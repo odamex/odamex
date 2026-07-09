@@ -213,7 +213,7 @@ void P_ShowSpawns(const mapthing2_t& mthing)
 		}
 
 		if (spawn) {
-			spawn->effects = spawn->args[0] << FX_FOUNTAINSHIFT;
+			spawn->SetEffects(spawn->args[0] << FX_FOUNTAINSHIFT);
 		}
 	}
 }

@@ -1984,6 +1984,8 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		target->health = 0;
 	}
 
+	target->UpdateActorLists();
+
 	P_RemoveHealthPool(target);
 	P_QueueCorpseForDestroy(target);
 

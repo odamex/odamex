@@ -64,6 +64,7 @@ void R_CacheSprite(const spritedef_t *sprite)
 
 				patch_t* patch = W_CachePatch(sprite->spriteframes[i].lump[r]);
 				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
+				sprite->spriteframes[i].height[r] = patch->height()<<FRACBITS;
 				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
 				sprite->spriteframes[i].topoffset[r] = patch->topoffset()<<FRACBITS;
 			}

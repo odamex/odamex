@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <array>
+
 // Basics.
 #include "doomdef.h"
 
@@ -392,6 +394,10 @@ class CredibilityState
 		int             m_predictedMotionTicCount { 0 };
 };
 
+// Blockmap dimensions, needed by the inline ActorBlockMapListNode::Next.
+extern int bmapwidth;
+extern int bmapheight;
+
 // Map Object definition.
 class AActor : public DThinker
 {
@@ -477,6 +483,9 @@ public:
 	void Destroy () override;
 	~AActor () override;
 
+	void* operator new(size_t size);
+	void operator delete(void* ptr, size_t size);
+
 	void RunThink () override;
 	void PostThink() override;
 
@@ -503,6 +512,24 @@ public:
 
 	struct subsector_s		*subsector;
 
+	// Keep these values together because they're hit by R_ProjectSprite,
+	// PIT_FindTarget, and PIT_CheckThing, which are heavy hitters on maps
+	// with a ton of monsters. This way, the cache can more easily hit
+	// due to locality.
+	int				flags;
+	int				flags2;	// Heretic flags
+	int				flags3;	// MBF21 flags
+	int				oflags;			// Odamex flags
+	int				statusflags; // Flags indicating a players status to other players
+	int 			health;
+	int32_t			type;
+	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
+	translationref_t translation;	// Translation table (or NULL)
+
+	// Additional info record for player avatars only.
+	// Only valid if type == MT_PLAYER
+	player_t*	player;
+
     // The closest interval over all contacted Sectors.
     fixed_t		floorz;
     fixed_t		ceilingz;
@@ -521,19 +548,12 @@ public:
     // If == validcount, already checked.
     int			validcount;
 
-	int32_t			type;
     mobjinfo_t*		info;	// &mobjinfo[mobj->type]
     int				tics;	// state tic counter
 	state_t			*state;
 	int				damage;			// For missiles
-	int				flags;
-	int				flags2;	// Heretic flags
-	int				flags3;	// MBF21 flags
-	int				oflags;			// Odamex flags
-	int				statusflags; // Flags indicating a players status to other players
 	int				special1;		// Special info
 	int				special2;		// Special info
-	int 			health;
 
     // Movement direction, movement generation (zig-zagging).
     byte			movedir;	// 0-7
@@ -553,10 +573,6 @@ public:
     // no matter what (even if shot)
     int			threshold;
 
-    // Additional info record for player avatars only.
-    // Only valid if type == MT_PLAYER
-	player_t*	player;
-
     // Player number last looked for.
     unsigned int	lastlook;
 
@@ -573,8 +589,6 @@ public:
 	ActorAwarenessState<MAXPLAYERS> playersAware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
-	translationref_t translation;	// Translation table (or NULL)
-	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
 	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
 	int16_t			gear;			// killough 11/98: used in torque simulation
 
@@ -636,8 +650,74 @@ private:
 	friend class FActorIterator;
 
 	void ClearFriendly();
+	void RemoveFromActorList();
 
-	static std::vector<AActorPtr> s_friendlies;
+public:
+	//
+	// ActorClassList
+	//
+	// Intrusive doubly-linked list of friendly/hostile monsters, equivalent
+	// to MBF's thinkerclasscap[th_friends/th_enemies] chains.
+	//
+	class ActorClassList
+	{
+	public:
+		AActor* Head() const { return m_head; }
+		bool empty() const { return m_head == NULL; }
+		size_t Count() const { return m_count; }
+		void Append(AActor* mo);
+		void Remove(AActor* mo);
+		void MoveFrontToEnd(AActor* upto);
+		void Clear();
+
+	private:
+		AActor* m_head = nullptr;
+		AActor* m_tail = nullptr;
+		size_t m_count = 0;
+	};
+
+	// next/previous actor in s_friendlies/s_hostiles; managed by ActorClassList
+	AActor* tlnext = nullptr;
+	AActor* tlprev = nullptr;
+
+	// next/previous actor in the list of all actors; linked on construction,
+	// unlinked on destruction.  Iterating this instead of the thinker list
+	// skips the runtime type check on every thinker.
+	AActor* anext = nullptr;
+	AActor* aprev = nullptr;
+
+	static AActor* FirstActor() { return s_allhead; }
+
+	// next/previous actor in the list of actors with nonzero effects, so
+	// P_RunEffects only visits actors that actually have effects. Always
+	// assign effects through SetEffects to keep the list in sync.
+	AActor* enext = nullptr;
+	AActor* eprev = nullptr;
+
+	void SetEffects(uint32_t neweffects);
+	static AActor* FirstEffectsActor() { return s_effectshead; }
+
+private:
+	static AActor* s_effectshead;
+
+	void LinkEffectsList();
+	void UnlinkEffectsList();
+
+	// the class list this actor is currently linked into, if any
+	ActorClassList* tlist = nullptr;
+
+	// Actor lists to make friendly/unfriendly targeting
+	// a little less taxing...
+	static ActorClassList s_friendlies;
+	static ActorClassList s_hostiles;
+
+	// intrusive list of every AActor in existence
+	static AActor* s_allhead;
+	static AActor* s_alltail;
+
+	void LinkAllActorsList();
+	void UnlinkAllActorsList();
+
 public:
 
 	void LinkToWorld ();
@@ -648,7 +728,10 @@ public:
 
 	bool IsFriendly() const { return flags & MF_FRIEND; }
 	void SetFriendly (bool isFriendly, const AActor* owner);
-	static std::reference_wrapper<std::vector<AActorPtr>> GetFriendlies() { return s_friendlies; }
+	void UpdateActorLists();
+	static void ClearActorLists();
+	static ActorClassList& GetFriendlies() { return s_friendlies; }
+	static ActorClassList& GetHostiles() { return s_hostiles; }
 
 	AActorPtr ptr(){ return self; }
 
@@ -660,17 +743,51 @@ public:
 	// be in the mapblock where its center was located, even if it was
 	// overlapping other blocks.
 	//
+	// The per-block next/prev links live in a fixed-size array inside the
+	// actor itself; nearly every actor spans at most a 3x3 block area
+	// (radius up to 128 covers the spider mastermind), so walking a blockmap
+	// chain never chases a separate heap allocation per actor. Larger
+	// custom actors fall back to a heap array.
+	//
 	class ActorBlockMapListNode
 	{
 	public:
 		explicit ActorBlockMapListNode(AActor* mo);
+		ActorBlockMapListNode(const ActorBlockMapListNode& other);
+		ActorBlockMapListNode& operator=(const ActorBlockMapListNode& other);
+		~ActorBlockMapListNode();
+
 		void Link();
 		void Unlink();
-		AActor* Next(int bmx, int bmy);
+
+		AActor* Next(int bmx, int bmy) const
+		{
+			if (bmx < 0 || bmx >= bmapwidth || bmy < 0 || bmy >= bmapheight)
+				return nullptr;
+
+			return m_next[getIndex(bmx, bmy)];
+		}
 
 	private:
 		void clear();
-		size_t getIndex(int bmx, int bmy);
+		void ensureCapacity(int blockcnt);
+		void copyFrom(const ActorBlockMapListNode& other);
+
+		size_t getIndex(int bmx, int bmy) const
+		{
+			// Out-of-range queries (including the cleared state and the
+			// vanilla single-block case) fall back to index 0, which is
+			// always a valid slot.
+			if (bmx < m_originx || bmx > m_originx + m_blockcntx - 1 ||
+				bmy < m_originy || bmy > m_originy + m_blockcnty - 1)
+				return 0;
+
+			return (bmy - m_originy) * m_blockcntx + bmx - m_originx;
+		}
+
+		// the number of block links stored inline before falling back to
+		// the heap - covers actors up to radius 128 (a 3x3 block area)
+		static const int INLINE_BLOCKS = 9;
 
 		AActor* m_actor;
 
@@ -682,9 +799,13 @@ public:
 		int m_blockcnty;
 
 		// the next and previous actors in each of the possible blockmaps
-		// this actor can inhabit
-		std::vector<AActor*>  m_next;
-		std::vector<AActor**> m_prev;
+		// this actor can inhabit - point at the inline arrays unless the
+		// actor spans more than INLINE_BLOCKS blocks
+		int m_capacity;
+		AActor**  m_next;
+		AActor*** m_prev;
+		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext;
+		std::array<AActor**, INLINE_BLOCKS> m_inlineprev;
 	};
 
 	// Interaction info, by BLOCKMAP.

@@ -603,7 +603,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	if (mo->flags & MF_MISSILE && mo->target && (mo->target->oflags & MFO_ISHORDEBOSS))
 	{
 		mo->oflags |= MFO_FULLBRIGHT;
-		mo->effects |= FX_YELLOWFOUNTAIN;
+		mo->SetEffects(mo->effects | FX_YELLOWFOUNTAIN);
 		mo->translation = translationref_t(&::bosstable[0]);
 	}
 
@@ -708,7 +708,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	if (type == MT_FOUNTAIN)
 	{
 		if (msg->args_size() >= 1)
-			mo->effects = msg->args().Get(0) << FX_FOUNTAINSHIFT;
+			mo->SetEffects(msg->args().Get(0) << FX_FOUNTAINSHIFT);
 	}
 
 	if (type == MT_ZDOOMBRIDGE)
@@ -765,6 +765,8 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->Destroy();
 	}
 
+	mo->UpdateActorLists();
+
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
 		mo->flags = msg->current().flags();
@@ -781,7 +783,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
-			mo->effects = FX_YELLOWFOUNTAIN;
+			mo->SetEffects(FX_YELLOWFOUNTAIN);
 			mo->translation = translationref_t(&::bosstable[0]);
 		}
 	}
@@ -811,7 +813,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags &= ~MF_SOLID;
 		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
-			mo->effects = 0; // Remove sparkles from boss corpses
+			mo->SetEffects(0); // Remove sparkles from boss corpses
 		}
 
 		if (mo->player)
@@ -1500,6 +1502,7 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	corpsehit->flags = info->flags;
 	corpsehit->health = info->spawnhealth;
 	corpsehit->target = AActor::AActorPtr();
+	corpsehit->UpdateActorLists();
 }
 
 //
