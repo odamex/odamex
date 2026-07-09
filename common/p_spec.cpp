@@ -445,6 +445,18 @@ EXTERN_CVAR (sv_allowexit)
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
 
+std::vector<DScroller*> DScroller::s_scrollers;
+
+DScroller::DScroller ()
+{
+	s_scrollers.push_back(this);
+}
+
+DScroller::~DScroller ()
+{
+	std::erase(s_scrollers, this);
+}
+
 void DScroller::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -2609,6 +2621,7 @@ void DScroller::RunThink ()
 DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 					  int control, int affectee, int accel)
 {
+	s_scrollers.push_back(this);
 	m_Type = type;
 	m_dx = dx;
 	m_dy = dy;
@@ -2636,6 +2649,7 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 					 int control, int accel)
 {
+	s_scrollers.push_back(this);
 	fixed_t x = abs(l->dx), y = abs(l->dy), d;
 	if (y > x)
 		d = x, x = y, y = d;

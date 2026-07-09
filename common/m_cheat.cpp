@@ -552,6 +552,7 @@ AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 	if (friendly)
 	{
 		entity->SetFriendly(true, player.mo);
+		entity->UpdateActorLists();
 		cheatname = "summonfriend";
 	}
 

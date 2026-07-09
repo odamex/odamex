@@ -325,8 +325,8 @@ bool P_ActivateMobj (AActor *mobj, AActor *activator)
 			}
 
 			case MT_FOUNTAIN:
-				mobj->effects &= ~FX_FOUNTAINMASK;
-				mobj->effects |= mobj->args[0] << FX_FOUNTAINSHIFT;
+				mobj->SetEffects((mobj->effects & ~FX_FOUNTAINMASK) |
+				                 (mobj->args[0] << FX_FOUNTAINSHIFT));
 				break;
 
 			case MT_SECRETTRIGGER:
@@ -364,7 +364,7 @@ bool P_DeactivateMobj (AActor *mobj)
 		switch (mobj->type)
 		{
 			case MT_FOUNTAIN:
-				mobj->effects &= ~FX_FOUNTAINMASK;
+				mobj->SetEffects(mobj->effects & ~FX_FOUNTAINMASK);
 				break;
 			default:
 				break;
