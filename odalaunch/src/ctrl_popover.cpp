@@ -327,12 +327,12 @@ void PlayerListPopover::Populate(const Server& s)
 		MonsterDmg = OdaGetDamagePercent(s, "sv_monsterdamage");
 
 	SetColouredItem(m_MonsterDmgItem, m_MonsterDmg, MonsterDmg.Value,
-	                MonsterDmg.IsPositive);
+	                !MonsterDmg.IsPositive);
 
 	const OdaModifier_t MonsterHealth =
 	    OdaGetDamagePercent(s, "sv_monstershealth");
 	SetColouredItem(m_MonsterHealthItem, m_MonsterHealth, MonsterHealth.Value,
-	                MonsterHealth.IsPositive);
+	                !MonsterHealth.IsPositive);
 
 	const OdaModifier_t Gravity = OdaGetGravity(s);
 	m_GravityDelta->SetLabel(Gravity.Delta);

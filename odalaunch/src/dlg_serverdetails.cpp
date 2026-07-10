@@ -651,12 +651,12 @@ void dlgServerDetails::PopulateGameplay()
 	if(s.Info.GameType == GT_Horde || s.Info.GameType == GT_Cooperative)
 		MonsterDmg = OdaGetDamagePercent(s, "sv_monsterdamage");
 	SetColouredRow(m_GpGrid, m_GpMonsterDmgLabel, m_GpMonsterDmg,
-	               MonsterDmg.Value, MonsterDmg.IsPositive);
+	               MonsterDmg.Value, !MonsterDmg.IsPositive);
 
 	const OdaModifier_t MonsterHealth =
 	    OdaGetDamagePercent(s, "sv_monstershealth");
 	SetColouredRow(m_GpGrid, m_GpMonsterHealthLabel, m_GpMonsterHealth,
-	               MonsterHealth.Value, MonsterHealth.IsPositive);
+	               MonsterHealth.Value, !MonsterHealth.IsPositive);
 
 	const OdaModifier_t Gravity = OdaGetGravity(s);
 	SetDeltaRow(m_GpGrid, m_GpGravityLabel, m_GpGravity, m_GpGravityDelta,
