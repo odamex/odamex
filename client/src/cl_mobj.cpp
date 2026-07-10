@@ -81,6 +81,8 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 //		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
 	mobj = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
+	mobj->credibility.Lionize();
+
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
 	mobj->translation = translationref_t(translationtables + 256 * player.id, player.id);
@@ -89,7 +91,7 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 		// NOTE(jsd): Copy the player setup menu's translation to the player_id's:
 		// [SL] don't screw with vanilla demo player colors
 		if (!demoplayback)
-			R_CopyTranslationRGB(0, player.id);
+			R_CopyTranslationRGB(menuplayer_id, player.id);
 	}
 
 //	if (player.deadspectator && player.mo)
@@ -197,7 +199,7 @@ void P_ShowSpawns(const mapthing2_t& mthing)
 		{
 			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{
-				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+				TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 				if (teamInfo->TeamSpawnThingNum == mthing.type)
 				{
 					// [RK] If we're not using z-height spawns, spawn the fountain on the floor
@@ -211,7 +213,7 @@ void P_ShowSpawns(const mapthing2_t& mthing)
 		}
 
 		if (spawn) {
-			spawn->effects = spawn->args[0] << FX_FOUNTAINSHIFT;
+			spawn->SetEffects(spawn->args[0] << FX_FOUNTAINSHIFT);
 		}
 	}
 }

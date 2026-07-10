@@ -23,7 +23,6 @@
 
 #include "odamex.h"
 
-#include <stdlib.h>
 #include <math.h>
 
 #include "g_gametype.h"
@@ -36,6 +35,7 @@
 #include "p_local.h"
 #include "infomap.h"
 #include "c_effect.h"
+#include "c_dispatch.h"
 
 extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)
@@ -43,7 +43,6 @@ EXTERN_CVAR(sv_allowcheats)
 #ifdef CLIENT_APP
 #include "am_map.h"
 #include "cl_main.h"
-#include "c_dispatch.h"
 extern bool automapactive;
 #endif
 
@@ -134,8 +133,8 @@ bool SetGeneric(cheatseq_t* cheat)
 			return true;
 	}
 
-	DoCheat(consoleplayer(), (ECheatFlags)cheat->Args[0]);
-	CL_SendCheat((ECheatFlags)cheat->Args[0]);
+	DoCheat(consoleplayer(), static_cast<CheatEnum>(cheat->Args[0]));
+	CL_SendCheat(static_cast<CheatEnum>(cheat->Args[0]));
 
 	return true;
 }
@@ -146,7 +145,7 @@ bool SetGeneric(cheatseq_t* cheat)
 
 bool AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
 {
-	if (cheat->Pos == NULL)
+	if (cheat->Pos == nullptr)
 	{
 		cheat->Pos = cheat->Sequence;
 		cheat->CurrentArg = 0;
@@ -198,7 +197,7 @@ BEGIN_COMMAND(summon)
 	if (argc < 2)
 		return;
 
-	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+	const std::string mobname = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 
 	if (!cheat::ValidSummonActor(mobname))
 	{
@@ -219,7 +218,7 @@ BEGIN_COMMAND(summonfriend)
 	if (argc < 2)
 		return;
 
-	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+	const std::string mobname = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 
 	if (!cheat::ValidSummonActor(mobname.c_str()))
 	{
@@ -248,6 +247,15 @@ BEGIN_COMMAND(mdk)
 }
 END_COMMAND(mdk)
 
+#endif
+
+#ifdef SERVER_APP
+BEGIN_COMMAND(tntem)
+{
+	const int kills = P_Massacre();
+	PrintFmt("Killed {} enemies.\n", kills);
+}
+END_COMMAND(tntem)
 #endif
 
 void A_PainDie(AActor*);
@@ -294,7 +302,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 {
 	std::string msg;
 
-	if (player.health <= 0)
+	if (player.health <= 0 or not serverside)
 		return;
 
 	switch (cheat)
@@ -431,7 +439,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 				if (actor->health > 0)
 				{
 					killcount++;
-					P_DamageMobj(actor, NULL, NULL, 10000, MOD_UNKNOWN);
+					P_DamageMobj(actor, nullptr, nullptr, 10000, MOD_UNKNOWN);
 				}
 				if (actor->type == MT_PAIN)
 				{
@@ -457,15 +465,12 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 		if (!G_IsCoopGame())
 			return;
 
-		if (serverside)
-		{
-			P_LineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT,
-			             P_AimLineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT),
-			             10000);
+		P_LineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT,
+		             P_AimLineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT),
+		             10000);
 
-			if (multiplayer)
-				msg = "MDK";
-		}
+		if (multiplayer)
+			msg = "MDK";
 	}
 	break;
 	case CHT_BUDDHA: {
@@ -484,6 +489,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 		}
 
 #ifdef SERVER_APP
+		SV_ClientPrintFmt(&player.client, PRINT_HIGH, "{}\n", msg);
 		SV_BroadcastPrintFmtButPlayer(PRINT_HIGH, player.id, "{} is a cheater: {}\n",
 		                            player.userinfo.netname, msg);
 #endif
@@ -508,7 +514,7 @@ AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 	AActor* entity = AActor::AActorPtr();
 	AActor* source = player.mo;
 
-	if (player.spectator || source == nullptr)
+	if (player.spectator or source == nullptr or not serverside)
 		return entity;
 
 	if (serverside)
@@ -545,10 +551,9 @@ AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 
 	if (friendly)
 	{
-		entity->flags |= MF_FRIEND;
+		entity->SetFriendly(true, player.mo);
+		entity->UpdateActorLists();
 		cheatname = "summonfriend";
-		P_GiveFriendlyOwnerInfo(entity, player.mo);
-		P_FriendlyEffects(entity);
 	}
 
 	if (multiplayer)
@@ -562,6 +567,9 @@ AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 
 void GiveTo(player_t& player, const char* name)
 {
+	if (not serverside)
+		return;
+
 	bool giveall;
 
 	if (&player != &consoleplayer())
@@ -577,7 +585,7 @@ void GiveTo(player_t& player, const char* name)
 	{
 		int h;
 
-		if (0 < (h = atoi(name + 6)))
+		if (0 < (h = ParseNum<int>(name + 6).value_or(0)))
 		{
 			if (player.mo)
 			{
@@ -610,7 +618,7 @@ void GiveTo(player_t& player, const char* name)
 			player.backpack = true;
 		}
 		for (int i = 0; i < NUMAMMO; i++)
-			P_GiveAmmo(player, (ammotype_t)i, 1);
+			P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
 
 		if (!giveall)
 			return;
@@ -620,7 +628,7 @@ void GiveTo(player_t& player, const char* name)
 	{
 		weapontype_t pendweap = player.pendingweapon;
 		for (int i = 0; i < NUMWEAPONS; i++)
-			P_GiveWeapon(player, (weapontype_t)i, false);
+			P_GiveWeapon(player, static_cast<weapontype_t>(i), false);
 		player.pendingweapon = pendweap;
 
 		if (!giveall)
@@ -678,15 +686,15 @@ void GiveTo(player_t& player, const char* name)
 		    else */
 		howmuch = it->quantity;
 
-		P_GiveAmmo(player, (ammotype_t)it->offset, howmuch);
+		P_GiveAmmo(player, static_cast<ammotype_t>(it->offset), howmuch);
 	}
 	else if (it->flags & IT_WEAPON)
 	{
-		P_GiveWeapon(player, (weapontype_t)it->offset, 0);
+		P_GiveWeapon(player, static_cast<weapontype_t>(it->offset), 0);
 	}
 	else if (it->flags & IT_KEY)
 	{
-		P_GiveCard(player, (card_t)it->offset);
+		P_GiveCard(player, static_cast<card_t>(it->offset));
 	}
 	else if (it->flags & IT_POWERUP)
 	{

@@ -35,7 +35,9 @@
 
 #include "i_system.h"
 #include "i_time.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_ctf.h"
@@ -383,7 +385,7 @@ void G_DoNewGame()
 		if(!(player.ingame()))
 			continue;
 
-		MSG_WriteSVC(&player.client.reliablebuf,
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(),
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
 	}
 
@@ -418,7 +420,7 @@ void G_DoNewGame()
 		if (G_IsTeamGame())
 			SV_CheckTeam(player);
 		else
-			memcpy(player.userinfo.color, player.prefcolor, 4);
+			player.userinfo.color = player.prefcolor;
 
 		SV_ClientFullUpdate(player);
 	}
@@ -711,7 +713,7 @@ void G_DoResetLevel(bool full_reset)
 			continue;
 
 		client_t* cl = &(player.client);
-		MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::ResetMap());
+		MSG_WriteSVC(cl->messenger.ReliableBuf(), odaproto::svc::ResetMap());
 	}
 
 	// Unserialize saved snapshot
@@ -887,7 +889,7 @@ void G_DoLoadLevel (int position)
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
 			{
-				MSG_WriteSVC(&pit->client.reliablebuf,
+				MSG_WriteSVC(pit->client.messenger.ReliableBuf(),
 				             SVC_PlayerMembers(*it, SVC_PM_READY));
 			}
 		}
@@ -929,7 +931,7 @@ void G_DoLoadLevel (int position)
 	if (sv_gametype == GM_CTF) {
 
 		for (int i = 0; i < NUMTEAMS; i++)
-			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
+			GetTeamInfo(static_cast<team_t>(i))->FlagData.flaglocated = false;
 	}
 
 	specialdoors.clear();
@@ -941,7 +943,7 @@ void G_DoLoadLevel (int position)
 	{
 		for (int i = 0; i < sv_teamsinplay; i++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 			if (!teamInfo->FlagData.flaglocated)
 			{
 				const char* teamColor = teamInfo->ColorString.c_str();

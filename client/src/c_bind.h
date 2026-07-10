@@ -66,7 +66,7 @@ void C_BindingsInit();
 void C_BindDefaults();
 
 // DoKey now have a binding responder, used to switch between Binds and Automap binds
-bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds);
+bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds);
 
 void C_ReleaseKeys();
 

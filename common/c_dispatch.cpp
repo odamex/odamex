@@ -543,7 +543,7 @@ BEGIN_COMMAND (if)
 
 	if(if_command_result && argc > 4)
 	{
-		std::string param = C_ArgCombine(argc - 4, (const char **)&argv[4]);
+		std::string param = C_ArgCombine(argc - 4, const_cast<const char**>(&argv[4]));
 		AddCommandString(param);
 	}
 }
@@ -876,7 +876,7 @@ BEGIN_COMMAND (alias)
 		if(argc > 2)
 		{
 			// Build the new alias
-			std::string param = C_ArgCombine(argc - 2, (const char **)&argv[2]);
+			std::string param = C_ArgCombine(argc - 2, const_cast<const char**>(&argv[2]));
 			new DConsoleAlias (argv[1], param.c_str());
 		}
 	}
@@ -1035,7 +1035,7 @@ END_COMMAND (puke)
 
 BEGIN_COMMAND (error)
 {
-	std::string text = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+	std::string text = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 	I_Error ("{}", text);
 }
 END_COMMAND (error)

@@ -19,17 +19,17 @@ jobs:
       minor: ${{ steps.gitversion.outputs.minor }}
       patch: ${{ steps.gitversion.outputs.patch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v4.1.0
+        uses: gittools/actions/gitversion/setup@v4.5
         with:
           versionSpec: '6.x'
       - name: Determine Version
         id:   gitversion
-        uses: gittools/actions/gitversion/execute@v4.1.0
+        uses: gittools/actions/gitversion/execute@v4.5
       - name: Get Commits From Source
         id:   revlist
         shell: bash
@@ -64,7 +64,7 @@ jobs:
           echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
           echo "TotalCommits: ${{ steps.revlist.outputs.totalCommits }}"
   build-macos-universal:
-    name: Build (Universal)
+    name: Build
     needs: pre_job
     runs-on: macos-14
     env:
@@ -72,13 +72,13 @@ jobs:
       new_version: ${{ needs.pre_job.outputs.new_version }}
       macos_deployment_target: "11.0"
       pcre2_version: "10.47"
-      wxwidgets_version: "3.2.5"
+      wxwidgets_version: "3.3.2"
       zlib_version: "1.2.11"
       libpng_version: "1.6.40"
       zstd_version: "1.5.7"
       odamex_install_bindir: "/Applications/Odamex"
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name: Run Upversion
@@ -151,7 +151,6 @@ jobs:
         export LDFLAGS="-L${DEPS_PREFIX}/lib"
         ./configure \
           --prefix="${DEPS_PREFIX}" \
-          --enable-unicode \
           --with-cocoa \
           --without-libtiff \
           --enable-monolithic \
@@ -189,7 +188,7 @@ jobs:
         cmake -S . -B build -GNinja \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
-          -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 \
+          -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 -DBUILD_TESTS=0 \
           -DCMAKE_PREFIX_PATH="${PWD}/deps/universal" \
           -DZSTD_LIBRARY="${PWD}/deps/universal/lib/libzstd.a" \
           -DZSTD_INCLUDE_DIR="${PWD}/deps/universal/include" \
@@ -324,7 +323,7 @@ jobs:
           "odamex-macos-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg" \
           "Odamex ${{ env.new_version }}"
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-macOS-universal
         path: odamex-macos-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg
@@ -336,11 +335,11 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-tags: true
     - name: Download universal artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: Odamex-macOS-universal
     - name: Create or update prerelease

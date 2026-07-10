@@ -99,24 +99,94 @@ subsector_t* P_PointInSubsector(fixed_t x, fixed_t y)
 
 
 AActor::ActorBlockMapListNode::ActorBlockMapListNode(AActor *mo) :
-	actor(mo)
+	m_actor (mo),
+	m_capacity (INLINE_BLOCKS),
+	m_next (m_inlinenext.data()),
+	m_prev (m_inlineprev.data())
 {
 	clear();
 }
 
+AActor::ActorBlockMapListNode::ActorBlockMapListNode(const ActorBlockMapListNode& other) :
+	m_actor (other.m_actor),
+	m_capacity (INLINE_BLOCKS),
+	m_next (m_inlinenext.data()),
+	m_prev (m_inlineprev.data())
+{
+	copyFrom(other);
+}
+
+AActor::ActorBlockMapListNode& AActor::ActorBlockMapListNode::operator=(const ActorBlockMapListNode& other)
+{
+	if (this != &other)
+	{
+		m_actor = other.m_actor;
+		copyFrom(other);
+	}
+	return *this;
+}
+
+AActor::ActorBlockMapListNode::~ActorBlockMapListNode()
+{
+	if (m_next != m_inlinenext.data())
+	{
+		delete[] m_next;
+		delete[] m_prev;
+	}
+}
+
+// Grows the link storage to hold at least blockcnt entries.  Only legal
+// while the node is unlinked, since other actors' m_prev entries can point
+// into this node's m_next array while it is linked.
+void AActor::ActorBlockMapListNode::ensureCapacity(int blockcnt)
+{
+	if (blockcnt <= m_capacity)
+		return;
+
+	if (m_next != m_inlinenext.data())
+	{
+		delete[] m_next;
+		delete[] m_prev;
+	}
+
+	m_next = new AActor*[blockcnt];
+	m_prev = new AActor**[blockcnt];
+	m_capacity = blockcnt;
+}
+
+void AActor::ActorBlockMapListNode::copyFrom(const ActorBlockMapListNode& other)
+{
+	m_originx   = other.m_originx;
+	m_originy   = other.m_originy;
+	m_blockcntx = other.m_blockcntx;
+	m_blockcnty = other.m_blockcnty;
+
+	int blockcnt = m_blockcntx * m_blockcnty;
+	if (blockcnt < 1)
+		blockcnt = 1; // index 0 must always be a valid slot
+
+	ensureCapacity(blockcnt);
+
+	for (int i = 0; i < blockcnt; i++)
+	{
+		m_next[i] = other.m_next[i];
+		m_prev[i] = other.m_prev[i];
+	}
+}
+
 void AActor::ActorBlockMapListNode::Link()
 {
-	int left    = (actor->x - actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
-	int right   = (actor->x + actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
-	int top     = (actor->y - actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
-	int bottom  = (actor->y + actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
+	int left    = (m_actor->x - m_actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
+	int right   = (m_actor->x + m_actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
+	int top     = (m_actor->y - m_actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
+	int bottom  = (m_actor->y + m_actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
 
 	if (!co_blockmapfix)
 	{
 		// originally Doom only used the block containing the center point
 		// of the actor even if the actor overlapped into other blocks
-		top = bottom = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
-		left = right = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
+		top = bottom = (m_actor->y - bmaporgy) >> MAPBLOCKSHIFT;
+		left = right = (m_actor->x - bmaporgx) >> MAPBLOCKSHIFT;
 	}
 
 	// do not ignore actors only *partially* outside blockmap
@@ -130,10 +200,12 @@ void AActor::ActorBlockMapListNode::Link()
 		if (top < 0) top = 0;
 		if (bottom >= bmapheight) bottom = bmapheight - 1;
 
-		originx = left;
-		originy = top;
-		blockcntx = right - left + 1;
-		blockcnty = bottom - top + 1;
+		m_originx = left;
+		m_originy = top;
+		m_blockcntx = right - left + 1;
+		m_blockcnty = bottom - top + 1;
+
+		ensureCapacity(m_blockcntx * m_blockcnty);
 
 		// [SL] 2012-05-15 - Add the actor to the blocklinks list for all of the
 		// blockmaps it overlaps, not just the blockmap for the actor's center point.
@@ -144,19 +216,19 @@ void AActor::ActorBlockMapListNode::Link()
 				// killough 8/11/98: simpler scheme using pointer-to-pointer prev
 				// pointers, allows head nodes to be treated like everything else
 
-				AActor **headptr = &blocklinks[bmy * bmapwidth + bmx];
-				AActor *headactor = *headptr;
+				AActor** headptr   = &blocklinks[bmy * bmapwidth + bmx];
+				AActor*  headactor = *headptr;
 
 				size_t thisidx = getIndex(bmx, bmy);
 
-		        if ((next[thisidx] = headactor))
-		        {
-		        	size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
-					headactor->bmapnode.prev[nextidx] = &next[thisidx];
+				if ((m_next[thisidx] = headactor))
+				{
+					size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
+					headactor->bmapnode.m_prev[nextidx] = & m_next[thisidx];
 				}
 
-		        prev[thisidx] = headptr;
-		        *headptr = actor;
+				m_prev[thisidx] = headptr;
+				*headptr = m_actor;
 			}
 		}
 	}
@@ -168,9 +240,9 @@ void AActor::ActorBlockMapListNode::Link()
 
 void AActor::ActorBlockMapListNode::Unlink()
 {
-	for (int bmy = originy; bmy < originy + blockcnty; bmy++)
+	for (int bmy = m_originy; bmy < m_originy + m_blockcnty; bmy++)
 	{
-		for (int bmx = originx; bmx < originx + blockcntx; bmx++)
+		for (int bmx = m_originx; bmx < m_originx + m_blockcntx; bmx++)
 		{
 			// killough 8/11/98: simpler scheme using pointers-to-pointers for prev
 			// pointers, allows head node pointers to be treated like everything else
@@ -182,45 +254,26 @@ void AActor::ActorBlockMapListNode::Unlink()
 
 			size_t thisidx = getIndex(bmx, bmy);
 
-			AActor *nextactor = next[thisidx];
-			AActor **prevactor = prev[thisidx];
+			AActor*  nextactor = m_next[thisidx];
+			AActor** prevactor = m_prev[thisidx];
 
 			if (prevactor && (*prevactor = nextactor))
 			{
 				size_t nextidx = nextactor->bmapnode.getIndex(bmx, bmy);
-				nextactor->bmapnode.prev[nextidx] = prevactor;
+				nextactor->bmapnode.m_prev[nextidx] = prevactor;
 			}
 		}
 	}
 }
 
-AActor* AActor::ActorBlockMapListNode::Next(int bmx, int bmy)
-{
-	if (bmx < 0 || bmx >= bmapwidth || bmy < 0 || bmy >= bmapheight)
-		return NULL;
-
-	return next[getIndex(bmx, bmy)];
-}
-
 void AActor::ActorBlockMapListNode::clear()
 {
-	originx = originy = 0;
-	blockcntx = blockcnty = 0;
-	memset(prev, 0, sizeof(prev));
-	memset(next, 0, sizeof(next));
-}
-
-size_t AActor::ActorBlockMapListNode::getIndex(int bmx, int bmy)
-{
-	if (!co_blockmapfix)
-		return 0;
-
-	// range check
-	if (bmx < originx || bmx > originx + blockcntx - 1 ||
-		bmy < originy || bmy > originy + blockcnty - 1)
-		return 0;
-
-	return (bmy - originy) * BLOCKSX + bmx - originx;
+	m_originx = 0;
+	m_originy = 0;
+	m_blockcntx = 0;
+	m_blockcnty = 0;
+	std::fill(m_next, m_next + m_capacity, nullptr);
+	std::fill(m_prev, m_prev + m_capacity, nullptr);
 }
 
 
@@ -422,7 +475,7 @@ fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1)
 				int64_t(v1->x - v2->x) * int64_t(v1->dy) +
 				int64_t(v2->y - v1->y) * int64_t(v1->dx);
 
-		return (fixed_t)(num / den);
+		return static_cast<fixed_t>(num / den);
 	}
 	else
 	{

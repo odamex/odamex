@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <cstdint> // bit.hpp is supposed to include this itself, but a bug in 2.0.0 prevents it
 #include <nonstd/bit.hpp>
 
 #if TARGET_CPU_X86 || TARGET_CPU_X86_64
@@ -73,7 +74,8 @@ inline static int64_t LELONGLONG(const int64_t x) noexcept
 	return nonstd::bit::as_little_endian(x);
 }
 
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+template <typename T>
+requires std::is_integral_v<T>
 inline static T LESWAP(const T x) noexcept
 {
 	return nonstd::bit::as_little_endian(x);
@@ -109,7 +111,8 @@ inline static int64_t BELONGLONG(const int64_t x) noexcept
 	return nonstd::bit::as_big_endian(x);
 }
 
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+template <typename T>
+requires std::is_integral_v<T>
 inline static T BESWAP(const T x) noexcept
 {
 	return nonstd::bit::as_big_endian(x);

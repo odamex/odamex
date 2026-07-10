@@ -24,8 +24,12 @@
 
 #pragma once
 
-#include "dobject.h"
+#include <array>
+#include <cassert>
+#include <type_traits>
 
+#include "dobject.h"
+#include "doomtype.h"
 
 #define FA_RESET (1 << 0)
 
@@ -62,7 +66,7 @@ public:
 
 	virtual	unsigned int Tell() const = 0;
 	virtual	FFile& Seek(int, ESeekPos) = 0;
-	inline	FFile& Seek(unsigned int i, ESeekPos p) { return Seek((int)i, p); }
+	inline	FFile& Seek(unsigned int i, ESeekPos p) { return Seek(static_cast<int>(i), p); }
 };
 
 class FLZOFile : public FFile
@@ -151,44 +155,105 @@ public:
 	void WriteCount(uint32_t count);
 	uint32_t ReadCount();
 
-	FArchive& operator<< (uint8_t c);
-	FArchive& operator<< (uint16_t s);
-	FArchive& operator<< (uint32_t i);
-	FArchive& operator<< (uint64_t i);
+	// ------------ Streaming-in operations ---------------
+
+	// Integer operators
+	template <typename IntegerType>
+	requires std::is_integral_v<IntegerType>
+	FArchive& operator<< (IntegerType value)
+	{
+		value = BESWAP(value);
+		Write(&value, sizeof(value));
+		return *this;
+	}
+
+	template <typename EnumeratedType>
+	requires std::is_enum_v<EnumeratedType>
+	FArchive& operator<< (EnumeratedType value)
+	{
+		*this << static_cast<std::underlying_type_t<EnumeratedType> >(value);
+		return *this;
+	}
+
+	// Overload bool because its size is implementation-defined, and we want archived sizes to be exact.
+	FArchive& operator<< (bool b) { return operator<< (uint8_t(b)); }
+
+	template <typename ElementType, size_t N>
+	FArchive& operator<< (const std::array<ElementType, N>& i_array)
+	{
+		*this << i_array.size();
+		for (const auto& element : i_array)
+		{
+			*this << element;
+		}
+		return *this;
+	}
+
 	FArchive& operator<< (float f);
 	FArchive& operator<< (double d);
 	FArchive& operator<< (argb_t color);
+	FArchive& operator<< (const std::string& str);
 	FArchive& operator<< (const char* str);
 	FArchive& operator<< (DObject* obj);
 
-	inline	FArchive& operator<< (char c) { return operator<< ((uint8_t)c); }
-	inline	FArchive& operator<< (int8_t c) { return operator<< ((uint8_t)c); }
-	inline	FArchive& operator<< (int16_t s) { return operator<< ((uint16_t)s); }
-	inline	FArchive& operator<< (int32_t i) { return operator<< ((uint32_t)i); }
-	inline	FArchive& operator<< (int64_t i) { return operator<< ((uint64_t)i); }
-	inline	FArchive& operator<< (const unsigned char* str) { return operator<< ((const char* )str); }
-	inline	FArchive& operator<< (const signed char* str) { return operator<< ((const char* )str); }
-	inline	FArchive& operator<< (bool b) { return operator<< ((uint8_t)b); }
+	FArchive& operator<< (const unsigned char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
+	FArchive& operator<< (const signed char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
 
-	FArchive& operator>> (uint8_t& c);
-	FArchive& operator>> (uint16_t& s);
-	FArchive& operator>> (uint32_t& i);
-	FArchive& operator>> (uint64_t& i);
+	// ------------ Streaming-out operations ---------------
+
+	// Integer operators
+	template <typename IntegerType>
+	requires std::is_integral_v<IntegerType>
+	FArchive& operator>> (IntegerType& value)
+	{
+		Read(&value, sizeof(value));
+		value = BESWAP(value);
+		return *this;
+	}
+
+	template <typename EnumeratedType>
+	requires std::is_enum_v<EnumeratedType>
+	FArchive& operator>> (EnumeratedType& value)
+	{
+		std::underlying_type_t<EnumeratedType> temp;
+		*this >> temp;
+		value = static_cast<EnumeratedType>(temp);
+		return *this;
+	}
+
+	// Overload bool because its size is implementation-defined, and we want archived sizes to be exact.
+	FArchive& operator>>(bool& b)
+	{
+		uint8_t value;
+		*this >> value;
+		b = static_cast<bool>(value);
+		return *this;
+	}
+
+	template <typename ElementType, size_t N>
+	FArchive& operator>> (std::array<ElementType, N>& o_array)
+	{
+		size_t arraySize{0};
+
+		*this >> arraySize;
+		assert(arraySize == o_array.size());
+
+		for (auto& element : o_array)
+		{
+			*this >> element;
+		}
+		return *this;
+	}
+
 	FArchive& operator>> (float& f);
 	FArchive& operator>> (double& d);
 	FArchive& operator>> (argb_t& color);
 	FArchive& operator>> (std::string& s);
 	FArchive& ReadObject(DObject *&obj, TypeInfo* wanttype);
 
-	inline	FArchive& operator>> (char& c) { uint8_t in; operator>> (in); c = (char)in; return *this; }
-	inline	FArchive& operator>> (int8_t& c) { uint8_t in; operator>> (in); c = (int8_t)in; return *this; }
-	inline	FArchive& operator>> (int16_t& s) { uint16_t in; operator>> (in); s = (int16_t)in; return *this; }
-	inline	FArchive& operator>> (int32_t& i) { uint32_t in; operator>> (in); i = (int32_t)in; return *this; }
-	inline	FArchive& operator>> (int64_t& i) { uint64_t in; operator>> (in); i = (int64_t)in; return *this; }
-	//inline	FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
-	//inline	FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
-	inline	FArchive& operator>> (bool& b) { uint8_t in; operator>> (in); b = (in != 0); return *this; }
-	inline  FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
+	//FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
+	//FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
+	FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
 
 protected:
 	enum { EObjectHashSize = 137 };
@@ -216,7 +281,7 @@ protected:
 		const TypeInfo* toCurrent;	// maps archive type index to execution type index
 		uint32_t toArchive;		// maps execution type index to archive type index
 
-		enum { NO_INDEX = 0xffffffff };
+//		enum { NO_INDEX = 0xffffffff };
 	} *m_TypeMap;
 
 	struct ObjectMap
@@ -231,7 +296,7 @@ private:
 	void operator= (const FArchive &src) {}
 };
 
-class player_s;
+class player_t;
 
-FArchive &operator<< (FArchive& arc, player_s* p);
-FArchive &operator>> (FArchive& arc, player_s* &p);
+FArchive &operator<< (FArchive& arc, player_t* p);
+FArchive &operator>> (FArchive& arc, player_t* &p);

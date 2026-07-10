@@ -70,8 +70,8 @@ public:
 	const char *LookupString (uint32_t index, uint32_t ofs=0) const;
 	const char *LocalizeString (uint32_t index) const;
 	void StartTypedScripts (uint16_t type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
-	uint32_t PC2Ofs (int *pc) const { return (byte *)pc - Data; }
-	int *Ofs2PC (uint32_t ofs) const { return (int *)(Data + ofs); }
+	uint32_t PC2Ofs (int *pc) const { return reinterpret_cast<byte*>(pc) - Data; }
+	int *Ofs2PC (uint32_t ofs) const { return reinterpret_cast<int*>(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }
 	ScriptFunction *GetFunction (int funcnum) const;
 	int GetArrayVal (int arraynum, int index) const;
@@ -364,8 +364,44 @@ public:
 		PCD_PLAYERNUMBER,
 		PCD_ACTIVATORTID,
 		PCD_GETCVAR = 255,
-	  /*260*/ PCD_GETACTORANGLE = 260,
-	  PCD_GETLEVELINFO = 265,
+/*260*/	PCD_GETACTORANGLE = 260,
+		PCD_GETLEVELINFO = 265,
+/*290*/
+		PCD_ANDSCRIPTVAR = 291,
+		PCD_ANDMAPVAR,
+		PCD_ANDWORLDVAR,
+		PCD_ANDGLOBALVAR,
+		PCD_ANDMAPARRAY,
+		PCD_ANDWORLDARRAY,
+		PCD_ANDGLOBALARRAY,
+		PCD_EORSCRIPTVAR,
+		PCD_EORMAPVAR,
+/*300*/	PCD_EORWORLDVAR,
+		PCD_EORGLOBALVAR,
+		PCD_EORMAPARRAY,
+		PCD_EORWORLDARRAY,
+		PCD_EORGLOBALARRAY,
+		PCD_ORSCRIPTVAR,
+		PCD_ORMAPVAR,
+		PCD_ORWORLDVAR,
+		PCD_ORGLOBALVAR,
+		PCD_ORMAPARRAY,
+/*310*/	PCD_ORWORLDARRAY,
+		PCD_ORGLOBALARRAY,
+		PCD_LSSCRIPTVAR,
+		PCD_LSMAPVAR,
+		PCD_LSWORLDVAR,
+		PCD_LSGLOBALVAR,
+		PCD_LSMAPARRAY,
+		PCD_LSWORLDARRAY,
+		PCD_LSGLOBALARRAY,
+		PCD_RSSCRIPTVAR,
+/*320*/	PCD_RSMAPVAR,
+		PCD_RSWORLDVAR,
+		PCD_RSGLOBALVAR,
+		PCD_RSMAPARRAY,
+		PCD_RSWORLDARRAY,
+		PCD_RSGLOBALARRAY,
 
 		PCODE_COMMAND_COUNT
 	};
@@ -438,7 +474,7 @@ public:
 		LEVELINFO_SUCK_TIME
 	};
 
-	enum EScriptState
+	enum EScriptState : uint8_t
 	{
 		SCRIPT_Running,
 		SCRIPT_Suspended,
@@ -513,15 +549,6 @@ private:
 
 	friend class DACSThinker;
 };
-
-inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState state)
-{
-	return arc << (byte)state;
-}
-inline FArchive &operator>> (FArchive &arc, DLevelScript::EScriptState &state)
-{
-	byte in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
-}
 
 class DACSThinker : public DThinker
 {

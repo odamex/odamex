@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -191,6 +191,8 @@ void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int l
 	spreeBreaker = newbreaker;
 }
 
+EXTERN_CVAR(sv_showsprees)
+
 void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 {
 	if (clientside && network_game)
@@ -270,8 +272,11 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	                         ::gametic};
 
 	#ifdef SERVER_APP
-	// Broadcast to all clients
-	MSG_BroadcastSVC(CLBUF_NET, SVC_SpreeBreaker(breaker, level, type), -1);
+	if (sv_showsprees)
+	{
+		// Broadcast to all clients
+		MSG_BroadcastSVC(CLBUF_NET, SVC_SpreeBreaker(breaker, level, type), -1);
+	}
 	#endif
 
 	setBreakerLanguage(breaker, type);
@@ -376,8 +381,11 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 
 		spreeRecord[playerId] = newRecord;
 #ifdef SERVER_APP
-		// Broadcast to all clients
-		MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(newRecord), -1);
+		if (sv_showsprees)
+		{
+			// Broadcast to all clients
+			MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(newRecord), -1);
+		}
 #endif
 		return true;
 	}
@@ -402,8 +410,11 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 			// Apply sexmessage to the broadcast text
 			setSpreeRecordLanguage(record, playerId);
 #ifdef SERVER_APP
-			// Broadcast to all clients
-			MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(record), -1);
+			if (sv_showsprees)
+			{
+				// Broadcast to all clients
+				MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(record), -1);
+			}
 #endif
 			return true;
 		}
@@ -444,17 +455,11 @@ void SpreeManager::expireOldSprees()
 	//	                "", "", CR_GOLD,   false, 0,  0};
 	//}
 
-	for (auto& it : spreeRecord)
-	{
-		SpreeRecord_t& record = it.second;
-
+	std::erase_if(spreeRecord, [](const auto& pair){
 		// Spree happened in the future, indicating we're in a rewinded demo
 		// Remove it
-		if (record.spreeStartTic > ::gametic)
-		{
-			spreeRecord.erase(it.first);
-		}
-	}
+		return pair.second.spreeStartTic > ::gametic;
+	});
 }
 
 const SpreeRecord_t& SpreeManager::getLatestSpreeRecord(const int notPlayerId)
@@ -614,6 +619,7 @@ void SpreeManager::clearPoints()
 
 #ifdef CLIENT_APP
 EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(cl_showofflinesprees)
 #endif
 
 void P_ProcessSpreeKill(const AActor* source, const player_t* target)
@@ -647,7 +653,8 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 
 #ifdef CLIENT_APP
 	// Don't announce sprees if the client has showing them disabled
-	if (!cl_showsprees)
+	if (!cl_showsprees || (!cl_showofflinesprees && !network_game) ||
+	    (!sv_showsprees && network_game))
 		return;
 #endif
 
@@ -684,7 +691,8 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 
 #ifdef CLIENT_APP
 	// Don't announce sprees if the client has showing them disabled
-	if (!cl_showsprees)
+	if (!cl_showsprees || (!cl_showofflinesprees && !network_game) ||
+	    (!sv_showsprees && network_game))
 		return;
 #endif
 

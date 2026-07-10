@@ -61,7 +61,7 @@
 // FARMHASH PORTABILITY LAYER: Runtime error if misconfigured
 
 #ifndef FARMHASH_DIE_IF_MISCONFIGURED
-#define FARMHASH_DIE_IF_MISCONFIGURED do { *(char*)(len % 17) = 0; } while (0)
+#define FARMHASH_DIE_IF_MISCONFIGURED do { *reinterpret_cast<char*>(len % 17) = 0; } while (0)
 #endif
 
 // FARMHASH PORTABILITY LAYER: "static inline" or similar

@@ -33,6 +33,11 @@
 
 extern bool keysfound[NUMCARDS];
 
+// The server tracks ping up until 999 msec.  This is the most that we record into
+// the player structure and the point at which we turn off reliable message
+// retransmissions.
+constexpr int MAX_PING = 999;
+
 class client_c
 {
 public:
@@ -44,8 +49,8 @@ public:
 extern client_c clients;
 
 void SV_InitNetwork (void);
-void SV_SendDisconnectSignal();
-void SV_SendReconnectSignal();
+void SV_SendAndFlushDisconnectSignal();
+void SV_SendAndFlushReconnectSignal();
 void SV_ExitLevel();
 void SV_DrawScores();
 
@@ -53,13 +58,6 @@ void SV_ServerSettingChange();
 bool SV_IsPlayerAllowedToSee(const player_t &pl, const AActor *mobj);
 
 void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
-
-// Print directly to a specific client.
-template <typename... ARGS>
-void SV_ClientPrintFmt(client_t *cl, int level, fmt::format_string<ARGS...> format, ARGS&&... args)
-{
-	SV_BasePrint(cl, level, fmt::format(format, std::forward<ARGS>(args)...));
-}
 
 // Print directly to a specific player.
 template <typename... ARGS>
@@ -121,25 +119,21 @@ void SV_CheckTimeouts (void);
 void SV_ConnectClient(void);
 void SV_ConnectClient2(player_t& player);
 void SV_WriteCommands(void);
-void SV_ClearClientsBPS(void);
-bool SV_SendPacket(player_t &pl);
-void SV_AcknowledgePacket(player_t &player);
+MessageResultEnum SV_SendPacket(player_t &pl);
 void SV_DisplayTics();
 void SV_RunTics();
 void SV_ParseCommands(player_t &player);
 void SV_UpdateFrags (const player_t &player);
 void SV_RemoveCorpses (void);
-#define SV_DropClient(who) SV_DropClient2(who, __FILE__, __LINE__)
-void SV_DropClient2(player_t& who, const char* file, const int line);
+void SV_DropClient(player_t& who);
 void SV_PlayerTriedToCheat(player_t &player);
-void SV_ActorTarget(const AActor *actor);
-void SV_ActorTracer(const AActor *actor);
 void SV_ForceSetTeam(player_t &who, team_t team);
 void SV_CheckTeam(player_t &player);
 void SV_SendUserInfo(const player_t &player, client_t* cl);
 void SV_Suicide(player_t &player);
 void SV_SpawnMobj(AActor *mo);
-void SV_TouchSpecial(const AActor& special, player_t& player);
+void SV_SpawnHighPriorityMobj(AActor *mo);
+void SV_TouchSpecial(AActor& special, player_t& player);
 
 void SV_Sound (const AActor *mo, byte channel, const char *name, byte attenuation);
 void SV_Sound(player_t& pl, const AActor* mo, const byte channel, const char* name, const byte attenuation);
@@ -153,7 +147,7 @@ extern std::vector<std::string> wadnames;
 void SV_SendPlayerInfo(player_t& player);
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
-void SV_SendDamageMobj(const AActor *target, int pain);
+void SV_SendDamageMobj(AActor *target, int pain);
 // Tells clients to remove an actor from the world as it doesn't exist anymore
 void SV_SendDestroyActor(const AActor *mo);
 

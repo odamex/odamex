@@ -526,7 +526,7 @@ void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(StdStringToUpper(os.getToken()).c_str() + 1);
+		const OLumpName s = GStrings(OStringToUpper(os.getToken().c_str() + 1));
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -551,7 +551,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(StdStringToUpper(musicname.c_str() + 1));
+		const OLumpName s = GStrings(OStringToUpper(musicname.c_str() + 1));
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -704,7 +704,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			}
 
 			os.mustScan();
-			const OString& s = GStrings(StdStringToUpper(os.getToken()));
+			const OLumpName s = GStrings(OStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -739,7 +739,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		if (os.compareTokenNoCase("lookup"))
 		{
 			os.mustScan();
-			const OString& s = GStrings(StdStringToUpper(os.getToken()));
+			const OLumpName s = GStrings(OStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -1088,10 +1088,11 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	}
 }
 
-template <typename DataType>
+template <typename T = int32_t>
+requires std::is_integral_v<T>
 void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
 {
-	*static_cast<DataType*>(data) = static_cast<DataType>(flags);
+	*static_cast<T*>(data) = static_cast<T>(flags);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1169,7 +1170,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "e4m6special", &MIType_Special<MT_NULL, MF3_E4M6BOSS>, &ref.bossactions },
 			{ "e4m8special", &MIType_Special<MT_NULL, MF3_E4M8BOSS>, &ref.bossactions },
 			{ "specialaction_exitlevel", &MIType_SpecialAction<11>, &ref.bossactions },
-			{ "specialaction_opendoor", &MIType_SpecialAction<29, 666>, &ref.bossactions },
+			{ "specialaction_opendoor", &MIType_SpecialAction<109, 666>, &ref.bossactions },
 			{ "specialaction_lowerfloor", &MIType_SpecialAction<23, 666>, &ref.bossactions },
 			{ "specialaction_killmonsters", &MIType_SpecialAction<280>, &ref.bossactions },
 			{ "lightning" },
@@ -1410,13 +1411,13 @@ void ParseEpisodeInfo(OScanner& os)
 		if (os.compareToken("{"))
 		{
 			// Detected new-style MAPINFO
-			os.error("Detected incorrectly placed curly brace in MAPINFO episode definiton");
+			os.error("Detected incorrectly placed curly brace in MAPINFO episode definition");
 		}
 		else if (os.compareToken("}"))
 		{
 			if (new_mapinfo == false)
 				os.error("Detected incorrectly placed curly brace in MAPINFO episode "
-				        "definiton");
+				        "definition");
 			else
 				break;
 		}
@@ -1663,6 +1664,14 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 
 	level_pwad_info_t defaultinfo{};
 
+	// if no sky is defined, it will show texture 0 (aastinky/aashitty)
+	// so instead, lets just try to give it the first defined sky in the level set.
+	if (levels.size() > 0 && defaultinfo.skypic == "")
+	{
+		level_pwad_info_t& def = levels.at(0);
+		defaultinfo.skypic = def.skypic;
+	}
+
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
 	const OScannerConfig config = {
@@ -1677,6 +1686,14 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		if (os.compareTokenNoCase("defaultmap"))
 		{
 			defaultinfo = level_pwad_info_t();
+
+			// if no sky is defined, it will show texture 0 (aastinky/aashitty)
+			// so instead, lets just try to give it the first defined sky in the level set.
+			if (levels.size() > 0 && defaultinfo.skypic == "")
+			{
+				level_pwad_info_t& def = levels.at(0);
+				defaultinfo.skypic = def.skypic;
+			}
 
 			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
 			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
@@ -1704,25 +1721,14 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 				    LEVEL_NOINTERMISSION | LEVEL_EVENLIGHTING | LEVEL_SNDSEQTOTALCTRL;
 			}
 
-			// Build upon already defined levels, that way we don't miss any defaults
-			bool levelExists = levels.findByName(map_name).exists();
-
 			// Find the level.
-			level_pwad_info_t& info = levelExists
+			level_pwad_info_t& info = levels.findByName(map_name).exists()
 				? levels.findByName(map_name)
 				: levels.create();
 
-			if (!levelExists)
-				info = defaultinfo;
-
-			// for maps above 32, if no sky is defined, it will show texture 0 (aastinky)
-			// so instead, lets just try to give it the first defined sky in the level set.
-			if (levels.size() > 0 && defaultinfo.skypic == "")
-			{
-				level_pwad_info_t& def = levels.at(0);
-				info.skypic = def.skypic;
-			}
-
+			// Hexen/ZDoom mapinfo always loads from the default defining a new map
+			// Changing this to be conditional will break most wads that use defaultmap
+			info = defaultinfo;
 			info.mapname = map_name;
 
 			// Map name.
@@ -1730,7 +1736,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 			if (os.compareTokenNoCase("lookup"))
 			{
 				os.mustScan();
-				const OString& s = GStrings(StdStringToUpper(os.getToken()));
+				const OLumpName s = GStrings(OStringToUpper(os.getToken()));
 				if (s.empty())
 				{
 					info.level_name = os.getToken();

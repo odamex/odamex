@@ -38,10 +38,6 @@
 
 IMPLEMENT_SERIAL (DLighting, DSectorEffect)
 
-DLighting::DLighting ()
-{
-}
-
 void DLighting::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -57,10 +53,6 @@ DLighting::DLighting (sector_t *sector)
 //
 
 IMPLEMENT_SERIAL (DFireFlicker, DLighting)
-
-DFireFlicker::DFireFlicker ()
-{
-}
 
 void DFireFlicker::Serialize (FArchive &arc)
 {
@@ -115,10 +107,6 @@ DFireFlicker::DFireFlicker (sector_t *sector, int upper, int lower)
 // [RH] flickering light like Hexen's
 //
 IMPLEMENT_SERIAL (DFlicker, DLighting)
-
-DFlicker::DFlicker ()
-{
-}
 
 void DFlicker::Serialize (FArchive &arc)
 {
@@ -177,10 +165,6 @@ void EV_StartLightFlickering (int tag, int upper, int lower)
 //
 
 IMPLEMENT_SERIAL (DLightFlash, DLighting)
-
-DLightFlash::DLightFlash ()
-{
-}
 
 void DLightFlash::Serialize (FArchive &arc)
 {
@@ -243,10 +227,6 @@ DLightFlash::DLightFlash (sector_t *sector, int min, int max)
 //
 
 IMPLEMENT_SERIAL (DStrobe, DLighting)
-
-DStrobe::DStrobe ()
-{
-}
 
 void DStrobe::Serialize (FArchive &arc)
 {
@@ -540,10 +520,6 @@ void EV_LightSetMaxNeighbor(int tag)
 //
 IMPLEMENT_SERIAL (DGlow, DLighting)
 
-DGlow::DGlow ()
-{
-}
-
 void DGlow::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -593,10 +569,6 @@ DGlow::DGlow (sector_t *sector)
 //
 
 IMPLEMENT_SERIAL (DGlow2, DLighting)
-
-DGlow2::DGlow2 ()
-{
-}
 
 void DGlow2::Serialize (FArchive &arc)
 {
@@ -688,10 +660,6 @@ void EV_StartLightFading (int tag, int value, int tics)
 // [RH] Phased lighting ala Hexen
 
 IMPLEMENT_SERIAL (DPhased, DLighting)
-
-DPhased::DPhased ()
-{
-}
 
 void DPhased::Serialize (FArchive &arc)
 {

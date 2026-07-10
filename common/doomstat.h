@@ -30,7 +30,6 @@
 #pragma once
 
 #include "doomdata.h"
-#include "d_net.h"
 #include "g_level.h"
 
 // We also need the definition of a cvar
@@ -154,9 +153,20 @@ extern	int 			gametic;
 extern std::vector<mapthing2_t> DeathMatchStarts;
 
 // Player spawn spots.
+struct VoodooStartInfoType
+{
+	mapthing2_t         mapThing;
+	AActor::AActorPtr   mobj;       // Map-lifetime pointer.
+
+	explicit VoodooStartInfoType(const mapthing2_t& i_mapThing) :
+		mapThing (i_mapThing)
+	{
+	}
+};
+
 #define MAXPLAYERSTARTS		64
-extern std::vector<mapthing2_t> playerstarts;
-extern std::vector<mapthing2_t> voodoostarts;
+extern std::vector<mapthing2_t>         playerstarts;
+extern std::vector<VoodooStartInfoType> voodoostarts;
 
 // ----------------------------------------------
 
@@ -167,7 +177,7 @@ extern	struct wbstartstruct_s wminfo;
 
 // LUT of ammunition limits for each kind.
 // This doubles with BackPack powerup item.
-extern	int 			maxammo[NUMAMMO];
+extern std::array<int, NUMAMMO> maxammo;
 
 //-----------------------------------------
 // Internal parameters, used for engine.

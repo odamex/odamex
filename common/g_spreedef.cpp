@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@ static std::string UseStringTableOrToken(std::string token)
 {
 	if (token.find_first_of("$") == 0)
 	{
-		std::string text = GStrings(token.substr(1));
+		std::string text = GStrings(OString(token.substr(1)));
 		if (text.empty())
 		{
 			return token;
@@ -128,8 +128,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Spree Token \"%s\".", os.getToken());
-			os.warning(buffer);
+			os.warning("Unknown Spree Token \"{:s}\".", os.getToken());
 		}
 		os.mustScan();
 	}
@@ -181,9 +180,7 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer =
-			    fmt::sprintf("Unknown Multi Kill Token \"%s\".", os.getToken());
-			os.warning(buffer);
+			os.warning("Unknown Multi Kill Token \"{:s}\".", os.getToken());
 		}
 		os.mustScan();
 	}
@@ -203,7 +200,7 @@ static void ParseSpreeText(OScanner& os, std::string& text, std::string token)
 
 static void ParseSpreeDef(const int lump, const OLumpName name)
 {
-	char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
+	const char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
 
 	const OScannerConfig config = {
 	    "SPREEDEF", // lumpName
@@ -273,8 +270,7 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Token \"%s\".", os.getToken());
-			os.error(buffer);
+			os.error("Unknown Token \"{:s}\".", os.getToken());
 		}
 	}
 

@@ -61,7 +61,7 @@ int LevelState::getCountdown() const
 		return g_preroundtime.asInt();
 	}
 
-	return ceil(period / (float)TICRATE);
+	return ceil(period / static_cast<float>(TICRATE));
 }
 
 /**
@@ -97,7 +97,7 @@ int LevelState::getJoinTimeLeft() const
 		return 0;
 
 	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
-	int left = ceil((end_time - ::level.time) / (float)TICRATE);
+	int left = ceil((end_time - ::level.time) / static_cast<float>(TICRATE));
 	return MAX(left, 0);
 }
 
@@ -270,12 +270,12 @@ void LevelState::readyToggle()
 		return;
 
 	float f_calc = total * sv_warmup_autostart;
-	size_t i_calc = (int)floor(f_calc + 0.5f);
+	size_t i_calc = static_cast<int>(std::round(f_calc));
 	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON)
 	{
 		needed = i_calc + 1;
 	}
-	needed = (int)ceil(f_calc);
+	needed = static_cast<int>(ceil(f_calc));
 
 	if (ready >= needed)
 	{

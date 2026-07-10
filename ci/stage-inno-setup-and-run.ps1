@@ -128,12 +128,15 @@ function CompileSetup {
         Remove-Item -Force -Recurse -Path "${OutputDir}"
     }
 
+    $VCRedistVersion = (Get-Item "${OutX64}\redist\vc_redist.x64.exe").VersionInfo.ProductVersion
+
     New-Item  -Force -ItemType "directory" -Path "${OutputDir}"
     # Generate installer
     ISCC.exe "${CurrentDir}\installer\windows\odamex.iss" `
         /DOdamexVersion=${OdamexVersion} `
         /DOdamexTestSuffix=${OdamexTestSuffix} `
         /DSourcePath=${CurrentDir} `
+        /DVCRedistVersion=${VCRedistVersion} `
         /O${OutputDir}
 }
 

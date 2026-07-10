@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include <ctime>
+#include <cctype>
 #include <functional>
 #include <sstream>
 
@@ -185,6 +186,37 @@ bool IsRealNum(const char* str)
 	return true;
 }
 
+//
+// IsRealNum
+//
+// [SL] Returns true if the specified string is a valid real number
+//
+bool IsRealNum(std::string_view str)
+{
+	bool seen_decimal = false;
+
+	if (str.empty())
+		return false;
+
+	if (str.starts_with('+') || str.starts_with('-'))
+		str.remove_prefix(1);
+
+	for (char c : str)
+	{
+		if (c == '.')
+		{
+			if (seen_decimal)
+				return false;		// second decimal point
+			else
+				seen_decimal = true;
+		}
+		else if (c < '0' || c > '9')
+			return false;
+	}
+
+	return true;
+}
+
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
 bool iequals(std::string_view s1, std::string_view s2)
@@ -327,6 +359,7 @@ void StrFormatBytes(std::string& out, size_t bytes)
 		out = fmt::sprintf("%.0f %s", checkbytes, BYTE_MAGS[magnitude]);
 }
 
+// TODO: update these to use c++20 std::chrono types and drop strptime
 // [AM] Format a tm struct as an ISO8601-compliant extended format string.
 //      Assume that the input time is in UTC.
 bool StrFormatISOTime(std::string& s, const tm* utc_tm) {
@@ -498,23 +531,17 @@ void TicsToTime(OTimespan& span, int time, bool ceilsec)
 	span.csecs = (span.tics * 100) / TICRATE;
 }
 
-// [SL] Reimplement std::isspace
-static int _isspace(int c)
-{
-	return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f' || c == '\r');
-}
-
 // Trim whitespace from the start of a string
 std::string &TrimStringStart(std::string &s)
 {
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn( _isspace )));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char c) { return !std::isspace(c); }));
 	return s;
 }
 
 // Trim whitespace from the end of a string
 std::string &TrimStringEnd(std::string &s)
 {
-	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn( _isspace )).base(), s.end());
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char c) { return !std::isspace(c); }).base(), s.end());
 	return s;
 }
 
@@ -522,6 +549,34 @@ std::string &TrimStringEnd(std::string &s)
 std::string &TrimString(std::string &s)
 {
 	return TrimStringStart(TrimStringEnd(s));
+}
+
+// Trim whitespace from the start of a string_view
+std::string_view TrimStringViewStart(std::string_view str)
+{
+	const auto it = std::find_if(str.begin(), str.end(), [](unsigned char c){
+		return !std::isspace(c);
+	});
+
+    str.remove_prefix(std::distance(str.begin(), it));
+    return str;
+}
+
+// Trim whitespace from the end of a string_view
+std::string_view TrimStringViewEnd(std::string_view str)
+{
+	const auto it = std::find_if(str.rbegin(), str.rend(), [](unsigned char c){
+		return !std::isspace(c);
+	});
+
+    str.remove_suffix(std::distance(str.rbegin(), it));
+    return str;
+}
+
+// Trim whitespace from the start and end of a string
+std::string_view TrimStringView(std::string_view str)
+{
+	return TrimStringViewStart(TrimStringViewEnd(str));
 }
 
 // Ensure that a string only has valid viewable ASCII in it.

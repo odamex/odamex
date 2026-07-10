@@ -58,10 +58,6 @@ void P_SetCeilingDestroy(DCeiling *ceiling)
 
 IMPLEMENT_SERIAL (DCeiling, DMovingCeiling)
 
-DCeiling::DCeiling ()
-{
-}
-
 void DCeiling::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -128,6 +124,11 @@ void DCeiling::RunThink ()
 {
 	EResult res;
 
+	if (m_Status == destroy)
+	{
+		return;
+	}
+
 	switch (m_Direction)
 	{
 	case 0:
@@ -149,7 +150,7 @@ void DCeiling::RunThink ()
 			{
 			case ceilRaiseToHighest:
 			case genCeiling:
-				Destroy();
+				P_SetCeilingDestroy(this);
 				break;
 			// movers with texture change, change the texture then get removed
 			case genCeilingChgT:
@@ -162,7 +163,7 @@ void DCeiling::RunThink ()
 				[[fallthrough]];
 			case genCeilingChg:
 				m_Sector->ceilingpic = m_Texture;
-				Destroy();
+				P_SetCeilingDestroy(this);
 				break;
 			case silentCrushAndRaise:
 			case genSilentCrusher:
@@ -177,7 +178,7 @@ void DCeiling::RunThink ()
 				PlayCeilingSound();
 				break;
 			default:
-				Destroy ();
+				P_SetCeilingDestroy(this);
 				break;
 			}
 
@@ -232,14 +233,14 @@ void DCeiling::RunThink ()
 				[[fallthrough]];
 			case genCeilingChg:
 				m_Sector->ceilingpic = m_Texture;
-				Destroy();
+				P_SetCeilingDestroy(this);
 				break;
 			case lowerAndCrush:
 			case lowerToFloor:
 			case lowerToLowest:
 			case lowerToMaxFloor:
 			case genCeiling:
-				Destroy();
+				P_SetCeilingDestroy(this);
 				break;
 
 			case ceilCrushAndRaise:
@@ -250,7 +251,7 @@ void DCeiling::RunThink ()
 					PlayCeilingSound();
 				break;
 			default:
-					Destroy ();
+					P_SetCeilingDestroy(this);
 				break;
 			}
 		}
@@ -594,59 +595,21 @@ bool EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t 
 bool P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t speed,
                   fixed_t speed2, fixed_t height, int crush, int silent, int change, crushmode_e crushmode)
 {
-	int secnum;
-	bool rtn;
-	sector_t* sec;
-	DCeiling* ceiling;
-	bool manual = false;
 	fixed_t targheight = 0;
 
 	height *= FRACUNIT;
 
-	rtn = false;
-
-	// check if a manual trigger, if so do just the sector on the backside
-	//
-	if (co_boomphys && tag == 0)
+	const auto helper = [&](sector_t* sec) -> bool
 	{
-		if (!line || !(sec = line->backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		// [RH] Hack to let manual crushers be retriggerable, too
-		tag ^= secnum | 0x1000000;
-		rtn |= P_ActivateInStasisCeiling(tag);
-		goto manual_ceiling;
-	}
-
-	//	Reactivate in-stasis ceilings...for certain types.
-	// This restarts a crusher after it has been stopped
-	if (type == DCeiling::ceilCrushAndRaise)
-	{
-		rtn |= P_ActivateInStasisCeiling(tag);
-	}
-
-	secnum = -1;
-	// affects all sectors with the same tag as the linedef
-	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
-	{
-		sec = &sectors[secnum];
-	manual_ceiling:
 		// if ceiling already moving, don't start a second function on it
 		if (P_CeilingActive(sec))
-		{
-			if (co_boomphys && manual)
-				return false;
-			else
-				continue;
-		}
+			return false;
 
-		fixed_t ceilingheight = P_CeilingHeight(sec);
-		fixed_t floorheight = P_FloorHeight(sec);
+		const fixed_t ceilingheight = P_CeilingHeight(sec);
+		const fixed_t floorheight = P_FloorHeight(sec);
 
 		// new door thinker
-		rtn = true;
-		ceiling = new DCeiling(sec, speed, speed2, silent);
+		DCeiling* ceiling = new DCeiling(sec, speed, speed2, silent);
 		ceiling->m_Texture = NO_TEXTURE;
 		P_AddMovingCeiling(sec);
 
@@ -842,8 +805,38 @@ bool P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 		ceiling->PlayCeilingSound();
 		P_AddMovingCeiling(sec);
 
-		if (manual)
-			return rtn;
+		return true;
+	};
+
+	int secnum = -1;
+	bool rtn = false;
+
+	// check if a manual trigger, if so do just the sector on the backside
+	//
+	if (co_boomphys && tag == 0)
+	{
+		sector_t* sec;
+		if (!line || !(sec = line->backsector))
+			return false;
+
+		secnum = sec - sectors;
+		// [RH] Hack to let manual crushers be retriggerable, too
+		tag ^= secnum | 0x1000000;
+		rtn |= P_ActivateInStasisCeiling(tag);
+		return helper(sec) || rtn;
+	}
+
+	//	Reactivate in-stasis ceilings...for certain types.
+	// This restarts a crusher after it has been stopped
+	if (type == DCeiling::ceilCrushAndRaise)
+	{
+		rtn |= P_ActivateInStasisCeiling(tag);
+	}
+
+	// affects all sectors with the same tag as the linedef
+	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
@@ -857,57 +850,19 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 				   int tag, fixed_t speed, fixed_t speed2, fixed_t height,
 				   bool crush, int silent, int change)
 {
-	int 		secnum;
-	bool 		rtn;
-	sector_t*	sec;
-	DCeiling*	ceiling;
-	bool		manual = false;
-	fixed_t		targheight = 0;
+	fixed_t	targheight = 0;
 
-	rtn = false;
-
-	// check if a manual trigger, if so do just the sector on the backside
-	//
-	if (co_boomphys && tag == 0)
+	const auto helper = [&](sector_t* sec) -> bool
 	{
-		if (!line || !(sec = line->backsector))
-			return rtn;
-		secnum = sec-sectors;
-		manual = true;
-		// [RH] Hack to let manual crushers be retriggerable, too
-		tag ^= secnum | 0x1000000;
-		rtn |= P_ActivateInStasisCeiling (tag);
-		goto manual_ceiling;
-	}
-
-	//	Reactivate in-stasis ceilings...for certain types.
-	// This restarts a crusher after it has been stopped
-	if (type == DCeiling::crushAndRaise)
-	{
-		rtn |= P_ActivateInStasisCeiling (tag);
-	}
-
-	secnum = -1;
-	// affects all sectors with the same tag as the linedef
-	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
-	{
-		sec = &sectors[secnum];
-manual_ceiling:
 		// if ceiling already moving, don't start a second function on it
 		if (sec->ceilingdata)
-		{
-			if (co_boomphys && manual)
-				return false;
-			else
-				continue;
-		}
+			return false;
 
-		fixed_t ceilingheight = P_CeilingHeight(sec);
-		fixed_t floorheight = P_FloorHeight(sec);
+		const fixed_t ceilingheight = P_CeilingHeight(sec);
+		const fixed_t floorheight = P_FloorHeight(sec);
 
 		// new door thinker
-		rtn = 1;
-		ceiling = new DCeiling (sec, speed, speed2, silent);
+		DCeiling* ceiling = new DCeiling(sec, speed, speed2, silent);
 		P_AddMovingCeiling(sec);
 
 		switch (type)
@@ -925,7 +880,7 @@ manual_ceiling:
 			break;
 
 		case DCeiling::ceilRaiseToHighest:
-			targheight = ceiling->m_TopHeight = P_FindHighestCeilingSurrounding (sec);
+			targheight = ceiling->m_TopHeight = P_FindHighestCeilingSurrounding(sec);
 			ceiling->m_Direction = 1;
 			break;
 
@@ -954,12 +909,12 @@ manual_ceiling:
 			break;
 
 		case DCeiling::ceilLowerToHighestFloor:
-			targheight = ceiling->m_BottomHeight = P_FindHighestFloorSurrounding (sec);
+			targheight = ceiling->m_BottomHeight = P_FindHighestFloorSurrounding(sec);
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseToHighestFloor:
-			targheight = ceiling->m_TopHeight = P_FindHighestFloorSurrounding (sec);
+			targheight = ceiling->m_TopHeight = P_FindHighestFloorSurrounding(sec);
 			ceiling->m_Direction = 1;
 			break;
 
@@ -986,12 +941,12 @@ manual_ceiling:
 			break;
 
 		case DCeiling::ceilLowerToLowest:
-			targheight = ceiling->m_BottomHeight = P_FindLowestCeilingSurrounding (sec);
+			targheight = ceiling->m_BottomHeight = P_FindLowestCeilingSurrounding(sec);
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseToLowest:
-			targheight = ceiling->m_TopHeight = P_FindLowestCeilingSurrounding (sec);
+			targheight = ceiling->m_TopHeight = P_FindLowestCeilingSurrounding(sec);
 			ceiling->m_Direction = -1;
 			break;
 
@@ -1006,19 +961,19 @@ manual_ceiling:
 			break;
 
 		case DCeiling::ceilLowerToHighest:
-			targheight = ceiling->m_BottomHeight = P_FindHighestCeilingSurrounding (sec);
+			targheight = ceiling->m_BottomHeight = P_FindHighestCeilingSurrounding(sec);
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilLowerByTexture:
 			targheight = ceiling->m_BottomHeight =
-				ceilingheight - P_FindShortestUpperAround (sec);
+				ceilingheight - P_FindShortestUpperAround(sec);
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseByTexture:
 			targheight = ceiling->m_TopHeight =
-				ceilingheight + P_FindShortestUpperAround (sec);
+				ceilingheight + P_FindShortestUpperAround(sec);
 			ceiling->m_Direction = 1;
 			break;
 
@@ -1088,10 +1043,40 @@ manual_ceiling:
 			}
 		}
 
-		ceiling->PlayCeilingSound ();
+		ceiling->PlayCeilingSound();
 
-		if (manual)
-			return rtn;
+		return true;
+	};
+
+	bool rtn = false;
+	int	secnum = -1;
+
+	// check if a manual trigger, if so do just the sector on the backside
+	//
+	if (co_boomphys && tag == 0)
+	{
+		sector_t* sec;
+		if (!line || !(sec = line->backsector))
+			return false;
+
+		secnum = sec - sectors;
+		// [RH] Hack to let manual crushers be retriggerable, too
+		tag ^= secnum | 0x1000000;
+		rtn = P_ActivateInStasisCeiling(tag);
+		return helper(sec) || rtn;
+	}
+
+	//	Reactivate in-stasis ceilings...for certain types.
+	// This restarts a crusher after it has been stopped
+	if (type == DCeiling::crushAndRaise)
+	{
+		rtn |= P_ActivateInStasisCeiling(tag);
+	}
+
+	// affects all sectors with the same tag as the linedef
+	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
@@ -1107,59 +1092,47 @@ manual_ceiling:
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-bool EV_DoGenCeiling(line_t* line)
+bool EV_DoGenCeiling(line_t& line)
 {
-	int secnum;
-	bool rtn;
-	bool manual;
-	sector_t* sec;
-	unsigned value = (unsigned)line->special - GenCeilingBase;
+	const uint32_t value = static_cast<uint32_t>(line.special) - GenCeilingBase;
 
 	// parse the bit fields in the line's special type
 
-	int Crsh = (value & CeilingCrush) >> CeilingCrushShift;
-	int ChgT = (value & CeilingChange) >> CeilingChangeShift;
-	int Targ = (value & CeilingTarget) >> CeilingTargetShift;
-	int Dirn = (value & CeilingDirection) >> CeilingDirectionShift;
-	int ChgM = (value & CeilingModel) >> CeilingModelShift;
-	int Sped = (value & CeilingSpeed) >> CeilingSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Crsh = (value & CeilingCrush) >> CeilingCrushShift;
+	const int ChgT = (value & CeilingChange) >> CeilingChangeShift;
+	const int Targ = (value & CeilingTarget) >> CeilingTargetShift;
+	const int Dirn = (value & CeilingDirection) >> CeilingDirectionShift;
+	const int ChgM = (value & CeilingModel) >> CeilingModelShift;
+	const int Sped = (value & CeilingSpeed) >> CeilingSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = false;
-
-	// check if a manual trigger, if so do just the sector on the backside
-	manual = false;
-	if (Trig == PushOnce || Trig == PushMany)
+	const auto helper = [&](sector_t* sec) -> bool
 	{
-		if (!(sec = line->backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_genceiling;
-	}
-
-	secnum = -1;
-	// if not manual do all sectors tagged the same as the line
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
-	{
-	manual_genceiling:
-		sec = &sectors[secnum];
 		// Do not start another function if ceiling already moving
 		if (sec->ceilingdata) // jff 2/22/98
-		{
-			if (!manual)
-				continue;
-			else
-				return rtn;
-		}
+			return false;
 
 		// new ceiling thinker
-		rtn = true;
-
-		new DCeiling(sec, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
+		new DCeiling(sec, &line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
 		P_AddMovingCeiling(sec); // add this ceiling to the active list
-		if (manual)
-			return rtn;
+		return true;
+	};
+
+	// check if a manual trigger, if so do just the sector on the backside
+	if (Trig == PushOnce || Trig == PushMany)
+	{
+		if (!line.backsector)
+			return false;
+
+		return helper(line.backsector);
+	}
+
+	bool rtn = false;
+	int secnum = -1;
+	// if not manual do all sectors tagged the same as the line
+	while ((secnum = P_FindSectorFromLineTag(&line, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
@@ -1175,57 +1148,45 @@ bool EV_DoGenCeiling(line_t* line)
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-bool EV_DoGenCrusher(line_t* line)
+bool EV_DoGenCrusher(line_t& line)
 {
-	int secnum;
-	bool rtn;
-	bool manual;
-	sector_t* sec;
-	unsigned value = (unsigned)line->special - GenCrusherBase;
+	const uint32_t value = static_cast<unsigned>(line.special) - GenCrusherBase;
 
 	// parse the bit fields in the line's special type
 
-	int Slnt = (value & CrusherSilent) >> CrusherSilentShift;
-	int Sped = (value & CrusherSpeed) >> CrusherSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Slnt = (value & CrusherSilent) >> CrusherSilentShift;
+	const int Sped = (value & CrusherSpeed) >> CrusherSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = false;
-
-	P_ActivateInStasisCeiling(line->id);
-
-	// check if a manual trigger, if so do just the sector on the backside
-	manual = false;
-	if (Trig == PushOnce || Trig == PushMany)
+	const auto helper = [&](sector_t* sec) -> bool
 	{
-		if (!(sec = line->backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_gencrusher;
-	}
-
-	secnum = -1;
-	// if not manual do all sectors tagged the same as the line
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
-	{
-	manual_gencrusher:
-		sec = &sectors[secnum];
 		// Do not start another function if ceiling already moving
 		if (sec->ceilingdata) // jff 2/22/98
-		{
-			if (!manual)
-				continue;
-			else
-				return rtn;
-		}
+			return false;
 
 		// new ceiling thinker
-		rtn = true;
-
-		new DCeiling(sec, line, Slnt, Sped);
+		new DCeiling(sec, &line, Slnt, Sped);
 		P_AddMovingCeiling(sec); // add this ceiling to the active list
-		if (manual)
-			return rtn;
+		return true;
+	};
+
+	P_ActivateInStasisCeiling(line.id);
+
+	// check if a manual trigger, if so do just the sector on the backside
+	if (Trig == PushOnce || Trig == PushMany)
+	{
+		if (!line.backsector)
+			return false;
+
+		return helper(line.backsector);
+	}
+
+	bool rtn = false;
+	int secnum = -1;
+	// if not manual do all sectors tagged the same as the line
+	while ((secnum = P_FindSectorFromLineTag(&line, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }

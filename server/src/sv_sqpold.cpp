@@ -205,7 +205,7 @@ void SV_SendServerInfo()
 		{
 			if ((sv_gametype == GM_CTF && i < 2) || (sv_gametype != GM_CTF && i < sv_teamsinplay)) {
 				MSG_WriteByte(&ml_message, 1);
-				MSG_WriteLong(&ml_message, GetTeamInfo((team_t)i)->Points);
+				MSG_WriteLong(&ml_message, GetTeamInfo(static_cast<team_t>(i))->Points);
 			} else {
 				MSG_WriteByte(&ml_message, 0);
 			}
@@ -217,12 +217,12 @@ void SV_SendServerInfo()
 //bond===========================
 	MSG_WriteString(&ml_message, sv_email.cstring());
 
-	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
-	if (timeleft<0) timeleft=0;
+	int timeleft = (sv_timelimit.asInt() - level.time/(TICRATE*60));
+	if (timeleft < 0) timeleft = 0;
 
-	MSG_WriteShort(&ml_message,sv_timelimit.asInt());
-	MSG_WriteShort(&ml_message,timeleft);
-	MSG_WriteShort(&ml_message,sv_fraglimit.asInt());
+	MSG_WriteShort(&ml_message, sv_timelimit.asInt());
+	MSG_WriteShort(&ml_message, timeleft);
+	MSG_WriteShort(&ml_message, sv_fraglimit.asInt());
 
 	MSG_WriteBool(&ml_message, (sv_itemsrespawn ? true : false));
 	MSG_WriteBool(&ml_message, (sv_weaponstay ? true : false));
@@ -254,7 +254,7 @@ void SV_SendServerInfo()
 
 //bond===========================
 
-    MSG_WriteLong(&ml_message, (uint32_t)0x01020304);
+    MSG_WriteLong(&ml_message, 0x01020304_u32);
     MSG_WriteShort(&ml_message, sv_maxplayers.asInt());
 
     for (const auto& player : players)
@@ -265,7 +265,7 @@ void SV_SendServerInfo()
         }
     }
 
-    MSG_WriteLong(&ml_message, (uint32_t)0x01020305);
+    MSG_WriteLong(&ml_message, 0x01020305_u32);
     MSG_WriteShort(&ml_message, strlen(join_password.cstring()) ? 1 : 0);
 
     // GhostlyDeath -- Send Game Version info

@@ -760,8 +760,6 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mDelay				= floor->m_Delay;
 			mOrgHeight			= floor->m_OrgHeight;
 			mFloorLine			= floor->m_Line;
-			mFloorOffset		= floor->m_Height;
-			mFloorChange		= floor->m_Change;
 		}
 		else if (sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
 		{
@@ -830,12 +828,12 @@ void SectorSnapshot::toSector(sector_t *sector) const
 	if (!sector)
 		return;
 
-	P_SetCeilingHeight(sector, mCeilingHeight);
-	P_SetFloorHeight(sector, mFloorHeight);
-	P_ChangeSector(sector, false);
-
 	if (mCeilingMoverType == SEC_PILLAR && mCeilingStatus != DPillar::destroy)
 	{
+		P_SetCeilingHeight(sector, mCeilingHeight);
+		P_SetFloorHeight(sector, mFloorHeight);
+		P_ChangeSector(sector, false);
+
 		int status = mCeilingStatus;
 
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
@@ -872,6 +870,10 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 	if (mCeilingMoverType == SEC_ELEVATOR && mCeilingStatus != DElevator::destroy)
 	{
+		P_SetCeilingHeight(sector, mCeilingHeight);
+		P_SetFloorHeight(sector, mFloorHeight);
+		P_ChangeSector(sector, false);
+
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
 		{
 			sector->ceilingdata->Destroy();
@@ -900,6 +902,9 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 	if (mCeilingMoverType == SEC_CEILING && mCeilingStatus != DCeiling::destroy)
 	{
+		P_SetCeilingHeight(sector, mCeilingHeight);
+		P_ChangeSector(sector, false);
+
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
 		{
 			sector->ceilingdata->Destroy();
@@ -928,6 +933,9 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 	if (mCeilingMoverType == SEC_DOOR && mCeilingStatus != DDoor::destroy)
 	{
+		P_SetCeilingHeight(sector, mCeilingHeight);
+		P_ChangeSector(sector, false);
+
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
 		{
 			sector->ceilingdata->Destroy();
@@ -954,6 +962,9 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 	if (mFloorMoverType == SEC_FLOOR && mFloorStatus != DFloor::destroy)
 	{
+		P_SetFloorHeight(sector, mFloorHeight);
+		P_ChangeSector(sector, false);
+
 		if (sector->floordata && !sector->floordata->IsA(RUNTIME_CLASS(DFloor)))
 		{
 			sector->floordata->Destroy();
@@ -983,13 +994,14 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		floor->m_StepTime			= mStepTime;
 		floor->m_PerStepTime		= mPerStepTime;
 		floor->m_Line				= mFloorLine;
-		floor->m_Height				= mFloorOffset;
-		floor->m_Change				= mFloorChange;
 		floor->m_Texture			= mFloorTexture;
 	}
 
 	if (mFloorMoverType == SEC_PLAT && mFloorStatus != DPlat::destroy)
 	{
+		P_SetFloorHeight(sector, mFloorHeight);
+		P_ChangeSector(sector, false);
+
 		if (sector->floordata && !sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
 		{
 			sector->floordata->Destroy();
@@ -1065,7 +1077,7 @@ bool SectorSnapshotManager::mValidSnapshot(int time) const
 //
 // Returns true if the container does not contain any valid snapshots
 //
-bool SectorSnapshotManager::empty()
+bool SectorSnapshotManager::empty() const
 {
 	return (!mValidSnapshot(mMostRecent));
 }

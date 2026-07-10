@@ -90,6 +90,23 @@ typedef struct
 extern "C" drawspan_t dspan;
 
 
+//
+// R_PixelCeil
+//
+// ceil(num / den) in whole pixels, for raw fixed-point numbers where
+// num >= 0 and den > 0.
+// 
+// For when you need to ceiling divide 16.16 floating point numbers and NOT
+// discard remainders after a certain quotient.
+//
+// Used for calculating texturefrac post coordinates.
+//
+static inline int R_PixelCeil(fixed_t num, fixed_t den)
+{
+	return static_cast<int>((static_cast<int64_t>(num) + den - 1) / den);
+}
+
+
 // [RH] Temporary buffer for column drawing
 
 void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
@@ -220,7 +237,7 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer);
 void R_RebuildPlayerTintTables(int player);
 
 // [RH] Actually create a player's translation table.
-void R_BuildPlayerTranslation(int player, argb_t dest_color);
+void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset);
 
 // [Nes] Classic player translation table.
 void R_BuildClassicPlayerTranslation(int player, int color);

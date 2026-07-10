@@ -122,7 +122,7 @@ void TeamInfo_ResetScores(bool fullreset)
 		for (auto& player : players)
 			player.flags[i] = false;
 
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 		teamInfo->FlagData.flagger = 0;
 		teamInfo->FlagData.state = flag_home;
 		teamInfo->FlagData.firstgrab = false;
@@ -183,19 +183,10 @@ TeamsView TeamQuery::execute()
 		{
 			// Since it's sorted, we know the top scoring team is at the front.
 			int top = results.at(0)->LivesPool();
-			for (TeamsView::iterator it = results.begin(); it != results.end();)
-			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->LivesPool() != top
-				                                         : (*it)->LivesPool() == top;
-				if (cmp)
-				{
-					it = results.erase(it);
-				}
-				else
-				{
-					++it;
-				}
-			}
+			std::erase_if(results, [this, top](const TeamInfo* result){
+				return (m_sortFilter == SFILTER_MAX) ? result->LivesPool() != top
+				                                     : result->LivesPool() == top;
+			});
 		}
 		break;
 	case SORT_SCORE:
@@ -204,19 +195,10 @@ TeamsView TeamQuery::execute()
 		{
 			// Since it's sorted, we know the top scoring team is at the front.
 			int top = results.at(0)->Points;
-			for (TeamsView::iterator it = results.begin(); it != results.end();)
-			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->Points != top
-				                                         : (*it)->Points == top;
-				if (cmp)
-				{
-					it = results.erase(it);
-				}
-				else
-				{
-					++it;
-				}
-			}
+			std::erase_if(results, [this, top](const TeamInfo* result){
+				return (m_sortFilter == SFILTER_MAX) ? result->Points != top
+				                                     : result->Points == top;
+			});
 		}
 		break;
 	case SORT_WINS:
@@ -225,19 +207,10 @@ TeamsView TeamQuery::execute()
 		{
 			// Since it's sorted, we know the top winning team is at the front.
 			int top = results.at(0)->RoundWins;
-			for (TeamsView::iterator it = results.begin(); it != results.end();)
-			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->RoundWins != top
-				                                         : (*it)->RoundWins == top;
-				if (cmp)
-				{
-					it = results.erase(it);
-				}
-				else
-				{
-					++it;
-				}
-			}
+			std::erase_if(results, [this, top](const TeamInfo* result){
+				return (m_sortFilter == SFILTER_MAX) ? result->RoundWins != top
+				                                     : result->RoundWins == top;
+			});
 		}
 		break;
 	}
@@ -258,13 +231,13 @@ std::string V_GetTeamColor(UserInfo userinfo)
 	return fmt::sprintf("%s%s%s", team->TextColor, team->ColorStringUpper, TEXTCOLOR_NORMAL);
 }
 
-const std::string TeamInfo::ColorizedTeamName()
+const std::string TeamInfo::ColorizedTeamName() const
 {
 	return fmt::sprintf("%s%s%s", TextColor, ColorStringUpper,
 	                    TEXTCOLOR_NORMAL);
 }
 
-int TeamInfo::LivesPool()
+int TeamInfo::LivesPool() const
 {
 	int pool = 0;
 	PlayerResults pr = PlayerQuery().hasLives().execute();

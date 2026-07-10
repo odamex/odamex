@@ -57,7 +57,9 @@
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "m_random.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "odainfo.h"
 #include "p_setup.h"
 #include "r_local.h"
@@ -109,11 +111,11 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			PrintFmt("ERROR: {}\n", error.GetMsg());
+			PrintFmt(PRINT_ERROR, "ERROR: {}\n", error.GetMsg());
 			PrintFmt("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
-			SV_SendDisconnectSignal();
+			SV_SendAndFlushDisconnectSignal();
 
 			// denis - sleep 10 seconds to conserve server resources (in case of recurring problem)
 			I_Sleep(10 * 1000LL * 1000LL * 1000LL);
@@ -131,13 +133,15 @@ EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_mbfphys)
 EXTERN_CVAR(co_zdoomammo)
 EXTERN_CVAR(co_allowdropoff)
+EXTERN_CVAR(co_voodooscroller)
+EXTERN_CVAR(co_archvilefirefix)
 
 void G_ReadCOMPLVL()
 {
 	int lumpnum = W_CheckNumForName("COMPLVL");
 	if (lumpnum != -1)
 	{
-		char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+		char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
 
 		co_zdoomphys.Set(0.0f);
 		co_zdoomammo.Set(0.0f);
@@ -147,24 +151,32 @@ void G_ReadCOMPLVL()
 			co_boomphys.Set(0.0f);
 			co_mbfphys.Set(0.0f);
 			co_allowdropoff.Set(0.0f);
+			co_voodooscroller.Set(0.0f);
+			co_archvilefirefix.Set(0.0f);
 		}
 		else if (iequals("boom", complvl))
 		{
 			co_boomphys.Set(1.0f);
 			co_mbfphys.Set(0.0f);
 			co_allowdropoff.Set(1.0f);
+			co_voodooscroller.Set(0.0f);
+			co_archvilefirefix.Set(0.0f);
 		}
 		else if (iequals("mbf", complvl))
 		{
 			co_boomphys.Set(1.0f);
 			co_mbfphys.Set(1.0f);
 			co_allowdropoff.Set(1.0f);
+			co_voodooscroller.Set(1.0f);
+			co_archvilefirefix.Set(1.0f);
 		}
 		else if (iequals("mbf21", complvl))
 		{
 			co_boomphys.Set(1.0f);
 			co_mbfphys.Set(1.0f);
 			co_allowdropoff.Set(1.0f);
+			co_voodooscroller.Set(0.0f);
+			co_archvilefirefix.Set(1.0f);
 		}
 		else
 		{
@@ -291,8 +303,10 @@ void D_DoomMain()
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
+	BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
+	END_DISABLE_WARNING_GNU
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
@@ -419,7 +433,7 @@ void D_DoomMain()
 	if (p && p < Args.NumArgs() - 1)
 	{
 		startmap = Args.GetArg(p + 1);
-		((char*)Args.GetArg(p))[0] = '-';
+		(const_cast<char*>(Args.GetArg(p)))[0] = '-';
 	}
 
 	level.mapname = startmap;

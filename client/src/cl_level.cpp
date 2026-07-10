@@ -41,7 +41,9 @@
 #include "i_system.h"
 #include "i_music.h"
 #include "i_time.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_local.h"
@@ -572,6 +574,9 @@ void G_DoLoadLevel (int position)
 
 	gamestate = GS_LEVEL;
 
+	// We're entering the level state - reset the rollback history.
+	rollerState = PlayerStateRoller {};
+
 	// [SL] Hide the console unless this is just part of the demo loop
 	// It's annoying to have the console close every time a new demo starts...
 	if (!demoscreen)
@@ -679,7 +684,7 @@ void G_DoLoadLevel (int position)
 
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 			for (auto& teamstart : teamInfo->Starts)
 			{
 				if (G_CheckSpot(consoleplayer(), teamstart))
@@ -769,7 +774,7 @@ void G_WorldDone()
 		AM_Stop();
 		if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 		{
-			options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+			options.text = W_CacheLumpName<const char>(thiscluster.exittext, PU_STATIC);
 		}
 		F_StartFinale(options);
 	}
@@ -805,7 +810,7 @@ void G_WorldDone()
 				AM_Stop();
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
-					options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+					options.text = W_CacheLumpName<const char>(thiscluster.exittext, PU_STATIC);
 				}
 				F_StartFinale(options);
 			}

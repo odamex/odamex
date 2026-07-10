@@ -79,7 +79,7 @@ public:
 	bool lobbyempty();
 };
 
-void SV_Maplist(player_t &player);
+void SV_Maplist(player_t &player, const odaproto::clc::Maplist& msg);
 void SV_MaplistUpdate(player_t &player);
 
 void Maplist_Disconnect(player_t &player);

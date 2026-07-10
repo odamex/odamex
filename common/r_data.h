@@ -94,7 +94,7 @@ void R_PrecacheLevel (void);
 // lookup by name. For animation?
 int R_FlatNumForName(const char *name);
 inline int R_FlatNumForName(const OLumpName& name) { return R_FlatNumForName(name.c_str()); };
-inline int R_FlatNumForName(const byte *name) { return R_FlatNumForName ((const char *)name); }
+inline int R_FlatNumForName(const byte *name) { return R_FlatNumForName (reinterpret_cast<const char*>(name)); }
 
 
 // Called by P_Ticker for switches and animations,
@@ -102,8 +102,8 @@ inline int R_FlatNumForName(const byte *name) { return R_FlatNumForName ((const 
 int R_TextureNumForName(const OLumpName& name);
 int R_CheckTextureNumForName(const OLumpName& name);
 
-inline int R_TextureNumForName (const byte *name) { return R_TextureNumForName ((const char *)name); }
-inline int R_CheckTextureNumForName (const byte *name) { return R_CheckTextureNumForName ((const char *)name); }
+inline int R_TextureNumForName (const byte *name) { return R_TextureNumForName (reinterpret_cast<const char*>(name)); }
+inline int R_CheckTextureNumForName (const byte *name) { return R_CheckTextureNumForName (reinterpret_cast<const char*>(name)); }
 
 void R_InitColormaps();
 void R_ShutdownColormaps();

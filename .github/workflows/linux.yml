@@ -25,7 +25,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -50,7 +50,7 @@ jobs:
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
@@ -64,7 +64,7 @@ jobs:
       CXX: /usr/bin/clang++
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -92,102 +92,85 @@ jobs:
     - name: Run unit tests
       run: ./build/tests/unit-tests/odagtest --gtest_color=yes
   build-fedora:
-    name: Build (Fedora 32)
+    name: Build (Fedora 34)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/fedora-buildgen.sh
-  build-ubuntu-focal:
-    name: Build (Ubuntu 20.04 LTS)
+  build-ubuntu-jammy:
+    name: Build (Ubuntu 22.04 LTS)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
-      run: bash ci/ubuntu-focal-buildgen.sh
+      run: bash ci/ubuntu-jammy-buildgen.sh
   build-flatpak:
     name: Build Flatpak (Ubuntu Latest)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
+      with:
+        submodules: recursive
     - name: Update metainfo dates
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
-        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Install flatpak
-      run: sudo apt update && sudo apt install flatpak flatpak-builder
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
       run: |
         echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
-    - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    - name: Run build
-      run: |
-        flatpak-builder --force-clean --user --install-deps-from=flathub \
-        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
-    - name: Pack flatpak
-      run: |
-        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
-        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
+    - name: Build Flatpak
+      uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
-        name: Odamex-Flatpak-x86_64
-        path: odamex.flatpak
+        manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        bundle: odamex.flatpak
+        branch: ${{ env.MODIFIED_BRANCH_NAME }}
   build-flatpak-arm:
     name: Build Flatpak (Ubuntu 24.04 ARM)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-24.04-arm
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
+      with:
+        submodules: recursive
     - name: Update metainfo dates
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
-        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Install flatpak
-      run: sudo apt update && sudo apt install flatpak flatpak-builder
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
       run: |
         echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
-    - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    - name: Run build
-      run: |
-        flatpak-builder --force-clean --user --install-deps-from=flathub \
-        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
-    - name: Pack flatpak
-      run: |
-        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
-        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
+    - name: Build Flatpak
+      uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
-        name: Odamex-Flatpak-ARM64
-        path: odamex.flatpak
+        manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        arch: aarch64
+        bundle: odamex.flatpak
+        branch: ${{ env.MODIFIED_BRANCH_NAME }}

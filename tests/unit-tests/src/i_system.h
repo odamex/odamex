@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -64,29 +64,23 @@ ticcmd_t *I_BaseTiccmd (void);
 // Clean exit, displays sell blurb.
 void STACK_ARGS I_Quit (void);
 
-void I_BaseError(const std::string& errortext);
+[[noreturn]] void I_BaseError(const std::string& errortext);
 [[noreturn]] void I_BaseFatalError(const std::string& errortext);
 
 template <typename... ARGS>
-void I_Error(const fmt::string_view format, const ARGS&... args)
+[[noreturn]] void I_Error(fmt::format_string<ARGS...>format, ARGS&&... args)
 {
-	I_BaseError(fmt::format(format, args...));
+	I_BaseError(fmt::format(format, std::forward<ARGS>(args)...));
 }
 
 template <typename... ARGS>
-void I_FatalError(const fmt::string_view format, const ARGS&... args)
+[[noreturn]] void I_FatalError(fmt::format_string<ARGS...> format, ARGS&&... args)
 {
-	I_BaseFatalError(fmt::format(format, args...));
+	I_BaseFatalError(fmt::format(format, std::forward<ARGS>(args)...));
 }
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
-
-// Print a console string
-void I_PrintStr (int x, const char *str, int count, bool scroll);
-
-// Set the title string of the startup window
-void I_SetTitleString (const char *title);
 
 std::string I_ConsoleInput (void);
 
@@ -96,25 +90,3 @@ dtime_t I_MSTime (void);
 void I_Yield(void);
 
 void I_FinishClockCalibration ();
-
-// Directory searching routines
-
-typedef struct
-{
-    int count;
-    struct dirent **namelist;
-    int current;
-} findstate_t;
-
-long I_FindFirst (char *filespec, findstate_t *fileinfo);
-int I_FindNext (long handle, findstate_t *fileinfo);
-int I_FindClose (long handle);
-int I_FindAttr (findstate_t *fileinfo);
-
-#define I_FindName(a)	((a)->namelist[(a)->current]->d_name)
-
-#define FA_RDONLY	1
-#define FA_HIDDEN	2
-#define FA_SYSTEM	4
-#define FA_DIREC	8
-#define FA_ARCH		16

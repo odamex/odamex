@@ -601,9 +601,6 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 	// print info about the IWAD to the console
 	D_PrintIWADIdentity();
 
-	// set the window title based on which IWAD we're using
-	I_SetTitleString(D_GetTitleString().c_str());
-
 	::modifiedgame = (::wadfiles.size() > 2) ||
 	                 !::patchfiles.empty(); // more than odamex.wad and IWAD?
 
@@ -690,13 +687,13 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		}
 
 #ifdef _WIN32
-		PrintFmt("You can use a tool such as Omniscient "
-		         "<https://drinkybird.net/doom/omniscient> to patch your way to the "
+		PrintFmt(PRINT_ERROR, "You can use a tool such as Omniscient "
+		         "<https://drinkybird.net/doom/omniscient> to patch your wad to the "
 		         "correct version of the data file.\n");
 #else
-		PrintFmt("You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
+		PrintFmt(PRINT_ERROR, "You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
 		         "patches located on Github <https://github.com/Doom-Utils/iwad-patches> "
-		         "to patch your way to the correct version of the data file.\n");
+		         "to patch your wad to the correct version of the data file.\n");
 #endif
 	}
 
@@ -1097,7 +1094,7 @@ public:
 		// mAccumulator can be greater than mFrameDuration so only get the
 		// time remaining until the next frame
 		dtime_t remaining_time = mAccumulator % mFrameDuration;
-		return (float)(double(remaining_time) / mFrameDuration);
+		return static_cast<float>(static_cast<double>(remaining_time) / mFrameDuration);
 	}
 
 private:

@@ -93,29 +93,32 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	{
 		// pointer to line function is NULL by default, set non-null if
 		// line special is walkover generalized linedef type
-		bool (*linefunc)(line_t * line) = NULL;
+		bool (*linefunc)(line_t& line) = nullptr;
 
 		// check each range of generalized linedefs
-		if ((unsigned)line->special >= GenEnd)
+		if (static_cast<unsigned>(line->special) >= GenEnd)
 		{
 			// Out of range for GenFloors
 		}
-		else if ((unsigned)line->special >= GenFloorBase)
+		else if (static_cast<unsigned>(line->special) >= GenFloorBase)
 		{
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 				if ((line->special & FloorChange) || !(line->special & FloorModel))
 					return false; // FloorModel is "Allow Monsters" if FloorChange is 0
+			if (!line->id) //jff 2/27/98 all walk generalized types require tag
+				return false;
 			linefunc = EV_DoGenFloor;
 		}
-		else if ((unsigned)line->special >= GenCeilingBase)
+		else if (static_cast<unsigned>(line->special) >= GenCeilingBase)
 		{
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 				if ((line->special & CeilingChange) || !(line->special & CeilingModel))
-					return false; // CeilingModel is "Allow Monsters" if CeilingChange is
-					               // 0
+					return false; // CeilingModel is "Allow Monsters" if CeilingChange is 0
+			if (!line->id) //jff 2/27/98 all walk generalized types require tag
+				return false;
 			linefunc = EV_DoGenCeiling;
 		}
-		else if ((unsigned)line->special >= GenDoorBase)
+		else if (static_cast<unsigned>(line->special) >= GenDoorBase)
 		{
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 			{
@@ -124,9 +127,11 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 				if (line->flags & ML_SECRET) // they can't open secret doors either
 					return false;
 			}
+			if (!line->id) //3/2/98 move outside the monster check
+				return false;
 			linefunc = EV_DoGenDoor;
 		}
-		else if ((unsigned)line->special >= GenLockedBase)
+		else if (static_cast<unsigned>(line->special) >= GenLockedBase)
 		{
 			if ((!P_IsPlayerOrAvatar(*thing)) ||
 			    bossaction)    // boss actions can't handle locked doors
@@ -141,27 +146,33 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 				return false;
 			linefunc = EV_DoGenLockedDoor;
 		}
-		else if ((unsigned)line->special >= GenLiftBase)
+		else if (static_cast<unsigned>(line->special) >= GenLiftBase)
 		{
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 				if (!(line->special & LiftMonster))
 					return false; // monsters disallowed
+			if (!line->id) //jff 2/27/98 all walk generalized types require tag
+				return false;
 			linefunc = EV_DoGenLift;
 		}
-		else if ((unsigned)line->special >= GenStairsBase)
+		else if (static_cast<unsigned>(line->special) >= GenStairsBase)
 		{
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 				if (!(line->special & StairMonster))
 					return false; // monsters disallowed
+			if (!line->id) //jff 2/27/98 all walk generalized types require tag
+				return false;
 			linefunc = EV_DoGenStairs;
 		}
-		else if ((unsigned)line->special >= GenCrusherBase)
+		else if (static_cast<unsigned>(line->special) >= GenCrusherBase)
 		{
 			// haleyjd 06/09/09: This was completely forgotten in BOOM, disabling
 			// all generalized walk-over crusher types!
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 				if (!(line->special & StairMonster))
 					return false; // monsters disallowed
+			if (!line->id) //jff 2/27/98 all walk generalized types require tag
+				return false;
 			linefunc = EV_DoGenCrusher;
 		}
 
@@ -169,12 +180,13 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			switch ((line->special & TriggerType) >> TriggerTypeShift)
 			{
 			case WalkOnce:
-				if (linefunc(line))
+				if (linefunc(*line))
 				{
 					return true;
 				}
+			// FIXME: is this fallthrough intended?
 			case WalkMany:
-				linefunc(line);
+				linefunc(*line);
 				return true;
 			default: // if not a walk type, do nothing here
 				return false;
@@ -1245,6 +1257,10 @@ void P_PlayerInCompatibleSector(player_t& player)
 	if (player.spectator)
 		return;
 
+	// Being destroyed / unlinked from the map?
+	if (not (player.mo && player.mo->subsector))
+		return;
+
 	// Falling, not all the way down yet?
 	if (player.mo->z != P_FloorHeight(player.mo) && !player.mo->waterlevel)
 		return;
@@ -1314,12 +1330,11 @@ void P_PlayerInCompatibleSector(player_t& player)
 				{
 					if (sv_allowexit)
 					{
-						for (Players::iterator it = ::players.begin();
-						     it != ::players.end(); ++it)
+						for (auto& pl : ::players)
 						{
-							if (player.ingame() && player.health > 0 && !(player.cheats & CF_GODMODE))
+							if (pl.ingame() && pl.health > 0 && !(pl.cheats & CF_GODMODE))
 							{
-								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+								P_DamageMobj(pl.mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_ExitLevel(0, 1);
@@ -1339,12 +1354,11 @@ void P_PlayerInCompatibleSector(player_t& player)
 				{
 					if (sv_allowexit)
 					{
-						for (Players::iterator it = ::players.begin();
-						     it != ::players.end(); ++it)
+						for (auto& pl : ::players)
 						{
-							if (player.ingame() && player.health > 0 && !(player.cheats & CF_GODMODE))
+							if (pl.ingame() && pl.health > 0 && !(pl.cheats & CF_GODMODE))
 							{
-								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+								P_DamageMobj(pl.mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_SecretExitLevel(0, 1);
@@ -1379,12 +1393,12 @@ void P_PlayerInCompatibleSector(player_t& player)
 //
 bool P_ActorInCompatibleSector(AActor* actor)
 {
-	if (!actor)
+	if (not (actor && actor->subsector))
 		return false;
 
-	sector_t* sector = actor->subsector->sector;
+	const bool sectorHasKillMonstersAction = actor->subsector->sector->special & KILL_MONSTERS_MASK;
 
-	if (sector && sector->special & KILL_MONSTERS_MASK && actor->z == actor->floorz &&
+	if (sectorHasKillMonstersAction && actor->z == actor->floorz &&
 	    !P_IsPlayerOrAvatar(*actor) && actor->flags & MF_SHOOTABLE && !(actor->flags & MF_FLOAT))
 	{
 		P_DamageMobj(actor, NULL, NULL, 10000);
@@ -1424,9 +1438,9 @@ void P_PostProcessCompatibleSidedefSpecial(side_t* sd, mapsidedef_t* msd,
 			if (fog != 0x000000 || color != 0xffffff)
 			{
 				dyncolormap_t* colormap =
-				    GetSpecialLights(((argb_t)color).getr(), ((argb_t)color).getg(),
-				                     ((argb_t)color).getb(), ((argb_t)fog).getr(),
-				                     ((argb_t)fog).getg(), ((argb_t)fog).getb());
+				    GetSpecialLights((static_cast<argb_t>(color)).getr(), (static_cast<argb_t>(color)).getg(),
+				                     (static_cast<argb_t>(color)).getb(), (static_cast<argb_t>(fog)).getr(),
+				                     (static_cast<argb_t>(fog)).getg(), (static_cast<argb_t>(fog)).getb());
 
 				for (sector_t& sector : R_GetSectors())
 				{
@@ -1509,7 +1523,7 @@ void P_SpawnCompatibleExtra(int i)
 
 	case OdamexStaticInits: // Gravity
 		grav =
-		    ((float)P_AproxDistance(lines[i].dx, lines[i].dy)) / (FRACUNIT * 100.0f);
+		    (static_cast<float>(P_AproxDistance(lines[i].dx, lines[i].dy))) / (FRACUNIT * 100.0f);
 		for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
 			sectors[s].gravity = grav;
 		break;
@@ -1918,14 +1932,14 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is push or switch generalized linedef type
-	bool (*linefunc)(line_t * line) = nullptr;
+	bool (*linefunc)(line_t& line) = nullptr;
 
 	// check each range of generalized linedefs
-	if ((unsigned)line->special >= GenEnd)
+	if (static_cast<unsigned>(line->special) >= GenEnd)
 	{
 		// Out of range for GenFloors
 	}
-	else if ((unsigned)line->special >= GenFloorBase)
+	else if (static_cast<unsigned>(line->special) >= GenFloorBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 			if ((line->special & FloorChange) || !(line->special & FloorModel))
@@ -1935,7 +1949,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			return false;                            // generalized types require tag
 		linefunc = EV_DoGenFloor;
 	}
-	else if ((unsigned)line->special >= GenCeilingBase)
+	else if (static_cast<unsigned>(line->special) >= GenCeilingBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 			if ((line->special & CeilingChange) || !(line->special & CeilingModel))
@@ -1946,7 +1960,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			return false;                            // generalized types require tag
 		linefunc = EV_DoGenCeiling;
 	}
-	else if ((unsigned)line->special >= GenDoorBase)
+	else if (static_cast<unsigned>(line->special) >= GenDoorBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 		{
@@ -1960,7 +1974,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			return false;                            // generalized types require tag
 		linefunc = EV_DoGenDoor;
 	}
-	else if ((unsigned)line->special >= GenLockedBase)
+	else if (static_cast<unsigned>(line->special) >= GenLockedBase)
 	{
 		if ((!P_IsPlayerOrAvatar(*thing)) || bossaction)
 			return false; // monsters disallowed from unlocking doors
@@ -1972,7 +1986,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 		linefunc = EV_DoGenLockedDoor;
 	}
-	else if ((unsigned)line->special >= GenLiftBase)
+	else if (static_cast<unsigned>(line->special) >= GenLiftBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 			if (!(line->special & LiftMonster))
@@ -1982,7 +1996,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			return false;                            // generalized types require tag
 		linefunc = EV_DoGenLift;
 	}
-	else if ((unsigned)line->special >= GenStairsBase)
+	else if (static_cast<unsigned>(line->special) >= GenStairsBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 			if (!(line->special & StairMonster))
@@ -1992,7 +2006,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			return false;                            // generalized types require tag
 		linefunc = EV_DoGenStairs;
 	}
-	else if ((unsigned)line->special >= GenCrusherBase)
+	else if (static_cast<unsigned>(line->special) >= GenCrusherBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 			if (!(line->special & CrusherMonster))
@@ -2009,7 +2023,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case PushOnce:
 			if (!side)
 			{
-				if (linefunc(line))
+				if (linefunc(*line))
 				{
 					reuse = false;
 					trigger = true;
@@ -2019,20 +2033,20 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case PushMany:
 			if (!side)
 			{
-				linefunc(line);
+				linefunc(*line);
 				reuse = true;
 				trigger = true;
 			}
 			break;
 		case SwitchOnce:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				reuse = false;
 				trigger = true;
 			}
 			break;
 		case SwitchMany:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				reuse = true;
 				trigger = true;
@@ -2115,7 +2129,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		break;
 	case 26: // Blue Door/Locked
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(doors::SLOW),
-		                                TICS(doors::WAIT), (card_t)(BCard | CardIsSkull)))
+		                                TICS(doors::WAIT), static_cast<card_t>(BCard | CardIsSkull)))
 		{
 			reuse = true;
 			trigger = true;
@@ -2123,7 +2137,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		break;
 	case 27: // Yellow Door /Locked
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(doors::SLOW),
-		                                TICS(doors::WAIT), (card_t)(YCard | CardIsSkull)))
+		                                TICS(doors::WAIT), static_cast<card_t>(YCard | CardIsSkull)))
 		{
 			reuse = true;
 			trigger = true;
@@ -2131,7 +2145,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		break;
 	case 28: // Red Door /Locked
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, 0, SPEED(doors::SLOW),
-		                                TICS(doors::WAIT), (card_t)(RCard | CardIsSkull)))
+		                                TICS(doors::WAIT), static_cast<card_t>(RCard | CardIsSkull)))
 		{
 			reuse = true;
 			trigger = true;
@@ -2146,7 +2160,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		break;
 	case 32: // Blue locked door open
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(doors::SLOW),
-			0, (card_t)(BCard | CardIsSkull)))
+			0, static_cast<card_t>(BCard | CardIsSkull)))
 		{
 			reuse = false;
 			trigger = true;
@@ -2154,7 +2168,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		break;
 	case 33: // Red locked door open
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(doors::SLOW), 0,
-		                                (card_t)(RCard | CardIsSkull)))
+		                                static_cast<card_t>(RCard | CardIsSkull)))
 		{
 			reuse = false;
 			trigger = true;
@@ -2162,7 +2176,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		break;
 	case 34: // Yellow locked door open
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, 0, SPEED(doors::SLOW), 0,
-		                                (card_t)(YCard | CardIsSkull)))
+		                                static_cast<card_t>(YCard | CardIsSkull)))
 		{
 			reuse = false;
 			trigger = true;
@@ -2451,7 +2465,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 133:
 		// BlzOpenDoor BLUE
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id,
-		              SPEED(doors::FAST), TICS(0), (card_t)(BCard | CardIsSkull)))
+		              SPEED(doors::FAST), TICS(0), static_cast<card_t>(BCard | CardIsSkull)))
 		{
 			reuse = false;
 			trigger = true;
@@ -2460,7 +2474,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 135:
 		// BlzOpenDoor RED
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(doors::FAST), TICS(0),
-		              (card_t)(RCard | CardIsSkull)))
+		              static_cast<card_t>(RCard | CardIsSkull)))
 		{
 			reuse = false;
 			trigger = true;
@@ -2469,7 +2483,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 137:
 		// BlzOpenDoor YELLOW
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(doors::FAST), TICS(0),
-		              (card_t)(YCard | CardIsSkull)))
+		              static_cast<card_t>(YCard | CardIsSkull)))
 		{
 			reuse = false;
 			trigger = true;
@@ -3303,7 +3317,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 99:
 		// BlzOpenDoor BLUE
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(doors::FAST), TICS(0),
-		              (card_t)(BCard | CardIsSkull)))
+		              static_cast<card_t>(BCard | CardIsSkull)))
 		{
 			reuse = true;
 			trigger = true;
@@ -3312,7 +3326,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 134:
 		// BlzOpenDoor RED
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(doors::FAST), TICS(0),
-		              (card_t)(RCard | CardIsSkull)))
+		              static_cast<card_t>(RCard | CardIsSkull)))
 		{
 			reuse = true;
 			trigger = true;
@@ -3321,7 +3335,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 136:
 		// BlzOpenDoor YELLOW
 		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(doors::FAST), TICS(0),
-		              (card_t)(YCard | CardIsSkull)))
+		              static_cast<card_t>(YCard | CardIsSkull)))
 		{
 			reuse = true;
 			trigger = true;
@@ -3349,6 +3363,10 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	{
 		if (serverside)
 		{
+			// The ActivateLine must go out first because P_ChangeSwitchTexture clears
+			// the special, resulting in a 0 special on both the Switch and ActivateLine messages.
+			SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
+
 			P_ChangeSwitchTexture(line, reuse, true);
 			OnChangedSwitchTexture(line, reuse);
 		}
@@ -3379,28 +3397,32 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is gun triggered generalized linedef type
-	bool (*linefunc)(line_t * line) = nullptr;
+	bool (*linefunc)(line_t& line) = nullptr;
 
 	// check each range of generalized linedefs
-	if ((unsigned)line->special >= GenEnd)
+	if (static_cast<unsigned>(line->special) >= GenEnd)
 	{
 		// Out of range for GenFloors
 	}
-	else if ((unsigned)line->special >= GenFloorBase)
+	else if (static_cast<unsigned>(line->special) >= GenFloorBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing))
 			if ((line->special & FloorChange) || !(line->special & FloorModel))
 				return false; // FloorModel is "Allow Monsters" if FloorChange is 0
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenFloor;
 	}
-	else if ((unsigned)line->special >= GenCeilingBase)
+	else if (static_cast<unsigned>(line->special) >= GenCeilingBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing))
 			if ((line->special & CeilingChange) || !(line->special & CeilingModel))
 				return false; // CeilingModel is "Allow Monsters" if CeilingChange is 0
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenCeiling;
 	}
-	else if ((unsigned)line->special >= GenDoorBase)
+	else if (static_cast<unsigned>(line->special) >= GenDoorBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing))
 		{
@@ -3409,9 +3431,11 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 			if (line->flags & ML_SECRET) // they can't open secret doors either
 				return false;
 		}
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenDoor;
 	}
-	else if ((unsigned)line->special >= GenLockedBase)
+	else if (static_cast<unsigned>(line->special) >= GenLockedBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing))
 			return false; // monsters disallowed from unlocking doors
@@ -3423,27 +3447,33 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		}
 		else
 			return false;
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenLockedDoor;
 	}
-	else if ((unsigned)line->special >= GenLiftBase)
+	else if (static_cast<unsigned>(line->special) >= GenLiftBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing))
 			if (!(line->special & LiftMonster))
 				return false; // monsters disallowed
 		linefunc = EV_DoGenLift;
 	}
-	else if ((unsigned)line->special >= GenStairsBase)
+	else if (static_cast<unsigned>(line->special) >= GenStairsBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing))
 			if (!(line->special & StairMonster))
 				return false; // monsters disallowed
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenStairs;
 	}
-	else if ((unsigned)line->special >= GenCrusherBase)
+	else if (static_cast<unsigned>(line->special) >= GenCrusherBase)
 	{
 		if (!P_IsPlayerOrAvatar(*thing))
 			if (!(line->special & StairMonster))
 				return false; // monsters disallowed
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenCrusher;
 	}
 
@@ -3451,13 +3481,13 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		switch ((line->special & TriggerType) >> TriggerTypeShift)
 		{
 		case GunOnce:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				return true;
 			}
 			return false;
 		case GunMany:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				return true;
 			}
@@ -3584,11 +3614,11 @@ void P_PostProcessCompatibleLinedefSpecial(line_t* line)
 #else
 	          // [RH] Second arg controls how opaque it is.
 		if (line->id == 0)
-			line->lucency = (byte)128;
+			line->lucency = 128_u8;
 		else
 			for (line_t& lineit : R_GetLines())
 				if (lineit.id == line->id)
-					lineit.lucency = (byte)128;
+					lineit.lucency = 128_u8;
 #endif
 		line->special = 0;
 		break;

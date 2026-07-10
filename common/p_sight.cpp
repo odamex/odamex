@@ -480,6 +480,9 @@ bool P_CheckSightZDoom(const AActor *t1, const AActor *t2)
 
 bool P_CheckSightEdgesZDoom(const AActor *t1, const AActor *t2, float radius_boost)
 {
+	if(!t1 || !t2 || !t1->subsector || !t2->subsector)
+		return false;
+
 	const sector_t *s1 = t1->subsector->sector;
 	const sector_t *s2 = t2->subsector->sector;
 	int pnum = (s1 - sectors) * numsectors + (s2 - sectors);
@@ -773,7 +776,7 @@ bool P_CrossBSPNode (int bspnum)
     bsp = &nodes[bspnum];
 
     // decide which side the start point is on
-    side = P_DivlineSide (strace.x, strace.y, (divline_t *)bsp);
+    side = P_DivlineSide(strace.x, strace.y, reinterpret_cast<divline_t*>(bsp));
     if (side == 2)
 		side = 0;	// an "on" should cross both sides
 
@@ -782,7 +785,7 @@ bool P_CrossBSPNode (int bspnum)
 		return false;
 
     // the partition plane is crossed here
-    if (side == P_DivlineSide (t2x, t2y,(divline_t *)bsp))
+    if (side == P_DivlineSide (t2x, t2y, reinterpret_cast<divline_t*>(bsp)))
     {
 		// the line doesn't touch the other side
 		return true;

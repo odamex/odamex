@@ -32,6 +32,7 @@
 
 #include <assert.h>
 #include <unordered_map>
+#include <array>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
@@ -94,7 +95,14 @@ constexpr static levelFlags_t LEVEL2_COMPAT_CROSSDROPOFF = BIT(18);
 
 struct acsdefered_s;
 class FBehavior;
-struct bossaction_t;
+
+struct bossaction_t
+{
+	int32_t type    = MT_NULL;
+	int32_t flags   = 0;
+	int16_t special = 0;
+	int16_t tag     = 0;
+};
 
 // struct that contains a FarmHash 128-bit fingerprint.
 struct fhfprint_t
@@ -110,7 +118,7 @@ struct fhfprint_t
 	[[nodiscard]]
 	bool operator==(std::string_view other) const
 	{
-		return other == this->toString();
+		return other == std::string_view(this->toString());
 	}
 
 	void clear()
@@ -122,25 +130,8 @@ struct fhfprint_t
 	std::string toString() const
 	{
 		// [Blair] Serialize the hashes before reading.
-		const uint64_t reconsthash1 = (uint64_t)(fingerprint[0]) |
-		                              (uint64_t)(fingerprint[1]) << 8 |
-		                              (uint64_t)(fingerprint[2]) << 16 |
-		                              (uint64_t)(fingerprint[3]) << 24 |
-		                              (uint64_t)(fingerprint[4]) << 32 |
-		                              (uint64_t)(fingerprint[5]) << 40 |
-		                              (uint64_t)(fingerprint[6]) << 48 |
-		                              (uint64_t)(fingerprint[7]) << 56;
-
-		const uint64_t reconsthash2 = (uint64_t)(fingerprint[8]) |
-		                              (uint64_t)(fingerprint[9]) << 8 |
-		                              (uint64_t)(fingerprint[10]) << 16 |
-		                              (uint64_t)(fingerprint[11]) << 24 |
-		                              (uint64_t)(fingerprint[12]) << 32 |
-		                              (uint64_t)(fingerprint[13]) << 40 |
-		                              (uint64_t)(fingerprint[14]) << 48 |
-		                              (uint64_t)(fingerprint[15]) << 56;
-
-		return fmt::format("{:016x}{:016x}", reconsthash1, reconsthash2);
+		const auto [reconsthash1, reconsthash2] = std::bit_cast<std::array<uint64_t, 2>>(fingerprint);
+		return fmt::format("{:016x}{:016x}", LELONGLONG(reconsthash1), LELONGLONG(reconsthash2));
 	}
 
 	[[nodiscard]]
@@ -191,7 +182,7 @@ struct level_info_t
 
 struct level_pwad_info_t
 {
-	// level_info_t
+	// level_info_t // TODO: should this be made into a single member??
 	OLumpName		mapname    = "";
 	int				levelnum   = 0;
 	int				mapnum     = 0;
@@ -330,7 +321,7 @@ struct level_locals_t
 
 	// The following are all used for ACS scripting
 	std::unique_ptr<FBehavior> behavior;
-	int32_t			vars[NUM_MAPVARS];
+	std::array<int32_t, NUM_MAPVARS> vars;
 
 	// The following are used for UMAPINFO
 	OLumpName		exitpic;
@@ -363,14 +354,6 @@ typedef uint32_t clusterFlags_t;
 
 const static clusterFlags_t CLUSTER_HUB = BIT(0);
 const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
-
-struct bossaction_t
-{
-	int32_t type    = MT_NULL;
-	int32_t flags   = 0;
-	int16_t special = 0;
-	int16_t tag     = 0;
-};
 
 struct cluster_info_t
 {

@@ -96,8 +96,6 @@ typedef vertex_s vertex_t;
 struct line_s;
 struct sector_t;
 
-class player_s;
-
 //
 // The SECTORS record, at runtime.
 // Stores things/mobjs.
@@ -264,6 +262,7 @@ struct sector_t
 
 	int linecount = 0;
 	line_s **lines = nullptr;		// [linecount] size
+	std::span<line_s*> getLines() { return std::span(lines, linecount); }
 
 	float gravity = 0.0f;		// [RH] Sector gravity (1.0 is normal)
 	int damageamount = 0;
@@ -283,7 +282,7 @@ struct sector_t
 	// [AM] Use the ZDoom 1.22 AActor system instead.
 	AActor::AActorPtr SecActTarget{};
 
-	AActor::AActorPtr Skybox;
+	AActor::AActorPtr Skybox{};
 
 	// [SL] 2012-01-16 - planes for sloping ceilings/floors
 	plane_t floorplane{}, ceilingplane{};
@@ -332,7 +331,7 @@ typedef enum
 	ST_NEGATIVE
 } slopetype_t;
 
-#define R_NOSIDE ((unsigned short)(-1))
+#define R_NOSIDE (static_cast<unsigned short>(-1))
 
 struct line_s
 {
@@ -526,7 +525,7 @@ struct post_t
 	 */
 	byte* data() const
 	{
-		return (byte*)(this) + 3;
+		return const_cast<byte*>(reinterpret_cast<const byte*>(this) + 3);
 	}
 
 	/**
@@ -534,7 +533,7 @@ struct post_t
 	 */
 	post_t* next() const
 	{
-		return (post_t*)((byte*)this + length + 4);
+		return reinterpret_cast<post_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + length + 4));
 	}
 
 	/**
@@ -560,11 +559,11 @@ struct tallpost_t
 	}
 	byte* data() const
 	{
-		return (byte*)(this) + 4;
+		return const_cast<byte*>(reinterpret_cast<const byte*>(this) + 4);
 	}
 	tallpost_t* next() const
 	{
-		return (tallpost_t*)((byte*)(this) + 4 + length);
+		return reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + length + 4));
 	}
 	bool end() const
 	{
@@ -597,10 +596,15 @@ struct drawseg_t
     int				silhouette;
 
     // Pointers to lists for sprite clipping,
-    //  all three adjusted so [x1] is first value.
+    //  all adjusted so [x1] is first value.
     int*			sprtopclip;
     int*			sprbottomclip;
 	tallpost_t**	midposts;
+
+	// per-column scales for the masked midtexture, in texture y-scale
+	// space; saved from wallscalex so the masked pass draws with the same
+	// scales R_PrepWall gave the wall tiers
+	fixed_t*		midscales;
 };
 
 
@@ -608,7 +612,7 @@ struct drawseg_t
 // A patch holds one or more columns.
 // Patches are used for sprites and all masked pictures, and we compose
 // textures from the TEXTURE1/2 lists of patches.
-struct patch_s
+struct patch_t
 {
 private:
 	short			_width;			// bounding box size
@@ -638,7 +642,7 @@ public:
 	}
 	uint32_t* ofs() const
 	{
-		return (uint32_t*)((byte*)this + 8);
+		return reinterpret_cast<uint32_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + 8));
 	}
 	uint32_t datastart() const
 	{
@@ -646,22 +650,18 @@ public:
 	}
 	post_t* post(const uint32_t ofs)
 	{
-		return (post_t*)((byte*)this + ofs);
+		return reinterpret_cast<post_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + ofs));
 	}
 	tallpost_t* tallpost(const uint32_t ofs)
 	{
-		return (tallpost_t*)((byte*)this + ofs);
+		return reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + ofs));
 	}
 };
-typedef patch_s patch_t;
-
-
-
 
 // A vissprite_t is a thing
 //	that will be drawn during a refresh.
 // I.e. a sprite object that is partly visible.
-struct vissprite_s
+struct vissprite_t
 {
     int				x1;
     int				x2;
@@ -701,9 +701,8 @@ struct vissprite_s
 	fixed_t			translucency;
 	byte			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
 
-	const AActor*			mo;
+	AActor*			mo;
 };
-typedef vissprite_s vissprite_t;
 
 //
 // Sprites are patches with a special naming convention
@@ -736,6 +735,7 @@ struct spriteframe_t
 	// [RH] Move some data out of spritewidth, spriteoffset,
 	//		and spritetopoffset arrays.
 	fixed_t		width[16];
+	fixed_t		height[16];
 	fixed_t		topoffset[16];
 	fixed_t		offset[16];
 };
@@ -754,9 +754,9 @@ struct spritedef_t
 //
 // The infamous visplane
 //
-struct visplane_s
+struct visplane_t
 {
-	visplane_s *next;		// Next visplane in hash chain -- killough
+	visplane_t *next;		// Next visplane in hash chain -- killough
 
 	plane_t		secplane;
 
@@ -775,4 +775,3 @@ struct visplane_s
 	unsigned int pad;				//		allocated immediately after the
 	unsigned int top[3];			//		visplane.
 };
-typedef visplane_s visplane_t;

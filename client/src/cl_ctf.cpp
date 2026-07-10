@@ -74,30 +74,10 @@ void CTF_CheckFlags (player_t &player)
 		if(player.flags[i])
 		{
 			player.flags[i] = false;
-			GetTeamInfo((team_t)i)->FlagData.flagger = 0;
+			GetTeamInfo(static_cast<team_t>(i))->FlagData.flagger = nullplayer_id;
 		}
 	}
 }
-
-//
-//	CTF_TossFlag
-//																					[Toke - CTF - Toss]
-//	Player tosses the flag
-/* [ML] 04/4/06: Remove flagtossing, too buggy
-void CTF_TossFlag (void)
-{
-	MSG_WriteMarker (&net_buffer, clc_ctfcommand);
-
-	if (CTFdata.BlueScreen)	CTFdata.BlueScreen	= false;
-	if (CTFdata.RedScreen)	CTFdata.RedScreen	= false;
-}
-
-BEGIN_COMMAND	(flagtoss)
-{
-	CTF_TossFlag ();
-}
-END_COMMAND		(flagtoss)
-*/
 
 //
 //	[Toke - CTF] CTF_CarryFlag
@@ -129,18 +109,18 @@ void CTF_MoveFlags ()
 	// denis - flag is now a boolean
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 
 		if(teamInfo->FlagData.flagger && teamInfo->FlagData.actor)
 		{
-			player_t &player = idplayer(teamInfo->FlagData.flagger);
+			const player_t &player = idplayer(teamInfo->FlagData.flagger);
 			AActor *flag = teamInfo->FlagData.actor;
 
 			if (!validplayer(player) || !player.mo)
 			{
 				// [SL] 2012-12-13 - Remove a flag if it's being carried but
 				// there's not a valid player carrying it (should not happen)
-				teamInfo->FlagData.flagger = 0;
+				teamInfo->FlagData.flagger = nullplayer_id;
 				teamInfo->FlagData.state = flag_home;
 				if(teamInfo->FlagData.actor)
 					teamInfo->FlagData.actor->Destroy();
@@ -205,7 +185,7 @@ void CTF_RunTics (void)
 	// Don't draw the flag the display player is carrying as it blocks the view.
 	for (size_t flag = 0; flag < NUMTEAMS; flag++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)flag);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(flag));
 
 		if (!teamInfo->FlagData.actor)
 			continue;
@@ -238,7 +218,7 @@ void CTF_DrawHud (void)
 	player_t &player = displayplayer();
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 
 		if(teamInfo->FlagData.state == flag_carried && teamInfo->FlagData.flagger == player.id)
 		{
@@ -538,9 +518,9 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 		[[fallthrough]];
 	case 1:
 		if (ev == SCORE_CAPTURE)
-			C_GMidPrint(flag_message[ev][2 + team], V_GetTextColor(GetTeamInfo(team)->TextColor.c_str()), 0);
+			C_GMidPrint(flag_message[ev][2 + team], V_GetTextColor(GetTeamInfo(team)->TextColor), 0);
 		else
-			C_GMidPrint(flag_message[ev][2 + flag], V_GetTextColor(GetTeamInfo(flag)->TextColor.c_str()), 0);
+			C_GMidPrint(flag_message[ev][2 + flag], V_GetTextColor(GetTeamInfo(flag)->TextColor), 0);
 		break;
 	default:
 		break;

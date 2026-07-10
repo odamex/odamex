@@ -208,6 +208,8 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	tmy = y;
 	tmz = z;
 
+	// Because voodoo dolls have legit pointers to players, we want to make sure that
+	// we don't accidentally mess up real players' cameras when one teleports.
 	if (!P_IsVoodooDoll(thing))
 	{
 		player_t* player = thing->player;
@@ -286,8 +288,10 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 	{
 		friction = FRICTION_FLY;
 	}
-	else if ((!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1) ||
-		(mo->waterlevel == 1 && (mo->z > mo->floorz + 6*FRACUNIT)))
+	else if (mo->subsector
+			&& ((!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1)
+				|| (mo->waterlevel == 1 && (mo->z > mo->floorz + 6*FRACUNIT)))
+			)
 	{
 		friction = mo->subsector->sector->friction;
 		movefactor = mo->subsector->sector->movefactor >> 1;
@@ -628,6 +632,15 @@ static bool PIT_CheckThing (AActor *thing)
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE|MF_TOUCHY)) )
 		return true;	// can't hit thing
 
+	// Reject things that are too far away before the pricier player/friendly
+	// checks below.
+	fixed_t blockdist = thing->radius + tmthing->radius;
+	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
+	{
+		// didn't hit thing
+		return true;
+	}
+
 	// GhostlyDeath -- Spectators go through everything!
 	if ((thing->player && thing->player->spectator) ||
 		(tmthing->player && tmthing->player->spectator))
@@ -639,13 +652,6 @@ static bool PIT_CheckThing (AActor *thing)
 	if (tmthing && thing && thing->flags & MF_FRIEND &&
 	    P_IsFriendlyThing(thing, tmthing) && sv_unblockfriendly)
 		return true;
-
-	fixed_t blockdist = thing->radius + tmthing->radius;
-	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
-	{
-		// didn't hit thing
-		return true;
-	}
 
 	if (P_AllowPassover())
 		BlockingMobj = thing;
@@ -839,6 +845,18 @@ static bool PIT_CheckThing (AActor *thing)
 		         (tmthing->flags & MF_SOLID || (demoplayback || !co_boomphys)));
 }
 
+// Odamex does not have ZDoom's later "acts like a bridge" flag.  Keep this
+// local to the +FLOATBOB bridge check so other special things are not affected.
+static bool P_IsBridgeMobj(const AActor* thing)
+{
+	return thing &&
+	       (thing->type == MT_BRIDGE ||
+	        thing->type == MT_BRIDGE32 ||
+	        thing->type == MT_BRIDGE16 ||
+	        thing->type == MT_BRIDGE8 ||
+	        thing->type == MT_ZDOOMBRIDGE);
+}
+
 // This routine checks for Lost Souls trying to be spawned		// phares
 // across 1-sided lines, impassible lines, or "monsters can't	//   |
 // cross" lines. Draw an imaginary line between the PE			//   V
@@ -897,6 +915,9 @@ bool PIT_CheckOnmobjZ (AActor *thing)
 
 	// [RH] Corpses and specials don't block moves
 	if (thing->flags & (MF_CORPSE|MF_SPECIAL))
+		return true;
+
+	if ((tmthing->flags & MF_SPECIAL) && !P_IsBridgeMobj(thing))
 		return true;
 
 	// Don't clip against self
@@ -1029,7 +1050,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 
 	if (P_AllowPassover() && !spectator)
 	{
-		if (thing->player)	// [RH] Fake taller height to catch stepping up into things.
+		if (P_IsPlayerOrAvatar(*thing))      // [RH] Fake taller height to catch stepping up into things.
 			thing->height += 24*FRACUNIT;
 
 		for (int bx = xl; bx <= xh; bx++)
@@ -1134,6 +1155,8 @@ AActor *P_CheckOnmobj (AActor *thing)
 	bool good;
 
 	oldz = thing->z;
+	if (thing->flags2 & MF2_FLOATBOB)
+		thing->z = thing->floorz + thing->special1; // test from the bob center
 	P_FakeZMovement (thing);
 	good = P_TestMobjZ (thing);
 	thing->z = oldz;
@@ -1149,7 +1172,8 @@ bool P_TestMobjZ (AActor *actor)
 	if (actor->flags & MF_NOCLIP)
 		return true;
 
-	if (!(actor->flags & MF_SOLID))
+	if (!(actor->flags & MF_SOLID) &&
+	    !((actor->flags & MF_SPECIAL) && (actor->flags2 & MF2_FLOATBOB)))
 		return true;
 
 	tmx = x = actor->x;
@@ -1249,7 +1273,7 @@ bool P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 {
 	fixed_t		testz = thing->z;
 
-	if(!thing->subsector)
+	if(not thing->subsector)
 	{
 		I_Error("P_TryMove: Thing {{type: {}, info->type: {}}} subsector was null", thing->type, thing->info->type);
 	}
@@ -1649,7 +1673,10 @@ bool P_ThingHeightClip (AActor* thing)
 
 bool P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove)
 {
-	if (!actor || actor->flags & MF_NOGRAVITY || !actor->floorsector)
+	if (!actor
+	 ||  actor->flags & MF_NOGRAVITY
+	 || !actor->floorsector
+	 || !actor->subsector)
 		return false;
 
 	const plane_t *plane = &actor->floorsector->floorplane;
@@ -2427,12 +2454,12 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 	if (topangle <= ANG360 - ANG180)
 		topslope = finetangent[FINEANGLES/2-1];
 	else
-		topslope = finetangent[FINEANGLES/4-((signed)topangle>>ANGLETOFINESHIFT)];
+		topslope = finetangent[FINEANGLES/4-(static_cast<signed>(topangle)>>ANGLETOFINESHIFT)];
 
 	if (bottomangle >= ANG180)
 		bottomslope = finetangent[0];
 	else
-		bottomslope = finetangent[FINEANGLES/4-((signed)bottomangle>>ANGLETOFINESHIFT)];
+		bottomslope = finetangent[FINEANGLES/4-(static_cast<signed>(bottomangle)>>ANGLETOFINESHIFT)];
 
 	attackrange = distance;
 	linetarget = NULL;
@@ -2698,7 +2725,7 @@ bool PTR_RailTraverse (intercept_t *in)
 	if (NumRailHits >= MaxRailHits)
 	{
 		MaxRailHits = MaxRailHits ? MaxRailHits * 2 : 16;
-		RailHits = (SRailHit *) M_Realloc(RailHits, sizeof(*RailHits) * MaxRailHits);
+		RailHits = static_cast<SRailHit*>(M_Realloc(RailHits, sizeof(*RailHits) * MaxRailHits));
 	}
 	RailHits[NumRailHits].hitthing = th;
 	RailHits[NumRailHits].x = x;
@@ -2763,9 +2790,7 @@ void P_RailAttack (AActor *source, int damage, int offset)
 			if (!mo || mo == source)
 				continue;
 
-			buf_t* buf = &(player.client.netbuf);
-
-			MSG_WriteSVC(buf, SVC_RailTrail(start, end));
+			MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_RailTrail(start, end));
 		}
 	}
 }
@@ -2848,18 +2873,18 @@ EXTERN_CVAR (chase_dist)
 
 void P_AimCamera (AActor *t1)
 {
-	fixed_t distance = (fixed_t)(chase_dist * FRACUNIT);
+	fixed_t distance = static_cast<fixed_t>(chase_dist * FRACUNIT);
 	angle_t angle = (t1->angle - ANG180) >> ANGLETOFINESHIFT;
 	fixed_t x2 = t1->x + (distance>>FRACBITS)*finecosine[angle];
 	fixed_t y2 = t1->y + (distance>>FRACBITS)*finesine[angle];
 	subsector_t *subsector;
 
 	shootthing = t1;
-	shootz = t1->z + t1->height + (fixed_t)(chase_height * FRACUNIT);
+	shootz = t1->z + t1->height + static_cast<fixed_t>(chase_height * FRACUNIT);
 	attackrange = distance;
 	aimslope = finetangent[FINEANGLES/4+(t1->pitch>>ANGLETOFINESHIFT)];
 
-	CameraZ = shootz + (fixed_t)(chase_dist * aimslope);
+	CameraZ = shootz + static_cast<fixed_t>(chase_dist * aimslope);
 	subsector = P_PointInSubsector (x2, y2);
 	if (subsector) {
 		fixed_t ceilingheight = P_CeilingHeight(x2, y2, subsector->sector) - CAMERA_DIST;
@@ -3000,17 +3025,20 @@ void P_UseLines (player_t& player)
 
 	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse)) {
 		// [RH] Give sector a chance to eat the use
-		sector_t *sec = usething->subsector->sector;
-		int spac = SECSPAC_Use;
-		if (foundline)
-			spac |= SECSPAC_UseWall;
-		if ((!sec->SecActTarget || !A_TriggerAction(sec->SecActTarget, usething, spac)) &&
-		    (co_boomphys && !P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse)))
+		if (usething->subsector)
 		{
-			// This added test makes the "oof" sound work on 2s lines -- killough:
-			// [ML] It also apparently allows additional silent bfg tricks not present in vanilla...
-			// [ML] co_boomlinecheck now part of co_boomphys
-			UV_SoundAvoidPlayer(usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+			sector_t *sec = usething->subsector->sector;
+			int spac = SECSPAC_Use;
+			if (foundline)
+				spac |= SECSPAC_UseWall;
+			if ((!sec->SecActTarget || !A_TriggerAction(sec->SecActTarget, usething, spac)) &&
+			    (co_boomphys && !P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse)))
+			{
+				// This added test makes the "oof" sound work on 2s lines -- killough:
+				// [ML] It also apparently allows additional silent bfg tricks not present in vanilla...
+				// [ML] co_boomlinecheck now part of co_boomphys
+				UV_SoundAvoidPlayer(usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+			}
 		}
 	}
 }
@@ -3178,7 +3206,7 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 
 		fixed_t momx = thing->momx;
 		fixed_t momy = thing->momy;
-		int damage = (int)points;
+		int damage = static_cast<int>(points);
 
 		P_DamageMobj(thing, bombspot, bombsource, damage, bombmod);
 
@@ -3186,15 +3214,15 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 		if (bombsource == thing)
 			thrust *= selfthrustscale;
 
-		float momz = (float)(thing->z + (thing->height>>1) - bombspot->z) * thrust;
+		float momz = static_cast<float>(thing->z + (thing->height>>1) - bombspot->z) * thrust;
 		if (bombsource != thing)
 			momz *= 0.5f;
 		else
 			momz *= 0.8f;
 
-		thing->momx = momx + (fixed_t)((thing->x - bombspot->x) * thrust);
-		thing->momy = momy + (fixed_t)((thing->y - bombspot->y) * thrust);
-		thing->momz += (fixed_t)momz;
+		thing->momx = momx + static_cast<fixed_t>((thing->x - bombspot->x) * thrust);
+		thing->momy = momy + static_cast<fixed_t>((thing->y - bombspot->y) * thrust);
+		thing->momz += static_cast<fixed_t>(momz);
 	}
 	else
 	{
@@ -3224,9 +3252,9 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;
-	bombdamagefloat = (float)damage;
+	bombdamagefloat = static_cast<float>(damage);
 	bombdistance = distance;
-	bombdistancefloat = 1.f / (float)distance;
+	bombdistancefloat = 1.f / static_cast<float>(distance);
 	DamageSource = hurtSource;
 	bombmod = mod;
 
@@ -3311,7 +3339,7 @@ bool PIT_ChangeSector (AActor *thing)
 	if (thing->health <= 0)
 	{
 		P_SetMobjState (thing, S_GIBS);
-		thing->effects = 0;
+		thing->SetEffects(0);
 
 		// [Nes] - Classic demo compatability: Ghost monster bug.
 		if ((demoplayback)) {
@@ -3445,7 +3473,7 @@ msecnode_t *P_GetSecnode()
 		headsecnode = headsecnode->m_snext;
 	}
 	else
-		node = (msecnode_t *)Z_Malloc (sizeof(*node), PU_LEVEL, NULL);
+		node = Z_Malloc<msecnode_t>(PU_LEVEL);
 	return node;
 }
 
@@ -3469,15 +3497,10 @@ void P_PutSecnode (msecnode_t *node)
 
 msecnode_t *P_AddSecnode (sector_t *s, AActor *thing, msecnode_t *nextnode)
 {
-	if (!s)
-		return NULL;
+	if (s == nullptr)
+		return nextnode;
 
-	msecnode_t *node;
-
-	if (s == NULL)
-		I_FatalError("AddSecnode of 0 for {}\n", thing->_StaticType.Name);
-
-	node = nextnode;
+	msecnode_t *node = nextnode;
 	while (node)
 	{
 		if (node->m_sector == s)	// Already have a node for this sector?
@@ -3664,7 +3687,10 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 
 	// Add the sector of the (x,y) point to sector_list.
 
-	sector_list = P_AddSecnode (thing->subsector->sector,thing,sector_list);
+	if (thing->subsector)
+	{
+		sector_list = P_AddSecnode (thing->subsector->sector,thing,sector_list);
+	}
 
 	// Now delete any nodes that won't be used. These are the ones where
 	// m_thing is still NULL.

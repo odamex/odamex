@@ -78,7 +78,6 @@ int 				messageLastMenuActive;
 bool				messageNeedsInput;
 
 void	(*messageRoutine)(int response);
-void	CL_SendUserInfo();
 void	M_ChangeTeam (int choice);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
@@ -661,7 +660,7 @@ void M_ReadSaveStrings()
 //
 void M_DrawLoad ()
 {
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_LOADG"), 72, 28);
+	screen->DrawPatchClean(W_CachePatch("M_LOADG"), 72, 28);
 	for (int i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
@@ -706,7 +705,7 @@ void M_DrawSave()
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SAVEG"), 72, 28);
+	screen->DrawPatchClean(W_CachePatch("M_SAVEG"), 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
@@ -875,24 +874,21 @@ void M_QuickLoad()
 //
 // M_ReadThis
 //
-void M_ReadThis(int choice)
+void M_ReadThis(int)
 {
-	choice = 0;
 	drawSkull = false;
 	M_SetupNextMenu(&ReadDef1);
 }
 
-void M_ReadThis2(int choice)
+void M_ReadThis2(int)
 {
-	choice = 0;
 	drawSkull = false;
 	M_SetupNextMenu(&ReadDef2);
 }
 
-void M_ReadThis3(int choice)
+void M_ReadThis3(int)
 {
     if (gameinfo.flags & GI_SHAREWARE) {
-        choice = 0;
         drawSkull = false;
         M_SetupNextMenu(&ReadDef3);
     } else {
@@ -900,9 +896,8 @@ void M_ReadThis3(int choice)
     }
 }
 
-void M_FinishReadThis(int choice)
+void M_FinishReadThis(int)
 {
-	choice = 0;
 	drawSkull = true;
 	MenuStackDepth = 0;
 	M_SetupNextMenu(&MainDef);
@@ -952,6 +947,9 @@ namespace
 {
 	void SetupEpisodeList()
 	{
+		if (EpiDef.lastOn >= episodenum)
+			EpiDef.lastOn = episodenum - 1;
+
 		for (int i = 0; i < episodenum; ++i)
 		{
 			if (EpisodeInfos[i].fulltext)
@@ -1106,7 +1104,7 @@ void M_ChooseSkill(int choice)
 		const char* must_confirm_text = SkillInfos[choice].must_confirm_text.c_str();
 
 		if (must_confirm_text[0] == '$')
-			M_StartMessage(GStrings(StdStringToUpper(must_confirm_text + 1)),
+			M_StartMessage(GStrings(OStringToUpper(must_confirm_text + 1)),
 		               M_VerifyNightmare, true);
 		else
 			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);
@@ -1207,9 +1205,8 @@ void M_EndGameResponse(int ch)
 	CL_QuitNetGame(NQ_SILENT);
 }
 
-void M_EndGame(int choice)
+void M_EndGame(int)
 {
-	choice = 0;
 	if (!usergame)
 	{
 		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
@@ -1272,8 +1269,8 @@ void M_QuitDOOM(int choice)
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
 static const char *genders[4] = { "male", "female", "cyborg", "other" };
-// Acts 19 quiz the order must match d_netinf.h
-static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };
+// [Acts 19 quiz] the order must match d_netinf.h
+static const char* colorpresets[12] = { "green", "indigo", "brown", "red", "blue", "orange", "gold", "jungle green", "purple", "white", "black", "custom" };
 static state_t *PlayerState;
 static int PlayerTics;
 argb_t CL_GetPlayerColor(const player_t&);
@@ -1299,7 +1296,8 @@ void M_PlayerSetup(int choice)
 
 	// [Nes] Intialize the player preview color.
 	const argb_t player_color = CL_GetPlayerColor(consoleplayer());
-	R_BuildPlayerTranslation(0, player_color);
+	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
+	R_BuildPlayerTranslation(menuplayer_id, player_color, colorpreset);
 }
 
 static void M_PlayerSetupTicker()
@@ -1340,8 +1338,8 @@ static forceinline void R_RenderFire(int x, int y)
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
-		PIXEL_T* to = (PIXEL_T*)surface->getBuffer() + y * surface_pitch + x;
-		const palindex_t* from = (palindex_t*)fire_surface->getBuffer() + b * fire_surface->getPitch();
+		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surface_pitch + x;
+		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + b * fire_surface->getPitch();
 		y += CleanYfac;
 
 		for (int a = 0; a < fire_surface_width; a++, to += xscale, from++)
@@ -1367,8 +1365,8 @@ static forceinline void R_RenderFire(int x, int y)
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
-		PIXEL_T* to = (PIXEL_T*)surface->getBuffer() + y * surface_pitch + x;
-		const palindex_t* from = (palindex_t*)fire_surface->getBuffer() + b * fire_surface->getPitch();
+		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surface_pitch + x;
+		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + b * fire_surface->getPitch();
 		y += CleanYfac;
 
 		for (int a = 0; a < fire_surface_width; a++, to += CleanXfac, from++)
@@ -1433,11 +1431,11 @@ static void M_PlayerSetupDrawer()
 			fire_surface->lock();
 			const int pitch = fire_surface->getPitch();
 
-			palindex_t* from = (palindex_t*)fire_surface->getBuffer() + (fire_surface_height - 3) * pitch;
+			palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + (fire_surface_height - 3) * pitch;
 			for (int a = 0; a < fire_surface_width; a++, from++)
 				*from = *(from + (pitch << 1)) = M_Random();
 
-			from = (palindex_t*)fire_surface->getBuffer();
+			from = static_cast<palindex_t*>(fire_surface->getBuffer());
 			for (int b = 0; b < fire_surface_height - 4; b += 2)
 			{
 				palindex_t* pixel = from;
@@ -1541,8 +1539,8 @@ static void M_PlayerSetupDrawer()
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
 		const argb_t player_color = CL_GetPlayerColor(consoleplayer());
-		R_BuildPlayerTranslation(0, player_color);
-		V_ColorMap = translationref_t(translationtables, 0);
+		R_BuildPlayerTranslation(menuplayer_id, player_color, colorpreset);
+		V_ColorMap = translationref_t(translationtables, menuplayer_id);
 
 		// Draw box surrounding fire and player:
 		screen->DrawPatchClean(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
@@ -1620,7 +1618,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 {
 	team_t team = D_TeamByName(cl_team.cstring());
 
-	int iTeam = (int)team;
+	int iTeam = static_cast<int>(team);
 	if (choice)
 	{
 		iTeam = (iTeam + 1) % NUMTEAMS;
@@ -1631,7 +1629,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 		if (iTeam < 0)
 			iTeam = NUMTEAMS - 1;
 	}
-	team = (team_t)iTeam;
+	team = static_cast<team_t>(iTeam);
 
 	cl_team = GetTeamInfo(team)->ColorStringUpper.c_str();
 }
@@ -1690,21 +1688,23 @@ static void M_ChangeColorPreset (int choice)
 
 	cl_colorpreset = colorpresets[colorpreset];
 
-	if (colorpreset == COLOR_BLUE)
-		// the Corn Chex jump suit; it should be brighter, but that introduces gray pixels on 8-bit
-		SendNewColor(57, 57, 255);
+	if (colorpreset == COLOR_GREEN)
+		// the Odamex green default
+		SendNewColor(64, 207, 0);
 	else if (colorpreset == COLOR_INDIGO)
 		// the Wheat Chex jump suit; a little darker than the blue
 		SendNewColor(134, 134, 134);
-	else if (colorpreset == COLOR_GREEN)
-		// the Odamex green default
-		SendNewColor(64, 207, 0);
 	else if (colorpreset == COLOR_BROWN)
 		// my best approximation of the Vanilla brown translation
 		SendNewColor(169, 87, 31);
 	else if (colorpreset == COLOR_RED)
 		// the blue luminosity matched to the Vanilla red hue without looking bad on 8-bit
 		SendNewColor(250, 62, 62);
+	else if (colorpreset == COLOR_BLUE)
+		// the Corn Chex jump suit; it should be brighter, but that introduces gray pixels on 8-bit
+		SendNewColor(57, 57, 255);
+	else if (colorpreset == COLOR_ORANGE)
+		SendNewColor(255, 96, 0);
 	else if (colorpreset == COLOR_GOLD)
 		SendNewColor(255, 206, 43);
 	else if (colorpreset == COLOR_JUNGLEGREEN)
@@ -1751,10 +1751,10 @@ static void SendNewColor(int red, int green, int blue)
 {
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 
-	AddCommandString(fmt::sprintf("cl_color \"%02x %02x %02x\"", red, green, blue));
+	cl_color.ForceSet(fmt::format("{:02x} {:02x} {:02x}", red, green, blue).c_str());
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		AddCommandString(fmt::sprintf("cl_customcolor \"%02x %02x %02x\"", red, green, blue));
+		cl_customcolor.ForceSet(fmt::format("{:02x} {:02x} {:02x}", red, green, blue).c_str());
 	}
 
 	// [SL] not connected to a server so we don't have to wait for the server
@@ -1762,10 +1762,10 @@ static void SendNewColor(int red, int green, int blue)
 	if (!connected)
 	{
 		// [Nes] Change the player preview color.
-		R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color));
+		R_BuildPlayerTranslation(menuplayer_id, V_GetColorFromString(cl_color), colorpreset);
 
 		if (consoleplayer().ingame())
-			R_CopyTranslationRGB(0, consoleplayer_id);
+			R_CopyTranslationRGB(menuplayer_id, consoleplayer_id);
 	}
 }
 
@@ -1872,7 +1872,7 @@ int M_StringHeight(char* string)
 //
 // M_Responder
 //
-bool M_Responder (event_t* ev)
+bool M_Responder(const event_t& ev)
 {
 	int ch, ch2, mod;
 
@@ -1881,9 +1881,9 @@ bool M_Responder (event_t* ev)
 	// eat mouse events
 	if(menuactive)
 	{
-		if(ev->type == ev_mouse)
+		if(ev.type == ev_mouse)
 			return true;
-		else if(ev->type == ev_joystick)
+		else if(ev.type == ev_joystick)
 		{
 			if(OptionsActive)
 				M_OptResponder (ev);
@@ -1892,20 +1892,20 @@ bool M_Responder (event_t* ev)
 		}
 	}
 
-	if (ev->type == ev_keyup)
+	if (ev.type == ev_keyup)
 	{
-		if(repeatKey == ev->data1)
+		if(repeatKey == ev.data1)
 		{
 			repeatKey = 0;
 			repeatCount = 0;
 		}
 	}
 
-	if (ev->type == ev_keydown)
+	if (ev.type == ev_keydown)
 	{
-		ch = ev->data1; 		// scancode
-		ch2 = ev->data3;		// ASCII
-		mod = ev->mod;			// key mods
+		ch = ev.data1; 		// scancode
+		ch2 = ev.data3;		// ASCII
+		mod = ev.mod;			// key mods
 	}
 
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
@@ -1963,7 +1963,7 @@ bool M_Responder (event_t* ev)
 		}
 		else
 		{
-			ch = ev->data3;	// [RH] Use user keymap
+			ch = ev.data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <
@@ -2124,7 +2124,7 @@ bool M_Responder (event_t* ev)
 	}
 
 	// [RH] Menu now eats all keydown events while active
-	if (ev->type == ev_keydown)
+	if (ev.type == ev_keydown)
 		return true;
 	else
 		return false;
@@ -2328,7 +2328,7 @@ void M_Init()
 	whichSkull = 0;
 	skullAnimCounter = 10;
 	drawSkull = true;
-	screenSize = (int)screenblocks - 3;
+	screenSize = screenblocks.asInt() - 3;
 	messageToPrint = 0;
 	messageString = NULL;
 	messageLastMenuActive = menuactive;

@@ -58,12 +58,13 @@
 #include "p_lnspec.h"
 #include "cl_netgraph.h"
 #include "p_pspr.h"
-#include "d_netcmd.h"
+#include "clc_message.h"
 #include "g_levelstate.h"
 #include "v_text.h"
 #include "hu_stuff.h"
 #include "p_acs.h"
 #include "i_input.h"
+#include "i_time.h"
 
 #include "g_gametype.h"
 #include "cl_parse.h"
@@ -71,7 +72,12 @@
 
 #include "m_consolecommandstream.h"
 
+#include "OdaMessenger.h"
+#include "CanarySocket.h"
+#include "PlayerStateRoller.h"
+
 #include <bitset>
+#include <ranges>
 #include <set>
 #include <sstream>
 
@@ -79,6 +85,10 @@
 
 #if _MSC_VER == 1310
 #pragma optimize("",off)
+#endif
+
+#ifndef _WIN32
+#   include <netinet/in.h>
 #endif
 
 // denis - fancy gfx, but no game manipulation
@@ -94,8 +104,6 @@ short version = 0;
 int gameversion = 0;				// GhostlyDeath -- Bigger Game Version
 int gameversiontosend = 0;		// If the server is 0.4, let's fake our client info
 
-buf_t     net_buffer(MAX_UDP_PACKET);
-
 bool      noservermsgs;
 int       last_received;
 
@@ -108,7 +116,8 @@ float     world_index_accum = 0.0f;
 int       last_svgametic = 0;
 int       last_player_update = 0;
 
-bool		recv_full_update = false;
+bool      hasReceivedFullUpdate = false;
+bool      isReceivingFullUpdate = false;
 
 std::string connectpasshash = "";
 
@@ -116,8 +125,12 @@ bool      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
-constexpr static size_t PACKET_SEQ_MASK = 0xFF;
-static int packetseq[256];
+extern NetGraph netgraph;
+
+OdaMessenger messenger;
+static std::unique_ptr<CanarySocketClient> s_canary;
+
+PlayerStateRoller rollerState{};
 
 // denis - unique session key provided by the server
 std::string digest;
@@ -127,12 +140,9 @@ std::string server_host = "";	// hostname of server
 // [SL] 2011-06-27 - Class to record and playback network recordings
 NetDemo netdemo;
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
-bool simulated_connection = false;
 bool forcenetdemosplit = false;		// need to split demo due to svc_reconnect
 
-NetCommand localcmds[MAXSAVETICS];
-
-extern NetGraph netgraph;
+odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
 
 // [SL] 2012-03-07 - Players that were teleported during the current gametic
 std::set<byte> teleported_players;
@@ -166,7 +176,7 @@ EXTERN_CVAR(debug_disconnect)
 
 static argb_t enemycolor, teamcolor;
 
-void P_PlayerLeavesGame(player_s* player);
+void P_PlayerLeavesGame(player_t* player);
 
 //
 // CL_ShadePlayerColor
@@ -191,7 +201,9 @@ argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 //
 argb_t CL_GetPlayerColor(const player_t& player)
 {
-	argb_t base_color(255, player.userinfo.color[1], player.userinfo.color[2], player.userinfo.color[3]);
+	argb_t base_color(255, player.userinfo.color.getr(),
+	                       player.userinfo.color.getg(),
+	                       player.userinfo.color.getb());
 	argb_t shade_color = base_color;
 
 	bool teammate = false;
@@ -215,8 +227,6 @@ argb_t CL_GetPlayerColor(const player_t& player)
 	return CL_ShadePlayerColor(base_color, shade_color);
 }
 
-
-
 static void CL_RebuildAllPlayerTranslations()
 {
 	// [SL] vanilla demo colors override
@@ -224,20 +234,22 @@ static void CL_RebuildAllPlayerTranslations()
 		return;
 
 	for (auto& player : players)
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
+	{
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
+	}
 }
 
 CVAR_FUNC_IMPL (r_enemycolor)
 {
 	// cache the color whenever the user changes it
-	enemycolor = argb_t(V_GetColorFromString(var));
+	enemycolor = V_GetColorFromString(var);
 	CL_RebuildAllPlayerTranslations();
 }
 
 CVAR_FUNC_IMPL (r_teamcolor)
 {
 	// cache the color whenever the user changes it
-	teamcolor = argb_t(V_GetColorFromString(var));
+	teamcolor = V_GetColorFromString(var);
 	CL_RebuildAllPlayerTranslations();
 }
 
@@ -279,7 +291,6 @@ EXTERN_CVAR (waddirs)
 
 void CL_PlayerTimes();
 void CL_TryToConnect(uint32_t server_token);
-void CL_Decompress();
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
@@ -357,16 +368,19 @@ void Host_EndGame(const char *msg)
 	CL_QuitNetGame(NQ_SILENT);
 }
 
-void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line)
+void CL_QuitNetGame(const netQuitReason_e reason)
 {
-	if(connected)
+	if(connected && !simulated_connection)
 	{
-		SZ_Clear(&net_buffer);
-		MSG_WriteMarker(&net_buffer, clc_disconnect);
-		NET_SendPacket(net_buffer, serveraddr);
-		SZ_Clear(&net_buffer);
+		CL_CompleteDisconnect(reason);
+
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
+	}
+	else
+	{
+		// Make sure we do a proper silent disconnect in single player.
+		CL_CompleteDisconnect(NQ_SILENT);
 	}
 
 	if (paused)
@@ -375,9 +389,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 		S_ResumeMusic();
 	}
 
-	memset (&serveraddr, 0, sizeof(serveraddr));
-	connected = false;
-	gameaction = ga_fullconsole;
+	serveraddr = {};
 	noservermsgs = false;
 	AM_Stop();
 
@@ -393,8 +405,6 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	mute_spectators = 0.f;
 	mute_enemies = 0.f;
 
-	P_ClearAllNetIds();
-
 	{
 		// [jsd] unlink player pointers from AActors; solves crash in R_ProjectSprites after a svc_disconnect message.
 		for (auto& player : players) {
@@ -406,12 +416,12 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 		players.clear();
 	}
 
-	recv_full_update = false;
+	hasReceivedFullUpdate = false;
 
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
 
-	if (netdemo.isPlaying())
+	if (netdemo.isPlaying() || netdemo.isPaused())
 		netdemo.stopPlaying();
 
 	demoplayback = false;
@@ -434,16 +444,148 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	case NQ_PROTO:
 		PrintFmt("Disconnected from server: Unrecoverable protocol error\n");
 		break;
+	case NQ_SERVER_DROP:
+		PrintFmt("Dropped by server\n");
+		break;
 	}
 
 	if (::debug_disconnect)
-		PrintFmt("  ({}:{})\n", file, line);
+		PrintFmt("{}\n", M_GetStacktrace("Disconnect location:", false));
 }
 
-
-void CL_Reconnect(void)
+static void CL_HandleDisconnectCompletionPacket()
 {
-	recv_full_update = false;
+	// We're in the middle of trying to complete the client-initiated disconnection.
+	// The only thing we care to handle now are Acknowledgements and the DisconnectClient
+	// confirmation.
+	while (::net_message.BytesLeftToRead() > 0)
+	{
+		const ParseResultType result = CL_ParseCommand();
+
+		switch (result.cmd)
+		{
+			case svc_disconnectclient:
+			case msg_ack:               // fall-thru
+				CL_ProcessCommand(result);
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+static void CL_GracefulClientInitiatedDisconnect()
+{
+	const dtime_t oneTicInNanosec = static_cast<dtime_t>(1000000000.0 / static_cast<double>(TICRATE));
+
+	messenger.Clear();
+
+	// Again, make sure that we allow for immediate retransmits.
+	messenger.SetRetransmitDelay(0);
+
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_DisconnectMe());
+	messenger.SendAll(gametic, serveraddr);
+
+	const dtime_t disconnectStartTime   = I_GetTime();
+	const dtime_t disconnectTimeoutTime = disconnectStartTime + I_ConvertTimeFromMs(2000);
+
+	// We have to maintain a fake tic to ensure that we don't exhaust the messenger's
+	// byte budget.  It doesn't matter that we're faking out the messenger because we'll
+	// be resetting it to default at the end of this function.
+
+	int fakeTics = gametic;
+	while (connected and I_GetTime() < disconnectTimeoutTime)
+	{
+		I_Sleep(oneTicInNanosec);
+
+		++fakeTics;
+		messenger.HandleRetransmissions(fakeTics, serveraddr);
+		while (NET_GetPacket())
+		{
+			if (messenger.Receive(::net_message) == MessageResultEnum::ACCEPT)
+			{
+				// If we see ACCEPT, it means we have acks that have to be handled immediately.
+				messenger.NextReceivedPacket(::net_message);
+				CL_HandleDisconnectCompletionPacket();
+			}
+		}
+
+		// Now make sure any received, enqueued reliable packets get serviced.
+		// This is where a svc_disconnectclient would get handled and thereby `connected` goes false.
+		while (messenger.NextReceivedPacket(::net_message))
+		{
+			CL_HandleDisconnectCompletionPacket();
+		}
+
+		// Make sure that the server gets its acks during this packet burndown phase.
+		messenger.SendAll(fakeTics, serveraddr);
+	}
+
+	if (connected)
+	{
+		PrintFmt(PRINT_WARNING, "Server did not acknowledge the disconnection - continuing anyway - expecting (and ignoring) challenge errors...\n");
+	}
+}
+
+static void CL_DrainSocket()
+{
+	const dtime_t oneTicInNanosec = static_cast<dtime_t>(1000000000.0 / static_cast<double>(TICRATE));
+
+	// In a very high-latency situation, even though we've seen the svc_disconnectclient
+	// confirmation from the server, the pipe could still be backed up with
+	// retransmits and acks.  Just drain until we get several consecutive tics
+	// without new packets.
+	int         consecutiveTicsWithoutPackets = 0;
+	const int   desiredTicsWithoutPackets     = 5;  // total guess..
+
+	const dtime_t lastTimeout = I_GetTime() + I_ConvertTimeFromMs(2000);
+	while (consecutiveTicsWithoutPackets < desiredTicsWithoutPackets and I_GetTime() < lastTimeout)
+	{
+		I_Sleep(oneTicInNanosec);
+		bool packetWasSeen = false;
+		while (NET_GetPacket())
+		{
+			packetWasSeen = true;
+		}
+
+		consecutiveTicsWithoutPackets = packetWasSeen ? 0 : consecutiveTicsWithoutPackets + 1;
+	}
+
+	if (consecutiveTicsWithoutPackets < desiredTicsWithoutPackets)
+	{
+		PrintFmt(PRINT_WARNING, "Still too many packets inbound - continuing anyway - expecting (and ignoring) challenge errors...\n");
+	}
+}
+
+void CL_CompleteDisconnect(netQuitReason_e reason)
+{
+	if (connected and not simulated_connection)
+	{
+		// The server instructed us to drop, so it's already walking us out the door - we only need to
+		// send the acknowledgements, nothing else.
+		if (reason == NQ_SERVER_DROP)
+		{
+			messenger.SendAll(gametic, serveraddr);
+		}
+		else
+		{
+			CL_GracefulClientInitiatedDisconnect();
+		}
+
+		CL_DrainSocket();
+	}
+
+	connected = false;
+
+	messenger = OdaMessenger();
+	P_ClearAllNetIds();
+	s_canary.reset();
+	gameaction = ga_fullconsole;
+}
+
+void CL_Reconnect(netQuitReason_e reason)
+{
+	hasReceivedFullUpdate = false;
 
 	if (netdemo.isRecording())
 		forcenetdemosplit = true;
@@ -452,13 +594,7 @@ void CL_Reconnect(void)
 
 	if (connected)
 	{
-		MSG_WriteMarker(&net_buffer, clc_disconnect);
-		NET_SendPacket(net_buffer, serveraddr);
-		SZ_Clear(&net_buffer);
-		connected = false;
-		gameaction = ga_fullconsole;
-
-		P_ClearAllNetIds();
+		CL_CompleteDisconnect(reason);
 	}
 	else if (lastconaddr.ip[0])
 	{
@@ -507,8 +643,7 @@ void CL_CheckDisplayPlayer(void)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		MSG_WriteMarker(&net_buffer, clc_spy);
-		MSG_WriteByte(&net_buffer, newid);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Spy(newid));
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility
@@ -590,6 +725,20 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 	} while (it != sentinal);
 }
 
+void D_ProcessEvents();
+void G_BuildTiccmd (ticcmd_t& cmd);
+
+//
+// NetUpdate
+// Reads inputs, processes them, builds ticcmd for console player.
+//
+void NetUpdate (void)
+{
+	I_StartTic ();
+	D_ProcessEvents ();
+	G_BuildTiccmd (consoleplayer().netcmds[gametic % BACKUPTICS]);
+}
+
 extern bool advancedemo;
 uint64_t nextstep = 0;
 int canceltics = 0;
@@ -626,7 +775,10 @@ void CL_StepTics(unsigned int count)
 		OInterpolation::getInstance().ticGameInterpolation();
 
 		G_Ticker ();
-		gametic++;
+
+		if (!netdemo.isPaused())
+			gametic++;
+
 		if (netdemo.isPlaying() && !netdemo.isPaused())
 			netdemo.ticker();
 	}
@@ -668,7 +820,7 @@ void CL_RunTics()
 				PrintFmt("level.time {}, prndindex {}, {} {} {}\n",
 				         level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				PrintFmt("level.time %d, prndindex %d\n", level.time, prndindex);
+ 				PrintFmt("level.time {}, prndindex {}\n", level.time, prndindex);
 		}
 	}
 	else
@@ -745,7 +897,7 @@ BEGIN_COMMAND (connect)
 		else
 		{
 			PrintFmt("Could not resolve host {}\n", target);
-			memset(&serveraddr, 0, sizeof(serveraddr));
+			serveraddr = {};
 		}
 	}
 
@@ -763,7 +915,7 @@ END_COMMAND (disconnect)
 
 BEGIN_COMMAND (reconnect)
 {
-	CL_Reconnect();
+	CL_Reconnect(NQ_SILENT);
 }
 END_COMMAND (reconnect)
 
@@ -811,21 +963,24 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	const std::string color = fmt::format("#{:02X}{:02X}{:02X}",
-		player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
+	    player->userinfo.color.getr(),
+	    player->userinfo.color.getg(),
+	    player->userinfo.color.getb());
 
 	PrintFmt(PRINT_HIGH, "---------------[player info]----------- \n");
-	PrintFmt(PRINT_HIGH, " userinfo.netname - {:s} \n",		player->userinfo.netname);
+	PrintFmt(PRINT_HIGH, " userinfo.netname     - {:s} \n",		player->userinfo.netname);
 
 	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
-		PrintFmt(PRINT_HIGH, " userinfo.team    - {:s} \n",
+		PrintFmt(PRINT_HIGH, " userinfo.team        - {:s} \n",
 		       GetTeamInfo(player->userinfo.team)->ColorizedTeamName());
 	}
-	PrintFmt(PRINT_HIGH, " userinfo.aimdist - {:d} \n",		player->userinfo.aimdist >> FRACBITS);
-	PrintFmt(PRINT_HIGH, " userinfo.color   - {:s} \n",		color);
-	PrintFmt(PRINT_HIGH, " userinfo.gender  - {:d} \n",		player->userinfo.gender);
-	PrintFmt(PRINT_HIGH, " time             - {:d} \n",		player->GameTime);
-	PrintFmt(PRINT_HIGH, " spectator        - {:d} \n",		player->spectator);
-	PrintFmt(PRINT_HIGH, " downloader       - {:d} \n",		player->playerstate == PST_DOWNLOAD);
+	PrintFmt(PRINT_HIGH, " userinfo.aimdist     - {:d} \n",		player->userinfo.aimdist >> FRACBITS);
+	PrintFmt(PRINT_HIGH, " userinfo.colorpreset - {:d} \n",		player->userinfo.colorpreset);
+	PrintFmt(PRINT_HIGH, " userinfo.color       - {:s} \n",		color);
+	PrintFmt(PRINT_HIGH, " userinfo.gender      - {:d} \n",		player->userinfo.gender);
+	PrintFmt(PRINT_HIGH, " time                 - {:d} \n",		player->GameTime);
+	PrintFmt(PRINT_HIGH, " spectator            - {:d} \n",		player->spectator);
+	PrintFmt(PRINT_HIGH, " downloader           - {:d} \n",		player->playerstate == PST_DOWNLOAD);
 	PrintFmt(PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
@@ -834,7 +989,7 @@ END_COMMAND (playerinfo)
 BEGIN_COMMAND (kill)
 {
     if (sv_allowcheats || G_IsCoopGame())
-        MSG_WriteMarker(&net_buffer, clc_kill);
+        MSG_WriteSVC(messenger.ReliableBuf(), CLC_Kill());
     else
         PrintFmt("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
 }
@@ -892,13 +1047,9 @@ BEGIN_COMMAND (rcon)
 {
 	if (connected && argc > 1)
 	{
-		char  command[256];
+		const std::string_view commandString {args, std::min(size_t(256), strlen(args)) };
 
-		strncpy(command, args, ARRAY_LENGTH(command) - 1);
-		command[255] = '\0';
-
-		MSG_WriteMarker(&net_buffer, clc_rcon);
-		MSG_WriteString(&net_buffer, command);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Rcon(commandString));
 	}
 }
 END_COMMAND (rcon)
@@ -908,13 +1059,7 @@ BEGIN_COMMAND (rcon_password)
 {
 	if (connected && argc > 1)
 	{
-		bool login = true;
-
-		MSG_WriteMarker(&net_buffer, clc_rcon_password);
-		MSG_WriteByte(&net_buffer, login);
-
-		std::string password = argv[1];
-		MSG_WriteString(&net_buffer, MD5SUM(password + digest).c_str());
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_RconPassword(MD5SUM(std::string(argv[1]) + digest)));
 	}
 }
 END_COMMAND (rcon_password)
@@ -923,11 +1068,7 @@ BEGIN_COMMAND (rcon_logout)
 {
 	if (connected)
 	{
-		bool login = false;
-
-		MSG_WriteMarker(&net_buffer, clc_rcon_password);
-		MSG_WriteByte(&net_buffer, login);
-		MSG_WriteString(&net_buffer, "");
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_RconLogout());
 	}
 }
 END_COMMAND (rcon_logout)
@@ -944,9 +1085,9 @@ END_COMMAND (playerteam)
 
 BEGIN_COMMAND (changeteams)
 {
-	int iTeam = (int)consoleplayer().userinfo.team;
+	int iTeam = static_cast<int>(consoleplayer().userinfo.team);
 	iTeam = (iTeam + 1) % sv_teamsinplay.asInt();
-	cl_team.Set(GetTeamInfo((team_t)iTeam)->ColorStringUpper.c_str());
+	cl_team.Set(GetTeamInfo(static_cast<team_t>(iTeam))->ColorStringUpper);
 }
 END_COMMAND (changeteams)
 
@@ -964,17 +1105,14 @@ BEGIN_COMMAND (spectate)
 	// Only send message if currently not a spectator, or to remove from play queue
 	if (!spectator || consoleplayer().QueuePosition > 0)
 	{
-		MSG_WriteMarker(&net_buffer, clc_spectate);
-		MSG_WriteByte(&net_buffer, true);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_SpectateBegin());
 	}
 }
 END_COMMAND (spectate)
 
 BEGIN_COMMAND(ready)
 {
-	MSG_WriteMarker(&net_buffer, clc_netcmd);
-	MSG_WriteString(&net_buffer, "ready");
-	MSG_WriteByte(&net_buffer, 0);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd("ready"));
 }
 END_COMMAND(ready)
 
@@ -1001,17 +1139,7 @@ BEGIN_COMMAND(netcmd)
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_netcmd);
-	MSG_WriteString(&net_buffer, argv[1]);
-
-	// Pass additional arguments as separate strings.  Avoids argument
-	// parsing at the opposite end.
-	byte netargc = MIN<size_t>(argc - 2, 0xFF);
-	MSG_WriteByte(&net_buffer, netargc);
-	for (size_t i = 0; i < netargc; i++)
-	{
-		MSG_WriteString(&net_buffer, argv[i + 2]);
-	}
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(argv+1, argv + argc));
 }
 END_COMMAND(netcmd)
 
@@ -1023,8 +1151,7 @@ BEGIN_COMMAND (join)
 	//	return;
 	//}
 
-	MSG_WriteMarker(&net_buffer, clc_spectate);
-	MSG_WriteByte(&net_buffer, false);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_SpectateEnd());
 }
 END_COMMAND (join)
 
@@ -1034,7 +1161,7 @@ BEGIN_COMMAND (flagnext)
 	{
 		for (int i = 0; i < NUMTEAMS; i++)
 		{
-			byte id = GetTeamInfo((team_t)i)->FlagData.flagger;
+			byte id = GetTeamInfo(static_cast<team_t>(i))->FlagData.flagger;
 			if (id != 0 && displayplayer_id != id)
 			{
 				displayplayer_id = id;
@@ -1267,6 +1394,8 @@ BEGIN_COMMAND(netrew)
 {
 	if (netdemo.isPlaying())
 		netdemo.prevSnapshot();
+	else if (netdemo.isPaused());
+		netdemo.prevTic();
 }
 END_COMMAND(netrew)
 
@@ -1314,32 +1443,14 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 // CL_SendUserInfo
 //
-void CL_SendUserInfo(void)
+void CL_SendUserInfo(buf_t& netBuf)
 {
-	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
 
-	MSG_WriteMarker	(&net_buffer, clc_userinfo);
-	MSG_WriteString	(&net_buffer, coninfo->netname.c_str());
-	MSG_WriteByte	(&net_buffer, coninfo->team); // [Toke]
-	MSG_WriteLong	(&net_buffer, coninfo->gender);
+	MSG_WriteSVCBuffer(&netBuf, CLC_UserInfo(consoleplayer().userinfo));
 
-	for (int i = 3; i >= 0; i--)
-		MSG_WriteByte(&net_buffer, coninfo->color[i]);
-
-	// [SL] place holder for deprecated skins
-	MSG_WriteString	(&net_buffer, "");
-
-	MSG_WriteLong	(&net_buffer, coninfo->aimdist);
-	MSG_WriteBool	(&net_buffer, true);	// [SL] deprecated "cl_unlag" CVAR
-	MSG_WriteBool	(&net_buffer, coninfo->predict_weapons);
-	MSG_WriteByte	(&net_buffer, (char)coninfo->switchweapon);
-	for (const auto& pref : coninfo->weapon_prefs)
-	{
-		MSG_WriteByte (&net_buffer, pref);
-	}
-
-	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
+	// Refresh Player Translations AFTER sending the new status to the server.
+	CL_RebuildAllPlayerTranslations();
 }
 
 //
@@ -1408,7 +1519,10 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		}
 		else
 		{
-			displayplayer_id = consoleplayer_id; // get out of spynext
+			if (!netdemo.isPlaying())
+			{
+				displayplayer_id = consoleplayer_id; // get out of spynext
+			}
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
 
@@ -1418,7 +1532,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	}
 	else
 	{
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
 	}
 
 	P_ClearPlayerPowerups(player);	// Remove all current powerups
@@ -1446,9 +1560,9 @@ void CL_RequestConnectInfo(void)
 
 		PrintFmt(PRINT_HIGH, "Connecting to {}...\n", NET_AdrToString(serveraddr));
 
-		SZ_Clear(&net_buffer);
-		MSG_WriteLong(&net_buffer, LAUNCHER_CHALLENGE);
-		NET_SendPacket(net_buffer, serveraddr);
+		buf_t netBuf {MAX_UDP_PACKET};
+		MSG_WriteLong(&netBuf, LAUNCHER_CHALLENGE);
+		NET_SendPacket(netBuf, serveraddr);
 	}
 
 	connecttimeout--;
@@ -1729,7 +1843,7 @@ bool CL_PrepareConnect()
 		return false;
 	}
 
-	recv_full_update = false;
+	hasReceivedFullUpdate = false;
 
 	connecttimeout = 0;
 	CL_TryToConnect(server_token);
@@ -1744,32 +1858,49 @@ bool CL_Connect()
 {
 	players.clear();
 
-	memset(packetseq, -1, sizeof(packetseq));
-
-	// [AM] This needs to go out ASAP so the server can start sending us
-	//      messages.
-	MSG_WriteMarker(&net_buffer, clc_ack);
-	MSG_WriteLong(&net_buffer, 0);
-	NET_SendPacket(::net_buffer, ::serveraddr);
-	PrintFmt("Requesting server state...\n");
-
 	connected = true;
-    multiplayer = true;
-    network_game = true;
+	multiplayer = true;
+	network_game = true;
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
 
-	byte flags = MSG_ReadByte();
-	if (flags & SVF_UNUSED_MASK)
+	if (not simulated_connection)
 	{
-		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood.", flags);
+		sockaddr_in tcpAddress;
+		sockaddr_in udpAddress;
+
+		NetadrToSockadr(&serveraddr, &tcpAddress);
+
+		NET_GetSockaddr(udpAddress);
+
+		s_canary = std::make_unique<CanarySocketClient>();
+		s_canary->Connect(tcpAddress, udpAddress);
+	}
+
+	messenger = OdaMessenger();
+	messenger.SetMaxRate(20);               // FIXME: total guess.
+	messenger.SetPacketsPerRetransmit(10);  // To align with the size of the traditional cmd buffer.
+	messenger.SetRetransmitDelay(0);        // This causes an immediate retransmit to relieve the risk of
+	                                        // packet loss on commands from the client.  Reliability comes
+	                                        // at the cost of _potential_ additionald latency, and the
+	                                        // slight increase in packets/tic is worth latency mitigation...
+	// Rewind!
+	// CL_Connect is only called after we already know that the sequence is 0, so we can just let
+	// the messenger do its thing.
+	::net_message.SeekRead(0, buf_t::BT_START);
+
+	if (messenger.Receive(::net_message) == MessageResultEnum::ABORT)
+	{
 		CL_QuitNetGame(NQ_PROTO);
 	}
-	else if (flags & SVF_COMPRESSED)
+	else
 	{
-		CL_Decompress();
+		PrintFmt("Requesting server state...\n");
+		messenger.NextReceivedPacket(::net_message);
+		CL_ParseCommands();
 	}
-	CL_ParseCommands();
+
+	messenger.SendAll(gametic, ::serveraddr);
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
 		return false;
@@ -1806,7 +1937,7 @@ void CL_InitNetwork (void)
     // set up a socket and net_message buffer
     InitNetCommon();
 
-    SZ_Clear(&net_buffer);
+    messenger.Clear();
 
     size_t ParamIndex = Args.CheckParm ("-connect");
 
@@ -1847,29 +1978,34 @@ void CL_TryToConnect(uint32_t server_token)
 
 		PrintFmt("Joining server...\n");
 
-		SZ_Clear(&net_buffer);
-		MSG_WriteLong(&net_buffer, PROTO_CHALLENGE); // send challenge
-		MSG_WriteLong(&net_buffer, server_token); // confirm server token
-		MSG_WriteShort(&net_buffer, version); // send client version
-		MSG_WriteByte(&net_buffer, 0); // send type of connection (play/spectate/rcon/download)
+		messenger.Clear();
+
+		// The following is part of the connection sequence that doesn't play
+		// nicely with the rest of the messaging...  This is why we do direct
+		// unmanaged packet sends.
+		//
+		buf_t netBuf {MAX_UDP_PACKET};
+		MSG_WriteLong(&netBuf, PROTO_CHALLENGE); // send challenge
+		MSG_WriteLong(&netBuf, server_token); // confirm server token
+		MSG_WriteShort(&netBuf, version); // send client version
+		MSG_WriteByte(&netBuf, 0); // send type of connection (play/spectate/rcon/download)
 
 		// GhostlyDeath -- Send more version info
 		if (gameversiontosend)
-			MSG_WriteLong(&net_buffer, gameversiontosend);
+			MSG_WriteLong(&netBuf, gameversiontosend);
 		else
-			MSG_WriteLong(&net_buffer, GAMEVER);
+			MSG_WriteLong(&netBuf, GAMEVER);
 
-		CL_SendUserInfo(); // send userinfo
+		CL_SendUserInfo(netBuf); // send userinfo
 
 		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
 		// maximum rate that the server will ignore.
 		constexpr int rate = 0xFFFF;
-		MSG_WriteLong(&net_buffer, rate);
+		MSG_WriteLong(&netBuf, rate);
 
-        MSG_WriteString(&net_buffer, connectpasshash.c_str());
+		MSG_WriteString(&netBuf, connectpasshash.c_str());
 
-		NET_SendPacket(net_buffer, serveraddr);
-		SZ_Clear(&net_buffer);
+		NET_SendPacket(netBuf, serveraddr);
 	}
 
 	connecttimeout--;
@@ -1909,58 +2045,48 @@ void CL_ClearSectorSnapshots()
 	sector_snaps.clear();
 }
 
-// Decompress the packet sequence
-// [Russell] - reason this was failing is because of huffman routines, so just
-// use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
-// if 0'd sections
-void CL_Decompress()
-{
-	if(!MSG_BytesLeft())
-		return;
-
-	MSG_DecompressMinilzo();
-}
-
 /**
  * @brief Read the header of the packet and prepare the rest of it for reading.
  *
- * @return False if the packet was scuttled, otherwise true.
+ * @return False if the packet was set aside for reliability sequencing, otherwise true.
  */
-bool CL_ReadPacketHeader()
+MessageResultEnum CL_ReadPacketHeader()
 {
-	// Packet sequence number.
-	int sequence = MSG_ReadLong();
-	int oldsequence = ::packetseq[sequence & PACKET_SEQ_MASK];
-
-	if (sequence == oldsequence)
-	{
-		// Duplicate packet, burn it and return early.
-		SZ_Clear(&::net_message);
-		return false;
-	}
-
-	// Not a dupe, keep it in our array of known received packets.
-	::packetseq[sequence & PACKET_SEQ_MASK] = sequence;
-
-	// Send an ACK to the server.
-	MSG_WriteMarker(&net_buffer, clc_ack);
-	MSG_WriteLong(&net_buffer, sequence);
-
-	// Flag bits.
-	byte flags = MSG_ReadByte();
-	if (flags & SVF_UNUSED_MASK)
-	{
-		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood.", flags);
-		CL_QuitNetGame(NQ_PROTO);
-	}
-	else if (flags & SVF_COMPRESSED)
-	{
-		CL_Decompress();
-	}
-
-	netgraph.addPacketIn();
-	return true;
+	::netgraph.addTrafficIn(::net_message.size());
+	return ::messenger.Receive(::net_message);
 }
+
+// Returns true if all is good, false if we need to bail out of further processing.
+MessageResultEnum CL_AcceptNetMessage()
+{
+	if (::messenger.NextReceivedPacket(::net_message))
+	{
+		if (netdemo.isRecording())
+		{
+			netdemo.capture(&::net_message);
+		}
+
+		CL_ParseCommands();
+
+		if (gameaction == ga_fullconsole) // Host_EndGame was called
+		{
+			return MessageResultEnum::ABORT;
+		}
+		return MessageResultEnum::ACCEPT;
+	}
+	return MessageResultEnum::DEFER;
+}
+
+MessageResultEnum CL_ProcessCurrentReliableMessages()
+{
+	auto result = CL_AcceptNetMessage();
+	while (result == MessageResultEnum::ACCEPT)
+	{
+		result = CL_AcceptNetMessage();
+	}
+	return result;
+}
+
 
 void CL_Clear()
 {
@@ -1968,9 +2094,9 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
-static std::string SVCName(byte header)
+static std::string SVCName(msg_t header)
 {
-	std::string svc = ::svc_info[header].getName();
+	std::string svc = ::msg_info[header].getName();
 	if (svc.empty())
 	{
 		svc = fmt::sprintf("svc_%u", header);
@@ -1990,22 +2116,27 @@ void CL_ParseCommands()
 			break;
 		}
 
-		size_t byteStart = ::net_message.BytesRead();
-		parseError_e res = CL_ParseCommand();
-		if (res != PERR_OK || ::net_message.overflowed)
+		const size_t          byteStart = ::net_message.BytesRead();
+		const ParseResultType result    = CL_ParseCommand();
+
+		const parseError_e processResult = result.code == PERR_OK ?
+			CL_ProcessCommand(result) :
+			result.code;
+
+		if (processResult != PERR_OK or ::net_message.overflowed)
 		{
 			const Protos& protos = CL_GetTicProtos();
 
 			std::string err;
-			if (res == PERR_UNKNOWN_HEADER)
+			if (result.code == PERR_UNKNOWN_HEADER)
 			{
 				err = "Unknown message header";
 			}
-			else if (res == PERR_UNKNOWN_MESSAGE)
+			else if (result.code == PERR_UNKNOWN_MESSAGE)
 			{
 				err = "Message is not known to message decoder";
 			}
-			else if (res == PERR_BAD_DECODE)
+			else if (result.code == PERR_BAD_DECODE)
 			{
 				err = "Could not decode message";
 			}
@@ -2046,70 +2177,92 @@ void CL_ParseCommands()
 			PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
 			         ::net_message.BytesRead(), byteStart);
 		}
-
-		::netgraph.addTrafficIn(::net_message.BytesRead() - byteStart);
 	}
 }
 
 
 void CL_SaveCmd(void)
 {
-	NetCommand *netcmd = &localcmds[gametic % MAXSAVETICS];
-	netcmd->fromPlayer(consoleplayer());
-	netcmd->setTic(gametic);
-	netcmd->setWorldIndex(world_index);
+	odaproto::clc::PlayerInput& netcmd = localcmds[gametic % MAXSAVETICS];
+	CLC_PackPlayerInputMessageFromPlayer(netcmd, consoleplayer(), gametic, world_index);
 }
 
 extern int outrate;
+
+// TODO:  we have to stop doing this willy-nilly extern madness..
+extern vissprite_t* closestNonCredibleVisSprite;
 
 //
 // CL_SendCmd
 //
 void CL_SendCmd(void)
 {
-	player_t *p = &consoleplayer();
+	player_t& player = consoleplayer();
 
-	if (netdemo.isPlaying())	// we're not really connected to a server
+	if (netdemo.isPlaying())    // we're not really connected to a server
 		return;
 
-	if (!p->mo || gametic < 1 )
+	if (gametic < 1 )
 		return;
 
-	// GhostlyDeath -- If we are spectating, tell the server of our new position
-	if (p->spectator)
+	if (player.mo)
 	{
-		MSG_WriteMarker(&net_buffer, clc_spectate);
-		MSG_WriteByte(&net_buffer, 5);
-		MSG_WriteLong(&net_buffer, p->mo->x);
-		MSG_WriteLong(&net_buffer, p->mo->y);
-		MSG_WriteLong(&net_buffer, p->mo->z);
+		// GhostlyDeath -- If we are spectating, tell the server of our new position
+		if (player.spectator)
+		{
+			MSG_WriteSVC(messenger.NetBuf(), CLC_SpectateUpdate(player));
+		}
+
+		if (closestNonCredibleVisSprite)
+		{
+			closestNonCredibleVisSprite->mo->credibility.Challenge();
+
+			MSG_WriteSVC(messenger.ReliableBuf(), CLC_SendMobjUpdate(closestNonCredibleVisSprite->mo->netid));
+			closestNonCredibleVisSprite = nullptr;
+		}
+
+		odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
+
+		// Write current client-tic.  Server later sends this back to client
+		// when sending svc_updatelocalplayer so the client knows which ticcmds
+		// need to be used for client's positional prediction and item data reconciliation.
+		currentNetcmd.set_tic(gametic);
+		MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_move);
-
-	// Write current client-tic.  Server later sends this back to client
-	// when sending svc_updatelocalplayer so the client knows which ticcmds
-	// need to be used for client's positional prediction.
-    MSG_WriteLong(&net_buffer, gametic);
-
-	for (int i = 9; i >= 0; i--)
+	if (netdemo.isRecording())
 	{
-		NetCommand blank_netcmd;
-		NetCommand* netcmd;
-
-		if (gametic >= i)
-			netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
-		else
-			netcmd = &blank_netcmd;		// write a blank netcmd since not enough gametics have passed
-
-		netcmd->write(&net_buffer);
+		if (not messenger.RecordingIsEnabled())
+		{
+			messenger.EnableRecording();
+		}
+	}
+	else
+	{
+		if (messenger.RecordingIsEnabled())
+		{
+			messenger.DisableRecording();
+		}
 	}
 
-	int bytesWritten = NET_SendPacket(net_buffer, serveraddr);
-	netgraph.addTrafficOut(bytesWritten);
+	const MessageResultEnum sendResult = messenger.SendAll(gametic, serveraddr);
 
-	outrate += net_buffer.size();
-    SZ_Clear(&net_buffer);
+	if (sendResult == MessageResultEnum::ABORT)
+	{
+		CL_QuitNetGame(NQ_SERVER_DROP);
+	}
+	else
+	{
+		const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
+
+		const int currentSendSize    = messenger.GetLastSendSize();
+		const int totalSentByteCount = currentSendSize + retransmittedByteCount;
+
+		netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
+		netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
+		netgraph.addTrafficOut(totalSentByteCount);
+		outrate += totalSentByteCount;
+	}
 }
 
 //
@@ -2129,19 +2282,15 @@ void CL_PlayerTimes()
 //
 void CL_SendCheat(int cheats)
 {
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, 0);
-	MSG_WriteShort(&net_buffer, cheats);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Cheat(cheats));
 }
 
 //
-// CL_SendCheat
+// CL_SendGiveCheat
 //
 void CL_SendGiveCheat(const char* item)
 {
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, item);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatGive(item));
 }
 
 //
@@ -2149,9 +2298,7 @@ void CL_SendGiveCheat(const char* item)
 //
 void CL_SendSummonCheat(const char* summon)
 {
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, 2);
-	MSG_WriteString(&net_buffer, summon);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatSummon(summon));
 }
 
 //
@@ -2159,9 +2306,7 @@ void CL_SendSummonCheat(const char* summon)
 //
 void CL_SendSummonFriendCheat(const char* summon)
 {
-	MSG_WriteMarker(&net_buffer, clc_cheat);
-	MSG_WriteByte(&net_buffer, 3);
-	MSG_WriteString(&net_buffer, summon);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatSummonFriend(summon));
 }
 
 
@@ -2239,20 +2384,12 @@ void WeaponPickupMessage (const AActor *toucher, const weapontype_t &Weapon)
 
 void CL_RemoveCompletedMovingSectors()
 {
-	std::map<unsigned short, SectorSnapshotManager>::iterator itr;
-	itr = sector_snaps.begin();
-
-	while (itr != sector_snaps.end())
-	{
-		SectorSnapshotManager *mgr = &(itr->second);
-		int time = mgr->getMostRecentTime();
-
-		// are all the snapshots in the container invalid or too old?
-		if (world_index - time > NUM_SNAPSHOTS || mgr->empty())
-			sector_snaps.erase(itr++);
-		else
-			++itr;
-	}
+	// are all the snapshots in the container invalid or too old?
+	std::erase_if(sector_snaps, [](const auto& pair){
+		const auto& mgr = pair.second;
+		const int time = mgr.getMostRecentTime();
+		return (world_index - time > NUM_SNAPSHOTS) || mgr.empty();
+	});
 }
 
 CVAR_FUNC_IMPL (cl_interp)
@@ -2303,6 +2440,15 @@ void CL_SimulateSectors()
 	}
 }
 
+static v3fixed_t CurrentDeltaFromSnapshot(const player_t& player, const PlayerSnapshot& prevsnap)
+{
+	v3fixed_t offset;
+	M_SetVec3Fixed(&offset, prevsnap.getX() - player.mo->x,
+	                        prevsnap.getY() - player.mo->y,
+	                        prevsnap.getZ() - player.mo->z);
+	return offset;
+}
+
 //
 // CL_SimulatePlayers()
 //
@@ -2339,20 +2485,61 @@ void CL_SimulatePlayers()
 				player.mo->prevangle = player.mo->angle;
 				player.mo->prevpitch = player.mo->pitch;
 
-				PlayerSnapshot prevsnap = player.snapshots.getSnapshot(world_index - 1);
+				v3fixed_t offset = CurrentDeltaFromSnapshot(player,
+				                                            player.snapshots.getSnapshot(world_index - 1));
 
-				v3fixed_t offset;
-				M_SetVec3Fixed(&offset, prevsnap.getX() - player.mo->x,
-										prevsnap.getY() - player.mo->y,
-										prevsnap.getZ() - player.mo->z);
+				// The following block is there to "jailbreak" a remote player whose predicted mobj
+				// movement resulted in a substantial disagreement with the server for a relatively
+				// excessive period of time.  In practice, this has been seen in rare conditions where
+				// a remote player is sandwiched by one or more moving sectors where the combined
+				// predictions result in a wildly different outcome than the server - i.e. did the
+				// player escape from the sandwich, and in what direction?  It can be a matter of just
+				// a few tics where there's an opportunity to escape, but the observer's latency and
+				// predicted sector motion causes the simulated player to miss its chance.
+				//
+				// When this happens, the remote player mobj can become trapped in a location where
+				// the movement prediction logic blocks motion, but the server MovePlayer messages
+				// yield snapshots that specify positions that are excessively distant from the mobj.
+				//
+				// This can happen naturally and in a benign manner *very* briefly for things like
+				// instant-mover lift sectors, which resolve naturally via extrapolation handling,
+				// so we need to check to see if this excessive distance persists for multiple tics.
+				//
+				// When this condition holds for a relatively long amount of time, we set the current
+				// snapshot to discontinuous so that the remote player's mobj makes an instantaneous
+				// jump to the official position.  From that point forward, normal prediction resumes.
 
-				fixed_t dist = M_LengthVec3Fixed(&offset);
-				if (dist > 2 * FRACUNIT)
+				constexpr fixed_t EXCESSIVE_DISTANCE = 128 * FRACUNIT;
+				constexpr int     EXCESSIVE_TIME     = 10;
+
+				if (offset.MagnitudeIsGreaterThan(EXCESSIVE_DISTANCE))
+				{
+					int ticsAgo = 2;
+					while (ticsAgo <= EXCESSIVE_TIME)
+					{
+						const PlayerSnapshot historicalSnap = player.snapshots.getSnapshot(world_index - ticsAgo);
+
+							if (not (    historicalSnap.isValid()
+							     and historicalSnap.isContinuous()
+							     and CurrentDeltaFromSnapshot(player, historicalSnap).MagnitudeIsGreaterThan(EXCESSIVE_DISTANCE)))
+						{
+							break;
+						}
+						++ticsAgo;
+					}
+
+					if (ticsAgo > EXCESSIVE_TIME)
+					{
+						snap.setContinuous(false);
+					}
+				}
+
+				if (snap.isContinuous() and offset.MagnitudeIsGreaterThan(2 * FRACUNIT))
 				{
 					#ifdef _SNAPSHOT_DEBUG_
 					PrintFmt(PRINT_HIGH, "Snapshot {}, Correcting extrapolation error of {}\n",
-							 world_index, dist >> FRACBITS);
-					#endif	// _SNAPSHOT_DEBUG_
+					         world_index, dist >> FRACBITS);
+					#endif  // _SNAPSHOT_DEBUG_
 
 					static constexpr fixed_t correction_amount = FRACUNIT * 0.80f;
 					M_ScaleVec3Fixed(&offset, &offset, correction_amount);
@@ -2361,6 +2548,13 @@ void CL_SimulatePlayers()
 					snap.setX(snap.getX() - offset.x);
 					snap.setY(snap.getY() - offset.y);
 					snap.setZ(snap.getZ() - offset.z);
+
+					// We calculated a new position based on what we assumed is an extrapolation.
+					// We treat the new position as also extrapolated, so mark it as such.
+					// This ensures that it goes through a proper movement check before it's
+					// applied to the player, which prevents things like the player being "popped"
+					// through ceilings and floors on instant lifts.
+					snap.setExtrapolated(true);
 				}
 			}
 

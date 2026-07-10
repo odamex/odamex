@@ -40,8 +40,8 @@ void HU_Init();
 void STACK_ARGS HU_Shutdown();
 
 void HU_Ticker();
-bool HU_Responder (event_t* ev);
-void HU_Drawer (void);
+bool HU_Responder(const event_t& ev);
+void HU_Drawer();
 
 enum chatmode_t
 {
@@ -60,6 +60,6 @@ void OdamexEffect (int xa, int ya, int xb, int yb);
 
 // [RH] Draw deathmatch scores
 
-class player_s;
-void HU_DrawScores (player_s *me);
+class player_t;
+void HU_DrawScores (player_t *me);
 void HU_DisplayTimer (int x, int y, bool scale = true);

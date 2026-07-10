@@ -59,7 +59,7 @@ EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(co_zdoomammo)
 EXTERN_CVAR(cl_centerbobonfire)
 
-const char *weaponnames[] =
+const char *weaponnames[NUMWEAPONS] =
 {
 	"Fist",
 	"Pistol",
@@ -69,7 +69,8 @@ const char *weaponnames[] =
 	"Plasma Gun",
 	"BFG9000",
 	"Chainsaw",
-	"Super Shotgun"
+	"Super Shotgun",
+	"No weapon"
 };
 
 void A_WeaponReady(AActor* mo);
@@ -206,7 +207,7 @@ void P_SetPspriteRef(player_t& player, pspdef_t& psp, int32_t stnum)
 			if (!player.spectator && player.mo != NULL)
 			{
 				// [CMB] calculate psprnum here using the present psp and length of psprites
-				player.psprnum = &psp - player.psprites;
+				player.psprnum = &psp - &player.psprites[0];
 				psp.state->action(player.mo);
 			}
 
@@ -298,12 +299,8 @@ bool P_EnoughAmmo(const player_t& player, weapontype_t weapon, bool switching = 
 //
 void P_SwitchWeapon(player_t& player)
 {
-	const byte *prefs;
-
-	if ((multiplayer && !sv_allowpwo) || demoplayback)
-		prefs = UserInfo::weapon_prefs_default;
-	else
-		prefs = player.userinfo.weapon_prefs;
+	const auto& prefs = ((multiplayer and not sv_allowpwo) or demoplayback) ? UserInfo::weapon_prefs_default :
+	                                                                          player.userinfo.weapon_prefs;
 
 	// find which weapon has the highest preference among availible weapons
 	size_t best_weapon_num = 0;
@@ -336,7 +333,7 @@ void P_SwitchWeapon(player_t& player)
 //
 weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 {
-	if (player->readyweapon == NUMWEAPONS || player->pendingweapon == NUMWEAPONS)
+	if (player->readyweapon == wp_none || player->pendingweapon == wp_none)
 		return wp_nochange;
 
 	gitem_t *item;
@@ -372,7 +369,7 @@ weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 			continue;
 		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial && gamemode != commercial_bfg)
 			continue;
-		return (weapontype_t)itemlist[index].offset;
+		return static_cast<weapontype_t>(itemlist[index].offset);
 	}
 
 	return wp_nochange;
@@ -397,18 +394,18 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 
 	// Never switch - player has to manually change themselves
 	// Having no weapons because of ClearInventory/TakeInventory overrides this
-	if (player.userinfo.switchweapon == WPSW_NEVER && player.readyweapon != NUMWEAPONS && player.pendingweapon != NUMWEAPONS)
+	if (player.userinfo.switchweapon == WPSW_NEVER && player.readyweapon != wp_none && player.pendingweapon != wp_none)
 		return false;
 
 	const weapontype_t currentweapon = (player.pendingweapon == wp_nochange)
 			? player.readyweapon
 			: player.pendingweapon;
 
-	if (currentweapon == NUMWEAPONS)
+	if (currentweapon == wp_none)
 		return true;
 
 	// Use player's weapon preferences
-	const byte *prefs = player.userinfo.weapon_prefs;
+	const auto& prefs = player.userinfo.weapon_prefs;
 	if (prefs[weapon] > prefs[currentweapon])
 	{
 		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&
@@ -473,17 +470,8 @@ static void DecreaseAmmo(player_t& player, int amount = 1)
 void P_FireWeapon(player_t& player)
 {
 	// Prevent fire if you don't have any weapon, including fist. See DoClearInv - PCD_CLEARINVENTORY
-	if (!P_CheckAmmo(player) || player.readyweapon == NUMWEAPONS)
+	if (!P_CheckAmmo(player) || player.readyweapon == wp_none)
 		return;
-
-	// [tm512] Send the client the weapon they just fired so
-	// that they can fix any weapon desyncs that they get - apr 14 2012
-#if defined(SERVER_APP)
-	if (serverside && !clientside)
-	{
-		MSG_WriteSVC(&player.client.reliablebuf, SVC_FireWeapon(player));
-	}
-#endif
 
 	P_SetMobjState(player.mo, S_PLAY_ATK1);
 	statenum_t newstatenum = weaponinfo[player.readyweapon].atkstate;
@@ -614,8 +602,8 @@ void A_Lower(AActor* mo)
 		return;
 	}
 
-	// haleyjd 03/28/10: do not assume pendingweapon is valid - include NUMWEAPONS from ClearInventory
-	if (player.pendingweapon < NUMWEAPONS + 1)
+	// haleyjd 03/28/10: do not assume pendingweapon is valid
+	if (player.pendingweapon < NUMWEAPONS)
 		player.readyweapon = player.pendingweapon;
 
 	P_BringUpWeapon(player);
@@ -738,7 +726,7 @@ void A_Saw(AActor* mo)
 							 linetarget->x, linetarget->y);
 	if (angle - player.mo->angle > ANG180)
 	{
-		if (angle - player.mo->angle < (angle_t)(-ANG90/20))
+		if (angle - player.mo->angle < static_cast<angle_t>(-ANG90/20))
 			player.mo->angle = angle + ANG90/21;
 		else
 			player.mo->angle -= ANG90/20;
@@ -878,7 +866,7 @@ void A_WeaponJump(AActor* mo)
 		return;
 
 	if (P_Random(mo) < psp.state->args[1])
-		P_SetPspriteRef(player, psp, (statenum_t)psp.state->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(psp.state->args[0]));
 }
 
 
@@ -906,7 +894,7 @@ void A_CheckAmmo(AActor* mo)
 		amount = weaponinfo[player.readyweapon].ammopershot;
 
 	if (player.ammo[type] < amount)
-		P_SetPspriteRef(player, psp, (statenum_t)psp.state->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(psp.state->args[0]));
 }
 
 
@@ -963,7 +951,7 @@ void A_RefireTo(AActor* mo)
 	    (player.pendingweapon == wp_nochange && player.health))
 	{
 		player.refire++;
-		P_SetPspriteRef(player, psp, (statenum_t)psp.state->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(psp.state->args[0]));
 	}
 	else
 	{
@@ -988,7 +976,7 @@ void A_GunFlashTo(AActor* mo)
 	if (!psp.state->args[1])
 		P_SetMobjState(player.mo, S_PLAY_ATK2);
 
-	P_SetPsprite(player, ps_flash, (statenum_t)psp.state->args[0]);
+	P_SetPsprite(player, ps_flash, static_cast<statenum_t>(psp.state->args[0]));
 }
 
 //
@@ -1016,13 +1004,13 @@ void A_WeaponProjectile(AActor* mo)
 	spawnofs_xy = psp->state->args[3];
 	spawnofs_z = psp->state->args[4];
 
-	if (!CheckIfDehActorDefined((mobjtype_t)type))
+	if (!CheckIfDehActorDefined(static_cast<mobjtype_t>(type)))
 	{
 		I_Error("A_WeaponProjectile: Attempted to spawn undefined projectile type.");
 	}
 
 	if (serverside)
-		P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
+		P_SpawnMBF21PlayerMissile(player->mo, static_cast<mobjtype_t>(type), angle, pitch, spawnofs_xy, spawnofs_z);
 }
 
 //
@@ -1066,7 +1054,7 @@ void A_WeaponBulletAttack(AActor* mo)
 	{
 		int bangle = angle;
 		damage = (P_Random(mo) % damagemod + 1) * damagebase;
-		bangle = angle + (int)player->mo->angle + P_RandomHitscanAngle(hspread);
+		bangle = angle + static_cast<int>(player->mo->angle) + P_RandomHitscanAngle(hspread);
 		slope = bulletslope + P_RandomHitscanSlope(vspread);
 
 		P_LineAttack(player->mo, bangle, MISSILERANGE, slope, damage);
@@ -1202,7 +1190,7 @@ void A_FirePlasma(AActor* mo)
 
 	P_SetPsprite (player,
 				  ps_flash,
-				  (statenum_t)(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
+				  static_cast<statenum_t>(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
 
 	if (serverside)
 	{
@@ -1225,7 +1213,7 @@ void A_FireRailgun(AActor* mo)
 
 	P_SetPsprite (player,
 				  ps_flash,
-				  (statenum_t)(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
+				  static_cast<statenum_t>(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
 
 	if (sv_gametype > 0)
 		damage = 100;
@@ -1527,6 +1515,10 @@ void A_BFGSpray(AActor* mo)
 		P_AimLineAttack (mo->target, an, 16*64*FRACUNIT);
 
 		if (!linetarget)
+			continue;
+
+		// if the ball didnt clip, dont hit with tracer
+		if (not P_ShouldClipPlayer(mo, linetarget) || not P_ShouldClipFriendly(mo, linetarget))
 			continue;
 
 		new AActor (linetarget->x,

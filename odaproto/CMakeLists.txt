@@ -9,10 +9,14 @@ find_package(protobuf
   NO_DEFAULT_PATH)
 
 set(ODAPROTO_PROTOS
-    ${CMAKE_CURRENT_SOURCE_DIR}/common.proto
-    ${CMAKE_CURRENT_SOURCE_DIR}/server.proto
+    client.proto
+    common.proto
+    server.proto
+    )
     )
 set(ODAPROTO_SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/client.pb.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/client.pb.h
     ${CMAKE_CURRENT_BINARY_DIR}/common.pb.cc
     ${CMAKE_CURRENT_BINARY_DIR}/common.pb.h
     ${CMAKE_CURRENT_BINARY_DIR}/server.pb.cc

@@ -220,7 +220,7 @@ bool P_Thing_Spawn (int tid, int type, angle_t angle, bool fog)
 		else
 			z = spot->z;
 
-		AActor* mobj = new AActor(spot->x, spot->y, z, (mobjtype_t)kind);
+		AActor* mobj = new AActor(spot->x, spot->y, z, static_cast<mobjtype_t>(kind));
 
 		if (mobj)
 		{
@@ -269,7 +269,7 @@ bool P_Thing_Projectile (int tid, int type, angle_t angle,
 		if (spot->type != MT_MAPSPOT && spot->type != MT_MAPSPOTGRAVITY)
 			continue;
 
-		mobj = new AActor (spot->x, spot->y, spot->z, (mobjtype_t)kind);
+		mobj = new AActor (spot->x, spot->y, spot->z, static_cast<mobjtype_t>(kind));
 
 		if (mobj)
 		{
@@ -290,7 +290,7 @@ bool P_Thing_Projectile (int tid, int type, angle_t angle,
 			mobj->momz = vspeed;
 			mobj->flags |= MF_DROPPED;
 			if (mobj->flags & MF_MISSILE)
-				rtn = P_CheckMissileSpawn (mobj);
+				rtn = P_CheckMissileSpawn (mobj, spot);
 			else if (!P_TestMobjLocation (mobj))
 				mobj->Destroy ();
 		}
@@ -325,8 +325,8 @@ bool P_ActivateMobj (AActor *mobj, AActor *activator)
 			}
 
 			case MT_FOUNTAIN:
-				mobj->effects &= ~FX_FOUNTAINMASK;
-				mobj->effects |= mobj->args[0] << FX_FOUNTAINSHIFT;
+				mobj->SetEffects((mobj->effects & ~FX_FOUNTAINMASK) |
+				                 (mobj->args[0] << FX_FOUNTAINSHIFT));
 				break;
 
 			case MT_SECRETTRIGGER:
@@ -364,7 +364,7 @@ bool P_DeactivateMobj (AActor *mobj)
 		switch (mobj->type)
 		{
 			case MT_FOUNTAIN:
-				mobj->effects &= ~FX_FOUNTAINMASK;
+				mobj->SetEffects(mobj->effects & ~FX_FOUNTAINMASK);
 				break;
 			default:
 				break;

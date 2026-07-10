@@ -18,7 +18,6 @@
 #include "d_event.h"
 #include "d_items.h"
 #include "d_main.h"
-#include "d_net.h"
 #include "d_netinf.h"
 #include "d_player.h"
 #include "d_ticcmd.h"
@@ -28,10 +27,11 @@
 #include "info.h"
 #include "i_net.h"
 #include "i_system.h"
-#include "lzoconf.h"
 #include "lzodefs.h"
 #include "md5.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "m_alloc.h"
 #include "m_argv.h"
 #include "m_bbox.h"

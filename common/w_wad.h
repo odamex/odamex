@@ -42,50 +42,68 @@ extern bool missingCommercialIWAD;
 //
 // TYPES
 //
-typedef struct
+struct wadinfo_t
 {
 	// Should be "IWAD" or "PWAD".
-	unsigned	identification;
-	int			numlumps;
-	int			infotableofs;
+	unsigned    identification;
+	int         numlumps;
+	int         infotableofs;
 
-} wadinfo_t;
+	bool Read(std::istream& io_stream);
+};
 
-#pragma pack(push, 1)
 struct filelump_t
 {
-	int			filepos;
-	int			size;
-	char		name[8]; // denis - todo - string
+	constexpr static size_t SIZE_IN_BYTES = 16;
 
+	int     filepos;
+	int     size;
+	char    name[8]; // denis - todo - string
+
+	bool Read(std::istream& io_stream);
 };
-#pragma pack(pop)
-
-//
-// WADFILE I/O related stuff.
-//
-typedef struct lumpinfo_s
-{
-	OLumpName	name;
-	FILE		*handle; // TODO: uqFile
-	int			position;
-	int			size;
-
-	// [RH] Hashing stuff
-	int			next;
-	int			index;
-
-	int			namespc;
-} lumpinfo_t;
 
 // [RH] Namespaces from BOOM.
-typedef enum {
+enum namespace_t
+{
 	ns_global = 0,
 	ns_textures,
 	ns_sprites,
 	ns_flats,
 	ns_colormaps,
-} namespace_t;
+};
+
+//
+// WADFILE I/O related stuff.
+//
+struct lumpinfo_t
+{
+	OLumpName                     name      {};
+	std::shared_ptr<std::istream> handle    {};
+	int                           position  { 0 };
+	int                           size      { 0 };
+
+	// [RH] Hashing stuff
+	int next    { -1 };
+	int index   { -1 };
+
+	namespace_t namespc { ns_global };
+
+	lumpinfo_t() = default;     // Needed because the following ctors implicitly delete the default ctor.
+
+	explicit lumpinfo_t(const OLumpName& i_name) :
+		name(i_name)
+	{
+	}
+
+	lumpinfo_t(const std::shared_ptr<std::istream>& i_stream, const filelump_t& i_fileinfo) :
+		name    (i_fileinfo.name),
+		handle  (i_stream),
+		position(i_fileinfo.filepos),
+		size    (i_fileinfo.size)
+	{
+	}
+};
 
 struct lumpHandle_t
 {
@@ -109,8 +127,8 @@ struct lumpHandle_t
 };
 
 extern	void**		lumpcache;
-extern	lumpinfo_t*	lumpinfo;
-extern	size_t	numlumps;
+extern std::vector<lumpinfo_t> lumpinfo;
+inline size_t W_NumLumps() { return lumpinfo.size(); }
 
 OCRC32Sum W_CRC32(const std::string& filename);
 OMD5Hash W_MD5(const std::string& filename);
@@ -119,27 +137,55 @@ void W_InitMultipleFiles(const OResFiles& filenames);
 lumpHandle_t W_LumpToHandle(const unsigned lump);
 int W_HandleToLump(const lumpHandle_t handle);
 
-int W_CheckNumForName(const char *name, int ns = ns_global);
-inline int W_CheckNumForName(const OLumpName& name, int ns = ns_global) { return W_CheckNumForName(name.c_str(), ns); };
-int W_GetNumForName(const char *name, int ns = ns_global);
-inline int W_GetNumForName(const OLumpName& name, int ns = ns_global) { return W_GetNumForName(name.c_str(), ns); };
+int W_CheckNumForName(const char *name, namespace_t ns = ns_global);
+inline int W_CheckNumForName(const OLumpName& name, namespace_t ns = ns_global) { return W_CheckNumForName(name.c_str(), ns); };
+int W_GetNumForName(const char *name, namespace_t ns = ns_global);
+inline int W_GetNumForName(const OLumpName& name, namespace_t ns = ns_global) { return W_GetNumForName(name.c_str(), ns); };
 
 OLumpName W_LumpName(unsigned lump);
 unsigned	W_LumpLength (unsigned lump);
 void		W_ReadLump (unsigned lump, void *dest);
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
 
+// TODO: add similar funcs that return string_views // how to deal with z_free then though?
 void* W_CacheLumpNum(unsigned lump, const zoneTag_e tag);
-void* W_CacheLumpName(const char* name, const zoneTag_e tag);
-void* W_CacheLumpName(const OLumpName& name, const zoneTag_e tag);
+
+//
+// W_CacheLumpNum
+//
+template <typename T>
+requires std::is_object_v<T>
+T* W_CacheLumpNum(unsigned lump, const zoneTag_e tag)
+{
+	return static_cast<T*>(W_CacheLumpNum(lump, tag));
+}
+
+//
+// W_CacheLumpName
+//
+template <typename T = void>
+requires (std::is_object_v<T> || std::is_void_v<T>)
+T* W_CacheLumpName(const char* name, const zoneTag_e tag)
+{
+	return W_CacheLumpNum<T>(W_GetNumForName(name), tag);
+}
+
+//
+// W_CacheLumpName
+//
+template <typename T = void>
+requires (std::is_object_v<T> || std::is_void_v<T>)
+T* W_CacheLumpName(const OLumpName& name, const zoneTag_e tag)
+{
+	return W_CacheLumpNum<T>(W_GetNumForName(name), tag);
+}
+
 patch_t* W_CachePatch(unsigned lump, const zoneTag_e tag = PU_CACHE);
 patch_t* W_CachePatch(const char* name, const zoneTag_e tag = PU_CACHE);
 patch_t* W_CachePatch(const OLumpName& name, const zoneTag_e tag = PU_CACHE);
 lumpHandle_t W_CachePatchHandle(const int lumpNum, const zoneTag_e tag = PU_CACHE);
-lumpHandle_t W_CachePatchHandle(const char* name, const zoneTag_e tag = PU_CACHE,
-                                int ns = ns_global);
-lumpHandle_t W_CachePatchHandle(const OLumpName&, const zoneTag_e tag = PU_CACHE,
-                                int ns = ns_global);
+lumpHandle_t W_CachePatchHandle(const char* name, const zoneTag_e tag = PU_CACHE, namespace_t ns = ns_global);
+lumpHandle_t W_CachePatchHandle(const OLumpName&, const zoneTag_e tag = PU_CACHE, namespace_t ns = ns_global);
 patch_t* W_ResolvePatchHandle(const lumpHandle_t lump);
 
 void	W_Profile (const char *fname);
@@ -152,7 +198,7 @@ bool	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's n
 //unsigned W_LumpNameHash (const char *name);				// [RH] Create hash key from an 8-char name
 
 // [RH] Combine multiple marked ranges of lumps into one.
-void W_MergeLumps (const OLumpName& start, const OLumpName& end, int);
+void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t);
 
 // [RH] Copy an 8-char string and uppercase it.
 void uppercopy (char *to, const char *from);

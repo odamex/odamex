@@ -36,12 +36,82 @@ std::string M_FindUserFileName(const std::string& file, const char* ext);
 void M_FixPathSep(std::string& path);
 std::string M_GetCWD();
 
-int64_t M_FileLength (FILE *f);
+template <typename ElementType>
+bool M_ReadLE(std::istream& io_stream, ElementType& o_data)
+{
+	if (io_stream.good())
+	{
+		io_stream.read(reinterpret_cast<char*>(&o_data), sizeof(o_data));
+		if (io_stream.gcount() == sizeof(o_data))
+		{
+			using namespace nonstd::bit;
+			o_data = to_native_endian(o_data,
+			                          little_endian_type());    // from
+			return true;
+		}
+        else
+        {
+            // We enter this condition if everything was good(), but we tried to read past the
+            // end-of-file.  In that case, both the eofbit and the failbit are set, either of
+            // which invalidate the .good() check.
+            //
+            // We want to be able to seek back from the EOF, and the seekg function clears
+            // the eofbit but not the failbit, preventing further reads from working.  Therefore
+            // we want to clear just the failbit here.  We're still safeguarded from past-EOF
+            // reads by the eofbit, so we're okay to do this.
+            //
+            // The end result is that the stream is left in the state as though the last read
+            // was successful (even though it really wasn't) and left us right at the EOF.
+            io_stream.clear(std::ios_base::eofbit);
+        }
+	}
+	return false;
+}
+
+template <typename ElementType, size_t N>
+bool M_ReadLE(std::istream& io_stream, ElementType (&o_dataArray)[N])
+{
+	for (size_t i = 0; i < N; ++i)
+	{
+		if (not M_ReadLE(io_stream, o_dataArray[i]))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+template <typename ElementType>
+bool M_WriteLE(std::ostream& io_stream, const ElementType& i_data)
+{
+	if (io_stream.good())
+	{
+		ElementType temp = nonstd::bit::as_little_endian(i_data);
+		io_stream.write(reinterpret_cast<char*>(&temp), sizeof(temp));
+		return true;
+	}
+	return false;
+}
+
+template <typename ElementType, size_t N>
+bool M_WriteLE(std::ostream& io_stream, const ElementType (&i_dataArray)[N])
+{
+	for (size_t i = 0; i < N; ++i)
+	{
+		if (not M_WriteLE(io_stream, i_dataArray[i]))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+uintmax_t M_FileLength (std::istream& f);
 bool M_FileExists(const std::string& filename);
 bool M_FileExistsExt(const std::string& filename, const char* ext);
 
 bool M_WriteFile(std::string filename, void *source, size_t length);
-size_t M_ReadFile(std::string filename, byte **buffer);
+size_t M_ReadFile(const std::string& filename, byte **buffer);
 
 bool M_AppendExtension (std::string &filename, std::string extension, bool if_needed = true);
 void M_ExtractFilePath(const std::string& filename, std::string &dest);

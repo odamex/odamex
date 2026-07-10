@@ -108,8 +108,8 @@ bool OTransferInfo::hydrate(CURL* curl)
 	if (curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resCode) != CURLE_OK)
 		return false;
 
-	double speed;
-	if (curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD, &speed) != CURLE_OK)
+	curl_off_t speed;
+	if (curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD_T, &speed) != CURLE_OK)
 		return false;
 
 	const char* url;
@@ -255,7 +255,12 @@ bool OTransferCheck::tick()
 	}
 
 	// Make sure we didn't find an HTML file - those are only okay on redirects.
-	if (stricmp(info.contentType.c_str(), "text/html") == 0)
+	std::string_view contentType = info.contentType;
+	const auto semiPos = contentType.find(';');
+	if (semiPos != std::string_view::npos)
+		contentType = contentType.substr(0, semiPos);
+	contentType = TrimStringView(contentType);
+	if (iequals(contentType, "text/html"))
 	{
 		m_errorProc("Only found an HTML file");
 		return false;
@@ -272,8 +277,8 @@ bool OTransferCheck::tick()
 //
 // https://curl.haxx.se/libcurl/c/CURLOPT_PROGRESSFUNCTION.html
 //
-int OTransfer::curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
-                            double ulnow)
+int OTransfer::curlProgress(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
+                            curl_off_t ulnow)
 {
 	static_cast<OTransfer*>(clientp)->m_progress.dltotal = dltotal;
 	static_cast<OTransfer*>(clientp)->m_progress.dlnow = dlnow;
@@ -333,7 +338,7 @@ bool OTransfer::start()
 	curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(m_curl, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(m_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
-	curl_easy_setopt(m_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
+	curl_easy_setopt(m_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlProgress);
 	curl_easy_setopt(m_curl, CURLOPT_PROGRESSDATA, this);
 	curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, curlHeader);
 	curl_easy_setopt(m_curl, CURLOPT_USERAGENT, ::ODAMEX_USERAGENT);

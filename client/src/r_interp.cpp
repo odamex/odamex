@@ -176,10 +176,7 @@ void OInterpolation::ticGameInterpolation()
 		}
 
 		// Handle the scrolling interpolation
-		TThinkerIterator<DScroller> iterator;
-		DScroller* scroller;
-
-		while ((scroller = iterator.Next()))
+		for (DScroller* scroller : DScroller::GetScrollers())
 		{
 			DScroller::EScrollType type = scroller->GetType();
 			int affectee = scroller->GetAffectee();
@@ -478,7 +475,7 @@ void OInterpolation::endGameInterpolation()
 void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
                                          bool chasecam)
 {
-	if (gamestate == GS_LEVEL && camera)
+	if (gamestate == GS_LEVEL && camera && camera->subsector)
 	{
 		fixed_t x = camera->x;
 		fixed_t y = camera->y;
