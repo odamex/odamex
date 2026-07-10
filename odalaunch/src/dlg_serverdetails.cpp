@@ -826,6 +826,56 @@ void dlgServerDetails::PopulateServerVars()
 	m_PnlServerVars->Layout();
 }
 
+// Builds the min/max/default cell for a documented cvar: up to three
+// underlined values (separated by " / "), each with its own "X value for
+// {cvar}" tooltip and a help cursor. Returns an empty sizer when the doc
+// carries none of the three.
+static wxSizer* BuildCvarBoundsCell(wxWindow* Parent, const std::string& Name,
+                                    const CvarDoc_t& Doc)
+{
+	static const wxCursor HelpCursor(wxCURSOR_QUESTION_ARROW);
+
+	wxFont DocFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+	DocFont.SetUnderlined(true);
+
+	const wxString CvarName = stdstr_towxstr(Name);
+	wxBoxSizer* Cell = new wxBoxSizer(wxHORIZONTAL);
+
+	auto AddPiece = [&](const wxString& Text, const wxString& Tip)
+	{
+		if(Cell->GetItemCount() > 0)
+			Cell->Add(new wxStaticText(Parent, wxID_ANY, " / "), 0,
+			          wxALIGN_CENTER_VERTICAL);
+
+		wxStaticText* Piece = new wxStaticText(Parent, wxID_ANY, Text);
+		Piece->SetFont(DocFont);
+		Piece->SetToolTip(Tip);
+		Piece->SetCursor(HelpCursor);
+
+		Cell->Add(Piece, 0, wxALIGN_CENTER_VERTICAL);
+	};
+
+	if(Doc.HasMin)
+		AddPiece(wxString::Format("%g", Doc.Min),
+		         wxString::Format("Minimum value for %s", CvarName));
+	if(Doc.HasMax)
+		AddPiece(wxString::Format("%g", Doc.Max),
+		         wxString::Format("Maximum value for %s", CvarName));
+	if(!Doc.DefaultValue.empty())
+		AddPiece(stdstr_towxstr(Doc.DefaultValue),
+		         wxString::Format("Default value for %s", CvarName));
+
+	if(Cell->GetItemCount() > 0)
+	{
+		Cell->Insert(0, new wxStaticText(Parent, wxID_ANY, "("), 0,
+		             wxALIGN_CENTER_VERTICAL);
+		Cell->Add(new wxStaticText(Parent, wxID_ANY, ")"), 0,
+		          wxALIGN_CENTER_VERTICAL);
+	}
+
+	return Cell;
+}
+
 void dlgServerDetails::BuildPaneContent(wxCollapsiblePane* Pane)
 {
 	if(!Pane || m_BuiltPanes.count(Pane))
@@ -848,7 +898,7 @@ void dlgServerDetails::BuildPaneContent(wxCollapsiblePane* Pane)
 	CvarDocDb& Docs = GetCvarDb();
 	wxWindow* PaneWin = Pane->GetPane();
 
-	wxFlexGridSizer* Grid = new wxFlexGridSizer(0, 2, 2, 12);
+	wxFlexGridSizer* Grid = new wxFlexGridSizer(0, 3, 2, 12);
 	const std::vector<std::pair<std::string, wxString> >& Rows = it->second;
 
 	for(size_t i = 0; i < Rows.size(); ++i)
@@ -872,6 +922,15 @@ void dlgServerDetails::BuildPaneContent(wxCollapsiblePane* Pane)
 
 		Grid->Add(NameCtrl, 0, wxALIGN_CENTER_VERTICAL);
 		Grid->Add(ValueCtrl, 0, wxALIGN_CENTER_VERTICAL);
+
+		// An empty value means a boolean flag (no value/bounds shown).
+		// We also don't want to display if it's a string, either.
+		const bool IsBool = Rows[i].second.IsEmpty();
+		if(Doc && !IsBool && Doc->Type != "string")
+			Grid->Add(BuildCvarBoundsCell(PaneWin, Name, *Doc), 0,
+			          wxALIGN_CENTER_VERTICAL);
+		else
+			Grid->AddSpacer(0);
 	}
 
 	wxBoxSizer* PaneSizer = new wxBoxSizer(wxVERTICAL);
