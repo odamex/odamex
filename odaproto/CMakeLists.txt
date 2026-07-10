@@ -13,7 +13,6 @@ set(ODAPROTO_PROTOS
     common.proto
     server.proto
     )
-    )
 set(ODAPROTO_SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/client.pb.cc
     ${CMAKE_CURRENT_BINARY_DIR}/client.pb.h

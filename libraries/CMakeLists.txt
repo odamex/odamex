@@ -179,6 +179,7 @@ if (BUILD_CLIENT OR BUILD_SERVER)
             set(UPNPC_BUILD_SHARED  OFF)
             set(UPNPC_BUILD_TESTS   OFF)
             set(UPNPC_BUILD_SAMPLE  OFF)
+            set(UPNPC_NO_INSTALL    ON)
         endif()
     endif()
 
@@ -351,7 +352,7 @@ if (BUILD_LAUNCHER)
         FetchContent_Declare(
             wxWidgets
             GIT_REPOSITORY  https://github.com/wxWidgets/wxWidgets.git
-            GIT_TAG         v3.2.10
+            GIT_TAG         v3.3.2
             OVERRIDE_FIND_PACKAGE
             )
         list(APPEND FETCH_CONTENT_PACKAGES wxWidgets)
@@ -370,8 +371,7 @@ endif()
 # Now do some patching to smooth-over any disagreements between the
 # target names as established by building the libs vs. finding them.
 
-if (TARGET libminiupnpc-static AND NOT miniupnpc::miniupnpc)
-    add_library(miniupnpc::miniupnpc ALIAS libminiupnpc-static)
+if (TARGET libminiupnpc-static)
     target_compile_definitions(libminiupnpc-static INTERFACE INTERNAL_MINIUPNP_STATICLIB)
 endif()
 
