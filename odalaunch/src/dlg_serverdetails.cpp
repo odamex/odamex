@@ -342,6 +342,16 @@ void dlgServerDetails::SetOptionalRow(wxFlexGridSizer* Grid,
 	Grid->Show(Value, Show);
 }
 
+void dlgServerDetails::SetColouredRow(wxFlexGridSizer* Grid, wxStaticText* Label,
+                                      wxStaticText* Value, const wxString& Text,
+                                      bool IsPositive)
+{
+	SetOptionalRow(Grid, Label, Value, Text);
+
+	if(!Text.IsEmpty())
+		OdaApplyDeltaColour(Value, IsPositive);
+}
+
 wxStaticText* dlgServerDetails::AddDeltaRow(wxFlexGridSizer* Grid,
                                             const wxString& Label,
                                             wxStaticText** LabelOut,
@@ -632,30 +642,30 @@ void dlgServerDetails::PopulateGameplay()
 	SetOptionalRow(m_GpGrid, m_GpFriendlyFireLabel, m_GpFriendlyFire,
 	               OdaGetFriendlyFireString(s));
 
-	SetOptionalRow(m_GpGrid, m_GpPlayerDmgLabel, m_GpPlayerDmg,
-	               OdaGetDamagePercentString(s, "sv_weapondamage"));
+	const OdaModifier_t PlayerDmg =
+	    OdaGetDamagePercent(s, "sv_weapondamage");
+	SetColouredRow(m_GpGrid, m_GpPlayerDmgLabel, m_GpPlayerDmg, PlayerDmg.Value,
+	               PlayerDmg.IsPositive);
 
-	wxString MonsterDmg;
+	OdaModifier_t MonsterDmg;
 	if(s.Info.GameType == GT_Horde || s.Info.GameType == GT_Cooperative)
-		MonsterDmg = OdaGetDamagePercentString(s, "sv_monsterdamage");
-	SetOptionalRow(m_GpGrid, m_GpMonsterDmgLabel, m_GpMonsterDmg, MonsterDmg);
+		MonsterDmg = OdaGetDamagePercent(s, "sv_monsterdamage");
+	SetColouredRow(m_GpGrid, m_GpMonsterDmgLabel, m_GpMonsterDmg,
+	               MonsterDmg.Value, MonsterDmg.IsPositive);
 
-	SetOptionalRow(m_GpGrid, m_GpMonsterHealthLabel, m_GpMonsterHealth,
-	               OdaGetDamagePercentString(s, "sv_monstershealth"));
+	const OdaModifier_t MonsterHealth =
+	    OdaGetDamagePercent(s, "sv_monstershealth");
+	SetColouredRow(m_GpGrid, m_GpMonsterHealthLabel, m_GpMonsterHealth,
+	               MonsterHealth.Value, MonsterHealth.IsPositive);
 
-	wxString GravityDelta;
-	bool GravityPositive = false;
-	const wxString Gravity =
-	    OdaGetGravityString(s, GravityDelta, GravityPositive);
+	const OdaModifier_t Gravity = OdaGetGravity(s);
 	SetDeltaRow(m_GpGrid, m_GpGravityLabel, m_GpGravity, m_GpGravityDelta,
-	            Gravity, GravityDelta, GravityPositive);
+	            Gravity.Value, Gravity.Delta, Gravity.IsPositive);
 
-	wxString AirDelta;
-	bool AirControlPositive = false;
-	const wxString AirControl =
-	    OdaGetAirControlString(s, AirDelta, AirControlPositive);
+	const OdaModifier_t AirControl = OdaGetAirControl(s);
 	SetDeltaRow(m_GpGrid, m_GpAirControlLabel, m_GpAirControl,
-	            m_GpAirControlDelta, AirControl, AirDelta, AirControlPositive);
+	            m_GpAirControlDelta, AirControl.Value, AirControl.Delta,
+	            AirControl.IsPositive);
 
 	wxString Waves;
 	if(s.Info.GameType == GT_Horde)

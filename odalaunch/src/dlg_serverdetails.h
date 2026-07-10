@@ -97,6 +97,12 @@ private:
 	void SetOptionalRow(wxFlexGridSizer* Grid, wxStaticText* Label,
 	                    wxStaticText* Value, const wxString& Text);
 
+	// As SetOptionalRow, but colours the whole value green when IsPositive, red
+	// otherwise (for above/below-default percentage values).
+	void SetColouredRow(wxFlexGridSizer* Grid, wxStaticText* Label,
+	                    wxStaticText* Value, const wxString& Text,
+	                    bool IsPositive);
+
 	// Like AddRow but the value cell also holds a trailing delta control (for a
 	// coloured "(+/-N%)" suffix). Returns the value widget; the label and delta
 	// widgets are written to *LabelOut / *DeltaOut.

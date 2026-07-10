@@ -220,16 +220,21 @@ wxString OdaGetFriendlyFireString(const Server& s)
 	return wxEmptyString;
 }
 
-wxString OdaGetDamagePercentString(const Server& s, const std::string& Cvar)
+OdaModifier_t OdaGetDamagePercent(const Server& s, const std::string& Cvar)
 {
+	OdaModifier_t DmgPercent;
+
 	wxString Value;
 	double Factor = 1.0;
 
 	if(OdaGetCvarValue(s, Cvar, Value) && Value.ToDouble(&Factor) &&
 	   Factor != 1.0)
-		return wxString::Format("%g%%", Factor * 100.0);
+	{
+		DmgPercent.Value = wxString::Format("%g%%", Factor * 100.0);
+		DmgPercent.IsPositive = (Factor > 1.0);
+	}
 
-	return wxEmptyString;
+	return DmgPercent;
 }
 
 wxString OdaGetRoundsString(const Server& s)
@@ -304,62 +309,66 @@ wxString OdaGetScoreString(const Server& s)
 	return wxEmptyString;
 }
 
-wxString OdaGetGravityString(const Server& s, wxString& DeltaOut,
-                             bool& IsPositive)
+OdaModifier_t OdaGetGravity(const Server& s)
 {
 	constexpr long Default = 800;
 
-	DeltaOut.Clear();
-	IsPositive = false;
+	OdaModifier_t Gravity;
 
 	wxString Value;
 
 	if(!OdaGetCvarValue(s, "sv_gravity", Value))
-		return wxEmptyString;
+		return Gravity;
 
-	long Gravity = 0;
-	if(!Value.ToLong(&Gravity))
-		return Value;
+	long GravityValue = 0;
+	if (!Value.ToLong(&GravityValue))
+	{
+		Gravity.Value = Value;
+		return Gravity;
+	}
 
 	// The default isn't worth showing.
-	if(Gravity == Default)
-		return wxEmptyString;
+	if(GravityValue == Default)
+		return Gravity;
 
-	const double Diff = (double)(Gravity - Default) / (double)Default;
+	const double Diff = (double)(GravityValue - Default) / (double)Default;
 
-	DeltaOut = wxString::Format("(%+.4g%%)", Diff);
-	IsPositive = (Diff > 0.0);
+	Gravity.Value = Value;
+	Gravity.Delta = wxString::Format("(%+.4g%%)", Diff);
+	Gravity.IsPositive = (Diff > 0.0);
 
-	return Value;
+	return Gravity;
 }
 
-wxString OdaGetAirControlString(const Server& s, wxString& DeltaOut,
-                                bool& IsPositive)
+OdaModifier_t OdaGetAirControl(const Server& s)
 {
 	constexpr double Default = 0.00390625; // 1/256
 
-	DeltaOut.Clear();
-	IsPositive = false;
+	OdaModifier_t AirControl;
 
 	wxString Value;
 
 	if(!OdaGetCvarValue(s, "sv_aircontrol", Value))
-		return wxEmptyString;
+		return AirControl;
 
-	double Air = 0.0;
-	if(!Value.ToDouble(&Air))
-		return Value;
+	double AirControlValue = 0.0;
+	if(!Value.ToDouble(&AirControlValue))
+	{
+		AirControl.Value = Value;
+		return AirControl;
+	}
 
 	// The default isn't worth showing.
-	if(Air == Default)
-		return wxEmptyString;
+	if (AirControlValue == Default)
+		return AirControl;
 
-	const double Diff = (Air - Default) / Default;
+	const double Diff = (AirControlValue - Default) / Default;
 
-	DeltaOut = wxString::Format("(%+.4g%%)", Diff);
-	IsPositive = (Diff > 0.0);
+	AirControl.Value = Value;
+	AirControl.Delta = wxString::Format("(%+.4g%%)", Diff);
+	AirControl.IsPositive = (Diff > 0.0);
 
-	return Value;
+	return AirControl;
 }
 
 void OdaApplyDeltaColour(wxStaticText* Ctrl, bool IsPositive)

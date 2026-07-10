@@ -82,6 +82,11 @@ private:
 	bool SetOptionalItem(wxSizer* Item, wxStaticText* Field,
 	                     const wxString& Value);
 
+	// Same as SetOptionalItem, but colors the value green when IsPositive, red
+	// otherwise (for above/below-default percentage values).
+	void SetColouredItem(wxSizer* Item, wxStaticText* Field,
+	                     const wxString& Value, bool IsPositive);
+
 	// Header items flow horizontally (wrapping as needed) to use the popover's
 	// width rather than stacking in a tall column.
 	wxSizer* m_HeaderSizer;

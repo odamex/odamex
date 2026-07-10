@@ -316,34 +316,33 @@ void PlayerListPopover::Populate(const Server& s)
 	SetOptionalItem(m_FriendlyFireItem, m_FriendlyFire,
 	                OdaGetFriendlyFireString(s));
 
-	SetOptionalItem(m_PlayerDmgItem, m_PlayerDmg,
-	                OdaGetDamagePercentString(s, "sv_weapondamage"));
+	const OdaModifier_t PlayerDmg =
+	    OdaGetDamagePercent(s, "sv_weapondamage");
+	SetColouredItem(m_PlayerDmgItem, m_PlayerDmg, PlayerDmg.Value,
+	                PlayerDmg.IsPositive);
 
-	wxString MonsterDmg;
+	OdaModifier_t MonsterDmg;
 
 	if(s.Info.GameType == GT_Horde || s.Info.GameType == GT_Cooperative)
-		MonsterDmg = OdaGetDamagePercentString(s, "sv_monsterdamage");
+		MonsterDmg = OdaGetDamagePercent(s, "sv_monsterdamage");
 
-	SetOptionalItem(m_MonsterDmgItem, m_MonsterDmg, MonsterDmg);
+	SetColouredItem(m_MonsterDmgItem, m_MonsterDmg, MonsterDmg.Value,
+	                MonsterDmg.IsPositive);
 
-	SetOptionalItem(m_MonsterHealthItem, m_MonsterHealth,
-	                OdaGetDamagePercentString(s, "sv_monstershealth"));
+	const OdaModifier_t MonsterHealth =
+	    OdaGetDamagePercent(s, "sv_monstershealth");
+	SetColouredItem(m_MonsterHealthItem, m_MonsterHealth, MonsterHealth.Value,
+	                MonsterHealth.IsPositive);
 
-	wxString GravityDelta;
-	bool GravityPositive = false;
-	const wxString Gravity =
-	    OdaGetGravityString(s, GravityDelta, GravityPositive);
-	m_GravityDelta->SetLabel(GravityDelta);
-	OdaApplyDeltaColour(m_GravityDelta, GravityPositive);
-	SetOptionalItem(m_GravityItem, m_Gravity, Gravity);
+	const OdaModifier_t Gravity = OdaGetGravity(s);
+	m_GravityDelta->SetLabel(Gravity.Delta);
+	OdaApplyDeltaColour(m_GravityDelta, Gravity.IsPositive);
+	SetOptionalItem(m_GravityItem, m_Gravity, Gravity.Value);
 
-	wxString AirDelta;
-	bool AirControlPositive = false;
-	const wxString AirControl =
-	    OdaGetAirControlString(s, AirDelta, AirControlPositive);
-	m_AirControlDelta->SetLabel(AirDelta);
-	OdaApplyDeltaColour(m_AirControlDelta, AirControlPositive);
-	SetOptionalItem(m_AirControlItem, m_AirControl, AirControl);
+	const OdaModifier_t AirControl = OdaGetAirControl(s);
+	m_AirControlDelta->SetLabel(AirControl.Delta);
+	OdaApplyDeltaColour(m_AirControlDelta, AirControl.IsPositive);
+	SetOptionalItem(m_AirControlItem, m_AirControl, AirControl.Value);
 
 	// Waves (g_horde_waves) - Horde mode only
 	wxString Waves;
@@ -413,6 +412,13 @@ bool PlayerListPopover::SetOptionalItem(wxSizer* Item, wxStaticText* Field,
 	m_HeaderSizer->Show(Item, Show, true);
 
 	return Show;
+}
+
+void PlayerListPopover::SetColouredItem(wxSizer* Item, wxStaticText* Field,
+                                        const wxString& Value, bool IsPositive)
+{
+	if(SetOptionalItem(Item, Field, Value))
+		OdaApplyDeltaColour(Field, IsPositive);
 }
 
 #endif // wxUSE_POPUPWIN

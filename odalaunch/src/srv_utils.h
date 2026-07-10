@@ -32,6 +32,18 @@ class wxWindow;
 class wxSizer;
 class wxStaticText;
 
+// A modifier value ready for display: the value text (empty when the modifier
+// is absent or at its default), an optional parenthesized delta from default,
+// and whether the value is above default (used to color it green vs red).
+struct OdaModifier_t
+{
+	wxString Value;
+	wxString Delta;
+	bool     IsPositive;
+
+	OdaModifier_t() : IsPositive(false) {}
+};
+
 // Returns an easy-to-read game type label for a server (e.g. "Cooperative",
 // "Duel", "Capture The Flag"), taking game modifiers (lives, sides, player
 // limits) into account.
@@ -76,10 +88,11 @@ wxString OdaGetPlayerCountString(const odalpapi::Server& s);
 // sv_friendlyfire transmitted), otherwise an empty string.
 wxString OdaGetFriendlyFireString(const odalpapi::Server& s);
 
-// Returns a damage/health modifier cvar as a percentage (e.g. "150%"), or an
-// empty string when the cvar is absent or at its neutral 1.0.
-wxString OdaGetDamagePercentString(const odalpapi::Server& s,
-                                   const std::string& Cvar);
+// Returns a damage/health modifier cvar as a percentage (e.g. "150%"),
+// or empty when the cvar is absent or at its neutral 1.0. IsPositive is
+// true when the modifier is above 1.0.
+OdaModifier_t OdaGetDamagePercent(const odalpapi::Server& s,
+                                  const std::string& Cvar);
 
 // Returns the rounds summary ("Unlimited", "N round limit[, first to M wins]"),
 // or an empty string when g_rounds is not in play.
@@ -93,18 +106,16 @@ wxString OdaGetTimeLeftString(const odalpapi::Server& s);
 // score for team modes, frags for deathmatch), or empty when none applies.
 wxString OdaGetScoreString(const odalpapi::Server& s);
 
-// Returns the sv_gravity value, or an empty string when absent or
-// at its default (800). DeltaOut receives the signed difference from default as
-// a parenthesised string (e.g. "(-0.25%)") and IsPositive is set true when the
-// value is above default (only meaningful when a non-empty value is returned).
-wxString OdaGetGravityString(const odalpapi::Server& s, wxString& DeltaOut,
-                             bool& IsPositive);
+// Returns the sv_gravity value, empty when absent or at its
+// default of 800. Delta is the signed difference from default as a
+// parenthesized string (e.g. "(-0.25%)") and IsPositive is true when the value
+// is above default.
+OdaModifier_t OdaGetGravity(const odalpapi::Server& s);
 
-// Returns the sv_aircontrol value, or an empty string when absent
-// or at its default (0.00390625). DeltaOut / IsPositive behave as for
-// OdaGetGravityString.
-wxString OdaGetAirControlString(const odalpapi::Server& s, wxString& DeltaOut,
-                                bool& IsPositive);
+// Returns the sv_aircontrol value, empty when absent or at
+// its default of 0.00390625. Delta / IsPositive behaves the same
+// as OdaGetGravity.
+OdaModifier_t OdaGetAirControl(const odalpapi::Server& s);
 
 // Colours a delta control green when IsPositive, red otherwise, choosing shades
 // that stay legible on the control's background (light or dark).
