@@ -23,7 +23,11 @@
 
 #pragma once
 
+#include "odamex.h"
+
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include <SDL.h>
+END_DISABLE_WARNING_GNU
 
 #if (SDL_MAJOR_VERSION == 3)
 	#define SDL3
