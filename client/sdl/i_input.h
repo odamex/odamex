@@ -22,7 +22,12 @@
 
 #pragma once
 
+#include "odamex.h"
+
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include <SDL.h>
+END_DISABLE_WARNING_GNU
+
 #include "win32inc.h"
 
 #include "d_event.h"
