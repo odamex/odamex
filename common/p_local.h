@@ -253,7 +253,7 @@ void	P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
 						fixed_t &destx, fixed_t &desty, fixed_t &destz);
 bool	P_TestMobjZ (AActor *actor);
 bool	P_TestMobjLocation (AActor *mobj);
-bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
+bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck = false);
 AActor	*P_CheckOnmobj (AActor *thing);
 void	P_FakeZMovement (AActor *mo);
 bool	P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);

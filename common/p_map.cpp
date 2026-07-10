@@ -984,7 +984,7 @@ bool P_TestMobjLocation (AActor *mobj)
 //	numspeciallines
 //  AActor *BlockingMobj = pointer to thing that blocked position (NULL if not
 //   blocked, or blocked by a line).
-bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
+bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 {
 	AActor *thingblocker = NULL;
 	fixed_t realheight = thing->height;
@@ -1107,16 +1107,21 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 			return true;
 	}
 
-	// check lines
-	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+	// skip this during a spawn check (player is not moving) 
+	// allows spawns that are touching blocking lines to work
+	if (not isSpawnCheck)
+	{
+		// check lines
+		xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
+		xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
+		yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
+		yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
 
-	for (int bx=xl ; bx<=xh ; bx++)
-		for (int by=yl ; by<=yh ; by++)
-			if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
-				return false;
+		for (int bx=xl ; bx<=xh ; bx++)
+			for (int by=yl ; by<=yh ; by++)
+				if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
+					return false;
+	}
 
 	if (P_AllowPassover())
 		return (BlockingMobj = thingblocker) == NULL;
