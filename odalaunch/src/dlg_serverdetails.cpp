@@ -450,7 +450,20 @@ void dlgServerDetails::BuildMetadataGrid()
 	m_MetaGrid->Add(m_MdAdminEmailLabel, 0, wxALIGN_CENTER_VERTICAL);
 	m_MetaGrid->Add(m_MdAdminEmail, 0, wxALIGN_CENTER_VERTICAL);
 
-	m_MdPassword = AddRow(m_PnlMetadata, m_MetaGrid, "Password:");
+	// Password row: a padlock icon (shown only when passworded) + Y/N.
+	wxStaticText* PasswordLabel =
+	    new wxStaticText(m_PnlMetadata, wxID_ANY, "Password:");
+	PasswordLabel->SetFont(LabelFont);
+
+	wxBoxSizer* PasswordSizer = new wxBoxSizer(wxHORIZONTAL);
+	m_PasswordIcon =
+	    new wxStaticBitmap(m_PnlMetadata, wxID_ANY, wxNullBitmap);
+	m_MdPassword = new wxStaticText(m_PnlMetadata, wxID_ANY, "");
+	PasswordSizer->Add(m_PasswordIcon, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
+	PasswordSizer->Add(m_MdPassword, 0, wxALIGN_CENTER_VERTICAL);
+
+	m_MetaGrid->Add(PasswordLabel, 0, wxALIGN_CENTER_VERTICAL);
+	m_MetaGrid->Add(PasswordSizer, 0, wxALIGN_CENTER_VERTICAL);
 
 	wxBoxSizer* Border = new wxBoxSizer(wxVERTICAL);
 	Border->Add(m_MetaGrid, 1, wxEXPAND | wxALL, 4);
@@ -631,7 +644,13 @@ void dlgServerDetails::PopulateMetadata()
 	m_MetaGrid->Show(m_MdAdminEmailLabel, ShowEmail);
 	m_MetaGrid->Show(m_MdAdminEmail, ShowEmail);
 
-	m_MdPassword->SetLabel(s.Info.PasswordHash.empty() ? "No" : "Yes");
+	const bool HasPassword = !s.Info.PasswordHash.empty();
+	m_MdPassword->SetLabel(HasPassword ? "Yes" : "No");
+	// Show the padlock icon (as used in the server list) next to a "Yes".
+	m_PasswordIcon->SetBitmap(
+	    HasPassword ? wxXmlResource::Get()->LoadBitmap("locked_server")
+	                : wxNullBitmap);
+	m_PasswordIcon->Show(HasPassword);
 }
 
 void dlgServerDetails::PopulateGameplay()

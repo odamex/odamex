@@ -168,6 +168,7 @@ private:
 	wxStaticText* m_MdDownloadURILabel;
 	wxHyperlinkCtrl* m_MdAdminEmail;
 	wxStaticText* m_MdAdminEmailLabel;
+	wxStaticBitmap* m_PasswordIcon;
 	wxStaticText* m_MdPassword;
 
 	// Gameplay grid
