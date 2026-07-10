@@ -181,6 +181,9 @@ class PlayerStateRoller
 		template <typename Callable>
 		void Roll(int i_oldTic, Callable&& i_callable);
 
+		template <typename Callable>
+		void RollIter(int i_oldTic, Callable&& i_callable);
+
 		// History keyed on *client* tic number.
 		HistoryTableType m_history;
 

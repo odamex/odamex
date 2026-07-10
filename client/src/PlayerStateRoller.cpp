@@ -150,6 +150,18 @@ void PlayerStateRoller::Roll(int i_oldTic, Callable&& i_callable)
 	i_callable(m_currentState);
 }
 
+template <typename Callable>
+void PlayerStateRoller::RollIter(int i_oldTic, Callable&& i_callable)
+{
+	for (int rollingTic = i_oldTic; rollingTic <= m_mostRecentTic; ++rollingTic)
+	{
+		auto rollingIter = m_history.find(rollingTic);
+
+		i_callable(rollingIter->second, rollingIter);
+	}
+	i_callable(m_currentState, m_history.end());
+}
+
 void PlayerStateRoller::ApplyMostRecentToPlayer(player_t& io_player)
 {
 	m_currentState.ToPlayer(io_player);
@@ -207,12 +219,12 @@ bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_history
 {
 	if (i_historyIter->second.weaponowned != i_weaponOwned)
 	{
-		HistoryTableType::iterator rollingIter  = i_historyIter;
 		HistoryTableType::iterator previousIter = m_history.end();
-		int itemSoundCancelationTic             = -1;
+		bool itemSoundMustBeCanceled            = false;
 		bool weaponWasAdded                     = false;
 
-		Roll(i_historyIter->first, [&](auto& rollingState)
+		RollIter(i_historyIter->first, [&](PlayerItemDataType&        rollingState,
+		                                   HistoryTableType::iterator rollingIter)
 			{
 				// The following block is all about canceling a weapon pickup sound if a rollback
 				// removes a weapon whose pickup was mispredicted.  In general, if we encounter
@@ -225,7 +237,7 @@ bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_history
 						// Take note that we must cancel the sound playback on the item channel.
 						if (rollingState.weaponowned[i] and not i_weaponOwned[i])
 						{
-							itemSoundCancelationTic = rollingIter->first;
+							itemSoundMustBeCanceled = true;
 						}
 						// But on the other hand, if we're adding a weapon, DON'T cancel the sound.
 						// In fact, if there was already a cancelation we prepared, cancel the cancelation.
@@ -234,7 +246,7 @@ bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_history
 						else if (i_weaponOwned[i] and not rollingState.weaponowned[i])
 						{
 							weaponWasAdded = true;
-							itemSoundCancelationTic = -1;
+							itemSoundMustBeCanceled = false;
 							break;
 						}
 						// Finally, if we encounter any other pickup in the rollback range, make sure
@@ -244,18 +256,17 @@ bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_history
 							if (rollingState.weaponowned[i] and not previousIter->second.weaponowned[i])
 							{
 								weaponWasAdded = true;
-								itemSoundCancelationTic = -1;
+								itemSoundMustBeCanceled = false;
 								break;
 							}
 						}
 					}
 					previousIter = rollingIter;
 				}
-				++rollingIter;
 				rollingState.weaponowned = i_weaponOwned;
 			});
 
-		if (itemSoundCancelationTic >= 0)
+		if (itemSoundMustBeCanceled)
 		{
 			S_StopSound(io_player.mo, CHAN_ITEM);
 		}
