@@ -162,11 +162,11 @@ class PlayerStateRoller
 
 		std::optional<HistoryTableType::iterator> ObtainHistory(int i_oldTic, const player_t& i_player);
 
-		bool RollbackAmmo           (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_ammo);
-		bool RollbackMaxAmmo        (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_maxAmmo);
-		bool RollbackWeaponOwned    (HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>&              i_weaponOwned);
-		bool RollbackPowers         (HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS>                 i_powers);
-		bool RollbackPsprites       (HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites);
+		bool RollbackAmmo       (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_ammo);
+		bool RollbackMaxAmmo    (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_maxAmmo);
+		bool RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>&              i_weaponOwned, player_t& io_player);
+		bool RollbackPowers     (HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS>                 i_powers);
+		bool RollbackPsprites   (HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites);
 
 		bool RollbackWeaponSelection(HistoryTableType::iterator i_historyIter, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon);
 
@@ -189,5 +189,4 @@ class PlayerStateRoller
 
 		int m_mostRecentTic;
 		int m_oldestTic;
-		int m_itemSoundCancelationTic;
 };
