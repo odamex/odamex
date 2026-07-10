@@ -27,6 +27,7 @@
 
 #include <algorithm>
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "FL/Fl.H"
 #include "FL/Fl_Box.H"
 #include "FL/Fl_Button.H"
@@ -38,6 +39,7 @@
 #include "FL/Fl_Tabs.H"
 #include "FL/Fl_Window.H"
 #include "FL/fl_ask.H"
+END_DISABLE_WARNING_GNU
 
 #include "gui_common.h"
 

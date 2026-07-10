@@ -22,7 +22,11 @@
 
 #pragma once
 
+#include "odamex.h"
+
+BEGIN_DISABLE_WARNING_GNU("-Wuseless-cast")
 #include "client.pb.h"
+END_DISABLE_WARNING_GNU
 
 class player_t;
 struct UserInfo;

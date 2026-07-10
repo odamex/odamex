@@ -26,7 +26,11 @@
 
 #pragma once
 
+#include "odamex.h"
+
+BEGIN_DISABLE_WARNING_GNU("-Wuseless-cast")
 #include "server.pb.h"
+END_DISABLE_WARNING_GNU
 
 #include "r_state.h"
 

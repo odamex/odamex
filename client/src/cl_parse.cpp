@@ -28,7 +28,9 @@
 
 #include <bitset>
 
+BEGIN_DISABLE_WARNING_GNU("-Wuseless-cast")
 #include "server.pb.h"
+END_DISABLE_WARNING_GNU
 
 #include "c_console.h"
 #include "c_dispatch.h"

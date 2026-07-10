@@ -78,8 +78,6 @@
 #include <sstream>
 #include <thread>
 
-#include "server.pb.h"
-
 #include "CanarySocket.h"
 
 #include "clc_message.h"

@@ -23,8 +23,12 @@
 
 #include "gui_common.h"
 
+#include "odamex.h"
+
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "FL/Fl_PNG_Image.H"
 #include "FL/Fl_Window.H"
+END_DISABLE_WARNING_GNU
 
 #include "gui_resource.h"
 

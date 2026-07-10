@@ -55,9 +55,7 @@
 #include "doomfunc.h"
 
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
-BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
-END_DISABLE_WARNING_GNU
 END_DISABLE_WARNING_GNU
 
 /**

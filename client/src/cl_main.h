@@ -30,7 +30,9 @@
 #include "r_defs.h"
 #include "cl_demo.h"
 
+BEGIN_DISABLE_WARNING_GNU("-Wuseless-cast")
 #include "client.pb.h"
+END_DISABLE_WARNING_GNU
 
 #include "OdaMessenger.h"
 #include "PlayerStateRoller.h"

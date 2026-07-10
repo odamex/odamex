@@ -27,8 +27,10 @@
 
 #include <unordered_map>
 
+BEGIN_DISABLE_WARNING_GNU("-Wuseless-cast")
 #include "client.pb.h"
 #include "server.pb.h"
+END_DISABLE_WARNING_GNU
 
 #include "i_net.h"
 
