@@ -24,6 +24,7 @@
 #include <cmath>
 #include <vector>
 
+#include <wx/cursor.h>
 #include <wx/settings.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
@@ -314,6 +315,7 @@ OdaModifier_t OdaGetGravity(const Server& s)
 	constexpr long Default = 800;
 
 	OdaModifier_t Gravity;
+	Gravity.Default = "800";
 
 	wxString Value;
 
@@ -345,6 +347,7 @@ OdaModifier_t OdaGetAirControl(const Server& s)
 	constexpr double Default = 0.00390625; // 1/256
 
 	OdaModifier_t AirControl;
+	AirControl.Default = "0.00390625";
 
 	wxString Value;
 
@@ -388,6 +391,22 @@ void OdaApplyDeltaColour(wxStaticText* Ctrl, bool IsPositive)
 	                          : wxColour(0xC0, 0x00, 0x00);
 
 	Ctrl->SetForegroundColour(IsPositive ? Green : Red);
+}
+
+void OdaApplyDefaultHint(wxStaticText* Ctrl, const wxString& DefaultText)
+{
+	if(DefaultText.IsEmpty())
+		return;
+
+	wxFont Font = Ctrl->GetFont();
+	Font.SetUnderlined(true);
+	Ctrl->SetFont(Font);
+
+	Ctrl->SetToolTip(wxString::Format("Default is %s", DefaultText));
+
+	// A help cursor signals that hovering reveals more information
+	static const wxCursor HelpCursor(wxCURSOR_QUESTION_ARROW);
+	Ctrl->SetCursor(HelpCursor);
 }
 
 wxString OdaGetFastMonstersString(const Server& s)

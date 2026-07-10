@@ -386,7 +386,8 @@ wxStaticText* dlgServerDetails::AddDeltaRow(wxFlexGridSizer* Grid,
 void dlgServerDetails::SetDeltaRow(wxFlexGridSizer* Grid, wxStaticText* Label,
                                    wxStaticText* Value, wxStaticText* Delta,
                                    const wxString& ValueText,
-                                   const wxString& DeltaText, bool IsPositive)
+                                   const wxString& DeltaText, bool IsPositive,
+                                   const wxString& DefaultText)
 {
 	const bool Show = !ValueText.IsEmpty();
 
@@ -395,6 +396,7 @@ void dlgServerDetails::SetDeltaRow(wxFlexGridSizer* Grid, wxStaticText* Label,
 		Value->SetLabel(ValueText);
 		Delta->SetLabel(DeltaText);
 		OdaApplyDeltaColour(Delta, IsPositive);
+		OdaApplyDefaultHint(Delta, DefaultText);
 	}
 
 	// The value and delta live in a nested cell sizer, so hide them recursively.
@@ -660,12 +662,13 @@ void dlgServerDetails::PopulateGameplay()
 
 	const OdaModifier_t Gravity = OdaGetGravity(s);
 	SetDeltaRow(m_GpGrid, m_GpGravityLabel, m_GpGravity, m_GpGravityDelta,
-	            Gravity.Value, Gravity.Delta, Gravity.IsPositive);
+	            Gravity.Value, Gravity.Delta, Gravity.IsPositive,
+	            Gravity.Default);
 
 	const OdaModifier_t AirControl = OdaGetAirControl(s);
 	SetDeltaRow(m_GpGrid, m_GpAirControlLabel, m_GpAirControl,
 	            m_GpAirControlDelta, AirControl.Value, AirControl.Delta,
-	            AirControl.IsPositive);
+	            AirControl.IsPositive, AirControl.Default);
 
 	wxString Waves;
 	if(s.Info.GameType == GT_Horde)

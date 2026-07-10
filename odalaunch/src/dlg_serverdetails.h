@@ -110,11 +110,12 @@ private:
 	                          wxStaticText** LabelOut, wxStaticText** DeltaOut);
 
 	// Shows/hides a value+delta row, setting the value and colouring the delta
-	// (green when IsPositive, red otherwise) when shown.
+	// (green when IsPositive, red otherwise) when shown. DefaultText, when set,
+	// adds a "Default is X" hover hint to the value and delta.
 	void SetDeltaRow(wxFlexGridSizer* Grid, wxStaticText* Label,
 	                 wxStaticText* Value, wxStaticText* Delta,
 	                 const wxString& ValueText, const wxString& DeltaText,
-	                 bool IsPositive);
+	                 bool IsPositive, const wxString& DefaultText);
 
 	dlgMain* m_Parent;
 	odalpapi::Server m_Server;

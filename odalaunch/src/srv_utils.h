@@ -34,12 +34,14 @@ class wxStaticText;
 
 // A modifier value ready for display: the value text (empty when the modifier
 // is absent or at its default), an optional parenthesized delta from default,
-// and whether the value is above default (used to color it green vs red).
+// whether the value is above default (used to color it green vs red), and the
+// modifier's default value as text (for a "Default is X" tooltip).
 struct OdaModifier_t
 {
 	wxString Value;
 	wxString Delta;
 	bool     IsPositive;
+	wxString Default;
 
 	OdaModifier_t() : IsPositive(false) {}
 };
@@ -120,6 +122,10 @@ OdaModifier_t OdaGetAirControl(const odalpapi::Server& s);
 // Colours a delta control green when IsPositive, red otherwise, choosing shades
 // that stay legible on the control's background (light or dark).
 void OdaApplyDeltaColour(wxStaticText* Ctrl, bool IsPositive);
+
+// Underlines Ctrl, gives it a "Default is X" tooltip and a help cursor to hint
+// that hovering reveals its default. No-op when DefaultText is empty.
+void OdaApplyDefaultHint(wxStaticText* Ctrl, const wxString& DefaultText);
 
 // Returns "Yes" when fast monsters are enabled (sv_fastmonsters) below
 // Nightmare skill, or an empty string otherwise.
