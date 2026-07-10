@@ -139,11 +139,26 @@ message UserInfo
 	int32 colorpreset = 7;
 }
 
+// Keep this enumeration in sync with its counterpart in info.h!
+enum MobjModeEnum
+{
+	MOBJ_SPAWN   = 0;
+	MOBJ_SEE     = 1;
+	MOBJ_PAIN    = 2;
+	MOBJ_MELEE   = 3;
+	MOBJ_MISSILE = 4;
+	MOBJ_DEATH   = 5;
+	MOBJ_XDEATH  = 6;
+	MOBJ_RAISE   = 7;
+}
+
+
 // svc_updatemobj
 message UpdateMobj
 {
 	uint32 flags = 1;
 	Actor actor = 2;
+	MobjModeEnum mode = 3;
 }
 
 // svc_spawnplayer
@@ -644,6 +659,32 @@ message MobjState
 {
 	int32 netid = 1;
 	int32 mostate = 2;
+}
+
+// svc_wakeupmobj
+//
+// Please note, some of these fields are duplicated with UpdateMobj, and that is intentional.
+// This message describes the state immediately before the transition to seestate, based on
+// the mobj members that are the set-union of those actually used in A_Chase and updated by
+// A_Look.  That way, the wakeup sequence includes the data needed to make the first call to
+// A_Chase match the server's results, and any residuals are captured by the subsequent
+// UpdateMobj.
+
+message WakeupMobj
+{
+    uint32  netid       =  1;
+    bool    seesound    =  2;
+    fixed32 angle       =  3;
+    uint32  goalid      =  4;
+    uint32  lastlook    =  5;
+    int32   movecount   =  6;
+    uint32  movedir     =  7;
+    uint32  pursuecount =  8;
+    int32   reactiontime=  9;
+    uint32  special     = 10;
+    uint32  strafecount = 11;
+    uint32  targetid    = 12;
+    uint32  threshold   = 13;
 }
 
 // svc_damagemobj

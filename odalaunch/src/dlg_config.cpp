@@ -100,7 +100,7 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
 	m_ChkCtrlGetListOnStart = XRCCTRL(*this, "Id_ChkCtrlGetListOnStart", wxCheckBox);
 	m_ChkCtrlShowBlockedServers = XRCCTRL(*this, "Id_ChkCtrlShowBlockedServers", wxCheckBox);
 	#if !ODALAUNCH_USE_WEB_REQUEST
-	XRCSIZERITEM(*this, "Id_StBxSizerUpdates")->Show(false);
+	XRCCTRL(*this, "Id_PanelUpdates", wxPanel)->Show(false);
 	#endif
 	m_ChkCtrlCheckForUpdates = XRCCTRL(*this, "Id_ChkCtrlCheckForUpdates", wxCheckBox);
 	m_ChkCtrlEnableBroadcasts = XRCCTRL(*this, "Id_ChkCtrlEnableBroadcasts", wxCheckBox);

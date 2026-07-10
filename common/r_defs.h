@@ -262,6 +262,7 @@ struct sector_t
 
 	int linecount = 0;
 	line_s **lines = nullptr;		// [linecount] size
+	std::span<line_s*> getLines() { return std::span(lines, linecount); }
 
 	float gravity = 0.0f;		// [RH] Sector gravity (1.0 is normal)
 	int damageamount = 0;
@@ -281,7 +282,7 @@ struct sector_t
 	// [AM] Use the ZDoom 1.22 AActor system instead.
 	AActor::AActorPtr SecActTarget{};
 
-	AActor::AActorPtr Skybox;
+	AActor::AActorPtr Skybox{};
 
 	// [SL] 2012-01-16 - planes for sloping ceilings/floors
 	plane_t floorplane{}, ceilingplane{};
@@ -595,10 +596,15 @@ struct drawseg_t
     int				silhouette;
 
     // Pointers to lists for sprite clipping,
-    //  all three adjusted so [x1] is first value.
+    //  all adjusted so [x1] is first value.
     int*			sprtopclip;
     int*			sprbottomclip;
 	tallpost_t**	midposts;
+
+	// per-column scales for the masked midtexture, in texture y-scale
+	// space; saved from wallscalex so the masked pass draws with the same
+	// scales R_PrepWall gave the wall tiers
+	fixed_t*		midscales;
 };
 
 
@@ -729,6 +735,7 @@ struct spriteframe_t
 	// [RH] Move some data out of spritewidth, spriteoffset,
 	//		and spritetopoffset arrays.
 	fixed_t		width[16];
+	fixed_t		height[16];
 	fixed_t		topoffset[16];
 	fixed_t		offset[16];
 };

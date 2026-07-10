@@ -773,6 +773,7 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 	}
 }
 
+static void V_RefreshSpecialLights();
 
 //
 // V_RefreshColormaps
@@ -785,6 +786,8 @@ void V_RefreshColormaps()
 	NormalLight.color = argb_t(255, 255, 255, 255);
 	NormalLight.fade = argb_t(level.fadeto_color[0], level.fadeto_color[1],
 							level.fadeto_color[2], level.fadeto_color[3]);
+
+	V_RefreshSpecialLights();
 
 	R_ReinitColormap();
 }
@@ -988,13 +991,15 @@ fargb_t V_HSVtoRGB(const fahsv_t &color)
 
 // Builds NUMCOLORMAPS colormaps lit with the specified color
 static void BuildColoredLights(shademap_t* maps, const int lr, const int lg, const int lb,
-                               const int fr, const int fg, const int fb)
+                               const int fr, const int fg, const int fb,
+                               const bool build_colormap = true)
 {
 	// The default palette is assumed to contain the maps for white light.
 	if (!maps)
 		return;
 
-	BuildLightRamp(*maps);
+	if (build_colormap)
+		BuildLightRamp(*maps);
 
 	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 
@@ -1002,7 +1007,7 @@ static void BuildColoredLights(shademap_t* maps, const int lr, const int lg, con
 	for (unsigned int l = 0; l < NUMCOLORMAPS; l++)
 	{
 		// Build the colormap and shademap:
-		palindex_t* colormap = maps->colormap + 256 * l;
+		palindex_t* colormap = build_colormap ? maps->colormap + 256 * l : nullptr;
 		argb_t* shademap = maps->shademap + 256 * l;
 		for (unsigned int c = 0; c < 256; c++)
 		{
@@ -1018,8 +1023,22 @@ static void BuildColoredLights(shademap_t* maps, const int lr, const int lg, con
 			argb_t color(255, r * lr / 255, g * lg / 255, b * lb / 255);
 
 			shademap[c] = V_GammaCorrect(color);
-			colormap[c] = V_BestColor(palette_colors, color);
+
+			if (build_colormap)
+				colormap[c] = V_BestColor(palette_colors, color);
 		}
+	}
+}
+
+static void V_RefreshSpecialLights()
+{
+	for (dyncolormap_t* colormap = NormalLight.next; colormap; colormap = colormap->next)
+	{
+		// Gamma changes only affect the 32-bit shademap.
+		BuildColoredLights(const_cast<shademap_t*>(colormap->maps.map()),
+				colormap->color.getr(), colormap->color.getg(), colormap->color.getb(),
+				colormap->fade.getr(), colormap->fade.getg(), colormap->fade.getb(),
+				false);
 	}
 }
 

@@ -151,6 +151,7 @@ EXTERN_CVAR (co_removesoullimit)
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR (co_novileghosts)
+EXTERN_CVAR (co_zdoomfriendtargeting)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -571,7 +572,7 @@ static value_t MidiReset[] = {
 
 static value_t OplCore[] = {
 	{ 0.0,			"Fast (Dosbox)"},
-	{ 1.0,			"Balanced (Nuked 1.74)"},
+	{ 1.0,			"Balanced (Nuked-Fast 1.8)"},
 	{ 2.0,			"Accurate (Nuked 1.8)"}
 };
 
@@ -711,6 +712,7 @@ static menuitem_t CompatItems[] ={
 	{svdiscrete, "MBF movement and collision",  {&co_mbfphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
   {svdiscrete, "ZDOOM 1.23 ammo checks",         {&co_zdoomammo},         {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "ZDOOM Friendly Targeting",       {&co_zdoomfriendtargeting},   {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "MBF Monster target selection",{&co_pursuit},      {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "Monsters help friends (MBF)",{&co_helpfriends},      {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "Monsters strafe (MBF)",{&co_monsterbacking},      {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -922,8 +924,8 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Center weapon when firing",{&cl_centerbobonfire},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Show Killing Sprees",		{&cl_showsprees},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Show Multi Kills",		{&cl_showmultikills},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Sprees in Offline Games",	{&cl_showofflinesprees},{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Multi Kills in Offline Games",	{&cl_showofflinemultikills},{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Sprees Offline",	{&cl_showofflinesprees},{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Multi Kills Offline",	{&cl_showofflinemultikills},{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
@@ -1270,11 +1272,12 @@ static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
 	{ 60.0,		"60fps" },
 	{ 70.0,		"70fps" },
-   	{ 105.0,	"105fps"},
+	{ 90.0,		"90fps" },
+	{ 105.0,	"105fps"},
 	{ 120.0,	"120fps" },
 	{ 140.0,	"140fps"},
-    	{ 144.0,	"144fps"},
-    	{ 240.0,	"240fps"},
+	{ 144.0,	"144fps"},
+	{ 240.0,	"240fps"},
 	{ 0.0,		"Unlimited" }
 };
 

@@ -3200,6 +3200,26 @@ void SV_UpdateMobjBestEffort(AActor* mo)
 	ImmediateUpdateMobj(*mo, false);
 }
 
+void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound)
+{
+	for (auto& player : players)
+	{
+		if (SV_IsPlayerAllowedToSee(player, mo) and player.ingame())
+		{
+			switch (mo->playersAware.Get(player.id))
+			{
+				case AwarenessEnum::NOT_AWARE:     [[ fallthrough ]];
+				case AwarenessEnum::BARELY_AWARE:
+					break;
+
+				default:
+					MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_WakeupMobj(mo, mustPlaySeeSound));
+					break;
+			}
+		}
+	}
+}
+
 // Update the given actors state immediately.
 void SV_UpdateMobjState(const AActor* mo)
 {
@@ -4941,7 +4961,7 @@ BEGIN_COMMAND (playerinfo)
 	}
 	else
 	{
-		PrintFmt(" frags - {:d}  deaths - {:d}  points - %d\n", player->fragcount,
+		PrintFmt(" frags - {:d}  deaths - {:d}  points - {:d}\n", player->fragcount,
 		       player->deathcount, player->points);
 	}
 	if (g_lives)

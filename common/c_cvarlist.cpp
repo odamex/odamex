@@ -107,7 +107,10 @@ CVAR(				sv_infiniteammo, "0", "Infinite ammo for all players",
 CVAR(				sv_itemsrespawn, "0", "Items will respawn after a fixed period, see sv_itemrespawntime",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
-CVAR(				sv_respawnsuper, "0", "Allows Invisibility/Invulnerability spheres from respawning (need sv_itemsrespawn set to 1)",
+CVAR(				sv_respawnsuper, "0", "Allows Invisibility/Invulnerability spheres to respawn (requires sv_itemsrespawn set to 1)",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+CVAR(				sv_respawnbarrels, "0", "Allows barrels to respawn. (requires sv_itemsrespawn set to 1)",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR_RANGE(			sv_itemrespawntime, "30", "If sv_itemsrespawn is set, items will respawn after this " \
@@ -150,7 +153,7 @@ CVAR(				sv_keepkeys, "0", "Keep keys on death",
 CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maxiumum time allowed for player reconciliation (in seconds)",
+CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maximum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR(				sv_allowmovebob, "1", "Allow weapon & view bob changing",
@@ -429,6 +432,11 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_mbfphys, "0", "Use MBF's movement code. Fixes mancubus fireball clipping and linedef skips.",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
+	CVAR(			co_zdoomfriendtargeting, "0",
+					"Use ZDoom's monster targeting when it comes to friendlies. This is much less taxing than MBF friendly targeting, "
+					"so enable if your system is struggling on slaughter maps with friendlies.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
 	// MBF21-defined compatibility changes
 	// -----------------------------------
 
@@ -491,7 +499,7 @@ CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR				(r_softinvulneffect, "1",
-					"Change invuln to enable light googles and invert the pallete on the weapon sprite only.",
+					"Change invuln to enable light goggles and invert the palette on the weapon sprite only.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Misc stuff

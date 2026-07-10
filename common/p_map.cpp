@@ -632,6 +632,15 @@ static bool PIT_CheckThing (AActor *thing)
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE|MF_TOUCHY)) )
 		return true;	// can't hit thing
 
+	// Reject things that are too far away before the pricier player/friendly
+	// checks below.
+	fixed_t blockdist = thing->radius + tmthing->radius;
+	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
+	{
+		// didn't hit thing
+		return true;
+	}
+
 	// GhostlyDeath -- Spectators go through everything!
 	if ((thing->player && thing->player->spectator) ||
 		(tmthing->player && tmthing->player->spectator))
@@ -643,13 +652,6 @@ static bool PIT_CheckThing (AActor *thing)
 	if (tmthing && thing && thing->flags & MF_FRIEND &&
 	    P_IsFriendlyThing(thing, tmthing) && sv_unblockfriendly)
 		return true;
-
-	fixed_t blockdist = thing->radius + tmthing->radius;
-	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
-	{
-		// didn't hit thing
-		return true;
-	}
 
 	if (P_AllowPassover())
 		BlockingMobj = thing;
@@ -3337,7 +3339,7 @@ bool PIT_ChangeSector (AActor *thing)
 	if (thing->health <= 0)
 	{
 		P_SetMobjState (thing, S_GIBS);
-		thing->effects = 0;
+		thing->SetEffects(0);
 
 		// [Nes] - Classic demo compatability: Ghost monster bug.
 		if ((demoplayback)) {

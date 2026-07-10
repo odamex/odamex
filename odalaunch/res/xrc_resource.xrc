@@ -653,7 +653,7 @@
                                         <option>0</option>
                                         <object class="wxColourPickerCtrl" name="Id_ClrPickServerLineHighlighter">
                                           <style>wxCLRP_DEFAULT_STYLE|wxCLRP_SHOW_LABEL</style>
-                                          <value>#2d2d2d</value>
+                                          <value>#ffffff</value>
                                         </object>
                                       </object>
                                     </object>
@@ -680,7 +680,7 @@
                                         <option>0</option>
                                         <object class="wxColourPickerCtrl" name="Id_ClrPickCustomServerHighlight">
                                           <style>wxCLRP_DEFAULT_STYLE|wxCLRP_SHOW_LABEL</style>
-                                          <value>#2d2d2d</value>
+                                          <value>#ffffff</value>
                                         </object>
                                       </object>
                                     </object>
@@ -891,20 +891,23 @@
                             </object>
                           </object>
                           <object class="sizeritem">
-                            <flag>wxALL|wxEXPAND</flag>
+                            <flag>wxEXPAND | wxALL</flag>
                             <border>5</border>
-                            <option>0</option>
-                            <object class="wxStaticBoxSizer" name="Id_StBxSizerUpdates">
-                              <orient>wxVERTICAL</orient>
-                              <label>Odamex Updates</label>
-                              <object class="sizeritem">
-                                <flag>wxALL</flag>
-                                <border>5</border>
-                                <option>0</option>
-                                <object class="wxCheckBox" name="Id_ChkCtrlCheckForUpdates">
-                                  <tooltip>Automatically check for updates when the launcher starts</tooltip>
-                                  <label>Check for updates</label>
-                                  <checked>0</checked>
+                            <option>1</option>
+                            <object class="wxPanel" name="Id_PanelUpdates">
+                              <style>wxTAB_TRAVERSAL</style>
+                              <object class="wxStaticBoxSizer" name="Id_StBxSizerUpdates">
+                                <orient>wxVERTICAL</orient>
+                                <label>Odamex Updates</label>
+                                <object class="sizeritem">
+                                  <flag>wxALL</flag>
+                                  <border>5</border>
+                                  <option>0</option>
+                                  <object class="wxCheckBox" name="Id_ChkCtrlCheckForUpdates">
+                                    <tooltip>Automatically check for updates when the launcher starts</tooltip>
+                                    <label>Check for updates</label>
+                                    <checked>0</checked>
+                                  </object>
                                 </object>
                               </object>
                             </object>
@@ -1662,7 +1665,7 @@
                   <border>5</border>
                   <option>1</option>
                   <object class="wxTextCtrl" name="Id_TxtCtrlLicense">
-                    <style>wxTE_AUTO_URL|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2|wxTE_CENTER</style>
+                    <style>wxTE_AUTO_URL|wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2|wxTE_CENTRE</style>
                     <value>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.</value>
                   </object>
                 </object>

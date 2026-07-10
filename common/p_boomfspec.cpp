@@ -93,7 +93,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	{
 		// pointer to line function is NULL by default, set non-null if
 		// line special is walkover generalized linedef type
-		bool (*linefunc)(line_t * line) = NULL;
+		bool (*linefunc)(line_t& line) = nullptr;
 
 		// check each range of generalized linedefs
 		if (static_cast<unsigned>(line->special) >= GenEnd)
@@ -180,12 +180,13 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			switch ((line->special & TriggerType) >> TriggerTypeShift)
 			{
 			case WalkOnce:
-				if (linefunc(line))
+				if (linefunc(*line))
 				{
 					return true;
 				}
+			// FIXME: is this fallthrough intended?
 			case WalkMany:
-				linefunc(line);
+				linefunc(*line);
 				return true;
 			default: // if not a walk type, do nothing here
 				return false;
@@ -1329,12 +1330,11 @@ void P_PlayerInCompatibleSector(player_t& player)
 				{
 					if (sv_allowexit)
 					{
-						for (Players::iterator it = ::players.begin();
-						     it != ::players.end(); ++it)
+						for (auto& pl : ::players)
 						{
-							if (player.ingame() && player.health > 0 && !(player.cheats & CF_GODMODE))
+							if (pl.ingame() && pl.health > 0 && !(pl.cheats & CF_GODMODE))
 							{
-								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+								P_DamageMobj(pl.mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_ExitLevel(0, 1);
@@ -1354,12 +1354,11 @@ void P_PlayerInCompatibleSector(player_t& player)
 				{
 					if (sv_allowexit)
 					{
-						for (Players::iterator it = ::players.begin();
-						     it != ::players.end(); ++it)
+						for (auto& pl : ::players)
 						{
-							if (player.ingame() && player.health > 0 && !(player.cheats & CF_GODMODE))
+							if (pl.ingame() && pl.health > 0 && !(pl.cheats & CF_GODMODE))
 							{
-								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+								P_DamageMobj(pl.mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_SecretExitLevel(0, 1);
@@ -1933,7 +1932,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is push or switch generalized linedef type
-	bool (*linefunc)(line_t * line) = nullptr;
+	bool (*linefunc)(line_t& line) = nullptr;
 
 	// check each range of generalized linedefs
 	if (static_cast<unsigned>(line->special) >= GenEnd)
@@ -2024,7 +2023,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case PushOnce:
 			if (!side)
 			{
-				if (linefunc(line))
+				if (linefunc(*line))
 				{
 					reuse = false;
 					trigger = true;
@@ -2034,20 +2033,20 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case PushMany:
 			if (!side)
 			{
-				linefunc(line);
+				linefunc(*line);
 				reuse = true;
 				trigger = true;
 			}
 			break;
 		case SwitchOnce:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				reuse = false;
 				trigger = true;
 			}
 			break;
 		case SwitchMany:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				reuse = true;
 				trigger = true;
@@ -3398,7 +3397,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is gun triggered generalized linedef type
-	bool (*linefunc)(line_t * line) = nullptr;
+	bool (*linefunc)(line_t& line) = nullptr;
 
 	// check each range of generalized linedefs
 	if (static_cast<unsigned>(line->special) >= GenEnd)
@@ -3482,13 +3481,13 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		switch ((line->special & TriggerType) >> TriggerTypeShift)
 		{
 		case GunOnce:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				return true;
 			}
 			return false;
 		case GunMany:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				return true;
 			}

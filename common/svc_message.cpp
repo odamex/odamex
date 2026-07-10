@@ -689,6 +689,8 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
 		mom->set_z(mobj.momz);
 	}
 
+	msg.set_mode(static_cast<odaproto::svc::MobjModeEnum>(mobj.mode));
+
 	return msg;
 }
 
@@ -942,6 +944,7 @@ odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sec
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 	msg.set_floor_height    (P_FloorHeight(&sector));
@@ -966,6 +969,7 @@ odaproto::svc::MovingSectorPillar SVC_MovingSectorPillar(const sector_t& sector,
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 	msg.set_floor_height    (P_FloorHeight(&sector));
@@ -991,6 +995,7 @@ odaproto::svc::MovingSectorCeiling SVC_MovingSectorCeiling(const sector_t& secto
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 
@@ -1021,6 +1026,7 @@ odaproto::svc::MovingSectorDoor SVC_MovingSectorDoor(const sector_t& sector, int
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 
@@ -1047,6 +1053,7 @@ odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, i
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
 
@@ -1066,8 +1073,6 @@ odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, i
 	msg.set_pause_time          (Floor->m_PauseTime);
 	msg.set_step_time           (Floor->m_StepTime);
 	msg.set_per_step_time       (Floor->m_PerStepTime);
-	msg.set_floor_offset        (Floor->m_Height);
-	msg.set_floor_change        (Floor->m_Change);
 	msg.set_floor_line          (Floor->m_Line ? (Floor->m_Line - lines) : -1);
 
 	return msg;
@@ -1079,8 +1084,9 @@ odaproto::svc::MovingSectorPlat SVC_MovingSectorPlat(const sector_t& sector, int
 
 	if (serverTic >= 0)
 	{
-		msg.set_server_tic(serverTic);
+			msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
 
@@ -1476,6 +1482,30 @@ odaproto::svc::LineSideUpdate SVC_LineSideUpdate(const line_t& line, const int s
 			break;
 		}
 	}
+
+	return msg;
+}
+
+odaproto::svc::WakeupMobj SVC_WakeupMobj(const AActor* mo, bool mustPlaySeeSound)
+{
+	odaproto::svc::WakeupMobj msg;
+
+	msg.set_netid(mo->netid);
+	msg.set_seesound(mustPlaySeeSound);
+	msg.set_angle(mo->angle);
+	if (mo->goal)
+	{
+		msg.set_goalid(mo->goal->netid);
+	}
+	msg.set_lastlook(mo->lastlook);
+	msg.set_movecount(mo->movecount);
+	msg.set_movedir(mo->movedir);
+	msg.set_pursuecount(mo->pursuecount);
+	msg.set_reactiontime(mo->reactiontime);
+	msg.set_special(mo->special);
+	msg.set_strafecount(mo->strafecount);
+	msg.set_targetid(mo->target->netid);
+	msg.set_threshold(mo->threshold);
 
 	return msg;
 }

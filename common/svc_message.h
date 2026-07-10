@@ -137,6 +137,7 @@ odaproto::svc::RailTrail SVC_RailTrail(const v3double_t& start, const v3double_t
 odaproto::svc::LineUpdate SVC_LineUpdate(const line_t& line);
 odaproto::svc::SectorProperties SVC_SectorProperties(const sector_t& sector);
 odaproto::svc::LineSideUpdate SVC_LineSideUpdate(const line_t& line, const int sideNum);
+odaproto::svc::WakeupMobj SVC_WakeupMobj(const AActor* mo, bool mustPlaySeeSound);
 odaproto::svc::MobjState SVC_MobjState(const AActor* mo);
 odaproto::svc::DamageMobj SVC_DamageMobj(const AActor* target, const int pain);
 odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, const line_t* line,
