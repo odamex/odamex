@@ -342,6 +342,57 @@ void dlgServerDetails::SetOptionalRow(wxFlexGridSizer* Grid,
 	Grid->Show(Value, Show);
 }
 
+wxStaticText* dlgServerDetails::AddDeltaRow(wxFlexGridSizer* Grid,
+                                            const wxString& Label,
+                                            wxStaticText** LabelOut,
+                                            wxStaticText** DeltaOut)
+{
+	const wxFont LabelFont =
+	    wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).Bold();
+
+	wxStaticText* LabelCtrl =
+	    new wxStaticText(m_PnlGameplayVars, wxID_ANY, Label);
+	LabelCtrl->SetFont(LabelFont);
+
+	wxStaticText* Value = new wxStaticText(m_PnlGameplayVars, wxID_ANY, "");
+	wxStaticText* Delta = new wxStaticText(m_PnlGameplayVars, wxID_ANY, "");
+
+	// The value cell holds the plain value plus a trailing coloured delta.
+	wxBoxSizer* Cell = new wxBoxSizer(wxHORIZONTAL);
+	Cell->Add(Value, 0, wxALIGN_CENTER_VERTICAL);
+	Cell->Add(Delta, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+
+	Grid->Add(LabelCtrl, 0, wxALIGN_CENTER_VERTICAL);
+	Grid->Add(Cell, 0, wxALIGN_CENTER_VERTICAL);
+
+	if(LabelOut)
+		*LabelOut = LabelCtrl;
+	if(DeltaOut)
+		*DeltaOut = Delta;
+
+	return Value;
+}
+
+void dlgServerDetails::SetDeltaRow(wxFlexGridSizer* Grid, wxStaticText* Label,
+                                   wxStaticText* Value, wxStaticText* Delta,
+                                   const wxString& ValueText,
+                                   const wxString& DeltaText, bool IsPositive)
+{
+	const bool Show = !ValueText.IsEmpty();
+
+	if(Show)
+	{
+		Value->SetLabel(ValueText);
+		Delta->SetLabel(DeltaText);
+		OdaApplyDeltaColour(Delta, IsPositive);
+	}
+
+	// The value and delta live in a nested cell sizer, so hide them recursively.
+	Grid->Show(Label, Show);
+	Grid->Show(Value, Show, true);
+	Grid->Show(Delta, Show, true);
+}
+
 void dlgServerDetails::BuildMetadataGrid()
 {
 	const wxFont LabelFont =
@@ -409,10 +460,10 @@ void dlgServerDetails::BuildGameplayGrid()
 	    AddRow(m_PnlGameplayVars, m_GpGrid, "Monster Dmg:", &m_GpMonsterDmgLabel);
 	m_GpMonsterHealth = AddRow(m_PnlGameplayVars, m_GpGrid, "Monster Health:",
 	                           &m_GpMonsterHealthLabel);
-	m_GpGravity =
-	    AddRow(m_PnlGameplayVars, m_GpGrid, "Gravity:", &m_GpGravityLabel);
-	m_GpAirControl =
-	    AddRow(m_PnlGameplayVars, m_GpGrid, "Air Control:", &m_GpAirControlLabel);
+	m_GpGravity = AddDeltaRow(m_GpGrid, "Gravity:", &m_GpGravityLabel,
+	                          &m_GpGravityDelta);
+	m_GpAirControl = AddDeltaRow(m_GpGrid, "Air Control:", &m_GpAirControlLabel,
+	                             &m_GpAirControlDelta);
 	m_GpWaves = AddRow(m_PnlGameplayVars, m_GpGrid, "Waves:", &m_GpWavesLabel);
 	m_GpCtfRules =
 	    AddRow(m_PnlGameplayVars, m_GpGrid, "CTF Rules:", &m_GpCtfRulesLabel);
@@ -592,10 +643,19 @@ void dlgServerDetails::PopulateGameplay()
 	SetOptionalRow(m_GpGrid, m_GpMonsterHealthLabel, m_GpMonsterHealth,
 	               OdaGetDamagePercentString(s, "sv_monstershealth"));
 
-	SetOptionalRow(m_GpGrid, m_GpGravityLabel, m_GpGravity,
-	               OdaGetGravityString(s));
-	SetOptionalRow(m_GpGrid, m_GpAirControlLabel, m_GpAirControl,
-	               OdaGetAirControlString(s));
+	wxString GravityDelta;
+	bool GravityPositive = false;
+	const wxString Gravity =
+	    OdaGetGravityString(s, GravityDelta, GravityPositive);
+	SetDeltaRow(m_GpGrid, m_GpGravityLabel, m_GpGravity, m_GpGravityDelta,
+	            Gravity, GravityDelta, GravityPositive);
+
+	wxString AirDelta;
+	bool AirControlPositive = false;
+	const wxString AirControl =
+	    OdaGetAirControlString(s, AirDelta, AirControlPositive);
+	SetDeltaRow(m_GpGrid, m_GpAirControlLabel, m_GpAirControl,
+	            m_GpAirControlDelta, AirControl, AirDelta, AirControlPositive);
 
 	wxString Waves;
 	if(s.Info.GameType == GT_Horde)

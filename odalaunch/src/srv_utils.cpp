@@ -304,34 +304,81 @@ wxString OdaGetScoreString(const Server& s)
 	return wxEmptyString;
 }
 
-wxString OdaGetGravityString(const Server& s)
+wxString OdaGetGravityString(const Server& s, wxString& DeltaOut,
+                             bool& IsPositive)
 {
+	constexpr long Default = 800;
+
+	DeltaOut.Clear();
+	IsPositive = false;
+
 	wxString Value;
 
 	if(!OdaGetCvarValue(s, "sv_gravity", Value))
 		return wxEmptyString;
 
-	// Default gravity (800) isn't worth showing.
 	long Gravity = 0;
-	if(Value.ToLong(&Gravity) && Gravity == 800)
+	if(!Value.ToLong(&Gravity))
+		return Value;
+
+	// The default isn't worth showing.
+	if(Gravity == Default)
 		return wxEmptyString;
+
+	const double Diff = (double)(Gravity - Default) / (double)Default;
+
+	DeltaOut = wxString::Format("(%+.4g%%)", Diff);
+	IsPositive = (Diff > 0.0);
 
 	return Value;
 }
 
-wxString OdaGetAirControlString(const Server& s)
+wxString OdaGetAirControlString(const Server& s, wxString& DeltaOut,
+                                bool& IsPositive)
 {
+	constexpr double Default = 0.00390625; // 1/256
+
+	DeltaOut.Clear();
+	IsPositive = false;
+
 	wxString Value;
 
 	if(!OdaGetCvarValue(s, "sv_aircontrol", Value))
 		return wxEmptyString;
 
-	// Default air control (0.00390625) isn't worth showing.
 	double Air = 0.0;
-	if(Value.ToDouble(&Air) && Air == 0.00390625)
+	if(!Value.ToDouble(&Air))
+		return Value;
+
+	// The default isn't worth showing.
+	if(Air == Default)
 		return wxEmptyString;
 
+	const double Diff = (Air - Default) / Default;
+
+	DeltaOut = wxString::Format("(%+.4g%%)", Diff);
+	IsPositive = (Diff > 0.0);
+
 	return Value;
+}
+
+void OdaApplyDeltaColour(wxStaticText* Ctrl, bool IsPositive)
+{
+	// Choose shades legible on the control's background: brighter on a dark
+	// background, deeper on a light one.
+	wxColour Bg = Ctrl->GetParent()
+	                  ? Ctrl->GetParent()->GetBackgroundColour()
+	                  : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+	const double Luma =
+	    Bg.Red() * 0.299 + Bg.Green() * 0.587 + Bg.Blue() * 0.114;
+	const bool Dark = Luma < 128.0;
+
+	const wxColour Green = Dark ? wxColour(0x5C, 0xD6, 0x5C)
+	                            : wxColour(0x00, 0x80, 0x00);
+	const wxColour Red = Dark ? wxColour(0xFF, 0x6B, 0x6B)
+	                          : wxColour(0xC0, 0x00, 0x00);
+
+	Ctrl->SetForegroundColour(IsPositive ? Green : Red);
 }
 
 wxString OdaGetFastMonstersString(const Server& s)

@@ -190,6 +190,25 @@ PlayerListPopover::PlayerListPopover(wxWindow* parent)
 		return Item;
 	};
 
+	// The same as MakeItem, but with a trailing delta control for a colored "(+/-X%)" control.
+	auto MakeDeltaItem = [&](const wxString& LabelText, wxStaticText** ValueOut,
+	                         wxStaticText** DeltaOut) -> wxSizer*
+	{
+		wxBoxSizer* Item = new wxBoxSizer(wxHORIZONTAL);
+
+		wxStaticText* Label = new wxStaticText(Panel, wxID_ANY, LabelText);
+		Label->SetFont(LabelFont);
+
+		*ValueOut = new wxStaticText(Panel, wxID_ANY, "");
+		*DeltaOut = new wxStaticText(Panel, wxID_ANY, "");
+
+		Item->Add(Label, 0, wxALIGN_CENTER_VERTICAL);
+		Item->Add(*ValueOut, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+		Item->Add(*DeltaOut, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+
+		return Item;
+	};
+
 	// Gap between consecutive items in the wrapping "rest" row
 	const int ItemGap = 18;
 	// Vertical gap between items stacked within a column
@@ -225,10 +244,11 @@ PlayerListPopover::PlayerListPopover(wxWindow* parent)
 	m_MonsterHealthItem = MakeItem("Monster Health:", &m_MonsterHealth);
 	LeftCol->Add(m_MonsterHealthItem, 0, wxBOTTOM, RowGap);
 
-	m_GravityItem = MakeItem("Gravity:", &m_Gravity);
+	m_GravityItem = MakeDeltaItem("Gravity:", &m_Gravity, &m_GravityDelta);
 	LeftCol->Add(m_GravityItem, 0, wxBOTTOM, RowGap);
 
-	m_AirControlItem = MakeItem("Air Control:", &m_AirControl);
+	m_AirControlItem =
+	    MakeDeltaItem("Air Control:", &m_AirControl, &m_AirControlDelta);
 	LeftCol->Add(m_AirControlItem, 0, wxBOTTOM, RowGap);
 
 	m_WavesItem = MakeItem("Waves:", &m_Waves);
@@ -309,8 +329,21 @@ void PlayerListPopover::Populate(const Server& s)
 	SetOptionalItem(m_MonsterHealthItem, m_MonsterHealth,
 	                OdaGetDamagePercentString(s, "sv_monstershealth"));
 
-	SetOptionalItem(m_GravityItem, m_Gravity, OdaGetGravityString(s));
-	SetOptionalItem(m_AirControlItem, m_AirControl, OdaGetAirControlString(s));
+	wxString GravityDelta;
+	bool GravityPositive = false;
+	const wxString Gravity =
+	    OdaGetGravityString(s, GravityDelta, GravityPositive);
+	m_GravityDelta->SetLabel(GravityDelta);
+	OdaApplyDeltaColour(m_GravityDelta, GravityPositive);
+	SetOptionalItem(m_GravityItem, m_Gravity, Gravity);
+
+	wxString AirDelta;
+	bool AirControlPositive = false;
+	const wxString AirControl =
+	    OdaGetAirControlString(s, AirDelta, AirControlPositive);
+	m_AirControlDelta->SetLabel(AirDelta);
+	OdaApplyDeltaColour(m_AirControlDelta, AirControlPositive);
+	SetOptionalItem(m_AirControlItem, m_AirControl, AirControl);
 
 	// Waves (g_horde_waves) - Horde mode only
 	wxString Waves;

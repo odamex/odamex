@@ -30,6 +30,7 @@
 
 class wxWindow;
 class wxSizer;
+class wxStaticText;
 
 // Returns an easy-to-read game type label for a server (e.g. "Cooperative",
 // "Duel", "Capture The Flag"), taking game modifiers (lives, sides, player
@@ -92,13 +93,22 @@ wxString OdaGetTimeLeftString(const odalpapi::Server& s);
 // score for team modes, frags for deathmatch), or empty when none applies.
 wxString OdaGetScoreString(const odalpapi::Server& s);
 
-// Returns the sv_gravity value, or an empty string when absent or at its
-// default (800).
-wxString OdaGetGravityString(const odalpapi::Server& s);
+// Returns the sv_gravity value, or an empty string when absent or
+// at its default (800). DeltaOut receives the signed difference from default as
+// a parenthesised string (e.g. "(-0.25%)") and IsPositive is set true when the
+// value is above default (only meaningful when a non-empty value is returned).
+wxString OdaGetGravityString(const odalpapi::Server& s, wxString& DeltaOut,
+                             bool& IsPositive);
 
-// Returns the sv_aircontrol value, or an empty string when absent or at its
-// default (0.00390625).
-wxString OdaGetAirControlString(const odalpapi::Server& s);
+// Returns the sv_aircontrol value, or an empty string when absent
+// or at its default (0.00390625). DeltaOut / IsPositive behave as for
+// OdaGetGravityString.
+wxString OdaGetAirControlString(const odalpapi::Server& s, wxString& DeltaOut,
+                                bool& IsPositive);
+
+// Colours a delta control green when IsPositive, red otherwise, choosing shades
+// that stay legible on the control's background (light or dark).
+void OdaApplyDeltaColour(wxStaticText* Ctrl, bool IsPositive);
 
 // Returns "Yes" when fast monsters are enabled (sv_fastmonsters) below
 // Nightmare skill, or an empty string otherwise.

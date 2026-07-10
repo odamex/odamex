@@ -96,7 +96,9 @@ private:
 	wxStaticText* m_MonsterDmg;
 	wxStaticText* m_MonsterHealth;
 	wxStaticText* m_Gravity;
+	wxStaticText* m_GravityDelta;
 	wxStaticText* m_AirControl;
+	wxStaticText* m_AirControlDelta;
 	wxStaticText* m_Waves;
 	wxStaticText* m_CtfRules;
 	wxStaticText* m_Lives;

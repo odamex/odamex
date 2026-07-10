@@ -97,6 +97,19 @@ private:
 	void SetOptionalRow(wxFlexGridSizer* Grid, wxStaticText* Label,
 	                    wxStaticText* Value, const wxString& Text);
 
+	// Like AddRow but the value cell also holds a trailing delta control (for a
+	// coloured "(+/-N%)" suffix). Returns the value widget; the label and delta
+	// widgets are written to *LabelOut / *DeltaOut.
+	wxStaticText* AddDeltaRow(wxFlexGridSizer* Grid, const wxString& Label,
+	                          wxStaticText** LabelOut, wxStaticText** DeltaOut);
+
+	// Shows/hides a value+delta row, setting the value and colouring the delta
+	// (green when IsPositive, red otherwise) when shown.
+	void SetDeltaRow(wxFlexGridSizer* Grid, wxStaticText* Label,
+	                 wxStaticText* Value, wxStaticText* Delta,
+	                 const wxString& ValueText, const wxString& DeltaText,
+	                 bool IsPositive);
+
 	dlgMain* m_Parent;
 	odalpapi::Server m_Server;
 
@@ -165,8 +178,10 @@ private:
 	wxStaticText* m_GpMonsterHealthLabel;
 	wxStaticText* m_GpGravity;
 	wxStaticText* m_GpGravityLabel;
+	wxStaticText* m_GpGravityDelta;
 	wxStaticText* m_GpAirControl;
 	wxStaticText* m_GpAirControlLabel;
+	wxStaticText* m_GpAirControlDelta;
 	wxStaticText* m_GpWaves;
 	wxStaticText* m_GpWavesLabel;
 	wxStaticText* m_GpCtfRules;
