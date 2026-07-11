@@ -30,17 +30,6 @@ modules:
       - type: archive
         url: https://www.libsdl.org/projects/old/SDL_mixer/timidity/timidity.tar.gz
         sha256: ee7c59bb5d5fae206d53eef0e82b5ed739e7cbf69252a3754024f8f52ebe77aa
-  # cpptrace dependencies
-  - name: libdwarf
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -D BUILD_DWARFDUMP=OFF
-    sources:
-      - type: git
-        url: https://github.com/jeremy-rifkin/libdwarf-lite.git
-        tag: v2.3.1
-        commit: d06f37ed6660b324e458387d43efde3d84c9dd55
   # Odamex (combined)
   - name: Odamex
     buildsystem: cmake-ninja
