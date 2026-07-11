@@ -964,7 +964,7 @@ void R_RenderSkyRange(visplane_t* pl)
 			skyposts[x] = backskytex->getColumn(colnum);
 		}
 
-		R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
+		R_RenderColumnRange(pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
 				skyposts, SkyColumnBlaster, false, 2);
 	}
 

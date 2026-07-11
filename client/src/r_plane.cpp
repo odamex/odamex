@@ -738,7 +738,7 @@ void R_DrawPlanes()
 				else
 					R_DrawSlopedPlane(pl);
 					
-				Z_ChangeTag((void*)texture, PU_CACHE);
+				Z_ChangeTag(texture, PU_CACHE);
 			}
 		}
 	}
