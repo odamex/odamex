@@ -278,6 +278,13 @@ void LstOdaServerList::ClearItemCells(long item)
 	}
 }
 
+bool LstOdaServerList::IsSortedToBottom(long item)
+{
+	// A non-responding server shows "<< NO RESPONSE >>" in its name column.
+	// Pin those to the bottom regardless of sort.
+	return GetItemText(item, serverlist_field_name) == ODA_QRYNORESPONSE;
+}
+
 void LstOdaServerList::SetBlockedInfo(long item)
 {
 	wxListItem ListItem;

@@ -78,7 +78,15 @@ public:
 	{
 		wxString text;
 		int image;
+		bool bottom; // Always sort to the bottom of the list
 	};
+
+	// Rows for which this returns true are pinned to the bottom of the list no
+	// matter which column or order is active (like non-responding servers).
+	virtual bool IsSortedToBottom(long WXUNUSED(item))
+	{
+		return false;
+	}
 
 	void Sort();
 
