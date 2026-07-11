@@ -60,6 +60,9 @@ if(wxWidgets_FOUND)
   odamex_target_settings(odalaunch)
 
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
+  target_include_directories(odalaunch PRIVATE ${wxWidgets_INCLUDE_DIRS})
+
+  message("================== ${wxWidgets_INCLUDE_DIRS} ======= ${wxWidgets_LIBRARIES} =============")
 
   if(WIN32)
     target_link_libraries(odalaunch ws2_32)
