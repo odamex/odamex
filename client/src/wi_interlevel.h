@@ -75,15 +75,15 @@ struct interlevelframe_t
 	};
 
 	OLumpName imagelump;
-	int imagelumpnum;
+	ResourceId imageresourceid;
 	OLumpName altimagelump;
-	int altimagelumpnum;
+	ResourceId altimageresourceid;
 	frametype_t type;
 	int duration;
 	int maxduration;
 
-	interlevelframe_t(OLumpName il = "", int iln = 0, OLumpName ail = "", int ailn = 0, frametype_t t = None, int d = 0, int md = 0) :
-		imagelump(il), imagelumpnum(iln), altimagelump(ail), altimagelumpnum(0), type(t), duration(d), maxduration(md) {}
+	interlevelframe_t(OLumpName il = "", ResourceId iln = ResourceId::INVALID_ID, OLumpName ail = "", ResourceId ailn = ResourceId::INVALID_ID, frametype_t t = None, int d = 0, int md = 0) :
+		imagelump(il), imageresourceid(iln), altimagelump(ail), altimageresourceid(ailn), type(t), duration(d), maxduration(md) {}
 };
 
 struct interlevelanim_t

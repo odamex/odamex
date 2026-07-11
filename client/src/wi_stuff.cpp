@@ -398,7 +398,7 @@ static void WI_drawAnimation(void)
 	for (const auto& state : *animation.states)
 	{
 		const interlevelframe_t& frame = state.frames.at(state.frame_index);
-		const Texture*  patch = W_CachePatch(frame.imagelumpnum);
+		const Texture*  patch = Res_CacheTexture(frame.imageresourceid);
 		if (!frame.altimagelump.empty())
 		{
 			int left = state.xpos - patch->leftoffset();
@@ -408,7 +408,7 @@ static void WI_drawAnimation(void)
 
 			if (!(left >= 0 && right < 320 && top >= 0 && bottom < 200))
 			{
-				patch = W_CachePatch(frame.altimagelumpnum);
+				patch = Res_CacheTexture(frame.altimageresourceid);
 			}
 		}
 
@@ -1512,7 +1512,7 @@ void WI_loadData()
 			{
 				for (const auto& frame : anim.frames)
 				{
-					W_CachePatch(frame.imagelumpnum);
+					Res_CacheTexture(frame.imageresourceid);
 				}
 			}
 		}
@@ -1525,7 +1525,7 @@ void WI_loadData()
 			{
 				for (const auto& frame : anim.frames)
 				{
-					W_CachePatch(frame.imagelumpnum);
+					Res_CacheTexture(frame.imageresourceid);
 				}
 			}
 		}
