@@ -42,10 +42,10 @@ modules:
       - -D BUILD_LAUNCHER=1
       - -D BUILD_TESTS=0
       - -D BUILD_MASTER=0
-      - -D USE_INTERNAL_LIBS=1
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
       - -D ODAMEX_INSTALL_DATADIR=/run/host/usr/share
       - -D USE_EXTERNAL_LIBDWARF=1
+      - -D USE_INTERNAL_WXWIDGETS=1
       - -D ODAMEX_NO_GITVER=0
     post-install:
       # We're in a build subdir due to builddir: true, so step back out of it.
