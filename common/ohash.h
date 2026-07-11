@@ -51,19 +51,19 @@ class OCRC32Sum : public OHash
 };
 
 template <>
-struct hashfunc<OCRC32Sum>
+struct std::hash<OCRC32Sum>
 {
-	unsigned int operator()(const OCRC32Sum& str) const
+	size_t operator()(const OCRC32Sum& str) const
 	{
-		return __hash_cstring(str.getHexCStr());
+		return std::hash<std::string>{}(str.getHexStr());
 	}
 };
 
 template <>
-struct hashfunc<OMD5Hash>
+struct std::hash<OMD5Hash>
 {
-	unsigned int operator()(const OMD5Hash& str) const
+	size_t operator()(const OMD5Hash& str) const
 	{
-		return __hash_cstring(str.getHexCStr());
+		return std::hash<std::string>{}(str.getHexStr());
 	}
 };

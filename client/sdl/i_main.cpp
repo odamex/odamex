@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
 		call_terms();
 		exit(EXIT_FAILURE);
 	}
-#ifndef _DEBUG
+#ifndef ODAMEX_DEBUG
 	catch (...)
 	{
 		// If an exception is thrown, be sure to do a proper shutdown.

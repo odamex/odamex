@@ -500,7 +500,7 @@ void I_ErrorMessageBox(const char* message)
 
 #endif
 
-#if defined(_DEBUG)
+#if defined(ODAMEX_DEBUG)
 
 BEGIN_COMMAND(debug_userfilename)
 {

@@ -250,7 +250,7 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	}
 	else // potential monster
 	{
-		enderName = P_MobjToName(static_cast<mobjtype_t>(source->type));
+		enderName = source->info->getDisplayName();
 		enderIsMonster = true;
 		broadcastText = spreeEndMonster;
 		type = BR_MONSTER;

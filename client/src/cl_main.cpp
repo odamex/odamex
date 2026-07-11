@@ -1270,7 +1270,7 @@ BEGIN_COMMAND(netrew)
 {
 	if (netdemo.isPlaying())
 		netdemo.prevSnapshot();
-	else if (netdemo.isPaused());
+	else if (netdemo.isPaused())
 		netdemo.prevTic();
 }
 END_COMMAND(netrew)
@@ -2354,7 +2354,7 @@ void CL_SimulatePlayers()
 										prevsnap.getY() - player.mo->y,
 										prevsnap.getZ() - player.mo->z);
 
-				fixed_t dist = M_LengthVec3Fixed(&offset);
+				fixed_t dist = M_LengthVec3Fixed(offset);
 				if (dist > 2 * FRACUNIT)
 				{
 					#ifdef _SNAPSHOT_DEBUG_
