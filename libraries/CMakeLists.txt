@@ -349,10 +349,10 @@ if (BUILD_LAUNCHER)
     # wxWidgets
     # ======================================
     if (USE_INTERNAL_WXWIDGETS)
+        set(FETCHCONTENT_SOURCE_DIR_WXWIDGETS "${CMAKE_CURRENT_SOURCE_DIR}/wxwidgets")
         FetchContent_Declare(
             wxWidgets
-            GIT_REPOSITORY  https://github.com/wxWidgets/wxWidgets.git
-            GIT_TAG         v3.3.2
+            URL "${FETCHCONTENT_SOURCE_DIR_WXWIDGETS}"
             OVERRIDE_FIND_PACKAGE
             )
         list(APPEND FETCH_CONTENT_PACKAGES wxWidgets)
