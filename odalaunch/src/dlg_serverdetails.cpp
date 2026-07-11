@@ -223,10 +223,6 @@ dlgServerDetails::dlgServerDetails(dlgMain* parent)
 	// Server variables get a vertical sizer of collapsible panes.
 	m_PnlServerVars->SetSizer(new wxBoxSizer(wxVERTICAL));
 
-	// This needs double buffering to avoid flicker when the panes expand/collapse and the
-	// scrolled area reflows.
-	m_PnlServerVars->SetDoubleBuffered(true);
-
 	// Reflow the scrolled area whenever a category pane expands/collapses, and
 	// remember the expansion state so a refresh can restore it.
 	Bind(wxEVT_COLLAPSIBLEPANE_CHANGED,
@@ -246,8 +242,10 @@ dlgServerDetails::dlgServerDetails(dlgMain* parent)
 			     else
 			     {
 				     // Build the pane's rows the first time it opens.
+				     Pane->Freeze();
 				     BuildPaneContent(Pane);
 				     m_ExpandedCategories.insert(Pane->GetLabel());
+				     Pane->Thaw();
 			     }
 		     }
 
@@ -265,7 +263,9 @@ dlgServerDetails::dlgServerDetails(dlgMain* parent)
 		{
 			if(!m_BuiltPanes.count(it->first))
 			{
+				it->first->Freeze();
 				BuildPaneContent(it->first);
+				it->first->Thaw();
 				evt.RequestMore(); // more panes may remain; keep idling
 				return;
 			}
@@ -786,14 +786,18 @@ void dlgServerDetails::PopulateServerVars()
 		                          wxDefaultPosition, wxDefaultSize,
 		                          wxCP_NO_TLW_RESIZE);
 
+		Pane->SetDoubleBuffered(true);
+
 		m_PaneRows[Pane] = Rows;
 		Outer->Add(Pane, 0, wxGROW | wxALL, 2);
 
 		// Restore (and eagerly build) panes the user had expanded before.
 		if(m_ExpandedCategories.count(Title))
 		{
+			Pane->Freeze();
 			BuildPaneContent(Pane);
 			Pane->Expand();
+			Pane->Thaw();
 		}
 
 		return true;
@@ -917,6 +921,8 @@ void dlgServerDetails::BuildPaneContent(wxCollapsiblePane* Pane)
 	CvarDocDb& Docs = GetCvarDb();
 	wxWindow* PaneWin = Pane->GetPane();
 
+	PaneWin->Freeze();
+
 	wxFlexGridSizer* Grid = new wxFlexGridSizer(0, 3, 2, 12);
 	const std::vector<std::pair<std::string, wxString> >& Rows = it->second;
 
@@ -955,6 +961,7 @@ void dlgServerDetails::BuildPaneContent(wxCollapsiblePane* Pane)
 	wxBoxSizer* PaneSizer = new wxBoxSizer(wxVERTICAL);
 	PaneSizer->Add(Grid, 0, wxALL, 4);
 	PaneWin->SetSizer(PaneSizer);
+	PaneWin->Thaw();
 }
 
 void dlgServerDetails::PopulatePlayerList()
