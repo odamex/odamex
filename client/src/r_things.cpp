@@ -176,23 +176,39 @@ fixed_t 		sprtopscreen;
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
 	// calculate unclipped screen coordinates for post
-	int64_t topscreen = sprtopscreen;
-	int64_t bottomscreen = topscreen + FixedMul(spryscale, dcol.textureheight);
+	const int64_t topscreen = sprtopscreen;
+	const int64_t bottomscreen = topscreen + FixedMul(spryscale, dcol.textureheight);
 
-	dcol.yl = (int)((topscreen + FRACUNIT - 1) >> FRACBITS);
-	dcol.yh = (int)((bottomscreen - 1) >> FRACBITS);
+	int64_t yl = (topscreen - 1) >> FRACBITS;
+	int64_t yh = (bottomscreen - 1) >> FRACBITS;
 
-	if (mceilingclip[dcol.x] + 1 > dcol.yl)
-		// TODO: dcol.texturefrac should take y-scaling of textures into account
-		dcol.texturefrac = (mceilingclip[dcol.x] + 1 - dcol.yl) * dcol.iscale;
-	else
-		dcol.texturefrac = 0;
+	int64_t texturefrac = 0;
+	if (mceilingclip[dcol.x] + 1 > yl)
+		texturefrac = (mceilingclip[dcol.x] + 1 - yl) * dcol.iscale;
 
-	dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
-	dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
+	yl = MAX<int64_t>(yl, MAX(mceilingclip[dcol.x], 0));
+	yh = MIN<int64_t>(yh, mfloorclip[dcol.x] - 1);
 
-	if (dcol.yl <= dcol.yh)
+	if (yl > yh || texturefrac >= dcol.textureheight)
+		return;
+
+	// clamp the texture coordinates so out-of-range rows are not drawn
+	const int64_t endfrac = texturefrac + (yh - yl) * dcol.iscale;
+	const int64_t maxfrac = dcol.textureheight;
+
+	if (endfrac >= maxfrac)
+	{
+		const int64_t cnt = (endfrac - maxfrac + dcol.iscale) / dcol.iscale;
+		yh -= cnt;
+	}
+
+	if (yl >= 0 && yh < viewheight && yl <= yh)
+	{
+		dcol.yl = static_cast<int>(yl);
+		dcol.yh = static_cast<int>(yh);
+		dcol.texturefrac = static_cast<fixed_t>(texturefrac);
 		drawfunc();
+	}
 }
 
 
@@ -325,7 +341,7 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 	dcol.argbtexturedata = texture->mARGBData;
 
 	dcol.masked = true;
-	dcol.iscale = 0xffffffffu / (unsigned)vis->yscale;
+	dcol.iscale = 0xffffffffu / static_cast<unsigned>(vis->yscale);
 	dcol.texturemid = vis->texturemid;
 	spryscale = vis->yscale;
 	sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
