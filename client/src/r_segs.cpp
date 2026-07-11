@@ -225,7 +225,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 			if (dcol.texturefrac < 0)
 			{
-				const int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+				const int cnt = R_PixelCeil(-dcol.texturefrac, dcol.iscale);
 				dcol.yl += cnt;
 				dcol.texturefrac += cnt * dcol.iscale;
 			}
@@ -235,7 +235,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 			if (endfrac >= maxfrac)
 			{
-				const int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+				const int cnt = R_PixelCeil(endfrac - maxfrac + 1, dcol.iscale);
 				dcol.yh -= cnt;
 			}
 
@@ -261,13 +261,19 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 	if (dcol.post->length != dcol.textureheight >> FRACBITS)
 	{
-		int count = dcol.textureheight >> FRACBITS;
 		tallpost_t* srcpost = dcol.post;
 
 		int destpostlen = 0;
 
 		static byte* destpostraw[512];
 		tallpost_t* destpost = (tallpost_t*) destpostraw;
+
+		// a 512 pixel tall post can overflow destpostraw
+		// because of the 4 byte header and 4 byte footer.
+		// so rather than increase it to 513 and imply that we
+		// handle 513px at a time, clamp it instead.
+		const int maxcount = static_cast<int>(sizeof(destpostraw)) - 8;
+		int count = MIN(dcol.textureheight >> FRACBITS, maxcount);
 
 		destpost->topdelta = 0;
 
@@ -277,8 +283,11 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 			if (srcpost->topdelta == destpostlen)
 			{
-				memcpy(destpost->data() + destpostlen, srcpost->data(), srcpost->length);
-					   destpostlen += srcpost->length;
+				// clamp to remaining to ensure malformed post lengths
+				// don't crash
+				const int copylen = MIN<int>(srcpost->length, remaining);
+				memcpy(destpost->data() + destpostlen, srcpost->data(), copylen);
+				destpostlen += copylen;
 			}
 			else
 			{

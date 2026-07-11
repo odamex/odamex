@@ -55,17 +55,14 @@ modules:
         commit: d06f37ed6660b324e458387d43efde3d84c9dd55
   # Odalaunch dependencies
   - name: WxWidgets
-    buildsystem: autotools
+    buildsystem: cmake-ninja
     config-opts:
-      # once cmake fixes are in, use cmake with these options
-      # - -D wxBUILD_SHARED=ON
-      # - -D wxBUILD_TESTS=OFF
-      # - -D wxBUILD_SAMPLES=OFF
-      # - -D wxBUILD_DEMOS=OFF
-      # - -D wxBUILD_TOOLKIT=gtk3
-      # - -D wxUSE_SYS_LIBS=sys
-      - --with-gtk=3
-      - --disable-tests
+      - -D wxBUILD_SHARED=ON
+      - -D wxBUILD_TESTS=OFF
+      - -D wxBUILD_SAMPLES=OFF
+      - -D wxBUILD_DEMOS=OFF
+      - -D wxBUILD_TOOLKIT=gtk3
+      - -D wxUSE_SYS_LIBS=sys
     cleanup:
       - "/lib/wx"
       - "/share/aclocal"
@@ -82,8 +79,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/wxWidgets/wxWidgets.git
-        tag: v3.3.2
-        commit: db1005db3dea2c37a46fb455a9a02e37aa360751
+        tag: v3.3.3
+        commit: 670835aec7e54b9e9d5a50d6a1aea1e8ba0bcdb2
   # Odamex (combined)
   - name: Odamex
     buildsystem: cmake-ninja

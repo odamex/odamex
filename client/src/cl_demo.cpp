@@ -1674,15 +1674,6 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	else
 		displayplayer_id = cid;
 
-	// setup psprites and restore player colors
-	for (auto& player : players)
-	{
-		P_SetupPsprites(player);
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
-	}
-
-	R_CopyTranslationRGB (0, consoleplayer_id);
-
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;
 	while ( (mo = flagiterator.Next() ) )
