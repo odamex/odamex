@@ -1063,6 +1063,7 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_playerpowers);
 	MSG_INFO(svc_playerpsprites);
 	MSG_INFO(svc_configureavatar);
+	MSG_INFO(svc_wakeupmobj);
 
 	MSG_INFO(clc_playerinput);
 	MSG_INFO(clc_netdemocap);

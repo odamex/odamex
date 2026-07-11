@@ -67,6 +67,7 @@ void R_CacheSprite(const spritedef_t *sprite)
 				const ResourceId res_id = sprite->spriteframes[i].resource[r];
 				const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
 
+				sprite->spriteframes[i].height[r] = texture->mHeight << FRACBITS;
 				sprite->spriteframes[i].width[r] = texture->mWidth << FRACBITS;
 				sprite->spriteframes[i].offset[r] = texture->mOffsetX << FRACBITS;
 				sprite->spriteframes[i].topoffset[r] = texture->mOffsetY << FRACBITS;

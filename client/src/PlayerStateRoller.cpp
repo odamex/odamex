@@ -26,7 +26,7 @@
 #include <iso646.h>
 
 #include "odamex.h"
-
+#include "s_sound.h"
 
 PlayerStateRoller::PlayerStateRoller() :
 	m_history       (TICRATE * 2),  // at least 2 seconds of history
@@ -150,6 +150,18 @@ void PlayerStateRoller::Roll(int i_oldTic, Callable&& i_callable)
 	i_callable(m_currentState);
 }
 
+template <typename Callable>
+void PlayerStateRoller::RollIter(int i_oldTic, Callable&& i_callable)
+{
+	for (int rollingTic = i_oldTic; rollingTic <= m_mostRecentTic; ++rollingTic)
+	{
+		auto rollingIter = m_history.find(rollingTic);
+
+		i_callable(rollingIter->second, rollingIter);
+	}
+	i_callable(m_currentState, m_history.end());
+}
+
 void PlayerStateRoller::ApplyMostRecentToPlayer(player_t& io_player)
 {
 	m_currentState.ToPlayer(io_player);
@@ -203,14 +215,62 @@ bool PlayerStateRoller::RollbackMaxAmmo(HistoryTableType::iterator i_historyIter
 	return false;
 }
 
-bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>& i_weaponOwned)
+bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>& i_weaponOwned, player_t& io_player)
 {
 	if (i_historyIter->second.weaponowned != i_weaponOwned)
 	{
-		Roll(i_historyIter->first, [&i_weaponOwned](auto& rollingState)
+		HistoryTableType::iterator previousIter = m_history.end();
+		bool itemSoundMustBeCanceled            = false;
+		bool weaponWasAdded                     = false;
+
+		RollIter(i_historyIter->first, [&](PlayerItemDataType&        rollingState,
+		                                   HistoryTableType::iterator rollingIter)
 			{
+				// The following block is all about canceling a weapon pickup sound if a rollback
+				// removes a weapon whose pickup was mispredicted.  In general, if we encounter
+				// a weapon going from not-owned to owned, we want to NOT cancel the sound.
+				if (not weaponWasAdded)
+				{
+					for (size_t i = 0; i < NUMWEAPONS; ++i)
+					{
+						// Are we removing a weapon pickup from history?
+						// Take note that we must cancel the sound playback on the item channel.
+						if (rollingState.weaponowned[i] and not i_weaponOwned[i])
+						{
+							itemSoundMustBeCanceled = true;
+						}
+						// But on the other hand, if we're adding a weapon, DON'T cancel the sound.
+						// In fact, if there was already a cancelation we prepared, cancel the cancelation.
+						// The *actual* pickup's cue is higher priority, so don't even bother checking
+						// for the remainder of the rollback operation.
+						else if (i_weaponOwned[i] and not rollingState.weaponowned[i])
+						{
+							weaponWasAdded = true;
+							itemSoundMustBeCanceled = false;
+							break;
+						}
+						// Finally, if we encounter any other pickup in the rollback range, make sure
+						// that we DON'T cancel its pickup sound.  The *actual* pickup cue is more imporant.
+						else if (previousIter != m_history.end())
+						{
+							if (rollingState.weaponowned[i] and not previousIter->second.weaponowned[i])
+							{
+								weaponWasAdded = true;
+								itemSoundMustBeCanceled = false;
+								break;
+							}
+						}
+					}
+					previousIter = rollingIter;
+				}
 				rollingState.weaponowned = i_weaponOwned;
 			});
+
+		if (itemSoundMustBeCanceled)
+		{
+			S_StopSound(io_player.mo, CHAN_ITEM);
+		}
+
 		return true;
 	}
 	return false;
@@ -392,7 +452,7 @@ bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAM
 bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const std::array<bool, NUMWEAPONS>& i_weaponOwned, player_t& io_player)
 {
 	auto historyIter = ObtainHistory(i_oldTic, io_player);
-	if (historyIter and RollbackWeaponOwned(*historyIter, i_weaponOwned))
+	if (historyIter and RollbackWeaponOwned(*historyIter, i_weaponOwned, io_player))
 	{
 		ApplyMostRecentToPlayer(io_player);
 		return true;
@@ -555,7 +615,7 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 
 		const bool ammoRequiredRoll             = RollbackAmmo           (*historyIter, i_itemData.ammo);
 		const bool maxammoRequiredRoll          = RollbackMaxAmmo        (*historyIter, i_itemData.maxammo);
-		const bool weaponOwnedRequiredRoll      = RollbackWeaponOwned    (*historyIter, i_itemData.weaponowned);
+		const bool weaponOwnedRequiredRoll      = RollbackWeaponOwned    (*historyIter, i_itemData.weaponowned, io_player);
 		const bool weaponSelectionRequiredRoll  = RollbackWeaponSelection(*historyIter, i_itemData.readyweapon, i_itemData.pendingweapon);
 		const bool powersRequiredRoll           = RollbackPowers         (*historyIter, i_itemData.powers);
 		const bool pspritesRequiredRoll         = RollbackPsprites       (*historyIter, i_itemData.psprites);

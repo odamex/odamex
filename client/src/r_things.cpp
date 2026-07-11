@@ -51,6 +51,17 @@
 
 extern fixed_t FocalLengthX, FocalLengthY;
 
+// prefetch hint, used to soften the pointer chase over a sector's
+// thing list
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+	#include <xmmintrin.h>
+	#define R_PREFETCH(p) _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_T0)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define R_PREFETCH(p) __builtin_prefetch(p)
+#else
+	#define R_PREFETCH(p) ((void)0)
+#endif
+
 #define MINZ							(FRACUNIT*4)
 #define BASEYCENTER 					(100)
 
@@ -109,9 +120,22 @@ int 			newvissprite;
 // R_ClearSprites
 // Called at frame start.
 //
+
+// last sprite def looked up by R_ProjectSprite
+static int32_t projspritenum;
+static const spritedef_t* projsprdef;
+
+// frame-constant interpolation flag, so R_ProjectSprite doesn't make a
+// singleton call per sprite
+static bool projlerp;
+
 void R_ClearSprites()
 {
 	vissprite_p = firstvissprite;
+
+	projspritenum = -1;
+	projsprdef = NULL;
+	projlerp = OInterpolation::getInstance().enabled();
 }
 
 
@@ -328,13 +352,13 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 // clipped off the screen.
 //
 static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
-		fixed_t x, fixed_t y, fixed_t z, fixed_t height, fixed_t width,
+		fixed_t x, fixed_t y, fixed_t z, fixed_t tx, fixed_t ty,
+		fixed_t height, fixed_t width,
 		fixed_t topoffs, fixed_t sideoffs, bool flip)
 {
-	// translate the sprite edges from world-space to camera-space
-	// and store in t1 & t2
-	fixed_t tx, ty, t1xold;
-	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
+	// x / y are in world-space, tx / ty are the same point already
+	// translated into camera-space by the caller
+	fixed_t t1xold;
 
 	v2fixed_t t1, t2;
 	if (flip)
@@ -356,15 +380,20 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	fixed_t gzt = z + topoffs;
 	fixed_t gzb = z;
 
+	// Run a less taxing calculation to get the x/y scale of the sprite.
+	fixed_t xscale = FixedDiv(FocalLengthX, ty);
+
 	// project the sprite edges to determine which columns the sprite occupies
-	int x1 = R_ProjectPointX(t1.x, ty);
-	int x2 = R_ProjectPointX(t2.x, ty) - 1;
+	int x1 = FIXED2INT(centerxfrac + FixedMul(t1.x, xscale));
+	int x2 = FIXED2INT(centerxfrac + FixedMul(t2.x, xscale)) - 1;
 	if (!R_CheckProjectionX(x1, x2))
 		return NULL;
 
+	fixed_t yscale = FixedDiv(FocalLengthY, ty);
+
 	// Entirely above the top of the screen or below the bottom?
-	int y1 = R_ProjectPointY(gzt - viewz, ty);
-	int y2 = R_ProjectPointY(gzb - viewz, ty) - 1;
+	int y1 = FIXED2INT(centeryfrac - FixedMul(gzt - viewz, yscale));
+	int y2 = FIXED2INT(centeryfrac - FixedMul(gzb - viewz, yscale)) - 1;
 	if (!R_CheckProjectionY(y1, y2))
 		return NULL;
 
@@ -514,8 +543,8 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	// [SL] interpolate the position of thing
 	fixed_t thingx, thingy, thingz;
 
-	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
-		OInterpolation::getInstance().enabled())
+	if (projlerp &&
+		P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT)
 	{
 		// the actor probably did not teleport
 		// interpolate between previous and current position
@@ -532,17 +561,35 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		thingz = thing->z;
 	}
 
-	auto it = sprites.find(thing->sprite);
+	// Clip sprites that are definitely out of view.
+	fixed_t camx, camy;
+	R_RotatePoint(thingx - viewx, thingy - viewy, ANG90 - viewangle, camx, camy);
+
+	if (camy < NEARCLIP)
+		return;
+
+	if (abs(camx) > (camy << 2) + 512 * FRACUNIT)
+		return;
+
+	// Cache the last sprite def lookup - crowds of identical monsters hit
+	// this constantly.
+	if (thing->sprite != projspritenum || projsprdef == NULL)
+	{
+		auto it = sprites.find(thing->sprite);
 
 #ifdef RANGECHECK
-	if (it == sprites.end())
-	{
-		DPrintFmt("R_ProjectSprite: thing ({}: {}): invalid sprite number {}\n on ", thing->type, thing->info->name, thing->sprite);
-		return;
-	}
+		if (it == sprites.end())
+		{
+			DPrintFmt("R_ProjectSprite: thing ({}: {}): invalid sprite number {}\n on ", thing->type, thing->info->name, thing->sprite);
+			return;
+		}
 #endif
 
-	const spritedef_t* sprdef = &it->second;
+		projsprdef = &it->second;
+		projspritenum = thing->sprite;
+	}
+
+	const spritedef_t* sprdef = projsprdef;
 
 #ifdef RANGECHECK
 	if ((thing->frame & FF_FRAMEMASK) >= sprdef->numframes)
@@ -594,7 +641,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	fixed_t height = texture->mHeight << FRACBITS;
 	fixed_t width = texture->mWidth << FRACBITS;
 
-	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, height, width, topoffs, sideoffs, flip);
+	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, camx, camy, height, width, topoffs, sideoffs, flip);
 
 	if (vis == NULL)
 		return;
@@ -701,6 +748,13 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 	// Handle all things in sector.
 	for (AActor* thing = sec->thinglist; thing; thing = thing->snext)
 	{
+		// start pulling the next actor into cache while this one projects
+		if (AActor* next = thing->snext)
+		{
+			R_PREFETCH(reinterpret_cast<const char*>(next));
+			R_PREFETCH(reinterpret_cast<const char*>(next) + 64);
+		}
+
 		R_ProjectSprite (thing, fakeside);
 	}
 }
@@ -1170,7 +1224,11 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		sideoffs = tex->mOffsetX << FRACBITS;
 	}
 
-	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, height, width, topoffs, sideoffs, false);
+	// translate the particle's position into camera space
+	fixed_t tx, ty;
+	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
+
+	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, tx, ty, height, width, topoffs, sideoffs, false);
 
 	if (vis == NULL)
 		return;

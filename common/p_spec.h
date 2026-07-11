@@ -226,8 +226,13 @@ public:
 
 	};
 
-	DScroller(EScrollType type, fixed_t dx, fixed_t dy, int control, int affectee, int accel);
-	DScroller(fixed_t dx, fixed_t dy, const line_t *l, int control, int accel);
+	DScroller (EScrollType type, fixed_t dx, fixed_t dy, int control, int affectee, int accel);
+	DScroller (fixed_t dx, fixed_t dy, const line_t *l, int control, int accel);
+	virtual ~DScroller ();
+
+	// All live scrollers, so per-tic code can iterate them without walking
+	// every thinker in the level.
+	static const std::vector<DScroller*>& GetScrollers() { return s_scrollers; }
 
 	void RunThink() override;
 
@@ -255,7 +260,9 @@ protected:
 	int         m_Accel      = 0;       // Whether it's accelerative
 
 private:
-	DScroller() = default;
+	DScroller();
+
+	static std::vector<DScroller*> s_scrollers;
 };
 
 inline bool P_WallScrollType(DScroller::EScrollType type)

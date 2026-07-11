@@ -86,7 +86,7 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 			if (recipe.isBoss)
 			{
 				// Heavy is the head that wears the crown.
-				mo->effects = FX_YELLOWFOUNTAIN;
+				mo->SetEffects(FX_YELLOWFOUNTAIN);
 				mo->translation = translationref_t(&bosstable[0]);
 
 				// Set flags as a boss.

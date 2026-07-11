@@ -603,7 +603,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	if (mo->flags & MF_MISSILE && mo->target && (mo->target->oflags & MFO_ISHORDEBOSS))
 	{
 		mo->oflags |= MFO_FULLBRIGHT;
-		mo->effects |= FX_YELLOWFOUNTAIN;
+		mo->SetEffects(mo->effects | FX_YELLOWFOUNTAIN);
 		mo->translation = translationref_t(&::bosstable[0]);
 	}
 
@@ -708,7 +708,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	if (type == MT_FOUNTAIN)
 	{
 		if (msg->args_size() >= 1)
-			mo->effects = msg->args().Get(0) << FX_FOUNTAINSHIFT;
+			mo->SetEffects(msg->args().Get(0) << FX_FOUNTAINSHIFT);
 	}
 
 	if (type == MT_ZDOOMBRIDGE)
@@ -765,6 +765,8 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->Destroy();
 	}
 
+	mo->UpdateActorLists();
+
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
 		mo->flags = msg->current().flags();
@@ -781,7 +783,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
-			mo->effects = FX_YELLOWFOUNTAIN;
+			mo->SetEffects(FX_YELLOWFOUNTAIN);
 			mo->translation = translationref_t(&::bosstable[0]);
 		}
 	}
@@ -811,7 +813,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags &= ~MF_SOLID;
 		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
-			mo->effects = 0; // Remove sparkles from boss corpses
+			mo->SetEffects(0); // Remove sparkles from boss corpses
 		}
 
 		if (mo->player)
@@ -1190,6 +1192,40 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 		mo->tracer = tracer->ptr();
 	else
 		mo->tracer = AActor::AActorPtr();
+
+	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
+	if (mode != mo->mode)
+	{
+		switch (mode)
+		{
+			case MobjModeEnum::SPAWN:
+				P_SetMobjState(mo, mo->info->spawnstate);
+				break;
+			case MobjModeEnum::SEE:
+				P_SetMobjState(mo, mo->info->seestate);
+				break;
+			case MobjModeEnum::PAIN:
+				P_SetMobjState(mo, mo->info->painstate);
+				break;
+			case MobjModeEnum::MELEE:
+				P_SetMobjState(mo, mo->info->meleestate);
+				break;
+			case MobjModeEnum::MISSILE:
+				P_SetMobjState(mo, mo->info->missilestate);
+				break;
+			case MobjModeEnum::DEATH:
+				P_SetMobjState(mo, mo->info->deathstate);
+				break;
+			case MobjModeEnum::XDEATH:
+				P_SetMobjState(mo, mo->info->xdeathstate);
+				break;
+			case MobjModeEnum::RAISE:
+				P_SetMobjState(mo, mo->info->raisestate);
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 //
@@ -1500,6 +1536,7 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	corpsehit->flags = info->flags;
 	corpsehit->health = info->spawnhealth;
 	corpsehit->target = AActor::AActorPtr();
+	corpsehit->UpdateActorLists();
 }
 
 //
@@ -2674,6 +2711,52 @@ static void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate* msg)
 	}
 }
 
+static void CL_WakeupMobj(const odaproto::svc::WakeupMobj* msg)
+{
+	AActor* mo = P_FindThingById(msg->netid());
+
+	// It is tempting to try to verify that the current state is somewhere in the set of
+	// truly "idle", passively-spawnstate states, but that can get tricky if we have any
+	// monsters that have any complexity to those states.
+	if (mo == nullptr or mo->state == nullptr)
+	{
+		return;
+	}
+
+	if (AActor* target = P_FindThingById(msg->targetid()))
+	{
+		mo->target = target->ptr();
+	}
+	else
+	{
+		mo->target = AActor::AActorPtr();
+	}
+
+	if (AActor* goal = P_FindThingById(msg->goalid()))
+	{
+		mo->goal = goal->ptr();
+	}
+	else
+	{
+		mo->goal = AActor::AActorPtr();
+	}
+
+	mo->angle = msg->angle();
+	mo->lastlook = msg->lastlook();
+	mo->movecount = msg->movecount();
+	mo->movedir = msg->movedir();
+	mo->pursuecount = msg->pursuecount();
+	mo->reactiontime = msg->reactiontime();
+	mo->special      = msg->special();
+	mo->strafecount  = msg->strafecount();
+	mo->threshold    = msg->threshold();
+
+	if (msg->seesound())
+	{
+		P_PlayWakeupSound(mo);
+	}
+}
+
 //
 // CL_SetMobjState
 //
@@ -2682,7 +2765,7 @@ static void CL_SetMobjState(const odaproto::svc::MobjState* msg)
 	AActor* mo = P_FindThingById(msg->netid());
 	int s = msg->mostate();
 
-    if (mo == NULL || !states.contains(s))
+	if (mo == NULL || !states.contains(s))
 		return;
 
 	P_SetMobjState(mo, static_cast<statenum_t>(s));
@@ -3455,6 +3538,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_lineupdate, CL_LineUpdate, odaproto::svc::LineUpdate);
 		SV_MSG(svc_sectorproperties, CL_SectorProperties, odaproto::svc::SectorProperties);
 		SV_MSG(svc_linesideupdate, CL_LineSideUpdate, odaproto::svc::LineSideUpdate);
+		SV_MSG(svc_wakeupmobj, CL_WakeupMobj, odaproto::svc::WakeupMobj);
 		SV_MSG(svc_mobjstate, CL_SetMobjState, odaproto::svc::MobjState);
 		SV_MSG(svc_damagemobj, CL_DamageMobj, odaproto::svc::DamageMobj);
 		SV_MSG(svc_executelinespecial, CL_ExecuteLineSpecial, odaproto::svc::ExecuteLineSpecial);

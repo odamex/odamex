@@ -298,6 +298,7 @@ enum msg_t
 	svc_playerpowers,
 	svc_playerpsprites,
 	svc_configureavatar,
+	svc_wakeupmobj,
 
 	// Client-originated messages
 	//

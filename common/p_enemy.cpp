@@ -69,6 +69,7 @@ EXTERN_CVAR(co_removesoullimit)
 EXTERN_CVAR(co_friend_helpertype)
 EXTERN_CVAR(co_friend_playerhelpers)
 EXTERN_CVAR(co_archvilefirefix)
+EXTERN_CVAR(co_zdoomfriendtargeting)
 
 #ifdef CLIENT_APP
 EXTERN_CVAR(cl_showfriends)
@@ -114,13 +115,14 @@ void A_Mushroom (AActor *actor);
 void A_Fall (AActor *actor);
 
 
-void SV_UpdateMonsterRespawnCount();
+void SV_BroadcastNoiseAlert(const sector_t& sector);
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
-void SV_UpdateMobj(AActor* mo);
-void SV_UpdateMobjBestEffort(AActor* mo);
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
-void SV_BroadcastNoiseAlert(const sector_t& sector);
+void SV_UpdateMobj(AActor* mo);
+void SV_UpdateMobjBestEffort(AActor* mo);
+void SV_UpdateMonsterRespawnCount();
+void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound);
 
 extern bool isFast;
 
@@ -356,6 +358,54 @@ bool P_CheckMissileRange (AActor *actor)
 		return false;
 
 	return true;
+}
+
+static bool P_IsVisible(AActor* actor, AActor* mo, bool allaround)
+{
+	if (!allaround)
+	{
+		angle_t an = R_PointToAngle2(actor->x, actor->y, mo->x, mo->y) - actor->angle;
+		if (an > ANG90 && an < ANG270 &&
+		    P_AproxDistance(mo->x - actor->x, mo->y - actor->y) > WAKEUPRANGE)
+			return false;
+	}
+	return P_CheckSight(actor, mo);
+}
+
+static AActor* current_actor;
+static bool current_allaround = false;
+
+static bool PIT_FindTarget(AActor* mo)
+{
+	AActor* actor = current_actor;
+
+	if (!((mo->flags ^ actor->flags) & MF_FRIEND && // Invalid target
+	      mo->health > 0 && (mo->flags & MF_COUNTKILL || mo->type == MT_SKULL)))
+		return true;
+
+	// If the monster is already engaged in a one-on-one attack
+	// with a healthy friend, don't attack around 60% the time
+	const AActor* targ = mo->target;
+	if (targ && targ->target == mo && P_Random() > 100 &&
+		(targ->flags ^ mo->flags) & MF_FRIEND &&
+		targ->health * 2 >= targ->info->spawnhealth)
+			return true;
+
+	if (P_IsFriendlyThing(mo, actor))
+		return true;
+
+	if (!P_IsVisible(actor, mo, current_allaround))
+		return true;
+
+	actor->lastenemy = actor->target; // Remember previous target
+	actor->target = mo->ptr();                // Found target
+
+	// Move the selected monster to the end of its associated
+	// list, so that it gets searched last next time.
+
+	mo->UpdateActorLists();
+
+	return false;
 }
 
 //
@@ -921,18 +971,6 @@ void P_NewChaseDir (AActor *actor)
 		actor->movecount = actor->strafecount;
 }
 
-static bool P_IsVisible(AActor* actor, AActor* mo, bool allaround)
-{
-	if (!allaround)
-	{
-		angle_t an = R_PointToAngle2(actor->x, actor->y, mo->x, mo->y) - actor->angle;
-		if (an > ANG90 && an < ANG270 &&
-		    P_AproxDistance(mo->x - actor->x, mo->y - actor->y) > WAKEUPRANGE)
-			return false;
-	}
-	return P_CheckSight(actor, mo);
-}
-
 //
 // P_HelpFriend
 //
@@ -941,16 +979,15 @@ static bool P_IsVisible(AActor* actor, AActor* mo, bool allaround)
 
 static bool P_HelpFriend(AActor* actor)
 {
-	int killcount = 0;
-	AActor* it;
-	TThinkerIterator<AActor> iterator;
-
 	// If less than 33% health, self-preservation rules
 	if (actor->health * 3 < actor->info->spawnhealth)
 		return false;
 
+	// Search the monster's own class list for friends in danger, like MBF's
+	// thinkerclasscap search, rather than every thinker in the level.
+	auto& list = actor->IsFriendly() ? AActor::GetFriendlies() : AActor::GetHostiles();
 
-	while ((it = iterator.Next()))
+	for (AActor* it = list.Head(); it; it = it->tlnext)
 	{
 		if (P_IsFriendlyThing(actor, it))
 		{
@@ -963,8 +1000,8 @@ static bool P_HelpFriend(AActor* actor)
 			else if (it->flags & MF_JUSTHIT && it->target &&
 			         it->target != actor->target)
 			{
-				AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(90)),
-				                                    896, RoughMonsterCheck);
+				AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)),
+				                                    10, RoughMonsterCheck);
 
 				if (!enemy)
 				{
@@ -1010,17 +1047,76 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 	}
 
 	// If there are no friendlies at all, don't bother doing a potentially expensive search for them.
-	if (AActor::GetFriendlies().get().empty())
+	if (AActor::GetFriendlies().empty())
 		return false;
 
-	// This is NOT MBF behavior
-	// But we want a smarter monster check for friendlies and hostiles attacking friendlies.
-	AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)), 7, RoughMonsterCheck);
-
-	if (enemy)
+	if (actor->IsFriendly() && co_zdoomfriendtargeting)
 	{
-		actor->target = enemy->ptr();
-		return true;
+		AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)), 10, RoughMonsterCheck);
+
+		if (enemy)
+		{
+			actor->target = enemy->ptr();
+			return true;
+		}
+	}
+	else if (!co_zdoomfriendtargeting)
+	{
+		// Let's have a less-taxing check for monsters/friendlies targeting each other.
+		// Emulates MBF's linked mobj lists for friendlies and hostiles.
+
+		// First, find the list of opposing monsters
+		auto& list = actor->IsFriendly() ? AActor::GetHostiles()
+		                                 : AActor::GetFriendlies();
+
+		// Bug out early if the list is empty
+		if (!list.empty())
+		{
+			current_actor = actor;
+			current_allaround = allaround;
+
+			int x = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
+			int y = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
+
+			// First we check the exact blockmap for the monster.
+			if (!P_BlockThingsIterator(x, y, PIT_FindTarget))
+				return true;
+
+			int d = 0;
+			// Then we worm around a lil bit
+			for (d = 1; d < 5; d++)
+			{
+				int i = 1 - d;
+				do
+					if (!P_BlockThingsIterator(x + i, y - d, PIT_FindTarget) ||
+					    !P_BlockThingsIterator(x + i, y + d, PIT_FindTarget))
+						return true;
+				while (++i < d);
+
+				do
+					if (!P_BlockThingsIterator(x - d, y + i, PIT_FindTarget) ||
+					    !P_BlockThingsIterator(x + d, y + i, PIT_FindTarget))
+						return true;
+				while (--i + d >= 0);
+			}
+
+			// Random number of monsters, to prevent patterns from forming
+			int n = (P_Random() & 31) + 15;
+
+			for (AActor* mo = list.Head(); mo; mo = mo->tlnext)
+			{
+				if (--n < 0)
+				{
+					// Only a subset of the monsters were searched. Move all of
+					// the ones which were searched so far, to the end of the list.
+
+					list.MoveFrontToEnd(mo);
+					break;
+				}
+				else if (!PIT_FindTarget(mo))
+					return true;
+			}
+		}
 	}
 
 	if (!actor->target)
@@ -1055,6 +1151,7 @@ AActor::AActorPtr SpawnHelper(const MapThing SpawnPoint, mobjtype_t SpawnType, c
 		if (P_TestMobjLocation(mo))
 		{
 			mo->SetFriendly(true, origin);
+			mo->UpdateActorLists();
 
 			mo->angle = ANG45 * (SpawnPoint.angle / 45);
 
@@ -1526,6 +1623,32 @@ void A_RandomWalk(AActor* actor)
 	}
 }
 
+
+bool P_PlayWakeupSound(AActor* actor)
+{
+	if (actor->info->seesound)
+	{
+		char sound[MAX_SNDNAME];
+
+		M_StringCopy(sound, actor->info->seesound, MAX_SNDNAME);
+
+		if (sound[strlen(sound) - 1] == '1')
+		{
+			sound[strlen(sound) - 1] = P_Random(actor)%3 + '1';
+			if (S_FindSound (sound) == -1)
+				sound[strlen(sound) - 1] = '1';
+		}
+
+		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
+			S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
+		else
+			S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+
+		return true;
+	}
+	return false;
+}
+
 //
 // A_Look
 // Stay in state until a player is sighted.
@@ -1533,23 +1656,26 @@ void A_RandomWalk(AActor* actor)
 //
 void A_Look (AActor *actor)
 {
-	AActor *targ;
-	AActor *newgoal;
+	// IMPORTANT NOTE:  Because we no longer predict this function on the client side,
+	//
+	//  ****    ANY actor variable that we set directly or indirectly as a          ****
+	//  ****    result of this function MUST be sent to the clients in the          ****
+	//  ****    MobjWakeup message to keep initial seestate prediction accurate!    ****
 
-	if(not (actor && actor->subsector))
+	if (not (serverside and actor and actor->subsector))
 		return;
 
 	// [RH] Set goal now if appropriate
 	if (actor->special == Thing_SetGoal && actor->args[0] == 0)
 	{
 		actor->special = 0;
-		newgoal = AActor::FindGoal (NULL, actor->args[1], MT_PATHNODE);
+		AActor* newgoal = AActor::FindGoal (NULL, actor->args[1], MT_PATHNODE);
 		actor->goal = newgoal->ptr();
 		actor->reactiontime = actor->args[2] * TICRATE + level.time;
 	}
 
 	actor->threshold = 0;		// any shot will wake up
-	targ = actor->subsector->sector->soundtarget;
+	AActor* targ = actor->subsector->sector->soundtarget;
 
 	if (targ && targ->player && (targ->player->cheats & CF_NOTARGET))
 		return;
@@ -1568,31 +1694,35 @@ void A_Look (AActor *actor)
 		//return;
 	}
 
+	if (actor->flags & MF_FRIEND && P_LookForTargets(actor, false))
+		goto seeyou;
+
 	if (targ && (targ->flags & MF_SHOOTABLE))
 	{
 		actor->target = targ->ptr();
 
 		if (actor->flags & MF_AMBUSH)
 		{
-		if (P_CheckSight(actor, actor->target))
+			if (P_CheckSight(actor, actor->target))
 				goto seeyou;
 		}
 		else
-		goto seeyou;
+			goto seeyou;
 	}
 
-
-	if (!P_LookForTargets (actor, false))
+	if (actor->flags & MF_FRIEND || !P_LookForTargets(actor, false))
 		return;
 
 	// go into chase state
-  seeyou:
+	seeyou:
 
-  	// GhostlyDeath -- Can't see spectators
-  	if (actor->target->player && actor->target->player->spectator)
+	bool mustPlaySeeSound = false;
+
+	// GhostlyDeath -- Can't see spectators
+	if (actor->target->player && actor->target->player->spectator)
 	{
 		actor->target = AActor::AActorPtr();
-  		//return;
+		//return;
 	}
 	// [RH] Don't start chasing after a goal if it isn't time yet.
 	if (actor->target == actor->goal)
@@ -1600,27 +1730,17 @@ void A_Look (AActor *actor)
 		if (actor->reactiontime > level.time)
 			actor->target = AActor::AActorPtr();
 	}
-	else if (actor->info->seesound)
+	else
 	{
-		char sound[MAX_SNDNAME];
-
-		M_StringCopy(sound, actor->info->seesound, MAX_SNDNAME);
-
-		if (sound[strlen(sound) - 1] == '1')
-		{
-			sound[strlen(sound) - 1] = P_Random(actor)%3 + '1';
-			if (S_FindSound (sound) == -1)
-				sound[strlen(sound) - 1] = '1';
-		}
-
-		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
-			S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
-		else
-			S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+		mustPlaySeeSound = P_PlayWakeupSound(actor);
 	}
 
 	if (actor->target)
-		P_SetMobjState (actor, actor->info->seestate, true);
+	{
+		SV_WakeupMobj(actor, mustPlaySeeSound);
+
+		P_SetMobjState(actor, actor->info->seestate);
+	}
 }
 #include "m_vectors.h"
 
@@ -1699,10 +1819,9 @@ void A_Chase (AActor *actor)
 			}
 			else
 			{
-				P_SetMobjState(actor, actor->info->spawnstate,
-				               true); // denis - todo - this sometimes leads to a stack
-				                      // overflow due to infinite recursion:
-				                      // A_Chase->SetMobjState->A_Look->SetMobjState
+				P_SetMobjState(actor, actor->info->spawnstate); // denis - todo - this sometimes leads to a stack
+				                                                // overflow due to infinite recursion:
+				                                                // A_Chase->SetMobjState->A_Look->SetMobjState
 				return;
 			}
 		}
@@ -1731,7 +1850,7 @@ void A_Chase (AActor *actor)
 				actor->goal = AActor::AActorPtr();
 
 			actor->target = AActor::AActorPtr();
-			P_SetMobjState (actor, actor->info->spawnstate, true);
+			P_SetMobjState (actor, actor->info->spawnstate);
 			return;
 		}
 		goto nomissile;
@@ -1744,7 +1863,7 @@ void A_Chase (AActor *actor)
 			S_Sound (actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
 		if (serverside)
-			P_SetMobjState (actor, actor->info->meleestate, true);
+			P_SetMobjState (actor, actor->info->meleestate);
 
 		if (!actor->info->missilestate)
 			actor->flags |= MF_JUSTHIT;
@@ -1764,7 +1883,7 @@ void A_Chase (AActor *actor)
 			goto nomissile;
 
 		if (serverside)
-			P_SetMobjState (actor, actor->info->missilestate, true);
+			P_SetMobjState (actor, actor->info->missilestate);
 		actor->flags |= MF_JUSTATTACKED;
 		return;
 	}
@@ -1959,7 +2078,7 @@ void A_CPosRefire (AActor *actor)
 		|| stop
         )
 	{
-		P_SetMobjState (actor, actor->info->seestate, true);
+		P_SetMobjState (actor, actor->info->seestate);
 	}
 }
 
@@ -1985,7 +2104,7 @@ void A_SpidRefire (AActor *actor)
 		|| stop
         )
 	{
-		P_SetMobjState (actor, actor->info->seestate, true);
+		P_SetMobjState (actor, actor->info->seestate);
 	}
 }
 
@@ -2700,6 +2819,7 @@ void A_SpawnObject(AActor* actor)
 	}
 
 	mo->SetFriendly(actor->IsFriendly(), actor);
+	mo->UpdateActorLists();
 
 	SV_SpawnMobj(mo);
 }
@@ -2917,7 +3037,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 					A_FaceTarget(actor);
 					actor->target = temp;
 
-					P_SetMobjState(actor, static_cast<statenum_t>(healstate), true);
+					P_SetMobjState(actor, static_cast<statenum_t>(healstate));
 
 					if (!clientside)
 						SV_Sound(corpsehit, CHAN_BODY, SoundMap[healsound].c_str(), ATTN_IDLE);
@@ -2928,6 +3048,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 
 					corpsehit->ResetFlagsToDefault();
 					corpsehit->SetFriendly(actor->IsFriendly(), actor);
+					corpsehit->UpdateActorLists();
 
 					if (serverside)
 					{
@@ -3210,6 +3331,8 @@ void A_AddFlags(AActor* actor)
 
 	if (update_blockmap)
 		actor->LinkToWorld();
+
+	actor->UpdateActorLists();
 }
 
 //
@@ -3245,6 +3368,8 @@ void A_RemoveFlags(AActor* actor)
 
 	if (update_blockmap)
 		actor->LinkToWorld();
+
+	actor->UpdateActorLists();
 }
 
 void A_Stop(AActor* actor)
@@ -3257,7 +3382,7 @@ static void ApplyFriendlyEffects(AActor* mobj)
 {
 	if (mobj->health <= 0)
 	{
-		mobj->effects &= ~FX_FRIENDHEARTS;
+		mobj->SetEffects(mobj->effects & ~FX_FRIENDHEARTS);
 		return;
 	}
 
@@ -3268,12 +3393,12 @@ static void ApplyFriendlyEffects(AActor* mobj)
 	if (validplayer(displayplayer()) && displayplayer().mo &&
 	    P_IsFriendlyThing(displayplayer().mo, mobj) && sentient(mobj))
 	{
-		mobj->effects |= FX_FRIENDHEARTS;
+		mobj->SetEffects(mobj->effects | FX_FRIENDHEARTS);
 		mobj->translation = translationref_t(&friendtable[0]);
 	}
 	else
 	{
-		mobj->effects &= ~FX_FRIENDHEARTS;
+		mobj->SetEffects(mobj->effects & ~FX_FRIENDHEARTS);
 		mobj->translation = nullptr;
 	}
 }
@@ -3326,7 +3451,7 @@ CVAR_FUNC_IMPL(cl_showfriends)
 		{
 			if (other->flags & MF_FRIEND)
 			{
-				other->effects &= ~FX_FRIENDHEARTS;
+				other->SetEffects(other->effects & ~FX_FRIENDHEARTS);
 				other->translation = nullptr;
 			}
 		}
@@ -3405,7 +3530,8 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	 */
 
 	/* killough 7/20/98: PEs shoot lost souls with the same friendliness */
-    other->SetFriendly(actor->IsFriendly(), actor);
+	other->SetFriendly(actor->IsFriendly(), actor);
+	other->UpdateActorLists();
 
 	// Check for movements.
 	if (!P_TryMove(other, x, y, false))
@@ -3506,7 +3632,7 @@ void A_Fall (AActor *actor)
 	// Remove any sort of boss effect on kill
 	if (actor->type != MT_PLAYER && actor->effects)
 	{
-		actor->effects = 0;
+		actor->SetEffects(0);
 	}
 }
 
@@ -3813,6 +3939,7 @@ void A_BrainSpit (AActor *mo)
 
 		// killough 7/18/98: brain friendliness is transferred
 		newmobj->SetFriendly(mo->IsFriendly(), mo);
+		newmobj->UpdateActorLists();
 	}
 
 	S_Sound (mo, CHAN_WEAPON, "brain/spit", 1, ATTN_NONE);
@@ -3886,9 +4013,10 @@ void A_SpawnFly (AActor *mo)
 
 	/* killough 7/18/98: brain friendliness is transferred */
 	newmobj->SetFriendly(mo->IsFriendly(), mo);
+	newmobj->UpdateActorLists();
 
 	if (P_LookForTargets (newmobj, true))
-		P_SetMobjState (newmobj, newmobj->info->seestate, true);
+		P_SetMobjState (newmobj, newmobj->info->seestate);
 
 	// telefrag anything in this spot
 	P_TeleportMove (newmobj, newmobj->x, newmobj->y, newmobj->z, true);
@@ -3966,6 +4094,7 @@ void A_Spawn(AActor* mo)
 			                    static_cast<mobjtype_t>(mo->state->misc1 - 1));
 
 		newmobj->SetFriendly(mo->IsFriendly(), mo);
+		newmobj->UpdateActorLists();
 	}
 }
 
@@ -4020,7 +4149,7 @@ void A_PlaySound(AActor* mo)
 void A_RandomJump(AActor* mo)
 {
 	if (P_Random(mo) < mo->state->misc2)
-		P_SetMobjState(mo, static_cast<statenum_t>(mo->state->misc1));
+		P_SetMobjState(mo, static_cast<statenum_t>(mo->state->misc1), true);
 }
 
 //

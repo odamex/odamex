@@ -1984,6 +1984,8 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		target->health = 0;
 	}
 
+	target->UpdateActorLists();
+
 	P_RemoveHealthPool(target);
 	P_QueueCorpseForDestroy(target);
 
@@ -2492,12 +2494,16 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		{
 			SV_SendDamageMobj(target, pain);
 		}
+
+		bool clientWasUpdated = false;
+
 		if (pain < target->info->painchance &&
 		    !(target->flags & MF_SKULLFLY) &&
 		    !(player && !damage))
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
-			P_SetMobjState(target, target->info->painstate);
+			const auto painResult = P_SetMobjState(target, target->info->painstate);
+			clientWasUpdated = (painResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED);
 		}
 
 		target->reactiontime = 0;			// we're awake now...
@@ -2520,18 +2526,22 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 
 			if (!target->lastenemy || !target->lastenemy->player ||
 				target->lastenemy->health <= 0)
-            {
+			{
 				target->lastenemy = target->target; // remember last enemy - killough
-            }
+			}
 
 			target->target = source->ptr();
 			target->threshold = BASETHRESHOLD;
 			if (target->state == &states[target->info->spawnstate]
 				&& target->info->seestate != S_NULL)
-            {
-				P_SetMobjState(target, target->info->seestate);
-            }
-            SV_UpdateMobj(target);
+			{
+				const auto seeResult = P_SetMobjState(target, target->info->seestate);
+				clientWasUpdated = clientWasUpdated or seeResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
+			}
+			if (not clientWasUpdated)
+			{
+				SV_UpdateMobj(target);
+			}
 		}
 	}
 	else
