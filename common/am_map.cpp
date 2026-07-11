@@ -63,7 +63,7 @@ nonstd::expected<std::vector<mline_t>, am_lump_parse_error_t> AM_ParseVectorLump
 		return nonstd::make_unexpected(am_lump_parse_error_t::LUMP_NOT_FOUND);
 
 
-	const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
+	const char* buffer = Res_LoadResource<char>(res_id, PU_STATIC);
 
 	const OScannerConfig config = {
 	    name,  // lumpName

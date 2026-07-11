@@ -470,7 +470,7 @@ void ParseUMapInfoLump(const ResourceId res_id, const OLumpName& lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
 
-	const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
+	const char* buffer = Res_LoadResource<char>(res_id, PU_STATIC);
 
 	const OScannerConfig config = {
 	    lumpname.c_str(), // lumpName

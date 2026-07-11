@@ -378,6 +378,34 @@ static inline const void* Res_LoadResource(const char* name, zoneTag_e tag = PU_
 	return Res_LoadResource(OString(name), tag);
 }
 
+//
+// Res_LoadResource
+//
+// Typed versions that return a pointer to the resource data cast to the
+// requested type, in the style of Z_Malloc<T>. Prefer these over casting
+// the untyped versions at the call site.
+//
+template <typename T>
+requires std::is_object_v<T>
+const T* Res_LoadResource(const ResourceId res_id, zoneTag_e tag = PU_CACHE)
+{
+	return static_cast<const T*>(Res_LoadResource(res_id, tag));
+}
+
+template <typename T>
+requires std::is_object_v<T>
+const T* Res_LoadResource(const OString& name, zoneTag_e tag = PU_CACHE)
+{
+	return Res_LoadResource<T>(Res_GetResourceId(name, global_directory_name), tag);
+}
+
+template <typename T>
+requires std::is_object_v<T>
+const T* Res_LoadResource(const char* name, zoneTag_e tag = PU_CACHE)
+{
+	return Res_LoadResource<T>(OString(name), tag);
+}
+
 
 // ----------------------------------------------------------------------------
 // Res_ReleaseResource

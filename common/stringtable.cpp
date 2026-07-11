@@ -95,7 +95,7 @@ void StringTable::clearStrings()
 //
 // Loads a language
 //
-void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char* lump,
+void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, const char* lump,
                                size_t lumpLen)
 {
 	OScannerConfig config = {
@@ -306,9 +306,8 @@ bool StringTable::hasString(const OString& name) const
 void StringTable::loadStringsLump(const uint32_t language_res_id, const bool engOnly)
 {
 	// Can't use Z_Malloc this early, so we use raw new/delete.
-	char* language_data = (char*)Res_LoadResource(language_res_id, PU_CACHE);
+	const char* language_data = Res_LoadResource<char>(language_res_id, PU_CACHE);
 	size_t len = Res_GetResourceSize(language_res_id);
-	language_data[len] = '\0';
 
 	// String replacement pass.  Strings in an later pass can be replaced
 	// by a string in an earlier pass from another lump.

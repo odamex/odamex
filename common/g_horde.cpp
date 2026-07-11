@@ -378,7 +378,7 @@ static void ParseAlias(OScanner& os)
 
 static void ParseHordeDef(const ResourceId res, const OLumpName& name)
 {
-	const char* buffer = static_cast<const char*>(Res_LoadResource(res, PU_STATIC));
+	const char* buffer = Res_LoadResource<char>(res, PU_STATIC);
 
 	OScannerConfig config = {
 	    name,  // lumpName

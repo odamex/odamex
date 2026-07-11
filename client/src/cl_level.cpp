@@ -752,8 +752,8 @@ void G_WorldDone()
 		AM_Stop();
 		if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 		{
-			options.text = static_cast<const char*>(Res_LoadResource(
-			    OStringToUpper(thiscluster.exittext.c_str()), PU_STATIC));
+			options.text = Res_LoadResource<char>(
+			    OStringToUpper(thiscluster.exittext.c_str()), PU_STATIC);
 		}
 		F_StartFinale(options);
 	}
@@ -789,8 +789,8 @@ void G_WorldDone()
 				AM_Stop();
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
-					options.text = static_cast<const char*>(Res_LoadResource(
-					    OStringToUpper(thiscluster.exittext.c_str()), PU_STATIC));
+					options.text = Res_LoadResource<char>(
+					    OStringToUpper(thiscluster.exittext.c_str()), PU_STATIC);
 				}
 				F_StartFinale(options);
 			}

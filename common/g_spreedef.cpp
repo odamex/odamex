@@ -200,7 +200,7 @@ static void ParseSpreeText(OScanner& os, std::string& text, std::string token)
 
 static void ParseSpreeDef(const ResourceId res_id, const OLumpName name)
 {
-	const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_CACHE));
+	const char* buffer = Res_LoadResource<char>(res_id, PU_CACHE);
 
 	const OScannerConfig config = {
 	    "SPREEDEF", // lumpName

@@ -596,7 +596,7 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 	if (lumplen == 0)
 		return;
 
-	const uint8_t* data = (uint8_t*)Res_LoadResource(res_id, PU_STATIC);
+	const uint8_t* data = Res_LoadResource<uint8_t>(res_id, PU_STATIC);
 
 	for (const uint8_t* ptr = data; *ptr != 255; ptr += 23)
 	{
@@ -773,7 +773,7 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 		for (size_t i = 0; i < res_ids.size(); i++)
 		{
 			const char* name = Res_GetResourceName(res_ids[i]).c_str();
-			const char* buffer = static_cast<const char*>(Res_LoadResource(res_ids[i], PU_STATIC));
+			const char* buffer = Res_LoadResource<char>(res_ids[i], PU_STATIC);
 
 			OScannerConfig config = {
 			    name,  // lumpName
@@ -1059,7 +1059,7 @@ const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag)
 			return static_cast<const Texture*>(NULL);
 	}
 
-	return static_cast<const Texture*>(Res_LoadResource(res_id, tag));
+	return Res_LoadResource<Texture>(res_id, tag);
 }
 
 

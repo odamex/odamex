@@ -146,7 +146,7 @@ void G_ReadCOMPLVL()
 	{
 		const uint32_t complvl_size = Res_GetResourceSize(res_id);
 		const std::string complvl(
-		    static_cast<const char*>(Res_LoadResource(res_id, PU_CACHE)), complvl_size);
+		    Res_LoadResource<char>(res_id, PU_CACHE), complvl_size);
 		Res_ReleaseResource(res_id);
 
 		co_zdoomphys.Set(0.0f);

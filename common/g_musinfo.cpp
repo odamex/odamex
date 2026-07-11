@@ -35,7 +35,7 @@ void G_ParseMusInfo()
 	{
 		const ResourceId res_id = res_ids[res_index];
 		LevelInfos& levels = getLevelInfos();
-		const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
+		const char* buffer = Res_LoadResource<char>(res_id, PU_STATIC);
 
 		const OScannerConfig config = {
 		    "MUSINFO", // lumpName

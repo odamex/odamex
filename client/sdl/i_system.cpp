@@ -255,7 +255,7 @@ void I_Endoom()
 	// Hack to stop crash with disk icon
 	in_endoom = true;
 
-	const uint8_t* endoom_data = (uint8_t*)Res_LoadResource(OStringToUpper(gameinfo.endoom.c_str()), PU_STATIC);
+	const uint8_t* endoom_data = Res_LoadResource<uint8_t>(OStringToUpper(gameinfo.endoom.c_str()), PU_STATIC);
 
 	// Set up text mode screen
 

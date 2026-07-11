@@ -265,7 +265,7 @@ static void getsfx(sfxinfo_struct *sfx)
 	if (!Res_CheckResource(sfx->res_id))
 		return;
 
-	Uint8* data = (Uint8*)Res_LoadResource(sfx->res_id, PU_STATIC);
+	Uint8* data = const_cast<Uint8*>(Res_LoadResource<Uint8>(sfx->res_id, PU_STATIC));
 	auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
 
     // [Russell] - ICKY QUICKY HACKY SPACKY *I HATE THIS SOUND MANAGEMENT SYSTEM!*

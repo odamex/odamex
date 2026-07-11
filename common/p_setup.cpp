@@ -77,7 +77,7 @@ static uint32_t P_MapLumpLength(const ResourceId res_id)
 template <typename T>
 static T* P_CacheMapLump(const ResourceId res_id, zoneTag_e tag = PU_STATIC)
 {
-	return (T*)Res_LoadResource(res_id, tag);
+	return const_cast<T*>(Res_LoadResource<T>(res_id, tag));
 }
 void P_SpawnAvatars();
 void P_TranslateTeleportThings();

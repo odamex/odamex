@@ -102,7 +102,7 @@ private:
 
 		// TODO: [SL] 2016-01-18 This hack should be removed when the text parsing
 		// routines are fixed.
-		((unsigned char*)data)[size - 1] = 0;
+		static_cast<unsigned char*>(data)[size - 1] = 0;
 
 		return data;
 	}

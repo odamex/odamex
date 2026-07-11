@@ -430,7 +430,7 @@ void S_ParseSndSeq()
 	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/SNDSEQ"));
 	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		const char* buffer = static_cast<const char*>(Res_LoadResource(res_ids[i], PU_STATIC));
+		const char* buffer = Res_LoadResource<char>(res_ids[i], PU_STATIC);
 
 		OScannerConfig config = {
 		    "SNDSEQ", // lumpName

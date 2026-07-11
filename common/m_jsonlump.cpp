@@ -45,7 +45,7 @@ jsonlumpresult_t M_ParseJSONLump(const ResourceId res_id, const char* lumptype, 
 		return jsonlumpresult_t::NOTFOUND;
 	}
 
-	const char* jsondata = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
+	const char* jsondata = Res_LoadResource<char>(res_id, PU_STATIC);
 
     Json::CharReaderBuilder builder;
     builder["collectComments"] = false;

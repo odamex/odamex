@@ -1061,7 +1061,7 @@ bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
 	const ResourceId res_id = Res_GetResourceId(name, NS_GLOBAL);
 	if (res_id != ResourceId::INVALID_ID)
 	{
-		const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
+		const char* buffer = Res_LoadResource<char>(res_id, PU_STATIC);
 
 		const OScannerConfig config = {
 		    name.c_str(), // lumpName
@@ -1749,7 +1749,7 @@ void ParseMapInfoLump(const ResourceId res_id, const OLumpName& lumpname)
 		defaultinfo.skypic = def.skypic;
 	}
 
-	const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
+	const char* buffer = Res_LoadResource<char>(res_id, PU_STATIC);
 
 	const OScannerConfig config = {
 	    lumpname.c_str(), // lumpName

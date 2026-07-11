@@ -498,7 +498,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 	 * detect the end of the lump.
 	 */
 	const ResourceId res_id = Res_GetResourceId("X11R6RGB", NS_GLOBAL);
-	char* rgbNames = (char*)Res_LoadResource(res_id, PU_CACHE);
+	const char* rgbNames = Res_LoadResource<char>(res_id, PU_CACHE);
 
 	if (rgbNames == NULL)
 	{
@@ -629,7 +629,7 @@ void V_InitPalette(const char* lumpname)
 	default_palette.maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
 	default_palette.maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
 
-	const byte* data = (byte*)Res_LoadResource(palette_res_id, PU_CACHE);
+	const byte* data = Res_LoadResource<byte>(palette_res_id, PU_CACHE);
 
 	for (int i = 0; i < 256; i++, data += 3)
 		default_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
@@ -1197,7 +1197,7 @@ void V_DoPaletteEffects()
 		{
 			// [SL] Load palette_num from disk and setup game_palette
 			current_palette_num = palette_num;
-			const byte* data = (byte*)Res_LoadResource(palette_res_id, PU_CACHE) + palette_num * 768;
+			const byte* data = Res_LoadResource<byte>(palette_res_id, PU_CACHE) + palette_num * 768;
 
 			for (int i = 0; i < 256; i++, data += 3)
 			{
@@ -1283,7 +1283,7 @@ void V_ResetPalette()
 
 		if (Res_CheckResource(palette_res_id))
 		{
-			const byte* data = (byte*)Res_LoadResource(palette_res_id, PU_CACHE);
+			const byte* data = Res_LoadResource<byte>(palette_res_id, PU_CACHE);
 			for (int i = 0; i < 256; i++, data += 3)
 			{
 				game_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);

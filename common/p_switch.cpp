@@ -78,7 +78,7 @@ static int  numswitches;
 void P_InitSwitchList(void)
 {
 	const ResourceId res_id = Res_GetResourceId("SWITCHES", NS_GLOBAL);
-	const byte *alphSwitchList = (byte*)Res_LoadResource(res_id, PU_STATIC);
+	const byte *alphSwitchList = Res_LoadResource<byte>(res_id, PU_STATIC);
 	const byte *list_p;
 	int i;
 
@@ -87,13 +87,13 @@ void P_InitSwitchList(void)
 
 	if (i == 0)
 	{
-		switchlist = (ResourceId *)Z_Malloc(sizeof(*switchlist), PU_STATIC, 0);
+		switchlist = Z_Malloc<ResourceId>(1, PU_STATIC);
 		*switchlist = -1;
 		numswitches = 0;
 	}
 	else
 	{
-		switchlist = (ResourceId *)Z_Malloc(sizeof(*switchlist)*(i*2+1), PU_STATIC, 0);
+		switchlist = Z_Malloc<ResourceId>(i * 2 + 1, PU_STATIC);
 
 		for (i = 0, list_p = alphSwitchList; list_p[18] || list_p[19]; list_p += 20)
 		{

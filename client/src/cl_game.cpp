@@ -1939,7 +1939,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	demo_res_id = Res_GetResourceId(defdemoname, NS_GLOBAL);
 	if (Res_CheckResource(demo_res_id))
 	{
-		demobuffer = demo_p = (byte*)Res_LoadResource(demo_res_id, PU_STATIC);
+		demobuffer = demo_p = const_cast<byte*>(Res_LoadResource<byte>(demo_res_id, PU_STATIC));
 		bytelen = Res_GetResourceSize(demo_res_id);
 	}
 	else

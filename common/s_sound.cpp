@@ -157,7 +157,7 @@ void S_ParseSndInfo()
 	for (size_t res_index = 0; res_index < res_ids.size(); res_index++)
 	{
 		const ResourceId res_id = res_ids[res_index];
-		const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_CACHE));
+		const char* buffer = Res_LoadResource<char>(res_id, PU_CACHE);
 
 		const OScannerConfig config = {
 		    "SNDINFO", // lumpName

@@ -104,7 +104,7 @@ cvar_t noisedebug ("noise", "0", "", CVARTYPE_BOOL, 0);
 static channel_t *Channel;
 
 // For ZDoom sound curve
-static byte		*SoundCurve;
+static const byte	*SoundCurve;
 
 // Maximum volume of a sound effect.
 CVAR_FUNC_IMPL(snd_sfxvolume)
@@ -255,7 +255,7 @@ static void S_StopChannel(size_t cnum);
 //
 void S_Init(float sfxVolume, float musicVolume)
 {
-	SoundCurve = (byte*)Res_LoadResource("SNDCURVE", PU_STATIC);
+	SoundCurve = Res_LoadResource<byte>("SNDCURVE", PU_STATIC);
 
 	// [RH] Read in sound sequences
 	NumSequences = 0;
@@ -1239,7 +1239,7 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 			return;
 		}
 
-		data = (byte*)Res_LoadResource(res_id, PU_CACHE);
+		data = const_cast<byte*>(Res_LoadResource<byte>(res_id, PU_CACHE));
 		length = Res_GetResourceSize(res_id);
 		I_PlaySong({data, static_cast<size_t>(length)}, looping, order);
 	}

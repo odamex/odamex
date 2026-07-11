@@ -59,7 +59,7 @@ shademap_t realcolormaps;
 
 void R_ForceDefaultColormap(const char* name)
 {
-	const byte* data = (byte*)Res_LoadResource(OStringToUpper(name, 8), PU_CACHE);
+	const byte* data = Res_LoadResource<byte>(OStringToUpper(name, 8), PU_CACHE);
 	memcpy(realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
 
 #if 0
@@ -150,7 +150,7 @@ void R_InitColormaps()
 			const ResourceId res_id = Res_GetResourceId(resource_name, NS_COLORMAPS);
 			if (Res_GetResourceSize(res_id) >= (NUMCOLORMAPS+1)*256)
 			{
-				const uint8_t* map = (uint8_t*)Res_LoadResource(res_id, PU_CACHE);
+				const uint8_t* map = Res_LoadResource<uint8_t>(res_id, PU_CACHE);
 				byte* colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*i;
 				argb_t* shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*i;
 
