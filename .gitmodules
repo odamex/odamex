@@ -40,3 +40,6 @@
 [submodule "libraries/sdl_mixer"]
 	path = libraries/sdl_mixer
 	url = https://github.com/libsdl-org/SDL_mixer.git
+[submodule "libraries/wxwidgets"]
+	path = libraries/wxwidgets
+	url = https://github.com/wxWidgets/wxWidgets.git
