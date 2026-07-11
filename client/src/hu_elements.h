@@ -29,7 +29,6 @@ std::string HelpText();
 std::string SpyPlayerName();
 std::string IntermissionTimer();
 std::string Timer();
-std::string Weapons();
 std::string PersonalSpread();
 std::string PersonalScore();
 std::string PersonalMatchDuelPlacement();
