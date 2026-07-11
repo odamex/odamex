@@ -27,8 +27,7 @@
 #ifndef __NET_UTILS_H__
 #define __NET_UTILS_H__
 
-#include "typedefs.h"
-
+#include <stdint.h>
 #include <string>
 #include <sstream>
 
@@ -42,7 +41,7 @@ namespace odalpapi
 {
 
 uint64_t GetMillisNow();
-int32_t OdaAddrToComponents(const std::string& HostPort, std::string &AddrOut, 
+int32_t OdaAddrToComponents(const std::string& HostPort, std::string &AddrOut,
                             uint16_t &PortOut);
 } // namespace
 

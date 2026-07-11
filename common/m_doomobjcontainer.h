@@ -65,24 +65,33 @@ class DoomObjectContainer
 
 public:
 	template <typename table_iterator>
-	class generic_iterator {
+	class generic_iterator
+	{
 	public:
 		using iterator_category = std::forward_iterator_tag;
-		using value_type        = std::pair<IdxType, ObjType&>;
+		using value_type        = std::pair<IdxType, ObjType>;
 		using difference_type   = std::ptrdiff_t;
-		using pointer           = value_type*;
-		using reference         = value_type&;
+		using reference         = std::pair<const IdxType&, ObjType&>;
+
+		struct arrow_proxy
+		{
+			reference r;
+			reference* operator->() { return &r; }
+		};
+
+		using pointer           = arrow_proxy;
+
 
 		generic_iterator(table_iterator it) : m_it(it) {}
 
-		reference operator*() const {
-			m_value.emplace(m_it->first, *m_it->second);
-			return *m_value;
+		reference operator*() const
+		{
+			return { m_it->first, *m_it->second };
 		}
 
-		pointer operator->() const {
-			m_value.emplace(m_it->first, *m_it->second);
-			return &*m_value;
+		pointer operator->() const
+		{
+			return pointer{ reference{ m_it->first, *m_it->second } };
 		}
 
 		generic_iterator& operator++() { ++m_it; return *this; }
@@ -93,7 +102,6 @@ public:
 
 	private:
 		table_iterator m_it;
-		mutable std::optional<value_type> m_value;
 	};
 
 	using iterator = generic_iterator<typename LookupTable::iterator>;
@@ -101,7 +109,8 @@ public:
 
 	// Construction and Destruction
 	explicit DoomObjectContainer() = default;
-	explicit DoomObjectContainer(size_t count)  : m_lookuptable(count), m_inordertable() {
+	explicit DoomObjectContainer(size_t count)  : m_lookuptable(count), m_inordertable()
+	{
 		m_inordertable.reserve(count);
 	}
 	~DoomObjectContainer() = default;

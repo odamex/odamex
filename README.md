@@ -1,5 +1,9 @@
 ![Odamex](https://raw.githubusercontent.com/odamex/odamex/stable/media/logo_128.png?raw=true)
 
+[![GitHub Releases](https://img.shields.io/github/v/release/odamex/odamex?label=Download%20Latest)](https://github.com/odamex/odamex/releases)
+
+[![Download on Flathub](https://flathub.org/api/badge?locale=en&light)](https://flathub.org/apps/net.odamex.Odamex)
+
 | Windows Build Status | Mac Build Status | Linux Build Status | Join our Discord! |
 | -------------------- | ---------------- | ------------------ | ----------------- |
 | [![Windows](https://github.com/odamex/odamex/actions/workflows/windows.yml/badge.svg)](https://github.com/odamex/odamex/actions/workflows/windows.yml) | [![macOS](https://github.com/odamex/odamex/actions/workflows/macos.yml/badge.svg)](https://github.com/odamex/odamex/actions/workflows/macos.yml) | [![Linux](https://github.com/odamex/odamex/actions/workflows/linux.yml/badge.svg)](https://github.com/odamex/odamex/actions/workflows/linux.yml) | [![Join our discord](https://discordapp.com/api/guilds/236518337671200768/widget.png?style=shield)](https://discord.gg/aMUzcZE) |
@@ -85,19 +89,7 @@ Before submitting a pull request, please make sure it follows [our coding standa
 **Note**: This project contains a demo testing utility that ensures vanilla compatibility by
 running a specific set of demos after each commit. When forking this project to prepare a pull request,
 this functionality will be unavailable by default to protect sensitive files.
-You can restore this functionality by:
-
-1. Forking [OdaTest-Resources](https://github.com/odamex/odatests-resources) to get the PWADs.
-2. Downloading [OdaTests](https://github.com/odamex/odatests) to get the encryption module.
-3. Replacing the encrypted IWADs with your own set of encrypted IWADs.
-Encrypt using `python .\secret.py encrypt doom2` with the environment variable
-`SECRET_KEY` defined to encrypt the IWADs with. The following IWADs (latest version) are needed to run all tests:
-`doom, doom1, doom2, tnt, plutonia`
-4. Create a release for your forked OdaTest-Resources repo.
-5. Enter the following Secrets / Repository Variables in GitHub:
-  - `secrets.DEMOTESTER_IWAD_KEY` - Encryption key for the IWADs
-  - `vars.DEMOTESTER_DOWNLOAD_URL` - Full URL to download the latest OdaTests release.
-  - `vars.DEMORESOURCES_DOWNLOAD_URL` - Full URL to download your personal demo resources
+You can restore this functionality by following the steps for integrating [OdaTests](https://github.com/odamex/odamex/wiki/OdaTests) into your fork.
 
 External Links
 --------------
@@ -106,7 +98,6 @@ Please visit the following websites for more information about the development o
 
 * [**Odamex Website**](https://odamex.net)
 * [Wiki](https://github.com/odamex/odamex/wiki)
-* [Forums](https://odamex.net/boards/)
 * [Discord](https://discord.gg/aMUzcZE)
 * [Twitter](https://twitter.com/odamex)
 

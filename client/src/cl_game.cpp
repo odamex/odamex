@@ -67,6 +67,8 @@
 #include "g_gametype.h"
 #include "p_horde.h"
 #include "g_musinfo.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 #include <math.h> // for pow()
 
@@ -98,6 +100,7 @@ EXTERN_CVAR (novert)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_respawnsuper)
+EXTERN_CVAR (sv_respawnbarrels)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (sv_sharekeys)
@@ -862,9 +865,6 @@ void P_CheckInterpPause()
 	}
 }
 
-void P_MovePlayer (player_t *player);
-void P_CalcHeight (player_t *player);
-void P_DeathThink (player_t *player);
 void CL_SimulateWorld();
 //
 // G_Ticker
@@ -1195,22 +1195,22 @@ void G_Ticker (void)
 // G_PlayerFinishLevel
 // Call when a player completes a level.
 //
-void G_PlayerFinishLevel (player_t &player)
+void G_PlayerFinishLevel (player_t& player)
 {
-	player_t *p;
+	player.powers.fill(0);
+	player.cards.fill(false);
 
-	p = &player;
+	if(player.mo)
+		player.mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
-	memset (p->powers, 0, sizeof (p->powers));
-	memset (p->cards, 0, sizeof (p->cards));
 
-	if(p->mo)
-		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
+	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
 
-	p->extralight = 0;					// cancel gun flashes
-	p->fixedcolormap = 0;				// cancel ir goggles
-	p->damagecount = 0; 				// no palette changes
-	p->bonuscount = 0;
+	player.extralight = 0;					// cancel gun flashes
+	player.fixedcolormap = 0;				// cancel ir goggles
+	player.damagecount = 0; 				// no palette changes
+	player.bonuscount = 0;
 }
 
 
@@ -1258,20 +1258,20 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // at the given mapthing2_t spot
 // because something is occupying it
 //
-void P_SpawnPlayer (player_t &player, mapthing2_t* mthing);
+void P_SpawnPlayer(player_t &player, const mapthing2_t& mthing);
 
-bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
+bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 {
 	unsigned			an;
 	AActor* 			mo;
 	fixed_t 			xa,ya;
 
-	fixed_t x = mthing->x << FRACBITS;
-	fixed_t y = mthing->y << FRACBITS;
+	const fixed_t x = mthing.x << FRACBITS;
+	const fixed_t y = mthing.y << FRACBITS;
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
-		z = mthing->z << FRACBITS;
+		z = mthing.z << FRACBITS;
 
 	if (!player.mo)
 	{
@@ -1329,13 +1329,13 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+			an = ( ANG45 * ((unsigned int)mthing.angle/45) ) >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = (angle_t)(mthing->angle / 45);
+			angle_t mtangle = (angle_t)(mthing.angle / 45);
 
 			an = ANG45 * mtangle;
 
@@ -1428,12 +1428,12 @@ static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
 // [RH] Select a deathmatch spawn spot at random (original mechanism)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
 {
-	int i = 0, j;
+	int i = 0;
 
-	for (j = 0; j < 20; j++)
+	for (int j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
-		if (G_CheckSpot (player, &DeathMatchStarts[i]) )
+		if (G_CheckSpot (player, DeathMatchStarts[i]) )
 			return &DeathMatchStarts[i];
 	}
 
@@ -1443,19 +1443,16 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 
 void G_DeathMatchSpawnPlayer (player_t &player)
 {
-	size_t selections;
-	mapthing2_t *spot;
-
 	if(!serverside || G_UsesCoopSpawns())
 		return;
 
-	selections = DeathMatchStarts.size();
+	const size_t selections = DeathMatchStarts.size();
 	// [RH] We can get by with just 1 deathmatch start
 	if (selections < 1)
 		I_Error ("No deathmatch starts");
 
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-	spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
+	mapthing2_t* spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
 
 	if (!spot && !playerstarts.empty())
 	{
@@ -1470,7 +1467,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
 
-	P_SpawnPlayer (player, spot);
+	P_SpawnPlayer (player, *spot);
 }
 
 //
@@ -1505,24 +1502,24 @@ void G_DoReborn (player_t &player)
 
 	unsigned int playernum = player.id - 1;
 
-	if (G_CheckSpot (player, &playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
 	{
-		P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
 		return;
 	}
 
 	// try to spawn at one of the other players' spots
 	for (auto& playerstart : playerstarts)
 	{
-		if (G_CheckSpot (player, &playerstart) )
+		if (G_CheckSpot(player, playerstart) )
 		{
-			P_SpawnPlayer (player, &playerstart);
+			P_SpawnPlayer(player, playerstart);
 			return;
 		}
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
 }
 
 
@@ -1754,7 +1751,7 @@ void G_DoSaveGame()
 		}
 	}
 
-	arc << (BYTE)0x1d;			// consistancy marker
+	arc << (byte)0x1d;			// consistancy marker
 
 	gameaction = ga_nothing;
 	savedescription[0] = 0;
@@ -2017,6 +2014,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			}
 
 			sv_respawnsuper.Set(0.0f);
+			sv_respawnbarrels.Set(0.0f);
 
 			usergame = false;
 		}

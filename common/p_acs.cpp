@@ -52,8 +52,8 @@ struct CallReturn
 {
 	int ReturnAddress;
 	ScriptFunction *ReturnFunction;
-	BYTE bDiscardResult;
-	BYTE Pad[3];
+	byte bDiscardResult;
+	byte Pad[3];
 };
 
 static int Stack[STACK_SIZE];
@@ -71,14 +71,14 @@ static std::vector<int> ArgvToArgs(const int (&a)[N])
 struct FBehavior::ArrayInfo
 {
 	int ArraySize;
-	SDWORD *Elements;
+	int32_t *Elements;
 };
 
 static void DoClearInv(player_t* player)
 {
 	player->weaponowned.fill(0);
-	memset(player->powers, 0, sizeof(player->powers));
-	memset(player->cards, 0, sizeof(player->cards));
+	player->powers.fill(0);
+	player->cards.fill(false);
 	player->ammo.fill(0);
 
 	if (player->backpack)
@@ -123,6 +123,7 @@ struct DoomEntity{
 };
 #define NUMMONSTERS 22
 
+// TODO: should this instead use the stuff from infomap.cpp:
 static DoomEntity DoomMonsterNames[NUMMONSTERS] = {
     {"ZombieMan", MT_POSSESSED},  {"ShotgunGuy", MT_SHOTGUY},
     {"ChaingunGuy", MT_CHAINGUY}, {"DoomImp", MT_TROOP},
@@ -235,8 +236,7 @@ extern ItemEquipVal P_GivePower(player_t *player, int  power);
 
 mobjtype_t FindWeaponEntity(const char* type)
 {
-	int i;
-	for (i = 0; i < 9; i++)
+	for (int i = 0; i < 9; i++)
 	{
 		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
@@ -254,8 +254,7 @@ mobjtype_t FindWeaponEntity(const char* type)
 
 mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
 {
-	int i;
-	for (i = 0; i < size; i++)
+	for (int i = 0; i < size; i++)
 	{
 		if (strcmp(list[i].Name, type) == 0)
 		{
@@ -266,34 +265,34 @@ mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
 	return MT_NULL;
 }
 
-static void GiveBackpack(player_t* player)
+static void GiveBackpack(player_t& player)
 {
-	if (!player->backpack)
+	if (!player.backpack)
 	{
-		for (int i=0 ; i<NUMAMMO ; i++)
+		for (auto& ammo : player.maxammo)
 		{
-			player->maxammo[i] *= 2;
+			ammo *= 2;
 		}
-		player->backpack = true;
+		player.backpack = true;
 	}
-	for (int i=0 ; i<NUMAMMO ; i++)
+	for (int i = 0; i < NUMAMMO; i++)
 	{
 		P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
 	}
-	SERVER_ONLY(SV_SendPlayerInfo(*player));
+	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-static void DoGiveInv(player_t* player, const char* type, int amount)
+static void DoGiveInv(player_t& player, const char* type, int amount)
 {
-	weapontype_t savedpendingweap = player->pendingweapon;
+	const weapontype_t savedpendingweap = player.pendingweapon;
 
 	// Give ammo
 	for (int i = 0; i < NUMAMMO; i++)
 	{
 		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
-			player->ammo[i] = MIN(player->ammo[i]+amount, player->maxammo[i]);
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			player.ammo[i] = MIN(player.ammo[i]+amount, player.maxammo[i]);
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -310,9 +309,9 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 			while (--amount > 0);
 
 			// Don't bring it up automatically
-			if (player->readyweapon != NUMWEAPONS && player->pendingweapon != NUMWEAPONS)
-				player->pendingweapon = savedpendingweap;
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			if (player.readyweapon != NUMWEAPONS && player.pendingweapon != NUMWEAPONS)
+				player.pendingweapon = savedpendingweap;
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -327,7 +326,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 				P_GiveCard(player, static_cast<card_t>(i));
 			}
 			while (--amount > 0);
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -342,7 +341,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 				P_GivePower(player, i);
 			}
 			while (--amount > 0);
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -355,7 +354,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 			GiveBackpack(player);
 		}
 		while (--amount > 0);
-		SERVER_ONLY(SV_SendPlayerInfo(*player));
+		SERVER_ONLY(SV_SendPlayerInfo(player));
 		return;
 	}
 
@@ -372,29 +371,29 @@ static void GiveInventory(AActor* activator, const char* type, int amount)
 			for (auto& player : players)
 			{
 				if (player.ingame() && !player.spectator)
-					DoGiveInv(&player, type, amount);
+					DoGiveInv(player, type, amount);
 			}
 		}
 	}
 	else if (activator->player != NULL)
 	{
-		DoGiveInv(activator->player, type, amount);
+		DoGiveInv(*activator->player, type, amount);
 	}
 }
 
-extern void P_SwitchWeapon(player_t *player);
+void P_SwitchWeapon(player_t& player);
 
-static void TakeWeapon(player_t* player, int weapon)
+static void TakeWeapon(player_t& player, int weapon)
 {
-	player->weaponowned[weapon] = false;
-	if (player->readyweapon == weapon || player->pendingweapon == weapon)
+	player.weaponowned[weapon] = false;
+	if (player.readyweapon == weapon || player.pendingweapon == weapon)
 	{
 		P_SwitchWeapon(player);
 
 		bool hasWeapon = false;
 		for (int i = 0; i < NUMWEAPONS; i++)
 		{
-			if (player->weaponowned[i])
+			if (player.weaponowned[i])
 			{
 				hasWeapon = true;
 				break;
@@ -402,38 +401,38 @@ static void TakeWeapon(player_t* player, int weapon)
 		}
 
 		if (!hasWeapon)
-			player->pendingweapon = NUMWEAPONS;
+			player.pendingweapon = NUMWEAPONS;
 	}
-	SERVER_ONLY(SV_SendPlayerInfo(*player));
+	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-extern bool P_CheckAmmo (player_t *player);
+bool P_CheckAmmo (player_t& player);
 
-static void TakeAmmo(player_t* player, int ammo, int amount)
+static void TakeAmmo(player_t& player, int ammo, int amount)
 {
 	if (amount == 0)
 	{
-		player->ammo[ammo] = 0;
+		player.ammo[ammo] = 0;
 	}
 	else
 	{
-		player->ammo[ammo] = MAX(player->ammo[ammo]-amount, 0);
+		player.ammo[ammo] = MAX(player.ammo[ammo]-amount, 0);
 	}
-	if (player->pendingweapon != wp_nochange)
+	if (player.pendingweapon != wp_nochange)
 	{
 		// Make sure we have the ammo for the weapon being switched to
-		weapontype_t readynow = player->readyweapon;
-		player->readyweapon = player->pendingweapon;
-		player->pendingweapon = wp_nochange;
+		weapontype_t readynow = player.readyweapon;
+		player.readyweapon = player.pendingweapon;
+		player.pendingweapon = wp_nochange;
 		if (P_CheckAmmo(player))
 		{
 			// There was enough ammo for the pending weapon, so keep switching
-			player->pendingweapon = player->readyweapon;
-			player->readyweapon = readynow;
+			player.pendingweapon = player.readyweapon;
+			player.readyweapon = readynow;
 		}
 		else
 		{
-			player->pendingweapon = player->readyweapon = readynow;
+			player.pendingweapon = player.readyweapon = readynow;
 			P_CheckAmmo(player);
 		}
 	}
@@ -442,7 +441,7 @@ static void TakeAmmo(player_t* player, int ammo, int amount)
 		// Make sure we still have enough ammo for the current weapon
 		P_CheckAmmo(player);
 	}
-	SERVER_ONLY(SV_SendPlayerInfo(*player));
+	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
 static AActor* SingleActorFromTID(int tid, AActor* defactor)
@@ -458,28 +457,26 @@ static AActor* SingleActorFromTID(int tid, AActor* defactor)
 	}
 }
 
-static void TakeBackpack(player_t* player)
+static void TakeBackpack(player_t& player)
 {
-	if (!player->backpack)
+	if (!player.backpack)
 		return;
 
-	player->backpack = false;
+	player.backpack = false;
 	for (int i = 0; i < NUMAMMO; ++i)
 	{
-		player->maxammo[i] /= 2;
-		if (player->ammo[i] > player->maxammo[i])
+		player.maxammo[i] /= 2;
+		if (player.ammo[i] > player.maxammo[i])
 		{
-			player->ammo[i] = player->maxammo[i];
+			player.ammo[i] = player.maxammo[i];
 		}
 	}
-	SERVER_ONLY(SV_SendPlayerInfo(*player));
+	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-static void DoTakeInv(player_t* player, const char* type, int amount)
+static void DoTakeInv(player_t& player, const char* type, int amount)
 {
-	int i;
-
-	for (i = 0; i < NUMAMMO; ++i)
+	for (int i = 0; i < NUMAMMO; ++i)
 	{
 		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
@@ -487,7 +484,7 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 			return;
 		}
 	}
-	for (i = 0; i < NUMWEAPONS; ++i)
+	for (int i = 0; i < NUMWEAPONS; ++i)
 	{
 		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
@@ -495,11 +492,11 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 			return;
 		}
 	}
-	for (i = 0; i < NUMCARDS; ++i)
+	for (int i = 0; i < NUMCARDS; ++i)
 	{
 		if (strcmp(DoomKeyNames[i].Name, type) == 0)
 		{
-			player->cards[i] = 0;
+			player.cards[i] = 0;
 		}
 	}
 	if (strcmp("Backpack", type) == 0)
@@ -510,17 +507,17 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 
 static void TakeInventory(AActor* activator, const char* type, int amount)
 {
-	if (activator == NULL)
+	if (activator == nullptr)
 	{
 		for (auto& player : players)
 		{
 			if (player.ingame() && !player.spectator)
-				DoTakeInv(&player, type, amount);
+				DoTakeInv(player, type, amount);
 		}
 	}
-	else if (activator->player != NULL)
+	else if (activator->player != nullptr)
 	{
-		DoTakeInv(activator->player, type, amount);
+		DoTakeInv(*activator->player, type, amount);
 	}
 }
 
@@ -564,10 +561,8 @@ EXTERN_CVAR (sv_gametype)
 
 //---- ACS lump manager ----//
 
-FBehavior::FBehavior (BYTE *object, int len)
+FBehavior::FBehavior (byte* object, int len)
 {
-	int i;
-
 	NumScripts = 0;
 	NumFunctions = 0;
 	NumArrays = 0;
@@ -604,22 +599,22 @@ FBehavior::FBehavior (BYTE *object, int len)
 	if (Format == ACS_Old)
 	{
 		Chunks = object + len;
-		Scripts = object + ((DWORD *)object)[1];
-		NumScripts = ((DWORD *)Scripts)[0];
+		Scripts = object + ((uint32_t *)object)[1];
+		NumScripts = ((uint32_t *)Scripts)[0];
 		// Check for redesigned ACSE/ACSe
-		if (((DWORD *)object)[1] >= 6*4 &&
-			(((DWORD *)Scripts)[-1] == MAKE_ID('A','C','S','e') ||
-			((DWORD *)Scripts)[-1] == MAKE_ID('A','C','S','E')))
+		if (((uint32_t *)object)[1] >= 6*4 &&
+			(((uint32_t *)Scripts)[-1] == MAKE_ID('A','C','S','e') ||
+			((uint32_t *)Scripts)[-1] == MAKE_ID('A','C','S','E')))
 		{
-			Format = (((BYTE *)Scripts)[-1] == 'e') ? ACS_LittleEnhanced : ACS_Enhanced;
-			Chunks = object + ((DWORD *)Scripts)[-2];
+			Format = (((byte *)Scripts)[-1] == 'e') ? ACS_LittleEnhanced : ACS_Enhanced;
+			Chunks = object + ((uint32_t *)Scripts)[-2];
 			// Forget about the compatibility cruft at the end of the lump
-			DataSize = ((DWORD *)object)[1] - 8;
+			DataSize = ((uint32_t *)object)[1] - 8;
 		}
 		else
 		{
 			Scripts += 4;
-			for (i = 0; i < NumScripts; ++i)
+			for (int i = 0; i < NumScripts; ++i)
 			{
 				ScriptPtr2 ptr1 = *(ScriptPtr2 *)(Scripts + 12*i);
 				ScriptPtr *ptr2 =  (ScriptPtr  *)(Scripts +  8*i);
@@ -632,16 +627,16 @@ FBehavior::FBehavior (BYTE *object, int len)
 	}
 	else
 	{
-		Chunks = object + ((DWORD *)object)[1];
+		Chunks = object + ((uint32_t *)object)[1];
 	}
 	if (Format != ACS_Old)
 	{
 		Scripts = FindChunk (MAKE_ID('S','P','T','R'));
 		if (object[3] != 0)
 		{
-			NumScripts = ((DWORD *)Scripts)[1] / 12;
+			NumScripts = ((uint32_t *)Scripts)[1] / 12;
 			Scripts += 8;
-			for (i = 0; i < NumScripts; ++i)
+			for (int i = 0; i < NumScripts; ++i)
 			{
 				ScriptPtr1 ptr1 = *(ScriptPtr1 *)(Scripts + 12*i);
 				ScriptPtr *ptr2 =  (ScriptPtr  *)(Scripts +  8*i);
@@ -653,7 +648,7 @@ FBehavior::FBehavior (BYTE *object, int len)
 		}
 		else
 		{
-			NumScripts = ((DWORD *)Scripts)[1] / 8;
+			NumScripts = ((uint32_t *)Scripts)[1] / 8;
 			Scripts += 8;
 		}
 	}
@@ -661,13 +656,14 @@ FBehavior::FBehavior (BYTE *object, int len)
 	// Sort scripts, so we can use a binary search to find them
 	if (NumScripts > 0)
 	{
+		// TODO: make it possible to replace with std::sort
 		qsort (Scripts, NumScripts, 8, SortScripts);
 	}
 
 	if (Format == ACS_Old)
 	{
-		LanguageNeutral = ((DWORD *)Data)[1];
-		LanguageNeutral += ((DWORD *)(Data + LanguageNeutral))[0] * 12 + 4;
+		LanguageNeutral = ((uint32_t *)Data)[1];
+		LanguageNeutral += ((uint32_t *)(Data + LanguageNeutral))[0] * 12 + 4;
 	}
 	else
 	{
@@ -677,55 +673,55 @@ FBehavior::FBehavior (BYTE *object, int len)
 
 	if (Format != ACS_Old)
 	{
-		DWORD *chunk;
+		uint32_t *chunk;
 
 		Functions = FindChunk(MAKE_ID('F','U','N','C'));
 		if (Functions != NULL)
 		{
-			NumFunctions = LELONG(((DWORD *)Functions)[1]);
+			NumFunctions = LELONG(((uint32_t *)Functions)[1]);
 			Functions += 8;
 		}
 
-		chunk = (DWORD *)FindChunk(MAKE_ID('M','I','N','I'));
+		chunk = (uint32_t *)FindChunk(MAKE_ID('M','I','N','I'));
 		if (chunk != NULL)
 		{
 			int numvars = LELONG(chunk[1])/4;
 			int firstvar = LELONG(chunk[2]);
-			for (i = 0; i < numvars; ++i)
+			for (int i = 0; i < numvars; ++i)
 			{
 				level.vars[i+firstvar] = LELONG(chunk[3+i]);
 			}
 		}
 
-		chunk = (DWORD *)FindChunk(MAKE_ID('A','R','A','Y'));
+		chunk = (uint32_t *)FindChunk(MAKE_ID('A','R','A','Y'));
 		if (chunk != NULL)
 		{
 			NumArrays = LELONG(chunk[1])/8;
 			Arrays = new ArrayInfo[NumArrays];
 			memset (Arrays, 0, sizeof(*Arrays)*NumArrays);
-			for (i = 0; i < NumArrays; ++i)
+			for (int i = 0; i < NumArrays; ++i)
 			{
 				level.vars[LELONG(chunk[2+i*2])] = i;
 				Arrays[i].ArraySize = LELONG(chunk[3+i*2]);
-				Arrays[i].Elements = new SDWORD[Arrays[i].ArraySize];
-				memset(Arrays[i].Elements, 0, Arrays[i].ArraySize*sizeof(DWORD));
+				Arrays[i].Elements = new int32_t[Arrays[i].ArraySize];
+				memset(Arrays[i].Elements, 0, Arrays[i].ArraySize*sizeof(uint32_t));
 			}
 		}
 
-		chunk = (DWORD *)FindChunk(MAKE_ID('A','I','N','I'));
+		chunk = (uint32_t *)FindChunk(MAKE_ID('A','I','N','I'));
 		while (chunk != NULL)
 		{
 			int arraynum = level.vars[LELONG(chunk[2])];
 			if ((unsigned)arraynum < (unsigned)NumArrays)
 			{
 				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
-				SDWORD *elems = Arrays[arraynum].Elements;
-				for (i = 0; i < initsize; ++i)
+				int32_t *elems = Arrays[arraynum].Elements;
+				for (int i = 0; i < initsize; ++i)
 				{
 					elems[i] = LELONG(chunk[3+i]);
 				}
 			}
-			chunk = (DWORD *)NextChunk((BYTE *)chunk);
+			chunk = (uint32_t *)NextChunk((byte *)chunk);
 		}
 	}
 
@@ -764,8 +760,8 @@ bool FBehavior::IsGood ()
 
 int *FBehavior::FindScript (int script) const
 {
-	const ScriptPtr *ptr = BinarySearch<ScriptPtr, WORD>
-		((ScriptPtr *)Scripts, NumScripts, &ScriptPtr::Number, (WORD)script);
+	const ScriptPtr *ptr = BinarySearch<ScriptPtr, uint16_t>
+		((ScriptPtr *)Scripts, NumScripts, &ScriptPtr::Number, (uint16_t)script);
 
 	return ptr ? (int *)(ptr->Address + Data) : NULL;
 }
@@ -799,41 +795,41 @@ void FBehavior::SetArrayVal (int arraynum, int index, int value)
 	array->Elements[index] = value;
 }
 
-BYTE *FBehavior::FindChunk (DWORD id) const
+byte *FBehavior::FindChunk (uint32_t id) const
 {
-	BYTE *chunk = Chunks;
+	byte *chunk = Chunks;
 
 	while (chunk != NULL && chunk < Data + DataSize)
 	{
-		if (((DWORD *)chunk)[0] == id)
+		if (((uint32_t *)chunk)[0] == id)
 		{
 			return chunk;
 		}
-		chunk += ((DWORD *)chunk)[1] + 8;
+		chunk += ((uint32_t *)chunk)[1] + 8;
 	}
 	return NULL;
 }
 
-BYTE *FBehavior::NextChunk (BYTE *chunk) const
+byte *FBehavior::NextChunk (byte *chunk) const
 {
-	DWORD id = *(DWORD *)chunk;
-	chunk += ((DWORD *)chunk)[1] + 8;
+	uint32_t id = *(uint32_t *)chunk;
+	chunk += ((uint32_t *)chunk)[1] + 8;
 	while (chunk != NULL && chunk < Data + DataSize)
 	{
-		if (((DWORD *)chunk)[0] == id)
+		if (((uint32_t *)chunk)[0] == id)
 		{
 			return chunk;
 		}
-		chunk += ((DWORD *)chunk)[1] + 8;
+		chunk += ((uint32_t *)chunk)[1] + 8;
 	}
 	return NULL;
 }
 
-const char *FBehavior::LookupString (DWORD index, DWORD ofs) const
+const char *FBehavior::LookupString (uint32_t index, uint32_t ofs) const
 {
 	if (Format == ACS_Old)
 	{
-		DWORD *list = (DWORD *)(Data + LanguageNeutral);
+		uint32_t *list = (uint32_t *)(Data + LanguageNeutral);
 
 		if (index >= list[0])
 			return NULL;	// Out of range for this list;
@@ -849,7 +845,7 @@ const char *FBehavior::LookupString (DWORD index, DWORD ofs) const
 				return NULL;
 			}
 		}
-		DWORD *list = (DWORD *)(Data + ofs);
+		uint32_t *list = (uint32_t *)(Data + ofs);
 
 		if (index >= list[1])
 			return NULL;	// Out of range for this list
@@ -859,16 +855,16 @@ const char *FBehavior::LookupString (DWORD index, DWORD ofs) const
 	}
 }
 
-const char *FBehavior::LocalizeString (DWORD index) const
+const char *FBehavior::LocalizeString (uint32_t index) const
 {
 	if (Format != ACS_Old)
 	{
-		DWORD ofs = Localized;
+		uint32_t ofs = Localized;
 		const char *str = NULL;
 
 		while (ofs != 0 && (str = LookupString (index, ofs)) == NULL)
 		{
-			ofs = ((DWORD *)(Data + ofs))[2];
+			ofs = ((uint32_t *)(Data + ofs))[2];
 		}
 		return str;
 	}
@@ -878,15 +874,12 @@ const char *FBehavior::LocalizeString (DWORD index) const
 	}
 }
 
-void FBehavior::PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD sysdef)
+void FBehavior::PrepLocale (uint32_t userpref, uint32_t userdef, uint32_t syspref, uint32_t sysdef)
 {
-	BYTE *chunk;
-	DWORD *list;
-
 	// Clear away any existing links
-	for (chunk = Chunks; chunk < Data + DataSize; chunk += ((DWORD *)chunk)[1] + 8)
+	for (byte* chunk = Chunks; chunk < Data + DataSize; chunk += ((uint32_t *)chunk)[1] + 8)
 	{
-		list = (DWORD *)chunk;
+		uint32_t* list = (uint32_t *)chunk;
 		if (list[0] == MAKE_ID('S','T','R','L'))
 		{
 			list[4] = 0;
@@ -914,21 +907,17 @@ void FBehavior::PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD 
 	AddLanguage (0);			// Failing that, use language independent strings
 }
 
-void FBehavior::AddLanguage (DWORD langid)
+void FBehavior::AddLanguage (uint32_t langid)
 {
-	DWORD ofs, *ofsput;
-	DWORD *list;
-	BYTE *chunk;
-
 	// First, make sure language is not already inserted
-	ofsput = CheckIfInList (langid);
+	uint32_t* ofsput = CheckIfInList (langid);
 	if (ofsput == NULL)
 	{ // Already in list
 		return;
 	}
 
 	// Try to find an exact match first
-	ofs = FindLanguage (langid, false);
+	uint32_t ofs = FindLanguage (langid, false);
 	if (ofs != 0)
 	{
 		*ofsput = ofs;
@@ -939,9 +928,9 @@ void FBehavior::AddLanguage (DWORD langid)
 	// type, if not in list already
 	if ((langid & LANGREGIONMASK) == 0)
 	{
-		for (chunk = Chunks; chunk < Data + DataSize; chunk += ((DWORD *)chunk)[1] + 8)
+		for (byte* chunk = Chunks; chunk < Data + DataSize; chunk += ((uint32_t *)chunk)[1] + 8)
 		{
-			list = (DWORD *)chunk;
+			uint32_t* list = (uint32_t *)chunk;
 			if (list[0] != MAKE_ID('S','T','R','L'))
 				continue;	// not a string list
 			if ((list[2] & ~LANGREGIONMASK) != langid)
@@ -955,16 +944,16 @@ void FBehavior::AddLanguage (DWORD langid)
 	}
 }
 
-DWORD *FBehavior::CheckIfInList (DWORD langid)
+uint32_t *FBehavior::CheckIfInList (uint32_t langid)
 {
-	DWORD ofs, *ofsput;
-	DWORD *list;
+	uint32_t ofs, *ofsput;
+	uint32_t *list;
 
 	ofs = Localized;
 	ofsput = &Localized;
 	while (ofs != 0)
 	{
-		list = (DWORD *)(Data + ofs);
+		list = (uint32_t *)(Data + ofs);
 		if (list[0] == langid)
 			return NULL;
 		ofsput = &list[2];
@@ -973,17 +962,16 @@ DWORD *FBehavior::CheckIfInList (DWORD langid)
 	return ofsput;
 }
 
-DWORD FBehavior::FindLanguage (DWORD langid, bool ignoreregion) const
+uint32_t FBehavior::FindLanguage (uint32_t langid, bool ignoreregion) const
 {
-	BYTE *chunk;
-	DWORD *list;
-	DWORD langmask;
+	byte *chunk;
+	uint32_t *list;
 
-	langmask = ignoreregion ? ~LANGREGIONMASK : ~0;
+	const uint32_t langmask = ignoreregion ? ~LANGREGIONMASK : ~0;
 
-	for (chunk = Chunks; chunk < Data + DataSize; chunk += ((DWORD *)chunk)[1] + 8)
+	for (chunk = Chunks; chunk < Data + DataSize; chunk += ((uint32_t *)chunk)[1] + 8)
 	{
-		list = (DWORD *)chunk;
+		list = (uint32_t *)chunk;
 		if (list[0] == MAKE_ID('S','T','R','L') && (list[2] & langmask) == langid)
 		{
 			return chunk - Data + 8;
@@ -992,15 +980,14 @@ DWORD FBehavior::FindLanguage (DWORD langid, bool ignoreregion) const
 	return 0;
 }
 
-void FBehavior::StartTypedScripts (WORD type, AActor *activator, int arg0, int arg1, int arg2, bool always) const
+void FBehavior::StartTypedScripts (uint16_t type, AActor *activator, int arg0, int arg1, int arg2, bool always) const
 {
 	if (!serverside)
 		return;
 
 	ScriptPtr *ptr;
-	int i;
 
-	for (i = 0; i < NumScripts; ++i)
+	for (int i = 0; i < NumScripts; ++i)
 	{
 		ptr = (ScriptPtr *)(Scripts + 8*i);
 		if (ptr->Type == type)
@@ -1063,7 +1050,7 @@ void DACSThinker::Serialize (FArchive &arc)
 		for (int i = 0; i < 1000; i++)
 		{
 			if (RunningScripts[i])
-				arc << RunningScripts[i] << (WORD)i;
+				arc << RunningScripts[i] << (uint16_t)i;
 		}
 		arc << static_cast<DLevelScript*>(nullptr);
 	}
@@ -1071,7 +1058,7 @@ void DACSThinker::Serialize (FArchive &arc)
 	{
 		arc >> Scripts >> LastScript;
 
-		WORD scriptnum;
+		uint16_t scriptnum;
 		DLevelScript *script;
 		arc >> script;
 		while (script)
@@ -1338,7 +1325,7 @@ void DLevelScript::operator delete (void *block)
 
 void DLevelScript::Serialize (FArchive &arc)
 {
-	DWORD i;
+	uint32_t i;
 
 	Super::Serialize (arc);
 
@@ -2105,8 +2092,8 @@ void DLevelScript::DoFadeRange(AActor* who, int r1, int g1, int b1, int a1,
 
 inline int getbyte (int *&pc)
 {
-	int res = *(BYTE *)pc;
-	pc = (int *)((BYTE *)pc+1);
+	int res = *(byte *)pc;
+	pc = (int *)((byte *)pc+1);
 	return res;
 }
 
@@ -2225,50 +2212,50 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_PUSHBYTE:
-			PushToStack(*(BYTE*)pc);
-			pc = (int*)((BYTE*)pc + 1);
+			PushToStack(*(byte*)pc);
+			pc = (int*)((byte*)pc + 1);
 			break;
 
 		case PCD_PUSH2BYTES:
-			Stack[sp] = ((BYTE*)pc)[0];
-			Stack[sp + 1] = ((BYTE*)pc)[1];
+			Stack[sp] = ((byte*)pc)[0];
+			Stack[sp + 1] = ((byte*)pc)[1];
 			sp += 2;
-			pc = (int*)((BYTE*)pc + 2);
+			pc = (int*)((byte*)pc + 2);
 			break;
 
 		case PCD_PUSH3BYTES:
-			Stack[sp] = ((BYTE*)pc)[0];
-			Stack[sp + 1] = ((BYTE*)pc)[1];
-			Stack[sp + 2] = ((BYTE*)pc)[2];
+			Stack[sp] = ((byte*)pc)[0];
+			Stack[sp + 1] = ((byte*)pc)[1];
+			Stack[sp + 2] = ((byte*)pc)[2];
 			sp += 3;
-			pc = (int*)((BYTE*)pc + 3);
+			pc = (int*)((byte*)pc + 3);
 			break;
 
 		case PCD_PUSH4BYTES:
-			Stack[sp] = ((BYTE*)pc)[0];
-			Stack[sp + 1] = ((BYTE*)pc)[1];
-			Stack[sp + 2] = ((BYTE*)pc)[2];
-			Stack[sp + 3] = ((BYTE*)pc)[3];
+			Stack[sp] = ((byte*)pc)[0];
+			Stack[sp + 1] = ((byte*)pc)[1];
+			Stack[sp + 2] = ((byte*)pc)[2];
+			Stack[sp + 3] = ((byte*)pc)[3];
 			sp += 4;
-			pc = (int*)((BYTE*)pc + 4);
+			pc = (int*)((byte*)pc + 4);
 			break;
 
 		case PCD_PUSH5BYTES:
-			Stack[sp] = ((BYTE*)pc)[0];
-			Stack[sp + 1] = ((BYTE*)pc)[1];
-			Stack[sp + 2] = ((BYTE*)pc)[2];
-			Stack[sp + 3] = ((BYTE*)pc)[3];
-			Stack[sp + 4] = ((BYTE*)pc)[4];
+			Stack[sp] = ((byte*)pc)[0];
+			Stack[sp + 1] = ((byte*)pc)[1];
+			Stack[sp + 2] = ((byte*)pc)[2];
+			Stack[sp + 3] = ((byte*)pc)[3];
+			Stack[sp + 4] = ((byte*)pc)[4];
 			sp += 5;
-			pc = (int*)((BYTE*)pc + 5);
+			pc = (int*)((byte*)pc + 5);
 			break;
 
 		case PCD_PUSHBYTES:
-			temp = *(BYTE*)pc;
-			pc = (int*)((BYTE*)pc + temp + 1);
+			temp = *(byte*)pc;
+			pc = (int*)((byte*)pc + temp + 1);
 			for (temp = -temp; temp; temp++)
 			{
-				PushToStack(*((BYTE*)pc + temp));
+				PushToStack(*((byte*)pc + temp));
 			}
 			break;
 
@@ -2349,108 +2336,110 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_LSPEC1DIRECTB:
-			ActivateLineSpecial(((BYTE *)pc)[0], activationline, activator,
-				((BYTE *)pc)[1], 0, 0, 0, 0);
-			pc = (int *)((BYTE *)pc + 2);
+			ActivateLineSpecial(((byte *)pc)[0], activationline, activator,
+				((byte *)pc)[1], 0, 0, 0, 0);
+			pc = (int *)((byte *)pc + 2);
 			break;
 
 		case PCD_LSPEC2DIRECTB:
-			ActivateLineSpecial(((BYTE *)pc)[0], activationline, activator,
-				((BYTE *)pc)[1], ((BYTE *)pc)[2], 0, 0, 0);
-			pc = (int *)((BYTE *)pc + 3);
+			ActivateLineSpecial(((byte *)pc)[0], activationline, activator,
+				((byte *)pc)[1], ((byte *)pc)[2], 0, 0, 0);
+			pc = (int *)((byte *)pc + 3);
 			break;
 
 		case PCD_LSPEC3DIRECTB:
-			ActivateLineSpecial(((BYTE *)pc)[0], activationline, activator,
-				((BYTE *)pc)[1], ((BYTE *)pc)[2], ((BYTE *)pc)[3], 0, 0);
-			pc = (int *)((BYTE *)pc + 4);
+			ActivateLineSpecial(((byte *)pc)[0], activationline, activator,
+				((byte *)pc)[1], ((byte *)pc)[2], ((byte *)pc)[3], 0, 0);
+			pc = (int *)((byte *)pc + 4);
 			break;
 
 		case PCD_LSPEC4DIRECTB:
-			ActivateLineSpecial(((BYTE *)pc)[0], activationline, activator,
-				((BYTE *)pc)[1], ((BYTE *)pc)[2], ((BYTE *)pc)[3],
-				((BYTE *)pc)[4], 0);
-			pc = (int *)((BYTE *)pc + 5);
+			ActivateLineSpecial(((byte *)pc)[0], activationline, activator,
+				((byte *)pc)[1], ((byte *)pc)[2], ((byte *)pc)[3],
+				((byte *)pc)[4], 0);
+			pc = (int *)((byte *)pc + 5);
 			break;
 
 		case PCD_LSPEC5DIRECTB:
-			ActivateLineSpecial(((BYTE *)pc)[0], activationline, activator,
-				((BYTE *)pc)[1], ((BYTE *)pc)[2], ((BYTE *)pc)[3],
-				((BYTE *)pc)[4], ((BYTE *)pc)[5]);
-			pc = (int *)((BYTE *)pc + 6);
+			ActivateLineSpecial(((byte *)pc)[0], activationline, activator,
+				((byte *)pc)[1], ((byte *)pc)[2], ((byte *)pc)[3],
+				((byte *)pc)[4], ((byte *)pc)[5]);
+			pc = (int *)((byte *)pc + 6);
 			break;
 
 		case PCD_CALL:
-		case PCD_CALLDISCARD: {
-			int funcnum;
-			int i;
-			ScriptFunction* func;
+		case PCD_CALLDISCARD:
+			{
+				int funcnum;
+				int i;
+				ScriptFunction* func;
 
-			funcnum = NEXTBYTE;
-			func = level.behavior->GetFunction(funcnum);
-			if (func == NULL)
-			{
-				PrintFmt(PRINT_HIGH, "Function {} in script {} out of range\n", funcnum,
-				       script);
-				state = SCRIPT_PleaseRemove;
-				break;
+				funcnum = NEXTBYTE;
+				func = level.behavior->GetFunction(funcnum);
+				if (func == NULL)
+				{
+					PrintFmt(PRINT_HIGH, "Function {} in script {} out of range\n", funcnum,
+					       script);
+					state = SCRIPT_PleaseRemove;
+					break;
+				}
+				if (sp + func->LocalCount + 32 > STACK_SIZE)
+				{ // 32 is the margin for the function's working space
+					PrintFmt(PRINT_HIGH, "Out of stack space in script {}\n", script);
+					state = SCRIPT_PleaseRemove;
+					break;
+				}
+				// The function's first argument is also its first local variable.
+				locals = &Stack[sp - func->ArgCount];
+				// Make space on the stack for any other variables the function uses.
+				for (i = 0; i < func->LocalCount; ++i)
+				{
+					Stack[sp + i] = 0;
+				}
+				sp += i;
+				((CallReturn*)&Stack[sp])->ReturnAddress = level.behavior->PC2Ofs(pc);
+				((CallReturn*)&Stack[sp])->ReturnFunction = activeFunction;
+				((CallReturn*)&Stack[sp])->bDiscardResult = (pcd == PCD_CALLDISCARD);
+				sp += sizeof(CallReturn) / sizeof(int);
+				pc = level.behavior->Ofs2PC(func->Address);
+				activeFunction = func;
 			}
-			if (sp + func->LocalCount + 32 > STACK_SIZE)
-			{ // 32 is the margin for the function's working space
-				PrintFmt(PRINT_HIGH, "Out of stack space in script {}\n", script);
-				state = SCRIPT_PleaseRemove;
-				break;
-			}
-			// The function's first argument is also its first local variable.
-			locals = &Stack[sp - func->ArgCount];
-			// Make space on the stack for any other variables the function uses.
-			for (i = 0; i < func->LocalCount; ++i)
-			{
-				Stack[sp + i] = 0;
-			}
-			sp += i;
-			((CallReturn*)&Stack[sp])->ReturnAddress = level.behavior->PC2Ofs(pc);
-			((CallReturn*)&Stack[sp])->ReturnFunction = activeFunction;
-			((CallReturn*)&Stack[sp])->bDiscardResult = (pcd == PCD_CALLDISCARD);
-			sp += sizeof(CallReturn) / sizeof(int);
-			pc = level.behavior->Ofs2PC(func->Address);
-			activeFunction = func;
-		}
-		break;
+			break;
 
 		case PCD_RETURNVOID:
-		case PCD_RETURNVAL: {
-			int value;
-			CallReturn* retState;
+		case PCD_RETURNVAL:
+			{
+				int value;
+				CallReturn* retState;
 
-			if (pcd == PCD_RETURNVAL)
-			{
-				value = Stack[--sp];
+				if (pcd == PCD_RETURNVAL)
+				{
+					value = Stack[--sp];
+				}
+				else
+				{
+					value = 0;
+				}
+				sp -= sizeof(CallReturn) / sizeof(int);
+				retState = (CallReturn*)&Stack[sp];
+				pc = level.behavior->Ofs2PC(retState->ReturnAddress);
+				sp -= activeFunction->ArgCount + activeFunction->LocalCount;
+				activeFunction = retState->ReturnFunction;
+				if (activeFunction == NULL)
+				{
+					locals = localvars;
+				}
+				else
+				{
+					locals =
+					    &Stack[sp - activeFunction->ArgCount - activeFunction->LocalCount];
+				}
+				if (!retState->bDiscardResult)
+				{
+					Stack[sp++] = value;
+				}
 			}
-			else
-			{
-				value = 0;
-			}
-			sp -= sizeof(CallReturn) / sizeof(int);
-			retState = (CallReturn*)&Stack[sp];
-			pc = level.behavior->Ofs2PC(retState->ReturnAddress);
-			sp -= activeFunction->ArgCount + activeFunction->LocalCount;
-			activeFunction = retState->ReturnFunction;
-			if (activeFunction == NULL)
-			{
-				locals = localvars;
-			}
-			else
-			{
-				locals =
-				    &Stack[sp - activeFunction->ArgCount - activeFunction->LocalCount];
-			}
-			if (!retState->bDiscardResult)
-			{
-				Stack[sp++] = value;
-			}
-		}
-		break;
+			break;
 
 		case PCD_ADD:
 			STACK(2) = STACK(2) + STACK(1);
@@ -2604,14 +2593,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_ADDMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) + STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_ADDMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) + STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_ADDWORLDARRAY:
 			{
@@ -2649,14 +2639,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_SUBMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) - STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_SUBMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) - STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_SUBWORLDARRAY:
 			{
@@ -2694,14 +2685,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_MULMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) * STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_MULMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) * STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_MULWORLDARRAY:
 			{
@@ -3012,8 +3004,8 @@ void DLevelScript::RunScript ()
 
 		case PCD_DELAYDIRECTB:
 			state = SCRIPT_Delayed;
-			statedata = *(BYTE *)pc;
-			pc = (int *)((BYTE *)pc + 1);
+			statedata = *(byte *)pc;
+			pc = (int *)((byte *)pc + 1);
 			break;
 
 		case PCD_RANDOM:
@@ -3027,8 +3019,8 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_RANDOMDIRECTB:
-			PushToStack (Random (((BYTE *)pc)[0], ((BYTE *)pc)[1]));
-			pc = (int *)((BYTE *)pc + 2);
+			PushToStack (Random (((byte *)pc)[0], ((byte *)pc)[1]));
+			pc = (int *)((byte *)pc + 2);
 			break;
 
 		case PCD_THINGCOUNT:
@@ -3756,19 +3748,20 @@ void DLevelScript::RunScript ()
 				PushToStack(activator->tid);
 			break;
 
-		case PCD_GETCVAR: {
-			cvar_t *var, *prev;
-			var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
-			if (var == NULL)
+		case PCD_GETCVAR:
 			{
-				STACK(1) = 0;
+				cvar_t *var, *prev;
+				var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
+				if (var == NULL)
+				{
+					STACK(1) = 0;
+				}
+				else
+				{
+					STACK(1) = var->asInt();
+				}
 			}
-			else
-			{
-				STACK(1) = var->asInt();
-			}
-		}
-		break;
+			break;
 
 		case PCD_GETLEVELINFO:
 			switch (STACK(1))
@@ -3852,7 +3845,236 @@ void DLevelScript::RunScript ()
 				}
 			}
 			break;
-        */
+		*/
+		case PCD_ANDSCRIPTVAR:
+			locals[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDMAPVAR:
+			level.vars[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) & STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ANDWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] &= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ANDGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] &= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_EORSCRIPTVAR:
+			locals[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORMAPVAR:
+			level.vars[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) ^ STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_EORWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] ^= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_EORGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] ^= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ORSCRIPTVAR:
+			locals[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORMAPVAR:
+			level.vars[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) | STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ORWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] |= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ORGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] |= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_LSSCRIPTVAR:
+			locals[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSMAPVAR:
+			level.vars[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) << STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_LSWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] <<= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_LSGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] <<= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_RSSCRIPTVAR:
+			locals[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSMAPVAR:
+			level.vars[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) >> STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_RSWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] >>= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_RSGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] >>= STACK(1);
+				sp -= 2;
+			}
+			break;
 		}
 	}
 
@@ -4138,6 +4360,10 @@ void strbin (char *str)
 			}
 			p++;
 		}
+		else
+		{
+			// Trainling backlash
+		}
 	}
 	*str = 0;
 }
@@ -4146,19 +4372,19 @@ FArchive &operator<< (FArchive &arc, acsdefered_s *defer)
 {
 	while (defer)
 	{
-		arc << (BYTE)1;
-		arc << (BYTE)defer->type << defer->script
+		arc << (byte)1;
+		arc << (byte)defer->type << defer->script
 			<< defer->arg0 << defer->arg1 << defer->arg2;
 		defer = defer->next;
 	}
-	arc << (BYTE)0;
+	arc << (byte)0;
 	return arc;
 }
 
 FArchive &operator>> (FArchive &arc, acsdefered_s* &defertop)
 {
 	acsdefered_s **defer = &defertop;
-	BYTE inbyte;
+	byte inbyte;
 
 	arc >> inbyte;
 	while (inbyte)

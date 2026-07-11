@@ -157,8 +157,8 @@ public:
 	int			armortype;
 
     // Power ups. invinc and invis are tic counters.
-	int			powers[NUMPOWERS];
-	bool		cards[NUMCARDS];
+	std::array<int, NUMPOWERS> powers;
+	std::array<bool, NUMCARDS> cards;
 	bool		backpack;
 
 	// [AM] Lives left.
@@ -168,7 +168,7 @@ public:
 	// [Toke - CTF] Points in a special game mode
 	int			points;
 	// [Toke - CTF - Carry] Remembers the flag when grabbed
-	bool		flags[NUMTEAMS];
+	std::array<bool, NUMTEAMS> flags;
 
     // Frags, deaths, monster kills
 	int			fragcount;

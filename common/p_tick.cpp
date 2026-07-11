@@ -30,6 +30,7 @@
 #include "c_console.h"
 #include "p_unlag.h"
 #include "p_horde.h"
+#include "g_spree.h"
 
 //
 // P_AtInterval
@@ -72,7 +73,7 @@ void P_Ticker (void)
 	{
 		for (auto& player : players)
 			if (player.ingame())
-				P_PlayerThink(&player);
+				P_PlayerThink(player);
 	}
 
 	// [SL] 2011-06-05 - Tick player actor animations here since P_Ticker is
@@ -88,6 +89,8 @@ void P_Ticker (void)
 
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
+
+	P_TicSprees();
 
 	if (clientside)
 		P_RunEffects(); // [RH] Run particle effects

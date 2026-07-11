@@ -471,7 +471,7 @@ public:
 	fixed_t		pitch;
 	angle_t		prevpitch;
 
-	DWORD			effects;			// [RH] see p_effect.h
+	uint32_t	effects;			// [RH] see p_effect.h
 
 	struct subsector_s		*subsector;
 
@@ -550,7 +550,7 @@ public:
 	translationref_t translation;	// Translation table (or NULL)
 	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
 	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
-	SWORD			gear;			// killough 11/98: used in torque simulation
+	int16_t			gear;			// killough 11/98: used in torque simulation
 
 	bool			onground;		// NES - Fixes infinite jumping bug like a charm.
 
@@ -613,7 +613,7 @@ public:
 	class ActorBlockMapListNode
 	{
 	public:
-		ActorBlockMapListNode(AActor *mo);
+		explicit ActorBlockMapListNode(AActor* mo);
 		void Link();
 		void Unlink();
 		AActor* Next(int bmx, int bmy);
@@ -622,26 +622,23 @@ public:
 		void clear();
 		size_t getIndex(int bmx, int bmy);
 
-		static constexpr size_t BLOCKSX = 3;
-		static constexpr size_t BLOCKSY = 3;
-
-		AActor		*actor;
+		AActor* m_actor;
 
 		// the top-left blockmap the actor is in
-		int			originx;
-		int			originy;
+		int m_originx;
+		int m_originy;
 		// the number of blocks the actor occupies
-		int			blockcntx;
-		int			blockcnty;
+		int m_blockcntx;
+		int m_blockcnty;
 
 		// the next and previous actors in each of the possible blockmaps
 		// this actor can inhabit
-		AActor		*next[BLOCKSX * BLOCKSY];
-		AActor		**prev[BLOCKSX * BLOCKSY];
+		std::vector<AActor*>  m_next;
+		std::vector<AActor**> m_prev;
 	};
 
 	// Interaction info, by BLOCKMAP.
-    // Links in blocks (if needed).
+	// Links in blocks (if needed).
 	ActorBlockMapListNode bmapnode;
 };
 

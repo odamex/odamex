@@ -28,7 +28,7 @@
 
 #include <random>
 
-inline std::mt19937 rng(time(NULL));
+inline std::mt19937 rng(std::random_device{}());
 
 typedef enum {
 	pr_misc,					// 0

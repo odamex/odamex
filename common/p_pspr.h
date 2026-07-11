@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -62,21 +62,21 @@ void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic);
 
 inline FArchive &operator<< (FArchive &arc, psprnum_t i)
 {
-	return arc << (BYTE)i;
+	return arc << (byte)i;
 }
 inline FArchive &operator>> (FArchive &arc, psprnum_t &out)
 {
-	BYTE in; arc >> in; out = (psprnum_t)in; return arc;
+	byte in; arc >> in; out = (psprnum_t)in; return arc;
 }
 
-typedef struct pspdef_s
+struct pspdef_t
 {
 	state_t*	state;	// a NULL state means not active
 	int 		tics;
 
 	fixed_t 	sx;
 	fixed_t 	sy;
-} pspdef_t;
+};
 
 FArchive &operator<< (FArchive &, pspdef_t &);
 FArchive &operator>> (FArchive &, pspdef_t &);

@@ -32,7 +32,7 @@ private:
 	vote_result_t result;
 	std::string votestring;
 	short countdown;
-	QWORD countdown_ms;
+	uint64_t countdown_ms;
 	byte yes;
 	byte yes_needed;
 	byte no;

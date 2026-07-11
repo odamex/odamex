@@ -45,6 +45,7 @@
 // a pool of bytes allocated for sprite clipping arrays
 Pool<tallpost_t*> masked_midposts_pool(4096);
 Pool<int> sprclip_pool(4096);
+Pool<fixed_t> midscales_pool(4096);
 
 // OPTIMIZE: closed two sided lines as single sided
 
@@ -96,6 +97,7 @@ extern fixed_t FocalLengthY;
 extern float yfoc;
 
 static tallpost_t** masked_midposts;
+static const fixed_t* masked_midscales;
 
 EXTERN_CVAR(r_clipmaskedspecial)
 
@@ -190,28 +192,40 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
 	tallpost_t* post = dcol.post;
 
+	// R_PrepWall uses floats to calculate scale1 and scale2, which left
+	// the scalestep values vulnerable to floating-point rounding errors.
+	// If a wall is tall enough and a resolution big enough, the scalestep
+	// can be off enough that by accumulation, it draws a row with no data.
+	// Your midtex gap! :)
+	//
+	// Instead we get spryscale from a value precalculated in R_StoreWallRange.
+	spryscale = masked_midscales[dcol.x];
+
 	if (post != NULL && spryscale > 0)
 	{
-		sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
+		// R_FillWallHeightArray uses centery and so should we.
+		// Otherwise we can have textures drawing at different
+		// heights when mouselook is on.
+		sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
 		dcol.iscale = 0xffffffffu / (unsigned)spryscale;
 
 		while (!post->end())
 		{
 			// calculate unclipped screen coordinates for post
-			const int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
+			const int topscreen = sprtopscreen + spryscale * post->topdelta;
 
-			dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
+			dcol.yl = topscreen >> FRACBITS;
 			dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
 
-			dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
+			dcol.yl = MAX(dcol.yl, MAX(mceilingclip[dcol.x], 0));
 			dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
 			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
-				+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
+				+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale);
 
 			if (dcol.texturefrac < 0)
 			{
-				const int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+				const int cnt = R_PixelCeil(-dcol.texturefrac, dcol.iscale);
 				dcol.yl += cnt;
 				dcol.texturefrac += cnt * dcol.iscale;
 			}
@@ -221,7 +235,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 			if (endfrac >= maxfrac)
 			{
-				const int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+				const int cnt = R_PixelCeil(endfrac - maxfrac + 1, dcol.iscale);
 				dcol.yh -= cnt;
 			}
 
@@ -235,8 +249,6 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 		masked_midposts[dcol.x] = NULL;
 	}
-
-	spryscale += rw_scalestep;
 }
 
 //
@@ -249,13 +261,19 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 	if (dcol.post->length != dcol.textureheight >> FRACBITS)
 	{
-		int count = dcol.textureheight >> FRACBITS;
 		tallpost_t* srcpost = dcol.post;
 
 		int destpostlen = 0;
 
 		static byte* destpostraw[512];
 		tallpost_t* destpost = (tallpost_t*) destpostraw;
+
+		// a 512 pixel tall post can overflow destpostraw
+		// because of the 4 byte header and 4 byte footer.
+		// so rather than increase it to 513 and imply that we
+		// handle 513px at a time, clamp it instead.
+		const int maxcount = static_cast<int>(sizeof(destpostraw)) - 8;
+		int count = MIN(dcol.textureheight >> FRACBITS, maxcount);
 
 		destpost->topdelta = 0;
 
@@ -265,8 +283,11 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 			if (srcpost->topdelta == destpostlen)
 			{
-				memcpy(destpost->data() + destpostlen, srcpost->data(), srcpost->length);
-					   destpostlen += srcpost->length;
+				// clamp to remaining to ensure malformed post lengths
+				// don't crash
+				const int copylen = MIN<int>(srcpost->length, remaining);
+				memcpy(destpost->data() + destpostlen, srcpost->data(), copylen);
+				destpostlen += copylen;
 			}
 			else
 			{
@@ -670,9 +691,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 		lightnum <  0 ? scalelight[0] : scalelight[lightnum];
 
 	masked_midposts = ds->midposts;
-
-	rw_scalestep = R_TexInvScaleY(ds->scalestep, texnum);
-	spryscale = R_TexInvScaleY(ds->scale1, texnum) + (x1 - ds->x1) * rw_scalestep;
+	masked_midscales = ds->midscales;
 
 	rw_lightstep = ds->lightstep;
 	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
@@ -862,6 +881,7 @@ void R_StoreWallRange(int start, int stop)
 	//	and decide if floor / ceiling marks are needed
 	midtexture = toptexture = bottomtexture = maskedtexture = 0;
 	ds_p->midposts = NULL;
+	ds_p->midscales = NULL;
 
 	if (!backsector)
 	{
@@ -1032,6 +1052,20 @@ void R_StoreWallRange(int start, int stop)
 			// masked midtexture
 			maskedtexture = texturetranslation[sidedef->midtexture];
 			ds_p->midposts = masked_midposts = masked_midposts_pool.alloc(count) - start;
+
+			// save the per-column scales, pre-scaled into the
+			// midtexture's y-scale space, for the masked pass
+			fixed_t* midscales = midscales_pool.alloc(count) - start;
+			if (texturescaley[maskedtexture] == FRACUNIT)
+			{
+				memcpy(midscales + start, wallscalex + start, count * sizeof(*midscales));
+			}
+			else
+			{
+				for (int x = start; x <= stop; x++)
+					midscales[x] = R_TexInvScaleY(wallscalex[x], maskedtexture);
+			}
+			ds_p->midscales = midscales;
 		}
 
 		// [SL] additional fix for sky hack
@@ -1042,15 +1076,7 @@ void R_StoreWallRange(int start, int stop)
 	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
 	// height to 0
 
-	// [Blair] Ensure Line_Horizon still works in Boom format.
-	short spe;
-
-	if (map_format.getZDoom())
-		spe = Line_Horizon;
-	else
-		spe = 337;
-
-	if (curline->linedef->special == spe)
+	if (curline->is_horizon)
 	{
 		rw_scale = ds_p->scale1 = ds_p->scale2 = rw_scalestep = ds_p->light = rw_light = 0;
 		midtexture = toptexture = bottomtexture = maskedtexture = 0;
@@ -1137,6 +1163,7 @@ void R_ClearOpenings()
 {
 	masked_midposts_pool.clear();
 	sprclip_pool.clear();
+	midscales_pool.clear();
 }
 
 VERSION_CONTROL (r_segs_cpp, "$Id$")

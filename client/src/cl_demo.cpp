@@ -33,6 +33,7 @@
 #include "m_fileio.h"
 #include "cl_demo.h"
 #include "p_saveg.h"
+#include "r_main.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
 #include "svc_message.h"
@@ -619,6 +620,7 @@ bool NetDemo::resume()
 {
 	if (isPaused())
 	{
+		pause_netdemotic = 0;
 		state = oldstate;
 		return true;
 	}
@@ -780,7 +782,7 @@ void NetDemo::ticker()
 	netdemotic++;
 	if (netdemotic == pause_netdemotic)
 	{
-		pause_netdemotic = netdemotic - 1;
+		pause_netdemotic = 0;
 		pause();
 		::paused = true;
 	}
@@ -1086,7 +1088,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		}
 	}
 
-	MSG_WriteLong(netbuffer, (DWORD)0x01020304);
+	MSG_WriteLong(netbuffer, (uint32_t)0x01020304);
 	MSG_WriteShort(netbuffer, sv_maxplayers);
 
 	for (const auto& player : players)
@@ -1095,7 +1097,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 			MSG_WriteBool(netbuffer, player.spectator);
 	}
 
-	MSG_WriteLong	(netbuffer, (DWORD)0x01020305);
+	MSG_WriteLong	(netbuffer, (uint32_t)0x01020305);
 	MSG_WriteShort	(netbuffer, 0);	// join_passowrd
 
 	MSG_WriteLong	(netbuffer, GAMEVER);
@@ -1223,7 +1225,24 @@ void NetDemo::nextTic()
 		return;
 
 	pause_netdemotic = netdemotic + 1;
-	resume();
+	state = oldstate;
+	::paused = false;
+}
+
+//
+// prevTic()
+//
+//		Rewind to the previous gametic.
+//		It has to rewind to the last snapshot
+//		and replay from there.
+//
+void NetDemo::prevTic()
+{
+	if (!isPaused())
+		return;
+
+	pause_netdemotic = netdemotic - 1;
+	state = oldstate;
 	::paused = false;
 }
 
@@ -1454,7 +1473,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 
 	// write map info
 	arc << level.mapname.c_str();
-	arc << (BYTE)(gamestate == GS_INTERMISSION);
+	arc << (byte)(gamestate == GS_INTERMISSION);
 
 	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
@@ -1655,15 +1674,6 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	else
 		displayplayer_id = cid;
 
-	// setup psprites and restore player colors
-	for (auto& player : players)
-	{
-		P_SetupPsprites(&player);
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
-	}
-
-	R_CopyTranslationRGB (0, consoleplayer_id);
-
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;
 	while ( (mo = flagiterator.Next() ) )
@@ -1677,6 +1687,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	}
 
 	// Make sure the status bar is displayed correctly
+	R_ForceViewWindowResize();
 	ST_Start();
 }
 

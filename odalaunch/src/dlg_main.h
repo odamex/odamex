@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef DLG_MAIN_H
-#define DLG_MAIN_H
+#pragma once
 
 #include "odalaunch.h"
 
@@ -34,7 +33,6 @@
 #include "dlg_config.h"
 #include "dlg_servers.h"
 #include "ctrl_infobar.h"
-#include "frm_odaget.h"
 
 #include <wx/frame.h>
 #include <wx/intl.h>
@@ -47,11 +45,21 @@
 #include <wx/timer.h>
 #include <wx/process.h>
 #include <wx/srchctrl.h>
+#include <wx/url.h>
 
 #include <vector>
+#include <memory>
+#include <unordered_map>
 
 #include "query_thread.h"
 #include "net_packet.h"
+
+#if wxCHECK_VERSION(3, 1, 5)
+	#include <wx/webrequest.h>
+	#define ODALAUNCH_USE_WEB_REQUEST 1
+#else
+	#define ODALAUNCH_USE_WEB_REQUEST 0
+#endif
 
 // custom event declarations
 wxDECLARE_EVENT(wxEVT_THREAD_MONITOR_SIGNAL, wxCommandEvent);
@@ -65,7 +73,7 @@ public:
 	virtual ~dlgMain();
 
 	odalpapi::Server         NullServer;
-	odalpapi::Server*        QServer;
+	std::unique_ptr<odalpapi::Server[]> QServer;
 	odalpapi::MasterServer   MServer;
 
 protected:
@@ -73,8 +81,8 @@ protected:
 	void OnManualConnect(wxCommandEvent& event);
 
 	void OnOpenSettingsDialog(wxCommandEvent& event);
-	void OnOpenOdaGet(wxCommandEvent& event);
 	void OnOpenWebsite(wxCommandEvent& event);
+	void OnOpenReleases(wxCommandEvent& event);
 	void OnOpenForum(wxCommandEvent& event);
 	void OnOpenWiki(wxCommandEvent& event);
 	void OnOpenChangeLog(wxCommandEvent& event);
@@ -95,6 +103,10 @@ protected:
 	void OnServerListDoubleClick(wxListEvent& event);
 
 	void OnCheckVersion(wxCommandEvent &event);
+	void SendCheckVersionRequest();
+	#if ODALAUNCH_USE_WEB_REQUEST
+	void OnCheckVersionResponse(wxWebRequestEvent& evt);
+	#endif
 
 	void OnShow(wxShowEvent& event);
 	void OnClose(wxCloseEvent& event);
@@ -108,17 +120,14 @@ protected:
 	void DoGetList(bool IsARTRefresh = false);
 	void DoRefreshList(bool IsARTRefresh = false);
 
-    void GetWebsitePageSource(wxString &SiteSrc);
-    void GetVersionInfoFromWebsite(const wxString &SiteSrc, wxString &ver);
-
 	void LoadMasterServers();
 
 	wxInt32 FindServer(wxString);
 	wxInt32 GetSelectedServerArrayIndex();
 
-	bool ClientIsRunning()
+	bool ClientIsRunning() const
 	{
-		return m_ClientIsRunning;
+		return !m_Processes.empty();
 	};
 
 	void LaunchGame(const wxString& Address, const wxString& ODX_Path,
@@ -131,15 +140,14 @@ protected:
 	dlgConfig* config_dlg;
 	dlgServers* server_dlg;
 	dlgAbout* AboutDialog;
-	//frmOdaGet *OdaGet;
 
 	wxPanel* m_PnlServerFilter;
 	wxSearchCtrl* m_SrchCtrlGlobal;
 
 	wxStatusBar* m_StatusBar;
-	wxProcess* m_Process;
+	std::unordered_map<int, std::unique_ptr<wxProcess>> m_Processes;
 
-	bool m_ClientIsRunning;
+	bool m_UpdateCheckWasAutomatic = false;
 
 	OdaInfoBar *InfoBar;
 
@@ -182,7 +190,7 @@ protected:
 	// Monitor Thread Command Signals
 	// Sends a signal to the monitoring thread to instruct it to carry out
 	// a command of some sort (get a list of servers for example)
-	typedef enum
+	enum mtcs_t
 	{
 		mtcs_none
 		,mtcs_getmaster
@@ -191,14 +199,14 @@ protected:
 		,mtcs_exit       // Shutdown now!
 
 		,mtcs_max
-	} mtcs_t;
+	};
 
-	typedef struct
+	struct mtcs_struct_t
 	{
 		mtcs_t Signal;
 		wxInt32 Index;
 		wxInt32 ServerListIndex;
-	} mtcs_struct_t;
+	};
 
 	// Only set these below if you got a response!
 	// [Russell] - iirc, volatile on a struct doesn't work as well as it
@@ -208,7 +216,7 @@ protected:
 	// Monitor Thread Return Signals
 	// The result of the signal sent above, sent to the callback function
 	// below
-	typedef enum
+	enum mtrs_t
 	{
 		mtrs_master_success
 		,mtrs_master_timeout   // Dead
@@ -221,31 +229,31 @@ protected:
 		,mtrs_servers_querydone // Query of all servers complete
 
 		,mtrs_max
-	} mtrs_t;
+	};
 
-	typedef struct
+	struct mtrs_struct_t
 	{
 		mtrs_t Signal;
 		wxInt32 Index;
 		wxInt32 ServerListIndex;
-	} mtrs_struct_t;
+	};
 
 	mtrs_struct_t mtrs_Result;
 
-	typedef enum
+	enum wtrs_t
 	{
 		wtrs_server_success
 		,wtrs_server_timeout
 
 		,wtrs_max
-	} wtrs_t;
+	};
 
-	typedef struct
+	struct wtrs_struct_t
 	{
 		wtrs_t Signal;
 		wxInt32 Index;
 		wxInt32 ServerListIndex;
-	} wtrs_struct_t;
+	};
 
 	wtrs_struct_t wtrs_Result;
 
@@ -267,11 +275,9 @@ protected:
 	// Our monitoring thread entry point, from wxThreadHelper
 	void* Entry();
 
-	std::vector<QueryThread*> threadVector;
+	std::vector<std::unique_ptr<QueryThread>> threadVector;
 
 private:
 
 	DECLARE_EVENT_TABLE()
 };
-
-#endif

@@ -141,7 +141,7 @@ void P_SerializeWorld (FArchive &arc)
 				<< line.special
 				<< line.lucency
 				<< line.id
-				<< line.args[0] << line.args[1] << line.args[2] << line.args[3] << line.args[4] << (WORD)0;
+				<< line.args[0] << line.args[1] << line.args[2] << line.args[3] << line.args[4] << (uint16_t)0;
 
 			for (int i = 0; i < 2; i++)
 			{
@@ -243,7 +243,7 @@ void P_SerializeWorld (FArchive &arc)
 		// do lines
 		for (line_t& line : R_GetLines())
 		{
-		    WORD dummy;
+		    uint16_t dummy;
 			arc >> line.flags
 				>> line.special
 				>> line.lucency

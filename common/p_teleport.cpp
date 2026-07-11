@@ -39,7 +39,7 @@
 #include "r_state.h"
 
 
-extern void P_CalcHeight (player_t *player);
+void P_CalcHeight (player_t& player);
 
 // [AM] From ZDoom SVN, modified for use with Odamex and without the
 //      buggy 2.0.x teleport behavior compatibility fix.  Thanks to both
@@ -65,7 +65,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 			if (searcher->tid != tid)
 				continue;
 
-			if (tag == 0 || searcher->subsector->sector->tag == tag)
+			if (tag == 0 || (searcher->subsector && searcher->subsector->sector->tag == tag))
 				count++;
 		}
 
@@ -109,7 +109,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 					continue;
 				if (searcher->tid != tid)
 					continue;
-				if (tag == 0 || searcher->subsector->sector->tag == tag)
+				if (tag == 0 || (searcher->subsector && searcher->subsector->sector->tag == tag))
 					count--;
 			}
 		}
@@ -135,7 +135,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 				if (!(searcher->type == MT_TELEPORTMAN || searcher->type == MT_TELEPORTMAN2))
 					continue;
 
-				if (searcher->subsector->sector == sectors + secnum)
+				if (searcher->subsector && searcher->subsector->sector == sectors + secnum)
 					return searcher;
 			}
 		}
@@ -272,6 +272,9 @@ bool EV_LineTeleport (line_t *line, int side, AActor *thing)
 				if (m->type != MT_TELEPORTMAN)
 					continue;
 
+				if (not m->subsector)
+					continue;
+
 				sector_t* sector = m->subsector->sector;
 				// wrong sector
 				if (sector-sectors != i )
@@ -403,7 +406,7 @@ bool EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* l
 		player->deltaviewheight = 0;
 
 		// Set player's view according to the newly set parameters
-		P_CalcHeight(player);
+		P_CalcHeight(*player);
 
 		// Reset the delta to have the same dynamics as before
 		player->deltaviewheight = deltaviewheight;
@@ -526,7 +529,7 @@ bool EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 				player->deltaviewheight = 0;
 
 				// Set player's view according to the newly set parameters
-				P_CalcHeight(player);
+				P_CalcHeight(*player);
 
 				// Reset the delta to have the same dynamics as before
 				player->deltaviewheight = deltaviewheight;

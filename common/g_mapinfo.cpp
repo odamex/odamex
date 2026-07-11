@@ -630,7 +630,7 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 void MIType_SetFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	*static_cast<DWORD*>(data) |= flags;
+	*static_cast<uint32_t*>(data) |= flags;
 }
 
 // Sets a compatibility flag for maps
@@ -642,20 +642,20 @@ void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned 
 	{
 		os.mustScanInt();
 		if (os.getTokenInt())
-			*static_cast<DWORD*>(data) |= flags;
+			*static_cast<uint32_t*>(data) |= flags;
 		else
-			*static_cast<DWORD*>(data) &= ~flags;
+			*static_cast<uint32_t*>(data) &= ~flags;
 	}
 	else
 	{
 		if (IsNum(os.getToken().c_str()))
 		{
-			*static_cast<DWORD*>(data) |= os.getTokenInt() ? flags : 0;
+			*static_cast<uint32_t*>(data) |= os.getTokenInt() ? flags : 0;
 		}
 		else
 		{
 			os.unScan();
-			*static_cast<DWORD*>(data) |= flags;
+			*static_cast<uint32_t*>(data) |= flags;
 		}
 	}
 }
@@ -664,7 +664,7 @@ void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned 
 void MIType_SCFlags(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	*static_cast<DWORD*>(data) = (*static_cast<DWORD*>(data) & flags2) | flags;
+	*static_cast<uint32_t*>(data) = (*static_cast<uint32_t*>(data) & flags2) | flags;
 }
 
 // Sets a cluster
@@ -1088,9 +1088,10 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	}
 }
 
+template <typename DataType>
 void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
 {
-	*static_cast<int32_t*>(data) = flags;
+	*static_cast<DataType*>(data) = static_cast<DataType>(flags);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1168,7 +1169,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "e4m6special", &MIType_Special<MT_NULL, MF3_E4M6BOSS>, &ref.bossactions },
 			{ "e4m8special", &MIType_Special<MT_NULL, MF3_E4M8BOSS>, &ref.bossactions },
 			{ "specialaction_exitlevel", &MIType_SpecialAction<11>, &ref.bossactions },
-			{ "specialaction_opendoor", &MIType_SpecialAction<29, 666>, &ref.bossactions },
+			{ "specialaction_opendoor", &MIType_SpecialAction<109, 666>, &ref.bossactions },
 			{ "specialaction_lowerfloor", &MIType_SpecialAction<23, 666>, &ref.bossactions },
 			{ "specialaction_killmonsters", &MIType_SpecialAction<280>, &ref.bossactions },
 			{ "lightning" },
@@ -1218,7 +1219,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "author", &MIType_String, &ref.author },
 			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
-			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK }
+			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "smoothlighting" } // TODO: not implemented
 		};
 	}
 };
@@ -1408,13 +1410,13 @@ void ParseEpisodeInfo(OScanner& os)
 		if (os.compareToken("{"))
 		{
 			// Detected new-style MAPINFO
-			os.error("Detected incorrectly placed curly brace in MAPINFO episode definiton");
+			os.error("Detected incorrectly placed curly brace in MAPINFO episode definition");
 		}
 		else if (os.compareToken("}"))
 		{
 			if (new_mapinfo == false)
 				os.error("Detected incorrectly placed curly brace in MAPINFO episode "
-				        "definiton");
+				        "definition");
 			else
 				break;
 		}
@@ -1571,7 +1573,7 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "noinfighting", &MIType_SCFlags, &ref.flags, SKILL_NOINFIGHTING, ~SKILL_TOTALINFIGHTING },
 			{ "totalinfighting", &MIType_SCFlags, &ref.flags, SKILL_TOTALINFIGHTING, ~SKILL_NOINFIGHTING },
 			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true },
-			{ "defaultskill", &MIType_SetInt, &defaultskillmenu, skillnum }
+			{ "defaultskill", &MIType_SetInt<decltype(defaultskillmenu)>, &defaultskillmenu, skillnum }
 		};
 	}
 };
@@ -1661,6 +1663,14 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 
 	level_pwad_info_t defaultinfo{};
 
+	// if no sky is defined, it will show texture 0 (aastinky/aashitty)
+	// so instead, lets just try to give it the first defined sky in the level set.
+	if (levels.size() > 0 && defaultinfo.skypic == "")
+	{
+		level_pwad_info_t& def = levels.at(0);
+		defaultinfo.skypic = def.skypic;
+	}
+
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
 	const OScannerConfig config = {
@@ -1675,6 +1685,14 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		if (os.compareTokenNoCase("defaultmap"))
 		{
 			defaultinfo = level_pwad_info_t();
+
+			// if no sky is defined, it will show texture 0 (aastinky/aashitty)
+			// so instead, lets just try to give it the first defined sky in the level set.
+			if (levels.size() > 0 && defaultinfo.skypic == "")
+			{
+				level_pwad_info_t& def = levels.at(0);
+				defaultinfo.skypic = def.skypic;
+			}
 
 			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
 			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
@@ -1702,25 +1720,14 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 				    LEVEL_NOINTERMISSION | LEVEL_EVENLIGHTING | LEVEL_SNDSEQTOTALCTRL;
 			}
 
-			// Build upon already defined levels, that way we don't miss any defaults
-			bool levelExists = levels.findByName(map_name).exists();
-
 			// Find the level.
-			level_pwad_info_t& info = levelExists
+			level_pwad_info_t& info = levels.findByName(map_name).exists()
 				? levels.findByName(map_name)
 				: levels.create();
 
-			if (!levelExists)
-				info = defaultinfo;
-
-			// for maps above 32, if no sky is defined, it will show texture 0 (aastinky)
-			// so instead, lets just try to give it the first defined sky in the level set.
-			if (levels.size() > 0 && defaultinfo.skypic == "")
-			{
-				level_pwad_info_t& def = levels.at(0);
-				info.skypic = def.skypic;
-			}
-
+			// Hexen/ZDoom mapinfo always loads from the default defining a new map
+			// Changing this to be conditional will break most wads that use defaultmap
+			info = defaultinfo;
 			info.mapname = map_name;
 
 			// Map name.

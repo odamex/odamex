@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2025 by The Odamex Team.
+# Copyright (C) 2006-2026 by The Odamex Team.
 #
 
 import configparser

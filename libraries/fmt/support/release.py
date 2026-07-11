@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-"""Manage site and releases.
+"""Make a release.
 
 Usage:
-  manage.py release [<branch>]
-  manage.py site
+  release.py [<branch>]
 
 For the release command $FMT_TOKEN should contain a GitHub personal access token
 obtained from https://github.com/settings/tokens.
@@ -12,9 +11,9 @@ obtained from https://github.com/settings/tokens.
 
 from __future__ import print_function
 import datetime, docopt, errno, fileinput, json, os
-import re, requests, shutil, sys
-from contextlib import contextmanager
+import re, shutil, sys
 from subprocess import check_call
+import urllib.request
 
 
 class Git:
@@ -35,6 +34,9 @@ class Git:
 
     def clone(self, *args):
         return self.call('clone', list(args) + [self.dir])
+
+    def fetch(self, *args):
+        return self.call('fetch', args, cwd=self.dir)
 
     def commit(self, *args):
         return self.call('commit', args, cwd=self.dir)
@@ -57,16 +59,22 @@ class Git:
 
 def clean_checkout(repo, branch):
     repo.clean('-f', '-d')
-    repo.reset('--hard')
+    repo.fetch('origin')
     repo.checkout(branch)
+    # Hard-reset to the remote so a reused clone picks up new commits
+    # instead of building from stale local state.
+    repo.reset('--hard', 'origin/' + branch)
 
 
 class Runner:
-    def __init__(self, cwd):
+    def __init__(self, cwd, env=None):
         self.cwd = cwd
+        self.env = env
 
     def __call__(self, *args, **kwargs):
         kwargs['cwd'] = kwargs.get('cwd', self.cwd)
+        if self.env is not None:
+            kwargs['env'] = kwargs.get('env', self.env)
         check_call(args, **kwargs)
 
 
@@ -81,46 +89,37 @@ def create_build_env():
     return env
 
 
-fmt_repo_url = 'git@github.com:fmtlib/fmt'
+def create_doc_env(env, fmt_repo):
+    """Create a virtualenv with the pinned documentation dependencies and
+    return an environment dict with it prepended to PATH. This ensures the
+    docs are built with the exact mkdocs/mkdocstrings versions required by the
+    custom handler, regardless of what is installed system-wide."""
+    # Use an absolute path so the venv resolves on PATH regardless of the
+    # working directory the build steps run in.
+    venv_dir = os.path.abspath(os.path.join(env.build_dir, 'venv'))
+    shutil.rmtree(venv_dir, ignore_errors=True)
+    check_call([sys.executable, '-m', 'venv', venv_dir])
+    venv_bin = os.path.join(venv_dir, 'bin')
+    pip = os.path.join(venv_bin, 'pip')
+    check_call([pip, 'install', '--quiet', '--upgrade', 'pip'])
+    requirements = os.path.join(
+        fmt_repo.dir, 'support', 'doc-requirements.txt')
+    check_call(
+        [pip, 'install', '--quiet', '--require-hashes', '-r', requirements])
+    doc_env = os.environ.copy()
+    doc_env['PATH'] = venv_bin + os.pathsep + doc_env.get('PATH', '')
+    return doc_env
 
 
-def update_site(env):
-    env.fmt_repo.update(fmt_repo_url)
-
-    doc_repo = Git(os.path.join(env.build_dir, 'fmt.dev'))
-    doc_repo.update('git@github.com:fmtlib/fmt.dev')
-
-    version = '11.0.0'
-    clean_checkout(env.fmt_repo, version)
-    target_doc_dir = os.path.join(env.fmt_repo.dir, 'doc')
-
-    # Build the docs.
-    html_dir = os.path.join(env.build_dir, 'html')
-    if os.path.exists(html_dir):
-        shutil.rmtree(html_dir)
-    include_dir = env.fmt_repo.dir
-    import build
-    build.build_docs(version, doc_dir=target_doc_dir,
-                        include_dir=include_dir, work_dir=env.build_dir)
-    shutil.rmtree(os.path.join(html_dir, '.doctrees'))
-    # Copy docs to the website.
-    version_doc_dir = os.path.join(doc_repo.dir, version)
-    try:
-        shutil.rmtree(version_doc_dir)
-    except OSError as e:
-        if e.errno != errno.ENOENT:
-            raise
-    shutil.move(html_dir, version_doc_dir)
-
-
-def release(args):
+if __name__ == '__main__':
+    args = docopt.docopt(__doc__)
     env = create_build_env()
     fmt_repo = env.fmt_repo
 
     branch = args.get('<branch>')
     if branch is None:
-        branch = 'master'
-    if not fmt_repo.update('-b', branch, fmt_repo_url):
+        branch = 'main'
+    if not fmt_repo.update('-b', branch, 'git@github.com:fmtlib/fmt'):
         clean_checkout(fmt_repo, branch)
 
     # Update the date in the changelog and extract the version and the first
@@ -183,36 +182,48 @@ def release(args):
     fmt_repo.add(changelog)
     fmt_repo.commit('-m', 'Update version')
 
-    # Build the docs and package.
-    run = Runner(fmt_repo.dir)
+    # Build the docs locally in a virtualenv with the pinned doc dependencies;
+    # the source zip is now built and attached to the release in CI by
+    # .github/workflows/release.yml, which also generates a SLSA provenance
+    # attestation for it. The venv is prepended to PATH so that CMake's
+    # find_program(MKDOCS mkdocs) and the ./mkdocs deploy step below both pick
+    # up the correct mkdocs/mkdocstrings versions.
+    doc_env = create_doc_env(env, fmt_repo)
+    run = Runner(fmt_repo.dir, env=doc_env)
     run('cmake', '.')
-    run('make', 'doc', 'package_source')
+    run('make', 'doc')
 
-    # Create a release on GitHub.
+    # Create a draft release on GitHub, then trigger the release workflow to
+    # build the source zip from the `release` branch and attach the zip plus
+    # *.intoto.jsonl provenance to this draft. After reviewing the draft, the
+    # maintainer clicks Publish to finalize.
     fmt_repo.push('origin', 'release')
     auth_headers = {'Authorization': 'token ' + os.getenv('FMT_TOKEN')}
-    r = requests.post('https://api.github.com/repos/fmtlib/fmt/releases',
-                      headers=auth_headers,
-                      data=json.dumps({'tag_name': version,
-                                       'target_commitish': 'release',
-                                       'body': changes, 'draft': True}))
-    if r.status_code != 201:
-        raise Exception('Failed to create a release ' + str(r))
-    id = r.json()['id']
-    uploads_url = 'https://uploads.github.com/repos/fmtlib/fmt/releases'
-    package = 'fmt-{}.zip'.format(version)
-    r = requests.post(
-        '{}/{}/assets?name={}'.format(uploads_url, id, package),
-        headers={'Content-Type': 'application/zip'} | auth_headers,
-        data=open('build/fmt/' + package, 'rb'))
-    if r.status_code != 201:
-        raise Exception('Failed to upload an asset ' + str(r))
+    req = urllib.request.Request(
+        'https://api.github.com/repos/fmtlib/fmt/releases',
+        data=json.dumps({'tag_name': version,
+                         'target_commitish': 'release',
+                         'body': changes, 'draft': True}).encode('utf-8'),
+        headers=auth_headers, method='POST')
+    with urllib.request.urlopen(req) as response:
+        if response.status != 201:
+            raise Exception(f'Failed to create a release ' +
+                            '{response.status} {response.reason}')
 
-    update_site(env)
+    # Draft releases do not fire `release: created`, so explicitly dispatch the
+    # release workflow. It runs from the default branch (`branch`) but builds
+    # and uploads artifacts from the `release` branch for tag `version`.
+    dispatch_req = urllib.request.Request(
+        'https://api.github.com/repos/fmtlib/fmt/actions/workflows/'
+        'release.yml/dispatches',
+        data=json.dumps({'ref': branch,
+                         'inputs': {'tag_name': version,
+                                    'ref': 'release'}}).encode('utf-8'),
+        headers=auth_headers, method='POST')
+    with urllib.request.urlopen(dispatch_req) as response:
+        if response.status != 204:
+            raise Exception('Failed to dispatch the release workflow ' +
+                            f'{response.status} {response.reason}')
 
-if __name__ == '__main__':
-    args = docopt.docopt(__doc__)
-    if args.get('release'):
-        release(args)
-    elif args.get('site'):
-        update_site(create_build_env())
+    short_version = '.'.join(version.split('.')[:-1])
+    check_call(['./mkdocs', 'deploy', short_version], env=doc_env)

@@ -574,7 +574,7 @@ BGCASTCALL = "BOSSBACK";
 TXT_FRAGLIMIT = "Fraglimit hit.";
 TXT_TIMELIMIT = "Timelimit hit.";
 
-// Spree messages
+// Spree messages (old)
 SPREEKILLSELF = "%o was looking good until %g killed %hself!";
 SPREEOVER = "%o's killing spree was ended by %k";
 SPREE5 = "%k is on a killing spree!";
@@ -583,7 +583,7 @@ SPREE15 = "%k is dominating!";
 SPREE20 = "%k is unstoppable!";
 SPREE25 = "%k is Godlike!";
 
-// Mulitkill messages
+// Mulitkill messages (old)
 MULTI2 = "Double kill!";
 MULTI3 = "Multi kill!";
 MULTI4 = "Ultra kill!";
@@ -1104,6 +1104,39 @@ MUSIC_DM2INT = "dm2int";
 
 TXT_BUDDHAON = "Buddha mode ON";
 TXT_BUDDHAOFF = "Buddha mode OFF";
+
+// Spree defaults (new)
+// Spree texts
+OSPREEENDP = "%o's %s was ended by %k!";
+OSPREEENDS = "%k was looking good until %g killed %hself!";
+OSPREEENDM = "%o's %s was ended by a %k!";
+OSPREEREP = "%k is STILL %s!";
+
+OSPREE1 = "Killing spree";
+OSPREE2 = "Rampage";
+OSPREE3 = "Dominating";
+OSPREE4 = "Unstoppable";
+OSPREE5 = "Untouchable";
+OSPREE6 = "Legendary";
+
+OBSPREE1 = "%k is on a %s!";
+OBSPREE2 = "%k is on a %s!";
+OBSPREE3 = "%k is %s!";
+OBSPREE4 = "%k is %s!";
+OBSPREE5 = "%k is %s!";
+OBSPREE6 = "%k is %s!";
+
+// Multi kill defaults (new)
+OMULTI2 = "Double Kill!";
+OMULTI3 = "Triple Kill!";
+OMULTI4 = "Multi Kill!";
+OMULTI5 = "Ultra Kill!";
+OMULTI6 = "Overkill!";
+OMULTI7 = "Mega Kill!";
+OMULTI8 = "Monster Kill!";
+OMULTI9 = "Mythic Kill!";
+OMULTI10 = "Killionaire!";
+OMULTI11 = "Terminator!";
 
 
 /******************************** French ********************************/

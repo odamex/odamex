@@ -445,10 +445,6 @@ EXTERN_CVAR (sv_allowexit)
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
 
-DScroller::DScroller ()
-{
-}
-
 void DScroller::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -472,11 +468,6 @@ void DScroller::Serialize (FArchive &arc)
 			>> m_vdx >> m_vdy
 			>> m_Accel;
 	}
-}
-
-DPusher::DPusher () : m_Type(p_push), m_Xmag(0), m_Ymag(0), m_Magnitude(0),
-    m_Radius(0), m_X(0), m_Y(0), m_Affectee(0)
-{
 }
 
 void DPusher::Serialize (FArchive &arc)
@@ -2195,34 +2186,34 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
-void P_ApplySectorDamageNoWait(player_t* player, int damage, int mod)
+void P_ApplySectorDamageNoWait(player_t& player, int damage, int mod)
 {
-	P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+	P_DamageMobj(player.mo, NULL, NULL, damage, mod);
 }
 
-void P_ApplySectorDamageNoRandom(player_t* player, int damage, int mod)
+void P_ApplySectorDamageNoRandom(player_t& player, int damage, int mod)
 {
-	if (!player->powers[pw_ironfeet])
+	if (!player.powers[pw_ironfeet])
 		if (!(level.time & 0x1f))
-			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+			P_DamageMobj(player.mo, NULL, NULL, damage, mod);
 }
 
-void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
+void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod)
 {
-	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
+	if (!player.powers[pw_ironfeet] || (leak && P_Random(player.mo)<leak))
 		if (!(level.time & 0x1f))
-			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+			P_DamageMobj(player.mo, NULL, NULL, damage, mod);
 }
 
-void P_ApplySectorDamageEndLevel(player_t* player)
+void P_ApplySectorDamageEndLevel(player_t& player)
 {
 	//if (comp[comp_god])
-	player->cheats &= ~CF_GODMODE;
+	player.cheats &= ~CF_GODMODE;
 
 	if (!(level.time & 0x1f))
-		P_DamageMobj(player->mo, NULL, NULL, 20);
+		P_DamageMobj(player.mo, NULL, NULL, 20);
 
-	if (player->health <= 10)
+	if (player.health <= 10)
 		if (sv_allowexit)
 			G_ExitLevel(0, 1);
 }
@@ -2231,24 +2222,24 @@ void P_ApplySectorDamageEndLevel(player_t* player)
 void SV_UpdateSecret(sector_t& sector, player_t &player);
 #endif
 
-void P_CollectSecretCommon(sector_t* sector, player_t* player)
+void P_CollectSecretCommon(sector_t& sector, player_t& player)
 {
-	player->secretcount++;
+	player.secretcount++;
 	level.found_secrets++;
-	sector->flags &= ~SECF_SECRET;
+	sector.flags &= ~SECF_SECRET;
 
 #ifdef SERVER_APP
-	SV_UpdateSecret(*sector, *player); // Update the sector to all clients so that they
-	                                   // don't discover an already found secret.
+	SV_UpdateSecret(sector, player); // Update the sector to all clients so that they
+	                                 // don't discover an already found secret.
 #elif defined(CLIENT_APP)
-	if (player->mo == consoleplayer().camera)
+	if (player.mo == consoleplayer().camera)
 		C_RevealSecret(); // Display the secret revealed message
 #endif
 }
 
-void P_CollectSecretVanilla(sector_t* sector, player_t* player)
+void P_CollectSecretVanilla(sector_t& sector, player_t& player)
 {
-	sector->special = 0;
+	sector.special = 0;
 	P_CollectSecretCommon(sector, player);
 }
 
@@ -3022,7 +3013,7 @@ void DPusher::RunThink ()
 	for ( ; node ; node = node->m_snext)
 	{
 		thing = node->m_thing;
-		if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+		if (!P_IsPlayerOrAvatar(*thing) || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 			continue;
 		if (m_Type == p_wind)
 		{

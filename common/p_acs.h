@@ -10,34 +10,34 @@
 
 struct ScriptPtr
 {
-	WORD Number;
-	BYTE Type;
-	BYTE ArgCount;
-	DWORD Address;
+	uint16_t Number;
+	byte Type;
+	byte ArgCount;
+	uint32_t Address;
 };
 
 struct ScriptPtr1
 {
-	WORD Number;
-	WORD Type;
-	DWORD Address;
-	DWORD ArgCount;
+	uint16_t Number;
+	uint16_t Type;
+	uint32_t Address;
+	uint32_t ArgCount;
 };
 
 struct ScriptPtr2
 {
-	DWORD Number;	// Type is Number / 1000
-	DWORD Address;
-	DWORD ArgCount;
+	uint32_t Number;	// Type is Number / 1000
+	uint32_t Address;
+	uint32_t ArgCount;
 };
 
 struct ScriptFunction
 {
-	BYTE ArgCount;
-	BYTE LocalCount;
-	BYTE HasReturnValue;
-	BYTE Pad;
-	DWORD Address;
+	byte ArgCount;
+	byte LocalCount;
+	byte HasReturnValue;
+	byte Pad;
+	uint32_t Address;
 };
 
 enum
@@ -59,19 +59,19 @@ enum ACSFormat { ACS_Old, ACS_Enhanced, ACS_LittleEnhanced, ACS_Unknown };
 class FBehavior
 {
 public:
-	FBehavior (BYTE *object, int len);
+	FBehavior (byte *object, int len);
 	~FBehavior ();
 
 	bool IsGood ();
-	BYTE *FindChunk (DWORD id) const;
-	BYTE *NextChunk (BYTE *chunk) const;
+	byte *FindChunk (uint32_t id) const;
+	byte *NextChunk (byte *chunk) const;
 	int *FindScript (int number) const;
-	void PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD sysdef);
-	const char *LookupString (DWORD index, DWORD ofs=0) const;
-	const char *LocalizeString (DWORD index) const;
-	void StartTypedScripts (WORD type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
-	DWORD PC2Ofs (int *pc) const { return (BYTE *)pc - Data; }
-	int *Ofs2PC (DWORD ofs) const { return (int *)(Data + ofs); }
+	void PrepLocale (uint32_t userpref, uint32_t userdef, uint32_t syspref, uint32_t sysdef);
+	const char *LookupString (uint32_t index, uint32_t ofs=0) const;
+	const char *LocalizeString (uint32_t index) const;
+	void StartTypedScripts (uint16_t type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
+	uint32_t PC2Ofs (int *pc) const { return (byte *)pc - Data; }
+	int *Ofs2PC (uint32_t ofs) const { return (int *)(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }
 	ScriptFunction *GetFunction (int funcnum) const;
 	int GetArrayVal (int arraynum, int index) const;
@@ -82,22 +82,22 @@ private:
 
 	ACSFormat Format;
 
-	BYTE *Data;
+	byte *Data;
 	int DataSize;
-	BYTE *Chunks;
-	BYTE *Scripts;
+	byte *Chunks;
+	byte *Scripts;
 	int NumScripts;
-	BYTE *Functions;
+	byte *Functions;
 	int NumFunctions;
 	ArrayInfo *Arrays;
 	int NumArrays;
-	DWORD LanguageNeutral;
-	DWORD Localized;
+	uint32_t LanguageNeutral;
+	uint32_t Localized;
 
 	static int STACK_ARGS SortScripts (const void *a, const void *b);
-	void AddLanguage (DWORD lang);
-	DWORD FindLanguage (DWORD lang, bool ignoreregion) const;
-	DWORD *CheckIfInList (DWORD lang);
+	void AddLanguage (uint32_t lang);
+	uint32_t FindLanguage (uint32_t lang, bool ignoreregion) const;
+	uint32_t *CheckIfInList (uint32_t lang);
 };
 
 class DLevelScript : public DObject
@@ -364,8 +364,44 @@ public:
 		PCD_PLAYERNUMBER,
 		PCD_ACTIVATORTID,
 		PCD_GETCVAR = 255,
-	  /*260*/ PCD_GETACTORANGLE = 260,
-	  PCD_GETLEVELINFO = 265,
+/*260*/	PCD_GETACTORANGLE = 260,
+		PCD_GETLEVELINFO = 265,
+/*290*/
+		PCD_ANDSCRIPTVAR = 291,
+		PCD_ANDMAPVAR,
+		PCD_ANDWORLDVAR,
+		PCD_ANDGLOBALVAR,
+		PCD_ANDMAPARRAY,
+		PCD_ANDWORLDARRAY,
+		PCD_ANDGLOBALARRAY,
+		PCD_EORSCRIPTVAR,
+		PCD_EORMAPVAR,
+/*300*/	PCD_EORWORLDVAR,
+		PCD_EORGLOBALVAR,
+		PCD_EORMAPARRAY,
+		PCD_EORWORLDARRAY,
+		PCD_EORGLOBALARRAY,
+		PCD_ORSCRIPTVAR,
+		PCD_ORMAPVAR,
+		PCD_ORWORLDVAR,
+		PCD_ORGLOBALVAR,
+		PCD_ORMAPARRAY,
+/*310*/	PCD_ORWORLDARRAY,
+		PCD_ORGLOBALARRAY,
+		PCD_LSSCRIPTVAR,
+		PCD_LSMAPVAR,
+		PCD_LSWORLDVAR,
+		PCD_LSGLOBALVAR,
+		PCD_LSMAPARRAY,
+		PCD_LSWORLDARRAY,
+		PCD_LSGLOBALARRAY,
+		PCD_RSSCRIPTVAR,
+/*320*/	PCD_RSMAPVAR,
+		PCD_RSWORLDVAR,
+		PCD_RSGLOBALVAR,
+		PCD_RSMAPARRAY,
+		PCD_RSWORLDARRAY,
+		PCD_RSGLOBALARRAY,
 
 		PCODE_COMMAND_COUNT
 	};
@@ -516,11 +552,11 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState state)
 {
-	return arc << (BYTE)state;
+	return arc << (byte)state;
 }
 inline FArchive &operator>> (FArchive &arc, DLevelScript::EScriptState &state)
 {
-	BYTE in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
+	byte in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
 }
 
 class DACSThinker : public DThinker

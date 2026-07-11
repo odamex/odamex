@@ -135,8 +135,8 @@ public:
 	void write(buf_t *buf);
 	void read(buf_t *buf);
 
-	void toPlayer(player_t *player) const;
-	void fromPlayer(player_t *player);
+	void toPlayer(player_t& player) const;
+	void fromPlayer(const player_t& player);
 
 private:
 	static constexpr int CMD_BUTTONS		= 0x0001;

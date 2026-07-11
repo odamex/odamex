@@ -189,12 +189,9 @@ argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 // Returns the color for the player after applying game logic (teammate, enemy)
 // and applying CVARs like r_forceteamcolor and r_forceenemycolor.
 //
-argb_t CL_GetPlayerColor(player_t *player)
+argb_t CL_GetPlayerColor(const player_t& player)
 {
-	if (!player)
-		return 0;
-
-	argb_t base_color(255, player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
+	argb_t base_color(255, player.userinfo.color[1], player.userinfo.color[2], player.userinfo.color[3]);
 	argb_t shade_color = base_color;
 
 	bool teammate = false;
@@ -204,10 +201,10 @@ argb_t CL_GetPlayerColor(player_t *player)
 		teammate = false;
 	if (G_IsTeamGame())
 	{
-		teammate = P_AreTeammates(consoleplayer(), *player);
-		base_color = GetTeamInfo(player->userinfo.team)->Color;
+		teammate = P_AreTeammates(consoleplayer(), player);
+		base_color = GetTeamInfo(player.userinfo.team)->Color;
 	}
-	if (player->id != consoleplayer_id && !consoleplayer().spectator)
+	if (player.id != consoleplayer_id && !consoleplayer().spectator)
 	{
 		if (r_forceteamcolor && teammate)
 			base_color = teamcolor;
@@ -227,7 +224,7 @@ static void CL_RebuildAllPlayerTranslations()
 		return;
 
 	for (auto& player : players)
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
 }
 
 CVAR_FUNC_IMPL (r_enemycolor)
@@ -280,8 +277,8 @@ EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 
-void CL_PlayerTimes (void);
-void CL_TryToConnect(DWORD server_token);
+void CL_PlayerTimes();
+void CL_TryToConnect(uint32_t server_token);
 void CL_Decompress();
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
@@ -296,9 +293,8 @@ void M_Ticker(void);
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
 void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill);
-void P_SetPsprite (player_t *player, int position, int32_t stnum);
+void P_SetPsprite (player_t& player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
-void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
 
 void P_PlayerLookUpDown (player_t *p);
@@ -363,7 +359,7 @@ void Host_EndGame(const char *msg)
 
 void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line)
 {
-	if(connected)
+	if(connected && !simulated_connection)
 	{
 		SZ_Clear(&net_buffer);
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
@@ -415,7 +411,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
 
-	if (netdemo.isPlaying())
+	if (netdemo.isPlaying() || netdemo.isPaused())
 		netdemo.stopPlaying();
 
 	demoplayback = false;
@@ -595,7 +591,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 }
 
 extern bool advancedemo;
-QWORD nextstep = 0;
+uint64_t nextstep = 0;
 int canceltics = 0;
 
 void CL_StepTics(unsigned int count)
@@ -630,7 +626,10 @@ void CL_StepTics(unsigned int count)
 		OInterpolation::getInstance().ticGameInterpolation();
 
 		G_Ticker ();
-		gametic++;
+
+		if (!netdemo.isPaused())
+			gametic++;
+
 		if (netdemo.isPlaying() && !netdemo.isPaused())
 			netdemo.ticker();
 	}
@@ -672,7 +671,7 @@ void CL_RunTics()
 				PrintFmt("level.time {}, prndindex {}, {} {} {}\n",
 				         level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				PrintFmt("level.time %d, prndindex %d\n", level.time, prndindex);
+ 				PrintFmt("level.time {}, prndindex {}\n", level.time, prndindex);
 		}
 	}
 	else
@@ -1271,6 +1270,8 @@ BEGIN_COMMAND(netrew)
 {
 	if (netdemo.isPlaying())
 		netdemo.prevSnapshot();
+	else if (netdemo.isPaused());
+		netdemo.prevTic();
 }
 END_COMMAND(netrew)
 
@@ -1412,7 +1413,10 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		}
 		else
 		{
-			displayplayer_id = consoleplayer_id; // get out of spynext
+			if (!netdemo.isPlaying())
+			{
+				displayplayer_id = consoleplayer_id; // get out of spynext
+			}
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
 
@@ -1422,7 +1426,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	}
 	else
 	{
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
 	}
 
 	P_ClearPlayerPowerups(player);	// Remove all current powerups
@@ -1542,7 +1546,7 @@ bool CL_PrepareConnect()
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
-	DWORD server_token = MSG_ReadLong();
+	uint32_t server_token = MSG_ReadLong();
 	server_host = MSG_ReadString();
 
 	bool recv_teamplay_stats = 0;
@@ -1840,7 +1844,7 @@ void CL_InitNetwork (void)
     connected = false;
 }
 
-void CL_TryToConnect(DWORD server_token)
+void CL_TryToConnect(uint32_t server_token)
 {
 	if (!serveraddr.ip[0])
 		return;
@@ -1885,9 +1889,9 @@ void CL_TryToConnect(DWORD server_token)
 // Returns true if we have received a svc_activateline message from the server
 // involving this player and teleportation
 //
-bool CL_PlayerJustTeleported(player_t *player)
+bool CL_PlayerJustTeleported(const player_t& player)
 {
-	if (player && teleported_players.find(player->id) != teleported_players.end())
+	if (teleported_players.find(player.id) != teleported_players.end())
 		return true;
 
 	return false;
@@ -1896,10 +1900,9 @@ bool CL_PlayerJustTeleported(player_t *player)
 //
 // CL_ClearPlayerJustTeleported
 //
-void CL_ClearPlayerJustTeleported(player_t *player)
+void CL_ClearPlayerJustTeleported(const player_t& player)
 {
-	if (player)
-		teleported_players.erase(player->id);
+	teleported_players.erase(player.id);
 }
 
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
@@ -2060,7 +2063,7 @@ void CL_ParseCommands()
 void CL_SaveCmd(void)
 {
 	NetCommand *netcmd = &localcmds[gametic % MAXSAVETICS];
-	netcmd->fromPlayer(&consoleplayer());
+	netcmd->fromPlayer(consoleplayer());
 	netcmd->setTic(gametic);
 	netcmd->setWorldIndex(world_index);
 }
@@ -2370,7 +2373,7 @@ void CL_SimulatePlayers()
 			}
 
 			int oldframe = player.mo->frame;
-			snap.toPlayer(&player);
+			snap.toPlayer(player);
 
 			if (player.playerstate != PST_LIVE)
 				player.mo->frame = oldframe;

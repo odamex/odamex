@@ -1,4 +1,19 @@
+// Formatting library for C++ - C++20 module
+//
+// Copyright (c) 2012 - present, Victor Zverovich and {fmt} contributors
+// All rights reserved.
+//
+// For the license information refer to format.h.
+
 module;
+
+#define FMT_MODULE
+
+#ifdef _MSVC_LANG
+#  define FMT_CPLUSPLUS _MSVC_LANG
+#else
+#  define FMT_CPLUSPLUS __cplusplus
+#endif
 
 // Put all implementation-provided headers into the global module fragment
 // to prevent attachment to this module.
@@ -15,7 +30,9 @@ module;
 #  include <cstring>
 #  include <ctime>
 #  include <exception>
-#  include <expected>
+#  if FMT_CPLUSPLUS > 202002L
+#    include <expected>
+#  endif
 #  include <filesystem>
 #  include <fstream>
 #  include <functional>
@@ -40,6 +57,8 @@ module;
 #  include <limits.h>
 #  include <stdint.h>
 #  include <stdio.h>
+#  include <stdlib.h>
+#  include <string.h>
 #  include <time.h>
 #endif
 #include <cerrno>
@@ -122,9 +141,8 @@ extern "C++" {
 }
 #endif
 
-// gcc doesn't yet implement private module fragments
-#if !FMT_GCC_VERSION
-module :private;
+#ifdef FMT_ATTACH_TO_GLOBAL_MODULE
+extern "C++" {
 #endif
 
 #if FMT_HAS_INCLUDE("format.cc")
@@ -132,4 +150,8 @@ module :private;
 #endif
 #if FMT_OS && FMT_HAS_INCLUDE("os.cc")
 #  include "os.cc"
+#endif
+
+#ifdef FMT_ATTACH_TO_GLOBAL_MODULE
+}
 #endif

@@ -264,6 +264,7 @@ struct sector_t
 
 	int linecount = 0;
 	line_s **lines = nullptr;		// [linecount] size
+	nonstd::span<line_s*> getLines() { return nonstd::span(lines, linecount); }
 
 	float gravity = 0.0f;		// [RH] Sector gravity (1.0 is normal)
 	int damageamount = 0;
@@ -274,7 +275,7 @@ struct sector_t
 
 	bool alwaysfake = false;	// [RH] Always apply heightsec modifications?
 	byte waterzone = 0;		// [RH] Sector is underwater?
-	WORD MoreFlags = 0;		// [RH] Misc sector flags
+	uint16_t MoreFlags = 0;		// [RH] Misc sector flags
 
 	// [RH] Action specials for sectors. Like Skull Tag, but more
 	// flexible in a Bloody way. SecActTarget forms a list of actors
@@ -283,7 +284,7 @@ struct sector_t
 	// [AM] Use the ZDoom 1.22 AActor system instead.
 	AActor::AActorPtr SecActTarget{};
 
-	AActor::AActorPtr Skybox;
+	AActor::AActorPtr Skybox{};
 
 	// [SL] 2012-01-16 - planes for sloping ceilings/floors
 	plane_t floorplane{}, ceilingplane{};
@@ -410,7 +411,7 @@ typedef struct msecnode_s
 //
 // The LineSeg.
 //
-struct seg_s
+struct seg_t
 {
 	vertex_t*	v1;
 	vertex_t*	v2;
@@ -428,8 +429,9 @@ struct seg_s
 	sector_t*	backsector;		// NULL for one-sided lines
 
 	fixed_t		length;
+
+	bool		is_horizon;
 };
-typedef seg_s seg_t;
 
 // ===== Polyobj data =====
 typedef struct FPolyObj
@@ -579,9 +581,9 @@ struct tallpost_t
 // OTHER TYPES
 //
 
-struct drawseg_s
+struct drawseg_t
 {
-	seg_t*			curline;
+	const seg_t*	curline;
 
     int				x1;
     int				x2;
@@ -596,12 +598,16 @@ struct drawseg_s
     int				silhouette;
 
     // Pointers to lists for sprite clipping,
-    //  all three adjusted so [x1] is first value.
+    //  all adjusted so [x1] is first value.
     int*			sprtopclip;
     int*			sprbottomclip;
 	tallpost_t**	midposts;
+
+	// per-column scales for the masked midtexture, in texture y-scale
+	// space; saved from wallscalex so the masked pass draws with the same
+	// scales R_PrepWall gave the wall tiers
+	fixed_t*		midscales;
 };
-typedef drawseg_s drawseg_t;
 
 
 // Patches.

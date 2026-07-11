@@ -57,7 +57,7 @@ void P_MigrateActorInfo(void)
 	// Set MF2_PASSMOBJ on dehacked monsters
 	// because we don't expose ZDoom's Bits2 BEX extension (yet...)
 	// which is the normal way MF2_PASSMOBJ gets set.
-	for (auto& [_, m] : mobjinfo)
+	for (auto&& [_, m] : mobjinfo)
 	{
 		if (m.flags & MF_COUNTKILL)
 		{
@@ -88,7 +88,7 @@ void P_MigrateActorInfo(void)
 	{
 		migrated = true;
 
-		for (auto& [_, m] : mobjinfo)
+		for (auto&& [_, m] : mobjinfo)
 		{
 			if (m.flags & MF_COUNTKILL)
 				m.flags2 |= MF2_MCROSS | MF2_PUSHWALL;
@@ -104,7 +104,7 @@ void P_MigrateActorInfo(void)
 	{
 		migrated = false;
 
-		for (auto& [idx, m] : mobjinfo)
+		for (auto&& [idx, m] : mobjinfo)
 		{
 			if (m.flags & MF_COUNTKILL)
 				m.flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
@@ -126,7 +126,7 @@ void MapFormat::init_sector_special(sector_t* sector)
 		P_SpawnCompatibleSectorSpecial(sector);
 }
 
-void MapFormat::player_in_special_sector(player_t* player)
+void MapFormat::player_in_special_sector(player_t& player)
 {
 	if (map_format.zdoom)
 		P_PlayerInZDoomSector(player);

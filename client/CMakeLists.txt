@@ -1,5 +1,4 @@
 include(OdamexCopyLibs)
-include(OdamexCopyWad)
 include(OdamexTargetSettings)
 
 # use unquoted #defines
@@ -58,6 +57,7 @@ if(WIN32)
 endif()
 
 # X11 configuration
+# TODO: do we need to update this at all for wayland?
 if(UNIX AND NOT APPLE)
   find_package(X11)
   if(X11_FOUND)
@@ -112,7 +112,7 @@ if(ENABLE_PORTMIDI)
 
     add_library(${PORTMIDI_LIBRARY} STATIC ${PORTMIDI_SOURCES} ${PORTMIDI_HEADERS})
     target_link_libraries(${PORTMIDI_LIBRARY} ${PM_NEEDED_LIBS})
-    message(STATUS "portmidi will be built and staticaly linked when compiling the client application.")
+    message(STATUS "portmidi will be built and statically linked when compiling the client application.")
   endif()
 
   add_definitions(-DPORTMIDI)
@@ -249,10 +249,9 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   odamex_copy_libs(odamex)
-  odamex_copy_wad(odamex)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
-  set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
+  set(MACOSX_BUNDLE_COPYRIGHT "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
   set(MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")

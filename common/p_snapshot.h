@@ -279,14 +279,14 @@ class PlayerSnapshot : public Snapshot
 {
 public:
 	PlayerSnapshot(int time = -1);
-	PlayerSnapshot(int time, player_t *player);
+	PlayerSnapshot(int time, const player_t& player);
 	~PlayerSnapshot() override {};
 
 	[[nodiscard]] bool operator==(const PlayerSnapshot &other) const;
 
 	void merge(const PlayerSnapshot& other);
 
-	void toPlayer(player_t *player) const;
+	void toPlayer(player_t& player) const;
 
 	fixed_t getViewHeight() const		{ return mViewHeight; }
 	fixed_t getDeltaViewHeight() const	{ return mDeltaViewHeight; }
@@ -593,7 +593,7 @@ public:
 	int		getCeilingTag() const			{ return mCeilingTag; }
 	int		getFloorTag() const				{ return mFloorTag; }
 	line_t*	getCeilingLine() const			{ return mCeilingLine; }
-	line_t*	getFloorLine() const			{ return mFloorLine; }
+	const line_t*	getFloorLine() const	{ return mFloorLine; }
 	fixed_t	getCeilingHeight() const		{ return mCeilingHeight; }
 	fixed_t	getFloorHeight() const			{ return mFloorHeight; }
 	fixed_t getCeilingSpeed() const			{ return mCeilingSpeed; }
@@ -646,7 +646,7 @@ private:
 	int				mCeilingTag;
 	int				mFloorTag;
 	line_t*			mCeilingLine;
-	line_t*			mFloorLine;
+	const line_t*	mFloorLine;
 
 	fixed_t			mCeilingHeight;
 	fixed_t			mFloorHeight;
@@ -737,7 +737,7 @@ private:
 //
 // ============================================================================
 
-void P_SetPlayerSnapshotNoPosition(player_t *player, const PlayerSnapshot &snap);
+void P_SetPlayerSnapshotNoPosition(player_t& player, const PlayerSnapshot &snap);
 
 ActorSnapshot P_LerpActorPosition(const ActorSnapshot &from, const ActorSnapshot &to, float amount);
 ActorSnapshot P_ExtrapolateActorPosition(const ActorSnapshot &from, float amount);

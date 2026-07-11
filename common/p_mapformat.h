@@ -37,7 +37,7 @@ class MapFormat
 	short getGeneralizedMask(void);
 
 	void init_sector_special(sector_t*);
-	void player_in_special_sector(player_t*);
+	void player_in_special_sector(player_t&);
 	bool actor_in_special_sector(AActor*);
 	void spawn_scroller(line_t*, int);
 	void spawn_friction(line_t*);
@@ -61,8 +61,8 @@ void P_SpawnCompatibleSectorSpecial(sector_t*);
 bool P_ActorInZDoomSector(AActor*);
 bool P_ActorInCompatibleSector(AActor* actor);
 
-void P_PlayerInCompatibleSector(player_t* player);
-void P_PlayerInZDoomSector(player_t* player);
+void P_PlayerInCompatibleSector(player_t& player);
+void P_PlayerInZDoomSector(player_t& player);
 
 void P_SpawnZDoomScroller(line_t*, int);
 void P_SpawnCompatibleScroller(line_t*, int);

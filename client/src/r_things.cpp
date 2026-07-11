@@ -73,7 +73,6 @@ fixed_t boby;
 EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (r_softinvulneffect)
 EXTERN_CVAR (r_particles)
-EXTERN_CVAR (r_thingsectorlight);
 
 //
 // INITIALIZATION FUNCTIONS
@@ -89,7 +88,7 @@ extern int				NumParticles;
 extern int				ActiveParticles;
 extern int				InactiveParticles;
 extern particle_t		*Particles;
-std::vector<WORD>		ParticlesInSubsec;
+std::vector<uint16_t>		ParticlesInSubsec;
 
 
 
@@ -152,20 +151,20 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 	while (!post->end())
 	{
 		// calculate unclipped screen coordinates for post
-		int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
+		const int topscreen = sprtopscreen + spryscale * post->topdelta;
 
-		dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
+		dcol.yl = topscreen >> FRACBITS;
 		dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
 
-		dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
+		dcol.yl = MAX(dcol.yl, MAX(mceilingclip[dcol.x], 0));
 		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
 		dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
-			+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
+			+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale);
 
 		if (dcol.texturefrac < 0)
 		{
-			int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+			int cnt = R_PixelCeil(-dcol.texturefrac, dcol.iscale);
 			dcol.yl += cnt;
 			dcol.texturefrac += cnt * dcol.iscale;
 		}
@@ -175,7 +174,7 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 
 		if (endfrac >= maxfrac)
 		{
-			int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+			int cnt = R_PixelCeil(endfrac - maxfrac + 1, dcol.iscale);
 			dcol.yh -= cnt;
 		}
 
@@ -314,7 +313,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	dcol.iscale = 0xffffffffu / (unsigned)vis->yscale;
 	dcol.texturemid = vis->texturemid;
 	spryscale = vis->yscale;
-	sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
+	sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
 
 	// [SL] set up the array that indicates which patch column to use for each screen column
 	fixed_t colfrac = vis->startfrac;
@@ -690,8 +689,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 	// Well, now it will be done.
 	sec->validcount = validcount;
 
-	int lightnum = r_thingsectorlight ? lightlevel : sec->lightlevel;
-	lightnum = (lightnum >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+	int lightnum = (lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
 	if (lightnum < 0)
 		spritelights = scalelight[0];
@@ -836,7 +834,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	R_DrawVisSprite (vis, vis->x1, vis->x2);
 }
 
-
+EXTERN_CVAR(r_thingsectorlight)
 
 //
 // R_DrawPlayerSprites
@@ -854,8 +852,8 @@ void R_DrawPlayerSprites()
 		(consoleplayer().cheats & CF_CHASECAM))
 		return;
 
-	sector_t* sec = R_FakeFlat(viewsector, &tempsec, &floorlight,
-	                           &ceilinglight, false);
+	const sector_t* sec = R_FakeFlat(viewsector, &tempsec, &floorlight,
+	                                 &ceilinglight, false);
 
 	// [RH] set foggy flag
 	foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3]
@@ -865,7 +863,7 @@ void R_DrawPlayerSprites()
 	basecolormap = sec->colormap->maps;
 
 	// get light level
-	const int lightnum = ((floorlight + ceilinglight) >> (LIGHTSEGSHIFT + 1))
+	const int lightnum = ((r_thingsectorlight ? (floorlight + ceilinglight) / 2 : sec->lightlevel) >> LIGHTSEGSHIFT)
 	               + (foggy ? 0 : extralight);
 
 	if (lightnum < 0)
@@ -1236,7 +1234,7 @@ void R_DrawParticle(vissprite_t* vis)
 {
 	// Don't bother clipping each individual column
 	int x1 = vis->x1, x2 = vis->x2;
-	int y1 = MAX(vis->y1, MAX(mceilingclip[x1] + 1, mceilingclip[x2] + 1));
+	int y1 = MAX(vis->y1, MAX(mceilingclip[x1], mceilingclip[x2]));
 	int y2 = MIN(vis->y2, MIN(mfloorclip[x1] - 1, mfloorclip[x2] - 1));
 
 	dspan.x1 = vis->x1;

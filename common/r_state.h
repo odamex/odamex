@@ -52,7 +52,7 @@ extern byte**			warpedflats;
 extern int*				flatwarpedwhen;
 extern int*				flattranslation;
 
-extern int* 			texturetranslation;
+inline std::unique_ptr<int[]> texturetranslation;
 
 // Sprite....
 extern int				firstspritelump;
@@ -107,13 +107,13 @@ extern std::vector<int> originalLightLevels;
 inline FArchive &operator<< (FArchive &arc, sector_t *sec)
 {
 	if (sec)
-		return arc << (WORD)(sec - sectors);
+		return arc << (uint16_t)(sec - sectors);
 	else
-		return arc << (WORD)0xffff;
+		return arc << (uint16_t)0xffff;
 }
 inline FArchive &operator>> (FArchive &arc, sector_t *&sec)
 {
-	WORD ofs;
+	uint16_t ofs;
 	arc >> ofs;
 	if (ofs == 0xffff)
 		sec = NULL;
@@ -125,13 +125,13 @@ inline FArchive &operator>> (FArchive &arc, sector_t *&sec)
 inline FArchive &operator<< (FArchive &arc, line_t *line)
 {
 	if (line)
-		return arc << (WORD)(line - lines);
+		return arc << (uint16_t)(line - lines);
 	else
-		return arc << (WORD)0xffff;
+		return arc << (uint16_t)0xffff;
 }
 inline FArchive &operator>> (FArchive &arc, line_t *&line)
 {
-	WORD ofs;
+	uint16_t ofs;
 	arc >> ofs;
 	if (ofs == 0xffff)
 		line = NULL;

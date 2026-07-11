@@ -102,14 +102,15 @@ struct fhfprint_t
 	std::array<byte, 16> fingerprint{};
 
 	[[nodiscard]]
-	bool operator==(const fhfprint_t& other)
+	bool operator==(const fhfprint_t& other) const
 	{
 		return fingerprint == other.fingerprint;
 	}
 
-	bool operator==(std::string_view other)
+	[[nodiscard]]
+	bool operator==(std::string_view other) const
 	{
-		return other == this->toString();
+		return other == std::string_view(this->toString());
 	}
 
 	void clear()
@@ -117,7 +118,8 @@ struct fhfprint_t
 		fingerprint.fill(0);
 	}
 
-	std::string toString()
+	[[nodiscard]]
+	std::string toString() const
 	{
 		// [Blair] Serialize the hashes before reading.
 		const uint64_t reconsthash1 = (uint64_t)(fingerprint[0]) |
@@ -139,6 +141,25 @@ struct fhfprint_t
 		                              (uint64_t)(fingerprint[15]) << 56;
 
 		return fmt::format("{:016x}{:016x}", reconsthash1, reconsthash2);
+	}
+
+	[[nodiscard]]
+	static fhfprint_t fromString(std::string_view hashstr)
+	{
+		const uint64_t hash1 = ParseNum<uint64_t>(hashstr.substr(0, 16), 16).value_or(0);
+		const uint64_t hash2 = ParseNum<uint64_t>(hashstr.substr(16), 16).value_or(0);
+
+		fhfprint_t fp{};
+
+		const auto unpack = [&fp](uint64_t hash, size_t index = 0){
+			for (int i = 0; i < 8; i++)
+				fp.fingerprint[i + index] = static_cast<byte>((hash >> (i * 8)) & 0xFF);
+		};
+
+		unpack(hash1);
+		unpack(hash2, 8);
+
+		return fp;
 	}
 };
 
@@ -308,8 +329,8 @@ struct level_locals_t
 	std::unordered_map<int, std::string> musinfo_map;
 
 	// The following are all used for ACS scripting
-	FBehavior*		behavior;
-	SDWORD			vars[NUM_MAPVARS];
+	std::unique_ptr<FBehavior> behavior;
+	std::array<int32_t, NUM_MAPVARS> vars;
 
 	// The following are used for UMAPINFO
 	OLumpName		exitpic;

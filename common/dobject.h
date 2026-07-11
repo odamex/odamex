@@ -190,7 +190,7 @@ public:
 	static void BeginFrame ();
 	static void EndFrame ();
 
-	DWORD ObjectFlags = 0;
+	uint32_t ObjectFlags = 0;
 
 	static void STACK_ARGS StaticShutdown ();
 

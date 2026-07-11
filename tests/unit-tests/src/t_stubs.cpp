@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -59,8 +59,8 @@ CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are sp
 
 void C_AddTabCommand(char const *) {}
 void C_RemoveTabCommand(char const *) {}
-void P_ShowSpawns(MapThing*) {}
-void P_SpawnPlayer(player_t&, mapthing2_t*) {}
+void P_ShowSpawns(const mapthing2_t&) {}
+void P_SpawnPlayer(player_t&, const mapthing2_t&) {}
 void G_DeathMatchSpawnPlayer(player_t&) {}
 player_t& consoleplayer() { return idplayer(consoleplayer_id); }
 player_t& displayplayer() { return idplayer(displayplayer_id); }
@@ -86,7 +86,7 @@ void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
 void D_ReadUserInfoStrings(int i, byte **stream, bool update) {}
 
 void SV_SpawnMobj(AActor *mobj) {}
-void SV_TouchSpecial(const AActor *special, player_t *player) {}
+void SV_TouchSpecial(const AActor& special, player_t& player) {}
 ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab) { return IEV_NotEquipped; }
 void SV_SocketTouch (player_t &player, team_t f) {}
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill) {}
@@ -104,7 +104,7 @@ void SV_BroadcastSector(int sectornum) {}
 void SV_UpdateMobj(const AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 
-void CTF_RememberFlagPos(mapthing2_t *mthing) {}
+void CTF_RememberFlagPos(const mapthing2_t& mthing) {}
 void CTF_SpawnFlag(team_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}

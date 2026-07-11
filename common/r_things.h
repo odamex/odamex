@@ -38,8 +38,8 @@ struct particle_s {
 	byte	size;
 	byte	fade;
 	int		color;
-	WORD	next;
-	WORD	nextinsubsector;
+	uint16_t next;
+	uint16_t nextinsubsector;
 };
 typedef struct particle_s particle_t;
 
@@ -47,9 +47,9 @@ extern int	NumParticles;
 extern int	ActiveParticles;
 extern int	InactiveParticles;
 extern particle_t *Particles;
-extern std::vector<WORD> ParticlesInSubsec;
+extern std::vector<uint16_t> ParticlesInSubsec;
 
-constexpr WORD NO_PARTICLE = 0xffff;
+inline constexpr uint16_t NO_PARTICLE = 0xffff;
 
 inline particle_t *NewParticle()
 {
@@ -88,5 +88,5 @@ void R_SortVisSprites();
 void R_AddSprites(sector_t *sec, int lightlevel, int fakeside);
 void R_ClearSprites();
 void R_DrawMasked();
-fixed_t P_CalculateWeaponBobX(player_t* player, float scale_amount);
-fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount);
+fixed_t P_CalculateWeaponBobX(player_t& player, float scale_amount);
+fixed_t P_CalculateWeaponBobY(player_t& player, float scale_amount);

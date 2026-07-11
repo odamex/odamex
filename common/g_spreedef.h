@@ -3,6 +3,7 @@
 //
 // $Id$
 //
+// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -16,34 +17,14 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Type Definitions
-//
-// AUTHORS:
-//   Michael Wood (mwoodj at huntsvegas dot org)
+//   Handles parsing all SPREEDEF lumps.
 //
 //-----------------------------------------------------------------------------
 
-#ifndef _TYPEDEFS_H
-#define _TYPEDEFS_H
+#pragma once
 
-// [AM] Do not namespace type definitions that shadow real ones, unless
-//      new, unique names are invented for them.
-
-#ifdef _MSC_VER
-typedef signed   __int8   int8_t;
-typedef signed   __int16  int16_t;
-typedef signed   __int32  int32_t;
-typedef unsigned __int8   uint8_t;
-typedef unsigned __int16  uint16_t;
-typedef unsigned __int32  uint32_t;
-typedef signed   __int64  int64_t;
-typedef unsigned __int64  uint64_t;
-#else
-#include <stdint.h>
-
-#ifndef _WIN32
-typedef unsigned int DWORD;
-#endif
-#endif
-
-#endif
+/// <summary>
+/// Parses all SPREEDEF lumps for consumption by
+/// the spree and multi kill managers.
+/// </summary>
+void G_ParseSpreeDef();

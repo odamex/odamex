@@ -58,11 +58,23 @@ BEGIN_COMMAND(toast)
 	{
 		toast.left = std::string(TEXTCOLOR_LIGHTBLUE) + "[BLU]Ralphis";
 		toast.right = std::string(TEXTCOLOR_BRICK) + "[RED]KBlair";
+		if (M_Random() % 2)
+		{
+			toast.flags |= toast_t::SPREE;
+			toast.points = M_RandomInt(15);
+			toast.spree_color = M_RandomInt(NUM_TEXT_COLORS);
+		}
 	}
 	else
 	{
 		toast.left = std::string(TEXTCOLOR_BRICK) + "[RED]KBlair";
 		toast.right = std::string(TEXTCOLOR_LIGHTBLUE) + "[BLU]Ralphis";
+		if (M_Random() % 2)
+		{
+			toast.flags |= toast_t::SPREE;
+			toast.points = M_RandomInt(15);
+			toast.spree_color = M_RandomInt(NUM_TEXT_COLORS);
+		}
 	}
 
 	toast.icon = M_Random() % NUMMODS;

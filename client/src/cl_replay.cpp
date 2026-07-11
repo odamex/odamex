@@ -140,7 +140,7 @@ void ClientReplay::itemReplay()
 
 	player_t& player = consoleplayer();
 
-	weaponstate_t state = P_GetWeaponState(&player);
+	weaponstate_t state = P_GetWeaponState(player);
 
 	if (state == readystate && firstReadyTic <= 0)
 	{
@@ -182,11 +182,11 @@ void ClientReplay::itemReplay()
 			continue;
 		}
 
-		std::string weaponname = P_MobjToName(static_cast<mobjtype_t>(mo->type));
-		weapontype_t weapontype = P_NameToWeapon(weaponname);
-		bool weaponSwitch = P_CheckSwitchWeapon(&player, weapontype);
+		const std::string weaponname = P_MobjToName(static_cast<mobjtype_t>(mo->type));
+		const weapontype_t weapontype = P_NameToWeapon(weaponname);
+		const bool weaponSwitch = P_CheckSwitchWeapon(player, weapontype);
 
-		P_GiveSpecial(&player, mo);
+		P_GiveSpecial(player, *mo);
 
 		replayed = true;
 
@@ -197,11 +197,11 @@ void ClientReplay::itemReplay()
 		// Cycle the raise/lower by the tics elapsed since to get us up to current
 		// But have special logic here to not skip ahead,
 		// and do nothing if it wasn't going to switch our weapon anyway.
-		if (P_SpecialIsWeapon(mo) && state == readystate && weaponSwitch)
+		if (P_SpecialIsWeapon(*mo) && state == readystate && weaponSwitch)
 		{
 			for (int i = 0; i < ticDelta; ++i)
 			{
-				P_MovePsprites(&player);
+				P_MovePsprites(player);
 			}
 		}
 

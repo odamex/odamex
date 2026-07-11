@@ -183,8 +183,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 		MEMFILE* mus = mem_fopen_read(data, length);
 		m_registeredSong.Mem = mem_fopen_write();
 
-		int result = mus2mid(mus, m_registeredSong.Mem);
-		if (result == 0)
+		if (!mus2mid(mus, m_registeredSong.Mem))
 		{
 			m_registeredSong.Data = SDL_RWFromMem(mem_fgetbuf(m_registeredSong.Mem),
 			                                      mem_fsize(m_registeredSong.Mem));

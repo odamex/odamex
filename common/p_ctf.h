@@ -57,7 +57,7 @@ void CTF_MoveFlags(void);
 void CTF_RunTics(void);
 void CTF_SpawnFlag(team_t f);
 void CTF_SpawnDroppedFlag(team_t f, int x, int y, int z);
-void CTF_RememberFlagPos(mapthing2_t *mthing);
+void CTF_RememberFlagPos(const mapthing2_t& mthing);
 void CTF_CheckFlags(player_t &player);
 void CTF_Sound(team_t f, team_t t, flag_score_t event);
 void CTF_Message(team_t f, team_t t, flag_score_t event);

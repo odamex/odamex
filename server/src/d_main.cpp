@@ -72,6 +72,8 @@
 
 #include "w_ident.h"
 
+#include "g_spreedef.h"
+
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_monstersrespawn)
@@ -107,7 +109,7 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			PrintFmt("ERROR: {}\n", error.GetMsg());
+			PrintFmt(PRINT_ERROR, "ERROR: {}\n", error.GetMsg());
 			PrintFmt("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
@@ -210,6 +212,7 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseSpreeDef();
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
 

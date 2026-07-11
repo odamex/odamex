@@ -286,8 +286,10 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 	{
 		friction = FRICTION_FLY;
 	}
-	else if ((!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1) ||
-		(mo->waterlevel == 1 && (mo->z > mo->floorz + 6*FRACUNIT)))
+	else if (mo->subsector
+			&& ((!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1)
+				|| (mo->waterlevel == 1 && (mo->z > mo->floorz + 6*FRACUNIT)))
+			)
 	{
 		friction = mo->subsector->sector->friction;
 		movefactor = mo->subsector->sector->movefactor >> 1;
@@ -815,7 +817,7 @@ static bool PIT_CheckThing (AActor *thing)
 			max_z -= 24 * FRACUNIT;
 
 		if (!P_AllowPassover() || thing->z < max_z)
-			P_TouchSpecialThing (thing, tmthing);	// can remove thing
+			P_TouchSpecialThing (*thing, *tmthing);	// can remove thing
 
 		return !solid;
 	}
@@ -1249,7 +1251,7 @@ bool P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 {
 	fixed_t		testz = thing->z;
 
-	if(!thing->subsector)
+	if(not thing->subsector)
 	{
 		I_Error("P_TryMove: Thing {{type: {}, info->type: {}}} subsector was null", thing->type, thing->info->type);
 	}
@@ -1649,7 +1651,10 @@ bool P_ThingHeightClip (AActor* thing)
 
 bool P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove)
 {
-	if (!actor || actor->flags & MF_NOGRAVITY || !actor->floorsector)
+	if (!actor
+	 ||  actor->flags & MF_NOGRAVITY
+	 || !actor->floorsector
+	 || !actor->subsector)
 		return false;
 
 	const plane_t *plane = &actor->floorsector->floorplane;
@@ -2981,42 +2986,39 @@ bool PTR_NoWayTraverse (intercept_t *in)
 // P_UseLines
 // Looks for special lines in front of the player to activate.
 //
-void P_UseLines (player_t *player)
+void P_UseLines (player_t& player)
 {
-	int 		angle;
-	fixed_t 	x1;
-	fixed_t 	y1;
-	fixed_t 	x2;
-	fixed_t 	y2;
-
 	// GhostlyDeath -- Spectators can't use special lines
-	if (player->spectator)
+	if (player.spectator)
 		return;
 
-	usething = player->mo;
+	usething = player.mo;
 	foundline = false;
 
 	//Added by MC: Check if bot and use special activating (spin round) if it is.
-	angle = player->mo->angle >> ANGLETOFINESHIFT;
+	const int angle = player.mo->angle >> ANGLETOFINESHIFT;
 
-	x1 = player->mo->x;
-	y1 = player->mo->y;
-	x2 = x1 + (USERANGE>>FRACBITS)*finecosine[angle];
-	y2 = y1 + (USERANGE>>FRACBITS)*finesine[angle];
+	const fixed_t x1 = player.mo->x;
+	const fixed_t y1 = player.mo->y;
+	const fixed_t x2 = x1 + (USERANGE >> FRACBITS) * finecosine[angle];
+	const fixed_t y2 = y1 + (USERANGE >> FRACBITS) * finesine[angle];
 
 	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse)) {
 		// [RH] Give sector a chance to eat the use
-		sector_t *sec = usething->subsector->sector;
-		int spac = SECSPAC_Use;
-		if (foundline)
-			spac |= SECSPAC_UseWall;
-		if ((!sec->SecActTarget || !A_TriggerAction(sec->SecActTarget, usething, spac)) &&
-		    (co_boomphys && !P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse)))
+		if (usething->subsector)
 		{
-			// This added test makes the "oof" sound work on 2s lines -- killough:
-			// [ML] It also apparently allows additional silent bfg tricks not present in vanilla...
-			// [ML] co_boomlinecheck now part of co_boomphys
-			UV_SoundAvoidPlayer(usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+			sector_t *sec = usething->subsector->sector;
+			int spac = SECSPAC_Use;
+			if (foundline)
+				spac |= SECSPAC_UseWall;
+			if ((!sec->SecActTarget || !A_TriggerAction(sec->SecActTarget, usething, spac)) &&
+			    (co_boomphys && !P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse)))
+			{
+				// This added test makes the "oof" sound work on 2s lines -- killough:
+				// [ML] It also apparently allows additional silent bfg tricks not present in vanilla...
+				// [ML] co_boomlinecheck now part of co_boomphys
+				UV_SoundAvoidPlayer(usething, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
+			}
 		}
 	}
 }
@@ -3475,15 +3477,10 @@ void P_PutSecnode (msecnode_t *node)
 
 msecnode_t *P_AddSecnode (sector_t *s, AActor *thing, msecnode_t *nextnode)
 {
-	if (!s)
-		return NULL;
+	if (s == nullptr)
+		return nextnode;
 
-	msecnode_t *node;
-
-	if (s == NULL)
-		I_FatalError("AddSecnode of 0 for {}\n", thing->_StaticType.Name);
-
-	node = nextnode;
+	msecnode_t *node = nextnode;
 	while (node)
 	{
 		if (node->m_sector == s)	// Already have a node for this sector?
@@ -3670,7 +3667,10 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 
 	// Add the sector of the (x,y) point to sector_list.
 
-	sector_list = P_AddSecnode (thing->subsector->sector,thing,sector_list);
+	if (thing->subsector)
+	{
+		sector_list = P_AddSecnode (thing->subsector->sector,thing,sector_list);
+	}
 
 	// Now delete any nodes that won't be used. These are the ones where
 	// m_thing is still NULL.

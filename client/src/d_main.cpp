@@ -87,6 +87,8 @@
 #include "gui_boot.h"
 #include "g_musinfo.h"
 #include "g_episode.h"
+#include "g_multikill.h"
+#include "g_spreedef.h"
 
 extern size_t got_heapsize;
 
@@ -374,6 +376,7 @@ void D_DoomLoop()
 			::players.clear();
 
 			::gameaction = ga_fullconsole;
+			::gamestate = GS_FULLCONSOLE;
 		}
 	}
 }
@@ -610,7 +613,8 @@ void G_ReadCOMPLVL()
 	char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
 	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
 
-	if (!serverside)
+	// don't use !serverside here, it doesn't get set early enough
+	if (multiplayer)
 	{
 		if (iequals("mbf", complvl))
 			r_thingsectorlight.Set(1.0f);
@@ -711,6 +715,7 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseSpreeDef();
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
 

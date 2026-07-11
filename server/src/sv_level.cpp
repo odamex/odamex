@@ -58,6 +58,7 @@
 #include "p_hordespawn.h"
 #include "g_episode.h"
 #include "g_skill.h"
+#include "g_spree.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -177,10 +178,11 @@ EXTERN_CVAR(sv_shufflemaplist)
 
 bool isLastMap()
 {
+	const auto& next = secretexit ? level.secretmap : level.nextmap;
 	return std::any_of(
 			forcedlastmaps.entries.begin(), forcedlastmaps.entries.end(),
 			[&](const auto& entry) {
-				return entry.first == level.mapname && (entry.second.empty() || entry.second == level.nextmap);
+				return entry.first == level.mapname && (entry.second.empty() || entry.second == next);
 		});
 }
 
@@ -432,7 +434,7 @@ void SV_ServerSettingChange();
 
 void G_InitNew(const char *mapname)
 {
-	DWORD previousLevelFlags = level.flags;
+	levelFlags_t previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
 		G_ClearSnapshots ();
@@ -451,6 +453,8 @@ void G_InitNew(const char *mapname)
 	const int old_gametype = sv_gametype.asInt();
 
 	cvar_t::UnlatchCVars ();
+
+	SpreeManager::getInstance().clearSprees();
 
 	if (old_gametype != sv_gametype || sv_gametype != GM_COOP)
 		unnatural_level_progression = true;
@@ -473,14 +477,14 @@ void G_InitNew(const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (auto& [_, state] : states)
+			for (auto&& [_, state] : states)
 			{
 				if (state.flags & STATEF_SKILL5FAST &&
 				    (state.tics != 1 || demoplayback))
 					state.tics >>= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (auto& [_, minfo] : mobjinfo)
+			for (auto&& [_, minfo] : mobjinfo)
 			{
 				if (minfo.altspeed != NO_ALTSPEED)
 				{
@@ -492,13 +496,13 @@ void G_InitNew(const char *mapname)
 		}
 		else
 		{
-			for (auto& [_, state] : states)
+			for (auto&& [_, state] : states)
 			{
 				if (state.flags & STATEF_SKILL5FAST)
 					state.tics <<= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (auto& [_, minfo] : mobjinfo)
+			for (auto&& [_, minfo] : mobjinfo)
 			{
 				if (minfo.altspeed != NO_ALTSPEED)
 				{
@@ -644,6 +648,8 @@ void G_DoCompleted()
 	for (auto& player : players)
 		if (player.ingame())
 			G_PlayerFinishLevel(player);
+
+	SpreeManager::getInstance().clearSprees();
 }
 
 extern void G_SerializeLevel(FArchive &arc, bool hubLoad);
@@ -740,7 +746,7 @@ void G_DoResetLevel(bool full_reset)
 
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
-	iquehead = iquetail = 0;
+	itemrespawnque = {};
 
 	// Clear player information.
 	for (auto& player : players)
