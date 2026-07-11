@@ -288,11 +288,20 @@ uint16_t RawTextureLoader::getHeight() const
 //
 uint32_t PatchTextureLoader::size() const
 {
-	// read the patch_t header to extract width & height
 	uint8_t raw_data[4];
+	if (mRawResourceAccessor->getResourceSize(mResId) < sizeof(raw_data))
+		return calculateTextureSize(0, 0);
+
+	// read the patch_t header to extract width & height
 	mRawResourceAccessor->loadResource(mResId, raw_data, 4);
 	int16_t width = LESHORT(*(int16_t*)(raw_data + 0));
 	int16_t height = LESHORT(*(int16_t*)(raw_data + 2));
+
+	// nonsense dimensions mean load() will reject the patch data and create
+	// an empty texture, so don't let them inflate the allocation either
+	if (width < 0 || height < 0)
+		return calculateTextureSize(0, 0);
+
 	return calculateTextureSize(width, height);
 }
 

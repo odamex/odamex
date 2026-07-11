@@ -215,21 +215,28 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 
 		ResourceLoader* loader = NULL;
 
+		bool is_png = false;
 		const uint32_t header_data_size = 32;
 		uint8_t header_data[header_data_size];
-		if (accessor->getResourceSize(raw_res_id) >= header_data_size)
+		const bool has_header = accessor->getResourceSize(raw_res_id) >= header_data_size;
+		if (has_header)
 		{
 			accessor->loadResource(raw_res_id, header_data, header_data_size);
-			if (Res_ValidatePngData(header_data, header_data_size))
-				loader = new PngTextureLoader(accessor, raw_res_id);
-			else if (dir == flats_directory_name)
+			is_png = Res_ValidatePngData(header_data, header_data_size);
+		}
+
+		if (is_png)
+			loader = new PngTextureLoader(accessor, raw_res_id);
+		else if (dir == patches_directory_name)
+			loader = new PatchTextureLoader(accessor, raw_res_id);
+		else if (dir == sprites_directory_name)
+			loader = new PatchTextureLoader(accessor, raw_res_id);
+		else if (dir == graphics_directory_name)
+			loader = new PatchTextureLoader(accessor, raw_res_id);
+		else if (has_header)
+		{
+			if (dir == flats_directory_name)
 				loader = new FlatTextureLoader(accessor, raw_res_id);
-			else if (dir == patches_directory_name)
-				loader = new PatchTextureLoader(accessor, raw_res_id);
-			else if (dir == sprites_directory_name)
-				loader = new PatchTextureLoader(accessor, raw_res_id);
-			else if (dir == graphics_directory_name)
-				loader = new PatchTextureLoader(accessor, raw_res_id);
 			else
 				PrintFmt(PRINT_HIGH, "Unsupported image format for {}.\n",
 				         path.c_str());
