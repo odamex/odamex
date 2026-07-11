@@ -285,7 +285,7 @@ static inline int R_ColumnRangeMaximumHeight(int start, int stop, const int* bot
 //
 //
 void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
-		const palindex_t** posts, void (*colblast)(), bool calc_light)
+		const palindex_t** posts, void (*colblast)(), bool calc_light, int columnmethod)
 {
 	if (start > stop)
 		return;
@@ -309,69 +309,71 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		}
 	}
 
-#if 1
-	for (int x = start; x <= stop; x++)
-	{
-		if (calc_light)
-		{
-			int light_index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
-			dcol.colormap = basecolormap.with(walllights[light_index]);
-			rw_light += rw_lightstep;
-		}
-
-		dcol.x = x;
-		dcol.yl = MAX(0, top[x]);
-		dcol.yh = MIN(viewheight -1, bottom[x]);
-		dcol.source = posts[x];
-		colblast();
-	}
-
-#else
-	// [SL] Render the range of columns in 64x64 pixel blocks, aligned to a grid
-	// on the screen. This is to make better use of spatial locality in the cache.
-	#define BLOCKBITS 6 
-	#define BLOCKSIZE (1 << BLOCKBITS)
-	#define BLOCKMASK (BLOCKSIZE - 1)
-
-	// pre-calculate the color map number for lighting for each screen column 
-	static int light_lookup[MAXWIDTH];
-	if (calc_light)
+	if (columnmethod == 0)
 	{
 		for (int x = start; x <= stop; x++)
 		{
-			int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
-			light_lookup[x] = walllights[index];
-			rw_light += rw_lightstep;
+			if (calc_light)
+			{
+				int light_index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+				dcol.colormap = basecolormap.with(walllights[light_index]);
+				rw_light += rw_lightstep;
+			}
+
+			dcol.x = x;
+			dcol.yl = MAX(0, top[x]);
+			dcol.yh = MIN(viewheight -1, bottom[x]);
+			dcol.source = posts[x];
+			colblast();
 		}
 	}
-
-	for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
+	else if (columnmethod == 2)
 	{
-		int blockstartx = bx;
-		int blockstopx = MIN((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
+		// [SL] Render the range of columns in 64x64 pixel blocks, aligned to a grid
+		// on the screen. This is to make better use of spatial locality in the cache.
+		#define BLOCKBITS 6
+		#define BLOCKSIZE (1 << BLOCKBITS)
+		#define BLOCKMASK (BLOCKSIZE - 1)
 
-		int miny = R_ColumnRangeMinimumHeight(blockstartx, blockstopx, top);
-		int maxy = R_ColumnRangeMaximumHeight(blockstartx, blockstopx, bottom);
-
-		for (int by = miny; by <= maxy; by = (by & ~BLOCKMASK) + BLOCKSIZE)
+		// pre-calculate the color map number for lighting for each screen column
+		static int light_lookup[MAXWIDTH];
+		if (calc_light)
 		{
-			int blockstarty = by;
-			int blockstopy = (by & ~BLOCKMASK) + BLOCKSIZE - 1;
-
-			for (int x = blockstartx; x <= blockstopx; x++)
+			for (int x = start; x <= stop; x++)
 			{
-				if (calc_light)
-					dcol.colormap = basecolormap.with(light_lookup[x]);
+				int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+				light_lookup[x] = walllights[index];
+				rw_light += rw_lightstep;
+			}
+		}
 
-				dcol.x = x;
-				dcol.yl = MAX(top[x], blockstarty);
-				dcol.yh = MIN(bottom[x], blockstopy);
-				dcol.source = posts[x];
-				colblast();
+		for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
+		{
+			const int blockstartx = bx;
+			const int blockstopx = MIN((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
+
+			const int miny = R_ColumnRangeMinimumHeight(blockstartx, blockstopx, top);
+			const int maxy = R_ColumnRangeMaximumHeight(blockstartx, blockstopx, bottom);
+
+			for (int by = miny; by <= maxy; by = (by & ~BLOCKMASK) + BLOCKSIZE)
+			{
+				const int blockstarty = by;
+				const int blockstopy = MIN((by & ~BLOCKMASK) + BLOCKSIZE - 1, viewheight - 1);
+
+				for (int x = blockstartx; x <= blockstopx; x++)
+				{
+					if (calc_light)
+						dcol.colormap = basecolormap.with(light_lookup[x]);
+
+					dcol.x = x;
+					dcol.yl = MAX(top[x], blockstarty);
+					dcol.yh = MIN(bottom[x], blockstopy);
+					dcol.source = posts[x];
+					colblast();
+				}
 			}
 		}
 	}
-#endif	// if 0
 }
 
 //
@@ -392,6 +394,9 @@ void R_RenderSolidSegRange(int start, int stop)
 
 	if (start > stop)
 		return;
+
+	// render solid seg tiers in 64x64 screen-space blocks for cache locality
+	static constexpr int columnmethod = 2;
 
 	dcol.masked = false;
 
@@ -448,7 +453,7 @@ void R_RenderSolidSegRange(int start, int stop)
 		dcol.texturedata = midtexture->mData;
 		dcol.argbtexturedata = midtexture->mARGBData;
 
-		R_RenderColumnRange(start, stop, walltopf, lower, midposts, SolidColumnBlaster, true);
+		R_RenderColumnRange(start, stop, walltopf, lower, midposts, SolidColumnBlaster, true, columnmethod);
 
 		// indicate that no further drawing can be done in this column
 		memcpy(&ceilingclip[start], &floorclipinitial[start], count * sizeof(ceilingclip[0]));
@@ -473,7 +478,7 @@ void R_RenderSolidSegRange(int start, int stop)
 			dcol.texturedata = toptexture->mData;
 			dcol.argbtexturedata = toptexture->mARGBData;
 
-			R_RenderColumnRange(start, stop, walltopf, lower, topposts, SolidColumnBlaster, true);
+			R_RenderColumnRange(start, stop, walltopf, lower, topposts, SolidColumnBlaster, true, columnmethod);
 
 			memcpy(&ceilingclip[start], walltopb + start, count * sizeof(ceilingclip[0]));
 		}
@@ -500,7 +505,7 @@ void R_RenderSolidSegRange(int start, int stop)
 			dcol.texturedata = bottomtexture->mData;
 			dcol.argbtexturedata = bottomtexture->mARGBData;
 
-			R_RenderColumnRange(start, stop, wallbottomb, lower, bottomposts, SolidColumnBlaster, true);
+			R_RenderColumnRange(start, stop, wallbottomb, lower, bottomposts, SolidColumnBlaster, true, columnmethod);
 
 			memcpy(&floorclip[start], wallbottomb + start, count * sizeof(floorclip[0]));
 		}
@@ -634,7 +639,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	}
 
 	// draw the columns
-	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts, MaskedColumnBlaster, true);
+	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts, MaskedColumnBlaster, true, 0);
 
 	// Mark these columns as having been drawn by setting the midpost ptr to NULL for each column
 	memset(ds->midposts + x1, 0, (x2 - x1 + 1) * sizeof(ds->midposts));

@@ -125,7 +125,7 @@ static inline int R_PixelCeil(fixed_t num, fixed_t den)
 // [RH] Temporary buffer for column drawing
 
 void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
-		const palindex_t** posts, void (*colblast)(), bool calc_light);
+		const palindex_t** posts, void (*colblast)(), bool calc_light, int columnmethod);
 
 // [RH] Pointers to the different column and span drawers...
 
