@@ -360,13 +360,13 @@ void WadResourceContainer::buildMarkerRecords()
 	OString last_marker_prefix;
 	LumpId last_lump_id = mDirectory.INVALID_LUMP_ID;
 
-	for (ContainerDirectory<WadDirectoryEntry>::const_iterator it = mDirectory.begin(); it != mDirectory.end(); ++it)
+	for (auto& waddir : mDirectory)
 	{
-		const WadDirectoryEntry& entry = *it;
+		const WadDirectoryEntry& entry = waddir;
 		if (isMarker(entry.path))
 		{
 			const OString current_marker_prefix(getMarkerPrefix(entry.path));
-			LumpId current_lump_id = mDirectory.getLumpId(it);
+			LumpId current_lump_id = mDirectory.getLumpId(&waddir);
 
 			// TODO: attempt to repair broken WADs that have missing markers
 
@@ -670,14 +670,41 @@ void DirectoryResourceContainer::addResources(ResourceManager* manager)
 		{
 			// Add the WAD as a separate container
 			std::string full_path = std::string(mPath) + std::string(entry.path);
-			FileAccessor* diskfile = new DiskFileAccessor(full_path);
+			FileAccessor* diskfile = new DiskFileAccessor(OString(full_path));
 			ResourceContainer* container = new WadResourceContainer(diskfile);
+			manager->addResourceContainer(container, this, global_directory_name, entry.path);
+		}
+		else if (isEmbeddedSingleMapWadFile(entry))
+		{
+			// A WAD in the maps/ directory contains a single map named
+			// after the WAD file, add it as a separate container.
+			std::string full_path = std::string(mPath) + std::string(entry.path);
+			FileAccessor* diskfile = new DiskFileAccessor(OString(full_path));
+			ResourceContainer* container = new SingleMapWadResourceContainer(diskfile);
 			manager->addResourceContainer(container, this, global_directory_name, entry.path);
 		}
 		else
 		{
 			// Transform the file path to fit with ResourceManager semantics
-			const ResourcePath resource_path = Res_TransformResourcePath(entry.path);
+			ResourcePath resource_path = Res_TransformResourcePath(entry.path);
+
+			// Use patch rules for global level resources
+			// aka last one wins
+			if (resource_path.first() == "GLOBAL" && resource_path.size() == 2 && entry.length > 0)
+			{
+				std::string full_path = std::string(mPath) + std::string(entry.path);
+				const OString full_path_os(full_path);
+				DiskFileAccessor file_accessor(full_path_os);
+				uint8_t* data = new uint8_t[entry.length];
+				if (file_accessor.read(data, entry.length) == entry.length)
+				{
+					WadResourceIdentifier identifier;
+					const ResourcePath& identified_path = identifier.identifyByContents(resource_path, data, entry.length);
+					if (!(identified_path == global_directory_name))
+						resource_path = identified_path + resource_path.last();
+				}
+				delete [] data;
+			}
 
 			const ResourceId res_id = manager->addResource(resource_path, this);
 			const LumpId lump_id = mDirectory.getLumpId(entry.path);
@@ -694,9 +721,9 @@ bool DirectoryResourceContainer::isEmbeddedWadFile(const FileSystemDirectoryEntr
 {
 	std::string ext;
 	M_ExtractFileExtension(entry.path, ext);
-	if (iequals(ext, "WAD"))
+	if (iequals(ext, ".WAD"))
 	{
-		// will not consider any lump less than 28 in size 
+		// will not consider any lump less than 28 in size
 		// (valid wad header, plus at least one lump in the directory)
 		if (entry.length < 28)
 			return false;
@@ -707,6 +734,31 @@ bool DirectoryResourceContainer::isEmbeddedWadFile(const FileSystemDirectoryEntr
 			return false;
 
 		return true;
+	}
+
+	return false;
+}
+
+
+//
+// DirectoryResourceContainer::isEmbeddedSingleMapWadFile
+//
+// Returns true for a WAD file in the maps/ directory, which by convention
+// contains a single map whose name is the WAD's base filename.
+//
+bool DirectoryResourceContainer::isEmbeddedSingleMapWadFile(const FileSystemDirectoryEntry& entry) const
+{
+	std::string ext;
+	M_ExtractFileExtension(entry.path, ext);
+	if (iequals(ext, ".WAD"))
+	{
+		// will not consider any lump less than 28 in size
+		// (valid wad header, plus at least one lump in the directory)
+		if (entry.length < 28)
+			return false;
+
+		const ResourcePath path = Res_TransformResourcePath(entry.path);
+		return path.first() == "MAPS" && path.size() == 2;
 	}
 
 	return false;
@@ -738,7 +790,8 @@ uint32_t DirectoryResourceContainer::loadResource(void* data, const ResourceId r
 		{
 			const FileSystemDirectoryEntry* entry = mDirectory.getEntry(lump_id);
 			std::string full_path = std::string(mPath) + std::string(entry->path);
-			DiskFileAccessor file_accessor(full_path);
+			const OString full_path_os(full_path);
+			DiskFileAccessor file_accessor(full_path_os);
 			return file_accessor.read(data, size);
 		}
 	}
@@ -766,8 +819,8 @@ void DirectoryResourceContainer::addEntries()
 	std::sort(tmp_entries.begin(), tmp_entries.end(), compare_filesystem_directory_entries);
 
 	// add the directory entries to this container
-	for (std::vector<FileSystemDirectoryEntry>::const_iterator it = tmp_entries.begin(); it != tmp_entries.end(); ++it)
-		mDirectory.addEntry(*it);
+	for (auto& entry: tmp_entries)
+		mDirectory.addEntry(entry);
 }
 
 
@@ -1074,7 +1127,20 @@ void ZipResourceContainer::addResources(ResourceManager* manager)
 		}
 		else
 		{
-			const ResourcePath resource_path = Res_TransformResourcePath(entry.path);
+			ResourcePath resource_path = Res_TransformResourcePath(entry.path);
+
+			if (resource_path.first() == "GLOBAL" && resource_path.size() == 2 && entry.length > 0)
+			{
+				uint8_t* data = new uint8_t[entry.length];
+				if (loadEntryData(&entry, data, entry.length) == entry.length)
+				{
+					WadResourceIdentifier identifier;
+					const ResourcePath& identified_path = identifier.identifyByContents(resource_path, data, entry.length);
+					if (!(identified_path == global_directory_name))
+						resource_path = identified_path + resource_path.last();
+				}
+				delete [] data;
+			}
 
 			const ResourceId res_id = manager->addResource(resource_path, this);
 			const LumpId lump_id = mDirectory.getLumpId(entry.path);
@@ -1091,7 +1157,7 @@ bool ZipResourceContainer::isEmbeddedWadFile(const ZipDirectoryEntry& entry) con
 {
 	std::string ext;
 	M_ExtractFileExtension(entry.path, ext);
-	if (iequals(ext, "WAD"))
+	if (iequals(ext, ".WAD"))
 	{
 		// will not consider any lump less than 28 in size 
 		// (valid wad header, plus at least one lump in the directory)
@@ -1114,16 +1180,14 @@ bool ZipResourceContainer::isEmbeddedSingleMapWadFile(const ZipDirectoryEntry& e
 {
 	std::string ext;
 	M_ExtractFileExtension(entry.path, ext);
-	if (iequals(ext, "WAD"))
+	if (iequals(ext, ".WAD"))
 	{
 		// will not consider any lump less than 28 in size 
 		// (valid wad header, plus at least one lump in the directory)
 		if (entry.length < 28)
 			return false;
 
-		ResourcePath path = Res_TransformResourcePath(entry.path);
-		std::string dir = path.first();
-		std::string map_name = path.last();
+		const ResourcePath path = Res_TransformResourcePath(entry.path);
 		return path.first() == "MAPS" && path.size() == 2;
 	}
 

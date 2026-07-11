@@ -843,6 +843,135 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 
 
 //
+// R_DrawColumnGenericARGB
+//
+// Version of R_DrawColumnGeneric that samples the source texture's
+// native ARGB plane instead of its palettized plane. The ARGB plane is
+// parallel to the palettized plane, so the column's texels are found by
+// rebasing dcol.source onto the ARGB plane. The color-remapping functor
+// is responsible for transparency and alpha blending.
+//
+template<typename COLORFUNC>
+static forceinline void R_DrawColumnGenericARGB(argb_t* dest, const drawcolumn_t& drawcolumn)
+{
+#ifdef RANGECHECK
+	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
+	{
+		PrintFmt(PRINT_HIGH, "R_DrawColumn: {} to {} at {}\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
+		return;
+	}
+#endif
+
+	const argb_t* source = drawcolumn.argbtexturedata + (drawcolumn.source - drawcolumn.texturedata);
+	int pitch = drawcolumn.pitch_in_pixels;
+	int count = drawcolumn.yh - drawcolumn.yl + 1;
+	if (count <= 0)
+		return;
+
+	const fixed_t fracstep = drawcolumn.iscale;
+	fixed_t frac = drawcolumn.texturefrac;
+
+	const int texheight = drawcolumn.textureheight;
+	const int mask = (texheight >> FRACBITS) - 1;
+
+	COLORFUNC colorfunc(drawcolumn);
+
+	if (drawcolumn.masked)
+	{
+		// handle masked (partially transparent) textures
+		do
+		{
+			colorfunc(source[frac >> FRACBITS], dest);
+			dest += pitch;
+			frac += fracstep;
+		} while (--count);
+	}
+	else if (texheight & (texheight - 1))
+	{
+		// texture height is NOT a power-of-2 (see R_DrawColumnGeneric)
+		if (frac < 0)
+			while ((frac += texheight) < 0);
+		else
+			while (frac >= texheight)
+				frac -= texheight;
+
+		while (count--)
+		{
+			colorfunc(source[frac >> FRACBITS], dest);
+			dest += pitch;
+			if ((frac += fracstep) >= texheight)
+				frac -= texheight;
+		}
+	}
+	else
+	{
+		// texture height is a power-of-2
+		// do some loop unrolling
+		while (count >= 8)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			count -= 8;
+		}
+
+		if (count & 4)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+		}
+
+		if (count & 2)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+			frac += fracstep;
+		}
+
+		if (count & 1)
+		{
+			colorfunc(source[(frac >> FRACBITS) & mask], dest);
+			dest += pitch;
+		}
+	}
+}
+
+
+//
 // R_FillSpanGeneric
 //
 // Templated version of a function to fill a span with a solid color.
@@ -1019,7 +1148,148 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		{
 			colormap = drawspan.slopelighting[ltindex++];
 
-			const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
+			const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask);
+			colorfunc(source[spot], dest);
+			++dest;
+			ufrac += ustep;
+			vfrac += vstep;
+		}
+	}
+}
+
+
+//
+// R_DrawLevelSpanGenericARGB
+//
+// Version of R_DrawLevelSpanGeneric that samples the source texture's
+// native ARGB plane (drawspan.argbsource), which is parallel to the
+// palettized plane.
+//
+template<typename COLORFUNC>
+static forceinline void R_DrawLevelSpanGenericARGB(argb_t* dest, const drawspan_t& drawspan)
+{
+#ifdef RANGECHECK
+	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
+		drawspan.y >= viewheight || drawspan.y < 0)
+	{
+		PrintFmt(PRINT_HIGH, "R_DrawLevelSpan: {} to {} at {}", drawspan.x1, drawspan.x2, drawspan.y);
+		return;
+	}
+#endif
+
+	const argb_t* source = drawspan.argbsource;
+	int count = drawspan.x2 - drawspan.x1 + 1;
+	if (count <= 0)
+		return;
+
+	dsfixed_t ufrac = dspan.ufrac, vfrac = dspan.vfrac;
+	dsfixed_t ustep = dspan.ustep, vstep = dspan.vstep;
+	const int umask = dspan.umask, vmask = dspan.vmask;
+	const int ushift = dspan.ushift, vshift = dspan.vshift;
+
+	COLORFUNC colorfunc(drawspan);
+
+	do {
+		const unsigned int spot = ((vfrac >> vshift) & vmask) | ((ufrac >> ushift) & umask);
+		colorfunc(source[spot], dest);
+		dest++;
+		ufrac += ustep;
+		vfrac += vstep;
+	} while (--count);
+}
+
+
+//
+// R_DrawSlopedSpanGenericARGB
+//
+// Version of R_DrawSlopedSpanGeneric that samples the source texture's
+// native ARGB plane (drawspan.argbsource).
+//
+template<typename COLORFUNC>
+static forceinline void R_DrawSlopedSpanGenericARGB(argb_t* dest, const drawspan_t& drawspan)
+{
+#ifdef RANGECHECK
+	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
+		drawspan.y >= viewheight || drawspan.y < 0)
+	{
+		PrintFmt(PRINT_HIGH, "R_DrawSlopedSpan: {} to {} at {}", drawspan.x1, drawspan.x2, drawspan.y);
+		return;
+	}
+#endif
+
+	const argb_t* source = drawspan.argbsource;
+	int count = drawspan.x2 - drawspan.x1 + 1;
+	if (count <= 0)
+		return;
+
+	float iu = drawspan.iu, iv = drawspan.iv;
+	const float ius = drawspan.iustep, ivs = drawspan.ivstep;
+	float id = drawspan.id, ids = drawspan.idstep;
+
+	COLORFUNC colorfunc(drawspan);
+
+	const int umask = dspan.umask, vmask = dspan.vmask;
+	const int ushift = dspan.ushift, vshift = dspan.vshift;
+
+	while (count >= SPANJUMP)
+	{
+		const float mulstart = 65536.0f / id;
+		id += ids * SPANJUMP;
+		const float mulend = 65536.0f / id;
+
+		const float ustart = iu * mulstart;
+		const float vstart = iv * mulstart;
+
+		fixed_t ufrac = static_cast<fixed_t>(ustart);
+		fixed_t vfrac = static_cast<fixed_t>(vstart);
+
+		iu += ius * SPANJUMP;
+		iv += ivs * SPANJUMP;
+
+		const float uend = iu * mulend;
+		const float vend = iv * mulend;
+
+		const fixed_t ustep = static_cast<fixed_t>((uend - ustart) * INTERPSTEP);
+		const fixed_t vstep = static_cast<fixed_t>((vend - vstart) * INTERPSTEP);
+
+		int incount = SPANJUMP;
+		while (incount--)
+		{
+			const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask);
+			colorfunc(source[spot], dest);
+			dest++;
+			ufrac += ustep;
+			vfrac += vstep;
+		}
+
+		count -= SPANJUMP;
+	}
+
+	if (count > 0)
+	{
+		const float mulstart = 65536.0f / id;
+		id += ids * count;
+		const float mulend = 65536.0f / id;
+
+		const float ustart = iu * mulstart;
+		const float vstart = iv * mulstart;
+
+		fixed_t ufrac = static_cast<fixed_t>(ustart);
+		fixed_t vfrac = static_cast<fixed_t>(vstart);
+
+		iu += ius * count;
+		iv += ivs * count;
+
+		const float uend = iu * mulend;
+		const float vend = iv * mulend;
+
+		const fixed_t ustep = static_cast<fixed_t>((uend - ustart) / count);
+		const fixed_t vstep = static_cast<fixed_t>((vend - vstart) / count);
+
+		int incount = count;
+		while (incount--)
+		{
+			const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask);
 			colorfunc(source[spot], dest);
 			++dest;
 			ufrac += ustep;
@@ -1520,11 +1790,221 @@ private:
 
 // ----------------------------------------------------------------------------
 //
+// 32bpp native ARGB color remapping functors
+//
+// These functors take a texel from a texture's native ARGB plane
+// instead of a palette index. Light diminishing follows the same math as
+// shaderef_t::shadeargb and the texel's alpha channel drives transparency:
+// masked surfaces blend translucent texels with the scene already drawn
+// behind them, while solid surfaces have no valid backdrop in the
+// framebuffer and composite onto black instead.
+//
+// ----------------------------------------------------------------------------
+
+//
+// ARGB shade lookup tables
+//
+// Gives the native ARGB drawers a shademap-like lookup - for each light
+// diminishing level, three 256-entry tables map a channel value to its
+// diminished, faded and gamma-corrected result. Colormaps carrying a
+// dynamic colormap (sector colormaps) are shaded separately.
+//
+static byte argb_shade_lut_r[NUMCOLORMAPS + 1][256];
+static byte argb_shade_lut_g[NUMCOLORMAPS + 1][256];
+static byte argb_shade_lut_b[NUMCOLORMAPS + 1][256];
+
+// Rebuild shade LUT table (new map or gamma bump).
+void R_UpdateARGBShadeLUT()
+{
+	const argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1],
+	                       level.fadeto_color[2], level.fadeto_color[3]);
+
+	for (int m = 0; m <= NUMCOLORMAPS; m++)
+	{
+		const int fade_r = fadecolor.getr() * m + NUMCOLORMAPS / 2;
+		const int fade_g = fadecolor.getg() * m + NUMCOLORMAPS / 2;
+		const int fade_b = fadecolor.getb() * m + NUMCOLORMAPS / 2;
+
+		for (int c = 0; c < 256; c++)
+		{
+			argb_shade_lut_r[m][c] = gammatable[(c * (NUMCOLORMAPS - m) + fade_r) / NUMCOLORMAPS];
+			argb_shade_lut_g[m][c] = gammatable[(c * (NUMCOLORMAPS - m) + fade_g) / NUMCOLORMAPS];
+			argb_shade_lut_b[m][c] = gammatable[(c * (NUMCOLORMAPS - m) + fade_b) / NUMCOLORMAPS];
+		}
+	}
+}
+
+//
+// ARGBShader
+//
+// Shades native ARGB texels for a fixed colormap. The common case
+// (no dynamic colormap) is three lookups in the per-frame shade tables.
+// Colormaps with a dynamic colormap precompute the light diminishing
+// constants once and shade when needed.
+//
+class ARGBShader
+{
+public:
+	ARGBShader(const shaderef_t& colormap)
+	{
+		const int mapnum =
+		    colormap.mapnum() < NUMCOLORMAPS ? colormap.mapnum() : NUMCOLORMAPS;
+
+		if (colormap.m_dyncolormap == NULL)
+		{
+			lut_r = argb_shade_lut_r[mapnum];
+			lut_g = argb_shade_lut_g[mapnum];
+			lut_b = argb_shade_lut_b[mapnum];
+		}
+		else
+		{
+			lut_r = lut_g = lut_b = NULL;
+
+			const argb_t lightcolor = colormap.m_dyncolormap->color;
+			const argb_t fadecolor = colormap.m_dyncolormap->fade;
+
+			scale_r = lightcolor.getr() * (NUMCOLORMAPS - mapnum);
+			scale_g = lightcolor.getg() * (NUMCOLORMAPS - mapnum);
+			scale_b = lightcolor.getb() * (NUMCOLORMAPS - mapnum);
+
+			add_r = fadecolor.getr() * mapnum + NUMCOLORMAPS / 2;
+			add_g = fadecolor.getg() * mapnum + NUMCOLORMAPS / 2;
+			add_b = fadecolor.getb() * mapnum + NUMCOLORMAPS / 2;
+		}
+	}
+
+	forceinline argb_t shade(const argb_t c) const
+	{
+		if (lut_r != NULL)
+			return argb_t(c.geta(), lut_r[c.getr()], lut_g[c.getg()], lut_b[c.getb()]);
+
+		return argb_t(c.geta(),
+		              gammatable[(c.getr() * scale_r / 255 + add_r) / NUMCOLORMAPS],
+		              gammatable[(c.getg() * scale_g / 255 + add_g) / NUMCOLORMAPS],
+		              gammatable[(c.getb() * scale_b / 255 + add_b) / NUMCOLORMAPS]);
+	}
+
+private:
+	const byte* lut_r;
+	const byte* lut_g;
+	const byte* lut_b;
+	int scale_r, scale_g, scale_b;
+	int add_r, add_g, add_b;
+};
+
+class DirectARGBColormapFunc
+{
+public:
+	DirectARGBColormapFunc(const drawcolumn_t& drawcolumn) :
+			shader(drawcolumn.colormap), blend_to_dest(drawcolumn.masked) { }
+	DirectARGBColormapFunc(const drawspan_t& drawspan) :
+			shader(drawspan.colormap), blend_to_dest(false) { }
+
+	forceinline void operator()(argb_t c, argb_t* dest) const
+	{
+		const int a = c.geta();
+		if (a == 255)
+		{
+			*dest = shader.shade(c);
+		}
+		else if (a > 0)
+		{
+			const argb_t bg = blend_to_dest ? *dest : argb_t(255, 0, 0, 0);
+			*dest = alphablend2a(bg, 255 - a, shader.shade(c), a);
+		}
+		else if (!blend_to_dest)
+		{
+			*dest = argb_t(255, 0, 0, 0);
+		}
+	}
+
+private:
+	const ARGBShader shader;
+	const bool blend_to_dest;
+};
+
+class DirectARGBTranslucentColormapFunc
+{
+public:
+	DirectARGBTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
+			shader(drawcolumn.colormap)
+	{
+		calculate_alpha(drawcolumn.translevel);
+	}
+
+	DirectARGBTranslucentColormapFunc(const drawspan_t& drawspan) :
+			shader(drawspan.colormap)
+	{
+		calculate_alpha(drawspan.translevel);
+	}
+
+	forceinline void operator()(argb_t c, argb_t* dest) const
+	{
+		// combine the surface's translucency with the texel's alpha
+		const int a = c.geta() * fga / 255;
+		if (a == 0)
+			return;
+
+		*dest = alphablend2a(*dest, 255 - a, shader.shade(c), a);
+	}
+
+private:
+	void calculate_alpha(fixed_t translevel)
+	{
+		fga = (translevel & ~0x03FF) >> 8;
+		fga = fga > 255 ? 255 : fga;
+	}
+
+	const ARGBShader shader;
+	int fga;
+};
+
+class DirectARGBSlopeColormapFunc
+{
+public:
+	DirectARGBSlopeColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.slopelighting) { }
+
+	forceinline void operator()(argb_t c, argb_t* dest)
+	{
+		const ARGBShader shader(*colormap);
+		colormap++;
+
+		const int a = c.geta();
+		if (a == 255)
+			*dest = shader.shade(c);
+		else if (a > 0)
+			*dest = alphablend2a(argb_t(255, 0, 0, 0), 255 - a, shader.shade(c), a);
+		else
+			*dest = argb_t(255, 0, 0, 0);
+	}
+
+private:
+	const shaderef_t* colormap;
+};
+
+
+// ----------------------------------------------------------------------------
+//
 // 32bpp color drawing wrappers
 //
 // ----------------------------------------------------------------------------
 
 #define FB_COLDEST_D (reinterpret_cast<argb_t*>(dcol.destination) + dcol.yl * dcol.pitch_in_pixels + dcol.x)
+
+//
+// R_ColumnHasNativeARGB
+//
+// Returns true when the current column should be drawn from its
+// texture's native ARGB plane: the plane must exist, and special colormaps
+// (e.g. invulnerability) have no RGB equivalent so those columns stay on
+// the palettized path.
+//
+static forceinline bool R_ColumnHasNativeARGB()
+{
+	return dcol.argbtexturedata != NULL && dcol.source != NULL &&
+	       dcol.colormap.mapnum() < NUMCOLORMAPS;
+}
 
 //
 // R_FillColumnD
@@ -1545,7 +2025,10 @@ void R_FillColumnD()
 //
 void R_DrawColumnD()
 {
-	R_DrawColumnGeneric<argb_t, DirectColormapFunc>(FB_COLDEST_D, dcol);
+	if (R_ColumnHasNativeARGB())
+		R_DrawColumnGenericARGB<DirectARGBColormapFunc>(FB_COLDEST_D, dcol);
+	else
+		R_DrawColumnGeneric<argb_t, DirectColormapFunc>(FB_COLDEST_D, dcol);
 }
 
 //
@@ -1577,7 +2060,10 @@ void R_DrawFuzzColumnD()
 //
 void R_DrawTranslucentColumnD()
 {
-	R_DrawColumnGeneric<argb_t, DirectTranslucentColormapFunc>(FB_COLDEST_D, dcol);
+	if (R_ColumnHasNativeARGB())
+		R_DrawColumnGenericARGB<DirectARGBTranslucentColormapFunc>(FB_COLDEST_D, dcol);
+	else
+		R_DrawColumnGeneric<argb_t, DirectTranslucentColormapFunc>(FB_COLDEST_D, dcol);
 }
 
 //
@@ -1658,7 +2144,10 @@ void R_FillTranslucentSpanD()
 //
 void R_DrawSpanD_c()
 {
-	R_DrawLevelSpanGeneric<argb_t, DirectColormapFunc>(FB_SPANDEST_D, dspan);
+	if (dspan.argbsource != NULL && dspan.colormap.mapnum() < NUMCOLORMAPS)
+		R_DrawLevelSpanGenericARGB<DirectARGBColormapFunc>(FB_SPANDEST_D, dspan);
+	else
+		R_DrawLevelSpanGeneric<argb_t, DirectColormapFunc>(FB_SPANDEST_D, dspan);
 }
 
 //
@@ -1669,7 +2158,10 @@ void R_DrawSpanD_c()
 //
 void R_DrawSlopeSpanD_c()
 {
-	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeColormapFunc>(FB_SPANDEST_D, dspan);
+	if (dspan.argbsource != NULL && dspan.slopelighting[0].mapnum() < NUMCOLORMAPS)
+		R_DrawSlopedSpanGenericARGB<DirectARGBSlopeColormapFunc>(FB_SPANDEST_D, dspan);
+	else
+		R_DrawSlopedSpanGeneric<argb_t, DirectSlopeColormapFunc>(FB_SPANDEST_D, dspan);
 }
 
 

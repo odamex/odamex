@@ -302,7 +302,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		return false;
 	}
 
-	const fileIdentifier_t* info = W_GameInfo(wanted.getWantedMD5());
+	const FileIdentifier* info = W_GameInfo(wanted.getWantedMD5());
 	if (!info)
 	{
 		// No GameInfo means that we're not dealing with a WAD we recognize.
@@ -333,7 +333,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 	}
 	else
 	{
-		const fileIdentifier_t* curInfo = W_GameInfo(sameNameRes.getMD5());
+		const FileIdentifier* curInfo = W_GameInfo(sameNameRes.getMD5());
 		if (curInfo)
 		{
 			// Found a file, but it's the wrong version.
@@ -424,13 +424,16 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 
 	if (::wadfiles.empty())
 	{
-		// If we don't have odamex.wad, resolve it now.
+		// If we don't have the engine resource yet, resolve it now.  The want is
+		// intentionally extension-less so it resolves to odamex.wad, odamex.zip,
+		// odamex.pk3, or an "odamex" directory - in that order of preference.
 		OWantFile want_odamex;
-		OWantFile::make(want_odamex, "odamex.wad", OFILE_WAD);
+		OWantFile::make(want_odamex, "odamex", OFILE_WAD);
 		if (!M_ResolveWantedFile(odamex_wad, want_odamex))
 		{
-			I_FatalError("Could not resolve \"{}\".  Please ensure this file is "
-			             "someplace where Odamex can find it.\n",
+			I_FatalError("Could not resolve the \"{}\" engine resource "
+			             "(odamex.wad, odamex.pk3/zip, or an odamex directory).  "
+			             "Please ensure it is someplace where Odamex can find it.\n",
 			             want_odamex.getBasename());
 		}
 	}
@@ -499,6 +502,29 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
  * @param newpatchfiles Patch files to check.
  * @return True if everything checks out.
  */
+static bool WantMatchesLoaded(const OWantFile& want, const OResFile& loaded)
+{
+	if (want.getWantedMD5() == loaded.getMD5())
+	{
+		return true;
+	}
+
+	// Directory resources are identified by a name marker rather than a
+	// content hash; accept a loaded directory or archive of the same base name.
+	if (M_IsDirectoryMarkerHash(want.getWantedMD5(), want.getBasename()))
+	{
+		std::string base = loaded.getBasename();
+		const std::string::size_type dot = base.find_last_of('.');
+		if (dot != std::string::npos)
+		{
+			base = base.substr(0, dot);
+		}
+		return iequals(base, want.getBasename());
+	}
+
+	return false;
+}
+
 static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
                                      const OWantFiles& newpatchfiles)
 {
@@ -519,7 +545,7 @@ static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
 	     ++it)
 	{
 		size_t idx = it - newwadfiles.begin();
-		if (it->getWantedMD5() != ::wadfiles.at(idx + 1).getMD5())
+		if (!WantMatchesLoaded(*it, ::wadfiles.at(idx + 1)))
 		{
 			return false;
 		}

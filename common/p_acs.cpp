@@ -1516,7 +1516,6 @@ int DLevelScript::ThingCount (int type, int tid)
 
 void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 {
-	int secnum = -1;
 	const OLumpName flatname = level.behavior->LookupString (name);
 
 	if (flatname.empty())

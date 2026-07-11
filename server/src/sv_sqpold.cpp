@@ -170,8 +170,10 @@ void SV_SendServerInfo()
 
 	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
 
-	for (size_t i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, wadfiles[i].getBasename().c_str());
+	MSG_WriteByte(&ml_message, resource_file_count - 1);
+
+	for (size_t i = 1; i < resource_file_count; ++i)
+		MSG_WriteString(&ml_message, Res_CleanseFilename(resource_file_names[i]).c_str());
 
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
 	MSG_WriteByte(&ml_message, sv_skill.asInt());
@@ -193,8 +195,8 @@ void SV_SendServerInfo()
 		}
 	}
 
-	for (size_t i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, ::wadfiles[i].getMD5().getHexCStr());
+	for (size_t i = 1; i < resource_file_count; ++i)
+		MSG_WriteString(&ml_message, resource_file_hashes[i].getHexCStr());
 
 	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
 	MSG_WriteString(&ml_message, sv_downloadsites.cstring());

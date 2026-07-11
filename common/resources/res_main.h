@@ -135,7 +135,7 @@ public:
 
 	const ResourceId getResourceId(const OString& name, ResourceNamespace ns, bool exact_ns_match = false) const
 	{
-		return mNameTranslator.translate(name, ns, exact_ns_match);
+		return mNameTranslator.translate(OStringToUpper(name), ns, exact_ns_match);
 	}
 
 	const ResourceId getResourceId(const ResourcePath& path) const
@@ -264,9 +264,9 @@ private:
 	const ResourceContainerRecord* getResourceContainerRecord(const ResourceContainer* container) const
 	{
 		// Linear search for now
-		for (ResourceContainerRecordTable::const_iterator it = mResourceContainers.begin(); it != mResourceContainers.end(); ++it)
-			if (it->mResourceContainer == container)
-				return &(*it);
+		for (auto& rescontainer: mResourceContainers)
+			if (rescontainer.mResourceContainer == container)
+				return &rescontainer;
 		return NULL;
 	}
 
@@ -319,7 +319,23 @@ const ResourceId Res_GetResourceId(const ResourcePath& path);
 
 const ResourceId Res_GetResourceId(const OString& name, const ResourcePath& directory);
 
-const ResourceId Res_GetResourceId(const OString& name, ResourceNamespace ns);
+const ResourceId Res_GetResourceId(const OString& name, ResourceNamespace ns, bool exact_ns_match = false);
+
+// OString's constructors are explicit; forward const char* names for convenience.
+static inline const ResourceId Res_GetResourceId(const char* name, const ResourcePath& directory)
+{
+	return Res_GetResourceId(OString(name), directory);
+}
+
+static inline const ResourceId Res_GetResourceId(const char* name, ResourceNamespace ns)
+{
+	return Res_GetResourceId(OString(name), ns);
+}
+
+static inline const ResourceId Res_GetResourceId(const std::string& name, ResourceNamespace ns)
+{
+	return Res_GetResourceId(OString(name), ns);
+}
 
 const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path);
 
@@ -357,6 +373,11 @@ static inline const void* Res_LoadResource(const OString& name, zoneTag_e tag = 
 	return Res_LoadResource(Res_GetResourceId(name, global_directory_name), tag);
 }
 
+static inline const void* Res_LoadResource(const char* name, zoneTag_e tag = PU_CACHE)
+{
+	return Res_LoadResource(OString(name), tag);
+}
+
 
 // ----------------------------------------------------------------------------
 // Res_ReleaseResource
@@ -379,3 +400,8 @@ const std::string& Res_GetResourceContainerFileName(const ResourceId res_id);
 
 bool Res_CheckMap(const OString& mapname);
 const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
+
+static inline const ResourceId Res_GetMapResourceId(const char* lump_name, const OString& mapname)
+{
+	return Res_GetMapResourceId(OString(lump_name), mapname);
+}

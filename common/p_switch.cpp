@@ -55,14 +55,14 @@ public:
 	};
 
 	DActiveButton ();
-	DActiveButton (line_t *, EWhere, ResourceId res_id, SDWORD time, fixed_t x, fixed_t y);
+	DActiveButton (line_t *, EWhere, ResourceId res_id, int32_t time, fixed_t x, fixed_t y);
 
 	void RunThink () override;
 
 	line_t	*m_Line;
 	EWhere	m_Where;
 	ResourceId m_ResId;
-	SDWORD	m_Timer;
+	int32_t	m_Timer;
 	fixed_t	m_X, m_Y;	// Location of timer sound
 };
 
@@ -150,6 +150,9 @@ static void P_StartButton (line_t *line, DActiveButton::EWhere w, ResourceId res
 ResourceId* P_GetButtonTexturePtr(line_t* line, ResourceId* alt_texture, DActiveButton::EWhere& where)
 {
 	where = (DActiveButton::EWhere)0;
+
+	if (line->sidenum[0] == R_NOSIDE)
+		return NULL;
 
 	side_t* side = &sides[line->sidenum[0]];
 
@@ -349,7 +352,7 @@ DActiveButton::DActiveButton ()
 }
 
 DActiveButton::DActiveButton (line_t *line, EWhere where, ResourceId res_id,
-							  SDWORD time, fixed_t x, fixed_t y)
+							  int32_t time, fixed_t x, fixed_t y)
 {
 	m_Line = line;
 	m_Where = where;
@@ -364,12 +367,12 @@ void DActiveButton::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
-		SDWORD texture = (SDWORD)((uint32_t)m_ResId & 0xFFFF);
+		int32_t texture = (int32_t)((uint32_t)m_ResId & 0xFFFF);
 		arc << m_Line << m_Where << texture << m_Timer << m_X << m_Y;
 	}
 	else
 	{
-		SDWORD texture;
+		int32_t texture;
 		arc >> m_Line >> m_Where >> texture >> m_Timer >> m_X >> m_Y;
 		if (texture == 0xFFFF)
 			m_ResId = ResourceId::INVALID_ID;

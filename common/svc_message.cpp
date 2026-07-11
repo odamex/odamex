@@ -545,29 +545,35 @@ odaproto::svc::DisconnectClient SVC_DisconnectClient(const player_t& player)
  * @brief Sends a message to a player telling them to change to the specified
  *        WAD and DEH patch files and load a map.
  */
-odaproto::svc::LoadMap SVC_LoadMap(const std::vector<std::string>& resource_files,
-                                   const std::vector<OMD5Hash>& resource_hashes,
+odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& patchnames,
                                    const std::string& mapname, int time)
 {
 	odaproto::svc::LoadMap msg;
 
-	// send list of resources (skip over resnames[0] == odamex.wad)
-	size_t rescount = resource_files.size() - 1;
-	for (size_t i = 1; i < rescount + 1; i++)
+	// send list of wads (skip over wadnames[0] == odamex.wad)
+	size_t wadcount = wadnames.size() - 1;
+	for (size_t i = 1; i < wadcount + 1; i++)
 	{
-		odaproto::svc::LoadMap_Resource* wad = msg.add_resnames();
-		wad->set_name(Res_CleanseFilename(resource_files[i]).c_str());
-		wad->set_hash(resource_hashes[i].getHexCStr());
+		odaproto::svc::LoadMap_Resource* wad = msg.add_wadnames();
+		wad->set_name(wadnames[i].getBasename());
+		wad->set_hash(wadnames[i].getMD5().getHexStr());
 	}
 
-	// [SL] DEH/BEX patch file names used to be sent separately.
-	// Just send nothing now.
+	// send list of DEH/BEX patches
+	size_t patchcount = patchnames.size();
+	for (size_t i = 0; i < patchcount; i++)
+	{
+		odaproto::svc::LoadMap_Resource* patch = msg.add_patchnames();
+		patch->set_name(patchnames[i].getBasename());
+		patch->set_hash(patchnames[i].getMD5().getHexStr());
+	}
 
 	msg.set_mapname(mapname);
 	msg.set_time(time);
 
 	return msg;
 }
+
 
 odaproto::svc::ConsolePlayer SVC_ConsolePlayer(const player_t& player,
                                                const std::string& digest)

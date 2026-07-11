@@ -328,31 +328,31 @@ void F_TextWrite ()
 	const int x = (primary_surface->getWidth() - screenblockWidth) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
-	ResourceId res_id;
 	switch (finalelumptype)
 	{
 	case FINALE_GRAPHIC:
-		lump = W_CheckNumForName(finalelump, ns_global);
-		if (lump >= 0)
+	{
+		const ResourceId res_id =
+		    Res_GetTextureResourceId(OStringToUpper(finalelump.c_str()), GRAPHICS, false);
+		if (Res_CheckResource(res_id))
 		{
-			screen->DrawPatchFullScreen(W_CachePatch(lump, PU_CACHE), true);
+			screen->DrawTextureFullScreen(Res_CacheTexture(res_id, PU_CACHE), true);
 		}
 		break;
+	}
 	case FINALE_FLAT:
-		lump = W_CheckNumForName(finalelump, ns_flats);
-		if (lump >= 0)
+	{
+		const ResourceId res_id =
+		    Res_GetTextureResourceId(OStringToUpper(finalelump.c_str()), FLOOR, false);
+		if (Res_CheckResource(res_id))
 		{
-			// Support high resolution flats
-			unsigned int length = W_LumpLength(lump);
-
 			I_FreeSurface(finale_surface);
 			finale_surface = I_AllocateSurface(320, 200, 8);
 
 			finale_surface->lock();
 
 			finale_surface->getDefaultCanvas()->FlatFill(
-			    0, 0, 320, 200, length,
-			    W_CacheLumpNum<byte>(lump, PU_CACHE));
+			    Res_CacheTexture(res_id, PU_CACHE), 0, 0, 320, 200);
 
 			primary_surface->blitcrop(finale_surface, 0, 0, 320, 200,
 			    x, y, screenblockWidth, screenblockHeight);
@@ -360,6 +360,7 @@ void F_TextWrite ()
 			finale_surface->unlock();
 		}
 		break;
+	}
 	default:
 		break;
 	}
@@ -393,7 +394,7 @@ void F_TextWrite ()
 			continue;
 		}
 
-		const Texture* chr = W_ResolvePatchHandle(hu_font[c]);
+		const Texture* chr = hu_font[c];
 
 		const int w = chr->width();
 		if (cx + w > width)
@@ -632,11 +633,12 @@ void F_CastDrawer()
 
 	const Texture* background_texture = Res_CacheTexture("BOSSBACK", PATCH);
 
-	finale_width = background_patch->width();
-	finale_height = background_patch->height() + (background_patch->height() / 5);
+	finale_width = background_texture->width();
+	finale_height = background_texture->height() + (background_texture->height() / 5);
 
 	I_FreeSurface(cast_surface);
-	cast_surface = I_AllocateSurface(background_patch->width(), background_patch->height(), 8);
+	cast_surface =
+	    I_AllocateSurface(background_texture->width(), background_texture->height(), 8);
 
 	// draw the background to the surface
 	cast_surface->lock();
@@ -649,7 +651,7 @@ void F_CastDrawer()
 
 	int scaled_x = (finale_width - 320) / 2;
 
-	const Texture* sprite_patch = W_CachePatch(sprframe->lump[0]);
+	const Texture* sprite_patch = Res_CacheTexture(sprframe->resource[0]);
 	if (sprframe->flip[0])
 		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160 + scaled_x, 170);
 	else
@@ -861,7 +863,8 @@ void F_Drawer (void)
 					break;
 				}
 				case '2':
-			        F_DrawEndPic(gameinfo.finalePage[1]);
+				{
+					F_DrawEndPic(gameinfo.finalePage[1]);
 					break;
 				}
 				case '3':
@@ -870,7 +873,8 @@ void F_Drawer (void)
 					break;
 				}
 				case '4':
-			        F_DrawEndPic(gameinfo.finalePage[2]);
+				{
+					F_DrawEndPic(gameinfo.finalePage[2]);
 					break;
 				}
 			}

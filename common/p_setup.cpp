@@ -64,7 +64,7 @@ void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
 
 //
-// [EB] Local helpers that map the old lump API onto the resource manager,
+// Local helpers that map the old lump API onto the resource manager,
 // keeping the loader code close to upstream.  Resource data is allocated
 // through the zone with cache ownership, so Z_Free()/Z_ChangeTag() on the
 // returned pointers behaves the same way it did with the old lump cache.
@@ -2118,7 +2118,7 @@ void P_ValidateMap(const OString& mapname)
 extern polyblock_t **PolyBlockMap;
 
 // [RH] position indicates the start spot to spawn at
-void P_SetupLevel (const char *lumpname, int position)
+void P_SetupLevel (const OString& lumpname, int position)
 {
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
@@ -2168,7 +2168,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	// UNUSED W_Profile ();
 
 	// find map lumps through the resource manager
-	const OString mapname(StdStringToUpper(lumpname));
+	const OString mapname(OStringToUpper(lumpname));
 
 	const ResourceId things_res_id   = Res_GetMapResourceId("THINGS", mapname);
 	const ResourceId linedefs_res_id = Res_GetMapResourceId("LINEDEFS", mapname);
@@ -2413,17 +2413,24 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 
 //
 
-void SetTextureNoErr (ResourceId* texture, unsigned int *color, char *name)
+void P_SetTextureNoErr(ResourceId* texture, unsigned int *color, const OString& name)
 {
-	*texture = Res_GetTextureResourceId(OStringToUpper(name, 8), WALL, false);
+	*texture = Res_GetTextureResourceId(name, WALL, false);
 	if (!Res_CheckResource(*texture))
 	{
+		*texture = ResourceId::INVALID_ID;
+
+		// Res_GetTextureResourceId treats "-" as no texture,
+		// and parsing it as hex would turn blank tiers on Static_Init
+		// lines into a black light color (0 brightness sectors).
+		if (name.size() == 1 && name.c_str()[0] == '-')
+			return;
+
 		char name2[9];
 		char *stop;
-		strncpy (name2, name, 8);
+		strncpy (name2, name.c_str(), 8);
 		name2[8] = 0;
 		*color = strtoul (name2, &stop, 16);
-		*texture = ResourceId::INVALID_ID;
 	}
 }
 

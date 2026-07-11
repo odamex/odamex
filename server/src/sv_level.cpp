@@ -96,7 +96,6 @@ extern bool sendpause;
 
 bool isFast = false;
 
-static std::string d_mapname;
 //
 // G_InitNew
 // Can be called by the startup code or the menu task,
@@ -206,7 +205,7 @@ OLumpName G_NextMap()
 		// [ML] 1/25/10: OR if next is empty
 		next = level.mapname;
 	}
-	else if (secretexit && Res_CheckMap(level.secretmap.c_str()))
+	else if (secretexit && Res_CheckMap(OString(level.secretmap.c_str())))
 	{
 		// if we hit a secret exit switch, go there instead.
 		next = level.secretmap;
@@ -478,8 +477,8 @@ void G_InitNew(const char *mapname)
 	paused = false;
 
 	// [RH] If this map doesn't exist, bomb out
-	if (!Res_CheckMap(mapname))
-		I_Error("Could not find map %s\n", mapname.c_str());
+	if (!Res_CheckMap(OString(StdStringToUpper(mapname))))
+		I_Error("Could not find map {}\n", mapname);
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
 	if (wantFast != isFast)
@@ -638,7 +637,7 @@ void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if (gameinfo.flags & GI_MAPxx && !Res_CheckMap("MAP31"))
+	if (gameinfo.flags & GI_MAPxx && !Res_CheckMap(OString("MAP31")))
 		secretexit = false;
 	else
 		secretexit = true;
@@ -932,7 +931,7 @@ void G_DoLoadLevel (int position)
 
 	specialdoors.clear();
 
-	P_SetupLevel (level.mapname.c_str(), position);
+	P_SetupLevel (OString(level.mapname.c_str()), position);
 
 	// Nes - CTF Post flag setup
 	if (sv_gametype == GM_CTF)

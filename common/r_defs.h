@@ -97,6 +97,7 @@ typedef vertex_s vertex_t;
 // Forward of LineDefs, for Sectors.
 struct line_s;
 struct sector_t;
+class Texture;
 
 //
 // The SECTORS record, at runtime.

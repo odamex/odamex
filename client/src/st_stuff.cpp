@@ -1133,10 +1133,9 @@ void ST_Drawer()
 }
 
 
-static lumpHandle_t LoadFaceGraphic(const OLumpName& name)
+static const Texture* LoadFaceGraphic(const OLumpName& name)
 {
-	int lump = W_GetNumForName(name, ns_global);
-	return W_CachePatchHandle(lump, PU_STATIC);
+	return W_CachePatch(name.c_str(), PU_STATIC);
 }
 
 static void ST_loadGraphics()
@@ -1147,10 +1146,10 @@ static void ST_loadGraphics()
 	for (int i = 0; i < 10; i++)
 	{
 		namebuf = fmt::format("STTNUM{}", i);
-		tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		tallnum[i] = W_CachePatch(namebuf, PU_STATIC);
 
 		namebuf = fmt::format("STYSNUM{}", i);
-		shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		shortnum[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
 
 	// Load percent key.
@@ -1163,7 +1162,7 @@ static void ST_loadGraphics()
 	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
 		namebuf = fmt::format("STKEYS{}", i);
-		keys[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		keys[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
 
 	// arms background
@@ -1193,11 +1192,11 @@ static void ST_loadGraphics()
 	for (int i = 0; i < 4; i++)
 	{
 		namebuf = fmt::format("STFB{}", i);
-		faceclassic[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		faceclassic[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
 
 	// status bar background bits
-	sbar = W_CachePatchHandle("STBAR", PU_STATIC);
+	sbar = W_CachePatch("STBAR", PU_STATIC);
 	// in tyool 2024, we have widescreen status bars
 	// and they're not always 320x32
 	sbar_width = W_ResolvePatchHandle(sbar)->width();

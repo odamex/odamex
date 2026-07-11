@@ -253,6 +253,8 @@ bool Res_ValidateMusicData(const uint8_t* data, size_t length)
 const ResourcePath& WadResourceIdentifier::identifyByContents(const ResourcePath& path, const uint8_t* data, size_t length) const
 {
 	const OString& lump_name = path.last();
+	if (Res_ValidatePngData(data, length))
+		return graphics_directory_name;
 	if (Res_ValidatePatchData(data, length))
 		return patches_directory_name;
 	if (Res_ValidateMusicData(data, length))

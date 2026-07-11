@@ -106,12 +106,25 @@ int*					planezlight;
 float					plight, shade;
 
 std::unique_ptr<fixed_t[]> yslope;
-static fixed_t			planeheight;
 
-static fixed_t			pl_xscale, pl_yscale;
-static fixed_t			pl_viewsin, pl_viewcos;
-static fixed_t			pl_viewxtrans, pl_viewytrans;
-static fixed_t			pl_xstepscale, pl_ystepscale;
+static double			pl_xscale, pl_yscale;
+static double			pl_viewsin, pl_viewcos;
+static double			pl_viewxtrans, pl_viewytrans;
+static double			pl_xstepscale, pl_ystepscale;
+static double			pl_planeheight;
+
+
+//
+// R_DoubleToDsFixed
+//
+// Converts a double to 16.16 fixed point with the same low-32-bit wrapping
+// the fixed-point pipeline had, avoiding the undefined behavior of casting
+// an out-of-range double directly to a 32-bit integer.
+//
+static inline dsfixed_t R_DoubleToDsFixed(double value)
+{
+	return static_cast<dsfixed_t>(static_cast<int64_t>(value * 65536.0));
+}
 
 v3float_t				a, b, c;
 float					ixscale, iyscale;
@@ -141,9 +154,11 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 		return;
 
 	// center of the view plane
+	// use the sub-pixel view center (centeryfrac) so the mapping tracks
+	// the exact y-shear from mouselook instead of snapping to whole pixels
 	v3float_t s;
 	s.x = x1 - centerx;
-	s.y = y - centery + 1.0f;
+	s.y = static_cast<float>(y + 1 - FIXED2DOUBLE(centeryfrac));
 	s.z = xfoc;
 
 	dspan.iu = M_DotProductVec3f(&s, &a) * flatwidth;
@@ -220,18 +235,26 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 //
 void R_MapLevelPlane(int y, int x1, int x2)
 {
-	fixed_t distance = FixedMul(planeheight, yslope[y]);
-	fixed_t slope = static_cast<fixed_t>(focratio * FixedDiv(planeheight, abs(centery - y) << FRACBITS));
+	const double distance = pl_planeheight * FIXED2DOUBLE(yslope[y]);
 
-	dspan.ustep = FixedMul(pl_xstepscale, slope);
-	dspan.vstep = FixedMul(pl_ystepscale, slope);
+	const double slope = distance / xfoc;
 
-	dspan.ufrac = pl_viewxtrans +
-				FixedMul(FixedMul(pl_viewcos, distance), pl_xscale) + 
-				(x1 - centerx) * dspan.ustep;
-	dspan.vfrac = pl_viewytrans -
-				FixedMul(FixedMul(pl_viewsin, distance), pl_yscale) +
-				(x1 - centerx) * dspan.vstep;
+	const double ustep = pl_xstepscale * slope;
+	const double vstep = pl_ystepscale * slope;
+
+	double ufrac = pl_viewxtrans + pl_viewcos * distance * pl_xscale +
+				(x1 - centerx) * ustep;
+	double vfrac = pl_viewytrans - pl_viewsin * distance * pl_yscale +
+				(x1 - centerx) * vstep;
+
+	// Wrap up into a FRACUNIT at most before converting back to fixed point.
+	ufrac -= 65536.0 * floor(ufrac / 65536.0);
+	vfrac -= 65536.0 * floor(vfrac / 65536.0);
+
+	dspan.ustep = R_DoubleToDsFixed(ustep);
+	dspan.vstep = R_DoubleToDsFixed(vstep);
+	dspan.ufrac = R_DoubleToDsFixed(ufrac);
+	dspan.vfrac = R_DoubleToDsFixed(vfrac);
 
 	if (fixedlightlev)
 		dspan.colormap = basecolormap.with(fixedlightlev);
@@ -240,10 +263,10 @@ void R_MapLevelPlane(int y, int x1, int x2)
 	else
 	{
 		// Determine lighting based on the span's distance from the viewer.
-		unsigned int index = distance >> LIGHTZSHIFT;
-
-		if (index >= MAXLIGHTZ)
-			index = MAXLIGHTZ-1;
+		unsigned int index = MAXLIGHTZ - 1;
+		const double lightdist = distance * 65536.0;
+		if (lightdist >= 0.0 && lightdist < double(MAXLIGHTZ) * double(1 << LIGHTZSHIFT))
+			index = static_cast<unsigned int>(lightdist) >> LIGHTZSHIFT;
 
 		dspan.colormap = basecolormap.with(planezlight[index]);
 	}
@@ -484,96 +507,114 @@ void R_MakeSpans(visplane_t *pl, void(*spanfunc)(int, int, int))
 //
 void R_DrawSlopedPlane(visplane_t *pl)
 {
-	const float xoffsf = FIXED2FLOAT(pl->xoffs);
-	const float yoffsf = FIXED2FLOAT(pl->yoffs);
-	const float scaledflatwidth = flatwidth * FIXED2FLOAT(pl->xscale);
-	const float scaledflatheight = flatheight * FIXED2FLOAT(pl->yscale);
+	const double xoffs = FIXED2DOUBLE(pl->xoffs);
+	const double yoffs = FIXED2DOUBLE(pl->yoffs);
+	const double scaledflatwidth = flatwidth * FIXED2DOUBLE(pl->xscale);
+	const double scaledflatheight = flatheight * FIXED2DOUBLE(pl->yscale);
 
-	v3float_t p, t, s, viewpos;
-	M_SetVec3f(&viewpos, viewx, viewy, viewz);
+	// world-space points on the plane (x, z horizontal, y = height)
+	double px, py, pz, tx, ty, tz, sx, sy, sz;
 
 	// [SL] optimize when the texture rotation angle is zero (most of the time)
-	// This eliminates several multiplies and improves visibile accuracy as the
-	// finesine/cosine tables do not have an exact value for angle 0
 	if (pl->angle == 0)
 	{
 		// Point p is the anchor point of the texture.  It starts out as the
 		// map coordinate (0, 0, planez(0,0)) but texture offset gets applied
-		p.x = -xoffsf;
-		p.z = yoffsf;
-		p.y = P_PlaneZ(p.x, p.z, &pl->secplane);
+		px = -xoffs;
+		pz = yoffs;
+		py = P_PlaneZ(px, pz, &pl->secplane);
 
 		// Point t is the point along the plane (texwidth, 0, planez(texwidth, 0)) with texture
 		// offset applied
-		t.x = p.x - scaledflatwidth;
-		t.z = p.z;
-		t.y = P_PlaneZ(t.x, t.z, &pl->secplane);
+		tx = px - scaledflatwidth;
+		tz = pz;
+		ty = P_PlaneZ(tx, tz, &pl->secplane);
 
 		// Point s is the point along the plane (0, texheight, planez(0, texheight)) with texture
 		// offset applied
-		s.x = p.x;
-		s.z = p.z + scaledflatheight;
-		s.y = P_PlaneZ(s.x, s.z, &pl->secplane);
+		sx = px;
+		sz = pz + scaledflatheight;
+		sy = P_PlaneZ(sx, sz, &pl->secplane);
 	}
 	else
 	{
-		float sinang = FIXED2FLOAT(finesine[(pl->angle + ANG90) >> ANGLETOFINESHIFT]);
-		float cosang = FIXED2FLOAT(finecosine[(pl->angle + ANG90) >> ANGLETOFINESHIFT]);
+		const double sinang = sin((pl->angle + ANG90) * ANGLE_TO_RAD);
+		const double cosang = cos((pl->angle + ANG90) * ANGLE_TO_RAD);
 
 		// Point p is the anchor point of the texture.  It starts out as the
 		// map coordinate (0, 0, planez(0,0)) but texture offset and rotation get applied
-		p.x = -yoffsf * cosang - xoffsf * sinang;
-		p.z = -xoffsf * cosang + yoffsf * sinang;
-		p.y = P_PlaneZ(p.x, p.z, &pl->secplane);
+		px = -yoffs * cosang - xoffs * sinang;
+		pz = -xoffs * cosang + yoffs * sinang;
+		py = P_PlaneZ(px, pz, &pl->secplane);
 
 		// Point t is the point along the plane (texwidth, 0, planez(texwidth, 0)) with texture
 		// offset and rotation applied
-		t.x = p.x - scaledflatwidth * sinang;
-		t.z = p.z + scaledflatwidth * cosang;
-		t.y = P_PlaneZ(t.x, t.z, &pl->secplane);
+		tx = px - scaledflatwidth * sinang;
+		tz = pz + scaledflatwidth * cosang;
+		ty = P_PlaneZ(tx, tz, &pl->secplane);
 
 		// Point s is the point along the plane (0, texheight, planez(0, texheight)) with texture
 		// offset and rotation applied
-		s.x = p.x + scaledflatheight * cosang;
-		s.z = p.z + scaledflatheight * sinang;
-		s.y = P_PlaneZ(s.x, s.z, &pl->secplane);
+		sx = px + scaledflatheight * cosang;
+		sz = pz + scaledflatheight * sinang;
+		sy = P_PlaneZ(sx, sz, &pl->secplane);
 	}
 
 	// Translate the points to their position relative to viewx, viewy and
-	// rotate them based on viewangle
-	angle_t rotation = static_cast<angle_t>(-static_cast<int>(viewangle) + ANG90);
-	M_TranslateVec3f(&p, &viewpos, rotation);
-	M_TranslateVec3f(&t, &viewpos, rotation);
-	M_TranslateVec3f(&s, &viewpos, rotation);
+	// rotate them based on viewangle (exact trig, see M_TranslateVec3f for
+	// the coordinate-system conventions)
+	const double rotrad = (ANG90 - viewangle) * ANGLE_TO_RAD;
+	const double rcos = cos(rotrad);
+	const double rsin = sin(rotrad);
+	const double viewxd = FIXED2DOUBLE(viewx);
+	const double viewyd = FIXED2DOUBLE(viewy);
+	const double viewzd = FIXED2DOUBLE(viewz);
+
+	auto translate = [&](double& x, double& y, double& z)
+	{
+		const double dx = x - viewxd;
+		const double dy = viewzd - y;
+		const double dz = z - viewyd;
+
+		x = dx * rcos - dz * rsin;
+		z = dz * rcos + dx * rsin;
+		y = dy;
+	};
+
+	translate(px, py, pz);
+	translate(tx, ty, tz);
+	translate(sx, sy, sz);
 
 	// Subtract p from t and s, making t and s into direction vectors
-	M_SubVec3f(&t, &t, &p);
-	M_SubVec3f(&s, &s, &p);
+	tx -= px; ty -= py; tz -= pz;
+	sx -= px; sy -= py; sz -= pz;
 
-	M_CrossProductVec3f(&a, &p, &s);
-	M_CrossProductVec3f(&b, &t, &p);
-	M_CrossProductVec3f(&c, &t, &s);
+	// a = p cross s, b = t cross p, c = t cross s, each scaled by half and
+	// with the y component corrected for the aspect ratio of the view
+	a.x = static_cast<float>(0.5 * (py * sz - pz * sy));
+	a.y = static_cast<float>(0.5 * (pz * sx - px * sz) * ifocratio);
+	a.z = static_cast<float>(0.5 * (px * sy - py * sx));
 
-	M_ScaleVec3f(&a, &a, 0.5f);
-	M_ScaleVec3f(&b, &b, 0.5f);
-	M_ScaleVec3f(&c, &c, 0.5f);
+	b.x = static_cast<float>(0.5 * (ty * pz - tz * py));
+	b.y = static_cast<float>(0.5 * (tz * px - tx * pz) * ifocratio);
+	b.z = static_cast<float>(0.5 * (tx * py - ty * px));
 
-	a.y *= ifocratio;
-	b.y *= ifocratio;
-	c.y *= ifocratio;
+	c.x = static_cast<float>(0.5 * (ty * sz - tz * sy));
+	c.y = static_cast<float>(0.5 * (tz * sx - tx * sz) * ifocratio);
+	c.z = static_cast<float>(0.5 * (tx * sy - ty * sx));
 
 	// (SoM) More help from randy. I was totally lost on this...
 	float scalenumer = FIXED2FLOAT(finetangent[FINEANGLES/4+CorrectFieldOfView/2]);
 	float ixscale = scalenumer / flatwidth;
 	float iyscale = scalenumer / flatheight;
 
-	float zat = P_PlaneZ(viewpos.x, viewpos.y, &pl->secplane);
+	const double zat = P_PlaneZ(viewxd, viewyd, &pl->secplane);
 
 	angle_t fovang = ANG(consoleplayer().fov / 2.0f);
 	float slopetan = FIXED2FLOAT(finetangent[fovang >> ANGLETOFINESHIFT]);
 	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / float(I_GetSurfaceWidth());
 
-	plight = (slopevis * ixscale * iyscale) / (zat - viewpos.z);
+	plight = (slopevis * ixscale * iyscale) / (zat - viewzd);
 	shade = 256.0 * 2.0 - (pl->lightlevel + 16.0) * 256.0 / 128.0;
 
 	basecolormap = pl->colormap;	// [RH] set basecolormap
@@ -588,54 +629,56 @@ void R_DrawSlopedPlane(visplane_t *pl)
 void R_DrawLevelPlane(visplane_t *pl)
 {
 	// viewx/viewy rotated by the texture rotation angle
-	fixed_t pl_viewx, pl_viewy;
+	double pl_viewx, pl_viewy;
 
 	// texture scaling factor
-	pl_xscale = pl->xscale;
-	pl_yscale = pl->yscale;
+	pl_xscale = FIXED2DOUBLE(pl->xscale);
+	pl_yscale = FIXED2DOUBLE(pl->yscale);
 
-	// viewsin/viewcos rotated by the texture rotation angle
-	pl_viewsin = finesine[(viewangle + pl->angle) >> ANGLETOFINESHIFT];
-	pl_viewcos = finecosine[(viewangle + pl->angle) >> ANGLETOFINESHIFT];
+	const angle_t rotation = viewangle + pl->angle;
+	pl_viewsin = sin(rotation * ANGLE_TO_RAD);
+	pl_viewcos = cos(rotation * ANGLE_TO_RAD);
 
-	// [SL] If the texture isn't rotated, we can optimize out a few multiplies
-	// and avoid using the finesine/cosine tables since they do not have exact
-	// values for angle 0. This helps the texture to line up correctly.
+	const double xoffs = FIXED2DOUBLE(pl->xoffs);
+	const double yoffs = FIXED2DOUBLE(pl->yoffs);
+	const double viewx_d = FIXED2DOUBLE(viewx);
+	const double viewy_d = FIXED2DOUBLE(viewy);
+
 	if (pl->angle == 0)
 	{
-		pl_viewx = pl->xoffs + viewx;
-		pl_viewy = pl->yoffs - viewy;
+		pl_viewx = xoffs + viewx_d;
+		pl_viewy = yoffs - viewy_d;
 	}
 	else
 	{
-		const fixed_t pl_cos = finecosine[pl->angle >> ANGLETOFINESHIFT];
-		const fixed_t pl_sin = finesine[pl->angle >> ANGLETOFINESHIFT];
+		const double pl_cos = cos(pl->angle * ANGLE_TO_RAD);
+		const double pl_sin = sin(pl->angle * ANGLE_TO_RAD);
 
 		if (map_format.getZDoom())
 		{
-			pl_viewx = pl->xoffs + FixedMul(viewx, pl_cos) - FixedMul(viewy, pl_sin);
-			pl_viewy = pl->yoffs - (FixedMul(viewx, pl_sin) + FixedMul(viewy, pl_cos));
+			pl_viewx = xoffs + viewx_d * pl_cos - viewy_d * pl_sin;
+			pl_viewy = yoffs - (viewx_d * pl_sin + viewy_d * pl_cos);
 		}
 		else
 		{
-			pl_viewx = FixedMul(viewx + pl->xoffs, pl_cos) - FixedMul(viewy - pl->yoffs, pl_sin);
-			pl_viewy = -(FixedMul(viewx + pl->xoffs, pl_sin) + FixedMul(viewy - pl->yoffs, pl_cos));
+			pl_viewx = (viewx_d + xoffs) * pl_cos - (viewy_d - yoffs) * pl_sin;
+			pl_viewy = -((viewx_d + xoffs) * pl_sin + (viewy_d - yoffs) * pl_cos);
 		}
 	}
 
 	// cache a calculation used by R_MapLevelPlane
-	pl_xstepscale = FixedMul(pl_viewsin, pl->xscale);
-	pl_ystepscale = FixedMul(pl_viewcos, pl->yscale);
+	pl_xstepscale = pl_viewsin * pl_xscale;
+	pl_ystepscale = pl_viewcos * pl_yscale;
 
 	// cache a calculation used by R_MapLevelPlane
-	pl_viewxtrans = FixedMul(pl_viewx + pl->xoffs, pl->xscale);
-	pl_viewytrans = FixedMul(pl_viewy + pl->yoffs, pl->yscale);
-	
+	pl_viewxtrans = (pl_viewx + xoffs) * pl_xscale;
+	pl_viewytrans = (pl_viewy + yoffs) * pl_yscale;
+
 	basecolormap = pl->colormap;	// [RH] set basecolormap
 
 	// [SL] 2012-02-05 - Plane's height should be constant for all (x,y)
 	// so just use (0, 0) when calculating the plane's z height
-	planeheight = abs(P_PlaneZ(0, 0, &pl->secplane) - viewz);
+	pl_planeheight = FIXED2DOUBLE(abs(P_PlaneZ(0, 0, &pl->secplane) - viewz));
 
 	int light = clamp((pl->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight), 0, LIGHTLEVELS - 1);
 	planezlight = zlight[light];
@@ -672,7 +715,10 @@ void R_DrawPlanes()
 				dspan.color += 4;	// [RH] color if r_drawflat is 1
 
 				const Texture* texture = Res_CacheTexture(res_id, PU_STATIC);
-				dspan.source = texture->mData; 
+				dspan.source = texture->mData;
+				// the 32bpp drawers sample the native ARGB plane when the
+				// texture carries one (NULL otherwise)
+				dspan.argbsource = texture->mARGBData;
 
 				// [SL] Note that the texture orientation differs from typical Doom span
 				// drawers since flats are stored in column major format now. The roles
@@ -829,12 +875,15 @@ void R_DrawSkyBoxes()
 		ds_p->curline = NULL;
 
 		// [RK] Allocate full width clip arrays.
-		ds_p->sprbottomclip = sprclip_pool.alloc(viewwidth);
-		ds_p->sprtopclip = sprclip_pool.alloc(viewwidth);
+		int* bottomclip = sprclip_pool.alloc(viewwidth);
+		int* topclip = sprclip_pool.alloc(viewwidth);
 
 		// [RK] Copy visplane clip values into the arrays.
-		memcpy(ds_p->sprbottomclip, floorclip.get(), viewwidth * sizeof(*ds_p->sprbottomclip));
-		memcpy(ds_p->sprtopclip, ceilingclip.get(), viewwidth * sizeof(*ds_p->sprtopclip));
+		memcpy(bottomclip, floorclip.get(), viewwidth * sizeof(*bottomclip));
+		memcpy(topclip, ceilingclip.get(), viewwidth * sizeof(*topclip));
+
+		ds_p->sprbottomclip = bottomclip;
+		ds_p->sprtopclip = topclip;
 
 		firstvissprite = vissprite_p;
 		firstdrawseg = ds_p++;

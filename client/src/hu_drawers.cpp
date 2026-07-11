@@ -272,8 +272,8 @@ void DrawTextureStretched(int x, int y,
 	if (!use_patch_offsets)
 	{
 		// Negate scaled patch offsets.
-		x += (roundToShort(patch->leftoffset() * (static_cast<float>(w) / patch->width()))) * x_scale;
-		y += (roundToShort(patch->topoffset() * (static_cast<float>(h) / patch->height()))) * y_scale;
+		x += (roundToShort(texture->leftoffset() * (static_cast<float>(w) / texture->width()))) * x_scale;
+		y += (roundToShort(texture->topoffset() * (static_cast<float>(h) / texture->height()))) * y_scale;
 	}
 
 	if (force_opaque)
@@ -292,7 +292,7 @@ void DrawTextureScaled(const int x, const int y,
                      const bool use_patch_offsets)
 {
 	// Calculate aspect ratios of patch and destination.
-	float patch_aspect = patch->width() / static_cast<float>(patch->height());
+	float patch_aspect = texture->width() / static_cast<float>(texture->height());
 	float dest_aspect = w / static_cast<float>(h);
 
 	if (patch_aspect < dest_aspect) {

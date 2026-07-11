@@ -471,6 +471,11 @@ public:
 
 	argb_t tlate(const translationref_t &translation, const byte c) const;
 
+	// Applies this colormap's light diminishing and fade to a native ARGB
+	// color, preserving the source alpha. Callers must keep special
+	// colormaps on the palettized path since they have no RGB equivalent.
+	argb_t shadeargb(const argb_t c) const;
+
 	[[nodiscard]] bool operator==(const shaderef_t &other) const;
 };
 

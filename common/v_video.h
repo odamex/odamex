@@ -180,10 +180,15 @@ public:
 	void DrawPatchFullScreen (const Texture* t, bool clear = true) const { DrawTextureFullScreen(t, clear); }
 	void DrawPatchFlipped (const Texture* t, int x, int y) const { DrawTextureFlipped(t, x, y); }
 	void DrawLucentPatch (const Texture* t, int x, int y) const { DrawLucentTexture(t, x, y); }
+	void DrawLucentPatchClean (const Texture* t, int x, int y) const { DrawLucentTextureClean(t, x, y); }
 	void DrawLucentPatchStretched (const Texture* t, int x, int y, int dw, int dh) const { DrawLucentTextureStretched(t, x, y, dw, dh); }
 	void DrawTranslatedPatch (const Texture* t, int x, int y) const { DrawTranslatedTexture(t, x, y); }
 	void DrawTranslatedPatchClean (const Texture* t, int x, int y) const { DrawTranslatedTextureClean(t, x, y); }
+	void DrawTranslatedPatchCleanNoMove (const Texture* t, int x, int y) const { DrawTranslatedTextureCleanNoMove(t, x, y); }
+	void DrawTranslatedLucentPatch (const Texture* t, int x, int y) const { DrawTranslatedLucentTexture(t, x, y); }
+	void DrawTranslatedLucentPatchCleanNoMove (const Texture* t, int x, int y) const { DrawTranslatedLucentTextureCleanNoMove(t, x, y); }
 	void DrawColoredPatch (const Texture* t, int x, int y) const { DrawColoredTexture(t, x, y); }
+	void DrawColoredPatchClean (const Texture* t, int x, int y) const { DrawColoredTextureClean(t, x, y); }
 	void DrawColoredLucentPatch (const Texture* t, int x, int y) const { DrawColoredLucentTexture(t, x, y); }
 
 protected:

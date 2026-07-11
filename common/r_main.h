@@ -277,4 +277,44 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 }
 
 
+//
+// shaderef_t::shadeargb
+//
+// Applies this colormap's light diminishing and fade to a native ARGB
+// color, mirroring the math used to build the shademaps (see tlate above
+// for the player-color equivalent). The source alpha is preserved so the
+// drawers can blend translucent texels.
+//
+inline argb_t shaderef_t::shadeargb(const argb_t c) const
+{
+	// Defensive clamp; special colormaps (m_mapnum >= NUMCOLORMAPS) have no
+	// RGB equivalent and belong on the palettized path.
+	const int mapnum = m_mapnum < NUMCOLORMAPS ? m_mapnum : NUMCOLORMAPS;
+
+	// Default to white light:
+	argb_t lightcolor = argb_t(255, 255, 255);
+	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
+
+	// Use the dynamic lighting's light color if we have one:
+	if (m_dyncolormap != NULL)
+	{
+		lightcolor = m_dyncolormap->color;
+		fadecolor = m_dyncolormap->fade;
+	}
+
+	unsigned int r = (c.getr() * lightcolor.getr() * (NUMCOLORMAPS - mapnum) / 255
+					+ fadecolor.getr() * mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int g = (c.getg() * lightcolor.getg() * (NUMCOLORMAPS - mapnum) / 255
+					+ fadecolor.getg() * mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int b = (c.getb() * lightcolor.getb() * (NUMCOLORMAPS - mapnum) / 255
+					+ fadecolor.getb() * mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+
+	return argb_t(c.geta(), gammatable[r], gammatable[g], gammatable[b]);
+}
+
+// angle_t to radians (tau / 2^32)
+// kind of overboard but we need more
+// than what finesine/finecosine can give us.
+static constexpr double ANGLE_TO_RAD = 6.28318530717958647692 / 4294967296.0;
+
 void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color);

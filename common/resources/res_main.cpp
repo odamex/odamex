@@ -31,6 +31,9 @@
 
 #include "odamex.h"
 
+#include <filesystem>
+#include <fstream>
+
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 #include "resources/res_fileaccessor.h"
@@ -54,24 +57,29 @@ static ResourceManager resource_manager;
 //
 static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const uint8_t*, size_t), size_t length=0)
 {
-	FILE* fp = fopen(filename.c_str(), "rb");
-	if (fp == NULL)
+	const std::filesystem::path path(filename.c_str());
+
+	std::error_code ec;
+	const std::uintmax_t file_size = std::filesystem::file_size(path, ec);
+	if (ec)
 		return false;
 
-	const size_t file_size = M_FileLength(filename);
 	if (length > file_size)
 		return false;
 
 	if (length == 0)
-		length = file_size;
+		length = static_cast<size_t>(file_size);
 
-	uint8_t* data = new uint8_t[length];
-	size_t read_cnt = fread(data, 1, length, fp);
-	bool valid = read_cnt == length && func(data, length);
-	delete [] data;
-	fclose(fp);
+	std::ifstream ifs(path, std::ios::in | std::ios::binary);
+	if (!ifs.good())
+		return false;
 
-	return valid;
+	std::vector<uint8_t> data(length);
+	ifs.read(reinterpret_cast<char*>(data.data()), length);
+	if (static_cast<size_t>(ifs.gcount()) != length)
+		return false;
+
+	return func(data.data(), length);
 }
 
 
@@ -182,7 +190,7 @@ void ResourceManager::addResourceContainer(
 	else
 		record.mFileName = filename;
 
-	Printf(PRINT_HIGH, "adding %s (%d %s)\n",
+	PrintFmt(PRINT_HIGH, "adding {} ({} {})\n",
 					record.mFileName.c_str(),
 					container->getResourceCount(),
 					container->getResourceCount() == 1 ? "lump" : "lumps");
@@ -239,8 +247,8 @@ void ResourceManager::openResourceFiles(const std::vector<std::string>& filename
 	assert(mResourceContainers.empty());
 	mResourceContainers.reserve(filenames.size() + 1);
 
-	for (std::vector<std::string>::const_iterator it = filenames.begin(); it != filenames.end(); ++it)
-		openResourceFile(*it);
+	for (auto &name : filenames)
+		openResourceFile(OString(name));
 
 	ResourceContainer* container = new TextureManager(this);
 	addResourceContainer(container, NULL, global_directory_name, "Unified Texture System");
@@ -257,12 +265,12 @@ void ResourceManager::openResourceFiles(const std::vector<std::string>& filename
 //
 void ResourceManager::closeAllResourceContainers()
 {
-	for (ResourceRecordTable::iterator it = mResources.begin(); it != mResources.end(); ++it)
-		releaseResourceData(getResourceId(&(*it)));
+	for (auto& resource : mResources)
+		releaseResourceData(getResourceId(resource.mPath));
 	mResources.clear();
 
-	for (ResourceContainerRecordTable::iterator it = mResourceContainers.begin(); it != mResourceContainers.end(); ++it)
-		delete it->mResourceContainer;
+	for (auto& container : mResourceContainers)
+		delete container.mResourceContainer;
 	mResourceContainers.clear();
 
 	mResourceContainerFileNames.clear();
@@ -381,7 +389,7 @@ const void* ResourceManager::loadResourceData(const ResourceId res_id, zoneTag_e
 		if (!data)
 		{
 			// Read the data if it's not already in the cache
-			DPrintf("Resource cache miss for %s\n", OString(getResourcePath(res_id)).c_str());
+			DPrintFmt("Resource cache miss for {}\n", OString(getResourcePath(res_id)).c_str());
 			const ResourceRecord* res_rec = getResourceRecord(res_id);
 
 			I_BeginRead();			// indicate to the HUD to draw the loading icon (STDISK)
@@ -460,7 +468,7 @@ void ResourceManager::dump() const
 		bool cached = mCache->getData(res_id) != NULL;
 		bool visible = mNameTranslator.checkNameVisibility(path, res_id);
 
-		Printf(PRINT_HIGH,"0x%08X %c %s [%u] [%s]\n",
+		PrintFmt(PRINT_HIGH,"0x{:08X} {} {} [{}] [{}]\n",
 				(uint32_t)res_id,
 				cached ? '$' : visible ? '*' : '-',
 				OString(path).c_str(),
@@ -484,7 +492,7 @@ void ResourceManager::dump() const
 //
 void Res_OpenResourceFiles(const std::vector<std::string>& filenames)
 {
-	Printf(PRINT_HIGH, "Res_OpenResourceFiles: Init resource data.\n");
+	PrintFmt(PRINT_HIGH, "Res_OpenResourceFiles: Init resource data.\n");
 	resource_manager.openResourceFiles(filenames);
 }
 
@@ -555,9 +563,9 @@ const ResourceId Res_GetResourceId(const OString& name, const ResourcePath& dire
 // Looks for the resource ID that matches the desired resource name in the given
 // resource namespace.
 //
-const ResourceId Res_GetResourceId(const OString& name, ResourceNamespace ns)
+const ResourceId Res_GetResourceId(const OString& name, ResourceNamespace ns, bool exact_ns_match)
 {
-	return resource_manager.getResourceId(name, ns);
+	return resource_manager.getResourceId(name, ns, exact_ns_match);
 }
 
 

@@ -638,10 +638,103 @@ void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, 
 	DCanvas::DrawColorLucentPatchD(source, dest, count, pitch);
 }
 
+/***********************************/
+/*                                 */
+/* The native ARGB column drawers  */
+/*                                 */
+/***********************************/
+
+//
+// V_DrawARGBColumn
+//
+// Draws one column of a texture's native true-color image plane to a
+// 32bpp surface, blending each pixel with the background using the
+// pixel's own alpha. 'level' (0-255) scales the overall opacity for
+// lucent drawing.
+//
+static void V_DrawARGBColumn(const argb_t* source, byte* dest, int count, int pitch, int level)
+{
+	if (count <= 0)
+		return;
+
+	do
+	{
+		const argb_t pixel = *source;
+		const int alpha = (pixel.geta() * level) / 255;
+		if (alpha >= 255)
+		{
+			*(argb_t*)dest = pixel;
+		}
+		else if (alpha > 0)
+		{
+			argb_t bg = *(argb_t*)dest;
+			*(argb_t*)dest = alphablend2a(bg, 255 - alpha, pixel, alpha);
+		}
+		source++;
+		dest += pitch;
+	} while (--count);
+}
+
+//
+// V_DrawARGBColumnS
+//
+// Scaled version of V_DrawARGBColumn.
+//
+static void V_DrawARGBColumnS(const argb_t* source, byte* dest, int count, int pitch, int yinc, int level)
+{
+	if (count <= 0)
+		return;
+
+	int c = 0;
+
+	do
+	{
+		const argb_t pixel = source[c >> FRACBITS];
+		const int alpha = (pixel.geta() * level) / 255;
+		if (alpha >= 255)
+		{
+			*(argb_t*)dest = pixel;
+		}
+		else if (alpha > 0)
+		{
+			argb_t bg = *(argb_t*)dest;
+			*(argb_t*)dest = alphablend2a(bg, 255 - alpha, pixel, alpha);
+		}
+		dest += pitch;
+		c += yinc;
+	} while (--count);
+}
+
+//
+// V_ARGBDrawLevel
+//
+// Determines whether the given texture should be drawn through its
+// native ARGB image plane on this surface with the given drawer, and at
+// what opacity level (0-255). Returns -1 when the native path does not
+// apply (palettized texture, 8bpp surface, or a translated/colored
+// drawer with no true-color equivalent) and 0 when the patch is fully
+// transparent and should not be drawn at all.
+//
+static int V_ARGBDrawLevel(const DCanvas::EWrapperCode drawer, const Texture* texture,
+                           const IWindowSurface* surface)
+{
+	if (!texture->mARGBData || surface->getBitsPerPixel() != 32)
+		return -1;
+
+	if (drawer == DCanvas::EWrapper_Normal)
+		return 255;
+
+	if (drawer == DCanvas::EWrapper_Lucent)
+		return clamp(static_cast<int>(hud_transparency * 255), 0, 255);
+
+	return -1;
+}
+
+
 /******************************/
-/*							  */
+/*                            */
 /* The patch drawing wrappers */
-/*							  */
+/*                            */
 /******************************/
 
 /**
@@ -664,15 +757,15 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, in
 
 	// [FG] automatically center wide patches without horizontal offset
 	// (taken from dsda but inverted since we center above this)
-	if (patch->width() > 320 && patch->leftoffset() != 0)
-		x += (patch->width() - 320) / 2;
+	if (texture->mWidth > 320 && texture->mOffsetX != 0)
+		x += (texture->mWidth - 320) / 2;
 
 #ifdef RANGECHECK
 	if (x < 0 ||x + texture->mWidth > surface_width || y < 0 || y + texture->mHeight > surface_height)
 	{
 	  // Printf (PRINT_HIGH, "Patch at %d,%d exceeds LFB\n", x,y );
 	  // No I_Error abort - what is up with TNT.WAD?
-	  DPrintf ("DCanvas::DrawWrapper: bad texture (ignored)\n");
+	  DPrintFmt("DCanvas::DrawWrapper: bad texture (ignored)\n");
 	  return;
 	}
 #endif
@@ -687,6 +780,21 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, in
 		V_MarkRect(x, y, texture->mWidth, texture->mHeight);
 
 	byte* desttop = mSurface->getBuffer() + y * surface_pitch + x * colstep;
+
+	// True-color (PNG) textures are drawn natively on 32bpp surfaces
+	// with per-pixel alpha blending, other drawers and 8bpp surfaces use
+	// the palettized approximation below.
+	const int argb_level = V_ARGBDrawLevel(drawer, texture, mSurface);
+	if (argb_level >= 0)
+	{
+		if (argb_level > 0)
+		{
+			for (int col = 0; col < texture->mWidth; col++, desttop += colstep)
+				V_DrawARGBColumn(texture->getARGBColumn(col), desttop,
+				                 texture->mHeight, surface_pitch, argb_level);
+		}
+		return;
+	}
 
 	for (int col = 0; col < texture->mWidth; x++, col++, desttop += colstep)
 	{
@@ -744,7 +852,7 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 #ifdef RANGECHECK
 	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
 	{
-		DPrintFmt("DCanvas::DrawSWrapper: bad patch dimensions ({} x {}) (ignored)\n", patch->width(), patch->height());
+		DPrintFmt("DCanvas::DrawSWrapper: bad patch dimensions ({} x {}) (ignored)\n", texture->mWidth, texture->mHeight);
 		return;
 	}
 #endif
@@ -760,6 +868,22 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 
 	byte* desttop = mSurface->getBuffer()+ (y0 * surface_pitch) + (x0 * colstep);
 	int w = MIN(destwidth * xinc, texture->mWidth << FRACBITS);
+
+	// True-color (PNG) textures are drawn natively on 32bpp surfaces
+	// with per-pixel alpha blending, other drawers and 8bpp surfaces use
+	// the palettized approximation below.
+	const int argb_level = V_ARGBDrawLevel(drawer, texture, mSurface);
+	if (argb_level >= 0)
+	{
+		if (argb_level > 0)
+		{
+			for (int col = 0; col < w; col += xinc, desttop += colstep)
+				V_DrawARGBColumnS(texture->getARGBColumn(col >> FRACBITS), desttop,
+				                  (texture->mHeight * ymul) >> FRACBITS, surface_pitch,
+				                  yinc, argb_level);
+		}
+		return;
+	}
 
 	for (int col = 0; col < w; col += xinc, desttop += colstep)
 	{
@@ -847,7 +971,7 @@ void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 	int ymul = (destheight << 16) / texture->mHeight;
 
 	y0 -= (texture->mOffsetY * ymul) >> 16;
-	// [EB] flipped drawing measures the x offset from the right-hand edge
+	// flipped drawing measures the x offset from the right-hand edge
 	x0 -= ((texture->mWidth - texture->mOffsetX) * xmul) >> 16;
 
 #ifdef RANGECHECK
@@ -868,6 +992,20 @@ void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 		V_MarkRect(x0, y0, destwidth, destheight);
 
 	byte* desttop = mSurface->getBuffer()+ y0 * surface_pitch + x0 * colstep;
+
+	// true-color (PNG) textures are drawn natively on 32bpp surfaces
+	// with per-pixel alpha blending, same as DrawWrapper/DrawSWrapper
+	const int argb_level = V_ARGBDrawLevel(EWrapper_Normal, texture, mSurface);
+	if (argb_level >= 0)
+	{
+		if (argb_level > 0)
+		{
+			for (int col = (destwidth - 1) * xinc; col >= 0 ; col -= xinc, desttop += colstep)
+				V_DrawARGBColumnS(texture->getARGBColumn(col >> FRACBITS), desttop,
+				                  (texture->mHeight * ymul) >> FRACBITS, surface_pitch, yinc, argb_level);
+		}
+		return;
+	}
 
 	for (int col = (destwidth - 1) * xinc; col >= 0 ; col -= xinc, desttop += colstep)
 	{

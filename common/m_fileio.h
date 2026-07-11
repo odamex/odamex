@@ -36,8 +36,8 @@ std::string M_FindUserFileName(const std::string& file, const char* ext);
 void M_FixPathSep(std::string& path);
 std::string M_GetCWD();
 
-SDWORD M_FileLength (FILE *f);
-SDWORD M_FileLength(const std::string& filename);
+int32_t M_FileLength (FILE *f);
+int32_t M_FileLength(const std::string& filename);
 template <typename ElementType>
 bool M_ReadLE(std::istream& io_stream, ElementType& o_data)
 {

@@ -78,6 +78,47 @@ bool OResFile::make(OResFile& out, const std::string& file)
 }
 
 /**
+ * @brief Populate an OResFile from a directory used as a resource container.
+ *
+ * @detail Directories cannot be hashed the way flat files can, so a
+ *         deterministic marker hash derived from the directory name is used.
+ *         Clients that want this resource will resolve a ZIP/PK3 archive
+ *         with the same base name instead.
+ *
+ * @param out OResFile to populate.
+ * @param dir Complete and working path to a directory.
+ * @return True if the OResFile was populated successfully.
+ */
+bool OResFile::makeDirectory(OResFile& out, const std::string& dir)
+{
+	if (!M_IsDirectory(dir))
+	{
+		return false;
+	}
+
+	std::string fullpath;
+	if (!M_GetAbsPath(dir, fullpath))
+	{
+		return false;
+	}
+
+	// Trim any trailing path separator so the basename resolves properly.
+	while (!fullpath.empty() && M_IsPathSep(fullpath.back()))
+		fullpath.pop_back();
+
+	std::string basename = M_ExtractFileName(fullpath);
+	if (basename.empty())
+	{
+		return false;
+	}
+
+	out.m_fullpath = fullpath;
+	out.m_md5 = M_DirectoryMarkerHash(basename);
+	out.m_basename = basename;
+	return true;
+}
+
+/**
  * @brief Populate an OResFile with an already calculated hash.
  *
  * @param out OResFile to populate.
@@ -265,8 +306,56 @@ std::vector<std::string> M_FileSearchDirs()
  * @param wanted Wanted file to resolve.
  * @return True if the file was resolved, otherwise false.
  */
+static bool IsArchiveExt(const std::string& ext)
+{
+	return iequals(ext, ".ZIP") || iequals(ext, ".PK3");
+}
+
+/**
+ * @brief Compute the deterministic marker hash used to identify a directory
+ *        resource of the given base name.
+ *
+ * @detail Directories cannot be content-hashed the way flat files can, so
+ *         they are identified by an MD5 of "DIR:" plus the uppercased
+ *         directory name. Both sides of a connection derive the same marker
+ *         for a directory of the same name.
+ */
+OMD5Hash M_DirectoryMarkerHash(const std::string& basename)
+{
+	const std::string marker = "DIR:" + StdStringToUpper(basename);
+	md5_state_t state;
+	md5_init(&state);
+	md5_append(&state, reinterpret_cast<const md5_byte_t*>(marker.data()), marker.size());
+	md5_byte_t digest[16];
+	md5_finish(&state, digest);
+
+	std::string hashStr;
+	for (int i = 0; i < 16; i++)
+		hashStr += fmt::sprintf("%02X", digest[i]);
+
+	OMD5Hash hash;
+	OMD5Hash::makeFromHexStr(hash, hashStr);
+	return hash;
+}
+
+/**
+ * @brief Check whether the given hash is the directory resource marker for
+ *        the given base name, meaning the want refers to a directory (or its
+ *        interchangeable archive form) rather than a concrete file.
+ */
+bool M_IsDirectoryMarkerHash(const OMD5Hash& hash, const std::string& basename)
+{
+	return !hash.empty() && hash == M_DirectoryMarkerHash(basename);
+}
+
 bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 {
+	// A directory can be loaded as a resource container directly.
+	if (M_IsDirectory(wanted.getWantedPath()))
+	{
+		return OResFile::makeDirectory(out, wanted.getWantedPath());
+	}
+
 	// If someone goes throught the effort of pointing directly to a file
 	// correctly, believe them.
 	if (M_FileExists(wanted.getWantedPath()))
@@ -294,14 +383,47 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	M_ExtractFileBase(path, basename);
 	if (M_ExtractFileExtension(path, strext))
 	{
-		exts.push_back(strext);
+		if (!strext.empty() && strext[0] != '.')
+			strext = "." + strext;
+		exts.push_back(StdStringToUpper(strext));
+
+		// Archive resources are interchangeable between the ZIP and
+		// PK3 extensions, so search for both spellings.
+		if (IsArchiveExt(strext))
+		{
+			exts.push_back(".ZIP");
+			exts.push_back(".PK3");
+		}
+	}
+	else if (M_IsDirectoryMarkerHash(wanted.getWantedMD5(), basename))
+	{
+		// The want refers to a directory resource on the server.
+		// Directories cannot be downloaded or hash-matched, so only look
+		// for the archive forms of the resource - never bare WAD files.
+		exts.push_back(".ZIP");
+		exts.push_back(".PK3");
 	}
 	else
 	{
 		const std::vector<std::string>& ftexts = M_FileTypeExts(wanted.getWantedType());
 		exts.insert(exts.end(), ftexts.begin(), ftexts.end());
+
+		// Extension-less WAD wants may also resolve to the archive
+		// forms of the resource.
+		if (wanted.getWantedType() == OFILE_WAD || wanted.getWantedType() == OFILE_UNKNOWN)
+		{
+			exts.push_back(".ZIP");
+			exts.push_back(".PK3");
+		}
 	}
 	exts.erase(std::unique(exts.begin(), exts.end()), exts.end());
+
+	// A want carrying the directory marker hash refers to a directory
+	// resource. No real file can match the marker, so archives are matched
+	// by name alone.
+	OMD5Hash search_md5 = wanted.getWantedMD5();
+	if (M_IsDirectoryMarkerHash(search_md5, basename))
+		search_md5 = OMD5Hash();
 
 	// And now...we resolve.
 	const std::vector<std::string> dirs = M_FileSearchDirs();
@@ -309,12 +431,26 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	{
 		const std::string searchpath = M_JoinPath(dir, subdir);
 		const std::string result =
-		    M_BaseFileSearchDir(searchpath, basename, exts, wanted.getWantedMD5());
+		    M_BaseFileSearchDir(searchpath, basename, exts, search_md5);
 		if (!result.empty())
 		{
 			// Found a file.
 			const std::string fullpath = M_JoinPath(searchpath, result);
 			return OResFile::make(out, fullpath);
+		}
+	}
+
+	// Last resort for extension-less wants: a directory with the
+	// wanted name inside one of the search directories.
+	if (strext.empty())
+	{
+		for (const auto& dir : dirs)
+		{
+			const std::string dirpath = M_JoinPath(M_JoinPath(dir, subdir), basename);
+			if (M_IsDirectory(dirpath))
+			{
+				return OResFile::makeDirectory(out, dirpath);
+			}
 		}
 	}
 
@@ -399,7 +535,7 @@ std::vector<scannedPWAD_t> M_ScanPWADs()
 			OWantFile file;
 			if (iequals(filename, "d.WAD"))
 			{
-				OMD5Hash hash = W_MD5(dir + PATHSEP + filename);
+				OMD5Hash hash = Res_MD5(dir + PATHSEP + filename);
 				OWantFile::makeWithHash(file, filename, OFILE_WAD, hash);
 			}
 			else

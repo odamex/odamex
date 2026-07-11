@@ -930,9 +930,9 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 
 	// Load the specified WAD and DEH files and change the level.
 	// if any WADs are missing, reconnect to begin downloading.
-	CL_LoadResourceFiles(resource_filenames, resource_filehashes);
+	G_LoadWad(newwadfiles, newpatchfiles);
 
-	if (!missing_resource_filename.empty())
+	if (!missingfiles.empty())
 	{
 		if (::missingCommercialIWAD)
 		{
@@ -1522,15 +1522,8 @@ static void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 	P_SetCeilingHeight(sector, ceilingheight);
 	P_SetFloorHeight(sector, floorheight);
 
-	if (floorpic >= ::numtextures)
-		floorpic = ::numtextures;
-
-	sector->floor_res_id = floorpic;
-
-	if (ceilingpic >= ::numtextures)
-		ceilingpic = ::numtextures;
-
-	sector->ceiling_res_id = ceilingpic;
+	sector->floor_res_id = ResourceId(floorpic);
+	sector->ceiling_res_id = ResourceId(ceilingpic);
 	sector->special = special;
 	sector->moveable = true;
 

@@ -178,6 +178,8 @@ void SpriteColumnBlaster()
 }
 
 EXTERN_CVAR(sv_showplayerpowerups)
+EXTERN_CVAR(sv_allowmovebob)
+EXTERN_CVAR(cl_movebob)
 
 //
 // R_DrawVisSprite
@@ -236,13 +238,13 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 
 	// Add powerup colormaps
 	// invis overrides all
-	if (vis.statusflags & SF_INVIS)
+	if (vis->statusflags & SF_INVIS)
 	{
 		vis->mobjflags |= MF_SHADOW;
 	}
 	else if (sv_showplayerpowerups > 0)
 	{
-		if (vis.statusflags & SF_INVULN)
+		if (vis->statusflags & SF_INVULN)
 		{
 			// draw invuln palette on vissprite only
 			// and don't include sector colored lighting because it creates strange
@@ -295,12 +297,14 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 
 	const Texture* texture = vis->texture;
 	dcol.textureheight = texture->mHeight << FRACBITS;
+	dcol.texturedata = texture->mData;
+	dcol.argbtexturedata = texture->mARGBData;
 
 	dcol.masked = true;
 	dcol.iscale = 0xffffffffu / (unsigned)vis->yscale;
 	dcol.texturemid = vis->texturemid;
 	spryscale = vis->yscale;
-	sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
+	sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
 
 	// [SL] set up the array that indicates which patch column to use for each screen column
 	fixed_t colfrac = vis->startfrac;
@@ -556,7 +560,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	{
 		const angle_t ang = R_PointToAngle(thingx, thingy);
 
-		// [EB] 16-angle sprite rotations
+		// 16-angle sprite rotations
 		if (sprframe->resource[0] == sprframe->resource[1])
 		{
 			rot = (ang - thing->angle + static_cast<angle_t>(ANG45 / 2) * 9) >> 28;
@@ -732,9 +736,8 @@ void R_DrawPSprite(const pspdef_t& psp, unsigned flags)
 	fixed_t width = texture->mWidth << FRACBITS;
 
 	// calculate the positional offset due to weapon bobbing
-	float bob_amount = ((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob : 1.0f;
-	fixed_t sx = P_CalculateWeaponBobX(&displayplayer(), bob_amount);
-	fixed_t sy = P_CalculateWeaponBobY(&displayplayer(), bob_amount);
+	fixed_t sx = ::bobx;
+	fixed_t sy = ::boby;
 
 	// calculate edges of the shape
 	fixed_t tx = sx - ((320 / 2) << FRACBITS) - sideoffs;
@@ -1160,11 +1163,11 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 
 	if (particle->sprite != NO_PARTICLE)
 	{
-		const Texture* patch = W_CachePatch(particle->sprite);
-		height = patch->height() << FRACBITS;
-		width = patch->width() << FRACBITS;
-		topoffs = patch->topoffset();
-		sideoffs = patch->leftoffset();
+		const Texture* tex = Res_CacheTexture(ResourceId(particle->sprite));
+		height = tex->mHeight << FRACBITS;
+		width = tex->mWidth << FRACBITS;
+		topoffs = tex->mOffsetY << FRACBITS;
+		sideoffs = tex->mOffsetX << FRACBITS;
 	}
 
 	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, height, width, topoffs, sideoffs, false);
@@ -1173,10 +1176,6 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		return;
 
 	vis->translation = translationref_t();
-	vis->startfrac = particle->color;
-	vis->res_id = NO_PARTICLE;
-	vis->mobjflags = particle->trans;
-	vis->translucency = 65535;
 	vis->statusflags = 0;
 	vis->mo = NULL;
 	vis->spectator = false;
@@ -1184,12 +1183,16 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	if (particle->sprite == NO_PARTICLE)
 	{
 		vis->startfrac = particle->color;
-		vis->patch = NO_PARTICLE;
+		vis->res_id = NO_PARTICLE;
+		vis->texture = NULL;
 		vis->mobjflags = particle->trans;
+		vis->translucency = 65535;
 	}
 	else
 	{
-		vis->patch = particle->sprite;
+		vis->res_id = ResourceId(particle->sprite);
+		vis->texture = Res_CacheTexture(vis->res_id);
+		vis->startfrac = 0;
 		vis->translucency = (particle->trans + 1) << 8;
 		vis->mobjflags = 0;
 	}

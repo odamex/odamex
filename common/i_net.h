@@ -25,7 +25,6 @@
 
 #include "doomtype.h"
 #include "resources/res_resourceid.h"
-#include "huffman.h"
 
 
 // Default buffer size for a UDP packet.

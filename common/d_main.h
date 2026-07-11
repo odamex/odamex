@@ -62,11 +62,14 @@ void D_DisplayTicker(void);
 extern const char *D_DrawIcon;
 
 void D_LoadResolvedPatches(bool reloadStrings = false);
+void D_AddWadCommandLineFiles(OWantFiles& out);
+void D_AddDehCommandLineFiles(OWantFiles& out);
 std::string D_CleanseFileName(const std::string &filename, const std::string &ext = "");
 
 extern OResFiles wadfiles;
 extern OResFiles patchfiles;
 extern OWantFiles missingfiles;
+extern bool missingCommercialIWAD;
 
 
 extern bool capfps;
@@ -76,5 +79,5 @@ void D_RunTics(void (*sim_func)(), void(*display_func)());
 
 std::string D_GetTitleString();
 
-void D_Init(const std::vector<std::string>& resource_file_names);
+void D_Init();
 void STACK_ARGS D_Shutdown();

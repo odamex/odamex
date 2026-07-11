@@ -57,6 +57,14 @@ static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
 
 void R_DrawSpanD_SSE2 (void)
 {
+	// Native ARGB sources are drawn by the C drawer, which handles
+	// per-texel alpha and true-color shading.
+	if (dspan.argbsource != NULL)
+	{
+		R_DrawSpanD_c();
+		return;
+	}
+
 #ifdef RANGECHECK
 	if (dspan.x2 < dspan.x1 || dspan.x1 < 0 || dspan.x2 >= viewwidth ||
 		dspan.y >= viewheight || dspan.y < 0)
@@ -168,6 +176,14 @@ void R_DrawSpanD_SSE2 (void)
 
 void R_DrawSlopeSpanD_SSE2 (void)
 {
+	// Native ARGB sources are drawn by the C drawer, which handles
+	// per-texel alpha and true-color shading.
+	if (dspan.argbsource != NULL)
+	{
+		R_DrawSlopeSpanD_c();
+		return;
+	}
+
 	int count = dspan.x2 - dspan.x1 + 1;
 	if (count <= 0)
 		return;
@@ -193,7 +209,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
 	
 	// texture data
-	byte *src = dspan.source;
+	const byte *src = dspan.source;
 
 	int ltindex = 0;		// index into the lighting table
 

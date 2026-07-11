@@ -120,41 +120,5 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 	return fhfngprnt;
 }
 
-// denis - Standard MD5SUM
-OMD5Hash W_MD5(const std::string& filename)
-{
-	OMD5Hash rvo;
-
-	const int file_chunk_size = 8192;
-	FILE* fp = fopen(filename.c_str(), "rb");
-
-	if (!fp)
-		return rvo;
-
-	md5_state_t state;
-	md5_init(&state);
-
-	unsigned n = 0;
-	unsigned char buf[file_chunk_size];
-
-	while ((n = fread(buf, 1, sizeof(buf), fp)))
-		md5_append(&state, (unsigned char*)buf, n);
-
-	md5_byte_t digest[16];
-	md5_finish(&state, digest);
-
-	fclose(fp);
-
-	std::stringstream hashStr;
-
-	for (int i = 0; i < 16; i++)
-		hashStr << std::setw(2) << std::setfill('0') << std::hex << std::uppercase
-		        << (short)digest[i];
-
-	OMD5Hash::makeFromHexStr(rvo, hashStr.str());
-	return rvo; // bubble up failure
-}
-
-
 
 VERSION_CONTROL (w_wad_cpp, "$Id$")

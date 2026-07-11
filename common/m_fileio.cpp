@@ -37,6 +37,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "i_system.h"
+#include "resources/res_filelib.h"
 
 // unfortunately, we still need you
 #include "cmdlib.h"
@@ -172,10 +173,21 @@ uintmax_t M_FileLength (std::istream& f)
 	return fileSize;
 }
 
-SDWORD M_FileLength(const std::string& filename)
+int32_t M_FileLength (FILE* f)
 {
-	FILE *f = fopen(filename.c_str(), "r");
-	SDWORD length = M_FileLength(f);
+	const long savedpos = ftell(f);
+	fseek(f, 0, SEEK_END);
+	const long filelen = ftell(f);
+	fseek(f, savedpos, SEEK_SET);
+	return static_cast<int32_t>(filelen);
+}
+
+int32_t M_FileLength(const std::string& filename)
+{
+	FILE *f = fopen(filename.c_str(), "rb");
+	if (f == NULL)
+		return -1;
+	int32_t length = M_FileLength(f);
 	fclose(f);
 	return length;
 }
@@ -580,7 +592,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
 			if (this_it < found_it)
 			{
 				const std::string local_file = (path / filename).string();
-				const OMD5Hash local_hash = W_MD5(local_file);
+				const OMD5Hash local_hash = Res_MD5(local_file);
 
 				if (hash.empty() || hash == local_hash)
 				{

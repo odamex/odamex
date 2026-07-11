@@ -25,7 +25,7 @@
 
 #include "am_map.h"
 
-#include "w_wad.h"
+#include "resources/res_main.h"
 #include "oscanner.h"
 
 //
@@ -58,19 +58,19 @@ static bool ScanAndSetRealNum(OScanner& os, fixed64_t& num)
 // Scans through and interprets a file of lines
 nonstd::expected<std::vector<mline_t>, am_lump_parse_error_t> AM_ParseVectorLump(const OLumpName& name)
 {
-	const int lump = W_CheckNumForName(name);
-	if (lump == -1)
+	const ResourceId res_id = Res_GetResourceId(OStringToUpper(name.c_str(), 8), NS_GLOBAL);
+	if (!Res_CheckResource(res_id))
 		return nonstd::make_unexpected(am_lump_parse_error_t::LUMP_NOT_FOUND);
 
 
-	const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
+	const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
 
 	const OScannerConfig config = {
 	    name,  // lumpName
 	    false, // semiComments
 	    true,  // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
 
 	std::vector<mline_t> lines;
 

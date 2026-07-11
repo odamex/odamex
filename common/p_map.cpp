@@ -46,12 +46,10 @@
 #include "p_mapformat.h"
 // State.
 #include "r_state.h"
-#include "r_sky.h"
 
 #include "z_zone.h"
 #include "p_unlag.h"
 #include "m_vectors.h"
-#include "p_mapformat.h"
 #include <math.h>
 #include <set>
 

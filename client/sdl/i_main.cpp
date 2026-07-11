@@ -208,8 +208,8 @@ int main(int argc, char *argv[])
 		atterm (DObject::StaticShutdown);
 
 		// Figure out what directory the program resides in.
-		progdir = I_GetBinaryDir();
-		startdir = I_GetCWD();
+		progdir = M_GetBinaryDir();
+		startdir = M_GetCWD();
 
 		D_DoomMain(); // Usually does not return
 

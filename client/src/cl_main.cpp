@@ -1574,13 +1574,13 @@ void CL_RequestConnectInfo(void)
  *
  * @param missing_file Missing file to attempt to download.
  */
-void CL_QuitAndTryDownload(const std::string& missing_file)
+void CL_QuitAndTryDownload(const OWantFile& missing_file)
 {
 	// Need to set this here, otherwise we render a frame of wild pointers
 	// filled with garbage data.
 	gamestate = GS_FULLCONSOLE;
 
-	if (missing_file.empty())
+	if (missing_file.getBasename().empty())
 	{
 		PrintFmt(PRINT_WARNING,
 		         "Tried to download an empty file.  This is probably a bug "
@@ -1639,79 +1639,11 @@ void CL_QuitAndTryDownload(const std::string& missing_file)
 	         missing_file.getBasename());
 	CL_QuitNetGame(NQ_SILENT);
 
-	// Attach the website to the file and download it.
-	OWantFile file;
-	OWantFile::make(file, missing_file, OFILE_UNKNOWN);
-
 	// Start the download.
-	CL_StartDownload(downloadsites, file, DL_RECONNECT);
+	CL_StartDownload(downloadsites, missing_file, DL_RECONNECT);
 }
 
 // Globals to store the filename and hash to download
-std::string missing_resource_filename, missing_resource_filehash;
-
-//
-// CL_LoadResourceFiles
-//
-// Checks for the existence of each file in a list of resource file names.
-// The globals missing_resource_filename and missing_resource_filehash
-// are set to the file name and MD5SUM of the missing file.
-//
-// Returns false if any of the required resource files are missing.
-//
-
-bool CL_LoadResourceFiles(
-			const std::vector<std::string>& resource_filenames,
-			const std::vector<std::string>& resource_filehashes)
-{
-	missing_resource_filename.clear();
-	missing_resource_filehash.clear();
-
-	std::vector<std::string> new_resource_filenames(resource_filenames);
-	std::vector<std::string> missing_resource_filenames, missing_resource_filehashes;
-	Res_ValidateResourceFiles(new_resource_filenames, resource_filehashes,
-								missing_resource_filenames, missing_resource_filehashes);
-
-	// not really missing a file but force the client to download anyways
-	if (developer && cl_forcedownload && missing_resource_filenames.empty())
-	{
-		missing_resource_filenames.push_back(resource_filenames.back());
-		missing_resource_filehashes.push_back(resource_filehashes.back());
-	}
-
-	// Are all of the resource files present?
-	if (missing_resource_filenames.empty())
-	{
-		D_ReloadResourceFiles(resource_filenames);
-		return true;
-	}
-	else
-	{
-		missing_resource_filename = missing_resource_filenames[0];
-		missing_resource_filehash = missing_resource_filehashes[0];
-		if (netdemo.isPlaying())
-		{
-			// Playing a netdemo and unable to download from the server
-			Printf(PRINT_HIGH, "Unable to find resource file \"%s\".  Cannot download while playing a netdemo.\n",
-								missing_resource_filename.c_str());
-			CL_QuitNetGame(NQ_ABORT);
-		}
-		else if (!cl_serverdownload)
-		{
-			// Playing a netdemo and unable to download from the server
-			Printf(PRINT_HIGH, "Unable to find \"%s\". Downloading is disabled on your client.  Go to Options > Network Options to enable downloading.\n",
-								missing_resource_filename.c_str());
-			CL_QuitNetGame(NQ_ABORT);
-		}
-		else
-		{
-			Printf(PRINT_HIGH, "Will download resource file \"%s\" from server\n",
-								missing_resource_filename.c_str());
-		}
-
-		return false;
-	}
-}
 
 
 //
@@ -1734,15 +1666,16 @@ bool CL_PrepareConnect()
 	MSG_ReadByte(); // max_players
 
 	std::string server_map = MSG_ReadString();
+	byte server_wads = MSG_ReadByte();
 
 	PrintFmt("Found server at {}.\n\n", NET_AdrToString(::serveraddr));
 	PrintFmt("> Hostname: {}\n", server_host);
 
-	// store the resource file name list
-	std::vector<std::string> resource_filenames;
-	for (size_t i = 0; i < resource_file_count; i++)
+	std::vector<std::string> newwadnames;
+	newwadnames.reserve(server_wads);
+	for (byte i = 0; i < server_wads; i++)
 	{
-		resource_filenames.push_back(MSG_ReadString());
+		newwadnames.push_back(MSG_ReadString());
 	}
 
 	MSG_ReadBool();							// deathmatch
@@ -1758,9 +1691,9 @@ bool CL_PrepareConnect()
 		MSG_ReadByte();
 	}
 
-	// store the MD5SUMS for the resource file name list
-	std::vector<std::string> resource_filehashes;
-	for (size_t i = 0; i < resource_file_count; i++)
+	OWantFiles newwadfiles;
+	newwadfiles.resize(server_wads);
+	for (byte i = 0; i < server_wads; i++)
 	{
 		OWantFile& file = newwadfiles.at(i);
 		const std::string hashStr = MSG_ReadString();
@@ -1787,9 +1720,11 @@ bool CL_PrepareConnect()
 	{
 		MSG_ReadLong();
 
-		for (size_t i = 0; i < NUMTEAMS; i++)
+		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
-			if (MSG_ReadBool() == true)
+			bool enabled = MSG_ReadBool();
+
+			if (enabled)
 				MSG_ReadLong();
 		}
 	}
@@ -1805,13 +1740,14 @@ bool CL_PrepareConnect()
 	/* GhostlyDeath -- Need the actual version info */
 	if (version == 65)
 	{
+		size_t l;
 		MSG_ReadString();
 
-		for (size_t i = 0; i < 3; i++)
+		for (l = 0; l < 3; l++)
 			MSG_ReadShort();
-		for (size_t i = 0; i < 14; i++)
+		for (l = 0; l < 14; l++)
 			MSG_ReadBool();
-		for (size_t i = 0; i < playercount; i++)
+		for (l = 0; l < playercount; l++)
 		{
 			MSG_ReadShort();
 			MSG_ReadShort();
@@ -1821,7 +1757,7 @@ bool CL_PrepareConnect()
 		MSG_ReadLong();
 		MSG_ReadShort();
 
-		for (size_t i = 0; i < playercount; i++)
+		for (l = 0; l < playercount; l++)
 			MSG_ReadBool();
 
 		MSG_ReadLong();

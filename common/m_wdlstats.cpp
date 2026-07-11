@@ -446,7 +446,7 @@ void M_StartWDLLog(bool newmap)
 	if (sv_gametype != 3)
 	{
 	    ::wdlstate.recording = false;
-	    Printf(
+	    PrintFmt(
 	        PRINT_HIGH,
 	        "wdlstats: Not logging, incorrect gametype.\n"
 	    );

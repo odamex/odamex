@@ -739,14 +739,14 @@ void AM_loadPics()
 {
 	for (int i = 0; i < 10; i++)
 	{
-		marknums[i] = W_CachePatchHandle(fmt::format("AMMNUM{}", i), PU_STATIC);
+		marknums[i] = W_CachePatch(fmt::format("AMMNUM{}", i).c_str(), PU_STATIC);
 	}
 }
 
 void AM_unloadPics()
 {
 	for (auto& marknum : marknums)
-		marknum.clear();
+		marknum = NULL;
 }
 
 void AM_clearMarks()

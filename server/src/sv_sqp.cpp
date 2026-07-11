@@ -219,9 +219,14 @@ next:
 	//MSG_WriteShort(&ml_message, TEAMpoints[i]);
 	//}
 
-	// [SL] DEH/BEX patch file names used to be sent separately.
-	// Just write 0 now.
-	MSG_WriteByte(&ml_message, 0);
+	// Patch files
+	MSG_WriteByte(&ml_message, ::patchfiles.size());
+
+	for (size_t i = 0; i < ::patchfiles.size(); ++i)
+	{
+		MSG_WriteString(&ml_message,
+		                D_CleanseFileName(::patchfiles[i].getBasename()).c_str());
+	}
 
 	// resource files
 	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();

@@ -25,23 +25,24 @@
 #include "g_level.h"
 #include "g_musinfo.h"
 #include "oscanner.h"
-#include "w_wad.h"
+#include "resources/res_main.h"
 #include "s_sound.h"
 
 void G_ParseMusInfo()
 {
-	int lump = -1;
-	while ((lump = W_FindLump("MUSINFO", lump)) != -1)
+	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/MUSINFO"));
+	for (size_t res_index = 0; res_index < res_ids.size(); res_index++)
 	{
+		const ResourceId res_id = res_ids[res_index];
 		LevelInfos& levels = getLevelInfos();
-		const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
+		const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
 
 		const OScannerConfig config = {
 		    "MUSINFO", // lumpName
 		    false,     // semiComments
 		    false,     // cComments
 		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
 
 		while (os.scan())
 		{

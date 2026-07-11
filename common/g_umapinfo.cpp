@@ -28,6 +28,7 @@
 #include "infomap.h"
 #include "g_mapinfo.h" // G_MapNameToLevelNum
 #include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL)
 {
@@ -575,7 +576,9 @@ void ParseUMapInfoLump(const ResourceId res_id, const OLumpName& lumpname)
 	}
 	// if an episode title patch is missing or invalid, fall back on text name
 	for (auto& episode : EpisodeInfos) {
-		episode.fulltext = episode.pic_name.empty() || W_CheckNumForName(episode.pic_name) == -1;
+		episode.fulltext = episode.pic_name.empty() ||
+		    !Res_CheckResource(Res_GetTextureResourceId(
+		        OStringToUpper(episode.pic_name.c_str()), GRAPHICS, false));
 	}
 }
 

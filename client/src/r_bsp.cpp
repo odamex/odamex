@@ -491,7 +491,7 @@ void R_AddLine (const seg_t *line)
 	static sector_t tempsec;
 	backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
 
-	R_PrepWall(w1.x, w1.y, w2.x, w2.y, t1.y, t2.y, x1, x2);
+	R_PrepWall(w1.x, w1.y, w2.x, w2.y, t1.x, t1.y, t2.x, t2.y, x1, x2);
 
 	// [SL] Check for single-sided line, closed doors or other scenarios that
 	// would make this line seg solid.
@@ -508,10 +508,10 @@ void R_AddLine (const seg_t *line)
 
 		// preserve a kind of transparent door/lift special effect:
 		((rw_backcz1 >= rw_frontcz1 && rw_backcz2 >= rw_frontcz2) ||
-		 line->sidedef->toptexture) &&
+		 !line->sidedef->toptexture.empty()) &&
 
 		((rw_backfz1 <= rw_frontfz1 && rw_backfz2 <= rw_frontfz2) ||
-		 line->sidedef->bottomtexture) &&
+		 !line->sidedef->bottomtexture.empty()) &&
 
 		// properly render skies (consider door "open" if both ceilings are sky):
 		(!R_ResourceIdIsSkyFlat(backsector->ceiling_res_id) || 
@@ -530,7 +530,7 @@ void R_AddLine (const seg_t *line)
 		&& backsector->lightlevel == frontsector->lightlevel
 		&& backsector->floor_res_id == frontsector->floor_res_id
 		&& backsector->ceiling_res_id == frontsector->ceiling_res_id
-		&& curline->sidedef->midtexture == 0
+		&& curline->sidedef->midtexture.empty()
 
 		// killough 3/7/98: Take flats offsets into account:
 		&& backsector->floor_xoffs == frontsector->floor_xoffs

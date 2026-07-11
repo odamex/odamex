@@ -70,7 +70,6 @@ bool W_IsIWAD(const std::string& filename);
 bool W_IsIWADDeprecated(const std::string& filename);
 bool W_IsIWADShareware(const std::string& filename);
 
-void W_SetupFileIdentifiers();
 const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32);
 const FileIdentifier* W_GameInfo(const OMD5Hash& md5);
 bool W_IsKnownIWAD(const OWantFile& file);

@@ -527,7 +527,7 @@ void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OLumpName s = GStrings(OStringToUpper(os.getToken().c_str() + 1));
+		const std::string s = GStrings(OStringToUpper(os.getToken().c_str() + 1));
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -552,7 +552,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OLumpName s = GStrings(OStringToUpper(musicname.c_str() + 1));
+		const std::string s = GStrings(OStringToUpper(musicname.c_str() + 1));
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -709,7 +709,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			}
 
 			os.mustScan();
-			const OLumpName s = GStrings(OStringToUpper(os.getToken()));
+			const std::string s = GStrings(OStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -744,7 +744,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		if (os.compareTokenNoCase("lookup"))
 		{
 			os.mustScan();
-			const OLumpName s = GStrings(OStringToUpper(os.getToken()));
+			const std::string s = GStrings(OStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -1039,7 +1039,8 @@ bool ScanAndCompareString(OScanner& os, std::string cmp)
 }
 
 //
-bool ScanAndSetRealNum(OScanner& os, fixed_t& num)
+template <typename FixedType>
+bool ScanAndSetRealNum(OScanner& os, FixedType& num)
 {
 	os.scan();
 	if (!IsRealNum(os.getToken().c_str()))
@@ -1812,12 +1813,15 @@ void ParseMapInfoLump(const ResourceId res_id, const OLumpName& lumpname)
 			if (os.compareTokenNoCase("lookup"))
 			{
 				os.mustScan();
-				const OLumpName s = GStrings(OStringToUpper(os.getToken()));
+				const std::string s = GStrings(OStringToUpper(os.getToken()));
 				if (s.empty())
 				{
 					info.level_name = os.getToken();
 				}
-				info.level_name = s;
+				else
+				{
+					info.level_name = s;
+				}
 			}
 			else
 			{
@@ -1923,7 +1927,9 @@ void ParseMapInfoLump(const ResourceId res_id, const OLumpName& lumpname)
 	}
 }
 
- 
+} // namespace
+
+
 void ParseMapInfoLump(const std::string& lumpname)
 {
 	ResourceId res_id = Res_GetResourceId(lumpname, NS_GLOBAL);

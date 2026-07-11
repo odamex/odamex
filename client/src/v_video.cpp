@@ -65,7 +65,7 @@ DCanvas *screen;
 static DBoundingBox dirtybox;
 
 static bool V_DoSetResolution();
-static void BuildTransTable(const argb_t* palette_colors);
+static void BuildTransTable(const palette_t* pal);
 
 // flag to indicate that V_AdjustVideoMode should try to change the video mode
 static bool setmodeneeded = false;
@@ -536,7 +536,7 @@ void V_Init()
 	// notify the console of changes in the screen resolution
 	C_NewModeAdjust();
 
-	BuildTransTable(V_GetDefaultPalette()->basecolors);
+	BuildTransTable(V_GetDefaultPalette());
 
 	vid_pillarbox_old = vid_pillarbox;
 	vid_widescreen_old = vid_widescreen.asInt();
@@ -894,7 +894,7 @@ void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int
 	// [SL] Now that flats are stored column major instead of row-major,
 	// transpose the texture so that we can use row-major blitting (faster)
 	palindex_t source[256 * 256];
-	V_TransposeTextureData(source, texture->mData, tex_width, tex_height, texture->mWidth);
+	V_TransposeTextureData(source, texture->mData, tex_width, tex_height, texture->mHeight);
 
 	int surface_advance = mSurface->getPitchInPixels() - right + left;
 
@@ -904,10 +904,10 @@ void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int
 
 		for (int y = top; y < bottom; y++)
 		{
-			for (int x = left; x < right; x++)
+			for (int x = left; x < right; )
 			{
 				int amount = std::min(tex_width - (x & tex_width_mask), right - x);
-				memcpy(dest, source + ((y & tex_height_mask) << tex_height_bits) + (x & tex_width_mask), amount);
+				memcpy(dest, source + ((y & tex_height_mask) << tex_width_bits) + (x & tex_width_mask), amount);
 				dest += amount;
 				x += amount;
 			}
@@ -921,7 +921,7 @@ void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int
 
 		for (int y = top; y < bottom; y++)
 		{
-			const palindex_t* src_line = source + ((y & tex_height_mask) << tex_height_bits);
+			const palindex_t* src_line = source + ((y & tex_height_mask) << tex_width_bits);
 			for (int x = left; x < right; x++)
 				*dest++ = V_Palette.shade(src_line[x & tex_width_mask]);
 
@@ -1098,7 +1098,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		const argb_t *bg2rgb = Col2RGB8[64-amount];
 
 		const argb_t color = V_GetColorFromString(color_str);
-		const unsigned int fg = fg2rgb[V_BestColor(V_GetDefaultPalette()->basecolors, color)];
+		const unsigned int fg = fg2rgb[V_BestOpaqueColor(V_GetDefaultPalette()->basecolors, color)];
 
 		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + y1 * surface_pitch_pixels + x1;
 		const int advance = surface_pitch_pixels - w;
@@ -1159,19 +1159,30 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 }
 
 // Build the tables necessary for translucency
-static void BuildTransTable(const argb_t* palette_colors)
+static void BuildTransTable(const palette_t* pal)
 {
+	const argb_t* palette_colors = pal->basecolors;
+
 	// create the small RGB table
 	for (int r = 0; r < 32; r++)
 		for (int g = 0; g < 32; g++)
 			for (int b = 0; b < 32; b++)
-				RGB32k[r][g][b] = V_BestColor(palette_colors, (r<<3)|(r>>2), (g<<3)|(g>>2), (b<<3)|(b>>2));
+				RGB32k[r][g][b] = V_BestOpaqueColor(palette_colors,
+					argb_t((r<<3)|(r>>2), (g<<3)|(g>>2), (b<<3)|(b>>2)));
 
 	for (int x = 0; x < 65; x++)
+	{
 		for (int y = 0; y < 256; y++)
-			Col2RGB8[x][y] = (((palette_colors[y].getr() * x) >> 4) << 20)  |
-							  ((palette_colors[y].getg() * x )>> 4) |
-							 (((palette_colors[y].getb() * x) >> 4) << 10);
+		{
+			const argb_t color = (y == pal->mask_color)
+				? palette_colors[pal->mask_translation[y]]
+				: palette_colors[y];
+
+			Col2RGB8[x][y] = (((color.getr() * x) >> 4) << 20)  |
+							  ((color.getg() * x )>> 4) |
+							 (((color.getb() * x) >> 4) << 10);
+		}
+	}
 }
 
 

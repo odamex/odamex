@@ -31,6 +31,7 @@
 #include "v_video.h"
 #include "m_alloc.h"
 #include "r_main.h"		// For lighting constants
+#include "r_draw.h"		// For R_UpdateARGBShadeLUT
 #include "resources/res_main.h"
 #include "z_zone.h"
 #include "i_video.h"
@@ -403,9 +404,12 @@ void V_RestoreScreenPalette()
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 {
 	int bestdistortion = limits::MAXINT;
-	int bestcolor = 0;		/// let any color go to 0 as a last resort
+	int bestcolor = 1;
 
-	for (int i = 0; i < 256; i++)
+	// Index 0 (mask_color) is reserved to represent transparency, so
+	// it is never a valid result: the drawers would treat the pixel as
+	// transparent and the display palette shows the raw lump color there.
+	for (int i = 1; i < 256; i++)
 	{
 		argb_t color(palette_colors[i]);
 
@@ -429,6 +433,18 @@ palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 palindex_t V_BestColor(const argb_t* palette_colors, argb_t color)
 {
 	return V_BestColor(palette_colors, color.getr(), color.getg(), color.getb());
+}
+
+
+//
+// V_BestOpaqueColor
+//
+// Alias for V_BestColor, which never returns the transparency mask slot
+// (index 0).
+//
+palindex_t V_BestOpaqueColor(const argb_t* palette_colors, argb_t color)
+{
+	return V_BestColor(palette_colors, color);
 }
 
 
@@ -481,9 +497,6 @@ static std::string V_GetColorStringByName(const std::string& name)
 	 * with a NULL byte. This is so that COM_Parse is able to
 	 * detect the end of the lump.
 	 */
-	char *data, descr[5*3];
-	int c[3], step;
-
 	const ResourceId res_id = Res_GetResourceId("X11R6RGB", NS_GLOBAL);
 	char* rgbNames = (char*)Res_LoadResource(res_id, PU_CACHE);
 
@@ -493,14 +506,14 @@ static std::string V_GetColorStringByName(const std::string& name)
 		return "";
 	}
 
-	const char* buffer = W_CacheLumpName<char>("X11R6RGB", PU_CACHE);
+	const char* buffer = rgbNames;
 
 	OScannerConfig config = {
 		"X11R6RGB", // lumpName
 		false,      // semiComments
 		false,      // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lumpnum));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
 
 
 	while (os.scan() && !os.crossed());
@@ -621,41 +634,29 @@ void V_InitPalette(const char* lumpname)
 	for (int i = 0; i < 256; i++, data += 3)
 		default_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
 
-	// Examine all of the colors of the palette and determines the two closest colors.
-	// One of those two colors are selected to be used to represent transparency.
-	//
-	// Builds a color translation table that attempts to reduce the palette to 255 colors
-	// by locating the two most similar colors and mapping those to a single color. The free color
-	// will be used to indicate transparency.
-	//
-	// Then swap the unused color in the palette with mask_color (always 0).
 
-	palindex_t color1, color2;
-	V_ClosestColors(default_palette.basecolors, color1, color2);
-
-	// move the color that was in "mask_color" position to "color1" position
-	// and make "mask_color" cyan
-	default_palette.basecolors[color1] = default_palette.basecolors[default_palette.mask_color];
+	const argb_t original_mask_rgb = default_palette.basecolors[default_palette.mask_color];
 	default_palette.basecolors[default_palette.mask_color] = argb_t(255, 0, 255, 255);
 
-	// Generate the translation table that's used when loading textures
-	// to ensure textures don't accidentally use the mask color unintentionally.
 	for (int i = 0; i < 256; i++)
 		default_palette.mask_translation[i] = i;
 
-	default_palette.mask_translation[default_palette.mask_color] = color1;
-	default_palette.mask_translation[color1] = color2;
+	default_palette.mask_translation[default_palette.mask_color] =
+	    V_BestOpaqueColor(default_palette.basecolors, original_mask_rgb);
 
 	V_GammaAdjustPalette(&default_palette);
 	V_ForceBlend(argb_t(0, 255, 255, 255));
 	V_RefreshColormaps();
-	V_ResetPalette();
 
 	assert(default_palette.maps.colormap != NULL);
 	assert(default_palette.maps.shademap != NULL);
 	V_Palette = shaderef_t(&default_palette.maps, 0);
 
+	// game_palette inherits the tables from default_palette, but
+	// V_ResetPalette replaces its colors with the raw (unmasked) palette
+	// lump colors for display.
 	game_palette = default_palette;
+	V_ResetPalette();
 }
 
 
@@ -735,15 +736,17 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 	{
 		for (int c = 0; c < 256; c++)
 		{
-			unsigned int r = (palette[c].getr() * (NUMCOLORMAPS - i) + fadecolor.getr() * i
+			const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
+
+			unsigned int r = (base.getr() * (NUMCOLORMAPS - i) + fadecolor.getr() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int g = (palette[c].getg() * (NUMCOLORMAPS - i) + fadecolor.getg() * i
+			unsigned int g = (base.getg() * (NUMCOLORMAPS - i) + fadecolor.getg() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int b = (palette[c].getb() * (NUMCOLORMAPS - i) + fadecolor.getb() * i
+			unsigned int b = (base.getb() * (NUMCOLORMAPS - i) + fadecolor.getb() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
 			argb_t color(255, r, g, b);
-			colormap[c] = V_BestColor(palette, color);
+			colormap[c] = V_BestOpaqueColor(palette, color);
 			shademap[c] = V_GammaCorrect(color);
 		}
 	}
@@ -751,13 +754,15 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
+		const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
+
 		int grayint = static_cast<int>(255.0f * clamp(1.0f -
-						(palette[c].getr() * 0.00116796875f +
-						 palette[c].getg() * 0.00229296875f +
-			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
+						(base.getr() * 0.00116796875f +
+						 base.getg() * 0.00229296875f +
+			 			 base.getb() * 0.0005625f), 0.0f, 1.0f));
 
 		argb_t color(255, grayint, grayint, grayint);
-		colormap[c] = V_BestColor(palette, color);
+		colormap[c] = V_BestOpaqueColor(palette, color);
 		shademap[c] = V_GammaCorrect(color);
 	}
 }
@@ -778,11 +783,13 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 	{
 		for (int c = 0; c < 256; c++)
 		{
-			unsigned int r = (palette[c].getr() * (NUMCOLORMAPS - i) + fadecolor.getr() * i
+			const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
+
+			unsigned int r = (base.getr() * (NUMCOLORMAPS - i) + fadecolor.getr() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int g = (palette[c].getg() * (NUMCOLORMAPS - i) + fadecolor.getg() * i
+			unsigned int g = (base.getg() * (NUMCOLORMAPS - i) + fadecolor.getg() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int b = (palette[c].getb() * (NUMCOLORMAPS - i) + fadecolor.getb() * i
+			unsigned int b = (base.getb() * (NUMCOLORMAPS - i) + fadecolor.getb() * i
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
 			argb_t color(255, r, g, b);
@@ -793,10 +800,12 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
+		const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
+
 		int grayint = static_cast<int>(255.0f * clamp(1.0f -
-						(palette[c].getr() * 0.00116796875f +
-						 palette[c].getg() * 0.00229296875f +
-			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
+						(base.getr() * 0.00116796875f +
+						 base.getg() * 0.00229296875f +
+			 			 base.getb() * 0.0005625f), 0.0f, 1.0f));
 
 		argb_t color(255, grayint, grayint, grayint);
 		shademap[c] = V_GammaCorrect(color);
@@ -820,6 +829,10 @@ void V_RefreshColormaps()
 	V_RefreshSpecialLights();
 
 	R_ReinitColormap();
+
+	// The native ARGB shade tables derive from the same fade color and gamma
+	// table as the palette colormaps, so rebuild them here too.
+	R_UpdateARGBShadeLUT();
 }
 
 
@@ -1266,7 +1279,18 @@ void V_ResetPalette()
 {
 	if (I_VideoInitialized())
 	{
-		game_palette = default_palette;
+		current_palette_num = -1;
+
+		if (Res_CheckResource(palette_res_id))
+		{
+			const byte* data = (byte*)Res_LoadResource(palette_res_id, PU_CACHE);
+			for (int i = 0; i < 256; i++, data += 3)
+			{
+				game_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
+				game_palette.colors[i] = V_GammaCorrect(game_palette.basecolors[i]);
+			}
+		}
+
 		I_SetPalette(game_palette.colors);
 		const fargb_t blend(0.0f, 0.0f, 0.0f, 0.0f);
 		V_SetBlend(blend);

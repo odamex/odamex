@@ -59,7 +59,7 @@ shademap_t realcolormaps;
 
 void R_ForceDefaultColormap(const char* name)
 {
-	const byte* data = (byte*)Res_LoadResource(name, PU_CACHE);
+	const byte* data = (byte*)Res_LoadResource(OStringToUpper(name, 8), PU_CACHE);
 	memcpy(realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
 
 #if 0
@@ -251,7 +251,7 @@ void R_InitData()
 
 void R_PrecacheLevel()
 {
-	DPrintf("Level Pre-Cache start\n");
+	DPrintFmt("Level Pre-Cache start\n");
 
 	// Cache floor & ceiling textures
 	for (int i = numsectors - 1; i >= 0; i--)
@@ -283,7 +283,7 @@ void R_PrecacheLevel()
 			R_CacheSprite(&it->second);
 	}
 
-	DPrintf("Level Pre-Cache end\n");
+	DPrintFmt("Level Pre-Cache end\n");
 }
 
 

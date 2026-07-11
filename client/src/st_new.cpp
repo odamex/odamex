@@ -158,41 +158,41 @@ void ST_initNew()
 	}
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::medipatches); i++)
-		::medi[i] = (Texture*)Res_CacheTexture(medipatches[i], SPRITE, PU_STATIC);
+		::medi[i] = W_CachePatchHandle(medipatches[i], PU_STATIC, SPRITE);
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::armorpatches); i++)
-		::armors[i] = (Texture*)Res_CacheTexture(armorpatches[i], SPRITE, PU_STATIC);
+		::armors[i] = W_CachePatchHandle(armorpatches[i], PU_STATIC, SPRITE);
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::ammopatches); i++)
 	{
-		::ammos[i] = (Texture*)Res_CacheTexture(ammopatches[i], SPRITE, PU_STATIC);
-		::bigammos[i] = (Texture*)Res_CacheTexture(bigammopatches[i], SPRITE, PU_STATIC);
+		::ammos[i] = W_CachePatchHandle(ammopatches[i], PU_STATIC, SPRITE);
+		::bigammos[i] = W_CachePatchHandle(bigammopatches[i], PU_STATIC, SPRITE);
 	}
 
 	for (size_t i = 0; i < NUMTEAMS; i++)
 	{
-		::FlagIconHome[i] = (Texture*)Res_CacheTexture(::flaghomepatches[i], GRAPHICS, PU_STATIC);
-		::FlagIconTaken[i] = (Texture*)Res_CacheTexture(::flagtakenpatches[i], GRAPHICS, PU_STATIC);
-		::FlagIconReturn[i] = (Texture*)Res_CacheTexture(::flagreturnpatches[i], GRAPHICS, PU_STATIC);
-		::FlagIconDropped[i] = (Texture*)Res_CacheTexture(::flagdroppatches[i], GRAPHICS, PU_STATIC);
-		::LivesIcon[i] = (Texture*)Res_CacheTexture(::livespatches[i], GRAPHICS, PU_STATIC);
+		::FlagIconHome[i] = W_CachePatchHandle(::flaghomepatches[i], PU_STATIC, GRAPHICS);
+		::FlagIconTaken[i] = W_CachePatchHandle(::flagtakenpatches[i], PU_STATIC, GRAPHICS);
+		::FlagIconReturn[i] = W_CachePatchHandle(::flagreturnpatches[i], PU_STATIC, GRAPHICS);
+		::FlagIconDropped[i] = W_CachePatchHandle(::flagdroppatches[i], PU_STATIC, GRAPHICS);
+		::LivesIcon[i] = W_CachePatchHandle(::livespatches[i], PU_STATIC, GRAPHICS);
 	}
 
 	::widest_num = widest;
-	::num_height = ::tallnum[0]->mHeight;
+	::num_height = W_ResolvePatchHandle(::tallnum[0])->mHeight;
 
 	::flagiconteam = W_CachePatchHandle("FLAGIT", PU_STATIC);
 	::flagiconteamoffense = W_CachePatchHandle("FLAGITO", PU_STATIC);
 	::flagiconteamdefense = W_CachePatchHandle("FLAGITD", PU_STATIC);
 
-	::line_leftempty = (Texture*)Res_CacheTexture("ODABARLE", GRAPHICS, PU_STATIC);
-	::line_leftfull = (Texture*)Res_CacheTexture("ODABARLF", GRAPHICS, PU_STATIC);
-	::line_centerempty = (Texture*)Res_CacheTexture("ODABARCE", GRAPHICS, PU_STATIC);
-	::line_centerleft = (Texture*)Res_CacheTexture("ODABARCL", GRAPHICS, PU_STATIC);
-	::line_centerright = (Texture*)Res_CacheTexture("ODABARCR", GRAPHICS, PU_STATIC);
-	::line_centerfull = (Texture*)Res_CacheTexture("ODABARCF", GRAPHICS, PU_STATIC);
-	::line_rightempty = (Texture*)Res_CacheTexture("ODABARRE", GRAPHICS, PU_STATIC);
-	::line_rightfull = (Texture*)Res_CacheTexture("ODABARRF", GRAPHICS, PU_STATIC);
+	::line_leftempty = W_CachePatchHandle("ODABARLE", PU_STATIC, GRAPHICS);
+	::line_leftfull = W_CachePatchHandle("ODABARLF", PU_STATIC, GRAPHICS);
+	::line_centerempty = W_CachePatchHandle("ODABARCE", PU_STATIC, GRAPHICS);
+	::line_centerleft = W_CachePatchHandle("ODABARCL", PU_STATIC, GRAPHICS);
+	::line_centerright = W_CachePatchHandle("ODABARCR", PU_STATIC, GRAPHICS);
+	::line_centerfull = W_CachePatchHandle("ODABARCF", PU_STATIC, GRAPHICS);
+	::line_rightempty = W_CachePatchHandle("ODABARRE", PU_STATIC, GRAPHICS);
+	::line_rightfull = W_CachePatchHandle("ODABARRF", PU_STATIC, GRAPHICS);
 
 	for (size_t i = 0; i < NUMMODS; i++)
 	{
@@ -215,13 +215,13 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	{
 		if (hud_scale)
 		{
-			scrn->DrawLucentTextureCleanNoMove(negminus, x, y);
-			x += CleanXfac * negminus->mWidth;
+			scrn->DrawLucentTextureCleanNoMove(W_ResolvePatchHandle(negminus), x, y);
+			x += CleanXfac * W_ResolvePatchHandle(negminus)->mWidth;
 		}
 		else
 		{
-			scrn->DrawLucentTexture(negminus, x, y);
-			x += negminus->mWidth;
+			scrn->DrawLucentTexture(W_ResolvePatchHandle(negminus), x, y);
+			x += W_ResolvePatchHandle(negminus)->mWidth;
 		}
 		num = -num;
 	}
@@ -236,13 +236,13 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 			const Texture* numpatch = W_ResolvePatchHandle(tallnum[*d - '0']);
 			if (hud_scale)
 			{
-				scrn->DrawLucentTextureCleanNoMove(tallnum[*d - '0'], x, y);
-				x += CleanXfac * tallnum[*d - '0']->mWidth;
+				scrn->DrawLucentTextureCleanNoMove(W_ResolvePatchHandle(tallnum[*d - '0']), x, y);
+				x += CleanXfac * W_ResolvePatchHandle(tallnum[*d - '0'])->mWidth;
 			}
 			else
 			{
-				scrn->DrawLucentTexture(tallnum[*d - '0'], x, y);
-				x += tallnum[*d - '0']->mWidth;
+				scrn->DrawLucentTexture(W_ResolvePatchHandle(tallnum[*d - '0']), x, y);
+				x += W_ResolvePatchHandle(tallnum[*d - '0'])->mWidth;
 			}
 		}
 		d++;
@@ -255,11 +255,11 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 	const int xscale = hud_scale ? CleanXfac : 1;
 
 	do {
-		x -= tallnum[d%10]->mWidth * xscale;
+		x -= W_ResolvePatchHandle(tallnum[d%10])->mWidth * xscale;
 	} while (d /= 10);
 
 	if (num < 0)
-		x -= negminus->mWidth * xscale;
+		x -= W_ResolvePatchHandle(negminus)->mWidth * xscale;
 
 	ST_DrawNum (x, y, scrn, num);
 }
@@ -317,45 +317,45 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 		if (!reverse) {
 			if (i == 0 && !cutleft) {
 				if (bar_filled == 0) {
-					texture = line_leftempty;
+					texture = W_ResolvePatchHandle(line_leftempty);
 				} else {
-					texture = line_leftfull;
+					texture = W_ResolvePatchHandle(line_leftfull);
 				}
 			} else if (i == bar_width - 1 && !cutright) {
 				if (bar_filled == bar_width) {
-					texture = line_rightfull;
+					texture = W_ResolvePatchHandle(line_rightfull);
 				} else {
-					texture = line_rightempty;
+					texture = W_ResolvePatchHandle(line_rightempty);
 				}
 			} else {
 				if (i == bar_filled - 1) {
-					texture = line_centerleft;
+					texture = W_ResolvePatchHandle(line_centerleft);
 				} else if (i < bar_filled) {
-					texture = line_centerfull;
+					texture = W_ResolvePatchHandle(line_centerfull);
 				} else {
-					texture = line_centerempty;
+					texture = W_ResolvePatchHandle(line_centerempty);
 				}
 			}
 		} else {
 			if (i == 0 && !cutleft) {
 				if (bar_filled == bar_width) {
-					texture = line_leftfull;
+					texture = W_ResolvePatchHandle(line_leftfull);
 				} else {
-					texture = line_leftempty;
+					texture = W_ResolvePatchHandle(line_leftempty);
 				}
 			} else if (i == bar_width - 1 && !cutright) {
 				if (bar_filled == 0) {
-					texture = line_rightempty;
+					texture = W_ResolvePatchHandle(line_rightempty);
 				} else {
-					texture = line_rightfull;
+					texture = W_ResolvePatchHandle(line_rightfull);
 				}
 			} else {
 				if (i == (bar_width - bar_filled)) {
-					texture = line_centerright;
+					texture = W_ResolvePatchHandle(line_centerright);
 				} else if (i >= (bar_width - bar_filled)) {
-					texture = line_centerfull;
+					texture = W_ResolvePatchHandle(line_centerfull);
 				} else {
-					texture = line_centerempty;
+					texture = W_ResolvePatchHandle(line_centerempty);
 				}
 			}
 		}
@@ -557,23 +557,23 @@ static void drawTeamGametype()
 		{
 			patchPosY -= FLAG_ICON_HEIGHT;
 
-			const Texture* drawPatch = ::FlagIconTaken[i];
+			const Texture* drawPatch = W_ResolvePatchHandle(::FlagIconTaken[i]);
 
 			if (sv_gametype == GM_CTF && G_IsDefendingTeam(teamInfo->Team))
 			{
 				switch (teamInfo->FlagData.state)
 				{
 				case flag_home:
-					drawPatch = ::FlagIconHome[i];
+					drawPatch = W_ResolvePatchHandle(::FlagIconHome[i]);
 					break;
 				case flag_carried:
 					if (idplayer(teamInfo->FlagData.flagger).userinfo.team == i)
-						drawPatch = ::FlagIconReturn[i];
+						drawPatch = W_ResolvePatchHandle(::FlagIconReturn[i]);
 					else
-						drawPatch = ::FlagIconTaken[i];
+						drawPatch = W_ResolvePatchHandle(::FlagIconTaken[i]);
 					break;
 				case flag_dropped:
-					drawPatch = ::FlagIconDropped[i];
+					drawPatch = W_ResolvePatchHandle(::FlagIconDropped[i]);
 					break;
 				default:
 					break;
@@ -588,14 +588,14 @@ static void drawTeamGametype()
 
 			if (plyr->userinfo.team == i)
 			{
-				const Texture* itpatch = ::flagiconteam;
+				const Texture* itpatch = W_ResolvePatchHandle(::flagiconteam);
 				if (G_IsSidesGame())
 				{
 					// Sides games show offense/defense.
 					if (G_IsDefendingTeam(consoleplayer().userinfo.team))
-						itpatch = ::flagiconteamdefense;
+						itpatch = W_ResolvePatchHandle(::flagiconteamdefense);
 					else
-						itpatch = ::flagiconteamoffense;
+						itpatch = W_ResolvePatchHandle(::flagiconteamoffense);
 				}
 				hud::DrawTexture(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
 				                 hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, itpatch);
@@ -620,7 +620,7 @@ static void drawTeamGametype()
 			patchPosY -= LIVES_HEIGHT;
 			hud::DrawTexture(SCREEN_BORDER, patchPosY, hud_scale, hud::X_RIGHT,
 			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM,
-			               ::LivesIcon[i]);
+			               W_ResolvePatchHandle(::LivesIcon[i]));
 
 			std::string buffer = fmt::sprintf("%d", teamInfo->LivesPool());
 			const int color = (i % 2) ? CR_GOLD : CR_GREY;
@@ -976,9 +976,9 @@ void OdamexHUD() {
 
 	// Draw Armor if the player has any
 	if (plyr->armortype && plyr->armorpoints) {
-		const Texture* current_armor = armors[1];
+		const Texture* current_armor = W_ResolvePatchHandle(armors[1]);
 		if (plyr->armortype == 1) {
-			current_armor = armors[0];
+			current_armor = W_ResolvePatchHandle(armors[0]);
 		}
 
 		if (current_armor) {
@@ -1017,9 +1017,9 @@ void OdamexHUD() {
 		const Texture* ammopatch;
 		// Use big ammo if the player has a backpack.
 		if (plyr->backpack) {
-			ammopatch = bigammos[ammotype];
+			ammopatch = W_ResolvePatchHandle(bigammos[ammotype]);
 		} else {
-			ammopatch = ammos[ammotype];
+			ammopatch = W_ResolvePatchHandle(ammos[ammotype]);
 		}
 
 		// Draw ammo.  We have a 16x16 box to the right of the ammo where the
@@ -1197,12 +1197,12 @@ void DrawToasts()
 		// Icon
 		const Texture* icon = W_ResolvePatchHandle(toast.icon);
 		const double yoff =
-		    (static_cast<double>(TOAST_HEIGHT) - static_cast<double>(it->icon->mHeight)) /
+		    (static_cast<double>(TOAST_HEIGHT) - static_cast<double>(icon->mHeight)) /
 		    2.0;
 
 		hud::DrawTexture(x, y + ceil(yoff), hud_scale, hud::X_RIGHT, hud::Y_TOP,
-		               hud::X_RIGHT, hud::Y_TOP, it->icon, false, true);
-		x += it->icon->mWidth + 1;
+		               hud::X_RIGHT, hud::Y_TOP, icon, false, true);
+		x += icon->mWidth + 1;
 
 			// Draw spree point badge if any
 		if (toast.active_spree && cl_showsprees && ((network_game && sv_showsprees) || (!network_game && cl_showofflinesprees)))
@@ -1948,7 +1948,7 @@ void SpectatorHUD()
 {
 	int iy = 4;
 
-	const Texture* curr_powerup = medi[0];
+	const Texture* curr_powerup = W_ResolvePatchHandle(medi[0]);
 	int xPos = 20;
 	int yPos = 2;
 

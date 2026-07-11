@@ -705,7 +705,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
   	// check for bogus sound lump
 	if (!Res_CheckResource(sfxinfo->res_id))
 	{
-		DPrintf("Bad sfx lump #: %d\n", (uint32_t)sfxinfo->res_id);
+		DPrintFmt("Bad sfx lump #: {}\n", (uint32_t)sfxinfo->res_id);
 		return;
 	}
 
@@ -1235,8 +1235,7 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 		const ResourceId res_id = Res_GetResourceId(musicname, NS_MUSIC);
 		if (!Res_CheckResource(res_id))
 		{
-			PrintFmt(PRINT_HIGH, "Music lump \"{}\" not found
-", musicname);
+			PrintFmt(PRINT_HIGH, "Music lump \"{}\" not found\n", musicname);
 			return;
 		}
 
@@ -1375,15 +1374,15 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 BEGIN_COMMAND (snd_soundlist)
 {
 	for (unsigned i = 0; i < S_sfx.size(); i++)
+	{
 		if (Res_CheckResource(S_sfx[i].res_id))
 		{
 			const OString lump_name(Res_GetResourcePath(S_sfx[i].res_id).last());
-			PrintFmt(PRINT_HIGH, "{:>3d}. {} ({})
-", i+1, S_sfx[i].name, lump_name);
+			PrintFmt(PRINT_HIGH, "{:>3d}. {} ({})\n", i+1, S_sfx[i].name, lump_name);
 		}
 		// todo: check if sounds are multiple lumps rather than just one (i.e. random sounds)
 		else
-			Printf (PRINT_HIGH, "%3d. %s **not present**\n", i+1, S_sfx[i].name);
+			PrintFmt(PRINT_HIGH, "{:>3}. {} **not present**\n", i+1, S_sfx[i].name);
 	}
 }
 END_COMMAND (snd_soundlist)

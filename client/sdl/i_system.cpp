@@ -246,12 +246,8 @@ void I_Endoom()
 	if (!r_showendoom || Args.CheckParm ("-novideo"))
 		return;
 
-	int lump = -1;
-	int count = 0;
-	while (count < 2 && (lump = W_FindLump("ENDOOM", lump)) != -1)
-	{
-		count++;
-	}
+	const size_t count =
+	    Res_GetAllResourceIds(ResourcePath("/GLOBAL/ENDOOM")).size();
 
 	if (r_showendoom == 2 && count <= 1)
 		return;

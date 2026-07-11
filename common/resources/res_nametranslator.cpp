@@ -54,7 +54,7 @@ ResourceNameTranslator::ResourceNameTranslator() :
 //
 const ResourceId ResourceNameTranslator::translate(const ResourcePath& path) const
 {
-	ResourceIdByPathLookupTable::const_iterator it = mResourceIdByPathLookup.find(path);
+	auto it = mResourceIdByPathLookup.find(path);
 	if (it != mResourceIdByPathLookup.end())
 	{
 		const ResourceIdList& res_id_list = it->second;
@@ -79,7 +79,7 @@ const ResourceId ResourceNameTranslator::translate(const OString& resource_name,
 {
 	// Check for an exact match for the resource name and namespace
 	const NamespacedResourceName namespaced_resource_name = {resource_name, ns};
-	NamespacedResourceIdLookupTable::const_iterator it_ns = mNamespacedResourceIdLookup.find(namespaced_resource_name);
+	auto it_ns = mNamespacedResourceIdLookup.find(namespaced_resource_name);
 	if (it_ns != mNamespacedResourceIdLookup.end())
 	{
 		const ResourceId res_id = it_ns->second;
@@ -90,7 +90,7 @@ const ResourceId ResourceNameTranslator::translate(const OString& resource_name,
 	if (!exact_ns_match)
 	{
 		// Fallback to the most recently added match for the resource name
-		ResourceIdLookupTable::const_iterator it = mResourceIdLookup.find(resource_name);
+		auto it = mResourceIdLookup.find(resource_name);
 		if (it != mResourceIdLookup.end())
 		{
 			const ResourceId res_id = it->second;
@@ -111,7 +111,7 @@ const ResourceId ResourceNameTranslator::translate(const OString& resource_name,
 //
 const ResourceIdList ResourceNameTranslator::getAllTranslations(const ResourcePath& path) const
 {
-	ResourceIdByPathLookupTable::const_iterator it = mResourceIdByPathLookup.find(path);
+	auto it = mResourceIdByPathLookup.find(path);
 	if (it != mResourceIdByPathLookup.end())
 	{
 		const ResourceIdList& res_id_list = it->second;
@@ -143,7 +143,7 @@ bool ResourceNameTranslator::checkNameVisibility(const ResourcePath& path, const
 //
 void ResourceNameTranslator::addTranslation(const ResourcePath& path, const ResourceId res_id)
 {
-	ResourceIdByPathLookupTable::iterator it = mResourceIdByPathLookup.find(path);
+	auto it = mResourceIdByPathLookup.find(path);
 	if (it == mResourceIdByPathLookup.end())
 	{
 		// No other resources with the same path exist yet. Create a new list

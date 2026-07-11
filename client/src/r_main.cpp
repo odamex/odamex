@@ -28,6 +28,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <numbers>
 #include "m_random.h"
 #include "p_local.h"
 #include "gi.h"
@@ -275,10 +276,30 @@ fixed_t R_PointToDist2(fixed_t dx, fixed_t dy)
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 {
-	int index = ang >> ANGLETOFINESHIFT;
+	// Exact rotation with double precision.
+	// Because finesine/finecosine are only 16-bit and
+	// caused tons of jittering textures and linedefs,
+	// especially with mouselook on in high-resolution modes.
 
-	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
-	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
+	// This will be the same all frame, so cache the sucker.
+	static angle_t cached_ang;
+	static double cached_sin, cached_cos = 1.0;
+
+	if (ang != cached_ang)
+	{
+		cached_ang = ang;
+		// Angle-to-rad calculation.
+		const double rad = ang * ANGLE_TO_RAD;
+		cached_sin = sin(rad);
+		cached_cos = cos(rad);
+	}
+
+	const double xd = FIXED2DOUBLE(x);
+	const double yd = FIXED2DOUBLE(y);
+
+
+	tx = static_cast<fixed_t>(static_cast<int64_t>((xd * cached_cos - yd * cached_sin) * double(FRACUNIT)));
+	ty = static_cast<fixed_t>(static_cast<int64_t>((xd * cached_sin + yd * cached_cos) * double(FRACUNIT)));
 }
 
 //
@@ -660,7 +681,14 @@ void R_SetViewAngle(angle_t ang)
 //
 static void R_ViewShear(angle_t pitch)
 {
-	fixed_t dy = FixedMul(FocalLengthY, finetangent[(ANG90 - pitch) >> ANGLETOFINESHIFT]);
+	// Same thing here with finesine/finecosine,
+	// we need to use double precision (32-bit)
+	// to avoid jittering in viewshear.
+	//
+	// tan(pitch-to-rad)
+	const double tanpitch =
+	    tan(static_cast<int32_t>(pitch) * ANGLE_TO_RAD);
+	const fixed_t dy = DOUBLE2FIXED(-FIXED2DOUBLE(FocalLengthY) * tanpitch);
 
 	centeryfrac = (viewheight << (FRACBITS - 1)) + dy;
 	centery = centeryfrac >> FRACBITS;

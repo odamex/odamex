@@ -71,6 +71,7 @@ class OResFile
 	const std::string& getBasename() const { return m_basename; }
 
 	static bool make(OResFile& out, const std::string& file);
+	static bool makeDirectory(OResFile& out, const std::string& dir);
 	static bool makeWithHash(OResFile& out, const std::string& file,
 	                         const OMD5Hash& hash);
 };
@@ -141,3 +142,5 @@ std::vector<std::string> M_FileSearchDirs();
 bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted);
 std::vector<scannedIWAD_t> M_ScanIWADs();
 std::vector<scannedPWAD_t> M_ScanPWADs();
+OMD5Hash M_DirectoryMarkerHash(const std::string& basename);
+bool M_IsDirectoryMarkerHash(const OMD5Hash& hash, const std::string& basename);

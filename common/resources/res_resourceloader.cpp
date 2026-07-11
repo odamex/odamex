@@ -349,10 +349,6 @@ void CompositeTextureLoader::load(void* data) const
 	Texture* texture = createTexture(data, mTexDef.mWidth, mTexDef.mHeight);
 
 	// Handle ZDoom scaling extensions
-	// [RH] Special for beta 29: Values of 0 will use the tx/ty cvars
-	// to determine scaling instead of defaulting to 8. I will likely
-	// remove this once I finish the betas, because by then, users
-	// should be able to actually create scaled textures.
 	if (mTexDef.mScaleX > 0)
 		texture->mScaleX = mTexDef.mScaleX << (FRACBITS - 3);
 	if (mTexDef.mScaleY > 0)
@@ -398,7 +394,7 @@ void InMemoryTextureLoader::load(void* data) const
 {
 	Texture* texture = createTexture(data, mWidth, mHeight);
 	#if CLIENT_APP
-	memcpy(texture->mData, mSourceData, mWidth * mHeight * sizeof(palindex_t));
+	memcpy(texture->mData, mSourceData.get(), mWidth * mHeight * sizeof(palindex_t));
 	#endif
 }
 
@@ -451,6 +447,41 @@ static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lum
 
 
 //
+// Res_ReadPNGGrabChunk
+//
+// Scans the raw PNG data for a "grAb" chunk (the ZDoom extension storing a
+// graphic's patch offsets) and writes the offsets when found. The chunk is
+// required to appear before the image data.
+//
+#if defined(USE_PNG) && defined(CLIENT_APP)
+static bool Res_ReadPNGGrabChunk(const uint8_t* data, uint32_t size, int16_t& xoffs, int16_t& yoffs)
+{
+	// walk the chunk list: 8-byte signature, then chunks laid out as
+	// [4-byte length][4-byte type][data][4-byte CRC]
+	uint32_t pos = 8;
+	while (pos + 8 <= size)
+	{
+		const uint32_t length = BELONG(*(const uint32_t*)(data + pos));
+		const uint8_t* chunk_type = data + pos + 4;
+
+		if (memcmp(chunk_type, "IDAT", 4) == 0 || memcmp(chunk_type, "IEND", 4) == 0)
+			break;
+
+		if (memcmp(chunk_type, "grAb", 4) == 0 && length == 8 && pos + 16 <= size)
+		{
+			xoffs = (int16_t)(int32_t)BELONG(*(const uint32_t*)(data + pos + 8));
+			yoffs = (int16_t)(int32_t)BELONG(*(const uint32_t*)(data + pos + 12));
+			return true;
+		}
+
+		pos += 12 + length;
+	}
+	return false;
+}
+#endif	// USE_PNG && CLIENT_APP
+
+
+//
 // PngTextureLoader::readHeader
 //
 // Loads the PNG header to read the width, height, and color type.
@@ -458,13 +489,17 @@ static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lum
 void PngTextureLoader::readHeader()
 {
 	#ifdef USE_PNG
-	const uint32_t data_size = 24;
+	// 8-byte signature + IHDR chunk header (8) + width (4) + height (4)
+	// + bit depth (1) + color type (1)
+	const uint32_t data_size = 26;
 	if (mRawResourceAccessor->getResourceSize(mResId) >= data_size)
 	{
 		uint8_t data[data_size];
 		mRawResourceAccessor->loadResource(mResId, data, data_size);
 		mWidth = BELONG(*(uint32_t*)(data + 16));
 		mHeight = BELONG(*(uint32_t*)(data + 20));
+		mBitDepth = data[24];
+		mColorType = data[25];
 	}
 	#endif	// USE_PNG
 }
@@ -475,15 +510,51 @@ void PngTextureLoader::readHeader()
 //
 uint32_t PngTextureLoader::size() const
 {
-	return calculateTextureSize(mWidth, mHeight);
+	uint32_t total = calculateTextureSize(mWidth, mHeight);
+
+	#if defined(USE_PNG) && defined(CLIENT_APP)
+	// Every PNG carries its image natively in an additional ARGB plane
+	// (aligned to the pixel size) for the 32bpp renderer, the palettized
+	// plane holds the 8bpp renderer's down-converted approximation.
+	total += (sizeof(argb_t) - 1) + sizeof(argb_t) * mWidth * mHeight;
+	#endif
+
+	return total;
+}
+
+
+//
+// Res_DitherAlphaThreshold
+//
+// The 8bpp renderer cannot blend, so a texel's partial alpha is
+// knocked down to either opaque ortransparent with no in between.
+// A flat threshold makes subtle translucency (alpha below the cutoff)
+// vanish entirely, so instead the cutoff is a 4x4 Bayer dithering
+// matrix over the texel position -- partial alpha get a screen door look,
+// with the fraction of opaque texels tracking the alpha value.
+//
+static forceinline int Res_DitherAlphaThreshold(int x, int y)
+{
+	static const uint8_t bayer4x4[4][4] = {
+		{  0,  8,  2, 10 },
+		{ 12,  4, 14,  6 },
+		{  3, 11,  1,  9 },
+		{ 15,  7, 13,  5 }
+	};
+
+	// spread the 16 dither levels across 8..248 so alpha 0 is always
+	// transparent and alpha 255 is always opaque
+	return bayer4x4[y & 3][x & 3] * 16 + 8;
 }
 
 
 //
 // PngTextureLoader::load
 //
-// Convert the given graphic lump in PNG format to a Texture instance,
-// converting from 32bpp to 8bpp using the default game palette.
+// Converts the given graphic lump in PNG format to a Texture instance.
+// The image is decoded natively into the texture's ARGB plane for the
+// 32bpp renderer, alongside an 8bpp approximation (converted using the
+// default game palette) for the 8bpp renderer.
 //
 void PngTextureLoader::load(void* data) const
 {
@@ -503,15 +574,23 @@ void PngTextureLoader::load(void* data) const
 
 	if (png_sig_cmp(raw_data, 0, 8) != 0)
 	{
-		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", resource_name);
+		PrintFmt(PRINT_HIGH, "Bad PNG header in {}.\n", resource_name);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 		return;
+	}
+
+	// Doom engines store patch offsets for PNG graphics in a grAb chunk.
+	int16_t grab_xoffs, grab_yoffs;
+	if (Res_ReadPNGGrabChunk(raw_data, raw_size, grab_xoffs, grab_yoffs))
+	{
+		texture->mOffsetX = grab_xoffs;
+		texture->mOffsetY = grab_yoffs;
 	}
 
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (!png_ptr)
 	{
-		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", resource_name);
+		PrintFmt(PRINT_HIGH, "PNG out of memory reading {}.\n", resource_name);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 		return;
 	}
@@ -519,7 +598,7 @@ void PngTextureLoader::load(void* data) const
 	info_ptr = png_create_info_struct(png_ptr);
 	if (!info_ptr)
 	{
-		Printf(PRINT_HIGH, "PNG out of memory reading %s.\n", resource_name);
+		PrintFmt(PRINT_HIGH, "PNG out of memory reading {}.\n", resource_name);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 		return;
 	}
@@ -537,37 +616,48 @@ void PngTextureLoader::load(void* data) const
 
 	if (ret != 1)
 	{
-		Printf(PRINT_HIGH, "Bad PNG header in %s.\n", resource_name);
+		PrintFmt(PRINT_HIGH, "Bad PNG header in {}.\n", resource_name);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 		return;
 	}
+
+	const bool palettized = (colortype == PNG_COLOR_TYPE_PALETTE);
 
 	// handle 16 bpp images
 	if (bitsperpixel == 16)
 		png_set_strip_16(png_ptr);
 
-	// convert transparency to full alpha
-	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
-		png_set_tRNS_to_alpha(png_ptr);
+	if (palettized)
+	{
+		// unpack 1/2/4-bit palette indices to one index per byte,
+		// but keep the image palettized.
+		if (bitsperpixel < 8)
+			png_set_packing(png_ptr);
+	}
+	else
+	{
+		// convert transparency to full alpha
+		if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+			png_set_tRNS_to_alpha(png_ptr);
 
-	// convert grayscale, if needed.
-	if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
-		png_set_expand_gray_1_2_4_to_8(png_ptr);
+		// convert grayscale, if needed.
+		if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
+			png_set_expand_gray_1_2_4_to_8(png_ptr);
+		if (colortype == PNG_COLOR_TYPE_GRAY || colortype == PNG_COLOR_TYPE_GRAY_ALPHA)
+			png_set_gray_to_rgb(png_ptr);
 
-	// convert paletted images to RGB
-	if (colortype == PNG_COLOR_TYPE_PALETTE)
-		png_set_palette_to_rgb(png_ptr);
-
-	// convert from RGB to ARGB
-	if (colortype == PNG_COLOR_TYPE_PALETTE || colortype == PNG_COLOR_TYPE_RGB || colortype == PNG_COLOR_TYPE_GRAY)
-	   png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
+		// convert from RGB to ARGB
+		if (colortype == PNG_COLOR_TYPE_RGB || colortype == PNG_COLOR_TYPE_GRAY)
+			png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
+	}
 
 	// process the above transformations
 	png_read_update_info(png_ptr, info_ptr);
 
-	if (png_get_color_type(png_ptr, info_ptr) != PNG_COLOR_TYPE_RGBA)
+	const png_byte final_colortype = png_get_color_type(png_ptr, info_ptr);
+	if (final_colortype != PNG_COLOR_TYPE_RGBA && final_colortype != PNG_COLOR_TYPE_PALETTE)
 	{
-		Printf(PRINT_HIGH, "Invalid PNG color type in %s.\n", resource_name);
+		PrintFmt(PRINT_HIGH, "Invalid PNG color type in {}.\n", resource_name);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
 		return;
 	}
@@ -579,22 +669,87 @@ void PngTextureLoader::load(void* data) const
 
 	png_read_image(png_ptr, row_pointers);
 
-	// write the image in the Texture, converting to column-major form
-	// and converting pixels to 8bpp palettized using nearest-color matching.
-	for (uint16_t y = 0; y < mHeight; y++)
-	{
-		const png_byte* row = row_pointers[y];
-		uint8_t* dest = texture->mData + y;
+	// The native ARGB plane follows the palettized image plane
+	// inside this texture's allocation, aligned to the pixel size.
+	uintptr_t plane_addr = reinterpret_cast<uintptr_t>(
+	    texture->mData + sizeof(palindex_t) * mWidth * mHeight);
+	plane_addr = (plane_addr + sizeof(argb_t) - 1) & ~uintptr_t(sizeof(argb_t) - 1);
+	argb_t* argb_plane = reinterpret_cast<argb_t*>(plane_addr);
+	texture->mARGBData = argb_plane;
 
-		for (int x = 0; x < mWidth; x++)
+	if (palettized)
+	{
+		// Build lookup tables translating the PNG's palette entries to
+		// their native color and to game palette indices. Entries with
+		// partial tRNS alpha are dithered between their matched color and
+		// the mask color in the 8bpp plane, while the ARGB plane keeps their
+		// true alpha.
+		png_color* png_palette = NULL;
+		int num_palette = 0;
+		png_get_PLTE(png_ptr, info_ptr, &png_palette, &num_palette);
+
+		png_byte* trans_alpha = NULL;
+		int num_trans = 0;
+		png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &num_trans, NULL);
+
+		palindex_t lut[256];
+		argb_t argb_lut[256];
+		for (int i = 0; i < 256; i++)
 		{
-			const png_byte* ptr = &(row[x << 2]);
-			argb_t color(ptr[3], ptr[0], ptr[1], ptr[2]);
-			if (color.geta() < 255)
-				*dest = palette->mask_color;
+			const int alpha = (i < num_trans && trans_alpha) ? trans_alpha[i] : 255;
+
+			if (i < num_palette)
+			{
+				argb_lut[i] = argb_t(alpha, png_palette[i].red, png_palette[i].green,
+				                     png_palette[i].blue);
+				lut[i] = V_BestColor(palette->basecolors, argb_lut[i]);
+			}
 			else
-				*dest = V_BestColor(palette->basecolors, color);
-			dest += mHeight;
+			{
+				argb_lut[i] = argb_t(0, 0, 0, 0);
+				lut[i] = palette->mask_color;
+			}
+		}
+
+		// write the image into the Texture in column-major form
+		for (uint16_t y = 0; y < mHeight; y++)
+		{
+			const png_byte* row = row_pointers[y];
+			uint8_t* dest = texture->mData + y;
+
+			for (int x = 0; x < mWidth; x++)
+			{
+				const argb_t color = argb_lut[row[x]];
+				if (color.geta() < Res_DitherAlphaThreshold(x, y))
+					*dest = palette->mask_color;
+				else
+					*dest = lut[row[x]];
+				dest += mHeight;
+				argb_plane[mHeight * x + y] = color;
+			}
+		}
+	}
+	else
+	{
+		// write the image in the Texture, converting to column-major form
+		// and converting pixels to 8bpp palettized using nearest-color matching.
+		for (uint16_t y = 0; y < mHeight; y++)
+		{
+			const png_byte* row = row_pointers[y];
+			uint8_t* dest = texture->mData + y;
+
+			for (int x = 0; x < mWidth; x++)
+			{
+				const png_byte* ptr = &(row[x << 2]);
+				argb_t color(ptr[3], ptr[0], ptr[1], ptr[2]);
+				if (color.geta() < Res_DitherAlphaThreshold(x, y))
+					*dest = palette->mask_color;
+				else
+					*dest = V_BestColor(palette->basecolors, color);
+				dest += mHeight;
+
+				argb_plane[mHeight * x + y] = color;
+			}
 		}
 	}
 

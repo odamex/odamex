@@ -379,6 +379,7 @@ private:
 	}
 
 	bool isEmbeddedWadFile(const FileSystemDirectoryEntry& entry) const;
+	bool isEmbeddedSingleMapWadFile(const FileSystemDirectoryEntry& entry) const;
 };
 
 

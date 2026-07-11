@@ -24,28 +24,14 @@
 #pragma once
 
 #include <string>
+#include <vector>
+
+#include "ohash.h"
 
 void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs);
 OMD5Hash Res_MD5(const std::string& filename);
 OCRC32Sum Res_CRC32(const std::string& filename);
 
 std::string Res_CleanseFilename(const std::string& filename);
-
-std::string Res_FindResourceFile(const std::string& filename, const std::string& hash = "");
-
-std::string Res_FindResourceFile(
-		const std::string& filename,
-		const char* const extlist[],
-		const std::string& hash = "");
-
-std::vector<std::string> Res_GatherResourceFilesFromArgs();
-std::vector<std::string> Res_GatherResourceFilesFromString(const std::string& str);
-
-void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
-								const std::vector<std::string>& resource_filehashes,
-								std::vector<std::string>& missing_resource_filenames,
-								std::vector<std::string>& missing_resource_filehashes);
-void Res_ValidateResourceFiles(std::vector<std::string>& resource_filenames,
-								std::vector<std::string>& missing_resource_filenames);
 
 void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir, const char separator);

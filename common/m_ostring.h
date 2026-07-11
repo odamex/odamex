@@ -27,6 +27,7 @@
 #pragma once
 
 #include <iostream>
+#include <cstring>
 #include <memory>
 #include <cassert>
 
@@ -656,6 +657,13 @@ template <> struct hashfunc<OString>
 
 OString OStringToUpper(std::string_view s);
 OString OStringToUpper(const OString& str);
+
+// Length-bounded conversion for possibly non-NUL-terminated fixed-width
+// names (e.g. 8-character lump names read from map data).
+inline OString OStringToUpper(const char* s, size_t n)
+{
+	return OStringToUpper(std::string_view(s, strnlen(s, n)));
+}
 OString OStringToLower(std::string_view s);
 OString OStringToLower(const OString& str);
 auto inline format_as(const OString& str) { return str.data(); }

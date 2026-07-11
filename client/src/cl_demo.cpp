@@ -892,13 +892,10 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	    numwads = 0xff;
 	MSG_WriteByte   (netbuffer, numwads - 1);
 
-	size_t resource_file_count = resource_file_names.size();
-	MSG_WriteByte(netbuffer, resource_file_count - 1);
-
-	for (size_t i = 1; i < resource_file_count; i++)
+	for (size_t i = 1; i < numwads; i++)
 	{
 		// Don't use absolute paths, as they present a security risk.
-		MSG_WriteString(netbuffer, Res_CleanseFilename(resource_file_names[i]).c_str());
+		MSG_WriteString(netbuffer, D_CleanseFileName(::wadfiles[i].getBasename()).c_str());
 	}
 
 	MSG_WriteBool   (netbuffer, 0);     // deathmatch?
@@ -919,9 +916,9 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	}
 
 	// MD5 hash sums for all the wadfiles on the server
-	for (size_t i = 1; i < resource_file_count; i++)
+	for (size_t i = 1; i < numwads; i++)
 	{
-		MSG_WriteString(netbuffer, resource_file_hashes[i].getHexCStr());
+		MSG_WriteString(netbuffer, ::wadfiles[i].getMD5().getHexCStr());
 	}
 
 	MSG_WriteString (netbuffer, "");    // sv_website.cstring()
@@ -1030,9 +1027,6 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 
 	// Server tells everyone if we're a spectator
 	MSG_WriteSVCBuffer(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
-
-	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
-	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
 	// Server sends wads & map name
 	MSG_WriteSVCBuffer(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
@@ -1403,8 +1397,6 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	byte check = 0x1d;
 	arc << check;          // consistancy marker
 
-	gameaction = ga_nothing;
-
 	arc.Close();
 
 	// Resize the snapshot buffer to hold our snapshot size.
@@ -1452,24 +1444,37 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	arc.Read(vars, len);
 	cvar_t::C_ReadCVars(&vars_p);
 
-	// read resource file info
-	std::vector<std::string> resource_filenames;
-	byte resource_file_count;
-	arc >> resource_file_count;
-	for (size_t i = 0; i < resource_file_count; i++)
+	// read wad info
+	OWantFiles newwadfiles, newpatchfiles;
+	byte numwads, numpatches;
+	std::string res, hashStr;
+
+	arc >> numwads;
+	for (size_t i = 0; i < numwads; i++)
 	{
-		arc >> filename;
-		resource_filenames.push_back(filename);
+		arc >> res;
+		arc >> hashStr;
+
+		OMD5Hash hash;
+		OMD5Hash::makeFromHexStr(hash, hashStr);
+
+		OWantFile want;
+		OWantFile::makeWithHash(want, res, OFILE_WAD, hash);
+		newwadfiles.push_back(want);
 	}
 
-	// [SL] DEH/BEX patch file names used to be saved separately.
-	// Read and ignore them (dummy should be zero anyways).
-	byte dummy;
-	arc >> dummy;
-	while (dummy--)
+	arc >> numpatches;
+	for (size_t i = 0; i < numpatches; i++)
 	{
-		std::string str;
-		arc >> str;
+		arc >> res;
+		arc >> hashStr;
+
+		OMD5Hash hash;
+		OMD5Hash::makeFromHexStr(hash, hashStr);
+
+		OWantFile want;
+		OWantFile::makeWithHash(want, res, OFILE_DEH, hash);
+		newpatchfiles.push_back(want);
 	}
 
 	std::string mapname;
@@ -1527,13 +1532,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	serverside = false;
 
 	// load the resource files
-	std::vector<std::string> new_resource_filenames(resource_filenames);
-	std::vector<std::string> empty_resource_filehashes;
-	std::vector<std::string> missing_resource_filenames;
-	std::vector<std::string> missing_resource_filehashes;
-
-	Res_ValidateResourceFiles(new_resource_filenames, empty_resource_filehashes,
-								missing_resource_filenames, missing_resource_filehashes);
+	G_LoadWad(newwadfiles, newpatchfiles);
 
 	G_InitNew(mapname);
 	displayplayer_id = consoleplayer_id = 1;

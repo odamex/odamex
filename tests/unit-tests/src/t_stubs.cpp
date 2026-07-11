@@ -35,6 +35,7 @@
 #include "oscanner.h"
 #include "c_dispatch.h"
 #include "w_wad.h"
+#include "r_sky.h"
 
 bool clientside = false; // don't want any rendering code called
 bool serverside = true;
@@ -388,7 +389,7 @@ void CTF_CheckFlags (player_t &player)
 
 void R_InitSkyDefs() {}
 void R_ClearSkyDefs() {}
-bool R_IsSkyFlat(int flatnum)
+bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
 {
 	return false;
 }

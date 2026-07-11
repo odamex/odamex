@@ -559,7 +559,7 @@ void D_DoAdvanceDemo (void)
 	{
 		I_FreeSurface(page_surface);
 
-		const Texture* texture = Res_CacheTexture(OString(pagename, 8), PATCH);
+		const Texture* texture = Res_CacheTexture(pagename, PATCH);
 
 		page_width = texture->mWidth;
 		page_height = texture->mHeight + (texture->mHeight / 5);
@@ -634,12 +634,14 @@ EXTERN_CVAR(co_archvilefirefix)
 
 void G_ReadCOMPLVL()
 {
-	const int lumpnum = W_CheckNumForName("COMPLVL");
-	if (lumpnum == -1)
+	const ResourceId res_id = Res_GetResourceId("COMPLVL", NS_GLOBAL);
+	if (!Res_CheckResource(res_id))
 		return;
 
-	char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
-	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
+	const uint32_t complvl_size = Res_GetResourceSize(res_id);
+	std::string complvl(static_cast<const char*>(Res_LoadResource(res_id, PU_CACHE)),
+	                    complvl_size);
+	Res_ReleaseResource(res_id);
 
 	// don't use !serverside here, it doesn't get set early enough
 	if (multiplayer)
@@ -716,7 +718,7 @@ void G_ReadCOMPLVL()
 // Called to initialize subsystems when loading a new set of WAD resource
 // files.
 //
-void D_Init(const std::vector<std::string>& resource_file_names)
+void D_Init()
 {
 	// only print init messages during startup, not when changing WADs
 	static bool first_time = true;
@@ -735,9 +737,6 @@ void D_Init(const std::vector<std::string>& resource_file_names)
 	// Temporarily set the ARGB memory layout so that palette manipulations can
 	// be done before the video mode is initialized.
 	argb_t::setChannels(3, 2, 1, 0);
-
-	// Load the resource files
-	D_LoadResourceFiles(resource_file_names);
 
 	// Load palette and set up colormaps
 	V_Init();
@@ -871,8 +870,6 @@ void D_DoomMain()
 	C_InitConsole();
 	atterm(C_ShutdownConsole);
 
-	W_SetupFileIdentifiers();
-
 	D_InitializeDoomObjectTables();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
@@ -972,8 +969,6 @@ void D_DoomMain()
 	atterm(I_ShutdownHardware);
 	I_Init();
 	I_InitInput();
-
-	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromArgs();
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	atterm(D_Shutdown);

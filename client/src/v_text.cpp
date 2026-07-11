@@ -100,7 +100,7 @@ void V_TextInit()
 	sub = 0;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		StrFormat(buffer, smallfont, j++ - sub);
+		buffer = fmt::sprintf(smallfont, j++ - sub);
 		::hu_smallfont[i] = Res_CacheTexture(buffer.c_str(), PATCH, PU_STATIC);
 		::hu_smallfont_name[i] = buffer.c_str();
 	}

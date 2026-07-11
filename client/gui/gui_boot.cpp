@@ -467,7 +467,7 @@ class BootWindow : public Fl_Window
 		m_IWADs = M_ScanIWADs();
 		for (const auto& iwad : m_IWADs)
 		{
-			m_IWADBrowser->add(iwad.id->mNiceName.c_str(), const_cast<fileIdentifier_t*>(iwad.id));
+			m_IWADBrowser->add(iwad.id->mNiceName.c_str(), const_cast<FileIdentifier*>(iwad.id));
 		}
 		m_genWADDirs = ::waddirs.str();
 	}

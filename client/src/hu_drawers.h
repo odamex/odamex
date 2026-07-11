@@ -79,4 +79,46 @@ void DrawTextureScaled(const int x, const int y,
                      const x_align_t x_origin, const y_align_t y_origin,
                      const Texture* texture, const bool force_opaque = false,
                      const bool use_patch_offsets = false);
+
+inline void DrawPatch(int x, int y, const float scale,
+                      const x_align_t xa, const y_align_t ya,
+                      const x_align_t xo, const y_align_t yo,
+                      const Texture* texture, const bool force_opaque = false,
+                      const bool use_patch_offsets = false)
+{
+	DrawTexture(x, y, scale, xa, ya, xo, yo, texture, force_opaque, use_patch_offsets);
+}
+
+inline void DrawTranslatedPatch(int x, int y, const float scale,
+                                const x_align_t xa, const y_align_t ya,
+                                const x_align_t xo, const y_align_t yo,
+                                const Texture* texture, byte* translation,
+                                const bool force_opaque = false,
+                                const bool use_patch_offsets = false)
+{
+	DrawTranslatedTexture(x, y, scale, xa, ya, xo, yo, texture, translation, force_opaque, use_patch_offsets);
+}
+
+inline void DrawPatchStretched(int x, int y,
+                               const unsigned short w, const unsigned short h,
+                               const float scale,
+                               const x_align_t xa, const y_align_t ya,
+                               const x_align_t xo, const y_align_t yo,
+                               const Texture* texture, const bool force_opaque = false,
+                               const bool use_patch_offsets = false)
+{
+	DrawTextureStretched(x, y, w, h, scale, xa, ya, xo, yo, texture, force_opaque, use_patch_offsets);
+}
+
+inline void DrawPatchScaled(const int x, const int y,
+                            unsigned short w, unsigned short h,
+                            const float scale,
+                            const x_align_t xa, const y_align_t ya,
+                            const x_align_t xo, const y_align_t yo,
+                            const Texture* texture, const bool force_opaque = false,
+                            const bool use_patch_offsets = false)
+{
+	DrawTextureScaled(x, y, w, h, scale, xa, ya, xo, yo, texture, force_opaque, use_patch_offsets);
+}
+
 }

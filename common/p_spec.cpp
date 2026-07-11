@@ -490,9 +490,6 @@ void DPusher::Serialize (FArchive &arc)
 }
 
 
-// Factor to scale scrolling effect into mobj-carrying properties = 3/32.
-// (This is so scrolling floors and objects on them can move at same speed.)
-#define CARRYFACTOR ((fixed_t)(FRACUNIT*.09375))
 
 // killough 3/7/98: Initialize generalized scrolling
 static void P_SpawnScrollers();
@@ -927,14 +924,14 @@ static fixed_t P_GetDefaultTextureHeight()
 	//
 	const ResourcePathList paths = Res_ListResourceDirectory(textures_directory_name);
 	if (paths.empty())
-		return MAXINT;
+		return limits::MAXINT;
 
 	const OString& texture_name = paths[0].last();
 	const Texture* texture = Res_CacheTexture(texture_name, WALL);
 	if (texture)
 		return texture->mHeight << FRACBITS;
 	else
-		return MAXINT;
+		return limits::MAXINT;
 }
 
 

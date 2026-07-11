@@ -35,10 +35,10 @@ inline OLumpName SKYFLATNAME = "F_SKY1";
 extern int		sky1shift;
 extern int		sky2shift;
 
-extern fixed_t	sky1scrolldelta;
-extern fixed_t	sky2scrolldelta;
-extern fixed_t	sky1columnoffset;
-extern fixed_t	sky2columnoffset;
+inline fixed_t	sky1scrolldelta;
+inline fixed_t	sky2scrolldelta;
+inline fixed_t	sky1columnoffset;
+inline fixed_t	sky2columnoffset;
 
 extern fixed_t	skytexturemid;
 extern int		skystretch;

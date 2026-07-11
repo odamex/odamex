@@ -47,14 +47,14 @@ extern NetDemo netdemo;
 extern fixed_t FocalLengthX;
 extern byte* Ranges;
 
-extern Texture* line_leftempty;
-extern Texture* line_leftfull;
-extern Texture* line_centerempty;
-extern Texture* line_centerleft;
-extern Texture* line_centerright;
-extern Texture* line_centerfull;
-extern Texture* line_rightempty;
-extern Texture* line_rightfull;
+extern lumpHandle_t line_leftempty;
+extern lumpHandle_t line_leftfull;
+extern lumpHandle_t line_centerempty;
+extern lumpHandle_t line_centerleft;
+extern lumpHandle_t line_centerright;
+extern lumpHandle_t line_centerfull;
+extern lumpHandle_t line_rightempty;
+extern lumpHandle_t line_rightfull;
 
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_gametype)
@@ -864,7 +864,7 @@ void EleBar(const int x, const int y, const int w, const float scale,
 	const Texture*  rightfull = W_ResolvePatchHandle(::line_rightfull);
 
 	// We assume that all parts of the bar are identical width.
-	const int UNIT_WIDTH = ::line_centerfull->mWidth;
+	const int UNIT_WIDTH = centerfull->mWidth;
 
 	// Number of things to draw.
 	const int UNITS = w / UNIT_WIDTH;
@@ -876,7 +876,7 @@ void EleBar(const int x, const int y, const int w, const float scale,
 		return;
 	}
 
-	std::vector<Texture*> lineHandles;
+	std::vector<lumpHandle_t> lineHandles;
 	lineHandles.reserve(UNITS);
 	for (int i = 0; i < UNITS; i++)
 	{
@@ -944,10 +944,10 @@ void EleBar(const int x, const int y, const int w, const float scale,
 		drawX = x;
 	}
 
-	for (const auto& patch : lineHandles)
+	for (const auto& handle : lineHandles)
 	{
 		hud::DrawTranslatedPatch(drawX, y, scale, x_align, y_align, x_origin, y_origin,
-		                         patch, ::Ranges + color * 256);
+		                         W_ResolvePatchHandle(handle), ::Ranges + color * 256);
 
 		if (x_align == hud::X_RIGHT)
 		{

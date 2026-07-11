@@ -1279,7 +1279,7 @@ public:
 		return file1->mGroupName == file2->mGroupName;
 	}
 
-	const OString identify(const OResFile& file) const
+	const OString identify(const std::string& filename) const
 	{
 		const OMD5Hash md5sum = Res_MD5(filename);
 		const FileIdentifier* fileid = lookupByMd5Sum(md5sum);
@@ -1470,7 +1470,7 @@ const FileIdentifier* W_GameInfo(const OMD5Hash& md5)
 //
 void W_ConfigureGameInfo(const std::string& iwad_filename)
 {
-	const OString idname = identtab.identify(iwad);
+	const OString idname = identtab.identify(iwad_filename);
 
     gameinfo = gameinfo_t();
 
@@ -1692,6 +1692,28 @@ bool W_IsFileCommercialWAD(const std::string& filename)
 bool W_IsIWADDeprecated(const std::string& filename)
 {
 	return identtab.isDeprecated(filename);
+}
+
+
+//
+// W_IsIWAD
+//
+// Returns true if the given resolved file is an IWAD file.
+//
+bool W_IsIWAD(const OResFile& file)
+{
+	return ::identtab.isIWAD(file.getFullpath());
+}
+
+
+//
+// W_IsIWADDeprecated
+//
+// Checks to see whether a given resolved file is an IWAD flagged as "deprecated"
+//
+bool W_IsIWADDeprecated(const OResFile& file)
+{
+	return identtab.isDeprecated(file.getFullpath());
 }
 
 

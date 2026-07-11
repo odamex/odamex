@@ -30,32 +30,25 @@
 class ResourceId
 {
 public:
-	ResourceId(uint32_t value = -1) :
+	constexpr ResourceId(uint32_t value = -1) :
 		mValue(value)
 	{ }
 
-	ResourceId(const ResourceId& other) :
-		mValue(other.mValue)
-	{ }
-	
-	ResourceId& operator=(const ResourceId& other)
-	{
-		mValue = other.mValue;
-		return *this;
-	}
+	constexpr ResourceId(const ResourceId& other) = default;
+	constexpr ResourceId& operator=(const ResourceId& other) = default;
 
-	operator uint32_t() const
+	constexpr operator uint32_t() const
 	{
 		return mValue;
 	}
 
 	// Convenience helpers mirroring the old lumpHandle_t interface.
-	bool empty() const
+	[[nodiscard]] constexpr bool empty() const
 	{
 		return mValue == static_cast<uint32_t>(-1);
 	}
 
-	void clear()
+	constexpr void clear()
 	{
 		mValue = static_cast<uint32_t>(-1);
 	}
@@ -66,7 +59,7 @@ private:
 	uint32_t mValue;
 };
 
-typedef std::vector<ResourceId> ResourceIdList;
+using ResourceIdList = std::vector<ResourceId>;
 
 // ----------------------------------------------------------------------------
 // hash function for OHashTable class

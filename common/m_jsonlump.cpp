@@ -38,14 +38,14 @@ static std::regex TypeMatchRegex = std::regex(TypeMatchRegexString);
 constexpr const char* VersionMatchRegexString = "^(\\d+)\\.(\\d+)\\.(\\d+)$";
 static std::regex VersionMatchRegex = std::regex(VersionMatchRegexString);
 
-jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc)
+jsonlumpresult_t M_ParseJSONLump(const ResourceId res_id, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc)
 {
-	if(lumpindex < 0 || W_LumpLength(lumpindex) <= 0)
+	if(!Res_CheckResource(res_id) || Res_GetResourceSize(res_id) == 0)
 	{
 		return jsonlumpresult_t::NOTFOUND;
 	}
 
-	const char* jsondata = W_CacheLumpNum<const char>(lumpindex, PU_STATIC);
+	const char* jsondata = static_cast<const char*>(Res_LoadResource(res_id, PU_STATIC));
 
     Json::CharReaderBuilder builder;
     builder["collectComments"] = false;
@@ -53,9 +53,9 @@ jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSON
     Json::Value root;
     std::string errs;
 
-    if(!reader->parse(jsondata, jsondata + W_LumpLength(lumpindex), &root, &errs))
+    if(!reader->parse(jsondata, jsondata + Res_GetResourceSize(res_id), &root, &errs))
     {
-        I_Error("M_ParseJSONLump: JSON parsing error in lump {}:\n{}", W_LumpName(lumpindex), errs);
+        I_Error("M_ParseJSONLump: JSON parsing error in lump {}:\n{}", Res_GetResourceName(res_id), errs);
         return jsonlumpresult_t::PARSEERROR;
     }
 

@@ -2020,7 +2020,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			if (!validplayer(con))
 			{
 				Res_ReleaseResource(demo_res_id);
-				Printf(PRINT_HIGH, "DOOM Demo: invalid console player %d of %d\n", who + 1, players.size());
+				PrintFmt(PRINT_HIGH, "DOOM Demo: invalid console player {} of {}\n", who + 1, players.size());
 				gameaction = ga_fullconsole;
 				return;
 			}

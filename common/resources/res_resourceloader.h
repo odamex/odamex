@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "resources/res_resourceid.h"
 
 class RawResourceAccessor;
@@ -48,14 +50,14 @@ public:
 		mRawResourceAccessor(accessor)
 	{}
 
-	virtual ~ResourceLoader() {}
+	virtual ~ResourceLoader() = default;
 
-	virtual bool validate() const
+	[[nodiscard]] virtual bool validate() const
 	{
 		return true;
 	}
 
-	virtual uint32_t size() const = 0;
+	[[nodiscard]] virtual uint32_t size() const = 0;
 	virtual void load(void* data) const = 0;
 
 protected:
@@ -78,9 +80,9 @@ public:
 		mResId(res_id)
 	{}
 
-	virtual ~GenericResourceLoader() {} 
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	~GenericResourceLoader() override = default;
+	[[nodiscard]] uint32_t size() const override;
+	void load(void* data) const override;
 
 protected:
 	const ResourceId			mResId;
@@ -95,8 +97,8 @@ public:
 		ResourceLoader(accessor)
 	{}
 
-	virtual ~BaseTextureLoader() {}
-	
+	~BaseTextureLoader() override = default;
+
 protected:
 	uint32_t calculateTextureSize(uint16_t width, uint16_t height) const;
 	Texture* createTexture(void* data, uint16_t width, uint16_t height) const;
@@ -117,13 +119,13 @@ public:
 		mResId(res_id)
 	{}
 
-	virtual ~RowMajorTextureLoader() {}
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	~RowMajorTextureLoader() override = default;
+	[[nodiscard]] uint32_t size() const override;
+	void load(void* data) const override;
 
 protected:
-	virtual uint16_t getWidth() const = 0;
-	virtual uint16_t getHeight() const = 0;
+	[[nodiscard]] virtual uint16_t getWidth() const = 0;
+	[[nodiscard]] virtual uint16_t getHeight() const = 0;
 
 	const ResourceId	mResId;
 };
@@ -144,11 +146,11 @@ public:
 		RowMajorTextureLoader(accessor, res_id)
 	{}
 
-	virtual ~FlatTextureLoader() {}
+	~FlatTextureLoader() override = default;
 
 protected:
-	virtual uint16_t getWidth() const;
-	virtual uint16_t getHeight() const;
+	[[nodiscard]] uint16_t getWidth() const override;
+	[[nodiscard]] uint16_t getHeight() const override;
 };
 
 
@@ -164,11 +166,11 @@ public:
 		RowMajorTextureLoader(accessor, res_id)
 	{}
 
-	virtual ~RawTextureLoader() {}
+	~RawTextureLoader() override = default;
 
 protected:
-	virtual uint16_t getWidth() const;
-	virtual uint16_t getHeight() const;
+	[[nodiscard]] uint16_t getWidth() const override;
+	[[nodiscard]] uint16_t getHeight() const override;
 };
 
 
@@ -183,9 +185,9 @@ public:
 		mResId(res_id)
 	{}
 
-	virtual ~PatchTextureLoader() {}
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	~PatchTextureLoader() override = default;
+	[[nodiscard]] uint32_t size() const override;
+	void load(void* data) const override;
 
 protected:
 	const ResourceId	mResId;
@@ -204,10 +206,10 @@ public:
 		mTexDef(texdef)
 	{}
 
-	virtual ~CompositeTextureLoader() {}
+	~CompositeTextureLoader() override = default;
 
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	[[nodiscard]] uint32_t size() const override;
+	void load(void* data) const override;
 
 protected:
 	const CompositeTextureDefinition	mTexDef;
@@ -221,26 +223,22 @@ class InMemoryTextureLoader : public BaseTextureLoader
 {
 public:
 	InMemoryTextureLoader(const palindex_t* source_data, int width, int height) :
-		BaseTextureLoader(NULL),
-		mSourceData(NULL),
+		BaseTextureLoader(nullptr),
 		mWidth(width), mHeight(height)
 	{
 		#if CLIENT_APP
-		mSourceData = new palindex_t[mWidth * mHeight];
-		memcpy(mSourceData, source_data, mWidth * mHeight * sizeof(palindex_t));
+		mSourceData = std::make_unique<palindex_t[]>(mWidth * mHeight);
+		memcpy(mSourceData.get(), source_data, mWidth * mHeight * sizeof(palindex_t));
 		#endif
 	}
 
-	virtual ~InMemoryTextureLoader()
-	{
-		delete [] mSourceData;
-	}
+	~InMemoryTextureLoader() override = default;
 
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	[[nodiscard]] uint32_t size() const override;
+	void load(void* data) const override;
 
 protected:
-	palindex_t*			mSourceData;
+	std::unique_ptr<palindex_t[]>	mSourceData;
 	uint16_t			mWidth;
 	uint16_t			mHeight;
 };
@@ -255,14 +253,15 @@ public:
 	PngTextureLoader(const RawResourceAccessor* accessor, const ResourceId res_id) :
 		BaseTextureLoader(accessor),
 		mResId(res_id),
-		mWidth(0), mHeight(0)
+		mWidth(0), mHeight(0),
+		mBitDepth(0), mColorType(-1)
 	{
 		readHeader();
 	}
 
-	virtual ~PngTextureLoader() {}
-	virtual uint32_t size() const;
-	virtual void load(void* data) const;
+	~PngTextureLoader() override = default;
+	[[nodiscard]] uint32_t size() const override;
+	void load(void* data) const override;
 
 protected:
 	void readHeader();
@@ -270,4 +269,6 @@ protected:
 	const ResourceId	mResId;
 	uint16_t			mWidth;
 	uint16_t			mHeight;
+	uint8_t				mBitDepth;
+	int16_t				mColorType;
 };

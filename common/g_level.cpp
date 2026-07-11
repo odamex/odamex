@@ -481,10 +481,6 @@ BEGIN_COMMAND (map)
 				G_DeferedInitNew(mapname);
 			}
 
-		if (Res_CheckMap(mapname))
-		{
-			unnatural_level_progression = true;
-			G_DeferedInitNew(mapname);
 		}
 		else
 		{

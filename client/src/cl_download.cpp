@@ -181,7 +181,7 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 
 	if (W_IsFilehashCommercialWAD(filename.getWantedMD5()))
 	{
-		const fileIdentifier_t* id = W_GameInfo(filename.getWantedMD5());
+		const FileIdentifier* id = W_GameInfo(filename.getWantedMD5());
 		PrintFmt(PRINT_WARNING, "{} is a renamed commercial wad file containing {}.\n"
 		                        "A copy of {} can be obtained through purchasing DOOM + DOOM II from Steam or GOG.\n",
 		                        filename.getBasename(), id->mNiceName, id->mFilename);
@@ -193,7 +193,25 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 
 	// Assign the other params to the download state.
 	::dlstate.filename = filename.getBasename();
+
+	// Extension-less wants come from servers with a directory (or
+	// unpacked archive) loaded as a resource.  Only the archive form can be
+	// downloaded, so request the ZIP spelling of the resource.
+	std::string dlext;
+	if (!M_ExtractFileExtension(::dlstate.filename, dlext))
+	{
+		::dlstate.filename += ".zip";
+	}
+
 	::dlstate.hash = filename.getWantedMD5();
+
+	// A directory marker hash identifies the resource by name only;
+	// the downloaded archive's contents cannot match it, so do not try to
+	// checksum the download.
+	if (M_IsDirectoryMarkerHash(::dlstate.hash, filename.getBasename()))
+	{
+		::dlstate.hash = OMD5Hash();
+	}
 	::dlstate.flags = flags;
 
 	// Start the checking bit on the next tick.

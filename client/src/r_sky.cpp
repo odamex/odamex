@@ -22,7 +22,7 @@
 //	The default sky map is 256 columns and repeats 4 times
 //	on a 320 screen.
 //
-//	[EB] ID24 SKYDEFS support (fire skies, double skies, scrolling skies)
+//	ID24 SKYDEFS support (fire skies, double skies, scrolling skies)
 //	adapted from Rum and Raisin via protobreak, running on top of the
 //	resource manager / Texture system.
 //
@@ -54,7 +54,6 @@ EXTERN_CVAR(joy_freelook)
 EXTERN_CVAR(r_skypalette)
 EXTERN_CVAR(r_linearsky)
 
-void R_DrawSkyForegroundColumn();
 
 
 //
@@ -70,8 +69,6 @@ fixed_t		skyheight;
 fixed_t		skyiscale;
 
 int			sky1shift,		sky2shift;
-fixed_t		sky1scrolldelta,	sky2scrolldelta;
-fixed_t		sky1columnoffset,	sky2columnoffset;
 
 static ResourceId sky_flat_resource_id = ResourceId::INVALID_ID;
 
@@ -150,7 +147,7 @@ bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
 }
 
 //
-// [EB] cache the Texture for a skytex_t, honoring texture animation
+// cache the Texture for a skytex_t, honoring texture animation
 //
 static const Texture* R_SkyTexTexture(const skytex_t* skytex)
 {
@@ -770,7 +767,7 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 
 	if (sky2texture && sky1texture->mHeight != sky2texture->mHeight)
 	{
-		Printf(PRINT_HIGH,"Both sky textures must be the same height.\n");
+		PrintFmt(PRINT_HIGH,"Both sky textures must be the same height.\n");
 		sky2texture = sky1texture;
 	}
 
@@ -792,7 +789,8 @@ static inline void R_BlastSkyColumn(void (*drawfunc)(void))
 {
 	if (dcol.yl <= dcol.yh)
 	{
-		dcol.texturefrac = dcol.texturemid + (dcol.yl - centery + 1) * dcol.iscale;
+		dcol.texturefrac = dcol.texturemid +
+		                   FixedMul(((dcol.yl + 1) << FRACBITS) - centeryfrac, dcol.iscale);
 		drawfunc();
 	}
 }
@@ -955,6 +953,8 @@ void R_RenderSkyRange(visplane_t* pl)
 		dcol.iscale = FixedMul(skyiscale, sky2scaley) >> skystretch;
 		dcol.texturemid = sky2mid + backrow_offset;
 		dcol.textureheight = backskytex->mHeight << FRACBITS;
+		dcol.texturedata = backskytex->mData;
+		dcol.argbtexturedata = backskytex->mARGBData;
 
 		for (int x = pl->minx; x <= pl->maxx; x++)
 		{
@@ -972,6 +972,8 @@ void R_RenderSkyRange(visplane_t* pl)
 	dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
 	dcol.texturemid = sky1mid + frontrow_offset;
 	dcol.textureheight = frontskytex->mHeight << FRACBITS;
+	dcol.texturedata = frontskytex->mData;
+	dcol.argbtexturedata = frontskytex->mARGBData;
 
 	for (int x = pl->minx; x <= pl->maxx; x++)
 	{

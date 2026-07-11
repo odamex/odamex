@@ -534,11 +534,12 @@ static int WI_DrawName (const char *str, int x, int y)
 	::V_ColorMap = translationref_t(::Ranges + CR_GREY * 256);
 	while (*str)
 	{
-		int lump = W_CheckNumForName(fmt::format("FONTB{:02d}", toupper(*str) - 32));
+		const ResourceId lump = Res_GetTextureResourceId(
+		    OStringToUpper(fmt::format("FONTB{:02d}", toupper(*str) - 32)), GRAPHICS, false);
 
-		if (lump != -1)
+		if (Res_CheckResource(lump))
 		{
-			const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
+			const Texture* texture = Res_CacheTexture(lump, PU_CACHE);
 			screen->DrawTextureClean(texture, x, y);
 			x += texture->mWidth - 1;
 		}
@@ -558,12 +559,12 @@ static int WI_DrawSmallName(const char* str, int x, int y)
 	while (*str)
 	{
 		const OLumpName charname = fmt::format("STCFN{:03d}", HU_FONTSTART + (toupper(*str) - 32) - 1);
-		int lump = W_CheckNumForName(charname);
+		const ResourceId lump = Res_GetTextureResourceId(OStringToUpper(charname.c_str()), GRAPHICS, false);
 
-		if (Res_CheckResource(res_id))
+		if (Res_CheckResource(lump))
 		{
-			const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
-			screen->DrawTextureClean(p, x, y);
+			const Texture* texture = Res_CacheTexture(lump, PU_CACHE);
+			screen->DrawTextureClean(texture, x, y);
 			x += texture->mWidth - 1;
 		}
 		else
@@ -616,8 +617,8 @@ void WI_drawEL()
 	screen->DrawTextureClean(entering, (320 - entering->mWidth)/2, y);
 
 	// [RH] Changed to adjust by height of entering patch instead of title
-	if (lnames1->height() < 200)
-		y += (5 * ent->height()) / 4;
+	if (entering->mHeight < 200)
+		y += (5 * entering->mHeight) / 4;
 
 	if (lnames[1])
 	{
@@ -1036,7 +1037,7 @@ void WI_drawNetgameStats()
 		//enaiel: Fix incorrect player background when showing old intermission
 		V_ColorMap = translationref_t(translationtables + it->id * 256, it->id);
 
-		screen->DrawTranslatedPatchClean(pP, x - pP->width(), y);
+		screen->DrawTranslatedTextureClean(::p, x - ::p->mWidth, y);
 		// classic face background colour
 		//screen->DrawTranslatedPatchClean (faceclassic[i], x-p->width(), y);
 
@@ -1295,9 +1296,9 @@ void WI_Ticker()
 		// intermission music
 		if (exitanim != nullptr && !exitanim->musiclump.empty())
 			S_ChangeMusic (exitanim->musiclump.c_str(), true);
-		else if (W_CheckNumForName(wbs->winner ? "D_OWIN" : "D_OLOSE") != -1)
+		else if (Res_CheckResource(Res_GetResourceId(wbs->winner ? "D_OWIN" : "D_OLOSE", NS_GLOBAL)))
 			S_ChangeMusic (wbs->winner ? "D_OWIN" : "D_OLOSE", true);
-		else if (W_CheckNumForName(wbs->winner ? "D_STWIN" : "D_STLOSE") != -1)
+		else if (Res_CheckResource(Res_GetResourceId(wbs->winner ? "D_STWIN" : "D_STLOSE", NS_GLOBAL)))
 			S_ChangeMusic (wbs->winner ? "D_STWIN" : "D_STLOSE", true);
 		else if (!currentlevel.zintermusic.empty())
 			S_ChangeMusic (currentlevel.zintermusic.c_str(), true);
@@ -1356,14 +1357,15 @@ static int WI_CalcWidth(const char *str)
 	while (*str)
 	{
 		const OLumpName charname = fmt::format("FONTB{:02d}", toupper(*str) - 32);
-		int lump = W_CheckNumForName(charname);
+		const ResourceId lump = Res_GetTextureResourceId(OStringToUpper(charname.c_str()), GRAPHICS, false);
 
-		if (lump != -1)
+		if (Res_CheckResource(lump))
 		{
 			const Texture* p = W_CachePatch(lump);
 			w += p->width() - 1;
 		} else {
 			w += 12;
+		}
 		str++;
 	}
 
@@ -1379,9 +1381,9 @@ void WI_loadData()
 
 	OLumpName winanim;
 	OLumpName winpic;
-	if (W_CheckNumForName(wbs->winner ? "WINANIM" : "LOSEANIM") != -1)
+	if (Res_CheckResource(Res_GetResourceId(wbs->winner ? "WINANIM" : "LOSEANIM", NS_GLOBAL)))
 		winanim = wbs->winner ? "WINANIM" : "LOSEANIM";
-	else if (W_CheckNumForName(wbs->winner ? "WINERPIC" : "LOSERPIC") != -1)
+	else if (Res_CheckResource(Res_GetTextureResourceId(wbs->winner ? "WINERPIC" : "LOSERPIC", GRAPHICS, false)))
 		winpic = wbs->winner ? "WINERPIC" : "LOSERPIC";
 
 	animation = wi_animation_t();
@@ -1425,18 +1427,17 @@ void WI_loadData()
 	canvas->DrawPatch(bg_patch, bg_patch->leftoffset(), bg_patch->topoffset());
 	background_surface->unlock();
 
-	for (int i = 0, j; i < 2; i++)
+	for (int i = 0; i < 2; i++)
 	{
 		const OLumpName& lname = (i == 0 ? wbs->lname0 : wbs->lname1);
 
+		ResourceId lname_res_id = ResourceId::INVALID_ID;
 		if (!lname.empty())
-			j = W_CheckNumForName (lname);
-		else
-			j = -1;
+			lname_res_id = Res_GetTextureResourceId(OStringToUpper(lname.c_str()), GRAPHICS, false);
 
-		if (j >= 0)
+		if (Res_CheckResource(lname_res_id))
 		{
-			lnames[i] = Res_CacheTexture(res_id, PU_STATIC);
+			lnames[i] = Res_CacheTexture(lname_res_id, PU_STATIC);
 		}
 		else
 		{
@@ -1450,7 +1451,7 @@ void WI_loadData()
 	{
 		// numbers 0-9
 		name = fmt::format("WINUM{}", i);
-		num[i] = W_CachePatchHandle(name.c_str(), PU_STATIC);
+		num[i] = W_CachePatch(name.c_str(), PU_STATIC);
 	}
 
     wiminus = Res_CacheTexture("WIMINUS", PATCH, PU_STATIC);
@@ -1463,7 +1464,7 @@ void WI_loadData()
 
 	// "finished"
 	// (Removed) Dan - Causes GUI Issues |FIX-ME|
-	finished = W_CachePatchHandle("WIF", PU_STATIC);
+	finished = W_CachePatch("WIF", PU_STATIC);
 
 	// "entering"
 	entering = Res_CacheTexture("WIENTER", PATCH, PU_STATIC);
@@ -1534,32 +1535,32 @@ void WI_loadData()
 	for (int i = 0; i < 4; i++)
 	{
 		name = fmt::format("STPB{}", i);
-		faceclassic[i] = W_CachePatchHandle(name, PU_STATIC);
+		faceclassic[i] = W_CachePatch(name, PU_STATIC);
 	}
 }
 
 void WI_unloadData()
 {
 	for (int i = 0; i < 10; i++)
-		num[i].clear();
+		num[i] = NULL;
 
-	wiminus.clear();
-	percent.clear();
-	colon.clear();
-	kills.clear();
-	secret.clear();
-	frags.clear();
-	items.clear();
-	finished.clear();
-	entering.clear();
-	timepatch.clear();
-	sucks.clear();
-	par.clear();
-	total.clear();
-	p.clear();
+	wiminus = NULL;
+	percent = NULL;
+	colon = NULL;
+	kills = NULL;
+	secret = NULL;
+	frags = NULL;
+	items = NULL;
+	finished = NULL;
+	entering = NULL;
+	timepatch = NULL;
+	sucks = NULL;
+	par = NULL;
+	total = NULL;
+	p = NULL;
 
 	for (int i = 0; i < 4; i++)
-		faceclassic[i].clear();
+		faceclassic[i] = NULL;
 }
 
 void WI_Drawer()

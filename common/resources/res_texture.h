@@ -31,6 +31,7 @@
 #include "z_zone.h"
 
 #include "oscanner.h"
+#include "olumpname.h"
 
 #include "resources/res_container.h"
 
@@ -54,6 +55,16 @@ enum TextureSearchOrdering {
 //
 const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering, bool use_placeholder = true);
 
+inline const ResourceId Res_GetTextureResourceId(const char* name, TextureSearchOrdering ordering, bool use_placeholder = true)
+{
+	return Res_GetTextureResourceId(OStringToUpper(name, 8), ordering, use_placeholder);
+}
+
+inline const ResourceId Res_GetTextureResourceId(const OLumpName& name, TextureSearchOrdering ordering, bool use_placeholder = true)
+{
+	return Res_GetTextureResourceId(OStringToUpper(name.c_str(), 8), ordering, use_placeholder);
+}
+
 
 //
 // Texture Animations
@@ -64,10 +75,29 @@ const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id);
 
 
 //
+// Res_IsTextureResource
+//
+// Returns true if the ResourceId refers to a resource registered by the
+// TextureManager and can therefore be safely cached as a Texture.
+//
+bool Res_IsTextureResource(const ResourceId res_id);
+
+
+//
 // Res_CacheTexture
 //
 const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag = PU_CACHE);
 const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, zoneTag_e tag = PU_CACHE);
+
+inline const Texture* Res_CacheTexture(const char* lump_name, TextureSearchOrdering ordering, zoneTag_e tag = PU_CACHE)
+{
+	return Res_CacheTexture(OString(lump_name), ordering, tag);
+}
+
+inline const Texture* Res_CacheTexture(const OLumpName& lump_name, TextureSearchOrdering ordering, zoneTag_e tag = PU_CACHE)
+{
+	return Res_CacheTexture(OString(lump_name.c_str()), ordering, tag);
+}
 
 
 // ============================================================================
@@ -83,15 +113,21 @@ const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering 
 // resolving simply produces the current texture (or the not-found
 // placeholder).
 //
-typedef ResourceId lumpHandle_t;
+using lumpHandle_t = ResourceId;
 
 inline lumpHandle_t W_CachePatchHandle(const char* name, zoneTag_e tag = PU_CACHE,
                                        TextureSearchOrdering ordering = PATCH)
 {
-	return Res_GetTextureResourceId(OStringToUpper(name, 8), ordering);
+	return Res_GetTextureResourceId(OStringToUpper(name), ordering);
 }
 
 inline lumpHandle_t W_CachePatchHandle(const OString& name, zoneTag_e tag = PU_CACHE,
+                                       TextureSearchOrdering ordering = PATCH)
+{
+	return W_CachePatchHandle(name.c_str(), tag, ordering);
+}
+
+inline lumpHandle_t W_CachePatchHandle(const OLumpName& name, zoneTag_e tag = PU_CACHE,
                                        TextureSearchOrdering ordering = PATCH)
 {
 	return W_CachePatchHandle(name.c_str(), tag, ordering);
@@ -102,14 +138,30 @@ inline const Texture* W_ResolvePatchHandle(const lumpHandle_t handle)
 	return Res_CacheTexture(handle);
 }
 
+// Looks like you already resolved the texture.
+inline const Texture* W_ResolvePatchHandle(const Texture* texture)
+{
+	return texture;
+}
+
 inline const Texture* W_CachePatch(const char* name, zoneTag_e tag = PU_CACHE)
 {
-	return Res_CacheTexture(OStringToUpper(name, 8), PATCH, tag);
+	return Res_CacheTexture(OStringToUpper(name), PATCH, tag);
 }
 
 inline const Texture* W_CachePatch(const OString& name, zoneTag_e tag = PU_CACHE)
 {
 	return W_CachePatch(name.c_str(), tag);
+}
+
+inline const Texture* W_CachePatch(const OLumpName& name, zoneTag_e tag = PU_CACHE)
+{
+	return W_CachePatch(name.c_str(), tag);
+}
+
+inline const Texture* W_CachePatch(const lumpHandle_t handle, zoneTag_e tag = PU_CACHE)
+{
+	return Res_CacheTexture(handle, tag);
 }
 
 
@@ -130,8 +182,8 @@ inline const Texture* W_CachePatch(const OString& name, zoneTag_e tag = PU_CACHE
 class Texture
 {
 public:
-	static const unsigned int MAX_TEXTURE_WIDTH		= 2048;
-	static const unsigned int MAX_TEXTURE_HEIGHT	= 2048;
+	static constexpr unsigned int MAX_TEXTURE_WIDTH		= 2048;
+	static constexpr unsigned int MAX_TEXTURE_HEIGHT	= 2048;
 
 	Texture()
 	{
@@ -141,26 +193,43 @@ public:
 	void init(int width, int height);
 	static uint32_t calculateSize(int width, int height);
 
-	fixed_t getScaledHeight() const
+	[[nodiscard]] fixed_t getScaledHeight() const
 	{
 		return FixedMul(mHeight << FRACBITS, mScaleY);
 	}
 
-	fixed_t getScaledWidth() const
+	[[nodiscard]] fixed_t getScaledWidth() const
 	{
 		return FixedMul(mWidth << FRACBITS, mScaleX);
 	}
 
 	// Accessors mirroring the old patch_t interface, so code written
 	// against patches can work with cached textures unmodified.
-	short width() const { return mWidth; }
-	short height() const { return mHeight; }
-	short leftoffset() const { return mOffsetX; }
-	short topoffset() const { return mOffsetY; }
+	[[nodiscard]] short width() const { return mWidth; }
+	[[nodiscard]] short height() const { return mHeight; }
+	[[nodiscard]] short leftoffset() const { return mOffsetX; }
+	[[nodiscard]] short topoffset() const { return mOffsetY; }
 
-	const palindex_t* getColumn(int col) const
-	{	
+	[[nodiscard]] const palindex_t* getColumn(int col) const
+	{
 		return mData + mHeight * col;
+	}
+
+	// Wraps a column index into the texture's width. mWidthMask only tiles
+	// correctly for power-of-two widths; non-power-of-two textures need a
+	// true modulo, matching ZDoom.
+	[[nodiscard]] int wrapColumn(int col) const
+	{
+		if (mWidthMask + 1 == mWidth)
+			return col & mWidthMask;
+		col %= mWidth;
+		return col < 0 ? col + mWidth : col;
+	}
+
+	// True color ARGB color plane.
+	[[nodiscard]] const argb_t* getARGBColumn(int col) const
+	{
+		return mARGBData ? mARGBData + mHeight * col : nullptr;
 	}
 
 	fixed_t				mScaleX;
@@ -181,14 +250,15 @@ public:
 	byte				mMaskColor;
 
 	palindex_t*			mData;
+	argb_t*				mARGBData;
 
 private:
-	static uint32_t calculateHeaderSize(int width, int height)
+	static constexpr uint32_t calculateHeaderSize(int width, int height)
 	{
 		return sizeof(Texture);
 	}
 
-	static uint32_t calculateDataSize(int width, int height)
+	static constexpr uint32_t calculateDataSize(int width, int height)
 	{
 		return sizeof(palindex_t) * width * height;
 	}
@@ -206,46 +276,20 @@ private:
 //
 struct CompositeTextureDefinition
 {
-	int16_t			mWidth;
-	int16_t			mHeight;
-	uint8_t			mScaleX;
-	uint8_t			mScaleY;
+	int16_t			mWidth = 0;
+	int16_t			mHeight = 0;
+	uint8_t			mScaleX = 0;
+	uint8_t			mScaleY = 0;
 
 	struct PatchDef
 	{
-		int 		mOriginX;
-		int 		mOriginY;
+		int 		mOriginX = 0;
+		int 		mOriginY = 0;
 		ResourceId	mResId;
 	};
 
-	typedef std::vector<PatchDef> PatchDefList;
+	using PatchDefList = std::vector<PatchDef>;
 	PatchDefList mPatchDefs;
-
-	CompositeTextureDefinition() :
-		mWidth(0), mHeight(0), mScaleX(0), mScaleY(0)
-	{ }
-
-	~CompositeTextureDefinition()
-	{ }
-
-	CompositeTextureDefinition(const CompositeTextureDefinition& other) 
-	{
-		operator=(other);
-	}
-
-	CompositeTextureDefinition& operator=(const CompositeTextureDefinition& other)
-	{
-		if (this != &other)
-		{
-			mWidth = other.mWidth;
-			mHeight = other.mHeight;
-			mScaleX = other.mScaleX;
-			mScaleY = other.mScaleY;
-
-			mPatchDefs = other.mPatchDefs;
-		}
-		return *this;
-	}
 };
 
 
@@ -290,6 +334,14 @@ public:
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
 
+	// Returns true if the given ResourceId is one of the texture resources
+	// registered by this TextureManager (as opposed to a raw file/lump
+	// resource that no TextureLoader claimed).
+	bool ownsResource(const ResourceId res_id) const
+	{
+		return mResourceLoaderLookup.find(res_id) != mResourceLoaderLookup.end();
+	}
+
 	void updateAnimatedTextures();
 
 
@@ -306,7 +358,7 @@ private:
 	CompositeTextureDefinition buildCompositeTextureDefinition(const uint8_t* data, const ResourceIdList& pnames_lookup) const;
 	ResourceId addMissingTexturePlaceholder(ResourceManager* manager);
 
-	typedef OHashTable<ResourceId, ResourceLoader*> ResourceLoaderLookupTable;
+	using ResourceLoaderLookupTable = OHashTable<ResourceId, ResourceLoader*>;
 	ResourceLoaderLookupTable		mResourceLoaderLookup;
 };
 
@@ -320,12 +372,15 @@ private:
 class AnimatedTextureManager
 {
 public:
-	AnimatedTextureManager() { }
-	
+	AnimatedTextureManager() = default;
+
 	~AnimatedTextureManager()
 	{
 		clear();
 	}
+
+	AnimatedTextureManager(const AnimatedTextureManager&) = delete;
+	AnimatedTextureManager& operator=(const AnimatedTextureManager&) = delete;
 
 	void readAnimationDefinitions();
 
@@ -342,13 +397,13 @@ private:
 	void copyTexture(Texture* destination_texture, const Texture* source_texture) const;
 	void parseAnim(OScanner& os, TextureSearchOrdering search_ordering);
 
-	typedef OHashTable<ResourceId, ResourceId> ResourceIdMap;
+	using ResourceIdMap = OHashTable<ResourceId, ResourceId>;
 	ResourceIdMap		mTextureTranslation;
 
 	// animated textures
 	struct anim_t
 	{
-		static const unsigned int MAX_ANIM_FRAMES = 32;
+		static constexpr unsigned int MAX_ANIM_FRAMES = 32;
 		ResourceId basepic;
 		short numframes;
 		bool uniqueframes;

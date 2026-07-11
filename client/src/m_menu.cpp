@@ -302,7 +302,7 @@ oldmenu_t EpiDef =
 	0	 				// lastOn
 };
 
-static int selected_episode = 0;
+int epi = 0;
 
 //
 // EXPANSION SELECT (DOOM2 BFG)
@@ -1015,7 +1015,7 @@ void M_NewGame(int choice)
 			EpiDef.y -= LINEHEIGHT * (episodenum / 4);
 		}
 
-		selected_episode = 0;
+		epi = 0;
 
 		if (episodenum > 1)
 		{
@@ -1073,7 +1073,7 @@ void M_StartGame(int choice)
 {
 	sv_skill.Set (static_cast<float>(choice + 1));
 	sv_gametype = GM_COOP;
-	std::string map_name(EpisodeMaps[selected_episode].c_str());
+	std::string map_name(EpisodeMaps[epi].c_str());
 
     if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
     {
@@ -1143,9 +1143,9 @@ void M_Episode(int choice)
 		return;
 	}
 
-	selected_episode = choice;
+	epi = choice;
 
-	if (EpisodeInfos[selected_episode].noskillmenu)
+	if (EpisodeInfos[epi].noskillmenu)
 		M_StartGame(defaultskillmenu);
 	else
 	{
@@ -1156,7 +1156,7 @@ void M_Episode(int choice)
 
 void M_Expansion(int choice)
 {
-	selected_episode = choice;
+	epi = choice;
 	NewDef.numitems = skillnum + 1;
 	SetupSkillList();
 	M_SetupNextMenu(&NewDef);

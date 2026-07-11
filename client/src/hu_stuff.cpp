@@ -53,7 +53,7 @@
 
 #define QUEUESIZE		128
 #define HU_INPUTX		0
-#define HU_INPUTY		(0 + (LESHORT(hu_font[0]->height) +1))
+#define HU_INPUTY		(0 + (hu_font[0]->mHeight +1))
 
 #define CTFBOARDWIDTH	236
 #define CTFBOARDHEIGHT	40
@@ -351,8 +351,6 @@ static void HU_InitCrosshair()
 	int xhairnum = hud_crosshair.asInt();
 	if (xhairnum)
 	{
-		int xhair;
-
 		const OLumpName xhairname = fmt::format("XHAIR{}", xhairnum);
 
 		crosshair_res_id = Res_GetTextureResourceId(xhairname, GRAPHICS);
@@ -423,7 +421,9 @@ static void HU_DrawCrosshair()
 
 		V_ColorMap = translationref_t(crosshair_trans);
 
-		const Texture*  ch_patch = W_CachePatch(crosshair_lump);
+
+
+		const Texture* ch_patch = Res_CacheTexture(crosshair_res_id);
 
 		int x = (I_GetSurfaceWidth() - (ch_patch->width() / 2)) / 2;
 		int y = I_GetSurfaceHeight() / 2;
@@ -431,15 +431,14 @@ static void HU_DrawCrosshair()
 		if (R_StatusBarVisible())
 			y = ST_StatusBarY(I_GetSurfaceWidth(), I_GetSurfaceHeight()) / 2;
 
-		const Texture* texture = Res_CacheTexture(crosshair_res_id);
 		if (hud_crosshairdim && hud_crosshairscale)
-			screen->DrawTranslatedLucentPatchCleanNoMove(ch_patch, x, y);
+			screen->DrawTranslatedLucentTextureCleanNoMove(ch_patch, x, y);
         else if (hud_crosshairscale)
-			screen->DrawTranslatedPatchCleanNoMove(ch_patch, x, y);
+			screen->DrawTranslatedTextureCleanNoMove(ch_patch, x, y);
         else if (hud_crosshairdim)
-			screen->DrawTranslatedLucentPatch(ch_patch, x, y);
+			screen->DrawTranslatedLucentTexture(ch_patch, x, y);
 		else
-			screen->DrawTranslatedPatch(ch_patch, x, y);
+			screen->DrawTranslatedTexture(ch_patch, x, y);
 	}
 }
 

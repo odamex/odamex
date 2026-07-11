@@ -27,7 +27,7 @@
 
 #include "odamex.h"
 
-#include "w_wad.h"
+#include "resources/res_main.h"
 
 #include <functional>
 
@@ -72,14 +72,14 @@ constexpr std::string_view M_JSONLumpResultToString(jsonlumpresult_t jlr)
 
 using JSONLumpFunc = std::function<jsonlumpresult_t(const Json::Value& elem, const JSONLumpVersion& version)>;
 
-jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc);
+jsonlumpresult_t M_ParseJSONLump(const ResourceId res_id, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc);
 
-inline jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, JSONLumpFunc&& parsefunc)
+inline jsonlumpresult_t M_ParseJSONLump(const ResourceId res_id, const char* lumptype, const JSONLumpVersion& maxversion, JSONLumpFunc&& parsefunc)
 {
-	return M_ParseJSONLump(lumpindex, lumptype, maxversion, parsefunc);
+	return M_ParseJSONLump(res_id, lumptype, maxversion, parsefunc);
 }
 
 inline jsonlumpresult_t M_ParseJSONLump(const OLumpName& lumpname, const char* lumptype, const JSONLumpVersion& maxversion, JSONLumpFunc&& parsefunc)
 {
-	return M_ParseJSONLump(W_CheckNumForName(lumpname), lumptype, maxversion, parsefunc);
+	return M_ParseJSONLump(Res_GetResourceId(OStringToUpper(lumpname.c_str()), NS_GLOBAL), lumptype, maxversion, parsefunc);
 }

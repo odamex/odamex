@@ -141,10 +141,13 @@ EXTERN_CVAR(co_archvilefirefix)
 
 void G_ReadCOMPLVL()
 {
-	int lumpnum = W_CheckNumForName("COMPLVL");
-	if (lumpnum != -1)
+	const ResourceId res_id = Res_GetResourceId("COMPLVL", NS_GLOBAL);
+	if (Res_CheckResource(res_id))
 	{
-		char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
+		const uint32_t complvl_size = Res_GetResourceSize(res_id);
+		const std::string complvl(
+		    static_cast<const char*>(Res_LoadResource(res_id, PU_CACHE)), complvl_size);
+		Res_ReleaseResource(res_id);
 
 		co_zdoomphys.Set(0.0f);
 		co_zdoomammo.Set(0.0f);
@@ -185,8 +188,6 @@ void G_ReadCOMPLVL()
 		{
 			DPrintFmt("Unrecognized COMPLVL value: {}", complvl);
 		}
-
-		Z_Free(complvl);
 	}
 }
 
@@ -197,7 +198,7 @@ void G_ReadCOMPLVL()
 // Called to initialize subsystems when loading a new set of WAD resource
 // files.
 //
-void D_Init(const std::vector<std::string>& resource_file_names)
+void D_Init()
 {
 	argb_t::setChannels(3, 2, 1, 0);
 	// only print init messages during startup, not when changing WADs
@@ -299,8 +300,6 @@ void D_DoomMain()
 
 	gamestate = GS_STARTUP;
 
-	W_SetupFileIdentifiers();
-
 	D_InitializeDoomObjectTables();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
@@ -337,10 +336,8 @@ void D_DoomMain()
 	PrintFmt(PRINT_HIGH, "I_Init: Init hardware.\n");
 	I_Init();
 
-	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromArgs();
-
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
-	D_Init(resource_filenames);
+	D_Init();
 	atterm(D_Shutdown);
 
 	PrintFmt(PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");

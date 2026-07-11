@@ -29,6 +29,13 @@
 typedef struct
 {
 	const palindex_t*	source;
+
+	// palletized texture data
+	const palindex_t*	texturedata;
+
+	// raw argb texture data (null if not argb)
+	const argb_t*		argbtexturedata;
+
 	uint8_t*			destination;
 
 	int					pitch_in_pixels;
@@ -57,6 +64,10 @@ extern "C" drawcolumn_t dcol;
 typedef struct
 {
 	const palindex_t*	source;
+
+	// null if no argb data
+	const argb_t*		argbsource;
+
 	uint8_t*			destination;
 
 	int					pitch_in_pixels;
@@ -177,6 +188,8 @@ void	R_FillSpanD (void);
 
 void R_DrawSpanD_c(void);
 void R_DrawSlopeSpanD_c(void);
+
+void R_UpdateARGBShadeLUT(void);
 
 #define SPANJUMP 16
 #define INTERPSTEP (0.0625f)

@@ -90,7 +90,6 @@ extern bool sendpause, sendsave, sendcenterview;
 
 bool isFast = false;
 
-static std::string d_mapname;
 
 //
 // G_InitNew
@@ -140,10 +139,6 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
 	G_LoadWadString(wadstr);
 
-	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(JoinStrings(VectorArgs(argc, argv), " "));
-	D_ReloadResourceFiles(resource_filenames);
-
-	G_DeferedInitNew(startmap);
 	D_StartTitle ();
 	CL_QuitNetGame(NQ_SILENT);
 	S_StopMusic();
@@ -188,7 +183,7 @@ void G_DoNewGame (void)
 	gameaction = ga_nothing;
 }
 
-void G_InitNew(const std::string& mapname)
+void G_InitNew(const char* mapname)
 {
 	// [RH] Remove all particles
 	R_ClearParticles();
@@ -229,8 +224,8 @@ void G_InitNew(const std::string& mapname)
 		consoleplayer().cheats &= ~CF_CHASECAM;
 
 	// [RH] If this map doesn't exist, bomb out
-	if (!Res_CheckMap(mapname))
-		I_Error("Could not find map %s\n", mapname.c_str());
+	if (!Res_CheckMap(OString(StdStringToUpper(mapname))))
+		I_Error("Could not find map {}\n", mapname);
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
 	if (wantFast != isFast)
@@ -369,8 +364,8 @@ void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 	}
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	std::string secretmapname = "MAP31";
-	if ((gameinfo.flags & GI_MAPxx) && !Res_CheckMap(secretmapname))
+	
+	if ((gameinfo.flags & GI_MAPxx) && !Res_CheckMap(OString("MAP31")))
 		secretexit = false;
 	else
 		secretexit = true;
@@ -642,7 +637,7 @@ void G_DoLoadLevel (int position)
 	}
 
  	SN_StopAllSequences (); // denis - todo - equivalent?
-	P_SetupLevel (level.mapname.c_str(), position);
+	P_SetupLevel (OString(level.mapname.c_str()), position);
 
 	// [AM] Prevent holding onto stale snapshots.
 	CL_ClearSectorSnapshots();

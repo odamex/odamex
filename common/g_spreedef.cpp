@@ -23,7 +23,7 @@
 
 #include "odamex.h"
 
-#include "w_wad.h"
+#include "resources/res_main.h"
 #include "g_multikill.h"
 #include "g_spree.h"
 #include "oscanner.h"
@@ -198,16 +198,16 @@ static void ParseSpreeText(OScanner& os, std::string& text, std::string token)
 	text = UseStringTableOrToken(newText);
 }
 
-static void ParseSpreeDef(const int lump, const OLumpName name)
+static void ParseSpreeDef(const ResourceId res_id, const OLumpName name)
 {
-	const char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
+	const char* buffer = static_cast<const char*>(Res_LoadResource(res_id, PU_CACHE));
 
 	const OScannerConfig config = {
 	    "SPREEDEF", // lumpName
 	    false,      // semiComments
 	    true,       // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
 
 	// Reset everything before parsing
 	MultiKillManager::getInstance().reset();
@@ -321,18 +321,18 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 
 void G_ParseSpreeDef()
 {
-	int lump = -1;
+	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/SPREEDEF"));
 
 	// No SPREEDEF? Load defaults and continue.
-	if (W_FindLump("SPREEDEF", lump) == -1)
+	if (res_ids.empty())
 	{
 		MultiKillManager::getInstance().loadMultiKillDefaults();
 		SpreeManager::getInstance().loadSpreeDefaults();
 		return;
 	}
 
-	while ((lump = W_FindLump("SPREEDEF", lump)) != -1)
+	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		ParseSpreeDef(lump, "SPREEDEF");
+		ParseSpreeDef(res_ids[i], "SPREEDEF");
 	}
 }
