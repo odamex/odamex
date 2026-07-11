@@ -194,7 +194,7 @@ void S_NoiseDebug()
 			strcpy(temp, lump_name.c_str());
 			screen->DrawText (color, 0, y, temp);
 
-			sprintf (temp, "%d", ox / FRACUNIT);
+			snprintf(temp, 16, "%d", ox / FRACUNIT);
 			screen->DrawText (color, 70, y, temp);
 			snprintf(temp, 16, "%d", oy / FRACUNIT);
 			screen->DrawText (color, 120, y, temp);
@@ -705,7 +705,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
   	// check for bogus sound lump
 	if (!Res_CheckResource(sfxinfo->res_id))
 	{
-		DPrintFmt("Bad sfx lump #: {}\n", (uint32_t)sfxinfo->res_id);
+		DPrintFmt("Bad sfx lump #: {}\n", static_cast <uint32_t>(sfxinfo->res_id));
 		return;
 	}
 
