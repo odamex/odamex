@@ -246,7 +246,7 @@ const char* NiceVersionDetails()
 	tried = true;
 
 	// Debug builds get a special callout.
-#if !defined(_DEBUG)
+#if !defined(ODAMEX_DEBUG)
 	const char* debug = "";
 #else
 	const char* debug = ", Debug Build";
