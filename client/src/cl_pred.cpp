@@ -209,6 +209,24 @@ static void CL_PredictSpying()
 }
 
 //
+// CL_PredictRemotePlayers
+//
+//
+static void CL_PredictRemotePlayers()
+{
+	for (auto& player : players)
+	{
+		if (player.ingame() 
+			&& player.mo 
+			&& player.id != consoleplayer_id   // handled in CL_PredictWorld
+			&& player.id != displayplayer_id)  // handled in CL_PredictSpying
+		{
+			P_BumpPlayerCounters(player);
+		}
+	}
+}
+
+//
 // CL_PredictSpectator
 //
 //
@@ -274,6 +292,8 @@ void CL_PredictWorld(void)
 
 	if (consoleplayer_id != displayplayer_id)
 		CL_PredictSpying();
+
+	CL_PredictRemotePlayers();
 
 	// [SL] 2012-03-10 - Spectators can predict their position without server
 	// correction.  Handle them as a special case and leave.

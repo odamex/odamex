@@ -14,7 +14,7 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --filesystem=~/.odamex:create
-  - --filesystem=home # needs to be able to create banfile.json and .odalaunch config file, as well as read any odasrv cfgs
+  - --filesystem=home # needs to be able to create banfile.json and read any odasrv cfgs
   - --filesystem=host-os:ro # for standard doom data locations in /usr
   - --filesystem=host-etc:ro # standard location for timidity configs, so users can override the included one
   - --env=TIMIDITY_CFG=/app/etc/timidity.cfg
@@ -41,7 +41,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/libsdl-org/SDL_mixer.git
-        tag: release-2.8.1
+        tag: release-2.8.2
+        commit: b208916aed9250fe434360e6c6a95f0697bb7b01
   # cpptrace dependencies
   - name: libdwarf
     buildsystem: cmake-ninja
@@ -50,20 +51,18 @@ modules:
     sources:
       - type: git
         url: https://github.com/jeremy-rifkin/libdwarf-lite.git
-        tag: v2.1.0
+        tag: v2.3.1
+        commit: d06f37ed6660b324e458387d43efde3d84c9dd55
   # Odalaunch dependencies
   - name: WxWidgets
-    buildsystem: autotools
+    buildsystem: cmake-ninja
     config-opts:
-      # once cmake fixes are in, use cmake with these options
-      # - -D wxBUILD_SHARED=ON
-      # - -D wxBUILD_TESTS=OFF
-      # - -D wxBUILD_SAMPLES=OFF
-      # - -D wxBUILD_DEMOS=OFF
-      # - -D wxBUILD_TOOLKIT=gtk3
-      # - -D wxUSE_SYS_LIBS=sys
-      - --with-gtk=3
-      - --disable-tests
+      - -D wxBUILD_SHARED=ON
+      - -D wxBUILD_TESTS=OFF
+      - -D wxBUILD_SAMPLES=OFF
+      - -D wxBUILD_DEMOS=OFF
+      - -D wxBUILD_TOOLKIT=gtk3
+      - -D wxUSE_SYS_LIBS=sys
     cleanup:
       - "/lib/wx"
       - "/share/aclocal"
@@ -80,7 +79,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/wxWidgets/wxWidgets.git
-        tag: v3.3.2
+        tag: v3.3.3
+        commit: 670835aec7e54b9e9d5a50d6a1aea1e8ba0bcdb2
   # Odamex (combined)
   - name: Odamex
     buildsystem: cmake-ninja

@@ -171,9 +171,19 @@ namespace {
 				// mechansims which we know are going to leave the thread sync objects in
 				// an unknown state.  Again, this drives us towards a program-lifetime
 				// Singleton for this whole thing.
-#ifdef _WIN32
+#ifdef __APPLE__
+				// join() deadlocks on mac, someone else can figure out why
+				m_thread.detach();
+#elif defined _WIN32
 				// Windows makes us ruthlessly kill the thread.
 				if (TerminateThread(m_thread.native_handle(), 0))
+				{
+					m_thread.join();
+				}
+				else
+				{
+					m_thread.detach();
+				}				
 #else
 				// Pthreads lets us do a Cancel operation, which defaults to ending the
 				// thread when control is in a "cancelation point" function.  Fortunately
@@ -181,7 +191,6 @@ namespace {
 				// std::getline and std::condition_variable for the vast majority of its
 				// lifetime, so it cancels basically right away.
 				if (pthread_cancel(m_thread.native_handle()) == 0)
-#endif
 				{
 					m_thread.join();
 				}
@@ -189,6 +198,7 @@ namespace {
 				{
 					m_thread.detach();
 				}
+#endif
 			}
 
 #ifdef _WIN32
