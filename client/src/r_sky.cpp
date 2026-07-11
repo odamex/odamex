@@ -985,7 +985,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	// When compositing over a background layer, palette index 0 in the
 	// foreground texture is treated as transparent (ID24 convention).
-	R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom, skyposts,
+	R_RenderColumnRange(pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom), skyposts,
 			backskytex ? SkyForegroundColumnBlaster : SkyColumnBlaster, false, 2);
 
 	R_ResetDrawFuncs();

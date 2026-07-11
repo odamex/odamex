@@ -1040,7 +1040,8 @@ void R_StoreWallRange(int start, int stop)
 			walltopf[n] = wallbottomf[n] = FIXED2FLOAT(centeryfrac);
 	}
 
-	segtextured = ((bool)midtexture | (bool)toptexture) | ((bool)bottomtexture | (bool)maskedtexture);
+	segtextured = (static_cast<bool>(midtexture) | static_cast<bool>(toptexture)) |
+	              ((static_cast<bool>(bottomtexture) | static_cast<bool>(maskedtexture)));
 
 	if (segtextured)
 	{
