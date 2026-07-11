@@ -270,11 +270,11 @@ void WI_ParseZDoomAnim(OScanner& os, std::vector<interlevelanim_t>& anims, inter
 			os.error("Expected identifier, got \"{}\".", os.getToken());
 		}
 		OLumpName framename = os.getToken();
-		int framenum = (int)Res_GetTextureResourceId(OStringToUpper(framename.c_str()), GRAPHICS);
+		ResourceId frameresourceid = Res_GetTextureResourceId(OStringToUpper(framename.c_str()), GRAPHICS);
 		interlevelframe_t::frametype_t type = (i == 0 ?
 			static_cast<interlevelframe_t::frametype_t>(interlevelframe_t::DurationFixed | interlevelframe_t::RandomStart) :
 			interlevelframe_t::DurationFixed);
-		anim.frames.emplace_back(framename, framenum, "", -1, type, duration, 0);
+		anim.frames.emplace_back(framename, frameresourceid, "", ResourceId::INVALID_ID, type, duration, 0);
 		if (++i >= 20)
 			os.error("More than 20 frames in animation.");
 		os.mustScan();
