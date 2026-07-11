@@ -206,7 +206,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	const int ushift = dspan.ushift, vshift = dspan.vshift;
 	
 	// framebuffer	
-	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
+	argb_t* dest = reinterpret_cast<argb_t*>(dspan.destination) + dspan.y * dspan.pitch_in_pixels + dspan.x1;
 	
 	// texture data
 	const byte *src = dspan.source;

@@ -410,7 +410,7 @@ void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch)
 		palindex_t pixel = *source;
 		if (pixel != 0)
 		{
-			*((argb_t *)dest) = V_Palette.shade(pixel);
+			*(reinterpret_cast<argb_t*>(dest)) = V_Palette.shade(pixel);
 		}
 		source++;
 		dest += pitch;
@@ -429,7 +429,7 @@ void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch,
 		palindex_t pixel = source[c >> 16];
 		if (pixel != 0)
 		{
-			*((argb_t *)dest) = V_Palette.shade(pixel);
+			*(reinterpret_cast<argb_t*>(dest)) = V_Palette.shade(pixel);
 		}
 		dest += pitch;
 		c += yinc;
@@ -455,8 +455,8 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 		if (pixel != 0)
 		{
 			argb_t fg = V_Palette.shade(pixel);
-			argb_t bg = *((argb_t *)dest);
-			*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		}
 		source++;
 		dest += pitch;
@@ -482,8 +482,8 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 		if (pixel != 0)
 		{
 			argb_t fg = V_Palette.shade(pixel);
-			argb_t bg = *((argb_t *)dest);
-			*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		}
 		dest += pitch;
 		c += yinc;
@@ -502,7 +502,7 @@ void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, i
 		palindex_t pixel = *source;
 		if (pixel != 0)
 		{
-			*((argb_t *)dest) = V_Palette.tlate(V_ColorMap, pixel);
+			*(reinterpret_cast<argb_t*>(dest)) = V_Palette.tlate(V_ColorMap, pixel);
 		}
 		source++;
 		dest += pitch;
@@ -521,7 +521,7 @@ void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, 
 		palindex_t pixel = source[c >> 16];
 		if (pixel != 0)
 		{
-			*((argb_t *)dest) = V_Palette.tlate(V_ColorMap, pixel);
+			*(reinterpret_cast<argb_t*>(dest)) = V_Palette.tlate(V_ColorMap, pixel);
 		}
 		dest += pitch;
 		c += yinc;
@@ -547,8 +547,8 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 		if (pixel != 0)
 		{
 			argb_t fg = V_Palette.tlate(V_ColorMap, pixel);
-			argb_t bg = *((argb_t *)dest);
-			*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		}
 		source++;
 		dest += pitch;
@@ -574,8 +574,8 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 		if (pixel != 0)
 		{
 			argb_t fg = V_Palette.tlate(V_ColorMap, pixel);
-			argb_t bg = *((argb_t *)dest);
-			*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		}
 		dest += pitch;
 		c += yinc;
@@ -663,12 +663,12 @@ static void V_DrawARGBColumn(const argb_t* source, byte* dest, int count, int pi
 		const int alpha = (pixel.geta() * level) / 255;
 		if (alpha >= 255)
 		{
-			*(argb_t*)dest = pixel;
+			*(reinterpret_cast<argb_t*>(dest)) = pixel;
 		}
 		else if (alpha > 0)
 		{
-			argb_t bg = *(argb_t*)dest;
-			*(argb_t*)dest = alphablend2a(bg, 255 - alpha, pixel, alpha);
+			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, 255 - alpha, pixel, alpha);
 		}
 		source++;
 		dest += pitch;
@@ -693,12 +693,12 @@ static void V_DrawARGBColumnS(const argb_t* source, byte* dest, int count, int p
 		const int alpha = (pixel.geta() * level) / 255;
 		if (alpha >= 255)
 		{
-			*(argb_t*)dest = pixel;
+			*(reinterpret_cast<argb_t*>(dest)) = pixel;
 		}
 		else if (alpha > 0)
 		{
-			argb_t bg = *(argb_t*)dest;
-			*(argb_t*)dest = alphablend2a(bg, 255 - alpha, pixel, alpha);
+			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, 255 - alpha, pixel, alpha);
 		}
 		dest += pitch;
 		c += yinc;

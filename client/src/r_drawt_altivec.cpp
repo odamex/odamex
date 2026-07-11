@@ -75,7 +75,7 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 	const uint16_t invalpha = 256 - alpha;
 	const vu16 vec_invalpha = { invalpha, invalpha, invalpha, invalpha, invalpha, invalpha, invalpha, invalpha };
 
-	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
+	argb_t* dest = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * surface_pitch_pixels + x1;
 
 	for (int rowcount = h; rowcount > 0; --rowcount)
 	{
