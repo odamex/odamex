@@ -135,6 +135,19 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)   # option() honors normal variables
 
     # ======================================
+    # libdwarf-lite
+    # ======================================
+    set (FETCHCONTENT_SOURCE_DIR_LIBDWARF_LITE "${CMAKE_CURRENT_SOURCE_DIR}/libdwarf-lite")
+    FetchContent_Declare(
+        libdwarf
+        URL "${FETCHCONTENT_SOURCE_DIR_LIBDWARF_LITE}"
+        OVERRIDE_FIND_PACKAGE
+        )
+    list(APPEND FETCH_CONTENT_PACKAGES libdwarf)
+
+    set(BUILD_DWARFDUMP OFF)
+
+    # ======================================
     # cpptrace
     # ======================================
     if (USE_INTERNAL_CPPTRACE)
@@ -146,7 +159,8 @@ if (BUILD_CLIENT OR BUILD_SERVER)
             )
         list(APPEND FETCH_CONTENT_PACKAGES cpptrace)
 
-        set (CPPTRACE_USE_EXTERNAL_LIBDWARF ${USE_EXTERNAL_LIBDWARF})
+        set (CPPTRACE_USE_EXTERNAL_LIBDWARF ON)
+
         if (USE_INTERNAL_ZSTD)
             set(CPPTRACE_USE_EXTERNAL_ZSTD OFF)
         else()
