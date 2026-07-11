@@ -331,11 +331,11 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         # ======================================
         set(FETCHCONTENT_SOURCE_DIR_SDL "${CMAKE_CURRENT_SOURCE_DIR}/sdl")
         FetchContent_Declare(
-            SDL
+            SDL2
             URL "${FETCHCONTENT_SOURCE_DIR_SDL}"
             OVERRIDE_FIND_PACKAGE
             )
-        list(APPEND FETCH_CONTENT_PACKAGES SDL)
+        list(APPEND FETCH_CONTENT_PACKAGES SDL2)
 
         set (SDL_SHARED OFF)
         set (SDL_STATIC ON)
@@ -345,16 +345,28 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         # ======================================
         set(FETCHCONTENT_SOURCE_DIR_SDL_MIXER "${CMAKE_CURRENT_SOURCE_DIR}/sdl_mixer")
         FetchContent_Declare(
-            SDL_mixer
+            SDL2_mixer
             URL "${FETCHCONTENT_SOURCE_DIR_SDL_MIXER}"
             OVERRIDE_FIND_PACKAGE
             )
-        list(APPEND FETCH_CONTENT_PACKAGES SDL_mixer)
+        list(APPEND FETCH_CONTENT_PACKAGES SDL2_mixer)
 
         set (SDL2MIXER_VENDORED      ON)
         set (BUILD_SHARED_LIBS      OFF)
         set (SDL2MIXER_DEPS_SHARED  OFF)
     endif()
+endif()
+
+# ----------==================----------
+# Now bring it all in!
+# ----------==================----------
+
+if (FETCH_CONTENT_PACKAGES)
+    FetchContent_MakeAvailable(${FETCH_CONTENT_PACKAGES})
+
+    # Some immediate fixups are needed to make wxWidgets happy.
+    set(SDL2_LIBRARY        SDL2::SDL2)
+    set(SDL2_INCLUDE_DIR    "${FETCHCONTENT_SOURCE_DIR_SDL}/include")
 endif()
 
 if (BUILD_LAUNCHER)
@@ -370,17 +382,15 @@ if (BUILD_LAUNCHER)
             OVERRIDE_FIND_PACKAGE
             )
         list(APPEND FETCH_CONTENT_PACKAGES wxWidgets)
+
+        set(wxBUILD_INSTALL OFF)
+
+        FetchContent_MakeAvailable(wxWidgets)
     endif()
 
 endif()
 
-# ----------==================----------
-# Now bring it all in!
-# ----------==================----------
 
-if (FETCH_CONTENT_PACKAGES)
-    FetchContent_MakeAvailable(${FETCH_CONTENT_PACKAGES})
-endif()
 
 # Now do some patching to smooth-over any disagreements between the
 # target names as established by building the libs vs. finding them.
@@ -394,8 +404,9 @@ if (TARGET libcurl_static AND NOT TARGET CURL::libcurl)
 endif()
 
 if (TARGET wxrc AND NOT wxWidgets_wxrc_EXECUTABLE)
-    set(wxWidgets_wxrc_EXECUTABLE wxrc                                      PARENT_SCOPE)
-    set(wxWidgets_LIBRARIES       wx::base wx::core wx::adv wx::net wx::xrc PARENT_SCOPE)
+    set(wxWidgets_wxrc_EXECUTABLE wxrc                                          PARENT_SCOPE)
+    set(wxWidgets_LIBRARIES       wx::base wx::core wx::adv wx::net wx::xrc     PARENT_SCOPE)
+    set(wxWidgets_INCLUDE_DIRS    ${FETCHCONTENT_SOURCE_DIR_WXWIDGETS}/include  PARENT_SCOPE)
 endif()
 
 if (TARGET png_static AND NOT TARGET PNG::PNG)

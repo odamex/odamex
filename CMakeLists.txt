@@ -60,7 +60,7 @@ cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_
 cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_CPPTRACE "Use internal cpptrace" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_FLTK "Use internal FLTK" 1 BUILD_CLIENT 0 )
-cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
+cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" 1 BUILD_LAUNCHER 0 )
 cmake_dependent_option( USE_INTERNAL_GTEST "Use internal GoogleTest" 1 BUILD_TESTS 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
