@@ -43,3 +43,6 @@
 [submodule "libraries/wxwidgets"]
 	path = libraries/wxwidgets
 	url = https://github.com/wxWidgets/wxWidgets.git
+[submodule "libraries/libdwarf-lite"]
+	path = libraries/libdwarf-lite
+	url = https://github.com/jeremy-rifkin/libdwarf-lite.git
