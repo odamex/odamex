@@ -114,6 +114,27 @@ static bool cmpQueue(const player_t* arg1, const player_t* arg2)
 	return arg1->QueuePosition < arg2->QueuePosition;
 }
 
+static void printWeaponTextIfWeaponOwned(const player_t& plyr, std::ostringstream& buffer, int i)
+{
+	if (i == wp_fist && plyr.powers[pw_strength] > 0)
+		buffer << ((i == plyr.readyweapon) ? TEXTCOLOR_BRICK : TEXTCOLOR_DARKRED);
+	else if (weaponinfo[i].minammo == 0
+		|| plyr.ammo[weaponinfo[i].ammotype] > 0)
+		buffer << ((i == plyr.readyweapon) ? TEXTCOLOR_GREEN : TEXTCOLOR_DARKGREEN);
+	else
+		buffer << ((i == plyr.readyweapon) ? TEXTCOLOR_GRAY : TEXTCOLOR_DARKGRAY);
+
+	if (plyr.weaponowned[i])
+	{
+		if (i == 7)
+			buffer << " 1+";
+		else if (i == 8)
+			buffer << " 3+";
+		else
+			buffer << " " << i + 1;
+	}
+}
+
 // Returns true if a player is ingame.
 bool ingamePlayer(const player_t& player)
 {
@@ -380,6 +401,23 @@ std::string Timer()
 		str = fmt::sprintf("%s%02d:%02d", color, tspan.minutes, tspan.seconds);
 	}
 	return str;
+}
+
+std::string Weapons()
+{
+	const player_t& plyr = displayplayer();
+	std::ostringstream buffer;
+	buffer << TEXTCOLOR_WHITE "ARMS";
+	for (int i = 0; i < NUMWEAPONS; ++i)
+	{
+		if (i != 7 && i != 8)
+			printWeaponTextIfWeaponOwned(plyr, buffer, i);
+		if (i == 0)
+			printWeaponTextIfWeaponOwned(plyr, buffer, 7);
+		if (i == 2)
+			printWeaponTextIfWeaponOwned(plyr, buffer, 8);
+	}
+	return buffer.str();
 }
 
 std::string IntermissionTimer()
