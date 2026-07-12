@@ -36,159 +36,9 @@
 // 		key type,
 //		value type,
 //		hash functor with the following signature (optional):
-//			unsigned int operator()(KT) const;
+//			size_t operator()(KT) const;
 //
 // ============================================================================
-
-// forward declaration
-template <typename KT, typename VT, typename HF> class OHashTable;
-
-// ============================================================================
-//
-// Hashing functors
-//
-// ============================================================================
-
-// Default hash functors for integer & string types
-template <typename KT>
-struct hashfunc
-{ };
-
-// ----------------------------------------------------------------------------
-// Based on hash()
-// by Bob Jenkins, released into the Public Domain.
-// See: http://burtleburtle.net/bob/hash/integer.html
-// ----------------------------------------------------------------------------
-
-static inline unsigned int __hash_jenkins_32bit(unsigned int a)
-{
-	a = (a + 0x7ed55d16) + (a << 12);
-	a = (a ^ 0xc761c23c) ^ (a >> 19);
-	a = (a + 0x165667b1) + (a << 5);
-	a = (a + 0xd3a2646c) ^ (a << 9);
-	a = (a + 0xfd7046c5) + (a << 3);
-	a = (a ^ 0xb55a4f09) ^ (a >> 16);
-	return a;
-}
-
-static inline unsigned int __hash_rot(unsigned int x, unsigned int k)
-{
-	return (x << k) | (x >> (32 - k));
-}
-
-// ----------------------------------------------------------------------------
-// Based on lookup3.c, hashword()
-// by Bob Jenkins, May 2006, and released into the Public Domain.
-// See: http://burtleburtle.net/bob/c/lookup3.c
-// ----------------------------------------------------------------------------
-
-static inline unsigned int __hash_jenkins_64bit(unsigned long long key)
-{
-	unsigned int* k = (unsigned int*)&key;
-	const unsigned int initval = 0xABCDEF01;	// any random value
-
-  	unsigned int a, b, c;
-	a = b = c = 0xDEADBEEF + 8 + initval;
-
-	b += k[1];
-	a += k[0];
-
-	c ^= b; c -= __hash_rot(b, 14);
-	a ^= c; a -= __hash_rot(c, 11);
-	b ^= a; b -= __hash_rot(a, 25);
-	c ^= b; c -= __hash_rot(b, 16);
-	a ^= c; a -= __hash_rot(c, 4);
-	b ^= a; b -= __hash_rot(a, 14);
-	c ^= b; c -= __hash_rot(b, 24);
-
-	return c;
-}
-
-template <> struct hashfunc<unsigned char>
-{	unsigned int operator()(unsigned char val) const { return __hash_jenkins_32bit(val); }	};
-
-template <> struct hashfunc<signed char>
-{	unsigned int operator()(signed char val) const { return __hash_jenkins_32bit(val); }	};
-
-template <> struct hashfunc<unsigned short>
-{	unsigned int operator()(unsigned short val) const { return __hash_jenkins_32bit(val); }	};
-
-template <> struct hashfunc<signed short>
-{	unsigned int operator()(signed short val) const { return __hash_jenkins_32bit(val); }	};
-
-template <> struct hashfunc<unsigned int>
-{	unsigned int operator()(unsigned int val) const { return __hash_jenkins_32bit(val); }	};
-
-template <> struct hashfunc<signed int>
-{	unsigned int operator()(signed int val) const { return __hash_jenkins_32bit(val); }		};
-
-template <> struct hashfunc<unsigned long>
-{
-	unsigned int operator()(unsigned long val) const
-	{
-		if (sizeof(unsigned long) == 8)
-			return __hash_jenkins_64bit(val);
-		else
-			return __hash_jenkins_32bit(val);
-	}
-};
-
-template <> struct hashfunc<signed long>
-{
-	unsigned int operator()(signed long val) const
-	{
-		if (sizeof(signed long) == 8)
-			return __hash_jenkins_64bit(val);
-		else
-			return __hash_jenkins_32bit(val);
-	}
-};
-
-template <> struct hashfunc<unsigned long long>
-{	unsigned int operator()(unsigned long long val) const { return __hash_jenkins_64bit(val); }	};
-
-template <> struct hashfunc<signed long long>
-{	unsigned int operator()(signed long long val) const { return __hash_jenkins_64bit(val); }	};
-
-template <> struct hashfunc<void*>
-{
-	unsigned int operator()(void* ptr) const
-	{
-		if (sizeof(ptrdiff_t) == 8)
-			return __hash_jenkins_64bit((ptrdiff_t)ptr);
-		else
-			return __hash_jenkins_32bit((ptrdiff_t)ptr);
-	}
-};
-
-template <>
-struct hashfunc<const void*>
-{
-	unsigned int operator()(const void* ptr) const
-	{
-		if (sizeof(ptrdiff_t) == 8)
-			return __hash_jenkins_64bit((ptrdiff_t)ptr);
-		else
-			return __hash_jenkins_32bit((ptrdiff_t)ptr);
-	}
-};
-
-static inline unsigned int __hash_cstring(const char* str)
-{
-	unsigned int val = 0;
-	while (*str != 0)
-		val = val * 101 + *str++;
-	return val;
-}
-
-template <> struct hashfunc<char*>
-{	unsigned int operator()(const char* str) const { return __hash_cstring(str); } };
-
-template <> struct hashfunc<const char*>
-{	unsigned int operator()(const char* str) const { return __hash_cstring(str); } };
-
-template <> struct hashfunc<std::string>
-{	unsigned int operator()(const std::string& str) const { return __hash_cstring(str.c_str()); } };
 
 
 // ----------------------------------------------------------------------------
@@ -199,7 +49,7 @@ template <> struct hashfunc<std::string>
 // is done quickly by iterating through the internal array of key/value pairs.
 // ----------------------------------------------------------------------------
 
-template <typename KT, typename VT, typename HF = hashfunc<KT> >
+template <typename KT, typename VT, typename HF = std::hash<KT> >
 class OHashTable
 {
 private:
@@ -266,12 +116,12 @@ public:
 			return !(operator==(other));
 		}
 
-		IVT& operator* ()
+		IVT& operator* () const
 		{
 			return mHashTable->mElements[mBucketNum].pair;
 		}
 
-		IVT* operator-> ()
+		IVT* operator-> () const
 		{
 			return &(operator*());
 		}

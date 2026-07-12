@@ -1749,6 +1749,8 @@ enum splash_group_t
 	SG_END
 };
 
+std::string P_MobjToName(mobjtype_t);
+
 struct mobjinfo_t
 {
 	int32_t type            = MT_NULL;
@@ -1794,6 +1796,11 @@ struct mobjinfo_t
 	// ZDoom
 	fixed_t scale = FRACUNIT; // render scale for the thing's sprites
 
+	std::string display_name = "";
+	// indicates it was explicitly overriden from the default by dehacked
+	bool display_name_set    = false;
+	std::string deh_name     = "";
+
 	// ID24 stuff
 	// int minrespawntics      = 420;
 	// int respawndice         = 4;
@@ -1806,6 +1813,9 @@ struct mobjinfo_t
 	// std::string pickupmessage = "";
 	// OLumpName translation   = nullptr;
 	// fixed_t selfdamage      = FRACUNIT;
+
+	[[nodiscard]]
+	std::string getDisplayName() const;
 };
 
 inline auto format_as(const mobjinfo_t& info)
