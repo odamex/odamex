@@ -565,8 +565,8 @@ protected:
 	static int CountPlayers ();
 	static void SetLineTexture (int lineid, int side, int position, int name);
 
-	static int DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle, bool force);
-	static int DoSpawnSpot(int type, int spot, int tid, std::optional<int> angle, bool force);
+	static int DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, angle_t angle, bool force);
+	static int DoSpawnSpot(int type, int spot, int tid, std::optional<angle_t> angle, bool force);
 	static void DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t speed, fixed_t vspeed, bool gravity, int newtid);
 
 	static void SetLineBlocking(int lineid, int flags);
