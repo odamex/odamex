@@ -105,9 +105,11 @@ class DiskFileAccessor : public FileAccessor
 {
 public:
 	DiskFileAccessor(const OString& filename) :
-		mFileName(filename)
+		mFileName(filename), mFileSize(0)
 	{
 		mFileHandle = fopen(mFileName.c_str(), "rb");
+		if (mFileHandle)
+			mFileSize = M_FileLength(mFileHandle);
 	}
 
 	virtual ~DiskFileAccessor()
@@ -128,9 +130,7 @@ public:
 
 	virtual size_t size() const
 	{
-		if (mFileHandle)	
-			return M_FileLength(mFileHandle);
-		return 0;
+		return mFileSize;
 	}
 
 	virtual bool seek(size_t pos)
@@ -162,6 +162,7 @@ public:
 private:
 	FILE*				mFileHandle;
 	const OString		mFileName;
+	size_t				mFileSize;
 };
 
 

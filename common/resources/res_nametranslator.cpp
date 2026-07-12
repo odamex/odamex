@@ -159,33 +159,46 @@ void ResourceNameTranslator::addTranslation(const ResourcePath& path, const Reso
 
 	if (path.size() > 1)
 	{
-		OString resource_name = path.last();
-		OString base_directory = path.first();
+		const OString& resource_name = path.last();
+		const OString& base_directory = path.first();
+
+		static const OString dir_patches("PATCHES");
+		static const OString dir_graphics("GRAPHICS");
+		static const OString dir_sounds("SOUNDS");
+		static const OString dir_music("MUSIC");
+		static const OString dir_maps("MAPS");
+		static const OString dir_flats("FLATS");
+		static const OString dir_sprites("SPRITES");
+		static const OString dir_textures("TEXTURES");
+		static const OString dir_hires("HIRES");
+		static const OString dir_colormaps("COLORMAPS");
+		static const OString dir_acs("ACS");
+		static const OString dir_voxels("VOXELS");
 
 		ResourceNamespace ns = NS_GLOBAL;
-		if (base_directory == OString("PATCHES"))
+		if (base_directory == dir_patches)
 			ns = NS_PATCHES;
-		else if (base_directory == OString("GRAPHICS"))
+		else if (base_directory == dir_graphics)
 			ns = NS_GRAPHICS;
-		else if (base_directory == OString("SOUNDS"))
+		else if (base_directory == dir_sounds)
 			ns = NS_SOUNDS;
-		else if (base_directory == OString("MUSIC"))
+		else if (base_directory == dir_music)
 			ns = NS_MUSIC;
-		else if (base_directory == OString("MAPS"))
+		else if (base_directory == dir_maps)
 			ns = NS_GLOBAL;			// TODO: Cross-check this behavior with ZDoom
-		else if (base_directory == OString("FLATS"))
+		else if (base_directory == dir_flats)
 			ns = NS_FLATS;
-		else if (base_directory == OString("SPRITES"))
+		else if (base_directory == dir_sprites)
 			ns = NS_SPRITES;
-		else if (base_directory == OString("TEXTURES"))
+		else if (base_directory == dir_textures)
 			ns = NS_NEWTEXTURES;
-		else if (base_directory == OString("HIRES"))
+		else if (base_directory == dir_hires)
 			ns = NS_HIRES;
-		else if (base_directory == OString("COLORMAPS"))
+		else if (base_directory == dir_colormaps)
 			ns = NS_COLORMAPS;
-		else if (base_directory == OString("ACS"))
+		else if (base_directory == dir_acs)
 			ns = NS_ACSLIBRARY;
-		else if (base_directory == OString("VOXELS"))
+		else if (base_directory == dir_voxels)
 			ns = NS_VOXELS;
 		// TODO: add scripts directory
 

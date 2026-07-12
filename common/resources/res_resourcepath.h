@@ -73,9 +73,10 @@ public:
 	ResourcePath& operator=(const ResourcePath& other)
 	{
 		mAbsolute = other.mAbsolute;
-		mItemCount = 0;
-		for (size_t i = 0; i < other.mItemCount && mItemCount < ResourcePath::MAX_ITEMS; i++)
-			addItem(other.mItems[i]);
+		mItemCount = other.mItemCount;
+		for (size_t i = 0; i < other.mItemCount; i++)
+			mItems[i] = other.mItems[i];
+		mAsString = other.mAsString;
 		return *this;
 	}
 
@@ -85,6 +86,7 @@ public:
 			return operator=(other);
 		for (size_t i = 0; i < other.mItemCount && mItemCount < ResourcePath::MAX_ITEMS; i++)
 			addItem(other.mItems[i]);
+		mAsString = toString();
 		return *this;
 	}
 
@@ -190,7 +192,6 @@ private:
 		{
 			mItems[mItemCount++] = OStringToUpper(token);
 		}
-		mAsString = toString();
 	}
 
 	//
@@ -203,10 +204,19 @@ private:
 		mItemCount = 0;
 		mAbsolute = !path.empty() && path[0] == ResourcePath::DELIMINATOR;
 
-		std::stringstream ss(path);
-		std::string token;
-		while (std::getline(ss, token, ResourcePath::DELIMINATOR) && mItemCount < ResourcePath::MAX_ITEMS)
-			addItem(token);
+		// split on the deliminator without the overhead of std::stringstream
+		// this is constructed once for every lump at load time
+		size_t start = 0;
+		while (start <= path.size() && mItemCount < ResourcePath::MAX_ITEMS)
+		{
+			size_t end = path.find(ResourcePath::DELIMINATOR, start);
+			if (end == std::string::npos)
+				end = path.size();
+			addItem(path.substr(start, end - start));
+			start = end + 1;
+		}
+
+		mAsString = toString();
 	}
 
 	OString mItems[MAX_ITEMS];
@@ -228,7 +238,7 @@ typedef std::vector<ResourcePath> ResourcePathList;
 // ----------------------------------------------------------------------------
 
 template <> struct hashfunc<ResourcePath>
-{	unsigned int operator()(const ResourcePath& path) const { return __hash_cstring(path.toString().c_str()); } };
+{	unsigned int operator()(const ResourcePath& path) const { return __hash_cstring(path.c_str()); } };
 
 
 

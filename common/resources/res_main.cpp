@@ -195,6 +195,10 @@ void ResourceManager::addResourceContainer(
 					container->getResourceCount(),
 					container->getResourceCount() == 1 ? "lump" : "lumps");
 
+	const size_t needed = mResources.size() + container->getResourceCount();
+	if (mResources.capacity() < needed)
+		mResources.reserve(MAX(needed, mResources.capacity() * 2));
+
 	container->addResources(this);
 }
 
