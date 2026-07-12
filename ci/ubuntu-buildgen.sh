@@ -10,14 +10,16 @@ set -x
 # Install packages (retry to handle transient mirror churn)
 sudo apt-get update -y -o Acquire::Retries=3
 if ! sudo apt-get install -y --no-install-recommends \
-    ninja-build \
+    libasound2-dev \
+    libcurl4-openssl-dev \
     libgtk-3-dev \
-    libcurl4-openssl-dev; then
+    ninja-build ; then
   sudo apt-get update -y -o Acquire::Retries=3
   sudo apt-get install -y --no-install-recommends \
-    ninja-build \
+    libasound2-dev \
+    libcurl4-openssl-dev \
     libgtk-3-dev \
-    libcurl4-openssl-dev
+    ninja-build
 fi
 
 # Generate build
