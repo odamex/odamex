@@ -90,6 +90,7 @@ void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *i
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_UpdateMobj(AActor* mo);
+void SV_UpdateMobjReliable(AActor* mo);
 void PickupMessage(const AActor *toucher, const char *message);
 void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
@@ -2490,12 +2491,14 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			}
 		}
 
+        bool clientsNeedUpdate = false;
 		if (!player)
 		{
 			SV_SendDamageMobj(target, pain);
+			clientsNeedUpdate = true;
 		}
 
-		bool clientWasUpdated = false;
+		bool clientsWereUpdated = false;
 
 		if (pain < target->info->painchance &&
 		    !(target->flags & MF_SKULLFLY) &&
@@ -2503,7 +2506,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
 			const auto painResult = P_SetMobjState(target, target->info->painstate);
-			clientWasUpdated = (painResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED);
+			clientsWereUpdated = (painResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED);
 		}
 
 		target->reactiontime = 0;			// we're awake now...
@@ -2536,12 +2539,14 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 				&& target->info->seestate != S_NULL)
 			{
 				const auto seeResult = P_SetMobjState(target, target->info->seestate);
-				clientWasUpdated = clientWasUpdated or seeResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
+				clientsWereUpdated = clientsWereUpdated or seeResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
 			}
-			if (not clientWasUpdated)
-			{
-				SV_UpdateMobj(target);
-			}
+		}
+		if (clientsNeedUpdate and not clientsWereUpdated)
+		{
+			// We use Reliable transport for the subsequent UpdateMobj so that we don't inadvertently wind
+			// up with disordered mid-tic updates that really needed to be sandwiched between other updates.
+			SV_UpdateMobjReliable(target);
 		}
 	}
 	else
