@@ -1793,13 +1793,13 @@ struct mobjinfo_t
 	const char* ripsound    = nullptr;
 	int32_t droppeditem     = MT_NULL;
 
-	// ZDoom
-	fixed_t scale = FRACUNIT; // render scale for the thing's sprites
-
 	std::string display_name = "";
 	// indicates it was explicitly overriden from the default by dehacked
 	bool display_name_set    = false;
 	std::string deh_name     = "";
+
+	// ZDoom
+	fixed_t scale = FRACUNIT; // render scale for the thing's sprites
 
 	// ID24 stuff
 	// int minrespawntics      = 420;

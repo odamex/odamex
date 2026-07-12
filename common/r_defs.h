@@ -690,7 +690,7 @@ struct vissprite_s
     // negative if flipped
     fixed_t			xiscale;
 
-	// ID24 dehacked scale: render scale of the thing's sprites
+	// ZDoom dehacked scale: render scale of the thing's sprites
 	// (FRACUNIT = unscaled)
 	fixed_t			thingscale;
 
