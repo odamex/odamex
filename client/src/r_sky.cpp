@@ -381,7 +381,6 @@ static sky_t* R_GetSky(const OLumpName& name, bool create)
 
 	OLumpName skytexname;
 	sky_t* sky = Z_Malloc<sky_t>(PU_STATIC);
-	memset(sky, 0, sizeof(*sky));
 	sky->background.scalex = INT2FIXED(1);
 	sky->background.scaley = INT2FIXED(1);
 	sky->background.scrolly = INT2FIXED(0);
@@ -470,7 +469,6 @@ void R_InitSkyDefs()
 			}
 
 			sky_t* sky = Z_Malloc<sky_t>(PU_STATIC);
-			memset(sky, 0, sizeof(*sky));
 
 			sky->type = skytype;
 			sky->usedefaultmid = false;
