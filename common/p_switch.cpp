@@ -101,8 +101,8 @@ void P_InitSwitchList(void)
 				((gameinfo.maxSwitch & ~15) == (list_p[18] & ~15)))
 			{
 				// [RH] Skip this switch if it can't be found.
-				const ResourceId texture1 = Res_GetTextureResourceId((const char*)list_p + 0, WALL, false);
-				const ResourceId texture2 = Res_GetTextureResourceId((const char*)list_p + 9, WALL, false);
+				const ResourceId texture1 = Res_GetTextureResourceId(reinterpret_cast<const char*>(list_p) + 0, WALL, false);
+				const ResourceId texture2 = Res_GetTextureResourceId(reinterpret_cast<const char*>(list_p) + 9, WALL, false);
 
 				if (Res_CheckResource(texture1) && Res_CheckResource(texture2))
 				{

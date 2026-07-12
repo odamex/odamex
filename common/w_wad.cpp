@@ -96,7 +96,7 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 	if (!lumpdata)
 		return fhfngprnt;
 
-	util::uint128_t fingerprint128 = util::Fingerprint128((const char*)lumpdata, length);
+	util::uint128_t fingerprint128 = util::Fingerprint128(reinterpret_cast<const char*>(lumpdata), length);
 
 	// Store the bytes of the hashes in the array.
 	fhfngprnt.fingerprint[0] = fingerprint128.first >> 8 * 0;

@@ -62,7 +62,7 @@ bool Res_ValidateDehackedData(const uint8_t* data, size_t length)
 	const char magic_str[] = "Patch File for DeHackEd v";
 	uint32_t magic_len = strlen(magic_str);
 
-	return length >= magic_len && strnicmp((const char*)data, magic_str, magic_len) == 0;
+	return length >= magic_len && strnicmp(reinterpret_cast<const char*>(data), magic_str, magic_len) == 0;
 }
 
 
