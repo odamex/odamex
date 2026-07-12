@@ -3173,12 +3173,10 @@ static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 	{
 		if (player.ingame() and SV_IsPlayerAllowedToSee(player, &mobj))
 		{
-			MessageQueue& fullAwareQueue = transport == TransportEnum::AUTO or
-			                               transport == TransportEnum::RELIABLE ? player.client.messenger.ReliableBuf() :
-			                                                                      player.client.messenger.NetBuf();
-			MessageQueue& semiAwareQueue = transport == TransportEnum::AUTO or
-			                               transport == TransportEnum::BEST_EFFORT ? player.client.messenger.NetBuf() :
-			                                                                         player.client.messenger.ReliableBuf();
+			MessageQueue& fullAwareQueue = transport == TransportEnum::BEST_EFFORT ? player.client.messenger.NetBuf()
+			                                                                       : player.client.messenger.ReliableBuf();
+			MessageQueue& semiAwareQueue = transport == TransportEnum::RELIABLE ? player.client.messenger.ReliableBuf()
+                                                                                : player.client.messenger.NetBuf();
 			switch (mobj.playersAware.Get(player.id))
 			{
 				case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
