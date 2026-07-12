@@ -1118,6 +1118,14 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		{
 			info->translucency = val;
 		}
+		else if (iequals(key, "Scale"))
+		{
+			const double scale = atof(std::string(value).c_str());
+			if (scale > 0.0)
+				info->scale = FLOAT2FIXED(static_cast<float>(clamp(scale, 1.0 / 256, 256.0)));
+			else
+				DPrintFmt("Ignoring invalid Scale value '{}' for thing {}\n", value, thingNum);
+		}
 		else if (iequals(key, "Dropped item"))
 		{
 			if (val == 0)

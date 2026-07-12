@@ -310,9 +310,19 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	else if (translated)
 		R_SetTranslatedDrawFuncs();
 
-	dcol.iscale = 0xffffffffu / (unsigned)vis->yscale;
 	dcol.texturemid = vis->texturemid;
 	spryscale = vis->yscale;
+
+	if (vis->thingscale != FRACUNIT)
+	{
+			spryscale = FixedMul(spryscale, vis->thingscale);
+			dcol.texturemid = FixedDiv(dcol.texturemid, vis->thingscale);
+	}
+
+	if (spryscale <= 0)
+			return;
+
+	dcol.iscale = 0xffffffffu / static_cast<unsigned>(spryscale);
 	sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
 
 	// [SL] set up the array that indicates which patch column to use for each screen column
@@ -436,6 +446,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->depth = ty;
 	vis->FakeFlat = fakeside;
 	vis->colormap = basecolormap;
+	vis->thingscale = FRACUNIT;
 	vis->spectator = false;
 
 	fixed_t iscale = FixedDiv(ty, FocalLengthX);
@@ -628,10 +639,26 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
 	fixed_t height = patch->height() << FRACBITS;
 	fixed_t width = patch->width() << FRACBITS;
 
+	const fixed_t thingscale = thing->info->scale;
+	if (thingscale != FRACUNIT)
+	{
+			topoffs = FixedMul(topoffs, thingscale);
+			sideoffs = FixedMul(sideoffs, thingscale);
+			height = FixedMul(height, thingscale);
+			width = FixedMul(width, thingscale);
+	}
+
 	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, height, width, topoffs, sideoffs, flip);
 
 	if (vis == NULL)
 		return;
+
+	if (thingscale != FRACUNIT)
+	{
+		vis->thingscale = thingscale;
+		vis->startfrac = FixedDiv(vis->startfrac, thingscale);
+		vis->xiscale = FixedDiv(vis->xiscale, thingscale);
+	}
 
 	vis->mobjflags = thing->flags;
 	vis->statusflags = thing->statusflags;
@@ -770,6 +797,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 	vis->xscale = pspritexscale;
 	vis->yscale = pspriteyscale;
+	vis->thingscale = FRACUNIT;
 	vis->translation = translationref_t();		// [RH] Use default colors
 	vis->translucency = r_drawplayersprites * FRACUNIT;
 	vis->mo = NULL;
