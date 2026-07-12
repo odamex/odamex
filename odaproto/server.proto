@@ -157,8 +157,14 @@ enum MobjModeEnum
 message UpdateMobj
 {
 	uint32 flags = 1;
-	Actor actor = 2;
-	MobjModeEnum mode = 3;
+	Actor  actor = 2;
+}
+
+// svc_updatemobjwithmode
+message UpdateMobjWithMode
+{
+	UpdateMobj   update = 1;
+	MobjModeEnum mode   = 3;
 }
 
 // svc_spawnplayer

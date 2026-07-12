@@ -626,10 +626,8 @@ odaproto::svc::UserInfo SVC_UserInfo(const player_t& player, int64_t time)
 /**
  * @brief Update mobj data on the client compared to the baseline.
  */
-odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
+static void FillUpdateMobj(odaproto::svc::UpdateMobj& msg, const AActor& mobj)
 {
-	odaproto::svc::UpdateMobj msg;
-
 	uint32_t flags = P_GetMobjBaselineFlags(mobj);
 	msg.set_flags(flags);
 
@@ -688,10 +686,23 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
 	{
 		mom->set_z(mobj.momz);
 	}
+}
+
+odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
+{
+	odaproto::svc::UpdateMobj msg;
+	FillUpdateMobj(msg, mobj);
+	return msg;
+}
+
+odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj)
+{
+    odaproto::svc::UpdateMobjWithMode msg;
+
+    FillUpdateMobj(* msg.mutable_update(), mobj);
 
 	msg.set_mode(static_cast<odaproto::svc::MobjModeEnum>(mobj.mode));
-
-	return msg;
+    return msg;
 }
 
 EXTERN_CVAR(sv_sharekeys);

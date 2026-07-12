@@ -3108,7 +3108,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	                                     sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
 	if (isHyperAware)
 	{
-		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobjWithMode(*mo));
 	}
 	else
 	{
@@ -3147,7 +3147,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 					break;
 
 				default:
-					MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+					MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobjWithMode(*mo));
 					break;
 			}
 		}
@@ -3293,7 +3293,7 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 				break;
 
 			default:
-				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobjWithMode(*mo));
 				break;
 		}
 	}
@@ -3720,7 +3720,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 			// Now in this case we're okay with *potentially* going overbudget or behind-by-one tic,
 			// because the player has a mobj that's multiple seconds out of date.  Being a even little
 			// late is better than that.
-			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*sortedMobjIter->actorPtr));
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobjWithMode(*sortedMobjIter->actorPtr));
 			player.requestedNetIdUpdate = 0;
 		}
 	}

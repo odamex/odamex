@@ -231,6 +231,7 @@ enum msg_t
 	svc_removemobj,
 	svc_userinfo,
 	svc_updatemobj,
+	svc_updatemobjwithmode,
 	svc_spawnplayer,
 	svc_damageplayer,
 	svc_killmobj,

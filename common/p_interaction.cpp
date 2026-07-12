@@ -2544,9 +2544,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		}
 		if (clientsNeedUpdate and not clientsWereUpdated)
 		{
-			// We use Reliable transport for the subsequent UpdateMobj so that we don't inadvertently wind
-			// up with disordered mid-tic updates that really needed to be sandwiched between other updates.
-			SV_UpdateMobjReliable(target);
+			SV_UpdateMobj(target);
 		}
 	}
 	else
