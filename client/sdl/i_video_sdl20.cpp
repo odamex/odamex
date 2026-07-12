@@ -679,8 +679,8 @@ void ISDL20Window::setWindowIcon()
 
 		if (WindowHandle)
 		{
-			SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-			SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+			SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIcon));
+			SendMessage(WindowHandle, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIcon));
 		}
 	}
 	#endif	// _WIN32

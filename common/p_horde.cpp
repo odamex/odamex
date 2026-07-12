@@ -637,8 +637,8 @@ void HordeState::getNextSpawnTime(int& min, int& max)
 	}
 
 	// Turn into integers.
-	min = MAX(int(round(minf)), 1);
-	max = MAX(int(round(maxf)), 1);
+	min = MAX(static_cast<int>(round(minf)), 1);
+	max = MAX(static_cast<int>(round(maxf)), 1);
 	max = MAX(max, min);
 }
 
@@ -736,8 +736,8 @@ void HordeState::tick()
 			{
 				// Adjust the count based on how many bosses we've spawned and current boss limit.
 				recipe = m_bossRecipe;
-				recipe.count = m_bossRecipe.totalCount - int(m_bosses.size());
-				int alive = int(countLivingBosses());
+				recipe.count = m_bossRecipe.totalCount - static_cast<int>(m_bosses.size());
+				int alive = static_cast<int>(countLivingBosses());
 				if (recipe.limit)
 				{
 					if (recipe.count <= 0)

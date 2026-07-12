@@ -151,7 +151,7 @@ class BootWindow : public Fl_Window
 				{
 					Fl_Box* logo = new Fl_Box(10, 35, 115, 155);
 					logo->image(GUIRes::icon_odamex_128());
-					logo->align(Fl_Align(512));
+					logo->align(static_cast<Fl_Align>(512));
 				} // Fl_Box* logo
 				{
 					m_IWADBrowser = new Fl_Hold_Browser(135, 35, 280, 155);
@@ -372,7 +372,7 @@ class BootWindow : public Fl_Window
 		BootWindow* boot = static_cast<BootWindow*>(data);
 
 		// Figure out which PWAD we're removing.
-		const size_t removeIDX = size_t(boot->m_PWADOrderBrowser->value()) - 1;
+		const size_t removeIDX = static_cast<size_t>(boot->m_PWADOrderBrowser->value()) - 1;
 		if (removeIDX > boot->m_selectedPWADs.size())
 		{
 			return;

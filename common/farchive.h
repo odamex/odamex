@@ -178,7 +178,7 @@ public:
 	}
 
 	// Overload bool because its size is implementation-defined, and we want archived sizes to be exact.
-	FArchive& operator<< (bool b) { return operator<< (uint8_t(b)); }
+	FArchive& operator<< (bool b) { return operator<< (static_cast<uint8_t>(b)); }
 
 	template <typename ElementType, size_t N>
 	FArchive& operator<< (const std::array<ElementType, N>& i_array)

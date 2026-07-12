@@ -315,13 +315,13 @@ bool WadResourceContainer::readWadDirectory()
 	if (!Res_ValidateWadData(header, 4))
 		return false;
 
-	int32_t wad_lump_count = LELONG(*(int32_t*)(header + 4));
+	int32_t wad_lump_count = LELONG(*reinterpret_cast<int32_t*>(header + 4));
 	uint32_t wad_table_length = wad_lump_count * wad_lump_record_length;
 	if (wad_lump_count < 1)
 		return false;
 
-	int32_t wad_table_offset = LELONG(*(int32_t*)(header + 8));
-	if (wad_table_offset < (int32_t)wad_header_length || wad_table_length + wad_table_offset > mFile->size())
+	int32_t wad_table_offset = LELONG(*reinterpret_cast<int32_t*>(header + 8));
+	if (wad_table_offset < static_cast<int32_t>(wad_header_length) || wad_table_length + wad_table_offset > mFile->size())
 		return false;
 
 	// read the WAD lump directory
@@ -337,9 +337,9 @@ bool WadResourceContainer::readWadDirectory()
 		for (uint32_t wad_lump_num = 0; wad_lump_num < static_cast<uint32_t>(wad_lump_count); wad_lump_num++, ptr += wad_lump_record_length)
 		{
 			WadDirectoryEntry entry;
-			entry.offset = LELONG(*(int32_t*)(ptr + 0));
-			entry.length = LELONG(*(int32_t*)(ptr + 4));
-			entry.path = OStringToUpper((char*)(ptr + 8), 8);
+			entry.offset = LELONG(*reinterpret_cast<const int32_t*>(ptr + 0));
+			entry.length = LELONG(*reinterpret_cast<const int32_t*>(ptr + 4));
+			entry.path = OStringToUpper(reinterpret_cast<const char*>(ptr + 8), 8);
 			mDirectory.addEntry(entry);
 		}
 
@@ -969,12 +969,12 @@ bool ZipResourceContainer::readCentralDirectory()
 	if (!mFile->seek(central_dir_end) || mFile->read(buffer, ZIP_END_OF_DIR_SIZE) != ZIP_END_OF_DIR_SIZE)
 		return false;
 
-	uint16_t disk_num = LESHORT(*(uint16_t*)(buffer + 4));
-	uint16_t central_directory_disk_num = LESHORT(*(uint16_t*)(buffer + 6));
-	uint16_t num_entries_on_disk = LESHORT(*(uint16_t*)(buffer + 8));
-	uint16_t num_entries_total = LESHORT(*(uint16_t*)(buffer + 10));
-	uint32_t dir_size = LELONG(*(uint32_t*)(buffer + 12));
-	uint32_t dir_offset = LELONG(*(uint32_t*)(buffer + 16));
+	uint16_t disk_num = LESHORT(*reinterpret_cast<uint16_t*>(buffer + 4));
+	uint16_t central_directory_disk_num = LESHORT(*reinterpret_cast<uint16_t*>(buffer + 6));
+	uint16_t num_entries_on_disk = LESHORT(*reinterpret_cast<uint16_t*>(buffer + 8));
+	uint16_t num_entries_total = LESHORT(*reinterpret_cast<uint16_t*>(buffer + 10));
+	uint32_t dir_size = LELONG(*reinterpret_cast<uint32_t*>(buffer + 12));
+	uint32_t dir_offset = LELONG(*reinterpret_cast<uint32_t*>(buffer + 16));
 
 	delete [] buffer;
 
@@ -1016,19 +1016,19 @@ void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length,
 		if (memcmp(ptr + 0, "PK\x01\x02", 4) != 0)
 			break;
 
-		uint16_t flags = LESHORT(*(uint16_t*)(ptr + 8));
-		uint16_t method = LESHORT(*(uint16_t*)(ptr + 10));
-		uint32_t compressed_length = LELONG(*(uint32_t*)(ptr + 20));
-		uint32_t uncompressed_length = LELONG(*(uint32_t*)(ptr + 24));
-		uint16_t name_length = LESHORT(*(uint16_t*)(ptr + 28));
-		uint16_t extra_length = LESHORT(*(uint16_t*)(ptr + 30));
-		uint16_t comment_length = LESHORT(*(uint16_t*)(ptr + 32));
-		uint32_t local_offset = LELONG(*(uint32_t*)(ptr + 42));
+		uint16_t flags = LESHORT(*reinterpret_cast<const uint16_t*>(ptr + 8));
+		uint16_t method = LESHORT(*reinterpret_cast<const uint16_t*>(ptr + 10));
+		uint32_t compressed_length = LELONG(*reinterpret_cast<const uint32_t*>(ptr + 20));
+		uint32_t uncompressed_length = LELONG(*reinterpret_cast<const uint32_t*>(ptr + 24));
+		uint16_t name_length = LESHORT(*reinterpret_cast<const uint16_t*>(ptr + 28));
+		uint16_t extra_length = LESHORT(*reinterpret_cast<const uint16_t*>(ptr + 30));
+		uint16_t comment_length = LESHORT(*reinterpret_cast<const uint16_t*>(ptr + 32));
+		uint32_t local_offset = LELONG(*reinterpret_cast<const uint32_t*>(ptr + 42));
 	
 		if (ptr + ZIP_CENTRAL_DIR_SIZE + name_length - buffer > length)
 			break;
 
-		std::string name((char*)(ptr + ZIP_CENTRAL_DIR_SIZE + 0), name_length);
+		std::string name(reinterpret_cast<const char*>(ptr + ZIP_CENTRAL_DIR_SIZE + 0), name_length);
 
 		// Convert path separators to '/'
 		for (size_t j = 0; j < name.length(); j++)
@@ -1083,8 +1083,8 @@ uint32_t ZipResourceContainer::calculateEntryOffset(const ZipDirectoryEntry* ent
     {
 		if (memcmp(buffer + 0, "PK\x03\x04", 4) == 0)
         {
-            uint16_t name_length = LESHORT(*(uint16_t*)(buffer + 26));
-            uint16_t extra_length = LESHORT(*(uint16_t*)(buffer + 28));
+            uint16_t name_length = LESHORT(*reinterpret_cast<uint16_t*>(buffer + 26));
+            uint16_t extra_length = LESHORT(*reinterpret_cast<uint16_t*>(buffer + 28));
             offset = entry->local_offset + ZIP_LOCAL_FILE_SIZE + name_length + extra_length;
         }
     }

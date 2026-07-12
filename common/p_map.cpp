@@ -3164,17 +3164,17 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 	// height of the thing and not the height of the map.
 	fixed_t dx = abs(thing->x - bombspot->x);
 	fixed_t dy = abs(thing->y - bombspot->y);
-	float len = float(MAX(dx, dy));
-	float boxradius = float(thing->radius);
+	float len = static_cast<float>(MAX(dx, dy));
+	float boxradius = static_cast<float>(thing->radius);
 
 	if (bombspot->z < thing->z || bombspot->z >= thing->z + thing->height)
 	{
 		float dz;
 
 		if (bombspot->z > thing->z)
-			dz = float(thing->z + thing->height - bombspot->z);
+			dz = static_cast<float>(thing->z + thing->height - bombspot->z);
 		else
-			dz = float(thing->z - bombspot->z);
+			dz = static_cast<float>(thing->z - bombspot->z);
 
 		if (len <= boxradius)
 			len = dz;
@@ -3772,7 +3772,7 @@ double P_PlaneZ(double x, double y, const plane_t *plane)
 
 	// Is the plane level?  (Z value is constant for entire plane)
 	if (P_IsPlaneLevel(plane))
-		return -double(plane->c) * plane->d * m;
+		return -static_cast<double>(plane->c) * plane->d * m;
 
 	return -(plane->a * x + plane->b * y + plane->d) / plane->c;
 }

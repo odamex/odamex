@@ -3312,7 +3312,7 @@ static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 		        avatarMapthing.angle,
 		        avatarMapthing.type,
 		        avatarMapthing.flags,
-		        int(avatarMapthing.special));
+		        static_cast<int>(avatarMapthing.special));
 		return;
 	}
 

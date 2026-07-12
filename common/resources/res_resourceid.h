@@ -66,4 +66,4 @@ using ResourceIdList = std::vector<ResourceId>;
 // ----------------------------------------------------------------------------
 
 template <> struct hashfunc<ResourceId>
-{   size_t operator()(const ResourceId res_id) const { return uint32_t(res_id); } };
+{   size_t operator()(const ResourceId res_id) const { return static_cast<uint32_t>(res_id); } };

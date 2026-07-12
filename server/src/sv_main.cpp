@@ -286,7 +286,7 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 CVAR_FUNC_IMPL(sv_maxrate)
 {
 	for (auto& player : players)
-		player.client.messenger.SetMaxRate(int(sv_maxrate));
+		player.client.messenger.SetMaxRate(static_cast<int>(sv_maxrate));
 }
 
 CVAR_FUNC_IMPL(sv_sharekeys)
@@ -2315,7 +2315,7 @@ void SV_ConnectClient()
 	}
 
 	// [SL] Ignore deprecated client rate. Clients now always use sv_maxrate.
-	cl->messenger.SetMaxRate(int(sv_maxrate));
+	cl->messenger.SetMaxRate(static_cast<int>(sv_maxrate));
 
 	// Check if the IP is banned from our list or not.
 	if (SV_BanCheck(cl))
@@ -2627,9 +2627,9 @@ static float SV_CalculateKillDeathRatio(const player_t* player)
 	if (player->killcount <= 0)	// Copied from HU_DMScores1.
 		return 0.0f;
 	else if (player->killcount >= 1 && player->deathcount == 0)
-		return float(player->killcount);
+		return static_cast<float>(player->killcount);
 	else
-		return float(player->killcount) / float(player->deathcount);
+		return static_cast<float>(player->killcount) / static_cast<float>(player->deathcount);
 }
 
 static float SV_CalculateFragDeathRatio(const player_t* player)
@@ -2652,9 +2652,9 @@ static float SV_CalculateFragDeathRatio(const player_t* player)
 	if (frags <= 0) // Copied from HU_DMScores1.
 		return 0.0f;
 	else if (frags >= 1 && deaths == 0)
-		return float(frags);
+		return static_cast<float>(frags);
 	else
-		return float(frags) / float(deaths);
+		return static_cast<float>(frags) / static_cast<float>(deaths);
 }
 
 //

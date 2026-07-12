@@ -44,7 +44,7 @@ Fl_Image* GUIRes::icon_odamex_128()
 void GUI_SetIcon(Fl_Window* win)
 {
 	const HICON icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(1));
-	win->icon((const void*)icon);
+	win->icon(reinterpret_cast<const void*>(icon));
 }
 
 #else

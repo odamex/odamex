@@ -348,7 +348,7 @@ PlayerSnapshot PlayerSnapshotManager::mInterpolateSnapshots(int from, int to, in
 	if (to == from || !snapto->isContinuous())
 		return *snapto;
 
-	float amount = float(time - from) / float(to - from);
+	float amount = static_cast<float>(time - from) / static_cast<float>(to - from);
 
 	return P_LerpPlayerPosition(*snapfrom, *snapto, amount);
 }
@@ -604,7 +604,7 @@ ActorSnapshot P_LerpActorPosition(const ActorSnapshot &from, const ActorSnapshot
 	#endif // _SNAPSHOT_DEBUG_
 
 	// lerp the angle
-	int anglediff = int(to.getAngle()) - int(from.getAngle());
+	int anglediff = static_cast<int>(to.getAngle()) - static_cast<int>(from.getAngle());
 	angle_t angle = from.getAngle() + FixedMul(anglediff, amount_fixed);
 
 	#ifdef _SNAPSHOT_DEBUG_

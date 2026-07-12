@@ -216,7 +216,7 @@ void AdlMidiMusicSystem::setVolume(float volume)
 	MusicSystem::setVolume(volume);
 
 	_UpdateMidiHook();
-	Mix_VolumeMusic(int(getVolume() * MIX_MAX_VOLUME));
+	Mix_VolumeMusic(static_cast<int>(getVolume() * MIX_MAX_VOLUME));
 }
 
 

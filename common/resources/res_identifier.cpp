@@ -75,15 +75,15 @@ bool Res_ValidatePatchData(const uint8_t* data, size_t length)
 {
 	if (length > 8)
 	{
-		const int16_t width = LESHORT(*(int16_t*)(data + 0));
-		const int16_t height = LESHORT(*(int16_t*)(data + 2));
+		const int16_t width = LESHORT(*reinterpret_cast<const int16_t*>(data + 0));
+		const int16_t height = LESHORT(*reinterpret_cast<const int16_t*>(data + 2));
 
 		const uint32_t column_table_offset = 8;
 		const uint32_t column_table_length = sizeof(int32_t) * width;
 
 		if (width > 0 && height > 0 && length >= column_table_offset + column_table_length)
 		{
-			const int32_t* column_offset = (const int32_t*)(data + column_table_offset);
+			const int32_t* column_offset = reinterpret_cast<const int32_t*>(data + column_table_offset);
 			const int32_t min_column_offset = column_table_offset + column_table_length;
 			const int32_t max_column_offset = length - 1;
 
@@ -133,9 +133,9 @@ bool Res_ValidatePCSpeakerSoundData(const uint8_t* data, size_t length)
 {
 	if (length > 4)
 	{
-		int16_t magic = LESHORT(*(int16_t*)((uint8_t*)data + 0));
-		int16_t sample_length = LESHORT(*(int16_t*)((uint8_t*)data + 2));
-		return magic == 0x0000 && (size_t)sample_length + 4 == length;
+		int16_t magic = LESHORT(*reinterpret_cast<int16_t*>(const_cast<uint8_t*>(data) + 0));
+		int16_t sample_length = LESHORT(*reinterpret_cast<int16_t*>(const_cast<uint8_t*>(data) + 2));
+		return magic == 0x0000 && static_cast<size_t>(sample_length) + 4 == length;
 	}
 	return false;
 }
@@ -155,7 +155,7 @@ bool Res_ValidateSoundData(const uint8_t* data, size_t length)
 {
 	if (length > 8)
 	{
-		if (LESHORT(*(uint16_t*)((uint8_t*)data + 0)) == 0x0003)
+		if (LESHORT(*reinterpret_cast<uint16_t*>(const_cast<uint8_t*>(data) + 0)) == 0x0003)
 			return true;		// DMX sound effect
 		if (data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F')
 			return true;		// WAVE sound effect

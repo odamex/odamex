@@ -33,7 +33,7 @@ public:
 		mData(NULL)
 	{
 		mData = new void*[mResourceCount];
-		memset((unsigned char*)mData, 0, sizeof(*mData) * mResourceCount);
+		memset(reinterpret_cast<unsigned char*>(mData), 0, sizeof(*mData) * mResourceCount);
 	}
 
 	~ResourceCache()

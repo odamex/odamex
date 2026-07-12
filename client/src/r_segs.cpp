@@ -180,9 +180,9 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 	// calculate unclipped screen coordinates for the whole dense column
 	const int64_t topscreen =
-	    int64_t(centeryfrac) - ((int64_t(dcol.texturemid) * spryscale) >> FRACBITS);
+	    static_cast<int64_t>(centeryfrac) - ((static_cast<int64_t>(dcol.texturemid) * spryscale) >> FRACBITS);
 	const int64_t bottomscreen =
-	    topscreen + ((int64_t(spryscale) * dcol.textureheight) >> FRACBITS);
+	    topscreen + ((static_cast<int64_t>(spryscale) * dcol.textureheight) >> FRACBITS);
 
 	int64_t yl = (topscreen - 1) >> FRACBITS;
 	int64_t yh = (bottomscreen - 1) >> FRACBITS;
@@ -229,7 +229,7 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 		return;
 
 	// TODO: move iscale calculation outside this function
-	dcol.iscale = FixedMul(0xffffffffu / unsigned(scale), wallscaley);
+	dcol.iscale = FixedMul(0xffffffffu / static_cast<unsigned>(scale), wallscaley);
 	dcol.texturefrac = dcol.texturemid +
 	                   FixedMul(((dcol.yl + 1) << FRACBITS) - centeryfrac, dcol.iscale);
 
@@ -587,17 +587,17 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	dcol.texturemid = FixedMul(dcol.texturemid - viewz, texture->mScaleY) +
 	                  curline->sidedef->rowoffset;
 	
-	int64_t topscreenclip = int64_t(centeryfrac) << FRACBITS;
-	int64_t botscreenclip = int64_t(centeryfrac - (viewheight << FRACBITS)) << FRACBITS;
+	int64_t topscreenclip = static_cast<int64_t>(centeryfrac) << FRACBITS;
+	int64_t botscreenclip = static_cast<int64_t>(centeryfrac - (viewheight << FRACBITS)) << FRACBITS;
  
 	// top of texture entirely below screen?
-	if (int64_t(dcol.texturemid) * ds->scale1 <= botscreenclip &&
-		int64_t(dcol.texturemid) * ds->scale2 <= botscreenclip)
+	if (static_cast<int64_t>(dcol.texturemid) * ds->scale1 <= botscreenclip &&
+		static_cast<int64_t>(dcol.texturemid) * ds->scale2 <= botscreenclip)
 		return;
 
 	// bottom of texture entirely above screen?
-	if (int64_t(dcol.texturemid - texheight) * ds->scale1 > topscreenclip &&
-		int64_t(dcol.texturemid - texheight) * ds->scale2 > topscreenclip)
+	if (static_cast<int64_t>(dcol.texturemid - texheight) * ds->scale1 > topscreenclip &&
+		static_cast<int64_t>(dcol.texturemid - texheight) * ds->scale2 > topscreenclip)
 		return;
 
 	basecolormap = frontsector->colormap->maps;	// [RH] Set basecolormap

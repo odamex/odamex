@@ -760,7 +760,7 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 {
 	// ensure the requested mode is valid
 	IVideoMode validated_mode = I_ValidateVideoMode(requested_mode);
-	validated_mode.vsync = bool(vid_vsync.asInt());
+	validated_mode.vsync = static_cast<bool>(vid_vsync.asInt());
 	validated_mode.stretch_mode = std::string(vid_filter);
 	assert(validated_mode.isValid());
 

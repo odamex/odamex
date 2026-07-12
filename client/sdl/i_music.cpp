@@ -80,7 +80,7 @@ void I_ResetMidiVolume()
 		// Set the midi device's volume
 		static constexpr DWORD volume = 0xFFFFFFFF;		// maximum volume
 		if (result == MMSYSERR_NOERROR && (caps.dwSupport & MIDICAPS_VOLUME))
-			midiOutSetVolume((HMIDIOUT)device, volume);
+			midiOutSetVolume(reinterpret_cast<HMIDIOUT>(static_cast<uintptr_t>(device)), volume);
 	}
 
 	SDL_UnlockAudio();

@@ -113,7 +113,7 @@ void Texture::init(int width, int height)
 
 	#if CLIENT_APP
 	// mData follows the header in memory
-	mData = (uint8_t*)this + calculateHeaderSize(width, height);
+	mData = reinterpret_cast<uint8_t*>(this) + calculateHeaderSize(width, height);
 	memset(mData, mMaskColor, calculateDataSize(width, height));
 	#endif
 }
@@ -362,12 +362,12 @@ CompositeTextureDefinition TextureManager::buildCompositeTextureDefinition(const
 {
 	CompositeTextureDefinition tex_def;
 
-	tex_def.mScaleX = *(uint8_t*)(data + 10);
-	tex_def.mScaleY = *(uint8_t*)(data + 11);
-	tex_def.mWidth = LESHORT(*((int16_t*)(data + 12)));
-	tex_def.mHeight = LESHORT(*((int16_t*)(data + 14)));
+	tex_def.mScaleX = *const_cast<uint8_t*>(data + 10);
+	tex_def.mScaleY = *const_cast<uint8_t*>(data + 11);
+	tex_def.mWidth = LESHORT(*reinterpret_cast<const int16_t*>(data + 12));
+	tex_def.mHeight = LESHORT(*reinterpret_cast<const int16_t*>(data + 14));
 
-	int16_t patch_count = LESHORT(*((int16_t*)(data + 20)));
+	int16_t patch_count = LESHORT(*reinterpret_cast<const int16_t*>(data + 20));
 	for (int16_t j = 0; j < patch_count; j++)
 	{
 		const uint8_t* patch_data = data + 22 + 10 * j;
@@ -375,12 +375,12 @@ CompositeTextureDefinition TextureManager::buildCompositeTextureDefinition(const
 		tex_def.mPatchDefs.push_back(CompositeTextureDefinition::PatchDef());
 		CompositeTextureDefinition::PatchDef& patch_def = tex_def.mPatchDefs.back();
 
-		patch_def.mOriginX = LESHORT(*((int16_t*)(patch_data + 0)));
-		patch_def.mOriginY = LESHORT(*((int16_t*)(patch_data + 2)));
+		patch_def.mOriginX = LESHORT(*reinterpret_cast<const int16_t*>(patch_data + 0));
+		patch_def.mOriginY = LESHORT(*reinterpret_cast<const int16_t*>(patch_data + 2));
 
 		// TODO: handle invalid pnames indices
-		int16_t patch_num = LESHORT(*((int16_t*)(patch_data + 4)));
-		if ((size_t)patch_num < pnames_lookup.size())
+		int16_t patch_num = LESHORT(*reinterpret_cast<const int16_t*>(patch_data + 4));
+		if (static_cast<size_t>(patch_num) < pnames_lookup.size())
 			patch_def.mResId = pnames_lookup[patch_num];
 	}
 
@@ -497,7 +497,7 @@ void AnimatedTextureManager::clear()
 	mTextureTranslation.clear();
 	mAnimDefs.clear();
 	for (size_t i = 0; i < mWarpedTextures.size(); i++)
-		delete [] (uint8_t*)mWarpedTextures[i].original_texture;
+		delete [] reinterpret_cast<uint8_t*>(mWarpedTextures[i].original_texture);
 	mWarpedTextures.clear();
 	#endif
 }
@@ -553,7 +553,7 @@ const ResourceId AnimatedTextureManager::getResourceId(const ResourceId res_id) 
 //
 static bool Res_AnimationFramesAreConsecutive(const ResourceId start_res_id, const ResourceId end_res_id, TextureSearchOrdering search_ordering)
 {
-	for (uint32_t value = start_res_id; value <= uint32_t(end_res_id); value++)
+	for (uint32_t value = start_res_id; value <= static_cast<uint32_t>(end_res_id); value++)
 	{
 		const ResourceId res_id(value);
 		if (!Res_CheckResource(res_id))
@@ -608,8 +608,8 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 	for (const uint8_t* ptr = data; *ptr != 255; ptr += 23)
 	{
 		bool is_wall = *ptr & 1;
-		const OString start_name = OStringToUpper((char*)(ptr + 10), 8);
-		const OString end_name = OStringToUpper((char*)(ptr + 1), 8);
+		const OString start_name = OStringToUpper(reinterpret_cast<const char*>(ptr + 10), 8);
+		const OString end_name = OStringToUpper(reinterpret_cast<const char*>(ptr + 1), 8);
 		TextureSearchOrdering search_ordering = is_wall ? WALL : FLOOR;
 
 		const ResourceId start_res_id = Res_GetTextureResourceId(start_name, search_ordering, false);
@@ -635,7 +635,7 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 			anim.numframes = numframes; 
 			anim.uniqueframes = false;
 			anim.curframe = 0;
-			int speed = LELONG(*(int*)(ptr + 19));
+			int speed = LELONG(*reinterpret_cast<const int*>(ptr + 19));
 			anim.speedmin[0] = anim.speedmax[0] = speed;
 			anim.countdown = speed - 1;
 
@@ -837,9 +837,9 @@ void AnimatedTextureManager::addWarpedTexture(const ResourceId res_id)
 		return;
 
 	AnimatedTextureManager::warp_t warp;
-	warp.working_texture = (Texture*)Res_CacheTexture(res_id, PU_STATIC);
+	warp.working_texture = const_cast<Texture*>(Res_CacheTexture(res_id, PU_STATIC));
 	size_t size = Texture::calculateSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
-	warp.original_texture = (Texture*)(new uint8_t[size]);
+	warp.original_texture = reinterpret_cast<Texture*>(new uint8_t[size]);
 	copyTexture(warp.original_texture, warp.working_texture);
 	mWarpedTextures.push_back(warp);
 }
@@ -912,7 +912,7 @@ static uint32_t Res_GetTextureCandidateRecency(const ResourceId res_id)
 
 	uint32_t newest = res_id;
 	for (size_t i = 0; i < res_ids.size(); i++)
-		if (res_ids[i] != res_id && (newest == uint32_t(res_id) || uint32_t(res_ids[i]) > newest))
+		if (res_ids[i] != res_id && (newest == static_cast<uint32_t>(res_id) || static_cast<uint32_t>(res_ids[i]) > newest))
 			newest = res_ids[i];
 	return newest;
 }

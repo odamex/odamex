@@ -265,7 +265,7 @@ void R_MapLevelPlane(int y, int x1, int x2)
 		// Determine lighting based on the span's distance from the viewer.
 		unsigned int index = MAXLIGHTZ - 1;
 		const double lightdist = distance * 65536.0;
-		if (lightdist >= 0.0 && lightdist < double(MAXLIGHTZ) * double(1 << LIGHTZSHIFT))
+		if (lightdist >= 0.0 && lightdist < static_cast<double>(MAXLIGHTZ) * static_cast<double>(1 << LIGHTZSHIFT))
 			index = static_cast<unsigned int>(lightdist) >> LIGHTZSHIFT;
 
 		dspan.colormap = basecolormap.with(planezlight[index]);
@@ -612,7 +612,7 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 	angle_t fovang = ANG(consoleplayer().fov / 2.0f);
 	float slopetan = FIXED2FLOAT(finetangent[fovang >> ANGLETOFINESHIFT]);
-	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / float(I_GetSurfaceWidth());
+	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / static_cast<float>(I_GetSurfaceWidth());
 
 	plight = (slopevis * ixscale * iyscale) / (zat - viewzd);
 	shade = 256.0 * 2.0 - (pl->lightlevel + 16.0) * 256.0 / 128.0;

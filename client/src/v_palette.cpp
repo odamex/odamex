@@ -267,7 +267,7 @@ public:
 		const double invgamma = 1.0 / level;
 
 		for (int i = 0; i < 256; i++)
-			table[i] = static_cast<byte>(255.0 * pow(double(i) / 255.0, invgamma));
+			table[i] = static_cast<byte>(255.0 * pow(static_cast<double>(i) / 255.0, invgamma));
 	}
 };
 
@@ -1009,7 +1009,7 @@ fargb_t V_HSVtoRGB(const fahsv_t &color)
 	float q = v * (1.0f - s * f);
 	float t = v * (1.0f - s * (1.0f - f));
 
-	int sector = int(h / 60.0f);
+	int sector = static_cast<int>(h / 60.0f);
 	switch (sector)
 	{
 		case 0:
@@ -1225,7 +1225,7 @@ void V_DoPaletteEffects()
 
 			// slowly fade the berzerk out
 			if (plyr->powers[pw_strength])
-				red_amount = MAX(red_amount, 12.0f - float(plyr->powers[pw_strength]) / 64.0f);
+				red_amount = MAX(red_amount, 12.0f - static_cast<float>(plyr->powers[pw_strength]) / 64.0f);
 
 			if (red_amount > 0.0f)
 			{

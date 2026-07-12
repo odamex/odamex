@@ -1791,9 +1791,9 @@ static void M_SlidePlayerRed(int choice)
 	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-		color.setr(std::max(0, int(color.getr()) - 1 - accel));
+		color.setr(std::max(0, static_cast<int>(color.getr()) - 1 - accel));
 	else
-		color.setr(std::min(255, int(color.getr()) + 1 + accel));
+		color.setr(std::min(255, static_cast<int>(color.getr()) + 1 + accel));
 
 	SendNewColor(color.getr(), color.getg(), color.getb());
 }
@@ -1804,9 +1804,9 @@ static void M_SlidePlayerGreen (int choice)
 	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-		color.setg(std::max(0, int(color.getg()) - 1 - accel));
+		color.setg(std::max(0, static_cast<int>(color.getg()) - 1 - accel));
 	else
-		color.setg(std::min(255, int(color.getg()) + 1 + accel));
+		color.setg(std::min(255, static_cast<int>(color.getg()) + 1 + accel));
 
 	SendNewColor(color.getr(), color.getg(), color.getb());
 }
@@ -1817,9 +1817,9 @@ static void M_SlidePlayerBlue (int choice)
 	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-		color.setb(std::max(0, int(color.getb()) - 1 - accel));
+		color.setb(std::max(0, static_cast<int>(color.getb()) - 1 - accel));
 	else
-		color.setb(std::min(255, int(color.getb()) + 1 + accel));
+		color.setb(std::min(255, static_cast<int>(color.getb()) + 1 + accel));
 
 	SendNewColor(color.getr(), color.getg(), color.getb());
 }

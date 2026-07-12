@@ -462,7 +462,7 @@ void Wipe_Start()
 	if (in_progress)
 		Wipe_Stop();
 
-	if (r_wipetype.asInt() < 0 || r_wipetype.asInt() >= int(wipe_NUMWIPES))
+	if (r_wipetype.asInt() < 0 || r_wipetype.asInt() >= static_cast<int>(wipe_NUMWIPES))
 		current_wipe_type = wipe_Melt;
 	else
 		current_wipe_type = r_wipetype.asEnum<wipe_type_t>();

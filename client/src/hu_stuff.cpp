@@ -604,7 +604,7 @@ static void ShoveChatStr (const std::string& str, byte visibility)
 	if (str.length() == 0)
 		return;
 
-    const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
+    const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), static_cast<size_t>(MAX_CHATSTR_LEN))};
 
 	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Say(visiblePortion, visibility));
 }
@@ -615,7 +615,7 @@ static void ShovePrivMsg(byte pid, const std::string& str)
 	if (str.length() == 0)
 		return;
 
-	const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
+	const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), static_cast<size_t>(MAX_CHATSTR_LEN))};
 
 	MSG_WriteSVC(messenger.ReliableBuf(), CLC_PrivMsg(pid, visiblePortion));
 }
@@ -1906,9 +1906,9 @@ static float HU_CalculateKillDeathRatio(const player_t* player)
 	if (player->killcount <= 0)	// Copied from HU_DMScores1.
 		return 0.0f;
 	else if (player->killcount >= 1 && player->deathcount == 0)
-		return float(player->killcount);
+		return static_cast<float>(player->killcount);
 	else
-		return float(player->killcount) / float(player->deathcount);
+		return static_cast<float>(player->killcount) / static_cast<float>(player->deathcount);
 }
 
 static float HU_CalculateFragDeathRatio(const player_t* player)
@@ -1932,9 +1932,9 @@ static float HU_CalculateFragDeathRatio(const player_t* player)
 	if (frags <= 0)	// Copied from HU_DMScores1.
 		return 0.0f;
 	else if (frags >= 1 && deaths == 0)
-		return float(frags);
+		return static_cast<float>(frags);
 	else
-		return float(frags) / float(deaths);
+		return static_cast<float>(frags) / static_cast<float>(deaths);
 }
 
 //

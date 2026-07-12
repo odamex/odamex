@@ -170,14 +170,14 @@ public:
 
 ConsoleLine::ConsoleLine()
     : color_code("\034-"), wrapped(false), print_level(PRINT_HIGH),
-      timeout(gametic + int(con_notifytime * TICRATE))
+      timeout(gametic + static_cast<int>(con_notifytime * TICRATE))
 {
 }
 
 ConsoleLine::ConsoleLine(const std::string& _text, const std::string& _color_code,
                          int _print_level)
     : text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
-      timeout(gametic + int(con_notifytime * TICRATE))
+      timeout(gametic + static_cast<int>(con_notifytime * TICRATE))
 {
 }
 
@@ -2269,7 +2269,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 {
 	unsigned int i;
 
-	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
+	const float fmsgtime = msgtime ? static_cast<float>(msgtime) : con_midtime;
 
 	if (MidMsg)
 		V_FreeBrokenLines(MidMsg);
@@ -2352,7 +2352,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 {
 	unsigned int i;
 
-	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
+	const float fmsgtime = msgtime ? static_cast<float>(msgtime) : con_midtime;
 
 	if (GameMsg)
 		V_FreeBrokenLines(GameMsg);

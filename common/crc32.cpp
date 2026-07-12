@@ -188,7 +188,7 @@ uint32_t crc32_1byte_tableless(const void* data, size_t length, uint32_t previou
 
   while (length-- != 0)
   {
-    uint8_t s = uint8_t(crc) ^ *current++;
+    uint8_t s = static_cast<uint8_t>(crc) ^ *current++;
 
     // Hagai Gold made me aware of this table-less algorithm and send me code
 

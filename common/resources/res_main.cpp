@@ -234,7 +234,7 @@ void ResourceManager::openResourceFile(const OString& path)
 
 	addResourceContainer(container, NULL, global_directory_name, path);
 
-	mResourceContainerFileNames.insert(std::make_pair(size_t(container), path));
+	mResourceContainerFileNames.insert(std::make_pair(reinterpret_cast<size_t>(container), path));
 	mResourceFileNames.push_back(path);
 
 }

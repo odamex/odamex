@@ -1159,7 +1159,7 @@ void DrawToasts()
 	if (!hud_feedobits)
 		return;
 
-	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
+	const int fadeDoneTics = (hud_feedtime * static_cast<float>(TICRATE));
 	const int fadeOutTics = fadeDoneTics - TICRATE;
 
 	V_SetFont("DIGFONT");
@@ -1271,7 +1271,7 @@ void DrawToasts()
 
 void ToastTicker()
 {
-	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
+	const int fadeDoneTics = (hud_feedtime * static_cast<float>(TICRATE));
 
 	// Remove stale toasts in a loop.
 	std::erase_if(g_Toasts, [fadeDoneTics](const drawToast_t& toast){

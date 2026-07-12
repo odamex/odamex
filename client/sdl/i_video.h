@@ -135,7 +135,7 @@ public:
 
 	double getAspectRatio() const
 	{
-		return double(width) / double(height);
+		return static_cast<double>(width) / static_cast<double>(height);
 	}
 
 	double getPixelAspectRatio() const
@@ -144,7 +144,7 @@ public:
 		if (isWideScreen())
 			return 1.0;
 
-		return double(width) * 0.75 / double(height);
+		return static_cast<double>(width) * 0.75 / static_cast<double>(height);
 	}
 
 	uint16_t	width;
@@ -268,7 +268,7 @@ public:
 
 	inline const uint8_t* getBuffer(uint16_t x, uint16_t y) const
 	{
-		return mSurfaceBuffer + int(y) * getPitch() + int(x) * getBytesPerPixel();
+		return mSurfaceBuffer + static_cast<int>(y) * getPitch() + static_cast<int>(x) * getBytesPerPixel();
 	}
 
 	inline uint8_t* getBuffer(uint16_t x, uint16_t y)

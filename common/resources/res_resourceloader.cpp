@@ -85,10 +85,10 @@ static void Res_DrawPatchIntoTexture(
 
 	int texwidth = texture->mWidth;
 	int texheight = texture->mHeight;
-	int16_t patchwidth = LESHORT(*(int16_t*)(lump_data + 0));
-	int16_t patchheight = LESHORT(*(int16_t*)(lump_data + 2));
+	int16_t patchwidth = LESHORT(*reinterpret_cast<const int16_t*>(lump_data + 0));
+	int16_t patchheight = LESHORT(*reinterpret_cast<const int16_t*>(lump_data + 2));
 
-	const int32_t* colofs = (int32_t*)(lump_data + 8);
+	const int32_t* colofs = reinterpret_cast<const int32_t*>(lump_data + 8);
 
 	if (patchwidth <= 0 || patchheight <= 0 ||
 		lump_length < 8 + patchwidth * sizeof(*colofs))		// long enough for column offset table?
@@ -237,7 +237,7 @@ uint16_t FlatTextureLoader::getWidth() const
 	else if (size == sizeof(palindex_t) * 64 * 128)		// Hexen scrolling flat
 		return 64;
 	else if (size > 0)
-		return (uint16_t)(sqrt(double(size)) / sizeof(palindex_t));
+		return static_cast<uint16_t>(sqrt(static_cast<double>(size)) / sizeof(palindex_t));
 	return 0;
 }
 
@@ -294,8 +294,8 @@ uint32_t PatchTextureLoader::size() const
 
 	// read the patch_t header to extract width & height
 	mRawResourceAccessor->loadResource(mResId, raw_data, 4);
-	int16_t width = LESHORT(*(int16_t*)(raw_data + 0));
-	int16_t height = LESHORT(*(int16_t*)(raw_data + 2));
+	int16_t width = LESHORT(*reinterpret_cast<int16_t*>(raw_data + 0));
+	int16_t height = LESHORT(*reinterpret_cast<int16_t*>(raw_data + 2));
 
 	// nonsense dimensions mean load() will reject the patch data and create
 	// an empty texture, so don't let them inflate the allocation either
@@ -318,10 +318,10 @@ void PatchTextureLoader::load(void* data) const
 	int16_t width = 0, height = 0, offsetx = 0, offsety = 0;
 	if (Res_ValidatePatchData(patch_data, patch_size))
 	{
-		width = LESHORT(*(int16_t*)(patch_data + 0));
-		height = LESHORT(*(int16_t*)(patch_data + 2));
-		offsetx = LESHORT(*(int16_t*)(patch_data + 4));
-		offsety = LESHORT(*(int16_t*)(patch_data + 6));
+		width = LESHORT(*reinterpret_cast<int16_t*>(patch_data + 0));
+		height = LESHORT(*reinterpret_cast<int16_t*>(patch_data + 2));
+		offsetx = LESHORT(*reinterpret_cast<int16_t*>(patch_data + 4));
+		offsety = LESHORT(*reinterpret_cast<int16_t*>(patch_data + 6));
 	}
 
 	Texture* texture = createTexture(data, width, height);
@@ -425,7 +425,7 @@ void InMemoryTextureLoader::load(void* data) const
 #ifdef USE_PNG
 static void Res_ReadPNGCallback(png_struct* png_ptr, png_byte* dest, png_size_t length)
 {
-	MEMFILE* mfp = (MEMFILE*)png_get_io_ptr(png_ptr);
+	MEMFILE* mfp = static_cast<MEMFILE*>(png_get_io_ptr(png_ptr));
 	mem_fread(dest, sizeof(byte), length, mfp);
 }
 #endif
@@ -470,7 +470,7 @@ static bool Res_ReadPNGGrabChunk(const uint8_t* data, uint32_t size, int16_t& xo
 	uint32_t pos = 8;
 	while (pos + 8 <= size)
 	{
-		const uint32_t length = BELONG(*(const uint32_t*)(data + pos));
+		const uint32_t length = BELONG(*reinterpret_cast<const uint32_t*>(data + pos));
 		const uint8_t* chunk_type = data + pos + 4;
 
 		if (memcmp(chunk_type, "IDAT", 4) == 0 || memcmp(chunk_type, "IEND", 4) == 0)
@@ -478,8 +478,8 @@ static bool Res_ReadPNGGrabChunk(const uint8_t* data, uint32_t size, int16_t& xo
 
 		if (memcmp(chunk_type, "grAb", 4) == 0 && length == 8 && pos + 16 <= size)
 		{
-			xoffs = (int16_t)(int32_t)BELONG(*(const uint32_t*)(data + pos + 8));
-			yoffs = (int16_t)(int32_t)BELONG(*(const uint32_t*)(data + pos + 12));
+			xoffs = static_cast<int16_t>(static_cast<int32_t>(BELONG(*reinterpret_cast<const uint32_t*>(data + pos + 8))));
+			yoffs = static_cast<int16_t>(static_cast<int32_t>(BELONG(*reinterpret_cast<const uint32_t*>(data + pos + 12))));
 			return true;
 		}
 
@@ -505,8 +505,8 @@ void PngTextureLoader::readHeader()
 	{
 		uint8_t data[data_size];
 		mRawResourceAccessor->loadResource(mResId, data, data_size);
-		mWidth = BELONG(*(uint32_t*)(data + 16));
-		mHeight = BELONG(*(uint32_t*)(data + 20));
+		mWidth = BELONG(*reinterpret_cast<uint32_t*>(data + 16));
+		mHeight = BELONG(*reinterpret_cast<uint32_t*>(data + 20));
 		mBitDepth = data[24];
 		mColorType = data[25];
 	}
@@ -682,7 +682,7 @@ void PngTextureLoader::load(void* data) const
 	// inside this texture's allocation, aligned to the pixel size.
 	uintptr_t plane_addr = reinterpret_cast<uintptr_t>(
 	    texture->mData + sizeof(palindex_t) * mWidth * mHeight);
-	plane_addr = (plane_addr + sizeof(argb_t) - 1) & ~uintptr_t(sizeof(argb_t) - 1);
+	plane_addr = (plane_addr + sizeof(argb_t) - 1) & ~static_cast<uintptr_t>(sizeof(argb_t) - 1);
 	argb_t* argb_plane = reinterpret_cast<argb_t*>(plane_addr);
 	texture->mARGBData = argb_plane;
 

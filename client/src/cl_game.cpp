@@ -331,7 +331,7 @@ BEGIN_COMMAND (weapnext)
 {
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), true);
 	if (newweapon != wp_nochange)
-		Impulse = int(newweapon) + 50;
+		Impulse = static_cast<int>(newweapon) + 50;
 }
 END_COMMAND (weapnext)
 
@@ -339,7 +339,7 @@ BEGIN_COMMAND (weapprev)
 {
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), false);
 	if (newweapon != wp_nochange)
-		Impulse = int(newweapon) + 50;
+		Impulse = static_cast<int>(newweapon) + 50;
 }
 END_COMMAND (weapprev)
 
@@ -2193,7 +2193,7 @@ bool G_CheckDemoStatus (void)
 				extern dtime_t starttime;
 				dtime_t endtime = I_MSTime() - starttime;
 				int realtics = endtime * TICRATE / 1000;
-				float fps = float(gametic * TICRATE) / realtics;
+				float fps = static_cast<float>(gametic * TICRATE) / realtics;
 
 				PrintFmt(PRINT_HIGH, "timed {} gametics in {} realtics ({:.1f} fps)\n",
 				         gametic, realtics, fps);

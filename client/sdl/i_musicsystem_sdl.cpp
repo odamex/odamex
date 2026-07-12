@@ -144,7 +144,7 @@ void SdlMixerMusicSystem::resumeSong()
 void SdlMixerMusicSystem::setVolume(float volume)
 {
 	MusicSystem::setVolume(volume);
-	Mix_VolumeMusic(int(getVolume() * MIX_MAX_VOLUME));
+	Mix_VolumeMusic(static_cast<int>(getVolume() * MIX_MAX_VOLUME));
 }
 
 //

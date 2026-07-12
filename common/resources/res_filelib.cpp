@@ -66,7 +66,7 @@ OMD5Hash Res_MD5(const std::string& filename)
 
 	std::stringstream hash;
 	for (int i = 0; i < 16; i++)
-		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
+		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << static_cast<short>(digest[i]);
 
 	OMD5Hash::makeFromHexStr(rvo, hash.str());
 	return rvo;
@@ -274,7 +274,7 @@ static char* GetRegistryString(registry_value_t *reg_val)
 		// Allocate a buffer for the value and read the value
 		result = static_cast<char*>(malloc(len));
 
-		if (RegQueryValueEx(key, reg_val->value, NULL, &valtype, (unsigned char*)result, &len) != ERROR_SUCCESS)
+		if (RegQueryValueEx(key, reg_val->value, NULL, &valtype, reinterpret_cast<unsigned char*>(result), &len) != ERROR_SUCCESS)
 		{
 			free(result);
 			result = NULL;

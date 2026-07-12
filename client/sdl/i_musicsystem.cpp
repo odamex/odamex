@@ -49,8 +49,8 @@ static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 	if (timeDivision & 0x8000)
 	{
 		// timeDivision is in SMPTE frames per second format
-		double framespersecond = double((timeDivision & 0x7F00) >> 8);
-		double ticksperframe = double((timeDivision & 0xFF));
+		double framespersecond = static_cast<double>((timeDivision & 0x7F00) >> 8);
+		double ticksperframe = static_cast<double>((timeDivision & 0xFF));
 
 		// [SL] 2011-12-23 - An fps value of 29 in timeDivision really implies
 		// 29.97 fps.
@@ -62,7 +62,7 @@ static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 	else
 	{
 		// timeDivision is in ticks per beat format
-		double ticsperbeat = double(timeDivision & 0x7FFF);
+		double ticsperbeat = static_cast<double>(timeDivision & 0x7FFF);
 		static double millisecondsperminute = 60.0 * 1000.0;
 		double millisecondsperbeat = millisecondsperminute / tempo;
 

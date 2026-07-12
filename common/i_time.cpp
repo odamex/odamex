@@ -73,7 +73,7 @@ dtime_t I_GetTime()
 	{
 		LARGE_INTEGER freq;
 		QueryPerformanceFrequency(&freq);
-		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / double(freq.QuadPart);
+		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / static_cast<double>(freq.QuadPart);
 
 		QueryPerformanceCounter(&initial_count);
 

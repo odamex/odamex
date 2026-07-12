@@ -150,7 +150,7 @@ IWindowSurface* R_GetRenderingSurface()
 //
 int R_PointOnSide(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh)
 {
-	return int64_t(xh - xl) * (y - yl) - int64_t(yh - yl) * (x - xl) >= 0;
+	return static_cast<int64_t>(xh - xl) * (y - yl) - static_cast<int64_t>(yh - yl) * (x - xl) >= 0;
 }
 
 //
@@ -190,7 +190,7 @@ int R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 //
 bool R_PointOnLine(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh)
 {
-	return int64_t(xh - xl) * (y - yl) - int64_t(yh - yl) * (x - xl) == 0;
+	return static_cast<int64_t>(xh - xl) * (y - yl) - static_cast<int64_t>(yh - yl) * (x - xl) == 0;
 }
 
 
@@ -298,8 +298,8 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 	const double yd = FIXED2DOUBLE(y);
 
 
-	tx = static_cast<fixed_t>(static_cast<int64_t>((xd * cached_cos - yd * cached_sin) * double(FRACUNIT)));
-	ty = static_cast<fixed_t>(static_cast<int64_t>((xd * cached_sin + yd * cached_cos) * double(FRACUNIT)));
+	tx = static_cast<fixed_t>(static_cast<int64_t>((xd * cached_cos - yd * cached_sin) * static_cast<double>(FRACUNIT)));
+	ty = static_cast<fixed_t>(static_cast<int64_t>((xd * cached_sin + yd * cached_cos) * static_cast<double>(FRACUNIT)));
 }
 
 //
@@ -427,7 +427,7 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 int R_ProjectPointX(fixed_t x, fixed_t y)
 {
 	if (y > 0)
-		return FIXED2INT(centerxfrac + int64_t(FocalLengthX) * int64_t(x) / int64_t(y));
+		return FIXED2INT(centerxfrac + static_cast<int64_t>(FocalLengthX) * static_cast<int64_t>(x) / static_cast<int64_t>(y));
 	else
 		return centerx;
 }
@@ -440,7 +440,7 @@ int R_ProjectPointX(fixed_t x, fixed_t y)
 int R_ProjectPointY(fixed_t z, fixed_t y)
 {
 	if (y > 0)
-		return FIXED2INT(centeryfrac - int64_t(FocalLengthY) * int64_t(z) / int64_t(y));
+		return FIXED2INT(centeryfrac - static_cast<int64_t>(FocalLengthY) * static_cast<int64_t>(z) / static_cast<int64_t>(y));
 	else
 		return centery;
 }
@@ -1065,7 +1065,7 @@ void R_RenderPlayerView(player_t* player)
 	R_DrawMasked();
 
 	// NOTE(jsd): Full-screen status color blending:
-	int blend_alpha = int(blend_color.geta() * 255.0f);
+	int blend_alpha = static_cast<int>(blend_color.geta() * 255.0f);
 	if (surface->getBitsPerPixel() == 32 && blend_alpha > 0)
 	{
 		r_dimpatchD(surface, V_GammaCorrect(blend_color), blend_alpha,
@@ -1206,14 +1206,14 @@ static void R_InitViewWindow()
 	if (consoleplayer().camera && consoleplayer().camera->player)
 		desired_fov = clamp(consoleplayer().camera->player->fov, 45.0f, 135.0f);
 
-	FieldOfView = int(desired_fov * FINEANGLES / 360.0f);
+	FieldOfView = static_cast<int>(desired_fov * FINEANGLES / 360.0f);
 
 	if (V_UseWidescreen())
 	{
 		float am = (3.0f * I_GetSurfaceWidth()) / (4.0f * I_GetSurfaceHeight());
 		float radfov = desired_fov * PI / 180.0f;
 		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
-		CorrectFieldOfView = int(widefov * FINEANGLES / 360.0f);
+		CorrectFieldOfView = static_cast<int>(widefov * FINEANGLES / 360.0f);
 	}
 	else
  	{

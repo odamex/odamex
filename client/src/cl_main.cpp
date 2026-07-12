@@ -342,7 +342,7 @@ static int CL_CalculateWorldIndexDriftCorrection()
 		world_index_accum += CORRECTION_PERIOD * delta;
 
 	// truncate the decimal portion of world_index_accum
-	int correction = int(world_index_accum);
+	int correction = static_cast<int>(world_index_accum);
 
 	// reset world_index_accum if our correction will affect world_index
 	if (correction != 0)
@@ -1048,7 +1048,7 @@ BEGIN_COMMAND (rcon)
 {
 	if (connected && argc > 1)
 	{
-		const std::string_view commandString {args, std::min(size_t(256), strlen(args)) };
+		const std::string_view commandString {args, std::min(static_cast<size_t>(256), strlen(args)) };
 
 		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Rcon(commandString));
 	}

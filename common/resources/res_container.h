@@ -422,7 +422,7 @@ private:
     static const size_t ZIP_END_OF_DIR_SIZE = 22;
     static const size_t ZIP_CENTRAL_DIR_SIZE = 46;
     static const size_t ZIP_LOCAL_FILE_SIZE = 30;
-    static const uint32_t INVALID_OFFSET = uint32_t(-1);
+    static const uint32_t INVALID_OFFSET = static_cast<uint32_t>(-1);
 
     // Compression methods (definition does not imply support)
     enum 

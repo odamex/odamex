@@ -664,7 +664,7 @@ void V_DrawFPSWidget()
 	{
 		static std::string buffer;
 		static double last_fps = 0.0;
-		const double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
+		const double delta_time_ms = 1000.0 * static_cast<double>(delta_time) / ONE_SECOND;
 
 		::g_GraphData.push(delta_time_ms);
 
@@ -739,7 +739,7 @@ void V_DrawFPSWidget()
 		// calculate last_fps every 1000ms
 		if (time_accum > ONE_SECOND)
 		{
-			last_fps = double(ONE_SECOND * frame_count) / time_accum;
+			last_fps = static_cast<double>(ONE_SECOND * frame_count) / time_accum;
 			time_accum = 0;
 			frame_count = 0;
 
@@ -762,7 +762,7 @@ void V_DrawFPSWidget()
 		// calculate last_fps every 1000ms
 		if (time_accum > ONE_SECOND)
 		{
-			last_fps = double(ONE_SECOND * frame_count) / time_accum;
+			last_fps = static_cast<double>(ONE_SECOND * frame_count) / time_accum;
 			time_accum = 0;
 			frame_count = 0;
 		}
@@ -806,7 +806,7 @@ static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
 //
 void V_DrawFPSTicker()
 {
-	const int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
+	const int current_tic = static_cast<int>(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
 	static int last_tic = current_tic;
 
 	const int tics = clamp(current_tic - last_tic, 0, 20);

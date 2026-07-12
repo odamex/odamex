@@ -717,7 +717,7 @@ static char *C_GetDefaultMusicSystem()
 	#endif
 
 	// don't overflow str
-	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
+	if (static_cast<int>(defaultmusicsystem) > 999 || static_cast<int>(defaultmusicsystem) < 0)
 		defaultmusicsystem = MS_NONE;
 
 	snprintf(str, 4, "%i", defaultmusicsystem);

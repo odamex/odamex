@@ -40,14 +40,14 @@ short roundToShort(float f)
 // Return the number of scaled available horizontal pixels to draw on.
 int XSize(const float scale)
 {
-	int x_scale = std::max(1, int(scale * CleanXfac));
+	int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
 	return I_GetSurfaceWidth() / x_scale;
 }
 
 // Return the number of scaled available vertical pixels to draw on.
 int YSize(const float scale)
 {
-	int y_scale = std::max(1, int(scale * CleanYfac));
+	int y_scale = std::max(1, static_cast<int>(scale * CleanYfac));
 	return I_GetSurfaceHeight() / y_scale;
 }
 
@@ -68,8 +68,8 @@ void calculateOrigin(int& x, int& y,
 
 	// Since Doom's assets are so low-resolution, scaling is done by simple
 	// doubling/tripling/etc. of the pixels with no alising.
-	x_scale = std::max(1, int(scale * CleanXfac));
-	y_scale = std::max(1, int(scale * CleanYfac));
+	x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
+	y_scale = std::max(1, static_cast<int>(scale * CleanYfac));
 
 	// "Alignment" is the side of the screen that the passed x and y values
 	// are relative to.  Note that for X_RIGHT and Y_BOTTOM, the coordinate

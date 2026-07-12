@@ -329,8 +329,8 @@ int P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line)
 	if (co_zdoomphys)
 	{
 		// Make use of vector cross product
-		return	int64_t(y - line->v1->y) * int64_t(line->dx) +
-				int64_t(line->v1->x - x) * int64_t(line->dy) >= 0;
+		return	static_cast<int64_t>(y - line->v1->y) * static_cast<int64_t>(line->dx) +
+				static_cast<int64_t>(line->v1->x - x) * static_cast<int64_t>(line->dy) >= 0;
 	}
 	else
 	{
@@ -408,8 +408,8 @@ int P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line)
 	if (co_zdoomphys)
 	{
 		// Make use of vector cross product
-		return	int64_t(y - line->y) * int64_t(line->dx) +
-				int64_t(line->x - x) * int64_t(line->dy) >= 0;
+		return	static_cast<int64_t>(y - line->y) * static_cast<int64_t>(line->dx) +
+				static_cast<int64_t>(line->x - x) * static_cast<int64_t>(line->dy) >= 0;
 	}
 	else
 	{
@@ -465,15 +465,15 @@ fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1)
 	{
 		// [RH] Use 64 bit ints, so long divlines don't overflow
 		int64_t den =
-				(int64_t(v1->dy) * int64_t(v2->dx) -
-				 int64_t(v1->dx) * int64_t(v2->dy)) >> FRACBITS;
+				(static_cast<int64_t>(v1->dy) * static_cast<int64_t>(v2->dx) -
+				 static_cast<int64_t>(v1->dx) * static_cast<int64_t>(v2->dy)) >> FRACBITS;
 
 		if (den == 0)
 			return 0;		// parallel
 
 		int64_t num =
-				int64_t(v1->x - v2->x) * int64_t(v1->dy) +
-				int64_t(v2->y - v1->y) * int64_t(v1->dx);
+				static_cast<int64_t>(v1->x - v2->x) * static_cast<int64_t>(v1->dy) +
+				static_cast<int64_t>(v2->y - v1->y) * static_cast<int64_t>(v1->dx);
 
 		return static_cast<fixed_t>(num / den);
 	}
