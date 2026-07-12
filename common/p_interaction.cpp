@@ -2491,7 +2491,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			}
 		}
 
-        bool clientsNeedUpdate = false;
+		bool clientsNeedUpdate = false;
 		if (!player)
 		{
 			SV_SendDamageMobj(target, pain);

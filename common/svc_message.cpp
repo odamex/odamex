@@ -697,12 +697,12 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
 
 odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj)
 {
-    odaproto::svc::UpdateMobjWithMode msg;
+	odaproto::svc::UpdateMobjWithMode msg;
 
-    FillUpdateMobj(* msg.mutable_update(), mobj);
+	FillUpdateMobj(* msg.mutable_update(), mobj);
 
 	msg.set_mode(static_cast<odaproto::svc::MobjModeEnum>(mobj.mode));
-    return msg;
+	return msg;
 }
 
 EXTERN_CVAR(sv_sharekeys);
