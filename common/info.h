@@ -1791,8 +1791,10 @@ struct mobjinfo_t
 	const char* ripsound    = nullptr;
 	int32_t droppeditem     = MT_NULL;
 
+	// ZDoom
+	fixed_t scale = FRACUNIT; // render scale for the thing's sprites
+
 	// ID24 stuff
-	fixed_t scale           = FRACUNIT; // render scale for the thing's sprites
 	// int minrespawntics      = 420;
 	// int respawndice         = 4;
 	// int pickupammotype      = -1;
