@@ -1241,6 +1241,25 @@ public:
 		return file && file->mIsDeprecated;
 	}
 
+		bool isDeprecated(const OResFile& possible_iwad_resfile) const
+	{
+		const OMD5Hash hash(possible_iwad_resfile.getMD5());
+		const FileIdentifier* file = lookupByMd5Sum(hash);
+		return file && file->mIsDeprecated;
+	}
+
+	// [SL] not an offical IWAD.
+	// Check for lumps that are required by vanilla Doom.
+	static constexpr int NUM_CHECKLUMPS = 6;
+	static constexpr char checklumps[NUM_CHECKLUMPS][8] = {
+	    {'P', 'L', 'A', 'Y', 'P', 'A', 'L'},      // 0
+	    {'C', 'O', 'L', 'O', 'R', 'M', 'A', 'P'}, // 1
+	    {'F', '_', 'S', 'T', 'A', 'R', 'T'},      // 2
+	    {'S', '_', 'S', 'T', 'A', 'R', 'T'},      // 3
+	    {'T', 'E', 'X', 'T', 'U', 'R', 'E', '1'}, // 4
+	    {'S', 'T', 'D', 'I', 'S', 'K'}            // 5
+	};
+
 	bool isIWAD(const std::string& filename) const
 	{
 		const OMD5Hash hash = Res_MD5(filename);
@@ -1249,19 +1268,22 @@ public:
 		if (ident)
 			return ident->mIsIWAD;
 
-		// [SL] not an offical IWAD.
-		// Check for lumps that are required by vanilla Doom.
-		static constexpr int NUM_CHECKLUMPS = 6;
-		static constexpr char checklumps[NUM_CHECKLUMPS][8] = {
-		    {'P', 'L', 'A', 'Y', 'P', 'A', 'L'},      // 0
-		    {'C', 'O', 'L', 'O', 'R', 'M', 'A', 'P'}, // 1
-		    {'F', '_', 'S', 'T', 'A', 'R', 'T'},      // 2
-		    {'S', '_', 'S', 'T', 'A', 'R', 'T'},      // 3
-		    {'T', 'E', 'X', 'T', 'U', 'R', 'E', '1'}, // 4
-		    {'S', 'T', 'D', 'I', 'S', 'K'}            // 5
-		};
-
 		WadFileLumpFinder lumps(filename);
+		for (int i = 0; i < NUM_CHECKLUMPS; i++)
+			if (!lumps.exists(std::string(checklumps[i], 8)))
+				return false;
+		return true;
+	}
+
+	bool isIWAD(const OResFile& file) const
+	{
+		const OMD5Hash& md5sum(file.getMD5());
+		const FileIdentifier* ident = lookupByMd5Sum(md5sum);
+
+		if (ident)
+			return ident->mIsIWAD;
+
+		WadFileLumpFinder lumps(file.getFullpath());
 		for (int i = 0; i < NUM_CHECKLUMPS; i++)
 			if (!lumps.exists(std::string(checklumps[i], 8)))
 				return false;
@@ -1702,7 +1724,7 @@ bool W_IsIWADDeprecated(const std::string& filename)
 //
 bool W_IsIWAD(const OResFile& file)
 {
-	return ::identtab.isIWAD(file.getFullpath());
+	return ::identtab.isIWAD(file);
 }
 
 

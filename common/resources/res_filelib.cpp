@@ -44,31 +44,30 @@ OMD5Hash Res_MD5(const std::string& filename)
 {
 	OMD5Hash rvo;
 
-	std::ifstream ifs(filename, std::ios::in | std::ios::binary);
-	if (!ifs.good())
+	const int file_chunk_size = 8192;
+	auto fp = uqFile(fopen(filename.c_str(), "rb"));
+
+	if (!fp)
 		return rvo;
 
 	md5_state_t state;
 	md5_init(&state);
 
-	char buf[8192];
-	while (ifs)
-	{
-		ifs.read(buf, sizeof(buf));
-		const std::streamsize n = ifs.gcount();
-		if (n > 0)
-			md5_append(&state, reinterpret_cast<const md5_byte_t*>(buf),
-			           static_cast<int>(n));
-	}
+	size_t n = 0;
+	unsigned char buf[file_chunk_size];
+
+	while ((n = fread(buf, 1, sizeof(buf), fp.get())))
+		md5_append(&state, static_cast<byte*>(buf), n);
 
 	md5_byte_t digest[16];
 	md5_finish(&state, digest);
 
-	std::stringstream hash;
-	for (int i = 0; i < 16; i++)
-		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << static_cast<short>(digest[i]);
+	std::stringstream hashStr;
 
-	OMD5Hash::makeFromHexStr(rvo, hash.str());
+	for (int i = 0; i < 16; i++)
+		hashStr << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << static_cast<short>(digest[i]);
+
+	OMD5Hash::makeFromHexStr(rvo, hashStr.str());
 	return rvo;
 }
 
@@ -82,21 +81,24 @@ OCRC32Sum Res_CRC32(const std::string& filename)
 {
 	OCRC32Sum rvo;
 
-	std::ifstream ifs(filename, std::ios::in | std::ios::binary);
-	if (!ifs.good())
+	const int file_chunk_size = 8192;
+	auto fp = uqFile(fopen(filename.c_str(), "rb"));
+
+	if (!fp)
 		return rvo;
 
-	char buf[8192];
+	size_t n = 0;
+	unsigned char buf[file_chunk_size];
 	uint32_t crc = 0;
-	while (ifs)
+
+	while ((n = fread(buf, 1, sizeof(buf), fp.get())))
 	{
-		ifs.read(buf, sizeof(buf));
-		const std::streamsize n = ifs.gcount();
-		if (n > 0)
-			crc = crc32_fast(buf, static_cast<size_t>(n), crc);
+		crc = crc32_fast(buf, n, crc);
 	}
 
-	std::string hashStr = fmt::sprintf("%08X", crc);
+	std::string hashStr;
+
+	hashStr = fmt::sprintf("%08X", crc);
 
 	OCRC32Sum::makeFromHexStr(rvo, hashStr);
 	return rvo; // bubble up failure
