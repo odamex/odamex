@@ -226,13 +226,14 @@ static void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 	// Just compare 4 characters as ints
 	for (int i = 0; i < numsprites; i++)
 	{
-		memset (sprtemp, -1, sizeof(sprtemp));
-
 		for (int f = 0; f < MAX_SPRITE_FRAMES; f++)
 		{
 			sprtemp[f].rotate = false;
 			for (int r = 0; r < 16; r++)
+			{
 				sprtemp[f].resource[r] = ResourceId::INVALID_ID;
+				sprtemp[f].width[r] = -1;
+			}
 		}
 
 		maxframe = -1;
