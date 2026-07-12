@@ -1692,7 +1692,7 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	V_ColorFill = V_BestOpaqueColor(V_GetDefaultPalette()->basecolors, color);
 
-	screen->DrawColoredPatchClean(o_texture, x + 5 + static_cast<int>(dist * 78.0), y);
+	screen->DrawColoredTextureClean(o_texture, x + 5 + static_cast<int>(dist * 78.0), y);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)

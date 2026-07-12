@@ -332,8 +332,7 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 
 // Colored patch drawer
 //
-// This routine is the same for the stretched version since we don't
-// care about the patch's actual contents, just it's outline.
+// Fills the texture's opaque pixels with V_ColorFill.
 void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int pitch)
 {
 	if (count <= 0)
@@ -343,15 +342,33 @@ void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int 
 
 	do
 	{
-		*dest = fill;
+		if (*source != 0)
+		{
+			*dest = fill;
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
 
-// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
-void DCanvas::DrawColoredPatchSP(const byte *source, byte *dest, int count, int pitch, int)
+void DCanvas::DrawColoredPatchSP(const byte *source, byte *dest, int count, int pitch, int yinc)
 {
-	DCanvas::DrawColoredPatchP(source, dest, count, pitch);
+	if (count <= 0)
+		return;
+
+	byte fill = static_cast<byte>(V_ColorFill);
+
+	int c = 0;
+
+	do
+	{
+		if (source[c >> 16] != 0)
+		{
+			*dest = fill;
+		}
+		dest += pitch;
+		c += yinc;
+	} while (--count);
 }
 
 
@@ -380,17 +397,49 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 
 	do
 	{
-		unsigned int bg = bg2rgb[*dest];
-		bg = (bg+bg) | 0x1f07c1f;
-		*dest = RGB32k[0][0][bg & (bg>>15)];
+		if (*source != 0)
+		{
+			unsigned int bg = bg2rgb[*dest];
+			bg = (bg+bg) | 0x1f07c1f;
+			*dest = RGB32k[0][0][bg & (bg>>15)];
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
 
-// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
-void DCanvas::DrawColorLucentPatchSP(const byte *source, byte *dest, int count, int pitch, int)
+void DCanvas::DrawColorLucentPatchSP(const byte *source, byte *dest, int count, int pitch, int yinc)
 {
-	DCanvas::DrawColorLucentPatchP(source, dest, count, pitch);
+	if (count <= 0 || !hud_transparency)
+		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawColoredPatchSP(source, dest, count, pitch, yinc);
+
+	argb_t *bg2rgb;
+
+	{
+		fixed_t fglevel, bglevel, translevel;
+
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
+		fglevel = translevel & ~0x3ff;
+		bglevel = FRACUNIT-fglevel;
+		bg2rgb = Col2RGB8[bglevel>>10];
+	}
+
+	int c = 0;
+
+	do
+	{
+		if (source[c >> 16] != 0)
+		{
+			unsigned int bg = bg2rgb[*dest];
+			bg = (bg+bg) | 0x1f07c1f;
+			*dest = RGB32k[0][0][bg & (bg>>15)];
+		}
+		dest += pitch;
+		c += yinc;
+	} while (--count);
 }
 
 /**************************/
@@ -595,22 +644,40 @@ void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int 
 	argb_t color = V_Palette.shade(V_ColorFill);
 	do
 	{
-		*(reinterpret_cast<argb_t*>(dest)) = color;
+		if (*source != 0)
+		{
+			*(reinterpret_cast<argb_t*>(dest)) = color;
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
 
-// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
-void DCanvas::DrawColoredPatchSD(const byte *source, byte *dest, int count, int pitch, int)
+void DCanvas::DrawColoredPatchSD(const byte *source, byte *dest, int count, int pitch, int yinc)
 {
-	DCanvas::DrawColoredPatchD(source, dest, count, pitch);
+	if (count <= 0)
+		return;
+
+	argb_t color = V_Palette.shade(V_ColorFill);
+
+	int c = 0;
+
+	do
+	{
+		if (source[c >> 16] != 0)
+		{
+			*(reinterpret_cast<argb_t*>(dest)) = color;
+		}
+		dest += pitch;
+		c += yinc;
+	} while (--count);
 }
 
 
 // Colored, translucent patch drawer
 //
-// This routine is the same for the stretched version since we don't
-// care about the patch's actual contents, just it's outline.
+// Like DrawColoredPatchD, only the texture's opaque (non mask color) pixels
+// are drawn.
 void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, int pitch)
 {
 	if (count <= 0 || !hud_transparency)
@@ -626,16 +693,41 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 
 	do
 	{
-		argb_t bg = *(reinterpret_cast<argb_t*>(dest));
-		*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
+		if (*source != 0)
+		{
+			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
+		}
+		source++;
 		dest += pitch;
 	} while (--count);
 }
 
-// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
-void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, int pitch, int)
+void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, int pitch, int yinc)
 {
-	DCanvas::DrawColorLucentPatchD(source, dest, count, pitch);
+	if (count <= 0 || !hud_transparency)
+		return;
+
+	if (::hud_transparency >= 1.0)
+		return DrawColoredPatchSD(source, dest, count, pitch, yinc);
+
+	int alpha = static_cast<int>(hud_transparency * 255);
+	int invAlpha = 255 - alpha;
+
+	argb_t fg = V_Palette.shade(V_ColorFill);
+
+	int c = 0;
+
+	do
+	{
+		if (source[c >> 16] != 0)
+		{
+			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
+		}
+		dest += pitch;
+		c += yinc;
+	} while (--count);
 }
 
 /***********************************/
