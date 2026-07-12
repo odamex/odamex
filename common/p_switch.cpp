@@ -149,7 +149,7 @@ static void P_StartButton (line_t *line, DActiveButton::EWhere w, ResourceId res
 
 ResourceId* P_GetButtonTexturePtr(line_t* line, ResourceId* alt_texture, DActiveButton::EWhere& where)
 {
-	where = (DActiveButton::EWhere)0;
+	where = static_cast<DActiveButton::EWhere>(0);
 
 	if (line->sidenum[0] == R_NOSIDE)
 		return NULL;
