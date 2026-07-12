@@ -334,7 +334,7 @@ bool WadResourceContainer::readWadDirectory()
 		mDirectory.reserve(wad_lump_count);
 
 		const uint8_t* ptr = wad_directory;
-		for (uint32_t wad_lump_num = 0; wad_lump_num < (uint32_t)wad_lump_count; wad_lump_num++, ptr += wad_lump_record_length)
+		for (uint32_t wad_lump_num = 0; wad_lump_num < static_cast<uint32_t>(wad_lump_count); wad_lump_num++, ptr += wad_lump_record_length)
 		{
 			WadDirectoryEntry entry;
 			entry.offset = LELONG(*(int32_t*)(ptr + 0));

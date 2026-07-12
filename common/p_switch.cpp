@@ -367,7 +367,8 @@ void DActiveButton::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
-		int32_t texture = (int32_t)((uint32_t)m_ResId & 0xFFFF);
+		int32_t texture =
+		    static_cast<int32_t>((static_cast<uint32_t>(m_ResId) & 0xFFFF));
 		arc << m_Line << m_Where << texture << m_Timer << m_X << m_Y;
 	}
 	else

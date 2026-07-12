@@ -469,10 +469,10 @@ void ResourceManager::dump() const
 		bool visible = mNameTranslator.checkNameVisibility(path, res_id);
 
 		PrintFmt(PRINT_HIGH,"0x{:08X} {} {} [{}] [{}]\n",
-				(uint32_t)res_id,
+				static_cast<uint32_t>(res_id),
 				cached ? '$' : visible ? '*' : '-',
 				OString(path).c_str(),
-				(uint32_t)getResourceSize(res_id),
+				static_cast<uint32_t>(getResourceSize(res_id)),
 				getResourceContainerFileName(res_id).c_str());
 	}
 }

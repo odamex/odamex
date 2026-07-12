@@ -316,20 +316,20 @@ void TextureManager::addCompositeTextureResources(ResourceManager* manager, cons
 	if (res_size < 4)		// not long enough to store definition_count
 		return;
 
-	int32_t definition_count = LELONG(*((int32_t*)(raw_def_data + 0)));
+	int32_t definition_count = LELONG(*(reinterpret_cast<int32_t*>(raw_def_data + 0)));
 	for (int32_t i = 0; i < definition_count; i++)
 	{
 		int32_t def_offset = 4 * i + 4;
-		if (res_size < (unsigned int)def_offset)
+		if (res_size < static_cast<uint32_t>(def_offset))
 			break;
 
 		// Read a texture definition, create a CompositeTextureDefinition,
 		// and add a new CompositeTextureLoader to the list.
-		int32_t tex_offset = LELONG(*((int32_t*)(raw_def_data + def_offset)));
-		if (res_size < (uint32_t)tex_offset + 22)
+		int32_t tex_offset = LELONG(*(reinterpret_cast<int32_t*>(raw_def_data + def_offset)));
+		if (res_size < static_cast<uint32_t>(tex_offset) + 22)
 			break;
 
-		const char* str = (const char*)(raw_def_data + tex_offset + 0);
+		const char* str = reinterpret_cast<const char*>((raw_def_data + tex_offset + 0));
 		const OString texture_lump_name = OStringToUpper(str, 8);
 
 		// From ChocolateDoom r_data.c:
@@ -410,8 +410,8 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 	uint8_t* pnames_raw_data = new uint8_t[pnames_size];
 	accessor->loadResource(pnames_res_id, pnames_raw_data, pnames_size);
 
-	int32_t pnames_count = LELONG(*((int32_t*)(pnames_raw_data + 0)));
-	if ((uint32_t)pnames_count * 8 + 4 != pnames_size)
+	int32_t pnames_count = LELONG(*(reinterpret_cast<int32_t*>(pnames_raw_data + 0)));
+	if (static_cast<uint32_t>(pnames_count) * 8 + 4 != pnames_size)
 		I_Error("Res_InitTextures: invalid PNAMES lump");
 
 	ResourceIdList pnames_lookup;
@@ -419,7 +419,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 
 	for (int32_t i = 0; i < pnames_count; i++)
 	{
-		const char* str = (const char*)(pnames_raw_data + 4 + 8 * i);
+		const char* str = reinterpret_cast<const char*>(pnames_raw_data + 4 + 8 * i);
 		const OString lump_name = OStringToUpper(str, 8);
 
 		ResourceId res_id = Res_GetResourceId(lump_name, NS_PATCHES);
@@ -882,9 +882,9 @@ void AnimatedTextureManager::updateAnimatedTextures()
 		}
 		else
 		{
-			for (uint32_t j = (uint32_t)anim->basepic; j < (uint32_t)anim->basepic + anim->numframes; j++)
+			for (uint32_t j = static_cast<uint32_t>(anim->basepic); j < static_cast<uint32_t>(anim->basepic) + anim->numframes; j++)
 			{
-				mTextureTranslation[j] = (ResourceId)(anim->basepic + (anim->curframe + j) % anim->numframes);
+				mTextureTranslation[j] = static_cast<ResourceId>((anim->basepic + (anim->curframe + j) % anim->numframes));
 			}
 		}
 	}

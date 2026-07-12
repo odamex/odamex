@@ -102,19 +102,19 @@ static void Res_DrawPatchIntoTexture(
 		int abstopdelta = 0;
 
 		int32_t offset = LELONG(colofs[x - xoffs]);
-		if (offset < 0 || lump_length < (uint32_t)offset + 1)		// long enough for this post's topdelta? 
+		if (offset < 0 || lump_length < static_cast<uint32_t>(offset) + 1)		// long enough for this post's topdelta? 
 			return;
 
 		const uint8_t* post = lump_data + offset; 
 		while (*post != 0xFF)
 		{
-			if (lump_length < (uint32_t)(post - lump_data) + 2)		// long enough for this post's header?
+			if (lump_length < static_cast<uint32_t>((post - lump_data)) + 2)		// long enough for this post's header?
 				return;
 
 			int posttopdelta = *(post + 0);
 			int postlength = *(post + 1);
 
-			if (postlength < 0 || lump_length < (uint32_t)(post - lump_data) + 4 + postlength)
+			if (postlength < 0 || lump_length < static_cast<uint32_t>((post - lump_data)) + 4 + postlength)
 				return;
 
 			// [SL] Handle DeePsea tall patches: topdelta is treated as a relative

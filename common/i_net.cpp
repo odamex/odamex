@@ -713,7 +713,7 @@ void MSG_WriteResourceId(buf_t* b, const ResourceId res_id)
 	if (!Res_CheckResource(res_id))
 		b->WriteShort(0xFFFF);
 	else
-		b->WriteShort((uint32_t)res_id & 0xFFFF);
+		b->WriteShort(static_cast<uint32_t>(res_id) & 0xFFFF);
 }
 
 void MSG_WriteUnVarint(buf_t* b, unsigned int uv)
