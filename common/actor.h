@@ -538,7 +538,7 @@ public:
 	// Thing being chased/attacked for tracers.
 	AActorPtr		tracer;
 	byte			special;		// special
-	byte			args[5];		// special arguments
+	std::array<byte, 5> args;		// special arguments
 
 	AActor			*inext, *iprev;	// Links to other mobjs in same bucket
 

@@ -130,13 +130,12 @@ AActor::AActor()
       height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
       info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
       flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
+      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), args(), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
       netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
-	memset(args, 0, sizeof(args));
 	self.init(this);
 }
 
@@ -154,7 +153,7 @@ AActor::AActor(const AActor& other)
       special1(other.special1), special2(other.special2),
       health(other.health), movedir(other.movedir), movecount(other.movecount),
       visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
-      player(other.player), lastlook(other.lastlook), special(other.special),
+      player(other.player), lastlook(other.lastlook), special(other.special), args(other.args),
       inext(other.inext), iprev(other.iprev), translation(other.translation),
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
@@ -165,7 +164,6 @@ AActor::AActor(const AActor& other)
       netid(other.netid), tid(other.tid),
       baseline_set(false), bmapnode(other.bmapnode)
 {
-	memcpy(args, other.args, sizeof(args));
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
 }
@@ -236,8 +234,8 @@ AActor &AActor::operator= (const AActor &other)
     netid = other.netid;
     tid = other.tid;
     special = other.special;
+	args = other.args;
 
-    memcpy(args, other.args, sizeof(args));
     bmapnode = other.bmapnode;
     memcpy(&baseline, &other.baseline, sizeof(baseline));
     baseline_set = other.baseline_set;
@@ -258,7 +256,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       height(0), momx(0), momy(0), momz(0), validcount(0), type(itype),
       info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
       statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
+      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), args(), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
@@ -332,7 +330,6 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	}
 
 	spawnpoint.type = 0;
-	memset(args, 0, sizeof(args));
 }
 
 
@@ -3148,7 +3145,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	// [RH] Set the thing's special
 	mobj->special = mthing.special;
-	memcpy (mobj->args, mthing.args, sizeof(mobj->args));
+	std::copy(std::begin(mthing.args), std::end(mthing.args), mobj->args.begin());
 
 	// [RH] If it's an ambient sound, activate it
 	if (type == MT_AMBIENT)
