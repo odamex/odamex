@@ -144,8 +144,76 @@ int*			mceilingclip;
 fixed_t 		spryscale;
 fixed_t 		sprtopscreen;
 
+static bool		sprflipvert;
+static int		sprflipheight;
+
+//
+// R_BlastFlippedSpriteColumn
+//
+// Draws the posts of a vertically inverted sprite column. Each post is
+// placed as far from the bottom of the patch as it normally sits from the
+// top, and its data is sampled in reverse.
+//
+static void R_BlastFlippedSpriteColumn(void (*drawfunc)())
+{
+	tallpost_t* post = dcol.post;
+
+	while (!post->end())
+	{
+		const int fliptopdelta = sprflipheight - post->topdelta - post->length;
+
+		// calculate unclipped screen coordinates for post
+		const int topscreen = sprtopscreen + spryscale * fliptopdelta;
+
+		dcol.yl = topscreen >> FRACBITS;
+		dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
+
+		dcol.yl = MAX(dcol.yl, MAX(mceilingclip[dcol.x], 0));
+		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
+
+		const fixed_t maxfrac = post->length << FRACBITS;
+
+		dcol.texturefrac = maxfrac - FRACUNIT -
+			(dcol.texturemid - (fliptopdelta << FRACBITS)
+			+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale));
+
+		if (dcol.texturefrac >= maxfrac)
+		{
+			int cnt = R_PixelCeil(dcol.texturefrac - maxfrac + 1, dcol.iscale);
+			dcol.yl += cnt;
+			dcol.texturefrac -= cnt * dcol.iscale;
+		}
+
+		const fixed_t endfrac = dcol.texturefrac - (dcol.yh - dcol.yl) * dcol.iscale;
+
+		if (endfrac < 0)
+		{
+			int cnt = R_PixelCeil(-endfrac, dcol.iscale);
+			dcol.yh -= cnt;
+		}
+
+		dcol.source = post->data();
+
+		if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
+		{
+			// step through the post data backwards
+			dcol.iscale = -dcol.iscale;
+			drawfunc();
+			dcol.iscale = -dcol.iscale;
+		}
+
+		post = post->next();
+	}
+}
+
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
+	if (sprflipvert)
+	{
+		R_BlastFlippedSpriteColumn(drawfunc);
+		return;
+	}
+
 	tallpost_t* post = dcol.post;
 
 	while (!post->end())
@@ -219,7 +287,8 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	}
 
 	// [AM] Ensure that we're not going to fall off the side of the patch.
-	const short patchWidth = W_CachePatch(vis->patch, PU_CACHE)->width();
+	const patch_t* patch = W_CachePatch(vis->patch, PU_CACHE);
+	const short patchWidth = patch->width();
 	const int start = vis->startfrac >> FRACBITS;
 	if (start < 0 || start > patchWidth)
 	{
@@ -313,10 +382,16 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	dcol.texturemid = vis->texturemid;
 	spryscale = vis->yscale;
 
-	if (vis->thingscale != FRACUNIT)
+	// A negative scale renders the sprite image inverted within
+	// its unchanged hitbox
+	sprflipvert = vis->thingscale < 0;
+	sprflipheight = patch->height();
+	const fixed_t scalemag = sprflipvert ? -vis->thingscale : vis->thingscale;
+
+	if (scalemag != FRACUNIT)
 	{
-			spryscale = FixedMul(spryscale, vis->thingscale);
-			dcol.texturemid = FixedDiv(dcol.texturemid, vis->thingscale);
+			spryscale = FixedMul(spryscale, scalemag);
+			dcol.texturemid = FixedDiv(dcol.texturemid, scalemag);
 	}
 
 	if (spryscale <= 0)
@@ -640,12 +715,19 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
 	fixed_t width = patch->width() << FRACBITS;
 
 	const fixed_t thingscale = thing->info->scale;
-	if (thingscale != FRACUNIT)
+
+	// A negative scale renders the sprite inverted at scale's size:
+	// mirror it horizontally here and the draw code flips it vertically
+	const fixed_t scalemag = thingscale < 0 ? -thingscale : thingscale;
+	if (thingscale < 0)
+		flip = !flip;
+
+	if (scalemag != FRACUNIT)
 	{
-			topoffs = FixedMul(topoffs, thingscale);
-			sideoffs = FixedMul(sideoffs, thingscale);
-			height = FixedMul(height, thingscale);
-			width = FixedMul(width, thingscale);
+			topoffs = FixedMul(topoffs, scalemag);
+			sideoffs = FixedMul(sideoffs, scalemag);
+			height = FixedMul(height, scalemag);
+			width = FixedMul(width, scalemag);
 	}
 
 	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, height, width, topoffs, sideoffs, flip);
@@ -656,8 +738,8 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
 	if (thingscale != FRACUNIT)
 	{
 		vis->thingscale = thingscale;
-		vis->startfrac = FixedDiv(vis->startfrac, thingscale);
-		vis->xiscale = FixedDiv(vis->xiscale, thingscale);
+		vis->startfrac = FixedDiv(vis->startfrac, scalemag);
+		vis->xiscale = FixedDiv(vis->xiscale, scalemag);
 	}
 
 	vis->mobjflags = thing->flags;

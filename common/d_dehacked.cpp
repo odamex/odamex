@@ -1215,8 +1215,11 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 		else if (iequals(key, "Scale"))
 		{
 			const double scale = atof(std::string(value).c_str());
-			if (scale > 0.0)
-				info->scale = FLOAT2FIXED(static_cast<float>(clamp(scale, 1.0 / 256, 256.0)));
+			if (scale != 0.0)
+			{
+				const double mag = clamp(scale < 0.0 ? -scale : scale, 1.0 / 256, 256.0);
+				info->scale = FLOAT2FIXED(static_cast<float>(scale < 0.0 ? -mag : mag));
+			}
 			else
 				DPrintFmt("Ignoring invalid Scale value '{}' for thing {}\n", value, thingNum);
 		}
