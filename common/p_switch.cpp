@@ -202,7 +202,7 @@ void P_SetButtonTexture(line_t* line, const ResourceId new_res_id)
 	{
 		DActiveButton::EWhere twhere;
 		ResourceId alt_res_id;
-		ResourceId* res_id_ptr = (ResourceId*)P_GetButtonTexturePtr(line, &alt_res_id, twhere);
+		ResourceId* res_id_ptr = P_GetButtonTexturePtr(line, &alt_res_id, twhere);
 
 		if (res_id_ptr != NULL && Res_CheckResource(*res_id_ptr))
 			*res_id_ptr = new_res_id;
