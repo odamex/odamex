@@ -981,6 +981,7 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_removemobj);
 	MSG_INFO(svc_userinfo);
 	MSG_INFO(svc_updatemobj);
+	MSG_INFO(svc_updatemobjwithmode);
 	MSG_INFO(svc_spawnplayer);
 	MSG_INFO(svc_damageplayer);
 	MSG_INFO(svc_killmobj);

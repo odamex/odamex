@@ -1088,11 +1088,11 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	CL_CheckDisplayPlayer();
 }
 
-static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
+static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 {
 	AActor* mo = P_FindThingById(msg->actor().netid());
-	if (!mo)
-		return;
+	if (not mo)
+		return mo;
 
 	mo->updatedDuringTic = gametic;
 
@@ -1192,6 +1192,16 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 		mo->tracer = tracer->ptr();
 	else
 		mo->tracer = AActor::AActorPtr();
+
+	return mo;
+}
+
+static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
+{
+	AActor* mo = CL_UpdateMobj(& msg->update());
+
+	if (not mo)
+		return;
 
 	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
 	if (mode != mo->mode)
@@ -3503,6 +3513,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
 		SV_MSG(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
 		SV_MSG(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
+		SV_MSG(svc_updatemobjwithmode, CL_UpdateMobjWithMode, odaproto::svc::UpdateMobjWithMode);
 		SV_MSG(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
 		SV_MSG(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
 		SV_MSG(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
