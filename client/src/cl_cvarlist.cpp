@@ -379,26 +379,36 @@ CVAR(cl_downloadsites,
      "with ZIP.",
      CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE_FUNC_DECL(cl_interp, "1", "Interpolate enemy player positions",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
+CVAR_RANGE_FUNC_DECL(cl_interp, "1",
+                    "Interpolate enemy player positions",
+                    CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
-CVAR_RANGE(			cl_prednudge,	"0.70", "Smooth out collisions",
-					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.05f, 1.0f)
+CVAR_RANGE(cl_prednudge, "0.70",
+            "Smooth out collisions",
+            CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.05f, 1.0f)
 
-CVAR(				cl_predictweapons, "1", "Draw weapon effects immediately",
-					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
+CVAR(cl_predictweapons, "1",
+    "Draw weapon effects immediately",
+    CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_netgraph, "0", "Show a graph of network related statistics",
-					CVARTYPE_BOOL, CVAR_NULL)
+CVAR(cl_netgraph, "0",
+    "Show a graph of network related statistics",
+     CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(				cl_serverdownload, "1", "Enable or disable downloading game files and resources from the internet " \
-											"(see cl_downloadsites for more information)",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR(cl_serverdownload, "1",
+    "Enable or disable downloading game files and resources from the internet "
+    "(see cl_downloadsites for more information)",
+    CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file when connecting " \
-											"to a server, even if the client already has that file " \
-											"(requires developer 1).",
-					CVARTYPE_BOOL, CVAR_NULL)
+CVAR(cl_forcedownload, "0",
+    "Forces the client to download the last WAD file when connecting "
+    "to a server, even if the client already has that file "
+    "(requires developer 1).",
+    CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(netdebug_automap, "0",
+    "Enables display of various netcode debugging information on the automap.  Requires iddt level 2 cheat.",
+    CVARTYPE_BOOL, CVAR_NULL)
 
 // Client Preferences
 // ------------------
@@ -772,7 +782,7 @@ CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 CVAR(			r_clipmaskedspecial, "0", "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transferred light levels (mimics MBF behavior)",
+CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR(           r_drawnetcredibility, "0", "Add a particle to each actor indicating how credible the client considers the actor's position",
