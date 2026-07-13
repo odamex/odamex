@@ -102,7 +102,6 @@ struct skytex_t
 	fixed_t currx;
 	fixed_t curry;
 	ResourceId res_id;
-	OLumpName texture;
 
 	// for interpolation
 	fixed_t prevx;
@@ -131,7 +130,7 @@ struct sky_t
 	bool usedefaultmid;
 };
 
-OHashTable<OLumpName, sky_t*> skylookup;
+OHashTable<ResourceId, sky_t*> skylookup;
 OHashTable<ResourceId, sky_t*> skyflatlookup;
 
 //
@@ -364,7 +363,11 @@ void R_InitSkyMap()
 //
 static sky_t* R_GetSky(const OLumpName& name, bool create)
 {
-	auto found = skylookup.find(name);
+	const ResourceId tex_res_id = Res_GetTextureResourceId(OStringToUpper(name.c_str()), WALL);
+	if (!Res_CheckResource(tex_res_id))
+		return nullptr;
+
+	auto found = skylookup.find(tex_res_id);
 	if (found != skylookup.end())
 	{
 		return found->second;
@@ -375,40 +378,31 @@ static sky_t* R_GetSky(const OLumpName& name, bool create)
 		return nullptr;
 	}
 
-	const ResourceId tex_res_id = Res_GetTextureResourceId(OStringToUpper(name.c_str()), WALL);
-	if (!Res_CheckResource(tex_res_id))
-		return nullptr;
-
-	OLumpName skytexname;
 	sky_t* sky = Z_Malloc<sky_t>(PU_STATIC);
+	*sky = {};
 	sky->background.scalex = INT2FIXED(1);
 	sky->background.scaley = INT2FIXED(1);
 	sky->background.scrolly = INT2FIXED(0);
 	if (level.flags & LEVEL_DOUBLESKY)
 	{
 		sky->background.res_id = Res_GetTextureResourceId(OStringToUpper(level.skypic2.c_str()), WALL);
-		sky->background.texture = level.skypic2;
 		sky->background.scrollx = level.sky2ScrollDelta & 0xffffff;
 		sky->foreground.scrollx = level.sky1ScrollDelta & 0xffffff;
 		sky->foreground.res_id = tex_res_id;
-		sky->foreground.texture = name;
 		sky->foreground.scalex = INT2FIXED(1);
 		sky->foreground.scaley = INT2FIXED(1);
 		sky->foreground.scrolly = INT2FIXED(0);
 		sky->type = skytype_t::DOUBLESKY;
-		skytexname = level.skypic2;
 	}
 	else
 	{
 		sky->background.res_id = tex_res_id;
-		sky->background.texture = name;
 		sky->background.scrollx = level.sky1ScrollDelta & 0xffffff;
 		sky->type = skytype_t::NORMAL;
-		skytexname = name;
 	}
 	sky->usedefaultmid = true;
 
-	skylookup[skytexname] = sky;
+	skylookup[sky->background.res_id] = sky;
 	return sky;
 }
 
@@ -469,6 +463,7 @@ void R_InitSkyDefs()
 			}
 
 			sky_t* sky = Z_Malloc<sky_t>(PU_STATIC);
+			*sky = {};
 
 			sky->type = skytype;
 			sky->usedefaultmid = false;
@@ -476,7 +471,6 @@ void R_InitSkyDefs()
 			static constexpr float_t ticratescale = 1.0 / TICRATE;
 
 			sky->background.res_id  = tex_res_id;
-			sky->background.texture = skytexname;
 			sky->background.mid     = FLOAT2FIXED(mid.asFloat());
 			sky->background.scrollx = FLOAT2FIXED(scrollx.asFloat() * ticratescale);
 			sky->background.scrolly = FLOAT2FIXED(scrolly.asFloat() * ticratescale);
@@ -524,7 +518,6 @@ void R_InitSkyDefs()
 				}
 
 				sky->foreground.res_id  = foretex_res_id;
-				sky->foreground.texture = foreskytexname;
 				sky->foreground.mid     = FLOAT2FIXED(foremid.asFloat());
 				sky->foreground.scrollx = FLOAT2FIXED(forescrollx.asFloat() * ticratescale);
 				sky->foreground.scrolly = FLOAT2FIXED(forescrolly.asFloat() * ticratescale);
@@ -536,7 +529,7 @@ void R_InitSkyDefs()
 				if (!fireelem.isNull() || !foreelem.isNull()) return jsonlumpresult_t::PARSEERROR;
 			}
 
-			skylookup[skytexname] = sky;
+			skylookup[tex_res_id] = sky;
 		}
 
 		for (const Json::Value& flatentry : flatmappings)
@@ -663,7 +656,7 @@ static void R_ActivateSky(sky_t* sky)
 	}
 	if (sky->type == skytype_t::DOUBLESKY)
 	{
-		auto skypair = skylookup.find(sky->foreground.texture);
+		auto skypair = skylookup.find(sky->foreground.res_id);
 		if (skypair != skylookup.end())
 		{
 			R_ActivateSky(skypair->second);
@@ -757,11 +750,11 @@ void R_SetDefaultSky(const OLumpName& sky)
 //
 void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 {
-	sky1texture = Res_CacheTexture(OStringToUpper(sky1_name, 8), WALL);
-	sky2texture = Res_CacheTexture(OStringToUpper(sky2_name, 8), WALL);
+	sky1texture = Res_CacheTexture(OStringToUpper(sky1_name), WALL);
+	sky2texture = Res_CacheTexture(OStringToUpper(sky2_name), WALL);
 
 	if (!sky1texture)
-		I_Error("Invalid sky1 texture \"{}\"", OStringToUpper(sky1_name, 8));
+		I_Error("Invalid sky1 texture \"{}\"", OStringToUpper(sky1_name));
 
 	if (sky2texture && sky1texture->mHeight != sky2texture->mHeight)
 	{

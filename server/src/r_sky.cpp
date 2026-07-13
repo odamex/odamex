@@ -108,9 +108,9 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	const ResourceId res_id = Res_GetTextureResourceId(OStringToUpper(sky1_name, 8), WALL);
+	const ResourceId res_id = Res_GetTextureResourceId(OStringToUpper(sky1_name), WALL);
 	if (!Res_CheckResource(res_id))
-		I_Error("Invalid sky1 texture \"{}\"", OStringToUpper(sky1_name, 8));
+		I_Error("Invalid sky1 texture \"{}\"", OStringToUpper(sky1_name));
 
 	if (HexenHack)
 		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY", FLOOR);
