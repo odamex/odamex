@@ -311,6 +311,7 @@ void Res_CloseAllResourceFiles();
 
 const std::vector<std::string>& Res_GetResourceFileNames();
 const std::vector<OMD5Hash>& Res_GetResourceFileHashes();
+OMD5Hash Res_ContentDigest(const std::string& path);
 
 
 const ResourcePathList Res_ListResourceDirectory(const ResourcePath& path);

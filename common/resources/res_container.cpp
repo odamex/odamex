@@ -25,11 +25,81 @@
 #include "resources/res_container.h"
 #include "resources/res_main.h"
 #include "resources/res_fileaccessor.h"
+#include "resources/res_filelib.h"
 #include "resources/res_identifier.h"
 
+#include "cmdlib.h"
 #include "i_system.h"
+#include "md5.h"
 
 #include "zlib.h"
+
+
+//
+// Res_NormalizeManifestPath
+//
+// Transforms a container-local file path into the canonical form used in
+// content manifests, so that ZIP entries and filesystem paths describing the
+// same file compare equal. Paths are separated by a /, no leading separator,
+// uppercase.
+//
+static std::string Res_NormalizeManifestPath(const std::string& path)
+{
+	std::string normalized(path);
+	for (auto& c : normalized)
+	{
+		if (c == '\\')
+			c = ResourcePath::DELIMINATOR;
+	}
+
+	const size_t start = normalized.find_first_not_of(ResourcePath::DELIMINATOR);
+	if (start == std::string::npos)
+		return std::string();
+
+	return StdStringToUpper(normalized.substr(start));
+}
+
+
+//
+// Res_ContentManifestDigest
+//
+// Computes an MD5 digest over a container's content manifest. The manifest
+// is sorted into a canonical order first, so the digest is independent of
+// the order entries were discovered in.
+//
+static OMD5Hash Res_ContentManifestDigest(std::vector<ContentManifestEntry>& manifest)
+{
+	std::sort(manifest.begin(), manifest.end(),
+	          [](const ContentManifestEntry& a, const ContentManifestEntry& b) {
+		          if (a.path != b.path)
+			          return a.path < b.path;
+		          if (a.crc32 != b.crc32)
+			          return a.crc32 < b.crc32;
+		          return a.length < b.length;
+	          });
+
+	md5_state_t state;
+	md5_init(&state);
+	for (const auto& entry : manifest)
+	{
+		// Include the path's NUL terminator as a field separator.
+		md5_append(&state, reinterpret_cast<const md5_byte_t*>(entry.path.c_str()),
+		           entry.path.length() + 1);
+		const std::string data = fmt::sprintf("%u:%s\n", entry.length, entry.crc32);
+		md5_append(&state, reinterpret_cast<const md5_byte_t*>(data.data()), data.length());
+	}
+
+	md5_byte_t digest[16];
+	md5_finish(&state, digest);
+
+	std::string hashStr;
+	for (int i = 0; i < 16; i++)
+		hashStr += fmt::sprintf("%02X", digest[i]);
+
+	OMD5Hash hash;
+	OMD5Hash::makeFromHexStr(hash, hashStr);
+	return hash;
+}
 
 
 //
@@ -824,6 +894,47 @@ void DirectoryResourceContainer::addEntries()
 }
 
 
+//
+// DirectoryResourceContainer::getContentDigest
+//
+// Builds a content manifest by CRC32-hashing every file in the directory
+// tree and digests it. The result is cached, since computing it costs one
+// full read of the directory's contents.
+//
+OMD5Hash DirectoryResourceContainer::getContentDigest() const
+{
+	if (mContentDigest.empty() && mDirectory.size() > 0)
+	{
+		std::vector<ContentManifestEntry> manifest;
+		manifest.reserve(mDirectory.size());
+
+		for (ContainerDirectory<FileSystemDirectoryEntry>::const_iterator it = mDirectory.begin();
+		     it != mDirectory.end(); ++it)
+		{
+			const FileSystemDirectoryEntry& entry = *it;
+			const std::string full_path = std::string(mPath) + std::string(entry.path);
+
+			const OCRC32Sum crc = Res_CRC32(full_path);
+			if (crc.empty())
+			{
+				// A file vanished or is unreadable; a partial digest would
+				// misrepresent the content, so produce none at all.
+				return OMD5Hash();
+			}
+
+			ContentManifestEntry manifest_entry;
+			manifest_entry.path = Res_NormalizeManifestPath(std::string(entry.path));
+			manifest_entry.length = entry.length;
+			manifest_entry.crc32 = crc.getHexStr();
+			manifest.push_back(manifest_entry);
+		}
+
+		mContentDigest = Res_ContentManifestDigest(manifest);
+	}
+	return mContentDigest;
+}
+
+
 // ============================================================================
 //
 // ZipResourceContainer class implementation
@@ -1018,6 +1129,7 @@ void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length,
 
 		uint16_t flags = LESHORT(*reinterpret_cast<const uint16_t*>(ptr + 8));
 		uint16_t method = LESHORT(*reinterpret_cast<const uint16_t*>(ptr + 10));
+		uint32_t crc32 = LELONG(*reinterpret_cast<const uint32_t*>(ptr + 16));
 		uint32_t compressed_length = LELONG(*reinterpret_cast<const uint32_t*>(ptr + 20));
 		uint32_t uncompressed_length = LELONG(*reinterpret_cast<const uint32_t*>(ptr + 24));
 		uint16_t name_length = LESHORT(*reinterpret_cast<const uint16_t*>(ptr + 28));
@@ -1040,6 +1152,14 @@ void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length,
 		// skip directories
 		if (name[name_length - 1] == ResourcePath::DELIMINATOR && uncompressed_length == 0)
 			continue;
+
+		// Record every file entry in the content manifest, even ones the
+		// loader skips below - the manifest describes the archive's content.
+		ContentManifestEntry manifest_entry;
+		manifest_entry.path = Res_NormalizeManifestPath(name);
+		manifest_entry.length = uncompressed_length;
+		manifest_entry.crc32 = fmt::sprintf("%08X", crc32);
+		mManifest.push_back(manifest_entry);
 
 		// skip unsupported compression methods
 		if (method != METHOD_DEFLATE && method != METHOD_STORED)
@@ -1065,6 +1185,24 @@ void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length,
 
 	for (std::vector<ZipDirectoryEntry>::const_iterator it = tmp_entries.begin(); it != tmp_entries.end(); ++it)
 		mDirectory.addEntry(*it);
+}
+
+
+//
+// ZipResourceContainer::getContentDigest
+//
+// Digests the content manifest recorded while parsing the central
+// directory. The ZIP format already stores the CRC32 of each entry's
+// uncompressed data, and we simply reuse this for ZIP archive WADs.
+//
+OMD5Hash ZipResourceContainer::getContentDigest() const
+{
+	if (mContentDigest.empty() && !mManifest.empty())
+	{
+		std::vector<ContentManifestEntry> manifest(mManifest);
+		mContentDigest = Res_ContentManifestDigest(manifest);
+	}
+	return mContentDigest;
 }
 
 

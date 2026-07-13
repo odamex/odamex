@@ -299,6 +299,7 @@ enum msg_t
 	svc_playerpsprites,
 	svc_configureavatar,
 	svc_wakeupmobj,
+	svc_resourcedigestsack,
 
 	// Client-originated messages
 	//
@@ -328,6 +329,7 @@ enum msg_t
 	clc_spy,
 	clc_privmsg,
 	clc_sendmobjupdate,
+	clc_resourcedigests,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };

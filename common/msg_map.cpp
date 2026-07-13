@@ -153,6 +153,8 @@ static void InitMap()
 	MapProto(clc_spy,            odaproto::clc::Spy::descriptor());
 	MapProto(clc_privmsg,        odaproto::clc::PrivMsg::descriptor());
 	MapProto(clc_sendmobjupdate, odaproto::clc::SendMobjUpdate::descriptor());
+	MapProto(clc_resourcedigests, odaproto::clc::ResourceDigests::descriptor());
+	MapProto(svc_resourcedigestsack, odaproto::svc::ResourceDigestsAck::descriptor());
 
 	MapProto(clc_rcon,          odaproto::clc::Rcon::descriptor());
 	MapProto(clc_rcon_password, odaproto::clc::RconPassword::descriptor());

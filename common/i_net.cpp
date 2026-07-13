@@ -1092,6 +1092,8 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_spy);
 	MSG_INFO(clc_privmsg);
 	MSG_INFO(clc_sendmobjupdate);
+	MSG_INFO(clc_resourcedigests);
+	MSG_INFO(svc_resourcedigestsack);
 }
 
 #undef MSG_INFO

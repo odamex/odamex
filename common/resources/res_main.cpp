@@ -538,6 +538,34 @@ const std::vector<OMD5Hash>& Res_GetResourceFileHashes()
 
 
 //
+// Res_ContentDigest
+//
+// Returns the content manifest digest for an archive or directory resource
+// at the given path, identifying its logical contents independent of
+// storage form. Returns an empty digest for any other file type - plain
+// WADs are identified by their whole-file MD5 instead.
+//
+OMD5Hash Res_ContentDigest(const std::string& path)
+{
+	const OString ospath(path);
+
+	if (M_IsDirectory(path))
+	{
+		DirectoryResourceContainer container(ospath);
+		return container.getContentDigest();
+	}
+
+	if (M_IsFile(path) && Res_IsZipFile(ospath))
+	{
+		ZipResourceContainer container(ospath);
+		return container.getContentDigest();
+	}
+
+	return OMD5Hash();
+}
+
+
+//
 // Res_ListResourceDirectory
 //
 // Returns a list of all resource names in the given resource directory.

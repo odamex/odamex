@@ -73,6 +73,7 @@ bool OResFile::make(OResFile& out, const std::string& file)
 
 	out.m_fullpath = fullpath;
 	out.m_md5 = hash;
+	out.m_contentDigest = Res_ContentDigest(fullpath);
 	out.m_basename = basename;
 	return true;
 }
@@ -114,6 +115,7 @@ bool OResFile::makeDirectory(OResFile& out, const std::string& dir)
 
 	out.m_fullpath = fullpath;
 	out.m_md5 = M_DirectoryMarkerHash(basename);
+	out.m_contentDigest = Res_ContentDigest(fullpath);
 	out.m_basename = basename;
 	return true;
 }
@@ -154,6 +156,7 @@ bool OResFile::makeWithHash(OResFile& out, const std::string& file, const OMD5Ha
 
 	out.m_fullpath = fullpath;
 	out.m_md5 = hash;
+	out.m_contentDigest = Res_ContentDigest(fullpath);
 	out.m_basename = basename;
 	return true;
 }
@@ -350,17 +353,25 @@ bool M_IsDirectoryMarkerHash(const OMD5Hash& hash, const std::string& basename)
 
 bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 {
-	// A directory can be loaded as a resource container directly.
+	const OMD5Hash& want_digest = wanted.getWantedContentDigest();
+
+	// A directory can be loaded as a resource container directly.  If the
+	// want carries a content digest, the directory's contents must match it.
 	if (M_IsDirectory(wanted.getWantedPath()))
 	{
-		return OResFile::makeDirectory(out, wanted.getWantedPath());
+		if (want_digest.empty() || Res_ContentDigest(wanted.getWantedPath()) == want_digest)
+		{
+			return OResFile::makeDirectory(out, wanted.getWantedPath());
+		}
+
+		// Wrong contents, keep trying.
 	}
 
 	// If someone goes throught the effort of pointing directly to a file
 	// correctly, believe them.
 	if (M_FileExists(wanted.getWantedPath()))
 	{
-		if (wanted.getWantedMD5().empty())
+		if (wanted.getWantedMD5().empty() && want_digest.empty())
 		{
 			// No hash preference.
 			return OResFile::make(out, wanted.getWantedPath());
@@ -371,6 +382,13 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 		{
 			// File matches our hash.
 			return OResFile::makeWithHash(out, wanted.getWantedPath(), hash);
+		}
+
+		if (!want_digest.empty() &&
+		    Res_ContentDigest(wanted.getWantedPath()) == want_digest)
+		{
+			// Not the same bytes, but the same logical contents.
+			return OResFile::make(out, wanted.getWantedPath());
 		}
 
 		// Not a match, keep trying.
@@ -440,6 +458,34 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 		}
 	}
 
+	// The want carries a content digest: accept any same-named archive or
+	// directory whose logical contents match it, regardless of container
+	// form or how the archive was compressed.
+	if (!want_digest.empty())
+	{
+		static const std::vector<std::string> archive_exts = {".ZIP", ".PK3"};
+		for (const auto& dir : dirs)
+		{
+			const std::string searchpath = M_JoinPath(dir, subdir);
+			const std::string result =
+			    M_BaseFileSearchDir(searchpath, basename, archive_exts, OMD5Hash());
+			if (!result.empty())
+			{
+				const std::string fullpath = M_JoinPath(searchpath, result);
+				if (Res_ContentDigest(fullpath) == want_digest)
+				{
+					return OResFile::make(out, fullpath);
+				}
+			}
+
+			const std::string dirpath = M_JoinPath(searchpath, basename);
+			if (M_IsDirectory(dirpath) && Res_ContentDigest(dirpath) == want_digest)
+			{
+				return OResFile::makeDirectory(out, dirpath);
+			}
+		}
+	}
+
 	// Last resort for extension-less wants: a directory with the
 	// wanted name inside one of the search directories.
 	if (strext.empty())
@@ -449,6 +495,12 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 			const std::string dirpath = M_JoinPath(M_JoinPath(dir, subdir), basename);
 			if (M_IsDirectory(dirpath))
 			{
+				// A known content digest must match; a same-named directory
+				// with different contents is not the wanted resource.
+				if (!want_digest.empty() && Res_ContentDigest(dirpath) != want_digest)
+				{
+					continue;
+				}
 				return OResFile::makeDirectory(out, dirpath);
 			}
 		}
@@ -591,9 +643,10 @@ BEGIN_COMMAND(whereis)
 	OResFile res;
 	if (M_ResolveWantedFile(res, want))
 	{
-		PrintFmt("basename: {}\nfullpath: {}\nCRC32: {}\nMD5: {}\n",
+		PrintFmt("basename: {}\nfullpath: {}\nCRC32: {}\nMD5: {}\nDIGEST: {}\n",
 		         res.getBasename(), res.getFullpath(),
-		         Res_CRC32(res.getFullpath()).getHexStr(), res.getMD5().getHexStr());
+		         Res_CRC32(res.getFullpath()).getHexStr(), res.getMD5().getHexStr(),
+		         res.getContentDigest().getHexStr());
 		return;
 	}
 
@@ -608,6 +661,8 @@ BEGIN_COMMAND(loaded)
 		PrintFmt("{}\n", file.getBasename());
 		PrintFmt("  PATH: {}\n", file.getFullpath());
 		PrintFmt("  MD5:  {}\n", file.getMD5().getHexStr());
+		if (!file.getContentDigest().empty())
+			PrintFmt("  DIGEST: {}\n", file.getContentDigest().getHexStr());
 	}
 
 	for (const auto& file : ::patchfiles)

@@ -197,3 +197,17 @@ message SendMobjUpdate
 {
     uint32 netid = 1;
 }
+
+// clc_resourcedigests
+message ResourceDigests
+{
+    message Resource
+    {
+        string name           = 1;
+        string md5            = 2;
+        string content_digest = 3;   // Manifest digest for archives/directories, empty otherwise.
+    }
+
+    repeated Resource wads    = 1;   // Loaded resource files, sans odamex.wad.
+    repeated Resource patches = 2;   // Loaded DEH/BEX patches.
+}

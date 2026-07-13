@@ -504,6 +504,15 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
  */
 static bool WantMatchesLoaded(const OWantFile& want, const OResFile& loaded)
 {
+	// A known content digest is authoritative: it identifies the logical
+	// contents of an archive or directory regardless of container form, and
+	// catches added, missing, or modified files inside it.
+	const OMD5Hash& want_digest = want.getWantedContentDigest();
+	if (!want_digest.empty())
+	{
+		return want_digest == loaded.getContentDigest();
+	}
+
 	if (want.getWantedMD5() == loaded.getMD5())
 	{
 		return true;

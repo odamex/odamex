@@ -118,6 +118,9 @@ int       last_svgametic = 0;
 int       last_player_update = 0;
 
 bool      hasReceivedFullUpdate = false;
+
+static bool resource_digests_unacked = false;
+static int  resource_digests_sent_tic = 0;
 bool      isReceivingFullUpdate = false;
 
 std::string connectpasshash = "";
@@ -418,6 +421,7 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	}
 
 	hasReceivedFullUpdate = false;
+	resource_digests_unacked = false;
 
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
@@ -831,6 +835,13 @@ void CL_RunTics()
 
 	if (!connected)
 		CL_RequestConnectInfo();
+
+	// Re-send resource digests until the server acknowledges receipt.
+	if (::resource_digests_unacked && ::connected && !::simulated_connection &&
+	    ::gametic - ::resource_digests_sent_tic > 5 * TICRATE)
+	{
+		CL_SendResourceDigests();
+	}
 
 	// [RH] Use the consoleplayer's camera to update sounds
 	S_UpdateSounds(listenplayer().camera);	// move positional sounds
@@ -1442,6 +1453,36 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 }
 
 //
+// CL_SendResourceDigests
+//
+// Sends hashes and content digests of our loaded resource files so the
+// server can verify they match its own. Called after each successful
+// resource load, and re-sent periodically until the server acknowledges
+// with svc_resourcedigestsack.
+//
+void CL_SendResourceDigests()
+{
+	if (!::connected || ::simulated_connection)
+		return;
+
+	MSG_WriteSVC(::messenger.ReliableBuf(),
+	             CLC_ResourceDigests(::wadfiles, ::patchfiles));
+
+	::resource_digests_unacked = true;
+	::resource_digests_sent_tic = ::gametic;
+}
+
+//
+// CL_AckResourceDigests
+//
+// The server accepted our resource digests; stop re-sending them.
+//
+void CL_AckResourceDigests()
+{
+	::resource_digests_unacked = false;
+}
+
+//
 // CL_SendUserInfo
 //
 void CL_SendUserInfo(buf_t& netBuf)
@@ -1814,6 +1855,16 @@ bool CL_PrepareConnect()
 		PrintFmt("> {}\n", file.getBasename());
 	}
 
+	if (MSG_BytesLeft() >= 4 && MSG_ReadLong() == 0x01020306)
+	{
+		for (byte i = 0; i < server_wads; i++)
+		{
+			OMD5Hash digest;
+			OMD5Hash::makeFromHexStr(digest, MSG_ReadString());
+			newwadfiles.at(i).setWantedContentDigest(digest);
+		}
+	}
+
 	// TODO: Allow deh/bex file downloads
 	PrintFmt("\n");
 	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles);
@@ -2002,10 +2053,7 @@ void CL_TryToConnect(uint32_t server_token)
 
 		CL_SendUserInfo(netBuf); // send userinfo
 
-		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
-		// maximum rate that the server will ignore.
-		constexpr int rate = 0xFFFF;
-		MSG_WriteLong(&netBuf, rate);
+		MSG_WriteSVCBuffer(&netBuf, CLC_ResourceDigests(::wadfiles, ::patchfiles));
 
 		MSG_WriteString(&netBuf, connectpasshash.c_str());
 

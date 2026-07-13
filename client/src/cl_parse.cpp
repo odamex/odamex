@@ -37,6 +37,7 @@
 #include "cl_main.h"
 #include "cl_maplist.h"
 #include "cl_vote.h"
+#include "clc_message.h"
 #include "cmdlib.h"
 #include "d_main.h"
 #include "d_player.h"
@@ -864,6 +865,16 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 }
 
 //
+// CL_ResourceDigestsAck
+//
+// The server accepted our resource digests; stop re-sending them.
+//
+static void CL_ResourceDigestsAck(const odaproto::svc::ResourceDigestsAck* msg)
+{
+	CL_AckResourceDigests();
+}
+
+//
 // LoadMap
 //
 // Read wad & deh filenames and map name from the server and loads
@@ -901,6 +912,11 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 			CL_QuitNetGame(NQ_DISCONNECT);
 			return;
 		}
+
+		OMD5Hash digest;
+		OMD5Hash::makeFromHexStr(digest, msg->wadnames().Get(i).content_digest());
+		file.setWantedContentDigest(digest);
+
 		newwadfiles.push_back(file);
 	}
 
@@ -947,6 +963,12 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		CL_QuitAndTryDownload(missing_file);
 		return;
 	}
+
+	// The resource files loaded successfully, present their hashes and
+	// content digests so the server can verify they match its own set.
+	// They are re-sent until the server acknowledges receipt, and the
+	// server enforces a deadline for them after changing resources.
+	CL_SendResourceDigests();
 
 	// [SL] 2012-12-02 - Force the music to stop when the new map uses
 	// the same music lump name that is currently playing. Otherwise,
@@ -3491,6 +3513,8 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
 		SV_MSG(svc_disconnectclient, CL_DisconnectClient, odaproto::svc::DisconnectClient);
 		SV_MSG(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
+		SV_MSG(svc_resourcedigestsack, CL_ResourceDigestsAck,
+		       odaproto::svc::ResourceDigestsAck);
 		SV_MSG(svc_consoleplayer, CL_ConsolePlayer, odaproto::svc::ConsolePlayer);
 		SV_MSG(svc_explodemissile, CL_ExplodeMissile, odaproto::svc::ExplodeMissile);
 		SV_MSG(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);

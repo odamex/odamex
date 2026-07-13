@@ -33,6 +33,7 @@ enum ofile_t
 
 	/**
 	 * @brief Anything that would be passed as a -file or -iwad parameter.
+	 * Including directories and archives.
 	 */
 	OFILE_WAD,
 
@@ -49,6 +50,7 @@ class OResFile
 {
 	std::string m_fullpath;
 	OMD5Hash m_md5;
+	OMD5Hash m_contentDigest;
 	std::string m_basename;
 
   public:
@@ -64,6 +66,12 @@ class OResFile
 	 * @brief Get the MD5 hash of the file.
 	 */
 	const OMD5Hash& getMD5() const { return m_md5; }
+
+	/**
+	 * @brief Get the content manifest digest of the file, or an empty hash
+	 *        for resources that are not archives or directories.
+	 */
+	const OMD5Hash& getContentDigest() const { return m_contentDigest; }
 
 	/**
 	 * @brief Get the base filename, with no path.
@@ -85,6 +93,7 @@ class OWantFile
 	std::string m_wantedpath;
 	ofile_t m_wantedtype;
 	OMD5Hash m_wantedMD5;
+	OMD5Hash m_wantedContentDigest;
 	OCRC32Sum m_wantedCRC32;
 	std::string m_basename;
 	std::string m_extension;
@@ -105,6 +114,17 @@ class OWantFile
 	 *        is no hash.
 	 */
 	const OMD5Hash& getWantedMD5() const { return m_wantedMD5; }
+
+	/**
+	 * @brief Get the wanted content manifest digest of the resource, or an
+	 *        empty hash if the server did not announce one.
+	 */
+	const OMD5Hash& getWantedContentDigest() const { return m_wantedContentDigest; }
+
+	/**
+	 * @brief Set the wanted content manifest digest of the resource.
+	 */
+	void setWantedContentDigest(const OMD5Hash& digest) { m_wantedContentDigest = digest; }
 
 	/**
 	 * @brief Get the base filename of the resource, with no directory.

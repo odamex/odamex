@@ -78,6 +78,8 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_ResetWorldPrediction();
 void CL_SendUserInfo(buf_t& netBuf);
+void CL_SendResourceDigests();
+void CL_AckResourceDigests();
 bool CL_Connect();
 bool CL_LoadResourceFiles(const std::vector<std::string>& resource_filenames,
                           const std::vector<std::string>& resource_filehashes);

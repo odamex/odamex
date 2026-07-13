@@ -67,6 +67,9 @@ struct client_t
 	int         last_received     { 0 };    // for timeouts
 	int         lastclientcmdtic  { 0 };
 	std::string digest            { };          // randomly generated string that the client must use for any hashes it sends back
+	int         digest_deadline   { 0 };        // gametic by which the client must present valid resource digests, or 0 if none pending
+	int         digests_expected  { 0 };        // outstanding svc_loadmap sends awaiting a clc_resourcedigests reply
+	int         digest_allowance  { 0 };        // clc_resourcedigests messages accepted before the client is considered to be flooding
 	bool        allow_rcon        { false };    // allow remote admin
 	bool        displaydisconnect { true  };    // display disconnect message when disconnecting
 

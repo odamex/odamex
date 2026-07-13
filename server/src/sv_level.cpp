@@ -395,6 +395,8 @@ void G_DoNewGame()
 
 		MSG_WriteSVC(player.client.messenger.ReliableBuf(),
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
+
+		SV_ExpectResourceDigests(player.client);
 	}
 
 	sv_curmap.ForceSet(d_mapname.c_str());

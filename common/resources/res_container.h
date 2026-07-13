@@ -32,7 +32,30 @@
 #include "resources/res_resourceid.h"
 #include "resources/res_resourcepath.h"
 
+#include "ohash.h"
+
 typedef uint32_t LumpId;
+
+
+// ============================================================================
+//
+// Content manifest
+//
+// ============================================================================
+//
+// Describes the logical contents of an archive or directory resource
+// container: one entry per file with a normalized path, uncompressed size,
+// and CRC32 of the uncompressed data. Two containers with equal manifests
+// hold the same content regardless of storage form (ZIP vs. directory) or
+// how the archive was compressed.
+//
+
+struct ContentManifestEntry
+{
+	std::string		path;		// forward slash separated, no leading separator, uppercase
+	uint32_t		length;		// uncompressed size in bytes
+	std::string		crc32;		// 8-digit uppercase hex CRC32 of uncompressed data
+};
 
 
 // forward declarations
@@ -182,6 +205,11 @@ public:
 	virtual uint32_t getResourceSize(const ResourceId res_id) const = 0;
 
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const = 0;
+
+	virtual OMD5Hash getContentDigest() const
+	{
+		return OMD5Hash();
+	}
 };
 
 
@@ -356,14 +384,18 @@ public:
 	virtual void addResources(ResourceManager* manager);
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
-		
+
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
+
+	virtual OMD5Hash getContentDigest() const;
 
 private:
 	void cleanup();
 	void addEntries();
 
 	OString mPath;
+
+	mutable OMD5Hash mContentDigest;
 
 	ContainerDirectory<FileSystemDirectoryEntry> mDirectory;
 
@@ -413,8 +445,10 @@ public:
 	virtual void addResources(ResourceManager* manager);
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
-		
+
 	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
+
+	virtual OMD5Hash getContentDigest() const;
 
 private:
 	void init(FileAccessor* file);
@@ -438,6 +472,9 @@ private:
 
     FileAccessor*  mFile;
 	ContainerDirectory<ZipDirectoryEntry> mDirectory;
+
+	std::vector<ContentManifestEntry> mManifest;
+	mutable OMD5Hash mContentDigest;
 
 	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
 	LumpIdLookupTable mLumpIdLookup;

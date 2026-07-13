@@ -234,6 +234,31 @@ odaproto::clc::UserInfo CLC_UserInfo(const UserInfo& userInfo)
 	return msg;
 }
 
+odaproto::clc::ResourceDigests CLC_ResourceDigests(const OResFiles& wads,
+                                                   const OResFiles& patches)
+{
+	odaproto::clc::ResourceDigests msg;
+
+	// Skip over wads[0], which is always odamex.wad; the server omits it
+	// from its announced resource list as well.
+	for (size_t i = 1; i < wads.size(); i++)
+	{
+		odaproto::clc::ResourceDigests_Resource* res = msg.add_wads();
+		res->set_name(wads[i].getBasename());
+		res->set_md5(wads[i].getMD5().getHexStr());
+		res->set_content_digest(wads[i].getContentDigest().getHexStr());
+	}
+
+	for (const auto& patch : patches)
+	{
+		odaproto::clc::ResourceDigests_Resource* res = msg.add_patches();
+		res->set_name(patch.getBasename());
+		res->set_md5(patch.getMD5().getHexStr());
+	}
+
+	return msg;
+}
+
 odaproto::clc::PingReply CLC_PingReply(uint64_t msec)
 {
 	odaproto::clc::PingReply msg;

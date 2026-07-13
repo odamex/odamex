@@ -283,6 +283,15 @@ void SV_SendServerInfo()
 		                D_CleanseFileName(file.getBasename()).c_str());
 	}
 
+	MSG_WriteLong(&ml_message, 0x01020306_u32);
+	for (size_t i = 1; i < resource_file_count; ++i)
+	{
+		if (i < ::wadfiles.size())
+			MSG_WriteString(&ml_message, ::wadfiles[i].getContentDigest().getHexCStr());
+		else
+			MSG_WriteString(&ml_message, "");
+	}
+
 	NET_SendPacket(ml_message, net_from);
 }
 
