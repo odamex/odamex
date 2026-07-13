@@ -14,19 +14,31 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Wrapper class around a char[8] to make dealing with lump names quicker
-//   and easier. Under most cases, the lump name will guaranteed to be completely
-//   uppercase.
+//   Wrapper class around a string to make dealing with lump names quicker
+//   and easier. The lump name is guaranteed to be completely uppercase.
+//
+//   Historically this was a fixed char[9], limiting lump names to 8
+//   characters. Archive and directory resources support long file names,
+//   so the storage is now dynamically sized. For compatibility with legacy
+//   callers, names shorter than 8 characters are NUL-padded so that reads
+//   of elements [0..8] and fixed 8-byte writes of c_str() remain valid.
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
+#include <string>
+#include <string_view>
+
 class OLumpName
 {
-	char m_data[9];
+	// Logical name (uppercase), always padded with NULs to a total backing
+	// length of at least 9 so that legacy element access and fixed-width
+	// serialization of short names stay in bounds. size() is the number of
+	// characters before the first NUL.
+	std::string m_data;
 
-	void MakeDataPresentable();
+	void assign(const char* str, size_t max_len);
 
   public:
 
@@ -55,12 +67,12 @@ class OLumpName
 	[[nodiscard]] const char& at(const size_t pos) const;
 	[[nodiscard]] char& operator[](const size_t pos);
 	[[nodiscard]] const char& operator[](const size_t pos) const;
-	[[nodiscard]] OLumpName substr(const size_t pos = 0, size_t npos = 7) const;
+	[[nodiscard]] OLumpName substr(const size_t pos = 0, size_t npos = std::string::npos) const;
 
 	// string operations
 	[[nodiscard]] const char* c_str() const;
 	[[nodiscard]] const char* data() const;
-	inline operator std::string_view() const { return { m_data, size() }; };
+	inline operator std::string_view() const { return { m_data.data(), size() }; };
 	// Note: comparison operations are done without regard to case sensitivity.
 	[[nodiscard]] int compare(const OLumpName& other) const;
 	[[nodiscard]] int compare(const char* other) const;
@@ -90,9 +102,8 @@ struct hashfunc<OLumpName>
 {
 	auto operator()(const OLumpName& lumpname) const
 	{
-		const char* s = lumpname.m_data;
 		size_t val = 0;
-		for (size_t n = 9; *s != 0 && n != 0; s++, n--)
+		for (const char* s = lumpname.m_data.c_str(); *s != 0; s++)
 			val = val * 101 + *s;
 		return val;
 	}
@@ -103,9 +114,8 @@ struct std::hash<OLumpName>
 {
 	auto operator()(const OLumpName& lumpname) const
 	{
-		const char* s = lumpname.m_data;
 		size_t val = 0;
-		for (size_t n = 9; *s != 0 && n != 0; s++, n--)
+		for (const char* s = lumpname.m_data.c_str(); *s != 0; s++)
 			val = val * 101 + *s;
 		return val;
 	}

@@ -244,6 +244,14 @@ static void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 		for (int l = sprite_paths.size() - 1; l >= 0; l--)
 		{
 			const OString& resource_name = sprite_paths[l].last();
+
+			// Archive and directory resources may carry long file names;
+			// only classic 8-character lump names can encode sprite frame
+			// and rotation characters.
+			if (resource_name.size() > 8 ||
+			    resource_name.find(".") != std::string::npos)
+				continue;
+
 			const char* resource_name_array = resource_name.c_str();
 			if (*reinterpret_cast<const int*>(resource_name_array) == intname)
 			{

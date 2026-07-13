@@ -121,7 +121,7 @@ size_t S_AddSound(const char *logicalname, const char *lumpname)
 	size_t sfxid = FindSoundNoHash(logicalname);
 
 	const ResourceId res_id = lumpname ?
-	    Res_GetResourceId(OStringToUpper(lumpname, 8), NS_SOUNDS) : ResourceId::INVALID_ID;
+	    Res_GetResourceId(OStringToUpper(lumpname), NS_SOUNDS) : ResourceId::INVALID_ID;
 
 	// Otherwise, prepare a new one.
 	if (sfxid != S_sfx.size())

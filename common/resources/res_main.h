@@ -128,6 +128,8 @@ public:
 
 	const ResourceId addResource(const ResourcePath& path, const ResourceContainer* container, const ResourceLoader* loader=NULL);
 
+	void addResourceAlias(const ResourcePath& path, const ResourceId res_id);
+
 	bool validateResourceId(const ResourceId res_id) const
 	{
 		return res_id < mResources.size();

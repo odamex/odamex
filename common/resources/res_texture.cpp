@@ -246,6 +246,18 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 		{
 			const ResourceId res_id = manager->addResource(path, this, loader);
 
+			// Long-named resources are recorded under their full path with
+			// extension; refresh their untruncated lump-name alias so that
+			// name lookups resolve to the texture version, just as re-adding
+			// the path does for classic 8-character names.
+			const std::string record_name(path.last());
+			const size_t dot = record_name.find('.');
+			if (dot != std::string::npos)
+			{
+				const OString stem(record_name.substr(0, dot));
+				manager->addResourceAlias(dir + stem, res_id);
+			}
+
 			// save the ResourceLoader pointers so they can be freed later
 			mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
 		}

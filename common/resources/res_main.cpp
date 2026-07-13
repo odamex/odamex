@@ -314,6 +314,20 @@ const ResourceId ResourceManager::addResource(
 
 
 //
+// ResourceManager::addResourceAlias
+//
+// Registers an additional path that translates to an existing resource
+// without creating a new resource record. Used to make archive and
+// directory files addressable by their full "long" path alongside their
+// classic 8-character lump name.
+//
+void ResourceManager::addResourceAlias(const ResourcePath& path, const ResourceId res_id)
+{
+	mNameTranslator.addTranslation(path, res_id);
+}
+
+
+//
 // ResourceManager::getAllResourceIds
 //
 const ResourceIdList ResourceManager::getAllResourceIds() const

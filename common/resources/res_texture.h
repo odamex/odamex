@@ -57,12 +57,12 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 
 inline const ResourceId Res_GetTextureResourceId(const char* name, TextureSearchOrdering ordering, bool use_placeholder = true)
 {
-	return Res_GetTextureResourceId(OStringToUpper(name, 8), ordering, use_placeholder);
+	return Res_GetTextureResourceId(OStringToUpper(name), ordering, use_placeholder);
 }
 
 inline const ResourceId Res_GetTextureResourceId(const OLumpName& name, TextureSearchOrdering ordering, bool use_placeholder = true)
 {
-	return Res_GetTextureResourceId(OStringToUpper(name.c_str(), 8), ordering, use_placeholder);
+	return Res_GetTextureResourceId(OStringToUpper(name.c_str()), ordering, use_placeholder);
 }
 
 

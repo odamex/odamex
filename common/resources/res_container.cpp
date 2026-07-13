@@ -136,8 +136,11 @@ static bool Res_IsMapLumpName(const OString& name)
 // Modifies a file path from a filesystem directory or an archive to meet
 // the criteria used by ResourceManager. This includes normalizing
 // path separators & truncating the lump name to 8 upper-case characters.
+// Pass truncate_lump_name = false to keep the full-length lump name, used
+// for the long-name aliases of files that don't fit in 8 characters.
 //
-static std::string Res_TransformResourcePath(const std::string& path)
+static std::string Res_TransformResourcePath(const std::string& path,
+                                             bool truncate_lump_name = true)
 {
 	std::string new_path(path);
 
@@ -179,7 +182,9 @@ static std::string Res_TransformResourcePath(const std::string& path)
 			std::transform(new_path.begin(), new_path.end(), new_path.begin(), toupper);
 
 			// Transform the name: truncate the lump name to 8 chars and move the lump to the first-level directory
-			new_path = new_path.substr(0, end_of_directory) + ResourcePath::DELIMINATOR + new_path.substr(start_of_lump_name, 8);
+			new_path = new_path.substr(0, end_of_directory) + ResourcePath::DELIMINATOR +
+			           new_path.substr(start_of_lump_name,
+			                           truncate_lump_name ? 8 : std::string::npos);
 
 			// Handle a specific use-case where a sprite lump name should contain a backslash
 			// character. See https://zdoom.org/wiki/Using_ZIPs_as_WAD_replacement.
@@ -190,6 +195,51 @@ static std::string Res_TransformResourcePath(const std::string& path)
 		}
 	}
 	return new_path;
+}
+
+
+//
+// Res_LongResourcePath
+//
+// Builds the full, untruncated resource path for a file from an archive or
+// filesystem directory: / separated with a leading separator, uppercased,
+// with subdirectories and the filename extension preserved. This is the
+// "long name" of the resource, emulating the long file name support of the
+// ZDoom family of ports.
+//
+static ResourcePath Res_LongResourcePath(const std::string& path)
+{
+	std::string new_path(path);
+
+	for (size_t i = 0; i < new_path.length(); i++)
+		if (new_path[i] == '/' || new_path[i] == '\\')
+			new_path[i] = ResourcePath::DELIMINATOR;
+
+	if (new_path.empty() || new_path[0] != ResourcePath::DELIMINATOR)
+		new_path = ResourcePath::DELIMINATOR + new_path;
+
+	return ResourcePath(StdStringToUpper(new_path));
+}
+
+
+//
+// Res_PathHasShortLumpName
+//
+// Returns true if the file name portion of the path fits in a classic
+// 8-character lump name once the extension is stripped. Files with longer
+// names have no short lump name - matching ZDoom-family behavior - and are
+// only addressable by their full path.
+//
+static bool Res_PathHasShortLumpName(const std::string& path)
+{
+	size_t start = path.find_last_of("/\\");
+	start = (start == std::string::npos) ? 0 : start + 1;
+
+	size_t end = path.find_first_of('.', start);
+	if (end == std::string::npos)
+		end = path.length();
+
+	return end - start <= 8;
 }
 
 
@@ -753,6 +803,20 @@ void DirectoryResourceContainer::addResources(ResourceManager* manager)
 			ResourceContainer* container = new SingleMapWadResourceContainer(diskfile);
 			manager->addResourceContainer(container, this, global_directory_name, entry.path);
 		}
+		else if (!Res_PathHasShortLumpName(std::string(entry.path)))
+		{
+			// The file name does not fit in a classic 8-character lump name.
+			// Following ZDoom-family behavior, such files get no truncated
+			// short name -- they are addressable by their full path or by
+			// their untruncated lump name.
+			const ResourceId res_id =
+			    manager->addResource(Res_LongResourcePath(std::string(entry.path)), this);
+			const LumpId lump_id = mDirectory.getLumpId(entry.path);
+			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
+
+			manager->addResourceAlias(
+			    Res_TransformResourcePath(std::string(entry.path), false), res_id);
+		}
 		else
 		{
 			// Transform the file path to fit with ResourceManager semantics
@@ -779,6 +843,9 @@ void DirectoryResourceContainer::addResources(ResourceManager* manager)
 			const ResourceId res_id = manager->addResource(resource_path, this);
 			const LumpId lump_id = mDirectory.getLumpId(entry.path);
 			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
+
+			// Also make the resource addressable by its full path.
+			manager->addResourceAlias(Res_LongResourcePath(std::string(entry.path)), res_id);
 		}
 	}
 }
@@ -1263,6 +1330,20 @@ void ZipResourceContainer::addResources(ResourceManager* manager)
 			ResourceContainer* container = new SingleMapWadResourceContainer(memfile);
 			manager->addResourceContainer(container, this, global_directory_name, entry.path);
 		}
+		else if (!Res_PathHasShortLumpName(std::string(entry.path)))
+		{
+			// The file name does not fit in a classic 8-character lump name.
+			// Following ZDoom-family behavior, such files get no truncated
+			// short name -- they are addressable by their full path or by
+			// their untruncated lump name.
+			const ResourceId res_id =
+			    manager->addResource(Res_LongResourcePath(std::string(entry.path)), this);
+			const LumpId lump_id = mDirectory.getLumpId(entry.path);
+			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
+
+			manager->addResourceAlias(
+			    Res_TransformResourcePath(std::string(entry.path), false), res_id);
+		}
 		else
 		{
 			ResourcePath resource_path = Res_TransformResourcePath(entry.path);
@@ -1283,6 +1364,9 @@ void ZipResourceContainer::addResources(ResourceManager* manager)
 			const ResourceId res_id = manager->addResource(resource_path, this);
 			const LumpId lump_id = mDirectory.getLumpId(entry.path);
 			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
+
+			// Also make the resource addressable by its full path.
+			manager->addResourceAlias(Res_LongResourcePath(std::string(entry.path)), res_id);
 		}
 	}
 }

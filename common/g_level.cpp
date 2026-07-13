@@ -655,7 +655,9 @@ void G_SerializeSnapshots(FArchive &arc)
 	else
 	{
 		LevelInfos& levels = getLevelInfos();
-		char mapname[8];
+		// One byte larger than the serialized name so the buffer is always
+		// NUL terminated when handed to findByName.
+		char mapname[9] = {0};
 
 		G_ClearSnapshots ();
 
@@ -700,7 +702,9 @@ void P_SerializeACSDefereds(FArchive &arc)
 	else
 	{
 		LevelInfos& levels = getLevelInfos();
-		char mapname[8];
+		// One byte larger than the serialized name so the buffer is always
+		// NUL terminated when handed to findByName.
+		char mapname[9] = {0};
 
 		P_RemoveDefereds();
 
