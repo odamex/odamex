@@ -28,6 +28,7 @@
 #define NET_IO_H
 
 #include <string>
+#include <stdint.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -41,8 +42,6 @@
 #include <sys/wait.h>
 #include <netdb.h>
 #endif
-
-#include "typedefs.h"
 
 /**
  * odalpapi namespace.

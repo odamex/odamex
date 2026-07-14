@@ -815,7 +815,11 @@ bool P_AreTeammates(const player_t &a, const player_t &b)
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 {
-	// Viewers can always spy themselves.
+	// skip if out of lives in survival
+	if (G_IsLivesGame() && other.lives < 1)
+		return false;
+
+	// otherwise viewers can always spy themselves.
 	if (viewer.id == other.id)
 		return true;
 
@@ -856,10 +860,6 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 	if (isTeammate || viewer.spectator)
 	{
-		// If a player has no more lives, don't show him.
-		if (::g_lives && other.lives < 1)
-			return false;
-
 		return true;
 	}
 
@@ -900,6 +900,36 @@ void P_SwitchSpyOnNoLives(const player_t& player)
 			AddCommandString("spynext");
 		}
 	}
+}
+
+void P_BumpPlayerCounters(player_t& player)
+{
+	// Counters, time dependent power ups.
+
+	// Strength counts up to diminish fade.
+	if (player.powers[pw_strength])
+		player.powers[pw_strength]++;
+
+	if (player.powers[pw_invulnerability])
+		player.powers[pw_invulnerability]--;
+
+	if (player.powers[pw_invisibility])
+		player.powers[pw_invisibility]--;
+
+	if (player.powers[pw_infrared])
+		player.powers[pw_infrared]--;
+
+	if (player.powers[pw_ironfeet])
+		player.powers[pw_ironfeet]--;
+
+	if (player.damagecount)
+		player.damagecount--;
+
+	if (player.bonuscount)
+		player.bonuscount--;
+
+	if (player.hazardcount)
+		player.hazardcount--;
 }
 
 void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
@@ -1067,41 +1097,16 @@ void P_PlayerThink (player_t& player)
 	// cycle psprites
 	P_MovePsprites (player);
 
-	// Counters, time dependent power ups.
+	P_BumpPlayerCounters(player);
 
-	// Strength counts up to diminish fade.
-	if (player.powers[pw_strength])
-		player.powers[pw_strength]++;
-
-	if (player.powers[pw_invulnerability])
-		player.powers[pw_invulnerability]--;
-
-	if (player.powers[pw_invisibility])
-		if (! --player.powers[pw_invisibility] )
-			player.mo->flags &= ~MF_SHADOW;
-
-	if (player.powers[pw_infrared])
-		player.powers[pw_infrared]--;
-
-	if (player.powers[pw_ironfeet])
-		player.powers[pw_ironfeet]--;
+	if (not player.powers[pw_invisibility])
+		player.mo->flags &= ~MF_SHADOW;
 
 	// For offline/chase cam
 	P_SetPlayerPowerupStatuses(player, player.powers);
 
-	if (player.damagecount)
-		player.damagecount--;
-
-	if (player.bonuscount)
-		player.bonuscount--;
-
-	if (player.hazardcount)
-	{
-		player.hazardcount--;
-		if (!(::level.time % player.hazardinterval) &&
-		    player.hazardcount > 16 * TICRATE)
-			P_DamageMobj(player.mo, NULL, NULL, 5);
-	}
+	if (player.hazardcount && not (::level.time % player.hazardinterval) && player.hazardcount > 16 * TICRATE)
+		P_DamageMobj(player.mo, NULL, NULL, 5);
 
 	// Handling colormaps.
 	if (displayplayer().powers[pw_invulnerability])

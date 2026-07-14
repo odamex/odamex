@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __ODA_DEFS_H__
-#define __ODA_DEFS_H__
+#pragma once
 
 #include "odalaunch.h"
 
@@ -80,12 +79,12 @@
 // ---------------
 
 // Default list of master servers, usually official ones
-static const char* def_masterlist[] =
+inline constexpr const char* def_masterlist[] =
 {
 	"master1.odamex.net:15000"
 	,"voxelsoft.com:15000"
 	,"odamex.electricbrass.net:15000"
-	,NULL
+	,nullptr
 };
 
 // Master server timeout
@@ -164,5 +163,3 @@ static const char* def_masterlist[] =
 // Miscellaneous
 // -------------
 
-
-#endif // __ODA_DEFS_H__

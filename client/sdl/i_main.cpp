@@ -168,6 +168,11 @@ int main(int argc, char *argv[])
 			}
 		}
 
+#if defined(__linux__) && defined(SDL20)
+		// despite the name, this also sets wayland app id
+		SDL_setenv("SDL_VIDEO_X11_WMCLASS", "net.odamex.Odamex.Client", false);
+#endif
+
 		unsigned int sdl_flags = SDL_INIT_TIMER;
 
 #ifdef _MSC_VER
@@ -220,7 +225,7 @@ int main(int argc, char *argv[])
 		call_terms();
 		exit(EXIT_FAILURE);
 	}
-#ifndef _DEBUG
+#ifndef ODAMEX_DEBUG
 	catch (...)
 	{
 		// If an exception is thrown, be sure to do a proper shutdown.

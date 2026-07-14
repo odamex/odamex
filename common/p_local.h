@@ -23,9 +23,7 @@
 
 #pragma once
 
-#ifndef __R_LOCAL__
 #include "r_local.h"
-#endif
 
 #include <set>
 
@@ -106,6 +104,7 @@ void P_PlayerThink (player_t& player);
 void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers);
 bool P_AreTeammates(const player_t& a, const player_t& b);
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
+void P_BumpPlayerCounters(player_t& player);
 
 //
 // P_MOBJ
@@ -135,12 +134,11 @@ bool	P_HitFloor (AActor *thing);
 //
 // [RH] P_THINGS
 //
-extern int SpawnableThings[];
-extern const int NumSpawnableThings;
+extern std::array<int, 155> SpawnableThings;
 
-bool	P_Thing_Spawn (int tid, int type, angle_t angle, bool fog);
+bool	P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, std::optional<int> newtid = std::nullopt);
 bool	P_Thing_Projectile (int tid, int type, angle_t angle,
-							fixed_t speed, fixed_t vspeed, bool gravity);
+							fixed_t speed, fixed_t vspeed, bool gravity, std::optional<int> newtid = std::nullopt);
 bool	P_ActivateMobj (AActor *mobj, AActor *activator);
 bool	P_DeactivateMobj (AActor *mobj);
 
@@ -148,7 +146,8 @@ bool	P_DeactivateMobj (AActor *mobj);
 // P_ENEMY
 //
 void	P_NoiseAlert (AActor* target, AActor* emmiter);
-void	P_SpawnBrainTargets(void);	// killough 3/26/98: spawn icon landings
+void	P_SpawnBrainTargets();	// killough 3/26/98: spawn icon landings
+int		P_Massacre();
 
 extern struct brain_s {				// killough 3/26/98: global state of boss brain
 	int easy, targeton;
@@ -264,6 +263,8 @@ bool	P_CheckSight (const AActor* t1, const AActor* t2);
 void	P_UseLines (player_t& player);
 void	P_ApplyTorque(AActor *mo);
 void	P_CopySector(sector_t *dest, sector_t *src);
+bool 	P_ShouldClipPlayer(AActor* projectile, AActor* player);
+bool 	P_ShouldClipFriendly(AActor* projectile, AActor* monster);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
 double P_PlaneZ(double x, double y, const plane_t *plane);
@@ -331,6 +332,7 @@ extern int				bmapheight; 	// in mapblocks
 extern fixed_t			bmaporgx;
 extern fixed_t			bmaporgy;		// origin of block map
 extern AActor** 		blocklinks; 	// for thing chains
+inline bool skipblstart; // should the first element of blocklists be skipped
 
 extern std::set<short>	movable_sectors;
 
@@ -349,6 +351,7 @@ void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int 
 #define DMG_NO_ARMOR		1
 
 // [RH] Means of death flags (based on Quake2's)
+// TODO: should this be an enum?
 #define MOD_UNKNOWN			0
 #define MOD_FIST			1
 #define MOD_PISTOL			2

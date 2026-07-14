@@ -114,6 +114,7 @@ EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_scalescoreboard)
 EXTERN_CVAR (hud_timer)
 EXTERN_CVAR (hud_speedometer)
+EXTERN_CVAR (hud_weapontext)
 EXTERN_CVAR (hud_bigfont)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_heldflag_flash)
@@ -209,6 +210,8 @@ EXTERN_CVAR(cl_autorecord_horde)
 // Spree options
 EXTERN_CVAR(cl_showsprees)
 EXTERN_CVAR(cl_showmultikills)
+EXTERN_CVAR(cl_showofflinesprees)
+EXTERN_CVAR(cl_showofflinemultikills)
 
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
@@ -567,7 +570,7 @@ static value_t MidiReset[] = {
 
 static value_t OplCore[] = {
 	{ 0.0,			"Fast (Dosbox)"},
-	{ 1.0,			"Balanced (Nuked 1.74)"},
+	{ 1.0,			"Balanced (Nuked-Fast 1.8)"},
 	{ 2.0,			"Accurate (Nuked 1.8)"}
 };
 
@@ -918,6 +921,8 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Center weapon when firing",{&cl_centerbobonfire},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Show Killing Sprees",		{&cl_showsprees},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Show Multi Kills",		{&cl_showmultikills},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Sprees Offline",	{&cl_showofflinesprees},{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Multi Kills Offline",	{&cl_showofflinemultikills},{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
@@ -1010,6 +1015,7 @@ static menuitem_t HUDItems[] = {
     // clang-format on
     {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
     {discrete, "Speedometer", {&hud_speedometer}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Weapons", {&hud_weapontext}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {slider, "Feed Timeout", {&hud_feedtime}, {1.0}, {10.0}, {0.25}, {NULL}},
     {discrete, "Show Kills in Feed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -1109,7 +1115,7 @@ static menuitem_t MessagesItems[] = {
 #endif
 	{ slider,	"Message Timeout",		 {&con_notifytime},		{1.0}, {10.0},	{0.25}, {NULL} },
 	{ slider,	"Center Message Timeout",{&con_midtime},		{1.0}, {10.0},	{0.25}, {NULL} },
-	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
+	{ discrete,	"Scale message text",    {&hud_scaletext},		{5.0}, {0.0}, 	{0.0}, {ScaleFactors} },
 	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
 	{ discrete,	"Scale console text",   {&con_scaletext},		{5.0}, {0.0}, 	{0.0}, {ScaleFactors} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
@@ -1264,11 +1270,12 @@ static value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
 	{ 60.0,		"60fps" },
 	{ 70.0,		"70fps" },
-   	{ 105.0,	"105fps"},
+	{ 90.0,		"90fps" },
+	{ 105.0,	"105fps"},
 	{ 120.0,	"120fps" },
 	{ 140.0,	"140fps"},
-    	{ 144.0,	"144fps"},
-    	{ 240.0,	"240fps"},
+	{ 144.0,	"144fps"},
+	{ 240.0,	"240fps"},
 	{ 0.0,		"Unlimited" }
 };
 

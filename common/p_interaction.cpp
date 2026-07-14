@@ -72,6 +72,7 @@ EXTERN_CVAR(g_lives)
 // sapientlion - experimental
 EXTERN_CVAR(sv_weapondrop)
 
+// TODO: does this need to be global?
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
@@ -79,7 +80,7 @@ int MeansOfDeath;
 int maxammo[NUMAMMO] = {200, 50, 300, 50};
 int clipammo[NUMAMMO] = {10, 4, 20, 1};
 
-void AM_Stop(void);
+void AM_Stop();
 void SV_SpawnMobj(AActor *mobj);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
@@ -517,7 +518,7 @@ ItemEquipVal P_GiveCard(player_t& player, card_t card)
 	}
 
 	player.bonuscount = BONUSADD;
-	player.cards[card] = 1;
+	player.cards[card] = true;
 
 	if (multiplayer)
 	{
@@ -2247,8 +2248,9 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		// end of game hell hack
 		if (sv_gametype == GM_COOP || sv_allowexit)
 		{
-			if ((target->subsector->sector->special & 255) == special
-				&& damage >= target->health)
+			if (   target->subsector
+			    && (target->subsector->sector->special & 255) == special
+			    && damage >= target->health)
 			{
 				damage = target->health - 1;
 			}
@@ -2555,17 +2557,23 @@ void P_PlayerLeavesGame(player_s* player)
 				}
 			}
 		}
-	}
 
-	if (targethasflag)
-	{
-		M_LogWDLEvent(WDL_EVENT_CARRIERKILL, player, player, f, 0, MOD_EXIT, 0);
+		// We need to check if the player already exists here
+		// Because some clients can disconnect before they fully join the game, and we
+		// don't want to log disconnects for players that never fully joined.
+		if (M_CheckIfPlayerInLogs(player->id))
+		{
+			if (targethasflag)
+			{
+				M_LogWDLEvent(WDL_EVENT_CARRIERKILL, player, player, f, 0, MOD_EXIT, 0);
+			}
+			else
+			{
+				M_LogWDLEvent(WDL_EVENT_KILL, player, player, 0, 0, MOD_EXIT, 0);
+			}
+			M_LogWDLEvent(WDL_EVENT_DISCONNECT, player, NULL, current, 0, 0, 0);
+		}
 	}
-	else
-	{
-		M_LogWDLEvent(WDL_EVENT_KILL, player, player, 0, 0, MOD_EXIT, 0);
-	}
-	M_LogWDLEvent(WDL_EVENT_DISCONNECT, player, NULL, current, 0, 0, 0);
 
 	// Playercount changes can cause end-of-game conditions.
 	G_AssertValidPlayerCount();

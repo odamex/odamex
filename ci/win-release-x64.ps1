@@ -47,7 +47,7 @@ function BuildX64 {
     New-Item  -Force -ItemType "directory" -Path "${CurrentDir}\BuildX64"
     Set-Location -Path "${CurrentDir}\BuildX64"
 
-    cmake.exe -G "Visual Studio 17 2022" -A "x64" "${CurrentDir}" `
+    cmake.exe -G "Visual Studio 18 2026" -A "x64" "${CurrentDir}" `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
@@ -130,17 +130,17 @@ function CopyFilesX64 {
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2.dll", `
         "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.exe", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase315u_net_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase315u_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase315u_xml_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw315u_core_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw315u_html_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw315u_xrc_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase332u_net_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase332u_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase332u_xml_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw332u_core_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw332u_html_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw332u_xrc_vc14x_x64.dll", `
         "${CurrentDir}\BuildX64\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X64Dir}\"
 
     # Get VC++ Redist
-    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "${X64Dir}\redist\vc_redist.x64.exe"
+    Invoke-WebRequest -Uri "https://aka.ms/vc14/vc_redist.x64.exe" -OutFile "${X64Dir}\redist\vc_redist.x64.exe"
 }
 
 function OutputsX64 {

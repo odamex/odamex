@@ -1,5 +1,7 @@
 name: OdaTests Notifier
 
+description: "Notifies discord of any changes to OdaTests results"
+
 inputs:
   demos-run:
     description: "Number of demo tests that were run"
@@ -15,7 +17,7 @@ runs:
   using: "composite"
   steps:
     - name: Checkout odatests-results branch
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         ref: odatests-results
         path: ./odatests-results

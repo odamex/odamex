@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __DLG_ABOUT_H__
-#define __DLG_ABOUT_H__
+#pragma once
 
 #include "odalaunch.h"
 
@@ -48,5 +47,3 @@ private:
 
 	DECLARE_EVENT_TABLE()
 };
-
-#endif // __DLG_ABOUT_H__

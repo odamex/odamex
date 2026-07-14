@@ -940,8 +940,6 @@ odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector)
 		floor->set_pause_time(Floor->m_PauseTime);
 		floor->set_step_time(Floor->m_StepTime);
 		floor->set_per_step_time(Floor->m_PerStepTime);
-		floor->set_floor_offset(Floor->m_Height);
-		floor->set_floor_change(Floor->m_Change);
 		floor->set_floor_line(Floor->m_Line ? (Floor->m_Line - lines) : -1);
 	}
 
@@ -1414,7 +1412,7 @@ odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, const lin
 odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
                                                        const AActor* activator,
                                                        const char* print,
-                                                       const std::vector<int>& args)
+                                                       const nonstd::span<const int> args)
 {
 	odaproto::svc::ExecuteACSSpecial msg;
 

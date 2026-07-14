@@ -90,6 +90,7 @@ EXTERN_CVAR(show_messages)
 EXTERN_CVAR(co_novileghosts)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(sv_showsprees)
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -240,7 +241,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	p.armorpoints = msg->player().armorpoints();
 	p.armortype = msg->player().armortype();
 
-	if (p.lives == 0 && msg->player().lives() > 0)
+	if ((p.lives == 0 && msg->player().lives() > 0) && !netdemo.isPlaying())
 	{
 		// Stop spying so you know you're back from the dead.
 		::displayplayer_id = ::consoleplayer_id;
@@ -1219,6 +1220,11 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
+
+		if (!netdemo.isPlaying())
+		{
+			::displayplayer_id = ::consoleplayer_id;
+		}
 	}
 
 	if (p.id == displayplayer().id)
@@ -2931,7 +2937,8 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 
 	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
 
-	if (cl_showsprees && displayplayer_id == playerId && update)
+	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
+	if (cl_showsprees && sv_showsprees && displayplayer_id == playerId && update)
 	{
 		// Play the sound for the new multi kill
 		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
@@ -2958,10 +2965,13 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 	player_t* clientPlayer = &consoleplayer();
 	fixed_t x, y, z;
 	fixed_t momx, momy, momz;
-	fixed_t pitch, viewz, viewheight, deltaviewheight;
+	fixed_t pitch, viewheight, deltaviewheight;
 	angle_t angle;
 	int jumpTics, reactiontime;
 	byte waterlevel;
+
+	// Note clientPlayer->viewz should not be set with the value from the demo here
+	// it is an aggregate value and will be set correctly later
 
 	clientPlayer->cmd.clear();
 	clientPlayer->cmd.unserialize(msg->player_cmd());
@@ -2975,7 +2985,6 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 	momz = msg->actor().mom().z();
 	angle = msg->actor().angle();
 	pitch = msg->actor().pitch();
-	viewz = msg->player().viewz();
 	viewheight = msg->player().viewheight();
 	deltaviewheight = msg->player().deltaviewheight();
 	jumpTics = msg->player().jumptics();
@@ -2994,7 +3003,6 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 		clientPlayer->mo->momz = momz;
 		clientPlayer->mo->angle = angle;
 		clientPlayer->mo->pitch = pitch;
-		clientPlayer->viewz = viewz;
 		clientPlayer->viewheight = viewheight;
 		clientPlayer->deltaviewheight = deltaviewheight;
 		clientPlayer->jumpTics = jumpTics;

@@ -31,6 +31,7 @@
 #include "xrc_resource.h"
 
 #include "net_io.h"
+#include "cvardoc_db.h"
 
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
@@ -42,6 +43,10 @@ IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {
+	#ifdef __linux__
+	SetClassName("net.odamex.Odamex.Launcher");
+	#endif
+
 	if(BufferedSocket::InitializeSocketAPI() == false)
 		return false;
 
@@ -52,8 +57,15 @@ bool Application::OnInit()
 	// load resources
 	InitXmlResource();
 
+	// Load the cvar documentation database (best-effort; the launcher runs
+	// fine without it). The client and server docs are merged into the
+	// deduplicated union of every cvar Odamex knows about; either may be
+	// absent.
+	GetCvarDb().LoadFromFiles(
+	    {OdaResolveCvarDocPath(), OdaResolveSrvCvarDocPath()});
+
 	// create main window, get size dimensions and show it
-	MAIN_DIALOG = new dlgMain(0L);
+	MAIN_DIALOG = new dlgMain(nullptr);
 
 	if(MAIN_DIALOG)
 		MAIN_DIALOG->Show();

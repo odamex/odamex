@@ -359,7 +359,7 @@ void Host_EndGame(const char *msg)
 
 void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line)
 {
-	if(connected)
+	if(connected && !simulated_connection)
 	{
 		SZ_Clear(&net_buffer);
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
@@ -411,7 +411,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
 
-	if (netdemo.isPlaying())
+	if (netdemo.isPlaying() || netdemo.isPaused())
 		netdemo.stopPlaying();
 
 	demoplayback = false;
@@ -626,7 +626,10 @@ void CL_StepTics(unsigned int count)
 		OInterpolation::getInstance().ticGameInterpolation();
 
 		G_Ticker ();
-		gametic++;
+
+		if (!netdemo.isPaused())
+			gametic++;
+
 		if (netdemo.isPlaying() && !netdemo.isPaused())
 			netdemo.ticker();
 	}
@@ -668,7 +671,7 @@ void CL_RunTics()
 				PrintFmt("level.time {}, prndindex {}, {} {} {}\n",
 				         level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				PrintFmt("level.time %d, prndindex %d\n", level.time, prndindex);
+ 				PrintFmt("level.time {}, prndindex {}\n", level.time, prndindex);
 		}
 	}
 	else
@@ -1267,6 +1270,8 @@ BEGIN_COMMAND(netrew)
 {
 	if (netdemo.isPlaying())
 		netdemo.prevSnapshot();
+	else if (netdemo.isPaused())
+		netdemo.prevTic();
 }
 END_COMMAND(netrew)
 
@@ -1408,7 +1413,10 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		}
 		else
 		{
-			displayplayer_id = consoleplayer_id; // get out of spynext
+			if (!netdemo.isPlaying())
+			{
+				displayplayer_id = consoleplayer_id; // get out of spynext
+			}
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
 
@@ -2346,7 +2354,7 @@ void CL_SimulatePlayers()
 										prevsnap.getY() - player.mo->y,
 										prevsnap.getZ() - player.mo->z);
 
-				fixed_t dist = M_LengthVec3Fixed(&offset);
+				fixed_t dist = M_LengthVec3Fixed(offset);
 				if (dist > 2 * FRACUNIT)
 				{
 					#ifdef _SNAPSHOT_DEBUG_

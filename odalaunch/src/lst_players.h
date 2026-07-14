@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __LST_PLAYERS_H__
-#define __LST_PLAYERS_H__
+#pragma once
 
 #include "odalaunch.h"
 
@@ -39,6 +38,8 @@ public:
 
 	void AddPlayersToList(const odalpapi::Server& s);
 
+	void AddPlayersAndSlotsToList(const odalpapi::Server& s);
+
 protected:
 
 	void SetupPlayerListColumns();
@@ -50,5 +51,3 @@ protected:
 private:
 	DECLARE_EVENT_TABLE()
 };
-
-#endif // __LST_PLAYERS_H__

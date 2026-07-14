@@ -28,6 +28,14 @@
 
 #include "gui_resource.h"
 
+Fl_Image* GUIRes::icon_odamex_128()
+{
+	static Fl_Image* image = new Fl_PNG_Image("icon_odamex_128", __icon_odamex_128_png,
+	                                          __icon_odamex_128_png_len);
+	return image;
+}
+
+
 #if defined(_WIN32)
 
 #include "FL/x.H"
@@ -41,13 +49,10 @@ void GUI_SetIcon(Fl_Window* win)
 
 #else
 
-void GUI_SetIcon(Fl_Window* win) { }
+void GUI_SetIcon(Fl_Window* win)
+{
+	win->icon(static_cast<const Fl_RGB_Image*>(GUIRes::icon_odamex_128()));
+}
 
 #endif
 
-Fl_Image* GUIRes::icon_odamex_128()
-{
-	static Fl_Image* image = new Fl_PNG_Image("icon_odamex_128", __icon_odamex_128_png,
-	                                          __icon_odamex_128_png_len);
-	return image;
-}

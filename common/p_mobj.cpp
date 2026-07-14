@@ -77,6 +77,7 @@ void SV_UpdateMonsterRespawnCount();
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_respawnsuper)
+EXTERN_CVAR(sv_respawnbarrels)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_mbfphys)
@@ -133,13 +134,12 @@ AActor::AActor()
       height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
       info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
       flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
+      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), args(), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
       netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
-	memset(args, 0, sizeof(args));
 	self.init(this);
 }
 
@@ -157,7 +157,7 @@ AActor::AActor(const AActor& other)
       special1(other.special1), special2(other.special2),
       health(other.health), movedir(other.movedir), movecount(other.movecount),
       visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
-      player(other.player), lastlook(other.lastlook), special(other.special),
+      player(other.player), lastlook(other.lastlook), special(other.special), args(other.args),
       inext(other.inext), iprev(other.iprev), translation(other.translation),
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
@@ -168,7 +168,6 @@ AActor::AActor(const AActor& other)
       netid(other.netid), tid(other.tid),
       baseline_set(false), bmapnode(other.bmapnode)
 {
-	memcpy(args, other.args, sizeof(args));
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
 }
@@ -239,8 +238,8 @@ AActor &AActor::operator= (const AActor &other)
     netid = other.netid;
     tid = other.tid;
     special = other.special;
+	args = other.args;
 
-    memcpy(args, other.args, sizeof(args));
     bmapnode = other.bmapnode;
     memcpy(&baseline, &other.baseline, sizeof(baseline));
     baseline_set = other.baseline_set;
@@ -261,7 +260,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       height(0), momx(0), momy(0), momz(0), validcount(0), type(itype),
       info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
       statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
+      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), args(), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
@@ -335,7 +334,6 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	}
 
 	spawnpoint.type = 0;
-	memset(args, 0, sizeof(args));
 }
 
 
@@ -428,7 +426,9 @@ void AActor::Destroy ()
 		P_RemoveHealthPool(this);
 
     // Add special to item respawn queue if it is destined to be respawned
-	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
+	// also add barrels
+	if (((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0) ||
+		info->type == MT_BARREL)
 	{
 		itemrespawnque.emplace(spawnpoint, level.time);
 
@@ -475,18 +475,9 @@ void P_CheckTouchy(AActor* mo)
 //
 fixed_t P_CalculateMinMom(const AActor *mo)
 {
-	fixed_t levelgravity, sectorgravity;
-
-	if (co_zdoomphys)
-	{
-		levelgravity = FixedDiv(FLOAT2FIXED(level.gravity), 100 << FRACBITS);
-		sectorgravity = FLOAT2FIXED(mo->subsector->sector->gravity);
-	}
-	else
-	{
-		levelgravity = GRAVITY * 8;
-		sectorgravity = FLOAT2FIXED(mo->subsector->sector->gravity);
-	}
+	const float   sectorGravityFloat = (mo && mo->subsector) ? mo->subsector->sector->gravity : 1.0f;
+	const fixed_t sectorgravity      = FLOAT2FIXED(sectorGravityFloat);
+	const fixed_t levelgravity       = co_zdoomphys ? FixedDiv(FLOAT2FIXED(level.gravity), 100 << FRACBITS) : GRAVITY * 8;
 
 	return -FixedMul(levelgravity, sectorgravity);
 }
@@ -696,8 +687,9 @@ void AActor::RunThink ()
 	// MUSINFO
 	if (type == MT_MUSICSOURCE && clientside)
 	{
-		if (musinfo.mapthing != this &&
-		    subsector->sector == displayplayer().mo->subsector->sector)
+		if (musinfo.mapthing != this
+		    && displayplayer().mo->subsector
+		    && subsector->sector == displayplayer().mo->subsector->sector)
 		{
 			musinfo.lastmapthing = musinfo.mapthing;
 			musinfo.mapthing = this->ptr();
@@ -710,7 +702,7 @@ void AActor::RunThink ()
 	prevy = y;
 	prevz = z;
 
-	if (!player)
+	if (!player || P_IsVoodooDoll(this))
 	{
 		prevangle = angle;
 		prevpitch = pitch;
@@ -1017,11 +1009,11 @@ void AActor::Serialize (FArchive &arc)
 		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
-		if (mobjinfo.find(type) == mobjinfo.end())
+		if (!mobjinfo.contains(type))
 		{
 			I_Error("AActor::Serialize: Unknown object type ({}) in saved game", type);
 		}
-		if (sprnames.find(sprite) == sprnames.end())
+		if (!sprnames.contains(sprite))
 		{
 			I_Error("AActor::Serialize: Unknown sprite ({}) in saved game", sprite);
 		}
@@ -1029,7 +1021,7 @@ void AActor::Serialize (FArchive &arc)
 		touching_sectorlist = NULL;
 
 		LinkToWorld ();
-		floorsector = subsector->sector;
+		floorsector = subsector ? subsector->sector : nullptr;
 
 		AddToHash ();
 		if(playerid && validplayer(idplayer(playerid)))
@@ -1073,7 +1065,7 @@ bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 
 	do
 	{
-		if (states.find(state) == states.end())
+		if (!states.contains(state))
 		{
 			I_Error("P_SetMobjState: State {} does not exist in state table.", state);
 		}
@@ -1135,7 +1127,9 @@ bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 //
 static void P_WindThrustActor(AActor* mo)
 {
-	if (mo->flags2 & MF2_WINDTHRUST)
+	if (   mo
+	    && mo->subsector
+	    && (mo->flags2 & MF2_WINDTHRUST))
 	{
 		static constexpr int windTab[3] = {2048*5, 2048*10, 2048*25};
 		const int special = mo->subsector->sector->special;
@@ -1794,7 +1788,7 @@ static void P_ActorFakeSectorTriggers(AActor* mo, fixed_t oldz)
 	}
 }
 
-void P_ApplyBouncyPhysics(AActor *mo)
+static void P_ApplyBouncyPhysics(AActor *mo)
 {
 	if (mo->flags & MF_BOUNCES && mo->momz)
 	{
@@ -1872,6 +1866,13 @@ void P_ApplyBouncyPhysics(AActor *mo)
 //
 void P_ZMovement(AActor *mo)
 {
+	// This check also protects a bunch of static functions that are only used
+	// as part of Z-Movement.
+	if (not (mo && mo->subsector))
+	{
+		return;
+	}
+
 	fixed_t oldz = mo->z;
 
 	if (mo->flags & MF_BOUNCES && mo->momz)
@@ -2668,7 +2669,9 @@ void P_RespawnSpecials (void)
 	auto it = spawn_map.find(mthing.type);
 	if (it == spawn_map.end() ||
 		// Allow or not Partial Invisibility & Invulnerability from respawning
-	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)))
+	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)) ||
+		// pop barrels as well if needed
+		(!sv_respawnbarrels && mthing.type == 2035))
 	{
 		// pull it from the queue
 		itemrespawnque.pop();
@@ -3166,7 +3169,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	// [RH] Set the thing's special
 	mobj->special = mthing.special;
-	memcpy (mobj->args, mthing.args, sizeof(mobj->args));
+	std::copy(std::begin(mthing.args), std::end(mthing.args), mobj->args.begin());
 
 	// [RH] If it's an ambient sound, activate it
 	if (type == MT_AMBIENT)

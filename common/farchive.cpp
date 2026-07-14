@@ -184,13 +184,13 @@ FFile& FLZOFile::Write(const void* mem, unsigned int len)
 		return *this;
 	}
 
-	if (m_Pos + len > m_BufferSize)
+	if (m_Pos + len > m_MaxBufferSize)
 	{
 		do {
-			m_BufferSize = m_MaxBufferSize = m_BufferSize ? m_BufferSize * 2 : 16384;
-		} while (m_Pos + len > m_BufferSize);
+			m_MaxBufferSize = m_MaxBufferSize ? m_MaxBufferSize * 2 : 16384;
+		} while (m_Pos + len > m_MaxBufferSize);
 
-		m_Buffer = (byte*)M_Realloc(m_Buffer, m_BufferSize);
+		m_Buffer = (byte*)M_Realloc(m_Buffer, m_MaxBufferSize);
 	}
 
 	if (len == 1)

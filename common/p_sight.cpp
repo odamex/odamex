@@ -359,8 +359,8 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 		if (mapxstep == 0 && mapystep == 0)
 			break;
 
-		// if vanilla Heretic/Hexen demo playback is ever introduced, this branch needs to be disabled
-		if ((xintercept >> FRACBITS) == mapx && (yintercept >> FRACBITS) == mapy)
+		// This branch fixes monsters seeing through walls sometimes, but is not demo compatible
+		if (!demoplayback && (xintercept >> FRACBITS) == mapx && (yintercept >> FRACBITS) == mapy)
 		{
 			// The trace goes directly through the corner of a blockmap block. Need to check other blocks adjacent to the corner
 			if (!P_SightBlockLinesIterator (mapx + mapxstep, mapy) ||
@@ -480,6 +480,9 @@ bool P_CheckSightZDoom(const AActor *t1, const AActor *t2)
 
 bool P_CheckSightEdgesZDoom(const AActor *t1, const AActor *t2, float radius_boost)
 {
+	if(!t1 || !t2 || !t1->subsector || !t2->subsector)
+		return false;
+
 	const sector_t *s1 = t1->subsector->sector;
 	const sector_t *s2 = t2->subsector->sector;
 	int pnum = (s1 - sectors) * numsectors + (s2 - sectors);

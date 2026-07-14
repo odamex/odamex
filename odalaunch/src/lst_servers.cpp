@@ -28,6 +28,7 @@
 #include <wx/dataobj.h>
 
 #include "str_utils.h"
+#include "srv_utils.h"
 #include "oda_defs.h"
 
 using namespace odalpapi;
@@ -277,6 +278,13 @@ void LstOdaServerList::ClearItemCells(long item)
 	}
 }
 
+bool LstOdaServerList::IsSortedToBottom(long item)
+{
+	// A non-responding server shows "<< NO RESPONSE >>" in its name column.
+	// Pin those to the bottom regardless of sort.
+	return GetItemText(item, serverlist_field_name) == ODA_QRYNORESPONSE;
+}
+
 void LstOdaServerList::SetBlockedInfo(long item)
 {
 	wxListItem ListItem;
@@ -315,12 +323,10 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	bool LineHighlight;
 	wxString HighlightColour;
 
-	wxInt32 i = 0;
 	wxListItem li;
 
 	wxUint64 Ping = 0;
 	wxString GameType = "";
-	size_t WadCount = 0;
 
 	li.m_mask = wxLIST_MASK_TEXT;
 
@@ -337,7 +343,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 		ClearItemCells(index);
 
 		li.m_itemId = index;
-		
+
         // Reset line text colour to control text colour
         SetItemTextColour(li.GetId(), GetTextColour());
 	}
@@ -357,7 +363,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
         ConfigInfo.Read(CSHLCOLOUR, &HighlightColour, ODA_UICSHSHIGHLIGHTCOLOUR);
 
 		Colour.Set(HighlightColour);
-        
+
         if (LineHighlight)
             SetItemTextColour(li.GetId(), Colour);
     }
@@ -380,7 +386,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	Ping = s.GetPing();
 
 	li.m_col = serverlist_field_ping;
-	li.m_text = wxString::Format("%lu", (wxInt32)Ping);
+	li.m_text = wxString::Format("%llu", Ping);
 
 	SetItem(li);
 
@@ -407,7 +413,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	SetItem(li);
 
 	// WAD files column
-	WadCount = s.Info.Wads.size();
+	const size_t WadCount = s.Info.Wads.size();
 
 	// build a list of pwads
 	if(WadCount)
@@ -416,7 +422,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 		std::string wadlist;
 		std::string pwad;
 
-		for(i = 2; i < WadCount; ++i)
+		for(size_t i = 2; i < WadCount; ++i)
 		{
 			pwad = s.Info.Wads[i].Name.substr(0, s.Info.Wads[i].Name.find('.'));
 
@@ -437,34 +443,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	SetItem(li);
 
 	// Game Type Column
-	if (s.Info.GameType == GT_Cooperative && s.Info.Lives)
-		GameType = "Survival";
-	else if (s.Info.GameType == GT_Cooperative && s.Info.MaxPlayers <= 1)
-		GameType = "Single-player";
-	else if (s.Info.GameType == GT_Cooperative)
-		GameType = "Cooperative";
-	else if (s.Info.GameType == GT_Deathmatch && s.Info.Lives)
-		GameType = "Last Marine Standing";
-	else if (s.Info.GameType == GT_Deathmatch && s.Info.MaxPlayers <= 2)
-		GameType = "Duel";
-	else if (s.Info.GameType == GT_Deathmatch)
-		GameType = "Deathmatch";
-	else if (s.Info.GameType == GT_TeamDeathmatch && s.Info.Lives)
-		GameType = "Team Last Marine Standing";
-	else if (s.Info.GameType == GT_TeamDeathmatch)
-		GameType = "Team Deathmatch";
-	else if (s.Info.GameType == GT_CaptureTheFlag && s.Info.Sides)
-		GameType = "Attack & Defend CTF";
-	else if (s.Info.GameType == GT_CaptureTheFlag && s.Info.Lives)
-		GameType = "LMS Capture The Flag";
-	else if (s.Info.GameType == GT_CaptureTheFlag)
-		GameType = "Capture The Flag";
-	else if (s.Info.GameType == GT_Horde && s.Info.Lives)
-		GameType = "Survival Horde";
-	else if (s.Info.GameType == GT_Horde)
-		GameType = "Horde";
-	else
-		GameType = "Unknown";
+	GameType = OdaGetGameTypeString(s);
 
 	li.m_col = serverlist_field_type;
 	li.m_text = GameType;

@@ -26,6 +26,9 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/log.h>
 #include <wx/dcmemory.h>
+#include <wx/settings.h>
+
+#include <algorithm>
 
 #include "str_utils.h"
 
@@ -38,7 +41,7 @@ BEGIN_EVENT_TABLE(LstOdaPlayerList, wxAdvancedListCtrl)
 	EVT_WINDOW_CREATE(LstOdaPlayerList::OnCreateControl)
 END_EVENT_TABLE()
 
-typedef enum
+enum playerlist_fields_t
 {
 	playerlist_field_attr
 	,playerlist_field_name
@@ -52,7 +55,7 @@ typedef enum
 	,playerlist_field_teamscore
 
 	,max_playerlist_fields
-} playerlist_fields_t;
+};
 
 static int ImageList_Spectator = -1;
 static int ImageList_RedBullet = -1;
@@ -201,8 +204,7 @@ LstOdaPlayerList::~LstOdaPlayerList()
 
 	// Team and Team Scores are shown dynamically, so handle the case of them
 	// not existing
-	if(!GetColumn((int)playerlist_field_team, li) ||
-	        !GetColumn((int)playerlist_field_teamscore, li))
+	if (GetColumnCount() <= playerlist_field_team)
 	{
 		return;
 	}
@@ -406,4 +408,51 @@ void LstOdaPlayerList::AddPlayersToList(const Server& s)
 	}
 
 	Sort();
+}
+
+void LstOdaPlayerList::AddPlayersAndSlotsToList(const Server& s)
+{
+	// Lay out the columns and add the real players/spectators first (this
+	// sorts them); the placeholder rows are appended afterwards so they always
+	// trail the occupied slots.
+	AddPlayersToList(s);
+
+	const int NumPlayers = (int)std::count_if(
+	    s.Info.Players.begin(), s.Info.Players.end(),
+	    [](const Player_t& p) { return !p.Spectator; });
+	const int NumSpectators = (int)s.Info.Players.size() - NumPlayers;
+
+	// When sv_maxplayers is <= 0 the server has no dedicated player cap, so every
+	// client slot is a player slot and there are no spectator slots.
+	const int MaxClients = (int)s.Info.MaxClients;
+	const int MaxPlayers = s.Info.MaxPlayers > 0 ? (int)s.Info.MaxPlayers
+	                                              : MaxClients;
+
+	const int EmptyPlayerSlots = (std::max)(0, MaxPlayers - NumPlayers);
+	const int EmptySpectatorSlots =
+	    (std::max)(0, (MaxClients - MaxPlayers) - NumSpectators);
+
+	const wxColour SlotColour =
+	    wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT);
+
+	// Appends a single placeholder row with greyed-out text.
+	auto AddSlotRow = [&](const wxString& Text)
+	{
+		long Item = ALCInsertItem();
+
+		wxListItem li;
+		li.m_itemId = Item;
+		li.SetMask(wxLIST_MASK_TEXT);
+		li.SetColumn(playerlist_field_name);
+		li.SetText(Text);
+		SetItem(li);
+
+		SetItemTextColour(Item, SlotColour);
+	};
+
+	for(int i = 0; i < EmptyPlayerSlots; ++i)
+		AddSlotRow("(player slot)");
+
+	for(int i = 0; i < EmptySpectatorSlots; ++i)
+		AddSlotRow("(spectator slot)");
 }

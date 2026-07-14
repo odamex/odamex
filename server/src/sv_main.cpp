@@ -4208,7 +4208,7 @@ BEGIN_COMMAND (playerinfo)
 	}
 	else
 	{
-		PrintFmt(" frags - {:d}  deaths - {:d}  points - %d\n", player->fragcount,
+		PrintFmt(" frags - {:d}  deaths - {:d}  points - {:d}\n", player->fragcount,
 		       player->deathcount, player->points);
 	}
 	if (g_lives)
@@ -4656,7 +4656,7 @@ void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* a
 // sent to the activating player.
 //
 void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* print,
-                          bool playerOnly, const std::vector<int>& args)
+                          bool playerOnly, const nonstd::span<const int> args)
 {
 	player_s* sendPlayer = nullptr;
 	if (playerOnly && activator != nullptr && activator->player != nullptr)
