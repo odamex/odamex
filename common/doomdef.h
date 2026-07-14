@@ -516,8 +516,16 @@ enum powertype_t : int8_t
 	pw_ironfeet,
 	pw_allmap,
 	pw_infrared,
+
+	// Skulltag powerups
+	pw_turbosphere,		// 50% faster movement
+	pw_translucency,	// player rendered nearly invisible
+	pw_doomsphere,		// quadruple damage dealt
+	pw_freezer,				// time freeze sphere (effect stubbed; will drive
+										// timeout/timein when implemented)
 	NUMPOWERS
 };
+
 
 //
 // Power up durations, how many tics till expiration.
@@ -526,6 +534,12 @@ enum powertype_t : int8_t
 #define INVISTICS	(60*TICRATE)
 #define INFRATICS	(120*TICRATE)
 #define IRONTICS	(60*TICRATE)
+
+// Skulltag powerup durations
+#define TURBOTICS	(30*TICRATE)
+#define TRANSTICS	(45*TICRATE)
+#define DOOMTICS	(30*TICRATE)
+#define FREEZETICS	(12*TICRATE)
 
 // Skulltag grenade time until detonation
 #define GRENADETICS	(5*TICRATE/2)

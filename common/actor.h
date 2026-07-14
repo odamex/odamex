@@ -277,6 +277,7 @@ enum statusflag_t
 
 #define MF_TRANSSHIFT	0x1A
 
+#define TRANSLUC10			(FRACUNIT/10)
 #define TRANSLUC25			(FRACUNIT/4)
 #define TRANSLUC33			(FRACUNIT/3)
 #define TRANSLUC50			(FRACUNIT/2)

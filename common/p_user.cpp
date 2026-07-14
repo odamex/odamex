@@ -574,8 +574,18 @@ void P_MovePlayer (player_t& player)
 				bobfactor >>= 8;
 			}
 		}
-		const fixed_t forwardmove = (player.cmd.forwardmove * movefactor) >> 8;
-		const fixed_t sidemove = (player.cmd.sidemove * movefactor) >> 8;
+		fixed_t forwardmove = (player.cmd.forwardmove * movefactor) >> 8;
+		fixed_t sidemove = (player.cmd.sidemove * movefactor) >> 8;
+
+		// Skulltag turbosphere (+50%) speed boost.
+		const fixed_t forwardbase = forwardmove;
+		const fixed_t sidebase = sidemove;
+
+		if (player.powers[pw_turbosphere])
+		{
+			forwardmove += forwardbase / 2;
+			sidemove += sidebase / 2;
+		}
 
 		// [ML] Check for these conditions unless advanced physics is on
 		if(co_zdoomphys ||
@@ -875,6 +885,19 @@ void P_BumpPlayerCounters(player_t& player)
 	if (player.powers[pw_ironfeet])
 		player.powers[pw_ironfeet]--;
 
+	if (player.powers[pw_turbosphere])
+		player.powers[pw_turbosphere]--;
+
+	if (player.powers[pw_translucency])
+		if (!--player.powers[pw_translucency] && player.mo)
+			player.mo->translucency = FRACUNIT;
+
+	if (player.powers[pw_doomsphere])
+		player.powers[pw_doomsphere]--;
+
+	if (player.powers[pw_freezer])
+		player.powers[pw_freezer]--;
+
 	if (player.damagecount)
 		player.damagecount--;
 
@@ -923,6 +946,13 @@ void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS
 		player.mo->statusflags |= SF_ALLMAP;
 	else
 		player.mo->statusflags &= ~SF_ALLMAP;
+
+	// Skulltag invisibility sphere: render the player translucent.
+	// Runs on both server and clients so remote players fade too.
+	if (powers[pw_translucency])
+		player.mo->translucency = TRANSLUC10;
+	else if (player.mo->translucency == TRANSLUC10)
+		player.mo->translucency = FRACUNIT;
 
 	P_SetPlayerInvulnBleed(player, powers);
 }

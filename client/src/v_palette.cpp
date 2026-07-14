@@ -1147,6 +1147,9 @@ void V_DoPaletteEffects()
 
 			palette_num += STARTBONUSPALS;
 		}
+		// Just show a red tint for doomsphere.
+		else if (plyr->powers[pw_doomsphere] > 4*32 || plyr->powers[pw_doomsphere] & 8)
+			palette_num = STARTREDPALS + 1;
 		else if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet] & 8)
 			palette_num = RADIATIONPAL;
 
@@ -1218,6 +1221,16 @@ void V_DoPaletteEffects()
 			static constexpr float alpha = 1.0f / 8.0f;
 			static constexpr float red = 0.0f;
 			static constexpr float green = 255.0f / 255.0f;
+			static constexpr float blue = 0.0f;
+			V_AddBlend(blend, fargb_t(alpha, red, green, blue));
+		}
+
+		// Just show a red tint for doomsphere.
+		if (plyr->powers[pw_doomsphere] > 4*32 || plyr->powers[pw_doomsphere] & 8)
+		{
+			static constexpr float alpha = 1.0f / 6.0f;
+			static constexpr float red = 1.0f;
+			static constexpr float green = 0.0f;
 			static constexpr float blue = 0.0f;
 			V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 		}

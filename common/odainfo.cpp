@@ -119,6 +119,23 @@ state_t odastates[] = {
 
     {S_STGRENADE, SPR_GREN, 32768, 1, NULL, S_STGRENADE, 0, 0}, // S_STGRENADE - Skulltag grenade
 
+    {S_TURB, SPR_TURB, 32768, 6, NULL, S_TURB2, 0, 0},          // S_TURB - Turbosphere
+    {S_TURB2, SPR_TURB, 32769, 6, NULL, S_TURB3, 0, 0},         // S_TURB2
+    {S_TURB3, SPR_TURB, 32770, 6, NULL, S_TURB4, 0, 0},         // S_TURB3
+    {S_TURB4, SPR_TURB, 32771, 6, NULL, S_TURB, 0, 0},          // S_TURB4
+    {S_FREEZE, SPR_TIME, 32768, 6, NULL, S_FREEZE2, 0, 0},      // S_FREEZE - Time freeze sphere
+    {S_FREEZE2, SPR_TIME, 32769, 6, NULL, S_FREEZE3, 0, 0},     // S_FREEZE2
+    {S_FREEZE3, SPR_TIME, 32770, 6, NULL, S_FREEZE4, 0, 0},     // S_FREEZE3
+    {S_FREEZE4, SPR_TIME, 32771, 6, NULL, S_FREEZE, 0, 0},      // S_FREEZE4
+    {S_INVS, SPR_INVS, 32768, 6, NULL, S_INVS2, 0, 0},          // S_INVS - Invisibility sphere
+    {S_INVS2, SPR_INVS, 32769, 6, NULL, S_INVS3, 0, 0},         // S_INVS2
+    {S_INVS3, SPR_INVS, 32770, 6, NULL, S_INVS4, 0, 0},         // S_INVS3
+    {S_INVS4, SPR_INVS, 32771, 6, NULL, S_INVS, 0, 0},          // S_INVS4
+    {S_DOOMSPH, SPR_DOOM, 32768, 10, NULL, S_DOOMSPH2, 0, 0},   // S_DOOMSPH - Doomsphere
+    {S_DOOMSPH2, SPR_DOOM, 32769, 15, NULL, S_DOOMSPH3, 0, 0},  // S_DOOMSPH2
+    {S_DOOMSPH3, SPR_DOOM, 32770, 8, NULL, S_DOOMSPH4, 0, 0},   // S_DOOMSPH3
+    {S_DOOMSPH4, SPR_DOOM, 32771, 6, NULL, S_DOOMSPH, 0, 0},    // S_DOOMSPH4
+
 };
 
 // reserved odamex sprites
@@ -128,8 +145,8 @@ const char* odasprnames[] = {
     //	[Toke - CTF]
     "BSOK", "RSOK", "BFLG", "RFLG", "BDWN", "RDWN", "BCAR", "RCAR", "GSOK", "GFLG",
     "GDWN", "GCAR", "TLGL", "WPBF", "WPRF", "WPGF", "CARE", "O1UP", "RSTM",
-    // Skulltag grenades
-    "GREN"};
+    // Skulltag grenades and powerup spheres
+    "GREN", "TURB", "TIME", "INVS", "DOOM"};
 
 // reserved odamex mobjinfo
 // ::MT_CAREPACK - ::MT_GIB0 + 1
@@ -2554,6 +2571,162 @@ mobjinfo_t odamobjinfo[] = {
 		S_NULL,         // raisestate
 		0x10000,
 		"MT_BFG10KSHOT",
+		NO_ALTSPEED,	// altspeed
+		64 * FRACUNIT,	// meleerange
+		IG_DEFAULT,		// infighting group
+		PG_DEFAULT,		// projectile group
+		SG_DEFAULT,		// splash group
+		0,		// flags3
+		NULL, // ripsound
+		MT_NULL		// droppeditem
+	},
+	{                 // MT_TURBOSPHERE
+        MT_TURBOSPHERE,
+		5030,           // doomednum
+		S_TURB,         // spawnstate
+		1000,           // spawnhealth
+		0,              // gibhealth
+		S_NULL,         // seestate
+		NULL,           // seesound
+		8,              // reactiontime
+		NULL,           // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		NULL,           // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		NULL,           // deathsound
+		0,              // speed
+		20*FRACUNIT,    // radius
+		16*FRACUNIT,    // height
+		16*FRACUNIT,    // cdheight
+		100,            // mass
+		0,              // damage
+		NULL,           // activesound
+		MF_SPECIAL|MF_COUNTITEM, // flags
+		0,              // flags2
+		S_NULL,         // raisestate
+		0x10000,
+		"MT_TURBOSPHERE",
+		NO_ALTSPEED,	// altspeed
+		64 * FRACUNIT,	// meleerange
+		IG_DEFAULT,		// infighting group
+		PG_DEFAULT,		// projectile group
+		SG_DEFAULT,		// splash group
+		0,		// flags3
+		NULL, // ripsound
+		MT_NULL		// droppeditem
+	},
+	{                 // MT_TIMEFREEZER
+        MT_TIMEFREEZER,
+		5032,           // doomednum
+		S_FREEZE,       // spawnstate
+		1000,           // spawnhealth
+		0,              // gibhealth
+		S_NULL,         // seestate
+		NULL,           // seesound
+		8,              // reactiontime
+		NULL,           // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		NULL,           // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		NULL,           // deathsound
+		0,              // speed
+		20*FRACUNIT,    // radius
+		16*FRACUNIT,    // height
+		16*FRACUNIT,    // cdheight
+		100,            // mass
+		0,              // damage
+		NULL,           // activesound
+		MF_SPECIAL|MF_COUNTITEM, // flags
+		0,              // flags2
+		S_NULL,         // raisestate
+		0x10000,
+		"MT_TIMEFREEZER",
+		NO_ALTSPEED,	// altspeed
+		64 * FRACUNIT,	// meleerange
+		IG_DEFAULT,		// infighting group
+		PG_DEFAULT,		// projectile group
+		SG_DEFAULT,		// splash group
+		0,		// flags3
+		NULL, // ripsound
+		MT_NULL		// droppeditem
+	},
+	{                 // MT_INVISIBILITY
+        MT_INVISIBILITY,
+		5036,           // doomednum
+		S_INVS,         // spawnstate
+		1000,           // spawnhealth
+		0,              // gibhealth
+		S_NULL,         // seestate
+		NULL,           // seesound
+		8,              // reactiontime
+		NULL,           // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		NULL,           // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		NULL,           // deathsound
+		0,              // speed
+		20*FRACUNIT,    // radius
+		16*FRACUNIT,    // height
+		16*FRACUNIT,    // cdheight
+		100,            // mass
+		0,              // damage
+		NULL,           // activesound
+		MF_SPECIAL|MF_COUNTITEM, // flags
+		0,              // flags2
+		S_NULL,         // raisestate
+		0x10000,
+		"MT_INVISIBILITY",
+		NO_ALTSPEED,	// altspeed
+		64 * FRACUNIT,	// meleerange
+		IG_DEFAULT,		// infighting group
+		PG_DEFAULT,		// projectile group
+		SG_DEFAULT,		// splash group
+		0,		// flags3
+		NULL, // ripsound
+		MT_NULL		// droppeditem
+	},
+	{                 // MT_DOOMSPHERE
+        MT_DOOMSPHERE,
+		5037,           // doomednum
+		S_DOOMSPH,      // spawnstate
+		1000,           // spawnhealth
+		0,              // gibhealth
+		S_NULL,         // seestate
+		NULL,           // seesound
+		8,              // reactiontime
+		NULL,           // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		NULL,           // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		NULL,           // deathsound
+		0,              // speed
+		20*FRACUNIT,    // radius
+		16*FRACUNIT,    // height
+		16*FRACUNIT,    // cdheight
+		100,            // mass
+		0,              // damage
+		NULL,           // activesound
+		MF_SPECIAL|MF_COUNTITEM, // flags
+		0,              // flags2
+		S_NULL,         // raisestate
+		0x10000,
+		"MT_DOOMSPHERE",
 		NO_ALTSPEED,	// altspeed
 		64 * FRACUNIT,	// meleerange
 		IG_DEFAULT,		// infighting group

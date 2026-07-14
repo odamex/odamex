@@ -205,6 +205,10 @@ void P_InitMobjNameMap()
 	MapMobj(MT_RESTEAMMATE, "ResurrectTeammatePowerUp", MC_NONE);
 	MapMobj(MT_GRENADE, "Grenade", MC_NONE);
 	MapMobj(MT_BFG10KSHOT, "BFG10kShot", MC_NONE);
+	MapMobj(MT_TURBOSPHERE, "Turbosphere", MC_POWER);
+	MapMobj(MT_TIMEFREEZER, "TimeFreezeSphere", MC_POWER);
+	MapMobj(MT_INVISIBILITY, "InvisibilitySphere", MC_POWER);
+	MapMobj(MT_DOOMSPHERE, "Doomsphere", MC_POWER);
 	// [AM] Deh_Actor_145-149 are reserved.
 	MapMobj(MT_EXTRA00, "Deh_Actor_150", MC_NONE);
 	MapMobj(MT_EXTRA01, "Deh_Actor_151", MC_NONE);

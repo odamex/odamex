@@ -78,6 +78,12 @@ enum spritenum_t: int32_t
 	// Skulltag grenade
 	SPR_GREN,
 
+	// Skulltag powerup spheres
+	SPR_TURB,
+	SPR_TIME,
+	SPR_INVS,
+	SPR_DOOM,
+
     // ------------------------------------------------------ //
 	SPR_TROO = 0,
 	SPR_SHTG,
@@ -356,6 +362,24 @@ enum statenum_t: int32_t
 
 	// Skulltag grenade (not to be confused with MBF's grenade)
 	S_STGRENADE,
+
+	// Skulltag powerup spheres
+	S_TURB,
+	S_TURB2,
+	S_TURB3,
+	S_TURB4,
+	S_FREEZE,
+	S_FREEZE2,
+	S_FREEZE3,
+	S_FREEZE4,
+	S_INVS,
+	S_INVS2,
+	S_INVS3,
+	S_INVS4,
+	S_DOOMSPH,
+	S_DOOMSPH2,
+	S_DOOMSPH3,
+	S_DOOMSPH4,
 
 	//------------------------------------
 
@@ -1544,6 +1568,12 @@ enum mobjtype_t: int32_t {
 	// Skulltag weapons
 	MT_GRENADE,
 	MT_BFG10KSHOT,
+
+	// Skulltag powerup spheres
+	MT_TURBOSPHERE,
+	MT_TIMEFREEZER,
+	MT_INVISIBILITY,
+	MT_DOOMSPHERE,
 
     // --------------------------------------------------------------------- //
 

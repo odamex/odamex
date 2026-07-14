@@ -259,6 +259,7 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic)
 	msg.set_powers(pw_ironfeet,         player.powers[pw_ironfeet]);
 	msg.set_powers(pw_allmap,           player.powers[pw_allmap]);
 	msg.set_powers(pw_infrared,         player.powers[pw_infrared]);
+	msg.set_powers(pw_translucency,     player.powers[pw_translucency]);
 
 	return msg;
 }

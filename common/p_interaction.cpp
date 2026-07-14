@@ -584,6 +584,34 @@ ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power)
 		return IEV_EquipRemove;
 	}
 
+	if (power == pw_turbosphere)
+	{
+		player.powers[power] = TURBOTICS;
+		return IEV_EquipRemove;
+	}
+
+	if (power == pw_translucency)
+	{
+		player.powers[power] = TRANSTICS;
+		if (player.mo)
+			player.mo->translucency = TRANSLUC10;
+		return IEV_EquipRemove;
+	}
+
+	if (power == pw_doomsphere)
+	{
+		player.powers[power] = DOOMTICS;
+		return IEV_EquipRemove;
+	}
+
+	if (power == pw_freezer)
+	{
+		// The time freeze effect is no-op'd until
+		// we are able to support it in the backend
+		player.powers[power] = FREEZETICS;
+		return IEV_EquipRemove;
+	}
+
 	if (player.powers[power])
 	{
 		return IEV_NotEquipped;	// already got it
@@ -1089,6 +1117,30 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			msg = &GOTVISOR;
 			sound = SpecialSound::PowerUp;
 			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_GOGGLES, false);
+			break;
+
+		case SPR_TURB:
+			val = P_GivePower(player, pw_turbosphere);
+			msg = &GOTTURBO;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_TIME:
+			val = P_GivePower(player, pw_freezer);
+			msg = &GOTTIME;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_INVS:
+			val = P_GivePower(player, pw_translucency);
+			msg = &GOTTRANSLUCENCY;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_DOOM:
+			val = P_GivePower(player, pw_doomsphere);
+			msg = &GOTDOOMSPHERE;
+			sound = SpecialSound::PowerUp;
 			break;
 
 		// ammo
@@ -2217,6 +2269,10 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		damage *= sv_weapondamage;
 	else if (source && target && player)
 		damage *= sv_monsterdamage;
+
+	// Skulltag doomsphere: the wielder deals quadruple damage.
+	if (source && source->player && source->player->powers[pw_doomsphere])
+		damage *= 4;
 
 	// Some close combat weapons should not
 	// inflict thrust and push the victim out of reach,
