@@ -3238,10 +3238,10 @@ AActor* P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	}
 
 		// [BC] Arc grenades up a bit.
-		if (missile->flags3 & MF3_GRENADE)
-			missile->momz += 3 * FRACUNIT;
+		if (th->flags3 & MF3_GRENADE)
+			th->momz += 3 * FRACUNIT;
 
-		P_CheckMissileSpawn (missile, source);
+		P_CheckMissileSpawn(th, source);
 
 
 	return th;
