@@ -1011,7 +1011,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 	tmy = y;
 	ceilingline = BlockingLine = NULL;
 
-	validcount++;
+  // dont increment this when spawning, bc not using P_BlockLinesIterator
+  if (not isSpawnCheck)
+	  validcount++;
+
 	spechit.clear();
 
 	if (tmflags & MF_NOCLIP && !(tmflags & MF_SKULLFLY))
