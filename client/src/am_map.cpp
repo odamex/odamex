@@ -120,6 +120,8 @@ EXTERN_CVAR(am_ovscalewidth)
 EXTERN_CVAR(am_ovscaleheight)
 EXTERN_CVAR(am_ovlocation)
 
+EXTERN_CVAR(netdebug_automap)
+
 BEGIN_COMMAND(resetcustomcolors)
 {
 	am_backcolor = "00 00 3a";
@@ -1891,6 +1893,8 @@ void AM_drawCheatThing(const AActor* t)
 	angle_t rotate_angle = 0;
 	angle_t triangle_angle = tangle;
 
+	const fixed64_t radius = FIXED2FIXED64(t->radius);
+
 	if (am_rotate)
 	{
 		AM_rotatePoint(p);
@@ -1919,16 +1923,14 @@ void AM_drawCheatThing(const AActor* t)
 		{
 			const am_color_t key_color = AM_getKeyColor(t);
 
-			AM_drawLineCharacter(gameinfo.cheatKey, FIXED2FIXED64(t->radius), 0, key_color, p.x,
-			                     p.y);
+			AM_drawLineCharacter(gameinfo.cheatKey, radius, 0, key_color, p.x, p.y);
 		}
 	}
 	else
 	{
 		am_color_t color = gameinfo.currentAutomapColors.ThingColor;
 
-		AM_drawLineCharacter(thintriangle_guy, FIXED2FIXED64(t->radius), triangle_angle, color,
-		                     p.x, p.y);
+		AM_drawLineCharacter(thintriangle_guy, radius, triangle_angle, color, p.x, p.y);
 
 		if (t->flags & MF_MISSILE)
 		{
@@ -1951,8 +1953,16 @@ void AM_drawCheatThing(const AActor* t)
 				color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
 		}
 
-		AM_drawLineCharacter(thinrectangle_guy, FIXED2FIXED64(t->radius), rotate_angle, color,
-		                     p.x, p.y);
+		AM_drawLineCharacter(thinrectangle_guy, radius, rotate_angle, color, p.x, p.y);
+	}
+
+	if (netdebug_automap)
+	{
+		screen->DrawTextStretched(CR_GREY,
+		                          CXMTOF(p.x - radius),
+		                          CYMTOF(p.y + radius) - V_LineHeight() * 2,
+		                          fmt::sprintf("%d", t->netid).c_str(),
+		                          2, 2);
 	}
 }
 
