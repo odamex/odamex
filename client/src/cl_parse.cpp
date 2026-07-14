@@ -247,6 +247,8 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	playerState.backpack = playerInfo.backpack();
 	playerState.cheats   = playerInfo.cheats();
 
+	playerState.rune = playerInfo.rune();
+
 	const size_t pspriteElementCount = std::min(playerState.psprites.size(), static_cast<size_t>(playerInfo.psprites_size()));
 
 	for (size_t i = 0; i < pspriteElementCount; ++i)
@@ -327,6 +329,8 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 			p.powers[i] = 0;
 		}
 	}
+
+	p.rune = msg->rune();
 
 	if (!validplayer(p) || !p.mo)
 		return;
@@ -2489,6 +2493,8 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
+
+	player.rune = msg->player().rune();
 
 	P_SetPlayerPowerupStatuses(player, powerups);
 

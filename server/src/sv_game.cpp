@@ -235,6 +235,10 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.flags[i] = false;
 	p.backpack = false;
 
+	p.rune = ru_none;
+	p.runeTics = 0;
+	p.lastrune = ru_none;
+
 	G_GiveSpawnInventory(p);
 
 	p.usedown = p.attackdown = true;	// don't do anything immediately

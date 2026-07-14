@@ -39,6 +39,8 @@ message MovePlayer
 	uint32          playerid = 3;
 	repeated int32  powers   = 4;
 	Actor           actor    = 5;
+
+	int32           rune     = 6;
 }
 
 // svc_updatelocalplayer

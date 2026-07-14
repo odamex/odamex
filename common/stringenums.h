@@ -85,6 +85,16 @@ inline const OString GOTTURBO = "GOTTURBO"_os;
 inline const OString GOTTIME = "GOTTIME"_os;
 inline const OString GOTTRANSLUCENCY = "GOTTRANSLUCENCY"_os;
 inline const OString GOTDOOMSPHERE = "GOTDOOMSPHERE"_os;
+inline const OString GOTSTRENGTH = "GOTSTRENGTH"_os;
+inline const OString GOTRAGE = "GOTRAGE"_os;
+inline const OString GOTDRAIN = "GOTDRAIN"_os;
+inline const OString GOTRESISTANCE = "GOTRESISTANCE"_os;
+inline const OString GOTREGENERATION = "GOTREGENERATION"_os;
+inline const OString GOTPROSPERITY = "GOTPROSPERITY"_os;
+inline const OString GOTHIJUMP = "GOTHIJUMP"_os;
+inline const OString GOTHISPEED = "GOTHISPEED"_os;
+inline const OString GOTSPREAD = "GOTSPREAD"_os;
+inline const OString GOTREFLECTION = "GOTREFLECTION"_os;
 inline const OString GOTCLIP = "GOTCLIP"_os;
 inline const OString GOTCLIPBOX = "GOTCLIPBOX"_os;
 inline const OString GOTROCKET = "GOTROCKET"_os;
@@ -1405,4 +1415,20 @@ inline const OString* const stringIndexes[] = {
     &OMULTI9,
     &OMULTI10,
     &OMULTI11,
+    // [BC] Skulltag powerups
+    &GOTTURBO,
+    &GOTTIME,
+    &GOTTRANSLUCENCY,
+    &GOTDOOMSPHERE,
+    // [BC] Skulltag runes
+    &GOTSTRENGTH,
+    &GOTRAGE,
+    &GOTDRAIN,
+    &GOTRESISTANCE,
+    &GOTREGENERATION,
+    &GOTPROSPERITY,
+    &GOTHIJUMP,
+    &GOTHISPEED,
+    &GOTSPREAD,
+    &GOTREFLECTION,
 };

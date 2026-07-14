@@ -482,15 +482,18 @@ ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool wasDropped
 //
 ItemEquipVal P_GiveBody(player_t& player, int num)
 {
-	if (player.health >= MAXHEALTH)
+	// Skulltag prosperity rune raises the health cap to 200.
+	const int maxhealth = (player.rune == ru_prosperity) ? 200 : MAXHEALTH;
+
+	if (player.health >= maxhealth)
 	{
 		return IEV_NotEquipped;
 	}
 
 	player.health += static_cast<int>(static_cast<float>(num) * G_GetCurrentSkill().health_factor);
-	if (player.health > MAXHEALTH)
+	if (player.health > maxhealth)
 	{
-		player.health = MAXHEALTH;
+		player.health = maxhealth;
 	}
 	player.mo->health = player.health;
 
@@ -606,8 +609,6 @@ ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power)
 
 	if (power == pw_freezer)
 	{
-		// The time freeze effect is no-op'd until
-		// we are able to support it in the backend
 		player.powers[power] = FREEZETICS;
 		return IEV_EquipRemove;
 	}
@@ -618,6 +619,82 @@ ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power)
 	}
 
 	player.powers[power] = 1;
+	return IEV_EquipRemove;
+}
+
+//
+// P_CurrentRune
+//
+// Returns the mobjtype of the rune the player is carrying, for dropping.
+//
+mobjtype_t P_CurrentRune(const player_t& player)
+{
+	switch (player.rune)
+	{
+	case ru_strength:
+		return MT_RUNESTRENGTH;
+	case ru_drain:
+		return MT_RUNEDRAIN;
+	case ru_rage:
+		return MT_RUNERAGE;
+	case ru_spread:
+		return MT_RUNESPREAD;
+	case ru_resistance:
+		return MT_RUNERESISTANCE;
+	case ru_regeneration:
+		return MT_RUNEREGENERATION;
+	case ru_prosperity:
+		return MT_RUNEPROSPERITY;
+	case ru_reflection:
+		return MT_RUNEREFLECTION;
+	case ru_highjump:
+		return MT_RUNEHIGHJUMP;
+	case ru_haste:
+		return MT_RUNEHASTE;
+	}
+
+	return MT_NULL;
+}
+
+//
+// P_GiveRune
+//
+// Gives the player a rune, tossing out the one they are carrying.
+//
+ItemEquipVal P_GiveRune(player_t& player, int /*runetype_t*/ rune)
+{
+	if (player.rune == rune)
+		return IEV_NotEquipped;
+
+	// Just grabbed one; don't pick up anything for a bit.
+	if (player.runeTics > 1 * TICRATE)
+		return IEV_NotEquipped;
+
+	// Don't instantly re-grab the rune we just swapped away.
+	if (player.runeTics && rune == player.lastrune)
+		return IEV_NotEquipped;
+
+	if (player.rune == ru_none)
+		player.lastrune = ru_none;
+
+	if (player.rune != ru_none && player.mo)
+	{
+		player.lastrune = player.rune;
+
+		if (serverside)
+		{
+			AActor* mo = new AActor(player.mo->x, player.mo->y,
+			                        player.mo->z + player.mo->height / 2,
+			                        P_CurrentRune(player));
+			mo->momz = player.mo->momz + 5 * FRACUNIT;
+			mo->flags |= MF_DROPPED;
+			mo->flags &= ~MF_NOGRAVITY;
+			SV_SpawnMobj(mo);
+		}
+	}
+
+	player.rune = rune;
+	player.runeTics = 2 * TICRATE;
 	return IEV_EquipRemove;
 }
 
@@ -1140,6 +1217,66 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 		case SPR_DOOM:
 			val = P_GivePower(player, pw_doomsphere);
 			msg = &GOTDOOMSPHERE;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_RUN1:
+			val = P_GiveRune(player, ru_strength);
+			msg = &GOTSTRENGTH;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_RUN2:
+			val = P_GiveRune(player, ru_rage);
+			msg = &GOTRAGE;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_RUN3:
+			val = P_GiveRune(player, ru_drain);
+			msg = &GOTDRAIN;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_RUN4:
+			val = P_GiveRune(player, ru_resistance);
+			msg = &GOTRESISTANCE;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_RUN5:
+			val = P_GiveRune(player, ru_regeneration);
+			msg = &GOTREGENERATION;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_RUN6:
+			val = P_GiveRune(player, ru_prosperity);
+			msg = &GOTPROSPERITY;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_RUN7:
+			val = P_GiveRune(player, ru_highjump);
+			msg = &GOTHIJUMP;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_RUN8:
+			val = P_GiveRune(player, ru_haste);
+			msg = &GOTHISPEED;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_RUN9:
+			val = P_GiveRune(player, ru_spread);
+			msg = &GOTSPREAD;
+			sound = SpecialSound::PowerUp;
+			break;
+
+		case SPR_RUNB:
+			val = P_GiveRune(player, ru_reflection);
+			msg = &GOTREFLECTION;
 			sound = SpecialSound::PowerUp;
 			break;
 
@@ -2088,6 +2225,23 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 	if (target->player && level.time)
 		G_LivesCheckEndGame();
 
+	// Drop the player's Skulltag rune.
+	if (target->player && target->player->rune != ru_none)
+	{
+		if (serverside)
+		{
+			AActor* runemo =
+			    new AActor(target->x, target->y, ONFLOORZ, P_CurrentRune(*target->player));
+			runemo->flags |= MF_DROPPED;
+			runemo->flags &= ~MF_NOGRAVITY;
+			SV_SpawnMobj(runemo);
+		}
+
+		target->player->rune = ru_none;
+		target->player->runeTics = 0;
+		target->player->lastrune = ru_none;
+	}
+
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
@@ -2274,6 +2428,18 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 	if (source && source->player && source->player->powers[pw_doomsphere])
 		damage *= 4;
 
+	// Skulltag strength rune: deal double damage.
+	if (source && source->player && source->player->rune == ru_strength)
+		damage *= 2;
+
+	// Skulltag drain rune: deal half damage but leech it as health.
+	if (source && source->player && source->player->rune == ru_drain &&
+	    source != target)
+	{
+		damage /= 2;
+		P_GiveBody(*source->player, damage);
+	}
+
 	// Some close combat weapons should not
 	// inflict thrust and push the victim out of reach,
 	// thus kick away unless using the chainsaw.
@@ -2309,6 +2475,26 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 	// player specific
 	if (player)
 	{
+		// Skulltag resistance rune: take half damage.
+		if (player->rune == ru_resistance)
+			damage /= 2;
+
+		// Skulltag reflection rune: halve incoming damage and return
+		// it to the attacker.
+		if (player->rune == ru_reflection && inflictor && inflictor != target &&
+		    source && source != target)
+		{
+			damage /= 2;
+
+			static bool reflecting = false;
+			if (!reflecting && damage > 0)
+			{
+				reflecting = true;
+				P_DamageMobj(source, target, target, damage, MOD_UNKNOWN);
+				reflecting = false;
+			}
+		}
+
 		short special = 11;
 		if (map_format.getZDoom())
 		{

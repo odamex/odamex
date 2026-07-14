@@ -47,6 +47,7 @@ struct PlayerItemDataType
 	std::array<bool, NUMCARDS>      cards;
 	bool                            backpack;
 	uint32_t                        cheats;
+	int                             rune;
 
 	std::array<PspriteStateType, NUMPSPRITES> psprites;
 
@@ -60,7 +61,8 @@ struct PlayerItemDataType
 		readyweapon     (wp_none),
 		pendingweapon   (wp_none),
 		backpack        (false),
-		cheats          (false)
+		cheats          (false),
+		rune            (ru_none)
 	{
 		ammo.fill(0);
 		maxammo.fill(0);
@@ -82,7 +84,8 @@ struct PlayerItemDataType
 		weaponowned     (player.weaponowned),
 		cards           (player.cards),
 		backpack        (player.backpack),
-		cheats          (player.cheats)
+		cheats          (player.cheats),
+		rune            (player.rune)
 	{
 		static_assert(std::tuple_size_v<decltype(psprites)> ==
 		              std::tuple_size_v<decltype(player.psprites)>);
@@ -108,6 +111,7 @@ struct PlayerItemDataType
 		cards           = player.cards;
 		backpack        = player.backpack;
 		cheats          = player.cheats;
+		rune            = player.rune;
 
 		for (size_t i = 0; i < psprites.size(); ++i)
 		{
@@ -129,6 +133,7 @@ struct PlayerItemDataType
 		player.weaponowned     = weaponowned;
 		player.cards           = cards;
 		player.backpack        = backpack;
+		player.rune            = rune;
 
 		if (not player.spectator)
 		{
@@ -169,6 +174,7 @@ struct PlayerItemDataType
 		    << i_thisRef.cards
 		    << i_thisRef.backpack
 		    << i_thisRef.cheats
+		    << i_thisRef.rune
 		    << i_thisRef.psprites
 		    ;
 
@@ -192,6 +198,7 @@ struct PlayerItemDataType
 		    >> o_thisRef.cards
 		    >> o_thisRef.backpack
 		    >> o_thisRef.cheats
+		    >> o_thisRef.rune
 		    >> o_thisRef.psprites
 		    ;
 

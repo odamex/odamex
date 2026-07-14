@@ -84,6 +84,18 @@ enum spritenum_t: int32_t
 	SPR_INVS,
 	SPR_DOOM,
 
+	// Skulltag runes
+	SPR_RUN1,
+	SPR_RUN2,
+	SPR_RUN3,
+	SPR_RUN4,
+	SPR_RUN5,
+	SPR_RUN6,
+	SPR_RUN7,
+	SPR_RUN8,
+	SPR_RUN9,
+	SPR_RUNB,
+
     // ------------------------------------------------------ //
 	SPR_TROO = 0,
 	SPR_SHTG,
@@ -380,6 +392,48 @@ enum statenum_t: int32_t
 	S_DOOMSPH2,
 	S_DOOMSPH3,
 	S_DOOMSPH4,
+
+	// Skulltag runes
+	S_RUN1,
+	S_RUN1A,
+	S_RUN1B,
+	S_RUN1C,
+	S_RUN1D,
+	S_RUN2,
+	S_RUN2A,
+	S_RUN3,
+	S_RUN3A,
+	S_RUN4,
+	S_RUN4A,
+	S_RUN4B,
+	S_RUN4C,
+	S_RUN4D,
+	S_RUN4E,
+	S_RUN4F,
+	S_RUN4G,
+	S_RUN5,
+	S_RUN5A,
+	S_RUN6,
+	S_RUN6A,
+	S_RUN6B,
+	S_RUN6C,
+	S_RUN6D,
+	S_RUN7,
+	S_RUN7A,
+	S_RUN7B,
+	S_RUN7C,
+	S_RUN8,
+	S_RUN8A,
+	S_RUN8B,
+	S_RUN8C,
+	S_RUN9,
+	S_RUN9A,
+	S_RUN9B,
+	S_RUN9C,
+	S_RUNB,
+	S_RUNB2,
+	S_RUNB3,
+	S_RUNB4,
 
 	//------------------------------------
 
@@ -1574,6 +1628,18 @@ enum mobjtype_t: int32_t {
 	MT_TIMEFREEZER,
 	MT_INVISIBILITY,
 	MT_DOOMSPHERE,
+
+	// Skulltag runes
+	MT_RUNESTRENGTH,
+	MT_RUNERAGE,
+	MT_RUNEDRAIN,
+	MT_RUNERESISTANCE,
+	MT_RUNEREGENERATION,
+	MT_RUNEPROSPERITY,
+	MT_RUNEHIGHJUMP,
+	MT_RUNEHASTE,
+	MT_RUNESPREAD,
+	MT_RUNEREFLECTION,
 
     // --------------------------------------------------------------------- //
 

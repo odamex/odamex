@@ -115,6 +115,8 @@ static void FillPlayer(odaproto::Player& io_msg, const player_t& player, int des
 		io_msg.add_powers(player.powers[i]);
 	}
 
+	io_msg.set_rune(player.rune);
+
 	if (!player.spectator)
 		io_msg.set_cheats(player.cheats);
 }
@@ -260,6 +262,7 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic)
 	msg.set_powers(pw_allmap,           player.powers[pw_allmap]);
 	msg.set_powers(pw_infrared,         player.powers[pw_infrared]);
 	msg.set_powers(pw_translucency,     player.powers[pw_translucency]);
+	msg.set_rune(player.rune);
 
 	return msg;
 }

@@ -363,6 +363,10 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special);
 
 void P_TouchSpecialThing (AActor& special, AActor& toucher);
 
+ItemEquipVal P_GiveBody(player_t& player, int num);
+ItemEquipVal P_GiveRune(player_t& player, int /*runetype_t*/ rune);
+mobjtype_t P_CurrentRune(const player_t& player);
+
 void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);
 
 #define DMG_NO_ARMOR		1

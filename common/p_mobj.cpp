@@ -726,6 +726,10 @@ void P_AnimationTick(AActor *mo)
 	{
 		mo->tics--;
 
+		// Skulltag haste rune: the player animates twice as fast.
+		if (mo->tics && mo->player && mo->player->rune == ru_haste)
+			mo->tics--;
+
 		// you can cycle through multiple states in a tic
 		if (!mo->tics)
 			if (P_SetMobjState (mo, mo->state->nextstate) == SetMobStateResultEnum::DESTROYED)
@@ -2009,7 +2013,7 @@ void P_XYMovement(AActor *mo)
 		if (!P_TryMove(mo, ptryx, ptryy, true, walkplane))
 		{
 			// blocked move
-            if (mo->flags2 & MF2_SLIDE)
+			if (mo->flags2 & MF2_SLIDE)
 			{
 				// try to slide along it
 				if (BlockingMobj == NULL)
@@ -2384,7 +2388,7 @@ static bool P_ClipMovementToCeiling(AActor* mo)
 			}
 
 			mo->z = mo->ceilingz - mo->height;
-		if (mo->momz > 0)
+			if (mo->momz > 0)
 			{
 				mo->momz = FixedMul(mo->momz, static_cast<fixed_t>(-0.75 * FRACUNIT));
 				P_GrenadeBounceSound(mo);
@@ -3207,42 +3211,59 @@ AActor* P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 		slope = pitchslope;
 	}
 
-	th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
+	// Skulltag spread rune: fire three missiles in a cone, 15 degrees
+	// to either side.
+	const int volleys =
+	    (source->player && source->player->rune == ru_spread) ? 3 : 1;
 
-	if (th->info->seesound)
-		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
-
-	th->target = source->ptr();
-	th->angle = an;
-
-	if (co_zdoomphys)
+	for (int v = 0; v < volleys; v++)
 	{
-		v3float_t velocity;
-		float speed = FIXED2FLOAT(th->info->speed);
+		angle_t van = an;
+		if (v == 1)
+			van += ANG45 / 3;
+		else if (v == 2)
+			van -= ANG45 / 3;
 
-		velocity.x = FIXED2FLOAT (finecosine[an>>ANGLETOFINESHIFT]);
-		velocity.y = FIXED2FLOAT (finesine[an>>ANGLETOFINESHIFT]);
-		velocity.z = FIXED2FLOAT (slope);
+		AActor* missile = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
 
-		M_NormalizeVec3f(&velocity, &velocity);
+		// Don't play the fire sound more than once.
+		if (!v && missile->info->seesound)
+			S_Sound (missile, CHAN_VOICE, missile->info->seesound, 1, ATTN_NORM);
 
-		th->momx = FLOAT2FIXED (velocity.x * speed);
-		th->momy = FLOAT2FIXED (velocity.y * speed);
-		th->momz = FLOAT2FIXED (velocity.z * speed);
-	}
-	else
-	{
-		th->momx = FixedMul(th->info->speed, finecosine[an >> ANGLETOFINESHIFT]);
-		th->momy = FixedMul(th->info->speed, finesine[an >> ANGLETOFINESHIFT]);
-		th->momz = FixedMul(th->info->speed, slope);
-	}
+		missile->target = source->ptr();
+		missile->angle = van;
+
+		if (co_zdoomphys)
+		{
+			v3float_t velocity;
+			float speed = FIXED2FLOAT(missile->info->speed);
+
+			velocity.x = FIXED2FLOAT (finecosine[van>>ANGLETOFINESHIFT]);
+			velocity.y = FIXED2FLOAT (finesine[van>>ANGLETOFINESHIFT]);
+			velocity.z = FIXED2FLOAT (slope);
+
+			M_NormalizeVec3f(&velocity, &velocity);
+
+			missile->momx = FLOAT2FIXED (velocity.x * speed);
+			missile->momy = FLOAT2FIXED (velocity.y * speed);
+			missile->momz = FLOAT2FIXED (velocity.z * speed);
+		}
+		else
+		{
+			missile->momx = FixedMul(missile->info->speed, finecosine[van >> ANGLETOFINESHIFT]);
+			missile->momy = FixedMul(missile->info->speed, finesine[van >> ANGLETOFINESHIFT]);
+			missile->momz = FixedMul(missile->info->speed, slope);
+		}
 
 		// [BC] Arc grenades up a bit.
-		if (th->flags3 & MF3_GRENADE)
-			th->momz += 3 * FRACUNIT;
+		if (missile->flags3 & MF3_GRENADE)
+			missile->momz += 3 * FRACUNIT;
 
-		P_CheckMissileSpawn(th, source);
+		P_CheckMissileSpawn (missile, source);
 
+		if (!v)
+			th = missile;
+	}
 
 	return th;
 }

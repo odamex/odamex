@@ -1347,27 +1347,39 @@ void P_FireHitscan (player_t& player, size_t quantity, spreadtype_t spread)
 
 	fixed_t bulletslope = P_BulletSlope(player.mo);
 
-	for (size_t i = 0; i < quantity; i++)
+	// Skulltag spread rune: every shot is fired three times, in a
+	// cone 15 degrees to either side.
+	const int volleys = (player.rune == ru_spread) ? 3 : 1;
+
+	for (int v = 0; v < volleys; v++)
 	{
-		int damage = 5 * (P_Random(player.mo) % 3 + 1);
-
-		// [SL] Don't do damage if the client is predicting bullet puffs
-		if (predict_puffs)
-			damage = 0;
-
-		angle_t angle = player.mo->angle;
-		fixed_t slope = bulletslope;
-		if (spread == SPREAD_SUPERSHOTGUN)
+		for (size_t i = 0; i < quantity; i++)
 		{
-			angle += P_RandomDiff(player.mo) << 19;
-			slope += P_RandomDiff(player.mo) << 5;
+			int damage = 5 * (P_Random(player.mo) % 3 + 1);
+
+			// [SL] Don't do damage if the client is predicting bullet puffs
+			if (predict_puffs)
+				damage = 0;
+
+			angle_t angle = player.mo->angle;
+			if (v == 1)
+				angle += ANG45 / 3;
+			else if (v == 2)
+				angle -= ANG45 / 3;
+
+			fixed_t slope = bulletslope;
+			if (spread == SPREAD_SUPERSHOTGUN)
+			{
+				angle += P_RandomDiff(player.mo) << 19;
+				slope += P_RandomDiff(player.mo) << 5;
+			}
+			else if (spread == SPREAD_NORMAL)
+			{
+				// single-barrel shotgun or re-firing pistol/chaingun
+				angle += P_RandomDiff(player.mo) << 18;
+			}
+			P_LineAttack(player.mo, angle, MISSILERANGE, slope, damage);
 		}
-		else if (spread == SPREAD_NORMAL)
-		{
-			// single-barrel shotgun or re-firing pistol/chaingun
-			angle += P_RandomDiff(player.mo) << 18;
-		}
-		P_LineAttack(player.mo, angle, MISSILERANGE, slope, damage);
 	}
 
 	// [SL] 2011-05-11 - Restore players and sectors to their current position
@@ -1612,6 +1624,10 @@ void P_MovePsprites(player_t& player)
 			if (psp->tics != -1)
 			{
 				psp->tics--;
+
+				// Skulltag rage rune: weapons cycle twice as fast.
+				if (psp->tics && player.rune == ru_rage)
+					psp->tics--;
 
 				if (psp->tics == 0)
 					P_SetPsprite(player, i, psp->state->nextstate);

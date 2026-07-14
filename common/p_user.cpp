@@ -574,12 +574,19 @@ void P_MovePlayer (player_t& player)
 				bobfactor >>= 8;
 			}
 		}
+
 		fixed_t forwardmove = (player.cmd.forwardmove * movefactor) >> 8;
 		fixed_t sidemove = (player.cmd.sidemove * movefactor) >> 8;
 
-		// Skulltag turbosphere (+50%) speed boost.
+		// Skulltag haste rune (+25%) and turbosphere (+50%) speed boosts.
 		const fixed_t forwardbase = forwardmove;
 		const fixed_t sidebase = sidemove;
+
+		if (player.rune == ru_haste)
+		{
+			forwardmove += forwardbase / 4;
+			sidemove += sidebase / 4;
+		}
 
 		if (player.powers[pw_turbosphere])
 		{
@@ -623,6 +630,9 @@ void P_MovePlayer (player_t& player)
 		if (player.mo->waterlevel >= 2)
 		{
 			player.mo->momz = 4*FRACUNIT;
+
+			if (player.rune == ru_highjump)
+				player.mo->momz *= 2;
 		}
 		else if (player.mo->flags2 & MF2_FLY)
 		{
@@ -632,12 +642,20 @@ void P_MovePlayer (player_t& player)
 		{
 			player.mo->momz += 8*FRACUNIT;
 
+			// Skulltag high jump rune: jump twice as high, but wait
+			// twice as long between jumps.
+			if (player.rune == ru_highjump)
+				player.mo->momz *= 2;
+
 //			[SL] No jumping sound...
 //			if(!player.spectator)
 //				UV_SoundAvoidPlayer(player.mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
             player.mo->flags2 &= ~MF2_ONMOBJ;
             player.jumpTics = 18;
+
+			if (player.rune == ru_highjump)
+				player.jumpTics *= 2;
 		}
 	}
 }
@@ -898,6 +916,9 @@ void P_BumpPlayerCounters(player_t& player)
 	if (player.powers[pw_freezer])
 		player.powers[pw_freezer]--;
 
+	if (player.runeTics)
+		player.runeTics--;
+
 	if (player.damagecount)
 		player.damagecount--;
 
@@ -953,6 +974,12 @@ void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS
 		player.mo->translucency = TRANSLUC10;
 	else if (player.mo->translucency == TRANSLUC10)
 		player.mo->translucency = FRACUNIT;
+
+	// Skulltag reflection rune: missiles deflect off the carrier.
+	if (player.rune == ru_reflection)
+		player.mo->flags2 |= MF2_REFLECTIVE;
+	else
+		player.mo->flags2 &= ~MF2_REFLECTIVE;
 
 	P_SetPlayerInvulnBleed(player, powers);
 }
@@ -1090,6 +1117,13 @@ void P_PlayerThink (player_t& player)
 
 	if (player.hazardcount && not (::level.time % player.hazardinterval) && player.hazardcount > 16 * TICRATE)
 		P_DamageMobj(player.mo, NULL, NULL, 5);
+
+	// Skulltag regeneration rune: +5 health every 32 tics.
+	if (serverside && player.rune == ru_regeneration && !(::level.time & 0x1f))
+	{
+		if (P_GiveBody(player, 5) == IEV_EquipRemove)
+			S_Sound(player.mo, CHAN_ITEM, "misc/i_pkup", 1, ATTN_NORM);
+	}
 
 	// Handling colormaps.
 	if (displayplayer().powers[pw_invulnerability])
@@ -1280,7 +1314,10 @@ void player_t::Serialize (FArchive &arc)
 			<< xviewshift
 			<< jumpTics
 			<< death_time
-			<< air_finished;
+			<< air_finished
+			<< rune
+			<< runeTics
+			<< lastrune;
 		for (i = 0; i < NUMPOWERS; i++)
 			arc << powers[i];
 		for (i = 0; i < NUMCARDS; i++)
@@ -1334,7 +1371,10 @@ void player_t::Serialize (FArchive &arc)
 			>> xviewshift
 			>> jumpTics
 			>> death_time
-			>> air_finished;
+			>> air_finished
+			>> rune
+			>> runeTics
+			>> lastrune;
 		for (i = 0; i < NUMPOWERS; i++)
 			arc >> powers[i];
 		for (i = 0; i < NUMCARDS; i++)
@@ -1371,6 +1411,9 @@ player_t::player_t() :
 	health(0),
 	armorpoints(0),
 	armortype(0),
+	rune(ru_none),
+	runeTics(0),
+	lastrune(ru_none),
 	backpack(false),
 	lives(0),
 	roundwins(0),

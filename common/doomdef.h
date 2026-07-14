@@ -521,11 +521,28 @@ enum powertype_t : int8_t
 	pw_turbosphere,		// 50% faster movement
 	pw_translucency,	// player rendered nearly invisible
 	pw_doomsphere,		// quadruple damage dealt
-	pw_freezer,				// time freeze sphere (effect stubbed; will drive
-										// timeout/timein when implemented)
+	pw_freezer,				// time freeze sphere (effect stubbed)
 	NUMPOWERS
 };
 
+// Skulltag runes. A player carries at most one and keeps it until death.
+enum runetype_t
+{
+	ru_none,
+
+	ru_strength,		// deal double damage
+	ru_drain,			// deal half damage, leech it as health
+	ru_rage,			// weapons cycle twice as fast
+	ru_spread,			// fire three shots in a spread
+	ru_resistance,		// take half damage
+	ru_regeneration,	// slowly regenerate health
+	ru_prosperity,		// health cap raised to 200
+	ru_reflection,		// halve and reflect incoming damage
+	ru_highjump,		// jump twice as high
+	ru_haste,			// move 25% faster
+
+	NUMRUNES
+};
 
 //
 // Power up durations, how many tics till expiration.

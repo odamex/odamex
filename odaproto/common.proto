@@ -82,6 +82,8 @@ message Player
 	repeated int32  maxammo         = 15;
 
 	repeated PspriteState   psprites    = 16;
+
+	int32           rune            = 17;
 }
 
 message Sector

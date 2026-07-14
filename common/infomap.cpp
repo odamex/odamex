@@ -209,6 +209,16 @@ void P_InitMobjNameMap()
 	MapMobj(MT_TIMEFREEZER, "TimeFreezeSphere", MC_POWER);
 	MapMobj(MT_INVISIBILITY, "InvisibilitySphere", MC_POWER);
 	MapMobj(MT_DOOMSPHERE, "Doomsphere", MC_POWER);
+	MapMobj(MT_RUNESTRENGTH, "RuneStrength", MC_POWER);
+	MapMobj(MT_RUNERAGE, "RuneRage", MC_POWER);
+	MapMobj(MT_RUNEDRAIN, "RuneDrain", MC_POWER);
+	MapMobj(MT_RUNERESISTANCE, "RuneResistance", MC_POWER);
+	MapMobj(MT_RUNEREGENERATION, "RuneRegeneration", MC_POWER);
+	MapMobj(MT_RUNEPROSPERITY, "RuneProsperity", MC_POWER);
+	MapMobj(MT_RUNEHIGHJUMP, "RuneHighJump", MC_POWER);
+	MapMobj(MT_RUNEHASTE, "RuneHaste", MC_POWER);
+	MapMobj(MT_RUNESPREAD, "RuneSpread", MC_POWER);
+	MapMobj(MT_RUNEREFLECTION, "RuneReflection", MC_POWER);
 	// [AM] Deh_Actor_145-149 are reserved.
 	MapMobj(MT_EXTRA00, "Deh_Actor_150", MC_NONE);
 	MapMobj(MT_EXTRA01, "Deh_Actor_151", MC_NONE);

@@ -741,8 +741,8 @@ static bool PIT_CheckThing (AActor *thing)
 					// Track the blocker for bounce/reflection handling.
 					BlockingMobj = thing;
 					return false; // Hit same species as originator, explode, no damage
+				}
 			}
-		}
 		}
 
 		if (!(thing->flags & MF_SHOOTABLE))

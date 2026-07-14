@@ -188,6 +188,12 @@ public:
 
     // Power ups. invinc and invis are tic counters.
 	std::array<int, NUMPOWERS> powers;
+
+	// Skulltag rune (one at a time, kept until death).
+	int			rune;
+	int			runeTics;	// anti-repickup timer after grabbing a rune
+	int			lastrune;	// rune we just swapped away
+
 	std::array<bool, NUMCARDS> cards;
 	bool		backpack;
 
