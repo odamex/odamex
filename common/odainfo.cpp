@@ -116,6 +116,9 @@ state_t odastates[] = {
     {S_NOWEAPONUP, SPR_TNT1, 0, 1, A_Raise, S_NOWEAPON, 0, 0},     // S_NOWEAPONUP
     {S_NOWEAPONDOWN, SPR_TNT1, 0, 1, A_Lower, S_NOWEAPON, 0, 0},   // S_NOWEAPONDOWN
     {S_NOWEAPON, SPR_TNT1, 0, 1, A_WeaponReady, S_NOWEAPON, 0, 0}, // S_NOWEAPON
+
+    {S_STGRENADE, SPR_GREN, 32768, 1, NULL, S_STGRENADE, 0, 0}, // S_STGRENADE - Skulltag grenade
+
 };
 
 // reserved odamex sprites
@@ -124,7 +127,9 @@ const char* odasprnames[] = {
     "GIB0", "GIB1", "GIB2", "GIB3", "GIB4", "GIB5", "GIB6", "GIB7", "UNKN",
     //	[Toke - CTF]
     "BSOK", "RSOK", "BFLG", "RFLG", "BDWN", "RDWN", "BCAR", "RCAR", "GSOK", "GFLG",
-    "GDWN", "GCAR", "TLGL", "WPBF", "WPRF", "WPGF", "CARE", "O1UP", "RSTM",};
+    "GDWN", "GCAR", "TLGL", "WPBF", "WPRF", "WPGF", "CARE", "O1UP", "RSTM",
+    // Skulltag grenades
+    "GREN"};
 
 // reserved odamex mobjinfo
 // ::MT_CAREPACK - ::MT_GIB0 + 1
@@ -2471,6 +2476,84 @@ mobjinfo_t odamobjinfo[] = {
 		S_NULL,         // raisestate
 		0x10000,
 		"MT_RESTEAMMATE",
+		NO_ALTSPEED,	// altspeed
+		64 * FRACUNIT,	// meleerange
+		IG_DEFAULT,		// infighting group
+		PG_DEFAULT,		// projectile group
+		SG_DEFAULT,		// splash group
+		0,		// flags3
+		NULL, // ripsound
+		MT_NULL		// droppeditem
+	},
+	{                 // MT_GRENADE
+        MT_GRENADE,
+		-1,             // doomednum
+		S_STGRENADE,    // spawnstate
+		1000,           // spawnhealth
+		0,              // gibhealth
+		S_NULL,         // seestate
+		"weapons/rocklf", // seesound
+		8,              // reactiontime
+		NULL,           // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		NULL,           // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_EXPLODE1,     // deathstate
+		S_NULL,         // xdeathstate
+		"weapons/rocklx", // deathsound
+		25*FRACUNIT,    // speed
+		8*FRACUNIT,     // radius
+		8*FRACUNIT,     // height
+		8*FRACUNIT,     // cdheight
+		100,            // mass
+		20,             // damage
+		NULL,           // activesound
+		MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF, // flags
+		MF2_PCROSS|MF2_IMPACT|MF2_FIREDAMAGE|MF2_LOGRAV, // flags2
+		S_NULL,         // raisestate
+		0x10000,
+		"MT_GRENADE",
+		NO_ALTSPEED,	// altspeed
+		64 * FRACUNIT,	// meleerange
+		IG_DEFAULT,		// infighting group
+		PG_DEFAULT,		// projectile group
+		SG_DEFAULT,		// splash group
+		MF3_GRENADE,	// flags3
+		NULL, // ripsound
+		MT_NULL		// droppeditem
+	},
+	{                 // MT_BFG10KSHOT
+        MT_BFG10KSHOT,
+		-1,             // doomednum
+		S_DETONATE,     // spawnstate
+		1000,           // spawnhealth
+		0,              // gibhealth
+		S_NULL,         // seestate
+		"weapons/rocklx", // seesound
+		8,              // reactiontime
+		NULL,           // attacksound
+		S_NULL,         // painstate
+		0,              // painchance
+		NULL,           // painsound
+		S_NULL,         // meleestate
+		S_NULL,         // missilestate
+		S_NULL,         // deathstate
+		S_NULL,         // xdeathstate
+		NULL,           // deathsound
+		20*FRACUNIT,    // speed
+		11*FRACUNIT,    // radius
+		8*FRACUNIT,     // height
+		8*FRACUNIT,     // cdheight
+		100,            // mass
+		192,            // damage
+		NULL,           // activesound
+		MF_NOBLOCKMAP|MF_DROPOFF|MF_NOGRAVITY, // flags
+		MF2_PCROSS|MF2_IMPACT, // flags2
+		S_NULL,         // raisestate
+		0x10000,
+		"MT_BFG10KSHOT",
 		NO_ALTSPEED,	// altspeed
 		64 * FRACUNIT,	// meleerange
 		IG_DEFAULT,		// infighting group

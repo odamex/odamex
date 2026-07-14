@@ -737,12 +737,21 @@ static bool PIT_CheckThing (AActor *thing)
 				if (!deh.Infight &&
 						(!((thing->flags ^ tmthing->target->flags) & MF_FRIEND) ||
 						(thing->flags & tmthing->target->flags & MF_FRIEND && P_IsFriendlyThing(thing, tmthing->target))))
+				{
+					// Track the blocker for bounce/reflection handling.
+					BlockingMobj = thing;
 					return false; // Hit same species as originator, explode, no damage
 			}
 		}
+		}
 
 		if (!(thing->flags & MF_SHOOTABLE))
+		{
+			// Track the blocker for bounce/reflection handling.
+			if (solid)
+				BlockingMobj = thing;
 			return !solid;		// didn't do any damage
+		}
 
 		// Don't clip the projectile unless it's not a teammate.
 		if (!P_ShouldClipPlayer(tmthing, thing))
@@ -804,6 +813,9 @@ static bool PIT_CheckThing (AActor *thing)
 				P_DamageMobj (thing, tmthing, tmthing->target, damage, mod);
 			}
 		}
+
+		// Track the blocker for bounce/reflection handling.
+		BlockingMobj = thing;
 
 		return false;		// don't traverse any more
 	}
@@ -2068,6 +2080,10 @@ void P_SlideMove (AActor *mo)
 AActor* 		linetarget; 	// who got hit (or NULL)
 AActor* 		shootthing;
 
+// Actor type spawned where a hitscan lands, in place of the usual
+// bullet puff (and blood). Used by the Skulltag BFG10K.
+mobjtype_t		PuffType = MT_PUFF;
+
 // Height if not aiming up or down
 // ???: use slope for monsters?
 fixed_t 		shootz;
@@ -2386,7 +2402,8 @@ bool PTR_ShootTraverse (intercept_t* in)
 	if (th->flags & MF_FRIEND && P_IsFriendlyThing(th, shootthing) && !sv_friendlymonsterfire)
 		spawnblood = false;
 
-	if (spawnblood)
+	// Custom puff types (BFG10K) always spawn in place of blood.
+	if (spawnblood && PuffType == MT_PUFF)
 		P_SpawnBlood(x, y, z, la_damage);
 	else
 		P_SpawnPuff(x, y, z);

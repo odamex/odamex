@@ -234,6 +234,9 @@ enum mobjflag_t
 									// BIT 17 is MF2_RIP -- RESERVED
 	MF3_FULLVOLSOUNDS	= BIT(18),	// full volume see / death sound
 
+	// Skulltag-derived flags
+	MF3_GRENADE			= BIT(19),	// Skulltag grenades
+
 	// --- mobj.oflags ---
 	// Odamex-specific flags
 	MFO_NOSNAPZ         = BIT(0),   // [clientside only] ignore snapshot z this tic
@@ -253,6 +256,8 @@ enum mobjflag_t
 	MFO_ISONCONVEYOR    = BIT(14),  // Mobj is in motion due to being carried by a sector
 
 	MFO_MOVESLIKEAMONSTER = BIT(15),    // Mobj has been updated through monster movement routines
+
+	MFO_BOUNCEDONE      = BIT(16),  // [INTERNAL] grenade bounce has decayed, explode on contact
 };
 
 //

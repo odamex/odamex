@@ -574,6 +574,10 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	rndindex = M_Random();
 	spawnRndindex = rndindex;
 
+	// Skulltag grenades explode on a fuse. special1 is the detonation countdown.
+	if ((flags & MF_MISSILE) && (flags3 & MF3_GRENADE))
+		special1 = GRENADETICS;
+
 	if (multiplayer && serverside)
 		netid = ::ServerNetID.obtainNetID();
 
@@ -1147,6 +1151,16 @@ void AActor::RunThink ()
 		prevpitch = pitch;
 	}
 
+	// Tick down a Skulltag grenade's fuse and detonate it.
+	if (special1 && (flags & MF_MISSILE) && (flags3 & MF3_GRENADE))
+	{
+		if (!--special1 && serverside)
+		{
+			P_ExplodeMissile(this);
+			return;
+		}
+	}
+
 	// server removal of corpses only
 	if (!clientside && serverside)
 	{
@@ -1675,6 +1689,61 @@ static void P_WallBouncy(AActor* mo)
 
 
 //
+// P_GrenadeBounceSound
+//
+// Grenades use a bounce sound rather than their seesound when
+// they strike level geometry.
+//
+static void P_GrenadeBounceSound(AActor* mo)
+{
+	S_Sound(mo, CHAN_VOICE, "weapons/grbnce", 1, ATTN_IDLE);
+}
+
+//
+// P_GrenadeBounceWall
+//
+// Bounces a Skulltag grenade off the wall it just struck, keeping
+// 3/4 of its speed. Based on Skulltag's P_BounceWall.
+//
+static void P_GrenadeBounceWall(AActor* mo)
+{
+	if (!BlockingLine)
+	{
+		mo->momx = mo->momy = 0;
+		return;
+	}
+
+	angle_t lineangle = P_PointToAngle(0, 0, BlockingLine->dx, BlockingLine->dy);
+	if (P_PointOnLineSide(mo->x, mo->y, BlockingLine) == 1)
+		lineangle += ANG180;
+
+	angle_t moveangle = P_PointToAngle(0, 0, mo->momx, mo->momy);
+	angle_t deltaangle = (2 * lineangle) - moveangle;
+	mo->angle = deltaangle;
+
+	fixed_t movelen = P_AproxDistance(mo->momx, mo->momy);
+	movelen = FixedMul(movelen, (fixed_t)(0.75 * FRACUNIT)); // friction
+	if (movelen < FRACUNIT)
+		movelen = 2 * FRACUNIT;
+
+	deltaangle >>= ANGLETOFINESHIFT;
+	mo->momx = FixedMul(movelen, finecosine[deltaangle]);
+	mo->momy = FixedMul(movelen, finesine[deltaangle]);
+}
+
+//
+// P_GrenadeCanBounce
+//
+// A Skulltag grenade bounces until its vertical bounce has decayed
+// (MFO_BOUNCEDONE), after which it explodes like an ordinary missile.
+//
+static bool P_GrenadeCanBounce(const AActor* mo)
+{
+	return (mo->flags & MF_MISSILE) && (mo->flags3 & MF3_GRENADE) &&
+	       !(mo->flags & MF_NOCLIP) && !(mo->oflags & MFO_BOUNCEDONE);
+}
+
+//
 // P_LostSoulReset
 //
 // Resets the Lost Soul to its spawn state after it collides with something.
@@ -1948,6 +2017,72 @@ void P_XYMovement(AActor *mo)
 				else
 					P_ActorSlideAgainstActor(mo, ptryx, ptryy);
 			}
+			else if (P_GrenadeCanBounce(mo))
+			{
+				// Skulltag grenades bounce off walls and non-shootable
+				// things instead of exploding.
+				if (BlockingMobj)
+				{
+					if ((BlockingMobj->flags2 & MF2_REFLECTIVE) ||
+					    !(BlockingMobj->flags & MF_SHOOTABLE))
+					{
+						// Deflect off the thing at 3/4 speed with a bit of
+						// random scatter.
+						angle_t angle = P_PointToAngle(BlockingMobj->x, BlockingMobj->y,
+						                               mo->x, mo->y) +
+						                ANG(1) * ((P_Random(mo) % 16) - 8);
+						fixed_t speed = P_AproxDistance(mo->momx, mo->momy);
+						speed = FixedMul(speed, (fixed_t)(0.75 * FRACUNIT));
+						mo->angle = angle;
+						angle >>= ANGLETOFINESHIFT;
+						mo->momx = FixedMul(speed, finecosine[angle]);
+						mo->momy = FixedMul(speed, finesine[angle]);
+						P_GrenadeBounceSound(mo);
+						return;
+					}
+
+					P_ExplodeMissile(mo);
+					return;
+				}
+
+				if (BlockingLine)
+				{
+					// Struck a wall; vanish if the "wall" is actually a sky.
+					if (ceilingline && ceilingline->backsector &&
+					    R_IsSkyFlat(ceilingline->backsector->ceilingpic) &&
+					    mo->z >= ceilingline->backsector->ceilingheight)
+					{
+						mo->Destroy();
+						return;
+					}
+
+					P_GrenadeBounceWall(mo);
+					P_GrenadeBounceSound(mo);
+					return;
+				}
+
+				// Blocked by a thing without BlockingMobj tracking
+				// (non-passover compat modes): explode on it.
+				P_ExplodeMissile(mo);
+				return;
+			}
+			else if ((mo->flags & MF_MISSILE) && BlockingMobj &&
+			         (BlockingMobj->flags2 & MF2_REFLECTIVE))
+			{
+				angle_t angle = P_PointToAngle(BlockingMobj->x, BlockingMobj->y,
+				                               mo->x, mo->y) +
+				                ANG(1) * ((P_Random(mo) % 16) - 8);
+				mo->angle = angle;
+				angle >>= ANGLETOFINESHIFT;
+				mo->momx = FixedMul(mo->info->speed >> 1, finecosine[angle]);
+				mo->momy = FixedMul(mo->info->speed >> 1, finesine[angle]);
+
+				// This may need to be gated for Heretic/Hexen compat.
+				mo->momz = -mo->momz / 2;
+
+				mo->target = BlockingMobj->ptr();
+				return;
+			}
 			else if (mo->flags & MF_MISSILE)
 			{
 				if (!P_ExplodeMissileAgainstWall(mo))
@@ -2170,6 +2305,26 @@ static bool P_ClipMovementToFloor(AActor* mo)
 		    P_FloorHeight(mo->x, mo->y, mo->subsector->sector) == mo->floorz)
 			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_HitFloor);
 
+		// Grenades bounce off the floor. They slow down considerably
+		// on each bounce since they've been designed around grenade jumping.
+		if (P_GrenadeCanBounce(mo))
+		{
+			mo->z = mo->floorz;
+			if (mo->momz < 0)
+			{
+				mo->momz = FixedMul(mo->momz, (fixed_t)(-0.6 * FRACUNIT));
+				mo->momx /= 4;
+				mo->momy /= 4;
+				P_GrenadeBounceSound(mo);
+
+				// Once the vertical bounce has decayed, the next floor
+				// contact detonates the grenade.
+				if (!(mo->flags & MF_NOGRAVITY) && mo->momz < 3 * FRACUNIT)
+					mo->oflags |= MFO_BOUNCEDONE;
+			}
+			return true;
+		}
+
 		// Lost Soul hit the floor
 		if (mo->flags & MF_SKULLFLY && P_CorrectLostSoulBounce())
 			mo->momz = -mo->momz;
@@ -2218,6 +2373,24 @@ static bool P_ClipMovementToCeiling(AActor* mo)
 		if (mo->subsector->sector->SecActTarget &&
 			P_CeilingHeight(mo->x, mo->y, mo->subsector->sector) == mo->ceilingz)
 			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_HitCeiling);
+
+		// Grenades bounce off ceilings, unless the ceiling is a sky.
+		if (P_GrenadeCanBounce(mo))
+		{
+			if (co_fixweaponimpacts && R_IsSkyFlat(mo->subsector->sector->ceilingpic))
+			{
+				mo->Destroy();
+				return false;
+			}
+
+			mo->z = mo->ceilingz - mo->height;
+		if (mo->momz > 0)
+			{
+				mo->momz = FixedMul(mo->momz, (fixed_t)(-0.75 * FRACUNIT));
+				P_GrenadeBounceSound(mo);
+			}
+			return true;
+		}
 
 		if (mo->momz > 0)
 			mo->momz = 0;
@@ -2658,6 +2831,24 @@ AActor *AActor::FindGoal (const AActor *actor, int tid, int kind)
 //
 void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 {
+	// Custom puff types (the BFG10K's impact blast) deal splash damage,
+	// so they are spawned serverside only and replicated to clients.
+	if (PuffType != MT_PUFF)
+	{
+		if (!serverside)
+			return;
+
+		AActor* blast = new AActor(x, y, z, PuffType);
+		blast->momx = blast->momy = blast->momz = 0;
+
+		// Credit the shooter for any splash damage the blast deals.
+		if (shootthing)
+			blast->target = shootthing->ptr();
+
+		SV_SpawnMobj(blast);
+		return;
+	}
+
 	// [SL] Allow only servers and clients that are predicting their own shots
 	if (!serverside && (shootthing != consoleplayer().mo ||
 					   !consoleplayer().userinfo.predict_weapons))
@@ -3046,7 +3237,15 @@ AActor* P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 		th->momz = FixedMul(th->info->speed, slope);
 	}
 
-	P_CheckMissileSpawn (th, source);
+		// [BC] Arc grenades up a bit.
+		if (missile->flags3 & MF3_GRENADE)
+			missile->momz += 3 * FRACUNIT;
+
+		P_CheckMissileSpawn (missile, source);
+
+		if (!v)
+			th = missile;
+	}
 
 	return th;
 }
@@ -3125,6 +3324,10 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 	th->x += FixedMul(xyofs, finecosine[an]);
 	th->y += FixedMul(xyofs, finesine[an]);
 	th->z += zofs;
+
+	// [BC] Arc grenades up a bit.
+	if (th->flags3 & MF3_GRENADE)
+		th->momz += 3 * FRACUNIT;
 
 	// [Blair] Set a tracer for player tracer weapons.
 	// This allows tracer projectiles fired from players to seek what
@@ -3245,6 +3448,10 @@ void P_ExplodeMissile (AActor* mo)
 	SV_ExplodeMissile(mo);
 
 	mo->momx = mo->momy = mo->momz = 0;
+
+	// [BC] Avoid a second detonation from the grenade's fuse.
+	if (mo->flags3 & MF3_GRENADE)
+		mo->special1 = 0;
 
 	P_SetMobjState (mo, mobjinfo[mo->type].deathstate);
 	if (mobjinfo[mo->type].deathstate != S_NULL)

@@ -226,6 +226,9 @@ void A_JumpIfTracerCloser(AActor* actor);
 void A_JumpIfFlagsSet(AActor* actor);
 void A_AddFlags(AActor* actor);
 void A_RemoveFlags(AActor* actor);
+// Skulltag
+void A_FireGrenade(AActor*);
+void A_FireBFG10k(AActor*);
 // MBF21 Weapons
 void A_ConsumeAmmo(AActor* mo);
 void A_CheckAmmo(AActor* mo);
@@ -370,6 +373,9 @@ static constexpr CodePtr CodePtrs[] = {
     {"CheckAmmo", A_CheckAmmo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
     {"RefireTo", A_RefireTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
     {"GunFlashTo", A_GunFlashTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    // Skulltag Pointers
+    {"FireGrenade", A_FireGrenade, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {"FireBFG10k", A_FireBFG10k, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
 };
 
 static constexpr struct
@@ -894,7 +900,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		short Bit;
 		short WhichFlags;
 		const char* Name;
-	} bitnames[73] = {
+	} bitnames[] = {
 	    {0, 0, "SPECIAL"},
 	    {1, 0, "SOLID"},
 	    {2, 0, "SHOOTABLE"},
@@ -973,6 +979,9 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 	    {29, 1, "ICEDAMAGE"},
 	    {30, 1, "SEEKERMISSILE"},
 	    {31, 1, "REFLECTIVE"},
+
+	    // Names for flags3
+	    {19, 3, "GRENADE"}, // [BC] Skulltag grenade physics
 	};
 
 	mobjinfo_t *info;
@@ -1228,8 +1237,8 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		else if (iequals(key, "Bits"))
 		{
 			auto lineval = value;
-			int value[3] = {0, 0, 0};
-			bool vchanged[3] = {false, false, false};
+			int value[4] = {0, 0, 0, 0};
+			bool vchanged[4] = {false, false, false, false};
 
 			for (const auto strval : SplitBexBits(lineval, ",+| \t\f\r"))
 			{
@@ -1284,6 +1293,10 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 				{
 					// info->oflags |= MFO_STEALTH; // not yet implemented
 				}
+			}
+			if (vchanged[3])
+			{
+				info->flags3 = value[3];
 			}
 		}
 		else if (iequals(key, "ID #"))

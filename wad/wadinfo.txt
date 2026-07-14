@@ -326,6 +326,7 @@ DIGSPREL	0	0
 
 # List of Sprites
 [sprites]
+GRENA0	5	6
 GIB0A0	4	7
 GIB1A0	4	7
 GIB2A0	4	7

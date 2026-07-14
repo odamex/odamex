@@ -761,6 +761,22 @@ void A_FireMissile(AActor* mo)
 
 
 //
+// A_FireGrenade
+//
+// Fires a Skulltag grenade.
+//
+void A_FireGrenade(AActor* mo)
+{
+    player_t& player = *mo->player;
+
+	DecreaseAmmo(player);
+
+	if (serverside)
+		P_SpawnPlayerMissile(player.mo, MT_GRENADE);
+}
+
+
+//
 // A_FireBFG
 //
 
@@ -1358,6 +1374,23 @@ void P_FireHitscan (player_t& player, size_t quantity, spreadtype_t spread)
 	// according to the server.
 	if (serverside)
 		Unlag::getInstance().restore(player.id);
+}
+
+//
+// A_FireBFG10k
+//
+// [BC] The Skulltag BFG10K: an accurate hitscan that spawns an exploding
+// blast (MT_BFG10KSHOT) where it lands, instead of a bullet puff.
+//
+void A_FireBFG10k(AActor* mo)
+{
+    player_t& player = *mo->player;
+
+	DecreaseAmmo(player, deh.BFGCells / 4);
+
+	PuffType = MT_BFG10KSHOT;
+	P_FireHitscan(player, 1, SPREAD_NONE);
+	PuffType = MT_PUFF;
 }
 
 //

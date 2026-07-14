@@ -527,6 +527,9 @@ enum powertype_t : int8_t
 #define INFRATICS	(120*TICRATE)
 #define IRONTICS	(60*TICRATE)
 
+// Skulltag grenade time until detonation
+#define GRENADETICS	(5*TICRATE/2)
+
 // [ML] 1/5/10: Move input defs to doomkeys.h
 #include "doomkeys.h"
 

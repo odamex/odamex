@@ -203,6 +203,8 @@ void P_InitMobjNameMap()
 	MapMobj(MT_CAREPACK, "CarePackage", MC_NONE);
 	MapMobj(MT_EXTRALIFE, "ExtraLifePowerUp", MC_NONE);
 	MapMobj(MT_RESTEAMMATE, "ResurrectTeammatePowerUp", MC_NONE);
+	MapMobj(MT_GRENADE, "Grenade", MC_NONE);
+	MapMobj(MT_BFG10KSHOT, "BFG10kShot", MC_NONE);
 	// [AM] Deh_Actor_145-149 are reserved.
 	MapMobj(MT_EXTRA00, "Deh_Actor_150", MC_NONE);
 	MapMobj(MT_EXTRA01, "Deh_Actor_151", MC_NONE);

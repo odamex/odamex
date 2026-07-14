@@ -74,6 +74,10 @@ enum spritenum_t: int32_t
     SPR_CARE,
 	SPR_O1UP,
 	SPR_RSTM,
+
+	// Skulltag grenade
+	SPR_GREN,
+
     // ------------------------------------------------------ //
 	SPR_TROO = 0,
 	SPR_SHTG,
@@ -349,6 +353,9 @@ enum statenum_t: int32_t
 	S_NOWEAPONUP,
 	S_NOWEAPONDOWN,
 	S_NOWEAPON,
+
+	// Skulltag grenade (not to be confused with MBF's grenade)
+	S_STGRENADE,
 
 	//------------------------------------
 
@@ -1533,6 +1540,10 @@ enum mobjtype_t: int32_t {
     MT_CAREPACK,
 	MT_EXTRALIFE,
 	MT_RESTEAMMATE,
+
+	// Skulltag weapons
+	MT_GRENADE,
+	MT_BFG10KSHOT,
 
     // --------------------------------------------------------------------- //
 
