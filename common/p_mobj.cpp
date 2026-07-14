@@ -1722,7 +1722,7 @@ static void P_GrenadeBounceWall(AActor* mo)
 	mo->angle = deltaangle;
 
 	fixed_t movelen = P_AproxDistance(mo->momx, mo->momy);
-	movelen = FixedMul(movelen, (fixed_t)(0.75 * FRACUNIT)); // friction
+	movelen = FixedMul(movelen, static_cast<fixed_t>(0.75 * FRACUNIT)); // friction
 	if (movelen < FRACUNIT)
 		movelen = 2 * FRACUNIT;
 
@@ -2032,7 +2032,7 @@ void P_XYMovement(AActor *mo)
 						                               mo->x, mo->y) +
 						                ANG(1) * ((P_Random(mo) % 16) - 8);
 						fixed_t speed = P_AproxDistance(mo->momx, mo->momy);
-						speed = FixedMul(speed, (fixed_t)(0.75 * FRACUNIT));
+						speed = FixedMul(speed, static_cast<fixed_t>(0.75 * FRACUNIT));
 						mo->angle = angle;
 						angle >>= ANGLETOFINESHIFT;
 						mo->momx = FixedMul(speed, finecosine[angle]);
@@ -2312,7 +2312,7 @@ static bool P_ClipMovementToFloor(AActor* mo)
 			mo->z = mo->floorz;
 			if (mo->momz < 0)
 			{
-				mo->momz = FixedMul(mo->momz, (fixed_t)(-0.6 * FRACUNIT));
+				mo->momz = FixedMul(mo->momz, static_cast<fixed_t>(-0.6 * FRACUNIT));
 				mo->momx /= 4;
 				mo->momy /= 4;
 				P_GrenadeBounceSound(mo);
@@ -2386,7 +2386,7 @@ static bool P_ClipMovementToCeiling(AActor* mo)
 			mo->z = mo->ceilingz - mo->height;
 		if (mo->momz > 0)
 			{
-				mo->momz = FixedMul(mo->momz, (fixed_t)(-0.75 * FRACUNIT));
+				mo->momz = FixedMul(mo->momz, static_cast<fixed_t>(-0.75 * FRACUNIT));
 				P_GrenadeBounceSound(mo);
 			}
 			return true;
@@ -3243,9 +3243,6 @@ AActor* P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 
 		P_CheckMissileSpawn (missile, source);
 
-		if (!v)
-			th = missile;
-	}
 
 	return th;
 }
