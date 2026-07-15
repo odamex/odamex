@@ -25,14 +25,18 @@ namespace cheat
 {
 
 //-------------
-// THESE ARE MAINLY FOR THE CLIENT
 // Smashing Pumpkins Into Small Piles Of Putrid Debris.
 bool AutoMap(cheatseq_t* cheat)
 {
 	if (automapactive)
 	{
-		if (!multiplayer || G_IsCoopGame())
+		if (not multiplayer
+		    or G_IsCoopGame()
+		    or netdemo.isPlaying()
+		    or netdemo.isPaused())
+		{
 			am_cheating = (am_cheating + 1) % 3;
+		}
 
 		return true;
 	}

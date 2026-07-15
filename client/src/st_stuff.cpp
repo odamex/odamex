@@ -549,15 +549,18 @@ bool ST_Responder(const event_t& ev)
 		{
 			if (cheat::AddKey(&cheat, static_cast<byte>(ev.data1), &eat))
 			{
-				if (cheat.DontCheck || cheat::AreCheatsEnabled())
+				if (   cheat::AreCheatsEnabled()
+				    or cheat.DontCheck
+				    or (cheat.AllowInNetdemoPlayback
+				        and (netdemo.isPlaying() or netdemo.isPaused())))
 				{
 					eat |= cheat.Handler(&cheat);
 				}
 			}
 		}
-    }
+	}
 
-    return eat;
+	return eat;
 }
 
 // Console cheats
