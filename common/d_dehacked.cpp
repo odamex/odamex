@@ -2296,6 +2296,9 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool
 	// Load english strings to match against.
 	::ENGStrings.loadStrings(true);
 
+	// Every patch starts at the baseline feature level; parsing promotes it.
+	deh.patchLevel = DehFeatureLevel::DOOM19;
+
 	int pversion = -1, dversion = -1;
 
 	if (!strncmp(buffer.c_str(), "Patch File for DeHackEd v", 25))
@@ -2358,6 +2361,14 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool
 	case 2021:
 	case 2024:
 		dp.textOffsetIdx = 2;
+		if (dversion == 2021)
+		{
+			deh.patchLevel = DehFeatureLevel::MBF21;
+		}
+		else if (dversion == 2024)
+		{
+			deh.patchLevel = DehFeatureLevel::ID24;
+		}
 		break;
 	default:
 		DPrintFmt("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
@@ -2408,6 +2419,12 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool
 	PrintFmt(" (DeHackEd patch)\n");
 
 	D_PostProcessDeh(dp);
+
+	if (deh.patchLevel > deh.accumLevel)
+	{
+		deh.accumLevel = deh.patchLevel;
+	}
+	deh.appliedPatchCount++;
 
 	return true;
 }

@@ -505,17 +505,39 @@ void D_LoadResolvedPatches(bool reloadStrings)
 		D_DoDehPatch(nullptr, W_GetNumForName("_CHXHACK"), reloadStrings);
 	}
 
-	// Load external patch files first.
-	for (const auto& file : ::patchfiles)
-	{
-		D_DoDehPatch(&file, -1, reloadStrings);
-	}
+	// Per ID24, WAD DEHACKED lumps apply first (IWAD followed by each PWAD in
+	// load order), with each WAD contributing only its last DEHACKED entry.
+	std::vector<int> wadPatchLumps;
+	std::vector<const std::istream*> patchSources;
 
-	// Check WAD files for lumps.
 	int lump = -1;
 	while ((lump = W_FindLump("DEHACKED", lump)) != -1)
 	{
-		D_DoDehPatch(NULL, lump, reloadStrings);
+		const std::istream* source = ::lumpinfo[lump].handle.get();
+
+		const auto it = source
+		    ? std::find(patchSources.begin(), patchSources.end(), source)
+		    : patchSources.end();
+		if (it == patchSources.end())
+		{
+			patchSources.push_back(source);
+			wadPatchLumps.push_back(lump);
+		}
+		else
+		{
+			wadPatchLumps[it - patchSources.begin()] = lump;
+		}
+	}
+
+	for (const int patchLump : wadPatchLumps)
+	{
+		D_DoDehPatch(NULL, patchLump, reloadStrings);
+	}
+
+	// Finally, parse every external deh file in order.
+	for (const auto& file : ::patchfiles)
+	{
+		D_DoDehPatch(&file, -1, reloadStrings);
 	}
 
 	// Re-apply spawninv settings with our new DEH settings.

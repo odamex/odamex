@@ -200,6 +200,19 @@ inline int				skyflatnum;
 // ---- [RH] ----
 EXTERN_CVAR (developer) // removeme
 
+// DeHackEd feature levels, ordered least to most capable. Each level is a
+// superset of the previous one (per the ID24HACKED specification).
+enum class DehFeatureLevel
+{
+	DOOM19,
+	BOOM,
+	MBF,
+	DEHEXTRA,
+	MBF21,
+	DSDHACKED,
+	ID24,
+};
+
 // [RH] Miscellaneous info for DeHackEd support
 struct DehInfo
 {
@@ -221,5 +234,12 @@ struct DehInfo
 	int Infight          = 0;
 	bool ZDAmmo          = false;
 	int32_t helper       = MT_NULL;
+
+	// Feature level of the patch currently being parsed.
+	DehFeatureLevel patchLevel = DehFeatureLevel::DOOM19;
+	// Highest feature level across all applied patches (and GAMECONF baseline).
+	DehFeatureLevel accumLevel = DehFeatureLevel::DOOM19;
+	// Number of DeHackEd patches successfully applied.
+	int appliedPatchCount = 0;
 };
 inline DehInfo deh{};
