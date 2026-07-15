@@ -1012,7 +1012,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 	ceilingline = BlockingLine = NULL;
 
   // dont increment this when spawning, bc not using P_BlockLinesIterator
-  if (not isSpawnCheck)
+  if (not isSpawnCheck || demoplayback)
 	  validcount++;
 
 	spechit.clear();
@@ -1112,7 +1112,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 
 	// skip this during a spawn check (player is not moving) 
 	// allows spawns that are touching blocking lines to work
-	if (not isSpawnCheck)
+	if (not isSpawnCheck || demoplayback)
 	{
 		// check lines
 		xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
