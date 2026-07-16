@@ -1088,11 +1088,16 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	CL_CheckDisplayPlayer();
 }
 
-static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
+static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = nullptr)
 {
-	AActor* mo = P_FindThingById(msg->actor().netid());
 	if (not mo)
-		return mo;
+	{
+		mo = P_FindThingById(msg->actor().netid());
+		if (not mo)
+		{
+			return mo;
+		}
+	}
 
 	mo->updatedDuringTic = gametic;
 
@@ -1198,7 +1203,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 
 static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 {
-	AActor* mo = CL_UpdateMobj(& msg->update());
+	AActor* mo = P_FindThingById(msg->update().actor().netid());
 
 	if (not mo)
 		return;
@@ -1241,6 +1246,10 @@ static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 		}
 		mo->tics = msg->tics();
 	}
+
+	// Now apply the update mobj, on the off chance that a mode change caused
+	// us to mispredict the fine-grained position, momentum, angle, etc.
+	CL_UpdateMobj(& msg->update(), mo);
 }
 
 //
