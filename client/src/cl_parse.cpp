@@ -1235,6 +1235,11 @@ static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 			default:
 				break;
 		}
+		if (mo->state->statenum != msg->state())
+		{
+			P_SetMobjState(mo, msg->state());
+		}
+		mo->tics = msg->tics();
 	}
 }
 
