@@ -2321,7 +2321,12 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		player.ammo[i] = ammo[i];
 
 	for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(player, i, stnum[i]);
+  {
+    if (i == ps_flash && stnum[i] == S_NULL)
+      player.extralight = 0;
+    
+    P_SetPsprite(player, i, stnum[i]);
+  }
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
