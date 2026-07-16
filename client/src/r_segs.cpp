@@ -980,11 +980,10 @@ void R_StoreWallRange(int start, int stop)
 			// MBF sky transfers split the visplane in 2, so in order for sky
 			// transfer skyhack to work, we need to identify both sectors' sky
 			const bool ceilingskyhack =
-				R_IsSkyFlat(frontsector->ceilingpic) && R_IsSkyFlat(backsector->ceilingpic) &&
-				frontsector->sky == backsector->sky;
+				!R_IsSkyFlat(frontsector->ceilingpic) || !R_IsSkyFlat(backsector->ceilingpic);
 
 			markceiling =
-				  (!ceilingskyhack &&
+				  (ceilingskyhack &&
 				   !P_IdenticalPlanes(&backsector->ceilingplane, &frontsector->ceilingplane))
 				|| backsector->lightlevel != frontsector->lightlevel
 				|| backsector->ceilingpic != frontsector->ceilingpic
