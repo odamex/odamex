@@ -3180,12 +3180,12 @@ static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 
 				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
 				case AwarenessEnum::FULLY_AWARE:
-					mobj.updatedDuringTic = gametic;
+					mobj.updatedDuringLocalTic = gametic;
 					MSG_WriteSVC(fullAwareQueue, message);
 					break;
 
 				case AwarenessEnum::SEMI_AWARE:
-					mobj.updatedDuringTic = gametic;
+					mobj.updatedDuringLocalTic = gametic;
 					MSG_WriteSVC(semiAwareQueue, message);
 					break;
 			}
@@ -3293,7 +3293,7 @@ void SV_UpdateAvatars(player_t& player)
 	{
 		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
 		{
-			voodooInfo.mobj->updatedDuringTic = gametic;    // Avoid a potential duplicate send.
+			voodooInfo.mobj->updatedDuringLocalTic = gametic;    // Avoid a potential duplicate send.
 			MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_UpdateMobj(*voodooInfo.mobj));
 		}
 	}
@@ -5197,13 +5197,13 @@ void SV_ExplodeMissile(AActor *mo)
 
 			case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
 			case AwarenessEnum::FULLY_AWARE:
-				mo->updatedDuringTic = gametic;
+				mo->updatedDuringLocalTic = gametic;
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*mo));
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
 				break;
 
 			case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
-				mo->updatedDuringTic = gametic;
+				mo->updatedDuringLocalTic = gametic;
 				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
 				break;
