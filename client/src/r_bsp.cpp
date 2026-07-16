@@ -447,6 +447,51 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 
 //
+// R_CheckClippedSegForFakeFlat
+//
+// We clip lines within NEARCLIP of the viewpoint, but these lines
+// may be needed to run R_FakeFlat.
+//
+// Check the clipped  segs for being within NEARCLIP of the view
+// point and if so, run R_FakeFlat on them
+//
+static void R_CheckClippedSegForFakeFlat(const seg_t* line)
+{
+	if (r_fakingunderwater || !line->backsector || !line->backsector->heightsec)
+		return;
+
+	// segs entirely behind the view plane cannot occupy the view
+	v2fixed64_t t1, t2;
+	R_RotatePoint64(int64_t(line->v1->x) - viewx, int64_t(line->v1->y) - viewy, ANG90 - viewangle, t1.x, t1.y);
+	R_RotatePoint64(int64_t(line->v2->x) - viewx, int64_t(line->v2->y) - viewy, ANG90 - viewangle, t2.x, t2.y);
+	if (t1.y < 0 && t2.y < 0)
+		return;
+
+	// is the view point within NEARCLIP of the seg?
+	const double dx = double(int64_t(line->v2->x) - line->v1->x);
+	const double dy = double(int64_t(line->v2->y) - line->v1->y);
+	const double px = double(int64_t(viewx) - line->v1->x);
+	const double py = double(int64_t(viewy) - line->v1->y);
+
+	const double len2 = dx * dx + dy * dy;
+	double u = len2 > 0.0 ? (px * dx + py * dy) / len2 : 0.0;
+	u = u < 0.0 ? 0.0 : (u > 1.0 ? 1.0 : u);
+
+	const double ex = px - u * dx;
+	const double ey = py - u * dy;
+
+	if (ex * ex + ey * ey >= double(NEARCLIP) * double(NEARCLIP))
+		return;
+
+	// let R_FakeFlat run the deep water window checks, considering the
+	// entire width of the view since the rejected seg has no column range
+	static sector_t tempsec;
+	rw_start = 0;
+	rw_stop = viewwidth - 1;
+	R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true);
+}
+
+//
 // R_AddLine
 // Clips the given segment
 // and adds any visible pieces to the line list.
@@ -457,7 +502,11 @@ void R_AddLine (const seg_t *line)
 
 	// skip this line if it's not facing the camera
 	if (R_PointOnSegSide(viewx, viewy, line) != 0)
+	{
+		// a seg passing exactly through the view point is also rejected here
+		R_CheckClippedSegForFakeFlat(line);
 		return;
+	}
 
 	dcol.color = ((line - segs) & 31) * 4;	// [RH] Color if not texturing line
 
@@ -471,7 +520,10 @@ void R_AddLine (const seg_t *line)
 	// Clip the line seg to the viewing window
 	int32_t lclip, rclip;
 	if (!R_ClipLineToFrustum64(t1, t2, NEARCLIP, lclip, rclip))
+	{
+		R_CheckClippedSegForFakeFlat(line);
 		return;
+	}
 
 	// apply the view frustum clipping to t1 & t2
 	R_ClipLine64(t1, t2, lclip, rclip, t1, t2);
@@ -480,7 +532,10 @@ void R_AddLine (const seg_t *line)
 	int x1 = R_ProjectPointX64(t1.x, t1.y);
 	int x2 = R_ProjectPointX64(t2.x, t2.y) - 1;
 	if (!R_CheckProjectionX(x1, x2))
+	{
+		R_CheckClippedSegForFakeFlat(line);
 		return;
+	}
 
 	rw_start = x1;
 	rw_stop = x2;
