@@ -2324,8 +2324,15 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
   {
     if (i == ps_flash && stnum[i] == S_NULL)
       player.extralight = 0;
-    
+
+    const fixed_t prevsy = player.psprites[player.psprnum].sy;
+    const fixed_t prevsx = player.psprites[player.psprnum].sx;
+
     P_SetPsprite(player, i, stnum[i]);
+
+    // fix to not 2x weapon lower/raise speed, CL_PredictSpying will do it correctly
+    player.psprites[player.psprnum].sy = prevsy;
+    player.psprites[player.psprnum].sx = prevsx;
   }
 
 	for (int i = 0; i < NUMPOWERS; i++)
