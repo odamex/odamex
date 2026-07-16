@@ -1998,11 +1998,6 @@ void CL_TryToConnect(uint32_t server_token)
 
 		CL_SendUserInfo(netBuf); // send userinfo
 
-		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
-		// maximum rate that the server will ignore.
-		constexpr int rate = 0xFFFF;
-		MSG_WriteLong(&netBuf, rate);
-
 		MSG_WriteString(&netBuf, connectpasshash.c_str());
 
 		NET_SendPacket(netBuf, serveraddr);
