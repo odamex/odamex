@@ -458,23 +458,24 @@ void R_AddLine (const seg_t *line)
 
 	dcol.color = ((line - segs) & 31) * 4;	// [RH] Color if not texturing line
 
-	// translate the line seg endpoints from world-space to camera-space
-	// and store in (t1.x, t1.y) and (t2.x, t2.y)
-	v2fixed_t t1, t2;
-	R_RotatePoint(line->v1->x - viewx, line->v1->y - viewy, ANG90 - viewangle, t1.x, t1.y);
-	R_RotatePoint(line->v2->x - viewx, line->v2->y - viewy, ANG90 - viewangle, t2.x, t2.y);
+	// translate the line seg endpoints from world-space to camera-space,
+	// keeping full 64-bit precision (t1, t2) so distant walls on huge maps
+	// (Planisphere 2) do not lose precision.
+	v2fixed64_t t1, t2;
+	R_RotatePoint64(int64_t(line->v1->x) - viewx, int64_t(line->v1->y) - viewy, ANG90 - viewangle, t1.x, t1.y);
+	R_RotatePoint64(int64_t(line->v2->x) - viewx, int64_t(line->v2->y) - viewy, ANG90 - viewangle, t2.x, t2.y);
 
 	// Clip the line seg to the viewing window
 	int32_t lclip, rclip;
-	if (!R_ClipLineToFrustum(&t1, &t2, NEARCLIP, lclip, rclip))
+	if (!R_ClipLineToFrustum64(t1, t2, NEARCLIP, lclip, rclip))
 		return;
 
 	// apply the view frustum clipping to t1 & t2
-	R_ClipLine(&t1, &t2, lclip, rclip, &t1, &t2);
+	R_ClipLine64(t1, t2, lclip, rclip, t1, t2);
 
 	// project the line endpoints to determine which columns the line seg occupies
-	int x1 = R_ProjectPointX(t1.x, t1.y);
-	int x2 = R_ProjectPointX(t2.x, t2.y) - 1;
+	int x1 = R_ProjectPointX64(t1.x, t1.y);
+	int x2 = R_ProjectPointX64(t2.x, t2.y) - 1;
 	if (!R_CheckProjectionX(x1, x2))
 		return;
 
@@ -490,7 +491,11 @@ void R_AddLine (const seg_t *line)
 	static sector_t tempsec;
 	backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
 
-	R_PrepWall(w1.x, w1.y, w2.x, w2.y, t1.y, t2.y, x1, x2);
+	// Clamp the max scaling distance to prevent an overflow
+	static constexpr int64_t maxwalldist = int64_t(16384) * FRACUNIT;
+	const fixed_t d1 = static_cast<fixed_t>(t1.y > maxwalldist ? maxwalldist : t1.y);
+	const fixed_t d2 = static_cast<fixed_t>(t2.y > maxwalldist ? maxwalldist : t2.y);
+	R_PrepWall(w1.x, w1.y, w2.x, w2.y, d1, d2, x1, x2);
 
 	// [SL] Check for single-sided line, closed doors or other scenarios that
 	// would make this line seg solid.
@@ -607,8 +612,10 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 
 	// translate the bounding box vertices from world-space to camera-space
 	// and store in (t1.x, t1.y) and (t2.x, t2.y)
-	R_RotatePoint(xl - viewx, yl - viewy, ANG90 - viewangle, t1.x, t1.y);
-	R_RotatePoint(xh - viewx, yh - viewy, ANG90 - viewangle, t2.x, t2.y);
+	// if we scale it down here, don't let it cull any bsp subtrees
+	if (R_RotatePointSafe(int64_t(xl) - viewx, int64_t(yl) - viewy, ANG90 - viewangle, t1.x, t1.y) ||
+	    R_RotatePointSafe(int64_t(xh) - viewx, int64_t(yh) - viewy, ANG90 - viewangle, t2.x, t2.y))
+		return true;
 
 	v2fixed_t box_pts[4][2];
 	// top line of box
