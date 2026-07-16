@@ -404,75 +404,10 @@ void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 //
 bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip)
 {
-	static constexpr int32_t CLIPUNIT = 1 << 30;
-	v2fixed_t p1 = *v1, p2 = *v2;
-
-	lclip = 0;
-	rclip = CLIPUNIT;
-
-	// Clip portions of the line that are behind the view plane
-	if (p1.y < clipdist)
-	{
-		// reject the line entirely if the whole thing is behind the view plane.
-		if (p2.y < clipdist)
-			return false;
-
-		// clip the line at the point where p1.y == clipdist
-		lclip = FixedDiv30(clipdist - p1.y, p2.y - p1.y);
-	}
-
-	if (p2.y < clipdist)
-	{
-		// clip the line at the point where p2.y == clipdist
-		rclip = FixedDiv30(clipdist - p1.y, p2.y - p1.y);
-	}
-
-	int32_t unclipped_amount = rclip - lclip;
-
-	// apply the clipping against the 'y = clipdist' plane to p1 & p2
-	R_ClipLine(v1, v2, lclip, rclip, &p1, &p2);
-
-	// [SL] A note on clipping to the screen edges:
-	// With a 90-degree FOV, if p1.x < -p1.y, then the left point
-	// is off the left side of the screen. Similarly, if p2.x > p2.y,
-	// then the right point is off the right side of the screen.
-	// We use yc1 and yc2 instead of p1.y and p2.y because they are
-	// adjusted to work with the current FOV rather than just 90-degrees.
-	fixed_t yc1 = FixedMul(fovtan, p1.y);
-	fixed_t yc2 = FixedMul(fovtan, p2.y);
-
-	// is the entire line off the left side or the right side of the screen?
-	if ((p1.x < -yc1 && p2.x < -yc2) || (p1.x > yc1 && p2.x > yc2))
-		return false;
-
-	// is the left vertex off the left side of the screen?
-	if (p1.x < -yc1)
-	{
-		// clip line at left edge of the screen
-		fixed_t den = p2.x - p1.x + yc2 - yc1;
-		if (den == 0)
-			return false;
-
-		int32_t t = FixedDiv30(-yc1 - p1.x, den);
-		lclip += FixedMul30(t, unclipped_amount);
-	}
-
-	// is the right vertex off the right side of the screen?
-	if (p2.x > yc2)
-	{
-		// clip line at right edge of the screen
-		fixed_t den = p2.x - p1.x - yc2 + yc1;
-		if (den == 0)
-			return false;
-
-		int32_t t = FixedDiv30(yc1 - p1.x, den);
-		rclip -= FixedMul30(CLIPUNIT - t, unclipped_amount);
-	}
-
-	if (lclip > rclip)
-		return false;
-
-	return true;
+	// With high user FOVs, we have to make this a 64-bit calculation.
+	const v2fixed64_t p1(v1->x, v1->y);
+	const v2fixed64_t p2(v2->x, v2->y);
+	return R_ClipLineToFrustum64(p1, p2, clipdist, lclip, rclip);
 }
 
 //
