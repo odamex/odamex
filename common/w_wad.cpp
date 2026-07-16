@@ -478,6 +478,11 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 				// we've processed everything.
 				insideBlock = false;
 			}
+			else if (space == ns_flats && lumpinfo[i].size < 4096)
+			{
+				// Don't use invalid flats and instead show NOFLAT.
+				lumpinfo[oldlumps++] = lumpinfo[i];
+			}
 			else
 			{
 				newlumpinfos[newlumps] = lumpinfo[i];
