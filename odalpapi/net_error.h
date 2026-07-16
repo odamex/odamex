@@ -32,7 +32,7 @@ namespace odalpapi
 
 void _ReportError(const char* file, int line, const char* func,
                   const char* fmt, ...);
-#if (_MSC_VER < 1400) // __VA_ARGS__ not supported by older ANSI C++
+#if defined(_MSC_VER) && (_MSC_VER < 1400) // __VA_ARGS__ not supported by older ANSI C++
 	void NET_ReportError(const char* fmt, ...);
 #else
 	#define NET_ReportError(...) \
