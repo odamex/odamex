@@ -976,8 +976,16 @@ void R_StoreWallRange(int start, int stop)
 				   (frontsector->floor_angle + frontsector->base_floor_angle)
 				;
 
+			// Sky hack
+			// MBF sky transfers split the visplane in 2, so in order for sky
+			// transfer skyhack to work, we need to identify both sectors' sky
+			const bool ceilingskyhack =
+				R_IsSkyFlat(frontsector->ceilingpic) && R_IsSkyFlat(backsector->ceilingpic) &&
+				frontsector->sky == backsector->sky;
+
 			markceiling =
-				  !P_IdenticalPlanes(&backsector->ceilingplane, &frontsector->ceilingplane)
+				  (!ceilingskyhack &&
+				   !P_IdenticalPlanes(&backsector->ceilingplane, &frontsector->ceilingplane))
 				|| backsector->lightlevel != frontsector->lightlevel
 				|| backsector->ceilingpic != frontsector->ceilingpic
 
@@ -1002,13 +1010,6 @@ void R_StoreWallRange(int start, int stop)
 				|| (backsector->ceiling_angle + backsector->base_ceiling_angle) !=
 				   (frontsector->ceiling_angle + frontsector->base_ceiling_angle)
 				;
-
-			// Sky hack
-			// MBF sky transfers split the visplane in 2, so in order for sky
-			// transfer skyhack to work, we need to identify both sectors' sky
-			markceiling = markceiling &&
-				(!R_IsSkyFlat(frontsector->ceilingpic) || !R_IsSkyFlat(backsector->ceilingpic) ||
-				 frontsector->sky != backsector->sky);
 		}
 
 
