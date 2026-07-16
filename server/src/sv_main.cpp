@@ -3092,11 +3092,6 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
 		return;
 
-	// Avoid sending more than one Update Mobj per tic for any missile.
-	// Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
-	if (mo->updatedDuringTic == gametic)
-		return;
-
 	// 64 units feels about right to prevent barely-dodged missiles from floating in front of the player's face
 	// when in a high-lag ~200 msec ping situation.
 	constexpr int HYPER_AWARENESS_CUTOFF_SQUARED = 64 * 64;
@@ -3275,11 +3270,6 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 
 	// update monster position every 7 tics
 	if ((gametic+mo->netid) % 7)
-		return;
-
-	// Avoid sending more than one Update Mobj per tic for any monsters.
-	// Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
-	if (mo->updatedDuringTic == gametic)
 		return;
 
 	if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
