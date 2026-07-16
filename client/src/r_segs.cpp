@@ -1004,8 +1004,11 @@ void R_StoreWallRange(int start, int stop)
 				;
 
 			// Sky hack
+			// MBF sky transfers split the visplane in 2, so in order for sky
+			// transfer skyhack to work, we need to identify both sectors' sky
 			markceiling = markceiling &&
-				(!R_IsSkyFlat(frontsector->ceilingpic) || !R_IsSkyFlat(backsector->ceilingpic));
+				(!R_IsSkyFlat(frontsector->ceilingpic) || !R_IsSkyFlat(backsector->ceilingpic) ||
+				 frontsector->sky != backsector->sky);
 		}
 
 
