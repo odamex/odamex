@@ -319,9 +319,15 @@ static StringTokens GetDownloadDirs()
 
 	// These folders should only work on PC versions
 #ifndef GCONSOLE
+	const auto getenvsafe = [](const char* name) -> std::string_view {
+		const auto var = getenv(name);
+		if (var)
+			return var;
+		return "";
+	};
 	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, getenvsafe("DOOMWADDIR"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, getenvsafe("DOOMWADPATH"), PATHLISTSEPCHAR);
 #endif
 
 	D_AddSearchDir(dirs, waddirs.str(), PATHLISTSEPCHAR);

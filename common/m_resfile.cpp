@@ -231,12 +231,19 @@ std::vector<std::string> M_FileSearchDirs()
 {
 	std::vector<std::string> dirs;
 
+	const auto getenvsafe = [](const char* name) -> std::string_view {
+		const auto var = getenv(name);
+		if (var)
+			return var;
+		return "";
+	};
+
 	// [cSc] Add cl_waddownloaddir as default path
-	D_AddSearchDir(dirs, ::cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, ::cl_waddownloaddir.str(), PATHLISTSEPCHAR);
 	D_AddSearchDir(dirs, ::Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, ::waddirs.cstring(), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, getenvsafe("DOOMWADDIR"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, getenvsafe("DOOMWADPATH"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, ::waddirs.str(), PATHLISTSEPCHAR);
 	dirs.push_back(M_CleanPath(M_GetUserDir() + PATHSEP "downloads"));
 	dirs.push_back(M_CleanPath(M_GetBinaryDir() + PATHSEP "downloads"));
 	dirs.push_back(M_GetUserDir());

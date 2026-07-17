@@ -209,13 +209,13 @@ void upnp_add_redir (const char * addr, int port, const char* protocol)
 	const std::string port_str = fmt::format("{}", port);
 
 	// Set a description if none exists
-	if (!sv_upnp_description.cstring()[0])
+	if (sv_upnp_description.str.empty())
 	{
 		std::stringstream desc;
 
 		desc << "Odasrv " << "(" << addr << ":" << port_str << ")";
 
-		sv_upnp_description.Set(desc.str().c_str());
+		sv_upnp_description.Set(desc.str());
 	}
 
 	const int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,

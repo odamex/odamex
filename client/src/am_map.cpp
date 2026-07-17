@@ -2090,7 +2090,7 @@ void AM_Drawer()
 		f_p = surface->getPitch();
 
 		if (const DCanvas* canvas = surface->getDefaultCanvas())
-			canvas->Dim(f.x, f.y, f_w, f_h, am_ovbackcolor.cstring(), am_ovbackalpha);
+			canvas->Dim(f.x, f.y, f_w, f_h, am_ovbackcolor.str(), am_ovbackalpha);
 	}
 
 	if (am_followplayer || minimapactive)

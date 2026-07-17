@@ -87,7 +87,7 @@ public:
 	void GetTransposedBlock(int x, int y, int _width, int _height, byte* dest) const;
 
 	// Darken a rectangle of th canvas
-	void Dim (int x, int y, int width, int height, const char* color, float amount) const;
+	void Dim (int x, int y, int width, int height, const std::string& color, float amount) const;
 	void Dim (int x, int y, int width, int height) const;
 
 	// Fill an area with a 64x64 flat texture

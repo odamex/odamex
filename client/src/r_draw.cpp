@@ -565,7 +565,7 @@ bool R_IsForcedColor(int player, bool forceteamcolor, bool forceenemycolor)
 CVAR_FUNC_IMPL(cl_customcolor)
 {
 	EXTERN_CVAR(cl_color)
-	cl_color.ForceSet(var.cstring());
+	cl_color.ForceSet(var.str());
 }
 
 // [RH] Create a player's translation table based on
@@ -1867,22 +1867,22 @@ static bool R_IsOptimizationAvailable(r_optimize_kind kind)
 
 CVAR_FUNC_IMPL(r_optimize)
 {
-	const char* val = var.cstring();
+	const std::string_view val = var.str();
 
 	// Only print the detected list the first time:
 	if (detect_optimizations())
 		print_optimizations();
 
 	// Set the optimization based on availability:
-	if (stricmp(val, "none") == 0)
+	if (iequals(val, "none"))
 		optimize_kind = OPTIMIZE_NONE;
-	else if (stricmp(val, "sse2") == 0 && R_IsOptimizationAvailable(OPTIMIZE_SSE2))
+	else if (iequals(val, "sse2") && R_IsOptimizationAvailable(OPTIMIZE_SSE2))
 		optimize_kind = OPTIMIZE_SSE2;
-	else if (stricmp(val, "mmx") == 0 && R_IsOptimizationAvailable(OPTIMIZE_MMX))
+	else if (iequals(val, "mmx") && R_IsOptimizationAvailable(OPTIMIZE_MMX))
 		optimize_kind = OPTIMIZE_MMX;
-	else if (stricmp(val, "altivec") == 0 && R_IsOptimizationAvailable(OPTIMIZE_ALTIVEC))
+	else if (iequals(val, "altivec") && R_IsOptimizationAvailable(OPTIMIZE_ALTIVEC))
 		optimize_kind = OPTIMIZE_ALTIVEC;
-	else if (stricmp(val, "detect") == 0)
+	else if (iequals(val, "detect"))
 		// Default to the most preferred:
 		optimize_kind = optimizations_available.back();
 	else
@@ -1896,7 +1896,7 @@ CVAR_FUNC_IMPL(r_optimize)
 	}
 
 	const char* optimize_name = get_optimization_name(optimize_kind);
-	if (stricmp(val, optimize_name) != 0)
+	if (iequals(val, optimize_name))
 	{
 		// update the cvar string
 		// this will trigger the callback to run a second time

@@ -1108,7 +1108,7 @@ void DCanvas::Box(const rectInt_t& bounds, const argb_t color) const
 EXTERN_CVAR (ui_dimamount)
 EXTERN_CVAR (ui_dimcolor)
 
-void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float famount) const
+void DCanvas::Dim(int x1, int y1, int w, int h, const std::string& color_str, float famount) const
 {
 	const int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	const int surface_pitch_pixels = mSurface->getPitchInPixels();
@@ -1188,7 +1188,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 	if (ui_dimamount == 0.0f)
 		return;
 
-	Dim(x1, y1, w, h, ui_dimcolor.cstring(), ui_dimamount);
+	Dim(x1, y1, w, h, ui_dimcolor.str(), ui_dimamount);
 }
 
 // Build the tables necessary for translucency

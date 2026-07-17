@@ -79,8 +79,8 @@ bool				messageNeedsInput;
 
 void	(*messageRoutine)(int response);
 void	M_ChangeTeam (int choice);
-team_t D_TeamByName (const char *team);
-gender_t D_GenderByName (const char *gender);
+team_t D_TeamByName (std::string_view team);
+gender_t D_GenderByName (std::string_view gender);
 colorpreset_t D_ColorPreset (const char *colorpreset);
 
 #define SAVESTRINGSIZE	24
@@ -1552,7 +1552,7 @@ static void M_PlayerSetupDrawer()
 
 	// Draw team setting
 	{
-		const team_t team = D_TeamByName(cl_team.cstring());
+		const team_t team = D_TeamByName(cl_team.str());
 		const int x = V_StringWidth ("Preferred Team") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Preferred Team");
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
@@ -1560,7 +1560,7 @@ static void M_PlayerSetupDrawer()
 
 	// Draw gender setting
 	{
-		const gender_t gender = D_GenderByName(cl_gender.cstring());
+		const gender_t gender = D_GenderByName(cl_gender.str());
 		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
 		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Gender");
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*2, genders[gender]);
@@ -1616,7 +1616,7 @@ static void M_PlayerSetupDrawer()
 
 void M_ChangeTeam (int choice) // [Toke - Teams]
 {
-	team_t team = D_TeamByName(cl_team.cstring());
+	team_t team = D_TeamByName(cl_team.str());
 
 	int iTeam = static_cast<int>(team);
 	if (choice)
@@ -1637,7 +1637,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 static void M_ChangeGender (int choice)
 {
 	static constexpr int MAX_GENDER = ARRAY_LENGTH(genders) - 1;
-	int gender = D_GenderByName(cl_gender.cstring());
+	int gender = D_GenderByName(cl_gender.str());
 
 	if (!choice)
 		gender = (gender == 0) ? MAX_GENDER : gender - 1;

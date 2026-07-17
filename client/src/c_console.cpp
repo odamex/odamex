@@ -883,36 +883,36 @@ static void TabComplete(TabCompleteDirection dir)
 	TabCycleStart();
 }
 
-static void setmsgcolor(int index, const char *color);
+static void setmsgcolor(int index, std::string_view color);
 
 CVAR_FUNC_IMPL(msg0color)
 {
-	setmsgcolor(0, var.cstring());
+	setmsgcolor(0, var.str());
 }
 
 CVAR_FUNC_IMPL(msg1color)
 {
-	setmsgcolor(1, var.cstring());
+	setmsgcolor(1, var.str());
 }
 
 CVAR_FUNC_IMPL(msg2color)
 {
-	setmsgcolor(2, var.cstring());
+	setmsgcolor(2, var.str());
 }
 
 CVAR_FUNC_IMPL(msg3color)
 {
-	setmsgcolor(3, var.cstring());
+	setmsgcolor(3, var.str());
 }
 
 CVAR_FUNC_IMPL(msg4color)
 {
-	setmsgcolor(4, var.cstring());
+	setmsgcolor(4, var.str());
 }
 
 CVAR_FUNC_IMPL(msgmidcolor)
 {
-	setmsgcolor(PRINTLEVELS-1, var.cstring());
+	setmsgcolor(PRINTLEVELS-1, var.str());
 }
 
 CVAR_FUNC_IMPL(con_scaletext)
@@ -1124,9 +1124,9 @@ static void C_SetConsoleDimensions(int width, int height)
 	}
 }
 
-static void setmsgcolor(int index, const char *color)
+static void setmsgcolor(int index, std::string_view color)
 {
-	int i = atoi(color);
+	int i = ParseNum<int>(color).value_or(0);
 	if (i < 0 || i >= NUM_TEXT_COLORS)
 		i = 0;
 	PrintColors[index] = i;

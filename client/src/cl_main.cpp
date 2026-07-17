@@ -309,8 +309,8 @@ void P_ExplodeMissile (AActor* mo);
 bool P_CheckMissileSpawn (AActor* th);
 
 void P_PlayerLookUpDown (player_t *p);
-team_t D_TeamByName (const char *team);
-gender_t D_GenderByName (const char *gender);
+team_t D_TeamByName (std::string_view team);
+gender_t D_GenderByName (std::string_view gender);
 void AM_Stop();
 
 //

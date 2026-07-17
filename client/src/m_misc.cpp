@@ -158,12 +158,12 @@ void M_LoadDefaults(void)
 		// Convert old default that had ts.chaosunleashed.net.  It's either
 		// dead or so intermittent that it slows down WAD downloading.
 
-		const char* cl_download_old =
+		static constexpr std::string_view cl_download_old =
 		    "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
 		    "http://grandpachuck.org/files/wads/ http://ts.chaosunleashed.net/ "
 		    "https://wads.doomleague.org/ http://files.funcrusher.net/wads/";
 
-		if (!strcmp(::cl_downloadsites.cstring(), cl_download_old))
+		if (::cl_downloadsites.str() == cl_download_old)
 		{
 			updated = true;
 			cl_downloadsites.RestoreDefault();
@@ -173,12 +173,12 @@ void M_LoadDefaults(void)
 	{
 		// Add new defaults - dogsoft and doomshack's upload dir.
 
-		const char* cl_download_old =
+		static constexpr std::string_view cl_download_old =
 		    "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
 		    "http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ "
 		    "http://files.funcrusher.net/wads/";
 
-		if (!strcmp(::cl_downloadsites.cstring(), cl_download_old))
+		if (::cl_downloadsites.str() == cl_download_old)
 		{
 			updated = true;
 			::cl_downloadsites.RestoreDefault();
@@ -189,13 +189,13 @@ void M_LoadDefaults(void)
 		// Add new defaults - doomshack's wadlist dir, firestick, euroboros, audrealms, and captainpollutiontv.
 		// Update the TSPG url from .net to .com.
 
-		const char* cl_download_old =
+		static constexpr std::string_view cl_download_old =
 		    "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
     	    "http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ "
 		    "http://files.funcrusher.net/wads/ https://doomshack.org/uploads/ "
 		    "https://doom.dogsoft.net/getwad.php?search=";
 
-		if (!strcmp(::cl_downloadsites.cstring(), cl_download_old))
+		if (::cl_downloadsites.str() == cl_download_old)
 		{
 			updated = true;
 			::cl_downloadsites.RestoreDefault();
@@ -283,7 +283,7 @@ std::string M_ExpandTokens(const std::string &str)
 				break;
 			}
 			case 'n':
-				buffer << cl_name.cstring();
+				buffer << cl_name.str();
 				break;
 			case 'g':
 			{

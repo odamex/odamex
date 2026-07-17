@@ -152,7 +152,7 @@ void SV_SendDamageMobj(AActor *target, int pain);
 void SV_SendDestroyActor(const AActor *mo);
 
 bool M_ReadJSON(Json::Value &json, const std::string& filename);
-bool M_WriteJSON(const char *filename, Json::Value &value, bool styled);
+bool M_WriteJSON(const std::string& filename, Json::Value &value, bool styled);
 
 // [AM] Coinflip
 void CMD_CoinFlip(std::string &result);

@@ -176,7 +176,7 @@ bool M_ReadJSON(Json::Value &json, const std::string& filename)
 
 // Writes a file in JSON format.  Third param is true if the output
 // should be pretty-printed.
-bool M_WriteJSON(const char* filename, Json::Value &value, bool styled)
+bool M_WriteJSON(const std::string& filename, Json::Value &value, bool styled)
 {
 	std::ofstream out_file;
 	Json::FastWriter fast_writer;
@@ -195,11 +195,7 @@ bool M_WriteJSON(const char* filename, Json::Value &value, bool styled)
 
 	out_file.close();
 
-	if (out_file.fail())
-	{
-		return false;
-	}
-	return true;
+	return !out_file.fail();
 }
 
 VERSION_CONTROL (m_misc_cpp, "$Id$")

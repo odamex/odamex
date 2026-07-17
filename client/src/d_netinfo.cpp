@@ -66,40 +66,40 @@ CVAR_FUNC_IMPL(cl_name)
 	std::string newname(var.str());
 	StripColorCodes(newname);
 
-	if (var.str().compare(newname) != 0)
-		var.Set(newname.c_str());
+	if (var.str() != newname)
+		var.Set(newname);
 }
 
-gender_t D_GenderByName (const char *gender)
+gender_t D_GenderByName(std::string_view gender)
 {
-	if (!stricmp (gender, "female"))
+	if (iequals(gender, "female"))
 		return GENDER_FEMALE;
-	else if (!stricmp (gender, "male"))
+	if (iequals(gender, "male"))
 		return GENDER_MALE;
-	else if (!stricmp (gender, "cyborg"))
+	if (!iequals(gender, "cyborg"))
 		return GENDER_CYBORG;
-	else
-		return GENDER_OTHER;
+
+	return GENDER_OTHER;
 }
 
 //
 //	[Toke - Teams] D_TeamToInt
 //	Convert team string to team integer
 //
-team_t D_TeamByName (const char *team)
+team_t D_TeamByName (std::string_view team)
 {
 	for (int i = 0; i < NUMTEAMS; i++)
 	{
 		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
-		if (stricmp(team, teamInfo->ColorString.c_str()) == 0)
+		if (iequals(team, teamInfo->ColorString))
 			return static_cast<team_t>(i);
 	}
 
-	if (strcmp(team, "0") == 0)
+	if (team == "0")
 		return TEAM_BLUE;
-	else if (strcmp(team, "1") == 0)
+	if (team == "1")
 		return TEAM_RED;
-	else if (strcmp(team, "2") == 0)
+	if (team == "2")
 		return TEAM_GREEN;
 
 	return TEAM_NONE;
@@ -187,7 +187,7 @@ void D_SetupUserInfo(void)
 	if (netname.length() > MAXPLAYERNAME)
 		netname.erase(MAXPLAYERNAME);
 
-	team_t newteam = D_TeamByName(cl_team.cstring());
+	team_t newteam = D_TeamByName(cl_team.str());
 	if (newteam == TEAM_NONE){
 		cl_team.RestoreDefault();
 		newteam = TEAM_BLUE;
@@ -196,7 +196,7 @@ void D_SetupUserInfo(void)
 
 	coninfo->netname			= netname;
 	coninfo->team				= newteam; // [Toke - Teams]
-	coninfo->gender				= D_GenderByName (cl_gender.cstring());
+	coninfo->gender				= D_GenderByName (cl_gender.str());
 	coninfo->aimdist			= static_cast<fixed_t>(cl_autoaim * 16384.0);
 	coninfo->predict_weapons	= (cl_predictweapons != 0);
 
