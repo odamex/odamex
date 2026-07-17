@@ -99,7 +99,7 @@
 #define NETDEMOVER 4
 
 int VersionCompat(const int server, const int client);
-std::string VersionMessage(const int server, const int client, const char* email);
+std::string VersionMessage(const int server, const int client, std::string_view email);
 
 // denis - per-file svn version stamps
 class file_version

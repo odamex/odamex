@@ -149,7 +149,7 @@ void SV_SendServerInfo()
 	if(MSG_BytesLeft() == 4)
 		MSG_WriteLong(&ml_message, MSG_ReadLong());
 
-	MSG_WriteString(&ml_message, sv_hostname.cstring());
+	MSG_WriteString(&ml_message, sv_hostname.str());
 
 	byte playersingame = 0;
 	for (const auto& player : players)
@@ -195,7 +195,7 @@ void SV_SendServerInfo()
 		MSG_WriteString(&ml_message, ::wadfiles[i].getMD5().getHexCStr());
 
 	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
-	MSG_WriteString(&ml_message, sv_downloadsites.cstring());
+	MSG_WriteString(&ml_message, sv_downloadsites.str());
 
 	if (G_IsTeamGame())
 	{
@@ -215,7 +215,7 @@ void SV_SendServerInfo()
 	MSG_WriteShort(&ml_message, VERSION);
 
 //bond===========================
-	MSG_WriteString(&ml_message, sv_email.cstring());
+	MSG_WriteString(&ml_message, sv_email.str());
 
 	int timeleft = (sv_timelimit.asInt() - level.time/(TICRATE*60));
 	if (timeleft < 0) timeleft = 0;
@@ -266,7 +266,7 @@ void SV_SendServerInfo()
     }
 
     MSG_WriteLong(&ml_message, 0x01020305_u32);
-    MSG_WriteShort(&ml_message, strlen(join_password.cstring()) ? 1 : 0);
+    MSG_WriteShort(&ml_message, join_password.str().empty() ? 0 : 1);
 
     // GhostlyDeath -- Send Game Version info
     MSG_WriteLong(&ml_message, GAMEVER);

@@ -101,7 +101,7 @@ int VersionCompat(const int server, const int client)
  * @param email E-mail address of server host.
  * @return String message, or blank string if compatible.
  */
-std::string VersionMessage(const int server, const int client, const char* email)
+std::string VersionMessage(const int server, const int client, std::string_view email)
 {
 	std::string rvo;
 

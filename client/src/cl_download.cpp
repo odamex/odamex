@@ -314,7 +314,7 @@ static StringTokens GetDownloadDirs()
 	StringTokens dirs;
 
 	// Add all of the sources.
-	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, cl_waddownloaddir.str(), PATHLISTSEPCHAR);
 	dirs.push_back(M_GetDownloadDir());
 
 	// These folders should only work on PC versions
@@ -324,7 +324,7 @@ static StringTokens GetDownloadDirs()
 	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
 #endif
 
-	D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, waddirs.str(), PATHLISTSEPCHAR);
 
 #ifdef __SWITCH__
 	dirs.push_back("./wads");

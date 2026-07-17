@@ -28,6 +28,7 @@
 
 #include <sstream>
 #include <algorithm>
+#include <ranges>
 
 #include "win32inc.h"
 #ifndef _WIN32
@@ -287,18 +288,15 @@ void D_InitializeDoomObjectTables()
 // D_AddSearchDir
 // denis - Split a new directory string using the separator and append results to the output
 //
-void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
+void D_AddSearchDir(std::vector<std::string> &dirs, std::string_view dir, const char separator)
 {
-	if(!dir)
+	if (dir.empty())
 		return;
 
 	// search through dwd
-	std::stringstream ss(dir);
-	std::string segment;
-
-	while(!ss.eof())
+	for (const auto view : std::views::split(dir, separator))
 	{
-		std::getline(ss, segment, separator);
+		std::string segment(view.begin(), view.end());
 
 		if(!segment.length())
 			continue;

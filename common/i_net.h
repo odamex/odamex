@@ -507,16 +507,17 @@ public:
 		WriteUnVarint((v << 1) ^ (v >> 31));
 	}
 
-	void WriteString(const char *c)
+	void WriteString(std::string_view c)
 	{
-		if(c && *c)
+		if (!c.empty())
 		{
-			size_t l = strlen(c);
+			size_t l = c.length();
 			byte *buf = SZ_GetSpace(l + 1);
 
 			if(!overflowed)
 			{
-				memcpy(buf, c, l + 1);
+				memcpy(buf, c.data(), l);
+				buf[l] = '\0';
 			}
 		}
 		else
@@ -834,8 +835,8 @@ void MSG_WriteUnVarint(buf_t* b, unsigned int uv);
 void MSG_WriteVarint(buf_t* b, int v);
 void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
-void MSG_WriteString (buf_t *b, const char *s);
-void MSG_WriteHexString(buf_t *b, const char *s);
+void MSG_WriteString (buf_t *b, std::string_view s);
+void MSG_WriteHexString(buf_t *b, std::string_view s);
 void MSG_WriteChunk (buf_t *b, const void *p, size_t l);
 void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg);
 void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg);

@@ -749,7 +749,7 @@ void MSG_WriteFloat(buf_t *b, float Float)
 // MSG_WriteString
 //
 // Write a string to a buffer and null terminate it
-void MSG_WriteString (buf_t *b, const char *s)
+void MSG_WriteString (buf_t *b, std::string_view s)
 {
 	if (simulated_connection)
 		return;
@@ -768,20 +768,20 @@ unsigned int toInt(char c)
 // MSG_WriteHexString
 //
 // Converts a hexidecimal string to its binary representation
-void MSG_WriteHexString(buf_t *b, const char *s)
+void MSG_WriteHexString(buf_t *b, std::string_view s)
 {
-    byte output[255];
+    std::array<byte, 255> output;
 
     // Nothing to write?
-    if (!(s && (*s)))
+    if (s.empty())
     {
         MSG_WriteByte(b, 0);
         return;
     }
 
-    const size_t numdigits = strlen(s) / 2;
+    const size_t numdigits = s.length() / 2;
 
-    if (numdigits > ARRAY_LENGTH(output))
+    if (numdigits > output.size())
     {
         PrintFmt(PRINT_HIGH, "MSG_WriteHexString: too many digits\n");
         return;
@@ -794,25 +794,25 @@ void MSG_WriteHexString(buf_t *b, const char *s)
 
     MSG_WriteByte(b, static_cast<byte>(numdigits));
 
-    MSG_WriteChunk(b, output, numdigits);
+    MSG_WriteChunk(b, output.data(), numdigits);
 }
 
-int MSG_BytesLeft(void)
+int MSG_BytesLeft()
 {
 	return net_message.BytesLeftToRead();
 }
 
-int MSG_ReadByte (void)
+int MSG_ReadByte()
 {
     return net_message.ReadByte();
 }
 
-int MSG_PeekByte (void)
+int MSG_PeekByte()
 {
 	return net_message.PeekByte();
 }
 
-void *MSG_ReadChunk (const size_t &size)
+void *MSG_ReadChunk(const size_t &size)
 {
 	return net_message.ReadChunk(size);
 }
