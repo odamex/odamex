@@ -358,6 +358,16 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		msg.add_args(mo->args[1]);
 	}
 
+	if (mo->type == MT_SKYVIEWPOINT)
+	{
+		msg.add_args(mo->tid);
+	}
+
+	if (mo->type == MT_SKYPICKER)
+	{
+		msg.add_args(mo->args[0]);
+	}
+
 	// denis - check type as that is what the client will be spawning
 	if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE)
 	{

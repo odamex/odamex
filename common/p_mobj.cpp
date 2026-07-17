@@ -2792,34 +2792,54 @@ void P_ClearSkyPickers()
 	DeferredSkyPickers.clear();
 }
 
-// Defer sky picking until all SkyViewpoints have spawned in.
+// Record a sky picker (thing 9081) for later resolution.
+void P_AddSkyPicker(int secnum, int viewpointTid)
+{
+	deferredskypicker_t picker;
+	picker.secnum = secnum;
+	picker.viewpointTid = viewpointTid;
+	DeferredSkyPickers.push_back(picker);
+}
+
+// Assign each recorded picker's sector to its target SkyViewpoint.
 void P_ResolveSkyPickers()
 {
-	for (size_t i = 0; i < DeferredSkyPickers.size(); i++)
+	for (size_t i = 0; i < DeferredSkyPickers.size();)
 	{
 		sector_t* sector = &sectors[DeferredSkyPickers[i].secnum];
 		int tid = DeferredSkyPickers[i].viewpointTid;
+		bool resolved = false;
 
 		if (tid == 0)
 		{
+			// A picker with no TID clears the sector back to regular sky.
 			sector->Skybox = AActor::AActorPtr();
-			continue;
-		}
-
-		TActorIterator<AActor> iterator(tid);
-		AActor* box = iterator.Next();
-
-		if (box != NULL && box->type == MT_SKYVIEWPOINT)
-		{
-			sector->Skybox = box->ptr();
+			resolved = true;
 		}
 		else
 		{
+			TActorIterator<AActor> iterator(tid);
+			AActor* box = iterator.Next();
+
+			if (box != NULL && box->type == MT_SKYVIEWPOINT)
+			{
+				sector->Skybox = box->ptr();
+				resolved = true;
+			}
+		}
+
+		if (!resolved && serverside)
+		{
 			PrintFmt("Can't find SkyViewpoint {} for sector {}\n", tid,
 			         DeferredSkyPickers[i].secnum);
+			resolved = true; // drop it
 		}
+
+		if (resolved)
+			DeferredSkyPickers.erase(DeferredSkyPickers.begin() + i);
+		else
+			i++;
 	}
-	DeferredSkyPickers.clear();
 }
 
 //
@@ -3224,17 +3244,13 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	mobj->tid = mthing.thingid;
 	mobj->AddToHash ();
 
-	SV_SpawnMobj(mobj);
-
 	if (mobj->type == MT_SKYVIEWPOINT)
 	{
 		mobj->angle = mthing.angle;
 		// If this actor has no TID, make it the default sky box
 		if (mobj->tid == 0)
 		{
-			int j;
-
-			for (j = 0; j < numsectors; j++)
+			for (int j = 0; j < numsectors; j++)
 			{
 				if (sectors[j].Skybox == NULL)
 				{
@@ -3246,14 +3262,11 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	if (mobj->type == MT_SKYPICKER)
 	{
-		// the target SkyViewpoint may not have been spawned yet.
-		deferredskypicker_t picker;
-		picker.secnum = static_cast<int>(mobj->subsector->sector - sectors);
-		picker.viewpointTid = mthing.args[0];
-		DeferredSkyPickers.push_back(picker);
-		mobj->Destroy ();
-		return;
+		// Record for deferred resolution.
+		P_AddSkyPicker(static_cast<int>(mobj->subsector->sector - sectors), mobj->args[0]);
 	}
+
+	SV_SpawnMobj(mobj);
 
 	if ((mthing.type >= 9992 && mthing.type <= 9999) ||
 		(mthing.type >= 9982 && mthing.type <= 9983)) {

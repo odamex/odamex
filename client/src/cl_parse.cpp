@@ -53,6 +53,7 @@
 #include "p_horde.h"
 #include "p_inter.h"
 #include "p_lnspec.h"
+#include "p_local.h"
 #include "p_mobj.h"
 #include "r_sky.h"
 #include "r_state.h"
@@ -678,13 +679,15 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	if (type == MT_SKYVIEWPOINT)
 	{
-		// mo->angle = msg->current().angle(); // done above
+		if (msg->args_size() >= 1)
+			mo->tid = msg->args().Get(0);
+
+		mo->AddToHash();
+
 		// If this actor has no TID, make it the default sky box
 		if (mo->tid == 0)
 		{
-			int j;
-
-			for (j = 0; j < numsectors; j++)
+			for (int j = 0; j < numsectors; j++)
 			{
 				if (sectors[j].Skybox == NULL)
 				{
@@ -692,34 +695,20 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 				}
 			}
 		}
+
+		// This viewpoint may satisfy pickers that were waiting on it.
+		P_ResolveSkyPickers();
 	}
 
 	if (type == MT_SKYPICKER)
 	{
-		if (!mo || !mo->subsector)
-			return;
-
-		sector_t* sector = mo->subsector->sector;
-		if (mo->args[0] == 0)
+		if (mo && mo->subsector)
 		{
-			sector->Skybox = AActor::AActorPtr();
+			const int secnum = static_cast<int>(mo->subsector->sector - sectors);
+			const int tid = (msg->args_size() >= 1) ? msg->args().Get(0) : 0;
+			P_AddSkyPicker(secnum, tid);
+			P_ResolveSkyPickers();
 		}
-		else
-		{
-			TActorIterator<AActor> iterator(mo->args[0]);
-			AActor* box = iterator.Next();
-
-			if (box != NULL && box->type == MT_SKYVIEWPOINT)
-			{
-				sector->Skybox = box->ptr();
-			}
-			else
-			{
-				PrintFmt("Can't find SkyViewpoint {} for sector {}\n", mo->args[0],
-				         sector - sectors);
-			}
-		}
-		mo->Destroy();
 	}
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
