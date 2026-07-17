@@ -28,6 +28,7 @@
 //#define SIMULATE_LATENCY
 
 #include <cfloat>
+#include <concepts>
 
 /*
 ==========================================================
@@ -104,19 +105,19 @@ CVARS (console variables)
 #define CVAR_ARCHIVE (CVAR_CLIENTARCHIVE | CVAR_SERVERARCHIVE)
 
 // Hints for network code optimization
-typedef enum
+enum struct cvartype_t
 {
-     CVARTYPE_NONE = 0 // Used for no sends
+	NONE = 0, // Used for no sends
 
-    ,CVARTYPE_BOOL
-    ,CVARTYPE_BYTE
-    ,CVARTYPE_WORD
-    ,CVARTYPE_INT
-    ,CVARTYPE_FLOAT
-    ,CVARTYPE_STRING
+    BOOL,
+    BYTE,
+    WORD,
+    INT,
+    FLOAT,
+    STRING,
 
-    ,CVARTYPE_MAX = 255
-} cvartype_t;
+    MAX = 255,
+};
 // TODO: make cvar_t an abstract class with subclasses for string/float/integral type
 class cvar_t
 {
@@ -259,12 +260,48 @@ private:
  protected:
 
 	cvar_t () :
-			m_Flags(0), m_Callback(NULL), m_Next(NULL), m_Type(CVARTYPE_NONE), m_Value(0.f),
+			m_Flags(0), m_Callback(NULL), m_Next(NULL), m_Type(cvartype_t::NONE), m_Value(0.f),
 			m_MinValue(-FLT_MAX), m_MaxValue(FLT_MAX)
 	 { }
 };
 
 cvar_t* GetFirstCvar(void);
+
+class cvarbase_t
+{
+
+};
+
+template <typename T>
+class cvarderived_t;
+
+template <std::integral T>
+class cvarderived_t<T>
+{
+
+};
+
+template <std::floating_point T>
+class cvarderived_t<T>
+{
+
+};
+
+template <>
+class cvarderived_t<bool>
+{};
+
+
+template <>
+class cvarderived_t<std::string>
+{};
+
+// alias
+template <>
+class cvarderived_t<cvarbase_t>
+{};
+
+
 
 // Maximum number of cvars that can be saved.
 #define MAX_BACKUPCVARS 512

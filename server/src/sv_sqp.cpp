@@ -108,7 +108,7 @@ static void IntQryBuildInformation(const uint32_t& EqProtocolVersion,
 			CvarField.Value = var->str();
 
 			// Skip empty strings
-			if(CvarField.Type == CVARTYPE_STRING && var->cstring()[0] != '\0')
+			if(CvarField.Type == cvartype_t::STRING && var->cstring()[0] != '\0')
 			{
 				Cvars.push_back(CvarField);
 				goto next;
@@ -136,33 +136,33 @@ next:
 
 		switch(Cvars[i].Type)
 		{
-		case CVARTYPE_BYTE:
+		case cvartype_t::BYTE:
 		{
 			MSG_WriteByte(&ml_message, ParseNum<byte>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
-		case CVARTYPE_WORD:
+		case cvartype_t::WORD:
 		{
 			MSG_WriteShort(&ml_message, ParseNum<short>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
-		case CVARTYPE_INT:
+		case cvartype_t::INT:
 		{
 			MSG_WriteLong(&ml_message, ParseNum<int>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
-		case CVARTYPE_FLOAT:
-		case CVARTYPE_STRING:
+		case cvartype_t::FLOAT:
+		case cvartype_t::STRING:
 		{
 			MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
 		}
 		break;
 
-		case CVARTYPE_NONE:
-		case CVARTYPE_MAX:
+		case cvartype_t::NONE:
+		case cvartype_t::MAX:
 		default:
 			break;
 		}

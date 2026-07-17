@@ -38,7 +38,7 @@
 // Used to identify the version of the game that saved
 // a config file to compensate for new features that get
 // put into newer configfiles.
-static CVAR (configver, CONFIGVERSIONSTR, "", CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+static CVAR (configver, CONFIGVERSIONSTR, "", cvartype_t::STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 EXTERN_CVAR (cl_name)
 EXTERN_CVAR (sv_maxplayers)

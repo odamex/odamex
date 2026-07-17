@@ -87,22 +87,22 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 
 	switch (cvar.type())
 	{
-	case CVARTYPE_BOOL:
+	case cvartype_t::BOOL:
 		info.push_back("Boolean");
 		break;
-	case CVARTYPE_BYTE:
+	case cvartype_t::BYTE:
 		info.push_back("Byte");
 		break;
-	case CVARTYPE_WORD:
+	case cvartype_t::WORD:
 		info.push_back("Short");
 		break;
-	case CVARTYPE_INT:
+	case cvartype_t::INT:
 		info.push_back("Number");
 		break;
-	case CVARTYPE_FLOAT:
+	case cvartype_t::FLOAT:
 		info.push_back("Float");
 		break;
-	case CVARTYPE_STRING:
+	case cvartype_t::STRING:
 		info.push_back("String");
 		break;
 	default:
@@ -113,14 +113,14 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 	// Default and range
 	switch (cvar.type())
 	{
-	case CVARTYPE_BOOL: {
+	case cvartype_t::BOOL: {
 		int val = atoi(cvar.getDefault().c_str());
 		info.push_back(val == 0 ? "Default: False" : "Default: True");
 		break;
 	}
-	case CVARTYPE_BYTE:
-	case CVARTYPE_WORD:
-	case CVARTYPE_INT: {
+	case cvartype_t::BYTE:
+	case cvartype_t::WORD:
+	case cvartype_t::INT: {
 		std::string buffer;
 		int val = atoi(cvar.getDefault().c_str());
 		buffer = fmt::sprintf("Default: %d", val);
@@ -140,7 +140,7 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 
 		break;
 	}
-	case CVARTYPE_FLOAT: {
+	case cvartype_t::FLOAT: {
 		std::string buffer;
 		float val = atof(cvar.getDefault().c_str());
 		buffer = fmt::sprintf("Default: %f", val);
@@ -160,7 +160,7 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 
 		break;
 	}
-	case CVARTYPE_STRING:
+	case cvartype_t::STRING:
 		if (!cvar.getDefault().empty())
 		{
 			std::string buf;
@@ -245,20 +245,20 @@ static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
 	bool numeric = false;
 	switch (cvar.type())
 	{
-	case CVARTYPE_BOOL:
+	case cvartype_t::BOOL:
 		typestr = "boolean";
 		break;
-	case CVARTYPE_BYTE:
-	case CVARTYPE_WORD:
-	case CVARTYPE_INT:
+	case cvartype_t::BYTE:
+	case cvartype_t::WORD:
+	case cvartype_t::INT:
 		typestr = "integer";
 		numeric = true;
 		break;
-	case CVARTYPE_FLOAT:
+	case cvartype_t::FLOAT:
 		typestr = "number";
 		numeric = true;
 		break;
-	case CVARTYPE_STRING:
+	case cvartype_t::STRING:
 		typestr = "string";
 		break;
 	default:
@@ -273,18 +273,18 @@ static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
 	// Default value, typed to match the cvar.
 	switch (cvar.type())
 	{
-	case CVARTYPE_BOOL:
+	case cvartype_t::BOOL:
 		out["default"] = atoi(cvar.getDefault().c_str()) != 0;
 		break;
-	case CVARTYPE_BYTE:
-	case CVARTYPE_WORD:
-	case CVARTYPE_INT:
+	case cvartype_t::BYTE:
+	case cvartype_t::WORD:
+	case cvartype_t::INT:
 		out["default"] = atoi(cvar.getDefault().c_str());
 		break;
-	case CVARTYPE_FLOAT:
+	case cvartype_t::FLOAT:
 		out["default"] = atof(cvar.getDefault().c_str());
 		break;
-	case CVARTYPE_STRING:
+	case cvartype_t::STRING:
 		out["default"] = cvar.getDefault();
 		break;
 	default:
@@ -296,7 +296,7 @@ static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
 	{
 		if (cvar.getMinValue() != -FLT_MAX)
 		{
-			if (cvar.type() == CVARTYPE_FLOAT)
+			if (cvar.type() == cvartype_t::FLOAT)
 				out["min"] = cvar.getMinValue();
 			else
 				out["min"] = static_cast<int>(cvar.getMinValue());
@@ -304,7 +304,7 @@ static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
 
 		if (cvar.getMaxValue() != FLT_MAX)
 		{
-			if (cvar.type() == CVARTYPE_FLOAT)
+			if (cvar.type() == cvartype_t::FLOAT)
 				out["max"] = cvar.getMaxValue();
 			else
 				out["max"] = static_cast<int>(cvar.getMaxValue());

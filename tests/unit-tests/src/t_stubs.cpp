@@ -52,9 +52,9 @@ gamestate_t gamestate;
 
 CVAR_FUNC_IMPL (sv_allowwidescreen) {}
 CVAR_FUNC_IMPL (sv_sharekeys) {}
-CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
-CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
-CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", CVARTYPE_BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", cvartype_t::BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 3.0f)
+CVAR (sv_maxplayersperteam, "0", "Maximum number of players that can be on a team", cvartype_t::BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
+CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are spectators", cvartype_t::BYTE, CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE)
 
 void C_AddTabCommand(char const *) {}
 void C_RemoveTabCommand(char const *) {}

@@ -167,9 +167,9 @@ void cvar_t::ForceSet(std::string_view valstr)
 		m_Flags |= CVAR_MODIFIED;
 
 		bool numerical_value = IsRealNum(valstr);
-		bool integral_type = m_Type == CVARTYPE_BOOL || m_Type == CVARTYPE_BYTE ||
-					m_Type == CVARTYPE_WORD || m_Type == CVARTYPE_INT;
-		bool floating_type = m_Type == CVARTYPE_FLOAT;
+		bool integral_type = m_Type == cvartype_t::BOOL || m_Type == cvartype_t::BYTE ||
+					m_Type == cvartype_t::WORD || m_Type == cvartype_t::INT;
+		bool floating_type = m_Type == cvartype_t::FLOAT;
 		float valf = numerical_value ? ParseNum<float>(valstr).value_or(0.0f) : 0.0f;
 
 		// perform rounding to nearest integer for integral types
@@ -655,7 +655,7 @@ BEGIN_COMMAND (set)
 		if (!var)
 		{
 			const std::string description = "Unsupported in Odamex v" + std::string(NiceVersion());
-			var = new cvar_t(argv[1], argv[2], description.c_str(), CVARTYPE_NONE,
+			var = new cvar_t(argv[1], argv[2], description.c_str(), cvartype_t::NONE,
 			                 CVAR_NOENABLEDISABLE |         // If we got here due to LoadDefaults, make sure we save the value back out as-is.
 			                 CVAR_AUTO |
 			                 CVAR_UNSETTABLE |

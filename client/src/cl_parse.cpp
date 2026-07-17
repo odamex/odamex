@@ -2317,7 +2317,7 @@ static void CL_ServerSettings(const odaproto::svc::ServerSettings* msg)
 		// for cleanup on program termination
 		// [AM] We have no way of telling of cvars are CVAR_NOENABLEDISABLE,
 		//      so let's set it on all cvars.
-		var = new cvar_t(CvarKey.c_str(), NULL, "", CVARTYPE_NONE,
+		var = new cvar_t(CvarKey.c_str(), NULL, "", cvartype_t::NONE,
 		                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE |
 		                     CVAR_NOENABLEDISABLE);
 		var->Set(CvarValue.c_str());
