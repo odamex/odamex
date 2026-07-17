@@ -64,7 +64,13 @@ static visplane_t		*visplanes[MAXVISPLANES + 1];	// killough
 static visplane_t		*freetail;					// killough
 static visplane_t		**freehead = &freetail;		// killough
 
-static bool r_InSkyBox;
+// Depth of the portal view currently being rendered.
+// 0 = the main view.
+// Portal planes created at depth N are rendered as portal passes at depth
+// N+1, up to r_portalrecursions, beyond that they draw as regular sky.
+static int r_PortalDepth;
+
+EXTERN_CVAR(r_portalrecursions)
 
 visplane_t 				*floorplane;
 visplane_t 				*ceilingplane;
@@ -311,7 +317,8 @@ visplane_t *R_FindPlane (const plane_t &secplane, int picnum, int lightlevel,
 	if (R_IsSkyFlat(picnum) || picnum & PL_SKYFLAT)  // killough 10/98
 	{
 			lightlevel = 0;		// most skies map together
-			isskybox = (picnum == skyflatnum) && (skybox != NULL) && !r_InSkyBox;
+			isskybox = (picnum == skyflatnum) && (skybox != NULL) &&
+			           r_PortalDepth < r_portalrecursions.asInt();
 	}
 	else
 	{
@@ -411,7 +418,8 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		// make a new visplane
 		unsigned hash;
 
-		if (pl->picnum == skyflatnum && pl->skybox != NULL && !r_InSkyBox)
+		if (pl->picnum == skyflatnum && pl->skybox != NULL &&
+		    r_PortalDepth < r_portalrecursions.asInt())
 		{
 			hash = MAXVISPLANES;
 		}
@@ -722,9 +730,11 @@ void R_DrawPlanes (void)
 
 //==========================================================================
 //
-// R_DrawSkyBoxes
+// R_DrawPortals
 //
-// Draws any recorded sky boxes and then frees them.
+// Draws recursive skybox views and then frees them.
+// Just note that these are NOT linked portals or even stacked sectors.
+// The current iteration just handles recursive skyboxes, that's it.
 //
 // The process:
 //   1. Move the camera to coincide with the SkyViewpoint.
@@ -734,109 +744,160 @@ void R_DrawPlanes (void)
 //   5. Create a drawseg at 0 distance to clip sprites to the visplane. It
 //      doesn't need to be associated with a line in the map, since there
 //      will never be any sprites in front of it.
-//   6. Render the BSP, then planes, then masked stuff.
-//   7. Restore the previous vissprites and drawsegs.
-//   8. Repeat for any other sky boxes.
-//   9. Put the camera back where it was to begin with.
+//   6. Render the BSP, then planes, then portal visplanes recursively
+//      (BSP, then planes).
+//   7. The final portal level renders masked textures and sprites,
+//      then each portal level above it will do the same.
+//   8. The final level renders sprites and masked textures,
+//      and frees the memory used for all portal visplanes.
+//   9. If the recursion level exceeds r_portalrecursions, all sky planes
+//      draw sky instead of rendering the portal view.
 //
 //==========================================================================
 
-void R_DrawSkyBoxes()
+static void R_RenderPortalView(visplane_t* pl);
+
+//
+// R_DrawDiscoveredPortals
+//
+// Renders every portal plane queued in visplanes[MAXVISPLANES] by the pass
+// (or main view) currently being rendered, then frees them.
+//
+static void R_DrawDiscoveredPortals()
 {
 	if (visplanes[MAXVISPLANES] == NULL)
 		return;
 
-	int savedextralight = extralight;
+	// Detach the queue, passes below accumulate their own portal discoveries.
+	visplane_t* queue = visplanes[MAXVISPLANES];
+	visplanes[MAXVISPLANES] = NULL;
+
+	visplane_t* pl;
+
+	r_PortalDepth++;
+
+	if (r_PortalDepth <= r_portalrecursions.asInt())
+	{
+		for (pl = queue; pl != NULL; pl = pl->next)
+			R_RenderPortalView(pl);
+	}
+	else
+	{
+		// Shouldn't be reachable (creation is suppressed at the limit), but
+		// never leave portal planes undrawn: render them as regular sky.
+		for (pl = queue; pl != NULL; pl = pl->next)
+		{
+			if (pl->maxx >= pl->minx)
+				R_RenderSkyRange(pl);
+		}
+	}
+
+	r_PortalDepth--;
+
+	// Free the processed planes.
+	for (*freehead = queue; *freehead;)
+		freehead = &(*freehead)->next;
+}
+
+//
+// R_RenderPortalView
+//
+// Renders a single portal pass into the window described by the visplane,
+// saving and restoring the view state around it so passes can nest.
+//
+static void R_RenderPortalView(visplane_t* pl)
+{
+	if (pl->maxx < pl->minx)
+		return;
+
 	fixed_t savedx = viewx;
 	fixed_t savedy = viewy;
 	fixed_t savedz = viewz;
 	angle_t savedangle = viewangle;
 	ptrdiff_t savedvissprite_p = vissprite_p - vissprites;
+	ptrdiff_t savedfirstvissprite = firstvissprite - vissprites;
 	ptrdiff_t savedds_p = ds_p - drawsegs;
+	ptrdiff_t savedfirstdrawseg = firstdrawseg - drawsegs;
 	AActor* savedcamera = camera;
 
 	int i;
-	visplane_t* pl;
 
-	// Don't draw sky boxes inside sky boxes.
-	r_InSkyBox = true;
+	AActor* sky = pl->skybox;
 
-	// Don't let gun flashes brighten the sky box
-	extralight = 0;
+	viewx = sky->x;
+	viewy = sky->y;
+	viewz = sky->z;
+	camera = sky;
+	R_SetViewAngle(savedangle + sky->angle);
+	validcount++; // Make sure we see all sprites
 
-	for (pl = visplanes[MAXVISPLANES]; pl != NULL; pl = pl->next)
+	R_ClearPlanes(false);
+	R_ClearClipSegs();
+
+	// Set up ceiling/floor clip arrays for this visplane.
+	for (i = pl->minx; i <= pl->maxx; i++)
 	{
-		if (pl->maxx < pl->minx)
-			continue;
-
-		AActor* sky = pl->skybox;
-
-		viewx = sky->x;
-		viewy = sky->y;
-		viewz = sky->z;
-		camera = sky;
-		R_SetViewAngle(savedangle + sky->angle);
-		validcount++; // Make sure we see all sprites
-
-		R_ClearPlanes(false);
-		R_ClearClipSegs();
-
-		// Set up ceiling/floor clip arrays for this visplane.
-		for (i = pl->minx; i <= pl->maxx; i++)
+		if (pl->top[i] == (unsigned int)viewheight)
 		{
-			if (pl->top[i] == (unsigned int)viewheight)
-			{
-				ceilingclip[i] = viewheight;
-				floorclip[i] = -1;
-			}
-			else
-			{
-				ceilingclip[i] = pl->top[i];
-				floorclip[i] = pl->bottom[i] + 1;
-			}
+			ceilingclip[i] = viewheight;
+			floorclip[i] = -1;
 		}
-
-		// Create a drawseg to clip sprites to the sky plane.
-		R_ReallocDrawSegs();
-		ds_p->x1 = 0;
-		ds_p->x2 = viewwidth - 1;
-		ds_p->silhouette = SIL_BOTH;
-		ds_p->midposts = NULL;
-		ds_p->midscales = NULL;
-		ds_p->curline = NULL;
-
-		// [RK] Allocate full width clip arrays.
-		ds_p->sprbottomclip = sprclip_pool.alloc(viewwidth);
-		ds_p->sprtopclip = sprclip_pool.alloc(viewwidth);
-
-		// [RK] Copy visplane clip values into the arrays.
-		memcpy(ds_p->sprbottomclip, floorclip.get(), viewwidth * sizeof(*ds_p->sprbottomclip));
-		memcpy(ds_p->sprtopclip, ceilingclip.get(), viewwidth * sizeof(*ds_p->sprtopclip));
-
-		firstvissprite = vissprite_p;
-		firstdrawseg = ds_p++;
-
-		R_RenderBSPNode(numnodes - 1);
-		R_DrawPlanes();
-		R_DrawMasked();
-
-		firstvissprite = vissprites;
-		vissprite_p = vissprites + savedvissprite_p;
-		firstdrawseg = drawsegs;
-		ds_p = drawsegs + savedds_p;
+		else
+		{
+			ceilingclip[i] = pl->top[i];
+			floorclip[i] = pl->bottom[i] + 1;
+		}
 	}
+
+	// Create a drawseg to clip sprites to the sky plane.
+	R_ReallocDrawSegs();
+	ds_p->x1 = 0;
+	ds_p->x2 = viewwidth - 1;
+	ds_p->silhouette = SIL_BOTH;
+	ds_p->midposts = NULL;
+	ds_p->midscales = NULL;
+	ds_p->curline = NULL;
+
+	// [RK] Allocate full width clip arrays.
+	ds_p->sprbottomclip = sprclip_pool.alloc(viewwidth);
+	ds_p->sprtopclip = sprclip_pool.alloc(viewwidth);
+
+	// [RK] Copy visplane clip values into the arrays.
+	memcpy(ds_p->sprbottomclip, floorclip.get(), viewwidth * sizeof(*ds_p->sprbottomclip));
+	memcpy(ds_p->sprtopclip, ceilingclip.get(), viewwidth * sizeof(*ds_p->sprtopclip));
+
+	firstvissprite = vissprite_p;
+	firstdrawseg = ds_p++;
+
+	R_RenderBSPNode(numnodes - 1);
+	R_DrawPlanes();
+	R_DrawDiscoveredPortals();
+	R_DrawMasked();
+
+	firstvissprite = vissprites + savedfirstvissprite;
+	vissprite_p = vissprites + savedvissprite_p;
+	firstdrawseg = drawsegs + savedfirstdrawseg;
+	ds_p = drawsegs + savedds_p;
 
 	camera = savedcamera;
 	viewx = savedx;
 	viewy = savedy;
 	viewz = savedz;
-	extralight = savedextralight;
 	R_SetViewAngle(savedangle);
+}
 
-	r_InSkyBox = false;
+void R_DrawPortals()
+{
+	if (visplanes[MAXVISPLANES] == NULL)
+		return;
 
-	for (*freehead = visplanes[MAXVISPLANES], visplanes[MAXVISPLANES] = NULL; *freehead;)
-		freehead = &(*freehead)->next;
+	// Don't let gun flashes brighten portal views
+	int savedextralight = extralight;
+	extralight = 0;
+
+	R_DrawDiscoveredPortals();
+
+	extralight = savedextralight;
 }
 
 //

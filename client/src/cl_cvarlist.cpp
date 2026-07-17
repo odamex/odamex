@@ -777,6 +777,9 @@ CVAR(			r_clipmaskedspecial, "0", "Vertically clip masked midtextures when surro
 CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transferred light levels (mimics MBF behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR_RANGE(		r_portalrecursions, "16", "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
+
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
 				CVARTYPE_BOOL, CVAR_NULL)

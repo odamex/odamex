@@ -2076,7 +2076,7 @@ void AActor::RemoveFromHash ()
 			{
 				inext->iprev = iprev;
 				inext = NULL;
-			}
+						}
 			iprev = NULL;
 		}
 	}
@@ -2780,6 +2780,48 @@ int P_IsPickupableThing(short type)
 	       );
 }
 
+struct deferredskypicker_t
+{
+	int secnum;
+	int viewpointTid;
+};
+static std::vector<deferredskypicker_t> DeferredSkyPickers;
+
+void P_ClearSkyPickers()
+{
+	DeferredSkyPickers.clear();
+}
+
+// Defer sky picking until all SkyViewpoints have spawned in.
+void P_ResolveSkyPickers()
+{
+	for (size_t i = 0; i < DeferredSkyPickers.size(); i++)
+	{
+		sector_t* sector = &sectors[DeferredSkyPickers[i].secnum];
+		int tid = DeferredSkyPickers[i].viewpointTid;
+
+		if (tid == 0)
+		{
+			sector->Skybox = AActor::AActorPtr();
+			continue;
+		}
+
+		TActorIterator<AActor> iterator(tid);
+		AActor* box = iterator.Next();
+
+		if (box != NULL && box->type == MT_SKYVIEWPOINT)
+		{
+			sector->Skybox = box->ptr();
+		}
+		else
+		{
+			PrintFmt("Can't find SkyViewpoint {} for sector {}\n", tid,
+			         DeferredSkyPickers[i].secnum);
+		}
+	}
+	DeferredSkyPickers.clear();
+}
+
 //
 // P_SpawnMapThing
 // The fields of the mapthing should
@@ -3204,27 +3246,13 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	if (mobj->type == MT_SKYPICKER)
 	{
-		sector_t* sector = mobj->subsector->sector;
-		if (mthing.args[0] == 0)
-		{
-			sector->Skybox = AActor::AActorPtr();
-		}
-		else
-			{
-				TActorIterator<AActor> iterator (mthing.args[0]);
-			    AActor* box = iterator.Next();
-
-				if (box != NULL && box->type == MT_SKYVIEWPOINT)
-				{
-				    sector->Skybox = box->ptr();
-				}
-				else
-				{
-					PrintFmt ("Can't find SkyViewpoint {} for sector {}\n", mthing.args[0],
-				           sector - sectors);
-				}
-			}
-			mobj->Destroy ();
+		// the target SkyViewpoint may not have been spawned yet.
+		deferredskypicker_t picker;
+		picker.secnum = static_cast<int>(mobj->subsector->sector - sectors);
+		picker.viewpointTid = mthing.args[0];
+		DeferredSkyPickers.push_back(picker);
+		mobj->Destroy ();
+		return;
 	}
 
 	if ((mthing.type >= 9992 && mthing.type <= 9999) ||

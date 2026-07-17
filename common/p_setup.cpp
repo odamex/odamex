@@ -2252,10 +2252,15 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 
+	P_ClearSkyPickers();
+
 	if (!HasBehavior)
 		P_LoadThings (lumpnum+ML_THINGS);
 	else
 		P_LoadThings2 (lumpnum+ML_THINGS, position);	// [RH] Load Hexen-style things
+
+	// Sky pickers can only be resolved once every SkyViewpoint has spawned.
+	P_ResolveSkyPickers();
 
 	if (!HasBehavior)
 		P_TranslateTeleportThings(); // [RH] Assign teleport destination TIDs
