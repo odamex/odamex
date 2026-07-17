@@ -3602,6 +3602,28 @@ void DLevelScript::RunScript ()
 			}
 			break;
 
+		case PCD_SETACTORANGLE:
+			{
+				const int tid = STACK(2);
+				const angle_t angle = STACK(1) << FRACBITS;
+
+				if (tid == 0)
+				{
+					if (activator != NULL)
+						activator->angle = angle;
+				}
+				else
+				{
+					FActorIterator iterator(tid);
+					AActor* actor;
+					while ((actor = iterator.Next()) != NULL)
+						actor->angle = angle;
+				}
+
+				sp -= 2;
+			}
+			break;
+
 		case PCD_SETFLOORTRIGGER:
 			new DPlaneWatcher (activator, activationline, lineSide, false, STACK(8),
 				STACK(7), STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
