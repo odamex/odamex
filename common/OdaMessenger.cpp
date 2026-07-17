@@ -32,6 +32,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 	const PacketHeaderType header {io_rawBuf};
 
 	m_immediateReceiveBuffer.clear();
+	m_immediateReceiveSequenceNumber = 0;
 
 	if (m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
 	{
@@ -89,6 +90,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 	if (bestEffortSize > 0)
 	{
 		m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
+		m_immediateReceiveSequenceNumber = header.sequence;
 		return MessageResultEnum::ACCEPT;
 	}
 
@@ -107,12 +109,15 @@ bool OdaMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 	const int receivedReliableSequenceNumber = m_receiver.NextPacket(io_rawBuf);
 	if (receivedReliableSequenceNumber >= 0)
 	{
+		m_currentReceivedPacketSequenceNumber = receivedReliableSequenceNumber;
 		return true;
 	}
 
 	if (m_immediateReceiveBuffer.size())
 	{
 		io_rawBuf.swap(m_immediateReceiveBuffer);
+		m_currentReceivedPacketSequenceNumber = m_immediateReceiveSequenceNumber;
+		m_immediateReceiveSequenceNumber = 0;
 		m_immediateReceiveBuffer.clear();
 		return true;
 	}

@@ -630,7 +630,6 @@ static void FillUpdateMobj(odaproto::svc::UpdateMobj& msg, const AActor& mobj)
 {
 	uint32_t flags = P_GetMobjBaselineFlags(mobj);
 	msg.set_flags(flags);
-	msg.set_server_tic(gametic);
 
 	odaproto::Actor* act = msg.mutable_actor();
 	odaproto::Vec3* pos = act->mutable_pos();

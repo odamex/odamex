@@ -156,9 +156,8 @@ enum MobjModeEnum
 // svc_updatemobj
 message UpdateMobj
 {
-	uint32 flags      = 1;
-	Actor  actor      = 2;
-	uint32 server_tic = 3;
+	uint32 flags = 1;
+	Actor  actor = 2;
 }
 
 // svc_updatemobjwithmode
