@@ -276,9 +276,7 @@ void C_DoCommand(std::string_view cmd, uint32_t key)
 	else
 	{
 		// Check for any CVars that match the command
-		cvar_t *var, *dummy;
-
-		if ((var = cvar_t::FindCVar(argv[0], &dummy)))
+		if (cvar_t::FindCVar(argv[0]) != nullptr)
 		{
 			if (argc >= 2)
 			{
@@ -515,8 +513,7 @@ BEGIN_COMMAND (if)
 	if (argc < 4)
 		return;
 
-	cvar_t *var, *dummy;
-	var = cvar_t::FindCVar (argv[1], &dummy);
+	const cvar_t* var = cvar_t::FindCVar (argv[1]);
 
 	if (!var)
 	{
@@ -646,8 +643,7 @@ std::function<parse_string_result_t()> ParseString(std::string_view data, bool e
 		if (!result || result.token->empty() || result.token->at(0) != '$')
 			return result;
 
-		cvar_t *dummy;
-		if (const cvar_t* var = cvar_t::FindCVar(std::string_view(*result.token).substr(1), &dummy))
+		if (const cvar_t* var = cvar_t::FindCVar(std::string_view(*result.token).substr(1)))
 			return {std::optional(var->str()), result.rest};
 
 		return result;

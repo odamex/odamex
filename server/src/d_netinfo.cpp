@@ -32,8 +32,7 @@
 
 bool SetServerVar (std::string_view name, const char *value)
 {
-	cvar_t *dummy;
-	cvar_t *var = cvar_t::FindCVar (name, &dummy);
+	cvar_t *var = cvar_t::FindCVar (name);
 
 	if (var)
 	{

@@ -2223,7 +2223,7 @@ static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
 	case SCORE_CAPTURE:
 		if (validplayer(player))
 		{
-			player.flags[target_team] = 0;
+			player.flags[target_team] = false;
 		}
 
 		target_teaminfo->FlagData.flagger = 0;
@@ -2235,7 +2235,7 @@ static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
 	case SCORE_RETURN:
 		if (validplayer(player))
 		{
-			player.flags[target_team] = 0;
+			player.flags[target_team] = false;
 		}
 
 		target_teaminfo->FlagData.flagger = 0;
@@ -2298,18 +2298,16 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 
 static void CL_ServerSettings(const odaproto::svc::ServerSettings* msg)
 {
-	cvar_t *var = NULL, *prev = NULL;
+	const std::string& CvarKey = msg->key();
+	const std::string& CvarValue = msg->value();
 
-	std::string CvarKey = msg->key();
-	std::string CvarValue = msg->value();
-
-	var = cvar_t::FindCVar(CvarKey.c_str(), &prev);
+	cvar_t* var = cvar_t::FindCVar(CvarKey);
 
 	// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
 	if (var)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
-			var->Set(CvarValue.c_str());
+			var->Set(CvarValue);
 	}
 	else
 	{
@@ -2320,7 +2318,7 @@ static void CL_ServerSettings(const odaproto::svc::ServerSettings* msg)
 		var = new cvar_t(CvarKey.c_str(), NULL, "", cvartype_t::NONE,
 		                 CVAR_SERVERINFO | CVAR_AUTO | CVAR_UNSETTABLE |
 		                     CVAR_NOENABLEDISABLE);
-		var->Set(CvarValue.c_str());
+		var->Set(CvarValue);
 	}
 
 	// Nes - update the skies in case sv_freelook is changed.

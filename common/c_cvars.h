@@ -28,7 +28,14 @@
 //#define SIMULATE_LATENCY
 
 #include <cfloat>
+#include <cmath>
 #include <concepts>
+#include <string>
+#include <stdint.h>
+#include <vector>
+#include <unordered_map>
+
+using byte = uint8_t;
 
 /*
 ==========================================================
@@ -168,7 +175,7 @@ public:
 
 	[[nodiscard]] explicit operator bool () const { return asBool(); }
 
-	inline void Callback (){ if (m_Callback) m_Callback (*this); }
+	void Callback (){ if (m_Callback) m_Callback (*this); }
 
 	void SetDefault (const char *value);
 	void RestoreDefault ();
@@ -176,8 +183,6 @@ public:
 	void Set (float value);
 	void ForceSet (std::string_view value);
 	void ForceSet (float value);
-
-	static void Transfer(const char *fromname, const char *toname);
 
 	static void EnableNoSet ();		// enable the honoring of CVAR_NOSET
 	static void EnableCallbacks ();
@@ -197,17 +202,20 @@ public:
 	// [SL] bitflag can be used to filter which cvars are set to default.
 	// The default value for bitflag is 0xFFFFFFFF, which effectively disables
 	// the filtering.
-	static void C_BackupCVars (unsigned int bitflag = 0xFFFFFFFF);
+	static void C_BackupCVars(unsigned int bitflag = 0xFFFFFFFF);
 
 	// Restore demo cvars. Called after demo playback to restore all cvars
 	// that might possibly have been changed during the course of demo playback.
-	static void C_RestoreCVars (void);
+	static void C_RestoreCVars();
 
 	// Finds a named cvar
-	static cvar_t *FindCVar (std::string_view var_name, cvar_t **prev);
+	static cvar_t *FindCVar (std::string_view var_name) {
+		cvar_t* dummy;
+		return FindCVar(var_name, &dummy);
+	};
 
 	// Called from G_InitNew()
-	static void UnlatchCVars (void);
+	static void UnlatchCVars();
 
 	// archive cvars to FILE f
 	static void C_ArchiveCVars (void *f);
@@ -234,9 +242,11 @@ public:
 
 	cvar_t *GetNext() { return m_Next; }
 
-private:
+	cvar_t(const cvar_t &var) = delete;
+	cvar_t(cvar_t&&) = delete;
 
-	cvar_t(const cvar_t &var) { }
+private:
+	static cvar_t *FindCVar (std::string_view var_name, cvar_t** prev);
 
 	void InitSelf(const char* name, const char* def, const char* help, cvartype_t,
 				uint32_t flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
@@ -254,51 +264,90 @@ private:
 
 	std::string m_LatchedString, m_Default;
 
-	static bool m_UseCallback;
-	static bool m_DoNoSet;
+	static inline bool m_UseCallback = false;
+	static inline bool m_DoNoSet = false;
 
- protected:
+protected:
 
 	cvar_t () :
 			m_Flags(0), m_Callback(NULL), m_Next(NULL), m_Type(cvartype_t::NONE), m_Value(0.f),
 			m_MinValue(-FLT_MAX), m_MaxValue(FLT_MAX)
 	 { }
+
+	class cvarlist_t
+	{
+	public:
+		void add(cvar_t& cvar)
+		{
+			m_cvars.push_back(&cvar);
+			m_cvarmap.emplace(cvar.name(), &cvar);
+		}
+
+		void remove(const std::string& name)
+		{
+			std::erase_if(m_cvars, [&](cvar_t* cvar){ return cvar->name() == name; });
+			m_cvarmap.erase(name);
+		}
+
+		cvar_t* find(const std::string& name)
+		{
+			auto it = m_cvarmap.find(name);
+			return it != m_cvarmap.end() ? it->second : nullptr;
+		}
+
+		auto begin() { return m_cvars.begin(); }
+		auto end() { return m_cvars.end(); }
+	private:
+		std::vector<cvar_t*> m_cvars;
+		std::unordered_map<std::string, cvar_t*> m_cvarmap;
+
+	};
 };
 
-cvar_t* GetFirstCvar(void);
+cvar_t* GetFirstCvar();
 
 class cvarbase_t
 {
+public:
+	virtual ~cvarbase_t() = 0;
+	cvarbase_t(cvarbase_t&&) = delete;
+	cvarbase_t(const cvarbase_t&) = delete;
+	cvarbase_t& operator=(cvarbase_t&&) = delete;
+	cvarbase_t& operator=(const cvarbase_t&) = delete;
+private:
+
+protected:
+	// static cvarlist_t list;
 
 };
 
 template <typename T>
-class cvarderived_t;
+class cvarderived_t : public cvarbase_t {};
 
 template <std::integral T>
-class cvarderived_t<T>
+class cvarderived_t<T> : public cvarbase_t
 {
 
 };
 
 template <std::floating_point T>
-class cvarderived_t<T>
+class cvarderived_t<T> : public cvarbase_t
 {
 
 };
 
 template <>
-class cvarderived_t<bool>
+class cvarderived_t<bool> : public cvarbase_t
 {};
 
 
 template <>
-class cvarderived_t<std::string>
+class cvarderived_t<std::string> : public cvarbase_t
 {};
 
 // alias
 template <>
-class cvarderived_t<cvarbase_t>
+class cvarderived_t<cvarbase_t> : public cvarbase_t
 {};
 
 

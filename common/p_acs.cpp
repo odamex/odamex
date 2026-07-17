@@ -3765,8 +3765,7 @@ void DLevelScript::RunScript ()
 
 		case PCD_GETCVAR:
 			{
-				cvar_t *var, *prev;
-				var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
+				const cvar_t* var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)));
 				if (var == NULL)
 				{
 					STACK(1) = 0;

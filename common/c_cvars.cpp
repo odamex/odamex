@@ -36,8 +36,7 @@
 
 #include "i_system.h"
 
-bool cvar_t::m_DoNoSet = false;
-bool cvar_t::m_UseCallback = false;
+cvarbase_t::~cvarbase_t() = default;
 
 // denis - all this class does is delete the cvars during its static destruction
 class ad_t {
@@ -79,8 +78,7 @@ cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype
 void cvar_t::InitSelf(const char* var_name, const char* def, const char* help, cvartype_t type,
 		uint32_t var_flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
-	cvar_t* dummy;
-	cvar_t* var = FindCVar(var_name, &dummy);
+	cvar_t* var = FindCVar(var_name);
 
 	m_Callback = callback;
 	m_String = "";
@@ -136,7 +134,7 @@ cvar_t::~cvar_t ()
 	{
 		cvar_t *var, *dummy = NULL;
 
-		var = FindCVar (m_Name.c_str(), &dummy);
+		var = FindCVar (m_Name, &dummy);
 
 		if (var == this)
 		{
@@ -242,41 +240,15 @@ void cvar_t::SetDefault(const char *val)
 
 void cvar_t::RestoreDefault ()
 {
-	Set(m_Default.c_str());
+	Set(m_Default);
 	m_Flags |= CVAR_ISDEFAULT;
-}
-
-//
-// cvar_t::Transfer
-//
-// Copies the value from one cvar to another and then removes the source cvar
-//
-void cvar_t::Transfer(const char *fromname, const char *toname)
-{
-	cvar_t *from, *to, *dummy;
-
-	from = FindCVar(fromname, &dummy);
-	to = FindCVar(toname, &dummy);
-
-	if (from && to)
-	{
-		to->ForceSet(from->m_Value);
-		to->ForceSet(from->m_String.c_str());
-
-		// remove the old cvar
-		cvar_t *cur = ad.GetCVars();
-		while (cur->m_Next != from)
-			cur = cur->m_Next;
-
-		cur->m_Next = from->m_Next;
-	}
 }
 
 cvar_t *cvar_t::cvar_set (const char *var_name, const char *val)
 {
-	cvar_t *var, *dummy;
+	cvar_t *var = FindCVar (var_name);
 
-	if ( (var = FindCVar (var_name, &dummy)) )
+	if (var)
 		var->Set (val);
 
 	return var;
@@ -284,9 +256,9 @@ cvar_t *cvar_t::cvar_set (const char *var_name, const char *val)
 
 cvar_t *cvar_t::cvar_forceset (const char *var_name, const char *val)
 {
-	cvar_t *var, *dummy;
+	cvar_t *var = FindCVar(var_name);
 
-	if ( (var = FindCVar (var_name, &dummy)) )
+	if (var)
 		var->ForceSet (val);
 
 	return var;
@@ -649,9 +621,7 @@ BEGIN_COMMAND (set)
 	}
 	else
 	{
-		cvar_t *var, *prev;
-
-		var = cvar_t::FindCVar (argv[1], &prev);
+		cvar_t *var = cvar_t::FindCVar (argv[1]);
 		if (!var)
 		{
 			const std::string description = "Unsupported in Odamex v" + std::string(NiceVersion());
@@ -704,16 +674,13 @@ END_COMMAND (set)
 
 BEGIN_COMMAND (get)
 {
-    cvar_t *prev;
-	cvar_t *var;
-
     if (argc < 2)
 	{
 		PrintFmt(PRINT_HIGH, "usage: get <variable>\n");
         return;
 	}
 
-    var = cvar_t::FindCVar (argv[1], &prev);
+    const cvar_t* var = cvar_t::FindCVar (argv[1]);
 
 	if (var)
 	{
@@ -740,16 +707,13 @@ END_COMMAND (get)
 
 BEGIN_COMMAND (toggle)
 {
-    cvar_t *prev;
-	cvar_t *var;
-
     if (argc < 2)
 	{
 		PrintFmt(PRINT_HIGH, "usage: toggle <variable>\n");
         return;
 	}
 
-    var = cvar_t::FindCVar (argv[1], &prev);
+	cvar_t *var = cvar_t::FindCVar (argv[1]);
 
 	if (!var)
 	{
@@ -796,16 +760,13 @@ END_COMMAND (cvarlist)
 
 BEGIN_COMMAND (help)
 {
-    cvar_t *prev;
-    cvar_t *var;
-
     if (argc < 2)
     {
 		PrintFmt(PRINT_HIGH, "usage: help <variable>\n");
         return;
     }
 
-    var = cvar_t::FindCVar (argv[1], &prev);
+    const cvar_t* var = cvar_t::FindCVar (argv[1]);
 
     if (!var)
     {

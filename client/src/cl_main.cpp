@@ -1029,8 +1029,7 @@ BEGIN_COMMAND (serverinfo)
     // Data
 	for (const auto& varname : server_cvars)
 	{
-		cvar_t *dummy;
-		Cvar = cvar_t::FindCVar(varname.c_str(), &dummy);
+		Cvar = cvar_t::FindCVar(varname);
 
 		PrintFmt("{1:>{0}} - {2}\n",
 			     MaxFieldLength,
