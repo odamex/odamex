@@ -372,6 +372,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	if (mo->type == MT_SKYPICKER)
 	{
 		msg.add_args(mo->args[0]);
+		msg.add_args(mo->args[1]); // which planes to apply the viewpoint to
 	}
 
 	// denis - check type as that is what the client will be spawning

@@ -706,7 +706,8 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		{
 			const int secnum = static_cast<int>(mo->subsector->sector - sectors);
 			const int tid = (msg->args_size() >= 1) ? msg->args().Get(0) : 0;
-			P_AddSkyPicker(secnum, tid);
+			const int planeflags = (msg->args_size() >= 2) ? msg->args().Get(1) : 0;
+			P_AddSkyPicker(secnum, tid, planeflags);
 			P_ResolveSkyPickers();
 		}
 	}

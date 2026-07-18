@@ -469,7 +469,7 @@ private:
 // of their order relative to SkyViewpoints in the THINGS lump,
 // or if sent by a server.
 void P_ClearSkyPickers();
-void P_AddSkyPicker(int secnum, int viewpointTid);
+void P_AddSkyPicker(int secnum, int viewpointTid, int planeflags);
 void P_ResolveSkyPickers();
 
 // Deferred stacked-sector portal pairing, same
