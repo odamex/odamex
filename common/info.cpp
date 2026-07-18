@@ -57,19 +57,19 @@ const char* doom_sprnames[::NUMSPRITES] = {
 	"BON3", // killough 7/11/98: evil sceptre in the beta version
 	"BON4", // killough 7/11/98: unholy bible in the beta version
 
-    // [BH] blood splats, [crispy] unused
-    "BLD2",
-    // [BH] 100 extra sprite names to use in dehacked patches
-    "SP00", "SP01", "SP02", "SP03", "SP04", "SP05", "SP06", "SP07", "SP08", "SP09",
-    "SP10", "SP11", "SP12", "SP13", "SP14", "SP15", "SP16", "SP17", "SP18", "SP19",
-    "SP20", "SP21", "SP22", "SP23", "SP24", "SP25", "SP26", "SP27", "SP28", "SP29",
-    "SP30", "SP31", "SP32", "SP33", "SP34", "SP35", "SP36", "SP37", "SP38", "SP39",
-    "SP40", "SP41", "SP42", "SP43", "SP44", "SP45", "SP46", "SP47", "SP48", "SP49",
-    "SP50", "SP51", "SP52", "SP53", "SP54", "SP55", "SP56", "SP57", "SP58", "SP59",
-    "SP60", "SP61", "SP62", "SP63", "SP64", "SP65", "SP66", "SP67", "SP68", "SP69",
-    "SP70", "SP71", "SP72", "SP73", "SP74", "SP75", "SP76", "SP77", "SP78", "SP79",
-    "SP80", "SP81", "SP82", "SP83", "SP84", "SP85", "SP86", "SP87", "SP88", "SP89",
-    "SP90", "SP91", "SP92", "SP93", "SP94", "SP95", "SP96", "SP97", "SP98", "SP99"
+	// [BH] blood splats, [crispy] unused
+	"BLD2",
+	// [BH] 100 extra sprite names to use in dehacked patches
+	"SP00", "SP01", "SP02", "SP03", "SP04", "SP05", "SP06", "SP07", "SP08", "SP09",
+	"SP10", "SP11", "SP12", "SP13", "SP14", "SP15", "SP16", "SP17", "SP18", "SP19",
+	"SP20", "SP21", "SP22", "SP23", "SP24", "SP25", "SP26", "SP27", "SP28", "SP29",
+	"SP30", "SP31", "SP32", "SP33", "SP34", "SP35", "SP36", "SP37", "SP38", "SP39",
+	"SP40", "SP41", "SP42", "SP43", "SP44", "SP45", "SP46", "SP47", "SP48", "SP49",
+	"SP50", "SP51", "SP52", "SP53", "SP54", "SP55", "SP56", "SP57", "SP58", "SP59",
+	"SP60", "SP61", "SP62", "SP63", "SP64", "SP65", "SP66", "SP67", "SP68", "SP69",
+	"SP70", "SP71", "SP72", "SP73", "SP74", "SP75", "SP76", "SP77", "SP78", "SP79",
+	"SP80", "SP81", "SP82", "SP83", "SP84", "SP85", "SP86", "SP87", "SP88", "SP89",
+	"SP90", "SP91", "SP92", "SP93", "SP94", "SP95", "SP96", "SP97", "SP98", "SP99"
 };
 
 // Doesn't work with g++, needs actionf_p1
@@ -1252,5906 +1252,5741 @@ state_t	boomstates[S_MUSHROOM + 1] = {
 
 mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 
-	{		// MT_PLAYER
-	.type         = MT_PLAYER,
-	.spawnstate   = S_PLAY,
-	.spawnhealth  = 100,
-	.gibhealth    = -100,
-	.seestate     = S_PLAY_RUN1,
-	.painstate   = S_PLAY_PAIN,
-	.painchance   = 255,
-	.painsound    = "*pain100_1",
-	.missilestate = S_PLAY_ATK1,
-	.deathstate   = S_PLAY_DIE1,
-	.xdeathstate  = S_PLAY_XDIE1,
-	.deathsound   = "*death1",
-	.radius       = 16_fx,
-	.height       = 56_fx,
-	.cdheight     = 56_fx,
-	.mass         = 100,
-	.flags        = MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH|MF_FRIEND,
-	.flags2       = MF2_SLIDE|MF2_PASSMOBJ|MF2_PUSHWALL,
-	.name         = "MT_PLAYER",
-	.meleerange   = 64_fx,
+	{ // MT_PLAYER
+	.type             = MT_PLAYER,
+	.spawnstate       = S_PLAY,
+	.spawnhealth      = 100,
+	.gibhealth        = -100,
+	.seestate         = S_PLAY_RUN1,
+	.painstate        = S_PLAY_PAIN,
+	.painchance       = 255,
+	.painsound        = "*pain100_1",
+	.missilestate     = S_PLAY_ATK1,
+	.deathstate       = S_PLAY_DIE1,
+	.xdeathstate      = S_PLAY_XDIE1,
+	.deathsound       = "*death1",
+	.radius           = 16_fx,
+	.height           = 56_fx,
+	.cdheight         = 56_fx,
+	.mass             = 100,
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH|MF_FRIEND,
+	.flags2           = MF2_SLIDE|MF2_PASSMOBJ|MF2_PUSHWALL,
+	.name             = "MT_PLAYER",
+	.meleerange       = 64_fx,
 	},
 
-	{		// MT_POSSESSED
-	MT_POSSESSED,
-	3004,		// doomednum
-	S_POSS_STND,		// spawnstate
-	20,		// spawnhealth
-    -20,	// gibhealth
-	S_POSS_RUN1,		// seestate
-	"grunt/sight1",		// seesound
-	8,		// reactiontime
-	"grunt/attack",		// attacksound
-	S_POSS_PAIN,		// painstate
-	200,		// painchance
-	"grunt/pain",		// painsound
-	S_NULL,		// meleestate
-	S_POSS_ATK1,		// missilestate
-	S_POSS_DIE1,		// deathstate
-	S_POSS_XDIE1,		// xdeathstate
-	"grunt/death1",		// deathsound
-	8,		// speed
-	20*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	"grunt/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_POSS_RAISE1,		// raisestate
-	0x10000,
-	"MT_POSSESSED",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_CLIP		// droppeditem
+	{ // MT_POSSESSED
+	.type             = MT_POSSESSED,
+	.doomednum        = 3004,
+	.spawnstate       = S_POSS_STND,
+	.spawnhealth      = 20,
+	.gibhealth        = -20,
+	.seestate         = S_POSS_RUN1,
+	.seesound         = "grunt/sight1",
+	.reactiontime     = 8,
+	.attacksound      = "grunt/attack",
+	.painstate        = S_POSS_PAIN,
+	.painchance       = 200,
+	.painsound        = "grunt/pain",
+	.missilestate     = S_POSS_ATK1,
+	.deathstate       = S_POSS_DIE1,
+	.xdeathstate      = S_POSS_XDIE1,
+	.deathsound       = "grunt/death1",
+	.speed            = 8,
+	.radius           = 20_fx,
+	.height           = 56_fx,
+	.cdheight         = 56_fx,
+	.mass             = 100,
+	.activesound      = "grunt/active",
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
+	.raisestate       = S_POSS_RAISE1,
+	.name             = "MT_POSSESSED",
+	.meleerange       = 64_fx,
+	.droppeditem      = MT_CLIP
   },
 
-	{		// MT_SHOTGUY
-	MT_SHOTGUY,
-	9,		// doomednum
-	S_SPOS_STND,		// spawnstate
-	30,		// spawnhealth
-	-30,	// gibhealth
-	S_SPOS_RUN1,		// seestate
-	"shotguy/sight1",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_SPOS_PAIN,		// painstate
-	170,		// painchance
-	"shotguy/pain",		// painsound
-	S_NULL,		// meleestate
-	S_SPOS_ATK1,		// missilestate
-	S_SPOS_DIE1,		// deathstate
-	S_SPOS_XDIE1,		// xdeathstate
-	"shotguy/death1",		// deathsound
-	8,		// speed
-	20*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	"shotguy/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_SPOS_RAISE1,		// raisestate
-	0x10000,
-	"MT_SHOTGUY",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_SHOTGUN		// droppeditem
+	{ // MT_SHOTGUY
+	.type             = MT_SHOTGUY,
+	.doomednum        = 9,		// doomednum
+	.spawnstate       = S_SPOS_STND,		// spawnstate
+	.spawnhealth      = 30,		// spawnhealth
+	.gibhealth        = -30,	// gibhealth
+	.seestate         = S_SPOS_RUN1,		// seestate
+	.seesound         = "shotguy/sight1",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_SPOS_PAIN,		// painstate
+	.painchance       = 170,		// painchance
+	.painsound        = "shotguy/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_SPOS_ATK1,		// missilestate
+	.deathstate       = S_SPOS_DIE1,		// deathstate
+	.xdeathstate      = S_SPOS_XDIE1,		// xdeathstate
+	.deathsound       = "shotguy/death1",		// deathsound
+	.speed            = 8,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "shotguy/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_SPOS_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_SHOTGUY",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_SHOTGUN		// droppeditem
   },
 
-	{		// MT_VILE
-	MT_VILE,
-	64,		// doomednum
-	S_VILE_STND,		// spawnstate
-	700,		// spawnhealth
-	0,                                      // gibhealth
-	S_VILE_RUN1,		// seestate
-	"vile/sight",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_VILE_PAIN,		// painstate
-	10,		// painchance
-	"vile/pain",		// painsound
-	S_NULL,		// meleestate
-	S_VILE_ATK1,		// missilestate
-	S_VILE_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"vile/death",		// deathsound
-	15,		// speed
-	20*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	500,		// mass
-	0,		// damage
-	"vile/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-     MF2_MCROSS | MF2_PASSMOBJ | MF2_PUSHWALL, // flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_VILE",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	MF3_SHORTMRANGE | MF3_DMGIGNORED | MF3_NOTHRESHOLD,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_FIRE
-	MT_FIRE,
-	-1,		// doomednum
-	S_FIRE1,		// spawnstate
-	1000,		// spawnhealth
-	0,			// gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_FIRE",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_UNDEAD
-	MT_UNDEAD,
-	66,		// doomednum
-	S_SKEL_STND,		// spawnstate
-	300,		// spawnhealth
-	0,			// gibhealth
-	S_SKEL_RUN1,		// seestate
-	"skeleton/sight",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_SKEL_PAIN,		// painstate
-	100,		// painchance
-	"skeleton/pain",		// painsound
-	S_SKEL_FIST1,		// meleestate
-	S_SKEL_MISS1,		// missilestate
-	S_SKEL_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"skeleton/death",		// deathsound
-	10,		// speed
-	20*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	500,		// mass
-	0,		// damage
-	"skeleton/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_SKEL_RAISE1,		// raisestate
-	0x10000,
-	"MT_UNDEAD",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	MF3_LONGMELEE | MF3_RANGEHALF,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_TRACER
-	MT_TRACER,
-	-1,		// doomednum
-	S_TRACER,		// spawnstate
-	1000,		// spawnhealth
-	0,			// gibhealth
-	S_NULL,		// seestate
-	"skeleton/attack",		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_TRACEEXP1,		// deathstate
-	S_NULL,		// xdeathstate
-	"skeleton/tracex",		// deathsound
-	10*FRACUNIT,		// speed
-	11*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	10,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT|MF2_SEEKERMISSILE,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_TRACER",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_SMOKE
-	MT_SMOKE,
-	-1,		// doomednum
-	S_SMOKE1,		// spawnstate
-	1000,		// spawnhealth
-	0,			// gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_SMOKE",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_FATSO
-	MT_FATSO,
-	67,		// doomednum
-	S_FATT_STND,		// spawnstate
-	600,		// spawnhealth
-	0,			// gibhealth
-	S_FATT_RUN1,		// seestate
-	"fatso/sight",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_FATT_PAIN,		// painstate
-	80,		// painchance
-	"fatso/pain",		// painsound
-	S_NULL,		// meleestate
-	S_FATT_ATK1,		// missilestate
-	S_FATT_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"fatso/death",		// deathsound
-	8,		// speed
-	48*FRACUNIT,		// radius
-	64*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	1000,		// mass
-	0,		// damage
-	"fatso/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_FATT_RAISE1,		// raisestate
-	0x10000,
-	"MT_FATSO",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	MF3_MAP07BOSS1,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_FATSHOT
-	MT_FATSHOT,
-	-1,		// doomednum
-	S_FATSHOT1,		// spawnstate
-	1000,		// spawnhealth
-	0,			// gibhealth
-	S_NULL,		// seestate
-	"fatso/attack",		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_FATSHOTX1,		// deathstate
-	S_NULL,		// xdeathstate
-	"fatso/shotx",		// deathsound
-	20*FRACUNIT,		// speed
-	6*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	8,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_FATSHOT",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_CHAINGUY
-	MT_CHAINGUY,
-	65,		// doomednum
-	S_CPOS_STND,		// spawnstate
-	70,		// spawnhealth
-	-70,	// gibhealth
-	S_CPOS_RUN1,		// seestate
-	"chainguy/sight1",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_CPOS_PAIN,		// painstate
-	170,		// painchance
-	"chainguy/pain",		// painsound
-	S_NULL,		// meleestate
-	S_CPOS_ATK1,		// missilestate
-	S_CPOS_DIE1,		// deathstate
-	S_CPOS_XDIE1,		// xdeathstate
-	"chainguy/death1",		// deathsound
-	8,		// speed
-	20*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	"chainguy/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_CPOS_RAISE1,		// raisestate
-	0x10000,
-	"MT_CHAINGUY",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_CHAINGUN		// droppeditem
-	},
-
-	{		// MT_TROOP
-	MT_TROOP,
-	3001,		// doomednum
-	S_TROO_STND,		// spawnstate
-	60,		// spawnhealth
-	-60,	// gibhealth
-	S_TROO_RUN1,		// seestate
-	"imp/sight1",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_TROO_PAIN,		// painstate
-	200,		// painchance
-	"imp/pain",		// painsound
-	S_TROO_ATK1,		// meleestate
-	S_TROO_ATK1,		// missilestate
-	S_TROO_DIE1,		// deathstate
-	S_TROO_XDIE1,		// xdeathstate
-	"imp/death1",		// deathsound
-	8,		// speed
-	20*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	"imp/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_TROO_RAISE1,		// raisestate
-	0x10000,
-	"MT_TROOP",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_SERGEANT
-	MT_SERGEANT,
-	3002,		// doomednum
-	S_SARG_STND,		// spawnstate
-	150,		// spawnhealth
-    0,	// gibhealth
-	S_SARG_RUN1,		// seestate
-	"demon/sight",		// seesound
-	8,		// reactiontime
-	"demon/melee",		// attacksound
-	S_SARG_PAIN,		// painstate
-	180,		// painchance
-	"demon/pain",		// painsound
-	S_SARG_ATK1,		// meleestate
-	S_NULL,		// missilestate
-	S_SARG_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"demon/death",		// deathsound
-	10,		// speed
-	30*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	400,		// mass
-	0,		// damage
-	"demon/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_SARG_RAISE1,		// raisestate
-	0x10000,
-	"MT_SERGEANT",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_SHADOWS
-	MT_SHADOWS,
-	58,		// doomednum
-	S_SARG_STND,		// spawnstate
-	150,		// spawnhealth
-	0,			// gibhealth
-	S_SARG_RUN1,		// seestate
-	"spectre/sight",		// seesound
-	8,		// reactiontime
-	"spectre/attack",		// attacksound
-	S_SARG_PAIN,		// painstate
-	180,		// painchance
-	"spectre/pain",		// painsound
-	S_SARG_ATK1,		// meleestate
-	S_NULL,		// missilestate
-	S_SARG_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"spectre/death",		// deathsound
-	10,		// speed
-	30*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	400,		// mass
-	0,		// damage
-	"spectre/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_SHADOW|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_SARG_RAISE1,		// raisestate
-	0x10000,
-	"MT_SHADOWS",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_HEAD
-	MT_HEAD,
-	3005,		// doomednum
-	S_HEAD_STND,		// spawnstate
-	400,		// spawnhealth
-	0,			// gibhealth
-	S_HEAD_RUN1,		// seestate
-	"caco/sight",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_HEAD_PAIN,		// painstate
-	128,		// painchance
-	"caco/pain",		// painsound
-	S_NULL,		// meleestate
-	S_HEAD_ATK1,		// missilestate
-	S_HEAD_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"caco/death",		// deathsound
-	8,		// speed
-	31*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	400,		// mass
-	0,		// damage
-	"caco/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_HEAD_RAISE1,		// raisestate
-	0x10000,
-	"MT_HEAD",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_BRUISER
-	MT_BRUISER,
-	3003,		// doomednum
-	S_BOSS_STND,		// spawnstate
-	1000,		// spawnhealth
-	0,			// gibhealth
-	S_BOSS_RUN1,		// seestate
-	"baron/sight",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_BOSS_PAIN,		// painstate
-	50,		// painchance
-	"baron/pain",		// painsound
-	S_BOSS_ATK1,		// meleestate
-	S_BOSS_ATK1,		// missilestate
-	S_BOSS_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"baron/death",		// deathsound
-	8,		// speed
-	24*FRACUNIT,		// radius
-	64*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	1000,		// mass
-	0,		// damage
-	"baron/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_BOSS_RAISE1,		// raisestate
-	0x10000,
-	"MT_BRUISER",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_BARON,		// projectile group
-	SG_DEFAULT,		// splash group
-	MF3_E1M8BOSS,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_BRUISERSHOT
-	MT_BRUISERSHOT,
-	-1,		// doomednum
-	S_BRBALL1,		// spawnstate
-	1000,		// spawnhealth
-	0,	// gibhealth
-	S_NULL,		// seestate
-	"baron/attack",		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_BRBALLX1,		// deathstate
-	S_NULL,		// xdeathstate
-	"baron/shotx",		// deathsound
-	15*FRACUNIT,		// speed
-	6*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	8,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_BRUISERSHOT",
-	20 * FRACUNIT,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_KNIGHT
-	MT_KNIGHT,
-	69,		// doomednum
-	S_BOS2_STND,		// spawnstate
-	500,		// spawnhealth
-	0, // gibhealth
-	S_BOS2_RUN1,		// seestate
-	"knight/sight",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_BOS2_PAIN,		// painstate
-	50,		// painchance
-	"knight/pain",		// painsound
-	S_BOS2_ATK1,		// meleestate
-	S_BOS2_ATK1,		// missilestate
-	S_BOS2_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"knight/death",		// deathsound
-	8,		// speed
-	24*FRACUNIT,		// radius
-	64*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	1000,		// mass
-	0,		// damage
-	"knight/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_BOS2_RAISE1,		// raisestate
-	0x10000,
-	"MT_KNIGHT",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_BARON,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_SKULL
-	MT_SKULL,
-	3006,		// doomednum
-	S_SKULL_STND,		// spawnstate
-	100,		// spawnhealth
-    0, // gibhealth
-	S_SKULL_RUN1,		// seestate
-	nullptr, // seesound
-	8,		// reactiontime
-	"skull/melee",		// attacksound
-	S_SKULL_PAIN,		// painstate
-	256,		// painchance
-	"skull/pain",		// painsound
-	S_NULL,		// meleestate
-	S_SKULL_ATK1,		// missilestate
-	S_SKULL_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"skull/death",		// deathsound
-	8,		// speed
-	16*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	50,		// mass
-	3,		// damage
-	"skull/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_SKULL",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	MF3_RANGEHALF,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_SPIDER
-	MT_SPIDER,
-	7,		// doomednum
-	S_SPID_STND,		// spawnstate
-	3000,		// spawnhealth
-	0,	// gibhealth
-	S_SPID_RUN1,		// seestate
-	"spider/sight",		// seesound
-	8,		// reactiontime
-	"spider/attack",		// attacksound
-	S_SPID_PAIN,		// painstate
-	40,		// painchance
-	"spider/pain",		// painsound
-	S_NULL,		// meleestate
-	S_SPID_ATK1,		// missilestate
-	S_SPID_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"spider/death",		// deathsound
-	12,		// speed
-	128*FRACUNIT,		// radius
-	100*FRACUNIT,		// height
-	100*FRACUNIT,	// cdheight
-	1000,		// mass
-	0,		// damage
-	"spider/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL|MF2_BOSS,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_SPIDER",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	MF3_NORADIUSDMG | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E3M8BOSS | MF3_E4M8BOSS,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_BABY
-	MT_BABY,
-	68,		// doomednum
-	S_BSPI_STND,		// spawnstate
-	500,		// spawnhealth
-	0,		// gibhealth
-	S_BSPI_SIGHT,		// seestate
-	"baby/sight",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_BSPI_PAIN,		// painstate
-	128,		// painchance
-	"baby/pain",		// painsound
-	S_NULL,		// meleestate
-	S_BSPI_ATK1,		// missilestate
-	S_BSPI_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"baby/death",		// deathsound
-	12,		// speed
-	64*FRACUNIT,		// radius
-	64*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	600,		// mass
-	0,		// damage
-	"baby/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_BSPI_RAISE1,		// raisestate
-	0x10000,
-	"MT_BABY",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	MF3_MAP07BOSS2,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_CYBORG
-	MT_CYBORG,
-	16,		// doomednum
-	S_CYBER_STND,		// spawnstate
-	4000,		// spawnhealth
-	0, // gibhealth
-	S_CYBER_RUN1,		// seestate
-	"cyber/sight",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_CYBER_PAIN,		// painstate
-	20,		// painchance
-	"cyber/pain",		// painsound
-	S_NULL,		// meleestate
-	S_CYBER_ATK1,		// missilestate
-	S_CYBER_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"cyber/death",		// deathsound
-	16,		// speed
-	40*FRACUNIT,		// radius
-	110*FRACUNIT,		// height
-	110*FRACUNIT,	// cdheight
-	1000,		// mass
-	0,		// damage
-	"cyber/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL|MF2_BOSS,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_CYBORG",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	MF3_NORADIUSDMG | MF3_HIGHERMPROB | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E2M8BOSS | MF3_E4M6BOSS,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_PAIN
-	MT_PAIN,
-	71,		// doomednum
-	S_PAIN_STND,		// spawnstate
-	400,		// spawnhealth
-    0, // gibhealth
-	S_PAIN_RUN1,		// seestate
-	"pain/sight",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_PAIN_PAIN,		// painstate
-	128,		// painchance
-	"pain/pain",		// painsound
-	S_NULL,		// meleestate
-	S_PAIN_ATK1,		// missilestate
-	S_PAIN_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"pain/death",		// deathsound
-	8,		// speed
-	31*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	400,		// mass
-	0,		// damage
-	"pain/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_PAIN_RAISE1,		// raisestate
-	0x10000,
-	"MT_PAIN",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_WOLFSS
-	MT_WOLFSS,
-	84,		// doomednum
-	S_SSWV_STND,		// spawnstate
-	50,		// spawnhealth
-	-50,	// gibhealth
-	S_SSWV_RUN1,		// seestate
-	"wolfss/sight",		// seesound
-	8,		// reactiontime
-	nullptr, // attacksound
-	S_SSWV_PAIN,		// painstate
-	170,		// painchance
-	"wolfss/pain",		// painsound
-	S_NULL,		// meleestate
-	S_SSWV_ATK1,		// missilestate
-	S_SSWV_DIE1,		// deathstate
-	S_SSWV_XDIE1,		// xdeathstate
-	"wolfss/death",		// deathsound
-	8,		// speed
-	20*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	"wolfss/active",		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_SSWV_RAISE1,		// raisestate
-	0x10000,
-	"MT_WOLFSS",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_CLIP		// droppeditem
-	},
-
-	{		// MT_KEEN
-	MT_KEEN,
-	72,		// doomednum
-	S_KEENSTND,		// spawnstate
-	100,		// spawnhealth
-	0,			// gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_KEENPAIN,		// painstate
-	256,		// painchance
-	"keen/pain",		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_COMMKEEN,		// deathstate
-	S_NULL,		// xdeathstate
-	"keen/death",		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	72*FRACUNIT,		// height
-	51*FRACUNIT,	// cdheight
-	10000000,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_KEEN",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_BOSSBRAIN
-	MT_BOSSBRAIN,
-	88,		// doomednum
-	S_BRAIN,		// spawnstate
-	250,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_BRAIN_PAIN,		// painstate
-	255,		// painchance
-	"brain/pain",		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_BRAIN_DIE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"brain/death",		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight (actually 86; don't stack these)
-	10000000,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SHOOTABLE,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_BOSSBRAIN",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_BOSSSPIT
-	MT_BOSSSPIT,
-	89,		// doomednum
-	S_BRAINEYE,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_BRAINEYESEE,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	32*FRACUNIT,		// height
-	32*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_NOSECTOR,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_BOSSSPIT",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_BOSSTARGET
-	MT_BOSSTARGET,
-	87,		// doomednum
-	S_NULL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	32*FRACUNIT,		// height
-	32*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_NOSECTOR,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_BOSSTARGET",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_SPAWNSHOT
-	MT_SPAWNSHOT,
-	-1,		// doomednum
-	S_SPAWN1,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	"brain/spit",		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	"brain/spawn",		// deathsound
-	10*FRACUNIT,		// speed
-	6*FRACUNIT,		// radius
-	32*FRACUNIT,		// height
-	32*FRACUNIT,	// cdheight
-	100,		// mass
-	3,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_NOCLIP,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_SPAWNSHOT",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_SPAWNFIRE
-	MT_SPAWNFIRE,
-	-1,		// doomednum
-	S_SPAWNFIRE1,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_SPAWNFIRE",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_BARREL
-	MT_BARREL,
-	2035,		// doomednum
-	S_BAR1,		// spawnstate
-	20,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_BEXP,		// deathstate
-	S_NULL,		// xdeathstate
-	"world/barrelx",		// deathsound
-	0,		// speed
-	10*FRACUNIT,		// radius
-	42*FRACUNIT,		// height
-	34*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_NOBLOOD,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_BARREL",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_TROOPSHOT
-	MT_TROOPSHOT,
-	-1,		// doomednum
-	S_TBALL1,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	"imp/attack",		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_TBALLX1,		// deathstate
-	S_NULL,		// xdeathstate
-	"imp/shotx",		// deathsound
-	10*FRACUNIT,		// speed
-	6*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	3,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_TROOPSHOT",
-	20 * FRACUNIT,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_HEADSHOT
-	MT_HEADSHOT,
-	-1,		// doomednum
-	S_RBALL1,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	"caco/attack",		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_RBALLX1,		// deathstate
-	S_NULL,		// xdeathstate
-	"caco/shotx",		// deathsound
-	10*FRACUNIT,		// speed
-	6*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	5,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_HEADSHOT",
-	20 * FRACUNIT,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_ROCKET
-	MT_ROCKET,
-	-1,		// doomednum
-	S_ROCKET,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	"weapons/rocklf",		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_EXPLODE1,		// deathstate
-	S_NULL,		// xdeathstate
-	"weapons/rocklx",		// deathsound
-	20*FRACUNIT,		// speed
-	11*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	20,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_ROCKET",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_PLASMA
-	MT_PLASMA,
-	-1,		// doomednum
-	S_PLASBALL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	"weapons/plasmaf",		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_PLASEXP,		// deathstate
-	S_NULL,		// xdeathstate
-	"weapons/plasmax",		// deathsound
-	25*FRACUNIT,		// speed
-	13*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	5,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_PLASMA",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_BFG
-	MT_BFG,
-	-1,		// doomednum
-	S_BFGSHOT,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	nullptr, // seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_BFGLAND,		// deathstate
-	S_NULL,		// xdeathstate
-	"weapons/bfgx",		// deathsound
-	25*FRACUNIT,		// speed
-	13*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	100,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_BFG",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_ARACHPLAZ
-	MT_ARACHPLAZ,
-	-1,		// doomednum
-	S_ARACH_PLAZ,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	"baby/attack",		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_ARACH_PLEX,		// deathstate
-	S_NULL,		// xdeathstate
-	"baby/shotx",		// deathsound
-	25*FRACUNIT,		// speed
-	13*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	5,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	MF2_PCROSS|MF2_IMPACT,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_ARACHPLAZ",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_PUFF
-	MT_PUFF,
-	-1,		// doomednum
-	S_PUFF1,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_PUFF",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_BLOOD
-	MT_BLOOD,
-	-1,		// doomednum
-	S_BLOOD1,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_BLOOD",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_TFOG
-	MT_TFOG,
-	-1,		// doomednum
-	S_TFOG,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_TFOG",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_IFOG
-	MT_IFOG,
-	-1,		// doomednum
-	S_IFOG,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_IFOG",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_TELEPORTMAN
-	MT_TELEPORTMAN,
-	14,		// doomednum
-	S_NULL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_NOSECTOR,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_TELEPORTMAN",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_EXTRABFG
-	MT_EXTRABFG,
-	-1,		// doomednum
-	S_BFGEXP,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	FRACUNIT,
-	"MT_EXTRABFG",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC0
-	MT_MISC0,
-	2018,		// doomednum
-	S_ARM1,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC0",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC1
-	MT_MISC1,
-	2019,		// doomednum
-	S_ARM2,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC1",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC2
-	MT_MISC2,
-	2014,		// doomednum
-	S_BON1,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC2",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC3
-	MT_MISC3,
-	2015,		// doomednum
-	S_BON2,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC3",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC4
-	MT_MISC4,
-	5,		// doomednum
-	S_BKEY,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_NOTDMATCH,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC4",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC5
-	MT_MISC5,
-	13,		// doomednum
-	S_RKEY,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_NOTDMATCH,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC5",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC6
-	MT_MISC6,
-	6,		// doomednum
-	S_YKEY,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_NOTDMATCH,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC6",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC7
-	MT_MISC7,
-	39,		// doomednum
-	S_YSKULL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_NOTDMATCH,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC7",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC8
-	MT_MISC8,
-	38,		// doomednum
-	S_RSKULL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_NOTDMATCH,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC8",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC9
-	MT_MISC9,
-	40,		// doomednum
-	S_BSKULL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_NOTDMATCH,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC9",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC10
-	MT_MISC10,
-	2011,		// doomednum
-	S_STIM,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC10",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC11
-	MT_MISC11,
-	2012,		// doomednum
-	S_MEDI,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC11",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC12
-	MT_MISC12,
-	2013,		// doomednum
-	S_SOUL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC12",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_INV
-	MT_INV,
-	2022,		// doomednum
-	S_PINV,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_INV",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC13
-	MT_MISC13,
-	2023,		// doomednum
-	S_PSTR,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC13",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_INS
-	MT_INS,
-	2024,		// doomednum
-	S_PINS,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_INS",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC14
-	MT_MISC14,
-	2025,		// doomednum
-	S_SUIT,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC14",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC15
-	MT_MISC15,
-	2026,		// doomednum
-	S_PMAP,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC15",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC16
-	MT_MISC16,
-	2045,		// doomednum
-	S_PVIS,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC16",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MEGA
-	MT_MEGA,
-	83,		// doomednum
-	S_MEGA,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MEGA",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_CLIP
-	MT_CLIP,
-	2007,		// doomednum
-	S_CLIP,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_CLIP",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC17
-	MT_MISC17,
-	2048,		// doomednum
-	S_AMMO,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC17",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC18
-	MT_MISC18,
-	2010,		// doomednum
-	S_ROCK,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC18",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC19
-	MT_MISC19,
-	2046,		// doomednum
-	S_BROK,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC19",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC20
-	MT_MISC20,
-	2047,		// doomednum
-	S_CELL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC20",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC21
-	MT_MISC21,
-	17,		// doomednum
-	S_CELP,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC21",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC22
-	MT_MISC22,
-	2008,		// doomednum
-	S_SHEL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC22",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC23
-	MT_MISC23,
-	2049,		// doomednum
-	S_SBOX,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC23",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC24
-	MT_MISC24,
-	8,		// doomednum
-	S_BPAK,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC24",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC25
-	MT_MISC25,
-	2006,		// doomednum
-	S_BFUG,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC25",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_CHAINGUN
-	MT_CHAINGUN,
-	2002,		// doomednum
-	S_MGUN,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_CHAINGUN",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC26
-	MT_MISC26,
-	2005,		// doomednum
-	S_CSAW,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC26",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC27
-	MT_MISC27,
-	2003,		// doomednum
-	S_LAUN,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC27",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC28
-	MT_MISC28,
-	2004,		// doomednum
-	S_PLAS,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC28",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_SHOTGUN
-	MT_SHOTGUN,
-	2001,		// doomednum
-	S_SHOT,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_SHOTGUN",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_SUPERSHOTGUN
-	MT_SUPERSHOTGUN,
-	82,		// doomednum
-	S_SHOT2,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_SUPERSHOTGUN",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC29
-	MT_MISC29,
-	85,		// doomednum
-	S_TECHLAMP,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	74*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC29",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC30
-	MT_MISC30,
-	86,		// doomednum
-	S_TECH2LAMP,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	54*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC30",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC31
-	MT_MISC31,
-	2028,		// doomednum
-	S_COLU,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	44*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC31",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC32
-	MT_MISC32,
-	30,		// doomednum
-	S_TALLGRNCOL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	48*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC32",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC33
-	MT_MISC33,
-	31,		// doomednum
-	S_SHRTGRNCOL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	34*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC33",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC34
-	MT_MISC34,
-	32,		// doomednum
-	S_TALLREDCOL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	48*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC34",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC35
-	MT_MISC35,
-	33,		// doomednum
-	S_SHRTREDCOL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	34*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC35",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC36
-	MT_MISC36,
-	37,		// doomednum
-	S_SKULLCOL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	44*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC36",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC37
-	MT_MISC37,
-	36,		// doomednum
-	S_HEARTCOL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	40*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC37",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC38
-	MT_MISC38,
-	41,		// doomednum
-	S_EVILEYE,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	50*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC38",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC39
-	MT_MISC39,
-	42,		// doomednum
-	S_FLOATSKULL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	48*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC39",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC40
-	MT_MISC40,
-	43,		// doomednum
-	S_TORCHTREE,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC40",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC41
-	MT_MISC41,
-	44,		// doomednum
-	S_BLUETORCH,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	68*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC41",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC42
-	MT_MISC42,
-	45,		// doomednum
-	S_GREENTORCH,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	68*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC42",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC43
-	MT_MISC43,
-	46,		// doomednum
-	S_REDTORCH,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	68*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC43",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC44
-	MT_MISC44,
-	55,		// doomednum
-	S_BTORCHSHRT,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	37*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC44",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC45
-	MT_MISC45,
-	56,		// doomednum
-	S_GTORCHSHRT,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	37*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC45",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC46
-	MT_MISC46,
-	57,		// doomednum
-	S_RTORCHSHRT,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	37*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC46",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC47
-	MT_MISC47,
-	47,		// doomednum
-	S_STALAGTITE,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	47*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC47",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC48
-	MT_MISC48,
-	48,		// doomednum
-	S_TECHPILLAR,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	120*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC48",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC49
-	MT_MISC49,
-	34,		// doomednum
-	S_CANDLESTIK,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC49",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC50
-	MT_MISC50,
-	35,		// doomednum
-	S_CANDELABRA,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	54*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC50",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC51
-	MT_MISC51,
-	49,		// doomednum
-	S_BLOODYTWITCH,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	68*FRACUNIT,		// height
-	68*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC51",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC52
-	MT_MISC52,
-	50,		// doomednum
-	S_MEAT2,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	84*FRACUNIT,		// height
-	84*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC52",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC53
-	MT_MISC53,
-	51,		// doomednum
-	S_MEAT3,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	84*FRACUNIT,		// height
-	79*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC53",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC54
-	MT_MISC54,
-	52,		// doomednum
-	S_MEAT4,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	68*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC54",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC55
-	MT_MISC55,
-	53,		// doomednum
-	S_MEAT5,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	52*FRACUNIT,		// height
-	52*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC55",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC56
-	MT_MISC56,
-	59,		// doomednum
-	S_MEAT2,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	84*FRACUNIT,		// height
-	84*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC56",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC57
-	MT_MISC57,
-	60,		// doomednum
-	S_MEAT4,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	68*FRACUNIT,		// height
-	68*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC57",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC58
-	MT_MISC58,
-	61,		// doomednum
-	S_MEAT3,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	52*FRACUNIT,		// height
-	52*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC58",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC59
-	MT_MISC59,
-	62,		// doomednum
-	S_MEAT5,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	52*FRACUNIT,		// height
-	52*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC59",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC60
-	MT_MISC60,
-	63,		// doomednum
-	S_BLOODYTWITCH,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	68*FRACUNIT,		// height
-	68*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC60",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC61
-	MT_MISC61,
-	22,		// doomednum
-	S_HEAD_DIE6,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC61",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC62
-	MT_MISC62,
-	15,		// doomednum
-	S_PLAY_DIE7,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC62",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC63
-	MT_MISC63,
-	18,		// doomednum
-	S_POSS_DIE5,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC63",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC64
-	MT_MISC64,
-	21,		// doomednum
-	S_SARG_DIE6,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC64",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC65
-	MT_MISC65,
-	23,		// doomednum
-	S_SKULL_DIE6,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC65",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC66
-	MT_MISC66,
-	20,		// doomednum
-	S_TROO_DIE5,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC66",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC67
-	MT_MISC67,
-	19,		// doomednum
-	S_SPOS_DIE5,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC67",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC68
-	MT_MISC68,
-	10,		// doomednum
-	S_PLAY_XDIE9,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC68",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC69
-	MT_MISC69,
-	12,		// doomednum
-	S_PLAY_XDIE9,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC69",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC70
-	MT_MISC70,
-	28,		// doomednum
-	S_HEADSONSTICK,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	60*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC70",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC71
-	MT_MISC71,
-	24,		// doomednum
-	S_GIBS,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	0,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC71",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC72
-	MT_MISC72,
-	27,		// doomednum
-	S_HEADONASTICK,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	54*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC72",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC73
-	MT_MISC73,
-	29,		// doomednum
-	S_HEADCANDLES,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	40*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC73",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC74
-	MT_MISC74,
-	25,		// doomednum
-	S_DEADSTICK,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC74",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC75
-	MT_MISC75,
-	26,		// doomednum
-	S_LIVESTICK,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC75",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC76
-	MT_MISC76,
-	54,		// doomednum
-	S_BIGTREE,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	32*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	124*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC76",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC77
-	MT_MISC77,
-	70,		// doomednum
-	S_BBAR1,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	46*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC77",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC78
-	MT_MISC78,
-	73,		// doomednum
-	S_HANGNOGUTS,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	88*FRACUNIT,		// height
-	88*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC78",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC79
-	MT_MISC79,
-	74,		// doomednum
-	S_HANGBNOBRAIN,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	88*FRACUNIT,		// height
-	88*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC79",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC80
-	MT_MISC80,
-	75,		// doomednum
-	S_HANGTLOOKDN,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	64*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC80",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC81
-	MT_MISC81,
-	76,		// doomednum
-	S_HANGTSKULL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	64*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC81",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC82
-	MT_MISC82,
-	77,		// doomednum
-	S_HANGTLOOKUP,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	64*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC82",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC83
-	MT_MISC83,
-	78,		// doomednum
-	S_HANGTNOBRAIN,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	64*FRACUNIT,		// height
-	64*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC83",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC84
-	MT_MISC84,
-	79,		// doomednum
-	S_COLONGIBS,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC84",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC85
-	MT_MISC85,
-	80,		// doomednum
-	S_SMALLPOOL,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC85",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-	},
-
-	{		// MT_MISC86
-	MT_MISC86,
-	81,		// doomednum
-	S_BRAINSTEM,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP,		// flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_MISC86",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
+	{ // MT_VILE
+	.type             = MT_VILE,
+	.doomednum        = 64,		// doomednum
+	.spawnstate       = S_VILE_STND,		// spawnstate
+	.spawnhealth      = 700,		// spawnhealth
+	.gibhealth        = 0,                                      // gibhealth
+	.seestate         = S_VILE_RUN1,		// seestate
+	.seesound         = "vile/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_VILE_PAIN,		// painstate
+	.painchance       = 10,		// painchance
+	.painsound        = "vile/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_VILE_ATK1,		// missilestate
+	.deathstate       = S_VILE_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "vile/death",		// deathsound
+	.speed            = 15,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 500,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "vile/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	 .flags2           = MF2_MCROSS | MF2_PASSMOBJ | MF2_PUSHWALL, // flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_VILE",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = MF3_SHORTMRANGE | MF3_DMGIGNORED | MF3_NOTHRESHOLD,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_FIRE
+	.type             = MT_FIRE,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_FIRE1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0,			// gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_FIRE",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_UNDEAD
+	.type             = MT_UNDEAD,
+	.doomednum        = 66,		// doomednum
+	.spawnstate       = S_SKEL_STND,		// spawnstate
+	.spawnhealth      = 300,		// spawnhealth
+	.gibhealth        = 0,			// gibhealth
+	.seestate         = S_SKEL_RUN1,		// seestate
+	.seesound         = "skeleton/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_SKEL_PAIN,		// painstate
+	.painchance       = 100,		// painchance
+	.painsound        = "skeleton/pain",		// painsound
+	.meleestate       = S_SKEL_FIST1,		// meleestate
+	.missilestate     = S_SKEL_MISS1,		// missilestate
+	.deathstate       = S_SKEL_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "skeleton/death",		// deathsound
+	.speed            = 10,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 500,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "skeleton/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_SKEL_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_UNDEAD",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = MF3_LONGMELEE | MF3_RANGEHALF,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_TRACER
+	.type             = MT_TRACER,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_TRACER,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0,			// gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = "skeleton/attack",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_TRACEEXP1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "skeleton/tracex",		// deathsound
+	.speed            = 10*FRACUNIT,		// speed
+	.radius           = 11*FRACUNIT,		// radius
+	.height           = 8*FRACUNIT,		// height
+	.cdheight         = 8*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 10,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_PCROSS|MF2_IMPACT|MF2_SEEKERMISSILE,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_TRACER",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_SMOKE
+	.type             = MT_SMOKE,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_SMOKE1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0,			// gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_SMOKE",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_FATSO
+	.type             = MT_FATSO,
+	.doomednum        = 67,		// doomednum
+	.spawnstate       = S_FATT_STND,		// spawnstate
+	.spawnhealth      = 600,		// spawnhealth
+	.gibhealth        = 0,			// gibhealth
+	.seestate         = S_FATT_RUN1,		// seestate
+	.seesound         = "fatso/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_FATT_PAIN,		// painstate
+	.painchance       = 80,		// painchance
+	.painsound        = "fatso/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_FATT_ATK1,		// missilestate
+	.deathstate       = S_FATT_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "fatso/death",		// deathsound
+	.speed            = 8,		// speed
+	.radius           = 48*FRACUNIT,		// radius
+	.height           = 64*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 1000,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "fatso/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_FATT_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_FATSO",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = MF3_MAP07BOSS1,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_FATSHOT
+	.type             = MT_FATSHOT,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_FATSHOT1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0,			// gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = "fatso/attack",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_FATSHOTX1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "fatso/shotx",		// deathsound
+	.speed            = 20*FRACUNIT,		// speed
+	.radius           = 6*FRACUNIT,		// radius
+	.height           = 8*FRACUNIT,		// height
+	.cdheight         = 8*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 8,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_PCROSS|MF2_IMPACT,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_FATSHOT",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_CHAINGUY
+	.type             = MT_CHAINGUY,
+	.doomednum        = 65,		// doomednum
+	.spawnstate       = S_CPOS_STND,		// spawnstate
+	.spawnhealth      = 70,		// spawnhealth
+	.gibhealth        = -70,	// gibhealth
+	.seestate         = S_CPOS_RUN1,		// seestate
+	.seesound         = "chainguy/sight1",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_CPOS_PAIN,		// painstate
+	.painchance       = 170,		// painchance
+	.painsound        = "chainguy/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_CPOS_ATK1,		// missilestate
+	.deathstate       = S_CPOS_DIE1,		// deathstate
+	.xdeathstate      = S_CPOS_XDIE1,		// xdeathstate
+	.deathsound       = "chainguy/death1",		// deathsound
+	.speed            = 8,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "chainguy/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_CPOS_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_CHAINGUY",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_CHAINGUN		// droppeditem
+	},
+
+	{ // MT_TROOP
+	.type             = MT_TROOP,
+	.doomednum        = 3001,		// doomednum
+	.spawnstate       = S_TROO_STND,		// spawnstate
+	.spawnhealth      = 60,		// spawnhealth
+	.gibhealth        = -60,	// gibhealth
+	.seestate         = S_TROO_RUN1,		// seestate
+	.seesound         = "imp/sight1",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_TROO_PAIN,		// painstate
+	.painchance       = 200,		// painchance
+	.painsound        = "imp/pain",		// painsound
+	.meleestate       = S_TROO_ATK1,		// meleestate
+	.missilestate     = S_TROO_ATK1,		// missilestate
+	.deathstate       = S_TROO_DIE1,		// deathstate
+	.xdeathstate      = S_TROO_XDIE1,		// xdeathstate
+	.deathsound       = "imp/death1",		// deathsound
+	.speed            = 8,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "imp/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_TROO_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_TROOP",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_SERGEANT
+	.type             = MT_SERGEANT,
+	.doomednum        = 3002,		// doomednum
+	.spawnstate       = S_SARG_STND,		// spawnstate
+	.spawnhealth      = 150,		// spawnhealth
+	.gibhealth        = 0,	// gibhealth
+	.seestate         = S_SARG_RUN1,		// seestate
+	.seesound         = "demon/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = "demon/melee",		// attacksound
+	.painstate        = S_SARG_PAIN,		// painstate
+	.painchance       = 180,		// painchance
+	.painsound        = "demon/pain",		// painsound
+	.meleestate       = S_SARG_ATK1,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_SARG_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "demon/death",		// deathsound
+	.speed            = 10,		// speed
+	.radius           = 30*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 400,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "demon/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_SARG_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_SERGEANT",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_SHADOWS
+	.type             = MT_SHADOWS,
+	.doomednum        = 58,		// doomednum
+	.spawnstate       = S_SARG_STND,		// spawnstate
+	.spawnhealth      = 150,		// spawnhealth
+	.gibhealth        = 0,			// gibhealth
+	.seestate         = S_SARG_RUN1,		// seestate
+	.seesound         = "spectre/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = "spectre/attack",		// attacksound
+	.painstate        = S_SARG_PAIN,		// painstate
+	.painchance       = 180,		// painchance
+	.painsound        = "spectre/pain",		// painsound
+	.meleestate       = S_SARG_ATK1,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_SARG_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "spectre/death",		// deathsound
+	.speed            = 10,		// speed
+	.radius           = 30*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 400,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "spectre/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_SHADOW|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_SARG_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_SHADOWS",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_HEAD
+	.type             = MT_HEAD,
+	.doomednum        = 3005,		// doomednum
+	.spawnstate       = S_HEAD_STND,		// spawnstate
+	.spawnhealth      = 400,		// spawnhealth
+	.gibhealth        = 0,			// gibhealth
+	.seestate         = S_HEAD_RUN1,		// seestate
+	.seesound         = "caco/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_HEAD_PAIN,		// painstate
+	.painchance       = 128,		// painchance
+	.painsound        = "caco/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_HEAD_ATK1,		// missilestate
+	.deathstate       = S_HEAD_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "caco/death",		// deathsound
+	.speed            = 8,		// speed
+	.radius           = 31*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 400,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "caco/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_HEAD_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_HEAD",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_BRUISER
+	.type             = MT_BRUISER,
+	.doomednum        = 3003,		// doomednum
+	.spawnstate       = S_BOSS_STND,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0,			// gibhealth
+	.seestate         = S_BOSS_RUN1,		// seestate
+	.seesound         = "baron/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_BOSS_PAIN,		// painstate
+	.painchance       = 50,		// painchance
+	.painsound        = "baron/pain",		// painsound
+	.meleestate       = S_BOSS_ATK1,		// meleestate
+	.missilestate     = S_BOSS_ATK1,		// missilestate
+	.deathstate       = S_BOSS_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "baron/death",		// deathsound
+	.speed            = 8,		// speed
+	.radius           = 24*FRACUNIT,		// radius
+	.height           = 64*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 1000,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "baron/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_BOSS_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_BRUISER",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_BARON,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = MF3_E1M8BOSS,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_BRUISERSHOT
+	.type             = MT_BRUISERSHOT,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_BRBALL1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0,	// gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = "baron/attack",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_BRBALLX1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "baron/shotx",		// deathsound
+	.speed            = 15*FRACUNIT,		// speed
+	.radius           = 6*FRACUNIT,		// radius
+	.height           = 8*FRACUNIT,		// height
+	.cdheight         = 8*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 8,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_PCROSS|MF2_IMPACT,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_BRUISERSHOT",
+	.altspeed         = 20 * FRACUNIT,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_KNIGHT
+	.type             = MT_KNIGHT,
+	.doomednum        = 69,		// doomednum
+	.spawnstate       = S_BOS2_STND,		// spawnstate
+	.spawnhealth      = 500,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_BOS2_RUN1,		// seestate
+	.seesound         = "knight/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_BOS2_PAIN,		// painstate
+	.painchance       = 50,		// painchance
+	.painsound        = "knight/pain",		// painsound
+	.meleestate       = S_BOS2_ATK1,		// meleestate
+	.missilestate     = S_BOS2_ATK1,		// missilestate
+	.deathstate       = S_BOS2_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "knight/death",		// deathsound
+	.speed            = 8,		// speed
+	.radius           = 24*FRACUNIT,		// radius
+	.height           = 64*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 1000,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "knight/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_BOS2_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_KNIGHT",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_BARON,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_SKULL
+	.type             = MT_SKULL,
+	.doomednum        = 3006,		// doomednum
+	.spawnstate       = S_SKULL_STND,		// spawnstate
+	.spawnhealth      = 100,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_SKULL_RUN1,		// seestate
+	.seesound         = nullptr, // seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = "skull/melee",		// attacksound
+	.painstate        = S_SKULL_PAIN,		// painstate
+	.painchance       = 256,		// painchance
+	.painsound        = "skull/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_SKULL_ATK1,		// missilestate
+	.deathstate       = S_SKULL_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "skull/death",		// deathsound
+	.speed            = 8,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 50,		// mass
+	.damage           = 3,		// damage
+	.activesound      = "skull/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_SKULL",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = MF3_RANGEHALF,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_SPIDER
+	.type             = MT_SPIDER,
+	.doomednum        = 7,		// doomednum
+	.spawnstate       = S_SPID_STND,		// spawnstate
+	.spawnhealth      = 3000,		// spawnhealth
+	.gibhealth        = 0,	// gibhealth
+	.seestate         = S_SPID_RUN1,		// seestate
+	.seesound         = "spider/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = "spider/attack",		// attacksound
+	.painstate        = S_SPID_PAIN,		// painstate
+	.painchance       = 40,		// painchance
+	.painsound        = "spider/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_SPID_ATK1,		// missilestate
+	.deathstate       = S_SPID_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "spider/death",		// deathsound
+	.speed            = 12,		// speed
+	.radius           = 128*FRACUNIT,		// radius
+	.height           = 100*FRACUNIT,		// height
+	.cdheight         = 100*FRACUNIT,	// cdheight
+	.mass             = 1000,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "spider/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL|MF2_BOSS,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_SPIDER",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = MF3_NORADIUSDMG | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E3M8BOSS | MF3_E4M8BOSS,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_BABY
+	.type             = MT_BABY,
+	.doomednum        = 68,		// doomednum
+	.spawnstate       = S_BSPI_STND,		// spawnstate
+	.spawnhealth      = 500,		// spawnhealth
+	.gibhealth        = 0,		// gibhealth
+	.seestate         = S_BSPI_SIGHT,		// seestate
+	.seesound         = "baby/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_BSPI_PAIN,		// painstate
+	.painchance       = 128,		// painchance
+	.painsound        = "baby/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_BSPI_ATK1,		// missilestate
+	.deathstate       = S_BSPI_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "baby/death",		// deathsound
+	.speed            = 12,		// speed
+	.radius           = 64*FRACUNIT,		// radius
+	.height           = 64*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 600,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "baby/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_BSPI_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_BABY",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = MF3_MAP07BOSS2,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_CYBORG
+	.type             = MT_CYBORG,
+	.doomednum        = 16,		// doomednum
+	.spawnstate       = S_CYBER_STND,		// spawnstate
+	.spawnhealth      = 4000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_CYBER_RUN1,		// seestate
+	.seesound         = "cyber/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_CYBER_PAIN,		// painstate
+	.painchance       = 20,		// painchance
+	.painsound        = "cyber/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_CYBER_ATK1,		// missilestate
+	.deathstate       = S_CYBER_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "cyber/death",		// deathsound
+	.speed            = 16,		// speed
+	.radius           = 40*FRACUNIT,		// radius
+	.height           = 110*FRACUNIT,		// height
+	.cdheight         = 110*FRACUNIT,	// cdheight
+	.mass             = 1000,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "cyber/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL|MF2_BOSS,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_CYBORG",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = MF3_NORADIUSDMG | MF3_HIGHERMPROB | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E2M8BOSS | MF3_E4M6BOSS,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_PAIN
+	.type             = MT_PAIN,
+	.doomednum        = 71,		// doomednum
+	.spawnstate       = S_PAIN_STND,		// spawnstate
+	.spawnhealth      = 400,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_PAIN_RUN1,		// seestate
+	.seesound         = "pain/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_PAIN_PAIN,		// painstate
+	.painchance       = 128,		// painchance
+	.painsound        = "pain/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_PAIN_ATK1,		// missilestate
+	.deathstate       = S_PAIN_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "pain/death",		// deathsound
+	.speed            = 8,		// speed
+	.radius           = 31*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 400,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "pain/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_PAIN_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_PAIN",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_WOLFSS
+	.type             = MT_WOLFSS,
+	.doomednum        = 84,		// doomednum
+	.spawnstate       = S_SSWV_STND,		// spawnstate
+	.spawnhealth      = 50,		// spawnhealth
+	.gibhealth        = -50,	// gibhealth
+	.seestate         = S_SSWV_RUN1,		// seestate
+	.seesound         = "wolfss/sight",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = nullptr, // attacksound
+	.painstate        = S_SSWV_PAIN,		// painstate
+	.painchance       = 170,		// painchance
+	.painsound        = "wolfss/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_SSWV_ATK1,		// missilestate
+	.deathstate       = S_SSWV_DIE1,		// deathstate
+	.xdeathstate      = S_SSWV_XDIE1,		// xdeathstate
+	.deathsound       = "wolfss/death",		// deathsound
+	.speed            = 8,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 56*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = "wolfss/active",		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
+	.raisestate       = S_SSWV_RAISE1,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_WOLFSS",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_CLIP		// droppeditem
+	},
+
+	{ // MT_KEEN
+	.type             = MT_KEEN,
+	.doomednum        = 72,		// doomednum
+	.spawnstate       = S_KEENSTND,		// spawnstate
+	.spawnhealth      = 100,		// spawnhealth
+	.gibhealth        = 0,			// gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_KEENPAIN,		// painstate
+	.painchance       = 256,		// painchance
+	.painsound        = "keen/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_COMMKEEN,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "keen/death",		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 72*FRACUNIT,		// height
+	.cdheight         = 51*FRACUNIT,	// cdheight
+	.mass             = 10000000,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY|MF_SHOOTABLE|MF_COUNTKILL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_KEEN",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_BOSSBRAIN
+	.type             = MT_BOSSBRAIN,
+	.doomednum        = 88,		// doomednum
+	.spawnstate       = S_BRAIN,		// spawnstate
+	.spawnhealth      = 250,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_BRAIN_PAIN,		// painstate
+	.painchance       = 255,		// painchance
+	.painsound        = "brain/pain",		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_BRAIN_DIE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "brain/death",		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight (actually 86; don't stack these)
+	.mass             = 10000000,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_BOSSBRAIN",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_BOSSSPIT
+	.type             = MT_BOSSSPIT,
+	.doomednum        = 89,		// doomednum
+	.spawnstate       = S_BRAINEYE,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_BRAINEYESEE,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 32*FRACUNIT,		// height
+	.cdheight         = 32*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_NOSECTOR,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_BOSSSPIT",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_BOSSTARGET
+	.type             = MT_BOSSTARGET,
+	.doomednum        = 87,		// doomednum
+	.spawnstate       = S_NULL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 32*FRACUNIT,		// height
+	.cdheight         = 32*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_NOSECTOR,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_BOSSTARGET",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_SPAWNSHOT
+	.type             = MT_SPAWNSHOT,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_SPAWN1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = "brain/spit",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "brain/spawn",		// deathsound
+	.speed            = 10*FRACUNIT,		// speed
+	.radius           = 6*FRACUNIT,		// radius
+	.height           = 32*FRACUNIT,		// height
+	.cdheight         = 32*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 3,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY|MF_NOCLIP,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_SPAWNSHOT",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_SPAWNFIRE
+	.type             = MT_SPAWNFIRE,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_SPAWNFIRE1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_SPAWNFIRE",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_BARREL
+	.type             = MT_BARREL,
+	.doomednum        = 2035,		// doomednum
+	.spawnstate       = S_BAR1,		// spawnstate
+	.spawnhealth      = 20,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_BEXP,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "world/barrelx",		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 10*FRACUNIT,		// radius
+	.height           = 42*FRACUNIT,		// height
+	.cdheight         = 34*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_NOBLOOD,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_BARREL",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_TROOPSHOT
+	.type             = MT_TROOPSHOT,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_TBALL1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = "imp/attack",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_TBALLX1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "imp/shotx",		// deathsound
+	.speed            = 10*FRACUNIT,		// speed
+	.radius           = 6*FRACUNIT,		// radius
+	.height           = 8*FRACUNIT,		// height
+	.cdheight         = 8*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 3,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_PCROSS|MF2_IMPACT,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_TROOPSHOT",
+	.altspeed         = 20 * FRACUNIT,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_HEADSHOT
+	.type             = MT_HEADSHOT,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_RBALL1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = "caco/attack",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_RBALLX1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "caco/shotx",		// deathsound
+	.speed            = 10*FRACUNIT,		// speed
+	.radius           = 6*FRACUNIT,		// radius
+	.height           = 8*FRACUNIT,		// height
+	.cdheight         = 8*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 5,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_PCROSS|MF2_IMPACT,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_HEADSHOT",
+	.altspeed         = 20 * FRACUNIT,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_ROCKET
+	.type             = MT_ROCKET,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_ROCKET,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = "weapons/rocklf",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_EXPLODE1,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "weapons/rocklx",		// deathsound
+	.speed            = 20*FRACUNIT,		// speed
+	.radius           = 11*FRACUNIT,		// radius
+	.height           = 8*FRACUNIT,		// height
+	.cdheight         = 8*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 20,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_PCROSS|MF2_IMPACT,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_ROCKET",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_PLASMA
+	.type             = MT_PLASMA,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_PLASBALL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = "weapons/plasmaf",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_PLASEXP,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "weapons/plasmax",		// deathsound
+	.speed            = 25*FRACUNIT,		// speed
+	.radius           = 13*FRACUNIT,		// radius
+	.height           = 8*FRACUNIT,		// height
+	.cdheight         = 8*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 5,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_PCROSS|MF2_IMPACT,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_PLASMA",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_BFG
+	.type             = MT_BFG,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_BFGSHOT,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = nullptr, // seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_BFGLAND,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "weapons/bfgx",		// deathsound
+	.speed            = 25*FRACUNIT,		// speed
+	.radius           = 13*FRACUNIT,		// radius
+	.height           = 8*FRACUNIT,		// height
+	.cdheight         = 8*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 100,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_PCROSS|MF2_IMPACT,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_BFG",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_ARACHPLAZ
+	.type             = MT_ARACHPLAZ,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_ARACH_PLAZ,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = "baby/attack",		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_ARACH_PLEX,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = "baby/shotx",		// deathsound
+	.speed            = 25*FRACUNIT,		// speed
+	.radius           = 13*FRACUNIT,		// radius
+	.height           = 8*FRACUNIT,		// height
+	.cdheight         = 8*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 5,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
+	.flags2           = MF2_PCROSS|MF2_IMPACT,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_ARACHPLAZ",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_PUFF
+	.type             = MT_PUFF,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_PUFF1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_PUFF",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_BLOOD
+	.type             = MT_BLOOD,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_BLOOD1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_BLOOD",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_TFOG
+	.type             = MT_TFOG,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_TFOG,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_TFOG",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_IFOG
+	.type             = MT_IFOG,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_IFOG,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_IFOG",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_TELEPORTMAN
+	.type             = MT_TELEPORTMAN,
+	.doomednum        = 14,		// doomednum
+	.spawnstate       = S_NULL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_NOSECTOR,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_TELEPORTMAN",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_EXTRABFG
+	.type             = MT_EXTRABFG,
+	.doomednum        = -1,		// doomednum
+	.spawnstate       = S_BFGEXP,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = FRACUNIT,
+	.name             = "MT_EXTRABFG",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC0
+	.type             = MT_MISC0,
+	.doomednum        = 2018,		// doomednum
+	.spawnstate       = S_ARM1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC0",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC1
+	.type             = MT_MISC1,
+	.doomednum        = 2019,		// doomednum
+	.spawnstate       = S_ARM2,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC1",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC2
+	.type             = MT_MISC2,
+	.doomednum        = 2014,		// doomednum
+	.spawnstate       = S_BON1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_COUNTITEM,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC2",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC3
+	.type             = MT_MISC3,
+	.doomednum        = 2015,		// doomednum
+	.spawnstate       = S_BON2,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_COUNTITEM,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC3",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC4
+	.type             = MT_MISC4,
+	.doomednum        = 5,		// doomednum
+	.spawnstate       = S_BKEY,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_NOTDMATCH,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC4",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC5
+	.type             = MT_MISC5,
+	.doomednum        = 13,		// doomednum
+	.spawnstate       = S_RKEY,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_NOTDMATCH,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC5",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC6
+	.type             = MT_MISC6,
+	.doomednum        = 6,		// doomednum
+	.spawnstate       = S_YKEY,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_NOTDMATCH,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC6",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC7
+	.type             = MT_MISC7,
+	.doomednum        = 39,		// doomednum
+	.spawnstate       = S_YSKULL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_NOTDMATCH,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC7",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC8
+	.type             = MT_MISC8,
+	.doomednum        = 38,		// doomednum
+	.spawnstate       = S_RSKULL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_NOTDMATCH,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC8",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC9
+	.type             = MT_MISC9,
+	.doomednum        = 40,		// doomednum
+	.spawnstate       = S_BSKULL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_NOTDMATCH,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC9",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC10
+	.type             = MT_MISC10,
+	.doomednum        = 2011,		// doomednum
+	.spawnstate       = S_STIM,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC10",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC11
+	.type             = MT_MISC11,
+	.doomednum        = 2012,		// doomednum
+	.spawnstate       = S_MEDI,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC11",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC12
+	.type             =	MT_MISC12,
+	.doomednum        =	2013,		// doomednum
+	.spawnstate       =	S_SOUL,		// spawnstate
+	.spawnhealth      =	1000,		// spawnhealth
+	.gibhealth        =	0, // gibhealth
+	.seestate         =	S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_COUNTITEM,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC12",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_INV
+	.type             = MT_INV,
+	.doomednum        = 2022,		// doomednum
+	.spawnstate       = S_PINV,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_COUNTITEM,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_INV",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC13
+	.type             = MT_MISC13,
+	.doomednum        = 2023,		// doomednum
+	.spawnstate       = S_PSTR,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_COUNTITEM,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC13",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_INS
+	.type             = MT_INS,
+	.doomednum        = 2024,		// doomednum
+	.spawnstate       = S_PINS,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_COUNTITEM,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_INS",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC14
+	.type             = MT_MISC14,
+	.doomednum        = 2025,		// doomednum
+	.spawnstate       = S_SUIT,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC14",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC15
+	.type             = MT_MISC15,
+	.doomednum        = 2026,		// doomednum
+	.spawnstate       = S_PMAP,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_COUNTITEM,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC15",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC16
+	.type             = MT_MISC16,
+	.doomednum        = 2045,		// doomednum
+	.spawnstate       = S_PVIS,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_COUNTITEM,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC16",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MEGA
+	.type             = MT_MEGA,
+	.doomednum        = 83,		// doomednum
+	.spawnstate       = S_MEGA,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL|MF_COUNTITEM,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MEGA",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_CLIP
+	.type             = MT_CLIP,
+	.doomednum        = 2007,		// doomednum
+	.spawnstate       = S_CLIP,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_CLIP",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC17
+	.type             = MT_MISC17,
+	.doomednum        = 2048,		// doomednum
+	.spawnstate       = S_AMMO,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC17",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC18
+	.type             = MT_MISC18,
+	.doomednum        = 2010,		// doomednum
+	.spawnstate       = S_ROCK,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC18",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC19
+	.type             = MT_MISC19,
+	.doomednum        = 2046,		// doomednum
+	.spawnstate       = S_BROK,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC19",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC20
+	.type             = MT_MISC20,
+	.doomednum        = 2047,		// doomednum
+	.spawnstate       = S_CELL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC20",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC21
+	.type             = MT_MISC21,
+	.doomednum        = 17,		// doomednum
+	.spawnstate       = S_CELP,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC21",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC22
+	.type             = MT_MISC22,
+	.doomednum        = 2008,		// doomednum
+	.spawnstate       = S_SHEL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC22",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC23
+	.type             = MT_MISC23,
+	.doomednum        = 2049,		// doomednum
+	.spawnstate       = S_SBOX,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC23",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC24
+	.type             = MT_MISC24,
+	.doomednum        = 8,		// doomednum
+	.spawnstate       = S_BPAK,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC24",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC25
+	.type             = MT_MISC25,
+	.doomednum        = 2006,		// doomednum
+	.spawnstate       = S_BFUG,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC25",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_CHAINGUN
+	.type             = MT_CHAINGUN,
+	.doomednum        = 2002,		// doomednum
+	.spawnstate       = S_MGUN,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_CHAINGUN",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC26
+	.type             = MT_MISC26,
+	.doomednum        = 2005,		// doomednum
+	.spawnstate       = S_CSAW,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC26",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC27
+	.type             = MT_MISC27,
+	.doomednum        = 2003,		// doomednum
+	.spawnstate       = S_LAUN,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC27",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC28
+	.type             = MT_MISC28,
+	.doomednum        = 2004,		// doomednum
+	.spawnstate       = S_PLAS,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC28",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_SHOTGUN
+	.type             = MT_SHOTGUN,
+	.doomednum        = 2001,		// doomednum
+	.spawnstate       = S_SHOT,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_SHOTGUN",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_SUPERSHOTGUN
+	.type             = MT_SUPERSHOTGUN,
+	.doomednum        = 82,		// doomednum
+	.spawnstate       = S_SHOT2,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPECIAL,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_SUPERSHOTGUN",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC29
+	.type             = MT_MISC29,
+	.doomednum        = 85,		// doomednum
+	.spawnstate       = S_TECHLAMP,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 74*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC29",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC30
+	.type             = MT_MISC30,
+	.doomednum        = 86,		// doomednum
+	.spawnstate       = S_TECH2LAMP,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 54*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC30",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC31
+	.type             = MT_MISC31,
+	.doomednum        = 2028,		// doomednum
+	.spawnstate       = S_COLU,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 44*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC31",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC32
+	.type             = MT_MISC32,
+	.doomednum        = 30,		// doomednum
+	.spawnstate       = S_TALLGRNCOL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 48*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC32",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC33
+	.type             = MT_MISC33,
+	.doomednum        = 31,		// doomednum
+	.spawnstate       = S_SHRTGRNCOL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 34*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC33",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC34
+	.type             = MT_MISC34,
+	.doomednum        = 32,		// doomednum
+	.spawnstate       = S_TALLREDCOL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 48*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC34",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC35
+	.type             = MT_MISC35,
+	.doomednum        = 33,		// doomednum
+	.spawnstate       = S_SHRTREDCOL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 34*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC35",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC36
+	.type             = MT_MISC36,
+	.doomednum        = 37,		// doomednum
+	.spawnstate       = S_SKULLCOL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 44*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC36",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC37
+	.type             = MT_MISC37,
+	.doomednum        = 36,		// doomednum
+	.spawnstate       = S_HEARTCOL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 40*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC37",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC38
+	.type             = MT_MISC38,
+	.doomednum        = 41,		// doomednum
+	.spawnstate       = S_EVILEYE,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 50*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC38",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC39
+	.type             = MT_MISC39,
+	.doomednum        = 42,		// doomednum
+	.spawnstate       = S_FLOATSKULL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 48*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC39",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC40
+	.type             = MT_MISC40,
+	.doomednum        = 43,		// doomednum
+	.spawnstate       = S_TORCHTREE,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 56*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC40",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC41
+	.type             = MT_MISC41,
+	.doomednum        = 44,		// doomednum
+	.spawnstate       = S_BLUETORCH,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 68*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC41",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC42
+	.type             = MT_MISC42,
+	.doomednum        = 45,		// doomednum
+	.spawnstate       = S_GREENTORCH,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 68*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC42",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC43
+	.type             = MT_MISC43,
+	.doomednum        = 46,		// doomednum
+	.spawnstate       = S_REDTORCH,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 68*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC43",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC44
+	.type             = MT_MISC44,
+	.doomednum        = 55,		// doomednum
+	.spawnstate       = S_BTORCHSHRT,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 37*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC44",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC45
+	.type             = MT_MISC45,
+	.doomednum        = 56,		// doomednum
+	.spawnstate       = S_GTORCHSHRT,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 37*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC45",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC46
+	.type             = MT_MISC46,
+	.doomednum        = 57,		// doomednum
+	.spawnstate       = S_RTORCHSHRT,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 37*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC46",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC47
+	.type             = MT_MISC47,
+	.doomednum        = 47,		// doomednum
+	.spawnstate       = S_STALAGTITE,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 47*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC47",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC48
+	.type             = MT_MISC48,
+	.doomednum        = 48,		// doomednum
+	.spawnstate       = S_TECHPILLAR,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 120*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC48",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC49
+	.type             = MT_MISC49,
+	.doomednum        = 34,		// doomednum
+	.spawnstate       = S_CANDLESTIK,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC49",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC50
+	.type             = MT_MISC50,
+	.doomednum        = 35,		// doomednum
+	.spawnstate       = S_CANDELABRA,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 54*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC50",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC51
+	.type             = MT_MISC51,
+	.doomednum        = 49,		// doomednum
+	.spawnstate       = S_BLOODYTWITCH,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 68*FRACUNIT,		// height
+	.cdheight         = 68*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC51",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC52
+	.type             = MT_MISC52,
+	.doomednum        = 50,		// doomednum
+	.spawnstate       = S_MEAT2,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 84*FRACUNIT,		// height
+	.cdheight         = 84*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC52",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC53
+	.type             = MT_MISC53,
+	.doomednum        = 51,		// doomednum
+	.spawnstate       = S_MEAT3,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 84*FRACUNIT,		// height
+	.cdheight         = 79*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC53",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC54
+	.type             = MT_MISC54,
+	.doomednum        = 52,		// doomednum
+	.spawnstate       = S_MEAT4,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 68*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC54",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC55
+	.type             = MT_MISC55,
+	.doomednum        = 53,		// doomednum
+	.spawnstate       = S_MEAT5,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 52*FRACUNIT,		// height
+	.cdheight         = 52*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC55",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC56
+	.type             = MT_MISC56,
+	.doomednum        = 59,		// doomednum
+	.spawnstate       = S_MEAT2,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 84*FRACUNIT,		// height
+	.cdheight         = 84*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC56",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC57
+	.type             = MT_MISC57,
+	.doomednum        = 60,		// doomednum
+	.spawnstate       = S_MEAT4,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 68*FRACUNIT,		// height
+	.cdheight         = 68*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC57",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC58
+	.type             = MT_MISC58,
+	.doomednum        = 61,		// doomednum
+	.spawnstate       = S_MEAT3,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 52*FRACUNIT,		// height
+	.cdheight         = 52*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC58",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC59
+	.type             = MT_MISC59,
+	.doomednum        = 62,		// doomednum
+	.spawnstate       = S_MEAT5,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 52*FRACUNIT,		// height
+	.cdheight         = 52*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC59",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC60
+	.type             = MT_MISC60,
+	.doomednum        = 63,		// doomednum
+	.spawnstate       = S_BLOODYTWITCH,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 68*FRACUNIT,		// height
+	.cdheight         = 68*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC60",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC61
+	.type             = MT_MISC61,
+	.doomednum        = 22,		// doomednum
+	.spawnstate       = S_HEAD_DIE6,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC61",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC62
+	.type             = MT_MISC62,
+	.doomednum        = 15,		// doomednum
+	.spawnstate       = S_PLAY_DIE7,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC62",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC63
+	.type             = MT_MISC63,
+	.doomednum        = 18,		// doomednum
+	.spawnstate       = S_POSS_DIE5,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC63",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC64
+	.type             = MT_MISC64,
+	.doomednum        = 21,		// doomednum
+	.spawnstate       = S_SARG_DIE6,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC64",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC65
+	.type             = MT_MISC65,
+	.doomednum        = 23,		// doomednum
+	.spawnstate       = S_SKULL_DIE6,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC65",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC66
+	.type             = MT_MISC66,
+	.doomednum        = 20,		// doomednum
+	.spawnstate       = S_TROO_DIE5,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC66",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC67
+	.type             = MT_MISC67,
+	.doomednum        = 19,		// doomednum
+	.spawnstate       = S_SPOS_DIE5,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC67",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC68
+	.type             = MT_MISC68,
+	.doomednum        = 10,		// doomednum
+	.spawnstate       = S_PLAY_XDIE9,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC68",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC69
+	.type             = MT_MISC69,
+	.doomednum        = 12,		// doomednum
+	.spawnstate       = S_PLAY_XDIE9,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC69",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC70
+	.type             = MT_MISC70,
+	.doomednum        = 28,		// doomednum
+	.spawnstate       = S_HEADSONSTICK,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 60*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC70",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC71
+	.type             = MT_MISC71,
+	.doomednum        = 24,		// doomednum
+	.spawnstate       = S_GIBS,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = 0,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC71",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC72
+	.type             = MT_MISC72,
+	.doomednum        = 27,		// doomednum
+	.spawnstate       = S_HEADONASTICK,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 54*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC72",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC73
+	.type             = MT_MISC73,
+	.doomednum        = 29,		// doomednum
+	.spawnstate       = S_HEADCANDLES,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 40*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC73",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC74
+	.type             = MT_MISC74,
+	.doomednum        = 25,		// doomednum
+	.spawnstate       = S_DEADSTICK,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC74",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC75
+	.type             = MT_MISC75,
+	.doomednum        = 26,		// doomednum
+	.spawnstate       = S_LIVESTICK,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC75",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC76
+	.type             = MT_MISC76,
+	.doomednum        = 54,		// doomednum
+	.spawnstate       = S_BIGTREE,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 32*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 124*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC76",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC77
+	.type             = MT_MISC77,
+	.doomednum        = 70,		// doomednum
+	.spawnstate       = S_BBAR1,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 46*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC77",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC78
+	.type             = MT_MISC78,
+	.doomednum        = 73,		// doomednum
+	.spawnstate       = S_HANGNOGUTS,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 88*FRACUNIT,		// height
+	.cdheight         = 88*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC78",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC79
+	.type             = MT_MISC79,
+	.doomednum        = 74,		// doomednum
+	.spawnstate       = S_HANGBNOBRAIN,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 88*FRACUNIT,		// height
+	.cdheight         = 88*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC79",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC80
+	.type             = MT_MISC80,
+	.doomednum        = 75,		// doomednum
+	.spawnstate       = S_HANGTLOOKDN,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 64*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC80",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC81
+	.type             = MT_MISC81,
+	.doomednum        = 76,		// doomednum
+	.spawnstate       = S_HANGTSKULL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 64*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC81",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC82
+	.type             = MT_MISC82,
+	.doomednum        = 77,		// doomednum
+	.spawnstate       = S_HANGTLOOKUP,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 64*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC82",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC83
+	.type             = MT_MISC83,
+	.doomednum        = 78,		// doomednum
+	.spawnstate       = S_HANGTNOBRAIN,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 16*FRACUNIT,		// radius
+	.height           = 64*FRACUNIT,		// height
+	.cdheight         = 64*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_SOLID|MF_SPAWNCEILING|MF_NOGRAVITY,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC83",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC84
+	.type             = MT_MISC84,
+	.doomednum        = 79,		// doomednum
+	.spawnstate       = S_COLONGIBS,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC84",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC85
+	.type             = MT_MISC85,
+	.doomednum        = 80,		// doomednum
+	.spawnstate       = S_SMALLPOOL,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC85",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
+	},
+
+	{ // MT_MISC86
+	.type             = MT_MISC86,
+	.doomednum        = 81,		// doomednum
+	.spawnstate       = S_BRAINSTEM,		// spawnstate
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 20*FRACUNIT,		// radius
+	.height           = 16*FRACUNIT,		// height
+	.cdheight         = 16*FRACUNIT,	// cdheight
+	.mass             = 100,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP,		// flags
+	.flags2           = 0,		// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,
+	.name             = "MT_MISC86",
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
 	},
 
 	// For use with wind and current effects
-	{		// MT_PUSH	// phares
-	MT_PUSH,	// phares
-	5001,		// doomednum	//   |    //jff 5/11/98 deconflict
-	S_TNT1,		// spawnstate	//   V    // with DOSDoom
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	8,		// radius
-	8,		// height
-	8,		// cdheight
-	10,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP,	// flags
-	MF2_DONTDRAW,	// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_PUSH",	// name
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
+	{ // MT_PUSH
+	.type             = MT_PUSH, // phares
+	.doomednum        = 5001,    //   |     //jff 5/11/98 deconflict
+	.spawnstate       = S_TNT1,  //   V     // with DOSDoom
+	.spawnhealth      = 1000,		// spawnhealth
+	.gibhealth        = 0, // gibhealth
+	.seestate         = S_NULL,		// seestate
+	.seesound         = NULL,		// seesound
+	.reactiontime     = 8,		// reactiontime
+	.attacksound      = NULL,		// attacksound
+	.painstate        = S_NULL,		// painstate
+	.painchance       = 0,		// painchance
+	.painsound        = NULL,		// painsound
+	.meleestate       = S_NULL,		// meleestate
+	.missilestate     = S_NULL,		// missilestate
+	.deathstate       = S_NULL,		// deathstate
+	.xdeathstate      = S_NULL,		// xdeathstate
+	.deathsound       = NULL,		// deathsound
+	.speed            = 0,		// speed
+	.radius           = 8,		// radius
+	.height           = 8,		// height
+	.cdheight         = 8,		// cdheight
+	.mass             = 10,		// mass
+	.damage           = 0,		// damage
+	.activesound      = NULL,		// activesound
+	.flags            = MF_NOBLOCKMAP,	// flags
+	.flags2           = MF2_DONTDRAW,	// flags2
+	.raisestate       = S_NULL,		// raisestate
+	.translucency     = 0x10000,	// translucency
+	.name             = "MT_PUSH",	// name
+	.altspeed         = NO_ALTSPEED,	// altspeed
+	.meleerange       = 64 * FRACUNIT,	// meleerange
+	.infighting_group = IG_DEFAULT,		// infighting group
+	.projectile_group = PG_DEFAULT,		// projectile group
+	.splash_group     = SG_DEFAULT,		// splash group
+	.flags3           = 0,		// flags3
+	.ripsound         = NULL, // ripsound
+	.droppeditem      = MT_NULL		// droppeditem
 	},
 
 	// For use with wind and current effects
-	{		// MT_PULL
-	MT_PULL,
-	5002,		// doomednum                   //jff 5/11/98 deconflict
-	S_TNT1,		// spawnstate                  // with DOSDoom
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	8,		// radius
-	8,		// height
-	8,		// cdheight
-	10,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP,	// flags
-	MF2_DONTDRAW,	// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_PULL",	// name
-    NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
+	{ // MT_PULL
+	.type             = MT_PULL,
+	.doomednum        = 5002,   //jff 5/11/98 deconflict
+	.spawnstate       = S_TNT1, // with DOSDoom
+	.spawnhealth      = 1000,
+	.reactiontime     = 8,
+	.radius           = 8,
+	.height           = 8,
+	.cdheight         = 8,
+	.mass             = 10,
+	.flags            = MF_NOBLOCKMAP,
+	.flags2           = MF2_DONTDRAW,
+	.name             = "MT_PULL",
 	},
 
 	// Marine's best friend :)      // killough 7/19/98
-	{		// MT_DOGS
-	MT_DOGS,
-	888,		// doomednum
-	S_DOGS_STND,	// spawnstate
-	500,		// spawnhealth
-	0, // gibhealth
-	S_DOGS_RUN1,	// seestate
-	"dog/sight",	// seesound
-	8,		// reactiontime
-	"dog/attack",	// attacksound
-	S_DOGS_PAIN,	// painstate
-	180,		// painchance
-	"dog/pain",	// painsound
-	S_DOGS_ATK1,	// meleestate
-	S_NULL,		// missilestate
-	S_DOGS_DIE1,	// deathstate
-	S_NULL,		// xdeathstate
-	"dog/death",	// deathsound
-	10,		// speed
-	12*FRACUNIT,	// radius
-	28*FRACUNIT,	// height
-	28*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	"dog/active",	// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,   // flags
-	MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL, // flags2
-	S_DOGS_RAISE1,	// raisestate
-	0x10000,	// translucency
-	"MT_DOGS",	// name
-    NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
+	{ // MT_DOGS
+	.type             = MT_DOGS,
+	.doomednum        = 888,
+	.spawnstate       = S_DOGS_STND,
+	.spawnhealth      = 500,
+	.seestate         = S_DOGS_RUN1,
+	.seesound         = "dog/sight",
+	.reactiontime     = 8,
+	.attacksound      = "dog/attack",
+	.painstate        = S_DOGS_PAIN,
+	.painchance       = 180,
+	.painsound        = "dog/pain",
+	.meleestate       = S_DOGS_ATK1,
+	.deathstate       = S_DOGS_DIE1,
+	.deathsound       = "dog/death",
+	.speed            = 10,
+	.radius           = 12_fx,
+	.height           = 28_fx,
+	.cdheight         = 28_fx,
+	.mass             = 100,
+	.activesound      = "dog/active",
+	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,
+	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
+	.raisestate       = S_DOGS_RAISE1,
+	.name             = "MT_DOGS",
 	},
 
 	// killough 7/11/98: this is the first of two plasma fireballs in the beta
-	{		// MT_PLASMA1
-	MT_PLASMA1,
-	-1,		// doomednum
-	S_PLS1BALL,	// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	"weapons/plasmaf", // seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_PLS1EXP,	// deathstate
-	S_NULL,		// xdeathstate
-	"weapons/plasmax", // deathsound
-	25*FRACUNIT,	// speed
-	13*FRACUNIT,	// radius
-	8*FRACUNIT,	// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	4,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,
-	MF2_PCROSS|MF2_IMPACT, // flags2
-	S_NULL,		// raisestate
-	FRACUNIT,	// translucency
-	"MT_PLASMA1",	// name
-    NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
+	{ // MT_PLASMA1
+	.type             = MT_PLASMA1,
+	.spawnstate       = S_PLS1BALL,
+	.spawnhealth      = 1000,
+	.seesound         = "weapons/plasmaf",
+	.reactiontime     = 8,
+	.deathstate       = S_PLS1EXP,
+	.deathsound       = "weapons/plasmax",
+	.speed            = 25_fx,
+	.radius           = 13_fx,
+	.height           = 8_fx,
+	.cdheight         = 8_fx,
+	.mass             = 100,
+	.damage           = 4,
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,
+	.flags2           = MF2_PCROSS|MF2_IMPACT,
+	.translucency     = FRACUNIT,
+	.name             = "MT_PLASMA1",
 	},
 
 	// killough 7/11/98: this is the second of two plasma fireballs in the beta
-	{		// MT_PLASMA2
-	MT_PLASMA2,
-	-1,		// doomednum
-	S_PLS2BALL,	// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	"weapons/plasmaf", // seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_PLS2BALLX1,	// deathstate
-	S_NULL,		// xdeathstate
-	"weapons/plasmax", // deathsound
-	25*FRACUNIT,	// speed
-	6*FRACUNIT,	// radius
-	8*FRACUNIT,	// height
-	8*FRACUNIT,	// cdheight
-	100,		// mass
-	4,		// damage
-	NULL,		// activesound
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,
-	MF2_PCROSS|MF2_IMPACT, // flags2
-	S_NULL,		// raisestate
-	FRACUNIT,	// translucency
-	"MT_PLASMA2",	// name
-    NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
+	{ // MT_PLASMA2
+	.type             = MT_PLASMA2,
+	.spawnstate       = S_PLS2BALL,
+	.spawnhealth      = 1000,
+	.seesound         = "weapons/plasmaf",
+	.reactiontime     = 8,
+	.deathstate       = S_PLS2BALLX1,
+	.deathsound       = "weapons/plasmax",
+	.speed            = 25_fx,
+	.radius           = 6_fx,
+	.height           = 8_fx,
+	.cdheight         = 8_fx,
+	.mass             = 100,
+	.damage           = 4,
+	.flags            = MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,
+	.flags2           = MF2_PCROSS|MF2_IMPACT,
+	.translucency     = FRACUNIT,
+	.name             = "MT_PLASMA2",
 	},
 
 	// killough 7/11/98: this is the evil sceptre in the beta version
-	{		// MT_SCEPTRE
-	MT_SCEPTRE,
-	2016,		// doomednum
-	S_BON3,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	10*FRACUNIT,	// radius
-	16*FRACUNIT,	// height
-	16*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM, // flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_SCEPTRE",	// name
-    NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
+	{ // MT_SCEPTRE
+	.type             = MT_SCEPTRE,
+	.doomednum        = 2016,
+	.spawnstate       = S_BON3,
+	.spawnhealth      = 1000,
+	.reactiontime     = 8,
+	.radius           = 10_fx,
+	.height           = 16_fx,
+	.cdheight         = 16_fx,
+	.mass             = 100,
+	.flags            = MF_SPECIAL|MF_COUNTITEM,
+	.name             = "MT_SCEPTRE",
 	},
 
 	// killough 7/11/98: this is the unholy bible in the beta version
-	{		// MT_BIBLE
-	MT_BIBLE,
-	2017,		// doomednum
-	S_BON4,		// spawnstate
-	1000,		// spawnhealth
-	0, // gibhealth
-	S_NULL,		// seestate
-	NULL,		// seesound
-	8,		// reactiontime
-	NULL,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	NULL,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	NULL,		// deathsound
-	0,		// speed
-	20*FRACUNIT,	// radius
-	10*FRACUNIT,	// height
-	10*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SPECIAL|MF_COUNTITEM, // flags
-	0,		// flags2
-	S_NULL,		// raisestate
-	0x10000,	// translucency
-	"MT_BIBLE",	// name
-    NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
+	{ // MT_BIBLE
+	.type             = MT_BIBLE,
+	.doomednum        = 2017,
+	.spawnstate       = S_BON4,
+	.spawnhealth      = 1000,
+	.reactiontime     = 8,
+	.radius           = 20_fx,
+	.height           = 10_fx,
+	.cdheight         = 10_fx,
+	.mass             = 100,
+	.flags            = MF_SPECIAL|MF_COUNTITEM,
+	.name             = "MT_BIBLE",
 	},
 
-    // [crispy] support MUSINFO lump (dynamic music changing)
-    {
-    // MT_MUSICSOURCE
-    MT_MUSICSOURCE,
-    14165,         // doomednum
-    S_TNT1,        // spawnstate
-    1000,          // spawnhealth
-	0, // gibhealth
-    S_NULL,        // seestate
-    NULL,          // seesound
-    8,             // reactiontime
-    NULL,          // attacksound
-    S_NULL,        // painstate
-    0,             // painchance
-    NULL,          // painsound
-    S_NULL,        // meleestate
-    S_NULL,        // missilestate
-    S_NULL,        // deathstate
-    S_NULL,        // xdeathstate
-    NULL,          // deathsound
-    0,             // speed
-    16*FRACUNIT,            // radius
-    16*FRACUNIT,            // height
-	16*FRACUNIT,			// cdheight
-    100,           // mass
-    0,             // damage
-    NULL,          // activesound
-    MF_NOBLOCKMAP, // flags
-	0,
-    S_NULL,         // raisestate
-    0x10000,   // translucency
-	"MT_MUSICSOURCE", // name
-    NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT,	// meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
-    },
+	// [crispy] support MUSINFO lump (dynamic music changing)
+	{ // MT_MUSICSOURCE
+	.type             = MT_MUSICSOURCE,
+	.doomednum        = 14165,
+	.spawnstate       = S_TNT1,
+	.spawnhealth      = 1000,
+	.reactiontime     = 8,
+	.radius           = 16_fx,
+	.height           = 16_fx,
+	.cdheight         = 16_fx,
+	.mass             = 100,
+	.flags            = MF_NOBLOCKMAP,
+	.name             = "MT_MUSICSOURCE",
+	},
 
-    // 145-149 - UNUSED THINGS, HERE'S A PLACEHOLDER
-    {145, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
-    {146, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
-	{147, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
-    {148, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
-    {149, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"UNUSED"},
+	// 145-149 - UNUSED THINGS, HERE'S A PLACEHOLDER
+	{.type = 145, .spawnstate = S_TNT1, .name = "UNUSED"},
+	{.type = 146, .spawnstate = S_TNT1, .name = "UNUSED"},
+	{.type = 147, .spawnstate = S_TNT1, .name = "UNUSED"},
+	{.type = 148, .spawnstate = S_TNT1, .name = "UNUSED"},
+	{.type = 149, .spawnstate = S_TNT1, .name = "UNUSED"},
 
 	// DEHEXTRA THINGS
-    {MT_EXTRA00, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA00",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA01, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA01",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA02, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA02",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA03, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA03",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA04, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA04",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA05, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA05",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA06, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA06",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA07, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA07",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA08, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA08",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA09, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA09",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA10, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA10",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA11, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA11",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA12, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA12",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA13, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA13",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA14, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA14",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA15, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA15",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA16, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA16",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA17, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA17",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA18, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA18",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA19, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA19",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA20, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA20",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA21, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA21",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA22, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA22",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA23, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA23",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA24, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA24",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA25, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA25",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA26, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA26",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA27, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA27",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA28, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA28",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA29, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA29",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA30, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA30",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA31, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA31",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA32, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA32",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA33, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA33",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA34, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA34",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA35, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA35",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA36, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA36",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA37, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA37",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA38, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA38",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA39, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA39",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA40, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA40",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA41, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA41",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA42, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA42",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA43, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA43",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA44, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA44",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA45, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA45",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA46, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA46",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA47, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA47",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA48, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA48",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA49, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA49",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA50, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA50",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA51, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA51",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA52, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA52",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA53, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA53",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA54, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA54",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA55, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA55",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA56, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA56",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA57, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA57",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA58, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA58",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA59, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA59",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA60, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA60",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA61, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA61",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA62, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA62",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA63, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA63",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA64, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA64",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA65, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA65",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA66, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA66",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA67, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA67",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA68, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA68",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA69, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA69",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA70, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA70",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA71, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA71",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA72, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA72",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA73, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA73",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA74, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA74",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA75, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA75",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA76, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA76",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA77, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA77",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA78, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA78",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA79, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA79",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA80, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA80",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA81, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA81",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA82, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA82",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA83, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA83",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA84, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA84",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA85, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA85",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA86, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA86",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA87, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA87",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA88, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA88",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA89, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA89",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA90, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA90",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA91, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA91",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA92, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA92",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA93, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA93",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA94, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA94",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA95, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA95",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA96, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA96",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA97, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA97",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-    {MT_EXTRA98, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA98",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
-	{MT_EXTRA99, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA99",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
+	// TODO: are these supposed to be S_TNT1 or should they be S_NULL?
+	{.type = MT_EXTRA00, .spawnstate = S_TNT1, .name = "MT_EXTRA00"},
+	{.type = MT_EXTRA01, .spawnstate = S_TNT1, .name = "MT_EXTRA01"},
+	{.type = MT_EXTRA02, .spawnstate = S_TNT1, .name = "MT_EXTRA02"},
+	{.type = MT_EXTRA03, .spawnstate = S_TNT1, .name = "MT_EXTRA03"},
+	{.type = MT_EXTRA04, .spawnstate = S_TNT1, .name = "MT_EXTRA04"},
+	{.type = MT_EXTRA05, .spawnstate = S_TNT1, .name = "MT_EXTRA05"},
+	{.type = MT_EXTRA06, .spawnstate = S_TNT1, .name = "MT_EXTRA06"},
+	{.type = MT_EXTRA07, .spawnstate = S_TNT1, .name = "MT_EXTRA07"},
+	{.type = MT_EXTRA08, .spawnstate = S_TNT1, .name = "MT_EXTRA08"},
+	{.type = MT_EXTRA09, .spawnstate = S_TNT1, .name = "MT_EXTRA09"},
+	{.type = MT_EXTRA10, .spawnstate = S_TNT1, .name = "MT_EXTRA10"},
+	{.type = MT_EXTRA11, .spawnstate = S_TNT1, .name = "MT_EXTRA11"},
+	{.type = MT_EXTRA12, .spawnstate = S_TNT1, .name = "MT_EXTRA12"},
+	{.type = MT_EXTRA13, .spawnstate = S_TNT1, .name = "MT_EXTRA13"},
+	{.type = MT_EXTRA14, .spawnstate = S_TNT1, .name = "MT_EXTRA14"},
+	{.type = MT_EXTRA15, .spawnstate = S_TNT1, .name = "MT_EXTRA15"},
+	{.type = MT_EXTRA16, .spawnstate = S_TNT1, .name = "MT_EXTRA16"},
+	{.type = MT_EXTRA17, .spawnstate = S_TNT1, .name = "MT_EXTRA17"},
+	{.type = MT_EXTRA18, .spawnstate = S_TNT1, .name = "MT_EXTRA18"},
+	{.type = MT_EXTRA19, .spawnstate = S_TNT1, .name = "MT_EXTRA19"},
+	{.type = MT_EXTRA20, .spawnstate = S_TNT1, .name = "MT_EXTRA20"},
+	{.type = MT_EXTRA21, .spawnstate = S_TNT1, .name = "MT_EXTRA21"},
+	{.type = MT_EXTRA22, .spawnstate = S_TNT1, .name = "MT_EXTRA22"},
+	{.type = MT_EXTRA23, .spawnstate = S_TNT1, .name = "MT_EXTRA23"},
+	{.type = MT_EXTRA24, .spawnstate = S_TNT1, .name = "MT_EXTRA24"},
+	{.type = MT_EXTRA25, .spawnstate = S_TNT1, .name = "MT_EXTRA25"},
+	{.type = MT_EXTRA26, .spawnstate = S_TNT1, .name = "MT_EXTRA26"},
+	{.type = MT_EXTRA27, .spawnstate = S_TNT1, .name = "MT_EXTRA27"},
+	{.type = MT_EXTRA28, .spawnstate = S_TNT1, .name = "MT_EXTRA28"},
+	{.type = MT_EXTRA29, .spawnstate = S_TNT1, .name = "MT_EXTRA29"},
+	{.type = MT_EXTRA30, .spawnstate = S_TNT1, .name = "MT_EXTRA30"},
+	{.type = MT_EXTRA31, .spawnstate = S_TNT1, .name = "MT_EXTRA31"},
+	{.type = MT_EXTRA32, .spawnstate = S_TNT1, .name = "MT_EXTRA32"},
+	{.type = MT_EXTRA33, .spawnstate = S_TNT1, .name = "MT_EXTRA33"},
+	{.type = MT_EXTRA34, .spawnstate = S_TNT1, .name = "MT_EXTRA34"},
+	{.type = MT_EXTRA35, .spawnstate = S_TNT1, .name = "MT_EXTRA35"},
+	{.type = MT_EXTRA36, .spawnstate = S_TNT1, .name = "MT_EXTRA36"},
+	{.type = MT_EXTRA37, .spawnstate = S_TNT1, .name = "MT_EXTRA37"},
+	{.type = MT_EXTRA38, .spawnstate = S_TNT1, .name = "MT_EXTRA38"},
+	{.type = MT_EXTRA39, .spawnstate = S_TNT1, .name = "MT_EXTRA39"},
+	{.type = MT_EXTRA40, .spawnstate = S_TNT1, .name = "MT_EXTRA40"},
+	{.type = MT_EXTRA41, .spawnstate = S_TNT1, .name = "MT_EXTRA41"},
+	{.type = MT_EXTRA42, .spawnstate = S_TNT1, .name = "MT_EXTRA42"},
+	{.type = MT_EXTRA43, .spawnstate = S_TNT1, .name = "MT_EXTRA43"},
+	{.type = MT_EXTRA44, .spawnstate = S_TNT1, .name = "MT_EXTRA44"},
+	{.type = MT_EXTRA45, .spawnstate = S_TNT1, .name = "MT_EXTRA45"},
+	{.type = MT_EXTRA46, .spawnstate = S_TNT1, .name = "MT_EXTRA46"},
+	{.type = MT_EXTRA47, .spawnstate = S_TNT1, .name = "MT_EXTRA47"},
+	{.type = MT_EXTRA48, .spawnstate = S_TNT1, .name = "MT_EXTRA48"},
+	{.type = MT_EXTRA49, .spawnstate = S_TNT1, .name = "MT_EXTRA49"},
+	{.type = MT_EXTRA50, .spawnstate = S_TNT1, .name = "MT_EXTRA50"},
+	{.type = MT_EXTRA51, .spawnstate = S_TNT1, .name = "MT_EXTRA51"},
+	{.type = MT_EXTRA52, .spawnstate = S_TNT1, .name = "MT_EXTRA52"},
+	{.type = MT_EXTRA53, .spawnstate = S_TNT1, .name = "MT_EXTRA53"},
+	{.type = MT_EXTRA54, .spawnstate = S_TNT1, .name = "MT_EXTRA54"},
+	{.type = MT_EXTRA55, .spawnstate = S_TNT1, .name = "MT_EXTRA55"},
+	{.type = MT_EXTRA56, .spawnstate = S_TNT1, .name = "MT_EXTRA56"},
+	{.type = MT_EXTRA57, .spawnstate = S_TNT1, .name = "MT_EXTRA57"},
+	{.type = MT_EXTRA58, .spawnstate = S_TNT1, .name = "MT_EXTRA58"},
+	{.type = MT_EXTRA59, .spawnstate = S_TNT1, .name = "MT_EXTRA59"},
+	{.type = MT_EXTRA60, .spawnstate = S_TNT1, .name = "MT_EXTRA60"},
+	{.type = MT_EXTRA61, .spawnstate = S_TNT1, .name = "MT_EXTRA61"},
+	{.type = MT_EXTRA62, .spawnstate = S_TNT1, .name = "MT_EXTRA62"},
+	{.type = MT_EXTRA63, .spawnstate = S_TNT1, .name = "MT_EXTRA63"},
+	{.type = MT_EXTRA64, .spawnstate = S_TNT1, .name = "MT_EXTRA64"},
+	{.type = MT_EXTRA65, .spawnstate = S_TNT1, .name = "MT_EXTRA65"},
+	{.type = MT_EXTRA66, .spawnstate = S_TNT1, .name = "MT_EXTRA66"},
+	{.type = MT_EXTRA67, .spawnstate = S_TNT1, .name = "MT_EXTRA67"},
+	{.type = MT_EXTRA68, .spawnstate = S_TNT1, .name = "MT_EXTRA68"},
+	{.type = MT_EXTRA69, .spawnstate = S_TNT1, .name = "MT_EXTRA69"},
+	{.type = MT_EXTRA70, .spawnstate = S_TNT1, .name = "MT_EXTRA70"},
+	{.type = MT_EXTRA71, .spawnstate = S_TNT1, .name = "MT_EXTRA71"},
+	{.type = MT_EXTRA72, .spawnstate = S_TNT1, .name = "MT_EXTRA72"},
+	{.type = MT_EXTRA73, .spawnstate = S_TNT1, .name = "MT_EXTRA73"},
+	{.type = MT_EXTRA74, .spawnstate = S_TNT1, .name = "MT_EXTRA74"},
+	{.type = MT_EXTRA75, .spawnstate = S_TNT1, .name = "MT_EXTRA75"},
+	{.type = MT_EXTRA76, .spawnstate = S_TNT1, .name = "MT_EXTRA76"},
+	{.type = MT_EXTRA77, .spawnstate = S_TNT1, .name = "MT_EXTRA77"},
+	{.type = MT_EXTRA78, .spawnstate = S_TNT1, .name = "MT_EXTRA78"},
+	{.type = MT_EXTRA79, .spawnstate = S_TNT1, .name = "MT_EXTRA79"},
+	{.type = MT_EXTRA80, .spawnstate = S_TNT1, .name = "MT_EXTRA80"},
+	{.type = MT_EXTRA81, .spawnstate = S_TNT1, .name = "MT_EXTRA81"},
+	{.type = MT_EXTRA82, .spawnstate = S_TNT1, .name = "MT_EXTRA82"},
+	{.type = MT_EXTRA83, .spawnstate = S_TNT1, .name = "MT_EXTRA83"},
+	{.type = MT_EXTRA84, .spawnstate = S_TNT1, .name = "MT_EXTRA84"},
+	{.type = MT_EXTRA85, .spawnstate = S_TNT1, .name = "MT_EXTRA85"},
+	{.type = MT_EXTRA86, .spawnstate = S_TNT1, .name = "MT_EXTRA86"},
+	{.type = MT_EXTRA87, .spawnstate = S_TNT1, .name = "MT_EXTRA87"},
+	{.type = MT_EXTRA88, .spawnstate = S_TNT1, .name = "MT_EXTRA88"},
+	{.type = MT_EXTRA89, .spawnstate = S_TNT1, .name = "MT_EXTRA89"},
+	{.type = MT_EXTRA90, .spawnstate = S_TNT1, .name = "MT_EXTRA90"},
+	{.type = MT_EXTRA91, .spawnstate = S_TNT1, .name = "MT_EXTRA91"},
+	{.type = MT_EXTRA92, .spawnstate = S_TNT1, .name = "MT_EXTRA92"},
+	{.type = MT_EXTRA93, .spawnstate = S_TNT1, .name = "MT_EXTRA93"},
+	{.type = MT_EXTRA94, .spawnstate = S_TNT1, .name = "MT_EXTRA94"},
+	{.type = MT_EXTRA95, .spawnstate = S_TNT1, .name = "MT_EXTRA95"},
+	{.type = MT_EXTRA96, .spawnstate = S_TNT1, .name = "MT_EXTRA96"},
+	{.type = MT_EXTRA97, .spawnstate = S_TNT1, .name = "MT_EXTRA97"},
+	{.type = MT_EXTRA98, .spawnstate = S_TNT1, .name = "MT_EXTRA98"},
+	{.type = MT_EXTRA99, .spawnstate = S_TNT1, .name = "MT_EXTRA99"},
 };
 
 void D_BuildSpawnMap() {
