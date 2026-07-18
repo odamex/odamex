@@ -72,6 +72,26 @@ static int r_PortalDepth;
 
 EXTERN_CVAR(r_portalrecursions)
 
+// Is this actor a stacked-sector portal anchor?
+static bool R_IsStackPoint(const AActor* mo)
+{
+	return mo && (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK);
+}
+
+// Alpha of the boundary flat drawn over a stack portal's content, from the
+// remote stack thing's arg0: 0 = invisible flat, 255 = fully opaque.
+static int R_StackFlatAlpha(const AActor* mo)
+{
+	return clamp(static_cast<int>(mo->args[0]), 0, 255);
+}
+
+// Does this plane render as a portal? A boundary flat at full opacity would
+// completely hide the portal view, so skip the pass and draw it normally.
+static bool R_IsStackPortal(const AActor* mo)
+{
+	return R_IsStackPoint(mo) && R_StackFlatAlpha(mo) < 255;
+}
+
 visplane_t 				*floorplane;
 visplane_t 				*ceilingplane;
 visplane_t				*skyplane;
@@ -322,7 +342,8 @@ visplane_t *R_FindPlane (const plane_t &secplane, int picnum, int lightlevel,
 	}
 	else
 	{
-			isskybox = false;
+			isskybox = R_IsStackPortal(skybox) &&
+			           r_PortalDepth < r_portalrecursions.asInt();
 	}
 
 	// New visplane algorithm uses hash table -- killough
@@ -418,7 +439,8 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		// make a new visplane
 		unsigned hash;
 
-		if (pl->picnum == skyflatnum && pl->skybox != NULL &&
+		if (((pl->picnum == skyflatnum && pl->skybox != NULL) ||
+		     R_IsStackPortal(pl->skybox)) &&
 		    r_PortalDepth < r_portalrecursions.asInt())
 		{
 			hash = MAXVISPLANES;
@@ -637,6 +659,105 @@ void R_DrawLevelPlane(visplane_t *pl)
 
 
 //
+// R_DrawSingleFlatPlane
+//
+// Draws one visplane textured with its (regular, non-sky) flat, using
+// whatever spanfunc is currently selected. Factored out of R_DrawPlanes so
+// portal boundary flats can be re-drawn blended over portal content.
+//
+static void R_DrawSingleFlatPlane(visplane_t* pl)
+{
+	// regular flat
+	int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
+
+	dspan.color += 4;	// [RH] color if r_drawflat is 1
+	dspan.source = (byte *)W_CacheLumpNum (firstflat + useflatnum, PU_STATIC);
+
+	// [RH] warp a flat if desired
+	if (flatwarp[useflatnum])
+	{
+		if (warpedflats[useflatnum] && flatwarpedwhen[useflatnum] == level.time)
+		{
+			Z_ChangeTag(dspan.source, PU_CACHE);
+			dspan.source = warpedflats[useflatnum];
+			Z_ChangeTag(dspan.source, PU_STATIC);
+		}
+		else
+		{
+			if (!warpedflats[useflatnum])
+				warpedflats[useflatnum] = (byte*)Z_Malloc(64*64, PU_STATIC, &warpedflats[useflatnum]);
+
+			static byte buffer[64];
+			int timebase = level.time*23;
+
+			flatwarpedwhen[useflatnum] = level.time;
+			byte *warped = warpedflats[useflatnum];
+
+			for (int x = 63; x >= 0; x--)
+			{
+				int yt, yf = (finesine[(timebase + ((x+17) << 7))&FINEMASK]>>13) & 63;
+				byte *source = dspan.source + x;
+				byte *dest = warped + x;
+				for (yt = 64; yt; yt--, yf = (yf+1)&63, dest += 64)
+					*dest = *(source + (yf << 6));
+			}
+			timebase = level.time*32;
+			for (int y = 63; y >= 0; y--)
+			{
+				int xt, xf = (finesine[(timebase + (y << 7))&FINEMASK]>>13) & 63;
+				byte *source = warped + (y << 6);
+				byte *dest = buffer;
+				for (xt = 64; xt; xt--, xf = (xf+1) & 63)
+					*dest++ = *(source+xf);
+				memcpy (warped + (y << 6), buffer, 64);
+			}
+			Z_ChangeTag (dspan.source, PU_CACHE);
+			dspan.source = warped;
+		}
+	}
+
+	pl->top[pl->maxx+1] = viewheight;
+	pl->top[pl->minx-1] = viewheight;
+
+	if (P_IsPlaneLevel(&pl->secplane))
+		R_DrawLevelPlane(pl);
+	else
+		R_DrawSlopedPlane(pl);
+
+	Z_ChangeTag (dspan.source, PU_CACHE);
+}
+
+//
+// R_DrawStackFlatBlend
+//
+// Blends a stacked sector portal plane's own flat over the portal content
+// just rendered into it, at the alpha given by the stack thing's arg0.
+// Runs with the discovering pass's view restored, since the plane's texture
+// mapping is in that view's space.
+//
+static void R_DrawStackFlatBlend(visplane_t* pl)
+{
+	if (pl->maxx < pl->minx || !R_IsStackPoint(pl->skybox))
+		return;
+
+	const int alpha = R_StackFlatAlpha(pl->skybox);
+	if (alpha == 0)
+		return;
+
+	// A sky-pic'd portal plane has no flat to blend.
+	if (R_IsSkyFlat(pl->picnum) || pl->picnum & PL_SKYFLAT)
+		return;
+
+	dspan.translevel = (alpha << FRACBITS) / 255;
+	spanfunc = R_DrawTranslucentSpan;
+	spanslopefunc = R_DrawTranslucentSlopeSpan;
+
+	R_DrawSingleFlatPlane(pl);
+
+	R_ResetDrawFuncs();
+}
+
+//
 // R_DrawPlanes
 //
 // At the end of each frame.
@@ -665,64 +786,7 @@ void R_DrawPlanes (void)
 			}
 			else
 			{
-				// regular flat
-				int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
-
-				dspan.color += 4;	// [RH] color if r_drawflat is 1
-				dspan.source = (byte *)W_CacheLumpNum (firstflat + useflatnum, PU_STATIC);
-
-				// [RH] warp a flat if desired
-				if (flatwarp[useflatnum])
-				{
-					if (warpedflats[useflatnum] && flatwarpedwhen[useflatnum] == level.time)
-					{
-						Z_ChangeTag(dspan.source, PU_CACHE);
-						dspan.source = warpedflats[useflatnum];
-						Z_ChangeTag(dspan.source, PU_STATIC);
-					}
-					else
-					{
-						if (!warpedflats[useflatnum])
-							warpedflats[useflatnum] = (byte*)Z_Malloc(64*64, PU_STATIC, &warpedflats[useflatnum]);
-
-						static byte buffer[64];
-						int timebase = level.time*23;
-
-						flatwarpedwhen[useflatnum] = level.time;
-						byte *warped = warpedflats[useflatnum];
-
-						for (int x = 63; x >= 0; x--)
-						{
-							int yt, yf = (finesine[(timebase + ((x+17) << 7))&FINEMASK]>>13) & 63;
-							byte *source = dspan.source + x;
-							byte *dest = warped + x;
-							for (yt = 64; yt; yt--, yf = (yf+1)&63, dest += 64)
-								*dest = *(source + (yf << 6));
-						}
-						timebase = level.time*32;
-						for (int y = 63; y >= 0; y--)
-						{
-							int xt, xf = (finesine[(timebase + (y << 7))&FINEMASK]>>13) & 63;
-							byte *source = warped + (y << 6);
-							byte *dest = buffer;
-							for (xt = 64; xt; xt--, xf = (xf+1) & 63)
-								*dest++ = *(source+xf);
-							memcpy (warped + (y << 6), buffer, 64);
-						}
-						Z_ChangeTag (dspan.source, PU_CACHE);
-						dspan.source = warped;
-					}
-				}
-
-				pl->top[pl->maxx+1] = viewheight;
-				pl->top[pl->minx-1] = viewheight;
-
-				if (P_IsPlaneLevel(&pl->secplane))
-					R_DrawLevelPlane(pl);
-				else
-					R_DrawSlopedPlane(pl);
-
-				Z_ChangeTag (dspan.source, PU_CACHE);
+				R_DrawSingleFlatPlane(pl);
 			}
 		}
 	}
@@ -750,7 +814,7 @@ void R_DrawPlanes (void)
 //      then each portal level above it will do the same.
 //   8. The final level renders sprites and masked textures,
 //      and frees the memory used for all portal visplanes.
-//   9. If the recursion level exceeds r_portalrecursions, all sky planes
+//   9. If the recursion level exceeds r_portalrecursions, all portal planes
 //      draw sky instead of rendering the portal view.
 //
 //==========================================================================
@@ -779,7 +843,13 @@ static void R_DrawDiscoveredPortals()
 	if (r_PortalDepth <= r_portalrecursions.asInt())
 	{
 		for (pl = queue; pl != NULL; pl = pl->next)
+		{
 			R_RenderPortalView(pl);
+
+			// The discovering view is restored now, overlay the boundary
+			// flat translucently if the stack thing asks for it.
+			R_DrawStackFlatBlend(pl);
+		}
 	}
 	else
 	{
@@ -824,11 +894,26 @@ static void R_RenderPortalView(visplane_t* pl)
 
 	AActor* sky = pl->skybox;
 
-	viewx = sky->x;
-	viewy = sky->y;
-	viewz = sky->z;
-	camera = sky;
-	R_SetViewAngle(savedangle + sky->angle);
+	if (R_IsStackPoint(sky))
+	{
+		AActor* mate = sky->tracer;
+
+		if (mate == NULL)
+			return; // mate was destroyed at runtime, skip the pass
+
+		viewx = savedx + sky->x - mate->x;
+		viewy = savedy + sky->y - mate->y;
+		viewz = savedz + sky->z - mate->z;
+		camera = sky;
+	}
+	else
+	{
+		viewx = sky->x;
+		viewy = sky->y;
+		viewz = sky->z;
+		camera = sky;
+		R_SetViewAngle(savedangle + sky->angle);
+	}
 	validcount++; // Make sure we see all sprites
 
 	R_ClearPlanes(false);

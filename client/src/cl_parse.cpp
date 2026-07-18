@@ -689,10 +689,10 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		{
 			for (int j = 0; j < numsectors; j++)
 			{
-				if (sectors[j].Skybox == NULL)
-				{
-					sectors[j].Skybox = mo->ptr();
-				}
+				if (sectors[j].SkyboxCeiling == NULL)
+					sectors[j].SkyboxCeiling = mo->ptr();
+				if (sectors[j].SkyboxFloor == NULL)
+					sectors[j].SkyboxFloor = mo->ptr();
 			}
 		}
 
@@ -709,6 +709,20 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			P_AddSkyPicker(secnum, tid);
 			P_ResolveSkyPickers();
 		}
+	}
+
+	if (type == MT_UPPERSTACK || type == MT_LOWERSTACK)
+	{
+		if (msg->args_size() >= 1)
+			mo->tid = msg->args().Get(0);
+
+		if (msg->args_size() >= 2)
+			mo->args[0] = msg->args().Get(1);
+
+		mo->AddToHash();
+
+		P_AddStackLink(mo);
+		P_ResolveStackLinks();
 	}
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS)

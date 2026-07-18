@@ -2813,7 +2813,8 @@ void P_ResolveSkyPickers()
 		if (tid == 0)
 		{
 			// A picker with no TID clears the sector back to regular sky.
-			sector->Skybox = AActor::AActorPtr();
+			sector->SkyboxCeiling = AActor::AActorPtr();
+			sector->SkyboxFloor = AActor::AActorPtr();
 			resolved = true;
 		}
 		else
@@ -2823,7 +2824,8 @@ void P_ResolveSkyPickers()
 
 			if (box != NULL && box->type == MT_SKYVIEWPOINT)
 			{
-				sector->Skybox = box->ptr();
+				sector->SkyboxCeiling = box->ptr();
+				sector->SkyboxFloor = box->ptr();
 				resolved = true;
 			}
 		}
@@ -2837,6 +2839,76 @@ void P_ResolveSkyPickers()
 
 		if (resolved)
 			DeferredSkyPickers.erase(DeferredSkyPickers.begin() + i);
+		else
+			i++;
+	}
+}
+
+static std::vector<AActor::AActorPtr> DeferredStackLinks;
+
+void P_ClearStackLinks()
+{
+	DeferredStackLinks.clear();
+}
+
+void P_AddStackLink(AActor* mo)
+{
+	DeferredStackLinks.push_back(mo->ptr());
+}
+
+// Pair each recorded stack point with its opposite-type mate by TID.
+// Mate is stored in the AActor::tracer field.
+void P_ResolveStackLinks()
+{
+	for (size_t i = 0; i < DeferredStackLinks.size();)
+	{
+		AActor* self = DeferredStackLinks[i];
+
+		if (self == NULL)
+		{
+			// The stack point was destroyed while waiting.
+			DeferredStackLinks.erase(DeferredStackLinks.begin() + i);
+			continue;
+		}
+
+		bool resolved = false;
+
+		if (self->tid != 0)
+		{
+			const mobjtype_t matetype =
+			    self->type == MT_UPPERSTACK ? MT_LOWERSTACK : MT_UPPERSTACK;
+
+			TActorIterator<AActor> iterator(self->tid);
+			AActor* mate;
+
+			while ((mate = iterator.Next()) != NULL && mate->type != matetype)
+				;
+
+			if (mate != NULL)
+			{
+				self->tracer = mate->ptr();
+				mate->tracer = self->ptr();
+
+				sector_t* sector = self->subsector->sector;
+				if (self->type == MT_UPPERSTACK)
+					sector->SkyboxFloor = mate->ptr();
+				else
+					sector->SkyboxCeiling = mate->ptr();
+
+				resolved = true;
+			}
+		}
+
+		if (!resolved && serverside)
+		{
+			PrintFmt("Can't find {} stack point with TID {} for sector {}\n",
+			         self->type == MT_UPPERSTACK ? "lower" : "upper", self->tid,
+			         self->subsector->sector - sectors);
+			resolved = true; // drop it
+		}
+
+		if (resolved)
+			DeferredStackLinks.erase(DeferredStackLinks.begin() + i);
 		else
 			i++;
 	}
@@ -3041,13 +3113,21 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		::level.detected_gametype = GM_HORDE;
 	}
 
-	if (mthing.type == 9081)
+	if (mthing.type == 9077)
 	{
-		type = MT_SKYPICKER;
+		type = MT_UPPERSTACK;
+	}
+	else if (mthing.type == 9078)
+	{
+		type = MT_LOWERSTACK;
 	}
 	else if (mthing.type == 9080)
 	{
 		type = MT_SKYVIEWPOINT;
+	}
+	else if (mthing.type == 9081)
+	{
+		type = MT_SKYPICKER;
 	}
 	else if (mthing.type == 9082)
 	{
@@ -3252,12 +3332,18 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		{
 			for (int j = 0; j < numsectors; j++)
 			{
-				if (sectors[j].Skybox == NULL)
-				{
-					sectors[j].Skybox = mobj->ptr();
-				}
+				if (sectors[j].SkyboxCeiling == NULL)
+					sectors[j].SkyboxCeiling = mobj->ptr();
+				if (sectors[j].SkyboxFloor == NULL)
+					sectors[j].SkyboxFloor = mobj->ptr();
 			}
 		}
+	}
+
+	if (mobj->type == MT_UPPERSTACK || mobj->type == MT_LOWERSTACK)
+	{
+		// Record for deferred resolution.
+		P_AddStackLink(mobj);
 	}
 
 	if (mobj->type == MT_SKYPICKER)

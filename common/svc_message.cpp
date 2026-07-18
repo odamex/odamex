@@ -358,6 +358,12 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		msg.add_args(mo->args[1]);
 	}
 
+	if (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK)
+	{
+		msg.add_args(mo->tid);
+		msg.add_args(mo->args[0]); // boundary flat alpha
+	}
+
 	if (mo->type == MT_SKYVIEWPOINT)
 	{
 		msg.add_args(mo->tid);
