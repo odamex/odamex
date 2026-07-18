@@ -70,7 +70,7 @@ EXTERN_CVAR (vid_pillarbox)
 static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 {
 	int display_index = 0;
-	SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
+	SDL_DisplayMode mode = { .format = SDL_PIXELFORMAT_UNKNOWN, .w = 0, .h = 0, .refresh_rate = 0, .driverdata = nullptr };
 
 	int display_mode_count = SDL_GetNumDisplayModes(display_index);
 	if (display_mode_count < 1)
