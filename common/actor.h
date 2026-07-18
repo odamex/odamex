@@ -404,7 +404,7 @@ extern int bmapheight;
 class AActor : public DThinker
 {
 	DECLARE_SERIAL (AActor, DThinker)
-	typedef szp<AActor> AActorPtr;
+	using AActorPtr = szp<AActor>;
 	AActorPtr self;
 
 	class AActorPtrCounted
@@ -413,8 +413,10 @@ class AActor : public DThinker
 
 		public:
 
-		AActorPtrCounted() {}
+		AActorPtrCounted() = default;
 
+		// TODO: should these be returning AActorPtrCounted& instead?
+		// clang-tidy gives warnings about this
 		AActorPtr &operator= (const AActorPtr& other)
 		{
 			if(ptr)
@@ -526,7 +528,7 @@ public:
 	int 			health = 0;
 	int32_t			type = MT_UNKNOWNTHING;
 	fixed_t			translucency = 0;	// 65536=fully opaque, 0=fully invisible
-	translationref_t translation{};	// Translation table (or NULL)
+	translationref_t translation;	// Translation table (or NULL)
 
 	// Additional info record for player avatars only.
 	// Only valid if type == MT_PLAYER
@@ -599,7 +601,7 @@ public:
 	// a linked list of sectors where this object appears
 	struct msecnode_t	*touching_sectorlist = nullptr;				// phares 3/14/98
 
-	short           deadtic = 0;        // tics after player's death
+	int16_t           deadtic = 0;        // tics after player's death
 
 	unsigned char   rndindex = 0;       // denis - because everything should have a random number generator, for prediction
 	unsigned char   spawnRndindex = 0;
@@ -609,10 +611,10 @@ public:
 	team_t friend_teamid = TEAM_NONE; // team of the player who spawned this actor
 
 	// killough 9/9/98: How long a monster pursues a target.
-	short pursuecount = 0;
+	int16_t pursuecount = 0;
 
 	// killough 9/8/98: monster strafing
-	short strafecount = 0;
+	int16_t strafecount = 0;
 
 	// ThingIDs
 	static void ClearTIDHashes ();
@@ -624,7 +626,7 @@ public:
 	[[nodiscard]] static AActor *FindGoal (const AActor *first, int tid, int kind);
 
 	uint32_t		netid = 0;          // every object has its own netid
-	short			tid = 0;			// thing identifier
+	int16_t			tid = 0;			// thing identifier
 	baseline_t		baseline{};		// Baseline data for mobj sent to clients
 	bool			baseline_set = false;	// Have we set our baseline yet?
 
@@ -667,9 +669,9 @@ public:
 	class ActorClassList
 	{
 	public:
-		AActor* Head() const { return m_head; }
-		bool empty() const { return m_head == NULL; }
-		size_t Count() const { return m_count; }
+		[[nodiscard]] AActor* Head() const { return m_head; }
+		[[nodiscard]] bool empty() const { return m_head == nullptr; }
+		[[nodiscard]] size_t Count() const { return m_count; }
 		void Append(AActor* mo);
 		void Remove(AActor* mo);
 		void MoveFrontToEnd(AActor* upto);
@@ -731,14 +733,14 @@ public:
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
 	void ResetFlagsToDefault();
 
-	bool IsFriendly() const { return flags & MF_FRIEND; }
+	[[nodiscard]] bool IsFriendly() const { return flags & MF_FRIEND; }
 	void SetFriendly (bool isFriendly, const AActor* owner);
 	void UpdateActorLists();
 	static void ClearActorLists();
 	static ActorClassList& GetFriendlies() { return s_friendlies; }
 	static ActorClassList& GetHostiles() { return s_hostiles; }
 
-	AActorPtr ptr(){ return self; }
+	AActorPtr ptr() { return self; }
 
 	//
 	// ActorBlockMapListNode
@@ -765,6 +767,7 @@ public:
 		void Link();
 		void Unlink();
 
+		[[nodiscard]]
 		AActor* Next(int bmx, int bmy) const
 		{
 			if (bmx < 0 || bmx >= bmapwidth || bmy < 0 || bmy >= bmapheight)
@@ -778,6 +781,7 @@ public:
 		void ensureCapacity(int blockcnt);
 		void copyFrom(const ActorBlockMapListNode& other);
 
+		[[nodiscard]]
 		size_t getIndex(int bmx, int bmy) const
 		{
 			// Out-of-range queries (including the cleared state and the
@@ -787,7 +791,7 @@ public:
 				bmy < m_originy || bmy > m_originy + m_blockcnty - 1)
 				return 0;
 
-			return (bmy - m_originy) * m_blockcntx + bmx - m_originx;
+			return ((bmy - m_originy) * m_blockcntx) + bmx - m_originx;
 		}
 
 		// the number of block links stored inline before falling back to
@@ -818,18 +822,18 @@ public:
 	ActorBlockMapListNode bmapnode;
 };
 
-typedef std::vector<AActor::AActorPtr> AActors;
+using AActors = std::vector<AActor::AActorPtr>;
 
 class FActorIterator
 {
 public:
-	FActorIterator (int i) : base (NULL), id (i)
+	FActorIterator (int i) : id (i)
 	{
 	}
 	AActor *Next ()
 	{
 		if (id == 0)
-			return NULL;
+			return nullptr;
 		if (!base)
 			base = AActor::FindByTID(NULL, id);
 		else
@@ -841,7 +845,7 @@ public:
 		return base;
 	}
 private:
-	AActor *base;
+	AActor *base = nullptr;
 	int id;
 };
 

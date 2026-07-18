@@ -34,21 +34,21 @@ class AActor;
 class player_t;
 struct pspdef_s;
 
-typedef void (*actionf_v)();
-typedef void (*actionf_p1)( AActor* );
-typedef void (*actionf_p2)( player_t*, pspdef_s* );
+using actionf_v = void (*)();
+using actionf_p1 = void (*)( AActor* );
+using actionf_p2 = void (*)( player_t*, pspdef_s* );
 
-typedef union
+union actionf_t
 {
 	void *acvoid;
 	actionf_p1	acp1;
 	actionf_v	acv;
 	actionf_p2	acp2;
-} actionf_t;
+};
 
 // Historically, "think_t" is yet another
 // function pointer to a routine to handle an actor
-typedef actionf_t  think_t;
+// typedef actionf_t think_t;
 
 class FThinkerIterator;
 
@@ -99,16 +99,12 @@ private:
 	DThinker *m_CurrThinker;
 
 public:
-	FThinkerIterator (TypeInfo *type)
-	{
-		m_ParentType = type;
-		m_CurrThinker = DThinker::FirstThinker;
-	}
+	FThinkerIterator (TypeInfo *type) : m_ParentType(type), m_CurrThinker(DThinker::FirstThinker) {}
 	DThinker *Next ()
 	{
 		while (m_CurrThinker)
 		{
-			if (m_CurrThinker->IsKindOf (m_ParentType))
+			if (m_CurrThinker->IsKindOf(m_ParentType))
 			{
 				DThinker *res = m_CurrThinker;
 				m_CurrThinker = m_CurrThinker->m_Next;
