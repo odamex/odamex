@@ -1116,7 +1116,7 @@ void SV_Callvote(player_t& player, const odaproto::clc::CallVote& msg)
 	}
 
 	// Is another vote already in progress?
-	if (vote != 0)
+	if (vote != nullptr)
 	{
 		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Another vote is already in progress.\n");
 		return;
