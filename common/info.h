@@ -1784,7 +1784,7 @@ struct mobjinfo_t
 	int flags               = 0;
 	int flags2              = 0;
 	statenum_t raisestate   = S_NULL;
-	int translucency        = 0x10000;
+	int translucency        = FRACUNIT;
 	const char *name        = nullptr;
 
 	// MBF21 STUFF HERE
