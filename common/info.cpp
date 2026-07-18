@@ -1253,43 +1253,26 @@ state_t	boomstates[S_MUSHROOM + 1] = {
 mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 
 	{		// MT_PLAYER
-	MT_PLAYER,
-	-1,		// doomednum
-	S_PLAY,		// spawnstate
-	100,		// spawnhealth
-	-100,		// gibhealth
-	S_PLAY_RUN1,		// seestate
-	NULL,		// seesound
-	0,		// reactiontime
-	NULL,		// attacksound
-	S_PLAY_PAIN,		// painstate
-	255,		// painchance
-	"*pain100_1",		// painsound
-	S_NULL,		// meleestate
-	S_PLAY_ATK1,		// missilestate
-	S_PLAY_DIE1,		// deathstate
-	S_PLAY_XDIE1,		// xdeathstate
-	"*death1",		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	56*FRACUNIT,	// cdheight
-	100,		// mass
-	0,		// damage
-	NULL,		// activesound
-	MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH|MF_FRIEND,		// flags
-	MF2_SLIDE|MF2_PASSMOBJ|MF2_PUSHWALL,		// flags2
-	S_NULL,		// raisestate
-	0x10000,
-	"MT_PLAYER",
-	NO_ALTSPEED,	// altspeed
-	64 * FRACUNIT, // meleerange
-	IG_DEFAULT,		// infighting group
-	PG_DEFAULT,		// projectile group
-	SG_DEFAULT,		// splash group
-	0,		// flags3
-	NULL, // ripsound
-	MT_NULL		// droppeditem
+	.type         = MT_PLAYER,
+	.spawnstate   = S_PLAY,
+	.spawnhealth  = 100,
+	.gibhealth    = -100,
+	.seestate     = S_PLAY_RUN1,
+	.painstate   = S_PLAY_PAIN,
+	.painchance   = 255,
+	.painsound    = "*pain100_1",
+	.missilestate = S_PLAY_ATK1,
+	.deathstate   = S_PLAY_DIE1,
+	.xdeathstate  = S_PLAY_XDIE1,
+	.deathsound   = "*death1",
+	.radius       = 16_fx,
+	.height       = 56_fx,
+	.cdheight     = 56_fx,
+	.mass         = 100,
+	.flags        = MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH|MF_FRIEND,
+	.flags2       = MF2_SLIDE|MF2_PASSMOBJ|MF2_PUSHWALL,
+	.name         = "MT_PLAYER",
+	.meleerange   = 64_fx,
 	},
 
 	{		// MT_POSSESSED
@@ -1341,7 +1324,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_SPOS_RUN1,		// seestate
 	"shotguy/sight1",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_SPOS_PAIN,		// painstate
 	170,		// painchance
 	"shotguy/pain",		// painsound
@@ -1381,7 +1364,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_VILE_RUN1,		// seestate
 	"vile/sight",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_VILE_PAIN,		// painstate
 	10,		// painchance
 	"vile/pain",		// painsound
@@ -1461,7 +1444,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_SKEL_RUN1,		// seestate
 	"skeleton/sight",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_SKEL_PAIN,		// painstate
 	100,		// painchance
 	"skeleton/pain",		// painsound
@@ -1581,7 +1564,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_FATT_RUN1,		// seestate
 	"fatso/sight",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_FATT_PAIN,		// painstate
 	80,		// painchance
 	"fatso/pain",		// painsound
@@ -1661,7 +1644,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_CPOS_RUN1,		// seestate
 	"chainguy/sight1",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_CPOS_PAIN,		// painstate
 	170,		// painchance
 	"chainguy/pain",		// painsound
@@ -1701,7 +1684,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_TROO_RUN1,		// seestate
 	"imp/sight1",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_TROO_PAIN,		// painstate
 	200,		// painchance
 	"imp/pain",		// painsound
@@ -1821,7 +1804,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_HEAD_RUN1,		// seestate
 	"caco/sight",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_HEAD_PAIN,		// painstate
 	128,		// painchance
 	"caco/pain",		// painsound
@@ -1861,7 +1844,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_BOSS_RUN1,		// seestate
 	"baron/sight",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_BOSS_PAIN,		// painstate
 	50,		// painchance
 	"baron/pain",		// painsound
@@ -1941,7 +1924,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_BOS2_RUN1,		// seestate
 	"knight/sight",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_BOS2_PAIN,		// painstate
 	50,		// painchance
 	"knight/pain",		// painsound
@@ -1979,7 +1962,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	100,		// spawnhealth
     0, // gibhealth
 	S_SKULL_RUN1,		// seestate
-	0,		// seesound
+	nullptr, // seesound
 	8,		// reactiontime
 	"skull/melee",		// attacksound
 	S_SKULL_PAIN,		// painstate
@@ -2061,7 +2044,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_BSPI_SIGHT,		// seestate
 	"baby/sight",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_BSPI_PAIN,		// painstate
 	128,		// painchance
 	"baby/pain",		// painsound
@@ -2101,7 +2084,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_CYBER_RUN1,		// seestate
 	"cyber/sight",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_CYBER_PAIN,		// painstate
 	20,		// painchance
 	"cyber/pain",		// painsound
@@ -2141,7 +2124,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_PAIN_RUN1,		// seestate
 	"pain/sight",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_PAIN_PAIN,		// painstate
 	128,		// painchance
 	"pain/pain",		// painsound
@@ -2181,7 +2164,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	S_SSWV_RUN1,		// seestate
 	"wolfss/sight",		// seesound
 	8,		// reactiontime
-	0,		// attacksound
+	nullptr, // attacksound
 	S_SSWV_PAIN,		// painstate
 	170,		// painchance
 	"wolfss/pain",		// painsound
@@ -2659,7 +2642,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	1000,		// spawnhealth
 	0, // gibhealth
 	S_NULL,		// seestate
-	0,		// seesound
+	nullptr, // seesound
 	8,		// reactiontime
 	NULL,		// attacksound
 	S_NULL,		// painstate

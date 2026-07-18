@@ -339,11 +339,13 @@ class CredibilityState
 {
 	public:
 
+		[[nodiscard]]
 		CredibilityEnum Get() const
 		{
 			return m_credibility;
 		}
 
+		[[nodiscard]]
 		bool IsCredible() const
 		{
 			return m_credibility == CredibilityEnum::FULLY_CREDIBLE
