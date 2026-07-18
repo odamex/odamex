@@ -194,6 +194,7 @@ public:
 	[[nodiscard]] virtual float max() const = 0;
 	[[nodiscard]] virtual float increment(float level) const = 0;
 	virtual void generateGammaTable(byte* table, float level) const = 0;
+	virtual ~GammaStrategy() = default;
 };
 
 class DoomGammaStrategy : public GammaStrategy
