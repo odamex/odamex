@@ -209,7 +209,7 @@ void upnp_add_redir (const char * addr, int port, const char* protocol)
 	const std::string port_str = fmt::format("{}", port);
 
 	// Set a description if none exists
-	if (sv_upnp_description.str.empty())
+	if (sv_upnp_description.str().empty())
 	{
 		std::stringstream desc;
 
