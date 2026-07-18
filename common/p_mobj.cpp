@@ -107,7 +107,7 @@ netid_map_t actor_by_netid;
 // allocations. Dead actors are threaded onto a freelist and reused, so after
 // the initial ramp-up allocation is a couple of pointer swaps, and actors
 // that are alive at the same time tend to sit near each other in memory.
-// 
+//
 // Probably not thread safe.
 //
 namespace
@@ -369,9 +369,9 @@ inline void CredibilityState::Update(const AActor& mobj)
             else
             {
                 if (m_predictedMotionTicCount > 0 or
-                       not (m_crediblePosition.x == mobj.x and
-                            m_crediblePosition.y == mobj.y and
-                            m_crediblePosition.z == mobj.z))
+                       m_crediblePosition.x != mobj.x ||
+                            m_crediblePosition.y != mobj.y ||
+                            m_crediblePosition.z != mobj.z)
                 {
                     ++m_predictedMotionTicCount;
                 }
@@ -402,46 +402,36 @@ inline void CredibilityState::Update(const AActor& mobj)
 }
 
 AActor::AActor()
-    : x(0), y(0), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
-      prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
-      subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
-      height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
-      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
-      flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-      iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
-      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), mode(MobjModeEnum::SPAWN), updatedDuringTic(-1), spawnTic(gametic),
-      mobjtic(gametic), bmapnode(this)
+    : spawnTic(gametic), mobjtic(gametic), bmapnode(this)
 {
-	args.fill(0);
 	self.init(this);
 	LinkAllActorsList();
 }
 
 AActor::AActor(const AActor& other)
-    : x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy),
+    : DThinker(other), x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy),
       prevz(other.prevz), snext(other.snext), sprev(other.sprev), angle(other.angle),
       prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
       pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
-      subsector(other.subsector), floorz(other.floorz), ceilingz(other.ceilingz),
-      dropoffz(other.dropoffz), floorsector(other.floorsector), radius(other.radius),
-      height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
-      validcount(other.validcount), type(other.type), info(other.info), tics(other.tics),
-      state(other.state), damage(other.damage),
+	  subsector(other.subsector),
       flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags),
+	  health(other.health), type(other.type), translucency(other.translucency), translation(other.translation),
+      player(other.player), floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
+	  floorsector(other.floorsector), radius(other.radius), height(other.height),
+	  momx(other.momx), momy(other.momy), momz(other.momz),
+      validcount(other.validcount), info(other.info), tics(other.tics),
+      state(other.state), damage(other.damage),
       special1(other.special1), special2(other.special2),
-      health(other.health), movedir(other.movedir), movecount(other.movecount),
+      movedir(other.movedir), movecount(other.movecount),
       visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
-      player(other.player), lastlook(other.lastlook), special(other.special), args(other.args),
-      inext(other.inext), iprev(other.iprev), translation(other.translation),
-      translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
+      lastlook(other.lastlook), special(other.special), args(other.args),
+      inext(other.inext), iprev(other.iprev),
+      waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
       deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
       friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
       pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
-      baseline_set(false), mode(other.mode), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
+      mode(other.mode), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
       mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
@@ -454,6 +444,9 @@ AActor::AActor(const AActor& other)
 
 AActor &AActor::operator= (const AActor &other)
 {
+	if(&other == this)
+    	return *this;
+
     x = other.x;
     y = other.y;
     z = other.z;
@@ -540,17 +533,7 @@ AActor &AActor::operator= (const AActor &other)
 //
 
 AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
-    : x(ix), y(iy), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
-      prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
-      subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
-      height(0), momx(0), momy(0), momz(0), validcount(0), type(itype),
-      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
-      statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-      iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
-      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), mode(MobjModeEnum::SPAWN), updatedDuringTic(-1),
+    : x(ix), y(iy), type(itype),
       spawnTic(gametic), mobjtic(gametic), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
@@ -870,7 +853,7 @@ fixed_t P_CalculateMinMom(const AActor *mo)
 //
 // Floating item bobbing
 //
-// [RV] +FLOATBOB actors use the common ZDoom offset table.  
+// [RV] +FLOATBOB actors use the common ZDoom offset table.
 // special1 stores the center offset from the floor.
 // The table supplies the visual bob.
 //
