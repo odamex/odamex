@@ -402,38 +402,38 @@ inline void CredibilityState::Update(const AActor& mobj)
 }
 
 AActor::AActor()
-    : spawnTic(gametic), mobjtic(gametic), bmapnode(this)
+	: spawnTic(gametic), mobjtic(gametic), bmapnode(this)
 {
 	self.init(this);
 	LinkAllActorsList();
 }
 
 AActor::AActor(const AActor& other)
-    : DThinker(other), x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy),
-      prevz(other.prevz), snext(other.snext), sprev(other.sprev), angle(other.angle),
-      prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
-      pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
+	: DThinker(other), x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy),
+	  prevz(other.prevz), snext(other.snext), sprev(other.sprev), angle(other.angle),
+	  prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
+	  pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
 	  subsector(other.subsector),
-      flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags),
+	  flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags),
 	  health(other.health), type(other.type), translucency(other.translucency), translation(other.translation),
-      player(other.player), floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
+	  player(other.player), floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
 	  floorsector(other.floorsector), radius(other.radius), height(other.height),
 	  momx(other.momx), momy(other.momy), momz(other.momz),
-      validcount(other.validcount), info(other.info), tics(other.tics),
-      state(other.state), damage(other.damage),
-      special1(other.special1), special2(other.special2),
-      movedir(other.movedir), movecount(other.movecount),
-      visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
-      lastlook(other.lastlook), special(other.special), args(other.args),
-      inext(other.inext), iprev(other.iprev),
-      waterlevel(other.waterlevel), gear(other.gear),
-      onground(other.onground), touching_sectorlist(other.touching_sectorlist),
-      deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
-      friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
-      pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
-      mode(other.mode), updatedDuringLocalTic(other.updatedDuringLocalTic),
-      updatedDuringServerTic(other.updatedDuringServerTic), spawnTic(other.spawnTic),
-      mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
+	  validcount(other.validcount), info(other.info), tics(other.tics),
+	  state(other.state), damage(other.damage),
+	  special1(other.special1), special2(other.special2),
+	  movedir(other.movedir), movecount(other.movecount),
+	  visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
+	  lastlook(other.lastlook), special(other.special), args(other.args),
+	  inext(other.inext), iprev(other.iprev),
+	  waterlevel(other.waterlevel), gear(other.gear),
+	  onground(other.onground), touching_sectorlist(other.touching_sectorlist),
+	  deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
+	  friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
+	  pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
+	  mode(other.mode), updatedDuringLocalTic(other.updatedDuringLocalTic),
+	  updatedDuringServerTic(other.updatedDuringServerTic), spawnTic(other.spawnTic),
+	  mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
@@ -535,8 +535,8 @@ AActor &AActor::operator= (const AActor &other)
 //
 
 AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
-    : x(ix), y(iy), type(itype),
-      spawnTic(gametic), mobjtic(gametic), bmapnode(this)
+	: x(ix), y(iy), type(itype),
+	  spawnTic(gametic), mobjtic(gametic), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	const auto it = ::mobjinfo.find(itype);
