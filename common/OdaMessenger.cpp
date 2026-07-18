@@ -89,6 +89,10 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 	const size_t bestEffortSize = io_rawBuf.BytesLeftToRead();
 	if (bestEffortSize > 0)
 	{
+		if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
+		{
+			m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
+		}
 		m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
 		m_immediateReceiveSequenceNumber = header.sequence;
 		return MessageResultEnum::ACCEPT;
