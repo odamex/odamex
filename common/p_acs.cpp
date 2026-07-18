@@ -459,7 +459,8 @@ EXTERN_CVAR (sv_gametype)
 
 FBehavior::FBehavior (byte* object, int len)
 : Chunks(nullptr), Scripts(nullptr), NumScripts(0),
-  Functions(nullptr), NumFunctions(0), Arrays(nullptr), NumArrays(0)
+  Functions(nullptr), NumFunctions(0), ScriptFlags(nullptr), NumScriptFlags(0),
+  Arrays(nullptr), NumArrays(0)
 {
 
 	if (object[0] != 'A' || object[1] != 'C' || object[2] != 'S')
@@ -571,6 +572,14 @@ FBehavior::FBehavior (byte* object, int len)
 		{
 			NumFunctions = LELONG(((uint32_t *)Functions)[1]);
 			Functions += 8;
+		}
+
+		// Per-script flags (clientside etc)
+		ScriptFlags = FindChunk(MAKE_ID('S','F','L','G'));
+		if (ScriptFlags != NULL)
+		{
+			NumScriptFlags = LELONG(((uint32_t *)ScriptFlags)[1]) / 4;
+			ScriptFlags += 8;
 		}
 
 		chunk = (uint32_t *)FindChunk(MAKE_ID('M','I','N','I'));
@@ -871,21 +880,43 @@ uint32_t FBehavior::FindLanguage (uint32_t langid, bool ignoreregion) const
 	return 0;
 }
 
+bool FBehavior::IsScriptClientside (int number) const
+{
+	if (ScriptFlags == NULL)
+		return false;
+
+	const uint16_t *flags = (const uint16_t *)ScriptFlags;
+	for (int i = 0; i < NumScriptFlags; ++i)
+	{
+		if (LESHORT(flags[i*2]) == (uint16_t)number)
+			return (LESHORT(flags[i*2+1]) & SCRIPTF_ClientSide) != 0;
+	}
+
+	return false;
+}
+
 void FBehavior::StartTypedScripts (uint16_t type, AActor *activator, int arg0, int arg1, int arg2, bool always) const
 {
-	if (!serverside)
-		return;
-
 	ScriptPtr *ptr;
 
 	for (int i = 0; i < NumScripts; ++i)
 	{
 		ptr = (ScriptPtr *)(Scripts + 8*i);
-		if (ptr->Type == type)
+		if (ptr->Type != type)
+			continue;
+
+		if (IsScriptClientside(ptr->Number))
 		{
-			P_GetScriptGoing (activator, NULL, ptr->Number,
-				(int *)(ptr->Address + Data), 0, arg0, arg1, arg2, always, true);
+			if (!clientside)
+				continue;
 		}
+		else if (!serverside)
+		{
+			continue;
+		}
+
+		P_GetScriptGoing (activator, NULL, ptr->Number,
+			(int *)(ptr->Address + Data), 0, arg0, arg1, arg2, always, true);
 	}
 }
 

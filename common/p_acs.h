@@ -54,6 +54,14 @@ enum
 	SCRIPT_Disconnect	= 14,
 };
 
+// Per-script flags stored in the SFLG chunk of ZDoom enhanced (ACSe)
+// behavior lumps.
+enum
+{
+	SCRIPTF_Net			= 1,	// Safe to activate ("puke") over the network
+	SCRIPTF_ClientSide	= 2,	// Runs on the client rather than the server
+};
+
 enum ACSFormat { ACS_Old, ACS_Enhanced, ACS_LittleEnhanced, ACS_Unknown };
 
 class FBehavior
@@ -70,6 +78,7 @@ public:
 	const char *LookupString (uint32_t index, uint32_t ofs=0) const;
 	const char *LocalizeString (uint32_t index) const;
 	void StartTypedScripts (uint16_t type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
+	bool IsScriptClientside (int number) const;
 	uint32_t PC2Ofs (int *pc) const { return (byte *)pc - Data; }
 	int *Ofs2PC (uint32_t ofs) const { return (int *)(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }
@@ -89,6 +98,8 @@ private:
 	int NumScripts;
 	byte *Functions;
 	int NumFunctions;
+	byte *ScriptFlags;
+	int NumScriptFlags;
 	ArrayInfo *Arrays;
 	int NumArrays;
 	uint32_t LanguageNeutral;
