@@ -277,8 +277,8 @@ public:
 	}
 };
 
-static constexpr DoomGammaStrategy doomgammastrat;
-static constexpr ZDoomGammaStrategy zdoomgammastrat;
+static const DoomGammaStrategy doomgammastrat;
+static const ZDoomGammaStrategy zdoomgammastrat;
 const GammaStrategy* gammastrat = &doomgammastrat;
 
 float V_GetMinimumGammaLevel()
