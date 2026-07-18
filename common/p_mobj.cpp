@@ -346,9 +346,9 @@ inline void CredibilityState::Update(const AActor& mobj)
 #ifdef CLIENT_APP
     if (not serverside)     // But we still need to check in case we're in single-player.
     {
-        if (mobj.updatedDuringTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
+        if (mobj.updatedDuringLocalTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
         {
-            const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringTic;
+            const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringLocalTic;
 
             if (ticsSinceAuthoritativeUpdate == 0)
             {
@@ -431,7 +431,8 @@ AActor::AActor(const AActor& other)
       deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
       friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
       pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
-      mode(other.mode), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
+      mode(other.mode), updatedDuringLocalTic(other.updatedDuringLocalTic),
+      updatedDuringServerTic(other.updatedDuringServerTic), spawnTic(other.spawnTic),
       mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
@@ -517,11 +518,12 @@ AActor &AActor::operator= (const AActor &other)
     memcpy(&baseline, &other.baseline, sizeof(baseline));
     baseline_set = other.baseline_set;
 
-    mode             = other.mode;
-    updatedDuringTic = other.updatedDuringTic;
-    spawnTic         = other.spawnTic;
-    mobjtic          = other.mobjtic;
-    credibility      = other.credibility;
+    mode                    = other.mode;
+    updatedDuringLocalTic   = other.updatedDuringLocalTic;
+    updatedDuringServerTic  = other.updatedDuringServerTic;
+    spawnTic                = other.spawnTic;
+    mobjtic                 = other.mobjtic;
+    credibility             = other.credibility;
 
     return *this;
 }
@@ -1304,7 +1306,8 @@ void AActor::Serialize (FArchive &arc)
 			<< rndindex
 			<< spawnRndindex
 			<< mode
-			<< updatedDuringTic
+			<< updatedDuringLocalTic
+			<< updatedDuringServerTic
 			<< spawnTic
 			<< mobjtic
 			<< credibility;
@@ -1394,7 +1397,8 @@ void AActor::Serialize (FArchive &arc)
 			>> rndindex
 			>> spawnRndindex
 			>> mode
-			>> updatedDuringTic
+			>> updatedDuringLocalTic
+			>> updatedDuringServerTic
 			>> spawnTic
 			>> mobjtic
 			>> credibility;

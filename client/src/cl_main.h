@@ -71,7 +71,7 @@ bool CL_PrepareConnect();
 void CL_ParseCommands(void);
 MessageResultEnum CL_ReadPacketHeader();
 MessageResultEnum CL_AcceptNetMessage();
-MessageResultEnum CL_ProcessCurrentReliableMessages();
+MessageResultEnum CL_ProcessCurrentAvailableMessages();
 void CL_SendCmd(void);
 void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);

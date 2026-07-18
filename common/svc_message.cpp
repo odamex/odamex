@@ -702,6 +702,9 @@ odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj)
 	FillUpdateMobj(* msg.mutable_update(), mobj);
 
 	msg.set_mode(static_cast<odaproto::svc::MobjModeEnum>(mobj.mode));
+	msg.set_state(mobj.state->statenum);
+	msg.set_tics (mobj.tics);
+
 	return msg;
 }
 

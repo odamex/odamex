@@ -636,7 +636,9 @@ public:
 
 	// Server: The tic on which this mobj was sent an UpdateMobj.
 	// Client: the tic on which this mobj received an UpdateMobj.
-	int updatedDuringTic = -1;
+	int updatedDuringLocalTic = -1;
+
+	int updatedDuringServerTic = -1;
 
 	// Server:  The tic on which this mobj was actually spawned. Used to for determining correct initial
 	//          state and rnd index to send to clients.  *Not communicated to the client.*
