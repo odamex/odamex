@@ -1029,15 +1029,14 @@ void G_Ticker (void)
 					break;
 			}
 
-			// If we're here it's because we need to accept a message right away.
-
-			const MessageResultEnum nonReliableResult = CL_AcceptNetMessage();
-			if (nonReliableResult == MessageResultEnum::ABORT)
+			// If we're here it's because we need to accept messages right away.
+			const MessageResultEnum immediateResult = CL_ProcessCurrentAvailableMessages();
+			if (immediateResult == MessageResultEnum::ABORT)
 				return;
 		}
 
 		// With all the latest packets received, process the reliable message in proper sequence.
-		const MessageResultEnum reliableResult = CL_ProcessCurrentReliableMessages();
+		const MessageResultEnum reliableResult = CL_ProcessCurrentAvailableMessages();
 		if (reliableResult == MessageResultEnum::ABORT)
 			return;
 
