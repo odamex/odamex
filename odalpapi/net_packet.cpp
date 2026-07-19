@@ -352,13 +352,7 @@ void Server::ReadInformation()
 	Socket->Read32(Info.VersionRealProtocol);
 
 	// Revision number of server
-    // TODO: Remove guard before next release
-	QRYNEWINFO(7)
-	{
-        Socket->ReadString(Info.VersionRevStr);
-	}
-	else
-        Socket->Read32(Info.VersionRevision);
+    Socket->ReadString(Info.VersionRevStr);
     
 	// Read cvar data
 	ReadCvars();
@@ -367,14 +361,8 @@ void Server::ReadInformation()
 
 	Socket->ReadString(Info.CurrentMap);
 
-	// TODO: Remove guard for next release and update protocol version
-	QRYNEWINFO(6)
-	{
-		if(Info.TimeLimit)
-			Socket->Read16(Info.TimeLeft);
-	}
-	else
-		Socket->Read16(Info.TimeLeft);
+    if(Info.TimeLimit)
+        Socket->Read16(Info.TimeLeft);
 
 	// Teams
 	if(Info.GameType == GT_TeamDeathmatch ||

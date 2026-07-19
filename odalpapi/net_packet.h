@@ -67,7 +67,7 @@
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
 #define VERSION (MAKEVER(13, 0, 0))
-#define PROTOCOL_VERSION 8
+#define PROTOCOL_VERSION 1
 
 #define TAG_ID 0xAD0
 
