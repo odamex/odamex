@@ -44,6 +44,7 @@
 #include "s_sound.h"
 #include "m_menu.h"
 #include "v_text.h"
+#include "v_font.h"
 #include "st_stuff.h"
 #include "p_ctf.h"
 #include "r_sky.h"
@@ -1420,13 +1421,13 @@ static void M_PlayerSetupDrawer()
 	}
 
 	// Draw player name box
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y, "Name");
+	screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y, "Name");
 	M_DrawSaveLoadBorder (PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME+1);
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
+	screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
 
 	// Draw cursor for either of the above
 	if (genStringEnter != oldmenustring_t::NONE)
-		screen->DrawTextCleanMove(CR_RED, PSetupDef.x + V_StringWidth(savegamestrings[saveSlot]) + 56,
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x + V_FontStringWidthClean(::menu_font, savegamestrings[saveSlot]) + 56,
 							PSetupDef.y + ((saveSlot == 0) ? 0 : LINEHEIGHT), "_");
 
 	// Draw player character
@@ -1569,26 +1570,26 @@ static void M_PlayerSetupDrawer()
 	// Draw team setting
 	{
 		const team_t team = D_TeamByName(cl_team.cstring());
-		const int x = V_StringWidth ("Preferred Team") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Preferred Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
+		const int x = V_FontStringWidthClean(::menu_font, "Preferred Team") + 8 + PSetupDef.x;
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Preferred Team");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
 	{
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
-		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Gender");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*2, genders[gender]);
+		const int x = V_FontStringWidthClean(::menu_font, "Gender") + 8 + PSetupDef.x;
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Gender");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + LINEHEIGHT*2, genders[gender]);
 	}
 
 	// Draw autoaim setting
 	{
-		const int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
+		const int x = V_FontStringWidthClean(::menu_font, "Autoaim") + 8 + PSetupDef.x;
 		const float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*3,
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Autoaim");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + LINEHEIGHT*3,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
@@ -1599,9 +1600,9 @@ static void M_PlayerSetupDrawer()
 
 	// Draw color setting
 	{
-		const int x = V_StringWidth ("Color") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Color");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*4, colorpresets[colorpreset]);
+		const int x = V_FontStringWidthClean(::menu_font, "Color") + 8 + PSetupDef.x;
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Color");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + LINEHEIGHT*4, colorpresets[colorpreset]);
 	}
 
 	int PSetupSize = sizeof(PlayerSetupMenu) / sizeof(PlayerSetupMenu[0]);
@@ -1615,12 +1616,12 @@ static void M_PlayerSetupDrawer()
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Red");
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Green");
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Blue");
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Red");
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Green");
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Blue");
 
 		{
-			const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
+			const int x = V_FontStringWidthClean(::menu_font, "Green") + 8 + PSetupDef.x;
 			const argb_t playercolor = V_GetColorFromString(cl_color);
 
 			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
@@ -2177,19 +2178,21 @@ void M_Drawer()
 	if (!hu_font[0])
 		return;
 
-	if (messageToPrint && ::hu_font[0])
+	if (messageToPrint && ::menu_font)
 	{
 		// Horiz. & Vertically center string and print it.
-		brokenlines_t *lines = V_BreakLines (320, messageString);
+		brokenlines_t *lines = V_BreakLinesFont(::menu_font, 320, messageString);
+		const int lineheight = V_FontLineHeightClean(::menu_font);
 		int y = 100;
 
 		for (int i = 0; lines[i].width != -1; i++)
-			y -= hu_font[0]->mHeight / 2;
+			y -= lineheight / 2;
 
 		for (int i = 0; lines[i].width != -1; i++)
 		{
-			screen->DrawTextCleanMove(CR_RED, 160 - lines[i].width/2, y, lines[i].string);
-			y += hu_font[0]->mHeight;
+			screen->DrawFontTextCleanMove(::menu_font, CR_RED, 160 - lines[i].width/2, y,
+			                              lines[i].string);
+			y += lineheight;
 		}
 
 		V_FreeBrokenLines (lines);
@@ -2218,7 +2221,8 @@ void M_Drawer()
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
-					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
+					screen->DrawFontTextCleanMove(::menu_font, CR_RED, x, y,
+					                              currentMenu->menuitems[i].textname);
 				}
 				y += LINEHEIGHT;
 			}

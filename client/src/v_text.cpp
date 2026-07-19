@@ -30,6 +30,7 @@
 
 #include "i_video.h"
 #include "v_video.h"
+#include "v_font.h"
 #include "hu_stuff.h"
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
@@ -62,6 +63,31 @@ static std::string hu_digfont_name[HU_FONTSIZE];
 
 byte *ConChars;
 extern byte *Ranges;
+
+OFont* menu_font = NULL;
+OFont* hud_font = NULL;
+
+static const char* TTF_LUMP_NAME = "FONT_SM";
+
+//
+// V_CreateFont
+//
+// Builds a TrueType font, falling back to the equivalent bitmap font if the
+// TrueType lump is missing or unusable -- text disappearing entirely is a far
+// worse failure mode than text in the wrong typeface.
+//
+static OFont* V_CreateFont(unsigned int stylemask, OFont::ScaleFunc scale_func)
+{
+	OFont* font = new TrueTypeFont(TTF_LUMP_NAME, 8, stylemask, scale_func);
+	if (font->isUsable())
+		return font;
+
+	PrintFmt(PRINT_HIGH, "TrueType font {} unusable, falling back to the bitmap font.\n",
+	         TTF_LUMP_NAME);
+
+	delete font;
+	return new SmallDoomFont(scale_func);
+}
 
 /**
  * @brief Initialize fonts.
@@ -140,6 +166,11 @@ void V_TextInit()
 	::hu_bigfont_height = ::hu_bigfont['M' - HU_FONTSTART]->mHeight;
 	::hu_smallfont_height = ::hu_smallfont['M' - HU_FONTSTART]->mHeight;
 	::hu_digfont_height = ::hu_digfont['M' - HU_FONTSTART]->mHeight;
+
+	if (!::menu_font)
+		::menu_font = V_CreateFont(TrueTypeFont::TTF_GRADIENT, V_FontScaleClean);
+	if (!::hud_font)
+		::hud_font = V_CreateFont(TrueTypeFont::TTF_TEXTURE, V_FontScaleHudText);
 
 	// Default font is SMALLFONT.
 	V_SetFont("SMALLFONT");
@@ -471,6 +502,94 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 	}
 }
 
+// ----------------------------------------------------------------------------
+//
+// OFont-backed text
+//
+// ----------------------------------------------------------------------------
+
+//
+// DCanvas::DrawFontTextCleanMove
+//
+// Positions are given in 320x200 virtual coordinates and transformed the same
+// way DrawTextCleanMove does, but each glyph is blitted at its built size --
+// the font already carries the scale, so scaling here would apply it twice.
+//
+void DCanvas::DrawFontTextCleanMove(const OFont* font, int normalcolor, int x, int y,
+		const char* string) const
+{
+	if (!font || !string)
+		return;
+
+	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
+		normalcolor = CR_RED;
+
+	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
+
+	int cx = getCleanX(x);
+	int cy = getCleanY(y);
+	const int startx = cx;
+
+	for (const char* str = string; str[0] != '\0'; )
+	{
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			const int new_color = V_GetTextColor(str);
+			V_ColorMap = translationref_t(Ranges + new_color * 256);
+			str += 2;
+			continue;
+		}
+
+		if (str[0] == '\n')
+		{
+			cx = startx;
+			cy += font->getHeight();
+			str++;
+			continue;
+		}
+
+		const char c = str[0];
+		str++;
+
+		const Texture* glyph = font->getGlyph(c);
+		if (glyph && glyph->mWidth > 0 && glyph->mHeight > 0)
+		{
+			if (cx + glyph->mWidth > I_GetSurfaceWidth())
+				break;
+
+			// glyph bearings are relative to the baseline, which sits
+			// getAscent() below the top of the line
+			DrawWrapper(EWrapper_Translated, glyph, cx, cy + font->getAscent());
+		}
+
+		cx += font->getTextWidth(c);
+	}
+}
+
+
+//
+// V_FontStringWidthClean
+//
+int V_FontStringWidthClean(const OFont* font, const char* str)
+{
+	if (!font || !str)
+		return 0;
+
+	return font->getTextWidth(str) / MAX(1, CleanXfac);
+}
+
+//
+// V_FontLineHeightClean
+//
+int V_FontLineHeightClean(const OFont* font)
+{
+	if (!font)
+		return 0;
+
+	return font->getHeight() / MAX(1, CleanYfac);
+}
+
+
 //
 // Find string width from hu_font chars
 //
@@ -663,6 +782,135 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 		return broken;
 	}
 }
+
+//
+// breakitFont
+//
+// The same as breakit, but measures with an OFont. Reported widths are in virtual
+// units so that callers can keep centering in 320x200 space.
+//
+static void breakitFont(const OFont* font, brokenlines_t* line, const byte* start,
+		const byte* string, const char* prefix = nullptr)
+{
+	// Leave out trailing white space
+	while (string > start && isspace(*(string - 1)))
+		string--;
+
+	const size_t prefix_len = prefix ? strlen(prefix) : 0;
+
+	line->string = new char[string - start + 1 + prefix_len];
+
+	if (prefix_len)
+		strncpy(line->string + 0, prefix, prefix_len);
+
+	strncpy(line->string + prefix_len, reinterpret_cast<const char*>(start), string - start);
+	line->string[string - start + prefix_len] = 0;
+	line->width = V_FontStringWidthClean(font, line->string);
+}
+
+
+//
+// V_BreakLinesFont
+//
+brokenlines_t* V_BreakLinesFont(const OFont* font, int maxwidth, const byte* str)
+{
+	if (!font || !str)
+		return NULL;
+
+	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
+
+	const int maxwidth_px = maxwidth * MAX(1, CleanXfac);
+
+	const byte* space = NULL;
+	const byte* start = str;
+	bool lastWasSpace = false;
+	int i = 0, w = 0, nw = 0;
+
+	char color_code_str[4] = { 0 };
+
+	while (*str)
+	{
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			snprintf(color_code_str, 4, "\034%c", str[1]);
+			str += 2;
+			continue;
+		}
+
+		// no case folding here: unlike the Doom bitmap fonts, a TrueType
+		// face has real lowercase glyphs
+		const int c = *str++;
+
+		if (isspace(c))
+		{
+			if (!lastWasSpace)
+			{
+				space = str - 1;
+				lastWasSpace = true;
+			}
+		}
+		else
+		{
+			lastWasSpace = false;
+		}
+
+		nw = font->getTextWidth((char)c);
+
+		if (w + nw > maxwidth_px || c == '\n')
+		{
+			// Time to break the line
+			if (!space)
+				space = str - 1;
+
+			breakitFont(font, &lines[i], start, space, color_code_str);
+
+			i++;
+			w = 0;
+			lastWasSpace = false;
+			start = space;
+			space = NULL;
+
+			while (*start && isspace(*start) && *start != '\n')
+				start++;
+
+			if (*start == '\n')
+				start++;
+			else
+				while (*start && isspace(*start))
+					start++;
+
+			str = start;
+		}
+		else
+		{
+			w += nw;
+		}
+	}
+
+	if (str - start > 1)
+	{
+		const byte* s = start;
+
+		while (s < str)
+		{
+			if (!isspace(*s++))
+			{
+				breakitFont(font, &lines[i++], start, str, color_code_str);
+				break;
+			}
+		}
+	}
+
+	// Make a copy of the broken lines and return them
+	brokenlines_t* broken = new brokenlines_t[i + 1];
+
+	memcpy(broken, lines, sizeof(brokenlines_t) * i);
+	broken[i].string = NULL;
+	broken[i].width = -1;
+
+	return broken;
+}
+
 
 void V_FreeBrokenLines(brokenlines_t* lines)
 {

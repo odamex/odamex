@@ -93,3 +93,17 @@ inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_Br
 int V_GetTextColor(std::string_view str);
 
 extern OGlobalFont hu_font;
+
+class OFont;
+
+extern OFont* menu_font;
+extern OFont* hud_font;
+
+int V_FontStringWidthClean(const OFont* font, const char* str);
+int V_FontLineHeightClean(const OFont* font);
+
+brokenlines_t* V_BreakLinesFont(const OFont* font, int maxwidth, const byte* str);
+inline brokenlines_t* V_BreakLinesFont(const OFont* font, int maxwidth, const char* str)
+{
+	return V_BreakLinesFont(font, maxwidth, reinterpret_cast<const byte*>(str));
+}

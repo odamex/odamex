@@ -33,6 +33,7 @@
 #include "r_data.h"
 
 class IWindowSurface;
+class OFont;
 
 extern int CleanXfac, CleanYfac;
 
@@ -124,6 +125,7 @@ public:
 	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
 
 	void DrawTextureFlipped(const Texture* texture, int x, int y) const;
+	void DrawFontTextCleanMove(const OFont* font, int normalcolor, int x, int y, const char *string) const;
 
 	inline void DrawTexture(const Texture* texture, int x, int y) const;
 	inline void DrawTextureStretched(const Texture* texture, int x, int y, int dw, int dh) const;

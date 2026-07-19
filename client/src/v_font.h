@@ -46,7 +46,7 @@ public:
 	virtual int getAdvanceY(char c) const;
 	int getTextWidth(char c) const;
 	int getTextWidth(const char* str) const;
-	int getTextHeight(char c) const;
+	virtual int getTextHeight(char c) const;
 	int getTextHeight(const char* str) const;
 	void printText(const DCanvas* canvas, int x, int y, int color, const char* str) const;
 
@@ -60,6 +60,18 @@ public:
 
 	bool isLoaded() const
 	{	return mLoaded;	}
+
+	// The glyph for a character, or NULL if the font has none.
+	const Texture* getGlyph(char c) const
+	{	return mCharacters[(byte)c];	}
+
+	// Distance from the top of a line of text down to the baseline that
+	// glyphs sit on.
+	virtual int getAscent() const
+	{	return 0;	}
+
+	// True if the font actually built usable glyphs.
+	bool isUsable() const;
 
 protected:
 	OFont();
@@ -82,7 +94,13 @@ protected:
 	// again on unload. Returns NULL if the resource is missing or empty.
 	const Texture* cacheSourceTexture(const char* name);
 
+	// How far the pen moves after drawing a character.
+	virtual int getGlyphAdvance(char c) const;
+
 	const Texture*			mCharacters[256];
+
+	// Advance used for a character the font has no glyph for.
+	int						mMissingGlyphWidth;
 
 private:
 	void printCharacter(const DCanvas* canvas, int& x, int& y, char c) const;
@@ -207,8 +225,17 @@ public:
 	virtual int getAdvanceX(char c) const;
 	virtual int getAdvanceY(char c) const;
 
+	virtual int getAscent() const
+	{	return mAscent;	}
+
+	// Every line of an outline font occupies the face's line height,
+	// regardless of which characters are on it.
+	virtual int getTextHeight(char c) const
+	{	return mHeight;	}
+
 protected:
 	virtual void buildGlyphs();
+	virtual int getGlyphAdvance(char c) const;
 
 private:
 	std::string		mLumpName;
@@ -216,6 +243,7 @@ private:
 	unsigned int	mStyleMask;
 
 	int				mHeight;
+	int				mAscent;
 
 	int				mAdvanceX[256];
 	int				mAdvanceY[256];

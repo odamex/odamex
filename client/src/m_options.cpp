@@ -47,6 +47,7 @@ END_DISABLE_WARNING_GNU
 #include "z_zone.h"
 #include "v_video.h"
 #include "v_text.h"
+#include "v_font.h"
 
 #include "hu_stuff.h"
 
@@ -1616,7 +1617,7 @@ void M_SwitchMenu(menu_t* menu)
 			item = menu->items + i;
 			if (item->type != whitetext && item->type != redtext && item->type != orangetext)
 			{
-				thiswidth = V_StringWidth (item->label);
+				thiswidth = V_FontStringWidthClean(::menu_font, item->label);
 				if (thiswidth > widest)
 					widest = thiswidth;
 			}
@@ -1663,7 +1664,7 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 		buf = fmt::sprintf("%.1f", cur);
 	else
 		buf = fmt::sprintf("%.2f", cur);
-	screen->DrawTextCleanMove(CR_GREEN, x + 96, y, buf.c_str());
+	screen->DrawFontTextCleanMove(::menu_font, CR_GREEN, x + 96, y, buf.c_str());
 }
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
@@ -1761,7 +1762,7 @@ void M_OptDrawer (void)
 					else
 						color = CR_RED;
 
-					screen->DrawTextCleanMove(color, 104 * x + 20, y, str);
+					screen->DrawFontTextCleanMove(::menu_font, color, 104 * x + 20, y, str);
 				}
 			}
 
@@ -1774,7 +1775,7 @@ void M_OptDrawer (void)
 		}
 		else
 		{
-			width = V_StringWidth(item->label);
+			width = V_FontStringWidthClean(::menu_font, item->label);
 			switch (item->type)
 			{
 			case more:
@@ -1812,7 +1813,7 @@ void M_OptDrawer (void)
 				color = CR_RED;
 				break;
 			}
-			screen->DrawTextCleanMove (color, x, y, item->label);
+			screen->DrawFontTextCleanMove(::menu_font, color, x, y, item->label);
 
 			switch (item->type)
 			{
@@ -1827,7 +1828,7 @@ void M_OptDrawer (void)
 
 				if (v == vals)
 				{
-					screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
+					screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
 				}
 				else
 				{
@@ -1835,14 +1836,14 @@ void M_OptDrawer (void)
 					if (item->type == cdiscrete)
 						color_num = item->a.cvar->asInt();
 
-					screen->DrawTextCleanMove(color_num, CurrentMenu->indent + 14, y, item->e.values[v].name);
+					screen->DrawFontTextCleanMove(::menu_font, color_num, CurrentMenu->indent + 14, y, item->e.values[v].name);
 				}
 
 			}
 			break;
 
 			case nochoice:
-				screen->DrawTextCleanMove (CR_GOLD, CurrentMenu->indent + 14, y,
+				screen->DrawFontTextCleanMove(::menu_font, CR_GOLD, CurrentMenu->indent + 14, y,
 										   (item->e.values[static_cast<int>(item->b.leftval)]).name);
 				break;
 
@@ -1872,21 +1873,21 @@ void M_OptDrawer (void)
 			case control:
 			{
 				std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
 			case mapcontrol:
 			{
 				std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
 			case netdemocontrol:
 			{
 				std::string desc = NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
@@ -1905,7 +1906,7 @@ void M_OptDrawer (void)
 				else
 					str = value[0].name;
 
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, str);
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, str);
 			}
 			break;
 
@@ -1926,13 +1927,13 @@ void M_OptDrawer (void)
 					joyname += ": " + I_GetJoystickNameFromIndex(item->a.cvar->asInt());
 				}
 
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
 			}
 			break;
 
 			case joyaxis:
 			{
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, item->a.cvar->cstring());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, item->a.cvar->cstring());
 			}
 			break;
 

@@ -176,7 +176,7 @@ fixed_t V_FontScaleClean()
 
 
 OFont::OFont() :
-	mLoaded(false), mScale(FRACUNIT), mScaleFunc(nullptr)
+	mMissingGlyphWidth(0), mLoaded(false), mScale(FRACUNIT), mScaleFunc(nullptr)
 {
 	for (int i = 0; i < 256; i++)
 		mCharacters[i] = nullptr;
@@ -209,6 +209,13 @@ fixed_t OFont::getScale() const
 	return mScaleFunc ? mScaleFunc() : mScale;
 }
 
+bool OFont::isUsable() const
+{
+	// a font with no letterforms is one whose source resource was missing
+	const Texture* texture = mCharacters[(byte)'T'];
+	return texture != nullptr && texture->mWidth > 0 && texture->mHeight > 0;
+}
+
 void OFont::load()
 {
 	unload();
@@ -232,6 +239,7 @@ void OFont::unload()
 	for (int i = 0; i < 256; i++)
 		mCharacters[i] = nullptr;
 
+	mMissingGlyphWidth = 0;
 	mLoaded = false;
 }
 
@@ -331,7 +339,11 @@ void OFont::printCharacter(const DCanvas* canvas, int& x, int& y, char c) const
 	{
 		const Texture* texture = mCharacters[static_cast<byte>(c)];
 		if (texture)
-			canvas->DrawTranslatedTexture(texture, x, y);
+		{
+			// glyph bearings are relative to the baseline, which sits
+			// getAscent() below the top of the line
+			canvas->DrawTranslatedTexture(texture, x, y + getAscent());
+		}
 		x += getTextWidth(c);
 	}
 }
@@ -347,20 +359,35 @@ void OFont::printText(const DCanvas* canvas, int x, int y, int color, const char
 	}
 }
 
+int OFont::getGlyphAdvance(char c) const
+{
+	// A bitmap font's glyph is its own metric: step by the drawn width.
+	const Texture* texture = mCharacters[static_cast<byte>(c)];
+	return texture ? texture->mWidth - texture->mOffsetX : 0;
+}
+
 int OFont::getTextWidth(char c) const
 {
-	const Texture* texture = mCharacters[static_cast<byte>(c)];
-
 	if (c == '\t')
 		return 4 * getTextWidth(' ');
 
-	if (c == ' ' && (!texture || texture->mWidth == 0))
+	const Texture* texture = mCharacters[static_cast<byte>(c)];
+	if (!texture)
+	{
+		// a character the font has no glyph for: draw nothing, but leave a
+		// gap so words do not run together
+		return mMissingGlyphWidth;
+	}
+
+	const int advance = getGlyphAdvance(c);
+	if (advance > 0)
+		return advance;
+
+	// no advance and nothing drawn -- a bitmap font's blank space glyph
+	if (c == ' ')
 		return getTextWidth('T') / 2;
 
-	if (texture)
-		return texture->mWidth - texture->mOffsetX + getAdvanceX(c);
-	else
-		return 0;
+	return 0;
 }
 
 int OFont::getTextWidth(const char* str) const
@@ -603,14 +630,14 @@ void LargeDoomFont::buildGlyphs()
 // ----------------------------------------------------------------------------
 
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask) :
-	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0)
+	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0)
 {
 	load();
 }
 
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		ScaleFunc scale_func) :
-	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0)
+	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0)
 {
 	setScale(scale_func);
 	load();
@@ -625,6 +652,7 @@ void TrueTypeFont::buildGlyphs()
 	const int size = MAX(1, (mBaseSize * getScale()) >> FRACBITS);
 
 	mHeight = 0;
+	mAscent = 0;
 	memset(mAdvanceX, 0, sizeof(mAdvanceX));
 	memset(mAdvanceY, 0, sizeof(mAdvanceY));
 
@@ -689,6 +717,9 @@ void TrueTypeFont::buildGlyphs()
 
 	for (int charnum = ' '; charnum < '~'; charnum++)
 	{
+		if (FT_Get_Char_Index(face, charnum) == 0)
+			continue;
+
 		error = FT_Load_Char(face, charnum, FT_LOAD_RENDER);
 		if (error)
 		{
@@ -700,12 +731,10 @@ void TrueTypeFont::buildGlyphs()
 		const int height = face->glyph->bitmap.rows;
 		const int pitch = face->glyph->bitmap.pitch;
 
-		mAdvanceX[charnum] = face->glyph->advance.x >> 8;
-		mAdvanceY[charnum] = face->glyph->advance.y >> 8;
+		mAdvanceX[charnum] = face->glyph->advance.x >> 6;
+		mAdvanceY[charnum] = face->glyph->advance.y >> 6;
 
 		Texture* texture = createGlyph(width, height);
-		texture->mOffsetX = -face->glyph->bitmap_left;
-		texture->mOffsetY = -face->glyph->bitmap_top;
 		mCharacters[charnum] = texture;
 
 		if (width == 0 || height == 0)
@@ -726,6 +755,19 @@ void TrueTypeFont::buildGlyphs()
 			// set the color plane to a solid
 			memset(texture->mData, TRANSLATION_RANGE_START, width * height * sizeof(palindex_t));
 		}
+
+		// Set the glyph's bearing only after the fill: filling from a
+		// background graphic goes through Res_CopySubimage, which copies the
+		// source's offsets onto the destination and would otherwise wipe
+		// these out.
+		// DrawWrapper places a texture at (x - mOffsetX, y - mOffsetY), and
+		// we hand it the pen position on the baseline. FreeType's bearings
+		// put the glyph at (pen + bitmap_left, baseline - bitmap_top), so
+		// the offsets are the negation of one and the plain value of the
+		// other. Getting mOffsetY's sign wrong makes every glyph deflect
+		// the wrong way from the baseline.
+		texture->mOffsetX = -face->glyph->bitmap_left;
+		texture->mOffsetY = face->glyph->bitmap_top;
 
 		// Cut the glyph's shape out of the fill laid down above. Coverage is
 		// thresholded to a hard edge, and everything outside it becomes the
@@ -757,11 +799,21 @@ void TrueTypeFont::buildGlyphs()
 		}
 	}
 
+	mAscent = face->size->metrics.ascender >> 6;
+	mHeight = face->size->metrics.height >> 6;
+
+	if (mHeight <= 0)
+		mHeight = mAscent - (face->size->metrics.descender >> 6);
+
 	FT_Done_Face(face);
 	FT_Done_FreeType(ftlibrary);
 
-	// base the font height on the letter T
-	mHeight = getTextHeight('T');
+	mMissingGlyphWidth = MAX(1, size / 2);
+}
+
+int TrueTypeFont::getGlyphAdvance(char c) const
+{
+	return mAdvanceX[static_cast<byte>(c)];
 }
 
 int TrueTypeFont::getAdvanceX(char c) const
