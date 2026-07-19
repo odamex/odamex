@@ -150,6 +150,8 @@ include(zlib-lib.cmake)
 
 include(libpng-lib.cmake)
 
+include(freetype-lib.cmake)
+
 include(curl-lib.cmake)
 
 include(fltk-lib.cmake)

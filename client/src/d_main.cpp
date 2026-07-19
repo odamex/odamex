@@ -52,6 +52,7 @@ END_DISABLE_WARNING_GNU
 #include "z_zone.h"
 #include "s_sound.h"
 #include "v_video.h"
+#include "v_font.h"
 #include "f_finale.h"
 #include "f_wipe.h"
 #include "m_argv.h"
@@ -750,6 +751,8 @@ void D_Init()
 
 	C_InitConCharsFont();
 
+	V_FontInit();
+
 	HU_Init();
 
 	G_ParseMapInfo();
@@ -819,7 +822,7 @@ void STACK_ARGS D_Shutdown()
 
 	D_UndoDehPatch();
 
-//	V_UnloadFonts();
+	V_FontShutdown();
 
 	HU_Shutdown();
 

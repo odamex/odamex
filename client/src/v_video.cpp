@@ -44,6 +44,7 @@
 
 #include "v_video.h"
 #include "v_text.h"
+#include "v_font.h"
 
 #include "z_zone.h"
 
@@ -106,6 +107,10 @@ void V_AdjustVideoMode()
 
 		// Refresh the console.
 		C_NewModeAdjust();
+
+		// Fonts bake their scale into their glyphs, so any that follow the
+		// video mode have to be rebuilt at the new one.
+		V_FontRebuild();
 
 		// Recalculate various view parameters.
 		R_ForceViewWindowResize();

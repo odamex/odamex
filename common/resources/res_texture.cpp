@@ -132,6 +132,53 @@ uint32_t Texture::calculateSize(int width, int height)
 }
 
 
+//
+// Res_CopySubimage
+//
+void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
+		int dx1, int dy1, int dx2, int dy2,
+		int sx1, int sy1, int sx2, int sy2)
+{
+	if (!dest_texture || !source_texture || !dest_texture->mData || !source_texture->mData)
+		return;
+
+	const int destwidth = dx2 - dx1 + 1;
+	const int destheight = dy2 - dy1 + 1;
+
+	const int sourcewidth = sx2 - sx1 + 1;
+	const int sourceheight = sy2 - sy1 + 1;
+
+	if (destwidth <= 0 || destheight <= 0 || sourcewidth <= 0 || sourceheight <= 0)
+		return;
+
+	const fixed_t xstep = FixedDiv(sourcewidth << FRACBITS, destwidth << FRACBITS) + 1;
+	const fixed_t ystep = FixedDiv(sourceheight << FRACBITS, destheight << FRACBITS) + 1;
+
+	palindex_t* dest = dest_texture->mData + dx1 * dest_texture->mHeight + dy1;
+
+	fixed_t xfrac = 0;
+	for (int xcount = destwidth; xcount > 0; xcount--)
+	{
+		const palindex_t* source = source_texture->mData +
+				(sx1 + (xfrac >> FRACBITS)) * source_texture->mHeight + sy1;
+
+		fixed_t yfrac = 0;
+		for (int ycount = destheight; ycount > 0; ycount--)
+		{
+			*dest++ = source[yfrac >> FRACBITS];
+			yfrac += ystep;
+		}
+
+		dest += dest_texture->mHeight - destheight;
+		xfrac += xstep;
+	}
+
+	// copy the source texture's offset info, scaled to match
+	dest_texture->mOffsetX = FixedDiv(source_texture->mOffsetX << FRACBITS, xstep) >> FRACBITS;
+	dest_texture->mOffsetY = FixedDiv(source_texture->mOffsetY << FRACBITS, ystep) >> FRACBITS;
+}
+
+
 // ============================================================================
 //
 // TextureManager

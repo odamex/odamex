@@ -100,6 +100,24 @@ inline const Texture* Res_CacheTexture(const OLumpName& lump_name, TextureSearch
 }
 
 
+//
+// Res_CopySubimage
+//
+// Copies the [sx1,sy1]-[sx2,sy2] region of source_texture into the
+// [dx1,dy1]-[dx2,dy2] region of dest_texture, scaling the source region to
+// fit the destination region.
+//
+// Transparency travels with the pixels: palette index 0 is the transparent
+// slot, so it copies through like any other color.
+//
+// Warning: no clipping is performed, so it is possible to read past the end of
+// the source texture.
+//
+void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
+		int dx1, int dy1, int dx2, int dy2,
+		int sx1, int sy1, int sx2, int sy2);
+
+
 // ============================================================================
 //
 // Transitional patch-handle API
