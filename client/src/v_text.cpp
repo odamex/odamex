@@ -168,7 +168,8 @@ void V_TextInit()
 	::hu_digfont_height = ::hu_digfont['M' - HU_FONTSTART]->mHeight;
 
 	if (!::menu_font)
-		::menu_font = V_CreateFont(TrueTypeFont::TTF_GRADIENT, V_FontScaleClean);
+		::menu_font = V_CreateFont(TrueTypeFont::TTF_GRADIENT | TrueTypeFont::TTF_SHADOW,
+		                           V_FontScaleClean);
 	if (!::hud_font)
 		::hud_font = V_CreateFont(TrueTypeFont::TTF_TEXTURE, V_FontScaleHudText);
 

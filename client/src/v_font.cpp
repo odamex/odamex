@@ -59,6 +59,40 @@ static const palindex_t DOOM_FONT_RANGE_END		= 0x5F;
 
 
 //
+// V_FindDecorationColor
+//
+// Picks the darkest palette entry usable for an outline or drop shadow,
+// avoiding transparency or translation colors.
+//
+static palindex_t V_FindDecorationColor()
+{
+	const palette_t* palette = V_GetDefaultPalette();
+
+	int best_index = 1;
+	int best_distance = 256 * 256 * 3 + 1;
+
+	for (int i = 1; i < 256; i++)
+	{
+		if (i >= TRANSLATION_RANGE_START && i <= TRANSLATION_RANGE_END)
+			continue;
+
+		const argb_t color = palette->basecolors[i];
+		const int distance = color.getr() * color.getr() +
+		                     color.getg() * color.getg() +
+		                     color.getb() * color.getb();
+
+		if (distance < best_distance)
+		{
+			best_distance = distance;
+			best_index = i;
+		}
+	}
+
+	return static_cast<palindex_t>(best_index);
+}
+
+
+//
 // V_TranslateFontChar
 //
 // Shifts a glyph's pixels from the palette range the stock Doom font
@@ -711,6 +745,21 @@ void TrueTypeFont::buildGlyphs()
 	if (stylemask & TTF_TEXTURE)
 		background_texture = cacheSourceTexture("FONTBACK");
 
+	const int outline_size = (stylemask & TTF_OUTLINE) ? MAX(1, size / 16) : 0;
+	const int shadow_size = (stylemask & TTF_SHADOW) ? MAX(1, size / 8) : 0;
+
+	const int pad_left = outline_size;
+	const int pad_top = outline_size;
+	const int pad_right = MAX(outline_size, shadow_size);
+	const int pad_bottom = MAX(outline_size, shadow_size);
+
+	const bool decorated = (outline_size > 0 || shadow_size > 0);
+	const palindex_t decoration_color = decorated ? V_FindDecorationColor() : 0;
+
+	// coverage masks, reused across glyphs to avoid churning allocations
+	std::vector<byte> body;
+	std::vector<byte> deco;
+
 	// stand-in for a fill pixel that landed on the transparency slot
 	const palindex_t opaque_fill_fallback =
 			V_BestOpaqueColor(V_GetDefaultPalette()->basecolors, argb_t(0, 0, 0));
@@ -734,10 +783,13 @@ void TrueTypeFont::buildGlyphs()
 		mAdvanceX[charnum] = face->glyph->advance.x >> 6;
 		mAdvanceY[charnum] = face->glyph->advance.y >> 6;
 
-		Texture* texture = createGlyph(width, height);
+		const int tex_width = (width > 0) ? width + pad_left + pad_right : 0;
+		const int tex_height = (height > 0) ? height + pad_top + pad_bottom : 0;
+
+		Texture* texture = createGlyph(tex_width, tex_height);
 		mCharacters[charnum] = texture;
 
-		if (width == 0 || height == 0)
+		if (tex_width == 0 || tex_height == 0)
 			continue;
 
 		if (background_texture)
@@ -753,7 +805,8 @@ void TrueTypeFont::buildGlyphs()
 		else
 		{
 			// set the color plane to a solid
-			memset(texture->mData, TRANSLATION_RANGE_START, width * height * sizeof(palindex_t));
+			memset(texture->mData, TRANSLATION_RANGE_START,
+			       tex_width * tex_height * sizeof(palindex_t));
 		}
 
 		// Set the glyph's bearing only after the fill: filling from a
@@ -766,34 +819,92 @@ void TrueTypeFont::buildGlyphs()
 		// the offsets are the negation of one and the plain value of the
 		// other. Getting mOffsetY's sign wrong makes every glyph deflect
 		// the wrong way from the baseline.
-		texture->mOffsetX = -face->glyph->bitmap_left;
-		texture->mOffsetY = face->glyph->bitmap_top;
+		texture->mOffsetX = -(face->glyph->bitmap_left - pad_left);
+		texture->mOffsetY = face->glyph->bitmap_top + pad_top;
 
-		// Cut the glyph's shape out of the fill laid down above. Coverage is
-		// thresholded to a hard edge, and everything outside it becomes the
-		// transparent palette index.
+
+		// Resolve the glyph into the color plane. Coverage is thresholded to
+		// a hard edge, the body keeps the fill laid down above, decoration
+		// gets a fixed dark color, and everything else becomes transparent.
 		//
 		// A fill is only allowed to contain the transparent index where the
 		// glyph isn't, so any opaque pixel that landed on it is nudged to the
 		// nearest opaque color instead -- otherwise a background graphic with
 		// transparency of its own would punch holes through the glyph.
 		const byte* source = reinterpret_cast<const byte*>(face->glyph->bitmap.buffer);
+
+		// coverage masks, in the texture's column-major layout
+		body.assign(tex_width * tex_height, 0);
+
+		for (int gx = 0; gx < width; gx++)
+		{
+			for (int gy = 0; gy < height; gy++)
+			{
+				if (*(source + pitch * gy + gx) > 127)
+					body[(gx + pad_left) * tex_height + (gy + pad_top)] = 1;
+			}
+		}
+
+		if (decorated)
+		{
+			deco.assign(tex_width * tex_height, 0);
+
+			for (int x = 0; x < tex_width; x++)
+			{
+				for (int y = 0; y < tex_height; y++)
+				{
+					if (!body[x * tex_height + y])
+						continue;
+
+					// drop shadow: the body offset down and to the right
+					if (shadow_size > 0)
+					{
+						const int sx = x + shadow_size;
+						const int sy = y + shadow_size;
+						if (sx < tex_width && sy < tex_height)
+							deco[sx * tex_height + sy] = 1;
+					}
+
+					// outline: the body dilated in every direction
+					if (outline_size > 0)
+					{
+						for (int ox = -outline_size; ox <= outline_size; ox++)
+						{
+							for (int oy = -outline_size; oy <= outline_size; oy++)
+							{
+								const int nx = x + ox;
+								const int ny = y + oy;
+								if (nx >= 0 && nx < tex_width && ny >= 0 && ny < tex_height)
+									deco[nx * tex_height + ny] = 1;
+							}
+						}
+					}
+				}
+			}
+		}
+
 		palindex_t* dest = texture->mData;
 
-		for (int x = 0; x < width; x++)
+		for (int x = 0; x < tex_width; x++)
 		{
-			for (int y = 0; y < height; y++)
+			for (int y = 0; y < tex_height; y++)
 			{
-				const byte pixel = *(source + pitch * y + x);
-				if (pixel > 127)
+				const int index = x * tex_height + y;
+
+				if (body[index])
 				{
 					if (*dest == TRANSPARENT_INDEX)
 						*dest = opaque_fill_fallback;
+				}
+				else if (decorated && deco[index])
+				{
+					*dest = decoration_color;
 				}
 				else
 				{
 					*dest = TRANSPARENT_INDEX;
 				}
+
 				dest++;
 			}
 		}
