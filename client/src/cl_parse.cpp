@@ -337,7 +337,8 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 
 	// Mark the gametic this update arrived in for prediction code
 	p.tic = gametic;
-	p.mo->updatedDuringTic = gametic;
+	p.mo->updatedDuringLocalTic  = gametic;
+	p.mo->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
 
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p.spectator && (&p != &consoleplayer()))
@@ -531,9 +532,10 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->special1 = mo->z - mo->floorz;
 		mo->LinkToWorld();
 	}
-	mo->baseline         = base;
-	mo->updatedDuringTic = gametic;
-	mo->mobjtic          = msg->timebase_tic();
+	mo->baseline               = base;
+	mo->updatedDuringLocalTic  = gametic;
+	mo->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	mo->mobjtic                = msg->timebase_tic();
 
 	P_SetThingId(mo, netid);
 
@@ -1092,13 +1094,19 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	CL_CheckDisplayPlayer();
 }
 
-static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
+static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = nullptr)
 {
-	AActor* mo = P_FindThingById(msg->actor().netid());
 	if (not mo)
-		return mo;
+	{
+		mo = P_FindThingById(msg->actor().netid());
+		if (not mo)
+		{
+			return mo;
+		}
+	}
 
-	mo->updatedDuringTic = gametic;
+	mo->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	mo->updatedDuringLocalTic = gametic;
 
 	uint32_t flags = msg->flags();
 
@@ -1202,10 +1210,24 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 
 static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 {
-	AActor* mo = CL_UpdateMobj(& msg->update());
+	AActor* mo = P_FindThingById(msg->update().actor().netid());
 
 	if (not mo)
 		return;
+
+	// Special handling: If we get a best-effort / order-not-guaranteed UpdateMobj, make sure that
+	//                   we're not going backwards with it!  This avoids rare ghosts.
+	const int currentSequence = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	if (currentSequence < 0)
+	{
+		const int baseSequence = std::abs(mo->updatedDuringServerTic);
+		const int newSequence  = -currentSequence;
+
+		if (newSequence < baseSequence)
+		{
+			return;
+		}
+	}
 
 	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
 	if (mode != mo->mode)
@@ -1239,7 +1261,16 @@ static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 			default:
 				break;
 		}
+		if (mo->state->statenum != msg->state())
+		{
+			P_SetMobjState(mo, msg->state());
+		}
+		mo->tics = msg->tics();
 	}
+
+	// Now apply the update mobj, on the off chance that a mode change caused
+	// us to mispredict the fine-grained position, momentum, angle, etc.
+	CL_UpdateMobj(& msg->update(), mo);
 }
 
 //
@@ -1271,7 +1302,8 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	mobj->momx = mobj->momy = mobj->momz = 0;
 
-	mobj->updatedDuringTic = gametic;
+	mobj->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	mobj->updatedDuringLocalTic  = gametic;
 	mobj->credibility.Lionize();
 
 	// set color translations for player sprites
@@ -1487,7 +1519,8 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		target->momy = msg->target_mom().y();
 		target->momz = msg->target_mom().z();
 
-		target->updatedDuringTic = gametic;
+		target->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+		target->updatedDuringLocalTic = gametic;
 	}
 
 	target->health = health;
@@ -1530,7 +1563,8 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	corpsehit->momy = msg->corpse().mom().y();
 	corpsehit->momz = msg->corpse().mom().z();
 
-	corpsehit->updatedDuringTic = gametic;
+	corpsehit->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	corpsehit->updatedDuringLocalTic  = gametic;
 
 	mobjinfo_t* info = corpsehit->info;
 

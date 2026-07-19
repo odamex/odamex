@@ -3092,11 +3092,6 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
 		return;
 
-	// Avoid sending more than one Update Mobj per tic for any missile.
-	// Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
-	if (mo->updatedDuringTic == gametic)
-		return;
-
 	// 64 units feels about right to prevent barely-dodged missiles from floating in front of the player's face
 	// when in a high-lag ~200 msec ping situation.
 	constexpr int HYPER_AWARENESS_CUTOFF_SQUARED = 64 * 64;
@@ -3185,12 +3180,12 @@ static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 
 				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
 				case AwarenessEnum::FULLY_AWARE:
-					mobj.updatedDuringTic = gametic;
+					mobj.updatedDuringLocalTic = gametic;
 					MSG_WriteSVC(fullAwareQueue, message);
 					break;
 
 				case AwarenessEnum::SEMI_AWARE:
-					mobj.updatedDuringTic = gametic;
+					mobj.updatedDuringLocalTic = gametic;
 					MSG_WriteSVC(semiAwareQueue, message);
 					break;
 			}
@@ -3277,11 +3272,6 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 	if ((gametic+mo->netid) % 7)
 		return;
 
-	// Avoid sending more than one Update Mobj per tic for any monsters.
-	// Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
-	if (mo->updatedDuringTic == gametic)
-		return;
-
 	if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
 	{
 		switch (mo->playersAware.Get(player.id))
@@ -3303,7 +3293,7 @@ void SV_UpdateAvatars(player_t& player)
 	{
 		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
 		{
-			voodooInfo.mobj->updatedDuringTic = gametic;    // Avoid a potential duplicate send.
+			voodooInfo.mobj->updatedDuringLocalTic = gametic;    // Avoid a potential duplicate send.
 			MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_UpdateMobj(*voodooInfo.mobj));
 		}
 	}
@@ -5207,13 +5197,13 @@ void SV_ExplodeMissile(AActor *mo)
 
 			case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
 			case AwarenessEnum::FULLY_AWARE:
-				mo->updatedDuringTic = gametic;
+				mo->updatedDuringLocalTic = gametic;
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*mo));
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
 				break;
 
 			case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
-				mo->updatedDuringTic = gametic;
+				mo->updatedDuringLocalTic = gametic;
 				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
 				break;
