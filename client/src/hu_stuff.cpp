@@ -716,7 +716,7 @@ static int GetLongestTeamWidth()
 		longestTeamName.append(" FRAGS: ");
 	else
 		longestTeamName.append(" POINTS: ");
-	return V_StringWidth(longestTeamName.c_str());
+	return hud::GetTextWidth(longestTeamName.c_str(), hud_scalescoreboard);
 }
 
 // [AM] Draw scoreboard header
@@ -754,7 +754,7 @@ void drawHeader(player_t *player, int y)
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_LEFT, hud::Y_TOP,
 	              "CLIENTS: ", CR_GREY, true);
-	hud::DrawText(-236 + V_StringWidth("CLIENTS: "), y, hud_scalescoreboard,
+	hud::DrawText(-236 + hud::GetTextWidth("CLIENTS: ", hud_scalescoreboard), y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_LEFT, hud::Y_TOP,
 	              hud::ClientsSplit().c_str(), CR_GREEN, true);
@@ -801,7 +801,7 @@ void drawHeader(player_t *player, int y)
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_LEFT, hud::Y_TOP,
 		              "PLAYERS: ", CR_GREY, true);
-		hud::DrawText(-236 + V_StringWidth("PLAYERS: "), y + 8, hud_scalescoreboard,
+		hud::DrawText(-236 + hud::GetTextWidth("PLAYERS: ", hud_scalescoreboard), y + 8, hud_scalescoreboard,
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_LEFT, hud::Y_TOP,
 		              hud::PlayersSplit().c_str(), CR_GREEN, true);
@@ -862,14 +862,14 @@ void drawHeader(player_t *player, int y)
 		values.push_back(str);
 	}
 
-	int rw = V_StringWidth("00:00");
+	int rw = hud::GetTextWidth("00:00", hud_scalescoreboard);
 	if (sv_timelimit.asInt() == 0 && gamestate != GS_INTERMISSION)
-		rw = V_StringWidth("N/A");
+		rw = hud::GetTextWidth("N/A", hud_scalescoreboard);
 	else if (timer.size() > 5)
-		rw = V_StringWidth("00:00:00");
+		rw = hud::GetTextWidth("00:00:00", hud_scalescoreboard);
 
 	for (const auto& val : values)
-		rw = std::max(V_StringWidth(val.c_str()), rw);
+		rw = std::max(hud::GetTextWidth(val.c_str(), hud_scalescoreboard), rw);
 
 	for (size_t i = 0; i < values.size() && i < 3; i++)
 	{

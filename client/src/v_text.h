@@ -99,6 +99,19 @@ class OFont;
 extern OFont* menu_font;
 extern OFont* hud_font;
 
+//
+// V_GetHudFont
+//
+// Returns a HUD font rasterized for the given integer pixel scale, building
+// and caching one on first use.
+//
+// The HUD draws text at several different scales (hud_scale and
+// hud_scalescoreboard), and an OFont bakes its scale into its glyphs, so one
+// font cannot serve them all. Rasterizing a font per scale keeps every size
+// crisp instead of stretching one size to fit.
+//
+OFont* V_GetHudFont(int pixel_scale);
+
 int V_FontStringWidthClean(const OFont* font, const char* str);
 int V_FontLineHeightClean(const OFont* font);
 

@@ -635,7 +635,7 @@ static void drawHordeGametype()
 {
 	static constexpr int SCREEN_BORDER = 4;
 	static constexpr int ABOVE_AMMO = 24;
-	const int LINE_SPACING = V_LineHeight() + 1;
+	const int LINE_SPACING = hud::GetLineHeight(::hud_scale) + 1;
 	static constexpr int BAR_BORDER = 5;
 
 	const hordeInfo_t& info = P_HordeInfo();
@@ -669,7 +669,7 @@ static void drawHordeGametype()
 	const int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
 	hud::DrawText(SCREEN_BORDER, y, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 	              hud::X_RIGHT, hud::Y_BOTTOM, waverow.c_str(), CR_GREY);
-	hud::EleBar(SCREEN_BORDER, y + LINE_SPACING, V_StringWidth("WAVE:0/0"), ::hud_scale,
+	hud::EleBar(SCREEN_BORDER, y + LINE_SPACING, hud::GetTextWidth("WAVE:0/0", ::hud_scale), ::hud_scale,
 	            hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killPct,
 	            killColor);
 	hud::DrawText(SCREEN_BORDER, y + LINE_SPACING + BAR_BORDER, ::hud_scale, hud::X_RIGHT,
@@ -750,7 +750,7 @@ void drawProtos()
 	const float scale = 0.75f;
 	int y = top;
 
-	const int indent = V_StringWidth(" >");
+	const int indent = hud::GetTextWidth(" >", scale);
 
 	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
 	{
@@ -880,7 +880,7 @@ static void drawLevelStats()
 	}
 
 	std::string line;
-	const int LINE_SPACING = V_LineHeight() + 1;
+	const int LINE_SPACING = hud::GetLineHeight(::hud_scale) + 1;
 	int font_offset = 0;
 	unsigned int x = R_StatusBarVisible() ? (text_ax + 2) : (text_ax + 10), y = R_StatusBarVisible() ? statusBarY() + 1 : 44;
 
@@ -1051,7 +1051,7 @@ void OdamexHUD() {
 
 		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
-		iy += V_LineHeight() + 1;
+		iy += hud::GetLineHeight(::hud_scale) + 1;
 
 		if (::hud_bigfont)
 			V_SetFont("SMALLFONT");
@@ -1066,7 +1066,7 @@ void OdamexHUD() {
 		          static_cast<int>(HU_GetPlayerSpeed()));
 		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
-		iy += V_LineHeight() + 1;
+		iy += hud::GetLineHeight(::hud_scale) + 1;
 
 		if (::hud_bigfont)
 			V_SetFont("SMALLFONT");
@@ -1075,12 +1075,12 @@ void OdamexHUD() {
 	// Draw other player name, if spying
 	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
-	iy += V_LineHeight() + 1;
+	iy += hud::GetLineHeight(::hud_scale) + 1;
 
 	// Draw targeted player names.
 	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	               hud::Y_BOTTOM, 1, hud_targetcount);
-	iy += V_LineHeight() + 1;
+	iy += hud::GetLineHeight(::hud_scale) + 1;
 
 	// Draw stat lines.  Vertically aligned with the bottom of the armor
 	// number on the other side of the screen.
@@ -1092,13 +1092,13 @@ void OdamexHUD() {
 
 	if (G_IsMatchDuelGame())
 	{
-		spreadheight = 24 + (V_LineHeight() * 2) + 2;
-		scoreheight = 24 + V_LineHeight() + 1;
+		spreadheight = 24 + (hud::GetLineHeight(::hud_scale) * 2) + 2;
+		scoreheight = 24 + hud::GetLineHeight(::hud_scale) + 1;
 		placeheight = 24;
 	}
 	else
 	{
-		spreadheight = 24 + V_LineHeight() + 1;
+		spreadheight = 24 + hud::GetLineHeight(::hud_scale) + 1;
 		scoreheight = 24;
 		placeheight = 0; // No place height drawn if not match duel
 	}
@@ -1163,7 +1163,7 @@ void DrawToasts()
 	const int fadeOutTics = fadeDoneTics - TICRATE;
 
 	V_SetFont("DIGFONT");
-	const int TOAST_HEIGHT = V_LineHeight() + 2;
+	const int TOAST_HEIGHT = hud::GetLineHeight(::hud_scale) + 2;
 
 	std::string buffer;
 	int y = 0;
@@ -1192,7 +1192,7 @@ void DrawToasts()
 		// Right-hand side.
 		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
 		              hud::Y_TOP, toast.right.c_str(), CR_GREY);
-		x += V_StringWidth(toast.right.c_str()) + 1;
+		x += hud::GetTextWidth(toast.right.c_str(), ::hud_scale) + 1;
 
 		// Icon
 		const Texture* icon = W_ResolvePatchHandle(toast.icon);
@@ -1234,7 +1234,7 @@ void DrawToasts()
 			// We subtract 2 pixels because we want the text to bleed into the left and
 			// right gfx
 			int points_width =
-			    V_StringWidth(fmt::sprintf("%d", toast.points).c_str()) - 1;
+			    hud::GetTextWidth(fmt::sprintf("%d", toast.points).c_str(), ::hud_scale) - 1;
 			const Texture* mpatch = W_ResolvePatchHandle(ToastSpreeM);
 			for (int i = 0; i < points_width; i++)
 			{
@@ -1962,7 +1962,7 @@ void SpectatorHUD()
 
 		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
-		iy += V_LineHeight() + 1;
+		iy += hud::GetLineHeight(::hud_scale) + 1;
 
 		if (::hud_bigfont)
 			V_SetFont("SMALLFONT");
@@ -1971,7 +1971,7 @@ void SpectatorHUD()
 	// Draw help text - spy player name is handled elsewhere.
 	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::HelpText().c_str(), CR_GREY);
-	iy += V_LineHeight() + 1;
+	iy += hud::GetLineHeight(::hud_scale) + 1;
 
 	// Draw targeted player names.
 	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
@@ -1991,7 +1991,7 @@ void DoomHUD()
 	{
 		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
-		st_y += V_LineHeight() + 1;
+		st_y += hud::GetLineHeight(::hud_scale) + 1;
 	}
 
 	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
@@ -2001,18 +2001,18 @@ void DoomHUD()
 		                   static_cast<int>(HU_GetPlayerSpeed()));
 		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
-		st_y += V_LineHeight() + 1;
+		st_y += hud::GetLineHeight(::hud_scale) + 1;
 	}
 
 	// Draw other player name, if spying
 	hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
-	st_y += V_LineHeight() + 1;
+	st_y += hud::GetLineHeight(::hud_scale) + 1;
 
 	// Draw targeted player names.
 	hud::EATargets(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	               hud::Y_BOTTOM, 1, hud_targetcount);
-	st_y += V_LineHeight() + 1;
+	st_y += hud::GetLineHeight(::hud_scale) + 1;
 
 	// Draw gametype scoreboard
 	hud::drawGametype();

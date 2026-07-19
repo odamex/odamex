@@ -42,6 +42,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_IMAGE_H
+#include FT_OUTLINE_H
 
 extern byte* Ranges;
 
@@ -741,6 +742,9 @@ void TrueTypeFont::buildGlyphs()
 		return;
 	}
 
+	// Bold if the font size is too small so we don't alias away any details.
+	const FT_Pos embolden = (size < 13) ? std::min((13 - size) * 6, 48) : 0;
+
 	const Texture* background_texture = nullptr;
 	if (stylemask & TTF_TEXTURE)
 		background_texture = cacheSourceTexture("FONTBACK");
@@ -769,10 +773,20 @@ void TrueTypeFont::buildGlyphs()
 		if (FT_Get_Char_Index(face, charnum) == 0)
 			continue;
 
-		error = FT_Load_Char(face, charnum, FT_LOAD_RENDER);
+		error = FT_Load_Char(face, charnum, FT_LOAD_DEFAULT);
 		if (error)
 		{
 			PrintFmt(PRINT_HIGH, "Error loading TrueType font {} glyph {}: {}\n", lumpname, charnum, error);
+			continue;
+		}
+
+		if (embolden > 0 && face->glyph->format == FT_GLYPH_FORMAT_OUTLINE)
+			FT_Outline_Embolden(&face->glyph->outline, embolden);
+
+		error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+		if (error)
+		{
+			PrintFmt(PRINT_HIGH, "Error rendering TrueType font {} glyph {}: {}\n", lumpname, charnum, error);
 			continue;
 		}
 

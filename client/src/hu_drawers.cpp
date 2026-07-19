@@ -27,6 +27,7 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
+#include "v_font.h"
 #include "resources/res_texture.h"
 
 namespace hud {
@@ -171,7 +172,25 @@ void Dim(int x, int y,
 }
 
 
-// Draw hu_font text.
+// Width of a string in HUD units, matching what DrawText will produce.
+int GetTextWidth(const char* str, const float scale)
+{
+	if (!str)
+		return 0;
+
+	const int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
+	return V_GetHudFont(x_scale)->getTextWidth(str) / x_scale;
+}
+
+// Height of a line of text in HUD units, matching what DrawText will produce.
+int GetLineHeight(const float scale)
+{
+	const int y_scale = std::max(1, static_cast<int>(scale * CleanYfac));
+	return V_GetHudFont(y_scale)->getHeight() / y_scale;
+}
+
+
+// Draw text with the HUD font.
 void DrawText(int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,
               const x_align_t x_origin, const y_align_t y_origin,
@@ -182,18 +201,27 @@ void DrawText(int x, int y, const float scale,
 	if (!str)
 		return;
 
-	// Calculate width and height of string
-	unsigned short w = V_StringWidth(str);
-	unsigned short h = V_LineHeight();
-
 	// Turn our scaled coordinates into real coordinates.
-	int x_scale, y_scale;
-	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+	int x_scale = 1, y_scale = 1;
+	calculateOrigin(x, y, 0, 0, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
 
-	if (force_opaque)
-		screen->DrawTextStretched(color, x, y, str, x_scale, y_scale);
-	else
-		screen->DrawTextStretchedLuc(color, x, y, str, x_scale, y_scale);
+	// Calculate width and height of string
+	const OFont* font = V_GetHudFont(x_scale);
+	const int w = font->getTextWidth(str);
+	const int h = font->getHeight();
+
+	// apply the origin offset ourselves, in real pixels
+	if (x_origin == X_CENTER)
+		x -= w >> 1;
+	else if (x_origin == X_RIGHT)
+		x -= w;
+
+	if (y_origin == Y_MIDDLE)
+		y -= h >> 1;
+	else if (y_origin == Y_BOTTOM)
+		y -= h;
+
+	screen->DrawFontText(font, color, x, y, str, force_opaque);
 }
 
 

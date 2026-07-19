@@ -126,6 +126,7 @@ public:
 
 	void DrawTextureFlipped(const Texture* texture, int x, int y) const;
 	void DrawFontTextCleanMove(const OFont* font, int normalcolor, int x, int y, const char *string) const;
+	void DrawFontText(const OFont* font, int normalcolor, int x, int y, const char *string, bool force_opaque = true) const;
 
 	inline void DrawTexture(const Texture* texture, int x, int y) const;
 	inline void DrawTextureStretched(const Texture* texture, int x, int y, int dw, int dh) const;
@@ -197,6 +198,8 @@ protected:
 	void TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
 	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
 	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
+
+	void DrawFontTextRaw (const OFont* font, EWrapperCode drawer, int normalcolor, int x, int y, const char *string) const;
 
 	void DrawWrapper (EWrapperCode drawer, const Texture* texture, int x, int y) const;
 	void DrawSWrapper (EWrapperCode drawer, const Texture* texture, int x, int y, int destwidth, int destheight) const;

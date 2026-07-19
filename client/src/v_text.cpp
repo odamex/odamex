@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <ctype.h>
+#include <map>
 
 #include "v_text.h"
 
@@ -88,6 +89,43 @@ static OFont* V_CreateFont(unsigned int stylemask, OFont::ScaleFunc scale_func)
 	delete font;
 	return new SmallDoomFont(scale_func);
 }
+
+//
+// V_CreateFontAtSize
+//
+// As V_CreateFont, but pinned to an absolute pixel size rather than following
+// a scale provider.
+//
+static OFont* V_CreateFontAtSize(unsigned int stylemask, int size)
+{
+	OFont* font = new TrueTypeFont(TTF_LUMP_NAME, size, stylemask);
+	if (font->isUsable())
+		return font;
+
+	delete font;
+	return new SmallDoomFont(MAX(1, size / 8) * FRACUNIT);
+}
+
+
+//
+// V_GetHudFont
+//
+OFont* V_GetHudFont(int pixel_scale)
+{
+	typedef std::map<int, OFont*> HudFontCache;
+	static HudFontCache cache;
+
+	pixel_scale = MAX(1, pixel_scale);
+
+	HudFontCache::iterator it = cache.find(pixel_scale);
+	if (it != cache.end())
+		return it->second;
+
+	OFont* font = V_CreateFontAtSize(TrueTypeFont::TTF_TEXTURE, 8 * pixel_scale);
+	cache[pixel_scale] = font;
+	return font;
+}
+
 
 /**
  * @brief Initialize fonts.
@@ -510,14 +548,14 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 // ----------------------------------------------------------------------------
 
 //
-// DCanvas::DrawFontTextCleanMove
+// DCanvas::DrawFontTextRaw
 //
-// Positions are given in 320x200 virtual coordinates and transformed the same
-// way DrawTextCleanMove does, but each glyph is blitted at its built size --
-// the font already carries the scale, so scaling here would apply it twice.
+// Shared core of the OFont drawing entry points. Coordinates are real screen
+// pixels and glyphs are blitted at their built size -- the font already
+// carries its scale, so scaling here would apply it twice.
 //
-void DCanvas::DrawFontTextCleanMove(const OFont* font, int normalcolor, int x, int y,
-		const char* string) const
+void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
+		int normalcolor, int x, int y, const char* string) const
 {
 	if (!font || !string)
 		return;
@@ -527,9 +565,8 @@ void DCanvas::DrawFontTextCleanMove(const OFont* font, int normalcolor, int x, i
 
 	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
 
-	int cx = getCleanX(x);
-	int cy = getCleanY(y);
-	const int startx = cx;
+	const int startx = x;
+	const int ascent = font->getAscent();
 
 	for (const char* str = string; str[0] != '\0'; )
 	{
@@ -543,8 +580,8 @@ void DCanvas::DrawFontTextCleanMove(const OFont* font, int normalcolor, int x, i
 
 		if (str[0] == '\n')
 		{
-			cx = startx;
-			cy += font->getHeight();
+			x = startx;
+			y += font->getHeight();
 			str++;
 			continue;
 		}
@@ -555,16 +592,45 @@ void DCanvas::DrawFontTextCleanMove(const OFont* font, int normalcolor, int x, i
 		const Texture* glyph = font->getGlyph(c);
 		if (glyph && glyph->mWidth > 0 && glyph->mHeight > 0)
 		{
-			if (cx + glyph->mWidth > I_GetSurfaceWidth())
+			if (x + glyph->mWidth > I_GetSurfaceWidth())
 				break;
 
 			// glyph bearings are relative to the baseline, which sits
 			// getAscent() below the top of the line
-			DrawWrapper(EWrapper_Translated, glyph, cx, cy + font->getAscent());
+			DrawWrapper(drawer, glyph, x, y + ascent);
 		}
 
-		cx += font->getTextWidth(c);
+		x += font->getTextWidth(c);
 	}
+}
+
+
+//
+// DCanvas::DrawFontTextCleanMove
+//
+// Takes 320x200 virtual coordinates, transformed the same way
+// DrawTextCleanMove does.
+//
+void DCanvas::DrawFontTextCleanMove(const OFont* font, int normalcolor, int x, int y,
+		const char* string) const
+{
+	DrawFontTextRaw(font, EWrapper_Translated, normalcolor,
+	                getCleanX(x), getCleanY(y), string);
+}
+
+
+//
+// DCanvas::DrawFontText
+//
+// Takes real screen coordinates, for callers that have already done their own
+// positioning. Translucent unless the caller forces otherwise, matching the
+// HUD's existing text drawing.
+//
+void DCanvas::DrawFontText(const OFont* font, int normalcolor, int x, int y,
+		const char* string, bool force_opaque) const
+{
+	DrawFontTextRaw(font, force_opaque ? EWrapper_Translated : EWrapper_TlatedLucent,
+	                normalcolor, x, y, string);
 }
 
 
