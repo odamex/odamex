@@ -36,6 +36,7 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "v_text.h"
+#include "v_font.h"
 #include "g_gametype.h"
 
 #include "cl_main.h"
@@ -446,14 +447,17 @@ static void HU_DrawCrosshair()
 static void HU_DrawChatPrompt()
 {
 	// Don't draw the chat prompt without a valid font.
-	if (!::hu_font[0])
+	if (!V_FontsReady())
 		return;
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
-	// Set up text scaling
+	// Set up text scaling. The prompt follows the HUD text scale; an OFont
+	// bakes its scale into its glyphs, so ask for a face rasterized at it.
 	int scaledxfac = V_TextScaleXAmount();
 	int scaledyfac = V_TextScaleYAmount();
+
+	OFont* font = V_GetFaceFont(FACE_SMALL, MAX(scaledxfac, 1));
 
 	// Determine what Y height to display the chat prompt at.
 	// * I_GetSurfaceHeight() is the "actual" screen height.
@@ -484,23 +488,15 @@ static void HU_DrawChatPrompt()
 	else if (HU_ChatMode() == CHAT_NORMAL)
 		prompt = "Say: ";
 
-	int promptwidth = V_StringWidth(prompt) * scaledxfac;
-	int x = hu_font['_' - HU_FONTSTART]->mWidth * scaledxfac * 2 + promptwidth;
+	int promptwidth = font->getTextWidth(prompt);
+	int x = font->getTextWidth('_') * 2 + promptwidth;
 
-	// figure out if the text is wider than the screen->
+	// figure out if the text is wider than the screen.
 	// if so, only draw the right-most portion of it.
 	int i;
-	for (i = static_cast<int>(input_text.length()) - 1; i >= 0 && x < I_GetSurfaceWidth(); i--)
+	for (i = static_cast<int>(input_text.length()) - 1; i >= 0 && x < surface_width; i--)
 	{
-		int c = toupper(input_text[i] & 0x7f) - HU_FONTSTART;
-		if (c < 0 || c >= HU_FONTSIZE)
-		{
-			x += 4 * scaledxfac;
-		}
-		else
-		{
-			x += hu_font[c]->mWidth * scaledxfac;
-		}
+		x += font->getTextWidth(input_text[i]);
 	}
 
 	if (i >= 0)
@@ -511,10 +507,8 @@ static void HU_DrawChatPrompt()
 	// draw the prompt, text, and cursor
 	std::string show_text = input_text;
 	show_text += '_';
-	screen->DrawTextStretched(CR_RED, 0, y, prompt,
-							scaledxfac, scaledyfac);
-	screen->DrawTextStretched(CR_GREY, promptwidth, y, show_text.c_str() + i,
-							scaledxfac, scaledyfac);
+	screen->DrawFontText(font, CR_RED, 0, y, prompt);
+	screen->DrawFontText(font, CR_GREY, promptwidth, y, show_text.c_str() + i);
 }
 
 
