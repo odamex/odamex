@@ -173,27 +173,28 @@ void Dim(int x, int y,
 
 
 // Width of a string in HUD units, matching what DrawText will produce.
-int GetTextWidth(const char* str, const float scale)
+int GetTextWidth(const char* str, const float scale, const fontface_t face)
 {
 	if (!str)
 		return 0;
 
 	const int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
-	return V_GetHudFont(x_scale)->getTextWidth(str) / x_scale;
+	return V_GetFaceFont(face, x_scale)->getTextWidth(str) / x_scale;
 }
 
-brokenlines_t* BreakLines(const char* str, const int maxwidth, const float scale)
+brokenlines_t* BreakLines(const char* str, const int maxwidth, const float scale,
+                          const fontface_t face)
 {
 	const int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
-	return V_BreakLinesFontPixels(V_GetHudFont(x_scale), maxwidth * x_scale,
+	return V_BreakLinesFontPixels(V_GetFaceFont(face, x_scale), maxwidth * x_scale,
 	                              reinterpret_cast<const byte*>(str));
 }
 
 // Height of a line of text in HUD units, matching what DrawText will produce.
-int GetLineHeight(const float scale)
+int GetLineHeight(const float scale, const fontface_t face)
 {
 	const int y_scale = std::max(1, static_cast<int>(scale * CleanYfac));
-	return V_GetHudFont(y_scale)->getHeight() / y_scale;
+	return V_GetFaceFont(face, y_scale)->getHeight() / y_scale;
 }
 
 
@@ -202,7 +203,8 @@ void DrawText(int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,
               const x_align_t x_origin, const y_align_t y_origin,
               const char* str, const int color,
-              const bool force_opaque)
+              const bool force_opaque,
+              const fontface_t face)
 {
 	// No string?  Don't bother with this function.
 	if (!str)
@@ -213,7 +215,7 @@ void DrawText(int x, int y, const float scale,
 	calculateOrigin(x, y, 0, 0, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
 
 	// Calculate width and height of string
-	const OFont* font = V_GetHudFont(x_scale);
+	const OFont* font = V_GetFaceFont(face, x_scale);
 	const int w = font->getTextWidth(str);
 	const int h = font->getHeight();
 

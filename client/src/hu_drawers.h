@@ -23,6 +23,7 @@
 #pragma once
 
 #include "r_defs.h"
+#include "v_text.h"
 
 class Texture;
 struct brokenlines_t;
@@ -50,14 +51,16 @@ void Dim(int x, int y,
          const float scale,
          const x_align_t x_align, const y_align_t y_align,
          const x_align_t x_origin, const y_align_t y_origin);
-int GetTextWidth(const char* str, const float scale);
-brokenlines_t* BreakLines(const char* str, const int maxwidth, const float scale);
-int GetLineHeight(const float scale);
+int GetTextWidth(const char* str, const float scale, const fontface_t face = FACE_SMALL);
+brokenlines_t* BreakLines(const char* str, const int maxwidth, const float scale,
+                          const fontface_t face = FACE_SMALL);
+int GetLineHeight(const float scale, const fontface_t face = FACE_SMALL);
 void DrawText(int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,
               const x_align_t x_origin, const y_align_t y_origin,
               const char* str, const int color,
-              const bool force_opaque = false);
+              const bool force_opaque = false,
+              const fontface_t face = FACE_SMALL);
 void DrawTexture(int x, int y, const float scale,
                const x_align_t x_align, const y_align_t y_align,
                const x_align_t x_origin, const y_align_t y_origin,

@@ -110,6 +110,22 @@ extern OFont* hud_font;
 // font cannot serve them all. Rasterizing a font per scale keeps every size
 // crisp instead of stretching one size to fit.
 //
+enum fontface_t
+{
+	FACE_SMALL,
+	FACE_BIG,
+	FACE_DIGITS,
+};
+
+//
+// V_GetFaceFont
+//
+// Returns one of the named faces built for the given scale factor. Each face
+// has its own base size, so FACE_BIG comes out larger than FACE_SMALL at the
+// same scale.
+//
+OFont* V_GetFaceFont(fontface_t face, int pixel_scale);
+
 OFont* V_GetHudFont(int pixel_scale);
 
 //

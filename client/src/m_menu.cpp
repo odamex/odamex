@@ -2212,7 +2212,6 @@ void M_Drawer()
 			const int x = currentMenu->x;
 			int y = currentMenu->y;
 			const int max = currentMenu->numitems;
-			V_SetFont("BIGFONT");
 			for (int i = 0; i < max; i++)
 			{
 				if (currentMenu->menuitems[i].name[0])
@@ -2226,7 +2225,6 @@ void M_Drawer()
 				}
 				y += LINEHEIGHT;
 			}
-			V_SetFont("SMALLFONT");
 
 			// DRAW SKULL
 			if (drawSkull)

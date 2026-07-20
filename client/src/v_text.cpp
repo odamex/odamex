@@ -155,19 +155,35 @@ OFont* V_GetHudFontSized(int pixel_size)
 }
 
 
-// V_SetFont cycles thru these now, but we should work to get
-// rid of the V_SetFont paradigm.
-struct hudface_t
+//
+// What each named face is made of. Indexed by fontface_t.
+//
+struct hudfacedef_t
 {
 	const char*	lumpname;
 	int			base_size;
 };
 
-static const hudface_t hud_face_small	= { "FONT_SM",  8 };
-static const hudface_t hud_face_big		= { "FONT_BIG", 12 };
-static const hudface_t hud_face_dig		= { "FONT_DIG", 8 };
+static const hudfacedef_t hud_faces[] =
+{
+	{ "FONT_SM",  8 },		// FACE_SMALL
+	{ "FONT_BIG", 12 },		// FACE_BIG
+	{ "FONT_DIG", 8 },		// FACE_DIGITS
+};
 
-static const hudface_t* current_hud_face = &hud_face_small;
+
+//
+// V_GetFaceFont
+//
+OFont* V_GetFaceFont(fontface_t face, int pixel_scale)
+{
+	// The bitmap HUD font is 8 pixels tall, so a scale factor of N matches a
+	// face built at N times its base size.
+	pixel_scale = MAX(1, pixel_scale);
+
+	const hudfacedef_t& def = hud_faces[face];
+	return V_GetFont(def.lumpname, def.base_size * pixel_scale);
+}
 
 
 //
@@ -175,12 +191,7 @@ static const hudface_t* current_hud_face = &hud_face_small;
 //
 OFont* V_GetHudFont(int pixel_scale)
 {
-	// The bitmap HUD font is 8 pixels tall, so a scale factor of N matches a
-	// face built at N times its base size.
-	pixel_scale = MAX(1, pixel_scale);
-
-	return V_GetFont(current_hud_face->lumpname,
-	                 current_hud_face->base_size * pixel_scale);
+	return V_GetFaceFont(FACE_SMALL, pixel_scale);
 }
 
 
@@ -317,17 +328,14 @@ void V_SetFont(const char* fontname)
 	if (!stricmp(fontname, "BIGFONT"))
 	{
 		::hu_font.setFont(::hu_bigfont, hu_bigfont_height);
-		::current_hud_face = &hud_face_big;
 	}
 	else if (!stricmp(fontname, "SMALLFONT"))
 	{
 		::hu_font.setFont(::hu_smallfont, hu_smallfont_height);
-		::current_hud_face = &hud_face_small;
 	}
 	else if (!stricmp(fontname, "DIGFONT"))
 	{
 		::hu_font.setFont(::hu_digfont, hu_digfont_height);
-		::current_hud_face = &hud_face_dig;
 	}
 }
 

@@ -678,7 +678,6 @@ static void drawHordeGametype()
 
 	if (hud_hordeinfo_debug)
 	{
-		V_SetFont("DIGFONT");
 
 		int min, max;
 		P_NextSpawnTime(min, max);
@@ -696,9 +695,8 @@ static void drawHordeGametype()
 		                   define.minTotalHealth(), info.alive(), define.maxTotalHealth(),
 		                   buf2);
 		hud::DrawText(SCREEN_BORDER, 64, ::hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
-		              hud::X_LEFT, hud::Y_BOTTOM, buf.c_str(), CR_GREY);
+		              hud::X_LEFT, hud::Y_BOTTOM, buf.c_str(), CR_GREY, false, FACE_DIGITS);
 
-		V_SetFont("SMALLFONT");
 	}
 }
 
@@ -751,7 +749,7 @@ void drawProtos()
 	const float scale = 0.75f;
 	int y = top;
 
-	const int indent = hud::GetTextWidth(" >", scale);
+	const int indent = hud::GetTextWidth(" >", scale, FACE_DIGITS);
 
 	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
 	{
@@ -761,21 +759,21 @@ void drawProtos()
 		{
 			// Draw arrow
 			hud::DrawText(0, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
-			              " >", CR_GOLD, true);
+			              " >", CR_GOLD, true, FACE_DIGITS);
 		}
 
 		const int rowColor = ProtoRowColor(it->header);
 
 		// Draw name
 		hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
-		              it->name.c_str(), rowColor, true);
+		              it->name.c_str(), rowColor, true, FACE_DIGITS);
 		y += V_StringHeight(it->name.c_str());
 
 		if (selected)
 		{
 			// Draw data
 			hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
-			              hud::Y_TOP, it->data.c_str(), CR_WHITE, true);
+			              hud::Y_TOP, it->data.c_str(), CR_WHITE, true, FACE_DIGITS);
 			y += V_StringHeight(it->data.c_str());
 		}
 	}
@@ -791,7 +789,7 @@ void drawProtos()
 	        hud::Y_TOP,
 	        ::msg_info[clc_playerinput].getName(),
 	        ProtoRowColor(clc_playerinput),
-	        true);
+	        true, FACE_DIGITS);
 
 	y += V_StringHeight(::msg_info[clc_playerinput].getName());
 	hud::DrawText(
@@ -803,7 +801,7 @@ void drawProtos()
 	        hud::Y_TOP,
 	        ::localcmds[::last_received % MAXSAVETICS].DebugString().c_str(),
 	        ProtoRowColor(clc_playerinput),
-	        true);
+	        true, FACE_DIGITS);
 
 	V_SetFont("SMALLFONT");
 }
@@ -821,7 +819,6 @@ void drawNetdemo() {
 	const int xscale = hud_scale ? CleanXfac : 1;
 	const int yscale = hud_scale ? CleanYfac : 1;
 
-	V_SetFont("DIGFONT");
 
 	int color = CR_GOLD;
 	if (netdemo.isPlaying())
@@ -838,15 +835,14 @@ void drawNetdemo() {
 	hud::DrawText(2, 47, hud_scale,
 	              hud::X_LEFT, hud::Y_BOTTOM,
 	              hud::X_LEFT, hud::Y_BOTTOM,
-	              hud::NetdemoElapsed().c_str(), color);
+	              hud::NetdemoElapsed().c_str(), color, false, FACE_DIGITS);
 
 	// Draw map number/total
 	hud::DrawText(74, 47, hud_scale,
 	              hud::X_LEFT, hud::Y_BOTTOM,
 	              hud::X_RIGHT, hud::Y_BOTTOM,
-	              hud::NetdemoMaps().c_str(), CR_BRICK);
+	              hud::NetdemoMaps().c_str(), CR_BRICK, false, FACE_DIGITS);
 
-	V_SetFont("SMALLFONT");
 
 	// Draw the bar.
 	// TODO: Once status bar notches have been implemented, put map
@@ -887,7 +883,6 @@ static void drawLevelStats()
 
 	if (hud_extendedinfo == 1 || hud_extendedinfo == 3)
 	{
-		V_SetFont("DIGFONT");
 		font_offset = 1;
 	}
 
@@ -897,7 +892,7 @@ static void drawLevelStats()
 	                        level.killed_monsters);
 
 		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
-	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY, false, FACE_DIGITS);
 	}
 	else if (hud_extendedinfo >= 3 || !R_StatusBarVisible())
 	{
@@ -906,11 +901,11 @@ static void drawLevelStats()
 		std::string secretrow;
 
 		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
-		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "S", CR_GREY);
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "S", CR_GREY, false, FACE_DIGITS);
 		hud::DrawText(x + font_offset, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
-	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "I", CR_GREY);
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "I", CR_GREY, false, FACE_DIGITS);
 		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
-	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "K", CR_GREY);
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "K", CR_GREY, false, FACE_DIGITS);
 
 		killrow = fmt::sprintf("%s %d/%d",
 		                       (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
@@ -926,11 +921,11 @@ static void drawLevelStats()
 		x += 9 - font_offset * 4;
 
 		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
-		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, secretrow.c_str(), CR_GREY);
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, secretrow.c_str(), CR_GREY, false, FACE_DIGITS);
 		hud::DrawText(x, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
-	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, itemrow.c_str(), CR_GREY);
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, itemrow.c_str(), CR_GREY, false, FACE_DIGITS);
 		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
-		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY, false, FACE_DIGITS);
 
 	}
 	else
@@ -947,10 +942,9 @@ static void drawLevelStats()
 		                    level.found_secrets, level.total_secrets);
 
 		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
-		    hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
+		    hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY, false, FACE_DIGITS);
 	}
 
-	V_SetFont("SMALLFONT");
 }
 
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
@@ -1047,30 +1041,22 @@ void OdamexHUD() {
 
 	if (::hud_timer)
 	{
-		if (::hud_bigfont)
-			V_SetFont("BIGFONT");
 
 		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
-		iy += hud::GetLineHeight(::hud_scale) + 1;
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY, false, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
+		iy += hud::GetLineHeight(::hud_scale, ::hud_bigfont ? FACE_BIG : FACE_SMALL) + 1;
 
-		if (::hud_bigfont)
-			V_SetFont("SMALLFONT");
 	}
 
 	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
 	{
-		if (::hud_bigfont)
-			V_SetFont("BIGFONT");
 
 		buf = fmt::sprintf("%d" TEXTCOLOR_DARKGREY "ups",
 		          static_cast<int>(HU_GetPlayerSpeed()));
 		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
-		iy += hud::GetLineHeight(::hud_scale) + 1;
+		              hud::Y_BOTTOM, buf.c_str(), CR_GREY, false, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
+		iy += hud::GetLineHeight(::hud_scale, ::hud_bigfont ? FACE_BIG : FACE_SMALL) + 1;
 
-		if (::hud_bigfont)
-			V_SetFont("SMALLFONT");
 	}
 
 	// Draw other player name, if spying
@@ -1085,39 +1071,35 @@ void OdamexHUD() {
 
 	// Draw stat lines.  Vertically aligned with the bottom of the armor
 	// number on the other side of the screen.
-	if (::hud_bigfont)
-		V_SetFont("BIGFONT");
 
 	// Special 3 line formatting for match duel
 	int spreadheight, scoreheight, placeheight;
 
 	if (G_IsMatchDuelGame())
 	{
-		spreadheight = 24 + (hud::GetLineHeight(::hud_scale) * 2) + 2;
-		scoreheight = 24 + hud::GetLineHeight(::hud_scale) + 1;
+		spreadheight = 24 + (hud::GetLineHeight(::hud_scale, ::hud_bigfont ? FACE_BIG : FACE_SMALL) * 2) + 2;
+		scoreheight = 24 + hud::GetLineHeight(::hud_scale, ::hud_bigfont ? FACE_BIG : FACE_SMALL) + 1;
 		placeheight = 24;
 	}
 	else
 	{
-		spreadheight = 24 + hud::GetLineHeight(::hud_scale) + 1;
+		spreadheight = 24 + hud::GetLineHeight(::hud_scale, ::hud_bigfont ? FACE_BIG : FACE_SMALL) + 1;
 		scoreheight = 24;
 		placeheight = 0; // No place height drawn if not match duel
 	}
 
 	hud::DrawText(text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
-	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
+	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY, false, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
 	hud::DrawText(text_ax + 4, scoreheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
-	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY);
+	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY, false, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
 
 	if (G_IsMatchDuelGame())
 	{
 		hud::DrawText(text_ax + 4, placeheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 		              hud::X_RIGHT, hud::Y_BOTTOM,
-		              hud::PersonalMatchDuelPlacement().c_str(), CR_GREY);
+		              hud::PersonalMatchDuelPlacement().c_str(), CR_GREY, false, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
 	}
 
-	if (::hud_bigfont)
-		V_SetFont("SMALLFONT");
 
 	// Draw keys in coop
 	if (G_IsCoopGame()) {
@@ -1163,8 +1145,7 @@ void DrawToasts()
 	const int fadeDoneTics = (hud_feedtime * static_cast<float>(TICRATE));
 	const int fadeOutTics = fadeDoneTics - TICRATE;
 
-	V_SetFont("DIGFONT");
-	const int TOAST_HEIGHT = hud::GetLineHeight(::hud_scale) + 2;
+	const int TOAST_HEIGHT = hud::GetLineHeight(::hud_scale, FACE_DIGITS) + 2;
 
 	std::string buffer;
 	int y = 0;
@@ -1192,8 +1173,8 @@ void DrawToasts()
 
 		// Right-hand side.
 		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
-		              hud::Y_TOP, toast.right.c_str(), CR_GREY);
-		x += hud::GetTextWidth(toast.right.c_str(), ::hud_scale) + 1;
+		              hud::Y_TOP, toast.right.c_str(), CR_GREY, false, FACE_DIGITS);
+		x += hud::GetTextWidth(toast.right.c_str(), ::hud_scale, FACE_DIGITS) + 1;
 
 		// Icon
 		const Texture* icon = W_ResolvePatchHandle(toast.icon);
@@ -1235,7 +1216,7 @@ void DrawToasts()
 			// We subtract 2 pixels because we want the text to bleed into the left and
 			// right gfx
 			int points_width =
-			    hud::GetTextWidth(fmt::sprintf("%d", toast.points).c_str(), ::hud_scale) - 1;
+			    hud::GetTextWidth(fmt::sprintf("%d", toast.points).c_str(), ::hud_scale, FACE_DIGITS) - 1;
 			const Texture* mpatch = W_ResolvePatchHandle(ToastSpreeM);
 			for (int i = 0; i < points_width; i++)
 			{
@@ -1256,18 +1237,17 @@ void DrawToasts()
 			// Now draw the number of points
 			hud::DrawText(pointStartX, y + ceil(syoff), hud_scale, hud::X_RIGHT,
 			              hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
-			              fmt::sprintf("%d", toast.points).c_str(), CR_GRAY);
+			              fmt::sprintf("%d", toast.points).c_str(), CR_GRAY, false, FACE_DIGITS);
 		}
 
 		// Left-hand side.
 		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
-		              hud::Y_TOP, toast.left.c_str(), CR_GREY);
+		              hud::Y_TOP, toast.left.c_str(), CR_GREY, false, FACE_DIGITS);
 
 		y += TOAST_HEIGHT;
 	}
 	::hud_transparency.ForceSet(oldtrans);
 
-	V_SetFont("SMALLFONT");
 }
 
 void ToastTicker()
@@ -1517,7 +1497,6 @@ void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 
 	line.spreeText = breaker.spreeEndedBroadcastText;
 
-	V_SetFont("SMALLFONT");
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	const OFont* banner_font = V_GetHudFontSized(8 * ::CleanYfac);
@@ -1551,7 +1530,6 @@ void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
 	line.spreeText = record.spree.spreeText;
 	line.color = record.spree.color;
 
-	V_SetFont("BIGFONT");
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	const OFont* banner_font = V_GetFont("FONT_SPR", 12 * ::CleanYfac);
@@ -1572,7 +1550,6 @@ void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
 
 	::hud_transparency.ForceSet(oldtrans);
 
-	V_SetFont("SMALLFONT");
 }
 
 void DisplaySmallSpree(const SpreeRecord_t& record)
@@ -1581,7 +1558,6 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 
 	line.spreeText = record.spree.spreeBroadcastText;
 
-	V_SetFont("SMALLFONT");
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	const OFont* banner_font = V_GetHudFontSized(8 * ::CleanYfac);
@@ -1724,7 +1700,6 @@ void MultiKillHud()
 		line.multiKillText = multi.multikilltext;
 		line.color = multi.color;
 
-		V_SetFont("BIGFONT");
 
 		const int surface_width = I_GetSurfaceWidth(),
 			      surface_height = I_GetSurfaceHeight();
@@ -1747,7 +1722,6 @@ void MultiKillHud()
 
 		::hud_transparency.ForceSet(oldtrans);
 
-		V_SetFont("SMALLFONT");
 	}
 }
 
@@ -1912,7 +1886,6 @@ void LevelStateHUD()
 		break;
 	}
 
-	V_SetFont("BIGFONT");
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	const OFont* banner_font = V_GetHudFontSized(12 * ::CleanYfac);
@@ -1928,7 +1901,6 @@ void LevelStateHUD()
 		                               surface_height / 4 - h / 2, lines.title.c_str(), false);
 	}
 
-	V_SetFont("SMALLFONT");
 
 	// the subtitles run at the small size beneath the large title
 	const OFont* subtitle_font = V_GetHudFontSized(8 * ::CleanYfac);
@@ -1962,17 +1934,11 @@ void SpectatorHUD()
 	// Draw warmup state or timer
 	if (::hud_timer)
 	{
-		if (::hud_bigfont)
-		{
-			V_SetFont("BIGFONT");
-		}
 
 		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
-		iy += hud::GetLineHeight(::hud_scale) + 1;
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY, false, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
+		iy += hud::GetLineHeight(::hud_scale, ::hud_bigfont ? FACE_BIG : FACE_SMALL) + 1;
 
-		if (::hud_bigfont)
-			V_SetFont("SMALLFONT");
 	}
 
 	// Draw help text - spy player name is handled elsewhere.
