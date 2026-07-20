@@ -263,7 +263,7 @@ void OKeyBindings::SetBinds(const OBinding* binds)
 //
 bool C_DoNetDemoKey(const event_t& ev)
 {
-	if (!netdemo.isPlaying() && !netdemo.isPaused())
+	if (not netdemo.isInPlayback())
 		return false;
 
 	const std::string *binding = nullptr;
@@ -300,12 +300,12 @@ bool C_DoSpectatorKey (const event_t& ev)
 	if (G_IsLivesGame())
 	{
 		if (!consoleplayer().spectator && consoleplayer().lives > 0 &&
-		    !netdemo.isPlaying() && !netdemo.isPaused())
+		    !netdemo.isInPlayback())
 		return false;
 	}
 	else
 	{
-		if (!consoleplayer().spectator && !netdemo.isPlaying() && !netdemo.isPaused())
+		if (!consoleplayer().spectator && !netdemo.isInPlayback())
 		return false;
 	}
 
