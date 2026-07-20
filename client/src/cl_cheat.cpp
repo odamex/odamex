@@ -54,8 +54,7 @@ bool AutoMap(cheatseq_t* cheat)
 	{
 		if (not multiplayer
 		    or G_IsCoopGame()
-		    or netdemo.isPlaying()
-		    or netdemo.isPaused())
+		    or netdemo.isInPlayback())
 		{
 			am_cheating = (am_cheating + 1) % 3;
 		}

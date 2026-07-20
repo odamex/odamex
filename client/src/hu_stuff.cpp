@@ -615,7 +615,7 @@ static void ShovePrivMsg(byte pid, const std::string& str)
 
 BEGIN_COMMAND (messagemode)
 {
-	if (!connected || ::netdemo.isPlaying() || ::netdemo.isPaused())
+	if (!connected || ::netdemo.isInPlayback())
 		return;
 
 	HU_SetChatMode();
@@ -637,7 +637,7 @@ END_COMMAND (say)
 
 BEGIN_COMMAND (messagemode2)
 {
-	if (!connected || ::netdemo.isPlaying() || ::netdemo.isPaused() ||
+	if (!connected || ::netdemo.isInPlayback() ||
 	   (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF && !consoleplayer().spectator))
 		return;
 

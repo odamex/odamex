@@ -976,7 +976,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	gameaction = ga_nothing;
 
 	// Autorecord netdemo or continue recording in a new file
-	if (!(netdemo.isPlaying() || netdemo.isRecording() || netdemo.isPaused()))
+	if (!(netdemo.isPlaying() || netdemo.isInPlayback()))
 	{
 		std::string filename;
 

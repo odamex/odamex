@@ -1702,7 +1702,7 @@ void AM_drawPlayers()
 		if (!(p.ingame()) || !p.mo ||
 		    (((G_IsFFAGame() && &p != &conplayer) ||
 		      (G_IsTeamGame() && p.userinfo.team != conplayer.userinfo.team)) &&
-		     !(netdemo.isPlaying() || netdemo.isPaused()) && !demoplayback &&
+		     !netdemo.isInPlayback() && !demoplayback &&
 		     !(conplayer.spectator)) ||
 		    p.spectator)
 		{

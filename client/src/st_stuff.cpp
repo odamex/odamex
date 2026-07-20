@@ -551,8 +551,7 @@ bool ST_Responder(const event_t& ev)
 			{
 				if (   cheat::AreCheatsEnabled()
 				    or cheat.DontCheck
-				    or (cheat.AllowInNetdemoPlayback
-				        and (netdemo.isPlaying() or netdemo.isPaused())))
+				    or (cheat.AllowInNetdemoPlayback and netdemo.isInPlayback()))
 				{
 					eat |= cheat.Handler(&cheat);
 				}
