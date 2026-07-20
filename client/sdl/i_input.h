@@ -64,6 +64,9 @@ public:
 	virtual void resume() = 0;
 	virtual void reset() = 0;
 
+	virtual void resumeUI()
+	{	resume();	}
+
 	virtual void gatherEvents() = 0;
 	virtual bool hasEvent() const = 0;
 	virtual void getEvent(event_t* ev) = 0;
@@ -113,6 +116,9 @@ public:
 
 	virtual void grabInput() = 0;
 	virtual void releaseInput() = 0;
+
+	virtual void grabInputForUI()
+	{	releaseInput();	}
 
 	virtual bool isInputGrabbed() const
 	{	return false;	}

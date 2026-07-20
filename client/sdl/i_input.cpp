@@ -55,9 +55,20 @@
 bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
+EXTERN_CVAR(ui_mouse)
+
 static IInputSubsystem* input_subsystem = NULL;
 
 static bool nomouse = false;
+
+enum EInputMode
+{
+	INPUT_MODE_RELEASED,
+	INPUT_MODE_UI,
+	INPUT_MODE_GAME
+};
+
+static EInputMode current_input_mode = INPUT_MODE_RELEASED;
 
 KeyNameTable key_names;
 
@@ -341,16 +352,17 @@ static bool I_CanRepeat()
 
 
 //
-// I_CanGrab
+// I_GetDesiredInputMode
 //
-// Returns true if the input (mouse & keyboard) can be grabbed in
-// the current game state.
+// Returns how the mouse should be handled in the current game state:
+// captured for gameplay, freed but still delivering buttons for the menu and
+// console, or shut off entirely.
 //
-static bool I_CanGrab()
+static EInputMode I_GetDesiredInputMode()
 {
 	#ifdef GCONSOLE
-	return true;
-	#endif
+	return INPUT_MODE_GAME;
+	#else
 
 	extern bool configuring_controls;
 	extern constate_e ConsoleState;
@@ -359,45 +371,59 @@ static bool I_CanGrab()
 
 	// If the window doesn't have the focus, don't grab
 	if (!I_GetWindow()->isFocused())
-		return false;
+		return INPUT_MODE_RELEASED;
+
+	const bool console_active = ConsoleState == c_down || ConsoleState == c_falling ||
+	                            ConsoleState == c_fallfull;
+
+	const bool attract_active = gamestate == GS_DEMOSCREEN || gamestate == GS_FINALE ||
+	                            ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) &&
+	                             demoplayback);
+
+	const bool ui_active = menuactive || console_active || attract_active;
+	if (ui_active && !configuring_controls)
+	{
+		if (nomouse || ui_mouse.asInt() == 0)
+			return INPUT_MODE_RELEASED;
+		return INPUT_MODE_UI;
+	}
 
 	// If the window is full screen and has only one monitor, always grab
 	if (I_GetWindow()->isFullScreen() && I_GetMonitorCount() <= 1)
-		return true;
+		return INPUT_MODE_GAME;
 
 	if (nomouse)
-		return false;
+		return INPUT_MODE_RELEASED;
 
 	// Always grab when configuring controllers in the menu
 	if (configuring_controls)
-		return true;
+		return INPUT_MODE_GAME;
 
 	// If paused, in the menu or in the console, don't grab
 	if (menuactive || ConsoleState == c_down || paused)
-		return false;
+		return INPUT_MODE_RELEASED;
 
 	// If playing the game, always grab
 	if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
-		return true;
+		return INPUT_MODE_GAME;
 
-	return false;
+	return INPUT_MODE_RELEASED;
+	#endif
 }
 
 
 //
-// I_GrabInput
+// I_ApplyInputMode
 //
-static void I_GrabInput()
+static void I_ApplyInputMode(EInputMode mode)
 {
-	input_subsystem->grabInput();
-}
+	current_input_mode = mode;
 
-
-//
-// I_UngrabInput
-//
-static void I_UngrabInput()
-{
+	if (mode == INPUT_MODE_GAME)
+		input_subsystem->grabInput();
+	else if (mode == INPUT_MODE_UI)
+		input_subsystem->grabInputForUI();
+	else
 	input_subsystem->releaseInput();
 }
 
@@ -412,10 +438,7 @@ static void I_UngrabInput()
 //
 void I_ForceUpdateGrab()
 {
-	if (I_CanGrab())
-		I_GrabInput();
-	else
-		I_UngrabInput();
+	I_ApplyInputMode(I_GetDesiredInputMode());
 }
 
 
@@ -436,10 +459,9 @@ static void I_UpdateGrab()
 	prev_fullscreen = fullscreen;
 
 	// check if the window focus changed (or menu/console status changed)
-	if (!input_subsystem->isInputGrabbed() && I_CanGrab())
-		I_GrabInput();
-	else if (input_subsystem->isInputGrabbed() && !I_CanGrab())
-		I_UngrabInput();
+	const EInputMode desired = I_GetDesiredInputMode();
+	if (desired != current_input_mode)
+		I_ApplyInputMode(desired);
 #endif
 }
 
@@ -620,7 +642,7 @@ void STACK_ARGS I_ShutdownInput()
 {
 	input_subsystem->disableTextEntry();
 
-	I_UngrabInput();
+	I_ApplyInputMode(INPUT_MODE_RELEASED);
 
 	delete input_subsystem;
 	input_subsystem = NULL;
