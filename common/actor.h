@@ -253,6 +253,7 @@ enum mobjflag_t
 	MFO_ISONCONVEYOR    = BIT(14),  // Mobj is in motion due to being carried by a sector
 
 	MFO_MOVESLIKEAMONSTER = BIT(15),    // Mobj has been updated through monster movement routines
+	MFO_ISAWAITINGSPAWN   = 0x00010000,
 };
 
 //
