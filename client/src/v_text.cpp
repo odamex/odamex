@@ -111,20 +111,31 @@ static OFont* V_CreateFontAtSize(unsigned int stylemask, int size)
 //
 // V_GetHudFont
 //
-OFont* V_GetHudFont(int pixel_scale)
+OFont* V_GetHudFontSized(int pixel_size)
 {
 	typedef std::map<int, OFont*> HudFontCache;
 	static HudFontCache cache;
 
-	pixel_scale = MAX(1, pixel_scale);
+	pixel_size = clamp(pixel_size, 4, 128);
 
-	HudFontCache::iterator it = cache.find(pixel_scale);
+	HudFontCache::iterator it = cache.find(pixel_size);
 	if (it != cache.end())
 		return it->second;
 
-	OFont* font = V_CreateFontAtSize(TrueTypeFont::TTF_TEXTURE, 8 * pixel_scale);
-	cache[pixel_scale] = font;
+	OFont* font = V_CreateFontAtSize(TrueTypeFont::TTF_TEXTURE, pixel_size);
+	cache[pixel_size] = font;
 	return font;
+}
+
+
+//
+// V_GetHudFont
+//
+OFont* V_GetHudFont(int pixel_scale)
+{
+	// The bitmap HUD font is 8 pixels tall, so a scale factor of N matches a
+	// font built at 8N pixels.
+	return V_GetHudFontSized(8 * MAX(1, pixel_scale));
 }
 
 

@@ -171,8 +171,8 @@ static void V_FillGradient(Texture* dest_texture, palindex_t start_color, palind
 			for (int y = 0; y < dest_texture->mHeight; y++)
 			{
 				int color = start_color + ((y * frac) >> FRACBITS);
-				color = MAX(color, (int)start_color);
-				color = MIN(color, (int)end_color);
+				color = MAX(color, static_cast<int>(start_color));
+				color = MIN(color, static_cast<int>(end_color));
 				*dest++ = static_cast<palindex_t>(color);
 			}
 		}

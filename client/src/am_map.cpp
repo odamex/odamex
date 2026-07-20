@@ -43,6 +43,7 @@
 #include "v_video.h"
 
 #include "v_text.h"
+#include "v_font.h"
 
 // State.
 #include "r_state.h"
@@ -2131,7 +2132,12 @@ void AM_Drawer()
 		std::string line;
 		const int time = level.time / TICRATE;
 
-		int text_height = (hu_font[0]->mHeight + 1) * CleanYfac;
+		// Same clean scale the bitmap path drew at. The font bakes its scale
+		// into its glyphs, so its metrics are already in real pixels and the
+		// old external CleanXfac multiply is gone from every measurement here.
+		const OFont* font = V_GetHudFont(MIN(CleanXfac, CleanYfac));
+
+		int text_height = font->getHeight() + CleanYfac;
 		int OV_Y = surface_height - (surface_height * 32 / 200);
 
 		if (G_IsCoopGame())
@@ -2151,7 +2157,7 @@ void AM_Drawer()
 				}
 
 				int x, y;
-				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+				const int text_width = font->getTextWidth(line.c_str());
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -2168,7 +2174,7 @@ void AM_Drawer()
 					y = OV_Y - (text_height * 2) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+				screen->DrawFontText(font, CR_GREY, x, y, line.c_str());
 			}
 
 			if (am_showitems && !G_IsHordeMode())
@@ -2178,7 +2184,7 @@ void AM_Drawer()
 				                    level.total_items);
 
 				int x, y;
-				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+				const int text_width = font->getTextWidth(line.c_str());
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -2191,7 +2197,7 @@ void AM_Drawer()
 					y = OV_Y - (text_height * 3) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+				screen->DrawFontText(font, CR_GREY, x, y, line.c_str());
 			}
 
 			if (am_showsecrets && !G_IsHordeMode())
@@ -2199,7 +2205,7 @@ void AM_Drawer()
 				line = fmt::sprintf(TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %d / %d",
 				                    level.found_secrets, level.total_secrets);
 				int x, y;
-				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+				const int text_width = font->getTextWidth(line.c_str());
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -2212,7 +2218,7 @@ void AM_Drawer()
 					y = OV_Y - (text_height * 2) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+				screen->DrawFontText(font, CR_GREY, x, y, line.c_str());
 			}
 		}
 
@@ -2242,7 +2248,7 @@ void AM_Drawer()
 			line = GStrings.getIndex(firstmap + level.levelnum - mapoffset);
 
 			int x, y;
-			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+			const int text_width = font->getTextWidth(line.c_str());
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -2259,7 +2265,7 @@ void AM_Drawer()
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
-			screen->DrawTextClean(CR_RED, x, y, line.c_str());
+			screen->DrawFontText(font, CR_RED, x, y, line.c_str());
 		}
 		else
 		{
@@ -2287,7 +2293,7 @@ void AM_Drawer()
 			line += level.level_name;
 
 			int x, y;
-			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+			const int text_width = font->getTextWidth(line.c_str());
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -2304,7 +2310,7 @@ void AM_Drawer()
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
-			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+			screen->DrawFontText(font, CR_GREY, x, y, line.c_str());
 		}
 
 		if (am_showtime)
@@ -2312,7 +2318,7 @@ void AM_Drawer()
 			line = fmt::sprintf(" %02d:%02d:%02d", time / 3600, (time % 3600) / 60, time % 60); // Time
 
 			int x, y;
-			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+			const int text_width = font->getTextWidth(line.c_str());
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -2329,7 +2335,7 @@ void AM_Drawer()
 				y -= text_height * 3;
 			}
 
-			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+			screen->DrawFontText(font, CR_GREY, x, y, line.c_str());
 		}
 	}
 }

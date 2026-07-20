@@ -112,6 +112,14 @@ extern OFont* hud_font;
 //
 OFont* V_GetHudFont(int pixel_scale);
 
+//
+// V_GetHudFontSized
+//
+// The same as V_GetHudFont, but takes an absolute pixel size. Use this for
+// text whose size is not a multiple of the 8-pixel bitmap font.
+//
+OFont* V_GetHudFontSized(int pixel_size);
+
 int V_FontStringWidthClean(const OFont* font, const char* str);
 int V_FontLineHeightClean(const OFont* font);
 

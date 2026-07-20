@@ -38,6 +38,7 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
+#include "v_font.h"
 #include "z_zone.h"
 #include "i_system.h"
 #include "i_time.h"
@@ -1519,8 +1520,9 @@ void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 	V_SetFont("SMALLFONT");
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
-	int h = 8 * CleanYfac;
+	const OFont* banner_font = V_GetHudFontSized(8 * ::CleanYfac);
+	int w = banner_font->getTextWidth(line.spreeText.c_str());
+	int h = banner_font->getHeight();
 
 	line.lucent = lucentFade(::gametic - breaker.spreeEndedTic, TICRATE * 3, TICRATE * 4);
 
@@ -1530,9 +1532,9 @@ void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 	if (::hud_transparency > 0.0f)
 	{
 		int y = (surface_height / 4) - h / 2;
-		::screen->DrawTextStretchedLuc(CR_GRAY,
+		::screen->DrawFontText(banner_font, CR_GRAY,
 		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
-		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+		                               line.spreeText.c_str(), false);
 	}
 
 	::hud_transparency.ForceSet(oldtrans);
@@ -1552,8 +1554,9 @@ void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
 	V_SetFont("BIGFONT");
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
-	int h = 12 * CleanYfac;
+	const OFont* banner_font = V_GetHudFontSized(12 * ::CleanYfac);
+	int w = banner_font->getTextWidth(line.spreeText.c_str());
+	int h = banner_font->getHeight();
 
 	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
 
@@ -1563,8 +1566,8 @@ void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
 	if (::hud_transparency > 0.0f)
 	{
 		int y = (surface_height / 4) - h / 2;
-		::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
-		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+		::screen->DrawFontText(banner_font, line.color, surface_width / 2 - w / 2, y,
+		                               line.spreeText.c_str(), false);
 	}
 
 	::hud_transparency.ForceSet(oldtrans);
@@ -1581,8 +1584,9 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 	V_SetFont("SMALLFONT");
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
-	int h = 8 * CleanYfac;
+	const OFont* banner_font = V_GetHudFontSized(8 * ::CleanYfac);
+	int w = banner_font->getTextWidth(line.spreeText.c_str());
+	int h = banner_font->getHeight();
 
 	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
 
@@ -1592,9 +1596,9 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 	if (::hud_transparency > 0.0f)
 	{
 		int y = (surface_height / 4) - h / 2;
-		::screen->DrawTextStretchedLuc(CR_GRAY,
+		::screen->DrawFontText(banner_font, CR_GRAY,
 		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
-		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+		                               line.spreeText.c_str(), false);
 	}
 
 	::hud_transparency.ForceSet(oldtrans);
@@ -1724,8 +1728,9 @@ void MultiKillHud()
 
 		const int surface_width = I_GetSurfaceWidth(),
 			      surface_height = I_GetSurfaceHeight();
-		int w = V_StringWidth(line.multiKillText.c_str()) * CleanYfac;
-		int h = 12 * CleanYfac;
+		const OFont* banner_font = V_GetHudFontSized(12 * ::CleanYfac);
+		int w = banner_font->getTextWidth(line.multiKillText.c_str());
+		int h = banner_font->getHeight();
 
 		line.lucent = lucentFade(::gametic - tics.lastKillTime,
 			                      TICRATE * 3, TICRATE * 4);
@@ -1736,8 +1741,8 @@ void MultiKillHud()
 		if (::hud_transparency > 0.0f)
 		{
 			int y = surface_height - (surface_height / 4) - h / 2;
-			::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
-				line.multiKillText.c_str(), ::CleanYfac, ::CleanYfac);
+			::screen->DrawFontText(banner_font, line.color, surface_width / 2 - w / 2, y,
+				line.multiKillText.c_str(), false);
 		}
 
 		::hud_transparency.ForceSet(oldtrans);
@@ -1910,33 +1915,35 @@ void LevelStateHUD()
 	V_SetFont("BIGFONT");
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(lines.title.c_str()) * CleanYfac;
-	int h = 12 * CleanYfac;
+	const OFont* banner_font = V_GetHudFontSized(12 * ::CleanYfac);
+	int w = banner_font->getTextWidth(lines.title.c_str());
+	int h = banner_font->getHeight();
 
 	const float oldtrans = ::hud_transparency;
 	::hud_transparency = lines.lucent;
 
 	if (::hud_transparency > 0.0f)
 	{
-		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                               surface_height / 4 - h / 2, lines.title.c_str(),
-		                               ::CleanYfac, ::CleanYfac);
+		::screen->DrawFontText(banner_font, CR_GREY, surface_width / 2 - w / 2,
+		                               surface_height / 4 - h / 2, lines.title.c_str(), false);
 	}
 
 	V_SetFont("SMALLFONT");
-	const int height = V_StringHeight("M") + 1;
+
+	// the subtitles run at the small size beneath the large title
+	const OFont* subtitle_font = V_GetHudFontSized(8 * ::CleanYfac);
+	const int line_spacing = subtitle_font->getHeight() + ::CleanYfac;
 
 	for (size_t i = 0; i < lines.subtitle.size(); i++)
 	{
-		w = V_StringWidth(lines.subtitle[i].c_str()) * ::CleanYfac;
-		h = 8 * ::CleanYfac;
+		w = subtitle_font->getTextWidth(lines.subtitle[i].c_str());
+		h = subtitle_font->getHeight();
 		if (::hud_transparency > 0.0f)
 		{
-			::screen->DrawTextStretchedLuc(
-			    CR_GREY, surface_width / 2 - w / 2,
+			::screen->DrawFontText(subtitle_font, CR_GREY, surface_width / 2 - w / 2,
 			    (surface_height / 4 - h / 2) + (12 * ::CleanYfac) +
-			        (i * height * ::CleanYfac),
-			    lines.subtitle[i].c_str(), ::CleanYfac, ::CleanYfac);
+			        (i * line_spacing),
+			    lines.subtitle[i].c_str(), false);
 		}
 	}
 
