@@ -43,6 +43,7 @@
 #include "infomap.h"
 #include "p_mobj.h"
 #include "r_sky.h"
+#include "c_effect.h"
 
 #if defined(SERVER_APP)
 #include "sv_main.h"
@@ -1818,14 +1819,51 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 
 EXTERN_CVAR(sv_nomonsters)
 
+namespace
+{
+
+std::optional<std::pair<byte, uint32_t>> GetFountainSpawnInfo(const char* mobjstr)
+{
+	const auto make_return = [](const uint32_t fountaintype) {
+		return std::pair<byte, uint32_t>({ fountaintype >> FX_FOUNTAINSHIFT, fountaintype });
+	};
+	switch (OUtil::CONST_HASH_NO_CASE(mobjstr)) {
+		case OUtil::CONST_HASH_NO_CASE("YellowParticleFountain"):
+			return make_return(FX_YELLOWFOUNTAIN);
+		case OUtil::CONST_HASH_NO_CASE("RedParticleFountain"):
+			return make_return(FX_REDFOUNTAIN);
+		case OUtil::CONST_HASH_NO_CASE("BlueParticleFountain"):
+			return make_return(FX_BLUEFOUNTAIN);
+		case OUtil::CONST_HASH_NO_CASE("GreenParticleFountain"):
+			return make_return(FX_GREENFOUNTAIN);
+		case OUtil::CONST_HASH_NO_CASE("PurpleParticleFountain"):
+			return make_return(FX_PURPLEFOUNTAIN);
+		case OUtil::CONST_HASH_NO_CASE("BlackParticleFountain"):
+			return make_return(FX_BLACKFOUNTAIN);
+		case OUtil::CONST_HASH_NO_CASE("WhiteParticleFountain"):
+			return make_return(FX_WHITEFOUNTAIN);
+		default:
+			return std::nullopt;
+	}
+}
+
+}
+
 // TODO: deduplicate these and the similar functions in P_Interaction
-int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle, bool force)
+int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, angle_t angle, bool force)
 {
 	const char* typestr = level.behavior->LookupString(type);
 	if (typestr == nullptr)
 		return 0;
 
-	const mobjtype_t info = P_INameToMobj(typestr);
+	mobjtype_t info = P_INameToMobj(typestr);
+	std::optional<std::pair<byte, uint32_t>> fountain_info;
+	if (info == MT_NULL)
+	{
+		fountain_info = GetFountainSpawnInfo(typestr);
+		if (fountain_info)
+			info = MT_FOUNTAIN;
+	}
 
 	int spawncount = 0;
 
@@ -1837,7 +1875,12 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, in
 		{
 			if (force || P_TestMobjLocation(actor))
 			{
-				actor->angle = BYTEANGLE(angle);
+				if (fountain_info)
+				{
+					actor->args[0] = fountain_info->first;
+					actor->effects = fountain_info->second;
+				}
+				actor->angle = angle;
 				actor->tid = tid;
 				actor->AddToHash();
 				actor->flags |= MF_DROPPED;  // Don't respawn
@@ -1858,7 +1901,7 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, in
 	return spawncount;
 }
 
-int DLevelScript::DoSpawnSpot(int type, int spot, int tid, std::optional<int> angle, bool force)
+int DLevelScript::DoSpawnSpot(int type, int spot, int tid, std::optional<angle_t> angle, bool force)
 {
 	FActorIterator iterator(spot);
 	AActor* aspot;
@@ -1876,9 +1919,16 @@ void DLevelScript::DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t s
 	if (typestr == nullptr)
 		return;
 
-	const auto info = P_INameToMobj(typestr);
+	auto info = P_INameToMobj(typestr);
+	std::optional<std::pair<byte, uint32_t>> fountain_info;
 	if (info == MT_NULL)
-		return;
+	{
+		fountain_info = GetFountainSpawnInfo(typestr);
+		if (fountain_info)
+			info = MT_FOUNTAIN;
+		else
+			return;
+	}
 
 	if ((mobjinfo[info].flags & MF_COUNTKILL) && sv_nomonsters)
 		return;
@@ -1904,8 +1954,13 @@ void DLevelScript::DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t s
 			}
 			else
 				mobj->flags |= MF_NOGRAVITY;
+			if (fountain_info)
+			{
+				mobj->args[0] = fountain_info->first;
+				mobj->effects = fountain_info->second;
+			}
 			mobj->target = spot->ptr();
-			mobj->angle = BYTEANGLE(angle);
+			mobj->angle = angle;
 			mobj->momx = FixedMul(speed, finecosine[angle>>ANGLETOFINESHIFT]);
 			mobj->momy = FixedMul(speed, finesine[angle>>ANGLETOFINESHIFT]);
 			mobj->momz = vspeed;
@@ -3409,22 +3464,22 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SPAWN:
-			STACK(6) = DoSpawn (STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), STACK(1), false);
+			STACK(6) = DoSpawn (STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), BYTEANGLE(STACK(1)), false);
 			sp -= 5;
 			break;
 
 		case PCD_SPAWNDIRECT:
-			PushToStack (DoSpawn (pc[0], pc[1], pc[2], pc[3], pc[4], pc[5], false));
+			PushToStack (DoSpawn (pc[0], pc[1], pc[2], pc[3], pc[4], BYTEANGLE(pc[5]), false));
 			pc += 6;
 			break;
 
 		case PCD_SPAWNSPOT:
-			STACK(4) = DoSpawnSpot (STACK(4), STACK(3), STACK(2), STACK(1), false);
+			STACK(4) = DoSpawnSpot (STACK(4), STACK(3), STACK(2), BYTEANGLE(STACK(1)), false);
 			sp -= 3;
 			break;
 
 		case PCD_SPAWNSPOTDIRECT:
-			PushToStack (DoSpawnSpot (pc[0], pc[1], pc[2], pc[3], false));
+			PushToStack (DoSpawnSpot (pc[0], pc[1], pc[2], BYTEANGLE(pc[3]), false));
 			pc += 4;
 			break;
 
@@ -3434,7 +3489,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SPAWNPROJECTILE:
-			DoSpawnProjectile(STACK(7), STACK(6), STACK(5), SPEED(STACK(4)), SPEED(STACK(3)), STACK(2), STACK(1));
+			DoSpawnProjectile(STACK(7), STACK(6), BYTEANGLE(STACK(5)), SPEED(STACK(4)), SPEED(STACK(3)), STACK(2), STACK(1));
 			sp -= 7;
 			break;
 
@@ -4122,7 +4177,7 @@ auto DLevelScript::CallFunction(const int scriptnum, const int func, const nonst
 
 		case CF_SPAWNSPOTFORCED:
 			CHECK_MIN_ARGS(4);
-			return DoSpawnSpot(args[0], args[1], args[2], args[3], true);
+			return DoSpawnSpot(args[0], args[1], args[2], BYTEANGLE(args[3]), true);
 
 		case CF_SPAWNSPOTFACINGFORCED:
 			CHECK_MIN_ARGS(3);
@@ -4130,7 +4185,7 @@ auto DLevelScript::CallFunction(const int scriptnum, const int func, const nonst
 
 		case CF_SPAWNFORCED:
 			CHECK_MIN_ARGS(4);
-			return DoSpawn(args[0], args[1], args[2], args[3], args.size() > 4 ? args[4] : 0, args.size() > 5 ? args[5] : 0, true);
+			return DoSpawn(args[0], args[1], args[2], args[3], args.size() > 4 ? args[4] : 0, args.size() > 5 ? BYTEANGLE(args[5]) : 0, true);
 
 		case CF_SQRT:
 			CHECK_MIN_ARGS(1);

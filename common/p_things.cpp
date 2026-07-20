@@ -305,7 +305,7 @@ bool P_ActivateMobj (AActor *mobj, AActor *activator)
 {
 	if (mobj->flags & MF_COUNTKILL)
 	{
-		mobj->flags2 &= !(MF2_DORMANT | MF2_INVULNERABLE);
+		mobj->flags2 &= ~(MF2_DORMANT | MF2_INVULNERABLE);
 		return true;
 	}
 	else
