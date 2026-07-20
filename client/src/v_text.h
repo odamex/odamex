@@ -120,6 +120,18 @@ OFont* V_GetHudFont(int pixel_scale);
 //
 OFont* V_GetHudFontSized(int pixel_size);
 
+//
+// V_GetFont
+//
+// Returns a font built from a specific face at a specific pixel size,
+// caching one per face-and-size combination. A face whose lump is not
+// present quietly falls back to the standard one.
+//
+// Unlike V_GetHudFont this ignores whatever V_SetFont last selected, so use
+// it for text that should always draw in a particular face.
+//
+OFont* V_GetFont(const char* lumpname, int pixel_size);
+
 int V_FontStringWidthClean(const OFont* font, const char* str);
 int V_FontLineHeightClean(const OFont* font);
 

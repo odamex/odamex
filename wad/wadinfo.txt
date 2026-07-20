@@ -32,6 +32,8 @@ EASYKEY
 OBOSSMAP
 SPREEDEF
 FONT_SM
+FONT_SPR
+FONT_MK
 
 # List of Sounds (prevent conversion)
 DSEMPTY

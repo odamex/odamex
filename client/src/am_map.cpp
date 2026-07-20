@@ -2135,7 +2135,7 @@ void AM_Drawer()
 		// Same clean scale the bitmap path drew at. The font bakes its scale
 		// into its glyphs, so its metrics are already in real pixels and the
 		// old external CleanXfac multiply is gone from every measurement here.
-		const OFont* font = V_GetHudFont(MIN(CleanXfac, CleanYfac));
+		const OFont* font = V_GetHudFontSized(8 * MIN(CleanXfac, CleanYfac));
 
 		int text_height = font->getHeight() + CleanYfac;
 		int OV_Y = surface_height - (surface_height * 32 / 200);

@@ -1554,7 +1554,7 @@ void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
 	V_SetFont("BIGFONT");
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	const OFont* banner_font = V_GetHudFontSized(12 * ::CleanYfac);
+	const OFont* banner_font = V_GetFont("FONT_SPR", 12 * ::CleanYfac);
 	int w = banner_font->getTextWidth(line.spreeText.c_str());
 	int h = banner_font->getHeight();
 
@@ -1728,7 +1728,7 @@ void MultiKillHud()
 
 		const int surface_width = I_GetSurfaceWidth(),
 			      surface_height = I_GetSurfaceHeight();
-		const OFont* banner_font = V_GetHudFontSized(12 * ::CleanYfac);
+		const OFont* banner_font = V_GetFont("FONT_MK", 12 * ::CleanYfac);
 		int w = banner_font->getTextWidth(line.multiKillText.c_str());
 		int h = banner_font->getHeight();
 

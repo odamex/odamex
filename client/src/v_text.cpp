@@ -92,14 +92,30 @@ static OFont* V_CreateFont(unsigned int stylemask, OFont::ScaleFunc scale_func)
 }
 
 //
+// V_FontLumpExists
+//
+// Optional faces are looked up quietly -- TrueTypeFont complains when it
+// cannot find its lump, and a face that is simply not shipped should not
+// report that on every font rebuild.
+//
+static bool V_FontLumpExists(const char* lumpname)
+{
+	return Res_CheckResource(Res_GetResourceId(lumpname, global_directory_name));
+}
+
+
+//
 // V_CreateFontAtSize
 //
-// As V_CreateFont, but pinned to an absolute pixel size rather than following
-// a scale provider.
+// As V_CreateFont, but pinned to an absolute pixel size and a named face
+// rather than following a scale provider.
 //
-static OFont* V_CreateFontAtSize(unsigned int stylemask, int size)
+static OFont* V_CreateFontAtSize(unsigned int stylemask, int size, const char* lumpname)
 {
-	OFont* font = new TrueTypeFont(TTF_LUMP_NAME, size, stylemask);
+	if (!V_FontLumpExists(lumpname))
+		lumpname = TTF_LUMP_NAME;
+
+	OFont* font = new TrueTypeFont(lumpname, size, stylemask);
 	if (font->isUsable())
 		return font;
 
@@ -109,23 +125,49 @@ static OFont* V_CreateFontAtSize(unsigned int stylemask, int size)
 
 
 //
-// V_GetHudFont
+// V_GetFont
 //
-OFont* V_GetHudFontSized(int pixel_size)
+OFont* V_GetFont(const char* lumpname, int pixel_size)
 {
-	typedef std::map<int, OFont*> HudFontCache;
-	static HudFontCache cache;
+	typedef std::map<std::string, OFont*> FontCache;
+	static FontCache cache;
 
 	pixel_size = clamp(pixel_size, 4, 128);
 
-	HudFontCache::iterator it = cache.find(pixel_size);
+	const std::string key = fmt::format("{}:{}", lumpname, pixel_size);
+
+	FontCache::iterator it = cache.find(key);
 	if (it != cache.end())
 		return it->second;
 
-	OFont* font = V_CreateFontAtSize(TrueTypeFont::TTF_TEXTURE, pixel_size);
-	cache[pixel_size] = font;
+	OFont* font = V_CreateFontAtSize(TrueTypeFont::TTF_TEXTURE, pixel_size, lumpname);
+	cache[key] = font;
 	return font;
 }
+
+
+//
+// V_GetHudFontSized
+//
+OFont* V_GetHudFontSized(int pixel_size)
+{
+	return V_GetFont(TTF_LUMP_NAME, pixel_size);
+}
+
+
+// V_SetFont cycles thru these now, but we should work to get
+// rid of the V_SetFont paradigm.
+struct hudface_t
+{
+	const char*	lumpname;
+	int			base_size;
+};
+
+static const hudface_t hud_face_small	= { "FONT_SM",  8 };
+static const hudface_t hud_face_big		= { "FONT_BIG", 12 };
+static const hudface_t hud_face_dig		= { "FONT_DIG", 8 };
+
+static const hudface_t* current_hud_face = &hud_face_small;
 
 
 //
@@ -134,8 +176,11 @@ OFont* V_GetHudFontSized(int pixel_size)
 OFont* V_GetHudFont(int pixel_scale)
 {
 	// The bitmap HUD font is 8 pixels tall, so a scale factor of N matches a
-	// font built at 8N pixels.
-	return V_GetHudFontSized(8 * MAX(1, pixel_scale));
+	// face built at N times its base size.
+	pixel_scale = MAX(1, pixel_scale);
+
+	return V_GetFont(current_hud_face->lumpname,
+	                 current_hud_face->base_size * pixel_scale);
 }
 
 
@@ -272,14 +317,17 @@ void V_SetFont(const char* fontname)
 	if (!stricmp(fontname, "BIGFONT"))
 	{
 		::hu_font.setFont(::hu_bigfont, hu_bigfont_height);
+		::current_hud_face = &hud_face_big;
 	}
 	else if (!stricmp(fontname, "SMALLFONT"))
 	{
 		::hu_font.setFont(::hu_smallfont, hu_smallfont_height);
+		::current_hud_face = &hud_face_small;
 	}
 	else if (!stricmp(fontname, "DIGFONT"))
 	{
 		::hu_font.setFont(::hu_digfont, hu_digfont_height);
+		::current_hud_face = &hud_face_dig;
 	}
 }
 
