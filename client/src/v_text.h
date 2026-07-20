@@ -148,6 +148,15 @@ OFont* V_GetHudFontSized(int pixel_size);
 //
 OFont* V_GetFont(const char* lumpname, int pixel_size);
 
+//
+// V_FontsReady
+//
+// False until V_TextInit has run. Callers that can be reached during
+// early startup -- console printing, notably -- must check this before
+// asking for a font.
+//
+bool V_FontsReady();
+
 int V_FontStringWidthClean(const OFont* font, const char* str);
 int V_FontLineHeightClean(const OFont* font);
 

@@ -71,6 +71,15 @@ OFont* hud_font = NULL;
 
 static const char* TTF_LUMP_NAME = "FONT_SM";
 
+// Fonts need the resource system and the palette, neither of which exists
+// during early startup -- and the console prints long before then.
+static bool fonts_ready = false;
+
+bool V_FontsReady()
+{
+	return fonts_ready;
+}
+
 //
 // V_CreateFont
 //
@@ -281,6 +290,8 @@ void V_TextInit()
 
 	// Default font is SMALLFONT.
 	V_SetFont("SMALLFONT");
+
+	::fonts_ready = true;
 }
 
 /**
@@ -316,6 +327,8 @@ void V_TextShutdown()
 	}
 
 	::hu_font.clear();
+
+	::fonts_ready = false;
 }
 
 /**
@@ -616,6 +629,72 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 // ----------------------------------------------------------------------------
 
 //
+// V_DrawRuleChar
+//
+// Characters 0x1D-0x1F are the console's horizontal rule -- a left cap, a
+// middle run and a right cap that CONCHARS draws as a solid coloured bar.
+// No TrueType face carries them, so reproduce the bar directly.
+//
+static bool V_DrawRuleChar(const DCanvas* canvas, byte c, int x, int y,
+		int advance, int line_height)
+{
+	if (c < RULE_CHAR_FIRST || c > RULE_CHAR_LAST || ::ConChars == nullptr || advance <= 0)
+		return false;
+
+	// Each CONCHARS glyph is 8 rows of 8 colour bytes followed by 8 mask
+	// bytes, where a mask byte of 0 means the pixel is drawn.
+	const byte* glyph = ::ConChars + static_cast<int>(c) * 128;
+
+	int first_row = -1, last_row = -1;
+	palindex_t color_index = 0;
+
+	for (int row = 0; row < 8; row++)
+	{
+		const byte* colors = glyph + row * 16;
+		const byte* mask = colors + 8;
+
+		for (int col = 0; col < 8; col++)
+		{
+			if (mask[col] == 0)
+			{
+				if (first_row < 0)
+					first_row = row;
+				last_row = row;
+				color_index = colors[col];
+				break;
+			}
+		}
+	}
+
+	// A rule character with no opaque pixel is still consumed (it advances the
+	// pen) but draws nothing.
+	if (first_row < 0)
+		return true;
+
+	// scale the bar's rows up to the line the text is being drawn on
+	int left = x;
+	int right = x + advance;
+	int top = y + (first_row * line_height) / 8;
+	int bottom = MAX(y + ((last_row + 1) * line_height) / 8, top + 1);
+
+	// Clear does no bounds checking, so clip the bar to the surface before
+	// handing it over -- console text can be positioned partly off-screen.
+	const IWindowSurface* surface = canvas->getSurface();
+	left = MAX(left, 0);
+	top = MAX(top, 0);
+	right = MIN(right, static_cast<int>(surface->getWidth()));
+	bottom = MIN(bottom, static_cast<int>(surface->getHeight()));
+
+	if (left < right && top < bottom)
+	{
+		canvas->Clear(left, top, right, bottom,
+		              V_GetDefaultPalette()->basecolors[color_index]);
+	}
+	return true;
+}
+
+
+//
 // DCanvas::DrawFontTextRaw
 //
 // Shared core of the OFont drawing entry points. Coordinates are real screen
@@ -662,6 +741,14 @@ void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 
 		const char c = str[0];
 		str++;
+
+		const int advance = font->getTextWidth(c);
+
+		if (V_DrawRuleChar(this, static_cast<byte>(c), x, y, advance, font->getHeight()))
+		{
+			x += advance;
+			continue;
+		}
 
 		const Texture* glyph = font->getGlyph(c);
 		if (glyph && glyph->mWidth > 0 && glyph->mHeight > 0)

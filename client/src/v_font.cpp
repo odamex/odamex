@@ -429,6 +429,9 @@ int OFont::getTextWidth(char c) const
 	if (c == '\t')
 		return 4 * getTextWidth(' ');
 
+	if (c >= RULE_CHAR_FIRST && c <= RULE_CHAR_LAST)
+		return getHeight();
+
 	const Texture* texture = mCharacters[static_cast<byte>(c)];
 	if (!texture)
 	{

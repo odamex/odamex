@@ -31,6 +31,9 @@
 #include "resources/res_texture.h"
 #include "z_zone.h"
 
+static const char RULE_CHAR_FIRST	= 0x1D;
+static const char RULE_CHAR_LAST	= 0x1F;
+
 //
 // OFont
 //
