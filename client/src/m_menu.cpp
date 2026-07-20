@@ -57,6 +57,10 @@
 #include "m_fileio.h"
 
 EXTERN_CVAR(g_resetinvonexit)
+EXTERN_CVAR(ui_mouse)
+
+bool I_GetUIMousePosition(int& x, int& y);
+bool I_IsUIMouseButtonDown(int button);
 
 // temp for screenblocks (0-9)
 int 				screenSize;
@@ -192,6 +196,18 @@ bool M_DemoNoPlay;
 static IWindowSurface* fire_surface;
 static constexpr int fire_surface_width = 72;
 static constexpr int fire_surface_height = 77;
+
+enum
+{
+	MSGBUTTON_YES = 0,
+	MSGBUTTON_NO = 1,
+	MSGBUTTON_NONE = -1
+};
+
+static int MessageButtonX1[2], MessageButtonX2[2];
+static int MessageButtonY1 = 0, MessageButtonY2 = 0;
+
+static void M_DrawMessageButtons(int y);
 
 static void M_PauseSound(void)
 {
@@ -1873,6 +1889,189 @@ int M_StringHeight(char* string)
 //
 
 //
+// M_GetMouseItem
+//
+// Returns the index of the item in the current old-style menu underneath the
+// mouse cursor, or -1 if the cursor isn't over a selectable item.
+//
+static int M_GetMouseItem()
+{
+
+	if (ui_mouse.asInt() == 0 || currentMenu == nullptr)
+		return -1;
+
+	// These states take over the whole menu and have nothing to click on.
+	if (messageToPrint || genStringEnter != oldmenustring_t::NONE)
+		return -1;
+
+	int mouse_x, mouse_y;
+	if (!I_GetUIMousePosition(mouse_x, mouse_y))
+		return -1;
+
+	for (int i = 0; i < currentMenu->numitems; i++)
+	{
+		const oldmenuitem_t& item = currentMenu->menuitems[i];
+		if (item.status == -1)
+			continue;
+
+		int width = 0;
+		if (item.name[0])
+		{
+			width = W_CachePatch(item.name)->width();
+		}
+		else if (item.textname[0])
+		{
+			V_SetFont("BIGFONT");
+			width = V_StringWidth(item.textname);
+			V_SetFont("SMALLFONT");
+		}
+		else
+		{
+			// The item carries no label of its own.
+			// The row still occupies its usual slot,
+			// so make the rest of the line clickable.
+			width = 320 - currentMenu->x - 8;
+		}
+
+		if (width <= 0)
+			continue;
+
+		// The hitbox starts at the cursor rather than the label so that the
+		// gap the skull occupies is still clickable.
+		const int y = currentMenu->y + i * LINEHEIGHT;
+		const int x1 = screen->getCleanX(currentMenu->x + SKULLXOFF);
+		const int x2 = screen->getCleanX(currentMenu->x + width);
+		const int y1 = screen->getCleanY(y);
+		const int y2 = screen->getCleanY(y + LINEHEIGHT);
+
+		if (mouse_x >= x1 && mouse_x < x2 && mouse_y >= y1 && mouse_y < y2)
+			return i;
+	}
+
+	return -1;
+}
+
+
+//
+// M_GetMessageButton
+//
+// Returns which of the confirmation prompt's buttons the cursor is over:
+// MSGBUTTON_YES, MSGBUTTON_NO, or MSGBUTTON_NONE.
+//
+static int M_GetMessageButton()
+{
+	if (ui_mouse.asInt() == 0 || !messageToPrint || !messageNeedsInput)
+		return MSGBUTTON_NONE;
+
+	// Nothing has been drawn yet this session
+	if (MessageButtonY2 <= MessageButtonY1)
+		return MSGBUTTON_NONE;
+
+	int mouse_x, mouse_y;
+	if (!I_GetUIMousePosition(mouse_x, mouse_y))
+		return MSGBUTTON_NONE;
+
+	if (mouse_y < MessageButtonY1 || mouse_y >= MessageButtonY2)
+		return MSGBUTTON_NONE;
+
+	for (int button = 0; button < 2; button++)
+	{
+		if (mouse_x >= MessageButtonX1[button] && mouse_x < MessageButtonX2[button])
+			return button;
+	}
+
+	return MSGBUTTON_NONE;
+}
+
+
+//
+// M_DrawMessageButtons
+//
+// Draws clickable YES and NO buttons underneath a confirmation prompt and
+// records where they landed so the responder can hit-test against them.
+//
+static void M_DrawMessageButtons(int y)
+{
+	static const char* labels[2] = { "YES", "NO" };
+	static const int SPACING = 24;
+
+	const int widths[2] = { V_StringWidth(labels[0]), V_StringWidth(labels[1]) };
+	const int total = widths[0] + SPACING + widths[1];
+	const int height = W_ResolvePatchHandle(hu_font[0])->height();
+
+	const int hovered = M_GetMessageButton();
+
+	int x = 160 - total / 2;
+	for (int button = 0; button < 2; button++)
+	{
+		screen->DrawTextCleanMove(button == hovered ? CR_GREY : CR_RED, x, y, labels[button]);
+
+		MessageButtonX1[button] = screen->getCleanX(x);
+		MessageButtonX2[button] = screen->getCleanX(x + widths[button]);
+
+		x += widths[button] + SPACING;
+	}
+
+	MessageButtonY1 = screen->getCleanY(y);
+	MessageButtonY2 = screen->getCleanY(y + height);
+}
+//
+// M_UpdateMouseItem
+//
+// Moves the menu cursor to whatever the mouse is hovering over.
+//
+static void M_UpdateMouseItem()
+{
+	static int prev_mouse_x = -1, prev_mouse_y = -1;
+
+	int mouse_x, mouse_y;
+	if (!I_GetUIMousePosition(mouse_x, mouse_y))
+		return;
+
+	const bool moved = (mouse_x != prev_mouse_x || mouse_y != prev_mouse_y);
+	prev_mouse_x = mouse_x;
+	prev_mouse_y = mouse_y;
+
+	if (!moved)
+		return;
+
+	const int item = M_GetMouseItem();
+	if (item != -1 && item != itemOn)
+	{
+		itemOn = item;
+		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+	}
+}
+
+
+//
+
+//
+// M_ActivateItem
+//
+// Performs the action for a menu item, as though it had been selected with
+// the accept key.
+//
+static void M_ActivateItem(int item)
+{
+	if (!currentMenu->menuitems[item].routine || !currentMenu->menuitems[item].status)
+		return;
+
+	currentMenu->lastOn = item;
+	if (currentMenu->menuitems[item].status == 2)
+	{
+		currentMenu->menuitems[item].routine(1);		// right arrow
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+	}
+	else
+	{
+		currentMenu->menuitems[item].routine(item);
+		S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+	}
+}
+
+
+//
 // M_Responder
 //
 bool M_Responder (event_t* ev)
@@ -1983,7 +2182,29 @@ bool M_Responder (event_t* ev)
 	// Take care of any messages that need input
 	if (messageToPrint)
 	{
-		if (messageNeedsInput &&
+		int answer = 0;
+
+		if (ui_mouse.asInt() != 0 && (ch == OKEY_MOUSE1 || ch == OKEY_MOUSE2))
+		{
+			if (!messageNeedsInput)
+			{
+				// "Press any key" messages are dismissed by any click
+				answer = ' ';
+			}
+			else if (ch == OKEY_MOUSE2)
+			{
+				answer = 'n';
+			}
+			else
+			{
+				const int button = M_GetMessageButton();
+				if (button == MSGBUTTON_NONE)
+					return true;
+
+				answer = (button == MSGBUTTON_YES) ? 'y' : 'n';
+			}
+		}
+		else if (messageNeedsInput &&
 		    (!(ch2 == ' ' || Key_IsMenuKey(ch) || Key_IsYesKey(ch) || Key_IsNoKey(ch) ||
 			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
 			return true;
@@ -1992,7 +2213,9 @@ bool M_Responder (event_t* ev)
 		messageToPrint = 0;
 		if (messageRoutine)
 		{
-			if (ch == '\0' && ch2 != '\0')
+			if (answer)
+				messageRoutine(answer);
+			else if (ch == '\0' && ch2 != '\0')
 				messageRoutine(ch2);
 			else
 				messageRoutine(ch);
@@ -2019,6 +2242,17 @@ bool M_Responder (event_t* ev)
 			AddCommandString("menu_main");
 			return true;
 		}
+
+		const bool attract = gamestate == GS_DEMOSCREEN || gamestate == GS_FINALE ||
+		                     ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) &&
+		                      demoplayback);
+
+		if (ui_mouse.asInt() != 0 && attract && (ch == OKEY_MOUSE1 || ch == OKEY_MOUSE2))
+		{
+			AddCommandString("menu_main");
+			return true;
+		}
+
 		return false;
 	}
 
@@ -2028,6 +2262,26 @@ bool M_Responder (event_t* ev)
 		if(!strcmp(cmd, "menu_main"))
 		{
 			M_ClearMenus();
+			return true;
+		}
+	}
+
+	if (ui_mouse.asInt() != 0)
+	{
+		if (ch == OKEY_MOUSE1)
+		{
+			const int item = M_GetMouseItem();
+			if (item != -1)
+			{
+				itemOn = item;
+					M_ActivateItem(item);
+			}
+			return true;
+		}
+		else if (ch == OKEY_MOUSE2)
+		{
+			currentMenu->lastOn = itemOn;
+			M_PopMenuStack();
 			return true;
 		}
 	}
@@ -2078,21 +2332,7 @@ bool M_Responder (event_t* ev)
 		}
 		else if (Key_IsAcceptKey(ch))
 		{
-			if (currentMenu->menuitems[itemOn].routine &&
-				currentMenu->menuitems[itemOn].status)
-			{
-				currentMenu->lastOn = itemOn;
-				if (currentMenu->menuitems[itemOn].status == 2)
-				{
-					currentMenu->menuitems[itemOn].routine(1);		// right arrow
-					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-				}
-				else
-				{
-					currentMenu->menuitems[itemOn].routine(itemOn);
-					S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-				}
-			}
+			M_ActivateItem(itemOn);
 			return true;
 		}
 		else if (Key_IsCancelKey(ch))
@@ -2179,6 +2419,9 @@ void M_Drawer()
 		}
 
 		V_FreeBrokenLines (lines);
+
+		if (messageNeedsInput)
+			M_DrawMessageButtons(y + ch->height());
 	}
 	else if (menuactive)
 	{
@@ -2299,6 +2542,11 @@ void M_Ticker()
 	{
 		whichSkull ^= 1;
 		skullAnimCounter = 8;
+	}
+
+	if (menuactive)
+	{
+			M_UpdateMouseItem();
 	}
 
 	if (currentMenu == &PSetupDef)

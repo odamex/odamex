@@ -48,6 +48,9 @@ int I_GetKeyFromName(const std::string& name);
 void I_GetEvents(bool mouseOnly);
 
 
+bool I_GetUIMousePosition(int& x, int& y);
+bool I_IsUIMouseButtonDown(int button);
+
 // ============================================================================
 //
 // IInputDevice abstract base class interface

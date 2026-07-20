@@ -65,6 +65,9 @@ void M_OptResponder (event_t *ev);
 // [RH] Draw options menu
 void M_OptDrawer (void);
 
+// Move the options menu selection to whatever the mouse is hovering over
+void M_OptUpdateMouseItem();
+
 // [RH] Initialize options menu
 void M_OptInit (void);
 

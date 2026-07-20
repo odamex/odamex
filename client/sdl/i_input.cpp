@@ -466,6 +466,43 @@ static void I_UpdateGrab()
 }
 
 
+//
+// I_GetUIMousePosition
+//
+bool I_GetUIMousePosition(int& x, int& y)
+{
+	if (current_input_mode != INPUT_MODE_UI)
+		return false;
+
+	int window_x, window_y;
+	SDL_GetMouseState(&window_x, &window_y);
+
+	return I_WindowToSurfaceCoords(window_x, window_y, x, y);
+}
+
+
+//
+// I_IsUIMouseButtonDown
+//
+bool I_IsUIMouseButtonDown(int button)
+{
+	if (current_input_mode != INPUT_MODE_UI)
+		return false;
+
+	const uint32_t state = SDL_GetMouseState(NULL, NULL);
+
+	switch (button)
+	{
+	case OKEY_MOUSE1:	return (state & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;
+	case OKEY_MOUSE2:	return (state & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0;
+	case OKEY_MOUSE3:	return (state & SDL_BUTTON(SDL_BUTTON_MIDDLE)) != 0;
+	case OKEY_MOUSE4:	return (state & SDL_BUTTON(SDL_BUTTON_X1)) != 0;
+	case OKEY_MOUSE5:	return (state & SDL_BUTTON(SDL_BUTTON_X2)) != 0;
+	default:			return false;
+	}
+}
+
+
 CVAR_FUNC_IMPL(use_joystick)
 {
 	if (var == 0.0f)
