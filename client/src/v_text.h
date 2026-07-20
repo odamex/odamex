@@ -136,6 +136,7 @@ int V_FontStringWidthClean(const OFont* font, const char* str);
 int V_FontLineHeightClean(const OFont* font);
 
 brokenlines_t* V_BreakLinesFont(const OFont* font, int maxwidth, const byte* str);
+brokenlines_t* V_BreakLinesFontPixels(const OFont* font, int maxwidth_px, const byte* str);
 inline brokenlines_t* V_BreakLinesFont(const OFont* font, int maxwidth, const char* str)
 {
 	return V_BreakLinesFont(font, maxwidth, reinterpret_cast<const byte*>(str));

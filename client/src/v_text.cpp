@@ -961,12 +961,24 @@ static void breakitFont(const OFont* font, brokenlines_t* line, const byte* star
 //
 brokenlines_t* V_BreakLinesFont(const OFont* font, int maxwidth, const byte* str)
 {
+	return V_BreakLinesFontPixels(font, maxwidth * MAX(1, CleanXfac), str);
+}
+
+
+//
+// V_BreakLinesFontPixels
+//
+// The same as V_BreakLinesFont, but the width is already in real pixels.
+// Callers that lay out in their own coordinate system -- the HUD, at its
+// own scale -- use this so the wrap width matches the font the text is
+// actually drawn with.
+//
+brokenlines_t* V_BreakLinesFontPixels(const OFont* font, int maxwidth_px, const byte* str)
+{
 	if (!font || !str)
 		return NULL;
 
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
-
-	const int maxwidth_px = maxwidth * MAX(1, CleanXfac);
 
 	const byte* space = NULL;
 	const byte* start = str;

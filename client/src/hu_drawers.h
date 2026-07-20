@@ -25,6 +25,7 @@
 #include "r_defs.h"
 
 class Texture;
+struct brokenlines_t;
 
 namespace hud {
 
@@ -50,6 +51,7 @@ void Dim(int x, int y,
          const x_align_t x_align, const y_align_t y_align,
          const x_align_t x_origin, const y_align_t y_origin);
 int GetTextWidth(const char* str, const float scale);
+brokenlines_t* BreakLines(const char* str, const int maxwidth, const float scale);
 int GetLineHeight(const float scale);
 void DrawText(int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,

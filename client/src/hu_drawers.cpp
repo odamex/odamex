@@ -182,6 +182,13 @@ int GetTextWidth(const char* str, const float scale)
 	return V_GetHudFont(x_scale)->getTextWidth(str) / x_scale;
 }
 
+brokenlines_t* BreakLines(const char* str, const int maxwidth, const float scale)
+{
+	const int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
+	return V_BreakLinesFontPixels(V_GetHudFont(x_scale), maxwidth * x_scale,
+	                              reinterpret_cast<const byte*>(str));
+}
+
 // Height of a line of text in HUD units, matching what DrawText will produce.
 int GetLineHeight(const float scale)
 {

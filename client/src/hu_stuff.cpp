@@ -733,11 +733,12 @@ void drawHeader(player_t *player, int y)
 	brokenlines_t* hostname = NULL;
 	if (::multiplayer)
 	{
-		hostname = V_BreakLines(192, sv_hostname.cstring());
+		hostname = hud::BreakLines(sv_hostname.cstring(), 192, hud_scalescoreboard);
 	}
 	else
 	{
-		hostname = V_BreakLines(192, "Odamex " DOTVERSIONSTR " - Offline");
+		hostname = hud::BreakLines("Odamex " DOTVERSIONSTR " - Offline", 192,
+		                           hud_scalescoreboard);
 	}
 
 	for (size_t i = 0; i < 2 && hostname[i].width > 0; i++)
