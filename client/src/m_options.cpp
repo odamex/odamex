@@ -252,6 +252,9 @@ static int				OptMouseRowCount = 0;
 
 static const int		OPT_WHEEL_LINES = 3;
 
+static int				OptDragItem = -1;
+static menu_t*			OptDragMenu = NULL;
+
 value_t YesNo[2] = {
 	{ 0.0, "No" },
 	{ 1.0, "Yes" }
@@ -2045,6 +2048,86 @@ static void M_OptScroll(int lines)
 
 
 //
+// M_OptSetSliderFromMouse
+//
+// Sets a slider to the value the cursor was clicked at.
+//
+static void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
+{
+	const int x = CurrentMenu->indent + 8;
+	const int track_x1 = screen->getCleanX(x + SLIDER_TRACK_X);
+	const int track_x2 = screen->getCleanX(x + SLIDER_TRACK_X + SLIDER_TRACK_WIDTH);
+
+	if (track_x2 <= track_x1)
+		return;
+
+	float dist = static_cast<float>(mouse_x - track_x1) / static_cast<float>(track_x2 - track_x1);
+	dist = clamp(dist, 0.0f, 1.0f);
+
+	if (item->type == slider)
+	{
+		float newval = item->b.leftval + dist * (item->c.rightval - item->b.leftval);
+
+		// Snap to the item's step so clicking produces the same set of values
+		// the arrow keys do.
+		if (item->d.step != 0.0f)
+		{
+			const float step = (item->c.rightval >= item->b.leftval) ? item->d.step : -item->d.step;
+			newval = item->b.leftval +
+			         step * std::floor((newval - item->b.leftval) / step + 0.5f);
+		}
+
+		if (item->b.leftval < item->c.rightval)
+			newval = clamp(newval, item->b.leftval, item->c.rightval);
+		else
+			newval = clamp(newval, item->c.rightval, item->b.leftval);
+
+		if (item->e.cfunc)
+			item->e.cfunc(item->a.cvar, newval);
+		else
+			item->a.cvar->Set(newval);
+	}
+	else
+	{
+		// Color component sliders move in steps of 17
+		int part = static_cast<int>(dist * 255.0f + 0.5f);
+		part = ((part + 0x08) / 0x11) * 0x11;
+		part = clamp(part, 0, 0xFF);
+
+		const char* oldcolor = item->a.cvar->cstring();
+		char newcolor[9];
+
+		if (strlen(oldcolor) == 8)
+			memcpy(newcolor, oldcolor, 9);
+		else
+			memcpy(newcolor, "00 00 00", 9);
+
+		char singlecolor[3];
+		snprintf(singlecolor, 3, "%02x", part);
+
+		if (item->type == redslider)
+			memcpy(newcolor, singlecolor, 2);
+		else if (item->type == greenslider)
+			memcpy(newcolor + 3, singlecolor, 2);
+		else if (item->type == blueslider)
+			memcpy(newcolor + 6, singlecolor, 2);
+
+		item->a.cvar->Set(newcolor);
+	}
+}
+
+
+//
+// M_OptItemIsSlider
+//
+static bool M_OptItemIsSlider(const menuitem_t* item)
+{
+	return item->type == slider || item->type == redslider ||
+	       item->type == greenslider || item->type == blueslider;
+}
+
+
+//
 // M_OptMouseClick
 //
 static void M_OptMouseClick(int mouse_x, int mouse_y)
@@ -2068,6 +2151,16 @@ static void M_OptMouseClick(int mouse_x, int mouse_y)
 	if (item->type == screenres)
 		item->a.selmode = M_OptScreenResColumn(mouse_x);
 
+	if (M_OptItemIsSlider(item))
+	{
+		M_OptSetSliderFromMouse(item, mouse_x);
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+
+		// Keep following the pointer until the button is released
+		OptDragItem = index;
+		OptDragMenu = CurrentMenu;
+		return;
+	}
 
 	bool cycles_value = false;
 	switch (item->type)
@@ -2103,6 +2196,12 @@ void M_OptUpdateMouseItem()
 	if (ui_mouse.asInt() == 0 || WaitingForKey || WaitingForAxis)
 		return;
 
+	if (OptDragItem != -1 &&
+	    (OptDragMenu != CurrentMenu || OptDragItem >= CurrentMenu->numitems ||
+	     !M_OptItemIsSlider(CurrentMenu->items + OptDragItem) ||
+	     !I_IsUIMouseButtonDown(OKEY_MOUSE1)))
+		OptDragItem = -1;
+
 	int mouse_x, mouse_y;
 	if (!I_GetUIMousePosition(mouse_x, mouse_y))
 		return;
@@ -2113,6 +2212,12 @@ void M_OptUpdateMouseItem()
 
 	if (!moved)
 		return;
+
+	if (OptDragItem != -1)
+	{
+		M_OptSetSliderFromMouse(CurrentMenu->items + OptDragItem, mouse_x);
+		return;
+	}
 
 	const int row = M_OptRowUnderMouse(mouse_y);
 	if (row == -1)
@@ -2210,7 +2315,7 @@ void M_OptResponder (event_t *ev)
 			}
 		}
 		return;
-			}
+	}
 
 	if (ui_mouse.asInt() != 0 && ev->type == ev_keydown &&
 	    ch >= OKEY_MOUSE1 && ch <= OKEY_MWHEELRIGHT)

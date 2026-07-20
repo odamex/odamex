@@ -197,6 +197,11 @@ static IWindowSurface* fire_surface;
 static constexpr int fire_surface_width = 72;
 static constexpr int fire_surface_height = 77;
 
+static int PSetupSliderX1 = 0;
+static int PSetupSliderX2 = 0;
+
+static int PSetupDragItem = -1;
+
 enum
 {
 	MSGBUTTON_YES = 0,
@@ -1628,6 +1633,9 @@ static void M_PlayerSetupDrawer()
 			const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
 			const argb_t playercolor = V_GetColorFromString(cl_color);
 
+			PSetupSliderX1 = screen->getCleanX(x + SLIDER_TRACK_X);
+			PSetupSliderX2 = screen->getCleanX(x + SLIDER_TRACK_X + SLIDER_TRACK_WIDTH);
+
 			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
 			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*6, 0.0f, 255.0f, playercolor.getg(), 0.0f);
 			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*7, 0.0f, 255.0f, playercolor.getb(), 0.0f);
@@ -2015,6 +2023,11 @@ static void M_DrawMessageButtons(int y)
 	MessageButtonY1 = screen->getCleanY(y);
 	MessageButtonY2 = screen->getCleanY(y + height);
 }
+
+
+static void M_SetPlayerColorFromMouse(int item, int mouse_x);
+
+
 //
 // M_UpdateMouseItem
 //
@@ -2023,6 +2036,11 @@ static void M_DrawMessageButtons(int y)
 static void M_UpdateMouseItem()
 {
 	static int prev_mouse_x = -1, prev_mouse_y = -1;
+
+	// Drop any drag whose button was released or whose menu went away
+	if (PSetupDragItem != -1 &&
+	    (currentMenu != &PSetupDef || !I_IsUIMouseButtonDown(OKEY_MOUSE1)))
+		PSetupDragItem = -1;
 
 	int mouse_x, mouse_y;
 	if (!I_GetUIMousePosition(mouse_x, mouse_y))
@@ -2035,6 +2053,14 @@ static void M_UpdateMouseItem()
 	if (!moved)
 		return;
 
+	// A drag keeps hold of the slider it started on, so sliding off the row
+	// vertically doesn't hand the drag to a neighbour.
+	if (PSetupDragItem != -1)
+	{
+		M_SetPlayerColorFromMouse(PSetupDragItem, mouse_x);
+		return;
+	}
+
 	const int item = M_GetMouseItem();
 	if (item != -1 && item != itemOn)
 	{
@@ -2045,6 +2071,33 @@ static void M_UpdateMouseItem()
 
 
 //
+// M_SetPlayerColorFromMouse
+//
+// Jumps a player color slider to the position the slider was
+// clicked at.
+//
+static void M_SetPlayerColorFromMouse(int item, int mouse_x)
+{
+	if (PSetupSliderX2 <= PSetupSliderX1)
+		return;
+
+	float dist = static_cast<float>(mouse_x - PSetupSliderX1) / static_cast<float>(PSetupSliderX2 - PSetupSliderX1);
+	dist = clamp(dist, 0.0f, 1.0f);
+
+	const int part = clamp(static_cast<int>(dist * 255.0f + 0.5f), 0, 255);
+
+	argb_t color = V_GetColorFromString(cl_color);
+
+	if (item == playerred)
+		color.setr(part);
+	else if (item == playergreen)
+		color.setg(part);
+	else
+		color.setb(part);
+
+	SendNewColor(color.getr(), color.getg(), color.getb());
+}
+
 
 //
 // M_ActivateItem
@@ -2274,7 +2327,26 @@ bool M_Responder (event_t* ev)
 			if (item != -1)
 			{
 				itemOn = item;
+
+				// The player setup colour sliders jump to where they were
+				// clicked instead of nudging a single step.
+				int mouse_x, mouse_y;
+				const bool colorslider = currentMenu == &PSetupDef &&
+				                         (item == playerred || item == playergreen ||
+				                          item == playerblue);
+
+				if (colorslider && I_GetUIMousePosition(mouse_x, mouse_y))
+				{
+					M_SetPlayerColorFromMouse(item, mouse_x);
+					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+
+					// Keep following the pointer until the button is released
+					PSetupDragItem = item;
+				}
+				else
+				{
 					M_ActivateItem(item);
+				}
 			}
 			return true;
 		}
