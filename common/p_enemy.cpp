@@ -3037,7 +3037,8 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 					A_FaceTarget(actor);
 					actor->target = temp;
 
-					P_SetMobjState(actor, static_cast<statenum_t>(healstate));
+					// Force a client update because healstate might NOT be a "mode" for custom healers.
+					P_SetMobjState(actor, static_cast<statenum_t>(healstate), true);
 
 					if (!clientside)
 						SV_Sound(corpsehit, CHAN_BODY, SoundMap[healsound].c_str(), ATTN_IDLE);
