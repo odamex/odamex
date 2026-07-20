@@ -270,6 +270,9 @@ CVAR_RANGE_FUNC_DECL(ui_transgreen, "0", "",
 
 CVAR_RANGE_FUNC_DECL(ui_transblue, "0", "",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
+
+CVAR(				ui_mouse, "1", "Navigate the menus and console with the mouse",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 // Init settings
 // -------------
 
