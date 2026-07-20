@@ -73,6 +73,7 @@ EXTERN_CVAR(g_lives)
 // sapientlion - experimental
 EXTERN_CVAR(sv_weapondrop)
 
+// TODO: does this need to be global?
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
@@ -80,7 +81,7 @@ int MeansOfDeath;
 int maxammo[NUMAMMO] = {200, 50, 300, 50};
 int clipammo[NUMAMMO] = {10, 4, 20, 1};
 
-void AM_Stop(void);
+void AM_Stop();
 void SV_SpawnMobj(AActor *mobj);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
@@ -529,7 +530,7 @@ ItemEquipVal P_GiveCard(player_t& player, card_t card)
 	}
 
 	player.bonuscount = BONUSADD;
-	player.cards[card] = 1;
+	player.cards[card] = true;
 
 	if (multiplayer)
 	{

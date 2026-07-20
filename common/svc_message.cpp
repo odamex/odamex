@@ -1412,7 +1412,7 @@ odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, const lin
 odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
                                                        const AActor* activator,
                                                        const char* print,
-                                                       const std::vector<int>& args)
+                                                       const nonstd::span<const int> args)
 {
 	odaproto::svc::ExecuteACSSpecial msg;
 
