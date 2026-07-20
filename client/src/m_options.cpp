@@ -29,6 +29,8 @@
 
 #include "odamex.h"
 
+#include <cmath>
+
 #include "gstrings.h"
 #include "minilzo.h"
 
@@ -234,6 +236,21 @@ void M_ClearMenus (void);
 static bool CanScrollUp;
 static bool CanScrollDown;
 static int VisBottom;
+
+EXTERN_CVAR(ui_mouse)
+
+#define MAX_OPT_MOUSE_ROWS	32
+
+struct optmouserow_t
+{
+	int		item;		// index into CurrentMenu->items
+	int		y1, y2;		// surface pixel bounds of the row
+};
+
+static optmouserow_t	OptMouseRows[MAX_OPT_MOUSE_ROWS];
+static int				OptMouseRowCount = 0;
+
+static const int		OPT_WHEEL_LINES = 3;
 
 value_t YesNo[2] = {
 	{ 0.0, "No" },
@@ -1712,12 +1729,22 @@ void M_OptDrawer (void)
 	y = 15 + title->height();
 	ytop = y + CurrentMenu->scrolltop * 8;
 
+	OptMouseRowCount = 0;
+
 	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += 8)	// TIJ
 	{
 		if (i == CurrentMenu->scrolltop)
 			i += CurrentMenu->scrollpos;
 
 		item = CurrentMenu->items + i;
+
+		if (OptMouseRowCount < MAX_OPT_MOUSE_ROWS)
+		{
+			optmouserow_t& row = OptMouseRows[OptMouseRowCount++];
+			row.item = i;
+			row.y1 = screen->getCleanY(y);
+			row.y2 = screen->getCleanY(y + 8);
+		}
 
 		if (item->type == screenres)
 		{
@@ -1938,6 +1965,175 @@ void M_OptDrawer (void)
 		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
 }
 
+//
+// M_OptItemSelectable
+//
+// Matches the item types the up/down key handlers skip over.
+//
+static bool M_OptItemSelectable(const menuitem_t* item)
+{
+	switch (item->type)
+	{
+	case redtext:
+	case whitetext:
+	case yellowtext:
+	case orangetext:
+		return false;
+	case screenres:
+		return item->b.res1 != NULL;
+	default:
+		return true;
+	}
+}
+
+
+//
+// M_OptRowUnderMouse
+//
+// Returns an index into OptMouseRows, or -1 if the cursor isn't over a row.
+//
+static int M_OptRowUnderMouse(int mouse_y)
+{
+	for (int i = 0; i < OptMouseRowCount; i++)
+	{
+		if (mouse_y >= OptMouseRows[i].y1 && mouse_y < OptMouseRows[i].y2)
+			return i;
+	}
+
+	return -1;
+}
+
+
+//
+// M_OptScreenResColumn
+//
+// Returns which of the three resolution columns the cursor is over.
+//
+static int M_OptScreenResColumn(int mouse_x)
+{
+	for (int col = 2; col > 0; col--)
+	{
+		if (mouse_x >= screen->getCleanX(104 * col + 8))
+			return col;
+	}
+
+	return 0;
+}
+
+
+//
+// M_OptScroll
+//
+// Scrolls the visible portion of the menu without moving the selection.
+//
+static void M_OptScroll(int lines)
+{
+	if (lines < 0 && CanScrollUp)
+	{
+		CurrentMenu->scrollpos += lines;
+		if (CurrentMenu->scrollpos < 0)
+			CurrentMenu->scrollpos = 0;
+	}
+	else if (lines > 0 && CanScrollDown)
+	{
+		const int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+		CurrentMenu->scrollpos += lines;
+		if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
+			CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+	}
+}
+
+
+//
+// M_OptMouseClick
+//
+static void M_OptMouseClick(int mouse_x, int mouse_y)
+{
+	const int row = M_OptRowUnderMouse(mouse_y);
+	if (row == -1)
+		return;
+
+	const int index = OptMouseRows[row].item;
+	menuitem_t* item = CurrentMenu->items + index;
+
+	if (!M_OptItemSelectable(item))
+		return;
+
+	// The resolution list keeps its column in the item being left behind
+	if (CurrentMenu->items[CurrentItem].type == screenres && CurrentItem != index)
+		CurrentMenu->items[CurrentItem].a.selmode = -1;
+
+	CurrentItem = index;
+
+	if (item->type == screenres)
+		item->a.selmode = M_OptScreenResColumn(mouse_x);
+
+
+	bool cycles_value = false;
+	switch (item->type)
+	{
+	case discrete:
+	case cdiscrete:
+	case svdiscrete:
+	case bitflag:
+	case joyactive:
+		cycles_value = true;
+		break;
+	default:
+		break;
+	}
+
+	// Everything else behaves exactly as though the accept key was pressed.
+	event_t synth_ev(ev_keydown, cycles_value ? OKEY_RIGHTARROW : OKEY_ENTER, 0, 0, 0);
+	M_OptResponder(&synth_ev);
+}
+
+
+//
+// M_OptUpdateMouseItem
+//
+// Moves the selection to whatever the cursor is hovering over. Only acts when
+// the pointer actually moves so that a resting cursor doesn't fight the
+// keyboard.
+//
+void M_OptUpdateMouseItem()
+{
+	static int prev_mouse_x = -1, prev_mouse_y = -1;
+
+	if (ui_mouse.asInt() == 0 || WaitingForKey || WaitingForAxis)
+		return;
+
+	int mouse_x, mouse_y;
+	if (!I_GetUIMousePosition(mouse_x, mouse_y))
+		return;
+
+	const bool moved = (mouse_x != prev_mouse_x || mouse_y != prev_mouse_y);
+	prev_mouse_x = mouse_x;
+	prev_mouse_y = mouse_y;
+
+	if (!moved)
+		return;
+
+	const int row = M_OptRowUnderMouse(mouse_y);
+	if (row == -1)
+		return;
+
+	const int index = OptMouseRows[row].item;
+	if (index == CurrentItem || !M_OptItemSelectable(CurrentMenu->items + index))
+		return;
+
+	if (CurrentMenu->items[CurrentItem].type == screenres)
+		CurrentMenu->items[CurrentItem].a.selmode = -1;
+
+	CurrentItem = index;
+
+	if (CurrentMenu->items[CurrentItem].type == screenres)
+		CurrentMenu->items[CurrentItem].a.selmode = M_OptScreenResColumn(mouse_x);
+
+	S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+}
+
+
 void M_OptResponder (event_t *ev)
 {
 	menuitem_t *item;
@@ -2013,6 +2209,29 @@ void M_OptResponder (event_t *ev)
 				}
 			}
 		}
+		return;
+			}
+
+	if (ui_mouse.asInt() != 0 && ev->type == ev_keydown &&
+	    ch >= OKEY_MOUSE1 && ch <= OKEY_MWHEELRIGHT)
+	{
+		int mouse_x, mouse_y;
+
+		if (ch == OKEY_MOUSE2)
+		{
+			CurrentMenu->lastOn = CurrentItem;
+			M_PopMenuStack();
+			return;
+		}
+		else if (ch == OKEY_MWHEELUP)
+			M_OptScroll(-OPT_WHEEL_LINES);
+		else if (ch == OKEY_MWHEELDOWN)
+			M_OptScroll(OPT_WHEEL_LINES);
+		else if (ch == OKEY_MOUSE1 && I_GetUIMousePosition(mouse_x, mouse_y))
+			M_OptMouseClick(mouse_x, mouse_y);
+
+		if (CurrentMenu->refreshfunc)
+			(*CurrentMenu->refreshfunc)();
 		return;
 	}
 

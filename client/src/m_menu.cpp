@@ -2546,6 +2546,9 @@ void M_Ticker()
 
 	if (menuactive)
 	{
+		if (OptionsActive)
+			M_OptUpdateMouseItem();
+		else
 			M_UpdateMouseItem();
 	}
 

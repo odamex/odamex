@@ -30,6 +30,9 @@
 #define LINEHEIGHT	16
 #define SKULLXOFF	-32
 
+#define SLIDER_TRACK_X		5
+#define SLIDER_TRACK_WIDTH	78
+
 //
 // MENUS
 //
