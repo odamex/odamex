@@ -65,6 +65,12 @@ public:
 	const Texture* getGlyph(char c) const
 	{	return mCharacters[(byte)c];	}
 
+	const byte* getGlyphCoverage(char c) const
+	{	return mCharacterCoverage[(byte)c];	}
+
+	const palindex_t* getGlyphFill(char c) const
+	{	return mCharacterFill[(byte)c];	}
+
 	// Distance from the top of a line of text down to the baseline that
 	// glyphs sit on.
 	virtual int getAscent() const
@@ -88,7 +94,8 @@ protected:
 
 	// Allocates a glyph texture owned by this font, cleared to the
 	// transparent palette index.
-	Texture* createGlyph(int width, int height);
+	Texture* createGlyph(int width, int height,
+		byte** coverage_plane = nullptr, palindex_t** fill_plane = nullptr);
 
 	// Caches a source graphic and records it so that the font releases it
 	// again on unload. Returns NULL if the resource is missing or empty.
@@ -98,6 +105,8 @@ protected:
 	virtual int getGlyphAdvance(char c) const;
 
 	const Texture*			mCharacters[256];
+	const byte*				mCharacterCoverage[256];
+	const palindex_t*		mCharacterFill[256];
 
 	// Advance used for a character the font has no glyph for.
 	int						mMissingGlyphWidth;

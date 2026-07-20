@@ -737,6 +737,72 @@ void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, 
 /***********************************/
 
 //
+// DCanvas::DrawGlyphBlended
+//
+// Blits one antialiased glyph to a 32bpp surface.
+//
+// The glyph arrives as two planes: the palette index of the fill under each
+// pixel, and how much of that pixel the glyph actually covers. Each pixel is
+// translated and shaded to a true color the same way the palettized drawers
+// would, then blended with the background by its coverage -- which is what
+// turns a stairstepped edge into a smooth one. 'level' (0-255) scales the
+// whole glyph's opacity for translucent text.
+//
+// Coordinates are the glyph's top-left corner in screen pixels -- anything
+// falling outside the surface is clipped away.
+//
+void DCanvas::DrawGlyphBlended(const palindex_t* fill, const byte* coverage,
+		int width, int height, int x, int y, int level) const
+{
+	if (!fill || !coverage || level <= 0)
+		return;
+
+	const int surface_width = mSurface->getWidth();
+	const int surface_height = mSurface->getHeight();
+	const int surface_pitch = mSurface->getPitch();
+
+	// clip to the surface
+	const int x1 = MAX(x, 0);
+	const int y1 = MAX(y, 0);
+	const int x2 = MIN(x + width, surface_width);
+	const int y2 = MIN(y + height, surface_height);
+
+	if (x1 >= x2 || y1 >= y2)
+		return;
+
+	V_MarkRect(x1, y1, x2 - x1, y2 - y1);
+
+	byte* buffer = mSurface->getBuffer();
+
+	for (int col = x1; col < x2; col++)
+	{
+		// the planes are column-major, matching the glyph's texture
+		const int plane_column = (col - x) * height;
+		byte* dest = buffer + y1 * surface_pitch + col * sizeof(argb_t);
+
+		for (int row = y1; row < y2; row++)
+		{
+			const int plane_index = plane_column + (row - y);
+			const int alpha = coverage[plane_index] * level / 255;
+
+			if (alpha > 0)
+			{
+				const argb_t color = V_Palette.tlate(V_ColorMap, fill[plane_index]);
+				argb_t* pixel = reinterpret_cast<argb_t*>(dest);
+
+				if (alpha >= 255)
+					*pixel = color;
+				else
+					*pixel = alphablend2a(*pixel, 255 - alpha, color, alpha);
+			}
+
+			dest += surface_pitch;
+		}
+	}
+}
+
+
+//
 // V_DrawARGBColumn
 //
 // Draws one column of a texture's native true-color image plane to a

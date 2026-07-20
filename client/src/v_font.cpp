@@ -214,7 +214,11 @@ OFont::OFont() :
 	mMissingGlyphWidth(0), mLoaded(false), mScale(FRACUNIT), mScaleFunc(nullptr)
 {
 	for (int i = 0; i < 256; i++)
+	{
 		mCharacters[i] = nullptr;
+		mCharacterCoverage[i] = nullptr;
+		mCharacterFill[i] = nullptr;
+	}
 
 	V_FontRegistry().push_back(this);
 }
@@ -272,7 +276,11 @@ void OFont::unload()
 	mCachedResources.clear();
 
 	for (int i = 0; i < 256; i++)
+	{
 		mCharacters[i] = nullptr;
+		mCharacterCoverage[i] = nullptr;
+		mCharacterFill[i] = nullptr;
+	}
 
 	mMissingGlyphWidth = 0;
 	mLoaded = false;
@@ -340,11 +348,26 @@ const Texture* OFont::cacheSourceTexture(const char* name)
 	return texture;
 }
 
-Texture* OFont::createGlyph(int width, int height)
+Texture* OFont::createGlyph(int width, int height,
+		byte** coverage_plane, palindex_t** fill_plane)
 {
-	const uint32_t size = Texture::calculateSize(width, height);
+	const bool with_planes = (coverage_plane != nullptr && fill_plane != nullptr);
+	const uint32_t pixels = width * height;
+	const uint32_t base_size = Texture::calculateSize(width, height);
+	const uint32_t size = base_size + (with_planes ? 2 * pixels : 0);
+
 	Texture* texture = static_cast<Texture*>(Z_Malloc(size, PU_STATIC, nullptr));
 	texture->init(width, height);
+
+	if (with_planes)
+	{
+		// the planes follow the texture, inside the same allocation
+		byte* extra = reinterpret_cast<byte*>(texture) + base_size;
+		memset(extra, 0, 2 * pixels);
+
+		*coverage_plane = extra;
+		*fill_plane = reinterpret_cast<palindex_t*>(extra + pixels);
+	}
 
 	mOwnedTextures.push_back(texture);
 	return texture;
@@ -763,6 +786,7 @@ void TrueTypeFont::buildGlyphs()
 	// coverage masks, reused across glyphs to avoid churning allocations
 	std::vector<byte> body;
 	std::vector<byte> deco;
+	std::vector<byte> coverage;
 
 	// stand-in for a fill pixel that landed on the transparency slot
 	const palindex_t opaque_fill_fallback =
@@ -800,8 +824,13 @@ void TrueTypeFont::buildGlyphs()
 		const int tex_width = (width > 0) ? width + pad_left + pad_right : 0;
 		const int tex_height = (height > 0) ? height + pad_top + pad_bottom : 0;
 
-		Texture* texture = createGlyph(tex_width, tex_height);
+		byte* coverage_plane = nullptr;
+		palindex_t* fill_plane = nullptr;
+		Texture* texture = createGlyph(tex_width, tex_height, &coverage_plane, &fill_plane);
+
 		mCharacters[charnum] = texture;
+		mCharacterCoverage[charnum] = coverage_plane;
+		mCharacterFill[charnum] = fill_plane;
 
 		if (tex_width == 0 || tex_height == 0)
 			continue;
@@ -847,15 +876,23 @@ void TrueTypeFont::buildGlyphs()
 		// transparency of its own would punch holes through the glyph.
 		const byte* source = reinterpret_cast<const byte*>(face->glyph->bitmap.buffer);
 
+		if (fill_plane)
+			memcpy(fill_plane, texture->mData, tex_width * tex_height * sizeof(palindex_t));
+
 		// coverage masks, in the texture's column-major layout
 		body.assign(tex_width * tex_height, 0);
+		coverage.assign(tex_width * tex_height, 0);
 
 		for (int gx = 0; gx < width; gx++)
 		{
 			for (int gy = 0; gy < height; gy++)
 			{
-				if (*(source + pitch * gy + gx) > 127)
-					body[(gx + pad_left) * tex_height + (gy + pad_top)] = 1;
+				const byte pixel = *(source + pitch * gy + gx);
+				const int index = (gx + pad_left) * tex_height + (gy + pad_top);
+
+				coverage[index] = pixel;
+				if (pixel > 127)
+					body[index] = 1;
 			}
 		}
 
@@ -917,6 +954,26 @@ void TrueTypeFont::buildGlyphs()
 				else
 				{
 					*dest = TRANSPARENT_INDEX;
+				}
+
+				if (coverage_plane)
+				{
+					if (coverage[index] > 0)
+					{
+						coverage_plane[index] = coverage[index];
+
+						if (fill_plane[index] == TRANSPARENT_INDEX)
+							fill_plane[index] = opaque_fill_fallback;
+					}
+					else if (decorated && deco[index])
+					{
+						coverage_plane[index] = 0xFF;
+						fill_plane[index] = decoration_color;
+					}
+					else
+					{
+						coverage_plane[index] = 0;
+					}
 				}
 
 				dest++;

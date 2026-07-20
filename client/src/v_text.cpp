@@ -46,6 +46,7 @@ EXTERN_CVAR(msg3color)
 EXTERN_CVAR(msg4color)
 
 EXTERN_CVAR(hud_scaletext)
+EXTERN_CVAR(hud_transparency)
 
 
 OGlobalFont hu_font;
@@ -568,6 +569,12 @@ void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 	const int startx = x;
 	const int ascent = font->getAscent();
 
+	const bool blend = (mSurface->getBitsPerPixel() == 32);
+	int blend_level = 255;
+
+	if (drawer == EWrapper_Lucent || drawer == EWrapper_TlatedLucent)
+		blend_level = clamp(static_cast<int>(hud_transparency * 255), 0, 255);
+
 	for (const char* str = string; str[0] != '\0'; )
 	{
 		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
@@ -597,7 +604,21 @@ void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 
 			// glyph bearings are relative to the baseline, which sits
 			// getAscent() below the top of the line
-			DrawWrapper(drawer, glyph, x, y + ascent);
+			const int glyph_x = x - glyph->mOffsetX;
+			const int glyph_y = y + ascent - glyph->mOffsetY;
+
+			const byte* coverage = font->getGlyphCoverage(c);
+			const palindex_t* fill = font->getGlyphFill(c);
+
+			if (blend && coverage && fill)
+			{
+				DrawGlyphBlended(fill, coverage, glyph->mWidth, glyph->mHeight,
+				                 glyph_x, glyph_y, blend_level);
+			}
+			else
+			{
+				DrawWrapper(drawer, glyph, x, y + ascent);
+			}
 		}
 
 		x += font->getTextWidth(c);
