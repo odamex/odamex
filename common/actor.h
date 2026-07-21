@@ -236,23 +236,23 @@ enum mobjflag_t
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
-	MFO_NOSNAPZ         = BIT(0),   // [clientside only] ignore snapshot z this tic
-	MFO_HEALTHPOOL      = BIT(1),   // global health pool that tracks killed HP
-	MFO_INFIGHTINVUL    = BIT(2),   // invulnerable to infighting
-	MFO_UNFLINCHING     = BIT(3),   // monster flinching reduced to 1 in 256
-	MFO_ARMOR           = BIT(4),   // damage taken by monster is reduced
-	MFO_QUICK           = BIT(5),   // speed of monster is increased
-	MFO_NORAISE         = BIT(6),   // vile can't raise corpse
-	MFO_ISHORDEBOSS     = BIT(7),   // Is a horde boss?  Implies that damage subtracts from boss health pool
-	MFO_FULLBRIGHT      = BIT(8),   // monster is fullbright
-	MFO_SPECTATOR       = BIT(9),   // GhostlyDeath -- thing is/was a spectator and can't be seen!
-	MFO_FALLING         = BIT(10),  // [INTERNAL] for falling
-	MFO_ARMED           = BIT(11),  // [INTERNAL] for TOUCHY (object is armed)
-	MFO_LINEDONE        = BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
-	// MFO_STEALTH          = BIT(13),  // Andy Baker's stealth monsters
-	MFO_ISONCONVEYOR    = BIT(14),  // Mobj is in motion due to being carried by a sector
-
-	MFO_MOVESLIKEAMONSTER = BIT(15),    // Mobj has been updated through monster movement routines
+	MFO_NOSNAPZ             =        0x1,   // [clientside only] ignore snapshot z this tic
+	MFO_HEALTHPOOL          =        0x2,   // global health pool that tracks killed HP
+	MFO_INFIGHTINVUL        =        0x4,   // invulnerable to infighting
+	MFO_UNFLINCHING         =        0x8,   // monster flinching reduced to 1 in 256
+	MFO_ARMOR               =       0x10,   // damage taken by monster is reduced
+	MFO_QUICK               =       0x20,   // speed of monster is increased
+	MFO_NORAISE             =       0x40,   // vile can't raise corpse
+	MFO_ISHORDEBOSS         =       0x80,   // Is a horde boss?  Implies that damage subtracts from boss health pool
+	MFO_FULLBRIGHT          =      0x100,   // monster is fullbright
+	MFO_SPECTATOR           =      0x200,   // GhostlyDeath -- thing is/was a spectator and can't be seen!
+	MFO_FALLING             =      0x400,   // [INTERNAL] for falling
+	MFO_ARMED               =      0x800,   // [INTERNAL] for TOUCHY (object is armed)
+	MFO_LINEDONE            =     0x1000,   // [INTERNAL] for A_LineEffect, line special already done
+	// MFO_STEALTH          =     0x2000,   // Andy Baker's stealth monsters
+	MFO_ISONCONVEYOR        =     0x4000,   // [INTERNAL] Mobj is in motion due to being carried by a sector
+	MFO_MOVESLIKEAMONSTER   =     0x8000,   // [INTERNAL] Mobj has been updated through monster movement routines
+	MFO_ISAWAITINGSPAWN     =    0x10000,   // [INTERNAL] Mobj is a temporary mobj for a client-side player object awaiting its SpawnPlayer message
 };
 
 //
