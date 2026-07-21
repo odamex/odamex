@@ -209,8 +209,12 @@ enum
 	MSGBUTTON_NONE = -1
 };
 
+// Surface-space bounds of each confirmation button. The buttons are stacked
+// vertically, so each has its own Y range.
 static int MessageButtonX1[2], MessageButtonX2[2];
-static int MessageButtonY1 = 0, MessageButtonY2 = 0;
+static int MessageButtonY1[2], MessageButtonY2[2];
+
+static int messageSelection = MSGBUTTON_NO;
 
 static void M_DrawMessageButtons(int y);
 
@@ -1859,6 +1863,7 @@ void M_StartMessage (const char *string, void (*routine)(int), bool input)
 	messageString = string;
 	messageRoutine = routine;
 	messageNeedsInput = input;
+	messageSelection = MSGBUTTON_NO;
 	menuactive = true;
 }
 
@@ -1971,20 +1976,18 @@ static int M_GetMessageButton()
 	if (ui_mouse.asInt() == 0 || !messageToPrint || !messageNeedsInput)
 		return MSGBUTTON_NONE;
 
-	// Nothing has been drawn yet this session
-	if (MessageButtonY2 <= MessageButtonY1)
-		return MSGBUTTON_NONE;
-
 	int mouse_x, mouse_y;
 	if (!I_GetUIMousePosition(mouse_x, mouse_y))
 		return MSGBUTTON_NONE;
 
-	if (mouse_y < MessageButtonY1 || mouse_y >= MessageButtonY2)
-		return MSGBUTTON_NONE;
-
 	for (int button = 0; button < 2; button++)
 	{
-		if (mouse_x >= MessageButtonX1[button] && mouse_x < MessageButtonX2[button])
+		// A zero-height range means the button hasn't been drawn yet
+		if (MessageButtonY2[button] <= MessageButtonY1[button])
+			continue;
+
+		if (mouse_x >= MessageButtonX1[button] && mouse_x < MessageButtonX2[button] &&
+		    mouse_y >= MessageButtonY1[button] && mouse_y < MessageButtonY2[button])
 			return button;
 	}
 
@@ -2001,27 +2004,62 @@ static int M_GetMessageButton()
 static void M_DrawMessageButtons(int y)
 {
 	static const char* labels[2] = { "YES", "NO" };
-	static const int SPACING = 24;
+	// Draw order
+	static const int order[2] = {MSGBUTTON_YES, MSGBUTTON_NO};
 
-	const int widths[2] = { V_StringWidth(labels[0]), V_StringWidth(labels[1]) };
-	const int total = widths[0] + SPACING + widths[1];
 	const int height = W_ResolvePatchHandle(hu_font[0])->height();
+	const patch_t* cursor = W_CachePatch("LITLCURS");
+	const int cursor_gap = 4;
+	const int line_step = height + 2;
 
-	const int hovered = M_GetMessageButton();
-
-	int x = 160 - total / 2;
-	for (int button = 0; button < 2; button++)
+	for (int row = 0; row < 2; row++)
 	{
-		screen->DrawTextCleanMove(button == hovered ? CR_GREY : CR_RED, x, y, labels[button]);
+		const int button = order[row];
+		const int w = V_StringWidth(labels[button]);
+		const int bx = 160 - w / 2;			// each label centered
+		const int by = y + row * line_step;
 
-		MessageButtonX1[button] = screen->getCleanX(x);
-		MessageButtonX2[button] = screen->getCleanX(x + widths[button]);
+		screen->DrawTextCleanMove(CR_RED, bx, by, labels[button]);
 
-		x += widths[button] + SPACING;
+		MessageButtonX1[button] = screen->getCleanX(bx);
+		MessageButtonX2[button] = screen->getCleanX(bx + w);
+		MessageButtonY1[button] = screen->getCleanY(by);
+		MessageButtonY2[button] = screen->getCleanY(by + height);
+
+		if (button == messageSelection && skullAnimCounter < 6)
+			screen->DrawPatchClean(cursor, bx + w + cursor_gap, by);
 	}
+}
 
-	MessageButtonY1 = screen->getCleanY(y);
-	MessageButtonY2 = screen->getCleanY(y + height);
+
+//
+// M_UpdateMessageSelection
+//
+// Moves the confirmation selection to whatever button the mouse hovers over.
+// Leaves it untouched when the pointer is off the buttons so keyboard choices
+// aren't fought by a resting cursor.
+//
+static void M_UpdateMessageSelection()
+{
+	static int prev_mouse_x = -1, prev_mouse_y = -1;
+
+	int mouse_x, mouse_y;
+	if (!I_GetUIMousePosition(mouse_x, mouse_y))
+		return;
+
+	const bool moved = (mouse_x != prev_mouse_x || mouse_y != prev_mouse_y);
+	prev_mouse_x = mouse_x;
+	prev_mouse_y = mouse_y;
+
+	if (!moved)
+		return;
+
+	const int button = M_GetMessageButton();
+	if (button != MSGBUTTON_NONE && button != messageSelection)
+	{
+		messageSelection = button;
+		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+	}
 }
 
 
@@ -2237,6 +2275,16 @@ bool M_Responder (event_t* ev)
 	{
 		int answer = 0;
 
+		const bool buttons_shown = ui_mouse.asInt() != 0 && messageNeedsInput;
+
+		if (buttons_shown && (Key_IsUpKey(ch, numlock) || Key_IsDownKey(ch, numlock) ||
+		                      Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock)))
+		{
+			messageSelection = (messageSelection == MSGBUTTON_YES) ? MSGBUTTON_NO : MSGBUTTON_YES;
+			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			return true;
+		}
+
 		if (ui_mouse.asInt() != 0 && (ch == OKEY_MOUSE1 || ch == OKEY_MOUSE2))
 		{
 			if (!messageNeedsInput)
@@ -2256,6 +2304,10 @@ bool M_Responder (event_t* ev)
 
 				answer = (button == MSGBUTTON_YES) ? 'y' : 'n';
 			}
+		}
+		else if (buttons_shown && Key_IsAcceptKey(ch))
+		{
+			answer = (messageSelection == MSGBUTTON_YES) ? 'y' : 'n';
 		}
 		else if (messageNeedsInput &&
 		    (!(ch2 == ' ' || Key_IsMenuKey(ch) || Key_IsYesKey(ch) || Key_IsNoKey(ch) ||
@@ -2492,7 +2544,7 @@ void M_Drawer()
 
 		V_FreeBrokenLines (lines);
 
-		if (messageNeedsInput)
+		if (messageNeedsInput && ui_mouse.asInt() != 0)
 			M_DrawMessageButtons(y + ch->height());
 	}
 	else if (menuactive)
@@ -2616,7 +2668,9 @@ void M_Ticker()
 		skullAnimCounter = 8;
 	}
 
-	if (menuactive)
+	if (messageToPrint && messageNeedsInput && ui_mouse.asInt() != 0)
+		M_UpdateMessageSelection();
+	else if (menuactive)
 	{
 		if (OptionsActive)
 			M_OptUpdateMouseItem();
