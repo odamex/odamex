@@ -1315,7 +1315,7 @@ bool SV_SetupUserInfo(player_t &player, const odaproto::clc::UserInfo& msg)
 		    !player.spectator && !G_IsLevelState(LevelState::WARMUP))
 		{
 			// kill player if team is changed
-			P_DamageMobj(player.mo, 0, 0, 1000, 0);
+			P_DamageMobj(player.mo, nullptr, nullptr, 1000, 0);
 			M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
 			              M_GetPlayerId(player, old_team), 0, 0);
 			M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,

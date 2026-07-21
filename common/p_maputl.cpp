@@ -932,7 +932,7 @@ bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 {
 	size_t 				count = intercepts.size();
 	fixed_t 			dist;
-	intercept_t*		in = 0;
+	intercept_t*		in = nullptr;
 
 	while (count--)
 	{

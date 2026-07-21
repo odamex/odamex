@@ -114,7 +114,7 @@ size_t DArgs::CheckParm (const char *check) const
 const char *DArgs::CheckValue (const char *check) const
 {
 	if(!check)
-		return 0;
+		return nullptr;
 
 	size_t i = CheckParm (check);
 

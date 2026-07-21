@@ -404,24 +404,24 @@ static byte CheatPowerup[7][10] = {{'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 'v',
                                    {'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 255}};
 
 cheatseq_t DoomCheats[] = {
-//   Sequence           Pos DontCheck   Netdemo CurrentArg  Args                Handler
-    {CheatMus,          0,  true,       true,   0,          {0,            0},  cheat::ChangeMusic},
-    {CheatPowerup[6],   0,  true,       false,  0,          {0,            0},  cheat::BeholdMenu},
-    {CheatMypos,        0,  true,       true,   0,          {0,            0},  cheat::IdMyPos},
-    {CheatAmap,         0,  false,      true,   0,          {0,            0},  cheat::AutoMap},
-    {CheatGod,          0,  false,      false,  0,          {CHT_IDDQD,    0},  cheat::SetGeneric},
-    {CheatAmmo,         0,  false,      false,  0,          {CHT_IDKFA,    0},  cheat::SetGeneric},
-    {CheatAmmoNoKey,    0,  false,      false,  0,          {CHT_IDFA,     0},  cheat::SetGeneric},
-    {CheatNoclip,       0,  false,      false,  0,          {CHT_NOCLIP,   0},  cheat::SetGeneric}, // Special check given !
-    {CheatNoclip2,      0,  false,      false,  0,          {CHT_NOCLIP,   1},  cheat::SetGeneric}, // Special Check given !
-    {CheatPowerup[0],   0,  false,      false,  0,          {CHT_BEHOLDV,  0},  cheat::SetGeneric},
-    {CheatPowerup[1],   0,  false,      false,  0,          {CHT_BEHOLDS,  0},  cheat::SetGeneric},
-    {CheatPowerup[2],   0,  false,      false,  0,          {CHT_BEHOLDI,  0},  cheat::SetGeneric},
-    {CheatPowerup[3],   0,  false,      false,  0,          {CHT_BEHOLDR,  0},  cheat::SetGeneric},
-    {CheatPowerup[4],   0,  false,      false,  0,          {CHT_BEHOLDA,  0},  cheat::SetGeneric},
-    {CheatPowerup[5],   0,  false,      false,  0,          {CHT_BEHOLDL,  0},  cheat::SetGeneric},
-    {CheatChoppers,     0,  false,      false,  0,          {CHT_CHAINSAW, 0},  cheat::SetGeneric},
-    {CheatClev,         0,  false,      false,  0,          {0,            0},  cheat::ChangeLevel}};
+//   Sequence           Pos       DontCheck   Netdemo CurrentArg  Args                Handler
+    {CheatMus,          nullptr,  true,       true,   0,          {0,            0},  cheat::ChangeMusic},
+    {CheatPowerup[6],   nullptr,  true,       false,  0,          {0,            0},  cheat::BeholdMenu},
+    {CheatMypos,        nullptr,  true,       true,   0,          {0,            0},  cheat::IdMyPos},
+    {CheatAmap,         nullptr,  false,      true,   0,          {0,            0},  cheat::AutoMap},
+    {CheatGod,          nullptr,  false,      false,  0,          {CHT_IDDQD,    0},  cheat::SetGeneric},
+    {CheatAmmo,         nullptr,  false,      false,  0,          {CHT_IDKFA,    0},  cheat::SetGeneric},
+    {CheatAmmoNoKey,    nullptr,  false,      false,  0,          {CHT_IDFA,     0},  cheat::SetGeneric},
+    {CheatNoclip,       nullptr,  false,      false,  0,          {CHT_NOCLIP,   0},  cheat::SetGeneric}, // Special check given !
+    {CheatNoclip2,      nullptr,  false,      false,  0,          {CHT_NOCLIP,   1},  cheat::SetGeneric}, // Special Check given !
+    {CheatPowerup[0],   nullptr,  false,      false,  0,          {CHT_BEHOLDV,  0},  cheat::SetGeneric},
+    {CheatPowerup[1],   nullptr,  false,      false,  0,          {CHT_BEHOLDS,  0},  cheat::SetGeneric},
+    {CheatPowerup[2],   nullptr,  false,      false,  0,          {CHT_BEHOLDI,  0},  cheat::SetGeneric},
+    {CheatPowerup[3],   nullptr,  false,      false,  0,          {CHT_BEHOLDR,  0},  cheat::SetGeneric},
+    {CheatPowerup[4],   nullptr,  false,      false,  0,          {CHT_BEHOLDA,  0},  cheat::SetGeneric},
+    {CheatPowerup[5],   nullptr,  false,      false,  0,          {CHT_BEHOLDL,  0},  cheat::SetGeneric},
+    {CheatChoppers,     nullptr,  false,      false,  0,          {CHT_CHAINSAW, 0},  cheat::SetGeneric},
+    {CheatClev,         nullptr,  false,      false,  0,          {0,            0},  cheat::ChangeLevel}};
 
 //
 // STATUS BAR CODE

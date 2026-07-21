@@ -1408,8 +1408,8 @@ inline auto format_as(statenum_t eStateNum)
 	return fmt::underlying(eStateNum);
 }
 
-#define MAXSTATEARGS 8
-typedef long statearg_t;
+inline constexpr auto MAXSTATEARGS = 8;
+using statearg_t = int32_t;
 
 #define STATEF_NONE 0
 #define STATEF_SKILL5FAST BIT(0) // tics halve on nightmare skill
@@ -1451,11 +1451,11 @@ inline FArchive &operator>> (FArchive &arc, state_t *&state)
 {
 	int32_t ofs;
 	arc >> ofs;
-	DoomObjectContainer<state_t, int32_t>::iterator it = states.find(ofs);
+	auto it = states.find(ofs);
 	if (it != states.end())
 		state = &it->second;
 	else
-		state = NULL;
+		state = nullptr;
 	return arc;
 }
 
@@ -1784,7 +1784,7 @@ struct mobjinfo_t
 	int flags               = 0;
 	int flags2              = 0;
 	statenum_t raisestate   = S_NULL;
-	int translucency        = 0x10000;
+	int translucency        = FRACUNIT;
 	const char *name        = nullptr;
 
 	// MBF21 STUFF HERE

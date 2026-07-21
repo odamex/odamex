@@ -216,7 +216,7 @@ bool P_SightTraverseIntercepts ( void )
 {
 	size_t  count = intercepts.size();
 	fixed_t dist;
-	intercept_t *in = 0;
+	intercept_t *in = nullptr;
 	divline_t dl;
 //
 // calculate intercept distance
