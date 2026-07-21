@@ -2370,7 +2370,8 @@ void C_DrawMid()
 		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 
-		const int line_height = C_MessageFont()->getHeight();
+		const OFont* font = C_MessageFont();
+		const int line_height = font->getHeight();
 
 		const int bottom = R_StatusBarVisible()
 			                   ? ST_StatusBarY(surface_width, surface_height) : surface_height;
@@ -2378,10 +2379,12 @@ void C_DrawMid()
 		const int x = surface_width / 2;
 		int y = (bottom - line_height * MidLines) / 2;
 
+		// Center by the line's real pixel width -- brokenlines_t::width is
+		// reported in virtual units, which would under-shift at CleanXfac > 1.
 		for (int i = 0; i < MidLines; i++, y += line_height)
 		{
-			screen->DrawFontText(C_MessageFont(), PrintColors[PRINTLEVELS-1],
-			                     x - (MidMsg[i].width / 2),
+			screen->DrawFontText(font, PrintColors[PRINTLEVELS-1],
+			                     x - (font->getTextWidth(MidMsg[i].string) / 2),
 			                     y, MidMsg[i].string);
 		}
 
@@ -2450,7 +2453,8 @@ void C_DrawGMid()
 		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 
-		const int line_height = C_MessageFont()->getHeight();
+		const OFont* font = C_MessageFont();
+		const int line_height = font->getHeight();
 
 		const int bottom = R_StatusBarVisible()
 			                   ? ST_StatusBarY(surface_width, surface_height) : surface_height;
@@ -2460,8 +2464,8 @@ void C_DrawGMid()
 
 		for (int i = 0; i < GameLines; i++, y += line_height)
 		{
-			screen->DrawFontText(C_MessageFont(), GameColor,
-			                     x - (GameMsg[i].width / 2),
+			screen->DrawFontText(font, GameColor,
+			                     x - (font->getTextWidth(GameMsg[i].string) / 2),
 			                     y, GameMsg[i].string);
 		}
 
