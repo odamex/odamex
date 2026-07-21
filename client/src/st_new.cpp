@@ -377,8 +377,12 @@ void ST_voteDraw (int y) {
 		return;
 	}
 
+	if (!V_FontsReady())
+		return;
+
 	int xscale = hud_scale ? CleanXfac : 1;
 	int yscale = hud_scale ? CleanYfac : 1;
+	OFont* font = V_GetHudFontSized(8 * yscale);
 
 	// Vote Result/Countdown
 	std::ostringstream buffer;
@@ -416,28 +420,21 @@ void ST_voteDraw (int y) {
 	}
 
 	int x1, x2;
-	x1 = (I_GetSurfaceWidth() - V_StringWidth(result_string.c_str()) * xscale) >> 1;
-	if (hud_scale) {
-		screen->DrawTextClean(result_color, x1, y, result_string.c_str());
-	} else {
-		screen->DrawText(result_color, x1, y, result_string.c_str());
-	}
+	x1 = (I_GetSurfaceWidth() - font->getTextWidth(result_string.c_str())) >> 1;
+	screen->DrawFontText(font, result_color, x1, y, result_string.c_str());
 
 	// Votestring - Break lines
-	brokenlines_t *votestring = V_BreakLines(320, vote_state.votestring.c_str());
+	brokenlines_t *votestring = V_BreakLinesFontPixels(
+	    font, 320 * xscale, reinterpret_cast<const byte*>(vote_state.votestring.c_str()));
 	for (byte i = 0;i < 4;i++) {
 		if (votestring[i].width == -1) {
 			break;
 		}
 
-		x2 = (I_GetSurfaceWidth() - votestring[i].width * xscale) >> 1;
+		x2 = (I_GetSurfaceWidth() - font->getTextWidth(votestring[i].string)) >> 1;
 		y += yscale * 8;
 
-		if (hud_scale) {
-			screen->DrawTextClean(CR_GREY, x2, y, votestring[i].string);
-		} else {
-			screen->DrawText(CR_GREY, x2, y, votestring[i].string);
-		}
+		screen->DrawFontText(font, CR_GREY, x2, y, votestring[i].string);
 	}
 	V_FreeBrokenLines(votestring);
 
@@ -471,14 +468,11 @@ void ST_voteDraw (int y) {
 		    TEXTCOLOR_NORMAL, TEXTCOLOR_GREEN, TEXTCOLOR_NORMAL, TEXTCOLOR_GOLD, noStr,
 		    TEXTCOLOR_NORMAL, TEXTCOLOR_RED, TEXTCOLOR_NORMAL);
 
-		int hint_w = V_StringWidth(hint.c_str()) * xscale;
+		int hint_w = font->getTextWidth(hint.c_str());
 		int hx = (I_GetSurfaceWidth() - hint_w) >> 1;
 
 		y += yscale * 8; // place one line below the votestring lines
-		if (hud_scale)
-			screen->DrawTextClean(CR_GRAY, hx, y, hint.c_str());
-		else
-			screen->DrawText(CR_GRAY, hx, y, hint.c_str());
+		screen->DrawFontText(font, CR_GRAY, hx, y, hint.c_str());
 	}
 }
 
@@ -731,6 +725,22 @@ static int ProtoRowColor(int cmd)
 	return rowColor;
 }
 
+static int ProtoRowHeight(const char* str, float scale)
+{
+	int lines = 1;
+	for (const char* p = str; *p != '\0'; ++p)
+	{
+		if (*p == TEXTCOLOR_ESCAPE && *(p + 1) != '\0')
+		{
+			++p;
+			continue;
+		}
+		if (*p == '\n')
+			++lines;
+	}
+	return lines * hud::GetLineHeight(scale, FACE_DIGITS);
+}
+
 /**
  * @brief Draw protocol buffer packets
  */
@@ -739,8 +749,6 @@ void drawProtos()
 	const Protos& protos = CL_GetTicProtos();
 	if (protos.size() == 0)
 		return;
-
-	V_SetFont("DIGFONT");
 
 	proto_selected = clamp<size_t>(proto_selected, 0, protos.size() - 1);
 
@@ -767,14 +775,14 @@ void drawProtos()
 		// Draw name
 		hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
 		              it->name.c_str(), rowColor, true, FACE_DIGITS);
-		y += V_StringHeight(it->name.c_str());
+		y += ProtoRowHeight(it->name.c_str(), scale);
 
 		if (selected)
 		{
 			// Draw data
 			hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
 			              hud::Y_TOP, it->data.c_str(), CR_WHITE, true, FACE_DIGITS);
-			y += V_StringHeight(it->data.c_str());
+			y += ProtoRowHeight(it->data.c_str(), scale);
 		}
 	}
 
@@ -791,7 +799,7 @@ void drawProtos()
 	        ProtoRowColor(clc_playerinput),
 	        true, FACE_DIGITS);
 
-	y += V_StringHeight(::msg_info[clc_playerinput].getName());
+	y += ProtoRowHeight(::msg_info[clc_playerinput].getName(), scale);
 	hud::DrawText(
 	        130, y,
 	        scale,
@@ -802,8 +810,6 @@ void drawProtos()
 	        ::localcmds[::last_received % MAXSAVETICS].DebugString().c_str(),
 	        ProtoRowColor(clc_playerinput),
 	        true, FACE_DIGITS);
-
-	V_SetFont("SMALLFONT");
 }
 
 // [AM] Draw netdemo state

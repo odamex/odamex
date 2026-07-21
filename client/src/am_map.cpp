@@ -2127,7 +2127,7 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2) && ::hu_font[0])
+	if (!(viewactive && am_overlay < 2) && V_FontsReady())
 	{
 		std::string line;
 		const int time = level.time / TICRATE;

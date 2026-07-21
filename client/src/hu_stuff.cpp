@@ -53,8 +53,6 @@
 #include "v_video.h"
 
 #define QUEUESIZE		128
-#define HU_INPUTX		0
-#define HU_INPUTY		(0 + (hu_font[0]->mHeight +1))
 
 #define CTFBOARDWIDTH	236
 #define CTFBOARDHEIGHT	40
@@ -125,7 +123,6 @@ void HU_DMScores2 (player_t *player);
 void HU_TeamScores1 (player_t *player);
 void HU_TeamScores2 (player_t *player);
 
-extern inline int V_StringWidth(const char *str);
 size_t P_NumPlayersInGame();
 static void ShoveChatStr(const std::string& str, byte who);
 

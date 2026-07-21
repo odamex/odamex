@@ -170,7 +170,6 @@ void M_DrawSaveLoadBorder(int x,int y, int len);
 void M_SetupNextMenu(oldmenu_t *menudef);
 void M_DrawEmptyCell(oldmenu_t *menu,int item);
 void M_DrawSelCell(oldmenu_t *menu,int item);
-int  M_StringHeight(char *string);
 void M_StartControlPanel();
 void M_StartMessage(const char *string,void (*routine)(int),bool input);
 void M_StopMessage();
@@ -668,7 +667,7 @@ void M_DrawLoad ()
 	for (int i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
-		screen->DrawTextCleanMove(CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
 	}
 }
 
@@ -713,13 +712,13 @@ void M_DrawSave()
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
-		screen->DrawTextCleanMove(CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
 	}
 
 	if (genStringEnter != oldmenustring_t::NONE)
 	{
-		i = V_StringWidth(savegamestrings[saveSlot]);
-		screen->DrawTextCleanMove(CR_RED, LoadDef.x + i, LoadDef.y+LINEHEIGHT*saveSlot, "_");
+		i = V_FontStringWidthClean(::menu_font, savegamestrings[saveSlot]);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x + i, LoadDef.y+LINEHEIGHT*saveSlot, "_");
 	}
 }
 
@@ -944,8 +943,8 @@ void M_DrawNewGame()
 	const char* pslabel = "Pistol Start Each Level ";
 	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
 
-	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
-	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
+	screen->DrawFontTextCleanMove(::menu_font, CR_RED, NewDef.x, psy, pslabel);
+	screen->DrawFontTextCleanMove(::menu_font, CR_GREY, NewDef.x + V_FontStringWidthClean(::menu_font, pslabel), psy,
 	                          g_resetinvonexit ? "ON" : "OFF");
 }
 
@@ -1862,27 +1861,6 @@ void M_StopMessage()
 
 
 //
-//		Find string height from hu_font chars
-//
-int M_StringHeight(char* string)
-{
-	// Default height without a working font is 8.
-	if (!::hu_font[0])
-		return 8;
-
-	int height = hu_font[0]->mHeight;
-
-	int h = height;
-	while (*string)
-		if ((*string++) == '\n')
-			h += height;
-
-	return h;
-}
-
-
-
-//
 // CONTROL PANEL
 //
 
@@ -1983,7 +1961,7 @@ bool M_Responder(const event_t& ev)
 			ch = ev.data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
-				V_StringWidth(savegamestrings[saveSlot]) <
+				V_FontStringWidthClean(::menu_font, savegamestrings[saveSlot]) <
 				(genStringLen - 1) * 8)
 			{
 				savegamestrings[saveSlot][saveCharIndex++] = ch;
@@ -2175,7 +2153,7 @@ void M_StartControlPanel()
 //
 void M_Drawer()
 {
-	if (!hu_font[0])
+	if (!V_FontsReady())
 		return;
 
 	if (messageToPrint && ::menu_font)

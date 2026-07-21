@@ -34,6 +34,7 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
+#include "v_font.h"
 #include "s_sound.h"
 #include "gstrings.h"
 #include "r_state.h"
@@ -309,7 +310,7 @@ void F_Ticker()
 
 void F_TextWrite ()
 {
-	if (!::hu_font[0])
+	if (!V_FontsReady() || !::menu_font)
 		return;
 
 	// erase the entire screen to a tiled background
@@ -368,40 +369,24 @@ void F_TextWrite ()
 	V_MarkRect(x, y, width, height);
 
 	// draw some of the text onto the screen
-	int cx = gameinfo.textScreenX, cy = gameinfo.textScreenY;
+	const int cx = gameinfo.textScreenX, cy = gameinfo.textScreenY;
 	const char* ch = finaletext.c_str();
 
 	if (finalecount < gameinfo.textScreenY + 1)
 		return;
 
 	int count = (finalecount - 10) / TEXTSPEED;
+
+	std::string visible;
 	for ( ; count; count-- )
 	{
-		int c = *ch++;
+		const int c = *ch++;
 		if (!c)
 			break;
-		if (c == '\n')
-		{
-			cx = gameinfo.textScreenX;
-			cy += 11; // (gamemission == heretic) ? 10 : 11;
-			continue;
-		}
-
-		c = toupper(c) - HU_FONTSTART;
-		if (c < 0 || c > HU_FONTSIZE)
-		{
-			cx += 4;
-			continue;
-		}
-
-		const Texture* chr = hu_font[c];
-
-		const int w = chr->width();
-		if (cx + w > width)
-			break;
-		screen->DrawPatchClean(chr, cx, cy);
-		cx += w;
+		visible += static_cast<char>(c);
 	}
+
+	screen->DrawFontTextCleanMove(::menu_font, CR_RED, cx, cy, visible.c_str());
 }
 
 //
@@ -666,10 +651,13 @@ void F_CastDrawer()
 
 	cast_surface->unlock();
 
-	screen->DrawTextClean(CR_RED,
-		x + (width - CleanXfac * V_StringWidth(castorder[castnum].name)) / 2,
-		y + (height * 180 / 200),
-		castorder[castnum].name);
+	if (V_FontsReady() && ::menu_font)
+	{
+		screen->DrawFontText(::menu_font, CR_RED,
+			x + (width - ::menu_font->getTextWidth(castorder[castnum].name)) / 2,
+			y + (height * 180 / 200),
+			castorder[castnum].name);
+	}
 }
 
 

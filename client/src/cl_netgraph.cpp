@@ -294,7 +294,8 @@ void NetGraph::drawTrafficIn(int x, int y)
 	std::ostringstream buf;
 	buf.precision(2);
 	buf << "Traffic In: " << std::fixed << totalTraffic / 1024.0 << " KB/sec";
-	screen->DrawText(textcolor, x, y, buf.str().c_str());
+	if (V_FontsReady())
+		screen->DrawFontText(V_GetHudFontSized(8), textcolor, x, y, buf.str().c_str());
 }
 
 void NetGraph::drawTrafficOut(int x, int y)
@@ -306,7 +307,8 @@ void NetGraph::drawTrafficOut(int x, int y)
 	std::ostringstream buf;
 	buf.precision(2);
 	buf << "Traffic Out: " << std::fixed << totalTraffic / 1024.0 << " KB/s";
-	screen->DrawText(textcolor, x, y, buf.str().c_str());
+	if (V_FontsReady())
+		screen->DrawFontText(V_GetHudFontSized(8), textcolor, x, y, buf.str().c_str());
 }
 
 void NetGraph::drawPackets(int x, int y)
@@ -330,7 +332,8 @@ void NetGraph::drawPackets(int x, int y)
 
 	std::ostringstream buf;
 	buf << "Packets In: " << std::setw(5) << maxPackets;
-	screen->DrawText(textcolor, x, y, buf.str().c_str());
+	if (V_FontsReady())
+		screen->DrawFontText(V_GetHudFontSized(8), textcolor, x, y, buf.str().c_str());
 }
 
 std::string NetGraph::BlankIfNegative(int value)
@@ -361,18 +364,23 @@ void NetGraph::draw()
 	static constexpr int textcolor = CR_GREY;
 	static constexpr int fontheight = 8;
 
-	screen->DrawText(textcolor, mX, mY, "World Index Sync");
+	if (!V_FontsReady())
+		return;
+
+	OFont* font = V_GetHudFontSized(8);
+
+	screen->DrawFontText(font, textcolor, mX, mY, "World Index Sync");
 	drawWorldIndexSync(mX, mY + fontheight);
 
-	screen->DrawText(textcolor, mX, mY + 64, "Mispredictions");
+	screen->DrawFontText(font, textcolor, mX, mY + 64, "Mispredictions");
 	drawMispredictions(mX, mY + 64 + fontheight);
 
 	const int nowIndex = (gametic - 1) % MAX_HISTORY_TICS;
 
-	screen->DrawText(textcolor, mX + 128, mY, ("Reliable Send PIF: " + std::to_string(mReliableSendDepth[nowIndex])).c_str());
+	screen->DrawFontText(font, textcolor, mX + 128, mY, ("Reliable Send PIF: " + std::to_string(mReliableSendDepth[nowIndex])).c_str());
 	drawReliableSendDepth(mX + 128, mY + fontheight);
 
-	screen->DrawText(textcolor, mX + 290, mY, ("Server Reliable PIF: " + BlankIfNegative(mServerQueueDepth[nowIndex])).c_str());
+	screen->DrawFontText(font, textcolor, mX + 290, mY, ("Server Reliable PIF: " + BlankIfNegative(mServerQueueDepth[nowIndex])).c_str());
 	drawServerQueueDepth(mX + 290, mY + fontheight);
 
 	drawTrafficIn       (mX, mY + 128 + fontheight);
@@ -380,7 +388,7 @@ void NetGraph::draw()
 	drawPackets         (mX, mY + 128 + fontheight * 6);
 	drawServerThrottle  (mX, mY + 128 + fontheight * 20);
 
-	screen->DrawText(textcolor, mX, mY + 128 + fontheight * 19, ("Server Throttle: " + BlankIfNegative(mThrottle[nowIndex])).c_str());
+	screen->DrawFontText(font, textcolor, mX, mY + 128 + fontheight * 19, ("Server Throttle: " + BlankIfNegative(mThrottle[nowIndex])).c_str());
 
 }
 
