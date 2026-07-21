@@ -1146,7 +1146,7 @@ void R_RenderPlayerView(player_t* player)
 		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
 
 	R_DrawPlanes();
-	R_DrawSkyBoxes();
+	R_DrawPortals();
 	R_DrawMasked();
 
 	// NOTE(jsd): Full-screen status color blending:

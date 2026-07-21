@@ -465,6 +465,19 @@ private:
 	DPolyDoor ();
 };
 
+// Deferred sky picker resolution, so pickers work regardless
+// of their order relative to SkyViewpoints in the THINGS lump,
+// or if sent by a server.
+void P_ClearSkyPickers();
+void P_AddSkyPicker(int secnum, int viewpointTid, int planeflags);
+void P_ResolveSkyPickers();
+
+// Deferred stacked-sector portal pairing, same
+// order as the sky pickers above.
+void P_ClearStackLinks();
+void P_AddStackLink(AActor* mo);
+void P_ResolveStackLinks();
+
 // [RH] Data structure for P_SpawnMapThing() to keep track
 //		of polyobject-related things.
 typedef struct polyspawns_s
