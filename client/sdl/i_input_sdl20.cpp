@@ -541,7 +541,8 @@ void ISDL20MouseInputDevice::gatherEvents()
 				ev.type = ev_keydown;
 				int direction = 1;
 				#if SDL_VERSION_ATLEAST(2, 0, 4)
-				if (sdl_ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+				// Only allow flipped mousewheel directions when in UI mode.
+				if (!mUIMode && sdl_ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
 					direction = -1;
 				#endif
 
