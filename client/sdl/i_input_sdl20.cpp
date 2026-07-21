@@ -360,7 +360,7 @@ void ISDL20KeyboardInputDevice::getEvent(event_t* ev)
 // ISDL20MouseInputDevice::ISDL20MouseInputDevice
 //
 ISDL20MouseInputDevice::ISDL20MouseInputDevice(int id) :
-	mActive(false)
+	mActive(false), mUIMode(false)
 {
 	reset();
 }
@@ -414,10 +414,45 @@ void ISDL20MouseInputDevice::reset()
 void ISDL20MouseInputDevice::pause()
 {
 	mActive = false;
+	mUIMode = false;
 	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
 	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
 	SDL_SetRelativeMouseMode(SDL_FALSE);
+}
+
+
+//
+// ISDL20MouseInputDevice::enableEvents
+//
+// Enables delivery of SDL mouse events, optionally capturing the pointer for
+// relative motion.
+//
+void ISDL20MouseInputDevice::enableEvents(bool relative)
+{
+	if (relative)
+	{
+		// [RV] Always use relative mouse mode and
+		// force unscaled relative motion across supported SDL versions
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+
+		#if SDL_VERSION_ATLEAST(2, 0, 14)
+			SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SCALING, "0", SDL_HINT_OVERRIDE);
+		#endif
+
+		#if SDL_VERSION_ATLEAST(2, 26, 0)
+			SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SYSTEM_SCALE, "0", SDL_HINT_OVERRIDE);
+		#endif
+	}
+	else
+	{
+		// Let the cursor move freely so the OS cursor tracks the UI.
+		SDL_SetRelativeMouseMode(SDL_FALSE);
+	}
+
+	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
+	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
+	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
 }
 
 
@@ -432,23 +467,26 @@ void ISDL20MouseInputDevice::pause()
 void ISDL20MouseInputDevice::resume()
 {
 	mActive = true;
+	mUIMode = false;
 	reset();
 
-	// [RV] Always use relative mouse mode and
-	// force unscaled relative motion across supported SDL versions
-	SDL_SetRelativeMouseMode(SDL_TRUE);
+	enableEvents(true);
+}
 
-	#if SDL_VERSION_ATLEAST(2, 0, 14)
-		SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SCALING, "0", SDL_HINT_OVERRIDE);
-	#endif
 
-	#if SDL_VERSION_ATLEAST(2, 26, 0)
-		SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SYSTEM_SCALE, "0", SDL_HINT_OVERRIDE);
-	#endif
+//
+// ISDL20MouseInputDevice::resumeUI
+//
+// Enables input for driving menus and the console. The pointer is left
+// uncaptured so the OS cursor remains visible and positioned by the user.
+//
+void ISDL20MouseInputDevice::resumeUI()
+{
+	mActive = true;
+	mUIMode = true;
+	reset();
 
-	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
-	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
-	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
+	enableEvents(false);
 }
 
 //
@@ -485,7 +523,7 @@ void ISDL20MouseInputDevice::gatherEvents()
 		}
 	}
 
-	if (movement_event.data2 || movement_event.data3)
+	if (!mUIMode && (movement_event.data2 || movement_event.data3))
 		mEvents.push(movement_event);
 
 	// Retrieve mouse button and wheel events from SDL and post
@@ -503,7 +541,8 @@ void ISDL20MouseInputDevice::gatherEvents()
 				ev.type = ev_keydown;
 				int direction = 1;
 				#if SDL_VERSION_ATLEAST(2, 0, 4)
-				if (sdl_ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+				// Only allow flipped mousewheel directions when in UI mode.
+				if (!mUIMode && sdl_ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
 					direction = -1;
 				#endif
 
@@ -1052,6 +1091,18 @@ void ISDL20InputSubsystem::releaseInput()
 	IInputDevice* device = getMouseInputDevice();
 	if (device)
 		device->pause();
+}
+
+
+//
+// ISDL20InputSubsystem::grabInputForUI
+//
+void ISDL20InputSubsystem::grabInputForUI()
+{
+	mInputGrabbed = false;
+	IInputDevice* device = getMouseInputDevice();
+	if (device)
+		device->resumeUI();
 }
 
 #endif	// SDL20
