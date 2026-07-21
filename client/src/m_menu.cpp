@@ -2067,6 +2067,51 @@ static void M_SetPlayerColorFromMouse(int item, int mouse_x);
 
 
 //
+// M_MouseOverEditField
+//
+// Returns true if the cursor is over the text field currently being edited, so
+// that clicking it can commit the entry the same way pressing Enter does.
+//
+static bool M_MouseOverEditField()
+{
+	if (ui_mouse.asInt() == 0)
+		return false;
+
+	// Origin and length of the box drawn by M_DrawSaveLoadBorder for the
+	// field currently being edited.
+	int box_x, box_y, len;
+
+	if (genStringEnter == oldmenustring_t::SAVEGAME)
+	{
+		box_x = LoadDef.x;
+		box_y = LoadDef.y + LINEHEIGHT * saveSlot;
+		len = 24;
+	}
+	else if (genStringEnter == oldmenustring_t::PLAYERNAME)
+	{
+		box_x = PSetupDef.x + 56;
+		box_y = PSetupDef.y;
+		len = MAXPLAYERNAME + 1;
+	}
+	else
+	{
+		return false;
+	}
+
+	int mouse_x, mouse_y;
+	if (!I_GetUIMousePosition(mouse_x, mouse_y))
+		return false;
+
+	const int x1 = screen->getCleanX(box_x - 8);
+	const int x2 = screen->getCleanX(box_x + len * 8 + 8);
+	const int y1 = screen->getCleanY(box_y);
+	const int y2 = screen->getCleanY(box_y + LINEHEIGHT);
+
+	return mouse_x >= x1 && mouse_x < x2 && mouse_y >= y1 && mouse_y < y2;
+}
+
+
+//
 // M_UpdateMouseItem
 //
 // Moves the menu cursor to whatever the mouse is hovering over.
@@ -2239,15 +2284,20 @@ bool M_Responder (event_t* ev)
 				savegamestrings[saveSlot][saveCharIndex] = 0;
 			}
 		}
-		else if (Key_IsCancelKey(ch))
+		else if (Key_IsCancelKey(ch) ||
+		         (ui_mouse.asInt() != 0 && ch == OKEY_MOUSE2))
 		{
+			// Escape, or a right click, cancels the entry and restores the
+			// previous text.
 			if (genStringEnter == oldmenustring_t::SAVEGAME)
 				M_ClearMenus();
 			genStringEnter = oldmenustring_t::NONE;
 			M_StringCopy(&savegamestrings[saveSlot][0], saveOldString, SAVESTRINGSIZE);
 		}
-		else if (Key_IsAcceptKey(ch))
+		else if (Key_IsAcceptKey(ch) ||
+		         (ch == OKEY_MOUSE1 && M_MouseOverEditField()))
 		{
+			// Enter, or a click on the field being edited, commits the entry.
 			if (genStringEnter == oldmenustring_t::SAVEGAME)
 				M_ClearMenus();
 			genStringEnter = oldmenustring_t::NONE;
