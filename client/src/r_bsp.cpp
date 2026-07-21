@@ -760,7 +760,7 @@ void R_Subsector (int num)
 					frontsector->ceiling_xscale,
 					frontsector->ceiling_yscale,
 					frontsector->ceiling_angle + frontsector->base_ceiling_angle,
-					frontsector->Skybox
+					frontsector->SkyboxCeiling
 					) : NULL;
 
 	// killough 3/7/98: Add (x,y) offsets to flats, add deep water check
@@ -780,7 +780,7 @@ void R_Subsector (int num)
 					frontsector->floor_xscale,
 					frontsector->floor_yscale,
 					frontsector->floor_angle + frontsector->base_floor_angle,
-					frontsector->Skybox
+					frontsector->SkyboxFloor
 					) : NULL;
 
 	// [RH] set foggy flag
