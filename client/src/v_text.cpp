@@ -151,6 +151,63 @@ OFont* V_GetHudFontSized(int pixel_size)
 
 
 //
+// V_GetStyledFont
+//
+// Like V_GetFont, but with an explicit style mask (TTF_TEXTURE / TTF_GRADIENT /
+// TTF_OUTLINE / TTF_SHADOW) rather than the default TTF_TEXTURE. TTF_GRADIENT
+// here uses the translation ramp, so it takes on whatever color it is drawn in.
+//
+OFont* V_GetStyledFont(const char* lumpname, int pixel_size, unsigned int stylemask)
+{
+	typedef std::map<std::string, OFont*> FontCache;
+	static FontCache cache;
+
+	pixel_size = clamp(pixel_size, 4, 128);
+	const std::string key = fmt::format("{}:{}:{}", lumpname, pixel_size, stylemask);
+
+	FontCache::iterator it = cache.find(key);
+	if (it != cache.end())
+		return it->second;
+
+	OFont* font = V_CreateFontAtSize(stylemask, pixel_size, lumpname);
+	cache[key] = font;
+	return font;
+}
+
+
+//
+// V_GetGradientFont
+//
+// A TTF_GRADIENT font whose fill runs between two fixed colors (top to bottom).
+// The colors are baked in as literal palette indices (outside the 0xB0-0xBF
+// translation range), so draw it in any normal text color range to show them.
+//
+OFont* V_GetGradientFont(const char* lumpname, int pixel_size, argb_t top, argb_t bottom)
+{
+	typedef std::map<std::string, OFont*> FontCache;
+	static FontCache cache;
+
+	pixel_size = clamp(pixel_size, 4, 128);
+	const std::string key = fmt::format("{}:{}:{:08x}:{:08x}", lumpname, pixel_size,
+	                                    static_cast<uint32_t>(top), static_cast<uint32_t>(bottom));
+
+	FontCache::iterator it = cache.find(key);
+	if (it != cache.end())
+		return it->second;
+
+	const char* lump = V_FontLumpExists(lumpname) ? lumpname : TTF_LUMP_NAME;
+	OFont* font = new TrueTypeFont(lump, pixel_size, TrueTypeFont::TTF_GRADIENT, top, bottom);
+	if (!font->isUsable())
+	{
+		delete font;
+		font = new SmallDoomFont(MAX(1, pixel_size / 8) * FRACUNIT);
+	}
+	cache[key] = font;
+	return font;
+}
+
+
+//
 // What each named face is made of. Indexed by fontface_t.
 //
 struct hudfacedef_t

@@ -99,6 +99,25 @@ OFont* V_GetHudFontSized(int pixel_size);
 OFont* V_GetFont(const char* lumpname, int pixel_size);
 
 //
+// V_GetStyledFont
+//
+// The same as V_GetFont, but with an explicit TrueTypeFont style mask
+// (TTF_TEXTURE / TTF_GRADIENT / TTF_OUTLINE / TTF_SHADOW).
+// A TTF_GRADIENT font built this way uses the translation ramp and
+// takes the color it is drawn in.
+//
+OFont* V_GetStyledFont(const char* lumpname, int pixel_size, unsigned int stylemask);
+
+//
+// V_GetGradientFont
+//
+// A TTF_GRADIENT font filled with a fixed top-to-bottom color gradient. The
+// colors are baked into the glyphs as literal palette indices outside the
+// 0xB0-0xBF translation range, so any normal text color range shows them as is.
+//
+OFont* V_GetGradientFont(const char* lumpname, int pixel_size, argb_t top, argb_t bottom);
+
+//
 // V_FontsReady
 //
 // False until V_TextInit has run. Callers that can be reached during

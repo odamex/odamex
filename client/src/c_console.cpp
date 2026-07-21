@@ -85,7 +85,7 @@ static const OFont* C_Font()
 	if (!V_FontsReady())
 		return nullptr;
 
-	return V_GetHudFontSized(8 * MAX(1u, ConScale));
+	return V_GetFont("FONT_CON", 8 * MAX(1u, ConScale));
 }
 
 //

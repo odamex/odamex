@@ -230,6 +230,8 @@ public:
 	TrueTypeFont(const char* lumpname, int size, unsigned int stylemask);
 	TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 	             ScaleFunc scale_func);
+	TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
+	             argb_t grad_top, argb_t grad_bottom);
 
 	virtual int getHeight() const
 	{	return mHeight;	}
@@ -259,4 +261,9 @@ private:
 
 	int				mAdvanceX[256];
 	int				mAdvanceY[256];
+
+	// Custom gradient endpoints (used only when mHasGradientColors).
+	bool			mHasGradientColors;
+	argb_t			mGradTop;
+	argb_t			mGradBottom;
 };

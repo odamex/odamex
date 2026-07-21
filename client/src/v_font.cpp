@@ -180,6 +180,40 @@ static void V_FillGradient(Texture* dest_texture, palindex_t start_color, palind
 }
 
 
+//
+// V_FillGradientRGB
+//
+// Fills a texture's color plane with a vertical gradient interpolated in RGB
+// from top_color (row 0) to bottom_color (row dist) and matched to the nearest
+// palette entry per row. Unlike V_FillGradient these indices are literal
+// colors, not the translation ramp, so the glyph keeps them at draw time.
+//
+static void V_FillGradientRGB(Texture* dest_texture, argb_t top, argb_t bottom, int dist)
+{
+	const int w = dest_texture->mWidth;
+	const int h = dest_texture->mHeight;
+	const argb_t* palette = V_GetDefaultPalette()->basecolors;
+	const int span = MAX(1, dist - 1);
+
+	// One matched palette index per row (V_BestColor is expensive, so cache it).
+	std::vector<palindex_t> rowcolor(h);
+	for (int y = 0; y < h; y++)
+	{
+		const int t = MIN(y, span);
+		const int r = top.getr() + (bottom.getr() - top.getr()) * t / span;
+		const int g = top.getg() + (bottom.getg() - top.getg()) * t / span;
+		const int b = top.getb() + (bottom.getb() - top.getb()) * t / span;
+		rowcolor[y] = V_BestColor(palette, r, g, b);
+	}
+
+	// column-major: the inner loop walks a column
+	palindex_t* dest = dest_texture->mData;
+	for (int x = 0; x < w; x++)
+		for (int y = 0; y < h; y++)
+			*dest++ = rowcolor[y];
+}
+
+
 // ----------------------------------------------------------------------------
 //
 // OFont base class implementation
@@ -691,16 +725,26 @@ void LargeDoomFont::buildGlyphs()
 // ----------------------------------------------------------------------------
 
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask) :
-	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0)
+	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0),
+	mHasGradientColors(false)
 {
 	load();
 }
 
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		ScaleFunc scale_func) :
-	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0)
+	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0),
+	mHasGradientColors(false)
 {
 	setScale(scale_func);
+	load();
+}
+
+TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
+		argb_t grad_top, argb_t grad_bottom) :
+	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0),
+	mHasGradientColors(true), mGradTop(grad_top), mGradBottom(grad_bottom)
+{
 	load();
 }
 
@@ -843,9 +887,15 @@ void TrueTypeFont::buildGlyphs()
 			// tile a texture behind the glyph
 			V_FillTexture(texture, background_texture);
 		}
+		else if ((stylemask & TTF_GRADIENT) && mHasGradientColors)
+		{
+			// gradient between two fixed colors (baked as literal palette
+			// indices, so the draw-time color does not recolor it)
+			V_FillGradientRGB(texture, mGradTop, mGradBottom, size);
+		}
 		else if (stylemask & TTF_GRADIENT)
 		{
-			// gradient from light (top) to dark (bottom)
+			// gradient from light (top) to dark (bottom), recolored at draw time
 			V_FillGradient(texture, TRANSLATION_RANGE_START, TRANSLATION_RANGE_END, size);
 		}
 		else

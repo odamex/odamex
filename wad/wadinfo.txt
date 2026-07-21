@@ -34,6 +34,7 @@ SPREEDEF
 FONT_SM
 FONT_SPR
 FONT_MK
+FONT_CON
 
 # List of Sounds (prevent conversion)
 DSEMPTY
