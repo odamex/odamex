@@ -812,7 +812,7 @@ void drawProtos()
 // [AM] Draw netdemo state
 // TODO: This is ripe for commonizing, but I _need_ to get this done soon.
 void drawNetdemo() {
-	if (!(netdemo.isPlaying() || netdemo.isPaused())) {
+	if (not netdemo.isInPlayback()) {
 		return;
 	}
 
