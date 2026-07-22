@@ -376,9 +376,12 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 		fixed_t height, fixed_t width,
 		fixed_t topoffs, fixed_t sideoffs, bool flip)
 {
-	// x / y are in world-space, tx / ty are the same point already
-	// translated into camera-space by the caller
-	fixed_t t1xold;
+	// translate the sprite edges from world-space to camera-space
+	// and store in t1 & t2
+	fixed_t tx, ty, t1xold;
+	// too far from the camera to draw anyway if its distance is greater than ~32767 fracunits.
+	if (R_RotatePointSafe(int64_t(x) - viewx, int64_t(y) - viewy, ANG90 - viewangle, tx, ty))
+		return NULL;
 
 	v2fixed_t t1, t2;
 	if (flip)

@@ -35,6 +35,9 @@ function(odamex_target_settings _TARGET)
     target_compile_definitions("${_TARGET}" PRIVATE
       $<$<CONFIG:Debug>:ODAMEX_DEBUG> _CRT_SECURE_NO_WARNINGS)
     target_compile_options("${_TARGET}" PRIVATE /MP)
+    if(USE_SANITIZE_ADDRESS)
+      target_compile_options("${_TARGET}" PRIVATE /fsanitize=address)
+    endif()
   else()
     target_compile_definitions("${_TARGET}" PRIVATE
       $<$<CONFIG:Debug>:ODAMEX_DEBUG>)
@@ -100,7 +103,11 @@ function(odamex_target_settings _TARGET)
 
   # Add link options - checked link options need at least 3.18.
   if(MSVC)
-    target_link_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:/INCREMENTAL:NO>)
+    if(USE_SANITIZE_ADDRESS)
+      target_link_options("${_TARGET}" PRIVATE /INCREMENTAL:NO)
+    else()
+      target_link_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:/INCREMENTAL:NO>)
+    endif()
     target_link_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:/LTCG>)
   endif()
 

@@ -31,6 +31,7 @@
 #include "m_fixed.h"
 #include "info.h"
 #include "actor.h"
+#include "gstrings.h"
 
 const char* doom_sprnames[::NUMSPRITES] = {
 	"TROO","SHTG","PUNG","PISG","PISF","SHTF","SHT2","CHGG","CHGF","MISG",
@@ -1244,6 +1245,19 @@ state_t	boomstates[S_MUSHROOM + 1] = {
 	// killough 10/98: mushroom effect
 	{ S_MUSHROOM, SPR_MISL,32769,8,A_Mushroom,S_EXPLODE2,0,0, {0, 0, 0, 0, 0, 0, 0, 0}, STATEF_NONE},  // S_MUSHROOM
 };
+
+std::string mobjinfo_t::getDisplayName() const
+{
+	if (!deh_name.empty() && !display_name_set)
+		return deh_name;
+	if (!display_name.empty())
+	{
+		if (display_name[0] == '$')
+			return GStrings(StdStringToUpper(display_name).c_str() + 1);
+		return display_name;
+	}
+	return P_MobjToName(static_cast<mobjtype_t>(this->type));
+}
 
 // [Blair] Since Odamex has more out-of-the-box states,
 // the new DEHExtra state spec starts at 1100, while we have around
