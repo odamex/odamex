@@ -491,6 +491,12 @@ int OFont::getTextWidth(const char* str) const
 
 	while (*str)
 	{
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
 		width += getTextWidth(*str);
 		str++;
 	}
