@@ -103,6 +103,7 @@
  *
  */
 
+#include <string>
 #include <termios.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -655,6 +656,14 @@ void linenoiseClearScreen(void) {
     if (write(STDOUT_FILENO,"\x1b[H\x1b[2J",7) <= 0) {
         /* nothing to do, just to avoid warning. */
     }
+}
+
+/* Clear the screen. Used for 'clear' command*/
+void linenoiseClearScreen(linenoiseState* l) {
+    if (write(STDOUT_FILENO,"\x1b[H\x1b[2J\x1b[3J",11) <= 0) {
+        /* nothing to do, just to avoid warning. */
+    }
+    refreshLine(l);
 }
 
 /* Beep, used for completion when there is nothing to complete or when all
@@ -1418,10 +1427,7 @@ const char *linenoiseEditMore = "If you see this, you are misusing the API: when
  */
 char *linenoiseEditFeed(linenoiseState *l) {
     char c;
-    int nread;
-    char seq[3];
-
-    nread = read(l->ifd,&c,1);
+    int nread = read(l->ifd,&c,1);
     if (nread < 0) {
         return (errno == EAGAIN || errno == EWOULDBLOCK) ? const_cast<char*>(linenoiseEditMore) : NULL;
     } else if (nread == 0) {
@@ -1501,36 +1507,29 @@ char *linenoiseEditFeed(linenoiseState *l) {
         /* Read the next two bytes representing the escape sequence.
          * Use two calls to handle slow terminals returning the two
          * chars at different times. */
-        if (read(l->ifd,seq,1) == -1) break;
-        if (read(l->ifd,seq+1,1) == -1) break;
+        {
+
+        char c;
+        char final = 0;
+        std::string params;
+        char type;
+        if (read(l->ifd, &type, 1) != 1)
+            break;
+
+        while (read(l->ifd, &c, 1) == 1)
+        {
+            if (c >= '@' && c <= '~')
+            {
+                final = c;
+                break;
+            }
+
+            params += c;
+        }
 
         /* ESC [ sequences. */
-        if (seq[0] == '[') {
-            if (seq[1] >= '0' && seq[1] <= '9') {
-                char param[8];
-                size_t plen = 1;
-                char final = 0;
-
-                param[0] = seq[1];
-                while (plen < sizeof(param)) {
-                    char p;
-                    if (read(l->ifd,&p,1) != 1) break;
-                    if (p >= '0' && p <= '9') {
-                        param[plen++] = p;
-                    } else {
-                        final = p;
-                        break;
-                    }
-                }
-                if (final == '~') {
-                    if (plen == 1 && param[0] == '3') {
-                        linenoiseEditDelete(l);
-                    } else if (plen == 3 && memcmp(param,"200",3) == 0) {
-                        linenoiseEditPaste(l);
-                    }
-                }
-            } else {
-                switch(seq[1]) {
+        if (type == '[') {
+            switch(final) {
                 case 'A': /* Up */
                     linenoiseEditHistoryNext(l, LINENOISE_HISTORY_PREV);
                     break;
@@ -1549,13 +1548,21 @@ char *linenoiseEditFeed(linenoiseState *l) {
                 case 'F': /* End*/
                     linenoiseEditMoveEnd(l);
                     break;
-                }
+                case '~':
+                    if (params == "3")
+                        linenoiseEditDelete(l);
+                    else if (params == "200")
+                        linenoiseEditPaste(l);
+                    break;
             }
         }
 
         /* ESC O sequences. */
-        else if (seq[0] == 'O') {
-            switch(seq[1]) {
+        else if (type == 'O') {
+            char final;
+            if (read(l->ifd, &final, 1) != 1)
+                break;
+            switch(final) {
             case 'H': /* Home */
                 linenoiseEditMoveHome(l);
                 break;
@@ -1563,6 +1570,7 @@ char *linenoiseEditFeed(linenoiseState *l) {
                 linenoiseEditMoveEnd(l);
                 break;
             }
+        }
         }
         break;
     default:

@@ -92,5 +92,6 @@ int linenoiseHistorySetMaxLen(int len);
 
 /* Other utilities. */
 void linenoiseClearScreen(void);
+void linenoiseClearScreen(linenoiseState* l);
 void linenoiseMaskModeEnable(void);
 void linenoiseMaskModeDisable(void);

@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include <poll.h>
 
+#include "odamex.h"
+#include "c_dispatch.h"
+
 bool HasInput()
 {
     pollfd pfd{
@@ -112,6 +115,12 @@ public:
 		Show();
 	}
 
+	void Clear()
+	{
+		if (m_active)
+			linenoiseClearScreen(&m_state);
+	}
+
 	static ConsoleLineEditor& getInstance()
 	{
 		static ConsoleLineEditor editor;
@@ -150,3 +159,9 @@ std::string M_LineEditorInput()
 {
 	return ConsoleLineEditor::getInstance().GetCommand();
 }
+
+BEGIN_COMMAND(clear)
+{
+	ConsoleLineEditor::getInstance().Clear();
+}
+END_COMMAND(clear)
