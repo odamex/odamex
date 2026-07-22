@@ -203,7 +203,7 @@ static registry_value_t gog_final_doom =
 	"path",
 };
 
-static char *GetRegistryString(registry_value_t *reg_val)
+static char *GetRegistryString(const registry_value_t *reg_val)
 {
 	HKEY key = 0;
 	DWORD len = 0;
