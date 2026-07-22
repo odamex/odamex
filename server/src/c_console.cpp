@@ -101,6 +101,8 @@ char *TimeStamp()
 
 EXTERN_CVAR(log_color)
 
+#include "m_consolelineeditor.h"
+
 static size_t PrintString(int printlevel, std::string str)
 {
 	StripColorCodes(str);
@@ -137,11 +139,13 @@ static size_t PrintString(int printlevel, std::string str)
 			break;
 	}
 
+	linenoisehide();
 	if (log_color && I_ConsoleUseColor())
 		fmt::print(stdout, style, "{}", str);
 	else
 		fmt::print(stdout, "{}", str);
 	fflush(stdout);
+	linenoiseshow();
 
 	if (LOG.is_open())
 	{

@@ -73,6 +73,7 @@
 #include "w_ident.h"
 
 #include "g_spreedef.h"
+#include "m_consolelineeditor.h"
 
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
@@ -116,7 +117,9 @@ void D_DoomLoop (void)
 			SV_SendDisconnectSignal();
 
 			// denis - sleep 10 seconds to conserve server resources (in case of recurring problem)
+			linenoisepause();
 			I_Sleep(10 * 1000LL * 1000LL * 1000LL);
+			linenoiseresume();
 
 			// denis - reload with current settings
 			G_ChangeMap ();

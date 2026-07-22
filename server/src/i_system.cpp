@@ -63,6 +63,7 @@
 #include "c_dispatch.h"
 #include "sv_main.h"
 #include "m_consolecommandstream.h"
+#include "m_consolelineeditor.h"
 
 #ifdef _WIN32
 UINT TimerPeriod;
@@ -267,9 +268,19 @@ std::string I_ConsoleInput()
 #ifdef _WIN32
     if (ShutdownNow())
         return "quit";
-#endif
 
-    return M_ConsoleInput();
+	return M_ConsoleInput();
+#else
+	static const bool interactive = [](){
+		const char* term = getenv("TERM");
+		if (!term || strcmp(term, "dumb") == 0)
+			return false;
+
+		return !::Args.CheckParm("-confile") && isatty(STDIN_FILENO) && isatty(STDOUT_FILENO);
+	}();
+
+    return interactive ? M_LineEditorInput() : M_ConsoleInput();
+#endif
 }
 
 VERSION_CONTROL (i_system_cpp, "$Id$")
