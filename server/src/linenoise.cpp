@@ -121,15 +121,12 @@
 #define LINENOISE_DEFAULT_HISTORY_MAX_LEN 100
 #define LINENOISE_MAX_LINE (1024*1024)      // That will get dynamically allocated
 #define LINENOISE_INITIAL_BUFLEN 4096
-#define PASTE_FOLD_THRESHOLD 200            // Min bytes to fold a single-line paste.
-#define PASTE_FOLD_CONTEXT 8                // Context chars kept around generic folds.
 #define PASTE_MAX_BYTES LINENOISE_MAX_LINE
 static linenoiseCompletionCallback completionCallback = NULL;
 static linenoiseHintsCallback hintsCallback = NULL;
 static linenoiseFreeHintsCallback freeHintsCallback = NULL;
 static void refreshLineWithCompletion(linenoiseState *ls, linenoiseCompletions *lc, int flags);
 static void refreshLineWithFlags(linenoiseState *l, int flags);
-static void linenoiseFoldClear(linenoiseState *l);
 
 static struct termios orig_termios; /* In order to restore at exit.*/
 static int maskmode = 0; /* Show "***" instead of input. For passwords. */
@@ -697,12 +694,10 @@ static void refreshLineWithCompletion(linenoiseState *ls, linenoiseCompletions *
         linenoiseState saved = *ls;
         ls->len = ls->pos = strlen(lc->cvec[ls->completion_idx]);
         ls->buf = lc->cvec[ls->completion_idx];
-        ls->fold_count = 0;
         refreshLineWithFlags(ls,flags);
         ls->len = saved.len;
         ls->pos = saved.pos;
         ls->buf = saved.buf;
-        ls->fold_count = saved.fold_count;
     } else {
         refreshLineWithFlags(ls,flags);
     }
@@ -759,7 +754,6 @@ static int completeLine(linenoiseState *ls, int keypressed) {
                     nwritten = snprintf(ls->buf,ls->buflen,"%s",
                         lc.cvec[ls->completion_idx]);
                     ls->len = ls->pos = nwritten;
-                    linenoiseFoldClear(ls);
                 }
                 ls->in_completion = 0;
                 break;
@@ -843,298 +837,34 @@ static void abFree(struct abuf *ab) {
     free(ab->b);
 }
 
-/* A fold is a display-only replacement for a range in l->buf. The edited
- * buffer always keeps the real bytes; refresh code asks linenoiseRenderBuffer()
- * for a temporary printable version plus the cursor position inside it. */
-struct linenoiseFold {
-    size_t start;
-    size_t end;
-    char display[64];
-    size_t displaylen;
-};
-
-struct linenoiseFolds {
-    int count;
-    struct linenoiseFold fold[LINENOISE_MAX_FOLDS];
-};
-
-/* Return the number of logical lines in the range. */
-static size_t foldCountLines(const char *buf, size_t len) {
-    size_t lines = 1, j;
-    for (j = 0; j < len; j++) {
-        if (buf[j] == '\n') lines++;
-    }
-    return lines;
-}
-
-/* Return true if the text should be folded: if it contains newlines or is at
- * least PASTE_FOLD_THRESHOLD bytes long. */
-static int shouldFoldText(const char *buf, size_t len) {
-    return memchr(buf, '\n', len) != NULL || len >= PASTE_FOLD_THRESHOLD;
-}
-
-/* Fill f->display with the text shown instead of the folded range. */
-static void foldSetRenderedText(struct linenoiseFold *f, const char *buf) {
-    size_t hidden = f->end - f->start;
-    size_t lines = foldCountLines(buf + f->start, hidden);
-    int n;
-
-    if (lines > 1)
-        n = snprintf(f->display,sizeof(f->display),"[... %zu pasted lines ...]",lines);
-    else
-        n = snprintf(f->display,sizeof(f->display),"[... %zu pasted chars ...]",hidden);
-    if (n < 0) n = 0;
-    f->displaylen = (size_t)n;
-}
-
-/* Populate f with one fold reconstructed from a history entry. History stores
- * the real text, but not the original paste boundaries, so we reconstruct
- * an approximation of text we want to hide on the fly: if it is long or
- * contains newlines. */
-static int linenoiseBuildHistoryFold(linenoiseState *l, struct linenoiseFold *f) {
-    f->start = f->end = f->displaylen = 0;
-    if (l->len == 0 || maskmode) return 0;
-    if (!shouldFoldText(l->buf,l->len)) return 0;
-
-    f->start = 0;
-    f->end = l->len;
-    if (l->len > PASTE_FOLD_CONTEXT*2) {
-        size_t pos = 0, chars = 0;
-        int nl = 0;
-
-        /* We leave (if possible) a few chars on
-         * the start before the fold, to give context. */
-        while (pos < l->len && chars < PASTE_FOLD_CONTEXT) {
-            size_t step = utf8NextCharLen(l->buf,pos,l->len);
-            if (step == 0 || pos + step > l->len) break;
-            if (l->buf[pos] == '\n') nl = 1;
-            pos += step;
-            chars++;
-        }
-        f->start = nl ? 0 : pos;
-
-        /* And also on the end side. */
-        pos = l->len;
-        chars = 0;
-        nl = 0;
-        while (pos > 0 && chars < PASTE_FOLD_CONTEXT) {
-            size_t step = utf8PrevCharLen(l->buf,pos);
-            if (step == 0 || step > pos) break;
-            pos -= step;
-            if (l->buf[pos] == '\n') nl = 1;
-            chars++;
-        }
-        f->end = nl ? l->len : pos;
-        if (f->start >= f->end) {
-            f->start = 0;
-            f->end = l->len;
-        }
-    }
-    foldSetRenderedText(f,l->buf);
-    return 1;
-}
-
-/* Populate fs with the folds to render for the current buffer. As a side
- * effect, the rendered text of each fold is updated. Return 1 if folding
- * should be used, or 0 if the buffer should be rendered as-is. */
-static int linenoiseGetRenderFolds(linenoiseState *l, struct linenoiseFolds *fs) {
-    int j;
-
-    fs->count = 0;
-    if (l->len == 0 || maskmode) return 0;
-
-    for (j = 0; j < l->fold_count; j++) {
-        struct linenoiseFold *f;
-        size_t start = l->fold_start[j];
-        size_t end = l->fold_end[j];
-
-        if (start >= end || end > l->len) continue;
-        f = fs->fold + fs->count++;
-        f->start = start;
-        f->end = end;
-        foldSetRenderedText(f,l->buf);
-    }
-    return fs->count != 0;
-}
-
 /* Return the freshly allocated string content that is actually displayed in
  * the user prompt. It can be the actual edited line, or a special version
  * where pasted or multiline history ranges are replaced by their folded
  * "[...]" style versions. outpos is l->pos translated into this rendered
  * buffer. */
 static int linenoiseRenderBuffer(linenoiseState *l, char **out, size_t *outlen, size_t *outpos) {
-    struct linenoiseFolds fs;
-    size_t len, pos, src, dst;
-    char *r;
-    int j, pos_set = 0;
-
-    if (!linenoiseGetRenderFolds(l,&fs)) {
-        /* Keep the refresh code simple: it always owns a temporary render
-         * buffer, even when the render is identical to the real edit buffer. */
-        r = static_cast<char*>(malloc(l->len+1));
-        if (r == NULL) return -1;
-        memcpy(r,l->buf,l->len);
-        r[l->len] = '\0';
-        *out = r;
-        *outlen = l->len;
-        *outpos = l->pos;
-        return 0;
-    }
-
-    /* Gaps are copied as-is, folded ranges are replaced by their markers.
-     * The bytes inside each [start,end) range stay in l->buf but are not
-     * emitted to the terminal. */
-    len = l->len;
-    for (j = 0; j < fs.count; j++) {
-        struct linenoiseFold *f = fs.fold+j;
-        len -= f->end - f->start;
-        len += f->displaylen;
-    }
-    r = static_cast<char*>(malloc(len+1));
+    /* Keep the refresh code simple: it always owns a temporary render
+     * buffer, even when the render is identical to the real edit buffer. */
+    char* r = static_cast<char*>(malloc(l->len+1));
     if (r == NULL) return -1;
-
-    src = dst = 0;
-    pos = 0;
-    for (j = 0; j < fs.count; j++) {
-        struct linenoiseFold *f = fs.fold+j;
-        size_t gap = f->start - src;
-
-        if (!pos_set && l->pos <= f->start) {
-            pos = dst + (l->pos - src);
-            pos_set = 1;
-        }
-        memcpy(r+dst,l->buf+src,gap);
-        dst += gap;
-
-        if (!pos_set && l->pos < f->end) {
-            pos = dst + f->displaylen;
-            pos_set = 1;
-        }
-        memcpy(r+dst,f->display,f->displaylen);
-        dst += f->displaylen;
-        if (!pos_set && l->pos == f->end) {
-            pos = dst;
-            pos_set = 1;
-        }
-        src = f->end;
-    }
-    if (!pos_set) pos = dst + (l->pos - src);
-    memcpy(r+dst,l->buf+src,l->len-src);
-    r[len] = '\0';
-
+    memcpy(r,l->buf,l->len);
+    r[l->len] = '\0';
     *out = r;
-    *outlen = len;
-    *outpos = pos;
+    *outlen = l->len;
+    *outpos = l->pos;
     return 0;
 }
 
 /* Return the number of bytes to move right from pos. If pos is at the start of
  * a folded range, the whole hidden range is skipped by one cursor movement. */
 static size_t linenoiseEditNextLen(linenoiseState *l, size_t pos) {
-    struct linenoiseFolds fs;
-    int j;
-
-    if (linenoiseGetRenderFolds(l,&fs)) {
-        for (j = 0; j < fs.count; j++) {
-            if (pos == fs.fold[j].start)
-                return fs.fold[j].end - fs.fold[j].start;
-        }
-    }
     return utf8NextCharLen(l->buf,pos,l->len);
 }
 
 /* Return the number of bytes to move left from pos. If pos is at the end of a
  * folded range, the whole hidden range is skipped by one cursor movement. */
 static size_t linenoiseEditPrevLen(linenoiseState *l, size_t pos) {
-    struct linenoiseFolds fs;
-    int j;
-
-    if (linenoiseGetRenderFolds(l,&fs)) {
-        for (j = 0; j < fs.count; j++) {
-            if (pos == fs.fold[j].end)
-                return fs.fold[j].end - fs.fold[j].start;
-        }
-    }
     return utf8PrevCharLen(l->buf,pos);
-}
-
-/* Add a fold range, keeping the array sorted by start offset. */
-static void linenoiseFoldAdd(linenoiseState *l, size_t start, size_t end) {
-    int j;
-
-    if (start >= end || l->fold_count == LINENOISE_MAX_FOLDS) return;
-    j = l->fold_count;
-    while (j > 0 && start < l->fold_start[j-1]) {
-        l->fold_start[j] = l->fold_start[j-1];
-        l->fold_end[j] = l->fold_end[j-1];
-        j--;
-    }
-    l->fold_start[j] = start;
-    l->fold_end[j] = end;
-    l->fold_count++;
-}
-
-/* Clear all remembered fold ranges. */
-static void linenoiseFoldClear(linenoiseState *l) {
-    l->fold_count = 0;
-}
-
-/* Remove one remembered fold range. */
-static void linenoiseFoldRemove(linenoiseState *l, int j) {
-    memmove(l->fold_start+j,l->fold_start+j+1,
-            sizeof(size_t)*(l->fold_count-j-1));
-    memmove(l->fold_end+j,l->fold_end+j+1,
-            sizeof(size_t)*(l->fold_count-j-1));
-    l->fold_count--;
-}
-
-/* Return true if [pos,pos+len) overlaps any folded range. */
-static int linenoiseRangeOverlapsFold(linenoiseState *l, size_t pos, size_t len) {
-    size_t end = pos + len;
-    int j;
-
-    for (j = 0; j < l->fold_count; j++) {
-        if (end > l->fold_start[j] && pos < l->fold_end[j])
-            return 1;
-    }
-    return 0;
-}
-
-/* Adjust fold ranges after an insertion. If insertion somehow lands inside a
- * fold, remove that fold because it no longer maps to an unchanged range. */
-static void linenoiseAdjustFoldsAfterInsert(linenoiseState *l, size_t pos, size_t len) {
-    int j = 0;
-
-    while (j < l->fold_count) {
-        if (pos <= l->fold_start[j]) {
-            l->fold_start[j] += len;
-            l->fold_end[j] += len;
-            j++;
-        } else if (pos < l->fold_end[j]) {
-            linenoiseFoldRemove(l,j);
-        } else {
-            j++;
-        }
-    }
-}
-
-/* Adjust fold ranges after a deletion. If deletion overlaps a fold, remove
- * that fold because it no longer maps to an unchanged range. */
-static void linenoiseAdjustFoldsAfterDelete(linenoiseState *l, size_t pos, size_t len) {
-    size_t end = pos + len;
-    int j = 0;
-
-    while (j < l->fold_count) {
-        if (end <= l->fold_start[j]) {
-            l->fold_start[j] -= len;
-            l->fold_end[j] -= len;
-            j++;
-        } else if (pos >= l->fold_end[j]) {
-            j++;
-        } else {
-            linenoiseFoldRemove(l,j);
-        }
-    }
 }
 
 /* Helper of refreshSingleLine() and refreshMultiLine() to show hints
@@ -1329,8 +1059,6 @@ static int linenoiseEditGrow(linenoiseState *l, size_t needed) {
  * this to first store the real pasted bytes, then mark their range as folded,
  * and only then refresh so raw pasted newlines are never printed directly. */
 static int linenoiseEditInsertNoRefresh(linenoiseState *l, const char *c, size_t clen) {
-    size_t insert_pos = l->pos;
-
     if (clen > SIZE_MAX-l->len || linenoiseEditGrow(l,l->len+clen) == -1)
         return -1;
 
@@ -1343,7 +1071,6 @@ static int linenoiseEditInsertNoRefresh(linenoiseState *l, const char *c, size_t
     l->pos += clen;
     l->len += clen;
     l->buf[l->len] = '\0';
-    linenoiseAdjustFoldsAfterInsert(l,insert_pos,clen);
     return 0;
 }
 
@@ -1357,8 +1084,7 @@ int linenoiseEditInsert(linenoiseState *l, const char *c, size_t clen) {
                              memchr(c, '\r', clen) != NULL;
 
         if (linenoiseEditInsertNoRefresh(l,c,clen) == -1) return 0;
-        if (!needs_refresh && !hintsCallback &&
-            (maskmode || l->fold_count == 0))
+        if (!needs_refresh && !hintsCallback && maskmode)
         {
             size_t bufwidth = utf8StrWidth(l->buf,l->len);
             if (utf8StrWidth(l->prompt,l->plen)+bufwidth < l->cols) {
@@ -1420,7 +1146,6 @@ void linenoiseEditHistoryNext(linenoiseState *l, int dir) {
     if (history_len > 1) {
         const char *src;
         size_t len;
-        struct linenoiseFold f;
 
         /* Update the current history entry before to
          * overwrite it with the next one. */
@@ -1445,13 +1170,7 @@ void linenoiseEditHistoryNext(linenoiseState *l, int dir) {
         memcpy(l->buf,src,len);
         l->buf[len] = '\0';
         l->len = l->pos = len;
-        linenoiseFoldClear(l);
 
-        /* History stores the real text, but not the original paste ranges.
-         * If the recalled entry needs folding, create one display fold now
-         * so text typed after recall remains outside the folded range. */
-        if (linenoiseBuildHistoryFold(l,&f))
-            linenoiseFoldAdd(l,f.start,f.end);
         refreshLine(l);
     }
 }
@@ -1462,7 +1181,6 @@ void linenoiseEditHistoryNext(linenoiseState *l, int dir) {
 void linenoiseEditDelete(linenoiseState *l) {
     if (l->len > 0 && l->pos < l->len) {
         size_t clen = linenoiseEditNextLen(l, l->pos);
-        linenoiseAdjustFoldsAfterDelete(l,l->pos,clen);
         memmove(l->buf+l->pos, l->buf+l->pos+clen, l->len-l->pos-clen);
         l->len -= clen;
         l->buf[l->len] = '\0';
@@ -1474,7 +1192,6 @@ void linenoiseEditDelete(linenoiseState *l) {
 void linenoiseEditBackspace(linenoiseState *l) {
     if (l->pos > 0 && l->len > 0) {
         size_t clen = linenoiseEditPrevLen(l, l->pos);
-        linenoiseAdjustFoldsAfterDelete(l,l->pos-clen,clen);
         memmove(l->buf+l->pos-clen, l->buf+l->pos, l->len-l->pos);
         l->pos -= clen;
         l->len -= clen;
@@ -1496,7 +1213,6 @@ void linenoiseEditDeletePrevWord(linenoiseState *l) {
     while (l->pos > 0 && l->buf[l->pos-1] != ' ')
         l->pos -= linenoiseEditPrevLen(l, l->pos);
     diff = old_pos - l->pos;
-    linenoiseAdjustFoldsAfterDelete(l,l->pos,diff);
     memmove(l->buf+l->pos, l->buf+old_pos, l->len-old_pos+1);
     l->len -= diff;
     refreshLine(l);
@@ -1539,15 +1255,12 @@ int linenoiseEditStart(linenoiseState *l, char *buf, size_t buflen, const char *
     l->plen = strlen(prompt);
     l->oldpos = l->pos = 0;
     l->len = 0;
-    linenoiseFoldClear(l);
 
     /* Enter raw mode. */
     rawmode_output = l->ofd;
     if (enableRawMode(l->ifd) == -1) return -1;
 
     l->cols = getColumns(l->ifd, l->ofd);
-    l->oldrows = 0;
-    l->oldrpos = 1;  /* Cursor starts on row 1. */
     l->history_index = 0;
 
     /* Buffer starts empty. */
@@ -1627,8 +1340,6 @@ static void linenoiseEditPaste(linenoiseState *l) {
 
     maxlen = maxlen > l->len ? maxlen - l->len : 0;
     if (maxlen > PASTE_MAX_BYTES) maxlen = PASTE_MAX_BYTES;
-    /* Once all fold slots are used, consume later pastes without storing them. */
-    if (l->fold_count == LINENOISE_MAX_FOLDS) maxlen = 0;
 
     while (1) {
         char c;
@@ -1681,18 +1392,7 @@ static void linenoiseEditPaste(linenoiseState *l) {
         len = w;
     }
 
-    if (!maskmode && shouldFoldText(buf,len)) {
-        size_t start = l->pos;
-        if (linenoiseEditInsertNoRefresh(l,buf,len) == -1) {
-            free(buf);
-            linenoiseBeep();
-            return;
-        }
-        linenoiseFoldAdd(l,start,start+len);
-        refreshLine(l);
-    } else {
-        linenoiseEditInsert(l,buf,len);
-    }
+    linenoiseEditInsert(l,buf,len);
     free(buf);
 }
 
@@ -1777,10 +1477,6 @@ char *linenoiseEditFeed(linenoiseState *l) {
             size_t currlen = linenoiseEditNextLen(l, l->pos);
             size_t prevstart = l->pos - prevlen;
             if (prevlen > sizeof(tmp) || currlen > sizeof(tmp)) break;
-            if (linenoiseRangeOverlapsFold(l,prevstart,prevlen+currlen)) {
-                linenoiseBeep();
-                break;
-            }
             /* Copy current char to tmp, move previous char right, paste tmp. */
             memcpy(tmp, l->buf + l->pos, currlen);
             memmove(l->buf + prevstart + currlen, l->buf + prevstart, prevlen);
@@ -1890,11 +1586,9 @@ char *linenoiseEditFeed(linenoiseState *l) {
     case CTRL_U: /* Ctrl+u, delete the whole line. */
         l->buf[0] = '\0';
         l->pos = l->len = 0;
-        linenoiseFoldClear(l);
         refreshLine(l);
         break;
     case CTRL_K: /* Ctrl+k, delete from current to end of line. */
-        linenoiseAdjustFoldsAfterDelete(l,l->pos,l->len-l->pos);
         l->buf[l->pos] = '\0';
         l->len = l->pos;
         refreshLine(l);

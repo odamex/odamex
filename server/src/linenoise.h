@@ -62,12 +62,7 @@ struct linenoiseState {
     size_t oldpos;      /* Previous refresh cursor position. */
     size_t len;         /* Current edited line length. */
     size_t cols;        /* Number of columns in terminal. */
-    size_t oldrows;     /* Rows used by last refrehsed line (multiline mode) */
-    int oldrpos;        /* Cursor row from last refresh (for multiline clearing). */
     int history_index;  /* The history index we are currently editing. */
-    int fold_count;    /* Number of folded ranges. */
-    size_t fold_start[LINENOISE_MAX_FOLDS]; /* Folded range start offsets. */
-    size_t fold_end[LINENOISE_MAX_FOLDS];   /* Folded range end offsets. */
 };
 
 struct linenoiseCompletions {
