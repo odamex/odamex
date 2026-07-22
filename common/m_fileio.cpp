@@ -194,6 +194,18 @@ bool M_FileExistsExt(const std::string& filename, const char* ext)
 	return false;
 }
 
+/**
+ * @brief Checks to see whether a file exists and is a directory or not
+ *
+ * @param filename Filename to check.
+ */
+bool M_DirectoryExists(const std::string& path)
+{
+	// Returns false on errors
+	std::error_code ec;
+	return fs::is_directory(path, ec);
+}
+
 //
 // M_WriteFile
 //

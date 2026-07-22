@@ -39,6 +39,7 @@ std::string M_GetCWD();
 int64_t M_FileLength (FILE *f);
 bool M_FileExists(const std::string& filename);
 bool M_FileExistsExt(const std::string& filename, const char* ext);
+bool M_DirectoryExists(const std::string& filename);
 
 bool M_WriteFile(std::string filename, void *source, size_t length);
 size_t M_ReadFile(std::string filename, byte **buffer);
