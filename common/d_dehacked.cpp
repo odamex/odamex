@@ -723,15 +723,13 @@ static void PrintUnknown(std::string_view key, const char* loc, const size_t idx
 
 static void HandleMode(std::string_view header, DehScanner& scanner)
 {
-	// TODO C++20: restore the structured bindings here
-	// for (const auto& [name, funcs] : Modes)
-	for (const auto& mode : Modes)
+	for (const auto& [name, funcs] : Modes)
 	{
-		if (!strnicmp(mode.name.data(), header.data(), mode.name.size()))
+		if (name.size() >= header.size() && !strnicmp(name.data(), header.data(), name.size()))
 		{
 			std::visit([&](const auto& func) {
-				func(header, mode.name.length(), scanner);
-			}, mode.funcs);
+				func(header, name.length(), scanner);
+			}, funcs);
 			return;
 		}
 	}
