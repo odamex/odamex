@@ -880,10 +880,10 @@ bool FBehavior::IsScriptClientside (int number) const
 	if (ScriptFlags == NULL)
 		return false;
 
-	const uint16_t *flags = (const uint16_t *)ScriptFlags;
+	const uint16_t* flags = reinterpret_cast<const uint16_t*>(ScriptFlags);
 	for (int i = 0; i < NumScriptFlags; ++i)
 	{
-		if (LESHORT(flags[i*2]) == (uint16_t)number)
+		if (LESHORT(flags[i*2]) == static_cast<uint16_t>(number))
 			return (LESHORT(flags[i*2+1]) & SCRIPTF_ClientSide) != 0;
 	}
 
