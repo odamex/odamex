@@ -376,8 +376,8 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 		fixed_t height, fixed_t width,
 		fixed_t topoffs, fixed_t sideoffs, bool flip)
 {
-	// x / y are in world-space, tx / ty are the same point already
-	// translated into camera-space by the caller
+	// translate the sprite edges from world-space to camera-space
+	// and store in t1 & t2
 	fixed_t t1xold;
 
 	v2fixed_t t1, t2;
@@ -595,7 +595,11 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 
 	// Clip sprites that are definitely out of view.
 	fixed_t camx, camy;
-	R_RotatePoint(thingx - viewx, thingy - viewy, ANG90 - viewangle, camx, camy);
+
+	// too far from the camera to draw anyway if its distance is greater than ~32767
+	// fracunits.
+	if (R_RotatePointSafe(int64_t(thingx) - viewx, int64_t(thingy) - viewy, ANG90 - viewangle, camx, camy))
+		return;
 
 	if (camy < NEARCLIP)
 		return;
@@ -1267,7 +1271,8 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 
 	// translate the particle's position into camera space
 	fixed_t tx, ty;
-	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
+	if (R_RotatePointSafe(int64_t(x) - viewx, int64_t(y) - viewy, ANG90 - viewangle, tx, ty))
+		return;
 
 	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, tx, ty, height, width, topoffs, sideoffs, false);
 

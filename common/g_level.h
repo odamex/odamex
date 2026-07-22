@@ -93,7 +93,7 @@ constexpr static levelFlags_t LEVEL2_TOTALINFIGHTING = BIT(2);
 constexpr static levelFlags_t LEVEL2_INFIGHTINGMASK = BIT_MASK(0, 2);
 constexpr static levelFlags_t LEVEL2_COMPAT_CROSSDROPOFF = BIT(18);
 
-struct acsdefered_s;
+struct acsdefered_t;
 class FBehavior;
 
 struct bossaction_t
@@ -172,7 +172,7 @@ struct level_info_t
 	levelFlags_t  flags2     = 0;
 	int           cluster    = 0;
 	FLZOMemFile*  snapshot   = nullptr;
-	acsdefered_s* defered    = nullptr;
+	acsdefered_t* defered    = nullptr;
 
 	bool exists() const
 	{
@@ -199,7 +199,7 @@ struct level_pwad_info_t
 	levelFlags_t	flags2     = 0;
 	int				cluster    = 0;
 	FLZOMemFile*	snapshot   = nullptr;
-	acsdefered_s*	defered    = nullptr;
+	acsdefered_t*	defered    = nullptr;
 
 	// level_pwad_info_t
 

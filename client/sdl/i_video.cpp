@@ -1111,6 +1111,44 @@ int I_GetSurfaceHeight()
 
 
 //
+// I_WindowToSurfaceCoords
+//
+// Translates a point in window coordinates to the same point in the
+// surface that draws to the window.
+//
+// Returns true if the function was able to translate the position.
+//
+bool I_WindowToSurfaceCoords(int window_x, int window_y, int& surface_x, int& surface_y)
+{
+	if (!I_VideoInitialized() || I_GetWindow() == nullptr)
+		return false;
+
+	int x, y;
+	if (!I_GetWindow()->windowToSurfaceCoords(window_x, window_y, x, y))
+		return false;
+
+	// The surface everything draws to may be a matted sub-surface centered
+	// inside the window's surface, so shift into its coordinate space.
+	const IWindowSurface* window_surface = I_GetWindow()->getPrimarySurface();
+	const IWindowSurface* draw_surface = I_GetPrimarySurface();
+
+	if (window_surface == nullptr || draw_surface == nullptr)
+		return false;
+
+	x -= (window_surface->getWidth() - draw_surface->getWidth()) / 2;
+	y -= (window_surface->getHeight() - draw_surface->getHeight()) / 2;
+
+	if (x < 0 || x >= draw_surface->getWidth() || y < 0 || y >= draw_surface->getHeight())
+		return false;
+
+	surface_x = x;
+	surface_y = y;
+
+	return true;
+}
+
+
+//
 // I_IsProtectedReslotuion
 //
 // [ML] If this is 320x200 or 640x400, the resolutions

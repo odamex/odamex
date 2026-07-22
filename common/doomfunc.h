@@ -166,7 +166,7 @@ struct drop_wrapper
         return it;
     }
 
-    inline auto end() { return std::end(iterable); }
+    auto end() { return std::end(iterable); }
 };
 
 /**
@@ -182,8 +182,7 @@ struct visitor : Ts... { using Ts::operator()...; };
 template<class... Ts>
 visitor(Ts...) -> visitor<Ts...>;
 
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-// requires std::is_integral_v<T>
+template <std::integral T>
 constexpr auto to_unsigned(T x)
 {
 	return static_cast<std::make_unsigned_t<T>>(x);
@@ -198,6 +197,40 @@ constexpr auto to_unsigned(T x)
 	__builtin_unreachable();
 #endif
 }
+
+constexpr uint32_t CONST_HASH(std::string_view str)
+{
+	uint32_t hash = 0x811c9dc5;
+	constexpr uint32_t prime = 0x1000193;
+
+	for (uint8_t value : str)
+	{
+		hash = hash ^ value;
+		hash *= prime;
+	}
+
+	return hash;
+}
+
+// same as CONST_HASH, but all ascii uppercase characters
+// are converted to lowercase before hashing
+constexpr uint32_t CONST_HASH_NO_CASE(std::string_view str)
+{
+	uint32_t hash = 0x811c9dc5;
+	constexpr uint32_t prime = 0x1000193;
+
+	for (uint8_t value : str)
+	{
+		if (value >= 'A' && value <= 'Z')
+			value += 0x20;
+
+		hash = hash ^ value;
+		hash *= prime;
+	}
+
+	return hash;
+}
+
 
 }
 

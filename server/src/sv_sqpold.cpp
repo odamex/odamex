@@ -92,7 +92,7 @@ uint32_t SV_NewToken()
 	uint64_t now = I_MSTime() * TICRATE / 1000;
 
 	token_t token;
-	token.id = rand()*time(0);
+	token.id = rand()*time(nullptr);
 	token.issued = now;
 	token.from = net_from;
 

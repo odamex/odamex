@@ -73,7 +73,7 @@ EXTERN_CVAR(sv_callvote_timelimit)
 static void SV_GlobalVoteUpdate();
 
 // Vote class goes here
-Vote *vote = 0;
+std::unique_ptr<Vote> vote = nullptr;
 
 // Checks a particular vote to see if it's been enabled by the server
 bool Vote::setup_check_cvar()
@@ -1116,7 +1116,7 @@ void SV_Callvote(player_t& player, const odaproto::clc::CallVote& msg)
 	}
 
 	// Is another vote already in progress?
-	if (vote != 0)
+	if (vote != nullptr)
 	{
 		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Another vote is already in progress.\n");
 		return;
@@ -1126,46 +1126,46 @@ void SV_Callvote(player_t& player, const odaproto::clc::CallVote& msg)
 	switch (votecmd)
 	{
 	case VOTE_KICK:
-		vote = new KickVote;
+		vote = std::make_unique<KickVote>();
 		break;
 	case VOTE_FORCESPEC:
-		vote = new ForcespecVote;
+		vote = std::make_unique<ForcespecVote>();
 		break;
 	case VOTE_FORCESTART:
-		vote = new ForcestartVote;
+		vote = std::make_unique<ForcestartVote>();
 		break;
 	case VOTE_RANDCAPS:
-		vote = new RandcapsVote;
+		vote = std::make_unique<RandcapsVote>();
 		break;
 	case VOTE_RANDPICKUP:
-		vote = new RandpickupVote;
+		vote = std::make_unique<RandpickupVote>();
 		break;
 	case VOTE_MAP:
-		vote = new MapVote;
+		vote = std::make_unique<MapVote>();
 		break;
 	case VOTE_NEXTMAP:
-		vote = new NextmapVote;
+		vote = std::make_unique<NextmapVote>();
 		break;
 	case VOTE_RANDMAP:
-		vote = new RandmapVote;
+		vote = std::make_unique<RandmapVote>();
 		break;
 	case VOTE_RESTART:
-		vote = new RestartVote;
+		vote = std::make_unique<RestartVote>();
 		break;
 	case VOTE_FRAGLIMIT:
-		vote = new FraglimitVote;
+		vote = std::make_unique<FraglimitVote>();
 		break;
 	case VOTE_SCORELIMIT:
-		vote = new ScorelimitVote;
+		vote = std::make_unique<ScorelimitVote>();
 		break;
 	case VOTE_TIMELIMIT:
-		vote = new TimelimitVote;
+		vote = std::make_unique<TimelimitVote>();
 		break;
 	case VOTE_COINFLIP:
-		vote = new CoinflipVote;
+		vote = std::make_unique<CoinflipVote>();
 		break;
 	case VOTE_LIVES:
-		vote = new LivesVote;
+		vote = std::make_unique<LivesVote>();
 		break;
 	default:
 		return;
@@ -1179,8 +1179,7 @@ void SV_Callvote(player_t& player, const odaproto::clc::CallVote& msg)
 	if (!valid)
 	{
 		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "{}\n", vote->get_error());
-		delete vote;
-		vote = 0;
+		vote.reset();
 		return;
 	}
 
@@ -1215,7 +1214,7 @@ void SV_VoteCmd(player_t& player, const std::vector<std::string>& args)
 	}
 
 	// Is there even a vote going on?
-	if (vote == 0)
+	if (vote == nullptr)
 	{
 		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Invalid vote, no vote in progress.\n");
 		return;
@@ -1236,7 +1235,7 @@ void SV_VoteCmd(player_t& player, const std::vector<std::string>& args)
 void Vote_Disconnect(player_t &player)
 {
 	// Is there even a vote happening?  If not, we don't really care.
-	if (vote == 0)
+	if (vote == nullptr)
 	{
 		return;
 	}
@@ -1264,7 +1263,7 @@ void Vote_Runtic()
 	}
 
 	// Is there even a vote happening?
-	if (vote == 0)
+	if (vote == nullptr)
 	{
 		return;
 	}
@@ -1282,8 +1281,7 @@ void Vote_Runtic()
 			SV_BroadcastPrintFmt("{}\n", vote->get_error());
 		}
 
-		delete vote;
-		vote = 0;
+		vote.reset();
 		return;
 	}
 

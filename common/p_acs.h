@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <span>
+
 #include "dobject.h"
 #include "r_defs.h"
 
@@ -54,6 +56,14 @@ enum
 	SCRIPT_Disconnect	= 14,
 };
 
+// Per-script flags stored in the SFLG chunk of ZDoom enhanced (ACSe)
+// behavior lumps.
+enum
+{
+	SCRIPTF_Net			= 1,	// Safe to activate ("puke") over the network
+	SCRIPTF_ClientSide	= 2,	// Runs on the client rather than the server
+};
+
 enum ACSFormat { ACS_Old, ACS_Enhanced, ACS_LittleEnhanced, ACS_Unknown };
 
 class FBehavior
@@ -70,6 +80,7 @@ public:
 	const char *LookupString (uint32_t index, uint32_t ofs=0) const;
 	const char *LocalizeString (uint32_t index) const;
 	void StartTypedScripts (uint16_t type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
+	bool IsScriptClientside(int number) const;
 	uint32_t PC2Ofs (int *pc) const { return reinterpret_cast<byte*>(pc) - Data; }
 	int *Ofs2PC (uint32_t ofs) const { return reinterpret_cast<int*>(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }
@@ -89,6 +100,8 @@ private:
 	int NumScripts;
 	byte *Functions;
 	int NumFunctions;
+	byte *ScriptFlags;
+	int NumScriptFlags;
 	ArrayInfo *Arrays;
 	int NumArrays;
 	uint32_t LanguageNeutral;
@@ -363,9 +376,15 @@ public:
 
 		PCD_PLAYERNUMBER,
 		PCD_ACTIVATORTID,
+/*250*/
+		PCD_THING_PROJECTILE2 = 252,
+		PCD_STRLEN,
 		PCD_GETCVAR = 255,
 /*260*/	PCD_GETACTORANGLE = 260,
 		PCD_GETLEVELINFO = 265,
+		PCD_SETACTORANGLE = 276,
+/*280*/	PCD_SPAWNPROJECTILE = 280,
+		PCD_SPAWNSPOTFACING = 289,
 /*290*/
 		PCD_ANDSCRIPTVAR = 291,
 		PCD_ANDMAPVAR,
@@ -402,10 +421,36 @@ public:
 		PCD_RSMAPARRAY,
 		PCD_RSWORLDARRAY,
 		PCD_RSGLOBALARRAY,
+/*340*/
+		PCD_PRINTBINARY = 349,
+/*350*/ PCD_PRINTHEX,
+		PCD_CALLFUNC,
 
-		PCODE_COMMAND_COUNT
+		PCODE_COMMAND_COUNT // is this useful for anything?
 	};
 
+	// CALLFUNC function indices
+	enum
+	{
+		CF_SETACTIVATOR = 12,
+		CF_SETACTIVATORTOTARGET,
+		CF_SETSKYSCROLLSPEED = 18,
+		CF_SPAWNSPOTFORCED = 20,
+		CF_SPAWNSPOTFACINGFORCED,
+		CF_SPAWNFORCED = 36,
+		CF_SQRT = 48,
+		CF_FIXEDSQRT,
+		CF_VECTORLENGTH,
+		CF_STRCMP = 63,
+		CF_STRICMP,
+		CF_STRLEFT,
+		CF_STRRIGHT,
+		CF_STRMID,
+		CF_SETSECTORDAMAGE = 94,
+		CF_FLOOR = 207,
+		CF_ROUND,
+		CF_CEIL,
+	};
 
 	static void ACS_SetLineTexture(const int* args, byte argCount);
 	static void ACS_ClearInventory(AActor* actor);
@@ -448,6 +493,7 @@ public:
 		CLASS_MAGE =			2
 	};
 	enum {
+		// why unused - remove?
 		SKILL_VERY_EASY =		0,
 		SKILL_EASY =			1,
 		SKILL_NORMAL =			2,
@@ -472,6 +518,15 @@ public:
 		LEVELINFO_TOTAL_MONSTERS,
 		LEVELINFO_KILLED_MONSTERS,
 		LEVELINFO_SUCK_TIME
+	};
+
+	enum
+	{
+		PRINTNAME_LEVELNAME  = -1,
+		PRINTNAME_LEVEL      = -2,
+		PRINTNAME_NEXTLEVEL  = -3,
+		PRINTNAME_NEXTSECRET = -4,
+		PRINTNAME_SKILL      = -5
 	};
 
 	enum EScriptState : uint8_t
@@ -524,8 +579,9 @@ protected:
 	static int CountPlayers ();
 	static void SetLineTexture (int lineid, int side, int position, int name);
 
-	static int DoSpawn (int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle);
-	static int DoSpawnSpot (int type, int spot, int tid, int angle);
+	static int DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, angle_t angle, bool force);
+	static int DoSpawnSpot(int type, int spot, int tid, std::optional<angle_t> angle, bool force);
+	static void DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t speed, fixed_t vspeed, bool gravity, int newtid);
 
 	static void SetLineBlocking(int lineid, int flags);
 	static void SetLineMonsterBlocking(int lineid, int toggle);
@@ -544,6 +600,13 @@ protected:
 	static void DoFadeRange (AActor* who, int r1, int g1, int b1, int a1,
 		int r2, int g2, int b2, int a2, fixed_t time);
 
+	struct callfunc_args_error_t
+	{
+		int num_required_args;
+	};
+
+	auto CallFunction(const int scriptnum, const int func, const std::span<const int> args)
+		-> nonstd::expected<int, callfunc_args_error_t>;
 private:
 	DLevelScript ();
 
@@ -559,7 +622,7 @@ public:
 
 	void RunThink () override;
 
-	DLevelScript *RunningScripts[1000];	// Array of all synchronous scripts
+	std::array<DLevelScript*, 1000> RunningScripts;	// Array of all synchronous scripts
 	static DACSThinker *ActiveThinker;
 
     void DumpScriptStatus();
@@ -572,9 +635,9 @@ private:
 };
 
 // The structure used to control scripts between maps
-struct acsdefered_s
+struct acsdefered_t
 {
-	struct acsdefered_s *next;
+	acsdefered_t *next;
 
 	enum EType
 	{
@@ -587,8 +650,6 @@ struct acsdefered_s
 	int arg0, arg1, arg2;
 	int playernum;
 };
-typedef struct acsdefered_s acsdefered_t;
 
-
-FArchive &operator<< (FArchive &arc, acsdefered_s *defer);
-FArchive &operator>> (FArchive &arc, acsdefered_s* &defer);
+FArchive &operator<< (FArchive &arc, acsdefered_t *defer);
+FArchive &operator>> (FArchive &arc, acsdefered_t* &defer);

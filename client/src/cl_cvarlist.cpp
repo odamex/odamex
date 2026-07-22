@@ -270,6 +270,9 @@ CVAR_RANGE_FUNC_DECL(ui_transgreen, "0", "",
 
 CVAR_RANGE_FUNC_DECL(ui_transblue, "0", "",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
+
+CVAR(				ui_mouse, "1", "Navigate the menus and console with the mouse",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 // Init settings
 // -------------
 
@@ -787,6 +790,9 @@ CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the
 
 CVAR(           r_drawnetcredibility, "0", "Add a particle to each actor indicating how credible the client considers the actor's position",
                 CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR_RANGE(		r_portalrecursions, "16", "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
 
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",

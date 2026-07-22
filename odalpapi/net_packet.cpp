@@ -200,6 +200,7 @@ void Server::ResetData()
 	Info.MaxClients = 0;
 	Info.MaxPlayers = 0;
 	Info.ScoreLimit = 0;
+	Info.FragLimit = 0;
 	Info.GameType = GT_Cooperative;
 	Info.PasswordHash = "";
 	Info.CurrentMap = "";
@@ -284,41 +285,35 @@ bool Server::ReadCvars()
 			break;
 		}
 
-		// Filter out important information for us to use, it'd be nicer to have
-		// a launcher-side cvar implementation though
+		// Mirror important values into dedicated struct fields for quick access.
+		// These cvars are still kept in the cvar list below so callers that
+		// enumerate cvars (e.g. the server details dialog) can see them too.
 		if(Cvar.Name == "sv_hostname")
 		{
 			Info.Name = Cvar.Value;
-
-			continue;
 		}
 		else if(Cvar.Name == "sv_maxplayers")
 		{
 			Info.MaxPlayers = Cvar.ui8;
-
-			continue;
 		}
 		else if(Cvar.Name == "sv_maxclients")
 		{
 			Info.MaxClients = Cvar.ui8;
-
-			continue;
 		}
 		else if(Cvar.Name == "sv_gametype")
 		{
 			Info.GameType = (GameType_t)Cvar.ui8;
-
-			continue;
 		}
 		else if(Cvar.Name == "sv_scorelimit")
 		{
 			Info.ScoreLimit = Cvar.ui16;
-
-			continue;
+		}
+		else if (Cvar.Name == "sv_fraglimit")
+		{
+			Info.FragLimit = Cvar.ui16;
 		}
 		else if(Cvar.Name == "sv_timelimit")
 		{
-			// Add this to the cvar list as well
 			Info.TimeLimit = Cvar.ui16;
 		}
 		else if (Cvar.Name == "g_lives")

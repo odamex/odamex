@@ -76,6 +76,8 @@ static bool				cursoron = false;
 static int				ConBottom = 0;
 static int RowAdjust = 0;
 
+static const int		CONSOLE_WHEEL_LINES = 3;
+
 int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
 
 int			CursorTicker, ScrollState = 0;
@@ -2039,7 +2041,7 @@ static bool C_HandleKey(const event_t& ev)
 			TabCycleClear();
 			return true;
 		}
-	case OKEY_MOUSE3:
+	case OKEY_MOUSE2:
 		// Paste from clipboard - add each character to command line
 		CmdLine.insertString(I_GetClipboardText());
 		CmdCompletions.clear();
@@ -2095,6 +2097,24 @@ static bool C_HandleKey(const event_t& ev)
 			else
 				// Start scrolling console buffer down
 				ScrollState = SCROLLDN;
+			return true;
+		}
+		else if (ch == OKEY_MWHEELUP)
+		{
+			// Scroll the console buffer up a few lines at a time
+			if (static_cast<int>(ConRows) > static_cast<int>(ConBottom / ConCharSize))
+			{
+				RowAdjust += CONSOLE_WHEEL_LINES;
+				if (RowAdjust > static_cast<int>(ConRows - ConBottom / ConCharSize))
+					RowAdjust = ConRows - ConBottom / ConCharSize;
+			}
+			return true;
+		}
+		else if (ch == OKEY_MWHEELDOWN)
+		{
+			RowAdjust -= CONSOLE_WHEEL_LINES;
+			if (RowAdjust < 0)
+				RowAdjust = 0;
 			return true;
 		}
 		else if (Key_IsLeftKey(ch, NumLockEnabled))

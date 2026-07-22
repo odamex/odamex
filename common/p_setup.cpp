@@ -471,7 +471,7 @@ void P_LoadNodes(int lump)
 		std::is_same_v<MapNodeType, mapnode_deepbsp_t> ? 8 : 0;
 
 	numnodes = (W_LumpLength(lump) - headerSize) / sizeof(MapNodeType);
-	nodes = static_cast<node_t*>(Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0));
+	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
 	byte* data = reinterpret_cast<byte*>(W_CacheLumpNum<MapNodeType>(lump, PU_STATIC));
 
 	const MapNodeType* mn = reinterpret_cast<const MapNodeType*>(data + headerSize);
@@ -2234,10 +2234,18 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 
+	P_ClearSkyPickers();
+	P_ClearStackLinks();
+
 	if (!HasBehavior)
 		P_LoadThings (lumpnum+ML_THINGS);
 	else
 		P_LoadThings2 (lumpnum+ML_THINGS, position);	// [RH] Load Hexen-style things
+
+	// Sky pickers and stacked-sector pairs can only be resolved once every
+	// SkyViewpoint / stack point has spawned.
+	P_ResolveSkyPickers();
+	P_ResolveStackLinks();
 
 	if (!HasBehavior)
 		P_TranslateTeleportThings(); // [RH] Assign teleport destination TIDs

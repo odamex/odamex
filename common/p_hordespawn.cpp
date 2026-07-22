@@ -415,7 +415,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
 		if (it->type != spawn.type)
 			continue;
 
-		SpawnPointWeight spw = {0, 0.0f, 0, false};
+		SpawnPointWeight spw = {nullptr, 0.0f, 0, false};
 		spw.spawn = &*it;
 		spw.dist = P_AproxDistance2(it->mo, spawn.mo);
 		weights.push_back(spw);

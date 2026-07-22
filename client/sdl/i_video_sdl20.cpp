@@ -28,6 +28,7 @@
 #include "i_sdl.h"
 #include <stdlib.h>
 #include <cassert>
+#include <cmath>
 
 #include <algorithm>
 #include <functional>
@@ -70,7 +71,7 @@ EXTERN_CVAR (vid_pillarbox)
 static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 {
 	int display_index = 0;
-	SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
+	SDL_DisplayMode mode = { .format = SDL_PIXELFORMAT_UNKNOWN, .w = 0, .h = 0, .refresh_rate = 0, .driverdata = nullptr };
 
 	int display_mode_count = SDL_GetNumDisplayModes(display_index);
 	if (display_mode_count < 1)
@@ -364,6 +365,56 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 		SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
 
 	SDL_RenderPresent(mSDLRenderer);
+}
+
+
+//
+// ISDL20TextureWindowSurfaceManager::windowToSurfaceCoords
+//
+// Inverts the transformation the finishRefresh() function applies when
+// presenting the texture:
+// 
+// window pixels -> renderer logical coordinates -> surface pixels.
+//
+bool ISDL20TextureWindowSurfaceManager::windowToSurfaceCoords(
+		int window_x, int window_y, int& surface_x, int& surface_y) const
+{
+	if (mSDLRenderer == nullptr)
+		return false;
+
+	// Undo the letterboxing/scaling applied by SDL_RenderSetLogicalSize.
+	float logical_x, logical_y;
+
+	// Do people even sub in old SDL.dlls anymore?
+	#if SDL_VERSION_ATLEAST(2, 0, 18)
+		SDL_RenderWindowToLogical(mSDLRenderer, window_x, window_y, &logical_x, &logical_y);
+	#else
+		SDL_Rect viewport;
+		float scale_x, scale_y;
+		SDL_RenderGetViewport(mSDLRenderer, &viewport);
+		SDL_RenderGetScale(mSDLRenderer, &scale_x, &scale_y);
+		if (scale_x <= 0.0f || scale_y <= 0.0f)
+			return false;
+		logical_x = window_x / scale_x - viewport.x;
+		logical_y = window_y / scale_y - viewport.y;
+	#endif
+
+	// Undo the destination rectangle the texture is blitted into.
+	// 
+	// When not pillarboxing, the logical size is the surface size
+	// and this is a no-op.
+	if (mDrawLogicalRect)
+	{
+		if (mLogicalRect.w <= 0 || mLogicalRect.h <= 0)
+			return false;
+		logical_x = (logical_x - mLogicalRect.x) * mWidth / static_cast<float>(mLogicalRect.w);
+		logical_y = (logical_y - mLogicalRect.y) * mHeight / static_cast<float>(mLogicalRect.h);
+	}
+
+	surface_x = static_cast<int>(std::floor(logical_x));
+	surface_y = static_cast<int>(std::floor(logical_y));
+
+	return surface_x >= 0 && surface_x < mWidth && surface_y >= 0 && surface_y < mHeight;
 }
 
 

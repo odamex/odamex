@@ -261,13 +261,19 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 	if (dcol.post->length != dcol.textureheight >> FRACBITS)
 	{
-		int count = dcol.textureheight >> FRACBITS;
 		tallpost_t* srcpost = dcol.post;
 
 		int destpostlen = 0;
 
 		static byte* destpostraw[512];
 		tallpost_t* destpost = reinterpret_cast<tallpost_t*>(destpostraw);
+
+		// a 512 pixel tall post can overflow destpostraw
+		// because of the 4 byte header and 4 byte footer.
+		// so rather than increase it to 513 and imply that we
+		// handle 513px at a time, clamp it instead.
+		const int maxcount = static_cast<int>(sizeof(destpostraw)) - 8;
+		int count = MIN(dcol.textureheight >> FRACBITS, maxcount);
 
 		destpost->topdelta = 0;
 
@@ -277,8 +283,11 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 			if (srcpost->topdelta == destpostlen)
 			{
-				memcpy(destpost->data() + destpostlen, srcpost->data(), srcpost->length);
-					   destpostlen += srcpost->length;
+				// clamp to remaining to ensure malformed post lengths
+				// don't crash
+				const int copylen = MIN<int>(srcpost->length, remaining);
+				memcpy(destpost->data() + destpostlen, srcpost->data(), copylen);
+				destpostlen += copylen;
 			}
 			else
 			{
@@ -967,8 +976,15 @@ void R_StoreWallRange(int start, int stop)
 				   (frontsector->floor_angle + frontsector->base_floor_angle)
 				;
 
+			// Sky hack
+			// MBF sky transfers split the visplane in 2, so in order for sky
+			// transfer skyhack to work, we need to identify both sectors' sky
+			const bool ceilingskyhack =
+				!R_IsSkyFlat(frontsector->ceilingpic) || !R_IsSkyFlat(backsector->ceilingpic);
+
 			markceiling =
-				  !P_IdenticalPlanes(&backsector->ceilingplane, &frontsector->ceilingplane)
+				  (ceilingskyhack &&
+				   !P_IdenticalPlanes(&backsector->ceilingplane, &frontsector->ceilingplane))
 				|| backsector->lightlevel != frontsector->lightlevel
 				|| backsector->ceilingpic != frontsector->ceilingpic
 
@@ -993,10 +1009,6 @@ void R_StoreWallRange(int start, int stop)
 				|| (backsector->ceiling_angle + backsector->base_ceiling_angle) !=
 				   (frontsector->ceiling_angle + frontsector->base_ceiling_angle)
 				;
-
-			// Sky hack
-			markceiling = markceiling &&
-				(!R_IsSkyFlat(frontsector->ceilingpic) || !R_IsSkyFlat(backsector->ceilingpic));
 		}
 
 

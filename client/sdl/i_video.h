@@ -76,6 +76,8 @@ int I_GetVideoBitDepth();
 int I_GetSurfaceWidth();
 int I_GetSurfaceHeight();
 
+bool I_WindowToSurfaceCoords(int window_x, int window_y, int& surface_x, int& surface_y);
+
 bool I_IsProtectedResolution(const IWindowSurface* surface = I_GetPrimarySurface());
 bool I_IsProtectedResolution(int width, int height);
 bool I_IsWideResolution(int width, int height);
@@ -377,6 +379,8 @@ public:
 
 	virtual void startRefresh() { }
 	virtual void finishRefresh() { }
+	virtual bool windowToSurfaceCoords(int window_x, int window_y, int& surface_x, int& surface_y) const
+	{	return false;	}
 };
 
 
@@ -479,6 +483,9 @@ public:
 
 	virtual void startRefresh() { }
 	virtual void finishRefresh() { }
+
+	virtual bool windowToSurfaceCoords(int window_x, int window_y, int& surface_x, int& surface_y) const
+	{	return false;	}
 
 	virtual void setWindowTitle(const std::string& caption = "") { }
 	virtual void setWindowIcon() { }
