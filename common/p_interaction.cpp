@@ -62,6 +62,7 @@ EXTERN_CVAR(sv_friendlymonsterfire)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
+EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
@@ -72,6 +73,7 @@ EXTERN_CVAR(g_lives)
 // sapientlion - experimental
 EXTERN_CVAR(sv_weapondrop)
 
+// TODO: does this need to be global?
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
@@ -79,7 +81,7 @@ int MeansOfDeath;
 std::array<int, NUMAMMO> maxammo  {200, 50, 300, 50};
 std::array<int, NUMAMMO> clipammo { 10,  4,  20,  1};
 
-void AM_Stop(void);
+void AM_Stop();
 void SV_SpawnMobj(AActor *mobj);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
@@ -257,12 +259,16 @@ int P_GetDeathCount(const player_t& player)
 //
 
 // mbf21: take into account new weapon autoswitch flags
-static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int oldammo)
+static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammotype, int oldammo)
 {
+	const weapontype_t currentweapon = (player.pendingweapon == wp_nochange)
+            ? player.readyweapon
+            : player.pendingweapon;
+
 	// Keep the original behaviour while playbacking demos only.
 	if (demoplayback)
 	{
-		switch (ammo)
+		switch (ammotype)
 		{
 		case am_clip:
 			if (player.readyweapon == wp_fist)
@@ -296,23 +302,30 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int 
 			break;
 		}
 	}
-	else if (player.userinfo.switchweapon != WPSW_NEVER)
+	else if (player.userinfo.switchweapon != WPSW_NEVER &&
+			 weaponinfo[currentweapon].flags & WPF_AUTOSWITCHFROM &&
+			 (weaponinfo[currentweapon].ammotype == am_noammo ||
+				weaponinfo[currentweapon].ammotype != ammotype))
 	{
-		if (weaponinfo[player.readyweapon].flags & WPF_AUTOSWITCHFROM &&
-			(weaponinfo[player.readyweapon].ammotype == am_noammo ||
-		     player.ammo[weaponinfo[player.readyweapon].ammotype] != ammo))
+		// respect the "attack cancels PWO" setting if player is attacking
+		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&
+			sv_allowpwo &&
+            player.cmd.buttons & BT_ATTACK &&
+            player.ammo[ammotype] > 0)
+        {
+            return IEV_EquipRemove;
+        }
+
+		for (int i = NUMWEAPONS - 1; i > currentweapon; --i)
 		{
-			for (int i = NUMWEAPONS - 1; i > player.readyweapon; --i)
+			if (player.weaponowned[i] &&
+				not (weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
+				weaponinfo[i].ammotype == ammotype &&
+				weaponinfo[i].ammopershot > oldammo &&
+				weaponinfo[i].ammopershot <= player.ammo[ammotype])
 			{
-				if (player.weaponowned[i] &&
-				    !(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
-				    weaponinfo[i].ammotype == ammo &&
-				    weaponinfo[i].ammopershot > oldammo &&
-				    weaponinfo[i].ammopershot <= player.ammo[ammo])
-				{
-					player.pendingweapon = static_cast<weapontype_t>(i);
-					break;
-				}
+				player.pendingweapon = static_cast<weapontype_t>(i);
+				break;
 			}
 		}
 	}
@@ -531,7 +544,7 @@ ItemEquipVal P_GiveCard(player_t& player, card_t card)
 	}
 
 	player.bonuscount = BONUSADD;
-	player.cards[card] = 1;
+	player.cards[card] = true;
 
 	if (multiplayer)
 	{

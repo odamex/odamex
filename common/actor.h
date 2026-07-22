@@ -815,8 +815,8 @@ public:
 		int m_capacity;
 		AActor**  m_next;
 		AActor*** m_prev;
-		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext;
-		std::array<AActor**, INLINE_BLOCKS> m_inlineprev;
+		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext{};
+		std::array<AActor**, INLINE_BLOCKS> m_inlineprev{};
 	};
 
 	// Interaction info, by BLOCKMAP.

@@ -348,6 +348,10 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
 	const auto& key1 = ListCtrl->m_sortData[static_cast<size_t>(item1)];
 	const auto& key2 = ListCtrl->m_sortData[static_cast<size_t>(item2)];
 
+	// Bottom-pinned rows always sink below the rest, independent of sort order.
+	if(key1.bottom != key2.bottom)
+		return key1.bottom ? 1 : -1;
+
 	if(SortCol == ListCtrl->GetSpecialSortColumn())
 		return SortOrder ? key2.image - key1.image : key1.image - key2.image;
 	else
@@ -372,6 +376,7 @@ void wxAdvancedListCtrl::Sort()
 		Item.SetId(itemid);
 		GetItem(Item);
 		auto& sortkey = m_sortData.emplace_back();
+		sortkey.bottom = IsSortedToBottom(itemid);
 		if(SortCol == GetSpecialSortColumn())
 			sortkey.image = Item.GetImage();
 		else

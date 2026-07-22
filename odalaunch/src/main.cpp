@@ -31,6 +31,7 @@
 #include "xrc_resource.h"
 
 #include "net_io.h"
+#include "cvardoc_db.h"
 
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
@@ -55,6 +56,13 @@ bool Application::OnInit()
 
 	// load resources
 	InitXmlResource();
+
+	// Load the cvar documentation database (best-effort; the launcher runs
+	// fine without it). The client and server docs are merged into the
+	// deduplicated union of every cvar Odamex knows about; either may be
+	// absent.
+	GetCvarDb().LoadFromFiles(
+	    {OdaResolveCvarDocPath(), OdaResolveSrvCvarDocPath()});
 
 	// create main window, get size dimensions and show it
 	MAIN_DIALOG = new dlgMain(nullptr);

@@ -147,7 +147,7 @@ odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, const lin
 odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
                                                        const AActor* activator,
                                                        const char* print,
-                                                       const std::vector<int>& args);
+                                                       const std::span<const int> args);
 odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(const DThinker* thinker);
 odaproto::svc::VoteUpdate SVC_VoteUpdate(const vote_state_t& state);
 odaproto::svc::Maplist SVC_Maplist(const maplist_status_t status);

@@ -494,6 +494,23 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		msg.add_args(mo->args[1]);
 	}
 
+	if (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK)
+	{
+		msg.add_args(mo->tid);
+		msg.add_args(mo->args[0]); // boundary flat alpha
+	}
+
+	if (mo->type == MT_SKYVIEWPOINT)
+	{
+		msg.add_args(mo->tid);
+	}
+
+	if (mo->type == MT_SKYPICKER)
+	{
+		msg.add_args(mo->args[0]);
+		msg.add_args(mo->args[1]); // which planes to apply the viewpoint to
+	}
+
 	// denis - check type as that is what the client will be spawning
 	if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE)
 	{
@@ -1575,7 +1592,7 @@ odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, const lin
 odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
                                                        const AActor* activator,
                                                        const char* print,
-                                                       const std::vector<int>& args)
+                                                       const std::span<const int> args)
 {
 	odaproto::svc::ExecuteACSSpecial msg;
 

@@ -1483,6 +1483,8 @@ enum mobjtype_t: int32_t {
     MT_NODE,        //Added by MC:
     MT_WATERZONE,
     MT_SECRETTRIGGER,
+    MT_UPPERSTACK,
+    MT_LOWERSTACK,
     MT_SKYVIEWPOINT,
     MT_SKYPICKER,
     MT_SECTORSILENCER,
@@ -1797,6 +1799,11 @@ struct mobjinfo_t
 	const char* ripsound    = nullptr;
 	int32_t droppeditem     = MT_NULL;
 
+	std::string display_name = "";
+	// indicates it was explicitly overriden from the default by dehacked
+	bool display_name_set    = false;
+	std::string deh_name     = "";
+
 	// ID24 stuff
 	// int minrespawntics      = 420;
 	// int respawndice         = 4;
@@ -1809,6 +1816,9 @@ struct mobjinfo_t
 	// std::string pickupmessage = "";
 	// OLumpName translation   = nullptr;
 	// fixed_t selfdamage      = FRACUNIT;
+
+	[[nodiscard]]
+	std::string getDisplayName() const;
 };
 
 inline auto format_as(const mobjinfo_t& info)

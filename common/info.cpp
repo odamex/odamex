@@ -30,7 +30,9 @@
 // Data.
 #include "m_fixed.h"
 #include "info.h"
+#include "infomap.h"
 #include "actor.h"
+#include "gstrings.h"
 
 const char* doom_sprnames[::NUMSPRITES] = {
 	"TROO","SHTG","PUNG","PISG","PISF","SHTF","SHT2","CHGG","CHGF","MISG",
@@ -1245,6 +1247,19 @@ state_t	boomstates[S_MUSHROOM + 1] = {
 	{ S_MUSHROOM, SPR_MISL,32769,8,A_Mushroom,S_EXPLODE2,0,0, {0, 0, 0, 0, 0, 0, 0, 0}, STATEF_NONE},  // S_MUSHROOM
 };
 
+std::string mobjinfo_t::getDisplayName() const
+{
+	if (!deh_name.empty() && !display_name_set)
+		return deh_name;
+	if (!display_name.empty())
+	{
+		if (display_name[0] == '$')
+			return GStrings(OString(StdStringToUpper(display_name).substr(1)));
+		return display_name;
+	}
+	return P_MobjToName(static_cast<mobjtype_t>(this->type));
+}
+
 // [Blair] Since Odamex has more out-of-the-box states,
 // the new DEHExtra state spec starts at 1100, while we have around
 // 1130.
@@ -1304,7 +1319,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_POSSESSED",
 	.meleerange       = 64_fx,
 	.droppeditem      = MT_CLIP,
-  },
+	.display_name     = "$FN_ZOMBIE",
+	},
 
 	{ // MT_SHOTGUY
 	.type             = MT_SHOTGUY,
@@ -1333,7 +1349,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_SPOS_RAISE1,
 	.name             = "MT_SHOTGUY",
 	.droppeditem      = MT_SHOTGUN,
-  },
+	.display_name     = "$FN_SHOTGUN",
+	},
 
 	{ // MT_VILE
 	.type             = MT_VILE,
@@ -1359,6 +1376,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_MCROSS | MF2_PASSMOBJ | MF2_PUSHWALL,
 	.name             = "MT_VILE",
 	.flags3           = MF3_SHORTMRANGE | MF3_DMGIGNORED | MF3_NOTHRESHOLD,
+	.display_name     = "$FN_ARCH",
 	},
 
 	{ // MT_FIRE
@@ -1401,6 +1419,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_SKEL_RAISE1,
 	.name             = "MT_UNDEAD",
 	.flags3           = MF3_LONGMELEE | MF3_RANGEHALF,
+	.display_name     = "$FN_REVEN",
 	},
 
 	{ // MT_TRACER
@@ -1460,6 +1479,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_FATT_RAISE1,
 	.name             = "MT_FATSO",
 	.flags3           = MF3_MAP07BOSS1,
+	.display_name     = "$FN_MANCU",
 	},
 
 	{ // MT_FATSHOT
@@ -1508,6 +1528,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_CPOS_RAISE1,
 	.name             = "MT_CHAINGUY",
 	.droppeditem      = MT_CHAINGUN,
+	.display_name     = "$FN_HEAVY",
 	},
 
 	{ // MT_TROOP
@@ -1537,6 +1558,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
 	.raisestate       = S_TROO_RAISE1,
 	.name             = "MT_TROOP",
+	.display_name     = "$FN_IMP",
 	},
 
 	{ // MT_SERGEANT
@@ -1564,6 +1586,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
 	.raisestate       = S_SARG_RAISE1,
 	.name             = "MT_SERGEANT",
+	.display_name     = "$FN_DEMON",
 	},
 
 	{ // MT_SHADOWS
@@ -1591,6 +1614,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
 	.raisestate       = S_SARG_RAISE1,
 	.name             = "MT_SHADOWS",
+	.display_name     = "$FN_SPECTRE",
 	},
 
 	{ // MT_HEAD
@@ -1617,6 +1641,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
 	.raisestate       = S_HEAD_RAISE1,
 	.name             = "MT_HEAD",
+	.display_name     = "$FN_CACO",
 	},
 
 	{ // MT_BRUISER
@@ -1646,6 +1671,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_BRUISER",
 	.projectile_group = PG_BARON,
 	.flags3           = MF3_E1M8BOSS,
+	.display_name     = "$FN_BARON",
 	},
 
 	{ // MT_BRUISERSHOT
@@ -1694,6 +1720,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_BOS2_RAISE1,
 	.name             = "MT_KNIGHT",
 	.projectile_group = PG_BARON,
+	.display_name     = "$FN_HELL",
 	},
 
 	{ // MT_SKULL
@@ -1721,6 +1748,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
 	.name             = "MT_SKULL",
 	.flags3           = MF3_RANGEHALF,
+	.display_name     = "$FN_LOST",
 	},
 
 	{ // MT_SPIDER
@@ -1748,6 +1776,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL|MF2_BOSS,
 	.name             = "MT_SPIDER",
 	.flags3           = MF3_NORADIUSDMG | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E3M8BOSS | MF3_E4M8BOSS,
+	.display_name     = "$FN_SPIDER",
 	},
 
 	{ // MT_BABY
@@ -1775,6 +1804,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_BSPI_RAISE1,
 	.name             = "MT_BABY",
 	.flags3           = MF3_MAP07BOSS2,
+	.display_name     = "$FN_ARACH",
 	},
 
 	{ // MT_CYBORG
@@ -1800,12 +1830,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags            = MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,
 	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL|MF2_BOSS,
 	.name             = "MT_CYBORG",
-	.altspeed         = NO_ALTSPEED,
-	.infighting_group = IG_DEFAULT,
-	.projectile_group = PG_DEFAULT,
-	.splash_group     = SG_DEFAULT,
 	.flags3           = MF3_NORADIUSDMG | MF3_HIGHERMPROB | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E2M8BOSS | MF3_E4M6BOSS,
-	.droppeditem      = MT_NULL
+	.display_name     = "$FN_CYBER",
 	},
 
 	{ // MT_PAIN
@@ -1832,7 +1858,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
 	.raisestate       = S_PAIN_RAISE1,
 	.name             = "MT_PAIN",
-
+	.display_name     = "$FN_PAIN",
 	},
 
 	{ // MT_WOLFSS
@@ -1865,7 +1891,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.infighting_group = IG_DEFAULT,
 	.projectile_group = PG_DEFAULT,
 	.splash_group     = SG_DEFAULT,
-	.droppeditem      = MT_CLIP
+	.droppeditem      = MT_CLIP,
+	.display_name     = "$FN_WOLFSS",
 	},
 
 	{ // MT_KEEN
@@ -2207,6 +2234,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC0",
+	.display_name     = "$TAG_GREENARMOR",
 	},
 
 	{ // MT_MISC1
@@ -2221,6 +2249,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC1",
+	.display_name     = "$TAG_BLUEARMOR",
 	},
 
 	{ // MT_MISC2
@@ -2235,6 +2264,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_COUNTITEM,
 	.name             = "MT_MISC2",
+	.display_name     = "$TAG_HEALTHBONUS",
 	},
 
 	{ // MT_MISC3
@@ -2249,6 +2279,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_COUNTITEM,
 	.name             = "MT_MISC3",
+	.display_name     = "$TAG_ARMORBONUS",
 	},
 
 	{ // MT_MISC4
@@ -2263,6 +2294,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC4",
+	.display_name     = "$TAG_BLUECARD",
 	},
 
 	{ // MT_MISC5
@@ -2277,6 +2309,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC5",
+	.display_name     = "$TAG_REDCARD",
 	},
 
 	{ // MT_MISC6
@@ -2291,6 +2324,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC6",
+	.display_name     = "$TAG_YELLOWCARD",
 	},
 
 	{ // MT_MISC7
@@ -2305,6 +2339,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC7",
+	.display_name     = "$TAG_YELLOWSKULL",
 	},
 
 	{ // MT_MISC8
@@ -2319,6 +2354,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC8",
+	.display_name     = "$TAG_REDSKULL",
 	},
 
 	{ // MT_MISC9
@@ -2333,6 +2369,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC9",
+	.display_name     = "$TAG_BLUESKULL",
 	},
 
 	{ // MT_MISC10
@@ -2347,6 +2384,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC10",
+	.display_name     = "$TAG_STIMPACK",
 	},
 
 	{ // MT_MISC11
@@ -2361,6 +2399,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC11",
+	.display_name     = "$TAG_MEDIKIT",
 	},
 
 	{ // MT_MISC12
@@ -2376,6 +2415,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_COUNTITEM,
 	.name             = "MT_MISC12",
+	.display_name     = "$TAG_SOULSPHERE",
 	},
 
 	{ // MT_INV
@@ -2390,6 +2430,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_COUNTITEM,
 	.name             = "MT_INV",
+	.display_name     = "$TAG_INVULSPHERE",
 	},
 
 	{ // MT_MISC13
@@ -2404,6 +2445,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_COUNTITEM,
 	.name             = "MT_MISC13",
+	.display_name     = "$TAG_BERSERK",
 	},
 
 	{ // MT_INS
@@ -2418,6 +2460,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_COUNTITEM,
 	.name             = "MT_INS",
+	.display_name     = "$TAG_INVISSPHERE",
 	},
 
 	{ // MT_MISC14
@@ -2432,6 +2475,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC14",
+	.display_name     = "$TAG_RADSUIT",
 	},
 
 	{ // MT_MISC15
@@ -2446,6 +2490,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_COUNTITEM,
 	.name             = "MT_MISC15",
+	.display_name     = "$TAG_ALLMAP",
 	},
 
 	{ // MT_MISC16
@@ -2460,6 +2505,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_COUNTITEM,
 	.name             = "MT_MISC16",
+	.display_name     = "$TAG_VISOR",
 	},
 
 	{ // MT_MEGA
@@ -2474,6 +2520,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_COUNTITEM,
 	.name             = "MT_MEGA",
+	.display_name     = "$TAG_MEGASPHERE",
 	},
 
 	{ // MT_CLIP
@@ -2488,6 +2535,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_CLIP",
+	.display_name     = "$AMMO_CLIP",
 	},
 
 	{ // MT_MISC17
@@ -2502,6 +2550,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC17",
+	.display_name     = "$AMMO_CLIP",
 	},
 
 	{ // MT_MISC18
@@ -2516,6 +2565,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC18",
+	.display_name     = "$AMMO_ROCKETS",
 	},
 
 	{ // MT_MISC19
@@ -2530,6 +2580,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC19",
+	.display_name     = "$AMMO_ROCKETS",
 	},
 
 	{ // MT_MISC20
@@ -2544,6 +2595,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC20",
+	.display_name     = "$AMMO_CELLS",
 	},
 
 	{ // MT_MISC21
@@ -2558,6 +2610,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC21",
+	.display_name     = "$AMMO_CELLS",
 	},
 
 	{ // MT_MISC22
@@ -2572,6 +2625,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC22",
+	.display_name     = "$AMMO_SHELLS",
 	},
 
 	{ // MT_MISC23
@@ -2586,6 +2640,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC23",
+	.display_name     = "$AMMO_SHELLS",
 	},
 
 	{ // MT_MISC24
@@ -2600,6 +2655,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC24",
+	.display_name     = "$TAG_BACKPACK",
 	},
 
 	{ // MT_MISC25
@@ -2614,6 +2670,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC25",
+	.display_name     = "$TAG_BFG9000",
 	},
 
 	{ // MT_CHAINGUN
@@ -2628,6 +2685,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_CHAINGUN",
+	.display_name     = "$TAG_CHAINGUN",
 	},
 
 	{ // MT_MISC26
@@ -2642,6 +2700,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC26",
+	.display_name     = "$TAG_CHAINSAW",
 	},
 
 	{ // MT_MISC27
@@ -2656,6 +2715,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC27",
+	.display_name     = "$TAG_ROCKETLAUNCHER",
 	},
 
 	{ // MT_MISC28
@@ -2670,6 +2730,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_MISC28",
+	.display_name     = "$TAG_PLASMARIFLE",
 	},
 
 	{ // MT_SHOTGUN
@@ -2684,6 +2745,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_SHOTGUN",
+	.display_name     = "$TAG_SHOTGUN",
 	},
 
 	{ // MT_SUPERSHOTGUN
@@ -2698,6 +2760,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL,
 	.name             = "MT_SUPERSHOTGUN",
+	.display_name     = "$TAG_SUPERSHOTGUN",
 	},
 
 	{ // MT_MISC29
@@ -3559,6 +3622,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
 	.raisestate       = S_DOGS_RAISE1,
 	.name             = "MT_DOGS",
+	.display_name     = "$FN_DOG",
 	},
 
 	// killough 7/11/98: this is the first of two plasma fireballs in the beta

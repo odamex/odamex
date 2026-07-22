@@ -149,7 +149,22 @@ IWindowSurface* R_GetRenderingSurface()
 //
 int R_PointOnSide(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh)
 {
-	return int64_t(xh - xl) * (y - yl) - int64_t(yh - yl) * (x - xl) >= 0;
+	int64_t dx = int64_t(xh) - xl;
+	int64_t dy = int64_t(yh) - yl;
+	int64_t px = int64_t(x) - xl;
+	int64_t py = int64_t(y) - yl;
+
+	static constexpr int64_t limit = int64_t(1) << 31;
+	if (dx >= limit || dx < -limit || dy >= limit || dy < -limit ||
+	    px >= limit || px < -limit || py >= limit || py < -limit)
+	{
+		dx >>= FRACBITS;
+		dy >>= FRACBITS;
+		px >>= FRACBITS;
+		py >>= FRACBITS;
+	}
+
+	return dx * py - dy * px >= 0;
 }
 
 //
@@ -189,7 +204,23 @@ int R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 //
 bool R_PointOnLine(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh)
 {
-	return int64_t(xh - xl) * (y - yl) - int64_t(yh - yl) * (x - xl) == 0;
+	// 64-bit deltas for the same reason as R_PointOnSide above
+	int64_t dx = int64_t(xh) - xl;
+	int64_t dy = int64_t(yh) - yl;
+	int64_t px = int64_t(x) - xl;
+	int64_t py = int64_t(y) - yl;
+
+	static constexpr int64_t limit = int64_t(1) << 31;
+	if (dx >= limit || dx < -limit || dy >= limit || dy < -limit ||
+	    px >= limit || px < -limit || py >= limit || py < -limit)
+	{
+		dx >>= FRACBITS;
+		dy >>= FRACBITS;
+		px >>= FRACBITS;
+		py >>= FRACBITS;
+	}
+
+	return dx * py - dy * px == 0;
 }
 
 
@@ -282,6 +313,53 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 }
 
 //
+// R_RotatePointSafe
+//
+// Rotates world space into camera space, but has special provisions to
+// keep the calculation 64-bit and to rescale the result if it is too large
+// to fit in a fixed_t.
+//
+// R_RotatePoint takes 16.16 fixed point as input, but it can overflow if it
+// tries to rotate world space in a sightline longer than ~32767 fracunits.
+//
+// Returns true if the result had to be rescaled.
+//
+bool R_RotatePointSafe(int64_t x, int64_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
+{
+	int index = ang >> ANGLETOFINESHIFT;
+
+	// same operations as FixedMul, kept in 64 bits
+	int64_t tx64 = ((x * finecosine[index]) >> FRACBITS) - ((y * finesine[index]) >> FRACBITS);
+	int64_t ty64 = ((x * finesine[index]) >> FRACBITS) + ((y * finecosine[index]) >> FRACBITS);
+
+	// Max distance for fixed_t (16.16 fixed point)
+	static constexpr int64_t limit = (int64_t(1) << 30) - 1;
+	const int64_t mag = MAX<int64_t>(tx64 < 0 ? -tx64 : tx64, ty64 < 0 ? -ty64 : ty64);
+	if (mag <= limit)
+	{
+		tx = static_cast<fixed_t>(tx64);
+		ty = static_cast<fixed_t>(ty64);
+		return false;
+	}
+
+	// Max rescale instead of overflow.
+	// This only kicks in if the x/y to rotate is larger than ~131,000 fracunits.
+	// The maximum possible sightline in a 16-bit coordinate map is ~56636 fracunits.
+	if (mag > INT64_MAX / limit)
+	{
+		const double scale = static_cast<double>(limit) / static_cast<double>(mag);
+		tx = static_cast<fixed_t>(tx64 * scale);
+		ty = static_cast<fixed_t>(ty64 * scale);
+	}
+	else
+	{
+		tx = static_cast<fixed_t>(tx64 * limit / mag);
+		ty = static_cast<fixed_t>(ty64 * limit / mag);
+	}
+	return true;
+}
+
+//
 // R_ClipLine
 //
 // Clips the endpoints of the line defined by in1 & in2 and stores the
@@ -326,8 +404,51 @@ void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 //
 bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip)
 {
+	// With high user FOVs, we have to make this a 64-bit calculation.
+	const v2fixed64_t p1(v1->x, v1->y);
+	const v2fixed64_t p2(v2->x, v2->y);
+	return R_ClipLineToFrustum64(p1, p2, clipdist, lclip, rclip);
+}
+
+//
+// 64-bit camera-space clipping/projection.
+//
+// These mirror R_RotatePoint / R_ClipLine / R_ClipLineToFrustum /
+// R_ProjectPointX exactly, but keep the camera-space coordinates in 64 bits
+// instead of squeezing them into a fixed_t.
+//
+static inline int64_t R_iMul30(int64_t a, int64_t b) { return (a * b) >> 30; }
+static inline int64_t R_iDiv30(int64_t a, int64_t b) { return (a << 30) / b; }
+static inline int64_t R_iMulFrac(int64_t a, int64_t b) { return (a * b) >> FRACBITS; }
+
+void R_RotatePoint64(int64_t x, int64_t y, angle_t ang, int64_t& tx, int64_t& ty)
+{
+	const int index = ang >> ANGLETOFINESHIFT;
+	tx = ((x * finecosine[index]) >> FRACBITS) - ((y * finesine[index]) >> FRACBITS);
+	ty = ((x * finesine[index]) >> FRACBITS) + ((y * finecosine[index]) >> FRACBITS);
+}
+
+void R_ClipLine64(const v2fixed64_t& in1, const v2fixed64_t& in2,
+                  int32_t lclip, int32_t rclip,
+                  v2fixed64_t& out1, v2fixed64_t& out2)
+{
+	// Capture inputs into locals first so this is safe when an output aliases
+	// an input (R_AddLine calls it as R_ClipLine64(t1, t2, ..., t1, t2)).
+	const int64_t dx = in2.x - in1.x;
+	const int64_t dy = in2.y - in1.y;
+	const int64_t x = in1.x;
+	const int64_t y = in1.y;
+	out1.x = x + R_iMul30(lclip, dx);
+	out2.x = x + R_iMul30(rclip, dx);
+	out1.y = y + R_iMul30(lclip, dy);
+	out2.y = y + R_iMul30(rclip, dy);
+}
+
+bool R_ClipLineToFrustum64(const v2fixed64_t& v1, const v2fixed64_t& v2, int64_t clipdist,
+                           int32_t& lclip, int32_t& rclip)
+{
 	static constexpr int32_t CLIPUNIT = 1 << 30;
-	v2fixed_t p1 = *v1, p2 = *v2;
+	v2fixed64_t p1 = v1, p2 = v2;
 
 	lclip = 0;
 	rclip = CLIPUNIT;
@@ -335,33 +456,21 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 	// Clip portions of the line that are behind the view plane
 	if (p1.y < clipdist)
 	{
-		// reject the line entirely if the whole thing is behind the view plane.
 		if (p2.y < clipdist)
 			return false;
-
-		// clip the line at the point where p1.y == clipdist
-		lclip = FixedDivN<30>(clipdist - p1.y, p2.y - p1.y);
+		lclip = static_cast<int32_t>(R_iDiv30(clipdist - p1.y, p2.y - p1.y));
 	}
 
 	if (p2.y < clipdist)
-	{
-		// clip the line at the point where p2.y == clipdist
-		rclip = FixedDivN<30>(clipdist - p1.y, p2.y - p1.y);
-	}
+		rclip = static_cast<int32_t>(R_iDiv30(clipdist - p1.y, p2.y - p1.y));
 
-	int32_t unclipped_amount = rclip - lclip;
+	const int32_t unclipped_amount = rclip - lclip;
 
 	// apply the clipping against the 'y = clipdist' plane to p1 & p2
-	R_ClipLine(v1, v2, lclip, rclip, &p1, &p2);
+	R_ClipLine64(v1, v2, lclip, rclip, p1, p2);
 
-	// [SL] A note on clipping to the screen edges:
-	// With a 90-degree FOV, if p1.x < -p1.y, then the left point
-	// is off the left side of the screen. Similarly, if p2.x > p2.y,
-	// then the right point is off the right side of the screen.
-	// We use yc1 and yc2 instead of p1.y and p2.y because they are
-	// adjusted to work with the current FOV rather than just 90-degrees.
-	fixed_t yc1 = FixedMul(fovtan, p1.y);
-	fixed_t yc2 = FixedMul(fovtan, p2.y);
+	const int64_t yc1 = R_iMulFrac(fovtan, p1.y);
+	const int64_t yc2 = R_iMulFrac(fovtan, p2.y);
 
 	// is the entire line off the left side or the right side of the screen?
 	if ((p1.x < -yc1 && p2.x < -yc2) || (p1.x > yc1 && p2.x > yc2))
@@ -370,31 +479,35 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 	// is the left vertex off the left side of the screen?
 	if (p1.x < -yc1)
 	{
-		// clip line at left edge of the screen
-		fixed_t den = p2.x - p1.x + yc2 - yc1;
+		const int64_t den = p2.x - p1.x + yc2 - yc1;
 		if (den == 0)
 			return false;
-
-		int32_t t = FixedDivN<30>(-yc1 - p1.x, den);
-		lclip += FixedMulN<30>(t, unclipped_amount);
+		const int32_t t = static_cast<int32_t>(R_iDiv30(-yc1 - p1.x, den));
+		lclip += static_cast<int32_t>(R_iMul30(t, unclipped_amount));
 	}
 
 	// is the right vertex off the right side of the screen?
 	if (p2.x > yc2)
 	{
-		// clip line at right edge of the screen
-		fixed_t den = p2.x - p1.x - yc2 + yc1;
+		const int64_t den = p2.x - p1.x - yc2 + yc1;
 		if (den == 0)
 			return false;
-
-		int32_t t = FixedDivN<30>(yc1 - p1.x, den);
-		rclip -= FixedMulN<30>(CLIPUNIT - t, unclipped_amount);
+		const int32_t t = static_cast<int32_t>(R_iDiv30(yc1 - p1.x, den));
+		rclip -= static_cast<int32_t>(R_iMul30(CLIPUNIT - t, unclipped_amount));
 	}
 
 	if (lclip > rclip)
 		return false;
 
 	return true;
+}
+
+int R_ProjectPointX64(int64_t x, int64_t y)
+{
+	if (y > 0)
+		return FIXED2INT(centerxfrac + int64_t(FocalLengthX) * x / y);
+	else
+		return centerx;
 }
 
 
@@ -470,8 +583,8 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 {
 	// convert from world-space to camera-space
 	v3fixed_t pt1, pt2;
-	R_RotatePoint(inpt1->x - viewx, inpt1->y - viewy, ANG90 - viewangle, pt1.x, pt1.y);
-	R_RotatePoint(inpt2->x - viewx, inpt2->y - viewy, ANG90 - viewangle, pt2.x, pt2.y);
+	R_RotatePointSafe(int64_t(inpt1->x) - viewx, int64_t(inpt1->y) - viewy, ANG90 - viewangle, pt1.x, pt1.y);
+	R_RotatePointSafe(int64_t(inpt2->x) - viewx, int64_t(inpt2->y) - viewy, ANG90 - viewangle, pt2.x, pt2.y);
 	pt1.z = inpt1->z - viewz;
 	pt2.z = inpt2->z - viewz;
 
@@ -1033,7 +1146,7 @@ void R_RenderPlayerView(player_t* player)
 		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
 
 	R_DrawPlanes();
-	R_DrawSkyBoxes();
+	R_DrawPortals();
 	R_DrawMasked();
 
 	// NOTE(jsd): Full-screen status color blending:
