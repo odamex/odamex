@@ -1887,6 +1887,12 @@ FUNC(LS_Thing_SpawnNoFog)
 	return P_Thing_Spawn (arg0, arg1, BYTEANGLE(arg2), false);
 }
 
+FUNC(LS_Thing_SpawnFacing)
+// Thing_SpawnFacing (tid, type, nofog, newtid)
+{
+	return P_Thing_Spawn (arg0, arg1, std::nullopt, !arg2, arg3);
+}
+
 FUNC(LS_Thing_SetGoal)
 // Thing_SetGoal (tid, goal, delay)
 {
@@ -2643,7 +2649,7 @@ FUNC(LS_TranslucentLine)
 }
 
 // ZDoom line specials
-lnSpecFunc LineSpecials[283] =
+std::array<lnSpecFunc, 283> LineSpecials =
 {
 	LS_NOP,
 	LS_NOP,		// Polyobj_StartLine,
@@ -2784,7 +2790,7 @@ lnSpecFunc LineSpecials[283] =
 	LS_Thing_ProjectileGravity,
 	LS_Thing_SpawnNoFog,
 	LS_Floor_Waggle,
-    LS_NOTIMP,  // 139 Thing_SpawnFacing (not supported)
+    LS_Thing_SpawnFacing,
 	LS_Sector_ChangeSound,
 	LS_NOP,		// 141 (unused)
 	LS_NOP,		// 142 (unused)

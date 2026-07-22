@@ -220,7 +220,7 @@ void upnp_add_redir (const char * addr, int port, const char* protocol)
 	}
 
 	const int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-		port_str.c_str(), port_str.c_str(), addr, sv_upnp_description.cstring(), protocol, NULL, 0);
+		port_str.c_str(), port_str.c_str(), addr, sv_upnp_description.cstring(), protocol, nullptr, nullptr);
 
 	if (r != 0)
 	{
@@ -247,7 +247,7 @@ void upnp_rem_redir (int port, const char* protocol)
 
 	const std::string port_str = fmt::format("{}", port);
 	const int r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
-		port_str.c_str(), protocol, 0);
+		port_str.c_str(), protocol, nullptr);
 
 	if (r != 0)
 	{
@@ -1001,6 +1001,7 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_removemobj);
 	MSG_INFO(svc_userinfo);
 	MSG_INFO(svc_updatemobj);
+	MSG_INFO(svc_updatemobjwithmode);
 	MSG_INFO(svc_spawnplayer);
 	MSG_INFO(svc_damageplayer);
 	MSG_INFO(svc_killmobj);

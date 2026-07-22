@@ -228,7 +228,7 @@ private:
 	// non-member friend functions
 	// ------------------------------------------------------------------------
 
-	friend struct hashfunc<ResourcePath>;
+	friend struct std::hash<ResourcePath>;
 };
 
 typedef std::vector<ResourcePath> ResourcePathList;
@@ -237,8 +237,8 @@ typedef std::vector<ResourcePath> ResourcePathList;
 // hash function for OHashTable class
 // ----------------------------------------------------------------------------
 
-template <> struct hashfunc<ResourcePath>
-{	unsigned int operator()(const ResourcePath& path) const { return __hash_cstring(path.c_str()); } };
+template <> struct std::hash<ResourcePath>
+{	size_t operator()(const ResourcePath& path) const { return __hash_cstring(path.c_str()); } };
 
 
 

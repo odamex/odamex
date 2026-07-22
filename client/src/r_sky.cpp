@@ -796,6 +796,31 @@ inline void SkyForegroundColumnBlaster()
 	R_BlastSkyColumn(R_DrawSkyForegroundColumn);
 }
 
+void R_SetSkyScrollSpeed(int skynum, fixed_t speed)
+{
+	if (skynum != 1 && skynum != 2)
+		return;
+
+	sky_t* sky = skyflatlookup[Res_GetTextureResourceId(SKYFLATNAME.c_str(), FLOOR)];
+	if (!sky)
+		return;
+
+	if (level.flags & LEVEL_DOUBLESKY)
+	{
+		if (skynum == 1)
+			sky->foreground.scrollx = speed;
+		else if (skynum == 2)
+			sky->background.scrollx = speed;
+	}
+	else
+	{
+		if (skynum == 1)
+			sky->background.scrollx = speed;
+		else if (skynum == 2)
+			sky2scrolldelta = speed;
+	}
+}
+
 //
 // R_RenderSkyRange
 //

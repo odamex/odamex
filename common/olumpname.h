@@ -88,7 +88,6 @@ class OLumpName
 	friend bool operator!=(const OLumpName& lhs, std::string_view rhs);
 
 	// for allowing use as keys in OHashTable and std::unordered_map
-	friend struct hashfunc<OLumpName>;
 	friend struct std::hash<OLumpName>;
 };
 
@@ -98,21 +97,9 @@ class OLumpName
 [[nodiscard]] bool operator==(const OLumpName& lhs, std::string_view rhs);
 
 template <>
-struct hashfunc<OLumpName>
-{
-	auto operator()(const OLumpName& lumpname) const
-	{
-		size_t val = 0;
-		for (const char* s = lumpname.m_data.c_str(); *s != 0; s++)
-			val = val * 101 + *s;
-		return val;
-	}
-};
-
-template <>
 struct std::hash<OLumpName>
 {
-	auto operator()(const OLumpName& lumpname) const
+	constexpr auto operator()(const OLumpName& lumpname) const
 	{
 		size_t val = 0;
 		for (const char* s = lumpname.m_data.c_str(); *s != 0; s++)

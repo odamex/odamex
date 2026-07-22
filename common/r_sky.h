@@ -66,3 +66,6 @@ void R_RenderSkyRange(visplane_t* pl);
 
 bool R_ResourceIdIsSkyFlat(const ResourceId res_id);
 static inline bool R_IsSkyFlat(const ResourceId res_id) { return R_ResourceIdIsSkyFlat(res_id); }
+// Sets scroll speed of the current map's sky1 and sky2
+// For ZDoom maps and ACS, may result in strange behavior with skydefs
+void R_SetSkyScrollSpeed(int skynum, fixed_t speed);

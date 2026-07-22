@@ -137,7 +137,7 @@ jobs:
       env:
         name: "${{ github.ref_name }}"
       run: |
-        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+        echo "MODIFIED_BRANCH_NAME=${name//\//-}" >> $GITHUB_ENV
     - name: Build Flatpak
       uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
@@ -166,7 +166,7 @@ jobs:
       env:
         name: "${{ github.ref_name }}"
       run: |
-        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+        echo "MODIFIED_BRANCH_NAME=${name//\//-}" >> $GITHUB_ENV
     - name: Build Flatpak
       uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:

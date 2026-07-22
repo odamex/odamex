@@ -539,7 +539,7 @@ void F_CastTicker()
 		  case S_CYBER_ATK4:
 		  case S_CYBER_ATK6:	sfx = "weapons/rocklf"; break;
 		  case S_PAIN_ATK3: 	sfx = "skull/melee"; break;
-		  default: sfx = 0; break;
+		  default: sfx = nullptr; break;
 		}
 
 		if (sfx) {

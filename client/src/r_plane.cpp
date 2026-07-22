@@ -66,7 +66,33 @@ static visplane_t		*visplanes[MAXVISPLANES + 1];	// killough
 static visplane_t		*freetail;					// killough
 static visplane_t		**freehead = &freetail;		// killough
 
-static bool r_InSkyBox;
+// Depth of the portal view currently being rendered.
+// 0 = the main view.
+// Portal planes created at depth N are rendered as portal passes at depth
+// N+1, up to r_portalrecursions, beyond that they draw as regular sky.
+static int r_PortalDepth;
+
+EXTERN_CVAR(r_portalrecursions)
+
+// Is this actor a stacked-sector portal anchor?
+static bool R_IsStackPoint(const AActor* mo)
+{
+	return mo && (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK);
+}
+
+// Alpha of the boundary flat drawn over a stack portal's content, from the
+// remote stack thing's arg0: 0 = invisible flat, 255 = fully opaque.
+static int R_StackFlatAlpha(const AActor* mo)
+{
+	return clamp(static_cast<int>(mo->args[0]), 0, 255);
+}
+
+// Does this plane render as a portal? A boundary flat at full opacity would
+// completely hide the portal view, so skip the pass and draw it normally.
+static bool R_IsStackPortal(const AActor* mo)
+{
+	return R_IsStackPoint(mo) && R_StackFlatAlpha(mo) < 255;
+}
 
 visplane_t 				*floorplane;
 visplane_t 				*ceilingplane;
@@ -342,11 +368,13 @@ visplane_t* R_FindPlane(
 	if (R_ResourceIdIsSkyFlat(res_id) || (sky_transfer & PL_SKYFLAT))  // killough 10/98
 	{
 		lightlevel = 0;		// most skies map together
-		isskybox = R_ResourceIdIsSkyFlat(res_id) && (skybox != NULL) && !r_InSkyBox;
+		isskybox = R_ResourceIdIsSkyFlat(res_id) && (skybox != NULL) &&
+		           r_PortalDepth < r_portalrecursions.asInt();
 	}
 	else
 	{
-		isskybox = false;
+		isskybox = R_IsStackPortal(skybox) &&
+		           r_PortalDepth < r_portalrecursions.asInt();
 	}
 
 	// New visplane algorithm uses hash table -- killough
@@ -445,7 +473,9 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		// make a new visplane
 		unsigned hash;
 
-		if (R_ResourceIdIsSkyFlat(pl->res_id) && pl->skybox != NULL && !r_InSkyBox)
+		if (((R_ResourceIdIsSkyFlat(pl->res_id) && pl->skybox != NULL) ||
+		     R_IsStackPortal(pl->skybox)) &&
+		    r_PortalDepth < r_portalrecursions.asInt())
 		{
 			hash = MAXVISPLANES;
 		}
@@ -688,6 +718,77 @@ void R_DrawLevelPlane(visplane_t *pl)
 
 
 //
+// R_DrawSingleFlatPlane
+//
+// Draws one visplane textured with its (regular, non-sky) flat, using
+// whatever spanfunc is currently selected. Factored out of R_DrawPlanes so
+// portal boundary flats can be re-drawn blended over portal content.
+//
+static void R_DrawSingleFlatPlane(visplane_t* pl)
+{
+	// regular flat
+	dspan.color += 4;	// [RH] color if r_drawflat is 1
+
+	const ResourceId res_id = Res_GetAnimatedTextureResourceId(pl->res_id);
+	const Texture* texture = Res_CacheTexture(res_id, PU_STATIC);
+	dspan.source = texture->mData;
+	// the 32bpp drawers sample the native ARGB plane when the
+	// texture carries one (NULL otherwise)
+	dspan.argbsource = texture->mARGBData;
+
+	// [SL] Note that the texture orientation differs from typical Doom span
+	// drawers since flats are stored in column major format now. The roles
+	// of ufrac and vfrac have been reversed to accomodate this.
+	dspan.umask = texture->mWidthMask << texture->mHeightBits;
+	dspan.vmask = texture->mHeightMask;
+	dspan.ushift = FRACBITS - texture->mHeightBits;
+	dspan.vshift = FRACBITS;
+
+	// Warped flats are now handled elsewhere
+
+	pl->top[pl->maxx+1] = viewheight;
+	pl->top[pl->minx-1] = viewheight;
+
+	if (P_IsPlaneLevel(&pl->secplane))
+		R_DrawLevelPlane(pl);
+	else
+		R_DrawSlopedPlane(pl);
+
+	Z_ChangeTag(texture, PU_CACHE);
+}
+
+//
+// R_DrawStackFlatBlend
+//
+// Blends a stacked sector portal plane's own flat over the portal content
+// just rendered into it, at the alpha given by the stack thing's arg0.
+// Runs with the discovering pass's view restored, since the plane's texture
+// mapping is in that view's space.
+//
+static void R_DrawStackFlatBlend(visplane_t* pl)
+{
+	if (pl->maxx < pl->minx || !R_IsStackPoint(pl->skybox))
+		return;
+
+	const int alpha = R_StackFlatAlpha(pl->skybox);
+	if (alpha == 0)
+		return;
+
+	// A sky-pic'd portal plane has no flat to blend.
+	if (R_ResourceIdIsSkyFlat(Res_GetAnimatedTextureResourceId(pl->res_id)) ||
+	    (pl->sky_transfer & PL_SKYFLAT))
+		return;
+
+	dspan.translevel = (alpha << FRACBITS) / 255;
+	spanfunc = R_DrawTranslucentSpan;
+	spanslopefunc = R_DrawTranslucentSlopeSpan;
+
+	R_DrawSingleFlatPlane(pl);
+
+	R_ResetDrawFuncs();
+}
+
+//
 // R_DrawPlanes
 //
 // At the end of each frame.
@@ -711,34 +812,7 @@ void R_DrawPlanes()
 			}
 			else
 			{
-				// regular flat
-				dspan.color += 4;	// [RH] color if r_drawflat is 1
-
-				const Texture* texture = Res_CacheTexture(res_id, PU_STATIC);
-				dspan.source = texture->mData;
-				// the 32bpp drawers sample the native ARGB plane when the
-				// texture carries one (NULL otherwise)
-				dspan.argbsource = texture->mARGBData;
-
-				// [SL] Note that the texture orientation differs from typical Doom span
-				// drawers since flats are stored in column major format now. The roles
-				// of ufrac and vfrac have been reversed to accomodate this.
-				dspan.umask = texture->mWidthMask << texture->mHeightBits;
-				dspan.vmask = texture->mHeightMask;
-				dspan.ushift = FRACBITS - texture->mHeightBits;
-				dspan.vshift = FRACBITS;
-
-				// Warped flats are now handled elsewhere
-
-				pl->top[pl->maxx+1] = viewheight;
-				pl->top[pl->minx-1] = viewheight;
-
-				if (P_IsPlaneLevel(&pl->secplane))
-					R_DrawLevelPlane(pl);
-				else
-					R_DrawSlopedPlane(pl);
-					
-				Z_ChangeTag(texture, PU_CACHE);
+				R_DrawSingleFlatPlane(pl);
 			}
 		}
 	}
@@ -746,9 +820,11 @@ void R_DrawPlanes()
 
 //==========================================================================
 //
-// R_DrawSkyBoxes
+// R_DrawPortals
 //
-// Draws any recorded sky boxes and then frees them.
+// Draws recursive skybox views and then frees them.
+// Just note that these are NOT linked portals or even stacked sectors.
+// The current iteration just handles recursive skyboxes, that's it.
 //
 // The process:
 //   1. Move the camera to coincide with the SkyViewpoint.
@@ -758,52 +834,116 @@ void R_DrawPlanes()
 //   5. Create a drawseg at 0 distance to clip sprites to the visplane. It
 //      doesn't need to be associated with a line in the map, since there
 //      will never be any sprites in front of it.
-//   6. Render the BSP, then planes, then masked stuff.
-//   7. Restore the previous vissprites and drawsegs.
-//   8. Repeat for any other sky boxes.
-//   9. Put the camera back where it was to begin with.
+//   6. Render the BSP, then planes, then portal visplanes recursively
+//      (BSP, then planes).
+//   7. The final portal level renders masked textures and sprites,
+//      then each portal level above it will do the same.
+//   8. The final level renders sprites and masked textures,
+//      and frees the memory used for all portal visplanes.
+//   9. If the recursion level exceeds r_portalrecursions, all portal planes
+//      draw sky instead of rendering the portal view.
 //
 //==========================================================================
 
-void R_DrawSkyBoxes()
+static void R_RenderPortalView(visplane_t* pl);
+
+//
+// R_DrawDiscoveredPortals
+//
+// Renders every portal plane queued in visplanes[MAXVISPLANES] by the pass
+// (or main view) currently being rendered, then frees them.
+//
+static void R_DrawDiscoveredPortals()
 {
 	if (visplanes[MAXVISPLANES] == NULL)
 		return;
 
-	int savedextralight = extralight;
+	// Detach the queue, passes below accumulate their own portal discoveries.
+	visplane_t* queue = visplanes[MAXVISPLANES];
+	visplanes[MAXVISPLANES] = NULL;
+
+	visplane_t* pl;
+
+	r_PortalDepth++;
+
+	if (r_PortalDepth <= r_portalrecursions.asInt())
+	{
+		for (pl = queue; pl != NULL; pl = pl->next)
+		{
+			R_RenderPortalView(pl);
+
+			// The discovering view is restored now, overlay the boundary
+			// flat translucently if the stack thing asks for it.
+			R_DrawStackFlatBlend(pl);
+		}
+	}
+	else
+	{
+		// Shouldn't be reachable (creation is suppressed at the limit), but
+		// never leave portal planes undrawn: render them as regular sky.
+		for (pl = queue; pl != NULL; pl = pl->next)
+		{
+			if (pl->maxx >= pl->minx)
+				R_RenderSkyRange(pl);
+		}
+	}
+
+	r_PortalDepth--;
+
+	// Free the processed planes.
+	for (*freehead = queue; *freehead;)
+		freehead = &(*freehead)->next;
+}
+
+//
+// R_RenderPortalView
+//
+// Renders a single portal pass into the window described by the visplane,
+// saving and restoring the view state around it so passes can nest.
+//
+static void R_RenderPortalView(visplane_t* pl)
+{
+	if (pl->maxx < pl->minx)
+		return;
+
 	fixed_t savedx = viewx;
 	fixed_t savedy = viewy;
 	fixed_t savedz = viewz;
 	angle_t savedangle = viewangle;
 	ptrdiff_t savedvissprite_p = vissprite_p - vissprites;
+	ptrdiff_t savedfirstvissprite = firstvissprite - vissprites;
 	ptrdiff_t savedds_p = ds_p - drawsegs;
+	ptrdiff_t savedfirstdrawseg = firstdrawseg - drawsegs;
 	AActor* savedcamera = camera;
 
 	int i;
-	visplane_t* pl;
 
-	// Don't draw sky boxes inside sky boxes.
-	r_InSkyBox = true;
+	AActor* sky = pl->skybox;
 
-	// Don't let gun flashes brighten the sky box
-	extralight = 0;
-
-	for (pl = visplanes[MAXVISPLANES]; pl != NULL; pl = pl->next)
+	if (R_IsStackPoint(sky))
 	{
-		if (pl->maxx < pl->minx)
-			continue;
+		AActor* mate = sky->tracer;
 
-		AActor* sky = pl->skybox;
+		if (mate == NULL)
+			return; // mate was destroyed at runtime, skip the pass
 
+		viewx = savedx + sky->x - mate->x;
+		viewy = savedy + sky->y - mate->y;
+		viewz = savedz + sky->z - mate->z;
+		camera = sky;
+	}
+	else
+	{
 		viewx = sky->x;
 		viewy = sky->y;
 		viewz = sky->z;
 		camera = sky;
 		R_SetViewAngle(savedangle + sky->angle);
-		validcount++; // Make sure we see all sprites
+	}
+	validcount++; // Make sure we see all sprites
 
-		R_ClearPlanes(false);
-		R_ClearClipSegs();
+	R_ClearPlanes(false);
+	R_ClearClipSegs();
 
 		// Set up ceiling/floor clip arrays for this visplane.
 		for (i = pl->minx; i <= pl->maxx; i++)
@@ -820,14 +960,14 @@ void R_DrawSkyBoxes()
 			}
 		}
 
-		// Create a drawseg to clip sprites to the sky plane.
-		R_ReallocDrawSegs();
-		ds_p->x1 = 0;
-		ds_p->x2 = viewwidth - 1;
-		ds_p->silhouette = SIL_BOTH;
-		ds_p->midposts = NULL;
-		ds_p->midscales = NULL;
-		ds_p->curline = NULL;
+	// Create a drawseg to clip sprites to the sky plane.
+	R_ReallocDrawSegs();
+	ds_p->x1 = 0;
+	ds_p->x2 = viewwidth - 1;
+	ds_p->silhouette = SIL_BOTH;
+	ds_p->midposts = NULL;
+	ds_p->midscales = NULL;
+	ds_p->curline = NULL;
 
 		// [RK] Allocate full width clip arrays.
 		int* bottomclip = sprclip_pool.alloc(viewwidth);
@@ -840,30 +980,38 @@ void R_DrawSkyBoxes()
 		ds_p->sprbottomclip = bottomclip;
 		ds_p->sprtopclip = topclip;
 
-		firstvissprite = vissprite_p;
-		firstdrawseg = ds_p++;
+	firstvissprite = vissprite_p;
+	firstdrawseg = ds_p++;
 
-		R_RenderBSPNode(numnodes - 1);
-		R_DrawPlanes();
-		R_DrawMasked();
+	R_RenderBSPNode(numnodes - 1);
+	R_DrawPlanes();
+	R_DrawDiscoveredPortals();
+	R_DrawMasked();
 
-		firstvissprite = vissprites;
-		vissprite_p = vissprites + savedvissprite_p;
-		firstdrawseg = drawsegs;
-		ds_p = drawsegs + savedds_p;
-	}
+	firstvissprite = vissprites + savedfirstvissprite;
+	vissprite_p = vissprites + savedvissprite_p;
+	firstdrawseg = drawsegs + savedfirstdrawseg;
+	ds_p = drawsegs + savedds_p;
 
 	camera = savedcamera;
 	viewx = savedx;
 	viewy = savedy;
 	viewz = savedz;
-	extralight = savedextralight;
 	R_SetViewAngle(savedangle);
+}
 
-	r_InSkyBox = false;
+void R_DrawPortals()
+{
+	if (visplanes[MAXVISPLANES] == NULL)
+		return;
 
-	for (*freehead = visplanes[MAXVISPLANES], visplanes[MAXVISPLANES] = NULL; *freehead;)
-		freehead = &(*freehead)->next;
+	// Don't let gun flashes brighten portal views
+	int savedextralight = extralight;
+	extralight = 0;
+
+	R_DrawDiscoveredPortals();
+
+	extralight = savedextralight;
 }
 
 //

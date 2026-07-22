@@ -67,12 +67,12 @@ struct NamespacedResourceName
 // hash function for OHashTable class
 // ----------------------------------------------------------------------------
 
-template <> struct hashfunc<NamespacedResourceName>
+template <> struct std::hash<NamespacedResourceName>
 {
-	unsigned int operator()(const NamespacedResourceName& namespaced_resource_name) const
+	size_t operator()(const NamespacedResourceName& namespaced_resource_name) const
 	{
-		hashfunc<int> ns_hashfunc;
-		hashfunc<OString> name_hashfunc;
+		std::hash<int> ns_hashfunc;
+		std::hash<OString> name_hashfunc;
 		return (ns_hashfunc(1 + namespaced_resource_name.ns) << 26) ^ name_hashfunc(namespaced_resource_name.name);
 	}
 };

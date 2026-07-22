@@ -65,5 +65,5 @@ using ResourceIdList = std::vector<ResourceId>;
 // hash function for OHashTable class
 // ----------------------------------------------------------------------------
 
-template <> struct hashfunc<ResourceId>
+template <> struct std::hash<ResourceId>
 {   size_t operator()(const ResourceId res_id) const { return static_cast<uint32_t>(res_id); } };

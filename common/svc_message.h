@@ -98,6 +98,7 @@ odaproto::svc::ExplodeMissile SVC_ExplodeMissile(const AActor& mobj);
 odaproto::svc::RemoveMobj SVC_RemoveMobj(const AActor& mobj);
 odaproto::svc::UserInfo SVC_UserInfo(const player_t& player, int64_t time);
 odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj);
+odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj);
 odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player, int tic);
 odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActor *inflictor, int health, int armor, int destinationClientTicOfValidity);
 odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
@@ -147,7 +148,7 @@ odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, const lin
 odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
                                                        const AActor* activator,
                                                        const char* print,
-                                                       const std::vector<int>& args);
+                                                       const std::span<const int> args);
 odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(const DThinker* thinker);
 odaproto::svc::VoteUpdate SVC_VoteUpdate(const vote_state_t& state);
 odaproto::svc::Maplist SVC_Maplist(const maplist_status_t status);

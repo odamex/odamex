@@ -512,7 +512,7 @@ static fixed_t P_PositionDifference(const v3fixed_t &a, const v3fixed_t &b)
 	v3fixed_t diff;
 	M_SubVec3Fixed(&diff, &b, &a);
 
-	return M_LengthVec3Fixed(&diff);
+	return M_LengthVec3Fixed(diff);
 }
 
 //

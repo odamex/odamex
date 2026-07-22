@@ -403,9 +403,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
-				WI_ParseZDoomAnim(os, anims, {animcondition_t::OnEnteringScreen, 0, 0}, {animcondition_t::CurrMapEqual, mapname});
+				WI_ParseZDoomAnim(os, anims, {animcondition_t::OnEnteringScreen, "", ""}, {animcondition_t::CurrMapEqual, mapname});
 			else if (os.compareTokenNoCase("pic"))
-				WI_ParseZDoomPic(os, anims, {animcondition_t::OnEnteringScreen, 0, 0}, {animcondition_t::CurrMapEqual, mapname});
+				WI_ParseZDoomPic(os, anims, {animcondition_t::OnEnteringScreen, "", ""}, {animcondition_t::CurrMapEqual, mapname});
 			else
 				os.error("Unknown command {}", os.getToken());
 		}
@@ -418,9 +418,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
-				WI_ParseZDoomAnim(os, anims, {animcondition_t::OnFinishedScreen, 0, 0}, {animcondition_t::CurrMapNotEqual, mapname}, true);
+				WI_ParseZDoomAnim(os, anims, {animcondition_t::OnFinishedScreen, "", ""}, {animcondition_t::CurrMapNotEqual, mapname}, true);
 			else if (os.compareTokenNoCase("pic"))
-				WI_ParseZDoomPic(os, anims, {animcondition_t::OnFinishedScreen, 0, 0}, {animcondition_t::CurrMapNotEqual, mapname}, true);
+				WI_ParseZDoomPic(os, anims, {animcondition_t::OnFinishedScreen, "", ""}, {animcondition_t::CurrMapNotEqual, mapname}, true);
 			else
 				os.error("Unknown command {}", os.getToken());
 		}
@@ -433,9 +433,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
-				WI_ParseZDoomAnim(os, anims, {animcondition_t::OnFinishedScreen, 0, 0}, {animcondition_t::CurrMapEqual, mapname});
+				WI_ParseZDoomAnim(os, anims, {animcondition_t::OnFinishedScreen, "", ""}, {animcondition_t::CurrMapEqual, mapname});
 			else if (os.compareTokenNoCase("pic"))
-				WI_ParseZDoomPic(os, anims, {animcondition_t::OnFinishedScreen, 0, 0}, {animcondition_t::CurrMapEqual, mapname});
+				WI_ParseZDoomPic(os, anims, {animcondition_t::OnFinishedScreen, "", ""}, {animcondition_t::CurrMapEqual, mapname});
 			else
 				os.error("Unknown command {}", os.getToken());
 		}
@@ -448,9 +448,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
-				WI_ParseZDoomAnim(os, anims, {animcondition_t::OnEnteringScreen, 0, 0}, {animcondition_t::CurrMapNotEqual, mapname}, true);
+				WI_ParseZDoomAnim(os, anims, {animcondition_t::OnEnteringScreen, "", ""}, {animcondition_t::CurrMapNotEqual, mapname}, true);
 			else if (os.compareTokenNoCase("pic"))
-				WI_ParseZDoomPic(os, anims, {animcondition_t::OnEnteringScreen, 0, 0}, {animcondition_t::CurrMapNotEqual, mapname}, true);
+				WI_ParseZDoomPic(os, anims, {animcondition_t::OnEnteringScreen, "", ""}, {animcondition_t::CurrMapNotEqual, mapname}, true);
 			else
 				os.error("Unknown command {}", os.getToken());
 		}

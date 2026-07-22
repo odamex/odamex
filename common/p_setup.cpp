@@ -2270,10 +2270,18 @@ void P_SetupLevel (const OString& lumpname, int position)
 
 	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 
+	P_ClearSkyPickers();
+	P_ClearStackLinks();
+
 	if (!HasBehavior)
 		P_LoadThings (things_res_id);
 	else
 		P_LoadThings2 (things_res_id, position);	// [RH] Load Hexen-style things
+
+	// Sky pickers and stacked-sector pairs can only be resolved once every
+	// SkyViewpoint / stack point has spawned.
+	P_ResolveSkyPickers();
+	P_ResolveStackLinks();
 
 	if (!HasBehavior)
 		P_TranslateTeleportThings(); // [RH] Assign teleport destination TIDs

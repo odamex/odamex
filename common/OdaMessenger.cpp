@@ -31,6 +31,9 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 {
 	const PacketHeaderType header {io_rawBuf};
 
+	m_immediateReceiveBuffer.clear();
+	m_immediateReceiveSequenceNumber = 0;
+
 	if (m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
 	{
 		return MessageResultEnum::ABORT;
@@ -82,9 +85,16 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 			ack.WriteLong(header.sequence);
 		}
 	}
-	if (io_rawBuf.BytesLeftToRead() > 0)
+
+	const size_t bestEffortSize = io_rawBuf.BytesLeftToRead();
+	if (bestEffortSize > 0)
 	{
-		m_quickTurnaroundReceiveBuffer = &io_rawBuf;
+		if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
+		{
+			m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
+		}
+		m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
+		m_immediateReceiveSequenceNumber = header.sequence;
 		return MessageResultEnum::ACCEPT;
 	}
 
@@ -98,13 +108,24 @@ bool OdaMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 		return false;
 	}
 
-	if (m_quickTurnaroundReceiveBuffer)
+	// Do the reliable traffic first because it's possible or even likely for a reliable mobj update
+	// (or critical event) to be followed up by an UpdateMobj that includes post-physics dynamics.
+	const int receivedReliableSequenceNumber = m_receiver.NextPacket(io_rawBuf);
+	if (receivedReliableSequenceNumber >= 0)
 	{
-		io_rawBuf.swap(*m_quickTurnaroundReceiveBuffer);
-		m_quickTurnaroundReceiveBuffer = nullptr;
+		m_currentReceivedPacketSequenceNumber = receivedReliableSequenceNumber;
 		return true;
 	}
-	return m_receiver.NextPacket(io_rawBuf) >= 0;
+
+	if (m_immediateReceiveBuffer.size())
+	{
+		io_rawBuf.swap(m_immediateReceiveBuffer);
+		m_currentReceivedPacketSequenceNumber = m_immediateReceiveSequenceNumber;
+		m_immediateReceiveSequenceNumber = 0;
+		m_immediateReceiveBuffer.clear();
+		return true;
+	}
+	return false;
 }
 
 void OdaMessenger::HandleAcks(buf_t& io_rawBuf)

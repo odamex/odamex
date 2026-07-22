@@ -643,7 +643,7 @@ std::string PersonalMatchDuelPlacement()
 
 // Return the amount of time elapsed in a netdemo.
 std::string NetdemoElapsed() {
-	if (!(netdemo.isPlaying() || netdemo.isPaused())) {
+	if (not netdemo.isInPlayback()) {
 		return "";
 	}
 
@@ -1663,7 +1663,7 @@ void EATargets(int x, int y, const float scale,
 		return;
 	}
 
-	const bool netdemoplaying = ::netdemo.isPlaying() || ::netdemo.isPaused();
+	const bool netdemoplaying = ::netdemo.isInPlayback();
 	std::vector<TargetInfo_t> Targets;
 
 	// What players should be drawn?

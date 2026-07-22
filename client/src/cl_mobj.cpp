@@ -184,7 +184,7 @@ void P_ShowSpawns(const mapthing2_t& mthing)
 
 	if (clientside && cl_showspawns)
 	{
-		AActor* spawn = 0;
+		AActor* spawn = nullptr;
 
 		if (sv_gametype == GM_DM && mthing.type == 11)
 		{

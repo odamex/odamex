@@ -39,7 +39,7 @@
 // 		key type,
 //		value type,
 //		hash functor with the following signature (optional):
-//			unsigned int operator()(KT) const;
+//			size_t operator()(KT) const;
 //
 // ============================================================================
 
@@ -191,10 +191,6 @@ template <> struct hashfunc<char*>
 template <> struct hashfunc<const char*>
 {	unsigned int operator()(const char* str) const { return __hash_cstring(str); } };
 
-template <> struct hashfunc<std::string>
-{	unsigned int operator()(const std::string& str) const { return __hash_cstring(str.c_str()); } };
-
-
 // ----------------------------------------------------------------------------
 // OHashTable interface & inline implementation
 //
@@ -203,7 +199,7 @@ template <> struct hashfunc<std::string>
 // is done quickly by iterating through the internal array of key/value pairs.
 // ----------------------------------------------------------------------------
 
-template <typename KT, typename VT, typename HF = hashfunc<KT> >
+template <typename KT, typename VT, typename HF = std::hash<KT> >
 class OHashTable
 {
 private:
@@ -270,12 +266,12 @@ public:
 			return !(operator==(other));
 		}
 
-		IVT& operator* ()
+		IVT& operator* () const
 		{
 			return mHashTable->mElements[mBucketNum].pair;
 		}
 
-		IVT* operator-> ()
+		IVT* operator-> () const
 		{
 			return &(operator*());
 		}

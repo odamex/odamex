@@ -56,7 +56,7 @@ struct interlevelcond_t
 	interlevelcond_t() = default;
 
 	interlevelcond_t(animcondition_t c, int p) :
-		condition(c), isZDoom(false), param(p), mapname1(), mapname2() {}
+		condition(c), isZDoom(false), param(p) {}
 
 	interlevelcond_t(animcondition_t c, OLumpName m1, OLumpName m2 = "") :
 		condition(c), isZDoom(true), param(0), mapname1(m1), mapname2(m2) {}
@@ -93,7 +93,7 @@ struct interlevelanim_t
 	int xpos;
 	int ypos;
 
-	interlevelanim_t(std::vector<interlevelframe_t> f = {}, std::vector<interlevelcond_t> c = {}, int x = 0, int y = 0) : frames(f), conditions(c), xpos(x), ypos(y) {}
+	interlevelanim_t(std::vector<interlevelframe_t> f = {}, std::vector<interlevelcond_t> c = {}, int x = 0, int y = 0) : frames(std::move(f)), conditions(std::move(c)), xpos(x), ypos(y) {}
 };
 
 struct interlevellayer_t
