@@ -43,6 +43,8 @@
 
 #if defined(SERVER_APP)
 #include "sv_main.h"
+#else
+#include "cl_stubs.h"
 #endif
 
 #define CLAMPCOLOR(c)	(EColorRange)((unsigned)(c)>CR_UNTRANSLATED?CR_UNTRANSLATED:(c))
@@ -1304,12 +1306,18 @@ void DPlaneWatcher::RunThink ()
 		(LastD > WatchD && newd <= WatchD))
 	{
 		TeleportSide = LineSide;
+		P_ClearIsTeleported();
 		LineSpecials[Special] (Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
 
 		if (serverside)
 		{
-			SERVER_ONLY(SV_SendExecuteLineSpecial(Special, Line, Activator, Arg0, Arg1,
-			                                      Arg2, Arg3, Arg4));
+			SV_SendExecuteLineSpecial(Special, Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
+
+			if (P_IsTeleported(Activator))
+			{
+				SV_UpdateMobj(Activator);
+				P_ClearIsTeleported();
+			}
 		}
 		Destroy ();
 	}
@@ -1818,9 +1826,15 @@ void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activ
 {
 	if (serverside)
 	{
+		P_ClearIsTeleported();
 		LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
-		SERVER_ONLY(SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2,
-		                                      arg3, arg4));
+
+		SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2, arg3, arg4);
+		if (P_IsTeleported(activator))
+		{
+			SV_UpdateMobj(activator);
+			P_ClearIsTeleported();
+		}
 	}
 }
 
