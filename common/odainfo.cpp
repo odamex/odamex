@@ -389,6 +389,39 @@ mobjinfo_t odamobjinfo[] = {
 		.flags            = MF_NOBLOCKMAP | MF_NOSECTOR | MF_NOGRAVITY,
 		.name             = "MT_SECRETTRIGGER",
 	},
+
+	{
+		// MT_UPPERSTACK
+		.type             = MT_UPPERSTACK,
+		.doomednum        = 9077,
+		.spawnstate       = S_TNT1,
+		.spawnhealth      = 1000,
+		.reactiontime     = 8,
+		.radius           = 20_fx,
+		.height           = 16_fx,
+		.cdheight         = 16_fx,
+		.mass             = 100,
+		.flags            = MF_NOBLOCKMAP | MF_NOSECTOR | MF_NOGRAVITY,
+		.flags2           = MF2_DONTDRAW,
+		.name             = "MT_UPPERSTACK",
+	},
+
+	{
+		// MT_LOWERSTACK
+		.type             = MT_LOWERSTACK,
+		.doomednum        = 9078,
+		.spawnstate       = S_TNT1,
+		.spawnhealth      = 1000,
+		.reactiontime     = 8,
+		.radius           = 20_fx,
+		.height           = 16_fx,
+		.cdheight         = 16_fx,
+		.mass             = 100,
+		.flags            = MF_NOBLOCKMAP | MF_NOSECTOR | MF_NOGRAVITY,
+		.flags2           = MF2_DONTDRAW,
+		.name             = "MT_LOWERSTACK",
+	},
+
 	{
 		// MT_SKYVIEWPOINT
 		.type             = MT_SKYVIEWPOINT,
@@ -404,6 +437,7 @@ mobjinfo_t odamobjinfo[] = {
 		.flags2           = MF2_DONTDRAW,
 		.name             = "MT_SKYVIEWPOINT",
 	},
+
 	{
 		// MT_SKYPICKER
 		.type             = MT_SKYPICKER,
@@ -419,6 +453,7 @@ mobjinfo_t odamobjinfo[] = {
 		.flags2           = MF2_DONTDRAW,
 		.name             = "MT_SKYPICKER",
 	},
+
 	{
 		// MT_SECTORSILENCER
 		.type             = MT_SECTORSILENCER,

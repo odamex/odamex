@@ -30,6 +30,7 @@
 // Data.
 #include "m_fixed.h"
 #include "info.h"
+#include "infomap.h"
 #include "actor.h"
 #include "gstrings.h"
 
@@ -1253,7 +1254,7 @@ std::string mobjinfo_t::getDisplayName() const
 	if (!display_name.empty())
 	{
 		if (display_name[0] == '$')
-			return GStrings(StdStringToUpper(display_name).c_str() + 1);
+			return GStrings(OString(StdStringToUpper(display_name)));
 		return display_name;
 	}
 	return P_MobjToName(static_cast<mobjtype_t>(this->type));

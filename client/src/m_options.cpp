@@ -2184,7 +2184,7 @@ static void M_OptMouseClick(int mouse_x, int mouse_y)
 
 	// Everything else behaves exactly as though the accept key was pressed.
 	event_t synth_ev(ev_keydown, cycles_value ? OKEY_RIGHTARROW : OKEY_ENTER, 0, 0, 0);
-	M_OptResponder(&synth_ev);
+	M_OptResponder(synth_ev);
 }
 
 
@@ -2324,7 +2324,7 @@ void M_OptResponder(const event_t& ev)
 		return;
 	}
 
-	if (ui_mouse.asInt() != 0 && ev->type == ev_keydown &&
+	if (ui_mouse.asInt() != 0 && ev.type == ev_keydown &&
 	    ch >= OKEY_MOUSE1 && ch <= OKEY_MWHEELRIGHT)
 	{
 		int mouse_x, mouse_y;

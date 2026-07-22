@@ -5427,7 +5427,7 @@ void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* a
 // sent to the activating player.
 //
 void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* print,
-                          bool playerOnly, const nonstd::span<const int> args)
+                          bool playerOnly, const std::span<const int> args)
 {
 	player_t* sendPlayer = nullptr;
 	if (playerOnly && activator != nullptr && activator->player != nullptr)

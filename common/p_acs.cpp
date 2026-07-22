@@ -24,6 +24,7 @@
 
 #include "odamex.h"
 
+#include "cmdlib.h"
 #include "z_zone.h"
 #include "p_local.h"
 #include "p_spec.h"
@@ -102,8 +103,7 @@ void DoClearInv(player_t* player)
 	player->weaponowned[wp_none] = true;
 	player->pendingweapon = wp_none;
 
-	SERVER_ONLY(
-	    SV_ACSExecuteSpecial(DLevelScript::PCD_CLEARINVENTORY, player->mo, NULL, true));
+	SERVER_ONLY(SV_ACSExecuteSpecial(DLevelScript::PCD_CLEARINVENTORY, player->mo, NULL, true));
 }
 
 void ClearInventory(AActor* activator)
@@ -158,12 +158,11 @@ void DoGiveInv(player_t& player, const char* type, int amount)
 		}
 		while (--amount > 0);
 
-			// Don't bring it up automatically
-			if (player.readyweapon != wp_none && player.pendingweapon != wp_none)
-				player.pendingweapon = savedpendingweap;
-			SERVER_ONLY(SV_SendPlayerInfo(player));
-			return;
-		}
+		// Don't bring it up automatically
+		if (player.readyweapon != wp_none && player.pendingweapon != wp_none)
+			player.pendingweapon = savedpendingweap;
+		SERVER_ONLY(SV_SendPlayerInfo(player));
+		return;
 	}
 
 	const auto [_, givetype] = P_INameToMobjFull(type);
@@ -420,40 +419,30 @@ int CheckInventory(AActor* activator, const char* type)
 int16_t StrToMOD(const char* str)
 {
 	// TODO: find out whether this is supposed to be case sensitive
-	using OUtil::CONST_HASH_NO_CASE;
-	switch (CONST_HASH_NO_CASE(str))
-	{
-		default:
-		case CONST_HASH_NO_CASE("Ice"):
-		case CONST_HASH_NO_CASE("Disintegrate"):
-		case CONST_HASH_NO_CASE("Poison"):
-		case CONST_HASH_NO_CASE("Electric"):
-		case CONST_HASH_NO_CASE("Massacre"):
-		case CONST_HASH_NO_CASE("None"):
-			return MOD_UNKNOWN;
-		case CONST_HASH_NO_CASE("BFGSplash"):
-			return MOD_BFG_SPLASH;
-		case CONST_HASH_NO_CASE("Drowning"):
-			return MOD_WATER;
-		case CONST_HASH_NO_CASE("Slime"):
-			return MOD_SLIME;
-		case CONST_HASH_NO_CASE("Fire"):
-			return MOD_LAVA;
-		case CONST_HASH_NO_CASE("Crush"):
-			return MOD_CRUSH;
-		case CONST_HASH_NO_CASE("Telefrag"):
-			return MOD_TELEFRAG;
-		case CONST_HASH_NO_CASE("Falling"):
-			return MOD_FALLING;
-		case CONST_HASH_NO_CASE("Suicide"):
-			return MOD_SUICIDE;
-		case CONST_HASH_NO_CASE("Exit"):
-			return MOD_EXIT;
-		case CONST_HASH_NO_CASE("Melee"):
-			return MOD_HIT;
-		case CONST_HASH_NO_CASE("Railgun"):
-			return MOD_RAILGUN;
-	}
+	if (iequals(str, "BFGSplash"))
+		return MOD_BFG_SPLASH;
+	else if (iequals(str, "Drowning"))
+		return MOD_WATER;
+	else if (iequals(str, "Slime"))
+		return MOD_SLIME;
+	else if (iequals(str, "Fire"))
+		return MOD_LAVA;
+	else if (iequals(str, "Crush"))
+		return MOD_CRUSH;
+	else if (iequals(str, "Telefrag"))
+		return MOD_TELEFRAG;
+	else if (iequals(str, "Falling"))
+		return MOD_FALLING;
+	else if (iequals(str, "Suicide"))
+		return MOD_SUICIDE;
+	else if (iequals(str, "Exit"))
+		return MOD_EXIT;
+	else if (iequals(str, "Melee"))
+		return MOD_HIT;
+	else if (iequals(str, "Railgun"))
+		return MOD_RAILGUN;
+
+	return MOD_UNKNOWN;
 }
 
 } // namespace
@@ -906,7 +895,7 @@ void FBehavior::StartTypedScripts (uint16_t type, AActor *activator, int arg0, i
 	for (int i = 0; i < NumScripts; ++i)
 	{
 
-		ScriptPtr* ptr = reinterpret_cast<int*>(Scripts + 8 * i);
+		ScriptPtr* ptr = reinterpret_cast<ScriptPtr*>(Scripts + 8 * i);
 
 		if (ptr->Type != type)
 			continue;
@@ -923,8 +912,6 @@ void FBehavior::StartTypedScripts (uint16_t type, AActor *activator, int arg0, i
 
 		P_GetScriptGoing (activator, NULL, ptr->Number,
 				reinterpret_cast<int*>(ptr->Address + Data), 0, arg0, arg1, arg2, always, true);
-	}
-}
 	}
 }
 
@@ -1866,24 +1853,22 @@ std::optional<std::pair<byte, uint32_t>> GetFountainSpawnInfo(const char* mobjst
 	const auto make_return = [](const uint32_t fountaintype) {
 		return std::pair<byte, uint32_t>({ fountaintype >> FX_FOUNTAINSHIFT, fountaintype });
 	};
-	switch (OUtil::CONST_HASH_NO_CASE(mobjstr)) {
-		case OUtil::CONST_HASH_NO_CASE("YellowParticleFountain"):
-			return make_return(FX_YELLOWFOUNTAIN);
-		case OUtil::CONST_HASH_NO_CASE("RedParticleFountain"):
-			return make_return(FX_REDFOUNTAIN);
-		case OUtil::CONST_HASH_NO_CASE("BlueParticleFountain"):
-			return make_return(FX_BLUEFOUNTAIN);
-		case OUtil::CONST_HASH_NO_CASE("GreenParticleFountain"):
-			return make_return(FX_GREENFOUNTAIN);
-		case OUtil::CONST_HASH_NO_CASE("PurpleParticleFountain"):
-			return make_return(FX_PURPLEFOUNTAIN);
-		case OUtil::CONST_HASH_NO_CASE("BlackParticleFountain"):
-			return make_return(FX_BLACKFOUNTAIN);
-		case OUtil::CONST_HASH_NO_CASE("WhiteParticleFountain"):
-			return make_return(FX_WHITEFOUNTAIN);
-		default:
-			return std::nullopt;
-	}
+	if (iequals(mobjstr, "YellowParticleFountain"))
+		return make_return(FX_YELLOWFOUNTAIN);
+	else if (iequals(mobjstr, "RedParticleFountain"))
+		return make_return(FX_REDFOUNTAIN);
+	else if (iequals(mobjstr, "BlueParticleFountain"))
+		return make_return(FX_BLUEFOUNTAIN);
+	else if (iequals(mobjstr, "GreenParticleFountain"))
+		return make_return(FX_GREENFOUNTAIN);
+	else if (iequals(mobjstr, "PurpleParticleFountain"))
+		return make_return(FX_PURPLEFOUNTAIN);
+	else if (iequals(mobjstr, "BlackParticleFountain"))
+		return make_return(FX_BLACKFOUNTAIN);
+	else if (iequals(mobjstr, "WhiteParticleFountain"))
+		return make_return(FX_WHITEFOUNTAIN);
+
+	return std::nullopt;
 }
 
 }
@@ -1935,9 +1920,9 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, an
 	else if (info == MT_NULL)
 	{
 		DPrintFmt("ACS: LOGIC ERROR - Could not spawn thing {}\n", typestr);
-	return static_cast<int>(reinterpret_cast<uintptr_t>(actor));
+	}
 
-	return (int)reinterpret_cast<uintptr_t>(actor);
+	return spawncount;
 }
 
 int DLevelScript::DoSpawnSpot(int type, int spot, int tid, std::optional<angle_t> angle, bool force)
@@ -2006,7 +1991,7 @@ void DLevelScript::DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t s
 			mobj->flags |= MF_DROPPED;
 			mobj->tid = newtid;
 			if (mobj->flags & MF_MISSILE)
-				P_CheckMissileSpawn(mobj);
+				P_CheckMissileSpawn(mobj, spot);
 			else if (!P_TestMobjLocation(mobj))
 				mobj->Destroy ();
 		}
@@ -2040,7 +2025,7 @@ static void DoActualFadeRange(player_t* viewer, float ftime, bool fadingFrom,
 			}
 			else
 			{
-				fr1 = viewer->blend_color.geta() / 255.0f;
+				fa1 = viewer->blend_color.geta() / 255.0f;
 				fr1 = viewer->blend_color.getr() / 255.0f;
 				fg1 = viewer->blend_color.getg() / 255.0f;
 				fb1 = viewer->blend_color.getb() / 255.0f;
@@ -2087,6 +2072,15 @@ inline int getbyte (int *&pc)
 	int res = *reinterpret_cast<byte*>(pc);
 	pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc)+1);
 	return res;
+}
+
+inline int getshort (int *&pc)
+{
+	int res = LESHORT(*reinterpret_cast<uint16_t*>(pc));
+	pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc)+2);
+	return res;
+}
+
 template <int N>
 inline std::array<byte, N> getbytes (int *&pc)
 {
@@ -2097,8 +2091,6 @@ inline std::array<byte, N> getbytes (int *&pc)
 
     pc = reinterpret_cast<int*>(p + N);
 	return out;
-}
-
 }
 
 void DLevelScript::RunScript ()
@@ -4149,7 +4141,7 @@ void DLevelScript::RunScript ()
 			{
 				const int nargs = NEXTBYTE;
 				const int function = NEXTSHORT;
-				const nonstd::span<const int> args(&STACK(nargs), nargs);
+				const std::span<const int> args(&STACK(nargs), nargs);
 				const auto result = CallFunction(script, function, args);
 				sp -= (nargs - 1);
 				STACK(1) = result.value_or(0);
@@ -4191,7 +4183,7 @@ void DLevelScript::RunScript ()
 
 fixed_t P_BulletSlope(AActor* mo);
 
-auto DLevelScript::CallFunction(const int scriptnum, const int func, const nonstd::span<const int> args)
+auto DLevelScript::CallFunction(const int scriptnum, const int func, const std::span<const int> args)
 	-> nonstd::expected<int, callfunc_args_error_t>
 {
 	#define CHECK_MIN_ARGS(minArgs) \
@@ -4609,9 +4601,9 @@ FArchive &operator>> (FArchive &arc, acsdefered_t* &defertop)
 	arc >> inbyte;
 	while (inbyte)
 	{
-		(*defer)->type = static_cast<acsdefered_s::EType>(inbyte);
+		*defer = new acsdefered_t;
 		arc >> inbyte;
-		(*defer)->type = (acsdefered_s::EType)inbyte;
+		(*defer)->type = static_cast<acsdefered_t::EType>(inbyte);
 		arc >> (*defer)->script
 			>> (*defer)->arg0 >> (*defer)->arg1 >> (*defer)->arg2;
 		defer = &((*defer)->next);
@@ -4656,6 +4648,4 @@ void DACSThinker::DumpScriptStatus ()
 		script = script->next;
 	}
 }
-VERSION_CONTROL (p_acs_cpp, "$Id$")
-
 VERSION_CONTROL (p_acs_cpp, "$Id$")

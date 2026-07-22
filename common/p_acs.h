@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <span>
+
 #include "dobject.h"
 #include "r_defs.h"
 
@@ -518,6 +520,15 @@ public:
 		LEVELINFO_SUCK_TIME
 	};
 
+	enum
+	{
+		PRINTNAME_LEVELNAME  = -1,
+		PRINTNAME_LEVEL      = -2,
+		PRINTNAME_NEXTLEVEL  = -3,
+		PRINTNAME_NEXTSECRET = -4,
+		PRINTNAME_SKILL      = -5
+	};
+
 	enum EScriptState : uint8_t
 	{
 		SCRIPT_Running,
@@ -594,7 +605,7 @@ protected:
 		int num_required_args;
 	};
 
-	auto CallFunction(const int scriptnum, const int func, const nonstd::span<const int> args)
+	auto CallFunction(const int scriptnum, const int func, const std::span<const int> args)
 		-> nonstd::expected<int, callfunc_args_error_t>;
 private:
 	DLevelScript ();

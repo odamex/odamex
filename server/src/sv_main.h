@@ -182,7 +182,7 @@ void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* a
                                int arg1, int arg2, int arg3, int arg4);
 void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* print,
                           bool playerOnly,
-                          const nonstd::span<const int> args = {});
+                          const std::span<const int> args = {});
 
 bool CompareQueuePosition(const player_t* p1, const player_t* p2);
 

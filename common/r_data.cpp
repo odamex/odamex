@@ -678,8 +678,8 @@ void R_InitTextures()
 	texhash_t texturehash2;
 	// [EB] texture1 goes to texturehash2 because .insert only inserts for keys that don't already exist
 	//      and we need texture2 to override texture1
-	int texnum = R_LoadTextureLump(texture1, patchlookup, 0, texturehash2);
-	texnum = R_LoadTextureLump(texture2, patchlookup, texnum, texturehash);
+	int texnum = R_LoadTextureLump(texture1, patchlookup, 0, texturehash2, errors);
+	texnum = R_LoadTextureLump(texture2, patchlookup, texnum, texturehash, errors);
 	texturehash.insert(texturehash2.begin(), texturehash2.end());
 
 	const auto createTexture = [&](int textureIndex,
