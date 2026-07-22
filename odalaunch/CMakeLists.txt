@@ -61,6 +61,11 @@ if(wxWidgets_FOUND)
 
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
 
+  # Cvar documentation database loader needs a JSON parser.
+  if(TARGET jsoncpp_static)
+    target_link_libraries(odalaunch jsoncpp_static)
+  endif()
+
   if(WIN32)
     target_link_libraries(odalaunch ws2_32)
   endif()
