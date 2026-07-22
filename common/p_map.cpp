@@ -185,12 +185,12 @@ namespace
 	AActor* teleportedThing;
 }
 
-void P_ClearIsTeleported()
+void P_ClearJustTeleported()
 {
 	teleportedThing = nullptr;
 }
 
-bool P_IsTeleported (AActor* thing)
+bool P_JustTeleported (AActor* thing)
 {
 	return teleportedThing == thing;
 }

@@ -270,8 +270,8 @@ void    P_FakeZMovement (AActor *mo);
 bool    P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
 bool    P_TryMove (AActor* thing, fixed_t x, fixed_t y, int dropoff, bool onfloor = false);
 bool    P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag); // [RH] Added z and telefrag parameters
-bool    P_IsTeleported (AActor* thing);
-void    P_ClearIsTeleported ();
+bool    P_JustTeleported (AActor* thing);
+void    P_ClearJustTeleported ();
 void    P_SlideMove (AActor* mo);
 bool    P_CheckSight (const AActor* t1, const AActor* t2);
 void    P_UseLines (player_t& player);

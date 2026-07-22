@@ -1930,7 +1930,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	if (side) // jff 6/1/98 fix inadvertent deletion of side test
 		return false;
 
-	P_ClearIsTeleported();
+	P_ClearJustTeleported();
 
 	// jff 02/04/98 add check here for generalized floor/ceil mover
 
@@ -3375,10 +3375,10 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// because client-side prediction immediately followed by the ActivateLine _may_
 			// result in a wildly inaccurate position, depending on a variety of factors, and
 			// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
-			if (P_IsTeleported(thing))
+			if (P_JustTeleported(thing))
 			{
 				SV_UpdateMobj(thing);
-				P_ClearIsTeleported();
+				P_ClearJustTeleported();
 			}
 
 			P_ChangeSwitchTexture(line, reuse, true);

@@ -1306,17 +1306,17 @@ void DPlaneWatcher::RunThink ()
 		(LastD > WatchD && newd <= WatchD))
 	{
 		TeleportSide = LineSide;
-		P_ClearIsTeleported();
+		P_ClearJustTeleported();
 		LineSpecials[Special] (Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
 
 		if (serverside)
 		{
 			SV_SendExecuteLineSpecial(Special, Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
 
-			if (P_IsTeleported(Activator))
+			if (P_JustTeleported(Activator))
 			{
 				SV_UpdateMobj(Activator);
-				P_ClearIsTeleported();
+				P_ClearJustTeleported();
 			}
 		}
 		Destroy ();
@@ -1826,14 +1826,14 @@ void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activ
 {
 	if (serverside)
 	{
-		P_ClearIsTeleported();
+		P_ClearJustTeleported();
 		LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
 
 		SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2, arg3, arg4);
-		if (P_IsTeleported(activator))
+		if (P_JustTeleported(activator))
 		{
 			SV_UpdateMobj(activator);
-			P_ClearIsTeleported();
+			P_ClearJustTeleported();
 		}
 	}
 }

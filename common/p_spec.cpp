@@ -1961,7 +1961,7 @@ void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 
 	if (thing)
 	{
-		P_ClearIsTeleported();
+		P_ClearJustTeleported();
 		result = map_format.cross_special_line(line, side, thing, bossaction);
 	}
 
@@ -1973,10 +1973,10 @@ void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 		// because client-side prediction immediately followed by the ActivateLine _may_
 		// result in a wildly inaccurate position, depending on a variety of factors, and
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
-		if (P_IsTeleported(thing))
+		if (P_JustTeleported(thing))
 		{
 			SV_UpdateMobj(thing);
-			P_ClearIsTeleported();
+			P_ClearJustTeleported();
 		}
 
 		bool repeat;
@@ -2026,7 +2026,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	bool lineresult;
 
-	P_ClearIsTeleported();
+	P_ClearJustTeleported();
 
 	if (map_format.getZDoom()) // All zdoom specials can be impact activated
 	{
@@ -2046,10 +2046,10 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		// because client-side prediction immediately followed by the ActivateLine _may_
 		// result in a wildly inaccurate position, depending on a variety of factors, and
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
-		if (P_IsTeleported(thing))
+		if (P_JustTeleported(thing))
 		{
 			SV_UpdateMobj(thing);
-			P_ClearIsTeleported();
+			P_ClearJustTeleported();
 		}
 
 		if (lineresult)
@@ -2105,7 +2105,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 
 	TeleportSide = side;
 
-	P_ClearIsTeleported();
+	P_ClearJustTeleported();
 
 	if (map_format.getZDoom())
 		result = P_ActivateZDoomLine(line, thing, side, ML_SPAC_USE);
@@ -2121,10 +2121,10 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 		// because client-side prediction immediately followed by the ActivateLine _may_
 		// result in a wildly inaccurate position, depending on a variety of factors, and
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
-		if (P_IsTeleported(thing))
+		if (P_JustTeleported(thing))
 		{
 			SV_UpdateMobj(thing);
-			P_ClearIsTeleported();
+			P_ClearJustTeleported();
 		}
 
 		if (map_format.getZDoom() && !bossaction)
@@ -2189,7 +2189,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 	}
 
     TeleportSide = side;
-	P_ClearIsTeleported();
+	P_ClearJustTeleported();
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
@@ -2201,10 +2201,10 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 		// because client-side prediction immediately followed by the ActivateLine _may_
 		// result in a wildly inaccurate position, depending on a variety of factors, and
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
-		if (P_IsTeleported(thing))
+		if (P_JustTeleported(thing))
 		{
 			SV_UpdateMobj(thing);
-			P_ClearIsTeleported();
+			P_ClearJustTeleported();
 		}
 
 		if (serverside && !(thing->player && (thing->player->spectator ||
