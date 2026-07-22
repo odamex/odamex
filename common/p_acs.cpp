@@ -419,30 +419,40 @@ int CheckInventory(AActor* activator, const char* type)
 int16_t StrToMOD(const char* str)
 {
 	// TODO: find out whether this is supposed to be case sensitive
-	if (iequals(str, "BFGSplash"))
-		return MOD_BFG_SPLASH;
-	else if (iequals(str, "Drowning"))
-		return MOD_WATER;
-	else if (iequals(str, "Slime"))
-		return MOD_SLIME;
-	else if (iequals(str, "Fire"))
-		return MOD_LAVA;
-	else if (iequals(str, "Crush"))
-		return MOD_CRUSH;
-	else if (iequals(str, "Telefrag"))
-		return MOD_TELEFRAG;
-	else if (iequals(str, "Falling"))
-		return MOD_FALLING;
-	else if (iequals(str, "Suicide"))
-		return MOD_SUICIDE;
-	else if (iequals(str, "Exit"))
-		return MOD_EXIT;
-	else if (iequals(str, "Melee"))
-		return MOD_HIT;
-	else if (iequals(str, "Railgun"))
-		return MOD_RAILGUN;
-
-	return MOD_UNKNOWN;
+	using OUtil::CONST_HASH_NO_CASE;
+	switch (CONST_HASH_NO_CASE(str))
+	{
+		default:
+		case CONST_HASH_NO_CASE("Ice"):
+		case CONST_HASH_NO_CASE("Disintegrate"):
+		case CONST_HASH_NO_CASE("Poison"):
+		case CONST_HASH_NO_CASE("Electric"):
+		case CONST_HASH_NO_CASE("Massacre"):
+		case CONST_HASH_NO_CASE("None"):
+			return MOD_UNKNOWN;
+		case CONST_HASH_NO_CASE("BFGSplash"):
+			return MOD_BFG_SPLASH;
+		case CONST_HASH_NO_CASE("Drowning"):
+			return MOD_WATER;
+		case CONST_HASH_NO_CASE("Slime"):
+			return MOD_SLIME;
+		case CONST_HASH_NO_CASE("Fire"):
+			return MOD_LAVA;
+		case CONST_HASH_NO_CASE("Crush"):
+			return MOD_CRUSH;
+		case CONST_HASH_NO_CASE("Telefrag"):
+			return MOD_TELEFRAG;
+		case CONST_HASH_NO_CASE("Falling"):
+			return MOD_FALLING;
+		case CONST_HASH_NO_CASE("Suicide"):
+			return MOD_SUICIDE;
+		case CONST_HASH_NO_CASE("Exit"):
+			return MOD_EXIT;
+		case CONST_HASH_NO_CASE("Melee"):
+			return MOD_HIT;
+		case CONST_HASH_NO_CASE("Railgun"):
+			return MOD_RAILGUN;
+	}
 }
 
 } // namespace
@@ -1850,25 +1860,28 @@ namespace
 
 std::optional<std::pair<byte, uint32_t>> GetFountainSpawnInfo(const char* mobjstr)
 {
+	using OUtil::CONST_HASH_NO_CASE;
 	const auto make_return = [](const uint32_t fountaintype) {
 		return std::pair<byte, uint32_t>({ fountaintype >> FX_FOUNTAINSHIFT, fountaintype });
 	};
-	if (iequals(mobjstr, "YellowParticleFountain"))
-		return make_return(FX_YELLOWFOUNTAIN);
-	else if (iequals(mobjstr, "RedParticleFountain"))
-		return make_return(FX_REDFOUNTAIN);
-	else if (iequals(mobjstr, "BlueParticleFountain"))
-		return make_return(FX_BLUEFOUNTAIN);
-	else if (iequals(mobjstr, "GreenParticleFountain"))
-		return make_return(FX_GREENFOUNTAIN);
-	else if (iequals(mobjstr, "PurpleParticleFountain"))
-		return make_return(FX_PURPLEFOUNTAIN);
-	else if (iequals(mobjstr, "BlackParticleFountain"))
-		return make_return(FX_BLACKFOUNTAIN);
-	else if (iequals(mobjstr, "WhiteParticleFountain"))
-		return make_return(FX_WHITEFOUNTAIN);
-
-	return std::nullopt;
+	switch (CONST_HASH_NO_CASE(mobjstr)) {
+		case CONST_HASH_NO_CASE("YellowParticleFountain"):
+			return make_return(FX_YELLOWFOUNTAIN);
+		case CONST_HASH_NO_CASE("RedParticleFountain"):
+			return make_return(FX_REDFOUNTAIN);
+		case CONST_HASH_NO_CASE("BlueParticleFountain"):
+			return make_return(FX_BLUEFOUNTAIN);
+		case CONST_HASH_NO_CASE("GreenParticleFountain"):
+			return make_return(FX_GREENFOUNTAIN);
+		case CONST_HASH_NO_CASE("PurpleParticleFountain"):
+			return make_return(FX_PURPLEFOUNTAIN);
+		case CONST_HASH_NO_CASE("BlackParticleFountain"):
+			return make_return(FX_BLACKFOUNTAIN);
+		case CONST_HASH_NO_CASE("WhiteParticleFountain"):
+			return make_return(FX_WHITEFOUNTAIN);
+		default:
+			return std::nullopt;
+	}
 }
 
 }
