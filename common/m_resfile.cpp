@@ -134,7 +134,10 @@ bool OWantFile::make(OWantFile& out, const std::string& file, const ofile_t type
 	std::string extension;
 	M_ExtractFileExtension(basename, extension);
 
-	out.m_wantedpath = file;
+	std::string expanded(file);
+	M_ExpandHomeDir(expanded);
+
+	out.m_wantedpath = expanded;
 	out.m_wantedtype = type;
 	out.m_basename = basename;
 	out.m_extension = extension;
@@ -162,7 +165,10 @@ bool OWantFile::makeWithHash(OWantFile& out, const std::string& file, const ofil
 	std::string extension;
 	M_ExtractFileExtension(basename, extension);
 
-	out.m_wantedpath = file;
+	std::string expanded(file);
+	M_ExpandHomeDir(expanded);
+
+	out.m_wantedpath = expanded;
 	out.m_wantedtype = type;
 	out.m_wantedMD5 = hash;
 	out.m_basename = basename;
