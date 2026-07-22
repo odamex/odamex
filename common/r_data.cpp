@@ -407,7 +407,7 @@ void R_GenerateLookup(int texnum, int *const errors)
 	// Now count the number of columns that are covered by more than one patch.
 	// Fill in the lump / offset, so columns with only a single patch are all done.
 
-	texturecomposite[texnum] = 0;
+	texturecomposite[texnum] = nullptr;
 	int csize = 0;
 
 	int x = texture->width;

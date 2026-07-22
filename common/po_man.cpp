@@ -1340,7 +1340,7 @@ void PO_Init (void)
 	polyspawns_t *polyspawn, **prev;
 	int polyIndex;
 
-	polyobjs = Z_Calloc<polyobj_t>(po_NumPolyobjs, PU_LEVEL, 0);
+	polyobjs = Z_Calloc<polyobj_t>(po_NumPolyobjs, PU_LEVEL);
 
 	polyIndex = 0; // index polyobj number
 	// Find the startSpot points, and spawn each polyobj

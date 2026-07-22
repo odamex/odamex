@@ -258,7 +258,7 @@ struct sector_t
 
 	// list of mobjs that are at least partially in the sector
 	// thinglist is a subset of touching_thinglist
-	msecnode_s *touching_thinglist = nullptr;				// phares 3/14/98
+	msecnode_t *touching_thinglist = nullptr;				// phares 3/14/98
 
 	int linecount = 0;
 	line_s **lines = nullptr;		// [linecount] size
@@ -395,16 +395,16 @@ typedef line_s line_t;
 //
 // For the links, NULL means top or end of list.
 
-typedef struct msecnode_s
+struct msecnode_t
 {
 	sector_t			*m_sector;	// a sector containing this object
 	AActor				*m_thing;	// this object
-	msecnode_s	*m_tprev;	// prev msecnode_t for this thing
-	msecnode_s	*m_tnext;	// next msecnode_t for this thing
-	msecnode_s	*m_sprev;	// prev msecnode_t for this sector
-	msecnode_s	*m_snext;	// next msecnode_t for this sector
+	msecnode_t	*m_tprev;	// prev msecnode_t for this thing
+	msecnode_t	*m_tnext;	// next msecnode_t for this thing
+	msecnode_t	*m_sprev;	// prev msecnode_t for this sector
+	msecnode_t	*m_snext;	// next msecnode_t for this sector
 	bool visited;	// killough 4/4/98, 4/7/98: used in search algorithms
-} msecnode_t;
+};
 
 //
 // The LineSeg.
@@ -463,13 +463,13 @@ typedef struct polyblock_s
 //	indicating the visible walls that define
 //	(all or some) sides of a convex BSP leaf.
 //
-typedef struct subsector_s
+struct subsector_t
 {
 	sector_t		*sector;
 	unsigned int	numlines;
 	unsigned int	firstline;
 	polyobj_t	    *poly;
-} subsector_t;
+};
 
 //
 // BSP node.

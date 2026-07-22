@@ -87,11 +87,9 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 	}
 }
 
-DThinker::DThinker ()
+DThinker::DThinker() : m_Next(nullptr), m_Prev(LastThinker)
 {
 	// Add a new thinker at the end of the list.
-	m_Prev = LastThinker;
-	m_Next = NULL;
 	if (LastThinker)
 		LastThinker->m_Next = this;
 	if (!FirstThinker)
@@ -104,9 +102,7 @@ DThinker::DThinker ()
 	m_optionalVectorIndex = s_thinkers.size() - 1;
 }
 
-DThinker::~DThinker ()
-{
-}
+DThinker::~DThinker() = default;
 
 // This method is necessary if you construct the Thinker in an unconventional way,
 // like via a copy ctor.  Otherwise, DThinker::Destroy() runs the risk of stomping

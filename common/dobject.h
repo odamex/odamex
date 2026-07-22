@@ -61,8 +61,7 @@ class					DPillar;
 
 struct TypeInfo
 {
-	TypeInfo ()
-	{}
+	TypeInfo () = default;
 
 	TypeInfo (const char *inName, const TypeInfo *inParentType, unsigned int inSize)
 		: Name (inName),
@@ -97,7 +96,7 @@ struct TypeInfo
 		}
 		return false;
 	}
-	[[nodiscard]] inline bool IsDescendantOf (const TypeInfo *ti) const
+	[[nodiscard]] bool IsDescendantOf (const TypeInfo *ti) const
 	{
 		return ti->IsAncestorOf (this);
 	}
@@ -171,15 +170,15 @@ private: \
 	typedef DObject ThisClass;
 
 public:
-	DObject () {};
-	virtual ~DObject () = 0;
+	DObject() = default;
+	virtual ~DObject() = 0;
 
-	[[nodiscard]] inline bool IsKindOf (const TypeInfo *base) const
+	[[nodiscard]] bool IsKindOf (const TypeInfo *base) const
 	{
 		return base->IsAncestorOf (StaticType ());
 	}
 
-	[[nodiscard]] inline bool IsA (const TypeInfo *type) const
+	[[nodiscard]] bool IsA (const TypeInfo *type) const
 	{
 		return (type == StaticType());
 	}
