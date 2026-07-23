@@ -610,8 +610,7 @@ void CL_StepTics(unsigned int count)
 		if (advancedemo)
 			D_DoAdvanceDemo();
 
-		g_UIStack.tick(); // console + menu overlays
-		HU_Ticker();
+		g_UIStack.tick(); // console + menu + HUD overlays
 
 		if (P_AtInterval(TICRATE))
 			CL_PlayerTimes();

@@ -28,6 +28,7 @@ class MenuOverlay : public IOverlay
 	void tick() override;
 	void draw() override;
 	bool responder(event_t* ev) override;
+	int inputPriority() const override { return UIPRIO_MENU; }
 };
 
 MenuOverlay& UI_MenuOverlay();

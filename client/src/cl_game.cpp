@@ -710,65 +710,115 @@ bool G_ShouldIgnoreMouseInput()
 }
 
 //
-// G_Responder
-// Get info needed to make ticcmd_ts for the players.
+// G_DemoAttractResponder
 //
-bool G_Responder (event_t *ev)
+// During demo playback / the title-screen attract loop, any key that isn't
+// bound to a "special" command pops up the menu.
+//
+// Returns true whenever the attract handler is active, so it swallows the
+// event from the rest of the input path.
+//
+bool G_DemoAttractResponder(event_t* ev)
 {
 	// any other key pops up menu if in demos
 	// [RH] But only if the key isn't bound to a "special" command
-	if (gameaction == ga_nothing &&
-		(demoplayback || gamestate == GS_DEMOSCREEN))
-	{
-		const char *cmd = Bindings.GetBind(ev->data1).c_str();
-
-		if (ev->type == ev_keydown)
-		{
-
-			if (!cmd || (
-				strnicmp (cmd, "menu_", 5) &&
-				stricmp (cmd, "toggleconsole") &&
-				stricmp (cmd, "sizeup") &&
-				stricmp (cmd, "sizedown") &&
-				stricmp (cmd, "togglemap") &&
-				stricmp (cmd, "spynext") &&
-				stricmp (cmd, "chase") &&
-				stricmp (cmd, "+showscores") &&
-				stricmp (cmd, "bumpgamma") &&
-				stricmp (cmd, "screenshot") &&
-                stricmp (cmd, "stepmode") &&
-                stricmp (cmd, "step")))
-			{
-				M_StartControlPanel ();
-				return true;
-			}
-			else
-			{
-				return C_DoKey (ev, &Bindings, &DoubleBindings);
-			}
-		}
-		if (cmd && cmd[0] == '+')
-			return C_DoKey(ev, &Bindings, &DoubleBindings);
-
+	if (!(gameaction == ga_nothing &&
+	      (demoplayback || gamestate == GS_DEMOSCREEN)))
 		return false;
-	}
 
-	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+	const char *cmd = Bindings.GetBind(ev->data1).c_str();
+
+	if (ev->type == ev_keydown)
 	{
-		if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
-			return true;
-		if (C_DoSpectatorKey(ev))
-			return true;
-
-		if (HU_Responder (ev))
-			return true;		// chat ate the event
-		if (ST_Responder (ev))
-			return true;		// status window ate it
-		if (!viewactive)
-			if (AM_Responder (ev))
-				return true;	// automap ate it
+		if (!cmd || (
+			strnicmp (cmd, "menu_", 5) &&
+			stricmp (cmd, "toggleconsole") &&
+			stricmp (cmd, "sizeup") &&
+			stricmp (cmd, "sizedown") &&
+			stricmp (cmd, "togglemap") &&
+			stricmp (cmd, "spynext") &&
+			stricmp (cmd, "chase") &&
+			stricmp (cmd, "+showscores") &&
+			stricmp (cmd, "bumpgamma") &&
+			stricmp (cmd, "screenshot") &&
+            stricmp (cmd, "stepmode") &&
+            stricmp (cmd, "step")))
+		{
+			M_StartControlPanel ();
+		}
+		else
+		{
+			C_DoKey (ev, &Bindings, &DoubleBindings);
+		}
 	}
-	else if (gamestate == GS_FINALE)
+	else if (cmd && cmd[0] == '+')
+	{
+		C_DoKey(ev, &Bindings, &DoubleBindings);
+	}
+
+	// Active: swallow the event so nothing below (HUD, bindings) uses it.
+	return true;
+}
+
+//
+// G_HudResponder
+//
+// Net-demo / spectator keys and the in-level HUD (chat + status bar).
+// Active during the level and intermission.
+//
+bool G_HudResponder(event_t* ev)
+{
+	if (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION)
+		return false;
+
+	if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
+		return true;
+	if (C_DoSpectatorKey(ev))
+		return true;
+
+	if (HU_Responder (ev))
+		return true;		// chat ate the event
+	if (ST_Responder (ev))
+		return true;		// status window ate it
+
+	return false;
+}
+
+//
+// G_AutomapResponder
+//
+// The automap's input. When the fullscreen map (viewactive) is inactive, it runs
+// at a priority above the key bindings, when viewactive = true, it runs below
+// them so bound keys win first.
+// This function only applies the gamestate gate that matches each case.
+// The ordering is handled by the layer's input priority.
+//
+bool G_AutomapResponder(event_t* ev)
+{
+	if (!viewactive)
+	{
+		if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+			return AM_Responder(ev);
+	}
+	else
+	{
+		if (gamestate == GS_LEVEL)
+			return AM_Responder(ev);
+	}
+	return false;
+}
+
+//
+// G_Responder
+//
+// The core game input: finale, key bindings and mouse/joystick movement.
+// 
+// The demo-attract, HUD and automap slices formerly here now live in their own
+// input layers.
+//
+bool G_Responder (event_t *ev)
+{
+	if (gamestate == GS_FINALE)
 	{
 		if (F_Responder (ev))
 			return true;		// finale ate the event
@@ -813,11 +863,11 @@ bool G_Responder (event_t *ev)
 
 	}
 
-	// [RH] If the view is active, give the automap a chance at
-	// the events *last* so that any bound keys get precedence.
-
+	// [RH] If the view is active, don't swallow the event here: the automap's
+	// post-binding input layer (lower priority than this one) gets the last
+	// crack so that any bound keys keep precedence.
 	if (gamestate == GS_LEVEL && viewactive)
-		return AM_Responder (ev);
+		return false;
 
 	if (ev->type == ev_keydown ||
 		ev->type == ev_mouse ||

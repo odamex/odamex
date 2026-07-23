@@ -14,21 +14,32 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Console overlay adapter.
+//   HUD overlay adapter.
 //
 //-----------------------------------------------------------------------------
 
-#pragma once
+#include "odamex.h"
 
-#include "ui/ui_layer.h"
+#include "ui/overlay_hud.h"
 
-class ConsoleOverlay : public IOverlay
+#include "g_game.h"
+#include "hu_stuff.h"
+
+void HudOverlay::tick()
 {
-  public:
-	void tick() override;
-	void draw() override;
-	bool responder(event_t* ev) override;
-	int inputPriority() const override { return UIPRIO_CONSOLE; }
-};
+	// HU_Ticker already ran pre-simulation (before G_Ticker) and self-gates
+	// internally, so it moves here as-is. The status bar / automap tickers run
+	// *after* P_Ticker inside G_Ticker, so those stay put until Phase 4.
+	HU_Ticker();
+}
 
-ConsoleOverlay& UI_ConsoleOverlay();
+bool HudOverlay::responder(event_t* ev)
+{
+	return G_HudResponder(ev);
+}
+
+HudOverlay& UI_HudOverlay()
+{
+	static HudOverlay hud;
+	return hud;
+}

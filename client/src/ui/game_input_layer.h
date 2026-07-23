@@ -14,7 +14,13 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Console overlay adapter.
+//   Game input layers.
+//
+//   GameInputLayer  - the core game input (finale, key bindings, mouse/joystick
+//                     movement). Active in every gamestate, lowest of the
+//                     gameplay input layers, sandwiched by automap.
+//   DemoInputLayer  - the demo-attract "any key opens the menu" handler. Highest
+//                     gameplay priority, when active it swallows the event.
 //
 //-----------------------------------------------------------------------------
 
@@ -22,13 +28,19 @@
 
 #include "ui/ui_layer.h"
 
-class ConsoleOverlay : public IOverlay
+class GameInputLayer : public IOverlay
 {
   public:
-	void tick() override;
-	void draw() override;
 	bool responder(event_t* ev) override;
-	int inputPriority() const override { return UIPRIO_CONSOLE; }
+	int inputPriority() const override { return UIPRIO_GAMEINPUT; }
 };
 
-ConsoleOverlay& UI_ConsoleOverlay();
+class DemoInputLayer : public IOverlay
+{
+  public:
+	bool responder(event_t* ev) override;
+	int inputPriority() const override { return UIPRIO_DEMO; }
+};
+
+GameInputLayer& UI_GameInputLayer();
+DemoInputLayer& UI_DemoInputLayer();

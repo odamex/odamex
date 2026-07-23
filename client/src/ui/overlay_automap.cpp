@@ -14,21 +14,28 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Console overlay adapter.
+//   Automap overlay adapter.
 //
 //-----------------------------------------------------------------------------
 
-#pragma once
+#include "odamex.h"
 
-#include "ui/ui_layer.h"
+#include "ui/overlay_automap.h"
 
-class ConsoleOverlay : public IOverlay
+#include "g_game.h"
+
+bool AutomapOverlay::responder(event_t* ev)
 {
-  public:
-	void tick() override;
-	void draw() override;
-	bool responder(event_t* ev) override;
-	int inputPriority() const override { return UIPRIO_CONSOLE; }
-};
+	return G_AutomapResponder(ev);
+}
 
-ConsoleOverlay& UI_ConsoleOverlay();
+int AutomapOverlay::inputPriority() const
+{
+	return viewactive ? UIPRIO_AUTOMAP_POST : UIPRIO_AUTOMAP_PRE;
+}
+
+AutomapOverlay& UI_AutomapOverlay()
+{
+	static AutomapOverlay automap;
+	return automap;
+}

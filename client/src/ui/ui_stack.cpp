@@ -24,11 +24,16 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include "ui/ui_stack.h"
 
 #include "ui/ui_layer.h"
 #include "ui/overlay_console.h"
 #include "ui/overlay_menu.h"
+#include "ui/overlay_hud.h"
+#include "ui/overlay_automap.h"
+#include "ui/game_input_layer.h"
 
 UIStack g_UIStack;
 
@@ -58,13 +63,18 @@ void UIStack::draw()
 
 bool UIStack::responder(event_t* ev)
 {
-	// back -> front: the topmost overlay gets first crack at input. A layer
-	// that consumes the event, or that blocks input, stops propagation.
-	for (size_t i = m_overlays.size(); i-- > 0;)
+	// Walk layers by input priority, highest first. A layer that consumes the
+	// event, or that blocks input, stops propagation.
+	std::vector<IOverlay*> ordered(m_overlays);
+	std::stable_sort(ordered.begin(), ordered.end(),
+	                 [](const IOverlay* a, const IOverlay* b)
+	                 { return a->inputPriority() > b->inputPriority(); });
+
+	for (size_t i = 0; i < ordered.size(); i++)
 	{
-		if (m_overlays[i]->responder(ev))
+		if (ordered[i]->responder(ev))
 			return true;
-		if (m_overlays[i]->blocksInput())
+		if (ordered[i]->blocksInput())
 			return true;
 	}
 	return false;
@@ -73,6 +83,16 @@ bool UIStack::responder(event_t* ev)
 void UI_InitGlobalOverlays()
 {
 	g_UIStack.clear();
+
+	// Drawn/ticked in push order. Input order is by inputPriority(),
+	// not push order, so ordering among these is set there.
 	g_UIStack.push(&UI_ConsoleOverlay()); // bottom: drawn first, input last
 	g_UIStack.push(&UI_MenuOverlay());    // top: drawn last (over console)
+
+	// Gameplay input layers.
+	// They self-gate on gamestate.
+	g_UIStack.push(&UI_DemoInputLayer());
+	g_UIStack.push(&UI_HudOverlay());
+	g_UIStack.push(&UI_AutomapOverlay());
+	g_UIStack.push(&UI_GameInputLayer());
 }

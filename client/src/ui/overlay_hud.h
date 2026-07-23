@@ -14,7 +14,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Console overlay adapter.
+//   HUD overlay adapter.
 //
 //-----------------------------------------------------------------------------
 
@@ -22,13 +22,12 @@
 
 #include "ui/ui_layer.h"
 
-class ConsoleOverlay : public IOverlay
+class HudOverlay : public IOverlay
 {
   public:
 	void tick() override;
-	void draw() override;
 	bool responder(event_t* ev) override;
-	int inputPriority() const override { return UIPRIO_CONSOLE; }
+	int inputPriority() const override { return UIPRIO_HUD; }
 };
 
-ConsoleOverlay& UI_ConsoleOverlay();
+HudOverlay& UI_HudOverlay();

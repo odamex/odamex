@@ -187,11 +187,7 @@ void D_ProcessEvents (void)
 	for (; eventtail != eventhead ; eventtail = ++eventtail<MAXEVENTS ? eventtail : 0)
 	{
 		ev = &events[eventtail];
-		if (C_Responder (ev))
-			continue;				// console ate the event
-		if (M_Responder (ev))
-			continue;				// menu ate the event
-		G_Responder (ev);
+		g_UIStack.responder(ev);
 	}
 }
 
@@ -204,7 +200,7 @@ void D_PostEvent (const event_t* ev)
 	if (ev->type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
 		!paused && ConsoleState != c_down && ConsoleState != c_falling)
 	{
-		G_Responder((event_t*)ev);
+		g_UIStack.responder(const_cast<event_t*>(ev));
 		return;
 	}
 

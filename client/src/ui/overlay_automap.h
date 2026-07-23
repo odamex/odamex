@@ -14,7 +14,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Console overlay adapter.
+//   Automap overlay adapter.
 //
 //-----------------------------------------------------------------------------
 
@@ -22,13 +22,11 @@
 
 #include "ui/ui_layer.h"
 
-class ConsoleOverlay : public IOverlay
+class AutomapOverlay : public IOverlay
 {
   public:
-	void tick() override;
-	void draw() override;
 	bool responder(event_t* ev) override;
-	int inputPriority() const override { return UIPRIO_CONSOLE; }
+	int inputPriority() const override;
 };
 
-ConsoleOverlay& UI_ConsoleOverlay();
+AutomapOverlay& UI_AutomapOverlay();

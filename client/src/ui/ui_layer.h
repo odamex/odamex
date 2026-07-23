@@ -23,6 +23,24 @@
 #include "d_event.h"
 
 //
+// Input dispatch priorities.
+//
+// The UIStack walks layers by inputPriority(),
+// highest first to lowest, to determine input cascade order.
+//
+enum
+{
+	UIPRIO_SCENE          = 0,   // base: the active scene / fallthrough
+	UIPRIO_AUTOMAP_POST   = 300, // automap when the 3D view is active (post-binding)
+	UIPRIO_GAMEINPUT      = 400, // key bindings + mouse/joystick movement
+	UIPRIO_AUTOMAP_PRE    = 500, // automap when the 3D view is inactive (pre-binding)
+	UIPRIO_HUD            = 800, // net-demo/spectator keys, chat, status bar
+	UIPRIO_DEMO           = 850, // demo-attract "any key opens the menu"
+	UIPRIO_MENU           = 900,
+	UIPRIO_CONSOLE        = 1000,
+};
+
+//
 // ILayer
 //
 // The common lifecycle + dispatch surface for scenes and overlays.
@@ -42,6 +60,10 @@ class ILayer
 
 	// Return true if the event was consumed and should not propagate further.
 	virtual bool responder(event_t* ev) { return false; }
+
+	// Input dispatch order key (higher = receives input earlier). Evaluated per
+	// event, so a layer may vary it with runtime state (e.g. the automap).
+	virtual int inputPriority() const { return UIPRIO_SCENE; }
 };
 
 //
