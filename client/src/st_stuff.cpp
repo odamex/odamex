@@ -520,7 +520,7 @@ EXTERN_CVAR (sv_allowcheats)
 
 // Respond to keyboard input events, intercept cheats.
 // [RH] Cheats eatkey the last keypress used to trigger them
-bool ST_Responder (event_t *ev)
+bool ST_Responder (const event_t *ev)
 {
 	bool eat = false;
 

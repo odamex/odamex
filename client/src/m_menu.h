@@ -41,7 +41,7 @@
 // Even when the menu is not displayed,
 // this can resize the view and change game parameters.
 // Does all the real work of the menu interaction.
-bool M_Responder (event_t *ev);
+bool M_Responder (const event_t *ev);
 
 // Called by main loop,
 // only used for menu (skull cursor) animation.
@@ -63,7 +63,7 @@ void M_StartControlPanel (void);
 bool M_StartOptionsMenu (void);
 
 // [RH] Handle keys for options menu
-void M_OptResponder (event_t *ev);
+void M_OptResponder (const event_t *ev);
 
 // [RH] Draw options menu
 void M_OptDrawer (void);

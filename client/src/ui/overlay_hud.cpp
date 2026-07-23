@@ -33,7 +33,7 @@ void HudOverlay::tick()
 	HU_Ticker();
 }
 
-bool HudOverlay::responder(event_t* ev)
+bool HudOverlay::responder(const event_t* ev)
 {
 	return G_HudResponder(ev);
 }

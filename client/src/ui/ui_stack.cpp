@@ -61,7 +61,7 @@ void UIStack::draw()
 		m_overlays[i]->draw();
 }
 
-bool UIStack::responder(event_t* ev)
+bool UIStack::responder(const event_t* ev)
 {
 	// Walk layers by input priority, highest first. A layer that consumes the
 	// event, or that blocks input, stops propagation.

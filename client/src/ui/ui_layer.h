@@ -59,7 +59,7 @@ class ILayer
 	virtual void draw() {}
 
 	// Return true if the event was consumed and should not propagate further.
-	virtual bool responder(event_t* ev) { return false; }
+	virtual bool responder(const event_t* ev) { return false; }
 
 	// Input dispatch order key (higher = receives input earlier). Evaluated per
 	// event, so a layer may vary it with runtime state (e.g. the automap).

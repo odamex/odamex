@@ -24,7 +24,7 @@
 
 #include "g_game.h"
 
-bool AutomapOverlay::responder(event_t* ev)
+bool AutomapOverlay::responder(const event_t* ev)
 {
 	return G_AutomapResponder(ev);
 }

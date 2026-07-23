@@ -61,18 +61,18 @@ void G_Ticker(void);
 // Core game input responder: finale, key bindings and mouse/joystick movement.
 // Invoked at the binding-layer input priority. The demo-attract, HUD and automap
 // input slices live in the responders below (each hosted by its own UI layer).
-bool G_Responder(event_t*	ev);
+bool G_Responder(const event_t*	ev);
 
 // Demo-attract / title-screen: any non-special key pops the menu. Returns true
 // while active (it swallows the event from the rest of the input path).
-bool G_DemoAttractResponder(event_t* ev);
+bool G_DemoAttractResponder(const event_t* ev);
 
 // Net-demo/spectator keys + in-level HUD (chat, status bar). Level/intermission.
-bool G_HudResponder(event_t* ev);
+bool G_HudResponder(const event_t* ev);
 
 // Automap input, with the gamestate gate that matches its input priority
 // (pre-binding when the view is inactive, post-binding when active).
-bool G_AutomapResponder(event_t* ev);
+bool G_AutomapResponder(const event_t* ev);
 
 void G_ScreenShot(const char* filename);
 

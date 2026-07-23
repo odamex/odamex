@@ -87,8 +87,8 @@ void	G_DoCompleted (void);
 void	G_DoWorldDone (void);
 void	G_DoSaveGame();
 
-bool	C_DoNetDemoKey(event_t *ev);
-bool	C_DoSpectatorKey(event_t *ev);
+bool	C_DoNetDemoKey(const event_t *ev);
+bool	C_DoSpectatorKey(const event_t *ev);
 
 void	CL_QuitCommand();
 
@@ -718,7 +718,7 @@ bool G_ShouldIgnoreMouseInput()
 // Returns true whenever the attract handler is active, so it swallows the
 // event from the rest of the input path.
 //
-bool G_DemoAttractResponder(event_t* ev)
+bool G_DemoAttractResponder(const event_t* ev)
 {
 	// any other key pops up menu if in demos
 	// [RH] But only if the key isn't bound to a "special" command
@@ -766,7 +766,7 @@ bool G_DemoAttractResponder(event_t* ev)
 // Net-demo / spectator keys and the in-level HUD (chat + status bar).
 // Active during the level and intermission.
 //
-bool G_HudResponder(event_t* ev)
+bool G_HudResponder(const event_t* ev)
 {
 	if (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION)
 		return false;
@@ -793,7 +793,7 @@ bool G_HudResponder(event_t* ev)
 // This function only applies the gamestate gate that matches each case.
 // The ordering is handled by the layer's input priority.
 //
-bool G_AutomapResponder(event_t* ev)
+bool G_AutomapResponder(const event_t* ev)
 {
 	if (!viewactive)
 	{
@@ -816,7 +816,7 @@ bool G_AutomapResponder(event_t* ev)
 // The demo-attract, HUD and automap slices formerly here now live in their own
 // input layers.
 //
-bool G_Responder (event_t *ev)
+bool G_Responder (const event_t *ev)
 {
 	if (gamestate == GS_FINALE)
 	{

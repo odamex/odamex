@@ -860,7 +860,7 @@ END_COMMAND(togglemap)
 //
 // Handle events (user inputs) in automap mode
 //
-bool AM_Responder(event_t* ev)
+bool AM_Responder(const event_t* ev)
 {
 	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{

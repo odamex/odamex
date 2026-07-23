@@ -54,7 +54,7 @@ extern lumpHandle_t negminus;
 //
 
 // Called by main loop.
-bool ST_Responder(event_t* ev);
+bool ST_Responder(const event_t* ev);
 
 // Called by main loop.
 void ST_Ticker();
@@ -103,4 +103,4 @@ void DoomHUD();
 
 }
 
-bool ST_Responder(event_t* ev);
+bool ST_Responder(const event_t* ev);

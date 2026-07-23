@@ -30,12 +30,12 @@
 
 #include "g_game.h"
 
-bool GameInputLayer::responder(event_t* ev)
+bool GameInputLayer::responder(const event_t* ev)
 {
 	return G_Responder(ev);
 }
 
-bool DemoInputLayer::responder(event_t* ev)
+bool DemoInputLayer::responder(const event_t* ev)
 {
 	return G_DemoAttractResponder(ev);
 }

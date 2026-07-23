@@ -200,7 +200,7 @@ void D_PostEvent (const event_t* ev)
 	if (ev->type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
 		!paused && ConsoleState != c_down && ConsoleState != c_falling)
 	{
-		g_UIStack.responder(const_cast<event_t*>(ev));
+		g_UIStack.responder(ev);
 		return;
 	}
 

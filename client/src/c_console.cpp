@@ -2216,7 +2216,7 @@ static bool C_HandleKey(const event_t* ev)
 	return true;
 }
 
-bool C_Responder(event_t *ev)
+bool C_Responder(const event_t *ev)
 {
 	if (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull || menuactive)
 		return false;

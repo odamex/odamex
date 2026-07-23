@@ -35,7 +35,7 @@ void MenuOverlay::draw()
 	M_Drawer();
 }
 
-bool MenuOverlay::responder(event_t* ev)
+bool MenuOverlay::responder(const event_t* ev)
 {
 	return M_Responder(ev);
 }

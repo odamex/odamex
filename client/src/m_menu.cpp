@@ -2210,7 +2210,7 @@ static void M_ActivateItem(int item)
 //
 // M_Responder
 //
-bool M_Responder (event_t* ev)
+bool M_Responder (const event_t* ev)
 {
 	int ch, ch2, mod;
 

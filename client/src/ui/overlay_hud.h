@@ -26,7 +26,7 @@ class HudOverlay : public IOverlay
 {
   public:
 	void tick() override;
-	bool responder(event_t* ev) override;
+	bool responder(const event_t* ev) override;
 	int inputPriority() const override { return UIPRIO_HUD; }
 };
 

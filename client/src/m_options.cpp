@@ -2239,7 +2239,7 @@ void M_OptUpdateMouseItem()
 }
 
 
-void M_OptResponder (event_t *ev)
+void M_OptResponder (const event_t *ev)
 {
 	menuitem_t *item;
 	int ch = ev->data1;

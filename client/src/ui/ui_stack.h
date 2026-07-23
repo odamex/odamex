@@ -40,7 +40,7 @@ class UIStack
 
 	void tick();
 	void draw();
-	bool responder(event_t* ev);
+	bool responder(const event_t* ev);
 
   private:
 	std::vector<IOverlay*> m_overlays;

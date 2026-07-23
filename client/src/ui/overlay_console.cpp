@@ -35,7 +35,7 @@ void ConsoleOverlay::draw()
 	C_DisplayTicker();
 }
 
-bool ConsoleOverlay::responder(event_t* ev)
+bool ConsoleOverlay::responder(const event_t* ev)
 {
 	return C_Responder(ev);
 }

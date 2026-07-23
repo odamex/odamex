@@ -261,7 +261,7 @@ void OKeyBindings::SetBinds(const OBinding* binds)
 // NetDemo playback.  Returns false if the key pressed is not
 // bound to any netdemo command.
 //
-bool C_DoNetDemoKey (event_t *ev)
+bool C_DoNetDemoKey (const event_t *ev)
 {
 	if (!netdemo.isPlaying() && !netdemo.isPaused())
 		return false;
@@ -295,7 +295,7 @@ bool C_DoNetDemoKey (event_t *ev)
 // or during NetDemo playback.  Returns false if the key pressed is not
 // bound to any spectating command such as spynext.
 //
-bool C_DoSpectatorKey (event_t *ev)
+bool C_DoSpectatorKey (const event_t *ev)
 {
 	if (G_IsLivesGame())
 	{
@@ -324,7 +324,7 @@ bool C_DoSpectatorKey (event_t *ev)
 }
 
 
-bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
+bool C_DoKey(const event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 {
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
 		return false;

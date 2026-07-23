@@ -31,14 +31,14 @@
 class GameInputLayer : public IOverlay
 {
   public:
-	bool responder(event_t* ev) override;
+	bool responder(const event_t* ev) override;
 	int inputPriority() const override { return UIPRIO_GAMEINPUT; }
 };
 
 class DemoInputLayer : public IOverlay
 {
   public:
-	bool responder(event_t* ev) override;
+	bool responder(const event_t* ev) override;
 	int inputPriority() const override { return UIPRIO_DEMO; }
 };
 

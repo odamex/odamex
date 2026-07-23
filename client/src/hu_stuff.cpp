@@ -110,7 +110,7 @@ int V_TextScaleYAmount();
 
 void HU_Init();
 void HU_Drawer();
-bool HU_Responder(event_t *ev);
+bool HU_Responder(const event_t *ev);
 
 lumpHandle_t sbline;
 
@@ -269,7 +269,7 @@ static int HU_GetMacroForNumpadKey(int key)
 //
 // Chat mode text entry
 //
-bool HU_Responder(event_t *ev)
+bool HU_Responder(const event_t *ev)
 {
 	if ((ev->mod & OMOD_ALT || (ev->data1 == OKEY_HAT1 && ev->type == ev_keydown)) &&
 	   !(ev->mod & OMOD_RALT && ev->mod & OMOD_LCTRL)) // Ignore AltGr
