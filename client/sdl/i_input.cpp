@@ -400,7 +400,7 @@ static EInputMode I_GetDesiredInputMode()
 		return INPUT_MODE_GAME;
 
 	// If paused, in the menu or in the console, don't grab
-	if (menuactive || ConsoleState == c_down || paused)
+	if (menuactive || ConsoleState == c_down || (paused && not displayplayer().isFreecam))
 		return INPUT_MODE_RELEASED;
 
 	// If playing the game, always grab

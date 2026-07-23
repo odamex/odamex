@@ -56,6 +56,10 @@
 #include "r_sky.h"
 #include "p_compdb.h"
 
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
+
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
 void P_SpawnAvatars();
@@ -888,6 +892,14 @@ void P_LoadThings (int lump)
 		mt2.angle = LESHORT(mt->angle);
 		mt2.type = LESHORT(mt->type);
 
+		// clientside-only freecam start pos
+		#ifdef CLIENT_APP
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsSpawnThing(mt2))
+		{
+			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, ANG45 * (mt2.angle / 45));
+		}
+		#endif
+
 		P_SpawnMapThing (mt2, 0);
 	}
 
@@ -936,6 +948,14 @@ void P_LoadThings2 (int lump, int position)
 		mt->angle = LESHORT(mt->angle);
 		mt->type = LESHORT(mt->type);
 		mt->flags = LESHORT(mt->flags);
+
+		// clientside-only freecam start pos
+		#ifdef CLIENT_APP
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsSpawnThing(*mt))
+		{
+			Freecam::setStartPosition(mt->x << FRACBITS, mt->y << FRACBITS, ONFLOORZ, ANG45 * (mt->angle / 45));
+		}
+		#endif
 
 		P_SpawnMapThing(*mt, position);
 	}

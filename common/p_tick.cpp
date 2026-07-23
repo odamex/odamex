@@ -51,6 +51,11 @@ void P_AnimationTick(AActor *mo);
 void P_Ticker (void)
 {
 #ifdef CLIENT_APP
+	if (paused && displayplayer().isFreecam)
+	{
+		displayplayer().mo->RunThink();
+	}
+
 	// Game pauses when in the menu and not online/demo
 	if ((paused || (!multiplayer && !demoplayback &&
 		(menuactive || ConsoleState == c_down || ConsoleState == c_falling))) &&

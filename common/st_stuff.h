@@ -101,6 +101,8 @@ void SpectatorHUD();
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD();
 
+// HUD when spying the freecam
+void FreecamHUD();
 }
 
 bool ST_Responder(event_t* ev);
