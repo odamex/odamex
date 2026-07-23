@@ -347,7 +347,7 @@ static void I_DisableKeyRepeat()
 //
 static bool I_CanRepeat()
 {
-	return ConsoleState == c_down || HU_ChatMode() != CHAT_INACTIVE || menuactive;
+	return C_IsConsoleDown() || HU_ChatMode() != CHAT_INACTIVE || M_MenuActive();
 }
 
 
@@ -365,7 +365,6 @@ static EInputMode I_GetDesiredInputMode()
 	#else
 
 	extern bool configuring_controls;
-	extern constate_e ConsoleState;
 
 	assert(I_GetWindow() != NULL);
 
@@ -373,14 +372,13 @@ static EInputMode I_GetDesiredInputMode()
 	if (!I_GetWindow()->isFocused())
 		return INPUT_MODE_RELEASED;
 
-	const bool console_active = ConsoleState == c_down || ConsoleState == c_falling ||
-	                            ConsoleState == c_fallfull;
+	const bool console_active = C_IsConsoleCapturingInput();
 
 	const bool attract_active = gamestate == GS_DEMOSCREEN || gamestate == GS_FINALE ||
 	                            ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) &&
 	                             demoplayback);
 
-	const bool ui_active = menuactive || console_active || attract_active;
+	const bool ui_active = M_MenuActive() || console_active || attract_active;
 	if (ui_active && !configuring_controls)
 	{
 		if (nomouse || ui_mouse.asInt() == 0)
@@ -400,7 +398,7 @@ static EInputMode I_GetDesiredInputMode()
 		return INPUT_MODE_GAME;
 
 	// If paused, in the menu or in the console, don't grab
-	if (menuactive || ConsoleState == c_down || paused)
+	if (M_MenuActive() || C_IsConsoleDown() || paused)
 		return INPUT_MODE_RELEASED;
 
 	// If playing the game, always grab

@@ -974,7 +974,7 @@ void ST_UpdateSurfaceBpp()
 void ST_Ticker()
 {
 	ST_UpdateSurfaceBpp();
-	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
+	if (!multiplayer && !demoplayback && C_IsConsoleActivating())
 		return;
 	st_randomnumber = M_Random();
 	ST_updateWidgets();

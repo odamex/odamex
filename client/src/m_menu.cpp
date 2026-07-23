@@ -78,6 +78,15 @@ int 				messx;
 int 				messy;
 int 				messageLastMenuActive;
 
+// Menu-active state, owned by the menu layer.
+// External code queries M_MenuActive().
+static bool			s_menuActive = false;
+
+bool M_MenuActive()
+{
+	return s_menuActive;
+}
+
 // timed message = no input from user
 bool				messageNeedsInput;
 
@@ -1858,20 +1867,20 @@ void M_DrawSelCell (oldmenu_t *menu, int item)
 
 void M_StartMessage (const char *string, void (*routine)(int), bool input)
 {
-	messageLastMenuActive = menuactive;
+	messageLastMenuActive = s_menuActive;
 	messageToPrint = 1;
 	messageString = string;
 	messageRoutine = routine;
 	messageNeedsInput = input;
 	messageSelection = MSGBUTTON_NO;
-	menuactive = true;
+	s_menuActive = true;
 }
 
 
 
 void M_StopMessage()
 {
-	menuactive = messageLastMenuActive;
+	s_menuActive = messageLastMenuActive;
 	messageToPrint = 0;
 }
 
@@ -2217,7 +2226,7 @@ bool M_Responder (const event_t* ev)
 	ch = ch2 = mod = -1;
 
 	// eat mouse events
-	if(menuactive)
+	if(s_menuActive)
 	{
 		if(ev->type == ev_mouse)
 			return true;
@@ -2251,7 +2260,7 @@ bool M_Responder (const event_t* ev)
 
 	// Transfer any action to the Options Menu Responder
 	// if we're not on the main menu.
-	if (menuactive && OptionsActive) {
+	if (s_menuActive && OptionsActive) {
 		M_OptResponder (ev);
 		return true;
 	}
@@ -2364,7 +2373,7 @@ bool M_Responder (const event_t* ev)
 			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
 			return true;
 
-		menuactive = messageLastMenuActive;
+		s_menuActive = messageLastMenuActive;
 		messageToPrint = 0;
 		if (messageRoutine)
 		{
@@ -2376,7 +2385,7 @@ bool M_Responder (const event_t* ev)
 				messageRoutine(ch);
 		}
 
-		menuactive = false;
+		s_menuActive = false;
 		M_ResumeSound();
 		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 		return true;
@@ -2390,7 +2399,7 @@ bool M_Responder (const event_t* ev)
 	}
 
 	// Pop-up menu?
-	if (!menuactive)
+	if (!s_menuActive)
 	{
 		if (Key_IsMenuKey(ch))
 		{
@@ -2554,12 +2563,12 @@ bool M_Responder (const event_t* ev)
 void M_StartControlPanel()
 {
 	// intro might call this repeatedly
-	if (menuactive)
+	if (s_menuActive)
 		return;
 
 	drawSkull = true;
 	MenuStackDepth = 0;
-	menuactive = 1;
+	s_menuActive = 1;
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
@@ -2597,7 +2606,7 @@ void M_Drawer()
 		if (messageNeedsInput && ui_mouse.asInt() != 0)
 			M_DrawMessageButtons(y + ch->height());
 	}
-	else if (menuactive)
+	else if (s_menuActive)
 	{
 		if (OptionsActive)
 		{
@@ -2639,7 +2648,7 @@ void M_Drawer()
 
 	// [SL] force the status bar to be redrawn in case the menu
 	// draws over a portion of the status bar background
-	if (R_StatusBarVisible() && (menuactive || messageToPrint))
+	if (R_StatusBarVisible() && (s_menuActive || messageToPrint))
 		ST_ForceRefresh();
 }
 
@@ -2651,7 +2660,7 @@ void M_ClearMenus()
 {
 	I_FreeSurface(fire_surface);
 	MenuStackDepth = 0;
-	menuactive = false;
+	s_menuActive = false;
 	drawSkull = true;
 	M_DemoNoPlay = false;
     M_ResumeSound();
@@ -2720,7 +2729,7 @@ void M_Ticker()
 
 	if (messageToPrint && messageNeedsInput && ui_mouse.asInt() != 0)
 		M_UpdateMessageSelection();
-	else if (menuactive)
+	else if (s_menuActive)
 	{
 		if (OptionsActive)
 			M_OptUpdateMouseItem();
@@ -2753,7 +2762,7 @@ void M_Init()
 
 	currentMenu = &MainDef;
 	OptionsActive = false;
-	menuactive = 0;
+	s_menuActive = 0;
 	itemOn = currentMenu->lastOn;
 	whichSkull = 0;
 	skullAnimCounter = 10;
@@ -2761,7 +2770,7 @@ void M_Init()
 	screenSize = (int)screenblocks - 3;
 	messageToPrint = 0;
 	messageString = NULL;
-	messageLastMenuActive = menuactive;
+	messageLastMenuActive = s_menuActive;
 
     if (gameinfo.flags & GI_MAPxx)
     {

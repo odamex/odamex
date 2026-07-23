@@ -340,9 +340,13 @@ void LevelState::tic()
 	if (!::serverside)
 		return;
 
+#ifdef CLIENT_APP
 	// Handle singleplayer pauses.
-	if (::paused || ::menuactive)
+	// Servers don't have pause or time out/time in yet,
+	// so just gate it to the client.
+	if (::paused || M_MenuActive())
 		return;
+#endif
 
 	// If there aren't any more active players, go back to warm up mode [tm512 2014/04/08]
 	if (m_state != LevelState::WARMUP && P_NumPlayersInGame() == 0)

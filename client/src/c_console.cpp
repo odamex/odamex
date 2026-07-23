@@ -81,7 +81,18 @@ static const int		CONSOLE_WHEEL_LINES = 3;
 int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
 
 int			CursorTicker, ScrollState = 0;
-constate_e	ConsoleState = c_up;
+
+typedef enum cstate_t {
+	c_up=0, c_down, c_falling, c_rising, c_fallfull, c_risefull
+} constate_e;
+
+static constate_e	ConsoleState = c_up;
+
+bool C_IsConsoleUp()             { return ConsoleState == c_up; }
+bool C_IsConsoleDown()           { return ConsoleState == c_down; }
+bool C_IsConsoleActivating()     { return ConsoleState == c_down || ConsoleState == c_falling; }
+bool C_IsConsoleCapturingInput() { return ConsoleState == c_down || ConsoleState == c_falling ||
+                                          ConsoleState == c_fallfull; }
 
 extern byte *ConChars;
 
@@ -1459,7 +1470,7 @@ void C_Ticker()
 //
 static void C_DrawNotifyText()
 {
-	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || menuactive)
+	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || M_MenuActive())
 		return;
 
 	int ypos = 0;
@@ -1561,7 +1572,7 @@ void C_NewModeAdjust()
 void C_FullConsole()
 {
 	// SoM: disconnect effect.
-	if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && ConsoleState == c_up && !menuactive)
+	if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && ConsoleState == c_up && !M_MenuActive())
 		screen->Dim(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
 	ConsoleState = c_down;
@@ -1845,7 +1856,7 @@ void C_DrawConsole()
 		}
 	}
 
-	if (menuactive)
+	if (M_MenuActive())
 		return;
 
 	if (lines > 0)
@@ -2218,7 +2229,7 @@ static bool C_HandleKey(const event_t* ev)
 
 bool C_Responder(const event_t *ev)
 {
-	if (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull || menuactive)
+	if (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull || M_MenuActive())
 		return false;
 
 	if (ev->type == ev_keyup)

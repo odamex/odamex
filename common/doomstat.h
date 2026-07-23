@@ -103,7 +103,9 @@ EXTERN_CVAR (sv_maxplayers)
 //	status bar explicitely.
 extern	bool			statusbaractive;
 
-inline	bool			menuactive; 	// Menu overlayed?
+// Menu overlayed?
+bool M_MenuActive();
+
 inline	bool			paused; 		// Game Pause?
 
 

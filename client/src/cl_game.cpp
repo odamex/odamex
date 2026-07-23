@@ -348,8 +348,6 @@ BEGIN_COMMAND (togglerun)
 }
 END_COMMAND (togglerun)
 
-extern constate_e ConsoleState;
-
 //
 // G_BuildTiccmd
 // Builds a ticcmd from all of the available inputs
@@ -486,7 +484,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	// buttons
 	// john - only add attack when console up
-	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && HU_ChatMode() == CHAT_INACTIVE)
+	if (Actions[ACTION_ATTACK] && C_IsConsoleUp() && HU_ChatMode() == CHAT_INACTIVE)
 		cmd->buttons |= BT_ATTACK;
 
 	if (Actions[ACTION_USE])
@@ -598,7 +596,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		::localview.skipangle = true;
 	}
 
-	if (sendcenterview && ConsoleState == c_up && !menuactive)
+	if (sendcenterview && C_IsConsoleUp() && !M_MenuActive())
 	{
 		sendcenterview = false;
 		cmd->pitch = CENTERVIEW;
@@ -899,7 +897,7 @@ void P_CheckInterpPause()
 	// Game pauses when in the menu and not online/demo
 	OInterpolation &oi = OInterpolation::getInstance();
 	if (paused || (!multiplayer && !demoplayback &&
-		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)))
+		(M_MenuActive() || C_IsConsoleActivating())))
 	{
 		if (oi.enabled())
 		{

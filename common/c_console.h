@@ -32,11 +32,12 @@
 #define C_BLINKRATE			(TICRATE/2)
 #define MAX_CHATSTR_LEN		128
 
-typedef enum cstate_t {
-	c_up=0, c_down, c_falling, c_rising, c_fallfull, c_risefull
-} constate_e;
-
-extern constate_e	ConsoleState;
+// Console visibility / slide-animation state is owned internally by the console.
+// Query these predicates instead of the former global ConsoleState / constate_e enum.
+bool C_IsConsoleUp();             // fully hidden (c_up)
+bool C_IsConsoleDown();           // fully open (c_down)
+bool C_IsConsoleActivating();     // open or sliding into the half-screen (c_down || c_falling)
+bool C_IsConsoleCapturingInput(); // occupies enough screen to capture input (c_down || c_falling || c_fallfull)
 
 // Initialize the console
 void C_InitConsole();

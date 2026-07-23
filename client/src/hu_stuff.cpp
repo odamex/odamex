@@ -224,7 +224,7 @@ void STACK_ARGS HU_Shutdown()
 void HU_Ticker()
 {
 	// verify the chat mode status is valid
-	if (ConsoleState != c_up || menuactive || (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION))
+	if (!C_IsConsoleUp() || M_MenuActive() || (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION))
 		HU_UnsetChatMode();
 
 	hud::ToastTicker();

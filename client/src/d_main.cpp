@@ -197,8 +197,8 @@ void D_ProcessEvents (void)
 //
 void D_PostEvent (const event_t* ev)
 {
-	if (ev->type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
-		!paused && ConsoleState != c_down && ConsoleState != c_falling)
+	if (ev->type == ev_mouse && !M_MenuActive() && gamestate == GS_LEVEL &&
+		!paused && !C_IsConsoleActivating())
 	{
 		g_UIStack.responder(ev);
 		return;
@@ -309,7 +309,7 @@ void D_Display()
 	}
 
 	// draw pause pic
-	if (paused && !menuactive)
+	if (paused && !M_MenuActive())
 	{
 		const patch_t* pause = W_CachePatch(gameinfo.pauseSign);
 
