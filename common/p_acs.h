@@ -54,6 +54,14 @@ enum
 	SCRIPT_Disconnect	= 14,
 };
 
+// Per-script flags stored in the SFLG chunk of ZDoom enhanced (ACSe)
+// behavior lumps.
+enum
+{
+	SCRIPTF_Net			= 1,	// Safe to activate ("puke") over the network
+	SCRIPTF_ClientSide	= 2,	// Runs on the client rather than the server
+};
+
 enum ACSFormat { ACS_Old, ACS_Enhanced, ACS_LittleEnhanced, ACS_Unknown };
 
 class FBehavior
@@ -70,6 +78,7 @@ public:
 	const char *LookupString (uint32_t index, uint32_t ofs=0) const;
 	const char *LocalizeString (uint32_t index) const;
 	void StartTypedScripts (uint16_t type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
+	bool IsScriptClientside (int number) const;
 	uint32_t PC2Ofs (int *pc) const { return (byte *)pc - Data; }
 	int *Ofs2PC (uint32_t ofs) const { return (int *)(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }
@@ -89,6 +98,8 @@ private:
 	int NumScripts;
 	byte *Functions;
 	int NumFunctions;
+	byte *ScriptFlags;
+	int NumScriptFlags;
 	ArrayInfo *Arrays;
 	int NumArrays;
 	uint32_t LanguageNeutral;
@@ -369,6 +380,7 @@ public:
 		PCD_GETCVAR = 255,
 /*260*/	PCD_GETACTORANGLE = 260,
 		PCD_GETLEVELINFO = 265,
+		PCD_SETACTORANGLE = 276,
 /*280*/	PCD_SPAWNPROJECTILE = 280,
 		PCD_SPAWNSPOTFACING = 289,
 /*290*/
@@ -565,8 +577,8 @@ protected:
 	static int CountPlayers ();
 	static void SetLineTexture (int lineid, int side, int position, int name);
 
-	static int DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle, bool force);
-	static int DoSpawnSpot(int type, int spot, int tid, std::optional<int> angle, bool force);
+	static int DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, angle_t angle, bool force);
+	static int DoSpawnSpot(int type, int spot, int tid, std::optional<angle_t> angle, bool force);
 	static void DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t speed, fixed_t vspeed, bool gravity, int newtid);
 
 	static void SetLineBlocking(int lineid, int flags);

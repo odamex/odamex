@@ -135,7 +135,8 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec.alwaysfake
 				<< sec.waterzone
 				<< sec.SecActTarget
-				<< sec.Skybox
+				<< sec.SkyboxCeiling
+				<< sec.SkyboxFloor
 				<< sec.MoreFlags;
 		}
 
@@ -169,7 +170,8 @@ void P_SerializeWorld (FArchive &arc)
 		for (sector_t& sec : R_GetSectors())
 		{
 			AActor* SecActTarget;
-			AActor* Skybox;
+			AActor* SkyboxCeiling;
+			AActor* SkyboxFloor;
 
 			arc >> sec.floorheight
 				>> sec.ceilingheight
@@ -234,7 +236,8 @@ void P_SerializeWorld (FArchive &arc)
 			arc >> sec.alwaysfake
 				>> sec.waterzone
 				>> SecActTarget
-				>> Skybox
+				>> SkyboxCeiling
+				>> SkyboxFloor
 				>> sec.MoreFlags;
 
 			sec.floorplane.invc = FixedDiv(FRACUNIT, sec.floorplane.c);
@@ -242,7 +245,8 @@ void P_SerializeWorld (FArchive &arc)
 			sec.ceilingplane.invc = FixedDiv(FRACUNIT, sec.ceilingplane.c);
 			sec.ceilingplane.sector = &sec;
 			sec.SecActTarget.init(SecActTarget);
-			sec.Skybox.init(Skybox);
+			sec.SkyboxCeiling.init(SkyboxCeiling);
+			sec.SkyboxFloor.init(SkyboxFloor);
 		}
 
 		// do lines
