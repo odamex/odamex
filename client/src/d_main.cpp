@@ -58,6 +58,7 @@
 #include "m_misc.h"
 #include "m_menu.h"
 #include "c_console.h"
+#include "ui/ui_stack.h"
 #include "c_bind.h"
 #include "c_dispatch.h"
 #include "i_system.h"
@@ -264,9 +265,7 @@ void D_Display()
 		case GS_FULLCONSOLE:
 		case GS_CONNECTING:
         case GS_CONNECTED:
-			C_DrawConsole();
-			C_DisplayTicker();
-			M_Drawer();
+			g_UIStack.draw(); // console + menu overlays
 			I_FinishUpdate();
 			return;
 
@@ -341,9 +340,7 @@ void D_Display()
 	if (wiping_screen)
 		Wipe_Drawer();
 
-	C_DrawConsole();	// draw console
-	C_DisplayTicker(); // Display console tic
-	M_Drawer();			// menu is drawn even on top of everything
+	g_UIStack.draw();	// console + menu overlays, drawn on top of everything
 	I_FinishUpdate();	// page flip or blit buffer
 
 	END_STAT(D_Display);
@@ -723,6 +720,9 @@ void D_Init()
 	if (first_time)
 		PrintFmt(PRINT_HIGH, "M_Init: Init miscellaneous info.\n");
 	M_Init();
+
+	// register the built-in UI overlays (console, menu) with the UI stack
+	UI_InitGlobalOverlays();
 
 	if (first_time)
 		PrintFmt(PRINT_HIGH, "P_Init: Init Playloop state.\n");

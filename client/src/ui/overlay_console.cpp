@@ -1,0 +1,47 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// Copyright (C) 2006-2026 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//   Console overlay adapter.
+//
+//-----------------------------------------------------------------------------
+
+#include "odamex.h"
+
+#include "ui/overlay_console.h"
+
+#include "c_console.h"
+
+void ConsoleOverlay::tick()
+{
+	C_Ticker();
+}
+
+void ConsoleOverlay::draw()
+{
+	C_DrawConsole();
+	C_DisplayTicker();
+}
+
+bool ConsoleOverlay::responder(event_t* ev)
+{
+	return C_Responder(ev);
+}
+
+ConsoleOverlay& UI_ConsoleOverlay()
+{
+	static ConsoleOverlay console;
+	return console;
+}

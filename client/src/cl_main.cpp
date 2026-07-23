@@ -40,6 +40,7 @@
 #include "cl_main.h"
 #include "c_effect.h"
 #include "c_console.h"
+#include "ui/ui_stack.h"
 #include "d_main.h"
 #include "p_ctf.h"
 #include "m_random.h"
@@ -609,8 +610,7 @@ void CL_StepTics(unsigned int count)
 		if (advancedemo)
 			D_DoAdvanceDemo();
 
-		C_Ticker();
-		M_Ticker();
+		g_UIStack.tick(); // console + menu overlays
 		HU_Ticker();
 
 		if (P_AtInterval(TICRATE))

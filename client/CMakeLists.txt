@@ -19,7 +19,7 @@ add_definitions(-DCLIENT_APP)
 
 # Client
 set(CLIENT_DIR sdl src)
-file(GLOB CLIENT_SOURCES src/*.cpp src/*.h)
+file(GLOB CLIENT_SOURCES src/*.cpp src/*.h src/ui/*.cpp src/ui/*.h)
 file(GLOB CLIENT_SDL_SOURCES sdl/*.cpp sdl/*.h)
 if(WIN32)
   configure_file(sdl/client.rc.in "${CMAKE_CURRENT_BINARY_DIR}/client.rc" @ONLY)
