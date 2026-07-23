@@ -1236,7 +1236,7 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 {
 	if (I_VideoInitialized() && !midprinting)
 	{
-		const bool noPickups = printlevel == PRINT_PICKUP && !::message_showpickups;
+		const bool noPickups = printlevel == PRINT_PICKUP && (!::message_showpickups || displayplayer().isFreecam);
 		const bool noObits = printlevel == PRINT_OBITUARY && !::message_showobituaries;
 
 		if (!noPickups && !noObits)
@@ -2330,7 +2330,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 
 void C_DrawMid()
 {
-	if (MidMsg)
+	if (MidMsg && not displayplayer().isFreecam)
 	{
 		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 

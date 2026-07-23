@@ -2936,6 +2936,31 @@ void P_ResolveStackLinks()
 }
 
 //
+// P_IsSpawnThing
+//
+// Returns true if the mapthing2_t is a spawn
+//
+bool P_IsSpawnThing(const mapthing2_t& mt)
+{
+	if (mt.type == 1 || mt.type == 2 || mt.type == 3 || mt.type == 4 || mt.type == 11)  // player1-4, DM
+	{
+		return true;
+	}
+
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+
+		if (mt.type == teamInfo->TeamSpawnThingNum)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//
 // P_SpawnMapThing
 // The fields of the mapthing should
 // already be in host byte order.

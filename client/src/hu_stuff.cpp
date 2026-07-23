@@ -534,6 +534,8 @@ void HU_Drawer()
 			{
 				if (spechud)
 					hud::SpectatorHUD();
+				else if (displayplayer().isFreecam)
+					hud::FreecamHUD();
 				else
 					hud::OdamexHUD();
 			}
