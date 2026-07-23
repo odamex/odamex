@@ -259,23 +259,25 @@ extern sector_t			*tmfloorsector;
 
 extern	line_t* 		ceilingline;
 
-void	P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
-						fixed_t &destx, fixed_t &desty, fixed_t &destz);
-bool	P_TestMobjZ (AActor *actor);
-bool	P_TestMobjLocation (AActor *mobj);
-bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
-AActor	*P_CheckOnmobj (AActor *thing);
-void	P_FakeZMovement (AActor *mo);
-bool	P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
-bool	P_TryMove (AActor* thing, fixed_t x, fixed_t y, int dropoff, bool onfloor = false);
-bool	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag);	// [RH] Added z and telefrag parameters
-void	P_SlideMove (AActor* mo);
-bool	P_CheckSight (const AActor* t1, const AActor* t2);
-void	P_UseLines (player_t& player);
-void	P_ApplyTorque(AActor *mo);
-void	P_CopySector(sector_t *dest, sector_t *src);
-bool 	P_ShouldClipPlayer(AActor* projectile, AActor* player);
-bool 	P_ShouldClipFriendly(AActor* projectile, AActor* monster);
+void    P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
+                            fixed_t &destx, fixed_t &desty, fixed_t &destz);
+bool    P_TestMobjZ (AActor *actor);
+bool    P_TestMobjLocation (AActor *mobj);
+bool    P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
+AActor* P_CheckOnmobj (AActor *thing);
+void    P_FakeZMovement (AActor *mo);
+bool    P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
+bool    P_TryMove (AActor* thing, fixed_t x, fixed_t y, int dropoff, bool onfloor = false);
+bool    P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag); // [RH] Added z and telefrag parameters
+bool    P_JustTeleported (AActor* thing);
+void    P_ClearJustTeleported ();
+void    P_SlideMove (AActor* mo);
+bool    P_CheckSight (const AActor* t1, const AActor* t2);
+void    P_UseLines (player_t& player);
+void    P_ApplyTorque(AActor *mo);
+void    P_CopySector(sector_t *dest, sector_t *src);
+bool    P_ShouldClipPlayer(AActor* projectile, AActor* player);
+bool    P_ShouldClipFriendly(AActor* projectile, AActor* monster);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
 double P_PlaneZ(double x, double y, const plane_t *plane);
