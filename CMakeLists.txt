@@ -57,7 +57,7 @@ cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIB
 cmake_dependent_option( USE_INTERNAL_ZSTD "Use internal zstd" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_TESTS" 0 )
-cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
+cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS OR BUILD_LAUNCHER" 0 )
 cmake_dependent_option( USE_INTERNAL_CPPTRACE "Use internal cpptrace" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_FLTK "Use internal FLTK" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
@@ -136,20 +136,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS "${CMAKE_EXPORT_COMPILE_COMMANDS}" CACHE BOOL
   FORCE)
 
 # Global compile options as shown in a GUI.
+option(USE_SANITIZE_ADDRESS "Turn on Address Sanitizer in Debug builds." OFF)
 if(NOT MSVC)
-  set(USE_COLOR_DIAGNOSTICS ON CACHE BOOL
-    "Force the use of color diagnostics, necessary to get color output with Ninja.")
-  set(USE_STATIC_STDLIB OFF CACHE BOOL
-    "Statically link against the C and C++ Standard Library.")
-  set(USE_SANITIZE_ADDRESS OFF CACHE BOOL
-    "Turn on Address Sanitizer in Debug builds.")
-  set(USE_SANITIZE_THREAD OFF CACHE BOOL
-    "Turn on Thread Sanitizer in Debug builds.")
+  option(USE_COLOR_DIAGNOSTICS "Force the use of color diagnostics, necessary to get color output with Ninja." ON)
+  option(USE_STATIC_STDLIB "Statically link against the C and C++ Standard Library." OFF)
+  option(USE_SANITIZE_THREAD "Turn on Thread Sanitizer in Debug builds." OFF)
   if(USE_SANITIZE_ADDRESS AND USE_SANITIZE_THREAD)
     message(FATAL_ERROR "USE_SANITIZE_ADDRESS and USE_SANITIZE_THREAD are mutually exclusive options.")
   endif()
-  set(USE_SANITIZE_UNDEFINED OFF CACHE BOOL
-    "Turn on Undefined Behavior Sanitizer in Debug builds.")
+  option(USE_SANITIZE_UNDEFINED "Turn on Undefined Behavior Sanitizer in Debug builds." OFF)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )

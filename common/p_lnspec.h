@@ -501,15 +501,6 @@ typedef struct
 	short args[5];
 } xlat_t;
 
-#define TAG 123 // Special value that gets replaced with the line tag
-
-#define WALK ML_SPAC_CROSS
-#define USE ML_SPAC_USE
-#define SHOOT ML_SPAC_IMPACT
-#define MONST ML_MONSTERSCANACTIVATE
-#define MONWALK ML_SPAC_MCROSS
-#define REP ML_REPEATSPECIAL
-
 struct line_s;
 class AActor;
 
@@ -521,7 +512,7 @@ typedef bool (*lnSpecFunc)(struct line_s	*line,
 						   int				arg4,
 						   int				arg5);
 
-extern lnSpecFunc LineSpecials[283];
+extern std::array<lnSpecFunc, 283> LineSpecials;
 
 bool EV_CeilingCrushStop (int tag);
 void EV_StopPlat (int tag);
