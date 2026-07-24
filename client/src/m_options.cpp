@@ -1614,11 +1614,81 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 	}
 }
 
+//
+// M_OptValueExtent
+//
+// Returns how far an item's value/control column reaches to the right of the
+// divider (aka 'indent').
+//
+static int M_OptValueExtent(const menuitem_t* item)
+{
+	switch (item->type)
+	{
+	case discrete:
+	case cdiscrete:
+	case svdiscrete:
+	{
+		int vals = static_cast<int>(item->b.leftval);
+		int w = V_FontStringWidthClean(::menu_font, "Unknown");
+		for (int v = 0; v < vals; v++)
+		{
+			int tw = V_FontStringWidthClean(::menu_font, item->e.values[v].name);
+			if (tw > w)
+				w = tw;
+		}
+		return 14 + w;
+	}
+
+	case nochoice:
+		return 14 + V_FontStringWidthClean(::menu_font,
+		            item->e.values[static_cast<int>(item->b.leftval)].name);
+
+	case bitflag:
+		return 14 + MAX(V_FontStringWidthClean(::menu_font, "Yes"),
+		                V_FontStringWidthClean(::menu_font, "No"));
+
+	case slider:
+	{
+		// slider graphic is 96 units wide (drawn at indent+8) with the value
+		// text drawn just past it -- measure the widest formatted endpoint
+		int w = 0;
+		if (item->d.step != 0.0f)
+		{
+			const char* f = (item->d.step >= 1.0f) ? "%.0f"
+			              : (item->d.step >= 0.1f) ? "%.1f" : "%.2f";
+			std::string lo = fmt::sprintf(f, item->b.leftval);
+			std::string hi = fmt::sprintf(f, item->c.rightval);
+			w = MAX(V_FontStringWidthClean(::menu_font, lo.c_str()),
+			        V_FontStringWidthClean(::menu_font, hi.c_str()));
+		}
+		return 8 + 96 + w;
+	}
+
+	case redslider:
+	case greenslider:
+	case blueslider:
+		return 8 + 96;
+
+	case control:
+		return 14 + V_FontStringWidthClean(::menu_font,
+		            Bindings.GetNameKeys(item->b.key1, item->c.key2).c_str());
+	case mapcontrol:
+		return 14 + V_FontStringWidthClean(::menu_font,
+		            AutomapBindings.GetNameKeys(item->b.key1, item->c.key2).c_str());
+	case netdemocontrol:
+		return 14 + V_FontStringWidthClean(::menu_font,
+		            NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2).c_str());
+
+	case listelement:
+		return 14 + V_FontStringWidthClean(::menu_font, item->label);
+
+	default:
+		return 0;
+	}
+}
+
 void M_SwitchMenu(menu_t* menu)
 {
-	int i, widest = 0, thiswidth;
-	menuitem_t *item;
-
 	MenuStack[MenuStackDepth].menu.newmenu = menu;
 	MenuStack[MenuStackDepth].isNewStyle = true;
 	MenuStack[MenuStackDepth].drawSkull = false;
@@ -1629,20 +1699,47 @@ void M_SwitchMenu(menu_t* menu)
 	CurrentMenu = menu;
 	CurrentItem = menu->lastOn;
 
-	if (!menu->indent)
+	// Position the label/value divider so the whole block is centered on the
+	// screen midline. Labels are right-aligned to end at `indent`; values begin
+	// at `indent + 14` (sliders at `indent + 8`). We measure how far the widest
+	// label reaches left of the divider and how far the widest value reaches
+	// right of it, then set the divider so the block straddles x=160.
+	//
+	// This is recomputed on every switch rather than cached: it depends on the
+	// active font's metrics, which change with resolution and with TTF/bitmap
+	// font swaps. (The old hardcoded indents were tuned for the bitmap font and
+	// leave the narrower TTF text shoved to one side.)
+	int leftExtent = 0;   // widest right-aligned label, measured left from indent
+	int rightExtent = 0;  // widest value/control, measured right from indent
+	for (int i = 0; i < menu->numitems; i++)
 	{
-		for (i = 0; i < menu->numitems; i++)
+		const menuitem_t* item = menu->items + i;
+
+		// Centered headers and list rows don't right-align a label to the divider.
+		if (item->type != whitetext && item->type != redtext &&
+		    item->type != yellowtext && item->type != orangetext &&
+		    item->type != listelement)
 		{
-			item = menu->items + i;
-			if (item->type != whitetext && item->type != redtext && item->type != orangetext)
-			{
-				thiswidth = V_FontStringWidthClean(::menu_font, item->label);
-				if (thiswidth > widest)
-					widest = thiswidth;
-			}
+			int lw = V_FontStringWidthClean(::menu_font, item->label);
+			if (lw > leftExtent)
+				leftExtent = lw;
 		}
-		menu->indent = widest + 6;
+
+		int rw = M_OptValueExtent(item);
+		if (rw > rightExtent)
+			rightExtent = rw;
 	}
+
+	int indent = 160 - (rightExtent - leftExtent) / 2;
+
+	// Keep the block on-screen when it fits: labels off the left edge, values
+	// off the right. If it is wider than the screen, leave it centered.
+	const int margin = 4;
+	const int lo = leftExtent + margin;
+	const int hi = 320 - margin - rightExtent;
+	if (lo <= hi)
+		indent = clamp(indent, lo, hi);
+	menu->indent = indent;
 
 	flagsvar = NULL;
 }
