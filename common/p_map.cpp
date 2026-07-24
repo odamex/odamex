@@ -192,7 +192,7 @@ void P_ClearJustTeleported()
 
 bool P_JustTeleported (AActor* thing)
 {
-	return teleportedThing == thing;
+	return teleportedThing != nullptr && teleportedThing == thing;
 }
 
 //
