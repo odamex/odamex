@@ -1750,6 +1750,41 @@ bool M_StartOptionsMenu (void)
 	return true;
 }
 
+//
+// M_OptTextVOffset
+//
+// Gets the proper vertical offset of a row's text.
+//
+static int M_OptTextVOffset()
+{
+	if (!V_FontsReady() || !::menu_font)
+		return 0;
+
+	const int cleany = MAX(1, CleanYfac);
+	return (8 * cleany - ::menu_font->getHeight()) / (2 * cleany);
+}
+
+//
+// M_DrawOptCursor
+//
+// Draws a row marker, but positioned in real pixels so it is vertically
+// centered on the row's text rather than on the row box.
+//
+static void M_DrawOptCursor(const Texture* texture, int vx, int y)
+{
+	const int cleanx = MAX(1, CleanXfac);
+	const int cleany = MAX(1, CleanYfac);
+	const int font_height = (V_FontsReady() && ::menu_font) ? ::menu_font->getHeight() : 8 * cleany;
+
+	// the text's em box top in real pixels is where DrawFontTextCleanMove(ty)
+	// starts drawing; its center is half the font height below that
+	const int text_center = screen->getCleanY(y + M_OptTextVOffset()) + font_height / 2;
+	const int cursor_height = texture->mHeight * cleany;
+
+	screen->DrawTextureStretched(texture, screen->getCleanX(vx), text_center - cursor_height / 2,
+	                             texture->mWidth * cleanx, cursor_height);
+}
+
 void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float step)
 {
 	if (leftval < rightval)
@@ -1780,7 +1815,7 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 		buf = fmt::sprintf("%.1f", cur);
 	else
 		buf = fmt::sprintf("%.2f", cur);
-	screen->DrawFontTextCleanMove(::menu_font, CR_GREEN, x + 96, y, buf.c_str());
+	screen->DrawFontTextCleanMove(::menu_font, CR_GREEN, x + 96, y + M_OptTextVOffset(), buf.c_str());
 }
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
@@ -1863,6 +1898,8 @@ void M_OptDrawer (void)
 			row.y2 = screen->getCleanY(y + 8);
 		}
 
+		const int ty = y + M_OptTextVOffset();
+
 		if (item->type == screenres)
 		{
 			const char *str = NULL;
@@ -1888,7 +1925,7 @@ void M_OptDrawer (void)
 					else
 						color = CR_RED;
 
-					screen->DrawFontTextCleanMove(::menu_font, color, 104 * x + 20, y, str);
+					screen->DrawFontTextCleanMove(::menu_font, color, 104 * x + 20, ty, str);
 				}
 			}
 
@@ -1896,7 +1933,7 @@ void M_OptDrawer (void)
 				|| WaitingForAxis || testingmode))
 			{
 				const Texture* texture = Res_CacheTexture("LITLCURS", GRAPHICS);
-				screen->DrawTextureClean(texture, item->a.selmode * 104 + 8, y);
+				M_DrawOptCursor(texture, item->a.selmode * 104 + 8, y);
 			}
 		}
 		else
@@ -1939,7 +1976,7 @@ void M_OptDrawer (void)
 				color = CR_RED;
 				break;
 			}
-			screen->DrawFontTextCleanMove(::menu_font, color, x, y, item->label);
+			screen->DrawFontTextCleanMove(::menu_font, color, x, ty, item->label);
 
 			switch (item->type)
 			{
@@ -1954,7 +1991,7 @@ void M_OptDrawer (void)
 
 				if (v == vals)
 				{
-					screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
+					screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, "Unknown");
 				}
 				else
 				{
@@ -1962,14 +1999,14 @@ void M_OptDrawer (void)
 					if (item->type == cdiscrete)
 						color_num = item->a.cvar->asInt();
 
-					screen->DrawFontTextCleanMove(::menu_font, color_num, CurrentMenu->indent + 14, y, item->e.values[v].name);
+					screen->DrawFontTextCleanMove(::menu_font, color_num, CurrentMenu->indent + 14, ty, item->e.values[v].name);
 				}
 
 			}
 			break;
 
 			case nochoice:
-				screen->DrawFontTextCleanMove(::menu_font, CR_GOLD, CurrentMenu->indent + 14, y,
+				screen->DrawFontTextCleanMove(::menu_font, CR_GOLD, CurrentMenu->indent + 14, ty,
 										   (item->e.values[static_cast<int>(item->b.leftval)]).name);
 				break;
 
@@ -1999,21 +2036,21 @@ void M_OptDrawer (void)
 			case control:
 			{
 				std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, desc.c_str());
 			}
 			break;
 
 			case mapcontrol:
 			{
 				std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, desc.c_str());
 			}
 			break;
 
 			case netdemocontrol:
 			{
 				std::string desc = NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, desc.c_str());
 			}
 			break;
 
@@ -2032,7 +2069,7 @@ void M_OptDrawer (void)
 				else
 					str = value[0].name;
 
-				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, str);
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, str);
 			}
 			break;
 
@@ -2053,13 +2090,13 @@ void M_OptDrawer (void)
 					joyname += ": " + I_GetJoystickNameFromIndex(item->a.cvar->asInt());
 				}
 
-				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, joyname.c_str());
 			}
 			break;
 
 			case joyaxis:
 			{
-				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, y, item->a.cvar->cstring());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, item->a.cvar->cstring());
 			}
 			break;
 
@@ -2070,7 +2107,7 @@ void M_OptDrawer (void)
 			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
 				const Texture* texture = Res_CacheTexture("LITLCURS", GRAPHICS);
-				screen->DrawTextureClean(texture, CurrentMenu->indent + 3, y);
+				M_DrawOptCursor(texture, CurrentMenu->indent + 3, y);
 			}
 		}
 	}
