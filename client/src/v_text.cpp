@@ -208,6 +208,39 @@ OFont* V_GetGradientFont(const char* lumpname, int pixel_size, argb_t top, argb_
 
 
 //
+// V_GetVariableFont
+//
+OFont* V_GetVariableFont(const char* lumpname, int pixel_size, unsigned int stylemask,
+                         const std::vector<OFontVariation>& variations)
+{
+	typedef std::map<std::string, OFont*> FontCache;
+	static FontCache cache;
+
+	pixel_size = clamp(pixel_size, 4, 128);
+
+	// key on the lump, size, style, and every axis setting so that each
+	// distinct instance is cached separately
+	std::string key = fmt::format("{}:{}:{}", lumpname, pixel_size, stylemask);
+	for (const OFontVariation& v : variations)
+		key += fmt::format(":{:08x}={}", v.tag, v.value);
+
+	FontCache::iterator it = cache.find(key);
+	if (it != cache.end())
+		return it->second;
+
+	const char* lump = V_FontLumpExists(lumpname) ? lumpname : TTF_LUMP_NAME;
+	OFont* font = new TrueTypeFont(lump, pixel_size, stylemask, variations);
+	if (!font->isUsable())
+	{
+		delete font;
+		font = new SmallDoomFont(MAX(1, pixel_size / 8) * FRACUNIT);
+	}
+	cache[key] = font;
+	return font;
+}
+
+
+//
 // What each named face is made of. Indexed by fontface_t.
 //
 struct hudfacedef_t

@@ -25,6 +25,7 @@
 #pragma once
 
 #include <stdexcept>
+#include <vector>
 
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 #include "hu_stuff.h"
@@ -48,6 +49,7 @@ void V_FreeBrokenLines (brokenlines_t *lines);
 int V_GetTextColor(std::string_view str);
 
 class OFont;
+struct OFontVariation;
 
 extern OFont* menu_font;
 extern OFont* hud_font;
@@ -116,6 +118,17 @@ OFont* V_GetStyledFont(const char* lumpname, int pixel_size, unsigned int stylem
 // 0xB0-0xBF translation range, so any normal text color range shows them as is.
 //
 OFont* V_GetGradientFont(const char* lumpname, int pixel_size, argb_t top, argb_t bottom);
+
+//
+// V_GetVariableFont
+//
+// Like V_GetStyledFont, but applies a set of OpenType variation-axis settings
+// (weight, width, optical size, slant, or any custom axis the face exposes) to
+// a variable font. Each distinct set of axis values is cached as its own font.
+// A face with no matching axes renders at its defaults.
+//
+OFont* V_GetVariableFont(const char* lumpname, int pixel_size, unsigned int stylemask,
+                         const std::vector<OFontVariation>& variations);
 
 //
 // V_FontsReady

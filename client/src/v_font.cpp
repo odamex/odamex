@@ -43,8 +43,11 @@
 #include FT_FREETYPE_H
 #include FT_IMAGE_H
 #include FT_OUTLINE_H
+#include FT_MULTIPLE_MASTERS_H
 
 extern byte* Ranges;
+
+EXTERN_CVAR(developer)
 
 // The palette's transparency slot. Column drawers skip pixels holding it.
 static const palindex_t TRANSPARENT_INDEX		= 0;
@@ -730,28 +733,100 @@ void LargeDoomFont::buildGlyphs()
 //
 // ----------------------------------------------------------------------------
 
-TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask) :
+TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
+		const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0),
-	mHasGradientColors(false)
+	mHasGradientColors(false), mVariations(variations)
 {
 	load();
 }
 
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
-		ScaleFunc scale_func) :
+		ScaleFunc scale_func, const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0),
-	mHasGradientColors(false)
+	mHasGradientColors(false), mVariations(variations)
 {
 	setScale(scale_func);
 	load();
 }
 
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
-		argb_t grad_top, argb_t grad_bottom) :
+		argb_t grad_top, argb_t grad_bottom, const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0),
-	mHasGradientColors(true), mGradTop(grad_top), mGradBottom(grad_bottom)
+	mHasGradientColors(true), mGradTop(grad_top), mGradBottom(grad_bottom),
+	mVariations(variations)
 {
 	load();
+}
+
+void TrueTypeFont::setVariations(const std::vector<OFontVariation>& variations)
+{
+	mVariations = variations;
+	if (isLoaded())
+		load();
+}
+
+//
+// V_FontAxisTag
+//
+// Packs a four-character axis tag into the big-endian integer form FreeType
+// stores in FT_Var_Axis::tag. Short tags are padded with spaces.
+//
+uint32_t V_FontAxisTag(const char* tag)
+{
+	byte c[4] = { ' ', ' ', ' ', ' ' };
+	for (int i = 0; i < 4 && tag && tag[i]; i++)
+		c[i] = static_cast<byte>(tag[i]);
+	return (static_cast<uint32_t>(c[0]) << 24) | (static_cast<uint32_t>(c[1]) << 16) |
+	       (static_cast<uint32_t>(c[2]) << 8)  |  static_cast<uint32_t>(c[3]);
+}
+
+//
+// V_ApplyFontVariations
+//
+// Sets a variable font's design-axis coordinates on an open FreeType face.
+// Unspecified axes keep their default, requested values are clamped to each
+// axis's range. Non-variable faces are left untouched.
+//
+static void V_ApplyFontVariations(FT_Library library, FT_Face face,
+		const char* lumpname, const std::vector<OFontVariation>& variations)
+{
+	if (!(face->face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS))
+		return;
+
+	FT_MM_Var* mmvar = nullptr;
+	if (FT_Get_MM_Var(face, &mmvar) != 0 || mmvar == nullptr)
+		return;
+
+	std::vector<FT_Fixed> coords(mmvar->num_axis);
+	for (FT_UInt i = 0; i < mmvar->num_axis; i++)
+	{
+		const FT_Var_Axis& axis = mmvar->axis[i];
+		coords[i] = axis.def;
+
+		for (const OFontVariation& v : variations)
+		{
+			if (v.tag == static_cast<uint32_t>(axis.tag))
+			{
+				FT_Fixed value = static_cast<FT_Fixed>(v.value * 65536.0f);
+				coords[i] = clamp(value, axis.minimum, axis.maximum);
+				break;
+			}
+		}
+
+		if (developer)
+		{
+			const char tag[5] = {
+				static_cast<char>((axis.tag >> 24) & 0xFF), static_cast<char>((axis.tag >> 16) & 0xFF),
+				static_cast<char>((axis.tag >> 8) & 0xFF),  static_cast<char>(axis.tag & 0xFF), '\0' };
+			PrintFmt(PRINT_HIGH, "font {} axis '{}': min={:.1f} def={:.1f} max={:.1f} -> {:.1f}\n",
+			         lumpname, tag, axis.minimum / 65536.0f, axis.def / 65536.0f,
+			         axis.maximum / 65536.0f, coords[i] / 65536.0f);
+		}
+	}
+
+	FT_Set_Var_Design_Coordinates(face, mmvar->num_axis, coords.data());
+	FT_Done_MM_Var(library, mmvar);
 }
 
 void TrueTypeFont::buildGlyphs()
@@ -817,6 +892,11 @@ void TrueTypeFont::buildGlyphs()
 		FT_Done_FreeType(ftlibrary);
 		return;
 	}
+
+	// Variable font: dial in the requested design-axis coordinates (weight,
+	// width, optical size, etc.) before any glyphs are loaded.
+	// No-op for a static face.
+	V_ApplyFontVariations(ftlibrary, face, lumpname, mVariations);
 
 	// Bold if the font size is too small so we don't alias away any details.
 	const FT_Pos embolden = (size < 13) ? std::min((13 - size) * 6, 48) : 0;

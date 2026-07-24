@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,27 @@
 
 static const char RULE_CHAR_FIRST	= 0x1D;
 static const char RULE_CHAR_LAST	= 0x1F;
+
+//
+// OFontVariation
+//
+// A single OpenType variation-axis setting for a variable font.
+// tag is a packed four-character axis tag
+// Used to set things like font weight, optical size, etc.
+//
+struct OFontVariation
+{
+	uint32_t	tag;
+	float		value;
+};
+
+//
+// V_FontAxisTag
+//
+// Packs a four-character axis tag ("wght", "wdth", "opsz", "slnt", "ital", or
+// any custom tag) into the integer form used by OFontVariation::tag.
+//
+uint32_t V_FontAxisTag(const char* tag);
 
 //
 // OFont
@@ -227,11 +249,14 @@ public:
 		TTF_SHADOW			= 0x08
 	};
 
-	TrueTypeFont(const char* lumpname, int size, unsigned int stylemask);
 	TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
-	             ScaleFunc scale_func);
+	             const std::vector<OFontVariation>& variations = std::vector<OFontVariation>());
 	TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
-	             argb_t grad_top, argb_t grad_bottom);
+	             ScaleFunc scale_func,
+	             const std::vector<OFontVariation>& variations = std::vector<OFontVariation>());
+	TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
+	             argb_t grad_top, argb_t grad_bottom,
+	             const std::vector<OFontVariation>& variations = std::vector<OFontVariation>());
 
 	virtual int getHeight() const
 	{	return mHeight;	}
@@ -246,6 +271,11 @@ public:
 	// regardless of which characters are on it.
 	virtual int getTextHeight(char c) const
 	{	return mHeight;	}
+
+	// Sets the variable-font axis coordinates (weight, width, optical size,
+	// slant, or any custom axis the face exposes) and rebuilds the glyphs if
+	// the font is already loaded.
+	void setVariations(const std::vector<OFontVariation>& variations);
 
 protected:
 	virtual void buildGlyphs();
@@ -266,4 +296,7 @@ private:
 	bool			mHasGradientColors;
 	argb_t			mGradTop;
 	argb_t			mGradBottom;
+
+	// Requested variable-font axis coordinates
+	std::vector<OFontVariation>	mVariations;
 };
