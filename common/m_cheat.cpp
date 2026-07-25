@@ -315,7 +315,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 {
 	std::string msg;
 
-	if (player.health <= 0)
+	if (player.health <= 0 && cheat != CHT_RESURRECT)
 		return;
 
 	switch (cheat)
