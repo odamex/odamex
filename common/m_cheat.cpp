@@ -531,6 +531,8 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 
 			// Re-arm the weapon they were holding.
 			P_SetupPsprites(player);
+
+			P_ResurrectEffect(player.mo);
 		}
 	}
 	break;

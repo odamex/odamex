@@ -43,6 +43,7 @@
 #include "i_time.h"
 #include "minilzo.h"
 #include "m_random.h"
+#include "c_effect.h"
 #include "p_acs.h"
 #include "p_local.h"
 #include "p_saveg.h"
@@ -183,6 +184,7 @@ void G_InitNew (const char *mapname)
 {
 	// [RH] Remove all particles
 	R_ClearParticles ();
+	P_ClearResurrectHalos ();
 
 	for (auto& player : players)
 	{

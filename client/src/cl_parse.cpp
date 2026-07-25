@@ -1206,7 +1206,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	}
 	else
 	{
-	p.viewheight = VIEWHEIGHT;
+		p.viewheight = VIEWHEIGHT;
 	}
 
 	p.attacker = AActor::AActorPtr();
@@ -1270,6 +1270,9 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	newsnap.setContinuous(false);
 	p.snapshots.clearSnapshots();
 	p.snapshots.addSnapshot(newsnap);
+
+	if (inPlaceRevive)
+		P_ResurrectEffect(mobj);
 }
 
 //
