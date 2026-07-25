@@ -45,7 +45,8 @@ void Clear(int x, int y,
            const float scale,
            const x_align_t x_align, const y_align_t y_align,
            const x_align_t x_origin, const y_align_t y_origin,
-           const argb_t color);
+           const argb_t color,
+           const int y_pixel_nudge = 0);
 void Dim(int x, int y,
          const unsigned short w, const unsigned short h,
          const float scale,
@@ -60,7 +61,8 @@ void DrawText(int x, int y, const float scale,
               const x_align_t x_origin, const y_align_t y_origin,
               const char* str, const int color,
               const bool force_opaque = false,
-              const fontface_t face = FACE_SMALL);
+              const fontface_t face = FACE_SMALL,
+              const int y_pixel_nudge = 0);
 void DrawTexture(int x, int y, const float scale,
                const x_align_t x_align, const y_align_t y_align,
                const x_align_t x_origin, const y_align_t y_origin,
@@ -71,7 +73,8 @@ void DrawTranslatedTexture(int x, int y, const float scale,
                          const x_align_t x_origin, const y_align_t y_origin,
                          const Texture* texture, byte* translation,
                          const bool force_opaque = false,
-                         const bool use_patch_offsets = false);
+                         const bool use_patch_offsets = false,
+                         const int y_pixel_nudge = 0);
 void DrawTextureStretched(int x, int y,
                         const unsigned short w, const unsigned short h,
                         const float scale,

@@ -141,11 +141,14 @@ void Clear(int x, int y,
            const float scale,
            const x_align_t x_align, const y_align_t y_align,
            const x_align_t x_origin, const y_align_t y_origin,
-           const argb_t color)
+           const argb_t color,
+           const int y_pixel_nudge)
 {
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+
+	y += y_pixel_nudge;
 
 	int maxHeight = I_GetSurfaceHeight();
 	int maxWidth = I_GetSurfaceWidth();
@@ -204,7 +207,8 @@ void DrawText(int x, int y, const float scale,
               const x_align_t x_origin, const y_align_t y_origin,
               const char* str, const int color,
               const bool force_opaque,
-              const fontface_t face)
+              const fontface_t face,
+              const int y_pixel_nudge)
 {
 	// No string?  Don't bother with this function.
 	if (!str)
@@ -229,6 +233,8 @@ void DrawText(int x, int y, const float scale,
 		y -= h >> 1;
 	else if (y_origin == Y_BOTTOM)
 		y -= h;
+
+	y += y_pixel_nudge;
 
 	screen->DrawFontText(font, color, x, y, str, force_opaque);
 }
@@ -267,7 +273,8 @@ void DrawTranslatedTexture(int x, int y, const float scale,
                          const x_align_t x_align, const y_align_t y_align,
                          const x_align_t x_origin, const y_align_t y_origin,
                          const Texture* texture, byte* translation,
-                         const bool force_opaque, const bool use_patch_offsets)
+                         const bool force_opaque, const bool use_patch_offsets,
+                         const int y_pixel_nudge)
 {
 	// Calculate width and height of patch
 	unsigned short w = texture->mWidth;
@@ -283,6 +290,8 @@ void DrawTranslatedTexture(int x, int y, const float scale,
 		x += texture->mOffsetX * x_scale;
 		y += texture->mOffsetY * y_scale;
 	}
+
+	y += y_pixel_nudge;
 
 	V_ColorMap = translationref_t(translation);
 
