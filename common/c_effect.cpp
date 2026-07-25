@@ -44,7 +44,7 @@ particle_t		*Particles;
 static int	grey1, grey2, grey3, grey4, red, green, blue, yellow, black,
 		   red1, green1, blue1, yellow1, purple, purple1, white,
 		   rblue1, rblue2, rblue3, rblue4, orange, yorange, dred, grey5,
-		   maroon1, maroon2, pink;
+		   maroon1, maroon2, pink, gold1, gold2;
 
 static const struct ColorList {
 	int *color, r, g, b;
@@ -76,6 +76,8 @@ static const struct ColorList {
 	{&maroon1,	154, 49,  49 },
 	{&maroon2,	125, 24,  24 },
 	{&pink,		255, 112,  185 },
+	{&gold1,	255, 190, 60 },
+	{&gold2,	255, 224, 130},
 	{NULL, 0, 0, 0}
 };
 
@@ -236,6 +238,8 @@ particle_t *JitterParticle (int ttl)
 //
 // Run effects on all mobjs in world
 //
+static void P_RunResurrectHalos (void);
+
 void P_RunEffects (void)
 {
 	if (!clientside)
@@ -249,6 +253,8 @@ void P_RunEffects (void)
 		if (actor->effects)
 			P_RunEffect (actor, actor->effects);
 	}
+
+	P_RunResurrectHalos();
 }
 
 void P_RunEffect (const AActor *actor, int effects)
@@ -469,6 +475,146 @@ void P_DisconnectEffect (const AActor *actor)
 		p->color = M_Random() < 128 ? maroon1 : maroon2;
 		p->size = 4;
 	}
+}
+
+//
+// Resurrect halo
+//
+// A spinning gold halo that hovers over a revived player and follows them for a
+// short time.
+//
+struct resurrecthalo_t
+{
+	AActor::AActorPtr actor;
+	int tics;  // remaining lifetime
+	int phase; // accumulator
+};
+
+static std::vector<resurrecthalo_t> ResurrectHalos;
+
+static const int RESURRECT_HALO_TICS = TICRATE * 3;     // how long the halo lingers
+static const int RESURRECT_HALO_SPIN = FINEANGLES / 32; // rotation per tic
+
+static void MakeResurrectHalo (const AActor *actor, int phase)
+{
+	const int rings = 2;
+	const int perring = 18;
+	const fixed_t baseradius = actor->radius + 3 * FRACUNIT;
+	const fixed_t basez = actor->z + actor->height + 5 * FRACUNIT;
+
+	// Stacked, steadily glowing rings, each nudged in phase and height.
+	for (int r = 0; r < rings; r++)
+	{
+		const fixed_t radius = baseradius + r * (3 * FRACUNIT);
+		const fixed_t z = basez + r * (3 * FRACUNIT);
+		const int ringphase = phase + r * (FINEANGLES / (perring * 2));
+
+		for (int i = 0; i < perring; i++)
+		{
+			particle_t *p = NewParticle();
+
+			if (!p)
+				return;
+
+			const int fa = (ringphase + i * (FINEANGLES / perring)) & FINEMASK;
+
+			p->x = actor->x + FixedMul(radius, finecosine[fa]);
+			p->y = actor->y + FixedMul(radius, finesine[fa]);
+			p->z = z;
+			p->velx = p->vely = p->velz = 0;
+			p->accx = p->accy = p->accz = 0;
+			p->color = (r & 1) ? gold2 : gold1;
+			p->size = 2;
+			p->trans = 255;
+			p->ttl = 3;
+			p->fade = FADEFROMTTL(3);
+			p->sprite = NO_PARTICLE;
+		}
+	}
+
+	// A few brighter sparkles orbiting the rings to sell the spin.
+	for (int s = 0; s < 3; s++)
+	{
+		particle_t *p = NewParticle();
+
+		if (!p)
+			return;
+
+		const int fa = (phase + s * (FINEANGLES / 3)) & FINEMASK;
+		const fixed_t radius = baseradius + 4 * FRACUNIT;
+
+		p->x = actor->x + FixedMul(radius, finecosine[fa]);
+		p->y = actor->y + FixedMul(radius, finesine[fa]);
+		p->z = basez + 2 * FRACUNIT;
+		p->velz = FRACUNIT / 6;
+		p->color = gold2;
+		p->size = 4;
+		p->trans = 255;
+		p->ttl = 6;
+		p->fade = FADEFROMTTL(6);
+		p->sprite = NO_PARTICLE;
+	}
+}
+
+//
+// P_ResurrectEffect
+//
+// Attach (or refresh) a following gold halo on a revived player.
+//
+void P_ResurrectEffect (const AActor *actor)
+{
+	if (!actor || !clientside)
+		return;
+
+	// If this pawn already has a halo, just restart its timer.
+	for (size_t i = 0; i < ResurrectHalos.size(); i++)
+	{
+		if (static_cast<const AActor *>(ResurrectHalos[i].actor) == actor)
+		{
+			ResurrectHalos[i].tics = RESURRECT_HALO_TICS;
+			return;
+		}
+	}
+
+	resurrecthalo_t halo;
+	halo.actor = const_cast<AActor *>(actor)->ptr();
+	halo.tics = RESURRECT_HALO_TICS;
+	halo.phase = 0;
+	ResurrectHalos.push_back(halo);
+}
+
+//
+// P_RunResurrectHalos
+//
+// Ticks every active halo
+//
+static void P_RunResurrectHalos (void)
+{
+	if (!clientside)
+		return;
+
+	for (size_t i = 0; i < ResurrectHalos.size();)
+	{
+		resurrecthalo_t &halo = ResurrectHalos[i];
+		AActor *mo = halo.actor;
+
+		if (!mo || halo.tics <= 0)
+		{
+			ResurrectHalos[i] = ResurrectHalos.back();
+			ResurrectHalos.pop_back();
+			continue;
+		}
+
+		MakeResurrectHalo(mo, halo.phase);
+		halo.phase = (halo.phase + RESURRECT_HALO_SPIN) & FINEMASK;
+		halo.tics--;
+		i++;
+	}
+}
+
+void P_ClearResurrectHalos (void)
+{
+	ResurrectHalos.clear();
 }
 
 VERSION_CONTROL (p_effect_cpp, "$Id$")
