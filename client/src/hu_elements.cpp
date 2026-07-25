@@ -968,6 +968,8 @@ void EAPlayerColors(int x, int y,
                     const x_align_t x_origin, const y_align_t y_origin,
                     const short padding, const short limit)
 {
+	const int yoff = (hud::GetLineHeight(scale, FACE_SMALL) - h + 1) / 2;
+
 	byte drawn = 0;
 	for (const auto& player : sortedPlayers())
 	{
@@ -978,7 +980,8 @@ void EAPlayerColors(int x, int y,
 		if (ingamePlayer(*player))
 		{
 			argb_t playercolor = CL_GetPlayerColor(*player);
-			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
+			hud::Clear(x, y + yoff, w, h, scale, x_align, y_align, x_origin, y_origin,
+			           playercolor, -1);
 
 			y += h + padding;
 			drawn += 1;
@@ -995,6 +998,8 @@ void EATeamPlayerColors(int x, int y,
                         const short padding, const short limit,
                         const byte team)
 {
+	const int yoff = (hud::GetLineHeight(scale, FACE_SMALL) - h + 1) / 2;
+
 	byte drawn = 0;
 	for (const auto& player : sortedPlayers())
 	{
@@ -1005,7 +1010,8 @@ void EATeamPlayerColors(int x, int y,
 		if (inTeamPlayer(*player, team))
 		{
 			argb_t playercolor = CL_GetPlayerColor(*player);
-			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
+			hud::Clear(x, y + yoff, w, h, scale, x_align, y_align, x_origin, y_origin,
+			           playercolor, -1);
 
 			y += h + padding;
 			drawn += 1;
