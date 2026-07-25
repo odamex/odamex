@@ -361,7 +361,8 @@ menu_t OptionMenu = {
 	OptionItems,
 	0,
 	0,
-	NULL
+	NULL,
+	"Options"
 };
 
 /*=======================================
@@ -479,7 +480,8 @@ menu_t ControlsMenu = {
 	ControlsItems,
 	2,
 	0,
-	NULL
+	NULL,
+	"Customize Controls"
 };
 
 // -------------------------------------------------------
@@ -529,7 +531,8 @@ menu_t MouseMenu = {
     MouseItems,
 	0,
 	0,
-	NULL
+	NULL,
+	"Mouse Options"
 };
 
 
@@ -562,7 +565,8 @@ menu_t JoystickMenu = {
     JoystickItems,
 	0,
 	0,
-	NULL
+	NULL,
+	"Joystick Setup"
 };
 
  /*=======================================
@@ -685,7 +689,8 @@ menu_t AdvMidiMenu = {
 	AdvMidiItems,
 	0,
 	0,
-	NULL
+	NULL,
+	"Advanced MIDI Options"
 };
 
 menu_t LibAdlMidiMenu = {
@@ -696,7 +701,8 @@ menu_t LibAdlMidiMenu = {
 	LibAdlMidiItems,
 	0,
 	0,
-	NULL
+	NULL,
+	"libADLMIDI Options"
 };
 
 menu_t SoundMenu = {
@@ -707,7 +713,8 @@ menu_t SoundMenu = {
 	SoundItems,
 	0,
 	0,
-	NULL
+	NULL,
+	"Sound Options"
 };
 
 
@@ -759,6 +766,7 @@ menu_t CompatMenu = {
 	0,
 	0,
 	NULL,
+	"Compatibility Options"
 };
 
 
@@ -796,7 +804,8 @@ menu_t NetworkMenu = {
 	NetworkItems,
 	1,
 	0,
-	NULL
+	NULL,
+	"Network Options"
 };
 
 
@@ -846,7 +855,8 @@ menu_t WeaponMenu = {
 	WeaponItems,
 	0,
 	0,
-	NULL
+	NULL,
+	"Weapon Preferences"
 };
 
 
@@ -996,7 +1006,8 @@ menu_t VideoMenu = {
 	VideoItems,
 	4,
 	0,
-	&M_UpdateDisplayOptions
+	&M_UpdateDisplayOptions,
+	"Display Options"
 };
 
 /*=======================================
@@ -1077,6 +1088,7 @@ menu_t HUDMenu = {
     0,                      // scrolltop
     0,                      // scrollpos
     NULL,                   // refreshfunc
+    "HUD Options",          // titletext
 };
 
 /*=======================================
@@ -1166,7 +1178,8 @@ menu_t MessagesMenu = {
 	MessagesItems,
 	0,
 	0,
-	NULL
+	NULL,
+	"Messages"
 };
 
 /*=======================================
@@ -1233,7 +1246,8 @@ menu_t AutomapMenu = {
 	AutomapItems,
 	0,
 	0,
-	NULL
+	NULL,
+	"Automap Options"
 };
 
 
@@ -1355,7 +1369,8 @@ menu_t ModesMenu = {
 	ModesItems,
 	0,
 	0,
-	NULL
+	NULL,
+	"Set Video Mode"
 };
 
 static void BuildModesList(int hiwidth, int hiheight)
@@ -1765,6 +1780,18 @@ static int M_OptTextVOffset()
 }
 
 //
+// M_GetHeaderFont
+//
+// The font used for a menu's TTF title text (when the menu supplies titletext
+// instead of a title patch).
+//
+OFont* M_GetHeaderFont()
+{
+	const int header_base = 16;		// virtual pixels tall at 1x clean scale
+	return V_GetFont("FONT_BIG", header_base * MAX(1, CleanYfac));
+}
+
+//
 // M_DrawOptCursor
 //
 // Draws a row marker, but positioned in real pixels so it is vertically
@@ -1875,10 +1902,24 @@ void M_OptDrawer (void)
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
 
-	const Texture* title_texture = Res_CacheTexture(CurrentMenu->title, GRAPHICS);
-	screen->DrawTextureClean(title_texture, 160 - title_texture->mWidth / 2, 10);
+	if (CurrentMenu->titletext && CurrentMenu->titletext[0] && V_FontsReady())
+	{
+		// TTF title text, centered, in place of the title patch
+		const int cleany = MAX(1, CleanYfac);
+		OFont* hfont = M_GetHeaderFont();
+		const int tw = hfont->getTextWidth(CurrentMenu->titletext);
+		screen->DrawFontText(hfont, CR_RED, (I_GetSurfaceWidth() - tw) / 2,
+		                     screen->getCleanY(10), CurrentMenu->titletext, true);
 
-	y = 15 + title_texture->mHeight;
+		y = 10 + hfont->getHeight() / cleany + 5;
+	}
+	else
+	{
+		const Texture* title_texture = Res_CacheTexture(CurrentMenu->title, GRAPHICS);
+		screen->DrawTextureClean(title_texture, 160 - title_texture->mWidth / 2, 10);
+
+		y = 15 + title_texture->mHeight;
+	}
 	ytop = y + CurrentMenu->scrolltop * 8;
 
 	OptMouseRowCount = 0;

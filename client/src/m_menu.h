@@ -26,6 +26,10 @@
 
 #include "d_event.h"
 
+class OFont;
+
+OFont* M_GetHeaderFont();
+
 // Some defines...
 #define LINEHEIGHT	16
 #define SKULLXOFF	-32
@@ -165,6 +169,7 @@ typedef struct menu_s {
 	int				scrolltop;
 	int				scrollpos;
 	void			(*refreshfunc)();	// Callback func for M_OptResponder
+	const char	   *titletext;			// If set, drawn as TTF text in place of the title patch
 } menu_t;
 
 typedef struct

@@ -684,11 +684,27 @@ void M_ReadSaveStrings()
 
 
 //
+// M_DrawMenuTitleText
+//
+// Draws a menu title as centered TTF header text.
+//
+static void M_DrawMenuTitleText(const char* text, int y)
+{
+	if (!V_FontsReady())
+		return;
+
+	OFont* font = M_GetHeaderFont();
+	const int tw = font->getTextWidth(text);
+	screen->DrawFontText(font, CR_RED, (I_GetSurfaceWidth() - tw) / 2,
+	                     screen->getCleanY(y), text, true);
+}
+
+//
 // M_LoadGame & Cie.
 //
 void M_DrawLoad ()
 {
-	screen->DrawPatchClean(W_CachePatch("M_LOADG"), 72, 28);
+	M_DrawMenuTitleText("Load Game", 20);
 	for (int i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
@@ -733,7 +749,7 @@ void M_DrawSave()
 {
 	int i;
 
-	screen->DrawPatchClean(W_CachePatch("M_SAVEG"), 72, 28);
+	M_DrawMenuTitleText("Save Game", 20);
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
@@ -937,17 +953,23 @@ void M_FinishReadThis(int)
 //
 void M_DrawSaveLoadBorder (int x, int y, int len)
 {
-	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
+	const Texture* center_texture = Res_CacheTexture("M_LSCNTR", GRAPHICS);
+
+	// Vertically center the box on the field text.
+	const int cleany = MAX(1, CleanYfac);
+	const int font_h = (V_FontsReady() && ::menu_font) ? ::menu_font->getHeight() / cleany : 8;
+	const int box_y = y + font_h / 2 - center_texture->mHeight / 2 + center_texture->mOffsetY;
+
+	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, box_y);
 
 	for (int i = 0; i < len; i++)
 	{
-		const Texture* center_texture = Res_CacheTexture("M_LSCNTR", GRAPHICS);
-		screen->DrawTextureClean(center_texture, x, y+7);
+		screen->DrawTextureClean(center_texture, x, box_y);
 		x += 8;
 	}
 
 	const Texture* right_texture = Res_CacheTexture("M_LSRGHT", GRAPHICS);
-	screen->DrawTextureClean(right_texture, x, y+7);
+	screen->DrawTextureClean(right_texture, x, box_y);
 }
 
 //
@@ -1439,10 +1461,7 @@ static void M_PlayerSetupDrawer()
 	OdamexEffect(x1,y1,x2,y2);
 
 	// Draw title
-	{
-		const Texture* texture = Res_CacheTexture("M_PSTTL", GRAPHICS);
-        screen->DrawTextureClean(texture, 160 - texture->mWidth / 2, 10);
-	}
+	M_DrawMenuTitleText("Player Setup", 10);
 
 	// Draw player name box
 	screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y, "Name");
