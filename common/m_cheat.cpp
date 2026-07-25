@@ -33,6 +33,7 @@
 #include "d_items.h"
 #include "g_skill.h"
 #include "p_local.h"
+#include "p_mobj.h"
 #include "infomap.h"
 #include "c_effect.h"
 #include "c_dispatch.h"
@@ -246,6 +247,18 @@ BEGIN_COMMAND(mdk)
 	CL_SendCheat(CHT_MDK);
 }
 END_COMMAND(mdk)
+
+BEGIN_COMMAND(resurrect)
+{
+	if (!cheat::AreCheatsEnabled())
+		return;
+
+	if (multiplayer && !G_IsCoopGame())
+		return;
+
+	cheat::DoCheat(consoleplayer(), CHT_RESURRECT);
+}
+END_COMMAND(resurrect)
 
 #endif
 
@@ -480,6 +493,44 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 		player.cheats ^= CF_BUDDHA;
 		msg = (player.cheats & CF_BUDDHA) ? GStrings(TXT_BUDDHAON)
 		                                   : GStrings(TXT_BUDDHAOFF);
+	}
+	break;
+	case CHT_RESURRECT: {
+		if (player.spectator || player.playerstate != PST_DEAD || !player.mo)
+			return;
+
+		if (multiplayer && !G_IsCoopGame())
+			return;
+
+		if (serverside)
+		{
+			if (G_IsLivesGame() && player.lives < 1)
+				player.lives = 1;
+
+			AActor* mo = player.mo;
+			mobjinfo_t* info = &::mobjinfo[MT_PLAYER];
+
+			mo->flags = info->flags;
+			mo->flags2 = info->flags2;
+			mo->flags3 = info->flags3;
+			mo->radius = info->radius;
+			mo->height = P_ThingInfoHeight(info);
+			P_SetMobjState(mo, info->spawnstate);
+
+			player.health = mo->health = deh.StartHealth;
+			player.playerstate = PST_LIVE;
+			player.refire = 0;
+			player.damagecount = 0;
+			player.bonuscount = 0;
+			player.extralight = 0;
+			player.fixedcolormap = 0;
+			player.xviewshift = 0;
+			player.deltaviewheight = 1;
+			player.attacker = AActor::AActorPtr();
+
+			// Re-arm the weapon they were holding.
+			P_SetupPsprites(player);
+		}
 	}
 	break;
 	}
