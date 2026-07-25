@@ -257,6 +257,7 @@ BEGIN_COMMAND(resurrect)
 		return;
 
 	cheat::DoCheat(consoleplayer(), CHT_RESURRECT);
+	CL_SendCheat(CHT_RESURRECT);
 }
 END_COMMAND(resurrect)
 

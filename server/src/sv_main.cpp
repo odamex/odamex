@@ -3712,9 +3712,23 @@ void SV_Cheat(player_t &player)
 			return;
 
 		int oldCheats = player.cheats;
+		byte oldState = player.playerstate;
 		cheat::DoCheat(player, cheat);
 
-		if (player.cheats != oldCheats)
+		if (cheat == CHT_RESURRECT && oldState == PST_DEAD &&
+		    player.playerstate == PST_LIVE && player.mo)
+		{
+			for (Players::iterator it = players.begin(); it != players.end(); ++it)
+			{
+				if (!it->ingame())
+					continue;
+				if (&*it != &player && !SV_IsPlayerAllowedToSee(*it, player.mo))
+					continue;
+				MSG_WriteSVC(&it->client.reliablebuf, SVC_SpawnPlayer(player));
+			}
+		}
+
+		if (player.cheats != oldCheats || cheat == CHT_RESURRECT)
 		{
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{

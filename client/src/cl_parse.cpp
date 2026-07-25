@@ -1161,6 +1161,8 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	const fixed_t y = msg->actor().pos().y();
 	const fixed_t z = msg->actor().pos().z();
 
+	const bool inPlaceRevive = (P_FindThingById(netid) != NULL);
+
 	P_ClearId(netid);
 
 	// first disassociate the corpse
@@ -1197,10 +1199,18 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	p.fixedcolormap = 0;
 
 	p.xviewshift = 0;
+	if (inPlaceRevive && p.id == consoleplayer_id)
+	{
+		// Viewheight will raise slowly from the ground.
+		p.deltaviewheight = 1;
+	}
+	else
+	{
 	p.viewheight = VIEWHEIGHT;
+	}
 
 	p.attacker = AActor::AActorPtr();
-	p.viewz = z + VIEWHEIGHT;
+	p.viewz = z + p.viewheight;
 
 	// spawn a teleport fog
 	// tfog = new AActor (x, y, z + gameinfo.telefogHeight, MT_TFOG);
