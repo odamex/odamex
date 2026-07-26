@@ -1637,6 +1637,7 @@ bool P_CheckKeys (player_t *p, card_t lock, bool remote)
 void OnChangedSwitchTexture (line_t *line, int useAgain);
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction);
+void SV_UpdateMobj(AActor* mo);
 
 //
 // EVENTS
@@ -1667,7 +1668,7 @@ bool P_HandleSpecialRepeat(line_t* line)
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
 //
-void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
+void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 {
 	TeleportSide = side;
 
@@ -1685,12 +1686,23 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 
 	if (thing)
 	{
+		P_ClearJustTeleported();
 		result = map_format.cross_special_line(line, side, thing, bossaction);
 	}
 
 	if (result)
 	{
 		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
+
+		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
+		// because client-side prediction immediately followed by the ActivateLine _may_
+		// result in a wildly inaccurate position, depending on a variety of factors, and
+		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		if (P_JustTeleported(thing))
+		{
+			SV_UpdateMobj(thing);
+			P_ClearJustTeleported();
+		}
 
 		bool repeat;
 
@@ -1739,6 +1751,8 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	bool lineresult;
 
+	P_ClearJustTeleported();
+
 	if (map_format.getZDoom()) // All zdoom specials can be impact activated
 	{
 		lineresult = LineSpecials[line->special](line, thing, line->args[0], line->args[1],
@@ -1752,6 +1766,16 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 	if(serverside && lineresult)
 	{
 		SV_OnActivatedLine(line, thing, 0, LineShoot, false);
+
+		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
+		// because client-side prediction immediately followed by the ActivateLine _may_
+		// result in a wildly inaccurate position, depending on a variety of factors, and
+		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		if (P_JustTeleported(thing))
+		{
+			SV_UpdateMobj(thing);
+			P_ClearJustTeleported();
+		}
 
 		if (lineresult)
 		{
@@ -1806,6 +1830,8 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 
 	TeleportSide = side;
 
+	P_ClearJustTeleported();
+
 	if (map_format.getZDoom())
 		result = P_ActivateZDoomLine(line, thing, side, ML_SPAC_USE);
 	else
@@ -1815,6 +1841,16 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	{
 		// May need to move this higher as the special is gone in Boom by this point.
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
+
+		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
+		// because client-side prediction immediately followed by the ActivateLine _may_
+		// result in a wildly inaccurate position, depending on a variety of factors, and
+		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		if (P_JustTeleported(thing))
+		{
+			SV_UpdateMobj(thing);
+			P_ClearJustTeleported();
+		}
 
 		if (map_format.getZDoom() && !bossaction)
 		{
@@ -1878,12 +1914,23 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 	}
 
     TeleportSide = side;
+	P_ClearJustTeleported();
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]))
 	{
 		SV_OnActivatedLine(line, thing, side, LinePush, false);
+
+		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
+		// because client-side prediction immediately followed by the ActivateLine _may_
+		// result in a wildly inaccurate position, depending on a variety of factors, and
+		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		if (P_JustTeleported(thing))
+		{
+			SV_UpdateMobj(thing);
+			P_ClearJustTeleported();
+		}
 
 		if (serverside && !(thing->player && (thing->player->spectator ||
 		                                      thing->player->playerstate != PST_LIVE)))

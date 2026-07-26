@@ -179,6 +179,20 @@ bool PIT_StompThing (AActor *thing)
 	return false;
 }
 
+namespace
+{
+	AActor* teleportedThing;
+}
+
+void P_ClearJustTeleported()
+{
+	teleportedThing = nullptr;
+}
+
+bool P_JustTeleported (AActor* thing)
+{
+	return teleportedThing != nullptr && teleportedThing == thing;
+}
 
 //
 // P_TeleportMove
@@ -191,15 +205,6 @@ bool PIT_StompThing (AActor *thing)
 //		was being teleported between two non-overlapping height ranges.
 bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag)
 {
-	int 				xl;
-	int 				xh;
-	int 				yl;
-	int 				yh;
-	int 				bx;
-	int 				by;
-
-	subsector_t*		newsubsec;
-
 	// kill anything occupying the position
 	tmthing = thing;
 
@@ -230,7 +235,7 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
-	newsubsec = P_PointInSubsector (x,y);
+	const subsector_t* newsubsec = P_PointInSubsector (x,y);
 	ceilingline = NULL;
 
 	// The base floor/ceiling is from the subsector
@@ -248,13 +253,13 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	                   (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
-	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 
-	for (bx=xl ; bx<=xh ; bx++)
-		for (by=yl ; by<=yh ; by++)
+	for (int bx=xl ; bx<=xh ; bx++)
+		for (int by=yl ; by<=yh ; by++)
 			if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
 				return false;
 
@@ -265,6 +270,8 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	thing->ceilingz = tmceilingz;
 	thing->dropoffz = tmfloorz;
 	thing->floorsector = tmfloorsector;
+
+	teleportedThing = thing;
 
 	return true;
 }
