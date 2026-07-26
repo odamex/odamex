@@ -1037,29 +1037,29 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 
 NetDemo::SnapshotVector::const_iterator NetDemo::lookupSnapshot(const SnapshotVector& i_vector, uint32_t gameticnum) const
 {
-    if (gameticnum < header.starting_gametic or
-        gameticnum > header.ending_gametic or
-        i_vector.empty())
-    {
-        return i_vector.end();
-    }
+	if (gameticnum < header.starting_gametic or
+	    gameticnum > header.ending_gametic or
+	    i_vector.empty())
+	{
+		return i_vector.end();
+	}
 
-    auto iter = std::upper_bound(i_vector.begin(),
-                                 i_vector.end(),
-                                 gameticnum);
+	auto iter = std::upper_bound(i_vector.begin(),
+	                             i_vector.end(),
+	                             gameticnum);
 
-    // We know that the tic number is within the valid range and that there's at least one snapshot,
-    // but upper_bound will return end() if the tic number is between the start of the last snapshot
-    // and the ending_gametic.
-    //
-    // In any case, we want to return the element BEFORE the result of upper_bound, unless it's the
-    // very first element.
+	// We know that the tic number is within the valid range and that there's at least one snapshot,
+	// but upper_bound will return end() if the tic number is between the start of the last snapshot
+	// and the ending_gametic.
+	//
+	// In any case, we want to return the element BEFORE the result of upper_bound, unless it's the
+	// very first element.
 
-    if (iter == i_vector.begin())
-    {
-        return iter;
-    }
-    return iter-1;
+	if (iter == i_vector.begin())
+	{
+		return iter;
+	}
+	return iter-1;
 }
 
 
@@ -1070,7 +1070,7 @@ NetDemo::SnapshotVector::const_iterator NetDemo::lookupSnapshot(const SnapshotVe
 //
 NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForNetdemotic(uint32_t i_netdemoticnum) const
 {
-    return lookupSnapshot(snapshot_index, header.starting_gametic + i_netdemoticnum);
+	return lookupSnapshot(snapshot_index, header.starting_gametic + i_netdemoticnum);
 }
 
 // getSnapshotForGametic()
@@ -1080,7 +1080,7 @@ NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForNetdemotic(uint32
 //
 NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForGametic(uint32_t gameticnum) const
 {
-    return lookupSnapshot(snapshot_index, gameticnum);
+	return lookupSnapshot(snapshot_index, gameticnum);
 }
 
 //
@@ -1091,7 +1091,7 @@ NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForGametic(uint32_t 
 //
 NetDemo::SnapshotVector::const_iterator NetDemo::getCurrentSnapshotIter() const
 {
-    return lookupSnapshot(snapshot_index, static_cast<uint32_t>(gametic));
+	return lookupSnapshot(snapshot_index, static_cast<uint32_t>(gametic));
 }
 
 //
@@ -1102,7 +1102,7 @@ NetDemo::SnapshotVector::const_iterator NetDemo::getCurrentSnapshotIter() const
 //
 NetDemo::SnapshotVector::const_iterator NetDemo::getCurrentMapIter() const
 {
-    return lookupSnapshot(map_index, static_cast<uint32_t>(gametic));
+	return lookupSnapshot(map_index, static_cast<uint32_t>(gametic));
 }
 
 //
@@ -1147,11 +1147,11 @@ void NetDemo::nextSnapshot()
 {
 	auto currentIter = getCurrentSnapshotIter();
 
-    if (currentIter   == snapshot_index.end() or
-        currentIter+1 == snapshot_index.end())
-    {
+	if (currentIter   == snapshot_index.end() or
+	    currentIter+1 == snapshot_index.end())
+	{
 		return;
-    }
+	}
 
 	readSnapshot(currentIter+1);
 }
@@ -1165,15 +1165,15 @@ void NetDemo::nextSnapshot()
 //
 void NetDemo::prevSnapshot()
 {
-    auto iter = getCurrentSnapshotIter();
+	auto iter = getCurrentSnapshotIter();
 
-    if (iter == snapshot_index.end())        // Unlikely, but validate it anyway.
-        return;
+	if (iter == snapshot_index.end())        // Unlikely, but validate it anyway.
+		return;
 
-    if (iter != snapshot_index.begin())
-    {
-        iter -= 1;
-    }
+	if (iter != snapshot_index.begin())
+	{
+		iter -= 1;
+	}
 
 	readSnapshot(iter);
 }
@@ -1186,16 +1186,16 @@ void NetDemo::prevSnapshot()
 //
 void NetDemo::nextMap()
 {
-    auto iter = getCurrentMapIter();
-    if (iter == map_index.end())
-        return;
+	auto iter = getCurrentMapIter();
+	if (iter == map_index.end())
+		return;
 
-    iter += 1;
+	iter += 1;
 
-    if (iter == map_index.end())
-        return;
+	if (iter == map_index.end())
+		return;
 
-    readSnapshot(iter);
+	readSnapshot(iter);
 }
 
 //
@@ -1206,15 +1206,15 @@ void NetDemo::nextMap()
 //
 void NetDemo::prevMap()
 {
-    auto iter = getCurrentMapIter();
+	auto iter = getCurrentMapIter();
 
-    if (iter == map_index.end())
-        return;
+	if (iter == map_index.end())
+		return;
 
-    if (iter != map_index.begin())
-    {
-        iter -= 1;
-    }
+	if (iter != map_index.begin())
+	{
+		iter -= 1;
+	}
 
 	readSnapshot(iter);
 }
@@ -1307,31 +1307,31 @@ const std::vector<int> NetDemo::getMapChangeTimes() const
 
 bool NetDemo::seekGametic(int requestedGametic)
 {
-    if (not isInPlayback()
-        or requestedGametic < header.starting_gametic
-        or requestedGametic > header.ending_gametic)
-    {
-        return false;
-    }
+	if (not isInPlayback()
+	    or requestedGametic < header.starting_gametic
+	    or requestedGametic > header.ending_gametic)
+	{
+		return false;
+	}
 
-    auto snapshotIter = getSnapshotForGametic(requestedGametic);
-    if (snapshotIter == snapshot_index.end())
-        return false;
+	auto snapshotIter = getSnapshotForGametic(requestedGametic);
+	if (snapshotIter == snapshot_index.end())
+		return false;
 
-    resume();
-    if (readSnapshot(snapshotIter))
-    {
-        timingdemo = true;
-        pause_netdemotic = requestedGametic - header.starting_gametic;
-        return true;
-    }
-    pause();
-    return false;
+	resume();
+	if (readSnapshot(snapshotIter))
+	{
+		timingdemo = true;
+		pause_netdemotic = requestedGametic - header.starting_gametic;
+		return true;
+	}
+	pause();
+	return false;
 }
 
 bool NetDemo::seekNetdemoTic(int requestedNetdemotic)
 {
-    return seekGametic(requestedNetdemotic + header.starting_gametic);
+	return seekGametic(requestedNetdemotic + header.starting_gametic);
 }
 
 void NetDemo::writeMapChange()

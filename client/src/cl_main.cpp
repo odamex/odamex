@@ -1415,23 +1415,23 @@ END_COMMAND(netprevmap)
 
 BEGIN_COMMAND(netseek)
 {
-    if (argc <= 1)
-    {
-        PrintFmt(PRINT_HIGH, "netseek <absolute netdemo tic number>\n");
-        return;
-    }
-    if (not netdemo.isInPlayback())
-    {
-        PrintFmt(PRINT_HIGH, "Cannot seek because a netdemo isn't playing.  Use the 'netplay' command to start.\n");
-        return;
-    }
+	if (argc <= 1)
+	{
+		PrintFmt(PRINT_HIGH, "netseek <absolute netdemo tic number>\n");
+		return;
+	}
+	if (not netdemo.isInPlayback())
+	{
+		PrintFmt(PRINT_HIGH, "Cannot seek because a netdemo isn't playing.  Use the 'netplay' command to start.\n");
+		return;
+	}
 
-    const int requestedAbsoluteNetdemoTic = std::stoi(argv[1]);
+	const int requestedAbsoluteNetdemoTic = std::stoi(argv[1]);
 
-    if (not netdemo.seekNetdemoTic(requestedAbsoluteNetdemoTic))
-    {
-        PrintFmt(PRINT_HIGH, "Cannot seek: {} is an invalid tic number\n", requestedAbsoluteNetdemoTic);
-    }
+	if (not netdemo.seekNetdemoTic(requestedAbsoluteNetdemoTic))
+	{
+		PrintFmt(PRINT_HIGH, "Cannot seek: {} is an invalid tic number\n", requestedAbsoluteNetdemoTic);
+	}
 }
 END_COMMAND(netseek)
 
