@@ -39,6 +39,7 @@
 #include "clc_message.h"
 #include "svc_message.h"
 #include "g_gametype.h"
+#include "g_game.h"
 
 #include "PacketHeaderType.h"
 
@@ -112,6 +113,7 @@ void NetDemo::cleanUp()
 	map_index.clear();
 	state = oldstate = NetDemo::st_stopped;
 	netdemotic = pause_netdemotic = last_map_tic = 0;
+	timingdemo = false;
 }
 
 /**
@@ -490,6 +492,7 @@ bool NetDemo::pause()
 {
 	if (isPlaying())
 	{
+		timingdemo = false;
 		oldstate = state;
 		state = NetDemo::st_paused;
 		return true;
@@ -1032,59 +1035,74 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 }
 
 
-//
-// snapshotLookup()
-//
-//      Returns the snapshot that preceeds the ticnum parameter or returns
-//      NULL if the ticnum is out of bounds.
-//
-const NetDemo::netdemo_index_entry_t *NetDemo::snapshotLookup(int ticnum) const
+NetDemo::SnapshotVector::const_iterator NetDemo::lookupSnapshot(const SnapshotVector& i_vector, uint32_t gameticnum) const
 {
-	int index = (ticnum - header.starting_gametic) / header.snapshot_spacing - 1;
+    if (gameticnum < header.starting_gametic or
+        gameticnum > header.ending_gametic or
+        i_vector.empty())
+    {
+        return i_vector.end();
+    }
 
-	if (index >= snapshot_index.size())
-		return NULL;
+    auto iter = std::upper_bound(i_vector.begin(),
+                                 i_vector.end(),
+                                 gameticnum);
 
-	int mapindex = getCurrentMapIndex();
-	if (index < 0 || snapshot_index[index].ticnum < map_index[mapindex].ticnum)
-		return &map_index[mapindex];
+    // We know that the tic number is within the valid range and that there's at least one snapshot,
+    // but upper_bound will return end() if the tic number is between the start of the last snapshot
+    // and the ending_gametic.
+    //
+    // In any case, we want to return the element BEFORE the result of upper_bound, unless it's the
+    // very first element.
 
-	return &snapshot_index[index];
+    if (iter == i_vector.begin())
+    {
+        return iter;
+    }
+    return iter-1;
+}
+
+
+// getSnapshotForNetdemotic()
+//
+//      Returns the snapshot that preceeds the netdemoticnum parameter or returns
+//      snapshot_index.end() if the netdemoticnum is out of bounds.
+//
+NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForNetdemotic(uint32_t i_netdemoticnum) const
+{
+    return lookupSnapshot(snapshot_index, header.starting_gametic + i_netdemoticnum);
+}
+
+// getSnapshotForGametic()
+//
+//      Returns the snapshot that preceeds the gameticnum parameter or returns
+//      snapshot_index.end() if the gameticnum is out of bounds.
+//
+NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForGametic(uint32_t gameticnum) const
+{
+    return lookupSnapshot(snapshot_index, gameticnum);
 }
 
 //
-// getCurrentSnapshotIndex()
+// getCurrentSnapshotIter()
 //
-//      Returns the index into the snapshot_index vector that immediately
+//      Returns the iterator into the snapshot_index vector that immediately
 //      preceeds the current gametic.
 //
-int NetDemo::getCurrentSnapshotIndex() const
+NetDemo::SnapshotVector::const_iterator NetDemo::getCurrentSnapshotIter() const
 {
-	for (int i = 0; i < snapshot_index.size() - 1; i++)
-	{
-		if (static_cast<int>(snapshot_index[i + 1].ticnum) > gametic)
-			return i;
-	}
-
-	return snapshot_index.size() - 1;
+    return lookupSnapshot(snapshot_index, static_cast<uint32_t>(gametic));
 }
 
-
 //
-// getCurrentMapIndex()
+// getCurrentMapIter()
 //
-//      Returns the index into the map_index vector for the map that the
+//      Returns the iterator into the map_index vector for the map that the
 //      is currently being played.
 //
-int NetDemo::getCurrentMapIndex() const
+NetDemo::SnapshotVector::const_iterator NetDemo::getCurrentMapIter() const
 {
-	for (int i = 0; i < map_index.size() - 1; i++)
-	{
-		if (static_cast<int>(map_index[i + 1].ticnum) > gametic)
-			return i;
-	}
-
-	return map_index.size() - 1;
+    return lookupSnapshot(map_index, static_cast<uint32_t>(gametic));
 }
 
 //
@@ -1127,16 +1145,15 @@ void NetDemo::prevTic()
 //
 void NetDemo::nextSnapshot()
 {
-	if (snapshot_index.empty())
+	auto currentIter = getCurrentSnapshotIter();
+
+    if (currentIter   == snapshot_index.end() or
+        currentIter+1 == snapshot_index.end())
+    {
 		return;
+    }
 
-	int nextsnapindex = getCurrentSnapshotIndex() + 1;
-
-	// don't read past the last snapshot
-	if (nextsnapindex >= snapshot_index.size())
-		return;
-
-	readSnapshot(&snapshot_index[nextsnapindex]);
+	readSnapshot(currentIter+1);
 }
 
 
@@ -1148,15 +1165,17 @@ void NetDemo::nextSnapshot()
 //
 void NetDemo::prevSnapshot()
 {
-	if (snapshot_index.empty())
-		return;
+    auto iter = getCurrentSnapshotIter();
 
-	int prevsnapindex = getCurrentSnapshotIndex() - 1;
+    if (iter == snapshot_index.end())        // Unlikely, but validate it anyway.
+        return;
 
-	if (prevsnapindex < 0)
-		prevsnapindex = 0;
+    if (iter != snapshot_index.begin())
+    {
+        iter -= 1;
+    }
 
-	readSnapshot(&snapshot_index[prevsnapindex]);
+	readSnapshot(iter);
 }
 
 //
@@ -1167,16 +1186,16 @@ void NetDemo::prevSnapshot()
 //
 void NetDemo::nextMap()
 {
-	if (map_index.empty())
-		return;
+    auto iter = getCurrentMapIter();
+    if (iter == map_index.end())
+        return;
 
-	int nextmapindex = getCurrentMapIndex() + 1;
-	if (nextmapindex >= map_index.size())
-		return;
+    iter += 1;
 
-	const NetDemo::netdemo_index_entry_t *snap = &map_index[nextmapindex];
+    if (iter == map_index.end())
+        return;
 
-	readSnapshot(snap);
+    readSnapshot(iter);
 }
 
 //
@@ -1187,16 +1206,17 @@ void NetDemo::nextMap()
 //
 void NetDemo::prevMap()
 {
-	if (map_index.empty())
-		return;
+    auto iter = getCurrentMapIter();
 
-	int prevmapindex = getCurrentMapIndex() - 1;
-	if (prevmapindex < 0)
-		prevmapindex = 0;
+    if (iter == map_index.end())
+        return;
 
-	const NetDemo::netdemo_index_entry_t *snap = &map_index[prevmapindex];
+    if (iter != map_index.begin())
+    {
+        iter -= 1;
+    }
 
-	readSnapshot(snap);
+	readSnapshot(iter);
 }
 
 
@@ -1204,10 +1224,10 @@ void NetDemo::prevMap()
 // readSnapshot()
 //
 //
-void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
+bool NetDemo::readSnapshot(SnapshotVector::const_iterator snap)
 {
-	if (!isPlaying() || !snap)
-		return;
+	if (not isPlaying())
+		return false;
 
 	gametic = snap->ticnum;
 	int file_offset = snap->offset;
@@ -1219,7 +1239,7 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 	if (!readMessageHeader(type, len, tic))
 	{
 		fatalError("Failed to read netdemo message header.");
-		return;
+		return false;
 	}
 
 	// Clear the snapshot buffer and read into it.
@@ -1230,11 +1250,12 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 	if (demofp.gcount() < len)
 	{
 		fatalError("Unable to read snapshot from data file");
-		return;
+		return false;
 	}
 
 	readSnapshotData(snapbuf);
 	netdemotic = snap->ticnum - header.starting_gametic;
+	return true;
 }
 
 
@@ -1284,6 +1305,34 @@ const std::vector<int> NetDemo::getMapChangeTimes() const
 	return times;
 }
 
+bool NetDemo::seekGametic(int requestedGametic)
+{
+    if (not isInPlayback()
+        or requestedGametic < header.starting_gametic
+        or requestedGametic > header.ending_gametic)
+    {
+        return false;
+    }
+
+    auto snapshotIter = getSnapshotForGametic(requestedGametic);
+    if (snapshotIter == snapshot_index.end())
+        return false;
+
+    resume();
+    if (readSnapshot(snapshotIter))
+    {
+        timingdemo = true;
+        pause_netdemotic = requestedGametic - header.starting_gametic;
+        return true;
+    }
+    pause();
+    return false;
+}
+
+bool NetDemo::seekNetdemoTic(int requestedNetdemotic)
+{
+    return seekGametic(requestedNetdemotic + header.starting_gametic);
+}
 
 void NetDemo::writeMapChange()
 {
