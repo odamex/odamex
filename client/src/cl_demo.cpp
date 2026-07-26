@@ -102,7 +102,7 @@ void NetDemo::cleanUp()
 {
 	if (isRecording())
 	{
-		stopRecording();	// Try to write any unwritten data
+		stopRecording();    // Try to write any unwritten data
 	}
 
 	// close all files
@@ -175,44 +175,44 @@ bool NetDemo::writeHeader()
 
 bool NetDemo::netdemo_header_id_t::Read(std::fstream& io_stream)
 {
-    if (io_stream.good())
-    {
-        return  M_ReadLE(io_stream, identifier)
-            and M_ReadLE(io_stream, version);
-    }
-    return false;
+	if (io_stream.good())
+	{
+		return  M_ReadLE(io_stream, identifier)
+		    and M_ReadLE(io_stream, version);
+	}
+	return false;
 }
 
 bool NetDemo::netdemo_header3_t::Read(std::fstream& io_stream)
 {
-    if (io_stream.good())
-    {
-        return  id.Read(io_stream)
-            and M_ReadLE(io_stream, compression)
-            and M_ReadLE(io_stream, snapshot_index_size)
-            and M_ReadLE(io_stream, snapshot_index_offset)
-            and M_ReadLE(io_stream, map_index_size)
-            and M_ReadLE(io_stream, map_index_offset)
-            and M_ReadLE(io_stream, snapshot_spacing)
-            and M_ReadLE(io_stream, starting_gametic)
-            and M_ReadLE(io_stream, ending_gametic)
-            and M_ReadLE(io_stream, reserved);
-    }
-    return false;
+	if (io_stream.good())
+	{
+		return  id.Read(io_stream)
+		    and M_ReadLE(io_stream, compression)
+		    and M_ReadLE(io_stream, snapshot_index_size)
+		    and M_ReadLE(io_stream, snapshot_index_offset)
+		    and M_ReadLE(io_stream, map_index_size)
+		    and M_ReadLE(io_stream, map_index_offset)
+		    and M_ReadLE(io_stream, snapshot_spacing)
+		    and M_ReadLE(io_stream, starting_gametic)
+		    and M_ReadLE(io_stream, ending_gametic)
+		    and M_ReadLE(io_stream, reserved);
+	}
+	return false;
 }
 
 bool NetDemo::netdemo_header4_t::Read(std::fstream& io_stream)
 {
-    if (io_stream.good())
-    {
-        return  id.Read(io_stream)
-            and M_ReadLE(io_stream, compression)
-            and M_ReadLE(io_stream, snapshot_spacing)
-            and M_ReadLE(io_stream, starting_gametic)
-            and M_ReadLE(io_stream, ending_gametic)
-            and M_ReadLE(io_stream, reserved);
-    }
-    return false;
+	if (io_stream.good())
+	{
+		return  id.Read(io_stream)
+		    and M_ReadLE(io_stream, compression)
+		    and M_ReadLE(io_stream, snapshot_spacing)
+		    and M_ReadLE(io_stream, starting_gametic)
+		    and M_ReadLE(io_stream, ending_gametic)
+		    and M_ReadLE(io_stream, reserved);
+	}
+	return false;
 }
 
 //
@@ -227,42 +227,42 @@ bool NetDemo::readHeader()
 	demofp.seekg(0, std::ios::beg);
 	const auto startingPosition = demofp.tellg();
 
-    netdemo_header_id_t headerId;
-    const bool headerIDOk = headerId.Read(demofp);
+	netdemo_header_id_t headerId;
+	const bool headerIDOk = headerId.Read(demofp);
 
-    if (not (headerIDOk
-             and headerId.identifier[0] == 'O'
-             and headerId.identifier[1] == 'D'
-             and headerId.identifier[2] == 'A'
-             and headerId.identifier[3] == 'D'))
-    {
-        return false;
-    }
+	if (not (headerIDOk
+	         and headerId.identifier[0] == 'O'
+	         and headerId.identifier[1] == 'D'
+	         and headerId.identifier[2] == 'A'
+	         and headerId.identifier[3] == 'D'))
+	{
+		return false;
+	}
 
-    header.id = headerId;
+	header.id = headerId;
 
-    if (header.id.version == NETDEMOVER)
-    {
-        demofp.seekg(startingPosition, std::ios::beg);
+	if (header.id.version == NETDEMOVER)
+	{
+		demofp.seekg(startingPosition, std::ios::beg);
 
-        return header.Read(demofp)
-                and demofp.tellg() - startingPosition == HEADER_SIZE;
-    }
+		return header.Read(demofp)
+		        and demofp.tellg() - startingPosition == HEADER_SIZE;
+	}
 
-    if (header.id.version == 3)
-    {
-        demofp.seekg(startingPosition, std::ios::beg);
+	if (header.id.version == 3)
+	{
+		demofp.seekg(startingPosition, std::ios::beg);
 
-        netdemo_header3_t header3;
+		netdemo_header3_t header3;
 
-        if (header3.Read(demofp)
-                and demofp.tellg() - startingPosition == HEADER_SIZE)
-        {
-            // Translate from 3 to NETDEMOVER
-            header.Import(header3);
-            return true;
-        }
-    }
+		if (header3.Read(demofp)
+		        and demofp.tellg() - startingPosition == HEADER_SIZE)
+		{
+			// Translate from 3 to NETDEMOVER
+			header.Import(header3);
+			return true;
+		}
+	}
 	return false;
 }
 
