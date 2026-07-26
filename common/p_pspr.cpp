@@ -1045,31 +1045,23 @@ void A_WeaponBulletAttack(AActor* mo)
 	if (!psp->state)
 		return;
 
-	hspread = psp->state->args[0];
-	vspread = psp->state->args[1];
+	hspread    = psp->state->args[0];
+	vspread    = psp->state->args[1];
 	numbullets = psp->state->args[2];
 	damagebase = psp->state->args[3];
-	damagemod = psp->state->args[4];
+	damagemod  = psp->state->args[4];
 
 	Unlag::getInstance().reconcile(player->id);
-
-	bool refire = player->refire ? true : false;
-
-	angle = 0;
-
-	if (refire)
-		angle = P_RandomDiff(player->mo) << 18;
 
 	fixed_t bulletslope = P_BulletSlope(player->mo);
 
 	for (i = 0; i < numbullets; i++)
 	{
-		int bangle = angle;
 		damage = (P_Random(mo) % damagemod + 1) * damagebase;
-		bangle = angle + (int)player->mo->angle + P_RandomHitscanAngle(hspread);
+		angle = (int)player->mo->angle + P_RandomHitscanAngle(hspread);
 		slope = bulletslope + P_RandomHitscanSlope(vspread);
 
-		P_LineAttack(player->mo, bangle, MISSILERANGE, slope, damage);
+		P_LineAttack(player->mo, angle, MISSILERANGE, slope, damage);
 	}
 
 	Unlag::getInstance().restore(player->id);
