@@ -1327,14 +1327,27 @@ bool NetDemo::seekGametic(int requestedGametic)
 
 	auto currentSnapshotIter = getCurrentSnapshotIter();
 
-	// If we need to skip ahead more than one second's worth or go backwards, read the snapshot.
-	const bool isReadyToFF = requestedGametic < gametic or requestedGametic > gametic + TICRATE ?
-	                         readSnapshot(snapshotIter) :
-	                         true;
+	// We want to force a snapshot load if we need to skip backwards by any amount or if
+	// we're advancing to another snapshot, and the target is more than a second out.
+	// The only reason for the one second out is that we can just easily fast-forward
+	// 35 tics.  It's pretty arbitary really.
+	const bool mustLoadSnapshot = requestedGametic < gametic
+	                              or (snapshotIter != currentSnapshotIter
+	                                  and requestedGametic > gametic + TICRATE);
+
+	const bool isReadyToFF = mustLoadSnapshot ? readSnapshot(snapshotIter) : true;
+
 	if (isReadyToFF)
 	{
+		// FIXME:   If we try to pause at the very beginning of a snapshot, we get a horrible
+		//          view interpolation error.  Workaround: advance one tic.
+		if (requestedGametic == snapshotIter->ticnum)
+		{
+			requestedGametic += 1;
+		}
 		timingdemo = true;
 		pause_netdemotic = requestedGametic - header.starting_gametic;
+
 		return true;
 	}
 	pause();
