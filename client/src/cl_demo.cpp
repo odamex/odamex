@@ -1321,8 +1321,17 @@ bool NetDemo::seekGametic(int requestedGametic)
 	if (snapshotIter == snapshot_index.end())
 		return false;
 
+	// First, we have to be playing to load a snapshot.  Then we have to be playing to
+	// fast-forward to the requested tic.  If we fail, we just simply pause.
 	resume();
-	if (readSnapshot(snapshotIter))
+
+	auto currentSnapshotIter = getCurrentSnapshotIter();
+
+	// If we need to skip ahead more than one second's worth or go backwards, read the snapshot.
+	const bool isReadyToFF = requestedGametic < gametic or requestedGametic > gametic + TICRATE ?
+	                         readSnapshot(snapshotIter) :
+	                         true;
+	if (isReadyToFF)
 	{
 		timingdemo = true;
 		pause_netdemotic = requestedGametic - header.starting_gametic;
