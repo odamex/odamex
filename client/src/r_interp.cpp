@@ -38,6 +38,8 @@
 #include "p_local.h"
 #include "r_interp.h"
 
+#include "ui/ui_scene.h"
+
 EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(cl_movebob)
 
@@ -165,7 +167,7 @@ void OInterpolation::ticGameInterpolation()
 
 	R_TicSkyDefInterpolation();
 
-	if (gamestate == GS_LEVEL)
+	if (UI_SceneType() == SCENE_LEVEL)
 	{
 		for (int i = 0; i < numsectors; i++)
 		{
@@ -365,7 +367,7 @@ void OInterpolation::beginGameInterpolation(fixed_t amount)
 
 	R_InterpolateSkyDefs(amount);
 
-	if (gamestate == GS_LEVEL)
+	if (UI_SceneType() == SCENE_LEVEL)
 	{
 		interpolateCeilings(amount);
 
@@ -453,7 +455,7 @@ void OInterpolation::restoreBob(void)
 //
 void OInterpolation::endGameInterpolation()
 {
-	if (gamestate == GS_LEVEL)
+	if (UI_SceneType() == SCENE_LEVEL)
 	{
 		restoreCeilings();
 
@@ -478,7 +480,7 @@ void OInterpolation::endGameInterpolation()
 void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
                                          bool chasecam)
 {
-	if (gamestate == GS_LEVEL && camera && camera->subsector)
+	if (UI_SceneType() == SCENE_LEVEL && camera && camera->subsector)
 	{
 		fixed_t x = camera->x;
 		fixed_t y = camera->y;

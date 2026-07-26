@@ -59,6 +59,7 @@
 #include "m_menu.h"
 #include "c_console.h"
 #include "ui/ui_stack.h"
+#include "ui/ui_scene.h"
 #include "c_bind.h"
 #include "c_dispatch.h"
 #include "i_system.h"
@@ -197,7 +198,7 @@ void D_ProcessEvents (void)
 //
 void D_PostEvent (const event_t* ev)
 {
-	if (ev->type == ev_mouse && !M_MenuActive() && gamestate == GS_LEVEL &&
+	if (ev->type == ev_mouse && !M_MenuActive() && UI_SceneType() == SCENE_LEVEL &&
 		!paused && !C_IsConsoleActivating())
 	{
 		g_UIStack.responder(ev);
@@ -256,90 +257,91 @@ void D_Display()
 	// download gamestate.
 	CL_DownloadTick();
 
-	switch (gamestate)
+	IScene& scene = UI_Scene();
+	scene.draw();
+
+
+	if (scene.wantsFrameDecorations())
 	{
-		case GS_FULLCONSOLE:
-		case GS_CONNECTING:
-        case GS_CONNECTED:
-			g_UIStack.draw(); // console + menu overlays
-			I_FinishUpdate();
-			return;
-
-		case GS_LEVEL:
-		    if (!gametic || !g_ValidLevel)
-				break;
-
-			V_DoPaletteEffects();
-
-			// Drawn to R_GetRenderingSurface()
-			R_RenderPlayerView(&displayplayer());
-			R_DrawViewBorder();
-			ST_Drawer();
-
-			if (I_GetEmulatedSurface())
-				I_BlitEmulatedSurface();
-
-			if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
-				AM_Drawer();
-
-			CTF_DrawHud();
-			HU_Drawer();
-			C_DrawMid();
-			C_DrawGMid();
-			break;
-
-		case GS_INTERMISSION:
-			CTF_DrawHud();
-			WI_Drawer();
-			HU_Drawer();
-			C_DrawMid();
-			V_ResetPalette();
-			break;
-
-		case GS_FINALE:
-			F_Drawer();
-			break;
-
-		case GS_DEMOSCREEN:
-			D_PageDrawer();
-			break;
-
-	default:
-	    break;
-	}
-
-	// draw pause pic
-	if (paused && !M_MenuActive())
-	{
-		const patch_t* pause = W_CachePatch(gameinfo.pauseSign);
-
-		// todo: properly center "PAUSED" graphic for Heretic
-		const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
-		screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
-	}
-
-	// [RH] Draw icon, if any
-	if (D_DrawIcon)
-	{
-		const int lump = W_CheckNumForName(D_DrawIcon);
-
-		D_DrawIcon = NULL;
-		if (lump >= 0)
+		// draw pause pic
+		if (paused && !M_MenuActive())
 		{
-			const patch_t *p = W_CachePatch(lump);
+			const patch_t* pause = W_CachePatch(gameinfo.pauseSign);
 
-			screen->DrawPatchIndirect(p, 160-p->width()/2, 100-p->height()/2);
+			// todo: properly center "PAUSED" graphic for Heretic
+			const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
+			screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
 		}
-		NoWipe = 10;
-	}
 
-	if (wiping_screen)
-		Wipe_Drawer();
+		// [RH] Draw icon, if any
+		if (D_DrawIcon)
+		{
+			const int lump = W_CheckNumForName(D_DrawIcon);
+
+			D_DrawIcon = NULL;
+			if (lump >= 0)
+			{
+				const patch_t *p = W_CachePatch(lump);
+
+				screen->DrawPatchIndirect(p, 160-p->width()/2, 100-p->height()/2);
+			}
+			NoWipe = 10;
+		}
+
+		if (wiping_screen)
+			Wipe_Drawer();
+	}
 
 	g_UIStack.draw();	// console + menu overlays, drawn on top of everything
 	I_FinishUpdate();	// page flip or blit buffer
 
 	END_STAT(D_Display);
+}
+
+//
+// Scene draw functions
+//
+void D_DrawLevelScene()
+{
+	if (!gametic || !g_ValidLevel)
+		return;
+
+	V_DoPaletteEffects();
+
+	// Drawn to R_GetRenderingSurface()
+	R_RenderPlayerView(&displayplayer());
+	R_DrawViewBorder();
+	ST_Drawer();
+
+	if (I_GetEmulatedSurface())
+		I_BlitEmulatedSurface();
+
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
+		AM_Drawer();
+
+	CTF_DrawHud();
+	HU_Drawer();
+	C_DrawMid();
+	C_DrawGMid();
+}
+
+void D_DrawIntermissionScene()
+{
+	CTF_DrawHud();
+	WI_Drawer();
+	HU_Drawer();
+	C_DrawMid();
+	V_ResetPalette();
+}
+
+void D_DrawFinaleScene()
+{
+	F_Drawer();
+}
+
+void D_DrawDemoScene()
+{
+	D_PageDrawer();
 }
 
 //
@@ -369,7 +371,7 @@ void D_DoomLoop()
 			::players.clear();
 
 			::gameaction = ga_fullconsole;
-			::gamestate = GS_FULLCONSOLE;
+			Scene_SetFromGamestate(GS_FULLCONSOLE);
 		}
 	}
 }
@@ -464,7 +466,7 @@ void D_DoAdvanceDemo (void)
         case 0:
             pagetic = gameinfo.titleTime * TICRATE;
 
-            gamestate = GS_DEMOSCREEN;
+            Scene_SetFromGamestate(GS_DEMOSCREEN);
             pagename = gameinfo.titlePage;
 
             currentmusic = gameinfo.titleMusic.c_str();
@@ -478,7 +480,7 @@ void D_DoAdvanceDemo (void)
             break;
         case 2:
             pagetic = gameinfo.pageTime * TICRATE;
-            gamestate = GS_DEMOSCREEN;
+            Scene_SetFromGamestate(GS_DEMOSCREEN);
             pagename = gameinfo.creditPages[0];
 
             break;
@@ -487,7 +489,7 @@ void D_DoAdvanceDemo (void)
 
             break;
         case 4:
-            gamestate = GS_DEMOSCREEN;
+            Scene_SetFromGamestate(GS_DEMOSCREEN);
 
             if ((gameinfo.flags & GI_MAPxx) || (gameinfo.flags & GI_MENUHACK_RETAIL))
             {
@@ -511,7 +513,7 @@ void D_DoAdvanceDemo (void)
             break;
         case 6:
             pagetic = gameinfo.pageTime * TICRATE;
-            gamestate = GS_DEMOSCREEN;
+            Scene_SetFromGamestate(GS_DEMOSCREEN);
             pagename = gameinfo.creditPages[1];
 
             break;
@@ -719,6 +721,7 @@ void D_Init()
 
 	// register the built-in UI overlays (console, menu) with the UI stack
 	UI_InitGlobalOverlays();
+	UI_InitScenes();
 
 	if (first_time)
 		PrintFmt(PRINT_HIGH, "P_Init: Init Playloop state.\n");
@@ -751,7 +754,7 @@ void D_Init()
 //
 void STACK_ARGS D_Shutdown()
 {
-	if (gamestate == GS_LEVEL)
+	if (UI_SceneType() == SCENE_LEVEL)
 		G_ExitLevel(0, 0);
 
 	getLevelInfos().clear();
@@ -817,7 +820,7 @@ void D_DoomMain()
 {
 	size_t p;
 
-	gamestate = GS_STARTUP;
+	Scene_SetFromGamestate(GS_STARTUP);
 
 	atterm(D_Close);
 

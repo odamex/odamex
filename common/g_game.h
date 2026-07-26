@@ -58,6 +58,11 @@ void G_WorldDone(void);
 
 void G_Ticker(void);
 
+void G_LevelTick();
+void G_IntermissionTick();
+void G_FinaleTick();
+void G_DemoScreenTick();
+
 // Core game input responder: finale, key bindings and mouse/joystick movement.
 // Invoked at the binding-layer input priority. The demo-attract, HUD and automap
 // input slices live in the responders below (each hosted by its own UI layer).

@@ -58,6 +58,8 @@
 
 #include "cl_demo.h"
 
+#include "ui/ui_scene.h"
+
 extern NetDemo netdemo;
 
 static constexpr int MAX_LINE_LENGTH = 8192;
@@ -1167,7 +1169,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	const size_t len = strlen(source);
 
 	if ((printlevel != 128 && !show_messages) || len == 0 ||
-		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
+		(UI_SceneType() != SCENE_LEVEL && UI_SceneType() != SCENE_INTERMISSION) )
 		return;
 
 	// Do not display filtered chat messages
@@ -1470,7 +1472,8 @@ void C_Ticker()
 //
 static void C_DrawNotifyText()
 {
-	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || M_MenuActive())
+	if ((UI_SceneType() != SCENE_LEVEL && UI_SceneType() != SCENE_INTERMISSION) ||
+	    M_MenuActive())
 		return;
 
 	int ypos = 0;
@@ -1515,7 +1518,8 @@ void C_SetTicker(unsigned int at)
 // any time the client is not in a level, intermission or playing the demo loop.
 static bool C_UseFullConsole()
 {
-	return (gamestate != GS_LEVEL && gamestate != GS_DEMOSCREEN && gamestate != GS_INTERMISSION);
+	return (UI_SceneType() != SCENE_LEVEL && UI_SceneType() != SCENE_DEMOSCREEN &&
+	        UI_SceneType() != SCENE_INTERMISSION);
 }
 
 
@@ -1572,7 +1576,8 @@ void C_NewModeAdjust()
 void C_FullConsole()
 {
 	// SoM: disconnect effect.
-	if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && ConsoleState == c_up && !M_MenuActive())
+	if ((UI_SceneType() == SCENE_LEVEL || UI_SceneType() == SCENE_INTERMISSION) &&
+	    ConsoleState == c_up && !M_MenuActive())
 		screen->Dim(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
 	ConsoleState = c_down;
@@ -1600,7 +1605,7 @@ void C_HideConsole()
 
 static void PauseResumeSound(bool pause_sound)
 {
-	if (gamestate != GS_LEVEL || multiplayer || demoplayback || netdemo.isPlaying())
+	if (UI_SceneType() != SCENE_LEVEL || multiplayer || demoplayback || netdemo.isPlaying())
 	{
 		return;
 	}

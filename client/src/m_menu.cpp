@@ -25,6 +25,9 @@
 
 #include "odamex.h"
 
+#include "ui/ui_scene.h"
+#include "ui/ui_command.h"
+
 #include <ctime>
 
 #include "gstrings.h"
@@ -229,7 +232,7 @@ static void M_DrawMessageButtons(int y);
 
 static void M_PauseSound(void)
 {
-	if (paused || gamestate != GS_LEVEL || multiplayer || demoplayback ||
+	if (paused || UI_SceneType() != SCENE_LEVEL || multiplayer || demoplayback ||
 	    netdemo.isPlaying())
 	{
 		return;
@@ -240,7 +243,7 @@ static void M_PauseSound(void)
 
 static void M_ResumeSound(void)
 {
-	if (paused || gamestate != GS_LEVEL || multiplayer || demoplayback ||
+	if (paused || UI_SceneType() != SCENE_LEVEL || multiplayer || demoplayback ||
 	    netdemo.isPlaying())
 	{
 		return;
@@ -711,8 +714,13 @@ void M_LoadSelect (int choice)
 	std::string name;
 
 	G_BuildSaveName (name, choice);
-	G_LoadGame(name);
-	gamestate = gamestate == GS_FULLCONSOLE ? GS_HIDECONSOLE : gamestate;
+	{
+		UICommand cmd(UICommand::CMD_LOAD_GAME);
+		cmd.str = name;
+		UI_PostCommand(cmd);
+	}
+	if (gamestate == GS_FULLCONSOLE)
+		Scene_SetFromGamestate(GS_HIDECONSOLE);
 	M_ClearMenus ();
 	if (quickSaveSlot == -2)
 	{
@@ -762,7 +770,12 @@ void M_DrawSave()
 //
 void M_DoSave (int slot)
 {
-	G_SaveGame (slot, { savegamestrings[slot], 24 });
+	{
+		UICommand cmd(UICommand::CMD_SAVE_GAME);
+		cmd.slot = slot;
+		cmd.str.assign(savegamestrings[slot], 24);
+		UI_PostCommand(cmd);
+	}
 	M_ClearMenus ();
 		// PICK QUICKSAVE SLOT YET?
 	if (quickSaveSlot == -2)
@@ -821,7 +834,7 @@ void M_SaveGame (int choice)
 		return;
 	}
 
-	if (gamestate != GS_LEVEL)
+	if (UI_SceneType() != SCENE_LEVEL)
 		return;
 
 	M_SetupNextMenu(&SaveDef);
@@ -861,7 +874,7 @@ void M_QuickSave()
 		return;
 	}
 
-	if (gamestate != GS_LEVEL)
+	if (UI_SceneType() != SCENE_LEVEL)
 		return;
 
 	if (quickSaveSlot < 0)
@@ -1120,12 +1133,16 @@ void M_StartGame(int choice)
                 }
             }
 
-            G_DeferedInitNew (CalcMapName (epi+1, 1));
+            UICommand cmd(UICommand::CMD_NEW_GAME);
+            cmd.str = CalcMapName (epi+1, 1).c_str();
+            UI_PostCommand(cmd);
         }
     }
     else
     {
-        G_DeferedInitNew (EpisodeMaps[epi]);
+        UICommand cmd(UICommand::CMD_NEW_GAME);
+        cmd.str = EpisodeMaps[epi].c_str();
+        UI_PostCommand(cmd);
     }
 
     M_ClearMenus ();
@@ -1241,7 +1258,7 @@ void M_EndGameResponse(int ch)
 	S_StopAmbientSound();
 	M_ClearMenus ();
 	D_StartTitle ();
-	CL_QuitNetGame(NQ_SILENT);
+	UI_PostCommand(UICommand(UICommand::CMD_END_GAME));
 }
 
 void M_EndGame(int choice)
@@ -2407,8 +2424,9 @@ bool M_Responder (const event_t* ev)
 			return true;
 		}
 
-		const bool attract = gamestate == GS_DEMOSCREEN || gamestate == GS_FINALE ||
-		                     ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) &&
+		const SceneType scene = UI_SceneType();
+		const bool attract = scene == SCENE_DEMOSCREEN || scene == SCENE_FINALE ||
+		                     ((scene == SCENE_LEVEL || scene == SCENE_INTERMISSION) &&
 		                      demoplayback);
 
 		if (ui_mouse.asInt() != 0 && attract && (ch == OKEY_MOUSE1 || ch == OKEY_MOUSE2))

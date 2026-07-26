@@ -38,6 +38,8 @@
 #include "w_wad.h"
 #include "i_system.h"
 
+#include "ui/ui_scene.h"
+
 extern int *texturewidthmask;
 extern fixed_t FocalLengthX;
 extern fixed_t freelookviewheight;
@@ -136,7 +138,7 @@ void R_InterpolateSkyDefs(fixed_t amount)
 		skytex_t* background = &sky->background;
 		skytex_t* foreground = &sky->foreground;
 
-		if (gamestate == GS_LEVEL)
+		if (UI_SceneType() == SCENE_LEVEL)
 		{
 			fixed_t newbackgroundxoffset = background->prevx +
 			                    FixedMul(amount, background->currx - background->prevx);
@@ -183,7 +185,7 @@ void R_TicSkyDefInterpolation()
 		skytex_t* background = &sky->background;
 		skytex_t* foreground = &sky->foreground;
 
-		if (gamestate == GS_LEVEL)
+		if (UI_SceneType() == SCENE_LEVEL)
 		{
 			background->prevx = background->currx;
 			background->prevy = background->curry;
@@ -284,7 +286,7 @@ void R_InitSkyMap()
 		return;
 
 	// [SL] 2011-11-30 - Don't run if we don't know what sky texture to use
-	if (gamestate != GS_LEVEL)
+	if (UI_SceneType() != SCENE_LEVEL)
 		return;
 
 	sky_t* defaultsky = skyflatlookup[skyflatnum];

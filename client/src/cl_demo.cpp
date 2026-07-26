@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include "ui/ui_scene.h"
+
 #include "cl_main.h"
 #include "p_ctf.h"
 #include "d_player.h"
@@ -174,7 +176,7 @@ void NetDemo::fatalError(const std::string &message)
 {
 	cleanUp();
 	gameaction = ga_nothing;
-	gamestate = GS_FULLCONSOLE;
+	Scene_SetFromGamestate(GS_FULLCONSOLE);
 
 	PrintFmt(PRINT_HIGH, "{}\n", message);
 }
@@ -712,7 +714,7 @@ bool NetDemo::stopPlaying()
 	PrintFmt(PRINT_HIGH, "Demo has ended.\n");
 	reset();
     gameaction = ga_fullconsole;
-    gamestate = GS_FULLCONSOLE;
+    Scene_SetFromGamestate(GS_FULLCONSOLE);
 
 	return true;
 }
@@ -766,7 +768,7 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 //
 bool NetDemo::atSnapshotInterval()
 {
-	if (!connected || map_index.empty() || gamestate != GS_LEVEL)
+	if (!connected || map_index.empty() || UI_SceneType() != SCENE_LEVEL)
 		return false;
 
 	int last_map_tic = map_index.back().ticnum;
@@ -1410,7 +1412,7 @@ const std::vector<int> NetDemo::getMapChangeTimes() const
 
 void NetDemo::writeMapChange()
 {
-	if (connected && gamestate == GS_LEVEL)
+	if (connected && UI_SceneType() == SCENE_LEVEL)
 	{
 		writeSnapshotData(snapbuf);
 		writeMapIndexEntry();
@@ -1422,7 +1424,7 @@ void NetDemo::writeMapChange()
 
 void NetDemo::writeIntermission()
 {
-	if (connected && gamestate == GS_INTERMISSION)
+	if (connected && UI_SceneType() == SCENE_INTERMISSION)
 	{
 		writeSnapshotData(snapbuf);
 		writeSnapshotIndexEntry();
@@ -1473,7 +1475,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 
 	// write map info
 	arc << level.mapname.c_str();
-	arc << (byte)(gamestate == GS_INTERMISSION);
+	arc << (byte)(UI_SceneType() == SCENE_INTERMISSION);
 
 	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);

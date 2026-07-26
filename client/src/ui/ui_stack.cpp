@@ -39,7 +39,22 @@ UIStack g_UIStack;
 
 void UIStack::push(IOverlay* overlay)
 {
+	if (overlay == nullptr)
+		return;
+
+	if (std::find(m_overlays.begin(), m_overlays.end(), overlay) != m_overlays.end())
+		return;
+
 	m_overlays.push_back(overlay);
+}
+
+void UIStack::remove(IOverlay* overlay)
+{
+	std::vector<IOverlay*>::iterator it =
+	    std::find(m_overlays.begin(), m_overlays.end(), overlay);
+
+	if (it != m_overlays.end())
+		m_overlays.erase(it);
 }
 
 void UIStack::clear()
@@ -92,7 +107,5 @@ void UI_InitGlobalOverlays()
 	// Gameplay input layers.
 	// They self-gate on gamestate.
 	g_UIStack.push(&UI_DemoInputLayer());
-	g_UIStack.push(&UI_HudOverlay());
-	g_UIStack.push(&UI_AutomapOverlay());
 	g_UIStack.push(&UI_GameInputLayer());
 }

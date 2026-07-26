@@ -40,6 +40,8 @@
 #include "i_video.h"
 #include "cmdlib.h"
 
+#include "ui/ui_scene.h"
+
 size_t P_NumPlayersInGame(void);
 argb_t CL_GetPlayerColor(const player_t&);
 
@@ -384,7 +386,7 @@ std::string Timer()
 
 std::string IntermissionTimer()
 {
-	if (gamestate != GS_INTERMISSION)
+	if (UI_SceneType() != SCENE_INTERMISSION)
 	{
 		return "";
 	}
@@ -1650,7 +1652,7 @@ void EATargets(int x, int y, const float scale,
                const x_align_t x_origin, const y_align_t y_origin,
                const short padding, const short limit,
                const bool force_opaque) {
-	if (gamestate != GS_LEVEL) {
+	if (UI_SceneType() != SCENE_LEVEL) {
 		// We're not in the game.
 		return;
 	}

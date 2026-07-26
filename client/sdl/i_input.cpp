@@ -43,6 +43,8 @@
 #include "i_time.h"
 #include "hu_stuff.h"
 
+#include "ui/ui_scene.h"
+
 #ifdef __SWITCH__
 	#include "nx_io.h"
 #endif
@@ -374,8 +376,9 @@ static EInputMode I_GetDesiredInputMode()
 
 	const bool console_active = C_IsConsoleCapturingInput();
 
-	const bool attract_active = gamestate == GS_DEMOSCREEN || gamestate == GS_FINALE ||
-	                            ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) &&
+	const SceneType scene = UI_SceneType();
+	const bool attract_active = scene == SCENE_DEMOSCREEN || scene == SCENE_FINALE ||
+	                            ((scene == SCENE_LEVEL || scene == SCENE_INTERMISSION) &&
 	                             demoplayback);
 
 	const bool ui_active = M_MenuActive() || console_active || attract_active;
@@ -402,7 +405,7 @@ static EInputMode I_GetDesiredInputMode()
 		return INPUT_MODE_RELEASED;
 
 	// If playing the game, always grab
-	if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
+	if ((scene == SCENE_LEVEL || scene == SCENE_INTERMISSION) && !demoplayback)
 		return INPUT_MODE_GAME;
 
 	return INPUT_MODE_RELEASED;

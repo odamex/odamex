@@ -24,6 +24,9 @@
 
 #include "odamex.h"
 
+#include "ui/ui_scene.h"
+#include "ui/ui_command.h"
+
 #include "f_finale.h"
 
 #include <ctype.h>
@@ -161,7 +164,7 @@ static int F_GetHeight()
 void F_StartFinale(finale_options_t& options)
 {
 	::gameaction = ga_nothing;
-	::gamestate = GS_FINALE;
+	Scene_SetFromGamestate(GS_FINALE);
 	::viewactive = false;
 
 	// Okay - IWAD dependend stuff.
@@ -278,14 +281,14 @@ void F_Ticker()
 					{
 						finalecount = 0;
 						finalestage = 1;
-						wipegamestate = GS_FORCEWIPE;
+						Scene_ForceWipe();
 						if (level.nextmap[7] == '3')
 							S_StartMusic ("d_bunny");
 					}
 				}
 				else
 				{
-					gameaction = ga_worlddone;
+					UI_PostCommand(UICommand(UICommand::CMD_FINALE_ADVANCE));
 				}
 			//}
 		}
@@ -448,9 +451,6 @@ static bool	 	castattacking;
 //
 // F_StartCast
 //
-extern	gamestate_t 	wipegamestate;
-
-
 void F_StartCast()
 {
 	// [RH] Set the names for the cast
@@ -472,7 +472,7 @@ void F_StartCast()
 	castorder[15].name = GStrings(CC_CYBER);
 	castorder[16].name = GStrings(CC_HERO);
 
-	wipegamestate = GS_FORCEWIPE;
+	Scene_ForceWipe();
 	castnum = 0;
 	caststate = &states[mobjinfo[castorder[castnum].type].seestate];
 	casttics = caststate->tics;

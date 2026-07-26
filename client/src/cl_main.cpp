@@ -41,6 +41,7 @@
 #include "c_effect.h"
 #include "c_console.h"
 #include "ui/ui_stack.h"
+#include "ui/ui_scene.h"
 #include "d_main.h"
 #include "p_ctf.h"
 #include "m_random.h"
@@ -538,7 +539,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 	if (players.empty())
 		return;
 
-	if (gamestate == GS_INTERMISSION)
+	if (UI_SceneType() == SCENE_INTERMISSION)
 	{
 		displayplayer_id = consoleplayer_id;
 		return;
@@ -719,7 +720,7 @@ BEGIN_COMMAND (connect)
 	simulated_connection = false;	// Ch0wW : don't block people connect to a server after playing a demo
 
 	C_FullConsole();
-	gamestate = GS_CONNECTING;
+	Scene_SetFromGamestate(GS_CONNECTING);
 
 	CL_QuitNetGame(NQ_SILENT);
 
@@ -1445,7 +1446,7 @@ void CL_RequestConnectInfo(void)
 	if (!serveraddr.ip[0])
 		return;
 
-	gamestate = GS_CONNECTING;
+	Scene_SetFromGamestate(GS_CONNECTING);
 
 	if(!connecttimeout)
 	{
@@ -1470,7 +1471,7 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 {
 	// Need to set this here, otherwise we render a frame of wild pointers
 	// filled with garbage data.
-	gamestate = GS_FULLCONSOLE;
+	Scene_SetFromGamestate(GS_FULLCONSOLE);
 
 	if (missing_file.getBasename().empty())
 	{
@@ -1790,7 +1791,7 @@ bool CL_Connect()
 	noservermsgs = false;
 	last_received = gametic;
 
-	gamestate = GS_CONNECTED;
+	Scene_SetFromGamestate(GS_CONNECTED);
 
 	return true;
 }
@@ -1836,7 +1837,7 @@ void CL_InitNetwork (void)
 				I_SetPort(serveraddr, SERVERPORT);
 
 			lastconaddr = serveraddr;
-			gamestate = GS_CONNECTING;
+			Scene_SetFromGamestate(GS_CONNECTING);
 		}
     }
 
@@ -2401,7 +2402,7 @@ void CL_SimulatePlayers()
 //
 void CL_SimulateWorld()
 {
-	if (gamestate != GS_LEVEL || netdemo.isPaused())
+	if (UI_SceneType() != SCENE_LEVEL || netdemo.isPaused())
 		return;
 
 	// if the world_index falls outside this range, resync it

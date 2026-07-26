@@ -25,6 +25,10 @@
 
 #include "odamex.h"
 
+#ifdef CLIENT_APP
+#include "ui/ui_scene.h"
+#endif
+
 
 #include <sstream>
 #include <algorithm>
@@ -900,7 +904,12 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	D_Shutdown();
 
 	gamestate_t oldgamestate = ::gamestate;
-	::gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
+	// prevent console from trying to use nonexistant font
+#ifdef CLIENT_APP
+	Scene_SetFromGamestate(GS_STARTUP);
+#else
+	::gamestate = GS_STARTUP;
+#endif
 
 	// Load all the WAD and DEH/BEX files
 	OResFiles oldwadfiles = ::wadfiles;
@@ -956,7 +965,12 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	// preserve state
 	::lastWadRebootSuccess = ::missingfiles.empty();
 
-	::gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
+	// GS_STARTUP would prevent netcode connecting properly
+#ifdef CLIENT_APP
+	Scene_SetFromGamestate(oldgamestate);
+#else
+	::gamestate = oldgamestate;
+#endif
 
 	return ::missingfiles.empty() && failmsg.empty();
 }

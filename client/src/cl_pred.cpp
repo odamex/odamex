@@ -32,6 +32,8 @@
 
 #include "p_snapshot.h"
 
+#include "ui/ui_scene.h"
+
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictsectors)
 
@@ -279,7 +281,7 @@ static void CL_PredictLocalPlayer(int predtic)
 //
 void CL_PredictWorld(void)
 {
-	if (gamestate != GS_LEVEL)
+	if (UI_SceneType() != SCENE_LEVEL)
 		return;
 
 	player_t& p = consoleplayer();

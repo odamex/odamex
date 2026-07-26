@@ -51,6 +51,8 @@
 
 #include "v_video.h"
 
+#include "ui/ui_scene.h"
+
 #define QUEUESIZE		128
 #define HU_INPUTX		0
 #define HU_INPUTY		(0 + (LESHORT(hu_font[0]->height) +1))
@@ -224,7 +226,8 @@ void STACK_ARGS HU_Shutdown()
 void HU_Ticker()
 {
 	// verify the chat mode status is valid
-	if (!C_IsConsoleUp() || M_MenuActive() || (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION))
+	if (!C_IsConsoleUp() || M_MenuActive() ||
+	    (UI_SceneType() != SCENE_LEVEL && UI_SceneType() != SCENE_INTERMISSION))
 		HU_UnsetChatMode();
 
 	hud::ToastTicker();
@@ -281,7 +284,8 @@ bool HU_Responder(const event_t *ev)
 		altdown = false;
 	}
 
-	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || ev->type != ev_keydown)
+	if ((UI_SceneType() != SCENE_LEVEL && UI_SceneType() != SCENE_INTERMISSION) ||
+	    ev->type != ev_keydown)
 	{
 		if (HU_ChatMode() != CHAT_INACTIVE)
             return true;
@@ -372,7 +376,7 @@ static void HU_InitCrosshair()
 //
 static void HU_DrawCrosshair()
 {
-	if (gamestate != GS_LEVEL)
+	if (UI_SceneType() != SCENE_LEVEL)
 		return;
 
 	if (!camera)
@@ -462,7 +466,7 @@ static void HU_DrawChatPrompt()
 	// * ST_Y is the current Y height of the status bar.
 
 	int y;
-	if (!viewactive && gamestate != GS_INTERMISSION)
+	if (!viewactive && UI_SceneType() != SCENE_INTERMISSION)
 	{
 		// Fullscreen automap is visible
 		y = ST_StatusBarY(surface_width, surface_height) - (20 * scaledyfac);
@@ -522,7 +526,7 @@ void HU_Drawer()
 	if (noisedebug)
 		S_NoiseDebug();
 
-	if (gamestate == GS_LEVEL)
+	if (UI_SceneType() == SCENE_LEVEL)
 	{
 		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
 
@@ -552,7 +556,8 @@ void HU_Drawer()
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
-	if (noservermsgs && (gamestate == GS_INTERMISSION || gamestate == GS_LEVEL))
+	if (noservermsgs &&
+	    (UI_SceneType() == SCENE_INTERMISSION || UI_SceneType() == SCENE_LEVEL))
 		screen->DrawPatchCleanNoMove(W_CachePatch("NET"), 50 * CleanXfac, 1 * CleanYfac);
 
 	if (cl_netgraph)
@@ -561,7 +566,7 @@ void HU_Drawer()
 	if (hud_mousegraph)
 		mousegraph.draw(hud_mousegraph);
 
-	if (idmypos && gamestate == GS_LEVEL)
+	if (idmypos && UI_SceneType() == SCENE_LEVEL)
 		PrintFmt(PRINT_HIGH, "ang={};x,y,z=({},{},{})\n",
 			     displayplayer().camera->angle/FRACUNIT,
 			     displayplayer().camera->x/FRACUNIT,
@@ -574,12 +579,12 @@ void HU_Drawer()
 	// [AM] Voting HUD!
 	ST_voteDraw(11 * CleanYfac);
 
-	if (gamestate == GS_LEVEL)
+	if (UI_SceneType() == SCENE_LEVEL)
 		HU_DrawCrosshair();
 
 	if (consoleplayer().camera && !(demoplayback))
 	{
-		if ((gamestate != GS_INTERMISSION && Actions[ACTION_SHOWSCORES]) ||
+		if ((UI_SceneType() != SCENE_INTERMISSION && Actions[ACTION_SHOWSCORES]) ||
 		    (::multiplayer && hud_show_scoreboard_ondeath &&
 		     displayplayer().health <= 0 && !displayplayer().spectator))
 		{
@@ -811,7 +816,7 @@ void drawHeader(player_t *player, int y)
 	std::string timer, fraglimit, scorelimit;
 	StringTokens names, values;
 
-	if (::gamestate == GS_INTERMISSION)
+	if (UI_SceneType() == SCENE_INTERMISSION)
 	{
 		names.push_back("NEXT MAP IN: ");
 		timer = hud::IntermissionTimer();
@@ -862,7 +867,7 @@ void drawHeader(player_t *player, int y)
 	}
 
 	int rw = V_StringWidth("00:00");
-	if (sv_timelimit.asInt() == 0 && gamestate != GS_INTERMISSION)
+	if (sv_timelimit.asInt() == 0 && UI_SceneType() != SCENE_INTERMISSION)
 		rw = V_StringWidth("N/A");
 	else if (timer.size() > 5)
 		rw = V_StringWidth("00:00:00");
@@ -1344,7 +1349,7 @@ void Scoreboard(player_t *player)
 	int extra_player_rows = 0;
 
 	// Reset playerID to self if ever happening to spy.
-	if (gamestate == GS_INTERMISSION)
+	if (UI_SceneType() == SCENE_INTERMISSION)
 		displayplayer_id = consoleplayer_id;
 
 	int extraQuadRows = 0;

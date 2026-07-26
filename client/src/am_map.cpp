@@ -56,6 +56,8 @@
 #include "g_skill.h"
 #include "p_mapformat.h"
 
+#include "ui/ui_scene.h"
+
 argb_t CL_GetPlayerColor(const player_t&);
 
 EXTERN_CVAR(am_followplayer)
@@ -833,7 +835,7 @@ void AM_maxOutWindowScale()
 
 BEGIN_COMMAND(togglemap)
 {
-	if (gamestate != GS_LEVEL)
+	if (UI_SceneType() != SCENE_LEVEL)
 		return;
 
 	if (!automapactive)

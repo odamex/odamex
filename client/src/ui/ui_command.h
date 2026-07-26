@@ -14,40 +14,36 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   UIStack - the stack of active UI overlays (menu, console).
-//
-//   Owns overlay ticking and drawing.
-//   Tick and draw are done back to front, but
-//   input is handled front layer to back layer.
+//   UI to game scene command channel.
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#include <vector>
+#include <string>
 
-#include "d_event.h"
-
-class IOverlay;
-
-class UIStack
+struct UICommand
 {
-  public:
-	void push(IOverlay* overlay);
-	void remove(IOverlay* overlay);
-	void clear();
+	enum Type
+	{
+		CMD_NONE = 0,
+		CMD_NEW_GAME,       // str = map name
+		CMD_LOAD_GAME,      // str = savegame name
+		CMD_SAVE_GAME,      // slot + str = description
+		CMD_END_GAME,
+		CMD_FINALE_ADVANCE,
+	};
 
-	bool empty() const { return m_overlays.empty(); }
+	UICommand() : type(CMD_NONE), slot(0) {}
+	explicit UICommand(Type t) : type(t), slot(0) {}
 
-	void tick();
-	void draw();
-	bool responder(const event_t* ev);
-
-  private:
-	std::vector<IOverlay*> m_overlays;
+	Type type;
+	int slot;
+	std::string str;
 };
 
-extern UIStack g_UIStack;
+// Post a command from a UI layer.
+void UI_PostCommand(const UICommand& cmd);
 
-// Register the built-in global overlays (console, menu)
-void UI_InitGlobalOverlays();
+// Execute and clear everything posted since the last drain.
+void UI_DrainCommands();

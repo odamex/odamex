@@ -46,6 +46,8 @@
 #include "st_stuff.h"
 #include "am_map.h"
 #include "c_console.h"
+#include "ui/ui_scene.h"
+#include "ui/ui_command.h"
 #include "c_bind.h"
 #include "c_dispatch.h"
 #include "v_video.h"
@@ -721,7 +723,7 @@ bool G_DemoAttractResponder(const event_t* ev)
 	// any other key pops up menu if in demos
 	// [RH] But only if the key isn't bound to a "special" command
 	if (!(gameaction == ga_nothing &&
-	      (demoplayback || gamestate == GS_DEMOSCREEN)))
+	      (demoplayback || UI_SceneType() == SCENE_DEMOSCREEN)))
 		return false;
 
 	const char *cmd = Bindings.GetBind(ev->data1).c_str();
@@ -766,7 +768,7 @@ bool G_DemoAttractResponder(const event_t* ev)
 //
 bool G_HudResponder(const event_t* ev)
 {
-	if (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION)
+	if (UI_SceneType() != SCENE_LEVEL && UI_SceneType() != SCENE_INTERMISSION)
 		return false;
 
 	if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
@@ -795,12 +797,12 @@ bool G_AutomapResponder(const event_t* ev)
 {
 	if (!viewactive)
 	{
-		if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+		if (UI_SceneType() == SCENE_LEVEL || UI_SceneType() == SCENE_INTERMISSION)
 			return AM_Responder(ev);
 	}
 	else
 	{
-		if (gamestate == GS_LEVEL)
+		if (UI_SceneType() == SCENE_LEVEL)
 			return AM_Responder(ev);
 	}
 	return false;
@@ -816,7 +818,7 @@ bool G_AutomapResponder(const event_t* ev)
 //
 bool G_Responder (const event_t *ev)
 {
-	if (gamestate == GS_FINALE)
+	if (UI_SceneType() == SCENE_FINALE)
 	{
 		if (F_Responder (ev))
 			return true;		// finale ate the event
@@ -864,7 +866,7 @@ bool G_Responder (const event_t *ev)
 	// [RH] If the view is active, don't swallow the event here: the automap's
 	// post-binding input layer (lower priority than this one) gets the last
 	// crack so that any bound keys keep precedence.
-	if (gamestate == GS_LEVEL && viewactive)
+	if (UI_SceneType() == SCENE_LEVEL && viewactive)
 		return false;
 
 	if (ev->type == ev_keydown ||
@@ -924,6 +926,9 @@ extern int connecttimeout;
 void G_Ticker (void)
 {
 	int 		buf;
+
+	// Drain anything the UI layers posted since the last tic.
+	UI_DrainCommands();
 
 	// Turn off no-z-snapping for all players.
 	// [AM] Eventually, it would be nice to do this for all mobjs, but iterating
@@ -1003,7 +1008,7 @@ void G_Ticker (void)
 				R_ExitLevel();
 			}
 
-			gamestate = GS_FULLCONSOLE;
+			Scene_SetFromGamestate(GS_FULLCONSOLE);
 			C_FullConsole();
 
 			gameaction = ga_nothing;
@@ -1184,53 +1189,56 @@ void G_Ticker (void)
     }
 
 	// do main actions
-	switch (gamestate)
+	UI_Scene().tick();
+}
+
+//
+// Scene tick functions
+//
+void G_LevelTick()
+{
+	if(clientside && !serverside)
 	{
-	case GS_LEVEL:
-		if(clientside && !serverside)
+		if (!consoleplayer().mo)
 		{
-			if (!consoleplayer().mo)
-			{
-				// [SL] 2011-12-14 - Spawn message from server has not arrived
-				// yet.  Fake it and hope it arrives soon.
-				AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
-				mobj->flags &= ~MF_SOLID;
-				mobj->flags2 |= MF2_DONTDRAW;
-				consoleplayer().mo = consoleplayer().camera = mobj->ptr();
-				consoleplayer().mo->player = &consoleplayer();
-				G_PlayerReborn(consoleplayer());
-				DPrintFmt("Did not receive spawn for consoleplayer.\n");
-			}
-
-			CL_SimulateWorld();
-			CL_PredictWorld();
-
-			// Replay item pickups if the items arrived now.
-			ClientReplay::getInstance().itemReplay();
+			// [SL] 2011-12-14 - Spawn message from server has not arrived
+			// yet.  Fake it and hope it arrives soon.
+			AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
+			mobj->flags &= ~MF_SOLID;
+			mobj->flags2 |= MF2_DONTDRAW;
+			consoleplayer().mo = consoleplayer().camera = mobj->ptr();
+			consoleplayer().mo->player = &consoleplayer();
+			G_PlayerReborn(consoleplayer());
+			DPrintFmt("Did not receive spawn for consoleplayer.\n");
 		}
-		P_CheckInterpPause();
-		P_Ticker ();
-		P_BobTicker();
-		ST_Ticker ();
-		AM_Ticker ();
-		break;
 
-	case GS_INTERMISSION:
-		ST_Ticker ();
-		WI_Ticker ();
-		break;
+		CL_SimulateWorld();
+		CL_PredictWorld();
 
-	case GS_FINALE:
-		F_Ticker ();
-		break;
-
-	case GS_DEMOSCREEN:
-		D_PageTicker ();
-		break;
-
-	default:
-		break;
+		// Replay item pickups if the items arrived now.
+		ClientReplay::getInstance().itemReplay();
 	}
+	P_CheckInterpPause();
+	P_Ticker ();
+	P_BobTicker();
+	ST_Ticker ();
+	AM_Ticker ();
+}
+
+void G_IntermissionTick()
+{
+	ST_Ticker ();
+	WI_Ticker ();
+}
+
+void G_FinaleTick()
+{
+	F_Ticker ();
+}
+
+void G_DemoScreenTick()
+{
+	D_PageTicker ();
 }
 
 

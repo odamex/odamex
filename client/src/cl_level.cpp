@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include "ui/ui_scene.h"
+
 #include <set>
 
 #include "am_map.h"
@@ -536,7 +538,7 @@ void G_DoCompleted (void)
 		}
 	}
 
-	gamestate = GS_INTERMISSION;
+	Scene_SetFromGamestate(GS_INTERMISSION);
 	viewactive = false;
 
 	WI_Start (&wminfo);
@@ -566,11 +568,11 @@ void G_DoLoadLevel (int position)
                  "{}: \"{}\"\n\n", level.mapname, level.level_name);
 
 	if (wipegamestate == GS_LEVEL)
-		wipegamestate = GS_FORCEWIPE;
+		Scene_ForceWipe();
 
-	const bool demoscreen = (gamestate == GS_DEMOSCREEN);
+	const bool demoscreen = (UI_SceneType() == SCENE_DEMOSCREEN);
 
-	gamestate = GS_LEVEL;
+	Scene_SetFromGamestate(GS_LEVEL);
 
 	// [SL] Hide the console unless this is just part of the demo loop
 	// It's annoying to have the console close every time a new demo starts...
