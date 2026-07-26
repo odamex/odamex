@@ -1314,6 +1314,9 @@ bool NetDemo::seekGametic(int requestedGametic)
 		return false;
 	}
 
+	if (requestedGametic == gametic)
+		return true;
+
 	auto snapshotIter = getSnapshotForGametic(requestedGametic);
 	if (snapshotIter == snapshot_index.end())
 		return false;
