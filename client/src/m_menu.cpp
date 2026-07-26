@@ -2036,7 +2036,18 @@ static void M_DrawMessageButtons(int y)
 		MessageButtonY2[button] = screen->getCleanY(by + height);
 
 		if (button == messageSelection && skullAnimCounter < 6)
-			screen->DrawPatchClean(cursor, bx + w + cursor_gap, by);
+		{
+			const int cleanx = MAX(1, CleanXfac);
+			const int cleany = MAX(1, CleanYfac);
+			const int font_height = ::menu_font->getHeight();
+			const int text_center = screen->getCleanY(by) + font_height / 2;
+			const int cursor_height = cursor->mHeight * cleany;
+
+			screen->DrawTextureStretched(cursor,
+			                             screen->getCleanX(bx + w + cursor_gap),
+			                             text_center - cursor_height / 2,
+			                             cursor->mWidth * cleanx, cursor_height);
+		}
 	}
 }
 
