@@ -952,6 +952,9 @@ void drawScores(player_t* player, int y, byte extra_rows)
 	// Run column selection logic.
 	scoreCols(columns);
 
+	const int lineY = y + 11;
+	const int dataY = y + 14;
+
 	// Draw columns first.
 	byte limit = extra_rows + 4;
 	for (size_t i = 0; i < ARRAY_LENGTH(columns); i++)
@@ -963,39 +966,39 @@ void drawScores(player_t* player, int y, byte extra_rows)
 			break;
 		case SCOL_DAMAGE:
 			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true);
-			hud::EAPlayerDamage(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			              hud::X_RIGHT, hud::Y_TOP, "DAMAGE", CR_GREY, true, FACE_SMALL, -1);
+			hud::EAPlayerDamage(x, dataY, hud_scalescoreboard, hud::X_CENTER,
 			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			break;
 		case SCOL_LIVES:
 			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "LIVES", CR_GREY, true);
-			hud::EAPlayerLives(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			              hud::X_RIGHT, hud::Y_TOP, "LIVES", CR_GREY, true, FACE_SMALL, -1);
+			hud::EAPlayerLives(x, dataY, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			break;
 		case SCOL_DEATHS:
 			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "DETHS", CR_GREY, true);
-			hud::EAPlayerDeaths(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			              hud::X_RIGHT, hud::Y_TOP, "DETHS", CR_GREY, true, FACE_SMALL, -1);
+			hud::EAPlayerDeaths(x, dataY, hud_scalescoreboard, hud::X_CENTER,
 			                    hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			break;
 		case SCOL_WINS:
 			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "WINS", CR_GREY, true);
-			hud::EAPlayerRoundWins(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			              hud::X_RIGHT, hud::Y_TOP, "WINS", CR_GREY, true, FACE_SMALL, -1);
+			hud::EAPlayerRoundWins(x, dataY, hud_scalescoreboard, hud::X_CENTER,
 			                       hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit,
 			                       true);
 			break;
 		case SCOL_FRAGS:
 			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "FRAGS", CR_GREY, true);
-			hud::EAPlayerFrags(x, y + 11, hud_scalescoreboard, hud::X_CENTER,
+			              hud::X_RIGHT, hud::Y_TOP, "FRAGS", CR_GREY, true, FACE_SMALL, -1);
+			hud::EAPlayerFrags(x, dataY, hud_scalescoreboard, hud::X_CENTER,
 			                   hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			break;
 		case SCOL_KD:
 			hud::DrawText(x, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "K/D", CR_GREY, true);
-			hud::EAPlayerKD(x, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+			              hud::X_RIGHT, hud::Y_TOP, "K/D", CR_GREY, true, FACE_SMALL, -1);
+			hud::EAPlayerKD(x, dataY, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 			                hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 			break;
 		}
@@ -1003,31 +1006,31 @@ void drawScores(player_t* player, int y, byte extra_rows)
 
 	// Other column headers
 	hud::DrawText(-227, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_LEFT,
-	              hud::Y_TOP, "Name", CR_GREY, true);
+	              hud::Y_TOP, "Name", CR_GREY, true, FACE_SMALL, -1);
 	hud::DrawText(188, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT,
-	              hud::Y_TOP, "MINS", CR_GREY, true);
+	              hud::Y_TOP, "MINS", CR_GREY, true, FACE_SMALL, -1);
 	hud::DrawText(236, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE, hud::X_RIGHT,
-	              hud::Y_TOP, "PING", CR_GREY, true);
+	              hud::Y_TOP, "PING", CR_GREY, true, FACE_SMALL, -1);
 
 	// Line
 	for (short xi = -236 + 1; xi < 236; xi += 2)
 	{
-		hud::DrawTranslatedTexture(xi, y + 8, hud_scalescoreboard,
+		hud::DrawTranslatedTexture(xi, lineY, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
 		                         ::sbline, Ranges + CR_GREY * 256, true);
 	}
 
 	// Ingame Players
-	hud::EAPlayerColors(-236, y + 11, 7, 7, hud_scalescoreboard, hud::X_CENTER,
+	hud::EAPlayerColors(-236, dataY, 7, 7, hud_scalescoreboard, hud::X_CENTER,
 	                    hud::Y_MIDDLE, hud::X_LEFT, hud::Y_TOP, 1, limit);
-	hud::EAPlayerNames(-227, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+	hud::EAPlayerNames(-227, dataY, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 	                   hud::X_LEFT, hud::Y_TOP, 1, limit, true);
 
 	// Other column data
-	hud::EAPlayerTimes(188, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+	hud::EAPlayerTimes(188, dataY, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 	                   hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
-	hud::EAPlayerPings(236, y + 11, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
+	hud::EAPlayerPings(236, dataY, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 	                   hud::X_RIGHT, hud::Y_TOP, 1, limit, true);
 }
 
@@ -1529,54 +1532,54 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	hud::DrawText(-137, y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_LEFT, hud::Y_TOP,
-	              "Name", CR_GREY, true);
+	              "Name", CR_GREY, true, FACE_SMALL, -1);
 
 	if (sv_gametype == GM_CTF)
 	{
 		hud::DrawText(34, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP, "PPL", CR_GREY, true);
+		              hud::X_RIGHT, hud::Y_TOP, "PPL", CR_GREY, true, FACE_SMALL, -1);
 		if (g_lives)
 		{
 			hud::DrawText(62, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "PTS", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "PTS", CR_GREY, true, FACE_SMALL, -1);
 			hud::DrawText(90, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "LIV", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "LIV", CR_GREY, true, FACE_SMALL, -1);
 		}
 		else
 		{
 			hud::DrawText(62, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "PTS", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "PTS", CR_GREY, true, FACE_SMALL, -1);
 			hud::DrawText(90, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "FRG", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "FRG", CR_GREY, true, FACE_SMALL, -1);
 		}
 	}
 	else
 	{
 		hud::DrawText(22, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-		              hud::X_RIGHT, hud::Y_TOP, "PPL", CR_GREY, true);
+		              hud::X_RIGHT, hud::Y_TOP, "PPL", CR_GREY, true, FACE_SMALL, -1);
 		if (g_lives)
 		{
 			hud::DrawText(50, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "FRG", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "FRG", CR_GREY, true, FACE_SMALL, -1);
 			hud::DrawText(90, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "LIV", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "LIV", CR_GREY, true, FACE_SMALL, -1);
 		}
 		else
 		{
 			hud::DrawText(50, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "FRG", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "FRG", CR_GREY, true, FACE_SMALL, -1);
 			hud::DrawText(90, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
-			              hud::X_RIGHT, hud::Y_TOP, "K/D", CR_GREY, true);
+			              hud::X_RIGHT, hud::Y_TOP, "K/D", CR_GREY, true, FACE_SMALL, -1);
 		}
 	}
 	hud::DrawText(118, y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_RIGHT, hud::Y_TOP,
-	              "MIN", CR_GREY, true);
+	              "MIN", CR_GREY, true, FACE_SMALL, -1);
 	hud::DrawText(146, y, hud_scalescoreboard,
 	              hud::X_CENTER, hud::Y_MIDDLE,
 	              hud::X_RIGHT, hud::Y_TOP,
-	              "PNG", CR_GREY, true);
+	              "PNG", CR_GREY, true, FACE_SMALL, -1);
 
 	int yOffset = 8;
 
@@ -1600,36 +1603,36 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 		hud::DrawText(-137, y + yOffset + 3, hud_scalescoreboard,
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_LEFT, hud::Y_TOP,
-		              str.c_str(), color, true);
+		              str.c_str(), color, true, FACE_SMALL, -1);
 
 		if (sv_gametype == GM_CTF)
 		{
 			str = hud::TeamPlayers(color, i);
 			hud::DrawText(34, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
 			              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
-			              true);
+			              true, FACE_SMALL, -1);
 
 			if (g_lives)
 			{
 				str = hud::TeamPoints(color, i);
 				hud::DrawText(62, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
 				              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
-				              true);
+				              true, FACE_SMALL, -1);
 				hud::TeamLives(str, color, i);
 				hud::DrawText(90, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
 				              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
-				              true);
+				              true, FACE_SMALL, -1);
 			}
 			else
 			{
 				str = hud::TeamPoints(color, i);
 				hud::DrawText(62, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
 				              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
-				              true);
+				              true, FACE_SMALL, -1);
 				str = hud::TeamFrags(color, i);
 				hud::DrawText(90, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
 				              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
-				              true);
+				              true, FACE_SMALL, -1);
 			}
 		}
 		else
@@ -1637,29 +1640,29 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 			str = hud::TeamPlayers(color, i);
 			hud::DrawText(22, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
 			              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
-			              true);
+			              true, FACE_SMALL, -1);
 
 			if (g_lives)
 			{
 				str = hud::TeamPoints(color, i);
 				hud::DrawText(50, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
 				              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
-				              true);
+				              true, FACE_SMALL, -1);
 				hud::TeamLives(str, color, i);
 				hud::DrawText(90, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
 				              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
-				              true);
+				              true, FACE_SMALL, -1);
 			}
 			else
 			{
 				str = hud::TeamPoints(color, i);
 				hud::DrawText(50, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
 				              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
-				              true);
+				              true, FACE_SMALL, -1);
 				str = hud::TeamKD(color, i);
 				hud::DrawText(90, y + yOffset + 3, hud_scalescoreboard, hud::X_CENTER,
 				              hud::Y_MIDDLE, hud::X_RIGHT, hud::Y_TOP, str.c_str(), color,
-				              true);
+				              true, FACE_SMALL, -1);
 			}
 		}
 
@@ -1667,7 +1670,7 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 		hud::DrawText(146, y + yOffset + 3, hud_scalescoreboard,
 		              hud::X_CENTER, hud::Y_MIDDLE,
 		              hud::X_RIGHT, hud::Y_TOP,
-		              str.c_str(), color, true);
+		              str.c_str(), color, true, FACE_SMALL, -1);
 
 		// Ingame Players
 		byte limit = extra_rows + 4;
