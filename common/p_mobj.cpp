@@ -3159,27 +3159,6 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		::level.detected_gametype = GM_HORDE;
 	}
 
-	if (mthing.type == 9077)
-	{
-		type = MT_UPPERSTACK;
-	}
-	else if (mthing.type == 9078)
-	{
-		type = MT_LOWERSTACK;
-	}
-	else if (mthing.type == 9080)
-	{
-		type = MT_SKYVIEWPOINT;
-	}
-	else if (mthing.type == 9081)
-	{
-		type = MT_SKYPICKER;
-	}
-	else if (mthing.type == 9082)
-	{
-		type = MT_SECTORSILENCER;
-	}
-
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
 	if (mthing.type >= 14001 && mthing.type <= 14064)
