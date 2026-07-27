@@ -1354,7 +1354,7 @@ bool NetDemo::seekGametic(int requestedGametic)
 	return false;
 }
 
-bool NetDemo::seekNetdemoTic(int requestedNetdemotic)
+bool NetDemo::seekNetdemotic(int requestedNetdemotic)
 {
 	return seekGametic(requestedNetdemotic + header.starting_gametic);
 }

@@ -23,7 +23,7 @@ public:
 	bool stopRecording();
 	bool pause();
 	bool resume();
-	bool seekNetdemoTic(int requestedNetdemotic);
+	bool seekNetdemotic(int requestedNetdemotic);
 	bool seekGametic(int requestedGametic);
 
 	void writeMessages();
@@ -40,6 +40,8 @@ public:
 	[[nodiscard]] bool isInPlayback() const { return isPlaying() or isPaused(); }
 
 	[[nodiscard]] int getSpacing() const { return header.snapshot_spacing; }
+
+	[[nodiscard]] int getNetdemotic() const { return netdemotic; }
 
 	void nextTic();
 	void prevTic();
