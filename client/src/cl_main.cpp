@@ -79,6 +79,7 @@
 #include <bitset>
 #include <chrono>
 #include <ranges>
+#include <regex>
 #include <set>
 #include <sstream>
 
@@ -1433,35 +1434,30 @@ struct SeekParseResult
 };
 
 template <typename DurationType>
-auto ParseFormattedTimeAs(const char* str, const char* format)
-{
-	DurationType       tics;
-	std::istringstream is {str};
-	is >> std::chrono::parse(format, tics);
-	if (not is.fail())
-	{
-		return tics.count();
-	}
-	return typename DurationType::rep(0);
-}
-
-template <typename DurationType>
 auto ParseTimeAs(const char* str, bool isNegative)
 {
-	constexpr static auto formats =
-	{
-		"%H:%M:%S",
-		"%M:%S",
-	};
+	const static std::regex regexHMS { "(\\d+):(\\d+):(\\d+)" };
+	const static std::regex regexMS  { "(\\d+):(\\d+)" };
 
-	for (auto format : formats)
+	std::tm dateTime {};
+	std::cmatch match;
+	if (std::regex_match(str, match, regexHMS))
 	{
-		if (auto result = ParseFormattedTimeAs<DurationType>(str, format))
-		{
-			return isNegative ? -result : result;
-		}
+		std::from_chars(match[1].first, match[1].second, dateTime.tm_hour);
+		std::from_chars(match[2].first, match[2].second, dateTime.tm_min);
+		std::from_chars(match[3].first, match[3].second, dateTime.tm_sec);
 	}
-	return typename DurationType::rep(0);
+	else if (std::regex_match(str, match, regexMS))
+	{
+		std::from_chars(match[1].first, match[1].second, dateTime.tm_min);
+		std::from_chars(match[2].first, match[2].second, dateTime.tm_sec);
+	}
+
+	const auto ticks = (DurationType(std::chrono::hours   { dateTime.tm_hour }) +
+	                    DurationType(std::chrono::minutes { dateTime.tm_min  }) +
+	                    DurationType(std::chrono::seconds { dateTime.tm_sec  })).count();
+
+	return isNegative ? -ticks : ticks;
 }
 
 SeekParseResult ParseSeekValue(const char* valueStr)
