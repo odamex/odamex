@@ -1509,6 +1509,10 @@ SeekParseResult ParseSeekValue(const char* valueStr)
     if (uint32_t timeParseResult = ParseTicsAsTime(valueStr))
     {
         result.tics = static_cast<int>(timeParseResult);
+        if (isNegative)
+        {
+            result.tics = -result.tics;
+        }
     }
     else
     {
@@ -1551,9 +1555,9 @@ BEGIN_COMMAND(netseek)
         case SeekKindEnum::RELATIVE_NETDEMOTIC:
             if (not netdemo.seekNetdemotic(netdemo.getNetdemotic() + parseResult.tics))
             {
-                PrintFmt(PRINT_HIGH, "Cannot seek: {} {}{} == {} is an invalid tic number\n",
+                PrintFmt(PRINT_HIGH, "Cannot seek: {}{}{} == {} is an invalid tic number\n",
                          netdemo.getNetdemotic(),
-                         parseResult.tics < 0 ? '-' : '+',
+                         parseResult.tics < 0 ? " " : " +",
                          parseResult.tics,
                          netdemo.getNetdemotic() + parseResult.tics);
             }
