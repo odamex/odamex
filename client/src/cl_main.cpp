@@ -1427,26 +1427,26 @@ enum class SeekKindEnum
 
 struct SeekParseResult
 {
-	SeekKindEnum kind { SeekKindEnum::NONE };
-	int          tics { 0 };
+	SeekKindEnum kind    { SeekKindEnum::NONE };
+	int          tics    { 0 };
+	bool         isExact { true };
 };
 
-using TicsType = std::chrono::duration<uint32_t,
-                                       std::ratio<1, 35>>;
-
-uint32_t ParseTicsAsTimeFormat(const char* str, const char* format)
+template <typename DurationType>
+auto ParseFormattedTimeAs(const char* str, const char* format)
 {
-	TicsType           tics;
+	DurationType       tics;
 	std::istringstream is {str};
 	is >> std::chrono::parse(format, tics);
 	if (not is.fail())
 	{
 		return tics.count();
 	}
-	return 0;
+	return typename DurationType::rep(0);
 }
 
-uint32_t ParseTicsAsTime(const char* str)
+template <typename DurationType>
+auto ParseTimeAs(const char* str, bool isNegative)
 {
 	constexpr static auto formats =
 	{
@@ -1456,12 +1456,12 @@ uint32_t ParseTicsAsTime(const char* str)
 
 	for (auto format : formats)
 	{
-		if (auto result = ParseTicsAsTimeFormat(str, format))
+		if (auto result = ParseFormattedTimeAs<DurationType>(str, format))
 		{
-			return result;
+			return isNegative ? -result : result;
 		}
 	}
-	return 0;
+	return typename DurationType::rep(0);
 }
 
 SeekParseResult ParseSeekValue(const char* valueStr)
@@ -1509,13 +1509,18 @@ SeekParseResult ParseSeekValue(const char* valueStr)
 		++valueStr;
 	}
 
-	if (uint32_t timeParseResult = ParseTicsAsTime(valueStr))
+	using TicsType = std::chrono::duration<int,
+	                                       std::ratio<1, TICRATE>>;
+
+	if (int timeParseResult = ParseTimeAs<TicsType>(valueStr, isNegative))
 	{
-		result.tics = static_cast<int>(timeParseResult);
-		if (isNegative)
-		{
-			result.tics = -result.tics;
-		}
+		result.tics = timeParseResult;
+	}
+	// Okay, direct-to-tics didn't work.  Try milliseconds and flooring it to tics.
+	else if (auto timeParseResult = ParseTimeAs<std::chrono::milliseconds>(valueStr, isNegative))
+	{
+		result.tics    = (timeParseResult * TICRATE) / 1000;
+		result.isExact = false;
 	}
 	else
 	{
@@ -1557,6 +1562,11 @@ BEGIN_COMMAND(netseek)
 	          "???",
 	          parseResult.tics);
 
+	if (parseResult.kind != SeekKindEnum::NONE and not parseResult.isExact)
+	{
+		PrintFmt(PRINT_WARNING, "Inexact seek: {} is not an exact tic.  Seeking to closest preceding tic...\n", argv[1]);
+	}
+
 	switch (parseResult.kind)
 	{
 		case SeekKindEnum::NONE:
@@ -1573,9 +1583,9 @@ BEGIN_COMMAND(netseek)
 		case SeekKindEnum::RELATIVE_NETDEMOTIC:
 			if (not netdemo.seekNetdemotic(netdemo.getNetdemotic() + parseResult.tics))
 			{
-				PrintFmt(PRINT_WARNING, "Cannot seek: {}{}{} == {} is an invalid tic number\n",
+				PrintFmt(PRINT_WARNING, "Cannot seek: {} {}{} == {} is an invalid tic number\n",
 				         netdemo.getNetdemotic(),
-				         parseResult.tics < 0 ? " " : " +",
+				         parseResult.tics < 0 ? "" : "+",
 				         parseResult.tics,
 				         netdemo.getNetdemotic() + parseResult.tics);
 			}
