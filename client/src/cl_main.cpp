@@ -1539,6 +1539,14 @@ BEGIN_COMMAND(netseek)
 
     const SeekParseResult parseResult = ParseSeekValue(argv[1]);
 
+    DPrintFmt("Seek command: {} tics: {}\n",
+            parseResult.kind == SeekKindEnum::NONE ? "NONE" :
+            parseResult.kind == SeekKindEnum::ABSOLUTE_NETDEMOTIC ? "ABSOLUTE_NETDEMOTIC" :
+            parseResult.kind == SeekKindEnum::RELATIVE_NETDEMOTIC ? "RELATIVE_NETDEMOTIC" :
+            parseResult.kind == SeekKindEnum::ABSOLUTE_GAMETIC ? "ABSOLUTE_GAMETIC" :
+            "???",
+            parseResult.tics);
+
     switch (parseResult.kind)
     {
         case SeekKindEnum::NONE:
