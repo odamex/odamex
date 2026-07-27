@@ -1525,10 +1525,17 @@ BEGIN_COMMAND(netseek)
 {
 	if (argc <= 1)
 	{
-		PrintFmt(PRINT_HIGH, "netseek  <netdemo tic number>\n"
-		                     "netseek g<recorded gametic number>\n"
-		                     "netseek +<tics forward>\n"
-		                     "netseek -<tics backward>\n");
+		PrintFmt(PRINT_HIGH, "Absolute seek:\n"
+		                     "    netseek  <netdemo tic number>\n"
+		                     "    netseek g<recorded gametic number>\n"
+		                     "    netseek  <[hh:]mm:ss>\n"
+		                     "Relative seek forward:\n"
+		                     "    netseek +<tics>\n"
+		                     "    netseek +<[hh:]mm:ss>\n"
+		                     "Relative seek backward:\n"
+		                     "    netseek -<tics>\n"
+		                     "    netseek -<[hh:]mm:ss>\n"
+		        );
 		return;
 	}
 	if (not netdemo.isInPlayback())
