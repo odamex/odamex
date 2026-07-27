@@ -1132,9 +1132,7 @@ void NetDemo::prevTic()
 	if (!isPaused())
 		return;
 
-	pause_netdemotic = netdemotic - 1;
-	state = oldstate;
-	::paused = false;
+	seekGametic(gametic - 1);
 }
 
 //
