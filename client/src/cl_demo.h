@@ -42,6 +42,7 @@ public:
 	[[nodiscard]] int getSpacing() const { return header.snapshot_spacing; }
 
 	[[nodiscard]] int getNetdemotic() const { return netdemotic; }
+	[[nodiscard]] int getGametic() const    { return netdemotic + header.starting_gametic; }
 
 	void nextTic();
 	void prevTic();
@@ -50,7 +51,7 @@ public:
 	void nextMap();
 	void prevMap();
 
-	void ticker();
+	bool ticker();
 	[[nodiscard]] int calculateTimeElapsed() const;
 	[[nodiscard]] int calculateTotalTime() const;
 	[[nodiscard]] const std::vector<int> getMapChangeTimes() const;
@@ -85,15 +86,15 @@ private:
 		uint32_t        ticnum  { 0 };
 		std::streampos  offset  { 0 };  // offset in the demo file
 
-        auto operator<=>(const netdemo_index_entry_t& other) const
-        {
-            return ticnum <=> other.ticnum;
-        }
-        auto operator<=>(uint32_t otherTic) const
-        {
-            return ticnum <=> otherTic;
-        }
-    };
+		auto operator<=>(const netdemo_index_entry_t& other) const
+		{
+			return ticnum <=> other.ticnum;
+		}
+		auto operator<=>(uint32_t otherTic) const
+		{
+			return ticnum <=> otherTic;
+		}
+	};
 
 	void cleanUp();
 	void error(const std::string &message);

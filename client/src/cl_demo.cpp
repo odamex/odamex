@@ -442,11 +442,11 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-    if constexpr (TRY_LOADING_OLD_NETDEMOS)
-    {
-        PrintFmt(PRINT_WARNING, "Attempting to load a version {} netdemo...\n", header.id.version);
-    }
-    else if (header.id.version != NETDEMOVER)
+	if constexpr (TRY_LOADING_OLD_NETDEMOS)
+	{
+		PrintFmt(PRINT_WARNING, "Attempting to load a version {} netdemo...\n", header.id.version);
+	}
+	else if (header.id.version != NETDEMOVER)
 	{
 		std::string buffer;
 		const int latestVersion = LatestDemoVersion(header.id.version);
@@ -643,15 +643,22 @@ bool NetDemo::atSnapshotInterval()
 }
 
 
-void NetDemo::ticker()
+bool NetDemo::ticker()
 {
-	netdemotic++;
-	if (netdemotic == pause_netdemotic)
+	if (not isInPlayback())
+		return false;
+
+	if (isPlaying())
 	{
-		pause_netdemotic = 0;
-		pause();
-		::paused = true;
+		netdemotic++;
+		if (netdemotic == pause_netdemotic)
+		{
+			pause_netdemotic = 0;
+			pause();
+			::paused = true;
+		}
 	}
+	return true;
 }
 
 //
@@ -827,7 +834,8 @@ void NetDemo::readMessages(buf_t* netbuffer)
 	}
 
 	// read from the input file and put the data into netbuffer
-	gametic = tic;
+	gametic     = tic;
+	netdemotic  = gametic - header.starting_gametic;
 	readMessageBody(netbuffer, len);
 }
 
@@ -1132,7 +1140,7 @@ void NetDemo::prevTic()
 	if (!isPaused())
 		return;
 
-	seekGametic(gametic - 1);
+	seekNetdemotic(netdemotic - 1);
 }
 
 //

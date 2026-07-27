@@ -777,11 +777,14 @@ void CL_StepTics(unsigned int count)
 
 		G_Ticker ();
 
-		if (!netdemo.isPaused())
-			gametic++;
-
-		if (netdemo.isPlaying() && !netdemo.isPaused())
-			netdemo.ticker();
+		if (netdemo.ticker())
+		{
+			gametic = netdemo.getGametic();
+		}
+		else
+		{
+			++gametic;
+		}
 	}
 
 	DObject::EndFrame ();
