@@ -1540,7 +1540,7 @@ BEGIN_COMMAND(netseek)
 	}
 	if (not netdemo.isInPlayback())
 	{
-		PrintFmt(PRINT_HIGH, "Cannot seek because a netdemo isn't playing.  Use the 'netplay' command to start.\n");
+		PrintFmt(PRINT_WARNING, "Cannot seek because a netdemo isn't playing.  Use the 'netplay' command to start.\n");
 		return;
 	}
 
@@ -1557,20 +1557,20 @@ BEGIN_COMMAND(netseek)
 	switch (parseResult.kind)
 	{
 		case SeekKindEnum::NONE:
-			PrintFmt(PRINT_HIGH, "Cannot seek: cannot parse {}\n", argv[1]);
+			PrintFmt(PRINT_WARNING, "Cannot seek: cannot parse {}\n", argv[1]);
 			break;
 
 		case SeekKindEnum::ABSOLUTE_NETDEMOTIC:
 			if (not netdemo.seekNetdemotic(parseResult.tics))
 			{
-				PrintFmt(PRINT_HIGH, "Cannot seek: {} is an invalid tic number\n", parseResult.tics);
+				PrintFmt(PRINT_WARNING, "Cannot seek: {} is an invalid tic number\n", parseResult.tics);
 			}
 			break;
 
 		case SeekKindEnum::RELATIVE_NETDEMOTIC:
 			if (not netdemo.seekNetdemotic(netdemo.getNetdemotic() + parseResult.tics))
 			{
-				PrintFmt(PRINT_HIGH, "Cannot seek: {}{}{} == {} is an invalid tic number\n",
+				PrintFmt(PRINT_WARNING, "Cannot seek: {}{}{} == {} is an invalid tic number\n",
 				         netdemo.getNetdemotic(),
 				         parseResult.tics < 0 ? " " : " +",
 				         parseResult.tics,
@@ -1581,7 +1581,7 @@ BEGIN_COMMAND(netseek)
 		case SeekKindEnum::ABSOLUTE_GAMETIC:
 			if (not netdemo.seekGametic(parseResult.tics))
 			{
-				PrintFmt(PRINT_HIGH, "Cannot seek: {} is an invalid gametic number\n", parseResult.tics);
+				PrintFmt(PRINT_WARNING, "Cannot seek: {} is an invalid gametic number\n", parseResult.tics);
 			}
 			break;
 	}
