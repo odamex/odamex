@@ -1416,16 +1416,16 @@ END_COMMAND(netprevmap)
 
 enum class SeekKindEnum
 {
-    NONE,
-    ABSOLUTE_NETDEMOTIC,
-    RELATIVE_NETDEMOTIC,
-    ABSOLUTE_GAMETIC,
+	NONE,
+	ABSOLUTE_NETDEMOTIC,
+	RELATIVE_NETDEMOTIC,
+	ABSOLUTE_GAMETIC,
 };
 
 struct SeekParseResult
 {
-    SeekKindEnum kind { SeekKindEnum::NONE };
-    int          tics { 0 };
+	SeekKindEnum kind { SeekKindEnum::NONE };
+	int          tics { 0 };
 };
 
 using TicsType = std::chrono::duration<uint32_t,
@@ -1433,92 +1433,92 @@ using TicsType = std::chrono::duration<uint32_t,
 
 uint32_t ParseTicsAsTimeFormat(const char* str, const char* format)
 {
-    TicsType           tics;
-    std::istringstream is {str};
-    is >> std::chrono::parse(format, tics);
-    if (not is.fail())
-    {
-        return tics.count();
-    }
-    return 0;
+	TicsType           tics;
+	std::istringstream is {str};
+	is >> std::chrono::parse(format, tics);
+	if (not is.fail())
+	{
+		return tics.count();
+	}
+	return 0;
 }
 
 uint32_t ParseTicsAsTime(const char* str)
 {
-    constexpr static auto formats =
-    {
-        "%H:%M:%S",
-        "%M:%S",
-    };
+	constexpr static auto formats =
+	{
+		"%H:%M:%S",
+		"%M:%S",
+	};
 
-    for (auto format : formats)
-    {
-        if (auto result = ParseTicsAsTimeFormat(str, format))
-        {
-            return result;
-        }
-    }
-    return 0;
+	for (auto format : formats)
+	{
+		if (auto result = ParseTicsAsTimeFormat(str, format))
+		{
+			return result;
+		}
+	}
+	return 0;
 }
 
 SeekParseResult ParseSeekValue(const char* valueStr)
 {
-    SeekParseResult result;
+	SeekParseResult result;
 
-    if (not valueStr)
-    {
-        return result;
-    }
+	if (not valueStr)
+	{
+		return result;
+	}
 
-    switch (*valueStr)
-    {
-        case 'g':       [[ fallthrough ]];
-        case 'G':
-            result.kind = SeekKindEnum::ABSOLUTE_GAMETIC;
-            ++valueStr;
-            break;
+	switch (*valueStr)
+	{
+		case 'g':       [[ fallthrough ]];
+		case 'G':
+			result.kind = SeekKindEnum::ABSOLUTE_GAMETIC;
+			++valueStr;
+			break;
 
-        case '+':       [[ fallthrough ]];
-        case '-':
-            result.kind = SeekKindEnum::RELATIVE_NETDEMOTIC;
-            break;
+		case '+':       [[ fallthrough ]];
+		case '-':
+			result.kind = SeekKindEnum::RELATIVE_NETDEMOTIC;
+			break;
 
-        default:
-            result.kind = SeekKindEnum::ABSOLUTE_NETDEMOTIC;
-            break;
-    }
+		default:
+			result.kind = SeekKindEnum::ABSOLUTE_NETDEMOTIC;
+			break;
+	}
 
-    char*      firstUnparsedPtr {nullptr};
-    const long intValue = std::strtol(valueStr, & firstUnparsedPtr, 0);
+	char*      firstUnparsedPtr {nullptr};
+	const long intValue = std::strtol(valueStr, & firstUnparsedPtr, 0);
 
-    if (intValue and firstUnparsedPtr and *firstUnparsedPtr != ':')
-    {
-        result.tics = (result.kind == SeekKindEnum::ABSOLUTE_GAMETIC ? std::abs(intValue) : intValue);
-        return result;
-    }
+	if (intValue and firstUnparsedPtr and *firstUnparsedPtr != ':')
+	{
+		result.tics = (result.kind == SeekKindEnum::ABSOLUTE_GAMETIC ? std::abs(intValue) : intValue);
+		return result;
+	}
 
-    // If we already determined that we have a relative indicator, record the sign
-    // and then skip it before trying to parse a time value.
-    const bool isNegative = *valueStr == '-';
+	// If we already determined that we have a relative indicator, record the sign
+	// and then skip it before trying to parse a time value.
+	const bool isNegative = *valueStr == '-';
 
-    if (result.kind == SeekKindEnum::RELATIVE_NETDEMOTIC)
-    {
-        ++valueStr;
-    }
+	if (result.kind == SeekKindEnum::RELATIVE_NETDEMOTIC)
+	{
+		++valueStr;
+	}
 
-    if (uint32_t timeParseResult = ParseTicsAsTime(valueStr))
-    {
-        result.tics = static_cast<int>(timeParseResult);
-        if (isNegative)
-        {
-            result.tics = -result.tics;
-        }
-    }
-    else
-    {
-        result.kind = SeekKindEnum::NONE;
-    }
-    return result;
+	if (uint32_t timeParseResult = ParseTicsAsTime(valueStr))
+	{
+		result.tics = static_cast<int>(timeParseResult);
+		if (isNegative)
+		{
+			result.tics = -result.tics;
+		}
+	}
+	else
+	{
+		result.kind = SeekKindEnum::NONE;
+	}
+	return result;
 }
 
 BEGIN_COMMAND(netseek)
@@ -1537,47 +1537,47 @@ BEGIN_COMMAND(netseek)
 		return;
 	}
 
-    const SeekParseResult parseResult = ParseSeekValue(argv[1]);
+	const SeekParseResult parseResult = ParseSeekValue(argv[1]);
 
-    DPrintFmt("Seek command: {} tics: {}\n",
-            parseResult.kind == SeekKindEnum::NONE ? "NONE" :
-            parseResult.kind == SeekKindEnum::ABSOLUTE_NETDEMOTIC ? "ABSOLUTE_NETDEMOTIC" :
-            parseResult.kind == SeekKindEnum::RELATIVE_NETDEMOTIC ? "RELATIVE_NETDEMOTIC" :
-            parseResult.kind == SeekKindEnum::ABSOLUTE_GAMETIC ? "ABSOLUTE_GAMETIC" :
-            "???",
-            parseResult.tics);
+	DPrintFmt("Seek command: {} tics: {}\n",
+	          parseResult.kind == SeekKindEnum::NONE ? "NONE" :
+	          parseResult.kind == SeekKindEnum::ABSOLUTE_NETDEMOTIC ? "ABSOLUTE_NETDEMOTIC" :
+	          parseResult.kind == SeekKindEnum::RELATIVE_NETDEMOTIC ? "RELATIVE_NETDEMOTIC" :
+	          parseResult.kind == SeekKindEnum::ABSOLUTE_GAMETIC ? "ABSOLUTE_GAMETIC" :
+	          "???",
+	          parseResult.tics);
 
-    switch (parseResult.kind)
-    {
-        case SeekKindEnum::NONE:
-            PrintFmt(PRINT_HIGH, "Cannot seek: cannot parse {}\n", argv[1]);
-            break;
+	switch (parseResult.kind)
+	{
+		case SeekKindEnum::NONE:
+			PrintFmt(PRINT_HIGH, "Cannot seek: cannot parse {}\n", argv[1]);
+			break;
 
-        case SeekKindEnum::ABSOLUTE_NETDEMOTIC:
-            if (not netdemo.seekNetdemotic(parseResult.tics))
-            {
-                PrintFmt(PRINT_HIGH, "Cannot seek: {} is an invalid tic number\n", parseResult.tics);
-            }
-            break;
+		case SeekKindEnum::ABSOLUTE_NETDEMOTIC:
+			if (not netdemo.seekNetdemotic(parseResult.tics))
+			{
+				PrintFmt(PRINT_HIGH, "Cannot seek: {} is an invalid tic number\n", parseResult.tics);
+			}
+			break;
 
-        case SeekKindEnum::RELATIVE_NETDEMOTIC:
-            if (not netdemo.seekNetdemotic(netdemo.getNetdemotic() + parseResult.tics))
-            {
-                PrintFmt(PRINT_HIGH, "Cannot seek: {}{}{} == {} is an invalid tic number\n",
-                         netdemo.getNetdemotic(),
-                         parseResult.tics < 0 ? " " : " +",
-                         parseResult.tics,
-                         netdemo.getNetdemotic() + parseResult.tics);
-            }
-            break;
+		case SeekKindEnum::RELATIVE_NETDEMOTIC:
+			if (not netdemo.seekNetdemotic(netdemo.getNetdemotic() + parseResult.tics))
+			{
+				PrintFmt(PRINT_HIGH, "Cannot seek: {}{}{} == {} is an invalid tic number\n",
+				         netdemo.getNetdemotic(),
+				         parseResult.tics < 0 ? " " : " +",
+				         parseResult.tics,
+				         netdemo.getNetdemotic() + parseResult.tics);
+			}
+			break;
 
-        case SeekKindEnum::ABSOLUTE_GAMETIC:
-            if (not netdemo.seekGametic(parseResult.tics))
-            {
-                PrintFmt(PRINT_HIGH, "Cannot seek: {} is an invalid gametic number\n", parseResult.tics);
-            }
-            break;
-    }
+		case SeekKindEnum::ABSOLUTE_GAMETIC:
+			if (not netdemo.seekGametic(parseResult.tics))
+			{
+				PrintFmt(PRINT_HIGH, "Cannot seek: {} is an invalid gametic number\n", parseResult.tics);
+			}
+			break;
+	}
 }
 END_COMMAND(netseek)
 
