@@ -395,6 +395,10 @@ endif()
 # Now do some patching to smooth-over any disagreements between the
 # target names as established by building the libs vs. finding them.
 
+if (APPLE AND TARGET SDL2::SDL2)
+    set_target_properties(SDL2::SDL2 PROPERTIES OBJCXX_STANDARD 17)
+endif()
+
 if (TARGET libminiupnpc-static)
     target_compile_definitions(libminiupnpc-static INTERFACE INTERNAL_MINIUPNP_STATICLIB)
 endif()
