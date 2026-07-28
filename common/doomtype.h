@@ -53,14 +53,6 @@ using OByteSpan = nonstd::span<byte>;
 	#include <float.h>
 #endif
 
-#if defined(__GNUC__) && !defined(OSF1)
-	#define __int64 long long
-#endif
-
-#ifdef OSF1
-	#define __int64 long
-#endif
-
 #if defined _MSC_VER
 	#define DBL_EPSILON 2.2204460492503131e-016
 	#define FLT_EPSILON 1.192092896e-07F
