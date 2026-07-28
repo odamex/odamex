@@ -20,6 +20,10 @@ project(Odamex VERSION 13.0.0)
 
 include(CMakeDependentOption)
 
+if (APPLE)
+    enable_language(OBJCXX)
+endif()
+
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
 set(CMAKE_INSTALL_BINDIR "bin")
 set(CMAKE_INSTALL_DATADIR "share")
