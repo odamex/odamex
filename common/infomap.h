@@ -22,12 +22,34 @@
 
 #pragma once
 
+#include <string_view>
+#include <variant>
+#include <optional>
+
 #include "doomdef.h"
 #include "info.h"
 
+namespace infomap
+{
+
+using backpack_t = std::monostate;
+constexpr backpack_t backpack{};
+using givetype_t = std::variant<card_t, weapontype_t, ammotype_t, powertype_t, backpack_t>;
+
+struct mobjclass_t
+{
+    mobjtype_t type = MT_NULL;
+    std::optional<givetype_t> givetype = std::nullopt;
+};
+
+}
+
 mobjtype_t P_NameToMobj(const std::string& name);
 mobjtype_t P_INameToMobj(const std::string& name);
-weapontype_t P_NameToWeapon(const std::string& name);
+infomap::mobjclass_t P_NameToMobjFull(const std::string& name);
+infomap::mobjclass_t P_INameToMobjFull(const std::string& name);
+weapontype_t P_NameToWeapon(std::string_view name);
+weapontype_t P_INameToWeapon(std::string_view name);
 std::string P_MobjToName(const mobjtype_t type);
 void P_MapDehThing(const mobjtype_t type, const std::string& name);
 void P_InitMobjNameMap();

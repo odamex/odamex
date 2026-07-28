@@ -51,7 +51,10 @@
 // specifies that a thing should be hanging from the ceiling but doesn't specify
 // a height for the thing, since these are the heights it probably wants.
 
-static constexpr byte OrgHeights[] = {
+namespace
+{
+
+constexpr byte OrgHeights[] = {
     56, 56,  56, 56, 16, 56, 8,  16, 64, 8,  56, 56, 56, 56, 56, 64, 8,  64, 56, 100,
     64, 110, 56, 56, 72, 16, 32, 32, 32, 16, 42, 8,  8,  8,  8,  8,  8,  16, 16, 16,
     16, 16,  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
@@ -62,17 +65,17 @@ static constexpr byte OrgHeights[] = {
 };
 
 // English strings for DeHackEd replacement.
-static StringTable ENGStrings;
+StringTable ENGStrings;
 
 // This is an offset to be used for computing the text stuff.
 // Straight from the DeHackEd source which was
 // Written by Greg Lewis, gregl@umich.edu.
-static constexpr int toff[] = {129044, 129284, 129380};
+constexpr std::array<int, 3> toff = {129044, 129284, 129380};
 
 // A conversion array to convert from the 448 code pointers to the 966
 // Frames that exist.
 // Again taken from the DeHackEd source.
-static constexpr short codepconv[522] = {
+constexpr std::array<int16_t, 522> codepconv = {
     1, 2, 3, 4, 6, 9, 10, 11, 12, 14, 16, 17, 18, 19, 20, 22, 29, 30, 31, 32, 33, 34, 36,
     38, 39, 41, 43, 44, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
     63, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
@@ -109,10 +112,12 @@ static constexpr short codepconv[522] = {
     1075 // Total: 522
 };
 
-static bool BackedUpData = false;
+bool BackedUpData = false;
 // This is the original data before it gets replaced by a patch.
-static std::string OrgSprNames[::NUMSPRITES];
-static actionf_p1 OrgActionPtrs[::NUMSTATES];
+std::array<std::string, ::NUMSPRITES> OrgSprNames;
+std::array<actionf_p1, ::NUMSTATES> OrgActionPtrs;
+
+} // namespace
 
 // Functions used in a .bex [CODEPTR] chunk
 void A_FireRailgun(AActor*);
@@ -410,27 +415,28 @@ struct Key
 
 class DehScanner;
 
-static void PatchThing(int, DehScanner&);
+static void PatchThing(int, std::string_view, DehScanner&);
 static void PatchSound(int, DehScanner&);
-static void PatchSounds(int, DehScanner&);
+static void PatchSounds(DehScanner&);
 static void PatchFrame(int, DehScanner&);
 static void PatchSprite(int, DehScanner&);
-static void PatchSprites(int, DehScanner&);
+static void PatchSprites(DehScanner&);
 static void PatchAmmo(int, DehScanner&);
 static void PatchWeapon(int, DehScanner&);
 static void PatchPointer(int, DehScanner&);
-static void PatchCheats(int, DehScanner&);
-static void PatchMisc(int, DehScanner&);
-static void PatchText(int, DehScanner&);
-static void PatchStrings(int, DehScanner&);
-static void PatchPars(int, DehScanner&);
-static void PatchCodePtrs(int, DehScanner&);
-static void PatchMusic(int, DehScanner&);
-static void PatchHelper(int, DehScanner&);
+static void PatchCheats(DehScanner&);
+static void PatchMisc(DehScanner&);
+static void PatchText(int, int, DehScanner&);
+static void PatchStrings(DehScanner&);
+static void PatchPars(DehScanner&);
+static void PatchCodePtrs(DehScanner&);
+static void PatchMusic(DehScanner&);
+static void PatchHelper(DehScanner&);
 static int DoInclude(std::string_view, size_t);
 
+static std::tuple<int, std::string_view> ParseThingHeader(std::string_view, size_t);
 static int ParsePointerHeader(std::string_view, size_t);
-static int ParseTextHeader(std::string_view, size_t);
+static std::tuple<int, int> ParseTextHeader(std::string_view, size_t);
 static int ParseClassicHeader(std::string_view header, size_t length)
 {
 	std::string_view textNum = header.substr(length);
@@ -445,41 +451,85 @@ static int ParseClassicHeader(std::string_view header, size_t length)
 	}
 };
 
+template <typename... Args>
+struct ModeFuncs
+{
+	void (*parsebody)(Args..., DehScanner&) = nullptr;
+
+	using HeaderResult =
+		std::conditional_t<
+			sizeof...(Args) == 1,
+			// Args...[0]
+			std::tuple_element_t<0, std::tuple<Args...>>,
+			std::tuple<Args...>>;
+
+	HeaderResult (*parseheader)(std::string_view, size_t) = nullptr;
+
+	void operator()(std::string_view header, size_t length, DehScanner& scanner) const
+	{
+		if constexpr (sizeof...(Args) == 1)
+		{
+			parsebody(parseheader(header, length), scanner);
+		}
+		else
+		{
+			std::apply(
+				[&](auto&&... args)
+				{
+					parsebody(std::forward<decltype(args)>(args)..., scanner);
+				},
+				parseheader(header, length)
+			);
+		}
+
+	}
+};
+
+template <>
+struct ModeFuncs<>
+{
+	void (*parsebody)(DehScanner&);
+
+	void operator()(std::string_view, size_t, DehScanner& scanner) const
+	{
+		parsebody(scanner);
+	}
+};
+
 static constexpr struct
 {
 	std::string_view name;
-	void (*parsebody)(int, DehScanner&);
-	int (*parseheader)(std::string_view, size_t) = [](std::string_view, size_t){ return 0; };
+	std::variant<ModeFuncs<>, ModeFuncs<int>, ModeFuncs<int, int>, ModeFuncs<int, std::string_view>> funcs;
 } Modes[] = {
     // https://eternity.youfailit.net/wiki/DeHackEd_/_BEX_Reference
 
     // These appear in .deh and .bex files
-    {"Thing", PatchThing, ParseClassicHeader},
-    {"Sound", PatchSound, ParseClassicHeader},
-    {"Frame", PatchFrame, ParseClassicHeader},
-    {"Sprite", PatchSprite, ParseClassicHeader},
-    {"Ammo", PatchAmmo, ParseClassicHeader},
-    {"Weapon", PatchWeapon, ParseClassicHeader},
-    {"Pointer", PatchPointer, ParsePointerHeader},
-    {"Cheat", PatchCheats},
-    {"Misc", PatchMisc},
-    {"Text", PatchText, ParseTextHeader},
+    {"Thing", ModeFuncs<int, std::string_view>{ PatchThing, ParseThingHeader }},
+    {"Sound", ModeFuncs<int>{ PatchSound, ParseClassicHeader }},
+    {"Frame", ModeFuncs<int>{ PatchFrame, ParseClassicHeader }},
+    {"Sprite", ModeFuncs<int>{ PatchSprite, ParseClassicHeader }},
+    {"Ammo", ModeFuncs<int>{ PatchAmmo, ParseClassicHeader }},
+    {"Weapon", ModeFuncs<int>{ PatchWeapon, ParseClassicHeader }},
+    {"Pointer", ModeFuncs<int>{ PatchPointer, ParsePointerHeader }},
+    {"Cheat", ModeFuncs<>{ PatchCheats }},
+    {"Misc", ModeFuncs<>{ PatchMisc }},
+    {"Text", ModeFuncs<int, int>{ PatchText, ParseTextHeader }},
     // These appear in .bex files
-    {"include", [](int, DehScanner&){}, DoInclude},
-    {"[STRINGS]", PatchStrings},
-    {"[PARS]", PatchPars},
-    {"[CODEPTR]", PatchCodePtrs},
+    {"include", ModeFuncs<int>{ [](int, DehScanner&){}, DoInclude }},
+    {"[STRINGS]", ModeFuncs<>{ PatchStrings }},
+    {"[PARS]", ModeFuncs<>{ PatchPars }},
+    {"[CODEPTR]", ModeFuncs<>{ PatchCodePtrs }},
     // Eternity engine added a few more features to BEX
-    {"[MUSIC]", PatchMusic},
+    {"[MUSIC]", ModeFuncs<>{ PatchMusic }},
 	// DSDHacked BEX additions
-	{"[SPRITES]", PatchSprites},
-	{"[SOUNDS]", PatchSounds},
-	{"[HELPER]", PatchHelper},
+	{"[SPRITES]", ModeFuncs<>{ PatchSprites }},
+	{"[SOUNDS]", ModeFuncs<>{ PatchSounds }},
+	{"[HELPER]", ModeFuncs<>{ PatchHelper }},
 };
 
 static bool HandleKey(std::span<const Key> keys, void* structure, std::string_view key, int value,
                       const int structsize);
-static void BackupData(void);
+static void BackupData();
 
 class DehScanner
 {
@@ -515,6 +565,7 @@ private:
         return true;
     }
 
+	[[nodiscard]]
 	bool isEmptyLine() const
 	{
 		return m_currentLine.empty() ||
@@ -525,11 +576,13 @@ private:
 			);
 	}
 
+	[[nodiscard]]
 	bool isCommentLine() const
 	{
 		return !m_currentLine.empty() && m_currentLine[0] == '#';
 	}
 
+	[[nodiscard]]
 	bool isKVLine() const
 	{
 		return !m_currentLine.empty() && m_currentLine.find('=') != std::string_view::npos;
@@ -544,6 +597,7 @@ private:
 		return str;
 	}
 
+	[[nodiscard]]
 	KVLine parseKV() const
     {
         size_t equalPos = m_currentLine.find('=');
@@ -552,11 +606,13 @@ private:
         return { key, value };
     }
 
+	[[nodiscard]]
     HeaderLine parseHeader() const
     {
         return trimSpace(m_currentLine);
     }
 
+	[[nodiscard]]
 	std::optional<Line> parseCurrentLine() const
     {
         if (isKVLine())
@@ -667,11 +723,16 @@ static void PrintUnknown(std::string_view key, const char* loc, const size_t idx
 
 static void HandleMode(std::string_view header, DehScanner& scanner)
 {
-	for (const auto& [name, parsebody, parseheader] : Modes)
+	// TODO C++20: restore the structured bindings here
+	// apparently apple clang doesn't support this yet even in C++20 mode
+	// for (const auto& [name, funcs] : Modes)
+	for (const auto& mode : Modes)
 	{
-		if (!strnicmp(name.data(), header.data(), name.size()))
+		if (header.length() >= mode.name.length() && !strnicmp(mode.name.data(), header.data(), mode.name.size()))
 		{
-			parsebody(parseheader(header, name.length()), scanner);
+			std::visit([&](const auto& func) {
+				func(header, mode.name.length(), scanner);
+			}, mode.funcs);
 			return;
 		}
 	}
@@ -719,10 +780,10 @@ struct DoomBackup_t
 } doomBackup;
 
 // [CMB] useful typedefs for iteration over global doom object containers
-typedef DoomObjectContainer<state_t, int32_t>::iterator StatesIterator;
-typedef DoomObjectContainer<mobjinfo_t, int32_t>::iterator MobjIterator;
-typedef DoomObjectContainer<std::string, int32_t>::iterator SpriteNamesIterator;
-typedef DoomObjectContainer<std::string, int32_t>::iterator SoundMapIterator;
+using StatesIterator = DoomObjectContainer<state_t, int32_t>::iterator;
+using MobjIterator = DoomObjectContainer<mobjinfo_t, int32_t>::iterator;
+using SpriteNamesIterator = DoomObjectContainer<std::string, int32_t>::iterator;
+using SoundMapIterator = DoomObjectContainer<std::string, int32_t>::iterator;
 
 static void BackupData(void)
 {
@@ -886,7 +947,38 @@ static auto SplitBexBits(std::string_view str, std::string_view delims)
     return out;
 }
 
-static void PatchThing(int thingNum, DehScanner& scanner)
+static std::tuple<int, std::string_view> ParseThingHeader(std::string_view header, size_t length) {
+	int thingNum;
+	std::string_view textNum = TrimStringViewStart(header.substr(length));
+	if (auto num = ParseNum<int32_t>(textNum))
+	{
+		thingNum = *num;
+	}
+	else
+	{
+		DPrintFmt("Invalid thing header: '{}'\n", header);
+		return { -1, "" };
+	}
+
+	const auto idxPastNum = textNum.find_first_not_of("0123456789");
+	if (idxPastNum == std::string_view::npos)
+		return { thingNum, "" };
+
+	std::string_view thingName = textNum.substr(idxPastNum);
+
+	thingName = TrimStringView(thingName);
+
+	if (thingName.size() < 2)
+		return { thingNum, "" };
+
+	// remove parentheses
+	thingName.remove_prefix(1);
+	thingName.remove_suffix(1);
+
+	return { thingNum, thingName };
+}
+
+static void PatchThing(int thingNum, std::string_view thingName, DehScanner& scanner)
 {
 	// flags can be specified by name (a .bex extension):
 	struct
@@ -991,7 +1083,9 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		info = &mobjinfo_it->second;
 	}
 
-#if defined _DEBUG
+	info->deh_name = thingName;
+
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Thing {} found.\n", thingNum);
 #endif
 
@@ -1014,7 +1108,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 
 		if (ends_with(key, " frame"))
 		{
-			statenum_t state = static_cast<statenum_t>(val);
+			const auto state = static_cast<statenum_t>(val);
 
 			if (starts_with(key, "Initial frame"))
 			{
@@ -1296,6 +1390,11 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		{
 			info->mass = val;
 		}
+		else if (iequals(key, "Tag"))
+		{
+			info->display_name = value;
+			info->display_name_set = true;
+		}
 		else
 		{
 			PrintUnknown(key, "Thing", thingNum);
@@ -1419,7 +1518,7 @@ static void PatchFrame(int frameNum, DehScanner& scanner)
 			}
 		}
 	}
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	SpriteNamesIterator sprnames_it = sprnames.find(info->sprite);
 	// TODO: sprname might appear as <No Sprite> when it's just not be defined yet
 	std::string_view sprname = (sprnames_it == sprnames.end()) ? "<No Sprite>"sv : sprnames_it->second;
@@ -1435,7 +1534,7 @@ static void PatchSprite(int sprNum, DehScanner& scanner)
 
 	if (sprNum >= 0 && sprNum < ::NUMSPRITES)
 	{
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Sprite {}\n", sprNum);
 #endif
 	}
@@ -1480,10 +1579,10 @@ static void PatchSprite(int sprNum, DehScanner& scanner)
  *
  * @param dummy - int value for function pointer
  */
-static void PatchSprites(int dummy, DehScanner& scanner)
+static void PatchSprites(DehScanner& scanner)
 {
 	static constexpr size_t maxsprlen = 4;
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[SPRITES]\n");
 #endif
 
@@ -1507,7 +1606,7 @@ static void PatchSprites(int dummy, DehScanner& scanner)
 		else
 		{
 			// find the value that matches
-			for (int i = 0; i < ARRAY_LENGTH(OrgSprNames); i++)
+			for (int i = 0; i < OrgSprNames.size(); i++)
 			{
 				if (strnicmp(key.data(), OrgSprNames[i].c_str(), maxsprlen) == 0)
 				{
@@ -1520,7 +1619,7 @@ static void PatchSprites(int dummy, DehScanner& scanner)
 			DPrintFmt("Invalid sprite index {}.\n", key);
 			continue; // TODO: should this be an error instead?
 		}
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		SpriteNamesIterator sprnames_it = sprnames.find(sprIdx);
 		const char* prevSprName =
 		    sprnames_it != sprnames.end() ? sprnames_it->second.c_str() : "No Sprite";
@@ -1531,9 +1630,9 @@ static void PatchSprites(int dummy, DehScanner& scanner)
 	}
 }
 
-static void PatchSounds(int dummy, DehScanner& scanner)
+static void PatchSounds(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Sounds]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -1574,7 +1673,7 @@ static void PatchAmmo(int ammoNum, DehScanner& scanner)
 
 	if (ammoNum >= 0 && ammoNum < NUMAMMO)
 	{
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Ammo {}.\n", ammoNum);
 #endif
 		max = &maxammo[ammoNum];
@@ -1624,7 +1723,7 @@ static void PatchWeapon(int weapNum, DehScanner& scanner)
 	if (weapNum >= 0 && weapNum < NUMWEAPONS)
 	{
 		info = &weaponinfo[weapNum];
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Weapon {}\n", weapNum);
 #endif
 	}
@@ -1706,27 +1805,26 @@ static void PatchWeapon(int weapNum, DehScanner& scanner)
 
 static int ParsePointerHeader(std::string_view header, size_t) {
 	auto headerParser = ParseString(header, false);
-	int ptr, frame;
 
 	// skip first token, we already know it's "Pointer"
 	headerParser();
 
 	auto expect_token = [&](std::string_view match = "") -> std::optional<std::string> {
 		auto t = headerParser().token;
-        if (t && (match.empty() || iequals(*t, match))) return *t;
-        DPrintFmt("Pointer block header is invalid: \"{}\"\n", header);
-        return std::nullopt;
+		if (t && (match.empty() || iequals(*t, match))) return t;
+		DPrintFmt("Pointer block header is invalid: \"{}\"\n", header);
+		return std::nullopt;
     };
 
-    auto expect_number = [&]() -> std::optional<int> {
-        auto tok = expect_token();
-        if (!tok) return std::nullopt;
+	auto expect_number = [&]() -> std::optional<int> {
+		auto tok = expect_token();
+		if (!tok) return std::nullopt;
 
-        if (auto num = ParseNum<int32_t>(*tok)) return *num;
+		if (auto num = ParseNum<int32_t>(*tok)) return num;
 
-        DPrintFmt("Pointer block header is invalid: \"{}\"\n", header);
-        return std::nullopt;
-    };
+		DPrintFmt("Pointer block header is invalid: \"{}\"\n", header);
+		return std::nullopt;
+	};
 
 	const auto ptrNum = expect_number();
 	if (!ptrNum)
@@ -1739,14 +1837,14 @@ static int ParsePointerHeader(std::string_view header, size_t) {
 	if (!frameNum)
 		return -1;
 
-	ptr = *ptrNum;
-	frame = *frameNum;
+	const int ptr = *ptrNum;
+	const int frame = *frameNum;
 
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Pointer {}\n", ptr);
 #endif
 
-	if (ptr < 0 || ptr >= ARRAY_LENGTH(codepconv)) {
+	if (ptr < 0 || ptr >= codepconv.size()) {
 		DPrintFmt("Pointer {} out of range.\n", ptr);
 		return -1;
 	}
@@ -1787,7 +1885,7 @@ static void PatchPointer(int ptrNum, DehScanner& scanner)
 	}
 }
 
-static void PatchCheats(int dummy, DehScanner& scanner)
+static void PatchCheats(DehScanner& scanner)
 {
 	DPrintFmt("[DeHackEd] Cheats support is deprecated. Ignoring these lines...\n");
 
@@ -1795,7 +1893,7 @@ static void PatchCheats(int dummy, DehScanner& scanner)
 	while (const auto line = scanner.getNextKeyValue());
 }
 
-static void PatchMisc(int dummy, DehScanner& scanner)
+static void PatchMisc(DehScanner& scanner)
 {
 	static constexpr Key keys[] = {
 	    {"Initial Health", offsetof(DehInfo, StartHealth)},
@@ -1815,7 +1913,7 @@ static void PatchMisc(int dummy, DehScanner& scanner)
 	    {"BFG Cells/Shot", offsetof(DehInfo, BFGCells)},
 	    {"Monsters Infight", offsetof(DehInfo, Infight)}};
 	gitem_t* item;
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Misc\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -1851,9 +1949,9 @@ static void PatchMisc(int dummy, DehScanner& scanner)
 	deh.Infight = deh.Infight == 0xDD ? 1 : 0;
 }
 
-static void PatchPars(int dummy, DehScanner& scanner)
+static void PatchPars(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Pars]\n");
 #endif
 	while (const auto line = scanner.getNextLine())
@@ -1925,15 +2023,15 @@ static void PatchPars(int dummy, DehScanner& scanner)
 		}
 
 		info.partime = time;
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Par for {} changed to {}\n", mapname, time);
 #endif
 	}
 }
 
-static void PatchCodePtrs(int dummy, DehScanner& scanner)
+static void PatchCodePtrs(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[CodePtr]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -1976,9 +2074,9 @@ static void PatchCodePtrs(int dummy, DehScanner& scanner)
 	}
 }
 
-static void PatchMusic(int dummy, DehScanner& scanner)
+static void PatchMusic(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Music]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -1995,9 +2093,9 @@ static void PatchMusic(int dummy, DehScanner& scanner)
 	}
 }
 
-static void PatchHelper(int dummy, DehScanner& scanner)
+static void PatchHelper(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Helper]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -2014,11 +2112,12 @@ static void PatchHelper(int dummy, DehScanner& scanner)
 	}
 }
 
-static int ParseTextHeader(std::string_view header, size_t)
+static std::tuple<int, int> ParseTextHeader(std::string_view header, size_t)
 {
 	std::string_view idk = header.substr(4);
 	auto parser = ParseString(idk, false);
-	int oldsize = -1, newsize = -1;
+	int oldsize = -1;
+	int newsize = -1;
 	if (auto token = parser().token)
 	{
 		if (auto num = ParseNum<int32_t>(*token))
@@ -2038,20 +2137,17 @@ static int ParseTextHeader(std::string_view header, size_t)
 	if (oldsize == -1 || newsize == -1)
 	{
 		DPrintFmt("Invalid Text header: '{}'\n", header);
-		return -1;
+		return { -1, -1 };
 	}
 
 	// awful hack, but we know that the max size here is only a few hundred
-	return (oldsize << 16) + newsize;
+	return { oldsize, newsize };
 }
 
-static void PatchText(int sizes, DehScanner& scanner)
+static void PatchText(const int oldSize, const int newSize, DehScanner& scanner)
 {
-	if (sizes == -1)
+	if (oldSize == -1)
 		return;
-
-	int newSize = (sizes & 0xFFFF);
-	int oldSize = sizes >> 16;
 
 	const auto oldStr = scanner.readTextString(oldSize);
 	const auto newStr = scanner.readTextString(newSize);
@@ -2103,9 +2199,9 @@ static void PatchText(int sizes, DehScanner& scanner)
 	DPrintFmt("   (Unmatched)\n");
 }
 
-static void PatchStrings(int dummy, DehScanner& scanner)
+static void PatchStrings(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Strings]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -2213,7 +2309,7 @@ static int DoInclude(std::string_view include, size_t)
 
 	std::string filename = *token;
 
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Including {}\n", filename);
 #endif
 

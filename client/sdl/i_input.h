@@ -53,6 +53,9 @@ int I_GetKeyFromName(const std::string& name);
 void I_GetEvents(bool mouseOnly);
 
 
+bool I_GetUIMousePosition(int& x, int& y);
+bool I_IsUIMouseButtonDown(int button);
+
 // ============================================================================
 //
 // IInputDevice abstract base class interface
@@ -68,6 +71,9 @@ public:
 	virtual void pause() = 0;
 	virtual void resume() = 0;
 	virtual void reset() = 0;
+
+	virtual void resumeUI()
+	{	resume();	}
 
 	virtual void gatherEvents() = 0;
 	virtual bool hasEvent() const = 0;
@@ -118,6 +124,9 @@ public:
 
 	virtual void grabInput() = 0;
 	virtual void releaseInput() = 0;
+
+	virtual void grabInputForUI()
+	{	releaseInput();	}
 
 	virtual bool isInputGrabbed() const
 	{	return false;	}

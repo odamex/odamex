@@ -54,7 +54,7 @@ $majminpatchFiles = @(
 
 $majminpatchCfgs = Get-ChildItem '.\config-samples' -Filter "*.cfg"
 
-$yearFiles = (Get-ChildItem . -Recurse -File) | ? {($_.FullName -notmatch "build") -and ($_.FullName -notmatch "out") -and ($_.FullName -notmatch "libraries")}
+$yearFiles = Get-ChildItem . -Recurse -File | Where-Object { $_.DirectoryName -notmatch '\\(build|out|libraries)(\\|$)' }
 
 $majminpatchCommaFiles = @(
 '.\odalpapi\net_packet.h',

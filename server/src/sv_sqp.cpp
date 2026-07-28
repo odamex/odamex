@@ -50,7 +50,7 @@ struct CvarField_t
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
-#define PROTOCOL_VERSION 7
+#define PROTOCOL_VERSION 1
 
 /*
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -84,17 +84,8 @@ static void IntQryBuildInformation(const uint32_t& EqProtocolVersion,
 	// bond - real protocol
 	MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
-	// Built revision of server
-	// TODO: Remove guard before next release
-	QRYNEWINFO(7)
-	{
-		// Send the detailed version - version number was in PROTOCOL_VERSION.
-		MSG_WriteString(&ml_message, NiceVersionDetails());
-	}
-	else
-	{
-		MSG_WriteLong(&ml_message, -1);
-	}
+    // Send the detailed version - version number was in PROTOCOL_VERSION.
+    MSG_WriteString(&ml_message, NiceVersionDetails());
 
 	cvar_t* var = GetFirstCvar();
 
@@ -172,21 +163,16 @@ next:
 
 	MSG_WriteString(&ml_message, level.mapname.c_str());
 
-	int timeleft = (sv_timelimit.asInt() - level.time/(TICRATE*60));
-
-	if (timeleft < 0)
-		timeleft = 0;
-
-	// TODO: Remove guard on next release and reset protocol version
-	// TODO: Incorporate code above into block
 	// Only send timeleft if sv_timelimit has been set
-	QRYNEWINFO(6)
-	{
-		if (sv_timelimit.asInt())
-			MSG_WriteShort(&ml_message, timeleft);
-	}
-	else
-		MSG_WriteShort(&ml_message, timeleft);
+    if (sv_timelimit.asInt())
+    {
+        int timeleft = (sv_timelimit.asInt() - level.time/(TICRATE*60));
+
+        if (timeleft < 0)
+            timeleft = 0;
+
+        MSG_WriteShort(&ml_message, timeleft);
+    }
 
 	// Teams
 	if(G_IsTeamGame())

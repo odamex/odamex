@@ -24,6 +24,7 @@
 
 #include "odamex.h"
 
+#include "cmdlib.h"
 #include "z_zone.h"
 #include "p_local.h"
 #include "p_spec.h"
@@ -40,9 +41,15 @@
 #include "p_inter.h"
 #include "gi.h"
 #include "g_skill.h"
+#include "infomap.h"
+#include "p_mobj.h"
+#include "r_sky.h"
+#include "c_effect.h"
 
 #if defined(SERVER_APP)
 #include "sv_main.h"
+#else
+#include "cl_stubs.h"
 #endif
 
 #define CLAMPCOLOR(c)	(EColorRange)((unsigned)(c)>CR_UNTRANSLATED?CR_UNTRANSLATED:(c))
@@ -56,27 +63,32 @@ struct CallReturn
 	byte Pad[3];
 };
 
-static int Stack[STACK_SIZE];
-
-static bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
-	int lineSide, int arg0, int arg1, int arg2, int always, bool delay);
-AActor* P_FindThingById(uint32_t id);
-
-template <size_t N>
-static std::vector<int> ArgvToArgs(const int (&a)[N])
-{
-	return std::vector<int>(a, a + N);
-}
-
 struct FBehavior::ArrayInfo
 {
 	int ArraySize;
 	int32_t *Elements;
 };
 
-static void DoClearInv(player_t* player)
+ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, float num);
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
+ItemEquipVal P_GiveCard(player_t *player, card_t card);
+ItemEquipVal P_GivePower(player_t *player, int  power);
+
+AActor* P_FindThingById(uint32_t id);
+void P_SwitchWeapon(player_t& player);
+bool P_CheckAmmo (player_t& player);
+
+namespace
 {
-	player->weaponowned.fill(0);
+
+std::array<int, STACK_SIZE> Stack;
+
+bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
+	int lineSide, int arg0, int arg1, int arg2, int always, bool delay);
+
+void DoClearInv(player_t* player)
+{
+	player->weaponowned.fill(false);
 	player->powers.fill(0);
 	player->cards.fill(false);
 	player->ammo.fill(0);
@@ -93,11 +105,10 @@ static void DoClearInv(player_t* player)
 	player->weaponowned[wp_none] = true;
 	player->pendingweapon = wp_none;
 
-	SERVER_ONLY(
-	    SV_ACSExecuteSpecial(DLevelScript::PCD_CLEARINVENTORY, player->mo, NULL, true));
+	SERVER_ONLY(SV_ACSExecuteSpecial(DLevelScript::PCD_CLEARINVENTORY, player->mo, NULL, true));
 }
 
-static void ClearInventory(AActor* activator)
+void ClearInventory(AActor* activator)
 {
 	if (activator == NULL)
 	{
@@ -117,158 +128,7 @@ static void ClearInventory(AActor* activator)
 	}
 }
 
-// TODO: HACKY WACKY, need to port classes from ZDOOM 1.23 to make that way cleaner
-struct DoomEntity{
-	const char* Name;
-	mobjtype_t Type;
-};
-#define NUMMONSTERS 22
-
-// TODO: should this instead use the stuff from infomap.cpp:
-static DoomEntity DoomMonsterNames[NUMMONSTERS] = {
-    {"ZombieMan", MT_POSSESSED},  {"ShotgunGuy", MT_SHOTGUY},
-    {"ChaingunGuy", MT_CHAINGUY}, {"DoomImp", MT_TROOP},
-    {"Demon", MT_SERGEANT},       {"Spectre", MT_SHADOWS},
-    {"LostSoul", MT_SKULL},       {"Cacodemon", MT_HEAD},
-    {"HellKnight", MT_KNIGHT},    {"BaronOfHell", MT_BRUISER},
-    {"Arachnotron", MT_BABY},     {"PainElemental", MT_PAIN},
-    {"Revenant", MT_UNDEAD},      {"Fatso", MT_FATSO},
-    {"Archvile", MT_VILE},        {"SpiderMastermind", MT_SPIDER},
-    {"Cyberdemon", MT_CYBORG},    {"CommanderKeen", MT_KEEN},
-    {"WolfensteinSS", MT_WOLFSS}, {"BossBrain", MT_BOSSBRAIN},
-    {"BossTarget", MT_BOSSTARGET}, {"BossEye", MT_BOSSSPIT}};
-
-static DoomEntity DoomAmmoNames[8] = {{"Clip", MT_CLIP},        {"Shell", MT_MISC22},
-                                      {"Cell", MT_MISC20},      {"RocketAmmo", MT_MISC18},
-                                      {"ClipBox", MT_MISC17},   {"ShellBox", MT_MISC23},
-                                      {"RocketBox", MT_MISC19}, {"CellPack", MT_MISC21}};
-
-static DoomEntity DoomWeaponNames[NUMWEAPONS] = {
-    {"Fist", MT_NULL}, // Default weapon, no entity
-    {"Pistol", MT_NULL},          {"Shotgun", MT_SHOTGUN},
-    {"Chaingun", MT_CHAINGUN},    {"RocketLauncher", MT_MISC27},
-    {"PlasmaRifle", MT_MISC28},   {"BFG9000", MT_MISC25},
-    {"Chainsaw", MT_MISC26},      {"SuperShotgun", MT_SUPERSHOTGUN},
-    {"OdaUnarmed", MT_NULL}    // Odamex-specific wp_none.
-    };
-
-static DoomEntity DoomKeyNames[6] = {{"BlueCard", MT_MISC4},
-                                     {"YellowCard", MT_MISC6},
-                                     {"RedCard", MT_MISC5},
-                                     {"BlueSkull", MT_MISC9},
-                                     {"YellowSkull", MT_MISC7},
-									 {"RedSkull", MT_MISC8}};
-
-static DoomEntity DoomPowerNames[7] = {{"InvulnerabilitySphere", MT_INV},
-                                       {"Berserk", MT_MISC13},
-                                       {"BlurSphere", MT_INS},
-                                       {"RadSuit", MT_MISC14},
-                                       {"Allmap", MT_MISC15},
-                                       {"Infrared", MT_MISC16}};
-
-static DoomEntity DoomHealthArmorNames[9] = {
-    {"HealthBonus", MT_MISC2}, {"ArmorBonus", MT_MISC3}, {"GreenArmor", MT_MISC0},
-    {"BlueArmor", MT_MISC1},   {"Stimpack", MT_MISC10},  {"Medikit", MT_MISC11},
-    {"Soulsphere", MT_MISC12}, {"Megasphere", MT_MEGA},  {"Backpack", MT_MISC24}};
-
-static DoomEntity DoomDecorationNames[60] = {{"BurningBarrel", MT_MISC77},
-                                             {"HangNoGuts", MT_MISC78},
-                                             {"HangBNoBrain", MT_MISC79},
-                                             {"HangTLookingDown", MT_MISC80},
-                                             {"HangTSkull", MT_MISC81},
-                                             {"HangTLookingUp", MT_MISC82},
-                                             {"HangTNoBrain", MT_MISC83},
-                                             {"ColonGibs", MT_MISC84},
-                                             {"SmallBloodPool", MT_MISC85},
-                                             {"BrainStem", MT_MISC86},
-                                             {"TechLamp", MT_MISC29},
-                                             {"TechLamp2", MT_MISC30},
-                                             {"GibbedMarine", MT_MISC68},
-                                             {"GibbedMarineExtra", MT_MISC69},
-                                             {"DeadMarine", MT_MISC62},
-                                             {"DeadZombieMan", MT_MISC63},
-                                             {"DeadShotgunGuy", MT_MISC67},
-                                             {"DeadDoomImp", MT_MISC66},
-                                             {"DeadDemon", MT_MISC64},
-                                             {"DeadCacodemon", MT_MISC61},
-                                             {"DeadLostSoul", MT_MISC65},
-                                             {"Gibs", MT_MISC71},
-                                             {"DeadStick", MT_MISC74},
-                                             {"LiveStick", MT_MISC75},
-                                             {"HeadOnAStick", MT_MISC72},
-                                             {"HeadsOnAStick", MT_MISC70},
-                                             {"HeadCandles", MT_MISC73},
-                                             {"TallGreenColumn", MT_MISC32},
-                                             {"ShortGreenColumn", MT_MISC33},
-                                             {"TallRedColumn", MT_MISC34},
-                                             {"ShortRedColumn", MT_MISC35},
-                                             {"Candlestick", MT_MISC49},
-                                             {"Candelabra", MT_MISC50},
-                                             {"HeartColumn", MT_MISC37},
-                                             {"SkullColumn", MT_MISC36},
-                                             {"EvilEye", MT_MISC38},
-                                             {"FloatingSkull", MT_MISC39},
-                                             {"TorchTree", MT_MISC40},
-                                             {"BlueTorch", MT_MISC41},
-                                             {"GreenTorch", MT_MISC42},
-                                             {"RedTorch", MT_MISC43},
-                                             {"Stalagtite", MT_MISC47},
-                                             {"TechPillar", MT_MISC48},
-                                             {"BloodyTwitch", MT_MISC51},
-                                             {"Meat2", MT_MISC52},
-                                             {"Meat3", MT_MISC53},
-                                             {"Meat4", MT_MISC54},
-                                             {"Meat5", MT_MISC55},
-                                             {"BigTree", MT_MISC76},
-                                             {"ShortBlueTorch", MT_MISC44},
-                                             {"ShortGreenTorch", MT_MISC45},
-                                             {"ShortRedTorch", MT_MISC46},
-                                             {"NonsolidMeat2", MT_MISC56},
-                                             {"NonsolidMeat4", MT_MISC57},
-                                             {"NonsolidMeat3", MT_MISC58},
-                                             {"NonsolidMeat5", MT_MISC59},
-                                             {"NonsolidTwitch", MT_MISC60},
-                                             {"ZBridge", MT_BRIDGE},
-                                             {"Column", MT_MISC31},
-                                             {"ExplosiveBarrel", MT_BARREL}};
-
-extern ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, float num);
-extern ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
-extern ItemEquipVal P_GiveCard(player_t *player, card_t card);
-extern ItemEquipVal P_GivePower(player_t *player, int  power);
-
-mobjtype_t FindWeaponEntity(const char* type)
-{
-	for (int i = 0; i < 9; i++)
-	{
-		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
-		{
-			if (DoomWeaponNames[i].Type == MT_NULL)
-			{
-				DPrintFmt("ACS: LOGIC ERROR - Cannot spawn default weapons!\n");
-				return MT_NULL;
-			}
-			return DoomWeaponNames[i].Type;
-		}
-	}
-
-	return MT_NULL;
-}
-
-mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
-{
-	for (int i = 0; i < size; i++)
-	{
-		if (strcmp(list[i].Name, type) == 0)
-		{
-			return list[i].Type;
-		}
-	}
-
-	return MT_NULL;
-}
-
-static void GiveBackpack(player_t& player)
+void GiveBackpack(player_t& player)
 {
 	if (!player.backpack)
 	{
@@ -285,87 +145,72 @@ static void GiveBackpack(player_t& player)
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-static void DoGiveInv(player_t& player, const char* type, int amount)
+void DoGiveInv(player_t& player, const char* type, int amount)
 {
 	const weapontype_t savedpendingweap = player.pendingweapon;
 
-	// Give ammo
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
-		{
-			player.ammo[i] = MIN(player.ammo[i]+amount, player.maxammo[i]);
-			SERVER_ONLY(SV_SendPlayerInfo(player));
-			return;
-		}
-	}
-
 	// Give weapon
-	for (int i = 0; i < NUMWEAPONS; i++)
-	{
-		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
-		{
-			do
-			{
-				P_GiveWeapon(player, static_cast<weapontype_t>(i), false);
-			}
-			while (--amount > 0);
-
-			// Don't bring it up automatically
-			if (player.readyweapon != wp_none && player.pendingweapon != wp_none)
-				player.pendingweapon = savedpendingweap;
-			SERVER_ONLY(SV_SendPlayerInfo(player));
-			return;
-		}
-	}
-
-	// Give keycard
-	for (int i = 0; i < NUMCARDS; i++)
-	{
-		if (strcmp(DoomKeyNames[i].Name, type) == 0)
-		{
-			do
-			{
-				P_GiveCard(player, static_cast<card_t>(i));
-			}
-			while (--amount > 0);
-			SERVER_ONLY(SV_SendPlayerInfo(player));
-			return;
-		}
-	}
-
-	// Give power
-	for (int i = 0; i < NUMPOWERS; i++)
-	{
-		if (strcmp(DoomPowerNames[i].Name, type) == 0)
-		{
-			do
-			{
-				P_GivePower(player, i);
-			}
-			while (--amount > 0);
-			SERVER_ONLY(SV_SendPlayerInfo(player));
-			return;
-		}
-	}
-
-	// Give backpack
-	if (strcmp("Backpack", type) == 0)
+	// Needs separate handling because fist/pistol have no mobjtype
+	const weapontype_t weapon = P_INameToWeapon(type);
+	if (weapon != wp_none)
 	{
 		do
 		{
-			GiveBackpack(player);
+			P_GiveWeapon(player, weapon, false);
 		}
 		while (--amount > 0);
+
+		// Don't bring it up automatically
+		if (player.readyweapon != wp_none && player.pendingweapon != wp_none)
+			player.pendingweapon = savedpendingweap;
 		SERVER_ONLY(SV_SendPlayerInfo(player));
 		return;
 	}
 
-	// Unknown item.
-	PrintFmt(PRINT_HIGH, "I don't know what {} is\n", type);
+	const auto [_, givetype] = P_INameToMobjFull(type);
+	if (!givetype)
+	{
+		DPrintFmt("ACS: LOGIC ERROR - Could not give {}\n", type);
+		return;
+	}
+
+	std::visit(OUtil::visitor {
+		[&](const card_t card) {
+			do
+			{
+				P_GiveCard(player, card);
+			}
+			while (--amount > 0);
+			SERVER_ONLY(SV_SendPlayerInfo(player));
+		},
+		[&](const ammotype_t ammo) {
+			player.ammo[ammo] = MIN(player.ammo[ammo]+amount, player.maxammo[ammo]);
+			SERVER_ONLY(SV_SendPlayerInfo(player));
+		},
+		[&](const powertype_t power) {
+			// TODO: check if do-while is correct here
+			do
+			{
+				P_GivePower(player, power);
+			}
+			while (--amount > 0);
+			SERVER_ONLY(SV_SendPlayerInfo(player));
+		},
+		[&](const infomap::backpack_t) {
+			do
+			{
+				GiveBackpack(player);
+			}
+			while (--amount > 0);
+			SERVER_ONLY(SV_SendPlayerInfo(player));
+		},
+		[](const weapontype_t) {
+			// already handled above, do nothing
+		}
+	}, *givetype);
 }
 
-static void GiveInventory(AActor* activator, const char* type, int amount)
+void GiveInventory(AActor* activator, const char* type, int amount)
 {
 	if (activator == NULL)
 	{
@@ -384,9 +229,7 @@ static void GiveInventory(AActor* activator, const char* type, int amount)
 	}
 }
 
-void P_SwitchWeapon(player_t& player);
-
-static void TakeWeapon(player_t& player, int weapon)
+void TakeWeapon(player_t& player, int weapon)
 {
 	player.weaponowned[weapon] = false;
 	if (player.readyweapon == weapon || player.pendingweapon == weapon)
@@ -413,9 +256,7 @@ static void TakeWeapon(player_t& player, int weapon)
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-bool P_CheckAmmo (player_t& player);
-
-static void TakeAmmo(player_t& player, int ammo, int amount)
+void TakeAmmo(player_t& player, int ammo, int amount)
 {
 	if (amount == 0)
 	{
@@ -451,7 +292,7 @@ static void TakeAmmo(player_t& player, int ammo, int amount)
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-static AActor* SingleActorFromTID(int tid, AActor* defactor)
+AActor* SingleActorFromTID(int tid, AActor* defactor)
 {
 	if (tid == 0)
 	{
@@ -464,7 +305,7 @@ static AActor* SingleActorFromTID(int tid, AActor* defactor)
 	}
 }
 
-static void TakeBackpack(player_t& player)
+void TakeBackpack(player_t& player)
 {
 	if (!player.backpack)
 		return;
@@ -473,46 +314,53 @@ static void TakeBackpack(player_t& player)
 	for (int i = 0; i < NUMAMMO; ++i)
 	{
 		player.maxammo[i] /= 2;
-		if (player.ammo[i] > player.maxammo[i])
-		{
-			player.ammo[i] = player.maxammo[i];
-		}
+		player.ammo[i] = std::min(player.ammo[i], player.maxammo[i]);
 	}
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-static void DoTakeInv(player_t& player, const char* type, int amount)
+void DoTakeInv(player_t& player, const char* type, int amount)
 {
-	for (int i = 0; i < NUMAMMO; ++i)
+	const weapontype_t weapon = P_INameToWeapon(type);
+	if (weapon != wp_none)
 	{
-		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
-		{
-			TakeAmmo(player, i, amount);
+			TakeWeapon(player, weapon);
 			return;
-		}
 	}
-	for (int i = 0; i < NUMWEAPONS; ++i)
+
+	const auto [_, givetype] = P_INameToMobjFull(type);
+	if (!givetype)
 	{
-		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
-		{
-			TakeWeapon(player, i);
-			return;
+		DPrintFmt("ACS: LOGIC ERROR - Could not take {}\n", type);
+		return;
+	}
+
+	std::visit(OUtil::visitor {
+		[&](const card_t card) {
+			player.cards[card] = false;
+			SERVER_ONLY(SV_SendPlayerInfo(player));
+		},
+		[&](const ammotype_t ammo) {
+			TakeAmmo(player, ammo, amount);
+		},
+		[&](const powertype_t power) {
+			// TODO: implement this
+			PrintFmt("Taking powerups is not yet supported\n");
+		},
+		[&](const infomap::backpack_t) {
+			// TODO: Eternity uses the amount, check if this applies to ZDoom too
+			// see https://eternity.youfailit.net/wiki/TakeInventory
+			TakeBackpack(player);
+		},
+		[](const weapontype_t) {
+			// already handled above, do nothing
 		}
-	}
-	for (int i = 0; i < NUMCARDS; ++i)
-	{
-		if (strcmp(DoomKeyNames[i].Name, type) == 0)
-		{
-			player.cards[i] = 0;
-		}
-	}
-	if (strcmp("Backpack", type) == 0)
-	{
-		TakeBackpack(player);
-	}
+	}, *givetype);
+
+	// TODO: Eternity allows taking health, check if this applies to ZDoom too
 }
 
-static void TakeInventory(AActor* activator, const char* type, int amount)
+void TakeInventory(AActor* activator, const char* type, int amount)
 {
 	if (activator == nullptr)
 	{
@@ -528,40 +376,88 @@ static void TakeInventory(AActor* activator, const char* type, int amount)
 	}
 }
 
-static int CheckInventory(AActor* activator, const char* type)
+int CheckInventory(AActor* activator, const char* type)
 {
-	if (activator == NULL || activator->player == NULL)
+	if (activator == nullptr || activator->player == nullptr)
 		return 0;
 
-	player_t* player = activator->player;
+	const player_t& player = *activator->player;
 
-	for (int i = 0; i < NUMAMMO; ++i)
+	const weapontype_t weapon = P_INameToWeapon(type);
+	if (weapon != wp_none)
 	{
-		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
-		{
-			return player->ammo[i];
+		return player.weaponowned[weapon] ? 1 : 0;
+	}
+
+	const auto [_, givetype] = P_INameToMobjFull(type);
+	if (!givetype)
+	{
+		DPrintFmt("ACS: LOGIC ERROR - Could not check {}\n", type);
+		return 0;
+	}
+
+	return std::visit(OUtil::visitor {
+		[&](const card_t card) {
+			return player.cards[card] ? 1 : 0;
+		},
+		[&](const ammotype_t ammo) {
+			return player.ammo[ammo];
+		},
+		[&](const powertype_t power) {
+			// TODO: implement this
+			PrintFmt("Checking powerups is not yet supported\n");
+			return 0;
+		},
+		[&](const infomap::backpack_t) {
+			return player.backpack ? 1 : 0;
+		},
+		[](const weapontype_t) {
+			// already handled above, do nothing
+			return 0;
 		}
-	}
-	for (int i = 0; i < NUMWEAPONS; ++i)
-	{
-		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
-		{
-			return player->weaponowned[i] ? 1 : 0;
-		}
-	}
-	for (int i = 0; i < NUMCARDS; ++i)
-	{
-		if (strcmp(DoomKeyNames[i].Name, type) == 0)
-		{
-			return player->cards[i] ? 1 : 0;
-		}
-	}
-	if (strcmp("Backpack", type) == 0)
-	{
-		return player->backpack ? 1 : 0;
-	}
-	return 0;
+	}, *givetype);
 }
+
+int16_t StrToMOD(const char* str)
+{
+	// TODO: find out whether this is supposed to be case sensitive
+	using OUtil::CONST_HASH_NO_CASE;
+	switch (CONST_HASH_NO_CASE(str))
+	{
+		default:
+		case CONST_HASH_NO_CASE("Ice"):
+		case CONST_HASH_NO_CASE("Disintegrate"):
+		case CONST_HASH_NO_CASE("Poison"):
+		case CONST_HASH_NO_CASE("Electric"):
+		case CONST_HASH_NO_CASE("Massacre"):
+		case CONST_HASH_NO_CASE("None"):
+			return MOD_UNKNOWN;
+		case CONST_HASH_NO_CASE("BFGSplash"):
+			return MOD_BFG_SPLASH;
+		case CONST_HASH_NO_CASE("Drowning"):
+			return MOD_WATER;
+		case CONST_HASH_NO_CASE("Slime"):
+			return MOD_SLIME;
+		case CONST_HASH_NO_CASE("Fire"):
+			return MOD_LAVA;
+		case CONST_HASH_NO_CASE("Crush"):
+			return MOD_CRUSH;
+		case CONST_HASH_NO_CASE("Telefrag"):
+			return MOD_TELEFRAG;
+		case CONST_HASH_NO_CASE("Falling"):
+			return MOD_FALLING;
+		case CONST_HASH_NO_CASE("Suicide"):
+			return MOD_SUICIDE;
+		case CONST_HASH_NO_CASE("Exit"):
+			return MOD_EXIT;
+		case CONST_HASH_NO_CASE("Melee"):
+			return MOD_HIT;
+		case CONST_HASH_NO_CASE("Railgun"):
+			return MOD_RAILGUN;
+	}
+}
+
+} // namespace
 
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (sv_gametype)
@@ -569,14 +465,10 @@ EXTERN_CVAR (sv_gametype)
 //---- ACS lump manager ----//
 
 FBehavior::FBehavior (byte* object, int len)
+: Chunks(nullptr), Scripts(nullptr), NumScripts(0),
+  Functions(nullptr), NumFunctions(0), ScriptFlags(nullptr), NumScriptFlags(0),
+  Arrays(nullptr), NumArrays(0)
 {
-	NumScripts = 0;
-	NumFunctions = 0;
-	NumArrays = 0;
-	Scripts = NULL;
-	Functions = NULL;
-	Arrays = NULL;
-	Chunks = NULL;
 
 	if (object[0] != 'A' || object[1] != 'C' || object[2] != 'S')
 	{
@@ -687,6 +579,14 @@ FBehavior::FBehavior (byte* object, int len)
 		{
 			NumFunctions = LELONG((reinterpret_cast<uint32_t*>(Functions))[1]);
 			Functions += 8;
+		}
+
+		// Per-script flags (clientside etc)
+		ScriptFlags = FindChunk(MAKE_ID('S','F','L','G'));
+		if (ScriptFlags != NULL)
+		{
+			NumScriptFlags = LELONG((reinterpret_cast<uint32_t*>(ScriptFlags))[1]) / 4;
+			ScriptFlags += 8;
 		}
 
 		chunk = reinterpret_cast<uint32_t*>(FindChunk(MAKE_ID('M','I','N','I')));
@@ -987,19 +887,43 @@ uint32_t FBehavior::FindLanguage (uint32_t langid, bool ignoreregion) const
 	return 0;
 }
 
+bool FBehavior::IsScriptClientside (int number) const
+{
+	if (ScriptFlags == NULL)
+		return false;
+
+	const uint16_t* flags = reinterpret_cast<const uint16_t*>(ScriptFlags);
+	for (int i = 0; i < NumScriptFlags; ++i)
+	{
+		if (LESHORT(flags[i*2]) == static_cast<uint16_t>(number))
+			return (LESHORT(flags[i*2+1]) & SCRIPTF_ClientSide) != 0;
+	}
+
+	return false;
+}
+
 void FBehavior::StartTypedScripts (uint16_t type, AActor *activator, int arg0, int arg1, int arg2, bool always) const
 {
-	if (!serverside)
-		return;
-
 	for (int i = 0; i < NumScripts; ++i)
 	{
-		ScriptPtr* ptr = reinterpret_cast<ScriptPtr*>(Scripts + 8*i);
-		if (ptr->Type == type)
+
+		ScriptPtr* ptr = reinterpret_cast<ScriptPtr*>(Scripts + 8 * i);
+
+		if (ptr->Type != type)
+			continue;
+
+		if (IsScriptClientside(ptr->Number))
 		{
-			P_GetScriptGoing (activator, NULL, ptr->Number,
-				reinterpret_cast<int*>(ptr->Address + Data), 0, arg0, arg1, arg2, always, true);
+			if (!clientside)
+				continue;
 		}
+		else if (!serverside)
+		{
+			continue;
+		}
+
+		P_GetScriptGoing (activator, NULL, ptr->Number,
+				reinterpret_cast<int*>(ptr->Address + Data), 0, arg0, arg1, arg2, always, true);
 	}
 }
 
@@ -1008,6 +932,7 @@ void FBehavior::StartTypedScripts (uint16_t type, AActor *activator, int arg0, i
 
 
 #define NEXTWORD	(LELONG(*pc++))
+#define NEXTSHORT	(fmt==ACS_LittleEnhanced?getshort(pc):NEXTWORD)
 #define NEXTBYTE	(fmt==ACS_LittleEnhanced?getbyte(pc):NEXTWORD)
 #define STACK(a)	(Stack[sp - (a)])
 #define PushToStack(a)	(Stack[sp++] = (a))
@@ -1027,10 +952,9 @@ DACSThinker::DACSThinker ()
 	else
 	{
 		ActiveThinker = this;
-		Scripts = NULL;
-		LastScript = NULL;
-		for (int i = 0; i < 1000; i++)
-			RunningScripts[i] = NULL;
+		Scripts = nullptr;
+		LastScript = nullptr;
+		RunningScripts.fill(nullptr);
 	}
 }
 
@@ -1304,12 +1228,18 @@ void DPlaneWatcher::RunThink ()
 		(LastD > WatchD && newd <= WatchD))
 	{
 		TeleportSide = LineSide;
+		P_ClearJustTeleported();
 		LineSpecials[Special] (Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
 
 		if (serverside)
 		{
-			SERVER_ONLY(SV_SendExecuteLineSpecial(Special, Line, Activator, Arg0, Arg1,
-			                                      Arg2, Arg3, Arg4));
+			SV_SendExecuteLineSpecial(Special, Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
+
+			if (P_JustTeleported(Activator))
+			{
+				SV_UpdateMobj(Activator);
+				P_ClearJustTeleported();
+			}
 		}
 		Destroy ();
 	}
@@ -1455,13 +1385,12 @@ void DLevelScript::PutFirst ()
 
 int DLevelScript::Random (int min, int max)
 {
-	int num1, num2, num3, num4;
 	unsigned int num;
 
-	num1 = P_Random ();
-	num2 = P_Random ();
-	num3 = P_Random ();
-	num4 = P_Random ();
+	const int num1 = P_Random();
+	const int num2 = P_Random();
+	const int num3 = P_Random();
+	const int num4 = P_Random();
 
 	num = ((num1 << 24) | (num2 << 16) | (num3 << 8) | num4);
 	num %= (max - min + 1);
@@ -1474,7 +1403,7 @@ int DLevelScript::ThingCount (int type, int tid)
 	AActor *mobj = NULL;
 	int count = 0;
 
-	if (type >= NumSpawnableThings)
+	if (static_cast<size_t>(type) >= SpawnableThings.size())
 	{
 		return 0;
 	}
@@ -1538,17 +1467,14 @@ void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 		sectors[secnum].SectorChanges |= SPC_FlatPic;
 	}
 
-	if (serverside)
-	{
-		const int argv[] = {tag, name};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(
-		    SV_ACSExecuteSpecial(floorOrCeiling ? PCD_CHANGECEILING : PCD_CHANGEFLOOR,
-		                         NULL, NULL, false, args));
-	}
+	SERVER_ONLY(
+		const std::array args = {tag, name};
+		SV_ACSExecuteSpecial(floorOrCeiling ? PCD_CHANGECEILING : PCD_CHANGEFLOOR,
+		                     NULL, NULL, false, args);
+	)
 }
 
-extern size_t P_NumPlayersInGame();
+size_t P_NumPlayersInGame();
 
 int DLevelScript::CountPlayers()
 {
@@ -1691,12 +1617,10 @@ void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 	if (texname.empty())
 		return;
 
-	if (serverside)
-	{
-		int argv[] = {lineid, side, position, name};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINETEXTURE, NULL, NULL, false, args));
-	}
+	SERVER_ONLY(
+		const std::array args = {lineid, side, position, name};
+		SV_ACSExecuteSpecial(PCD_SETLINETEXTURE, NULL, NULL, false, args);
+	)
 
 	side = (side) ? 1 : 0;
 
@@ -1757,12 +1681,10 @@ void DLevelScript::SetLineBlocking(int lineid, int flags)
 		}
 	}
 
-	if (serverside)
-	{
-		int argv[] = {lineid, flags};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINEBLOCKING, NULL, NULL, false, args));
-	}
+	SERVER_ONLY(
+		const std::array args  = {lineid, flags};
+		SV_ACSExecuteSpecial(PCD_SETLINEBLOCKING, NULL, NULL, false, args);
+	)
 }
 
 void DLevelScript::SetLineMonsterBlocking(int lineid, int toggle)
@@ -1781,12 +1703,10 @@ void DLevelScript::SetLineMonsterBlocking(int lineid, int toggle)
 		}
 	}
 
-	if (serverside)
-	{
-		int argv[] = {lineid, toggle};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINEMONSTERBLOCKING, NULL, NULL, false, args));
-	}
+	SERVER_ONLY(
+		const std::array args = {lineid, toggle};
+		SV_ACSExecuteSpecial(PCD_SETLINEMONSTERBLOCKING, NULL, NULL, false, args);
+	)
 }
 
 void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, int arg3, int arg4, int arg5)
@@ -1805,12 +1725,10 @@ void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, i
 		line->args[4] = arg5;
 	}
 
-	if (serverside)
-	{
-		int argv[] = {lineid, special, arg1, arg2, arg3, arg4, arg5};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINESPECIAL, NULL, NULL, false, args));
-	}
+	SERVER_ONLY(
+		const std::array args = {lineid, special, arg1, arg2, arg3, arg4, arg5};
+		SV_ACSExecuteSpecial(PCD_SETLINESPECIAL, NULL, NULL, false, args);
+	)
 }
 
 void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activator,
@@ -1818,9 +1736,15 @@ void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activ
 {
 	if (serverside)
 	{
+		P_ClearJustTeleported();
 		LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
-		SERVER_ONLY(SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2,
-		                                      arg3, arg4));
+
+		SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2, arg3, arg4);
+		if (P_JustTeleported(activator))
+		{
+			SV_UpdateMobj(activator);
+			P_ClearJustTeleported();
+		}
 	}
 }
 
@@ -1838,12 +1762,10 @@ void DLevelScript::ChangeMusic(byte pcd, const AActor* activator, int index, int
 			S_ChangeMusic(lookup, loop);
 	}
 
-	if (serverside)
-	{
-		int argv[] = {index, loop};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, activator, NULL, local, args));
-	}
+	SERVER_ONLY(
+		const std::array args = {index, loop};
+		SV_ACSExecuteSpecial(pcd, activator, NULL, local, args);
+	)
 }
 
 
@@ -1861,12 +1783,10 @@ void DLevelScript::StartSound(byte pcd, const AActor* activator, int channel, in
 			S_Sound(channel, lookup, static_cast<float>(volume) / 127.0F, attenuation);
 	}
 
-	if (serverside)
-	{
-		int argv[] = {channel, index, volume, attenuation};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, activator, NULL, local, args));
-	}
+	SERVER_ONLY(
+		const std::array args = {channel, index, volume, attenuation};
+		SV_ACSExecuteSpecial(pcd, activator, NULL, local, args);
+	)
 }
 
 void DLevelScript::StartSectorSound(byte pcd, const sector_t* sector, int channel, int index, int volume, int attenuation)
@@ -1878,13 +1798,11 @@ void DLevelScript::StartSectorSound(byte pcd, const sector_t* sector, int channe
 			S_Sound(sector->soundorg, channel, lookup, static_cast<float>(volume) / 127.0F, attenuation);
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		int sectorNum = sector ? sector - sectors : 0;
-		int argv[] = {sectorNum, channel, index, volume, attenuation};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, NULL, NULL, false, args));
-	}
+		const std::array args = {sectorNum, channel, index, volume, attenuation};
+		SV_ACSExecuteSpecial(pcd, NULL, NULL, false, args);
+	)
 }
 
 void DLevelScript::StartThingSound(byte pcd, const AActor* actor, int channel, int index, int volume, int attenuation)
@@ -1896,12 +1814,10 @@ void DLevelScript::StartThingSound(byte pcd, const AActor* actor, int channel, i
 			S_Sound(actor, channel, lookup, static_cast<float>(volume) / 127.0F, attenuation);
 	}
 
-	if (serverside)
-	{
-		int argv[] = {channel, index, volume, attenuation};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, actor, NULL, false, args));
-	}
+	SERVER_ONLY(
+		const std::array args = {channel, index, volume, attenuation};
+		SV_ACSExecuteSpecial(pcd, actor, NULL, false, args);
+	)
 }
 
 void DLevelScript::SetThingSpecial(AActor* actor, int special, int arg1, int arg2, int arg3, int arg4, int arg5)
@@ -1913,12 +1829,10 @@ void DLevelScript::SetThingSpecial(AActor* actor, int special, int arg1, int arg
 	actor->args[3] = arg4;
 	actor->args[4] = arg5;
 
-	if (serverside)
-	{
-		int argv[] = {static_cast<int>(actor->netid), special, arg1, arg2, arg3, arg4, arg5};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETTHINGSPECIAL, actor, NULL, false, args));
-	}
+	SERVER_ONLY(
+		const std::array args = {static_cast<int>(actor->netid), special, arg1, arg2, arg3, arg4, arg5};
+		SV_ACSExecuteSpecial(PCD_SETTHINGSPECIAL, actor, NULL, false, args);
+	)
 }
 
 void DLevelScript::CancelFade(AActor* actor)
@@ -1947,81 +1861,168 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 			SN_StartSequence(sec, lookup);
 	}
 
-	if (serverside)
-	{
-		int argv[] = {static_cast<int>(sec - sectors), index};
-		std::vector<int> args = ArgvToArgs(argv);
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, false, args));
+	SERVER_ONLY(
+		const std::array args = {static_cast<int>(sec - sectors), index};
+		SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, false, args);
+	)
+}
+
+EXTERN_CVAR(sv_nomonsters)
+
+namespace
+{
+
+std::optional<std::pair<byte, uint32_t>> GetFountainSpawnInfo(const char* mobjstr)
+{
+	using OUtil::CONST_HASH_NO_CASE;
+	const auto make_return = [](const uint32_t fountaintype) {
+		return std::pair<byte, uint32_t>({ fountaintype >> FX_FOUNTAINSHIFT, fountaintype });
+	};
+	switch (CONST_HASH_NO_CASE(mobjstr)) {
+		case CONST_HASH_NO_CASE("YellowParticleFountain"):
+			return make_return(FX_YELLOWFOUNTAIN);
+		case CONST_HASH_NO_CASE("RedParticleFountain"):
+			return make_return(FX_REDFOUNTAIN);
+		case CONST_HASH_NO_CASE("BlueParticleFountain"):
+			return make_return(FX_BLUEFOUNTAIN);
+		case CONST_HASH_NO_CASE("GreenParticleFountain"):
+			return make_return(FX_GREENFOUNTAIN);
+		case CONST_HASH_NO_CASE("PurpleParticleFountain"):
+			return make_return(FX_PURPLEFOUNTAIN);
+		case CONST_HASH_NO_CASE("BlackParticleFountain"):
+			return make_return(FX_BLACKFOUNTAIN);
+		case CONST_HASH_NO_CASE("WhiteParticleFountain"):
+			return make_return(FX_WHITEFOUNTAIN);
+		default:
+			return std::nullopt;
 	}
 }
 
-int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle)
+}
+
+// TODO: deduplicate these and the similar functions in P_Interaction
+int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, angle_t angle, bool force)
 {
 	const char* typestr = level.behavior->LookupString(type);
-	if (typestr == NULL)
+	if (typestr == nullptr)
 		return 0;
-	char name[64];
-	name[0] = 'A';
-	name[63] = 0;
-	strncpy(name+1, typestr, 62);
 
-	//const TypeInfo* info = TypeInfo::FindType(name);
-	mobjtype_t info;
-
+	mobjtype_t info = P_INameToMobj(typestr);
+	std::optional<std::pair<byte, uint32_t>> fountain_info;
+	if (info == MT_NULL)
 	{
-		// Find an entity through cycles
-		info = FindDoomEntity(typestr, DoomMonsterNames, NUMMONSTERS);
-
-		if (info == MT_NULL)
-			info = FindWeaponEntity(typestr);
-		if (info == MT_NULL)
-			info = FindDoomEntity(typestr, DoomAmmoNames, 8);
-		if (info == MT_NULL)
-			info = FindDoomEntity(typestr, DoomKeyNames, 6);
-		if (info == MT_NULL)
-			info = FindDoomEntity(typestr, DoomPowerNames, 6);
-		if (info == MT_NULL)
-			info = FindDoomEntity(typestr, DoomHealthArmorNames, 9); // Ch0wW
-		if (info == MT_NULL)
-			info = FindDoomEntity(typestr, DoomDecorationNames, 60); // Ch0wW
+		fountain_info = GetFountainSpawnInfo(typestr);
+		if (fountain_info)
+			info = MT_FOUNTAIN;
 	}
 
-	AActor* actor = NULL;
+	int spawncount = 0;
 
-	if (info != MT_NULL)
+	if (info != MT_NULL && !((mobjinfo[info].flags & MF_COUNTKILL) && sv_nomonsters))
 	{
-		actor = new AActor (x, y, z, info);
+		auto* actor = new AActor (x, y, z, info);
 
-		if (actor != NULL)
+		if (actor != nullptr)
 		{
-			if (P_TestMobjLocation(actor))
+			if (force || P_TestMobjLocation(actor))
 			{
-				actor->angle = angle << 24;
+				if (fountain_info)
+				{
+					actor->args[0] = fountain_info->first;
+					actor->effects = fountain_info->second;
+				}
+				actor->angle = angle;
 				actor->tid = tid;
 				actor->AddToHash();
 				actor->flags |= MF_DROPPED;  // Don't respawn
+				spawncount++;
 			}
 			else
 			{
 				actor->Destroy();
-				actor = NULL;
+				actor = nullptr;
 			}
 		}
 	}
+	else if (info == MT_NULL)
+	{
+		DPrintFmt("ACS: LOGIC ERROR - Could not spawn thing {}\n", typestr);
+	}
 
-	return static_cast<int>(reinterpret_cast<uintptr_t>(actor));
+	return spawncount;
 }
 
-int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
+int DLevelScript::DoSpawnSpot(int type, int spot, int tid, std::optional<angle_t> angle, bool force)
 {
-	FActorIterator iterator(tid);
+	FActorIterator iterator(spot);
 	AActor* aspot;
 	int spawned = 0;
 
 	while ((aspot = iterator.Next())) {
-		spawned = DoSpawn(type, aspot->x, aspot->y, aspot->z, tid, angle);
+		spawned += DoSpawn(type, aspot->x, aspot->y, aspot->z, tid, angle.value_or(aspot->angle), force);
 	}
 	return spawned;
+}
+
+void DLevelScript::DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t speed, fixed_t vspeed, bool gravity, int newtid)
+{
+	const char* typestr = level.behavior->LookupString(type);
+	if (typestr == nullptr)
+		return;
+
+	auto info = P_INameToMobj(typestr);
+	std::optional<std::pair<byte, uint32_t>> fountain_info;
+	if (info == MT_NULL)
+	{
+		fountain_info = GetFountainSpawnInfo(typestr);
+		if (fountain_info)
+			info = MT_FOUNTAIN;
+		else
+			return;
+	}
+
+	if ((mobjinfo[info].flags & MF_COUNTKILL) && sv_nomonsters)
+		return;
+
+	AActor* spot = nullptr;
+	AActor* mobj = nullptr;
+	while ( (spot = AActor::FindByTID (spot, tid)) )
+	{
+		if (spot->type != MT_MAPSPOT && spot->type != MT_MAPSPOTGRAVITY)
+			continue;
+
+		mobj = new AActor(spot->x, spot->y, spot->z, info);
+
+		if (mobj)
+		{
+			if (mobj->info->seesound)
+				S_Sound (mobj, CHAN_VOICE, mobj->info->seesound, 1, ATTN_NORM);
+			if (gravity)
+			{
+				mobj->flags &= ~MF_NOGRAVITY;
+				if (!(mobj->flags & MF_COUNTKILL))
+					mobj->flags2 |= MF2_LOGRAV;
+			}
+			else
+				mobj->flags |= MF_NOGRAVITY;
+			if (fountain_info)
+			{
+				mobj->args[0] = fountain_info->first;
+				mobj->effects = fountain_info->second;
+			}
+			mobj->target = spot->ptr();
+			mobj->angle = angle;
+			mobj->momx = FixedMul(speed, finecosine[angle>>ANGLETOFINESHIFT]);
+			mobj->momy = FixedMul(speed, finesine[angle>>ANGLETOFINESHIFT]);
+			mobj->momz = vspeed;
+			mobj->flags |= MF_DROPPED;
+			mobj->tid = newtid;
+			if (mobj->flags & MF_MISSILE)
+				P_CheckMissileSpawn(mobj, spot);
+			else if (!P_TestMobjLocation(mobj))
+				mobj->Destroy ();
+		}
+	}
 }
 
 void DLevelScript::DoFadeTo(AActor* who, int r, int g, int b, int a, fixed_t time)
@@ -2051,7 +2052,7 @@ static void DoActualFadeRange(player_t* viewer, float ftime, bool fadingFrom,
 			}
 			else
 			{
-				fr1 = viewer->blend_color.geta() / 255.0f;
+				fa1 = viewer->blend_color.geta() / 255.0f;
 				fr1 = viewer->blend_color.getr() / 255.0f;
 				fg1 = viewer->blend_color.getg() / 255.0f;
 				fb1 = viewer->blend_color.getb() / 255.0f;
@@ -2087,18 +2088,23 @@ void DLevelScript::DoFadeRange(AActor* who, int r1, int g1, int b1, int a1,
 		DoActualFadeRange(who->player, ftime, fadingFrom, fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2);
 	}
 
-	if (serverside)
-	{
-		int argv[] = {r1, g1, b1, a1, r2, g2, b2, a2, time};
-		std::vector<int> args(argv, argv + ARRAY_LENGTH(argv));
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_FADERANGE, who, NULL, true, args));
-	}
+	SERVER_ONLY(
+		const std::array args = {r1, g1, b1, a1, r2, g2, b2, a2, time};
+		SV_ACSExecuteSpecial(PCD_FADERANGE, who, NULL, true, args);
+	)
 }
 
 inline int getbyte (int *&pc)
 {
 	int res = *reinterpret_cast<byte*>(pc);
 	pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc)+1);
+	return res;
+}
+
+inline int getshort (int *&pc)
+{
+	int res = LESHORT(*reinterpret_cast<uint16_t*>(pc));
+	pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc)+2);
 	return res;
 }
 
@@ -2180,7 +2186,7 @@ void DLevelScript::RunScript ()
 	const ACSFormat fmt = level.behavior->GetFormat();
 	int runaway = 0;	// used to prevent infinite loops
 	int pcd;
-	char work[4096], *workwhere = work;
+	std::string work;
 	const char *lookup;
 //	int optstart = -1;
 	int temp;
@@ -2210,9 +2216,12 @@ void DLevelScript::RunScript ()
 		switch (pcd)
 		{
 		default:
+			// TODO: validate bytecode upon loading and transform unknown into PCD_TERMINATE
+			// and replace the default case with a call to OUtil::unreachable()
+			// this should give a decent improvement to performance
 			DPrintFmt("Unknown P-Code {} in script {}\n", pcd, script);
-			continue;
-			// fall through
+			PrintFmt(PRINT_WARNING, "Encountered a problem while executing ACS script #{}. Terminating script...", script);
+			[[fallthrough]];
 		case PCD_TERMINATE:
 			state = SCRIPT_PleaseRemove;
 			break;
@@ -2780,14 +2789,14 @@ void DLevelScript::RunScript ()
 				{
 					state = SCRIPT_DivideBy0;
 				}
-			    else
-			    {
-				    int a = level.vars[NEXTBYTE];
-				    int i = STACK(2);
-				    level.behavior->SetArrayVal(
-				        a, i, level.behavior->GetArrayVal(a, i) / STACK(1));
-				    sp -= 2;
-			    }
+				else
+				{
+					int a = level.vars[NEXTBYTE];
+					int i = STACK(2);
+					level.behavior->SetArrayVal(
+						a, i, level.behavior->GetArrayVal(a, i) / STACK(1));
+					sp -= 2;
+				}
 			}
 			break;
 
@@ -3071,22 +3080,22 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_CHANGEFLOOR:
-			ChangeFlat (STACK(2), STACK(1), 0);
+			ChangeFlat (STACK(2), STACK(1), false);
 			sp -= 2;
 			break;
 
 		case PCD_CHANGEFLOORDIRECT:
-			ChangeFlat (pc[0], pc[1], 0);
+			ChangeFlat (pc[0], pc[1], false);
 			pc += 2;
 			break;
 
 		case PCD_CHANGECEILING:
-			ChangeFlat (STACK(2), STACK(1), 1);
+			ChangeFlat (STACK(2), STACK(1), true);
 			sp -= 2;
 			break;
 
 		case PCD_CHANGECEILINGDIRECT:
-			ChangeFlat (pc[0], pc[1], 1);
+			ChangeFlat (pc[0], pc[1], true);
 			pc += 2;
 			break;
 
@@ -3183,8 +3192,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_BEGINPRINT:
-			workwhere = work;
-			work[0] = 0;
+			work.clear();
 			break;
 
 		case PCD_PRINTSTRING:
@@ -3192,27 +3200,35 @@ void DLevelScript::RunScript ()
 			lookup = (pcd == PCD_PRINTSTRING ?
 				level.behavior->LookupString (STACK(1)) :
 				level.behavior->LocalizeString (STACK(1)));
-			if (lookup != NULL)
+			if (lookup != nullptr)
 			{
-				workwhere += snprintf(workwhere, 4096, "%s", lookup);
+				work += lookup;
 			}
 			--sp;
 			break;
 
 		case PCD_PRINTNUMBER:
-			workwhere += snprintf(workwhere, 4096, "%d", STACK(1));
+			work += fmt::format("{:d}", STACK(1));
 			--sp;
 			break;
 
 		case PCD_PRINTCHARACTER:
-			workwhere[0] = STACK(1);
-			workwhere[1] = 0;
-			workwhere++;
+			work += static_cast<char>(STACK(1));
 			--sp;
 			break;
 
 		case PCD_PRINTFIXED:
-			workwhere += snprintf(workwhere, 4096, "%g", FIXED2FLOAT(STACK(1)));
+			work += fmt::format("{:g}", FIXED2FLOAT(STACK(1)));
+			--sp;
+			break;
+
+		case PCD_PRINTBINARY:
+			work += fmt::format("{:B}", STACK(1));
+			--sp;
+			break;
+
+		case PCD_PRINTHEX:
+			work += fmt::format("{:X}", STACK(1));
 			--sp;
 			break;
 
@@ -3220,39 +3236,59 @@ void DLevelScript::RunScript ()
 		// [RH] Fancied up a bit
 		case PCD_PRINTNAME:
 			{
-				player_t *player = NULL;
+				player_t* player = nullptr;
 
-				if (STACK(1) == 0 || static_cast<unsigned>(STACK(1)) > MAXPLAYERS)
+				if (STACK(1) < 0)
+				{
+						switch (STACK(1))
+						{
+						case PRINTNAME_LEVELNAME:
+								work += level.level_name;
+								break;
+						case PRINTNAME_LEVEL:
+								work += level.mapname;
+								break;
+						case PRINTNAME_NEXTLEVEL:
+								work += level.nextmap;
+								break;
+						case PRINTNAME_NEXTSECRET:
+								work += level.secretmap;
+								break;
+						case PRINTNAME_SKILL:
+								work += G_GetCurrentSkill().name;
+								break;
+						default:
+								work += ' ';
+						}
+				}
+				else if (STACK(1) == 0 || static_cast<unsigned>(STACK(1)) > MAXPLAYERS)
 				{
 					if (activator)
 					{
 						player = activator->player;
 					}
 				}
-				else if (idplayer(STACK(1)).ingame())
+				else if (idplayer(STACK(1) - 1).ingame())
 				{
-					player = &idplayer(STACK(1));
+					player = &idplayer(STACK(1) - 1);
 				}
 				else
 				{
-				    workwhere += snprintf(workwhere, 4096, "Player %d\n",
-						STACK(1));
+					work += fmt::format("Player {:d}\n", STACK(1));
 					sp--;
 					break;
 				}
 				if (player)
 				{
-				    workwhere += snprintf(workwhere, 4096, "%s",
-						activator->player->userinfo.netname.c_str());
+					work += activator->player->userinfo.netname;
 				}
 				else if (activator)
 				{
-				    workwhere += snprintf(workwhere, 4096, "%s",
-						RUNTIME_TYPE(activator)->Name+1);
+					work += activator->info->getDisplayName();
 				}
 				else
 				{
-				    workwhere += snprintf(workwhere, 4096, " ");
+					work += ' ';
 				}
 				sp--;
 			}
@@ -3261,10 +3297,10 @@ void DLevelScript::RunScript ()
 		case PCD_ENDPRINT:
 		case PCD_ENDPRINTBOLD:
 		//case PCD_MOREHUDMESSAGE:
-			strbin (work);
+			strbin (work.data());
 			if (pcd != PCD_MOREHUDMESSAGE)
 			{
-				ACS_Print(pcd, activator, work);
+				ACS_Print(pcd, activator, work.c_str());
 			}
 			else
 			{
@@ -3335,10 +3371,10 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_GAMETYPE:
-		    if (sv_gametype == 3)
-                PushToStack (GAME_NET_CTF);
-            else if (sv_gametype == 2)
-                PushToStack (GAME_NET_TEAMDEATHMATCH);
+			if (sv_gametype == 3)
+				PushToStack (GAME_NET_CTF);
+			else if (sv_gametype == 2)
+				PushToStack (GAME_NET_TEAMDEATHMATCH);
 			else if (sv_gametype == 1)
 				PushToStack (GAME_NET_DEATHMATCH);
 			else if (multiplayer)
@@ -3489,23 +3525,38 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SPAWN:
-			STACK(6) = DoSpawn (STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
+			STACK(6) = DoSpawn (STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), BYTEANGLE(STACK(1)), false);
 			sp -= 5;
 			break;
 
 		case PCD_SPAWNDIRECT:
-			PushToStack (DoSpawn (pc[0], pc[1], pc[2], pc[3], pc[4], pc[5]));
+			PushToStack (DoSpawn (pc[0], pc[1], pc[2], pc[3], pc[4], BYTEANGLE(pc[5]), false));
 			pc += 6;
 			break;
 
 		case PCD_SPAWNSPOT:
-			STACK(4) = DoSpawnSpot (STACK(4), STACK(3), STACK(2), STACK(1));
+			STACK(4) = DoSpawnSpot (STACK(4), STACK(3), STACK(2), BYTEANGLE(STACK(1)), false);
 			sp -= 3;
 			break;
 
 		case PCD_SPAWNSPOTDIRECT:
-			PushToStack (DoSpawnSpot (pc[0], pc[1], pc[2], pc[3]));
+			PushToStack (DoSpawnSpot (pc[0], pc[1], pc[2], BYTEANGLE(pc[3]), false));
 			pc += 4;
+			break;
+
+		case PCD_SPAWNSPOTFACING:
+			STACK(3) = DoSpawnSpot(STACK(3), STACK(2), STACK(1), std::nullopt, false);
+			sp -= 2;
+			break;
+
+		case PCD_SPAWNPROJECTILE:
+			DoSpawnProjectile(STACK(7), STACK(6), BYTEANGLE(STACK(5)), SPEED(STACK(4)), SPEED(STACK(3)), STACK(2), STACK(1));
+			sp -= 7;
+			break;
+
+		case PCD_THING_PROJECTILE2:
+			P_Thing_Projectile(STACK(7), STACK(6), BYTEANGLE(STACK(5)), SPEED(STACK(4)), SPEED(STACK(3)), STACK(2), STACK(1));
+			sp -= 7;
 			break;
 
 		case PCD_CLEARINVENTORY:
@@ -3609,6 +3660,28 @@ void DLevelScript::RunScript ()
 				{
 					STACK(1) = actor->angle >> FRACBITS;
 				}
+			}
+			break;
+
+		case PCD_SETACTORANGLE:
+			{
+				const int tid = STACK(2);
+				const angle_t angle = STACK(1) << FRACBITS;
+
+				if (tid == 0)
+				{
+					if (activator != NULL)
+						activator->angle = angle;
+				}
+				else
+				{
+					FActorIterator iterator(tid);
+					AActor* actor;
+					while ((actor = iterator.Next()) != NULL)
+						actor->angle = angle;
+				}
+
+				sp -= 2;
 			}
 			break;
 
@@ -3765,16 +3838,9 @@ void DLevelScript::RunScript ()
 
 		case PCD_GETCVAR:
 			{
-				cvar_t *var, *prev;
-				var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
-				if (var == NULL)
-				{
-					STACK(1) = 0;
-				}
-				else
-				{
-					STACK(1) = var->asInt();
-				}
+				cvar_t *prev;
+				const auto var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
+				STACK(1) = var == nullptr ? 0 : var->asInt();
 			}
 			break;
 
@@ -4090,6 +4156,29 @@ void DLevelScript::RunScript ()
 				sp -= 2;
 			}
 			break;
+
+		case PCD_STRLEN:
+			{
+				const char* str = level.behavior->LookupString(STACK(1));
+				STACK(1) = str ? static_cast<int32_t>(strlen(str)) : 0;
+			}
+			break;
+
+		case PCD_CALLFUNC:
+			{
+				const int nargs = NEXTBYTE;
+				const int function = NEXTSHORT;
+				const std::span<const int> args(&STACK(nargs), nargs);
+				const auto result = CallFunction(script, function, args);
+				sp -= (nargs - 1);
+				STACK(1) = result.value_or(0);
+				if (!result)
+					PrintFmt(
+						"Call ACS internal function {} with {} args. At least {} args required\n",
+						function, nargs, result.error().num_required_args
+					);
+			}
+			break;
 		}
 	}
 
@@ -4119,7 +4208,139 @@ void DLevelScript::RunScript ()
 	}
 }
 
-static bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
+fixed_t P_BulletSlope(AActor* mo);
+
+auto DLevelScript::CallFunction(const int scriptnum, const int func, const std::span<const int> args)
+	-> nonstd::expected<int, callfunc_args_error_t>
+{
+	#define CHECK_MIN_ARGS(minArgs) \
+		do { \
+			if (args.size() < (minArgs)) { \
+				return nonstd::make_unexpected<callfunc_args_error_t>({(minArgs)}); \
+			} \
+		} while(0)
+
+	switch (func) {
+		case CF_SETACTIVATOR:
+			CHECK_MIN_ARGS(1);
+			activator = AActor::FindByTID(nullptr, args[0]);
+			return activator != nullptr;
+
+		case CF_SETACTIVATORTOTARGET:
+			CHECK_MIN_ARGS(1);
+			{
+				auto actor = SingleActorFromTID(STACK(1), activator);
+				if (actor == nullptr)
+					return 0;
+
+				auto player = actor->player;
+				if (player != nullptr && player->mo != nullptr && player->playerstate == PST_LIVE)
+				{
+					P_BulletSlope(actor->player->mo);
+					actor = linetarget;
+				}
+				else
+				{
+					actor = actor->target;
+				}
+
+				if (actor != nullptr)
+				{
+					activator = actor;
+					return 1;
+				}
+
+				return 0;
+			}
+
+		case CF_SETSKYSCROLLSPEED:
+			CHECK_MIN_ARGS(2);
+			CLIENT_ONLY(R_SetSkyScrollSpeed(args[0], args[1]));
+			return 1;
+
+		case CF_SPAWNSPOTFORCED:
+			CHECK_MIN_ARGS(4);
+			return DoSpawnSpot(args[0], args[1], args[2], BYTEANGLE(args[3]), true);
+
+		case CF_SPAWNSPOTFACINGFORCED:
+			CHECK_MIN_ARGS(3);
+			return DoSpawnSpot(args[0], args[1], args[2], std::nullopt, true);
+
+		case CF_SPAWNFORCED:
+			CHECK_MIN_ARGS(4);
+			return DoSpawn(args[0], args[1], args[2], args[3], args.size() > 4 ? args[4] : 0, args.size() > 5 ? BYTEANGLE(args[5]) : 0, true);
+
+		case CF_SQRT:
+			CHECK_MIN_ARGS(1);
+			return static_cast<int>(std::floor(std::sqrt(static_cast<double>(args[0]))));
+
+		case CF_FIXEDSQRT:
+			CHECK_MIN_ARGS(1);
+			return DOUBLE2FIXED(std::sqrt(FIXED2DOUBLE(args[0])));
+
+		case CF_VECTORLENGTH:
+			CHECK_MIN_ARGS(2);
+			return M_LengthVec2Fixed(v2fixed_t(args[0], args[1]));
+
+		case CF_STRCMP:
+		case CF_STRICMP:
+			CHECK_MIN_ARGS(2);
+			{
+				// same string
+				if (args[0] == args[1])
+					return 0;
+
+				const char* str1 = level.behavior->LookupString(args[0]);
+				const char* str2 = level.behavior->LookupString(args[1]);
+
+				if (args.size() > 2)
+					return (func == CF_STRCMP) ? strncmp(str1, str2, args[2]) : strnicmp(str1, str2, args[2]);
+
+				return (func == CF_STRCMP) ? strcmp(str1, str2) : stricmp(str1, str2);
+			}
+
+		case CF_SETSECTORDAMAGE:
+			CHECK_MIN_ARGS(2);
+			{
+				int secnum = -1;
+				while ((secnum = P_FindSectorFromTag (args[0], secnum)) >= 0)
+				{
+					auto& sec = sectors[secnum];
+					sec.damageamount = args[1];
+					sec.mod = args.size() > 2 ? StrToMOD(level.behavior->LookupString(args[2])) : MOD_UNKNOWN;
+					sec.damageinterval = args.size() > 3 ? clamp(args[3], 1, limits::MAXINT) : 32;
+					sec.leakrate = args.size() > 4 ? args[4] : 0;
+				}
+				return 0;
+			}
+
+		// TODO: maybe make functions in m_fixed.h?
+		case CF_FLOOR:
+			CHECK_MIN_ARGS(1);
+			return args[0] & ~0xffff;
+
+		case CF_CEIL:
+			CHECK_MIN_ARGS(1);
+			return (args[0] & ~0xffff) + INT2FIXED(1);
+
+		case CF_ROUND:
+			CHECK_MIN_ARGS(1);
+			return (args[0] + DOUBLE2FIXED(0.5)) & ~0xFFFF;
+
+		default:
+			// TODO: similar to the first big switch in RunScript, validate these ahead of time
+			// and replace this case with OUtil::unreachable()
+			// map unrecognized funcs to
+			DPrintFmt("Tried to call unsupported ACS internal function {} in script {}\n", func, scriptnum);
+			return 0;
+	}
+
+	#undef CHECK_MIN_ARGS
+}
+
+namespace {
+
+bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
 	int lineSide, int arg0, int arg1, int arg2, int always, bool delay)
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
@@ -4139,6 +4360,8 @@ static bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
 	return true;
 }
 
+} // namespace
+
 DLevelScript::DLevelScript (AActor *who, line_t *where, int num, int *code, int lineside,
 							int arg0, int arg1, int arg2, int always, bool delay)
 {
@@ -4155,12 +4378,13 @@ DLevelScript::DLevelScript (AActor *who, line_t *where, int num, int *code, int 
 	activator = who;
 	activationline = where;
 	lineSide = lineside;
-	if (delay) {
+	// [EB] 29 June 2026 - Silence duplicated branch warning by re-adding the original branch
+	// but adding demoplayback condition, in case we add hexen demo support
+	if (delay && demoplayback) {
 		// From Hexen: Give the world some time to set itself up before
 		// running open scripts.
-		//script->state = SCRIPT_Delayed;
-		//script->statedata = TICRATE;
-		state = SCRIPT_Running;
+		state = SCRIPT_Delayed;
+		statedata = TICRATE;
 	} else {
 		state = SCRIPT_Running;
 	}
@@ -4183,7 +4407,7 @@ static void SetScriptState (int script, DLevelScript::EScriptState state)
 		controller->RunningScripts[script]->SetState (state);
 }
 
-void P_DoDeferedScripts (void)
+void P_DoDeferedScripts()
 {
 	acsdefered_t *def;
 	int *scriptdata;
@@ -4230,7 +4454,7 @@ static void addDefered (level_pwad_info_t& i, acsdefered_t::EType type, int scri
 {
 	if (i.levelnum != 0)
 	{
-		acsdefered_t *def = new acsdefered_s;
+		acsdefered_t *def = new acsdefered_t;
 
 		def->next = i.defered;
 		def->type = type;
@@ -4377,13 +4601,13 @@ void strbin (char *str)
 		}
 		else
 		{
-			// Trainling backlash
+			// Trailing backlash
 		}
 	}
 	*str = 0;
 }
 
-FArchive &operator<< (FArchive &arc, acsdefered_s *defer)
+FArchive &operator<< (FArchive &arc, acsdefered_t *defer)
 {
 	while (defer)
 	{
@@ -4396,17 +4620,17 @@ FArchive &operator<< (FArchive &arc, acsdefered_s *defer)
 	return arc;
 }
 
-FArchive &operator>> (FArchive &arc, acsdefered_s* &defertop)
+FArchive &operator>> (FArchive &arc, acsdefered_t* &defertop)
 {
-	acsdefered_s **defer = &defertop;
+	acsdefered_t **defer = &defertop;
 	byte inbyte;
 
 	arc >> inbyte;
 	while (inbyte)
 	{
-		*defer = new acsdefered_s;
+		*defer = new acsdefered_t;
 		arc >> inbyte;
-		(*defer)->type = static_cast<acsdefered_s::EType>(inbyte);
+		(*defer)->type = static_cast<acsdefered_t::EType>(inbyte);
 		arc >> (*defer)->script
 			>> (*defer)->arg0 >> (*defer)->arg1 >> (*defer)->arg2;
 		defer = &((*defer)->next);
@@ -4451,6 +4675,4 @@ void DACSThinker::DumpScriptStatus ()
 		script = script->next;
 	}
 }
-
-
 VERSION_CONTROL (p_acs_cpp, "$Id$")

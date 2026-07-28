@@ -190,25 +190,29 @@ EXTERN_CVAR(gammalevel)
 class GammaStrategy
 {
 public:
-	virtual float min() const = 0;
-	virtual float max() const = 0;
-	virtual float increment(float level) const = 0;
+	[[nodiscard]] virtual float min() const = 0;
+	[[nodiscard]] virtual float max() const = 0;
+	[[nodiscard]] virtual float increment(float level) const = 0;
 	virtual void generateGammaTable(byte* table, float level) const = 0;
+	virtual ~GammaStrategy() = default;
 };
 
 class DoomGammaStrategy : public GammaStrategy
 {
 public:
+	[[nodiscard]]
 	float min() const override
 	{
 		return 0.0f;
 	}
 
+	[[nodiscard]]
 	float max() const override
 	{
 		return 7.0f;
 	}
 
+	[[nodiscard]]
 	float increment(float level) const override
 	{
 		level += 1.0f;
@@ -238,16 +242,19 @@ public:
 class ZDoomGammaStrategy : public GammaStrategy
 {
 public:
+	[[nodiscard]]
 	float min() const override
 	{
 		return 0.5f;
 	}
 
+	[[nodiscard]]
 	float max() const override
 	{
 		return 3.0f;
 	}
 
+	[[nodiscard]]
 	float increment(float level) const override
 	{
 		level += 0.1f;
@@ -270,9 +277,9 @@ public:
 	}
 };
 
-static DoomGammaStrategy doomgammastrat;
-static ZDoomGammaStrategy zdoomgammastrat;
-GammaStrategy* gammastrat = &doomgammastrat;
+static const DoomGammaStrategy doomgammastrat;
+static const ZDoomGammaStrategy zdoomgammastrat;
+const GammaStrategy* gammastrat = &doomgammastrat;
 
 float V_GetMinimumGammaLevel()
 {

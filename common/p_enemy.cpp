@@ -799,7 +799,7 @@ static void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
 	int tdir;
 	dirtype_t olddir = static_cast<dirtype_t>(actor->movedir);
 
-	dirtype_t turnaround = turnaround = opposite[olddir];
+	dirtype_t turnaround = opposite[olddir];
 
 	if (deltax > 10 * FRACUNIT)
 		d[1] = DI_EAST;
@@ -3037,7 +3037,8 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 					A_FaceTarget(actor);
 					actor->target = temp;
 
-					P_SetMobjState(actor, static_cast<statenum_t>(healstate));
+					// Force a client update because healstate might NOT be a "mode" for custom healers.
+					P_SetMobjState(actor, static_cast<statenum_t>(healstate), true);
 
 					if (!clientside)
 						SV_Sound(corpsehit, CHAN_BODY, SoundMap[healsound].c_str(), ATTN_IDLE);

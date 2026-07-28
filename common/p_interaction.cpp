@@ -62,6 +62,7 @@ EXTERN_CVAR(sv_friendlymonsterfire)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
+EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
@@ -72,6 +73,7 @@ EXTERN_CVAR(g_lives)
 // sapientlion - experimental
 EXTERN_CVAR(sv_weapondrop)
 
+// TODO: does this need to be global?
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
@@ -79,7 +81,7 @@ int MeansOfDeath;
 std::array<int, NUMAMMO> maxammo  {200, 50, 300, 50};
 std::array<int, NUMAMMO> clipammo { 10,  4,  20,  1};
 
-void AM_Stop(void);
+void AM_Stop();
 void SV_SpawnMobj(AActor *mobj);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
@@ -90,6 +92,7 @@ void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *i
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_UpdateMobj(AActor* mo);
+void SV_UpdateMobjReliable(AActor* mo);
 void PickupMessage(const AActor *toucher, const char *message);
 void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
@@ -256,12 +259,16 @@ int P_GetDeathCount(const player_t& player)
 //
 
 // mbf21: take into account new weapon autoswitch flags
-static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int oldammo)
+static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammotype, int oldammo)
 {
+	const weapontype_t currentweapon = (player.pendingweapon == wp_nochange)
+            ? player.readyweapon
+            : player.pendingweapon;
+
 	// Keep the original behaviour while playbacking demos only.
 	if (demoplayback)
 	{
-		switch (ammo)
+		switch (ammotype)
 		{
 		case am_clip:
 			if (player.readyweapon == wp_fist)
@@ -295,23 +302,30 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int 
 			break;
 		}
 	}
-	else if (player.userinfo.switchweapon != WPSW_NEVER)
+	else if (player.userinfo.switchweapon != WPSW_NEVER &&
+			 weaponinfo[currentweapon].flags & WPF_AUTOSWITCHFROM &&
+			 (weaponinfo[currentweapon].ammotype == am_noammo ||
+				weaponinfo[currentweapon].ammotype != ammotype))
 	{
-		if (weaponinfo[player.readyweapon].flags & WPF_AUTOSWITCHFROM &&
-			(weaponinfo[player.readyweapon].ammotype == am_noammo ||
-		     player.ammo[weaponinfo[player.readyweapon].ammotype] != ammo))
+		// respect the "attack cancels PWO" setting if player is attacking
+		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&
+			sv_allowpwo &&
+            player.cmd.buttons & BT_ATTACK &&
+            player.ammo[ammotype] > 0)
+        {
+            return IEV_EquipRemove;
+        }
+
+		for (int i = NUMWEAPONS - 1; i > currentweapon; --i)
 		{
-			for (int i = NUMWEAPONS - 1; i > player.readyweapon; --i)
+			if (player.weaponowned[i] &&
+				not (weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
+				weaponinfo[i].ammotype == ammotype &&
+				weaponinfo[i].ammopershot > oldammo &&
+				weaponinfo[i].ammopershot <= player.ammo[ammotype])
 			{
-				if (player.weaponowned[i] &&
-				    !(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
-				    weaponinfo[i].ammotype == ammo &&
-				    weaponinfo[i].ammopershot > oldammo &&
-				    weaponinfo[i].ammopershot <= player.ammo[ammo])
-				{
-					player.pendingweapon = static_cast<weapontype_t>(i);
-					break;
-				}
+				player.pendingweapon = static_cast<weapontype_t>(i);
+				break;
 			}
 		}
 	}
@@ -530,7 +544,7 @@ ItemEquipVal P_GiveCard(player_t& player, card_t card)
 	}
 
 	player.bonuscount = BONUSADD;
-	player.cards[card] = 1;
+	player.cards[card] = true;
 
 	if (multiplayer)
 	{
@@ -2490,12 +2504,14 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			}
 		}
 
+		bool clientsNeedUpdate = false;
 		if (!player)
 		{
 			SV_SendDamageMobj(target, pain);
+			clientsNeedUpdate = true;
 		}
 
-		bool clientWasUpdated = false;
+		bool clientsWereUpdated = false;
 
 		if (pain < target->info->painchance &&
 		    !(target->flags & MF_SKULLFLY) &&
@@ -2503,7 +2519,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
 			const auto painResult = P_SetMobjState(target, target->info->painstate);
-			clientWasUpdated = (painResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED);
+			clientsWereUpdated = (painResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED);
 		}
 
 		target->reactiontime = 0;			// we're awake now...
@@ -2536,12 +2552,12 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 				&& target->info->seestate != S_NULL)
 			{
 				const auto seeResult = P_SetMobjState(target, target->info->seestate);
-				clientWasUpdated = clientWasUpdated or seeResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
+				clientsWereUpdated = clientsWereUpdated or seeResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
 			}
-			if (not clientWasUpdated)
-			{
-				SV_UpdateMobj(target);
-			}
+		}
+		if (clientsNeedUpdate and not clientsWereUpdated)
+		{
+			SV_UpdateMobj(target);
 		}
 	}
 	else

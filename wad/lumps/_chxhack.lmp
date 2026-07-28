@@ -97,14 +97,14 @@ NIGHTMARE = Careful, this will be tough.\nDo you wish to continue?\n\npress y or
 SWSTRING  = this is Chex(R) Quest. look for\n\nfuture levels at www.chexquest.com.\n\npress a key.
 
 # Chat macros - currently unused
-HUSTR_CHATMACRO1 = I'm ready to zorch!
-HUSTR_CHATMACRO2 = I'm feeling great!
-HUSTR_CHATMACRO3 = I'm getting pretty gooed up!
-HUSTR_CHATMACRO4 = Somebody help me!
-HUSTR_CHATMACRO5 = Go back to your own dimension!
-HUSTR_CHATMACRO6 = Stop that Flemoid
-HUSTR_CHATMACRO7 = I think I'm lost!
-HUSTR_CHATMACRO8 = I'll get you out of this gunk.
+#HUSTR_CHATMACRO1 = I'm ready to zorch!
+#HUSTR_CHATMACRO2 = I'm feeling great!
+#HUSTR_CHATMACRO3 = I'm getting pretty gooed up!
+#HUSTR_CHATMACRO4 = Somebody help me!
+#HUSTR_CHATMACRO5 = Go back to your own dimension!
+#HUSTR_CHATMACRO6 = Stop that Flemoid
+#HUSTR_CHATMACRO7 = I think I'm lost!
+#HUSTR_CHATMACRO8 = I'll get you out of this gunk.
 
 # Pickup messages
 GOTARMOR    = Picked up the Chex(R) Armor.

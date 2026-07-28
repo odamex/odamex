@@ -77,6 +77,7 @@ static void InitMap()
 	MapProto(svc_removemobj, odaproto::svc::RemoveMobj::descriptor());
 	MapProto(svc_userinfo, odaproto::svc::UserInfo::descriptor());
 	MapProto(svc_updatemobj, odaproto::svc::UpdateMobj::descriptor());
+	MapProto(svc_updatemobjwithmode, odaproto::svc::UpdateMobjWithMode::descriptor());
 	MapProto(svc_spawnplayer, odaproto::svc::SpawnPlayer::descriptor());
 	MapProto(svc_damageplayer, odaproto::svc::DamagePlayer::descriptor());
 	MapProto(svc_killmobj, odaproto::svc::KillMobj::descriptor());

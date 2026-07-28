@@ -236,23 +236,23 @@ enum mobjflag_t
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
-	MFO_NOSNAPZ         = BIT(0),   // [clientside only] ignore snapshot z this tic
-	MFO_HEALTHPOOL      = BIT(1),   // global health pool that tracks killed HP
-	MFO_INFIGHTINVUL    = BIT(2),   // invulnerable to infighting
-	MFO_UNFLINCHING     = BIT(3),   // monster flinching reduced to 1 in 256
-	MFO_ARMOR           = BIT(4),   // damage taken by monster is reduced
-	MFO_QUICK           = BIT(5),   // speed of monster is increased
-	MFO_NORAISE         = BIT(6),   // vile can't raise corpse
-	MFO_ISHORDEBOSS     = BIT(7),   // Is a horde boss?  Implies that damage subtracts from boss health pool
-	MFO_FULLBRIGHT      = BIT(8),   // monster is fullbright
-	MFO_SPECTATOR       = BIT(9),   // GhostlyDeath -- thing is/was a spectator and can't be seen!
-	MFO_FALLING         = BIT(10),  // [INTERNAL] for falling
-	MFO_ARMED           = BIT(11),  // [INTERNAL] for TOUCHY (object is armed)
-	MFO_LINEDONE        = BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
-	// MFO_STEALTH          = BIT(13),  // Andy Baker's stealth monsters
-	MFO_ISONCONVEYOR    = BIT(14),  // Mobj is in motion due to being carried by a sector
-
-	MFO_MOVESLIKEAMONSTER = BIT(15),    // Mobj has been updated through monster movement routines
+	MFO_NOSNAPZ             =        0x1,   // [clientside only] ignore snapshot z this tic
+	MFO_HEALTHPOOL          =        0x2,   // global health pool that tracks killed HP
+	MFO_INFIGHTINVUL        =        0x4,   // invulnerable to infighting
+	MFO_UNFLINCHING         =        0x8,   // monster flinching reduced to 1 in 256
+	MFO_ARMOR               =       0x10,   // damage taken by monster is reduced
+	MFO_QUICK               =       0x20,   // speed of monster is increased
+	MFO_NORAISE             =       0x40,   // vile can't raise corpse
+	MFO_ISHORDEBOSS         =       0x80,   // Is a horde boss?  Implies that damage subtracts from boss health pool
+	MFO_FULLBRIGHT          =      0x100,   // monster is fullbright
+	MFO_SPECTATOR           =      0x200,   // GhostlyDeath -- thing is/was a spectator and can't be seen!
+	MFO_FALLING             =      0x400,   // [INTERNAL] for falling
+	MFO_ARMED               =      0x800,   // [INTERNAL] for TOUCHY (object is armed)
+	MFO_LINEDONE            =     0x1000,   // [INTERNAL] for A_LineEffect, line special already done
+	// MFO_STEALTH          =     0x2000,   // Andy Baker's stealth monsters
+	MFO_ISONCONVEYOR        =     0x4000,   // [INTERNAL] Mobj is in motion due to being carried by a sector
+	MFO_MOVESLIKEAMONSTER   =     0x8000,   // [INTERNAL] Mobj has been updated through monster movement routines
+	MFO_ISAWAITINGSPAWN     =    0x10000,   // [INTERNAL] Mobj is a temporary mobj for a client-side player object awaiting its SpawnPlayer message
 };
 
 //
@@ -339,11 +339,13 @@ class CredibilityState
 {
 	public:
 
+		[[nodiscard]]
 		CredibilityEnum Get() const
 		{
 			return m_credibility;
 		}
 
+		[[nodiscard]]
 		bool IsCredible() const
 		{
 			return m_credibility == CredibilityEnum::FULLY_CREDIBLE
@@ -402,7 +404,7 @@ extern int bmapheight;
 class AActor : public DThinker
 {
 	DECLARE_SERIAL (AActor, DThinker)
-	typedef szp<AActor> AActorPtr;
+	using AActorPtr = szp<AActor>;
 	AActorPtr self;
 
 	class AActorPtrCounted
@@ -411,8 +413,10 @@ class AActor : public DThinker
 
 		public:
 
-		AActorPtrCounted() {}
+		AActorPtrCounted() = default;
 
+		// TODO: should these be returning AActorPtrCounted& instead?
+		// clang-tidy gives warnings about this
 		AActorPtr &operator= (const AActorPtr& other)
 		{
 			if(ptr)
@@ -490,75 +494,75 @@ public:
 	void PostThink() override;
 
     // Info for drawing: position.
-    fixed_t		x;
-    fixed_t		y;
-    fixed_t		z;
+    fixed_t		x = 0;
+    fixed_t		y = 0;
+    fixed_t		z = 0;
 
-	fixed_t		prevx;
-	fixed_t		prevy;
-	fixed_t		prevz;
+	fixed_t		prevx = 0;
+	fixed_t		prevy = 0;
+	fixed_t		prevz = 0;
 
-	AActor			*snext, **sprev;	// links in sector (if needed)
+	AActor		*snext = nullptr, **sprev = nullptr;	// links in sector (if needed)
 
     //More drawing info: to determine current sprite.
-    angle_t		angle;	// orientation
-	angle_t		prevangle;
-    int32_t		sprite;	// used to find patch_t and flip value
-    int			frame;	// might be ORed with FF_FULLBRIGHT
-	fixed_t		pitch;
-	angle_t		prevpitch;
+    angle_t		angle = 0;	// orientation
+	angle_t		prevangle = 0;
+    int32_t		sprite = SPR_UNKN;	// used to find patch_t and flip value
+    int			frame = 0;	// might be ORed with FF_FULLBRIGHT
+	fixed_t		pitch = 0;
+	angle_t		prevpitch = 0;
 
-	uint32_t	effects;			// [RH] see p_effect.h
+	uint32_t	effects = 0;			// [RH] see p_effect.h
 
-	struct subsector_s		*subsector;
+	struct subsector_t *subsector = nullptr;
 
 	// Keep these values together because they're hit by R_ProjectSprite,
 	// PIT_FindTarget, and PIT_CheckThing, which are heavy hitters on maps
 	// with a ton of monsters. This way, the cache can more easily hit
 	// due to locality.
-	int				flags;
-	int				flags2;	// Heretic flags
-	int				flags3;	// MBF21 flags
-	int				oflags;			// Odamex flags
-	int				statusflags; // Flags indicating a players status to other players
-	int 			health;
-	int32_t			type;
-	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
+	int				flags = 0;
+	int				flags2 = 0;	// Heretic flags
+	int				flags3 = 0;	// MBF21 flags
+	int				oflags = 0;			// Odamex flags
+	int				statusflags = 0; // Flags indicating a players status to other players
+	int 			health = 0;
+	int32_t			type = MT_UNKNOWNTHING;
+	fixed_t			translucency = 0;	// 65536=fully opaque, 0=fully invisible
 	translationref_t translation;	// Translation table (or NULL)
 
 	// Additional info record for player avatars only.
 	// Only valid if type == MT_PLAYER
-	player_t*	player;
+	player_t*	player = nullptr;
 
     // The closest interval over all contacted Sectors.
-    fixed_t		floorz;
-    fixed_t		ceilingz;
-	fixed_t		dropoffz;
-	struct sector_t	*floorsector;
+    fixed_t		floorz = 0;
+    fixed_t		ceilingz = 0;
+	fixed_t		dropoffz = 0;
+	struct sector_t	*floorsector = nullptr;
 
     // For movement checking.
-    fixed_t		radius;
-    fixed_t		height;
+    fixed_t		radius = 0;
+    fixed_t		height = 0;
 
     // Momentums, used to update position.
-    fixed_t		momx;
-    fixed_t		momy;
-    fixed_t		momz;
+    fixed_t		momx = 0;
+    fixed_t		momy = 0;
+    fixed_t		momz = 0;
 
     // If == validcount, already checked.
-    int			validcount;
+    int			validcount = 0;
 
-    mobjinfo_t*		info;	// &mobjinfo[mobj->type]
-    int				tics;	// state tic counter
-	state_t			*state;
-	int				damage;			// For missiles
-	int				special1;		// Special info
-	int				special2;		// Special info
+    mobjinfo_t*		info = nullptr;	// &mobjinfo[mobj->type]
+    int				tics = 0;	// state tic counter
+	state_t			*state = nullptr;
+	int				damage = 0;			// For missiles
+	int				special1 = 0;		// Special info
+	int				special2 = 0;		// Special info
 
     // Movement direction, movement generation (zig-zagging).
-    byte			movedir;	// 0-7
-    int				movecount;	// when 0, select a new dir
-	char			visdir;
+    byte			movedir = 0;	// 0-7
+    int				movecount = 0;	// when 0, select a new dir
+	char			visdir = 0;
 
     // Thing being chased/attacked (or NULL),
     // also the originator for missiles.
@@ -567,50 +571,50 @@ public:
 
     // Reaction time: if non 0, don't attack yet.
     // Used by player to freeze a bit after teleporting.
-    int				reactiontime;
+    int				reactiontime = 0;
 
     // If >0, the target will be chased
     // no matter what (even if shot)
-    int			threshold;
+    int			threshold = 0;
 
     // Player number last looked for.
-    unsigned int	lastlook;
+    unsigned int	lastlook = 0;
 
     // For nightmare respawn.
-    mapthing2_t		spawnpoint;
+    mapthing2_t		spawnpoint{};
 
 	// Thing being chased/attacked for tracers.
 	AActorPtr           tracer;
-	byte                special;    // special
-	std::array<byte, 5> args;       // special arguments
+	byte                special = 0;    // special
+	std::array<byte, 5> args = {};       // special arguments
 
-	AActor			*inext, *iprev;	// Links to other mobjs in same bucket
+	AActor			*inext = nullptr, *iprev = nullptr;	// Links to other mobjs in same bucket
 
 	ActorAwarenessState<MAXPLAYERS> playersAware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
-	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
-	int16_t			gear;			// killough 11/98: used in torque simulation
+	byte			waterlevel = 0;		// 0=none, 1=feet, 2=waist, 3=eyes
+	int16_t			gear = 0;			// killough 11/98: used in torque simulation
 
-	bool			onground;		// NES - Fixes infinite jumping bug like a charm.
+	bool			onground = false;		// NES - Fixes infinite jumping bug like a charm.
 
 	// a linked list of sectors where this object appears
-	struct msecnode_s	*touching_sectorlist;				// phares 3/14/98
+	struct msecnode_t	*touching_sectorlist = nullptr;				// phares 3/14/98
 
-	short           deadtic;        // tics after player's death
+	int16_t           deadtic = 0;        // tics after player's death
 
-	unsigned char   rndindex;       // denis - because everything should have a random number generator, for prediction
-	unsigned char   spawnRndindex;
+	unsigned char   rndindex = 0;       // denis - because everything should have a random number generator, for prediction
+	unsigned char   spawnRndindex = 0;
 
-	byte friend_playerid; // playerid of the player who spawned this actor
+	byte friend_playerid = 0; // playerid of the player who spawned this actor
 
-	team_t friend_teamid; // team of the player who spawned this actor
+	team_t friend_teamid = TEAM_NONE; // team of the player who spawned this actor
 
 	// killough 9/9/98: How long a monster pursues a target.
-	short pursuecount;
+	int16_t pursuecount = 0;
 
 	// killough 9/8/98: monster strafing
-	short strafecount;
+	int16_t strafecount = 0;
 
 	// ThingIDs
 	static void ClearTIDHashes ();
@@ -621,18 +625,20 @@ public:
 	[[nodiscard]] AActor *FindGoal (int tid, int kind) const;
 	[[nodiscard]] static AActor *FindGoal (const AActor *first, int tid, int kind);
 
-	uint32_t		netid;          // every object has its own netid
-	short			tid;			// thing identifier
-	baseline_t		baseline;		// Baseline data for mobj sent to clients
-	bool			baseline_set;	// Have we set our baseline yet?
+	uint32_t		netid = 0;          // every object has its own netid
+	int16_t			tid = 0;			// thing identifier
+	baseline_t		baseline{};		// Baseline data for mobj sent to clients
+	bool			baseline_set = false;	// Have we set our baseline yet?
 
 	// Server: The primary mode that the mobj is in.  Dictated by top-level state transitions.
 	// Client: Latched primary mode.  If different from the server, the state is transitioned to follow along accordingly.
-	MobjModeEnum mode;
+	MobjModeEnum mode = MobjModeEnum::SPAWN;
 
 	// Server: The tic on which this mobj was sent an UpdateMobj.
 	// Client: the tic on which this mobj received an UpdateMobj.
-	int updatedDuringTic;
+	int updatedDuringLocalTic = -1;
+
+	int updatedDuringServerTic = -1;
 
 	// Server:  The tic on which this mobj was actually spawned. Used to for determining correct initial
 	//          state and rnd index to send to clients.  *Not communicated to the client.*
@@ -648,7 +654,7 @@ private:
 	static constexpr size_t TIDHashSize = 256;
 	static constexpr size_t TIDHashMask = TIDHashSize - 1;
 	static AActor *TIDHash[TIDHashSize];
-	static inline int TIDHASH (int key) { return key & TIDHashMask; }
+	static int TIDHASH (int key) { return key & TIDHashMask; }
 
 	friend class FActorIterator;
 
@@ -665,9 +671,9 @@ public:
 	class ActorClassList
 	{
 	public:
-		AActor* Head() const { return m_head; }
-		bool empty() const { return m_head == NULL; }
-		size_t Count() const { return m_count; }
+		[[nodiscard]] AActor* Head() const { return m_head; }
+		[[nodiscard]] bool empty() const { return m_head == nullptr; }
+		[[nodiscard]] size_t Count() const { return m_count; }
 		void Append(AActor* mo);
 		void Remove(AActor* mo);
 		void MoveFrontToEnd(AActor* upto);
@@ -729,14 +735,14 @@ public:
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
 	void ResetFlagsToDefault();
 
-	bool IsFriendly() const { return flags & MF_FRIEND; }
+	[[nodiscard]] bool IsFriendly() const { return flags & MF_FRIEND; }
 	void SetFriendly (bool isFriendly, const AActor* owner);
 	void UpdateActorLists();
 	static void ClearActorLists();
 	static ActorClassList& GetFriendlies() { return s_friendlies; }
 	static ActorClassList& GetHostiles() { return s_hostiles; }
 
-	AActorPtr ptr(){ return self; }
+	AActorPtr ptr() { return self; }
 
 	//
 	// ActorBlockMapListNode
@@ -763,6 +769,7 @@ public:
 		void Link();
 		void Unlink();
 
+		[[nodiscard]]
 		AActor* Next(int bmx, int bmy) const
 		{
 			if (bmx < 0 || bmx >= bmapwidth || bmy < 0 || bmy >= bmapheight)
@@ -776,6 +783,7 @@ public:
 		void ensureCapacity(int blockcnt);
 		void copyFrom(const ActorBlockMapListNode& other);
 
+		[[nodiscard]]
 		size_t getIndex(int bmx, int bmy) const
 		{
 			// Out-of-range queries (including the cleared state and the
@@ -785,7 +793,7 @@ public:
 				bmy < m_originy || bmy > m_originy + m_blockcnty - 1)
 				return 0;
 
-			return (bmy - m_originy) * m_blockcntx + bmx - m_originx;
+			return ((bmy - m_originy) * m_blockcntx) + bmx - m_originx;
 		}
 
 		// the number of block links stored inline before falling back to
@@ -807,8 +815,8 @@ public:
 		int m_capacity;
 		AActor**  m_next;
 		AActor*** m_prev;
-		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext;
-		std::array<AActor**, INLINE_BLOCKS> m_inlineprev;
+		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext{};
+		std::array<AActor**, INLINE_BLOCKS> m_inlineprev{};
 	};
 
 	// Interaction info, by BLOCKMAP.
@@ -816,18 +824,18 @@ public:
 	ActorBlockMapListNode bmapnode;
 };
 
-typedef std::vector<AActor::AActorPtr> AActors;
+using AActors = std::vector<AActor::AActorPtr>;
 
 class FActorIterator
 {
 public:
-	FActorIterator (int i) : base (NULL), id (i)
+	FActorIterator (int i) : id (i)
 	{
 	}
 	AActor *Next ()
 	{
 		if (id == 0)
-			return NULL;
+			return nullptr;
 		if (!base)
 			base = AActor::FindByTID(NULL, id);
 		else
@@ -839,7 +847,7 @@ public:
 		return base;
 	}
 private:
-	AActor *base;
+	AActor *base = nullptr;
 	int id;
 };
 

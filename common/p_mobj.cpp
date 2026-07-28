@@ -107,7 +107,7 @@ netid_map_t actor_by_netid;
 // allocations. Dead actors are threaded onto a freelist and reused, so after
 // the initial ramp-up allocation is a couple of pointer swaps, and actors
 // that are alive at the same time tend to sit near each other in memory.
-// 
+//
 // Probably not thread safe.
 //
 namespace
@@ -346,9 +346,9 @@ inline void CredibilityState::Update(const AActor& mobj)
 #ifdef CLIENT_APP
     if (not serverside)     // But we still need to check in case we're in single-player.
     {
-        if (mobj.updatedDuringTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
+        if (mobj.updatedDuringLocalTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
         {
-            const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringTic;
+            const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringLocalTic;
 
             if (ticsSinceAuthoritativeUpdate == 0)
             {
@@ -369,9 +369,9 @@ inline void CredibilityState::Update(const AActor& mobj)
             else
             {
                 if (m_predictedMotionTicCount > 0 or
-                       not (m_crediblePosition.x == mobj.x and
-                            m_crediblePosition.y == mobj.y and
-                            m_crediblePosition.z == mobj.z))
+                       m_crediblePosition.x != mobj.x ||
+                            m_crediblePosition.y != mobj.y ||
+                            m_crediblePosition.z != mobj.z)
                 {
                     ++m_predictedMotionTicCount;
                 }
@@ -402,47 +402,38 @@ inline void CredibilityState::Update(const AActor& mobj)
 }
 
 AActor::AActor()
-    : x(0), y(0), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
-      prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
-      subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
-      height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
-      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
-      flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-      iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
-      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), mode(MobjModeEnum::SPAWN), updatedDuringTic(-1), spawnTic(gametic),
-      mobjtic(gametic), bmapnode(this)
+	: spawnTic(gametic), mobjtic(gametic), bmapnode(this)
 {
-	args.fill(0);
 	self.init(this);
 	LinkAllActorsList();
 }
 
 AActor::AActor(const AActor& other)
-    : x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy),
-      prevz(other.prevz), snext(other.snext), sprev(other.sprev), angle(other.angle),
-      prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
-      pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
-      subsector(other.subsector), floorz(other.floorz), ceilingz(other.ceilingz),
-      dropoffz(other.dropoffz), floorsector(other.floorsector), radius(other.radius),
-      height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
-      validcount(other.validcount), type(other.type), info(other.info), tics(other.tics),
-      state(other.state), damage(other.damage),
-      flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags),
-      special1(other.special1), special2(other.special2),
-      health(other.health), movedir(other.movedir), movecount(other.movecount),
-      visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
-      player(other.player), lastlook(other.lastlook), special(other.special), args(other.args),
-      inext(other.inext), iprev(other.iprev), translation(other.translation),
-      translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
-      onground(other.onground), touching_sectorlist(other.touching_sectorlist),
-      deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
-      friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
-      pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
-      baseline_set(false), mode(other.mode), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
-      mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
+	: DThinker(other), x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy),
+	  prevz(other.prevz), snext(other.snext), sprev(other.sprev), angle(other.angle),
+	  prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
+	  pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
+	  subsector(other.subsector),
+	  flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags),
+	  health(other.health), type(other.type), translucency(other.translucency), translation(other.translation),
+	  player(other.player), floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
+	  floorsector(other.floorsector), radius(other.radius), height(other.height),
+	  momx(other.momx), momy(other.momy), momz(other.momz),
+	  validcount(other.validcount), info(other.info), tics(other.tics),
+	  state(other.state), damage(other.damage),
+	  special1(other.special1), special2(other.special2),
+	  movedir(other.movedir), movecount(other.movecount),
+	  visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
+	  lastlook(other.lastlook), special(other.special), args(other.args),
+	  inext(other.inext), iprev(other.iprev),
+	  waterlevel(other.waterlevel), gear(other.gear),
+	  onground(other.onground), touching_sectorlist(other.touching_sectorlist),
+	  deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
+	  friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
+	  pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
+	  mode(other.mode), updatedDuringLocalTic(other.updatedDuringLocalTic),
+	  updatedDuringServerTic(other.updatedDuringServerTic), spawnTic(other.spawnTic),
+	  mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
@@ -454,6 +445,9 @@ AActor::AActor(const AActor& other)
 
 AActor &AActor::operator= (const AActor &other)
 {
+	if(&other == this)
+    	return *this;
+
     x = other.x;
     y = other.y;
     z = other.z;
@@ -524,11 +518,12 @@ AActor &AActor::operator= (const AActor &other)
     memcpy(&baseline, &other.baseline, sizeof(baseline));
     baseline_set = other.baseline_set;
 
-    mode             = other.mode;
-    updatedDuringTic = other.updatedDuringTic;
-    spawnTic         = other.spawnTic;
-    mobjtic          = other.mobjtic;
-    credibility      = other.credibility;
+    mode                    = other.mode;
+    updatedDuringLocalTic   = other.updatedDuringLocalTic;
+    updatedDuringServerTic  = other.updatedDuringServerTic;
+    spawnTic                = other.spawnTic;
+    mobjtic                 = other.mobjtic;
+    credibility             = other.credibility;
 
     return *this;
 }
@@ -540,18 +535,8 @@ AActor &AActor::operator= (const AActor &other)
 //
 
 AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
-    : x(ix), y(iy), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
-      prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
-      subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
-      height(0), momx(0), momy(0), momz(0), validcount(0), type(itype),
-      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
-      statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-      iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
-      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), mode(MobjModeEnum::SPAWN), updatedDuringTic(-1),
-      spawnTic(gametic), mobjtic(gametic), bmapnode(this)
+	: x(ix), y(iy), type(itype),
+	  spawnTic(gametic), mobjtic(gametic), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	const auto it = ::mobjinfo.find(itype);
@@ -870,7 +855,7 @@ fixed_t P_CalculateMinMom(const AActor *mo)
 //
 // Floating item bobbing
 //
-// [RV] +FLOATBOB actors use the common ZDoom offset table.  
+// [RV] +FLOATBOB actors use the common ZDoom offset table.
 // special1 stores the center offset from the floor.
 // The table supplies the visual bob.
 //
@@ -1321,7 +1306,8 @@ void AActor::Serialize (FArchive &arc)
 			<< rndindex
 			<< spawnRndindex
 			<< mode
-			<< updatedDuringTic
+			<< updatedDuringLocalTic
+			<< updatedDuringServerTic
 			<< spawnTic
 			<< mobjtic
 			<< credibility;
@@ -1411,7 +1397,8 @@ void AActor::Serialize (FArchive &arc)
 			>> rndindex
 			>> spawnRndindex
 			>> mode
-			>> updatedDuringTic
+			>> updatedDuringLocalTic
+			>> updatedDuringServerTic
 			>> spawnTic
 			>> mobjtic
 			>> credibility;
@@ -2592,7 +2579,7 @@ void AActor::RemoveFromHash ()
 			{
 				inext->iprev = iprev;
 				inext = NULL;
-			}
+						}
 			iprev = NULL;
 		}
 	}
@@ -3302,6 +3289,161 @@ int P_IsPickupableThing(short type)
 	       );
 }
 
+enum
+{
+	SKYPICK_NOFLOOR   = 1,
+	SKYPICK_NOCEILING = 2
+};
+
+struct deferredskypicker_t
+{
+	int secnum;
+	int viewpointTid;
+	int planeflags;
+};
+static std::vector<deferredskypicker_t> DeferredSkyPickers;
+
+void P_ClearSkyPickers()
+{
+	DeferredSkyPickers.clear();
+}
+
+// Record a sky picker (thing 9081) for later resolution.
+void P_AddSkyPicker(int secnum, int viewpointTid, int planeflags)
+{
+	deferredskypicker_t picker;
+	picker.secnum = secnum;
+	picker.viewpointTid = viewpointTid;
+	picker.planeflags = planeflags;
+	DeferredSkyPickers.push_back(picker);
+}
+
+static bool P_IsStackPoint(const AActor* mo)
+{
+	return mo && (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK);
+}
+
+// Assign each recorded picker's sector to its target SkyViewpoint.
+void P_ResolveSkyPickers()
+{
+	for (size_t i = 0; i < DeferredSkyPickers.size();)
+	{
+		sector_t* sector = &sectors[DeferredSkyPickers[i].secnum];
+		int tid = DeferredSkyPickers[i].viewpointTid;
+		int planeflags = DeferredSkyPickers[i].planeflags;
+		bool resolved = false;
+
+		// A picker with no TID clears its planes back to regular sky.
+		AActor::AActorPtr box_ptr;
+
+		if (tid == 0)
+		{
+			resolved = true;
+		}
+		else
+		{
+			TActorIterator<AActor> iterator(tid);
+			AActor* box = iterator.Next();
+
+			if (box != NULL && box->type == MT_SKYVIEWPOINT)
+			{
+				box_ptr = box->ptr();
+				resolved = true;
+			}
+		}
+
+		if (resolved)
+		{
+			if (!(planeflags & SKYPICK_NOCEILING) && !P_IsStackPoint(sector->SkyboxCeiling))
+				sector->SkyboxCeiling = box_ptr;
+
+			if (!(planeflags & SKYPICK_NOFLOOR) && !P_IsStackPoint(sector->SkyboxFloor))
+				sector->SkyboxFloor = box_ptr;
+		}
+		else if (serverside)
+		{
+			PrintFmt("Can't find SkyViewpoint {} for sector {}\n", tid,
+			         DeferredSkyPickers[i].secnum);
+			resolved = true; // drop it
+		}
+
+		if (resolved)
+			DeferredSkyPickers.erase(DeferredSkyPickers.begin() + i);
+		else
+			i++;
+	}
+}
+
+static std::vector<AActor::AActorPtr> DeferredStackLinks;
+
+void P_ClearStackLinks()
+{
+	DeferredStackLinks.clear();
+}
+
+void P_AddStackLink(AActor* mo)
+{
+	DeferredStackLinks.push_back(mo->ptr());
+}
+
+// Pair each recorded stack point with its opposite-type mate by TID.
+// Mate is stored in the AActor::tracer field.
+void P_ResolveStackLinks()
+{
+	for (size_t i = 0; i < DeferredStackLinks.size();)
+	{
+		AActor* self = DeferredStackLinks[i];
+
+		if (self == NULL)
+		{
+			// The stack point was destroyed while waiting.
+			DeferredStackLinks.erase(DeferredStackLinks.begin() + i);
+			continue;
+		}
+
+		bool resolved = false;
+
+		if (self->tid != 0)
+		{
+			const mobjtype_t matetype =
+			    self->type == MT_UPPERSTACK ? MT_LOWERSTACK : MT_UPPERSTACK;
+
+			TActorIterator<AActor> iterator(self->tid);
+			AActor* mate;
+
+			while ((mate = iterator.Next()) != NULL && mate->type != matetype)
+				;
+
+			if (mate != NULL)
+			{
+				self->tracer = mate->ptr();
+				mate->tracer = self->ptr();
+
+				sector_t* sector = self->subsector->sector;
+				if (self->type == MT_UPPERSTACK)
+					sector->SkyboxFloor = mate->ptr();
+				else
+					sector->SkyboxCeiling = mate->ptr();
+
+				resolved = true;
+			}
+		}
+
+		if (!resolved && serverside)
+		{
+			PrintFmt("Can't find {} stack point with TID {} for sector {}\n",
+			         self->type == MT_UPPERSTACK ? "lower" : "upper", self->tid,
+			         self->subsector->sector - sectors);
+			resolved = true; // drop it
+		}
+
+		if (resolved)
+			DeferredStackLinks.erase(DeferredStackLinks.begin() + i);
+		else
+			i++;
+	}
+}
+
 //
 // P_SpawnMapThing
 // This function spawns a thing that originates from the map itself.
@@ -3503,13 +3645,21 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		::level.detected_gametype = GM_HORDE;
 	}
 
-	if (mthing.type == 9081)
+	if (mthing.type == 9077)
 	{
-		type = MT_SKYPICKER;
+		type = MT_UPPERSTACK;
+	}
+	else if (mthing.type == 9078)
+	{
+		type = MT_LOWERSTACK;
 	}
 	else if (mthing.type == 9080)
 	{
 		type = MT_SKYVIEWPOINT;
+	}
+	else if (mthing.type == 9081)
+	{
+		type = MT_SKYPICKER;
 	}
 	else if (mthing.type == 9082)
 	{
@@ -3668,7 +3818,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	// [RH] Set the thing's special
 	mobj->special = mthing.special;
-	mobj->args    = mthing.args;
+	std::copy(std::begin(mthing.args), std::end(mthing.args), mobj->args.begin());
 
 	// [RH] If it's an ambient sound, activate it
 	if (type == MT_AMBIENT)
@@ -3729,42 +3879,30 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		// If this actor has no TID, make it the default sky box
 		if (mobj->tid == 0)
 		{
-			int j;
-
-			for (j = 0; j < numsectors; j++)
+			for (int j = 0; j < numsectors; j++)
 			{
-				if (sectors[j].Skybox == NULL)
-				{
-					sectors[j].Skybox = mobj->ptr();
-				}
+				if (sectors[j].SkyboxCeiling == NULL)
+					sectors[j].SkyboxCeiling = mobj->ptr();
+				if (sectors[j].SkyboxFloor == NULL)
+					sectors[j].SkyboxFloor = mobj->ptr();
 			}
 		}
+	}
+
+	if (mobj->type == MT_UPPERSTACK || mobj->type == MT_LOWERSTACK)
+	{
+		// Record for deferred resolution.
+		P_AddStackLink(mobj);
 	}
 
 	if (mobj->type == MT_SKYPICKER)
 	{
-		sector_t* sector = mobj->subsector->sector;
-		if (mthing.args[0] == 0)
-		{
-			sector->Skybox = AActor::AActorPtr();
-		}
-		else
-			{
-				TActorIterator<AActor> iterator (mthing.args[0]);
-			    AActor* box = iterator.Next();
-
-				if (box != NULL && box->type == MT_SKYVIEWPOINT)
-				{
-				    sector->Skybox = box->ptr();
-				}
-				else
-				{
-					PrintFmt ("Can't find SkyViewpoint {} for sector {}\n", mthing.args[0],
-				           sector - sectors);
-				}
-			}
-			mobj->Destroy ();
+		// Record for deferred resolution.
+		P_AddSkyPicker(static_cast<int>(mobj->subsector->sector - sectors), mobj->args[0],
+		               mobj->args[1]);
 	}
+
+	SV_SpawnMobj(mobj);
 
 	if ((mthing.type >= 9992 && mthing.type <= 9999) ||
 		(mthing.type >= 9982 && mthing.type <= 9983)) {

@@ -1313,7 +1313,7 @@ bool SV_SetupUserInfo(player_t &player, const odaproto::clc::UserInfo& msg)
 		    !player.spectator && !G_IsLevelState(LevelState::WARMUP))
 		{
 			// kill player if team is changed
-			P_DamageMobj(player.mo, 0, 0, 1000, 0);
+			P_DamageMobj(player.mo, nullptr, nullptr, 1000, 0);
 			M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
 			              M_GetPlayerId(player, old_team), 0, 0);
 			M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
@@ -3090,11 +3090,6 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
 		return;
 
-	// Avoid sending more than one Update Mobj per tic for any missile.
-	// Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
-	if (mo->updatedDuringTic == gametic)
-		return;
-
 	// 64 units feels about right to prevent barely-dodged missiles from floating in front of the player's face
 	// when in a high-lag ~200 msec ping situation.
 	constexpr int HYPER_AWARENESS_CUTOFF_SQUARED = 64 * 64;
@@ -3106,7 +3101,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	                                     sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
 	if (isHyperAware)
 	{
-		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobjWithMode(*mo));
 	}
 	else
 	{
@@ -3145,14 +3140,21 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 					break;
 
 				default:
-					MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+					MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobjWithMode(*mo));
 					break;
 			}
 		}
 	}
 }
 
-static void ImmediateUpdateMobj(AActor& mobj, bool reliableIsAllowed)
+enum class TransportEnum
+{
+	AUTO,
+	BEST_EFFORT,
+	RELIABLE
+};
+
+static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 {
 	// Don't use this function to update players.
 	if (mobj.player)
@@ -3164,6 +3166,10 @@ static void ImmediateUpdateMobj(AActor& mobj, bool reliableIsAllowed)
 	{
 		if (player.ingame() and SV_IsPlayerAllowedToSee(player, &mobj))
 		{
+			MessageQueue& fullAwareQueue = transport == TransportEnum::BEST_EFFORT ? player.client.messenger.NetBuf()
+			                                                                       : player.client.messenger.ReliableBuf();
+			MessageQueue& semiAwareQueue = transport == TransportEnum::RELIABLE ? player.client.messenger.ReliableBuf()
+                                                                                : player.client.messenger.NetBuf();
 			switch (mobj.playersAware.Get(player.id))
 			{
 				case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
@@ -3172,15 +3178,14 @@ static void ImmediateUpdateMobj(AActor& mobj, bool reliableIsAllowed)
 
 				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
 				case AwarenessEnum::FULLY_AWARE:
-					mobj.updatedDuringTic = gametic;
-					MSG_WriteSVC(reliableIsAllowed ? player.client.messenger.ReliableBuf()
-					                               : player.client.messenger.NetBuf(),
-					             message);
+					mobj.updatedDuringLocalTic = gametic;
+					MSG_WriteSVC(fullAwareQueue, message);
 					break;
 
 				case AwarenessEnum::SEMI_AWARE:
-					mobj.updatedDuringTic = gametic;
-					MSG_WriteSVC(player.client.messenger.NetBuf(), message);
+					mobj.updatedDuringLocalTic = gametic;
+					MSG_WriteSVC(semiAwareQueue, message);
+					break;
 			}
 		}
 	}
@@ -3189,13 +3194,19 @@ static void ImmediateUpdateMobj(AActor& mobj, bool reliableIsAllowed)
 // Update the given actors data immediately, using standard Reliable and Best-effort transports as appropriate.
 void SV_UpdateMobj(AActor* mo)
 {
-	ImmediateUpdateMobj(*mo, true);
+	ImmediateUpdateMobj(*mo, TransportEnum::AUTO);
 }
 
 // Update the given actors data immediately, ONLY using Best-effort transport.
 void SV_UpdateMobjBestEffort(AActor* mo)
 {
-	ImmediateUpdateMobj(*mo, false);
+	ImmediateUpdateMobj(*mo, TransportEnum::BEST_EFFORT);
+}
+
+// Update the given actors data immediately, ONLY using Reliable transport.
+void SV_UpdateMobjReliable(AActor* mo)
+{
+	ImmediateUpdateMobj(*mo, TransportEnum::RELIABLE);
 }
 
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound)
@@ -3259,11 +3270,6 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 	if ((gametic+mo->netid) % 7)
 		return;
 
-	// Avoid sending more than one Update Mobj per tic for any missile.
-	// Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
-	if (mo->updatedDuringTic == gametic)
-		return;
-
 	if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
 	{
 		switch (mo->playersAware.Get(player.id))
@@ -3273,7 +3279,7 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 				break;
 
 			default:
-				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobjWithMode(*mo));
 				break;
 		}
 	}
@@ -3285,7 +3291,7 @@ void SV_UpdateAvatars(player_t& player)
 	{
 		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
 		{
-			voodooInfo.mobj->updatedDuringTic = gametic;    // Avoid a potential duplicate send.
+			voodooInfo.mobj->updatedDuringLocalTic = gametic;    // Avoid a potential duplicate send.
 			MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_UpdateMobj(*voodooInfo.mobj));
 		}
 	}
@@ -3700,7 +3706,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 			// Now in this case we're okay with *potentially* going overbudget or behind-by-one tic,
 			// because the player has a mobj that's multiple seconds out of date.  Being a even little
 			// late is better than that.
-			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*sortedMobjIter->actorPtr));
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobjWithMode(*sortedMobjIter->actorPtr));
 			player.requestedNetIdUpdate = 0;
 		}
 	}
@@ -5118,15 +5124,6 @@ void SV_SendDamageMobj(AActor *target, int pain)
 		if (SV_IsPlayerAllowedToSee(player, target))
 		{
 			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_DamageMobj(target, pain));
-
-			// If we're letting the client gradually forget about this mobj, don't bother with
-			// a mobj update.  Also, don't bother if it's another player, because other players
-			// get updated with a special message.
-			if (target->playersAware.Get(player.id) != AwarenessEnum::BARELY_AWARE and not target->player)
-			{
-				target->updatedDuringTic = gametic;
-				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*target));
-			}
 		}
 	}
 }
@@ -5198,13 +5195,13 @@ void SV_ExplodeMissile(AActor *mo)
 
 			case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
 			case AwarenessEnum::FULLY_AWARE:
-				mo->updatedDuringTic = gametic;
+				mo->updatedDuringLocalTic = gametic;
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*mo));
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
 				break;
 
 			case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
-				mo->updatedDuringTic = gametic;
+				mo->updatedDuringLocalTic = gametic;
 				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
 				break;
@@ -5428,7 +5425,7 @@ void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* a
 // sent to the activating player.
 //
 void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* print,
-                          bool playerOnly, const std::vector<int>& args)
+                          bool playerOnly, const std::span<const int> args)
 {
 	player_t* sendPlayer = nullptr;
 	if (playerOnly && activator != nullptr && activator->player != nullptr)

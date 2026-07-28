@@ -407,7 +407,7 @@ void R_GenerateLookup(int texnum, int *const errors)
 	// Now count the number of columns that are covered by more than one patch.
 	// Fill in the lump / offset, so columns with only a single patch are all done.
 
-	texturecomposite[texnum] = 0;
+	texturecomposite[texnum] = nullptr;
 	int csize = 0;
 
 	int x = texture->width;
@@ -526,7 +526,7 @@ struct texlump_t
 	}
 };
 
-static int32_t R_LoadTextureLump(const texlump_t& texlump, const std::span<const int> patchlookup, int texnum, texhash_t& texhash, int& errors)
+static int32_t R_LoadTextureLump(const texlump_t& texlump, const std::span<const int> patchlookup, int texnum, texhash_t& texhash)
 {
 	int32_t* directory = texlump.directory;
 	int i;
@@ -557,11 +557,19 @@ static int32_t R_LoadTextureLump(const texlump_t& texlump, const std::span<const
 		{
 			patch->originx = LESHORT(mpatch->originx);
 			patch->originy = LESHORT(mpatch->originy);
-			patch->patch = patchlookup[LESHORT(mpatch->patch)];
+			const int16_t patchnum = LESHORT(mpatch->patch);
+			if (patchnum >= 0 && static_cast<size_t>(patchnum) < patchlookup.size())
+				patch->patch = patchlookup[patchnum];
+			else
+			 	patch->patch = -1;
 			if (patch->patch == -1)
 			{
+				patch->patch = W_CheckNumForName("TNT1A0", ns_sprites);
 				PrintFmt(PRINT_WARNING, "R_InitTextures: Missing patch in texture {}\n", texture->name);
-				errors++;
+				// [EB] Make missing patches non-fatal
+				// other ports have annoyingly started doing this
+				// and so we do to if we want all the wads to work...
+				// errors++;
 			}
 		}
 
@@ -655,7 +663,7 @@ void R_InitTextures()
 	numtextures = texture1.numtextures + texture2.numtextures + tx_numtextures;
 
 	const int first_pname_tex = numtextures;
-	const int numpnamestextures = std::count_if(patchlookup.begin(), patchlookup.end(), [](const int patch){ return patch != -1; });
+	const int numpnamestextures = std::ranges::count_if(patchlookup, [](const int patch){ return patch != -1; });
 	numtextures += numpnamestextures;
 
 	textures = new texture_t *[numtextures];
@@ -670,8 +678,8 @@ void R_InitTextures()
 	texhash_t texturehash2;
 	// [EB] texture1 goes to texturehash2 because .insert only inserts for keys that don't already exist
 	//      and we need texture2 to override texture1
-	int texnum = R_LoadTextureLump(texture1, patchlookup, 0, texturehash2, errors);
-	texnum = R_LoadTextureLump(texture2, patchlookup, texnum, texturehash, errors);
+	int texnum = R_LoadTextureLump(texture1, patchlookup, 0, texturehash2);
+	texnum = R_LoadTextureLump(texture2, patchlookup, texnum, texturehash);
 	texturehash.insert(texturehash2.begin(), texturehash2.end());
 
 	const auto createTexture = [&](int textureIndex,

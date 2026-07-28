@@ -132,6 +132,7 @@ void SV_CheckTeam(player_t &player);
 void SV_SendUserInfo(const player_t &player, client_t* cl);
 void SV_Suicide(player_t &player);
 void SV_SpawnMobj(AActor *mo);
+void SV_UpdateMobj(AActor* mo);
 void SV_SpawnHighPriorityMobj(AActor *mo);
 void SV_TouchSpecial(AActor& special, player_t& player);
 
@@ -182,7 +183,7 @@ void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* a
                                int arg1, int arg2, int arg3, int arg4);
 void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* print,
                           bool playerOnly,
-                          const std::vector<int>& args = std::vector<int>());
+                          const std::span<const int> args = {});
 
 bool CompareQueuePosition(const player_t* p1, const player_t* p2);
 

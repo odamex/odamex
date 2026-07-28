@@ -225,11 +225,13 @@ protected:
 	static vdrawfunc *m_Drawfuncs;
 	static vdrawsfunc *m_Drawsfuncs;
 
-private:
-	IWindowSurface*			mSurface;
-
+public:
+	// Maps a virtual 320x200 coordinate to a real screen coordinate.
 	int getCleanX(int x) const;
 	int getCleanY(int y) const;
+
+private:
+	IWindowSurface*			mSurface;
 };
 
 inline void DCanvas::DrawText (int normalcolor, int x, int y, const byte *string) const
