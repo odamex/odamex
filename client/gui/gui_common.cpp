@@ -26,8 +26,10 @@
 #include "odamex.h"
 
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
+BEGIN_DISABLE_WARNING_GNU("-Wzero-as-null-pointer-constant")
 #include "FL/Fl_PNG_Image.H"
 #include "FL/Fl_Window.H"
+END_DISABLE_WARNING_GNU
 END_DISABLE_WARNING_GNU
 
 #include "gui_resource.h"

@@ -31,7 +31,9 @@
 #include "cl_demo.h"
 
 BEGIN_DISABLE_WARNING_GNU("-Wuseless-cast")
+BEGIN_DISABLE_WARNING_GNU("-Wnon-virtual-dtor")
 #include "client.pb.h"
+END_DISABLE_WARNING_GNU
 END_DISABLE_WARNING_GNU
 
 #include "OdaMessenger.h"
