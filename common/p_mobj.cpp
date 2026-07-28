@@ -1385,8 +1385,8 @@ void P_XYMovement(AActor *mo)
 	fixed_t maxmove = (mo->waterlevel < 2) || (mo->flags & MF_MISSILE) ? MAXMOVE/2 : MAXMOVE/8;
 	fixed_t mom_clamp = maxmove * 2;
 
-	fixed_t xmove = mo->momx = clamp(mo->momx, -mom_clamp, mom_clamp);
-	fixed_t ymove = mo->momy = clamp(mo->momy, -mom_clamp, mom_clamp);
+	fixed_t xmove = mo->momx = std::clamp(mo->momx, -mom_clamp, mom_clamp);
+	fixed_t ymove = mo->momy = std::clamp(mo->momy, -mom_clamp, mom_clamp);
 
 	// [SL] is the destination on a slope and if so, should the actor
 	// continue to be on the floor?

@@ -683,7 +683,7 @@ static void ParseAnim(OScanner &os, byte istex)
 		if (os.compareToken("tics"))
 		{
 			os.mustScanInt();
-			min = max = clamp(os.getTokenInt(), 0, 255);
+			min = max = std::clamp(os.getTokenInt(), 0, 255);
 		}
 		else if (os.compareToken("rand"))
 		{

@@ -810,7 +810,7 @@ void V_DrawFPSTicker()
 	const int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
 	static int last_tic = current_tic;
 
-	const int tics = clamp(current_tic - last_tic, 0, 20);
+	const int tics = std::clamp(current_tic - last_tic, 0, 20);
 	last_tic = current_tic;
 
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)

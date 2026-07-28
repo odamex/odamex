@@ -730,7 +730,7 @@ void drawProtos()
 
 	V_SetFont("DIGFONT");
 
-	proto_selected = clamp(proto_selected, (size_t)0, protos.size() - 1);
+	proto_selected = std::clamp(proto_selected, (size_t)0, protos.size() - 1);
 
 	// Starting y is five rows from the top.
 	int y = 7 * 5;
@@ -1580,9 +1580,9 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 
 void SpreeHud()
 {
-	if (!validplayer(displayplayer()) || 
-    !cl_showsprees || 
-    (!cl_showofflinesprees && !network_game) || 
+	if (!validplayer(displayplayer()) ||
+    !cl_showsprees ||
+    (!cl_showofflinesprees && !network_game) ||
     (!sv_showsprees && network_game) ||
     displayplayer().isFreecam)
   {

@@ -2165,9 +2165,9 @@ static void M_SetPlayerColorFromMouse(int item, int mouse_x)
 		return;
 
 	float dist = static_cast<float>(mouse_x - PSetupSliderX1) / static_cast<float>(PSetupSliderX2 - PSetupSliderX1);
-	dist = clamp(dist, 0.0f, 1.0f);
+	dist = std::clamp(dist, 0.0f, 1.0f);
 
-	const int part = clamp(static_cast<int>(dist * 255.0f + 0.5f), 0, 255);
+	const int part = std::clamp(static_cast<int>(dist * 255.0f + 0.5f), 0, 255);
 
 	argb_t color = V_GetColorFromString(cl_color);
 
