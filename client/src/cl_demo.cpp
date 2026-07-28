@@ -1091,7 +1091,15 @@ NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForGametic(uint32_t 
 	return lookupSnapshot(snapshot_index, gameticnum);
 }
 
+// getMapLoadSnapshotForGametic()
 //
+//      Returns the snapshot that loaded the map that is being played as of the given gametic.
+//      Returns map_index.end() if the gametic is out of bounds.
+NetDemo::SnapshotVector::const_iterator NetDemo::getMapLoadSnapshotForGametic(uint32_t gameticnum) const
+{
+	return lookupSnapshot(map_index, gameticnum);
+}
+
 // getCurrentSnapshotIter()
 //
 //      Returns the iterator into the snapshot_index vector that immediately
@@ -1330,6 +1338,16 @@ bool NetDemo::seekGametic(int requestedGametic)
 	// First, we have to be playing to load a snapshot.  Then we have to be playing to
 	// fast-forward to the requested tic.  If we fail, we just simply pause.
 	resume();
+
+	// If we're switching maps, then load the snapshot that walks the client through the
+	// proper map-change message sequence before we try to load the commanded snapshot.
+	// This avoids some glitches, including missing mobjs and mis-interpolations.
+	const auto currentMapLoadIter = getCurrentMapIter();
+	const auto destinationMapIter = getMapLoadSnapshotForGametic(requestedGametic);
+	if (currentMapLoadIter != destinationMapIter)
+	{
+		readSnapshot(destinationMapIter);
+	}
 
 	auto currentSnapshotIter = getCurrentSnapshotIter();
 

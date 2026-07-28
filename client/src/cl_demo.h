@@ -117,10 +117,11 @@ private:
 
 	using SnapshotVector = std::vector<netdemo_index_entry_t>;
 
-	[[nodiscard]] SnapshotVector::const_iterator getCurrentSnapshotIter  () const;
-	[[nodiscard]] SnapshotVector::const_iterator getCurrentMapIter       () const;
-	[[nodiscard]] SnapshotVector::const_iterator getSnapshotForGametic   (uint32_t gameticnum) const;
-	[[nodiscard]] SnapshotVector::const_iterator getSnapshotForNetdemotic(uint32_t netdemoticnum) const;
+	[[nodiscard]] SnapshotVector::const_iterator getCurrentSnapshotIter      () const;
+	[[nodiscard]] SnapshotVector::const_iterator getCurrentMapIter           () const;
+	[[nodiscard]] SnapshotVector::const_iterator getSnapshotForGametic       (uint32_t gameticnum) const;
+	[[nodiscard]] SnapshotVector::const_iterator getSnapshotForNetdemotic    (uint32_t netdemoticnum) const;
+	[[nodiscard]] SnapshotVector::const_iterator getMapLoadSnapshotForGametic(uint32_t gameticnum) const;
 
 	[[nodiscard]] SnapshotVector::const_iterator lookupSnapshot(const SnapshotVector& i_vector, uint32_t gameticnum) const;
 
