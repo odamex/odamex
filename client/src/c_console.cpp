@@ -2042,8 +2042,9 @@ static bool C_HandleKey(const event_t* ev)
 			return true;
 		}
 	case OKEY_MOUSE2:
+	case OKEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
-		CmdLine.insertString(I_GetClipboardText());
+		CmdLine.insertString(I_GetClipboardText(ch == OKEY_MOUSE3));
 		CmdCompletions.clear();
 		TabCycleClear();
 		return true;
