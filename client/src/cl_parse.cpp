@@ -30,7 +30,9 @@
 
 BEGIN_DISABLE_WARNING_GNU("-Wuseless-cast")
 BEGIN_DISABLE_WARNING_GNU("-Wnon-virtual-dtor")
+BEGIN_DISABLE_WARNING_GNU("-Wzero-as-null-pointer-constant")
 #include "server.pb.h"
+END_DISABLE_WARNING_GNU
 END_DISABLE_WARNING_GNU
 END_DISABLE_WARNING_GNU
 
