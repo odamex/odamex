@@ -2208,6 +2208,17 @@ static bool C_HandleKey(const event_t* ev)
 		return true;
 	}
 
+	if (KeysAlt)
+	{
+		// Paste from primary selection - add each character to command line
+ 		if (tolower(ev->data1) == 'v')
+		{
+			CmdLine.insertString(I_GetClipboardText(true));
+			TabCycleClear();
+		}
+		return true;
+	}
+
 	if (keytext)
 	{
 		// Add keypress to command line
