@@ -960,6 +960,13 @@ void P_LoadThings2 (int lump, int position)
 		P_SpawnMapThing(*mt, position);
 	}
 
+	// Sort by player number if starts are not in order
+	std::sort(playerstarts.begin(), playerstarts.end(), [](const mapthing2_t& p1, const mapthing2_t& p2){
+		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
+	});
+
+	P_SpawnAvatars();
+
 	Z_Free (data);
 }
 
