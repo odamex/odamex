@@ -2770,7 +2770,7 @@ size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
-int P_IsPickupableThing(short type)
+bool P_IsPickupableThing(int16_t type)
 {
 	return (type == 82 // SSG
 			|| (type >= 2000 && type <= 2050) // weapons, ammo, health, armor, special items
@@ -2936,13 +2936,13 @@ void P_ResolveStackLinks()
 }
 
 //
-// P_IsSpawnThing
+// P_IsPlayerSpawnThing
 //
 // Returns true if the mapthing2_t is a spawn
 //
-bool P_IsSpawnThing(const mapthing2_t& mt)
+bool P_IsPlayerSpawnThing(const mapthing2_t& mt)
 {
-	if (mt.type == 1 || mt.type == 2 || mt.type == 3 || mt.type == 4 || mt.type == 11)  // player1-4, DM
+	if (mt.type == 1 || mt.type == 2 || mt.type == 3 || mt.type == 4 || mt.type == 11 || (mt.type >= 4001 && mt.type <= 4001 + MAXPLAYERSTARTS - 4))  // player1-4, DM
 	{
 		return true;
 	}
