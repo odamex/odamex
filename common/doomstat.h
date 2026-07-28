@@ -154,7 +154,7 @@ extern	int 			gametic;
 extern std::vector<mapthing2_t> DeathMatchStarts;
 
 // Player spawn spots.
-#define MAXPLAYERSTARTS		64
+inline constexpr int MAXPLAYERSTARTS = 64;
 extern std::vector<mapthing2_t> playerstarts;
 extern std::vector<mapthing2_t> voodoostarts;
 
