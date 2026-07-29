@@ -19,6 +19,7 @@ jobs:
         with:
           submodules: "recursive"
       - uses: ZedThree/clang-tidy-review@v0.23.1
+        id: review
         with:
           apt_packages: "ninja-build,libsdl2-dev,libsdl2-mixer-dev,libcurl3-openssl-dev,libpng-dev,libwxgtk3.2-dev,zlib1g-dev,libzstd-dev,libfltk1.4-dev,libjsoncpp-dev"
           exclude: "libraries/*"
@@ -37,5 +38,8 @@ jobs:
               -DUSE_INTERNAL_GTEST=0 \
               -DUSE_INTERNAL_JSONCPP=0 \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - if: steps.review.outputs.total_comments > 0
+        run: exit 1
 
 
