@@ -1,0 +1,13 @@
+name: Post clang-tidy comments
+
+on:
+  workflow_run:
+    workflows: ["clang-tidy"]
+    types:
+      - completed
+
+jobs:
+  clang-tidy-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ZedThree/clang-tidy-review/post@v0.23.1
