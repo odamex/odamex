@@ -69,6 +69,7 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         if (TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
             add_library(ZLIB::ZLIB ALIAS zlibstatic)
             set (ZLIB_INCLUDE_DIRS "${FETCHCONTENT_SOURCE_DIR_ZLIB}" "${zlib_BINARY_DIR}")
+            set (ZLIB_LIBRARIES ZLIB::ZLIB)
             export(TARGETS zlibstatic
                    NAMESPACE ZLIB::
                    FILE "${zlib_BINARY_DIR}/zlib-targets.cmake")
@@ -375,6 +376,13 @@ if (FETCH_CONTENT_PACKAGES)
     set(CURL_INCLUDE_DIRS   "${FETCHCONTENT_SOURCE_DIR_CURL}/include")
     set(CURL_LIBRARIES      CURL::libcurl)
 
+    if (TARGET png_static AND NOT TARGET PNG::PNG)
+        add_library(PNG::PNG ALIAS png_static)
+    endif()
+
+    set(PNG_LIBRARIES       PNG::PNG)
+    set(PNG_INCLUDE_DIRS    "${FETCHCONTENT_SOURCE_DIR_PNG}")
+
 endif()
 
 if (BUILD_LAUNCHER)
@@ -392,6 +400,8 @@ if (BUILD_LAUNCHER)
         list(APPEND FETCH_CONTENT_PACKAGES wxWidgets)
 
         set(wxBUILD_INSTALL OFF)
+        set(wxUSE_LIBPNG    sys)    # Just tell wx to fallback to our builds of these libs via find_package.
+        set(wxUSE_ZLIB      sys)
 
         FetchContent_MakeAvailable(wxWidgets)
     endif()
@@ -403,11 +413,6 @@ endif()
 # Now do some patching to smooth-over any disagreements between the
 # target names as established by building the libs vs. finding them.
 
-#if (APPLE AND TARGET SDL2-static)
-#    set_property(TARGET SDL2-static PROPERTY OBJCXX_STANDARD)
-#    set_target_properties(SDL2-static PROPERTIES OBJCXX_EXTENSIONS OFF)
-#endif()
-
 if (TARGET libminiupnpc-static)
     target_compile_definitions(libminiupnpc-static INTERFACE INTERNAL_MINIUPNP_STATICLIB)
 endif()
@@ -416,10 +421,6 @@ if (TARGET wxrc AND NOT wxWidgets_wxrc_EXECUTABLE)
     set(wxWidgets_wxrc_EXECUTABLE wxrc                                          PARENT_SCOPE)
     set(wxWidgets_LIBRARIES       wx::base wx::core wx::adv wx::net wx::xrc     PARENT_SCOPE)
     set(wxWidgets_INCLUDE_DIRS    ${FETCHCONTENT_SOURCE_DIR_WXWIDGETS}/include  PARENT_SCOPE)
-endif()
-
-if (TARGET png_static AND NOT TARGET PNG::PNG)
-    add_library(PNG::PNG ALIAS png_static)
 endif()
 
 if (TARGET ADLMIDI_static AND NOT TARGET libADLMIDI::ADLMIDI_static)
