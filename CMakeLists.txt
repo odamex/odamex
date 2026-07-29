@@ -21,7 +21,7 @@ project(Odamex VERSION 13.0.0)
 include(CMakeDependentOption)
 
 if (APPLE)
-    enable_language(OBJCXX)
+    enable_language(OBJC)
 endif()
 
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
