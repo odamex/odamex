@@ -3947,7 +3947,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	0,		// flags3
 	NULL, // ripsound
 	MT_NULL,		// droppeditem
-	"$TAG_AMMOROCKETS",
+	"$AMMO_ROCKETS",
 	},
 
 	{		// MT_MISC19
@@ -3988,7 +3988,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	0,		// flags3
 	NULL, // ripsound
 	MT_NULL,		// droppeditem
-	"$TAG_AMMOROCKETS",
+	"$AMMO_ROCKETS",
 	},
 
 	{		// MT_MISC20
@@ -4029,7 +4029,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	0,		// flags3
 	NULL, // ripsound
 	MT_NULL,		// droppeditem
-	"$TAG_AMMOCELLS",
+	"$AMMO_CELLS",
 	},
 
 	{		// MT_MISC21
@@ -4070,7 +4070,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	0,		// flags3
 	NULL, // ripsound
 	MT_NULL,		// droppeditem
-	"$TAG_AMMOCELLS",
+	"$AMMO_CELLS",
 	},
 
 	{		// MT_MISC22

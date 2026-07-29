@@ -227,6 +227,23 @@ static void CL_PredictRemotePlayers()
 }
 
 //
+// CL_PredictFreecam
+//
+//
+static void CL_PredictFreecam()
+{
+	player_t& player = displayplayer();
+	if (not player.isFreecam)
+		return;
+
+	predicting = true;
+
+	P_PlayerThink(player);
+
+	predicting = false;
+}
+
+//
 // CL_PredictSpectator
 //
 //
@@ -281,6 +298,12 @@ void CL_PredictWorld(void)
 {
 	if (gamestate != GS_LEVEL)
 		return;
+
+	if (netdemo.isPaused() && displayplayer().isFreecam)
+	{
+		CL_PredictFreecam();
+		return;
+	}
 
 	player_t& p = consoleplayer();
 

@@ -480,9 +480,6 @@ int ST_StatusBarX(int surface_width, int surface_height)
 {
 	if (!R_StatusBarVisible())
 		return 0;
-
-	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
-		return 0;
 	else
 		return (surface_width - ST_StatusBarWidth(surface_width, surface_height)) / 2;
 }
@@ -490,9 +487,6 @@ int ST_StatusBarX(int surface_width, int surface_height)
 int ST_StatusBarY(int surface_width, int surface_height)
 {
 	if (!R_StatusBarVisible())
-		return surface_height;
-
-	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
 		return surface_height;
 	else
 		return surface_height - ST_StatusBarHeight(surface_width, surface_height);

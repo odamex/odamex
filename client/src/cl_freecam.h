@@ -16,31 +16,29 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Error handling
-//
-// AUTHORS:
-//  Russell Rice (russell at odamex dot net)
-//  Michael Wood (mwoodj at knology dot net)
+//   The freecam is a clientside-only player that is injected and used
+//   with spynext to free roam the map during netdemos or allowed gamemodes
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __NET_ERROR_H__
-#define __NET_ERROR_H__
+#pragma once
 
-namespace odalpapi
+#include "odamex.h"
+#include "cl_main.h"
+
+inline constexpr byte freecamplayer_id = 255;
+
+namespace Freecam
 {
-
-void _ReportError(const char* file, int line, const char* func,
-                  const char* fmt, ...);
-#if defined(_MSC_VER) && (_MSC_VER < 1400) // __VA_ARGS__ not supported by older ANSI C++
-	void NET_ReportError(const char* fmt, ...);
-#else
-	#define NET_ReportError(...) \
-		_ReportError(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-#endif
-
-#define REPERR_NO_ARGS ""
-
-} // namespace
-
-#endif // __NET_ERROR_H__
+	extern std::string prevmap;
+	void addFreecamPlayer();
+	void savePosition();
+	void reset();
+	void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
+	bool needPosition();
+	bool allowAdd();
+	bool allowSpy();
+	void retireFor255thPlayer(player_t* cam);	
+	bool wipedOnLevelChange(player_t* cam);
+	void buildCam(player_t* p_cam);
+};

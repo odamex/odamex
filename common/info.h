@@ -1490,6 +1490,8 @@ enum mobjtype_t: int32_t {
     MT_NODE,        //Added by MC:
     MT_WATERZONE,
     MT_SECRETTRIGGER,
+    MT_UPPERSTACK,
+    MT_LOWERSTACK,
     MT_SKYVIEWPOINT,
     MT_SKYPICKER,
     MT_SECTORSILENCER,

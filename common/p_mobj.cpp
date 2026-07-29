@@ -2076,7 +2076,7 @@ void AActor::RemoveFromHash ()
 			{
 				inext->iprev = iprev;
 				inext = NULL;
-			}
+						}
 			iprev = NULL;
 		}
 	}
@@ -2780,6 +2780,186 @@ int P_IsPickupableThing(short type)
 	       );
 }
 
+enum
+{
+	SKYPICK_NOFLOOR   = 1,
+	SKYPICK_NOCEILING = 2
+};
+
+struct deferredskypicker_t
+{
+	int secnum;
+	int viewpointTid;
+	int planeflags;
+};
+static std::vector<deferredskypicker_t> DeferredSkyPickers;
+
+void P_ClearSkyPickers()
+{
+	DeferredSkyPickers.clear();
+}
+
+// Record a sky picker (thing 9081) for later resolution.
+void P_AddSkyPicker(int secnum, int viewpointTid, int planeflags)
+{
+	deferredskypicker_t picker;
+	picker.secnum = secnum;
+	picker.viewpointTid = viewpointTid;
+	picker.planeflags = planeflags;
+	DeferredSkyPickers.push_back(picker);
+}
+
+static bool P_IsStackPoint(const AActor* mo)
+{
+	return mo && (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK);
+}
+
+// Assign each recorded picker's sector to its target SkyViewpoint.
+void P_ResolveSkyPickers()
+{
+	for (size_t i = 0; i < DeferredSkyPickers.size();)
+	{
+		sector_t* sector = &sectors[DeferredSkyPickers[i].secnum];
+		int tid = DeferredSkyPickers[i].viewpointTid;
+		int planeflags = DeferredSkyPickers[i].planeflags;
+		bool resolved = false;
+
+		// A picker with no TID clears its planes back to regular sky.
+		AActor::AActorPtr box_ptr;
+
+		if (tid == 0)
+		{
+			resolved = true;
+		}
+		else
+		{
+			TActorIterator<AActor> iterator(tid);
+			AActor* box = iterator.Next();
+
+			if (box != NULL && box->type == MT_SKYVIEWPOINT)
+			{
+				box_ptr = box->ptr();
+				resolved = true;
+			}
+		}
+
+		if (resolved)
+		{
+			if (!(planeflags & SKYPICK_NOCEILING) && !P_IsStackPoint(sector->SkyboxCeiling))
+				sector->SkyboxCeiling = box_ptr;
+
+			if (!(planeflags & SKYPICK_NOFLOOR) && !P_IsStackPoint(sector->SkyboxFloor))
+				sector->SkyboxFloor = box_ptr;
+		}
+		else if (serverside)
+		{
+			PrintFmt("Can't find SkyViewpoint {} for sector {}\n", tid,
+			         DeferredSkyPickers[i].secnum);
+			resolved = true; // drop it
+		}
+
+		if (resolved)
+			DeferredSkyPickers.erase(DeferredSkyPickers.begin() + i);
+		else
+			i++;
+	}
+}
+
+static std::vector<AActor::AActorPtr> DeferredStackLinks;
+
+void P_ClearStackLinks()
+{
+	DeferredStackLinks.clear();
+}
+
+void P_AddStackLink(AActor* mo)
+{
+	DeferredStackLinks.push_back(mo->ptr());
+}
+
+// Pair each recorded stack point with its opposite-type mate by TID.
+// Mate is stored in the AActor::tracer field.
+void P_ResolveStackLinks()
+{
+	for (size_t i = 0; i < DeferredStackLinks.size();)
+	{
+		AActor* self = DeferredStackLinks[i];
+
+		if (self == NULL)
+		{
+			// The stack point was destroyed while waiting.
+			DeferredStackLinks.erase(DeferredStackLinks.begin() + i);
+			continue;
+		}
+
+		bool resolved = false;
+
+		if (self->tid != 0)
+		{
+			const mobjtype_t matetype =
+			    self->type == MT_UPPERSTACK ? MT_LOWERSTACK : MT_UPPERSTACK;
+
+			TActorIterator<AActor> iterator(self->tid);
+			AActor* mate;
+
+			while ((mate = iterator.Next()) != NULL && mate->type != matetype)
+				;
+
+			if (mate != NULL)
+			{
+				self->tracer = mate->ptr();
+				mate->tracer = self->ptr();
+
+				sector_t* sector = self->subsector->sector;
+				if (self->type == MT_UPPERSTACK)
+					sector->SkyboxFloor = mate->ptr();
+				else
+					sector->SkyboxCeiling = mate->ptr();
+
+				resolved = true;
+			}
+		}
+
+		if (!resolved && serverside)
+		{
+			PrintFmt("Can't find {} stack point with TID {} for sector {}\n",
+			         self->type == MT_UPPERSTACK ? "lower" : "upper", self->tid,
+			         self->subsector->sector - sectors);
+			resolved = true; // drop it
+		}
+
+		if (resolved)
+			DeferredStackLinks.erase(DeferredStackLinks.begin() + i);
+		else
+			i++;
+	}
+}
+
+//
+// P_IsSpawnThing
+//
+// Returns true if the mapthing2_t is a spawn
+//
+bool P_IsSpawnThing(const mapthing2_t& mt)
+{
+	if (mt.type == 1 || mt.type == 2 || mt.type == 3 || mt.type == 4 || mt.type == 11)  // player1-4, DM
+	{
+		return true;
+	}
+
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+
+		if (mt.type == teamInfo->TeamSpawnThingNum)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 //
 // P_SpawnMapThing
 // The fields of the mapthing should
@@ -2979,13 +3159,21 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		::level.detected_gametype = GM_HORDE;
 	}
 
-	if (mthing.type == 9081)
+	if (mthing.type == 9077)
 	{
-		type = MT_SKYPICKER;
+		type = MT_UPPERSTACK;
+	}
+	else if (mthing.type == 9078)
+	{
+		type = MT_LOWERSTACK;
 	}
 	else if (mthing.type == 9080)
 	{
 		type = MT_SKYVIEWPOINT;
+	}
+	else if (mthing.type == 9081)
+	{
+		type = MT_SKYPICKER;
 	}
 	else if (mthing.type == 9082)
 	{
@@ -3182,50 +3370,36 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	mobj->tid = mthing.thingid;
 	mobj->AddToHash ();
 
-	SV_SpawnMobj(mobj);
-
 	if (mobj->type == MT_SKYVIEWPOINT)
 	{
 		mobj->angle = mthing.angle;
 		// If this actor has no TID, make it the default sky box
 		if (mobj->tid == 0)
 		{
-			int j;
-
-			for (j = 0; j < numsectors; j++)
+			for (int j = 0; j < numsectors; j++)
 			{
-				if (sectors[j].Skybox == NULL)
-				{
-					sectors[j].Skybox = mobj->ptr();
-				}
+				if (sectors[j].SkyboxCeiling == NULL)
+					sectors[j].SkyboxCeiling = mobj->ptr();
+				if (sectors[j].SkyboxFloor == NULL)
+					sectors[j].SkyboxFloor = mobj->ptr();
 			}
 		}
+	}
+
+	if (mobj->type == MT_UPPERSTACK || mobj->type == MT_LOWERSTACK)
+	{
+		// Record for deferred resolution.
+		P_AddStackLink(mobj);
 	}
 
 	if (mobj->type == MT_SKYPICKER)
 	{
-		sector_t* sector = mobj->subsector->sector;
-		if (mthing.args[0] == 0)
-		{
-			sector->Skybox = AActor::AActorPtr();
-		}
-		else
-			{
-				TActorIterator<AActor> iterator (mthing.args[0]);
-			    AActor* box = iterator.Next();
-
-				if (box != NULL && box->type == MT_SKYVIEWPOINT)
-				{
-				    sector->Skybox = box->ptr();
-				}
-				else
-				{
-					PrintFmt ("Can't find SkyViewpoint {} for sector {}\n", mthing.args[0],
-				           sector - sectors);
-				}
-			}
-			mobj->Destroy ();
+		// Record for deferred resolution.
+		P_AddSkyPicker(static_cast<int>(mobj->subsector->sector - sectors), mobj->args[0],
+		               mobj->args[1]);
 	}
+
+	SV_SpawnMobj(mobj);
 
 	if ((mthing.type >= 9992 && mthing.type <= 9999) ||
 		(mthing.type >= 9982 && mthing.type <= 9983)) {
