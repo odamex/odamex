@@ -22,12 +22,17 @@
 
 #pragma once
 
+#include <string>
+
 // Where a generated document should be sent.
-enum cvardocdest_t
+enum infodumpdest_t
 {
-	CVARDOC_FILE,
-	CVARDOC_STDOUT,
+	INFODUMP_FILE,
+	INFODUMP_STDOUT,
 };
 
-void C_WriteCvarDoc(cvardocdest_t dest);
-void C_WriteCvarDocJSON(cvardocdest_t dest);
+bool EmitInfoDump(const std::string& doc, const char* basename, const char* ext,
+                  infodumpdest_t dest);
+
+bool C_WriteCvarDoc(infodumpdest_t dest);
+bool C_WriteCvarDocJSON(infodumpdest_t dest);

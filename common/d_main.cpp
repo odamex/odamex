@@ -1053,38 +1053,102 @@ void D_AddDehCommandLineFiles(OWantFiles& out)
 	AddCommandLineOptionFiles(out, "-deh", OFILE_DEH);
 }
 
+// ============================================================================
 //
-// D_CheckDocumentationDump
+// Command line information dumps
 //
-// Checks for -cvardoc or -cvardocjson command line parameters and,
-// if found, dumps the cvar documentation and exits.
+// These are informational command line switches that simply dump
+// information and exit before initializing any subsystems.
+// These are allowed to run as root since they exit right after.
 //
-// We have to run this early, so we don't have to load an IWAD to
-// get automated documentation.
-void D_CheckDocumentationDump()
-{
-	bool dumped = false;
+// ============================================================================
 
-	cvardocdest_t dest = CVARDOC_STDOUT;
-
-#ifdef _WIN32
-	dest = CVARDOC_FILE;
+// Name the version document after the app, so a client and a server writing
+// into the same directory do not clobber each other.
+#if defined(CLIENT_APP)
+#define VERSION_BASENAME "odamex-version"
+#elif defined(SERVER_APP)
+#define VERSION_BASENAME "odasrv-version"
+#elif defined(TEST_APP)
+#define VERSION_BASENAME "odagtest-version"
 #endif
 
-	if (Args.CheckParm("-cvardoc"))
-	{
-		C_WriteCvarDoc(dest);
-		dumped = true;
-	}
 
-	if (Args.CheckParm("-cvardocjson"))
+static infodumpdest_t D_InfoDumpDest()
+{
+#ifdef _WIN32
+	return INFODUMP_FILE;
+#else
+	return INFODUMP_STDOUT;
+#endif
+}
+
+bool C_WriteVersion(infodumpdest_t dest)
+{
+	return EmitInfoDump(fmt::format("Odamex {}\n", NiceVersion()), VERSION_BASENAME,
+	                    ".txt", dest);
+}
+
+//
+// --version
+//
+static bool D_DumpVersion()
+{
+	return C_WriteVersion(D_InfoDumpDest());
+}
+
+//
+// -cvardoc
+//
+static bool D_DumpCvarDoc()
+{
+	return C_WriteCvarDoc(D_InfoDumpDest());
+}
+
+//
+// -cvardocjson
+//
+static bool D_DumpCvarDocJSON()
+{
+	return C_WriteCvarDocJSON(D_InfoDumpDest());
+}
+
+struct infodump_t
+{
+	const char* param;  // the switch, including its leading dashes
+	bool (*handler)();  // writes the information out, false if it could not
+};
+
+static const infodump_t InfoDumps[] = {
+    {"--version", D_DumpVersion},
+    {"-cvardoc", D_DumpCvarDoc},
+    {"-cvardocjson", D_DumpCvarDocJSON},
+};
+
+//
+// D_CheckInfoDumps
+//
+// Checks for every information dump named on the command line, then quits if any of
+// them ran.
+//
+void D_CheckInfoDumps()
+{
+	bool dumped = false;
+	bool ok = true;
+
+	for (const infodump_t& dump : InfoDumps)
 	{
-		C_WriteCvarDocJSON(dest);
-		dumped = true;
+		if (Args.CheckParm(dump.param))
+		{
+			if (!dump.handler())
+				ok = false;
+
+			dumped = true;
+		}
 	}
 
 	if (dumped)
-		exit(EXIT_SUCCESS);
+		exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 

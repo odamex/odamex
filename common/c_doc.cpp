@@ -412,22 +412,25 @@ static std::string BuildCvarDocJSON()
 }
 
 /**
- * @brief Emit a generated cvar documentation document.
+ * @brief Emit a generated document.
  *
- * CVARDOC_FILE writes a file in the write directory.
- * CVARDOC_STDOUT prints the document to stdout instead.
+ * INFODUMP_FILE writes a file in the write directory.
+ * INFODUMP_STDOUT prints the document to stdout instead.
  *
  * @param doc Document contents to emit.
+ * @param basename Name to give the file, without an extension.
  * @param ext Extension to give the file, including the leading dot.
  * @param dest Where the document should go.
+ * @return False if the document could not be written.
  */
-static void EmitCvarDoc(const std::string& doc, const char* ext, cvardocdest_t dest)
+bool EmitInfoDump(const std::string& doc, const char* basename, const char* ext,
+                  infodumpdest_t dest)
 {
-	if (dest == CVARDOC_STDOUT)
+	if (dest == INFODUMP_STDOUT)
 	{
 		fwrite(doc.data(), sizeof(char), doc.size(), stdout);
 		fflush(stdout);
-		return;
+		return true;
 	}
 
 	std::string path = M_GetWriteDir();
@@ -435,7 +438,7 @@ static void EmitCvarDoc(const std::string& doc, const char* ext, cvardocdest_t d
 	{
 		path += PATHSEP;
 	}
-	path += CVARDOC_BASENAME;
+	path += basename;
 	path += ext;
 
 
@@ -443,7 +446,7 @@ static void EmitCvarDoc(const std::string& doc, const char* ext, cvardocdest_t d
 	if (fh == NULL)
 	{
 		PrintFmt("error: Could not open \"{}\" for writing.\n", path);
-		return;
+		return false;
 	}
 
 	fwrite(doc.data(), sizeof(char), doc.size(), fh);
@@ -453,26 +456,27 @@ static void EmitCvarDoc(const std::string& doc, const char* ext, cvardocdest_t d
 
 	// Success!
 	PrintFmt("Wrote {} bytes to \"{}\"\n", bytes, path);
+	return true;
 }
 
-void C_WriteCvarDoc(cvardocdest_t dest)
+bool C_WriteCvarDoc(infodumpdest_t dest)
 {
-	EmitCvarDoc(BuildCvarDocHTML(), ".html", dest);
+	return EmitInfoDump(BuildCvarDocHTML(), CVARDOC_BASENAME, ".html", dest);
 }
 
-void C_WriteCvarDocJSON(cvardocdest_t dest)
+bool C_WriteCvarDocJSON(infodumpdest_t dest)
 {
-	EmitCvarDoc(BuildCvarDocJSON(), ".json", dest);
+	return EmitInfoDump(BuildCvarDocJSON(), CVARDOC_BASENAME, ".json", dest);
 }
 
 BEGIN_COMMAND(cvardoc)
 {
-	C_WriteCvarDoc(CVARDOC_FILE);
+	C_WriteCvarDoc(INFODUMP_FILE);
 }
 END_COMMAND(cvardoc)
 
 BEGIN_COMMAND(cvardocjson)
 {
-	C_WriteCvarDocJSON(CVARDOC_FILE);
+	C_WriteCvarDocJSON(INFODUMP_FILE);
 }
 END_COMMAND(cvardocjson)

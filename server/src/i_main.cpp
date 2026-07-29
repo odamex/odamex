@@ -183,13 +183,7 @@ int __cdecl main(int argc, char *argv[])
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		::Args.SetArgs(argc, argv);
 
-		if (::Args.CheckParm("--version"))
-		{
-			fmt::print("Odamex {}\n", NiceVersion());
-			exit(EXIT_SUCCESS);
-		}
-
-		D_CheckDocumentationDump();
+		D_CheckInfoDumps();
 
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)
@@ -315,13 +309,7 @@ int main(int argc, char **argv)
     {
 		::Args.SetArgs(argc, argv);
 
-		if (::Args.CheckParm("--version"))
-		{
-			fmt::print("Odamex {}\n", NiceVersion());
-			exit(EXIT_SUCCESS);
-		}
-
-		D_CheckDocumentationDump();
+		D_CheckInfoDumps();
 
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
