@@ -34,15 +34,6 @@ if [ -f "${staging_dir}/${odamex_dir}/Odamex.app/Contents/MacOS/odamex.wad" ]; t
   ln -s "Odamex.app/Contents/MacOS/odamex.wad" "${staging_dir}/${odamex_dir}/odamex.wad"
 fi
 
-if [ -x "build/client/odamex.app/Contents/MacOS/odamex" ]; then
-  "build/client/odamex.app/Contents/MacOS/odamex" -cvardocjson \
-    > "${staging_dir}/${odamex_dir}/odamex_cvardoc.json"
-fi
-if [ -x "build/server/odasrv" ]; then
-  "build/server/odasrv" -cvardocjson \
-    > "${staging_dir}/${odamex_dir}/odasrv_cvardoc.json"
-fi
-
 for doc in 3RD-PARTY-LICENSES CHANGELOG LICENSE MAINTAINERS odamex-installed.txt README README.md; do
   if [ -e "${doc}" ]; then
     cp -R "${doc}" "${staging_dir}/${odamex_dir}/"

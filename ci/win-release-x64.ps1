@@ -9,8 +9,6 @@
 # These parameters can and should be changed for new versions.
 #
 
-. "$PSScriptRoot\cvardoc.ps1"
-
 Set-Variable -Name "CurrentDir" -Value (Get-Location) # cd to the base odamex git path before executing
 
 if ($env:new_version.length -gt 0)
@@ -121,12 +119,7 @@ function CopyFilesX64 {
     New-Item -Force -ItemType "directory" -Path "${X64Dir}"
     New-Item -Force -ItemType "directory" -Path "${X64Dir}\redist"
 
-    Write-CvarDocJson "${CurrentDir}\BuildX64\client\RelWithDebInfo\odamex.exe" | Out-Null
-    Write-CvarDocJson "${CurrentDir}\BuildX64\server\RelWithDebInfo\odasrv.exe" | Out-Null
-
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\odamex_cvardoc.json", `
-        "${CurrentDir}\BuildX64\server\RelWithDebInfo\odasrv_cvardoc.json", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libgme.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libwavpack-1.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libxmp.dll", `
