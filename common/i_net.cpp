@@ -66,8 +66,10 @@ typedef int SOCKET;
 #define GETSOCKOPTCAST(x) (static_cast<void*>(x))
 #endif
 
-#include <google/protobuf/message.h>
 
+BEGIN_DISABLE_WARNING_GNU("-Wzero-as-null-pointer-constant")
+#include <google/protobuf/message.h>
+END_DISABLE_WARNING_GNU
 
 #include "i_system.h"
 #include "i_net.h"

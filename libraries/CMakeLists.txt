@@ -397,6 +397,7 @@ endif()
 
 if (APPLE AND TARGET SDL2-static)
     set_target_properties(SDL2-static PROPERTIES OBJCXX_STANDARD 17)
+    set_target_properties(SDL2-static PROPERTIES OBJCXX_EXTENSIONS OFF)
 endif()
 
 if (TARGET libminiupnpc-static)
