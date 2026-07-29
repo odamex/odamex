@@ -48,7 +48,7 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "c_console.h"
-#include "c_dispatch.h"
+#include "c_doc.h"
 #include "i_system.h"
 #include "i_time.h"
 #include "g_game.h"
@@ -1065,15 +1065,21 @@ void D_CheckDocumentationDump()
 {
 	bool dumped = false;
 
+	cvardocdest_t dest = CVARDOC_STDOUT;
+
+#ifdef _WIN32
+	dest = CVARDOC_FILE;
+#endif
+
 	if (Args.CheckParm("-cvardoc"))
 	{
-		AddCommandString("cvardoc");
+		C_WriteCvarDoc(dest);
 		dumped = true;
 	}
 
 	if (Args.CheckParm("-cvardocjson"))
 	{
-		AddCommandString("cvardocjson");
+		C_WriteCvarDocJSON(dest);
 		dumped = true;
 	}
 
