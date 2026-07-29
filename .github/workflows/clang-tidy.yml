@@ -39,6 +39,8 @@ jobs:
               -DUSE_INTERNAL_JSONCPP=0 \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
+      - uses: ZedThree/clang-tidy-review/upload@v0.23.1
+
       - name: Fail on new warnings
         if: steps.review.outputs.total_comments > 0
         run: exit 1
