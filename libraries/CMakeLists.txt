@@ -396,7 +396,7 @@ endif()
 # target names as established by building the libs vs. finding them.
 
 if (APPLE AND TARGET SDL2-static)
-    set_target_properties(SDL2-static PROPERTIES OBJCXX_STANDARD 98)
+    set_property(TARGET SDL2-static PROPERTIES OBJCXX_STANDARD)
     set_target_properties(SDL2-static PROPERTIES OBJCXX_EXTENSIONS OFF)
 endif()
 
