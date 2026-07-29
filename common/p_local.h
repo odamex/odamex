@@ -134,12 +134,11 @@ bool	P_HitFloor (AActor *thing);
 //
 // [RH] P_THINGS
 //
-extern int SpawnableThings[];
-extern const int NumSpawnableThings;
+extern std::array<int, 155> SpawnableThings;
 
-bool	P_Thing_Spawn (int tid, int type, angle_t angle, bool fog);
+bool	P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, std::optional<int> newtid = std::nullopt);
 bool	P_Thing_Projectile (int tid, int type, angle_t angle,
-							fixed_t speed, fixed_t vspeed, bool gravity);
+							fixed_t speed, fixed_t vspeed, bool gravity, std::optional<int> newtid = std::nullopt);
 bool	P_ActivateMobj (AActor *mobj, AActor *activator);
 bool	P_DeactivateMobj (AActor *mobj);
 
@@ -352,6 +351,7 @@ void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int 
 #define DMG_NO_ARMOR		1
 
 // [RH] Means of death flags (based on Quake2's)
+// TODO: should this be an enum?
 #define MOD_UNKNOWN			0
 #define MOD_FIST			1
 #define MOD_PISTOL			2
@@ -464,6 +464,19 @@ protected:
 private:
 	DPolyDoor ();
 };
+
+// Deferred sky picker resolution, so pickers work regardless
+// of their order relative to SkyViewpoints in the THINGS lump,
+// or if sent by a server.
+void P_ClearSkyPickers();
+void P_AddSkyPicker(int secnum, int viewpointTid, int planeflags);
+void P_ResolveSkyPickers();
+
+// Deferred stacked-sector portal pairing, same
+// order as the sky pickers above.
+void P_ClearStackLinks();
+void P_AddStackLink(AActor* mo);
+void P_ResolveStackLinks();
 
 // [RH] Data structure for P_SpawnMapThing() to keep track
 //		of polyobject-related things.

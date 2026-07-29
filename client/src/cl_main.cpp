@@ -68,6 +68,7 @@
 #include "g_gametype.h"
 #include "cl_parse.h"
 #include "cl_replay.h"
+#include "cl_freecam.h"
 
 #include "m_consolecommandstream.h"
 
@@ -500,15 +501,20 @@ void CL_CheckDisplayPlayer(void)
 	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isPlaying() || netdemo.isPaused()))
 		newid = consoleplayer_id;
 
-	if (displayplayer().spectator)
+	if (displayplayer().spectator && not displayplayer().isFreecam)
 		newid = consoleplayer_id;
 
 	if (newid)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		MSG_WriteMarker(&net_buffer, clc_spy);
-		MSG_WriteByte(&net_buffer, newid);
+		// server doesnt know about clientside freecam, dont tell it
+		if (not displayplayer().isFreecam && newid != freecamplayer_id)
+		{
+			MSG_WriteMarker(&net_buffer, clc_spy);
+			MSG_WriteByte(&net_buffer, newid);
+		}
+		
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility
@@ -1270,7 +1276,7 @@ BEGIN_COMMAND(netrew)
 {
 	if (netdemo.isPlaying())
 		netdemo.prevSnapshot();
-	else if (netdemo.isPaused());
+	else if (netdemo.isPaused())
 		netdemo.prevTic();
 }
 END_COMMAND(netrew)
@@ -2354,7 +2360,7 @@ void CL_SimulatePlayers()
 										prevsnap.getY() - player.mo->y,
 										prevsnap.getZ() - player.mo->z);
 
-				fixed_t dist = M_LengthVec3Fixed(&offset);
+				fixed_t dist = M_LengthVec3Fixed(offset);
 				if (dist > 2 * FRACUNIT)
 				{
 					#ifdef _SNAPSHOT_DEBUG_

@@ -353,7 +353,9 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	// translate the sprite edges from world-space to camera-space
 	// and store in t1 & t2
 	fixed_t tx, ty, t1xold;
-	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
+	// too far from the camera to draw anyway if its distance is greater than ~32767 fracunits.
+	if (R_RotatePointSafe(int64_t(x) - viewx, int64_t(y) - viewy, ANG90 - viewangle, tx, ty))
+		return NULL;
 
 	v2fixed_t t1, t2;
 	if (flip)
@@ -543,10 +545,12 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
 		return;
 
 	// [SL] interpolate the position of thing
+  // except if paused and using freecam
 	fixed_t thingx, thingy, thingz;
 
 	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
-		OInterpolation::getInstance().enabled())
+		  OInterpolation::getInstance().enabled() && 
+      not (paused && displayplayer().isFreecam))
 	{
 		// the actor probably did not teleport
 		// interpolate between previous and current position
@@ -828,7 +832,9 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	}
 
 	// Don't display the weapon sprite if using spectating without spynext
-	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
+	// or using freecam
+	if ((consoleplayer().spectator && displayplayer_id == consoleplayer_id) ||
+		displayplayer().isFreecam)
 		return;
 
 	R_DrawVisSprite (vis, vis->x1, vis->x2);

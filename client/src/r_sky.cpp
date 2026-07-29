@@ -294,7 +294,7 @@ void R_InitSkyMap()
 	if (fskyheight <= (128 << FRACBITS))
 	{
 		defaultskytexturemid = 200 / 2 * FRACUNIT;
-		skystretch = ((r_stretchsky != 0) && consoleplayer().spectator) ||
+		skystretch = ((r_stretchsky != 0) && (consoleplayer().spectator || displayplayer().isFreecam)) ||
 		             (r_stretchsky == 1) ||
 		             (r_stretchsky == 2 && sv_freelook && (cl_mouselook || joy_freelook));
 	}
@@ -704,18 +704,36 @@ inline void SkyColumnBlaster()
 	R_BlastSkyColumn(colfunc);
 }
 
-inline bool R_PostDataIsTransparent(byte* data)
+inline bool R_PostDataIsTransparent(const byte* data)
 {
-	if (*data == '\0')
-	{
-		return true;
-	}
-	return false;
+	return *data == '\0';
 }
 
 bool R_IsSkyFlat(int flatnum)
 {
 	return flatnum == skyflatnum || skyflatlookup.count(flatnum);
+}
+
+void R_SetSkyScrollSpeed(int skynum, fixed_t speed)
+{
+	if (skynum != 1 && skynum != 2)
+		return;
+
+	auto sky = skyflatlookup[R_FlatNumForName(SKYFLATNAME)];
+	if (level.flags & LEVEL_DOUBLESKY)
+	{
+		if (skynum == 1)
+			sky->foreground.scrollx = speed;
+		else if (skynum == 2)
+			sky->background.scrollx = speed;
+	}
+	else
+	{
+		if (skynum == 1)
+			sky->background.scrollx = speed;
+		else if (skynum == 2)
+			sky2scrollxdelta = speed;
+	}
 }
 
 //

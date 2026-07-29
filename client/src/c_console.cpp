@@ -76,6 +76,8 @@ static bool				cursoron = false;
 static int				ConBottom = 0;
 static int RowAdjust = 0;
 
+static const int		CONSOLE_WHEEL_LINES = 3;
+
 int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, for interp purposes
 
 int			CursorTicker, ScrollState = 0;
@@ -1234,7 +1236,7 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 {
 	if (I_VideoInitialized() && !midprinting)
 	{
-		const bool noPickups = printlevel == PRINT_PICKUP && !::message_showpickups;
+		const bool noPickups = printlevel == PRINT_PICKUP && (!::message_showpickups || displayplayer().isFreecam);
 		const bool noObits = printlevel == PRINT_OBITUARY && !::message_showobituaries;
 
 		if (!noPickups && !noObits)
@@ -2039,9 +2041,10 @@ static bool C_HandleKey(const event_t* ev)
 			TabCycleClear();
 			return true;
 		}
+	case OKEY_MOUSE2:
 	case OKEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
-		CmdLine.insertString(I_GetClipboardText());
+		CmdLine.insertString(I_GetClipboardText(ch == OKEY_MOUSE3));
 		CmdCompletions.clear();
 		TabCycleClear();
 		return true;
@@ -2095,6 +2098,24 @@ static bool C_HandleKey(const event_t* ev)
 			else
 				// Start scrolling console buffer down
 				ScrollState = SCROLLDN;
+			return true;
+		}
+		else if (ch == OKEY_MWHEELUP)
+		{
+			// Scroll the console buffer up a few lines at a time
+			if (static_cast<int>(ConRows) > static_cast<int>(ConBottom / ConCharSize))
+			{
+				RowAdjust += CONSOLE_WHEEL_LINES;
+				if (RowAdjust > static_cast<int>(ConRows - ConBottom / ConCharSize))
+					RowAdjust = ConRows - ConBottom / ConCharSize;
+			}
+			return true;
+		}
+		else if (ch == OKEY_MWHEELDOWN)
+		{
+			RowAdjust -= CONSOLE_WHEEL_LINES;
+			if (RowAdjust < 0)
+				RowAdjust = 0;
 			return true;
 		}
 		else if (Key_IsLeftKey(ch, NumLockEnabled))
@@ -2182,6 +2203,17 @@ static bool C_HandleKey(const event_t* ev)
  		if (tolower(ev->data1) == 'v')
 		{
 			CmdLine.insertString(I_GetClipboardText());
+			TabCycleClear();
+		}
+		return true;
+	}
+
+	if (KeysAlt)
+	{
+		// Paste from primary selection - add each character to command line
+ 		if (tolower(ev->data1) == 'v')
+		{
+			CmdLine.insertString(I_GetClipboardText(true));
 			TabCycleClear();
 		}
 		return true;
@@ -2310,7 +2342,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 
 void C_DrawMid()
 {
-	if (MidMsg)
+	if (MidMsg && not displayplayer().isFreecam)
 	{
 		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 

@@ -412,7 +412,13 @@ BEGIN_COMMAND (exec)
 	static std::vector<std::string> exec_stack;
 	static std::vector<bool>	tag_stack;
 
-	std::string found = M_FindUserFileName(argv[1], ".cfg");
+	// TODO: clean this up into a clearer ordering of search directories
+	// CWD, M_FindUserFileName, -cfgdir, ODAMEX_INSTALL_DATADIR, M_GetBinaryDir
+	// the last two are so that config-sample can always be easily exec'd
+	// not sure where exactly -cfgdir should be in the priority, it could be argued
+	// that it should be above user directory and/or CWD
+	std::string found = M_FileExists(argv[1]) ?
+		M_CleanPath(argv[1]) : M_FindUserFileName(argv[1], ".cfg");
 	if (found.empty())
 	{
 		const char* cfgdir = Args.CheckValue("-cfgdir");
@@ -946,9 +952,9 @@ BEGIN_COMMAND (actorlist)
 	PrintFmt(PRINT_HIGH, "Actors at level.time == {}:\n", level.time);
 	while ( (mo = iterator.Next ()) )
 	{
-		PrintFmt(PRINT_HIGH, "{} ({:x}, {:x}, {:x} | {:x}) state: {} tics: {}\n", mobjinfo[mo->type].name,
+		PrintFmt(PRINT_HIGH, "{} ({:x}, {:x}, {:x} | {:x}) state: {} tics: {} tid: {}\n", mobjinfo[mo->type].name,
 			static_cast<uint32_t>(mo->x), static_cast<uint32_t>(mo->y), static_cast<uint32_t>(mo->z),
-			static_cast<uint32_t>(mo->angle), mo->state->statenum, mo->tics);
+			static_cast<uint32_t>(mo->angle), mo->state->statenum, mo->tics, mo->tid);
 	}
 }
 END_COMMAND(actorlist)
