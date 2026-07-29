@@ -367,6 +367,14 @@ if (FETCH_CONTENT_PACKAGES)
     # Some immediate fixups are needed to make wxWidgets happy.
     set(SDL2_LIBRARY        SDL2::SDL2)
     set(SDL2_INCLUDE_DIR    "${FETCHCONTENT_SOURCE_DIR_SDL}/include")
+
+    if (TARGET libcurl_static AND NOT TARGET CURL::libcurl)
+        add_library(CURL::libcurl ALIAS libcurl_static)
+    endif()
+
+    set(CURL_INCLUDE_DIRS   "${FETCHCONTENT_SOURCE_DIR_CURL}/include")
+    set(CURL_LIBRARIES      CURL::libcurl)
+
 endif()
 
 if (BUILD_LAUNCHER)
@@ -402,10 +410,6 @@ endif()
 
 if (TARGET libminiupnpc-static)
     target_compile_definitions(libminiupnpc-static INTERFACE INTERNAL_MINIUPNP_STATICLIB)
-endif()
-
-if (TARGET libcurl_static AND NOT TARGET CURL::libcurl)
-    add_library(CURL::libcurl ALIAS libcurl_static)
 endif()
 
 if (TARGET wxrc AND NOT wxWidgets_wxrc_EXECUTABLE)
