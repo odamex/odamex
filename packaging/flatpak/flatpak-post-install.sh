@@ -48,6 +48,10 @@ oda_install Server odasrv
 # Launcher app
 oda_install Launcher odalaunch
 
+# Generate cvar documentation
+/app/bin/odamex -cvardocjson > /app/bin/odamex_cvardoc.json
+/app/bin/odasrv -cvardocjson > /app/bin/odasrv_cvardoc.json
+
 # Install helper script
 install -Dm755 packaging/flatpak/select-exe.sh /app/bin/select-exe
 

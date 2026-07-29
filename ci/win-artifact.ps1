@@ -1,5 +1,7 @@
 Set-PSDebug -Trace 1
 
+. "$PSScriptRoot\cvardoc.ps1"
+
 # Construct a filename
 
 $SHORTHASH = "${Env:GITHUB_SHA}".substring(0, 7)
@@ -11,13 +13,18 @@ Set-Location "build"
 New-Item -Name "artifact" -ItemType "directory" | Out-Null
 New-Item -Name "archive" -ItemType "directory" | Out-Null
 
+Write-CvarDocJson ".\client\RelWithDebInfo\odamex.exe" | Out-Null
+Write-CvarDocJson ".\server\RelWithDebInfo\odasrv.exe" | Out-Null
+
 # Copy all built files into artifact directory
 Copy-Item -Path `
     ".\client\RelWithDebInfo\odamex.exe", `
     ".\client\RelWithDebInfo\odamex.pdb", `
+    ".\client\RelWithDebInfo\odamex_cvardoc.json", `
     ".\client\RelWithDebInfo\*.dll", `
     ".\server\RelWithDebInfo\odasrv.exe", `
     ".\server\RelWithDebInfo\odasrv.pdb", `
+    ".\server\RelWithDebInfo\odasrv_cvardoc.json", `
     ".\odalaunch\RelWithDebInfo\odalaunch.exe", `
     ".\odalaunch\RelWithDebInfo\odalaunch.pdb", `
     ".\odalaunch\RelWithDebInfo\*.dll", `

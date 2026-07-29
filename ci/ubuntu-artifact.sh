@@ -12,3 +12,6 @@ mkdir -p build/artifact && cd build
 cp -aR \
     "client/odamex" "server/odasrv" "odalaunch/odalaunch" \
     "wad/odamex.wad" artifact/
+
+./client/odamex -cvardocjson > artifact/odamex_cvardoc.json
+./server/odasrv -cvardocjson > artifact/odasrv_cvardoc.json
