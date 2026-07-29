@@ -313,14 +313,6 @@ int main(int argc, char **argv)
 
     try
     {
-		if(!getuid() || !geteuid())
-			I_FatalError("root user detected, quitting odamex immediately");
-
-		int r_euid = seteuid (getuid ());
-
-		if(r_euid < 0)
-			perror(NULL);
-
 		::Args.SetArgs(argc, argv);
 
 		if (::Args.CheckParm("--version"))
@@ -330,6 +322,14 @@ int main(int argc, char **argv)
 		}
 
 		D_CheckDocumentationDump();
+
+		if(!getuid() || !geteuid())
+			I_FatalError("root user detected, quitting odamex immediately");
+
+		int r_euid = seteuid (getuid ());
+
+		if(r_euid < 0)
+			perror(NULL);
 
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)

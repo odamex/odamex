@@ -110,11 +110,6 @@ int main(int argc, char *argv[])
 		atterm(nx_early_deinit);
 #endif
 
-#if defined(UNIX) && !defined(GCONSOLE)
-		if(!getuid() || !geteuid())
-			I_FatalError("root user detected, quitting odamex immediately");
-#endif
-
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		::Args.SetArgs(argc, argv);
 
@@ -137,6 +132,11 @@ int main(int argc, char *argv[])
 		}
 
 		D_CheckDocumentationDump();
+
+#if defined(UNIX) && !defined(GCONSOLE)
+		if(!getuid() || !geteuid())
+			I_FatalError("root user detected, quitting odamex immediately");
+#endif
 
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)
