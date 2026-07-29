@@ -119,7 +119,6 @@ EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_bigfont)
 EXTERN_CVAR(hud_timer)
 EXTERN_CVAR(hud_speedometer)
-EXTERN_CVAR(hud_weapontext)
 EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(hud_anchoring)
@@ -540,8 +539,6 @@ static void drawTeamGametype()
 	const int yscale = hud_scale ? CleanYfac : 1;
 
 	int patchPosY = ::hud_bigfont ? 53 : 43;
-	if (::hud_weapontext)
-		patchPosY += V_LineHeight() + 1;
 
 	const bool shouldShowScores = G_IsTeamGame();
 	const bool shouldShowLives = G_IsLivesGame();
@@ -671,11 +668,7 @@ static void drawHordeGametype()
 		killColor = CR_GREEN;
 	}
 
-	int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
-
-	if (::hud_weapontext)
-		y += V_LineHeight() + 1;
-
+	const int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
 	hud::DrawText(SCREEN_BORDER, y, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 	              hud::X_RIGHT, hud::Y_BOTTOM, waverow.c_str(), CR_GREY);
 	hud::EleBar(SCREEN_BORDER, y + LINE_SPACING, V_StringWidth("WAVE:0/0"), ::hud_scale,
@@ -1013,12 +1006,6 @@ void OdamexHUD() {
 		ST_DrawNumRight(I_GetSurfaceWidth() - num_ax - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
-	if (::hud_weapontext)
-	{
-		V_SetFont("SMALLFONT");
-		hud::DrawText(patch_ax + 4, 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, hud::Weapons().c_str(), false);
-	}
-
 	std::string str;
 	int iy = 4;
 
@@ -1067,7 +1054,6 @@ void OdamexHUD() {
 
 	// Special 3 line formatting for match duel
 	int spreadheight, scoreheight, placeheight;
-	int cardheight = 24;
 
 	if (G_IsMatchDuelGame())
 	{
@@ -1080,12 +1066,6 @@ void OdamexHUD() {
 		spreadheight = 24 + V_LineHeight() + 1;
 		scoreheight = 24;
 		placeheight = 0; // No place height drawn if not match duel
-	}
-	if (::hud_weapontext) {
-		spreadheight += V_LineHeight() + 1;
-		scoreheight += V_LineHeight() + 1;
-		placeheight += V_LineHeight() + 1;
-		cardheight += V_LineHeight() + 2;
 	}
 
 	hud::DrawText(text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
@@ -1107,7 +1087,7 @@ void OdamexHUD() {
 	if (G_IsCoopGame()) {
 		for (byte i = 0;i < NUMCARDS;i++) {
 			if (plyr->cards[i]) {
-				hud::DrawPatch(patch_ax + 4 + (i * 10), cardheight, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+				hud::DrawPatch(patch_ax + 4 + (i * 10), 24, hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 				               hud::X_RIGHT, hud::Y_BOTTOM,
 				               W_ResolvePatchHandle(keys[i]));
 			}
@@ -1600,8 +1580,14 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 
 void SpreeHud()
 {
-	if (!validplayer(displayplayer()) || !cl_showsprees || (!cl_showofflinesprees && !network_game) || (!sv_showsprees && network_game))
-		return;
+	if (!validplayer(displayplayer()) || 
+    !cl_showsprees || 
+    (!cl_showofflinesprees && !network_game) || 
+    (!sv_showsprees && network_game) ||
+    displayplayer().isFreecam)
+  {
+    return;
+  }
 
 	static SpreeManager& manager = SpreeManager::getInstance();
 
@@ -1702,7 +1688,7 @@ void SpreeHud()
 
 void MultiKillHud()
 {
-	if (!validplayer(displayplayer()))
+	if (!validplayer(displayplayer()) || displayplayer().isFreecam)
 		return;
 
 	const player_t& p = displayplayer();
@@ -1756,7 +1742,7 @@ void LevelStateHUD()
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP: {
-		if (consoleplayer().spectator)
+		if (consoleplayer().spectator || displayplayer().isFreecam)
 		{
 			break;
 		}
@@ -2016,6 +2002,37 @@ void DoomHUD()
 		hud::drawLevelStats();
 }
 
+void FreecamHUD()
+{
+	int iy = 4;
+
+	// Draw warmup state or timer
+	if (::hud_timer)
+	{
+		if (::hud_bigfont)
+		{
+			V_SetFont("BIGFONT");
+		}
+
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
+	}
+
+	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, "Freecam", CR_WHITE);
+	iy += V_LineHeight() + 1;
+
+	// Draw targeted player names.
+	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, 0);
+
+	// Draw gametype scoreboard
+	hud::drawGametype();
+}
 }
 
 BEGIN_COMMAND(netprotoup)

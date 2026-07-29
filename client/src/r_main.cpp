@@ -871,7 +871,9 @@ void R_SetupFrame (player_t *player)
 	player_t &consolePlayer = consoleplayer();
 	const bool use_localview =
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
-	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
+	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback) 
+		||
+		displayplayer().isFreecam;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -941,7 +943,7 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	if ((use_localview && !::localview.skippitch) || netdemo.isPaused())
+	if ((use_localview && !::localview.skippitch) || netdemo.isPaused() || displayplayer().isFreecam)
 	{
 		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}
@@ -1146,7 +1148,7 @@ void R_RenderPlayerView(player_t* player)
 		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
 
 	R_DrawPlanes();
-	R_DrawSkyBoxes();
+	R_DrawPortals();
 	R_DrawMasked();
 
 	// NOTE(jsd): Full-screen status color blending:
@@ -1378,7 +1380,7 @@ bool R_BorderVisible()
 //
 bool R_StatusBarVisible()
 {
-	return setblocks <= 10 || AM_ClassicAutomapVisible();
+	return (setblocks <= 10 || AM_ClassicAutomapVisible()) && !displayplayer().spectator;
 }
 
 //

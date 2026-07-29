@@ -111,7 +111,7 @@ bool I_IsHeadless();
 
 void I_FinishClockCalibration ();
 
-std::string I_GetClipboardText();
+std::string I_GetClipboardText(bool use_primary_selection = false);
 
 /**
  * @brief Show an error message box.

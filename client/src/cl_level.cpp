@@ -59,7 +59,7 @@
 #include "z_zone.h"
 #include "m_wdlstats.h"
 #include "g_spree.h"
-
+#include "cl_freecam.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -203,6 +203,12 @@ void G_InitNew (const char *mapname)
 			level_pwad_info_t& level = levels.at(i);
 			level.flags &= ~LEVEL_VISITED;
 		}
+	}
+
+	if (Freecam::allowAdd() && Freecam::prevmap != mapname)
+	{
+		Freecam::reset();
+		Freecam::prevmap = mapname;
 	}
 
 	cvar_t::UnlatchCVars ();
@@ -688,7 +694,13 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	displayplayer_id = consoleplayer_id;				// view the guy you are playing
+	if (not displayplayer().isFreecam)
+	{
+		// view the guy you are playing..
+		// unless level load is from a netdemo snapshot and display is freecam
+		displayplayer_id = consoleplayer_id;
+	}
+	
 	ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;
 
@@ -714,6 +726,13 @@ void G_DoLoadLevel (int position)
 
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
+
+	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
+	if (Freecam::allowAdd())
+	{
+		Freecam::addFreecamPlayer();
+	}
+
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 
 	::levelstate.reset();

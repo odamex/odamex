@@ -38,6 +38,7 @@
 #include "p_mobj.h"
 #include "svc_message.h"
 #include "g_gametype.h"
+#include "cl_freecam.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -713,6 +714,8 @@ bool NetDemo::stopPlaying()
 	reset();
     gameaction = ga_fullconsole;
     gamestate = GS_FULLCONSOLE;
+
+	Freecam::reset();
 
 	return true;
 }
@@ -1539,6 +1542,8 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	byte cid = consoleplayer_id;
 	byte did = displayplayer_id;
 
+	Freecam::savePosition();
+
 	P_ClearAllNetIds();
 
 	// Remove all players
@@ -1669,7 +1674,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 
 	// try to restore display player
 	player_t *disp = &idplayer(did);
-	if (validplayer(*disp) && disp->ingame() && !disp->spectator)
+	if ((validplayer(*disp) && disp->ingame() && !disp->spectator) || disp->isFreecam)
 		displayplayer_id = did;
 	else
 		displayplayer_id = cid;
