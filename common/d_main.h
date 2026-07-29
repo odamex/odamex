@@ -87,6 +87,8 @@ void D_RunTics(void (*sim_func)(), void(*display_func)());
 void D_AddWadCommandLineFiles(OWantFiles& out);
 void D_AddDehCommandLineFiles(OWantFiles& out);
 
+void D_CheckDocumentationDump();
+
 std::string D_GetTitleString();
 
 void D_Init();

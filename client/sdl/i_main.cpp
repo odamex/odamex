@@ -136,6 +136,8 @@ int main(int argc, char *argv[])
 			exit(EXIT_SUCCESS);
 		}
 
+		D_CheckDocumentationDump();
+
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)
 		{

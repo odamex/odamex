@@ -189,6 +189,8 @@ int __cdecl main(int argc, char *argv[])
 			exit(EXIT_SUCCESS);
 		}
 
+		D_CheckDocumentationDump();
+
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)
 		{
@@ -326,6 +328,8 @@ int main(int argc, char **argv)
 			fmt::print("Odamex {}\n", NiceVersion());
 			exit(EXIT_SUCCESS);
 		}
+
+		D_CheckDocumentationDump();
 
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)

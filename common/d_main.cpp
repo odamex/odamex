@@ -48,6 +48,7 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "c_console.h"
+#include "c_dispatch.h"
 #include "i_system.h"
 #include "i_time.h"
 #include "g_game.h"
@@ -1050,6 +1051,34 @@ void D_AddDehCommandLineFiles(OWantFiles& out)
 {
 	AddCommandLineOptionFiles(out, "-bex", OFILE_DEH);
 	AddCommandLineOptionFiles(out, "-deh", OFILE_DEH);
+}
+
+//
+// D_CheckDocumentationDump
+//
+// Checks for -cvardoc or -cvardocjson command line parameters and,
+// if found, dumps the cvar documentation and exits.
+//
+// We have to run this early, so we don't have to load an IWAD to
+// get automated documentation.
+void D_CheckDocumentationDump()
+{
+	bool dumped = false;
+
+	if (Args.CheckParm("-cvardoc"))
+	{
+		AddCommandString("cvardoc");
+		dumped = true;
+	}
+
+	if (Args.CheckParm("-cvardocjson"))
+	{
+		AddCommandString("cvardocjson");
+		dumped = true;
+	}
+
+	if (dumped)
+		exit(EXIT_SUCCESS);
 }
 
 
