@@ -213,7 +213,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
       target_link_libraries(odamex fltk::fltk fltk::images)
     else()
       find_package(FLTK 1.4 CONFIG REQUIRED)
-      target_link_libraries(odamex fltk::fltk-shared fltk::images-shared)
+      target_link_libraries(odamex fltk::fltk fltk::images)
     endif()
   endif()
 
