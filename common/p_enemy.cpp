@@ -638,10 +638,9 @@ bool P_HitFriend(AActor* self)
 	return false;
 }
 
-static fixed_t dropoff_deltax, dropoff_deltay, floorz;
 extern fixed_t tmbbox[4];
 
-static bool PIT_AvoidDropoff(const line_t& line)
+static bool PIT_AvoidDropoff(const line_t& line, const fixed_t floorz, fixed_t& dropoff_deltax, fixed_t& dropoff_deltay)
 {
 	if (line.backsector && // Ignore one-sided linedefs
 	    tmbbox[BOXRIGHT] > line.bbox[BOXLEFT] &&
@@ -675,7 +674,7 @@ static bool PIT_AvoidDropoff(const line_t& line)
 // Driver for above
 //
 
-static fixed_t P_AvoidDropoff(AActor* actor)
+static fixed_t P_AvoidDropoff(AActor* actor, fixed_t& dropoff_deltax, fixed_t& dropoff_deltay)
 {
 	tmbbox[BOXTOP] = actor->y + actor->radius;
 	tmbbox[BOXBOTTOM] = actor->y - actor->radius;
@@ -687,7 +686,7 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	const int xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
 	const int xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
 
-	floorz = actor->z; // remember floor height
+	const fixed_t floorz = actor->z; // remember floor height
 
 	dropoff_deltax = dropoff_deltay = 0;
 
@@ -696,7 +695,7 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	validcount++;
 	for (int bx = xl; bx <= xh; bx++)
 		for (int by = yl; by <= yh; by++)
-			P_BlockLinesIterator(bx, by, PIT_AvoidDropoff); // all contacted lines
+			P_BlockLinesIterator(bx, by, PIT_AvoidDropoff, floorz, dropoff_deltax, dropoff_deltay); // all contacted lines
 
 	return dropoff_deltax | dropoff_deltay; // Non-zero if movement prescribed
 }
@@ -837,11 +836,14 @@ void P_NewChaseDir (AActor *actor)
 
 	actor->strafecount = 0;
 
+	fixed_t dropoff_deltax = 0;
+	fixed_t dropoff_deltay = 0;
+
 	if (P_IsMBFCompatMode())
 	{
 		if (actor->floorz - actor->dropoffz > FRACUNIT * 24 &&
 		    actor->z <= actor->floorz && !(actor->flags & (MF_DROPOFF | MF_FLOAT)) &&
-		    !P_AllowDropOff() && P_AvoidDropoff(actor)) /* Move away from dropoff */
+		    !P_AllowDropOff() && P_AvoidDropoff(actor, dropoff_deltax, dropoff_deltay)) /* Move away from dropoff */
 		{
 			P_DoNewChaseDir(actor, dropoff_deltax, dropoff_deltay);
 
