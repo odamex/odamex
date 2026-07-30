@@ -558,13 +558,13 @@ bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 		return true;
 
 	int offset = *(blockmap + (bmapwidth*y + x));
-	int *list = blockmaplump + offset;
+	const int *list = blockmaplump + offset;
 
 	/* [RH] Polyobj stuff from Hexen --> */
 	polyblock_t *polyLink;
 	extern polyblock_t **PolyBlockMap;
 
-	offset = y*bmapwidth + x;
+	offset = (y * bmapwidth) + x;
 	if (PolyBlockMap)
 	{
 		polyLink = PolyBlockMap[offset];
@@ -573,7 +573,7 @@ bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 		{
 			if (polyLink->polyobj && polyLink->polyobj->validcount != validcount)
 			{
-				seg_t **tempSeg = polyLink->polyobj->segs;
+				seg_t*const* tempSeg = polyLink->polyobj->segs;
 				polyLink->polyobj->validcount = validcount;
 
 				for (int i = polyLink->polyobj->numsegs; i; i--, tempSeg++)
@@ -626,16 +626,14 @@ bool P_BlockThingsIterator (int x, int y, F&& func, AActor *actor, ARGS&&... arg
 {
 	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
 		return true;
-	else
- 	{
-		AActor *mobj = (actor != NULL ? actor : blocklinks[y*bmapwidth+x]);
-		while (mobj)
- 		{
-			if (!std::invoke(std::forward<F>(func), *mobj, std::forward<ARGS>(args)...))
- 				return false;
 
-			mobj = mobj->bmapnode.Next(x, y);
-		}
+	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y*bmapwidth)+x]);
+	while (mobj)
+ 	{
+		if (!std::invoke(std::forward<F>(func), *mobj, std::forward<ARGS>(args)...))
+ 			return false;
+		mobj = mobj->bmapnode.Next(x, y);
 	}
+
 	return true;
 }

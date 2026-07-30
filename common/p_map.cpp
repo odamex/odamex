@@ -169,12 +169,13 @@ bool PIT_StompThing (AActor& thing)
 	// monsters don't stomp things except on boss level
 	if (StompAlwaysFrags)
 	{
+		static constexpr int telefrag_damage = 10000;
 		// [AM] Surprise, avatars telefrag players who try to telefrag it!
 		//      Not your lucky day, I suppose.
 		if (thing.type == MT_AVATAR && tmthing->player)
-			P_DamageMobj(tmthing, &thing, &thing, 10000, MOD_TELEFRAG);
+			P_DamageMobj(tmthing, &thing, &thing, telefrag_damage, MOD_TELEFRAG);
 		else
-			P_DamageMobj(&thing, tmthing, tmthing, 10000, MOD_TELEFRAG);
+			P_DamageMobj(&thing, tmthing, tmthing, telefrag_damage, MOD_TELEFRAG);
 		return true;
 	}
 	return false;
@@ -370,10 +371,13 @@ int P_GetMoveFactor (const AActor *mo, int *frictionp)
 // longer and probably really isn't worth the effort.
 //
 
+namespace
+{
+
 //
 // CheckForPushSpecial
 //
-static void CheckForPushSpecial (line_t *line, int side, AActor *mobj)
+void CheckForPushSpecial (line_t *line, int side, AActor *mobj)
 {
 	if (line->special)
 	{
@@ -385,7 +389,8 @@ static void CheckForPushSpecial (line_t *line, int side, AActor *mobj)
 }
 
 
-static // killough 3/26/98: make static
+// killough 3/26/98: make static
+// now in anonymous namespace
 bool PIT_CrossLine (const line_t& ld)
 {
 	if (!(ld.flags & ML_TWOSIDED) ||
@@ -404,7 +409,8 @@ bool PIT_CrossLine (const line_t& ld)
 // Adjusts tmfloorz and tmceilingz as lines are contacted
 //
 
-static // killough 3/26/98: make static
+// killough 3/26/98: make static
+// now in anonymous namespace
 bool PIT_CheckLine(line_t& ld, bool tmunstuck)
 {
 	if (tmbbox[BOXRIGHT] <= ld.bbox[BOXLEFT]
@@ -556,6 +562,8 @@ bool PIT_CheckLine(line_t& ld, bool tmunstuck)
 
 	return true;
 }
+
+} // namespace
 
 /*
  * @brief Determines if a projectile should clip a friendly monster.

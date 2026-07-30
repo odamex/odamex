@@ -640,7 +640,10 @@ bool P_HitFriend(AActor* self)
 
 extern fixed_t tmbbox[4];
 
-static bool PIT_AvoidDropoff(const line_t& line, const fixed_t floorz, fixed_t& dropoff_deltax, fixed_t& dropoff_deltay)
+namespace
+{
+
+bool PIT_AvoidDropoff(const line_t& line, const fixed_t floorz, fixed_t& dropoff_deltax, fixed_t& dropoff_deltay)
 {
 	if (line.backsector && // Ignore one-sided linedefs
 	    tmbbox[BOXRIGHT] > line.bbox[BOXLEFT] &&
@@ -648,8 +651,8 @@ static bool PIT_AvoidDropoff(const line_t& line, const fixed_t floorz, fixed_t& 
 	    tmbbox[BOXTOP] > line.bbox[BOXBOTTOM] && // Linedef must be contacted
 	    tmbbox[BOXBOTTOM] < line.bbox[BOXTOP] && P_BoxOnLineSide(tmbbox, &line) == -1)
 	{
-		fixed_t front = line.frontsector->floorheight;
-		fixed_t back = line.backsector->floorheight;
+		const fixed_t front = line.frontsector->floorheight;
+		const fixed_t back = line.backsector->floorheight;
 		angle_t angle;
 
 		// The monster must contact one of the two floors,
@@ -674,7 +677,7 @@ static bool PIT_AvoidDropoff(const line_t& line, const fixed_t floorz, fixed_t& 
 // Driver for above
 //
 
-static fixed_t P_AvoidDropoff(AActor* actor, fixed_t& dropoff_deltax, fixed_t& dropoff_deltay)
+fixed_t P_AvoidDropoff(AActor* actor, fixed_t& dropoff_deltax, fixed_t& dropoff_deltay)
 {
 	tmbbox[BOXTOP] = actor->y + actor->radius;
 	tmbbox[BOXBOTTOM] = actor->y - actor->radius;
@@ -711,7 +714,7 @@ static fixed_t P_AvoidDropoff(AActor* actor, fixed_t& dropoff_deltax, fixed_t& d
 // Uses the new ZDoom chase code
 //
 
-static void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
+void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
 {
 	dirtype_t d[3];
 
@@ -820,6 +823,8 @@ static void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
 
 	actor->movedir = DI_NODIR; // can not move
 }
+
+} // namespace
 
 void P_NewChaseDir (AActor *actor)
 {
@@ -2214,8 +2219,7 @@ int				viletryradius;
 
 bool PIT_VileCheck (AActor& thing)
 {
-	int 	maxdist;
-	bool 	check;
+	bool check;
 
 	if (thing.oflags & MFO_NORAISE)
 		return true;	// [AM] Can't raise
@@ -2229,7 +2233,7 @@ bool PIT_VileCheck (AActor& thing)
 	if (thing.info->raisestate == S_NULL)
 		return true;	// monster doesn't have a raise state
 
-	maxdist = thing.info->radius + viletryradius;
+	const int maxdist = thing.info->radius + viletryradius;
 
 	if ( abs(thing.x - viletryx) > maxdist
 		 || abs(thing.y - viletryy) > maxdist )
@@ -2243,11 +2247,9 @@ bool PIT_VileCheck (AActor& thing)
 
 	if (co_novileghosts)
 	{
-		int height, radius;
-
 		corpsehit->flags |= MF_SOLID;
-		height = corpsehit->height; // save temporarily
-		radius = corpsehit->radius; // save temporarily
+		const int height = corpsehit->height; // save temporarily
+		const int radius = corpsehit->radius; // save temporarily
 		corpsehit->height = P_ThingInfoHeight(corpsehit->info);
 		corpsehit->radius = corpsehit->info->radius;
 		check = P_CheckPosition(corpsehit, corpsehit->x, corpsehit->y);
