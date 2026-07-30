@@ -59,7 +59,6 @@ if(wxWidgets_FOUND)
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
   target_include_directories(odalaunch PUBLIC ${wxWidgets_INCLUDE_DIRS})
 
-  message("================== ${wxWidgets_INCLUDE_DIRS} ======= ${wxWidgets_LIBRARIES} =============")
   if(TARGET jsoncpp_static)
     target_link_libraries(odalaunch jsoncpp_static)
   endif()
