@@ -851,7 +851,7 @@ void M_LogWDLEvent(WDLEvents event, const player_t* activator, const player_t* t
 /**
  * Log a WDL event when you have actor pointers.
  */
-void M_LogActorWDLEvent(WDLEvents event, AActor* activator, AActor* target, int arg0,
+void M_LogActorWDLEvent(WDLEvents event, const AActor* activator, const AActor* target, int arg0,
                         int arg1, int arg2, int arg3)
 {
 	if (!::wdlstate.recording)
