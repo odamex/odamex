@@ -3075,14 +3075,6 @@ void P_UseLines (player_t& player)
 //
 // RADIUS ATTACK
 //
-static AActor* 		bombsource;
-static AActor* 		bombspot;
-static int			bombdamage;
-static float		bombdamagefloat;
-static int			bombdistance;
-static float		bombdistancefloat;
-static bool			DamageSource;
-static int			bombmod;
 
 // [RH] Damage scale to apply to thing that shot the missile. (co_zdoomphys)
 static float selfthrustscale;
@@ -3108,7 +3100,15 @@ bool P_SplashImmune(const AActor& target, const AActor& spot)
 	    mobjinfo[target.type].splash_group == mobjinfo[spot.type].splash_group;
 }
 
-bool PIT_DoomRadiusAttack(AActor& thing)
+bool PIT_DoomRadiusAttack(AActor& thing,
+                          AActor* bombsource,
+                          const AActor* bombspot,
+                          const int bombdamage,
+                          const float bombdamagefloat,
+                          const int bombdistance,
+                          const float bombdistancefloat,
+                          const bool DamageSource,
+                          const int bombmod)
 {
 	if (!serverside || !(thing.flags & (MF_SHOOTABLE | MF_BOUNCES)))
 		return true;
@@ -3162,7 +3162,15 @@ bool PIT_DoomRadiusAttack(AActor& thing)
 // "bombsource" is the creature that caused the explosion at "bombspot".
 // [RH] Now it knows about vertical distances and can thrust things vertically, too.
 //
-bool PIT_ZDoomRadiusAttack(AActor& thing)
+bool PIT_ZDoomRadiusAttack(AActor& thing,
+                           AActor* bombsource,
+                           const AActor* bombspot,
+                           const int bombdamage,
+                           const float bombdamagefloat,
+                           const int bombdistance,
+                           const float bombdistancefloat,
+                           const bool DamageSource,
+                           const int bombmod)
 {
 	if (!serverside || !(thing.flags & (MF_SHOOTABLE | MF_BOUNCES)))
 		return true;
@@ -3185,7 +3193,7 @@ bool PIT_ZDoomRadiusAttack(AActor& thing)
 	if (bombspot->type == MT_BARREL || thing.type == MT_BARREL ||
 		thing.type == MT_BOSSBRAIN)
 	{
-		return PIT_DoomRadiusAttack(thing);
+		return PIT_DoomRadiusAttack(thing, bombsource, bombspot, bombdamage, bombdamagefloat, bombdistance, bombdistancefloat, DamageSource, bombmod);
 	}
 
 	// [RH] New code. The bounding box only covers the
@@ -3272,28 +3280,23 @@ bool PIT_ZDoomRadiusAttack(AActor& thing)
 void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bool hurtSource, int mod)
 {
-	fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
-	int yh = MIN<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, bmapheight - 1);
-	int yl = MAX<int>((spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT, 0);
-	int xh = MIN<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, bmapwidth - 1);
-	int xl = MAX<int>((spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT, 0);
-	bombspot = spot;
-	bombsource = source;
-	bombdamage = damage;
-	bombdamagefloat = (float)damage;
-	bombdistance = distance;
-	bombdistancefloat = 1.f / (float)distance;
-	DamageSource = hurtSource;
-	bombmod = mod;
+	const fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
+	const int yh = std::min<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, bmapheight - 1);
+	const int yl = std::max<int>((spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT, 0);
+	const int xh = std::min<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, bmapwidth - 1);
+	const int xl = std::max<int>((spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT, 0);
+	AActor* bombsource = source;
+	const auto bombdamagefloat = (float)damage;
+	const float bombdistancefloat = 1.f / (float)distance;
 
 	// [Blair] Prevent crash from barrels hit by crushers
-	if (!demoplayback && bombsource == NULL && bombspot != NULL)
+	if (!demoplayback && bombsource == nullptr && spot != nullptr)
 	{
-		bombsource = bombspot;
+		bombsource = spot;
 	}
 
 	// decide which radius attack function to use
-	bool (*pAttackFunc)(AActor&) = co_zdoomphys ?
+	const auto pAttackFunc = co_zdoomphys ?
 		PIT_ZDoomRadiusAttack : PIT_DoomRadiusAttack;
 
 	if (co_blockmapfix)
@@ -3319,14 +3322,14 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 
 		for (const auto& actor : actorset)
 		{
-			pAttackFunc(*actor);
+			pAttackFunc(*actor, spot, bombsource, damage, bombdamagefloat, distance, bombdistancefloat, hurtSource, mod);
 		}
 	}
 	else
 	{
 		for (int y=yl ; y<=yh ; y++)
 			for (int x=xl ; x<=xh ; x++)
-				P_BlockThingsIterator (x, y, pAttackFunc, nullptr);
+				P_BlockThingsIterator (x, y, pAttackFunc, nullptr, spot, bombsource, damage, bombdamagefloat, distance, bombdistancefloat, hurtSource, mod);
 	}
 }
 
