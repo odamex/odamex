@@ -120,9 +120,7 @@ CVAR_FUNC_IMPL (sv_gravity)
 //
 // PIT_StompThing
 //
-static bool StompAlwaysFrags;
-
-bool PIT_StompThing (AActor& thing)
+bool PIT_StompThing (AActor& thing, const bool StompAlwaysFrags)
 {
 	fixed_t blockdist;
 
@@ -244,8 +242,8 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	validcount++;
 	spechit.clear();
 
-	StompAlwaysFrags = P_IsPlayerOrAvatar(*tmthing) ||
-	                   (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
+	const bool StompAlwaysFrags = P_IsPlayerOrAvatar(*tmthing) ||
+	                              (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
 	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
@@ -255,7 +253,7 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 
 	for (bx=xl ; bx<=xh ; bx++)
 		for (by=yl ; by<=yh ; by++)
-			if (!P_BlockThingsIterator(bx,by,PIT_StompThing, nullptr))
+			if (!P_BlockThingsIterator(bx,by,PIT_StompThing, nullptr, StompAlwaysFrags))
 				return false;
 
 	// the move is ok,
