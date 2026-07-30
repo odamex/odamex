@@ -2156,7 +2156,7 @@
          "type" : "string"
       },
       {
-         "default" : 3,
+         "default" : 255,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Music subsystem preference",
          "name" : "snd_musicsystem",

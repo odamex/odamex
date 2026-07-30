@@ -179,6 +179,39 @@ void I_SetMusicVolume (float volume)
 		musicsystem->setVolume(volume);
 }
 
+//
+// I_GetDefaultMusicSystem
+//
+// The music system to use when the user has expressed no preference, which
+// depends on what the platform does best.
+//
+MusicSystemType I_GetDefaultMusicSystem()
+{
+#if defined _WIN32
+	return MS_PORTMIDI;
+#elif defined OSX
+	return MS_AUDIOUNIT;
+#elif defined __linux__
+	return MS_LIBADLMIDI;
+#else
+	return MS_SDLMIXER;
+#endif
+}
+
+//
+// I_ResolveMusicSystem
+//
+// Turns whatever snd_musicsystem holds into a music system we can actually
+// start.
+//
+MusicSystemType I_ResolveMusicSystem(int musicsystem_type)
+{
+	if (musicsystem_type == MS_AUTO)
+		return I_GetDefaultMusicSystem();
+
+	return static_cast<MusicSystemType>(musicsystem_type);
+}
+
 void I_InitMusic(MusicSystemType musicsystem_type)
 {
 	I_ShutdownMusic();
@@ -230,7 +263,9 @@ void STACK_ARGS I_ShutdownMusic(void)
 
 CVAR_FUNC_IMPL (snd_musicsystem)
 {
-	if ((int)current_musicsystem_type == snd_musicsystem.asInt())
+	const MusicSystemType desired = I_ResolveMusicSystem(snd_musicsystem.asInt());
+
+	if (current_musicsystem_type == desired)
 		return;
 
 	if (musicsystem)
@@ -238,7 +273,7 @@ CVAR_FUNC_IMPL (snd_musicsystem)
 		I_ShutdownMusic();
 		S_StopMusic();
 	}
-	I_InitMusic();
+	I_InitMusic(desired);
 
 	if (level.music.empty())
 		S_ChangeMusic(currentmusic, true);
@@ -282,7 +317,7 @@ static MusicSystemType I_SelectMusicSystem(byte *data, size_t length)
 	bool ismidi = (S_MusicIsMus(data, length) || S_MusicIsMidi(data, length));
 
 	if (ismidi)
-		return static_cast<MusicSystemType>(snd_musicsystem.asInt());
+		return I_ResolveMusicSystem(snd_musicsystem.asInt());
 
 	// Non-midi music always uses SDL_Mixer (for now at least)
 	return MS_SDLMIXER;
