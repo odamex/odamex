@@ -19,7 +19,7 @@ function(cvardoc_emit_array out_var symbol path)
     message(FATAL_ERROR "embed_cvardoc: no such file: ${path}")
   endif()
 
-	# Read file as hex, get length in bytes
+  # Read file as hex, get length in bytes
   file(READ "${path}" _hex HEX)
 
   string(LENGTH "${_hex}" _hexlen)
