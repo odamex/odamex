@@ -3410,9 +3410,9 @@ bool PIT_ChangeSector (AActor& thing)
 		// spray blood in a random direction
 		if (!(thing.flags&MF_NOBLOOD))
 		{
-			AActor *mo = new AActor (thing.x,
+			auto *mo = new AActor (thing.x,
 									 thing.y,
-									 thing.z + thing.height/2, MT_BLOOD);
+									 thing.z + (thing.height/2), MT_BLOOD);
 
 			mo->momx = P_RandomDiff (mo) << 12;
 			mo->momy = P_RandomDiff (mo) << 12;

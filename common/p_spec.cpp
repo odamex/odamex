@@ -2905,7 +2905,7 @@ bool PIT_PushThing (AActor& thing)
 	{
 		int sx = tmpusher->m_X;
 		int sy = tmpusher->m_Y;
-		int dist = P_AproxDistance (thing.x - sx,thing.y - sy);
+		const int dist = P_AproxDistance (thing.x - sx,thing.y - sy);
 		int speed = (tmpusher->m_Magnitude -
 					((dist>>FRACBITS)>>1))<<(FRACBITS-PUSH_FACTOR-1);
 
@@ -2919,8 +2919,8 @@ bool PIT_PushThing (AActor& thing)
 
 		if (speed > 0 && P_IsMBFCompatMode())
 		{
-			int x = (thing.x - sx) >> FRACBITS;
-			int y = (thing.y - sy) >> FRACBITS;
+			const int x = (thing.x - sx) >> FRACBITS;
+			const int y = (thing.y - sy) >> FRACBITS;
 			speed = (int)(((uint64_t)tmpusher->m_Magnitude << 23) / (x * x + y * y + 1));
 		}
 
