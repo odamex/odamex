@@ -2840,8 +2840,8 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 	if (actor->movedir != DI_NODIR)
 	{
 		// check for corpses to raise
-		const fixed_t viletryx = actor->x + actor->info->speed * xspeed[actor->movedir];
-		const fixed_t viletryy = actor->y + actor->info->speed * yspeed[actor->movedir];
+		const fixed_t viletryx = actor->x + (actor->info->speed * xspeed[actor->movedir]);
+		const fixed_t viletryy = actor->y + (actor->info->speed * yspeed[actor->movedir]);
 
 		const int xl = (viletryx - bmaporgx - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
 		const int xh = (viletryx - bmaporgx + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
