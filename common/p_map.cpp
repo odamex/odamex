@@ -425,8 +425,8 @@ bool PIT_CheckLine(line_t& ld, bool tmunstuck)
 
 	const auto untouched = [](line_t& ld)
 	{
-		fixed_t x = tmthing->x;
-		fixed_t y = tmthing->y;
+		const fixed_t x = tmthing->x;
+		const fixed_t y = tmthing->y;
 		std::array<fixed_t, 4> tmbbox{};
 		tmbbox[BOXRIGHT] = x+tmthing->radius;
     	tmbbox[BOXLEFT] = x-tmthing->radius;
@@ -516,11 +516,11 @@ bool PIT_CheckLine(line_t& ld, bool tmunstuck)
 	{
 		// Find the point on the line closest to the actor's center, and use
 		// that to calculate openings
-		double dx = FIXED2DOUBLE(ld.dx);
-		double dy = FIXED2DOUBLE(ld.dy);
-		double r =	(FIXED2DOUBLE(tmx - ld.v1->x) * dx +
-					 FIXED2DOUBLE(tmy - ld.v1->y) * dy) /
-					(dx * dx + dy * dy);
+		const double dx = FIXED2DOUBLE(ld.dx);
+		const double dy = FIXED2DOUBLE(ld.dy);
+		const double r  = ((FIXED2DOUBLE(tmx - ld.v1->x) * dx) +
+		                   (FIXED2DOUBLE(tmy - ld.v1->y) * dy)) /
+		                   ((dx * dx) + (dy * dy));
 
 		if (r <= 0.0)
 		{
@@ -532,8 +532,8 @@ bool PIT_CheckLine(line_t& ld, bool tmunstuck)
 		}
 		else
 		{
-			fixed_t sx = ld.v1->x + r * ld.dx;
-			fixed_t sy = ld.v1->y + r * ld.dy;
+			const fixed_t sx = ld.v1->x + (r * ld.dx);
+			const fixed_t sy = ld.v1->y + (r * ld.dy);
 			P_LineOpening (&ld, sx, sy, tmx, tmy);
 		}
 	}
@@ -649,9 +649,12 @@ bool P_ProjectileImmune(AActor* target, AActor* source)
 	                mobjinfo[source->type].projectile_group));
 }
 
-static bool PIT_CheckThing (AActor& thing)
+namespace
 {
-	bool solid = thing.flags & MF_SOLID;
+
+bool PIT_CheckThing (AActor& thing)
+{
+	const bool solid = thing.flags & MF_SOLID;
 
 	// don't clip against self
 	if (&thing == tmthing)
@@ -672,7 +675,7 @@ static bool PIT_CheckThing (AActor& thing)
 	    P_IsFriendlyThing(&thing, tmthing) && sv_unblockfriendly)
 		return true;
 
-	fixed_t blockdist = thing.radius + tmthing->radius;
+	const fixed_t blockdist = thing.radius + tmthing->radius;
 	if (abs(thing.x - tmx) >= blockdist || abs(thing.y - tmy) >= blockdist)
 	{
 		// didn't hit thing
@@ -711,7 +714,7 @@ static bool PIT_CheckThing (AActor& thing)
 	    (thing.type ^ MT_SKULL) |        // (but Barons & Knights
 	        (tmthing->type ^ MT_PAIN))    // are intentionally not)
 	{
-		P_DamageMobj(&thing, NULL, NULL, thing.health); // kill object
+		P_DamageMobj(&thing, nullptr, nullptr, thing.health); // kill object
 		return true;
 	}
 
@@ -871,6 +874,9 @@ static bool PIT_CheckThing (AActor& thing)
 		         (tmthing->flags & MF_SOLID || (demoplayback || !co_boomphys)));
 }
 
+} // namespace
+
+
 // This routine checks for Lost Souls trying to be spawned		// phares
 // across 1-sided lines, impassible lines, or "monsters can't	//   |
 // cross" lines. Draw an imaginary line between the PE			//   V
@@ -947,14 +953,14 @@ bool PIT_CheckOnmobjZ (AActor& thing)
 	// over / under thing
 	if (tmthing->z > thing.z + thing.height)
 		return true;
-	else if (tmthing->z + tmthing->height <= thing.z)
+	if (tmthing->z + tmthing->height <= thing.z)
 		return true;
 
 	// Don't clip the projectile unless it's not a teammate.
 	if (tmthing->flags & MF_MISSILE && !P_ShouldClipPlayer(tmthing, &thing))
 		return true;
 
-	fixed_t blockdist = thing.radius+tmthing->radius;
+	const fixed_t blockdist = thing.radius+tmthing->radius;
 	if (abs(thing.x - tmx) >= blockdist || abs(thing.y - tmy) >= blockdist)
 		return true;		// Didn't hit thing
 
@@ -1499,7 +1505,10 @@ bool P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 // so balancing is possible.
 //
 
-static bool PIT_ApplyTorque (const line_t& ld)
+namespace
+{
+
+bool PIT_ApplyTorque (const line_t& ld)
 {
 	if (ld.backsector &&		// If thing touches two-sided pivot linedef
 		tmbbox[BOXRIGHT]  > ld.bbox[BOXLEFT]  &&
@@ -1567,6 +1576,8 @@ static bool PIT_ApplyTorque (const line_t& ld)
 	}
 	return true;
 }
+
+} // namespace
 
 //
 // killough 9/12/98
@@ -3380,7 +3391,7 @@ bool PIT_ChangeSector (AActor& thing)
 	/* killough 11/98: kill touchy things immediately */
 	if (thing.flags & MF_TOUCHY && (thing.oflags & MFO_ARMED || sentient(&thing)))
 	{
-		P_DamageMobj(&thing, NULL, NULL, thing.health); // kill object
+		P_DamageMobj(&thing, nullptr, nullptr, thing.health); // kill object
 		return true;                                    // keep checking
 	}
 

@@ -52,6 +52,8 @@ Checks: |
   -readability-named-parameter,
   # we mostly use lowercase
   -readability-uppercase-literal-suffix,
+  # simplified form can be less clear sometimes
+  -readability-simplify-boolean-expr
 CheckOptions:
   # Allow `if (pointer)`
   - key: readability-implicit-bool-conversion.AllowPointerConditions
