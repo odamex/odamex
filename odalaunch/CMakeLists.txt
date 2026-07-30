@@ -29,8 +29,10 @@ include_directories(${API_DIR} ${LAUNCH_DIR} ${XRCRES_BINARY_DIR})
 # wxWidgets configuration
 
 find_package(wxWidgets COMPONENTS core base adv net xrc)
-if(wxWidgets_FOUND)
-  include( "${wxWidgets_USE_FILE}" )
+if (wxWidgets_FOUND)
+  if (wxWidgets_USE_FILE)
+    include( "${wxWidgets_USE_FILE}" )
+  endif()
 else()
   if(wxWidgets_ROOT_DIR)
     message(WARNING "wxWidgets root directory exists but no compiled libraries were found, odalaunch target not generated.")
