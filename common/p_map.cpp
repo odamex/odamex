@@ -1520,10 +1520,10 @@ bool PIT_ApplyTorque (const line_t& ld)
 		AActor *mo = tmthing;
 
 		fixed_t dist =								// lever arm
-	  + (ld.dx >> FRACBITS) * (mo->y >> FRACBITS)
-	  - (ld.dy >> FRACBITS) * (mo->x >> FRACBITS)
-	  - (ld.dx >> FRACBITS) * (ld.v1->y >> FRACBITS)
-	  + (ld.dy >> FRACBITS) * (ld.v1->x >> FRACBITS);
+			+ ((ld.dx >> FRACBITS) * (mo->y >> FRACBITS))
+			- ((ld.dy >> FRACBITS) * (mo->x >> FRACBITS))
+			- ((ld.dx >> FRACBITS) * (ld.v1->y >> FRACBITS))
+			+ ((ld.dy >> FRACBITS) * (ld.v1->x >> FRACBITS));
 
 		if (dist < 0 ?								// dropoff direction
 			P_FloorHeight(mo->x, mo->y, ld.frontsector) < mo->z &&
@@ -1534,7 +1534,8 @@ bool PIT_ApplyTorque (const line_t& ld)
 		// At this point, we know that the object straddles a two-sided
 		// linedef, and that the object's center of mass is above-ground.
 
-			fixed_t x = abs(ld.dx), y = abs(ld.dy);
+			fixed_t x = abs(ld.dx);
+			fixed_t y = abs(ld.dy);
 
 			if (y > x)
 			{
@@ -3091,6 +3092,8 @@ CVAR_FUNC_IMPL(sv_splashfactor)
 	selfthrustscale = 1.0f / var;
 }
 
+namespace
+{
 
 //
 // PIT_DoomRadiusAttack
@@ -3098,14 +3101,14 @@ CVAR_FUNC_IMPL(sv_splashfactor)
 // "bombsource" is the creature that caused the explosion at "bombspot".
 //
 
-static bool P_SplashImmune(const AActor& target, const AActor& spot)
+bool P_SplashImmune(const AActor& target, const AActor& spot)
 {
 	return // not default behaviour and same group
 	    mobjinfo[target.type].splash_group != SG_DEFAULT &&
 	    mobjinfo[target.type].splash_group == mobjinfo[spot.type].splash_group;
 }
 
-static bool PIT_DoomRadiusAttack(AActor& thing)
+bool PIT_DoomRadiusAttack(AActor& thing)
 {
 	if (!serverside || !(thing.flags & (MF_SHOOTABLE | MF_BOUNCES)))
 		return true;
@@ -3121,12 +3124,9 @@ static bool PIT_DoomRadiusAttack(AActor& thing)
 		!(bombspot->flags3 & MF3_FORCERADIUSDMG))
 		return true;
 
-	fixed_t dx = abs(thing.x - bombspot->x);
-	fixed_t dy = abs(thing.y - bombspot->y);
-	fixed_t dist = (MAX(dx, dy) - thing.radius) >> FRACBITS;
-
-	if (dist < 0)
-		dist = 0;
+	const fixed_t dx = abs(thing.x - bombspot->x);
+	const fixed_t dy = abs(thing.y - bombspot->y);
+	const fixed_t dist = std::max((std::max(dx, dy) - thing.radius) >> FRACBITS, 0);
 
 	if (dist >= bombdistance)
 	{
@@ -3162,7 +3162,7 @@ static bool PIT_DoomRadiusAttack(AActor& thing)
 // "bombsource" is the creature that caused the explosion at "bombspot".
 // [RH] Now it knows about vertical distances and can thrust things vertically, too.
 //
-static bool PIT_ZDoomRadiusAttack(AActor& thing)
+bool PIT_ZDoomRadiusAttack(AActor& thing)
 {
 	if (!serverside || !(thing.flags & (MF_SHOOTABLE | MF_BOUNCES)))
 		return true;
@@ -3190,10 +3190,10 @@ static bool PIT_ZDoomRadiusAttack(AActor& thing)
 
 	// [RH] New code. The bounding box only covers the
 	// height of the thing and not the height of the map.
-	fixed_t dx = abs(thing.x - bombspot->x);
-	fixed_t dy = abs(thing.y - bombspot->y);
-	float len = float(MAX(dx, dy));
-	float boxradius = float(thing.radius);
+	const fixed_t dx = abs(thing.x - bombspot->x);
+	const fixed_t dy = abs(thing.y - bombspot->y);
+	auto len = float(std::max(dx, dy));
+	const auto boxradius = float(thing.radius);
 
 	if (bombspot->z < thing.z || bombspot->z >= thing.z + thing.height)
 	{
@@ -3214,9 +3214,7 @@ static bool PIT_ZDoomRadiusAttack(AActor& thing)
 	}
 	else
 	{
-		len -= boxradius;
-		if (len < 0.0f)
-			len = 0.0f;
+		len -= std::max(boxradius, 0.0f);
 	}
 
 	float points;
@@ -3232,9 +3230,9 @@ static bool PIT_ZDoomRadiusAttack(AActor& thing)
 	{
 		// OK to damage; target is in direct path
 
-		fixed_t momx = thing.momx;
-		fixed_t momy = thing.momy;
-		int damage = (int)points;
+		const fixed_t momx = thing.momx;
+		const fixed_t momy = thing.momy;
+		const int damage = (int)points;
 
 		P_DamageMobj(&thing, bombspot, bombsource, damage, bombmod);
 
@@ -3264,6 +3262,8 @@ static bool PIT_ZDoomRadiusAttack(AActor& thing)
 
 	return true;
 }
+
+} // namespace
 
 //
 // P_RadiusAttack

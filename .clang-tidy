@@ -65,3 +65,8 @@ CheckOptions:
     value: true
   - key: cppcoreguidelines-rvalue-reference-param-not-moved.AllowPartialMove
     value: true
+  - key: readability-magic-numbers.IgnorePowersOf2IntegerValues
+    value: true
+  # add 0.5 to list, 1/2 is rarely an actual magic number
+  - key: readability-magic-numbers.IgnoreFloatingPointValues
+    value: 1.0;100.0;0.5
