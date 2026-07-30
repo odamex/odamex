@@ -239,7 +239,6 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	if (mSDLRenderer == nullptr)
 		I_FatalError("I_InitVideo: unable to create SDL2 renderer: {}\n", SDL_GetError());
 
-	mDrawLogicalRect = false;
 	SDL_RenderSetLogicalSize(mSDLRenderer, mWidth, mHeight);
 
 	// Ensure the game window is clear, even if using -noblit
@@ -338,10 +337,7 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 	   SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
     }
 
-	if (mDrawLogicalRect)
-		SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, &mLogicalRect);
-	else
-		SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
+	SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
 
 	SDL_RenderPresent(mSDLRenderer);
 }
@@ -377,18 +373,6 @@ bool ISDL20TextureWindowSurfaceManager::windowToSurfaceCoords(
 		logical_x = window_x / scale_x - viewport.x;
 		logical_y = window_y / scale_y - viewport.y;
 	#endif
-
-	// Undo the destination rectangle the texture is blitted into.
-	//
-	// When not pillarboxing, the logical size is the surface size
-	// and this is a no-op.
-	if (mDrawLogicalRect)
-	{
-		if (mLogicalRect.w <= 0 || mLogicalRect.h <= 0)
-			return false;
-		logical_x = (logical_x - mLogicalRect.x) * mWidth / static_cast<float>(mLogicalRect.w);
-		logical_y = (logical_y - mLogicalRect.y) * mHeight / static_cast<float>(mLogicalRect.h);
-	}
 
 	surface_x = static_cast<int>(std::floor(logical_x));
 	surface_y = static_cast<int>(std::floor(logical_y));
