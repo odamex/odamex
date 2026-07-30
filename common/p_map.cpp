@@ -3102,10 +3102,10 @@ bool PIT_DoomRadiusAttack(AActor& thing,
                           AActor* bombsource,
                           const AActor* bombspot,
                           const int bombdamage,
-                          const float bombdamagefloat,
+                          const float /*bombdamagefloat*/,
                           const int bombdistance,
-                          const float bombdistancefloat,
-                          const bool DamageSource,
+                          const float /*bombdistancefloat*/,
+                          const bool /*DamageSource*/,
                           const int bombmod)
 {
 	if (!serverside || !(thing.flags & (MF_SHOOTABLE | MF_BOUNCES)))
@@ -3320,14 +3320,14 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 
 		for (const auto& actor : actorset)
 		{
-			pAttackFunc(*actor, spot, bombsource, damage, bombdamagefloat, distance, bombdistancefloat, hurtSource, mod);
+			pAttackFunc(*actor, bombsource, spot, damage, bombdamagefloat, distance, bombdistancefloat, hurtSource, mod);
 		}
 	}
 	else
 	{
 		for (int y=yl ; y<=yh ; y++)
 			for (int x=xl ; x<=xh ; x++)
-				P_BlockThingsIterator (x, y, pAttackFunc, nullptr, spot, bombsource, damage, bombdamagefloat, distance, bombdistancefloat, hurtSource, mod);
+				P_BlockThingsIterator (x, y, pAttackFunc, nullptr, bombsource, spot, damage, bombdamagefloat, distance, bombdistancefloat, hurtSource, mod);
 	}
 }
 
@@ -3406,7 +3406,7 @@ bool PIT_ChangeSector (AActor& thing)
 
 	if (crushchange > 0 && !(level.time&3) )
 	{
-		P_DamageMobj(&thing, NULL, NULL, crushchange, MOD_CRUSH);
+		P_DamageMobj(&thing, nullptr, nullptr, crushchange, MOD_CRUSH);
 
 		// spray blood in a random direction
 		if (!(thing.flags&MF_NOBLOOD))
