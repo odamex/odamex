@@ -98,6 +98,7 @@ modules:
       - -D ODAMEX_INSTALL_DATADIR=/run/host/usr/share
       - -D USE_EXTERNAL_LIBDWARF=1
       - -D ODAMEX_NO_GITVER=0
+      - -D ODAMEX_UPDATE_CVARDOCS=0
     post-install:
       - ./flatpak-post-install.sh
       # delete files that cleanup can't see

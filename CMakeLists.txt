@@ -236,6 +236,7 @@ endif()
 # The "cvardocs" target refreshes the committed documentation on demand.
 if(TARGET odamex OR TARGET odasrv)
   add_custom_target(cvardocs COMMENT "Refreshing cvar documentation")
+  add_custom_target(cvardocs-check COMMENT "Checking cvar documentation is up to date")
 
   foreach(_cvardoc_target odamex odasrv)
     if(TARGET ${_cvardoc_target})
@@ -246,6 +247,15 @@ if(TARGET odamex OR TARGET odasrv)
         -P "${CVARDOC_UPDATE_SCRIPT}"
         VERBATIM)
       add_dependencies(cvardocs ${_cvardoc_target})
+
+      add_custom_command(TARGET cvardocs-check POST_BUILD
+        COMMAND "${CMAKE_COMMAND}"
+        -D "BINARY=$<TARGET_FILE:${_cvardoc_target}>"
+        -D "OUTPUT=${CVARDOC_RES_DIR}/${_cvardoc_target}_cvardoc.json"
+        -D "CHECK=ON"
+        -P "${CVARDOC_UPDATE_SCRIPT}"
+        VERBATIM)
+      add_dependencies(cvardocs-check ${_cvardoc_target})
     endif()
   endforeach()
 endif()
