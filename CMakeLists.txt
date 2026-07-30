@@ -176,6 +176,29 @@ git_branch(HEAD GIT_BRANCH)
 string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
+# Cvar documentation
+#
+# odalaunch compiles in the documents committed under odalaunch/res, so it
+# builds without the client or the server ever having run.
+option(ODAMEX_UPDATE_CVARDOCS
+  "Refresh the committed cvar documentation when the client or server builds" ON)
+
+set(CVARDOC_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/odalaunch/res")
+set(CVARDOC_UPDATE_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/tools/cvardoc/update_cvardoc.cmake")
+
+function(odamex_cvardoc_refresh target)
+  if(NOT ODAMEX_UPDATE_CVARDOCS)
+    return()
+  endif()
+
+  add_custom_command(TARGET ${target} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}"
+    -D "BINARY=$<TARGET_FILE:${target}>"
+    -D "OUTPUT=${CVARDOC_RES_DIR}/${target}_cvardoc.json"
+    -P "${CVARDOC_UPDATE_SCRIPT}"
+    VERBATIM)
+endfunction()
+
 # Libraries
 add_subdirectory(libraries)
 
@@ -208,6 +231,23 @@ if(BUILD_LAUNCHER)
 endif()
 if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_LAUNCHER)
   message(FATAL_ERROR "No target chosen, doing nothing.")
+endif()
+
+# The "cvardocs" target refreshes the committed documentation on demand.
+if(TARGET odamex OR TARGET odasrv)
+  add_custom_target(cvardocs COMMENT "Refreshing cvar documentation")
+
+  foreach(_cvardoc_target odamex odasrv)
+    if(TARGET ${_cvardoc_target})
+      add_custom_command(TARGET cvardocs POST_BUILD
+        COMMAND "${CMAKE_COMMAND}"
+        -D "BINARY=$<TARGET_FILE:${_cvardoc_target}>"
+        -D "OUTPUT=${CVARDOC_RES_DIR}/${_cvardoc_target}_cvardoc.json"
+        -P "${CVARDOC_UPDATE_SCRIPT}"
+        VERBATIM)
+      add_dependencies(cvardocs ${_cvardoc_target})
+    endif()
+  endforeach()
 endif()
 
 # WAD building

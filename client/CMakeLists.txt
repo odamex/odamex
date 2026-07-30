@@ -330,6 +330,10 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 endif()
 
+if(TARGET odamex)
+  odamex_cvardoc_refresh(odamex)
+endif()
+
 if(BUILD_OR_FAIL AND NOT TARGET odamex)
   message(FATAL_ERROR "Odamex target could not be generated")
 endif()

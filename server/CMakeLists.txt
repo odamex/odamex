@@ -97,6 +97,10 @@ else()
     COMPONENT server)
 endif()
 
+if(TARGET odasrv)
+  odamex_cvardoc_refresh(odasrv)
+endif()
+
 # [AM] Not needed right now, but could be in the future...
 if(BUILD_OR_FAIL AND NOT TARGET odasrv)
   message(FATAL_ERROR "Odasrv target could not be generated")
