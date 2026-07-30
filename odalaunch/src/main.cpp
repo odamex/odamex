@@ -43,7 +43,7 @@ IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {
-	#ifdef __linux__
+	#if !defined(__APPLE__) && !defined(_WIN32)
 	SetClassName("net.odamex.Odamex.Launcher");
 	#endif
 
