@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <array>
 
 #include "i_video.h"
 #include "v_video.h"
@@ -337,7 +338,7 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 	   SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
     }
 
-	SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
+	SDL_RenderCopy(mSDLRenderer, mSDLTexture, nullptr, nullptr);
 
 	SDL_RenderPresent(mSDLRenderer);
 }
