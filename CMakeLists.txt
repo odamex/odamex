@@ -1,6 +1,8 @@
 # CMake >= 3.13 needed for -S and -B params in library compilation.
-# CMake >= 3.19 needed for policy CMP0112: target-dependent generator expressions
-#               do not implicitly add target-level dependencies.
+# CMake >= 3.19 needed for:
+#               -   policy CMP0112: target-dependent generator expressions
+#                   do not implicitly add target-level dependencies.
+#               -   Multiple configs can be given as cfgs in $<CONFIG:cfgs>.
 #
 # Note that if you are running Linux, there are many ways to get newer
 # versions of CMake.

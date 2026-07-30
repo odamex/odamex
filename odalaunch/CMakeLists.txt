@@ -67,6 +67,29 @@ if(wxWidgets_FOUND)
     target_link_libraries(odalaunch ws2_32)
   endif()
 
+  if (UNIX AND NOT APPLE)
+
+    list(APPEND make_dbg_file
+        objcopy --only-keep-debug odalaunch odalaunch.dbg)
+
+    list(APPEND strip_exe_file
+        objcopy --strip-debug odalaunch)
+
+    list(APPEND link_exe_to_dbg
+        objcopy --add-gnu-debuglink=odalaunch.dbg odalaunch)
+
+    add_custom_command(
+        TARGET odalaunch
+        POST_BUILD
+        COMMAND "$<IF:$<CONFIG:Debug,RelWithDebInfo>,${make_dbg_file},>"
+        COMMAND "$<IF:$<CONFIG:Debug,RelWithDebInfo>,${strip_exe_file},>"
+        COMMAND "$<IF:$<CONFIG:Debug,RelWithDebInfo>,${link_exe_to_dbg},>"
+        COMMAND_EXPAND_LISTS
+        VERBATIM
+        )
+
+  endif()
+
   set(MACOSX_BUNDLE_BUNDLE_NAME OdaLaunch)
   set(MACOSX_BUNDLE_COPYRIGHT "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
   set(MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}")
