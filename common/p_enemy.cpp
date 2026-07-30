@@ -641,25 +641,25 @@ bool P_HitFriend(AActor* self)
 static fixed_t dropoff_deltax, dropoff_deltay, floorz;
 extern fixed_t tmbbox[4];
 
-static bool PIT_AvoidDropoff(line_t* line)
+static bool PIT_AvoidDropoff(const line_t& line)
 {
-	if (line->backsector && // Ignore one-sided linedefs
-	    tmbbox[BOXRIGHT] > line->bbox[BOXLEFT] &&
-	    tmbbox[BOXLEFT] < line->bbox[BOXRIGHT] &&
-	    tmbbox[BOXTOP] > line->bbox[BOXBOTTOM] && // Linedef must be contacted
-	    tmbbox[BOXBOTTOM] < line->bbox[BOXTOP] && P_BoxOnLineSide(tmbbox, line) == -1)
+	if (line.backsector && // Ignore one-sided linedefs
+	    tmbbox[BOXRIGHT] > line.bbox[BOXLEFT] &&
+	    tmbbox[BOXLEFT] < line.bbox[BOXRIGHT] &&
+	    tmbbox[BOXTOP] > line.bbox[BOXBOTTOM] && // Linedef must be contacted
+	    tmbbox[BOXBOTTOM] < line.bbox[BOXTOP] && P_BoxOnLineSide(tmbbox, &line) == -1)
 	{
-		fixed_t front = line->frontsector->floorheight;
-		fixed_t back = line->backsector->floorheight;
+		fixed_t front = line.frontsector->floorheight;
+		fixed_t back = line.backsector->floorheight;
 		angle_t angle;
 
 		// The monster must contact one of the two floors,
 		// and the other must be a tall dropoff (more than 24).
 
 		if (back == floorz && front < floorz - FRACUNIT * 24)
-			angle = R_PointToAngle2(0, 0, line->dx, line->dy); // front side dropoff
+			angle = R_PointToAngle2(0, 0, line.dx, line.dy); // front side dropoff
 		else if (front == floorz && back < floorz - FRACUNIT * 24)
-			angle = R_PointToAngle2(line->dx, line->dy, 0, 0); // back side dropoff
+			angle = R_PointToAngle2(line.dx, line.dy, 0, 0); // back side dropoff
 		else
 			return true;
 
@@ -2210,30 +2210,30 @@ fixed_t 		viletryx;
 fixed_t 		viletryy;
 int				viletryradius;
 
-bool PIT_VileCheck (AActor *thing)
+bool PIT_VileCheck (AActor& thing)
 {
 	int 	maxdist;
 	bool 	check;
 
-	if (thing->oflags & MFO_NORAISE)
+	if (thing.oflags & MFO_NORAISE)
 		return true;	// [AM] Can't raise
 
-	if (!(thing->flags & MF_CORPSE) )
+	if (!(thing.flags & MF_CORPSE) )
 		return true;	// not a monster
 
-	if (thing->tics != -1)
+	if (thing.tics != -1)
 		return true;	// not lying still yet
 
-	if (thing->info->raisestate == S_NULL)
+	if (thing.info->raisestate == S_NULL)
 		return true;	// monster doesn't have a raise state
 
-	maxdist = thing->info->radius + viletryradius;
+	maxdist = thing.info->radius + viletryradius;
 
-	if ( abs(thing->x - viletryx) > maxdist
-		 || abs(thing->y - viletryy) > maxdist )
+	if ( abs(thing.x - viletryx) > maxdist
+		 || abs(thing.y - viletryy) > maxdist )
 		return true;			// not actually touching
 
-	corpsehit = thing;
+	corpsehit = &thing;
 	corpsehit->momx = corpsehit->momy = 0;
 
 	if (P_AllowPassover())
@@ -2861,7 +2861,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 				// Call PIT_VileCheck to check
 				// whether object is a corpse
 				// that can be raised.
-				if (!P_BlockThingsIterator(bx, by, PIT_VileCheck))
+				if (!P_BlockThingsIterator(bx, by, PIT_VileCheck, nullptr))
 				{
 					mobjinfo_t* info;
 
