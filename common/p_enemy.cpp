@@ -2212,12 +2212,8 @@ void A_SkelFist (AActor *actor)
 // Detect a corpse that could be raised.
 //
 AActor* 		corpsehit;
-AActor* 		vileobj;
-fixed_t 		viletryx;
-fixed_t 		viletryy;
-int				viletryradius;
 
-bool PIT_VileCheck (AActor& thing)
+bool PIT_VileCheck (AActor& thing, AActor* /*vileobj*/, const fixed_t viletryx, const fixed_t viletryy, const int viletryradius)
 {
 	bool check;
 
@@ -2841,31 +2837,27 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 		return false;
 	}
 
-	int xl, xh;
-	int yl, yh;
-	int bx, by;
-
 	if (actor->movedir != DI_NODIR)
 	{
 		// check for corpses to raise
-		viletryx = actor->x + actor->info->speed * xspeed[actor->movedir];
-		viletryy = actor->y + actor->info->speed * yspeed[actor->movedir];
+		const fixed_t viletryx = actor->x + actor->info->speed * xspeed[actor->movedir];
+		const fixed_t viletryy = actor->y + actor->info->speed * yspeed[actor->movedir];
 
-		xl = (viletryx - bmaporgx - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		xh = (viletryx - bmaporgx + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		yl = (viletryy - bmaporgy - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		yh = (viletryy - bmaporgy + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		const int xl = (viletryx - bmaporgx - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		const int xh = (viletryx - bmaporgx + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		const int yl = (viletryy - bmaporgy - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		const int yh = (viletryy - bmaporgy + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
 
-		vileobj = actor;
-		viletryradius = radius;
-		for (bx = xl; bx <= xh; bx++)
+		auto* vileobj = actor;
+		const int viletryradius = radius;
+		for (int bx = xl; bx <= xh; bx++)
 		{
-			for (by = yl; by <= yh; by++)
+			for (int by = yl; by <= yh; by++)
 			{
 				// Call PIT_VileCheck to check
 				// whether object is a corpse
 				// that can be raised.
-				if (!P_BlockThingsIterator(bx, by, PIT_VileCheck, nullptr))
+				if (!P_BlockThingsIterator(bx, by, PIT_VileCheck, nullptr, vileobj, viletryx, viletryy, viletryradius))
 				{
 					mobjinfo_t* info;
 

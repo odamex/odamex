@@ -2894,9 +2894,7 @@ DPusher::DPusher (DPusher::EPusher type, line_t *l, int magnitude, int angle,
 // tmpusher belongs to the point source (MT_PUSH/MT_PULL).
 //
 
-DPusher *tmpusher; // pusher structure for blockmap searches
-
-bool PIT_PushThing (AActor& thing)
+bool PIT_PushThing (AActor& thing, DPusher* tmpusher)
 {
 	if (!P_IsMBFCompatMode() ?
 			thing.player && !(thing.flags & (MF_NOGRAVITY | MF_NOCLIP)) :
@@ -2988,7 +2986,6 @@ void DPusher::RunThink ()
 		// Seek out all pushable things within the force radius of this
 		// point pusher. Crosses sectors, so use blockmap.
 
-		tmpusher = this; // MT_PUSH/MT_PULL point source
 		radius = m_Radius; // where force goes to zero
 		tmbbox[BOXTOP]    = m_Y + radius;
 		tmbbox[BOXBOTTOM] = m_Y - radius;
@@ -3001,7 +2998,7 @@ void DPusher::RunThink ()
 		yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 		for (bx=xl ; bx<=xh ; bx++)
 			for (by=yl ; by<=yh ; by++)
-				P_BlockThingsIterator (bx, by, PIT_PushThing, nullptr);
+				P_BlockThingsIterator (bx, by, PIT_PushThing, nullptr, this /*MT_PUSH/MT_PULL point source*/);
 		return;
 	}
 

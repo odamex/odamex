@@ -1173,15 +1173,12 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 
 AActor *P_CheckOnmobj (AActor *thing)
 {
-	fixed_t oldz;
-	bool good;
-
-	oldz = thing->z;
+	const fixed_t oldz = thing->z;
 	P_FakeZMovement (thing);
-	good = P_TestMobjZ (thing);
+	const bool good = P_TestMobjZ (thing);
 	thing->z = oldz;
 
-	return good ? NULL : onmobj;
+	return good ? nullptr : onmobj;
 }
 
 bool P_TestMobjZ (AActor *actor)
@@ -3346,13 +3343,11 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 //  the way it was and call P_ChangeSector again
 //  to undo the changes.
 //
-int		crushchange;
-bool 	nofit;
 
 //
 // PIT_ChangeSector
 //
-bool PIT_ChangeSector (AActor& thing)
+bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 {
 	if (P_ThingHeightClip (&thing))
 	{
@@ -3436,8 +3431,7 @@ bool P_ChangeSector (sector_t *sector, int crunch)
 	if (!sector)
 		return true;
 
-	nofit = false;
-	crushchange = crunch;
+	bool nofit = false;
 
 	// [ML] co_boomsectortouch now part of co_boomphys
 	if (co_boomphys)
@@ -3463,19 +3457,17 @@ bool P_ChangeSector (sector_t *sector, int crunch)
 				{
 					n->visited	= true; 						// mark thing as processed
 					if (n->m_thing && !(n->m_thing->flags & MF_NOBLOCKMAP))	// [Blair] Add nullcheck here
-						PIT_ChangeSector(*n->m_thing); 						// for clients that aren't updated yet.
+						PIT_ChangeSector(*n->m_thing, crunch, nofit); 						// for clients that aren't updated yet.
 					break;										// exit and start over
 				}
 		while (n);	// repeat from scratch until all things left are marked valid
 	}
 	else
 	{
-		int x, y;
-
 		// re-check heights for all things near the moving sector
-		for (x=sector->blockbox[BOXLEFT] ; x<= sector->blockbox[BOXRIGHT] ; x++)
-			for (y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
-				P_BlockThingsIterator (x, y, PIT_ChangeSector, nullptr);
+		for (int x=sector->blockbox[BOXLEFT] ; x<= sector->blockbox[BOXRIGHT] ; x++)
+			for (int y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
+				P_BlockThingsIterator (x, y, PIT_ChangeSector, nullptr, crunch, nofit);
 
 	}
 
