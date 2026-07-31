@@ -303,7 +303,7 @@ class OZone
 //
 // Z_Close
 //
-void STACK_ARGS Z_Close()
+void Z_Close()
 {
 	g_zone.clear();
 }

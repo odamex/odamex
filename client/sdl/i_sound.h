@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -32,9 +32,9 @@
 void I_InitSound();
 
 // ... shut down and relase at program termination.
-void STACK_ARGS I_ShutdownSound (void);
+void I_ShutdownSound();
 
-void I_SetSfxVolume (float volume);
+void I_SetSfxVolume(float volume);
 
 //
 //	SFX I/O

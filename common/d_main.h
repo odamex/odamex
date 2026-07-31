@@ -81,7 +81,7 @@ extern OWantFiles missingfiles;
 
 extern bool capfps;
 extern float maxfps;
-void STACK_ARGS D_ClearTaskSchedulers();
+void D_ClearTaskSchedulers();
 void D_RunTics(void (*sim_func)(), void(*display_func)());
 
 void D_AddWadCommandLineFiles(OWantFiles& out);
@@ -92,4 +92,4 @@ void D_CheckInfoDumps();
 std::string D_GetTitleString();
 
 void D_Init();
-void STACK_ARGS D_Shutdown();
+void D_Shutdown();

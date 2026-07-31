@@ -58,15 +58,15 @@ extern UINT TimerPeriod;
 #endif
 
 // functions to be called at shutdown are stored in this stack
-typedef void (STACK_ARGS *term_func_t)(void);
+using term_func_t = void (*)();
 std::stack< std::pair<term_func_t, std::string> > TermFuncs;
 
-void addterm (void (STACK_ARGS *func) (), const char *name)
+void addterm (void (*func) (), const char *name)
 {
-	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
+	TermFuncs.emplace(func, name);
 }
 
-void STACK_ARGS call_terms (void)
+void call_terms()
 {
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
