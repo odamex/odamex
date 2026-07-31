@@ -115,7 +115,7 @@ void DObject::EndFrame ()
 	ToDestroy.clear();
 }
 
-void STACK_ARGS DObject::StaticShutdown ()
+void DObject::StaticShutdown ()
 {
 	Inactive = true;
 

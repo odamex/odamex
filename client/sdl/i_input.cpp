@@ -675,7 +675,7 @@ bool I_InitInput()
 //
 // I_ShutdownInput
 //
-void STACK_ARGS I_ShutdownInput()
+void I_ShutdownInput()
 {
 	input_subsystem->disableTextEntry();
 

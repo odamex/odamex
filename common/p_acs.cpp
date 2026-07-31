@@ -646,7 +646,7 @@ FBehavior::~FBehavior ()
 	}
 }
 
-int STACK_ARGS FBehavior::SortScripts (const void *a, const void *b)
+int FBehavior::SortScripts (const void *a, const void *b)
 {
 	ScriptPtr *ptr1 = (ScriptPtr *)a;
 	ScriptPtr *ptr2 = (ScriptPtr *)b;

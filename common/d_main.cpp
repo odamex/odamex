@@ -1192,7 +1192,7 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 	}
 }
 
-void STACK_ARGS D_ClearTaskSchedulers()
+void D_ClearTaskSchedulers()
 {
 	simulation_scheduler.reset();
 	display_scheduler.reset();
