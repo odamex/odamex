@@ -24,6 +24,8 @@
 #pragma once
 
 #include <stdlib.h>
+#include <vector>
+#include <stdint.h>
 
 class FArchive;
 

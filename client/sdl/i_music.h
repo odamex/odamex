@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <string>
 #include <SDL_mixer.h>
 
 #include "m_memio.h"
