@@ -712,7 +712,7 @@ void R_Init()
 //
 // R_Shutdown
 //
-void STACK_ARGS R_Shutdown()
+void R_Shutdown()
 {
     R_FreeTranslationTables();
 
@@ -871,7 +871,7 @@ void R_SetupFrame (player_t *player)
 	player_t &consolePlayer = consoleplayer();
 	const bool use_localview =
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
-	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback) 
+	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback)
 		||
 		displayplayer().isFreecam;
 

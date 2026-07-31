@@ -446,7 +446,7 @@ static bool V_DoSetResolution()
 //
 // V_Close
 //
-void STACK_ARGS V_Close()
+void V_Close()
 {
 	R_ShutdownColormaps();
 }

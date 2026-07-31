@@ -3,7 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -17,34 +16,23 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	F_FINALE
+//   Dumps a document with a list of all cvars
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
+#include <string>
 
-#include "d_event.h"
-//
-// FINALE
-//
-
-// Called by main loop.
-bool F_Responder(event_t* ev);
-
-// Called by main loop.
-void F_Ticker();
-
-// Called by main loop.
-void F_Drawer();
-
-struct finale_options_t
+// Where a generated document should be sent.
+enum infodumpdest_t
 {
-	OLumpName music;
-	OLumpName flat;
-	std::string text;
-	OLumpName pic;
+	INFODUMP_FILE,
+	INFODUMP_STDOUT,
 };
 
-void F_StartFinale(finale_options_t& options);
-void F_ShutdownFinale();
+bool EmitInfoDump(const std::string& doc, const char* basename, const char* ext,
+                  infodumpdest_t dest);
+
+bool C_WriteCvarDoc(infodumpdest_t dest);
+bool C_WriteCvarDocJSON(infodumpdest_t dest);

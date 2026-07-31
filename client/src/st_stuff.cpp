@@ -1375,7 +1375,7 @@ void ST_Init()
 	}
 }
 
-void STACK_ARGS ST_Shutdown()
+void ST_Shutdown()
 {
 	ST_unloadData();
 

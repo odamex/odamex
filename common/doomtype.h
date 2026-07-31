@@ -47,12 +47,6 @@ using byte = uint8_t;
 
 using OByteSpan = nonstd::span<byte>;
 
-#if defined(_MSC_VER) || defined(__WATCOMC__)
-	#define STACK_ARGS __cdecl
-#else
-	#define STACK_ARGS
-#endif
-
 // Predefined with some OS.
 #if !defined(UNIX) && !defined(_WIN32)
 	#include <limits.h>

@@ -3,7 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -17,34 +16,14 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	F_FINALE
+//   The cvar documentation compiled into the launcher.
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
+#include <string_view>
 
-#include "d_event.h"
-//
-// FINALE
-//
-
-// Called by main loop.
-bool F_Responder(event_t* ev);
-
-// Called by main loop.
-void F_Ticker();
-
-// Called by main loop.
-void F_Drawer();
-
-struct finale_options_t
-{
-	OLumpName music;
-	OLumpName flat;
-	std::string text;
-	OLumpName pic;
-};
-
-void F_StartFinale(finale_options_t& options);
-void F_ShutdownFinale();
+// These variables get filled in by cmake on build
+extern const std::string_view ODAMEX_CVARDOC_JSON;
+extern const std::string_view ODASRV_CVARDOC_JSON;

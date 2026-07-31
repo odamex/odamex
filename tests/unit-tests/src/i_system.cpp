@@ -125,7 +125,7 @@ void I_FinishClockCalibration ()
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void) {}
+void I_Quit() {}
 
 
 //

@@ -47,6 +47,8 @@ jobs:
       run: cmake --build ./build/
     - name: Run unit tests
       run: ./build/tests/unit-tests/odagtest --gtest_color=yes
+    - name: Check cvar documentation is up to date
+      run: cmake --build ./build/ --target cvardocs-check
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact

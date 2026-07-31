@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -68,7 +68,7 @@ void ST_Start();
 // Called by startup code.
 void ST_Init();
 
-void STACK_ARGS ST_Shutdown();
+void ST_Shutdown();
 
 namespace hud {
 

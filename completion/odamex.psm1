@@ -96,6 +96,8 @@ function New-OdamexOption {
 $script:Options = @(
     # exclusive options, i.e. can't be used with any others
     New-OdamexOption ClientAndServer "--version" -Exclusive
+    New-OdamexOption ClientAndServer "--cvardoc" -Exclusive
+    New-OdamexOption ClientAndServer "--cvardocjson" -Exclusive
     # simple flags
     New-OdamexOption Client "-nomouse"
     New-OdamexOption Client "-nosound"
