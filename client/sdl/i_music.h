@@ -50,8 +50,8 @@ typedef enum
 	MS_AUTO			= 255
 } MusicSystemType;
 
-MusicSystemType I_GetDefaultMusicSystem();
-MusicSystemType I_ResolveMusicSystem(int musicsystem_type);
+constexpr MusicSystemType I_GetDefaultMusicSystem();
+constexpr MusicSystemType I_ResolveMusicSystem(int musicsystem_type);
 
 bool S_MusicIsMus(byte* data, size_t length);
 bool S_MusicIsMidi(byte* data, size_t length);
@@ -67,7 +67,7 @@ EXTERN_CVAR(snd_musicsystem)
 // [ML] Keep track of the currently loaded music lump name
 extern std::string currentmusic;
 
-void I_InitMusic(MusicSystemType musicsystem_type = I_ResolveMusicSystem(snd_musicsystem.asInt()));
+void I_InitMusic(const MusicSystemType musicsystem_type = I_ResolveMusicSystem(snd_musicsystem.asInt()));
 void I_ShutdownMusic();
 // Volume.
 void I_SetMusicVolume (float volume);

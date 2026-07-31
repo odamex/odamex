@@ -185,7 +185,7 @@ void I_SetMusicVolume (float volume)
 // The music system to use when the user has expressed no preference, which
 // depends on what the platform does best.
 //
-MusicSystemType I_GetDefaultMusicSystem()
+constexpr MusicSystemType I_GetDefaultMusicSystem()
 {
 #ifdef _WIN32
 	return MS_PORTMIDI;
@@ -204,7 +204,7 @@ MusicSystemType I_GetDefaultMusicSystem()
 // Turns whatever snd_musicsystem holds into a music system we can actually
 // start.
 //
-MusicSystemType I_ResolveMusicSystem(int musicsystem_type)
+constexpr MusicSystemType I_ResolveMusicSystem(int musicsystem_type)
 {
 	if (musicsystem_type == MS_AUTO)
 		return I_GetDefaultMusicSystem();
