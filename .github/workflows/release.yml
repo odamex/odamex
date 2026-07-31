@@ -275,7 +275,9 @@ jobs:
         for f in \
           "${DEPS_PREFIX}/bin/wx-config" \
           "${DEPS_PREFIX}/lib/libpcre2-32.a" \
-          "${DEPS_PREFIX}/lib/libzstd.a"
+          "${DEPS_PREFIX}/lib/libzstd.a" \
+          "${DEPS_PREFIX}/licenses/LICENSE.SDL2.txt" \
+          "${DEPS_PREFIX}/licenses/COPYING.SDL2_mixer.txt"
         do
           if [ ! -f "$f" ]; then
             missing=1
@@ -288,6 +290,31 @@ jobs:
         mkdir -p "${DEPS_PREFIX}"
 
         brew install ninja cmake pkg-config python
+
+        mkdir -p "${DEPS_PREFIX}/licenses"
+
+        cp "libraries/sdl/LICENSE.txt" "${DEPS_PREFIX}/licenses/LICENSE.SDL2.txt"
+        cp "libraries/sdl_mixer/LICENSE.txt" "${DEPS_PREFIX}/licenses/COPYING.SDL2_mixer.txt"
+
+        copy_license_glob() {
+          local base="$1"
+          local dest="$2"
+          if [ -e "${DEPS_PREFIX}/licenses/${dest}" ]; then
+            return 0
+          fi
+          local found
+          found=$(find "${base}" -maxdepth 3 -type f \( -iname "LICENSE*" -o -iname "COPYING*" \) | head -n 1 || true)
+          if [ -n "${found}" ]; then
+            cp "${found}" "${DEPS_PREFIX}/licenses/${dest}"
+          fi
+        }
+        copy_license_glob "libraries/sdl_mixer/external" "LICENSE.gme.txt"
+        copy_license_glob "libraries/sdl_mixer/external/ogg" "LICENSE.ogg-vorbis.txt"
+        copy_license_glob "libraries/sdl_mixer/external/vorbis" "LICENSE.ogg-vorbis.txt"
+        copy_license_glob "libraries/sdl_mixer/external/opus" "LICENSE.opus.txt"
+        copy_license_glob "libraries/sdl_mixer/external/opusfile" "LICENSE.opusfile.txt"
+        copy_license_glob "libraries/sdl_mixer/external/wavpack" "LICENSE.wavpack.txt"
+        copy_license_glob "libraries/sdl_mixer/external/xmp" "LICENSE.xmp.txt"
 
         curl -L -o pcre2.tar.bz2 \
           "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${{ env.pcre2_version }}/pcre2-${{ env.pcre2_version }}.tar.bz2"
