@@ -176,6 +176,9 @@ git_branch(HEAD GIT_BRANCH)
 string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
+# Cvar documentation
+include(OdamexCvarDoc)
+
 # Libraries
 add_subdirectory(libraries)
 
@@ -209,6 +212,9 @@ endif()
 if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_LAUNCHER)
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
+
+# The "cvardocs" target refreshes the committed documentation on demand.
+odamex_cvardoc_add_targets()
 
 # WAD building
 add_subdirectory(wad)

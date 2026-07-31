@@ -26,6 +26,7 @@
 #include "odamex.h"
 
 
+#include <array>
 #include <sstream>
 #include <algorithm>
 
@@ -48,6 +49,7 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "c_console.h"
+#include "c_doc.h"
 #include "i_system.h"
 #include "i_time.h"
 #include "g_game.h"
@@ -1050,6 +1052,108 @@ void D_AddDehCommandLineFiles(OWantFiles& out)
 {
 	AddCommandLineOptionFiles(out, "-bex", OFILE_DEH);
 	AddCommandLineOptionFiles(out, "-deh", OFILE_DEH);
+}
+
+// ============================================================================
+//
+// Command line information dumps
+//
+// These are informational command line switches that simply dump
+// information and exit before initializing any subsystems.
+// These are allowed to run as root since they exit right after.
+//
+// ============================================================================
+
+// Name the version document after the app, so a client and a server writing
+// into the same directory do not clobber each other.
+#ifdef CLIENT_APP
+constexpr const char* VERSION_BASENAME = "odamex-version";
+#elif defined(SERVER_APP)
+constexpr const char* VERSION_BASENAME = "odasrv-version";
+#elif defined(TEST_APP)
+constexpr const char* VERSION_BASENAME = "odagtest-version";
+#endif
+
+bool C_WriteVersion(infodumpdest_t dest)
+{
+	return EmitInfoDump(fmt::format("Odamex {}\n", NiceVersion()), VERSION_BASENAME,
+	                    ".txt", dest);
+}
+
+namespace
+{
+
+infodumpdest_t D_InfoDumpDest()
+{
+#ifdef _WIN32
+	return INFODUMP_FILE;
+#else
+	return INFODUMP_STDOUT;
+#endif
+}
+
+//
+// --version
+//
+bool D_DumpVersion()
+{
+	return C_WriteVersion(D_InfoDumpDest());
+}
+
+//
+// --cvardoc
+//
+bool D_DumpCvarDoc()
+{
+	return C_WriteCvarDoc(D_InfoDumpDest());
+}
+
+//
+// --cvardocjson
+//
+bool D_DumpCvarDocJSON()
+{
+	return C_WriteCvarDocJSON(D_InfoDumpDest());
+}
+
+struct infodump_t
+{
+	const char* param;  // the switch, including its leading dashes
+	bool (*handler)();  // writes the information out, false if it could not
+};
+
+const std::array InfoDumps = {
+    infodump_t{"--version", D_DumpVersion},
+    infodump_t{"--cvardoc", D_DumpCvarDoc},
+    infodump_t{"--cvardocjson", D_DumpCvarDocJSON},
+};
+
+} // namespace
+
+//
+// D_CheckInfoDumps
+//
+// Checks for every information dump named on the command line, then quits if any of
+// them ran.
+//
+void D_CheckInfoDumps()
+{
+	bool dumped = false;
+	bool ok = true;
+
+	for (const infodump_t& dump : InfoDumps)
+	{
+		if (Args.CheckParm(dump.param))
+		{
+			if (!dump.handler())
+				ok = false;
+
+			dumped = true;
+		}
+	}
+
+	if (dumped)
+		exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 

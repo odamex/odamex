@@ -58,11 +58,9 @@ bool Application::OnInit()
 	InitXmlResource();
 
 	// Load the cvar documentation database (best-effort; the launcher runs
-	// fine without it). The client and server docs are merged into the
-	// deduplicated union of every cvar Odamex knows about; either may be
-	// absent.
-	GetCvarDb().LoadFromFiles(
-	    {OdaResolveCvarDocPath(), OdaResolveSrvCvarDocPath()});
+	// fine without it). The client and server docs are compiled in and merged
+	// into the deduplicated union of every cvar Odamex knows about.
+	GetCvarDb().LoadEmbedded();
 
 	// create main window, get size dimensions and show it
 	MAIN_DIALOG = new dlgMain(nullptr);
