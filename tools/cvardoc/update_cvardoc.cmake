@@ -73,8 +73,22 @@ endif()
 
 if(CHECK)
   message(FATAL_ERROR
-    "cvardoc: ${OUTPUT} is out of date.  Build the cvardocs target and commit "
-    "the result.")
+    "cvardoc: ${OUTPUT} is out of date.\n"
+    "\n"
+    "  If this only fails on some platforms, the cause is probably a cvar whose "
+    "default, range, help text or the cvar itself is decided at compile time"
+    "rather than written as a literal.\n"
+    "\n"
+    "  There is one committed cvardocjson for client/server for every platform, so "
+    "anything that varies between builds cannot live in a cvar's declared "
+    "parameters -- it will pass on the machine that generated the document and "
+    "fail everywhere else.\n"
+    "\n"
+    "  Give the cvar a fixed literal instead and apply the platform-specific "
+    "part at runtime in its CVAR_FUNC_IMPL callback, which runs once for every "
+    "cvar at startup. No-op on non-target platforms if needed.\n"
+    "\n"
+    "If the above doesn't apply, build the cvardocs target and commit the result.")
 endif()
 
 file(WRITE "${OUTPUT}" "${FRESH}")
