@@ -1101,7 +1101,7 @@ bool D_DumpVersion()
 }
 
 //
-// -cvardoc
+// --cvardoc
 //
 bool D_DumpCvarDoc()
 {
@@ -1109,7 +1109,7 @@ bool D_DumpCvarDoc()
 }
 
 //
-// -cvardocjson
+// --cvardocjson
 //
 bool D_DumpCvarDocJSON()
 {
@@ -1124,8 +1124,8 @@ struct infodump_t
 
 const std::array InfoDumps = {
     infodump_t{"--version", D_DumpVersion},
-    infodump_t{"-cvardoc", D_DumpCvarDoc},
-    infodump_t{"-cvardocjson", D_DumpCvarDocJSON},
+    infodump_t{"--cvardoc", D_DumpCvarDoc},
+    infodump_t{"--cvardocjson", D_DumpCvarDocJSON},
 };
 
 } // namespace
