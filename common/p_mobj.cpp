@@ -2942,7 +2942,7 @@ void P_ResolveStackLinks()
 //
 bool P_IsPlayerSpawnThing(const mapthing2_t& mt)
 {
-	if (mt.type == 1 || mt.type == 2 || mt.type == 3 || mt.type == 4 || mt.type == 11 || (mt.type >= 4001 && mt.type <= 4001 + MAXPLAYERSTARTS - 4))  // player1-4, DM
+	if (VANILLA_COOP_PLAYER_STARTS.contains(mt.type) || mt.type == 11 || EXTRA_COOP_PLAYER_STARTS.contains(mt.type))  // player1-4, DM
 	{
 		return true;
 	}
@@ -3061,8 +3061,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// check for players specially
-	if ((mthing.type <= 4 && mthing.type > 0)
-		|| (mthing.type >= 4001 && mthing.type <= 4001 + MAXPLAYERSTARTS - 4))
+	if (VANILLA_COOP_PLAYER_STARTS.contains(mthing.type) || EXTRA_COOP_PLAYER_STARTS.contains(mthing.type))
 	{
 		// [RH] Only spawn spots that match position.
 		if (mthing.args[0] != position)
