@@ -128,7 +128,7 @@ void M_LogWDLEvent(
 	int arg0, int arg1, int arg2, int arg3
 );
 void M_LogActorWDLEvent(
-	WDLEvents eventtype, AActor* activator, AActor* target,
+	WDLEvents eventtype, const AActor* activator, const AActor* target,
 	int arg0, int arg1, int arg2, int arg3
 );
 int M_GetPlayerId(const player_t& player, team_t team);
