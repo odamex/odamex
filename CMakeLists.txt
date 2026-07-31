@@ -23,6 +23,8 @@ project(Odamex VERSION 13.0.0)
 include(CMakeDependentOption)
 
 if (APPLE)
+    # If built as a subproject on Mac, SDL requires that the parent project enable OBJC and OBJCXX
+    # so that it can build its Objective-C modules.
     enable_language(OBJC OBJCXX)
 endif()
 
