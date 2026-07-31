@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-#if defined(__linux__) && defined(SDL20)
+#if !defined(__APPLE__) && !defined(_WIN32) && defined(SDL20)
 		// despite the name, this also sets wayland app id
 		SDL_setenv("SDL_VIDEO_X11_WMCLASS", "net.odamex.Odamex.Client", false);
 #endif
