@@ -133,8 +133,6 @@ void I_Quit() {}
 //
 bool gameisdead;
 
-#define MAX_ERRORTEXT	1024
-
 void I_BaseError(const std::string& errortext)
 {
 	throw CRecoverableError(errortext);
