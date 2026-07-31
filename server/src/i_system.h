@@ -87,7 +87,7 @@ template <typename... ARGS>
 	I_BaseFatalError(fmt::format(format, std::forward<ARGS>(args)...));
 }
 
-void addterm (void (*func)(void), const char *name);
+void addterm (void (*func)(), const char *name);
 #define atterm(t) addterm (t, #t)
 
 bool I_ConsoleUseColor();

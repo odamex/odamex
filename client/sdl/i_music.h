@@ -58,7 +58,7 @@ EXTERN_CVAR(snd_musicsystem)
 extern std::string currentmusic;
 
 void I_InitMusic(MusicSystemType musicsystem_type = (MusicSystemType)snd_musicsystem.asInt());
-void I_ShutdownMusic(void);
+void I_ShutdownMusic();
 // Volume.
 void I_SetMusicVolume (float volume);
 // PAUSE game handling.

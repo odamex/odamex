@@ -562,7 +562,7 @@ void I_InitSound()
 		channel_in_use[i] = false;
 }
 
-void I_ShutdownSound (void)
+void I_ShutdownSound ()
 {
 	if (!sound_initialized)
 		return;
