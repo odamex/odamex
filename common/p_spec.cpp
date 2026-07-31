@@ -198,14 +198,13 @@ int P_ArgToCrush(byte arg)
  */
 int P_IsUnderDamage(const AActor* actor)
 {
-	const struct msecnode_s* seclist;
-	const DCeiling* cr; // Crushing ceiling
 	int dir = 0;
-	for (seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
+	for (const msecnode_t* seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
 	{
-		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) && cr->m_Status == 2) // Down
+		const DSectorEffect* cr = seclist->m_sector->ceilingdata; // Crushing ceiling
+		if (cr && cr->IsKindOf(RUNTIME_CLASS(DCeiling)) && static_cast<const DCeiling*>(cr)->m_Status == 2) // Down
 		{
-			cr->m_Crush > NO_CRUSH ? dir = 1 : dir = 0;
+			static_cast<const DCeiling*>(cr)->m_Crush > NO_CRUSH ? dir = 1 : dir = 0;
 		}
 	}
 	return dir;
