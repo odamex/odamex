@@ -187,7 +187,7 @@ void I_SetMusicVolume (float volume)
 //
 MusicSystemType I_GetDefaultMusicSystem()
 {
-#if defined _WIN32
+#ifdef _WIN32
 	return MS_PORTMIDI;
 #elif defined OSX
 	return MS_AUDIOUNIT;
@@ -252,7 +252,7 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 	current_musicsystem_type = musicsystem_type;
 }
 
-void STACK_ARGS I_ShutdownMusic(void)
+void I_ShutdownMusic()
 {
 	if (musicsystem)
 	{

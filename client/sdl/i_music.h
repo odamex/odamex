@@ -22,8 +22,13 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <string>
 #include <SDL_mixer.h>
 
+#include "c_cvars.h"
+#include "doomtype.h"
 #include "m_memio.h"
 
 struct MusicHandler_t
@@ -63,7 +68,7 @@ EXTERN_CVAR(snd_musicsystem)
 extern std::string currentmusic;
 
 void I_InitMusic(MusicSystemType musicsystem_type = I_ResolveMusicSystem(snd_musicsystem.asInt()));
-void STACK_ARGS I_ShutdownMusic(void);
+void I_ShutdownMusic();
 // Volume.
 void I_SetMusicVolume (float volume);
 // PAUSE game handling.
