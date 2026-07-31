@@ -1,3 +1,4 @@
+include(OdamexCvarDoc)
 include(OdamexTargetSettings)
 
 # use unquoted #defines

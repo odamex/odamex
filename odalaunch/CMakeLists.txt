@@ -1,4 +1,5 @@
 include(OdalaunchCopyLibs)
+include(OdamexCvarDoc)
 include(OdamexTargetSettings)
 
 # API
@@ -41,13 +42,6 @@ else()
   endif()
 endif()
 
-# Cvar documentation
-# The "cvardocs" target generates the CVARDOC_SOURCE from the CVARDOC_JSON.
-set(CVARDOC_JSON
-  "${CMAKE_CURRENT_SOURCE_DIR}/res/odamex_cvardoc.json"
-  "${CMAKE_CURRENT_SOURCE_DIR}/res/odasrv_cvardoc.json")
-set(CVARDOC_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/cvardoc_data.cpp")
-
 # Odalaunch target
 if(wxWidgets_FOUND)
   file(MAKE_DIRECTORY "${XRCRES_BINARY_DIR}")
@@ -60,18 +54,8 @@ if(wxWidgets_FOUND)
     "${XRCRES_DIR}/icons.xrc" "${XRCRES_DIR}/xrc_resource.xrc"
     VERBATIM)
 
-  set(CVARDOC_EMBED_SCRIPT "${CMAKE_SOURCE_DIR}/tools/cvardoc/embed_cvardoc.cmake")
-
-  add_custom_command(
-    OUTPUT "${CVARDOC_SOURCE}"
-    DEPENDS ${CVARDOC_JSON} "${CVARDOC_EMBED_SCRIPT}"
-    COMMAND "${CMAKE_COMMAND}"
-    -D "CLIENT_JSON=${CMAKE_CURRENT_SOURCE_DIR}/res/odamex_cvardoc.json"
-    -D "SERVER_JSON=${CMAKE_CURRENT_SOURCE_DIR}/res/odasrv_cvardoc.json"
-    -D "OUTPUT=${CVARDOC_SOURCE}"
-    -P "${CVARDOC_EMBED_SCRIPT}"
-    COMMENT "Embedding cvar documentation"
-    VERBATIM)
+  # Compiles the committed cvar documentation into the launcher.
+  odamex_cvardoc_source(CVARDOC_SOURCE)
 
   add_executable(odalaunch MACOSX_BUNDLE WIN32
     ${API_SOURCES} ${API_HEADERS}
