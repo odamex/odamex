@@ -36,14 +36,14 @@
 #include "version.h"
 
 #ifdef CLIENT_APP
-#define CS_STRING "Odamex Client"
-#define CVARDOC_BASENAME "odamex_cvardoc"
+constexpr const char* CS_STRING = "Odamex Client";
+constexpr const char* CVARDOC_BASENAME = "odamex_cvardoc";
 #elif defined(SERVER_APP)
-#define CS_STRING "Odamex Server"
-#define CVARDOC_BASENAME "odasrv_cvardoc"
+constexpr const char* CS_STRING = "Odamex Server";
+constexpr const char* CVARDOC_BASENAME = "odasrv_cvardoc";
 #elif defined(TEST_APP)
-#define CS_STRING "Odamex Unit Tests"
-#define CVARDOC_BASENAME "odagtest_cvardoc"
+constexpr const char* CS_STRING = "Odamex Unit Tests";
+constexpr const char* CVARDOC_BASENAME = "odagtest_cvardoc";
 #endif
 
 // A view to a list of Cvars.
@@ -336,12 +336,16 @@ static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
 	out["flags"] = flags;
 }
 
+namespace
+{
+
 /**
  * @brief Render the cvar documentation as a complete HTML document.
  */
-static std::string BuildCvarDocHTML()
+std::string BuildCvarDocHTML()
 {
-	std::string doc, buffer;
+	std::string doc;
+	std::string buffer;
 
 	// First the header.
 	std::string title;
@@ -353,7 +357,7 @@ static std::string BuildCvarDocHTML()
 	const char* PREAMBLE =
 	    "<h2>%s</h2>"
 	    "<p>"
-	    "These are the console variables known to the " CS_STRING " as of revision %s."
+	    "These are the console variables known to the %s as of revision %s."
 	    "</p><p>"
 	    "In order to understand some of the documentation below, it's important to get "
 	    "some definitions out of the way first.  A Boolean is a true/false value, a Byte "
@@ -361,7 +365,7 @@ static std::string BuildCvarDocHTML()
 	    "number with a decimal point in it, like 3.14."
 	    "</p>";
 
-	doc += fmt::sprintf(PREAMBLE, title, NiceVersion());
+	doc += fmt::sprintf(PREAMBLE, title, CS_STRING, NiceVersion());
 
 	// Initial tag for cvars.
 	doc += "<dl>";
@@ -387,7 +391,7 @@ static std::string BuildCvarDocHTML()
 /**
  * @brief Render the cvar documentation as a complete JSON document.
  */
-static std::string BuildCvarDocJSON()
+std::string BuildCvarDocJSON()
 {
 	Json::Value root(Json::objectValue);
 	root["schema_version"] = 1;
@@ -410,6 +414,8 @@ static std::string BuildCvarDocJSON()
 	Json::StyledWriter writer;
 	return writer.write(root);
 }
+
+} // namespace
 
 /**
  * @brief Emit a generated document.
@@ -443,7 +449,7 @@ bool EmitInfoDump(const std::string& doc, const char* basename, const char* ext,
 
 
 	FILE* fh = fopen(path.c_str(), "wt+");
-	if (fh == NULL)
+	if (fh == nullptr)
 	{
 		PrintFmt("error: Could not open \"{}\" for writing.\n", path);
 		return false;

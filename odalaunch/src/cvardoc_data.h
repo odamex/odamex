@@ -22,10 +22,8 @@
 
 #pragma once
 
-#include <cstddef>
+#include <string_view>
 
 // These variables get filled in by cmake on build
-extern const char ODAMEX_CVARDOC_JSON[];
-extern const size_t ODAMEX_CVARDOC_JSON_LEN;
-extern const char ODASRV_CVARDOC_JSON[];
-extern const size_t ODASRV_CVARDOC_JSON_LEN;
+extern const std::string_view ODAMEX_CVARDOC_JSON;
+extern const std::string_view ODASRV_CVARDOC_JSON;

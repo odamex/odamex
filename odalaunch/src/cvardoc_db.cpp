@@ -84,17 +84,17 @@ bool CvarDocDb::LoadEmbedded()
 	m_BranchName.clear();
 
 	bool AnyLoaded = false;
-	if (ParseDocument(ODAMEX_CVARDOC_JSON, ODAMEX_CVARDOC_JSON_LEN))
+	if (ParseDocument(ODAMEX_CVARDOC_JSON))
 		AnyLoaded = true;
-	if (ParseDocument(ODASRV_CVARDOC_JSON, ODASRV_CVARDOC_JSON_LEN))
+	if (ParseDocument(ODASRV_CVARDOC_JSON))
 		AnyLoaded = true;
 
 	return AnyLoaded;
 }
 
-bool CvarDocDb::ParseDocument(const char* Data, size_t Length)
+bool CvarDocDb::ParseDocument(std::string_view Doc)
 {
-	if (Data == NULL || Length == 0)
+	if (Doc.empty())
 		return false;
 
 	Json::CharReaderBuilder builder;
@@ -102,7 +102,7 @@ bool CvarDocDb::ParseDocument(const char* Data, size_t Length)
 
 	Json::Value root;
 	std::string errors;
-	if (!reader->parse(Data, Data + Length, &root, &errors))
+	if (!reader->parse(Doc.data(), Doc.data() + Doc.size(), &root, &errors))
 	{
 		wxLogDebug("cvardoc: JSON parse error: %s", errors.c_str());
 		return false;

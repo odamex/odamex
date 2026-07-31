@@ -26,6 +26,7 @@
 #include "odamex.h"
 
 
+#include <array>
 #include <sstream>
 #include <algorithm>
 
@@ -1065,16 +1066,24 @@ void D_AddDehCommandLineFiles(OWantFiles& out)
 
 // Name the version document after the app, so a client and a server writing
 // into the same directory do not clobber each other.
-#if defined(CLIENT_APP)
-#define VERSION_BASENAME "odamex-version"
+#ifdef CLIENT_APP
+constexpr const char* VERSION_BASENAME = "odamex-version";
 #elif defined(SERVER_APP)
-#define VERSION_BASENAME "odasrv-version"
+constexpr const char* VERSION_BASENAME = "odasrv-version";
 #elif defined(TEST_APP)
-#define VERSION_BASENAME "odagtest-version"
+constexpr const char* VERSION_BASENAME = "odagtest-version";
 #endif
 
+bool C_WriteVersion(infodumpdest_t dest)
+{
+	return EmitInfoDump(fmt::format("Odamex {}\n", NiceVersion()), VERSION_BASENAME,
+	                    ".txt", dest);
+}
 
-static infodumpdest_t D_InfoDumpDest()
+namespace
+{
+
+infodumpdest_t D_InfoDumpDest()
 {
 #ifdef _WIN32
 	return INFODUMP_FILE;
@@ -1083,16 +1092,10 @@ static infodumpdest_t D_InfoDumpDest()
 #endif
 }
 
-bool C_WriteVersion(infodumpdest_t dest)
-{
-	return EmitInfoDump(fmt::format("Odamex {}\n", NiceVersion()), VERSION_BASENAME,
-	                    ".txt", dest);
-}
-
 //
 // --version
 //
-static bool D_DumpVersion()
+bool D_DumpVersion()
 {
 	return C_WriteVersion(D_InfoDumpDest());
 }
@@ -1100,7 +1103,7 @@ static bool D_DumpVersion()
 //
 // -cvardoc
 //
-static bool D_DumpCvarDoc()
+bool D_DumpCvarDoc()
 {
 	return C_WriteCvarDoc(D_InfoDumpDest());
 }
@@ -1108,7 +1111,7 @@ static bool D_DumpCvarDoc()
 //
 // -cvardocjson
 //
-static bool D_DumpCvarDocJSON()
+bool D_DumpCvarDocJSON()
 {
 	return C_WriteCvarDocJSON(D_InfoDumpDest());
 }
@@ -1119,11 +1122,13 @@ struct infodump_t
 	bool (*handler)();  // writes the information out, false if it could not
 };
 
-static const infodump_t InfoDumps[] = {
-    {"--version", D_DumpVersion},
-    {"-cvardoc", D_DumpCvarDoc},
-    {"-cvardocjson", D_DumpCvarDocJSON},
+const std::array InfoDumps = {
+    infodump_t{"--version", D_DumpVersion},
+    infodump_t{"-cvardoc", D_DumpCvarDoc},
+    infodump_t{"-cvardocjson", D_DumpCvarDocJSON},
 };
+
+} // namespace
 
 //
 // D_CheckInfoDumps

@@ -23,6 +23,7 @@
 #include "odalaunch.h"
 
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -88,7 +89,7 @@ public:
 	const wxString& BranchName() const { return m_BranchName; }
 
 private:
-	bool ParseDocument(const char* Data, size_t Length);
+	bool ParseDocument(std::string_view Doc);
 
 	std::unordered_map<std::string, CvarDoc_t> m_Cvars;
 
