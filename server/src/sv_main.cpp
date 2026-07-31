@@ -425,7 +425,7 @@ BEGIN_COMMAND (say)
 }
 END_COMMAND (say)
 
-void STACK_ARGS call_terms (void);
+void call_terms();
 
 void SV_QuitCommand()
 {

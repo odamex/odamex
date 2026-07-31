@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //		Default Config File.
-//    
+//
 //-----------------------------------------------------------------------------
 
 
@@ -26,7 +26,7 @@
 
 void M_LoadDefaults(void);
 
-void STACK_ARGS M_SaveDefaults(std::string filename = "");
+void M_SaveDefaults(std::string filename = "");
 
 std::string M_GetConfigPath(void);
 std::string M_ExpandTokens(const std::string &str);

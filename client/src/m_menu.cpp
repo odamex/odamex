@@ -1251,7 +1251,7 @@ void M_EndGame(int choice)
 // M_QuitDOOM
 //
 
-void STACK_ARGS call_terms();
+void call_terms();
 
 void M_QuitResponse(int ch)
 {
