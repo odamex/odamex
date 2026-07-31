@@ -2894,18 +2894,16 @@ DPusher::DPusher (DPusher::EPusher type, line_t *l, int magnitude, int angle,
 // tmpusher belongs to the point source (MT_PUSH/MT_PULL).
 //
 
-DPusher *tmpusher; // pusher structure for blockmap searches
-
-bool PIT_PushThing (AActor *thing)
+bool PIT_PushThing (AActor& thing, DPusher* tmpusher)
 {
 	if (!P_IsMBFCompatMode() ?
-			thing->player && !(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) :
-			(sentient(thing) || thing->flags & MF_SHOOTABLE) &&
-			!(thing->flags & MF_NOCLIP))
+			thing.player && !(thing.flags & (MF_NOGRAVITY | MF_NOCLIP)) :
+			(sentient(&thing) || thing.flags & MF_SHOOTABLE) &&
+			!(thing.flags & MF_NOCLIP))
 	{
 		int sx = tmpusher->m_X;
 		int sy = tmpusher->m_Y;
-		int dist = P_AproxDistance (thing->x - sx,thing->y - sy);
+		const int dist = P_AproxDistance (thing.x - sx,thing.y - sy);
 		int speed = (tmpusher->m_Magnitude -
 					((dist>>FRACBITS)>>1))<<(FRACBITS-PUSH_FACTOR-1);
 
@@ -2919,22 +2917,22 @@ bool PIT_PushThing (AActor *thing)
 
 		if (speed > 0 && P_IsMBFCompatMode())
 		{
-			int x = (thing->x - sx) >> FRACBITS;
-			int y = (thing->y - sy) >> FRACBITS;
+			const int x = (thing.x - sx) >> FRACBITS;
+			const int y = (thing.y - sy) >> FRACBITS;
 			speed = (int)(((uint64_t)tmpusher->m_Magnitude << 23) / (x * x + y * y + 1));
 		}
 
 		// If speed <= 0, you're outside the effective radius. You also have
 		// to be able to see the push/pull source point.
 
-		if (speed > 0 && P_CheckSight(thing, tmpusher->m_Source))
+		if (speed > 0 && P_CheckSight(&thing, tmpusher->m_Source))
 		{
-			angle_t pushangle = P_PointToAngle (thing->x, thing->y, sx, sy);
+			angle_t pushangle = P_PointToAngle (thing.x, thing.y, sx, sy);
 			if (tmpusher->m_Source->type == MT_PUSH)
 				pushangle += ANG180;    // away
 			pushangle >>= ANGLETOFINESHIFT;
-			thing->momx += FixedMul (speed, finecosine[pushangle]);
-			thing->momy += FixedMul (speed, finesine[pushangle]);
+			thing.momx += FixedMul (speed, finecosine[pushangle]);
+			thing.momy += FixedMul (speed, finesine[pushangle]);
 		}
 	}
 	return true;
@@ -2988,7 +2986,6 @@ void DPusher::RunThink ()
 		// Seek out all pushable things within the force radius of this
 		// point pusher. Crosses sectors, so use blockmap.
 
-		tmpusher = this; // MT_PUSH/MT_PULL point source
 		radius = m_Radius; // where force goes to zero
 		tmbbox[BOXTOP]    = m_Y + radius;
 		tmbbox[BOXBOTTOM] = m_Y - radius;
@@ -3001,7 +2998,7 @@ void DPusher::RunThink ()
 		yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 		for (bx=xl ; bx<=xh ; bx++)
 			for (by=yl ; by<=yh ; by++)
-				P_BlockThingsIterator (bx, by, PIT_PushThing);
+				P_BlockThingsIterator (bx, by, PIT_PushThing, nullptr, this /*MT_PUSH/MT_PULL point source*/);
 		return;
 	}
 

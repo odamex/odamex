@@ -340,7 +340,7 @@ protected:
 	int m_Y         = 0;          // Y of point source if point pusher
 	int m_Affectee  = 0;          // Number of affected sector
 
-	friend bool PIT_PushThing (AActor *thing);
+	friend bool PIT_PushThing (AActor& thing, DPusher* tmpusher);
 };
 
 inline FArchive &operator<< (FArchive &arc, DPusher::EPusher type)
