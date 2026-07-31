@@ -86,6 +86,6 @@ template <typename T>
 using exclusive_range = range<T, clusivity_t::exclusive>;
 
 template <typename T>
-using inclusive_range = range<T, clusivity_t::exclusive>;
+using inclusive_range = range<T, clusivity_t::inclusive>;
 
 } // namespace OUtil
