@@ -1,4 +1,5 @@
 include(OdamexTargetSettings)
+include(CreateDebugSymbolFile)
 
 # use unquoted #defines
 if(COMMAND cmake_policy)
@@ -40,6 +41,8 @@ add_executable(odasrv
   ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
 odamex_target_settings(odasrv)
 odamex_target_errors(odasrv)
+
+create_debug_symbol_file(TARGET odasrv)
 
 target_include_directories(odasrv PRIVATE src)
 if(WIN32)

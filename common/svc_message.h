@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include "odamex.h"
+
 #include "server.pb.h"
 
 #include "r_state.h"

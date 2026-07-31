@@ -30,60 +30,10 @@ modules:
       - type: archive
         url: https://www.libsdl.org/projects/old/SDL_mixer/timidity/timidity.tar.gz
         sha256: ee7c59bb5d5fae206d53eef0e82b5ed739e7cbf69252a3754024f8f52ebe77aa
-  - name: SDL2-mixer
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -D SDL2MIXER_VENDORED=ON
-      - -D SDL2MIXER_DEPS_SHARED=OFF
-      - -D SDL2MIXER_SAMPLES=OFF
-      - -D CMAKE_INSTALL_LIBDIR=lib
-    sources:
-      - type: git
-        url: https://github.com/libsdl-org/SDL_mixer.git
-        tag: release-2.8.2
-        commit: b208916aed9250fe434360e6c6a95f0697bb7b01
-  # cpptrace dependencies
-  - name: libdwarf
-    buildsystem: cmake-ninja
-    config-opts:
-      - -D BUILD_DWARFDUMP=OFF
-    sources:
-      - type: git
-        url: https://github.com/jeremy-rifkin/libdwarf-lite.git
-        tag: v2.3.1
-        commit: d06f37ed6660b324e458387d43efde3d84c9dd55
-  # Odalaunch dependencies
-  - name: WxWidgets
-    buildsystem: cmake-ninja
-    config-opts:
-      - -D wxBUILD_SHARED=ON
-      - -D wxBUILD_TESTS=OFF
-      - -D wxBUILD_SAMPLES=OFF
-      - -D wxBUILD_DEMOS=OFF
-      - -D wxBUILD_TOOLKIT=gtk3
-      - -D wxUSE_SYS_LIBS=sys
-    cleanup:
-      - "/lib/wx"
-      - "/share/aclocal"
-      - "/share/bakefile"
-      - "/lib/libwx_gtk3u_adv-3.3*"
-      - "/lib/libwx_gtk3u_aui-3.3*"
-      - "/lib/libwx_gtk3u_gl-3.3*"
-      - "/lib/libwx_gtk3u_media-3.3*"
-      - "/lib/libwx_gtk3u_propgrid-3.3*"
-      - "/lib/libwx_gtk3u_qa-3.3*"
-      - "/lib/libwx_gtk3u_ribbon-3.3*"
-      - "/lib/libwx_gtk3u_richtext-3.3*"
-      - "/lib/libwx_gtk3u_stc-3.3*"
-    sources:
-      - type: git
-        url: https://github.com/wxWidgets/wxWidgets.git
-        tag: v3.3.3
-        commit: 670835aec7e54b9e9d5a50d6a1aea1e8ba0bcdb2
   # Odamex (combined)
   - name: Odamex
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -D CMAKE_BUILD_TYPE=RelWithDebInfo
       - -D BUILD_OR_FAIL=1
@@ -92,14 +42,15 @@ modules:
       - -D BUILD_LAUNCHER=1
       - -D BUILD_TESTS=0
       - -D BUILD_MASTER=0
-      - -D BUILD_TESTS=0
       - -D USE_INTERNAL_LIBS=0
+      - -D USE_INTERNAL_CURL=1
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
       - -D ODAMEX_INSTALL_DATADIR=/run/host/usr/share
       - -D USE_EXTERNAL_LIBDWARF=1
       - -D ODAMEX_NO_GITVER=0
     post-install:
-      - ./flatpak-post-install.sh
+      # We're in a build subdir due to builddir: true, so step back out of it.
+      - cd $FLATPAK_BUILDER_BUILDDIR && chmod +x ./flatpak-post-install.sh && "./flatpak-post-install.sh"
       # delete files that cleanup can't see
       - rm -rf /app/bin/wx*
       - rm -rf /app/lib/cmake

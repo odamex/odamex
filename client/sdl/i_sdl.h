@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include "odamex.h"
+
 #include <SDL.h>
 
 #if (SDL_MAJOR_VERSION == 3)

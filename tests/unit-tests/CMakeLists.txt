@@ -28,7 +28,7 @@ add_executable(odagtest
 target_include_directories(odagtest PRIVATE "${CMAKE_SOURCE_DIR}/client/src")
 
 target_link_libraries(odagtest GTest::gtest_main)
-target_link_libraries(odagtest fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo curl_interface cpptrace::cpptrace)
+target_link_libraries(odagtest fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo CURL::libcurl cpptrace::cpptrace)
 if(USE_INTERNAL_JSONCPP)
   target_link_libraries(odagtest jsoncpp_static)
 else()

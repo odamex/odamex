@@ -31,7 +31,6 @@
 
 #include "svc_message.h"
 
-#include "common.pb.h"
 #include "d_main.h"
 #include "g_gametype.h"
 #include "i_system.h"

@@ -66,8 +66,8 @@ typedef int SOCKET;
 #define GETSOCKOPTCAST(x) (static_cast<void*>(x))
 #endif
 
-#include <google/protobuf/message.h>
 
+#include <google/protobuf/message.h>
 
 #include "i_system.h"
 #include "i_net.h"
@@ -75,14 +75,18 @@ typedef int SOCKET;
 #include "d_player.h"
 #include "m_alloc.h"
 
-BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
-END_DISABLE_WARNING_GNU
 
 #ifdef ODA_HAVE_MINIUPNP
-#include "miniupnpc/miniwget.h"
-#include "miniupnpc/miniupnpc.h"
-#include "miniupnpc/upnpcommands.h"
+#   ifdef INTERNAL_MINIUPNP_STATICLIB
+#       include "miniwget.h"
+#       include "miniupnpc.h"
+#       include "upnpcommands.h"
+#   else
+#       include "miniupnpc/miniwget.h"
+#       include "miniupnpc/miniupnpc.h"
+#       include "miniupnpc/upnpcommands.h"
+#   endif
 #endif
 
 unsigned int	inet_socket;

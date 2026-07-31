@@ -7,6 +7,10 @@ add_library(odamex-common INTERFACE)
 target_sources(odamex-common INTERFACE ${COMMON_SOURCES} ${COMMON_HEADERS})
 target_include_directories(odamex-common INTERFACE . ${CMAKE_CURRENT_BINARY_DIR})
 
+if (TARGET miniupnpc::miniupnpc)
+    target_link_libraries(odamex-common INTERFACE miniupnpc::miniupnpc)
+endif()
+
 if(UNIX)
   include(CheckSymbolExists)
   check_symbol_exists(backtrace "execinfo.h" HAVE_BACKTRACE)

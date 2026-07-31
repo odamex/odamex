@@ -1,5 +1,5 @@
-include(OdamexCopyLibs)
 include(OdamexTargetSettings)
+include(CreateDebugSymbolFile)
 
 # use unquoted #defines
 if(COMMAND cmake_policy)
@@ -160,6 +160,8 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   odamex_target_settings(odamex)
   odamex_target_errors(odamex)
 
+  create_debug_symbol_file(TARGET odamex)
+
   if(USE_DEFAULT_SIMD)
     if(ODAMEX_TARGET_ARCH STREQUAL "amd64")
       message(STATUS "Default SIMD flags not touched for AMD64")
@@ -194,19 +196,11 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
 
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
   target_link_libraries(odamex odamex-common odaproto tinylibs)
-  if(TARGET SDL::SDL)
-    target_link_libraries(odamex SDL::SDL)
-    if(TARGET SDL::SDLmain)
-      target_link_libraries(odamex SDL::SDLmain)
-    endif()
-    target_link_libraries(odamex SDL::mixer)
-  else()
-    target_link_libraries(odamex SDL2::SDL2)
-    if(TARGET SDL2::SDL2main)
-      target_link_libraries(odamex SDL2::SDL2main)
-    endif()
-    target_link_libraries(odamex SDL2::mixer)
+  target_link_libraries(odamex SDL2::SDL2)
+  if(TARGET SDL2::SDL2main)
+    target_link_libraries(odamex SDL2::SDL2main)
   endif()
+  target_link_libraries(odamex SDL2_mixer::SDL2_mixer-static)
 
   if(NOT GCONSOLE)
     target_include_directories(odamex PRIVATE gui)
@@ -230,7 +224,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
-  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt minilzo cpptrace::cpptrace libADLMIDI::ADLMIDI_static curl_interface)
+  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt minilzo cpptrace::cpptrace libADLMIDI::ADLMIDI_static CURL::libcurl)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)
@@ -249,7 +243,6 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
   endif()
 
-  odamex_copy_libs(odamex)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
   set(MACOSX_BUNDLE_COPYRIGHT "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")

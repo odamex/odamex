@@ -22,7 +22,10 @@
 
 #pragma once
 
+#include "odamex.h"
+
 #include <SDL.h>
+
 #include "win32inc.h"
 
 #include "d_event.h"

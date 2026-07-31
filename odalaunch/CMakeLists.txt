@@ -1,5 +1,6 @@
 include(OdalaunchCopyLibs)
 include(OdamexTargetSettings)
+include(CreateDebugSymbolFile)
 
 # API
 set(API_DIR ../odalpapi)
@@ -26,13 +27,12 @@ set(XRCRES_HEADER "${XRCRES_BINARY_DIR}/xrc_resource.h")
 include_directories(${API_DIR} ${LAUNCH_DIR} ${XRCRES_BINARY_DIR})
 
 # wxWidgets configuration
-# [AM] Putting this "find" in libraries would only work (from a scope
-#      perspective) if we got a target out of it, which we don't for
-#      wxWidgets.  So we do the ugly downloading bits in libraries and do
-#      the "find" here.
+
 find_package(wxWidgets COMPONENTS core base adv net xrc)
-if(wxWidgets_FOUND)
-  include( "${wxWidgets_USE_FILE}" )
+if (wxWidgets_FOUND)
+  if (wxWidgets_USE_FILE)
+    include( "${wxWidgets_USE_FILE}" )
+  endif()
 else()
   if(wxWidgets_ROOT_DIR)
     message(WARNING "wxWidgets root directory exists but no compiled libraries were found, odalaunch target not generated.")
@@ -60,8 +60,8 @@ if(wxWidgets_FOUND)
   odamex_target_settings(odalaunch)
 
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
+  target_include_directories(odalaunch PUBLIC ${wxWidgets_INCLUDE_DIRS})
 
-  # Cvar documentation database loader needs a JSON parser.
   if(TARGET jsoncpp_static)
     target_link_libraries(odalaunch jsoncpp_static)
   endif()
@@ -70,7 +70,7 @@ if(wxWidgets_FOUND)
     target_link_libraries(odalaunch ws2_32)
   endif()
 
-  odalaunch_copy_libs(odalaunch)
+  create_debug_symbol_file(TARGET odalaunch)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME OdaLaunch)
   set(MACOSX_BUNDLE_COPYRIGHT "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")

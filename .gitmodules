@@ -34,3 +34,15 @@
 [submodule "libraries/cpptrace"]
 	path = libraries/cpptrace
 	url = https://github.com/jeremy-rifkin/cpptrace.git
+[submodule "libraries/sdl"]
+	path = libraries/sdl
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "libraries/sdl_mixer"]
+	path = libraries/sdl_mixer
+	url = https://github.com/libsdl-org/SDL_mixer.git
+[submodule "libraries/wxwidgets"]
+	path = libraries/wxwidgets
+	url = https://github.com/wxWidgets/wxWidgets.git
+[submodule "libraries/libdwarf-lite"]
+	path = libraries/libdwarf-lite
+	url = https://github.com/jeremy-rifkin/libdwarf-lite.git

@@ -13,8 +13,28 @@ set(ODAPROTO_PROTOS
     common.proto
     server.proto
     )
-
-protobuf_generate(OUT_VAR ODAPROTO_SOURCES PROTOS ${ODAPROTO_PROTOS})
+set(ODAPROTO_SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/client.pb.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/client.pb.h
+    ${CMAKE_CURRENT_BINARY_DIR}/common.pb.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/common.pb.h
+    ${CMAKE_CURRENT_BINARY_DIR}/server.pb.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/server.pb.h
+    )
+add_custom_command(
+    OUTPUT
+        ${ODAPROTO_SOURCES}
+    COMMAND
+        protoc
+    ARGS
+        ${ODAPROTO_PROTOS}
+        --cpp_out=${CMAKE_CURRENT_BINARY_DIR}
+        -I ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS
+        protoc
+        ${ODAPROTO_PROTOS}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
 
 source_group("Definitions" FILES ${ODAPROTO_PROTOS})
 source_group("Generated" FILES ${ODAPROTO_SOURCES})

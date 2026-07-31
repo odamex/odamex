@@ -1,6 +1,8 @@
 # CMake >= 3.13 needed for -S and -B params in library compilation.
-# CMake >= 3.19 needed for policy CMP0112: target-dependent generator expressions
-#               do not implicitly add target-level dependencies.
+# CMake >= 3.19 needed for:
+#               -   policy CMP0112: target-dependent generator expressions
+#                   do not implicitly add target-level dependencies.
+#               -   Multiple configs can be given as cfgs in $<CONFIG:cfgs>.
 #
 # Note that if you are running Linux, there are many ways to get newer
 # versions of CMake.
@@ -19,6 +21,12 @@ cmake_minimum_required(VERSION 3.19)
 project(Odamex VERSION 13.0.0)
 
 include(CMakeDependentOption)
+
+if (APPLE)
+    # If built as a subproject on Mac, SDL requires that the parent project enable OBJC and OBJCXX
+    # so that it can build its Objective-C modules.
+    enable_language(OBJC OBJCXX)
+endif()
 
 # CMAKE_INSTALL_BINDIR and CMAKE_INSTALL_DATADIR will be changed if GNUInstallDirs is availible
 set(CMAKE_INSTALL_BINDIR "bin")
@@ -60,7 +68,7 @@ cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_
 cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS OR BUILD_LAUNCHER" 0 )
 cmake_dependent_option( USE_INTERNAL_CPPTRACE "Use internal cpptrace" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_FLTK "Use internal FLTK" 1 BUILD_CLIENT 0 )
-cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
+cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" 1 BUILD_LAUNCHER 0 )
 cmake_dependent_option( USE_INTERNAL_GTEST "Use internal GoogleTest" 1 BUILD_TESTS 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
@@ -177,7 +185,7 @@ string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
 # Libraries
-add_subdirectory(libraries)
+add_subdirectory(libraries SYSTEM)
 
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
@@ -191,13 +199,6 @@ if(BUILD_SERVER)
   add_subdirectory(server)
 endif()
 if(BUILD_TESTS)
-  if(USE_INTERNAL_GTEST)
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    set(INSTALL_GTEST OFF)
-    add_subdirectory(libraries/googletest)
-  else()
-    find_package(GTest REQUIRED)
-  endif()
   add_subdirectory(tests/unit-tests)
 endif()
 if(BUILD_MASTER)

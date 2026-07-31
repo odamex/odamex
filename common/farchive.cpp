@@ -26,11 +26,10 @@
 
 #include <algorithm>
 
+#include "minilzo.h"
+
 #include "farchive.h"
 #include "m_alloc.h"
-BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
-#include "minilzo.h"
-END_DISABLE_WARNING_GNU
 #include "i_system.h"
 #include "d_player.h"
 #include "dobject.h"
@@ -265,9 +264,8 @@ void FLZOFile::Implode()
 	{
 		compressed = std::make_unique<lzo_byte[]>(MaxLZOCompressedLength(input_len));
 
-		BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 		auto wrkmem = std::make_unique<lzo_byte[]>(LZO1X_1_MEM_COMPRESS);
-		END_DISABLE_WARNING_GNU
+
 		int res = lzo1x_1_compress(m_Buffer, input_len, compressed.get(), &compressed_len, wrkmem.get());
 
 		// If the data could not be compressed, store it as-is.

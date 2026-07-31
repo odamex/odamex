@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include "odamex.h"
+
 #include "client.pb.h"
 
 class player_t;

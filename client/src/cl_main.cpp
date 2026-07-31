@@ -83,8 +83,6 @@
 #include <set>
 #include <sstream>
 
-#include "server.pb.h"
-
 #if _MSC_VER == 1310
 #pragma optimize("",off)
 #endif

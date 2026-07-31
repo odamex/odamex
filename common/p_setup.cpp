@@ -24,11 +24,12 @@
 
 
 #include "odamex.h"
-
 #include <stdlib.h>
 #include <math.h>
 #include <set>
+
 #include <zlib.h>
+
 #include <nonstd/scope.hpp>
 
 #include "m_alloc.h"

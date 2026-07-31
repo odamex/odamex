@@ -25,9 +25,8 @@
 
 #include "odamex.h"
 
-BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
-END_DISABLE_WARNING_GNU
+
 #include "m_alloc.h"
 #include "z_zone.h"
 #include "f_finale.h"

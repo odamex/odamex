@@ -15,7 +15,7 @@ elseif(SOLARIS)
 endif()
 
 if(UNIX)
-	install( TARGETS odamast DESTINATION ${CMAKE_INSTALL_BINDIR} )
+	install( TARGETS odamast DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT master)
 endif()
 
 if(BUILD_OR_FAIL AND NOT TARGET odamast)

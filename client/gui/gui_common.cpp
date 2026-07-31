@@ -23,6 +23,8 @@
 
 #include "gui_common.h"
 
+#include "odamex.h"
+
 #include "FL/Fl_PNG_Image.H"
 #include "FL/Fl_Window.H"
 

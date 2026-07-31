@@ -1,136 +1,13 @@
 # Build libraries.
-#
-# Here we use execute_process and file(DOWNLOAD) to download and compile
-# libraries as we need them.  Some stuff to remember:
-#
-# - C libraries can cross Debug/Release boundaries, but C++ libraries can't.
-#   You'll need to be able to select the proper debug vs release library in
-#   multi-config builds - see JsonCpp for an example.
-# - Xcode does not like it when CMake passes --parallel with no parameter.
-#
 
-# Parallel processor count - needed by Xcode.
-include(ProcessorCount)
-ProcessorCount(PARALLEL_PROC_COUNT)
+# We use FetchContent instead of add_subdirectory specifically because it has
+# the ability to override subsequent calls to find_package for the packages
+# it obtains.  This is especially critical for making sure that sub-dependencies
+# such as libpng -> zlib resolve correctly.
 
-# Set our prefix path, so inter-dependencies are picked up on.
-if(CMAKE_PREFIX_PATH)
-  list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
-else()
-  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
-endif()
+include(FetchContent)
 
-# Shorthand, to reduce line-noise
-set(libprefix "${CMAKE_STATIC_LIBRARY_PREFIX}")
-set(libsuffix "${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set(dllprefix "${CMAKE_SHARED_LIBRARY_PREFIX}")
-set(dllsuffix "${CMAKE_SHARED_LIBRARY_SUFFIX}")
-
-file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/local/include")
-
-function(lib_buildgen)
-  cmake_parse_arguments("" "" "LIBRARY;SRCDIR;CXXFLAGS" "PARAMS" ${ARGN})
-
-  if(NOT _SRCDIR)
-    set(_SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/${_LIBRARY}")
-  endif()
-
-  # Baseline library generation.
-  set(_COMMAND "${CMAKE_COMMAND}"
-    -S "${_SRCDIR}"
-    -B "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
-    -G "${CMAKE_GENERATOR}"
-    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-    "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
-    "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
-    "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
-
-  if(CMAKE_GENERATOR_PLATFORM)
-    list(APPEND _COMMAND -A)
-    list(APPEND _COMMAND ${CMAKE_GENERATOR_PLATFORM})
-  endif()
-
-  if(CMAKE_GENERATOR_TOOLSET)
-    list(APPEND _COMMAND -T)
-    list(APPEND _COMMAND ${CMAKE_GENERATOR_TOOLSET})
-  endif()
-
-  if(CMAKE_C_COMPILER)
-    list(APPEND _COMMAND "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}")
-  endif()
-
-  if(CMAKE_CXX_COMPILER)
-    list(APPEND _COMMAND "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
-  endif()
-
-  if(CMAKE_LINKER)
-    list(APPEND _COMMAND "-DCMAKE_LINKER=${CMAKE_LINKER}")
-  endif()
-
-  if(CMAKE_RC_COMPILER)
-    list(APPEND _COMMAND "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}")
-  endif()
-  if(CMAKE_OSX_ARCHITECTURES)
-    string(REPLACE ";" "\\;" _OSX_ARCHS "${CMAKE_OSX_ARCHITECTURES}")
-    list(APPEND _COMMAND "-DCMAKE_OSX_ARCHITECTURES=${_OSX_ARCHS}")
-  endif()
-  if(CMAKE_OSX_DEPLOYMENT_TARGET)
-    list(APPEND _COMMAND "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
-  endif()
-
-  get_property(_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-  if(NOT _IS_MULTI_CONFIG)
-    list(APPEND _COMMAND "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
-  endif()
-
-  if(_CXXFLAGS)
-    set(_ENVCMD ${CMAKE_COMMAND} -E env CXXFLAGS=${_CXXFLAGS})
-  endif()
-
-  message(STATUS "Generating ${_LIBRARY}...")
-  message(${_ENVCMD} ${_COMMAND} ${_PARAMS})
-  execute_process(COMMAND ${_ENVCMD} ${_COMMAND} ${_PARAMS} RESULT_VARIABLE _RESVAL)
-  if(_RESVAL GREATER 0)
-    message(FATAL_ERROR "Library ${_LIBRARY} did not generate correctly.")
-  endif()
-endfunction()
-
-function(lib_build)
-  cmake_parse_arguments("" "" "LIBRARY" "" ${ARGN})
-
-  # Compile the library.
-  get_property(_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-  if(_IS_MULTI_CONFIG)
-    # Debug and Release are not compatible, so build both.
-    message(STATUS "Building ${_LIBRARY} Debug...")
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
-      --config Debug --target install
-      --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
-    if(_RESVAL GREATER 0)
-      message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Debug.")
-    endif()
-
-    message(STATUS "Building ${_LIBRARY} RelWithDebInfo...")
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
-      --config RelWithDebInfo --target install
-      --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
-    if(_RESVAL GREATER 0)
-      message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Release.")
-    endif()
-  else()
-    # Single config uses the passed build type.
-    message(STATUS "Building ${_LIBRARY} ${CMAKE_BUILD_TYPE}...")
-    execute_process(COMMAND "${CMAKE_COMMAND}"
-      --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
-      --config ${CMAKE_BUILD_TYPE} --target install
-      --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
-    if(_RESVAL GREATER 0)
-      message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly.")
-    endif()
-  endif()
-endfunction()
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)   # option() honors normal variables
 
 ### tiny libraries ###
 
@@ -146,26 +23,406 @@ if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
   target_include_directories(minilzo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/minilzo")
 endif()
 
-include(zlib-lib.cmake)
+set(FETCH_CONTENT_PACKAGES)
 
-include(libpng-lib.cmake)
+if (BUILD_TESTS)
+    # ======================================
+    # GTest
+    # ======================================
+    set (FETCHCONTENT_SOURCE_DIR_GTEST "${CMAKE_CURRENT_SOURCE_DIR}/googletest")
+    FetchContent_Declare(
+        GTest
+        URL "${FETCHCONTENT_SOURCE_DIR_GTEST}"
+        OVERRIDE_FIND_PACKAGE
+        )
 
-include(curl-lib.cmake)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-include(fltk-lib.cmake)
+    # Just like ZLIB, this is used by other dependencies, we have to configure it early.
+    FetchContent_MakeAvailable(GTest)
 
-include(fmt-lib.cmake)
+endif()
 
-include(jsoncpp-lib.cmake)
+if (BUILD_CLIENT OR BUILD_SERVER)
 
-include(miniupnp-lib.cmake)
+    # ======================================
+    # zlib
+    # ======================================
+    if (USE_INTERNAL_ZLIB)
+        set (FETCHCONTENT_SOURCE_DIR_ZLIB "${CMAKE_CURRENT_SOURCE_DIR}/zlib")
+        FetchContent_Declare(
+            ZLIB
+            URL "${FETCHCONTENT_SOURCE_DIR_ZLIB}"
+            OVERRIDE_FIND_PACKAGE
+            )
 
-include(protobuf-lib.cmake)
+        # We go against CMake's normal advice of doing the MakeAvailable of everything in
+        # one shot for ZLIB, because the other projects expect ZLIB::ZLIB to be an
+        # *actual target* at the time that they're made available, and we have to declare
+        # it as an alias.
+        set(ZLIB_BUILD_SHARED   OFF)
+        set(ZLIB_BUILD_TESTING  OFF)
+        set(ZLIB_BUILD_STATIC    ON)
 
-include(SDL-lib.cmake)
+        FetchContent_MakeAvailable(ZLIB)
 
-include(wxWidgets-lib.cmake)
+        if (TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
+            add_library(ZLIB::ZLIB ALIAS zlibstatic)
+            set (ZLIB_INCLUDE_DIRS "${FETCHCONTENT_SOURCE_DIR_ZLIB}" "${zlib_BINARY_DIR}")
+            set (ZLIB_LIBRARIES ZLIB::ZLIB)
+            export(TARGETS zlibstatic
+                   NAMESPACE ZLIB::
+                   FILE "${zlib_BINARY_DIR}/zlib-targets.cmake")
+        endif()
 
-include(libadlmidi-lib.cmake)
+    else()
+        find_package(ZLIB)
+        if (TARGET ZLIB::ZLIB)
+            set_target_properties(ZLIB::ZLIB PROPERTIES IMPORTED_GLOBAL True)
+        endif()
+    endif()
 
-include(cpptrace-lib.cmake)
+    # ======================================
+    # fmt
+    # ======================================
+    set (FETCHCONTENT_SOURCE_DIR_FMT "${CMAKE_CURRENT_SOURCE_DIR}/fmt")
+    FetchContent_Declare(
+        fmt
+        URL "${FETCHCONTENT_SOURCE_DIR_FMT}"
+        OVERRIDE_FIND_PACKAGE
+        )
+    list(APPEND FETCH_CONTENT_PACKAGES fmt)
+    set(FMT_DOC     OFF)
+    set(FMT_INSTALL OFF)
+    set(FMT_TEST    OFF)
+
+    # ======================================
+    # jsoncpp
+    # ======================================
+    if (USE_INTERNAL_JSONCPP)
+        set (FETCHCONTENT_SOURCE_DIR_JSONCPP "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp")
+        FetchContent_Declare(
+            jsoncpp
+            URL "${FETCHCONTENT_SOURCE_DIR_JSONCPP}"
+            OVERRIDE_FIND_PACKAGE
+            )
+        list(APPEND FETCH_CONTENT_PACKAGES jsoncpp)
+
+        set(JSONCPP_WITH_TESTS                  OFF)
+        set(JSONCPP_WITH_POST_BUILD_UNITTEST    OFF)
+        set(JSONCPP_WITH_WARNING_AS_ERROR       OFF)
+        set(JSONCPP_WITH_PKGCONFIG_SUPPORT      OFF)
+        set(JSONCPP_WITH_CMAKE_PACKAGE           ON)
+    endif()
+
+    # ======================================
+    # Protobuf
+    # ======================================
+    set (FETCHCONTENT_SOURCE_DIR_PROTOBUF "${CMAKE_CURRENT_SOURCE_DIR}/protobuf")
+    FetchContent_Declare(
+        Protobuf
+        URL "${FETCHCONTENT_SOURCE_DIR_PROTOBUF}"
+        OVERRIDE_FIND_PACKAGE
+        )
+    list(APPEND FETCH_CONTENT_PACKAGES Protobuf)
+
+    set(protobuf_BUILD_SHARED_LIBS   OFF)
+    set(protobuf_BUILD_TESTS         OFF)
+    set(protobuf_MSVC_STATIC_RUNTIME OFF)
+    set(protobuf_INSTALL             OFF)
+
+    # Protobuf sets a policy older than 3.13, which would force us to set the above
+    # values in the cache explicitly.  Let's just use a modern-day policy here...
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)   # option() honors normal variables
+
+    # ======================================
+    # libdwarf-lite
+    # ======================================
+    set (FETCHCONTENT_SOURCE_DIR_LIBDWARF_LITE "${CMAKE_CURRENT_SOURCE_DIR}/libdwarf-lite")
+    FetchContent_Declare(
+        libdwarf
+        URL "${FETCHCONTENT_SOURCE_DIR_LIBDWARF_LITE}"
+        OVERRIDE_FIND_PACKAGE
+        )
+    list(APPEND FETCH_CONTENT_PACKAGES libdwarf)
+
+    set(BUILD_DWARFDUMP OFF)
+
+    # ======================================
+    # cpptrace
+    # ======================================
+    if (USE_INTERNAL_CPPTRACE)
+        set (FETCHCONTENT_SOURCE_DIR_CPPTRACE "${CMAKE_CURRENT_SOURCE_DIR}/cpptrace")
+        FetchContent_Declare(
+            cpptrace
+            URL "${FETCHCONTENT_SOURCE_DIR_CPPTRACE}"
+            OVERRIDE_FIND_PACKAGE
+            )
+        list(APPEND FETCH_CONTENT_PACKAGES cpptrace)
+
+        set (CPPTRACE_USE_EXTERNAL_LIBDWARF ON)
+
+        if (USE_INTERNAL_ZSTD)
+            set(CPPTRACE_USE_EXTERNAL_ZSTD OFF)
+        else()
+            set(CPPTRACE_USE_EXTERNAL_ZSTD ON)
+        endif()
+    else()
+        find_package(cpptrace)
+        if(TARGET cpptrace::cpptrace)
+            set_target_properties(cpptrace::cpptrace PROPERTIES IMPORTED_GLOBAL True)
+        endif()
+    endif()
+
+    if (BUILD_SERVER)
+
+        # ======================================
+        # MiniUPnP
+        # ======================================
+        if (NOT USE_MINIUPNP)
+            message(STATUS "Skipping MiniUPnPc...")
+        elseif(USE_INTERNAL_MINIUPNP)
+            set(FETCHCONTENT_SOURCE_DIR_MINIUPNP "${CMAKE_CURRENT_SOURCE_DIR}/miniupnp")
+            FetchContent_Declare(
+                miniupnp
+                URL "${FETCHCONTENT_SOURCE_DIR_MINIUPNP}"
+                SOURCE_SUBDIR miniupnpc
+                OVERRIDE_FIND_PACKAGE
+                )
+            list(APPEND FETCH_CONTENT_PACKAGES miniupnp)
+
+            set(UPNPC_BUILD_SHARED  OFF)
+            set(UPNPC_BUILD_TESTS   OFF)
+            set(UPNPC_BUILD_SAMPLE  OFF)
+            set(UPNPC_NO_INSTALL    ON)
+        endif()
+    endif()
+
+    if (BUILD_CLIENT)
+
+        # ======================================
+        # PNG
+        # ======================================
+        if (USE_INTERNAL_PNG)
+            set(FETCHCONTENT_SOURCE_DIR_PNG "${CMAKE_CURRENT_SOURCE_DIR}/libpng")
+            FetchContent_Declare(
+                PNG
+                URL "${FETCHCONTENT_SOURCE_DIR_PNG}"
+                OVERRIDE_FIND_PACKAGE
+                )
+            list(APPEND FETCH_CONTENT_PACKAGES PNG)
+
+            set (PNG_SHARED OFF)
+            set (PNG_STATIC  ON)
+            set (PNG_TESTS  OFF)
+
+            if (APPLE)
+                set (PNG_HARDWARE_OPTIMIZATIONS OFF)    # Disable NEON
+            endif()
+        else()
+            find_package(PNG)
+            if(TARGET PNG::PNG)
+                set_target_properties(PNG::PNG PROPERTIES IMPORTED_GLOBAL True)
+            endif()
+        endif()
+
+        # ======================================
+        # CURL
+        # ======================================
+        if (USE_INTERNAL_CURL)
+            set(FETCHCONTENT_SOURCE_DIR_CURL "${CMAKE_CURRENT_SOURCE_DIR}/curl")
+            FetchContent_Declare(
+                CURL
+                URL "${FETCHCONTENT_SOURCE_DIR_CURL}"
+                OVERRIDE_FIND_PACKAGE
+                )
+            list(APPEND FETCH_CONTENT_PACKAGES CURL)
+
+            set(BUILD_SHARED_LIBS       OFF)
+            set(BUILD_STATIC_LIBS       ON)
+            set(CURL_DISABLE_INSTALL    ON)
+            set(BUILD_CURL_EXE          OFF)
+            set(BUILD_EXAMPLES          OFF)
+            set(BUILD_LIBCURL_DOCS      OFF)
+            set(BUILD_MISC_DOCS         OFF)
+            set(ENABLE_CURL_MANUAL      OFF)
+            set(BUILD_TESTING           OFF)
+            set(CURL_USE_LIBPSL         OFF)
+            set(CURL_USE_LIBSSH2        OFF)
+            set(CURL_ZLIB               OFF)
+            set(HTTP_ONLY               ON)
+
+            if (WIN32)
+                set(CURL_USE_SCHANNEL   ON)
+            endif()
+
+            set(CURL_ENABLE_EXPORT_TARGET OFF)
+        else()
+            find_package(CURL)
+            if (TARGET CURL::libcurl)
+                # Apparently in flatpak builds, this "official" libcurl somehow winds up being an alias.
+                get_target_property(curl_is_alias_of CURL::libcurl ALIASED_TARGET)
+                if (NOT curl_is_alias_of)
+                    set_target_properties(CURL::libcurl PROPERTIES IMPORTED_GLOBAL True)
+                endif()
+            endif()
+        endif()
+
+        # ======================================
+        # FLTK
+        # ======================================
+        if (USE_INTERNAL_FLTK)
+            set(FETCHCONTENT_SOURCE_DIR_FLTK "${CMAKE_CURRENT_SOURCE_DIR}/fltk")
+            FetchContent_Declare(
+                FLTK
+                URL "${FETCHCONTENT_SOURCE_DIR_FLTK}"
+                OVERRIDE_FIND_PACKAGE
+                )
+            list(APPEND FETCH_CONTENT_PACKAGES FLTK)
+
+            set(FLTK_USE_SYSTEM_LIBJPEG OFF)
+            set(FLTK_USE_SYSTEM_LIBPNG  OFF)
+            set(FLTK_USE_SYSTEM_ZLIB    OFF)
+            set(FLTK_OPTION_PRINT_SUPPORT   OFF)
+            set(FLTK_BUILD_GL               OFF)
+            set(FLTK_USE_PANGO              OFF)
+            set(FLTK_GRAPHICS_CAIRO         OFF)
+            set(FLTK_OPTION_CAIRO_WINDOW    OFF)
+            set(FLTK_OPTION_CAIRO_EXT       OFF)
+            set(FLTK_BUILD_TEST             OFF)
+
+            if(APPLE)
+                if(NOT USE_INTERNAL_PNG)
+                    set(FLTK_USE_SYSTEM_LIBPNG  ON)
+                endif()
+                if(NOT USE_INTERNAL_ZLIB)
+                    set(FLTK_USE_SYSTEM_ZLIB    ON)
+                endif()
+            elseif(UNIX AND NOT APPLE)
+                set(FLTK_USE_SYSTEM_LIBDECOR    OFF)
+                set(FLTK_USE_LIBDECOR_GTK       OFF)
+            endif()
+        else()
+            find_package(FLTK CONFIG)
+                if (NOT TARGET fltk::fltk)
+                    find_package(FLTK REQUIRED)
+                endif()
+        endif()
+
+        # ======================================
+        # libADLMidi
+        # ======================================
+        if (USE_INTERNAL_LIBADLMIDI)
+            set(FETCHCONTENT_SOURCE_DIR_LIBADLMIDI "${CMAKE_CURRENT_SOURCE_DIR}/libadlmidi")
+            FetchContent_Declare(
+                libadlmidi
+                URL "${FETCHCONTENT_SOURCE_DIR_LIBADLMIDI}"
+                OVERRIDE_FIND_PACKAGE
+                )
+            list(APPEND FETCH_CONTENT_PACKAGES libadlmidi)
+        else()
+            find_package(libADLMIDI)
+            if (TARGET libADLMIDI::ADLMIDI_static)
+                set_target_properties(libADLMIDI::ADLMIDI_static PROPERTIES IMPORTED_GLOBAL True)
+            endif()
+        endif()
+
+        # ======================================
+        # SDL
+        # ======================================
+        set(FETCHCONTENT_SOURCE_DIR_SDL "${CMAKE_CURRENT_SOURCE_DIR}/sdl")
+        FetchContent_Declare(
+            SDL2
+            URL "${FETCHCONTENT_SOURCE_DIR_SDL}"
+            OVERRIDE_FIND_PACKAGE
+            )
+        list(APPEND FETCH_CONTENT_PACKAGES SDL2)
+
+        set (SDL_SHARED OFF)
+        set (SDL_STATIC ON)
+
+        # ======================================
+        # SDL_mixer
+        # ======================================
+        set(FETCHCONTENT_SOURCE_DIR_SDL_MIXER "${CMAKE_CURRENT_SOURCE_DIR}/sdl_mixer")
+        FetchContent_Declare(
+            SDL2_mixer
+            URL "${FETCHCONTENT_SOURCE_DIR_SDL_MIXER}"
+            OVERRIDE_FIND_PACKAGE
+            )
+        list(APPEND FETCH_CONTENT_PACKAGES SDL2_mixer)
+
+        set (SDL2MIXER_VENDORED      ON)
+        set (BUILD_SHARED_LIBS      OFF)
+        set (SDL2MIXER_DEPS_SHARED  OFF)
+    endif()
+endif()
+
+# ----------==================----------
+# Now bring it all in!
+# ----------==================----------
+
+if (FETCH_CONTENT_PACKAGES)
+    FetchContent_MakeAvailable(${FETCH_CONTENT_PACKAGES})
+
+    # Some immediate fixups are needed to make wxWidgets happy.
+    set(SDL2_LIBRARY        SDL2::SDL2)
+    set(SDL2_INCLUDE_DIR    "${FETCHCONTENT_SOURCE_DIR_SDL}/include")
+
+    if (TARGET libcurl_static AND NOT TARGET CURL::libcurl)
+        add_library(CURL::libcurl ALIAS libcurl_static)
+    endif()
+
+    set(CURL_INCLUDE_DIRS   "${FETCHCONTENT_SOURCE_DIR_CURL}/include")
+    set(CURL_LIBRARIES      CURL::libcurl)
+
+    if (TARGET png_static AND NOT TARGET PNG::PNG)
+        add_library(PNG::PNG ALIAS png_static)
+    endif()
+
+    set(PNG_LIBRARIES       PNG::PNG)
+    set(PNG_INCLUDE_DIRS    "${FETCHCONTENT_SOURCE_DIR_PNG}")
+
+endif()
+
+if (BUILD_LAUNCHER)
+
+    # ======================================
+    # wxWidgets
+    # ======================================
+    if (USE_INTERNAL_WXWIDGETS)
+        set(FETCHCONTENT_SOURCE_DIR_WXWIDGETS "${CMAKE_CURRENT_SOURCE_DIR}/wxwidgets")
+        FetchContent_Declare(
+            wxWidgets
+            URL "${FETCHCONTENT_SOURCE_DIR_WXWIDGETS}"
+            OVERRIDE_FIND_PACKAGE
+            )
+        list(APPEND FETCH_CONTENT_PACKAGES wxWidgets)
+
+        set(wxBUILD_INSTALL OFF)
+        set(wxUSE_LIBPNG    sys)    # Just tell wx to fallback to our builds of these libs via find_package.
+        set(wxUSE_ZLIB      sys)
+
+        FetchContent_MakeAvailable(wxWidgets)
+    endif()
+
+endif()
+
+
+
+# Now do some patching to smooth-over any disagreements between the
+# target names as established by building the libs vs. finding them.
+
+if (TARGET libminiupnpc-static)
+    target_compile_definitions(libminiupnpc-static INTERFACE INTERNAL_MINIUPNP_STATICLIB)
+endif()
+
+if (TARGET wxrc AND NOT wxWidgets_wxrc_EXECUTABLE)
+    set(wxWidgets_wxrc_EXECUTABLE wxrc                                          PARENT_SCOPE)
+    set(wxWidgets_LIBRARIES       wx::base wx::core wx::adv wx::net wx::xrc     PARENT_SCOPE)
+    set(wxWidgets_INCLUDE_DIRS    ${FETCHCONTENT_SOURCE_DIR_WXWIDGETS}/include  PARENT_SCOPE)
+endif()
+
+if (TARGET ADLMIDI_static AND NOT TARGET libADLMIDI::ADLMIDI_static)
+    add_library(libADLMIDI::ADLMIDI_static ALIAS ADLMIDI_static)
+endif()
