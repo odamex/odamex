@@ -28,9 +28,7 @@
 #include <math.h>
 #include <set>
 
-BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include <zlib.h>
-END_DISABLE_WARNING_GNU
 
 #include <nonstd/scope.hpp>
 
@@ -525,10 +523,8 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	zstream->next_out = output;
 	zstream->avail_out = outlen;
 
-BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 	if (inflateInit(zstream) != Z_OK)
 		I_Error("P_DecompressNodes: Error during ZDBSP nodes decompression initialization!");
-END_DISABLE_WARNING_GNU
 
 	// resize if output buffer runs full
 	while ((err = inflate(zstream, Z_SYNC_FLUSH)) == Z_OK)

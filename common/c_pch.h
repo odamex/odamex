@@ -1,5 +1,7 @@
 #pragma once
 
+#include "minilzo.h"
+
 #include "actor.h"
 #include "cmdlib.h"
 #include "c_console.h"
@@ -29,9 +31,6 @@
 #include "i_system.h"
 #include "lzodefs.h"
 #include "md5.h"
-BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
-#include "minilzo.h"
-END_DISABLE_WARNING_GNU
 #include "m_alloc.h"
 #include "m_argv.h"
 #include "m_bbox.h"

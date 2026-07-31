@@ -183,7 +183,7 @@ string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
 # Libraries
-add_subdirectory(libraries)
+add_subdirectory(libraries SYSTEM)
 
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)

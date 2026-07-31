@@ -27,6 +27,8 @@
 
 #include <algorithm>
 
+#include "minilzo.h"
+
 #include "c_dispatch.h"
 #include "d_event.h"
 #include "d_main.h"
@@ -35,9 +37,6 @@
 
 #include "i_system.h"
 #include "i_time.h"
-BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
-#include "minilzo.h"
-END_DISABLE_WARNING_GNU
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_ctf.h"

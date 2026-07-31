@@ -67,9 +67,7 @@ typedef int SOCKET;
 #endif
 
 
-BEGIN_DISABLE_WARNING_GNU("-Wzero-as-null-pointer-constant")
 #include <google/protobuf/message.h>
-END_DISABLE_WARNING_GNU
 
 #include "i_system.h"
 #include "i_net.h"
@@ -77,9 +75,7 @@ END_DISABLE_WARNING_GNU
 #include "d_player.h"
 #include "m_alloc.h"
 
-BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
-END_DISABLE_WARNING_GNU
 
 #ifdef ODA_HAVE_MINIUPNP
 #   ifdef INTERNAL_MINIUPNP_STATICLIB

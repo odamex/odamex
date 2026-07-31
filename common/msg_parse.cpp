@@ -22,9 +22,7 @@
 
 #include "msg_parse.h"
 
-BEGIN_DISABLE_WARNING_GNU("-Wzero-as-null-pointer-constant")
 #include <google/protobuf/message.h>
-END_DISABLE_WARNING_GNU
 
 #include "msg_map.h"
 
