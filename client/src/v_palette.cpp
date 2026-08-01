@@ -361,7 +361,7 @@ CVAR_FUNC_IMPL(vid_gammatype)
 //
 CVAR_FUNC_IMPL(gammalevel)
 {
-	float sanitized_var = std::clamp(var.value(), gammastrat->min(), gammastrat->max());
+	const float sanitized_var = std::clamp(var.value(), gammastrat->min(), gammastrat->max());
 	if (var == sanitized_var)
 		V_UpdateGammaLevel(var);
 	else
@@ -674,7 +674,7 @@ static float lightScale(float a)
 	static float e1 = exp(1.0f);
 	static float e1sube0 = e1 - exp(-1.0f);
 
-	return std::clamp(1.0f - (e1 - (float)exp(a * 2.0f - 1.0f)) / e1sube0, 0.0f, 1.0f);
+	return std::clamp(1.0f - ((e1 - (float)exp((a * 2.0f) - 1.0f)) / e1sube0), 0.0f, 1.0f);
 }
 
 void BuildLightRamp (shademap_t &maps)

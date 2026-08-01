@@ -651,7 +651,7 @@ void R_DrawLevelPlane(visplane_t *pl)
 	// so just use (0, 0) when calculating the plane's z height
 	planeheight = abs(P_PlaneZ(0, 0, &pl->secplane) - viewz);
 
-	int light = std::clamp((pl->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight), 0, LIGHTLEVELS - 1);
+	const int light = std::clamp((pl->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight), 0, LIGHTLEVELS - 1);
 	planezlight = zlight[light];
 
 	R_MakeSpans(pl, R_MapLevelPlane);

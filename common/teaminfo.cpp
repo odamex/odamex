@@ -285,7 +285,7 @@ bool P_IsTeamStart(int16_t type)
 {
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+		const TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
 
 		if (type == teamInfo->TeamSpawnThingNum)
 		{
