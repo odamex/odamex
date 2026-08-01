@@ -39,8 +39,8 @@ static const size_t default_initial_resource_count = 2048;
 // ResourceNameTranslator::ResourceNameTranslator
 //
 ResourceNameTranslator::ResourceNameTranslator() :
-	mNamespacedResourceIdLookup(default_initial_resource_count),
 	mResourceIdLookup(default_initial_resource_count),
+	mNamespacedResourceIdLookup(default_initial_resource_count),
 	mResourceIdByPathLookup(default_initial_resource_count)
 { }
 
