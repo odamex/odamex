@@ -875,7 +875,7 @@ brokenlines_t* V_BreakLinesFontPixels(const OFont* font, int maxwidth_px, const 
 			lastWasSpace = false;
 		}
 
-		nw = font->getTextWidth((char)c);
+		nw = font->getTextWidth(static_cast<char>(c));
 
 		if (w + nw > maxwidth_px || c == '\n')
 		{
