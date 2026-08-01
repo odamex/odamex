@@ -172,7 +172,7 @@ jobs:
         curl -L https://github.com/PowerShell/PowerShell/releases/download/v7.6.4/powershell-7.6.4-linux-x64.tar.gz -o /tmp/powershell.tar.gz
         mkdir -p /opt/pwsh
         tar -xzf /tmp/powershell.tar.gz -C /opt/pwsh
-        ln -s /opt/pwsh/pwsh /usr/local/bin/pwsh
+        ln -sf /opt/pwsh/pwsh /usr/bin/pwsh
     - name:  Run Upversion
       id:    upversion
       shell: pwsh
@@ -219,7 +219,7 @@ jobs:
         curl -L https://github.com/PowerShell/PowerShell/releases/download/v7.6.4/powershell-7.6.4-linux-arm64.tar.gz -o /tmp/powershell.tar.gz
         mkdir -p /opt/pwsh
         tar -xzf /tmp/powershell.tar.gz -C /opt/pwsh
-        ln -s /opt/pwsh/pwsh /usr/local/bin/pwsh
+        ln -sf /opt/pwsh/pwsh /usr/bin/pwsh
     - name:  Run Upversion
       id:    upversion
       shell: pwsh
