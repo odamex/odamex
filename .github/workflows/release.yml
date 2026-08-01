@@ -172,12 +172,6 @@ jobs:
       uses: actions/checkout@v7
       with:
         submodules: recursive
-    - name: Install PowerShell
-      run: |
-        curl -L https://github.com/PowerShell/PowerShell/releases/download/v7.6.4/powershell-7.6.4-linux-x64.tar.gz -o /tmp/powershell.tar.gz
-        mkdir -p /opt/pwsh
-        tar -xzf /tmp/powershell.tar.gz -C /opt/pwsh
-        ln -s /opt/pwsh/pwsh /usr/local/bin/pwsh
     - name: Update metainfo dates
       shell: bash
       run: |
@@ -215,12 +209,6 @@ jobs:
       uses: actions/checkout@v7
       with:
         submodules: recursive
-    - name: Install PowerShell
-      run: |
-        curl -L https://github.com/PowerShell/PowerShell/releases/download/v7.6.4/powershell-7.6.4-linux-arm64.tar.gz -o /tmp/powershell.tar.gz
-        mkdir -p /opt/pwsh
-        tar -xzf /tmp/powershell.tar.gz -C /opt/pwsh
-        ln -s /opt/pwsh/pwsh /usr/local/bin/pwsh
     - name: Update metainfo dates
       shell: bash
       run: |
