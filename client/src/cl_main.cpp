@@ -514,7 +514,7 @@ void CL_CheckDisplayPlayer(void)
 			MSG_WriteMarker(&net_buffer, clc_spy);
 			MSG_WriteByte(&net_buffer, newid);
 		}
-		
+
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility
@@ -1093,7 +1093,7 @@ BEGIN_COMMAND (spy)
 }
 END_COMMAND (spy)
 
-void STACK_ARGS call_terms (void);
+void call_terms();
 
 void CL_QuitCommand()
 {

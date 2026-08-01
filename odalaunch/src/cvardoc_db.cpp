@@ -22,22 +22,14 @@
 
 #include <memory>
 
-#include <wx/ffile.h>
-#include <wx/fileconf.h>
-#include <wx/filename.h>
 #include <wx/log.h>
 
 #include <json/json.h>
 
-#include "oda_defs.h"
-#include "plat_utils.h"
+#include "cvardoc_data.h"
 
 // The expected schema_version for the cvardoc document we know how to parse.
 static const int CVARDOC_SCHEMA_VERSION = 1;
-
-// The on-disk names of the client and server cvar documents.
-static const wxString CVARDOC_FILENAME = "odamex_cvardoc.json";
-static const wxString SRV_CVARDOC_FILENAME = "odasrv_cvardoc.json";
 
 CvarDocDb& GetCvarDb()
 {
@@ -81,7 +73,7 @@ static std::string DefaultToString(const Json::Value& v)
 	return "";
 }
 
-bool CvarDocDb::LoadFromFiles(const std::vector<wxString>& Paths)
+bool CvarDocDb::LoadEmbedded()
 {
 	// Reset to a known-empty state; a failed load leaves the DB empty.
 	m_Cvars.clear();
@@ -92,37 +84,25 @@ bool CvarDocDb::LoadFromFiles(const std::vector<wxString>& Paths)
 	m_BranchName.clear();
 
 	bool AnyLoaded = false;
-	for (size_t i = 0; i < Paths.size(); i++)
-	{
-		if (ParseDocument(Paths[i]))
-			AnyLoaded = true;
-	}
+	if (ParseDocument(ODAMEX_CVARDOC_JSON))
+		AnyLoaded = true;
+	if (ParseDocument(ODASRV_CVARDOC_JSON))
+		AnyLoaded = true;
 
 	return AnyLoaded;
 }
 
-bool CvarDocDb::ParseDocument(const wxString& Path)
+bool CvarDocDb::ParseDocument(std::string_view Doc)
 {
-	if (Path.IsEmpty() || !wxFileName::FileExists(Path))
+	if (Doc.empty())
 		return false;
-
-	// Read the whole document into memory.
-	wxFFile file(Path, "rb");
-	if (!file.IsOpened())
-		return false;
-
-	wxString contents;
-	if (!file.ReadAll(&contents))
-		return false;
-
-	const wxScopedCharBuffer utf8 = contents.utf8_str();
 
 	Json::CharReaderBuilder builder;
 	const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
 
 	Json::Value root;
 	std::string errors;
-	if (!reader->parse(utf8.data(), utf8.data() + utf8.length(), &root, &errors))
+	if (!reader->parse(Doc.data(), Doc.data() + Doc.size(), &root, &errors))
 	{
 		wxLogDebug("cvardoc: JSON parse error: %s", errors.c_str());
 		return false;
@@ -203,42 +183,3 @@ const CvarDoc_t* CvarDocDb::Find(const std::string& Name) const
 	return &it->second;
 }
 
-// Searches the candidate directories for Filename, returning on the first match.
-static wxString ResolveDataFile(const wxString& Filename)
-{
-	wxArrayString dirs;
-
-	// 1. The configured Odamex directory (next to odamex.exe).
-	{
-		wxFileConfig ConfigInfo;
-		wxString OdamexDirectory;
-		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory, OdaGetInstallDir());
-		dirs.Add(OdamexDirectory);
-	}
-
-	// 2/3. The launcher's own install and data directories.
-	dirs.Add(OdaGetInstallDir());
-	dirs.Add(OdaGetDataDir());
-
-	for (size_t i = 0; i < dirs.GetCount(); i++)
-	{
-		if (dirs[i].IsEmpty())
-			continue;
-
-		wxFileName fn(dirs[i], Filename);
-		if (fn.FileExists())
-			return fn.GetFullPath();
-	}
-
-	return wxEmptyString;
-}
-
-wxString OdaResolveCvarDocPath()
-{
-	return ResolveDataFile(CVARDOC_FILENAME);
-}
-
-wxString OdaResolveSrvCvarDocPath()
-{
-	return ResolveDataFile(SRV_CVARDOC_FILENAME);
-}

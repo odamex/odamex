@@ -909,7 +909,7 @@ bool I_VideoInitialized()
 //
 // Destroys the application window and frees its memory.
 //
-void STACK_ARGS I_ShutdownHardware()
+void I_ShutdownHardware()
 {
 	I_FreeSurface(loading_icon_background_surface);
 

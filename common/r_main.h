@@ -199,7 +199,7 @@ void R_RenderPlayerView (player_t *player);
 void R_Init();
 
 // Called by exit code.
-void STACK_ARGS R_Shutdown();
+void R_Shutdown();
 
 void R_ExitLevel();
 
