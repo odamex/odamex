@@ -97,21 +97,6 @@ jobs:
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
-  build-sdl12:
-    name: Build (SDL 1.2)
-    needs: pre_job
-    runs-on: ubuntu-latest
-    env:
-      USE_SDL12: 1
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Prepare build
-      run: bash ci/ubuntu-buildgen.sh
-    - name: Run build
-      run: cmake --build ./build/
   build-clang:
     name: Build (Clang)
     needs: pre_job
