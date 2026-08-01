@@ -201,10 +201,24 @@ int P_IsUnderDamage(const AActor* actor)
 	int dir = 0;
 	for (const msecnode_t* seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
 	{
-		const DSectorEffect* cr = seclist->m_sector->ceilingdata; // Crushing ceiling
-		if (cr && cr->IsKindOf(RUNTIME_CLASS(DCeiling)) && static_cast<const DCeiling*>(cr)->m_Status == 2) // Down
+		const DSectorEffect* ceilingdata = seclist->m_sector->ceilingdata; // Crushing ceiling
+		if (ceilingdata && ceilingdata->IsKindOf(RUNTIME_CLASS(DCeiling)))
 		{
-			static_cast<const DCeiling*>(cr)->m_Crush > NO_CRUSH ? dir = 1 : dir = 0;
+			const auto* cl = static_cast<const DCeiling*>(ceilingdata);
+			if (cl->m_Crush > NO_CRUSH)
+			{
+				dir |= cl->m_Direction; // 1 = up, 0 = waiting, -1 = down
+			}
+		}
+
+		const DSectorEffect* floordata = seclist->m_sector->floordata; // Crushing floor
+		if (floordata && floordata->IsKindOf(RUNTIME_CLASS(DFloor)))
+		{
+			const auto* fl = static_cast<const DFloor*>(floordata);
+			if (fl->m_Crush > NO_CRUSH)
+			{
+				dir |= -fl->m_Direction; // need to negate since up is when damage happens for floors
+			}
 		}
 	}
 	return dir;

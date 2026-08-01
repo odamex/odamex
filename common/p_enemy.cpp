@@ -465,7 +465,8 @@ bool P_Move (AActor *actor, int dropoff = 0)
 bool P_SmartMove(AActor* actor)
 {
 	AActor* target = actor->target;
-	bool on_lift, under_damage = false;
+	bool on_lift;
+	int under_damage = 0;
 	int dropoff = 0;
 
 	/* killough 9/12/98: Stay on a lift if target is on one */
