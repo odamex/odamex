@@ -17,17 +17,11 @@ jobs:
     name: Build Preparation
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.get_release.outputs.upload_url }}
       new_version: ${{ steps.gitversion.outputs.majorMinorPatch }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v4.5
         with:
@@ -66,7 +60,6 @@ jobs:
     needs: pre_job
     runs-on: windows-latest
     env:
-      upload_url: ${{ needs.pre_job.outputs.upload_url }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
     - name: Checkout source
@@ -115,7 +108,6 @@ jobs:
     runs-on: windows-latest
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
       uses: actions/checkout@v7
@@ -166,7 +158,6 @@ jobs:
       options: --privileged
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
       uses: actions/checkout@v7
@@ -203,7 +194,6 @@ jobs:
       options: --privileged
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
       uses: actions/checkout@v7
@@ -556,7 +546,6 @@ jobs:
     needs: [pre_job, build-windows, build-windows-x32]
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
       uses: actions/checkout@v7
@@ -613,7 +602,6 @@ jobs:
     needs: [pre_job]
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
-      upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
       uses: actions/checkout@v7
