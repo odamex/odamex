@@ -158,91 +158,81 @@ jobs:
           ./Output/zip/odamex-win32-${{env.new_version}}.zip
           ./Output/pdb/odamex-debug-pdb-${{env.new_version}}-x86.zip
   build-flatpak:
-    name: Build Flatpak (Ubuntu Latest)
+    name: Build Flatpak (x86_64)
     needs: pre_job
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Update metainfo dates
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
         sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Install flatpak
-      run: sudo apt update && sudo apt install flatpak flatpak-builder
     - name: Remove .git folders
       shell: bash
       run: rm -rf .git
-    - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Run build
-      run: |
-        flatpak-builder --force-clean --user --install-deps-from=flathub \
-        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=release -v
-    - name: Pack flatpak
-      run: |
-        flatpak build-bundle repo odamex-linux-x86_64-${{ env.new_version }}.flatpak net.odamex.Odamex release \
-        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
-    - name: Upload artifact
-      uses: actions/upload-artifact@v7
+      uses: flatpak/flatpak-github-actions/flatpak-builder@8e357b1556f526e3642244bdf1a6d585be36de54
       with:
-        name: Odamex-Flatpak-x86_64
-        path: odamex-linux-x86_64-${{ env.new_version }}.flatpak
+        manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        bundle: odamex-linux-x86_64-${{ env.new_version }}.flatpak
+        branch: release
+        build-debug-bundle: true
+        artifact-name: Odamex-Flatpak-x86_64
     - name: Upload release binary (x86_64)
       uses: softprops/action-gh-release@v2.3.4
       with:
-        files: odamex-linux-x86_64-${{ env.new_version }}.flatpak
+        files: |
+          odamex-linux-x86_64-${{ env.new_version }}.flatpak
+          odamex-linux-x86_64-${{ env.new_version }}-debug.flatpak
   build-flatpak-arm:
-    name: Build Flatpak (Ubuntu 24.04 ARM)
+    name: Build Flatpak (arm64)
     needs: pre_job
     runs-on: ubuntu-24.04-arm
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Update metainfo dates
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
         sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Install flatpak
-      run: sudo apt update && sudo apt install flatpak flatpak-builder
     - name: Remove .git folders
       shell: bash
       run: rm -rf .git
-    - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Run build
-      run: |
-        flatpak-builder --force-clean --user --install-deps-from=flathub \
-        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=release -v
-    - name: Pack flatpak
-      run: |
-        flatpak build-bundle repo odamex-linux-arm64-${{ env.new_version }}.flatpak net.odamex.Odamex release \
-        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
-    - name: Upload artifact
-      uses: actions/upload-artifact@v7
+      uses: flatpak/flatpak-github-actions/flatpak-builder@8e357b1556f526e3642244bdf1a6d585be36de54
       with:
-        name: Odamex-Flatpak-ARM64
-        path: odamex-linux-arm64-${{ env.new_version }}.flatpak
-    - name: Upload release binary (ARM64)
+        manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        bundle: odamex-linux-arm64-${{ env.new_version }}.flatpak
+        branch: release
+        build-debug-bundle: true
+        artifact-name: Odamex-Flatpak-arm64
+    - name: Upload release binary (arm64)
       uses: softprops/action-gh-release@v2.3.4
       env:
         GITHUB_TOKEN: ${{ github.token }}
       with:
-        files: odamex-linux-arm64-${{ env.new_version }}.flatpak
+        files: |
+          odamex-linux-arm64-${{ env.new_version }}.flatpak
+          odamex-linux-arm64-${{ env.new_version }}-debug.flatpak
   build-macos-universal:
     name: macOS Build (Universal DMG)
     needs: pre_job

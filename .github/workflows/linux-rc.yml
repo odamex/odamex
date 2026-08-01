@@ -166,7 +166,7 @@ jobs:
     - name: Run build
       run: bash ci/ubuntu-focal-buildgen.sh
   build-flatpak:
-    name: Build Flatpak (Ubuntu Latest)
+    name: Build Flatpak (x86_64)
     needs: pre_job
     runs-on: ubuntu-latest
     container:
