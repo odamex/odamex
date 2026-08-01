@@ -870,6 +870,7 @@ menu_t WeaponMenu = {
 static void StartHUDMenu();
 static void StartMessagesMenu (void);
 static void StartAutomapMenu (void);
+static void StartFontMenu (void);
 void ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
@@ -947,6 +948,7 @@ static menuitem_t VideoItems[] = {
 	{ more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {.mfunc = StartHUDMenu}},
 	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {.mfunc = StartMessagesMenu} },
 	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {.mfunc = StartAutomapMenu} },
+	{ more,		"Fonts",				    {NULL},					{0.0}, {0.0},	{0.0},  {.mfunc = StartFontMenu} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {8.0},	{1.0},  {NULL} },
@@ -1182,6 +1184,39 @@ menu_t MessagesMenu = {
 	0,
 	NULL,
 	"Messages"
+};
+
+/*=======================================
+ *
+ * Fonts Menu
+ *
+ *=======================================*/
+EXTERN_CVAR (ui_font_hud)
+EXTERN_CVAR (ui_font_messages)
+EXTERN_CVAR (ui_font_console)
+
+static value_t FontTypes[] = {
+	{ FONT_BITMAP, "Bitmap" },
+	{ FONT_TTF,    "TrueType" }
+};
+
+static menuitem_t FontItems[] = {
+	{ discrete,	"Menu font",		{&ui_font_menu},		{2.0}, {0.0},	{0.0}, {FontTypes} },
+	{ discrete,	"Message font",		{&ui_font_messages},	{2.0}, {0.0},	{0.0}, {FontTypes} },
+	{ discrete,	"HUD font",			{&ui_font_hud},			{2.0}, {0.0},	{0.0}, {FontTypes} },
+	{ discrete,	"Console font",		{&ui_font_console},		{2.0}, {0.0},	{0.0}, {FontTypes} },
+};
+
+menu_t FontMenu = {
+	"M_FONTS",
+	0,
+	ARRAY_LENGTH(FontItems),
+	0,
+	FontItems,
+	0,
+	0,
+	NULL,
+	"Fonts"
 };
 
 /*=======================================
@@ -3120,6 +3155,11 @@ static void StartMessagesMenu (void)
 static void StartAutomapMenu (void)
 {
 	M_SwitchMenu (&AutomapMenu);
+}
+
+static void StartFontMenu (void)
+{
+	M_SwitchMenu (&FontMenu);
 }
 
 void ResetCustomColors (void)
