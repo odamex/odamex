@@ -2942,20 +2942,17 @@ void P_ResolveStackLinks()
 //
 bool P_IsPlayerSpawnThing(const mapthing2_t& mt)
 {
-	if (VANILLA_COOP_PLAYER_STARTS.contains(mt.type) || mt.type == 11 || EXTRA_COOP_PLAYER_STARTS.contains(mt.type))  // player1-4, DM
-	{
+	if (VANILLA_COOP_PLAYER_STARTS.contains(mt.type) || mt.type == 11)  // player1-4, DM
 		return true;
-	}
 
-	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
-	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+	if (spawn_map.contains(mt.type))
+		return false;
 
-		if (mt.type == teamInfo->TeamSpawnThingNum)
-		{
-			return true;
-		}
-	}
+	if (EXTRA_COOP_PLAYER_STARTS.contains(mt.type))
+		return true;
+
+	if (P_IsTeamStart(mt.type))
+		return true;
 
 	return false;
 }
@@ -2974,7 +2971,9 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (mthing.type == 0 || mthing.type == -1)
 		return;
 
-	if (sv_allowshowspawns)
+	const bool inSpawnMap = spawn_map.contains(mthing.type);
+
+	if (sv_allowshowspawns && !inSpawnMap)
 		P_ShowSpawns(mthing);
 
 	const bool isTeleportDest = mthing.type == 14;
@@ -3001,7 +3000,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// count deathmatch start positions
-	if (mthing.type == 11 || (!sv_teamspawns && mthing.type >= 5080 && mthing.type <= 5082))
+	if (mthing.type == 11 || (!sv_teamspawns && P_IsTeamStart(mthing.type) && !inSpawnMap))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (DeathMatchStarts.size() >= 10 && demoplayback)
@@ -3012,7 +3011,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	if (sv_teamspawns)
+	if (sv_teamspawns && !inSpawnMap)
 	{
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
@@ -3030,6 +3029,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	// [RH] Record polyobject-related things
 	if (HexenHack)
 	{
+		// NOLINTNEXTLINE(bugprone-switch-missing-default-case)
 		switch (mthing.type)
 		{
 		case PO_HEX_ANCHOR_TYPE:
@@ -3044,9 +3044,10 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		}
 	}
 
-	if (mthing.type == PO_ANCHOR_TYPE ||
+	if (!inSpawnMap &&
+		(mthing.type == PO_ANCHOR_TYPE ||
 		mthing.type == PO_SPAWN_TYPE ||
-		mthing.type == PO_SPAWNCRUSH_TYPE)
+		mthing.type == PO_SPAWNCRUSH_TYPE))
 	{
 		polyspawns_t *polyspawn = new polyspawns_t;
 		polyspawn->next = polyspawns;
@@ -3061,7 +3062,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// check for players specially
-	if (VANILLA_COOP_PLAYER_STARTS.contains(mthing.type) || EXTRA_COOP_PLAYER_STARTS.contains(mthing.type))
+	if (VANILLA_COOP_PLAYER_STARTS.contains(mthing.type) || (!inSpawnMap && EXTRA_COOP_PLAYER_STARTS.contains(mthing.type)))
 	{
 		// [RH] Only spawn spots that match position.
 		if (mthing.args[0] != position)
@@ -3152,12 +3153,6 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	if (P_IsHordeThing(mthing.type))
-	{
-		type = MT_HORDESPAWN;
-		::level.detected_gametype = GM_HORDE;
-	}
-
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
 	if (mthing.type >= 14001 && mthing.type <= 14064)
@@ -3193,6 +3188,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 			mthing.args[0] = mthing.type - 9026;
 			type = MT_FOUNTAIN;
 			info = &mobjinfo[type]; // mt_fountain guaranteed to exist
+		}
+
+		if (P_IsHordeThing(mthing.type))
+		{
+			type = MT_HORDESPAWN;
+			::level.detected_gametype = GM_HORDE;
 		}
 	}
 	else
