@@ -110,31 +110,15 @@ int main(int argc, char *argv[])
 		atterm(nx_early_deinit);
 #endif
 
+		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
+		::Args.SetArgs(argc, argv);
+
+		D_CheckInfoDumps();
+
 #if defined(UNIX) && !defined(GCONSOLE)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
-
-		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
-		::Args.SetArgs(argc, argv);
-
-		if (::Args.CheckParm("--version"))
-		{
-#ifdef _WIN32
-			FILE* fh = fopen("odamex-version.txt", "w");
-			if (!fh)
-				exit(EXIT_FAILURE);
-
-			const int ok = fprintf(fh, "Odamex %s\n", NiceVersion());
-			if (!ok)
-				exit(EXIT_FAILURE);
-
-			fclose(fh);
-#else
-			fmt::print("Odamex {}\n", NiceVersion());
-#endif
-			exit(EXIT_SUCCESS);
-		}
 
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)

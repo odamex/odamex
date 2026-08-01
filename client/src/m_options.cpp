@@ -568,6 +568,7 @@ menu_t JoystickMenu = {
   *=======================================*/
 
 static value_t MusSys[] = {
+	{ MS_AUTO,		"Auto"},
 	#ifndef _WIN32
 	{ MS_SDLMIXER,	"SDL Mixer"},
 	#endif
