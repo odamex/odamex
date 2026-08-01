@@ -19,7 +19,7 @@ jobs:
       minor: ${{ steps.gitversion.outputs.minor }}
       patch: ${{ steps.gitversion.outputs.patch }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
@@ -71,9 +71,10 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+        submodules: recursive
     - name:  Run Upversion
       id:    upversion
       shell: pwsh
@@ -82,8 +83,6 @@ jobs:
         MAJORVERSION: ${{ needs.pre_job.outputs.major }}
         MINORVERSION: ${{ needs.pre_job.outputs.minor }}
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Turn on problem matcher
@@ -106,9 +105,9 @@ jobs:
       CXX: /usr/bin/clang++
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
@@ -119,9 +118,9 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Turn on problem matcher
@@ -134,9 +133,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Run build
       run: bash ci/fedora-buildgen.sh
   build-ubuntu-focal:
@@ -145,9 +144,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Run build
       run: bash ci/ubuntu-focal-buildgen.sh
   build-flatpak:
@@ -252,7 +251,7 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-tags: true
     - name: Download x86_64 Flatpak
@@ -262,7 +261,7 @@ jobs:
     - name: Download Arm Flatpak
       uses: actions/download-artifact@v8
       with:
-        name: Odamex-Flatpak-ARM64
+        name: Odamex-Flatpak-arm64
     - name: Create or update prerelease
       uses: ./.github/actions/update-prerelease
       env:

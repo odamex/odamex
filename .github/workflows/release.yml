@@ -20,7 +20,7 @@ jobs:
       upload_url: ${{ steps.get_release.outputs.upload_url }}
       new_version: ${{ steps.gitversion.outputs.majorMinorPatch }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
       - name: Get release
@@ -70,9 +70,9 @@ jobs:
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
     - name: Remove .git folders
@@ -118,9 +118,9 @@ jobs:
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Turn on problem matcher
       uses: ammaraskar/msvc-problem-matcher@master
     - name: Remove .git folders
@@ -250,9 +250,9 @@ jobs:
       odamex_install_bindir: "/Applications/Odamex"
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Cache macOS universal deps
       uses: actions/cache@v4
       with:
@@ -558,9 +558,9 @@ jobs:
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Remove .git folders
       shell: bash
       run: rm -rf .git
@@ -615,9 +615,9 @@ jobs:
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Remove .git folders
       shell: bash
       run: rm -rf .git
