@@ -2862,13 +2862,6 @@
       },
       {
          "default" : false,
-         "flags" : [ "CLIENTARCHIVE" ],
-         "helptext" : "Pillarbox 4:3 resolutions in widescreen",
-         "name" : "vid_pillarbox",
-         "type" : "boolean"
-      },
-      {
-         "default" : false,
          "flags" : [],
          "helptext" : "Vanilla Doom frames per second indicator",
          "name" : "vid_ticker",
@@ -2903,8 +2896,8 @@
          "type" : "boolean"
       }
    ],
-   "odamex_branchname" : "",
-   "odamex_commithash" : "",
+   "odamex_branchname" : "remove-pillarbox",
+   "odamex_commithash" : "6172db6b18f607654a0abf824a5ab69a7780e5bb",
    "odamex_version" : "12.2.1",
    "schema_version" : 1
 }
