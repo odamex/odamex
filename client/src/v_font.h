@@ -88,13 +88,13 @@ public:
 
 	// The glyph for a character, or NULL if the font has none.
 	const Texture* getGlyph(char c) const
-	{	return mCharacters[(byte)c];	}
+	{	return mCharacters[static_cast<byte>(c)];	}
 
 	const byte* getGlyphCoverage(char c) const
-	{	return mCharacterCoverage[(byte)c];	}
+	{	return mCharacterCoverage[static_cast<byte>(c)];	}
 
 	const palindex_t* getGlyphFill(char c) const
-	{	return mCharacterFill[(byte)c];	}
+	{	return mCharacterFill[static_cast<byte>(c)];	}
 
 	// Distance from the top of a line of text down to the baseline that
 	// glyphs sit on.
