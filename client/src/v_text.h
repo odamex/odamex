@@ -54,6 +54,12 @@ struct OFontVariation;
 extern OFont* menu_font;
 extern OFont* hud_font;
 
+enum fonttype_t
+{
+	FONT_BITMAP,	// classic bitmap font
+	FONT_TTF,		// TrueType font
+};
+
 //
 // V_GetHudFont
 //
@@ -129,6 +135,23 @@ OFont* V_GetGradientFont(const char* lumpname, int pixel_size, argb_t top, argb_
 //
 OFont* V_GetVariableFont(const char* lumpname, int pixel_size, unsigned int stylemask,
                          const std::vector<OFontVariation>& variations);
+
+//
+// V_GetBitmapFont
+//
+// The classic bitmap equivalent of a named face.
+// Used by the per-subsystem font selection to force the bitmap
+// typeface even when a TrueType lump is present.
+//
+OFont* V_GetBitmapFont(const char* lumpname, int pixel_size);
+
+//
+// V_FontApplyPreferences
+//
+// Rebuilds the global menu_font and hud_font from the ui_font_* cvars. Called
+// once fonts are ready and again whenever one of those cvars changes.
+//
+void V_FontApplyPreferences();
 
 //
 // V_FontsReady

@@ -48,6 +48,9 @@ EXTERN_CVAR(msg4color)
 EXTERN_CVAR(hud_scaletext)
 EXTERN_CVAR(hud_transparency)
 
+EXTERN_CVAR(ui_font_menu)
+EXTERN_CVAR(ui_font_hud)
+
 
 byte *ConChars;
 extern byte *Ranges;
@@ -73,16 +76,19 @@ bool V_FontsReady()
 // TrueType lump is missing or unusable -- text disappearing entirely is a far
 // worse failure mode than text in the wrong typeface.
 //
-static OFont* V_CreateFont(unsigned int stylemask, OFont::ScaleFunc scale_func)
+static OFont* V_CreateFont(unsigned int stylemask, OFont::ScaleFunc scale_func, bool bitmap)
 {
-	OFont* font = new TrueTypeFont(TTF_LUMP_NAME, 8, stylemask, scale_func);
-	if (font->isUsable())
-		return font;
+	if (!bitmap)
+	{
+		OFont* font = new TrueTypeFont(TTF_LUMP_NAME, 8, stylemask, scale_func);
+		if (font->isUsable())
+			return font;
 
-	PrintFmt(PRINT_HIGH, "TrueType font {} unusable, falling back to the bitmap font.\n",
-	         TTF_LUMP_NAME);
+		PrintFmt(PRINT_HIGH, "TrueType font {} unusable, falling back to the bitmap font.\n",
+		         TTF_LUMP_NAME);
 
-	delete font;
+		delete font;
+	}
 	return new SmallDoomFont(scale_func);
 }
 
@@ -147,6 +153,44 @@ OFont* V_GetFont(const char* lumpname, int pixel_size)
 OFont* V_GetHudFontSized(int pixel_size)
 {
 	return V_GetFont(TTF_LUMP_NAME, pixel_size);
+}
+
+
+//
+// V_GetBitmapFont
+//
+OFont* V_GetBitmapFont(const char* lumpname, int pixel_size)
+{
+	typedef std::map<std::string, OFont*> FontCache;
+	static FontCache cache;
+
+	pixel_size = clamp(pixel_size, 4, 128);
+	const std::string key = fmt::format("{}:{}", lumpname, pixel_size);
+
+	FontCache::iterator it = cache.find(key);
+	if (it != cache.end())
+		return it->second;
+
+	OFont* font;
+	if (!strnicmp(lumpname, "FONT_BIG", 8))
+	{
+		// The large red font's glyphs are roughly twice the small font's height.
+		const fixed_t scale = MAX(1, pixel_size / 16) * FRACUNIT;
+		font = new LargeDoomFont(scale);
+	}
+	else if (!strnicmp(lumpname, "FONT_CON", 8))
+	{
+		const fixed_t scale = MAX(1, pixel_size / 8) * FRACUNIT;
+		font = new ConCharsFont(scale);
+	}
+	else
+	{
+		const fixed_t scale = MAX(1, pixel_size / 8) * FRACUNIT;
+		font = new SmallDoomFont(scale);
+	}
+
+	cache[key] = font;
+	return font;
 }
 
 
@@ -267,7 +311,10 @@ OFont* V_GetFaceFont(fontface_t face, int pixel_scale)
 	pixel_scale = MAX(1, pixel_scale);
 
 	const hudfacedef_t& def = hud_faces[face];
-	return V_GetFont(def.lumpname, def.base_size * pixel_scale);
+	const int size = def.base_size * pixel_scale;
+	if (ui_font_hud.asInt() == FONT_BITMAP)
+		return V_GetBitmapFont(def.lumpname, size);
+	return V_GetFont(def.lumpname, size);
 }
 
 
@@ -280,18 +327,54 @@ OFont* V_GetHudFont(int pixel_scale)
 }
 
 
+//
+// V_BuildGlobalFonts
+//
+// Recreates the global menu_font and hud_font, choosing the bitmap or
+// TrueType typeface for each from its ui_font_* cvar.
+//
+static void V_BuildGlobalFonts()
+{
+	const bool menu_bitmap = ui_font_menu.asInt() == FONT_BITMAP;
+	const bool hud_bitmap = ui_font_hud.asInt() == FONT_BITMAP;
+
+	delete ::menu_font;
+	::menu_font = V_CreateFont(TrueTypeFont::TTF_GRADIENT | TrueTypeFont::TTF_SHADOW,
+	                           V_FontScaleClean, menu_bitmap);
+
+	delete ::hud_font;
+	::hud_font = V_CreateFont(TrueTypeFont::TTF_TEXTURE, V_FontScaleHudText, hud_bitmap);
+}
+
+//
+// V_FontApplyPreferences
+//
+void V_FontApplyPreferences()
+{
+	if (!V_FontsReady())
+		return;
+
+	V_BuildGlobalFonts();
+}
+
 /**
  * @brief Initialize fonts.
  */
 void V_TextInit()
 {
-	if (!::menu_font)
-		::menu_font = V_CreateFont(TrueTypeFont::TTF_GRADIENT | TrueTypeFont::TTF_SHADOW,
-		                           V_FontScaleClean);
-	if (!::hud_font)
-		::hud_font = V_CreateFont(TrueTypeFont::TTF_TEXTURE, V_FontScaleHudText);
+	V_BuildGlobalFonts();
 
 	::fonts_ready = true;
+}
+
+CVAR_FUNC_IMPL(ui_font_menu)
+{
+	V_FontApplyPreferences();
+}
+
+CVAR_FUNC_IMPL(ui_font_hud)
+{
+	V_FontApplyPreferences();
 }
 
 /**

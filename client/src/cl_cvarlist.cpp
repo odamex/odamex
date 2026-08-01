@@ -273,6 +273,18 @@ CVAR_RANGE_FUNC_DECL(ui_transblue, "0", "",
 
 CVAR(				ui_mouse, "1", "Navigate the menus and console with the mouse",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE_FUNC_DECL(ui_font_menu, "1", "Font used for menus (0 = bitmap, 1 = TrueType).",
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE_FUNC_DECL(ui_font_hud, "1", "Font used for the HUD (0 = bitmap, 1 = TrueType).",
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(			ui_font_messages, "1", "Font used for in-game messages (0 = bitmap, 1 = TrueType).",
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(			ui_font_console, "1", "Font used for the console (0 = bitmap, 1 = TrueType).",
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 // Init settings
 // -------------
 

@@ -74,6 +74,9 @@ extern int		gametic;
 static unsigned int		ConRows, ConCols, ConCharSize, ConScale;
 static unsigned int		ConWrapWidth;	// pixel width text wraps at
 
+EXTERN_CVAR(ui_font_console)
+EXTERN_CVAR(ui_font_messages)
+
 //
 // C_Font
 //
@@ -85,7 +88,10 @@ static const OFont* C_Font()
 	if (!V_FontsReady())
 		return nullptr;
 
-	return V_GetFont("FONT_CON", 8 * MAX(1u, ConScale));
+	const int size = 8 * MAX(1u, ConScale);
+	if (ui_font_console.asInt() == FONT_BITMAP)
+		return V_GetBitmapFont("FONT_CON", size);
+	return V_GetFont("FONT_CON", size);
 }
 
 //
@@ -107,7 +113,10 @@ static int C_CharWidth(char c)
 //
 static const OFont* C_MessageFont()
 {
-	return V_GetHudFontSized(8 * MAX(1, V_TextScaleXAmount()));
+	const int size = 8 * MAX(1, V_TextScaleXAmount());
+	if (ui_font_messages.asInt() == FONT_BITMAP)
+		return V_GetBitmapFont("FONT_SM", size);
+	return V_GetHudFontSized(size);
 }
 
 static bool				cursoron = false;

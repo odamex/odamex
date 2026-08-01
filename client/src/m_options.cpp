@@ -78,6 +78,8 @@ END_DISABLE_WARNING_GNU
 // [ML] 09/4/06: Show secret revealed message, 0 = off, 1 = on
 EXTERN_CVAR (hud_revealsecrets)
 
+EXTERN_CVAR (ui_font_menu)
+
 // Show messages has default, 0 = off, 1 = on
 EXTERN_CVAR (show_messages)
 
@@ -1788,7 +1790,10 @@ static int M_OptTextVOffset()
 OFont* M_GetHeaderFont()
 {
 	const int header_base = 16;		// virtual pixels tall at 1x clean scale
-	return V_GetFont("FONT_BIG", header_base * MAX(1, CleanYfac));
+	const int size = header_base * MAX(1, CleanYfac);
+	if (ui_font_menu.asInt() == FONT_BITMAP)
+		return V_GetBitmapFont("FONT_BIG", size);
+	return V_GetFont("FONT_BIG", size);
 }
 
 //
