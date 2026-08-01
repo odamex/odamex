@@ -99,7 +99,7 @@ class OLumpName
 template <>
 struct std::hash<OLumpName>
 {
-	constexpr auto operator()(const OLumpName& lumpname) const
+	auto operator()(const OLumpName& lumpname) const
 	{
 		size_t val = 0;
 		for (const char* s = lumpname.m_data.c_str(); *s != 0; s++)
