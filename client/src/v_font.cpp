@@ -288,7 +288,7 @@ fixed_t OFont::getScale() const
 bool OFont::isUsable() const
 {
 	// a font with no letterforms is one whose source resource was missing
-	const Texture* texture = mCharacters[(byte)'T'];
+	const Texture* texture = mCharacters[static_cast<byte>('T')];
 	return texture != nullptr && texture->mWidth > 0 && texture->mHeight > 0;
 }
 
