@@ -168,6 +168,12 @@ jobs:
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
         submodules: recursive
+    - name: Install PowerShell
+      run: |
+        curl -L https://github.com/PowerShell/PowerShell/releases/download/v7.6.4/powershell-7.6.4-linux-x64.tar.gz -o /tmp/powershell.tar.gz
+        mkdir -p /opt/pwsh
+        tar -xzf /tmp/powershell.tar.gz -C /opt/pwsh
+        ln -s /opt/pwsh/pwsh /usr/local/bin/pwsh
     - name:  Run Upversion
       id:    upversion
       shell: pwsh
@@ -209,6 +215,12 @@ jobs:
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
         submodules: recursive
+    - name: Install PowerShell
+      run: |
+        curl -L https://github.com/PowerShell/PowerShell/releases/download/v7.6.4/powershell-7.6.4-linux-arm64.tar.gz -o /tmp/powershell.tar.gz
+        mkdir -p /opt/pwsh
+        tar -xzf /tmp/powershell.tar.gz -C /opt/pwsh
+        ln -s /opt/pwsh/pwsh /usr/local/bin/pwsh
     - name:  Run Upversion
       id:    upversion
       shell: pwsh
