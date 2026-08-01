@@ -128,6 +128,8 @@ const char* odasprnames[] = {
 
 // reserved odamex mobjinfo
 // ::MT_CAREPACK - ::MT_GIB0 + 1
+// this table *is* the constants for those numbers
+// NOLINTBEGIN(readability-magic-numbers)
 mobjinfo_t odamobjinfo[] = {
     // ------------ odamex things start ------------ //
     {
@@ -2573,6 +2575,7 @@ mobjinfo_t odamobjinfo[] = {
 
     // ----------- odamex mobjinfo end -----------
 };
+// NOLINTEND(readability-magic-numbers)
 
 nonstd::span<mobjinfo_t> getOdaMobjinfo() {
     return { odamobjinfo, ARRAY_LENGTH(odamobjinfo) };

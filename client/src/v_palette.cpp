@@ -721,7 +721,7 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		int grayint = (int)(255.0f * std::clamp(1.0f -
+		const int grayint = (int)(255.0f * std::clamp(1.0f -
 						(palette[c].getr() * 0.00116796875f +
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
@@ -763,7 +763,7 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		int grayint = (int)(255.0f * std::clamp(1.0f -
+		const int grayint = (int)(255.0f * std::clamp(1.0f -
 						(palette[c].getr() * 0.00116796875f +
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
@@ -880,7 +880,7 @@ BEGIN_COMMAND (testblend)
 	{
 		argb_t color(V_GetColorFromString(argv[1]));
 
-		int alpha = 255.0 * std::clamp((float)atof(argv[2]), 0.0f, 1.0f);
+		const int alpha = 255.0 * std::clamp((float)atof(argv[2]), 0.0f, 1.0f);
 		R_SetSectorBlend(argb_t(alpha, color.getr(), color.getg(), color.getb()));
 	}
 }
