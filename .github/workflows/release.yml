@@ -221,6 +221,7 @@ jobs:
       uses: flatpak/flatpak-github-actions/flatpak-builder@8e357b1556f526e3642244bdf1a6d585be36de54
       with:
         manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        arch: aarch64
         bundle: odamex-linux-arm64-${{ env.new_version }}.flatpak
         branch: release
         build-debug-bundle: true
