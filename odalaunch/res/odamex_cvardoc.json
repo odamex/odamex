@@ -2896,8 +2896,8 @@
          "type" : "boolean"
       }
    ],
-   "odamex_branchname" : "remove-pillarbox",
-   "odamex_commithash" : "6172db6b18f607654a0abf824a5ab69a7780e5bb",
+   "odamex_branchname" : "",
+   "odamex_commithash" : "",
    "odamex_version" : "12.2.1",
    "schema_version" : 1
 }
