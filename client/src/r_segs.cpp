@@ -969,10 +969,6 @@ void R_StoreWallRange(int start, int stop)
 				|| (backsector->ceiling_angle + backsector->base_ceiling_angle) !=
 				   (frontsector->ceiling_angle + frontsector->base_ceiling_angle)
 				;
-
-			// Sky hack
-			markceiling = markceiling &&
-				(!R_ResourceIdIsSkyFlat(frontsector->ceiling_res_id) || !R_ResourceIdIsSkyFlat(backsector->ceiling_res_id));
 		}
 
 		if (rw_hashigh)
