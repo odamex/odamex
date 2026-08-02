@@ -25,7 +25,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -36,9 +36,9 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Install Python packages
       uses: insightsengineering/pip-action@v2
       with:
@@ -123,9 +123,9 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Install Python packages
       uses: insightsengineering/pip-action@v2
       with:
