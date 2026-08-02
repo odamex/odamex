@@ -2090,8 +2090,9 @@ static fixed_t	bottomslope;
 
 //
 // P_IsFriendlyMonster
-// Adds a few short circuits before calling P_IsFriendlyThing
-// because P_IsFriendlyThing checks not friendlies for friendliness
+// Checks that thing is specifically a friendly monster that source gets along
+// with.
+// Because P_IsFriendlyThing checks not friendlies for friendliness
 //
 static bool P_IsFriendlyMonster(AActor* source, AActor* thing)
 {
@@ -2099,9 +2100,6 @@ static bool P_IsFriendlyMonster(AActor* source, AActor* thing)
 		return false;
 
 	if (!(thing->flags & MF_FRIEND))
-		return false;
-
-	if (!source->player && !(source->flags & MF_FRIEND))
 		return false;
 
 	return P_IsFriendlyThing(source, thing);
@@ -2208,15 +2206,12 @@ bool PTR_AimTraverse (intercept_t* in)
 		return true;
 
 	// [SL] 2011-10-31 - Don't aim at teammates
-	if ((sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) &&
-		shootthing->player && th->player &&
-		shootthing->player->userinfo.team == th->player->userinfo.team &&
-		!sv_friendlyfire)
+	if (!sv_friendlyfire && shootthing->player && th->player &&
+	    P_AreTeammates(*shootthing->player, *th->player))
 		return true;
 
-	// Don't aim at friendlies if you're a player
-	if (shootthing->player && th->flags & MF_FRIEND && P_IsFriendlyThing(shootthing, th) &&
-	    !sv_friendlymonsterfire)
+	// Don't aim at friendlies you can't hurt
+	if (!sv_friendlymonsterfire && P_IsFriendlyMonster(shootthing, th))
 		return true;
 
 	// check angles to see if the thing can be aimed at
