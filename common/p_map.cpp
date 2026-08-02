@@ -2437,7 +2437,7 @@ bool PTR_ShootTraverse (intercept_t* in)
 			spawnblood = false;
 	}
 
-	if (th->flags & MF_FRIEND && P_IsFriendlyThing(th, shootthing) && !sv_friendlymonsterfire)
+	if (P_IsFriendlyMonster(shootthing, th) && !sv_friendlymonsterfire)
 		spawnblood = false;
 
 	if (spawnblood)
