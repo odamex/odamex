@@ -75,7 +75,7 @@ team_t LevelState::getDefendingTeam() const
 	}
 
 	// Blue always goes first, then red, then so on...
-	int teams = clamp(sv_teamsinplay.asInt(), 2, 3);
+	const int teams = std::clamp(sv_teamsinplay.asInt(), 2, 3);
 	int round0 = MAX(::levelstate.getRound() - 1, 0);
 	return static_cast<team_t>(round0 % teams);
 }

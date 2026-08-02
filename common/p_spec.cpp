@@ -198,14 +198,27 @@ int P_ArgToCrush(byte arg)
  */
 int P_IsUnderDamage(const AActor* actor)
 {
-	const struct msecnode_s* seclist;
-	const DCeiling* cr; // Crushing ceiling
 	int dir = 0;
-	for (seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
+	for (const msecnode_t* seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
 	{
-		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) && cr->m_Status == 2) // Down
+		const DSectorEffect* ceilingdata = seclist->m_sector->ceilingdata; // Crushing ceiling
+		if (ceilingdata && ceilingdata->IsKindOf(RUNTIME_CLASS(DCeiling)))
 		{
-			cr->m_Crush > NO_CRUSH ? dir = 1 : dir = 0;
+			const auto* cl = static_cast<const DCeiling*>(ceilingdata);
+			if (cl->m_Crush > NO_CRUSH)
+			{
+				dir |= cl->m_Direction; // 1 = up, 0 = waiting, -1 = down
+			}
+		}
+
+		const DSectorEffect* floordata = seclist->m_sector->floordata; // Crushing floor
+		if (floordata && floordata->IsKindOf(RUNTIME_CLASS(DFloor)))
+		{
+			const auto* fl = static_cast<const DFloor*>(floordata);
+			if (fl->m_Crush > NO_CRUSH)
+			{
+				dir |= -fl->m_Direction; // need to negate since up is when damage happens for floors
+			}
 		}
 	}
 	return dir;
@@ -683,7 +696,7 @@ static void ParseAnim(OScanner &os, byte istex)
 		if (os.compareToken("tics"))
 		{
 			os.mustScanInt();
-			min = max = clamp(os.getTokenInt(), 0, 255);
+			min = max = std::clamp(os.getTokenInt(), 0, 255);
 		}
 		else if (os.compareToken("rand"))
 		{

@@ -448,7 +448,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
 		if (weight.dist > (1024 * FRACUNIT))
 			continue;
 
-		int groupIter = clamp(left, 1, maxGroupSize);
+		const int groupIter = std::clamp(left, 1, maxGroupSize);
 
 		AActors okIter = SpawnMonsterGroup(*weight.spawn, recipe, groupIter, monsterCounts);
 		ok.insert(ok.end(), okIter.begin(), okIter.end());

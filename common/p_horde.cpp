@@ -817,7 +817,7 @@ void HordeState::tick()
 						recipe.count = 0;
 					}
 					else
-						recipe.count = clamp(recipe.limit - alive, 0, recipe.count);
+						recipe.count = std::clamp(recipe.limit - alive, 0, recipe.count);
 				}
 			}
 

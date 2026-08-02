@@ -8,6 +8,7 @@ on:
 
 jobs:
   clang-tidy-comment:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
     steps:
       - uses: ZedThree/clang-tidy-review/post@v0.23.1

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -44,13 +44,12 @@ struct palette_t
 	}
 };
 
-struct dyncolormap_s {
+struct dyncolormap_t {
 	shaderef_t		maps;
 	argb_t			color;
 	argb_t			fade;
-	struct dyncolormap_s *next;
+	dyncolormap_t *next;
 };
-typedef struct dyncolormap_s dyncolormap_t;
 
 extern fargb_t baseblend;
 
