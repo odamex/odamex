@@ -2423,7 +2423,7 @@ bool PTR_ShootTraverse (intercept_t* in)
 
 	// Spawn bullet puffs or blod spots,
 	// depending on target type.
-	bool spawnblood = !(in->d.thing->flags & MF_NOBLOOD);
+	bool spawnblood = !(th->flags & MF_NOBLOOD) && !(th->flags2 & MF2_DORMANT);
 
 	// [SL] 2011-05-11 - In unlagged games, spawn blood at the target's current
 	// position, not at their reconciled position
