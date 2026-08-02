@@ -2088,6 +2088,54 @@ fixed_t 		aimslope;
 static fixed_t	topslope;
 static fixed_t	bottomslope;
 
+//
+// P_IsFriendlyMonster
+// Adds a few short circuits before calling P_IsFriendlyThing
+// because P_IsFriendlyThing checks not friendlies for friendliness
+//
+static bool P_IsFriendlyMonster(AActor* source, AActor* thing)
+{
+	if (!source || !thing)
+		return false;
+
+	if (!(thing->flags & MF_FRIEND))
+		return false;
+
+	if (!source->player && !(source->flags & MF_FRIEND))
+		return false;
+
+	return P_IsFriendlyThing(source, thing);
+}
+
+//
+// P_ShouldHitscanPass
+// Determines if a hitscan should pass thru a thing.
+//
+static bool P_ShouldHitscanPass(AActor* source, AActor* thing)
+{
+	if (!source || !thing)
+		return false;
+
+	// Shoot through teammates you can't hurt and don't collide with.
+	if (sv_unblockplayers && !sv_friendlyfire &&
+	    source->player && thing->player &&
+	    P_AreTeammates(*source->player, *thing->player))
+		return true;
+
+	if (sv_unblockfriendly && !sv_friendlymonsterfire)
+	{
+		// Same deal for friendly monsters
+		if (P_IsFriendlyMonster(source, thing))
+			return true;
+
+		// Same deal for a friendly shooting thru the player it belongs to.
+		if (source->flags & MF_FRIEND && thing->player &&
+		    P_IsFriendlyThing(thing, source))
+			return true;
+	}
+
+	return false;
+}
 
 //
 // PTR_AimTraverse
@@ -2352,6 +2400,10 @@ bool PTR_ShootTraverse (intercept_t* in)
 
 	// GhostlyDeath -- Don't shoot spectators!
 	if ((th->player && th->player->spectator))
+		return true;
+
+	// Don't let unblocked teammates or friendlies soak up the shot.
+	if (P_ShouldHitscanPass(shootthing, th))
 		return true;
 
 	// check angles to see if the thing can be aimed at
