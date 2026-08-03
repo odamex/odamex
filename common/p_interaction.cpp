@@ -2186,7 +2186,8 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 	// No damage with sv_friendlymonsterfire
 	if (!sv_friendlymonsterfire && source && target != source && mod != MOD_TELEFRAG)
 	{
-		if (source->flags & MF_FRIEND && P_IsFriendlyThing(source, target))
+		if (!(source->player && target->player) && source->flags & MF_FRIEND &&
+		    P_IsFriendlyThing(source, target))
 		{
 			return;
 		}

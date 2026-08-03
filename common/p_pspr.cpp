@@ -1512,7 +1512,7 @@ void A_BFGSpray(AActor* mo)
 
 		// mo->target is the originator (player)
 		//	of the missile
-		P_AimLineAttack (mo->target, an, 16*64*FRACUNIT);
+		P_AimLineAttack (mo->target, an, 16*64*FRACUNIT, false);
 
 		if (!linetarget)
 			continue;
