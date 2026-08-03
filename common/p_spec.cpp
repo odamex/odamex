@@ -228,7 +228,8 @@ bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest)
 
 	// Swap order if the friendshiptest actor isn't a MF_FRIEND
 	// (but the other one is)
-	if (!(friendshiptest->flags & MF_FRIEND) && actor->flags & MF_FRIEND)
+	if ((friendshiptest->player && !actor->player) ||
+	    (!(friendshiptest->flags & MF_FRIEND) && actor->flags & MF_FRIEND))
 	{
 		const AActor* swap = actor;
 		actor = friendshiptest;

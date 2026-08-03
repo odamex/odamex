@@ -765,9 +765,7 @@ static bool PIT_CheckThing (AActor *thing)
 					return true;
 
 				// [RH] DeHackEd infighting is here.
-				if (!deh.Infight &&
-						(!((thing->flags ^ tmthing->target->flags) & MF_FRIEND) ||
-						(thing->flags & tmthing->target->flags & MF_FRIEND && P_IsFriendlyThing(thing, tmthing->target))))
+				if (!deh.Infight && P_IsFriendlyThing(thing, tmthing->target))
 					return false; // Hit same species as originator, explode, no damage
 			}
 		}

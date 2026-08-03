@@ -379,15 +379,14 @@ static bool PIT_FindTarget(AActor* mo)
 {
 	AActor* actor = current_actor;
 
-	if (!((mo->flags ^ actor->flags) & MF_FRIEND && // Invalid target
-	      mo->health > 0 && (mo->flags & MF_COUNTKILL || mo->type == MT_SKULL)))
+	if (!(mo->health > 0 && (mo->flags & MF_COUNTKILL || mo->type == MT_SKULL)))
 		return true;
 
 	// If the monster is already engaged in a one-on-one attack
 	// with a healthy friend, don't attack around 60% the time
 	const AActor* targ = mo->target;
 	if (targ && targ->target == mo && P_Random() > 100 &&
-		(targ->flags ^ mo->flags) & MF_FRIEND &&
+		!P_IsFriendlyThing(targ, mo) &&
 		targ->health * 2 >= targ->info->spawnhealth)
 			return true;
 
@@ -1069,8 +1068,14 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		auto& list = actor->IsFriendly() ? AActor::GetHostiles()
 		                                 : AActor::GetFriendlies();
 
-		// Bug out early if the list is empty
-		if (!list.empty())
+		// A friendly opposes another player's friendlies in a PvP game, so it
+		// has to look through its own list as well.
+		auto* rivals = (actor->IsFriendly() && !G_IsCoopGame())
+		                   ? &AActor::GetFriendlies()
+		                   : nullptr;
+
+		// Bug out early if there's nobody to oppose
+		if (!list.empty() || (rivals && !rivals->empty()))
 		{
 			current_actor = actor;
 			current_allaround = allaround;
@@ -1103,18 +1108,24 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 			// Random number of monsters, to prevent patterns from forming
 			int n = (P_Random() & 31) + 15;
 
-			for (AActor* mo = list.Head(); mo; mo = mo->tlnext)
+			for (auto* opposing : {&list, rivals})
 			{
-				if (--n < 0)
-				{
-					// Only a subset of the monsters were searched. Move all of
-					// the ones which were searched so far, to the end of the list.
+				if (!opposing)
+					continue;
 
-					list.MoveFrontToEnd(mo);
-					break;
+				for (AActor* mo = opposing->Head(); mo; mo = mo->tlnext)
+				{
+					if (--n < 0)
+					{
+						// Only a subset of the monsters were searched. Move all of
+						// the ones which were searched so far, to the end of the list.
+
+						opposing->MoveFrontToEnd(mo);
+						break;
+					}
+					else if (!PIT_FindTarget(mo))
+						return true;
 				}
-				else if (!PIT_FindTarget(mo))
-					return true;
 			}
 		}
 	}
@@ -1304,6 +1315,41 @@ void P_RunHelperTics()
 }
 
 //
+// P_LookForOwner
+//
+// killough 9/9/98: go back to the player a friendly belongs to, no matter
+// whether it's visible or not.
+//
+static bool P_LookForOwner(AActor* actor, bool allaround)
+{
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	{
+		if (it->id == actor->friend_playerid && !it->spectator && it->health > 0)
+		{
+			if (it->ingame() && it->playerstate == PST_LIVE && !it->spectator &&
+			    it->mo && it->mo->health > 0 && P_IsFriendlyThing(it->mo, actor) &&
+			    P_IsVisible(actor, it->mo, allaround))
+			{
+				actor->target = it->mo;
+
+				// killough 12/98:
+				// get out of refiring loop, to avoid hitting player accidentally
+
+				if (actor->info->missilestate)
+				{
+					P_SetMobjState(actor, actor->info->seestate);
+					actor->flags &= ~MF_JUSTHIT;
+				}
+
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+//
 // P_LookForPlayers
 // If allaround is false, only look 180 degrees in front.
 // Returns true if a player is targeted.
@@ -1332,35 +1378,11 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 	if (!sector)
 		return false;
 
-	if (actor->flags & MF_FRIEND)
-	{ // killough 9/9/98: friendly monsters go about players differently
-		// Go back to a player, no matter whether it's visible or not
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		{
-			if (it->id == actor->friend_playerid && !it->spectator && it->health > 0)
-			{
-				if (it->ingame() && it->playerstate == PST_LIVE && !it->spectator &&
-				    it->mo && it->mo->health > 0 && P_IsFriendlyThing(it->mo, actor) &&
-				    P_IsVisible(actor, it->mo, allaround))
-				{
-					actor->target = it->mo;
+	// killough 9/9/98: friendly monsters go about players differently
+	// Go back to a player, no matter whether it's visible or not
 
-					// killough 12/98:
-					// get out of refiring loop, to avoid hitting player accidentally
-
-					if (actor->info->missilestate)
-					{
-						P_SetMobjState(actor, actor->info->seestate);
-						actor->flags &= ~MF_JUSTHIT;
-					}
-
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
+	if (actor->flags & MF_FRIEND && G_IsCoopGame())
+		return P_LookForOwner(actor, allaround);
 
 	// Construct our table of ingame players
 	// [AM] TODO: Have the Players container handle this instead of having to
@@ -1414,6 +1436,10 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 				actor->target = actor->goal;
 				return true;
 			}
+
+			if (actor->flags & MF_FRIEND)
+				return P_LookForOwner(actor, allaround);
+
 			return false;
 		}
 
@@ -1430,6 +1456,9 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 
 		if (!player->mo)
 			continue; // out of game
+
+		if (P_IsFriendlyThing(actor, player->mo))
+			continue;
 
 		if (!P_IsVisible(actor, player->mo, allaround))
 		{
@@ -3381,7 +3410,7 @@ void A_Stop(AActor* actor)
 #ifdef CLIENT_APP
 static void ApplyFriendlyEffects(AActor* mobj)
 {
-	if (mobj->health <= 0)
+	if (mobj->health <= 0 || mobj->flags & MF_CORPSE)
 	{
 		mobj->SetEffects(mobj->effects & ~FX_FRIENDHEARTS);
 		return;

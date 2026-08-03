@@ -633,8 +633,6 @@ void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
 	if (i_isFriendly)
 	{
 		this->flags |= MF_FRIEND;
-
-		P_FriendlyEffects(this);
 	}
 	else
 	{
@@ -653,6 +651,11 @@ void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
 			this->friend_playerid = owner->friend_playerid;
 			this->friend_teamid = owner->friend_teamid;
 		}
+	}
+
+	if (i_isFriendly)
+	{
+		P_FriendlyEffects(this);
 	}
 }
 

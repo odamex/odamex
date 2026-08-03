@@ -800,9 +800,6 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	mo->UpdateActorLists();
 
-	if (mo->flags & MF_FRIEND)
-		P_FriendlyEffects(mo);
-
 	if (msg->spawn_flags() & SVC_SM_CORPSE)
 	{
 		int frame = msg->current().frame();
@@ -834,6 +831,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		if (mo->player)
 			mo->player->playerstate = PST_DEAD;
 	}
+
+	if (mo->flags & MF_FRIEND)
+		P_FriendlyEffects(mo);
 }
 
 //
@@ -1597,12 +1597,14 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 		corpsehit->flags |= MF_FRIEND;
 		corpsehit->friend_playerid = msg->corpse().friend_playerid();
 		corpsehit->friend_teamid = static_cast<team_t>(msg->corpse().friend_teamid());
-		P_FriendlyEffects(corpsehit);
 	}
 
 	corpsehit->health = info->spawnhealth;
 	corpsehit->target = AActor::AActorPtr();
 	corpsehit->UpdateActorLists();
+
+	if (corpsehit->flags & MF_FRIEND)
+		P_FriendlyEffects(corpsehit);
 }
 
 //
