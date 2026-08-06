@@ -1277,20 +1277,23 @@ void M_RestoreVideoMode()
 	M_SetVideoMode(old_width, old_height);
 }
 
+namespace
+{
 
-static value_t Depths[22];
+constexpr int MAX_LINES_ONSCREEN = 22;
+value_t Depths[MAX_LINES_ONSCREEN];
 
 #ifdef GCONSOLE
-static const char VMEnterText[] = "Press A to set mode";
-static const char VMTestText[] = "Press X to test mode for 5 seconds";
+constexpr const char VMEnterText[] = "Press A to set mode";
+constexpr const char VMTestText[] = "Press X to test mode for 5 seconds";
 #else
-static const char VMEnterText[] = "Press ENTER to set mode";
-static const char VMTestText[] = "Press T to test mode for 5 seconds";
+constexpr const char VMEnterText[] = "Press ENTER to set mode";
+constexpr const char VMTestText[] = "Press T to test mode for 5 seconds";
 #endif
 
-static const char VMTestWaitText[] = "Please wait 5 seconds...";
+constexpr const char VMTestWaitText[] = "Please wait 5 seconds...";
 
-static value_t VidFPSCaps[] = {
+value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
 	{ 60.0,		"60fps" },
 	{ 70.0,		"70fps" },
@@ -1303,13 +1306,13 @@ static value_t VidFPSCaps[] = {
 	{ 0.0,		"Unlimited" }
 };
 
-static value_t FullScreenOptions[] = {
+value_t FullScreenOptions[] = {
 	{ WINDOW_Windowed,			"Window" },
 	{ WINDOW_Fullscreen,		"Full Screen Exclusive" },
 	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
 };
 
-static value_t WidescreenMode[] = {
+value_t WidescreenMode[] = {
 	{ 0.0,			"Off" },
 	{ 1.0,			"Auto" },
 	{ 2.0,			"16:10" },
@@ -1318,7 +1321,7 @@ static value_t WidescreenMode[] = {
 	{ 5.0,			"32:9" }
 };
 
-static menuitem_t ModesItems[] = {
+menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
@@ -1342,6 +1345,8 @@ static menuitem_t ModesItems[] = {
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ yellowtext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 };
+
+}
 
 #define VM_DEPTHITEM	0
 #define VM_RESSTART		6
@@ -1533,7 +1538,7 @@ static void M_SlideUIBlue (int val)
 
 void M_OptInit (void)
 {
-	for (int i = 0; i < 22; i++)
+	for (size_t i = 0; i < ARRAY_LENGTH(Depths); i++)
 	{
 		Depths[i].value = i;
 		Depths[i].name = NULL;
@@ -2433,7 +2438,7 @@ void M_OptResponder(const event_t& ev)
 				}
 				if (CurrentItem < 0)
 				{
-					CurrentMenu->scrollpos = std::max(0, CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
+					CurrentMenu->scrollpos = std::max(0, CurrentMenu->numitems - MAX_LINES_ONSCREEN + CurrentMenu->scrolltop);
 					CurrentItem = CurrentMenu->numitems - 1;
 				}
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
