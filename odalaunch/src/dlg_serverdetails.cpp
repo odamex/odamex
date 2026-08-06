@@ -88,7 +88,7 @@ static const CvarCategories& GetCvarCategories()
 	{
 		Categories.push_back(std::make_pair(Name, std::move(Cvars)));
 	};
-
+	// TODO: Load these from cvardocjson instead.
 	Add("Gameplay Options",
 	    {"sv_gametype", "sv_teamsinplay", "sv_teamspawns", "sv_maxcorpses", "g_sides"});
 	Add("Gameplay Modifiers",
@@ -155,7 +155,7 @@ static const CvarCategories& GetCvarCategories()
 	    {"g_horde_extralife", "g_horde_goalhp", "g_horde_maxtotalhp",
 	     "g_horde_mintotalhp", "g_horde_resurrect", "g_horde_spawnempty_max",
 	     "g_horde_spawnempty_min", "g_horde_spawnfull_max",
-	     "g_horde_spawnfull_min", "g_horde_waves"});
+	     "g_horde_spawnfull_min", "g_horde_waves", "g_horde_cooldown"});
 	Add("Survival", {"g_lives", "g_lives_jointimer"});
 	Add("Rounds",
 	    {"g_rounds", "g_preroundtime", "g_postroundtime", "g_preroundreset",

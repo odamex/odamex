@@ -3683,6 +3683,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		type = MT_MUSICSOURCE;
 	}
 
+	if (!inSpawnMap && P_IsHordeThing(mthing.type))
+	{
+		type = MT_HORDESPAWN;
+		::level.detected_gametype = GM_HORDE;
+	}
+
 	// [CMB] find the value in the mobjinfo table if we asked for a specific type; otherwise check the spawn table
 	mobjinfo_t* info = nullptr;
 	if (type == -1)
@@ -3700,12 +3706,6 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 			mthing.args[0] = mthing.type - 9026;
 			type = MT_FOUNTAIN;
 			info = &mobjinfo[type]; // mt_fountain guaranteed to exist
-		}
-
-		if (P_IsHordeThing(mthing.type))
-		{
-			type = MT_HORDESPAWN;
-			::level.detected_gametype = GM_HORDE;
 		}
 	}
 	else
