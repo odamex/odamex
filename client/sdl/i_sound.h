@@ -44,7 +44,7 @@ void I_SetSfxVolume(float volume);
 void I_SetChannels (int);
 
 // load a sound from disk
-void I_LoadSound (struct sfxinfo_struct *sfx);
+void I_LoadSound (sfxinfo_t *sfx);
 
 // Starts a sound in a particular sound channel.
 int

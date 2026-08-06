@@ -258,7 +258,7 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     return ret_data;
 }
 
-static void getsfx(sfxinfo_struct *sfx)
+static void getsfx(sfxinfo_t *sfx)
 {
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
@@ -462,7 +462,7 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 	Mix_SetPanning(handle, sep, 255-sep);
 }
 
-void I_LoadSound (sfxinfo_struct *sfx)
+void I_LoadSound (sfxinfo_t *sfx)
 {
 	if (!sound_initialized)
 		return;

@@ -683,7 +683,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 
 	while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 	{
-		sfx_id = ResolveSound(sfxinfo->link);
+		sfx_id = ResolveSound(sfx_id);
 		sfxinfo = &S_sfx[sfx_id];
 	}
 
@@ -692,7 +692,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 		I_LoadSound(sfxinfo);
 		while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 		{
-			sfx_id = ResolveSound(sfxinfo->link);
+			sfx_id = ResolveSound(sfx_id);
 			sfxinfo = &S_sfx[sfx_id];
 		}
 	}
