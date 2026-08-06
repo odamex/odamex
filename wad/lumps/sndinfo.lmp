@@ -618,9 +618,12 @@ menu/choose   dspistol // Choose a menu item
 menu/clear    dsswtchx // Close top menu
 $alias menu/advance menu/choose // Open a submenu
 
+// TODO: implement $playersound and $playercompat
+// and resolve gendered sounds in aliases
+// and change the 2 player sounds here to *death and *gibbed
 $alias intermission/tick          weapons/pistol
-$alias intermission/cooptotal     *death
+$alias intermission/cooptotal     player/male/death1
 $alias intermission/nextstage     weapons/rocklx
 $alias intermission/paststats     weapons/shotgr
 $alias intermission/pastcoopstats weapons/shotgr
-$alias intermission/pastdmstats   *gibbed
+$alias intermission/pastdmstats   player/male/gibbed
