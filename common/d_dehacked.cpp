@@ -2378,21 +2378,20 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool
 			DPrintFmt("Could not read file\n");
 			return false;
 		}
+
+		// Check to see if this file is really a WAD, and if so, don't parse it as a
+		// DEH file.
+		if (buffer.size() >= 4 &&
+		    (!memcmp(buffer.data(), "IWAD", 4) || !memcmp(buffer.data(), "PWAD", 4)))
+		{
+			PrintFmt(PRINT_WARNING, "\"{}\" is a WAD file, not a DeHackEd patch.\n",
+			         patchfile->getBasename());
+			return false;
+		}
 	}
 	else
 	{
 		// Nothing to do.
-		return false;
-	}
-
-	// Check to see if this file is really a WAD, and if not, don't parse it as a
-	// DEH file.
-	if (buffer.size() >= 4 && (!memcmp(buffer.data(), "IWAD", 4) ||
-	                           !memcmp(buffer.data(), "PWAD", 4)))
-	{
-		const std::string name =
-		    patchfile ? patchfile->getBasename() : std::string("DEHACKED");
-		PrintFmt(PRINT_WARNING, "\"{}\" is a WAD file, not a DeHackEd patch.\n", name);
 		return false;
 	}
 

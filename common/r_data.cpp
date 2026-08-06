@@ -581,6 +581,99 @@ static int32_t R_LoadTextureLump(const texlump_t& texlump, const nonstd::span<co
 	return i;
 }
 
+//
+// R_BuildPatchLookup
+//
+// Resolves PNAMES into lump numbers using the same namespace fallbacks as
+// R_InitTextures. Entries that cannot be resolved are left as -1.
+//
+static std::vector<int> R_BuildPatchLookup()
+{
+	std::vector<int> patchlookup;
+
+	const int pnameslump = W_CheckNumForName("PNAMES");
+	if (pnameslump == -1)
+		return patchlookup;
+
+	char* names = static_cast<char*>(W_CacheLumpNum(pnameslump, PU_STATIC));
+	const int numpatches = LELONG(*(reinterpret_cast<const int*>(names)));
+
+	if (numpatches > 0)
+	{
+		const char* name_p = names + 4;
+
+		patchlookup.resize(numpatches);
+		for (int i = 0; i < numpatches; i++)
+		{
+			patchlookup[i] = W_CheckNumForName(name_p + i*8);
+
+			// some wads use the texture namespace but still list them in pnames
+			if (patchlookup[i] == -1)
+				patchlookup[i] = W_CheckNumForName(name_p + i*8, ns_textures);
+
+			// killough 4/17/98: some wads use sprites as wall patches
+			if (patchlookup[i] == -1)
+				patchlookup[i] = W_CheckNumForName(name_p + i*8, ns_sprites);
+		}
+	}
+
+	Z_Free(names);
+	return patchlookup;
+}
+
+//
+// R_FindTextureMissingPatch
+//
+// Walks TEXTURE1/TEXTURE2 for a texture referencing a patch that cannot be
+// resolved. Returns the first such texture, or an empty string if all resolve.
+//
+// R_InitTextures treats a missing patch as non-fatal and swaps in a blank, so
+// this is only for judging whether a WAD can stand on its own as an IWAD.
+//
+std::string R_FindTextureMissingPatch()
+{
+	const std::vector<int> patchlookup = R_BuildPatchLookup();
+	if (patchlookup.empty())
+		return "";
+
+	static const char* const texlumpnames[] = { "TEXTURE1", "TEXTURE2" };
+
+	for (const char* texlumpname : texlumpnames)
+	{
+		const texlump_t texlump(texlumpname);
+		if (texlump.lumpnum == -1)
+			continue;
+
+		int32_t* directory = texlump.directory;
+		for (int i = 0; i < texlump.numtextures; i++, directory++)
+		{
+			const int32_t offset = LELONG(*directory);
+			if (offset > texlump.maxoff)
+				return texlumpname; // bad directory, certainly not usable
+
+			const maptexture_t* mtexture = reinterpret_cast<const maptexture_t*>(
+				reinterpret_cast<const byte*>(texlump.data) + offset);
+
+			const int patchcount = SAFESHORT(mtexture->patchcount);
+			const mappatch_t* mpatch = &mtexture->patches[0];
+
+			for (int j = 0; j < patchcount; j++, mpatch++)
+			{
+				const int16_t patchnum = LESHORT(mpatch->patch);
+				if (patchnum < 0 ||
+				    static_cast<size_t>(patchnum) >= patchlookup.size() ||
+				    patchlookup[patchnum] == -1)
+				{
+					const OLumpName texname = mtexture->name;
+					return std::string(texname.c_str());
+				}
+			}
+		}
+	}
+
+	return "";
+}
+
 void R_InitTextures()
 {
 	std::vector<int> patchlookup;

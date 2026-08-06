@@ -42,6 +42,7 @@
 #include "i_music.h"
 #include "i_time.h"
 #include "minilzo.h"
+#include "m_argv.h"
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_local.h"
@@ -124,6 +125,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
+	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+
+	if (!DefaultsLoaded)
+	{
+		::startupwadstring = wadstr;
+		return;
+	}
+
 	if (paused)
 	{
 		paused = false;
@@ -132,7 +141,6 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
 	C_HideConsole();
 
-	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
 	G_LoadWadString(wadstr);
 
 	D_StartTitle ();

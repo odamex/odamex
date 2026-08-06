@@ -49,6 +49,8 @@
 level_locals_t level;			// info about current level
 maplist_lastmaps_t forcedlastmaps;		// forced last map for the current wad
 
+std::string startupwadstring;
+
 level_pwad_info_t g_EmptyLevel;
 cluster_info_t g_EmptyCluster;
 
@@ -267,6 +269,24 @@ void P_RemoveDefereds()
 }
 
 //
+// MatchesLoadedFilename
+//
+// True if a wanted (case insensitive) filename names the resolved one already
+// loaded.
+//
+static bool MatchesLoadedFilename(const std::string& wanted, const std::string& loaded)
+{
+	if (iequals(wanted, loaded))
+		return true;
+
+	if (wanted.find_last_of('.') != std::string::npos)
+		return false;
+
+	const size_t dot = loaded.find_last_of('.');
+	return dot != std::string::npos && iequals(wanted, loaded.substr(0, dot));
+}
+
+//
 // G_LoadWad
 //
 // Determines if the vectors of wad & patch filenames differs from the currently
@@ -289,7 +309,8 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	// Did we switch IWAD files?
 	if (AddedIWAD && !::wadfiles.empty())
 	{
-		if (newwadfiles.at(0).getBasename() != wadfiles.at(1).getBasename())
+		if (!MatchesLoadedFilename(newwadfiles.at(0).getBasename(),
+		                           wadfiles.at(1).getBasename()))
 		{
 			Reboot = true;
 		}
@@ -298,7 +319,11 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	// Do the sizes of the WAD lists not match up?
 	if (!Reboot)
 	{
-		if (::wadfiles.size() - 2 != newwadfiles.size() - (AddedIWAD ? 1 : 0))
+		if (::wadfiles.size() < 2)
+		{
+			Reboot = true;
+		}
+		else if (::wadfiles.size() - 2 != newwadfiles.size() - (AddedIWAD ? 1 : 0))
 		{
 			Reboot = true;
 		}
@@ -310,7 +335,8 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 		for (size_t i = 2, j = (AddedIWAD ? 1 : 0);
 		     i < ::wadfiles.size() && j < newwadfiles.size(); i++, j++)
 		{
-			if (!(newwadfiles.at(j).getBasename() == ::wadfiles.at(i).getBasename()))
+			if (!MatchesLoadedFilename(newwadfiles.at(j).getBasename(),
+			                           ::wadfiles.at(i).getBasename()))
 			{
 				Reboot = true;
 				break;
@@ -333,7 +359,8 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 		for (size_t i = 0, j = 0; i < ::patchfiles.size() && j < newpatchfiles.size();
 		     i++, j++)
 		{
-			if (!(newpatchfiles.at(j).getBasename() == ::patchfiles.at(i).getBasename()))
+			if (!MatchesLoadedFilename(newpatchfiles.at(j).getBasename(),
+			                           ::patchfiles.at(i).getBasename()))
 			{
 				Reboot = true;
 				break;
@@ -379,18 +406,16 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 }
 
 //
-// G_LoadWadString
+// G_ParseWadString
 //
-// Takes a string of random wads and patches, which is sorted through and
-// trampolined to the implementation of G_LoadWad.
+// Sorts a string of random wads and patches into two file lists without
+// loading anything.
 //
-bool G_LoadWadString(const std::string& str, const std::string& mapname, const maplist_lastmaps_t& lastmaps)
+void G_ParseWadString(const std::string& str, OWantFiles& newwadfiles,
+                      OWantFiles& newpatchfiles)
 {
 	const std::vector<std::string>& wad_exts = M_FileTypeExts(OFILE_WAD);
 	const std::vector<std::string>& deh_exts = M_FileTypeExts(OFILE_DEH);
-
-	OWantFiles newwadfiles;
-	OWantFiles newpatchfiles;
 
 	auto parser = ParseString(str, false);
 	while(std::optional<std::string> token = parser().token)
@@ -441,6 +466,20 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname, const m
 		newwadfiles.push_back(file);
 		continue;
 	}
+}
+
+//
+// G_LoadWadString
+//
+// Takes a string of random wads and patches, which is sorted through and
+// trampolined to the implementation of G_LoadWad.
+//
+bool G_LoadWadString(const std::string& str, const std::string& mapname, const maplist_lastmaps_t& lastmaps)
+{
+	OWantFiles newwadfiles;
+	OWantFiles newpatchfiles;
+
+	G_ParseWadString(str, newwadfiles, newpatchfiles);
 
 	forcedlastmaps = lastmaps;
 	return G_LoadWad(newwadfiles, newpatchfiles, mapname);
