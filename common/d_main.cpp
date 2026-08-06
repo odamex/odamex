@@ -1227,6 +1227,9 @@ void D_AddStartupWadFiles(OWantFiles& outwadfiles, OWantFiles& outpatchfiles)
 		AppendUniqueFiles(outpatchfiles, patchfiles);
 	}
 
+	for (size_t p = Args.CheckParm("+wad"); p; p = Args.CheckParm("+wad"))
+		const_cast<char*>(Args.GetArg(p))[0] = '-';
+
 	if (::startupwadstring.empty())
 		return;
 
