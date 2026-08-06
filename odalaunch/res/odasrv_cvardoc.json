@@ -74,6 +74,13 @@
       {
          "default" : false,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Fix the vanilla bug where Arch-vile fire is spawned in the wrong location, causing motion and interpolation column-of-fire-type visual glitches",
+         "name" : "co_archvilefirefix",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "Use MBF monster_avoid_hazards behavior -- monsters will avoid some damaging sectors and crushers.",
          "name" : "co_avoidhazards",
          "type" : "boolean"
@@ -231,8 +238,22 @@
       {
          "default" : false,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF21's comp_voodooscroller behavior -- Enable voodoo dolls on slow scrollers to move too slowly.",
+         "name" : "co_voodooscroller",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "Enable/disable ZDoom 1.23b33-based ammo checks",
          "name" : "co_zdoomammo",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use ZDoom's monster targeting when it comes to friendlies. This is much less taxing than MBF friendly targeting, so enable if your system is struggling on slaughter maps with friendlies.",
+         "name" : "co_zdoomfriendtargeting",
          "type" : "boolean"
       },
       {
@@ -250,7 +271,7 @@
          "type" : "boolean"
       },
       {
-         "default" : "012030",
+         "default" : "013000",
          "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "",
          "name" : "configver",
@@ -525,7 +546,7 @@
       },
       {
          "default" : false,
-         "flags" : [ "SERVERARCHIVE" ],
+         "flags" : [ "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "Print debugging messages for each packet sent",
          "name" : "log_packetdebug",
          "type" : "boolean"
@@ -538,21 +559,12 @@
          "type" : "boolean"
       },
       {
-         "default" : 131072,
-         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
-         "helptext" : "Net receive buffer size in bytes",
-         "max" : 268435456,
-         "min" : 1500,
-         "name" : "net_rcvbuf",
-         "type" : "integer"
-      },
-      {
-         "default" : 131072,
-         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
-         "helptext" : "Net send buffer size in bytes",
-         "max" : 268435456,
-         "min" : 1500,
-         "name" : "net_sndbuf",
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of threads to use for client messaging (0 to auto-select based on core count)",
+         "max" : 256,
+         "min" : 0,
+         "name" : "net_maxthreads",
          "type" : "integer"
       },
       {
@@ -1032,7 +1044,7 @@
          "type" : "integer"
       },
       {
-         "default" : 200,
+         "default" : 800,
          "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
          "helptext" : "Forces clients to be on or below this rate",
          "max" : 100000,
@@ -1397,6 +1409,6 @@
    ],
    "odamex_branchname" : "",
    "odamex_commithash" : "",
-   "odamex_version" : "12.3.0",
+   "odamex_version" : "13.0.0",
    "schema_version" : 1
 }
