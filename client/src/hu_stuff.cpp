@@ -208,7 +208,7 @@ void HU_Init()
 //
 // Frees any memory allocated specifically for the HUD.
 //
-void STACK_ARGS HU_Shutdown()
+void HU_Shutdown()
 {
 	::sbline.clear();
 
@@ -534,6 +534,8 @@ void HU_Drawer()
 			{
 				if (spechud)
 					hud::SpectatorHUD();
+				else if (displayplayer().isFreecam)
+					hud::FreecamHUD();
 				else
 					hud::OdamexHUD();
 			}

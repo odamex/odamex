@@ -107,7 +107,7 @@ private:
 	uint32_t LanguageNeutral;
 	uint32_t Localized;
 
-	static int STACK_ARGS SortScripts (const void *a, const void *b);
+	static int SortScripts (const void *a, const void *b);
 	void AddLanguage (uint32_t lang);
 	uint32_t FindLanguage (uint32_t lang, bool ignoreregion) const;
 	uint32_t *CheckIfInList (uint32_t lang);

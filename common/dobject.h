@@ -24,6 +24,8 @@
 #pragma once
 
 #include <stdlib.h>
+#include <vector>
+#include <stdint.h>
 
 class FArchive;
 
@@ -191,7 +193,7 @@ public:
 
 	uint32_t ObjectFlags = 0;
 
-	static void STACK_ARGS StaticShutdown ();
+	static void StaticShutdown ();
 
 private:
 	static inline std::vector<DObject *> ToDestroy{};

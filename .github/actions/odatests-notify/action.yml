@@ -17,7 +17,7 @@ runs:
   using: "composite"
   steps:
     - name: Checkout odatests-results branch
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         ref: odatests-results
         path: ./odatests-results

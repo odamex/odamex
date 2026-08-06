@@ -573,10 +573,12 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		return;
 
 	// [SL] interpolate the position of thing
+  // except if paused and using freecam
 	fixed_t thingx, thingy, thingz;
 
 	if (projlerp &&
-		P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT)
+	    P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
+	    not (paused && displayplayer().isFreecam))
 	{
 		// the actor probably did not teleport
 		// interpolate between previous and current position
@@ -716,7 +718,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	{
 		// diminished light
 		int index = (vis->yscale*lightscalexmul)>>LIGHTSCALESHIFT;	// [RH]
-		index = clamp(index, 0, MAXLIGHTSCALE - 1);
+		index = std::clamp(index, 0, MAXLIGHTSCALE - 1);
 
 		vis->colormap = basecolormap.with(spritelights[index]);	// [RH] Use basecolormap
 	}
@@ -919,7 +921,9 @@ void R_DrawPSprite(const pspdef_t& psp, unsigned flags)
 	}
 
 	// Don't display the weapon sprite if using spectating without spynext
-	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
+	// or using freecam
+	if ((consoleplayer().spectator && displayplayer_id == consoleplayer_id) ||
+		displayplayer().isFreecam)
 		return;
 
 	R_DrawVisSprite (vis, vis->x1, vis->x2);
@@ -1321,8 +1325,8 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 			int index = (vis->yscale*lightscalexmul)>>(LIGHTSCALESHIFT-1);
 			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
-			index = clamp(index, 0, MAXLIGHTSCALE - 1);
-			lightnum = clamp(lightnum, 0, LIGHTLEVELS - 1);
+			index = std::clamp(index, 0, MAXLIGHTSCALE - 1);
+			lightnum = std::clamp(lightnum, 0, LIGHTLEVELS - 1);
 
 			vis->colormap = map.with(scalelight[lightnum][index]);
 		}

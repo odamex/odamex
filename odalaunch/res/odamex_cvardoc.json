@@ -1,0 +1,2927 @@
+{
+   "cvars" : [
+      {
+         "default" : "00 00 3a",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_backcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "00 00 5a",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_cdwallcolor",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_classicmapstring",
+         "type" : "boolean"
+      },
+      {
+         "default" : "ff ff 00",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_exitcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "1a 1a 8a",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_fdwallcolor",
+         "type" : "string"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_followplayer",
+         "type" : "boolean"
+      },
+      {
+         "default" : "44 44 88",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_gridcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "bb bb bb",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_lockedcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "00 22 6e",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_notseencolor",
+         "type" : "string"
+      },
+      {
+         "default" : 0.25,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Transparency of overlay minimap background",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "am_ovbackalpha",
+         "type" : "number"
+      },
+      {
+         "default" : "00 00 00",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Overlay minimap background color",
+         "name" : "am_ovbackcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "00 00 5a",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovcdwallcolor",
+         "type" : "string"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 3,
+         "min" : 0,
+         "name" : "am_overlay",
+         "type" : "integer"
+      },
+      {
+         "default" : "ff ff 00",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovexitcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "1a 1a 8a",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovfdwallcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "44 44 88",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovgridcolor",
+         "type" : "string"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Overlay minimap location (0:LeftTop, 1:LeftMid, 2:LeftBot, 3:RightTop, 4:RightMid, 5:RightBot)",
+         "max" : 5,
+         "min" : 0,
+         "name" : "am_ovlocation",
+         "type" : "integer"
+      },
+      {
+         "default" : "bb bb bb",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovlockedcolor",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Overlay minimap enabled",
+         "name" : "am_ovminimap",
+         "type" : "boolean"
+      },
+      {
+         "default" : "00 22 6e",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovnotseencolor",
+         "type" : "string"
+      },
+      {
+         "default" : 0.5,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Scale height of overlay minimap",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "am_ovscaleheight",
+         "type" : "number"
+      },
+      {
+         "default" : 0.25,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Scale width of overlay minimap",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "am_ovscalewidth",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Overlay automap uses the same custom colors as the non-overlayed automap.",
+         "name" : "am_ovshare",
+         "type" : "boolean"
+      },
+      {
+         "default" : "ff a3 00",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovteleportcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "dark grey",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovthingcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "sky blue",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovthingcolor_countitem",
+         "type" : "string"
+      },
+      {
+         "default" : "dark green",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovthingcolor_friend",
+         "type" : "string"
+      },
+      {
+         "default" : "navy",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovthingcolor_item",
+         "type" : "string"
+      },
+      {
+         "default" : "74 fc 6c",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovthingcolor_monster",
+         "type" : "string"
+      },
+      {
+         "default" : "yellow",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovthingcolor_nocountmonster",
+         "type" : "string"
+      },
+      {
+         "default" : "orange",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovthingcolor_projectile",
+         "type" : "string"
+      },
+      {
+         "default" : "10 32 7e",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovtswallcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "00 8b ff",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovwallcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "80 80 80",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovxhaircolor",
+         "type" : "string"
+      },
+      {
+         "default" : "d8 e8 fc",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_ovyourcolor",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_rotate",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_showitems",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show locked doors on the automap even when custom colors are disabled.",
+         "name" : "am_showlocked",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_showmonsters",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_showsecrets",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_showtime",
+         "type" : "boolean"
+      },
+      {
+         "default" : "ff a3 00",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_teleportcolor",
+         "type" : "string"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Scale the thickness of the automap lines by this value. Set to 0 for auto.",
+         "max" : 6,
+         "min" : 0,
+         "name" : "am_thickness",
+         "type" : "integer"
+      },
+      {
+         "default" : "dark grey",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_thingcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "sky blue",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_thingcolor_countitem",
+         "type" : "string"
+      },
+      {
+         "default" : "dark green",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_thingcolor_friend",
+         "type" : "string"
+      },
+      {
+         "default" : "navy",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_thingcolor_item",
+         "type" : "string"
+      },
+      {
+         "default" : "74 fc 6c",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_thingcolor_monster",
+         "type" : "string"
+      },
+      {
+         "default" : "yellow",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_thingcolor_nocountmonster",
+         "type" : "string"
+      },
+      {
+         "default" : "orange",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_thingcolor_projectile",
+         "type" : "string"
+      },
+      {
+         "default" : "10 32 7e",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_tswallcolor",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_usecustomcolors",
+         "type" : "boolean"
+      },
+      {
+         "default" : "00 8b ff",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_wallcolor",
+         "type" : "string"
+      },
+      {
+         "default" : "80 80 80",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_xhaircolor",
+         "type" : "string"
+      },
+      {
+         "default" : "d8 e8 fc",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "am_yourcolor",
+         "type" : "string"
+      },
+      {
+         "default" : 90,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Chase camera distance",
+         "max" : 32768,
+         "min" : -32768,
+         "name" : "chase_dist",
+         "type" : "integer"
+      },
+      {
+         "default" : -8,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Height of chase camera",
+         "max" : 32768,
+         "min" : -32768,
+         "name" : "chase_height",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "",
+         "name" : "chasedemo",
+         "type" : "boolean"
+      },
+      {
+         "default" : "No",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "chatmacro0",
+         "type" : "string"
+      },
+      {
+         "default" : "I'm ready to kick butt!",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "chatmacro1",
+         "type" : "string"
+      },
+      {
+         "default" : "I'm OK.",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "chatmacro2",
+         "type" : "string"
+      },
+      {
+         "default" : "I'm not looking too good!",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "chatmacro3",
+         "type" : "string"
+      },
+      {
+         "default" : "Help!",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "chatmacro4",
+         "type" : "string"
+      },
+      {
+         "default" : "You suck!",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "chatmacro5",
+         "type" : "string"
+      },
+      {
+         "default" : "Next time, scumbag...",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "chatmacro6",
+         "type" : "string"
+      },
+      {
+         "default" : "Come here!",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "chatmacro7",
+         "type" : "string"
+      },
+      {
+         "default" : "I'll take care of it.",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "chatmacro8",
+         "type" : "string"
+      },
+      {
+         "default" : "Yes",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "chatmacro9",
+         "type" : "string"
+      },
+      {
+         "default" : 5000.0,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 5000.0,
+         "min" : 0.0,
+         "name" : "cl_autoaim",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Automatically record netdemos",
+         "name" : "cl_autorecord",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Allows cooperative netdemos from cl_autorecord CVAR.",
+         "name" : "cl_autorecord_coop",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Allows CTF netdemos from cl_autorecord CVAR.",
+         "name" : "cl_autorecord_ctf",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Allows deathmatch netdemos from cl_autorecord CVAR.",
+         "name" : "cl_autorecord_deathmatch",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Allows duel netdemos from cl_autorecord CVAR.",
+         "name" : "cl_autorecord_duel",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Allows Horde netdemos from cl_autorecord CVAR.",
+         "name" : "cl_autorecord_horde",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Allows team deathmatch netdemos from cl_autorecord CVAR.",
+         "name" : "cl_autorecord_teamdm",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Automatically capture a screenshot at the end of a match.",
+         "name" : "cl_autoscreenshot",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Centers the weapon bobbing when firing a weapon",
+         "name" : "cl_centerbobonfire",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Plays a sound when a chat message appears (0 = never, 1 = always, 2 = only teamchat)",
+         "max" : 2,
+         "min" : 0,
+         "name" : "cl_chatsounds",
+         "type" : "integer"
+      },
+      {
+         "default" : "40 cf 00",
+         "flags" : [ "USERINFO", "NOSET", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "cl_color",
+         "type" : "string"
+      },
+      {
+         "default" : "custom",
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "cl_colorpreset",
+         "type" : "string"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Plays a sound when a player joins",
+         "name" : "cl_connectalert",
+         "type" : "boolean"
+      },
+      {
+         "default" : "40 cf 00",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "cl_customcolor",
+         "type" : "string"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Dead player's view follows the actor who killed them",
+         "name" : "cl_deathcam",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Plays a sound when a player quits",
+         "name" : "cl_disconnectalert",
+         "type" : "boolean"
+      },
+      {
+         "default" : "https://static.allfearthesentinel.com/wads/ https://doomshack.org/wads/ http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ http://files.funcrusher.net/wads/ https://doomshack.org/uploads/ https://doom.dogsoft.net/getwad.php?search= https://doomshack.org/wadlist.php https://wads.firestick.games/ https://euroboros.net/zandronum/wads/ https://static.audrealms.org/wads/ https://downloadbox.captainpollutiontv.de/DooM/WADSEEKER/",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "A list of websites to download WAD files from.  These websites are used if the server doesn't provide any websites to download files from, or the file can't be found on any of their sites.  The list of sites is separated by spaces.  These websites are tried in random order, and their WAD files must not be compressed with ZIP.",
+         "name" : "cl_downloadsites",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Forces the client to download the last WAD file when connecting to a server, even if the client already has that file (requires developer 1).",
+         "name" : "cl_forcedownload",
+         "type" : "boolean"
+      },
+      {
+         "default" : "male",
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "cl_gender",
+         "type" : "string"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Interpolate enemy player positions",
+         "max" : 4,
+         "min" : 0,
+         "name" : "cl_interp",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Look up or down with mouse",
+         "name" : "cl_mouselook",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Adjust weapon and movement bobbing",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "cl_movebob",
+         "type" : "number"
+      },
+      {
+         "default" : "Player",
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "cl_name",
+         "type" : "string"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Directory for Odamex to save netdemos to.",
+         "name" : "cl_netdemodir",
+         "type" : "string"
+      },
+      {
+         "default" : "Odamex_%g_%d_%t_%w_%m",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Default netdemo name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
+         "name" : "cl_netdemoname",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Show a graph of network related statistics",
+         "name" : "cl_netgraph",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Predict weapon pickups",
+         "name" : "cl_predictpickup",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Move floors and ceilings immediately instead of waiting for confirmation, values are:\n// 0 - Don't predict any sectors\n// 1 - Predict all sectors based only on actor movements\n// 2 - Predict only sectors activated by you\n",
+         "max" : 2,
+         "min" : 0,
+         "name" : "cl_predictsectors",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "USERINFO", "CLIENTARCHIVE" ],
+         "helptext" : "Draw weapon effects immediately",
+         "name" : "cl_predictweapons",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0.69999999999999996,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Smooth out collisions",
+         "max" : 1.0,
+         "min" : 0.05000000074505806,
+         "name" : "cl_prednudge",
+         "type" : "number"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Always run",
+         "name" : "cl_run",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Directory for Odamex to save screenshots to.",
+         "name" : "cl_screenshotdir",
+         "type" : "string"
+      },
+      {
+         "default" : "Odamex_%g_%d_%t",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Default screenshot name.  Parses the following tokens:\n// %d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// %n: player name\n// %g: gametype\n// %w: WAD file loaded; either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
+         "name" : "cl_screenshotname",
+         "type" : "string"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Enable or disable downloading game files and resources from the internet (see cl_downloadsites for more information)",
+         "name" : "cl_serverdownload",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show an indicator on friendly monsters.",
+         "name" : "cl_showfriends",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show multi kills for the display player.",
+         "name" : "cl_showmultikills",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show multi kills during single player games and vanilla demo playback. Netdemos are unaffected. Does not supercede cl_showmultikills",
+         "name" : "cl_showofflinemultikills",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show killing sprees during single player games and vanilla demo playback. Netdemos are unaffected. Does not supercede cl_showsprees.",
+         "name" : "cl_showofflinesprees",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "LATCH", "CLIENTARCHIVE" ],
+         "helptext" : "Show spawn points as particle fountains",
+         "name" : "cl_showspawns",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show killing sprees for the display player.",
+         "name" : "cl_showsprees",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Create separate netdemos for each map",
+         "name" : "cl_splitnetdemos",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Switch upon weapon pickup (0 = never, 1 = always, 2 = use weapon preferences, 3 = use PWO but holding fire cancels it)",
+         "max" : 3,
+         "min" : 0,
+         "name" : "cl_switchweapon",
+         "type" : "integer"
+      },
+      {
+         "default" : "blue",
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "cl_team",
+         "type" : "string"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Set custom WAD download directory",
+         "name" : "cl_waddownloaddir",
+         "type" : "string"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Weapon preference level for BFG9000",
+         "max" : 8,
+         "min" : 0,
+         "name" : "cl_weaponpref_bfg",
+         "type" : "integer"
+      },
+      {
+         "default" : 6,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Weapon preference level for chaingun",
+         "max" : 8,
+         "min" : 0,
+         "name" : "cl_weaponpref_cg",
+         "type" : "integer"
+      },
+      {
+         "default" : 3,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Weapon preference level for chainsaw",
+         "max" : 8,
+         "min" : 0,
+         "name" : "cl_weaponpref_csw",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Weapon preference level for fists",
+         "max" : 8,
+         "min" : 0,
+         "name" : "cl_weaponpref_fst",
+         "type" : "integer"
+      },
+      {
+         "default" : 4,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Weapon preference level for pistol",
+         "max" : 8,
+         "min" : 0,
+         "name" : "cl_weaponpref_pis",
+         "type" : "integer"
+      },
+      {
+         "default" : 8,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Weapon preference level for plasma rifle",
+         "max" : 8,
+         "min" : 0,
+         "name" : "cl_weaponpref_pls",
+         "type" : "integer"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Weapon preference level for rocket launcher",
+         "max" : 8,
+         "min" : 0,
+         "name" : "cl_weaponpref_rl",
+         "type" : "integer"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Weapon preference level for shotgun",
+         "max" : 8,
+         "min" : 0,
+         "name" : "cl_weaponpref_sg",
+         "type" : "integer"
+      },
+      {
+         "default" : 7,
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Weapon preference level for super shotgun",
+         "max" : 8,
+         "min" : 0,
+         "name" : "cl_weaponpref_ssg",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Allow monsters can get pushed or thrusted off of ledges.",
+         "name" : "co_allowdropoff",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Fix the vanilla bug where Arch-vile fire is spawned in the wrong location, causing motion and interpolation column-of-fire-type visual glitches",
+         "name" : "co_archvilefirefix",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF monster_avoid_hazards behavior -- monsters will avoid some damaging sectors and crushers.",
+         "name" : "co_avoidhazards",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Fix the blockmap collision bug",
+         "name" : "co_blockmapfix",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use a finer-grained, faster, and more accurate test for actors, sectors and lines",
+         "name" : "co_boomphys",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Increase precision of vertical auto-aim",
+         "name" : "co_fineautoaim",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Corrected behavior for impact of projectiles and bullets on surfaces",
+         "name" : "co_fixweaponimpacts",
+         "type" : "boolean"
+      },
+      {
+         "default" : 128,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF distfriend behavior -- friendlies will try to maintain this distance in mapblocks.",
+         "max" : 2048,
+         "min" : 0,
+         "name" : "co_friend_distance",
+         "type" : "integer"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Name of the actor type to spawn as a helper.\n// Spawnable actors can be found using the ccmd `dumpactors`\n// If empty, it uses the defined default friend in Dehacked (BEX).\n// If the actor name can't be found, an MBF helper dog will be spawned\n",
+         "name" : "co_friend_helpertype",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF dog_jumping behavior -- friendly monsters will drop off high ledges if the target is immediately on the other side.",
+         "name" : "co_friend_ledgejumping",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [
+            "SERVERINFO",
+            "LATCH",
+            "NOENABLEDISABLE",
+            "SERVERARCHIVE",
+            "CLIENTARCHIVE"
+         ],
+         "helptext" : "Use MBF player_helpers behavior -- amount of friendly things to spawn at map start.\n// If in an online game, dogs spawn only once on map start per helper per player.\n// The helper type is defined in BEX or through the cvar co_friend_helpertype.",
+         "max" : 64,
+         "min" : 0,
+         "name" : "co_friend_playerhelpers",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Make pickup sounds global",
+         "name" : "co_globalsound",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF help_friends behavior -- monsters will help friends under 50% health.",
+         "name" : "co_helpfriends",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF's movement code. Fixes mancubus fireball clipping and linedef skips.",
+         "name" : "co_mbfphys",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF monster_backing behavior -- monsters can strafe or retreat.",
+         "name" : "co_monsterbacking",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF monster_friction behavior -- monster movement is affected by ice and sludge.",
+         "name" : "co_monsterfriction",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF monkeys behavior -- monsters will step up or down to 24 units.",
+         "name" : "co_monstersclimbsteep",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Turns off the west-facing silent spawns vanilla bug",
+         "name" : "co_nosilentspawns",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
+         "name" : "co_novileghosts",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF comp_pursuit behavior -- monsters will change targets if their current target is out of sight and a new valid target is in sight.",
+         "name" : "co_pursuit",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Enable/Disable infinitely tall actors",
+         "name" : "co_realactorheight",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Allows pain elementals to still spawn lost souls if more than 20 are present",
+         "name" : "co_removesoullimit",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF comp_staylift behavior -- monsters will try to stay on the same lift their target is on.",
+         "name" : "co_staylift",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF21's comp_voodooscroller behavior -- Enable voodoo dolls on slow scrollers to move too slowly.",
+         "name" : "co_voodooscroller",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Enable/disable ZDoom 1.23b33-based ammo checks",
+         "name" : "co_zdoomammo",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use ZDoom's monster targeting when it comes to friendlies. This is much less taxing than MBF friendly targeting, so enable if your system is struggling on slaughter maps with friendlies.",
+         "name" : "co_zdoomfriendtargeting",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Enable/disable ZDoom-based gravity and physics interactions",
+         "name" : "co_zdoomphys",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Enable sound attenuation curve + attenuation of switch sounds with distance",
+         "name" : "co_zdoomsound",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1024,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Size of console scroll-back buffer",
+         "max" : 65536,
+         "min" : 512,
+         "name" : "con_buffersize",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Activates colored messages in printed messages",
+         "name" : "con_coloredmessages",
+         "type" : "boolean"
+      },
+      {
+         "default" : 3.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Number of seconds to display messages in the middle of the screen",
+         "max" : 10.0,
+         "min" : 1.0,
+         "name" : "con_midtime",
+         "type" : "number"
+      },
+      {
+         "default" : 3.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Number of seconds to display messages to top of the HUD",
+         "max" : 10.0,
+         "min" : 1.0,
+         "name" : "con_notifytime",
+         "type" : "number"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Scale factor of console text (0 = auto).",
+         "max" : 4,
+         "min" : 0,
+         "name" : "con_scaletext",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "con_scrlock",
+         "type" : "boolean"
+      },
+      {
+         "default" : "013000",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "configver",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show source file:line where a disconnect happens",
+         "name" : "debug_disconnect",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Debugging mode",
+         "name" : "developer",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
+         "name" : "g_ctf_notouchreturn",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "A custom name for the gametype.  If blank, a default name is used based on currently set cvars.",
+         "name" : "g_gametypename",
+         "type" : "string"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of waves a specific Horde wave must wait before it can be chosen again",
+         "max" : 10,
+         "min" : 0,
+         "name" : "g_horde_cooldown",
+         "type" : "integer"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Chance to spawn an `extra life powerup` in Horde.\nThe value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\nIf `g_lives` isn't greater than 0, this cvar has no effect.",
+         "max" : 4.0,
+         "min" : 0.0,
+         "name" : "g_horde_extralife",
+         "type" : "number"
+      },
+      {
+         "default" : 8.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Goal health multiplier for a given round",
+         "name" : "g_horde_goalhp",
+         "type" : "number"
+      },
+      {
+         "default" : 10.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Multiplier for maximum spawned health at a time",
+         "name" : "g_horde_maxtotalhp",
+         "type" : "number"
+      },
+      {
+         "default" : 4.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Multiplier for minimum spawned health at a time",
+         "name" : "g_horde_mintotalhp",
+         "type" : "number"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Chance to spawn a `resurrect teammate powerup` in Horde.\nThe value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\nIf `g_lives` isn't greater than 0, this cvar has no effect.",
+         "max" : 4.0,
+         "min" : 0.0,
+         "name" : "g_horde_resurrect",
+         "type" : "number"
+      },
+      {
+         "default" : 3,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Maximum number of seconds it takes to spawn a monster in an empty horde map",
+         "max" : 60,
+         "min" : 1,
+         "name" : "g_horde_spawnempty_max",
+         "type" : "integer"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Minimum number of seconds it takes to spawn a monster in an empty horde map",
+         "max" : 60,
+         "min" : 1,
+         "name" : "g_horde_spawnempty_min",
+         "type" : "integer"
+      },
+      {
+         "default" : 6,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Maximum number of seconds it takes to spawn a monster in a full horde map",
+         "max" : 60,
+         "min" : 1,
+         "name" : "g_horde_spawnfull_max",
+         "type" : "integer"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Minimum number of seconds it takes to spawn a monster in a full horde map",
+         "max" : 60,
+         "min" : 1,
+         "name" : "g_horde_spawnfull_min",
+         "type" : "integer"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of horde waves per map",
+         "name" : "g_horde_waves",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of lives a player has before they can no longer respawn - this can result in a game loss depending on the gametype",
+         "name" : "g_lives",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "When players have limited lives, this is the number of seconds after the round or game started that new players can join - if set to zero, players need to queue and wait until the next round to join",
+         "name" : "g_lives_jointimer",
+         "type" : "integer"
+      },
+      {
+         "default" : 3,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount of time after a round before the next round/endgame",
+         "name" : "g_postroundtime",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "After preround is over, reset the map one last time.",
+         "max" : 1,
+         "min" : 0,
+         "name" : "g_preroundreset",
+         "type" : "integer"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount of time before a round where you can't shoot",
+         "name" : "g_preroundtime",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Always reset players to their starting inventory on level exit",
+         "name" : "g_resetinvonexit",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of total rounds the game can go on for before the game ends",
+         "name" : "g_roundlimit",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Turns on rounds - if enabled, reaching the gametype's win condition only wins a single round, and a player or team must win a certain number of rounds to win the game",
+         "name" : "g_rounds",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Turns on offensive vs defensive sides for team-based game modes - teams on offense don't have to defend any team objective, teams on defense win if time expires, and if rounds are enabled the team on defense changes every round",
+         "name" : "g_sides",
+         "type" : "boolean"
+      },
+      {
+         "default" : "default",
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "The default inventory a player should spawn with.  See the \"spawninv\" console command.",
+         "name" : "g_spawninv",
+         "type" : "string"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Removes some things from the map. Values are:\n// -1 - Multiplayer things are added in singleplayer.\n// 0 - All things are retained (default).\n// 1 - Only Coop weapons are removed.\n// 2 - All Coop things are removed.\n// 3 - All pickupable things are removed.\n",
+         "max" : 3,
+         "min" : -1,
+         "name" : "g_thingfilter",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of times a round must be won before a player or team wins the game",
+         "name" : "g_winlimit",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "After a match winners stay in the game, losers get spectated.",
+         "name" : "g_winnerstays",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Gamma correction level",
+         "name" : "gammalevel",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "HUD anchoring (0.0: Center, 1.0: Corners)",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "hud_anchoring",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Use BIGFONT for certain HUD items - intended as a stopgap feature for streamers",
+         "name" : "hud_bigfont",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Type of crosshair, 0 means no crosshair",
+         "max" : 255,
+         "min" : 0,
+         "name" : "hud_crosshair",
+         "type" : "integer"
+      },
+      {
+         "default" : "ff ff ff",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Crosshair color",
+         "name" : "hud_crosshaircolor",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Crosshair transparency",
+         "name" : "hud_crosshairdim",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Color of crosshair represents health level",
+         "name" : "hud_crosshairhealth",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Crosshair scaling",
+         "name" : "hud_crosshairscale",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Shows the netdemo bar and timer on the HUD.",
+         "name" : "hud_demobar",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Debug protocol messages while demo is paused.",
+         "name" : "hud_demoprotos",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Show kills, items, and secrets:\n// 0: Off\n// 1: DIGFONT\n// 2: SMALLFONT\n// 3: DIGFONT, vertical arrangement\n// 4: SMALLFONT, vertical arrangement",
+         "max" : 4,
+         "min" : 0,
+         "name" : "hud_extendedinfo",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show obituaries in the event feed.",
+         "name" : "hud_feedobits",
+         "type" : "boolean"
+      },
+      {
+         "default" : 3.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "How long entries show in the event feed, in seconds.",
+         "max" : 10.0,
+         "min" : 1.0,
+         "name" : "hud_feedtime",
+         "type" : "number"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Game message type",
+         "max" : 2,
+         "min" : 1,
+         "name" : "hud_gamemsgtype",
+         "type" : "integer"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Show the held flag border",
+         "max" : 2,
+         "min" : 0,
+         "name" : "hud_heldflag",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Enables the flashes around the flag border.",
+         "name" : "hud_heldflag_flash",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Show debugging information for horde.",
+         "name" : "hud_hordeinfo_debug",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Display mouse values",
+         "name" : "hud_mousegraph",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Get a notification if you or another player finds a secret.",
+         "max" : 3,
+         "min" : 0,
+         "name" : "hud_revealsecrets",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "HUD scaling",
+         "name" : "hud_scale",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Scoreboard scaling",
+         "name" : "hud_scalescoreboard",
+         "type" : "number"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Scaling multiplier for chat and midprint (0 = auto).",
+         "max" : 4,
+         "min" : 0,
+         "name" : "hud_scaletext",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show the scoreboard on death.",
+         "name" : "hud_show_scoreboard_ondeath",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show the HUD speedometer",
+         "name" : "hud_speedometer",
+         "type" : "boolean"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Number of players to reveal",
+         "max" : 32,
+         "min" : 0,
+         "name" : "hud_targetcount",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show health of friendly players you're aiming at - this feature has known shortcomings with inaccurate health values and will be fixed in a future version of Odamex, enable at your peril",
+         "name" : "hud_targethealth_debug",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show names of players you're aiming at",
+         "name" : "hud_targetnames",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down Timer\n// 2: Count-up timer",
+         "name" : "hud_timer",
+         "type" : "integer"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "HUD transparency",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "hud_transparency",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Don't show the IWAD selector on boot.",
+         "name" : "i_skipbootwin",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Shows current player position on map",
+         "name" : "idmypos",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "+strafe activates automatic SR50",
+         "name" : "in_autosr50",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Invert vertical mouse movement",
+         "name" : "invertmouse",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Selects the joystick device to use",
+         "name" : "joy_active",
+         "type" : "integer"
+      },
+      {
+         "default" : 0.20000000000000001,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 0.75,
+         "min" : 0.0,
+         "name" : "joy_deadzone",
+         "type" : "number"
+      },
+      {
+         "default" : 15.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "joy_fastsensitivity",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "joy_forwardaxis",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Look up or down with the joystick",
+         "name" : "joy_freelook",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "joy_invert",
+         "type" : "number"
+      },
+      {
+         "default" : 0.20000000000000001,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Sets the required pressure to trigger a press on the left trigger (Analog controllers only)",
+         "max" : 1.0,
+         "min" : 0.0099999997764825821,
+         "name" : "joy_lefttrigger_deadzone",
+         "type" : "number"
+      },
+      {
+         "default" : 3.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "joy_lookaxis",
+         "type" : "number"
+      },
+      {
+         "default" : 0.20000000000000001,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Sets the required pressure to trigger a press on the right trigger (Analog controllers only)",
+         "max" : 1.0,
+         "min" : 0.0099999997764825821,
+         "name" : "joy_righttrigger_deadzone",
+         "type" : "number"
+      },
+      {
+         "default" : 10.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "joy_sensitivity",
+         "type" : "number"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "joy_strafeaxis",
+         "type" : "number"
+      },
+      {
+         "default" : 2.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "joy_turnaxis",
+         "type" : "number"
+      },
+      {
+         "default" : "auto",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Language to use for ingame strings",
+         "name" : "language",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Print debugging messages for each packet sent",
+         "name" : "log_packetdebug",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Generate centerview when mlook encountered",
+         "name" : "lookspring",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Strafe with mouse",
+         "name" : "lookstrafe",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Smooth mouse input",
+         "name" : "m_filter",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "m_forward",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Vertical mouse sensitivity",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "m_pitch",
+         "type" : "number"
+      },
+      {
+         "default" : 2.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "m_side",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "m_yaw",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show player death messages on the message line.",
+         "name" : "message_showobituaries",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show item pickup messages on the message line.",
+         "name" : "message_showpickups",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Overall mouse sensitivity",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "mouse_sensitivity",
+         "type" : "number"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Use vanilla Doom or ZDoom mouse sensitivity scaling (DEPRECATED)",
+         "name" : "mouse_type",
+         "type" : "integer"
+      },
+      {
+         "default" : 6,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Color used for Pickup messages.",
+         "max" : 22,
+         "min" : 0,
+         "name" : "msg0color",
+         "type" : "integer"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Color used for obituary messages.",
+         "max" : 22,
+         "min" : 0,
+         "name" : "msg1color",
+         "type" : "integer"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Color used for all regular messages.",
+         "max" : 22,
+         "min" : 0,
+         "name" : "msg2color",
+         "type" : "integer"
+      },
+      {
+         "default" : 3,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Color used for chat messages.",
+         "max" : 22,
+         "min" : 0,
+         "name" : "msg3color",
+         "type" : "integer"
+      },
+      {
+         "default" : 8,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Color used for team-chat messages.",
+         "max" : 22,
+         "min" : 0,
+         "name" : "msg4color",
+         "type" : "integer"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Color used for centered messages.",
+         "max" : 22,
+         "min" : 0,
+         "name" : "msgmidcolor",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Mute enemy players chat.",
+         "name" : "mute_enemies",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Mute spectators chat.",
+         "name" : "mute_spectators",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Enables display of various netcode debugging information on the automap.  Requires iddt level 2 cheat.",
+         "name" : "netdebug_automap",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "",
+         "name" : "noise",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Disable vertical mouse movement",
+         "name" : "novert",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOSET", "NOENABLEDISABLE" ],
+         "helptext" : "Display currently used network port number",
+         "name" : "port",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Print console text to stdout",
+         "name" : "print_stdout",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
+         "name" : "r_clipmaskedspecial",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Disables all texturing of walls, floors and ceilings",
+         "name" : "r_drawflat",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Add a particle to each actor indicating how credible the client considers the actor's position",
+         "name" : "r_drawnetcredibility",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Weapon Transparency",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "r_drawplayersprites",
+         "type" : "number"
+      },
+      {
+         "default" : "40 cf 00",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "r_enemycolor",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Draws flashing colors where there is HOM",
+         "name" : "r_flashhom",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Changes the color of all enemies to the color specified by r_enemycolor",
+         "name" : "r_forceenemycolor",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Changes the color of all teammates to the color specified by r_teamcolor",
+         "name" : "r_forceteamcolor",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Render skies without horizonal stretching",
+         "name" : "r_linearsky",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Display the disk icon when loading data from disk",
+         "name" : "r_loadicon",
+         "type" : "boolean"
+      },
+      {
+         "default" : "detect",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Rendering optimizations",
+         "name" : "r_optimize",
+         "type" : "string"
+      },
+      {
+         "default" : 0.5,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Intensity of red pain effect",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "r_painintensity",
+         "type" : "number"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Draw particles",
+         "name" : "r_particles",
+         "type" : "boolean"
+      },
+      {
+         "default" : 16,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
+         "max" : 64,
+         "min" : 0,
+         "name" : "r_portalrecursions",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Display the ENDDOOM text after quitting",
+         "max" : 2,
+         "min" : 0,
+         "name" : "r_showendoom",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Invulnerability sphere changes the palette of the sky",
+         "name" : "r_skypalette",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Change invuln to enable light goggles and invert the palette on the weapon sprite only.",
+         "name" : "r_softinvulneffect",
+         "type" : "boolean"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",
+         "max" : 2,
+         "min" : 0,
+         "name" : "r_stretchsky",
+         "type" : "integer"
+      },
+      {
+         "default" : "40 cf 00",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "r_teamcolor",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
+         "name" : "r_thingsectorlight",
+         "type" : "boolean"
+      },
+      {
+         "default" : "0",
+         "flags" : [ "NOSET", "NOENABLEDISABLE" ],
+         "helptext" : "Set to the current video resolution",
+         "name" : "r_viewsize",
+         "type" : "string"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 3,
+         "min" : 0,
+         "name" : "r_wipetype",
+         "type" : "integer"
+      },
+      {
+         "default" : 10,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Selects the size of the visible window",
+         "max" : 12,
+         "min" : 3,
+         "name" : "screenblocks",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "show_messages",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Announcer volume",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "snd_announcervolume",
+         "type" : "number"
+      },
+      {
+         "default" : 32,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Number of channels for sound effects",
+         "max" : 32,
+         "min" : 4,
+         "name" : "snd_channels",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Stereo switch",
+         "name" : "snd_crossover",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Game SFX",
+         "name" : "snd_gamesfx",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "MIDI delay after reset (0 to 2000 milliseconds)",
+         "max" : 2000,
+         "min" : 0,
+         "name" : "snd_mididelay",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "MIDI instrument fallback (0: Disable, 1: Enable)",
+         "name" : "snd_midifallback",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)",
+         "max" : 3,
+         "min" : 0,
+         "name" : "snd_midireset",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Read SysEx from MIDI files (0: Disable, 1: Enable)",
+         "name" : "snd_midisysex",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Music output device for the chosen music subsystem",
+         "name" : "snd_musicdevice",
+         "type" : "string"
+      },
+      {
+         "default" : 255,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Music subsystem preference",
+         "name" : "snd_musicsystem",
+         "type" : "integer"
+      },
+      {
+         "default" : 0.5,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Music volume",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "snd_musicvolume",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Disables music",
+         "name" : "snd_nomusic",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "OPL instrument set",
+         "max" : 2,
+         "min" : 0,
+         "name" : "snd_oplbank",
+         "type" : "integer"
+      },
+      {
+         "default" : 6,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Number of emulated OPL chips",
+         "max" : 8,
+         "min" : 1,
+         "name" : "snd_oplchips",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "OPL emulation quality",
+         "max" : 2,
+         "min" : 0,
+         "name" : "snd_oplcore",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Full-range OPL panning",
+         "name" : "snd_oplpan",
+         "type" : "boolean"
+      },
+      {
+         "default" : 44100,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Audio samplerate",
+         "max" : 192000,
+         "min" : 22050,
+         "name" : "snd_samplerate",
+         "type" : "integer"
+      },
+      {
+         "default" : 0.5,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Sound effect volume",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "snd_sfxvolume",
+         "type" : "number"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Enable vote UI sounds",
+         "name" : "snd_votesfx",
+         "type" : "boolean"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Voice announcer type",
+         "max" : 2,
+         "min" : 1,
+         "name" : "snd_voxtype",
+         "type" : "integer"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 1,
+         "min" : 0,
+         "name" : "st_scale",
+         "type" : "integer"
+      },
+      {
+         "default" : 0.00390625,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "How much control the player has in the air",
+         "max" : 32768.0,
+         "min" : 0.0,
+         "name" : "sv_aircontrol",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow usage of cheats in all game modes",
+         "name" : "sv_allowcheats",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow use of Exit switch/teleports in all game modes",
+         "name" : "sv_allowexit",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to set their field of view",
+         "name" : "sv_allowfov",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allows players to jump when set in all game modes",
+         "name" : "sv_allowjump",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow weapon & view bob changing",
+         "name" : "sv_allowmovebob",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to set their preferences for automatic weapon switching",
+         "name" : "sv_allowpwo",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to adjust amount of red pain screen intensity",
+         "name" : "sv_allowredscreen",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to see spawn points as particle fountains",
+         "name" : "sv_allowshowspawns",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "When set, names of players appear in the FOV",
+         "name" : "sv_allowtargetnames",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to use true widescreen",
+         "name" : "sv_allowwidescreen",
+         "type" : "boolean"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of seconds to wait before starting the game from warmup or restarting the game.",
+         "max" : 60,
+         "min" : 0,
+         "name" : "sv_countdown",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Give double ammo regardless of difficulty",
+         "name" : "sv_doubleammo",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "A list of websites to download WAD files from, separated by spaces",
+         "name" : "sv_downloadsites",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Monsters are at nightmare speed",
+         "name" : "sv_fastmonsters",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Force a player to respawn",
+         "name" : "sv_forcerespawn",
+         "type" : "boolean"
+      },
+      {
+         "default" : 30,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Force a player to respawn after a set amount of time (in seconds)",
+         "max" : 32768,
+         "min" : 0,
+         "name" : "sv_forcerespawntime",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Makes water more realistic (boom maps at the moment)",
+         "name" : "sv_forcewater",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "When enabled, exit switch will kill the player who flips it",
+         "name" : "sv_fragexitswitch",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Sets the amount of frags a player can accumulate before the game ends",
+         "max" : 65536,
+         "min" : 0,
+         "name" : "sv_fraglimit",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow Looking up and down",
+         "name" : "sv_freelook",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "When set, players can injure others on the same team, it is ignored in deathmatch",
+         "name" : "sv_friendlyfire",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "When set, players and other friendly monsters can injure friendly monsters on the same team, it is ignored in deathmatch",
+         "name" : "sv_friendlymonsterfire",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Sets the game mode, values are:\n// 0 = Cooperative\n// 1 = Deathmatch\n// 2 = Team Deathmatch\n// 3 = Capture The Flag\n// 4 = Horde\n",
+         "max" : 4,
+         "min" : 0,
+         "name" : "sv_gametype",
+         "type" : "integer"
+      },
+      {
+         "default" : 800,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Gravity of the environment",
+         "max" : 32768,
+         "min" : 0,
+         "name" : "sv_gravity",
+         "type" : "integer"
+      },
+      {
+         "default" : "Untitled Odamex Server",
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Server name to appear on masters, clients and launchers",
+         "name" : "sv_hostname",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Infinite ammo for all players",
+         "name" : "sv_infiniteammo",
+         "type" : "boolean"
+      },
+      {
+         "default" : 10,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Sets the time limit for the intermission to end (in seconds).",
+         "max" : 60,
+         "min" : 0,
+         "name" : "sv_intermissionlimit",
+         "type" : "integer"
+      },
+      {
+         "default" : 30,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "If sv_itemsrespawn is set, items will respawn after this time (in seconds)",
+         "max" : 500,
+         "min" : 0,
+         "name" : "sv_itemrespawntime",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Items will respawn after a fixed period, see sv_itemrespawntime",
+         "name" : "sv_itemsrespawn",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Keep keys on death",
+         "name" : "sv_keepkeys",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE" ],
+         "helptext" : "maximum clients who can connect to server",
+         "name" : "sv_maxclients",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE" ],
+         "helptext" : "maximum players who can join the game, others are spectators",
+         "name" : "sv_maxplayers",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE" ],
+         "helptext" : "Maximum number of players that can be on a team",
+         "name" : "sv_maxplayersperteam",
+         "type" : "integer"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Cap the maximum time allowed for player reconciliation (in seconds)",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "sv_maxunlagtime",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount to multiply monster weapon damage by",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "sv_monsterdamage",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount to multiply monster health by",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "sv_monstershealth",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Monsters will respawn after a period of time",
+         "name" : "sv_monstersrespawn",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "No monsters will be present",
+         "name" : "sv_nomonsters",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "When enabled, print player beacons in WDL events.This will take effect on map change.",
+         "name" : "sv_playerbeacons",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allows barrels to respawn. (requires sv_itemsrespawn set to 1)",
+         "name" : "sv_respawnbarrels",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allows Invisibility/Invulnerability spheres to respawn (requires sv_itemsrespawn set to 1)",
+         "name" : "sv_respawnsuper",
+         "type" : "boolean"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Game ends when team score is reached in Teamplay/CTF",
+         "max" : 255,
+         "min" : 0,
+         "name" : "sv_scorelimit",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Share keys found to every player.",
+         "name" : "sv_sharekeys",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Enable multi kill announcements. When disabled, clients will not display or announce multi kills.",
+         "name" : "sv_showmultikills",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Show which powerup each player has. (1 = Show all powerups to clients. 0 = Only show Invisibility (vanilla)",
+         "name" : "sv_showplayerpowerups",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Enable killing spree announcements. When disabled, clients will not display or announce sprees.",
+         "name" : "sv_showsprees",
+         "type" : "boolean"
+      },
+      {
+         "default" : 3,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Sets the skill level, values are:\n// 0 - No things mode\n// 1 - I'm Too Young To Die\n// 2 - Hey, Not Too Rough\n// 3 - Hurt Me Plenty\n// 4 - Ultra-Violence\n// 5 - Nightmare",
+         "max" : 7,
+         "min" : 0,
+         "name" : "sv_skill",
+         "type" : "integer"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Force a player to wait a period (in seconds) before respawning",
+         "max" : 32768.0,
+         "min" : 0.0,
+         "name" : "sv_spawndelaytime",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Rocket explosion thrust effect?",
+         "max" : 100.0,
+         "min" : 0.0099999997764825821,
+         "name" : "sv_splashfactor",
+         "type" : "number"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE" ],
+         "helptext" : "Teams that are enabled",
+         "max" : 3,
+         "min" : 2,
+         "name" : "sv_teamsinplay",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "When disabled, treat team spawns like normal deathmatch spawns in Teamplay/CTF",
+         "name" : "sv_teamspawns",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Sets the time limit for the game to end (in minutes)",
+         "max" : 1440.0,
+         "min" : 0.0,
+         "name" : "sv_timelimit",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allows players and friendly monsters to walk through other friendly monsters, and player and friendly projectiles to pass thru players and other friendlies.",
+         "name" : "sv_unblockfriendly",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allows players to walk through other players, and player projectiles to pass through teammates.",
+         "name" : "sv_unblockplayers",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Enable a 'warmup mode' before the match starts.",
+         "name" : "sv_warmup",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Ratio of players needed for warmup to automatically start the game.",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "sv_warmup_autostart",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount to multiply player weapon damage by",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "sv_weapondamage",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Enable/disable weapon drop.",
+         "name" : "sv_weapondrop",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Weapons stay after pickup",
+         "name" : "sv_weaponstay",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0.69999999999999996,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "ui_dimamount",
+         "type" : "number"
+      },
+      {
+         "default" : "00 00 00",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "ui_dimcolor",
+         "type" : "string"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Navigate the menus and console with the mouse",
+         "name" : "ui_mouse",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 255,
+         "min" : 0,
+         "name" : "ui_transblue",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 255,
+         "min" : 0,
+         "name" : "ui_transgreen",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "max" : 255,
+         "min" : 0,
+         "name" : "ui_transred",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "use_joystick",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Enable 320x200 video emulation",
+         "name" : "vid_320x200",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Enable 32-bit color rendering",
+         "name" : "vid_32bpp",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Enable 640x400 video emulation",
+         "name" : "vid_640x400",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Force fullscreen resolution to the closest available video mode.",
+         "name" : "vid_autoadjust",
+         "type" : "boolean"
+      },
+      {
+         "default" : 720,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "vid_defheight",
+         "type" : "integer"
+      },
+      {
+         "default" : 1280,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "vid_defwidth",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE" ],
+         "helptext" : "Display frames per second.\n1: Full Graph.\n2: Just FPS Counter.",
+         "max" : 2,
+         "min" : 0,
+         "name" : "vid_displayfps",
+         "type" : "integer"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Set render scale quality setting for SDL 2.0, one of \"nearest\",\"linear\",\"best\"",
+         "name" : "vid_filter",
+         "type" : "string"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Full screen video mode",
+         "name" : "vid_fullscreen",
+         "type" : "integer"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Select between ZDoom and DOS Doom gamma correction",
+         "max" : 1,
+         "min" : 0,
+         "name" : "vid_gammatype",
+         "type" : "integer"
+      },
+      {
+         "default" : 60.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Maximum framerate (0 indicates unlimited framerate)",
+         "name" : "vid_maxfps",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Overscan matting (as a percentage of the screen area)",
+         "max" : 1.0,
+         "min" : 0.5,
+         "name" : "vid_overscan",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Vanilla Doom frames per second indicator",
+         "name" : "vid_ticker",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Enable/Disable vertical refresh sync (vsync)",
+         "name" : "vid_vsync",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Widescreen mode (0: Off, 1: Auto, 2: 16:10, 3: 16:9, 4: 21:9, 5: 32:9)",
+         "name" : "vid_widescreen",
+         "type" : "integer"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Allow custom WAD directories to be specified",
+         "name" : "waddirs",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Use Vanilla's intermission screen if there are 4 players or less on cooperative gamemodes.",
+         "name" : "wi_oldintermission",
+         "type" : "boolean"
+      }
+   ],
+   "odamex_branchname" : "",
+   "odamex_commithash" : "",
+   "odamex_version" : "13.0.0",
+   "schema_version" : 1
+}

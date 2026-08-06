@@ -56,6 +56,10 @@
 #include "r_sky.h"
 #include "p_compdb.h"
 
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
+
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
 void P_SpawnAvatars();
@@ -878,11 +882,19 @@ void P_LoadThings (int lump)
 			.flags = flags2
 		};
 
+		// clientside-only freecam start pos
+		#ifdef CLIENT_APP
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(mt2))
+		{
+			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, ANG45 * (mt2.angle / 45));
+		}
+		#endif
+
 		P_SpawnMapThing(mt2, 0);
 	}
 
 	// Sort by player number if starts are not in order
-	std::sort(playerstarts.begin(), playerstarts.end(), [](const mapthing2_t& p1, const mapthing2_t& p2){
+	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
 		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
 	});
 
@@ -899,7 +911,7 @@ void P_LoadThings (int lump)
 //
 void P_LoadThings2 (int lump, int position)
 {
-	mapthing2_t* data = W_CacheLumpNum<mapthing2_t>(lump, PU_STATIC);
+	auto* data = W_CacheLumpNum<mapthing2_t>(lump, PU_STATIC);
 	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
 	size_t count = W_LumpLength(lump) / sizeof(mapthing2_t);
 
@@ -926,8 +938,25 @@ void P_LoadThings2 (int lump, int position)
 		mt.type = LESHORT(mt.type);
 		mt.flags = LESHORT(mt.flags);
 
+		// clientside-only freecam start pos
+		#ifdef CLIENT_APP
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(mt))
+		{
+			Freecam::setStartPosition(mt.x << FRACBITS, mt.y << FRACBITS, ONFLOORZ, ANG45 * (mt.angle / 45));
+		}
+		#endif
+
 		P_SpawnMapThing(mt, position);
 	}
+
+	// Sort by player number if starts are not in order
+	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
+		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
+	});
+
+	P_SpawnAvatars();
+
+	Z_Free (data);
 }
 
 //

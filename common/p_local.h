@@ -46,13 +46,13 @@
 
 
 // player radius for movement checking
-#define PLAYERRADIUS	16*FRACUNIT
-#define PLAYERRADIUS64	16*FRACUNIT64
+#define PLAYERRADIUS	(16*FRACUNIT)
+#define PLAYERRADIUS64	(16*FRACUNIT64)
 
 // MAXRADIUS is for precalculated sector block boxes
 // the spider demon is larger,
 // but we do not have any moving sectors nearby
-#define MAXRADIUS		32*FRACUNIT
+#define MAXRADIUS		(32*FRACUNIT)
 
 //#define GRAVITY 		FRACUNIT
 #define MAXMOVE 		(30*FRACUNIT)
@@ -217,9 +217,6 @@ extern fixed_t			openrange;
 extern fixed_t			lowfloor;
 
 void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=limits::MINFIXED, fixed_t refy=0);
-
-bool P_BlockLinesIterator (int x, int y, bool(*func)(line_t*) );
-bool P_BlockThingsIterator (int x, int y, bool(*func)(AActor*), AActor *start=NULL);
 
 #define PT_ADDLINES 	1
 #define PT_ADDTHINGS	2
@@ -534,3 +531,113 @@ void P_RunHelperTics();
 // P_SPEC
 //
 #include "p_spec.h"
+
+//
+// P_MAPUTL templates
+//
+
+//
+// BLOCK MAP ITERATORS
+// For each line/thing in the given mapblock,
+// call the passed PIT_* function.
+// If the function returns false,
+// exit with false without checking anything else.
+//
+
+
+//
+// P_BlockLinesIterator
+// The validcount flags are used to avoid checking lines
+// that are marked in multiple mapblocks,
+// so increment validcount before the first call
+// to P_BlockLinesIterator, then make one or more calls
+// to it.
+//
+template <typename F, typename... ARGS>
+// TODO: C++20, uncomment following line
+// requires std::predicate<F, line_t&, ARGS...>
+bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
+{
+	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
+		return true;
+
+	int offset = *(blockmap + (bmapwidth*y + x));
+	const int *list = blockmaplump + offset;
+
+	/* [RH] Polyobj stuff from Hexen --> */
+	polyblock_t *polyLink;
+	extern polyblock_t **PolyBlockMap;
+
+	offset = (y * bmapwidth) + x;
+	if (PolyBlockMap)
+	{
+		polyLink = PolyBlockMap[offset];
+
+		while (polyLink)
+		{
+			if (polyLink->polyobj && polyLink->polyobj->validcount != validcount)
+			{
+				seg_t*const* tempSeg = polyLink->polyobj->segs;
+				polyLink->polyobj->validcount = validcount;
+
+				for (int i = polyLink->polyobj->numsegs; i; i--, tempSeg++)
+				{
+					if ((*tempSeg)->linedef->validcount != validcount)
+					{
+						(*tempSeg)->linedef->validcount = validcount;
+						if (!std::invoke(std::forward<F>(func), *(*tempSeg)->linedef, std::forward<ARGS>(args)...))
+							return false;
+					}
+				}
+			}
+			polyLink = polyLink->next;
+		}
+	}
+	/* <-- Polyobj stuff from Hexen */
+
+	// [RH] Get past starting 0 (from BOOM)
+	// denis - not so fast, this breaks doom1.wad 1.9 demo1
+	// [SL] The first entry in each block list appears to have been intended to
+	// be used for a special purpose but instead contains garbage (most often
+	// referencing linedef 0). Using this first entry (as vanilla Doom does) can
+	// cause hitscan weapons to erroneously hit the first linedef entry regardless
+	// of where that linedef is located in relation to the block.
+	if (!demoplayback && skipblstart)
+		++list;
+
+	for (; *list != -1; list++)
+	{
+		line_t& ld = lines[*list];
+
+		if (ld.validcount != validcount) {
+			ld.validcount = validcount;
+
+			if (!std::invoke(std::forward<F>(func), ld, std::forward<ARGS>(args)...))
+				return false;
+		}
+	}
+
+	return true;		// everything was checked
+}
+
+//
+// P_BlockThingsIterator
+//
+template <typename F, typename... ARGS>
+// TODO: C++20, uncomment following line
+// requires std::predicate<F, AActor&, ARGS...>
+bool P_BlockThingsIterator (int x, int y, F&& func, AActor *actor, ARGS&&... args)
+{
+	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
+		return true;
+
+	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y*bmapwidth)+x]);
+	while (mobj)
+ 	{
+		if (!std::invoke(std::forward<F>(func), *mobj, std::forward<ARGS>(args)...))
+ 			return false;
+		mobj = mobj->bmapnode.Next(x, y);
+	}
+
+	return true;
+}

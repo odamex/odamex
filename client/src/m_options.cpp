@@ -571,6 +571,7 @@ menu_t JoystickMenu = {
   *=======================================*/
 
 static value_t MusSys[] = {
+	{ MS_AUTO,		"Auto"},
 	#ifndef _WIN32
 	{ MS_SDLMIXER,	"SDL Mixer"},
 	#endif
@@ -1655,9 +1656,9 @@ bool M_StartOptionsMenu (void)
 void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float step)
 {
 	if (leftval < rightval)
-		cur = clamp(cur, leftval, rightval);
+		cur = std::clamp(cur, leftval, rightval);
 	else
-		cur = clamp(cur, rightval, leftval);
+		cur = std::clamp(cur, rightval, leftval);
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
@@ -1683,9 +1684,9 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
 {
 	if (leftval < rightval)
-		cur = clamp(cur, leftval, rightval);
+		cur = std::clamp(cur, leftval, rightval);
 	else
-		cur = clamp(cur, rightval, leftval);
+		cur = std::clamp(cur, rightval, leftval);
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
@@ -2068,7 +2069,7 @@ static void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
 		return;
 
 	float dist = static_cast<float>(mouse_x - track_x1) / static_cast<float>(track_x2 - track_x1);
-	dist = clamp(dist, 0.0f, 1.0f);
+	dist = std::clamp(dist, 0.0f, 1.0f);
 
 	if (item->type == slider)
 	{
@@ -2084,9 +2085,9 @@ static void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
 		}
 
 		if (item->b.leftval < item->c.rightval)
-			newval = clamp(newval, item->b.leftval, item->c.rightval);
+			newval = std::clamp(newval, item->b.leftval, item->c.rightval);
 		else
-			newval = clamp(newval, item->c.rightval, item->b.leftval);
+			newval = std::clamp(newval, item->c.rightval, item->b.leftval);
 
 		if (item->e.cfunc)
 			item->e.cfunc(item->a.cvar, newval);
@@ -2098,7 +2099,7 @@ static void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
 		// Color component sliders move in steps of 17
 		int part = static_cast<int>(dist * 255.0f + 0.5f);
 		part = ((part + 0x08) / 0x11) * 0x11;
-		part = clamp(part, 0, 0xFF);
+		part = std::clamp(part, 0, 0xFF);
 
 		const char* oldcolor = item->a.cvar->cstring();
 		char newcolor[9];

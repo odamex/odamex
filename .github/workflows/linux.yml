@@ -25,7 +25,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -36,9 +36,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Turn on problem matcher
@@ -47,6 +47,8 @@ jobs:
       run: cmake --build ./build/
     - name: Run unit tests
       run: ./build/tests/unit-tests/odagtest --gtest_color=yes
+    - name: Check cvar documentation is up to date
+      run: cmake --build ./build/ --target cvardocs-check
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact
@@ -64,9 +66,9 @@ jobs:
       CXX: /usr/bin/clang++
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
@@ -80,9 +82,9 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Turn on problem matcher
@@ -98,9 +100,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Run build
       run: bash ci/fedora-buildgen.sh
   build-ubuntu-jammy:
@@ -110,9 +112,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Run build
       run: bash ci/ubuntu-jammy-buildgen.sh
   build-flatpak:
@@ -125,7 +127,7 @@ jobs:
       options: --privileged
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         submodules: recursive
     - name: Update metainfo dates
@@ -139,11 +141,13 @@ jobs:
       run: |
         echo "MODIFIED_BRANCH_NAME=${name//\//-}" >> $GITHUB_ENV
     - name: Build Flatpak
-      uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      uses: flatpak/flatpak-github-actions/flatpak-builder@8e357b1556f526e3642244bdf1a6d585be36de54
       with:
         manifest-path: packaging/flatpak/net.odamex.Odamex.yml
-        bundle: odamex.flatpak
+        bundle: odamex-x86_64.flatpak
         branch: ${{ env.MODIFIED_BRANCH_NAME }}
+        build-debug-bundle: true
+        artifact-name: Odamex-Flatpak-x86_64
   build-flatpak-arm:
     name: Build Flatpak (Ubuntu 24.04 ARM)
     needs: pre_job
@@ -154,7 +158,7 @@ jobs:
       options: --privileged
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         submodules: recursive
     - name: Update metainfo dates
@@ -168,9 +172,11 @@ jobs:
       run: |
         echo "MODIFIED_BRANCH_NAME=${name//\//-}" >> $GITHUB_ENV
     - name: Build Flatpak
-      uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      uses: flatpak/flatpak-github-actions/flatpak-builder@8e357b1556f526e3642244bdf1a6d585be36de54
       with:
         manifest-path: packaging/flatpak/net.odamex.Odamex.yml
         arch: aarch64
-        bundle: odamex.flatpak
+        bundle: odamex-arm64.flatpak
         branch: ${{ env.MODIFIED_BRANCH_NAME }}
+        build-debug-bundle: true
+        artifact-name: Odamex-Flatpak-arm64

@@ -82,7 +82,7 @@ static void Wipe_StartMelt()
 	{
 		int random_value = (M_Random() % 3) - 1;
 		worms[x] = worms[x - 1] + random_value;
-		worms[x] = clamp(worms[x], -15, 0);
+		worms[x] = std::clamp(worms[x], -15, 0);
 	}
 
 	// copy each column of the current screen image to wipe_screen

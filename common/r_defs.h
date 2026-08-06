@@ -175,7 +175,7 @@ struct plane_s
 };
 typedef plane_s plane_t;
 
-struct dyncolormap_s;
+struct dyncolormap_t;
 
 class DSectorEffect;
 
@@ -269,7 +269,7 @@ struct sector_t
 	int damageinterval = 0;
 	int leakrate = 0;
 	short mod = 0;			// [RH] Means-of-death for applied damage
-	dyncolormap_s *colormap = nullptr;	// [RH] Per-sector colormap
+	dyncolormap_t *colormap = nullptr;	// [RH] Per-sector colormap
 
 	bool alwaysfake = false;	// [RH] Always apply heightsec modifications?
 	byte waterzone = 0;		// [RH] Sector is underwater?

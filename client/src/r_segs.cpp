@@ -180,7 +180,7 @@ static void R_FillWallHeightArray(
 
 	for (int i = start; i <= stop; i++)
 	{
-		array[i] = clamp(static_cast<int>(frac), ceilingclipinitial[0], floorclipinitial[0]);
+		array[i] = std::clamp(static_cast<int>(frac), ceilingclipinitial[0], floorclipinitial[0]);
 		frac -= step;
 	}
 }
@@ -335,7 +335,7 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool
 {
 	if (calc_light)
 	{
-		const int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+		const int index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
 		dcol.colormap = basecolormap.with(walllights[index]);
 	}
 
@@ -428,7 +428,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		{
 			for (int x = start; x <= stop; x++)
 			{
-				const int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+				const int index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
 				light_lookup[x] = walllights[index];
 				rw_light += rw_lightstep;
 			}
@@ -745,8 +745,8 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 
 	const fixed_t mindist = NEARCLIP;
 	static constexpr fixed_t maxdist = 16384*FRACUNIT;
-	dist1 = clamp(dist1, mindist, maxdist);
-	dist2 = clamp(dist2, mindist, maxdist);
+	dist1 = std::clamp(dist1, mindist, maxdist);
+	dist2 = std::clamp(dist2, mindist, maxdist);
 
 	// calculate texture coordinates at the line's endpoints
 	const float scale1 = yfoc / FIXED2FLOAT(dist1);
@@ -1103,7 +1103,7 @@ void R_StoreWallRange(int start, int stop)
 
 			lightnum += R_OrthogonalLightnumAdjustment();
 
-			lightnum = clamp(lightnum, 0, LIGHTLEVELS - 1);
+			lightnum = std::clamp(lightnum, 0, LIGHTLEVELS - 1);
 			walllights = scalelight[lightnum];
 		}
 	}

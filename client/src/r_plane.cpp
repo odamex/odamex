@@ -82,7 +82,7 @@ static bool R_IsStackPoint(const AActor* mo)
 // remote stack thing's arg0: 0 = invisible flat, 255 = fully opaque.
 static int R_StackFlatAlpha(const AActor* mo)
 {
-	return clamp(static_cast<int>(mo->args[0]), 0, 255);
+	return std::clamp(static_cast<int>(mo->args[0]), 0, 255);
 }
 
 // Does this plane render as a portal? A boundary flat at full opacity would
@@ -651,7 +651,7 @@ void R_DrawLevelPlane(visplane_t *pl)
 	// so just use (0, 0) when calculating the plane's z height
 	planeheight = abs(P_PlaneZ(0, 0, &pl->secplane) - viewz);
 
-	int light = clamp((pl->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight), 0, LIGHTLEVELS - 1);
+	const int light = std::clamp((pl->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight), 0, LIGHTLEVELS - 1);
 	planezlight = zlight[light];
 
 	R_MakeSpans(pl, R_MapLevelPlane);

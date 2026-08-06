@@ -19,7 +19,7 @@ jobs:
       minor: ${{ steps.gitversion.outputs.minor }}
       patch: ${{ steps.gitversion.outputs.patch }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
@@ -71,9 +71,10 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+        submodules: recursive
     - name:  Run Upversion
       id:    upversion
       shell: pwsh
@@ -82,8 +83,6 @@ jobs:
         MAJORVERSION: ${{ needs.pre_job.outputs.major }}
         MINORVERSION: ${{ needs.pre_job.outputs.minor }}
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Turn on problem matcher
@@ -97,21 +96,6 @@ jobs:
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
-  build-sdl12:
-    name: Build (SDL 1.2)
-    needs: pre_job
-    runs-on: ubuntu-latest
-    env:
-      USE_SDL12: 1
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Prepare build
-      run: bash ci/ubuntu-buildgen.sh
-    - name: Run build
-      run: cmake --build ./build/
   build-clang:
     name: Build (Clang)
     needs: pre_job
@@ -121,9 +105,9 @@ jobs:
       CXX: /usr/bin/clang++
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
@@ -134,9 +118,9 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Turn on problem matcher
@@ -149,9 +133,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Run build
       run: bash ci/fedora-buildgen.sh
   build-ubuntu-jammy:
@@ -160,15 +144,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Run build
       run: bash ci/ubuntu-jammy-buildgen.sh
   build-flatpak:
-    name: Build Flatpak (Ubuntu Latest)
+    name: Build Flatpak (x86_64)
     needs: pre_job
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
     env:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
@@ -176,9 +163,16 @@ jobs:
       MINORVERSION: ${{ needs.pre_job.outputs.minor }}
       PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+        submodules: recursive
+    - name: Install PowerShell
+      run: |
+        curl -L https://github.com/PowerShell/PowerShell/releases/download/v7.6.4/powershell-7.6.4-linux-x64.tar.gz -o /tmp/powershell.tar.gz
+        mkdir -p /opt/pwsh
+        tar -xzf /tmp/powershell.tar.gz -C /opt/pwsh
+        ln -sf /opt/pwsh/pwsh /usr/bin/pwsh
     - name:  Run Upversion
       id:    upversion
       shell: pwsh
@@ -189,35 +183,26 @@ jobs:
         DATE=$(date +'%Y-%m-%d')
         sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
         sed -i "s/version=\"$MAJORVERSION\.$MINORVERSION\.$PATCHVERSION\"/version=\"$new_version-prerelease.$build_number\"/g" packaging/linux/net.odamex.Odamex.releases.xml
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Install flatpak
-      run: sudo apt update && sudo apt install flatpak flatpak-builder
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
       run: |
         echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
-    - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Run build
-      run: |
-        flatpak-builder --force-clean --user --install-deps-from=flathub \
-        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
-    - name: Pack flatpak
-      run: |
-        flatpak build-bundle repo odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak \
-        net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
-    - name: Upload artifact
-      uses: actions/upload-artifact@v7
+      uses: flatpak/flatpak-github-actions/flatpak-builder@8e357b1556f526e3642244bdf1a6d585be36de54
       with:
-        name: Odamex-Flatpak-x86_64
-        path: odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
+        manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        bundle: odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
+        branch: ${{ env.MODIFIED_BRANCH_NAME }}
+        build-debug-bundle: true
+        artifact-name: Odamex-Flatpak-x86_64
   build-flatpak-arm:
-    name: Build Flatpak (Ubuntu 24.04 ARM)
+    name: Build Flatpak (arm64)
     needs: pre_job
     runs-on: ubuntu-24.04-arm
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
     env:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
@@ -225,9 +210,16 @@ jobs:
       MINORVERSION: ${{ needs.pre_job.outputs.minor }}
       PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+        submodules: recursive
+    - name: Install PowerShell
+      run: |
+        curl -L https://github.com/PowerShell/PowerShell/releases/download/v7.6.4/powershell-7.6.4-linux-arm64.tar.gz -o /tmp/powershell.tar.gz
+        mkdir -p /opt/pwsh
+        tar -xzf /tmp/powershell.tar.gz -C /opt/pwsh
+        ln -sf /opt/pwsh/pwsh /usr/bin/pwsh
     - name:  Run Upversion
       id:    upversion
       shell: pwsh
@@ -238,31 +230,20 @@ jobs:
         DATE=$(date +'%Y-%m-%d')
         sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
         sed -i "s/version=\"$MAJORVERSION\.$MINORVERSION\.$PATCHVERSION\"/version=\"$new_version-prerelease.$build_number\"/g" packaging/linux/net.odamex.Odamex.releases.xml
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Install flatpak
-      run: sudo apt update && sudo apt install flatpak flatpak-builder
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
       run: |
         echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
-    - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Run build
-      run: |
-        flatpak-builder --force-clean --user --install-deps-from=flathub \
-        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
-    - name: Pack flatpak
-      run: |
-        flatpak build-bundle repo odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak \
-        net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
-    - name: Upload artifact
-      uses: actions/upload-artifact@v7
+      uses: flatpak/flatpak-github-actions/flatpak-builder@8e357b1556f526e3642244bdf1a6d585be36de54
       with:
-        name: Odamex-Flatpak-ARM64
-        path: odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
+        manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        arch: aarch64
+        bundle: odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
+        branch: ${{ env.MODIFIED_BRANCH_NAME }}
+        build-debug-bundle: true
+        artifact-name: Odamex-Flatpak-arm64
   package-and-upload:
     name: Package and Upload Artifacts
     runs-on: windows-latest
@@ -271,7 +252,7 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-tags: true
     - name: Download x86_64 Flatpak
@@ -281,7 +262,7 @@ jobs:
     - name: Download Arm Flatpak
       uses: actions/download-artifact@v8
       with:
-        name: Odamex-Flatpak-ARM64
+        name: Odamex-Flatpak-arm64
     - name: Create or update prerelease
       uses: ./.github/actions/update-prerelease
       env:

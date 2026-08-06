@@ -423,7 +423,7 @@ static void ApplyDistanceScaling(float dist_scale, fixed_t *approx_dist)
 	if (dist_scale > 0.0f)
 	{
 		float scaled_dist = FIXED2FLOAT(*approx_dist) * dist_scale;
-		scaled_dist = clamp(scaled_dist, 0.0f, 32767.0f);
+		scaled_dist = std::clamp(scaled_dist, 0.0f, 32767.0f);
 		*approx_dist = FLOAT2FIXED(scaled_dist);
 	}
 }

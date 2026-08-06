@@ -1,3 +1,4 @@
+include(OdamexCvarDoc)
 include(OdamexTargetSettings)
 
 # use unquoted #defines
@@ -96,6 +97,10 @@ else()
   install(TARGETS odasrv
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     COMPONENT server)
+endif()
+
+if(TARGET odasrv)
+  odamex_cvardoc_refresh(odasrv)
 endif()
 
 # [AM] Not needed right now, but could be in the future...

@@ -72,6 +72,7 @@ END_DISABLE_WARNING_GNU
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "cl_freecam.h"
 
 #include <math.h> // for pow()
 
@@ -712,7 +713,7 @@ void G_AddViewPitch(int pitch)
 		pitch = -pitch;
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) ||
-	    consoleplayer().spectator)
+	    consoleplayer().spectator || displayplayer().isFreecam)
 	{
 		localview.pitch += pitch << 16;
 		localview.setpitch = true;
@@ -721,7 +722,8 @@ void G_AddViewPitch(int pitch)
 
 bool G_ShouldIgnoreMouseInput()
 {
-	if (consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD)
+	if ((consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD) &&
+		not displayplayer().isFreecam)
 		return true;
 
 	return false;
@@ -866,7 +868,7 @@ void P_CheckInterpPause()
 {
 	// Game pauses when in the menu and not online/demo
 	OInterpolation &oi = OInterpolation::getInstance();
-	if (paused || (!multiplayer && !demoplayback &&
+	if ((paused && not displayplayer().isFreecam) || (!multiplayer && !demoplayback &&
 		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)))
 	{
 		if (oi.enabled())
@@ -994,6 +996,11 @@ void G_Ticker (void)
 		{
 			memcpy(&player.cmd, &player.netcmds[buf], sizeof(ticcmd_t));
 		}
+	}
+	// Rude - allow controlling displayplayer if freecam
+	else if (displayplayer().isFreecam)
+	{
+		memcpy(&displayplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
 	}
 	else
 	{
