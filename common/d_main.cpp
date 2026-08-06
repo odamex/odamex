@@ -1083,49 +1083,26 @@ bool C_WriteVersion(infodumpdest_t dest)
 namespace
 {
 
-infodumpdest_t D_InfoDumpDest()
+constexpr infodumpdest_t D_InfoDumpDest([[maybe_unused]] infodumpdest_t dest)
 {
-#ifdef _WIN32
-	return INFODUMP_FILE;
+#if defined(_WIN32) && defined(CLIENT_APP)
+	return infodumpdest_t::FILE;
 #else
-	return INFODUMP_STDOUT;
+	return dest;
 #endif
-}
-
-//
-// --version
-//
-bool D_DumpVersion()
-{
-	return C_WriteVersion(D_InfoDumpDest());
-}
-
-//
-// --cvardoc
-//
-bool D_DumpCvarDoc()
-{
-	return C_WriteCvarDoc(D_InfoDumpDest());
-}
-
-//
-// --cvardocjson
-//
-bool D_DumpCvarDocJSON()
-{
-	return C_WriteCvarDocJSON(D_InfoDumpDest());
 }
 
 struct infodump_t
 {
 	const char* param;  // the switch, including its leading dashes
-	bool (*handler)();  // writes the information out, false if it could not
+	bool (*handler)(infodumpdest_t);  // writes the information out, false if it could not
+	infodumpdest_t dest; // whether to write to stdout or a file
 };
 
 const std::array InfoDumps = {
-    infodump_t{"--version", D_DumpVersion},
-    infodump_t{"--cvardoc", D_DumpCvarDoc},
-    infodump_t{"--cvardocjson", D_DumpCvarDocJSON},
+    infodump_t{"--version", C_WriteVersion, infodumpdest_t::STDOUT},
+    infodump_t{"--cvardoc", C_WriteCvarDoc, infodumpdest_t::FILE},
+    infodump_t{"--cvardocjson", C_WriteCvarDocJSON, infodumpdest_t::STDOUT},
 };
 
 } // namespace
@@ -1138,22 +1115,18 @@ const std::array InfoDumps = {
 //
 void D_CheckInfoDumps()
 {
-	bool dumped = false;
 	bool ok = true;
 
 	for (const infodump_t& dump : InfoDumps)
 	{
 		if (Args.CheckParm(dump.param))
 		{
-			if (!dump.handler())
+			if (!dump.handler(D_InfoDumpDest(dump.dest)))
 				ok = false;
 
-			dumped = true;
+			exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
 		}
 	}
-
-	if (dumped)
-		exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 

@@ -25,10 +25,10 @@
 #include <string>
 
 // Where a generated document should be sent.
-enum infodumpdest_t
+enum class infodumpdest_t
 {
-	INFODUMP_FILE,
-	INFODUMP_STDOUT,
+	FILE,
+	STDOUT,
 };
 
 bool EmitInfoDump(const std::string& doc, const char* basename, const char* ext,

@@ -420,8 +420,8 @@ std::string BuildCvarDocJSON()
 /**
  * @brief Emit a generated document.
  *
- * INFODUMP_FILE writes a file in the write directory.
- * INFODUMP_STDOUT prints the document to stdout instead.
+ * infodumpdest_t::FILE writes a file in the write directory.
+ * infodumpdest_t::STDOUT prints the document to stdout instead.
  *
  * @param doc Document contents to emit.
  * @param basename Name to give the file, without an extension.
@@ -432,7 +432,7 @@ std::string BuildCvarDocJSON()
 bool EmitInfoDump(const std::string& doc, const char* basename, const char* ext,
                   infodumpdest_t dest)
 {
-	if (dest == INFODUMP_STDOUT)
+	if (dest == infodumpdest_t::STDOUT)
 	{
 		fwrite(doc.data(), sizeof(char), doc.size(), stdout);
 		fflush(stdout);
@@ -477,12 +477,12 @@ bool C_WriteCvarDocJSON(infodumpdest_t dest)
 
 BEGIN_COMMAND(cvardoc)
 {
-	C_WriteCvarDoc(INFODUMP_FILE);
+	C_WriteCvarDoc(infodumpdest_t::FILE);
 }
 END_COMMAND(cvardoc)
 
 BEGIN_COMMAND(cvardocjson)
 {
-	C_WriteCvarDocJSON(INFODUMP_FILE);
+	C_WriteCvarDocJSON(infodumpdest_t::FILE);
 }
 END_COMMAND(cvardocjson)

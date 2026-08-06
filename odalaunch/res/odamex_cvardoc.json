@@ -1138,7 +1138,7 @@
          "type" : "boolean"
       },
       {
-         "default" : "012021",
+         "default" : "012030",
          "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "",
          "name" : "configver",
@@ -2898,6 +2898,6 @@
    ],
    "odamex_branchname" : "",
    "odamex_commithash" : "",
-   "odamex_version" : "12.2.1",
+   "odamex_version" : "12.3.0",
    "schema_version" : 1
 }
