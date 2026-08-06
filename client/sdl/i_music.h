@@ -22,8 +22,13 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <string>
 #include <SDL_mixer.h>
 
+#include "c_cvars.h"
+#include "doomtype.h"
 #include "m_memio.h"
 
 struct MusicHandler_t
@@ -40,8 +45,44 @@ typedef enum
 	MS_SDLMIXER		= 1,
 	MS_AUDIOUNIT	= 2,
 	MS_PORTMIDI		= 3,
-	MS_LIBADLMIDI		= 4
+	MS_LIBADLMIDI		= 4,
+
+	MS_AUTO			= 255
 } MusicSystemType;
+
+//
+// I_GetDefaultMusicSystem
+//
+// The music system to use when the user has expressed no preference, which
+// depends on what the platform does best.
+//
+// TODO: convert this to consteval when merging to protobreak
+constexpr MusicSystemType I_GetDefaultMusicSystem()
+{
+#ifdef _WIN32
+	return MS_PORTMIDI;
+#elif defined OSX
+	return MS_AUDIOUNIT;
+#elif defined __linux__
+	return MS_LIBADLMIDI;
+#else
+	return MS_SDLMIXER;
+#endif
+}
+
+//
+// I_ResolveMusicSystem
+//
+// Turns whatever snd_musicsystem holds into a music system we can actually
+// start.
+//
+constexpr MusicSystemType I_ResolveMusicSystem(int musicsystem_type)
+{
+	if (musicsystem_type == MS_AUTO)
+		return I_GetDefaultMusicSystem();
+
+	return static_cast<MusicSystemType>(musicsystem_type);
+}
 
 bool S_MusicIsMus(byte* data, size_t length);
 bool S_MusicIsMidi(byte* data, size_t length);
@@ -57,8 +98,8 @@ EXTERN_CVAR(snd_musicsystem)
 // [ML] Keep track of the currently loaded music lump name
 extern std::string currentmusic;
 
-void I_InitMusic(MusicSystemType musicsystem_type = snd_musicsystem.asEnum<MusicSystemType>());
-void STACK_ARGS I_ShutdownMusic(void);
+void I_InitMusic(const MusicSystemType musicsystem_type = I_ResolveMusicSystem(snd_musicsystem.asInt()));
+void I_ShutdownMusic();
 // Volume.
 void I_SetMusicVolume (float volume);
 // PAUSE game handling.

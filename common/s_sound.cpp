@@ -253,7 +253,7 @@ void S_ParseSndInfo()
 					ambient->periodmax = MAX(ambient->periodmin, ambient->periodmax);
 
 					os.mustScanFloat();
-					ambient->volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
+					ambient->volume = std::clamp(os.getTokenFloat(), 0.0f, 1.0f);
 
 					if (ambient->mode == amb_mode_t::NONE || ambient->volume == 0.0f ||
 					    (ambient->mode != amb_mode_t::CONTINUOUS &&

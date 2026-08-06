@@ -35,6 +35,7 @@
 // We also need the definition of a cvar
 #include "c_cvars.h"
 #include "d_netinf.h"
+#include "range.h"
 
 // ------------------------
 // Command line parameters.
@@ -164,7 +165,9 @@ struct VoodooStartInfoType
 	}
 };
 
-#define MAXPLAYERSTARTS		64
+inline constexpr int MAXPLAYERSTARTS = 64;
+inline constexpr OUtil::inclusive_range<int16_t> VANILLA_COOP_PLAYER_STARTS{1, 4};
+inline constexpr OUtil::inclusive_range<int16_t> EXTRA_COOP_PLAYER_STARTS{4001, 4001 + MAXPLAYERSTARTS - 4};
 extern std::vector<mapthing2_t>         playerstarts;
 extern std::vector<VoodooStartInfoType> voodoostarts;
 

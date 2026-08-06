@@ -26,6 +26,7 @@
 #include "odamex.h"
 
 
+#include <array>
 #include <sstream>
 #include <algorithm>
 
@@ -48,6 +49,7 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "c_console.h"
+#include "c_doc.h"
 #include "i_system.h"
 #include "i_time.h"
 #include "g_game.h"
@@ -61,6 +63,10 @@
 #include "m_resfile.h"
 #include "odainfo.h"
 #include "infomap.h"
+
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
 
 OResFiles wadfiles;
 OResFiles patchfiles;
@@ -203,7 +209,7 @@ static registry_value_t gog_final_doom =
 	"path",
 };
 
-static char *GetRegistryString(registry_value_t *reg_val)
+static char *GetRegistryString(const registry_value_t *reg_val)
 {
 	HKEY key = 0;
 	DWORD len = 0;
@@ -283,30 +289,71 @@ void D_InitializeDoomObjectTables()
 	);
 }
 
-//
-// D_AddSearchDir
-// denis - Split a new directory string using the separator and append results to the output
-//
-void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
+void D_AddSearchDir(std::vector<std::string>& dirs, const char* newdir, missing_dir_policy_t policy)
 {
-	if(!dir)
+	if (!newdir)
+		return;
+
+	D_AddSearchDir(dirs, std::string{newdir}, policy);
+}
+
+void D_AddSearchDir(std::vector<std::string>& dirs, std::string newdir, missing_dir_policy_t policy)
+{
+	if (newdir.empty())
+		return;
+
+	M_ExpandHomeDir(newdir);
+	newdir = M_CleanPath(newdir);
+	if (M_DirectoryExists(newdir))
+	{
+		dirs.push_back(newdir);
+	}
+	else if (policy == missing_dir_policy_t::WARN ||
+		(policy == missing_dir_policy_t::DEV_WARN && (::developer || ::devparm)))
+	{
+		PrintFmt(PRINT_WARNING, "{}: search directory \"{}\" not found\n", __FUNCTION__, newdir);
+	}
+}
+
+//
+// D_AddSearchDirList
+// denis - Split a new directory string using the path list separator and append results to the output
+//
+void D_AddSearchDirList(std::vector<std::string> &dirs, const char *newdirs, missing_dir_policy_t policy)
+{
+	if (!newdirs)
+		return;
+
+	D_AddSearchDirList(dirs, std::string{newdirs}, policy);
+}
+
+void D_AddSearchDirList(std::vector<std::string> &dirs, std::string newdirs, missing_dir_policy_t policy)
+{
+	if(newdirs.empty())
 		return;
 
 	// search through dwd
-	std::stringstream ss(dir);
+	std::stringstream ss{newdirs};
 	std::string segment;
 
 	while(!ss.eof())
 	{
-		std::getline(ss, segment, separator);
+		std::getline(ss, segment, PATHLISTSEPCHAR);
 
 		if(!segment.length())
 			continue;
 
 		M_ExpandHomeDir(segment);
 		segment = M_CleanPath(segment);
-
-		dirs.push_back(segment);
+		if (M_DirectoryExists(segment))
+		{
+			dirs.push_back(segment);
+		}
+		else if (policy == missing_dir_policy_t::WARN ||
+			(policy == missing_dir_policy_t::DEV_WARN && (::developer || ::devparm)))
+		{
+			PrintFmt(PRINT_WARNING, "{}: search directory \"{}\" not found\n", __FUNCTION__, segment);
+		}
 	}
 }
 
@@ -315,11 +362,9 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 {
 	#if defined(_WIN32)
 
-	const char separator = ';';
-
 	// Doom 95
 	{
-		for (auto& uninstallval : uninstall_values)
+		for (const auto& uninstallval : uninstall_values)
 		{
 			char* val;
 			char* path;
@@ -341,7 +386,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 				path = unstr + strlen(uninstaller_string);
 
 				const char* cpath = path;
-				D_AddSearchDir(dirs, cpath, separator);
+				D_AddSearchDir(dirs, cpath);
 			}
 		}
 	}
@@ -356,7 +401,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 			{
 				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
 
-				D_AddSearchDir(dirs, subpath.c_str(), separator);
+				D_AddSearchDir(dirs, subpath);
 			}
 
 			M_Free(install_path);
@@ -373,7 +418,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 			{
 				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
 
-				D_AddSearchDir(dirs, subpath.c_str(), separator);
+				D_AddSearchDir(dirs, subpath);
 			}
 
 			M_Free(install_path);
@@ -386,7 +431,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (doom_plus_doom2_path != nullptr)
 		{
-			D_AddSearchDir(dirs, doom_plus_doom2_path, separator);
+			D_AddSearchDir(dirs, doom_plus_doom2_path);
 			M_Free(doom_plus_doom2_path);
 		}
 
@@ -394,7 +439,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (doom_path != nullptr)
 		{
-			D_AddSearchDir(dirs, doom_path, separator);
+			D_AddSearchDir(dirs, doom_path);
 			M_Free(doom_path);
 		}
 
@@ -404,8 +449,8 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 		{
 			const std::string full_doom2_path = fmt::format("{}\\{}", doom2_path, "doom2");
 			const std::string master_levels_path = fmt::format("{}\\{}", doom2_path, "master\\wads");
-			D_AddSearchDir(dirs, full_doom2_path.c_str(), separator);
-			D_AddSearchDir(dirs, master_levels_path.c_str(), separator);
+			D_AddSearchDir(dirs, full_doom2_path);
+			D_AddSearchDir(dirs, master_levels_path);
 			M_Free(doom2_path);
 		}
 
@@ -415,44 +460,42 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 		{
 			const std::string plutonia_path = fmt::format("{}\\{}", final_doom_path, "Plutonia");
 			const std::string tnt_path = fmt::format("{}\\{}", final_doom_path, "TNT");
-			D_AddSearchDir(dirs, plutonia_path.c_str(), separator);
-			D_AddSearchDir(dirs, tnt_path.c_str(), separator);
+			D_AddSearchDir(dirs, plutonia_path);
+			D_AddSearchDir(dirs, tnt_path);
 			M_Free(final_doom_path);
 		}
 	}
 
 	// DOS Doom via DEICE
-	D_AddSearchDir(dirs, "\\doom2", separator);    // Doom II
-	D_AddSearchDir(dirs, "\\plutonia", separator); // Final Doom
-	D_AddSearchDir(dirs, "\\tnt", separator);
-	D_AddSearchDir(dirs, "\\doom_se", separator);  // Ultimate Doom
-	D_AddSearchDir(dirs, "\\doom", separator);     // Shareware / Registered Doom
-	D_AddSearchDir(dirs, "\\dooms", separator);    // Shareware versions
-	D_AddSearchDir(dirs, "\\doomsw", separator);
+	D_AddSearchDir(dirs, "\\doom2");    // Doom II
+	D_AddSearchDir(dirs, "\\plutonia"); // Final Doom
+	D_AddSearchDir(dirs, "\\tnt");
+	D_AddSearchDir(dirs, "\\doom_se");  // Ultimate Doom
+	D_AddSearchDir(dirs, "\\doom");     // Shareware / Registered Doom
+	D_AddSearchDir(dirs, "\\dooms");    // Shareware versions
+	D_AddSearchDir(dirs, "\\doomsw");
 
 	#elif defined(UNIX)
 
-	const char separator = ':';
-
 	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator);
-	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator);
+	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", missing_dir_policy_t::DEV_WARN);
 	#endif
 	// Search the maintainer-directed data directory for WADs
 	#if defined(ODAMEX_INSTALL_DATADIR)
-	D_AddSearchDir(dirs, ODAMEX_INSTALL_DATADIR, separator);
+	D_AddSearchDir(dirs, ODAMEX_INSTALL_DATADIR, missing_dir_policy_t::DEV_WARN);
 	#endif
 
-	D_AddSearchDir(dirs, "/usr/share/doom", separator);
-	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
+	D_AddSearchDir(dirs, "/usr/share/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/usr/share/games/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/usr/local/share/games/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/usr/local/share/doom", missing_dir_policy_t::DEV_WARN);
 	// Flatpak sandbox default directories
 	// (Since you need to pass envvars to a Flatpak)
-	D_AddSearchDir(dirs, "/run/host/usr/share/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", separator);
+	D_AddSearchDir(dirs, "/run/host/usr/share/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", missing_dir_policy_t::DEV_WARN);
 
 	#endif
 }
@@ -906,6 +949,11 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	OResFiles oldwadfiles = ::wadfiles;
 	OResFiles oldpatchfiles = ::patchfiles;
 	std::string failmsg;
+
+	#ifdef CLIENT_APP
+	Freecam::reset();
+	#endif
+
 	try
 	{
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
@@ -1004,6 +1052,81 @@ void D_AddDehCommandLineFiles(OWantFiles& out)
 {
 	AddCommandLineOptionFiles(out, "-bex", OFILE_DEH);
 	AddCommandLineOptionFiles(out, "-deh", OFILE_DEH);
+}
+
+// ============================================================================
+//
+// Command line information dumps
+//
+// These are informational command line switches that simply dump
+// information and exit before initializing any subsystems.
+// These are allowed to run as root since they exit right after.
+//
+// ============================================================================
+
+// Name the version document after the app, so a client and a server writing
+// into the same directory do not clobber each other.
+#ifdef CLIENT_APP
+constexpr const char* VERSION_BASENAME = "odamex-version";
+#elif defined(SERVER_APP)
+constexpr const char* VERSION_BASENAME = "odasrv-version";
+#elif defined(TEST_APP)
+constexpr const char* VERSION_BASENAME = "odagtest-version";
+#endif
+
+bool C_WriteVersion(infodumpdest_t dest)
+{
+	return EmitInfoDump(fmt::format("Odamex {}\n", NiceVersion()), VERSION_BASENAME,
+	                    ".txt", dest);
+}
+
+namespace
+{
+
+constexpr infodumpdest_t D_InfoDumpDest([[maybe_unused]] infodumpdest_t dest)
+{
+#if defined(_WIN32) && defined(CLIENT_APP)
+	return infodumpdest_t::FILE;
+#else
+	return dest;
+#endif
+}
+
+struct infodump_t
+{
+	const char* param;  // the switch, including its leading dashes
+	bool (*handler)(infodumpdest_t);  // writes the information out, false if it could not
+	infodumpdest_t dest; // whether to write to stdout or a file
+};
+
+const std::array InfoDumps = {
+    infodump_t{"--version", C_WriteVersion, infodumpdest_t::STDOUT},
+    infodump_t{"--cvardoc", C_WriteCvarDoc, infodumpdest_t::FILE},
+    infodump_t{"--cvardocjson", C_WriteCvarDocJSON, infodumpdest_t::STDOUT},
+};
+
+} // namespace
+
+//
+// D_CheckInfoDumps
+//
+// Checks for every information dump named on the command line, then quits if any of
+// them ran.
+//
+void D_CheckInfoDumps()
+{
+	bool ok = true;
+
+	for (const infodump_t& dump : InfoDumps)
+	{
+		if (Args.CheckParm(dump.param))
+		{
+			if (!dump.handler(D_InfoDumpDest(dump.dest)))
+				ok = false;
+
+			exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
+		}
+	}
 }
 
 
@@ -1146,7 +1269,7 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 	}
 }
 
-void STACK_ARGS D_ClearTaskSchedulers()
+void D_ClearTaskSchedulers()
 {
 	simulation_scheduler.reset();
 	display_scheduler.reset();

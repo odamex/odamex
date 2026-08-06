@@ -121,7 +121,7 @@ static void adlmidi_music_hook (void *data, byte *stream, int len)
 	{
 		int16_t samp;
 		memcpy(&samp, stream + i, 2);
-		samp = clamp(samp * hdata->volume, -32768.f, 32767.f);
+		samp = std::clamp(samp * hdata->volume, -32768.f, 32767.f);
 		memcpy(stream + i, &samp, 2);
 	}
 }

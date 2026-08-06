@@ -15,6 +15,8 @@ Checks: |
   # this is just a little silly
   -performance-enum-size
   misc-*,
+  # we intentionally use indirect includes, cleaning up is nice but its not configurably enough
+  -misc-include-cleaner,
   # again, so many of these that it's not worth it
   -misc-non-private-member-variables-in-classes,
   # some annoying warnings about reasonable uses of recursion
@@ -50,6 +52,8 @@ Checks: |
   -readability-named-parameter,
   # we mostly use lowercase
   -readability-uppercase-literal-suffix,
+  # simplified form can be less clear sometimes
+  -readability-simplify-boolean-expr
 CheckOptions:
   # Allow `if (pointer)`
   - key: readability-implicit-bool-conversion.AllowPointerConditions
@@ -61,3 +65,10 @@ CheckOptions:
     value: true
   - key: cppcoreguidelines-rvalue-reference-param-not-moved.AllowPartialMove
     value: true
+  - key: readability-magic-numbers.IgnorePowersOf2IntegerValues
+    value: true
+  # add values that are obvious most of the time
+  - key: readability-magic-numbers.IgnoredFloatingPointValues
+    value: 1.0;100.0;0.25;0.5;0.75;255.0;-32768.0;32767.0
+  - key: readability-magic-numbers.IgnoredIntegerValues
+    value: 1;2;3;4;255;-32768;32767

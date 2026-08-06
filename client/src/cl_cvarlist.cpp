@@ -706,37 +706,6 @@ CVAR_RANGE_FUNC_DECL(	snd_oplchips, "6", "Number of emulated OPL chips",
 CVAR_RANGE_FUNC_DECL(	snd_oplbank, "1", "OPL instrument set",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
-//
-// C_GetDefaultMuiscSystem()
-//
-// Allows the default value for snd_musicsystem to change depending on
-// compile-time factors (eg, OS)
-//
-static char *C_GetDefaultMusicSystem()
-{
-	static char str[4];
-
-	MusicSystemType defaultmusicsystem = MS_SDLMIXER;
-	#ifdef OSX
-	defaultmusicsystem = MS_AUDIOUNIT;
-	#endif
-
-	#if defined _WIN32
-	defaultmusicsystem = MS_PORTMIDI;
-	#endif
-
-	#ifdef __linux__
-	defaultmusicsystem = MS_LIBADLMIDI;
-	#endif
-
-	// don't overflow str
-	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
-		defaultmusicsystem = MS_NONE;
-
-	snprintf(str, 4, "%i", defaultmusicsystem);
-	return str;
-}
-
 CVAR(			snd_midisysex, "0", "Read SysEx from MIDI files (0: Disable, 1: Enable)",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -749,7 +718,7 @@ CVAR_RANGE(		snd_mididelay, "0", "MIDI delay after reset (0 to 2000 milliseconds
 CVAR_RANGE(		snd_midireset, "1", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
-CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
+CVAR_FUNC_DECL(	snd_musicsystem, "255", "Music subsystem preference",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	snd_nomusic, "0", "Disables music",
@@ -849,9 +818,6 @@ CVAR_FUNC_DECL(	vid_defheight, "720", "",
 
 CVAR_FUNC_DECL(	vid_widescreen, "1", "Widescreen mode (0: Off, 1: Auto, 2: 16:10, 3: 16:9, 4: 21:9, 5: 32:9)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR_FUNC_DECL(	vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest available video mode.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

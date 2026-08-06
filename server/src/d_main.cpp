@@ -249,7 +249,7 @@ void D_Init()
 // Called to shutdown subsystems when unloading a set of WAD resource files.
 // Should be called prior to D_Init when loading a new set of WADs.
 //
-void STACK_ARGS D_Shutdown()
+void D_Shutdown()
 {
 	if (gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);

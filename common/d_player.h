@@ -114,7 +114,10 @@ typedef enum
 	PST_DISCONNECT,
 
     // [BC] Entered the game
-	PST_ENTER
+	PST_ENTER,
+	
+	// this player is the freecam
+	PST_FREECAM
 
 } playerstate_t;
 
@@ -166,6 +169,9 @@ public:
 
 	// [RH] who is this?
 	UserInfo	userinfo;
+
+	// is this the clientside-only freecam player?
+	bool isFreecam = false;
 
 	// FOV in degrees
 	float		fov;

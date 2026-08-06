@@ -50,6 +50,7 @@ EXTERN_CVAR(g_horde_spawnempty_min)
 EXTERN_CVAR(g_horde_spawnempty_max)
 EXTERN_CVAR(g_horde_spawnfull_min)
 EXTERN_CVAR(g_horde_spawnfull_max)
+EXTERN_CVAR(g_horde_cooldown)
 EXTERN_CVAR(g_horde_extralife)
 EXTERN_CVAR(g_horde_resurrect)
 EXTERN_CVAR(sv_nomonsters)
@@ -183,6 +184,10 @@ static void ActivateMonsters(AActors& mobjs)
 //	}
 //}
 
+const int HORDECOOLDOWN_SIZE = 10;
+const char *hordecooldown[HORDECOOLDOWN_SIZE];
+int hordecoolcount;
+
 class HordeState
 {
 	hordeState_e m_state = HS_STARTING;
@@ -238,7 +243,10 @@ class HordeState
 		m_wave = 1;
 		m_waveTime = ::level.time;
 		m_bossTime = ::level.time;
-		m_defineID = P_HordePickDefine(m_wave, ::g_horde_waves);
+		m_defineID = HordeWaveSelector(P_HordePickDefine(m_wave, ::g_horde_waves));
+// [Acts 19 quiz] HordeWaveLogger is separate from HordeWaveSelector because
+// forceWave needs to ingore the Horde cooldown list, but still log itself.
+		HordeWaveLogger(G_HordeDefine(m_defineID).name.c_str());
 		m_spawnedHealth = 0;
 		m_killedHealth = 0;
 		m_bossHealth = 0;
@@ -257,6 +265,62 @@ class HordeState
 		{
 			SV_BroadcastPrintFmt("Wave {}: \"{}\"\n", m_wave,
 			                     G_HordeDefine(m_defineID).name);
+		}
+	}
+
+	size_t HordeWaveSelector(size_t waveidentity)
+	{
+		if (G_IsHordeMode() && g_horde_cooldown > 0)
+		{
+			const char* wavename = G_HordeDefine(waveidentity).name.c_str();
+
+// [Acts 19 quiz] We want the function to stop endlessly looping if it's unable
+// to find a suitable replacement wave. It gets a limited number of "attempts."
+			for (int attempts = 20; attempts > 0; attempts--)
+			{
+				int horderolodex = hordecoolcount - 1;
+				if (horderolodex < 0)
+				{
+					horderolodex = HORDECOOLDOWN_SIZE - 1;
+				}
+				for (int cooldowncvar = g_horde_cooldown; cooldowncvar > 0; cooldowncvar--)
+				{
+					if (hordecooldown[horderolodex] != wavename)
+					{
+						if (cooldowncvar == 1)
+						{
+							attempts = 0;
+							break;
+						}
+						horderolodex = horderolodex--;
+						if (horderolodex < 0)
+						{
+							horderolodex = HORDECOOLDOWN_SIZE - 1;
+						}
+					}
+					else
+					{
+						waveidentity = P_HordePickDefine(m_wave, ::g_horde_waves);
+						wavename = G_HordeDefine(waveidentity).name.c_str();
+						cooldowncvar = 0;
+					}
+				}
+			}
+		}
+		return waveidentity;
+	}
+
+	void HordeWaveLogger(const char* wavename)
+	{
+		PlayerResults playerslives = PlayerQuery().hasLives().execute();
+		if (G_IsHordeMode() && (!G_IsLivesGame() || playerslives.count > 0))
+		{
+			hordecooldown[hordecoolcount] = wavename;
+			hordecoolcount = ++hordecoolcount;
+			if (hordecoolcount >= HORDECOOLDOWN_SIZE)
+			{
+				hordecoolcount = 0;
+			}
 		}
 	}
 
@@ -342,7 +406,8 @@ class HordeState
 		m_wave += 1;
 		m_waveTime = ::level.time;
 		m_bossTime = ::level.time;
-		m_defineID = P_HordePickDefine(m_wave, ::g_horde_waves);
+		m_defineID = HordeWaveSelector(P_HordePickDefine(m_wave, ::g_horde_waves));
+		HordeWaveLogger(G_HordeDefine(m_defineID).name.c_str());
 		m_waveStartHealth = m_killedHealth;
 		m_bossHealth = 0;
 		m_bossDamage = 0;
@@ -371,6 +436,12 @@ class HordeState
 		m_waveTime = ::level.time;
 		m_bossTime = ::level.time;
 		m_defineID = defineID;
+		// [Acts 19 quiz] We check for online serverside to prevent client/server
+		// desyncs of what's in hordecooldownprint.
+		if (!network_game || serverside)
+		{
+			HordeWaveLogger(G_HordeDefine(m_defineID).name.c_str());
+		}
 		m_waveStartHealth = m_killedHealth;
 		m_bossHealth = 0;
 		m_bossDamage = 0;
@@ -746,7 +817,7 @@ void HordeState::tick()
 						recipe.count = 0;
 					}
 					else
-						recipe.count = clamp(recipe.limit - alive, 0, recipe.count);
+						recipe.count = std::clamp(recipe.limit - alive, 0, recipe.count);
 				}
 			}
 
@@ -1029,6 +1100,8 @@ void P_HordePostLoad()
 	::g_HordeDirector.recountMonsters();
 }
 
+const char* serveronlycmd = "Only the server can use this command in a netgame!\n";
+
 BEGIN_COMMAND(hordewave)
 {
 	if (argc < 2)
@@ -1161,3 +1234,59 @@ BEGIN_COMMAND(hordeinfo)
 	PrintFmt("Boss Damage: {}\n", ::g_HordeDirector.serialize().bossDamage);
 }
 END_COMMAND(hordeinfo)
+
+BEGIN_COMMAND(hordecooldownclear)
+{
+	if (!G_IsHordeMode())
+	{
+		PrintFmt("Can't clear the horde cooldown list outside of horde mode.\n");
+		return;
+	}
+
+	if (network_game && clientside)
+	{
+		PrintFmt("{}", serveronlycmd);
+		return;
+	}
+
+	for (int clearlist = 0; clearlist < HORDECOOLDOWN_SIZE; clearlist++)
+	{
+		hordecooldown[clearlist] = NULL;
+	}
+	hordecoolcount = 0;
+}
+END_COMMAND(hordecooldownclear)
+
+BEGIN_COMMAND(hordecooldownprint)
+{
+	if (!G_IsHordeMode())
+	{
+		PrintFmt("Can't obtain horde cooldown list outside of horde mode.\n");
+		return;
+	}
+
+	if (network_game && clientside)
+	{
+		PrintFmt("{}", serveronlycmd);
+		return;
+	}
+
+	int printlist = hordecoolcount - g_horde_cooldown;
+	if (printlist < 0)
+	{
+		printlist = HORDECOOLDOWN_SIZE + printlist;
+	}
+	for (int counter = g_horde_cooldown; counter > 0; counter--)
+	{
+		if (hordecooldown[printlist] != NULL)
+		{
+			PrintFmt("{}\n", hordecooldown[printlist]);
+		}
+		printlist++;
+		if (printlist >= HORDECOOLDOWN_SIZE)
+		{
+			printlist = 0;
+		}
+	}
+}
+END_COMMAND(hordecooldownprint)

@@ -482,9 +482,6 @@ int ST_StatusBarX(int surface_width, int surface_height)
 {
 	if (!R_StatusBarVisible())
 		return 0;
-
-	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
-		return 0;
 	else
 		return (surface_width - ST_StatusBarWidth(surface_width, surface_height)) / 2;
 }
@@ -492,9 +489,6 @@ int ST_StatusBarX(int surface_width, int surface_height)
 int ST_StatusBarY(int surface_width, int surface_height)
 {
 	if (!R_StatusBarVisible())
-		return surface_height;
-
-	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
 		return surface_height;
 	else
 		return surface_height - ST_StatusBarHeight(surface_width, surface_height);
@@ -701,7 +695,7 @@ BEGIN_COMMAND (fov)
 		PrintFmt(PRINT_HIGH, "FOV is {:g}\n", m_Instigator->player->fov);
 	else
 	{
-		m_Instigator->player->fov = clamp(static_cast<float>(atof(argv[1])), 45.0f, 135.0f);
+		m_Instigator->player->fov = std::clamp(static_cast<float>(atof(argv[1])), 45.0f, 135.0f);
 		R_ForceViewWindowResize();
 	}
 }
@@ -722,7 +716,7 @@ int ST_calcPainOffset()
 	static int lastcalc;
 	static int oldhealth = -1;
 
-	const int health = clamp(displayplayer().health, -1, 100);
+	const int health = std::clamp(displayplayer().health, -1, 100);
 
 	if (health != oldhealth)
 	{
@@ -1385,7 +1379,7 @@ void ST_Init()
 	}
 }
 
-void STACK_ARGS ST_Shutdown()
+void ST_Shutdown()
 {
 	ST_unloadData();
 

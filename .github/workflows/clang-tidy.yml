@@ -1,0 +1,49 @@
+name: clang-tidy
+
+on:
+  pull_request:
+    paths:
+      # included some extras just in case
+      # we ever have some c files
+      # or decide to use hpp
+      - '**.cpp'
+      - '**.hpp'
+      - '**.c'
+      - '**.h'
+
+jobs:
+  clang-tidy-review:
+    if: ${{ !startsWith(github.head_ref, 'release/') && github.head_ref != 'create-pull-request/patch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: "recursive"
+      - uses: ZedThree/clang-tidy-review@v0.23.1
+        id: review
+        with:
+          split_workflow: true
+          apt_packages: "ninja-build,libsdl2-dev,libsdl2-mixer-dev,libcurl3-openssl-dev,libpng-dev,libwxgtk3.2-dev,zlib1g-dev,libzstd-dev,libjsoncpp-dev,libgtest-dev"
+          exclude: "libraries/*"
+          config_file: "./ci/clang-tidy.yml"
+          build_dir: "build"
+          cmake_command: |
+            cmake -B build . -GNinja \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              -DBUILD_OR_FAIL=1 \
+              -DBUILD_CLIENT=1 \
+              -DBUILD_SERVER=1 \
+              -DBUILD_LAUNCHER=1 \
+              -DBUILD_TESTS=1 \
+              -DBUILD_MASTER=1 \
+              -DUSE_INTERNAL_GTEST=0 \
+              -DUSE_INTERNAL_JSONCPP=0 \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - uses: ZedThree/clang-tidy-review/upload@v0.23.1
+
+      - name: Fail on new warnings
+        if: steps.review.outputs.total_comments > 0
+        run: exit 1
+
+

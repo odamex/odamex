@@ -1888,8 +1888,8 @@ void P_XYMovement(AActor *mo)
 	fixed_t maxmove = (mo->waterlevel < 2) || (mo->flags & MF_MISSILE) ? MAXMOVE/2 : MAXMOVE/8;
 	fixed_t mom_clamp = maxmove * 2;
 
-	fixed_t xmove = mo->momx = clamp(mo->momx, -mom_clamp, mom_clamp);
-	fixed_t ymove = mo->momy = clamp(mo->momy, -mom_clamp, mom_clamp);
+	fixed_t xmove = mo->momx = std::clamp(mo->momx, -mom_clamp, mom_clamp);
+	fixed_t ymove = mo->momy = std::clamp(mo->momy, -mom_clamp, mom_clamp);
 
 	// [SL] is the destination on a slope and if so, should the actor
 	// continue to be on the floor?
@@ -3279,7 +3279,7 @@ size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
-int P_IsPickupableThing(short type)
+bool P_IsPickupableThing(int16_t type)
 {
 	return (type == 82 // SSG
 			|| (type >= 2000 && type <= 2050) // weapons, ammo, health, armor, special items
@@ -3445,6 +3445,28 @@ void P_ResolveStackLinks()
 }
 
 //
+// P_IsPlayerSpawnThing
+//
+// Returns true if the mapthing2_t is a spawn
+//
+bool P_IsPlayerSpawnThing(const mapthing2_t& mt)
+{
+	if (VANILLA_COOP_PLAYER_STARTS.contains(mt.type) || mt.type == 11)  // player1-4, DM
+		return true;
+
+	if (spawn_map.contains(mt.type))
+		return false;
+
+	if (EXTRA_COOP_PLAYER_STARTS.contains(mt.type))
+		return true;
+
+	if (P_IsTeamStart(mt.type))
+		return true;
+
+	return false;
+}
+
+//
 // P_SpawnMapThing
 // This function spawns a thing that originates from the map itself.
 // The fields of the mapthing should
@@ -3459,11 +3481,13 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (mthing.type == 0 || mthing.type == -1)
 		return;
 
-	if (sv_allowshowspawns)
+	const bool inSpawnMap = spawn_map.contains(mthing.type);
+
+	if (sv_allowshowspawns && !inSpawnMap)
 		P_ShowSpawns(mthing);
 
-	const bool isPlayerSpawnPoint = (mthing.type >=    1 && mthing.type <=    4) ||
-	                                (mthing.type >= 4001 && mthing.type <= 4001 + MAXPLAYERSTARTS - 4);
+	const bool isPlayerCoopSpawnPoint = (VANILLA_COOP_PLAYER_STARTS.contains(mthing.type) ||
+	                                    (!inSpawnMap && EXTRA_COOP_PLAYER_STARTS.contains(mthing.type)));
 	const bool isTeleportDest = mthing.type == 14;
 	const bool isSecAct = (mthing.type >= 9982 && mthing.type <= 9983) ||
 	                      (mthing.type >= 9992 && mthing.type <= 9999);
@@ -3474,7 +3498,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
 	// otherwise teleporters or avatars won't work well.
 	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isPlayerSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
+	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
 	{
 		return;
 	}
@@ -3488,7 +3512,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// count deathmatch start positions
-	if (mthing.type == 11 || (!sv_teamspawns && mthing.type >= 5080 && mthing.type <= 5082))
+	if (mthing.type == 11 || (!sv_teamspawns && P_IsTeamStart(mthing.type) && !inSpawnMap))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (DeathMatchStarts.size() >= 10 && demoplayback)
@@ -3499,7 +3523,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	if (sv_teamspawns)
+	if (sv_teamspawns && !inSpawnMap)
 	{
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
@@ -3517,6 +3541,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	// [RH] Record polyobject-related things
 	if (HexenHack)
 	{
+		// NOLINTNEXTLINE(bugprone-switch-missing-default-case)
 		switch (mthing.type)
 		{
 		case PO_HEX_ANCHOR_TYPE:
@@ -3531,9 +3556,10 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		}
 	}
 
-	if (mthing.type == PO_ANCHOR_TYPE ||
+	if (!inSpawnMap &&
+		(mthing.type == PO_ANCHOR_TYPE ||
 		mthing.type == PO_SPAWN_TYPE ||
-		mthing.type == PO_SPAWNCRUSH_TYPE)
+		mthing.type == PO_SPAWNCRUSH_TYPE))
 	{
 		polyspawns_t *polyspawn = new polyspawns_t;
 		polyspawn->next = polyspawns;
@@ -3548,7 +3574,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// check for players specially
-	if (isPlayerSpawnPoint)
+	if (isPlayerCoopSpawnPoint)
 	{
 		// [RH] Only spawn spots that match position.
 		if (mthing.args[0] != position)
@@ -3639,33 +3665,6 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	if (P_IsHordeThing(mthing.type))
-	{
-		type = MT_HORDESPAWN;
-		::level.detected_gametype = GM_HORDE;
-	}
-
-	if (mthing.type == 9077)
-	{
-		type = MT_UPPERSTACK;
-	}
-	else if (mthing.type == 9078)
-	{
-		type = MT_LOWERSTACK;
-	}
-	else if (mthing.type == 9080)
-	{
-		type = MT_SKYVIEWPOINT;
-	}
-	else if (mthing.type == 9081)
-	{
-		type = MT_SKYPICKER;
-	}
-	else if (mthing.type == 9082)
-	{
-		type = MT_SECTORSILENCER;
-	}
-
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
 	if (mthing.type >= 14001 && mthing.type <= 14064)
@@ -3682,6 +3681,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mthing.args[0] = mthing.type - 14100;
 		mthing.type = mobjinfo[MT_MUSICSOURCE].doomednum;
 		type = MT_MUSICSOURCE;
+	}
+
+	if (!inSpawnMap && P_IsHordeThing(mthing.type))
+	{
+		type = MT_HORDESPAWN;
+		::level.detected_gametype = GM_HORDE;
 	}
 
 	// [CMB] find the value in the mobjinfo table if we asked for a specific type; otherwise check the spawn table

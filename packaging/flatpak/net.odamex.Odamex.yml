@@ -8,7 +8,9 @@ command: select-exe
 separate-locales: false
 finish-args:
   - --share=ipc
-  - --device=all # change this to device=input + device=dri when available more widely
+  - --device-if=all:!has-input-device
+  - --device=input
+  - --device=dri
   - --socket=pulseaudio
   - --share=network
   - --socket=wayland
@@ -95,9 +97,10 @@ modules:
       - -D BUILD_TESTS=0
       - -D USE_INTERNAL_LIBS=0
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
-      - -D ODAMEX_INSTALL_DATADIR=/run/host/usr/share
+      - -D ODAMEX_INSTALL_DATADIR=/app/share
       - -D USE_EXTERNAL_LIBDWARF=1
       - -D ODAMEX_NO_GITVER=0
+      - -D ODAMEX_UPDATE_CVARDOCS=0
     post-install:
       - ./flatpak-post-install.sh
       # delete files that cleanup can't see

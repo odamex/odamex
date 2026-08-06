@@ -1,0 +1,1414 @@
+{
+   "cvars" : [
+      {
+         "default" : 90,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Chase camera distance",
+         "max" : 32768,
+         "min" : -32768,
+         "name" : "chase_dist",
+         "type" : "integer"
+      },
+      {
+         "default" : -8,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Height of chase camera",
+         "max" : 32768,
+         "min" : -32768,
+         "name" : "chase_height",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Centers the weapon bobbing when firing a weapon",
+         "name" : "cl_centerbobonfire",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Dead player's view follows the actor who killed them",
+         "name" : "cl_deathcam",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Adjust weapon and movement bobbing",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "cl_movebob",
+         "type" : "number"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Predict weapon pickups",
+         "name" : "cl_predictpickup",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Move floors and ceilings immediately instead of waiting for confirmation, values are:\n// 0 - Don't predict any sectors\n// 1 - Predict all sectors based only on actor movements\n// 2 - Predict only sectors activated by you\n",
+         "max" : 2,
+         "min" : 0,
+         "name" : "cl_predictsectors",
+         "type" : "integer"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Set custom WAD download directory",
+         "name" : "cl_waddownloaddir",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Allow monsters can get pushed or thrusted off of ledges.",
+         "name" : "co_allowdropoff",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Fix the vanilla bug where Arch-vile fire is spawned in the wrong location, causing motion and interpolation column-of-fire-type visual glitches",
+         "name" : "co_archvilefirefix",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF monster_avoid_hazards behavior -- monsters will avoid some damaging sectors and crushers.",
+         "name" : "co_avoidhazards",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Fix the blockmap collision bug",
+         "name" : "co_blockmapfix",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use a finer-grained, faster, and more accurate test for actors, sectors and lines",
+         "name" : "co_boomphys",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Increase precision of vertical auto-aim",
+         "name" : "co_fineautoaim",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Corrected behavior for impact of projectiles and bullets on surfaces",
+         "name" : "co_fixweaponimpacts",
+         "type" : "boolean"
+      },
+      {
+         "default" : 128,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF distfriend behavior -- friendlies will try to maintain this distance in mapblocks.",
+         "max" : 2048,
+         "min" : 0,
+         "name" : "co_friend_distance",
+         "type" : "integer"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Name of the actor type to spawn as a helper.\n// Spawnable actors can be found using the ccmd `dumpactors`\n// If empty, it uses the defined default friend in Dehacked (BEX).\n// If the actor name can't be found, an MBF helper dog will be spawned\n",
+         "name" : "co_friend_helpertype",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF dog_jumping behavior -- friendly monsters will drop off high ledges if the target is immediately on the other side.",
+         "name" : "co_friend_ledgejumping",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [
+            "SERVERINFO",
+            "LATCH",
+            "NOENABLEDISABLE",
+            "SERVERARCHIVE",
+            "CLIENTARCHIVE"
+         ],
+         "helptext" : "Use MBF player_helpers behavior -- amount of friendly things to spawn at map start.\n// If in an online game, dogs spawn only once on map start per helper per player.\n// The helper type is defined in BEX or through the cvar co_friend_helpertype.",
+         "max" : 64,
+         "min" : 0,
+         "name" : "co_friend_playerhelpers",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Make pickup sounds global",
+         "name" : "co_globalsound",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF help_friends behavior -- monsters will help friends under 50% health.",
+         "name" : "co_helpfriends",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF's movement code. Fixes mancubus fireball clipping and linedef skips.",
+         "name" : "co_mbfphys",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF monster_backing behavior -- monsters can strafe or retreat.",
+         "name" : "co_monsterbacking",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF monster_friction behavior -- monster movement is affected by ice and sludge.",
+         "name" : "co_monsterfriction",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF monkeys behavior -- monsters will step up or down to 24 units.",
+         "name" : "co_monstersclimbsteep",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Turns off the west-facing silent spawns vanilla bug",
+         "name" : "co_nosilentspawns",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
+         "name" : "co_novileghosts",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF comp_pursuit behavior -- monsters will change targets if their current target is out of sight and a new valid target is in sight.",
+         "name" : "co_pursuit",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Enable/Disable infinitely tall actors",
+         "name" : "co_realactorheight",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Allows pain elementals to still spawn lost souls if more than 20 are present",
+         "name" : "co_removesoullimit",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF comp_staylift behavior -- monsters will try to stay on the same lift their target is on.",
+         "name" : "co_staylift",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF21's comp_voodooscroller behavior -- Enable voodoo dolls on slow scrollers to move too slowly.",
+         "name" : "co_voodooscroller",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Enable/disable ZDoom 1.23b33-based ammo checks",
+         "name" : "co_zdoomammo",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use ZDoom's monster targeting when it comes to friendlies. This is much less taxing than MBF friendly targeting, so enable if your system is struggling on slaughter maps with friendlies.",
+         "name" : "co_zdoomfriendtargeting",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Enable/disable ZDoom-based gravity and physics interactions",
+         "name" : "co_zdoomphys",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Enable sound attenuation curve + attenuation of switch sounds with distance",
+         "name" : "co_zdoomsound",
+         "type" : "boolean"
+      },
+      {
+         "default" : "013000",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "",
+         "name" : "configver",
+         "type" : "string"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Team flag must be at home pedestal for any captures of an enemy flag returned to said pedestal to count as a point",
+         "name" : "ctf_flagathometoscore",
+         "type" : "boolean"
+      },
+      {
+         "default" : 10,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Time for a dropped flag to be returned automatically to its home base",
+         "max" : 255,
+         "min" : 0,
+         "name" : "ctf_flagtimeout",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Flags dropped must be returned manually",
+         "name" : "ctf_manualreturn",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show source file:line where a disconnect happens",
+         "name" : "debug_disconnect",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Debugging mode",
+         "name" : "developer",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
+         "name" : "g_ctf_notouchreturn",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "A custom name for the gametype.  If blank, a default name is used based on currently set cvars.",
+         "name" : "g_gametypename",
+         "type" : "string"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of waves a specific Horde wave must wait before it can be chosen again",
+         "max" : 10,
+         "min" : 0,
+         "name" : "g_horde_cooldown",
+         "type" : "integer"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Chance to spawn an `extra life powerup` in Horde.\nThe value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\nIf `g_lives` isn't greater than 0, this cvar has no effect.",
+         "max" : 4.0,
+         "min" : 0.0,
+         "name" : "g_horde_extralife",
+         "type" : "number"
+      },
+      {
+         "default" : 8.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Goal health multiplier for a given round",
+         "name" : "g_horde_goalhp",
+         "type" : "number"
+      },
+      {
+         "default" : 10.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Multiplier for maximum spawned health at a time",
+         "name" : "g_horde_maxtotalhp",
+         "type" : "number"
+      },
+      {
+         "default" : 4.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Multiplier for minimum spawned health at a time",
+         "name" : "g_horde_mintotalhp",
+         "type" : "number"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Chance to spawn a `resurrect teammate powerup` in Horde.\nThe value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\nIf `g_lives` isn't greater than 0, this cvar has no effect.",
+         "max" : 4.0,
+         "min" : 0.0,
+         "name" : "g_horde_resurrect",
+         "type" : "number"
+      },
+      {
+         "default" : 3,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Maximum number of seconds it takes to spawn a monster in an empty horde map",
+         "max" : 60,
+         "min" : 1,
+         "name" : "g_horde_spawnempty_max",
+         "type" : "integer"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Minimum number of seconds it takes to spawn a monster in an empty horde map",
+         "max" : 60,
+         "min" : 1,
+         "name" : "g_horde_spawnempty_min",
+         "type" : "integer"
+      },
+      {
+         "default" : 6,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Maximum number of seconds it takes to spawn a monster in a full horde map",
+         "max" : 60,
+         "min" : 1,
+         "name" : "g_horde_spawnfull_max",
+         "type" : "integer"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Minimum number of seconds it takes to spawn a monster in a full horde map",
+         "max" : 60,
+         "min" : 1,
+         "name" : "g_horde_spawnfull_min",
+         "type" : "integer"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of horde waves per map",
+         "name" : "g_horde_waves",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of lives a player has before they can no longer respawn - this can result in a game loss depending on the gametype",
+         "name" : "g_lives",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "When players have limited lives, this is the number of seconds after the round or game started that new players can join - if set to zero, players need to queue and wait until the next round to join",
+         "name" : "g_lives_jointimer",
+         "type" : "integer"
+      },
+      {
+         "default" : 3,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount of time after a round before the next round/endgame",
+         "name" : "g_postroundtime",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "After preround is over, reset the map one last time.",
+         "max" : 1,
+         "min" : 0,
+         "name" : "g_preroundreset",
+         "type" : "integer"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount of time before a round where you can't shoot",
+         "name" : "g_preroundtime",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Always reset players to their starting inventory on level exit",
+         "name" : "g_resetinvonexit",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of total rounds the game can go on for before the game ends",
+         "name" : "g_roundlimit",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Turns on rounds - if enabled, reaching the gametype's win condition only wins a single round, and a player or team must win a certain number of rounds to win the game",
+         "name" : "g_rounds",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Turns on offensive vs defensive sides for team-based game modes - teams on offense don't have to defend any team objective, teams on defense win if time expires, and if rounds are enabled the team on defense changes every round",
+         "name" : "g_sides",
+         "type" : "boolean"
+      },
+      {
+         "default" : "default",
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "The default inventory a player should spawn with.  See the \"spawninv\" console command.",
+         "name" : "g_spawninv",
+         "type" : "string"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Removes some things from the map. Values are:\n// -1 - Multiplayer things are added in singleplayer.\n// 0 - All things are retained (default).\n// 1 - Only Coop weapons are removed.\n// 2 - All Coop things are removed.\n// 3 - All pickupable things are removed.\n",
+         "max" : 3,
+         "min" : -1,
+         "name" : "g_thingfilter",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of times a round must be won before a player or team wins the game",
+         "name" : "g_winlimit",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "After a match winners stay in the game, losers get spectated.",
+         "name" : "g_winnerstays",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Clients can connect if they have this password",
+         "name" : "join_password",
+         "type" : "string"
+      },
+      {
+         "default" : "auto",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Language to use for ingame strings",
+         "name" : "language",
+         "type" : "string"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Print colored messages\n// 0 - Disabled\n// 1 - Enabled (terminal output only) \n//2 - Enabled (terminal and log files)",
+         "max" : 2,
+         "min" : 0,
+         "name" : "log_color",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
+         "name" : "log_fulltimestamps",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Print debugging messages for each packet sent",
+         "name" : "log_packetdebug",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Generate centerview when mlook encountered",
+         "name" : "lookspring",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of threads to use for client messaging (0 to auto-select based on core count)",
+         "max" : 256,
+         "min" : 0,
+         "name" : "net_maxthreads",
+         "type" : "integer"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOSET", "NOENABLEDISABLE" ],
+         "helptext" : "Display currently used network port number",
+         "name" : "port",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Change invuln to enable light goggles and invert the palette on the weapon sprite only.",
+         "name" : "r_softinvulneffect",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Remote console password",
+         "name" : "rcon_password",
+         "type" : "string"
+      },
+      {
+         "default" : 0.00390625,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "How much control the player has in the air",
+         "max" : 32768.0,
+         "min" : 0.0,
+         "name" : "sv_aircontrol",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow usage of cheats in all game modes",
+         "name" : "sv_allowcheats",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow use of Exit switch/teleports in all game modes",
+         "name" : "sv_allowexit",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to set their field of view",
+         "name" : "sv_allowfov",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allows players to jump when set in all game modes",
+         "name" : "sv_allowjump",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow weapon & view bob changing",
+         "name" : "sv_allowmovebob",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to set their preferences for automatic weapon switching",
+         "name" : "sv_allowpwo",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to adjust amount of red pain screen intensity",
+         "name" : "sv_allowredscreen",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to see spawn points as particle fountains",
+         "name" : "sv_allowshowspawns",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "When set, names of players appear in the FOV",
+         "name" : "sv_allowtargetnames",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to use true widescreen",
+         "name" : "sv_allowwidescreen",
+         "type" : "boolean"
+      },
+      {
+         "default" : "banlist.json",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Default file to save and load the banlist.",
+         "name" : "sv_banfile",
+         "type" : "string"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of seconds to wait between automatically loading the banlist.",
+         "max" : 86400,
+         "min" : 0,
+         "name" : "sv_banfile_reload",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can flip a coin.",
+         "name" : "sv_callvote_coinflip",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote to force a player to spectate.",
+         "name" : "sv_callvote_forcespec",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote to force the match to start.",
+         "name" : "sv_callvote_forcestart",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote a new fraglimit.",
+         "name" : "sv_callvote_fraglimit",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can votekick other players.",
+         "name" : "sv_callvote_kick",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote to change the number of lives.",
+         "name" : "sv_callvote_lives",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote to switch to a specific map from the server's maplist.",
+         "name" : "sv_callvote_map",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote on progressing to the next map.",
+         "name" : "sv_callvote_nextmap",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote to force the server to pick two players from the pool of ingame players and force-spectate everyone else.",
+         "name" : "sv_callvote_randcaps",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote to switch to a random map from the server's maplist.",
+         "name" : "sv_callvote_randmap",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote to force the server to pick a certian number of players from the pool of ingame players and force-spectate everyone else.",
+         "name" : "sv_callvote_randpickup",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote to reload the current map.",
+         "name" : "sv_callvote_restart",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote a new scorelimit.",
+         "name" : "sv_callvote_scorelimit",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Clients can vote a new timelimit.",
+         "name" : "sv_callvote_timelimit",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOSET", "NOENABLEDISABLE" ],
+         "helptext" : "Set to the number of connected players (for scripting)",
+         "name" : "sv_clientcount",
+         "type" : "integer"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Number of seconds to wait before starting the game from warmup or restarting the game.",
+         "max" : 60,
+         "min" : 0,
+         "name" : "sv_countdown",
+         "type" : "integer"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOSET", "NOENABLEDISABLE" ],
+         "helptext" : "Set to the last played map",
+         "name" : "sv_curmap",
+         "type" : "string"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOSET", "NOENABLEDISABLE" ],
+         "helptext" : "Set to the first pwad filename passed to the wad command (for scripting)",
+         "name" : "sv_curpwad",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "EXPERIMENTAL: When enabled in DM, players will spawn at the farthest point from each other.",
+         "name" : "sv_dmfarspawn",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Give double ammo regardless of difficulty",
+         "name" : "sv_doubleammo",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "A list of websites to download WAD files from, separated by spaces",
+         "name" : "sv_downloadsites",
+         "type" : "string"
+      },
+      {
+         "default" : "email@domain.com",
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Administrator email address",
+         "name" : "sv_email",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Freezes the game state when there are no players",
+         "name" : "sv_emptyfreeze",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Reloads the current map when all players leave",
+         "name" : "sv_emptyreset",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Script to run at end of each map (e.g. to choose next map)",
+         "name" : "sv_endmapscript",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Monsters are at nightmare speed",
+         "name" : "sv_fastmonsters",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1.5,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Chat flood protection time (in seconds)",
+         "max" : 10.0,
+         "min" : 0.0,
+         "name" : "sv_flooddelay",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Force a player to respawn",
+         "name" : "sv_forcerespawn",
+         "type" : "boolean"
+      },
+      {
+         "default" : 30,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Force a player to respawn after a set amount of time (in seconds)",
+         "max" : 32768,
+         "min" : 0,
+         "name" : "sv_forcerespawntime",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Makes water more realistic (boom maps at the moment)",
+         "name" : "sv_forcewater",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "When enabled, exit switch will kill the player who flips it",
+         "name" : "sv_fragexitswitch",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Sets the amount of frags a player can accumulate before the game ends",
+         "max" : 65536,
+         "min" : 0,
+         "name" : "sv_fraglimit",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow Looking up and down",
+         "name" : "sv_freelook",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "When set, players can injure others on the same team, it is ignored in deathmatch",
+         "name" : "sv_friendlyfire",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "When set, players and other friendly monsters can injure friendly monsters on the same team, it is ignored in deathmatch",
+         "name" : "sv_friendlymonsterfire",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Sets the game mode, values are:\n// 0 = Cooperative\n// 1 = Deathmatch\n// 2 = Team Deathmatch\n// 3 = Capture The Flag\n// 4 = Horde\n",
+         "max" : 4,
+         "min" : 0,
+         "name" : "sv_gametype",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Players can see spectator chat",
+         "name" : "sv_globalspectatorchat",
+         "type" : "boolean"
+      },
+      {
+         "default" : 800,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Gravity of the environment",
+         "max" : 32768,
+         "min" : 0,
+         "name" : "sv_gravity",
+         "type" : "integer"
+      },
+      {
+         "default" : "Untitled Odamex Server",
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Server name to appear on masters, clients and launchers",
+         "name" : "sv_hostname",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Infinite ammo for all players",
+         "name" : "sv_infiniteammo",
+         "type" : "boolean"
+      },
+      {
+         "default" : 10,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Sets the time limit for the intermission to end (in seconds).",
+         "max" : 60,
+         "min" : 0,
+         "name" : "sv_intermissionlimit",
+         "type" : "integer"
+      },
+      {
+         "default" : 30,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "If sv_itemsrespawn is set, items will respawn after this time (in seconds)",
+         "max" : 500,
+         "min" : 0,
+         "name" : "sv_itemrespawntime",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Items will respawn after a fixed period, see sv_itemrespawntime",
+         "name" : "sv_itemsrespawn",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Keep keys on death",
+         "name" : "sv_keepkeys",
+         "type" : "boolean"
+      },
+      {
+         "default" : 4,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Maximum clients that can connect to a server",
+         "max" : 255,
+         "min" : 2,
+         "name" : "sv_maxclients",
+         "type" : "integer"
+      },
+      {
+         "default" : 200,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Maximum corpses to appear on map",
+         "max" : 65536,
+         "min" : 0,
+         "name" : "sv_maxcorpses",
+         "type" : "integer"
+      },
+      {
+         "default" : 4,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Maximum players that can join the game, the rest are spectators",
+         "max" : 255,
+         "min" : 2,
+         "name" : "sv_maxplayers",
+         "type" : "integer"
+      },
+      {
+         "default" : 3,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Maximum number of players that can be on a team (0 means unlimited)",
+         "max" : 255,
+         "min" : 0,
+         "name" : "sv_maxplayersperteam",
+         "type" : "integer"
+      },
+      {
+         "default" : 800,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Forces clients to be on or below this rate",
+         "max" : 100000,
+         "min" : 7,
+         "name" : "sv_maxrate",
+         "type" : "integer"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Cap the maximum time allowed for player reconciliation (in seconds)",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "sv_maxunlagtime",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount to multiply monster weapon damage by",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "sv_monsterdamage",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount to multiply monster health by",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "sv_monstershealth",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Monsters will respawn after a period of time",
+         "name" : "sv_monstersrespawn",
+         "type" : "boolean"
+      },
+      {
+         "default" : "Welcome to Odamex",
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Message Of The Day to display to clients upon connecting",
+         "name" : "sv_motd",
+         "type" : "string"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "NAT firewall workaround, this is a port number",
+         "max" : 65536,
+         "min" : 0,
+         "name" : "sv_natport",
+         "type" : "integer"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOSET", "NOENABLEDISABLE" ],
+         "helptext" : "Set to the next map to be played",
+         "name" : "sv_nextmap",
+         "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "No monsters will be present",
+         "name" : "sv_nomonsters",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "When enabled, print player beacons in WDL events.This will take effect on map change.",
+         "name" : "sv_playerbeacons",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allows barrels to respawn. (requires sv_itemsrespawn set to 1)",
+         "name" : "sv_respawnbarrels",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allows Invisibility/Invulnerability spheres to respawn (requires sv_itemsrespawn set to 1)",
+         "name" : "sv_respawnsuper",
+         "type" : "boolean"
+      },
+      {
+         "default" : 5,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Game ends when team score is reached in Teamplay/CTF",
+         "max" : 255,
+         "min" : 0,
+         "name" : "sv_scorelimit",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Share keys found to every player.",
+         "name" : "sv_sharekeys",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Enable multi kill announcements. When disabled, clients will not display or announce multi kills.",
+         "name" : "sv_showmultikills",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Show which powerup each player has. (1 = Show all powerups to clients. 0 = Only show Invisibility (vanilla)",
+         "name" : "sv_showplayerpowerups",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Enable killing spree announcements. When disabled, clients will not display or announce sprees.",
+         "name" : "sv_showsprees",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Randomly shuffle the maplist",
+         "name" : "sv_shufflemaplist",
+         "type" : "boolean"
+      },
+      {
+         "default" : 3,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Sets the skill level, values are:\n// 0 - No things mode\n// 1 - I'm Too Young To Die\n// 2 - Hey, Not Too Rough\n// 3 - Hurt Me Plenty\n// 4 - Ultra-Violence\n// 5 - Nightmare",
+         "max" : 7,
+         "min" : 0,
+         "name" : "sv_skill",
+         "type" : "integer"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Force a player to wait a period (in seconds) before respawning",
+         "max" : 32768.0,
+         "min" : 0.0,
+         "name" : "sv_spawndelaytime",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Rocket explosion thrust effect?",
+         "max" : 100.0,
+         "min" : 0.0099999997764825821,
+         "name" : "sv_splashfactor",
+         "type" : "number"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Script to run at start of each map (e.g. to override cvars)",
+         "name" : "sv_startmapscript",
+         "type" : "string"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Script to run at after wad changes (e.g. to override cvars)",
+         "name" : "sv_startwadscript",
+         "type" : "string"
+      },
+      {
+         "default" : 2,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Teams that are enabled",
+         "max" : 3,
+         "min" : 2,
+         "name" : "sv_teamsinplay",
+         "type" : "integer"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "When disabled, treat team spawns like normal deathmatch spawns in Teamplay/CTF",
+         "name" : "sv_teamspawns",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Buffer controller input from players experiencing sudden latency spikes for smoother movement",
+         "name" : "sv_ticbuffer",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0.0,
+         "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Sets the time limit for the game to end (in minutes)",
+         "max" : 1440.0,
+         "min" : 0.0,
+         "name" : "sv_timelimit",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allows players and friendly monsters to walk through other friendly monsters, and player and friendly projectiles to pass thru players and other friendlies.",
+         "name" : "sv_unblockfriendly",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Allows players to walk through other players, and player projectiles to pass through teammates.",
+         "name" : "sv_unblockplayers",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Enable UPnP support",
+         "name" : "sv_upnp",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Router-side description of port mapping",
+         "name" : "sv_upnp_description",
+         "type" : "string"
+      },
+      {
+         "default" : 2000,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "UPnP Router discovery timeout",
+         "max" : 10000,
+         "min" : 500,
+         "name" : "sv_upnp_discovertimeout",
+         "type" : "integer"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOSET", "NOENABLEDISABLE" ],
+         "helptext" : "Set to the router IP address",
+         "name" : "sv_upnp_externalip",
+         "type" : "string"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOSET", "NOENABLEDISABLE" ],
+         "helptext" : "Set to the local machine IP address",
+         "name" : "sv_upnp_internalip",
+         "type" : "string"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Advertise on master servers",
+         "name" : "sv_usemasters",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Count absent voters as 'no' if the vote timer runs out.",
+         "name" : "sv_vote_countabs",
+         "type" : "boolean"
+      },
+      {
+         "default" : 0.5,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Ratio of yes votes needed for vote to pass.",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "sv_vote_majority",
+         "type" : "number"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Spectators are allowed to callvote.",
+         "name" : "sv_vote_speccall",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERARCHIVE" ],
+         "helptext" : "Spectators are allowed to vote.",
+         "name" : "sv_vote_specvote",
+         "type" : "boolean"
+      },
+      {
+         "default" : 30,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount of time a vote takes in seconds.",
+         "max" : 120,
+         "min" : 0,
+         "name" : "sv_vote_timelimit",
+         "type" : "integer"
+      },
+      {
+         "default" : 60,
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Timeout between votes in seconds.",
+         "max" : 600,
+         "min" : 0,
+         "name" : "sv_vote_timeout",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Enable a 'warmup mode' before the match starts.",
+         "name" : "sv_warmup",
+         "type" : "boolean"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Ratio of players needed for warmup to automatically start the game.",
+         "max" : 1.0,
+         "min" : 0.0,
+         "name" : "sv_warmup_autostart",
+         "type" : "number"
+      },
+      {
+         "default" : 1.0,
+         "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
+         "helptext" : "Amount to multiply player weapon damage by",
+         "max" : 100.0,
+         "min" : 0.0,
+         "name" : "sv_weapondamage",
+         "type" : "number"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Enable/disable weapon drop.",
+         "name" : "sv_weapondrop",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
+         "helptext" : "Weapons stay after pickup",
+         "name" : "sv_weaponstay",
+         "type" : "boolean"
+      },
+      {
+         "default" : "",
+         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Allow custom WAD directories to be specified",
+         "name" : "waddirs",
+         "type" : "string"
+      }
+   ],
+   "odamex_branchname" : "",
+   "odamex_commithash" : "",
+   "odamex_version" : "13.0.0",
+   "schema_version" : 1
+}

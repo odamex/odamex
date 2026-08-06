@@ -72,7 +72,7 @@ bool DefaultsLoaded;
  * @author Randy Heit
  * @param Optional: The filename to save the current configuration to.
  */
-void STACK_ARGS M_SaveDefaults(std::string filename)
+void M_SaveDefaults(std::string filename)
 {
 	if (!DefaultsLoaded)
 		return;

@@ -1,4 +1,5 @@
 include(OdalaunchCopyLibs)
+include(OdamexCvarDoc)
 include(OdamexTargetSettings)
 
 # API
@@ -53,17 +54,25 @@ if(wxWidgets_FOUND)
     "${XRCRES_DIR}/icons.xrc" "${XRCRES_DIR}/xrc_resource.xrc"
     VERBATIM)
 
+  # Compiles the committed cvar documentation into the launcher.
+  odamex_cvardoc_source(CVARDOC_SOURCE)
+
   add_executable(odalaunch MACOSX_BUNDLE WIN32
     ${API_SOURCES} ${API_HEADERS}
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
+    ${CVARDOC_SOURCE}
     ${XRCRES_HEADER} ${LAUNCH_WIN32_RESOURCES})
   odamex_target_settings(odalaunch)
 
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
 
   # Cvar documentation database loader needs a JSON parser.
-  if(TARGET jsoncpp_static)
+  if(USE_INTERNAL_JSONCPP)
     target_link_libraries(odalaunch jsoncpp_static)
+  else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(JSONCPP jsoncpp REQUIRED IMPORTED_TARGET)
+    target_link_libraries(odalaunch PkgConfig::JSONCPP)
   endif()
 
   if(WIN32)
