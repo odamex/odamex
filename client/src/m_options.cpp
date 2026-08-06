@@ -2325,7 +2325,7 @@ void M_OptResponder(const event_t& ev)
 		return;
 	}
 
-	if (ui_mouse.asInt() != 0 && ev.type == ev_keydown &&
+	if (ui_mouse.asBool() && ev.type == ev_keydown &&
 	    ch >= OKEY_MOUSE1 && ch <= OKEY_MWHEELRIGHT)
 	{
 		int mouse_x, mouse_y;
