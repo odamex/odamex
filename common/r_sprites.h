@@ -23,6 +23,13 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
+#include "hashtable.h"
+#include "info.h"
+#include "r_defs.h"
+
 extern int MaxVisSprites;
 
 extern vissprite_t *vissprites, *firstvissprite;

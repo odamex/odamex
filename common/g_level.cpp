@@ -268,13 +268,16 @@ void P_RemoveDefereds()
 	::getLevelInfos().zapDeferreds();
 }
 
+namespace
+{
+
 //
 // MatchesLoadedFilename
 //
 // True if a wanted (case insensitive) filename names the resolved one already
 // loaded.
 //
-static bool MatchesLoadedFilename(const std::string& wanted, const std::string& loaded)
+bool MatchesLoadedFilename(const std::string& wanted, const std::string& loaded)
 {
 	if (iequals(wanted, loaded))
 		return true;
@@ -285,6 +288,8 @@ static bool MatchesLoadedFilename(const std::string& wanted, const std::string& 
 	const size_t dot = loaded.find_last_of('.');
 	return dot != std::string::npos && iequals(wanted, loaded.substr(0, dot));
 }
+
+} // namespace
 
 //
 // G_LoadWad

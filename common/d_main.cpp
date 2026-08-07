@@ -1115,7 +1115,10 @@ static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option
 //
 // No extension is assumed to be a WAD.
 //
-static void AddBareCommandLineFiles(OWantFiles& out, ofile_t type)
+namespace
+{
+
+void AddBareCommandLineFiles(OWantFiles& out, ofile_t type)
 {
 	const std::vector<std::string>& exts = M_FileTypeExts(type);
 
@@ -1152,6 +1155,8 @@ static void AddBareCommandLineFiles(OWantFiles& out, ofile_t type)
 	}
 }
 
+} // namespace
+
 //
 // D_AddWadCommandLineFiles
 //
@@ -1183,7 +1188,10 @@ void D_AddDehCommandLineFiles(OWantFiles& out)
 //
 // Appends in to out, skipping files whose wanted path is already queued.
 //
-static void AppendUniqueFiles(OWantFiles& out, const OWantFiles& in)
+namespace
+{
+
+void AppendUniqueFiles(OWantFiles& out, const OWantFiles& in)
 {
 	for (const auto& file : in)
 	{
@@ -1201,6 +1209,8 @@ static void AppendUniqueFiles(OWantFiles& out, const OWantFiles& in)
 			out.push_back(file);
 	}
 }
+
+} // namespace
 
 //
 // D_AddStartupWadFiles

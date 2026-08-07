@@ -71,6 +71,27 @@ void R_CacheSprite(const spritedef_t *sprite)
 	}
 }
 
+namespace
+{
+
+constexpr size_t SPR_FRAME_CHAR = 4;
+constexpr size_t SPR_ROTATION_CHAR = 5;
+constexpr size_t SPR_FLIPFRAME_CHAR = 6;
+constexpr size_t SPR_FLIPROTATION_CHAR = 7;
+
+//
+// NameToInt
+//
+// Packs the four character sprite name into an int so names can be compared in
+// one go.
+//
+int NameToInt(const char* name)
+{
+	int packed = 0;
+	memcpy(&packed, name, sizeof(packed));
+	return packed;
+}
+
 //
 // R_InstallSpriteLump
 // Local function for R_InitSprites.
@@ -81,8 +102,8 @@ void R_CacheSprite(const spritedef_t *sprite)
 // Returns false if the lump name does not decode to a usable frame and
 // rotation. Only tolerant callers see that, it is otherwise fatal.
 //
-static bool R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool flipped,
-                                bool tolerant)
+bool R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool flipped,
+                         bool tolerant)
 {
 	unsigned rotation;
 
@@ -157,7 +178,7 @@ enum spritecheck_t
 // Returns SPRITE_COMPLETE if every frame is usable, otherwise it will return
 // the failure reason.
 //
-static spritecheck_t R_CheckSpriteFrames(int numframes, bool strict, int& badframe)
+spritecheck_t R_CheckSpriteFrames(int numframes, bool strict, int& badframe)
 {
 	for (int frame = 0; frame < numframes; frame++)
 	{
@@ -202,7 +223,7 @@ static spritecheck_t R_CheckSpriteFrames(int numframes, bool strict, int& badfra
 
 
 // [RH] Seperated out of R_InitSpriteDefs()
-static void R_InstallSprite(const char *name, int32_t num)
+void R_InstallSprite(const char *name, int32_t num)
 {
 	if (maxframe == -1)
 	{
@@ -251,7 +272,7 @@ static void R_InstallSprite(const char *name, int32_t num)
 // Returns false if a matching lump had a name that does not decode to a frame
 // and rotation, which only tolerant callers see.
 //
-static bool R_ScanSpriteLumps(const char* sprite, int first, int last, bool tolerant)
+bool R_ScanSpriteLumps(const char* sprite, int first, int last, bool tolerant)
 {
 	memset (sprtemp, -1, sizeof(sprtemp));
 
@@ -259,26 +280,25 @@ static bool R_ScanSpriteLumps(const char* sprite, int first, int last, bool tole
 		frame.rotate = false;
 
 	maxframe = -1;
-	const int intname = *(reinterpret_cast<const int*>(sprite));
+	const int intname = NameToInt(sprite);
 	bool wellformed = true;
 
 	// scan the lumps,
 	//	filling in the frames for whatever is found
 	for (int l = last; l >= first; l--)
 	{
-		if (*(reinterpret_cast<const int*>(lumpinfo[l].name.c_str())) == intname &&
-		    lumpinfo[l].size > 0)
+		if (NameToInt(lumpinfo[l].name.c_str()) == intname && lumpinfo[l].size > 0)
 		{
 			if (!R_InstallSpriteLump (l,
-								 lumpinfo[l].name[4] - 'A', // denis - fixme - security
-								 lumpinfo[l].name[5] - '0',
+								 lumpinfo[l].name[SPR_FRAME_CHAR] - 'A', // denis - fixme - security
+								 lumpinfo[l].name[SPR_ROTATION_CHAR] - '0',
 								 false, tolerant))
 				wellformed = false;
 
-			if (lumpinfo[l].name[6])
+			if (lumpinfo[l].name[SPR_FLIPFRAME_CHAR])
 				if (!R_InstallSpriteLump (l,
-								 lumpinfo[l].name[6] - 'A',
-								 lumpinfo[l].name[7] - '0',
+								 lumpinfo[l].name[SPR_FLIPFRAME_CHAR] - 'A',
+								 lumpinfo[l].name[SPR_FLIPROTATION_CHAR] - '0',
 								 true, tolerant))
 					wellformed = false;
 		}
@@ -302,7 +322,7 @@ static bool R_ScanSpriteLumps(const char* sprite, int first, int last, bool tole
 //	letter/number appended.
 // The rotation character can be 0 to signify no rotations.
 //
-static void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
+void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 {
 	numsprites = namelist.size();
 
@@ -315,6 +335,8 @@ static void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 		R_InstallSprite(namelist[i]->sprite, namelist[i]->spritenum);
 	}
 }
+
+} // namespace
 
 //
 // R_FindIncompleteSprite

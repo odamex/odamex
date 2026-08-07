@@ -581,13 +581,16 @@ static int32_t R_LoadTextureLump(const texlump_t& texlump, const nonstd::span<co
 	return i;
 }
 
+namespace
+{
+
 //
 // R_BuildPatchLookup
 //
 // Resolves PNAMES into lump numbers using the same namespace fallbacks as
 // R_InitTextures. Entries that cannot be resolved are left as -1.
 //
-static std::vector<int> R_BuildPatchLookup()
+std::vector<int> R_BuildPatchLookup()
 {
 	std::vector<int> patchlookup;
 
@@ -596,7 +599,10 @@ static std::vector<int> R_BuildPatchLookup()
 		return patchlookup;
 
 	char* names = static_cast<char*>(W_CacheLumpNum(pnameslump, PU_STATIC));
-	const int numpatches = LELONG(*(reinterpret_cast<const int*>(names)));
+
+	int32_t rawcount = 0;
+	memcpy(&rawcount, names, sizeof(rawcount));
+	const int numpatches = LELONG(rawcount);
 
 	if (numpatches > 0)
 	{
@@ -623,6 +629,8 @@ static std::vector<int> R_BuildPatchLookup()
 	return patchlookup;
 }
 
+} // namespace
+
 //
 // R_FindTextureMissingPatch
 //
@@ -647,14 +655,19 @@ std::string R_FindTextureMissingPatch()
 			continue;
 
 		const int32_t* directory = texlump.directory;
+		// TODO: Convert this to std::bit_cast?
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+		const auto* texdata = reinterpret_cast<const byte*>(texlump.data);
+
 		for (int i = 0; i < texlump.numtextures; i++, directory++)
 		{
 			const int32_t offset = LELONG(*directory);
 			if (offset > texlump.maxoff)
 				return texlumpname; // bad directory, certainly not usable
 
-			const auto* mtexture = reinterpret_cast<const maptexture_t*>(
-				reinterpret_cast<const byte*>(texlump.data) + offset);
+			// TODO: Convert this to std::bit_cast?
+			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+			const auto* mtexture = reinterpret_cast<const maptexture_t*>(texdata + offset);
 
 			const int patchcount = SAFESHORT(mtexture->patchcount);
 			const mappatch_t* mpatch = &mtexture->patches[0];
