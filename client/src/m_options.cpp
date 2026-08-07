@@ -29,6 +29,7 @@
 
 #include "odamex.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include "gstrings.h"
@@ -1276,20 +1277,23 @@ void M_RestoreVideoMode()
 	M_SetVideoMode(old_width, old_height);
 }
 
+namespace
+{
 
-static value_t Depths[22];
+constexpr int MAX_LINES_ONSCREEN = 22;
+value_t Depths[MAX_LINES_ONSCREEN];
 
 #ifdef GCONSOLE
-static const char VMEnterText[] = "Press A to set mode";
-static const char VMTestText[] = "Press X to test mode for 5 seconds";
+constexpr const char VMEnterText[] = "Press A to set mode";
+constexpr const char VMTestText[] = "Press X to test mode for 5 seconds";
 #else
-static const char VMEnterText[] = "Press ENTER to set mode";
-static const char VMTestText[] = "Press T to test mode for 5 seconds";
+constexpr const char VMEnterText[] = "Press ENTER to set mode";
+constexpr const char VMTestText[] = "Press T to test mode for 5 seconds";
 #endif
 
-static const char VMTestWaitText[] = "Please wait 5 seconds...";
+constexpr const char VMTestWaitText[] = "Please wait 5 seconds...";
 
-static value_t VidFPSCaps[] = {
+value_t VidFPSCaps[] = {
 	{ 35.0,		"35fps" },
 	{ 60.0,		"60fps" },
 	{ 70.0,		"70fps" },
@@ -1302,13 +1306,13 @@ static value_t VidFPSCaps[] = {
 	{ 0.0,		"Unlimited" }
 };
 
-static value_t FullScreenOptions[] = {
+value_t FullScreenOptions[] = {
 	{ WINDOW_Windowed,			"Window" },
 	{ WINDOW_Fullscreen,		"Full Screen Exclusive" },
 	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
 };
 
-static value_t WidescreenMode[] = {
+value_t WidescreenMode[] = {
 	{ 0.0,			"Off" },
 	{ 1.0,			"Auto" },
 	{ 2.0,			"16:10" },
@@ -1317,7 +1321,7 @@ static value_t WidescreenMode[] = {
 	{ 5.0,			"32:9" }
 };
 
-static menuitem_t ModesItems[] = {
+menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
 	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
 #else
@@ -1341,6 +1345,8 @@ static menuitem_t ModesItems[] = {
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ yellowtext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 };
+
+}
 
 #define VM_DEPTHITEM	0
 #define VM_RESSTART		6
@@ -1532,7 +1538,7 @@ static void M_SlideUIBlue (int val)
 
 void M_OptInit (void)
 {
-	for (int i = 0; i < 22; i++)
+	for (size_t i = 0; i < ARRAY_LENGTH(Depths); i++)
 	{
 		Depths[i].value = i;
 		Depths[i].name = NULL;
@@ -1588,14 +1594,14 @@ void M_SizeDisplay (float diff)
 BEGIN_COMMAND (sizedown)
 {
 	M_SizeDisplay (-1.0);
-	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 }
 END_COMMAND (sizedown)
 
 BEGIN_COMMAND (sizeup)
 {
 	M_SizeDisplay(1.0);
-	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 }
 END_COMMAND (sizeup)
 
@@ -1616,9 +1622,6 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 
 void M_SwitchMenu(menu_t* menu)
 {
-	int i, widest = 0, thiswidth;
-	menuitem_t *item;
-
 	MenuStack[MenuStackDepth].menu.newmenu = menu;
 	MenuStack[MenuStackDepth].isNewStyle = true;
 	MenuStack[MenuStackDepth].drawSkull = false;
@@ -1631,14 +1634,14 @@ void M_SwitchMenu(menu_t* menu)
 
 	if (!menu->indent)
 	{
-		for (i = 0; i < menu->numitems; i++)
+		int widest = 0;
+		for (int i = 0; i < menu->numitems; i++)
 		{
-			item = menu->items + i;
+			const menuitem_t* item = menu->items + i;
 			if (item->type != whitetext && item->type != redtext && item->type != orangetext)
 			{
-				thiswidth = V_StringWidth (item->label);
-				if (thiswidth > widest)
-					widest = thiswidth;
+				const int thiswidth = V_StringWidth (item->label);
+				widest = std::max(thiswidth, widest);
 			}
 		}
 		menu->indent = widest + 6;
@@ -1715,20 +1718,19 @@ int M_FindCurVal (float cur, value_t *values, int numvals)
 	return v;
 }
 
-void M_OptDrawer (void)
+void M_OptDrawer()
 {
 	int color;
 	int y, width, i, x, ytop;
-	int x1,y1,x2,y2;
 	int theight = 0;
 	menuitem_t *item;
 	patch_t *title;
 
-	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
-	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
+	const int x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
+	const int y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
 
-    x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
-	y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
+    const int x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
+	const int y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
@@ -2161,7 +2163,7 @@ static void M_OptMouseClick(int mouse_x, int mouse_y)
 	if (M_OptItemIsSlider(item))
 	{
 		M_OptSetSliderFromMouse(item, mouse_x);
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 
 		// Keep following the pointer until the button is released
 		OptDragItem = index;
@@ -2242,7 +2244,7 @@ void M_OptUpdateMouseItem()
 	if (CurrentMenu->items[CurrentItem].type == screenres)
 		CurrentMenu->items[CurrentItem].a.selmode = M_OptScreenResColumn(mouse_x);
 
-	S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+	S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 }
 
 void M_OptResponder(const event_t& ev)
@@ -2325,7 +2327,7 @@ void M_OptResponder(const event_t& ev)
 		return;
 	}
 
-	if (ui_mouse.asInt() != 0 && ev.type == ev_keydown &&
+	if (ui_mouse.asBool() && ev.type == ev_keydown &&
 	    ch >= OKEY_MOUSE1 && ch <= OKEY_MWHEELRIGHT)
 	{
 		int mouse_x, mouse_y;
@@ -2409,7 +2411,7 @@ void M_OptResponder(const event_t& ev)
 			if (CurrentMenu->items[CurrentItem].type == screenres)
 				CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 		}
 		else if (Key_IsUpKey(ch, numlock))
 		{
@@ -2432,12 +2434,11 @@ void M_OptResponder(const event_t& ev)
 					CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
 				{
 					CurrentMenu->scrollpos--;
-					if (CurrentMenu->scrollpos < 0)
-						CurrentMenu->scrollpos = 0;
+					CurrentMenu->scrollpos = std::max(CurrentMenu->scrollpos, 0);
 				}
 				if (CurrentItem < 0)
 				{
-					CurrentMenu->scrollpos = MAX(0, CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
+					CurrentMenu->scrollpos = std::max(0, CurrentMenu->numitems - MAX_LINES_ONSCREEN + CurrentMenu->scrolltop);
 					CurrentItem = CurrentMenu->numitems - 1;
 				}
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
@@ -2450,17 +2451,14 @@ void M_OptResponder(const event_t& ev)
 			if (CurrentMenu->items[CurrentItem].type == screenres)
 				CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 		}
 		else if (Key_IsPageUpKey(ch, numlock))
 		{
 			if (CanScrollUp)
 			{
 				CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
-				if (CurrentMenu->scrollpos < 0)
-				{
-					CurrentMenu->scrollpos = 0;
-				}
+				CurrentMenu->scrollpos = std::max(CurrentMenu->scrollpos, 0);
 				CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
 				while (CurrentMenu->items[CurrentItem].type == redtext ||
 					CurrentMenu->items[CurrentItem].type == whitetext ||
@@ -2471,7 +2469,7 @@ void M_OptResponder(const event_t& ev)
 				{
 					++CurrentItem;
 				}
-				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 			}
 		}
 		else if (Key_IsPageDownKey(ch, numlock))
@@ -2494,7 +2492,7 @@ void M_OptResponder(const event_t& ev)
 				{
 					++CurrentItem;
 				}
-				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 			}
 		}
 		else if (Key_IsLeftKey(ch, numlock))
@@ -2515,7 +2513,7 @@ void M_OptResponder(const event_t& ev)
 			else
 				item->a.cvar->Set(newval);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 		case redslider:
 		case greenslider:
@@ -2541,8 +2539,7 @@ void M_OptResponder(const event_t& ev)
 
 			if (part > 0x00)
 				part -= 0x11;
-			if (part < 0x00)
-				part = 0x00;
+			part = std::max(part, 0x00);
 
 			char singlecolor[3];
 			snprintf(singlecolor, 3, "%02x", part);
@@ -2556,7 +2553,7 @@ void M_OptResponder(const event_t& ev)
 
 			item->a.cvar->Set(newcolor);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 		case discrete:
 		case cdiscrete:
@@ -2580,7 +2577,7 @@ void M_OptResponder(const event_t& ev)
 			if (item->e.values == Depths)
 				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 
 		case screenres:
@@ -2604,7 +2601,7 @@ void M_OptResponder(const event_t& ev)
 				item->a.selmode = col;
 			}
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 		break;
 
 		case joyactive:
@@ -2616,7 +2613,7 @@ void M_OptResponder(const event_t& ev)
 			else if (static_cast<size_t>(item->a.cvar->value()) > 0)
 				item->a.cvar->Set(item->a.cvar->value() - 1);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 
 		default:
@@ -2641,7 +2638,7 @@ void M_OptResponder(const event_t& ev)
 			else
 				item->a.cvar->Set(newval);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 		case redslider:
 		case greenslider:
@@ -2667,8 +2664,7 @@ void M_OptResponder(const event_t& ev)
 
 			if (part < 0xff)
 				part += 0x11;
-			if (part > 0xff)
-				part = 0xff;
+			part = std::min(part, 0xff);
 
 			char singlecolor[3];
 			snprintf(singlecolor, 3, "%02x", part);
@@ -2682,7 +2678,7 @@ void M_OptResponder(const event_t& ev)
 
 			item->a.cvar->Set(newcolor);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 		case discrete:
 		case cdiscrete:
@@ -2706,7 +2702,7 @@ void M_OptResponder(const event_t& ev)
 			if (item->e.values == Depths)
 				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 
 		case screenres:
@@ -2733,7 +2729,7 @@ void M_OptResponder(const event_t& ev)
 				item->a.selmode = col;
 			}
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 		break;
 
 		case joyactive:
@@ -2746,7 +2742,7 @@ void M_OptResponder(const event_t& ev)
 				item->a.cvar->Set(item->a.cvar->value() + 1);
 
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 
 		default:
@@ -2785,12 +2781,12 @@ void M_OptResponder(const event_t& ev)
 				}
 
 				M_SetVideoMode(width, height);
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 			}
 			else if (item->type == more && item->e.mfunc)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/advance", 1, ATTN_NONE);
 				item->e.mfunc();
 			}
 			else if (item->type == discrete || item->type == cdiscrete ||
@@ -2813,7 +2809,7 @@ void M_OptResponder(const event_t& ev)
 				// Hack hack. Rebuild list of resolutions
 				if (item->e.values == Depths)
 					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 			}
 			else if (item->type == control || item->type == mapcontrol || item->type == netdemocontrol)
 			{
@@ -2828,7 +2824,7 @@ void M_OptResponder(const event_t& ev)
 			else if (item->type == listelement)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 				item->e.lfunc(CurrentItem);
 			}
 			else if (item->type == joyaxis)
@@ -2872,7 +2868,7 @@ void M_OptResponder(const event_t& ev)
 				testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
 				M_SetVideoMode(width, height);
 
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 			}
 		}
 		}
