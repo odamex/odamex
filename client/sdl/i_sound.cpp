@@ -60,6 +60,9 @@ CVAR_FUNC_IMPL(snd_samplerate)
 	S_Init(snd_sfxvolume, snd_musicvolume);
 }
 
+namespace
+{
+
 #if 0
 
 /**
@@ -73,7 +76,7 @@ CVAR_FUNC_IMPL(snd_samplerate)
  * @param length Total length of data to write.
  * @param samplerate Samplerate to put in the header.
  */
-static void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate)
+void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate)
 {
 	FILE* wav;
 	unsigned int i;
@@ -120,7 +123,7 @@ static void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate
 
 //// [Russell] - Chocolate Doom's sound converter code, how awesome!
 //// unused for now
-//static bool ConvertibleRatio(int freq1, int freq2)
+//bool ConvertibleRatio(int freq1, int freq2)
 //{
 //    int ratio;
 //
@@ -151,8 +154,8 @@ static void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate
 
 // Generic sound expansion function for any sample rate
 
-static void ExpandSoundData(byte* data, int samplerate, int bits, int length,
-                            Mix_Chunk* destination)
+void ExpandSoundData(const byte* data, int samplerate, int bits, int length,
+                     Mix_Chunk* destination)
 {
 	Sint16* expanded = reinterpret_cast<Sint16*>(destination->abuf);
 	size_t samplecount = length / (bits / 8);
@@ -215,7 +218,7 @@ static void ExpandSoundData(byte* data, int samplerate, int bits, int length,
 	}
 }
 
-static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
+Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 {
     Mix_Chunk *chunk;
     SDL_RWops *mem_op;
@@ -258,7 +261,7 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     return ret_data;
 }
 
-static void getsfx(sfxinfo_struct *sfx)
+void getsfx(sfxinfo_t *sfx)
 {
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
@@ -323,6 +326,8 @@ static void getsfx(sfxinfo_struct *sfx)
     ExpandSoundData(static_cast<byte*>(data) + 8, samplerate, 8, length, chunk);
     sfx->data = chunk;
 }
+
+} // namespace
 
 //
 // SFX API
@@ -462,7 +467,7 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 	Mix_SetPanning(handle, sep, 255-sep);
 }
 
-void I_LoadSound (sfxinfo_struct *sfx)
+void I_LoadSound (sfxinfo_t *sfx)
 {
 	if (!sound_initialized)
 		return;

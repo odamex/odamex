@@ -852,7 +852,7 @@ void WI_updateNetgameStats()
 		acceleratestage = 0;
 
 		i = 0;
-		for (Players::iterator it = players.begin();it != players.end();++it,++i)
+		for (auto it = players.begin();it != players.end();++it,++i)
 		{
 			if (!(it->ingame()))
 				continue;
@@ -864,18 +864,18 @@ void WI_updateNetgameStats()
 			if (dofrags)
 				cnt_frags_c[i] = WI_fragSum(*it);
 		}
-		S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 		ng_state = 10;
 	}
 	if (ng_state == 2)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
 		i = 0;
-		for (Players::iterator it = players.begin();it != players.end();++it,++i)
+		for (auto it = players.begin();it != players.end();++it,++i)
 		{
 			if (!(it->ingame()))
 				continue;
@@ -890,14 +890,14 @@ void WI_updateNetgameStats()
 
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
 	else if (ng_state == 4)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -915,14 +915,14 @@ void WI_updateNetgameStats()
 		}
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
 	else if (ng_state == 6)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -942,7 +942,7 @@ void WI_updateNetgameStats()
 
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			ng_state += 1 + 2*!dofrags;
 		}
 	}
@@ -950,7 +950,7 @@ void WI_updateNetgameStats()
 	{
 		int fsum;
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -970,7 +970,7 @@ void WI_updateNetgameStats()
 
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "player/male/death1", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/cooptotal", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
@@ -978,7 +978,10 @@ void WI_updateNetgameStats()
 	{
 		if (acceleratestage)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+			if (dofrags)
+				S_Sound (CHAN_INTERFACE, "intermission/pastdmstats", 1, ATTN_NONE);
+			else
+				S_Sound (CHAN_INTERFACE, "intermission/pastcoopstats", 1, ATTN_NONE);
 			if ((gameinfo.flags & GI_MAPxx) && (enteranim == nullptr || demoplayback))
 				WI_initNoState();
 			else
@@ -1117,7 +1120,7 @@ void WI_updateStats()
 		cnt_time   = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
 		cnt_par    = wminfo.partime / TICRATE;
 
-		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 		sp_state = 10;
 	}
 	if (sp_state == 2)
@@ -1125,12 +1128,12 @@ void WI_updateStats()
 		cnt_kills += 2;
 
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		if (!gameinfo.intermissionCounter || cnt_kills >= finalKillPercent)
 		{
 			cnt_kills = finalKillPercent;
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 		}
 	}
@@ -1139,12 +1142,12 @@ void WI_updateStats()
 		cnt_items += 2;
 
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		if (!gameinfo.intermissionCounter || cnt_items >= finalItemPercent)
 		{
 			cnt_items = finalItemPercent;
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 		}
 	}
@@ -1153,19 +1156,19 @@ void WI_updateStats()
 		cnt_secret += 2;
 
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		if (!gameinfo.intermissionCounter || cnt_secret >= finalSecretPercent)
 		{
 			cnt_secret = finalSecretPercent;
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 		}
 	}
 	else if (sp_state == 8)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		cnt_time += 3;
 
@@ -1180,7 +1183,7 @@ void WI_updateStats()
 
 			if (cnt_time >= plrs[me].stime / TICRATE)
 			{
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 			}
 		}
@@ -1218,7 +1221,7 @@ void WI_updateStats()
 				background_surface->unlock();
 			}
 
-			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/paststats", 1, ATTN_NONE);
 
 			if (gameinfo.flags & GI_MAPxx && (enteranim == nullptr || demoplayback))
 				WI_initNoState();

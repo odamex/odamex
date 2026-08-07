@@ -33,9 +33,7 @@ class player_t;
 //
 // SoundFX struct.
 //
-typedef struct sfxinfo_struct sfxinfo_t;
-
-struct sfxinfo_struct
+struct sfxinfo_t
 {
 	char name[MAX_SNDNAME + 1]; // [RH] Sound name defined in SNDINFO
 	unsigned normal;            // Normal sample handle
