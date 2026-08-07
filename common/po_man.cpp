@@ -23,6 +23,8 @@
 
 // HEADER FILES ------------------------------------------------------------
 
+#include <algorithm>
+
 #include "odamex.h"
 
 #include "p_local.h"
@@ -943,48 +945,33 @@ static void LinkPolyobj (polyobj_t *po)
 {
 	int leftX, rightX;
 	int topY, bottomY;
-	seg_t **tempSeg;
-	polyblock_t **link;
 	polyblock_t *tempLink;
-	int i, j;
 
 	// calculate the polyobj bbox
-	tempSeg = po->segs;
+	seg_t** tempSeg = po->segs;
 	rightX = leftX = (*tempSeg)->v1->x;
 	topY = bottomY = (*tempSeg)->v1->y;
 
-	for(i = 0; i < po->numsegs; i++, tempSeg++)
+	for (int i = 0; i < po->numsegs; i++, tempSeg++)
 	{
-		if((*tempSeg)->v1->x > rightX)
-		{
-			rightX = (*tempSeg)->v1->x;
-		}
-		if((*tempSeg)->v1->x < leftX)
-		{
-			leftX = (*tempSeg)->v1->x;
-		}
-		if((*tempSeg)->v1->y > topY)
-		{
-			topY = (*tempSeg)->v1->y;
-		}
-		if((*tempSeg)->v1->y < bottomY)
-		{
-			bottomY = (*tempSeg)->v1->y;
-		}
+		rightX = std::max((*tempSeg)->v1->x, rightX);
+		leftX = std::min((*tempSeg)->v1->x, leftX);
+		topY = std::max((*tempSeg)->v1->y, topY);
+		bottomY = std::min((*tempSeg)->v1->y, bottomY);
 	}
 	po->bbox[BOXRIGHT] = (rightX-bmaporgx)>>MAPBLOCKSHIFT;
 	po->bbox[BOXLEFT] = (leftX-bmaporgx)>>MAPBLOCKSHIFT;
 	po->bbox[BOXTOP] = (topY-bmaporgy)>>MAPBLOCKSHIFT;
 	po->bbox[BOXBOTTOM] = (bottomY-bmaporgy)>>MAPBLOCKSHIFT;
 	// add the polyobj to each blockmap section
-	for(j = po->bbox[BOXBOTTOM]*bmapwidth; j <= po->bbox[BOXTOP]*bmapwidth;
-		j += bmapwidth)
+	for (int j = po->bbox[BOXBOTTOM]*bmapwidth; j <= po->bbox[BOXTOP]*bmapwidth;
+	     j += bmapwidth)
 	{
-		for(i = po->bbox[BOXLEFT]; i <= po->bbox[BOXRIGHT]; i++)
+		for (int i = po->bbox[BOXLEFT]; i <= po->bbox[BOXRIGHT]; i++)
 		{
-			if(i >= 0 && i < bmapwidth && j >= 0 && j < bmapheight*bmapwidth)
+			if (i >= 0 && i < bmapwidth && j >= 0 && j < bmapheight*bmapwidth)
 			{
-				link = &PolyBlockMap[j+i];
+				polyblock_t** link = &PolyBlockMap[j+i];
 				if(!(*link))
 				{ // Create a new link at the current block cell
 					*link = Z_Malloc<polyblock_t>(PU_LEVEL);
