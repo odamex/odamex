@@ -125,7 +125,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
-	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+	const std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
 
 	if (!DefaultsLoaded)
 	{

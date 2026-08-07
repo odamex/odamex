@@ -603,17 +603,19 @@ static std::vector<int> R_BuildPatchLookup()
 		const char* name_p = names + 4;
 
 		patchlookup.resize(numpatches);
-		for (int i = 0; i < numpatches; i++)
+		for (ptrdiff_t i = 0; i < numpatches; i++)
 		{
-			patchlookup[i] = W_CheckNumForName(name_p + i*8);
+			const char* patchname = name_p + (i * 8);
+
+			patchlookup[i] = W_CheckNumForName(patchname);
 
 			// some wads use the texture namespace but still list them in pnames
 			if (patchlookup[i] == -1)
-				patchlookup[i] = W_CheckNumForName(name_p + i*8, ns_textures);
+				patchlookup[i] = W_CheckNumForName(patchname, ns_textures);
 
 			// killough 4/17/98: some wads use sprites as wall patches
 			if (patchlookup[i] == -1)
-				patchlookup[i] = W_CheckNumForName(name_p + i*8, ns_sprites);
+				patchlookup[i] = W_CheckNumForName(patchname, ns_sprites);
 		}
 	}
 
@@ -636,7 +638,7 @@ std::string R_FindTextureMissingPatch()
 	if (patchlookup.empty())
 		return "";
 
-	static const char* const texlumpnames[] = { "TEXTURE1", "TEXTURE2" };
+	static const std::array<const char*, 2> texlumpnames = { "TEXTURE1", "TEXTURE2" };
 
 	for (const char* texlumpname : texlumpnames)
 	{
@@ -644,14 +646,14 @@ std::string R_FindTextureMissingPatch()
 		if (texlump.lumpnum == -1)
 			continue;
 
-		int32_t* directory = texlump.directory;
+		const int32_t* directory = texlump.directory;
 		for (int i = 0; i < texlump.numtextures; i++, directory++)
 		{
 			const int32_t offset = LELONG(*directory);
 			if (offset > texlump.maxoff)
 				return texlumpname; // bad directory, certainly not usable
 
-			const maptexture_t* mtexture = reinterpret_cast<const maptexture_t*>(
+			const auto* mtexture = reinterpret_cast<const maptexture_t*>(
 				reinterpret_cast<const byte*>(texlump.data) + offset);
 
 			const int patchcount = SAFESHORT(mtexture->patchcount);
@@ -665,7 +667,7 @@ std::string R_FindTextureMissingPatch()
 				    patchlookup[patchnum] == -1)
 				{
 					const OLumpName texname = mtexture->name;
-					return std::string(texname.c_str());
+					return {texname.c_str()};
 				}
 			}
 		}

@@ -1119,7 +1119,7 @@ static void AddBareCommandLineFiles(OWantFiles& out, ofile_t type)
 {
 	const std::vector<std::string>& exts = M_FileTypeExts(type);
 
-	DArgs files = Args.GatherBareFiles();
+	const DArgs files = Args.GatherBareFiles();
 	for (size_t i = 0; i < files.NumArgs(); i++)
 	{
 		const std::string arg = files.GetArg(i);
@@ -1212,15 +1212,16 @@ static void AppendUniqueFiles(OWantFiles& out, const OWantFiles& in)
 //
 void D_AddStartupWadFiles(OWantFiles& outwadfiles, OWantFiles& outpatchfiles)
 {
-	DArgs wadparams = Args.GatherFiles("+wad");
+	const DArgs wadparams = Args.GatherFiles("+wad");
 	if (wadparams.NumArgs())
 	{
 		std::vector<std::string> tokens;
 		tokens.reserve(wadparams.NumArgs());
 		for (size_t i = 0; i < wadparams.NumArgs(); i++)
-			tokens.push_back(wadparams.GetArg(i));
+			tokens.emplace_back(wadparams.GetArg(i));
 
-		OWantFiles wadfiles, patchfiles;
+		OWantFiles wadfiles;
+		OWantFiles patchfiles;
 		G_ParseWadString(C_EscapeWadList(tokens), wadfiles, patchfiles);
 
 		AppendUniqueFiles(outwadfiles, wadfiles);
@@ -1228,12 +1229,13 @@ void D_AddStartupWadFiles(OWantFiles& outwadfiles, OWantFiles& outpatchfiles)
 	}
 
 	for (size_t p = Args.CheckParm("+wad"); p; p = Args.CheckParm("+wad"))
-		const_cast<char*>(Args.GetArg(p))[0] = '-';
+		Args.SetArg(p, "-wad");
 
 	if (::startupwadstring.empty())
 		return;
 
-	OWantFiles wadfiles, patchfiles;
+	OWantFiles wadfiles;
+	OWantFiles patchfiles;
 	G_ParseWadString(::startupwadstring, wadfiles, patchfiles);
 	::startupwadstring.clear();
 

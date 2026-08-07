@@ -74,6 +74,12 @@ void DArgs::SetArgs (unsigned argc, char **argv)
 	CopyArgs(argc, argv);
 }
 
+void DArgs::SetArg (unsigned int argnum, const char *arg)
+{
+	if (argnum < args.size())
+		args[argnum] = arg;
+}
+
 void DArgs::CopyArgs (unsigned argc, char **argv)
 {
 	args.clear();

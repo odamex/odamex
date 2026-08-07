@@ -47,7 +47,7 @@ public:
 	void SetArgs (unsigned int argc, char **argv);
 	void SetArgs(const char *cmdline);
 	DArgs GatherFiles(const char* param) const;
-	DArgs GatherBareFiles() const;
+	[[nodiscard]] DArgs GatherBareFiles() const;
 	void SetArg (unsigned int argnum, const char *arg);
 
 

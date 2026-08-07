@@ -190,9 +190,9 @@ static spritecheck_t R_CheckSpriteFrames(int numframes, bool strict, int& badfra
 			}
 		}
 
-		for (int rotation = 0; rotation < 16; ++rotation)
+		for (const int rotationlump : sprtemp[frame].lump)
 		{
-			if (sprtemp[frame].lump[rotation] == -1)
+			if (rotationlump == -1)
 				return SPRITE_MISSING_ROTATIONS;
 		}
 	}
@@ -255,9 +255,8 @@ static bool R_ScanSpriteLumps(const char* sprite, int first, int last, bool tole
 {
 	memset (sprtemp, -1, sizeof(sprtemp));
 
-	for (int i = 0; i < MAX_SPRITE_FRAMES; i++) {
-	    sprtemp[i].rotate = false;
-	}
+	for (spriteframe_t& frame : sprtemp)
+		frame.rotate = false;
 
 	maxframe = -1;
 	const int intname = *(reinterpret_cast<const int*>(sprite));

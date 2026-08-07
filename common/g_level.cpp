@@ -319,11 +319,8 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	// Do the sizes of the WAD lists not match up?
 	if (!Reboot)
 	{
-		if (::wadfiles.size() < 2)
-		{
-			Reboot = true;
-		}
-		else if (::wadfiles.size() - 2 != newwadfiles.size() - (AddedIWAD ? 1 : 0))
+		if (::wadfiles.size() < 2 ||
+		    ::wadfiles.size() - 2 != newwadfiles.size() - (AddedIWAD ? 1 : 0))
 		{
 			Reboot = true;
 		}
