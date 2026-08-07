@@ -955,8 +955,6 @@ void P_LoadThings2 (int lump, int position)
 	});
 
 	P_SpawnAvatars();
-
-	Z_Free (data);
 }
 
 //
