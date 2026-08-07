@@ -154,7 +154,7 @@ void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate)
 
 // Generic sound expansion function for any sample rate
 
-void ExpandSoundData(byte* data, int samplerate, int bits, int length,
+void ExpandSoundData(const byte* data, int samplerate, int bits, int length,
                      Mix_Chunk* destination)
 {
 	Sint16* expanded = reinterpret_cast<Sint16*>(destination->abuf);
