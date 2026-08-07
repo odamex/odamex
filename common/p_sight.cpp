@@ -24,6 +24,10 @@
 //-----------------------------------------------------------------------------
 
 
+#include <algorithm>
+
+#include <algorithm>
+
 #include "odamex.h"
 
 
@@ -633,22 +637,6 @@ P_InterceptVector2
 //
 bool P_CrossSubsector (int num)
 {
-    seg_t*		seg;
-    line_t*		line;
-    int			s1;
-    int			s2;
-    int			count;
-    subsector_t*	sub;
-    sector_t*		front;
-    sector_t*		back;
-    fixed_t		opentop;
-    fixed_t		openbottom;
-    divline_t		divl;
-    vertex_t*		v1;
-    vertex_t*		v2;
-    fixed_t		frac;
-    fixed_t		slope;
-
 #ifdef RANGECHECK
     if (num>=numsubsectors)
 		I_Error("P_CrossSubsector: ss {} with numss = {}",
@@ -656,15 +644,15 @@ bool P_CrossSubsector (int num)
 				numsubsectors);
 #endif
 
-    sub = &subsectors[num];
+    const subsector_t* sub = &subsectors[num];
 
     // check lines
-    count = sub->numlines;
-    seg = &segs[sub->firstline];
+    uint32_t count = sub->numlines;
+    const seg_t* seg = &R_GetSegs()[sub->firstline];
 
     for ( ; count ; seg++, count--)
     {
-		line = seg->linedef;
+		line_t* line = seg->linedef;
 
 		// allready checked other side?
 		if (line->validcount == validcount)
@@ -672,15 +660,16 @@ bool P_CrossSubsector (int num)
 
 		line->validcount = validcount;
 
-		v1 = line->v1;
-		v2 = line->v2;
-		s1 = P_DivlineSide (v1->x,v1->y, &strace);
-		s2 = P_DivlineSide (v2->x, v2->y, &strace);
+		const vertex_t* v1 = line->v1;
+		const vertex_t* v2 = line->v2;
+		int s1 = P_DivlineSide (v1->x,v1->y, &strace);
+		int s2 = P_DivlineSide (v2->x, v2->y, &strace);
 
 		// line isn't crossed?
 		if (s1 == s2)
 			continue;
 
+		divline_t divl;
 		divl.x = v1->x;
 		divl.y = v1->y;
 		divl.dx = v2->x - v1->x;
@@ -698,35 +687,29 @@ bool P_CrossSubsector (int num)
 			return false;
 
 		// crosses a two sided line
-		front = seg->frontsector;
-		back = seg->backsector;
+		const sector_t* front = seg->frontsector;
+		const sector_t* back = seg->backsector;
 
-		frac = P_InterceptVector2 (&strace, &divl);
+		const fixed_t frac = P_InterceptVector2 (&strace, &divl);
 
 		// no wall to block sight with?
-		fixed_t crossx = divl.x + FixedMul(frac, divl.dx);
-		fixed_t crossy = divl.y + FixedMul(frac, divl.dy);
+		const fixed_t crossx = divl.x + FixedMul(frac, divl.dx);
+		const fixed_t crossy = divl.y + FixedMul(frac, divl.dy);
 
-		fixed_t ff = P_FloorHeight(crossx, crossy, front);
-		fixed_t fc = P_CeilingHeight(crossx, crossy, front);
-		fixed_t bf = P_FloorHeight(crossx, crossy, back);
-		fixed_t bc = P_CeilingHeight(crossx, crossy, back);
+		const fixed_t ff = P_FloorHeight(crossx, crossy, front);
+		const fixed_t fc = P_CeilingHeight(crossx, crossy, front);
+		const fixed_t bf = P_FloorHeight(crossx, crossy, back);
+		const fixed_t bc = P_CeilingHeight(crossx, crossy, back);
 
 		if (ff == bf && fc == bc)
 			continue;
 
 		// possible occluder
 		// because of ceiling height differences
-		if (fc < bc)
-			opentop = fc;
-		else
-			opentop = bc;
+		const fixed_t opentop = fc < bc ? fc : bc;
 
 		// because of ceiling height differences
-		if (ff > bf)
-			openbottom = ff;
-		else
-			openbottom = bf;
+		const fixed_t openbottom = ff > bf ? ff : bf;
 
 		// quick test for totally closed doors
 		if (openbottom >= opentop)
@@ -734,16 +717,14 @@ bool P_CrossSubsector (int num)
 
 		if (ff != bf)
 		{
-			slope = FixedDiv (openbottom - sightzstart , frac);
-			if (slope > bottomslope)
-				bottomslope = slope;
+			const fixed_t slope = FixedDiv (openbottom - sightzstart , frac);
+			bottomslope = std::max(slope, bottomslope);
 		}
 
 		if (fc != bc)
 		{
-			slope = FixedDiv (opentop - sightzstart , frac);
-			if (slope < topslope)
-				topslope = slope;
+			const fixed_t slope = FixedDiv (opentop - sightzstart , frac);
+			topslope = std::min(slope, topslope);
 		}
 
 		if (topslope <= bottomslope)

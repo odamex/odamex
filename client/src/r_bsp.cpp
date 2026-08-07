@@ -508,7 +508,7 @@ void R_AddLine (const seg_t *line)
 		return;
 	}
 
-	dcol.color = ((line - segs) & 31) * 4;	// [RH] Color if not texturing line
+	dcol.color = ((line - R_GetSegs().data()) & 31) * 4;	// [RH] Color if not texturing line
 
 	// translate the line seg endpoints from world-space to camera-space,
 	// keeping full 64-bit precision (t1, t2) so distant walls on huge maps
@@ -737,7 +737,7 @@ void R_Subsector (int num)
 	const subsector_t& sub = subsectors[num];
 	frontsector = sub.sector;
 	int count = sub.numlines;
-	const seg_t* line = &segs[sub.firstline];
+	const seg_t* line = &R_GetSegs()[sub.firstline];
 
 	// killough 3/8/98, 4/4/98: Deep water / fake ceiling effect
 	frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,

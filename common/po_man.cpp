@@ -1089,15 +1089,13 @@ static void InitBlockMap (void)
 //      count the number of segs in the polyobj
 static void IterFindPolySegs (int x, int y, seg_t **segList)
 {
-	int i;
-
 	if (x == PolyStartX && y == PolyStartY)
 	{
 		return;
 	}
-	for (i = 0; i < numsegs; i++)
+	for (auto& seg : R_GetSegs())
 	{
-		if (segs[i].v1->x == x && segs[i].v1->y == y)
+		if (seg.v1->x == x && seg.v1->y == y)
 		{
 			if(!segList)
 			{
@@ -1105,9 +1103,9 @@ static void IterFindPolySegs (int x, int y, seg_t **segList)
 			}
 			else
 			{
-				*segList++ = &segs[i];
+				*segList++ = &seg;
 			}
-			IterFindPolySegs (segs[i].v2->x, segs[i].v2->y, segList);
+			IterFindPolySegs (seg.v2->x, seg.v2->y, segList);
 			return;
 		}
 	}
@@ -1119,36 +1117,35 @@ static void IterFindPolySegs (int x, int y, seg_t **segList)
 //
 static void SpawnPolyobj (int index, int tag, bool crush)
 {
-	int i;
 	int j;
 	int psIndex;
 	int psIndexOld;
 	seg_t *polySegList[PO_MAXPOLYSEGS];
 
-	for (i = 0; i < numsegs; i++)
+	for (auto& seg : R_GetSegs())
 	{
-		if (segs[i].linedef->special == PO_LINE_START &&
-			segs[i].linedef->args[0] == tag)
+		if (seg.linedef->special == PO_LINE_START &&
+			seg.linedef->args[0] == tag)
 		{
 			if (polyobjs[index].segs)
 			{
 				I_Error("SpawnPolyobj: Polyobj {} already spawned.\n", tag);
 			}
-			segs[i].linedef->special = 0;
-			segs[i].linedef->args[0] = 0;
+			seg.linedef->special = 0;
+			seg.linedef->args[0] = 0;
 			PolySegCount = 1;
-			PolyStartX = segs[i].v1->x;
-			PolyStartY = segs[i].v1->y;
-			IterFindPolySegs(segs[i].v2->x, segs[i].v2->y, NULL);
+			PolyStartX = seg.v1->x;
+			PolyStartY = seg.v1->y;
+			IterFindPolySegs(seg.v2->x, seg.v2->y, nullptr);
 
 			polyobjs[index].numsegs = PolySegCount;
 			polyobjs[index].segs = Z_Malloc<seg_t*>(PolySegCount, PU_LEVEL);
-			polyobjs[index].segs[0] = &segs[i]; // insert the first seg
-			IterFindPolySegs (segs[i].v2->x, segs[i].v2->y,
+			polyobjs[index].segs[0] = &seg; // insert the first seg
+			IterFindPolySegs (seg.v2->x, seg.v2->y,
 				polyobjs[index].segs+1);
 			polyobjs[index].crush = crush;
 			polyobjs[index].tag = tag;
-			polyobjs[index].seqType = segs[i].linedef->args[2];
+			polyobjs[index].seqType = seg.linedef->args[2];
 			if (polyobjs[index].seqType < 0 || polyobjs[index].seqType > 63)
 			{
 				polyobjs[index].seqType = 0;
@@ -1163,19 +1160,19 @@ static void SpawnPolyobj (int index, int tag, bool crush)
 		for (j = 1; j < PO_MAXPOLYSEGS; j++)
 		{
 			psIndexOld = psIndex;
-			for (i = 0; i < numsegs; i++)
+			for (auto& seg : R_GetSegs())
 			{
-				if (segs[i].linedef->special == PO_LINE_EXPLICIT &&
-					segs[i].linedef->args[0] == tag)
+				if (seg.linedef->special == PO_LINE_EXPLICIT &&
+					seg.linedef->args[0] == tag)
 				{
-					if (!segs[i].linedef->args[1])
+					if (!seg.linedef->args[1])
 					{
 						I_Error("SpawnPolyobj: Explicit line missing order number (probably {}) in poly {}.\n",
 							j+1, tag);
 					}
-					if (segs[i].linedef->args[1] == j)
+					if (seg.linedef->args[1] == j)
 					{
-						polySegList[psIndex] = &segs[i];
+						polySegList[psIndex] = &seg;
 						polyobjs[index].numsegs++;
 						psIndex++;
 						if (psIndex > PO_MAXPOLYSEGS)
@@ -1188,23 +1185,23 @@ static void SpawnPolyobj (int index, int tag, bool crush)
 			// Clear out any specials for these segs...we cannot clear them out
 			// 	in the above loop, since we aren't guaranteed one seg per
 			//		linedef.
-			for (i = 0; i < numsegs; i++)
+			for (auto& seg : R_GetSegs())
 			{
-				if (segs[i].linedef->special == PO_LINE_EXPLICIT &&
-					segs[i].linedef->args[0] == tag && segs[i].linedef->args[1] == j)
+				if (seg.linedef->special == PO_LINE_EXPLICIT &&
+					seg.linedef->args[0] == tag && seg.linedef->args[1] == j)
 				{
-					segs[i].linedef->special = 0;
-					segs[i].linedef->args[0] = 0;
+					seg.linedef->special = 0;
+					seg.linedef->args[0] = 0;
 				}
 			}
 			if (psIndex == psIndexOld)
 			{ // Check if an explicit line order has been skipped
 				// A line has been skipped if there are any more explicit
 				// lines with the current tag value
-				for (i = 0; i < numsegs; i++)
+				for (auto& seg : R_GetSegs())
 				{
-					if(segs[i].linedef->special == PO_LINE_EXPLICIT &&
-						segs[i].linedef->args[0] == tag)
+					if(seg.linedef->special == PO_LINE_EXPLICIT &&
+						seg.linedef->args[0] == tag)
 					{
 						I_Error("SpawnPolyobj: Missing explicit line {} for poly {}\n",
 							j, tag);
@@ -1218,7 +1215,7 @@ static void SpawnPolyobj (int index, int tag, bool crush)
 			polyobjs[index].crush = crush;
 			polyobjs[index].tag = tag;
 			polyobjs[index].segs = Z_Malloc<seg_t*>(polyobjs[index].numsegs, PU_LEVEL);
-			for (i = 0; i < polyobjs[index].numsegs; i++)
+			for (int i = 0; i < polyobjs[index].numsegs; i++)
 			{
 				polyobjs[index].segs[i] = polySegList[i];
 			}
