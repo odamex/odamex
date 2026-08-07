@@ -1631,13 +1631,13 @@ void P_SetSkipBlockStart()
 //
 void P_LoadBlockMap (int lump)
 {
-	int count;
+	const uint32_t count = W_LumpLength(lump) / 2;
 
-	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000 || count < 4)
+	if (Args.CheckParm("-blockmap") || count >= 0x10000 || count < 4)
 		P_CreateBlockMap();
 	else
 	{
-		short *wadblockmaplump = W_CacheLumpNum<short>(lump, PU_LEVEL);
+		auto *wadblockmaplump = W_CacheLumpNum<int16_t>(lump, PU_LEVEL);
 		blockmaplump = Z_Malloc<int>(count, PU_LEVEL);
 
 		// killough 3/1/98: Expand wad blockmap into larger internal one,
@@ -1650,9 +1650,9 @@ void P_LoadBlockMap (int lump)
 		blockmaplump[2] = static_cast<uint16_t>(LESHORT(wadblockmaplump[2]));
 		blockmaplump[3] = static_cast<uint16_t>(LESHORT(wadblockmaplump[3]));
 
-		for (int i = 4; i < count; i++)
+		for (uint32_t i = 4; i < count; i++)
 		{
-			const short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
+			const int16_t t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
 			blockmaplump[i] = t == -1 ? 0xffffffff : static_cast<uint16_t>(t);
 		}
 

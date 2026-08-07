@@ -554,8 +554,7 @@ void P_RunHelperTics();
 // to it.
 //
 template <typename F, typename... ARGS>
-// TODO: C++20, uncomment following line
-// requires std::predicate<F, line_t&, ARGS...>
+requires std::predicate<F, line_t&, ARGS...>
 bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 {
 	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
@@ -624,8 +623,7 @@ bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 // P_BlockThingsIterator
 //
 template <typename F, typename... ARGS>
-// TODO: C++20, uncomment following line
-// requires std::predicate<F, AActor&, ARGS...>
+requires std::predicate<F, AActor&, ARGS...>
 bool P_BlockThingsIterator (int x, int y, F&& func, AActor *actor, ARGS&&... args)
 {
 	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)

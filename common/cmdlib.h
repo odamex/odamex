@@ -61,8 +61,7 @@ bool	IsNum(std::string_view str);
 bool	IsRealNum(const char* str);
 bool	IsRealNum(std::string_view str);
 
-template<typename T>
-requires std::is_integral_v<T>
+template<std::integral T>
 std::optional<T> ParseNum(std::string_view str, int base = 10)
 {
     T out;
