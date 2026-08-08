@@ -655,7 +655,13 @@ std::string R_FindTextureMissingPatch()
 			continue;
 
 		const int32_t* directory = texlump.directory;
-		// TODO: Convert this to std::bit_cast?
+
+		// TODO: Refactor below to not require reinterpret_cast.
+		// The directory offsets are already in bytes, so the data
+		// should be cached as bytes instead of int32_t.
+
+		// The lump is cached as int32_t but the directory offsets below are in
+		// bytes, so it has to be re-viewed as a byte buffer.
 		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
 		const auto* texdata = reinterpret_cast<const byte*>(texlump.data);
 
@@ -665,7 +671,14 @@ std::string R_FindTextureMissingPatch()
 			if (offset > texlump.maxoff)
 				return texlumpname; // bad directory, certainly not usable
 
-			// TODO: Convert this to std::bit_cast?
+			// TODO: Refactor below to not use reinterpret_cast.
+			// The maptexture_t struct is already packed to match the
+			// on-disk format, so it should be safe to read directly
+			// from the byte buffer.
+
+			// Records are variable length -- patches[] is declared as one
+			// element but is really patchcount long -- so each one is read in
+			// place at its directory offset rather than copied out.
 			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
 			const auto* mtexture = reinterpret_cast<const maptexture_t*>(texdata + offset);
 
