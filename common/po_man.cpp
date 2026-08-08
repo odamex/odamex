@@ -23,8 +23,6 @@
 
 // HEADER FILES ------------------------------------------------------------
 
-#include <algorithm>
-
 #include "odamex.h"
 
 #include "p_local.h"
