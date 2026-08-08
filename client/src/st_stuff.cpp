@@ -32,6 +32,7 @@
 #include "m_random.h"
 #include "st_lib.h"
 #include "am_map.h"
+#include "cl_cheat.h"
 #include "m_cheat.h"
 #include "s_sound.h"
 #include "gstrings.h"
@@ -349,7 +350,7 @@ static int st_fragscount;
 static int st_oldhealth = -1;
 
 // used for evil grin
-static bool oldweaponsowned[NUMWEAPONS + 1];
+static bool oldweaponsowned[NUMWEAPONS];
 
 // count until face changes
 static int st_facecount = 0;
@@ -403,23 +404,24 @@ static byte CheatPowerup[7][10] = {{'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 'v',
                                    {'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 255}};
 
 cheatseq_t DoomCheats[] = {
-    {CheatMus, 0, 1, 0, {0, 0}, cheat::ChangeMusic},
-    {CheatPowerup[6], 0, 1, 0, {0, 0}, cheat::BeholdMenu},
-    {CheatMypos, 0, 1, 0, {0, 0}, cheat::IdMyPos},
-    {CheatAmap, 0, 0, 0, {0, 0}, cheat::AutoMap},
-    {CheatGod, 0, 0, 0, {CHT_IDDQD, 0}, cheat::SetGeneric},
-    {CheatAmmo, 0, 0, 0, {CHT_IDKFA, 0}, cheat::SetGeneric},
-    {CheatAmmoNoKey, 0, 0, 0, {CHT_IDFA, 0}, cheat::SetGeneric},
-    {CheatNoclip, 0, 0, 0, {CHT_NOCLIP, 0}, cheat::SetGeneric},  // Special check given !
-    {CheatNoclip2, 0, 0, 0, {CHT_NOCLIP, 1}, cheat::SetGeneric}, // Special Check given !
-    {CheatPowerup[0], 0, 0, 0, {CHT_BEHOLDV, 0}, cheat::SetGeneric},
-    {CheatPowerup[1], 0, 0, 0, {CHT_BEHOLDS, 0}, cheat::SetGeneric},
-    {CheatPowerup[2], 0, 0, 0, {CHT_BEHOLDI, 0}, cheat::SetGeneric},
-    {CheatPowerup[3], 0, 0, 0, {CHT_BEHOLDR, 0}, cheat::SetGeneric},
-    {CheatPowerup[4], 0, 0, 0, {CHT_BEHOLDA, 0}, cheat::SetGeneric},
-    {CheatPowerup[5], 0, 0, 0, {CHT_BEHOLDL, 0}, cheat::SetGeneric},
-    {CheatChoppers, 0, 0, 0, {CHT_CHAINSAW, 0}, cheat::SetGeneric},
-    {CheatClev, 0, 0, 0, {0, 0}, cheat::ChangeLevel}};
+//   Sequence           Pos       DontCheck   Netdemo CurrentArg  Args                Handler
+    {CheatMus,          nullptr,  true,       true,   0,          {0,            0},  cheat::ChangeMusic},
+    {CheatPowerup[6],   nullptr,  true,       false,  0,          {0,            0},  cheat::BeholdMenu},
+    {CheatMypos,        nullptr,  true,       true,   0,          {0,            0},  cheat::IdMyPos},
+    {CheatAmap,         nullptr,  false,      true,   0,          {0,            0},  cheat::AutoMap},
+    {CheatGod,          nullptr,  false,      false,  0,          {CHT_IDDQD,    0},  cheat::SetGeneric},
+    {CheatAmmo,         nullptr,  false,      false,  0,          {CHT_IDKFA,    0},  cheat::SetGeneric},
+    {CheatAmmoNoKey,    nullptr,  false,      false,  0,          {CHT_IDFA,     0},  cheat::SetGeneric},
+    {CheatNoclip,       nullptr,  false,      false,  0,          {CHT_NOCLIP,   0},  cheat::SetGeneric}, // Special check given !
+    {CheatNoclip2,      nullptr,  false,      false,  0,          {CHT_NOCLIP,   1},  cheat::SetGeneric}, // Special Check given !
+    {CheatPowerup[0],   nullptr,  false,      false,  0,          {CHT_BEHOLDV,  0},  cheat::SetGeneric},
+    {CheatPowerup[1],   nullptr,  false,      false,  0,          {CHT_BEHOLDS,  0},  cheat::SetGeneric},
+    {CheatPowerup[2],   nullptr,  false,      false,  0,          {CHT_BEHOLDI,  0},  cheat::SetGeneric},
+    {CheatPowerup[3],   nullptr,  false,      false,  0,          {CHT_BEHOLDR,  0},  cheat::SetGeneric},
+    {CheatPowerup[4],   nullptr,  false,      false,  0,          {CHT_BEHOLDA,  0},  cheat::SetGeneric},
+    {CheatPowerup[5],   nullptr,  false,      false,  0,          {CHT_BEHOLDL,  0},  cheat::SetGeneric},
+    {CheatChoppers,     nullptr,  false,      false,  0,          {CHT_CHAINSAW, 0},  cheat::SetGeneric},
+    {CheatClev,         nullptr,  false,      false,  0,          {0,            0},  cheat::ChangeLevel}};
 
 //
 // STATUS BAR CODE
@@ -505,7 +507,7 @@ void ST_ForceRefresh()
 
 CVAR_FUNC_IMPL (st_scale)
 {
-	R_SetViewSize((int)screenblocks);
+	R_SetViewSize(screenblocks.asInt());
 	ST_ForceRefresh();
 }
 
@@ -514,14 +516,14 @@ EXTERN_CVAR (sv_allowcheats)
 
 // Respond to keyboard input events, intercept cheats.
 // [RH] Cheats eatkey the last keypress used to trigger them
-bool ST_Responder (event_t *ev)
+bool ST_Responder(const event_t& ev)
 {
 	bool eat = false;
 
 	// Filter automap on/off.
-	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
+	if (ev.type == ev_keyup && ((ev.data1 & 0xffff0000) == AM_MSGHEADER))
 	{
-		switch (ev->data1)
+		switch (ev.data1)
 		{
 		case AM_MSGENTERED:
 			st_gamestate = AutomapState;
@@ -535,21 +537,23 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-	else if (ev->type == ev_keydown && ev->data3)
+	else if (ev.type == ev_keydown && ev.data3)
 	{
 		for (auto& cheat : DoomCheats)
 		{
-			if (cheat::AddKey(&cheat, (byte)ev->data1, &eat))
+			if (cheat::AddKey(&cheat, static_cast<byte>(ev.data1), &eat))
 			{
-				if (cheat.DontCheck || cheat::AreCheatsEnabled())
+				if (   cheat::AreCheatsEnabled()
+				    or cheat.DontCheck
+				    or (cheat.AllowInNetdemoPlayback and netdemo.isInPlayback()))
 				{
 					eat |= cheat.Handler(&cheat);
 				}
 			}
 		}
-    }
+	}
 
-    return eat;
+	return eat;
 }
 
 // Console cheats
@@ -673,7 +677,7 @@ BEGIN_COMMAND (give)
 	if (argc < 2)
 		return;
 
-	const std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+	const std::string name = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 	if (name.length())
 	{
 		cheat::GiveTo(consoleplayer(), name.c_str());
@@ -691,7 +695,7 @@ BEGIN_COMMAND (fov)
 		PrintFmt(PRINT_HIGH, "FOV is {:g}\n", m_Instigator->player->fov);
 	else
 	{
-		m_Instigator->player->fov = std::clamp((float)atof(argv[1]), 45.0f, 135.0f);
+		m_Instigator->player->fov = std::clamp(static_cast<float>(atof(argv[1])), 45.0f, 135.0f);
 		R_ForceViewWindowResize();
 	}
 }
@@ -911,7 +915,7 @@ void ST_updateWidgets()
 	for (int i = 0; i < 6; i++)
 	{
 		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
-		if (plyr->weaponowned[i+1])
+		if (plyr->weaponowned[i+1])     // plus 1 because we skip the fist as a statusbar indicator.
 			st_weaponowned[i] = 1;
 		else
 			st_weaponowned[i] = 0;

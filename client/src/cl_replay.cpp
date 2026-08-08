@@ -186,7 +186,11 @@ void ClientReplay::itemReplay()
 		const weapontype_t weapontype = P_NameToWeapon(weaponname);
 		const bool weaponSwitch = P_CheckSwitchWeapon(player, weapontype);
 
-		P_GiveSpecial(player, *mo);
+		const ItemEquipVal giveResult = P_GiveSpecial(player, *mo);
+		if (giveResult == IEV_EquipRemove)
+		{
+			mo->Destroy();
+		}
 
 		replayed = true;
 

@@ -526,7 +526,7 @@ void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(StdStringToUpper(os.getToken()).c_str() + 1);
+		const OLumpName s = GStrings(OStringToUpper(os.getToken().c_str() + 1));
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -551,7 +551,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(StdStringToUpper(musicname.c_str() + 1));
+		const OLumpName s = GStrings(OStringToUpper(musicname.c_str() + 1));
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -704,7 +704,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			}
 
 			os.mustScan();
-			const OString& s = GStrings(StdStringToUpper(os.getToken()));
+			const OLumpName s = GStrings(OStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -739,7 +739,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		if (os.compareTokenNoCase("lookup"))
 		{
 			os.mustScan();
-			const OString& s = GStrings(StdStringToUpper(os.getToken()));
+			const OLumpName s = GStrings(OStringToUpper(os.getToken()));
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -1088,10 +1088,11 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	}
 }
 
-template <typename DataType>
+template <typename T = int32_t>
+requires std::is_integral_v<T>
 void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
 {
-	*static_cast<DataType*>(data) = static_cast<DataType>(flags);
+	*static_cast<T*>(data) = static_cast<T>(flags);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1735,7 +1736,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 			if (os.compareTokenNoCase("lookup"))
 			{
 				os.mustScan();
-				const OString& s = GStrings(StdStringToUpper(os.getToken()));
+				const OLumpName s = GStrings(OStringToUpper(os.getToken()));
 				if (s.empty())
 				{
 					info.level_name = os.getToken();

@@ -64,6 +64,7 @@ void R_CacheSprite(const spritedef_t *sprite)
 
 				patch_t* patch = W_CachePatch(sprite->spriteframes[i].lump[r]);
 				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
+				sprite->spriteframes[i].height[r] = patch->height()<<FRACBITS;
 				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
 				sprite->spriteframes[i].topoffset[r] = patch->topoffset()<<FRACBITS;
 			}
@@ -256,8 +257,7 @@ void R_InstallSprite(const char *name, int32_t num)
 
 	// allocate space for the frames present and copy sprtemp to it
 	sprites[num].numframes = maxframe;
-	sprites[num].spriteframes = (spriteframe_t *)
-		Z_Malloc (maxframe * sizeof(spriteframe_t), PU_STATIC, NULL);
+	sprites[num].spriteframes = Z_Malloc<spriteframe_t>(maxframe, PU_STATIC);
 	memcpy (sprites[num].spriteframes, sprtemp, maxframe * sizeof(spriteframe_t));
 	sprites[num].spritenum = num;
 }
@@ -394,7 +394,7 @@ void R_InitSprites(std::vector<spriteinfo_t*>& sprites)
 
 	M_Free(vissprites);
 
-	firstvissprite = vissprites = (vissprite_t *) M_Malloc(MaxVisSprites * sizeof(vissprite_t));
+	firstvissprite = vissprites = static_cast<vissprite_t*>(M_Malloc(MaxVisSprites * sizeof(vissprite_t)));
 	lastvissprite = &vissprites[MaxVisSprites];
 
 	R_InitSpriteDefs (sprites);

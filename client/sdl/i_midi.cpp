@@ -34,14 +34,14 @@
 #else // WORDS_BIGENDIAN
 
 #define ntohl(x) \
-        (/*(long int)*/((((unsigned long int)(x) & 0x000000ffU) << 24) | \
-                             (((unsigned long int)(x) & 0x0000ff00U) <<  8) | \
-                             (((unsigned long int)(x) & 0x00ff0000U) >>  8) | \
-                             (((unsigned long int)(x) & 0xff000000U) >> 24)))
+        (/*(long int)*/(((static_cast<uint32_t>(x) & 0x000000ffU) << 24) | \
+                             ((static_cast<uint32_t>(x) & 0x0000ff00U) <<  8) | \
+                             ((static_cast<uint32_t>(x) & 0x00ff0000U) >>  8) | \
+                             ((static_cast<uint32_t>(x) & 0xff000000U) >> 24)))
 
 #define ntohs(x) \
-        (/*(short int)*/((((unsigned short int)(x) & 0x00ff) << 8) | \
-                              (((unsigned short int)(x) & 0xff00) >> 8)))
+        (/*(short int)*/(((static_cast<uint16_t>(x) & 0x00ff) << 8) | \
+                              ((static_cast<uint16_t>(x) & 0xff00) >> 8)))
 #endif // WORDS_BIGENDIAN
 #endif // ntohl
 
@@ -165,7 +165,7 @@ static byte* I_ReadDataBlock(MEMFILE *mf, size_t length)
 	if (mem_fsize(mf) < memfileoffset + length)
 		return NULL;
 
-	byte* data = (byte*)mem_fgetbuf(mf) + memfileoffset;
+	byte* data = reinterpret_cast<byte*>(mem_fgetbuf(mf)) + memfileoffset;
 	mem_fseek(mf, length, MEM_SEEK_CUR);
 
 	return data;
@@ -310,7 +310,7 @@ static MidiEvent* I_ReadMidiEvent(MEMFILE *mf, unsigned int start_time)
 	// Channel Events only use the highest 4 bits to denote the type
 	// Lower four bits denote the channel
 	int channel = eventtype & 0x0F;
-	eventtype = static_cast<midi_event_type_t>(int(eventtype) & 0xF0);
+	eventtype = static_cast<midi_event_type_t>(static_cast<int>(eventtype) & 0xF0);
 
 	if (I_IsMidiControllerEvent(eventtype))
 	{
@@ -556,7 +556,7 @@ static void UpdateDrumMap(const byte *data, size_t length)
 		data[9] == 0xF7)   // SysEx EOX
 	{
 		byte idx;
-		byte checksum = 128 - ((int)data[4] + data[5] + data[6] + data[7]) % 128;
+		byte checksum = 128 - (static_cast<int>(data[4]) + data[5] + data[6] + data[7]) % 128;
 
 		if (data[8] != checksum)
 			return;

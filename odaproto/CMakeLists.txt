@@ -8,7 +8,11 @@ find_package(protobuf
     "${CMAKE_CURRENT_BINARY_DIR}/../libraries/protobuf-build/lib64/cmake/protobuf"
   NO_DEFAULT_PATH)
 
-set(ODAPROTO_PROTOS common.proto server.proto)
+set(ODAPROTO_PROTOS
+    client.proto
+    common.proto
+    server.proto
+    )
 
 protobuf_generate(OUT_VAR ODAPROTO_SOURCES PROTOS ${ODAPROTO_PROTOS})
 

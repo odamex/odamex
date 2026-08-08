@@ -725,7 +725,7 @@ bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	fixed_t speed;
 	DDoor* door;
 
-	speed = (fixed_t)speed_byte * FRACUNIT / 8;
+	speed = static_cast<fixed_t>(speed_byte) * FRACUNIT / 8;
 
 	if (lock && !P_CanUnlockZDoomDoor(mo->player, lock, tag))
 		return false;

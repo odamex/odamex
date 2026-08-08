@@ -151,10 +151,7 @@ void CMD_MapVoteCallback(const maplist_qrows_t &result) {
 	std::ostringstream index;
 	index << result[0].first;
 
-	MSG_WriteMarker(&net_buffer, clc_callvote);
-	MSG_WriteByte(&net_buffer, VOTE_MAP);
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, index.str().c_str());
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CallVote(VOTE_MAP, index.str()));
 }
 
 void CMD_RandmapVoteErrback(const std::string &error) {
@@ -172,9 +169,7 @@ void CMD_RandmapVoteCallback(const maplist_qrows_t &result) {
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_callvote);
-	MSG_WriteByte(&net_buffer, VOTE_RANDMAP);
-	MSG_WriteByte(&net_buffer, 0);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CallVote(VOTE_RANDMAP));
 }
 
 //////// CONSOLE COMMANDS ////////
@@ -202,7 +197,7 @@ BEGIN_COMMAND(callvote) {
 			if (votecmd_s.compare(vote_type_cmd[i]) == 0) {
 				// Found it.  Set our votecmd and get rid of our
 				// first argument, since we don't need it anymore.
-				votecmd = (vote_type_t)i;
+				votecmd = static_cast<vote_type_t>(i);
 				arguments.erase(arguments.begin());
 			}
 		}
@@ -266,12 +261,8 @@ BEGIN_COMMAND(callvote) {
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_callvote);
-	MSG_WriteByte(&net_buffer, (byte)votecmd);
-	MSG_WriteByte(&net_buffer, (byte)(arguments.size()));
-	for (const auto& argument : arguments) {
-		MSG_WriteString(&net_buffer, argument.c_str());
-	}
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CallVote(votecmd, arguments));
+
 } END_COMMAND(callvote)
 
 /**
@@ -285,10 +276,8 @@ BEGIN_COMMAND(vote_yes)
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_netcmd);
-	MSG_WriteString(&net_buffer, "vote");
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, "yes");
+	std::array cmd { "vote", "yes" };
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(cmd.begin(), cmd.end()));
 
 	if (snd_votesfx)
 		S_Sound(CHAN_INTERFACE, "ui/vote/yes", 1.0f, ATTN_NONE);
@@ -306,10 +295,8 @@ BEGIN_COMMAND(vote_no)
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_netcmd);
-	MSG_WriteString(&net_buffer, "vote");
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, "no");
+	std::array cmd { "vote", "no" };
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(cmd.begin(), cmd.end()));
 
 	if (snd_votesfx)
 		S_Sound(CHAN_INTERFACE, "ui/vote/no", 1.0f, ATTN_NONE);

@@ -45,17 +45,17 @@ void P_SerializePlayers (FArchive &arc)
 		{
 			if (not player.isFreecam) // dont serialize the freecam
 			{
-				arc << (int)(player.playerstate);
+				arc << static_cast<int>(player.playerstate);
 			}
-		}	
+		}
 	}
 	else
 	{
-		int playerstate = (playerstate_t)0;
+		int playerstate = static_cast<playerstate_t>(0);
 		for (auto& player : players)
 		{
 			arc >> playerstate;
-			player.playerstate = (playerstate_t)playerstate;
+			player.playerstate = static_cast<playerstate_t>(playerstate);
 		}
 	}
 
@@ -147,7 +147,7 @@ void P_SerializeWorld (FArchive &arc)
 				<< line.special
 				<< line.lucency
 				<< line.id
-				<< line.args[0] << line.args[1] << line.args[2] << line.args[3] << line.args[4] << (uint16_t)0;
+				<< line.args[0] << line.args[1] << line.args[2] << line.args[3] << line.args[4] << 0_u16;
 
 			for (int i = 0; i < 2; i++)
 			{
@@ -303,7 +303,7 @@ void P_SerializePolyobjs (FArchive &arc)
 
 	if (arc.IsStoring ())
 	{
-		arc << (int)ASEG_POLYOBJS << po_NumPolyobjs;
+		arc << static_cast<int>(ASEG_POLYOBJS) << po_NumPolyobjs;
 		for(i = 0, po = polyobjs; i < po_NumPolyobjs; i++, po++)
 		{
 			arc << po->tag << po->angle << po->startSpot[0] <<

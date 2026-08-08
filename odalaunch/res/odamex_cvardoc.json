@@ -575,14 +575,14 @@
       },
       {
          "default" : "40 cf 00",
-         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "flags" : [ "USERINFO", "NOSET", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "",
          "name" : "cl_color",
          "type" : "string"
       },
       {
          "default" : "custom",
-         "flags" : [ "CLIENTARCHIVE" ],
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "",
          "name" : "cl_colorpreset",
          "type" : "string"
@@ -596,7 +596,7 @@
       },
       {
          "default" : "40 cf 00",
-         "flags" : [ "CLIENTARCHIVE" ],
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "",
          "name" : "cl_customcolor",
          "type" : "string"
@@ -912,6 +912,13 @@
       {
          "default" : false,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Fix the vanilla bug where Arch-vile fire is spawned in the wrong location, causing motion and interpolation column-of-fire-type visual glitches",
+         "name" : "co_archvilefirefix",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "Use MBF monster_avoid_hazards behavior -- monsters will avoid some damaging sectors and crushers.",
          "name" : "co_avoidhazards",
          "type" : "boolean"
@@ -1069,8 +1076,22 @@
       {
          "default" : false,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF21's comp_voodooscroller behavior -- Enable voodoo dolls on slow scrollers to move too slowly.",
+         "name" : "co_voodooscroller",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "Enable/disable ZDoom 1.23b33-based ammo checks",
          "name" : "co_zdoomammo",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use ZDoom's monster targeting when it comes to friendlies. This is much less taxing than MBF friendly targeting, so enable if your system is struggling on slaughter maps with friendlies.",
+         "name" : "co_zdoomfriendtargeting",
          "type" : "boolean"
       },
       {
@@ -1138,7 +1159,7 @@
          "type" : "boolean"
       },
       {
-         "default" : "012030",
+         "default" : "013000",
          "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "",
          "name" : "configver",
@@ -1709,6 +1730,13 @@
          "type" : "string"
       },
       {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Print debugging messages for each packet sent",
+         "name" : "log_packetdebug",
+         "type" : "boolean"
+      },
+      {
          "default" : true,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Generate centerview when mlook encountered",
@@ -1864,22 +1892,11 @@
          "type" : "boolean"
       },
       {
-         "default" : 131072,
-         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
-         "helptext" : "Net receive buffer size in bytes",
-         "max" : 268435456,
-         "min" : 1500,
-         "name" : "net_rcvbuf",
-         "type" : "integer"
-      },
-      {
-         "default" : 131072,
-         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
-         "helptext" : "Net send buffer size in bytes",
-         "max" : 268435456,
-         "min" : 1500,
-         "name" : "net_sndbuf",
-         "type" : "integer"
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Enables display of various netcode debugging information on the automap.  Requires iddt level 2 cheat.",
+         "name" : "netdebug_automap",
+         "type" : "boolean"
       },
       {
          "default" : false,
@@ -1921,6 +1938,13 @@
          "flags" : [],
          "helptext" : "Disables all texturing of walls, floors and ceilings",
          "name" : "r_drawflat",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Add a particle to each actor indicating how credible the client considers the actor's position",
+         "name" : "r_drawnetcredibility",
          "type" : "boolean"
       },
       {
@@ -2048,7 +2072,7 @@
       {
          "default" : false,
          "flags" : [],
-         "helptext" : "Things are lit according to the average of the transferred light levels (mimics MBF behavior)",
+         "helptext" : "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
          "name" : "r_thingsectorlight",
          "type" : "boolean"
       },
@@ -2898,6 +2922,6 @@
    ],
    "odamex_branchname" : "",
    "odamex_commithash" : "",
-   "odamex_version" : "12.3.0",
+   "odamex_version" : "13.0.0",
    "schema_version" : 1
 }

@@ -23,9 +23,11 @@
 
 #pragma once
 
-#include "r_local.h"
-
+#include <array>
 #include <set>
+
+#include "r_local.h"
+#include "m_vectors.h"
 
 #define FLOATSPEED		(FRACUNIT*4)
 
@@ -101,7 +103,7 @@ weaponstate_t P_GetWeaponState(const player_t& player);
 //
 void P_FallingDamage (AActor *ent);
 void P_PlayerThink (player_t& player);
-void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers);
+void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS> powers);
 bool P_AreTeammates(const player_t& a, const player_t& b);
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
 void P_BumpPlayerCounters(player_t& player);
@@ -120,7 +122,14 @@ inline std::queue<std::pair<mapthing2_t, int>> itemrespawnque;
 void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
 void	P_RespawnSpecials (void);
 
-bool	P_SetMobjState (AActor* mobj, int32_t state, bool cl_update = false);
+enum class SetMobStateResultEnum
+{
+	DESTROYED,
+	SUCCESSFUL,
+	SUCCESSFUL_AND_CLIENTS_UPDATED,
+};
+
+SetMobStateResultEnum P_SetMobjState (AActor* mobj, int32_t state, bool cl_update = false);
 
 void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
@@ -145,9 +154,11 @@ bool	P_DeactivateMobj (AActor *mobj);
 //
 // P_ENEMY
 //
-void	P_NoiseAlert (AActor* target, AActor* emmiter);
-void	P_SpawnBrainTargets();	// killough 3/26/98: spawn icon landings
-int		P_Massacre();
+bool P_NoiseAlert (AActor* target, AActor* emmiter);
+bool P_NoiseAlert (AActor& target, sector_t& sec);
+int  P_Massacre();
+
+void	P_SpawnBrainTargets(void);	// killough 3/26/98: spawn icon landings
 
 extern struct brain_s {				// killough 3/26/98: global state of boss brain
 	int easy, targeton;
@@ -245,23 +256,25 @@ extern sector_t			*tmfloorsector;
 
 extern	line_t* 		ceilingline;
 
-void	P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
-						fixed_t &destx, fixed_t &desty, fixed_t &destz);
-bool	P_TestMobjZ (AActor *actor);
-bool	P_TestMobjLocation (AActor *mobj);
-bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
-AActor	*P_CheckOnmobj (AActor *thing);
-void	P_FakeZMovement (AActor *mo);
-bool	P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
-bool	P_TryMove (AActor* thing, fixed_t x, fixed_t y, int dropoff, bool onfloor = false);
-bool	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag);	// [RH] Added z and telefrag parameters
-void	P_SlideMove (AActor* mo);
-bool	P_CheckSight (const AActor* t1, const AActor* t2);
-void	P_UseLines (player_t& player);
-void	P_ApplyTorque(AActor *mo);
-void	P_CopySector(sector_t *dest, sector_t *src);
-bool 	P_ShouldClipPlayer(AActor* projectile, AActor* player);
-bool 	P_ShouldClipFriendly(AActor* projectile, AActor* monster);
+void    P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
+                            fixed_t &destx, fixed_t &desty, fixed_t &destz);
+bool    P_TestMobjZ (AActor *actor);
+bool    P_TestMobjLocation (AActor *mobj);
+bool    P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
+AActor* P_CheckOnmobj (AActor *thing);
+void    P_FakeZMovement (AActor *mo);
+bool    P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
+bool    P_TryMove (AActor* thing, fixed_t x, fixed_t y, int dropoff, bool onfloor = false);
+bool    P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag); // [RH] Added z and telefrag parameters
+bool    P_JustTeleported (AActor* thing);
+void    P_ClearJustTeleported ();
+void    P_SlideMove (AActor* mo);
+bool    P_CheckSight (const AActor* t1, const AActor* t2);
+void    P_UseLines (player_t& player);
+void    P_ApplyTorque(AActor *mo);
+void    P_CopySector(sector_t *dest, sector_t *src);
+bool    P_ShouldClipPlayer(AActor* projectile, AActor* player);
+bool    P_ShouldClipFriendly(AActor* projectile, AActor* monster);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
 double P_PlaneZ(double x, double y, const plane_t *plane);
@@ -287,7 +300,6 @@ bool P_PointOnPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 bool P_PointAbovePlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 bool P_PointBelowPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 
-struct v3fixed_t;
 v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg, const v3fixed_t &linedir);
 
 
@@ -337,10 +349,12 @@ extern std::set<short>	movable_sectors;
 //
 // P_INTER
 //
-extern int				maxammo[NUMAMMO];
-extern int				clipammo[NUMAMMO];
+extern std::array<int, NUMAMMO> maxammo;
+extern std::array<int, NUMAMMO> clipammo;
 
-void P_GiveSpecial(player_t& player, AActor& special);
+[[ nodiscard("Please check for whether the mobj must be destroyed!!") ]]
+ItemEquipVal P_GiveSpecial(player_t& player, AActor& special);
+
 void P_TouchSpecialThing (AActor& special, AActor& toucher);
 
 void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);
@@ -384,23 +398,14 @@ extern	int MeansOfDeath;
 //
 // PO_MAN
 //
-typedef enum
+enum podoortype_t : uint8_t
 {
 	PODOOR_NONE,
 	PODOOR_SLIDE,
 	PODOOR_SWING,
 
 	NUMTYPES
-} podoortype_t;
-
-inline FArchive &operator<< (FArchive &arc, podoortype_t type)
-{
-	return arc << (byte)type;
-}
-inline FArchive &operator>> (FArchive &arc, podoortype_t &out)
-{
-	byte in; arc >> in; out = (podoortype_t)in; return arc;
-}
+};
 
 class DPolyAction : public DThinker
 {
@@ -516,7 +521,6 @@ bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest);
 bool P_IsVoodooDoll(const AActor* mo);
 void P_FriendlyEffects();
 void P_FriendlyEffects(AActor* mo);
-void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin);
 bool P_ProjectileImmune(AActor* target, AActor* source);
 void P_SetupHelpers();
 void P_ClearHelpers();

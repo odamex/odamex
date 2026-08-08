@@ -180,7 +180,7 @@ static void R_FillWallHeightArray(
 
 	for (int i = start; i <= stop; i++)
 	{
-		array[i] = std::clamp((int)frac, ceilingclipinitial[0], floorclipinitial[0]);
+		array[i] = std::clamp(static_cast<int>(frac), ceilingclipinitial[0], floorclipinitial[0]);
 		frac -= step;
 	}
 }
@@ -207,7 +207,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 		// Otherwise we can have textures drawing at different
 		// heights when mouselook is on.
 		sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
-		dcol.iscale = 0xffffffffu / (unsigned)spryscale;
+		dcol.iscale = 0xffffffffu / static_cast<unsigned>(spryscale);
 
 		while (!post->end())
 		{
@@ -266,7 +266,7 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 		int destpostlen = 0;
 
 		static byte* destpostraw[512];
-		tallpost_t* destpost = (tallpost_t*) destpostraw;
+		tallpost_t* destpost = reinterpret_cast<tallpost_t*>(destpostraw);
 
 		// a 512 pixel tall post can overflow destpostraw
 		// because of the 4 byte header and 4 byte footer.

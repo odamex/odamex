@@ -120,6 +120,8 @@ EXTERN_CVAR(am_ovscalewidth)
 EXTERN_CVAR(am_ovscaleheight)
 EXTERN_CVAR(am_ovlocation)
 
+EXTERN_CVAR(netdebug_automap)
+
 BEGIN_COMMAND(resetcustomcolors)
 {
 	am_backcolor = "00 00 3a";
@@ -177,10 +179,10 @@ EXTERN_CVAR(screenblocks)
 #define F_PANINC (140 / TICRATE)
 // how much zoom-in per tic
 // goes to 2x in 1 second
-#define M_ZOOMIN ((int)(1.02 * FRACUNIT64))
+#define M_ZOOMIN (static_cast<int>(1.02 * FRACUNIT64))
 // how much zoom-out per tic
 // pulls out to 0.5x in 1 second
-#define M_ZOOMOUT ((int)(FRACUNIT64 / 1.02))
+#define M_ZOOMOUT (static_cast<int>(FRACUNIT64 / 1.02))
 
 // translates between frame-buffer and map distances
 #define FTOM(x) FixedMul64((INT2FIXED64((x))), scale_ftom)
@@ -527,7 +529,7 @@ void AM_initVariables()
 	AM_saveScaleAndLoc();
 
 	// inform the status bar of the change
-	ST_Responder(&st_notify);
+	ST_Responder(st_notify);
 }
 
 am_color_t AM_GetColorFromString(const argb_t* palette_colors, const std::string& colorstring)
@@ -784,7 +786,7 @@ void AM_Stop()
 	automapactive = false;
 
 	static event_t st_notify(ev_keyup, AM_MSGEXITED, 0, 0);
-	ST_Responder(&st_notify);
+	ST_Responder(st_notify);
 
 	stopped = true;
 	viewactive = true;
@@ -860,32 +862,32 @@ END_COMMAND(togglemap)
 //
 // Handle events (user inputs) in automap mode
 //
-bool AM_Responder(event_t* ev)
+bool AM_Responder(const event_t& ev)
 {
-	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
+	if (automapactive && (ev.type == ev_keydown || ev.type == ev_keyup))
 	{
 		if (am_followplayer)
 		{
 			// check for am_pan* and ignore in follow mode
-			const std::string defbind = AutomapBindings.Binds[ev->data1];
+			const std::string defbind = AutomapBindings.Binds[ev.data1];
 			if (iequals(defbind, "+am_pan"))
 				return false;
 		}
 
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
-			const std::string defbind = Bindings.Binds[ev->data1];
+			const std::string defbind = Bindings.Binds[ev.data1];
 			// Check for automap, in order not to be stuck
 			if (iequals(defbind, "togglemap"))
 				return false;
 		}
 
 		const bool res = C_DoKey(ev, &AutomapBindings, NULL);
-		if (res && ev->type == ev_keyup)
+		if (res && ev.type == ev_keyup)
 		{
 			// If this is a release event we also need to check if it released a button in
 			// the main Bindings so that that button does not get stuck.
-			const std::string defbind = Bindings.Binds[ev->data1];
+			const std::string defbind = Bindings.Binds[ev.data1];
 
 			// Check for automap, in order not to be stuck
 			if (iequals(defbind, "togglemap"))
@@ -1251,7 +1253,7 @@ static inline void PUTDOT_THICK(
 
 static inline void PUTDOT_THICK(int x, int y, argb_t color)
 {
-	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *((argb_t*)(fb + y * f_p + (x << 2))) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2);
+	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *(reinterpret_cast<argb_t*>(fb + y * f_p + (x << 2))) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2);
 }
 
 static inline void PUTDOT_THICK(int x, int y, byte color)
@@ -1614,7 +1616,7 @@ void AM_rotatePoint(mpoint_t& pt)
 	pt.y += y;
 }
 
-void AM_drawLineCharacter(nonstd::span<const mline_t> lineguy, fixed64_t scale,
+void AM_drawLineCharacter(std::span<const mline_t> lineguy, fixed64_t scale,
                           angle_t angle, am_color_t color, fixed64_t x, fixed64_t y)
 {
 	for (const auto& mline : lineguy)
@@ -1700,7 +1702,7 @@ void AM_drawPlayers()
 		if (!(p.ingame()) || !p.mo ||
 		    (((G_IsFFAGame() && &p != &conplayer) ||
 		      (G_IsTeamGame() && p.userinfo.team != conplayer.userinfo.team)) &&
-		     !(netdemo.isPlaying() || netdemo.isPaused()) && !demoplayback &&
+		     !netdemo.isInPlayback() && !demoplayback &&
 		     !(conplayer.spectator)) ||
 		    p.spectator)
 		{
@@ -1815,7 +1817,7 @@ void AM_drawHordeBoss(const AActor* t)
 {
 	OInterpolation& oi = OInterpolation::getInstance();
 
-	if (t->oflags & MFO_BOSSPOOL && t->health > 0)
+	if (t->oflags & MFO_ISHORDEBOSS && t->health > 0)
 	{
 		fixed_t thingx;
 		fixed_t thingy;
@@ -1891,6 +1893,8 @@ void AM_drawCheatThing(const AActor* t)
 	angle_t rotate_angle = 0;
 	angle_t triangle_angle = tangle;
 
+	const fixed64_t radius = FIXED2FIXED64(t->radius);
+
 	if (am_rotate)
 	{
 		AM_rotatePoint(p);
@@ -1919,16 +1923,14 @@ void AM_drawCheatThing(const AActor* t)
 		{
 			const am_color_t key_color = AM_getKeyColor(t);
 
-			AM_drawLineCharacter(gameinfo.cheatKey, FIXED2FIXED64(t->radius), 0, key_color, p.x,
-			                     p.y);
+			AM_drawLineCharacter(gameinfo.cheatKey, radius, 0, key_color, p.x, p.y);
 		}
 	}
 	else
 	{
 		am_color_t color = gameinfo.currentAutomapColors.ThingColor;
 
-		AM_drawLineCharacter(thintriangle_guy, FIXED2FIXED64(t->radius), triangle_angle, color,
-		                     p.x, p.y);
+		AM_drawLineCharacter(thintriangle_guy, radius, triangle_angle, color, p.x, p.y);
 
 		if (t->flags & MF_MISSILE)
 		{
@@ -1951,8 +1953,16 @@ void AM_drawCheatThing(const AActor* t)
 				color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
 		}
 
-		AM_drawLineCharacter(thinrectangle_guy, FIXED2FIXED64(t->radius), rotate_angle, color,
-		                     p.x, p.y);
+		AM_drawLineCharacter(thinrectangle_guy, radius, rotate_angle, color, p.x, p.y);
+	}
+
+	if (netdebug_automap)
+	{
+		screen->DrawTextStretched(CR_GREY,
+		                          CXMTOF(p.x - radius),
+		                          CYMTOF(p.y + radius) - V_LineHeight() * 2,
+		                          fmt::sprintf("%d", t->netid).c_str(),
+		                          2, 2);
 	}
 }
 
@@ -2007,7 +2017,7 @@ void AM_drawCrosshair(am_color_t color)
 {
 	// single point for now
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, (byte)color.index);
+		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.index);
 	else
 		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.rgb);
 }

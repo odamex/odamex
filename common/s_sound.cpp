@@ -153,12 +153,12 @@ void S_ParseSndInfo()
 	int lump = -1;
 	while ((lump = W_FindLump("SNDINFO", lump)) != -1)
 	{
-		char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
+		char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
 
 		const OScannerConfig config = {
-		    "SNDINFO", // lumpName
-		    true,      // semiComments
-		    true,      // cComments
+		    .lumpName     = "SNDINFO",
+		    .semiComments = true,
+		    .cComments    = true,
 		};
 		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
 
@@ -278,7 +278,7 @@ void S_ParseSndInfo()
 				else if (os.compareTokenNoCase("alias"))
 				{
 					os.mustScan();
-					const int sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
+					const int sfxfrom = S_AddSound(os.getToken().c_str(), nullptr);
 					os.mustScan();
 					S_sfx[sfxfrom].link = FindSoundTentative(os.getToken().c_str());
 				}

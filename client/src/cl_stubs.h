@@ -1,10 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,13 +16,11 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		Networking stuff
+//  Clientside function stubs
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#define BACKUPTICS		12	// number of tics to remember
-
-// Create any new ticcmds and broadcast to other players.
-void NetUpdate();
+void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0, int arg1, int arg2, int arg3, int arg4);
+void SV_UpdateMobj(AActor* mo);

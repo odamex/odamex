@@ -23,25 +23,29 @@
 
 #pragma once
 
+#include <memory>
+#include <string>
+#include <vector>
 
-
-enum parseError_e
-{
-	PERR_OK,
-	PERR_UNKNOWN_HEADER,
-	PERR_UNKNOWN_MESSAGE,
-	PERR_BAD_DECODE
-};
+#include "msg_parse.h"
 
 struct Proto
 {
-	byte header;
+	msg_t header;
 	std::string name;
 	size_t size;
 	std::string data;
 };
 
+struct ParseResultType
+{
+	std::unique_ptr<google::protobuf::Message> msg;
+	parseError_e                               code = PERR_OK;
+	msg_t                                      cmd  = msg_noop;
+};
+
 typedef std::vector<Proto> Protos;
 
 const Protos& CL_GetTicProtos();
-parseError_e CL_ParseCommand();
+ParseResultType CL_ParseCommand();
+parseError_e    CL_ProcessCommand(const ParseResultType& parsedCommand);

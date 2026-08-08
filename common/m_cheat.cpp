@@ -40,214 +40,6 @@
 extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)
 
-#ifdef CLIENT_APP
-#include "am_map.h"
-#include "cl_main.h"
-extern bool automapactive;
-#endif
-
-void C_DoCommand(std::string_view cmd, uint32_t key = 0);
-
-//
-// CHEAT SEQUENCE PACKAGE
-//
-
-#ifdef CLIENT_APP
-
-namespace cheat
-{
-
-//-------------
-// THESE ARE MAINLY FOR THE CLIENT
-// Smashing Pumpkins Into Small Piles Of Putrid Debris.
-bool AutoMap(cheatseq_t* cheat)
-{
-	if (automapactive)
-	{
-		if (!multiplayer || G_IsCoopGame())
-			am_cheating = (am_cheating + 1) % 3;
-
-		return true;
-	}
-	return false;
-}
-
-bool ChangeLevel(cheatseq_t* cheat)
-{
-	std::string buf;
-
-	// What were you trying to achieve?
-	if (multiplayer)
-		return false;
-
-	// [ML] Chex mode: always set the episode number to 1.
-	// FIXME: This is probably a horrible hack, it sure looks like one at least
-	// And why is there only a newline for non-chex?
-	if (gamemode == retail_chex)
-		buf = fmt::format("map 1{:c}", cheat->Args[1]);
-	else
-		buf = fmt::format("map {:c}{:c}\n", cheat->Args[0], cheat->Args[1]);
-
-	AddCommandString(buf);
-	return true;
-}
-
-bool IdMyPos(cheatseq_t* cheat)
-{
-	C_DoCommand("toggle idmypos", 0);
-	return true;
-}
-
-bool BeholdMenu(cheatseq_t* cheat)
-{
-	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STSTR_BEHOLD));
-	return false;
-}
-
-bool ChangeMusic(cheatseq_t* cheat)
-{
-	char buf[9] = "idmus xx";
-
-	buf[6] = cheat->Args[0];
-	buf[7] = cheat->Args[1];
-	C_DoCommand(buf, 0);
-	return true;
-}
-
-//
-// Sets clientside the new cheat flag
-// and also requests its new status serverside
-//
-bool SetGeneric(cheatseq_t* cheat)
-{
-	if (!AreCheatsEnabled())
-		return true;
-
-	if (cheat->Args[0] == CHT_NOCLIP)
-	{
-		if (cheat->Args[1] == 0 && gamemode != shareware && gamemode != registered &&
-		    gamemode != retail && gamemode != retail_bfg)
-			return true;
-		else if (cheat->Args[1] == 1 && gamemode != commercial &&
-		         gamemode != commercial_bfg)
-			return true;
-	}
-
-	DoCheat(consoleplayer(), (ECheatFlags)cheat->Args[0]);
-	CL_SendCheat((ECheatFlags)cheat->Args[0]);
-
-	return true;
-}
-
-// [RH] Actually handle the cheat. The cheat code in st_stuff.c now just
-// writes some bytes to the network data stream, and the network code
-// later calls us.
-
-bool AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
-{
-	if (cheat->Pos == nullptr)
-	{
-		cheat->Pos = cheat->Sequence;
-		cheat->CurrentArg = 0;
-	}
-	if (*cheat->Pos == 0)
-	{
-		*eat = true;
-		cheat->Args[cheat->CurrentArg++] = key;
-		cheat->Pos++;
-	}
-	else if (key == *cheat->Pos)
-	{
-		cheat->Pos++;
-	}
-	else
-	{
-		cheat->Pos = cheat->Sequence;
-		cheat->CurrentArg = 0;
-	}
-	if (*cheat->Pos == 0xff)
-	{
-		cheat->Pos = cheat->Sequence;
-		cheat->CurrentArg = 0;
-		return true;
-	}
-	return false;
-}
-
-} // namespace cheat
-
-BEGIN_COMMAND(tntem)
-{
-	if (!cheat::AreCheatsEnabled())
-		return;
-
-	if (multiplayer && !G_IsCoopGame())
-		return;
-
-	cheat::DoCheat(consoleplayer(), CHT_MASSACRE);
-	CL_SendCheat(CHT_MASSACRE);
-}
-END_COMMAND(tntem)
-
-BEGIN_COMMAND(summon)
-{
-	if (!cheat::AreCheatsEnabled())
-		return;
-
-	if (argc < 2)
-		return;
-
-	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
-
-	if (!cheat::ValidSummonActor(mobname))
-	{
-		PrintFmt(PRINT_HIGH, "Invalid summon argument: {}. Please use `dumpactors` for a valid list of actor names.\n", mobname);
-		return;
-	}
-
-	cheat::Summon(consoleplayer(), mobname, false);
-	CL_SendSummonCheat(mobname.c_str());
- }
-END_COMMAND(summon)
-
-BEGIN_COMMAND(summonfriend)
-{
-	if (!cheat::AreCheatsEnabled())
-		return;
-
-	if (argc < 2)
-		return;
-
-	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
-
-	if (!cheat::ValidSummonActor(mobname.c_str()))
-	{
-		PrintFmt(PRINT_HIGH,
-		         "Invalid summon argument: {}. Please use `dumpactors` for a valid list of "
-		         "actor names.\n",
-		         mobname);
-		return;
-	}
-
-	cheat::Summon(consoleplayer(), mobname.c_str(), true);
-	CL_SendSummonFriendCheat(mobname.c_str());
-}
-END_COMMAND(summonfriend)
-
-BEGIN_COMMAND(mdk)
-{
-	if (!cheat::AreCheatsEnabled())
-		return;
-
-	if (multiplayer && !G_IsCoopGame())
-		return;
-
-	cheat::DoCheat(consoleplayer(), CHT_MDK);
-	CL_SendCheat(CHT_MDK);
-}
-END_COMMAND(mdk)
-
-#endif
 
 #ifdef SERVER_APP
 BEGIN_COMMAND(tntem)
@@ -302,7 +94,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 {
 	std::string msg;
 
-	if (player.health <= 0)
+	if (player.health <= 0 or not serverside)
 		return;
 
 	switch (cheat)
@@ -465,15 +257,12 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 		if (!G_IsCoopGame())
 			return;
 
-		if (serverside)
-		{
-			P_LineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT,
-			             P_AimLineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT),
-			             10000);
+		P_LineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT,
+		             P_AimLineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT),
+		             10000);
 
-			if (multiplayer)
-				msg = "MDK";
-		}
+		if (multiplayer)
+			msg = "MDK";
 	}
 	break;
 	case CHT_BUDDHA: {
@@ -492,6 +281,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 		}
 
 #ifdef SERVER_APP
+		SV_ClientPrintFmt(&player.client, PRINT_HIGH, "{}\n", msg);
 		SV_BroadcastPrintFmtButPlayer(PRINT_HIGH, player.id, "{} is a cheater: {}\n",
 		                            player.userinfo.netname, msg);
 #endif
@@ -516,7 +306,7 @@ AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 	AActor* entity = AActor::AActorPtr();
 	AActor* source = player.mo;
 
-	if (player.spectator || source == nullptr)
+	if (player.spectator or source == nullptr or not serverside)
 		return entity;
 
 	if (serverside)
@@ -553,10 +343,9 @@ AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 
 	if (friendly)
 	{
-		entity->flags |= MF_FRIEND;
+		entity->SetFriendly(true, player.mo);
+		entity->UpdateActorLists();
 		cheatname = "summonfriend";
-		P_GiveFriendlyOwnerInfo(entity, player.mo);
-		P_FriendlyEffects(entity);
 	}
 
 	if (multiplayer)
@@ -570,6 +359,9 @@ AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 
 void GiveTo(player_t& player, const char* name)
 {
+	if (not serverside)
+		return;
+
 	bool giveall;
 
 	if (&player != &consoleplayer())
@@ -618,7 +410,7 @@ void GiveTo(player_t& player, const char* name)
 			player.backpack = true;
 		}
 		for (int i = 0; i < NUMAMMO; i++)
-			P_GiveAmmo(player, (ammotype_t)i, 1);
+			P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
 
 		if (!giveall)
 			return;
@@ -628,7 +420,7 @@ void GiveTo(player_t& player, const char* name)
 	{
 		weapontype_t pendweap = player.pendingweapon;
 		for (int i = 0; i < NUMWEAPONS; i++)
-			P_GiveWeapon(player, (weapontype_t)i, false);
+			P_GiveWeapon(player, static_cast<weapontype_t>(i), false);
 		player.pendingweapon = pendweap;
 
 		if (!giveall)
@@ -686,15 +478,15 @@ void GiveTo(player_t& player, const char* name)
 		    else */
 		howmuch = it->quantity;
 
-		P_GiveAmmo(player, (ammotype_t)it->offset, howmuch);
+		P_GiveAmmo(player, static_cast<ammotype_t>(it->offset), howmuch);
 	}
 	else if (it->flags & IT_WEAPON)
 	{
-		P_GiveWeapon(player, (weapontype_t)it->offset, 0);
+		P_GiveWeapon(player, static_cast<weapontype_t>(it->offset), 0);
 	}
 	else if (it->flags & IT_KEY)
 	{
-		P_GiveCard(player, (card_t)it->offset);
+		P_GiveCard(player, static_cast<card_t>(it->offset));
 	}
 	else if (it->flags & IT_POWERUP)
 	{

@@ -240,7 +240,7 @@ static bool S_UseMap8Volume()
 //
 // Internals.
 //
-static void S_StopChannel(unsigned int cnum);
+static void S_StopChannel(size_t cnum);
 
 
 //
@@ -250,7 +250,7 @@ static void S_StopChannel(unsigned int cnum);
 //
 void S_Init(float sfxVolume, float musicVolume)
 {
-	SoundCurve = (byte *)W_CacheLumpNum(W_GetNumForName("SNDCURVE"), PU_STATIC);
+	SoundCurve = W_CacheLumpName<byte>("SNDCURVE", PU_STATIC);
 
 	// [RH] Read in sound sequences
 	NumSequences = 0;
@@ -263,7 +263,7 @@ void S_Init(float sfxVolume, float musicVolume)
 	// (the maximum numer of sounds rendered
 	// simultaneously) within zone memory.
 	numChannels = snd_channels.asInt();
-	Channel = (channel_t*)Z_Malloc(numChannels * sizeof(channel_t), PU_STATIC, 0);
+	Channel = Z_Malloc<channel_t>(numChannels, PU_STATIC);
 	for (size_t i = 0; i < numChannels; i++)
 		Channel[i].clear();
 
@@ -643,6 +643,8 @@ public:
 				else
 					return { &ent->x, ent->x, ent->y };
 		}
+
+		OUtil::unreachable();
 	}
 
 	[[nodiscard]] const AActor* get_entity() noexcept
@@ -681,7 +683,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 
 	while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 	{
-		sfx_id = ResolveSound(sfxinfo->link);
+		sfx_id = ResolveSound(sfx_id);
 		sfxinfo = &S_sfx[sfx_id];
 	}
 
@@ -690,13 +692,13 @@ static void S_StartSound(sound_origin_t origin, int channel,
 		I_LoadSound(sfxinfo);
 		while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 		{
-			sfx_id = ResolveSound(sfxinfo->link);
+			sfx_id = ResolveSound(sfx_id);
 			sfxinfo = &S_sfx[sfx_id];
 		}
 	}
 
   	// check for bogus sound lump
-	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > static_cast<int>(numlumps))
+	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > static_cast<int>(W_NumLumps()))
 	{
 		DPrintFmt("Bad sfx lump #: {}\n", sfxinfo->lumpnum);
 		return;
@@ -933,7 +935,7 @@ void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, 
 //
 // S_StopChannel
 //
-static void S_StopChannel(unsigned int cnum)
+static void S_StopChannel(size_t cnum)
 {
 	if (::Channel == nullptr)
 		return;
@@ -1096,7 +1098,7 @@ void S_UpdateSounds(const AActor* listener)
 	if (::Channel == nullptr)
 		return;
 
-	for (int cnum = 0; cnum < (int)numChannels; cnum++)
+	for (size_t cnum = 0; cnum < numChannels; cnum++)
 	{
 		channel_t* c = &Channel[cnum];
 		const sfxinfo_t* sfx = c->sfxinfo;
@@ -1218,9 +1220,12 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 
 	byte* data = nullptr;
 	size_t length = 0;
-	FILE *f;
 
-	if (!(f = fopen (musicname.c_str(), "rb")))
+	std::ifstream f(musicname,
+	                std::ios::in |
+	                std::ios::binary);
+
+	if (not f.good())
 	{
 		int lumpnum;
 		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
@@ -1229,18 +1234,18 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 			return;
 		}
 
-		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
+		data = W_CacheLumpNum<byte>(lumpnum, PU_CACHE);
 		length = W_LumpLength(lumpnum);
 		I_PlaySong({data, length}, looping, order);
-    }
-    else
+	}
+	else
 	{
 		length = M_FileLength(f);
-		data = static_cast<byte*>(Malloc(length));
-		const size_t result = fread(data, length, 1, f);
-		fclose(f);
+		data = static_cast<byte*>(M_Malloc(length));
+		f.read(reinterpret_cast<char*>(data), length);
 
-		if (result == 1)
+		const size_t result = f.gcount();
+		if (result == length)
 		{
 			I_PlaySong({data, length}, looping, order);
 		}
@@ -1273,8 +1278,8 @@ static void SetTicker(int *tics, AmbientSound *ambient)
 	}
 	else if (ambient->mode == amb_mode_t::RANDOM)
 	{
-		*tics = (int)(((float)rand() / (float)RAND_MAX) *
-				(float)(ambient->periodmax - ambient->periodmin)) +
+		*tics = static_cast<int>((static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) *
+				static_cast<float>(ambient->periodmax - ambient->periodmin)) +
 				ambient->periodmin;
 	}
 	else

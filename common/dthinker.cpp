@@ -38,6 +38,7 @@ IMPLEMENT_SERIAL (DThinker, DObject)
 DThinker *DThinker::FirstThinker = NULL;
 DThinker *DThinker::LastThinker = NULL;
 
+std::vector<DThinker *> DThinker::s_thinkers;
 std::vector<DThinker *> LingerDestroy;
 
 void DThinker::Serialize (FArchive &arc)
@@ -58,12 +59,12 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 		{
 			if (!(arc.IsReset() && P_ThinkerIsPlayerType(thinker)))
 			{
-				arc << (byte)1;
+				arc << 1_u8;
 				arc << thinker;
 			}
 			thinker = thinker->m_Next;
 		}
-		arc << (byte)0;
+		arc << 0_u8;
 	}
 	else
 	{
@@ -86,11 +87,9 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 	}
 }
 
-DThinker::DThinker ()
+DThinker::DThinker() : m_Next(nullptr), m_Prev(LastThinker)
 {
 	// Add a new thinker at the end of the list.
-	m_Prev = LastThinker;
-	m_Next = NULL;
 	if (LastThinker)
 		LastThinker->m_Next = this;
 	if (!FirstThinker)
@@ -98,17 +97,19 @@ DThinker::DThinker ()
 	LastThinker = this;
 	refCount = 0;
 	destroyed = false;
+
+	s_thinkers.push_back(this);
+	m_optionalVectorIndex = s_thinkers.size() - 1;
 }
 
-DThinker::~DThinker ()
-{
-}
+DThinker::~DThinker() = default;
 
 // This method is necessary if you construct the Thinker in an unconventional way,
 // like via a copy ctor.  Otherwise, DThinker::Destroy() runs the risk of stomping
 // all over the thinker list.
 void DThinker::Orphan()
 {
+	m_optionalVectorIndex.reset();
 	m_Next = NULL;
 	m_Prev = NULL;
 	refCount = 0;
@@ -128,6 +129,17 @@ void DThinker::Destroy ()
 		m_Next->m_Prev = m_Prev;
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
+
+	if (m_optionalVectorIndex.has_value())
+	{
+		if (s_thinkers.size() > 0)
+		{
+			s_thinkers.back()->m_optionalVectorIndex = m_optionalVectorIndex;
+			std::swap(s_thinkers.back(), s_thinkers[* m_optionalVectorIndex]);
+			s_thinkers.pop_back();
+		}
+		m_optionalVectorIndex.reset();
+	}
 
 	destroyed = true;
 
@@ -251,7 +263,10 @@ void DThinker::RunThinkers ()
 	while (currentthinker)
 	{
 		if (!IndependentThinker(currentthinker))
+		{
 			currentthinker->RunThink();
+			currentthinker->PostThink();
+		}
 		currentthinker = currentthinker->m_Next;
 	}
 	END_STAT (ThinkCycles);
@@ -260,14 +275,14 @@ void DThinker::RunThinkers ()
 
 void *DThinker::operator new (size_t size)
 {
-	return Z_Malloc (size, PU_LEVSPEC, 0);
+	return Z_Malloc<void>(size, PU_LEVSPEC, nullptr);
 }
 
 // Deallocation is lazy -- it will not actually be freed
 // until its thinking turn comes up.
 void DThinker::operator delete (void *mem)
 {
-	Z_Free (mem);
+	Z_Free(mem);
 }
 
 bool P_ThinkerIsPlayerType(DThinker* thinker)
@@ -280,3 +295,4 @@ bool P_ThinkerIsPlayerType(DThinker* thinker)
 }
 
 VERSION_CONTROL (dthinker_cpp, "$Id$")
+

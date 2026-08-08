@@ -50,24 +50,15 @@
 // drawn directly on the view screen,
 // coordinates are given for a 320*200 view screen.
 //
-typedef enum
+enum psprnum_t : uint8_t
 {
 	ps_weapon,
 	ps_flash,
 	NUMPSPRITES
 
-} psprnum_t;
+};
 
 void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic);
-
-inline FArchive &operator<< (FArchive &arc, psprnum_t i)
-{
-	return arc << (byte)i;
-}
-inline FArchive &operator>> (FArchive &arc, psprnum_t &out)
-{
-	byte in; arc >> in; out = (psprnum_t)in; return arc;
-}
 
 struct pspdef_t
 {

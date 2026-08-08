@@ -28,6 +28,7 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
+#include "d_player.h"
 #include "i_system.h"
 #include "infomap.h"
 #include "m_random.h"
@@ -135,12 +136,15 @@ StringTokens hordeDefine_t::weaponStrings(player_t* player) const
 		if (player == nullptr)
 			continue;
 
-		if (weapon == wp_none && player->powers[pw_strength])
+		// wp_none is basically always-owned as per weaponowned, but because
+		// we're co-opting wp_none to mean Berserk as a weapon in this one case,
+		// we check that against the powers table.
+		const bool alreadyHasWeapon = (weapon == wp_none ? player->powers[pw_strength] :
+		                                                   player->weaponowned[weapon]);
+		if (alreadyHasWeapon)
+		{
 			continue;
-
-		// don't do an out of bounds access on weaponowned
-		if (weapon != wp_none && player->weaponowned[weapon])
-			continue;
+		}
 
 		switch (weapon)
 		{
@@ -223,7 +227,7 @@ size_t P_HordePickDefine(const int current, const int total)
 	else
 	{
 		// Endless mode, and the gloves are off.
-		return M_RandomInt(::WAVE_DEFINES.size());
+		return M_RandomInt(static_cast<uint32_t>(::WAVE_DEFINES.size()));
 	}
 }
 

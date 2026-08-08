@@ -133,7 +133,7 @@ void I_Quit() {}
 //
 bool gameisdead;
 
-void I_BaseError(const std::string& errortext)
+[[noreturn]] void I_BaseError(const std::string& errortext)
 {
 	throw CRecoverableError(errortext);
 }

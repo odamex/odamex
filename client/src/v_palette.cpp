@@ -190,25 +190,29 @@ EXTERN_CVAR(gammalevel)
 class GammaStrategy
 {
 public:
-	virtual float min() const = 0;
-	virtual float max() const = 0;
-	virtual float increment(float level) const = 0;
+	[[nodiscard]] virtual float min() const = 0;
+	[[nodiscard]] virtual float max() const = 0;
+	[[nodiscard]] virtual float increment(float level) const = 0;
 	virtual void generateGammaTable(byte* table, float level) const = 0;
+	virtual ~GammaStrategy() = default;
 };
 
 class DoomGammaStrategy : public GammaStrategy
 {
 public:
+	[[nodiscard]]
 	float min() const override
 	{
 		return 0.0f;
 	}
 
+	[[nodiscard]]
 	float max() const override
 	{
 		return 7.0f;
 	}
 
+	[[nodiscard]]
 	float increment(float level) const override
 	{
 		level += 1.0f;
@@ -227,27 +231,30 @@ public:
 		// This generates a 1:1 match with the original gammatable but also
 		// allows for intermediate values.
 
-		const double basefac = pow(2.0, (double)level) * (255.0/256.0);
+		const double basefac = pow(2.0, static_cast<double>(level)) * (255.0/256.0);
 		const double exp = 1.0 - 0.125 * level;
 
 		for (int i = 0; i < 256; i++)
-			table[i] = (byte)(0.5 + basefac * pow(double(i) + 1.0, exp));
+			table[i] = static_cast<byte>(0.5 + basefac * pow(static_cast<double>(i) + 1.0, exp));
 	}
 };
 
 class ZDoomGammaStrategy : public GammaStrategy
 {
 public:
+	[[nodiscard]]
 	float min() const override
 	{
 		return 0.5f;
 	}
 
+	[[nodiscard]]
 	float max() const override
 	{
 		return 3.0f;
 	}
 
+	[[nodiscard]]
 	float increment(float level) const override
 	{
 		level += 0.1f;
@@ -266,13 +273,13 @@ public:
 		const double invgamma = 1.0 / level;
 
 		for (int i = 0; i < 256; i++)
-			table[i] = (byte)(255.0 * pow(double(i) / 255.0, invgamma));
+			table[i] = static_cast<byte>(255.0 * pow(double(i) / 255.0, invgamma));
 	}
 };
 
-static DoomGammaStrategy doomgammastrat;
-static ZDoomGammaStrategy zdoomgammastrat;
-GammaStrategy* gammastrat = &doomgammastrat;
+static const DoomGammaStrategy doomgammastrat;
+static const ZDoomGammaStrategy zdoomgammastrat;
+const GammaStrategy* gammastrat = &doomgammastrat;
 
 float V_GetMinimumGammaLevel()
 {
@@ -453,9 +460,9 @@ void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_
 			if (x == y)
 				continue;
 
-			int dr = (int)palette_colors[y].getr() - (int)palette_colors[x].getr();
-			int dg = (int)palette_colors[y].getg() - (int)palette_colors[x].getg();
-			int db = (int)palette_colors[y].getb() - (int)palette_colors[x].getb();
+			int dr = static_cast<int>(palette_colors[y].getr()) - static_cast<int>(palette_colors[x].getr());
+			int dg = static_cast<int>(palette_colors[y].getg()) - static_cast<int>(palette_colors[x].getg());
+			int db = static_cast<int>(palette_colors[y].getb()) - static_cast<int>(palette_colors[x].getb());
 			int distortion = dr*dr + dg*dg + db*db;
 			if (distortion < bestdistortion)
 			{
@@ -485,7 +492,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 		return "";
 	}
 
-	const char* buffer = static_cast<char*>(W_CacheLumpName("X11R6RGB", PU_CACHE));
+	const char* buffer = W_CacheLumpName<char>("X11R6RGB", PU_CACHE);
 
 	OScannerConfig config = {
 		"X11R6RGB", // lumpName
@@ -608,7 +615,7 @@ void V_InitPalette(const char* lumpname)
 	default_palette.maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
 	default_palette.maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
 
-	const byte* data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+	const byte* data = W_CacheLumpNum<byte>(lumpnum, PU_CACHE);
 
 	for (int i = 0; i < 256; i++, data += 3)
 		default_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
@@ -674,16 +681,15 @@ static float lightScale(float a)
 	static float e1 = exp(1.0f);
 	static float e1sube0 = e1 - exp(-1.0f);
 
-	return std::clamp(1.0f - ((e1 - (float)exp((a * 2.0f) - 1.0f)) / e1sube0), 0.0f, 1.0f);
+	return std::clamp(1.0f - ((e1 - static_cast<float>(exp((a * 2.0f) - 1.0f))) / e1sube0), 0.0f, 1.0f);
 }
 
 void BuildLightRamp (shademap_t &maps)
 {
-	int l;
 	// Build light ramp:
-	for (l = 0; l < 256; ++l)
+	for (int l = 0; l < 256; ++l)
 	{
-		int a = (int)(255 * lightScale(l / 255.0f));
+		const int a = static_cast<int>(255 * lightScale(l / 255.0f));
 		maps.ramp[l] = a;
 	}
 }
@@ -721,7 +727,7 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		const int grayint = (int)(255.0f * std::clamp(1.0f -
+		const int grayint = static_cast<int>(255.0f * std::clamp(1.0f -
 						(palette[c].getr() * 0.00116796875f +
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
@@ -763,7 +769,7 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		const int grayint = (int)(255.0f * std::clamp(1.0f -
+		const int grayint = static_cast<int>(255.0f * std::clamp(1.0f -
 						(palette[c].getr() * 0.00116796875f +
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
@@ -880,7 +886,7 @@ BEGIN_COMMAND (testblend)
 	{
 		argb_t color(V_GetColorFromString(argv[1]));
 
-		const int alpha = 255.0 * std::clamp((float)atof(argv[2]), 0.0f, 1.0f);
+		const int alpha = 255.0 * std::clamp(static_cast<float>(atof(argv[2])), 0.0f, 1.0f);
 		R_SetSectorBlend(argb_t(alpha, color.getr(), color.getg(), color.getb()));
 	}
 }
@@ -1035,7 +1041,7 @@ static void V_RefreshSpecialLights()
 	for (dyncolormap_t* colormap = NormalLight.next; colormap; colormap = colormap->next)
 	{
 		// Gamma changes only affect the 32-bit shademap.
-		BuildColoredLights((shademap_t*)colormap->maps.map(),
+		BuildColoredLights(const_cast<shademap_t*>(colormap->maps.map()),
 				colormap->color.getr(), colormap->color.getg(), colormap->color.getb(),
 				colormap->fade.getr(), colormap->fade.getg(), colormap->fade.getb(),
 				false);
@@ -1063,11 +1069,11 @@ dyncolormap_t* GetSpecialLights(int lr, int lg, int lb, int fr, int fg, int fb)
 	}
 
 	// Not found. Create it.
-	colormap = (dyncolormap_t*)Z_Malloc(sizeof(*colormap), PU_LEVEL, 0);
+	colormap = Z_Malloc<dyncolormap_t>(PU_LEVEL);
 
 	shademap_t* maps = new shademap_t();
-	maps->colormap = (palindex_t*)Z_Malloc(NUMCOLORMAPS * 256 * sizeof(palindex_t), PU_LEVEL, 0);
-	maps->shademap = (argb_t*)Z_Malloc(NUMCOLORMAPS * 256 * sizeof(argb_t), PU_LEVEL, 0);
+	maps->colormap = Z_Malloc<palindex_t>(NUMCOLORMAPS * 256, PU_LEVEL);
+	maps->shademap = Z_Malloc<argb_t>(NUMCOLORMAPS * 256, PU_LEVEL);
 
 	colormap->maps = shaderef_t(maps, 0);
 	colormap->color = color;
@@ -1090,7 +1096,7 @@ BEGIN_COMMAND (testcolor)
 	{
 		argb_t color(V_GetColorFromString(argv[1]));
 
-		BuildColoredLights((shademap_t*)NormalLight.maps.map(),
+		BuildColoredLights(const_cast<shademap_t*>(NormalLight.maps.map()),
 				color.getr(), color.getg(), color.getb(),
 				level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
 	}
@@ -1113,17 +1119,17 @@ void V_DoPaletteEffects()
 	{
 		int palette_num = 0;
 
-		float red_count = (float)plyr->damagecount;
+		float red_count = static_cast<float>(plyr->damagecount);
 		if (!multiplayer || sv_allowredscreen)
 			red_count *= r_painintensity;
 
 		// slowly fade the berzerk out
 		if (plyr->powers[pw_strength])
-			red_count = MAX(red_count, 12.0f - float(plyr->powers[pw_strength] >> 6));
+			red_count = MAX(red_count, 12.0f - static_cast<float>(plyr->powers[pw_strength] >> 6));
 
 		if (red_count > 0.0f)
 		{
-			palette_num = ((int)red_count + 7) >> 3;
+			palette_num = (static_cast<int>(red_count) + 7) >> 3;
 
 			if (IsChexMission(gamemission))
 				palette_num = RADIATIONPAL;
@@ -1154,7 +1160,7 @@ void V_DoPaletteEffects()
 		{
 			// [SL] Load palette_num from disk and setup game_palette
 			current_palette_num = palette_num;
-			const byte* data = (byte*)W_CacheLumpName(palette_lumpname, PU_CACHE) + palette_num * 768;
+			const byte* data = W_CacheLumpName<byte>(palette_lumpname, PU_CACHE) + palette_num * 768;
 
 			for (int i = 0; i < 256; i++, data += 3)
 			{
@@ -1199,7 +1205,7 @@ void V_DoPaletteEffects()
 		// yellow tint for item pickup
 		if (plyr->bonuscount)
 		{
-			float bonus_amount = (float)plyr->bonuscount;
+			float bonus_amount = static_cast<float>(plyr->bonuscount);
 			if (bonus_amount > 0.0f)
 			{
 				bonus_amount = MIN(bonus_amount, 24.0f);

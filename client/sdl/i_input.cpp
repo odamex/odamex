@@ -720,7 +720,7 @@ void I_GetEvents(bool mouseOnly)
 	while (input_subsystem->hasEvent())
 	{
 		input_subsystem->getEvent(&ev);
-		D_PostEvent(&ev);
+		D_PostEvent(ev);
 	}
 }
 
@@ -849,12 +849,12 @@ void IInputSubsystem::disableTextEntry()
 // concurrently as long as they are held down. Thus a unique value is returned
 // for each of them.
 //
-static int I_GetEventRepeaterKey(const event_t* ev)
+static int I_GetEventRepeaterKey(const event_t& ev)
 {
-	if (ev->type != ev_keydown && ev->type != ev_keyup)
+	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return 0;
 
-	int button = ev->data1;
+	const int button = ev.data1;
 	if (button == OKEY_CAPSLOCK || button == OKEY_SCRLCK ||
 		button == OKEY_LSHIFT || button == OKEY_LCTRL || button == OKEY_LALT ||
 		button == OKEY_RSHIFT || button == OKEY_RCTRL || button == OKEY_RALT ||
@@ -877,7 +877,7 @@ static int I_GetEventRepeaterKey(const event_t* ev)
 void IInputSubsystem::addToEventRepeaters(event_t& ev)
 {
 	// Check if the event needs to be added/removed from the list of repeatable events
-	const int key = I_GetEventRepeaterKey(&ev);
+	const int key = I_GetEventRepeaterKey(ev);
 	if (ev.type == ev_keydown && key)
 	{
 		// If there is an existing repeater event for "key",

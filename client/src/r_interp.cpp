@@ -176,10 +176,7 @@ void OInterpolation::ticGameInterpolation()
 		}
 
 		// Handle the scrolling interpolation
-		TThinkerIterator<DScroller> iterator;
-		DScroller* scroller;
-
-		while ((scroller = iterator.Next()))
+		for (DScroller* scroller : DScroller::GetScrollers())
 		{
 			DScroller::EScrollType type = scroller->GetType();
 			int affectee = scroller->GetAffectee();

@@ -11,7 +11,7 @@ add_definitions(-DODAMEX_NO_GITVER)
 
 file(GLOB TEST_SOURCES src/*.cpp src/*.h test/*.cpp test/*.h)
 
-set(COMMON_DIR ../../common)
+set(COMMON_DIR "${CMAKE_SOURCE_DIR}/common")
 
 get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
 source_group("Test" FILES ${TEST_SOURCES})
@@ -19,7 +19,14 @@ source_group("Common" FILES ${COMMON_SOURCES})
 
 include_directories(${COMMON_DIR} src)
 
-add_executable(odagtest ${COMMON_SOURCES} ${TEST_SOURCES})
+add_executable(odagtest
+    ${COMMON_SOURCES}
+    ${TEST_SOURCES}
+    "${CMAKE_SOURCE_DIR}/client/src/PlayerStateRoller.cpp"
+    "${CMAKE_SOURCE_DIR}/client/src/PlayerStateRoller.h"
+    )
+target_include_directories(odagtest PRIVATE "${CMAKE_SOURCE_DIR}/client/src")
+
 target_link_libraries(odagtest GTest::gtest_main)
 target_link_libraries(odagtest fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo curl_interface cpptrace::cpptrace)
 if(USE_INTERNAL_JSONCPP)
@@ -37,3 +44,4 @@ elseif(UNIX AND NOT APPLE)
 endif()
 
 odamex_target_settings(odagtest)
+odamex_target_errors(odagtest)

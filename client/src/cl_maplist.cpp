@@ -121,16 +121,11 @@ bool MaplistCache::query(const std::vector<std::string> &query,
 			}
 		} else {
 			// Discard any map that doesn't match
-			std::vector<std::pair<size_t, maplist_entry_t*> >::iterator itr;
-			for (itr = result.begin();itr != result.end();) {
-				bool f_map = CheckWildcards(pattern.c_str(), this->maplist[itr->first].map.c_str());
-				bool f_wad = CheckWildcards(pattern.c_str(), JoinStrings(this->maplist[itr->first].wads).c_str());
-				if (f_map || f_wad) {
-					++itr;
-				} else {
-					itr = result.erase(itr);
-				}
-			}
+			std::erase_if(result, [this, &pattern](const auto& pair){
+				bool f_map = CheckWildcards(pattern.c_str(), this->maplist[pair.first].map.c_str());
+				bool f_wad = CheckWildcards(pattern.c_str(), JoinStrings(this->maplist[pair.first].wads).c_str());
+				return !(f_map || f_wad);
+			});
 		}
 
 		if (result.empty()){
@@ -256,8 +251,8 @@ void MaplistCache::defer_query(const std::vector<std::string> &query,
 	if (this->deferred_queries.empty()) {
 		// Only send out a maplist status packet if we don't already have a
 		// deferred query in progress.
-		MSG_WriteMarker(&net_buffer, clc_maplist);
-		MSG_WriteByte(&net_buffer, this->status);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Maplist(this->status));
+
 		this->status = MAPLIST_WAIT;
 		this->timeout = I_MSTime() + (1000 * 3);
 	}
@@ -275,7 +270,8 @@ void MaplistCache::status_handler(maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 		// If our cache is out-of-date and we are able to request
 		// an updated maplist, request one.
-		MSG_WriteMarker(&net_buffer, clc_maplist_update);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_MaplistUpdate());
+
 		[[fallthrough]];
 	case MAPLIST_EMPTY:
 	case MAPLIST_THROTTLED:

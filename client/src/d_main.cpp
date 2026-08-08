@@ -45,7 +45,9 @@
 
 #include "m_alloc.h"
 #include "m_random.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
@@ -164,14 +166,27 @@ void D_SetPlatform(void)
 #endif
 }
 
+bool step_mode = false;
+
+//
+// D_CheckNetGame
+// Works out player numbers among the net participants
+//
+void D_CheckNetGame (void)
+{
+    CL_InitNetwork ();
+
+    D_SetupUserInfo();
+
+    step_mode = ((Args.CheckParm ("-stepmode")) != 0);
+}
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
 //
 void D_ProcessEvents (void)
 {
-	event_t *ev;
-
 	// [RH] If testing mode, do not accept input until test is over
 	if (testingmode)
 	{
@@ -185,12 +200,12 @@ void D_ProcessEvents (void)
 
 	for (; eventtail != eventhead ; eventtail = ++eventtail<MAXEVENTS ? eventtail : 0)
 	{
-		ev = &events[eventtail];
-		if (C_Responder (ev))
+		const event_t& ev = events[eventtail];
+		if (C_Responder(ev))
 			continue;				// console ate the event
-		if (M_Responder (ev))
+		if (M_Responder(ev))
 			continue;				// menu ate the event
-		G_Responder (ev);
+		G_Responder(ev);
 	}
 }
 
@@ -198,16 +213,16 @@ void D_ProcessEvents (void)
 // D_PostEvent
 // Called by the I/O functions when input is detected
 //
-void D_PostEvent (const event_t* ev)
+void D_PostEvent(const event_t& ev)
 {
-	if (ev->type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
+	if (ev.type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
 		(!paused || displayplayer().isFreecam) && ConsoleState != c_down && ConsoleState != c_falling)
 	{
-		G_Responder((event_t*)ev);
+		G_Responder(ev);
 		return;
 	}
 
-	events[eventhead] = *ev;
+	events[eventhead] = ev;
 
 	if(++eventhead >= MAXEVENTS)
 		eventhead = 0;
@@ -544,7 +559,7 @@ void D_DoAdvanceDemo (void)
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-			canvas->DrawBlock(0, 0, page_width, page_height, (byte*)patch);
+			canvas->DrawBlock(0, 0, page_width, page_height, reinterpret_cast<const byte*>(patch));
 			page_surface->unlock();
 		}
 		else
@@ -603,6 +618,8 @@ EXTERN_CVAR(co_removesoullimit)
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(r_clipmaskedspecial)
 EXTERN_CVAR(r_thingsectorlight)
+EXTERN_CVAR(co_voodooscroller)
+EXTERN_CVAR(co_archvilefirefix)
 
 void G_ReadCOMPLVL()
 {
@@ -610,7 +627,7 @@ void G_ReadCOMPLVL()
 	if (lumpnum == -1)
 		return;
 
-	char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+	char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
 	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
 
 	// don't use !serverside here, it doesn't get set early enough
@@ -640,6 +657,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(0.0f);
 		co_removesoullimit.Set(0.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(0.0f);
+		co_archvilefirefix.Set(0.0f);
 	}
 	else if (iequals("boom", complvl))
 	{
@@ -649,6 +668,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(0.0f);
+		co_archvilefirefix.Set(0.0f);
 	}
 	else if (iequals("mbf", complvl))
 	{
@@ -658,6 +679,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(1.0f);
+		co_archvilefirefix.Set(1.0f);
 	}
 	else if (iequals("mbf21", complvl))
 	{
@@ -667,6 +690,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(1.0f);
+		co_voodooscroller.Set(0.0f);
+		co_archvilefirefix.Set(1.0f);
 	}
 	else
 	{
@@ -814,6 +839,8 @@ void D_Shutdown()
 
 void C_DoCommand(std::string_view cmd, uint32_t key);
 
+colorpreset_t D_ColorPreset (const char *colorpreset);
+
 //
 // D_DoomMain
 //
@@ -835,8 +862,10 @@ void D_DoomMain()
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
+	BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 	if (lzo_init() != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
+	END_DISABLE_WARNING_GNU
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
@@ -1006,13 +1035,15 @@ void D_DoomMain()
 	if (p && p < Args.NumArgs()-1)
 	{
 		startmap = Args.GetArg(p+1);
-		((char *)Args.GetArg(p))[0] = '-';
+		(const_cast<char*>(Args.GetArg(p))[0]) = '-';
 		autostart = true;
 	}
 
 	// NOTE(jsd): Set up local player color
+	EXTERN_CVAR(cl_colorpreset);
 	EXTERN_CVAR(cl_color);
-	R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color));
+	R_BuildPlayerTranslation(menuplayer_id, V_GetColorFromString(cl_color), D_ColorPreset(cl_colorpreset.cstring()));
+	R_BuildPlayerTranslation(consoleplayer_id, V_GetColorFromString(cl_color), D_ColorPreset(cl_colorpreset.cstring()));
 
 	I_FinishClockCalibration();
 

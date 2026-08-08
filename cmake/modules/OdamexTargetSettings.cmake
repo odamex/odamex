@@ -12,7 +12,7 @@ endfunction()
 function(odamex_target_settings _TARGET)
   set(ODAMEX_DLLS "")
 
-  set_property(TARGET "${_TARGET}" PROPERTY CXX_STANDARD 17)
+  set_property(TARGET "${_TARGET}" PROPERTY CXX_STANDARD 20)
 
   if(HAS_LTO)
     set_property(TARGET "${_TARGET}"
@@ -142,4 +142,24 @@ function(odamex_target_settings _TARGET)
       COMMAND "${CMAKE_COMMAND}" -E copy_if_different
       "${ODAMEX_DLL}" $<TARGET_FILE_DIR:${_TARGET}> VERBATIM)
   endforeach()
+endfunction()
+
+# Enable some extra compilation errors that we probably only want to apply to the more well-maintained targets
+function(odamex_target_errors _TARGET)
+  if(MSVC)
+    # ideally, enable C26475 and C26493, but I can't figure it out
+  else()
+    checked_add_compile_flag(CHECKED_OPTIONS -Werror=old-style-cast W_ERR_OLD_STYLE_CAST)
+    checked_add_compile_flag(CHECKED_OPTIONS -Werror=class-memaccess W_ERR_CLASS_MEMACCESS)
+    checked_add_compile_flag(CHECKED_OPTIONS -Werror=cast-function-type W_ERR_CAST_FUNCTION_TYPE)
+    checked_add_compile_flag(CHECKED_OPTIONS -Werror=reorder W_ERR_REORDER)
+    checked_add_compile_flag(CHECKED_OPTIONS -Werror=init-self W_ERR_INIT_SELF)
+    if (NOT APPLE)
+      # on macOS this gives errors for NULL too, and we have too many of those for now
+      checked_add_compile_flag(CHECKED_OPTIONS -Werror=zero-as-null-pointer-constant W_ERR_ZERO_AS_NULL)
+    endif()
+    checked_add_compile_flag(CHECKED_OPTIONS -Werror=non-virtual-dtor W_ERR_NON_VIRTUAL_DTOR)
+  endif()
+  target_compile_options("${_TARGET}" PRIVATE ${CHECKED_OPTIONS})
+  target_compile_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:${CHECKED_RELEASE_OPTIONS}>)
 endfunction()

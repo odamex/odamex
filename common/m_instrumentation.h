@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2021 by Alex Mayfield.
+// Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,21 +16,39 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Server message map.
+//  Singleton for coordinating the enablement and recording of multiple timing
+//  instrumentation Stopwatches.
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#include "i_net.h"
+#include "StopwatchManager.h"
 
-namespace google
-{
-namespace protobuf
-{
-class Descriptor;
-}
-} // namespace google
+#include "Stopwatch.h"
 
-const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header);
-svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc);
+class TimingInstr
+{
+	public:
+		static TimingInstr& Get()
+		{
+			static TimingInstr s_instance;
+			return s_instance;
+		}
+
+		std::shared_ptr<Stopwatch> CreateStopwatch(const std::string& i_name);
+
+		size_t EnableStopwatches(const std::string& i_regex);
+		size_t DisableStopwatches(const std::string& i_regex);
+
+		bool StartRecording(const std::string& i_filename);
+		void ManageRecording(int i_tic);
+		bool StopRecording();
+
+		const std::string& GetFilename();
+
+	protected:
+		TimingInstr() = default;
+
+		StopwatchManager m_manager;
+};

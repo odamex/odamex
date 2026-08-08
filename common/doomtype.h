@@ -25,9 +25,10 @@
 
 #pragma once
 
-#include <nonstd/span.hpp>
-
 // Standard libc/STL includes we use in countless places
+
+#include <limits>
+#include <span>
 
 #include "version.h"
 #include "errors.h"
@@ -45,7 +46,7 @@
 
 using byte = uint8_t;
 
-using OByteSpan = nonstd::span<byte>;
+using OByteSpan = std::span<byte>;
 
 // Predefined with some OS.
 #if !defined(UNIX) && !defined(_WIN32)
@@ -268,7 +269,14 @@ public:
 	{	seta(_a); setr(_r); setg(_g); setb(_b);	}
 
 	inline operator argb_t () const
-	{	return argb_t((uint8_t)(a * 255.0f), (uint8_t)(r * 255.0f), (uint8_t)(g * 255.0f), (uint8_t)(b * 255.0f));	}
+	{
+		return argb_t(
+			static_cast<uint8_t>(a * 255.0f),
+			static_cast<uint8_t>(r * 255.0f),
+			static_cast<uint8_t>(g * 255.0f),
+			static_cast<uint8_t>(b * 255.0f)
+		);
+	}
 
 	inline float geta() const
 	{	return a;	}

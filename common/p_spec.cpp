@@ -100,7 +100,7 @@ fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f)
 	return (arg_i << FRACBITS) + (arg_f << FRACBITS) / 100;
 }
 
-int P_ArgToCrushMode(byte arg, bool slowdown)
+crushmode_e P_ArgToCrushMode(byte arg, bool slowdown)
 {
 	static constexpr crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
 
@@ -113,7 +113,7 @@ int P_ArgToCrushMode(byte arg, bool slowdown)
 int P_FindSectorFromLineTag(const line_t* line, int start)
 {
 	start = start >= 0 ? sectors[start].nexttag
-	                   : sectors[(unsigned)line->id % (unsigned)numsectors].firsttag;
+	                   : sectors[static_cast<unsigned>(line->id) % static_cast<unsigned>(numsectors)].firsttag;
 	while (start >= 0 && sectors[start].tag != line->id)
 		start = sectors[start].nexttag;
 	return start;
@@ -123,7 +123,7 @@ int P_FindSectorFromLineTag(const line_t* line, int start)
 int P_FindLineFromLineTag(const line_t* line, int start)
 {
 	start = start >= 0 ? lines[start].nextid
-	                   : lines[(unsigned)line->id % (unsigned)numlines].firstid;
+	                   : lines[static_cast<unsigned>(line->id) % static_cast<unsigned>(numlines)].firstid;
 	while (start >= 0 && lines[start].id != line->id)
 		start = lines[start].nextid;
 	return start;
@@ -132,7 +132,7 @@ int P_FindLineFromLineTag(const line_t* line, int start)
 int P_FindLineFromTag(int tag, int start)
 {
 	start = start >= 0 ? lines[start].nextid
-	                   : lines[(unsigned)tag % (unsigned)numlines].firstid;
+	                   : lines[static_cast<unsigned>(tag) % static_cast<unsigned>(numlines)].firstid;
 	while (start >= 0 && lines[start].id != tag)
 		start = lines[start].nextid;
 	return start;
@@ -458,6 +458,18 @@ EXTERN_CVAR (sv_allowexit)
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
 
+std::vector<DScroller*> DScroller::s_scrollers;
+
+DScroller::DScroller ()
+{
+	s_scrollers.push_back(this);
+}
+
+DScroller::~DScroller ()
+{
+	std::erase(s_scrollers, this);
+}
+
 void DScroller::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -563,7 +575,7 @@ static void P_InitAnimDefs ()
 
 		while ((lump = W_FindLump("ANIMDEFS", lump)) != -1)
 		{
-			const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+			const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
 
 			OScannerConfig config = {
 			    "ANIMDEFS", // lumpName
@@ -645,7 +657,7 @@ static void ParseAnim(OScanner &os, byte istex)
 			if (lastanim > anims + maxanims)
 			{
 				const size_t newmax = maxanims ? maxanims * 2 : MAXANIMS;
-				anims = static_cast<anim_t*>(Realloc(anims, newmax * sizeof(*anims)));
+				anims = static_cast<anim_t*>(M_Realloc(anims, newmax * sizeof(*anims)));
 				place = anims + maxanims;
 				lastanim = place + 1;
 				maxanims = newmax;
@@ -865,7 +877,7 @@ void P_InitPicAnims (void)
 	if (W_CheckNumForName ("ANIMATED") == -1)
 		return;
 
-	animdefs = (byte *)W_CacheLumpName ("ANIMATED", PU_STATIC);
+	animdefs = W_CacheLumpName<byte>("ANIMATED", PU_STATIC);
 
 	// Init animation
 
@@ -875,7 +887,7 @@ void P_InitPicAnims (void)
 			if (lastanim >= anims + maxanims)
 			{
 				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-				anims = (anim_t*) M_Realloc(anims, newmax*sizeof(*anims));   // killough
+				anims = static_cast<anim_t*>(M_Realloc(anims, newmax*sizeof(*anims)));   // killough
 				lastanim = anims + maxanims;
 				maxanims = newmax;
 			}
@@ -901,8 +913,8 @@ void P_InitPicAnims (void)
 			}
 			else
 			{
-				if (W_CheckNumForName ((char *)anim_p + 10 /* .startname */, ns_flats) == -1 ||
-					W_CheckNumForName ((char *)anim_p + 1 /* .startname */, ns_flats) == -1)
+				if (W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 10 /* .startname */, ns_flats) == -1 ||
+					W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 1 /* .startname */, ns_flats) == -1)
 					continue;
 
 				lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
@@ -993,15 +1005,10 @@ fixed_t P_FindLowestFloorSurrounding (sector_t* sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height < height)
-			height = v1height;
-		if (v2height < height)
-			height = v2height;
+		height = std::min({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -1027,15 +1034,10 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height > height)
-			height = v1height;
-		if (v2height > height)
-			height = v2height;
+		height = std::max({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -1227,15 +1229,10 @@ fixed_t P_FindLowestCeilingSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height < height)
-			height = v1height;
-		if (v2height < height)
-			height = v2height;
+		height = std::min({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -1259,15 +1256,10 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height > height)
-			height = v1height;
-		if (v2height > height)
-			height = v2height;
+		height = std::max({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -1423,7 +1415,7 @@ sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec)
 int P_FindSectorFromTag (int tag, int start)
 {
 	start = start >= 0 ? sectors[start].nexttag :
-		sectors[(unsigned) tag % (unsigned) numsectors].firsttag;
+		sectors[static_cast<unsigned>(tag) % static_cast<unsigned>(numsectors)].firsttag;
 	while (start >= 0 && sectors[start].tag != tag)
 		start = sectors[start].nexttag;
 	return start;
@@ -1434,7 +1426,7 @@ int P_FindSectorFromTag (int tag, int start)
 int P_FindLineFromID (int id, int start)
 {
 	start = start >= 0 ? lines[start].nextid :
-		lines[(unsigned) id % (unsigned) numlines].firstid;
+		lines[static_cast<unsigned>(id) % static_cast<unsigned>(numlines)].firstid;
 	while (start >= 0 && lines[start].id != id)
 		start = lines[start].nextid;
 	return start;
@@ -1845,7 +1837,7 @@ bool P_CheckKeys (player_t *p, card_t lock, bool remote)
 	bool bc, rc, yc, bs, rs, ys;
 	bool equiv = lock & 0x80;
 
-        lock = (card_t)(lock & 0x7f);
+        lock = static_cast<card_t>(lock & 0x7f);
 
 	bc = p->cards[it_bluecard];
 	rc = p->cards[it_redcard];
@@ -1933,6 +1925,7 @@ bool P_CheckKeys (player_t *p, card_t lock, bool remote)
 void OnChangedSwitchTexture (line_t *line, int useAgain);
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction);
+void SV_UpdateMobj(AActor* mo);
 
 //
 // EVENTS
@@ -1963,7 +1956,7 @@ bool P_HandleSpecialRepeat(line_t* line)
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
 //
-void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
+void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 {
 	TeleportSide = side;
 
@@ -1981,12 +1974,23 @@ void P_CrossSpecialLine(line_t*	line, int side, AActor* thing, bool bossaction)
 
 	if (thing)
 	{
+		P_ClearJustTeleported();
 		result = map_format.cross_special_line(line, side, thing, bossaction);
 	}
 
 	if (result)
 	{
 		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
+
+		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
+		// because client-side prediction immediately followed by the ActivateLine _may_
+		// result in a wildly inaccurate position, depending on a variety of factors, and
+		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		if (P_JustTeleported(thing))
+		{
+			SV_UpdateMobj(thing);
+			P_ClearJustTeleported();
+		}
 
 		bool repeat;
 
@@ -2035,6 +2039,8 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 
 	bool lineresult;
 
+	P_ClearJustTeleported();
+
 	if (map_format.getZDoom()) // All zdoom specials can be impact activated
 	{
 		lineresult = LineSpecials[line->special](line, thing, line->args[0], line->args[1],
@@ -2048,6 +2054,16 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 	if(serverside && lineresult)
 	{
 		SV_OnActivatedLine(line, thing, 0, LineShoot, false);
+
+		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
+		// because client-side prediction immediately followed by the ActivateLine _may_
+		// result in a wildly inaccurate position, depending on a variety of factors, and
+		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		if (P_JustTeleported(thing))
+		{
+			SV_UpdateMobj(thing);
+			P_ClearJustTeleported();
+		}
 
 		if (lineresult)
 		{
@@ -2102,6 +2118,8 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 
 	TeleportSide = side;
 
+	P_ClearJustTeleported();
+
 	if (map_format.getZDoom())
 		result = P_ActivateZDoomLine(line, thing, side, ML_SPAC_USE);
 	else
@@ -2111,6 +2129,16 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	{
 		// May need to move this higher as the special is gone in Boom by this point.
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
+
+		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
+		// because client-side prediction immediately followed by the ActivateLine _may_
+		// result in a wildly inaccurate position, depending on a variety of factors, and
+		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		if (P_JustTeleported(thing))
+		{
+			SV_UpdateMobj(thing);
+			P_ClearJustTeleported();
+		}
 
 		if (map_format.getZDoom() && !bossaction)
 		{
@@ -2174,12 +2202,23 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 	}
 
     TeleportSide = side;
+	P_ClearJustTeleported();
 
 	if(LineSpecials[line->special] (line, thing, line->args[0],
 					line->args[1], line->args[2],
 					line->args[3], line->args[4]))
 	{
 		SV_OnActivatedLine(line, thing, side, LinePush, false);
+
+		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
+		// because client-side prediction immediately followed by the ActivateLine _may_
+		// result in a wildly inaccurate position, depending on a variety of factors, and
+		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		if (P_JustTeleported(thing))
+		{
+			SV_UpdateMobj(thing);
+			P_ClearJustTeleported();
+		}
 
 		if (serverside && !(thing->player && (thing->player->spectator ||
 		                                      thing->player->playerstate != PST_LIVE)))
@@ -2606,12 +2645,13 @@ void DScroller::RunThink ()
 				if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
 					(!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
 					 thing->z < waterheight))
-				  {
+					{
 					// Move objects only if on floor or underwater,
 					// non-floating, and clipped.
-					thing->momx += dx;
-					thing->momy += dy;
-				  }
+					thing->momx   += dx;
+					thing->momy   += dy;
+					thing->oflags |= MFO_ISONCONVEYOR;
+					}
 			break;
 		}
 
@@ -2641,6 +2681,7 @@ void DScroller::RunThink ()
 DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 					  int control, int affectee, int accel)
 {
+	s_scrollers.push_back(this);
 	m_Type = type;
 	m_dx = dx;
 	m_dy = dy;
@@ -2668,6 +2709,7 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 					 int control, int accel)
 {
+	s_scrollers.push_back(this);
 	fixed_t x = abs(l->dx), y = abs(l->dy), d;
 	if (y > x)
 		d = x, x = y, y = d;
@@ -2705,7 +2747,7 @@ static void P_SpawnScrollers(void)
 
 fixed_t P_ArgToSpeed(byte arg)
 {
-	return (fixed_t)arg * FRACUNIT / 8;
+	return static_cast<fixed_t>(arg) * FRACUNIT / 8;
 }
 
 bool P_ArgToCrushType(byte arg)
@@ -2932,7 +2974,7 @@ bool PIT_PushThing (AActor& thing, DPusher* tmpusher)
 		{
 			const int x = (thing.x - sx) >> FRACBITS;
 			const int y = (thing.y - sy) >> FRACBITS;
-			speed = (int)(((uint64_t)tmpusher->m_Magnitude << 23) / (x * x + y * y + 1));
+			speed = static_cast<int>((static_cast<uint64_t>(tmpusher->m_Magnitude) << 23) / ((x * x) + (y * y) + 1));
 		}
 
 		// If speed <= 0, you're outside the effective radius. You also have

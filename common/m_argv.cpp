@@ -120,7 +120,7 @@ size_t DArgs::CheckParm (const char *check) const
 const char *DArgs::CheckValue (const char *check) const
 {
 	if(!check)
-		return 0;
+		return nullptr;
 
 	size_t i = CheckParm (check);
 
@@ -257,8 +257,8 @@ void DArgs::SetArgs(const char *cmdline)
 	if (!*cmdline)
 		return;
 
-	outputline = (char *) M_Malloc((strlen(cmdline) + 1) * sizeof(char));
-	outputargv = (char **) M_Malloc(((strlen(cmdline) + 1) / 2) * sizeof(char *));
+	outputline = static_cast<char*>(M_Malloc((strlen(cmdline) + 1) * sizeof(char)));
+	outputargv = static_cast<char**>(M_Malloc(((strlen(cmdline) + 1) / 2) * sizeof(char *)));
 
 	const char *p = cmdline;
 	q = outputline;
@@ -388,15 +388,15 @@ void M_FindResponseFile (void)
 
 			if (argc != 0)
 			{
-				char **argv = (char **) M_Malloc(argc*sizeof(char *) + argsize);
-				argv[i] = (char *)argv + argc*sizeof(char *);
+				char **argv = static_cast<char**>(M_Malloc(argc*sizeof(char *) + argsize));
+				argv[i] = reinterpret_cast<char*>(argv) + argc*sizeof(char *);
 				ParseCommandLine (file.get(), NULL, argv+i);
 
 				for (index = 0; index < i; ++index)
-					argv[index] = (char*)Args.GetArg (index);
+					argv[index] = const_cast<char*>(Args.GetArg(index));
 
 				for (index = i + 1, i += argcinresp; index < Args.NumArgs (); ++index)
-					argv[i++] = (char*)Args.GetArg (index);
+					argv[i++] = const_cast<char*>(Args.GetArg(index));
 
 				DArgs newargs (i, argv);
 				Args = newargs;
@@ -497,7 +497,7 @@ static long ParseCommandLine (const char *args, int *argc, char **argv)
 	{
 		*argc = count;
 	}
-	return (long)reinterpret_cast<uintptr_t>(buffplace);
+	return static_cast<long>(reinterpret_cast<uintptr_t>(buffplace));
 }
 
 

@@ -58,12 +58,12 @@ static bool ScanAndSetRealNum(OScanner& os, fixed64_t& num)
 // Scans through and interprets a file of lines
 nonstd::expected<std::vector<mline_t>, am_lump_parse_error_t> AM_ParseVectorLump(const OLumpName& name)
 {
-	const int lump = W_CheckNumForName(name, 0);
+	const int lump = W_CheckNumForName(name);
 	if (lump == -1)
 		return nonstd::make_unexpected(am_lump_parse_error_t::LUMP_NOT_FOUND);
 
 
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+	const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
 
 	const OScannerConfig config = {
 	    name,  // lumpName
