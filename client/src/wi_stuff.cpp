@@ -534,6 +534,18 @@ static int WI_DrawName (const char *str, int x, int y)
 	::V_ColorMap = translationref_t(::Ranges + CR_GREY * 256);
 	while (*str)
 	{
+		// Recolor on a color escape code instead of drawing it.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			int new_color = V_GetTextColor(str);
+			if (new_color == -1)
+				new_color = CR_GREY;
+
+			::V_ColorMap = translationref_t(::Ranges + new_color * 256);
+			str += 2;
+			continue;
+		}
+
 		int lump = W_CheckNumForName(fmt::format("FONTB{:02d}", toupper(*str) - 32));
 
 		if (lump != -1)
@@ -1379,6 +1391,13 @@ static int WI_CalcWidth (const char *str)
 
 	while (*str)
 	{
+		// Color escape codes take up no space.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
 		const OLumpName charname = fmt::format("FONTB{:02d}", toupper(*str) - 32);
 		int lump = W_CheckNumForName(charname);
 

@@ -265,7 +265,7 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 			do
 			{
 				os.mustScan();
-				info.must_confirm_text += os.getToken();
+				info.must_confirm_text += GStrings.maybeLookup(os.getToken());
 				info.must_confirm_text += "\n";
 				os.scan();
 			} while (os.compareToken(","));
@@ -293,7 +293,7 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 			do
 			{
 				os.mustScan();
-				info.must_confirm_text += os.getToken();
+				info.must_confirm_text += GStrings.maybeLookup(os.getToken());
 				info.must_confirm_text += "\n";
 				os.scan();
 			} while (os.compareToken(","));
@@ -332,6 +332,15 @@ void MIType_String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	*static_cast<std::string*>(data) = os.getToken();
+}
+
+// Sets the inputted data as a std::string, checking LANGUAGE if it is a $ token
+void MIType_$String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
+                 unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
+
+	*static_cast<std::string*>(data) = GStrings.maybeLookup(os.getToken());
 }
 
 // Sets the inputted data as a color
@@ -526,7 +535,7 @@ void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OLumpName s = GStrings(OStringToUpper(os.getToken().c_str() + 1));
+		const std::string s = GStrings.lookup(os.getToken().c_str() + 1);
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -551,7 +560,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OLumpName s = GStrings(OStringToUpper(musicname.c_str() + 1));
+		const std::string s = GStrings.lookup(musicname.c_str() + 1);
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -704,7 +713,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			}
 
 			os.mustScan();
-			const OLumpName s = GStrings(OStringToUpper(os.getToken()));
+			const std::string s = GStrings.lookup(os.getToken());
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -719,7 +728,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			do
 			{
 				os.mustScan();
-				ctext += os.getToken();
+				ctext += GStrings.maybeLookup(os.getToken());
 				ctext += "\n";
 				os.scan();
 			} while (os.compareToken(","));
@@ -739,7 +748,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		if (os.compareTokenNoCase("lookup"))
 		{
 			os.mustScan();
-			const OLumpName s = GStrings(OStringToUpper(os.getToken()));
+			const std::string s = GStrings.lookup(os.getToken());
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -749,7 +758,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		}
 		else
 		{
-			*text = os.getToken();
+			*text = GStrings.maybeLookup(os.getToken());
 		}
 	}
 }
@@ -1426,13 +1435,20 @@ void ParseEpisodeInfo(OScanner& os)
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			if (picisgfx == false)
-				name = os.getToken();
+				name = GStrings.maybeLookup(os.getToken());
 		}
 		else if (os.compareTokenNoCase("lookup"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
-			// Not implemented
+			const std::string s = GStrings.lookup(os.getToken());
+			if (s.empty())
+			{
+				os.error("Unknown lookup string \"{}\".", os.getToken());
+			}
+
+			if (picisgfx == false)
+				name = s;
 		}
 		else if (os.compareTokenNoCase("picname"))
 		{
@@ -1561,7 +1577,7 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "spawnmulti", &MIType_Bool, &ref.spawn_multi, true },
 			{ "instantreaction", &MIType_Bool, &ref.instant_reaction, true },
 			{ "acsreturn", &MIType_Int, &ref.ACS_return },
-			{ "name", &MIType_String, &ref.menu_name },
+			{ "name", &MIType_$String, &ref.menu_name },
 			{ "picname", &MIType_LumpName, &ref.pic_name },
 			// { "playerclassname", &???, &ref.menu_names_for_player_class } // todo - requires special MIType to work properly
 			{ "mustconfirm", &MIType_MustConfirm, &ref, true },
@@ -1731,21 +1747,24 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 			info = defaultinfo;
 			info.mapname = map_name;
 
-			// Map name.
+			// Map name.  Either a literal, an explicit "lookup <name>", or a
+			// "$NAME" token that is looked up in LANGUAGE.
 			os.mustScan();
 			if (os.compareTokenNoCase("lookup"))
 			{
 				os.mustScan();
-				const OLumpName s = GStrings(OStringToUpper(os.getToken()));
-				if (s.empty())
-				{
-					info.level_name = os.getToken();
-				}
-				info.level_name = s;
+				const std::string s = GStrings.lookup(os.getToken());
+				info.level_name = s.empty() ? os.getToken() : s;
 			}
 			else
 			{
-				info.level_name = os.getToken();
+				const std::string token = os.getToken();
+				info.level_name = GStrings.maybeLookup(token);
+
+				if (info.level_name == token)
+				{
+					StringTable::replaceEscapes(info.level_name);
+				}
 			}
 			info.pname.clear();
 
