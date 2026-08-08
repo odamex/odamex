@@ -3048,7 +3048,7 @@ void DPusher::RunThink ()
 		const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS) >> MAPBLOCKSHIFT;
 		for (int bx = xl; bx <= xh; bx++)
 			for (int by = yl; by <= yh; by++)
-				P_BlockThingsIterator (bx, by, PIT_PushThing, nullptr, this /*MT_PUSH/MT_PULL point source*/);
+				P_BlockThingsIterator(bx, by, PIT_PushThing, nullptr, this /*MT_PUSH/MT_PULL point source*/);
 		return;
 	}
 

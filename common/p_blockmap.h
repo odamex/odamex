@@ -26,8 +26,17 @@
 #include <vector>
 #include <algorithm>
 
+#include "m_bbox.h"
 #include "m_fixed.h"
 #include "p_mobj.h"
+
+// mapblocks are used to check movement
+// against lines and things
+inline constexpr int MAPBLOCKUNITS = 128;
+inline constexpr int MAPBLOCKSIZE  = (MAPBLOCKUNITS*FRACUNIT);
+inline constexpr int MAPBLOCKSHIFT = (FRACBITS+7);
+inline constexpr int MAPBMASK      = (MAPBLOCKSIZE-1);
+inline constexpr int MAPBTOFRAC    = (MAPBLOCKSHIFT-FRACBITS);
 
 class blockmap_t
 {

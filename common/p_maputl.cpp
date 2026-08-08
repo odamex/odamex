@@ -356,7 +356,7 @@ int P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line)
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
 //
-int P_BoxOnLineSide (const fixed_t *tmbox, const line_t *ld)
+int P_BoxOnLineSide (const std::span<const fixed_t, 4> tmbox, const line_t *ld)
 {
 	int p1 = 0;
 	int p2 = 0;
@@ -1141,6 +1141,7 @@ bool P_ActorInFOV(const AActor* origin, const AActor* mo , float f, fixed_t dist
 
 AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 {
+	// TODO: get rid of mod here
 	const int bx = index % blockmap.width();
 	const int by = index / blockmap.width();
 	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
@@ -1192,6 +1193,7 @@ AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 
 AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 {
+	// TODO: get rid of mod here
 	const int bx = index % blockmap.width();
 	const int by = index / blockmap.width();
 	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))

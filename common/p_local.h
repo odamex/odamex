@@ -36,14 +36,6 @@
 #define MAXHEALTH		100
 #define VIEWHEIGHT		(41*FRACUNIT)
 
-// mapblocks are used to check movement
-// against lines and things
-#define MAPBLOCKUNITS	128
-#define MAPBLOCKSIZE	(MAPBLOCKUNITS*FRACUNIT)
-#define MAPBLOCKSHIFT	(FRACBITS+7)
-#define MAPBMASK		(MAPBLOCKSIZE-1)
-#define MAPBTOFRAC		(MAPBLOCKSHIFT-FRACBITS)
-
 
 // player radius for movement checking
 #define PLAYERRADIUS	(16*FRACUNIT)
@@ -209,7 +201,7 @@ int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
 void	P_MakeDivline (const line_t *li, divline_t *dl);
 fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1);
-int 	P_BoxOnLineSide (const fixed_t *tmbox, const line_t *ld);
+int 	P_BoxOnLineSide (const std::span<const fixed_t, 4> tmbox, const line_t *ld);
 
 extern fixed_t			opentop;
 extern fixed_t			openbottom;
