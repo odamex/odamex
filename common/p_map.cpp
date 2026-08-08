@@ -253,10 +253,10 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	                              (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
-	const int xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	const int xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	const int yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - blockmap_class.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - blockmap_class.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - blockmap_class.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	for (int bx=xl ; bx<=xh ; bx++)
 		for (int by=yl ; by<=yh ; by++)
@@ -926,10 +926,10 @@ bool Check_Sides(const AActor* actor, int x, int y)
 
 	// Determine which blocks to look in for blocking lines
 
-	const int xl = (tmbbox[BOXLEFT]   - bmaporgx)>>MAPBLOCKSHIFT;
-	const int xh = (tmbbox[BOXRIGHT]  - bmaporgx)>>MAPBLOCKSHIFT;
-	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	const int yh = (tmbbox[BOXTOP]    - bmaporgy)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT]   - blockmap_class.originx())>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT]  - blockmap_class.originx())>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy())>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP]    - blockmap_class.originy())>>MAPBLOCKSHIFT;
 
 	// xl->xh, yl->yh determine the mapblock set to search
 
@@ -1081,10 +1081,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	// because DActors are grouped into mapblocks
 	// based on their origin point, and can overlap
 	// into adjacent blocks by up to MAXRADIUS units.
-	int xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	int xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	int yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	int yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	int xl = (tmbbox[BOXLEFT] - blockmap_class.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	int xh = (tmbbox[BOXRIGHT] - blockmap_class.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	int yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	int yh = (tmbbox[BOXTOP] - blockmap_class.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	BlockingMobj = NULL;
 
@@ -1167,10 +1167,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	}
 
 	// check lines
-	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+	xl = (tmbbox[BOXLEFT] - blockmap_class.originx())>>MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - blockmap_class.originx())>>MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy())>>MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - blockmap_class.originy())>>MAPBLOCKSHIFT;
 
 	// from mbf, allows players to get unstuck if they end up spawned
 	// partially inside a wall or blocking line
@@ -1233,10 +1233,10 @@ bool P_TestMobjZ (AActor *actor)
 // into mapblocks based on their origin point, and can overlap into adjacent
 // blocks by up to MAXRADIUS units
 //
-	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	xl = (tmbbox[BOXLEFT] - blockmap_class.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - blockmap_class.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - blockmap_class.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	for (bx = xl; bx <= xh; bx++)
 		for (by = yl; by <= yh; by++)
@@ -1612,13 +1612,13 @@ bool PIT_ApplyTorque (const line_t& ld)
 void P_ApplyTorque (AActor *mo)
 {
 	int xl = ((tmbbox[BOXLEFT] =
-			mo->x - mo->radius) - bmaporgx) >> MAPBLOCKSHIFT;
+			mo->x - mo->radius) - blockmap_class.originx()) >> MAPBLOCKSHIFT;
 	int xh = ((tmbbox[BOXRIGHT] =
-			mo->x + mo->radius) - bmaporgx) >> MAPBLOCKSHIFT;
+			mo->x + mo->radius) - blockmap_class.originx()) >> MAPBLOCKSHIFT;
 	int yl = ((tmbbox[BOXBOTTOM] =
-			mo->y - mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
+			mo->y - mo->radius) - blockmap_class.originy()) >> MAPBLOCKSHIFT;
 	int yh = ((tmbbox[BOXTOP] =
-			mo->y + mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
+			mo->y + mo->radius) - blockmap_class.originy()) >> MAPBLOCKSHIFT;
 	int bx,by;
 	int flags = mo->oflags;	//Remember the current state, for gear-change
 
@@ -3302,10 +3302,10 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bool hurtSource, int mod)
 {
 	const fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
-	const int yh = std::min<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, blockmap_class.height() - 1);
-	const int yl = std::max<int>((spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT, 0);
-	const int xh = std::min<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, blockmap_class.width() - 1);
-	const int xl = std::max<int>((spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT, 0);
+	const int yh = std::min<int>((spot->y + dist - blockmap_class.originy())>>MAPBLOCKSHIFT, blockmap_class.height() - 1);
+	const int yl = std::max<int>((spot->y - dist - blockmap_class.originy())>>MAPBLOCKSHIFT, 0);
+	const int xh = std::min<int>((spot->x + dist - blockmap_class.originx())>>MAPBLOCKSHIFT, blockmap_class.width() - 1);
+	const int xl = std::max<int>((spot->x - dist - blockmap_class.originx())>>MAPBLOCKSHIFT, 0);
 	AActor* bombsource = source;
 	const auto bombdamagefloat = static_cast<float>(damage);
 	const float bombdistancefloat = 1.f / static_cast<float>(distance);
@@ -3723,10 +3723,10 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 
 	validcount++; // used to make sure we only process a line once
 
-	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+	xl = (tmbbox[BOXLEFT] - blockmap_class.originx())>>MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - blockmap_class.originx())>>MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy())>>MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - blockmap_class.originy())>>MAPBLOCKSHIFT;
 
 	for (bx=xl ; bx<=xh ; bx++)
 		for (by=yl ; by<=yh ; by++)

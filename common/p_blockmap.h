@@ -82,6 +82,12 @@ public:
 	{
 		return m_originy;
 	}
+
+	[[nodiscard]]
+	int size() const noexcept
+	{
+		return m_width * m_height;
+	}
 };
 
 inline blockmap_t blockmap_class;

@@ -909,15 +909,15 @@ bool PO_RotatePolyobj (int num, angle_t angle)
 //
 // UnLinkPolyobj
 //
-static void UnLinkPolyobj (polyobj_t *po)
+static void UnLinkPolyobj(polyobj_t *po)
 {
 	// remove the polyobj from each blockmap section
 	for (int j = po->bbox[BOXBOTTOM]; j <= po->bbox[BOXTOP]; j++)
 	{
-		const int index = j*bmapwidth;
+		const int index = j * blockmap_class.width();
 		for (int i = po->bbox[BOXLEFT]; i <= po->bbox[BOXRIGHT]; i++)
 		{
-			if (i >= 0 && i < bmapwidth && j >= 0 && j < bmapheight)
+			if (blockmap_class.containsCoordinate(i, j))
 			{
 				polyblock_t* link = PolyBlockMap[index+i];
 				while (link != nullptr && link->polyobj != po)
@@ -937,7 +937,7 @@ static void UnLinkPolyobj (polyobj_t *po)
 //
 // LinkPolyobj
 //
-static void LinkPolyobj (polyobj_t *po)
+static void LinkPolyobj(polyobj_t *po)
 {
 	int leftX, rightX;
 	int topY, bottomY;
@@ -955,24 +955,24 @@ static void LinkPolyobj (polyobj_t *po)
 		topY = std::max((*tempSeg)->v1->y, topY);
 		bottomY = std::min((*tempSeg)->v1->y, bottomY);
 	}
-	po->bbox[BOXRIGHT] = (rightX-bmaporgx)>>MAPBLOCKSHIFT;
-	po->bbox[BOXLEFT] = (leftX-bmaporgx)>>MAPBLOCKSHIFT;
-	po->bbox[BOXTOP] = (topY-bmaporgy)>>MAPBLOCKSHIFT;
-	po->bbox[BOXBOTTOM] = (bottomY-bmaporgy)>>MAPBLOCKSHIFT;
+	po->bbox[BOXRIGHT] = (rightX - blockmap_class.originx()) >> MAPBLOCKSHIFT;
+	po->bbox[BOXLEFT] = (leftX - blockmap_class.originx()) >> MAPBLOCKSHIFT;
+	po->bbox[BOXTOP] = (topY - blockmap_class.originy()) >> MAPBLOCKSHIFT;
+	po->bbox[BOXBOTTOM] = (bottomY - blockmap_class.originy()) >> MAPBLOCKSHIFT;
 	// add the polyobj to each blockmap section
-	for (int j = po->bbox[BOXBOTTOM]*bmapwidth; j <= po->bbox[BOXTOP]*bmapwidth;
-	     j += bmapwidth)
+	for (int j = po->bbox[BOXBOTTOM]*blockmap_class.width(); j <= po->bbox[BOXTOP]*blockmap_class.width();
+	     j += blockmap_class.width())
 	{
 		for (int i = po->bbox[BOXLEFT]; i <= po->bbox[BOXRIGHT]; i++)
 		{
-			if (i >= 0 && i < bmapwidth && j >= 0 && j < bmapheight*bmapwidth)
+			if (i >= 0 && i < blockmap_class.width() && j >= 0 && j < blockmap_class.size())
 			{
 				polyblock_t** link = &PolyBlockMap[j+i];
 				if(!(*link))
 				{ // Create a new link at the current block cell
 					*link = Z_Malloc<polyblock_t>(PU_LEVEL);
-					(*link)->next = NULL;
-					(*link)->prev = NULL;
+					(*link)->next = nullptr;
+					(*link)->prev = nullptr;
 					(*link)->polyobj = po;
 					continue;
 				}
@@ -1007,36 +1007,22 @@ static void LinkPolyobj (polyobj_t *po)
 //
 static bool CheckMobjBlocking (seg_t *seg, polyobj_t *po)
 {
-	AActor *mobj;
-	int i, j;
-	int left, right, top, bottom;
 	fixed_t tmbbox[4];
-	line_t *ld;
-	bool blocked;
 
-	ld = seg->linedef;
+	line_t* ld = seg->linedef;
 
-	top = (ld->bbox[BOXTOP]-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
-	bottom = (ld->bbox[BOXBOTTOM]-bmaporgy-MAXRADIUS)>>MAPBLOCKSHIFT;
-	left = (ld->bbox[BOXLEFT]-bmaporgx-MAXRADIUS)>>MAPBLOCKSHIFT;
-	right = (ld->bbox[BOXRIGHT]-bmaporgx+MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int top = std::clamp((ld->bbox[BOXTOP] - blockmap_class.originy() + MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap_class.height() - 1);
+	const int bottom = std::clamp((ld->bbox[BOXBOTTOM] - blockmap_class.originy() - MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap_class.height() - 1);
+	const int left = std::clamp((ld->bbox[BOXLEFT] - blockmap_class.originx() - MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap_class.width());
+	const int right = std::clamp((ld->bbox[BOXRIGHT] - blockmap_class.originx() + MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap_class.width());
 
-	blocked = false;
+	bool blocked = false;
 
-	bottom = bottom < 0 ? 0 : bottom;
-	bottom = bottom >= bmapheight ? bmapheight-1 : bottom;
-	top = top < 0 ? 0 : top;
-	top = top >= bmapheight  ? bmapheight-1 : top;
-	left = left < 0 ? 0 : left;
-	left = left >= bmapwidth ? bmapwidth-1 : left;
-	right = right < 0 ? 0 : right;
-	right = right >= bmapwidth ?  bmapwidth-1 : right;
-
-	for (j = bottom*bmapwidth; j <= top*bmapwidth; j += bmapwidth)
+	for (int j = bottom * blockmap_class.width(); j <= top*blockmap_class.width(); j += blockmap_class.width())
 	{
-		for (i = left; i <= right; i++)
+		for (int i = left; i <= right; i++)
 		{
-			for (mobj = blocklinks[j+i]; mobj; mobj = mobj->bmapnode.Next(i, j/bmapwidth))
+			for (AActor* mobj = blocklinks[j+i]; mobj; mobj = mobj->bmapnode.Next(i, j / blockmap_class.width()))
 			{
 				if ((mobj->flags&MF_SOLID) && !(mobj->flags&MF_NOCLIP))
 				{
@@ -1068,9 +1054,9 @@ static bool CheckMobjBlocking (seg_t *seg, polyobj_t *po)
 //
 // InitBlockMap
 //
-static void InitBlockMap (void)
+static void InitBlockMap()
 {
-	PolyBlockMap = Z_Calloc<polyblock_t*>(bmapwidth*bmapheight, PU_LEVEL);
+	PolyBlockMap = Z_Calloc<polyblock_t*>(blockmap_class.size(), PU_LEVEL);
 
 	for (int i = 0; i < po_NumPolyobjs; i++)
 	{
@@ -1111,12 +1097,11 @@ static void IterFindPolySegs (int x, int y, seg_t **segList)
 //
 // SpawnPolyobj
 //
-static void SpawnPolyobj (int index, int tag, bool crush)
+static void SpawnPolyobj(int index, int tag, bool crush)
 {
-	int j;
 	int psIndex;
 	int psIndexOld;
-	seg_t *polySegList[PO_MAXPOLYSEGS];
+	std::array<seg_t*, PO_MAXPOLYSEGS> polySegList;
 
 	for (auto& seg : R_GetSegs())
 	{
@@ -1153,7 +1138,7 @@ static void SpawnPolyobj (int index, int tag, bool crush)
 	{ // didn't find a polyobj through PO_LINE_START
 		psIndex = 0;
 		polyobjs[index].numsegs = 0;
-		for (j = 1; j < PO_MAXPOLYSEGS; j++)
+		for (int j = 1; j < PO_MAXPOLYSEGS; j++)
 		{
 			psIndexOld = psIndex;
 			for (auto& seg : R_GetSegs())

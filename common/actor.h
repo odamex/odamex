@@ -50,6 +50,8 @@
 
 #include "ActorAwarenessState.h"
 
+#include "p_blockmap.h"
+
 //
 // NOTES: AActor
 //
@@ -395,10 +397,6 @@ class CredibilityState
 		v3fixed_t       m_crediblePosition { 0, 0, 0 };
 		int             m_predictedMotionTicCount { 0 };
 };
-
-// Blockmap dimensions, needed by the inline ActorBlockMapListNode::Next.
-extern int bmapwidth;
-extern int bmapheight;
 
 // Map Object definition.
 class AActor : public DThinker
@@ -772,7 +770,7 @@ public:
 		[[nodiscard]]
 		AActor* Next(int bmx, int bmy) const
 		{
-			if (bmx < 0 || bmx >= bmapwidth || bmy < 0 || bmy >= bmapheight)
+			if (not blockmap_class.containsCoordinate(bmx, bmy))
 				return nullptr;
 
 			return m_next[getIndex(bmx, bmy)];

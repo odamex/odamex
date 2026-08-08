@@ -57,11 +57,10 @@ blockmap_t blockmap_t::create()
 	// Subroutine to add a line number to a block list
 	// It simply returns if the line is already in the block
 	//
-
 	const auto AddBlockLine = [&blocklists, &blockdone]
 	(
 		int blockno,
-		uint32_t lineno
+		int32_t lineno
 	)
 	{
 		if (blockdone[blockno])
@@ -104,7 +103,7 @@ blockmap_t blockmap_t::create()
 
 	const auto BlockIndex = [ncols](int x, int y){ return (y * ncols) + x; };
 
-	const int NBlocks = ncols*nrows; // number of cells
+	const int NBlocks = ncols * nrows; // number of cells
 
 	// create the array of pointers on NBlocks to blocklists
 	// also create an array of linelist counts on NBlocks
@@ -141,10 +140,10 @@ blockmap_t blockmap_t::create()
 
 		int bx = (x1-xorg) >> blkshift;
 		int by = (y1-yorg) >> blkshift;
-		AddBlockLine (BlockIndex(bx, by), i);
+		AddBlockLine(BlockIndex(bx, by), i);
 		bx = (x2-xorg) >> blkshift;
 		by = (y2-yorg) >> blkshift;
-		AddBlockLine (BlockIndex(bx, by), i);
+		AddBlockLine(BlockIndex(bx, by), i);
 
 		// For each column, see where the line along its left edge, which
 		// it contains, intersects the Linedef i. Add i to each corresponding
@@ -227,7 +226,7 @@ blockmap_t blockmap_t::create()
 
 				// The cell that contains the intersection point is always added
 
-				AddBlockLine (BlockIndex(xb, j), i);
+				AddBlockLine(BlockIndex(xb, j), i);
 
 				// if the intersection is at a corner it depends on the slope
 				// (and whether the line extends past the intersection) which
@@ -238,19 +237,19 @@ blockmap_t blockmap_t::create()
 					if (sneg)       //   \ - blocks x,y-, x-,y
 					{
 						if (j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb, j - 1), i);
+							AddBlockLine(BlockIndex(xb, j - 1), i);
 						if (xb>0 && minx<x)
-							AddBlockLine (BlockIndex(xb - 1, j), i);
+							AddBlockLine(BlockIndex(xb - 1, j), i);
 					}
 					else if (vert)  //   | - block x,y-
 					{
 						if (j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb, j - 1), i);
+							AddBlockLine(BlockIndex(xb, j - 1), i);
 					}
 					else if (spos)  //   / - block x-,y-
 					{
 						if (xb>0 && j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb - 1, j - 1), i);
+							AddBlockLine(BlockIndex(xb - 1, j - 1), i);
 					}
 				}
 				else if (j>0 && miny<y) // else not on a corner: x,y-
@@ -265,20 +264,8 @@ blockmap_t blockmap_t::create()
 	}
 
 	// blockmap header
-	//
-	// Rjy: P_CreateBlockMap should not initialise bmaporg{x,y} as P_LoadBlockMap
-	// does so again, resulting in their being left-shifted by FRACBITS twice.
-	//
-	// Thus any map having its blockmap built by the engine would have its
-	// origin at (0,0) regardless of where the walls and monsters actually are,
-	// breaking all collision detection.
-	//
-	// Instead have P_CreateBlockMap create blockmaplump only, so that both
-	// clauses of the conditional in P_LoadBlockMap have the same effect, and
-	// bmap* are only initialised from blockmaplump[0..3] once in the latter.
-	//
 	newblockmap.m_originx = INT2FIXED(xorg);
-	newblockmap.m_originx = INT2FIXED(xorg);
+	newblockmap.m_originy = INT2FIXED(yorg);
 	newblockmap.m_height = nrows;
 	newblockmap.m_width = ncols;
 

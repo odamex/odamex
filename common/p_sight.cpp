@@ -267,22 +267,22 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 	validcount++;
 	intercepts.clear();
 
-	if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
+	if ( ((x1-blockmap_class.originx())&(MAPBLOCKSIZE-1)) == 0)
 		x1 += FRACUNIT;							// don't side exactly on a line
-	if ( ((y1-bmaporgy)&(MAPBLOCKSIZE-1)) == 0)
+	if ( ((y1-blockmap_class.originy())&(MAPBLOCKSIZE-1)) == 0)
 		y1 += FRACUNIT;							// don't side exactly on a line
 	trace.x = x1;
 	trace.y = y1;
 	trace.dx = x2 - x1;
 	trace.dy = y2 - y1;
 
-	x1 -= bmaporgx;
-	y1 -= bmaporgy;
+	x1 -= blockmap_class.originx();
+	y1 -= blockmap_class.originy();
 	xt1 = x1>>MAPBLOCKSHIFT;
 	yt1 = y1>>MAPBLOCKSHIFT;
 
-	x2 -= bmaporgx;
-	y2 -= bmaporgy;
+	x2 -= blockmap_class.originx();
+	y2 -= blockmap_class.originy();
 	xt2 = x2>>MAPBLOCKSHIFT;
 	yt2 = y2>>MAPBLOCKSHIFT;
 
