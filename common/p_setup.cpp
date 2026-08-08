@@ -123,16 +123,6 @@ bool			HasBehavior = false;
 // blocks of size ...
 // Used to speed up collision detection
 // by spatial subdivision in 2D.
-//
-// Blockmap size.
-int 			bmapwidth;
-int 			bmapheight; 	// size in mapblocks
-
-int				*blockmaplump;	// offsets in blockmap are from here
-
-fixed_t 		bmaporgx;		// origin of block map
-fixed_t 		bmaporgy;
-
 AActor**		blocklinks;		// for thing chains
 
 
