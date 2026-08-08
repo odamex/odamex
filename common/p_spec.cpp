@@ -2998,7 +2998,7 @@ bool PIT_PushThing (AActor& thing, DPusher* tmpusher)
 // T_Pusher looks for all objects that are inside the radius of
 // the effect.
 //
-extern fixed_t tmbbox[4];
+extern std::array<fixed_t, 4> tmbbox;
 
 void DPusher::RunThink ()
 {

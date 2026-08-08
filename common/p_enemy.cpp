@@ -718,7 +718,7 @@ bool P_HitFriend(AActor* self)
 	return false;
 }
 
-extern fixed_t tmbbox[4];
+extern std::array<fixed_t, 4> tmbbox;
 
 namespace
 {
