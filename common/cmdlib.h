@@ -28,6 +28,9 @@
 #include <optional>
 #include <charconv>
 #include <vector>
+#include <string_view>
+#include <string>
+#include <concepts>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // MIPS
