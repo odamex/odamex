@@ -44,11 +44,13 @@ class blockmap_t
 		m_skipzerostart = std::ranges::none_of(m_blocklists, [](auto&& list){ return !list.empty() && list.front() == 0; });
 	}
 
-public:
-
 	static blockmap_t create();
 	static blockmap_t loadVanilla(int lump);
-	static blockmap_t loadXBM1();
+	static blockmap_t loadXBM1(int lump);
+
+public:
+
+	static blockmap_t load(int lump);
 
 	[[nodiscard]]
 	bool containsCoordinate(int x, int y) const noexcept

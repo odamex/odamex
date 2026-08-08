@@ -1298,15 +1298,7 @@ void P_LoadSideDefs2 (int lump)
 //
 void P_LoadBlockMap (int lump)
 {
-	const uint32_t count = W_LumpLength(lump) / 2;
-
-
-	if (Args.CheckParm("-blockmap") || count >= 0x10000 || count < 4)
-		blockmap = blockmap_t::create();
-	else
-	{
-		blockmap = blockmap_t::loadVanilla(lump);
-	}
+	blockmap = blockmap_t::load(lump);
 
 	// clear out mobj chains
 	blocklinks = Z_Calloc<AActor*>(blockmap.size(), PU_LEVEL);

@@ -26,6 +26,7 @@
 
 #include "odamex.h"
 
+#include "m_argv.h"
 #include "p_blockmap.h"
 #include "p_setup.h"
 #include "r_state.h"
@@ -84,6 +85,51 @@ blockmap_t blockmap_t::loadVanilla(int lump)
 
 			list.push_back(static_cast<uint16_t>(line));
 			line = LESHORT(wadblockmaplump[offset + j]);
+			j++;
+		}
+	}
+
+	newblockmap.setSkipBlockStart();
+
+	return newblockmap;
+}
+
+blockmap_t blockmap_t::loadXBM1(int lump)
+{
+	blockmap_t newblockmap;
+	const size_t lump_size = W_LumpLength(lump) / sizeof(int32_t);
+	auto *wadblockmaplump = W_CacheLumpNum<int32_t>(lump, PU_LEVEL);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(wadblockmaplump); });
+
+	// killough 3/1/98: Expand wad blockmap into larger internal one,
+	// by treating all offsets except -1 as unsigned and zero-extending
+	// them. This potentially doubles the size of blockmaps allowed,
+	// because Doom originally considered the offsets as always signed.
+
+	newblockmap.m_originx = LELONG(wadblockmaplump[2]);
+	newblockmap.m_originy = LELONG(wadblockmaplump[3]);
+	newblockmap.m_width = static_cast<uint32_t>(LELONG(wadblockmaplump[4]));
+	newblockmap.m_height = static_cast<uint32_t>(LELONG(wadblockmaplump[5]));
+	newblockmap.m_blocklists.resize(newblockmap.size());
+
+	const size_t first_list = 4 + newblockmap.size();
+
+	for (const auto i : std::views::iota(0, newblockmap.size()))
+	{
+		const auto offset = static_cast<size_t>(LELONG(wadblockmaplump[i + 6])) + 2;
+		if (offset < first_list || offset > lump_size)
+			I_Error("Blockmap offset #{} ({}) is out of bounds.", i, offset);
+
+		auto& list = newblockmap.m_blocklists[i];
+		int32_t line = LELONG(wadblockmaplump[offset]);
+		size_t j = 1;
+		while (line != -1)
+		{
+			if (static_cast<size_t>(line) > R_GetLines().size())
+				I_Error("Blockmap list #{} contains non-existent line #{}", i, line);
+
+			list.push_back(static_cast<uint32_t>(line));
+			line = LELONG(wadblockmaplump[offset + j]);
 			j++;
 		}
 	}
@@ -338,4 +384,38 @@ blockmap_t blockmap_t::create()
 	newblockmap.setSkipBlockStart();
 
 	return newblockmap;
+}
+
+blockmap_t blockmap_t::load(int lump)
+{
+	enum blockmaptype_t
+	{
+		VANILLA,
+		XBM1,
+		BOOM,
+	};
+
+	blockmaptype_t format = VANILLA;
+
+	const auto vanilla_size = W_LumpLength(lump) / sizeof(int16_t);
+	if (vanilla_size < 4 || vanilla_size >= 0x10000)
+		format = BOOM;
+
+	void *data = W_CacheLumpNum(lump, PU_CACHE);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	if (memcmp(data, "XBM1\0\0\0\0", 8) == 0)
+		format = XBM1;
+
+	if (Args.CheckParm("-blockmap"))
+		format = BOOM;
+
+	switch (format)
+	{
+		case VANILLA:
+			return loadVanilla(lump);
+		case XBM1:
+			return loadXBM1(lump);
+		case BOOM:
+			return create();
+	}
 }
