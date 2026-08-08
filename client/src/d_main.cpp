@@ -216,7 +216,7 @@ void D_ProcessEvents (void)
 void D_PostEvent(const event_t& ev)
 {
 	if (ev.type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
-		!paused && ConsoleState != c_down && ConsoleState != c_falling)
+		(!paused || displayplayer().isFreecam) && ConsoleState != c_down && ConsoleState != c_falling)
 	{
 		G_Responder(ev);
 		return;
@@ -577,7 +577,7 @@ void D_DoAdvanceDemo (void)
 //
 // D_Close
 //
-void STACK_ARGS D_Close()
+void D_Close()
 {
 	I_FreeSurface(page_surface);
 
@@ -778,7 +778,7 @@ void D_Init()
 // Called to shutdown subsystems when unloading a set of WAD resource files.
 // Should be called prior to D_Init when loading a new set of WADs.
 //
-void STACK_ARGS D_Shutdown()
+void D_Shutdown()
 {
 	if (gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);

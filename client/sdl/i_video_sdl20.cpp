@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <array>
 
 #include "i_video.h"
 #include "v_video.h"
@@ -53,7 +54,6 @@
 
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_widescreen)
-EXTERN_CVAR (vid_pillarbox)
 
 #ifdef SDL20
 // ============================================================================
@@ -209,19 +209,19 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	bool vsync, const char *render_scale_quality
 ) :
 		mWindow(window),
-		mSDLRenderer(NULL), mSDLTexture(NULL),
-		mSurface(NULL), m8bppTo32BppSurface(NULL),
+		mSDLRenderer(nullptr), mSDLTexture(nullptr),
+		mSurface(nullptr), m8bppTo32BppSurface(nullptr),
         mWidth(width), mHeight(height)
 {
-	assert(mWindow != NULL);
-    assert(mWindow->mSDLWindow != NULL);
+	assert(mWindow != nullptr);
+    assert(mWindow->mSDLWindow != nullptr);
 
 	memcpy(&mFormat, format, sizeof(mFormat));
 
 	// [jsd] set the user's preferred render scaling hint if non-empty:
 	// acceptable values are [("0" or "nearest"), ("1" or "linear"), ("2" or "best")].
 	bool quality_set = false;
-	if (render_scale_quality != NULL && render_scale_quality[0] != '\0') {
+	if (render_scale_quality != nullptr && render_scale_quality[0] != '\0') {
 		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, render_scale_quality) == SDL_TRUE) {
 			quality_set = true;
 		}
@@ -229,39 +229,18 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 
 	if (!quality_set) {
 		// Select the best RENDER_SCALE_QUALITY that is supported
-		const char *scale_hints[] = {"best", "linear", "nearest", ""};
-		for (int i = 0; scale_hints[i][0] != '\0'; i++) {
-			if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scale_hints[i]))
+		static constexpr std::array scale_hints = {"best", "linear", "nearest"};
+		for (auto hint : scale_hints) {
+			if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, hint))
 				break;
 		}
 	}
 
 	mSDLRenderer = createRenderer(vsync);
-	if (mSDLRenderer == NULL)
+	if (mSDLRenderer == nullptr)
 		I_FatalError("I_InitVideo: unable to create SDL2 renderer: {}\n", SDL_GetError());
 
-	const IVideoMode& native_mode = I_GetVideoCapabilities()->getNativeMode();
-	if (vid_widescreen.asInt() == 0 && vid_pillarbox && (3 * native_mode.width > 4 * native_mode.height))
-	{
-		int windowWidth, windowHeight;
-		SDL_GetWindowSize(mWindow->mSDLWindow, &windowWidth, &windowHeight);
-
-		float ratio = (mWidth* windowHeight) / static_cast<float>(windowWidth * mHeight);
-		int logicalWidth = windowWidth * ratio;
-
-		mLogicalRect.h = windowHeight;
-		mLogicalRect.w = logicalWidth;
-		mLogicalRect.x = (windowWidth - logicalWidth) / 2;
-		mLogicalRect.y = 0;
-
-		mDrawLogicalRect = true;
-		SDL_RenderSetLogicalSize(mSDLRenderer, mLogicalRect.w, mLogicalRect.h);
-	}
-	else
-	{
-		mDrawLogicalRect = false;
-		SDL_RenderSetLogicalSize(mSDLRenderer, mWidth, mHeight);
-	}
+	SDL_RenderSetLogicalSize(mSDLRenderer, mWidth, mHeight);
 
 	// Ensure the game window is clear, even if using -noblit
 	SDL_SetRenderDrawColor(mSDLRenderer, 0, 0, 0, 255);
@@ -279,11 +258,11 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 				texture_flags,
 				mWidth, mHeight);
 
-	if (mSDLTexture == NULL)
+	if (mSDLTexture == nullptr)
 		I_FatalError("I_InitVideo: unable to create SDL2 texture: {}\n", SDL_GetError());
 
 	mSurface = new IWindowSurface(width, height, &mFormat);
-    if (mSurface->getBitsPerPixel() ==8)
+    if (mSurface->getBitsPerPixel() == 8)
         m8bppTo32BppSurface = new IWindowSurface(width, height, mWindow->getPixelFormat());
 }
 
@@ -359,10 +338,7 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 	   SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
     }
 
-	if (mDrawLogicalRect)
-		SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, &mLogicalRect);
-	else
-		SDL_RenderCopy(mSDLRenderer, mSDLTexture, NULL, NULL);
+	SDL_RenderCopy(mSDLRenderer, mSDLTexture, nullptr, nullptr);
 
 	SDL_RenderPresent(mSDLRenderer);
 }
@@ -373,7 +349,7 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 //
 // Inverts the transformation the finishRefresh() function applies when
 // presenting the texture:
-// 
+//
 // window pixels -> renderer logical coordinates -> surface pixels.
 //
 bool ISDL20TextureWindowSurfaceManager::windowToSurfaceCoords(
@@ -398,18 +374,6 @@ bool ISDL20TextureWindowSurfaceManager::windowToSurfaceCoords(
 		logical_x = window_x / scale_x - viewport.x;
 		logical_y = window_y / scale_y - viewport.y;
 	#endif
-
-	// Undo the destination rectangle the texture is blitted into.
-	// 
-	// When not pillarboxing, the logical size is the surface size
-	// and this is a no-op.
-	if (mDrawLogicalRect)
-	{
-		if (mLogicalRect.w <= 0 || mLogicalRect.h <= 0)
-			return false;
-		logical_x = (logical_x - mLogicalRect.x) * mWidth / static_cast<float>(mLogicalRect.w);
-		logical_y = (logical_y - mLogicalRect.y) * mHeight / static_cast<float>(mLogicalRect.h);
-	}
 
 	surface_x = static_cast<int>(std::floor(logical_x));
 	surface_y = static_cast<int>(std::floor(logical_y));

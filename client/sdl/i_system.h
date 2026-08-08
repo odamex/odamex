@@ -76,7 +76,7 @@ ticcmd_t *I_BaseTiccmd (void);
 
 // Called by M_Responder when quit is selected.
 // Clean exit, displays sell blurb.
-void STACK_ARGS I_Quit (void);
+void I_Quit();
 
 void I_BaseWarning(const std::string& errortext);
 [[noreturn]] void I_BaseError(const std::string& errortext);
@@ -100,7 +100,7 @@ template <typename... ARGS>
 	I_BaseFatalError(fmt::format(format, std::forward<ARGS>(args)...));
 }
 
-void addterm (void (STACK_ARGS *func)(void), const char *name);
+void addterm (void (*func)(), const char *name);
 #define atterm(t) addterm (t, #t)
 
 // Repaint the pre-game console
@@ -111,7 +111,7 @@ bool I_IsHeadless();
 
 void I_FinishClockCalibration ();
 
-std::string I_GetClipboardText();
+std::string I_GetClipboardText(bool use_primary_selection = false);
 
 /**
  * @brief Show an error message box.

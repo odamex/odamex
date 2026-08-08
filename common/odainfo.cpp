@@ -128,6 +128,7 @@ const char* odasprnames[] = {
 
 // reserved odamex mobjinfo
 // ::MT_CAREPACK - ::MT_GIB0 + 1
+// this table *is* the constants for those numbers
 // NOLINTBEGIN(readability-magic-numbers)
 mobjinfo_t odamobjinfo[] = {
 	// ------------ odamex things start ------------ //
@@ -968,7 +969,6 @@ mobjinfo_t odamobjinfo[] = {
 	{
 		// MT_HORDESPAWN
 		.type             = MT_HORDESPAWN,
-		.doomednum        = 5302,
 		.spawnstate       = S_TNT1,
 		.spawnhealth      = 100,
 		.radius           = 16_fx,
@@ -981,7 +981,6 @@ mobjinfo_t odamobjinfo[] = {
 	{
 		// MT_CAREPACK
 		.type             = MT_CAREPACK,
-		.doomednum        = 5301,
 		.spawnstate       = S_CARE,
 		.spawnhealth      = 1000,
 		.reactiontime     = 8,

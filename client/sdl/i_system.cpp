@@ -305,7 +305,7 @@ void I_Endoom()
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void)
+void I_Quit()
 {
 	has_exited = 1;		/* Prevent infinitely recursive exits -- killough */
 
@@ -328,9 +328,7 @@ void STACK_ARGS I_Quit (void)
 //
 bool gameisdead;
 
-#define MAX_ERRORTEXT	1024
-
-void STACK_ARGS call_terms (void);
+void call_terms();
 
 void I_BaseWarning(const std::string& warningtext)
 {
@@ -424,11 +422,17 @@ void I_BaseWarning(const std::string& warningtext)
 // [EB] 20 Mar 2026 - Got rid of all platform specific code
 // Now that we dropped SDL1 support, we can fully rely on SDL for this
 //
-std::string I_GetClipboardText()
+std::string I_GetClipboardText([[maybe_unused]] bool use_primary_selection)
 {
 #if defined(SDL20) || defined(SDL3)
-	char* textp = SDL_GetClipboardText();
-	auto textpExit = nonstd::make_scope_exit([&]() { SDL_free(textp); });
+	#if SDL_VERSION_ATLEAST(2, 26, 0)
+		const auto driver = I_GetVideoDriverName();
+		const bool driver_supports_primary = driver == "wayland" || driver == "x11";
+		char* textp = use_primary_selection && driver_supports_primary ? SDL_GetPrimarySelectionText() : SDL_GetClipboardText();
+	#else
+		char* textp = SDL_GetClipboardText();
+	#endif
+	const auto textpExit = nonstd::make_scope_exit([&]() { SDL_free(textp); });
 
 	if (NULL == textp)
 	{

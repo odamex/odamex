@@ -993,7 +993,7 @@ void C_InitConCharsFont()
 //
 // C_ShutdownConCharsFont
 //
-void STACK_ARGS C_ShutdownConCharsFont()
+void C_ShutdownConCharsFont()
 {
 	delete [] ConChars;
 	ConChars = NULL;
@@ -1051,7 +1051,7 @@ void C_InitConsoleBackground()
 //
 // Frees the background_surface
 //
-void STACK_ARGS C_ShutdownConsoleBackground()
+void C_ShutdownConsoleBackground()
 {
 	I_FreeSurface(background_surface);
 }
@@ -1060,7 +1060,7 @@ void STACK_ARGS C_ShutdownConsoleBackground()
 //
 // C_ShutdownConsole
 //
-void STACK_ARGS C_ShutdownConsole()
+void C_ShutdownConsole()
 {
 	Lines.clear();
 	History.clear();
@@ -1236,7 +1236,7 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 {
 	if (I_VideoInitialized() && !midprinting)
 	{
-		const bool noPickups = printlevel == PRINT_PICKUP && !::message_showpickups;
+		const bool noPickups = printlevel == PRINT_PICKUP && (!::message_showpickups || displayplayer().isFreecam);
 		const bool noObits = printlevel == PRINT_OBITUARY && !::message_showobituaries;
 
 		if (!noPickups && !noObits)
@@ -1997,7 +1997,7 @@ static bool C_HandleKey(const event_t& ev)
 	}
 
 #ifdef __SWITCH__
-	if (ev->data1 == OKEY_JOY3)
+	if (ev.data1 == OKEY_JOY3)
 	{
 		char oldtext[64], text[64], fulltext[65];
 
@@ -2042,8 +2042,9 @@ static bool C_HandleKey(const event_t& ev)
 			return true;
 		}
 	case OKEY_MOUSE2:
+	case OKEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
-		CmdLine.insertString(I_GetClipboardText());
+		CmdLine.insertString(I_GetClipboardText(ch == OKEY_MOUSE3));
 		CmdCompletions.clear();
 		TabCycleClear();
 		return true;
@@ -2186,8 +2187,8 @@ static bool C_HandleKey(const event_t& ev)
 	if (KeysCtrl)
 	{
 		// handle key combinations
-		// NOTE: we have to use ev->data1 here instead of the
-		// localization-aware ev->data3 since SDL2 does not send a SDL_TEXTINPUT
+		// NOTE: we have to use ev.data1 here instead of the
+		// localization-aware ev.data3 since SDL2 does not send a SDL_TEXTINPUT
 		// event when Ctrl is held down.
 
 		// Go to beginning of line
@@ -2202,6 +2203,17 @@ static bool C_HandleKey(const event_t& ev)
  		if (tolower(ev.data1) == 'v')
 		{
 			CmdLine.insertString(I_GetClipboardText());
+			TabCycleClear();
+		}
+		return true;
+	}
+
+	if (KeysAlt)
+	{
+		// Paste from primary selection - add each character to command line
+ 		if (tolower(ev.data1) == 'v')
+		{
+			CmdLine.insertString(I_GetClipboardText(true));
 			TabCycleClear();
 		}
 		return true;
@@ -2330,7 +2342,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 
 void C_DrawMid()
 {
-	if (MidMsg)
+	if (MidMsg && not displayplayer().isFreecam)
 	{
 		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 

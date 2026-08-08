@@ -1,4 +1,5 @@
 include(OdamexCopyLibs)
+include(OdamexCvarDoc)
 include(OdamexTargetSettings)
 
 # use unquoted #defines
@@ -329,6 +330,10 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       COMPONENT client)
   endif()
+endif()
+
+if(TARGET odamex)
+  odamex_cvardoc_refresh(odamex)
 endif()
 
 if(BUILD_OR_FAIL AND NOT TARGET odamex)

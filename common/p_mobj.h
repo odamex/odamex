@@ -147,6 +147,7 @@ bool P_VisibleToPlayers(const AActor *mo);
 void P_SetMobjBaseline(AActor& mo);
 uint32_t P_GetMobjBaselineFlags(const AActor& mo);
 bool P_PlayWakeupSound(AActor* actor);
+bool P_IsPlayerSpawnThing(const mapthing2_t& mt);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);

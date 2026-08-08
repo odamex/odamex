@@ -48,6 +48,9 @@
 
 #include <span>
 
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
 //
 // Movement.
 //
@@ -406,7 +409,7 @@ void P_CalcHeight (player_t& player)
 		bob = 0;
 
 	// move viewheight
-	if (player.playerstate == PST_LIVE)
+	if (player.playerstate == PST_LIVE || player.playerstate == PST_FREECAM)
 	{
 		player.viewheight += player.deltaviewheight;
 
@@ -770,6 +773,12 @@ bool P_AreTeammates(const player_t &a, const player_t &b)
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 {
+	// server doesnt know or care about the freecam
+	#ifdef CLIENT_APP
+	if (other.isFreecam && Freecam::allowSpy())
+		return true;
+	#endif
+
 	// skip if out of lives in survival
 	if (G_IsLivesGame() && other.lives < 1)
 		return false;

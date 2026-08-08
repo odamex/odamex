@@ -50,7 +50,8 @@ function BuildX64 {
     cmake.exe -G "Visual Studio 18 2026" -A "x64" "${CurrentDir}" `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
-        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
+        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 `
+        -DODAMEX_UPDATE_CVARDOCS=0
     cmake.exe --build . --config RelWithDebInfo
 
     Set-Location -Path "${CurrentDir}"

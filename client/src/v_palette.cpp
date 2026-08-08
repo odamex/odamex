@@ -368,7 +368,7 @@ CVAR_FUNC_IMPL(vid_gammatype)
 //
 CVAR_FUNC_IMPL(gammalevel)
 {
-	float sanitized_var = clamp(var.value(), gammastrat->min(), gammastrat->max());
+	const float sanitized_var = std::clamp(var.value(), gammastrat->min(), gammastrat->max());
 	if (var == sanitized_var)
 		V_UpdateGammaLevel(var);
 	else
@@ -681,16 +681,15 @@ static float lightScale(float a)
 	static float e1 = exp(1.0f);
 	static float e1sube0 = e1 - exp(-1.0f);
 
-	return clamp(1.0f - (e1 - static_cast<float>(exp(a * 2.0f - 1.0f))) / e1sube0, 0.0f, 1.0f);
+	return std::clamp(1.0f - ((e1 - static_cast<float>(exp((a * 2.0f) - 1.0f))) / e1sube0), 0.0f, 1.0f);
 }
 
 void BuildLightRamp (shademap_t &maps)
 {
-	int l;
 	// Build light ramp:
-	for (l = 0; l < 256; ++l)
+	for (int l = 0; l < 256; ++l)
 	{
-		int a = static_cast<int>(255 * lightScale(l / 255.0f));
+		const int a = static_cast<int>(255 * lightScale(l / 255.0f));
 		maps.ramp[l] = a;
 	}
 }
@@ -728,7 +727,7 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		int grayint = static_cast<int>(255.0f * clamp(1.0f -
+		const int grayint = static_cast<int>(255.0f * std::clamp(1.0f -
 						(palette[c].getr() * 0.00116796875f +
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
@@ -770,7 +769,7 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		int grayint = static_cast<int>(255.0f * clamp(1.0f -
+		const int grayint = static_cast<int>(255.0f * std::clamp(1.0f -
 						(palette[c].getr() * 0.00116796875f +
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
@@ -887,7 +886,7 @@ BEGIN_COMMAND (testblend)
 	{
 		argb_t color(V_GetColorFromString(argv[1]));
 
-		int alpha = 255.0 * clamp(static_cast<float>(atof(argv[2])), 0.0f, 1.0f);
+		const int alpha = 255.0 * std::clamp(static_cast<float>(atof(argv[2])), 0.0f, 1.0f);
 		R_SetSectorBlend(argb_t(alpha, color.getr(), color.getg(), color.getb()));
 	}
 }

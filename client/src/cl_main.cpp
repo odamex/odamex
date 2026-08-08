@@ -69,6 +69,7 @@
 #include "g_gametype.h"
 #include "cl_parse.h"
 #include "cl_replay.h"
+#include "cl_freecam.h"
 
 #include "m_consolecommandstream.h"
 
@@ -638,14 +639,18 @@ void CL_CheckDisplayPlayer(void)
 	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isInPlayback()))
 		newid = consoleplayer_id;
 
-	if (displayplayer().spectator)
+	if (displayplayer().spectator && not displayplayer().isFreecam)
 		newid = consoleplayer_id;
 
 	if (newid)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Spy(newid));
+		// server doesnt know about clientside freecam, dont tell it
+		if (not displayplayer().isFreecam && newid != freecamplayer_id)
+		{
+			MSG_WriteSVC(messenger.ReliableBuf(), CLC_Spy(newid));
+		}
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility
@@ -1216,7 +1221,7 @@ BEGIN_COMMAND (spy)
 }
 END_COMMAND (spy)
 
-void STACK_ARGS call_terms (void);
+void call_terms();
 
 void CL_QuitCommand()
 {

@@ -602,3 +602,28 @@ vox/red/flag/return		dvrfr
 
 $random menu/quit1 { player/male/death1 demon/pain grunt/pain misc/gibbed misc/teleport grunt/sight1 grunt/sight3 demon/melee }
 $random menu/quit2 { vile/active misc/p_pkup brain/cube misc/gibbed skeleton/swing knight/death baby/active demon/melee  }
+
+//---------------------------------------------------------------------------
+// MENU & INTERMISSION
+//---------------------------------------------------------------------------
+
+menu/activate dsswtchn // Activate a new menu
+menu/backup   dsswtchn // Backup to previous menu
+menu/prompt   dsswtchn // Activate a prompt "menu"
+menu/cursor   dspstop  // Move cursor up/down
+menu/change   dsstnmov // Select new value for option
+menu/invalid  dsoof    // Menu not available
+menu/dismiss  dsswtchx // Dismiss a prompt message
+menu/choose   dspistol // Choose a menu item
+menu/clear    dsswtchx // Close top menu
+$alias menu/advance menu/choose // Open a submenu
+
+// TODO: implement $playersound and $playercompat
+// and resolve gendered sounds in aliases
+// and change the 2 player sounds here to *death and *gibbed
+$alias intermission/tick          weapons/pistol
+$alias intermission/cooptotal     player/male/death1
+$alias intermission/nextstage     weapons/rocklx
+$alias intermission/paststats     weapons/shotgr
+$alias intermission/pastcoopstats weapons/shotgr
+$alias intermission/pastdmstats   player/male/gibbed

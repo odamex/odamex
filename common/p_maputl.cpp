@@ -678,114 +678,6 @@ void AActor::SetOrigin (fixed_t ix, fixed_t iy, fixed_t iz)
 	LinkToWorld ();
 }
 
-
-//
-// BLOCK MAP ITERATORS
-// For each line/thing in the given mapblock,
-// call the passed PIT_* function.
-// If the function returns false,
-// exit with false without checking anything else.
-//
-
-
-//
-// P_BlockLinesIterator
-// The validcount flags are used to avoid checking lines
-// that are marked in multiple mapblocks,
-// so increment validcount before the first call
-// to P_BlockLinesIterator, then make one or more calls
-// to it.
-//
-extern polyblock_t **PolyBlockMap;
-
-bool P_BlockLinesIterator (int x, int y, bool(*func)(line_t*))
-{
-	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
-		return true;
-
-	int offset = *(blockmap + (bmapwidth*y + x));
-	int *list = blockmaplump + offset;
-
-	/* [RH] Polyobj stuff from Hexen --> */
-	polyblock_t *polyLink;
-
-	offset = y*bmapwidth + x;
-	if (PolyBlockMap)
-	{
-		polyLink = PolyBlockMap[offset];
-
-		while (polyLink)
-		{
-			if (polyLink->polyobj && polyLink->polyobj->validcount != validcount)
-			{
-				int i;
-				seg_t **tempSeg = polyLink->polyobj->segs;
-				polyLink->polyobj->validcount = validcount;
-
-				for (i = polyLink->polyobj->numsegs; i; i--, tempSeg++)
-				{
-					if ((*tempSeg)->linedef->validcount != validcount)
-					{
-						(*tempSeg)->linedef->validcount = validcount;
-						if (!func ((*tempSeg)->linedef))
-							return false;
-					}
-				}
-			}
-			polyLink = polyLink->next;
-		}
-	}
-	/* <-- Polyobj stuff from Hexen */
-
-	// [RH] Get past starting 0 (from BOOM)
-	// denis - not so fast, this breaks doom1.wad 1.9 demo1
-	// [SL] The first entry in each block list appears to have been intended to
-	// be used for a special purpose but instead contains garbage (most often
-	// referencing linedef 0). Using this first entry (as vanilla Doom does) can
-	// cause hitscan weapons to erroneously hit the first linedef entry regardless
-	// of where that linedef is located in relation to the block.
-	if (!demoplayback && skipblstart)
-		++list;
-
-	for (; *list != -1; list++)
-	{
-		line_t *ld = &lines[*list];
-
-		if (ld->validcount != validcount) {
-			ld->validcount = validcount;
-
-			if ( !func(ld) )
-				return false;
-		}
-	}
-
-	return true;		// everything was checked
-}
-
-
-//
-// P_BlockThingsIterator
-//
-bool P_BlockThingsIterator (int x, int y, bool(*func)(AActor*), AActor *actor)
-{
-	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
-		return true;
-	else
- 	{
-		AActor *mobj = (actor != NULL ? actor : blocklinks[y*bmapwidth+x]);
-		while (mobj)
- 		{
- 			if (!func (mobj))
- 				return false;
-
-			mobj = mobj->bmapnode.Next(x, y);
-		}
-	}
-	return true;
-}
-
-
-
 //
 // INTERCEPT ROUTINES
 //
@@ -793,8 +685,6 @@ bool P_BlockThingsIterator (int x, int y, bool(*func)(AActor*), AActor *actor)
 std::vector<intercept_t> intercepts;
 
 divline_t		trace;
-bool 			earlyout;
-int 			ptflags;
 
 //
 // PIT_AddLineIntercepts.
@@ -806,11 +696,10 @@ int 			ptflags;
 // are on opposite sides of the trace.
 // Returns true if earlyout and a solid line hit.
 //
-bool PIT_AddLineIntercepts (line_t *ld)
+bool PIT_AddLineIntercepts (line_t& ld, bool earlyout)
 {
 	int 				s1;
 	int 				s2;
-	fixed_t 			frac;
 	divline_t			dl;
 
 	// avoid precision problems with two routines
@@ -819,21 +708,21 @@ bool PIT_AddLineIntercepts (line_t *ld)
 		 || trace.dx < -FRACUNIT*16
 		 || trace.dy < -FRACUNIT*16)
 	{
-		s1 = P_PointOnDivlineSide (ld->v1->x, ld->v1->y, &trace);
-		s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
+		s1 = P_PointOnDivlineSide (ld.v1->x, ld.v1->y, &trace);
+		s2 = P_PointOnDivlineSide (ld.v2->x, ld.v2->y, &trace);
 	}
 	else
 	{
-		s1 = P_PointOnLineSide (trace.x, trace.y, ld);
-		s2 = P_PointOnLineSide (trace.x+trace.dx, trace.y+trace.dy, ld);
+		s1 = P_PointOnLineSide (trace.x, trace.y, &ld);
+		s2 = P_PointOnLineSide (trace.x+trace.dx, trace.y+trace.dy, &ld);
 	}
 
 	if (s1 == s2)
 		return true;	// line isn't crossed
 
 	// hit the line
-	P_MakeDivline (ld, &dl);
-	frac = P_InterceptVector (&trace, &dl);
+	P_MakeDivline (&ld, &dl);
+	const fixed_t frac = P_InterceptVector (&trace, &dl);
 
 	if (frac < 0)
 		return true;	// behind source
@@ -841,7 +730,7 @@ bool PIT_AddLineIntercepts (line_t *ld)
 	// try to early out the check
 	if (earlyout
 		&& frac < FRACUNIT
-		&& !ld->backsector)
+		&& !ld.backsector)
 	{
 		return false;	// stop checking
 	}
@@ -850,7 +739,7 @@ bool PIT_AddLineIntercepts (line_t *ld)
 	intercept_t intercept;
 	intercept.frac = frac;
 	intercept.isaline = true;
-	intercept.d.line = ld;
+	intercept.d.line = &ld;
 	intercepts.push_back(intercept);
 
 	return true;		// continue
@@ -861,44 +750,37 @@ bool PIT_AddLineIntercepts (line_t *ld)
 //
 // PIT_AddThingIntercepts
 //
-bool PIT_AddThingIntercepts (AActor* thing)
+bool PIT_AddThingIntercepts (AActor& thing)
 {
 	fixed_t 		x1;
 	fixed_t 		y1;
 	fixed_t 		x2;
 	fixed_t 		y2;
 
-	int 			s1;
-	int 			s2;
-
-	bool 			tracepositive;
-
 	divline_t		dl;
 
-	fixed_t 		frac;
-
-	tracepositive = (trace.dx ^ trace.dy)>0;
+	const bool tracepositive = (trace.dx ^ trace.dy)>0;
 
 	// check a corner to corner crossection for hit
 	if (tracepositive)
 	{
-		x1 = thing->x - thing->radius;
-		y1 = thing->y + thing->radius;
+		x1 = thing.x - thing.radius;
+		y1 = thing.y + thing.radius;
 
-		x2 = thing->x + thing->radius;
-		y2 = thing->y - thing->radius;
+		x2 = thing.x + thing.radius;
+		y2 = thing.y - thing.radius;
 	}
 	else
 	{
-		x1 = thing->x - thing->radius;
-		y1 = thing->y - thing->radius;
+		x1 = thing.x - thing.radius;
+		y1 = thing.y - thing.radius;
 
-		x2 = thing->x + thing->radius;
-		y2 = thing->y + thing->radius;
+		x2 = thing.x + thing.radius;
+		y2 = thing.y + thing.radius;
 	}
 
-	s1 = P_PointOnDivlineSide (x1, y1, &trace);
-	s2 = P_PointOnDivlineSide (x2, y2, &trace);
+	const int s1 = P_PointOnDivlineSide (x1, y1, &trace);
+	const int s2 = P_PointOnDivlineSide (x2, y2, &trace);
 
 	if (s1 == s2)
 		return true;			// line isn't crossed
@@ -908,7 +790,7 @@ bool PIT_AddThingIntercepts (AActor* thing)
 	dl.dx = x2-x1;
 	dl.dy = y2-y1;
 
-	frac = P_InterceptVector (&trace, &dl);
+	const fixed_t frac = P_InterceptVector (&trace, &dl);
 
 	if (frac < 0)
 		return true;			// behind source
@@ -916,7 +798,7 @@ bool PIT_AddThingIntercepts (AActor* thing)
 	intercept_t intercept;
 	intercept.frac = frac;
 	intercept.isaline = false;
-	intercept.d.thing = thing;
+	intercept.d.thing = &thing;
 	intercepts.push_back(intercept);
 
 	return true;				// keep going
@@ -992,7 +874,7 @@ bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 
 	int 		count;
 
-	earlyout = flags & PT_EARLYOUT;
+	const bool earlyout = flags & PT_EARLYOUT;
 
 	validcount++;
 
@@ -1071,13 +953,13 @@ bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 	{
 		if (flags & PT_ADDLINES)
 		{
-			if (!P_BlockLinesIterator (mapx, mapy,PIT_AddLineIntercepts))
+			if (!P_BlockLinesIterator (mapx, mapy,PIT_AddLineIntercepts, earlyout))
 				return false;	// early out
 		}
 
 		if (flags & PT_ADDTHINGS)
 		{
-			if (!P_BlockThingsIterator (mapx, mapy,PIT_AddThingIntercepts))
+			if (!P_BlockThingsIterator (mapx, mapy,PIT_AddThingIntercepts, nullptr))
 				return false;	// early out
 		}
 

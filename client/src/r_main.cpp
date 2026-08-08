@@ -603,10 +603,10 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 
 	R_ClipLine(reinterpret_cast<v2fixed_t*>(&pt1), reinterpret_cast<v2fixed_t*>(&pt2), lclip, rclip, reinterpret_cast<v2fixed_t*>(&pt1), reinterpret_cast<v2fixed_t*>(&pt2));
 
-	int x1 = clamp(R_ProjectPointX(pt1.x, pt1.y), 0, viewwidth - 1);
-	int x2 = clamp(R_ProjectPointX(pt2.x, pt2.y), 0, viewwidth - 1);
-	int y1 = clamp(R_ProjectPointY(pt1.z, pt1.y), 0, viewheight - 1);
-	int y2 = clamp(R_ProjectPointY(pt2.z, pt2.y), 0, viewheight - 1);
+	const int x1 = std::clamp(R_ProjectPointX(pt1.x, pt1.y), 0, viewwidth - 1);
+	const int x2 = std::clamp(R_ProjectPointX(pt2.x, pt2.y), 0, viewwidth - 1);
+	const int y1 = std::clamp(R_ProjectPointY(pt1.z, pt1.y), 0, viewheight - 1);
+	const int y2 = std::clamp(R_ProjectPointY(pt2.z, pt2.y), 0, viewheight - 1);
 
 	// draw the line to the framebuffer
 	int dx = x2 - x1;
@@ -712,7 +712,7 @@ void R_Init()
 //
 // R_Shutdown
 //
-void STACK_ARGS R_Shutdown()
+void R_Shutdown()
 {
     R_FreeTranslationTables();
 
@@ -871,7 +871,9 @@ void R_SetupFrame (player_t *player)
 	player_t &consolePlayer = consoleplayer();
 	const bool use_localview =
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
-	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
+	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback)
+		||
+		displayplayer().isFreecam;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -941,9 +943,9 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	if ((use_localview && !::localview.skippitch) || netdemo.isPaused())
+	if ((use_localview && !::localview.skippitch) || netdemo.isPaused() || displayplayer().isFreecam)
 	{
-		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
+		R_ViewShear(std::clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}
 	else
 	{
@@ -1177,7 +1179,7 @@ static void R_InitLightTables(int surface_width, int surface_height)
 		for (int j = 0; j < MAXLIGHTSCALE; j++)
 		{
 			int level = startmap - (j * surface_width) / ((viewwidth * DISTMAP));
-			scalelight[i][j] = clamp(level, 0, NUMCOLORMAPS - 1);
+			scalelight[i][j] = std::clamp(level, 0, NUMCOLORMAPS - 1);
 		}
 	}
 
@@ -1189,7 +1191,7 @@ static void R_InitLightTables(int surface_width, int surface_height)
 		{
 			int scale = FixedDiv(160*FRACUNIT, (j+1) << LIGHTZSHIFT);
 			scale >>= LIGHTSCALESHIFT-LIGHTSCALEMULBITS;
-			zlight[i][j] = clamp(startmap - scale/DISTMAP, 0, NUMCOLORMAPS - 1);
+			zlight[i][j] = std::clamp(startmap - (scale/DISTMAP), 0, NUMCOLORMAPS - 1);
 		}
 	}
 
@@ -1289,7 +1291,7 @@ static void R_InitViewWindow()
 	// Calculate FieldOfView and CorrectFieldOfView
 	float desired_fov = 90.0f;
 	if (consoleplayer().camera && consoleplayer().camera->player)
-		desired_fov = clamp(consoleplayer().camera->player->fov, 45.0f, 135.0f);
+		desired_fov = std::clamp(consoleplayer().camera->player->fov, 45.0f, 135.0f);
 
 	FieldOfView = int(desired_fov * FINEANGLES / 360.0f);
 
@@ -1378,7 +1380,7 @@ bool R_BorderVisible()
 //
 bool R_StatusBarVisible()
 {
-	return setblocks <= 10 || AM_ClassicAutomapVisible();
+	return (setblocks <= 10 || AM_ClassicAutomapVisible()) && !displayplayer().spectator;
 }
 
 //
