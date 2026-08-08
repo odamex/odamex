@@ -811,10 +811,10 @@ public:
 		// this actor can inhabit - point at the inline arrays unless the
 		// actor spans more than INLINE_BLOCKS blocks
 		int m_capacity;
+		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext;
+		std::array<AActor**, INLINE_BLOCKS> m_inlineprev;
 		AActor**  m_next;
 		AActor*** m_prev;
-		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext{};
-		std::array<AActor**, INLINE_BLOCKS> m_inlineprev{};
 	};
 
 	// Interaction info, by BLOCKMAP.
