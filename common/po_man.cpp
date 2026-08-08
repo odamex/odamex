@@ -911,28 +911,24 @@ bool PO_RotatePolyobj (int num, angle_t angle)
 //
 static void UnLinkPolyobj (polyobj_t *po)
 {
-	polyblock_t *link;
-	int i, j;
-	int index;
-
 	// remove the polyobj from each blockmap section
-	for(j = po->bbox[BOXBOTTOM]; j <= po->bbox[BOXTOP]; j++)
+	for (int j = po->bbox[BOXBOTTOM]; j <= po->bbox[BOXTOP]; j++)
 	{
-		index = j*bmapwidth;
-		for(i = po->bbox[BOXLEFT]; i <= po->bbox[BOXRIGHT]; i++)
+		const int index = j*bmapwidth;
+		for (int i = po->bbox[BOXLEFT]; i <= po->bbox[BOXRIGHT]; i++)
 		{
-			if(i >= 0 && i < bmapwidth && j >= 0 && j < bmapheight)
+			if (i >= 0 && i < bmapwidth && j >= 0 && j < bmapheight)
 			{
-				link = PolyBlockMap[index+i];
-				while(link != NULL && link->polyobj != po)
+				polyblock_t* link = PolyBlockMap[index+i];
+				while (link != nullptr && link->polyobj != po)
 				{
 					link = link->next;
 				}
-				if(link == NULL)
+				if (link == nullptr)
 				{ // polyobj not located in the link cell
 					continue;
 				}
-				link->polyobj = NULL;
+				link->polyobj = nullptr;
 			}
 		}
 	}

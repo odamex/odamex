@@ -23,7 +23,65 @@
 
 #pragma once
 
+#include <vector>
+#include <algorithm>
+
+#include "m_fixed.h"
+#include "p_mobj.h"
+
 class blockmap_t
 {
+	fixed_t m_originx;
+	fixed_t m_originy;
+	int m_width;
+	int m_height;
+	std::vector<AActor*> m_blocklinks;
+	std::vector<std::vector<int>> m_blocklists;
+	bool m_skipzerostart;
 
+	void setSkipBlockStart()
+	{
+		m_skipzerostart = std::ranges::none_of(m_blocklists, [](auto&& list){ return !list.empty() && list.front() == 0; });
+	}
+
+public:
+
+	static blockmap_t create();
+	static blockmap_t loadVanilla();
+	static blockmap_t loadXBM1();
+
+	[[nodiscard]]
+	bool containsCoordinate(int x, int y) const noexcept
+	{
+		return !(x < 0 || y < 0 || x >= m_width || y >= m_height);
+	}
+
+	[[nodiscard]]
+	std::span<const int> list(int x, int y) const;
+
+	[[nodiscard]]
+	int width() const noexcept
+	{
+		return m_width;
+	}
+
+	[[nodiscard]]
+	int height() const noexcept
+	{
+		return m_height;
+	}
+
+	[[nodiscard]]
+	fixed_t originx() const noexcept
+	{
+		return m_originx;
+	}
+
+	[[nodiscard]]
+	fixed_t originy() const noexcept
+	{
+		return m_originy;
+	}
 };
+
+inline blockmap_t blockmap_class;

@@ -117,40 +117,31 @@ bool PTR_SightTraverse (intercept_t *in)
 ===================
 */
 
-bool P_SightBlockLinesIterator (int x, int y)
+bool P_SightBlockLinesIterator(int x, int y)
 {
-	int offset;
-	int *list;
-	line_t *ld;
-	int s1, s2;
 	divline_t dl;
 
-	polyblock_t *polyLink;
-	seg_t **segList;
-	int i;
 	extern polyblock_t **PolyBlockMap;
 
-	offset = y*bmapwidth+x;
+	const polyblock_t* polyLink = PolyBlockMap[(y * blockmap_class.width()) + x];
 
-	polyLink = PolyBlockMap[offset];
-
-	while(polyLink)
+	while (polyLink)
 	{
-		if(polyLink->polyobj)
+		if (polyLink->polyobj)
 		{ // only check non-empty links
-			if(polyLink->polyobj->validcount != validcount)
+			if (polyLink->polyobj->validcount != validcount)
 			{
-				segList = polyLink->polyobj->segs;
-				for(i = 0; i < polyLink->polyobj->numsegs; i++, segList++)
+				const seg_t *const * segList = polyLink->polyobj->segs;
+				for (int i = 0; i < polyLink->polyobj->numsegs; i++, segList++)
 				{
-					ld = (*segList)->linedef;
+					line_t* ld = (*segList)->linedef;
 					if(ld->validcount == validcount)
 					{
 						continue;
 					}
 					ld->validcount = validcount;
-					s1 = P_PointOnDivlineSide (ld->v1->x, ld->v1->y, &trace);
-					s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
+					int s1 = P_PointOnDivlineSide (ld->v1->x, ld->v1->y, &trace);
+					int s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
 					if (s1 == s2)
 						continue;		// line isn't crossed
 					P_MakeDivline (ld, &dl);
@@ -175,17 +166,15 @@ bool P_SightBlockLinesIterator (int x, int y)
 		polyLink = polyLink->next;
 	}
 
-	offset = *(blockmap + (bmapwidth*y + x));
-
-	for (list = blockmaplump + offset; *list != -1; list++)
+	for (int idx : blockmap_class.list(x, y))
 	{
-		ld = &lines[*list];
+		line_t* ld = &lines[idx];
 		if (ld->validcount == validcount)
 			continue;				// line has already been checked
 		ld->validcount = validcount;
 
-		s1 = P_PointOnDivlineSide (ld->v1->x, ld->v1->y, &trace);
-		s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
+		int s1 = P_PointOnDivlineSide (ld->v1->x, ld->v1->y, &trace);
+		int s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
 		if (s1 == s2)
 			continue;				// line isn't crossed
 		P_MakeDivline (ld, &dl);
@@ -299,8 +288,8 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 
 // points should never be out of bounds, but check once instead of
 // each block
-	if (xt1<0 || yt1<0 || xt1>=bmapwidth || yt1>=bmapheight
-	||  xt2<0 || yt2<0 || xt2>=bmapwidth || yt2>=bmapheight)
+	if (!blockmap_class.containsCoordinate(xt1, yt1) ||
+	    !blockmap_class.containsCoordinate(xt2, yt2))
 		return false;
 
 	if (xt2 > xt1)

@@ -21,3 +21,270 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "odamex.h"
+
+#include "p_blockmap.h"
+#include "p_setup.h"
+#include "r_state.h"
+
+[[nodiscard]]
+std::span<const int> blockmap_t::list(int x, int y) const
+{
+	// [RH] Get past starting 0 (from BOOM)
+	// denis - not so fast, this breaks doom1.wad 1.9 demo1
+	// [SL] The first entry in each block list appears to have been intended to
+	// be used for a special purpose but instead contains garbage (most often
+	// referencing linedef 0). Using this first entry (as vanilla Doom does) can
+	// cause hitscan weapons to erroneously hit the first linedef entry regardless
+	// of where that linedef is located in relation to the block.
+	if (!demoplayback && m_skipzerostart)
+		return std::span{m_blocklists[(y * m_width) + x]}.subspan(1);
+
+	return m_blocklists[(y * m_width) + x];
+}
+
+blockmap_t blockmap_t::create()
+{
+	static constexpr int blkshift = 7;                  /* places to shift rel position for cell num */
+	static constexpr int blkmask = (1 << blkshift) - 1; /* mask for rel position within cell */
+
+	blockmap_t newblockmap;
+
+	std::vector<std::vector<int32_t>> blocklists; // array of pointers to lists of lines
+	std::vector<bool> blockdone; // array keeping track of blocks/line
+
+	//
+	// Subroutine to add a line number to a block list
+	// It simply returns if the line is already in the block
+	//
+
+	const auto AddBlockLine = [&blocklists, &blockdone]
+	(
+		int blockno,
+		uint32_t lineno
+	)
+	{
+		if (blockdone[blockno])
+			return;
+
+		blocklists[blockno].push_back(lineno);
+		blockdone[blockno] = true;
+	};
+
+	// scan for map limits, which the blockmap must enclose
+	int map_minx = limits::MAXINT;
+	int map_miny = limits::MAXINT;
+	int map_maxx = limits::MININT;
+	int map_maxy = limits::MININT;
+	for (auto& vertex : R_GetVertices())
+	{
+		fixed_t t = vertex.x;
+		if (t < map_minx)
+			map_minx = t;
+		else if (t > map_maxx)
+			map_maxx = t;
+
+		t = vertex.y;
+		if (t < map_miny)
+			map_miny = t;
+		else if (t > map_maxy)
+			map_maxy = t;
+	}
+	map_minx >>= FRACBITS;    // work in map coords, not fixed_t
+	map_maxx >>= FRACBITS;
+	map_miny >>= FRACBITS;
+	map_maxy >>= FRACBITS;
+
+	// set up blockmap area to enclose level plus margin
+
+	const int xorg = map_minx; // blockmap origin (lower left)
+	const int yorg = map_miny;
+	const int ncols = (map_maxx-xorg+1+blkmask)>>blkshift; //jff 10/12/98
+	const int nrows = (map_maxy-yorg+1+blkmask)>>blkshift; //+1 needed for map exactly 1 cell
+
+	const auto BlockIndex = [ncols](int x, int y){ return (y * ncols) + x; };
+
+	const int NBlocks = ncols*nrows; // number of cells
+
+	// create the array of pointers on NBlocks to blocklists
+	// also create an array of linelist counts on NBlocks
+	// finally make an array in which we can mark blocks done per line
+
+	blocklists.resize(NBlocks);
+	blockdone.resize(NBlocks);
+
+	// For each linedef in the wad, determine all blockmap blocks it touches,
+	// and add the linedef number to the blocklists for those blocks
+
+	for (int i = 0; i < numlines; i++)
+	{
+		const int x1 = lines[i].v1->x>>FRACBITS; // lines[i] map coords
+		const int y1 = lines[i].v1->y>>FRACBITS;
+		const int x2 = lines[i].v2->x>>FRACBITS;
+		const int y2 = lines[i].v2->y>>FRACBITS;
+		const int dx = x2 - x1;
+		const int dy = y2 - y1;
+		const bool vert = (dx == 0);             // lines[i] slopetype
+		const bool horiz = (dy == 0);
+		const bool spos = (dx ^ dy) > 0;
+		const bool sneg = (dx ^ dy) < 0;
+		const int minx = x1 > x2 ? x2 : x1;        // extremal lines[i] coords
+		const int maxx = x1 > x2 ? x1 : x2;
+		const int miny = y1 > y2 ? y2 : y1;
+		const int maxy = y1 > y2 ? y1 : y2;
+
+		// no blocks done for this linedef yet
+
+		blockdone.assign(NBlocks, false);
+
+		// The line always belongs to the blocks containing its endpoints
+
+		int bx = (x1-xorg) >> blkshift;
+		int by = (y1-yorg) >> blkshift;
+		AddBlockLine (BlockIndex(bx, by), i);
+		bx = (x2-xorg) >> blkshift;
+		by = (y2-yorg) >> blkshift;
+		AddBlockLine (BlockIndex(bx, by), i);
+
+		// For each column, see where the line along its left edge, which
+		// it contains, intersects the Linedef i. Add i to each corresponding
+		// blocklist.
+
+		if (!vert)    // don't interesect vertical lines with columns
+		{
+			for (int j = 0; j < ncols; j++)
+			{
+				// intersection of Linedef with x=xorg+(j<<blkshift)
+				// (y-y1)*dx = dy*(x-x1)
+				// y = dy*(x-x1)+y1*dx;
+
+				const int x = xorg+(j<<blkshift);		// (x,y) is intersection
+				const int y = ((dy*(x-x1))/dx)+y1;
+				const int yb = (y-yorg)>>blkshift;	// block row number
+				const int yp = (y-yorg)&blkmask;		// y position within block
+
+				if (yb<0 || yb>nrows-1)			// outside blockmap, continue
+					continue;
+
+				if (x<minx || x>maxx)			// line doesn't touch column
+					continue;
+
+				// The cell that contains the intersection point is always added
+
+				AddBlockLine(BlockIndex(j, yb), i);
+
+				// if the intersection is at a corner it depends on the slope
+				// (and whether the line extends past the intersection) which
+				// blocks are hit
+
+				if (yp==0)			// intersection at a corner
+				{
+					if (sneg)		//   \ - blocks x,y-, x-,y
+					{
+						if (yb>0 && miny<y)
+							AddBlockLine(BlockIndex(j, yb - 1), i);
+						if (j>0 && minx<x)
+							AddBlockLine(BlockIndex(j - 1, yb), i);
+					}
+					else if (spos)	//   / - block x-,y-
+					{
+						if (yb>0 && j>0 && minx<x)
+							AddBlockLine(BlockIndex(j - 1, yb - 1), i);
+					}
+					else if (horiz)	//   - - block x-,y
+					{
+						if (j>0 && minx<x)
+							AddBlockLine(BlockIndex(j - 1, yb), i);
+					}
+				}
+				else if (j>0 && minx<x)	// else not at corner: x-,y
+					AddBlockLine(BlockIndex(j - 1, yb), i);
+			}
+		}
+
+		// For each row, see where the line along its bottom edge, which
+		// it contains, intersects the Linedef i. Add i to all the corresponding
+		// blocklists.
+
+		if (!horiz)
+		{
+			for (int j = 0; j < nrows; j++)
+			{
+				// intersection of Linedef with y=yorg+(j<<blkshift)
+				// (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
+				// x = dx*(y-y1)/dy+x1;
+
+				const int y = yorg+(j<<blkshift);		// (x,y) is intersection
+				const int x = ((dx*(y-y1))/dy)+x1;
+				const int xb = (x-xorg)>>blkshift;	// block column number
+				const int xp = (x-xorg)&blkmask;		// x position within block
+
+				if (xb<0 || xb>ncols-1)			// outside blockmap, continue
+					continue;
+
+				if (y<miny || y>maxy)			 // line doesn't touch row
+					continue;
+
+				// The cell that contains the intersection point is always added
+
+				AddBlockLine (BlockIndex(xb, j), i);
+
+				// if the intersection is at a corner it depends on the slope
+				// (and whether the line extends past the intersection) which
+				// blocks are hit
+
+				if (xp==0)			// intersection at a corner
+				{
+					if (sneg)       //   \ - blocks x,y-, x-,y
+					{
+						if (j>0 && miny<y)
+							AddBlockLine (BlockIndex(xb, j - 1), i);
+						if (xb>0 && minx<x)
+							AddBlockLine (BlockIndex(xb - 1, j), i);
+					}
+					else if (vert)  //   | - block x,y-
+					{
+						if (j>0 && miny<y)
+							AddBlockLine (BlockIndex(xb, j - 1), i);
+					}
+					else if (spos)  //   / - block x-,y-
+					{
+						if (xb>0 && j>0 && miny<y)
+							AddBlockLine (BlockIndex(xb - 1, j - 1), i);
+					}
+				}
+				else if (j>0 && miny<y) // else not on a corner: x,y-
+					AddBlockLine (BlockIndex(xb, j - 1), i);
+			}
+		}
+	}
+
+	for (auto& list : blocklists)
+	{
+		std::ranges::reverse(list);
+	}
+
+	// blockmap header
+	//
+	// Rjy: P_CreateBlockMap should not initialise bmaporg{x,y} as P_LoadBlockMap
+	// does so again, resulting in their being left-shifted by FRACBITS twice.
+	//
+	// Thus any map having its blockmap built by the engine would have its
+	// origin at (0,0) regardless of where the walls and monsters actually are,
+	// breaking all collision detection.
+	//
+	// Instead have P_CreateBlockMap create blockmaplump only, so that both
+	// clauses of the conditional in P_LoadBlockMap have the same effect, and
+	// bmap* are only initialised from blockmaplump[0..3] once in the latter.
+	//
+	newblockmap.m_originx = INT2FIXED(xorg);
+	newblockmap.m_originx = INT2FIXED(xorg);
+	newblockmap.m_height = nrows;
+	newblockmap.m_width = ncols;
+
+	newblockmap.m_blocklists = std::move(blocklists);
+
+	newblockmap.setSkipBlockStart();
+
+	return newblockmap;
+}

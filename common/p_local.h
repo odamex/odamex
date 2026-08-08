@@ -334,7 +334,6 @@ bool	Check_Sides(const AActor *, int, int);					// phares
 //
 extern byte*			rejectmatrix;	// for fast sight rejection
 extern bool				rejectempty;
-extern int*				blockmaplump;	// offsets in blockmap are from here
 extern int*				blockmap;
 extern int				bmapwidth;
 extern int				bmapheight; 	// in mapblocks
@@ -544,6 +543,7 @@ void P_RunHelperTics();
 // exit with false without checking anything else.
 //
 
+#include "p_blockmap.h"
 
 //
 // P_BlockLinesIterator
@@ -557,17 +557,16 @@ template <typename F, typename... ARGS>
 requires std::predicate<F, line_t&, ARGS...>
 bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 {
-	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
+	if (not blockmap_class.containsCoordinate(x, y))
 		return true;
 
-	int offset = *(blockmap + (bmapwidth*y + x));
-	const int *list = blockmaplump + offset;
+	std::span<const int> list = blockmap_class.list(x, y);
 
 	/* [RH] Polyobj stuff from Hexen --> */
 	polyblock_t *polyLink;
 	extern polyblock_t **PolyBlockMap;
 
-	offset = (y * bmapwidth) + x;
+	const int offset = (y * blockmap_class.width()) + x;
 	if (PolyBlockMap)
 	{
 		polyLink = PolyBlockMap[offset];
@@ -594,19 +593,9 @@ bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 	}
 	/* <-- Polyobj stuff from Hexen */
 
-	// [RH] Get past starting 0 (from BOOM)
-	// denis - not so fast, this breaks doom1.wad 1.9 demo1
-	// [SL] The first entry in each block list appears to have been intended to
-	// be used for a special purpose but instead contains garbage (most often
-	// referencing linedef 0). Using this first entry (as vanilla Doom does) can
-	// cause hitscan weapons to erroneously hit the first linedef entry regardless
-	// of where that linedef is located in relation to the block.
-	if (!demoplayback && skipblstart)
-		++list;
-
-	for (; *list != -1; list++)
+	for (int idx : list)
 	{
-		line_t& ld = lines[*list];
+		line_t& ld = lines[idx];
 
 		if (ld.validcount != validcount) {
 			ld.validcount = validcount;
@@ -626,10 +615,10 @@ template <typename F, typename... ARGS>
 requires std::predicate<F, AActor&, ARGS...>
 bool P_BlockThingsIterator (int x, int y, F&& func, AActor *actor, ARGS&&... args)
 {
-	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
+	if (not blockmap_class.containsCoordinate(x, y))
 		return true;
 
-	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y*bmapwidth)+x]);
+	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y * blockmap_class.width()) + x]);
 	while (mobj)
  	{
 		if (!std::invoke(std::forward<F>(func), *mobj, std::forward<ARGS>(args)...))

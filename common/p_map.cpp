@@ -3302,9 +3302,9 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bool hurtSource, int mod)
 {
 	const fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
-	const int yh = std::min<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, bmapheight - 1);
+	const int yh = std::min<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, blockmap_class.height() - 1);
 	const int yl = std::max<int>((spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT, 0);
-	const int xh = std::min<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, bmapwidth - 1);
+	const int xh = std::min<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, blockmap_class.width() - 1);
 	const int xl = std::max<int>((spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT, 0);
 	AActor* bombsource = source;
 	const auto bombdamagefloat = static_cast<float>(damage);
@@ -3327,12 +3327,12 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 		// So we make a list of unique actors in the surrounding blocks and
 		// then call the radius attack function once for each actor.
 
-		std::set<AActor*> actorset;
+		std::unordered_set<AActor*> actorset;
 		for (int y=yl ; y<=yh ; y++)
 		{
 			for (int x=xl ; x<=xh ; x++)
 			{
-				AActor *mobj = blocklinks[y*bmapwidth+x];
+				AActor *mobj = blocklinks[(y * blockmap_class.width()) + x];
 				while (mobj)
 				{
 					actorset.insert(mobj);

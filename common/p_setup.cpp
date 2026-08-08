@@ -55,6 +55,7 @@
 #include "g_musinfo.h"
 #include "r_sky.h"
 #include "p_compdb.h"
+#include "p_blockmap.h"
 
 #ifdef CLIENT_APP
 #include "cl_freecam.h"
@@ -1320,16 +1321,15 @@ struct linelist_t        // type used to list lines in each block
 
 void P_CreateBlockMap()
 {
-	std::unique_ptr<linelist_t*[]> blocklists; // array of pointers to lists of lines
-	std::unique_ptr<int[]> blockcount; // array of counters of line lists
-	std::unique_ptr<bool[]> blockdone; // array keeping track of blocks/line
+	std::vector<std::vector<uint32_t>> blocklists; // array of pointers to lists of lines
+	std::vector<bool> blockdone; // array keeping track of blocks/line
 
 	//
 	// Subroutine to add a line number to a block list
 	// It simply returns if the line is already in the block
 	//
 
-	const auto AddBlockLine = [&blocklists, &blockdone, &blockcount]
+	const auto AddBlockLine = [&blocklists, &blockdone]
 	(
 		int blockno,
 		uint32_t lineno
@@ -1338,11 +1338,7 @@ void P_CreateBlockMap()
 		if (blockdone[blockno])
 			return;
 
-		linelist_t* l = new linelist_t;
-		l->num = lineno;
-		l->next = blocklists[blockno];
-		blocklists[blockno] = l;
-		blockcount[blockno]++;
+		blocklists[blockno].push_back(lineno);
 		blockdone[blockno] = true;
 	};
 
@@ -1353,14 +1349,14 @@ void P_CreateBlockMap()
 	int map_maxy = limits::MININT;
 	for (int i = 0; i < numvertexes; i++)
 	{
-		fixed_t t;
-
-		if ((t = vertexes[i].x) < map_minx)
+		fixed_t t = vertexes[i].x;
+		if (t < map_minx)
 			map_minx = t;
 		else if (t > map_maxx)
 			map_maxx = t;
 
-		if ((t = vertexes[i].y) < map_miny)
+		t = vertexes[i].y;
+		if (t < map_miny)
 			map_miny = t;
 		else if (t > map_maxy)
 			map_maxy = t;
@@ -1385,22 +1381,8 @@ void P_CreateBlockMap()
 	// also create an array of linelist counts on NBlocks
 	// finally make an array in which we can mark blocks done per line
 
-	blocklists = std::make_unique<linelist_t*[]>(NBlocks);
-	std::fill_n(blocklists.get(), NBlocks, nullptr);
-	blockcount = std::make_unique<int[]>(NBlocks);
-	std::fill_n(blockcount.get(), NBlocks, 0);
-	blockdone = std::make_unique<bool[]>(NBlocks);
-
-	// initialize each blocklist, and enter the trailing -1 in all blocklists
-	// note the linked list of lines grows backwards
-
-	for (int i = 0; i < NBlocks; i++)
-	{
-		blocklists[i] = new linelist_t;
-		blocklists[i]->num = -1;
-		blocklists[i]->next = NULL;
-		blockcount[i]++;
-	}
+	blocklists.resize(NBlocks);
+	blockdone.resize(NBlocks);
 
 	// For each linedef in the wad, determine all blockmap blocks it touches,
 	// and add the linedef number to the blocklists for those blocks
@@ -1417,7 +1399,6 @@ void P_CreateBlockMap()
 		const bool horiz = (dy == 0);
 		const bool spos = (dx ^ dy) > 0;
 		const bool sneg = (dx ^ dy) < 0;
-		int bx,by;                              // block cell coords
 		const int minx = x1 > x2 ? x2 : x1;        // extremal lines[i] coords
 		const int maxx = x1 > x2 ? x1 : x2;
 		const int miny = y1 > y2 ? y2 : y1;
@@ -1425,12 +1406,12 @@ void P_CreateBlockMap()
 
 		// no blocks done for this linedef yet
 
-		std::fill_n(blockdone.get(), NBlocks, false);
+		blockdone.assign(NBlocks, false);
 
 		// The line always belongs to the blocks containing its endpoints
 
-		bx = (x1-xorg) >> blkshift;
-		by = (y1-yorg) >> blkshift;
+		int bx = (x1-xorg) >> blkshift;
+		int by = (y1-yorg) >> blkshift;
 		AddBlockLine (BlockIndex(bx, by), i);
 		bx = (x2-xorg) >> blkshift;
 		by = (y2-yorg) >> blkshift;
@@ -1448,10 +1429,10 @@ void P_CreateBlockMap()
 				// (y-y1)*dx = dy*(x-x1)
 				// y = dy*(x-x1)+y1*dx;
 
-				int x = xorg+(j<<blkshift);		// (x,y) is intersection
-				int y = (dy*(x-x1))/dx+y1;
-				int yb = (y-yorg)>>blkshift;	// block row number
-				int yp = (y-yorg)&blkmask;		// y position within block
+				const int x = xorg+(j<<blkshift);		// (x,y) is intersection
+				const int y = ((dy*(x-x1))/dx)+y1;
+				const int yb = (y-yorg)>>blkshift;	// block row number
+				const int yp = (y-yorg)&blkmask;		// y position within block
 
 				if (yb<0 || yb>nrows-1)			// outside blockmap, continue
 					continue;
@@ -1505,7 +1486,7 @@ void P_CreateBlockMap()
 				// x = dx*(y-y1)/dy+x1;
 
 				const int y = yorg+(j<<blkshift);		// (x,y) is intersection
-				const int x = (dx*(y-y1))/dy+x1;
+				const int x = ((dx*(y-y1))/dy)+x1;
 				const int xb = (x-xorg)>>blkshift;	// block column number
 				const int xp = (x-xorg)&blkmask;		// x position within block
 
@@ -1549,14 +1530,20 @@ void P_CreateBlockMap()
 		}
 	}
 
+	for (auto& list : blocklists)
+	{
+		std::ranges::reverse(list);
+		list.push_back(-1);
+	}
+
 	// Add initial 0 to all blocklists
 	// count the total number of lines (and 0's and -1's)
-	std::fill_n(blockdone.get(), NBlocks, false);
+	blockdone.assign(NBlocks, false);
 	uint32_t linetotal = 0;
 	for (int i = 0; i < NBlocks; i++)
 	{
 		AddBlockLine (i, 0);
-		linetotal += blockcount[i];
+		linetotal += blocklists[i].size();
 	}
 
 	// Create the blockmap lump
@@ -1583,19 +1570,15 @@ void P_CreateBlockMap()
 	// offsets to lists and block lists
 	for (int i = 0; i < NBlocks; i++)
 	{
-		linelist_t *bl = blocklists[i];
 		uint32_t offs = blockmaplump[4+i] =   // set offset to block's list
-			(i? blockmaplump[4+i-1] : 4+NBlocks) + (i? blockcount[i-1] : 0);
+			(i? blockmaplump[4+i-1] : 4+NBlocks) + (i? blocklists[i-1].size() : 0);
 
 		// add the lines in each block's list to the blockmaplump
 		// delete each list node as we go
 
-		while (bl)
+		for (auto num : blocklists[i])
 		{
-			linelist_t *tmp = bl->next;
-			blockmaplump[offs++] = bl->num;
-			delete bl;
-			bl = tmp;
+			blockmaplump[offs++] = num;
 		}
 	}
 }
@@ -1632,6 +1615,8 @@ void P_SetSkipBlockStart()
 void P_LoadBlockMap (int lump)
 {
 	const uint32_t count = W_LumpLength(lump) / 2;
+
+	blockmap_class = blockmap_t::create();
 
 	if (Args.CheckParm("-blockmap") || count >= 0x10000 || count < 4)
 		P_CreateBlockMap();
