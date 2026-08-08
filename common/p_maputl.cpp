@@ -215,14 +215,14 @@ void AActor::ActorBlockMapListNode::Link()
 				// killough 8/11/98: simpler scheme using pointer-to-pointer prev
 				// pointers, allows head nodes to be treated like everything else
 
-				AActor** headptr   = &blocklinks[bmy * blockmap.width() + bmx];
+				AActor** headptr   = &blocklinks[(bmy * blockmap.width()) + bmx];
 				AActor*  headactor = *headptr;
 
-				size_t thisidx = getIndex(bmx, bmy);
+				const size_t thisidx = getIndex(bmx, bmy);
 
 				if ((m_next[thisidx] = headactor))
 				{
-					size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
+					const size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
 					headactor->bmapnode.m_prev[nextidx] = & m_next[thisidx];
 				}
 
@@ -1237,31 +1237,28 @@ AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 
 AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*searchFunc)(AActor*, int, angle_t))
 {
-	int blockX;
-	int blockY;
-	int startX, startY;
 	int blockIndex;
 	int firstStop;
 	int secondStop;
 	int thirdStop;
 	int finalStop;
-	int count;
 	AActor* target;
 
-	startX = (mo->x - blockmap.originx()) >> MAPBLOCKSHIFT;
-	startY = (mo->y - blockmap.originy()) >> MAPBLOCKSHIFT;
+	const int startX = (mo->x - blockmap.originx()) >> MAPBLOCKSHIFT;
+	const int startY = (mo->y - blockmap.originy()) >> MAPBLOCKSHIFT;
 
 	if (startX >= 0 && startX < blockmap.width() && startY >= 0 && startY < blockmap.height())
 	{
-		if ((target = searchFunc(mo, startY * blockmap.width() + startX, fov)))
+		target = searchFunc(mo, (startY * blockmap.width()) + startX, fov);
+		if (target)
 		{ // found a target right away
 			return target;
 		}
 	}
-	for (count = 1; count <= distance; count++)
+	for (int count = 1; count <= distance; count++)
 	{
-		blockX = startX - count;
-		blockY = startY - count;
+		int blockX = startX - count;
+		int blockY = startY - count;
 
 		if (blockY < 0)
 		{
@@ -1279,7 +1276,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 		{
 			blockX = blockmap.width() - 1;
 		}
-		blockIndex = blockY * blockmap.width() + blockX;
+		blockIndex = (blockY * blockmap.width()) + blockX;
 		firstStop = startX + count;
 		if (firstStop < 0)
 		{
@@ -1298,15 +1295,16 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 		{
 			secondStop = blockmap.height() - 1;
 		}
-		thirdStop = secondStop * blockmap.width() + blockX;
-		secondStop = secondStop * blockmap.width() + firstStop;
+		thirdStop = (secondStop * blockmap.width()) + blockX;
+		secondStop = (secondStop * blockmap.width()) + firstStop;
 		firstStop += blockY * blockmap.width();
 		finalStop = blockIndex;
 
 		// Trace the first block section (along the top)
 		for (; blockIndex <= firstStop; blockIndex++)
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
@@ -1314,7 +1312,8 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 		// Trace the second block section (right edge)
 		for (blockIndex--; blockIndex <= secondStop; blockIndex += blockmap.width())
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
@@ -1322,7 +1321,8 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 		// Trace the third block section (bottom edge)
 		for (blockIndex -= blockmap.width(); blockIndex >= thirdStop; blockIndex--)
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
@@ -1330,13 +1330,14 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 		// Trace the final block section (left edge)
 		for (blockIndex++; blockIndex > finalStop; blockIndex -= blockmap.width())
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 VERSION_CONTROL (p_maputl_cpp, "$Id$")

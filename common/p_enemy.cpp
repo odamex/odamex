@@ -1079,8 +1079,8 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		// Bug out early if the list is empty
 		if (!list.empty())
 		{
-			int x = (actor->x - blockmap.originx()) >> MAPBLOCKSHIFT;
-			int y = (actor->y - blockmap.originy()) >> MAPBLOCKSHIFT;
+			const int x = (actor->x - blockmap.originx()) >> MAPBLOCKSHIFT;
+			const int y = (actor->y - blockmap.originy()) >> MAPBLOCKSHIFT;
 
 			// First we check the exact blockmap for the monster.
 			if (!P_BlockThingsIterator(x, y, PIT_FindTarget, nullptr, *actor, allaround))
