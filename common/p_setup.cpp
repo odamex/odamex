@@ -128,7 +128,6 @@ bool			HasBehavior = false;
 int 			bmapwidth;
 int 			bmapheight; 	// size in mapblocks
 
-int				*blockmap;		// int for larger maps ([RH] Made int because BOOM does)
 int				*blockmaplump;	// offsets in blockmap are from here
 
 fixed_t 		bmaporgx;		// origin of block map
@@ -1595,7 +1594,7 @@ void P_LoadBlockMap (int lump)
 {
 	const uint32_t count = W_LumpLength(lump) / 2;
 
-	blockmap_class = blockmap_t::create();
+	blockmap = blockmap_t::create();
 
 	if (Args.CheckParm("-blockmap") || count >= 0x10000 || count < 4)
 		P_CreateBlockMap();
@@ -1630,7 +1629,6 @@ void P_LoadBlockMap (int lump)
 
 	// clear out mobj chains
 	blocklinks = Z_Calloc<AActor*>(bmapwidth * bmapheight, PU_LEVEL);
-	blockmap = blockmaplump + 4;
 
 	// P_SetSkipBlockStart();
 }
@@ -1739,21 +1737,10 @@ int P_GroupLines()
 		sector->soundorg[1] = (bbox.Top()+bbox.Bottom())/2;
 
 		// adjust bounding box to map blocks
-		int block = (bbox.Top()-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block >= bmapheight ? bmapheight-1 : block;
-		sector->blockbox[BOXTOP]=block;
-
-		block = (bbox.Bottom()-bmaporgy-MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block < 0 ? 0 : block;
-		sector->blockbox[BOXBOTTOM]=block;
-
-		block = (bbox.Right()-bmaporgx+MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block >= bmapwidth ? bmapwidth-1 : block;
-		sector->blockbox[BOXRIGHT]=block;
-
-		block = (bbox.Left()-bmaporgx-MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block < 0 ? 0 : block;
-		sector->blockbox[BOXLEFT]=block;
+		sector->blockbox[BOXTOP] = std::min((bbox.Top()-blockmap.originy()+MAXRADIUS)>>MAPBLOCKSHIFT, blockmap.height() - 1);
+		sector->blockbox[BOXBOTTOM] = std::max((bbox.Bottom()-blockmap.originy()-MAXRADIUS)>>MAPBLOCKSHIFT, 0);;
+		sector->blockbox[BOXRIGHT] = std::min((bbox.Right()-blockmap.originx()+MAXRADIUS)>>MAPBLOCKSHIFT, blockmap.width() - 1);
+		sector->blockbox[BOXLEFT] = std::max((bbox.Left()-blockmap.originx()-MAXRADIUS)>>MAPBLOCKSHIFT, 0);
 	}
 	return total;
 }

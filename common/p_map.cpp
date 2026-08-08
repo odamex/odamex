@@ -253,10 +253,10 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	                              (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
-	const int xl = (tmbbox[BOXLEFT] - blockmap_class.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
-	const int xh = (tmbbox[BOXRIGHT] - blockmap_class.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
-	const int yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
-	const int yh = (tmbbox[BOXTOP] - blockmap_class.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	for (int bx=xl ; bx<=xh ; bx++)
 		for (int by=yl ; by<=yh ; by++)
@@ -926,10 +926,10 @@ bool Check_Sides(const AActor* actor, int x, int y)
 
 	// Determine which blocks to look in for blocking lines
 
-	const int xl = (tmbbox[BOXLEFT]   - blockmap_class.originx())>>MAPBLOCKSHIFT;
-	const int xh = (tmbbox[BOXRIGHT]  - blockmap_class.originx())>>MAPBLOCKSHIFT;
-	const int yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy())>>MAPBLOCKSHIFT;
-	const int yh = (tmbbox[BOXTOP]    - blockmap_class.originy())>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT]   - blockmap.originx())>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT]  - blockmap.originx())>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP]    - blockmap.originy())>>MAPBLOCKSHIFT;
 
 	// xl->xh, yl->yh determine the mapblock set to search
 
@@ -1081,10 +1081,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	// because DActors are grouped into mapblocks
 	// based on their origin point, and can overlap
 	// into adjacent blocks by up to MAXRADIUS units.
-	int xl = (tmbbox[BOXLEFT] - blockmap_class.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
-	int xh = (tmbbox[BOXRIGHT] - blockmap_class.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
-	int yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
-	int yh = (tmbbox[BOXTOP] - blockmap_class.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	BlockingMobj = NULL;
 
@@ -1167,10 +1167,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	}
 
 	// check lines
-	xl = (tmbbox[BOXLEFT] - blockmap_class.originx())>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - blockmap_class.originx())>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy())>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - blockmap_class.originy())>>MAPBLOCKSHIFT;
+	xl = (tmbbox[BOXLEFT] - blockmap.originx())>>MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - blockmap.originx())>>MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - blockmap.originy())>>MAPBLOCKSHIFT;
 
 	// from mbf, allows players to get unstuck if they end up spawned
 	// partially inside a wall or blocking line
@@ -1233,10 +1233,10 @@ bool P_TestMobjZ (AActor *actor)
 // into mapblocks based on their origin point, and can overlap into adjacent
 // blocks by up to MAXRADIUS units
 //
-	xl = (tmbbox[BOXLEFT] - blockmap_class.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - blockmap_class.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - blockmap_class.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	for (bx = xl; bx <= xh; bx++)
 		for (by = yl; by <= yh; by++)
@@ -1612,13 +1612,13 @@ bool PIT_ApplyTorque (const line_t& ld)
 void P_ApplyTorque (AActor *mo)
 {
 	int xl = ((tmbbox[BOXLEFT] =
-			mo->x - mo->radius) - blockmap_class.originx()) >> MAPBLOCKSHIFT;
+			mo->x - mo->radius) - blockmap.originx()) >> MAPBLOCKSHIFT;
 	int xh = ((tmbbox[BOXRIGHT] =
-			mo->x + mo->radius) - blockmap_class.originx()) >> MAPBLOCKSHIFT;
+			mo->x + mo->radius) - blockmap.originx()) >> MAPBLOCKSHIFT;
 	int yl = ((tmbbox[BOXBOTTOM] =
-			mo->y - mo->radius) - blockmap_class.originy()) >> MAPBLOCKSHIFT;
+			mo->y - mo->radius) - blockmap.originy()) >> MAPBLOCKSHIFT;
 	int yh = ((tmbbox[BOXTOP] =
-			mo->y + mo->radius) - blockmap_class.originy()) >> MAPBLOCKSHIFT;
+			mo->y + mo->radius) - blockmap.originy()) >> MAPBLOCKSHIFT;
 	int bx,by;
 	int flags = mo->oflags;	//Remember the current state, for gear-change
 
@@ -3302,10 +3302,10 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bool hurtSource, int mod)
 {
 	const fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
-	const int yh = std::min<int>((spot->y + dist - blockmap_class.originy())>>MAPBLOCKSHIFT, blockmap_class.height() - 1);
-	const int yl = std::max<int>((spot->y - dist - blockmap_class.originy())>>MAPBLOCKSHIFT, 0);
-	const int xh = std::min<int>((spot->x + dist - blockmap_class.originx())>>MAPBLOCKSHIFT, blockmap_class.width() - 1);
-	const int xl = std::max<int>((spot->x - dist - blockmap_class.originx())>>MAPBLOCKSHIFT, 0);
+	const int yh = std::min<int>((spot->y + dist - blockmap.originy())>>MAPBLOCKSHIFT, blockmap.height() - 1);
+	const int yl = std::max<int>((spot->y - dist - blockmap.originy())>>MAPBLOCKSHIFT, 0);
+	const int xh = std::min<int>((spot->x + dist - blockmap.originx())>>MAPBLOCKSHIFT, blockmap.width() - 1);
+	const int xl = std::max<int>((spot->x - dist - blockmap.originx())>>MAPBLOCKSHIFT, 0);
 	AActor* bombsource = source;
 	const auto bombdamagefloat = static_cast<float>(damage);
 	const float bombdistancefloat = 1.f / static_cast<float>(distance);
@@ -3332,7 +3332,7 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 		{
 			for (int x=xl ; x<=xh ; x++)
 			{
-				AActor *mobj = blocklinks[(y * blockmap_class.width()) + x];
+				AActor *mobj = blocklinks[(y * blockmap.width()) + x];
 				while (mobj)
 				{
 					actorset.insert(mobj);
@@ -3723,10 +3723,10 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 
 	validcount++; // used to make sure we only process a line once
 
-	xl = (tmbbox[BOXLEFT] - blockmap_class.originx())>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - blockmap_class.originx())>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy())>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - blockmap_class.originy())>>MAPBLOCKSHIFT;
+	xl = (tmbbox[BOXLEFT] - blockmap.originx())>>MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - blockmap.originx())>>MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - blockmap.originy())>>MAPBLOCKSHIFT;
 
 	for (bx=xl ; bx<=xh ; bx++)
 		for (by=yl ; by<=yh ; by++)

@@ -175,29 +175,29 @@ void AActor::ActorBlockMapListNode::copyFrom(const ActorBlockMapListNode& other)
 
 void AActor::ActorBlockMapListNode::Link()
 {
-	int left    = (m_actor->x - m_actor->radius - blockmap_class.originx()) >> MAPBLOCKSHIFT;
-	int right   = (m_actor->x + m_actor->radius - blockmap_class.originx()) >> MAPBLOCKSHIFT;
-	int top     = (m_actor->y - m_actor->radius - blockmap_class.originy()) >> MAPBLOCKSHIFT;
-	int bottom  = (m_actor->y + m_actor->radius - blockmap_class.originy()) >> MAPBLOCKSHIFT;
+	int left    = (m_actor->x - m_actor->radius - blockmap.originx()) >> MAPBLOCKSHIFT;
+	int right   = (m_actor->x + m_actor->radius - blockmap.originx()) >> MAPBLOCKSHIFT;
+	int top     = (m_actor->y - m_actor->radius - blockmap.originy()) >> MAPBLOCKSHIFT;
+	int bottom  = (m_actor->y + m_actor->radius - blockmap.originy()) >> MAPBLOCKSHIFT;
 
 	if (!co_blockmapfix)
 	{
 		// originally Doom only used the block containing the center point
 		// of the actor even if the actor overlapped into other blocks
-		top = bottom = (m_actor->y - blockmap_class.originy()) >> MAPBLOCKSHIFT;
-		left = right = (m_actor->x - blockmap_class.originx()) >> MAPBLOCKSHIFT;
+		top = bottom = (m_actor->y - blockmap.originy()) >> MAPBLOCKSHIFT;
+		left = right = (m_actor->x - blockmap.originx()) >> MAPBLOCKSHIFT;
 	}
 
 	// do not ignore actors only *partially* outside blockmap
 	// e.g. do not ignore an actor just because its left edge is off the left
 	// side of the blockmap - its *right* edge must be off the left side as well
-	if (right >= 0 && left < blockmap_class.width() && bottom >= 0 && top < blockmap_class.height())
+	if (right >= 0 && left < blockmap.width() && bottom >= 0 && top < blockmap.height())
 	{
 		// however, need to clamp a partially off-limits actor to the grid
 		left = std::max(left, 0);
-		if (right >= blockmap_class.width()) right = blockmap_class.width() - 1;
+		if (right >= blockmap.width()) right = blockmap.width() - 1;
 		top = std::max(top, 0);
-		if (bottom >= blockmap_class.height()) bottom = blockmap_class.height() - 1;
+		if (bottom >= blockmap.height()) bottom = blockmap.height() - 1;
 
 		m_originx = left;
 		m_originy = top;
@@ -215,7 +215,7 @@ void AActor::ActorBlockMapListNode::Link()
 				// killough 8/11/98: simpler scheme using pointer-to-pointer prev
 				// pointers, allows head nodes to be treated like everything else
 
-				AActor** headptr   = &blocklinks[bmy * blockmap_class.width() + bmx];
+				AActor** headptr   = &blocklinks[bmy * blockmap.width() + bmx];
 				AActor*  headactor = *headptr;
 
 				size_t thisidx = getIndex(bmx, bmy);
@@ -879,10 +879,10 @@ bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 
 	intercepts.clear();
 
-	if ( ((x1-blockmap_class.originx())&(MAPBLOCKSIZE-1)) == 0)
+	if ( ((x1-blockmap.originx())&(MAPBLOCKSIZE-1)) == 0)
 		x1 += FRACUNIT; // don't side exactly on a line
 
-	if ( ((y1-blockmap_class.originy())&(MAPBLOCKSIZE-1)) == 0)
+	if ( ((y1-blockmap.originy())&(MAPBLOCKSIZE-1)) == 0)
 		y1 += FRACUNIT; // don't side exactly on a line
 
 	trace.x = x1;
@@ -890,13 +890,13 @@ bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 	trace.dx = x2 - x1;
 	trace.dy = y2 - y1;
 
-	x1 -= blockmap_class.originx();
-	y1 -= blockmap_class.originy();
+	x1 -= blockmap.originx();
+	y1 -= blockmap.originy();
 	xt1 = x1>>MAPBLOCKSHIFT;
 	yt1 = y1>>MAPBLOCKSHIFT;
 
-	x2 -= blockmap_class.originx();
-	y2 -= blockmap_class.originy();
+	x2 -= blockmap.originx();
+	y2 -= blockmap.originy();
 	xt2 = x2>>MAPBLOCKSHIFT;
 	yt2 = y2>>MAPBLOCKSHIFT;
 
@@ -1141,8 +1141,8 @@ bool P_ActorInFOV(const AActor* origin, const AActor* mo , float f, fixed_t dist
 
 AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 {
-	const int bx = index % blockmap_class.width();
-	const int by = index / blockmap_class.width();
+	const int bx = index % blockmap.width();
+	const int by = index / blockmap.width();
 	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
@@ -1192,8 +1192,8 @@ AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 
 AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 {
-	const int bx = index % blockmap_class.width();
-	const int by = index / blockmap_class.width();
+	const int bx = index % blockmap.width();
+	const int by = index / blockmap.width();
 	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
@@ -1246,12 +1246,12 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 	int count;
 	AActor* target;
 
-	startX = (mo->x - blockmap_class.originx()) >> MAPBLOCKSHIFT;
-	startY = (mo->y - blockmap_class.originy()) >> MAPBLOCKSHIFT;
+	startX = (mo->x - blockmap.originx()) >> MAPBLOCKSHIFT;
+	startY = (mo->y - blockmap.originy()) >> MAPBLOCKSHIFT;
 
-	if (startX >= 0 && startX < blockmap_class.width() && startY >= 0 && startY < blockmap_class.height())
+	if (startX >= 0 && startX < blockmap.width() && startY >= 0 && startY < blockmap.height())
 	{
-		if ((target = searchFunc(mo, startY * blockmap_class.width() + startX, fov)))
+		if ((target = searchFunc(mo, startY * blockmap.width() + startX, fov)))
 		{ // found a target right away
 			return target;
 		}
@@ -1265,40 +1265,40 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 		{
 			blockY = 0;
 		}
-		else if (blockY >= blockmap_class.height())
+		else if (blockY >= blockmap.height())
 		{
-			blockY = blockmap_class.height() - 1;
+			blockY = blockmap.height() - 1;
 		}
 		if (blockX < 0)
 		{
 			blockX = 0;
 		}
-		else if (blockX >= blockmap_class.width())
+		else if (blockX >= blockmap.width())
 		{
-			blockX = blockmap_class.width() - 1;
+			blockX = blockmap.width() - 1;
 		}
-		blockIndex = blockY * blockmap_class.width() + blockX;
+		blockIndex = blockY * blockmap.width() + blockX;
 		firstStop = startX + count;
 		if (firstStop < 0)
 		{
 			continue;
 		}
-		if (firstStop >= blockmap_class.width())
+		if (firstStop >= blockmap.width())
 		{
-			firstStop = blockmap_class.width() - 1;
+			firstStop = blockmap.width() - 1;
 		}
 		secondStop = startY + count;
 		if (secondStop < 0)
 		{
 			continue;
 		}
-		if (secondStop >= blockmap_class.height())
+		if (secondStop >= blockmap.height())
 		{
-			secondStop = blockmap_class.height() - 1;
+			secondStop = blockmap.height() - 1;
 		}
-		thirdStop = secondStop * blockmap_class.width() + blockX;
-		secondStop = secondStop * blockmap_class.width() + firstStop;
-		firstStop += blockY * blockmap_class.width();
+		thirdStop = secondStop * blockmap.width() + blockX;
+		secondStop = secondStop * blockmap.width() + firstStop;
+		firstStop += blockY * blockmap.width();
 		finalStop = blockIndex;
 
 		// Trace the first block section (along the top)
@@ -1310,7 +1310,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 			}
 		}
 		// Trace the second block section (right edge)
-		for (blockIndex--; blockIndex <= secondStop; blockIndex += blockmap_class.width())
+		for (blockIndex--; blockIndex <= secondStop; blockIndex += blockmap.width())
 		{
 			if ((target = searchFunc(mo, blockIndex, fov)))
 			{
@@ -1318,7 +1318,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 			}
 		}
 		// Trace the third block section (bottom edge)
-		for (blockIndex -= blockmap_class.width(); blockIndex >= thirdStop; blockIndex--)
+		for (blockIndex -= blockmap.width(); blockIndex >= thirdStop; blockIndex--)
 		{
 			if ((target = searchFunc(mo, blockIndex, fov)))
 			{
@@ -1326,7 +1326,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 			}
 		}
 		// Trace the final block section (left edge)
-		for (blockIndex++; blockIndex > finalStop; blockIndex -= blockmap_class.width())
+		for (blockIndex++; blockIndex > finalStop; blockIndex -= blockmap.width())
 		{
 			if ((target = searchFunc(mo, blockIndex, fov)))
 			{

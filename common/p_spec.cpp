@@ -3042,10 +3042,10 @@ void DPusher::RunThink ()
 		tmbbox[BOXRIGHT]  = m_X + radius;
 		tmbbox[BOXLEFT]   = m_X - radius;
 
-		const int xl = (tmbbox[BOXLEFT] - blockmap_class.originx() - MAXRADIUS) >> MAPBLOCKSHIFT;
-		const int xh = (tmbbox[BOXRIGHT] - blockmap_class.originx() + MAXRADIUS) >> MAPBLOCKSHIFT;
-		const int yl = (tmbbox[BOXBOTTOM] - blockmap_class.originy() - MAXRADIUS) >> MAPBLOCKSHIFT;
-		const int yh = (tmbbox[BOXTOP] - blockmap_class.originy() + MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS) >> MAPBLOCKSHIFT;
 		for (int bx = xl; bx <= xh; bx++)
 			for (int by = yl; by <= yh; by++)
 				P_BlockThingsIterator (bx, by, PIT_PushThing, nullptr, this /*MT_PUSH/MT_PULL point source*/);

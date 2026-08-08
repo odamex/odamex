@@ -770,7 +770,7 @@ public:
 		[[nodiscard]]
 		AActor* Next(int bmx, int bmy) const
 		{
-			if (not blockmap_class.containsCoordinate(bmx, bmy))
+			if (not blockmap.containsCoordinate(bmx, bmy))
 				return nullptr;
 
 			return m_next[getIndex(bmx, bmy)];

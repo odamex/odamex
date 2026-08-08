@@ -123,7 +123,7 @@ bool P_SightBlockLinesIterator(int x, int y)
 
 	extern polyblock_t **PolyBlockMap;
 
-	const polyblock_t* polyLink = PolyBlockMap[(y * blockmap_class.width()) + x];
+	const polyblock_t* polyLink = PolyBlockMap[(y * blockmap.width()) + x];
 
 	while (polyLink)
 	{
@@ -166,7 +166,7 @@ bool P_SightBlockLinesIterator(int x, int y)
 		polyLink = polyLink->next;
 	}
 
-	for (int idx : blockmap_class.list(x, y))
+	for (int idx : blockmap.list(x, y))
 	{
 		line_t* ld = &lines[idx];
 		if (ld->validcount == validcount)
@@ -267,29 +267,29 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 	validcount++;
 	intercepts.clear();
 
-	if ( ((x1-blockmap_class.originx())&(MAPBLOCKSIZE-1)) == 0)
+	if ( ((x1-blockmap.originx())&(MAPBLOCKSIZE-1)) == 0)
 		x1 += FRACUNIT;							// don't side exactly on a line
-	if ( ((y1-blockmap_class.originy())&(MAPBLOCKSIZE-1)) == 0)
+	if ( ((y1-blockmap.originy())&(MAPBLOCKSIZE-1)) == 0)
 		y1 += FRACUNIT;							// don't side exactly on a line
 	trace.x = x1;
 	trace.y = y1;
 	trace.dx = x2 - x1;
 	trace.dy = y2 - y1;
 
-	x1 -= blockmap_class.originx();
-	y1 -= blockmap_class.originy();
+	x1 -= blockmap.originx();
+	y1 -= blockmap.originy();
 	xt1 = x1>>MAPBLOCKSHIFT;
 	yt1 = y1>>MAPBLOCKSHIFT;
 
-	x2 -= blockmap_class.originx();
-	y2 -= blockmap_class.originy();
+	x2 -= blockmap.originx();
+	y2 -= blockmap.originy();
 	xt2 = x2>>MAPBLOCKSHIFT;
 	yt2 = y2>>MAPBLOCKSHIFT;
 
 // points should never be out of bounds, but check once instead of
 // each block
-	if (!blockmap_class.containsCoordinate(xt1, yt1) ||
-	    !blockmap_class.containsCoordinate(xt2, yt2))
+	if (!blockmap.containsCoordinate(xt1, yt1) ||
+	    !blockmap.containsCoordinate(xt2, yt2))
 		return false;
 
 	if (xt2 > xt1)

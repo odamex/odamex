@@ -90,4 +90,4 @@ public:
 	}
 };
 
-inline blockmap_t blockmap_class;
+inline blockmap_t blockmap;

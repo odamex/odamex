@@ -551,16 +551,16 @@ template <typename F, typename... ARGS>
 requires std::predicate<F, line_t&, ARGS...>
 bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 {
-	if (not blockmap_class.containsCoordinate(x, y))
+	if (not blockmap.containsCoordinate(x, y))
 		return true;
 
-	std::span<const int> list = blockmap_class.list(x, y);
+	std::span<const int> list = blockmap.list(x, y);
 
 	/* [RH] Polyobj stuff from Hexen --> */
 	polyblock_t *polyLink;
 	extern polyblock_t **PolyBlockMap;
 
-	const int offset = (y * blockmap_class.width()) + x;
+	const int offset = (y * blockmap.width()) + x;
 	if (PolyBlockMap)
 	{
 		polyLink = PolyBlockMap[offset];
@@ -609,10 +609,10 @@ template <typename F, typename... ARGS>
 requires std::predicate<F, AActor&, ARGS...>
 bool P_BlockThingsIterator (int x, int y, F&& func, AActor *actor, ARGS&&... args)
 {
-	if (not blockmap_class.containsCoordinate(x, y))
+	if (not blockmap.containsCoordinate(x, y))
 		return true;
 
-	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y * blockmap_class.width()) + x]);
+	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y * blockmap.width()) + x]);
 	while (mobj)
  	{
 		if (!std::invoke(std::forward<F>(func), *mobj, std::forward<ARGS>(args)...))

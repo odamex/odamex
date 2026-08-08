@@ -914,10 +914,10 @@ static void UnLinkPolyobj(polyobj_t *po)
 	// remove the polyobj from each blockmap section
 	for (int j = po->bbox[BOXBOTTOM]; j <= po->bbox[BOXTOP]; j++)
 	{
-		const int index = j * blockmap_class.width();
+		const int index = j * blockmap.width();
 		for (int i = po->bbox[BOXLEFT]; i <= po->bbox[BOXRIGHT]; i++)
 		{
-			if (blockmap_class.containsCoordinate(i, j))
+			if (blockmap.containsCoordinate(i, j))
 			{
 				polyblock_t* link = PolyBlockMap[index+i];
 				while (link != nullptr && link->polyobj != po)
@@ -955,17 +955,17 @@ static void LinkPolyobj(polyobj_t *po)
 		topY = std::max((*tempSeg)->v1->y, topY);
 		bottomY = std::min((*tempSeg)->v1->y, bottomY);
 	}
-	po->bbox[BOXRIGHT] = (rightX - blockmap_class.originx()) >> MAPBLOCKSHIFT;
-	po->bbox[BOXLEFT] = (leftX - blockmap_class.originx()) >> MAPBLOCKSHIFT;
-	po->bbox[BOXTOP] = (topY - blockmap_class.originy()) >> MAPBLOCKSHIFT;
-	po->bbox[BOXBOTTOM] = (bottomY - blockmap_class.originy()) >> MAPBLOCKSHIFT;
+	po->bbox[BOXRIGHT] = (rightX - blockmap.originx()) >> MAPBLOCKSHIFT;
+	po->bbox[BOXLEFT] = (leftX - blockmap.originx()) >> MAPBLOCKSHIFT;
+	po->bbox[BOXTOP] = (topY - blockmap.originy()) >> MAPBLOCKSHIFT;
+	po->bbox[BOXBOTTOM] = (bottomY - blockmap.originy()) >> MAPBLOCKSHIFT;
 	// add the polyobj to each blockmap section
-	for (int j = po->bbox[BOXBOTTOM]*blockmap_class.width(); j <= po->bbox[BOXTOP]*blockmap_class.width();
-	     j += blockmap_class.width())
+	for (int j = po->bbox[BOXBOTTOM]*blockmap.width(); j <= po->bbox[BOXTOP]*blockmap.width();
+	     j += blockmap.width())
 	{
 		for (int i = po->bbox[BOXLEFT]; i <= po->bbox[BOXRIGHT]; i++)
 		{
-			if (i >= 0 && i < blockmap_class.width() && j >= 0 && j < blockmap_class.size())
+			if (i >= 0 && i < blockmap.width() && j >= 0 && j < blockmap.size())
 			{
 				polyblock_t** link = &PolyBlockMap[j+i];
 				if(!(*link))
@@ -1011,18 +1011,18 @@ static bool CheckMobjBlocking (seg_t *seg, polyobj_t *po)
 
 	line_t* ld = seg->linedef;
 
-	const int top = std::clamp((ld->bbox[BOXTOP] - blockmap_class.originy() + MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap_class.height() - 1);
-	const int bottom = std::clamp((ld->bbox[BOXBOTTOM] - blockmap_class.originy() - MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap_class.height() - 1);
-	const int left = std::clamp((ld->bbox[BOXLEFT] - blockmap_class.originx() - MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap_class.width());
-	const int right = std::clamp((ld->bbox[BOXRIGHT] - blockmap_class.originx() + MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap_class.width());
+	const int top = std::clamp((ld->bbox[BOXTOP] - blockmap.originy() + MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap.height() - 1);
+	const int bottom = std::clamp((ld->bbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap.height() - 1);
+	const int left = std::clamp((ld->bbox[BOXLEFT] - blockmap.originx() - MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap.width());
+	const int right = std::clamp((ld->bbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS) >> MAPBLOCKSHIFT, 0, blockmap.width());
 
 	bool blocked = false;
 
-	for (int j = bottom * blockmap_class.width(); j <= top*blockmap_class.width(); j += blockmap_class.width())
+	for (int j = bottom * blockmap.width(); j <= top*blockmap.width(); j += blockmap.width())
 	{
 		for (int i = left; i <= right; i++)
 		{
-			for (AActor* mobj = blocklinks[j+i]; mobj; mobj = mobj->bmapnode.Next(i, j / blockmap_class.width()))
+			for (AActor* mobj = blocklinks[j+i]; mobj; mobj = mobj->bmapnode.Next(i, j / blockmap.width()))
 			{
 				if ((mobj->flags&MF_SOLID) && !(mobj->flags&MF_NOCLIP))
 				{
@@ -1056,7 +1056,7 @@ static bool CheckMobjBlocking (seg_t *seg, polyobj_t *po)
 //
 static void InitBlockMap()
 {
-	PolyBlockMap = Z_Calloc<polyblock_t*>(blockmap_class.size(), PU_LEVEL);
+	PolyBlockMap = Z_Calloc<polyblock_t*>(blockmap.size(), PU_LEVEL);
 
 	for (int i = 0; i < po_NumPolyobjs; i++)
 	{
