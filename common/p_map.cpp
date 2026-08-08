@@ -590,6 +590,34 @@ bool P_IsFriendlyMonster(AActor* source, AActor* thing)
 	return P_IsFriendlyThing(source, thing);
 }
 
+//
+// P_IsFriendlyFireBlocked
+// Whether the friendly fire cvars on their own stop source from hurting
+// thing, regardless of whether the two are set to collide.
+//
+bool P_IsFriendlyFireBlocked(AActor* source, AActor* thing)
+{
+	if (!source || !thing)
+		return false;
+
+	if (source->player && thing->player)
+		return !sv_friendlyfire && P_AreTeammates(*source->player, *thing->player);
+
+	if (!sv_friendlymonsterfire)
+	{
+		if (P_IsFriendlyMonster(source, thing))
+			return true;
+
+		// A friendly and the player it belongs to. Player on player is
+		// sv_friendlyfire's business, handled above.
+		if (!source->player && source->flags & MF_FRIEND && thing->player &&
+		    P_IsFriendlyThing(thing, source))
+			return true;
+	}
+
+	return false;
+}
+
 } // namespace
 
 /*
@@ -815,9 +843,11 @@ bool PIT_CheckThing (AActor& thing)
 		if (tmthing->flags2 & MF2_RIP)
 		{
 			int damage = ((P_Random(tmthing) & 3) + 2) * tmthing->info->damage;
-			if (!(thing.flags & MF_NOBLOOD))
+			const bool canhurt = !P_IsFriendlyFireBlocked(tmthing->target, &thing);
+
+			if (canhurt && !(thing.flags & MF_NOBLOOD) && !(thing.flags2 & MF2_DORMANT))
 				P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage);
-			if (tmthing->info->ripsound)
+			if (canhurt && tmthing->info->ripsound)
 				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
 
 			P_DamageMobj(&thing, tmthing, tmthing->target, damage, MOD_UNKNOWN);
@@ -2167,26 +2197,11 @@ static bool P_ShouldSpareFriendly(AActor* source, AActor* thing)
 	if (!source || !thing)
 		return false;
 
-	// Shoot through teammates you can't hurt and don't collide with.
-	if (sv_unblockplayers && !sv_friendlyfire &&
-	    source->player && thing->player &&
-	    P_AreTeammates(*source->player, *thing->player))
-		return true;
+	// Only shoot through the things you can't hurt anyway.
+	if (source->player && thing->player)
+		return sv_unblockplayers && P_IsFriendlyFireBlocked(source, thing);
 
-	if (sv_unblockfriendly && !sv_friendlymonsterfire)
-	{
-		// Same deal for friendly monsters
-		if (P_IsFriendlyMonster(source, thing))
-			return true;
-
-		// Same deal for a friendly shooting thru the player it belongs to.
-		// Player on player is sv_unblockplayers' business, not this one's.
-		if (!source->player && source->flags & MF_FRIEND && thing->player &&
-		    P_IsFriendlyThing(thing, source))
-			return true;
-	}
-
-	return false;
+	return sv_unblockfriendly && P_IsFriendlyFireBlocked(source, thing);
 }
 
 //
