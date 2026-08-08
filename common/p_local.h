@@ -589,7 +589,7 @@ bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 
 	for (int idx : list)
 	{
-		line_t& ld = lines[idx];
+		line_t& ld = R_GetLines()[idx];
 
 		if (ld.validcount != validcount) {
 			ld.validcount = validcount;

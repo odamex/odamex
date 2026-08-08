@@ -47,7 +47,7 @@ class blockmap_t
 public:
 
 	static blockmap_t create();
-	static blockmap_t loadVanilla();
+	static blockmap_t loadVanilla(int lump);
 	static blockmap_t loadXBM1();
 
 	[[nodiscard]]

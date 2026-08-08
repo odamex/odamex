@@ -21,11 +21,15 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <ranges>
+#include <nonstd/scope.hpp>
+
 #include "odamex.h"
 
 #include "p_blockmap.h"
 #include "p_setup.h"
 #include "r_state.h"
+#include "w_wad.h"
 
 [[nodiscard]]
 std::span<const int> blockmap_t::list(int x, int y) const
@@ -37,10 +41,56 @@ std::span<const int> blockmap_t::list(int x, int y) const
 	// referencing linedef 0). Using this first entry (as vanilla Doom does) can
 	// cause hitscan weapons to erroneously hit the first linedef entry regardless
 	// of where that linedef is located in relation to the block.
-	if (!demoplayback && m_skipzerostart)
-		return std::span{m_blocklists[(y * m_width) + x]}.subspan(1);
+	const std::span list = m_blocklists[(y * m_width) + x];
+	if (!demoplayback && m_skipzerostart && !list.empty())
+		return list.subspan(1);
 
-	return m_blocklists[(y * m_width) + x];
+	return list;
+}
+
+blockmap_t blockmap_t::loadVanilla(int lump)
+{
+	blockmap_t newblockmap;
+	const size_t lump_size = W_LumpLength(lump) / sizeof(int16_t);
+	auto *wadblockmaplump = W_CacheLumpNum<int16_t>(lump, PU_LEVEL);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(wadblockmaplump); });
+
+	// killough 3/1/98: Expand wad blockmap into larger internal one,
+	// by treating all offsets except -1 as unsigned and zero-extending
+	// them. This potentially doubles the size of blockmaps allowed,
+	// because Doom originally considered the offsets as always signed.
+
+	newblockmap.m_originx = INT2FIXED(LESHORT(wadblockmaplump[0]));
+	newblockmap.m_originy = INT2FIXED(LESHORT(wadblockmaplump[1]));
+	newblockmap.m_width = static_cast<uint16_t>(LESHORT(wadblockmaplump[2]));
+	newblockmap.m_height = static_cast<uint16_t>(LESHORT(wadblockmaplump[3]));
+	newblockmap.m_blocklists.resize(newblockmap.size());
+
+	const size_t first_list = 4 + newblockmap.size();
+
+	for (const auto i : std::views::iota(0, newblockmap.size()))
+	{
+		const auto offset = static_cast<size_t>(LESHORT(wadblockmaplump[i + 4]));
+		if (offset < first_list || offset > lump_size)
+			I_Error("Blockmap offset #{} ({}) is out of bounds.", i, offset);
+
+		auto& list = newblockmap.m_blocklists[i];
+		int16_t line = LESHORT(wadblockmaplump[offset]);
+		size_t j = 1;
+		while (line != -1)
+		{
+			if (static_cast<size_t>(line) > R_GetLines().size())
+				I_Error("Blockmap list #{} contains non-existent line #{}", i, line);
+
+			list.push_back(static_cast<uint16_t>(line));
+			line = LESHORT(wadblockmaplump[offset + j]);
+			j++;
+		}
+	}
+
+	newblockmap.setSkipBlockStart();
+
+	return newblockmap;
 }
 
 blockmap_t blockmap_t::create()
@@ -115,7 +165,7 @@ blockmap_t blockmap_t::create()
 	// For each linedef in the wad, determine all blockmap blocks it touches,
 	// and add the linedef number to the blocklists for those blocks
 
-	for (int i = 0; i < numlines; i++)
+	for (int i = 0; i < static_cast<int>(R_GetLines().size()); i++)
 	{
 		const int x1 = lines[i].v1->x>>FRACBITS; // lines[i] map coords
 		const int y1 = lines[i].v1->y>>FRACBITS;

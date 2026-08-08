@@ -1594,43 +1594,16 @@ void P_LoadBlockMap (int lump)
 {
 	const uint32_t count = W_LumpLength(lump) / 2;
 
-	blockmap = blockmap_t::create();
 
 	if (Args.CheckParm("-blockmap") || count >= 0x10000 || count < 4)
-		P_CreateBlockMap();
+		blockmap = blockmap_t::create();
 	else
 	{
-		auto *wadblockmaplump = W_CacheLumpNum<int16_t>(lump, PU_LEVEL);
-		blockmaplump = Z_Malloc<int>(count, PU_LEVEL);
-
-		// killough 3/1/98: Expand wad blockmap into larger internal one,
-		// by treating all offsets except -1 as unsigned and zero-extending
-		// them. This potentially doubles the size of blockmaps allowed,
-		// because Doom originally considered the offsets as always signed.
-
-		blockmaplump[0] = LESHORT(wadblockmaplump[0]);
-		blockmaplump[1] = LESHORT(wadblockmaplump[1]);
-		blockmaplump[2] = static_cast<uint16_t>(LESHORT(wadblockmaplump[2]));
-		blockmaplump[3] = static_cast<uint16_t>(LESHORT(wadblockmaplump[3]));
-
-		for (uint32_t i = 4; i < count; i++)
-		{
-			const int16_t t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
-			blockmaplump[i] = t == -1 ? 0xffffffff : static_cast<uint16_t>(t);
-		}
-
-		Z_Free (wadblockmaplump);
+		blockmap = blockmap_t::loadVanilla(lump);
 	}
 
-	bmaporgx = blockmaplump[0]<<FRACBITS;
-	bmaporgy = blockmaplump[1]<<FRACBITS;
-	bmapwidth = blockmaplump[2];
-	bmapheight = blockmaplump[3];
-
 	// clear out mobj chains
-	blocklinks = Z_Calloc<AActor*>(bmapwidth * bmapheight, PU_LEVEL);
-
-	// P_SetSkipBlockStart();
+	blocklinks = Z_Calloc<AActor*>(blockmap.size(), PU_LEVEL);
 }
 
 /*
