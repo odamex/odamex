@@ -45,8 +45,8 @@ class blockmap_t
 	}
 
 	static blockmap_t create();
-	static blockmap_t loadVanilla(int lump);
-	static blockmap_t loadXBM1(int lump);
+	static blockmap_t loadVanilla(std::span<const int16_t> lump);
+	static blockmap_t loadXBM1(std::span<const int32_t> lump);
 
 public:
 

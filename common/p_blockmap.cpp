@@ -49,34 +49,31 @@ std::span<const int> blockmap_t::list(int x, int y) const
 	return list;
 }
 
-blockmap_t blockmap_t::loadVanilla(int lump)
+blockmap_t blockmap_t::loadVanilla(std::span<const int16_t> lump)
 {
 	blockmap_t newblockmap;
-	const size_t lump_size = W_LumpLength(lump) / sizeof(int16_t);
-	auto *wadblockmaplump = W_CacheLumpNum<int16_t>(lump, PU_LEVEL);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(wadblockmaplump); });
 
 	// killough 3/1/98: Expand wad blockmap into larger internal one,
 	// by treating all offsets except -1 as unsigned and zero-extending
 	// them. This potentially doubles the size of blockmaps allowed,
 	// because Doom originally considered the offsets as always signed.
 
-	newblockmap.m_originx = INT2FIXED(LESHORT(wadblockmaplump[0]));
-	newblockmap.m_originy = INT2FIXED(LESHORT(wadblockmaplump[1]));
-	newblockmap.m_width = static_cast<uint16_t>(LESHORT(wadblockmaplump[2]));
-	newblockmap.m_height = static_cast<uint16_t>(LESHORT(wadblockmaplump[3]));
+	newblockmap.m_originx = INT2FIXED(LESHORT(lump[0]));
+	newblockmap.m_originy = INT2FIXED(LESHORT(lump[1]));
+	newblockmap.m_width = static_cast<uint16_t>(LESHORT(lump[2]));
+	newblockmap.m_height = static_cast<uint16_t>(LESHORT(lump[3]));
 	newblockmap.m_blocklists.resize(newblockmap.size());
 
 	const size_t first_list = 4 + newblockmap.size();
 
 	for (const auto i : std::views::iota(0, newblockmap.size()))
 	{
-		const auto offset = static_cast<size_t>(LESHORT(wadblockmaplump[i + 4]));
-		if (offset < first_list || offset > lump_size)
+		const auto offset = static_cast<size_t>(LESHORT(lump[i + 4]));
+		if (offset < first_list || offset > lump.size())
 			I_Error("Blockmap offset #{} ({}) is out of bounds.", i, offset);
 
 		auto& list = newblockmap.m_blocklists[i];
-		int16_t line = LESHORT(wadblockmaplump[offset]);
+		int16_t line = LESHORT(lump[offset]);
 		size_t j = 1;
 		while (line != -1)
 		{
@@ -84,7 +81,7 @@ blockmap_t blockmap_t::loadVanilla(int lump)
 				I_Error("Blockmap list #{} contains non-existent line #{}", i, line);
 
 			list.push_back(static_cast<uint16_t>(line));
-			line = LESHORT(wadblockmaplump[offset + j]);
+			line = LESHORT(lump[offset + j]);
 			j++;
 		}
 	}
@@ -94,42 +91,34 @@ blockmap_t blockmap_t::loadVanilla(int lump)
 	return newblockmap;
 }
 
-blockmap_t blockmap_t::loadXBM1(int lump)
+blockmap_t blockmap_t::loadXBM1(std::span<const int32_t> lump)
 {
 	blockmap_t newblockmap;
-	const size_t lump_size = W_LumpLength(lump) / sizeof(int32_t);
-	auto *wadblockmaplump = W_CacheLumpNum<int32_t>(lump, PU_LEVEL);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(wadblockmaplump); });
 
-	// killough 3/1/98: Expand wad blockmap into larger internal one,
-	// by treating all offsets except -1 as unsigned and zero-extending
-	// them. This potentially doubles the size of blockmaps allowed,
-	// because Doom originally considered the offsets as always signed.
-
-	newblockmap.m_originx = LELONG(wadblockmaplump[2]);
-	newblockmap.m_originy = LELONG(wadblockmaplump[3]);
-	newblockmap.m_width = static_cast<uint32_t>(LELONG(wadblockmaplump[4]));
-	newblockmap.m_height = static_cast<uint32_t>(LELONG(wadblockmaplump[5]));
+	newblockmap.m_originx = LELONG(lump[0]);
+	newblockmap.m_originy = LELONG(lump[1]);
+	newblockmap.m_width = LELONG(lump[2]);
+	newblockmap.m_height = LELONG(lump[3]);
 	newblockmap.m_blocklists.resize(newblockmap.size());
 
 	const size_t first_list = 4 + newblockmap.size();
 
 	for (const auto i : std::views::iota(0, newblockmap.size()))
 	{
-		const auto offset = static_cast<size_t>(LELONG(wadblockmaplump[i + 6])) + 2;
-		if (offset < first_list || offset > lump_size)
+		const auto offset = static_cast<size_t>(LELONG(lump[i + 4])) + 2;
+		if (offset < first_list || offset > lump.size())
 			I_Error("Blockmap offset #{} ({}) is out of bounds.", i, offset);
 
 		auto& list = newblockmap.m_blocklists[i];
-		int32_t line = LELONG(wadblockmaplump[offset]);
+		int32_t line = LELONG(lump[offset]);
 		size_t j = 1;
 		while (line != -1)
 		{
 			if (static_cast<size_t>(line) > R_GetLines().size())
 				I_Error("Blockmap list #{} contains non-existent line #{}", i, line);
 
-			list.push_back(static_cast<uint32_t>(line));
-			line = LELONG(wadblockmaplump[offset + j]);
+			list.push_back(line);
+			line = LELONG(lump[offset + j]);
 			j++;
 		}
 	}
@@ -397,7 +386,8 @@ blockmap_t blockmap_t::load(int lump)
 
 	blockmaptype_t format = VANILLA;
 
-	const auto vanilla_size = W_LumpLength(lump) / sizeof(int16_t);
+	const auto lump_size = W_LumpLength(lump);
+	const auto vanilla_size = lump_size / sizeof(int16_t);
 	if (vanilla_size < 4 || vanilla_size >= 0x10000)
 		format = BOOM;
 
@@ -412,10 +402,19 @@ blockmap_t blockmap_t::load(int lump)
 	switch (format)
 	{
 		case VANILLA:
-			return loadVanilla(lump);
+			return loadVanilla({
+				static_cast<const int16_t*>(data),
+				lump_size / sizeof(int16_t)
+			});
 		case XBM1:
-			return loadXBM1(lump);
+			return loadXBM1({
+				static_cast<const int32_t*>(data) + 2,
+				(lump_size / sizeof(int32_t)) - (2 * sizeof(int32_t))
+			});
 		case BOOM:
 			return create();
 	}
+
+	// silences Wreturn-type warning
+	OUtil::unreachable();
 }
