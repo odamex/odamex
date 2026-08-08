@@ -65,6 +65,7 @@ blockmap_t blockmap_t::loadVanilla(std::span<const int16_t> lump)
 	newblockmap.m_blocklists.resize(newblockmap.size());
 
 	const size_t first_list = 4 + newblockmap.size();
+	const auto numlines = R_GetLines().size();
 
 	for (const auto i : std::views::iota(0, newblockmap.size()))
 	{
@@ -77,7 +78,7 @@ blockmap_t blockmap_t::loadVanilla(std::span<const int16_t> lump)
 		size_t j = 1;
 		while (line != -1)
 		{
-			if (static_cast<size_t>(line) > R_GetLines().size())
+			if (static_cast<size_t>(line) > numlines)
 				I_Error("Blockmap list #{} contains non-existent line #{}", i, line);
 
 			list.push_back(static_cast<uint16_t>(line));
@@ -102,6 +103,7 @@ blockmap_t blockmap_t::loadXBM1(std::span<const int32_t> lump)
 	newblockmap.m_blocklists.resize(newblockmap.size());
 
 	const size_t first_list = 4 + newblockmap.size();
+	const auto numlines = R_GetLines().size();
 
 	for (const auto i : std::views::iota(0, newblockmap.size()))
 	{
@@ -114,7 +116,7 @@ blockmap_t blockmap_t::loadXBM1(std::span<const int32_t> lump)
 		size_t j = 1;
 		while (line != -1)
 		{
-			if (static_cast<size_t>(line) > R_GetLines().size())
+			if (static_cast<size_t>(line) > numlines)
 				I_Error("Blockmap list #{} contains non-existent line #{}", i, line);
 
 			list.push_back(line);
@@ -150,7 +152,7 @@ blockmap_t blockmap_t::create()
 	blockmap_t newblockmap;
 
 	std::vector<std::vector<int32_t>> blocklists; // array of pointers to lists of lines
-	std::vector<bool> blockdone; // array keeping track of blocks/line
+	std::vector<int> blockdone; // array keeping track of blocks/line
 
 	//
 	// Subroutine to add a line number to a block list
@@ -162,11 +164,11 @@ blockmap_t blockmap_t::create()
 		int32_t lineno
 	)
 	{
-		if (blockdone[blockno])
+		if (blockdone[blockno] == lineno)
 			return;
 
 		blocklists[blockno].push_back(lineno);
-		blockdone[blockno] = true;
+		blockdone[blockno] = lineno;
 	};
 
 	// scan for map limits, which the blockmap must enclose
@@ -209,12 +211,15 @@ blockmap_t blockmap_t::create()
 	// finally make an array in which we can mark blocks done per line
 
 	blocklists.resize(NBlocks);
-	blockdone.resize(NBlocks);
+	blockdone.assign(NBlocks, -1);
 
 	// For each linedef in the wad, determine all blockmap blocks it touches,
 	// and add the linedef number to the blocklists for those blocks
 
-	for (int i = 0; i < static_cast<int>(R_GetLines().size()); i++)
+	const auto lines = R_GetLines();
+	const auto numlines = R_GetLines().size();
+
+	for (int i = 0; i < static_cast<int>(numlines); i++)
 	{
 		const int x1 = lines[i].v1->x>>FRACBITS; // lines[i] map coords
 		const int y1 = lines[i].v1->y>>FRACBITS;
@@ -226,14 +231,10 @@ blockmap_t blockmap_t::create()
 		const bool horiz = (dy == 0);
 		const bool spos = (dx ^ dy) > 0;
 		const bool sneg = (dx ^ dy) < 0;
-		const int minx = x1 > x2 ? x2 : x1;        // extremal lines[i] coords
-		const int maxx = x1 > x2 ? x1 : x2;
-		const int miny = y1 > y2 ? y2 : y1;
-		const int maxy = y1 > y2 ? y1 : y2;
+		const auto [minx, maxx] = std::minmax(x1, x2); // extremal lines[i] coords
+		const auto [miny, maxy] = std::minmax(y1, y2);
 
 		// no blocks done for this linedef yet
-
-		blockdone.assign(NBlocks, false);
 
 		// The line always belongs to the blocks containing its endpoints
 

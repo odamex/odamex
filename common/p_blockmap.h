@@ -40,13 +40,13 @@ inline constexpr int MAPBTOFRAC    = (MAPBLOCKSHIFT-FRACBITS);
 
 class blockmap_t
 {
-	fixed_t m_originx;
-	fixed_t m_originy;
-	int m_width;
-	int m_height;
+	fixed_t m_originx = 0;
+	fixed_t m_originy = 0;
+	int m_width  = 0;
+	int m_height = 0;
 	std::vector<AActor*> m_blocklinks;
 	std::vector<std::vector<int>> m_blocklists;
-	bool m_skipzerostart;
+	bool m_skipzerostart = false;
 
 	void setSkipBlockStart()
 	{
