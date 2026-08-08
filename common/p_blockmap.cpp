@@ -93,6 +93,20 @@ blockmap_t blockmap_t::loadVanilla(int lump)
 	return newblockmap;
 }
 
+//
+// jff 10/6/98
+// New code added to speed up calculation of internal blockmap
+// Algorithm is order of nlines*(ncols+nrows) not nlines*ncols*nrows
+//
+
+//
+// Actually construct the blockmap lump from the level data
+//
+// This finds the intersection of each linedef with the column and
+// row lines at the left and bottom of each blockmap cell. It then
+// adds the line to all block lists touching the intersection.
+//
+
 blockmap_t blockmap_t::create()
 {
 	static constexpr int blkshift = 7;                  /* places to shift rel position for cell num */
