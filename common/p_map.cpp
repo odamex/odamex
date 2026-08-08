@@ -259,9 +259,9 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
 	const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
-	for (int bx=xl ; bx<=xh ; bx++)
-		for (int by=yl ; by<=yh ; by++)
-			if (!P_BlockThingsIterator(bx, by,PIT_StompThing, nullptr, StompAlwaysFrags))
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
+			if (!P_BlockThingsIterator(bx, by, PIT_StompThing, nullptr, StompAlwaysFrags))
 				return false;
 
 	// the move is ok,
@@ -937,7 +937,7 @@ bool Check_Sides(const AActor* actor, int x, int y)
 	validcount++; // prevents checking same line twice
 	for (int bx = xl ; bx <= xh ; bx++)
 		for (int by = yl ; by <= yh ; by++)
-			if (!P_BlockLinesIterator(bx, by,PIT_CrossLine))
+			if (!P_BlockLinesIterator(bx, by, PIT_CrossLine))
 				return true;										//   ^
 	return false;												//   |
 }																// phares
@@ -1158,9 +1158,9 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	else
 	{
 		// vanilla Doom's check for blocking things
-		for (int bx=xl ; bx<=xh ; bx++)
-			for (int by=yl ; by<=yh ; by++)
-				if (!P_BlockThingsIterator(bx, by,PIT_CheckThing, nullptr))
+		for (int bx = xl; bx <= xh; bx++)
+			for (int by = yl; by <= yh; by++)
+				if (!P_BlockThingsIterator(bx, by, PIT_CheckThing, nullptr))
 					return false;
 
 		if (tmflags & MF_NOCLIP)
@@ -1182,7 +1182,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 
 	for (int bx = xl; bx <= xh; bx++)
 		for (int by = yl; by <= yh; by++)
-			if (!P_BlockLinesIterator(bx, by,PIT_CheckLine, tmunstuck))
+			if (!P_BlockLinesIterator(bx, by, PIT_CheckLine, tmunstuck))
 				return false;
 
 	if (P_AllowPassover())
@@ -3721,7 +3721,7 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 
 	for (int bx = xl; bx <= xh; bx++)
 		for (int by = yl; by <= yh; by++)
-			P_BlockLinesIterator(bx, by,PIT_GetSectors);
+			P_BlockLinesIterator(bx, by, PIT_GetSectors);
 
 	// Add the sector of the (x,y) point to sector_list.
 
