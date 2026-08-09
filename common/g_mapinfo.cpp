@@ -535,7 +535,7 @@ void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const std::string s = GStrings.lookup(os.getToken().c_str() + 1);
+		const OLumpName s = GStrings.lookup(os.getToken().c_str() + 1);
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -560,7 +560,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const std::string s = GStrings.lookup(musicname.c_str() + 1);
+		const OLumpName s = GStrings.lookup(musicname.c_str() + 1);
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
