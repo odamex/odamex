@@ -160,16 +160,16 @@ extern struct brain_s {				// killough 3/26/98: global state of boss brain
 //
 // P_MAPUTL
 //
-typedef struct
+struct divline_t
 {
 	fixed_t 	x;
 	fixed_t 	y;
 	fixed_t 	dx;
 	fixed_t 	dy;
 
-} divline_t;
+};
 
-typedef struct
+struct intercept_t
 {
 	fixed_t 	frac;			// along trace line
 	bool 	isaline;
@@ -177,13 +177,13 @@ typedef struct
 		AActor* thing;
 		line_t* line;
 	}					d;
-} intercept_t;
+};
 
 #define MAXINTERCEPTS	128
 
 extern std::vector<intercept_t> intercepts;
 
-typedef bool (*traverser_t) (intercept_t *in);
+using traverser_t = bool (*)(intercept_t& in);
 
 subsector_t* P_PointInSubsector(fixed_t x, fixed_t y);
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
@@ -223,7 +223,7 @@ P_PathTraverse
   fixed_t		x2,
   fixed_t		y2,
   int			flags,
-  bool		(*trav) (intercept_t *));
+  bool		(*trav) (intercept_t&));
 
 // [ML] 2/1/10: Break out P_PointToAngle from R_PointToAngle2 (from EE)
 angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y);
@@ -265,8 +265,8 @@ bool    P_CheckSight (const AActor* t1, const AActor* t2);
 void    P_UseLines (player_t& player);
 void    P_ApplyTorque(AActor *mo);
 void    P_CopySector(sector_t *dest, sector_t *src);
-bool    P_ShouldClipPlayer(AActor* projectile, AActor* player);
-bool    P_ShouldClipFriendly(AActor* projectile, AActor* monster);
+bool    P_ShouldClipPlayer(const AActor* projectile, const AActor* player);
+bool    P_ShouldClipFriendly(const AActor* projectile, const AActor* monster);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
 double P_PlaneZ(double x, double y, const plane_t *plane);
@@ -507,7 +507,7 @@ bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest);
 bool P_IsVoodooDoll(const AActor* mo);
 void P_FriendlyEffects();
 void P_FriendlyEffects(AActor* mo);
-bool P_ProjectileImmune(AActor* target, AActor* source);
+bool P_ProjectileImmune(const AActor* target, const AActor* source);
 void P_SetupHelpers();
 void P_ClearHelpers();
 void P_RunHelperTics();

@@ -809,7 +809,7 @@ bool PIT_AddThingIntercepts (AActor& thing)
 // Returns true if the traverser function returns true
 // for all lines.
 //
-bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
+bool P_TraverseIntercepts(traverser_t func, fixed_t maxfrac)
 {
 	size_t 				count = intercepts.size();
 	fixed_t 			dist;
@@ -831,7 +831,7 @@ bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 			return true;		// checked everything in range
 
 
-		if ( !func (in) )
+		if ( !func (*in) )
 			return false;		// don't bother going farther
 
 		in->frac = limits::MAXFIXED;
@@ -850,28 +850,15 @@ bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 // Returns true if the traverser function returns true
 // for all lines.
 //
-bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, bool (*trav) (intercept_t *))
+bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, bool (*trav) (intercept_t&))
 {
-	fixed_t 	xt1;
-	fixed_t 	yt1;
-	fixed_t 	xt2;
-	fixed_t 	yt2;
-
 	fixed_t 	xstep;
 	fixed_t 	ystep;
 
 	fixed_t 	partial;
 
-	fixed_t 	xintercept;
-	fixed_t 	yintercept;
-
-	int 		mapx;
-	int 		mapy;
-
 	int 		mapxstep;
 	int 		mapystep;
-
-	int 		count;
 
 	const bool earlyout = flags & PT_EARLYOUT;
 
@@ -892,13 +879,13 @@ bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 
 	x1 -= blockmap.originx();
 	y1 -= blockmap.originy();
-	xt1 = x1>>MAPBLOCKSHIFT;
-	yt1 = y1>>MAPBLOCKSHIFT;
+	const fixed_t xt1 = x1>>MAPBLOCKSHIFT;
+	const fixed_t yt1 = y1>>MAPBLOCKSHIFT;
 
 	x2 -= blockmap.originx();
 	y2 -= blockmap.originy();
-	xt2 = x2>>MAPBLOCKSHIFT;
-	yt2 = y2>>MAPBLOCKSHIFT;
+	const fixed_t xt2 = x2>>MAPBLOCKSHIFT;
+	const fixed_t yt2 = y2>>MAPBLOCKSHIFT;
 
 	if (xt2 > xt1)
 	{
@@ -919,7 +906,7 @@ bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 		ystep = 256*FRACUNIT;
 	}
 
-	yintercept = (y1>>MAPBTOFRAC) + FixedMul (partial, ystep);
+	fixed_t yintercept = (y1>>MAPBTOFRAC) + FixedMul (partial, ystep);
 
 
 	if (yt2 > yt1)
@@ -940,15 +927,15 @@ bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 		partial = FRACUNIT;
 		xstep = 256*FRACUNIT;
 	}
-	xintercept = (x1>>MAPBTOFRAC) + FixedMul (partial, xstep);
+	fixed_t xintercept = (x1>>MAPBTOFRAC) + FixedMul (partial, xstep);
 
 	// Step through map blocks.
 	// Count is present to prevent a round off error
 	// from skipping the break.
-	mapx = xt1;
-	mapy = yt1;
+	int mapx = xt1;
+	int mapy = yt1;
 
-	for (count = 0 ; count < 64 ; count++)
+	for (int count = 0 ; count < 64 ; count++)
 	{
 		if (flags & PT_ADDLINES)
 		{
