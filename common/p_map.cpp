@@ -92,9 +92,6 @@ AActor *BlockingMobj;
 // Temporary holder for thing_sectorlist threads
 msecnode_t* sector_list = NULL;		// phares 3/16/98
 
-// [SL] 2012-03-07 - Sectors that can change floor/ceiling height
-std::set<short>	movable_sectors;
-
 EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (co_boomphys)				// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_zdoomphys)

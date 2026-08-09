@@ -318,9 +318,6 @@ extern byte*			rejectmatrix;	// for fast sight rejection
 extern bool				rejectempty;
 extern AActor** 		blocklinks; 	// for thing chains
 
-extern std::set<short>	movable_sectors;
-
-
 //
 // P_INTER
 //
