@@ -56,7 +56,8 @@
 
 bool P_ShouldClipPlayer(AActor* projectile, AActor* player);
 
-fixed_t 		tmbbox[4];
+// TODO: make as many of these non-global as possible
+std::array<fixed_t, 4> tmbbox;
 static AActor  *tmthing;
 static int 		tmflags;
 static fixed_t	tmx;
@@ -253,14 +254,14 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	                              (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
-	const int xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	const int xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	const int yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
-	for (int bx=xl ; bx<=xh ; bx++)
-		for (int by=yl ; by<=yh ; by++)
-			if (!P_BlockThingsIterator(bx,by,PIT_StompThing, nullptr, StompAlwaysFrags))
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
+			if (!P_BlockThingsIterator(bx, by, PIT_StompThing, nullptr, StompAlwaysFrags))
 				return false;
 
 	// the move is ok,
@@ -444,7 +445,7 @@ bool PIT_CheckLine(line_t& ld, bool tmunstuck)
     		tmbbox[BOXLEFT]>= ld.bbox[BOXRIGHT] ||
     		tmbbox[BOXTOP] <= ld.bbox[BOXBOTTOM] ||
     		tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP] ||
-    		P_BoxOnLineSide(tmbbox.data(), &ld) != -1;
+    		P_BoxOnLineSide(tmbbox, &ld) != -1;
 	};
 
     // A line has been hit
@@ -962,17 +963,17 @@ bool Check_Sides(const AActor* actor, int x, int y)
 
 	// Determine which blocks to look in for blocking lines
 
-	const int xl = (tmbbox[BOXLEFT]   - bmaporgx)>>MAPBLOCKSHIFT;
-	const int xh = (tmbbox[BOXRIGHT]  - bmaporgx)>>MAPBLOCKSHIFT;
-	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	const int yh = (tmbbox[BOXTOP]    - bmaporgy)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT]   - blockmap.originx())>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT]  - blockmap.originx())>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP]    - blockmap.originy())>>MAPBLOCKSHIFT;
 
 	// xl->xh, yl->yh determine the mapblock set to search
 
 	validcount++; // prevents checking same line twice
 	for (int bx = xl ; bx <= xh ; bx++)
 		for (int by = yl ; by <= yh ; by++)
-			if (!P_BlockLinesIterator(bx,by,PIT_CrossLine))
+			if (!P_BlockLinesIterator(bx, by, PIT_CrossLine))
 				return true;										//   ^
 	return false;												//   |
 }																// phares
@@ -1119,10 +1120,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	// because DActors are grouped into mapblocks
 	// based on their origin point, and can overlap
 	// into adjacent blocks by up to MAXRADIUS units.
-	int xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	int xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	int yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	int yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	BlockingMobj = NULL;
 
@@ -1195,9 +1196,9 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	else
 	{
 		// vanilla Doom's check for blocking things
-		for (int bx=xl ; bx<=xh ; bx++)
-			for (int by=yl ; by<=yh ; by++)
-				if (!P_BlockThingsIterator(bx,by,PIT_CheckThing, nullptr))
+		for (int bx = xl; bx <= xh; bx++)
+			for (int by = yl; by <= yh; by++)
+				if (!P_BlockThingsIterator(bx, by, PIT_CheckThing, nullptr))
 					return false;
 
 		if (tmflags & MF_NOCLIP)
@@ -1205,10 +1206,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	}
 
 	// check lines
-	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+	xl = (tmbbox[BOXLEFT] - blockmap.originx())>>MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - blockmap.originx())>>MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - blockmap.originy())>>MAPBLOCKSHIFT;
 
 	// from mbf, allows players to get unstuck if they end up spawned
 	// partially inside a wall or blocking line
@@ -1217,9 +1218,9 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	// we should change it to rely on co_mbfphys
 	const bool tmunstuck = (thing->player != nullptr) && !P_IsVoodooDoll(thing) && !demoplayback;
 
-	for (int bx=xl ; bx<=xh ; bx++)
-		for (int by=yl ; by<=yh ; by++)
-			if (!P_BlockLinesIterator (bx,by,PIT_CheckLine, tmunstuck))
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
+			if (!P_BlockLinesIterator(bx, by, PIT_CheckLine, tmunstuck))
 				return false;
 
 	if (P_AllowPassover())
@@ -1248,7 +1249,6 @@ AActor *P_CheckOnmobj (AActor *thing)
 
 bool P_TestMobjZ (AActor *actor)
 {
-	int	xl,xh,yl,yh,bx,by;
 	fixed_t x, y;
 
 	if (actor->flags & MF_NOCLIP)
@@ -1271,14 +1271,14 @@ bool P_TestMobjZ (AActor *actor)
 // into mapblocks based on their origin point, and can overlap into adjacent
 // blocks by up to MAXRADIUS units
 //
-	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
-	for (bx = xl; bx <= xh; bx++)
-		for (by = yl; by <= yh; by++)
-			if (!P_BlockThingsIterator (bx, by, PIT_CheckOnmobjZ, nullptr))
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
+			if (!P_BlockThingsIterator(bx, by, PIT_CheckOnmobjZ, nullptr))
 				return false;
 
 	return true;
@@ -1649,22 +1649,21 @@ bool PIT_ApplyTorque (const line_t& ld)
 
 void P_ApplyTorque (AActor *mo)
 {
-	int xl = ((tmbbox[BOXLEFT] =
-			mo->x - mo->radius) - bmaporgx) >> MAPBLOCKSHIFT;
-	int xh = ((tmbbox[BOXRIGHT] =
-			mo->x + mo->radius) - bmaporgx) >> MAPBLOCKSHIFT;
-	int yl = ((tmbbox[BOXBOTTOM] =
-			mo->y - mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
-	int yh = ((tmbbox[BOXTOP] =
-			mo->y + mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
-	int bx,by;
+	const int xl = ((tmbbox[BOXLEFT] =
+			mo->x - mo->radius) - blockmap.originx()) >> MAPBLOCKSHIFT;
+	const int xh = ((tmbbox[BOXRIGHT] =
+			mo->x + mo->radius) - blockmap.originx()) >> MAPBLOCKSHIFT;
+	const int yl = ((tmbbox[BOXBOTTOM] =
+			mo->y - mo->radius) - blockmap.originy()) >> MAPBLOCKSHIFT;
+	const int yh = ((tmbbox[BOXTOP] =
+			mo->y + mo->radius) - blockmap.originy()) >> MAPBLOCKSHIFT;
 	int flags = mo->oflags;	//Remember the current state, for gear-change
 
 	tmthing = mo;
 	validcount++; // prevents checking same line twice
 
-	for (bx = xl ; bx <= xh ; bx++)
-		for (by = yl ; by <= yh ; by++)
+	for (int bx = xl ; bx <= xh ; bx++)
+		for (int by = yl ; by <= yh ; by++)
 			P_BlockLinesIterator(bx, by, PIT_ApplyTorque);
 
 	// If any momentum, mark object as 'falling' using engine-internal flags
@@ -3379,10 +3378,10 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bool hurtSource, int mod)
 {
 	const fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
-	const int yh = std::min<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, bmapheight - 1);
-	const int yl = std::max<int>((spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT, 0);
-	const int xh = std::min<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, bmapwidth - 1);
-	const int xl = std::max<int>((spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT, 0);
+	const int yh = std::min<int>((spot->y + dist - blockmap.originy())>>MAPBLOCKSHIFT, blockmap.height() - 1);
+	const int yl = std::max<int>((spot->y - dist - blockmap.originy())>>MAPBLOCKSHIFT, 0);
+	const int xh = std::min<int>((spot->x + dist - blockmap.originx())>>MAPBLOCKSHIFT, blockmap.width() - 1);
+	const int xl = std::max<int>((spot->x - dist - blockmap.originx())>>MAPBLOCKSHIFT, 0);
 	AActor* bombsource = source;
 	const auto bombdamagefloat = static_cast<float>(damage);
 	const float bombdistancefloat = 1.f / static_cast<float>(distance);
@@ -3404,12 +3403,12 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 		// So we make a list of unique actors in the surrounding blocks and
 		// then call the radius attack function once for each actor.
 
-		std::set<AActor*> actorset;
+		std::unordered_set<AActor*> actorset;
 		for (int y=yl ; y<=yh ; y++)
 		{
 			for (int x=xl ; x<=xh ; x++)
 			{
-				AActor *mobj = blocklinks[y*bmapwidth+x];
+				AActor *mobj = blocklinks[(y * blockmap.width()) + x];
 				while (mobj)
 				{
 					actorset.insert(mobj);
@@ -3762,20 +3761,12 @@ bool PIT_GetSectors (const line_t& ld)
 
 void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 {
-	int xl;
-	int xh;
-	int yl;
-	int yh;
-	int bx;
-	int by;
-	msecnode_t *node;
-
 	// First, clear out the existing m_thing fields. As each node is
 	// added or verified as needed, m_thing will be set properly. When
 	// finished, delete all nodes where m_thing is still NULL. These
 	// represent the sectors the Thing has vacated.
 
-	node = sector_list;
+	msecnode_t* node = sector_list;
 	while (node)
 	{
 		node->m_thing = NULL;
@@ -3787,7 +3778,7 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 	// so we need to back up tmthing and then restore it
 	AActor *last_tmthing = tmthing;
 	int last_tmx = tmx, last_tmy = tmy;
-	int last_tmbbox[4] = {tmbbox[0], tmbbox[1], tmbbox[2], tmbbox[3]};
+	const auto last_tmbbox = tmbbox;
 
 	tmthing = thing;
 	tmx = x;
@@ -3800,14 +3791,14 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 
 	validcount++; // used to make sure we only process a line once
 
-	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - blockmap.originx())>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - blockmap.originx())>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - blockmap.originy())>>MAPBLOCKSHIFT;
 
-	for (bx=xl ; bx<=xh ; bx++)
-		for (by=yl ; by<=yh ; by++)
-			P_BlockLinesIterator (bx,by,PIT_GetSectors);
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
+			P_BlockLinesIterator(bx, by, PIT_GetSectors);
 
 	// Add the sector of the (x,y) point to sector_list.
 
@@ -3835,10 +3826,7 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 	// denis - restore tmthing
 	tmthing = last_tmthing;
 	tmx = last_tmx; tmy = last_tmy;
-	tmbbox[0] = last_tmbbox[0];
-	tmbbox[1] = last_tmbbox[1];
-	tmbbox[2] = last_tmbbox[2];
-	tmbbox[3] = last_tmbbox[3];
+	tmbbox = last_tmbbox;
 }
 
 //
