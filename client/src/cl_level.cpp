@@ -44,6 +44,7 @@
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
 END_DISABLE_WARNING_GNU
+#include "m_argv.h"
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_local.h"
@@ -126,6 +127,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
+	const std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+
+	if (!DefaultsLoaded)
+	{
+		::startupwadstring = wadstr;
+		return;
+	}
+
 	if (paused)
 	{
 		paused = false;
@@ -134,7 +143,6 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
 	C_HideConsole();
 
-	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
 	G_LoadWadString(wadstr);
 
 	D_StartTitle ();
