@@ -55,6 +55,31 @@ bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NUL
 	return mapname == lumpname;
 }
 
+// Builds the error text for a map name that ValidateMapName rejected.
+//
+// A name that is well formed for the other naming scheme is nearly always a
+// PWAD loaded against the wrong IWAD, which is worth saying outright.
+std::string InvalidMapNameError(const OLumpName& mapname)
+{
+	int epi = -1, map = -1;
+
+	if (gamemode == commercial && sscanf(mapname.c_str(), "E%dM%d", &epi, &map) == 2)
+	{
+		return fmt::format("Map name {} uses episode format, but the loaded IWAD uses "
+		                   "MAPxx names. This file needs a Doom or Ultimate Doom IWAD.",
+		                   mapname);
+	}
+
+	if (gamemode != commercial && sscanf(mapname.c_str(), "MAP%d", &map) == 1)
+	{
+		return fmt::format("Map name {} uses MAPxx format, but the loaded IWAD uses "
+		                   "ExMy names. This file needs a Doom II IWAD.",
+		                   mapname);
+	}
+
+	return fmt::format("Invalid map name {}", mapname);
+}
+
 // used for munching the strings in UMAPINFO
 std::string ParseMultiString(OScanner& os)
 {
@@ -166,7 +191,7 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		ParseOLumpName(os, mape->nextmap);
 		if (!ValidateMapName(mape->nextmap))
 		{
-			os.error("Invalid map name {}", mape->nextmap);
+			os.error("{}", InvalidMapNameError(mape->nextmap));
 			return false;
 		}
 	}
@@ -175,7 +200,7 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		ParseOLumpName(os, mape->secretmap);
 		if (!ValidateMapName(mape->secretmap))
 		{
-			os.error("Invalid map name {}", mape->nextmap);
+			os.error("{}", InvalidMapNameError(mape->secretmap));
 			return false;
 		}
 	}
@@ -489,7 +514,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 
 		if (!ValidateMapName(mapname))
 		{
-			os.error("Invalid map name {}", mapname);
+			os.error("{}", InvalidMapNameError(mapname));
 		}
 
 		// Find the level.
