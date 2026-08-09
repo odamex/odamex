@@ -1097,8 +1097,7 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	}
 }
 
-template <typename T = int32_t>
-requires std::is_integral_v<T>
+template <std::integral T = int32_t>
 void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
 {
 	*static_cast<T*>(data) = static_cast<T>(flags);

@@ -2998,19 +2998,14 @@ bool PIT_PushThing (AActor& thing, DPusher* tmpusher)
 // T_Pusher looks for all objects that are inside the radius of
 // the effect.
 //
-extern fixed_t tmbbox[4];
+extern std::array<fixed_t, 4> tmbbox;
 
 void DPusher::RunThink ()
 {
-	sector_t *sec;
-	AActor *thing;
-	msecnode_t *node;
 	int xspeed,yspeed;
-	int xl,xh,yl,yh,bx,by;
-	int radius;
 	int ht = 0;
 
-	sec = sectors + m_Affectee;
+	const sector_t* sec = sectors + m_Affectee;
 
 	// Be sure the special sector type is still turned on. If so, proceed.
 	// Else, bail out; the sector type has been changed on us.
@@ -3041,19 +3036,19 @@ void DPusher::RunThink ()
 		// Seek out all pushable things within the force radius of this
 		// point pusher. Crosses sectors, so use blockmap.
 
-		radius = m_Radius; // where force goes to zero
+		const int radius = m_Radius; // where force goes to zero
 		tmbbox[BOXTOP]    = m_Y + radius;
 		tmbbox[BOXBOTTOM] = m_Y - radius;
 		tmbbox[BOXRIGHT]  = m_X + radius;
 		tmbbox[BOXLEFT]   = m_X - radius;
 
-		xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-		xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-		yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-		yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
-		for (bx=xl ; bx<=xh ; bx++)
-			for (by=yl ; by<=yh ; by++)
-				P_BlockThingsIterator (bx, by, PIT_PushThing, nullptr, this /*MT_PUSH/MT_PULL point source*/);
+		const int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS) >> MAPBLOCKSHIFT;
+		for (int bx = xl; bx <= xh; bx++)
+			for (int by = yl; by <= yh; by++)
+				P_BlockThingsIterator(bx, by, PIT_PushThing, nullptr, this /*MT_PUSH/MT_PULL point source*/);
 		return;
 	}
 
@@ -3061,10 +3056,10 @@ void DPusher::RunThink ()
 
 	if (sec->heightsec) // special water sector?
 		ht = P_FloorHeight(sec->heightsec);
-	node = sec->touching_thinglist; // things touching this sector
+	const msecnode_t* node = sec->touching_thinglist; // things touching this sector
 	for ( ; node ; node = node->m_snext)
 	{
-		thing = node->m_thing;
+		AActor* thing = node->m_thing;
 		if (!P_IsPlayerOrAvatar(*thing) || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 			continue;
 		if (m_Type == p_wind)
