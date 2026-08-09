@@ -410,7 +410,7 @@ blockmap_t blockmap_t::load(int lump)
 		case XBM1:
 			return loadXBM1({
 				static_cast<const int32_t*>(data) + 2,
-				(lump_size / sizeof(int32_t)) - (2 * sizeof(int32_t))
+				(lump_size / sizeof(int32_t)) - 2
 			});
 		case BOOM:
 			return create();
