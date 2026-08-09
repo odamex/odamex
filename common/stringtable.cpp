@@ -345,7 +345,7 @@ void StringTable::replaceEscapes(std::string& str)
 	for (;;)
 	{
 		// Find the initial slash.
-		index = str.find("\\", index);
+		index = str.find('\\', index);
 		if (index == std::string::npos || index == str.length() - 1)
 			break;
 
