@@ -541,7 +541,8 @@ static int WI_DrawName (const char *str, int x, int y)
 			if (new_color == -1)
 				new_color = CR_GREY;
 
-			::V_ColorMap = translationref_t(::Ranges + new_color * 256);
+			::V_ColorMap =
+			    translationref_t(::Ranges + (static_cast<ptrdiff_t>(new_color) * 256));
 			str += 2;
 			continue;
 		}

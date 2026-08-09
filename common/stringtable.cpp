@@ -289,6 +289,9 @@ void StringTable::prepareIndexes()
 	}
 }
 
+namespace
+{
+
 //
 // Rewrite the ZDoom color escape at the given position into the escape
 // character form the text drawing code understands.
@@ -297,7 +300,7 @@ void StringTable::prepareIndexes()
 //
 // Returns false and leaves a malformed escape alone.
 //
-static bool replaceColorEscape(std::string& str, size_t index)
+bool replaceColorEscape(std::string& str, size_t index)
 {
 	// "\c" needs at least one more character to name a color with.
 	if (index + 2 >= str.length())
@@ -307,7 +310,7 @@ static bool replaceColorEscape(std::string& str, size_t index)
 	{
 		// Letter form. Our color letters are the same as ZDoom's, so only
 		// the escape character itself has to change.
-		const char code[] = {TEXTCOLOR_ESCAPE, str.at(index + 2), '\0'};
+		const std::string code = {TEXTCOLOR_ESCAPE, str.at(index + 2)};
 		str.replace(index, 3, code);
 		return true;
 	}
@@ -327,10 +330,12 @@ static bool replaceColorEscape(std::string& str, size_t index)
 // True if the string ends with a color escape code, which makes appending
 // another one pointless.
 //
-static bool endsWithColorCode(const std::string& str)
+bool endsWithColorCode(const std::string& str)
 {
 	return str.length() >= 2 && str.at(str.length() - 2) == TEXTCOLOR_ESCAPE;
 }
+
+} // namespace
 
 void StringTable::replaceEscapes(std::string& str)
 {

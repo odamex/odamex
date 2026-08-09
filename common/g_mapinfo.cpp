@@ -335,8 +335,8 @@ void MIType_String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 }
 
 // Sets the inputted data as a std::string, checking LANGUAGE if it is a $ token
-void MIType_$String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                 unsigned int flags2)
+void MIType_$String(OScanner& os, bool newStyleMapInfo, void* data,
+                    unsigned int /*flags*/, unsigned int /*flags2*/)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
