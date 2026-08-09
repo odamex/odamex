@@ -2081,7 +2081,7 @@ static void P_ApplyGravity(AActor* mo, fixed_t momz_change)
 			fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
 
 			if (mo->momz < sinkspeed)
-				mo->momz = MIN(startmomz, sinkspeed);
+				mo->momz = std::min(startmomz, sinkspeed);
 			else
 				mo->momz = startmomz + ((mo->momz - startmomz) >> WATER_SINK_FACTOR);
 		}

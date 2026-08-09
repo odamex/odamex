@@ -142,16 +142,9 @@ enum printlevel_t {
 //
 // MIN
 //
-// Returns the minimum of a and b.
-//
 #ifdef MIN
 	#undef MIN
 #endif
-template<class T>
-forceinline constexpr T MIN(const T a, const T b)
-{
-	return a < b ? a : b;
-}
 
 //
 // MAX

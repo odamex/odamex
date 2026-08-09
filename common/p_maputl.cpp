@@ -523,7 +523,7 @@ void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, f
 	fixed_t bc = P_CeilingHeight(x, y, back);
 	fixed_t bf = P_FloorHeight(x, y, back);
 
-	opentop = MIN<fixed_t>(fc, bc);
+	opentop = std::min<fixed_t>(fc, bc);
 
 	bool fflevel = P_IsPlaneLevel(&front->floorplane);
 	bool bflevel = P_IsPlaneLevel(&back->floorplane);

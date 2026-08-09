@@ -498,7 +498,7 @@ static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
 	ApplyDistanceScaling(dist_scale, &approx_dist);
 
 	if (S_UseMap8Volume())
-		approx_dist = MIN(approx_dist, S_CLIPPING_DIST);
+		approx_dist = std::min(approx_dist, S_CLIPPING_DIST);
 
 	if (approx_dist > S_CLIPPING_DIST)
 	{
@@ -709,7 +709,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 	if (sfxinfo->lumpnum == sfx_empty)
 		return;
 
-	volume = MIN(volume, 1.0f);
+	volume = std::min(volume, 1.0f);
 	const float initial_volume = volume;
 	int sep = NORM_SEP;
 	fixed_t dist = 0;

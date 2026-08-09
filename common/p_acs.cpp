@@ -184,7 +184,7 @@ void DoGiveInv(player_t& player, const char* type, int amount)
 			SERVER_ONLY(SV_SendPlayerInfo(player));
 		},
 		[&](const ammotype_t ammo) {
-			player.ammo[ammo] = MIN(player.ammo[ammo]+amount, player.maxammo[ammo]);
+			player.ammo[ammo] = std::min(player.ammo[ammo]+amount, player.maxammo[ammo]);
 			SERVER_ONLY(SV_SendPlayerInfo(player));
 		},
 		[&](const powertype_t power) {
@@ -621,7 +621,7 @@ FBehavior::FBehavior (byte* object, int len)
 			int arraynum = level.vars[LELONG(chunk[2])];
 			if (static_cast<unsigned>(arraynum) < static_cast<unsigned>(NumArrays))
 			{
-				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
+				int initsize = std::min<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
 				int32_t *elems = Arrays[arraynum].Elements;
 				for (int i = 0; i < initsize; ++i)
 				{
