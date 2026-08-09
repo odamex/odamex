@@ -78,7 +78,7 @@ blockmap_t blockmap_t::loadVanilla(std::span<const int16_t> lump)
 		size_t j = 1;
 		while (line != -1)
 		{
-			if (static_cast<size_t>(line) > numlines)
+			if (static_cast<uint16_t>(line) > numlines)
 				I_Error("Blockmap list #{} contains non-existent line #{}", i, line);
 
 			list.push_back(static_cast<uint16_t>(line));
@@ -116,7 +116,7 @@ blockmap_t blockmap_t::loadXBM1(std::span<const int32_t> lump)
 		size_t j = 1;
 		while (line != -1)
 		{
-			if (static_cast<size_t>(line) > numlines)
+			if (static_cast<uint32_t>(line) > numlines)
 				I_Error("Blockmap list #{} contains non-existent line #{}", i, line);
 
 			list.push_back(line);
