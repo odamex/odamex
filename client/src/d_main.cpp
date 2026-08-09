@@ -892,7 +892,8 @@ void D_DoomMain()
 		const char* skipParams[] = {
 		    "+connect", "+demotest", "+map",      "+netplay",  "+playdemo",
 		    "-connect", "-file",     "-playdemo", "-timedemo", "-warp",
-		    "+wad"
+		    "+wad",     "-map",      "-wad",      "-iwad",     "-netplay",
+		    "-deh",     "-bex"
 		};
 
 		bool shouldSkip = std::any_of(std::begin(skipParams), std::end(skipParams), [](const auto& param){ return ::Args.CheckValue(param); });
