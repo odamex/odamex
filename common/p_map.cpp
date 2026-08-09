@@ -629,28 +629,22 @@ bool P_IsFriendlyFireBlocked(AActor* source, AActor* thing)
  */
 bool P_ShouldClipFriendly(AActor* projectile, AActor* monster)
 {
-	if (!sv_unblockfriendly)
-	{
-		return true; // Clip all friendlies all the time.
-	}
-	else if (sv_friendlymonsterfire)
-	{
-		return true; // Always clip if friendly monster fire is on.
-	}
-	else if (P_IsFriendlyMonster(projectile->target, monster))
-	{
-		return false; // Friendly monster, no matter who fired at it
-	}
-	else if (projectile->target && !projectile->target->player &&
-	         projectile->target->flags & MF_FRIEND &&
-	         P_IsFriendlyThing(projectile->target, monster))
-	{
-		return false; // Friendly player
-	}
-	else
-	{
-		return true; // Not a friendly.
-	}
+	// Clip all friendlies all the time, and always clip when friendly monster
+	// fire is on.
+	if (!sv_unblockfriendly || sv_friendlymonsterfire)
+		return true;
+
+	// Friendly monster, no matter who fired at it
+	if (P_IsFriendlyMonster(projectile->target, monster))
+		return false;
+
+	// Friendly player
+	if (projectile->target && !projectile->target->player &&
+	    projectile->target->flags & MF_FRIEND &&
+	    P_IsFriendlyThing(projectile->target, monster))
+		return false;
+
+	return true; // Not a friendly.
 }
 
 /*
@@ -662,31 +656,21 @@ bool P_ShouldClipFriendly(AActor* projectile, AActor* monster)
  */
 bool P_ShouldClipPlayer(AActor* projectile, AActor* player)
 {
-	if (!sv_unblockplayers)
-	{
-		return true; // Clip all players all the time.
-	}
-	else if (sv_friendlyfire)
-	{
-		return true; // Always clip if friendly fire is on.
-	}
-	else if (projectile->target && projectile->target->player && player->player)
-	{
-		if (G_IsCoopGame() ||
-		    (projectile->target->player->userinfo.team == player->player->userinfo.team &&
-		     G_IsTeamGame()))
-		{
-			return false; // Friendly player
-		}
-		else
-		{
-			return true; // Enemy player
-		}
-	}
-	else
-	{
-		return true; // Not a player.
-	}
+	// Clip all players all the time, and always clip when friendly fire is on.
+	if (!sv_unblockplayers || sv_friendlyfire)
+		return true;
+
+	// Not a player.
+	if (!projectile->target || !projectile->target->player || !player->player)
+		return true;
+
+	// Friendly player
+	if (G_IsCoopGame() ||
+	    (projectile->target->player->userinfo.team == player->player->userinfo.team &&
+	     G_IsTeamGame()))
+		return false;
+
+	return true; // Enemy player
 }
 
 //
@@ -863,7 +847,7 @@ bool PIT_CheckThing (AActor& thing)
 		// damage / explode
 		if (tmthing->info->damage)
 		{
-			int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
+			const int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
 			{
 				// [RH] figure out the means of death
 				int mod;
@@ -2185,14 +2169,17 @@ fixed_t 		aimslope;
 static fixed_t	topslope;
 static fixed_t	bottomslope;
 
+namespace
+{
+
 // Whether the current aim should ignore things the shooter can't hurt.
-static bool		aimskipunhurtable = true;
+bool		aimskipunhurtable = true;
 
 //
 // P_ShouldSpareFriendly
 // Determines if an attack from source should leave a thing alone entirely.
 //
-static bool P_ShouldSpareFriendly(AActor* source, AActor* thing)
+bool P_ShouldSpareFriendly(AActor* source, AActor* thing)
 {
 	if (!source || !thing)
 		return false;
@@ -2203,6 +2190,8 @@ static bool P_ShouldSpareFriendly(AActor* source, AActor* thing)
 
 	return sv_unblockfriendly && P_IsFriendlyFireBlocked(source, thing);
 }
+
+} // namespace
 
 //
 // PTR_AimTraverse
@@ -2572,16 +2561,16 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance,
 	shootthing = t1;
 	aimskipunhurtable = skipunhurtable;
 
-	x2 = t1->x + (distance>>FRACBITS)*finecosine[angle];
-	y2 = t1->y + (distance>>FRACBITS)*finesine[angle];
-	shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
+	x2 = t1->x + ((distance>>FRACBITS)*finecosine[angle]);
+	y2 = t1->y + ((distance>>FRACBITS)*finesine[angle]);
+	shootz = t1->z + (t1->height>>1) + (8*FRACUNIT);
 
 	// can't shoot outside view angles
 
 	// [RH] Technically, this is now correct for an engine with true 6 DOF
 	// instead of one which implements y-shearing, like we currently do.
-	angle_t topangle = t1->pitch - ANG(32);
-	angle_t bottomangle = t1->pitch + ANG(32);
+	const angle_t topangle = t1->pitch - ANG(32);
+	const angle_t bottomangle = t1->pitch + ANG(32);
 
 	if (topangle <= ANG360 - ANG180)
 		topslope = finetangent[FINEANGLES/2-1];

@@ -2251,9 +2251,9 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		fixed_t thrust = damage * (FRACUNIT >> 3) * gameinfo.defKickback / target->info->mass;
 
 		// make fall forwards sometimes
-		if (!friendlyfireblocked
-			&& damage < 40
+		if (damage < 40
 			&& damage > target->health
+			&& !friendlyfireblocked
 			&& target->z - inflictor->z > 64 * FRACUNIT && (P_Random(target) & 1))
 		{
 			ang += ANG180;

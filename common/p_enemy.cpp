@@ -75,6 +75,9 @@ EXTERN_CVAR(co_zdoomfriendtargeting)
 EXTERN_CVAR(cl_showfriends)
 #endif
 
+constexpr int FRIENDTARGETSEARCH_FOV = 180;
+constexpr int FRIENDTARGETSEARCH_DIST = 10;
+
 enum dirtype_t
 {
 	DI_EAST,
@@ -1006,8 +1009,11 @@ static bool P_HelpFriend(AActor* actor)
 			else if (it->flags & MF_JUSTHIT && it->target &&
 			         it->target != actor->target)
 			{
-				AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)),
-				                                    10, RoughMonsterCheck);
+				AActor* enemy =
+				    P_RoughTargetSearch(actor,
+				      FixedToAngle(INT2FIXED(FRIENDTARGETSEARCH_FOV)),
+				      FRIENDTARGETSEARCH_DIST,
+				      RoughMonsterCheck);
 
 				if (!enemy)
 				{
@@ -1046,10 +1052,8 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 			actor->lastenemy = AActor::AActorPtr();
 			return true;
 		}
-		else
-		{
-			actor->lastenemy = AActor::AActorPtr();
-		}
+
+		actor->lastenemy = AActor::AActorPtr();
 	}
 
 	// If there are no friendlies at all, don't bother doing a potentially expensive search for them.
@@ -1061,7 +1065,10 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		if (actor->IsFriendly())
 		{
 			AActor* enemy =
-			    P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)), 10, RoughMonsterCheck);
+			      P_RoughTargetSearch(actor,
+			        FixedToAngle(INT2FIXED(FRIENDTARGETSEARCH_FOV)),
+			        FRIENDTARGETSEARCH_DIST,
+			        RoughMonsterCheck);
 
 			if (enemy)
 			{
@@ -1088,8 +1095,8 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		// Bug out early if there's nobody to oppose
 		if (!list.empty() || (rivals && !rivals->empty()))
 		{
-			int x = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
-			int y = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
+			const int x = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
+			const int y = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
 
 			// First we check the exact blockmap for the monster.
 			if (!P_BlockThingsIterator(x, y, PIT_FindTarget, nullptr, *actor, allaround))
@@ -1130,7 +1137,8 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 						opposing->MoveFrontToEnd(mo);
 						break;
 					}
-					else if (!PIT_FindTarget(*mo, *actor, allaround))
+
+					if (!PIT_FindTarget(*mo, *actor, allaround))
 						return true;
 				}
 			}
@@ -1321,13 +1329,16 @@ void P_RunHelperTics()
 	}
 }
 
+namespace
+{
+
 //
 // P_LookForOwner
 //
 // killough 9/9/98: go back to the player a friendly belongs to, no matter
 // whether it's visible or not.
 //
-static bool P_LookForOwner(AActor* actor, bool allaround)
+bool P_LookForOwner(AActor* actor, bool allaround)
 {
 	for (auto& player : players)
 	{
@@ -1356,6 +1367,8 @@ static bool P_LookForOwner(AActor* actor, bool allaround)
 	return false;
 }
 
+} // namespace
+
 //
 // P_LookForPlayers
 // If allaround is false, only look 180 degrees in front.
@@ -1381,7 +1394,7 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 	if (actor->subsector == nullptr)
 		return false;
 
-	sector_t* sector = actor->subsector->sector;
+	const sector_t* sector = actor->subsector->sector;
 	if (!sector)
 		return false;
 
