@@ -718,7 +718,7 @@ bool P_HitFriend(AActor* self)
 	return false;
 }
 
-extern fixed_t tmbbox[4];
+extern std::array<fixed_t, 4> tmbbox;
 
 namespace
 {
@@ -764,10 +764,10 @@ fixed_t P_AvoidDropoff(AActor* actor, fixed_t& dropoff_deltax, fixed_t& dropoff_
 	tmbbox[BOXRIGHT] = actor->x + actor->radius;
 	tmbbox[BOXLEFT] = actor->x - actor->radius;
 
-	const int yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
-	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
-	const int xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
-	const int xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - blockmap.originy()) >> MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy()) >> MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - blockmap.originx()) >> MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - blockmap.originx()) >> MAPBLOCKSHIFT;
 
 	const fixed_t floorz = actor->z; // remember floor height
 
@@ -1079,8 +1079,8 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		// Bug out early if the list is empty
 		if (!list.empty())
 		{
-			int x = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
-			int y = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
+			const int x = (actor->x - blockmap.originx()) >> MAPBLOCKSHIFT;
+			const int y = (actor->y - blockmap.originy()) >> MAPBLOCKSHIFT;
 
 			// First we check the exact blockmap for the monster.
 			if (!P_BlockThingsIterator(x, y, PIT_FindTarget, nullptr, *actor, allaround))
@@ -3005,10 +3005,10 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 		const fixed_t viletryx = actor->x + (actor->info->speed * xspeed[actor->movedir]);
 		const fixed_t viletryy = actor->y + (actor->info->speed * yspeed[actor->movedir]);
 
-		const int xl = (viletryx - bmaporgx - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		const int xh = (viletryx - bmaporgx + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		const int yl = (viletryy - bmaporgy - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		const int yh = (viletryy - bmaporgy + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		const int xl = (viletryx - blockmap.originx() - (MAXRADIUS * 2)) >> MAPBLOCKSHIFT;
+		const int xh = (viletryx - blockmap.originx() + (MAXRADIUS * 2)) >> MAPBLOCKSHIFT;
+		const int yl = (viletryy - blockmap.originy() - (MAXRADIUS * 2)) >> MAPBLOCKSHIFT;
+		const int yh = (viletryy - blockmap.originy() + (MAXRADIUS * 2)) >> MAPBLOCKSHIFT;
 
 		auto* vileobj = actor;
 		const int viletryradius = radius;

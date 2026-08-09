@@ -36,14 +36,6 @@
 #define MAXHEALTH		100
 #define VIEWHEIGHT		(41*FRACUNIT)
 
-// mapblocks are used to check movement
-// against lines and things
-#define MAPBLOCKUNITS	128
-#define MAPBLOCKSIZE	(MAPBLOCKUNITS*FRACUNIT)
-#define MAPBLOCKSHIFT	(FRACBITS+7)
-#define MAPBMASK		(MAPBLOCKSIZE-1)
-#define MAPBTOFRAC		(MAPBLOCKSHIFT-FRACBITS)
-
 
 // player radius for movement checking
 #define PLAYERRADIUS	(16*FRACUNIT)
@@ -209,7 +201,7 @@ int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
 void	P_MakeDivline (const line_t *li, divline_t *dl);
 fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1);
-int 	P_BoxOnLineSide (const fixed_t *tmbox, const line_t *ld);
+int 	P_BoxOnLineSide (const std::span<const fixed_t, 4> tmbox, const line_t *ld);
 
 extern fixed_t			opentop;
 extern fixed_t			openbottom;
@@ -334,14 +326,7 @@ bool	Check_Sides(const AActor *, int, int);					// phares
 //
 extern byte*			rejectmatrix;	// for fast sight rejection
 extern bool				rejectempty;
-extern int*				blockmaplump;	// offsets in blockmap are from here
-extern int*				blockmap;
-extern int				bmapwidth;
-extern int				bmapheight; 	// in mapblocks
-extern fixed_t			bmaporgx;
-extern fixed_t			bmaporgy;		// origin of block map
 extern AActor** 		blocklinks; 	// for thing chains
-inline bool skipblstart; // should the first element of blocklists be skipped
 
 extern std::set<short>	movable_sectors;
 
@@ -544,6 +529,7 @@ void P_RunHelperTics();
 // exit with false without checking anything else.
 //
 
+#include "p_blockmap.h"
 
 //
 // P_BlockLinesIterator
@@ -554,21 +540,19 @@ void P_RunHelperTics();
 // to it.
 //
 template <typename F, typename... ARGS>
-// TODO: C++20, uncomment following line
-// requires std::predicate<F, line_t&, ARGS...>
+requires std::predicate<F, line_t&, ARGS...>
 bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 {
-	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
+	if (not blockmap.containsCoordinate(x, y))
 		return true;
 
-	int offset = *(blockmap + (bmapwidth*y + x));
-	const int *list = blockmaplump + offset;
+	std::span<const int> list = blockmap.list(x, y);
 
 	/* [RH] Polyobj stuff from Hexen --> */
 	polyblock_t *polyLink;
 	extern polyblock_t **PolyBlockMap;
 
-	offset = (y * bmapwidth) + x;
+	const int offset = (y * blockmap.width()) + x;
 	if (PolyBlockMap)
 	{
 		polyLink = PolyBlockMap[offset];
@@ -595,19 +579,9 @@ bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 	}
 	/* <-- Polyobj stuff from Hexen */
 
-	// [RH] Get past starting 0 (from BOOM)
-	// denis - not so fast, this breaks doom1.wad 1.9 demo1
-	// [SL] The first entry in each block list appears to have been intended to
-	// be used for a special purpose but instead contains garbage (most often
-	// referencing linedef 0). Using this first entry (as vanilla Doom does) can
-	// cause hitscan weapons to erroneously hit the first linedef entry regardless
-	// of where that linedef is located in relation to the block.
-	if (!demoplayback && skipblstart)
-		++list;
-
-	for (; *list != -1; list++)
+	for (int idx : list)
 	{
-		line_t& ld = lines[*list];
+		line_t& ld = R_GetLines()[idx];
 
 		if (ld.validcount != validcount) {
 			ld.validcount = validcount;
@@ -624,14 +598,13 @@ bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 // P_BlockThingsIterator
 //
 template <typename F, typename... ARGS>
-// TODO: C++20, uncomment following line
-// requires std::predicate<F, AActor&, ARGS...>
+requires std::predicate<F, AActor&, ARGS...>
 bool P_BlockThingsIterator (int x, int y, F&& func, AActor *actor, ARGS&&... args)
 {
-	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
+	if (not blockmap.containsCoordinate(x, y))
 		return true;
 
-	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y*bmapwidth)+x]);
+	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y * blockmap.width()) + x]);
 	while (mobj)
  	{
 		if (!std::invoke(std::forward<F>(func), *mobj, std::forward<ARGS>(args)...))

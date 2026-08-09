@@ -162,8 +162,7 @@ void AActor::ActorBlockMapListNode::copyFrom(const ActorBlockMapListNode& other)
 	m_blockcnty = other.m_blockcnty;
 
 	int blockcnt = m_blockcntx * m_blockcnty;
-	if (blockcnt < 1)
-		blockcnt = 1; // index 0 must always be a valid slot
+	blockcnt = std::max(blockcnt, 1); // index 0 must always be a valid slot
 
 	ensureCapacity(blockcnt);
 
@@ -176,29 +175,29 @@ void AActor::ActorBlockMapListNode::copyFrom(const ActorBlockMapListNode& other)
 
 void AActor::ActorBlockMapListNode::Link()
 {
-	int left    = (m_actor->x - m_actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
-	int right   = (m_actor->x + m_actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
-	int top     = (m_actor->y - m_actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
-	int bottom  = (m_actor->y + m_actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
+	int left    = (m_actor->x - m_actor->radius - blockmap.originx()) >> MAPBLOCKSHIFT;
+	int right   = (m_actor->x + m_actor->radius - blockmap.originx()) >> MAPBLOCKSHIFT;
+	int top     = (m_actor->y - m_actor->radius - blockmap.originy()) >> MAPBLOCKSHIFT;
+	int bottom  = (m_actor->y + m_actor->radius - blockmap.originy()) >> MAPBLOCKSHIFT;
 
 	if (!co_blockmapfix)
 	{
 		// originally Doom only used the block containing the center point
 		// of the actor even if the actor overlapped into other blocks
-		top = bottom = (m_actor->y - bmaporgy) >> MAPBLOCKSHIFT;
-		left = right = (m_actor->x - bmaporgx) >> MAPBLOCKSHIFT;
+		top = bottom = (m_actor->y - blockmap.originy()) >> MAPBLOCKSHIFT;
+		left = right = (m_actor->x - blockmap.originx()) >> MAPBLOCKSHIFT;
 	}
 
 	// do not ignore actors only *partially* outside blockmap
 	// e.g. do not ignore an actor just because its left edge is off the left
 	// side of the blockmap - its *right* edge must be off the left side as well
-	if (right >= 0 && left < bmapwidth && bottom >= 0 && top < bmapheight)
+	if (right >= 0 && left < blockmap.width() && bottom >= 0 && top < blockmap.height())
 	{
 		// however, need to clamp a partially off-limits actor to the grid
-		if (left < 0) left = 0;
-		if (right >= bmapwidth) right = bmapwidth - 1;
-		if (top < 0) top = 0;
-		if (bottom >= bmapheight) bottom = bmapheight - 1;
+		left = std::max(left, 0);
+		if (right >= blockmap.width()) right = blockmap.width() - 1;
+		top = std::max(top, 0);
+		if (bottom >= blockmap.height()) bottom = blockmap.height() - 1;
 
 		m_originx = left;
 		m_originy = top;
@@ -216,14 +215,14 @@ void AActor::ActorBlockMapListNode::Link()
 				// killough 8/11/98: simpler scheme using pointer-to-pointer prev
 				// pointers, allows head nodes to be treated like everything else
 
-				AActor** headptr   = &blocklinks[bmy * bmapwidth + bmx];
+				AActor** headptr   = &blocklinks[(bmy * blockmap.width()) + bmx];
 				AActor*  headactor = *headptr;
 
-				size_t thisidx = getIndex(bmx, bmy);
+				const size_t thisidx = getIndex(bmx, bmy);
 
 				if ((m_next[thisidx] = headactor))
 				{
-					size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
+					const size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
 					headactor->bmapnode.m_prev[nextidx] = & m_next[thisidx];
 				}
 
@@ -357,7 +356,7 @@ int P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line)
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
 //
-int P_BoxOnLineSide (const fixed_t *tmbox, const line_t *ld)
+int P_BoxOnLineSide (const std::span<const fixed_t, 4> tmbox, const line_t *ld)
 {
 	int p1 = 0;
 	int p2 = 0;
@@ -880,10 +879,10 @@ bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 
 	intercepts.clear();
 
-	if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
+	if ( ((x1-blockmap.originx())&(MAPBLOCKSIZE-1)) == 0)
 		x1 += FRACUNIT; // don't side exactly on a line
 
-	if ( ((y1-bmaporgy)&(MAPBLOCKSIZE-1)) == 0)
+	if ( ((y1-blockmap.originy())&(MAPBLOCKSIZE-1)) == 0)
 		y1 += FRACUNIT; // don't side exactly on a line
 
 	trace.x = x1;
@@ -891,13 +890,13 @@ bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 	trace.dx = x2 - x1;
 	trace.dy = y2 - y1;
 
-	x1 -= bmaporgx;
-	y1 -= bmaporgy;
+	x1 -= blockmap.originx();
+	y1 -= blockmap.originy();
 	xt1 = x1>>MAPBLOCKSHIFT;
 	yt1 = y1>>MAPBLOCKSHIFT;
 
-	x2 -= bmaporgx;
-	y2 -= bmaporgy;
+	x2 -= blockmap.originx();
+	y2 -= blockmap.originy();
 	xt2 = x2>>MAPBLOCKSHIFT;
 	yt2 = y2>>MAPBLOCKSHIFT;
 
@@ -1142,8 +1141,9 @@ bool P_ActorInFOV(const AActor* origin, const AActor* mo , float f, fixed_t dist
 
 AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 {
-	const int bx = index % bmapwidth;
-	const int by = index / bmapwidth;
+	// TODO: get rid of mod here
+	const int bx = index % blockmap.width();
+	const int by = index / blockmap.width();
 	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
@@ -1193,8 +1193,9 @@ AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 
 AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 {
-	const int bx = index % bmapwidth;
-	const int by = index / bmapwidth;
+	// TODO: get rid of mod here
+	const int bx = index % blockmap.width();
+	const int by = index / blockmap.width();
 	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
@@ -1236,106 +1237,107 @@ AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 
 AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*searchFunc)(AActor*, int, angle_t))
 {
-	int blockX;
-	int blockY;
-	int startX, startY;
 	int blockIndex;
 	int firstStop;
 	int secondStop;
 	int thirdStop;
 	int finalStop;
-	int count;
 	AActor* target;
 
-	startX = (mo->x - bmaporgx) >> MAPBLOCKSHIFT;
-	startY = (mo->y - bmaporgy) >> MAPBLOCKSHIFT;
+	const int startX = (mo->x - blockmap.originx()) >> MAPBLOCKSHIFT;
+	const int startY = (mo->y - blockmap.originy()) >> MAPBLOCKSHIFT;
 
-	if (startX >= 0 && startX < bmapwidth && startY >= 0 && startY < bmapheight)
+	if (startX >= 0 && startX < blockmap.width() && startY >= 0 && startY < blockmap.height())
 	{
-		if ((target = searchFunc(mo, startY * bmapwidth + startX, fov)))
+		target = searchFunc(mo, (startY * blockmap.width()) + startX, fov);
+		if (target)
 		{ // found a target right away
 			return target;
 		}
 	}
-	for (count = 1; count <= distance; count++)
+	for (int count = 1; count <= distance; count++)
 	{
-		blockX = startX - count;
-		blockY = startY - count;
+		int blockX = startX - count;
+		int blockY = startY - count;
 
 		if (blockY < 0)
 		{
 			blockY = 0;
 		}
-		else if (blockY >= bmapheight)
+		else if (blockY >= blockmap.height())
 		{
-			blockY = bmapheight - 1;
+			blockY = blockmap.height() - 1;
 		}
 		if (blockX < 0)
 		{
 			blockX = 0;
 		}
-		else if (blockX >= bmapwidth)
+		else if (blockX >= blockmap.width())
 		{
-			blockX = bmapwidth - 1;
+			blockX = blockmap.width() - 1;
 		}
-		blockIndex = blockY * bmapwidth + blockX;
+		blockIndex = (blockY * blockmap.width()) + blockX;
 		firstStop = startX + count;
 		if (firstStop < 0)
 		{
 			continue;
 		}
-		if (firstStop >= bmapwidth)
+		if (firstStop >= blockmap.width())
 		{
-			firstStop = bmapwidth - 1;
+			firstStop = blockmap.width() - 1;
 		}
 		secondStop = startY + count;
 		if (secondStop < 0)
 		{
 			continue;
 		}
-		if (secondStop >= bmapheight)
+		if (secondStop >= blockmap.height())
 		{
-			secondStop = bmapheight - 1;
+			secondStop = blockmap.height() - 1;
 		}
-		thirdStop = secondStop * bmapwidth + blockX;
-		secondStop = secondStop * bmapwidth + firstStop;
-		firstStop += blockY * bmapwidth;
+		thirdStop = (secondStop * blockmap.width()) + blockX;
+		secondStop = (secondStop * blockmap.width()) + firstStop;
+		firstStop += blockY * blockmap.width();
 		finalStop = blockIndex;
 
 		// Trace the first block section (along the top)
 		for (; blockIndex <= firstStop; blockIndex++)
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
 		}
 		// Trace the second block section (right edge)
-		for (blockIndex--; blockIndex <= secondStop; blockIndex += bmapwidth)
+		for (blockIndex--; blockIndex <= secondStop; blockIndex += blockmap.width())
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
 		}
 		// Trace the third block section (bottom edge)
-		for (blockIndex -= bmapwidth; blockIndex >= thirdStop; blockIndex--)
+		for (blockIndex -= blockmap.width(); blockIndex >= thirdStop; blockIndex--)
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
 		}
 		// Trace the final block section (left edge)
-		for (blockIndex++; blockIndex > finalStop; blockIndex -= bmapwidth)
+		for (blockIndex++; blockIndex > finalStop; blockIndex -= blockmap.width())
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 VERSION_CONTROL (p_maputl_cpp, "$Id$")
