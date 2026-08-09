@@ -1135,17 +1135,8 @@ void AddBareCommandLineFiles(OWantFiles& out, ofile_t type)
 		}
 		else
 		{
-			bool matches = false;
-			for (const auto& fileext : exts)
-			{
-				if (iequals(ext, fileext))
-				{
-					matches = true;
-					break;
-				}
-			}
-
-			if (!matches)
+			if (std::ranges::none_of(exts,
+					[&](const auto& fileext){return iequals(ext, fileext); }))
 				continue;
 		}
 
