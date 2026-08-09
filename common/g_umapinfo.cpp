@@ -61,7 +61,8 @@ bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NUL
 // PWAD loaded against the wrong IWAD, which is worth saying outright.
 std::string InvalidMapNameError(const OLumpName& mapname)
 {
-	int epi = -1, map = -1;
+	int epi = -1;
+	int map = -1;
 
 	if (gamemode == commercial && sscanf(mapname.c_str(), "E%dM%d", &epi, &map) == 2)
 	{
