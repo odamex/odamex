@@ -2843,11 +2843,14 @@ void A_SpawnObject(AActor* actor)
 	mo->momy = FixedMul(vel_x, finesine[fan]) + FixedMul(vel_y, finecosine[fan]);
 	mo->momz = vel_z;
 
+	// A missile answers to whoever fired it, anything else answers for itself.
+	const bool spawnerismissile = actor->info->flags & (MF_MISSILE | MF_BOUNCES);
+
 	// if spawned object is a missile, set target+tracer
 	if (mo->info->flags & (MF_MISSILE | MF_BOUNCES))
 	{
 		// if spawner is also a missile, copy 'em
-		if (actor->info->flags & (MF_MISSILE | MF_BOUNCES))
+		if (spawnerismissile)
 		{
 			mo->target = actor->target;
 			mo->tracer = actor->tracer;
@@ -2859,8 +2862,22 @@ void A_SpawnObject(AActor* actor)
 			mo->tracer = actor->target;
 		}
 	}
+	else if (!mo->info->seestate)
+	{
+		// We need this to determine friendly fire
+		// This would transfer friendliness if it was a monster
+		// aka had a seestate, but some things spawn non-missiles
+		// with no see state that explode.
+		mo->target = spawnerismissile ? actor->target : actor->ptr();
+	}
 
-	mo->SetFriendly(actor->IsFriendly(), actor);
+	// A missile carries no friendliness of its own, so ownership
+	// has to come from whoever fired it here too.
+	const AActor* owner = actor;
+	if (spawnerismissile && actor->target)
+		owner = actor->target;
+
+	mo->SetFriendly(mo->info->seestate && owner->IsFriendly(), owner);
 	mo->UpdateActorLists();
 
 	SV_SpawnMobj(mo);
