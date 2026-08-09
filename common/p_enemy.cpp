@@ -1036,37 +1036,41 @@ static bool P_HelpFriend(AActor* actor)
 
 bool P_LookForMonsters(AActor* actor, bool allaround)
 {
-	if (!P_IsMBFCompatMode())
-		return false;
-
 	// Use last known enemy if no hatee sighted -- killough 2/15/98:
-	if (actor->lastenemy && actor->lastenemy->health > 0 &&
-	    !(actor->lastenemy->flags & actor->flags & MF_FRIEND))
+	if (P_IsMBFCompatMode())
 	{
-		actor->target = actor->lastenemy;
-		actor->lastenemy = AActor::AActorPtr();
-		return true;
-	}
-	else
-	{
-		actor->lastenemy = AActor::AActorPtr();
+		if (actor->lastenemy && actor->lastenemy->health > 0 &&
+		    !(actor->lastenemy->flags & actor->flags & MF_FRIEND))
+		{
+			actor->target = actor->lastenemy;
+			actor->lastenemy = AActor::AActorPtr();
+			return true;
+		}
+		else
+		{
+			actor->lastenemy = AActor::AActorPtr();
+		}
 	}
 
 	// If there are no friendlies at all, don't bother doing a potentially expensive search for them.
 	if (AActor::GetFriendlies().empty())
 		return false;
 
-	if (actor->IsFriendly() && co_zdoomfriendtargeting)
+	if (co_zdoomfriendtargeting)
 	{
-		AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)), 10, RoughMonsterCheck);
-
-		if (enemy)
+		if (actor->IsFriendly())
 		{
-			actor->target = enemy->ptr();
-			return true;
+			AActor* enemy =
+			    P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)), 10, RoughMonsterCheck);
+
+			if (enemy)
+			{
+				actor->target = enemy->ptr();
+				return true;
+			}
 		}
 	}
-	else if (!co_zdoomfriendtargeting)
+	else
 	{
 		// Let's have a less-taxing check for monsters/friendlies targeting each other.
 		// Emulates MBF's linked mobj lists for friendlies and hostiles.
