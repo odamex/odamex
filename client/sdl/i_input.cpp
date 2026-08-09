@@ -735,12 +735,14 @@ void I_StartTic()
 
 void I_EnableTextEntry()
 {
-	input_subsystem->enableTextEntry();
+	if (input_subsystem)
+		input_subsystem->enableTextEntry();
 }
 
 void I_DisableTextEntry()
 {
-	input_subsystem->disableTextEntry();
+	if (input_subsystem)
+		input_subsystem->disableTextEntry();
 }
 
 // ============================================================================
