@@ -334,7 +334,7 @@ bool R_RotatePointSafe(int64_t x, int64_t y, angle_t ang, fixed_t &tx, fixed_t &
 
 	// Max distance for fixed_t (16.16 fixed point)
 	static constexpr int64_t limit = (int64_t(1) << 30) - 1;
-	const int64_t mag = MAX<int64_t>(tx64 < 0 ? -tx64 : tx64, ty64 < 0 ? -ty64 : ty64);
+	const int64_t mag = std::max<int64_t>(tx64 < 0 ? -tx64 : tx64, ty64 < 0 ? -ty64 : ty64);
 	if (mag <= limit)
 	{
 		tx = static_cast<fixed_t>(tx64);

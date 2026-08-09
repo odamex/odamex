@@ -351,7 +351,7 @@ static inline int R_ColumnRangeMinimumHeight(int start, int stop, int* top)
 	for (int x = start; x <= stop; x++)
 		minheight = std::min(minheight, top[x]);
 
-	return MAX(minheight, 0);
+	return std::max(minheight, 0);
 }
 
 static inline int R_ColumnRangeMaximumHeight(int start, int stop, int* bottom)

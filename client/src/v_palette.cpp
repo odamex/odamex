@@ -1125,7 +1125,7 @@ void V_DoPaletteEffects()
 
 		// slowly fade the berzerk out
 		if (plyr->powers[pw_strength])
-			red_count = MAX(red_count, 12.0f - static_cast<float>(plyr->powers[pw_strength] >> 6));
+			red_count = std::max(red_count, 12.0f - static_cast<float>(plyr->powers[pw_strength] >> 6));
 
 		if (red_count > 0.0f)
 		{
@@ -1140,8 +1140,7 @@ void V_DoPaletteEffects()
 
 				palette_num += STARTREDPALS;
 
-				if (palette_num < 0)
-					palette_num = 0;
+				palette_num = std::max(palette_num, 0);
 			}
 		}
 		else if (plyr->bonuscount)

@@ -703,14 +703,14 @@ void HordeState::getNextSpawnTime(int& min, int& max)
 		const double falloff = Remap(::level.time, m_waveTime, FALLOFF_TIME, 1.0, 0.0);
 		const double floormin = Remap(falloff, 0.0, 1.0, 0.0, EMPTY_MIN_SPAWN);
 		const double floormax = Remap(falloff, 0.0, 1.0, 0.0, EMPTY_MAX_SPAWN);
-		minf = MAX(minf, floormin);
-		maxf = MAX(maxf, floormax);
+		minf = std::max(minf, floormin);
+		maxf = std::max(maxf, floormax);
 	}
 
 	// Turn into integers.
-	min = MAX(int(round(minf)), 1);
-	max = MAX(int(round(maxf)), 1);
-	max = MAX(max, min);
+	min = std::max(int(round(minf)), 1);
+	max = std::max(int(round(maxf)), 1);
+	max = std::max(max, min);
 }
 
 /**

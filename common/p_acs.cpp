@@ -264,7 +264,7 @@ void TakeAmmo(player_t& player, int ammo, int amount)
 	}
 	else
 	{
-		player.ammo[ammo] = MAX(player.ammo[ammo]-amount, 0);
+		player.ammo[ammo] = std::max(player.ammo[ammo]-amount, 0);
 	}
 	if (player.pendingweapon != wp_nochange)
 	{

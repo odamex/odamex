@@ -331,8 +331,8 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		minHealth = define.minGroupHealth;
 	}
 
-	int upper = MAX(maxHealth / health, 1);
-	const int lower = MAX(minHealth / health, 1);
+	int upper = std::max(maxHealth / health, 1);
+	const int lower = std::max(minHealth / health, 1);
 
 	int outTotalCount;
 	if (upper <= lower)
@@ -367,7 +367,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	out.type = outType;
 	out.count = outCount;
 	out.limit = limit.value_or(0);
-	out.totalCount = MAX(outTotalCount, outCount);
+	out.totalCount = std::max(outTotalCount, outCount);
 	out.isBoss = outIsBoss;
 
 	return true;
