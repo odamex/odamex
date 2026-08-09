@@ -31,6 +31,7 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "d_main.h"
+#include "i_input.h"
 #include "i_music.h"
 #include "i_time.h"
 #include "i_video.h"
@@ -787,6 +788,8 @@ void M_SaveSelect (int choice)
 	}
 
 	saveCharIndex = strlen(savegamestrings[choice]);
+
+	I_EnableTextEntry();
 }
 
 //
@@ -1759,6 +1762,8 @@ static void M_EditPlayerName (int choice)
 	if (!strcmp(savegamestrings[0], GStrings(EMPTYSTRING)))
 		savegamestrings[0][0] = 0;
 	saveCharIndex = strlen(savegamestrings[0]);
+
+	I_EnableTextEntry();
 }
 
 static void M_PlayerNameChanged (int choice)
@@ -2290,6 +2295,7 @@ bool M_Responder(const event_t& ev)
 				M_ClearMenus();
 			genStringEnter = oldmenustring_t::NONE;
 			M_StringCopy(&savegamestrings[saveSlot][0], saveOldString, SAVESTRINGSIZE);
+			I_DisableTextEntry();
 		}
 		else if (Key_IsAcceptKey(ch) ||
 		         (ch == OKEY_MOUSE1 && M_MouseOverEditField()))
@@ -2300,6 +2306,7 @@ bool M_Responder(const event_t& ev)
 			genStringEnter = oldmenustring_t::NONE;
 			if (savegamestrings[saveSlot][0])
 				genStringEnd(saveSlot);	// [RH] Function to call when enter is pressed
+			I_DisableTextEntry();
 		}
 		else
 		{
