@@ -3157,6 +3157,7 @@ void P_RespawnSpecials (void)
 	// find which type to spawn
 	auto it = spawn_map.find(mthing.type);
 	if (it == spawn_map.end() ||
+		// TODO: make this account for the possibility that dehacked has replaced these things
 		// Allow or not Partial Invisibility & Invulnerability from respawning
 	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)) ||
 		// pop barrels as well if needed
