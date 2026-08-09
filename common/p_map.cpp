@@ -64,10 +64,6 @@ static int 		tmflags;
 static fixed_t	tmx;
 static fixed_t	tmy;
 static fixed_t	tmz;	// [RH] Needed for third dimension of teleporters
-static int		pe_x;	// Pain Elemental position for Lost Soul checks	// phares
-static int		pe_y;	// Pain Elemental position for Lost Soul checks	// phares
-static int		ls_x;	// Lost Soul position for Lost Soul checks		// phares
-static int		ls_y;	// Lost Soul position for Lost Soul checks		// phares
 
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
@@ -695,7 +691,7 @@ void CheckForPushSpecial (line_t *line, int side, AActor *mobj)
 
 // killough 3/26/98: make static
 // now in anonymous namespace
-bool PIT_CrossLine (const line_t& ld)
+bool PIT_CrossLine (const line_t& ld, int pe_x, int pe_y, int ls_x, int ls_y)
 {
 	if (!(ld.flags & ML_TWOSIDED) ||
 		(ld.flags & (ML_BLOCKING|ML_BLOCKMONSTERS|ML_BLOCKEVERYTHING)))
@@ -1245,10 +1241,10 @@ bool P_IsBridgeMobj(const AActor& thing)
 
 bool Check_Sides(const AActor* actor, int x, int y)
 {
-	pe_x = actor->x;
-	pe_y = actor->y;
-	ls_x = x;
-	ls_y = y;
+	const int pe_x = actor->x; // Pain Elemental position for Lost Soul checks // phares
+	const int pe_y = actor->y; // Pain Elemental position for Lost Soul checks // phares
+	const int ls_x = x;        // Lost Soul position for Lost Soul checks      // phares
+	const int ls_y = y;        // Lost Soul position for Lost Soul checks      // phares
 
 	// Here is the bounding box of the trajectory
 
@@ -1269,8 +1265,8 @@ bool Check_Sides(const AActor* actor, int x, int y)
 	validcount++; // prevents checking same line twice
 	for (int bx = xl ; bx <= xh ; bx++)
 		for (int by = yl ; by <= yh ; by++)
-			if (!P_BlockLinesIterator(bx, by, PIT_CrossLine))
-				return true;										//   ^
+			if (!P_BlockLinesIterator(bx, by, PIT_CrossLine, pe_x, pe_y, ls_x, ls_y))
+				return true;									//   ^
 	return false;												//   |
 }																// phares
 
@@ -2576,8 +2572,6 @@ bool AimTraverseThing(AActor& th, const fixed_t frac)
 	return false;						// don't go any farther
 }
 
-} // namespace
-
 //
 // PTR_AimTraverse
 // Sets linetaget and aimslope when a target is aimed at.
@@ -2823,6 +2817,8 @@ bool PTR_ShootTraverse(const intercept_t& in)
 	return false;
 }
 
+} // namespace
+
 EXTERN_CVAR(sv_freelook)
 
 //
@@ -2979,14 +2975,13 @@ void P_LineAttack(AActor *t1, angle_t angle, fixed_t distance,
 //
 // [RH] PTR_RailTraverse
 //
-static int MaxRailHits, NumRailHits;
-static struct SRailHit {
+struct SRailHit {
 	AActor *hitthing;
 	fixed_t x,y,z;
-} *RailHits;
-static v3double_t RailEnd;
+};
+std::vector<SRailHit> RailHits;
 
-bool PTR_RailTraverse(const intercept_t& in)
+bool PTR_RailTraverse(const intercept_t& in, v3double_t& RailEnd)
 {
 	if (in.isaline)
 	{
@@ -3103,16 +3098,11 @@ bool PTR_RailTraverse(const intercept_t& in)
 	const fixed_t z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
 	// Save this thing for damaging later
-	if (NumRailHits >= MaxRailHits)
-	{
-		MaxRailHits = MaxRailHits ? MaxRailHits * 2 : 16;
-		RailHits = static_cast<SRailHit*>(M_Realloc(RailHits, sizeof(*RailHits) * MaxRailHits));
-	}
-	RailHits[NumRailHits].hitthing = th;
-	RailHits[NumRailHits].x = x;
-	RailHits[NumRailHits].y = y;
-	RailHits[NumRailHits].z = z;
-	NumRailHits++;
+	auto& RailHit = RailHits.emplace_back();
+	RailHit.hitthing = th;
+	RailHit.x = x;
+	RailHit.y = y;
+	RailHit.z = z;
 
 	// continue the trace
 	return true;
@@ -3134,11 +3124,12 @@ void P_RailAttack(AActor *source, int damage, int offset)
 	attackrange = 8192*FRACUNIT;
 	aimslope = finetangent[FINEANGLES/4-(source->pitch>>ANGLETOFINESHIFT)];
 	shootthing = source;
-	NumRailHits = 0;
+	RailHits.clear();
+	v3double_t RailEnd;
 
 	M_SetVec3(&start, x1, y1, shootz);
 
-	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_RailTraverse))
+	if (P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_RailTraverse, RailEnd))
 	{
 		// Nothing hit, so just shoot the air
 		M_AngleToVec3(&end, source->angle, source->pitch);
@@ -3151,13 +3142,13 @@ void P_RailAttack(AActor *source, int damage, int offset)
 		// Hit a wall, maybe some things as well
 		end = RailEnd;
 
-		for (int i = 0; i < NumRailHits; i++)
+		for (const auto& RailHit : RailHits)
 		{
-			if (RailHits[i].hitthing->flags & MF_NOBLOOD)
-				P_SpawnPuff(RailHits[i].x, RailHits[i].y, RailHits[i].z);
+			if (RailHit.hitthing->flags & MF_NOBLOOD)
+				P_SpawnPuff(RailHit.x, RailHit.y, RailHit.z);
 			else
-				P_SpawnBlood(RailHits[i].x, RailHits[i].y, RailHits[i].z, damage);
-			P_DamageMobj (RailHits[i].hitthing, source, source, damage, MOD_RAILGUN);
+				P_SpawnBlood(RailHit.x, RailHit.y, RailHit.z, damage);
+			P_DamageMobj (RailHit.hitthing, source, source, damage, MOD_RAILGUN);
 		}
 	}
 
