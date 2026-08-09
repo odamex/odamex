@@ -107,7 +107,7 @@ blockmap_t blockmap_t::loadXBM1(std::span<const int32_t> lump)
 
 	for (const auto i : std::views::iota(0, newblockmap.size()))
 	{
-		const auto offset = static_cast<uint32_t>(LELONG(lump[i + 4])) + 2;
+		const auto offset = static_cast<uint32_t>(LELONG(lump[i + 4]));
 		if (offset < first_list || offset > lump.size())
 			I_Error("Blockmap offset #{} ({}) is out of bounds.", i, offset);
 
