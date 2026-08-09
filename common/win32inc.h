@@ -53,6 +53,37 @@
         #undef PlaySound
     #endif
 
+    #ifdef MAXCHAR
+        #undef MAXCHAR
+    #endif
+    #ifdef MAXSHORT
+        #undef MAXSHORT
+    #endif
+    #ifdef MAXINT
+        #undef MAXINT
+    #endif
+    #ifdef MAXUINT
+        #undef MAXUINT
+    #endif
+    #ifdef MAXLONG
+        #undef MAXLONG
+    #endif
+    #ifdef MINCHAR
+        #undef MINCHAR
+    #endif
+    #ifdef MINSHORT
+        #undef MINSHORT
+    #endif
+    #ifdef MININT
+        #undef MININT
+    #endif
+    #ifdef MINUINT
+        #undef MINUINT
+    #endif
+    #ifdef MINLONG
+        #undef MINLONG
+    #endif
+
     // POSIX functions
 	#include <ctime>
     char * strptime(const char *buf, const char *fmt, struct tm *timeptr);
