@@ -736,6 +736,27 @@ void R_SetSkyScrollSpeed(int skynum, fixed_t speed)
 	}
 }
 
+void R_ChangeSkyTexture(const char* sky1name, const char* sky2name)
+{
+	auto sky = skyflatlookup[R_FlatNumForName(SKYFLATNAME)];
+	if (level.flags & LEVEL_DOUBLESKY)
+	{
+		if (sky1name && sky1name[0] != '\0')
+			sky->foreground.texnum = R_TextureNumForName(sky1name);
+
+		if (sky2name && sky2name[0] != '\0')
+			sky->background.texnum = R_TextureNumForName(sky2name);
+	}
+	else
+	{
+		if (sky1name && sky1name[0] != '\0')
+			sky->background.texnum = R_TextureNumForName(sky1name);
+
+		if (sky2name && sky2name[0] != '\0')
+			sky2texture = R_TextureNumForName(sky2name);
+	}
+}
+
 //
 // R_RenderSkyRange
 //

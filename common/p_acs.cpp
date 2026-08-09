@@ -4164,6 +4164,16 @@ void DLevelScript::RunScript ()
 			}
 			break;
 
+		case PCD_CHANGESKY:
+			{
+				const char* sky1name = level.behavior->LookupString(STACK(2));
+				const char* sky2name = level.behavior->LookupString(STACK(1));
+				CLIENT_ONLY(R_ChangeSkyTexture(sky1name, sky2name));
+				R_InitSkyMap();
+				sp -= 2;
+			}
+			break;
+
 		case PCD_CALLFUNC:
 			{
 				const int nargs = NEXTBYTE;
