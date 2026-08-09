@@ -2448,11 +2448,6 @@ int 			la_damage;
 fixed_t 		attackrange;
 fixed_t 		aimslope;
 
-// slopes to top and bottom of target
-// killough 4/20/98: make static instead of using ones in p_sight.c
-static fixed_t	topslope;
-static fixed_t	bottomslope;
-
 namespace
 {
 
@@ -2475,7 +2470,7 @@ bool P_ShouldSpareFriendly(AActor* source, AActor* thing)
 	return sv_unblockfriendly && P_IsFriendlyFireBlocked(source, thing);
 }
 
-bool AimTraverseLine(const line_t& li, const fixed_t frac)
+bool AimTraverseLine(const line_t& li, const fixed_t frac, fixed_t& topslope, fixed_t& bottomslope)
 {
 	if (!(li.flags & ML_TWOSIDED))
 		return false;				// stop
@@ -2518,7 +2513,7 @@ bool AimTraverseLine(const line_t& li, const fixed_t frac)
 	return true;					// shot continues
 }
 
-bool AimTraverseThing(AActor& th, const fixed_t frac)
+bool AimTraverseThing(AActor& th, const fixed_t frac, const fixed_t topslope, const fixed_t bottomslope)
 {
 	// shoot a thing
 	if (&th == shootthing)
@@ -2573,12 +2568,12 @@ bool AimTraverseThing(AActor& th, const fixed_t frac)
 // PTR_AimTraverse
 // Sets linetaget and aimslope when a target is aimed at.
 //
-bool PTR_AimTraverse(const intercept_t& in)
+bool PTR_AimTraverse(const intercept_t& in, fixed_t& topslope, fixed_t& bottomslope)
 {
 	if (in.isaline)
-		return AimTraverseLine(*in.d.line, in.frac);
+		return AimTraverseLine(*in.d.line, in.frac, topslope, bottomslope);
 
-	return AimTraverseThing(*in.d.thing, in.frac);
+	return AimTraverseThing(*in.d.thing, in.frac, topslope, bottomslope);
 }
 
 //
@@ -2839,6 +2834,12 @@ fixed_t P_AimLineAttack(AActor *t1, angle_t angle, fixed_t distance,
 	const angle_t topangle = t1->pitch - ANG(32);
 	const angle_t bottomangle = t1->pitch + ANG(32);
 
+	// slopes to top and bottom of target
+	// killough 4/20/98: make static instead of using ones in p_sight.c
+	// now local instead of static globals
+	fixed_t topslope;
+	fixed_t bottomslope;
+
 	if (topangle <= ANG360 - ANG180)
 		topslope = finetangent[FINEANGLES/2-1];
 	else
@@ -2852,7 +2853,7 @@ fixed_t P_AimLineAttack(AActor *t1, angle_t angle, fixed_t distance,
 	attackrange = distance;
 	linetarget = NULL;
 
-	P_PathTraverse (t1->x, t1->y, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_AimTraverse);
+	P_PathTraverse(t1->x, t1->y, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_AimTraverse, topslope, bottomslope);
 
 	if (linetarget)
 		return aimslope;
