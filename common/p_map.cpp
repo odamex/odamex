@@ -116,6 +116,301 @@ CVAR_FUNC_IMPL (sv_gravity)
 }
 
 //
+// INTERCEPT ROUTINES
+//
+
+divline_t trace;
+
+namespace
+{
+
+//
+// PIT_AddLineIntercepts.
+// Looks for lines in the given block
+// that intercept the given trace
+// to add to the intercepts list.
+//
+// A line is crossed if its endpoints
+// are on opposite sides of the trace.
+// Returns true if earlyout and a solid line hit.
+//
+bool PIT_AddLineIntercepts(line_t& ld, bool earlyout)
+{
+	int 				s1;
+	int 				s2;
+	divline_t			dl;
+
+	// avoid precision problems with two routines
+	if ( trace.dx > FRACUNIT*16
+		 || trace.dy > FRACUNIT*16
+		 || trace.dx < -FRACUNIT*16
+		 || trace.dy < -FRACUNIT*16)
+	{
+		s1 = P_PointOnDivlineSide (ld.v1->x, ld.v1->y, &trace);
+		s2 = P_PointOnDivlineSide (ld.v2->x, ld.v2->y, &trace);
+	}
+	else
+	{
+		s1 = P_PointOnLineSide (trace.x, trace.y, &ld);
+		s2 = P_PointOnLineSide (trace.x+trace.dx, trace.y+trace.dy, &ld);
+	}
+
+	if (s1 == s2)
+		return true;	// line isn't crossed
+
+	// hit the line
+	P_MakeDivline (&ld, &dl);
+	const fixed_t frac = P_InterceptVector (&trace, &dl);
+
+	if (frac < 0)
+		return true;	// behind source
+
+	// try to early out the check
+	if (earlyout
+		&& frac < FRACUNIT
+		&& !ld.backsector)
+	{
+		return false;	// stop checking
+	}
+
+
+	intercept_t intercept;
+	intercept.frac = frac;
+	intercept.isaline = true;
+	intercept.d.line = &ld;
+	intercepts.push_back(intercept);
+
+	return true;		// continue
+}
+
+//
+// PIT_AddThingIntercepts
+//
+bool PIT_AddThingIntercepts (AActor& thing)
+{
+	fixed_t 		x1;
+	fixed_t 		y1;
+	fixed_t 		x2;
+	fixed_t 		y2;
+
+	divline_t		dl;
+
+	const bool tracepositive = (trace.dx ^ trace.dy)>0;
+
+	// check a corner to corner crossection for hit
+	if (tracepositive)
+	{
+		x1 = thing.x - thing.radius;
+		y1 = thing.y + thing.radius;
+
+		x2 = thing.x + thing.radius;
+		y2 = thing.y - thing.radius;
+	}
+	else
+	{
+		x1 = thing.x - thing.radius;
+		y1 = thing.y - thing.radius;
+
+		x2 = thing.x + thing.radius;
+		y2 = thing.y + thing.radius;
+	}
+
+	const int s1 = P_PointOnDivlineSide (x1, y1, &trace);
+	const int s2 = P_PointOnDivlineSide (x2, y2, &trace);
+
+	if (s1 == s2)
+		return true;			// line isn't crossed
+
+	dl.x = x1;
+	dl.y = y1;
+	dl.dx = x2-x1;
+	dl.dy = y2-y1;
+
+	const fixed_t frac = P_InterceptVector (&trace, &dl);
+
+	if (frac < 0)
+		return true;			// behind source
+
+	intercept_t intercept;
+	intercept.frac = frac;
+	intercept.isaline = false;
+	intercept.d.thing = &thing;
+	intercepts.push_back(intercept);
+
+	return true;				// keep going
+}
+
+
+//
+// P_TraverseIntercepts
+// Returns true if the traverser function returns true
+// for all lines.
+//
+template <typename F, typename... ARGS>
+requires std::predicate<F, intercept_t&, ARGS...>
+bool P_TraverseIntercepts(F&& func, fixed_t maxfrac, ARGS&&... args)
+{
+	size_t 				count = intercepts.size();
+	fixed_t 			dist;
+	intercept_t*		in = nullptr;
+
+	while (count--)
+	{
+		dist = limits::MAXFIXED;
+		for (intercept_t& intercept : intercepts)
+		{
+			if (intercept.frac < dist)
+			{
+				dist = intercept.frac;
+				in = &intercept;
+			}
+		}
+
+		if (dist > maxfrac)
+			return true;		// checked everything in range
+
+
+		if (!std::invoke(std::forward<F>(func), *in, std::forward<ARGS>(args)...))
+			return false;		// don't bother going farther
+
+		in->frac = limits::MAXFIXED;
+	}
+
+	return true;				// everything was traversed
+}
+
+//
+// P_PathTraverse
+// Traces a line from x1,y1 to x2,y2,
+// calling the traverser function for each.
+// Returns true if the traverser function returns true
+// for all lines.
+//
+template <typename F, typename... ARGS>
+requires std::predicate<F, intercept_t&, ARGS...>
+bool P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, F&& trav, ARGS&&... args)
+{
+	fixed_t 	xstep;
+	fixed_t 	ystep;
+
+	fixed_t 	partial;
+
+	int 		mapxstep;
+	int 		mapystep;
+
+	const bool earlyout = flags & PT_EARLYOUT;
+
+	validcount++;
+
+	intercepts.clear();
+
+	if ( ((x1-blockmap.originx())&(MAPBLOCKSIZE-1)) == 0)
+		x1 += FRACUNIT; // don't side exactly on a line
+
+	if ( ((y1-blockmap.originy())&(MAPBLOCKSIZE-1)) == 0)
+		y1 += FRACUNIT; // don't side exactly on a line
+
+	trace.x = x1;
+	trace.y = y1;
+	trace.dx = x2 - x1;
+	trace.dy = y2 - y1;
+
+	x1 -= blockmap.originx();
+	y1 -= blockmap.originy();
+	const fixed_t xt1 = x1>>MAPBLOCKSHIFT;
+	const fixed_t yt1 = y1>>MAPBLOCKSHIFT;
+
+	x2 -= blockmap.originx();
+	y2 -= blockmap.originy();
+	const fixed_t xt2 = x2>>MAPBLOCKSHIFT;
+	const fixed_t yt2 = y2>>MAPBLOCKSHIFT;
+
+	if (xt2 > xt1)
+	{
+		mapxstep = 1;
+		partial = FRACUNIT -((x1>>MAPBTOFRAC)&(FRACUNIT-1));
+		ystep = FixedDiv (y2-y1,abs(x2-x1));
+	}
+	else if (xt2 < xt1)
+	{
+		mapxstep = -1;
+		partial = (x1>>MAPBTOFRAC)&(FRACUNIT-1);
+		ystep = FixedDiv(y2-y1,abs(x2-x1));
+	}
+	else
+	{
+		mapxstep = 0;
+		partial = FRACUNIT;
+		ystep = 256*FRACUNIT;
+	}
+
+	fixed_t yintercept = (y1>>MAPBTOFRAC) + FixedMul (partial, ystep);
+
+
+	if (yt2 > yt1)
+	{
+		mapystep = 1;
+		partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
+		xstep = FixedDiv(x2-x1,abs(y2-y1));
+	}
+	else if (yt2 < yt1)
+	{
+		mapystep = -1;
+		partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
+		xstep = FixedDiv(x2-x1,abs(y2-y1));
+	}
+	else
+	{
+		mapystep = 0;
+		partial = FRACUNIT;
+		xstep = 256*FRACUNIT;
+	}
+	fixed_t xintercept = (x1>>MAPBTOFRAC) + FixedMul(partial, xstep);
+
+	// Step through map blocks.
+	// Count is present to prevent a round off error
+	// from skipping the break.
+	int mapx = xt1;
+	int mapy = yt1;
+
+	for (int count = 0 ; count < 64 ; count++)
+	{
+		if (flags & PT_ADDLINES)
+		{
+			if (!P_BlockLinesIterator(mapx, mapy,PIT_AddLineIntercepts, earlyout))
+				return false;	// early out
+		}
+
+		if (flags & PT_ADDTHINGS)
+		{
+			if (!P_BlockThingsIterator(mapx, mapy,PIT_AddThingIntercepts, nullptr))
+				return false;	// early out
+		}
+
+		if (mapx == xt2 && mapy == yt2)
+		{
+			break;
+		}
+
+		if ((yintercept >> FRACBITS) == mapy)
+		{
+			yintercept += ystep;
+			mapx += mapxstep;
+		}
+		else if ((xintercept >> FRACBITS) == mapx)
+		{
+			xintercept += xstep;
+			mapy += mapystep;
+		}
+
+	}
+	// go through the sorted list
+	return P_TraverseIntercepts(std::forward<F>(trav), FRACUNIT, std::forward<ARGS>(args)...);
+}
+
+} // namespace
+
+//
 // TELEPORT MOVE
 //
 
@@ -1966,7 +2261,7 @@ void P_HitSlideLine (line_t* ld)
 //
 // PTR_SlideTraverse
 //
-bool PTR_SlideTraverse(intercept_t& in)
+bool PTR_SlideTraverse(const intercept_t& in)
 {
 	if (!in.isaline)
 		I_Error ("PTR_SlideTraverse: non-line intercept\n");
@@ -2024,8 +2319,6 @@ bool PTR_SlideTraverse(intercept_t& in)
 
 	return false;		// stop
 }
-
-
 
 //
 // P_SlideMove
@@ -2289,7 +2582,7 @@ bool AimTraverseThing(AActor& th, const fixed_t frac)
 // PTR_AimTraverse
 // Sets linetaget and aimslope when a target is aimed at.
 //
-bool PTR_AimTraverse (intercept_t& in)
+bool PTR_AimTraverse(const intercept_t& in)
 {
 	if (in.isaline)
 		return AimTraverseLine(*in.d.line, in.frac);
@@ -2429,7 +2722,7 @@ bool P_ShootLine(line_t& li, const fixed_t frac)
 //
 // PTR_ShootTraverse
 //
-bool PTR_ShootTraverse (intercept_t& in)
+bool PTR_ShootTraverse(const intercept_t& in)
 {
 	if (in.isaline)
 		return P_ShootLine(*in.d.line, in.frac);
@@ -2535,18 +2828,15 @@ EXTERN_CVAR(sv_freelook)
 //
 // P_AimLineAttack
 //
-fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance,
-                         bool skipunhurtable)
+fixed_t P_AimLineAttack(AActor *t1, angle_t angle, fixed_t distance,
+                        bool skipunhurtable)
 {
-	fixed_t x2;
-	fixed_t y2;
-
 	angle >>= ANGLETOFINESHIFT;
 	shootthing = t1;
 	aimskipunhurtable = skipunhurtable;
 
-	x2 = t1->x + ((distance>>FRACBITS)*finecosine[angle]);
-	y2 = t1->y + ((distance>>FRACBITS)*finesine[angle]);
+	const fixed_t x2 = t1->x + ((distance>>FRACBITS)*finecosine[angle]);
+	const fixed_t y2 = t1->y + ((distance>>FRACBITS)*finesine[angle]);
 	shootz = t1->z + (t1->height>>1) + (8*FRACUNIT);
 
 	// can't shoot outside view angles
@@ -2696,7 +2986,7 @@ static struct SRailHit {
 } *RailHits;
 static v3double_t RailEnd;
 
-bool PTR_RailTraverse(intercept_t& in)
+bool PTR_RailTraverse(const intercept_t& in)
 {
 	if (in.isaline)
 	{
@@ -2893,7 +3183,7 @@ fixed_t CameraX, CameraY, CameraZ;
 sector_t* CameraSector;
 #define CAMERA_DIST	0x1000	// Minimum distance between camera and walls
 
-bool PTR_CameraTraverse(intercept_t& in)
+bool PTR_CameraTraverse(const intercept_t& in)
 {
 	// ignore mobjs
 	if (!in.isaline)
@@ -3001,10 +3291,7 @@ void P_AimCamera (AActor *t1)
 //
 // USE LINES
 //
-AActor *usething;
-bool foundline;
-
-bool PTR_UseTraverse(intercept_t& in)
+bool PTR_UseTraverse(const intercept_t& in, AActor* usething, bool& foundline)
 {
 	if (!in.isaline)
 		I_Error("PTR_UseTraverse: non-line intercept\n");
@@ -3073,7 +3360,7 @@ bool PTR_UseTraverse(intercept_t& in)
 // by Lee Killough
 //
 
-bool PTR_NoWayTraverse(intercept_t& in)
+bool PTR_NoWayTraverse(const intercept_t& in, const AActor* usething)
 {
 	if (!in.isaline)
 		I_Error("PTR_NoWayTraverse: non-line intercept\n");
@@ -3101,8 +3388,8 @@ void P_UseLines (player_t& player)
 	if (player.spectator)
 		return;
 
-	usething = player.mo;
-	foundline = false;
+	AActor* usething = player.mo;
+	bool foundline = false;
 
 	//Added by MC: Check if bot and use special activating (spin round) if it is.
 	const int angle = player.mo->angle >> ANGLETOFINESHIFT;
@@ -3112,7 +3399,7 @@ void P_UseLines (player_t& player)
 	const fixed_t x2 = x1 + (USERANGE >> FRACBITS) * finecosine[angle];
 	const fixed_t y2 = y1 + (USERANGE >> FRACBITS) * finesine[angle];
 
-	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse)) {
+	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse, usething, foundline)) {
 		// [RH] Give sector a chance to eat the use
 		if (usething->subsector)
 		{
@@ -3121,7 +3408,7 @@ void P_UseLines (player_t& player)
 			if (foundline)
 				spac |= SECSPAC_UseWall;
 			if ((!sec->SecActTarget || !A_TriggerAction(sec->SecActTarget, usething, spac)) &&
-			    (co_boomphys && !P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse)))
+			    (co_boomphys && !P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse, usething)))
 			{
 				// This added test makes the "oof" sound work on 2s lines -- killough:
 				// [ML] It also apparently allows additional silent bfg tricks not present in vanilla...

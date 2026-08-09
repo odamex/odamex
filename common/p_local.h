@@ -181,9 +181,7 @@ struct intercept_t
 
 #define MAXINTERCEPTS	128
 
-extern std::vector<intercept_t> intercepts;
-
-using traverser_t = bool (*)(intercept_t& in);
+inline std::vector<intercept_t> intercepts;
 
 subsector_t* P_PointInSubsector(fixed_t x, fixed_t y);
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
@@ -215,15 +213,6 @@ void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=li
 #define PT_EARLYOUT 	4
 
 extern divline_t		trace;
-
-bool
-P_PathTraverse
-( fixed_t		x1,
-  fixed_t		y1,
-  fixed_t		x2,
-  fixed_t		y2,
-  int			flags,
-  bool		(*trav) (intercept_t&));
 
 // [ML] 2/1/10: Break out P_PointToAngle from R_PointToAngle2 (from EE)
 angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y);
