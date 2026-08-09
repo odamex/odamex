@@ -2183,12 +2183,16 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		return;
 	}
 
-	// No damage with sv_friendlymonsterfire
+	// No damage with sv_friendlymonsterfire.
+	// But keep track of if friendly fire is blocked to apply
+	// thrusting later.
+	bool friendlyfireblocked = false;
 	if (!sv_friendlymonsterfire && source && target != source && mod != MOD_TELEFRAG)
 	{
-		if (source->flags & MF_FRIEND && P_IsFriendlyThing(source, target))
+		if (!(source->player && target->player) && source->flags & MF_FRIEND &&
+		    P_IsFriendlyThing(source, target))
 		{
-			return;
+			friendlyfireblocked = true;
 		}
 	}
 
@@ -2215,7 +2219,8 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		}
 	}
 
-	if (target->flags & MF_SKULLFLY)
+	// Don't allow unblocked friendlies to interrupt lost soul flight
+	if (target->flags & MF_SKULLFLY && !friendlyfireblocked)
 	{
 		target->momx = target->momy = target->momz = 0;
 	}
@@ -2248,6 +2253,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		// make fall forwards sometimes
 		if (damage < 40
 			&& damage > target->health
+			&& !friendlyfireblocked
 			&& target->z - inflictor->z > 64 * FRACUNIT && (P_Random(target) & 1))
 		{
 			ang += ANG180;
@@ -2262,6 +2268,10 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		if (target->oflags & MFO_FALLING && target->gear >= MAXGEAR)
 			target->gear = 0;
 	}
+
+	// Knocked about but unhurt.
+	if (friendlyfireblocked)
+		return;
 
 	// player specific
 	if (player)
