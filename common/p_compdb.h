@@ -28,6 +28,7 @@
 struct levelcompdata_t
 {
     bool reservedLineFlag = false;
+    bool noACS            = false;
 };
 
 const levelcompdata_t& P_GetLevelCompData(fhfprint_t fingerprint);

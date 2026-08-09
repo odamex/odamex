@@ -1883,16 +1883,18 @@ void P_LoadBehavior (int lumpnum)
 {
 	byte *behavior = W_CacheLumpNum<byte>(lumpnum, PU_LEVEL);
 
+	const bool noACS = P_GetLevelCompData(::level.level_fingerprint).noACS;
+
 	level.behavior = std::make_unique<FBehavior>(behavior, lumpinfo[lumpnum].size);
 
-	if (!level.behavior->IsGood ())
+	if (!level.behavior->IsGood() || noACS)
 	{
 		level.behavior.reset();
 	}
 }
 
 // Hash the sector tags across the sectors and linedefs.
-void P_InitTagLists(void)
+void P_InitTagLists()
 {
 	for (int i = numsectors; --i >= 0; )		// Initially make all slots empty.
 		sectors[i].firsttag = -1;
@@ -2183,7 +2185,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	// note: most of this ordering is important
 
 	// [RH] Load in the BEHAVIOR lump
-	if (level.behavior != NULL)
+	if (level.behavior != nullptr)
 	{
 		level.behavior.reset();
 	}

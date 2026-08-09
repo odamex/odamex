@@ -470,7 +470,7 @@ FBehavior::FBehavior (byte* object, int len)
   Arrays(nullptr), NumArrays(0)
 {
 
-	if (object[0] != 'A' || object[1] != 'C' || object[2] != 'S')
+	if (len == 0 || object[0] != 'A' || object[1] != 'C' || object[2] != 'S')
 	{
 		Format = ACS_Unknown;
 		return;

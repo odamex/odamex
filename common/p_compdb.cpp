@@ -59,6 +59,13 @@ static const std::unordered_map<fhfprint_t, levelcompdata_t> compdata = {
 			.reservedLineFlag = true
 		}
 	},
+	{
+		// Hordamex MAP32
+		fhfprint_t::fromString("c47e517c46af18cbd62ff84812eaee10"),
+		{
+			.noACS = true
+		}
+	},
 };
 
 const levelcompdata_t& P_GetLevelCompData(fhfprint_t fingerprint)
