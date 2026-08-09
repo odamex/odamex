@@ -50,7 +50,7 @@ class blockmap_t
 
 	void setSkipBlockStart()
 	{
-		m_skipzerostart = std::ranges::none_of(m_blocklists, [](auto&& list){ return !list.empty() && list.front() == 0; });
+		m_skipzerostart = std::ranges::all_of(m_blocklists, [](auto&& list){ return !list.empty() && list.front() == 0; });
 	}
 
 	static blockmap_t create();
