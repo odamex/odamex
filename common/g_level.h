@@ -469,6 +469,10 @@ void P_RemoveDefereds();
 bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
                const std::string& mapname = "");
 bool G_LoadWadString(const std::string& str, const std::string& mapname = "", const maplist_lastmaps_t& lastmaps = {});
+void G_ParseWadString(const std::string& str, OWantFiles& newwadfiles,
+                      OWantFiles& newpatchfiles);
+
+extern std::string startupwadstring;
 
 LevelInfos& getLevelInfos();
 ClusterInfos& getClusterInfos();
