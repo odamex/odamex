@@ -180,15 +180,13 @@ struct divline_t
 
 struct intercept_t
 {
-	fixed_t 	frac;			// along trace line
-	bool 	isaline;
+	fixed_t frac;			// along trace line
+	bool    isaline;
 	union {
 		AActor* thing;
 		line_t* line;
-	}					d;
+	} d;
 };
-
-#define MAXINTERCEPTS	128
 
 inline std::vector<intercept_t> intercepts;
 
