@@ -217,8 +217,8 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 			dcol.yl = topscreen >> FRACBITS;
 			dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
 
-			dcol.yl = MAX(dcol.yl, MAX(mceilingclip[dcol.x], 0));
-			dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
+			dcol.yl = std::max({dcol.yl, mceilingclip[dcol.x], 0});
+			dcol.yh = std::min(dcol.yh, mfloorclip[dcol.x] - 1);
 
 			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
 				+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale);
@@ -273,7 +273,7 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 		// so rather than increase it to 513 and imply that we
 		// handle 513px at a time, clamp it instead.
 		const int maxcount = static_cast<int>(sizeof(destpostraw)) - 8;
-		int count = MIN(dcol.textureheight >> FRACBITS, maxcount);
+		int count = std::min(dcol.textureheight >> FRACBITS, maxcount);
 
 		destpost->topdelta = 0;
 
@@ -285,7 +285,7 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 			{
 				// clamp to remaining to ensure malformed post lengths
 				// don't crash
-				const int copylen = MIN<int>(srcpost->length, remaining);
+				const int copylen = std::min<int>(srcpost->length, remaining);
 				memcpy(destpost->data() + destpostlen, srcpost->data(), copylen);
 				destpostlen += copylen;
 			}
@@ -339,8 +339,8 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool
 		dcol.colormap = basecolormap.with(walllights[index]);
 	}
 
-	dcol.yl = MAX(top[x], 0);
-	dcol.yh = MIN(bottom[x], viewheight - 1);
+	dcol.yl = std::max(top[x], 0);
+	dcol.yh = std::min(bottom[x], viewheight - 1);
 	dcol.post = posts[x];
 }
 
@@ -349,18 +349,18 @@ static inline int R_ColumnRangeMinimumHeight(int start, int stop, int* top)
 {
 	int minheight = viewheight - 1;
 	for (int x = start; x <= stop; x++)
-		minheight = MIN(minheight, top[x]);
+		minheight = std::min(minheight, top[x]);
 
-	return MAX(minheight, 0);
+	return std::max(minheight, 0);
 }
 
 static inline int R_ColumnRangeMaximumHeight(int start, int stop, int* bottom)
 {
 	int maxheight = 0;
 	for (int x = start; x <= stop; x++)
-		maxheight = MAX(maxheight, bottom[x]);
+		maxheight = std::max(maxheight, bottom[x]);
 
-	return MIN(maxheight, viewheight - 1);
+	return std::min(maxheight, viewheight - 1);
 }
 
 //
@@ -439,7 +439,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
 		{
 			const int blockstartx = bx;
-			const int blockstopx = MIN((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
+			const int blockstopx = std::min((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
 
 			const int miny = R_ColumnRangeMinimumHeight(blockstartx, blockstopx, top);
 			const int maxy = R_ColumnRangeMaximumHeight(blockstartx, blockstopx, bottom);
@@ -455,8 +455,8 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 						dcol.colormap = basecolormap.with(light_lookup[x]);
 
 					dcol.x = x;
-					dcol.yl = MAX(top[x], blockstarty);
-					dcol.yh = MIN(bottom[x], blockstopy);
+					dcol.yl = std::max(top[x], blockstarty);
+					dcol.yh = std::min(bottom[x], blockstopy);
 					dcol.post = posts[x];
 					colblast();
 				}
@@ -489,8 +489,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	// clip the front of the walls to the ceiling and floor
 	for (int x = start; x <= stop; x++)
 	{
-		walltopf[x] = MAX(walltopf[x], ceilingclip[x]);
-		wallbottomf[x] = MIN(wallbottomf[x], floorclip[x]);
+		walltopf[x] = std::max(walltopf[x], ceilingclip[x]);
+		wallbottomf[x] = std::min(wallbottomf[x], floorclip[x]);
 	}
 
 	// mark ceiling-plane areas
@@ -498,8 +498,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	{
 		for (int x = start; x <= stop; x++)
 		{
-			const int top = MAX(ceilingclip[x], 0);
-			const int bottom = MIN(MIN(walltopf[x], floorclip[x]) - 1, viewheight - 1);
+			const int top = std::max(ceilingclip[x], 0);
+			const int bottom = std::min({walltopf[x], floorclip[x] - 1, viewheight - 1});
 
 			if (top <= bottom)
 			{
@@ -514,8 +514,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	{
 		for (int x = start; x <= stop; x++)
 		{
-			const int top = MAX(MAX(wallbottomf[x], ceilingclip[x]), 0);
-			const int bottom = MIN(floorclip[x] - 1, viewheight - 1);
+			const int top = std::max({wallbottomf[x], ceilingclip[x], 0});
+			const int bottom = std::min(floorclip[x] - 1, viewheight - 1);
 
 			if (top <= bottom)
 			{
@@ -553,7 +553,7 @@ void R_RenderSolidSegRange(int start, int stop)
 
 			for (int x = start; x <= stop; x++)
 			{
-				walltopb[x] = MAX(MIN(walltopb[x], floorclip[x]), walltopf[x]);
+				walltopb[x] = std::max(std::min(walltopb[x], floorclip[x]), walltopf[x]);
 				lower[x] = walltopb[x] - 1;
 			}
 
@@ -579,7 +579,7 @@ void R_RenderSolidSegRange(int start, int stop)
 
 			for (int x = start; x <= stop; x++)
 			{
-				wallbottomb[x] = MIN(MAX(wallbottomb[x], ceilingclip[x]), wallbottomf[x]);
+				wallbottomb[x] = std::min(std::max(wallbottomb[x], ceilingclip[x]), wallbottomf[x]);
 				lower[x] = wallbottomf[x] - 1;
 			}
 
@@ -660,9 +660,9 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	// find texture positioning
 	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
-		dcol.texturemid = MAX(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + R_TexInvScaleY(textureheight[texnum], texnum);
+		dcol.texturemid = std::max(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + R_TexInvScaleY(textureheight[texnum], texnum);
 	else
-		dcol.texturemid = MIN(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
+		dcol.texturemid = std::min(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
 
 	dcol.texturemid = R_TexScaleY(dcol.texturemid - viewz, texnum) + curline->sidedef->rowoffset;
 

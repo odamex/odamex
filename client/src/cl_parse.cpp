@@ -1449,8 +1449,8 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	}
 	else
 	{
-		player.health = MIN(player.health, health);
-		player.armorpoints = MIN(player.armorpoints, armorpoints);
+		player.health = std::min(player.health, health);
+		player.armorpoints = std::min(player.armorpoints, armorpoints);
 		player.mo->health = player.health;
 
 		if (player.health < 0)
@@ -1464,8 +1464,7 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 				player.health = 0;
 		}
 
-		if (player.armorpoints < 0)
-			player.armorpoints = 0;
+		player.armorpoints = std::max(player.armorpoints, 0);
 	}
 
 	if (player.armorpoints == 0)

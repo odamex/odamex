@@ -877,7 +877,7 @@ static void drawLevelStats()
 	if (hud_anchoring.value() < 1.0f)
 	{
 		num_ax = ((static_cast<float>(I_GetSurfaceWidth()) - static_cast<float>(I_GetSurfaceHeight()) * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
-		num_ax = MAX(0, num_ax);
+		num_ax = std::max(0, num_ax);
 		text_ax = num_ax / xscale;
 	}
 
@@ -971,7 +971,7 @@ void OdamexHUD() {
 	if (hud_anchoring.value() < 1.0f)
 	{
 		num_ax = ((static_cast<float>(I_GetSurfaceWidth()) - static_cast<float>(I_GetSurfaceHeight()) * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
-		num_ax = MAX(0, num_ax);
+		num_ax = std::max(0, num_ax);
 		text_ax = num_ax / xscale;
 		patch_ax = num_ax / xscale;
 	}

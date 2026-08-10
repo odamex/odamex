@@ -204,7 +204,7 @@ static std::string InvInvulStr(const spawnInventory_t& inv)
  */
 static void InvSetHealth(spawnInventory_t& inv, const std::string& value)
 {
-	inv.health = MAX(1, atoi(value.c_str()));
+	inv.health = std::max(1, atoi(value.c_str()));
 	inv.isdefault = false;
 }
 
@@ -214,7 +214,7 @@ static void InvSetHealth(spawnInventory_t& inv, const std::string& value)
 static void InvSetArmor(spawnInventory_t& inv, const int type, const std::string& value)
 {
 	inv.armortype = type;
-	inv.armorpoints = MAX(0, atoi(value.c_str()));
+	inv.armorpoints = std::max(0, atoi(value.c_str()));
 	inv.isdefault = false;
 }
 
@@ -271,7 +271,7 @@ static void InvSetAmmo(spawnInventory_t& inv, const ammotype_t type,
 	{
 		return;
 	}
-	inv.ammo[type] = MAX(0, atoi(value.c_str()));
+	inv.ammo[type] = std::max(0, atoi(value.c_str()));
 	inv.isdefault = false;
 }
 
