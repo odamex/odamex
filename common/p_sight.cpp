@@ -149,9 +149,11 @@ bool P_SightBlockLinesIterator(int x, int y)
 						return false;	// stop checking
 
 				// store the line for later intersection testing
-					intercept_t intercept;
-					intercept.d.line = ld;
-					intercept.isaline = true;
+					intercept_t intercept {
+						.frac    = 0_fx,
+						.isaline = true,
+						.d       = { .line = ld },
+					};
 					intercepts.push_back(intercept);
 				}
 				polyLink->polyobj->validcount = validcount;
@@ -182,9 +184,11 @@ bool P_SightBlockLinesIterator(int x, int y)
 			return false;	// stop checking
 
 	// store the line for later intersection testing
-       	intercept_t intercept;
-       	intercept.d.line = ld;
-		intercept.isaline = true;
+		intercept_t intercept {
+			.frac    = 0_fx,
+			.isaline = true,
+			.d       = { .line = ld },
+		};
        	intercepts.push_back(intercept);
 	}
 

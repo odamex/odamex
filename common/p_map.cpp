@@ -164,10 +164,11 @@ bool PIT_AddLineIntercepts(line_t& ld, bool earlyout)
 	}
 
 
-	intercept_t intercept;
-	intercept.frac = frac;
-	intercept.isaline = true;
-	intercept.d.line = &ld;
+	intercept_t intercept {
+		.frac    = frac,
+		.isaline = true,
+		.d       = { .line = &ld },
+	};
 	intercepts.push_back(intercept);
 
 	return true;		// continue
@@ -221,10 +222,11 @@ bool PIT_AddThingIntercepts (AActor& thing)
 	if (frac < 0)
 		return true;			// behind source
 
-	intercept_t intercept;
-	intercept.frac = frac;
-	intercept.isaline = false;
-	intercept.d.thing = &thing;
+	intercept_t intercept {
+		.frac    = frac,
+		.isaline = false,
+		.d       = { .thing = &thing },
+	};
 	intercepts.push_back(intercept);
 
 	return true;				// keep going
