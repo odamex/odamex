@@ -1090,8 +1090,11 @@ void R_DrawSprite (vissprite_t *spr)
 
 	// initialize the clipping arrays
 	int i = spr->x2 - spr->x1 + 1;
+	// clang-tidy has a false positive here
+	// NOLINTBEGIN(misc-const-correctness)
 	int* clip1 = clipbot + spr->x1;
 	int* clip2 = cliptop + spr->x1;
+	// NOLINTEND(misc-const-correctness)
 	do
 	{
 		*clip1++ = botclip;

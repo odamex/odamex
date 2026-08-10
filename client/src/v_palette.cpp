@@ -1115,6 +1115,9 @@ void V_DoPaletteEffects()
 
 	player_t* plyr = &displayplayer();
 
+	// these pretty much are just confusing magic numbers
+	// that don't really have easy names to give them
+	// NOLINTBEGIN(readability-magic-numbers)
 	if (primary_surface->getBitsPerPixel() == 8)
 	{
 		int palette_num = 0;
@@ -1229,6 +1232,7 @@ void V_DoPaletteEffects()
 
 		V_SetBlend(blend);
 	}
+	// NOLINTEND(readability-magic-numbers)
 }
 
 
