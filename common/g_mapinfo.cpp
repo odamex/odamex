@@ -1683,6 +1683,20 @@ struct MapInfoDataSetter<automap_dummy>
 };
 } // namespace
 
+// Drops a "by: " or "Author: " style prefix, the same way a
+// level name sheds the "MAP01: " that LANGUAGE puts in front of it.
+std::string G_StripAuthorPrefix(const std::string& author)
+{
+	const size_t pos = author.find(": ");
+	if (pos == std::string::npos)
+		return author;
+
+	std::string stripped = author.substr(pos + 2);
+	TrimString(stripped);
+
+	return stripped.empty() ? author : stripped;
+}
+
 // This function in particular is global rather than local specifically because UMAPINFO
 // also makes use of it.
 void G_MapNameToLevelNum(level_pwad_info_t& info)
