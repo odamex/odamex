@@ -33,7 +33,8 @@ function(odamex_target_settings _TARGET)
   if(MSVC)
     # jsd: hide warnings about using insecure crt functions:
     target_compile_definitions("${_TARGET}" PRIVATE
-      $<$<CONFIG:Debug>:ODAMEX_DEBUG> _CRT_SECURE_NO_WARNINGS)
+      $<$<CONFIG:Debug>:ODAMEX_DEBUG> _CRT_SECURE_NO_WARNINGS
+      WIN32_LEAN_AND_MEAN NOMINMAX NODRAWTEXT)
     target_compile_options("${_TARGET}" PRIVATE /MP)
     if(USE_SANITIZE_ADDRESS)
       target_compile_options("${_TARGET}" PRIVATE /fsanitize=address)
