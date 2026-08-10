@@ -22,6 +22,7 @@
 #include "odamex.h"
 
 #include "g_episode.h"
+#include "g_mapinfo.h"
 #include "gi.h"
 #include "gstrings.h"
 #include "g_skill.h"
@@ -604,7 +605,13 @@ void MIType_Author(OScanner& os, bool newStyleMapInfo, void* data,
 
 	level_pwad_info_t& info = *static_cast<level_pwad_info_t*>(data);
 
-	info.author = GStrings.maybeLookup(os.getToken());
+	const std::string token = os.getToken();
+	info.author = GStrings.maybeLookup(token);
+
+	if (info.author == token)
+	{
+		StringTable::replaceEscapes(info.author);
+	}
 
 	if (mapinfofrompwad)
 		info.flags2 |= LEVEL2_AUTHORFROMPWAD;
