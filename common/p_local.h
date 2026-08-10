@@ -167,6 +167,11 @@ struct divline_t
 	fixed_t 	dx;
 	fixed_t 	dy;
 
+	divline_t() = default;
+	explicit divline_t(const line_t& li) :
+		x(li.v1->x), y(li.v1->y),
+		dx(li.dx), dy(li.dy)
+	{}
 };
 
 struct intercept_t
@@ -197,7 +202,6 @@ AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov);
 
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
-void	P_MakeDivline (const line_t *li, divline_t *dl);
 fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1);
 int 	P_BoxOnLineSide (const std::span<const fixed_t, 4> tmbox, const line_t *ld);
 

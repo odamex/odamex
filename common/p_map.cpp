@@ -55,8 +55,6 @@
 #include <algorithm>
 #include <set>
 
-bool P_ShouldClipPlayer(const AActor* projectile, const AActor* player);
-
 // TODO: make as many of these non-global as possible
 std::array<fixed_t, 4> tmbbox;
 static AActor  *tmthing;
@@ -131,7 +129,6 @@ bool PIT_AddLineIntercepts(line_t& ld, bool earlyout)
 {
 	int 				s1;
 	int 				s2;
-	divline_t			dl;
 
 	// avoid precision problems with two routines
 	if ( trace.dx > FRACUNIT*16
@@ -152,7 +149,7 @@ bool PIT_AddLineIntercepts(line_t& ld, bool earlyout)
 		return true;	// line isn't crossed
 
 	// hit the line
-	P_MakeDivline (&ld, &dl);
+	divline_t dl{ld};
 	const fixed_t frac = P_InterceptVector (&trace, &dl);
 
 	if (frac < 0)
@@ -1627,7 +1624,7 @@ void P_CheckPushLines(AActor *thing)
 		{
 			// see which lines were pushed
 			line_t *ld = spechit[i];
-			int side = P_PointOnLineSide(thing->x, thing->y, ld);
+			const int side = P_PointOnLineSide(thing->x, thing->y, ld);
 			CheckForPushSpecial(ld, side, thing);
 		}
 	}
@@ -1809,10 +1806,10 @@ bool P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			line_t *ld = spechit.back();
 			spechit.pop_back();
 
-			int side = P_PointOnLineSide (thing->x, thing->y, ld);
-			int oldside = P_PointOnLineSide (oldx, oldy, ld);
+			const int side = P_PointOnLineSide(thing->x, thing->y, ld);
+			const int oldside = P_PointOnLineSide(oldx, oldy, ld);
 			if (side != oldside && ld->special)
-				P_CrossSpecialLine (ld, oldside, thing, false);
+				P_CrossSpecialLine(ld, oldside, thing, false);
 		}
 	}
 
@@ -2601,8 +2598,8 @@ bool P_ShootLine(line_t& li, const fixed_t frac)
 		return false;
 
 	// [SL] 2012-02-08 - Calculates where the intercept crosses the line
-	fixed_t crossx = trace.x + FixedMul(trace.dx, frac);
-	fixed_t crossy = trace.y + FixedMul(trace.dy, frac);
+	const fixed_t crossx = trace.x + FixedMul(trace.dx, frac);
+	const fixed_t crossy = trace.y + FixedMul(trace.dy, frac);
 
 	// [SL] determine which sector is on the side of the line that faces the shooter
 	sector_t *sec1, *sec2;
@@ -3178,8 +3175,8 @@ bool PTR_CameraTraverse(const intercept_t& in)
 	if (!in.isaline)
 		return true;
 
-	fixed_t crossx = trace.x + FixedMul(trace.dx, in.frac);
-	fixed_t crossy = trace.y + FixedMul(trace.dy, in.frac);
+	const fixed_t crossx = trace.x + FixedMul(trace.dx, in.frac);
+	const fixed_t crossy = trace.y + FixedMul(trace.dy, in.frac);
 
 	fixed_t frac = in.frac - CAMERA_DIST;
 	fixed_t z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
@@ -3310,9 +3307,9 @@ bool PTR_UseTraverse(const intercept_t& in, AActor* usething, bool& foundline)
 		return true; // not a special line, but keep checking
 	}
 
-	int side = (P_PointOnLineSide (usething->x, usething->y, li) == 1);
+	const int side = P_PointOnLineSide(usething->x, usething->y, li);
 
-    P_UseSpecialLine (usething, li, side, false);
+    P_UseSpecialLine(usething, li, side, false);
 
 	//WAS can't use more than one special line in a row
 	//jff 3/21/98 NOW multiple use allowed with enabling line flag

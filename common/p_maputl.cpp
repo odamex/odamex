@@ -438,21 +438,6 @@ int P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line)
 	}
 }
 
-
-
-//
-// P_MakeDivline
-//
-void P_MakeDivline (const line_t *li, divline_t *dl)
-{
-	dl->x = li->v1->x;
-	dl->y = li->v1->y;
-	dl->dx = li->dx;
-	dl->dy = li->dy;
-}
-
-
-
 //
 // P_InterceptVector
 // Returns the fractional intercept point along the first divline.

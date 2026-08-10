@@ -1187,7 +1187,7 @@ void V_DoPaletteEffects()
 
 			// slowly fade the berzerk out
 			if (plyr->powers[pw_strength])
-				red_amount = std::max(red_amount, 12.0f - float(plyr->powers[pw_strength]) / 64.0f);
+				red_amount = std::max(red_amount, 12.0f - (float(plyr->powers[pw_strength]) / 64.0f));
 
 			if (red_amount > 0.0f)
 			{
