@@ -162,15 +162,19 @@ extern struct brain_s {				// killough 3/26/98: global state of boss brain
 //
 struct divline_t
 {
-	fixed_t 	x;
-	fixed_t 	y;
-	fixed_t 	dx;
-	fixed_t 	dy;
+	fixed_t x;
+	fixed_t y;
+	fixed_t dx;
+	fixed_t dy;
 
 	divline_t() = default;
 	explicit divline_t(const line_t& li) :
 		x(li.v1->x), y(li.v1->y),
 		dx(li.dx), dy(li.dy)
+	{}
+
+	divline_t(fixed_t _x, fixed_t _y, fixed_t _dx, fixed_t _dy) :
+		x(_x), y(_y), dx(_dx), dy(_dy)
 	{}
 };
 

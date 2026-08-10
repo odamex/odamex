@@ -184,8 +184,6 @@ bool PIT_AddThingIntercepts (AActor& thing)
 	fixed_t 		x2;
 	fixed_t 		y2;
 
-	divline_t		dl;
-
 	const bool tracepositive = (trace.dx ^ trace.dy)>0;
 
 	// check a corner to corner crossection for hit
@@ -212,10 +210,7 @@ bool PIT_AddThingIntercepts (AActor& thing)
 	if (s1 == s2)
 		return true;			// line isn't crossed
 
-	dl.x = x1;
-	dl.y = y1;
-	dl.dx = x2-x1;
-	dl.dy = y2-y1;
+	const divline_t dl {x1, y1, x2 - x1, y2 - y1};
 
 	const fixed_t frac = P_InterceptVector (&trace, &dl);
 
