@@ -149,7 +149,7 @@ bool PIT_AddLineIntercepts(line_t& ld, bool earlyout)
 		return true;	// line isn't crossed
 
 	// hit the line
-	divline_t dl{ld};
+	const divline_t dl{ld};
 	const fixed_t frac = P_InterceptVector (&trace, &dl);
 
 	if (frac < 0)
@@ -3377,6 +3377,8 @@ void P_UseLines (player_t& player)
 		return;
 
 	AActor* usething = player.mo;
+	// clang-tidy has a false positive here
+	// NOLINTNEXTLINE(misc-const-correctness)
 	bool foundline = false;
 
 	//Added by MC: Check if bot and use special activating (spin round) if it is.

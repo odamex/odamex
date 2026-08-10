@@ -138,7 +138,7 @@ bool P_SightBlockLinesIterator(int x, int y)
 					int s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
 					if (s1 == s2)
 						continue;		// line isn't crossed
-					divline_t dl{*ld};
+					const divline_t dl{*ld};
 					s1 = P_PointOnDivlineSide (trace.x, trace.y, &dl);
 					s2 = P_PointOnDivlineSide (trace.x+trace.dx, trace.y+trace.dy, &dl);
 					if (s1 == s2)
@@ -173,7 +173,7 @@ bool P_SightBlockLinesIterator(int x, int y)
 		int s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
 		if (s1 == s2)
 			continue;				// line isn't crossed
-		divline_t dl{*ld};
+		const divline_t dl{*ld};
 		s1 = P_PointOnDivlineSide (trace.x, trace.y, &dl);
 		s2 = P_PointOnDivlineSide (trace.x+trace.dx, trace.y+trace.dy, &dl);
 		if (s1 == s2)
@@ -224,6 +224,8 @@ bool P_SightTraverseIntercepts()
 //
 	while (count--)
 	{
+		// clang tidy is just wrong here
+		// NOLINTNEXTLINE(misc-const-correctness)
 		fixed_t dist = limits::MAXFIXED;
 		for (intercept_t& intercept : intercepts)
 			if (intercept.frac < dist)
