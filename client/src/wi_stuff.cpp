@@ -576,6 +576,8 @@ int WI_DrawName (const char *str, int x, int y)
 	return (5 * WI_BigNameHeight()) / 4;
 }
 
+constexpr int WI_SMALLNAMEBLANK = 4;
+
 OLumpName WI_SmallNameChar(char c)
 {
 	return fmt::format("STCFN{:03d}", HU_FONTSTART + (toupper(c) - 32) - 1);
@@ -610,7 +612,7 @@ int WI_DrawSmallName(const char* str, int x, int y)
 		}
 		else
 		{
-			x += 12;
+			x += WI_SMALLNAMEBLANK;
 		}
 		str++;
 	}
@@ -637,12 +639,24 @@ int WI_CalcSmallWidth(const char* str)
 		if (lump != -1)
 			w += W_CachePatch(lump)->width() - 1;
 		else
-			w += 12;
+			w += WI_SMALLNAMEBLANK;
 
 		str++;
 	}
 
 	return w;
+}
+
+// Draws the author centered under a level name of the given height, and returns
+// how far down the drawing position moves as a result.
+//
+// The level name already left a quarter of its height as a gap, so the author
+// is drawn straight into it and the same gap is left below.
+int WI_DrawAuthorName(const char* author, int y, int nameheight)
+{
+	WI_DrawSmallName(author, 160 - WI_CalcSmallWidth(author) / 2, y);
+
+	return WI_SmallNameHeight() + (nameheight / 4);
 }
 
 } // namespace
@@ -673,14 +687,7 @@ void WI_drawLF()
 
 	// draw the author underneath, if the map names one
 	if (!lnameauthors[0].empty())
-	{
-		const char* author = lnameauthors[0].c_str();
-
-		// The level name already left a quarter of its height as a gap, so the
-		// author is drawn straight into it and the same gap is left below.
-		WI_DrawSmallName(author, 160 - WI_CalcSmallWidth(author) / 2, y);
-		y += WI_SmallNameHeight() + (nameheight / 4);
-	}
+		y += WI_DrawAuthorName(lnameauthors[0].c_str(), y, nameheight);
 
 	// draw "Finished!"
 	//if (!multiplayer || sv_maxplayers <= 1)
@@ -710,24 +717,25 @@ void WI_drawEL()
 	if (lnames1->height() < 200)
 		y += (5 * ent->height()) / 4;
 
+	int nameheight;
+
 	if (!lnames[1].empty())
 	{
 		// draw level
 		screen->DrawPatchClean(lnames1, (320 - lnames1->width()) / 2, y);
-		y += (5 * lnames1->height()) / 4;
+		nameheight = lnames1->height();
+		y += (5 * nameheight) / 4;
 	}
 	else
 	{
 		// [RH] draw a dynamic title string
+		nameheight = WI_BigNameHeight();
 		y += WI_DrawName (lnametexts[1], 160 - lnamewidths[1] / 2, y);
 	}
 
 	// draw the author underneath, if the map names one
 	if (!lnameauthors[1].empty())
-	{
-		const char* author = lnameauthors[1].c_str();
-		WI_DrawSmallName(author, 160 - WI_CalcSmallWidth(author) / 2, y);
-	}
+		WI_DrawAuthorName(lnameauthors[1].c_str(), y, nameheight);
 }
 
 void WI_drawAnimatedBack()
