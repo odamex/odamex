@@ -169,6 +169,9 @@ static lumpHandle_t		lnames[2];
 static int				lnamewidths[2];
 static const char*		lnametexts[2];
 
+// Map authors, empty when there is none or the title patch already shows it
+static std::string		lnameauthors[2];
+
 static IWindowSurface*	background_surface;
 
 static IWindowSurface*	anim_surface;
@@ -526,8 +529,16 @@ void WI_slamBackground()
 	background_surface->unlock();
 	anim_surface->unlock();
 }
+namespace
+{
 
-static int WI_DrawName (const char *str, int x, int y)
+int WI_BigNameHeight()
+{
+	const patch_t* p = W_CachePatch("FONTB39");
+	return p->height() - p->topoffset();
+}
+
+int WI_DrawName (const char *str, int x, int y)
 {
 	patch_t *p = NULL;
 
@@ -562,18 +573,34 @@ static int WI_DrawName (const char *str, int x, int y)
 		str++;
 	}
 
-	p = W_CachePatch ("FONTB39");
-	return (5*(p->height()-p->topoffset()))/4;
+	return (5 * WI_BigNameHeight()) / 4;
 }
 
-static int WI_DrawSmallName(const char* str, int x, int y)
+OLumpName WI_SmallNameChar(char c)
+{
+	return fmt::format("STCFN{:03d}", HU_FONTSTART + (toupper(c) - 32) - 1);
+}
+
+int WI_SmallNameHeight()
+{
+	const patch_t* p = W_CachePatch(WI_SmallNameChar('M'));
+	return p->height() - p->topoffset();
+}
+
+int WI_DrawSmallName(const char* str, int x, int y)
 {
 	patch_t* p = NULL;
 
 	while (*str)
 	{
-		const OLumpName charname = fmt::format("STCFN{:03d}", HU_FONTSTART + (toupper(*str) - 32) - 1);
-		int lump = W_CheckNumForName(charname);
+		// This font is drawn untranslated, so color codes are only skipped.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
+		int lump = W_CheckNumForName(WI_SmallNameChar(*str));
 
 		if (lump != -1)
 		{
@@ -588,9 +615,37 @@ static int WI_DrawSmallName(const char* str, int x, int y)
 		str++;
 	}
 
-	p = W_CachePatch("FONTB39");
-	return (5 * (p->height() - p->topoffset())) / 4;
+	return (5 * WI_SmallNameHeight()) / 4;
 }
+
+// Width of a string drawn by WI_DrawSmallName.
+int WI_CalcSmallWidth(const char* str)
+{
+	int w = 0;
+
+	while (*str)
+	{
+		// Color escape codes take up no space.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
+		const int lump = W_CheckNumForName(WI_SmallNameChar(*str));
+
+		if (lump != -1)
+			w += W_CachePatch(lump)->width() - 1;
+		else
+			w += 12;
+
+		str++;
+	}
+
+	return w;
+}
+
+} // namespace
 
 //Draws "<Levelname> Finished!"
 void WI_drawLF()
@@ -599,18 +654,32 @@ void WI_drawLF()
 		return;
 
 	int y = WI_TITLEY;
+	int nameheight;
 
 	if (!lnames[0].empty())
 	{
 		// draw <LevelName>
 		patch_t* lnames0 = W_ResolvePatchHandle(lnames[0]);
 		screen->DrawPatchClean(lnames0, (320 - lnames0->width()) / 2, y);
-		y += (5 * lnames0->height()) / 4;
+		nameheight = lnames0->height();
+		y += (5 * nameheight) / 4;
 	}
 	else
 	{
 		// [RH] draw a dynamic title string
+		nameheight = WI_BigNameHeight();
 		y += WI_DrawName (lnametexts[0], 160 - lnamewidths[0] / 2, y);
+	}
+
+	// draw the author underneath, if the map names one
+	if (!lnameauthors[0].empty())
+	{
+		const char* author = lnameauthors[0].c_str();
+
+		// The level name already left a quarter of its height as a gap, so the
+		// author is drawn straight into it and the same gap is left below.
+		WI_DrawSmallName(author, 160 - WI_CalcSmallWidth(author) / 2, y);
+		y += WI_SmallNameHeight() + (nameheight / 4);
 	}
 
 	// draw "Finished!"
@@ -645,11 +714,19 @@ void WI_drawEL()
 	{
 		// draw level
 		screen->DrawPatchClean(lnames1, (320 - lnames1->width()) / 2, y);
+		y += (5 * lnames1->height()) / 4;
 	}
 	else
 	{
 		// [RH] draw a dynamic title string
-		WI_DrawName (lnametexts[1], 160 - lnamewidths[1] / 2, y);
+		y += WI_DrawName (lnametexts[1], 160 - lnamewidths[1] / 2, y);
+	}
+
+	// draw the author underneath, if the map names one
+	if (!lnameauthors[1].empty())
+	{
+		const char* author = lnameauthors[1].c_str();
+		WI_DrawSmallName(author, 160 - WI_CalcSmallWidth(author) / 2, y);
 	}
 }
 
@@ -1472,6 +1549,8 @@ void WI_loadData()
 
 	for (int i = 0, j; i < 2; i++)
 	{
+		const level_pwad_info_t& linfo =
+		    levels.findByName(i == 0 ? wbs->current : wbs->next);
 		const OLumpName& lname = (i == 0 ? wbs->lname0 : wbs->lname1);
 
 		if (!lname.empty())
@@ -1486,9 +1565,13 @@ void WI_loadData()
 		else
 		{
 			lnames[i].clear();
-			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name.c_str();
+			lnametexts[i] = linfo.level_name.c_str();
 			lnamewidths[i] = WI_CalcWidth (lnametexts[i]);
 		}
+
+		const bool patchshowsauthor =
+		    !lnames[i].empty() && (linfo.flags2 & LEVEL2_HIDEAUTHORNAME);
+		lnameauthors[i] = patchshowsauthor ? "" : linfo.author;
 	}
 
 	for (int i = 0; i < 10; i++)

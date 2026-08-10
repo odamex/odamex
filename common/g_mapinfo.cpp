@@ -593,6 +593,37 @@ void MIType_SoundName(OScanner& os, bool doEquals, void* data, unsigned int flag
 	strncpy(static_cast<char*>(data), soundname.c_str(), MAX_SNDNAME);
 }
 
+// Sets the intermission title patch, which may carry a hideauthorname token
+void MIType_TitlePatch(OScanner& os, bool newStyleMapInfo, void* data,
+                       unsigned int /*flags*/, unsigned int /*flags2*/)
+{
+	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
+
+	level_pwad_info_t& info = *static_cast<level_pwad_info_t*>(data);
+
+	info.pname = os.getToken();
+
+	// Some title patches spell out the author as part of the graphic, in which
+	// case the map can ask for it not to be drawn a second time.
+	os.scan();
+	if (os.compareToken(","))
+	{
+		os.mustScan();
+		if (os.compareTokenNoCase("hideauthorname"))
+		{
+			info.flags2 |= LEVEL2_HIDEAUTHORNAME;
+		}
+		else
+		{
+			os.error("Unknown titlepatch option \"{}\".", os.getToken());
+		}
+	}
+	else
+	{
+		os.unScan();
+	}
+}
+
 // Sets the sky texture with an OLumpName
 void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                 unsigned int flags2)
@@ -1153,21 +1184,21 @@ struct MapInfoDataSetter<level_pwad_info_t>
 	{
 		mapInfoDataContainer = {
 			{ "levelnum", &MIType_Int, &ref.levelnum },
-	        { "next", &MIType_MapName, &ref.nextmap },
-	        { "secretnext", &MIType_MapName, &ref.secretmap },
+			{ "next", &MIType_MapName, &ref.nextmap },
+			{ "secretnext", &MIType_MapName, &ref.secretmap },
 			{ "secret", &MIType_MapName, &ref.secretmap },
 			{ "cluster", &MIType_Cluster, &ref.cluster },
 			{ "sky1", &MIType_Sky, &ref, 1 },
 			{ "sky2", &MIType_Sky, &ref, 2 },
 			{ "fade", &MIType_Color, &ref.fadeto_color },
 			{ "outsidefog", &MIType_Color, &ref.outsidefog_color },
-			{ "titlepatch", &MIType_LumpName, &ref.pname },
+			{ "titlepatch", &MIType_TitlePatch, &ref },
 			{ "music", &MIType_MusicLumpName, &ref.music },
 			{ "nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION },
 			{ "doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY },
 			{ "nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING },
 			{ "allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
-		       LEVEL_MONSTERSTELEFRAG },
+			     LEVEL_MONSTERSTELEFRAG },
 			{ "map07special", &MIType_Map07Special, &ref.bossactions },
 			{ "baronspecial", &MIType_Special<MT_BRUISER>, &ref.bossactions },
 			{ "cyberdemonspecial", &MIType_Special<MT_CYBORG>, &ref.bossactions },
@@ -1187,9 +1218,9 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "noautosequences", &MIType_SetFlag, &ref.flags, LEVEL_SNDSEQTOTALCTRL },
 			{ "forcenoskystretch", &MIType_SetFlag, &ref.flags, LEVEL_FORCENOSKYSTRETCH },
 			{ "allowfreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_YES,
-		       ~LEVEL_FREELOOK_NO },
+			    ~LEVEL_FREELOOK_NO },
 			{ "nofreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_NO,
-		       ~LEVEL_FREELOOK_YES },
+			    ~LEVEL_FREELOOK_YES },
 			{ "allowjump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
 			{ "nojump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
 			{ "cdtrack", &MIType_EatNext },
@@ -1217,7 +1248,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "compat_shorttex", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_SHORTTEX },
 			{ "compat_limitpain", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_LIMITPAIN },
 			{ "compat_useblocking", &MIType_CompatFlag, &ref.flags }, // special lines block use (not implemented, default odamex behavior)
-		    { "compat_missileclip", &MIType_CompatFlag, &ref.flags }, // original height monsters when it comes to missiles (not implemented)
+			{ "compat_missileclip", &MIType_CompatFlag, &ref.flags }, // original height monsters when it comes to missiles (not implemented)
 			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF }, // todo: not implemented
 			{ "compat_crossdropoff", &MIType_CompatFlag, &ref.flags2, LEVEL2_COMPAT_CROSSDROPOFF },
 			{ "compat_trace", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
@@ -1225,7 +1256,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
 			{ "compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER },
 			{ "compat_invisibility", &MIType_CompatFlag, &ref.flags},  // todo: not implemented
-			{ "author", &MIType_String, &ref.author },
+			{ "author", &MIType_$String, &ref.author },
 			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },

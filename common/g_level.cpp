@@ -1042,6 +1042,7 @@ BEGIN_COMMAND(mapinfo)
 	PrintFmt(PRINT_HIGH, "Map Name: {}\n", info.mapname);
 	PrintFmt(PRINT_HIGH, "Level Number: {}\n", info.levelnum);
 	PrintFmt(PRINT_HIGH, "Level Name: {}\n", info.level_name);
+	PrintFmt(PRINT_HIGH, "Author: {}\n", info.author);
 	PrintFmt(PRINT_HIGH, "Intermission Graphic: {}\n", info.pname);
 	PrintFmt(PRINT_HIGH, "Next Map: {}\n", info.nextmap);
 	PrintFmt(PRINT_HIGH, "Secret Map: {}\n", info.secretmap);
