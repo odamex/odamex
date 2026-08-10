@@ -150,6 +150,9 @@ player_action_t ParsePlayerAction(OScanner& os)
 
 bool pnamemodified;
 
+// True while the UMAPINFO lump being parsed belongs to a PWAD.
+bool umapinfofrompwad = false;
+
 bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 {
 	// find the next line with content.
@@ -186,6 +189,11 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.mustScan();
 		mape->author = os.getToken();
+
+		if (umapinfofrompwad)
+			mape->flags2 |= LEVEL2_AUTHORFROMPWAD;
+		else
+			mape->flags2 &= ~LEVEL2_AUTHORFROMPWAD;
 	}
 	else if (!stricmp(pname.c_str(), "next"))
 	{
@@ -494,6 +502,8 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
 
+	umapinfofrompwad = W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+
 	const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
 
 	const OScannerConfig config = {
@@ -534,6 +544,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 		pnamemodified = false;
 
 		info.mapname = mapname;
+		info.flags2 |= LEVEL2_FROMUMAPINFO;
 
 		G_MapNameToLevelNum(info);
 		G_MapNameToID24LevelNum(info);

@@ -41,6 +41,9 @@ bool HexenHack;
 namespace
 {
 
+// True while the MAPINFO lump being parsed belongs to a PWAD.
+bool mapinfofrompwad = false;
+
 //
 // Assumes that you have munched the last parameter you know how to handle,
 // but have not yet munched a comma.
@@ -591,6 +594,22 @@ void MIType_SoundName(OScanner& os, bool doEquals, void* data, unsigned int flag
 	const std::string soundname = os.getToken();
 
 	strncpy(static_cast<char*>(data), soundname.c_str(), MAX_SNDNAME);
+}
+
+// Sets the map author, remembering whether a PWAD is the one claiming it
+void MIType_Author(OScanner& os, bool newStyleMapInfo, void* data,
+                   unsigned int /*flags*/, unsigned int /*flags2*/)
+{
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
+
+	level_pwad_info_t& info = *static_cast<level_pwad_info_t*>(data);
+
+	info.author = GStrings.maybeLookup(os.getToken());
+
+	if (mapinfofrompwad)
+		info.flags2 |= LEVEL2_AUTHORFROMPWAD;
+	else
+		info.flags2 &= ~LEVEL2_AUTHORFROMPWAD;
 }
 
 // Sets the intermission title patch, which may carry a hideauthorname token
@@ -1256,7 +1275,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
 			{ "compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER },
 			{ "compat_invisibility", &MIType_CompatFlag, &ref.flags},  // todo: not implemented
-			{ "author", &MIType_$String, &ref.author },
+			{ "author", &MIType_Author, &ref },
 			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
@@ -1708,6 +1727,8 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
 
+	mapinfofrompwad = W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+
 	level_pwad_info_t defaultinfo{};
 
 	// if no sky is defined, it will show texture 0 (aastinky/aashitty)
@@ -1983,9 +2004,22 @@ void G_ParseMapInfo()
 		I_FatalError("{}: You cannot use clearskills in a MAPINFO if you do not define any "
 					"new skills after it.", __FUNCTION__);
 
-	// mark levels as secrets -- for ID24 intermissions
+	// A PWAD that replaces an IWAD map does not inherit the
+	// author of the map it buried. Only an author the PWAD states itself, in
+	// its own MAPINFO or UMAPINFO, survives onto a map the PWAD supplies.
 	LevelInfos& levels = getLevelInfos();
 	size_t numlevels = levels.size();
+	for (size_t i = 0; i < numlevels; i++)
+	{
+		level_pwad_info_t& level = levels.at(i);
+		if (!level.author.empty() && !(level.flags2 & LEVEL2_AUTHORFROMPWAD) &&
+		    W_IsLumpFromPWAD(level.mapname))
+		{
+			level.author.clear();
+		}
+	}
+
+	// mark levels as secrets -- for ID24 intermissions
 	for (size_t i = 0; i < numlevels; i++)
 	{
 		level_pwad_info_t& level = levels.at(i);
