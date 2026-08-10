@@ -69,7 +69,7 @@ blockmap_t blockmap_t::loadVanilla(std::span<const int16_t> lump)
 
 	for (const auto i : std::views::iota(0, newblockmap.size()))
 	{
-		const auto offset = static_cast<size_t>(LESHORT(lump[i + 4]));
+		const auto offset = static_cast<uint16_t>(LESHORT(lump[i + 4]));
 		if (offset < first_list || offset > lump.size())
 			I_Error("Blockmap offset #{} ({}) is out of bounds.", i, offset);
 
@@ -78,7 +78,7 @@ blockmap_t blockmap_t::loadVanilla(std::span<const int16_t> lump)
 		size_t j = 1;
 		while (line != -1)
 		{
-			if (static_cast<size_t>(line) > numlines)
+			if (static_cast<uint16_t>(line) > numlines)
 				I_Error("Blockmap list #{} contains non-existent line #{}", i, line);
 
 			list.push_back(static_cast<uint16_t>(line));
@@ -107,7 +107,7 @@ blockmap_t blockmap_t::loadXBM1(std::span<const int32_t> lump)
 
 	for (const auto i : std::views::iota(0, newblockmap.size()))
 	{
-		const auto offset = static_cast<size_t>(LELONG(lump[i + 4])) + 2;
+		const auto offset = static_cast<uint32_t>(LELONG(lump[i + 4]));
 		if (offset < first_list || offset > lump.size())
 			I_Error("Blockmap offset #{} ({}) is out of bounds.", i, offset);
 
@@ -116,7 +116,7 @@ blockmap_t blockmap_t::loadXBM1(std::span<const int32_t> lump)
 		size_t j = 1;
 		while (line != -1)
 		{
-			if (static_cast<size_t>(line) > numlines)
+			if (static_cast<uint32_t>(line) > numlines)
 				I_Error("Blockmap list #{} contains non-existent line #{}", i, line);
 
 			list.push_back(line);
@@ -410,7 +410,7 @@ blockmap_t blockmap_t::load(int lump)
 		case XBM1:
 			return loadXBM1({
 				static_cast<const int32_t*>(data) + 2,
-				(lump_size / sizeof(int32_t)) - (2 * sizeof(int32_t))
+				(lump_size / sizeof(int32_t)) - 2
 			});
 		case BOOM:
 			return create();

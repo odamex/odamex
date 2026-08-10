@@ -302,7 +302,8 @@ bool	P_ChangeSector (sector_t* sector, int crunch);
 
 extern	AActor*	linetarget; 	// who got hit (or NULL)
 
-fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance);
+fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance,
+                         bool skipunhurtable = true);
 fixed_t P_AutoAimLineAttack(AActor* actor, angle_t& angle, const angle_t spread, const int tracers, fixed_t distance);
 void	P_LineAttack (AActor *t1, angle_t angle, fixed_t distance, fixed_t slope, int damage);
 

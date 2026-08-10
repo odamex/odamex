@@ -239,50 +239,66 @@ bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest)
 		return true;
 	}
 
-	if (friendshiptest->flags & MF_FRIEND)
+	// Swap order if the friendshiptest actor isn't a MF_FRIEND
+	// (but the other one is)
+	if ((friendshiptest->player && !actor->player) ||
+	    (!(friendshiptest->flags & MF_FRIEND) && actor->flags & MF_FRIEND))
 	{
+		const AActor* swap = actor;
+		actor = friendshiptest;
+		friendshiptest = swap;
+	}
+
+	if (!(friendshiptest->flags & MF_FRIEND))
+	{
+		return !actor->player && !friendshiptest->player;
+	}
+
+	if (actor->player)
+	{
+		// Everyone shares the friendlies in a coop game.
 		if (G_IsCoopGame())
+			return true;
+
+		if (actor->player->id == friendshiptest->friend_playerid)
 		{
-			if (actor->flags & MF_FRIEND)
-				return true;
-		}
-		else if (actor->player)
-		{
-			if (actor->player->id == friendshiptest->friend_playerid)
-			{
-				// Don't attack me, I love you!
-				return true;
-			}
-			else if (G_IsTeamGame())
-			{
-				if (actor->player->userinfo.team == friendshiptest->friend_teamid)
-				{
-				   return true;
-				}
-			}
-		}
-		else if (actor->friend_playerid == 0 || friendshiptest->friend_playerid == 0 ||
-		         actor->friend_playerid == friendshiptest->friend_playerid)
-		{
-			// Fellow friend (or general friend)
-			// Do not attack.
+			// Don't attack me, I love you!
 			return true;
 		}
-		else if (G_IsTeamGame())
+
+		if (G_IsTeamGame() && actor->player->userinfo.team == friendshiptest->friend_teamid)
 		{
-			if (actor->friend_teamid == friendshiptest->friend_teamid)
-			{
-				// Friendly is of the same team as this friendly.
-				// Don't attack
-				return true;
-			}
+			// Friendly belongs to a player on this player's team.
+			return true;
 		}
+
+		return false;
 	}
-	else
+
+	if (!(actor->flags & MF_FRIEND))
 	{
-		if (!(actor->flags & MF_FRIEND))
-			return true;
+		// Monsters that aren't friendly have no love for friendlies.
+		return false;
 	}
+
+	if (G_IsCoopGame())
+		return true;
+
+	if (actor->friend_playerid == 0 || friendshiptest->friend_playerid == 0 ||
+	    actor->friend_playerid == friendshiptest->friend_playerid)
+	{
+		// Fellow friend (or general friend)
+		// Do not attack.
+		return true;
+	}
+
+	if (G_IsTeamGame() && actor->friend_teamid == friendshiptest->friend_teamid)
+	{
+		// Friendly is of the same team as this friendly.
+		// Don't attack
+		return true;
+	}
+
 	return false;
 }
 

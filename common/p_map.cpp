@@ -571,36 +571,81 @@ bool PIT_CheckLine(line_t& ld, bool tmunstuck)
 	return true;
 }
 
+//
+// P_IsFriendlyMonster
+// Checks that thing is specifically a friendly monster that source gets along
+// with.
+// Because P_IsFriendlyThing checks not friendlies for friendliness
+//
+bool P_IsFriendlyMonster(AActor* source, AActor* thing)
+{
+	if (!source || !thing)
+		return false;
+
+	if (thing->player)
+		return false;
+
+	if (!(thing->flags & MF_FRIEND))
+		return false;
+
+	return P_IsFriendlyThing(source, thing);
+}
+
+//
+// P_IsFriendlyFireBlocked
+// Whether the friendly fire cvars on their own stop source from hurting
+// thing, regardless of whether the two are set to collide.
+//
+bool P_IsFriendlyFireBlocked(AActor* source, AActor* thing)
+{
+	if (!source || !thing)
+		return false;
+
+	if (source->player && thing->player)
+		return !sv_friendlyfire && P_AreTeammates(*source->player, *thing->player);
+
+	if (!sv_friendlymonsterfire)
+	{
+		if (P_IsFriendlyMonster(source, thing))
+			return true;
+
+		// A friendly and the player it belongs to. Player on player is
+		// sv_friendlyfire's business, handled above.
+		if (!source->player && source->flags & MF_FRIEND && thing->player &&
+		    P_IsFriendlyThing(thing, source))
+			return true;
+	}
+
+	return false;
+}
+
 } // namespace
 
 /*
  * @brief Determines if a projectile should clip a friendly monster.
  *
  * @param projectile (suspected) projectile actor
- * @param player (suspected) player actor
- * @return true if the player should be clipped.
+ * @param monster (suspected) friendly monster
+ * @return true if the monster should be clipped.
  */
 bool P_ShouldClipFriendly(AActor* projectile, AActor* monster)
 {
-	if (!sv_unblockfriendly)
-	{
-		return true; // Clip all friendlies all the time.
-	}
-	else if (projectile->target && projectile->target->flags & MF_FRIEND && P_IsFriendlyThing(projectile->target, monster))
-	{
-		if (sv_friendlymonsterfire && !P_ProjectileImmune(monster, projectile->target))
-		{
-			return true; // Always clip if friendly monster fire is on.
-		}
-		else
-		{
-			return false; // Friendly monster
-		}
-	}
-	else
-	{
-		return true; // Not a friendly.
-	}
+	// Clip all friendlies all the time, and always clip when friendly monster
+	// fire is on.
+	if (!sv_unblockfriendly || sv_friendlymonsterfire)
+		return true;
+
+	// Friendly monster, no matter who fired at it
+	if (P_IsFriendlyMonster(projectile->target, monster))
+		return false;
+
+	// Friendly player
+	if (projectile->target && !projectile->target->player &&
+	    projectile->target->flags & MF_FRIEND &&
+	    P_IsFriendlyThing(projectile->target, monster))
+		return false;
+
+	return true; // Not a friendly.
 }
 
 /*
@@ -612,31 +657,21 @@ bool P_ShouldClipFriendly(AActor* projectile, AActor* monster)
  */
 bool P_ShouldClipPlayer(AActor* projectile, AActor* player)
 {
-	if (!sv_unblockplayers)
-	{
-		return true; // Clip all players all the time.
-	}
-	else if (projectile->target && projectile->target->player && player->player)
-	{
-		if (sv_friendlyfire)
-		{
-			return true; // Always clip if friendly fire is on.
-		}
-		else if (G_IsCoopGame() ||
-		    (projectile->target->player->userinfo.team == player->player->userinfo.team &&
-		     G_IsTeamGame()))
-		{
-			return false; // Friendly player
-		}
-		else
-		{
-			return true; // Enemy player
-		}
-	}
-	else
-	{
-		return true; // Not a player.
-	}
+	// Clip all players all the time, and always clip when friendly fire is on.
+	if (!sv_unblockplayers || sv_friendlyfire)
+		return true;
+
+	// Not a player.
+	if (!projectile->target || !projectile->target->player || !player->player)
+		return true;
+
+	// Friendly player
+	if (G_IsCoopGame() ||
+	    (projectile->target->player->userinfo.team == player->player->userinfo.team &&
+	     G_IsTeamGame()))
+		return false;
+
+	return true; // Enemy player
 }
 
 //
@@ -688,8 +723,9 @@ bool PIT_CheckThing (AActor& thing)
 	if (tmthing->player && thing.player && sv_unblockplayers)
 		return true;
 
-	if (tmthing && thing.flags & MF_FRIEND &&
-	    P_IsFriendlyThing(&thing, tmthing) && sv_unblockfriendly)
+	if (tmthing && !(tmthing->player && thing.player) &&
+	    thing.flags & MF_FRIEND && P_IsFriendlyThing(&thing, tmthing) &&
+	    sv_unblockfriendly)
 		return true;
 
 	if (P_AllowPassover())
@@ -773,9 +809,7 @@ bool PIT_CheckThing (AActor& thing)
 					return true;
 
 				// [RH] DeHackEd infighting is here.
-				if (!deh.Infight &&
-						(!((thing.flags ^ tmthing->target->flags) & MF_FRIEND) ||
-						(thing.flags & tmthing->target->flags & MF_FRIEND && P_IsFriendlyThing(&thing, tmthing->target))))
+				if (!deh.Infight && P_IsFriendlyThing(&thing, tmthing->target))
 					return false; // Hit same species as originator, explode, no damage
 			}
 		}
@@ -794,9 +828,11 @@ bool PIT_CheckThing (AActor& thing)
 		if (tmthing->flags2 & MF2_RIP)
 		{
 			int damage = ((P_Random(tmthing) & 3) + 2) * tmthing->info->damage;
-			if (!(thing.flags & MF_NOBLOOD))
+			const bool canhurt = !P_IsFriendlyFireBlocked(tmthing->target, &thing);
+
+			if (canhurt && !(thing.flags & MF_NOBLOOD) && !(thing.flags2 & MF2_DORMANT))
 				P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage);
-			if (tmthing->info->ripsound)
+			if (canhurt && tmthing->info->ripsound)
 				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
 
 			P_DamageMobj(&thing, tmthing, tmthing->target, damage, MOD_UNKNOWN);
@@ -812,7 +848,7 @@ bool PIT_CheckThing (AActor& thing)
 		// damage / explode
 		if (tmthing->info->damage)
 		{
-			int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
+			const int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
 			{
 				// [RH] figure out the means of death
 				int mod;
@@ -970,8 +1006,9 @@ bool PIT_CheckOnmobjZ (AActor& thing)
 		return true;
 
 	// Don't clip against friendlies
-	if (tmthing && thing.flags & MF_FRIEND &&
-	    P_IsFriendlyThing(&thing, tmthing) && sv_unblockfriendly)
+	if (tmthing && !(tmthing->player && thing.player) &&
+	    thing.flags & MF_FRIEND && P_IsFriendlyThing(&thing, tmthing) &&
+	    sv_unblockfriendly)
 		return true;
 
 	// over / under thing
@@ -980,8 +1017,9 @@ bool PIT_CheckOnmobjZ (AActor& thing)
 	if (tmthing->z + tmthing->height <= thing.z)
 		return true;
 
-	// Don't clip the projectile unless it's not a teammate.
-	if (tmthing->flags & MF_MISSILE && !P_ShouldClipPlayer(tmthing, &thing))
+	// Don't clip the projectile unless it's not a teammate or a friendly.
+	if (tmthing->flags & MF_MISSILE &&
+	    (!P_ShouldClipPlayer(tmthing, &thing) || !P_ShouldClipFriendly(tmthing, &thing)))
 		return true;
 
 	const fixed_t blockdist = thing.radius+tmthing->radius;
@@ -2130,6 +2168,29 @@ fixed_t 		aimslope;
 static fixed_t	topslope;
 static fixed_t	bottomslope;
 
+namespace
+{
+
+// Whether the current aim should ignore things the shooter can't hurt.
+bool		aimskipunhurtable = true;
+
+//
+// P_ShouldSpareFriendly
+// Determines if an attack from source should leave a thing alone entirely.
+//
+bool P_ShouldSpareFriendly(AActor* source, AActor* thing)
+{
+	if (!source || !thing)
+		return false;
+
+	// Only shoot through the things you can't hurt anyway.
+	if (source->player && thing->player)
+		return sv_unblockplayers && P_IsFriendlyFireBlocked(source, thing);
+
+	return sv_unblockfriendly && P_IsFriendlyFireBlocked(source, thing);
+}
+
+} // namespace
 
 //
 // PTR_AimTraverse
@@ -2201,17 +2262,21 @@ bool PTR_AimTraverse (intercept_t* in)
 	if ((th->player && th->player->spectator))
 		return true;
 
-	// [SL] 2011-10-31 - Don't aim at teammates
-	if ((sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) &&
-		shootthing->player && th->player &&
-		shootthing->player->userinfo.team == th->player->userinfo.team &&
-		!sv_friendlyfire)
-		return true;
+	if (aimskipunhurtable)
+	{
+		// [SL] 2011-10-31 - Don't aim at teammates
+		if (!sv_friendlyfire && shootthing->player && th->player &&
+		    P_AreTeammates(*shootthing->player, *th->player))
+			return true;
 
-	// Don't aim at friendlies if you're a player
-	if (shootthing->player && th->flags & MF_FRIEND && P_IsFriendlyThing(shootthing, th) &&
-	    !sv_friendlymonsterfire)
+		// Don't aim at friendlies you can't hurt
+		if (!sv_friendlymonsterfire && P_IsFriendlyMonster(shootthing, th))
+			return true;
+	}
+	else if (P_ShouldSpareFriendly(shootthing, th))
+	{
 		return true;
+	}
 
 	// check angles to see if the thing can be aimed at
 	dist = FixedMul (attackrange, in->frac);
@@ -2396,6 +2461,10 @@ bool PTR_ShootTraverse (intercept_t* in)
 	if ((th->player && th->player->spectator))
 		return true;
 
+	// Don't let unblocked teammates or friendlies soak up the shot.
+	if (P_ShouldSpareFriendly(shootthing, th))
+		return true;
+
 	// check angles to see if the thing can be aimed at
 	fixed_t dist = FixedMul(attackrange, in->frac);
 	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
@@ -2418,7 +2487,7 @@ bool PTR_ShootTraverse (intercept_t* in)
 
 	// Spawn bullet puffs or blod spots,
 	// depending on target type.
-	bool spawnblood = !(in->d.thing->flags & MF_NOBLOOD);
+	bool spawnblood = !(th->flags & MF_NOBLOOD) && !(th->flags2 & MF2_DORMANT);
 
 	// [SL] 2011-05-11 - In unlagged games, spawn blood at the target's current
 	// position, not at their reconciled position
@@ -2432,7 +2501,7 @@ bool PTR_ShootTraverse (intercept_t* in)
 			spawnblood = false;
 	}
 
-	if (th->flags & MF_FRIEND && P_IsFriendlyThing(th, shootthing) && !sv_friendlymonsterfire)
+	if (P_IsFriendlyMonster(shootthing, th) && !sv_friendlymonsterfire)
 		spawnblood = false;
 
 	if (spawnblood)
@@ -2481,24 +2550,26 @@ EXTERN_CVAR(sv_freelook)
 //
 // P_AimLineAttack
 //
-fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
+fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance,
+                         bool skipunhurtable)
 {
 	fixed_t x2;
 	fixed_t y2;
 
 	angle >>= ANGLETOFINESHIFT;
 	shootthing = t1;
+	aimskipunhurtable = skipunhurtable;
 
-	x2 = t1->x + (distance>>FRACBITS)*finecosine[angle];
-	y2 = t1->y + (distance>>FRACBITS)*finesine[angle];
-	shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
+	x2 = t1->x + ((distance>>FRACBITS)*finecosine[angle]);
+	y2 = t1->y + ((distance>>FRACBITS)*finesine[angle]);
+	shootz = t1->z + (t1->height>>1) + (8*FRACUNIT);
 
 	// can't shoot outside view angles
 
 	// [RH] Technically, this is now correct for an engine with true 6 DOF
 	// instead of one which implements y-shearing, like we currently do.
-	angle_t topangle = t1->pitch - ANG(32);
-	angle_t bottomangle = t1->pitch + ANG(32);
+	const angle_t topangle = t1->pitch - ANG(32);
+	const angle_t bottomangle = t1->pitch + ANG(32);
 
 	if (topangle <= ANG360 - ANG180)
 		topslope = finetangent[FINEANGLES/2-1];
@@ -3137,6 +3208,9 @@ bool PIT_DoomRadiusAttack(AActor& thing,
 	if (P_SplashImmune(thing, *bombspot))
 		return true;
 
+	if (P_ShouldSpareFriendly(bombsource, &thing))
+		return true;
+
 	// Boss spider and cyborg
 	// take no damage from concussion.
 	if (((thing.type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
@@ -3197,6 +3271,9 @@ bool PIT_ZDoomRadiusAttack(AActor& thing,
 
 	// MBF21
 	if (P_SplashImmune(thing, *bombspot))
+		return true;
+
+	if (P_ShouldSpareFriendly(bombsource, &thing))
 		return true;
 
 	// Boss spider and cyborg
