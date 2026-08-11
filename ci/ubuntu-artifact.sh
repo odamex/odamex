@@ -10,5 +10,8 @@ set -x
 mkdir -p build/artifact && cd build
 
 cp -aR \
-    "client/odamex" "server/odasrv" "odalaunch/odalaunch" \
-    "wad/odamex.wad" artifact/
+    "odamex/odamex" \
+    "odamex/odasrv" \
+    "odamex/odalaunch" \
+    "odamex/odamex.wad" \
+    artifact/
