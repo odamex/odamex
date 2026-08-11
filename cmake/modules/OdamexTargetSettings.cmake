@@ -12,7 +12,7 @@ endfunction()
 function(odamex_target_settings)
   set(options NO_DEPLOYMENT_ARTIFACT)
   set(oneValueArgs TARGET)
-  set(multiValueArgs TARGETS)
+  set(multiValueArgs )
 
   cmake_parse_arguments(PARSE_ARGV 0 arg "${options}" "${oneValueArgs}" "${multiValueArgs}")
 
