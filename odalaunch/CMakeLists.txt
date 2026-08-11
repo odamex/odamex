@@ -62,7 +62,7 @@ if(wxWidgets_FOUND)
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
     ${CVARDOC_SOURCE}
     ${XRCRES_HEADER} ${LAUNCH_WIN32_RESOURCES})
-  odamex_target_settings(odalaunch)
+  odamex_target_settings(TARGET odalaunch)
 
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
 

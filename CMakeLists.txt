@@ -70,6 +70,8 @@ cmake_dependent_option( USE_INTERNAL_LIBADLMIDI "Use internal libADLMIDI" 1 BUIL
 set(ODAMEX_INSTALL_BINDIR "/usr/local/bin" CACHE PATH "Smart default for bin dir location")
 set(ODAMEX_INSTALL_DATADIR "/usr/local/share" CACHE PATH "Smart default for data dir location")
 
+set(ODAMEX_ARTIFACT_DIR "${CMAKE_BINARY_DIR}/odamex" CACHE PATH "The build directory in which to place deployable end items such as executables, dynamic libraries, and data resources.")
+
 if(NOT APPLE AND NOT WIN32)
   add_definitions(-DODAMEX_INSTALL_BINDIR="${ODAMEX_INSTALL_BINDIR}")
   add_definitions(-DODAMEX_INSTALL_DATADIR="${ODAMEX_INSTALL_DATADIR}")
