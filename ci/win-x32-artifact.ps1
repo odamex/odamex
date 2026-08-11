@@ -17,7 +17,7 @@ Copy-Item `
         ".\odamex\RelWithDebInfo\odamex.pdb", `
         ".\odamex\RelWithDebInfo\odasrv.exe", `
         ".\odamex\RelWithDebInfo\odasrv.pdb", `
-        ".\odamex\odamex.wad", `
+        ".\odamex\RelWithDebInfo\odamex.wad", `
         ".\libraries\SDL2-2.32.8\lib\x86\*.dll", `
         ".\libraries\SDL2_mixer-2.8.1\lib\x86\*.dll", `
         ".\libraries\SDL2_mixer-2.8.1\lib\x86\optional\*.dll", `
