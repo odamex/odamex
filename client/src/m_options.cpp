@@ -869,6 +869,7 @@ EXTERN_CVAR (am_showitems)
 EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)
 EXTERN_CVAR (am_classicmapstring)
+EXTERN_CVAR (am_showauthor)
 EXTERN_CVAR (am_usecustomcolors)
 EXTERN_CVAR (am_showlocked)
 EXTERN_CVAR (st_scale)
@@ -1181,6 +1182,14 @@ static value_t ClassicMapStringTypes[] = {
 	{ 1.0, "Classic" }
 };
 
+static value_t AuthorDisplays[] = {
+	{ 0.0, "Off" },
+	{ 1.0, "Static" },
+	{ 2.0, "Fade" },
+	{ 3.0, "Marquee" },
+	{ 4.0, "Teletype" }
+};
+
 static value_t AutomapScales[] = {
 	{ 0.0, "Auto" },
 	{ 1.0, "1X" },
@@ -1206,11 +1215,12 @@ static menuitem_t AutomapItems[] = {
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete, "Line Thickeness",		{&am_thickness},		{7.0}, {0.0},	{0.0},  {AutomapScales} },
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-    { discrete, "Show item count",		{&am_showitems},		{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Show monster count",	{&am_showmonsters},		{2.0}, {0.0},	{0.0},	{OnOff} },
-    { discrete, "Show secrets count",	{&am_showsecrets},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Show map timer", 	    {&am_showtime}, 	   	{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Map name style",       {&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
+	{ discrete, "Show item count",		{&am_showitems},		{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Show monster count",	{&am_showmonsters},		{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show secrets count",	{&am_showsecrets},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Show map timer",		{&am_showtime}, 	   	{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Map name style",		{&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
+	{ discrete, "Show map author",		{&am_showauthor},		{5.0}, {0.0},	{0.0},  {AuthorDisplays} },
 
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ yellowtext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
