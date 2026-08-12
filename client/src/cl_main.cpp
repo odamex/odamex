@@ -130,9 +130,7 @@ netadr_t  lastconaddr;
 
 extern NetGraph netgraph;
 
-std::pmr::unsynchronized_pool_resource s_messengerPool;
-std::pmr::polymorphic_allocator<int> s_allocator { & s_messengerPool };
-OdaMessenger messenger { s_allocator };
+OdaMessenger messenger { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
 static std::unique_ptr<CanarySocketClient> s_canary;
 
 PlayerStateRoller rollerState{};
@@ -582,7 +580,7 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 
 	connected = false;
 
-	messenger = OdaMessenger {s_allocator};
+	messenger = OdaMessenger {messenger.MovePool()};
 	P_ClearAllNetIds();
 	s_canary.reset();
 	gameaction = ga_fullconsole;
@@ -2068,7 +2066,7 @@ bool CL_Connect()
 		s_canary->Connect(tcpAddress, udpAddress);
 	}
 
-	messenger = OdaMessenger(s_allocator);
+	messenger = OdaMessenger(messenger.MovePool());
 	messenger.SetMaxRate(20);               // FIXME: total guess.
 	messenger.SetPacketsPerRetransmit(10);  // To align with the size of the traditional cmd buffer.
 	messenger.SetRetransmitDelay(0);        // This causes an immediate retransmit to relieve the risk of

@@ -60,10 +60,7 @@
 
 struct client_t
 {
-	std::pmr::unsynchronized_pool_resource  pool;
-	std::pmr::polymorphic_allocator<int>    poolAllocator { &pool };
-
-	OdaMessenger messenger  { poolAllocator };
+	OdaMessenger messenger  { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
 	netadr_t     address    { };
 
 	short       version           { 0 };    // protocol version supported by the client

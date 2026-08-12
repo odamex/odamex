@@ -666,7 +666,7 @@ namespace
 
 			void TakeMessengerFrom(client_t& client)
 			{
-				m_deadEndMessengers.insert( { client.address, std::move(client.messenger) } );
+				m_deadEndMessengers.insert({client.address, std::move(client.messenger)});
 			}
 
 			void ServiceMessenger(int currentTic, std::map<netadr_t, OdaMessenger>::iterator iter, buf_t& packetBuffer)
@@ -2263,7 +2263,7 @@ void SV_ConnectClient()
 	cl->allow_rcon = false;
 	cl->displaydisconnect = false;
 
-	cl->messenger = OdaMessenger(cl->poolAllocator);
+	cl->messenger = OdaMessenger(cl->messenger.MovePool());
 
 	// generate a random string
 	std::stringstream ss;

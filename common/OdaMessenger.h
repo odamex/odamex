@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------sx
 #pragma once
 
+#include <memory>
 #include <memory_resource>
 
 #include "MessageQueue.h"
@@ -46,19 +47,20 @@ class OdaMessenger
 		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
 		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
 
-        template <typename AllocatorDataType>
-        explicit OdaMessenger(const std::pmr::polymorphic_allocator<AllocatorDataType>& i_allocator)
-            : m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, i_allocator }
-            , m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE, i_allocator }
-
-//            : m_allocator { i_allocator }
+        explicit OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>&& i_poolPtr)
+            : m_pool     { std::move(i_poolPtr) }
+            , m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {m_pool.get()}}
+            , m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {m_pool.get()}}
         {
         }
 
-        OdaMessenger(OdaMessenger&&) = default;
-
+        OdaMessenger(const OdaMessenger&)            = delete;
         OdaMessenger& operator=(const OdaMessenger&) = delete;
+
+        OdaMessenger(OdaMessenger&&)            = default;
         OdaMessenger& operator=(OdaMessenger&&) = default;
+
+        std::unique_ptr<std::pmr::unsynchronized_pool_resource>&& MovePool() { return std::move(m_pool); }
 
 		//  -------------- Receiving functions --------------
 
@@ -186,7 +188,8 @@ class OdaMessenger
 
 		int SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest);
 
-        std::pmr::deque<int> m_thing;
+		std::unique_ptr<std::pmr::unsynchronized_pool_resource> m_pool;
+
 		SequenceSender   m_sender;
 		SequenceReceiver m_receiver;
 
