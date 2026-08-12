@@ -28,9 +28,9 @@
 #ifdef _WIN32
 #   include <winsock2.h>
 #   include <ws2ipdef.h>            // For the keep alive socket options under IPPROTO_TCP
+#   include "win32inc.h"
 #   define  CANARY_SOCKET_INT SOCKET
 #   define  CANARY_BAD_SOCKET INVALID_SOCKET
-
 #else
 #   include <netinet/in.h>
 #   include <sys/socket.h>
