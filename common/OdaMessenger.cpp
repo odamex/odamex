@@ -96,15 +96,50 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 	}
 
 	const size_t bestEffortSize = io_rawBuf.BytesLeftToRead();
+
 	if (bestEffortSize > 0)
 	{
-		if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
+		// One subtlety:  Best effort / normal-priority messages that are "too old" are still handled
+		// because they could still have data mobjs that's more current than the mobjs' last reliable
+		// update, which could be even older.
+		const int  realSequence     = -header.sequence;
+		const bool isHighPriority   = header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY;
+		const bool isNormalPriority = not isHighPriority;
+		const bool isTooOld         = isHighPriority   and realSequence < m_currentReceivedPacketSequenceNumber;
+		const bool isTooNew         = isNormalPriority and realSequence > m_currentReceivedPacketSequenceNumber;
+
+		// No matter what, we want to handle any acks that are in the packet immediately, regardless
+		// of whether they're older or newer than expected.
+		const size_t startOfBestEffort = io_rawBuf.TellRead();
+		while (io_rawBuf.BytesLeftToRead())
 		{
-			m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
+			const msg_t msgFormatID = msg_t(io_rawBuf.ReadUnVarint());
+			if (msgFormatID == msg_ack)
+			{
+				Acknowledge(io_rawBuf.ReadLong());
+			}
+			else
+			{
+				const unsigned int msgSize = io_rawBuf.ReadUnVarint();
+				io_rawBuf.SeekRead(msgSize, buf_t::BT_CURRENT);
+			}
 		}
-		m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
-		m_immediateReceiveSequenceNumber = header.sequence;
-		return MessageResultEnum::ACCEPT;
+		io_rawBuf.SeekRead(startOfBestEffort, buf_t::BT_START);
+
+		if (isTooNew)
+		{
+			m_receiver.RegisterBestEffortPacket(realSequence, bestEffortSize, io_rawBuf);
+		}
+		else if (not isTooOld)
+		{
+			if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
+			{
+				m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
+			}
+			m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
+			m_immediateReceiveSequenceNumber = realSequence;
+			return MessageResultEnum::ACCEPT;
+		}
 	}
 
 	return MessageResultEnum::DEFER;
