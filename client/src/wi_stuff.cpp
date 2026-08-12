@@ -602,7 +602,7 @@ int WI_DrawSmallName(const char* str, int x, int y)
 			continue;
 		}
 
-		int lump = W_CheckNumForName(WI_SmallNameChar(*str));
+		const int lump = W_CheckNumForName(WI_SmallNameChar(*str));
 
 		if (lump != -1)
 		{
@@ -654,7 +654,7 @@ int WI_CalcSmallWidth(const char* str)
 // is drawn straight into it and the same gap is left below.
 int WI_DrawAuthorName(const char* author, int y, int nameheight)
 {
-	WI_DrawSmallName(author, 160 - WI_CalcSmallWidth(author) / 2, y);
+	WI_DrawSmallName(author, 160 - (WI_CalcSmallWidth(author) / 2), y);
 
 	return WI_SmallNameHeight() + (nameheight / 4);
 }
@@ -682,7 +682,7 @@ void WI_drawLF()
 	{
 		// [RH] draw a dynamic title string
 		nameheight = WI_BigNameHeight();
-		y += WI_DrawName (lnametexts[0], 160 - lnamewidths[0] / 2, y);
+		y += WI_DrawName (lnametexts[0], 160 - (lnamewidths[0] / 2), y);
 	}
 
 	// draw the author underneath, if the map names one
@@ -730,7 +730,7 @@ void WI_drawEL()
 	{
 		// [RH] draw a dynamic title string
 		nameheight = WI_BigNameHeight();
-		y += WI_DrawName (lnametexts[1], 160 - lnamewidths[1] / 2, y);
+		y += WI_DrawName (lnametexts[1], 160 - (lnamewidths[1] / 2), y);
 	}
 
 	// draw the author underneath, if the map names one
@@ -1580,11 +1580,11 @@ void WI_loadData()
 		// Determine if we should display the map author.
 		// MAPINFO can just straight up ask for it to be disabled.
 		const bool patchshowsauthor =
-		    !lnames[i].empty() && (linfo.flags2 & LEVEL2_HIDEAUTHORNAME);
+		    !lnames[i].empty() && (linfo.flags2 & LEVEL2_HIDEAUTHORNAME) != 0;
 
 		// A UMAPINFO map that brings its own title graphic has drawn that graphic
 		// to suit itself, so an author line under it is not wanted.
-		const bool umapinfoshowsauthor = (linfo.flags2 & LEVEL2_FROMUMAPINFO) &&
+		const bool umapinfoshowsauthor = (linfo.flags2 & LEVEL2_FROMUMAPINFO) != 0 &&
 		                                    !linfo.pname.empty() &&
 		                                    W_IsLumpFromPWAD(linfo.pname);
 

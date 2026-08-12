@@ -2047,13 +2047,16 @@ void AM_drawCrosshair(am_color_t color)
 		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.rgb);
 }
 
+namespace
+{
+
 //
 // AM_authorLine
 //
 // The author as it appears on the automap.
 // Strips any prefix before displaying.
 //
-static std::string AM_authorLine()
+std::string AM_authorLine()
 {
 	return TEXTCOLOR_RED "Author:" TEXTCOLOR_NORMAL " " +
 	       G_StripAuthorPrefix(level.author);
@@ -2062,7 +2065,7 @@ static std::string AM_authorLine()
 //
 // Resting position of a line of automap text, matching the map name's column.
 //
-static int AM_textRestX(const std::string& line, int surface_width)
+int AM_textRestX(const std::string& line, int surface_width)
 {
 	if (!AM_OverlayAutomapVisible())
 		return 0;
@@ -2076,7 +2079,7 @@ static int AM_textRestX(const std::string& line, int surface_width)
 // The translucent drawers read their blend straight off
 // hud_transparency, the same way the toasts fade themselves out.
 //
-static void AM_drawTextLuc(int color, int x, int y, const std::string& line, float alpha)
+void AM_drawTextLuc(int color, int x, int y, const std::string& line, float alpha)
 {
 	if (alpha <= 0.0f)
 		return;
@@ -2095,7 +2098,7 @@ struct amchar_t
 	int color;
 };
 
-static std::vector<amchar_t> AM_explodeLine(const std::string& line, int basecolor)
+std::vector<amchar_t> AM_explodeLine(const std::string& line, int basecolor)
 {
 	std::vector<amchar_t> chars;
 	int color = basecolor;
@@ -2111,7 +2114,7 @@ static std::vector<amchar_t> AM_explodeLine(const std::string& line, int basecol
 			continue;
 		}
 
-		chars.push_back({line[i], color});
+		chars.push_back({.c = line[i], .color = color});
 	}
 
 	return chars;
@@ -2119,7 +2122,7 @@ static std::vector<amchar_t> AM_explodeLine(const std::string& line, int basecol
 
 // Unscaled width of a character in the console font, matching what V_DrawText
 // advances by (including spaces).
-static int AM_charWidth(char c)
+int AM_charWidth(char c)
 {
 	const int index = toupper(c) - HU_FONTSTART;
 
@@ -2129,7 +2132,7 @@ static int AM_charWidth(char c)
 	return W_ResolvePatchHandle(hu_font[index])->width();
 }
 
-static int AM_lineWidth(const std::vector<amchar_t>& chars)
+int AM_lineWidth(const std::vector<amchar_t>& chars)
 {
 	int width = 0;
 	for (const amchar_t& ch : chars)
@@ -2144,7 +2147,7 @@ static int AM_lineWidth(const std::vector<amchar_t>& chars)
 // Puts the first so many characters of a line back together, with the color
 // escapes the teletype needs to have typed out along the way.
 //
-static std::string AM_assembleLine(const std::vector<amchar_t>& chars, size_t count)
+std::string AM_assembleLine(const std::vector<amchar_t>& chars, size_t count)
 {
 	std::string result;
 	int state = -1;
@@ -2171,7 +2174,7 @@ static std::string AM_assembleLine(const std::vector<amchar_t>& chars, size_t co
 //
 // Characters falling outside are dropped whole rather than clipped.
 //
-static void AM_drawClipped(const std::vector<amchar_t>& chars, int color, int x, int y,
+void AM_drawClipped(const std::vector<amchar_t>& chars, int color, int x, int y,
                            int clipleft, int clipright)
 {
 	std::string display;
@@ -2214,7 +2217,7 @@ static void AM_drawClipped(const std::vector<amchar_t>& chars, int color, int x,
 //
 // Draws the map name in the animation mode that was selected.
 //
-static void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
+void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
                                int surface_width)
 {
 	const bool animated =
@@ -2232,9 +2235,11 @@ static void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 	const bool marquee = am_showauthor == AM_AUTHOR_MARQUEE;
 	const bool teletype = am_showauthor == AM_AUTHOR_TELETYPE;
 
-	std::vector<amchar_t> mapchars, authorchars;
+	std::vector<amchar_t> mapchars;
+	std::vector<amchar_t> authorchars;
 	int region = 0;
-	int toauthor = AM_AUTHORFADE, tomap = AM_AUTHORFADE;
+	int toauthor = AM_AUTHORFADE;
+	int tomap = AM_AUTHORFADE;
 
 	if (marquee || teletype)
 	{
@@ -2263,7 +2268,7 @@ static void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 		toauthor = tomap = std::max(1, characters);
 	}
 
-	const int cycle = 2 * AM_AUTHORHOLD + toauthor + tomap;
+	const int cycle = (2 * AM_AUTHORHOLD) + toauthor + tomap;
 	if (cycle <= 0)
 	{
 		screen->DrawTextClean(mapcolor, AM_textRestX(mapline, surface_width), y,
@@ -2278,7 +2283,8 @@ static void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 	const std::string* in = &authorline;
 	const std::vector<amchar_t>* outchars = &mapchars;
 	const std::vector<amchar_t>* inchars = &authorchars;
-	int outcolor = mapcolor, incolor = CR_GREY;
+	int outcolor = mapcolor;
+	int incolor = CR_GREY;
 	double progress;
 
 	if (t < AM_AUTHORHOLD)
@@ -2287,30 +2293,32 @@ static void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 		                      mapline.c_str());
 		return;
 	}
-	else if (t < AM_AUTHORHOLD + toauthor)
-	{
-		progress = static_cast<double>(t - AM_AUTHORHOLD) / toauthor;
-	}
-	else if (t < 2 * AM_AUTHORHOLD + toauthor)
+
+	if (t >= AM_AUTHORHOLD + toauthor && t < (2 * AM_AUTHORHOLD) + toauthor)
 	{
 		screen->DrawTextClean(CR_GREY, AM_textRestX(authorline, surface_width), y,
 		                      authorline.c_str());
 		return;
+	}
+
+	if (t < AM_AUTHORHOLD + toauthor)
+	{
+		progress = static_cast<double>(t - AM_AUTHORHOLD) / toauthor;
 	}
 	else
 	{
 		std::swap(out, in);
 		std::swap(outchars, inchars);
 		std::swap(outcolor, incolor);
-		progress = static_cast<double>(t - (2 * AM_AUTHORHOLD + toauthor)) / tomap;
+		progress = static_cast<double>(t - ((2 * AM_AUTHORHOLD) + toauthor)) / tomap;
 	}
 
 	if (teletype)
 	{
 		// The outgoing line is taken back a character at a time, and once it has
 		// gone the incoming one is typed out the same way.
-		const size_t typed =
-		    static_cast<size_t>(progress * (outchars->size() + inchars->size()));
+		const auto typed = static_cast<size_t>(
+		    progress * static_cast<double>(outchars->size() + inchars->size()));
 
 		const bool typing = typed >= outchars->size();
 		const std::vector<amchar_t>& line = typing ? *inchars : *outchars;
@@ -2332,12 +2340,12 @@ static void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 		if (progress < 0.5)
 		{
 			AM_drawTextLuc(outcolor, AM_textRestX(*out, surface_width), y, *out,
-			               static_cast<float>(1.0 - progress * 2.0));
+			               static_cast<float>(1.0 - (progress / 0.5)));
 		}
 		else
 		{
 			AM_drawTextLuc(incolor, AM_textRestX(*in, surface_width), y, *in,
-			               static_cast<float>((progress - 0.5) * 2.0));
+			               static_cast<float>((progress - 0.5) / 0.5));
 		}
 		return;
 	}
@@ -2350,7 +2358,10 @@ static void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 	const int outwidth = AM_lineWidth(*outchars) * CleanXfac;
 	const int inwidth = AM_lineWidth(*inchars) * CleanXfac;
 
-	int clipleft, clipright, outx, inx;
+	int clipleft = 0;
+	int clipright = 0;
+	int outx = 0;
+	int inx = 0;
 
 	if (AM_OverlayAutomapVisible())
 	{
@@ -2373,6 +2384,8 @@ static void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 	AM_drawClipped(*outchars, outcolor, outx, y, clipleft, clipright);
 	AM_drawClipped(*inchars, incolor, inx, y, clipleft, clipright);
 }
+
+} // namespace
 
 //
 // AM_Drawer
