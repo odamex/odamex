@@ -32,14 +32,14 @@ function(odamex_target_settings _TARGET)
 
   target_compile_definitions("${_TARGET}" PRIVATE $<$<CONFIG:Debug>:ODAMEX_DEBUG>)
 
-  # The Win32 / Win SDK-related definitions and macros are controlled in a header file.
-  # Force that header file into our targets' compile options here.
   if (WIN32)
-      if (MSVC)
-        target_compile_options("${_TARGET}" PRIVATE /FI${CMAKE_SOURCE_DIR}/common/win32inc.h)
-      elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        target_compile_options("${_TARGET}" PRIVATE --include=${CMAKE_SOURCE_DIR}/common/win32inc.h)
-      endif()
+      target_compile_definitions("${_TARGET}"
+          PRIVATE
+            _CRT_SECURE_NO_WARNINGS
+            WIN32_LEAN_AND_MEAN
+            NOMINMAX
+            NODRAWTEXT
+            )
   endif()
 
   if(MSVC)
