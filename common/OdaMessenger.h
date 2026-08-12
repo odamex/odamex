@@ -49,7 +49,7 @@ class OdaMessenger
         template <typename AllocatorDataType>
         explicit OdaMessenger(const std::pmr::polymorphic_allocator<AllocatorDataType>& i_allocator)
             : m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, i_allocator }
-            , m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE } //, i_allocator }
+            , m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE, i_allocator }
 
 //            : m_allocator { i_allocator }
         {

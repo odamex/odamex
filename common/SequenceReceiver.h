@@ -22,22 +22,21 @@
 #pragma once
 
 #include <algorithm>
+#include <deque>
+#include <functional>
+#include <unordered_map>
 #include <vector>
 
-#include "PacketTable.h"
+#include "SequenceQueueEntryType.h"
 
 class SequenceReceiver
 {
 	public:
 
-		explicit SequenceReceiver(size_t i_initialSize) :
-			m_reliableTable   (i_initialSize),
-			m_currentSequence (0)
-		{
-		}
-
-		SequenceReceiver() :
-			SequenceReceiver(DEFAULT_RELIABILITY_QUEUE_SIZE)
+		explicit SequenceReceiver(size_t i_initialSize,
+		                          const std::pmr::polymorphic_allocator<SequenceQueueEntryType>& i_allocator = {}) :
+			m_receiveTable    { DEFAULT_RELIABILITY_QUEUE_SIZE, i_allocator },
+			m_currentSequence { 0 }
 		{
 		}
 
@@ -50,6 +49,8 @@ class SequenceReceiver
 		// into the table, and true is returned.  Otherwise, false is returned and the
 		// given buffer is left unread.
 		bool RegisterReliablePacket(int sequence, size_t i_size, buf_t& io_bufferRef);
+
+		bool RegisterBestEffortPacket(int sequence, size_t i_size, buf_t& io_bufferRef);
 
 		// Fetches the next packet in the sequence of received reliable messages.
 		// The ordering of messages returned by repeated calls to this function is
@@ -65,7 +66,24 @@ class SequenceReceiver
 
 	protected:
 
-		SinglePacketTable m_reliableTable;
+        struct PacketQueue
+        {
+            SequenceQueueEntryType                  reliable;     // Only one reliable message per sequence number.
+            std::pmr::deque<SequenceQueueEntryType> bestEffort;
+
+            explicit PacketQueue(const std::pmr::polymorphic_allocator<SequenceQueueEntryType>& i_allocator) :
+                bestEffort { i_allocator }
+            {
+            }
+
+            bool ReliableWasReceived()  const { return reliable.sequence       >= 0; }
+            bool ReliableWasProcessed() const { return reliable.originatingTic >= 0; }
+
+        };
+
+        std::pmr::unordered_map<int, PacketQueue, std::identity>::iterator ObtainReceivePacket(int sequence);
+
+		std::pmr::unordered_map<int, PacketQueue, std::identity> m_receiveTable;
 
 		int m_currentSequence;  // Index of the place to store the next received packet.
 };
