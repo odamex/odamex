@@ -50,7 +50,16 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood", header.flags);
 		return MessageResultEnum::ABORT;
 	}
-	else if (header.flags & PacketHeaderType::FLAG_COMPRESSED)
+
+	if (header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY and header.reliableSize)
+	{
+		PrintFmt(PRINT_WARNING, "High priority packet {} had a reliable payload: {} bytes",
+		         -header.sequence,
+		         header.reliableSize);
+		return MessageResultEnum::ABORT;
+	}
+
+	if (header.flags & PacketHeaderType::FLAG_COMPRESSED)
 	{
 		m_packet.GetCompressorRef().Decompress(io_rawBuf);
 	}
