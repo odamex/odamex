@@ -314,7 +314,10 @@ void CL_PredictWorld(void)
 	// tenatively tell the netgraph that our prediction was successful
 	netgraph.setMisprediction(false);
 
-	if (consoleplayer_id != displayplayer_id)
+	if (consoleplayer_id != displayplayer_id && displayplayer().isFreecam)
+		CL_PredictFreecam();
+
+	if (consoleplayer_id != displayplayer_id && not displayplayer().isFreecam)
 		CL_PredictSpying();
 
 	CL_PredictRemotePlayers();

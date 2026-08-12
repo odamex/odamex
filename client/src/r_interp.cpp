@@ -501,7 +501,7 @@ void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
 			}
 			else
 			{
-				// Only interpolate if we are spectating
+				// Only interpolate if we are spectating/freecam
 				// interpolate amount/FRACUNIT percent between previous value and
 				// current value
 				viewangle = camera->prevangle +
@@ -550,11 +550,10 @@ void OInterpolation::interpolateView(player_t* player, fixed_t amount)
 		return;
 
 	player_t& consolePlayer = consoleplayer();
-	const bool use_localview =
-	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
-	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback)
-		||
-		displayplayer().isFreecam;
+	const bool use_localview = consolePlayer.id == displayplayer().id &&
+	                           consolePlayer.health > 0 &&
+	                           not consolePlayer.mo->reactiontime &&
+	                           not netdemo.isInPlayback() && not demoplayback;
 
 	interpolateCamera(amount, use_localview, player->cheats & CF_CHASECAM);
 }
