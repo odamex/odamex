@@ -243,14 +243,7 @@ void I_Endoom()
 	if (!r_showendoom || Args.CheckParm ("-novideo"))
 		return;
 
-	int lump = -1;
-	int count = 0;
-	while (count < 2 && (lump = W_FindLump("ENDOOM", lump)) != -1)
-	{
-		count++;
-	}
-
-	if (r_showendoom == 2 && count <= 1)
+	if (r_showendoom == 2 && !W_IsLumpReplaced(gameinfo.endoom))
 		return;
 
 	// Hack to stop crash with disk icon
