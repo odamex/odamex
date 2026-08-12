@@ -33,25 +33,9 @@ const size_t DEFAULT_RELIABILITY_QUEUE_SIZE = 256;
 /// This type defines the per-packet data that's relevant for managing reliability.
 struct SequenceQueueEntryType
 {
-	buf_t buf;              ///< The actual data payload that needs reliability.
-	int   sequence;         ///< This packet's ssequence number.
-	int   originatingTic;   ///< The local tic on which this packet was sent or received.  Used for retransmit window management.
-	int   lastRetransmitTic;///< The tic number on which this packet was last retransmitted.
-	bool  isAwaiting;       ///< True if this packet needs yet to be acked.
-
-	explicit SequenceQueueEntryType(size_t length) :
-		buf           (length),
-		sequence      (-1),
-		originatingTic(-1),
-		lastRetransmitTic(-1),
-		isAwaiting    (false)
-	{
-		// We do it this way so that MSVC has a place to drop a breakpoint in the event of a failure.
-		// This is only a concern with MSVC because it does NOT trigger a breakpoint automatically
-		// when an assert fails in a console application!
-		if (buf.maxsize() == 0)
-		{
-			assert(buf.maxsize() > 0);
-		}
-	}
+	buf_t buf               { MAX_UDP_PACKET }; ///< The actual data payload that needs reliability.
+	int   sequence          { -1 };             ///< This packet's ssequence number.
+	int   originatingTic    { -1 };             ///< The local tic on which this packet was sent or received.  Used for retransmit window management.
+	int   lastRetransmitTic { -1 };             ///< The tic number on which this packet was last retransmitted.
+	bool  isAwaiting        { false };          ///< True if this packet needs yet to be acked.
 };

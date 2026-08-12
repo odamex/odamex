@@ -21,6 +21,8 @@
 //-----------------------------------------------------------------------------sx
 #pragma once
 
+#include <memory_resource>
+
 #include "MessageQueue.h"
 #include "Packet.h"
 #include "SequenceReceiver.h"
@@ -43,6 +45,20 @@ class OdaMessenger
 		//      800 KBps * 5 sec = 4000 KB backed-up retransmits max
 		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
 		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
+
+        template <typename AllocatorDataType>
+        explicit OdaMessenger(const std::pmr::polymorphic_allocator<AllocatorDataType>& i_allocator)
+            : m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, i_allocator }
+            , m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE } //, i_allocator }
+
+//            : m_allocator { i_allocator }
+        {
+        }
+
+        OdaMessenger(OdaMessenger&&) = default;
+
+        OdaMessenger& operator=(const OdaMessenger&) = delete;
+        OdaMessenger& operator=(OdaMessenger&&) = default;
 
 		//  -------------- Receiving functions --------------
 
@@ -170,6 +186,7 @@ class OdaMessenger
 
 		int SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest);
 
+        std::pmr::deque<int> m_thing;
 		SequenceSender   m_sender;
 		SequenceReceiver m_receiver;
 

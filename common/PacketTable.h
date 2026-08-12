@@ -21,8 +21,10 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
-#include <vector>
+#include <deque>
+#include <functional>
 #include <unordered_map>
+#include <vector>
 
 #include "SequenceQueueEntryType.h"
 
@@ -31,15 +33,13 @@
 template <typename MapType>
 class PacketTable;
 
-// This functor is our packet tables' hasher.  It causes the sequence numbers / keys to be
-// directly used as the bucket-selector value.
-struct PacketIntIdentity
+struct PacketQueue
 {
-	size_t operator()(const int key) const { return static_cast<size_t>(key); }
+    std::pmr::deque<SequenceQueueEntryType> queue;
 };
 
-using SinglePacketTable = PacketTable<std::unordered_map     <int, SequenceQueueEntryType, PacketIntIdentity> >;
-using MultiPacketTable  = PacketTable<std::unordered_multimap<int, SequenceQueueEntryType, PacketIntIdentity> >;
+using SinglePacketTable = PacketTable<std::unordered_map<int, SequenceQueueEntryType, std::identity> >;
+//using MultiPacketTable  = PacketTable<std::unordered_multimap<int, SequenceQueueEntryType, std::identity> >;
 
 // This class implements a hash table for storing packet data, keyed on sequence number, and
 // uses a stack of free-packet objects for reuse.
@@ -51,8 +51,9 @@ class PacketTable
 
 		// Constructor.  Set the initial size to the number of sequences you'd like to optimally
 		// support out of the gate.  If unsure, 256 is a safe bet.
-		explicit PacketTable(size_t i_initialSize) :
-			m_hashTable(i_initialSize)
+		//template <typename AllocatorType>
+		explicit PacketTable(size_t i_initialSize) ://, const AllocatorType& allocator) :
+			m_hashTable(i_initialSize)//, allocator)
 		{
 			m_hashTable.max_load_factor(3.0f);   // why not...?
 		}
@@ -67,7 +68,7 @@ class PacketTable
 			}
 			else
 			{
-				auto result = m_hashTable.emplace(sequence, MAX_UDP_PACKET);
+				auto result = m_hashTable.emplace(sequence, SequenceQueueEntryType{});
 				return result;
 			}
 		}

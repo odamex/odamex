@@ -21,9 +21,12 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
+#include <functional>
+#include <unordered_map>
 #include <vector>
 
-#include "PacketTable.h"
+#include "SequenceQueueEntryType.h"
+//#include "PacketTable.h"
 
 class SequenceSender
 {
@@ -63,12 +66,10 @@ class SequenceSender
 
 	public:  // Functions.
 
-		explicit SequenceSender(size_t i_initialSize);
-
-		SequenceSender() :
-			SequenceSender(DEFAULT_RELIABILITY_QUEUE_SIZE)
-		{
-		}
+        explicit SequenceSender(size_t i_initialSize, const std::pmr::polymorphic_allocator<SequenceQueueEntryType> & i_allocator = {}) :
+            m_sendTable { i_initialSize, i_allocator }
+        {
+        }
 
 		void SetMode(SenderModeEnum i_mode) { m_mode = i_mode; }
 		SenderModeEnum GetMode() const { return m_mode; }
@@ -96,9 +97,9 @@ class SequenceSender
 	protected:
 
 		std::vector<int>  m_unackedSequences;
-		SinglePacketTable m_sendTable;
+		std::pmr::unordered_map<int, SequenceQueueEntryType, std::identity> m_sendTable;
+		//SinglePacketTable m_sendTable;
 
-		int m_nextSequence;                 // The sequence number to assign to the next requested packet.
-
-		SenderModeEnum m_mode;
+		int             m_nextSequence  { 0 };                 // The sequence number to assign to the next requested packet.
+		SenderModeEnum  m_mode          { NORMAL };
 };

@@ -25,6 +25,7 @@
 
 #include <deque>
 #include <list>
+#include <memory_resource>
 #include <queue>
 
 #include <time.h>
@@ -59,7 +60,10 @@
 
 struct client_t
 {
-	OdaMessenger messenger  { };
+	std::pmr::unsynchronized_pool_resource  pool;
+	std::pmr::polymorphic_allocator<int>    poolAllocator { &pool };
+
+	OdaMessenger messenger  { poolAllocator };
 	netadr_t     address    { };
 
 	short       version           { 0 };    // protocol version supported by the client
