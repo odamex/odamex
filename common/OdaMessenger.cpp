@@ -45,12 +45,12 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		return MessageResultEnum::ABORT;
 	}
 
-	if (header.flags & SVF_UNUSED_MASK)
+	if (header.flags & PacketHeaderType::FLAG_UNUSED_MASK)
 	{
 		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood", header.flags);
 		return MessageResultEnum::ABORT;
 	}
-	else if (header.flags & SVF_COMPRESSED)
+	else if (header.flags & PacketHeaderType::FLAG_COMPRESSED)
 	{
 		m_packet.GetCompressorRef().Decompress(io_rawBuf);
 	}
@@ -227,7 +227,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	{
 		m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
 
-		const size_t sendSize = m_highPacket.Send(i_currentTic, m_sender, i_dest);
+		const size_t sendSize = m_highPacket.SendHighPriority(m_sender, i_dest);
 		bytesSentBestEffort += sendSize;
 		m_byteBudget        -= static_cast<int>(sendSize);
 	}
