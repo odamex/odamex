@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "SequenceQueueEntryType.h"
-//#include "PacketTable.h"
 
 class SequenceSender
 {
