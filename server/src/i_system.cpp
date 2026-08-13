@@ -158,7 +158,7 @@ void I_FinishClockCalibration ()
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void)
+void I_Quit()
 {
     has_exited = 1;             /* Prevent infinitely recursive exits -- killough */
 
@@ -180,9 +180,7 @@ void STACK_ARGS I_Quit (void)
 //
 bool gameisdead;
 
-#define MAX_ERRORTEXT	1024
-
-void STACK_ARGS call_terms (void);
+void call_terms();
 
 [[noreturn]] void I_BaseError(const std::string& errortext)
 {

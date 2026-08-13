@@ -342,7 +342,7 @@ static void WI_updateAnimationStates(std::vector<wi_animationstate_t>& states)
 						int maxtics = frame.maxduration;
 						int mintics = frame.duration;
 						tics = M_Random() % maxtics;
-						tics = clamp(tics, mintics, maxtics);
+						tics = std::clamp(tics, mintics, maxtics);
 					}
 					break;
 

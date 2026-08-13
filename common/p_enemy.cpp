@@ -465,7 +465,8 @@ bool P_Move (AActor *actor, int dropoff = 0)
 bool P_SmartMove(AActor* actor)
 {
 	AActor* target = actor->target;
-	bool on_lift, under_damage = false;
+	bool on_lift;
+	int under_damage = 0;
 	int dropoff = 0;
 
 	/* killough 9/12/98: Stay on a lift if target is on one */
@@ -638,28 +639,30 @@ bool P_HitFriend(AActor* self)
 	return false;
 }
 
-static fixed_t dropoff_deltax, dropoff_deltay, floorz;
 extern fixed_t tmbbox[4];
 
-static bool PIT_AvoidDropoff(line_t* line)
+namespace
 {
-	if (line->backsector && // Ignore one-sided linedefs
-	    tmbbox[BOXRIGHT] > line->bbox[BOXLEFT] &&
-	    tmbbox[BOXLEFT] < line->bbox[BOXRIGHT] &&
-	    tmbbox[BOXTOP] > line->bbox[BOXBOTTOM] && // Linedef must be contacted
-	    tmbbox[BOXBOTTOM] < line->bbox[BOXTOP] && P_BoxOnLineSide(tmbbox, line) == -1)
+
+bool PIT_AvoidDropoff(const line_t& line, const fixed_t floorz, fixed_t& dropoff_deltax, fixed_t& dropoff_deltay)
+{
+	if (line.backsector && // Ignore one-sided linedefs
+	    tmbbox[BOXRIGHT] > line.bbox[BOXLEFT] &&
+	    tmbbox[BOXLEFT] < line.bbox[BOXRIGHT] &&
+	    tmbbox[BOXTOP] > line.bbox[BOXBOTTOM] && // Linedef must be contacted
+	    tmbbox[BOXBOTTOM] < line.bbox[BOXTOP] && P_BoxOnLineSide(tmbbox, &line) == -1)
 	{
-		fixed_t front = line->frontsector->floorheight;
-		fixed_t back = line->backsector->floorheight;
+		const fixed_t front = line.frontsector->floorheight;
+		const fixed_t back = line.backsector->floorheight;
 		angle_t angle;
 
 		// The monster must contact one of the two floors,
 		// and the other must be a tall dropoff (more than 24).
 
 		if (back == floorz && front < floorz - FRACUNIT * 24)
-			angle = R_PointToAngle2(0, 0, line->dx, line->dy); // front side dropoff
+			angle = R_PointToAngle2(0, 0, line.dx, line.dy); // front side dropoff
 		else if (front == floorz && back < floorz - FRACUNIT * 24)
-			angle = R_PointToAngle2(line->dx, line->dy, 0, 0); // back side dropoff
+			angle = R_PointToAngle2(line.dx, line.dy, 0, 0); // back side dropoff
 		else
 			return true;
 
@@ -675,7 +678,7 @@ static bool PIT_AvoidDropoff(line_t* line)
 // Driver for above
 //
 
-static fixed_t P_AvoidDropoff(AActor* actor)
+fixed_t P_AvoidDropoff(AActor* actor, fixed_t& dropoff_deltax, fixed_t& dropoff_deltay)
 {
 	tmbbox[BOXTOP] = actor->y + actor->radius;
 	tmbbox[BOXBOTTOM] = actor->y - actor->radius;
@@ -687,7 +690,7 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	const int xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
 	const int xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
 
-	floorz = actor->z; // remember floor height
+	const fixed_t floorz = actor->z; // remember floor height
 
 	dropoff_deltax = dropoff_deltay = 0;
 
@@ -696,7 +699,7 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	validcount++;
 	for (int bx = xl; bx <= xh; bx++)
 		for (int by = yl; by <= yh; by++)
-			P_BlockLinesIterator(bx, by, PIT_AvoidDropoff); // all contacted lines
+			P_BlockLinesIterator(bx, by, PIT_AvoidDropoff, floorz, dropoff_deltax, dropoff_deltay); // all contacted lines
 
 	return dropoff_deltax | dropoff_deltay; // Non-zero if movement prescribed
 }
@@ -712,7 +715,7 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 // Uses the new ZDoom chase code
 //
 
-static void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
+void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
 {
 	dirtype_t d[3];
 
@@ -822,6 +825,8 @@ static void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
 	actor->movedir = DI_NODIR; // can not move
 }
 
+} // namespace
+
 void P_NewChaseDir (AActor *actor)
 {
 	if (!actor->target)
@@ -837,11 +842,14 @@ void P_NewChaseDir (AActor *actor)
 
 	actor->strafecount = 0;
 
+	fixed_t dropoff_deltax = 0;
+	fixed_t dropoff_deltay = 0;
+
 	if (P_IsMBFCompatMode())
 	{
 		if (actor->floorz - actor->dropoffz > FRACUNIT * 24 &&
 		    actor->z <= actor->floorz && !(actor->flags & (MF_DROPOFF | MF_FLOAT)) &&
-		    !P_AllowDropOff() && P_AvoidDropoff(actor)) /* Move away from dropoff */
+		    !P_AllowDropOff() && P_AvoidDropoff(actor, dropoff_deltax, dropoff_deltay)) /* Move away from dropoff */
 		{
 			P_DoNewChaseDir(actor, dropoff_deltax, dropoff_deltay);
 
@@ -2205,35 +2213,30 @@ void A_SkelFist (AActor *actor)
 // Detect a corpse that could be raised.
 //
 AActor* 		corpsehit;
-AActor* 		vileobj;
-fixed_t 		viletryx;
-fixed_t 		viletryy;
-int				viletryradius;
 
-bool PIT_VileCheck (AActor *thing)
+bool PIT_VileCheck (AActor& thing, AActor* /*vileobj*/, const fixed_t viletryx, const fixed_t viletryy, const int viletryradius)
 {
-	int 	maxdist;
-	bool 	check;
+	bool check;
 
-	if (thing->oflags & MFO_NORAISE)
+	if (thing.oflags & MFO_NORAISE)
 		return true;	// [AM] Can't raise
 
-	if (!(thing->flags & MF_CORPSE) )
+	if (!(thing.flags & MF_CORPSE) )
 		return true;	// not a monster
 
-	if (thing->tics != -1)
+	if (thing.tics != -1)
 		return true;	// not lying still yet
 
-	if (thing->info->raisestate == S_NULL)
+	if (thing.info->raisestate == S_NULL)
 		return true;	// monster doesn't have a raise state
 
-	maxdist = thing->info->radius + viletryradius;
+	const int maxdist = thing.info->radius + viletryradius;
 
-	if ( abs(thing->x - viletryx) > maxdist
-		 || abs(thing->y - viletryy) > maxdist )
+	if ( abs(thing.x - viletryx) > maxdist
+		 || abs(thing.y - viletryy) > maxdist )
 		return true;			// not actually touching
 
-	corpsehit = thing;
+	corpsehit = &thing;
 	corpsehit->momx = corpsehit->momy = 0;
 
 	if (P_AllowPassover())
@@ -2241,11 +2244,9 @@ bool PIT_VileCheck (AActor *thing)
 
 	if (co_novileghosts)
 	{
-		int height, radius;
-
 		corpsehit->flags |= MF_SOLID;
-		height = corpsehit->height; // save temporarily
-		radius = corpsehit->radius; // save temporarily
+		const int height = corpsehit->height; // save temporarily
+		const int radius = corpsehit->radius; // save temporarily
 		corpsehit->height = P_ThingInfoHeight(corpsehit->info);
 		corpsehit->radius = corpsehit->info->radius;
 		check = P_CheckPosition(corpsehit, corpsehit->x, corpsehit->y);
@@ -2837,31 +2838,27 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 		return false;
 	}
 
-	int xl, xh;
-	int yl, yh;
-	int bx, by;
-
 	if (actor->movedir != DI_NODIR)
 	{
 		// check for corpses to raise
-		viletryx = actor->x + actor->info->speed * xspeed[actor->movedir];
-		viletryy = actor->y + actor->info->speed * yspeed[actor->movedir];
+		const fixed_t viletryx = actor->x + (actor->info->speed * xspeed[actor->movedir]);
+		const fixed_t viletryy = actor->y + (actor->info->speed * yspeed[actor->movedir]);
 
-		xl = (viletryx - bmaporgx - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		xh = (viletryx - bmaporgx + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		yl = (viletryy - bmaporgy - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		yh = (viletryy - bmaporgy + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		const int xl = (viletryx - bmaporgx - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		const int xh = (viletryx - bmaporgx + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		const int yl = (viletryy - bmaporgy - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		const int yh = (viletryy - bmaporgy + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
 
-		vileobj = actor;
-		viletryradius = radius;
-		for (bx = xl; bx <= xh; bx++)
+		auto* vileobj = actor;
+		const int viletryradius = radius;
+		for (int bx = xl; bx <= xh; bx++)
 		{
-			for (by = yl; by <= yh; by++)
+			for (int by = yl; by <= yh; by++)
 			{
 				// Call PIT_VileCheck to check
 				// whether object is a corpse
 				// that can be raised.
-				if (!P_BlockThingsIterator(bx, by, PIT_VileCheck))
+				if (!P_BlockThingsIterator(bx, by, PIT_VileCheck, nullptr, vileobj, viletryx, viletryy, viletryradius))
 				{
 					mobjinfo_t* info;
 

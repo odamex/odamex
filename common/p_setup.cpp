@@ -894,7 +894,7 @@ void P_LoadThings (int lump)
 
 		// clientside-only freecam start pos
 		#ifdef CLIENT_APP
-		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsSpawnThing(mt2))
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(mt2))
 		{
 			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, ANG45 * (mt2.angle / 45));
 		}
@@ -951,7 +951,7 @@ void P_LoadThings2 (int lump, int position)
 
 		// clientside-only freecam start pos
 		#ifdef CLIENT_APP
-		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsSpawnThing(*mt))
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(*mt))
 		{
 			Freecam::setStartPosition(mt->x << FRACBITS, mt->y << FRACBITS, ONFLOORZ, ANG45 * (mt->angle / 45));
 		}
@@ -959,6 +959,13 @@ void P_LoadThings2 (int lump, int position)
 
 		P_SpawnMapThing(*mt, position);
 	}
+
+	// Sort by player number if starts are not in order
+	std::sort(playerstarts.begin(), playerstarts.end(), [](const mapthing2_t& p1, const mapthing2_t& p2){
+		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
+	});
+
+	P_SpawnAvatars();
 
 	Z_Free (data);
 }

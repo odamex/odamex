@@ -691,7 +691,7 @@ BEGIN_COMMAND (fov)
 		PrintFmt(PRINT_HIGH, "FOV is {:g}\n", m_Instigator->player->fov);
 	else
 	{
-		m_Instigator->player->fov = clamp((float)atof(argv[1]), 45.0f, 135.0f);
+		m_Instigator->player->fov = std::clamp((float)atof(argv[1]), 45.0f, 135.0f);
 		R_ForceViewWindowResize();
 	}
 }
@@ -712,7 +712,7 @@ int ST_calcPainOffset()
 	static int lastcalc;
 	static int oldhealth = -1;
 
-	const int health = clamp(displayplayer().health, -1, 100);
+	const int health = std::clamp(displayplayer().health, -1, 100);
 
 	if (health != oldhealth)
 	{
@@ -1375,7 +1375,7 @@ void ST_Init()
 	}
 }
 
-void STACK_ARGS ST_Shutdown()
+void ST_Shutdown()
 {
 	ST_unloadData();
 

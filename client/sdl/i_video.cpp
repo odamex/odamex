@@ -689,8 +689,8 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 	const IVideoMode invalid_mode(0, 0, 0, WINDOW_Windowed);
 	IVideoMode desired_mode = mode;
 
-	desired_mode.width = clamp<uint16_t>(mode.width, 320, MAXWIDTH);
-	desired_mode.height = clamp<uint16_t>(mode.height, 200, MAXHEIGHT);
+	desired_mode.width = std::clamp<uint16_t>(mode.width, 320, MAXWIDTH);
+	desired_mode.height = std::clamp<uint16_t>(mode.height, 200, MAXHEIGHT);
 	desired_mode.bpp = mode.bpp;
 	desired_mode.window_mode = mode.window_mode;
 
@@ -846,8 +846,8 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	}
 
 	// Ensure matted surface dimensions are sane and sanitized.
-	surface_width = clamp<uint16_t>(surface_width, 320, MAXWIDTH);
-	surface_height = clamp<uint16_t>(surface_height, 200, MAXHEIGHT);
+	surface_width = std::clamp<uint16_t>(surface_width, 320, MAXWIDTH);
+	surface_height = std::clamp<uint16_t>(surface_height, 200, MAXHEIGHT);
 
 	// Is matting being used? Create matted_surface based on the primary_surface.
 	if (surface_width != primary_surface->getWidth() ||
@@ -909,7 +909,7 @@ bool I_VideoInitialized()
 //
 // Destroys the application window and frees its memory.
 //
-void STACK_ARGS I_ShutdownHardware()
+void I_ShutdownHardware()
 {
 	I_FreeSurface(loading_icon_background_surface);
 

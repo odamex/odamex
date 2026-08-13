@@ -425,7 +425,7 @@ BEGIN_COMMAND (say)
 }
 END_COMMAND (say)
 
-void STACK_ARGS call_terms (void);
+void call_terms();
 
 void SV_QuitCommand()
 {
@@ -883,7 +883,7 @@ bool SV_SetupUserInfo(player_t &player)
 	if (gender < 0 || gender >= NUMGENDER)
 		gender = GENDER_OTHER;
 
-	aimdist = clamp(aimdist, 0, 5000 * 16384);
+	aimdist = std::clamp(aimdist, 0, 5000 * 16384);
 
 	if (switchweapon >= WPSW_NUMTYPES || switchweapon < 0)
 		switchweapon = WPSW_ALWAYS;

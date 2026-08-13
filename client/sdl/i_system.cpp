@@ -307,7 +307,7 @@ void I_Endoom()
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void)
+void I_Quit()
 {
 	has_exited = 1;		/* Prevent infinitely recursive exits -- killough */
 
@@ -330,9 +330,7 @@ void STACK_ARGS I_Quit (void)
 //
 bool gameisdead;
 
-#define MAX_ERRORTEXT	1024
-
-void STACK_ARGS call_terms (void);
+void call_terms();
 
 void I_BaseWarning(const std::string& warningtext)
 {

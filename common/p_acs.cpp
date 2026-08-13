@@ -646,7 +646,7 @@ FBehavior::~FBehavior ()
 	}
 }
 
-int STACK_ARGS FBehavior::SortScripts (const void *a, const void *b)
+int FBehavior::SortScripts (const void *a, const void *b)
 {
 	ScriptPtr *ptr1 = (ScriptPtr *)a;
 	ScriptPtr *ptr2 = (ScriptPtr *)b;
@@ -4278,7 +4278,7 @@ auto DLevelScript::CallFunction(const int scriptnum, const int func, const nonst
 					auto& sec = sectors[secnum];
 					sec.damageamount = args[1];
 					sec.mod = args.size() > 2 ? StrToMOD(level.behavior->LookupString(args[2])) : MOD_UNKNOWN;
-					sec.damageinterval = args.size() > 3 ? clamp(args[3], 1, limits::MAXINT) : 32;
+					sec.damageinterval = args.size() > 3 ? std::clamp(args[3], 1, limits::MAXINT) : 32;
 					sec.leakrate = args.size() > 4 ? args[4] : 0;
 				}
 				return 0;

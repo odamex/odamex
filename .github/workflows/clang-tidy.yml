@@ -13,6 +13,7 @@ on:
 
 jobs:
   clang-tidy-review:
+    if: ${{ !startsWith(github.head_ref, 'release/') && github.head_ref != 'create-pull-request/patch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -24,7 +25,7 @@ jobs:
           split_workflow: true
           apt_packages: "ninja-build,libsdl2-dev,libsdl2-mixer-dev,libcurl3-openssl-dev,libpng-dev,libwxgtk3.2-dev,zlib1g-dev,libzstd-dev,libjsoncpp-dev,libgtest-dev"
           exclude: "libraries/*"
-          config_file: ".clang-tidy"
+          config_file: "./ci/clang-tidy.yml"
           build_dir: "build"
           cmake_command: |
             cmake -B build . -GNinja \

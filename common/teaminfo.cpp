@@ -280,3 +280,18 @@ int TeamInfo::LivesPool()
 
 	return pool;
 }
+
+bool P_IsTeamStart(int16_t type)
+{
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+	{
+		const TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+
+		if (type == teamInfo->TeamSpawnThingNum)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}

@@ -28,6 +28,11 @@
 //#define SIMULATE_LATENCY
 
 #include <cfloat>
+#include <cmath>
+#include <string>
+#include <vector>
+
+#include "doomtype.h"
 
 /*
 ==========================================================

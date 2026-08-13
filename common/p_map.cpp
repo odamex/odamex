@@ -120,38 +120,36 @@ CVAR_FUNC_IMPL (sv_gravity)
 //
 // PIT_StompThing
 //
-static bool StompAlwaysFrags;
-
-bool PIT_StompThing (AActor *thing)
+bool PIT_StompThing (AActor& thing, const bool StompAlwaysFrags)
 {
 	fixed_t blockdist;
 
-	if (!(thing->flags & MF_SHOOTABLE))
+	if (!(thing.flags & MF_SHOOTABLE))
 		return true;
 
 	// Spectators shouldn't stomp anybody, and cannot be stomped.
-	if (thing->player && thing->player->spectator)
+	if (thing.player && thing.player->spectator)
 		return true;
 
 	if (tmthing->player && tmthing->player->spectator)
 		return true;
 
 	// Unblocked players shouldn't telefrag other players.  Thanks Amateur Spammer!
-	if (tmthing->player && thing->player && sv_unblockplayers)
+	if (tmthing->player && thing.player && sv_unblockplayers)
 		return true;
 
 	// Unblocked friendlies shouldn't telefrag anyone.
-	if (tmthing && thing && thing->flags & MF_FRIEND && P_IsFriendlyThing(thing, tmthing) &&
+	if (tmthing && thing.flags & MF_FRIEND && P_IsFriendlyThing(&thing, tmthing) &&
 	    sv_unblockfriendly)
 		return true;
 
 	// don't clip against self
-	if (thing == tmthing)
+	if (&thing == tmthing)
 		return true;
 
-	blockdist = thing->radius + tmthing->radius;
+	blockdist = thing.radius + tmthing->radius;
 
-	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
+	if (abs(thing.x - tmx) >= blockdist || abs(thing.y - tmy) >= blockdist)
 	{
 		// didn't hit it
 		return true;
@@ -160,21 +158,22 @@ bool PIT_StompThing (AActor *thing)
 	if (P_AllowPassover())
 	{
 		// [RH] Z-Check
-		if (tmz > thing->z + thing->height)
+		if (tmz > thing.z + thing.height)
 			return true;        // overhead
-		if (tmz + tmthing->height < thing->z)
+		if (tmz + tmthing->height < thing.z)
 			return true;        // underneath
 	}
 
 	// monsters don't stomp things except on boss level
 	if (StompAlwaysFrags)
 	{
+		static constexpr int telefrag_damage = 10000;
 		// [AM] Surprise, avatars telefrag players who try to telefrag it!
 		//      Not your lucky day, I suppose.
-		if (thing->type == MT_AVATAR && tmthing->player)
-			P_DamageMobj(tmthing, thing, thing, 10000, MOD_TELEFRAG);
+		if (thing.type == MT_AVATAR && tmthing->player)
+			P_DamageMobj(tmthing, &thing, &thing, telefrag_damage, MOD_TELEFRAG);
 		else
-			P_DamageMobj(thing, tmthing, tmthing, 10000, MOD_TELEFRAG);
+			P_DamageMobj(&thing, tmthing, tmthing, telefrag_damage, MOD_TELEFRAG);
 		return true;
 	}
 	return false;
@@ -243,8 +242,8 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	validcount++;
 	spechit.clear();
 
-	StompAlwaysFrags = P_IsPlayerOrAvatar(*tmthing) ||
-	                   (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
+	const bool StompAlwaysFrags = P_IsPlayerOrAvatar(*tmthing) ||
+	                              (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
 	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
@@ -254,7 +253,7 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 
 	for (bx=xl ; bx<=xh ; bx++)
 		for (by=yl ; by<=yh ; by++)
-			if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
+			if (!P_BlockThingsIterator(bx,by,PIT_StompThing, nullptr, StompAlwaysFrags))
 				return false;
 
 	// the move is ok,
@@ -370,10 +369,13 @@ int P_GetMoveFactor (const AActor *mo, int *frictionp)
 // longer and probably really isn't worth the effort.
 //
 
+namespace
+{
+
 //
 // CheckForPushSpecial
 //
-static void CheckForPushSpecial (line_t *line, int side, AActor *mobj)
+void CheckForPushSpecial (line_t *line, int side, AActor *mobj)
 {
 	if (line->special)
 	{
@@ -385,18 +387,19 @@ static void CheckForPushSpecial (line_t *line, int side, AActor *mobj)
 }
 
 
-static // killough 3/26/98: make static
-bool PIT_CrossLine (line_t* ld)
+// killough 3/26/98: make static
+// now in anonymous namespace
+bool PIT_CrossLine (const line_t& ld)
 {
-	if (!(ld->flags & ML_TWOSIDED) ||
-		(ld->flags & (ML_BLOCKING|ML_BLOCKMONSTERS|ML_BLOCKEVERYTHING)))
-		if (!(tmbbox[BOXLEFT]   > ld->bbox[BOXRIGHT]  ||
-			  tmbbox[BOXRIGHT]  < ld->bbox[BOXLEFT]   ||
-			  tmbbox[BOXTOP]    < ld->bbox[BOXBOTTOM] ||
-			  tmbbox[BOXBOTTOM] > ld->bbox[BOXTOP]))
-			if (P_PointOnLineSide(pe_x,pe_y,ld) != P_PointOnLineSide(ls_x,ls_y,ld))
-				return(false);  // line blocks trajectory				//   ^
-	return(true); // line doesn't block trajectory					//   |
+	if (!(ld.flags & ML_TWOSIDED) ||
+		(ld.flags & (ML_BLOCKING|ML_BLOCKMONSTERS|ML_BLOCKEVERYTHING)))
+		if (!(tmbbox[BOXLEFT]   > ld.bbox[BOXRIGHT]  ||
+			  tmbbox[BOXRIGHT]  < ld.bbox[BOXLEFT]   ||
+			  tmbbox[BOXTOP]    < ld.bbox[BOXBOTTOM] ||
+			  tmbbox[BOXBOTTOM] > ld.bbox[BOXTOP]))
+			if (P_PointOnLineSide(pe_x,pe_y,&ld) != P_PointOnLineSide(ls_x,ls_y,&ld))
+				return false;  // line blocks trajectory				//   ^
+	return true; // line doesn't block trajectory					//   |
 }																	// phares
 
 //
@@ -404,18 +407,36 @@ bool PIT_CrossLine (line_t* ld)
 // Adjusts tmfloorz and tmceilingz as lines are contacted
 //
 
-static // killough 3/26/98: make static
-bool PIT_CheckLine (line_t *ld)
+// killough 3/26/98: make static
+// now in anonymous namespace
+bool PIT_CheckLine(line_t& ld, bool tmunstuck)
 {
-	if (tmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT]
-		|| tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
-		|| tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM]
-		|| tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP] )
+	if (tmbbox[BOXRIGHT] <= ld.bbox[BOXLEFT]
+		|| tmbbox[BOXLEFT] >= ld.bbox[BOXRIGHT]
+		|| tmbbox[BOXTOP] <= ld.bbox[BOXBOTTOM]
+		|| tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP] )
 		return true;
 
-	if (P_BoxOnLineSide (tmbbox, ld) != -1)
+	if (P_BoxOnLineSide (tmbbox, &ld) != -1)
 		return true;
 
+
+	const auto untouched = [](line_t& ld)
+	{
+		const fixed_t x = tmthing->x;
+		const fixed_t y = tmthing->y;
+		std::array<fixed_t, 4> tmbbox{};
+		tmbbox[BOXRIGHT] = x+tmthing->radius;
+    	tmbbox[BOXLEFT] = x-tmthing->radius;
+    	tmbbox[BOXTOP] = y+tmthing->radius;
+    	tmbbox[BOXBOTTOM] = y-tmthing->radius;
+  		return
+    		tmbbox[BOXRIGHT] <= ld.bbox[BOXLEFT] ||
+    		tmbbox[BOXLEFT]>= ld.bbox[BOXRIGHT] ||
+    		tmbbox[BOXTOP] <= ld.bbox[BOXBOTTOM] ||
+    		tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP] ||
+    		P_BoxOnLineSide(tmbbox.data(), &ld) != -1;
+	};
 
     // A line has been hit
 
@@ -428,24 +449,29 @@ bool PIT_CheckLine (line_t *ld)
     // so two special lines that are only 8 pixels apart
     // could be crossed in either order.
 
-	if (!ld->backsector)
+	if (!ld.backsector)
 	{ // One sided line
-		BlockingLine = ld;
-		CheckForPushSpecial(ld, 0, tmthing);
-		return false;
+		BlockingLine = &ld;
+		CheckForPushSpecial(&ld, 0, tmthing);
+		return tmunstuck && !untouched(ld) && FixedMul(tmx-tmthing->x,ld.dy) > FixedMul(tmy-tmthing->y,ld.dx);
 	}
 
-    if (!(tmthing->flags & (MF_MISSILE | MF_BOUNCES)) || (ld->flags & ML_BLOCKEVERYTHING))
+    if (!(tmthing->flags & (MF_MISSILE | MF_BOUNCES)) || (ld.flags & ML_BLOCKEVERYTHING))
     {
-		if ((ld->flags &
+		if ((ld.flags &
 		     (ML_BLOCKING | ML_BLOCKEVERYTHING)) || // explicitly blocking everything
-		    (!P_IsPlayerOrAvatar(*tmthing) && !(tmthing->flags & MF_FRIEND) && (ld->flags & ML_BLOCKMONSTERS)) || // block monsters only
-		    (!P_IsPlayerOrAvatar(*tmthing) && !(tmthing->flags & MF_FRIEND) && (ld->flags & ML_BLOCKLANDMONSTERS) &&
-		     !(tmthing->flags & MF_FLOAT)) || // [Blair] Block land monsters.
 		    (P_IsPlayerOrAvatar(*tmthing) &&
-		     (ld->flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
+		     (ld.flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
 		{
-			CheckForPushSpecial(ld, 0, tmthing);
+			CheckForPushSpecial(&ld, 0, tmthing);
+			return tmunstuck && !untouched(ld);
+		}
+
+		if ((!P_IsPlayerOrAvatar(*tmthing) && !(tmthing->flags & MF_FRIEND) && (ld.flags & ML_BLOCKMONSTERS)) || // block monsters only
+		    (!P_IsPlayerOrAvatar(*tmthing) && !(tmthing->flags & MF_FRIEND) && (ld.flags & ML_BLOCKLANDMONSTERS) &&
+		     !(tmthing->flags & MF_FLOAT))) // [Blair] Block land monsters.
+		{
+			CheckForPushSpecial(&ld, 0, tmthing);
 			return false;
 		}
     }
@@ -454,8 +480,8 @@ bool PIT_CheckLine (line_t *ld)
 	if (!(tmthing->flags & MF_DROPOFF) &&
 		!(tmthing->flags & (MF_NOGRAVITY|MF_NOCLIP)))
 	{
-		if (ld->frontsector->floorplane.c < STEEPSLOPE ||
-			ld->backsector->floorplane.c < STEEPSLOPE)
+		if (ld.frontsector->floorplane.c < STEEPSLOPE ||
+			ld.backsector->floorplane.c < STEEPSLOPE)
 		{
 			const msecnode_t *node = tmthing->touching_sectorlist;
 			bool allow = false;
@@ -477,36 +503,36 @@ bool PIT_CheckLine (line_t *ld)
 	// set openrange, opentop, openbottom
 
 	// Are the sectors on both sides of the line non-sloped?
-	if (P_IsPlaneLevel(&ld->frontsector->floorplane) &&
-		P_IsPlaneLevel(&ld->backsector->floorplane) &&
-		P_IsPlaneLevel(&ld->frontsector->ceilingplane) &&
-		P_IsPlaneLevel(&ld->backsector->ceilingplane))
+	if (P_IsPlaneLevel(&ld.frontsector->floorplane) &&
+		P_IsPlaneLevel(&ld.backsector->floorplane) &&
+		P_IsPlaneLevel(&ld.frontsector->ceilingplane) &&
+		P_IsPlaneLevel(&ld.backsector->ceilingplane))
 	{
-		P_LineOpening(ld, tmx, tmy, tmx, tmy);
+		P_LineOpening(&ld, tmx, tmy, tmx, tmy);
 	}
 	else
 	{
 		// Find the point on the line closest to the actor's center, and use
 		// that to calculate openings
-		double dx = FIXED2DOUBLE(ld->dx);
-		double dy = FIXED2DOUBLE(ld->dy);
-		double r =	(FIXED2DOUBLE(tmx - ld->v1->x) * dx +
-					 FIXED2DOUBLE(tmy - ld->v1->y) * dy) /
-					(dx * dx + dy * dy);
+		const double dx = FIXED2DOUBLE(ld.dx);
+		const double dy = FIXED2DOUBLE(ld.dy);
+		const double r  = ((FIXED2DOUBLE(tmx - ld.v1->x) * dx) +
+		                   (FIXED2DOUBLE(tmy - ld.v1->y) * dy)) /
+		                   ((dx * dx) + (dy * dy));
 
 		if (r <= 0.0)
 		{
-			P_LineOpening (ld, ld->v1->x, ld->v1->y, tmx, tmy);
+			P_LineOpening (&ld, ld.v1->x, ld.v1->y, tmx, tmy);
 		}
 		else if (r >= 1.0)
 		{
-			P_LineOpening (ld, ld->v2->x, ld->v2->y, tmthing->x, tmthing->y);
+			P_LineOpening (&ld, ld.v2->x, ld.v2->y, tmthing->x, tmthing->y);
 		}
 		else
 		{
-			fixed_t sx = ld->v1->x + r * ld->dx;
-			fixed_t sy = ld->v1->y + r * ld->dy;
-			P_LineOpening (ld, sx, sy, tmx, tmy);
+			const fixed_t sx = ld.v1->x + (r * ld.dx);
+			const fixed_t sy = ld.v1->y + (r * ld.dy);
+			P_LineOpening (&ld, sx, sy, tmx, tmy);
 		}
 	}
 
@@ -514,26 +540,28 @@ bool PIT_CheckLine (line_t *ld)
 	if (opentop < tmceilingz)
 	{
 		tmceilingz = opentop;
-		ceilingline = ld;
-		BlockingLine = ld;
+		ceilingline = &ld;
+		BlockingLine = &ld;
 	}
 
 	if (openbottom > tmfloorz)
 	{
 		tmfloorz = openbottom;
 		tmfloorsector = openbottomsec;
-		BlockingLine = ld;
+		BlockingLine = &ld;
 	}
 
 	if (lowfloor < tmdropoffz)
 		tmdropoffz = lowfloor;
 
 	// if contacted a special line, add it to the list
-	if (ld->special)
-		spechit.push_back(ld);
+	if (ld.special)
+		spechit.push_back(&ld);
 
 	return true;
 }
+
+} // namespace
 
 /*
  * @brief Determines if a projectile should clip a friendly monster.
@@ -619,43 +647,46 @@ bool P_ProjectileImmune(AActor* target, AActor* source)
 	                mobjinfo[source->type].projectile_group));
 }
 
-static bool PIT_CheckThing (AActor *thing)
+namespace
 {
-	bool solid = thing->flags & MF_SOLID;
+
+bool PIT_CheckThing (AActor& thing)
+{
+	const bool solid = thing.flags & MF_SOLID;
 
 	// don't clip against self
-	if (thing == tmthing)
+	if (&thing == tmthing)
 		return true;
 
-	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE|MF_TOUCHY)) )
+	if (!(thing.flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE|MF_TOUCHY)) )
 		return true;	// can't hit thing
 
 	// GhostlyDeath -- Spectators go through everything!
-	if ((thing->player && thing->player->spectator) ||
+	if ((thing.player && thing.player->spectator) ||
 		(tmthing->player && tmthing->player->spectator))
 		return true;
 
-	if (tmthing->player && thing->player && sv_unblockplayers)
+	if (tmthing->player && thing.player && sv_unblockplayers)
 		return true;
 
-	if (tmthing && thing && thing->flags & MF_FRIEND &&
-	    P_IsFriendlyThing(thing, tmthing) && sv_unblockfriendly)
+	if (tmthing && thing.flags & MF_FRIEND &&
+	    P_IsFriendlyThing(&thing, tmthing) && sv_unblockfriendly)
 		return true;
 
-	fixed_t blockdist = thing->radius + tmthing->radius;
-	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
+	const fixed_t blockdist = thing.radius + tmthing->radius;
+	if (abs(thing.x - tmx) >= blockdist || abs(thing.y - tmy) >= blockdist)
 	{
 		// didn't hit thing
 		return true;
 	}
 
 	if (P_AllowPassover())
-		BlockingMobj = thing;
+		BlockingMobj = &thing;
 
 	if (P_AllowPassover() && (tmthing->flags2 & MF2_PASSMOBJ))
 	{
 		// check if a mobj passed over/under another object
-		if (tmthing->z >= thing->z + thing->height || tmthing->z + tmthing->height <= thing->z)
+		if (tmthing->z >= thing.z + thing.height || tmthing->z + tmthing->height <= thing.z)
 			return true;
 	}
 
@@ -667,21 +698,21 @@ static bool PIT_CheckThing (AActor *thing)
 	 * surroundings such as walls, then the touchy thing dies immediately.
 	 */
 
-	if (thing->flags & MF_TOUCHY &&               // touchy object
+	if (thing.flags & MF_TOUCHY &&               // touchy object
 	    tmthing->flags & MF_SOLID &&              // solid object touches it
-	    thing->health > 0 &&                      // touchy object is alive
-	    (thing->oflags & MFO_ARMED ||             // Thing is an armed mine
-	     sentient(thing)) &&                      // ... or a sentient thing
-	    (thing->type != tmthing->type ||          // only different species
-	     thing->type == MT_PLAYER) &&             // ... or different players
-	    thing->z + thing->height >= tmthing->z && // touches vertically
-	    tmthing->z + tmthing->height >= thing->z &&
-	    (thing->type ^ MT_PAIN) |         // PEs and lost souls
+	    thing.health > 0 &&                      // touchy object is alive
+	    (thing.oflags & MFO_ARMED ||             // Thing is an armed mine
+	     sentient(&thing)) &&                      // ... or a sentient thing
+	    (thing.type != tmthing->type ||          // only different species
+	     thing.type == MT_PLAYER) &&             // ... or different players
+	    thing.z + thing.height >= tmthing->z && // touches vertically
+	    tmthing->z + tmthing->height >= thing.z &&
+	    (thing.type ^ MT_PAIN) |         // PEs and lost souls
 	        (tmthing->type ^ MT_SKULL) && // are considered same
-	    (thing->type ^ MT_SKULL) |        // (but Barons & Knights
+	    (thing.type ^ MT_SKULL) |        // (but Barons & Knights
 	        (tmthing->type ^ MT_PAIN))    // are intentionally not)
 	{
-		P_DamageMobj(thing, NULL, NULL, thing->health); // kill object
+		P_DamageMobj(&thing, nullptr, nullptr, thing.health); // kill object
 		return true;
 	}
 
@@ -689,7 +720,7 @@ static bool PIT_CheckThing (AActor *thing)
 	if (tmthing->flags & MF_SKULLFLY)
 	{
 		int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
-		P_DamageMobj (thing, tmthing, tmthing, damage, MOD_HIT);
+		P_DamageMobj (&thing, tmthing, tmthing, damage, MOD_HIT);
 		tmthing->flags &= ~MF_SKULLFLY;
 		tmthing->momx = tmthing->momy = tmthing->momz = 0;
 		P_SetMobjState (tmthing, tmthing->info->spawnstate);
@@ -706,61 +737,61 @@ static bool PIT_CheckThing (AActor *thing)
 		&& !(tmthing->flags & MF_SOLID)))
 	{
 		// see if it went over / under
-		if (tmthing->z > thing->z + thing->height)
+		if (tmthing->z > thing.z + thing.height)
 			return true;				// overhead
-		if (tmthing->z+tmthing->height < thing->z)
+		if (tmthing->z+tmthing->height < thing.z)
 			return true;				// underneath
 
     // Check with projectiles owner if we can explode
 		if (tmthing->target &&
-			(P_ProjectileImmune(thing, tmthing->target) &&
+			(P_ProjectileImmune(&thing, tmthing->target) &&
 		    !((level.flags2 & LEVEL2_INFIGHTINGMASK) ?
 			    level.flags2 & LEVEL2_TOTALINFIGHTING :
 			    G_GetCurrentSkill().flags & SKILL_TOTALINFIGHTING)))
 		{
 			// Don't hit same species as originator
-			if (thing == tmthing->target)
+			if (&thing == tmthing->target)
 				return true;
 
-			if (!thing->player)
+			if (!thing.player)
 			{
 				// Run friendly clip check early if same species
-				if ((thing->flags & tmthing->target->flags & MF_FRIEND) &&
-				    !P_ShouldClipFriendly(tmthing, thing))
+				if ((thing.flags & tmthing->target->flags & MF_FRIEND) &&
+				    !P_ShouldClipFriendly(tmthing, &thing))
 					return true;
 
 				// [RH] DeHackEd infighting is here.
 				if (!deh.Infight &&
-						(!((thing->flags ^ tmthing->target->flags) & MF_FRIEND) ||
-						(thing->flags & tmthing->target->flags & MF_FRIEND && P_IsFriendlyThing(thing, tmthing->target))))
+						(!((thing.flags ^ tmthing->target->flags) & MF_FRIEND) ||
+						(thing.flags & tmthing->target->flags & MF_FRIEND && P_IsFriendlyThing(&thing, tmthing->target))))
 					return false; // Hit same species as originator, explode, no damage
 			}
 		}
 
-		if (!(thing->flags & MF_SHOOTABLE))
+		if (!(thing.flags & MF_SHOOTABLE))
 			return !solid;		// didn't do any damage
 
 		// Don't clip the projectile unless it's not a teammate.
-		if (!P_ShouldClipPlayer(tmthing, thing))
+		if (!P_ShouldClipPlayer(tmthing, &thing))
 			return true;
 
 		// Don't clip the projectile unless it's not a friendly.
-		if (!P_ShouldClipFriendly(tmthing, thing))
+		if (!P_ShouldClipFriendly(tmthing, &thing))
 			return true;
 
 		if (tmthing->flags2 & MF2_RIP)
 		{
 			int damage = ((P_Random(tmthing) & 3) + 2) * tmthing->info->damage;
-			if (!(thing->flags & MF_NOBLOOD))
+			if (!(thing.flags & MF_NOBLOOD))
 				P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage);
 			if (tmthing->info->ripsound)
 				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
 
-			P_DamageMobj(thing, tmthing, tmthing->target, damage, MOD_UNKNOWN);
-			if (thing->flags2 & MF2_PUSHABLE && !(tmthing->flags2 & MF2_CANNOTPUSH))
+			P_DamageMobj(&thing, tmthing, tmthing->target, damage, MOD_UNKNOWN);
+			if (thing.flags2 & MF2_PUSHABLE && !(tmthing->flags2 & MF2_CANNOTPUSH))
 			{ // Push thing
-				thing->momx += tmthing->momx >> 2;
-				thing->momy += tmthing->momy >> 2;
+				thing.momx += tmthing->momx >> 2;
+				thing.momy += tmthing->momy >> 2;
 			}
 
 			return true;
@@ -797,7 +828,7 @@ static bool PIT_CheckThing (AActor *thing)
 							}
 						break;
 				}
-				P_DamageMobj (thing, tmthing, tmthing->target, damage, mod);
+				P_DamageMobj (&thing, tmthing, tmthing->target, damage, mod);
 			}
 		}
 
@@ -805,7 +836,7 @@ static bool PIT_CheckThing (AActor *thing)
 	}
 
 	// check for special pickup
-	if (thing->flags & MF_SPECIAL && tmthing->flags & MF_PICKUP)
+	if (thing.flags & MF_SPECIAL && tmthing->flags & MF_PICKUP)
 	{
 		// [SL] Work-around the additional height added to players
 		// in P_CheckPosition. Don't let players grab items above
@@ -816,8 +847,8 @@ static bool PIT_CheckThing (AActor *thing)
 		if (tmthing->player)
 			max_z -= 24 * FRACUNIT;
 
-		if (!P_AllowPassover() || thing->z < max_z)
-			P_TouchSpecialThing (*thing, *tmthing);	// can remove thing
+		if (!P_AllowPassover() || thing.z < max_z)
+			P_TouchSpecialThing (thing, *tmthing);	// can remove thing
 
 		return !solid;
 	}
@@ -835,11 +866,14 @@ static bool PIT_CheckThing (AActor *thing)
 	if (demoplayback || !co_boomphys
 	    //&& !prboom_comp[PC_TREAT_NO_CLIPPING_THINGS_AS_NOT_BLOCKING].state
 			)
-		return !(thing->flags & MF_SOLID);
+		return !(thing.flags & MF_SOLID);
 	else
-		return !((thing->flags & MF_SOLID && !(thing->flags & MF_NOCLIP)) &&
+		return !((thing.flags & MF_SOLID && !(thing.flags & MF_NOCLIP)) &&
 		         (tmthing->flags & MF_SOLID || (demoplayback || !co_boomphys)));
 }
+
+} // namespace
+
 
 // This routine checks for Lost Souls trying to be spawned		// phares
 // across 1-sided lines, impassible lines, or "monsters can't	//   |
@@ -892,43 +926,43 @@ bool Check_Sides(const AActor* actor, int x, int y)
 //
 //---------------------------------------------------------------------------
 
-bool PIT_CheckOnmobjZ (AActor *thing)
+bool PIT_CheckOnmobjZ (AActor& thing)
 {
-	if (!(thing->flags & MF_SOLID))
+	if (!(thing.flags & MF_SOLID))
 		return true;
 
 	// [RH] Corpses and specials don't block moves
-	if (thing->flags & (MF_CORPSE|MF_SPECIAL))
+	if (thing.flags & (MF_CORPSE|MF_SPECIAL))
 		return true;
 
 	// Don't clip against self
-	if (thing == tmthing)
+	if (&thing == tmthing)
 		return true;
 
 	// Don't clip against a player
-	if (tmthing->player && thing->player && sv_unblockplayers)
+	if (tmthing->player && thing.player && sv_unblockplayers)
 		return true;
 
 	// Don't clip against friendlies
-	if (tmthing && thing && thing->flags & MF_FRIEND &&
-	    P_IsFriendlyThing(thing, tmthing) && sv_unblockfriendly)
+	if (tmthing && thing.flags & MF_FRIEND &&
+	    P_IsFriendlyThing(&thing, tmthing) && sv_unblockfriendly)
 		return true;
 
 	// over / under thing
-	if (tmthing->z > thing->z + thing->height)
+	if (tmthing->z > thing.z + thing.height)
 		return true;
-	else if (tmthing->z + tmthing->height <= thing->z)
+	if (tmthing->z + tmthing->height <= thing.z)
 		return true;
 
 	// Don't clip the projectile unless it's not a teammate.
-	if (tmthing->flags & MF_MISSILE && !P_ShouldClipPlayer(tmthing, thing))
+	if (tmthing->flags & MF_MISSILE && !P_ShouldClipPlayer(tmthing, &thing))
 		return true;
 
-	fixed_t blockdist = thing->radius+tmthing->radius;
-	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
+	const fixed_t blockdist = thing.radius+tmthing->radius;
+	if (abs(thing.x - tmx) >= blockdist || abs(thing.y - tmy) >= blockdist)
 		return true;		// Didn't hit thing
 
-	onmobj = thing;
+	onmobj = &thing;
 	return false;
 }
 
@@ -1103,26 +1137,33 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 		// vanilla Doom's check for blocking things
 		for (int bx=xl ; bx<=xh ; bx++)
 			for (int by=yl ; by<=yh ; by++)
-				if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
+				if (!P_BlockThingsIterator(bx,by,PIT_CheckThing, nullptr))
 					return false;
 
 		if (tmflags & MF_NOCLIP)
 			return true;
 	}
 
-	// skip this during a spawn check (player is not moving) 
+	// skip this during a spawn check (player is not moving)
 	// allows spawns that are touching blocking lines to work
 	if (not isSpawnCheck || demoplayback)
 	{
 		// check lines
-		xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-		xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-		yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-		yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+		xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
+		xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
+		yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
+		yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
 
-		for (int bx=xl ; bx<=xh ; bx++)
-			for (int by=yl ; by<=yh ; by++)
-				if (!P_BlockLinesIterator (bx,by,PIT_CheckLine))
+		// from mbf, allows players to get unstuck if they end up spawned
+		// partially inside a wall or blocking line
+		// i think this is safe to enable always (except for demo playback of course)
+		// but if it turns out to cause issues with vanilla or boom maps,
+		// we should change it to rely on co_mbfphys
+		const bool tmunstuck = (thing->player != nullptr) && !P_IsVoodooDoll(thing) && !demoplayback;
+
+		for (int bx = xl; bx <= xh; bx++)
+			for (int by = yl; by <= yh; by++)
+				if (!P_BlockLinesIterator(bx, by, PIT_CheckLine, tmunstuck))
 					return false;
 	}
 
@@ -1140,15 +1181,12 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 
 AActor *P_CheckOnmobj (AActor *thing)
 {
-	fixed_t oldz;
-	bool good;
-
-	oldz = thing->z;
+	const fixed_t oldz = thing->z;
 	P_FakeZMovement (thing);
-	good = P_TestMobjZ (thing);
+	const bool good = P_TestMobjZ (thing);
 	thing->z = oldz;
 
-	return good ? NULL : onmobj;
+	return good ? nullptr : onmobj;
 }
 
 bool P_TestMobjZ (AActor *actor)
@@ -1182,7 +1220,7 @@ bool P_TestMobjZ (AActor *actor)
 
 	for (bx = xl; bx <= xh; bx++)
 		for (by = yl; by <= yh; by++)
-			if (!P_BlockThingsIterator (bx, by, PIT_CheckOnmobjZ))
+			if (!P_BlockThingsIterator (bx, by, PIT_CheckOnmobjZ, nullptr))
 				return false;
 
 	return true;
@@ -1470,33 +1508,37 @@ bool P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 // so balancing is possible.
 //
 
-static bool PIT_ApplyTorque (line_t *ld)
+namespace
 {
-	if (ld->backsector &&		// If thing touches two-sided pivot linedef
-		tmbbox[BOXRIGHT]  > ld->bbox[BOXLEFT]  &&
-		tmbbox[BOXLEFT]   < ld->bbox[BOXRIGHT] &&
-		tmbbox[BOXTOP]    > ld->bbox[BOXBOTTOM] &&
-		tmbbox[BOXBOTTOM] < ld->bbox[BOXTOP] &&
-		P_BoxOnLineSide(tmbbox, ld) == -1)
+
+bool PIT_ApplyTorque (const line_t& ld)
+{
+	if (ld.backsector &&		// If thing touches two-sided pivot linedef
+		tmbbox[BOXRIGHT]  > ld.bbox[BOXLEFT]  &&
+		tmbbox[BOXLEFT]   < ld.bbox[BOXRIGHT] &&
+		tmbbox[BOXTOP]    > ld.bbox[BOXBOTTOM] &&
+		tmbbox[BOXBOTTOM] < ld.bbox[BOXTOP] &&
+		P_BoxOnLineSide(tmbbox, &ld) == -1)
 	{
 		AActor *mo = tmthing;
 
 		fixed_t dist =								// lever arm
-	  + (ld->dx >> FRACBITS) * (mo->y >> FRACBITS)
-	  - (ld->dy >> FRACBITS) * (mo->x >> FRACBITS)
-	  - (ld->dx >> FRACBITS) * (ld->v1->y >> FRACBITS)
-	  + (ld->dy >> FRACBITS) * (ld->v1->x >> FRACBITS);
+			+ ((ld.dx >> FRACBITS) * (mo->y >> FRACBITS))
+			- ((ld.dy >> FRACBITS) * (mo->x >> FRACBITS))
+			- ((ld.dx >> FRACBITS) * (ld.v1->y >> FRACBITS))
+			+ ((ld.dy >> FRACBITS) * (ld.v1->x >> FRACBITS));
 
 		if (dist < 0 ?								// dropoff direction
-			P_FloorHeight(mo->x, mo->y, ld->frontsector) < mo->z &&
-			P_FloorHeight(mo->x, mo->y, ld->backsector) >= mo->z :
-				P_FloorHeight(mo->x, mo->y, ld->backsector) < mo->z &&
-				P_FloorHeight(mo->x, mo->y, ld->frontsector) >= mo->z)
+			P_FloorHeight(mo->x, mo->y, ld.frontsector) < mo->z &&
+			P_FloorHeight(mo->x, mo->y, ld.backsector) >= mo->z :
+				P_FloorHeight(mo->x, mo->y, ld.backsector) < mo->z &&
+				P_FloorHeight(mo->x, mo->y, ld.frontsector) >= mo->z)
 		{
 		// At this point, we know that the object straddles a two-sided
 		// linedef, and that the object's center of mass is above-ground.
 
-			fixed_t x = abs(ld->dx), y = abs(ld->dy);
+			fixed_t x = abs(ld.dx);
+			fixed_t y = abs(ld.dy);
 
 			if (y > x)
 			{
@@ -1522,8 +1564,8 @@ static bool PIT_ApplyTorque (line_t *ld)
 
 			// Apply momentum away from the pivot linedef.
 
-			x = FixedMul(ld->dy, dist);
-			y = FixedMul(ld->dx, dist);
+			x = FixedMul(ld.dy, dist);
+			y = FixedMul(ld.dx, dist);
 
 			// Avoid moving too fast all of a sudden (step into "overdrive")
 
@@ -1538,6 +1580,8 @@ static bool PIT_ApplyTorque (line_t *ld)
 	}
 	return true;
 }
+
+} // namespace
 
 //
 // killough 9/12/98
@@ -3034,14 +3078,6 @@ void P_UseLines (player_t& player)
 //
 // RADIUS ATTACK
 //
-static AActor* 		bombsource;
-static AActor* 		bombspot;
-static int			bombdamage;
-static float		bombdamagefloat;
-static int			bombdistance;
-static float		bombdistancefloat;
-static bool			DamageSource;
-static int			bombmod;
 
 // [RH] Damage scale to apply to thing that shot the missile. (co_zdoomphys)
 static float selfthrustscale;
@@ -3051,6 +3087,8 @@ CVAR_FUNC_IMPL(sv_splashfactor)
 	selfthrustscale = 1.0f / var;
 }
 
+namespace
+{
 
 //
 // PIT_DoomRadiusAttack
@@ -3058,35 +3096,40 @@ CVAR_FUNC_IMPL(sv_splashfactor)
 // "bombsource" is the creature that caused the explosion at "bombspot".
 //
 
-static bool P_SplashImmune(AActor* target, AActor* spot)
+bool P_SplashImmune(const AActor& target, const AActor& spot)
 {
 	return // not default behaviour and same group
-	    mobjinfo[target->type].splash_group != SG_DEFAULT &&
-	    mobjinfo[target->type].splash_group == mobjinfo[spot->type].splash_group;
+	    mobjinfo[target.type].splash_group != SG_DEFAULT &&
+	    mobjinfo[target.type].splash_group == mobjinfo[spot.type].splash_group;
 }
 
-static bool PIT_DoomRadiusAttack(AActor* thing)
+bool PIT_DoomRadiusAttack(AActor& thing,
+                          AActor* bombsource,
+                          const AActor* bombspot,
+                          const int bombdamage,
+                          const float /*bombdamagefloat*/,
+                          const int bombdistance,
+                          const float /*bombdistancefloat*/,
+                          const bool /*DamageSource*/,
+                          const int bombmod)
 {
-	if (!serverside || !(thing->flags & (MF_SHOOTABLE | MF_BOUNCES)))
+	if (!serverside || !(thing.flags & (MF_SHOOTABLE | MF_BOUNCES)))
 		return true;
 
 	// MBF21
-	if (P_SplashImmune(thing, bombspot))
+	if (P_SplashImmune(thing, *bombspot))
 		return true;
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
-		(thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS)) &&
+	if (((thing.type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
+		(thing.flags3 & MF3_NORADIUSDMG || thing.flags2 & MF2_BOSS)) &&
 		!(bombspot->flags3 & MF3_FORCERADIUSDMG))
 		return true;
 
-	fixed_t dx = abs(thing->x - bombspot->x);
-	fixed_t dy = abs(thing->y - bombspot->y);
-	fixed_t dist = (MAX(dx, dy) - thing->radius) >> FRACBITS;
-
-	if (dist < 0)
-		dist = 0;
+	const fixed_t dx = abs(thing.x - bombspot->x);
+	const fixed_t dy = abs(thing.y - bombspot->y);
+	const fixed_t dist = std::max((std::max(dx, dy) - thing.radius) >> FRACBITS, 0);
 
 	if (dist >= bombdistance)
 	{
@@ -3099,7 +3142,7 @@ static bool PIT_DoomRadiusAttack(AActor* thing)
 		return true; // out of range
 	}
 
-	if (P_CheckSight(thing, bombspot))
+	if (P_CheckSight(&thing, bombspot))
 	{
 		int damage;
 
@@ -3109,7 +3152,7 @@ static bool PIT_DoomRadiusAttack(AActor* thing)
 			damage = (bombdamage * (bombdistance - dist) / bombdistance) + 1;
 
 		// must be in direct path
-		P_DamageMobj(thing, bombspot, bombsource, damage * sv_splashfactor, bombmod);
+		P_DamageMobj(&thing, bombspot, bombsource, damage * sv_splashfactor, bombmod);
 	}
 
 	return true;
@@ -3122,19 +3165,27 @@ static bool PIT_DoomRadiusAttack(AActor* thing)
 // "bombsource" is the creature that caused the explosion at "bombspot".
 // [RH] Now it knows about vertical distances and can thrust things vertically, too.
 //
-static bool PIT_ZDoomRadiusAttack(AActor* thing)
+bool PIT_ZDoomRadiusAttack(AActor& thing,
+                           AActor* bombsource,
+                           const AActor* bombspot,
+                           const int bombdamage,
+                           const float bombdamagefloat,
+                           const int bombdistance,
+                           const float bombdistancefloat,
+                           const bool DamageSource,
+                           const int bombmod)
 {
-	if (!serverside || !(thing->flags & (MF_SHOOTABLE | MF_BOUNCES)))
+	if (!serverside || !(thing.flags & (MF_SHOOTABLE | MF_BOUNCES)))
 		return true;
 
 	// MBF21
-	if (P_SplashImmune(thing, bombspot))
+	if (P_SplashImmune(thing, *bombspot))
 		return true;
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (((thing->type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
-	   (thing->flags3 & MF3_NORADIUSDMG || thing->flags2 & MF2_BOSS)) &&
+	if (((thing.type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
+	   (thing.flags3 & MF3_NORADIUSDMG || thing.flags2 & MF2_BOSS)) &&
 	   !(bombspot->flags3 & MF3_FORCERADIUSDMG))
 		return true;
 
@@ -3142,27 +3193,27 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 	// them far too "active." BossBrains also use the old code
 	// because some user levels require they have a height of 16,
 	// which can make them near impossible to hit with the new code.
-	if (bombspot->type == MT_BARREL || thing->type == MT_BARREL ||
-		thing->type == MT_BOSSBRAIN)
+	if (bombspot->type == MT_BARREL || thing.type == MT_BARREL ||
+		thing.type == MT_BOSSBRAIN)
 	{
-		return PIT_DoomRadiusAttack(thing);
+		return PIT_DoomRadiusAttack(thing, bombsource, bombspot, bombdamage, bombdamagefloat, bombdistance, bombdistancefloat, DamageSource, bombmod);
 	}
 
 	// [RH] New code. The bounding box only covers the
 	// height of the thing and not the height of the map.
-	fixed_t dx = abs(thing->x - bombspot->x);
-	fixed_t dy = abs(thing->y - bombspot->y);
-	float len = float(MAX(dx, dy));
-	float boxradius = float(thing->radius);
+	const fixed_t dx = abs(thing.x - bombspot->x);
+	const fixed_t dy = abs(thing.y - bombspot->y);
+	auto len = float(std::max(dx, dy));
+	const auto boxradius = float(thing.radius);
 
-	if (bombspot->z < thing->z || bombspot->z >= thing->z + thing->height)
+	if (bombspot->z < thing.z || bombspot->z >= thing.z + thing.height)
 	{
 		float dz;
 
-		if (bombspot->z > thing->z)
-			dz = float(thing->z + thing->height - bombspot->z);
+		if (bombspot->z > thing.z)
+			dz = float(thing.z + thing.height - bombspot->z);
 		else
-			dz = float(thing->z - bombspot->z);
+			dz = float(thing.z - bombspot->z);
 
 		if (len <= boxradius)
 			len = dz;
@@ -3174,9 +3225,7 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 	}
 	else
 	{
-		len -= boxradius;
-		if (len < 0.0f)
-			len = 0.0f;
+		len -= std::max(boxradius, 0.0f);
 	}
 
 	float points;
@@ -3185,32 +3234,32 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 	else
 		points = (bombdamage * (bombdistance - (len / FRACUNIT)) / bombdistance) + 1.0f;
 
-	if (thing == bombsource)
+	if (&thing == bombsource)
 		points *= sv_splashfactor;
 
-	if (points > 0.0f && P_CheckSight(thing, bombspot))
+	if (points > 0.0f && P_CheckSight(&thing, bombspot))
 	{
 		// OK to damage; target is in direct path
 
-		fixed_t momx = thing->momx;
-		fixed_t momy = thing->momy;
-		int damage = (int)points;
+		const fixed_t momx = thing.momx;
+		const fixed_t momy = thing.momy;
+		const int damage = (int)points;
 
-		P_DamageMobj(thing, bombspot, bombsource, damage, bombmod);
+		P_DamageMobj(&thing, bombspot, bombsource, damage, bombmod);
 
-		float thrust = points * 0.5f / thing->info->mass;
-		if (bombsource == thing)
+		float thrust = points * 0.5f / thing.info->mass;
+		if (bombsource == &thing)
 			thrust *= selfthrustscale;
 
-		float momz = (float)(thing->z + (thing->height>>1) - bombspot->z) * thrust;
-		if (bombsource != thing)
+		float momz = (float)(thing.z + (thing.height>>1) - bombspot->z) * thrust;
+		if (bombsource != &thing)
 			momz *= 0.5f;
 		else
 			momz *= 0.8f;
 
-		thing->momx = momx + (fixed_t)((thing->x - bombspot->x) * thrust);
-		thing->momy = momy + (fixed_t)((thing->y - bombspot->y) * thrust);
-		thing->momz += (fixed_t)momz;
+		thing.momx = momx + (fixed_t)((thing.x - bombspot->x) * thrust);
+		thing.momy = momy + (fixed_t)((thing.y - bombspot->y) * thrust);
+		thing.momz += (fixed_t)momz;
 	}
 	else
 	{
@@ -3225,6 +3274,8 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 	return true;
 }
 
+} // namespace
+
 //
 // P_RadiusAttack
 // Source is the creature that caused the explosion at spot.
@@ -3232,28 +3283,23 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bool hurtSource, int mod)
 {
-	fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
-	int yh = MIN<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, bmapheight - 1);
-	int yl = MAX<int>((spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT, 0);
-	int xh = MIN<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, bmapwidth - 1);
-	int xl = MAX<int>((spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT, 0);
-	bombspot = spot;
-	bombsource = source;
-	bombdamage = damage;
-	bombdamagefloat = (float)damage;
-	bombdistance = distance;
-	bombdistancefloat = 1.f / (float)distance;
-	DamageSource = hurtSource;
-	bombmod = mod;
+	const fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
+	const int yh = std::min<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, bmapheight - 1);
+	const int yl = std::max<int>((spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT, 0);
+	const int xh = std::min<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, bmapwidth - 1);
+	const int xl = std::max<int>((spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT, 0);
+	AActor* bombsource = source;
+	const auto bombdamagefloat = (float)damage;
+	const float bombdistancefloat = 1.f / (float)distance;
 
 	// [Blair] Prevent crash from barrels hit by crushers
-	if (!demoplayback && bombsource == NULL && bombspot != NULL)
+	if (!demoplayback && bombsource == nullptr && spot != nullptr)
 	{
-		bombsource = bombspot;
+		bombsource = spot;
 	}
 
 	// decide which radius attack function to use
-	bool (*pAttackFunc)(AActor*) = co_zdoomphys ?
+	const auto pAttackFunc = co_zdoomphys ?
 		PIT_ZDoomRadiusAttack : PIT_DoomRadiusAttack;
 
 	if (co_blockmapfix)
@@ -3279,14 +3325,14 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 
 		for (const auto& actor : actorset)
 		{
-			pAttackFunc(actor);
+			pAttackFunc(*actor, bombsource, spot, damage, bombdamagefloat, distance, bombdistancefloat, hurtSource, mod);
 		}
 	}
 	else
 	{
 		for (int y=yl ; y<=yh ; y++)
 			for (int x=xl ; x<=xh ; x++)
-				P_BlockThingsIterator (x, y, pAttackFunc);
+				P_BlockThingsIterator (x, y, pAttackFunc, nullptr, bombsource, spot, damage, bombdamagefloat, distance, bombdistancefloat, hurtSource, mod);
 	}
 }
 
@@ -3305,34 +3351,32 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 //  the way it was and call P_ChangeSector again
 //  to undo the changes.
 //
-int		crushchange;
-bool 	nofit;
 
 //
 // PIT_ChangeSector
 //
-bool PIT_ChangeSector (AActor *thing)
+bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 {
-	if (P_ThingHeightClip (thing))
+	if (P_ThingHeightClip (&thing))
 	{
 		// keep checking
 		return true;
 	}
 
 	// GhostlyDeath -- if it's a spectator, keep checking
-	if (thing->player && thing->player->spectator)
+	if (thing.player && thing.player->spectator)
 		return true;
 
 	// crunch bodies to giblets
-	if (thing->health <= 0)
+	if (thing.health <= 0)
 	{
-		P_SetMobjState (thing, S_GIBS);
-		thing->effects = 0;
+		P_SetMobjState (&thing, S_GIBS);
+		thing.effects = 0;
 
 		// [Nes] - Classic demo compatability: Ghost monster bug.
 		if ((demoplayback)) {
-			thing->height = 0;
-			thing->radius = 0;
+			thing.height = 0;
+			thing.radius = 0;
 		}
 
 		// keep checking
@@ -3340,22 +3384,22 @@ bool PIT_ChangeSector (AActor *thing)
 	}
 
 	// crunch dropped items
-	if (thing->flags & MF_DROPPED)
+	if (thing.flags & MF_DROPPED)
 	{
-		thing->Destroy ();
+		thing.Destroy ();
 
 		// keep checking
 		return true;
 	}
 
 	/* killough 11/98: kill touchy things immediately */
-	if (thing->flags & MF_TOUCHY && (thing->oflags & MFO_ARMED || sentient(thing)))
+	if (thing.flags & MF_TOUCHY && (thing.oflags & MFO_ARMED || sentient(&thing)))
 	{
-		P_DamageMobj(thing, NULL, NULL, thing->health); // kill object
+		P_DamageMobj(&thing, nullptr, nullptr, thing.health); // kill object
 		return true;                                    // keep checking
 	}
 
-	if (! (thing->flags & MF_SHOOTABLE) )
+	if (! (thing.flags & MF_SHOOTABLE) )
 	{
 		// assume it is bloody gibs or something
 		return true;
@@ -3365,14 +3409,14 @@ bool PIT_ChangeSector (AActor *thing)
 
 	if (crushchange > 0 && !(level.time&3) )
 	{
-		P_DamageMobj(thing, NULL, NULL, crushchange, MOD_CRUSH);
+		P_DamageMobj(&thing, nullptr, nullptr, crushchange, MOD_CRUSH);
 
 		// spray blood in a random direction
-		if (!(thing->flags&MF_NOBLOOD))
+		if (!(thing.flags&MF_NOBLOOD))
 		{
-			AActor *mo = new AActor (thing->x,
-									 thing->y,
-									 thing->z + thing->height/2, MT_BLOOD);
+			auto *mo = new AActor (thing.x,
+									 thing.y,
+									 thing.z + (thing.height/2), MT_BLOOD);
 
 			mo->momx = P_RandomDiff (mo) << 12;
 			mo->momy = P_RandomDiff (mo) << 12;
@@ -3395,8 +3439,7 @@ bool P_ChangeSector (sector_t *sector, int crunch)
 	if (!sector)
 		return true;
 
-	nofit = false;
-	crushchange = crunch;
+	bool nofit = false;
 
 	// [ML] co_boomsectortouch now part of co_boomphys
 	if (co_boomphys)
@@ -3422,19 +3465,17 @@ bool P_ChangeSector (sector_t *sector, int crunch)
 				{
 					n->visited	= true; 						// mark thing as processed
 					if (n->m_thing && !(n->m_thing->flags & MF_NOBLOCKMAP))	// [Blair] Add nullcheck here
-						PIT_ChangeSector(n->m_thing); 						// for clients that aren't updated yet.
+						PIT_ChangeSector(*n->m_thing, crunch, nofit); 						// for clients that aren't updated yet.
 					break;										// exit and start over
 				}
 		while (n);	// repeat from scratch until all things left are marked valid
 	}
 	else
 	{
-		int x, y;
-
 		// re-check heights for all things near the moving sector
-		for (x=sector->blockbox[BOXLEFT] ; x<= sector->blockbox[BOXRIGHT] ; x++)
-			for (y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
-				P_BlockThingsIterator (x, y, PIT_ChangeSector);
+		for (int x=sector->blockbox[BOXLEFT] ; x<= sector->blockbox[BOXRIGHT] ; x++)
+			for (int y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
+				P_BlockThingsIterator (x, y, PIT_ChangeSector, nullptr, crunch, nofit);
 
 	}
 
@@ -3585,15 +3626,15 @@ void P_DelSeclist (msecnode_t *node)
 // at this location, so don't bother with checking impassable or
 // blocking lines.
 
-bool PIT_GetSectors (line_t *ld)
+bool PIT_GetSectors (const line_t& ld)
 {
-	if (tmbbox[BOXRIGHT]	  <= ld->bbox[BOXLEFT]	 ||
-			tmbbox[BOXLEFT]   >= ld->bbox[BOXRIGHT]  ||
-			tmbbox[BOXTOP]	  <= ld->bbox[BOXBOTTOM] ||
-			tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
+	if (tmbbox[BOXRIGHT]	  <= ld.bbox[BOXLEFT]	 ||
+			tmbbox[BOXLEFT]   >= ld.bbox[BOXRIGHT]  ||
+			tmbbox[BOXTOP]	  <= ld.bbox[BOXBOTTOM] ||
+			tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP])
 		return true;
 
-	if (P_BoxOnLineSide (tmbbox, ld) != -1)
+	if (P_BoxOnLineSide (tmbbox, &ld) != -1)
 		return true;
 
 	// This line crosses through the object.
@@ -3603,7 +3644,7 @@ bool PIT_GetSectors (line_t *ld)
 	// allowed to move to this position, then the sector_list
 	// will be attached to the Thing's AActor at touching_sectorlist.
 
-	sector_list = P_AddSecnode (ld->frontsector,tmthing,sector_list);
+	sector_list = P_AddSecnode (ld.frontsector,tmthing,sector_list);
 
 	// Don't assume all lines are 2-sided, since some Things
 	// like MT_TFOG are allowed regardless of whether their radius takes
@@ -3612,8 +3653,8 @@ bool PIT_GetSectors (line_t *ld)
 	// killough 3/27/98, 4/4/98:
 	// Use sidedefs instead of 2s flag to determine two-sidedness.
 
-	if (ld->backsector)
-		sector_list = P_AddSecnode(ld->backsector, tmthing, sector_list);
+	if (ld.backsector)
+		sector_list = P_AddSecnode(ld.backsector, tmthing, sector_list);
 
 	return true;
 }

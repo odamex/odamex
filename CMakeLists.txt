@@ -16,7 +16,7 @@
 
 cmake_minimum_required(VERSION 3.19)
 
-project(Odamex VERSION 12.2.1)
+project(Odamex VERSION 12.3.0)
 
 include(CMakeDependentOption)
 
@@ -76,7 +76,7 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 set(PROJECT_COPYRIGHT "2006-2026")
-set(PROJECT_RC_VERSION "12,2,1,0")
+set(PROJECT_RC_VERSION "12,3,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Include early required commands for specific systems
@@ -176,6 +176,9 @@ git_branch(HEAD GIT_BRANCH)
 string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
+# Cvar documentation
+include(OdamexCvarDoc)
+
 # Libraries
 add_subdirectory(libraries)
 
@@ -209,6 +212,9 @@ endif()
 if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_LAUNCHER)
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
+
+# The "cvardocs" target refreshes the committed documentation on demand.
+odamex_cvardoc_add_targets()
 
 # WAD building
 add_subdirectory(wad)

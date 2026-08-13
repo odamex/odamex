@@ -993,7 +993,7 @@ void C_InitConCharsFont()
 //
 // C_ShutdownConCharsFont
 //
-void STACK_ARGS C_ShutdownConCharsFont()
+void C_ShutdownConCharsFont()
 {
 	delete [] ConChars;
 	ConChars = NULL;
@@ -1051,7 +1051,7 @@ void C_InitConsoleBackground()
 //
 // Frees the background_surface
 //
-void STACK_ARGS C_ShutdownConsoleBackground()
+void C_ShutdownConsoleBackground()
 {
 	I_FreeSurface(background_surface);
 }
@@ -1060,7 +1060,7 @@ void STACK_ARGS C_ShutdownConsoleBackground()
 //
 // C_ShutdownConsole
 //
-void STACK_ARGS C_ShutdownConsole()
+void C_ShutdownConsole()
 {
 	Lines.clear();
 	History.clear();

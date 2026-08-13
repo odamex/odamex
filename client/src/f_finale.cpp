@@ -226,7 +226,7 @@ void F_StartFinale(finale_options_t& options)
 //
 // Frees any memory allocated specifically for the finale
 //
-void STACK_ARGS F_ShutdownFinale()
+void F_ShutdownFinale()
 {
 	I_FreeSurface(cast_surface);
 	I_FreeSurface(finale_surface);
