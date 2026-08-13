@@ -79,6 +79,7 @@
 
 #include <bitset>
 #include <chrono>
+#include <memory_resource>
 #include <ranges>
 #include <regex>
 #include <set>

@@ -21,8 +21,6 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
-#include <cassert>
-
 #include "i_net.h"
 
 // This is sized with a theoretical max tolerance assuming a client with about

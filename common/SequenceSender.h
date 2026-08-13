@@ -22,6 +22,7 @@
 #pragma once
 
 #include <functional>
+#include <memory_resource>
 #include <unordered_map>
 #include <vector>
 
