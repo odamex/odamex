@@ -105,47 +105,52 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		const int  realSequence     = header.reliableSize ? header.sequence : -header.sequence;
 		const bool isHighPriority   = header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY;
 		const bool isNormalPriority = not isHighPriority;
-		//const bool isTooOld         = isHighPriority   and realSequence >= 0 and realSequence < m_currentReceivedPacketSequenceNumber;
-		const bool isTooNew         = isNormalPriority and realSequence > m_currentReceivedPacketSequenceNumber;
+		const bool isHighTooOld     = isHighPriority   and realSequence >= 0 and realSequence < m_currentReceivedPacketSequenceNumber;
+		const bool isNormalTooNew   = isNormalPriority and realSequence > m_currentReceivedPacketSequenceNumber;
+
+		if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
+		{
+			m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
+		}
 
 		// No matter what, we want to handle any acks that are in the packet immediately, regardless
 		// of whether they're older or newer than expected.
-        /*
-		const size_t startOfBestEffort = io_rawBuf.TellRead();
-		while (io_rawBuf.BytesLeftToRead())
-		{
-			const msg_t msgFormatID = msg_t(io_rawBuf.ReadUnVarint());
-			if (msgFormatID == msg_ack)
-			{
-                const int sequence = io_rawBuf.ReadLong();
-                DPrintFmt("fast ack for {}, isTooOld {}, isTooNew {}, received on {}, currentReceived {}\n",
-                        sequence,
-                        isTooOld,
-                        isTooNew,
-                        realSequence,
-                        m_currentReceivedPacketSequenceNumber);
-				Acknowledge(sequence);
-			}
-			else
-			{
-				const unsigned int msgSize = io_rawBuf.ReadUnVarint();
-				io_rawBuf.SeekRead(msgSize, buf_t::BT_CURRENT);
-			}
-		}
-		io_rawBuf.SeekRead(startOfBestEffort, buf_t::BT_START);
-        */
 
-		if (isTooNew or header.reliableSize)
+		if (isHighTooOld or isNormalTooNew)
 		{
+			const size_t startOfBestEffort = io_rawBuf.TellRead();
+			while (io_rawBuf.BytesLeftToRead())
+			{
+				const msg_t msgFormatID = msg_t(io_rawBuf.ReadUnVarint());
+				if (msgFormatID == msg_ack)
+				{
+					const int sequence = io_rawBuf.ReadLong();
+					m_immediateReceiveBuffer.WriteUnVarint(msgFormatID);
+					m_immediateReceiveBuffer.WriteLong(sequence);
+				}
+				else
+				{
+					const unsigned int msgSize = io_rawBuf.ReadUnVarint();
+					io_rawBuf.SeekRead(msgSize, buf_t::BT_CURRENT);
+				}
+			}
+			io_rawBuf.SeekRead(startOfBestEffort, buf_t::BT_START);
+		}
+
+		if (isNormalTooNew)
+		{
+			// Anything else in this "too new" best-effort payload will be handled after its reliable packet comes in.
+			// FYI - It doesn't hurt to have a duplicate ack handled whenever the owning packet is considered "current".
+
 			m_receiver.RegisterBestEffortPacket(realSequence, bestEffortSize, io_rawBuf);
 		}
-		else //if (not isTooOld)
+		else if (not isHighTooOld)
 		{
-			if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
-			{
-				m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
-			}
 			m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
+		}
+
+		if (m_immediateReceiveBuffer.size())
+		{
 			m_immediateReceiveSequenceNumber = realSequence;
 			return MessageResultEnum::ACCEPT;
 		}
