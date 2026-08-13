@@ -1734,7 +1734,7 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 		                       hud::X_RIGHT, hud::Y_TOP,
 		                       1, limit, i, true);
 
-		int count = MAX(hud::CountTeamPlayers(i), 4);
+		int count = std::max(hud::CountTeamPlayers(i), 4);
 		yOffset += 14 + count * 8;
 	}
 

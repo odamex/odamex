@@ -70,6 +70,7 @@ END_DISABLE_WARNING_GNU
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
+#include "g_level.h"
 #include "g_musinfo.h"
 
 #include "w_ident.h"
@@ -329,6 +330,8 @@ void D_DoomMain()
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
+
+	D_AddStartupWadFiles(newwadfiles, newpatchfiles);
 
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 

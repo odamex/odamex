@@ -249,8 +249,8 @@ void S_ParseSndInfo()
 						os.warning("Unknown ambient type ({})\n", os.getToken());
 					}
 
-					ambient->periodmin = MAX(0, ambient->periodmin);
-					ambient->periodmax = MAX(ambient->periodmin, ambient->periodmax);
+					ambient->periodmin = std::max(0, ambient->periodmin);
+					ambient->periodmax = std::max(ambient->periodmin, ambient->periodmax);
 
 					os.mustScanFloat();
 					ambient->volume = std::clamp(os.getTokenFloat(), 0.0f, 1.0f);

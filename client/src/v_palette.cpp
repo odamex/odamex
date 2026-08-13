@@ -1115,6 +1115,9 @@ void V_DoPaletteEffects()
 
 	player_t* plyr = &displayplayer();
 
+	// these pretty much are just confusing magic numbers
+	// that don't really have easy names to give them
+	// NOLINTBEGIN(readability-magic-numbers)
 	if (primary_surface->getBitsPerPixel() == 8)
 	{
 		int palette_num = 0;
@@ -1125,7 +1128,7 @@ void V_DoPaletteEffects()
 
 		// slowly fade the berzerk out
 		if (plyr->powers[pw_strength])
-			red_count = MAX(red_count, 12.0f - static_cast<float>(plyr->powers[pw_strength] >> 6));
+			red_count = std::max(red_count, 12.0f - static_cast<float>(plyr->powers[pw_strength] >> 6));
 
 		if (red_count > 0.0f)
 		{
@@ -1140,8 +1143,7 @@ void V_DoPaletteEffects()
 
 				palette_num += STARTREDPALS;
 
-				if (palette_num < 0)
-					palette_num = 0;
+				palette_num = std::max(palette_num, 0);
 			}
 		}
 		else if (plyr->bonuscount)
@@ -1188,11 +1190,11 @@ void V_DoPaletteEffects()
 
 			// slowly fade the berzerk out
 			if (plyr->powers[pw_strength])
-				red_amount = MAX(red_amount, 12.0f - float(plyr->powers[pw_strength]) / 64.0f);
+				red_amount = std::max(red_amount, 12.0f - (float(plyr->powers[pw_strength]) / 64.0f));
 
 			if (red_amount > 0.0f)
 			{
-				red_amount = MIN(red_amount, 56.0f);
+				red_amount = std::min(red_amount, 56.0f);
 				float alpha = (red_amount + 8.0f) / 72.0f;
 
 				const float red = IsChexMission(gamemission) ? 0.0f : 1.0f;
@@ -1208,7 +1210,7 @@ void V_DoPaletteEffects()
 			float bonus_amount = static_cast<float>(plyr->bonuscount);
 			if (bonus_amount > 0.0f)
 			{
-				bonus_amount = MIN(bonus_amount, 24.0f);
+				bonus_amount = std::min(bonus_amount, 24.0f);
 				float alpha = (bonus_amount + 8.0f) / 64.0f;
 
 				static constexpr float red = 215.0f / 255.0f;
@@ -1230,6 +1232,7 @@ void V_DoPaletteEffects()
 
 		V_SetBlend(blend);
 	}
+	// NOLINTEND(readability-magic-numbers)
 }
 
 

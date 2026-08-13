@@ -36,14 +36,6 @@
 #define MAXHEALTH		100
 #define VIEWHEIGHT		(41*FRACUNIT)
 
-// mapblocks are used to check movement
-// against lines and things
-#define MAPBLOCKUNITS	128
-#define MAPBLOCKSIZE	(MAPBLOCKUNITS*FRACUNIT)
-#define MAPBLOCKSHIFT	(FRACBITS+7)
-#define MAPBMASK		(MAPBLOCKSIZE-1)
-#define MAPBTOFRAC		(MAPBLOCKSHIFT-FRACBITS)
-
 
 // player radius for movement checking
 #define PLAYERRADIUS	(16*FRACUNIT)
@@ -168,30 +160,35 @@ extern struct brain_s {				// killough 3/26/98: global state of boss brain
 //
 // P_MAPUTL
 //
-typedef struct
+struct divline_t
 {
-	fixed_t 	x;
-	fixed_t 	y;
-	fixed_t 	dx;
-	fixed_t 	dy;
+	fixed_t x;
+	fixed_t y;
+	fixed_t dx;
+	fixed_t dy;
 
-} divline_t;
+	divline_t() = default;
+	explicit divline_t(const line_t& li) :
+		x(li.v1->x), y(li.v1->y),
+		dx(li.dx), dy(li.dy)
+	{}
 
-typedef struct
+	divline_t(fixed_t _x, fixed_t _y, fixed_t _dx, fixed_t _dy) :
+		x(_x), y(_y), dx(_dx), dy(_dy)
+	{}
+};
+
+struct intercept_t
 {
-	fixed_t 	frac;			// along trace line
-	bool 	isaline;
+	fixed_t frac;			// along trace line
+	bool    isaline;
 	union {
 		AActor* thing;
 		line_t* line;
-	}					d;
-} intercept_t;
+	} d;
+};
 
-#define MAXINTERCEPTS	128
-
-extern std::vector<intercept_t> intercepts;
-
-typedef bool (*traverser_t) (intercept_t *in);
+inline std::vector<intercept_t> intercepts;
 
 subsector_t* P_PointInSubsector(fixed_t x, fixed_t y);
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
@@ -207,9 +204,8 @@ AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov);
 
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
-void	P_MakeDivline (const line_t *li, divline_t *dl);
 fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1);
-int 	P_BoxOnLineSide (const fixed_t *tmbox, const line_t *ld);
+int 	P_BoxOnLineSide (const std::span<const fixed_t, 4> tmbox, const line_t *ld);
 
 extern fixed_t			opentop;
 extern fixed_t			openbottom;
@@ -223,15 +219,6 @@ void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=li
 #define PT_EARLYOUT 	4
 
 extern divline_t		trace;
-
-bool
-P_PathTraverse
-( fixed_t		x1,
-  fixed_t		y1,
-  fixed_t		x2,
-  fixed_t		y2,
-  int			flags,
-  bool		(*trav) (intercept_t *));
 
 // [ML] 2/1/10: Break out P_PointToAngle from R_PointToAngle2 (from EE)
 angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y);
@@ -273,8 +260,8 @@ bool    P_CheckSight (const AActor* t1, const AActor* t2);
 void    P_UseLines (player_t& player);
 void    P_ApplyTorque(AActor *mo);
 void    P_CopySector(sector_t *dest, sector_t *src);
-bool    P_ShouldClipPlayer(AActor* projectile, AActor* player);
-bool    P_ShouldClipFriendly(AActor* projectile, AActor* monster);
+bool    P_ShouldClipPlayer(const AActor* projectile, const AActor* player);
+bool    P_ShouldClipFriendly(const AActor* projectile, const AActor* monster);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
 double P_PlaneZ(double x, double y, const plane_t *plane);
@@ -310,7 +297,8 @@ bool	P_ChangeSector (sector_t* sector, int crunch);
 
 extern	AActor*	linetarget; 	// who got hit (or NULL)
 
-fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance);
+fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance,
+                         bool skipunhurtable = true);
 fixed_t P_AutoAimLineAttack(AActor* actor, angle_t& angle, const angle_t spread, const int tracers, fixed_t distance);
 void	P_LineAttack (AActor *t1, angle_t angle, fixed_t distance, fixed_t slope, int damage);
 
@@ -334,17 +322,7 @@ bool	Check_Sides(const AActor *, int, int);					// phares
 //
 extern byte*			rejectmatrix;	// for fast sight rejection
 extern bool				rejectempty;
-extern int*				blockmaplump;	// offsets in blockmap are from here
-extern int*				blockmap;
-extern int				bmapwidth;
-extern int				bmapheight; 	// in mapblocks
-extern fixed_t			bmaporgx;
-extern fixed_t			bmaporgy;		// origin of block map
 extern AActor** 		blocklinks; 	// for thing chains
-inline bool skipblstart; // should the first element of blocklists be skipped
-
-extern std::set<short>	movable_sectors;
-
 
 //
 // P_INTER
@@ -521,7 +499,7 @@ bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest);
 bool P_IsVoodooDoll(const AActor* mo);
 void P_FriendlyEffects();
 void P_FriendlyEffects(AActor* mo);
-bool P_ProjectileImmune(AActor* target, AActor* source);
+bool P_ProjectileImmune(const AActor* target, const AActor* source);
 void P_SetupHelpers();
 void P_ClearHelpers();
 void P_RunHelperTics();
@@ -544,6 +522,7 @@ void P_RunHelperTics();
 // exit with false without checking anything else.
 //
 
+#include "p_blockmap.h"
 
 //
 // P_BlockLinesIterator
@@ -554,21 +533,19 @@ void P_RunHelperTics();
 // to it.
 //
 template <typename F, typename... ARGS>
-// TODO: C++20, uncomment following line
-// requires std::predicate<F, line_t&, ARGS...>
+requires std::predicate<F, line_t&, ARGS...>
 bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 {
-	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
+	if (not blockmap.containsCoordinate(x, y))
 		return true;
 
-	int offset = *(blockmap + (bmapwidth*y + x));
-	const int *list = blockmaplump + offset;
+	std::span<const int> list = blockmap.list(x, y);
 
 	/* [RH] Polyobj stuff from Hexen --> */
 	polyblock_t *polyLink;
 	extern polyblock_t **PolyBlockMap;
 
-	offset = (y * bmapwidth) + x;
+	const int offset = (y * blockmap.width()) + x;
 	if (PolyBlockMap)
 	{
 		polyLink = PolyBlockMap[offset];
@@ -595,19 +572,9 @@ bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 	}
 	/* <-- Polyobj stuff from Hexen */
 
-	// [RH] Get past starting 0 (from BOOM)
-	// denis - not so fast, this breaks doom1.wad 1.9 demo1
-	// [SL] The first entry in each block list appears to have been intended to
-	// be used for a special purpose but instead contains garbage (most often
-	// referencing linedef 0). Using this first entry (as vanilla Doom does) can
-	// cause hitscan weapons to erroneously hit the first linedef entry regardless
-	// of where that linedef is located in relation to the block.
-	if (!demoplayback && skipblstart)
-		++list;
-
-	for (; *list != -1; list++)
+	for (int idx : list)
 	{
-		line_t& ld = lines[*list];
+		line_t& ld = R_GetLines()[idx];
 
 		if (ld.validcount != validcount) {
 			ld.validcount = validcount;
@@ -624,14 +591,13 @@ bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
 // P_BlockThingsIterator
 //
 template <typename F, typename... ARGS>
-// TODO: C++20, uncomment following line
-// requires std::predicate<F, AActor&, ARGS...>
+requires std::predicate<F, AActor&, ARGS...>
 bool P_BlockThingsIterator (int x, int y, F&& func, AActor *actor, ARGS&&... args)
 {
-	if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
+	if (not blockmap.containsCoordinate(x, y))
 		return true;
 
-	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y*bmapwidth)+x]);
+	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y * blockmap.width()) + x]);
 	while (mobj)
  	{
 		if (!std::invoke(std::forward<F>(func), *mobj, std::forward<ARGS>(args)...))

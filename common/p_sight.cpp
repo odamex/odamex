@@ -113,43 +113,32 @@ bool PTR_SightTraverse (intercept_t *in)
 ===================
 */
 
-bool P_SightBlockLinesIterator (int x, int y)
+bool P_SightBlockLinesIterator(int x, int y)
 {
-	int offset;
-	int *list;
-	line_t *ld;
-	int s1, s2;
-	divline_t dl;
-
-	polyblock_t *polyLink;
-	seg_t **segList;
-	int i;
 	extern polyblock_t **PolyBlockMap;
 
-	offset = y*bmapwidth+x;
+	const polyblock_t* polyLink = PolyBlockMap[(y * blockmap.width()) + x];
 
-	polyLink = PolyBlockMap[offset];
-
-	while(polyLink)
+	while (polyLink)
 	{
-		if(polyLink->polyobj)
+		if (polyLink->polyobj)
 		{ // only check non-empty links
-			if(polyLink->polyobj->validcount != validcount)
+			if (polyLink->polyobj->validcount != validcount)
 			{
-				segList = polyLink->polyobj->segs;
-				for(i = 0; i < polyLink->polyobj->numsegs; i++, segList++)
+				const seg_t *const * segList = polyLink->polyobj->segs;
+				for (int i = 0; i < polyLink->polyobj->numsegs; i++, segList++)
 				{
-					ld = (*segList)->linedef;
+					line_t* ld = (*segList)->linedef;
 					if(ld->validcount == validcount)
 					{
 						continue;
 					}
 					ld->validcount = validcount;
-					s1 = P_PointOnDivlineSide (ld->v1->x, ld->v1->y, &trace);
-					s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
+					int s1 = P_PointOnDivlineSide (ld->v1->x, ld->v1->y, &trace);
+					int s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
 					if (s1 == s2)
 						continue;		// line isn't crossed
-					P_MakeDivline (ld, &dl);
+					const divline_t dl{*ld};
 					s1 = P_PointOnDivlineSide (trace.x, trace.y, &dl);
 					s2 = P_PointOnDivlineSide (trace.x+trace.dx, trace.y+trace.dy, &dl);
 					if (s1 == s2)
@@ -160,9 +149,11 @@ bool P_SightBlockLinesIterator (int x, int y)
 						return false;	// stop checking
 
 				// store the line for later intersection testing
-					intercept_t intercept;
-					intercept.d.line = ld;
-					intercept.isaline = true;
+					intercept_t intercept {
+						.frac    = 0_fx,
+						.isaline = true,
+						.d       = { .line = ld },
+					};
 					intercepts.push_back(intercept);
 				}
 				polyLink->polyobj->validcount = validcount;
@@ -171,20 +162,18 @@ bool P_SightBlockLinesIterator (int x, int y)
 		polyLink = polyLink->next;
 	}
 
-	offset = *(blockmap + (bmapwidth*y + x));
-
-	for (list = blockmaplump + offset; *list != -1; list++)
+	for (int idx : blockmap.list(x, y))
 	{
-		ld = &lines[*list];
+		line_t* ld = &lines[idx];
 		if (ld->validcount == validcount)
 			continue;				// line has already been checked
 		ld->validcount = validcount;
 
-		s1 = P_PointOnDivlineSide (ld->v1->x, ld->v1->y, &trace);
-		s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
+		int s1 = P_PointOnDivlineSide (ld->v1->x, ld->v1->y, &trace);
+		int s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
 		if (s1 == s2)
 			continue;				// line isn't crossed
-		P_MakeDivline (ld, &dl);
+		const divline_t dl{*ld};
 		s1 = P_PointOnDivlineSide (trace.x, trace.y, &dl);
 		s2 = P_PointOnDivlineSide (trace.x+trace.dx, trace.y+trace.dy, &dl);
 		if (s1 == s2)
@@ -195,9 +184,11 @@ bool P_SightBlockLinesIterator (int x, int y)
 			return false;	// stop checking
 
 	// store the line for later intersection testing
-       	intercept_t intercept;
-       	intercept.d.line = ld;
-		intercept.isaline = true;
+		intercept_t intercept {
+			.frac    = 0_fx,
+			.isaline = true,
+			.d       = { .line = ld },
+		};
        	intercepts.push_back(intercept);
 	}
 
@@ -212,12 +203,10 @@ bool P_SightBlockLinesIterator (int x, int y)
 ====================
 */
 
-bool P_SightTraverseIntercepts ( void )
+bool P_SightTraverseIntercepts()
 {
 	size_t  count = intercepts.size();
-	fixed_t dist;
 	intercept_t *in = nullptr;
-	divline_t dl;
 //
 // calculate intercept distance
 //
@@ -226,7 +215,7 @@ bool P_SightTraverseIntercepts ( void )
 		if (!intercept.isaline)
 			I_Error("P_SightTraverseIntercepts: non-line intercept\n");
 
-		P_MakeDivline (intercept.d.line, &dl);
+		divline_t dl{*intercept.d.line};
 		intercept.frac = P_InterceptVector (&trace, &dl);
 	}
 
@@ -235,7 +224,9 @@ bool P_SightTraverseIntercepts ( void )
 //
 	while (count--)
 	{
-		dist = limits::MAXFIXED;
+		// clang tidy is just wrong here
+		// NOLINTNEXTLINE(misc-const-correctness)
+		fixed_t dist = limits::MAXFIXED;
 		for (intercept_t& intercept : intercepts)
 			if (intercept.frac < dist)
 			{
@@ -243,7 +234,7 @@ bool P_SightTraverseIntercepts ( void )
 				in = &intercept;
 			}
 
-		if ( !PTR_SightTraverse (in) )
+		if (!PTR_SightTraverse(in))
 			return false;					// don't bother going farther
 
 		in->frac = limits::MAXFIXED;
@@ -274,29 +265,29 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 	validcount++;
 	intercepts.clear();
 
-	if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
+	if ( ((x1-blockmap.originx())&(MAPBLOCKSIZE-1)) == 0)
 		x1 += FRACUNIT;							// don't side exactly on a line
-	if ( ((y1-bmaporgy)&(MAPBLOCKSIZE-1)) == 0)
+	if ( ((y1-blockmap.originy())&(MAPBLOCKSIZE-1)) == 0)
 		y1 += FRACUNIT;							// don't side exactly on a line
 	trace.x = x1;
 	trace.y = y1;
 	trace.dx = x2 - x1;
 	trace.dy = y2 - y1;
 
-	x1 -= bmaporgx;
-	y1 -= bmaporgy;
+	x1 -= blockmap.originx();
+	y1 -= blockmap.originy();
 	xt1 = x1>>MAPBLOCKSHIFT;
 	yt1 = y1>>MAPBLOCKSHIFT;
 
-	x2 -= bmaporgx;
-	y2 -= bmaporgy;
+	x2 -= blockmap.originx();
+	y2 -= blockmap.originy();
 	xt2 = x2>>MAPBLOCKSHIFT;
 	yt2 = y2>>MAPBLOCKSHIFT;
 
 // points should never be out of bounds, but check once instead of
 // each block
-	if (xt1<0 || yt1<0 || xt1>=bmapwidth || yt1>=bmapheight
-	||  xt2<0 || yt2<0 || xt2>=bmapwidth || yt2>=bmapheight)
+	if (!blockmap.containsCoordinate(xt1, yt1) ||
+	    !blockmap.containsCoordinate(xt2, yt2))
 		return false;
 
 	if (xt2 > xt1)
@@ -633,22 +624,6 @@ P_InterceptVector2
 //
 bool P_CrossSubsector (int num)
 {
-    seg_t*		seg;
-    line_t*		line;
-    int			s1;
-    int			s2;
-    int			count;
-    subsector_t*	sub;
-    sector_t*		front;
-    sector_t*		back;
-    fixed_t		opentop;
-    fixed_t		openbottom;
-    divline_t		divl;
-    vertex_t*		v1;
-    vertex_t*		v2;
-    fixed_t		frac;
-    fixed_t		slope;
-
 #ifdef RANGECHECK
     if (num>=numsubsectors)
 		I_Error("P_CrossSubsector: ss {} with numss = {}",
@@ -656,15 +631,15 @@ bool P_CrossSubsector (int num)
 				numsubsectors);
 #endif
 
-    sub = &subsectors[num];
+    const subsector_t* sub = &subsectors[num];
 
     // check lines
-    count = sub->numlines;
-    seg = &segs[sub->firstline];
+    uint32_t count = sub->numlines;
+    const seg_t* seg = &R_GetSegs()[sub->firstline];
 
     for ( ; count ; seg++, count--)
     {
-		line = seg->linedef;
+		line_t* line = seg->linedef;
 
 		// allready checked other side?
 		if (line->validcount == validcount)
@@ -672,15 +647,16 @@ bool P_CrossSubsector (int num)
 
 		line->validcount = validcount;
 
-		v1 = line->v1;
-		v2 = line->v2;
-		s1 = P_DivlineSide (v1->x,v1->y, &strace);
-		s2 = P_DivlineSide (v2->x, v2->y, &strace);
+		const vertex_t* v1 = line->v1;
+		const vertex_t* v2 = line->v2;
+		int s1 = P_DivlineSide (v1->x,v1->y, &strace);
+		int s2 = P_DivlineSide (v2->x, v2->y, &strace);
 
 		// line isn't crossed?
 		if (s1 == s2)
 			continue;
 
+		divline_t divl;
 		divl.x = v1->x;
 		divl.y = v1->y;
 		divl.dx = v2->x - v1->x;
@@ -698,35 +674,29 @@ bool P_CrossSubsector (int num)
 			return false;
 
 		// crosses a two sided line
-		front = seg->frontsector;
-		back = seg->backsector;
+		const sector_t* front = seg->frontsector;
+		const sector_t* back = seg->backsector;
 
-		frac = P_InterceptVector2 (&strace, &divl);
+		const fixed_t frac = P_InterceptVector2 (&strace, &divl);
 
 		// no wall to block sight with?
-		fixed_t crossx = divl.x + FixedMul(frac, divl.dx);
-		fixed_t crossy = divl.y + FixedMul(frac, divl.dy);
+		const fixed_t crossx = divl.x + FixedMul(frac, divl.dx);
+		const fixed_t crossy = divl.y + FixedMul(frac, divl.dy);
 
-		fixed_t ff = P_FloorHeight(crossx, crossy, front);
-		fixed_t fc = P_CeilingHeight(crossx, crossy, front);
-		fixed_t bf = P_FloorHeight(crossx, crossy, back);
-		fixed_t bc = P_CeilingHeight(crossx, crossy, back);
+		const fixed_t ff = P_FloorHeight(crossx, crossy, front);
+		const fixed_t fc = P_CeilingHeight(crossx, crossy, front);
+		const fixed_t bf = P_FloorHeight(crossx, crossy, back);
+		const fixed_t bc = P_CeilingHeight(crossx, crossy, back);
 
 		if (ff == bf && fc == bc)
 			continue;
 
 		// possible occluder
 		// because of ceiling height differences
-		if (fc < bc)
-			opentop = fc;
-		else
-			opentop = bc;
+		const fixed_t opentop = fc < bc ? fc : bc;
 
 		// because of ceiling height differences
-		if (ff > bf)
-			openbottom = ff;
-		else
-			openbottom = bf;
+		const fixed_t openbottom = ff > bf ? ff : bf;
 
 		// quick test for totally closed doors
 		if (openbottom >= opentop)
@@ -734,16 +704,14 @@ bool P_CrossSubsector (int num)
 
 		if (ff != bf)
 		{
-			slope = FixedDiv (openbottom - sightzstart , frac);
-			if (slope > bottomslope)
-				bottomslope = slope;
+			const fixed_t slope = FixedDiv (openbottom - sightzstart , frac);
+			bottomslope = std::max(slope, bottomslope);
 		}
 
 		if (fc != bc)
 		{
-			slope = FixedDiv (opentop - sightzstart , frac);
-			if (slope < topslope)
-				topslope = slope;
+			const fixed_t slope = FixedDiv (opentop - sightzstart , frac);
+			topslope = std::min(slope, topslope);
 		}
 
 		if (topslope <= bottomslope)

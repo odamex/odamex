@@ -516,7 +516,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	{
 		msg.set_target_netid(mo->target ? mo->target->netid : 0);
 	}
-	else if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
+	else if (mo->flags & (MF_AMBUSH | MF_DROPPED | MF_FRIEND))
 	{
 		spawnFlags |= SVC_SM_FLAGS;
 		cur->set_flags(mo->flags);
@@ -526,6 +526,15 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	{
 		spawnFlags |= SVC_SM_FLAGS2;
 		cur->set_flags2(mo->flags2);
+	}
+
+	// Who a friendly belongs to decides who it gets along with, and the client
+	// has to agree with us about that or it clips things we let through.
+	if (mo->flags & MF_FRIEND)
+	{
+		spawnFlags |= SVC_SM_FRIEND;
+		cur->set_friend_playerid(mo->friend_playerid);
+		cur->set_friend_teamid(mo->friend_teamid);
 	}
 
 	if (mo->oflags)
@@ -846,6 +855,10 @@ odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corps
 	cpsmom->set_x(corpse->momx);
 	cpsmom->set_y(corpse->momy);
 	cpsmom->set_z(corpse->momz);
+
+	cps->set_flags(corpse->flags);
+	cps->set_friend_playerid(corpse->friend_playerid);
+	cps->set_friend_teamid(corpse->friend_teamid);
 
 	msg.set_source_netid(source ? source->netid : 0);
 

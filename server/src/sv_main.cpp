@@ -26,7 +26,6 @@
 
 #include "win32inc.h"
 #ifdef _WIN32
-#   define WIN32_LEAN_AND_MEAN
 #   include <winsock2.h>
 #   include <time.h>
 #endif
@@ -1834,27 +1833,25 @@ void SV_SendGametic(client_t& client)
 
 void SV_LineStateUpdate(client_t *cl)
 {
-	for (int lineNum = 0; lineNum < numlines; lineNum++)
+	for (const auto& line : R_GetLines())
 	{
-		line_t* line = &lines[lineNum];
-
-		if (line->PropertiesChanged)
+		if (line.PropertiesChanged)
 		{
-			MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_LineUpdate(*line));
+			MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_LineUpdate(line));
 		}
 
-		if (!line->SidedefChanged)
+		if (!line.SidedefChanged)
 			continue;
 
 		for (int sideNum = 0; sideNum < 2; sideNum++)
 		{
-			if (line->sidenum[sideNum] != R_NOSIDE)
+			if (line.sidenum[sideNum] != R_NOSIDE)
 			{
-				side_t* currentSideDef = sides + line->sidenum[sideNum];
+				side_t* currentSideDef = sides + line.sidenum[sideNum];
 				if (!currentSideDef->SidedefChanges)
 					continue;
 
-				MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_LineSideUpdate(*line, sideNum));
+				MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_LineSideUpdate(line, sideNum));
 			}
 		}
 	}

@@ -72,6 +72,27 @@ void R_CacheSprite(const spritedef_t *sprite)
 	}
 }
 
+namespace
+{
+
+constexpr size_t SPR_FRAME_CHAR = 4;
+constexpr size_t SPR_ROTATION_CHAR = 5;
+constexpr size_t SPR_FLIPFRAME_CHAR = 6;
+constexpr size_t SPR_FLIPROTATION_CHAR = 7;
+
+//
+// NameToInt
+//
+// Packs the four character sprite name into an int so names can be compared in
+// one go.
+//
+int NameToInt(const char* name)
+{
+	int packed = 0;
+	memcpy(&packed, name, sizeof(packed));
+	return packed;
+}
+
 //
 // R_InstallSpriteLump
 // Local function for R_InitSprites.
@@ -79,7 +100,11 @@ void R_CacheSprite(const spritedef_t *sprite)
 // [RH] Removed checks for coexistance of rotation 0 with other
 //		rotations and made it look more like BOOM's version.
 //
-static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool flipped)
+// Returns false if the lump name does not decode to a usable frame and
+// rotation. Only tolerant callers see that, it is otherwise fatal.
+//
+bool R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool flipped,
+                         bool tolerant)
 {
 	unsigned rotation;
 
@@ -89,7 +114,12 @@ static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool fli
 		rotation = (rot >= 17) ? rot - 7 : 17;
 
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 16)
-		I_FatalError("R_InstallSpriteLump: Bad frame characters in lump {}: {}", lump, W_GetOLumpName(lump));
+	{
+		if (!tolerant)
+			I_FatalError("R_InstallSpriteLump: Bad frame characters in lump {}: {}", lump, W_GetOLumpName(lump));
+
+		return false;
+	}
 
 	if (static_cast<int>(frame) > maxframe)
 		maxframe = frame;
@@ -110,7 +140,7 @@ static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool fli
 			}
 		}
 
-		return;
+		return true;
 	}
 
 	rotation = (rotation <= 8 ? (rotation - 1) * 2 : (rotation - 9) * 2 + 1);
@@ -123,11 +153,78 @@ static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool fli
 		sprtemp[frame].rotate = true;
 		sprtemp[frame].width[rotation] = SPRITE_NEEDS_INFO;
 	}
+
+	return true;
+}
+
+
+enum spritecheck_t
+{
+	SPRITE_COMPLETE,
+	SPRITE_NO_PATCHES,
+	SPRITE_MISSING_ROTATIONS
+};
+
+//
+// R_CheckSpriteFrames
+//
+// Applies the frame completeness rules to the first numframes entries of
+// sprtemp, filling in mirrored rotations as it goes.
+//
+// When strict is set, a non-rotating frame that never had a lump installed is
+// reported too. R_InstallSprite lets those thru -- its only an issue when
+// displaying the sprite -- but for judging an unofficial IWAD means every
+// sprite needs one.
+//
+// Returns SPRITE_COMPLETE if every frame is usable, otherwise it will return
+// the failure reason.
+//
+spritecheck_t R_CheckSpriteFrames(int numframes, bool strict, int& badframe)
+{
+	for (int frame = 0; frame < numframes; frame++)
+	{
+		badframe = frame;
+
+		if (!sprtemp[frame].rotate)
+		{
+			// only the first rotation is needed
+			if (strict && sprtemp[frame].lump[0] == -1)
+				return SPRITE_NO_PATCHES;
+
+			continue;
+		}
+
+		// must have all 16 frames
+		for (int rotation = 0; rotation < 16; rotation += 2)
+		{
+			if (sprtemp[frame].lump[rotation + 1] == -1)
+			{
+				sprtemp[frame].lump[rotation + 1] = sprtemp[frame].lump[rotation];
+				sprtemp[frame].flip[rotation + 1] = sprtemp[frame].flip[rotation];
+				sprtemp[frame].width[rotation + 1] = SPRITE_NEEDS_INFO;
+			}
+
+			if (sprtemp[frame].lump[rotation] == -1)
+			{
+				sprtemp[frame].lump[rotation] = sprtemp[frame].lump[rotation + 1];
+				sprtemp[frame].flip[rotation] = sprtemp[frame].flip[rotation + 1];
+				sprtemp[frame].width[rotation] = SPRITE_NEEDS_INFO;
+			}
+		}
+
+		for (const int rotationlump : sprtemp[frame].lump)
+		{
+			if (rotationlump == -1)
+				return SPRITE_MISSING_ROTATIONS;
+		}
+	}
+
+	return SPRITE_COMPLETE;
 }
 
 
 // [RH] Seperated out of R_InitSpriteDefs()
-static void R_InstallSprite(const char *name, int32_t num)
+void R_InstallSprite(const char *name, int32_t num)
 {
 	if (maxframe == -1)
 	{
@@ -141,50 +238,21 @@ static void R_InstallSprite(const char *name, int32_t num)
 
 	maxframe++;
 
-	for (int frame = 0 ; frame < maxframe ; frame++)
+	int badframe = 0;
+	switch (R_CheckSpriteFrames(maxframe, false, badframe))
 	{
-		switch (static_cast<int>(sprtemp[frame].rotate))
-		{
-		  case -1:
-			// no rotations were found for that frame at all
-			I_FatalError ("R_InstallSprite: No patches found for {} frame {:c}", sprname, frame+'A');
-			break;
+	  case SPRITE_NO_PATCHES:
+		// no rotations were found for that frame at all
+		I_FatalError ("R_InstallSprite: No patches found for {} frame {:c}", sprname, badframe+'A');
+		break;
 
-		  case 0:
-			// only the first rotation is needed
-			break;
+	  case SPRITE_MISSING_ROTATIONS:
+		I_FatalError("R_InstallSprite: Sprite {} frame {:c} is missing rotations",
+			sprname, badframe + 'A');
+		break;
 
-		  case 1:
-			// must have all 16 frames
-			{
-			for (int rotation = 0; rotation < 16; rotation += 2)
-			{
-				if (sprtemp[frame].lump[rotation + 1] == -1)
-				{
-					sprtemp[frame].lump[rotation + 1] = sprtemp[frame].lump[rotation];
-					sprtemp[frame].flip[rotation + 1] = sprtemp[frame].flip[rotation];
-					sprtemp[frame].width[rotation + 1] = SPRITE_NEEDS_INFO;
-				}
-
-				if (sprtemp[frame].lump[rotation] == -1)
-				{
-					sprtemp[frame].lump[rotation] = sprtemp[frame].lump[rotation + 1];
-					sprtemp[frame].flip[rotation] = sprtemp[frame].flip[rotation + 1];
-					sprtemp[frame].width[rotation] = SPRITE_NEEDS_INFO;
-				}
-			}
-
-		  	for (int rotation = 0; rotation < 16; ++rotation)
-		  	{
-				if (sprtemp[frame].lump[rotation] == -1)
-				{
-					I_FatalError("R_InstallSprite: Sprite {} frame {:c} is missing rotations",
-						sprname, frame + 'A');
-				}
-		  	}
-			}
-			break;
-		}
+	  default:
+		break;
 	}
 
 	// allocate space for the frames present and copy sprtemp to it
@@ -194,6 +262,50 @@ static void R_InstallSprite(const char *name, int32_t num)
 	sprites[num].spritenum = num;
 }
 
+
+//
+// R_ScanSpriteLumps
+//
+// Resets sprtemp/maxframe and fills them in from every lump between first and
+// last whose name matches the given four character sprite name.
+//
+// Returns false if a matching lump had a name that does not decode to a frame
+// and rotation, which only tolerant callers see.
+//
+bool R_ScanSpriteLumps(const char* sprite, int first, int last, bool tolerant)
+{
+	memset (sprtemp, -1, sizeof(sprtemp));
+
+	for (spriteframe_t& frame : sprtemp)
+		frame.rotate = false;
+
+	maxframe = -1;
+	const int intname = NameToInt(sprite);
+	bool wellformed = true;
+
+	// scan the lumps,
+	//	filling in the frames for whatever is found
+	for (int l = last; l >= first; l--)
+	{
+		if (NameToInt(lumpinfo[l].name.c_str()) == intname && lumpinfo[l].size > 0)
+		{
+			if (!R_InstallSpriteLump (l,
+								 lumpinfo[l].name[SPR_FRAME_CHAR] - 'A', // denis - fixme - security
+								 lumpinfo[l].name[SPR_ROTATION_CHAR] - '0',
+								 false, tolerant))
+				wellformed = false;
+
+			if (lumpinfo[l].name[SPR_FLIPFRAME_CHAR])
+				if (!R_InstallSpriteLump (l,
+								 lumpinfo[l].name[SPR_FLIPFRAME_CHAR] - 'A',
+								 lumpinfo[l].name[SPR_FLIPROTATION_CHAR] - '0',
+								 true, tolerant))
+					wellformed = false;
+		}
+	}
+
+	return wellformed;
+}
 
 //
 // R_InitSpriteDefs
@@ -210,7 +322,7 @@ static void R_InstallSprite(const char *name, int32_t num)
 //	letter/number appended.
 // The rotation character can be 0 to signify no rotations.
 //
-static void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
+void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 {
 	numsprites = namelist.size();
 
@@ -219,36 +331,47 @@ static void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 	// Just compare 4 characters as ints
 	for (int i = 0; i < numsprites; i++)
 	{
-		memset (sprtemp, -1, sizeof(sprtemp));
-
-                for (int i = 0; i < MAX_SPRITE_FRAMES; i++) {
-                    sprtemp[i].rotate = false;
-                }
-
-		maxframe = -1;
-		const int intname = *reinterpret_cast<const int*>(namelist[i]->sprite);
-
-		// scan the lumps,
-		//	filling in the frames for whatever is found
-		for (int l = lastspritelump; l >= firstspritelump; l--)
-		{
-			if (*reinterpret_cast<const int*>(lumpinfo[l].name.c_str()) == intname && lumpinfo[l].size > 0)
-			{
-				R_InstallSpriteLump (l,
-									 lumpinfo[l].name[4] - 'A', // denis - fixme - security
-									 lumpinfo[l].name[5] - '0',
-									 false);
-
-				if (lumpinfo[l].name[6])
-					R_InstallSpriteLump (l,
-									 lumpinfo[l].name[6] - 'A',
-									 lumpinfo[l].name[7] - '0',
-									 true);
-			}
-		}
-
+		R_ScanSpriteLumps(namelist[i]->sprite, firstspritelump, lastspritelump, false);
 		R_InstallSprite(namelist[i]->sprite, namelist[i]->spritenum);
 	}
+}
+
+} // namespace
+
+//
+// R_FindIncompleteSprite
+//
+// Checks every sprite the game knows about against the lumps currently loaded,
+// looking for frames that are missing patches or rotations. 
+//
+// Never fatal, so its safe to call when judging whether a WAD will run
+// standalone (aka a standalone IWAD).
+//
+// Returns the first offender, or an empty string if they all check out.
+//
+std::string R_FindIncompleteSprite()
+{
+	const int startlump = W_CheckNumForName("S_START");
+	const int endlump = W_CheckNumForName("S_END");
+
+	if (startlump == -1 || endlump == -1 || endlump <= startlump)
+		return "";
+
+	for (auto it = sprnames.begin(); it != sprnames.end(); ++it)
+	{
+		if (!R_ScanSpriteLumps(it->second.data(), startlump + 1, endlump - 1, true))
+			return fmt::format("sprite {} has a malformed lump name", it->second);
+
+		if (maxframe == -1)
+			continue; // sprite is absent entirely, which is fine
+
+		int badframe = 0;
+		if (R_CheckSpriteFrames(maxframe + 1, true, badframe) != SPRITE_COMPLETE)
+			return fmt::format("sprite {} frame {:c} is incomplete", it->second,
+			                   badframe + 'A');
+	}
+
+	return "";
 }
 
 //

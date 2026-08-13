@@ -633,8 +633,6 @@ void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
 	if (i_isFriendly)
 	{
 		this->flags |= MF_FRIEND;
-
-		P_FriendlyEffects(this);
 	}
 	else
 	{
@@ -653,6 +651,11 @@ void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
 			this->friend_playerid = owner->friend_playerid;
 			this->friend_teamid = owner->friend_teamid;
 		}
+	}
+
+	if (i_isFriendly)
+	{
+		P_FriendlyEffects(this);
 	}
 }
 
@@ -2078,7 +2081,7 @@ static void P_ApplyGravity(AActor* mo, fixed_t momz_change)
 			fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
 
 			if (mo->momz < sinkspeed)
-				mo->momz = MIN(startmomz, sinkspeed);
+				mo->momz = std::min(startmomz, sinkspeed);
 			else
 				mo->momz = startmomz + ((mo->momz - startmomz) >> WATER_SINK_FACTOR);
 		}
@@ -3154,6 +3157,7 @@ void P_RespawnSpecials (void)
 	// find which type to spawn
 	auto it = spawn_map.find(mthing.type);
 	if (it == spawn_map.end() ||
+		// TODO: make this account for the possibility that dehacked has replaced these things
 		// Allow or not Partial Invisibility & Invulnerability from respawning
 	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)) ||
 		// pop barrels as well if needed

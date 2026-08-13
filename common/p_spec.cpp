@@ -239,50 +239,66 @@ bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest)
 		return true;
 	}
 
-	if (friendshiptest->flags & MF_FRIEND)
+	// Swap order if the friendshiptest actor isn't a MF_FRIEND
+	// (but the other one is)
+	if ((friendshiptest->player && !actor->player) ||
+	    (!(friendshiptest->flags & MF_FRIEND) && actor->flags & MF_FRIEND))
 	{
+		const AActor* swap = actor;
+		actor = friendshiptest;
+		friendshiptest = swap;
+	}
+
+	if (!(friendshiptest->flags & MF_FRIEND))
+	{
+		return !actor->player && !friendshiptest->player;
+	}
+
+	if (actor->player)
+	{
+		// Everyone shares the friendlies in a coop game.
 		if (G_IsCoopGame())
+			return true;
+
+		if (actor->player->id == friendshiptest->friend_playerid)
 		{
-			if (actor->flags & MF_FRIEND)
-				return true;
-		}
-		else if (actor->player)
-		{
-			if (actor->player->id == friendshiptest->friend_playerid)
-			{
-				// Don't attack me, I love you!
-				return true;
-			}
-			else if (G_IsTeamGame())
-			{
-				if (actor->player->userinfo.team == friendshiptest->friend_teamid)
-				{
-				   return true;
-				}
-			}
-		}
-		else if (actor->friend_playerid == 0 || friendshiptest->friend_playerid == 0 ||
-		         actor->friend_playerid == friendshiptest->friend_playerid)
-		{
-			// Fellow friend (or general friend)
-			// Do not attack.
+			// Don't attack me, I love you!
 			return true;
 		}
-		else if (G_IsTeamGame())
+
+		if (G_IsTeamGame() && actor->player->userinfo.team == friendshiptest->friend_teamid)
 		{
-			if (actor->friend_teamid == friendshiptest->friend_teamid)
-			{
-				// Friendly is of the same team as this friendly.
-				// Don't attack
-				return true;
-			}
+			// Friendly belongs to a player on this player's team.
+			return true;
 		}
+
+		return false;
 	}
-	else
+
+	if (!(actor->flags & MF_FRIEND))
 	{
-		if (!(actor->flags & MF_FRIEND))
-			return true;
+		// Monsters that aren't friendly have no love for friendlies.
+		return false;
 	}
+
+	if (G_IsCoopGame())
+		return true;
+
+	if (actor->friend_playerid == 0 || friendshiptest->friend_playerid == 0 ||
+	    actor->friend_playerid == friendshiptest->friend_playerid)
+	{
+		// Fellow friend (or general friend)
+		// Do not attack.
+		return true;
+	}
+
+	if (G_IsTeamGame() && actor->friend_teamid == friendshiptest->friend_teamid)
+	{
+		// Friendly is of the same team as this friendly.
+		// Don't attack
+		return true;
+	}
+
 	return false;
 }
 
@@ -2998,19 +3014,14 @@ bool PIT_PushThing (AActor& thing, DPusher* tmpusher)
 // T_Pusher looks for all objects that are inside the radius of
 // the effect.
 //
-extern fixed_t tmbbox[4];
+extern std::array<fixed_t, 4> tmbbox;
 
 void DPusher::RunThink ()
 {
-	sector_t *sec;
-	AActor *thing;
-	msecnode_t *node;
 	int xspeed,yspeed;
-	int xl,xh,yl,yh,bx,by;
-	int radius;
 	int ht = 0;
 
-	sec = sectors + m_Affectee;
+	const sector_t* sec = sectors + m_Affectee;
 
 	// Be sure the special sector type is still turned on. If so, proceed.
 	// Else, bail out; the sector type has been changed on us.
@@ -3041,19 +3052,19 @@ void DPusher::RunThink ()
 		// Seek out all pushable things within the force radius of this
 		// point pusher. Crosses sectors, so use blockmap.
 
-		radius = m_Radius; // where force goes to zero
+		const int radius = m_Radius; // where force goes to zero
 		tmbbox[BOXTOP]    = m_Y + radius;
 		tmbbox[BOXBOTTOM] = m_Y - radius;
 		tmbbox[BOXRIGHT]  = m_X + radius;
 		tmbbox[BOXLEFT]   = m_X - radius;
 
-		xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-		xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-		yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-		yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
-		for (bx=xl ; bx<=xh ; bx++)
-			for (by=yl ; by<=yh ; by++)
-				P_BlockThingsIterator (bx, by, PIT_PushThing, nullptr, this /*MT_PUSH/MT_PULL point source*/);
+		const int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS) >> MAPBLOCKSHIFT;
+		for (int bx = xl; bx <= xh; bx++)
+			for (int by = yl; by <= yh; by++)
+				P_BlockThingsIterator(bx, by, PIT_PushThing, nullptr, this /*MT_PUSH/MT_PULL point source*/);
 		return;
 	}
 
@@ -3061,10 +3072,10 @@ void DPusher::RunThink ()
 
 	if (sec->heightsec) // special water sector?
 		ht = P_FloorHeight(sec->heightsec);
-	node = sec->touching_thinglist; // things touching this sector
+	const msecnode_t* node = sec->touching_thinglist; // things touching this sector
 	for ( ; node ; node = node->m_snext)
 	{
-		thing = node->m_thing;
+		AActor* thing = node->m_thing;
 		if (!P_IsPlayerOrAvatar(*thing) || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 			continue;
 		if (m_Type == p_wind)

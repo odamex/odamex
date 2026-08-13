@@ -162,8 +162,7 @@ void AActor::ActorBlockMapListNode::copyFrom(const ActorBlockMapListNode& other)
 	m_blockcnty = other.m_blockcnty;
 
 	int blockcnt = m_blockcntx * m_blockcnty;
-	if (blockcnt < 1)
-		blockcnt = 1; // index 0 must always be a valid slot
+	blockcnt = std::max(blockcnt, 1); // index 0 must always be a valid slot
 
 	ensureCapacity(blockcnt);
 
@@ -176,29 +175,29 @@ void AActor::ActorBlockMapListNode::copyFrom(const ActorBlockMapListNode& other)
 
 void AActor::ActorBlockMapListNode::Link()
 {
-	int left    = (m_actor->x - m_actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
-	int right   = (m_actor->x + m_actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
-	int top     = (m_actor->y - m_actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
-	int bottom  = (m_actor->y + m_actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
+	int left    = (m_actor->x - m_actor->radius - blockmap.originx()) >> MAPBLOCKSHIFT;
+	int right   = (m_actor->x + m_actor->radius - blockmap.originx()) >> MAPBLOCKSHIFT;
+	int top     = (m_actor->y - m_actor->radius - blockmap.originy()) >> MAPBLOCKSHIFT;
+	int bottom  = (m_actor->y + m_actor->radius - blockmap.originy()) >> MAPBLOCKSHIFT;
 
 	if (!co_blockmapfix)
 	{
 		// originally Doom only used the block containing the center point
 		// of the actor even if the actor overlapped into other blocks
-		top = bottom = (m_actor->y - bmaporgy) >> MAPBLOCKSHIFT;
-		left = right = (m_actor->x - bmaporgx) >> MAPBLOCKSHIFT;
+		top = bottom = (m_actor->y - blockmap.originy()) >> MAPBLOCKSHIFT;
+		left = right = (m_actor->x - blockmap.originx()) >> MAPBLOCKSHIFT;
 	}
 
 	// do not ignore actors only *partially* outside blockmap
 	// e.g. do not ignore an actor just because its left edge is off the left
 	// side of the blockmap - its *right* edge must be off the left side as well
-	if (right >= 0 && left < bmapwidth && bottom >= 0 && top < bmapheight)
+	if (right >= 0 && left < blockmap.width() && bottom >= 0 && top < blockmap.height())
 	{
 		// however, need to clamp a partially off-limits actor to the grid
-		if (left < 0) left = 0;
-		if (right >= bmapwidth) right = bmapwidth - 1;
-		if (top < 0) top = 0;
-		if (bottom >= bmapheight) bottom = bmapheight - 1;
+		left = std::max(left, 0);
+		if (right >= blockmap.width()) right = blockmap.width() - 1;
+		top = std::max(top, 0);
+		if (bottom >= blockmap.height()) bottom = blockmap.height() - 1;
 
 		m_originx = left;
 		m_originy = top;
@@ -216,14 +215,14 @@ void AActor::ActorBlockMapListNode::Link()
 				// killough 8/11/98: simpler scheme using pointer-to-pointer prev
 				// pointers, allows head nodes to be treated like everything else
 
-				AActor** headptr   = &blocklinks[bmy * bmapwidth + bmx];
+				AActor** headptr   = &blocklinks[(bmy * blockmap.width()) + bmx];
 				AActor*  headactor = *headptr;
 
-				size_t thisidx = getIndex(bmx, bmy);
+				const size_t thisidx = getIndex(bmx, bmy);
 
 				if ((m_next[thisidx] = headactor))
 				{
-					size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
+					const size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
 					headactor->bmapnode.m_prev[nextidx] = & m_next[thisidx];
 				}
 
@@ -357,7 +356,7 @@ int P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line)
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
 //
-int P_BoxOnLineSide (const fixed_t *tmbox, const line_t *ld)
+int P_BoxOnLineSide (const std::span<const fixed_t, 4> tmbox, const line_t *ld)
 {
 	int p1 = 0;
 	int p2 = 0;
@@ -439,21 +438,6 @@ int P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line)
 	}
 }
 
-
-
-//
-// P_MakeDivline
-//
-void P_MakeDivline (const line_t *li, divline_t *dl)
-{
-	dl->x = li->v1->x;
-	dl->y = li->v1->y;
-	dl->dx = li->dx;
-	dl->dy = li->dy;
-}
-
-
-
 //
 // P_InterceptVector
 // Returns the fractional intercept point along the first divline.
@@ -524,7 +508,7 @@ void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, f
 	fixed_t bc = P_CeilingHeight(x, y, back);
 	fixed_t bf = P_FloorHeight(x, y, back);
 
-	opentop = MIN<fixed_t>(fc, bc);
+	opentop = std::min<fixed_t>(fc, bc);
 
 	bool fflevel = P_IsPlaneLevel(&front->floorplane);
 	bool bflevel = P_IsPlaneLevel(&back->floorplane);
@@ -676,312 +660,6 @@ void AActor::SetOrigin (fixed_t ix, fixed_t iy, fixed_t iz)
 	y = iy;
 	z = iz;
 	LinkToWorld ();
-}
-
-//
-// INTERCEPT ROUTINES
-//
-// denis - make intercepts array resizeable
-std::vector<intercept_t> intercepts;
-
-divline_t		trace;
-
-//
-// PIT_AddLineIntercepts.
-// Looks for lines in the given block
-// that intercept the given trace
-// to add to the intercepts list.
-//
-// A line is crossed if its endpoints
-// are on opposite sides of the trace.
-// Returns true if earlyout and a solid line hit.
-//
-bool PIT_AddLineIntercepts (line_t& ld, bool earlyout)
-{
-	int 				s1;
-	int 				s2;
-	divline_t			dl;
-
-	// avoid precision problems with two routines
-	if ( trace.dx > FRACUNIT*16
-		 || trace.dy > FRACUNIT*16
-		 || trace.dx < -FRACUNIT*16
-		 || trace.dy < -FRACUNIT*16)
-	{
-		s1 = P_PointOnDivlineSide (ld.v1->x, ld.v1->y, &trace);
-		s2 = P_PointOnDivlineSide (ld.v2->x, ld.v2->y, &trace);
-	}
-	else
-	{
-		s1 = P_PointOnLineSide (trace.x, trace.y, &ld);
-		s2 = P_PointOnLineSide (trace.x+trace.dx, trace.y+trace.dy, &ld);
-	}
-
-	if (s1 == s2)
-		return true;	// line isn't crossed
-
-	// hit the line
-	P_MakeDivline (&ld, &dl);
-	const fixed_t frac = P_InterceptVector (&trace, &dl);
-
-	if (frac < 0)
-		return true;	// behind source
-
-	// try to early out the check
-	if (earlyout
-		&& frac < FRACUNIT
-		&& !ld.backsector)
-	{
-		return false;	// stop checking
-	}
-
-
-	intercept_t intercept;
-	intercept.frac = frac;
-	intercept.isaline = true;
-	intercept.d.line = &ld;
-	intercepts.push_back(intercept);
-
-	return true;		// continue
-}
-
-
-
-//
-// PIT_AddThingIntercepts
-//
-bool PIT_AddThingIntercepts (AActor& thing)
-{
-	fixed_t 		x1;
-	fixed_t 		y1;
-	fixed_t 		x2;
-	fixed_t 		y2;
-
-	divline_t		dl;
-
-	const bool tracepositive = (trace.dx ^ trace.dy)>0;
-
-	// check a corner to corner crossection for hit
-	if (tracepositive)
-	{
-		x1 = thing.x - thing.radius;
-		y1 = thing.y + thing.radius;
-
-		x2 = thing.x + thing.radius;
-		y2 = thing.y - thing.radius;
-	}
-	else
-	{
-		x1 = thing.x - thing.radius;
-		y1 = thing.y - thing.radius;
-
-		x2 = thing.x + thing.radius;
-		y2 = thing.y + thing.radius;
-	}
-
-	const int s1 = P_PointOnDivlineSide (x1, y1, &trace);
-	const int s2 = P_PointOnDivlineSide (x2, y2, &trace);
-
-	if (s1 == s2)
-		return true;			// line isn't crossed
-
-	dl.x = x1;
-	dl.y = y1;
-	dl.dx = x2-x1;
-	dl.dy = y2-y1;
-
-	const fixed_t frac = P_InterceptVector (&trace, &dl);
-
-	if (frac < 0)
-		return true;			// behind source
-
-	intercept_t intercept;
-	intercept.frac = frac;
-	intercept.isaline = false;
-	intercept.d.thing = &thing;
-	intercepts.push_back(intercept);
-
-	return true;				// keep going
-}
-
-
-//
-// P_TraverseIntercepts
-// Returns true if the traverser function returns true
-// for all lines.
-//
-bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
-{
-	size_t 				count = intercepts.size();
-	fixed_t 			dist;
-	intercept_t*		in = nullptr;
-
-	while (count--)
-	{
-		dist = limits::MAXFIXED;
-		for (intercept_t& intercept : intercepts)
-		{
-			if (intercept.frac < dist)
-			{
-				dist = intercept.frac;
-				in = &intercept;
-			}
-		}
-
-		if (dist > maxfrac)
-			return true;		// checked everything in range
-
-
-		if ( !func (in) )
-			return false;		// don't bother going farther
-
-		in->frac = limits::MAXFIXED;
-	}
-
-	return true;				// everything was traversed
-}
-
-
-
-
-//
-// P_PathTraverse
-// Traces a line from x1,y1 to x2,y2,
-// calling the traverser function for each.
-// Returns true if the traverser function returns true
-// for all lines.
-//
-bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, bool (*trav) (intercept_t *))
-{
-	fixed_t 	xt1;
-	fixed_t 	yt1;
-	fixed_t 	xt2;
-	fixed_t 	yt2;
-
-	fixed_t 	xstep;
-	fixed_t 	ystep;
-
-	fixed_t 	partial;
-
-	fixed_t 	xintercept;
-	fixed_t 	yintercept;
-
-	int 		mapx;
-	int 		mapy;
-
-	int 		mapxstep;
-	int 		mapystep;
-
-	int 		count;
-
-	const bool earlyout = flags & PT_EARLYOUT;
-
-	validcount++;
-
-	intercepts.clear();
-
-	if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
-		x1 += FRACUNIT; // don't side exactly on a line
-
-	if ( ((y1-bmaporgy)&(MAPBLOCKSIZE-1)) == 0)
-		y1 += FRACUNIT; // don't side exactly on a line
-
-	trace.x = x1;
-	trace.y = y1;
-	trace.dx = x2 - x1;
-	trace.dy = y2 - y1;
-
-	x1 -= bmaporgx;
-	y1 -= bmaporgy;
-	xt1 = x1>>MAPBLOCKSHIFT;
-	yt1 = y1>>MAPBLOCKSHIFT;
-
-	x2 -= bmaporgx;
-	y2 -= bmaporgy;
-	xt2 = x2>>MAPBLOCKSHIFT;
-	yt2 = y2>>MAPBLOCKSHIFT;
-
-	if (xt2 > xt1)
-	{
-		mapxstep = 1;
-		partial = FRACUNIT - ((x1>>MAPBTOFRAC)&(FRACUNIT-1));
-		ystep = FixedDiv (y2-y1,abs(x2-x1));
-	}
-	else if (xt2 < xt1)
-	{
-		mapxstep = -1;
-		partial = (x1>>MAPBTOFRAC)&(FRACUNIT-1);
-		ystep = FixedDiv (y2-y1,abs(x2-x1));
-	}
-	else
-	{
-		mapxstep = 0;
-		partial = FRACUNIT;
-		ystep = 256*FRACUNIT;
-	}
-
-	yintercept = (y1>>MAPBTOFRAC) + FixedMul (partial, ystep);
-
-
-	if (yt2 > yt1)
-	{
-		mapystep = 1;
-		partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
-		xstep = FixedDiv (x2-x1,abs(y2-y1));
-	}
-	else if (yt2 < yt1)
-	{
-		mapystep = -1;
-		partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
-		xstep = FixedDiv (x2-x1,abs(y2-y1));
-	}
-	else
-	{
-		mapystep = 0;
-		partial = FRACUNIT;
-		xstep = 256*FRACUNIT;
-	}
-	xintercept = (x1>>MAPBTOFRAC) + FixedMul (partial, xstep);
-
-	// Step through map blocks.
-	// Count is present to prevent a round off error
-	// from skipping the break.
-	mapx = xt1;
-	mapy = yt1;
-
-	for (count = 0 ; count < 64 ; count++)
-	{
-		if (flags & PT_ADDLINES)
-		{
-			if (!P_BlockLinesIterator (mapx, mapy,PIT_AddLineIntercepts, earlyout))
-				return false;	// early out
-		}
-
-		if (flags & PT_ADDTHINGS)
-		{
-			if (!P_BlockThingsIterator (mapx, mapy,PIT_AddThingIntercepts, nullptr))
-				return false;	// early out
-		}
-
-		if (mapx == xt2 && mapy == yt2)
-		{
-			break;
-		}
-
-		if ( (yintercept >> FRACBITS) == mapy)
-		{
-			yintercept += ystep;
-			mapx += mapxstep;
-		}
-		else if ( (xintercept >> FRACBITS) == mapx)
-		{
-			xintercept += xstep;
-			mapy += mapystep;
-		}
-
-	}
-	// go through the sorted list
-	return P_TraverseIntercepts ( trav, FRACUNIT );
 }
 
 //
@@ -1142,8 +820,9 @@ bool P_ActorInFOV(const AActor* origin, const AActor* mo , float f, fixed_t dist
 
 AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 {
-	const int bx = index % bmapwidth;
-	const int by = index / bmapwidth;
+	// TODO: get rid of mod here
+	const int bx = index % blockmap.width();
+	const int by = index / blockmap.width();
 	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
@@ -1193,8 +872,9 @@ AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 
 AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 {
-	const int bx = index % bmapwidth;
-	const int by = index / bmapwidth;
+	// TODO: get rid of mod here
+	const int bx = index % blockmap.width();
+	const int by = index / blockmap.width();
 	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
@@ -1236,106 +916,107 @@ AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 
 AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*searchFunc)(AActor*, int, angle_t))
 {
-	int blockX;
-	int blockY;
-	int startX, startY;
 	int blockIndex;
 	int firstStop;
 	int secondStop;
 	int thirdStop;
 	int finalStop;
-	int count;
 	AActor* target;
 
-	startX = (mo->x - bmaporgx) >> MAPBLOCKSHIFT;
-	startY = (mo->y - bmaporgy) >> MAPBLOCKSHIFT;
+	const int startX = (mo->x - blockmap.originx()) >> MAPBLOCKSHIFT;
+	const int startY = (mo->y - blockmap.originy()) >> MAPBLOCKSHIFT;
 
-	if (startX >= 0 && startX < bmapwidth && startY >= 0 && startY < bmapheight)
+	if (startX >= 0 && startX < blockmap.width() && startY >= 0 && startY < blockmap.height())
 	{
-		if ((target = searchFunc(mo, startY * bmapwidth + startX, fov)))
+		target = searchFunc(mo, (startY * blockmap.width()) + startX, fov);
+		if (target)
 		{ // found a target right away
 			return target;
 		}
 	}
-	for (count = 1; count <= distance; count++)
+	for (int count = 1; count <= distance; count++)
 	{
-		blockX = startX - count;
-		blockY = startY - count;
+		int blockX = startX - count;
+		int blockY = startY - count;
 
 		if (blockY < 0)
 		{
 			blockY = 0;
 		}
-		else if (blockY >= bmapheight)
+		else if (blockY >= blockmap.height())
 		{
-			blockY = bmapheight - 1;
+			blockY = blockmap.height() - 1;
 		}
 		if (blockX < 0)
 		{
 			blockX = 0;
 		}
-		else if (blockX >= bmapwidth)
+		else if (blockX >= blockmap.width())
 		{
-			blockX = bmapwidth - 1;
+			blockX = blockmap.width() - 1;
 		}
-		blockIndex = blockY * bmapwidth + blockX;
+		blockIndex = (blockY * blockmap.width()) + blockX;
 		firstStop = startX + count;
 		if (firstStop < 0)
 		{
 			continue;
 		}
-		if (firstStop >= bmapwidth)
+		if (firstStop >= blockmap.width())
 		{
-			firstStop = bmapwidth - 1;
+			firstStop = blockmap.width() - 1;
 		}
 		secondStop = startY + count;
 		if (secondStop < 0)
 		{
 			continue;
 		}
-		if (secondStop >= bmapheight)
+		if (secondStop >= blockmap.height())
 		{
-			secondStop = bmapheight - 1;
+			secondStop = blockmap.height() - 1;
 		}
-		thirdStop = secondStop * bmapwidth + blockX;
-		secondStop = secondStop * bmapwidth + firstStop;
-		firstStop += blockY * bmapwidth;
+		thirdStop = (secondStop * blockmap.width()) + blockX;
+		secondStop = (secondStop * blockmap.width()) + firstStop;
+		firstStop += blockY * blockmap.width();
 		finalStop = blockIndex;
 
 		// Trace the first block section (along the top)
 		for (; blockIndex <= firstStop; blockIndex++)
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
 		}
 		// Trace the second block section (right edge)
-		for (blockIndex--; blockIndex <= secondStop; blockIndex += bmapwidth)
+		for (blockIndex--; blockIndex <= secondStop; blockIndex += blockmap.width())
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
 		}
 		// Trace the third block section (bottom edge)
-		for (blockIndex -= bmapwidth; blockIndex >= thirdStop; blockIndex--)
+		for (blockIndex -= blockmap.width(); blockIndex >= thirdStop; blockIndex--)
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
 		}
 		// Trace the final block section (left edge)
-		for (blockIndex++; blockIndex > finalStop; blockIndex -= bmapwidth)
+		for (blockIndex++; blockIndex > finalStop; blockIndex -= blockmap.width())
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			target = searchFunc(mo, blockIndex, fov);
+			if (target)
 			{
 				return target;
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 VERSION_CONTROL (p_maputl_cpp, "$Id$")

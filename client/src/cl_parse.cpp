@@ -772,8 +772,6 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		P_ResolveStackLinks();
 	}
 
-	mo->UpdateActorLists();
-
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
 		mo->flags = msg->current().flags();
@@ -794,6 +792,14 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->translation = translationref_t(&::bosstable[0]);
 		}
 	}
+
+	if (msg->spawn_flags() & SVC_SM_FRIEND)
+	{
+		mo->friend_playerid = msg->current().friend_playerid();
+		mo->friend_teamid = static_cast<team_t>(msg->current().friend_teamid());
+	}
+
+	mo->UpdateActorLists();
 
 	if (msg->spawn_flags() & SVC_SM_CORPSE)
 	{
@@ -826,6 +832,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		if (mo->player)
 			mo->player->playerstate = PST_DEAD;
 	}
+
+	if (mo->flags & MF_FRIEND)
+		P_FriendlyEffects(mo);
 }
 
 //
@@ -1440,8 +1449,8 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	}
 	else
 	{
-		player.health = MIN(player.health, health);
-		player.armorpoints = MIN(player.armorpoints, armorpoints);
+		player.health = std::min(player.health, health);
+		player.armorpoints = std::min(player.armorpoints, armorpoints);
 		player.mo->health = player.health;
 
 		if (player.health < 0)
@@ -1455,8 +1464,7 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 				player.health = 0;
 		}
 
-		if (player.armorpoints < 0)
-			player.armorpoints = 0;
+		player.armorpoints = std::max(player.armorpoints, 0);
 	}
 
 	if (player.armorpoints == 0)
@@ -1589,9 +1597,20 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	}
 
 	corpsehit->flags = info->flags;
+
+	if (msg->corpse().flags() & MF_FRIEND)
+	{
+		corpsehit->flags |= MF_FRIEND;
+		corpsehit->friend_playerid = msg->corpse().friend_playerid();
+		corpsehit->friend_teamid = static_cast<team_t>(msg->corpse().friend_teamid());
+	}
+
 	corpsehit->health = info->spawnhealth;
 	corpsehit->target = AActor::AActorPtr();
 	corpsehit->UpdateActorLists();
+
+	if (corpsehit->flags & MF_FRIEND)
+		P_FriendlyEffects(corpsehit);
 }
 
 //

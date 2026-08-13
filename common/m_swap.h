@@ -74,9 +74,7 @@ inline static int64_t LELONGLONG(const int64_t x) noexcept
 	return nonstd::bit::as_little_endian(x);
 }
 
-template <typename T>
-requires std::is_integral_v<T>
-inline static T LESWAP(const T x) noexcept
+inline static auto LESWAP(const std::integral auto x) noexcept
 {
 	return nonstd::bit::as_little_endian(x);
 }
@@ -111,9 +109,7 @@ inline static int64_t BELONGLONG(const int64_t x) noexcept
 	return nonstd::bit::as_big_endian(x);
 }
 
-template <typename T>
-requires std::is_integral_v<T>
-inline static T BESWAP(const T x) noexcept
+inline static auto BESWAP(const std::integral auto x) noexcept
 {
 	return nonstd::bit::as_big_endian(x);
 }

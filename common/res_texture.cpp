@@ -108,8 +108,8 @@ static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lumpdata, int
 
 	const int* colofs = reinterpret_cast<const int*>(lumpdata + 8);
 
-	int x1 = MAX(xoffs, 0);
-	int x2 = MIN(xoffs + patchwidth - 1, texwidth - 1);
+	const int x1 = std::max(xoffs, 0);
+	const int x2 = std::min(xoffs + patchwidth - 1, texwidth - 1);
 
 	for (int x = x1; x <= x2; x++)
 	{
@@ -129,8 +129,8 @@ static void Res_DrawPatchIntoTexture(Texture* texture, const byte* lumpdata, int
 				abstopdelta = posttopdelta;
 
 			int topoffset = yoffs + abstopdelta;
-			int y1 = MAX(topoffset, 0);
-			int y2 = MIN(topoffset + postlength - 1, texheight - 1);
+			const int y1 = std::max(topoffset, 0);
+			const int y2 = std::min(topoffset + postlength - 1, texheight - 1);
 
 			if (y1 <= y2)
 			{
@@ -607,9 +607,9 @@ void TextureManager::readAnimDefLump()
 					else if (os.compareToken("rand"))
 					{
 						os.mustScanInt();
-						min = MAX(os.getTokenInt(), 0);
+						min = std::max(os.getTokenInt(), 0);
 						os.mustScanInt();
-						max = MIN(os.getTokenInt(), 255);
+						max = std::min(os.getTokenInt(), 255);
 						if (min > max)
 							min = max = 1;
 					}

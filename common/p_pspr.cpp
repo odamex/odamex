@@ -273,7 +273,7 @@ bool P_EnoughAmmo(const player_t& player, weapontype_t weapon, bool switching = 
 
 	if (co_zdoomammo || deh.ZDAmmo)
 		// [SL] Fix for when DeHackEd doesn't patch minammo
-		count = MAX(weaponinfo[weapon].minammo, weaponinfo[weapon].ammouse);
+		count = std::max(weaponinfo[weapon].minammo, weaponinfo[weapon].ammouse);
 	else
 		count = weaponinfo[weapon].ammopershot;
 
@@ -1501,7 +1501,7 @@ void A_BFGSpray(AActor* mo)
 
 		// mo->target is the originator (player)
 		//	of the missile
-		P_AimLineAttack (mo->target, an, 16*64*FRACUNIT);
+		P_AimLineAttack (mo->target, an, 16*64*FRACUNIT, false);
 
 		if (!linetarget)
 			continue;
