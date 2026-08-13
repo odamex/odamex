@@ -36,7 +36,7 @@ class SequenceReceiver
 
 		explicit SequenceReceiver(size_t i_initialSize,
 		                          const std::pmr::polymorphic_allocator<SequenceQueueEntryType>& i_allocator = {}) :
-			m_receiveTable    { DEFAULT_RELIABILITY_QUEUE_SIZE, i_allocator },
+			m_receiveTable    { i_initialSize, i_allocator },
 			m_currentSequence { 0 }
 		{
 		}

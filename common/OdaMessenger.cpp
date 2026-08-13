@@ -129,7 +129,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 			const size_t startOfBestEffort = io_rawBuf.TellRead();
 			while (io_rawBuf.BytesLeftToRead())
 			{
-				const msg_t msgFormatID = msg_t(io_rawBuf.ReadUnVarint());
+				const auto msgFormatID = msg_t(io_rawBuf.ReadUnVarint());
 				switch (msgFormatID)
 				{
 					case msg_ack:

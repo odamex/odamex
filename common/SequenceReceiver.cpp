@@ -89,7 +89,7 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 		}
 		else
 		{
-			if (iter->second.bestEffort.size() > 0)
+			if (not iter->second.bestEffort.empty())
 			{
 				auto& entry = iter->second.bestEffort.front();
 				io_bufferRef.swap(entry.buf);

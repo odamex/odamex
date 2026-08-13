@@ -54,7 +54,8 @@ SequenceSender::QueueEntryResultType SequenceSender::ObtainSendPacket(int curren
 	m_unackedSequences.push_back(m_nextSequence);
 	++m_nextSequence;
 
-	return QueueEntryResultType {& newEntryRef.buf, newEntryRef.sequence};
+	return QueueEntryResultType {.buffer    = & newEntryRef.buf,
+	                             .sequence  = newEntryRef.sequence };
 }
 
 bool SequenceSender::Acknowledge(int sequence)
