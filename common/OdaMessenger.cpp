@@ -135,12 +135,11 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		io_rawBuf.SeekRead(startOfBestEffort, buf_t::BT_START);
         */
 
-        /*
 		if (isTooNew or header.reliableSize)
 		{
 			m_receiver.RegisterBestEffortPacket(realSequence, bestEffortSize, io_rawBuf);
 		}
-		else //if (not isTooOld)*/
+		else //if (not isTooOld)
 		{
 			if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
 			{
