@@ -1394,19 +1394,38 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 
 	validcount++;
 	spechit.clear();
+  
+  int xl;
+	int xh;
+	int yl;
+	int yh;
 
 	if (tmflags & MF_NOCLIP && !(tmflags & MF_SKULLFLY))
-		return true;
+  {
+    // let the freecam use teleporters
+    if (thing->player && thing->player->isFreecam)
+    {
+      xl = (tmbbox[BOXLEFT] - blockmap.originx())>>MAPBLOCKSHIFT;
+      xh = (tmbbox[BOXRIGHT] - blockmap.originx())>>MAPBLOCKSHIFT;
+      yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
+      yh = (tmbbox[BOXTOP] - blockmap.originy())>>MAPBLOCKSHIFT;
+
+      for (int bx = xl; bx <= xh; bx++)
+        for (int by = yl; by <= yh; by++)
+          P_BlockLinesIterator(bx, by, PIT_CheckLine, true);
+    }
+    return true;
+  }
 
 	// Check things first, possibly picking things up.
 	// The bounding box is extended by MAXRADIUS
 	// because DActors are grouped into mapblocks
 	// based on their origin point, and can overlap
 	// into adjacent blocks by up to MAXRADIUS units.
-	int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
-	int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
-	int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
-	int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	BlockingMobj = NULL;
 
@@ -1795,7 +1814,7 @@ bool P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 	thing->LinkToWorld ();
 
 	// if any special lines were hit, do the effect
-	if (! (thing->flags&(MF_TELEPORT|MF_NOCLIP)) )
+	if (not (thing->flags&(MF_TELEPORT|MF_NOCLIP)) || (thing-> player && thing->player->isFreecam))
 	{
 		while (!spechit.empty())
 		{

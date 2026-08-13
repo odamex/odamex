@@ -1976,7 +1976,7 @@ void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 {
 	TeleportSide = side;
 
-	// spectators and dead players can't cross special lines
+	// spectators, dead players and freecam can't cross special lines
 	// [Blair] Unless they're teleport lines.
 	if (thing && thing->player &&
 	    (thing->player->spectator || thing->player->playerstate != PST_LIVE) &&
