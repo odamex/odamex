@@ -117,10 +117,12 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 			m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
 		}
 
-		// No matter what, we want to handle any acks that are in the packet immediately, regardless
-		// of whether they're older or newer than expected.  We do this by copying the acks themselves
-		// into the immediate receive buffer so that they get evaluated very shortly after we return
-		// from this function, assuming NextReceivedPacket() is called shortly thereafter.
+		// No matter what, we want to handle any acks and ping requests that are in the packet
+		// immediately, regardless of whether they're older or newer than expected.  These are
+		// critical to keeping retransmissions under control under rough network conditions.
+		// We do this by copying these messages into the immediate receive buffer so that they
+		// get evaluated very shortly after we return from this function, assuming
+		// NextReceivedPacket() is called shortly thereafter.
 
 		if (isHighTooOld or isNormalTooNew)
 		{
@@ -128,16 +130,25 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 			while (io_rawBuf.BytesLeftToRead())
 			{
 				const msg_t msgFormatID = msg_t(io_rawBuf.ReadUnVarint());
-				if (msgFormatID == msg_ack)
+				switch (msgFormatID)
 				{
-					const int sequence = io_rawBuf.ReadLong();
-					m_immediateReceiveBuffer.WriteUnVarint(msgFormatID);
-					m_immediateReceiveBuffer.WriteLong(sequence);
-				}
-				else
-				{
-					const unsigned int msgSize = io_rawBuf.ReadUnVarint();
-					io_rawBuf.SeekRead(msgSize, buf_t::BT_CURRENT);
+					case msg_ack:
+						m_immediateReceiveBuffer.WriteUnVarint(msgFormatID);
+						m_immediateReceiveBuffer.WriteLong(io_rawBuf.ReadLong());   // sequence number
+						break;
+
+					case svc_pingrequest:
+						{
+							const size_t msgSize = io_rawBuf.ReadUnVarint();
+							m_immediateReceiveBuffer.WriteUnVarint(msgFormatID);
+							m_immediateReceiveBuffer.WriteUnVarint(msgSize);
+							m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(msgSize), msgSize);
+						}
+						break;
+
+					default:
+						io_rawBuf.SeekRead(io_rawBuf.ReadUnVarint(), buf_t::BT_CURRENT);    // read msg size + skip
+						break;
 				}
 			}
 			io_rawBuf.SeekRead(startOfBestEffort, buf_t::BT_START);

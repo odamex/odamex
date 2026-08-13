@@ -3356,7 +3356,7 @@ void SV_SendPingRequest(client_t* cl)
 	if (!P_AtInterval(100))
 		return;
 
-	MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_PingRequest());
+	MSG_WriteSVC(cl->messenger.HighBuf(), SVC_PingRequest());
 }
 
 void SV_UpdateMonsterRespawnCount()
