@@ -4551,9 +4551,9 @@ void SV_AcknowledgePacket(player_t &player)
 
 	const bool isFresh = player.client.messenger.Acknowledge(sequence);
 
-	//DPrintFmt("player {} tic {} ACKed seq {}\n", int(player.id), gametic, sequence);
+    DPrintFmt("funky ass ack {} is fresh {}\n", sequence, isFresh);
 
-	if (isFresh and sequence == 0)
+	if (sequence == 0 and (isFresh or player.client.messenger.WasAcked(sequence)))
 	{
 		// [AM] Finish our connection sequence.
 		SV_ConnectClient2(player);

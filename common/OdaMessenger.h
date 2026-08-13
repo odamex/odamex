@@ -126,6 +126,8 @@ class OdaMessenger
 		/// Returns true if this is the first acknowledgement of the given sequence.  False otherwise.
 		bool Acknowledge(int sequence);
 
+		bool WasAcked(int sequence) const { return m_sender.WasAcked(sequence); }
+
 		/// Return the requested message queue.  Use these queues to Obtain new messages into which to pack
 		/// new outgoing data.
 		MessageQueue& ReliableBuf() { return m_outgoingReliableQueue; }

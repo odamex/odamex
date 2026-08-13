@@ -47,13 +47,13 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 	if (header.flags & PacketHeaderType::FLAG_UNUSED_MASK)
 	{
-		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood", header.flags);
+		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood\n", header.flags);
 		return MessageResultEnum::ABORT;
 	}
 
 	if (header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY and header.reliableSize)
 	{
-		PrintFmt(PRINT_WARNING, "High priority packet {} had a reliable payload: {} bytes",
+		PrintFmt(PRINT_WARNING, "High priority packet {} had a reliable payload: {} bytes\n",
 		         -header.sequence,
 		         header.reliableSize);
 		return MessageResultEnum::ABORT;
@@ -102,21 +102,29 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		// One subtlety:  Best effort / normal-priority messages that are "too old" are still handled
 		// because they could still have data mobjs that's more current than the mobjs' last reliable
 		// update, which could be even older.
-		const int  realSequence     = -header.sequence;
+		const int  realSequence     = header.reliableSize ? header.sequence : -header.sequence;
 		const bool isHighPriority   = header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY;
 		const bool isNormalPriority = not isHighPriority;
-		const bool isTooOld         = isHighPriority   and realSequence < m_currentReceivedPacketSequenceNumber;
+		//const bool isTooOld         = isHighPriority   and realSequence >= 0 and realSequence < m_currentReceivedPacketSequenceNumber;
 		const bool isTooNew         = isNormalPriority and realSequence > m_currentReceivedPacketSequenceNumber;
 
 		// No matter what, we want to handle any acks that are in the packet immediately, regardless
 		// of whether they're older or newer than expected.
+        /*
 		const size_t startOfBestEffort = io_rawBuf.TellRead();
 		while (io_rawBuf.BytesLeftToRead())
 		{
 			const msg_t msgFormatID = msg_t(io_rawBuf.ReadUnVarint());
 			if (msgFormatID == msg_ack)
 			{
-				Acknowledge(io_rawBuf.ReadLong());
+                const int sequence = io_rawBuf.ReadLong();
+                DPrintFmt("fast ack for {}, isTooOld {}, isTooNew {}, received on {}, currentReceived {}\n",
+                        sequence,
+                        isTooOld,
+                        isTooNew,
+                        realSequence,
+                        m_currentReceivedPacketSequenceNumber);
+				Acknowledge(sequence);
 			}
 			else
 			{
@@ -125,12 +133,13 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 			}
 		}
 		io_rawBuf.SeekRead(startOfBestEffort, buf_t::BT_START);
+        */
 
 		if (isTooNew)
 		{
 			m_receiver.RegisterBestEffortPacket(realSequence, bestEffortSize, io_rawBuf);
 		}
-		else if (not isTooOld)
+		else //if (not isTooOld)
 		{
 			if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
 			{
