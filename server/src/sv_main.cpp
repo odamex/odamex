@@ -4551,8 +4551,6 @@ void SV_AcknowledgePacket(player_t &player)
 
 	const bool isFresh = player.client.messenger.Acknowledge(sequence);
 
-    DPrintFmt("funky ass ack {} is fresh {}\n", sequence, isFresh);
-
 	if (sequence == 0 and isFresh)
 	{
 		// [AM] Finish our connection sequence.
