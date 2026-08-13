@@ -99,9 +99,13 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 	if (bestEffortSize > 0)
 	{
-		// One subtlety:  Best effort / normal-priority messages that are "too old" are still handled
-		// because they could still have data mobjs that's more current than the mobjs' last reliable
-		// update, which could be even older.
+		// One subtlety: Best effort / normal-priority messages that are "too old" are still handled
+		//               because they could still have data mobjs that's more current than the mobjs'
+		//               last reliable update, which could be even older.
+		//
+		// Another subtlety: the realSequence will be -1 for any best-effort-only packets that predate
+		//                   any reliable messages.  Therefore we can't consider the sequence to be "old"
+		//                   unless it has a value >= 0.
 		const int  realSequence     = header.reliableSize ? header.sequence : -header.sequence;
 		const bool isHighPriority   = header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY;
 		const bool isNormalPriority = not isHighPriority;
@@ -114,7 +118,9 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		}
 
 		// No matter what, we want to handle any acks that are in the packet immediately, regardless
-		// of whether they're older or newer than expected.
+		// of whether they're older or newer than expected.  We do this by copying the acks themselves
+		// into the immediate receive buffer so that they get evaluated very shortly after we return
+		// from this function, assuming NextReceivedPacket() is called shortly thereafter.
 
 		if (isHighTooOld or isNormalTooNew)
 		{
