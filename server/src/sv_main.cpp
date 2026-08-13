@@ -4553,7 +4553,7 @@ void SV_AcknowledgePacket(player_t &player)
 
     DPrintFmt("funky ass ack {} is fresh {}\n", sequence, isFresh);
 
-	if (sequence == 0 and (isFresh or player.client.messenger.WasAcked(sequence)))
+	if (sequence == 0 and isFresh)
 	{
 		// [AM] Finish our connection sequence.
 		SV_ConnectClient2(player);
