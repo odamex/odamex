@@ -67,24 +67,22 @@ class SequenceReceiver
 
 	protected:
 
-        struct PacketQueue
-        {
-            SequenceQueueEntryType                  reliable;     // Only one reliable message per sequence number.
-            std::pmr::deque<SequenceQueueEntryType> bestEffort;
+		struct PacketQueue
+		{
+			SequenceQueueEntryType                  reliable;     // Only one reliable message per sequence number.
+			std::pmr::deque<SequenceQueueEntryType> bestEffort;
 
-            explicit PacketQueue(const std::pmr::polymorphic_allocator<SequenceQueueEntryType>& i_allocator) :
-                bestEffort { i_allocator }
-            {
-            }
+			explicit PacketQueue(const std::pmr::polymorphic_allocator<SequenceQueueEntryType>& i_allocator) :
+				bestEffort { i_allocator }
+			{
+			}
+		};
 
-            bool ReliableWasReceived()  const { return reliable.sequence       >= 0; }
-            bool ReliableWasProcessed() const { return reliable.originatingTic >= 0; }
+		using ReceiveTableType = std::pmr::unordered_map<int, PacketQueue, std::identity>;
 
-        };
+		ReceiveTableType::iterator ObtainReceivePacket(int sequence);
 
-        std::pmr::unordered_map<int, PacketQueue, std::identity>::iterator ObtainReceivePacket(int sequence);
-
-		std::pmr::unordered_map<int, PacketQueue, std::identity> m_receiveTable;
+		ReceiveTableType m_receiveTable;
 
 		int m_currentSequence;  // Index of the place to store the next received packet.
 };

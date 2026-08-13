@@ -47,20 +47,20 @@ class OdaMessenger
 		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
 		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
 
-        explicit OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>&& i_poolPtr)
-            : m_pool     { std::move(i_poolPtr) }
-            , m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {m_pool.get()}}
-            , m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {m_pool.get()}}
-        {
-        }
+		explicit OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>&& i_poolPtr)
+			: m_pool     { std::move(i_poolPtr) }
+			, m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {m_pool.get()}}
+			, m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {m_pool.get()}}
+		{
+		}
 
-        OdaMessenger(const OdaMessenger&)            = delete;
-        OdaMessenger& operator=(const OdaMessenger&) = delete;
+		OdaMessenger(const OdaMessenger&)            = delete;
+		OdaMessenger& operator=(const OdaMessenger&) = delete;
 
-        OdaMessenger(OdaMessenger&&)            = default;
-        OdaMessenger& operator=(OdaMessenger&&) = default;
+		OdaMessenger(OdaMessenger&&)            = default;
+		OdaMessenger& operator=(OdaMessenger&&) = default;
 
-        std::unique_ptr<std::pmr::unsynchronized_pool_resource>&& MovePool() { return std::move(m_pool); }
+		std::unique_ptr<std::pmr::unsynchronized_pool_resource>&& MovePool() { return std::move(m_pool); }
 
 		//  -------------- Receiving functions --------------
 
@@ -125,8 +125,6 @@ class OdaMessenger
 		///
 		/// Returns true if this is the first acknowledgement of the given sequence.  False otherwise.
 		bool Acknowledge(int sequence);
-
-		bool WasAcked(int sequence) const { return m_sender.WasAcked(sequence); }
 
 		/// Return the requested message queue.  Use these queues to Obtain new messages into which to pack
 		/// new outgoing data.

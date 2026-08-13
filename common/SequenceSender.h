@@ -94,8 +94,6 @@ class SequenceSender
 
 		int MostRecentAcquiredSequence() const { return m_nextSequence - 1; }
 
-		bool WasAcked(int sequence) const { return m_unackedSequences.size() ? sequence < m_unackedSequences.front() : sequence < m_nextSequence; }
-
 	protected:
 
 		std::vector<int> m_unackedSequences;
