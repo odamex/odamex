@@ -94,7 +94,7 @@ function CopyFilesX64 {
         -Destination "${CommonDir}\MAINTAINERS.txt"
     Copy-Item -Force -Path "${CurrentDir}\README" `
         -Destination "${CommonDir}\README.txt"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\wad\odamex.wad" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\odamex.wad" `
         -Destination "${CommonDir}"
     Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\LICENSE.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2_mixer.txt"
@@ -121,23 +121,23 @@ function CopyFilesX64 {
     New-Item -Force -ItemType "directory" -Path "${X64Dir}\redist"
 
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libgme.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libwavpack-1.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libxmp.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libogg-0.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libopus-0.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libopusfile-0.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\odamex.exe", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2_mixer.dll", `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.exe", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase332u_net_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase332u_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase332u_xml_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw332u_core_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw332u_html_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw332u_xrc_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\server\RelWithDebInfo\odasrv.exe" `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\libgme.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\libwavpack-1.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\libxmp.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\libogg-0.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\libopus-0.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\libopusfile-0.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\odamex.exe", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\SDL2_mixer.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\SDL2.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\odalaunch.exe", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxbase332u_net_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxbase332u_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxbase332u_xml_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxmsw332u_core_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxmsw332u_html_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxmsw332u_xrc_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\odasrv.exe" `
         -Destination "${X64Dir}\"
 
     # Get VC++ Redist
@@ -170,13 +170,13 @@ function ZipDebugX64 {
 
     # Copy pdb files into zip.  DO NOT THROW THESE AWAY!
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\odamex.pdb" `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\odamex.pdb" `
         -Destination "${OutputDir}\odamex-x64-${OdamexVersion}${OdamexTestSuffix}.pdb"
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX64\server\RelWithDebInfo\odasrv.pdb" `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\odasrv.pdb" `
         -Destination "${OutputDir}\odasrv-x64-${OdamexVersion}${OdamexTestSuffix}.pdb"
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.pdb" `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\odalaunch.pdb" `
         -Destination "${OutputDir}\odalaunch-x64-${OdamexVersion}${OdamexTestSuffix}.pdb"
 
     7z.exe a `
