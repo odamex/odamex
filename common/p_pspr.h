@@ -62,11 +62,20 @@ void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic);
 
 struct pspdef_t
 {
-	state_t*	state;	// a NULL state means not active
+	statenum_t	statenum;	// S_NULL means not active
 	int 		tics;
 
 	fixed_t 	sx;
 	fixed_t 	sy;
+
+	state_t* state() const
+	{
+		if (statenum == S_NULL)
+			return NULL;
+
+		DoomObjectContainer<state_t, int32_t>::iterator it = states.find(statenum);
+		return it != states.end() ? &it->second : NULL;
+	}
 };
 
 FArchive &operator<< (FArchive &, pspdef_t &);

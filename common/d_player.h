@@ -237,7 +237,7 @@ public:
 	{
 		bool operator()(const PspriteStateType& i_latch, const pspdef_t& i_psp) const
 		{
-			return i_latch.statenum == (i_psp.state ? i_psp.state->statenum : static_cast<statenum_t>(-1));
+			return i_latch.statenum == i_psp.statenum;
 		}
 	};
 
