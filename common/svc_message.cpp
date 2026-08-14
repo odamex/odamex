@@ -1047,10 +1047,8 @@ odaproto::svc::PlayerState SVC_PlayerState(const player_t& player)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		const pspdef_t* psp = &player.psprites[i];
-		const int32_t state = psp->state ? psp->state->statenum : 0;
 		odaproto::Player_Psp* plpsp = pl->add_psprites();
-		plpsp->set_statenum(state);
+		plpsp->set_statenum(player.psprites[i].statenum);
 	}
 
 	for (int i = 0; i < NUMPOWERS; i++)

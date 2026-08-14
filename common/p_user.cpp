@@ -1457,7 +1457,7 @@ player_s::player_s() :
 	// Can't put this in initializer list?
 	attacker = AActor::AActorPtr();
 
-	pspdef_t zeropsp = { NULL, 0, 0, 0 };
+	pspdef_t zeropsp = { S_NULL, 0, 0, 0 };
 	ArrayInit(psprites, zeropsp);
 	ArrayInit(oldvelocity, 0);
 	ArrayInit(prefcolor, 0);
