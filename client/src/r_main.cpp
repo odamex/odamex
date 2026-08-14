@@ -869,11 +869,10 @@ void R_SetupFrame (player_t *player)
 		return;
 
 	player_t &consolePlayer = consoleplayer();
-	const bool use_localview =
-	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
-	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback)
-		||
-		displayplayer().isFreecam;
+	const bool use_localview = consolePlayer.id == displayplayer().id &&
+	                           consolePlayer.health > 0 &&
+	                           not consolePlayer.mo->reactiontime &&
+	                           not netdemo.isInPlayback() && not demoplayback;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -943,13 +942,13 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	if ((use_localview && !::localview.skippitch) || netdemo.isPaused() || displayplayer().isFreecam)
+	if ((use_localview && !::localview.skippitch) || netdemo.isPaused())
 	{
 		R_ViewShear(std::clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}
 	else
 	{
-		// Only interpolate if we are spectating
+		// Only interpolate if we are spectating/freecam
 		fixed_t pitch = camera->prevpitch + FixedMul(render_lerp_amount, camera->pitch - camera->prevpitch);
 		R_ViewShear(pitch);
 	}
