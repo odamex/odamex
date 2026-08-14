@@ -1,6 +1,7 @@
 # CMake >= 3.13 needed for -S and -B params in library compilation.
 # CMake >= 3.19 needed for policy CMP0112: target-dependent generator expressions
 #               do not implicitly add target-level dependencies.
+# CMake >= 3.20 needed for restricted set of generator expressions allowed in custom command OUTPUT args.
 #
 # Note that if you are running Linux, there are many ways to get newer
 # versions of CMake.
@@ -14,7 +15,7 @@
 # - If you have Python installed, you can install CMake through pip.
 #
 
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.20)
 
 project(Odamex VERSION 13.0.0)
 
@@ -69,6 +70,8 @@ cmake_dependent_option( USE_INTERNAL_LIBADLMIDI "Use internal libADLMIDI" 1 BUIL
 
 set(ODAMEX_INSTALL_BINDIR "/usr/local/bin" CACHE PATH "Smart default for bin dir location")
 set(ODAMEX_INSTALL_DATADIR "/usr/local/share" CACHE PATH "Smart default for data dir location")
+
+set(ODAMEX_ARTIFACT_DIR "${CMAKE_BINARY_DIR}/odamex" CACHE PATH "The build directory in which to place deployable end items such as executables, dynamic libraries, and data resources.")
 
 if(NOT APPLE AND NOT WIN32)
   add_definitions(-DODAMEX_INSTALL_BINDIR="${ODAMEX_INSTALL_BINDIR}")

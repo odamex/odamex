@@ -27,13 +27,20 @@
     // DrawText macros in winuser.h interfere with v_video.h
     #ifndef NODRAWTEXT
         #define NODRAWTEXT
-    #endif  // NODRAWTEXT
+    #endif
 
     #ifndef NOMINMAX
         #define NOMINMAX
-    #endif  // NOMINMAX;
+    #endif
 
-    #define WIN32_LEAN_AND_MEAN
+    #ifndef WIN32_LEAN_AND_MEAN
+    #   define WIN32_LEAN_AND_MEAN
+    #endif
+
+    #ifndef _CRT_SECURE_NO_WARNINGS
+    #   define _CRT_SECURE_NO_WARNINGS
+    #endif
+
     // need to make winxp compat for raw mouse input
     // need at least vista for SHGetKnownFolderPath
     #if (_WIN32_WINNT < _WIN32_WINNT_VISTA)
