@@ -130,7 +130,10 @@ netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
 extern NetGraph netgraph;
-static auto  pool { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
+namespace
+{
+	auto pool { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
+}
 OdaMessenger messenger { pool };
 
 static std::unique_ptr<CanarySocketClient> s_canary;

@@ -670,20 +670,6 @@ namespace
 				return emplaceResult.first->second;
 			}
 
-			void ServiceMessenger(int currentTic, std::map<netadr_t, client_t>::iterator iter, buf_t& packetBuffer)
-			{
-				// Because we still want to honor acks from a disconnecting client,
-				// we must service them immediately upon receipt from the socket because
-				// they are not queued by the receiver.
-				while (iter->second.messenger->NextReceivedPacket(packetBuffer))
-				{
-					iter->second.messenger->HandleAcks(packetBuffer);
-				}
-
-				iter->second.messenger->HandleRetransmissions(currentTic, iter->first);
-				iter->second.messenger->SendAll(currentTic, iter->first);
-			}
-
 			size_t CheckMessengers(int currentTic)
 			{
 				buf_t throwaway;
@@ -736,6 +722,20 @@ namespace
 			}
 
 		protected:
+			static void ServiceMessenger(int currentTic, std::map<netadr_t, client_t>::iterator iter, buf_t& packetBuffer)
+			{
+				// Because we still want to honor acks from a disconnecting client,
+				// we must service them immediately upon receipt from the socket because
+				// they are not queued by the receiver.
+				while (iter->second.messenger->NextReceivedPacket(packetBuffer))
+				{
+					iter->second.messenger->HandleAcks(packetBuffer);
+				}
+
+				iter->second.messenger->HandleRetransmissions(currentTic, iter->first);
+				iter->second.messenger->SendAll(currentTic, iter->first);
+			}
+
 			// Intentionally use a map here instead of an unordered_map, because a map (a binary tree) tends to be
 			// faster for iterating over smaller element counts than an unordered_map (a hash table), the latter
 			// of which may require iterating over some number of completely unused buckets.
