@@ -2499,16 +2499,23 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	}
 
 	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
+	fixed_t pspx[NUMPSPRITES] = {0, 0};
+	fixed_t pspy[NUMPSPRITES] = {0, 0};
+	bool pspmoved[NUMPSPRITES] = {false, false};
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		if (i < msg->player().psprites_size())
 		{
-			const int32_t state = msg->player().psprites().Get(i).statenum();
+			const odaproto::PspriteState& psprite = msg->player().psprites().Get(i);
+			const int32_t state = psprite.statenum();
             if (!states.contains(state))
 			{
 				continue;
 			}
 			stnum[i] = static_cast<statenum_t>(state);
+			pspx[i] = psprite.sx();
+			pspy[i] = psprite.sy();
+			pspmoved[i] = true;
 		}
 	}
 
@@ -2549,7 +2556,15 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		player.ammo[i] = ammo[i];
 
 	for (int i = 0; i < NUMPSPRITES; i++)
+	{
 		P_SetPsprite(player, i, stnum[i]);
+
+		if (pspmoved[i] && player.psprites[i].state)
+		{
+			player.psprites[i].sx = pspx[i];
+			player.psprites[i].sy = pspy[i];
+		}
+	}
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
