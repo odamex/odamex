@@ -59,6 +59,11 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		return MessageResultEnum::ABORT;
 	}
 
+	if (m_isBitBucket)
+	{
+		return MessageResultEnum::DEFER;
+	}
+
 	if (header.flags & PacketHeaderType::FLAG_COMPRESSED)
 	{
 		m_packet.GetCompressorRef().Decompress(io_rawBuf);
@@ -178,7 +183,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 bool OdaMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 {
-	if (m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
+	if (m_isBitBucket or m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
 	{
 		return false;
 	}
@@ -277,7 +282,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		m_recordingBuffer.clear();
 	}
 
-	if (simulated_connection)
+	if (m_isBitBucket or simulated_connection)
 	{
 		Clear();
 	}
@@ -387,6 +392,11 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 
 int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
 {
+	if (m_isBitBucket)
+	{
+		return 0;
+	}
+
 	int retransmissionsSent = 0;
 	int bytesSent = 0;
 

@@ -664,9 +664,10 @@ namespace
 	{
 		public:
 
-			void TakeMessengerFrom(client_t&& client)
+			client_t& TakeMessengerFrom(client_t&& client)
 			{
-				m_deadEndMessengers.emplace(client.address, std::move(client));
+				auto emplaceResult = m_deadEndMessengers.emplace(client.address, std::move(client));
+				return emplaceResult.first->second;
 			}
 
 			void ServiceMessenger(int currentTic, std::map<netadr_t, client_t>::iterator iter, buf_t& packetBuffer)
@@ -747,6 +748,14 @@ namespace
 static void SV_DepartMessenger(client_t& client)
 {
 	s_departingMessengers.TakeMessengerFrom(std::move(client));
+
+	// Build a stub client and bit-bucket all of its messages.  This ensures that any errant uses of the messenger
+	// between now and the time that the player object is destroyed are safely no-op'd.
+	client = client_t{};
+	client.messenger->SetBitBucket(true);
+
+	// If needed, you could capture the return value from TakeMessengerFrom above, which is a reference to
+	// the moved, operational client, and copy any additional metadata into the stub client.
 }
 
 static size_t SV_CheckDepartingMessengers(int currentTic)
@@ -2472,9 +2481,11 @@ void SV_DisconnectClient(player_t &who)
 	if (who.client.displaydisconnect)
 	{
 		// print some final stats for the disconnected player
-		SV_BroadcastPrintFmt("{} disconnected. ({})\n",
-		                     who.userinfo.netname,
-		                     SV_BuildKillsDeathsStatusString(who));
+		SV_BroadcastPrintFmtButPlayer(PRINT_NORCON,
+		                              who.id,
+		                              "{} disconnected. ({})\n",
+		                              who.userinfo.netname,
+		                              SV_BuildKillsDeathsStatusString(who));
 	}
 
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &who);

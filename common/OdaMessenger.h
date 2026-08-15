@@ -59,6 +59,8 @@ class OdaMessenger
 		OdaMessenger(OdaMessenger&&)            = default;
 		OdaMessenger& operator=(OdaMessenger&&) = default;
 
+		void SetBitBucket(bool i_isBitBucket) { m_isBitBucket = i_isBitBucket; }
+
 		//  -------------- Receiving functions --------------
 
 		/// Receive and enqueue a packet for processing.  Every packet received with this function must be subsequently fetched via
@@ -214,6 +216,9 @@ class OdaMessenger
 
 		std::basic_string<byte> m_recordingBuffer;
 		bool                    m_recordingIsEnabled { false };
+
+		bool m_isBitBucket { false };   ///< Set this true to always discard all data.
+		                                ///< Use it to make a transient "stub" messenger for disconnecting clients.
 
 		// Metrics
 		size_t  m_bytesSentWithReliability      {  0 };
