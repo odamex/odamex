@@ -3145,7 +3145,7 @@ void P_RespawnSpecials (void)
 	if (itemrespawnque.empty())
 		return;
 
-	const auto& [mthing, respawntime] = itemrespawnque.front();
+	const auto [mthing, respawntime] = itemrespawnque.front();
 
 	// wait a certain number of seconds before respawning this special
 	if (level.time - respawntime < sv_itemrespawntime * TICRATE)
@@ -3170,14 +3170,8 @@ void P_RespawnSpecials (void)
 
 	const fixed_t z = it->second->flags & MF_SPAWNCEILING ? ONCEILINGZ : ONFLOORZ;
 
-	// spawn a teleport fog at the new spot
-	AActor* mo = new AActor (x, y, z, MT_IFOG);
-	SV_SpawnMobj(mo);
-	if (clientside)
-		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
-
 	// spawn it
-	mo = new AActor (x, y, z, it->second->type);
+	AActor* mo = new AActor (x, y, z, it->second->type);
 	mo->spawnpoint = mthing;
 	mo->angle = ANG45 * (mthing.angle / 45);
 
@@ -3192,6 +3186,28 @@ void P_RespawnSpecials (void)
 	}
 
 	mo->special = 0;
+
+	// a solid thing (usually a barrel) would trap whoever is standing there,
+	// so hold it back until the spot is clear
+	if ((mo->flags & MF_SOLID) && !P_TestMobjLocation(mo))
+	{
+		// destroying a barrel puts it back in the queue on its own
+		const bool requeued = mo->info->type == MT_BARREL;
+
+		mo->Destroy();
+		itemrespawnque.pop();
+
+		if (!requeued)
+			itemrespawnque.emplace(mthing, level.time);
+
+		return;
+	}
+
+	// spawn a teleport fog at the new spot
+	AActor* fog = new AActor (x, y, z, MT_IFOG);
+	SV_SpawnMobj(fog);
+	if (clientside)
+		S_Sound (fog, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	// pull it from the que
 	itemrespawnque.pop();
