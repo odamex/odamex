@@ -25,6 +25,7 @@
 
 #include <deque>
 #include <list>
+#include <memory>
 #include <memory_resource>
 #include <queue>
 
@@ -60,9 +61,10 @@
 
 struct client_t
 {
-	OdaMessenger messenger  { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
-	netadr_t     address    { };
+	std::unique_ptr<std::pmr::unsynchronized_pool_resource> pool     { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
+	std::unique_ptr<OdaMessenger>                           messenger{ std::make_unique<OdaMessenger>(pool) };
 
+	netadr_t    address           { };
 	short       version           { 0 };    // protocol version supported by the client
 	int         packedversion     { 0 };
 	int         last_received     { 0 };    // for timeouts
@@ -83,6 +85,9 @@ struct client_t
 	// Clients are not copyable.  They can be moved, but not copied.
 	client_t(const client_t &other)            = delete;
 	client_t& operator=(const client_t& other) = delete;
+
+	client_t(client_t&&)            = default;
+	client_t& operator=(client_t&&) = default;
 };
 
 //
