@@ -1394,28 +1394,28 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 
 	validcount++;
 	spechit.clear();
-  
-  int xl;
+
+	int xl;
 	int xh;
 	int yl;
 	int yh;
 
 	if (tmflags & MF_NOCLIP && !(tmflags & MF_SKULLFLY))
-  {
-    // let the freecam use teleporters
-    if (thing->player && thing->player->isFreecam)
-    {
-      xl = (tmbbox[BOXLEFT] - blockmap.originx())>>MAPBLOCKSHIFT;
-      xh = (tmbbox[BOXRIGHT] - blockmap.originx())>>MAPBLOCKSHIFT;
-      yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
-      yh = (tmbbox[BOXTOP] - blockmap.originy())>>MAPBLOCKSHIFT;
+	{
+		// let the freecam use teleporters
+		if (thing->player && thing->player->isFreecam)
+		{
+			xl = (tmbbox[BOXLEFT] - blockmap.originx()) >> MAPBLOCKSHIFT;
+			xh = (tmbbox[BOXRIGHT] - blockmap.originx()) >> MAPBLOCKSHIFT;
+			yl = (tmbbox[BOXBOTTOM] - blockmap.originy()) >> MAPBLOCKSHIFT;
+			yh = (tmbbox[BOXTOP] - blockmap.originy()) >> MAPBLOCKSHIFT;
 
-      for (int bx = xl; bx <= xh; bx++)
-        for (int by = yl; by <= yh; by++)
-          P_BlockLinesIterator(bx, by, PIT_CheckLine, true);
-    }
-    return true;
-  }
+			for (int bx = xl; bx <= xh; bx++)
+				for (int by = yl; by <= yh; by++)
+					P_BlockLinesIterator(bx, by, PIT_CheckLine, true);
+		}
+		return true;
+	}
 
 	// Check things first, possibly picking things up.
 	// The bounding box is extended by MAXRADIUS
