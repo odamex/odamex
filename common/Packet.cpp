@@ -89,11 +89,12 @@ size_t Packet::CompressAndSend(const netadr_t& i_dest)
 	return bytesSent;
 }
 
-size_t Packet::ReSend(int i_historicalLocalTic, int sequence, const buf_t& i_dataBuffer, const netadr_t& i_dest)
+size_t Packet::ReSend(int i_historicalLocalTic, int i_destinationTic, int sequence, const buf_t& i_dataBuffer, const netadr_t& i_dest)
 {
 	m_outgoingPacketBuffer.clear();
 
 	m_header.originatorTic  = i_historicalLocalTic;
+	m_header.destinationTic = i_destinationTic;
 	m_header.sequence       = sequence;
 	m_header.reliableSize   = static_cast<uint16_t>(i_dataBuffer.size());
 	m_header.flags          = 0;
@@ -104,7 +105,7 @@ size_t Packet::ReSend(int i_historicalLocalTic, int sequence, const buf_t& i_dat
 	return CompressAndSend(i_dest);
 }
 
-size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& i_dest)
+size_t Packet::Send(int i_currentTic, int i_destinationTic, SequenceSender& i_sender, const netadr_t& i_dest)
 {
 	if (m_header.reliableSize)
 	{
@@ -128,7 +129,8 @@ size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& 
 		m_header.sequence = i_sender.MostRecentAcquiredSequence();
 	}
 
-	m_header.originatorTic = i_currentTic;
+	m_header.originatorTic  = i_currentTic;
+	m_header.destinationTic = i_destinationTic;
 
 	m_outgoingPacketBuffer.SeekWrite(0, buf_t::BT_START);
 	m_header.Pack(m_outgoingPacketBuffer);
@@ -136,7 +138,7 @@ size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& 
 	return CompressAndSend(i_dest);
 }
 
-size_t Packet::SendHighPriority(int i_currentTic, SequenceSender& i_sender, const netadr_t& i_dest)
+size_t Packet::SendHighPriority(int i_currentTic, int i_destinationTic, SequenceSender& i_sender, const netadr_t& i_dest)
 {
 	if (m_header.reliableSize)
 	{
@@ -144,6 +146,7 @@ size_t Packet::SendHighPriority(int i_currentTic, SequenceSender& i_sender, cons
 	}
 
 	m_header.originatorTic  = i_currentTic;
+	m_header.destinationTic = i_destinationTic;
 	m_header.sequence       = i_sender.MostRecentAcquiredSequence();
 	m_header.flags          |= PacketHeaderType::FLAG_HIGH_PRIORITY;
 

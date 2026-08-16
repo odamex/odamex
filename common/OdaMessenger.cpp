@@ -303,7 +303,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	{
 		m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
 
-		const size_t sendSize = m_highPacket.SendHighPriority(i_currentTic, m_sender, i_dest);
+		const size_t sendSize = m_highPacket.SendHighPriority(i_currentTic, m_destinationTic, m_sender, i_dest);
 		bytesSentBestEffort += sendSize;
 		m_byteBudget        -= static_cast<int>(sendSize);
 	}
@@ -317,7 +317,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		// Now cover the case where we have leftover space enough for an unreliable portion.
 		m_outgoingNonReliableQueue.Pack([this](const buf_t& messageBuf) { return PackAsUnreliable(m_packet, messageBuf); });
 
-		const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
+		const size_t sendSize = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
 		m_bytesSentWithReliability += sendSize;
 		m_byteBudget               -= static_cast<int>(sendSize);
 	}
@@ -343,13 +343,13 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		{
 			if (m_packet.SizeOfReliablePortion() == 0)
 			{
-				const size_t bestEffortBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
+				const size_t bestEffortBytes = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
 				bytesSentBestEffort         += bestEffortBytes;
 				m_byteBudget                -= static_cast<int>(bestEffortBytes);
 			}
 			else
 			{
-				const size_t reliableBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
+				const size_t reliableBytes = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
 				m_bytesSentWithReliability  += reliableBytes;
 				m_byteBudget                -= static_cast<int>(reliableBytes);
 			}
@@ -365,7 +365,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	// it contains only a header.
 
 	const size_t lastReliableBytesSent = m_packet.SizeOfReliablePortion();
-	const size_t lastTotalSent         = m_packet.Send(i_currentTic, m_sender, i_dest);
+	const size_t lastTotalSent         = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
 	m_byteBudget                      -= static_cast<int>(lastTotalSent);
 
 	if (lastReliableBytesSent)
@@ -442,7 +442,11 @@ int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest
 			previousPacketSeq = sendQueueEntry->header.sequence;
 
 			sendQueueEntry->lastRetransmitTic = i_currentTic;
-			const int resendSize = static_cast<int>(m_packet.ReSend(sendQueueEntry->header.originatorTic, sendQueueEntry->header.sequence, sendQueueEntry->buf, i_dest));
+			const int resendSize = static_cast<int>(m_packet.ReSend(sendQueueEntry->header.originatorTic,
+			                                                        sendQueueEntry->header.destinationTic,
+			                                                        sendQueueEntry->header.sequence,
+			                                                        sendQueueEntry->buf,
+			                                                        i_dest));
 			bytesSent    += resendSize;
 			m_byteBudget -= resendSize;
 		}
