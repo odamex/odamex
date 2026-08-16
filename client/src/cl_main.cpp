@@ -134,7 +134,7 @@ namespace
 {
 	auto pool { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
 }
-OdaMessenger messenger { pool };
+OdaMessenger messenger { pool, 0 };
 
 static std::unique_ptr<CanarySocketClient> s_canary;
 
@@ -585,7 +585,8 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 
 	connected = false;
 
-	messenger = OdaMessenger {pool};
+	messenger = OdaMessenger {pool, gametic};
+
 	P_ClearAllNetIds();
 	s_canary.reset();
 	gameaction = ga_fullconsole;
@@ -796,6 +797,8 @@ void CL_StepTics(unsigned int count)
 		{
 			++gametic;
 		}
+
+		messenger.SetLocalTic(gametic);
 	}
 
 	DObject::EndFrame ();
@@ -2071,7 +2074,7 @@ bool CL_Connect()
 		s_canary->Connect(tcpAddress, udpAddress);
 	}
 
-	messenger = OdaMessenger(pool);
+	messenger = OdaMessenger(pool, gametic);
 	messenger.SetMaxRate(20);               // FIXME: total guess.
 	messenger.SetPacketsPerRetransmit(10);  // To align with the size of the traditional cmd buffer.
 	messenger.SetRetransmitDelay(0);        // This causes an immediate retransmit to relieve the risk of

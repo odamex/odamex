@@ -47,9 +47,10 @@ class OdaMessenger
 		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
 		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
 
-		explicit OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>& i_poolPtr)
+		OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>& i_poolPtr, int i_tic)
 			: m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
 			, m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
+			, m_localTic { i_tic }
 		{
 		}
 
@@ -59,7 +60,10 @@ class OdaMessenger
 		OdaMessenger(OdaMessenger&&)            = default;
 		OdaMessenger& operator=(OdaMessenger&&) = default;
 
+		//  -------------- Basic state management --------------
 		void SetBitBucket(bool i_isBitBucket) { m_isBitBucket = i_isBitBucket; }
+
+		void SetLocalTic(int i_tic) { m_localTic = i_tic; }
 
 		//  -------------- Receiving functions --------------
 
@@ -210,6 +214,10 @@ class OdaMessenger
 		int m_byteBudget  {  0 };       ///< The live budget.  Signed so that it can also represent debt.
 		int m_perTicBudget{  0 };       ///< The value used to reset the budget every tic.
 		int m_latchedTic  { -1 };       ///< Used for detecting new tics and resetting the budget.
+
+		int m_localTic          { -1 }; ///< The current local tic.
+		int m_receivedLocalTic  { -1 }; ///< The most recently-echoed back local tic from the other end.
+		int m_receivedRemoteTic { -1 }; ///< The other end's statement about its own tic.
 
 		int m_reliableOverloadThreshold { 0 };
 		int m_reliableOverloadCount { 0 };
