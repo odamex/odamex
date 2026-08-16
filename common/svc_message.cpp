@@ -205,6 +205,7 @@ odaproto::svc::PlayerPsprites SVC_PlayerPsprites(const player_t& player)
 	odaproto::svc::PlayerPsprites msg;
 
 	msg.set_player_tic(player.tic);
+	msg.set_pid(player.id);
 	for (const auto& psprite : player.psprites)
 	{
 		FillPsprite(*msg.add_psprites(), psprite);
@@ -946,6 +947,12 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(const player_t& player, byte flag
 	{
 		if (!player.spectator)
 			msg.set_cheats(player.cheats);
+	}
+
+	if (flags & SVC_PM_WEAPON)
+	{
+		msg.set_readyweapon(player.readyweapon);
+		msg.set_pendingweapon(player.pendingweapon);
 	}
 
 	return msg;

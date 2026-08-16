@@ -256,6 +256,7 @@ message PlayerPsprites
 {
 	int32                 player_tic = 1;
 	repeated PspriteState psprites   = 2;   // psprite[psprite_type] = psprite
+	uint32                pid        = 3;   // whose psprites these are
 }
 
 // svc_updatesector
@@ -294,6 +295,9 @@ message PlayerMembers
 
 	// Ch0wW: Include Cheats...
 	uint32 cheats = 15;
+
+	int32 readyweapon = 16;
+	int32 pendingweapon = 17;
 }
 
 // svc_teammembers

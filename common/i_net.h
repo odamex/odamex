@@ -194,6 +194,12 @@ enum clientBuf_e
  */
 #define SVC_PM_CHEATS BIT(5)
 
+/**
+ * @brief svc_playermembers: Weapon in hand. Broadcast so that viewers other than
+ *        the owner know which weapon to draw when spying them.
+ */
+#define SVC_PM_WEAPON BIT(6)
+
 extern int   localport;
 extern int   msg_badread;
 extern bool  simulated_connection;

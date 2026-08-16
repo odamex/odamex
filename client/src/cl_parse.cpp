@@ -1727,6 +1727,24 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		if (!p.spectator)
 			p.cheats = msg->cheats();
 	}
+
+	// Our own weapon is driven by prediction and the rollback state, so this is only
+	// here to tell us what everyone else is holding.
+	if ((flags & SVC_PM_WEAPON) && p.id != consoleplayer_id)
+	{
+		const int32_t ready = msg->readyweapon();
+		const int32_t pending = msg->pendingweapon();
+
+		if (ready >= 0 && ready < NUMWEAPONS && p.readyweapon != ready)
+		{
+			p.readyweapon = static_cast<weapontype_t>(ready);
+			p.pendingweapon = wp_nochange;
+			P_BringUpWeapon(p);
+		}
+
+		if (pending >= 0 && pending < NUMWEAPONS)
+			p.pendingweapon = static_cast<weapontype_t>(pending);
+	}
 }
 
 //
@@ -2480,7 +2498,7 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	int armortype = msg->player().armortype();
 	int armorpoints = msg->player().armorpoints();
 	int lives = msg->player().lives();
-	weapontype_t weap = static_cast<weapontype_t>(msg->player().readyweapon());
+	int32_t readyweapon = msg->player().readyweapon();
 
 	byte cardByte = msg->player().cards();
 	std::bitset<6> cardBits(cardByte);
@@ -2543,14 +2561,19 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	player.armorpoints = armorpoints;
 	player.lives = lives;
 
-	player.readyweapon = weap;
-	player.pendingweapon = wp_nochange;
+	if (readyweapon >= 0 && readyweapon < NUMWEAPONS)
+	{
+		const weapontype_t weap = static_cast<weapontype_t>(readyweapon);
+
+		player.readyweapon = weap;
+		player.pendingweapon = wp_nochange;
+
+		if (!player.weaponowned[weap])
+			P_GiveWeapon(player, weap, false);
+	}
 
 	for (int i = 0; i < NUMCARDS; i++)
 		player.cards[i] = cardBits[i];
-
-	if (!player.weaponowned[weap])
-		P_GiveWeapon(player, weap, false);
 
 	for (int i = 0; i < NUMAMMO; i++)
 		player.ammo[i] = ammo[i];
@@ -3354,10 +3377,28 @@ static void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
 {
 	std::array<PspriteStateType, NUMPSPRITES> psprites;
 
-	for (size_t i = 0; i < psprites.size(); ++i)
+	const size_t count = std::min(psprites.size(),
+	                              static_cast<size_t>(msg->psprites_size()));
+	for (size_t i = 0; i < count; ++i)
 	{
 	    psprites[i].statenum = static_cast<statenum_t>(msg->psprites(i).statenum());
 	    psprites[i].tics     = msg->psprites(i).tics();
+	}
+
+	// Nothing predicts another player's weapon, just take what the server says.
+	if (msg->pid() != consoleplayer_id)
+	{
+		player_t& p = idplayer(msg->pid());
+		if (!validplayer(p) || !p.mo)
+			return;
+
+		for (size_t i = 0; i < count; ++i)
+		{
+			auto state = states.find(psprites[i].statenum);
+			p.psprites[i].state = state != states.end() ? &state->second : nullptr;
+			p.psprites[i].tics = psprites[i].tics;
+		}
+		return;
 	}
 
 	if (rollerState.ResolvePsprites(msg->player_tic(),

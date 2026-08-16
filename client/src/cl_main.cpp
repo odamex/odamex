@@ -653,6 +653,14 @@ void CL_CheckDisplayPlayer(void)
 		}
 		displayplayer_id = newid;
 
+		// We have no idea where the new view target's weapon is sitting until the
+		// server tells us, and in a netdemo it may never tell us at all.
+		//
+		// Park it at the neutral position rather than wherever we last
+		// left this player.
+		if (newid != consoleplayer_id && validplayer(displayplayer()))
+			P_RestPsprites(displayplayer());
+
 		// Changing display player can sometimes affect status bar visibility
 		// since the status bar isn't visible when display player is a spectator.
 		// The status bar needs to be refreshed as well because the status bar face
