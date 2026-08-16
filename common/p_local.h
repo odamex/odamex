@@ -160,30 +160,35 @@ extern struct brain_s {				// killough 3/26/98: global state of boss brain
 //
 // P_MAPUTL
 //
-typedef struct
+struct divline_t
 {
-	fixed_t 	x;
-	fixed_t 	y;
-	fixed_t 	dx;
-	fixed_t 	dy;
+	fixed_t x;
+	fixed_t y;
+	fixed_t dx;
+	fixed_t dy;
 
-} divline_t;
+	divline_t() = default;
+	explicit divline_t(const line_t& li) :
+		x(li.v1->x), y(li.v1->y),
+		dx(li.dx), dy(li.dy)
+	{}
 
-typedef struct
+	divline_t(fixed_t _x, fixed_t _y, fixed_t _dx, fixed_t _dy) :
+		x(_x), y(_y), dx(_dx), dy(_dy)
+	{}
+};
+
+struct intercept_t
 {
-	fixed_t 	frac;			// along trace line
-	bool 	isaline;
+	fixed_t frac;			// along trace line
+	bool    isaline;
 	union {
 		AActor* thing;
 		line_t* line;
-	}					d;
-} intercept_t;
+	} d;
+};
 
-#define MAXINTERCEPTS	128
-
-extern std::vector<intercept_t> intercepts;
-
-typedef bool (*traverser_t) (intercept_t *in);
+inline std::vector<intercept_t> intercepts;
 
 subsector_t* P_PointInSubsector(fixed_t x, fixed_t y);
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
@@ -199,7 +204,6 @@ AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov);
 
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
-void	P_MakeDivline (const line_t *li, divline_t *dl);
 fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1);
 int 	P_BoxOnLineSide (const std::span<const fixed_t, 4> tmbox, const line_t *ld);
 
@@ -215,15 +219,6 @@ void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=li
 #define PT_EARLYOUT 	4
 
 extern divline_t		trace;
-
-bool
-P_PathTraverse
-( fixed_t		x1,
-  fixed_t		y1,
-  fixed_t		x2,
-  fixed_t		y2,
-  int			flags,
-  bool		(*trav) (intercept_t *));
 
 // [ML] 2/1/10: Break out P_PointToAngle from R_PointToAngle2 (from EE)
 angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y);
@@ -265,8 +260,8 @@ bool    P_CheckSight (const AActor* t1, const AActor* t2);
 void    P_UseLines (player_t& player);
 void    P_ApplyTorque(AActor *mo);
 void    P_CopySector(sector_t *dest, sector_t *src);
-bool    P_ShouldClipPlayer(AActor* projectile, AActor* player);
-bool    P_ShouldClipFriendly(AActor* projectile, AActor* monster);
+bool    P_ShouldClipPlayer(const AActor* projectile, const AActor* player);
+bool    P_ShouldClipFriendly(const AActor* projectile, const AActor* monster);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
 double P_PlaneZ(double x, double y, const plane_t *plane);
@@ -328,9 +323,6 @@ bool	Check_Sides(const AActor *, int, int);					// phares
 extern byte*			rejectmatrix;	// for fast sight rejection
 extern bool				rejectempty;
 extern AActor** 		blocklinks; 	// for thing chains
-
-extern std::set<short>	movable_sectors;
-
 
 //
 // P_INTER
@@ -507,7 +499,7 @@ bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest);
 bool P_IsVoodooDoll(const AActor* mo);
 void P_FriendlyEffects();
 void P_FriendlyEffects(AActor* mo);
-bool P_ProjectileImmune(AActor* target, AActor* source);
+bool P_ProjectileImmune(const AActor* target, const AActor* source);
 void P_SetupHelpers();
 void P_ClearHelpers();
 void P_RunHelperTics();

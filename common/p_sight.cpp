@@ -115,8 +115,6 @@ bool PTR_SightTraverse (intercept_t *in)
 
 bool P_SightBlockLinesIterator(int x, int y)
 {
-	divline_t dl;
-
 	extern polyblock_t **PolyBlockMap;
 
 	const polyblock_t* polyLink = PolyBlockMap[(y * blockmap.width()) + x];
@@ -140,7 +138,7 @@ bool P_SightBlockLinesIterator(int x, int y)
 					int s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
 					if (s1 == s2)
 						continue;		// line isn't crossed
-					P_MakeDivline (ld, &dl);
+					const divline_t dl{*ld};
 					s1 = P_PointOnDivlineSide (trace.x, trace.y, &dl);
 					s2 = P_PointOnDivlineSide (trace.x+trace.dx, trace.y+trace.dy, &dl);
 					if (s1 == s2)
@@ -151,9 +149,11 @@ bool P_SightBlockLinesIterator(int x, int y)
 						return false;	// stop checking
 
 				// store the line for later intersection testing
-					intercept_t intercept;
-					intercept.d.line = ld;
-					intercept.isaline = true;
+					intercept_t intercept {
+						.frac    = 0_fx,
+						.isaline = true,
+						.d       = { .line = ld },
+					};
 					intercepts.push_back(intercept);
 				}
 				polyLink->polyobj->validcount = validcount;
@@ -173,7 +173,7 @@ bool P_SightBlockLinesIterator(int x, int y)
 		int s2 = P_PointOnDivlineSide (ld->v2->x, ld->v2->y, &trace);
 		if (s1 == s2)
 			continue;				// line isn't crossed
-		P_MakeDivline (ld, &dl);
+		const divline_t dl{*ld};
 		s1 = P_PointOnDivlineSide (trace.x, trace.y, &dl);
 		s2 = P_PointOnDivlineSide (trace.x+trace.dx, trace.y+trace.dy, &dl);
 		if (s1 == s2)
@@ -184,9 +184,11 @@ bool P_SightBlockLinesIterator(int x, int y)
 			return false;	// stop checking
 
 	// store the line for later intersection testing
-       	intercept_t intercept;
-       	intercept.d.line = ld;
-		intercept.isaline = true;
+		intercept_t intercept {
+			.frac    = 0_fx,
+			.isaline = true,
+			.d       = { .line = ld },
+		};
        	intercepts.push_back(intercept);
 	}
 
@@ -201,12 +203,10 @@ bool P_SightBlockLinesIterator(int x, int y)
 ====================
 */
 
-bool P_SightTraverseIntercepts ( void )
+bool P_SightTraverseIntercepts()
 {
 	size_t  count = intercepts.size();
-	fixed_t dist;
 	intercept_t *in = nullptr;
-	divline_t dl;
 //
 // calculate intercept distance
 //
@@ -215,7 +215,7 @@ bool P_SightTraverseIntercepts ( void )
 		if (!intercept.isaline)
 			I_Error("P_SightTraverseIntercepts: non-line intercept\n");
 
-		P_MakeDivline (intercept.d.line, &dl);
+		divline_t dl{*intercept.d.line};
 		intercept.frac = P_InterceptVector (&trace, &dl);
 	}
 
@@ -224,7 +224,9 @@ bool P_SightTraverseIntercepts ( void )
 //
 	while (count--)
 	{
-		dist = limits::MAXFIXED;
+		// clang tidy is just wrong here
+		// NOLINTNEXTLINE(misc-const-correctness)
+		fixed_t dist = limits::MAXFIXED;
 		for (intercept_t& intercept : intercepts)
 			if (intercept.frac < dist)
 			{
@@ -232,7 +234,7 @@ bool P_SightTraverseIntercepts ( void )
 				in = &intercept;
 			}
 
-		if ( !PTR_SightTraverse (in) )
+		if (!PTR_SightTraverse(in))
 			return false;					// don't bother going farther
 
 		in->frac = limits::MAXFIXED;

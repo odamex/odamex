@@ -2425,12 +2425,12 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 				if (target->info->spawnhealth >= 1000)
 				{
 					// Big bodies get a green armor.
-					damage = MAX((damage * 2) / 3, 1);
+					damage = std::max((damage * 2) / 3, 1);
 				}
 				else
 				{
 					// Small bodies get a blue armor.
-					damage = MAX(damage / 2, 1);
+					damage = std::max(damage / 2, 1);
 				}
 			}
 
