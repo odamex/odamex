@@ -37,9 +37,9 @@ SequenceReceiver::ReceiveTableType::iterator SequenceReceiver::ObtainReceivePack
 	return m_receiveTable.end();
 }
 
-bool SequenceReceiver::RegisterReliablePacket(int sequence, size_t i_size, buf_t& io_bufferRef)
+bool SequenceReceiver::RegisterReliablePacket(const PacketHeaderType& i_header, size_t i_size, buf_t& io_bufferRef)
 {
-	auto iter = ObtainReceivePacket(sequence);
+	auto iter = ObtainReceivePacket(i_header.sequence);
 	if (iter != m_receiveTable.end())
 	{
 		auto& entryRef = iter->second;
@@ -47,7 +47,7 @@ bool SequenceReceiver::RegisterReliablePacket(int sequence, size_t i_size, buf_t
 		// Only one reliable packet allowed per sequence number.
 		if (entryRef.reliable.header.sequence < 0)
 		{
-			entryRef.reliable.header.sequence = sequence;
+			entryRef.reliable.header = i_header;
 			entryRef.reliable.buf.WriteChunk(io_bufferRef.ReadChunk(i_size), i_size);
 			return true;
 		}
@@ -55,14 +55,14 @@ bool SequenceReceiver::RegisterReliablePacket(int sequence, size_t i_size, buf_t
 	return false;
 }
 
-bool SequenceReceiver::RegisterBestEffortPacket(int sequence, size_t i_size, buf_t& io_bufferRef)
+bool SequenceReceiver::RegisterBestEffortPacket(const PacketHeaderType& i_header, size_t i_size, buf_t& io_bufferRef)
 {
-	auto iter = ObtainReceivePacket(sequence);
+	auto iter = ObtainReceivePacket(i_header.sequence);
 	if (iter != m_receiveTable.end())
 	{
 		// Best-effort is never retransmitted.  There's no need to check for duplication.
 		SequenceQueueEntryType& entryRef = iter->second.bestEffort.emplace_back();
-		entryRef.header.sequence = sequence;
+		entryRef.header = i_header;
 		entryRef.buf.WriteChunk(io_bufferRef.ReadChunk(i_size), i_size);
 		return true;
 	}

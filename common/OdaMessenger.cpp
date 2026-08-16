@@ -85,7 +85,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 	if (header.reliableSize)
 	{
-		if (not m_receiver.RegisterReliablePacket(header.sequence, header.reliableSize, io_rawBuf))
+		if (not m_receiver.RegisterReliablePacket(header, header.reliableSize, io_rawBuf))
 		{
 			// Was it a worthless / duplicate retransmit?  Skip over the content.
 			io_rawBuf.SeekRead(header.reliableSize, buf_t::BT_CURRENT);
@@ -108,14 +108,13 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		//               because they could still have data mobjs that's more current than the mobjs'
 		//               last reliable update, which could be even older.
 		//
-		// Another subtlety: the realSequence will be -1 for any best-effort-only packets that predate
+		// Another subtlety: the header sequence will be -1 for any best-effort-only packets that predate
 		//                   any reliable messages.  Therefore we can't consider the sequence to be "old"
 		//                   unless it has a value >= 0.
-		const int  realSequence     = header.reliableSize ? header.sequence : -header.sequence;
 		const bool isHighPriority   = (header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0;
 		const bool isNormalPriority = not isHighPriority;
-		const bool isHighTooOld     = isHighPriority   and realSequence >= 0 and realSequence < m_currentReceivedPacketSequenceNumber;
-		const bool isNormalTooNew   = isNormalPriority and realSequence > m_currentReceivedPacketSequenceNumber;
+		const bool isHighTooOld     = isHighPriority   and header.sequence >= 0 and header.sequence < m_currentReceivedPacketSequenceNumber;
+		const bool isNormalTooNew   = isNormalPriority and header.sequence > m_currentReceivedPacketSequenceNumber;
 
 		if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
 		{
@@ -164,7 +163,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 			// Anything else in this "too new" best-effort payload will be handled after its reliable packet comes in.
 			// FYI - It doesn't hurt to have a duplicate ack handled whenever the owning packet is considered "current".
 
-			m_receiver.RegisterBestEffortPacket(realSequence, bestEffortSize, io_rawBuf);
+			m_receiver.RegisterBestEffortPacket(header, bestEffortSize, io_rawBuf);
 		}
 		else if (not isHighTooOld)
 		{
@@ -173,7 +172,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 		if (m_immediateReceiveBuffer.size())
 		{
-			m_immediateReceiveSequenceNumber = realSequence;
+			m_immediateReceiveSequenceNumber = header.sequence;
 			return MessageResultEnum::ACCEPT;
 		}
 	}
