@@ -55,8 +55,8 @@ class Packet
 		// SendHighPriority() is intended for sending best-effort-only packets that precede
 		// all other reliable and best-effort packets.
 		size_t Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& i_dest);
-		size_t ReSend(int sequence, const buf_t& i_dataBuffer, const netadr_t& i_dest);
-		size_t SendHighPriority(SequenceSender& i_sender, const netadr_t& i_dest);
+		size_t ReSend(int i_historicalLocalTic, int sequence, const buf_t& i_dataBuffer, const netadr_t& i_dest);
+		size_t SendHighPriority(int i_currentTic, SequenceSender& i_sender, const netadr_t& i_dest);
 
 		size_t Size() const { return m_outgoingPacketBuffer.size(); }
 		int    RemainingBytes() const { return MAX_UDP_SIZE - static_cast<int>(m_outgoingPacketBuffer.size()); }
@@ -64,8 +64,6 @@ class Packet
 		size_t SizeOfReliablePortion() const { return m_header.reliableSize; }
 
 		MiniLzo& GetCompressorRef() { return m_compressor; }
-
-		void SetOriginatorTic(int i_tic) { m_header.originatorTic = i_tic; }
 
 	protected:
 

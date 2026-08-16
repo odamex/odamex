@@ -307,7 +307,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	{
 		m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
 
-		const size_t sendSize = m_highPacket.SendHighPriority(m_sender, i_dest);
+		const size_t sendSize = m_highPacket.SendHighPriority(i_currentTic, m_sender, i_dest);
 		bytesSentBestEffort += sendSize;
 		m_byteBudget        -= static_cast<int>(sendSize);
 	}
@@ -446,7 +446,7 @@ int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest
 			previousPacketSeq = sendQueueEntry->sequence;
 
 			sendQueueEntry->lastRetransmitTic = i_currentTic;
-			const int resendSize = static_cast<int>(m_packet.ReSend(sendQueueEntry->sequence, sendQueueEntry->buf, i_dest));
+			const int resendSize = static_cast<int>(m_packet.ReSend(sendQueueEntry->originatingTic, sendQueueEntry->sequence, sendQueueEntry->buf, i_dest));
 			bytesSent    += resendSize;
 			m_byteBudget -= resendSize;
 		}
