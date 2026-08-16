@@ -546,7 +546,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (!pagename.empty())
 	{
-		const patch_t* patch = W_CachePatch(pagename);
+		const patch_t* patch = W_CachePatch(W_CheckWidescreenPatch(pagename));
 
 		page_width = patch->width();
 		page_height = patch->height() + (patch->height() / 5);

@@ -1195,7 +1195,7 @@ static void ST_loadGraphics()
 	}
 
 	// status bar background bits
-	sbar = W_CachePatchHandle("STBAR", PU_STATIC);
+	sbar = W_CachePatchHandle(W_CheckWidescreenPatch("STBAR"), PU_STATIC);
 	// in tyool 2024, we have widescreen status bars
 	// and they're not always 320x32
 	sbar_width = W_ResolvePatchHandle(sbar)->width();

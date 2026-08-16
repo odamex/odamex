@@ -831,6 +831,18 @@ patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 	return static_cast<patch_t*>(lumpcache[lumpnum]);
 }
 
+OLumpName W_CheckWidescreenPatch(const OLumpName& lump_main)
+{
+	OLumpName lump_wide = "W_";
+	static constexpr int max_lump_name_length = 8;
+  	strncpy(&lump_wide[2], lump_main.data(), max_lump_name_length - 2);
+
+	if (W_CheckNumForName(lump_wide) >= 0)
+		return lump_wide;
+
+	return lump_main;
+}
+
 patch_t* W_CachePatch(const char* name, const zoneTag_e tag)
 {
 	return W_CachePatch(W_GetNumForName(name), tag);
