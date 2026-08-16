@@ -38,10 +38,7 @@ jobs:
               -DBUILD_MASTER=1 \
               -DUSE_INTERNAL_GTEST=0 \
               -DUSE_INTERNAL_JSONCPP=0 \
-              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON;
-             pushd build;
-             ninja odaproto;
-             popd'
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON; pushd build; ninja odaproto; popd'
 
       - uses: ZedThree/clang-tidy-review/upload@v0.23.1
 
