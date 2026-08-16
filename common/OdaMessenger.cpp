@@ -112,7 +112,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		//                   any reliable messages.  Therefore we can't consider the sequence to be "old"
 		//                   unless it has a value >= 0.
 		const int  realSequence     = header.reliableSize ? header.sequence : -header.sequence;
-		const bool isHighPriority   = header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY;
+		const bool isHighPriority   = (header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0;
 		const bool isNormalPriority = not isHighPriority;
 		const bool isHighTooOld     = isHighPriority   and realSequence >= 0 and realSequence < m_currentReceivedPacketSequenceNumber;
 		const bool isNormalTooNew   = isNormalPriority and realSequence > m_currentReceivedPacketSequenceNumber;
