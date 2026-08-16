@@ -65,6 +65,8 @@ class Packet
 
 		MiniLzo& GetCompressorRef() { return m_compressor; }
 
+		void SetOriginatorTic(int i_tic) { m_header.originatorTic = i_tic; }
+
 	protected:
 
 		size_t CompressAndSend(const netadr_t& i_dest);

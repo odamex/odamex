@@ -63,7 +63,12 @@ class OdaMessenger
 		//  -------------- Basic state management --------------
 		void SetBitBucket(bool i_isBitBucket) { m_isBitBucket = i_isBitBucket; }
 
-		void SetLocalTic(int i_tic) { m_localTic = i_tic; }
+		void SetLocalTic(int i_tic)
+		{
+			m_localTic = i_tic;
+			m_packet.SetOriginatorTic(i_tic);
+			m_highPacket.SetOriginatorTic(i_tic);
+		}
 
 		//  -------------- Receiving functions --------------
 
