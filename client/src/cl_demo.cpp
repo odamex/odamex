@@ -1658,10 +1658,9 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	else
 		displayplayer_id = cid;
 
-	// setup psprites and restore player colors
+	// restore player colors
 	for (auto& player : players)
 	{
-		P_SetupPsprites(player);
 		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
 	}
 
