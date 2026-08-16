@@ -334,7 +334,7 @@ bool R_RotatePointSafe(int64_t x, int64_t y, angle_t ang, fixed_t &tx, fixed_t &
 
 	// Max distance for fixed_t (16.16 fixed point)
 	static constexpr int64_t limit = (int64_t(1) << 30) - 1;
-	const int64_t mag = MAX<int64_t>(tx64 < 0 ? -tx64 : tx64, ty64 < 0 ? -ty64 : ty64);
+	const int64_t mag = std::max<int64_t>(tx64 < 0 ? -tx64 : tx64, ty64 < 0 ? -ty64 : ty64);
 	if (mag <= limit)
 	{
 		tx = static_cast<fixed_t>(tx64);
@@ -545,8 +545,8 @@ int R_ProjectPointY(fixed_t z, fixed_t y)
 //
 bool R_CheckProjectionX(int &x1, int &x2)
 {
-	x1 = MAX(x1, 0);
-	x2 = MIN(x2, viewwidth - 1);
+	x1 = std::max(x1, 0);
+	x2 = std::min(x2, viewwidth - 1);
 	return (x1 <= x2);
 }
 
@@ -558,8 +558,8 @@ bool R_CheckProjectionX(int &x1, int &x2)
 //
 bool R_CheckProjectionY(int &y1, int &y2)
 {
-	y1 = MAX(y1, 0);
-	y2 = MIN(y2, viewheight - 1);
+	y1 = std::max(y1, 0);
+	y2 = std::min(y2, viewheight - 1);
 	return y1 <= viewheight - 1 || y2 >= 0;
 }
 
@@ -869,11 +869,10 @@ void R_SetupFrame (player_t *player)
 		return;
 
 	player_t &consolePlayer = consoleplayer();
-	const bool use_localview =
-	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
-	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback)
-		||
-		displayplayer().isFreecam;
+	const bool use_localview = consolePlayer.id == displayplayer().id &&
+	                           consolePlayer.health > 0 &&
+	                           not consolePlayer.mo->reactiontime &&
+	                           not netdemo.isInPlayback() && not demoplayback;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -943,13 +942,13 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	if ((use_localview && !::localview.skippitch) || netdemo.isPaused() || displayplayer().isFreecam)
+	if ((use_localview && !::localview.skippitch) || netdemo.isPaused())
 	{
 		R_ViewShear(std::clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}
 	else
 	{
-		// Only interpolate if we are spectating
+		// Only interpolate if we are spectating/freecam
 		fixed_t pitch = camera->prevpitch + FixedMul(render_lerp_amount, camera->pitch - camera->prevpitch);
 		R_ViewShear(pitch);
 	}

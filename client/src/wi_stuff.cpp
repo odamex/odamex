@@ -353,7 +353,7 @@ static void WI_updateAnimationStates(std::vector<wi_animationstate_t>& states)
 					break;
 			}
 
-			state.duration_left = MAX(tics, 1);
+			state.duration_left = std::max(tics, 1);
 
 			if (!state.frame_start)
 			{

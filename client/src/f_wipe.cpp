@@ -397,12 +397,11 @@ static inline void Wipe_DrawFadeGeneric()
 
 	fixed_t newfade = fade - 2;
 
-	if (newfade < 2)
-		newfade = 2;
+	newfade = std::max(newfade, 2);
 
 	fixed_t fadedelta = newfade + FixedMul(render_lerp_amount, fade - newfade);
 
-	const fixed_t bglevel = MAX(64 - fadedelta, 0);
+	const fixed_t bglevel = std::max(64 - fadedelta, 0);
 
 	for (int y = 0; y < surface_height; y++)
 	{

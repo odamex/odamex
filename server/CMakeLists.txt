@@ -39,7 +39,7 @@ endif()
 
 add_executable(odasrv
   ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
-odamex_target_settings(odasrv)
+odamex_target_settings(TARGET odasrv)
 odamex_target_errors(odasrv)
 
 target_include_directories(odasrv PRIVATE src)
