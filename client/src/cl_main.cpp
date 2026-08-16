@@ -2306,6 +2306,11 @@ void CL_ParseCommands()
 			break;
 		}
 
+		if (messenger.GetCurrentReceivedIsHighPriority())
+		{
+			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
+		}
+
 		const size_t          byteStart = ::net_message.BytesRead();
 		const ParseResultType result    = CL_ParseCommand();
 

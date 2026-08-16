@@ -62,8 +62,15 @@ class OdaMessenger
 		//  -------------- Basic state management --------------
 		void SetBitBucket(bool i_isBitBucket) { m_isBitBucket = i_isBitBucket; }
 
-		int  GetCurrentReceivedRemoteTic() const { return m_receivedHeader.originatorTic; }
-		int  GetCurrentReceivedLocalTic() const  { return m_receivedHeader.destinationTic; }
+		/// The GetCurrentReceived* accessors return the associated tic numbers of the
+		/// packet *currently being processed* in accordance with the most recent call
+		/// to NextReceivedPacket().  From call to call of NextReceivedPacket(), these
+		/// values should be expected to change and reflect the tic numbers contained
+		/// within and associated with the messages contained in that packet.
+		int  GetCurrentReceivedRemoteTic() const     { return m_receivedHeader.originatorTic; }
+		int  GetCurrentReceivedLocalTic() const      { return m_receivedHeader.destinationTic; }
+		bool GetCurrentReceivedIsReliable() const    { return m_receivedHeader.reliableSize > 0; }
+		bool GetCurrentReceivedIsHighPriority() const{ return (m_receivedHeader.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0; }
 
 		/// The reason we want to allow explicitly setting the destination tic for outbound headers
 		/// is that the server *might not* have used the absolute latest-available command from the
@@ -93,6 +100,9 @@ class OdaMessenger
 		/// finished from the associated socket to ensure reliable data is handled in a timely manner.
 		//
 		/// Returns true if data was available and has been moved into the given raw buffer, false otherwise.
+		///
+		/// PLEASE NOTE: Upon success, the timing / tic numbers associated with the GetCurrentReceived* accessor functions
+		///              will be updated to reflect the tic numbers in the received packet.  Please see their descriptions.
 		bool NextReceivedPacket(buf_t& io_rawBuf);
 
 		/// Optional function to handle whatever Acknowledgements sit at the front of the given buffer.
