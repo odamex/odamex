@@ -88,7 +88,7 @@ weaponstate_t P_GetWeaponState(const player_t& player)
 {
 	const state_t* st = player.psprites[player.psprnum].state();
 
-	if (st == NULL)
+	if (st == nullptr)
 		return unknownstate;
 
 	if (st->action == A_WeaponReady)
@@ -196,7 +196,7 @@ void P_SetPspriteRef(player_t& player, pspdef_t& psp, int32_t stnum)
 
 		psp.statenum = static_cast<statenum_t>(stnum);
 
-		state_t* st = &it->second;
+		const state_t* st = &it->second;
 		psp.tics = st->tics;		// could be 0
 
 		if (st->misc1)
@@ -1647,9 +1647,9 @@ FArchive &operator<< (FArchive &arc, pspdef_t &def)
 
 FArchive &operator>> (FArchive &arc, pspdef_t &def)
 {
-	state_t* state = NULL;
+	state_t* state = nullptr;
 	arc >> state >> def.tics >> def.sx >> def.sy;
-	def.statenum = state ? static_cast<statenum_t>(state->statenum) : S_NULL;
+	def.statenum = state ? state->statenum : S_NULL;
 	return arc;
 }
 

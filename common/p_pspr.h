@@ -68,13 +68,13 @@ struct pspdef_t
 	fixed_t 	sx;
 	fixed_t 	sy;
 
-	state_t* state() const
+	[[nodiscard]] state_t* state() const
 	{
 		if (statenum == S_NULL)
-			return NULL;
+			return nullptr;
 
-		DoomObjectContainer<state_t, int32_t>::iterator it = states.find(statenum);
-		return it != states.end() ? &it->second : NULL;
+		const auto it = states.find(statenum);
+		return it != states.end() ? &it->second : nullptr;
 	}
 };
 
