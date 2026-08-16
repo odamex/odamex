@@ -3171,7 +3171,7 @@ void P_RespawnSpecials (void)
 	const fixed_t z = it->second->flags & MF_SPAWNCEILING ? ONCEILINGZ : ONFLOORZ;
 
 	// spawn it
-	AActor* mo = new AActor (x, y, z, it->second->type);
+	auto* mo = new AActor(x, y, z, it->second->type);
 	mo->spawnpoint = mthing;
 	mo->angle = ANG45 * (mthing.angle / 45);
 
@@ -3204,7 +3204,7 @@ void P_RespawnSpecials (void)
 	}
 
 	// spawn a teleport fog at the new spot
-	AActor* fog = new AActor (x, y, z, MT_IFOG);
+	auto* fog = new AActor (x, y, z, MT_IFOG);
 	SV_SpawnMobj(fog);
 	if (clientside)
 		S_Sound (fog, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
