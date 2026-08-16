@@ -4806,6 +4806,10 @@ void SV_StepTics(uint64_t count)
 		}
 
 		gametic++;
+		for (auto& player : players)
+		{
+			player.client.messenger->SetLocalTic(gametic);
+		}
 	}
 
 	DObject::EndFrame();
