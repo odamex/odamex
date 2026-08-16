@@ -43,6 +43,7 @@
 
 #include "PacketHeaderType.h"
 #include "cl_freecam.h"
+#include "f_wipe.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -1272,6 +1273,9 @@ bool NetDemo::readSnapshot(SnapshotVector::const_iterator snap)
 
 	readSnapshotData(snapbuf);
 	netdemotic = snap->ticnum - header.starting_gametic;
+
+	NoWipe = 2;
+
 	return true;
 }
 
