@@ -28,7 +28,7 @@ jobs:
           config_file: "./ci/clang-tidy.yml"
           build_dir: "build"
           cmake_command: |
-            cmake -B build . -GNinja \
+            'cmake -B build . -GNinja \
               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
               -DBUILD_OR_FAIL=1 \
               -DBUILD_CLIENT=1 \
@@ -38,7 +38,10 @@ jobs:
               -DBUILD_MASTER=1 \
               -DUSE_INTERNAL_GTEST=0 \
               -DUSE_INTERNAL_JSONCPP=0 \
-              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON;
+             pushd build;
+             ninja odaproto;
+             popd'
 
       - uses: ZedThree/clang-tidy-review/upload@v0.23.1
 
