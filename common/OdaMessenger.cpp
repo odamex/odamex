@@ -32,7 +32,6 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 	const PacketHeaderType header {io_rawBuf};
 
 	m_immediateReceiveBuffer.clear();
-	m_immediateReceiveSequenceNumber = 0;
 
 	if (m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
 	{
@@ -113,8 +112,8 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		//                   unless it has a value >= 0.
 		const bool isHighPriority   = (header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0;
 		const bool isNormalPriority = not isHighPriority;
-		const bool isHighTooOld     = isHighPriority   and header.sequence >= 0 and header.sequence < m_currentReceivedPacketSequenceNumber;
-		const bool isNormalTooNew   = isNormalPriority and header.sequence > m_currentReceivedPacketSequenceNumber;
+		const bool isHighTooOld     = isHighPriority   and header.sequence >= 0 and header.sequence < GetCurrentReceivedPacketSequenceNumber();
+		const bool isNormalTooNew   = isNormalPriority and header.sequence > GetCurrentReceivedPacketSequenceNumber();
 
 		if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
 		{
@@ -172,7 +171,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 		if (m_immediateReceiveBuffer.size())
 		{
-			m_immediateReceiveSequenceNumber = header.sequence;
+			m_receivedHeader = header;
 			return MessageResultEnum::ACCEPT;
 		}
 	}
@@ -187,23 +186,21 @@ bool OdaMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 		return false;
 	}
 
-	// Do the reliable traffic first because it's possible or even likely for a reliable mobj update
-	// (or critical event) to be followed up by an UpdateMobj that includes post-physics dynamics.
-	const int receivedReliableSequenceNumber = m_receiver.NextPacket(io_rawBuf);
-	if (receivedReliableSequenceNumber >= 0)
-	{
-		m_currentReceivedPacketSequenceNumber = receivedReliableSequenceNumber;
-		return true;
-	}
-
 	if (m_immediateReceiveBuffer.size())
 	{
 		io_rawBuf.swap(m_immediateReceiveBuffer);
-		m_currentReceivedPacketSequenceNumber = m_immediateReceiveSequenceNumber;
-		m_immediateReceiveSequenceNumber = 0;
 		m_immediateReceiveBuffer.clear();
+
+		// In this case, m_receivedHeader was set during Receive().
 		return true;
 	}
+
+	if (const auto nextHeader = m_receiver.NextPacket(io_rawBuf))
+	{
+		m_receivedHeader = nextHeader.value();      // it's a std::optional.
+		return true;
+	}
+
 	return false;
 }
 

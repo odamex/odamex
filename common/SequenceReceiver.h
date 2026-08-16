@@ -25,6 +25,7 @@
 #include <deque>
 #include <functional>
 #include <memory_resource>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -56,14 +57,14 @@ class SequenceReceiver
 		// Fetches the next packet in the sequence of received reliable messages.
 		// The ordering of messages returned by repeated calls to this function is
 		// dictated by the sequence numbers given to RegisterReceivePacket().  The
-		// sequence number of the fetched packet is returned.  If a "break" in the
-		// sequence is encountered, -1 is returned.  If no messages are pending,
-		// -1 is returned.
+		// header of the fetched packet is returned.  If a "break" in the sequence
+		// is encountered, nullopt is returned.  If no messages are pending, nullopt
+		// is returned.
 		//
 		// Messages obtained and processed in accordance with this function will be
 		// in the correct sequence, even if they were provided to RegisterReceivePacket()
 		// out-of-order.
-		int NextPacket(buf_t& io_bufferRef);
+		std::optional<PacketHeaderType> NextPacket(buf_t& io_bufferRef);
 
 	protected:
 

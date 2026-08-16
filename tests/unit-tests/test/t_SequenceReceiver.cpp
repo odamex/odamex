@@ -19,22 +19,22 @@ TEST_F(ReliableSequenceReceiver, BasicReceive)
 {
     SequenceReceiver receiver(10);
 
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 
     receiver.RegisterReliablePacket(PacketHeaderType(0), packet.buf.size(), packet.buf);
 
-    auto sequence = receiver.NextPacket(packet.buf);
+    auto sequence = receiver.NextPacket(packet.buf)->sequence;
     REQUIRE(sequence == 0);
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 
     // Duplicate receive.
     receiver.RegisterReliablePacket(PacketHeaderType(0), packet.buf.size(), packet.buf);
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 
     receiver.RegisterReliablePacket(PacketHeaderType(1), packet.buf.size(), packet.buf);
 
-    REQUIRE(receiver.NextPacket(packet.buf) == 1);
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 1);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 }
 
 TEST_F(ReliableSequenceReceiver, MultiReceive)
@@ -47,12 +47,12 @@ TEST_F(ReliableSequenceReceiver, MultiReceive)
     receiver.RegisterReliablePacket(PacketHeaderType(3), packet.buf.size(), packet.buf);
     receiver.RegisterReliablePacket(PacketHeaderType(4), packet.buf.size(), packet.buf);
 
-    REQUIRE(receiver.NextPacket(packet.buf) == 0);
-    REQUIRE(receiver.NextPacket(packet.buf) == 1);
-    REQUIRE(receiver.NextPacket(packet.buf) == 2);
-    REQUIRE(receiver.NextPacket(packet.buf) == 3);
-    REQUIRE(receiver.NextPacket(packet.buf) == 4);
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 0);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 1);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 2);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 3);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 4);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 }
 
 TEST_F(ReliableSequenceReceiver, OutOfSequence)
@@ -63,32 +63,32 @@ TEST_F(ReliableSequenceReceiver, OutOfSequence)
     receiver.RegisterReliablePacket(PacketHeaderType(5), packet.buf.size(), packet.buf);
     receiver.RegisterReliablePacket(PacketHeaderType(3), packet.buf.size(), packet.buf);
 
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 
     receiver.RegisterReliablePacket(PacketHeaderType(0), packet.buf.size(), packet.buf);
 
-    REQUIRE(receiver.NextPacket(packet.buf) == 0);
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 0);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 
     receiver.RegisterReliablePacket(PacketHeaderType(1), packet.buf.size(), packet.buf);
 
-    REQUIRE(receiver.NextPacket(packet.buf) == 1);
-    REQUIRE(receiver.NextPacket(packet.buf) == 2);
-    REQUIRE(receiver.NextPacket(packet.buf) == 3);
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 1);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 2);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 3);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 
     receiver.RegisterReliablePacket(PacketHeaderType(6), packet.buf.size(), packet.buf);
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 
     receiver.RegisterReliablePacket(PacketHeaderType(4), packet.buf.size(), packet.buf);
-    REQUIRE(receiver.NextPacket(packet.buf) == 4);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 4);
 
     receiver.RegisterReliablePacket(PacketHeaderType(7), packet.buf.size(), packet.buf);
-    REQUIRE(receiver.NextPacket(packet.buf) == 5);
-    REQUIRE(receiver.NextPacket(packet.buf) == 6);
-    REQUIRE(receiver.NextPacket(packet.buf) == 7);
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 5);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 6);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 7);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 }
 
 TEST_F(ReliableSequenceReceiver, BestEffortPortionOrderQueuing)
@@ -107,24 +107,24 @@ TEST_F(ReliableSequenceReceiver, BestEffortPortionOrderQueuing)
     packet.buf.clear();
 
     // Not ready to receive anything - all is backed up on reliable packet 1.
-    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 
     packet.buf.WriteUnVarint(700);
     receiver.RegisterReliablePacket(PacketHeaderType(0), packet.buf.size(), packet.buf);
     packet.buf.clear();
 
-    REQUIRE(receiver.NextPacket(packet.buf) == 0);  REQUIRE(packet.buf.ReadUnVarint() == 700);
-    REQUIRE(receiver.NextPacket(packet.buf) == 0);  REQUIRE(packet.buf.ReadUnVarint() ==  11);
-    REQUIRE(receiver.NextPacket(packet.buf) == 0);  REQUIRE(packet.buf.ReadUnVarint() ==  44);
-    REQUIRE(receiver.NextPacket(packet.buf) == 0);  REQUIRE(packet.buf.ReadUnVarint() ==  66);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 0);  REQUIRE(packet.buf.ReadUnVarint() == 700);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 0);  REQUIRE(packet.buf.ReadUnVarint() ==  11);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 0);  REQUIRE(packet.buf.ReadUnVarint() ==  44);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 0);  REQUIRE(packet.buf.ReadUnVarint() ==  66);
 
-    REQUIRE(receiver.NextPacket(packet.buf) == 1);  REQUIRE(packet.buf.ReadUnVarint() == 100);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 1);  REQUIRE(packet.buf.ReadUnVarint() == 100);
 
     packet.buf.clear(); packet.buf.WriteUnVarint(200); receiver.RegisterReliablePacket(PacketHeaderType(2), packet.buf.size(), packet.buf);
     packet.buf.clear(); packet.buf.WriteUnVarint(300); receiver.RegisterBestEffortPacket(PacketHeaderType(2), packet.buf.size(), packet.buf);
 
-    REQUIRE(receiver.NextPacket(packet.buf) == 1);  REQUIRE(packet.buf.ReadUnVarint() == 333);
-    REQUIRE(receiver.NextPacket(packet.buf) == 1);  REQUIRE(packet.buf.ReadUnVarint() == 666);
-    REQUIRE(receiver.NextPacket(packet.buf) == 2);  REQUIRE(packet.buf.ReadUnVarint() == 200);
-    REQUIRE(receiver.NextPacket(packet.buf) == 2);  REQUIRE(packet.buf.ReadUnVarint() == 300);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 1);  REQUIRE(packet.buf.ReadUnVarint() == 333);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 1);  REQUIRE(packet.buf.ReadUnVarint() == 666);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 2);  REQUIRE(packet.buf.ReadUnVarint() == 200);
+    REQUIRE(receiver.NextPacket(packet.buf)->sequence == 2);  REQUIRE(packet.buf.ReadUnVarint() == 300);
 }

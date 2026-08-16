@@ -69,9 +69,9 @@ bool SequenceReceiver::RegisterBestEffortPacket(const PacketHeaderType& i_header
 	return false;
 }
 
-int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
+std::optional<PacketHeaderType> SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 {
-	int fetchedPacketSequenceNumber = -1;
+	std::optional<PacketHeaderType> fetchedHeader;
 
 	// This is deliberately restrictive.  We do NOT want to process packets
 	// "from the future."  We want to keep a strict sequence to try to be as
@@ -84,8 +84,7 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 		{
 			iter->second.reliable.isAwaiting = true;
 			io_bufferRef.swap(iter->second.reliable.buf);
-
-			fetchedPacketSequenceNumber = m_currentSequence;
+			fetchedHeader = iter->second.reliable.header;
 		}
 		else
 		{
@@ -94,7 +93,7 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 				auto& entry = iter->second.bestEffort.front();
 				io_bufferRef.swap(entry.buf);
 				iter->second.bestEffort.pop_front();
-				fetchedPacketSequenceNumber = m_currentSequence;
+				fetchedHeader = entry.header;
 			}
 		}
 
@@ -103,9 +102,8 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 			m_receiveTable.erase(iter);
 			m_currentSequence++;
 		}
-		return fetchedPacketSequenceNumber;
 	}
 
 	// TODO: NonReliable, monotonic sequence with skips
-	return -1;
+	return fetchedHeader;
 }

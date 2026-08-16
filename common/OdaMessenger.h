@@ -63,8 +63,9 @@ class OdaMessenger
 		//  -------------- Basic state management --------------
 		void SetBitBucket(bool i_isBitBucket) { m_isBitBucket = i_isBitBucket; }
 
-		int  CurrentReceivedRemoteTic() const { return m_receivedRemoteTic; }
-		int  CurrentReceivedLocalTic() const { return m_receivedLocalTic; }
+		int  GetCurrentReceivedRemoteTic() const { return m_receivedHeader.originatorTic; }
+		int  GetCurrentReceivedLocalTic() const  { return m_receivedHeader.destinationTic; }
+
 		void SetLocalTic(int i_tic) { m_localTic = i_tic; }
 
 		//  -------------- Receiving functions --------------
@@ -178,7 +179,7 @@ class OdaMessenger
 		int GetReliableOverloadCount() const { return m_reliableOverloadCount; }
 		int GetTicBudget() const             { return m_perTicBudget; }
 
-		int GetCurrentReceivedPacketSequenceNumber() const { return m_currentReceivedPacketSequenceNumber; }
+		int GetCurrentReceivedPacketSequenceNumber() const { return m_receivedHeader.sequence; }
 
 	protected:
 
@@ -199,14 +200,14 @@ class OdaMessenger
 		Packet m_packet;
 		Packet m_highPacket;
 
+		PacketHeaderType m_receivedHeader;
+
 		// Send buffers
 		MessageQueue m_outgoingReliableQueue;
 		MessageQueue m_outgoingNonReliableQueue;
 		MessageQueue m_outgoingHighNonReliableQueue;
 
 		buf_t m_immediateReceiveBuffer              { MAX_UDP_PACKET };
-		int   m_immediateReceiveSequenceNumber      { 0 };
-		int   m_currentReceivedPacketSequenceNumber { 0 };
 
 		int m_maxPacketsPerRetransmission   { DEFAULT_RETRANSMISSIONS_PER_TIC };
 		int m_retransmitDelayInTics         { 0 };
@@ -216,10 +217,7 @@ class OdaMessenger
 		int m_byteBudget  {  0 };       ///< The live budget.  Signed so that it can also represent debt.
 		int m_perTicBudget{  0 };       ///< The value used to reset the budget every tic.
 		int m_latchedTic  { -1 };       ///< Used for detecting new tics and resetting the budget.
-
-		int m_localTic          { -1 }; ///< The current local tic.
-		int m_receivedLocalTic  { -1 }; ///< The most recently-echoed back local tic from the other end.
-		int m_receivedRemoteTic { -1 }; ///< The other end's statement about its own tic.
+		int m_localTic    { -1 };       ///< The current local tic.
 
 		int m_reliableOverloadThreshold { 0 };
 		int m_reliableOverloadCount { 0 };
