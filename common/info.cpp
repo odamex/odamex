@@ -1266,7 +1266,8 @@ std::string mobjinfo_t::getDisplayName() const
 // the new DEHExtra state spec starts at 1100, while we have around
 // 1130.
 // [CMB] odamex objects are now handled separately
-
+// this table *is* the constants for those numbers
+// NOLINTBEGIN(readability-magic-numbers)
 mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 
 	{		// MT_PLAYER
@@ -7242,6 +7243,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
     {MT_EXTRA98, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA98",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
 	{MT_EXTRA99, -1, S_TNT1,0,0,S_NULL,NULL,0,NULL,S_NULL,0,NULL,S_NULL,S_NULL,S_NULL,S_NULL,NULL,0,0,0,0,0,0,NULL,0,0,S_NULL,0x10000,"MT_EXTRA99",NO_ALTSPEED,64*FRACUNIT,IG_DEFAULT,PG_DEFAULT,SG_DEFAULT,0,NULL,MT_NULL},
 };
+// NOLINTEND(readability-magic-numbers)
 
 void D_BuildSpawnMap() {
 	spawn_map.clear();

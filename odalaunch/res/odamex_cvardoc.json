@@ -1138,7 +1138,7 @@
          "type" : "boolean"
       },
       {
-         "default" : "012021",
+         "default" : "012030",
          "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "",
          "name" : "configver",
@@ -2862,13 +2862,6 @@
       },
       {
          "default" : false,
-         "flags" : [ "CLIENTARCHIVE" ],
-         "helptext" : "Pillarbox 4:3 resolutions in widescreen",
-         "name" : "vid_pillarbox",
-         "type" : "boolean"
-      },
-      {
-         "default" : false,
          "flags" : [],
          "helptext" : "Vanilla Doom frames per second indicator",
          "name" : "vid_ticker",
@@ -2905,6 +2898,6 @@
    ],
    "odamex_branchname" : "",
    "odamex_commithash" : "",
-   "odamex_version" : "12.2.1",
+   "odamex_version" : "12.3.0",
    "schema_version" : 1
 }

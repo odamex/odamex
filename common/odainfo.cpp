@@ -128,6 +128,8 @@ const char* odasprnames[] = {
 
 // reserved odamex mobjinfo
 // ::MT_CAREPACK - ::MT_GIB0 + 1
+// this table *is* the constants for those numbers
+// NOLINTBEGIN(readability-magic-numbers)
 mobjinfo_t odamobjinfo[] = {
     // ------------ odamex things start ------------ //
     {
@@ -867,86 +869,11 @@ mobjinfo_t odamobjinfo[] = {
         NULL,          // ripsound
         MT_NULL        // droppeditem
     },
-    {
-        // MT_UPPERSTACK
-        MT_UPPERSTACK,
-        9077,                                       // doomednum
-        S_TNT1,                                     // spawnstate
-        1000,                                       // spawnhealth
-        0,                                          // gibhealth
-        S_NULL,                                     // seestate
-        NULL,                                       // seesound
-        8,                                          // reactiontime
-        NULL,                                       // attacksound
-        S_NULL,                                     // painstate
-        0,                                          // painchance
-        NULL,                                       // painsound
-        S_NULL,                                     // meleestate
-        S_NULL,                                     // missilestate
-        S_NULL,                                     // deathstate
-        S_NULL,                                     // xdeathstate
-        NULL,                                       // deathsound
-        0,                                          // speed
-        20 * FRACUNIT,                              // radius
-        16 * FRACUNIT,                              // height
-        16 * FRACUNIT,                              // cdheight
-        100,                                        // mass
-        0,                                          // damage
-        NULL,                                       // activesound
-        MF_NOBLOCKMAP | MF_NOSECTOR | MF_NOGRAVITY, // flags
-        MF2_DONTDRAW,                               // flags2
-        S_NULL,                                     // raisestate
-        0x10000,
-        "MT_UPPERSTACK",
-        NO_ALTSPEED,   // altspeed
-        64 * FRACUNIT, // meleerange
-        IG_DEFAULT,    // infighting group
-        PG_DEFAULT,    // projectile group
-        SG_DEFAULT,    // splash group
-        0,             // flags3
-        NULL,          // ripsound
-        MT_NULL        // droppeditem
-    },
-    {
-        // MT_LOWERSTACK
-        MT_LOWERSTACK,
-        9078,                                       // doomednum
-        S_TNT1,                                     // spawnstate
-        1000,                                       // spawnhealth
-        0,                                          // gibhealth
-        S_NULL,                                     // seestate
-        NULL,                                       // seesound
-        8,                                          // reactiontime
-        NULL,                                       // attacksound
-        S_NULL,                                     // painstate
-        0,                                          // painchance
-        NULL,                                       // painsound
-        S_NULL,                                     // meleestate
-        S_NULL,                                     // missilestate
-        S_NULL,                                     // deathstate
-        S_NULL,                                     // xdeathstate
-        NULL,                                       // deathsound
-        0,                                          // speed
-        20 * FRACUNIT,                              // radius
-        16 * FRACUNIT,                              // height
-        16 * FRACUNIT,                              // cdheight
-        100,                                        // mass
-        0,                                          // damage
-        NULL,                                       // activesound
-        MF_NOBLOCKMAP | MF_NOSECTOR | MF_NOGRAVITY, // flags
-        MF2_DONTDRAW,                               // flags2
-        S_NULL,                                     // raisestate
-        0x10000,
-        "MT_LOWERSTACK",
-        NO_ALTSPEED,   // altspeed
-        64 * FRACUNIT, // meleerange
-        IG_DEFAULT,    // infighting group
-        PG_DEFAULT,    // projectile group
-        SG_DEFAULT,    // splash group
-        0,             // flags3
-        NULL,          // ripsound
-        MT_NULL        // droppeditem
-    },
+    // HEY YOU RESOLVING THE MERGE CONFLICT
+    // for 13.0.0 we want the definitions that are up here for MT_UPPER/LOWERSTACK
+    // not the ones down below at the end of this array
+    // a similar change is also needed in info.h for the mobjtype.h enum
+    // you'll know it when you see it
     {
         // MT_SKYVIEWPOINT
         MT_SKYVIEWPOINT,
@@ -2405,7 +2332,7 @@ mobjinfo_t odamobjinfo[] = {
     {
         // MT_HORDESPAWN
         MT_HORDESPAWN,
-        5302,        // doomednum
+        -1,        // doomednum
         S_TNT1,        // spawnstate
         100,           // spawnhealth
         0,             // gibhealth
@@ -2445,7 +2372,7 @@ mobjinfo_t odamobjinfo[] = {
     {
         // MT_CAREPACK
         MT_CAREPACK,
-        5301,        // doomednum
+        -1,        // doomednum
         S_CARE,        // spawnstate
         1000,          // spawnhealth
         0,             // gibhealth
@@ -2560,9 +2487,95 @@ mobjinfo_t odamobjinfo[] = {
 		NULL, // ripsound
 		MT_NULL		// droppeditem
 	},
+    // HEY YOU RESOLVING THE MERGE CONFLICT
+    // for 13.0.0 we want the definitions that are up above for MT_UPPER/LOWERSTACK
+    // not these ones
+    // a similar change is also needed in info.h for the mobjtype.h enum
+    // you'll know it when you see it
+    {
+        // MT_UPPERSTACK
+        MT_UPPERSTACK,
+        9077,                                       // doomednum
+        S_TNT1,                                     // spawnstate
+        1000,                                       // spawnhealth
+        0,                                          // gibhealth
+        S_NULL,                                     // seestate
+        NULL,                                       // seesound
+        8,                                          // reactiontime
+        NULL,                                       // attacksound
+        S_NULL,                                     // painstate
+        0,                                          // painchance
+        NULL,                                       // painsound
+        S_NULL,                                     // meleestate
+        S_NULL,                                     // missilestate
+        S_NULL,                                     // deathstate
+        S_NULL,                                     // xdeathstate
+        NULL,                                       // deathsound
+        0,                                          // speed
+        20 * FRACUNIT,                              // radius
+        16 * FRACUNIT,                              // height
+        16 * FRACUNIT,                              // cdheight
+        100,                                        // mass
+        0,                                          // damage
+        NULL,                                       // activesound
+        MF_NOBLOCKMAP | MF_NOSECTOR | MF_NOGRAVITY, // flags
+        MF2_DONTDRAW,                               // flags2
+        S_NULL,                                     // raisestate
+        0x10000,
+        "MT_UPPERSTACK",
+        NO_ALTSPEED,   // altspeed
+        64 * FRACUNIT, // meleerange
+        IG_DEFAULT,    // infighting group
+        PG_DEFAULT,    // projectile group
+        SG_DEFAULT,    // splash group
+        0,             // flags3
+        NULL,          // ripsound
+        MT_NULL        // droppeditem
+    },
+    {
+        // MT_LOWERSTACK
+        MT_LOWERSTACK,
+        9078,                                       // doomednum
+        S_TNT1,                                     // spawnstate
+        1000,                                       // spawnhealth
+        0,                                          // gibhealth
+        S_NULL,                                     // seestate
+        NULL,                                       // seesound
+        8,                                          // reactiontime
+        NULL,                                       // attacksound
+        S_NULL,                                     // painstate
+        0,                                          // painchance
+        NULL,                                       // painsound
+        S_NULL,                                     // meleestate
+        S_NULL,                                     // missilestate
+        S_NULL,                                     // deathstate
+        S_NULL,                                     // xdeathstate
+        NULL,                                       // deathsound
+        0,                                          // speed
+        20 * FRACUNIT,                              // radius
+        16 * FRACUNIT,                              // height
+        16 * FRACUNIT,                              // cdheight
+        100,                                        // mass
+        0,                                          // damage
+        NULL,                                       // activesound
+        MF_NOBLOCKMAP | MF_NOSECTOR | MF_NOGRAVITY, // flags
+        MF2_DONTDRAW,                               // flags2
+        S_NULL,                                     // raisestate
+        0x10000,
+        "MT_LOWERSTACK",
+        NO_ALTSPEED,   // altspeed
+        64 * FRACUNIT, // meleerange
+        IG_DEFAULT,    // infighting group
+        PG_DEFAULT,    // projectile group
+        SG_DEFAULT,    // splash group
+        0,             // flags3
+        NULL,          // ripsound
+        MT_NULL        // droppeditem
+    },
 
     // ----------- odamex mobjinfo end -----------
 };
+// NOLINTEND(readability-magic-numbers)
 
 nonstd::span<mobjinfo_t> getOdaMobjinfo() {
     return { odamobjinfo, ARRAY_LENGTH(odamobjinfo) };

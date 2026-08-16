@@ -235,7 +235,7 @@ inline byte shaderef_t::ramp() const
 	if (m_mapnum >= NUMCOLORMAPS)
 		return 0;
 
-	int index = clamp(m_mapnum * 256 / NUMCOLORMAPS, 0, 255);
+	int index = std::clamp(m_mapnum * 256 / NUMCOLORMAPS, 0, 255);
 	return m_colors->ramp[index];
 }
 
