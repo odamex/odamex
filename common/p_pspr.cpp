@@ -112,9 +112,12 @@ weaponstate_t P_GetWeaponState(const player_t& player)
 // we've been holding at whatever they were the last time we had real data.
 // Fall back on the resting position instead of drawing their weapon on the floor.
 //
-static fixed_t P_SanePspriteOffset(fixed_t value, fixed_t center)
+namespace
 {
-	return std::clamp(value, center - MAXBOB, center + MAXBOB);
+	fixed_t P_SanePspriteOffset(fixed_t value, fixed_t center)
+	{
+		return std::clamp(value, center - MAXBOB, center + MAXBOB);
+	}
 }
 
 //
@@ -145,7 +148,7 @@ fixed_t P_CalculateWeaponBobX(player_t& player, float scale_amount)
 	}
 
 	// scale the weapon's distance away from center
-	return center_sx + scale_amount * (P_SanePspriteOffset(psp.sx, center_sx) - center_sx);
+	return center_sx + (scale_amount * (P_SanePspriteOffset(psp.sx, center_sx) - center_sx));
 }
 
 
@@ -181,7 +184,7 @@ fixed_t P_CalculateWeaponBobY(player_t& player, float scale_amount)
 	}
 
 	// scale the weapon's distance away from center
-	return center_sy + scale_amount * (P_SanePspriteOffset(psp.sy, center_sy) - center_sy);
+	return center_sy + (scale_amount * (P_SanePspriteOffset(psp.sy, center_sy) - center_sy));
 }
 
 
@@ -511,9 +514,12 @@ void P_DropWeapon(player_t& player)
 //
 // True when we are a client animating a player whose inputs we never see.
 //
-static bool P_WeaponIsRemotelyDriven(const player_t& player)
+namespace
 {
-	return !serverside && player.id != consoleplayer_id;
+	bool P_WeaponIsRemotelyDriven(const player_t& player)
+	{
+		return !serverside && player.id != consoleplayer_id;
+	}
 }
 
 //

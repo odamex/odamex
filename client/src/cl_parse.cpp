@@ -2498,7 +2498,7 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	int armortype = msg->player().armortype();
 	int armorpoints = msg->player().armorpoints();
 	int lives = msg->player().lives();
-	int32_t readyweapon = msg->player().readyweapon();
+	const int32_t readyweapon = msg->player().readyweapon();
 
 	byte cardByte = msg->player().cards();
 	std::bitset<6> cardBits(cardByte);
@@ -2516,10 +2516,15 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		}
 	}
 
-	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
-	fixed_t pspx[NUMPSPRITES] = {0, 0};
-	fixed_t pspy[NUMPSPRITES] = {0, 0};
-	bool pspmoved[NUMPSPRITES] = {false, false};
+	struct PspriteUpdate
+	{
+		statenum_t	statenum = S_NULL;
+		fixed_t		sx = 0;
+		fixed_t		sy = 0;
+		bool		positioned = false;
+	};
+
+	std::array<PspriteUpdate, NUMPSPRITES> pspupdates;
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		if (i < msg->player().psprites_size())
@@ -2530,10 +2535,10 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 			{
 				continue;
 			}
-			stnum[i] = static_cast<statenum_t>(state);
-			pspx[i] = psprite.sx();
-			pspy[i] = psprite.sy();
-			pspmoved[i] = true;
+			pspupdates[i].statenum = static_cast<statenum_t>(state);
+			pspupdates[i].sx = psprite.sx();
+			pspupdates[i].sy = psprite.sy();
+			pspupdates[i].positioned = true;
 		}
 	}
 
@@ -2563,7 +2568,7 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	if (readyweapon >= 0 && readyweapon < NUMWEAPONS)
 	{
-		const weapontype_t weap = static_cast<weapontype_t>(readyweapon);
+		const auto weap = static_cast<weapontype_t>(readyweapon);
 
 		player.readyweapon = weap;
 		player.pendingweapon = wp_nochange;
@@ -2580,12 +2585,12 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		P_SetPsprite(player, i, stnum[i]);
+		P_SetPsprite(player, i, pspupdates[i].statenum);
 
-		if (pspmoved[i] && player.psprites[i].state)
+		if (pspupdates[i].positioned && player.psprites[i].state)
 		{
-			player.psprites[i].sx = pspx[i];
-			player.psprites[i].sy = pspy[i];
+			player.psprites[i].sx = pspupdates[i].sx;
+			player.psprites[i].sy = pspupdates[i].sy;
 		}
 	}
 

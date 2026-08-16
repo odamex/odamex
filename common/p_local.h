@@ -36,7 +36,7 @@
 #define MAXHEALTH		100
 #define VIEWHEIGHT		(41*FRACUNIT)
 
-#define MAXBOB			0x100000
+constexpr fixed_t MAXBOB = 0x100000;	// 16 pixels of bob
 
 
 // player radius for movement checking
