@@ -45,9 +45,9 @@ bool SequenceReceiver::RegisterReliablePacket(int sequence, size_t i_size, buf_t
 		auto& entryRef = iter->second;
 
 		// Only one reliable packet allowed per sequence number.
-		if (entryRef.reliable.sequence < 0)
+		if (entryRef.reliable.header.sequence < 0)
 		{
-			entryRef.reliable.sequence = sequence;
+			entryRef.reliable.header.sequence = sequence;
 			entryRef.reliable.buf.WriteChunk(io_bufferRef.ReadChunk(i_size), i_size);
 			return true;
 		}
@@ -62,7 +62,7 @@ bool SequenceReceiver::RegisterBestEffortPacket(int sequence, size_t i_size, buf
 	{
 		// Best-effort is never retransmitted.  There's no need to check for duplication.
 		SequenceQueueEntryType& entryRef = iter->second.bestEffort.emplace_back();
-		entryRef.sequence = sequence;
+		entryRef.header.sequence = sequence;
 		entryRef.buf.WriteChunk(io_bufferRef.ReadChunk(i_size), i_size);
 		return true;
 	}
@@ -77,12 +77,12 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 	// "from the future."  We want to keep a strict sequence to try to be as
 	// deterministic as possible.
 	auto iter = m_receiveTable.find(m_currentSequence);
-	if (iter != m_receiveTable.end() and iter->second.reliable.sequence >= 0)
+	if (iter != m_receiveTable.end() and iter->second.reliable.header.sequence >= 0)
 	{
-		// originatingTic is co-opted to denote that the reliable packet has been processed.
-		if (iter->second.reliable.originatingTic < 0)
+		// isAwaiting is co-opted to denote that the reliable packet has been processed.
+		if (not iter->second.reliable.isAwaiting)
 		{
-			iter->second.reliable.originatingTic = 0;
+			iter->second.reliable.isAwaiting = true;
 			io_bufferRef.swap(iter->second.reliable.buf);
 
 			fetchedPacketSequenceNumber = m_currentSequence;

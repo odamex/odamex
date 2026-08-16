@@ -85,9 +85,9 @@ TEST(ReliableSequenceSender, MultipleSendsAndAcks)
 
     iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 3);
-    REQUIRE((iter.Next())->sequence == 4);
-    REQUIRE((iter.Next())->sequence == 5);
+    REQUIRE((iter.Next())->header.sequence == 3);
+    REQUIRE((iter.Next())->header.sequence == 4);
+    REQUIRE((iter.Next())->header.sequence == 5);
     REQUIRE(iter.Next() == nullptr);
 
     REQUIRE(sender1.Acknowledge(3));
@@ -108,34 +108,34 @@ TEST(ReliableSequenceSender, MultipleOutOfOrder)
 
     auto iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 0);
-    REQUIRE((iter.Next())->sequence == 1);
-    REQUIRE((iter.Next())->sequence == 2);
+    REQUIRE((iter.Next())->header.sequence == 0);
+    REQUIRE((iter.Next())->header.sequence == 1);
+    REQUIRE((iter.Next())->header.sequence == 2);
     REQUIRE(iter.Next() == nullptr);
 
     REQUIRE(sender1.Acknowledge(1));
 
     iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 0);
-    REQUIRE((iter.Next())->sequence == 2);
+    REQUIRE((iter.Next())->header.sequence == 0);
+    REQUIRE((iter.Next())->header.sequence == 2);
     REQUIRE(iter.Next() == nullptr);
 
     sender1.ObtainSendPacket();
 
     iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 0);
-    REQUIRE((iter.Next())->sequence == 2);
-    REQUIRE((iter.Next())->sequence == 3);
+    REQUIRE((iter.Next())->header.sequence == 0);
+    REQUIRE((iter.Next())->header.sequence == 2);
+    REQUIRE((iter.Next())->header.sequence == 3);
     REQUIRE(iter.Next() == nullptr);
 
     REQUIRE(sender1.Acknowledge(0));
 
     iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 2);
-    REQUIRE((iter.Next())->sequence == 3);
+    REQUIRE((iter.Next())->header.sequence == 2);
+    REQUIRE((iter.Next())->header.sequence == 3);
     REQUIRE(iter.Next() == nullptr);
 
     sender1.ObtainSendPacket();
@@ -144,41 +144,41 @@ TEST(ReliableSequenceSender, MultipleOutOfOrder)
 
     iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 2);
-    REQUIRE((iter.Next())->sequence == 3);
-    REQUIRE((iter.Next())->sequence == 4);
-    REQUIRE((iter.Next())->sequence == 5);
-    REQUIRE((iter.Next())->sequence == 6);
+    REQUIRE((iter.Next())->header.sequence == 2);
+    REQUIRE((iter.Next())->header.sequence == 3);
+    REQUIRE((iter.Next())->header.sequence == 4);
+    REQUIRE((iter.Next())->header.sequence == 5);
+    REQUIRE((iter.Next())->header.sequence == 6);
     REQUIRE(iter.Next() == nullptr);
 
     REQUIRE(sender1.Acknowledge(6));
 
     iter = sender1.IterateUnackedPackets();
-    REQUIRE((iter.Next())->sequence == 2);
-    REQUIRE((iter.Next())->sequence == 3);
-    REQUIRE((iter.Next())->sequence == 4);
-    REQUIRE((iter.Next())->sequence == 5);
+    REQUIRE((iter.Next())->header.sequence == 2);
+    REQUIRE((iter.Next())->header.sequence == 3);
+    REQUIRE((iter.Next())->header.sequence == 4);
+    REQUIRE((iter.Next())->header.sequence == 5);
     REQUIRE(iter.Next() == nullptr);
 
     REQUIRE(sender1.Acknowledge(3));
 
     iter = sender1.IterateUnackedPackets();
-    REQUIRE((iter.Next())->sequence == 2);
-    REQUIRE((iter.Next())->sequence == 4);
-    REQUIRE((iter.Next())->sequence == 5);
+    REQUIRE((iter.Next())->header.sequence == 2);
+    REQUIRE((iter.Next())->header.sequence == 4);
+    REQUIRE((iter.Next())->header.sequence == 5);
     REQUIRE(iter.Next() == nullptr);
 
     REQUIRE(sender1.Acknowledge(2));
 
     iter = sender1.IterateUnackedPackets();
-    REQUIRE((iter.Next())->sequence == 4);
-    REQUIRE((iter.Next())->sequence == 5);
+    REQUIRE((iter.Next())->header.sequence == 4);
+    REQUIRE((iter.Next())->header.sequence == 5);
     REQUIRE(iter.Next() == nullptr);
 
     REQUIRE(sender1.Acknowledge(5));
 
     iter = sender1.IterateUnackedPackets();
-    REQUIRE((iter.Next())->sequence == 4);
+    REQUIRE((iter.Next())->header.sequence == 4);
     REQUIRE(iter.Next() == nullptr);
 
     REQUIRE(sender1.Acknowledge(4));
@@ -206,9 +206,9 @@ TEST(ReliableSequenceSender, NormalWrap)
 
     auto iter = sender1.IterateUnackedPackets();
     SequenceQueueEntryType* entry;
-    REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 3);
-    REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 4);
-    REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 5);
-    REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 6);
+    REQUIRE((entry = iter.Next()) != nullptr && entry->header.sequence == 3);
+    REQUIRE((entry = iter.Next()) != nullptr && entry->header.sequence == 4);
+    REQUIRE((entry = iter.Next()) != nullptr && entry->header.sequence == 5);
+    REQUIRE((entry = iter.Next()) != nullptr && entry->header.sequence == 6);
     REQUIRE((entry = iter.Next()) == nullptr);
 }

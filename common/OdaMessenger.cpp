@@ -293,7 +293,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	{
 		if (SequenceQueueEntryType* oldestOutgoingUnackedEntry = m_sender.IterateUnackedPackets().Next())
 		{
-			if (i_currentTic > oldestOutgoingUnackedEntry->originatingTic + m_criticalSequenceTimeoutInTics)
+			if (i_currentTic > oldestOutgoingUnackedEntry->header.originatorTic + m_criticalSequenceTimeoutInTics)
 			{
 				m_sender.SetMode(SequenceSender::CRITICAL_FAILURE);
 				return MessageResultEnum::ABORT;
@@ -426,7 +426,7 @@ int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest
 
 	// If we have retransmissions, setup previousPacketSeq to appear that the first retransmitted
 	// packet counts as the first of a contiguous run of packets.
-	int previousPacketSeq          = sendQueueEntry ? sendQueueEntry->sequence - 1 : -1;
+	int previousPacketSeq          = sendQueueEntry ? sendQueueEntry->header.sequence - 1 : -1;
 	m_noncontiguousRetransmitCount = 0;
 
 	for (; sendQueueEntry != nullptr; sendQueueEntry = iter.Next())
@@ -436,17 +436,17 @@ int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest
 		// during development.
 		//
 		// In any case, natural scaling works well now, probably because we have a working throttle.
-		if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
+		if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->header.originatorTic) or sendQueueEntry->lastRetransmitTic != -1)
 		{
 			if (++retransmissionsSent > m_maxPacketsPerRetransmission or m_byteBudget <= 0)
 			{
 				break;
 			}
-			m_noncontiguousRetransmitCount += previousPacketSeq != sendQueueEntry->sequence - 1 ? 1 : 0;
-			previousPacketSeq = sendQueueEntry->sequence;
+			m_noncontiguousRetransmitCount += previousPacketSeq != sendQueueEntry->header.sequence - 1 ? 1 : 0;
+			previousPacketSeq = sendQueueEntry->header.sequence;
 
 			sendQueueEntry->lastRetransmitTic = i_currentTic;
-			const int resendSize = static_cast<int>(m_packet.ReSend(sendQueueEntry->originatingTic, sendQueueEntry->sequence, sendQueueEntry->buf, i_dest));
+			const int resendSize = static_cast<int>(m_packet.ReSend(sendQueueEntry->header.originatorTic, sendQueueEntry->header.sequence, sendQueueEntry->buf, i_dest));
 			bytesSent    += resendSize;
 			m_byteBudget -= resendSize;
 		}

@@ -63,6 +63,8 @@ class OdaMessenger
 		//  -------------- Basic state management --------------
 		void SetBitBucket(bool i_isBitBucket) { m_isBitBucket = i_isBitBucket; }
 
+		int  CurrentReceivedRemoteTic() const { return m_receivedRemoteTic; }
+		int  CurrentReceivedLocalTic() const { return m_receivedLocalTic; }
 		void SetLocalTic(int i_tic) { m_localTic = i_tic; }
 
 		//  -------------- Receiving functions --------------
