@@ -47,10 +47,9 @@ class OdaMessenger
 		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
 		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
 
-		OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>& i_poolPtr, int i_tic)
+		OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>& i_poolPtr)
 			: m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
 			, m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
-			, m_localTic { i_tic }
 		{
 		}
 
@@ -66,7 +65,10 @@ class OdaMessenger
 		int  GetCurrentReceivedRemoteTic() const { return m_receivedHeader.originatorTic; }
 		int  GetCurrentReceivedLocalTic() const  { return m_receivedHeader.destinationTic; }
 
-		void SetLocalTic(int i_tic) { m_localTic = i_tic; }
+		/// The reason we want to allow explicitly setting the destination tic for outbound headers
+		/// is that the server *might not* have used the absolute latest-available command from the
+		/// client, and the client uses the newest available.  It's up to the application.
+		void SetDestinationTic(int i_tic) { m_destinationTic = i_tic; }
 
 		//  -------------- Receiving functions --------------
 
@@ -207,20 +209,20 @@ class OdaMessenger
 		MessageQueue m_outgoingNonReliableQueue;
 		MessageQueue m_outgoingHighNonReliableQueue;
 
-		buf_t m_immediateReceiveBuffer              { MAX_UDP_PACKET };
+		buf_t m_immediateReceiveBuffer{ MAX_UDP_PACKET };
 
 		int m_maxPacketsPerRetransmission   { DEFAULT_RETRANSMISSIONS_PER_TIC };
 		int m_retransmitDelayInTics         { 0 };
 		int m_maxRate                       { 0 };
 		int m_criticalSequenceTimeoutInTics { DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS };
 
-		int m_byteBudget  {  0 };       ///< The live budget.  Signed so that it can also represent debt.
-		int m_perTicBudget{  0 };       ///< The value used to reset the budget every tic.
-		int m_latchedTic  { -1 };       ///< Used for detecting new tics and resetting the budget.
-		int m_localTic    { -1 };       ///< The current local tic.
+		int m_byteBudget    {  0 };       ///< The live budget.  Signed so that it can also represent debt.
+		int m_perTicBudget  {  0 };       ///< The value used to reset the budget every tic.
+		int m_latchedTic    { -1 };       ///< Used for detecting new tics and resetting the budget.
+		int m_destinationTic{ -1 };       ///< The remote tic that we're supposed to echo back to the other end.
 
 		int m_reliableOverloadThreshold { 0 };
-		int m_reliableOverloadCount { 0 };
+		int m_reliableOverloadCount     { 0 };
 
 		std::basic_string<byte> m_recordingBuffer;
 		bool                    m_recordingIsEnabled { false };

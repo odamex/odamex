@@ -62,7 +62,7 @@
 struct client_t
 {
 	std::unique_ptr<std::pmr::unsynchronized_pool_resource> pool     { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
-	std::unique_ptr<OdaMessenger>                           messenger{ std::make_unique<OdaMessenger>(pool, 0) };
+	std::unique_ptr<OdaMessenger>                           messenger{ std::make_unique<OdaMessenger>(pool) };
 
 	netadr_t    address           { };
 	short       version           { 0 };    // protocol version supported by the client

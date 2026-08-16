@@ -2272,7 +2272,7 @@ void SV_ConnectClient()
 	cl->allow_rcon = false;
 	cl->displaydisconnect = false;
 
-	cl->messenger = std::make_unique<OdaMessenger>(cl->pool, gametic);
+	cl->messenger = std::make_unique<OdaMessenger>(cl->pool);
 
 	// generate a random string
 	std::stringstream ss;
@@ -4806,10 +4806,6 @@ void SV_StepTics(uint64_t count)
 		}
 
 		gametic++;
-		for (auto& player : players)
-		{
-			player.client.messenger->SetLocalTic(gametic);
-		}
 	}
 
 	DObject::EndFrame();
