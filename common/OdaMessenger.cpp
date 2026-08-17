@@ -103,6 +103,22 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 	if (bestEffortSize > 0)
 	{
+		if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
+		{
+			m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
+		}
+
+		// IMPORTANT NOTE:  The best-effort packet queuing and deferred reception is a part of a future
+		//                  broader mobj rollback reconciliation feature.  We disable it for now because
+		//                  if we don't have mobj rollback enabled, then it can cause updates that should
+		//                  be handled in a timely manner to be deferred if network latency jitter or packet
+		//                  loss is prevalent, causing a visible backwards stutter on missiles and other
+		//                  things.
+		//
+		//                  Do not enable the following until holistic rollback is implemented.
+
+#ifdef ODAMESSENGER_ENABLE_BE_PACKET_QUEUE
+
 		// One subtlety: Best effort / normal-priority messages that are "too old" are still handled
 		//               because they could still have data mobjs that's more current than the mobjs'
 		//               last reliable update, which could be even older.
@@ -120,11 +136,6 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		const bool isNormalPriority = not isHighPriority;
 		const bool isHighTooOld     = isHighPriority   and header.sequence >= 0 and header.sequence < GetCurrentReceivedPacketSequenceNumber();
 		const bool isNormalTooNew   = isNormalPriority and header.sequence > GetCurrentReceivedPacketSequenceNumber();
-
-		if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
-		{
-			m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
-		}
 
 		// No matter what, we want to handle any acks and ping requests that are in the packet
 		// immediately, regardless of whether they're older or newer than expected.  These are
@@ -180,6 +191,15 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 			m_receivedHeader = header;
 			return MessageResultEnum::ACCEPT;
 		}
+
+#else // ... we're not deferring best-effort packet reception.  Do it immediately!
+
+		m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
+		m_immediateReceiveSequenceNumber = header.sequence;
+		return MessageResultEnum::ACCEPT;
+
+#endif
+
 	}
 
 	return MessageResultEnum::DEFER;
