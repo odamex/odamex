@@ -64,16 +64,6 @@ EXTERN_CVAR(am_followplayer)
 static int lockglow = 0;
 static int bossglow = 0;
 
-// How the map author is presented on the automap.
-enum authordisplay_t
-{
-	AM_AUTHOR_OFF = 0,
-	AM_AUTHOR_STATIC,
-	AM_AUTHOR_FADE,
-	AM_AUTHOR_MARQUEE,
-	AM_AUTHOR_TELETYPE,
-};
-
 // Tics the map name and the author each rest before handing the line over.
 static constexpr int AM_AUTHORHOLD = 4 * TICRATE;
 

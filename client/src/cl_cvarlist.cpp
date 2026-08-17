@@ -24,6 +24,7 @@
 
 #include "odamex.h"
 
+#include "am_map.h"
 #include "s_sound.h"
 #include "i_music.h"
 
@@ -65,7 +66,8 @@ CVAR_RANGE(am_showauthor, "2",
 		"2 - Fade in/out with map name\n"
 		"3 - Marquee in/out with map name\n"
 		"4 - Teletype effect with map name",
-		CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
+		CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,
+		AM_AUTHOR_OFF, AM_AUTHOR_TELETYPE)
 
 CVAR(					am_usecustomcolors, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

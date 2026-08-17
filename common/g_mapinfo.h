@@ -20,6 +20,10 @@
 
 #pragma once
 
+#include <string>
+
+#include "g_level.h"
+
 extern bool HexenHack; // Semi-Hexen-compatibility mode
 
 std::string G_StripAuthorPrefix(const std::string& author);
