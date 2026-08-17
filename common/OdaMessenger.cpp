@@ -188,14 +188,14 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 		if (m_immediateReceiveBuffer.size())
 		{
-			m_receivedHeader = header;
+			m_immediateReceiveHeader = header;
 			return MessageResultEnum::ACCEPT;
 		}
 
 #else // ... we're not deferring best-effort packet reception.  Do it immediately!
 
 		m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
-		m_immediateReceiveSequenceNumber = header.sequence;
+		m_immediateReceiveHeader = header;
 		return MessageResultEnum::ACCEPT;
 
 #endif
@@ -212,18 +212,33 @@ bool OdaMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 		return false;
 	}
 
+	// Make sure that a high-priority immediate receive buffer goes first, even ahead of
+	// any reliable packets.
+	if (m_immediateReceiveBuffer.size() and (m_immediateReceiveHeader.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0)
+	{
+		io_rawBuf.swap(m_immediateReceiveBuffer);
+		m_immediateReceiveBuffer.clear();
+
+		m_receivedHeader = m_immediateReceiveHeader;
+		return true;
+	}
+
+	// Now do the reliable packets.
+	if (const auto nextHeader = m_receiver.NextPacket(io_rawBuf))
+	{
+		m_receivedHeader = nextHeader.value();      // it's a std::optional.
+		return true;
+	}
+
+	// Finally do any best-effort mobj updates...  Please note that this can still be an
+	// out-of-order reception if the best-effort update originated after a dropped or
+	// jittered-out reliable packet.
 	if (m_immediateReceiveBuffer.size())
 	{
 		io_rawBuf.swap(m_immediateReceiveBuffer);
 		m_immediateReceiveBuffer.clear();
 
-		// In this case, m_receivedHeader was set during Receive().
-		return true;
-	}
-
-	if (const auto nextHeader = m_receiver.NextPacket(io_rawBuf))
-	{
-		m_receivedHeader = nextHeader.value();      // it's a std::optional.
+		m_receivedHeader = m_immediateReceiveHeader;
 		return true;
 	}
 

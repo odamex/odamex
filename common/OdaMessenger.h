@@ -219,7 +219,8 @@ class OdaMessenger
 		MessageQueue m_outgoingNonReliableQueue;
 		MessageQueue m_outgoingHighNonReliableQueue;
 
-		buf_t m_immediateReceiveBuffer{ MAX_UDP_PACKET };
+		buf_t            m_immediateReceiveBuffer{ MAX_UDP_PACKET };
+		PacketHeaderType m_immediateReceiveHeader;
 
 		int m_maxPacketsPerRetransmission   { DEFAULT_RETRANSMISSIONS_PER_TIC };
 		int m_retransmitDelayInTics         { 0 };
