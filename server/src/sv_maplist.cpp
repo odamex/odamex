@@ -541,7 +541,7 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
 		DPrintFmt("SV_MaplistUpdate: Sending status {} to pid {}\n", status, player.id);
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_MaplistUpdate(status, NULL));
+		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_MaplistUpdate(status, nullptr));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic

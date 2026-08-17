@@ -1152,7 +1152,7 @@ void SV_UpdateFrags(const player_t &player)
 //
 void SV_SendUserInfo (const player_t &player, client_t* cl)
 {
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_UserInfo(player, time(NULL) - player.JoinTime));
+	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_UserInfo(player, time(nullptr) - player.JoinTime));
 }
 
 /**
@@ -3683,7 +3683,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 	for (auto sortedMobjIter = player.sortedMobjs.begin(); sortedMobjIter != player.sortedMobjs.end(); ++sortedMobjIter)
 	{
-		const bool isWithinBudget = player.client.messenger->GetOutgoingSizeInBytes() < player.client.messenger->GetTicBudget();
+		const bool isWithinBudget = static_cast<int>(player.client.messenger->GetOutgoingSizeInBytes()) < player.client.messenger->GetTicBudget();
 		if (isWithinBudget)
 		{
 			if (hiddenUpdateCount <= maxForThisTic)
