@@ -1658,14 +1658,6 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	else
 		displayplayer_id = cid;
 
-	// restore player colors
-	for (auto& player : players)
-	{
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
-	}
-
-	R_CopyTranslationRGB(menuplayer_id, consoleplayer_id);
-
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;
 	while ( (mo = flagiterator.Next() ) )
