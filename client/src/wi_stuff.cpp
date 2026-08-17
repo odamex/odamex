@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <ctype.h>
+#include <array>
 
 #include "z_zone.h"
 #include "m_random.h"
@@ -57,20 +58,24 @@ size_t P_NumPlayersInGame();
 //
 
 // GLOBAL LOCATIONS
-#define WI_TITLEY				2
-#define WI_SPACINGY 			33
+constexpr int WI_TITLEY = 2;
+constexpr int WI_SPACINGY = 33;
+
+// Halfway across the 320 unit wide screen the intermission is laid out on.
+constexpr int WI_CENTERX = 160;
 
 // Single Player
-#define SP_STATSX		50
-#define SP_STATSY		50
-#define SP_TIMEX		16
-#define SP_TIMEY		168
+constexpr int SP_STATSX = 50;
+constexpr int SP_STATSY = 50;
+constexpr int SP_TIMEX = 16;
+constexpr int SP_TIMEY = 168;
 
 // NET GAME STUFF
-#define NG_STATSY				50
+constexpr int NG_STATSY = 50;
+
 #define NG_STATSX				(32 + pStar->width()/2 + 32*!dofrags)
 
-#define NG_SPACINGX 			64
+constexpr int NG_SPACINGX = 64;
 
 //
 // GENERAL DATA
@@ -83,43 +88,46 @@ size_t P_NumPlayersInGame();
 // in seconds
 #define SHOWNEXTLOCDELAY		4
 
+namespace
+{
+
 // used to accelerate or skip a stage
-static bool				acceleratestage;
+bool				acceleratestage;
 
 // wbs->pnum
-static unsigned			me;
+unsigned			me;
 
  // specifies current state
-static stateenum_t		state;
+stateenum_t		state;
 
 // contains information passed into intermission
-static wbstartstruct_t* wbs;
+wbstartstruct_t* wbs;
 
-static std::vector<wbplayerstruct_t> plrs;	// = wbs->plyr
-static std::vector<int> cnt_kills_c;	// = cnt_kills
-static std::vector<int> cnt_items_c;	// = cnt_items
-static std::vector<int> cnt_secret_c;	// = cnt_secret
-static std::vector<int> cnt_frags_c;	// = cnt_frags
-static lumpHandle_t		faceclassic[4];
-static int dofrags;
-static int ng_state;
+std::vector<wbplayerstruct_t> plrs;	// = wbs->plyr
+std::vector<int> cnt_kills_c;	// = cnt_kills
+std::vector<int> cnt_items_c;	// = cnt_items
+std::vector<int> cnt_secret_c;	// = cnt_secret
+std::vector<int> cnt_frags_c;	// = cnt_frags
+std::array<lumpHandle_t, 4>	faceclassic;
+int dofrags;
+int ng_state;
 
 // used for general timing
-static int				cnt;
+int				cnt;
 
 // used for timing of background animation
-static int				bcnt;
+int				bcnt;
 
 // Since classic is used for singleplayer only...
-static int			cnt_kills;
-static int			cnt_items;
-static int			cnt_secret;
-static int			cnt_time;
-static int			cnt_par;
-static int			cnt_pause;
+int			cnt_kills;
+int			cnt_items;
+int			cnt_secret;
+int			cnt_time;
+int			cnt_par;
+int			cnt_pause;
 
-static int			inter_width;
-static int			inter_height;
+int			inter_width;
+int			inter_height;
 
 
 //
@@ -127,57 +135,60 @@ static int			inter_height;
 //
 
 // %, : graphics
-static lumpHandle_t		percent;
-static lumpHandle_t		colon;
+lumpHandle_t		percent;
+lumpHandle_t		colon;
 
 // 0-9 graphic
-static lumpHandle_t		num[10];
+constexpr size_t WI_NUMDIGITS = 10;
+std::array<lumpHandle_t, WI_NUMDIGITS>	num;
 
 // minus sign
-static lumpHandle_t		wiminus;
+lumpHandle_t		wiminus;
 
 // "Finished!" graphics
-static lumpHandle_t		finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
+lumpHandle_t		finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
 // [Nes] Re-added for singleplayer
 
 // "Entering" graphic
-static lumpHandle_t		entering;
+lumpHandle_t		entering;
 
  // "Kills", "Items", "Secrets"
-static lumpHandle_t		kills;
-static lumpHandle_t		secret;
-static lumpHandle_t		items;
-static lumpHandle_t		frags;
-static lumpHandle_t		scrt;
+lumpHandle_t		kills;
+lumpHandle_t		secret;
+lumpHandle_t		items;
+lumpHandle_t		frags;
+lumpHandle_t		scrt;
 
 // Time sucks.
-static lumpHandle_t		timepatch;
-static lumpHandle_t		par;
-static lumpHandle_t		sucks;
+lumpHandle_t		timepatch;
+lumpHandle_t		par;
+lumpHandle_t		sucks;
 
 // "Total", your face, your dead face
-static lumpHandle_t		total;
-static lumpHandle_t		star;
-static lumpHandle_t		bstar;
+lumpHandle_t		total;
+lumpHandle_t		star;
+lumpHandle_t		bstar;
 
-static lumpHandle_t		p; // [RH] Only one
+lumpHandle_t		p; // [RH] Only one
 
  // Name graphics of each level (centered)
-static lumpHandle_t		lnames[2];
+std::array<lumpHandle_t, 2>	lnames;
 
 // [RH] Info to dynamically generate the level name graphics
-static int				lnamewidths[2];
-static const char*		lnametexts[2];
+std::array<int, 2>			lnamewidths;
+std::array<const char*, 2>	lnametexts;
 
 // Map authors, empty when there is none or the title patch already shows it
-static std::string		lnameauthors[2];
+std::array<std::string, 2>	lnameauthors;
 
-static IWindowSurface*	background_surface;
+IWindowSurface*	background_surface;
 
-static IWindowSurface*	anim_surface;
+IWindowSurface*	anim_surface;
 
-static interlevel_t* enteranim;
-static interlevel_t* exitanim;
+interlevel_t* enteranim;
+interlevel_t* exitanim;
+
+} // namespace
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_oldintermission)
@@ -573,7 +584,8 @@ int WI_DrawName (const char *str, int x, int y)
 		str++;
 	}
 
-	return (5 * WI_BigNameHeight()) / 4;
+	const int height = WI_BigNameHeight();
+	return height + (height / 4);
 }
 
 constexpr int WI_SMALLNAMEBLANK = 4;
@@ -617,7 +629,8 @@ int WI_DrawSmallName(const char* str, int x, int y)
 		str++;
 	}
 
-	return (5 * WI_SmallNameHeight()) / 4;
+	const int height = WI_SmallNameHeight();
+	return height + (height / 4);
 }
 
 // Width of a string drawn by WI_DrawSmallName.
@@ -654,7 +667,7 @@ int WI_CalcSmallWidth(const char* str)
 // is drawn straight into it and the same gap is left below.
 int WI_DrawAuthorName(const char* author, int y, int nameheight)
 {
-	WI_DrawSmallName(author, 160 - (WI_CalcSmallWidth(author) / 2), y);
+	WI_DrawSmallName(author, WI_CENTERX - (WI_CalcSmallWidth(author) / 2), y);
 
 	return WI_SmallNameHeight() + (nameheight / 4);
 }
@@ -676,13 +689,13 @@ void WI_drawLF()
 		patch_t* lnames0 = W_ResolvePatchHandle(lnames[0]);
 		screen->DrawPatchClean(lnames0, (320 - lnames0->width()) / 2, y);
 		nameheight = lnames0->height();
-		y += (5 * nameheight) / 4;
+		y += nameheight + (nameheight / 4);
 	}
 	else
 	{
 		// [RH] draw a dynamic title string
 		nameheight = WI_BigNameHeight();
-		y += WI_DrawName (lnametexts[0], 160 - (lnamewidths[0] / 2), y);
+		y += WI_DrawName (lnametexts[0], WI_CENTERX - (lnamewidths[0] / 2), y);
 	}
 
 	// draw the author underneath, if the map names one
@@ -715,7 +728,7 @@ void WI_drawEL()
 
 	// [RH] Changed to adjust by height of entering patch instead of title
 	if (lnames1->height() < 200)
-		y += (5 * ent->height()) / 4;
+		y += ent->height() + (ent->height() / 4);
 
 	int nameheight;
 
@@ -724,13 +737,13 @@ void WI_drawEL()
 		// draw level
 		screen->DrawPatchClean(lnames1, (320 - lnames1->width()) / 2, y);
 		nameheight = lnames1->height();
-		y += (5 * nameheight) / 4;
+		y += nameheight + (nameheight / 4);
 	}
 	else
 	{
 		// [RH] draw a dynamic title string
 		nameheight = WI_BigNameHeight();
-		y += WI_DrawName (lnametexts[1], 160 - (lnamewidths[1] / 2), y);
+		y += WI_DrawName (lnametexts[1], WI_CENTERX - (lnamewidths[1] / 2), y);
 	}
 
 	// draw the author underneath, if the map names one
@@ -1364,11 +1377,11 @@ void WI_drawStats()
 	WI_drawPercent(cnt_secret, 320 - SP_STATSX, SP_STATSY + 2 * lh);
 
 	screen->DrawPatchClean(pTimepatch, SP_TIMEX, SP_TIMEY);
-	WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
+	WI_drawTime(cnt_time, WI_CENTERX - SP_TIMEX, SP_TIMEY);
 
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd < 3)
 	{
-		screen->DrawPatchClean(pPar, SP_TIMEX + 160, SP_TIMEY);
+		screen->DrawPatchClean(pPar, SP_TIMEX + WI_CENTERX, SP_TIMEY);
 		WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
 	}
 }

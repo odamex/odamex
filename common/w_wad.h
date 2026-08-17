@@ -110,7 +110,7 @@ struct lumpinfo_t
 struct lumpHandle_t
 {
 	size_t id;
-	lumpHandle_t() : id(0)
+	lumpHandle_t() noexcept : id(0)
 	{
 	}
 	void clear()

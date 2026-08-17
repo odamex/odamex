@@ -86,6 +86,19 @@ static constexpr int AM_AUTHORSCROLLPX = 2;
 // Tics the teletype spends on each character it types or takes back.
 static constexpr int AM_AUTHORTYPETICS = 2;
 
+static constexpr int AM_LINE_MAPNAME = 1;
+static constexpr int AM_LINE_AUTHOR = 2;
+
+static constexpr int AM_LINE_TIME = 1;
+static constexpr int AM_LINE_SECRETS = 2;
+static constexpr int AM_LINE_MONSTERS = 2;
+static constexpr int AM_LINE_ITEMS = 3;
+
+static constexpr int AM_OVLINE_TIME = 2;
+static constexpr int AM_OVLINE_SECRETS = 3;
+static constexpr int AM_OVLINE_MONSTERS = 4;
+static constexpr int AM_OVLINE_ITEMS = 5;
+
 EXTERN_CVAR(am_rotate)
 EXTERN_CVAR(am_overlay)
 EXTERN_CVAR(am_thickness)
@@ -2534,7 +2547,7 @@ void AM_Drawer()
 				if (AM_OverlayAutomapVisible())
 				{
 					x = surface_width - text_width;
-					y = OV_Y - (text_height * (4 + authorline)) + 1;
+					y = OV_Y - (text_height * (AM_OVLINE_MONSTERS + authorline)) + 1;
 					if (G_IsHordeMode())
 					{
 						y -= text_height * 2;
@@ -2543,7 +2556,7 @@ void AM_Drawer()
 				else
 				{
 					x = 0;
-					y = OV_Y - (text_height * (2 + authorline)) + 1;
+					y = OV_Y - (text_height * (AM_LINE_MONSTERS + authorline)) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2561,12 +2574,12 @@ void AM_Drawer()
 				if (AM_OverlayAutomapVisible())
 				{
 					x = surface_width - text_width;
-					y = OV_Y - (text_height * (5 + authorline)) + 1;
+					y = OV_Y - (text_height * (AM_OVLINE_ITEMS + authorline)) + 1;
 				}
 				else
 				{
 					x = 0;
-					y = OV_Y - (text_height * (3 + authorline)) + 1;
+					y = OV_Y - (text_height * (AM_LINE_ITEMS + authorline)) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2582,12 +2595,12 @@ void AM_Drawer()
 				if (AM_OverlayAutomapVisible())
 				{
 					x = surface_width - text_width;
-					y = OV_Y - (text_height * (3 + authorline)) + 1;
+					y = OV_Y - (text_height * (AM_OVLINE_SECRETS + authorline)) + 1;
 				}
 				else
 				{
 					x = surface_width - text_width;
-					y = OV_Y - (text_height * (2 + authorline)) + 1;
+					y = OV_Y - (text_height * (AM_LINE_SECRETS + authorline)) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2619,7 +2632,7 @@ void AM_Drawer()
 
 			line = GStrings.getIndex(firstmap + level.levelnum - mapoffset);
 
-			int y = OV_Y - (text_height * 1) + 1;
+			int y = OV_Y - (text_height * AM_LINE_MAPNAME) + 1;
 			if (AM_OverlayAutomapVisible() && G_IsHordeMode())
 			{
 				y -= text_height * 3;
@@ -2652,7 +2665,7 @@ void AM_Drawer()
 
 			line += level.level_name;
 
-			int y = OV_Y - (text_height * 1) + 1;
+			int y = OV_Y - (text_height * AM_LINE_MAPNAME) + 1;
 			if (AM_OverlayAutomapVisible() && G_IsHordeMode())
 			{
 				y -= text_height * 3;
@@ -2665,7 +2678,7 @@ void AM_Drawer()
 		{
 			const std::string authorline = AM_authorLine();
 
-			int y = OV_Y - (text_height * 2) + 1;
+			int y = OV_Y - (text_height * AM_LINE_AUTHOR) + 1;
 			if (AM_OverlayAutomapVisible() && G_IsHordeMode())
 			{
 				y -= text_height * 3;
@@ -2685,12 +2698,12 @@ void AM_Drawer()
 			if (AM_OverlayAutomapVisible())
 			{
 				x = surface_width - text_width;
-				y = OV_Y - (text_height * (2 + authorline)) + 1;
+				y = OV_Y - (text_height * (AM_OVLINE_TIME + authorline)) + 1;
 			}
 			else
 			{
 				x = surface_width - text_width;
-				y = OV_Y - (text_height * 1) + 1;
+				y = OV_Y - (text_height * AM_LINE_TIME) + 1;
 			}
 			if (G_IsHordeMode())
 			{
