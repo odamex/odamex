@@ -1303,7 +1303,7 @@ void WI_updateStats()
 					S_ChangeMusic(gameinfo.intermissionMusic.c_str(), true);
 				// background
 				const OLumpName& bg_lump = enteranim == nullptr ? enterpic : enteranim->backgroundlump;
-				const patch_t* bg_patch = W_CachePatch(bg_lump);
+				const patch_t* bg_patch = W_CachePatch(W_CheckWidescreenPatch(bg_lump));
 
 				inter_width = bg_patch->width();
 				inter_height = bg_patch->height() + (bg_patch->height() / 5);
@@ -1542,7 +1542,7 @@ void WI_loadData()
 		name = "INTERPIC";
 
 	// background
-	const patch_t* bg_patch = W_CachePatch(name);
+	const patch_t* bg_patch = W_CachePatch(W_CheckWidescreenPatch(name));
 
 	inter_width = bg_patch->width();
 	inter_height = bg_patch->height() + (bg_patch->height() / 5);

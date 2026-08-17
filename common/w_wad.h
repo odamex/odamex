@@ -182,6 +182,8 @@ T* W_CacheLumpName(const OLumpName& name, const zoneTag_e tag)
 	return W_CacheLumpNum<T>(W_GetNumForName(name), tag);
 }
 
+OLumpName W_CheckWidescreenPatch(const OLumpName& lump_main);
+
 patch_t* W_CachePatch(unsigned lump, const zoneTag_e tag = PU_CACHE);
 patch_t* W_CachePatch(const char* name, const zoneTag_e tag = PU_CACHE);
 patch_t* W_CachePatch(const OLumpName& name, const zoneTag_e tag = PU_CACHE);

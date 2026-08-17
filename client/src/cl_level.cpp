@@ -719,7 +719,7 @@ void G_DoLoadLevel (int position)
 		// unless level load is from a netdemo snapshot and display is freecam
 		displayplayer_id = consoleplayer_id;
 	}
-	
+
 	ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;
 
@@ -777,12 +777,15 @@ void G_WorldDone()
 	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
 
 	// Sort out default options to pass to F_StartFinale
-	finale_options_t options = { "", "", "", "" };
+	finale_options_t options = { .music = "", .flat = "", .text = "", .pic = "" };
 	options.music = !level.intermusic.empty() ? level.intermusic : thiscluster.messagemusic;
 
 	if (!level.interbackdrop.empty())
 	{
-		options.flat = level.interbackdrop;
+		if (W_CheckNumForName(level.interbackdrop, ns_flats) == -1)
+			options.pic = level.interbackdrop;
+		else
+			options.flat = level.interbackdrop;
 	}
 	else if (!thiscluster.finalepic.empty())
 	{
