@@ -35,8 +35,6 @@ struct SequenceQueueEntryType
 {
 	buf_t               buf                 { MAX_UDP_PACKET }; ///< The actual data payload that needs reliability.
     PacketHeaderType    header              { };
-//	int                 sequence{ -1 };             ///< This packet's sequence number.
-//	int                 originatingTic    { -1 };             ///< The local tic on which this packet was sent or received.  Used for retransmit window management.
 	int                 lastRetransmitTic   { -1 };             ///< The tic number on which this packet was last retransmitted.
 	bool                isAwaiting          { false };          ///< True if this packet needs yet to be acked.
 };

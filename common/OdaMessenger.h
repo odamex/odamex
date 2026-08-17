@@ -47,7 +47,7 @@ class OdaMessenger
 		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
 		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
 
-		OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>& i_poolPtr)
+		explicit OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>& i_poolPtr)
 			: m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
 			, m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
 		{

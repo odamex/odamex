@@ -2306,6 +2306,10 @@ void CL_ParseCommands()
 			break;
 		}
 
+		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
+		// This is because the High Priority packet is always live and comes out every tic.  It's totally
+		// possible for the server to go without sending anything Reliable or Best-Effort if things are
+		// all-quiet.
 		if (messenger.GetCurrentReceivedIsHighPriority())
 		{
 			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());

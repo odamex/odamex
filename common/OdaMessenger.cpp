@@ -110,6 +110,12 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		// Another subtlety: the header sequence will be -1 for any best-effort-only packets that predate
 		//                   any reliable messages.  Therefore we can't consider the sequence to be "old"
 		//                   unless it has a value >= 0.
+		//
+		// Another one: When a best-effort payload and reliable payload are delivered together, the BE
+		//              portion is considered "too new" which means it gets placed in the BE queue of
+		//              the same table entry that the reliable portion goes into.  After we handle the
+		//              reliable portion, subsequent BE-only packets are handled via the immediate buffer.
+
 		const bool isHighPriority   = (header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0;
 		const bool isNormalPriority = not isHighPriority;
 		const bool isHighTooOld     = isHighPriority   and header.sequence >= 0 and header.sequence < GetCurrentReceivedPacketSequenceNumber();
