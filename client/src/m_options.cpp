@@ -260,6 +260,10 @@ constexpr int RESCOLUMN_WIDTH = 104;
 constexpr int RESCOLUMN_TEXT_X = 20;
 constexpr int RESCOLUMN_CURSOR_X = 8;
 
+// Menu item text indents.
+constexpr int MENU_HALFPASTINDENT = 177;
+constexpr int MENU_LONGTEXTINDENT = 240;
+
 struct optmouserow_t
 {
 	int		item;		// index into CurrentMenu->items
@@ -394,7 +398,7 @@ menu_t OptionMenu = {
 	"M_OPTTTL",
 	0,
 	OptionItems.size(),
-	177,
+	MENU_HALFPASTINDENT,
 	OptionItems.data(),
 	0,
 	0,
@@ -578,7 +582,7 @@ menu_t MouseMenu = {
 	"M_MOUSET",
 	0,
 	MouseItems.size(),
-	177,
+	MENU_HALFPASTINDENT,
 	MouseItems.data(),
 	0,
 	0,
@@ -617,7 +621,7 @@ menu_t JoystickMenu = {
 	"M_JOYSTK",
 	0,
 	JoystickItems.size(),
-	177,
+	MENU_HALFPASTINDENT,
 	JoystickItems.data(),
 	0,
 	0,
@@ -759,7 +763,7 @@ menu_t AdvMidiMenu = {
 	"M_SOUND",
 	3,
 	ARRAY_LENGTH(AdvMidiItems),
-	177,
+	MENU_HALFPASTINDENT,
 	AdvMidiItems,
 	0,
 	0,
@@ -770,7 +774,7 @@ menu_t LibAdlMidiMenu = {
 	"M_SOUND",
 	3,
 	LibAdlMidiItems.size(),
-	177,
+	MENU_HALFPASTINDENT,
 	LibAdlMidiItems.data(),
 	0,
 	0,
@@ -781,7 +785,7 @@ menu_t SoundMenu = {
 	"M_SOUND",
 	2,
 	SoundItems.size(),
-	177,
+	MENU_HALFPASTINDENT,
 	SoundItems.data(),
 	0,
 	0,
@@ -839,7 +843,7 @@ menu_t CompatMenu = {
 	"M_COMPAT",
 	1,
 	CompatItems.size(),
-	240,
+	MENU_LONGTEXTINDENT,
 	CompatItems.data(),
 	0,
 	0,
@@ -884,7 +888,7 @@ menu_t NetworkMenu = {
 	"M_NETWRK",
 	2,
 	NetworkItems.size(),
-	177,
+	MENU_HALFPASTINDENT,
 	NetworkItems.data(),
 	1,
 	0,
@@ -948,7 +952,7 @@ menu_t WeaponMenu = {
 	"M_WEAPON",
 	1,
 	WeaponItems.size(),
-	177,
+	MENU_HALFPASTINDENT,
 	WeaponItems.data(),
 	0,
 	0,
