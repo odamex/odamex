@@ -1176,7 +1176,7 @@ void M_Expansion(int choice)
 //
 void M_DrawReadThis1()
 {
-	const patch_t *p = W_CachePatch(gameinfo.infoPage[0]);
+	const patch_t *p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[0]));
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1185,7 +1185,7 @@ void M_DrawReadThis1()
 //
 void M_DrawReadThis2()
 {
-	const patch_t *p = W_CachePatch(gameinfo.infoPage[1]);
+	const patch_t *p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[1]));
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1194,7 +1194,7 @@ void M_DrawReadThis2()
 //
 void M_DrawReadThis3()
 {
-	const patch_t *p = W_CachePatch(gameinfo.infoPage[2]);
+	const patch_t *p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[2]));
 	screen->DrawPatchFullScreen(p, false);
 }
 

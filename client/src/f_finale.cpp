@@ -332,7 +332,7 @@ void F_TextWrite ()
 	switch (finalelumptype)
 	{
 	case FINALE_GRAPHIC:
-		lump = W_CheckNumForName(finalelump, ns_global);
+		lump = W_CheckNumForName(W_CheckWidescreenPatch(finalelump), ns_global);
 		if (lump >= 0)
 		{
 			screen->DrawPatchFullScreen(W_CachePatch(lump, PU_CACHE), true);
@@ -630,7 +630,7 @@ void F_CastDrawer()
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
-	const patch_t* background_patch = W_CachePatch("BOSSBACK");
+	const patch_t* background_patch = W_CachePatch(W_CheckWidescreenPatch("BOSSBACK"));
 
 	finale_width = background_patch->width();
 	finale_height = background_patch->height() + (background_patch->height() / 5);
@@ -680,8 +680,8 @@ void F_BunnyScroll()
 {
 	static int	laststage;
 
-	const patch_t* p1 = W_CachePatch("PFUB1");
-	const patch_t* p2 = W_CachePatch("PFUB2");
+	const patch_t* p1 = W_CachePatch(W_CheckWidescreenPatch("PFUB1"));
+	const patch_t* p2 = W_CachePatch(W_CheckWidescreenPatch("PFUB2"));
 
 	I_FreeSurface(bunny1_surface);
 	I_FreeSurface(bunny2_surface);
@@ -811,7 +811,7 @@ void F_DrawEndPic(const OLumpName& page)
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear(); // ensure black background in matted modes
 
-	const patch_t* background_patch = W_CachePatch(page);
+	const patch_t* background_patch = W_CachePatch(W_CheckWidescreenPatch(page));
 
 	finale_width = background_patch->width();
 	finale_height = background_patch->height() + (background_patch->height() / 5);
