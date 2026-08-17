@@ -1518,7 +1518,7 @@ static std::optional<MobjModeEnum> IdentifyMode(const AActor& mobj, int32_t stat
 // Returns true if the mobj is still present.
 SetMobStateResultEnum P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 {
-	state_t* st;
+	const state_t* st;
 	int cycle_counter = 0;
 
 	do

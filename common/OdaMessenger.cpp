@@ -45,12 +45,26 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		return MessageResultEnum::ABORT;
 	}
 
-	if (header.flags & SVF_UNUSED_MASK)
+	if (header.flags & PacketHeaderType::FLAG_UNUSED_MASK)
 	{
-		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood", header.flags);
+		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood\n", header.flags);
 		return MessageResultEnum::ABORT;
 	}
-	else if (header.flags & SVF_COMPRESSED)
+
+	if (header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY and header.reliableSize)
+	{
+		PrintFmt(PRINT_WARNING, "High priority packet {} had a reliable payload: {} bytes\n",
+		         -header.sequence,
+		         header.reliableSize);
+		return MessageResultEnum::ABORT;
+	}
+
+	if (m_isBitBucket)
+	{
+		return MessageResultEnum::DEFER;
+	}
+
+	if (header.flags & PacketHeaderType::FLAG_COMPRESSED)
 	{
 		m_packet.GetCompressorRef().Decompress(io_rawBuf);
 	}
@@ -87,15 +101,81 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 	}
 
 	const size_t bestEffortSize = io_rawBuf.BytesLeftToRead();
+
 	if (bestEffortSize > 0)
 	{
+		// One subtlety: Best effort / normal-priority messages that are "too old" are still handled
+		//               because they could still have data mobjs that's more current than the mobjs'
+		//               last reliable update, which could be even older.
+		//
+		// Another subtlety: the realSequence will be -1 for any best-effort-only packets that predate
+		//                   any reliable messages.  Therefore we can't consider the sequence to be "old"
+		//                   unless it has a value >= 0.
+		const int  realSequence     = header.reliableSize ? header.sequence : -header.sequence;
+		const bool isHighPriority   = header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY;
+		const bool isNormalPriority = not isHighPriority;
+		const bool isHighTooOld     = isHighPriority   and realSequence >= 0 and realSequence < m_currentReceivedPacketSequenceNumber;
+		const bool isNormalTooNew   = isNormalPriority and realSequence > m_currentReceivedPacketSequenceNumber;
+
 		if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
 		{
 			m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
 		}
-		m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
-		m_immediateReceiveSequenceNumber = header.sequence;
-		return MessageResultEnum::ACCEPT;
+
+		// No matter what, we want to handle any acks and ping requests that are in the packet
+		// immediately, regardless of whether they're older or newer than expected.  These are
+		// critical to keeping retransmissions under control under rough network conditions.
+		// We do this by copying these messages into the immediate receive buffer so that they
+		// get evaluated very shortly after we return from this function, assuming
+		// NextReceivedPacket() is called shortly thereafter.
+
+		if (isHighTooOld or isNormalTooNew)
+		{
+			const size_t startOfBestEffort = io_rawBuf.TellRead();
+			while (io_rawBuf.BytesLeftToRead())
+			{
+				const auto msgFormatID = msg_t(io_rawBuf.ReadUnVarint());
+				switch (msgFormatID)
+				{
+					case msg_ack:
+						m_immediateReceiveBuffer.WriteUnVarint(msgFormatID);
+						m_immediateReceiveBuffer.WriteLong(io_rawBuf.ReadLong());   // sequence number
+						break;
+
+					case svc_pingrequest:
+						{
+							const size_t msgSize = io_rawBuf.ReadUnVarint();
+							m_immediateReceiveBuffer.WriteUnVarint(msgFormatID);
+							m_immediateReceiveBuffer.WriteUnVarint(msgSize);
+							m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(msgSize), msgSize);
+						}
+						break;
+
+					default:
+						io_rawBuf.SeekRead(io_rawBuf.ReadUnVarint(), buf_t::BT_CURRENT);    // read msg size + skip
+						break;
+				}
+			}
+			io_rawBuf.SeekRead(startOfBestEffort, buf_t::BT_START);
+		}
+
+		if (isNormalTooNew)
+		{
+			// Anything else in this "too new" best-effort payload will be handled after its reliable packet comes in.
+			// FYI - It doesn't hurt to have a duplicate ack handled whenever the owning packet is considered "current".
+
+			m_receiver.RegisterBestEffortPacket(realSequence, bestEffortSize, io_rawBuf);
+		}
+		else if (not isHighTooOld)
+		{
+			m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
+		}
+
+		if (m_immediateReceiveBuffer.size())
+		{
+			m_immediateReceiveSequenceNumber = realSequence;
+			return MessageResultEnum::ACCEPT;
+		}
 	}
 
 	return MessageResultEnum::DEFER;
@@ -103,7 +183,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 bool OdaMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 {
-	if (m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
+	if (m_isBitBucket or m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
 	{
 		return false;
 	}
@@ -202,7 +282,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		m_recordingBuffer.clear();
 	}
 
-	if (simulated_connection)
+	if (m_isBitBucket or simulated_connection)
 	{
 		Clear();
 	}
@@ -227,7 +307,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	{
 		m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
 
-		const size_t sendSize = m_highPacket.Send(i_currentTic, m_sender, i_dest);
+		const size_t sendSize = m_highPacket.SendHighPriority(m_sender, i_dest);
 		bytesSentBestEffort += sendSize;
 		m_byteBudget        -= static_cast<int>(sendSize);
 	}
@@ -312,6 +392,11 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 
 int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
 {
+	if (m_isBitBucket)
+	{
+		return 0;
+	}
+
 	int retransmissionsSent = 0;
 	int bytesSent = 0;
 

@@ -35,6 +35,10 @@ struct PacketHeaderType
 	const static size_t PACKET_MESSAGE_INDEX       = 7;
 	const static size_t PACKET_HEADER_SIZE         = PACKET_MESSAGE_INDEX;
 
+	const static uint8_t FLAG_COMPRESSED    =  0x1;
+	const static uint8_t FLAG_HIGH_PRIORITY =  0x2;
+	const static uint8_t FLAG_UNUSED_MASK   = 0xFC;
+
 	int32_t  sequence;
 	uint16_t reliableSize;
 	uint8_t  flags;
