@@ -681,7 +681,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 			continue;
 
 		// Select the correct buffer.
-		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger.ReliableBuf().Obtain() : player.client.messenger.NetBuf().Obtain();
+		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger->ReliableBuf().Obtain() : player.client.messenger->NetBuf().Obtain();
 
 		b.WriteUnVarint(header);
 		b.WriteUnVarint(buffer.size());

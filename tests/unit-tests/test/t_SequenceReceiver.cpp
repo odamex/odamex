@@ -8,7 +8,7 @@
 
 struct ReliableSequenceReceiverData
 {
-    SequenceQueueEntryType packet {16}; // The 16 byte packet buffer is an arbitrary size.  Just as long as it's > 0.
+    SequenceQueueEntryType packet;
 };
 
 struct ReliableSequenceReceiver : ReliableSequenceReceiverData, testing::Test
@@ -89,5 +89,42 @@ TEST_F(ReliableSequenceReceiver, OutOfSequence)
     REQUIRE(receiver.NextPacket(packet.buf) == 6);
     REQUIRE(receiver.NextPacket(packet.buf) == 7);
     REQUIRE(receiver.NextPacket(packet.buf) < 0);
+}
 
+TEST_F(ReliableSequenceReceiver, BestEffortPortionOrderQueuing)
+{
+    SequenceReceiver receiver(10);
+
+    packet.buf.WriteUnVarint(11); receiver.RegisterBestEffortPacket(0, packet.buf.size(), packet.buf); packet.buf.clear();
+    packet.buf.WriteUnVarint(44); receiver.RegisterBestEffortPacket(0, packet.buf.size(), packet.buf); packet.buf.clear();
+    packet.buf.WriteUnVarint(66); receiver.RegisterBestEffortPacket(0, packet.buf.size(), packet.buf); packet.buf.clear();
+
+    packet.buf.WriteUnVarint(333); receiver.RegisterBestEffortPacket(1, packet.buf.size(), packet.buf); packet.buf.clear();
+    packet.buf.WriteUnVarint(666); receiver.RegisterBestEffortPacket(1, packet.buf.size(), packet.buf); packet.buf.clear();
+
+    packet.buf.WriteUnVarint(100);
+    receiver.RegisterReliablePacket(1, packet.buf.size(), packet.buf);
+    packet.buf.clear();
+
+    // Not ready to receive anything - all is backed up on reliable packet 1.
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+
+    packet.buf.WriteUnVarint(700);
+    receiver.RegisterReliablePacket(0, packet.buf.size(), packet.buf);
+    packet.buf.clear();
+
+    REQUIRE(receiver.NextPacket(packet.buf) == 0);  REQUIRE(packet.buf.ReadUnVarint() == 700);
+    REQUIRE(receiver.NextPacket(packet.buf) == 0);  REQUIRE(packet.buf.ReadUnVarint() ==  11);
+    REQUIRE(receiver.NextPacket(packet.buf) == 0);  REQUIRE(packet.buf.ReadUnVarint() ==  44);
+    REQUIRE(receiver.NextPacket(packet.buf) == 0);  REQUIRE(packet.buf.ReadUnVarint() ==  66);
+
+    REQUIRE(receiver.NextPacket(packet.buf) == 1);  REQUIRE(packet.buf.ReadUnVarint() == 100);
+
+    packet.buf.clear(); packet.buf.WriteUnVarint(200); receiver.RegisterReliablePacket(2, packet.buf.size(), packet.buf);
+    packet.buf.clear(); packet.buf.WriteUnVarint(300); receiver.RegisterBestEffortPacket(2, packet.buf.size(), packet.buf);
+
+    REQUIRE(receiver.NextPacket(packet.buf) == 1);  REQUIRE(packet.buf.ReadUnVarint() == 333);
+    REQUIRE(receiver.NextPacket(packet.buf) == 1);  REQUIRE(packet.buf.ReadUnVarint() == 666);
+    REQUIRE(receiver.NextPacket(packet.buf) == 2);  REQUIRE(packet.buf.ReadUnVarint() == 200);
+    REQUIRE(receiver.NextPacket(packet.buf) == 2);  REQUIRE(packet.buf.ReadUnVarint() == 300);
 }
