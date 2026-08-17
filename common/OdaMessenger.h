@@ -21,6 +21,9 @@
 //-----------------------------------------------------------------------------sx
 #pragma once
 
+#include <memory>
+#include <memory_resource>
+
 #include "MessageQueue.h"
 #include "Packet.h"
 #include "SequenceReceiver.h"
@@ -43,6 +46,20 @@ class OdaMessenger
 		//      800 KBps * 5 sec = 4000 KB backed-up retransmits max
 		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
 		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
+
+		explicit OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>& i_poolPtr)
+			: m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
+			, m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
+		{
+		}
+
+		OdaMessenger(const OdaMessenger&)            = delete;
+		OdaMessenger& operator=(const OdaMessenger&) = delete;
+
+		OdaMessenger(OdaMessenger&&)            = default;
+		OdaMessenger& operator=(OdaMessenger&&) = default;
+
+		void SetBitBucket(bool i_isBitBucket) { m_isBitBucket = i_isBitBucket; }
 
 		//  -------------- Receiving functions --------------
 
@@ -199,6 +216,9 @@ class OdaMessenger
 
 		std::basic_string<byte> m_recordingBuffer;
 		bool                    m_recordingIsEnabled { false };
+
+		bool m_isBitBucket { false };   ///< Set this true to always discard all data.
+		                                ///< Use it to make a transient "stub" messenger for disconnecting clients.
 
 		// Metrics
 		size_t  m_bytesSentWithReliability      {  0 };
