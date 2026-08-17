@@ -1234,15 +1234,9 @@ static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 	// Special handling: If we get a best-effort / order-not-guaranteed UpdateMobj, make sure that
 	//                   we're not going backwards with it!  This avoids rare ghosts.
 	const int currentSequence = ::messenger.GetCurrentReceivedPacketSequenceNumber();
-	if (currentSequence < 0)
+	if (currentSequence < mo->updatedDuringServerTic)
 	{
-		const int baseSequence = std::abs(mo->updatedDuringServerTic);
-		const int newSequence  = -currentSequence;
-
-		if (newSequence < baseSequence)
-		{
-			return;
-		}
+		return;
 	}
 
 	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
