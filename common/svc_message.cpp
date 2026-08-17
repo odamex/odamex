@@ -76,7 +76,7 @@ odaproto::svc::Disconnect SVC_Disconnect(const char* message)
 
 static void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
 {
-	io_msg.set_statenum (psprite.state ? psprite.state->statenum : -1);
+	io_msg.set_statenum (psprite.statenum);
 	io_msg.set_tics     (psprite.tics);
 	io_msg.set_sx       (psprite.sx);
 	io_msg.set_sy       (psprite.sy);

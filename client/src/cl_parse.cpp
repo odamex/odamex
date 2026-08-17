@@ -1234,15 +1234,9 @@ static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 	// Special handling: If we get a best-effort / order-not-guaranteed UpdateMobj, make sure that
 	//                   we're not going backwards with it!  This avoids rare ghosts.
 	const int currentSequence = ::messenger.GetCurrentReceivedPacketSequenceNumber();
-	if (currentSequence < 0)
+	if (currentSequence < mo->updatedDuringServerTic)
 	{
-		const int baseSequence = std::abs(mo->updatedDuringServerTic);
-		const int newSequence  = -currentSequence;
-
-		if (newSequence < baseSequence)
-		{
-			return;
-		}
+		return;
 	}
 
 	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
@@ -2587,7 +2581,7 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	{
 		P_SetPsprite(player, i, pspupdates[i].statenum);
 
-		if (pspupdates[i].positioned && player.psprites[i].state)
+		if (pspupdates[i].positioned && player.psprites[i].statenum != S_NULL)
 		{
 			player.psprites[i].sx = pspupdates[i].sx;
 			player.psprites[i].sy = pspupdates[i].sy;
@@ -3399,8 +3393,7 @@ static void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
 
 		for (size_t i = 0; i < count; ++i)
 		{
-			auto state = states.find(psprites[i].statenum);
-			p.psprites[i].state = state != states.end() ? &state->second : nullptr;
+			p.psprites[i].statenum = psprites[i].statenum;
 			p.psprites[i].tics = psprites[i].tics;
 		}
 		return;
