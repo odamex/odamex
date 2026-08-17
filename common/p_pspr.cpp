@@ -1647,7 +1647,7 @@ FArchive &operator<< (FArchive &arc, pspdef_t &def)
 
 FArchive &operator>> (FArchive &arc, pspdef_t &def)
 {
-	state_t* state = nullptr;
+	const state_t* state = nullptr;
 	arc >> state >> def.tics >> def.sx >> def.sy;
 	def.statenum = state ? state->statenum : S_NULL;
 	return arc;

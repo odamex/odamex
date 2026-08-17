@@ -68,7 +68,7 @@ struct pspdef_t
 	fixed_t 	sx;
 	fixed_t 	sy;
 
-	[[nodiscard]] state_t* state() const
+	[[nodiscard]] const state_t* state() const
 	{
 		if (statenum == S_NULL)
 			return nullptr;

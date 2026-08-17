@@ -552,7 +552,7 @@ public:
 
     mobjinfo_t*		info = nullptr;	// &mobjinfo[mobj->type]
     int				tics = 0;	// state tic counter
-	state_t			*state = nullptr;
+	const state_t	*state = nullptr;
 	int				damage = 0;			// For missiles
 	int				special1 = 0;		// Special info
 	int				special2 = 0;		// Special info
