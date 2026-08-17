@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "d_event.h"
 
 // Some defines...
@@ -204,11 +206,11 @@ typedef struct
 	bool drawSkull;
 } menustack_t;
 
-extern value_t YesNo[2];
-extern value_t NoYes[2];
-extern value_t OnOff[2];
-extern value_t OffOn[2];
-extern value_t OnOffAuto[3];
+extern std::array<value_t, 2> YesNo;
+extern std::array<value_t, 2> NoYes;
+extern std::array<value_t, 2> OnOff;
+extern std::array<value_t, 2> OffOn;
+extern std::array<value_t, 3> OnOffAuto;
 
 extern menustack_t MenuStack[16];
 extern int MenuStackDepth;
