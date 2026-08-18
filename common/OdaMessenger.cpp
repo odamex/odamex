@@ -132,6 +132,10 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		//              the same table entry that the reliable portion goes into.  After we handle the
 		//              reliable portion, subsequent BE-only packets are handled via the immediate buffer.
 
+		// TODO:  Perhaps header.seque should be checked against receiver.CurrentSequence instead of the
+		//        current received packet sequence number, because the latter can be misordered in some
+		//        situations.
+
 		const bool isHighPriority   = (header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0;
 		const bool isNormalPriority = not isHighPriority;
 		const bool isHighTooOld     = isHighPriority   and header.sequence >= 0 and header.sequence < GetCurrentReceivedPacketSequenceNumber();

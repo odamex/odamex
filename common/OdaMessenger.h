@@ -67,10 +67,11 @@ class OdaMessenger
 		/// to NextReceivedPacket().  From call to call of NextReceivedPacket(), these
 		/// values should be expected to change and reflect the tic numbers contained
 		/// within and associated with the messages contained in that packet.
-		int  GetCurrentReceivedRemoteTic() const     { return m_receivedHeader.originatorTic; }
-		int  GetCurrentReceivedLocalTic() const      { return m_receivedHeader.destinationTic; }
-		bool GetCurrentReceivedIsReliable() const    { return m_receivedHeader.reliableSize > 0; }
-		bool GetCurrentReceivedIsHighPriority() const{ return (m_receivedHeader.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0; }
+		int  GetCurrentReceivedPacketSequenceNumber() const { return m_receivedHeader.sequence; }
+		int  GetCurrentReceivedRemoteTic() const            { return m_receivedHeader.originatorTic; }
+		int  GetCurrentReceivedLocalTic() const             { return m_receivedHeader.destinationTic; }
+		bool GetCurrentReceivedIsReliable() const           { return m_receivedHeader.reliableSize > 0; }
+		bool GetCurrentReceivedIsHighPriority() const       { return (m_receivedHeader.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0; }
 
 		/// The reason we want to allow explicitly setting the destination tic for outbound headers
 		/// is that the server *might not* have used the absolute latest-available command from the
@@ -190,8 +191,6 @@ class OdaMessenger
 		int GetPendingAckCount() const       { return m_sender.GetPendingAckCount(); }
 		int GetReliableOverloadCount() const { return m_reliableOverloadCount; }
 		int GetTicBudget() const             { return m_perTicBudget; }
-
-		int GetCurrentReceivedPacketSequenceNumber() const { return m_receivedHeader.sequence; }
 
 	protected:
 
