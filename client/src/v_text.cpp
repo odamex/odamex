@@ -206,7 +206,7 @@ int V_GetTextColor(std::string_view str)
         set('D', 'd', CR_GREEN);
         set('E', 'e', CR_BROWN);
         set('F', 'f', CR_GOLD);
-        set('G', 'e', CR_RED);
+        set('G', 'g', CR_RED);
         set('H', 'h', CR_BLUE);
         set('I', 'i', CR_ORANGE);
         set('J', 'j', CR_WHITE);

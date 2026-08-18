@@ -983,6 +983,7 @@ EXTERN_CVAR (am_showitems)
 EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)
 EXTERN_CVAR (am_classicmapstring)
+EXTERN_CVAR (am_showauthor)
 EXTERN_CVAR (am_usecustomcolors)
 EXTERN_CVAR (am_showlocked)
 EXTERN_CVAR (st_scale)
@@ -1344,6 +1345,14 @@ std::array<value_t, 2> ClassicMapStringTypes = {{
 	{ .value = 1.0, .name = "Classic"}
 }};
 
+std::array<value_t, 5> AuthorDisplays = {{
+	{ .value = 0.0, .name = "Off"},
+	{ .value = 1.0, .name = "Static"},
+	{ .value = 2.0, .name = "Fade"},
+	{ .value = 3.0, .name = "Marquee"},
+	{ .value = 4.0, .name = "Teletype"}
+}};
+
 std::array<value_t, 7> AutomapScales = {{
 	{ .value = 0.0, .name = "Auto"},
 	{ .value = 1.0, .name = "1X"},
@@ -1363,7 +1372,7 @@ std::array<value_t, 6> MinimapLocations = {{
 	{ .value = 5.0, .name = "Right Bottom"},
 }};
 
-std::array<menuitem_t, 21> AutomapItems = {{
+std::array<menuitem_t, 22> AutomapItems = {{
 	{ .type = discrete, .label = "Rotate automap",		.a = {.cvar = &am_rotate},		   	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
 	{ .type = discrete, .label = "Overlay automap",		.a = {.cvar = &am_overlay},			.b = {.leftval = ARRAY_LENGTH(Overlays)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Overlays.data()}},
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -1374,6 +1383,7 @@ std::array<menuitem_t, 21> AutomapItems = {{
 	{ .type = discrete, .label = "Show secrets count",	.a = {.cvar = &am_showsecrets},	   	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
 	{ .type = discrete, .label = "Show map timer", 	    .a = {.cvar = &am_showtime}, 	   	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
 	{ .type = discrete, .label = "Map name style",       .a = {.cvar = &am_classicmapstring},	.b = {.leftval = ARRAY_LENGTH(ClassicMapStringTypes)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = ClassicMapStringTypes.data()}},
+	{ .type = discrete, .label = "Show map author",     .a = {.cvar = &am_showauthor},		.b = {.leftval = ARRAY_LENGTH(AuthorDisplays)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = AuthorDisplays.data()}},
 
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "Automap Colors",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},

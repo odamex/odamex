@@ -34,6 +34,7 @@
 #include "c_dispatch.h"
 #include "cl_demo.h"
 #include "g_gametype.h"
+#include "g_mapinfo.h"
 #include "m_cheat.h"
 
 // Needs access to LFB.
@@ -63,6 +64,31 @@ EXTERN_CVAR(am_followplayer)
 static int lockglow = 0;
 static int bossglow = 0;
 
+// Tics the map name and the author each rest before handing the line over.
+static constexpr int AM_AUTHORHOLD = 4 * TICRATE;
+
+// Tics a crossfade takes.
+static constexpr int AM_AUTHORFADE = 1 * TICRATE;
+
+// Unscaled pixels the marquee travels per tic.
+static constexpr int AM_AUTHORSCROLLPX = 2;
+
+// Tics the teletype spends on each character it types or takes back.
+static constexpr int AM_AUTHORTYPETICS = 2;
+
+static constexpr int AM_LINE_MAPNAME = 1;
+static constexpr int AM_LINE_AUTHOR = 2;
+
+static constexpr int AM_LINE_TIME = 1;
+static constexpr int AM_LINE_SECRETS = 2;
+static constexpr int AM_LINE_MONSTERS = 2;
+static constexpr int AM_LINE_ITEMS = 3;
+
+static constexpr int AM_OVLINE_TIME = 2;
+static constexpr int AM_OVLINE_SECRETS = 3;
+static constexpr int AM_OVLINE_MONSTERS = 4;
+static constexpr int AM_OVLINE_ITEMS = 5;
+
 EXTERN_CVAR(am_rotate)
 EXTERN_CVAR(am_overlay)
 EXTERN_CVAR(am_thickness)
@@ -71,6 +97,8 @@ EXTERN_CVAR(am_showmonsters)
 EXTERN_CVAR(am_showitems)
 EXTERN_CVAR(am_showtime)
 EXTERN_CVAR(am_classicmapstring)
+EXTERN_CVAR(am_showauthor)
+EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(am_usecustomcolors)
 EXTERN_CVAR(am_showlocked)
 EXTERN_CVAR(am_ovshare)
@@ -2022,6 +2050,346 @@ void AM_drawCrosshair(am_color_t color)
 		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.rgb);
 }
 
+namespace
+{
+
+//
+// AM_authorLine
+//
+// The author as it appears on the automap.
+// Strips any prefix before displaying.
+//
+std::string AM_authorLine()
+{
+	return TEXTCOLOR_RED "Author:" TEXTCOLOR_NORMAL " " +
+	       G_StripAuthorPrefix(level.author);
+}
+
+//
+// Resting position of a line of automap text, matching the map name's column.
+//
+int AM_textRestX(const std::string& line, int surface_width)
+{
+	if (!AM_OverlayAutomapVisible())
+		return 0;
+
+	return surface_width - (V_StringWidth(line.c_str()) * CleanXfac);
+}
+
+//
+// Draws a line of automap text at the given translucency.
+//
+// The translucent drawers read their blend straight off
+// hud_transparency, the same way the toasts fade themselves out.
+//
+void AM_drawTextLuc(int color, int x, int y, const std::string& line, float alpha)
+{
+	if (alpha <= 0.0f)
+		return;
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency.ForceSet(alpha);
+
+	screen->DrawTextCleanLuc(color, x, y, line.c_str());
+
+	::hud_transparency.ForceSet(oldtrans);
+}
+
+struct amchar_t
+{
+	char c;
+	int color;
+};
+
+std::vector<amchar_t> AM_explodeLine(const std::string& line, int basecolor)
+{
+	std::vector<amchar_t> chars;
+	int color = basecolor;
+
+	for (size_t i = 0; i < line.length(); i++)
+	{
+		if (line[i] == TEXTCOLOR_ESCAPE && i + 1 < line.length())
+		{
+			const int newcolor = V_GetTextColor(line.substr(i, 2));
+			if (newcolor != -1)
+				color = newcolor;
+			i++;
+			continue;
+		}
+
+		chars.push_back({.c = line[i], .color = color});
+	}
+
+	return chars;
+}
+
+// Unscaled width of a character in the console font, matching what V_DrawText
+// advances by (including spaces).
+int AM_charWidth(char c)
+{
+	const int index = toupper(c) - HU_FONTSTART;
+
+	if (index < 0 || index >= HU_FONTSIZE)
+		return 4;
+
+	return W_ResolvePatchHandle(hu_font[index])->width();
+}
+
+int AM_lineWidth(const std::vector<amchar_t>& chars)
+{
+	int width = 0;
+	for (const amchar_t& ch : chars)
+		width += AM_charWidth(ch.c);
+
+	return width;
+}
+
+//
+// AM_assembleLine
+//
+// Puts the first so many characters of a line back together, with the color
+// escapes the teletype needs to have typed out along the way.
+//
+std::string AM_assembleLine(const std::vector<amchar_t>& chars, size_t count)
+{
+	std::string result;
+	int state = -1;
+
+	for (size_t i = 0; i < count && i < chars.size(); i++)
+	{
+		if (chars[i].color != state)
+		{
+			state = chars[i].color;
+			result += TextColorFromRange(static_cast<EColorRange>(state));
+		}
+
+		result += chars[i].c;
+	}
+
+	return result;
+}
+
+//
+// AM_drawClipped
+//
+// Draws as much of a line as fits between two edges, given where its first
+// character would sit.
+//
+// Characters falling outside are dropped whole rather than clipped.
+//
+void AM_drawClipped(const std::vector<amchar_t>& chars, int color, int x, int y,
+                           int clipleft, int clipright)
+{
+	std::string display;
+	int state = -1;
+	int drawx = 0;
+	int pos = x;
+
+	for (const amchar_t& ch : chars)
+	{
+		const int charwidth = AM_charWidth(ch.c) * CleanXfac;
+
+		if (pos >= clipleft && pos + charwidth <= clipright)
+		{
+			if (display.empty())
+				drawx = pos;
+
+			if (ch.color != state)
+			{
+				state = ch.color;
+				display += TextColorFromRange(static_cast<EColorRange>(ch.color));
+			}
+
+			display += ch.c;
+		}
+		else if (!display.empty())
+		{
+			// Past the far edge, so nothing after this fits either.
+			break;
+		}
+
+		pos += charwidth;
+	}
+
+	if (!display.empty())
+		screen->DrawTextClean(color, drawx, y, display.c_str());
+}
+
+//
+// AM_drawMapNameLine
+//
+// Draws the map name in the animation mode that was selected.
+//
+void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
+                               int surface_width)
+{
+	const bool animated =
+	    am_showauthor == AM_AUTHOR_FADE || am_showauthor == AM_AUTHOR_MARQUEE ||
+	    am_showauthor == AM_AUTHOR_TELETYPE;
+
+	if (!animated || level.author.empty())
+	{
+		screen->DrawTextClean(mapcolor, AM_textRestX(mapline, surface_width), y,
+		                      mapline.c_str());
+		return;
+	}
+
+	const std::string authorline = AM_authorLine();
+	const bool marquee = am_showauthor == AM_AUTHOR_MARQUEE;
+	const bool teletype = am_showauthor == AM_AUTHOR_TELETYPE;
+
+	std::vector<amchar_t> mapchars;
+	std::vector<amchar_t> authorchars;
+	int region = 0;
+	int toauthor = AM_AUTHORFADE;
+	int tomap = AM_AUTHORFADE;
+
+	if (marquee || teletype)
+	{
+		mapchars = AM_explodeLine(mapline, mapcolor);
+		authorchars = AM_explodeLine(authorline, CR_GREY);
+	}
+
+	if (marquee)
+	{
+		// The marquee runs in the width of the longer line plus a blank, so that
+		// whichever line is showing, the next one starts arriving from the same
+		// place.
+		region =
+		    std::max(AM_lineWidth(mapchars), AM_lineWidth(authorchars)) + AM_charWidth(' ');
+
+		// Both directions carry a line the width of that same space.
+		toauthor = tomap = std::max(1, region / AM_AUTHORSCROLLPX);
+	}
+	else if (teletype)
+	{
+		// One line is taken back a character at a time and the other typed out,
+		// so either direction is the same amount of typing.
+		const int characters =
+		    static_cast<int>(mapchars.size() + authorchars.size()) * AM_AUTHORTYPETICS;
+
+		toauthor = tomap = std::max(1, characters);
+	}
+
+	const int cycle = (2 * AM_AUTHORHOLD) + toauthor + tomap;
+	if (cycle <= 0)
+	{
+		screen->DrawTextClean(mapcolor, AM_textRestX(mapline, surface_width), y,
+		                      mapline.c_str());
+		return;
+	}
+
+	const int t = amclock % cycle;
+
+	// Which line is on its way out, and how far along the handover is.
+	const std::string* out = &mapline;
+	const std::string* in = &authorline;
+	const std::vector<amchar_t>* outchars = &mapchars;
+	const std::vector<amchar_t>* inchars = &authorchars;
+	int outcolor = mapcolor;
+	int incolor = CR_GREY;
+	double progress;
+
+	if (t < AM_AUTHORHOLD)
+	{
+		screen->DrawTextClean(mapcolor, AM_textRestX(mapline, surface_width), y,
+		                      mapline.c_str());
+		return;
+	}
+
+	if (t >= AM_AUTHORHOLD + toauthor && t < (2 * AM_AUTHORHOLD) + toauthor)
+	{
+		screen->DrawTextClean(CR_GREY, AM_textRestX(authorline, surface_width), y,
+		                      authorline.c_str());
+		return;
+	}
+
+	if (t < AM_AUTHORHOLD + toauthor)
+	{
+		progress = static_cast<double>(t - AM_AUTHORHOLD) / toauthor;
+	}
+	else
+	{
+		std::swap(out, in);
+		std::swap(outchars, inchars);
+		std::swap(outcolor, incolor);
+		progress = static_cast<double>(t - ((2 * AM_AUTHORHOLD) + toauthor)) / tomap;
+	}
+
+	if (teletype)
+	{
+		// The outgoing line is taken back a character at a time, and once it has
+		// gone the incoming one is typed out the same way.
+		const auto typed = static_cast<size_t>(
+		    progress * static_cast<double>(outchars->size() + inchars->size()));
+
+		const bool typing = typed >= outchars->size();
+		const std::vector<amchar_t>& line = typing ? *inchars : *outchars;
+		const size_t count = typing ? typed - outchars->size() : outchars->size() - typed;
+
+		const std::string display = AM_assembleLine(line, count);
+
+		// Where the typing happens is the same place the line comes to rest, so
+		// it works from the left edge normally and the right edge on the overlay.
+		screen->DrawTextClean(typing ? incolor : outcolor,
+		                      AM_textRestX(display, surface_width), y, display.c_str());
+		return;
+	}
+
+	if (!marquee)
+	{
+		// The outgoing line is gone before the incoming one starts to arrive,
+		// so the two are never on the line together.
+		if (progress < 0.5)
+		{
+			AM_drawTextLuc(outcolor, AM_textRestX(*out, surface_width), y, *out,
+			               static_cast<float>(1.0 - (progress / 0.5)));
+		}
+		else
+		{
+			AM_drawTextLuc(incolor, AM_textRestX(*in, surface_width), y, *in,
+			               static_cast<float>((progress - 0.5) / 0.5));
+		}
+		return;
+	}
+
+	// The pair is carried a steady number of pixels per tic, the incoming line
+	// trailing the outgoing one by the width of the space they run in.
+	const int scrolled = static_cast<int>(progress * region) * CleanXfac;
+	const int width = region * CleanXfac;
+
+	const int outwidth = AM_lineWidth(*outchars) * CleanXfac;
+	const int inwidth = AM_lineWidth(*inchars) * CleanXfac;
+
+	int clipleft = 0;
+	int clipright = 0;
+	int outx = 0;
+	int inx = 0;
+
+	if (AM_OverlayAutomapVisible())
+	{
+		// Right aligned text travels the other way.
+		clipright = surface_width;
+		clipleft = surface_width - width;
+
+		outx = clipright - outwidth + scrolled;
+		inx = clipleft - inwidth + scrolled;
+	}
+	else
+	{
+		clipleft = 0;
+		clipright = width;
+
+		outx = clipleft - scrolled;
+		inx = clipright - scrolled;
+	}
+
+	AM_drawClipped(*outchars, outcolor, outx, y, clipleft, clipright);
+	AM_drawClipped(*inchars, incolor, inx, y, clipleft, clipright);
+}
+
+} // namespace
+
 //
 // AM_Drawer
 //
@@ -2144,6 +2512,9 @@ void AM_Drawer()
 		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
 
+		const bool showauthor = am_showauthor != AM_AUTHOR_OFF && !level.author.empty();
+		const int authorline = (showauthor && am_showauthor == AM_AUTHOR_STATIC) ? 1 : 0;
+
 		if (G_IsCoopGame())
 		{
 			if (am_showmonsters)
@@ -2166,7 +2537,7 @@ void AM_Drawer()
 				if (AM_OverlayAutomapVisible())
 				{
 					x = surface_width - text_width;
-					y = OV_Y - (text_height * 4) + 1;
+					y = OV_Y - (text_height * (AM_OVLINE_MONSTERS + authorline)) + 1;
 					if (G_IsHordeMode())
 					{
 						y -= text_height * 2;
@@ -2175,7 +2546,7 @@ void AM_Drawer()
 				else
 				{
 					x = 0;
-					y = OV_Y - (text_height * 2) + 1;
+					y = OV_Y - (text_height * (AM_LINE_MONSTERS + authorline)) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2193,12 +2564,12 @@ void AM_Drawer()
 				if (AM_OverlayAutomapVisible())
 				{
 					x = surface_width - text_width;
-					y = OV_Y - (text_height * 5) + 1;
+					y = OV_Y - (text_height * (AM_OVLINE_ITEMS + authorline)) + 1;
 				}
 				else
 				{
 					x = 0;
-					y = OV_Y - (text_height * 3) + 1;
+					y = OV_Y - (text_height * (AM_LINE_ITEMS + authorline)) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2214,12 +2585,12 @@ void AM_Drawer()
 				if (AM_OverlayAutomapVisible())
 				{
 					x = surface_width - text_width;
-					y = OV_Y - (text_height * 3) + 1;
+					y = OV_Y - (text_height * (AM_OVLINE_SECRETS + authorline)) + 1;
 				}
 				else
 				{
 					x = surface_width - text_width;
-					y = OV_Y - (text_height * 2) + 1;
+					y = OV_Y - (text_height * (AM_LINE_SECRETS + authorline)) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2251,25 +2622,13 @@ void AM_Drawer()
 
 			line = GStrings.getIndex(firstmap + level.levelnum - mapoffset);
 
-			int x, y;
-			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
-
-			if (AM_OverlayAutomapVisible())
+			int y = OV_Y - (text_height * AM_LINE_MAPNAME) + 1;
+			if (AM_OverlayAutomapVisible() && G_IsHordeMode())
 			{
-				x = surface_width - text_width;
-				y = OV_Y - (text_height * 1) + 1;
-				if (G_IsHordeMode())
-				{
-					y -= text_height * 3;
-				}
-			}
-			else
-			{
-				x = 0;
-				y = OV_Y - (text_height * 1) + 1;
+				y -= text_height * 3;
 			}
 
-			screen->DrawTextClean(CR_RED, x, y, line.c_str());
+			AM_drawMapNameLine(line, CR_RED, y, surface_width);
 		}
 		else
 		{
@@ -2296,25 +2655,27 @@ void AM_Drawer()
 
 			line += level.level_name;
 
-			int x, y;
-			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
-
-			if (AM_OverlayAutomapVisible())
+			int y = OV_Y - (text_height * AM_LINE_MAPNAME) + 1;
+			if (AM_OverlayAutomapVisible() && G_IsHordeMode())
 			{
-				x = surface_width - text_width;
-				y = OV_Y - (text_height * 1) + 1;
-				if (G_IsHordeMode())
-				{
-					y -= text_height * 3;
-				}
-			}
-			else
-			{
-				x = 0;
-				y = OV_Y - (text_height * 1) + 1;
+				y -= text_height * 3;
 			}
 
-			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+			AM_drawMapNameLine(line, CR_GREY, y, surface_width);
+		}
+
+		if (showauthor && am_showauthor == AM_AUTHOR_STATIC)
+		{
+			const std::string authorline = AM_authorLine();
+
+			int y = OV_Y - (text_height * AM_LINE_AUTHOR) + 1;
+			if (AM_OverlayAutomapVisible() && G_IsHordeMode())
+			{
+				y -= text_height * 3;
+			}
+
+			screen->DrawTextClean(CR_GREY, AM_textRestX(authorline, surface_width), y,
+			                      authorline.c_str());
 		}
 
 		if (am_showtime)
@@ -2327,12 +2688,12 @@ void AM_Drawer()
 			if (AM_OverlayAutomapVisible())
 			{
 				x = surface_width - text_width;
-				y = OV_Y - (text_height * 2) + 1;
+				y = OV_Y - (text_height * (AM_OVLINE_TIME + authorline)) + 1;
 			}
 			else
 			{
 				x = surface_width - text_width;
-				y = OV_Y - (text_height * 1) + 1;
+				y = OV_Y - (text_height * AM_LINE_TIME) + 1;
 			}
 			if (G_IsHordeMode())
 			{

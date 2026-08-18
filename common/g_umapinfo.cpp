@@ -21,11 +21,65 @@
 
 #include "odamex.h"
 
+#include <charconv>
+
 #include "g_episode.h"
 #include "oscanner.h"
 #include "w_wad.h"
 #include "infomap.h"
 #include "g_mapinfo.h" // G_MapNameToLevelNum
+
+//
+// Reads the run of digits at the given offset, moving it past them.
+//
+// Written out rather than sscan'd because scanning cannot say whether the
+// number it read actually fit.
+//
+bool ReadMapNumber(std::string_view name, size_t& pos, int& out)
+{
+	const std::from_chars_result result =
+	    std::from_chars(name.data() + pos, name.data() + name.length(), out);
+
+	if (result.ec != std::errc())
+		return false;
+
+	pos = result.ptr - name.data();
+	return true;
+}
+
+//
+// Reads an ExMy name, and nothing else.
+//
+bool ParseEpisodeMapName(std::string_view name, int& epi, int& map)
+{
+	size_t pos = 1;
+
+	if (name.empty() || toupper(name[0]) != 'E')
+		return false;
+
+	if (!ReadMapNumber(name, pos, epi))
+		return false;
+
+	if (pos >= name.length() || toupper(name[pos]) != 'M')
+		return false;
+
+	pos++;
+	return ReadMapNumber(name, pos, map) && pos == name.length();
+}
+
+//
+// Reads a MAPxx name, and nothing else.
+//
+bool ParseMapNumberName(std::string_view name, int& map)
+{
+	size_t pos = 3;
+
+	if (name.length() < pos || toupper(name[0]) != 'M' || toupper(name[1]) != 'A' ||
+	    toupper(name[2]) != 'P')
+		return false;
+
+	return ReadMapNumber(name, pos, map) && pos == name.length();
+}
 
 bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL)
 {
@@ -36,13 +90,13 @@ bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NUL
 
 	if (gamemode != commercial)
 	{
-		if (sscanf(mapname.c_str(), "E%dM%d", &epi, &map) != 2)
+		if (!ParseEpisodeMapName(mapname.c_str(), epi, map))
 			return false;
 		lumpname = fmt::format("E{}M{}", epi, map);
 	}
 	else
 	{
-		if (sscanf(mapname.c_str(), "MAP%d", &map) != 1)
+		if (!ParseMapNumberName(mapname.c_str(), map))
 			return false;
 		lumpname = fmt::format("MAP{:02d}", map);
 		epi = 1;
@@ -53,6 +107,32 @@ bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NUL
 	if (pMap)
 		*pMap = map;
 	return mapname == lumpname;
+}
+
+// Builds the error text for a map name that ValidateMapName rejected.
+//
+// A name that is well formed for the other naming scheme is nearly always a
+// PWAD loaded against the wrong IWAD, which is worth saying outright.
+std::string InvalidMapNameError(const OLumpName& mapname)
+{
+	int epi = -1;
+	int map = -1;
+
+	if (gamemode == commercial && ParseEpisodeMapName(mapname.c_str(), epi, map))
+	{
+		return fmt::format("Map name {} uses episode format, but the loaded IWAD uses "
+		                   "MAPxx names. This file needs a Doom or Ultimate Doom IWAD.",
+		                   mapname);
+	}
+
+	if (gamemode != commercial && ParseMapNumberName(mapname.c_str(), map))
+	{
+		return fmt::format("Map name {} uses MAPxx format, but the loaded IWAD uses "
+		                   "ExMy names. This file needs a Doom II IWAD.",
+		                   mapname);
+	}
+
+	return fmt::format("Invalid map name {}", mapname);
 }
 
 // used for munching the strings in UMAPINFO
@@ -124,6 +204,9 @@ player_action_t ParsePlayerAction(OScanner& os)
 
 bool pnamemodified;
 
+// True while the UMAPINFO lump being parsed belongs to a PWAD.
+bool umapinfofrompwad = false;
+
 bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 {
 	// find the next line with content.
@@ -160,13 +243,18 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.mustScan();
 		mape->author = os.getToken();
+
+		if (umapinfofrompwad)
+			mape->flags2 |= LEVEL2_AUTHORFROMPWAD;
+		else
+			mape->flags2 &= ~LEVEL2_AUTHORFROMPWAD;
 	}
 	else if (!stricmp(pname.c_str(), "next"))
 	{
 		ParseOLumpName(os, mape->nextmap);
 		if (!ValidateMapName(mape->nextmap))
 		{
-			os.error("Invalid map name {}", mape->nextmap);
+			os.error("{}", InvalidMapNameError(mape->nextmap));
 			return false;
 		}
 	}
@@ -175,7 +263,7 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		ParseOLumpName(os, mape->secretmap);
 		if (!ValidateMapName(mape->secretmap))
 		{
-			os.error("Invalid map name {}", mape->nextmap);
+			os.error("{}", InvalidMapNameError(mape->secretmap));
 			return false;
 		}
 	}
@@ -468,6 +556,8 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
 
+	umapinfofrompwad = W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+
 	const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
 
 	const OScannerConfig config = {
@@ -489,7 +579,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 
 		if (!ValidateMapName(mapname))
 		{
-			os.error("Invalid map name {}", mapname);
+			os.error("{}", InvalidMapNameError(mapname));
 		}
 
 		// Find the level.
@@ -508,6 +598,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 		pnamemodified = false;
 
 		info.mapname = mapname;
+		info.flags2 |= LEVEL2_FROMUMAPINFO;
 
 		G_MapNameToLevelNum(info);
 		G_MapNameToID24LevelNum(info);

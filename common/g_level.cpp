@@ -34,6 +34,7 @@
 #include "d_event.h"
 #include "d_main.h"
 #include "g_game.h"
+#include "g_mapinfo.h"
 #include "gi.h"
 #include "i_system.h"
 #include "p_acs.h"
@@ -539,7 +540,12 @@ BEGIN_COMMAND (map)
 	}
 	else
 	{
-		PrintFmt(PRINT_HIGH, "The current map is {}: \"{}\"\n", level.mapname, level.level_name);
+		std::string current =
+		    fmt::format("The current map is {}: \"{}\"", level.mapname, level.level_name);
+		if (!level.author.empty())
+			current += fmt::format(" by {}", G_StripAuthorPrefix(level.author));
+
+		PrintFmt(PRINT_HIGH, "{}\n", current);
 	}
 }
 END_COMMAND (map)
@@ -1042,6 +1048,7 @@ BEGIN_COMMAND(mapinfo)
 	PrintFmt(PRINT_HIGH, "Map Name: {}\n", info.mapname);
 	PrintFmt(PRINT_HIGH, "Level Number: {}\n", info.levelnum);
 	PrintFmt(PRINT_HIGH, "Level Name: {}\n", info.level_name);
+	PrintFmt(PRINT_HIGH, "Author: {}\n", info.author);
 	PrintFmt(PRINT_HIGH, "Intermission Graphic: {}\n", info.pname);
 	PrintFmt(PRINT_HIGH, "Next Map: {}\n", info.nextmap);
 	PrintFmt(PRINT_HIGH, "Secret Map: {}\n", info.secretmap);
