@@ -1253,9 +1253,7 @@ std::string mobjinfo_t::getDisplayName() const
 		return deh_name;
 	if (!display_name.empty())
 	{
-		if (display_name[0] == '$')
-			return GStrings(OString(StdStringToUpper(display_name).substr(1)));
-		return display_name;
+		return GStrings.maybeLookup(display_name);
 	}
 	return P_MobjToName(static_cast<mobjtype_t>(this->type));
 }

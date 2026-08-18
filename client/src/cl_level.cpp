@@ -36,6 +36,7 @@
 #include "f_finale.h"
 #include "g_game.h"
 #include "g_levelstate.h"
+#include "g_mapinfo.h"
 #include "gi.h"
 #include "g_skill.h"
 #include "i_system.h"
@@ -577,9 +578,14 @@ void G_DoLoadLevel (int position)
 
 	G_InitLevelLocals ();
 
+	std::string title =
+	    fmt::format("{}: \"{}" TEXTCOLOR_BOLD "\"", level.mapname, level.level_name);
+	if (!level.author.empty())
+		title += fmt::format(" by {}" TEXTCOLOR_BOLD, G_StripAuthorPrefix(level.author));
+
     PrintFmt_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
                  "\36\36\36\36\36\36\36\36\36\36\36\36\37\n"
-                 "{}: \"{}\"\n\n", level.mapname, level.level_name);
+                 "{}\n\n", title);
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
