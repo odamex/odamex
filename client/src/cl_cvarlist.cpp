@@ -24,6 +24,7 @@
 
 #include "odamex.h"
 
+#include "am_map.h"
 #include "s_sound.h"
 #include "i_music.h"
 
@@ -56,6 +57,17 @@ CVAR(					am_showtime, "1", "",
 
 CVAR(					am_classicmapstring, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+
+CVAR_RANGE(am_showauthor, "2",
+		"How the map author is shown on the automap.\n"
+		"0 - Off\n"
+		"1 - Static\n"
+		"2 - Fade in/out with map name\n"
+		"3 - Marquee in/out with map name\n"
+		"4 - Teletype effect with map name",
+		CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,
+		AM_AUTHOR_OFF, AM_AUTHOR_TELETYPE)
 
 CVAR(					am_usecustomcolors, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

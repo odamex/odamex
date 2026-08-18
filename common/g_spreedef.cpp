@@ -29,26 +29,6 @@
 #include "oscanner.h"
 #include "gstrings.h"
 
-static std::string UseStringTableOrToken(std::string token)
-{
-	if (token.find_first_of("$") == 0)
-	{
-		std::string text = GStrings(OString(token.substr(1)));
-		if (text.empty())
-		{
-			return token;
-		}
-		else
-		{
-			return text;
-		}
-	}
-	else
-	{
-		return token;
-	}
-}
-
 static void ParseSpreeKillInterval(OScanner& os, int& killinterval)
 {
 	os.assertTokenIs("spreekillinterval");
@@ -107,7 +87,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 			os.assertTokenIs("=");
 			os.mustScan();
 			std::string text = os.getToken();
-			spree.spreeText = UseStringTableOrToken(text);
+			spree.spreeText = GStrings.maybeLookup(text);
 		}
 		else if (os.compareTokenNoCase("broadcasttext"))
 		{
@@ -115,7 +95,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 			os.assertTokenIs("=");
 			os.mustScan();
 			std::string broadcastText = os.getToken();
-			spree.spreeBroadcastText = UseStringTableOrToken(broadcastText);
+			spree.spreeBroadcastText = GStrings.maybeLookup(broadcastText);
 		}
 		else if (os.compareTokenNoCase("gamesfx"))
 		{
@@ -167,7 +147,7 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 			os.assertTokenIs("=");
 			os.mustScan();
 			std::string text = os.getToken();
-			level.multikilltext = UseStringTableOrToken(text);
+			level.multikilltext = GStrings.maybeLookup(text);
 		}
 		else if (os.compareTokenNoCase("gamesfx"))
 		{
@@ -195,7 +175,7 @@ static void ParseSpreeText(OScanner& os, std::string& text, std::string token)
 	os.assertTokenIs("=");
 	os.mustScan();
 	std::string newText = os.getToken();
-	text = UseStringTableOrToken(newText);
+	text = GStrings.maybeLookup(newText);
 }
 
 static void ParseSpreeDef(const int lump, const OLumpName name)
