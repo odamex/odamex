@@ -360,19 +360,15 @@ const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 
 struct cluster_info_t
 {
-	int				cluster;
+	int				cluster = 0;
 	OLumpName		messagemusic;
 	OLumpName		finaleflat;
 	std::string		exittext;
 	std::string		entertext;
-	int				flags;
+	clusterFlags_t	flags = 0;
 	OLumpName		finalepic;
 
-	cluster_info_t()
-	    : cluster(0), messagemusic(""), finaleflat(""), exittext(""), entertext(""),
-	      flags(0)
-	{
-	}
+	cluster_info_t() = default;
 
 	bool exists() const
 	{

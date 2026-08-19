@@ -62,7 +62,7 @@ struct SkillInfo
 	bool must_confirm             = false;
 	std::string must_confirm_text = "$NIGHTMARE";
 	char shortcut                 = 0;
-	byte text_color[4]            = { 0 };	// not implemented
+	std::array<byte, 4> text_color = { 0 };	// not implemented
 	//SkillActorReplacement replace;	// not implemented
 	//SkillActorReplacement replaced;	// not implemented
 	float monster_health          = 1.0f;	// not implemented
