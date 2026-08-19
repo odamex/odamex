@@ -34,7 +34,7 @@ const size_t DEFAULT_RELIABILITY_QUEUE_SIZE = 256;
 struct SequenceQueueEntryType
 {
 	buf_t               buf                 { MAX_UDP_PACKET }; ///< The actual data payload that needs reliability.
-    PacketHeaderType    header              { };
+	PacketHeaderType    header;                                 ///< This packet's header.
 	int                 lastRetransmitTic   { -1 };             ///< The tic number on which this packet was last retransmitted.
 	bool                isAwaiting          { false };          ///< True if this packet needs yet to be acked.
 };
