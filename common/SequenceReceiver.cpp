@@ -90,10 +90,12 @@ std::optional<PacketHeaderType> SequenceReceiver::NextPacket(buf_t& io_bufferRef
 		{
 			if (not iter->second.bestEffort.empty())
 			{
-				auto& entry = iter->second.bestEffort.front();
-				io_bufferRef.swap(entry.buf);
+				{
+					auto& entry = iter->second.bestEffort.front();
+					fetchedHeader = entry.header;
+					io_bufferRef.swap(entry.buf);
+				}
 				iter->second.bestEffort.pop_front();
-				fetchedHeader = entry.header;
 			}
 		}
 
