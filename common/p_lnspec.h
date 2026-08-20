@@ -665,12 +665,12 @@ enum class boomLineSpecial_t : int16_t
 	ST_TransferSkyFlipped = 272,
 };
 
-inline constexpr int16_t lineSpecialValue(doomLineSpecial_t special)
+constexpr int16_t lineSpecialValue(doomLineSpecial_t special)
 {
 	return static_cast<int16_t>(special);
 }
 
-inline constexpr int16_t lineSpecialValue(boomLineSpecial_t special)
+constexpr int16_t lineSpecialValue(boomLineSpecial_t special)
 {
 	return static_cast<int16_t>(special);
 }
