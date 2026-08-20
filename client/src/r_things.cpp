@@ -1289,18 +1289,17 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->statusflags = 0;
 	vis->mo = NULL;
 	vis->spectator = false;
+	vis->mobjflags.clear();
+	vis->translucency = (particle->trans + 1) << 8;
 
 	if (particle->sprite == NO_PARTICLE)
 	{
 		vis->startfrac = particle->color;
 		vis->patch = NO_PARTICLE;
-		vis->mobjflags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(particle->trans));
 	}
 	else
 	{
 		vis->patch = particle->sprite;
-		vis->translucency = (particle->trans + 1) << 8;
-		vis->mobjflags.clear();
 	}
 
 	// get light level
@@ -1345,8 +1344,7 @@ void R_DrawParticle(vissprite_t* vis)
 	dspan.x1 = vis->x1;
 	dspan.x2 = vis->x2;
 	dspan.colormap = vis->colormap;
-	// vis->mobjflags holds translucency level (0-255)
-	dspan.translevel = (vis->mobjflags.to_int() + 1) << 8;
+	dspan.translevel = vis->translucency;
 	// vis->startfrac holds palette color index
 	dspan.color = vis->startfrac;
 
