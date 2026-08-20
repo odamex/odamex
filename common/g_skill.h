@@ -23,6 +23,15 @@
 
 #pragma once
 
+#include "c_cvars.h"
+#include "doomtype.h"
+#include "olumpname.h"
+
+#include <array>
+#include <string>
+
+EXTERN_CVAR(sv_skill)
+
 #define MAX_SKILLS 7
 
 inline constexpr uint32_t SKILL_NOINFIGHTING = BIT(0);
