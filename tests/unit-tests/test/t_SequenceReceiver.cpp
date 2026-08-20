@@ -4,15 +4,11 @@
 
 #include "SequenceReceiver.h"
 
-#define REQUIRE(x) EXPECT_TRUE((x))
+#define REQUIRE(x) EXPECT_TRUE((x)) // NOLINT (cppcoreguidelines-macro-usage)
 
-struct ReliableSequenceReceiverData
+struct ReliableSequenceReceiver : testing::Test
 {
     SequenceQueueEntryType packet;
-};
-
-struct ReliableSequenceReceiver : ReliableSequenceReceiverData, testing::Test
-{
 };
 
 TEST_F(ReliableSequenceReceiver, BasicReceive)
@@ -23,8 +19,9 @@ TEST_F(ReliableSequenceReceiver, BasicReceive)
 
     receiver.RegisterReliablePacket(PacketHeaderType(0), packet.buf.size(), packet.buf);
 
-    auto sequence = receiver.NextPacket(packet.buf)->sequence;
-    REQUIRE(sequence == 0);
+    auto nextPacket = receiver.NextPacket(packet.buf);
+    REQUIRE(nextPacket && nextPacket->sequence == 0);
+
     REQUIRE(receiver.NextPacket(packet.buf) == std::nullopt);
 
     // Duplicate receive.
