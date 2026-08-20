@@ -52,6 +52,7 @@ concept CEnum = std::is_enum_v<T> and not is_scoped_enum_v<T>;
 
 // C++23's std::to_underlying
 template <Enum E>
+[[nodiscard]]
 constexpr auto to_underlying(const E e) noexcept
 {
 	return static_cast<std::underlying_type_t<E>>(e);
@@ -66,14 +67,15 @@ template <typename T>
 struct reverse_wrapper
 {
 	T& iterable;
-	constexpr auto begin() noexcept(noexcept(std::rbegin(iterable))) { return std::rbegin(iterable); }
-	constexpr auto end() noexcept(noexcept(std::rend(iterable))) { return std::rend(iterable); }
+	[[nodiscard]] constexpr auto begin() noexcept(noexcept(std::rbegin(iterable))) { return std::rbegin(iterable); }
+	[[nodiscard]] constexpr auto end() noexcept(noexcept(std::rend(iterable))) { return std::rend(iterable); }
 };
 
 /**
  * @brief Reverse the iteration in a range-based for loop
  */
 template <typename T>
+[[nodiscard]]
 constexpr reverse_wrapper<T> reverse(T& iterable) { return { iterable }; }
 
 // Wrapper for skipping the first N elements in a range-based for loop
@@ -83,6 +85,7 @@ struct drop_wrapper
 	T& iterable;
 	size_t count;
 
+	[[nodiscard]]
 	constexpr auto begin() {
 		auto it = std::begin(iterable);
 		auto end_it = std::end(iterable);
@@ -91,13 +94,14 @@ struct drop_wrapper
 		return it;
 	}
 
-	constexpr auto end() noexcept(noexcept(std::end(iterable))) { return std::end(iterable); }
+	[[nodiscard]] constexpr auto end() noexcept(noexcept(std::end(iterable))) { return std::end(iterable); }
 };
 
 /**
  * @brief Skip the first `count` elements in a range-based for loop
  */
 template <typename T>
+[[nodiscard]]
 constexpr drop_wrapper<T> drop(T& iterable, std::size_t count) { return { iterable, count }; }
 
 // Helper for use of std::visit with lambdas
@@ -108,6 +112,7 @@ template<class... Ts>
 visitor(Ts...) -> visitor<Ts...>;
 
 template <std::integral T>
+[[nodiscard]]
 constexpr auto to_unsigned(T x)
 {
 	return static_cast<std::make_unsigned_t<T>>(x);
