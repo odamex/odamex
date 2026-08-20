@@ -389,13 +389,6 @@ constexpr flag_combo<E> operator|(const flag_combo<E> c, const E e) noexcept
 
 template <FlagEnum E>
 [[nodiscard]]
-constexpr flag_combo<E> operator|(const E e, const flag_combo<E> c) noexcept
-{
-	return c & e;
-}
-
-template <FlagEnum E>
-[[nodiscard]]
 constexpr flag_combo<E> operator|(const flag_combo<E> c1, const flag_combo<E> c2) noexcept
 {
 	return c1.bitwise_or(c2);
@@ -410,23 +403,9 @@ constexpr flag_set<E> operator|(const flag_set<E> s, const FlagOrCombo<E> auto c
 
 template <FlagEnum E>
 [[nodiscard]]
-constexpr flag_set<E> operator|(const FlagOrCombo<E> auto c, const flag_set<E> s) noexcept
-{
-	return s & c;
-}
-
-template <FlagEnum E>
-[[nodiscard]]
 constexpr bool operator&(const flag_set<E> s, const E e) noexcept
 {
 	return s.is_set(e);
-}
-
-template <FlagEnum E>
-[[nodiscard]]
-constexpr bool operator&(const E e, const flag_set<E> s) noexcept
-{
-	return s & e;
 }
 
 template <FlagEnum E>
@@ -438,23 +417,9 @@ constexpr bool operator&(const flag_set<E> s, const flag_combo<E> c) noexcept
 
 template <FlagEnum E>
 [[nodiscard]]
-constexpr bool operator&(const flag_combo<E> c, const flag_set<E> s) noexcept
-{
-	return s & c;
-}
-
-template <FlagEnum E>
-[[nodiscard]]
 constexpr flag_set<E> operator&(const flag_set<E> s, const flag_mask<E> m) noexcept
 {
 	return s.bitwise_and(flag_set<E>{m});
-}
-
-template <FlagEnum E>
-[[nodiscard]]
-constexpr flag_set<E> operator&(const flag_mask<E> m, const flag_set<E> s) noexcept
-{
-	return s & m;
 }
 
 template <FlagEnum E>
@@ -487,21 +452,7 @@ constexpr flag_set<E> operator^(const flag_set<E> s, const FlagOrCombo<E> auto c
 
 template <FlagEnum E>
 [[nodiscard]]
-constexpr flag_set<E> operator^(const FlagOrCombo<E> auto c, const flag_set<E> s) noexcept
-{
-	return s & c;
-}
-
-template <FlagEnum E>
-[[nodiscard]]
 constexpr bool operator==(const flag_combo<E> c, const E e) noexcept
-{
-	return c == flag_combo<E>{e};
-}
-
-template <FlagEnum E>
-[[nodiscard]]
-constexpr bool operator==(const E e, const flag_combo<E> c) noexcept
 {
 	return c == flag_combo<E>{e};
 }
