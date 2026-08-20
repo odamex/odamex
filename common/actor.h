@@ -118,109 +118,6 @@
 // Any questions?
 //
 
-enum mobjflag2_t
-{
-
-	// --- mobj.flags2 ---
-	// Heretic flags
-	MF2_LOGRAV			= BIT(0),   // alternate gravity setting
-	MF2_WINDTHRUST		= BIT(1),   // gets pushed around by the wind
-									// specials
-	MF2_FLOORBOUNCE		= BIT(2),   // bounces off the floor
-	MF2_BLASTED			= BIT(3),	// mobj can be on an edge because it was hit by a blast
-	MF2_FLY				= BIT(4),   // fly mode is active
-	MF2_FLOORCLIP		= BIT(5),   // if feet are allowed to be clipped
-	MF2_SPAWNFLOAT		= BIT(6),   // spawn random float z
-	MF2_NOTELEPORT		= BIT(7),   // does not teleport
-	MF2_RIP				= BIT(8),   // missile rips through solid
-									// targets
-	MF2_PUSHABLE		= BIT(9),   // can be pushed by other moving
-									// mobjs
-	MF2_SLIDE			= BIT(10),  // slides against walls
-	MF2_ONMOBJ			= BIT(11),  // mobj is resting on top of another
-									// mobj
-	MF2_PASSMOBJ		= BIT(12),  // Enable z block checking.  If on,
-									// this flag will allow the mobj to
-									// pass over/under other mobjs.
-	MF2_CANNOTPUSH		= BIT(13),  // cannot push other pushable mobjs
-	MF2_THRUGHOST		= BIT(14),  // missile will pass through ghosts [RH] was 8
-	MF2_BOSS			= BIT(15),  // mobj is a major boss
-	MF2_FIREDAMAGE		= BIT(16),  // does fire damage
-	MF2_NODMGTHRUST		= BIT(17),  // does not thrust target when damaging
-	MF2_TELESTOMP		= BIT(18),  // mobj can stomp another
-	MF2_FLOATBOB		= BIT(19),  // use float bobbing z movement
-	MF2_DONTDRAW		= BIT(20),  // don't generate a vissprite
-	MF2_IMPACT			= BIT(21),  // an MF_MISSILE mobj can activate SPAC_IMPACT
-	MF2_PUSHWALL		= BIT(22),  // mobj can push walls
-	MF2_MCROSS			= BIT(23),  // can activate monster cross lines
-	MF2_PCROSS			= BIT(24),  // can activate projectile cross lines
-	MF2_CANTLEAVEFLOORPIC = BIT(25),// stay within a certain floor type
-	MF2_NONSHOOTABLE	= BIT(26),  // mobj is totally non-shootable,
-									// but still considered solid
-	MF2_INVULNERABLE	= BIT(27),  // mobj is invulnerable
-	MF2_DORMANT			= BIT(28),  // thing is dormant
-	MF2_ICEDAMAGE		= BIT(29),  // does ice damage
-	MF2_SEEKERMISSILE	= BIT(30),  // is a seeker (for reflection)
-	MF2_REFLECTIVE		= BIT(31),  // reflects missiles
-
-	// --- mobj.flags3 ---
-	// MBF21-specific flags
-	                                // BIT0 will be MF2_LOGRAV
-	MF3_SHORTMRANGE		= BIT(1),	// has short missile range (archvile)
-	MF3_DMGIGNORED		= BIT(2),	// other things ignore its attacks (archvile)
-	MF3_NORADIUSDMG		= BIT(3),	// doesn't take splash damage
-	MF3_FORCERADIUSDMG	= BIT(4),	// does radius damage to everything, no exceptions
-	MF3_HIGHERMPROB		= BIT(5),	// min prob. of miss. att. = 37.5% vs 22%
-	MF3_RANGEHALF		= BIT(6),	// use half actual distance for missile attack probability
-	MF3_NOTHRESHOLD     = BIT(7),   // has no targeting threshold (archvile)
-	MF3_LONGMELEE		= BIT(8),   // long melee range
-									// BIT 9 is MF2_BOSS -- RESERVED
-	MF3_MAP07BOSS1		= BIT(10),	// is a MAP07 boss type 1 (666)
-	MF3_MAP07BOSS2		= BIT(11),	// is a MAP07 boss type 2 (667)
-	MF3_E1M8BOSS		= BIT(12),	// is an E1M8 boss
-	MF3_E2M8BOSS		= BIT(13),	// is an E1M8 boss
-	MF3_E3M8BOSS		= BIT(14),	// is an E3M8 boss
-	MF3_E4M6BOSS		= BIT(15),	// is an E4M6 boss
-	MF3_E4M8BOSS		= BIT(16),	// is an E4M8 boss
-									// BIT 17 is MF2_RIP -- RESERVED
-	MF3_FULLVOLSOUNDS	= BIT(18),	// full volume see / death sound
-
-	// --- mobj.oflags ---
-	// Odamex-specific flags
-	MFO_NOSNAPZ             =        0x1,   // [clientside only] ignore snapshot z this tic
-	MFO_HEALTHPOOL          =        0x2,   // global health pool that tracks killed HP
-	MFO_INFIGHTINVUL        =        0x4,   // invulnerable to infighting
-	MFO_UNFLINCHING         =        0x8,   // monster flinching reduced to 1 in 256
-	MFO_ARMOR               =       0x10,   // damage taken by monster is reduced
-	MFO_QUICK               =       0x20,   // speed of monster is increased
-	MFO_NORAISE             =       0x40,   // vile can't raise corpse
-	MFO_ISHORDEBOSS         =       0x80,   // Is a horde boss?  Implies that damage subtracts from boss health pool
-	MFO_FULLBRIGHT          =      0x100,   // monster is fullbright
-	MFO_SPECTATOR           =      0x200,   // GhostlyDeath -- thing is/was a spectator and can't be seen!
-	MFO_FALLING             =      0x400,   // [INTERNAL] for falling
-	MFO_ARMED               =      0x800,   // [INTERNAL] for TOUCHY (object is armed)
-	MFO_LINEDONE            =     0x1000,   // [INTERNAL] for A_LineEffect, line special already done
-	// MFO_STEALTH          =     0x2000,   // Andy Baker's stealth monsters
-	MFO_ISONCONVEYOR        =     0x4000,   // [INTERNAL] Mobj is in motion due to being carried by a sector
-	MFO_MOVESLIKEAMONSTER   =     0x8000,   // [INTERNAL] Mobj has been updated through monster movement routines
-	MFO_ISAWAITINGSPAWN     =    0x10000,   // [INTERNAL] Mobj is a temporary mobj for a client-side player object awaiting its SpawnPlayer message
-};
-
-//
-// Status flags
-// Flags to set when you want to indicate the status of a player to other players
-// Like powerups, lagging, etc
-//
-enum statusflag_t
-{
-	SF_INVULN = BIT(0),
-	SF_BERSERK = BIT(1),
-	SF_IRONFEET = BIT(2),
-	SF_INVIS = BIT(3),
-	SF_ALLMAP = BIT(4),
-	SF_INFRARED = BIT(5)
-};
-
 #define MF_TRANSSHIFT	0x1A
 
 #define TRANSLUC25			(FRACUNIT/4)
@@ -468,9 +365,9 @@ public:
 	// with a ton of monsters. This way, the cache can more easily hit
 	// due to locality.
 	ActorFlags1		flags  = ActorFlags1::none_set();
-	int				flags2 = 0;	// Heretic flags
-	int				flags3 = 0;	// MBF21 flags
-	int				oflags = 0;			// Odamex flags
+	ActorFlags2		flags2 = ActorFlags2::none_set(); // Heretic flags
+	ActorFlags3		flags3 = ActorFlags3::none_set(); // MBF21 flags
+	ActorOFlags		oflags = ActorOFlags::none_set(); // Odamex flags
 	int				statusflags = 0; // Flags indicating a players status to other players
 	int 			health = 0;
 	int32_t			type = MT_UNKNOWNTHING;
@@ -760,8 +657,8 @@ public:
 		// this actor can inhabit - point at the inline arrays unless the
 		// actor spans more than INLINE_BLOCKS blocks
 		int m_capacity;
-		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext;
-		std::array<AActor**, INLINE_BLOCKS> m_inlineprev;
+		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext{};
+		std::array<AActor**, INLINE_BLOCKS> m_inlineprev{};
 		AActor**  m_next;
 		AActor*** m_prev;
 	};

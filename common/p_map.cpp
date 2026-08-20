@@ -1940,7 +1940,7 @@ void P_ApplyTorque (AActor *mo)
 			mo->y - mo->radius) - blockmap.originy()) >> MAPBLOCKSHIFT;
 	const int yh = ((tmbbox[BOXTOP] =
 			mo->y + mo->radius) - blockmap.originy()) >> MAPBLOCKSHIFT;
-	int flags = mo->oflags;	//Remember the current state, for gear-change
+	const auto flags = mo->oflags; //Remember the current state, for gear-change
 
 	tmthing = mo;
 	validcount++; // prevents checking same line twice
@@ -1962,7 +1962,7 @@ void P_ApplyTorque (AActor *mo)
 	// of rotation, so we have to creatively simulate these
 	// systems somehow :)
 
-	if (!((mo->oflags | flags) & MFO_FALLING))	// If not falling for a while,
+	if (!((mo->oflags | combo(flags)) & MFO_FALLING))	// If not falling for a while,
 		mo->gear = 0;							// Reset it to full strength
 	else if (mo->gear < MAXGEAR)				// Else if not at max gear,
 		mo->gear++;								// move up a gear

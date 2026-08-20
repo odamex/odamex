@@ -779,12 +779,12 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS2)
 	{
-		mo->flags2 = msg->current().flags2();
+		mo->flags2 = ActorFlags2::unsafe_from_int(msg->current().flags2());
 	}
 
 	if (msg->spawn_flags() & SVC_SM_OFLAGS)
 	{
-		mo->oflags = msg->current().oflags();
+		mo->oflags = ActorOFlags::unsafe_from_int(msg->current().oflags());
 
 		if (mo->oflags & MFO_ISHORDEBOSS)
 		{

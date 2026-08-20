@@ -960,7 +960,7 @@ void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	arachnoaction.tag = 667;
 }
 
-template <int32_t TYPE, int32_t FLAG = 0>
+template <int32_t TYPE, auto FLAG = OUtil::noflag>
 void MIType_Special(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                          unsigned int flags2)
 {

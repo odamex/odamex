@@ -117,8 +117,8 @@ public:
 	int		getReactionTime() const	{ return mReactionTime; }
 	int		getWaterLevel() const	{ return mWaterLevel; }
 	ActorFlags1 getFlags() const	{ return mFlags; }
-	int		getFlags2() const		{ return mFlags2; }
-	int		getFlags3() const		{ return mFlags3; }
+	ActorFlags2 getFlags2() const	{ return mFlags2; }
+	ActorFlags3 getFlags3() const	{ return mFlags3; }
 	int		getFrame() const		{ return mFrame; }
 
 	void setX(fixed_t val)
@@ -205,13 +205,13 @@ public:
 		mFields |= ACT_FLAGS;
 	}
 
-	void setFlags2(int val)
+	void setFlags2(ActorFlags2 val)
 	{
 		mFlags2 = val;
 		mFields |= ACT_FLAGS2;
 	}
 
-	void setFlags3(int val)
+	void setFlags3(ActorFlags3 val)
 	{
 		mFlags3 = val;
 		mFields |= ACT_FLAGS3;
@@ -263,8 +263,8 @@ private:
 	int				mWaterLevel;
 
 	ActorFlags1		mFlags;
-	int				mFlags2;
-	int				mFlags3;
+	ActorFlags2		mFlags2;
+	ActorFlags3		mFlags3;
 	int				mFrame;
 };
 
@@ -306,8 +306,8 @@ public:
 	int		getReactionTime() const		{ return mActorSnap.getReactionTime(); }
 	int		getWaterLevel() const		{ return mActorSnap.getWaterLevel(); }
 	ActorFlags1 getFlags() const		{ return mActorSnap.getFlags(); }
-	int		getFlags2() const			{ return mActorSnap.getFlags2(); }
-	int		getFlags3() const			{ return mActorSnap.getFlags3(); }
+	ActorFlags2 getFlags2() const		{ return mActorSnap.getFlags2(); }
+	ActorFlags3 getFlags3() const		{ return mActorSnap.getFlags3(); }
 	int		getFrame() const			{ return mActorSnap.getFrame(); }
 
 	void setAuthoritative(bool val) override
@@ -412,13 +412,13 @@ public:
 		mFields |= PLY_FLAGS;
 	}
 
-	void setFlags2(int val)
+	void setFlags2(ActorFlags2 val)
 	{
 		mActorSnap.setFlags2(val);
 		mFields |= PLY_FLAGS2;
 	}
 
-	void setFlags3(int val)
+	void setFlags3(ActorFlags3 val)
 	{
 		mActorSnap.setFlags3(val);
 		mFields |= PLY_FLAGS3;

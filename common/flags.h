@@ -45,6 +45,9 @@ constexpr auto to_underlying(E e) noexcept
 template <typename B>
 concept Bool = std::is_same_v<B, bool>;
 
+struct noflag_t {};
+inline constexpr noflag_t noflag;
+
 }
 
 namespace flags_detail
@@ -52,6 +55,8 @@ namespace flags_detail
 
 using OUtil::to_underlying;
 using OUtil::Bool;
+using OUtil::noflag_t;
+using OUtil::noflag;
 
 template <typename T>
 concept FlagEnum =
@@ -250,19 +255,19 @@ public:
 	[[nodiscard]]
 	constexpr bool all() const noexcept
 	{
-		return *this == all_set();
+		return m_value == all_set().m_value;
 	}
 
 	[[nodiscard]]
 	constexpr bool any() const noexcept
 	{
-		return *this != none_set();
+		return m_value != none_set().m_value;
 	}
 
 	[[nodiscard]]
 	constexpr bool none() const noexcept
 	{
-		return *this == none_set();
+		return m_value == none_set().m_value;
 	}
 
 	[[nodiscard]]
@@ -275,6 +280,12 @@ public:
 	explicit operator underlying() const noexcept
 	{
 		return m_value;
+	}
+
+	[[nodiscard]]
+	constexpr bool operator==(noflag_t) const noexcept
+	{
+		return m_value == none_set().m_value;
 	}
 
 	[[nodiscard]]
@@ -322,6 +333,7 @@ private:
 	using base::base;
 public:
 	constexpr flag_set() noexcept = default;
+	constexpr flag_set(noflag_t) noexcept : flag_set() {};
 	constexpr flag_set(const FlagOrCombo<E> auto other) noexcept : base(other) {};
 
 	constexpr flag_set& operator|=(const FlagOrCombo<E> auto other) noexcept

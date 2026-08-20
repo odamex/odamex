@@ -525,7 +525,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	if (mo->flags2 & MF2_DORMANT)
 	{
 		spawnFlags |= SVC_SM_FLAGS2;
-		cur->set_flags2(mo->flags2);
+		cur->set_flags2(mo->flags2.to_int());
 	}
 
 	// Who a friendly belongs to decides who it gets along with, and the client
@@ -537,10 +537,10 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		cur->set_friend_teamid(mo->friend_teamid);
 	}
 
-	if (mo->oflags)
+	if (mo->oflags.any())
 	{
 		spawnFlags |= SVC_SM_OFLAGS;
-		cur->set_oflags(mo->oflags);
+		cur->set_oflags(mo->oflags.to_int());
 	}
 
 	// animating corpses

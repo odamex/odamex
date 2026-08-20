@@ -248,10 +248,13 @@ struct CodePtr
 	const char* name;
 	actionf_p1 func;
 	int argcount;
-	long default_args[MAXSTATEARGS];
+	statearg_t default_args[MAXSTATEARGS];
 };
 
-static constexpr CodePtr CodePtrs[] = {
+namespace
+{
+
+constexpr CodePtr CodePtrs[] = {
     {"NULL", NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
     {"MonsterRail", A_MonsterRail, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
     {"FireRailgun", A_FireRailgun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
@@ -377,35 +380,45 @@ static constexpr CodePtr CodePtrs[] = {
     {"GunFlashTo", A_GunFlashTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
 };
 
-static constexpr struct
+constexpr struct
 {
 	std::string_view name;
-	int32_t mobjinfo_t::* flags;
 	int32_t dehBit;
-	int32_t internalBit;
+	void (*setter)(mobjinfo_t&);
 } mbf21flagtranslation[] = {
 	// flags2
-	{ "LOGRAV",         &mobjinfo_t::flags2, BIT(0),  MF2_LOGRAV },
-	{ "BOSS",           &mobjinfo_t::flags2, BIT(9),  MF2_BOSS },
-	{ "RIP",            &mobjinfo_t::flags2, BIT(17), MF2_RIP },
+	{ "LOGRAV",         BIT(0),  [](mobjinfo_t& info) { info.flags2 |= MF2_LOGRAV; } },
+	{ "BOSS",           BIT(9),  [](mobjinfo_t& info) { info.flags2 |= MF2_BOSS; } },
+	{ "RIP",            BIT(17), [](mobjinfo_t& info) { info.flags2 |= MF2_RIP; } },
 	// flags3
-	{ "SHORTMRANGE",    &mobjinfo_t::flags3, BIT(1),  MF3_SHORTMRANGE },
-	{ "DMGIGNORED",     &mobjinfo_t::flags3, BIT(2),  MF3_DMGIGNORED },
-	{ "NORADIUSDMG",    &mobjinfo_t::flags3, BIT(3),  MF3_NORADIUSDMG },
-	{ "FORCERADIUSDMG", &mobjinfo_t::flags3, BIT(4),  MF3_FORCERADIUSDMG },
-	{ "HIGHERMPROB",    &mobjinfo_t::flags3, BIT(5),  MF3_HIGHERMPROB },
-	{ "RANGEHALF",      &mobjinfo_t::flags3, BIT(6),  MF3_RANGEHALF },
-	{ "NOTHRESHOLD",    &mobjinfo_t::flags3, BIT(7),  MF3_NOTHRESHOLD },
-	{ "LONGMELEE",      &mobjinfo_t::flags3, BIT(8),  MF3_LONGMELEE },
-	{ "MAP07BOSS1",     &mobjinfo_t::flags3, BIT(10), MF3_MAP07BOSS1 },
-	{ "MAP07BOSS2",     &mobjinfo_t::flags3, BIT(11), MF3_MAP07BOSS2 },
-	{ "E1M8BOSS",       &mobjinfo_t::flags3, BIT(12), MF3_E1M8BOSS },
-	{ "E2M8BOSS",       &mobjinfo_t::flags3, BIT(13), MF3_E2M8BOSS },
-	{ "E3M8BOSS",       &mobjinfo_t::flags3, BIT(14), MF3_E3M8BOSS },
-	{ "E4M6BOSS",       &mobjinfo_t::flags3, BIT(15), MF3_E4M6BOSS },
-	{ "E4M8BOSS",       &mobjinfo_t::flags3, BIT(16), MF3_E4M8BOSS },
-	{ "FULLVOLSOUNDS",  &mobjinfo_t::flags3, BIT(18), MF3_FULLVOLSOUNDS },
+	{ "SHORTMRANGE",    BIT(1),  [](mobjinfo_t& info) { info.flags3 |= MF3_SHORTMRANGE; } },
+	{ "DMGIGNORED",     BIT(2),  [](mobjinfo_t& info) { info.flags3 |= MF3_DMGIGNORED; } },
+	{ "NORADIUSDMG",    BIT(3),  [](mobjinfo_t& info) { info.flags3 |= MF3_NORADIUSDMG; } },
+	{ "FORCERADIUSDMG", BIT(4),  [](mobjinfo_t& info) { info.flags3 |= MF3_FORCERADIUSDMG; } },
+	{ "HIGHERMPROB",    BIT(5),  [](mobjinfo_t& info) { info.flags3 |= MF3_HIGHERMPROB; } },
+	{ "RANGEHALF",      BIT(6),  [](mobjinfo_t& info) { info.flags3 |= MF3_RANGEHALF; } },
+	{ "NOTHRESHOLD",    BIT(7),  [](mobjinfo_t& info) { info.flags3 |= MF3_NOTHRESHOLD; } },
+	{ "LONGMELEE",      BIT(8),  [](mobjinfo_t& info) { info.flags3 |= MF3_LONGMELEE; } },
+	{ "MAP07BOSS1",     BIT(10), [](mobjinfo_t& info) { info.flags3 |= MF3_MAP07BOSS1; } },
+	{ "MAP07BOSS2",     BIT(11), [](mobjinfo_t& info) { info.flags3 |= MF3_MAP07BOSS2; } },
+	{ "E1M8BOSS",       BIT(12), [](mobjinfo_t& info) { info.flags3 |= MF3_E1M8BOSS; } },
+	{ "E2M8BOSS",       BIT(13), [](mobjinfo_t& info) { info.flags3 |= MF3_E2M8BOSS; } },
+	{ "E3M8BOSS",       BIT(14), [](mobjinfo_t& info) { info.flags3 |= MF3_E3M8BOSS; } },
+	{ "E4M6BOSS",       BIT(15), [](mobjinfo_t& info) { info.flags3 |= MF3_E4M6BOSS; } },
+	{ "E4M8BOSS",       BIT(16), [](mobjinfo_t& info) { info.flags3 |= MF3_E4M8BOSS; } },
+	{ "FULLVOLSOUNDS",  BIT(18), [](mobjinfo_t& info) { info.flags3 |= MF3_FULLVOLSOUNDS; } },
 };
+
+constexpr void ClearMBF21Bits(mobjinfo_t& info)
+{
+	info.flags2 &= ~(MF2_LOGRAV|MF2_BOSS|MF2_RIP);
+	info.flags3 &= ~(MF3_SHORTMRANGE|MF3_DMGIGNORED|MF3_NORADIUSDMG|MF3_FORCERADIUSDMG|
+	                 MF3_HIGHERMPROB|MF3_RANGEHALF|MF3_NOTHRESHOLD|MF3_LONGMELEE|
+	                 MF3_MAP07BOSS1|MF3_MAP07BOSS1|MF3_E1M8BOSS|MF3_E2M8BOSS|MF3_E3M8BOSS|
+	                 MF3_E4M6BOSS|MF3_E4M8BOSS|MF3_FULLVOLSOUNDS);
+};
+
+}
 
 struct Key
 {
@@ -1257,22 +1270,7 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 		}
 		else if (iequals(key, "MBF21 Bits"))
 		{
-			static constexpr auto make_mask = [](const auto flagsPtr) -> int32_t
-			{
-			    int32_t mask = 0;
-			    for (const auto& f : mbf21flagtranslation)
-				{
-			        if (f.flags == flagsPtr)
-			            mask |= f.internalBit;
-				}
-			    return mask;
-			};
-
-			static constexpr int32_t flags2mask = make_mask(&mobjinfo_t::flags2);
-			static constexpr int32_t flags3mask = make_mask(&mobjinfo_t::flags3);
-
-			info->flags2 &= ~flags2mask;
-			info->flags3 &= ~flags3mask;
+			ClearMBF21Bits(*info);
 
 			for (const auto strval : SplitBexBits(value, ",+| \t\f\r"))
 			{
@@ -1281,20 +1279,20 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 					// TODO: maybe give a warning for out of range bits
 					const int32_t tempval = ParseNum<int32_t>(strval).value_or(0);
 
-					for (const auto& [_, flags, dehflag, internalflag] : mbf21flagtranslation)
+					for (const auto& [_, dehflag, setter] : mbf21flagtranslation)
 					{
 						if (tempval & dehflag)
-							info->*flags |= internalflag;
+							setter(*info);
 					}
 				}
 				else
 				{
 					bool found = false;
-					for (const auto& [name, flags, _, internalflag] : mbf21flagtranslation)
+					for (const auto& [name, _, setter] : mbf21flagtranslation)
 					{
 						if (iequals(strval, name))
 						{
-							info->*flags |= internalflag;
+							setter(*info);
 							found = true;
 						}
 					}
@@ -1361,7 +1359,7 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 			}
 			if (vchanged[1])
 			{
-				info->flags2 = value[1];
+				info->flags2 = ActorFlags2::unsafe_from_int(static_cast<uint32_t>(value[1]));
 			}
 			if (vchanged[2])
 			{
@@ -2592,28 +2590,28 @@ static void D_PostProcessDeh(const DehScanner::ParsedState& dp)
 		    bexptr_match->func == A_RemoveFlags ||
 		    bexptr_match->func == A_JumpIfFlagsSet)
 		{
-			const int mbf21flags = bexptr_match->func == A_JumpIfFlagsSet ? state.args[2] : state.args[1];
-			int flags2 = 0, flags3 = 0;
-			for (const auto& [_, flags, dehflag, internalflag]  : mbf21flagtranslation)
+			const statearg_t mbf21flags = bexptr_match->func == A_JumpIfFlagsSet ? state.args[2] : state.args[1];
+			mobjinfo_t dummy;
+			dummy.flags2.clear();
+			dummy.flags3.clear();
+
+			for (const auto& [_, dehflag, setter]  : mbf21flagtranslation)
 			{
 				if (mbf21flags & dehflag)
 				{
-					if (flags == &mobjinfo_t::flags2)
-						flags2 |= internalflag;
-					else if (flags == &mobjinfo_t::flags3)
-						flags3 |= internalflag;
+					setter(dummy);
 				}
 			}
 
 			if (bexptr_match->func == A_JumpIfFlagsSet)
 			{
-				state.args[2] = flags2;
-				state.args[3] = flags3;
+				state.args[2] = dummy.flags2.to_int();
+				state.args[3] = dummy.flags3.to_int();
 			}
 			else
 			{
-				state.args[1] = flags2;
-				state.args[2] = flags3;
+				state.args[1] = dummy.flags2.to_int();
+				state.args[2] = dummy.flags3.to_int();
 			}
 		}
 	}

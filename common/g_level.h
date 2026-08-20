@@ -96,7 +96,7 @@ using enum levelflags_t;
 consteval levelflags_t enable_bitflag_operators(levelflags_t) { return LEVEL_VISITED; };
 using LevelFlags1 = OFlags<levelflags_t>;
 
-enum class levelflags2_t
+enum class levelflags2_t : uint32_t
 {
 	LEVEL2_NORMALINFIGHTING    = BIT(0),
 	LEVEL2_NOINFIGHTING        = BIT(1),
@@ -118,7 +118,7 @@ class FBehavior;
 struct bossaction_t
 {
 	int32_t type    = MT_NULL;
-	int32_t flags   = 0;
+	ActorFlags3 flags;
 	int16_t special = 0;
 	int16_t tag     = 0;
 };

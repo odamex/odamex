@@ -3343,13 +3343,13 @@ void A_JumpIfFlagsSet(AActor* actor)
 		return;
 
 	const int state = actor->state->args[0];
-	const auto flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(actor->state->args[1]));
-	const int flags2 = actor->state->args[2];
-	const int flags3 = actor->state->args[3];
+	const auto flags  = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(actor->state->args[1]));
+	const auto flags2 = ActorFlags2::unsafe_from_int(static_cast<uint32_t>(actor->state->args[2]));
+	const auto flags3 = ActorFlags3::unsafe_from_int(static_cast<uint32_t>(actor->state->args[3]));
 
 	if ((actor->flags & mask(flags)) == flags &&
-	    (actor->flags2 & flags2) == flags2 &&
-	    (actor->flags3 & flags3) == flags3)
+	    (actor->flags2 & mask(flags2)) == flags2 &&
+	    (actor->flags3 & mask(flags3)) == flags3)
 		P_SetMobjState(actor, static_cast<statenum_t>(state), true);
 }
 
@@ -3367,9 +3367,9 @@ void A_AddFlags(AActor* actor)
 	if (!actor)
 		return;
 
-	const auto flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(actor->state->args[0]));
-	const int flags2 = actor->state->args[1];
-	const int flags3 = actor->state->args[2];
+	const auto flags  = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(actor->state->args[0]));
+	const auto flags2 = ActorFlags2::unsafe_from_int(static_cast<uint32_t>(actor->state->args[1]));
+	const auto flags3 = ActorFlags3::unsafe_from_int(static_cast<uint32_t>(actor->state->args[2]));
 
 	const bool update_blockmap =
 		((flags & MF_NOBLOCKMAP) && !(actor->flags & MF_NOBLOCKMAP)) ||
@@ -3381,9 +3381,9 @@ void A_AddFlags(AActor* actor)
 	if (update_blockmap)
 		actor->UnlinkFromWorld();
 
-	actor->flags |= combo(flags);
-	actor->flags2 |= flags2;
-	actor->flags3 |= flags3;
+	actor->flags  |= combo(flags);
+	actor->flags2 |= combo(flags2);
+	actor->flags3 |= combo(flags3);
 
 	if (update_blockmap)
 		actor->LinkToWorld();
@@ -3404,9 +3404,9 @@ void A_RemoveFlags(AActor* actor)
 	if (!actor)
 		return;
 
-	const auto flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(actor->state->args[0]));
-	const int flags2 = actor->state->args[1];
-	const int flags3 = actor->state->args[2];
+	const auto flags  = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(actor->state->args[0]));
+	const auto flags2 = ActorFlags2::unsafe_from_int(static_cast<uint32_t>(actor->state->args[1]));
+	const auto flags3 = ActorFlags3::unsafe_from_int(static_cast<uint32_t>(actor->state->args[2]));
 
 	const bool update_blockmap =
 		((flags & MF_NOBLOCKMAP) && (actor->flags & MF_NOBLOCKMAP)) ||
@@ -3418,9 +3418,9 @@ void A_RemoveFlags(AActor* actor)
 	if (update_blockmap)
 		actor->UnlinkFromWorld();
 
-	actor->flags &= ~(combo(flags));
-	actor->flags2 &= ~flags2;
-	actor->flags3 &= ~flags3;
+	actor->flags  &= ~(combo(flags));
+	actor->flags2 &= ~(combo(flags2));
+	actor->flags3 &= ~(combo(flags3));
 
 	if (update_blockmap)
 		actor->LinkToWorld();
@@ -3788,7 +3788,7 @@ void A_BossDeath(AActor *actor)
 		// see if a BossAction applies to this type
 		const auto ba = std::find_if(level.bossactions.begin(), level.bossactions.end(),
 			[&actor](bossaction_t ba){
-				return (ba.type == actor->type) || (ba.flags & actor->flags3);
+				return (ba.type == actor->type) || (ba.flags & combo(actor->flags3));
 			}
 		);
 		if (ba == level.bossactions.end())
@@ -3809,7 +3809,7 @@ void A_BossDeath(AActor *actor)
 
 		for (const bossaction_t& ba : level.bossactions)
 		{
-			if ((ba.type == actor->type) || (ba.flags & actor->flags3))
+			if ((ba.type == actor->type) || (ba.flags & combo(actor->flags3)))
 			{
 				// TODO: if a standardized line special for massacre is introduced, use that instead
 				if (ba.special == 280)

@@ -278,10 +278,12 @@ enum class mapthing2flag_t : int16_t
 };
 
 using enum mapthing2flag_t;
-
 consteval mapthing2flag_t enable_bitflag_operators(mapthing2flag_t) { return MTF_FRIENDLY; };
-
 using MapThingFlags = OFlags<mapthing2flag_t>;
+
+// we're using this in mapthing2_t where it gets loaded from raw bytes
+// have to make sure it's 16 bits
+static_assert(sizeof(MapThingFlags) == sizeof(mapthing2flag_t));
 
 // BOOM and DOOM compatible versions of some of the above
 
