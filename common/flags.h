@@ -27,23 +27,10 @@
 #include <concepts>
 #include <type_traits>
 #include <stdint.h>
+#include "util.h"
 
 namespace OUtil
 {
-
-template <typename E>
-requires std::is_enum_v<E>
-constexpr auto to_underlying(E e) noexcept
-{
-	return static_cast<std::underlying_type_t<E>>(e);
-}
-
-// prevent implicit conversions from ints
-// TODO: possibly move this and more of OUtil into a file
-// separate from this and from doomfunc.h so that they can
-// be used more widely
-template <typename B>
-concept Bool = std::is_same_v<B, bool>;
 
 struct noflag_t {};
 inline constexpr noflag_t noflag;

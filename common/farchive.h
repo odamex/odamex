@@ -166,11 +166,11 @@ public:
 		return *this;
 	}
 
-	template <typename EnumeratedType>
-	requires std::is_enum_v<EnumeratedType>
-	FArchive& operator<< (EnumeratedType value)
+	template <typename E>
+	requires std::is_enum_v<E>
+	FArchive& operator<< (const E value)
 	{
-		*this << static_cast<std::underlying_type_t<EnumeratedType> >(value);
+		*this << OUtil::to_underlying(value);
 		return *this;
 	}
 
