@@ -3633,7 +3633,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 
 	// check for appropriate skill level
-	if (!(mthing.flags & G_GetCurrentSkill().spawn_filter))
+	// TODO: change type of spawn_filter to MapThingFlags after merging with type-safe mapinfo PR
+	if (!(mthing.flags & combo(MapThingFlags::unsafe_from_int(static_cast<int16_t>(G_GetCurrentSkill().spawn_filter)))))
 		return;
 
 	// [RH] sound sequence overrides
@@ -3754,12 +3755,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		case MT_MISC28: // plasma gun
 			if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
 			{
-				if ((mthing.flags & (MTF_DEATHMATCH | MTF_SINGLE)) == MTF_DEATHMATCH)
+				if ((mthing.flags & MTF_DEATHMATCH) && !(mthing.flags & MTF_SINGLE))
 					return;
 			}
 			else
 			{
-				if ((mthing.flags & (MTF_FILTER_COOPWPN)))
+				if ((mthing.flags & MTF_FILTER_COOPWPN))
 					return;
 			}
 			break;

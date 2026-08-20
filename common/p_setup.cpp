@@ -843,9 +843,9 @@ void P_LoadThings (int lump)
 		//		everything and let it decide what to do with them.
 
 		// [RH] Need to translate the spawn flags to Hexen format.
-		short flags = LESHORT(mt.options);
+		auto flags = OFlags<mapthingflag_t>::unsafe_from_int(LESHORT(mt.options));
 		if (flags & BTF_RESERVED || demoplayback) flags &= BTF_RESERVED_MASK;
-		short flags2 = static_cast<short>((flags & 0xf) | 0x7e0);
+		auto flags2 = MapThingFlags::unsafe_from_int(static_cast<int16_t>((flags.to_int() & 0xf) | 0x7e0));
 		if (flags & BTF_NOTSINGLE)
 		{
 			#ifdef SERVER_APP
@@ -926,7 +926,7 @@ void P_LoadThings2 (int lump, int position)
 		mt.z = LESHORT(mt.z);
 		mt.angle = LESHORT(mt.angle);
 		mt.type = LESHORT(mt.type);
-		mt.flags = LESHORT(mt.flags);
+		mt.flags = MapThingFlags::unsafe_from_int(LESHORT(mt.flags.to_int()));
 
 		// clientside-only freecam start pos
 		#ifdef CLIENT_APP

@@ -127,7 +127,7 @@ static void FillMapThing(odaproto::MapThing& io_msg, const MapThing& i_mapthing)
     io_msg.set_z        (i_mapthing.z);
     io_msg.set_angle    (i_mapthing.angle);
     io_msg.set_type     (i_mapthing.type);
-    io_msg.set_flags    (i_mapthing.flags);
+    io_msg.set_flags    (i_mapthing.flags.to_int());
     io_msg.set_special  (i_mapthing.special);
 
     for (const auto& arg : i_mapthing.args)

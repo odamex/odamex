@@ -186,13 +186,15 @@ public:
 	[[nodiscard]]
 	constexpr Derived set(const E e) const noexcept
 	{
-		return Derived{m_value | to_underlying(e)};
+		// ugh, cast needed cause of integer promotion
+		return Derived{static_cast<underlying>(m_value | to_underlying(e))};
 	}
 
 	[[nodiscard]]
 	constexpr Derived clear(const E e) const noexcept
 	{
-		return Derived{m_value & ~to_underlying(e)};
+		// ugh, cast needed cause of integer promotion
+		return Derived{static_cast<underlying>(m_value & ~to_underlying(e))};
 	}
 
 	[[nodiscard]]
@@ -207,31 +209,36 @@ public:
 	[[nodiscard]]
 	constexpr Derived toggle(const E e) const noexcept
 	{
-		return Derived{m_value ^ to_underlying(e)};
+		// ugh, casted needed cause of integer promotion
+		return Derived{static_cast<underlying>(m_value ^ to_underlying(e))};
 	}
 
 	[[nodiscard]]
 	constexpr Derived toggle() const noexcept
 	{
-		return Derived{m_value ^ all_set()};
+		// ugh, casted needed cause of integer promotion
+		return Derived{static_cast<underlying>(m_value ^ all_set())};
 	}
 
 	[[nodiscard]]
 	constexpr Derived bitwise_or(const Derived other) const noexcept
 	{
-		return Derived{m_value | other.m_value};
+		// ugh, casted needed cause of integer promotion
+		return Derived{static_cast<underlying>(m_value | other.m_value)};
 	}
 
 	[[nodiscard]]
 	constexpr Derived bitwise_and(const Derived other) const noexcept
 	{
-		return Derived{m_value & other.m_value};
+		// ugh, casted needed cause of integer promotion
+		return Derived{static_cast<underlying>(m_value & other.m_value)};
 	}
 
 	[[nodiscard]]
 	constexpr Derived bitwise_xor(const Derived other) const noexcept
 	{
-		return {m_value ^ other.m_value};
+		// ugh, casted needed cause of integer promotion
+		return Derived{static_cast<underlying>(m_value ^ other.m_value)};
 	}
 
 	[[nodiscard]]

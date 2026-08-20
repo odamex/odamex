@@ -3362,7 +3362,7 @@ static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
     avatarMapthing.z        = mapthing.z();
     avatarMapthing.angle    = mapthing.angle();
     avatarMapthing.type     = mapthing.type();
-    avatarMapthing.flags    = mapthing.flags();
+    avatarMapthing.flags    = MapThingFlags::unsafe_from_int(static_cast<int16_t>(mapthing.flags()));
     avatarMapthing.special  = mapthing.special();
 
 	const size_t argCount = std::min(avatarMapthing.args.size(), static_cast<size_t>(mapthing.args_size()));
@@ -3372,8 +3372,7 @@ static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 
 	const uint32_t netid = msg->netid();
 
-	const auto avatarIter = std::find_if(::voodoostarts.begin(),
-	                                     ::voodoostarts.end(),
+	const auto avatarIter = std::ranges::find_if(::voodoostarts,
 	                                     [&avatarMapthing](const auto& voodooStart)
 	                                     {
 	                                         return voodooStart.mapThing == avatarMapthing;
@@ -3388,7 +3387,7 @@ static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 		        avatarMapthing.thingid,
 		        avatarMapthing.angle,
 		        avatarMapthing.type,
-		        avatarMapthing.flags,
+		        avatarMapthing.flags.to_int(),
 		        int(avatarMapthing.special));
 		return;
 	}

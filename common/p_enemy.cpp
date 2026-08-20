@@ -1184,7 +1184,7 @@ AActor::AActorPtr SpawnHelper(const MapThing SpawnPoint, mobjtype_t SpawnType, c
 			SV_SpawnMobj(mo);
 
 			// Spawn a teleport fog if it's not an ambush.
-			if ((SpawnPoint.flags & MTF_AMBUSH) == 0)
+			if (not (SpawnPoint.flags & MTF_AMBUSH))
 			{
 				AActor* tele =
 				    new AActor(SpawnPoint.x << FRACBITS, SpawnPoint.y << FRACBITS,
