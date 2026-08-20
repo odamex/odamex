@@ -28,7 +28,7 @@
 
 // [RH] Particle details
 // Expanded to be able to use patches/textures for particle effects
-struct particle_s {
+struct particle_t {
 	fixed_t	x,y,z;
 	fixed_t velx,vely,velz;
 	fixed_t accx,accy,accz;
@@ -41,7 +41,6 @@ struct particle_s {
 	uint16_t next;
 	uint16_t nextinsubsector;
 };
-typedef struct particle_s particle_t;
 
 extern int	NumParticles;
 extern int	ActiveParticles;

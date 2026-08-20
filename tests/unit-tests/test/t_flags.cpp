@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
+#include <stdint.h>
 #include "flags.h"
 
-enum class TestEnum
+enum class TestEnum : int8_t
 {
 	Flag1 = 0x1,
 	Flag2 = 0x2,
@@ -44,9 +45,12 @@ TEST(OFlags, CheckComboSet)
 	EXPECT_FALSE(flags & (Flag1 | Flag2));
 	EXPECT_FALSE(flags & (Flag3 | Flag4));
 	flags = TestFlags::all_set();
-	EXPECT_TRUE(flags & (Flag1 | Flag1));
+	EXPECT_TRUE(flags & (Flag1 | Flag2));
 	EXPECT_TRUE(flags & (Flag3 | Flag4));
 	flags.clear();
 	flags |= Flag1;
 	flags |= Flag3;
+	EXPECT_TRUE(flags & (Flag1 | Flag2));
+	EXPECT_TRUE(flags & (Flag3 | Flag4));
+	EXPECT_FALSE(flags & (Flag2 | Flag4));
 }

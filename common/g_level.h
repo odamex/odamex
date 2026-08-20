@@ -29,6 +29,7 @@
 #include "m_resfile.h"
 #include "olumpname.h"
 #include "r_defs.h" // line_t
+#include "flags.h"
 
 #include <assert.h>
 #include <unordered_map>
@@ -43,49 +44,59 @@
  */
 typedef uint32_t levelFlags_t;
 
-constexpr static levelFlags_t LEVEL_NOINTERMISSION = BIT(0);
-constexpr static levelFlags_t LEVEL_SECRET = BIT(1);
-constexpr static levelFlags_t LEVEL_DOUBLESKY = BIT(2);
-constexpr static levelFlags_t LEVEL_NOSOUNDCLIPPING = BIT(3);
+enum class levelflags_t : uint32_t
+{
+	LEVEL_NOINTERMISSION    = BIT(0),
+	LEVEL_SECRET            = BIT(1),
+	LEVEL_DOUBLESKY         = BIT(2),
+	LEVEL_NOSOUNDCLIPPING   = BIT(3),
 
-constexpr static levelFlags_t LEVEL_MAP07SPECIAL = BIT(4);
-constexpr static levelFlags_t LEVEL_BRUISERSPECIAL = BIT(5);
-constexpr static levelFlags_t LEVEL_CYBORGSPECIAL = BIT(6);
-constexpr static levelFlags_t LEVEL_SPIDERSPECIAL = BIT(7);
+	LEVEL_MAP07SPECIAL      = BIT(4),
+	LEVEL_BRUISERSPECIAL    = BIT(5),
+	LEVEL_CYBORGSPECIAL     = BIT(6),
+	LEVEL_SPIDERSPECIAL     = BIT(7),
 
-constexpr static levelFlags_t LEVEL_SPECLOWERFLOOR = BIT(8);
-constexpr static levelFlags_t LEVEL_SPECOPENDOOR = BIT(9);
-constexpr static levelFlags_t LEVEL_SPECACTIONSMASK = BIT_MASK(8, 9);
-constexpr static levelFlags_t LEVEL_MONSTERSTELEFRAG = BIT(10);
-constexpr static levelFlags_t LEVEL_EVENLIGHTING = BIT(11);
+	LEVEL_SPECLOWERFLOOR    = BIT(8),
+	LEVEL_SPECOPENDOOR      = BIT(9),
+	LEVEL_SPECACTIONSMASK   = BIT_MASK(8, 9),
 
-constexpr static levelFlags_t LEVEL_SNDSEQTOTALCTRL = BIT(12);
-constexpr static levelFlags_t LEVEL_FORCENOSKYSTRETCH = BIT(13);
-constexpr static levelFlags_t LEVEL_JUMP_NO = BIT(14);
-constexpr static levelFlags_t LEVEL_JUMP_YES = BIT(15);
+	LEVEL_MONSTERSTELEFRAG  = BIT(10),
+	LEVEL_EVENLIGHTING      = BIT(11),
 
-constexpr static levelFlags_t LEVEL_FREELOOK_NO = BIT(16);
-constexpr static levelFlags_t LEVEL_FREELOOK_YES = BIT(17);
-constexpr static levelFlags_t LEVEL_COMPAT_DROPOFF = BIT(18);
-constexpr static levelFlags_t LEVEL_COMPAT_NOPASSOVER = BIT(19);
-constexpr static levelFlags_t LEVEL_COMPAT_LIMITPAIN = BIT(20);
-constexpr static levelFlags_t LEVEL_COMPAT_SHORTTEX = BIT(21);
+	LEVEL_SNDSEQTOTALCTRL   = BIT(12),
+	LEVEL_FORCENOSKYSTRETCH = BIT(13),
 
- // Automatically start lightning
-constexpr static levelFlags_t LEVEL_STARTLIGHTNING = BIT(24);
-// Apply mapthing filtering to player starts
-constexpr static levelFlags_t LEVEL_FILTERSTARTS = BIT(25);
-// That level is a lobby, and has a few priorities
-constexpr static levelFlags_t LEVEL_LOBBYSPECIAL = BIT(26);
-// Player spawns will have z-height
-constexpr static levelFlags_t LEVEL_USEPLAYERSTARTZ = BIT(27);
+	LEVEL_JUMP_NO           = BIT(14),
+	LEVEL_JUMP_YES          = BIT(15),
+	LEVEL_FREELOOK_NO       = BIT(16),
+	LEVEL_FREELOOK_YES      = BIT(17),
 
- // Level was defined in a MAPINFO lump
-constexpr static levelFlags_t LEVEL_DEFINEDINMAPINFO = BIT(29);
-// Don't display cluster messages
-constexpr static levelFlags_t LEVEL_CHANGEMAPCHEAT = BIT(30);
-// Used for intermission map
-constexpr static levelFlags_t LEVEL_VISITED = BIT(31);
+	LEVEL_COMPAT_DROPOFF    = BIT(18),
+	LEVEL_COMPAT_NOPASSOVER = BIT(19),
+	LEVEL_COMPAT_LIMITPAIN  = BIT(20),
+	LEVEL_COMPAT_SHORTTEX   = BIT(21),
+
+	// Automatically start lightning
+	LEVEL_STARTLIGHTNING    = BIT(24),
+	// Apply mapthing filtering to player starts
+	LEVEL_FILTERSTARTS      = BIT(25),
+	// That level is a lobby, and has a few priorities
+	LEVEL_LOBBYSPECIAL      = BIT(26),
+	// Player spawns will have z-height
+	LEVEL_USEPLAYERSTARTZ   = BIT(27),
+
+	// Level was defined in a MAPINFO lump
+	LEVEL_DEFINEDINMAPINFO  = BIT(29),
+	// Don't display cluster messages
+	LEVEL_CHANGEMAPCHEAT    = BIT(30),
+	// Used for intermission map
+	LEVEL_VISITED           = BIT(31),
+};
+
+using enum levelflags_t;
+
+consteval levelflags_t enable_bitflag_operators(levelflags_t) { return LEVEL_VISITED; };
+using LevelFlags1 = OFlags<levelflags_t>;
 
 constexpr static levelFlags_t LEVEL2_NORMALINFIGHTING = BIT(0);
 constexpr static levelFlags_t LEVEL2_NOINFIGHTING = BIT(1);
@@ -171,12 +182,13 @@ struct level_info_t
 	int           partime    = 0;
 	OLumpName     skypic     = "";
 	OLumpName     music      = "";
-	levelFlags_t  flags      = 0;
+	LevelFlags1   flags      = LevelFlags1::none_set();
 	levelFlags_t  flags2     = 0;
 	int           cluster    = 0;
 	FLZOMemFile*  snapshot   = nullptr;
 	acsdefered_t* defered    = nullptr;
 
+	[[nodiscard]]
 	bool exists() const
 	{
 		return !this->mapname.empty();
@@ -198,7 +210,7 @@ struct level_pwad_info_t
 	int				partime    = 0;
 	OLumpName		skypic     = "";
 	OLumpName		music      = "";
-	levelFlags_t	flags      = 0;
+	LevelFlags1   flags      = LevelFlags1::none_set();
 	levelFlags_t	flags2     = 0;
 	int				cluster    = 0;
 	FLZOMemFile*	snapshot   = nullptr;
@@ -286,7 +298,7 @@ struct level_locals_t
 	OLumpName		nextmap;				// go here when sv_fraglimit is hit
 	OLumpName		secretmap;				// map to go to when used secret exit
 
-	levelFlags_t	flags;
+	LevelFlags1     flags;
 	levelFlags_t	flags2;
 
 	// [SL] use 4 bytes for color types instead of argb_t so that the struct

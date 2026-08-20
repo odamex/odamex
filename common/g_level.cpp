@@ -1176,7 +1176,7 @@ ClusterInfos& getClusterInfos()
 // P_AllowDropOff()
 bool P_AllowDropOff()
 {
-	return co_allowdropoff && !(level.flags & LEVEL2_COMPAT_CROSSDROPOFF);
+	return co_allowdropoff && !(level.flags2 & LEVEL2_COMPAT_CROSSDROPOFF);
 }
 
 bool P_AllowPassover()

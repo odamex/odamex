@@ -248,6 +248,24 @@ public:
 	}
 
 	[[nodiscard]]
+	constexpr bool all() const noexcept
+	{
+		return *this == all_set();
+	}
+
+	[[nodiscard]]
+	constexpr bool any() const noexcept
+	{
+		return *this != none_set();
+	}
+
+	[[nodiscard]]
+	constexpr bool none() const noexcept
+	{
+		return *this == none_set();
+	}
+
+	[[nodiscard]]
 	constexpr underlying to_int() const noexcept
 	{
 		return m_value;
@@ -260,9 +278,18 @@ public:
 	}
 
 	[[nodiscard]]
-	friend constexpr bool operator==(const Derived lhs, const Derived rhs)
+	friend constexpr bool operator==(const Derived lhs, const Derived rhs) noexcept
 	{
 		return lhs.m_value == rhs.m_value;
+	}
+
+	// TODO: this is just temporary and should be deleted as soon as its unused
+	// this is here for limiting the impact on the mapinfo parser until merging with the
+	// type safe mapinfo pr
+	[[nodiscard, deprecated]]
+	constexpr underlying& data() noexcept
+	{
+		return m_value;
 	}
 
 };
