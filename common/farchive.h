@@ -166,8 +166,7 @@ public:
 		return *this;
 	}
 
-	template <OUtil::Enum E>
-	FArchive& operator<< (const E value)
+	FArchive& operator<< (const OUtil::Enum auto value)
 	{
 		*this << OUtil::to_underlying(value);
 		return *this;
