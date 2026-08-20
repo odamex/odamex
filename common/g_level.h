@@ -42,7 +42,6 @@
 /**
  * @brief Level flag bitfield.
  */
-typedef uint32_t levelFlags_t;
 
 enum class levelflags_t : uint32_t
 {
