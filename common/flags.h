@@ -200,35 +200,35 @@ public:
 	[[nodiscard]]
 	constexpr Derived toggle(const E e) const noexcept
 	{
-		// ugh, casted needed cause of integer promotion
+		// ugh, cast needed cause of integer promotion
 		return Derived{static_cast<underlying>(m_value ^ to_underlying(e))};
 	}
 
 	[[nodiscard]]
 	constexpr Derived toggle() const noexcept
 	{
-		// ugh, casted needed cause of integer promotion
+		// ugh, cast needed cause of integer promotion
 		return Derived{static_cast<underlying>(m_value ^ all_set())};
 	}
 
 	[[nodiscard]]
 	constexpr Derived bitwise_or(const Derived other) const noexcept
 	{
-		// ugh, casted needed cause of integer promotion
+		// ugh, cast needed cause of integer promotion
 		return Derived{static_cast<underlying>(m_value | other.m_value)};
 	}
 
 	[[nodiscard]]
 	constexpr Derived bitwise_and(const Derived other) const noexcept
 	{
-		// ugh, casted needed cause of integer promotion
+		// ugh, cast needed cause of integer promotion
 		return Derived{static_cast<underlying>(m_value & other.m_value)};
 	}
 
 	[[nodiscard]]
 	constexpr Derived bitwise_xor(const Derived other) const noexcept
 	{
-		// ugh, casted needed cause of integer promotion
+		// ugh, cast needed cause of integer promotion
 		return Derived{static_cast<underlying>(m_value ^ other.m_value)};
 	}
 
