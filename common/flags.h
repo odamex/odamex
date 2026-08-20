@@ -47,8 +47,7 @@ using OUtil::noflag;
 
 template <typename T>
 concept FlagEnum =
-	// TODO: C++23 should this be is_scoped_enum?
-	std::is_enum_v<T> &&
+	OUtil::EnumClass<T> &&
 	requires (T t) { enable_bitflag_operators(t); };
 
 // TODO: C++26 someday in the far future this would be a job for reflection

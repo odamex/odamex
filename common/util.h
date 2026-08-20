@@ -32,13 +32,23 @@ namespace OUtil
 template <typename T>
 concept Enum = std::is_enum_v<T>;
 
-// TODO: C++23 uncomment this
-// template <typename T>
-// concept EnumClass = std::is_scoped_enum_v<T>;
+// C++23's std::is_scoped_enum
+template <typename T>
+struct is_scoped_enum :
+	std::bool_constant<
+		std::is_enum_v<T> and
+		not std::is_convertible_v<T, std::underlying_type_t<T>>
+	>
+{};
 
-// TODO: C++23 uncomment this
-// template <typename T>
-// concept CEnum = std::is_enum_v<T> and not std::is_scoped_enum_v<T>;
+template <typename T>
+inline constexpr bool is_scoped_enum_v = is_scoped_enum<T>::value;
+
+template <typename T>
+concept EnumClass = is_scoped_enum_v<T>;
+
+template <typename T>
+concept CEnum = std::is_enum_v<T> and not is_scoped_enum_v<T>;
 
 // C++23's std::to_underlying
 template <Enum E>
@@ -55,9 +65,9 @@ concept Bool = std::same_as<B, bool>;
 template <typename T>
 struct reverse_wrapper
 {
-    T& iterable;
-    constexpr auto begin() noexcept(noexcept(std::rbegin(iterable))) { return std::rbegin(iterable); }
-    constexpr auto end() noexcept(noexcept(std::rend(iterable))) { return std::rend(iterable); }
+	T& iterable;
+	constexpr auto begin() noexcept(noexcept(std::rbegin(iterable))) { return std::rbegin(iterable); }
+	constexpr auto end() noexcept(noexcept(std::rend(iterable))) { return std::rend(iterable); }
 };
 
 /**
@@ -70,18 +80,18 @@ constexpr reverse_wrapper<T> reverse(T& iterable) { return { iterable }; }
 template <typename T>
 struct drop_wrapper
 {
-    T& iterable;
-    size_t count;
+	T& iterable;
+	size_t count;
 
-    constexpr auto begin() {
-        auto it = std::begin(iterable);
-        auto end_it = std::end(iterable);
-        for (size_t i = 0; i < count && it != end_it; ++i)
-            ++it;
-        return it;
-    }
+	constexpr auto begin() {
+		auto it = std::begin(iterable);
+		auto end_it = std::end(iterable);
+		for (size_t i = 0; i < count && it != end_it; ++i)
+			++it;
+		return it;
+	}
 
-    constexpr auto end() noexcept(noexcept(std::end(iterable))) { return std::end(iterable); }
+	constexpr auto end() noexcept(noexcept(std::end(iterable))) { return std::end(iterable); }
 };
 
 /**
