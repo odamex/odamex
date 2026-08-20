@@ -384,8 +384,8 @@ std::array<menuitem_t, 19> OptionItems = {{
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = more,		.label = "Go To Console",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = GoToConsole}},
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete,	.label = "Always Run",			.a = {.cvar = &cl_run},				.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Skip Boot Window",		.a = {.cvar = &i_skipbootwin},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Always Run",			.a = {.cvar = &cl_run},				.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Skip Boot Window",		.a = {.cvar = &i_skipbootwin},		.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = more,		.label = "Reset to defaults",	.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = Reset2Defaults}},
 	{ .type = more,		.label = "Reset to last saved",	.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = Reset2Saved}}
@@ -397,9 +397,8 @@ std::array<menuitem_t, 19> OptionItems = {{
 menu_t OptionMenu = {
 	"M_OPTTTL",
 	0,
-	OptionItems.size(),
 	MENU_HALFPASTINDENT,
-	OptionItems.data(),
+	OptionItems,
 	0,
 	0,
 	nullptr
@@ -525,9 +524,8 @@ menuitem_t ControlsItems[] = {
 menu_t ControlsMenu = {
 	"M_CONTRO",
 	3,
-	ARRAY_LENGTH(ControlsItems),
 	0,
-	ControlsItems,
+	{ControlsItems, ARRAY_LENGTH(ControlsItems)},
 	2,
 	0,
 	nullptr
@@ -550,10 +548,9 @@ void M_ResetMouseValues()
 	m_side.RestoreDefault();
 	m_forward.RestoreDefault();
 }
+
 namespace
 {
-
-
 
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
 std::array<menuitem_t, 14> MouseItems = {{
@@ -561,13 +558,13 @@ std::array<menuitem_t, 14> MouseItems = {{
 	{ .type = slider,	.label = "Freelook Sensitivity", .a = {.cvar = &m_pitch},			.b = {.leftval = 0.05},	.c = {.rightval = 2.5},		.d = {.step = 0.05},		.e = {.values = nullptr}},
 
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
-	{ .type = discrete,	.label = "Always FreeLook", .a = {.cvar = &cl_mouselook},		.b = {.leftval = ARRAY_LENGTH(OnOff)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
-	{ .type = discrete,	.label = "Invert Mouse", .a = {.cvar = &invertmouse},		.b = {.leftval = ARRAY_LENGTH(OnOff)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Auto SR50 on Strafe", .a = {.cvar = &in_autosr50},		.b = {.leftval = ARRAY_LENGTH(OnOff)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}}, // [AM] Does not belong here
-	{ .type = discrete, .label = "Lookspring", .a = {.cvar = &lookspring},		.b = {.leftval = ARRAY_LENGTH(OnOff)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Always FreeLook", .a = {.cvar = &cl_mouselook},		.b = {.leftval = OnOff.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Invert Mouse", .a = {.cvar = &invertmouse},		.b = {.leftval = OnOff.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Auto SR50 on Strafe", .a = {.cvar = &in_autosr50},		.b = {.leftval = OnOff.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}}, // [AM] Does not belong here
+	{ .type = discrete, .label = "Lookspring", .a = {.cvar = &lookspring},		.b = {.leftval = OnOff.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
-	{ .type = discrete,	.label = "Horizontal Movement", .a = {.cvar = &lookstrafe},		.b = {.leftval = ARRAY_LENGTH(OnOff)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
-	{ .type = discrete,	.label = "Vertical Movement", .a = {.cvar = &novert},			.b = {.leftval = ARRAY_LENGTH(OffOn)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OffOn.data()}},
+	{ .type = discrete,	.label = "Horizontal Movement", .a = {.cvar = &lookstrafe},		.b = {.leftval = OnOff.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Vertical Movement", .a = {.cvar = &novert},			.b = {.leftval = OffOn.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OffOn.data()}},
 	{ .type = slider,	.label = "Horizontal Movement Speed", .a = {.cvar = &m_side},			.b = {.leftval = 0.0},	.c = {.rightval = 15},		.d = {.step = 0.5},		.e = {.values = nullptr}},
 	{ .type = slider,	.label = "Vertical Movement Speed", .a = {.cvar = &m_forward},			.b = {.leftval = 0.0},	.c = {.rightval = 15},		.d = {.step = 0.5},		.e = {.values = nullptr}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
@@ -576,22 +573,18 @@ std::array<menuitem_t, 14> MouseItems = {{
 // NOLINTEND(readability-magic-numbers)
 } // namespace
 
-
-
 menu_t MouseMenu = {
 	"M_MOUSET",
 	0,
-	MouseItems.size(),
 	MENU_HALFPASTINDENT,
-	MouseItems.data(),
+	MouseItems,
 	0,
 	0,
 	nullptr
 };
+
 namespace
 {
-
-
 
 /*=======================================
  *
@@ -601,12 +594,12 @@ namespace
 
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
 std::array<menuitem_t, 11> JoystickItems = {{
-	{ .type = discrete,	.label = "Use Joystick", .a = {.cvar = &use_joystick},		.b = {.leftval = ARRAY_LENGTH(OnOff)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Use Joystick", .a = {.cvar = &use_joystick},		.b = {.leftval = OnOff.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = joyactive,	.label = "Active Joystick", .a = {.cvar = &joy_active},		.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
-	{ .type = discrete,	.label = "Always FreeLook", .a = {.cvar = &joy_freelook},		.b = {.leftval = ARRAY_LENGTH(OnOff)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
-	{ .type = discrete,	.label = "Invert Look Axis", .a = {.cvar = &joy_invert},		.b = {.leftval = ARRAY_LENGTH(OnOff)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Always FreeLook", .a = {.cvar = &joy_freelook},		.b = {.leftval = OnOff.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Invert Look Axis", .a = {.cvar = &joy_invert},		.b = {.leftval = OnOff.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = whitetext,	.label = "Sensitivity Settings", .a = {.cvar = nullptr}, 				.b = {.leftval = 0.0}, 		.c = {.rightval = 0.0}, 		.d = {.step = 0.0}, 		.e = {.values = nullptr}},
 	{ .type = slider,	.label = "Turn Sensitivity", .a = {.cvar = &joy_sensitivity},	.b = {.leftval = 1.0},		.c = {.rightval = 30.0},		.d = {.step = 1.0},		.e = {.values = nullptr}},
@@ -620,9 +613,8 @@ std::array<menuitem_t, 11> JoystickItems = {{
 menu_t JoystickMenu = {
 	"M_JOYSTK",
 	0,
-	JoystickItems.size(),
 	MENU_HALFPASTINDENT,
-	JoystickItems.data(),
+	JoystickItems,
 	0,
 	0,
 	nullptr
@@ -702,14 +694,14 @@ static menuitem_t AdvMidiItems[] = {
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "Advanced MIDI Options", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "MIDI Instrument Fallback", .a = {.cvar = &snd_midifallback}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "MIDI Instrument Fallback", .a = {.cvar = &snd_midifallback}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = slider, .label = "MIDI Reset Delay (ms)", .a = {.cvar = &snd_mididelay}, .b = {.leftval = 0.0}, .c = {.rightval = 2000.0}, .d = {.step = 50.0}, .e = {.values = nullptr}},
 	#ifdef PORTMIDI
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "PortMidi Options", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "MIDI Reset", .a = {.cvar = &snd_midireset}, .b = {.leftval = ARRAY_LENGTH(MidiReset)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = MidiReset.data()}},
-	{ .type = discrete, .label = "Read MIDI SysEx", .a = {.cvar = &snd_midisysex}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "MIDI Reset", .a = {.cvar = &snd_midireset}, .b = {.leftval = MidiReset.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = MidiReset.data()}},
+	{ .type = discrete, .label = "Read MIDI SysEx", .a = {.cvar = &snd_midisysex}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	#endif
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -718,6 +710,7 @@ static menuitem_t AdvMidiItems[] = {
 	{ .type = orangetext, .label = "Modifying these settings may cause", .a = {.cvar = nullptr},.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = orangetext, .label = "unwanted behavior during MIDI playback!", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 };
+
 namespace
 {
 
@@ -726,10 +719,10 @@ namespace
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "OPL FM Synth Options", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "OPL quality", .a = {.cvar = &snd_oplcore}, .b = {.leftval = ARRAY_LENGTH(OplCore)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OplCore.data()}},
-	{ .type = discrete, .label = "Full OPL panning", .a = {.cvar = &snd_oplpan}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "OPL quality", .a = {.cvar = &snd_oplcore}, .b = {.leftval = OplCore.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OplCore.data()}},
+	{ .type = discrete, .label = "Full OPL panning", .a = {.cvar = &snd_oplpan}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = slider, .label = "# of OPL chips", .a = {.cvar = &snd_oplchips}, .b = {.leftval = 1.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "OPL instruments", .a = {.cvar = &snd_oplbank}, .b = {.leftval = ARRAY_LENGTH(OplBank)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OplBank.data()}},
+	{ .type = discrete, .label = "OPL instruments", .a = {.cvar = &snd_oplbank}, .b = {.leftval = OplBank.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OplBank.data()}},
 }};
 
 std::array<menuitem_t, 21> SoundItems = {{
@@ -738,23 +731,23 @@ std::array<menuitem_t, 21> SoundItems = {{
 	{ .type = slider,	.label = "Music Volume", .a = {.cvar = &snd_musicvolume},    .b = {.leftval = 0.0},        .c = {.rightval = 1.0}, .d = {.step = 0.015625}, .e = {.values = nullptr}},
 	{ .type = slider,	.label = "Sound Volume", .a = {.cvar = &snd_sfxvolume},      .b = {.leftval = 0.0},        .c = {.rightval = 1.0}, .d = {.step = 0.015625}, .e = {.values = nullptr}},
 	{ .type = slider,	.label = "Announcer Volume", .a = {.cvar = &snd_announcervolume},.b = {.leftval = 0.0},        .c = {.rightval = 1.0}, .d = {.step = 0.015625}, .e = {.values = nullptr}},
-	{ .type = discrete,   .label = "Stereo Switch", .a = {.cvar = &snd_crossover},      .b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
+	{ .type = discrete,   .label = "Stereo Switch", .a = {.cvar = &snd_crossover},      .b = {.leftval = OnOff.size()},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
 	{ .type = yellowtext,   .label = "Music Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
-	{ .type = discrete,   .label = "Midi Synth", .a = {.cvar = &snd_musicsystem},    .b = {.leftval = ARRAY_LENGTH(MusSys)}, .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = MusSys}},
-	{ .type = discrete,   .label = "Disable Music", .a = {.cvar = &snd_nomusic},        .b = {.leftval = ARRAY_LENGTH(YesNo)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = YesNo.data()}},
+	{ .type = discrete,   .label = "Midi Synth", .a = {.cvar = &snd_musicsystem},    .b = {.leftval = std::size(MusSys)}, .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = MusSys}},
+	{ .type = discrete,   .label = "Disable Music", .a = {.cvar = &snd_nomusic},        .b = {.leftval = YesNo.size()},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = YesNo.data()}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
 	{ .type = more,   .label = "OPL FM Synth Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.mfunc = LibAdlMidiOptions}},
 	{ .type = more,   .label = "Advanced MIDI Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.mfunc = AdvMidiOptions}},
 	{ .type = redtext,   .label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
 	{ .type = yellowtext,   .label = "Sound Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
-	{ .type = discrete,   .label = "Game SFX", .a = {.cvar = &snd_gamesfx},        .b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
-	{ .type = discrete,   .label = "Announcer Type", .a = {.cvar = &snd_voxtype},        .b = {.leftval = ARRAY_LENGTH(VoxType)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = VoxType.data()}},
-	{ .type = discrete,   .label = "Player Connect Alert", .a = {.cvar = &cl_connectalert},    .b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
-	{ .type = discrete,   .label = "Player Disconnect Alert", .a = {.cvar = &cl_disconnectalert}, .b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
-	{ .type = discrete,   .label = "Chat sounds", .a = {.cvar = &cl_chatsounds},      .b = {.leftval = ARRAY_LENGTH(ChatSndType)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = ChatSndType.data()}},
-	{ .type = discrete,   .label = "Voting Sounds", .a = {.cvar = &snd_votesfx},		.b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},	     .e = {.values = OnOff.data()}},
- }};
+	{ .type = discrete,   .label = "Game SFX", .a = {.cvar = &snd_gamesfx},        .b = {.leftval = OnOff.size()},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
+	{ .type = discrete,   .label = "Announcer Type", .a = {.cvar = &snd_voxtype},        .b = {.leftval = VoxType.size()},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = VoxType.data()}},
+	{ .type = discrete,   .label = "Player Connect Alert", .a = {.cvar = &cl_connectalert},    .b = {.leftval = OnOff.size()},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
+	{ .type = discrete,   .label = "Player Disconnect Alert", .a = {.cvar = &cl_disconnectalert}, .b = {.leftval = OnOff.size()},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
+	{ .type = discrete,   .label = "Chat sounds", .a = {.cvar = &cl_chatsounds},      .b = {.leftval = ChatSndType.size()},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = ChatSndType.data()}},
+	{ .type = discrete,   .label = "Voting Sounds", .a = {.cvar = &snd_votesfx},		.b = {.leftval = OnOff.size()},        .c = {.rightval = 0.0}, .d = {.step = 0.0},	     .e = {.values = OnOff.data()}},
+}};
 // NOLINTEND(readability-magic-numbers)
 } // namespace
 
@@ -762,9 +755,8 @@ std::array<menuitem_t, 21> SoundItems = {{
 menu_t AdvMidiMenu = {
 	"M_SOUND",
 	3,
-	ARRAY_LENGTH(AdvMidiItems),
 	MENU_HALFPASTINDENT,
-	AdvMidiItems,
+	{AdvMidiItems, ARRAY_LENGTH(AdvMidiItems)},
 	0,
 	0,
 	nullptr
@@ -773,9 +765,8 @@ menu_t AdvMidiMenu = {
 menu_t LibAdlMidiMenu = {
 	"M_SOUND",
 	3,
-	LibAdlMidiItems.size(),
 	MENU_HALFPASTINDENT,
-	LibAdlMidiItems.data(),
+	LibAdlMidiItems,
 	0,
 	0,
 	nullptr
@@ -784,17 +775,15 @@ menu_t LibAdlMidiMenu = {
 menu_t SoundMenu = {
 	"M_SOUND",
 	2,
-	SoundItems.size(),
 	MENU_HALFPASTINDENT,
-	SoundItems.data(),
+	SoundItems,
 	0,
 	0,
 	nullptr
 };
+
 namespace
 {
-
-
 
 /*=======================================
  *
@@ -804,36 +793,36 @@ namespace
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
 std::array<menuitem_t, 31> CompatItems = {{
 	{.type = yellowtext, .label = "Gameplay",							.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{.type = svdiscrete, .label = "Finer-precision Autoaim",        .a = {.cvar = &co_fineautoaim},       .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Fix hit detection at grid edges",.a = {.cvar = &co_blockmapfix},       .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Remove pain elemental spawn limit",.a = {.cvar = &co_removesoullimit}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Fix arch-vile ghost bug",			.a = {.cvar = &co_novileghosts}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = redtext,   .label = " ",								.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = svdiscrete, .label = "Finer-precision Autoaim",        .a = {.cvar = &co_fineautoaim},       .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Fix hit detection at grid edges",.a = {.cvar = &co_blockmapfix},       .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Remove pain elemental spawn limit",.a = {.cvar = &co_removesoullimit}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Fix arch-vile ghost bug",			.a = {.cvar = &co_novileghosts}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = redtext,    .label = " ",								.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{.type = yellowtext, .label = "Items and Decoration",				.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{.type = svdiscrete, .label = "Fix invisible puffs under skies",.a = {.cvar = &co_fixweaponimpacts},  .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Items can be walked over/under", .a = {.cvar = &co_realactorheight},   .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Items can drop off ledges",      .a = {.cvar = &co_allowdropoff},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = redtext,   .label = " ",								.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = svdiscrete, .label = "Fix invisible puffs under skies",.a = {.cvar = &co_fixweaponimpacts},  .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Items can be walked over/under", .a = {.cvar = &co_realactorheight},   .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Items can drop off ledges",      .a = {.cvar = &co_allowdropoff},      .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = redtext,    .label = " ",								.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{.type = yellowtext, .label = "Engine Compatibility",				.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{.type = svdiscrete, .label = "BOOM actor/sector/line checks",  .a = {.cvar = &co_boomphys},			 .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "MBF movement and collision",  .a = {.cvar = &co_mbfphys},			 .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "ZDOOM 1.23 physics",             .a = {.cvar = &co_zdoomphys},         .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "ZDOOM 1.23 ammo checks",         .a = {.cvar = &co_zdoomammo},         .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "ZDOOM Friendly Targeting",       .a = {.cvar = &co_zdoomfriendtargeting},   .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "MBF Monster target selection",.a = {.cvar = &co_pursuit},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Monsters help friends (MBF)",.a = {.cvar = &co_helpfriends},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Monsters strafe (MBF)",.a = {.cvar = &co_monsterbacking},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Monster wind/friction (MBF)",.a = {.cvar = &co_monsterfriction},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Monsters avoid crushers (MBF)",.a = {.cvar = &co_avoidhazards},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Monsters climb (MBF)",.a = {.cvar = &co_monstersclimbsteep},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Monsters stay on lifts (MBF)",.a = {.cvar = &co_staylift},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Friends can drop off (MBF)",.a = {.cvar = &co_friend_ledgejumping},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = slider,		 .label = "Friend distance (MBF)", .a = {.cvar = &co_friend_distance}, .b = {.leftval = 0.0}, .c = {.rightval = 2048.0}, .d = {.step = 64.0}, .e = {.values = nullptr}},
-	{.type = redtext,   .label = " ",								.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = svdiscrete, .label = "BOOM actor/sector/line checks",  .a = {.cvar = &co_boomphys},			 .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "MBF movement and collision",  .a = {.cvar = &co_mbfphys},			 .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "ZDOOM 1.23 physics",             .a = {.cvar = &co_zdoomphys},         .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "ZDOOM 1.23 ammo checks",         .a = {.cvar = &co_zdoomammo},         .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "ZDOOM Friendly Targeting",       .a = {.cvar = &co_zdoomfriendtargeting},   .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "MBF Monster target selection",.a = {.cvar = &co_pursuit},      .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monsters help friends (MBF)",.a = {.cvar = &co_helpfriends},      .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monsters strafe (MBF)",.a = {.cvar = &co_monsterbacking},      .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monster wind/friction (MBF)",.a = {.cvar = &co_monsterfriction},      .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monsters avoid crushers (MBF)",.a = {.cvar = &co_avoidhazards},      .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monsters climb (MBF)",.a = {.cvar = &co_monstersclimbsteep},      .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monsters stay on lifts (MBF)",.a = {.cvar = &co_staylift},      .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Friends can drop off (MBF)",.a = {.cvar = &co_friend_ledgejumping},      .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = slider,     .label = "Friend distance (MBF)", .a = {.cvar = &co_friend_distance}, .b = {.leftval = 0.0}, .c = {.rightval = 2048.0}, .d = {.step = 64.0}, .e = {.values = nullptr}},
+	{.type = redtext,    .label = " ",								.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{.type = yellowtext, .label = "Sound",							.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{.type = svdiscrete, .label = "Fix silent west spawns",         .a = {.cvar = &co_nosilentspawns},    .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "ZDoom Sound Response",			.a = {.cvar = &co_zdoomsound},		 .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{.type = svdiscrete, .label = "Global Pickup Sounds",			.a = {.cvar = &co_globalsound},		 .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Fix silent west spawns",         .a = {.cvar = &co_nosilentspawns},    .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "ZDoom Sound Response",			.a = {.cvar = &co_zdoomsound},		 .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Global Pickup Sounds",			.a = {.cvar = &co_globalsound},		 .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 }};
 // NOLINTEND(readability-magic-numbers)
 } // namespace
@@ -842,9 +831,8 @@ std::array<menuitem_t, 31> CompatItems = {{
 menu_t CompatMenu = {
 	"M_COMPAT",
 	1,
-	CompatItems.size(),
 	MENU_LONGTEXTINDENT,
-	CompatItems.data(),
+	CompatItems,
 	0,
 	0,
 	nullptr,
@@ -864,40 +852,37 @@ namespace
 std::array<menuitem_t, 15> NetworkItems = {{
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext,	.label = "Wad Download Settings",		.a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
-	{ .type = discrete, 	.label = "Download From Internet", 		.a = {.cvar = &cl_serverdownload}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, 		.c = {.rightval = 0.0}, 		.d = {.step = 0.0}, 		.e = {.values = OnOff.data()}},
+	{ .type = discrete, 	.label = "Download From Internet", 		.a = {.cvar = &cl_serverdownload}, .b = {.leftval = OnOff.size()}, 		.c = {.rightval = 0.0}, 		.d = {.step = 0.0}, 		.e = {.values = OnOff.data()}},
 
 	{ .type = redtext,		.label = " ",							.a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = yellowtext,	.label = "Netdemo Settings",				.a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
-	{ .type = discrete,		.label = "Autorecord demos",				.a = {.cvar = &cl_autorecord},	.b = {.leftval = ARRAY_LENGTH(OnOff)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
-	{ .type = discrete,		.label = "Split every map",				.a = {.cvar = &cl_splitnetdemos},	.b = {.leftval = ARRAY_LENGTH(OnOff)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,		.label = "Autorecord demos",				.a = {.cvar = &cl_autorecord},	.b = {.leftval = OnOff.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,		.label = "Split every map",				.a = {.cvar = &cl_splitnetdemos},	.b = {.leftval = OnOff.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
 
 	{ .type = redtext,		.label = " ",							.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext,	.label = "Autorecord filters",			.a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
-	{ .type = discrete,		.label = "Cooperation",					.a = {.cvar = &cl_autorecord_coop},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
-	{ .type = discrete,		.label = "Deathmatch",					.a = {.cvar = &cl_autorecord_deathmatch},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
-	{ .type = discrete,		.label = "Duel",							.a = {.cvar = &cl_autorecord_duel},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
-	{ .type = discrete,		.label = "Team Deathmatch",				.a = {.cvar = &cl_autorecord_teamdm},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
-	{ .type = discrete,		.label = "Capture the Flag",				.a = {.cvar = &cl_autorecord_ctf},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
-	{ .type = discrete,		.label = "Horde",						.a = {.cvar = &cl_autorecord_horde},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Cooperation",					.a = {.cvar = &cl_autorecord_coop},.b = {.leftval = DemoRestrictions.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Deathmatch",					.a = {.cvar = &cl_autorecord_deathmatch},.b = {.leftval = DemoRestrictions.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Duel",							.a = {.cvar = &cl_autorecord_duel},.b = {.leftval = DemoRestrictions.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Team Deathmatch",				.a = {.cvar = &cl_autorecord_teamdm},.b = {.leftval = DemoRestrictions.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Capture the Flag",				.a = {.cvar = &cl_autorecord_ctf},.b = {.leftval = DemoRestrictions.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Horde",						.a = {.cvar = &cl_autorecord_horde},.b = {.leftval = DemoRestrictions.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
 }};
 // NOLINTEND(readability-magic-numbers)
 } // namespace
 
-
 menu_t NetworkMenu = {
 	"M_NETWRK",
 	2,
-	NetworkItems.size(),
 	MENU_HALFPASTINDENT,
-	NetworkItems.data(),
+	NetworkItems,
 	1,
 	0,
 	nullptr
 };
+
 namespace
 {
-
-
 
 /*=======================================
  *
@@ -920,11 +905,10 @@ extern const char *weaponnames[];
 namespace
 {
 
-
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
 std::array<menuitem_t, 20> WeaponItems = {{
 	{.type = yellowtext, .label = "Weapon Preferences",  .a = {.cvar = nullptr},               .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{.type = discrete,  .label = "Switch on pickup",    .a = {.cvar = &cl_switchweapon},   .b = {.leftval = ARRAY_LENGTH(WeapSwitch)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = WeapSwitch.data()}},
+	{.type = discrete,  .label = "Switch on pickup",    .a = {.cvar = &cl_switchweapon},   .b = {.leftval = WeapSwitch.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = WeapSwitch.data()}},
 	{.type = redtext,   .label = " ",                   .a = {.cvar = nullptr},               .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{.type = yellowtext, .label = "Weapon Switch Order", .a = {.cvar = nullptr},               .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{.type = slider,    .label = weaponnames[0],        .a = {.cvar = &cl_weaponpref_fst}, .b = {.leftval = 0.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
@@ -951,9 +935,8 @@ std::array<menuitem_t, 20> WeaponItems = {{
 menu_t WeaponMenu = {
 	"M_WEAPON",
 	1,
-	WeaponItems.size(),
 	MENU_HALFPASTINDENT,
-	WeaponItems.data(),
+	WeaponItems,
 	0,
 	0,
 	nullptr
@@ -1069,19 +1052,19 @@ std::array<menuitem_t, 41> VideoItems = {{
 	{ .type = slider,	.label = "Red Pain Intensity",		.a = {.cvar = &r_painintensity},		.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.1},  .e = {.values = nullptr}},
 	{ .type = slider,	.label = "Movement bobbing",			.a = {.cvar = &cl_movebob},			.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.1},	.e = {.values = nullptr}},
 	{ .type = slider,   .label = "Weapon Visibility",        .a = {.cvar = &r_drawplayersprites}, .b = {.leftval = 0.0}, .c = {.rightval = 1.0},   .d = {.step = 0.1},  .e = {.values = nullptr}},
-	{ .type = discrete,	.label = "Visible Spawn Points",		.a = {.cvar = &cl_showspawns},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Center weapon when firing",.a = {.cvar = &cl_centerbobonfire},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Show Killing Sprees",		.a = {.cvar = &cl_showsprees},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Show Multi Kills",		.a = {.cvar = &cl_showmultikills},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Show Sprees Offline",	.a = {.cvar = &cl_showofflinesprees},.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Show Multi Kills Offline",	.a = {.cvar = &cl_showofflinemultikills},.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Visible Spawn Points",		.a = {.cvar = &cl_showspawns},		.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Center weapon when firing",.a = {.cvar = &cl_centerbobonfire},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show Killing Sprees",		.a = {.cvar = &cl_showsprees},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show Multi Kills",		.a = {.cvar = &cl_showmultikills},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show Sprees Offline",	.a = {.cvar = &cl_showofflinesprees},.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show Multi Kills Offline",	.a = {.cvar = &cl_showofflinemultikills},.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
 	{ .type = redtext,	.label = " ",					    .a = {.cvar = nullptr},				    .b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Force Team Color",			.a = {.cvar = &r_forceteamcolor},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Force Team Color",			.a = {.cvar = &r_forceteamcolor},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
 	{ .type = redslider,   .label = "Team Color Red",        .a = {.cvar = &r_teamcolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
 	{ .type = greenslider, .label = "Team Color Green",      .a = {.cvar = &r_teamcolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
 	{ .type = blueslider,  .label = "Team Color Blue",       .a = {.cvar = &r_teamcolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
 	{ .type = redtext,	.label = " ",					    .a = {.cvar = nullptr},				    .b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Force Enemy Color",        .a = {.cvar = &r_forceenemycolor},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Force Enemy Color",        .a = {.cvar = &r_forceenemycolor},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
 	{ .type = redslider,   .label = "Enemy Color Red",       .a = {.cvar = &r_enemycolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
 	{ .type = greenslider, .label = "Enemy Color Green",     .a = {.cvar = &r_enemycolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
 	{ .type = blueslider,  .label = "Enemy Color Blue",      .a = {.cvar = &r_enemycolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
@@ -1091,16 +1074,16 @@ std::array<menuitem_t, 41> VideoItems = {{
 	{ .type = slider,   .label = "UI Background Blue",       .a = {.cvar = &ui_transblue},        .b = {.leftval = 0.0}, .c = {.rightval = 255.0}, .d = {.step = 16.0}, .e = {.values = nullptr}},
 	{ .type = slider,   .label = "UI Background Visibility", .a = {.cvar = &ui_dimamount},        .b = {.leftval = 0.0}, .c = {.rightval = 1.0},   .d = {.step = 0.1},  .e = {.values = nullptr}},
 	{ .type = redtext,	.label = " ",					    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
-	{ .type = discrete, .label = "See killer on Death",			.a = {.cvar = &cl_deathcam},   .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Stretch short skies",	    .a = {.cvar = &r_stretchsky},	   	.b = {.leftval = ARRAY_LENGTH(OnOffAuto)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOffAuto.data()}},
-	{ .type = discrete, .label = "Linear Skies",			    .a = {.cvar = &r_linearsky},	   		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Invuln changes skies",		.a = {.cvar = &r_skypalette},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Use softer invuln effect", .a = {.cvar = &r_softinvulneffect},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Heart effect on friendlies", .a = {.cvar = &cl_showfriends},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Screen wipe style",	    .a = {.cvar = &r_wipetype},			.b = {.leftval = ARRAY_LENGTH(Wipes)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Wipes.data()}},
-	{ .type = discrete, .label = "Multiplayer Intermissions",.a = {.cvar = &wi_oldintermission},	.b = {.leftval = ARRAY_LENGTH(DoomOrOdamex)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = DoomOrOdamex.data()}},
-	{ .type = discrete, .label = "Show loading disk icon",	.a = {.cvar = &r_loadicon},			.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete,	.label = "Show DOS ending screen",  .a = {.cvar = &r_showendoom},		.b = {.leftval = ARRAY_LENGTH(Endoom)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Endoom.data()}},
+	{ .type = discrete, .label = "See killer on Death",			.a = {.cvar = &cl_deathcam},   .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Stretch short skies",	    .a = {.cvar = &r_stretchsky},	   	.b = {.leftval = OnOffAuto.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOffAuto.data()}},
+	{ .type = discrete, .label = "Linear Skies",			    .a = {.cvar = &r_linearsky},	   		.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Invuln changes skies",		.a = {.cvar = &r_skypalette},		.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Use softer invuln effect", .a = {.cvar = &r_softinvulneffect},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Heart effect on friendlies", .a = {.cvar = &cl_showfriends},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Screen wipe style",	    .a = {.cvar = &r_wipetype},			.b = {.leftval = Wipes.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Wipes.data()}},
+	{ .type = discrete, .label = "Multiplayer Intermissions",.a = {.cvar = &wi_oldintermission},	.b = {.leftval = DoomOrOdamex.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = DoomOrOdamex.data()}},
+	{ .type = discrete, .label = "Show loading disk icon",	.a = {.cvar = &r_loadicon},			.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Show DOS ending screen",  .a = {.cvar = &r_showendoom},		.b = {.leftval = Endoom.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Endoom.data()}},
 
 
 }};
@@ -1122,9 +1105,8 @@ void M_UpdateDisplayOptions()
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
-	VideoItems.size(),
 	0,
-	VideoItems.data(),
+	VideoItems,
 	4,
 	0,
 	&M_UpdateDisplayOptions
@@ -1167,42 +1149,42 @@ std::array<value_t, 5> ExtendedHudStyles = {{
 
 std::array<menuitem_t, 34> HUDItems = {{
 	{ .type = yellowtext, .label = "Status Bar", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Scale status bar", .a = {.cvar = &st_scale}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Scale status bar", .a = {.cvar = &st_scale}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "Floating HUD elements", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Scale HUD elements", .a = {.cvar = &hud_scale}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Scale HUD elements", .a = {.cvar = &hud_scale}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = slider, .label = "HUD Transparency", .a = {.cvar = &hud_transparency}, .b = {.leftval = 0.0}, .c = {.rightval = 1.0}, .d = {.step = 0.1}, .e = {.values = nullptr}},
 	{ .type = slider, .label = "HUD Anchoring", .a = {.cvar = &hud_anchoring}, .b = {.leftval = 0.0}, .c = {.rightval = 1.0}, .d = {.step = 0.1}, .e = {.values = nullptr}},
-	{.type = discrete, .label = "Bigger font in HUD", .a = {.cvar = &hud_bigfont}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = discrete, .label = "Bigger font in HUD", .a = {.cvar = &hud_bigfont}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	// clang-format off
-	{ .type = discrete, .label = "Show Secret Messages", .a = {.cvar = &hud_revealsecrets}, .b = {.leftval = ARRAY_LENGTH(SecretOptions)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = SecretOptions.data()}},
-	{ .type = discrete, .label = "Player target names", .a = {.cvar = &hud_targetnames}, .b = {.leftval = ARRAY_LENGTH(HideShow)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = HideShow.data()}},
+	{ .type = discrete, .label = "Show Secret Messages", .a = {.cvar = &hud_revealsecrets}, .b = {.leftval = SecretOptions.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = SecretOptions.data()}},
+	{ .type = discrete, .label = "Player target names", .a = {.cvar = &hud_targetnames}, .b = {.leftval = HideShow.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = HideShow.data()}},
 	// clang-format on
-	{ .type = discrete, .label = "Timer Type", .a = {.cvar = &hud_timer}, .b = {.leftval = ARRAY_LENGTH(TimerStyles)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = TimerStyles.data()}},
-	{ .type = discrete, .label = "Speedometer", .a = {.cvar = &hud_speedometer}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Timer Type", .a = {.cvar = &hud_timer}, .b = {.leftval = TimerStyles.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = TimerStyles.data()}},
+	{ .type = discrete, .label = "Speedometer", .a = {.cvar = &hud_speedometer}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = slider, .label = "Feed Timeout", .a = {.cvar = &hud_feedtime}, .b = {.leftval = 1.0}, .c = {.rightval = 10.0}, .d = {.step = 0.25}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Show Kills in Feed", .a = {.cvar = &hud_feedobits}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Netdemo infos", .a = {.cvar = &hud_demobar}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Extended hud", .a = {.cvar = &hud_extendedinfo}, .b = {.leftval = ARRAY_LENGTH(ExtendedHudStyles)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = ExtendedHudStyles.data()}},
+	{ .type = discrete, .label = "Show Kills in Feed", .a = {.cvar = &hud_feedobits}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Netdemo infos", .a = {.cvar = &hud_demobar}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Extended hud", .a = {.cvar = &hud_extendedinfo}, .b = {.leftval = ExtendedHudStyles.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = ExtendedHudStyles.data()}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 
 	{ .type = yellowtext, .label = "Scoreboard", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = slider, .label = "Scale scoreboard", .a = {.cvar = &hud_scalescoreboard}, .b = {.leftval = 0.0}, .c = {.rightval = 1.0}, .d = {.step = 0.125}, .e = {.values = nullptr}},
 	// clang-format off
-	{ .type = discrete, .label = "Scores on Death", .a = {.cvar = &hud_show_scoreboard_ondeath}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Scores on Death", .a = {.cvar = &hud_show_scoreboard_ondeath}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	// clang-format on
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 
 	{ .type = yellowtext, .label = "Capture the Flag", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Event Message Type", .a = {.cvar = &hud_gamemsgtype}, .b = {.leftval = ARRAY_LENGTH(VoxType)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = VoxType.data()}},
-	{ .type = discrete, .label = "Held Flag Border", .a = {.cvar = &hud_heldflag}, .b = {.leftval = ARRAY_LENGTH(FlagHelds)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = FlagHelds.data()}},
-	{ .type = discrete, .label = "Held Flag Flashes", .a = {.cvar = &hud_heldflag_flash}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Event Message Type", .a = {.cvar = &hud_gamemsgtype}, .b = {.leftval = VoxType.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = VoxType.data()}},
+	{ .type = discrete, .label = "Held Flag Border", .a = {.cvar = &hud_heldflag}, .b = {.leftval = FlagHelds.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = FlagHelds.data()}},
+	{ .type = discrete, .label = "Held Flag Flashes", .a = {.cvar = &hud_heldflag_flash}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 
 	{ .type = yellowtext, .label = "Crosshair", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Crosshair type", .a = {.cvar = &hud_crosshair}, .b = {.leftval = ARRAY_LENGTH(Crosshairs)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = Crosshairs.data()}},
-	{ .type = discrete, .label = "Scale crosshair", .a = {.cvar = &hud_crosshairscale}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Crosshair health", .a = {.cvar = &hud_crosshairhealth}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Crosshair type", .a = {.cvar = &hud_crosshair}, .b = {.leftval = Crosshairs.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = Crosshairs.data()}},
+	{ .type = discrete, .label = "Scale crosshair", .a = {.cvar = &hud_crosshairscale}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Crosshair health", .a = {.cvar = &hud_crosshairhealth}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = redslider, .label = "Crosshair Red", .a = {.cvar = &hud_crosshaircolor}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = greenslider, .label = "Crosshair Green", .a = {.cvar = &hud_crosshaircolor}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = blueslider, .label = "Crosshair Blue", .a = {.cvar = &hud_crosshaircolor}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -1215,9 +1197,8 @@ std::array<menuitem_t, 34> HUDItems = {{
 menu_t HUDMenu = {
 	"M_HUD",                // title
 	1,                      // lastOn
-	HUDItems.size(),        // numitems
 	0,                      // indent
-	HUDItems.data(),        // items
+	HUDItems,               // items
 	0,                      // scrolltop
 	0,                      // scrollpos
 	nullptr,                // refreshfunc
@@ -1292,28 +1273,28 @@ std::array<value_t, 5> ScaleFactors = {{
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
 menuitem_t MessagesItems[] = {
 #if 0
-	{ .type = discrete, .label = "Language", 			 .a = {.cvar = &language},		   	.b = {.leftval = ARRAY_LENGTH(Languages)}, .c = {.rightval = 0.0},   .d = {.step = 0.0}, .e = {.values = Languages}},
+	{ .type = discrete, .label = "Language", 			 .a = {.cvar = &language},		   	.b = {.leftval = Languages.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0}, .e = {.values = Languages}},
 #endif
 	{ .type = slider,	.label = "Message Timeout",		 .a = {.cvar = &con_notifytime},		.b = {.leftval = 1.0}, .c = {.rightval = 10.0},	.d = {.step = 0.25}, .e = {.values = nullptr}},
 	{ .type = slider,	.label = "Center Message Timeout",.a = {.cvar = &con_midtime},		.b = {.leftval = 1.0}, .c = {.rightval = 10.0},	.d = {.step = 0.25}, .e = {.values = nullptr}},
-	{ .type = discrete,	.label = "Scale message text",    .a = {.cvar = &hud_scaletext},		.b = {.leftval = ARRAY_LENGTH(ScaleFactors)}, .c = {.rightval = 0.0}, 	.d = {.step = 0.0}, .e = {.values = ScaleFactors.data()}},
-	{ .type = discrete,	.label = "Colorize messages",	.a = {.cvar = &con_coloredmessages},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete,	.label = "Scale console text",   .a = {.cvar = &con_scaletext},		.b = {.leftval = ARRAY_LENGTH(ScaleFactors)}, .c = {.rightval = 0.0}, 	.d = {.step = 0.0}, .e = {.values = ScaleFactors.data()}},
+	{ .type = discrete,	.label = "Scale message text",    .a = {.cvar = &hud_scaletext},		.b = {.leftval = ScaleFactors.size()}, .c = {.rightval = 0.0}, 	.d = {.step = 0.0}, .e = {.values = ScaleFactors.data()}},
+	{ .type = discrete,	.label = "Colorize messages",	.a = {.cvar = &con_coloredmessages},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Scale console text",   .a = {.cvar = &con_scaletext},		.b = {.leftval = ScaleFactors.size()}, .c = {.rightval = 0.0}, 	.d = {.step = 0.0}, .e = {.values = ScaleFactors.data()}},
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext,.label = "Display settings",	.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete,	.label = "Pickup messages",		.a = {.cvar = &message_showpickups},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete,	.label = "Death messages",		.a = {.cvar = &message_showobituaries},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete,	.label = "Spectator messages",	.a = {.cvar = &mute_spectators},	.b = {.leftval = ARRAY_LENGTH(OffOn)}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OffOn.data()}},
-	{ .type = discrete,	.label = "Enemy messages",		.a = {.cvar = &mute_enemies},	.b = {.leftval = ARRAY_LENGTH(OffOn)}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OffOn.data()}},
+	{ .type = discrete,	.label = "Pickup messages",		.a = {.cvar = &message_showpickups},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Death messages",		.a = {.cvar = &message_showobituaries},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Spectator messages",	.a = {.cvar = &mute_spectators},	.b = {.leftval = OffOn.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OffOn.data()}},
+	{ .type = discrete,	.label = "Enemy messages",		.a = {.cvar = &mute_enemies},	.b = {.leftval = OffOn.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OffOn.data()}},
 
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "Message Colors",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = cdiscrete, .label = "Item Pickup",			.a = {.cvar = &msg0color},		   	.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
-	{ .type = cdiscrete, .label = "Obituaries",			.a = {.cvar = &msg1color},		   	.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
-	{ .type = cdiscrete, .label = "Critical Messages",	.a = {.cvar = &msg2color},		   	.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
-	{ .type = cdiscrete, .label = "Chat Messages",		.a = {.cvar = &msg3color},		   	.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
-	{ .type = cdiscrete, .label = "Team Messages",		.a = {.cvar = &msg4color},		   	.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
-	{ .type = cdiscrete, .label = "Centered Messages",	.a = {.cvar = &msgmidcolor},			.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}}
+	{ .type = cdiscrete, .label = "Item Pickup",			.a = {.cvar = &msg0color},		   	.b = {.leftval = TextColors.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
+	{ .type = cdiscrete, .label = "Obituaries",			.a = {.cvar = &msg1color},		   	.b = {.leftval = TextColors.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
+	{ .type = cdiscrete, .label = "Critical Messages",	.a = {.cvar = &msg2color},		   	.b = {.leftval = TextColors.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
+	{ .type = cdiscrete, .label = "Chat Messages",		.a = {.cvar = &msg3color},		   	.b = {.leftval = TextColors.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
+	{ .type = cdiscrete, .label = "Team Messages",		.a = {.cvar = &msg4color},		   	.b = {.leftval = TextColors.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
+	{ .type = cdiscrete, .label = "Centered Messages",	.a = {.cvar = &msgmidcolor},			.b = {.leftval = TextColors.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}}
 };
 // NOLINTEND(readability-magic-numbers)
 } // namespace
@@ -1322,9 +1303,8 @@ menuitem_t MessagesItems[] = {
 menu_t MessagesMenu = {
 	"M_MESS",
 	0,
-	ARRAY_LENGTH(MessagesItems),
 	0,
-	MessagesItems,
+	{MessagesItems, ARRAY_LENGTH(MessagesItems)},
 	0,
 	0,
 	nullptr
@@ -1373,28 +1353,28 @@ std::array<value_t, 6> MinimapLocations = {{
 }};
 
 std::array<menuitem_t, 22> AutomapItems = {{
-	{ .type = discrete, .label = "Rotate automap",		.a = {.cvar = &am_rotate},		   	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Overlay automap",		.a = {.cvar = &am_overlay},			.b = {.leftval = ARRAY_LENGTH(Overlays)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Overlays.data()}},
+	{ .type = discrete, .label = "Rotate automap",		.a = {.cvar = &am_rotate},		   	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Overlay automap",		.a = {.cvar = &am_overlay},			.b = {.leftval = Overlays.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Overlays.data()}},
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Line Thickeness",		.a = {.cvar = &am_thickness},		.b = {.leftval = ARRAY_LENGTH(AutomapScales)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = AutomapScales.data()}},
+	{ .type = discrete, .label = "Line Thickeness",		.a = {.cvar = &am_thickness},		.b = {.leftval = AutomapScales.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = AutomapScales.data()}},
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Show item count",		.a = {.cvar = &am_showitems},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Show monster count",	.a = {.cvar = &am_showmonsters},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Show secrets count",	.a = {.cvar = &am_showsecrets},	   	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Show map timer", 	    .a = {.cvar = &am_showtime}, 	   	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Map name style",       .a = {.cvar = &am_classicmapstring},	.b = {.leftval = ARRAY_LENGTH(ClassicMapStringTypes)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = ClassicMapStringTypes.data()}},
-	{ .type = discrete, .label = "Show map author",     .a = {.cvar = &am_showauthor},		.b = {.leftval = ARRAY_LENGTH(AuthorDisplays)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = AuthorDisplays.data()}},
+	{ .type = discrete, .label = "Show item count",		.a = {.cvar = &am_showitems},		.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show monster count",	.a = {.cvar = &am_showmonsters},		.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show secrets count",	.a = {.cvar = &am_showsecrets},	   	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show map timer", 	    .a = {.cvar = &am_showtime}, 	   	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Map name style",       .a = {.cvar = &am_classicmapstring},	.b = {.leftval = ClassicMapStringTypes.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = ClassicMapStringTypes.data()}},
+	{ .type = discrete, .label = "Show map author",     .a = {.cvar = &am_showauthor},		.b = {.leftval = AuthorDisplays.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = AuthorDisplays.data()}},
 
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "Automap Colors",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Highlight locked doors",.a = {.cvar = &am_showlocked},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Custom map colors",	.a = {.cvar = &am_usecustomcolors},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Highlight locked doors",.a = {.cvar = &am_showlocked},		.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Custom map colors",	.a = {.cvar = &am_usecustomcolors},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
 	{ .type = more,     .label = "Reset custom map colors",  .a = {.cvar = nullptr},    .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.mfunc = ResetCustomColors}},
 
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "Overlay Minimap Options", .a = {.cvar = nullptr},			.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
-	{ .type = discrete, .label = "Enable Minimap",		.a = {.cvar = &am_ovminimap},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
-	{ .type = discrete, .label = "Location",				.a = {.cvar = &am_ovlocation},		.b = {.leftval = ARRAY_LENGTH(MinimapLocations)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = MinimapLocations.data()}},
+	{ .type = discrete, .label = "Enable Minimap",		.a = {.cvar = &am_ovminimap},		.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Location",				.a = {.cvar = &am_ovlocation},		.b = {.leftval = MinimapLocations.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = MinimapLocations.data()}},
 	{ .type = slider,	.label = "Scale Width",			.a = {.cvar = &am_ovscalewidth},		.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
 	{ .type = slider,	.label = "Scale Height",			.a = {.cvar = &am_ovscaleheight},	.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
 }};
@@ -1405,9 +1385,8 @@ std::array<menuitem_t, 22> AutomapItems = {{
 menu_t AutomapMenu = {
 	"M_AUTOMP",
 	0,
-	AutomapItems.size(),
 	0,
-	AutomapItems.data(),
+	AutomapItems,
 	0,
 	0,
 	nullptr
@@ -1516,12 +1495,12 @@ menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
 	{ .type = slider, .label = "Overscan",				.a = {.cvar = &vid_overscan},		.b = {.leftval = 0.84375}, .c = {.rightval = 1.0}, .d = {.step = 0.03125}, .e = {.values = nullptr}},
 #else
-	{ .type = discrete, .label = "Fullscreen",			.a = {.cvar = &vid_fullscreen},		.b = {.leftval = ARRAY_LENGTH(FullScreenOptions)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = FullScreenOptions.data()}},
+	{ .type = discrete, .label = "Fullscreen",			.a = {.cvar = &vid_fullscreen},		.b = {.leftval = FullScreenOptions.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = FullScreenOptions.data()}},
 #endif
-	{ .type = discrete,	.label = "Widescreen",			.a = {.cvar = &vid_widescreen},		.b = {.leftval = ARRAY_LENGTH(WidescreenMode)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = WidescreenMode.data()}} ,
-	{ .type = discrete,	.label = "VSync",				.a = {.cvar = &vid_vsync},			.b = {.leftval = ARRAY_LENGTH(YesNo)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = YesNo.data()}},
-	{ .type = discrete, .label = "Framerate",			.a = {.cvar = &vid_maxfps},			.b = {.leftval = ARRAY_LENGTH(VidFPSCaps)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = VidFPSCaps.data()}},
-	{ .type = discrete, .label = "32-bit color",			.a = {.cvar = &vid_32bpp},			.b = {.leftval = ARRAY_LENGTH(YesNo)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = YesNo.data()}},
+	{ .type = discrete,	.label = "Widescreen",			.a = {.cvar = &vid_widescreen},		.b = {.leftval = WidescreenMode.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = WidescreenMode.data()}} ,
+	{ .type = discrete,	.label = "VSync",				.a = {.cvar = &vid_vsync},			.b = {.leftval = YesNo.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = YesNo.data()}},
+	{ .type = discrete, .label = "Framerate",			.a = {.cvar = &vid_maxfps},			.b = {.leftval = VidFPSCaps.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = VidFPSCaps.data()}},
+	{ .type = discrete, .label = "32-bit color",			.a = {.cvar = &vid_32bpp},			.b = {.leftval = YesNo.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = YesNo.data()}},
 	{ .type = redtext,	.label = "",						.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = screenres, .label = nullptr,					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = screenres, .label = nullptr,					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -1548,9 +1527,8 @@ menuitem_t ModesItems[] = {
 menu_t ModesMenu = {
 	"M_VIDMOD",
 	0,
-	ARRAY_LENGTH(ModesItems),
 	130,
-	ModesItems,
+	{ModesItems, ARRAY_LENGTH(ModesItems)},
 	0,
 	0,
 	nullptr
@@ -1828,18 +1806,16 @@ BEGIN_COMMAND (sizeup)
 }
 END_COMMAND (sizeup)
 
-void M_BuildKeyList (menuitem_t *item, int numitems)
+void M_BuildKeyList(std::span<menuitem_t> items)
 {
-	int i;
-
-	for (i = 0; i < numitems; i++, item++)
+	for (auto& item : items)
 	{
-		if (item->type == control)
-			Bindings.GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
-		if (item->type == mapcontrol)
-			AutomapBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
-		if (item->type == netdemocontrol)
-			NetDemoBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
+		if (item.type == control)
+			Bindings.GetKeysForCommand(item.e.command, &item.b.key1, &item.c.key2);
+		if (item.type == mapcontrol)
+			AutomapBindings.GetKeysForCommand(item.e.command, &item.b.key1, &item.c.key2);
+		if (item.type == netdemocontrol)
+			NetDemoBindings.GetKeysForCommand(item.e.command, &item.b.key1, &item.c.key2);
 	}
 }
 
@@ -1858,12 +1834,11 @@ void M_SwitchMenu(menu_t* menu)
 	if (!menu->indent)
 	{
 		int widest = 0;
-		for (int i = 0; i < menu->numitems; i++)
+		for (auto& item : menu->items)
 		{
-			const menuitem_t* item = menu->items + i;
-			if (item->type != whitetext && item->type != redtext && item->type != orangetext)
+			if (item.type != whitetext && item.type != redtext && item.type != orangetext)
 			{
-				const int thiswidth = V_StringWidth (item->label);
+				const int thiswidth = V_StringWidth(item.label);
 				widest = std::max(thiswidth, widest);
 			}
 		}
@@ -1970,12 +1945,12 @@ void M_OptDrawer()
 
 	OptMouseRowCount = 0;
 
-	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += 8)	// TIJ
+	for (i = 0; i < CurrentMenu->items.size() && y <= 192 - theight; i++, y += 8)	// TIJ
 	{
 		if (i == CurrentMenu->scrolltop)
 			i += CurrentMenu->scrollpos;
 
-		item = CurrentMenu->items + i;
+		item = &CurrentMenu->items[i];
 
 		if (OptMouseRowCount < MAX_OPT_MOUSE_ROWS)
 		{
@@ -2197,7 +2172,7 @@ void M_OptDrawer()
 
 	VisBottom = i - 1;
 	CanScrollUp = (CurrentMenu->scrollpos != 0);
-	CanScrollDown = (i < CurrentMenu->numitems);
+	CanScrollDown = (i < CurrentMenu->items.size());
 
 	if (CanScrollUp)
 		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
@@ -2282,8 +2257,8 @@ void M_OptScroll(int lines)
 	{
 		const int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
 		CurrentMenu->scrollpos += lines;
-		if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
-			CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+		if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->items.size())
+			CurrentMenu->scrollpos = CurrentMenu->items.size() - CurrentMenu->scrolltop - pagesize;
 	}
 }
 
@@ -2378,7 +2353,7 @@ void M_OptMouseClick(int mouse_x, int mouse_y)
 		return;
 
 	const int index = OptMouseRows[row].item;
-	menuitem_t* item = CurrentMenu->items + index;
+	menuitem_t* item = &CurrentMenu->items[index];
 
 	if (!M_OptItemSelectable(item))
 		return;
@@ -2441,8 +2416,8 @@ void M_OptUpdateMouseItem()
 		return;
 
 	if (OptDragItem != -1 &&
-	    (OptDragMenu != CurrentMenu || OptDragItem >= CurrentMenu->numitems ||
-	     !M_OptItemIsSlider(CurrentMenu->items + OptDragItem) ||
+	    (OptDragMenu != CurrentMenu || OptDragItem >= CurrentMenu->items.size() ||
+	     !M_OptItemIsSlider(&CurrentMenu->items[OptDragItem]) ||
 	     !I_IsUIMouseButtonDown(OKEY_MOUSE1)))
 		OptDragItem = -1;
 
@@ -2460,7 +2435,7 @@ void M_OptUpdateMouseItem()
 
 	if (OptDragItem != -1)
 	{
-		M_OptSetSliderFromMouse(CurrentMenu->items + OptDragItem, mouse_x);
+		M_OptSetSliderFromMouse(&CurrentMenu->items[OptDragItem], mouse_x);
 		return;
 	}
 
@@ -2469,7 +2444,7 @@ void M_OptUpdateMouseItem()
 		return;
 
 	const int index = OptMouseRows[row].item;
-	if (index == CurrentItem || !M_OptItemSelectable(CurrentMenu->items + index))
+	if (index == CurrentItem || !M_OptItemSelectable(&CurrentMenu->items[index]))
 		return;
 
 	if (CurrentMenu->items[CurrentItem].type == screenres)
@@ -2489,7 +2464,7 @@ void M_OptResponder(const event_t& ev)
 	const int mod = ev.mod;
 	const char *cmd = Bindings.GetBind(ch).c_str();
 
-	menuitem_t *item = CurrentMenu->items + CurrentItem;
+	menuitem_t *item = &CurrentMenu->items[CurrentItem];
 
 	const bool numlock = (mod & OMOD_NUM) != 0;
 
@@ -2506,7 +2481,7 @@ void M_OptResponder(const event_t& ev)
 					AutomapBindings.ChangeBinding(item->e.command, ch);
 				else if (item->type == netdemocontrol)
 					NetDemoBindings.ChangeBinding(item->e.command, ch);
-				M_BuildKeyList (CurrentMenu->items, CurrentMenu->numitems);
+				M_BuildKeyList(CurrentMenu->items);
 			}
 
 			configuring_controls = false;
@@ -2633,7 +2608,7 @@ void M_OptResponder(const event_t& ev)
 					CurrentMenu->scrollpos++;
 					VisBottom++;
 				}
-				if (CurrentItem == CurrentMenu->numitems)
+				if (CurrentItem == CurrentMenu->items.size())
 				{
 					CurrentMenu->scrollpos = 0;
 					CurrentItem = 0;
@@ -2675,8 +2650,8 @@ void M_OptResponder(const event_t& ev)
 				}
 				if (CurrentItem < 0)
 				{
-					CurrentMenu->scrollpos = std::max(0, CurrentMenu->numitems - MAX_LINES_ONSCREEN + CurrentMenu->scrolltop);
-					CurrentItem = CurrentMenu->numitems - 1;
+					CurrentMenu->scrollpos = std::max<int>(0, CurrentMenu->items.size() - MAX_LINES_ONSCREEN + CurrentMenu->scrolltop);
+					CurrentItem = CurrentMenu->items.size() - 1;
 				}
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
 				CurrentMenu->items[CurrentItem].type == whitetext ||
@@ -2715,9 +2690,9 @@ void M_OptResponder(const event_t& ev)
 			{
 				const int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
 				CurrentMenu->scrollpos += pagesize;
-				if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
+				if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->items.size())
 				{
-					CurrentMenu->scrollpos = CurrentMenu->numitems - CurrentMenu->scrolltop - pagesize;
+					CurrentMenu->scrollpos = CurrentMenu->items.size() - CurrentMenu->scrolltop - pagesize;
 				}
 				CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
 				while (CurrentMenu->items[CurrentItem].type == redtext ||
@@ -2949,7 +2924,7 @@ void M_OptResponder(const event_t& ev)
 			col = item->a.selmode + 1;
 			if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
 			{
-				if (CurrentMenu->numitems - 1 > CurrentItem)
+				if (CurrentMenu->items.size() - 1 > CurrentItem)
 				{
 					if (CurrentMenu->items[CurrentItem + 1].type == screenres)
 					{
@@ -3188,8 +3163,8 @@ namespace
 
 void CustomizeControls()
 {
-	M_BuildKeyList (ControlsMenu.items, ControlsMenu.numitems);
-	M_SwitchMenu (&ControlsMenu);
+	M_BuildKeyList(ControlsMenu.items);
+	M_SwitchMenu(&ControlsMenu);
 }
 
 // [Russell] - Hack for getting to the player setup menu, doesn't

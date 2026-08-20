@@ -157,7 +157,7 @@ enum printlevel_t {
 //
 // ARRAY_LENGTH
 //
-// Safely counts the number of items in an C array or a std::array.
+// Safely counts the number of items in an C array.
 //
 template <typename T, size_t N>
 // NOLINTNEXTLINE(modernize-avoid-c-arrays) - the array it measures
@@ -165,13 +165,6 @@ constexpr size_t ARRAY_LENGTH(T (&)[N]) noexcept
 {
 	return std::extent_v<T[N]>;
 }
-
-template <typename T, size_t N>
-constexpr size_t ARRAY_LENGTH(const std::array<T, N>&) noexcept
-{
-	return N;
-}
-
 
 // ----------------------------------------------------------------------------
 //

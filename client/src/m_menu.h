@@ -161,9 +161,8 @@ struct menuitem_t {
 typedef struct menu_s {
 	OLumpName		title;
 	int				lastOn;
-	int				numitems;
 	int				indent;
-	menuitem_t	   *items;
+	std::span<menuitem_t> items;
 	int				scrolltop;
 	int				scrollpos;
 	void			(*refreshfunc)();	// Callback func for M_OptResponder
