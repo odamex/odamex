@@ -585,7 +585,8 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 
 	connected = false;
 
-	messenger = OdaMessenger {pool};
+	messenger = OdaMessenger{ pool };
+
 	P_ClearAllNetIds();
 	s_canary.reset();
 	gameaction = ga_fullconsole;
@@ -2303,6 +2304,15 @@ void CL_ParseCommands()
 		if (::net_message.BytesLeftToRead() == 0)
 		{
 			break;
+		}
+
+		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
+		// This is because the High Priority packet is always live and comes out every tic.  It's totally
+		// possible for the server to go without sending anything Reliable or Best-Effort if things are
+		// all-quiet.
+		if (messenger.GetCurrentReceivedIsHighPriority())
+		{
+			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
 		}
 
 		const size_t          byteStart = ::net_message.BytesRead();

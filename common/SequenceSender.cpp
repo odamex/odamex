@@ -46,16 +46,16 @@ SequenceSender::QueueEntryResultType SequenceSender::ObtainSendPacket(int curren
 {
 	SequenceQueueEntryType& newEntryRef = m_sendTable[m_nextSequence];
 
-	newEntryRef.isAwaiting        = true;
-	newEntryRef.sequence          = m_nextSequence;
-	newEntryRef.originatingTic    = currentTic;
-	newEntryRef.lastRetransmitTic = -1;
+	newEntryRef.isAwaiting           = true;
+	newEntryRef.header.sequence      = m_nextSequence;
+	newEntryRef.header.originatorTic = currentTic;
+	newEntryRef.lastRetransmitTic    = -1;
 
 	m_unackedSequences.push_back(m_nextSequence);
 	++m_nextSequence;
 
 	return QueueEntryResultType {.buffer    = & newEntryRef.buf,
-	                             .sequence  = newEntryRef.sequence };
+	                             .sequence  = newEntryRef.header.sequence };
 }
 
 bool SequenceSender::Acknowledge(int sequence)
