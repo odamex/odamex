@@ -34,15 +34,15 @@ concept Enum = std::is_enum_v<T>;
 
 // C++23's std::is_scoped_enum
 template <typename T>
-struct is_scoped_enum :
-	std::bool_constant<
-		std::is_enum_v<T> and
-		not std::is_convertible_v<T, std::underlying_type_t<T>>
-	>
-{};
+inline constexpr bool is_scoped_enum_v = [](){
+	if constexpr (not std::is_enum_v<T>)
+		return false;
+	else
+		return not std::is_convertible_v<T, std::underlying_type_t<T>>;
+}();
 
 template <typename T>
-inline constexpr bool is_scoped_enum_v = is_scoped_enum<T>::value;
+struct is_scoped_enum : std::bool_constant<is_scoped_enum_v<T>> {};
 
 template <typename T>
 concept EnumClass = is_scoped_enum_v<T>;

@@ -86,7 +86,7 @@ using enum mobjflag_t;
 consteval mobjflag_t enable_bitflag_operators(mobjflag_t) { return MF_TRANSLUCENT; }
 using ActorFlags1 = OFlags<mobjflag_t>;
 
-enum mobjflag2_t : uint32_t
+enum class mobjflag2_t : uint32_t
 {
 
 	// --- mobj.flags2 ---
