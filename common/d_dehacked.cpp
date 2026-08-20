@@ -1353,11 +1353,11 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 			}
 			if (vchanged[0])
 			{
-				if (value[0] & MF_TRANSLUCENT)
+				info->flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(value[0]));
+				if (info->flags & MF_TRANSLUCENT)
 				{
 					info->translucency = TRANSLUC66;
 				}
-				info->flags = value[0];
 			}
 			if (vchanged[1])
 			{
@@ -2656,41 +2656,44 @@ bool CheckIfDehActorDefined(const mobjtype_t mobjtype)
 	auto it = ::mobjinfo.find(mobjtype);
 	if (it == ::mobjinfo.end())
 		return false;
+
+	const mobjinfo_t defaults{};
 	const auto& mobj = it->second;
-	if (mobj.doomednum == -1 &&
+	if (mobj.doomednum == defaults.doomednum &&
 		mobj.spawnstate == S_TNT1 &&
-		mobj.spawnhealth == 0 &&
-		mobj.gibhealth == 0 &&
-		mobj.seestate == S_NULL &&
-		mobj.seesound == NULL &&
-	    mobj.reactiontime == 0 &&
-		mobj.attacksound == NULL &&
-		mobj.painstate == S_NULL &&
-	    mobj.painchance == 0 &&
-		mobj.painsound == NULL &&
-		mobj.meleestate == S_NULL &&
-	    mobj.missilestate == S_NULL &&
-		mobj.deathstate == S_NULL &&
-	    mobj.xdeathstate == S_NULL &&
-		mobj.deathsound == NULL &&
-		mobj.speed == 0 &&
-	    mobj.radius == 0 &&
-		mobj.height == 0 &&
-		mobj.cdheight == 0 &&
-	    mobj.mass == 0 &&
-	    mobj.damage == 0 &&
-		mobj.activesound == NULL &&
-		mobj.flags == 0 &&
-	    mobj.flags2 == 0 &&
-		mobj.raisestate == S_NULL &&
-		mobj.translucency == 0x10000 &&
-	    mobj.altspeed == NO_ALTSPEED &&
-		mobj.infighting_group == IG_DEFAULT &&
-		mobj.projectile_group == PG_DEFAULT &&
-		mobj.splash_group == SG_DEFAULT &&
-		mobj.ripsound == NULL &&
-		mobj.meleerange == (64 * FRACUNIT) &&
-		mobj.droppeditem == MT_NULL)
+		mobj.spawnhealth == defaults.spawnhealth &&
+		mobj.gibhealth == defaults.gibhealth &&
+		mobj.seestate == defaults.seestate &&
+		mobj.seesound == defaults.seesound &&
+	    mobj.reactiontime == defaults.reactiontime &&
+		mobj.attacksound == defaults.attacksound &&
+		mobj.painstate == defaults.painstate &&
+	    mobj.painchance == defaults.painchance &&
+		mobj.painsound == defaults.painsound &&
+		mobj.meleestate == defaults.meleestate &&
+	    mobj.missilestate == defaults.missilestate &&
+		mobj.deathstate == defaults.deathstate &&
+	    mobj.xdeathstate == defaults.xdeathstate &&
+		mobj.deathsound == defaults.deathsound &&
+		mobj.speed == defaults.speed &&
+	    mobj.radius == defaults.radius &&
+		mobj.height == defaults.height &&
+		mobj.cdheight == defaults.cdheight &&
+	    mobj.mass == defaults.mass &&
+	    mobj.damage == defaults.damage &&
+		mobj.activesound == defaults.activesound &&
+		mobj.flags == defaults.flags &&
+	    mobj.flags2 == defaults.flags2 &&
+		mobj.flags3 == defaults.flags3 &&
+		mobj.raisestate == defaults.raisestate &&
+		mobj.translucency == defaults.translucency &&
+	    mobj.altspeed == defaults.altspeed &&
+		mobj.infighting_group == defaults.infighting_group &&
+		mobj.projectile_group == defaults.projectile_group &&
+		mobj.splash_group == defaults.splash_group &&
+		mobj.ripsound == defaults.ripsound &&
+		mobj.meleerange == defaults.meleerange &&
+		mobj.droppeditem == defaults.droppeditem)
 	{
 		return false;
 	}

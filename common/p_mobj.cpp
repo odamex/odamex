@@ -2897,10 +2897,8 @@ bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t 
 //
 AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 {
-    AActor *th;
-    angle_t	an;
-    int		dist;
-    fixed_t     dest_x, dest_y, dest_z, dest_flags;
+    fixed_t dest_x, dest_y, dest_z;
+	ActorFlags1 dest_flags;
 
 	// denis: missile spawn code from chocolate doom
 	//
@@ -2925,16 +2923,16 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
         dest_x = 0;
         dest_y = 0;
         dest_z = 0;
-        dest_flags = 0;
+        dest_flags.clear();
     }
 
-	th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
+	AActor* th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
 
     if (th->info->seesound)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
     th->target = source->ptr();	// where it came from
-    an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
+    angle_t an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
 	// Horde boss? Make their projectiles look bossy
 	if (source->oflags & MFO_ISHORDEBOSS)
@@ -2957,11 +2955,8 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 	th->momx = FixedMul(th->info->speed, finecosine[an]);
 	th->momy = FixedMul(th->info->speed, finesine[an]);
 
-    dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
-	dist = dist / th->info->speed;
-
-    if (dist < 1)
-		dist = 1;
+    int dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
+	dist = std::max(dist / th->info->speed, 1);
 
     th->momz = (dest_z - source->z) / dist;
 

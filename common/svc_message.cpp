@@ -519,7 +519,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	else if (mo->flags & (MF_AMBUSH | MF_DROPPED | MF_FRIEND))
 	{
 		spawnFlags |= SVC_SM_FLAGS;
-		cur->set_flags(mo->flags);
+		cur->set_flags(mo->flags.to_int());
 	}
 
 	if (mo->flags2 & MF2_DORMANT)
@@ -856,7 +856,7 @@ odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corps
 	cpsmom->set_y(corpse->momy);
 	cpsmom->set_z(corpse->momz);
 
-	cps->set_flags(corpse->flags);
+	cps->set_flags(corpse->flags.to_int());
 	cps->set_friend_playerid(corpse->friend_playerid);
 	cps->set_friend_teamid(corpse->friend_teamid);
 

@@ -58,7 +58,7 @@
 // TODO: make as many of these non-global as possible
 std::array<fixed_t, 4> tmbbox;
 static AActor  *tmthing;
-static int 		tmflags;
+static ActorFlags1 tmflags;
 static fixed_t	tmx;
 static fixed_t	tmy;
 static fixed_t	tmz;	// [RH] Needed for third dimension of teleporters
@@ -1087,7 +1087,7 @@ bool PIT_CheckThing (AActor& thing)
 			if (!thing.player)
 			{
 				// Run friendly clip check early if same species
-				if ((thing.flags & tmthing->target->flags & MF_FRIEND) &&
+				if (((thing.flags & mask(tmthing->target->flags)) & MF_FRIEND) &&
 				    !P_ShouldClipFriendly(tmthing, &thing))
 					return true;
 
@@ -1325,7 +1325,7 @@ bool PIT_CheckOnmobjZ (AActor& thing)
 //
 bool P_TestMobjLocation (AActor *mobj)
 {
-	int flags = mobj->flags;
+	const auto flags = mobj->flags;
 	mobj->flags &= ~MF_PICKUP;
 
 	if (P_CheckPosition(mobj, mobj->x, mobj->y))

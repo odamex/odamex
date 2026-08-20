@@ -774,7 +774,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
-		mo->flags = msg->current().flags();
+		mo->flags = ActorFlags1::unsafe_from_int(msg->current().flags());
 	}
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS2)
@@ -1592,7 +1592,9 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 
 	corpsehit->flags = info->flags;
 
-	if (msg->corpse().flags() & MF_FRIEND)
+	const auto msgflags = OFlags<mobjflag_t>::unsafe_from_int(msg->corpse().flags());
+
+	if (msgflags & MF_FRIEND)
 	{
 		corpsehit->flags |= MF_FRIEND;
 		corpsehit->friend_playerid = msg->corpse().friend_playerid();

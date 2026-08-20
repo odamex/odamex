@@ -27,6 +27,7 @@
 
 #include "m_fixed.h"
 #include "dsectoreffect.h"
+#include "actorflags.h"
 
 class AActor;
 class player_t;
@@ -115,7 +116,7 @@ public:
 	fixed_t getFloorZ() const		{ return mFloorZ; }
 	int		getReactionTime() const	{ return mReactionTime; }
 	int		getWaterLevel() const	{ return mWaterLevel; }
-	int		getFlags() const		{ return mFlags; }
+	ActorFlags1 getFlags() const	{ return mFlags; }
 	int		getFlags2() const		{ return mFlags2; }
 	int		getFlags3() const		{ return mFlags3; }
 	int		getFrame() const		{ return mFrame; }
@@ -198,7 +199,7 @@ public:
 		mFields |= ACT_WATERLEVEL;
 	}
 
-	void setFlags(int val)
+	void setFlags(ActorFlags1 val)
 	{
 		mFlags = val;
 		mFields |= ACT_FLAGS;
@@ -261,7 +262,7 @@ private:
 	int				mReactionTime;
 	int				mWaterLevel;
 
-	int				mFlags;
+	ActorFlags1		mFlags;
 	int				mFlags2;
 	int				mFlags3;
 	int				mFrame;
@@ -304,7 +305,7 @@ public:
 	fixed_t getFloorZ() const			{ return mActorSnap.getFloorZ(); }
 	int		getReactionTime() const		{ return mActorSnap.getReactionTime(); }
 	int		getWaterLevel() const		{ return mActorSnap.getWaterLevel(); }
-	int		getFlags() const			{ return mActorSnap.getFlags(); }
+	ActorFlags1 getFlags() const		{ return mActorSnap.getFlags(); }
 	int		getFlags2() const			{ return mActorSnap.getFlags2(); }
 	int		getFlags3() const			{ return mActorSnap.getFlags3(); }
 	int		getFrame() const			{ return mActorSnap.getFrame(); }
@@ -405,7 +406,7 @@ public:
 		mFields |= PLY_REACTIONTIME;
 	}
 
-	void setFlags(int val)
+	void setFlags(ActorFlags1 val)
 	{
 		mActorSnap.setFlags(val);
 		mFields |= PLY_FLAGS;

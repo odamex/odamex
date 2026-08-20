@@ -802,7 +802,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 //
 // R_DrawPSprite
 //
-void R_DrawPSprite(const pspdef_t& psp, unsigned flags)
+void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
 {
 	vissprite_t 		avis;
 
@@ -977,7 +977,7 @@ void R_DrawPlayerSprites()
 	mceilingclip = negonearray;
 
 	{
-		int centerhack = centery;
+		const int centerhack = centery;
 
 		centery = (viewheight >> 1) + 1;	// Ch0wW : Fix for the weapon sprite's offset.
 		centeryfrac = centery << FRACBITS;
@@ -986,7 +986,7 @@ void R_DrawPlayerSprites()
 		for (const auto& psp : camera->player->psprites)
 		{
 			if (psp.statenum != S_NULL)
-				R_DrawPSprite (psp, 0);
+				R_DrawPSprite(psp, ActorFlags1::none_set());
 		}
 
 		centery = centerhack;
@@ -1294,13 +1294,13 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	{
 		vis->startfrac = particle->color;
 		vis->patch = NO_PARTICLE;
-		vis->mobjflags = particle->trans;
+		vis->mobjflags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(particle->trans));
 	}
 	else
 	{
 		vis->patch = particle->sprite;
 		vis->translucency = (particle->trans + 1) << 8;
-		vis->mobjflags = 0;
+		vis->mobjflags.clear();
 	}
 
 	// get light level
@@ -1346,7 +1346,7 @@ void R_DrawParticle(vissprite_t* vis)
 	dspan.x2 = vis->x2;
 	dspan.colormap = vis->colormap;
 	// vis->mobjflags holds translucency level (0-255)
-	dspan.translevel = (vis->mobjflags + 1) << 8;
+	dspan.translevel = (vis->mobjflags.to_int() + 1) << 8;
 	// vis->startfrac holds palette color index
 	dspan.color = vis->startfrac;
 

@@ -30,6 +30,7 @@
 
 #include "dobject.h"
 #include "doomtype.h"
+#include "flags.h"
 
 #define FA_RESET (1 << 0)
 
@@ -158,8 +159,7 @@ public:
 	// ------------ Streaming-in operations ---------------
 
 	// Integer operators
-	template <std::integral IntegerType>
-	FArchive& operator<< (IntegerType value)
+	FArchive& operator<< (std::integral auto value)
 	{
 		value = BESWAP(value);
 		Write(&value, sizeof(value));
@@ -171,6 +171,13 @@ public:
 	FArchive& operator<< (EnumeratedType value)
 	{
 		*this << static_cast<std::underlying_type_t<EnumeratedType> >(value);
+		return *this;
+	}
+
+	template <typename E>
+	FArchive& operator<< (const OFlags<E> value)
+	{
+		*this << value.to_int();
 		return *this;
 	}
 
@@ -201,9 +208,7 @@ public:
 	// ------------ Streaming-out operations ---------------
 
 	// Integer operators
-	template <typename IntegerType>
-	requires std::is_integral_v<IntegerType>
-	FArchive& operator>> (IntegerType& value)
+	FArchive& operator>> (std::integral auto& value)
 	{
 		Read(&value, sizeof(value));
 		value = BESWAP(value);
@@ -220,8 +225,17 @@ public:
 		return *this;
 	}
 
+	template <typename E>
+	FArchive& operator>> (OFlags<E>& value)
+	{
+		std::remove_cvref_t<decltype(value.to_int())> temp;
+		*this >> temp;
+		value = OFlags<E>::unsafe_from_int(temp);
+		return *this;
+	}
+
 	// Overload bool because its size is implementation-defined, and we want archived sizes to be exact.
-	FArchive& operator>>(bool& b)
+	FArchive& operator>> (bool& b)
 	{
 		uint8_t value;
 		*this >> value;

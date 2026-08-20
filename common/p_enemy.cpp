@@ -243,7 +243,7 @@ static bool P_CheckRange(AActor* actor, fixed_t range)
 	AActor* pl = actor->target;
 
 	return // killough 7/18/98: friendly monsters don't attack other friends
-	    pl && !(actor->flags & pl->flags & MF_FRIEND && P_IsFriendlyThing(actor, pl)) &&
+	    pl && !((actor->flags & mask(pl->flags)) & MF_FRIEND && P_IsFriendlyThing(actor, pl)) &&
 	    P_AproxDistance(pl->x - actor->x, pl->y - actor->y) < range &&
 	    P_CheckSight(actor, actor->target) &&
 	        pl->z <= actor->z + actor->height && actor->z <= pl->z + pl->height;
@@ -266,7 +266,7 @@ bool P_CheckMeleeRange (AActor *actor)
 	pl = actor->target;
 	dist = P_AproxDistance (pl->x-actor->x, pl->y-actor->y);
 
-	if (actor->flags & pl->flags & MF_FRIEND && P_IsFriendlyThing(actor, pl))
+	if ((actor->flags & mask(pl->flags)) & MF_FRIEND && P_IsFriendlyThing(actor, pl))
 		return false;
 
 	if (dist >= range - 20 * FRACUNIT + pl->info->radius)
@@ -566,7 +566,7 @@ bool P_SmartMove(AActor* actor)
 	// allow all friends to jump down instead of just dogs
 
 	if (actor->flags & MF_FRIEND && target && co_friend_ledgejumping && P_AllowDropOff() &&
-	    !((target->flags ^ actor->flags) & MF_FRIEND) &&
+	    !((target->flags ^ combo(actor->flags)) & MF_FRIEND) &&
 	    P_AproxDistance(actor->x - target->x, actor->y - target->y) < FRACUNIT * 144 &&
 	    P_Random(actor) < 235)
 		dropoff = 2;
@@ -944,7 +944,7 @@ void P_NewChaseDir (AActor *actor)
 		{
 			fixed_t dist = P_AproxDistance(deltax, deltay);
 
-			if (actor->flags & actor->target->flags & MF_FRIEND &&
+			if ((actor->flags & mask(actor->target->flags)) & MF_FRIEND &&
 			    P_IsFriendlyThing(actor, actor->target) &&
 			    co_friend_distance.asInt() << FRACBITS > dist && !P_IsOnLift(actor) &&
 			    !P_IsUnderDamage(actor))
@@ -952,7 +952,7 @@ void P_NewChaseDir (AActor *actor)
 				deltax = -deltax, deltay = -deltay;
 			}
 			else if (actor->target->health > 0 &&
-			         (actor->flags ^ actor->target->flags) & MF_FRIEND)
+			         (actor->flags ^ combo(actor->target->flags)) & MF_FRIEND)
 			{ // Live enemy target
 				if (co_monsterbacking &&
 						actor->info->missilestate &&
@@ -1046,7 +1046,7 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 	if (P_IsMBFCompatMode())
 	{
 		if (actor->lastenemy && actor->lastenemy->health > 0 &&
-		    !(actor->lastenemy->flags & actor->flags & MF_FRIEND))
+		    !((actor->lastenemy->flags & mask(actor->flags)) & MF_FRIEND))
 		{
 			actor->target = actor->lastenemy;
 			actor->lastenemy = AActor::AActorPtr();
@@ -1184,7 +1184,7 @@ AActor::AActorPtr SpawnHelper(const MapThing SpawnPoint, mobjtype_t SpawnType, c
 			SV_SpawnMobj(mo);
 
 			// Spawn a teleport fog if it's not an ambush.
-			if ((SpawnPoint.flags & MF_AMBUSH) == 0)
+			if ((SpawnPoint.flags & MTF_AMBUSH) == 0)
 			{
 				AActor* tele =
 				    new AActor(SpawnPoint.x << FRACBITS, SpawnPoint.y << FRACBITS,
@@ -3343,11 +3343,11 @@ void A_JumpIfFlagsSet(AActor* actor)
 		return;
 
 	const int state = actor->state->args[0];
-	const int flags = actor->state->args[1];
+	const auto flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(actor->state->args[1]));
 	const int flags2 = actor->state->args[2];
 	const int flags3 = actor->state->args[3];
 
-	if ((actor->flags & flags) == flags &&
+	if ((actor->flags & mask(flags)) == flags &&
 	    (actor->flags2 & flags2) == flags2 &&
 	    (actor->flags3 & flags3) == flags3)
 		P_SetMobjState(actor, static_cast<statenum_t>(state), true);
@@ -3367,7 +3367,7 @@ void A_AddFlags(AActor* actor)
 	if (!actor)
 		return;
 
-	const int flags = actor->state->args[0];
+	const auto flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(actor->state->args[0]));
 	const int flags2 = actor->state->args[1];
 	const int flags3 = actor->state->args[2];
 
@@ -3381,7 +3381,7 @@ void A_AddFlags(AActor* actor)
 	if (update_blockmap)
 		actor->UnlinkFromWorld();
 
-	actor->flags |= flags;
+	actor->flags |= combo(flags);
 	actor->flags2 |= flags2;
 	actor->flags3 |= flags3;
 
@@ -3404,7 +3404,7 @@ void A_RemoveFlags(AActor* actor)
 	if (!actor)
 		return;
 
-	const int flags = actor->state->args[0];
+	const auto flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(actor->state->args[0]));
 	const int flags2 = actor->state->args[1];
 	const int flags3 = actor->state->args[2];
 
@@ -3418,7 +3418,7 @@ void A_RemoveFlags(AActor* actor)
 	if (update_blockmap)
 		actor->UnlinkFromWorld();
 
-	actor->flags &= ~flags;
+	actor->flags &= ~(combo(flags));
 	actor->flags2 &= ~flags2;
 	actor->flags3 &= ~flags3;
 
@@ -4226,8 +4226,8 @@ void A_LineEffect(AActor* mo)
 			mo->player = &player;                      // Fake player
 			player.health = 100;                       // Alive player
 			junk.id = static_cast<short>(mo->state->misc2); // Sector tag for linedef
-			if (!P_UseSpecialLine(mo, &junk, 0, mo->flags & MF2_BOSS))       // Try using it
-				P_CrossSpecialLine(&junk, 0, mo, mo->flags & MF2_BOSS); // Try crossing it
+			if (!P_UseSpecialLine(mo, &junk, 0, false))       // Try using it
+				P_CrossSpecialLine(&junk, 0, mo, false); // Try crossing it
 			if (!junk.special)                         // If type cleared,
 			    mo->oflags |= MFO_LINEDONE;            // no more for this thing
 			mo->player = oldplayer;                    // Restore player status
