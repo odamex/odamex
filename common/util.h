@@ -29,9 +29,19 @@
 namespace OUtil
 {
 
+template <typename T>
+concept Enum = std::is_enum_v<T>;
+
+// TODO: C++23 uncomment this
+// template <typename T>
+// concept EnumClass = std::is_scoped_enum_v<T>;
+
+// TODO: C++23 uncomment this
+// template <typename T>
+// concept CEnum = std::is_enum_v<T> and not std::is_scoped_enum_v<T>;
+
 // C++23's std::to_underlying
-template <typename E>
-requires std::is_enum_v<E>
+template <Enum E>
 constexpr auto to_underlying(const E e) noexcept
 {
 	return static_cast<std::underlying_type_t<E>>(e);
