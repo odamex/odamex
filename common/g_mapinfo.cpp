@@ -28,6 +28,7 @@
 #include "g_skill.h"
 #include "i_system.h"
 #include "oscanner.h"
+#include "p_lnspec.h"
 #include "p_setup.h"
 #include "r_sky.h"
 #include "v_video.h"
@@ -87,7 +88,7 @@ void SkipUnknownType(OScanner& os)
 //
 // This function does not work with old-school ZDoom MAPINFO.
 //
-void SkipUnknownBlock(OScanner& os)
+[[maybe_unused]] void SkipUnknownBlock(OScanner& os)
 {
 	int stack = 0;
 
@@ -136,7 +137,7 @@ void MustGet<float>(OScanner& os)
 
 // ensure token is bool
 template <>
-void MustGet<bool>(OScanner& os)
+[[maybe_unused]] void MustGet<bool>(OScanner& os)
 {
 	os.mustScanBool();
 }
@@ -191,7 +192,7 @@ void ParseMapInfoHelper(OScanner& os, bool newStyleMapInfo)
 }
 
 template <>
-void ParseMapInfoHelper<void>(OScanner& os, bool newStyleMapInfo)
+[[maybe_unused]] void ParseMapInfoHelper<void>(OScanner& os, bool newStyleMapInfo)
 {
 	// do nothing
 }
@@ -855,7 +856,8 @@ void MIType_Pages(OScanner& os, bool doEquals, std::array<OLumpName, N>& out)
 }
 
 // Sets multiple lumpnames in a vector
-void MIType_$VectorLumpName(OScanner& os, bool doEquals, std::vector<OLumpName>& out)
+[[maybe_unused]] void MIType_$VectorLumpName(OScanner& os, bool doEquals,
+                                             std::vector<OLumpName>& out)
 {
 	ParseMapInfoHelper<OLumpName>(os, doEquals);
 
@@ -906,15 +908,11 @@ void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, int& out)
 	}
 	else
 	{
-		if (os.compareTokenNoCase("baby"))
-			out |= 1;
-		else if (os.compareTokenNoCase("easy"))
+		if (os.compareTokenNoCase("baby") || os.compareTokenNoCase("easy"))
 			out |= 1;
 		else if (os.compareTokenNoCase("normal"))
 			out |= 2;
-		else if (os.compareTokenNoCase("hard"))
-			out |= 4;
-		else if (os.compareTokenNoCase("nightmare"))
+		else if (os.compareTokenNoCase("hard") || os.compareTokenNoCase("nightmare"))
 			out |= 4;
 	}
 }
@@ -923,21 +921,23 @@ void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, int& out)
 void MIType_Map07Special(OScanner& /*os*/, bool /*newStyleMapInfo*/,
                          std::vector<bossaction_t>& bossactionvector)
 {
+	using enum doomLineSpecial_t;
+
 	// mancubus
 	bossaction_t& mancaction = bossactionvector.emplace_back();;
 
 	mancaction.type = MT_FATSO;
 	mancaction.flags = MF3_MAP07BOSS1;
-	mancaction.special = 23;
-	mancaction.tag = 666;
+	mancaction.special = lineSpecialValue(S1_Floor_LowerToLowest);
+	mancaction.tag = BOSSACTION_TAG;
 
 	// arachnotron
 	bossaction_t& arachnoaction = bossactionvector.emplace_back();;
 
 	arachnoaction.type = MT_BABY;
 	arachnoaction.flags = MF3_MAP07BOSS2;
-	arachnoaction.special = 30;
-	arachnoaction.tag = 667;
+	arachnoaction.special = lineSpecialValue(W1_Floor_RaiseByTexture);
+	arachnoaction.tag = BOSSACTION_TAG_ALT;
 }
 
 template <int32_t TYPE, int32_t FLAG = 0>
@@ -976,6 +976,13 @@ void MIType_SpecialAction(OScanner& /*os*/, bool /*newStyleMapInfo*/,
 	action.special = SPECIAL;
 	action.tag = TAG;
 }
+
+// Ensure the bossaction line specials are valid.
+template <auto SPECIAL, int16_t TAG = 0>
+    requires std::same_as<decltype(SPECIAL), doomLineSpecial_t> ||
+             std::same_as<decltype(SPECIAL), boomLineSpecial_t>
+constexpr auto MIType_LineSpecialAction =
+    MIType_SpecialAction<lineSpecialValue(SPECIAL), TAG>; // NOLINT(modernize-avoid-c-style-cast)
 
 // border around smaller screen sizes
 void MIType_Border(OScanner& os, bool doEquals)
@@ -1192,6 +1199,7 @@ struct MapInfoDataSetter
 template <>
 struct MapInfoDataSetter<level_pwad_info_t>
 {
+	using enum doomLineSpecial_t;
 	MapInfoDataContainer mapInfoDataContainer;
 
 	MapInfoDataSetter(level_pwad_info_t& ref)
@@ -1222,10 +1230,10 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "e3m8special", MIType_Special<MT_NULL, MF3_E3M8BOSS>, ref.bossactions },
 			{ "e4m6special", MIType_Special<MT_NULL, MF3_E4M6BOSS>, ref.bossactions },
 			{ "e4m8special", MIType_Special<MT_NULL, MF3_E4M8BOSS>, ref.bossactions },
-			{ "specialaction_exitlevel", MIType_SpecialAction<11>, ref.bossactions },
-			{ "specialaction_opendoor", MIType_SpecialAction<109, 666>, ref.bossactions },
-			{ "specialaction_lowerfloor", MIType_SpecialAction<23, 666>, ref.bossactions },
-			{ "specialaction_killmonsters", MIType_SpecialAction<280>, ref.bossactions },
+			{ "specialaction_exitlevel", MIType_LineSpecialAction<S1_Exit_Normal>, ref.bossactions },
+			{ "specialaction_opendoor", MIType_LineSpecialAction<W1_Door_OpenFast, BOSSACTION_TAG>, ref.bossactions },
+			{ "specialaction_lowerfloor", MIType_LineSpecialAction<S1_Floor_LowerToLowest, BOSSACTION_TAG>, ref.bossactions },
+			{ "specialaction_killmonsters", MIType_SpecialAction<BOSSACTION_MASSACRE>,ref.bossactions },
 			{ "lightning" },
 			{ "fadetable", MIType_LumpName, ref.fadetable },
 			{ "evenlighting", MIType_SetFlag, ref.flags, LEVEL_EVENLIGHTING },
