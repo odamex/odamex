@@ -1276,16 +1276,16 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "compat_useblocking", &MIType_CompatFlag, &ref.flags.data() }, // special lines block use (not implemented, default odamex behavior)
 			{ "compat_missileclip", &MIType_CompatFlag, &ref.flags.data() }, // original height monsters when it comes to missiles (not implemented)
 			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_COMPAT_DROPOFF) }, // todo: not implemented
-			{ "compat_crossdropoff", &MIType_CompatFlag, &ref.flags2, LEVEL2_COMPAT_CROSSDROPOFF },
+			{ "compat_crossdropoff", &MIType_CompatFlag, &ref.flags2.data(), static_cast<uint32_t>(LEVEL2_COMPAT_CROSSDROPOFF) },
 			{ "compat_trace", &MIType_CompatFlag, &ref.flags.data() }, // todo: not implemented
 			{ "compat_boomscroll", &MIType_CompatFlag, &ref.flags.data() }, // todo: not implemented
 			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags.data() }, // todo: not implemented
 			{ "compat_nopassover", &MIType_CompatFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_COMPAT_NOPASSOVER) },
 			{ "compat_invisibility", &MIType_CompatFlag, &ref.flags.data()},  // todo: not implemented
 			{ "author", &MIType_Author, &ref },
-			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
-			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
-			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "normalinfighting", &MIType_SCFlags, &ref.flags2.data(), static_cast<uint32_t>(LEVEL2_NORMALINFIGHTING), ~static_cast<uint32_t>(LEVEL2_INFIGHTINGMASK) },
+			{ "noinfighting", &MIType_SCFlags, &ref.flags2.data(), static_cast<uint32_t>(LEVEL2_NOINFIGHTING), ~static_cast<uint32_t>(LEVEL2_INFIGHTINGMASK) },
+			{ "totalinfighting", &MIType_SCFlags, &ref.flags2.data(), static_cast<uint32_t>(LEVEL2_TOTALINFIGHTING), ~static_cast<uint32_t>(LEVEL2_INFIGHTINGMASK) },
 			{ "smoothlighting" } // TODO: not implemented
 		};
 	}

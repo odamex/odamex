@@ -94,18 +94,24 @@ enum class levelflags_t : uint32_t
 };
 
 using enum levelflags_t;
-
 consteval levelflags_t enable_bitflag_operators(levelflags_t) { return LEVEL_VISITED; };
 using LevelFlags1 = OFlags<levelflags_t>;
 
-constexpr static levelFlags_t LEVEL2_NORMALINFIGHTING = BIT(0);
-constexpr static levelFlags_t LEVEL2_NOINFIGHTING = BIT(1);
-constexpr static levelFlags_t LEVEL2_TOTALINFIGHTING = BIT(2);
-constexpr static levelFlags_t LEVEL2_INFIGHTINGMASK = BIT_MASK(0, 2);
-constexpr static levelFlags_t LEVEL2_HIDEAUTHORNAME = BIT(3);
-constexpr static levelFlags_t LEVEL2_AUTHORFROMPWAD = BIT(4);
-constexpr static levelFlags_t LEVEL2_FROMUMAPINFO = BIT(5);
-constexpr static levelFlags_t LEVEL2_COMPAT_CROSSDROPOFF = BIT(18);
+enum class levelflags2_t
+{
+	LEVEL2_NORMALINFIGHTING    = BIT(0),
+	LEVEL2_NOINFIGHTING        = BIT(1),
+	LEVEL2_TOTALINFIGHTING     = BIT(2),
+	LEVEL2_INFIGHTINGMASK      = BIT_MASK(0, 2),
+	LEVEL2_HIDEAUTHORNAME      = BIT(3),
+	LEVEL2_AUTHORFROMPWAD      = BIT(4),
+	LEVEL2_FROMUMAPINFO        = BIT(5),
+	LEVEL2_COMPAT_CROSSDROPOFF = BIT(18),
+};
+
+using enum levelflags2_t;
+consteval levelflags2_t enable_bitflag_operators(levelflags2_t) { return LEVEL2_COMPAT_CROSSDROPOFF; };
+using LevelFlags2 = OFlags<levelflags2_t>;
 
 struct acsdefered_t;
 class FBehavior;
@@ -183,7 +189,7 @@ struct level_info_t
 	OLumpName     skypic     = "";
 	OLumpName     music      = "";
 	LevelFlags1   flags      = LevelFlags1::none_set();
-	levelFlags_t  flags2     = 0;
+	LevelFlags2   flags2     = LevelFlags2::none_set();
 	int           cluster    = 0;
 	FLZOMemFile*  snapshot   = nullptr;
 	acsdefered_t* defered    = nullptr;
@@ -210,8 +216,8 @@ struct level_pwad_info_t
 	int				partime    = 0;
 	OLumpName		skypic     = "";
 	OLumpName		music      = "";
-	LevelFlags1   flags      = LevelFlags1::none_set();
-	levelFlags_t	flags2     = 0;
+	LevelFlags1     flags      = LevelFlags1::none_set();
+	LevelFlags2     flags2     = LevelFlags2::none_set();
 	int				cluster    = 0;
 	FLZOMemFile*	snapshot   = nullptr;
 	acsdefered_t*	defered    = nullptr;
@@ -299,7 +305,7 @@ struct level_locals_t
 	OLumpName		secretmap;				// map to go to when used secret exit
 
 	LevelFlags1     flags;
-	levelFlags_t	flags2;
+	LevelFlags2     flags2;
 
 	// [SL] use 4 bytes for color types instead of argb_t so that the struct
 	// can consist of only plain-old-data types. It is also important to have
