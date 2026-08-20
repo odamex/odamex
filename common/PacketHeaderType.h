@@ -47,6 +47,8 @@ struct PacketHeaderType
 	uint16_t reliableSize;
 	uint16_t flags;
 
+	bool operator==(const PacketHeaderType& other) const = default;
+
 	explicit PacketHeaderType(int32_t i_sequence) :
 		sequence        (i_sequence),
 		originatorTic   (-1),
