@@ -35,10 +35,10 @@ concept Enum = std::is_enum_v<T>;
 // C++23's std::is_scoped_enum
 template <typename T>
 inline constexpr bool is_scoped_enum_v = [](){
-	if constexpr (not std::is_enum_v<T>)
-		return false;
-	else
+	if constexpr (std::is_enum_v<T>)
 		return not std::is_convertible_v<T, std::underlying_type_t<T>>;
+
+	return false;
 }();
 
 template <typename T>
