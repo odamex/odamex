@@ -359,13 +359,6 @@ constexpr flag_combo<E> combo(const flag_set<E> s) noexcept
 
 template <FlagEnum E>
 [[nodiscard]]
-constexpr flag_mask<E> mask(const E e) noexcept
-{
-	return flag_mask<E>{e};
-}
-
-template <FlagEnum E>
-[[nodiscard]]
 constexpr flag_mask<E> mask(const flag_combo<E> s) noexcept
 {
 	return flag_mask<E>{s};
@@ -469,6 +462,13 @@ template <flags_detail::FlagEnum E>
 constexpr flags_detail::flag_combo<E> operator|(const E e1, const E e2) noexcept
 {
 	return flags_detail::flag_combo<E>{e1} | e2;
+}
+
+template <flags_detail::FlagEnum E>
+[[nodiscard]]
+constexpr flags_detail::flag_mask<E> mask(const E e) noexcept
+{
+	return flags_detail::flag_mask<E>{e};
 }
 
 template <flags_detail::FlagEnum E>
