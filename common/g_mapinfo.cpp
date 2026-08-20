@@ -666,43 +666,59 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, level_pwad_info_t& info)
 }
 
 // Sets a flag
-void MIType_SetFlag(OScanner& /*os*/, bool /*newStyleMapInfo*/, uint32_t& out, uint32_t bits)
+struct MIType_SetFlag_t
 {
-	out |= bits;
-}
+	template <typename F>
+	void operator()(OScanner& /*os*/, bool /*newStyleMapInfo*/, F& out, F bits) const
+	{
+		out |= bits;
+	}
+};
+inline constexpr MIType_SetFlag_t MIType_SetFlag{};
 
 // Sets a compatibility flag for maps
-void MIType_CompatFlag(OScanner& os, bool /*newStyleMapInfo*/, uint32_t& out, uint32_t bits)
+struct MIType_CompatFlag_t
 {
-	os.scan();
-	if (os.compareToken("="))
+	template <typename F>
+	void operator()(OScanner& os, bool /*newStyleMapInfo*/, F& out, F bits) const
 	{
-		os.mustScanInt();
-		if (os.getTokenInt())
-			out |= bits;
-		else
-			out &= ~bits;
-	}
-	else
-	{
-		if (IsNum(os.getToken().c_str()))
+		os.scan();
+		if (os.compareToken("="))
 		{
-			out |= os.getTokenInt() ? bits : 0;
+			os.mustScanInt();
+			if (os.getTokenInt())
+				out |= bits;
+			else
+				out &= ~bits;
 		}
 		else
 		{
-			os.unScan();
-			out |= bits;
+			if (IsNum(os.getToken().c_str()))
+			{
+				if (os.getTokenInt())
+					out |= bits;
+			}
+			else
+			{
+				os.unScan();
+				out |= bits;
+			}
 		}
 	}
-}
+};
+inline constexpr MIType_CompatFlag_t MIType_CompatFlag{};
 
 // Sets an SC flag, clearing whichever bits the key supersedes
-void MIType_SCFlags(OScanner& /*os*/, bool /*newStyleMapInfo*/, uint32_t& out, uint32_t bits,
-                    uint32_t keepmask)
+struct MIType_SCFlags_t
 {
-	out = (out & keepmask) | bits;
-}
+	template <typename F>
+	void operator()(OScanner& /*os*/, bool /*newStyleMapInfo*/, F& out, F bits,
+	                F keepmask) const
+	{
+		out = (out & keepmask) | bits;
+	}
+};
+inline constexpr MIType_SCFlags_t MIType_SCFlags{};
 
 // Sets a cluster
 void MIType_Cluster(OScanner& os, bool newStyleMapInfo, int& out)
@@ -1129,6 +1145,20 @@ struct MapInfoData
 	{
 	}
 
+	// A setter written as a generic callable, for setters that accept more than one
+	// destination type (the flag setters).
+	template <typename Fn, typename T, typename... Args>
+	    requires(!std::is_pointer_v<Fn>) &&
+	                std::invocable<const Fn&, OScanner&, bool, T&, Args...>
+	MapInfoData(const char* _name, Fn _fn, T& _ref, Args... _args)
+	    : name(_name), fn([_fn, &_ref, _bound = std::tuple<Args...>(_args...)](
+	                          OScanner& os, bool newStyleMapInfo) {
+		      std::apply([&](Args... a) { _fn(os, newStyleMapInfo, _ref, a...); },
+		                 _bound);
+	      })
+	{
+	}
+
 	// A setter bound to the field it writes.
 	template <typename T, typename... Args>
 	MapInfoData(const char* _name, void (*_fn)(OScanner&, bool, T&, Args...), T& _ref,
@@ -1231,15 +1261,15 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "translator", MIType_EatNext },
 			{ "compat_shorttex", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_SHORTTEX },
 			{ "compat_limitpain", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_LIMITPAIN },
-			{ "compat_useblocking", MIType_CompatFlag, ref.flags, 0 }, // special lines block use (not implemented, default odamex behavior)
-			{ "compat_missileclip", MIType_CompatFlag, ref.flags, 0 }, // original height monsters when it comes to missiles (not implemented)
+			{ "compat_useblocking", MIType_CompatFlag, ref.flags, levelFlags_t() }, // special lines block use (not implemented, default odamex behavior)
+			{ "compat_missileclip", MIType_CompatFlag, ref.flags, levelFlags_t() }, // original height monsters when it comes to missiles (not implemented)
 			{ "compat_dropoff", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_DROPOFF }, // todo: not implemented
 			{ "compat_crossdropoff", MIType_CompatFlag, ref.flags2, LEVEL2_COMPAT_CROSSDROPOFF },
-			{ "compat_trace", MIType_CompatFlag, ref.flags, 0 }, // todo: not implemented
-			{ "compat_boomscroll", MIType_CompatFlag, ref.flags, 0 }, // todo: not implemented
-			{ "compat_sectorsounds", MIType_CompatFlag, ref.flags, 0 }, // todo: not implemented
+			{ "compat_trace", MIType_CompatFlag, ref.flags, levelFlags_t() }, // todo: not implemented
+			{ "compat_boomscroll", MIType_CompatFlag, ref.flags, levelFlags_t() }, // todo: not implemented
+			{ "compat_sectorsounds", MIType_CompatFlag, ref.flags, levelFlags_t() }, // todo: not implemented
 			{ "compat_nopassover", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_NOPASSOVER },
-			{ "compat_invisibility", MIType_CompatFlag, ref.flags, 0 },  // todo: not implemented
+			{ "compat_invisibility", MIType_CompatFlag, ref.flags, levelFlags_t() },  // todo: not implemented
 			{ "author", MIType_Author, ref },
 			{ "normalinfighting", MIType_SCFlags, ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "noinfighting", MIType_SCFlags, ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
@@ -1751,7 +1781,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		}
 		else if (os.compareTokenNoCase("map"))
 		{
-			uint32_t& levelflags = defaultinfo.flags;
+			levelFlags_t& levelflags = defaultinfo.flags;
 			os.mustScan();
 
 			OLumpName map_name = os.getToken();
