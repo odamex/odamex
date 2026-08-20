@@ -303,7 +303,7 @@ using enum mapthingflag_t;
 
 consteval mapthingflag_t enable_bitflag_operators(mapthingflag_t) { return BTF_RESERVED; };
 
-inline constexpr auto BTF_RESERVED_MASK = ~(BTF_EASY|BTF_MEDIUM|BTF_HARD|BTF_AMBUSH|BTF_NOTSINGLE);
+inline constexpr auto BTF_RESERVED_MASK = mask(BTF_EASY|BTF_MEDIUM|BTF_HARD|BTF_AMBUSH|BTF_NOTSINGLE);
 
 // Thing definition, position, orientation and type,
 // plus skill/visibility flags and attributes.
