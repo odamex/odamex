@@ -3812,7 +3812,7 @@ void A_BossDeath(AActor *actor)
 			if ((ba.type == actor->type) || (ba.flags & actor->flags3))
 			{
 				// TODO: if a standardized line special for massacre is introduced, use that instead
-				if (ba.special == 280)
+				if (ba.special == BOSSACTION_MASSACRE)
 				{
 					P_Massacre();
 					continue;

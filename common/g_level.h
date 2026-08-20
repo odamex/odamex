@@ -99,6 +99,14 @@ constexpr static levelFlags_t LEVEL2_COMPAT_CROSSDROPOFF = BIT(18);
 struct acsdefered_t;
 class FBehavior;
 
+// Sector tags the boss actions operate on.
+constexpr int16_t BOSSACTION_TAG = 666;
+constexpr int16_t BOSSACTION_TAG_ALT = 667;
+
+// UMAPINFO magic number to indicate that a
+// boss action should kill all monsters.
+constexpr int16_t BOSSACTION_MASSACRE = 280;
+
 struct bossaction_t
 {
 	int32_t type    = MT_NULL;
