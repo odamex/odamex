@@ -293,7 +293,7 @@ bool G_CheckSpot (player_t &player, const mapthing2_t& mthing)
 	//    return false;
 
 	player.mo->flags |=  MF_SOLID;
-	bool valid_position = P_CheckPosition(player.mo, x, y);
+	const bool valid_position = P_CheckPosition(player.mo, x, y, true);
 	player.mo->flags &= ~MF_SOLID;
 	player.mo->z = oldz;	// [RH] Restore corpse's height
 	if (!valid_position)

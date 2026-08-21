@@ -1018,7 +1018,7 @@ bool P_TestMobjLocation (AActor *mobj)
 //	numspeciallines
 //  AActor *BlockingMobj = pointer to thing that blocked position (NULL if not
 //   blocked, or blocked by a line).
-bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
+bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 {
 	AActor *thingblocker = NULL;
 	fixed_t realheight = thing->height;
@@ -1045,7 +1045,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	tmy = y;
 	ceilingline = BlockingLine = NULL;
 
-	validcount++;
+  // dont increment this when spawning, bc not using P_BlockLinesIterator
+  if (not isSpawnCheck || demoplayback)
+	  validcount++;
+
 	spechit.clear();
 
 	if (tmflags & MF_NOCLIP && !(tmflags & MF_SKULLFLY))
@@ -1141,23 +1144,28 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 			return true;
 	}
 
-	// check lines
-	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+	// skip this during a spawn check (player is not moving)
+	// allows spawns that are touching blocking lines to work
+	if (not isSpawnCheck || demoplayback)
+	{
+		// check lines
+		xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
+		xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
+		yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
+		yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
 
-	// from mbf, allows players to get unstuck if they end up spawned
-	// partially inside a wall or blocking line
-	// i think this is safe to enable always (except for demo playback of course)
-	// but if it turns out to cause issues with vanilla or boom maps,
-	// we should change it to rely on co_mbfphys
-	const bool tmunstuck = (thing->player != nullptr) && !P_IsVoodooDoll(thing) && !demoplayback;
+		// from mbf, allows players to get unstuck if they end up spawned
+		// partially inside a wall or blocking line
+		// i think this is safe to enable always (except for demo playback of course)
+		// but if it turns out to cause issues with vanilla or boom maps,
+		// we should change it to rely on co_mbfphys
+		const bool tmunstuck = (thing->player != nullptr) && !P_IsVoodooDoll(thing) && !demoplayback;
 
-	for (int bx=xl ; bx<=xh ; bx++)
-		for (int by=yl ; by<=yh ; by++)
-			if (!P_BlockLinesIterator (bx,by,PIT_CheckLine, tmunstuck))
-				return false;
+		for (int bx = xl; bx <= xh; bx++)
+			for (int by = yl; by <= yh; by++)
+				if (!P_BlockLinesIterator(bx, by, PIT_CheckLine, tmunstuck))
+					return false;
+	}
 
 	if (P_AllowPassover())
 		return (BlockingMobj = thingblocker) == NULL;
