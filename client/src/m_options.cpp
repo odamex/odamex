@@ -510,8 +510,8 @@ static menuitem_t MouseItems[] =
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ discrete,	"Horizontal Movement"			, {&lookstrafe},		{2.0},	{0.0},		{0.0},		{OnOff}},
 	{ discrete,	"Vertical Movement"				, {&novert},			{2.0},	{0.0},		{0.0},		{OffOn}},
-	{ slider,	"Horizontal Movement Speed"		, {&m_side},			{0.0},	{15},		{0.5},		{NULL}},
-	{ slider,	"Vertical Movement Speed"		, {&m_forward},			{0.0},	{15},		{0.5},		{NULL}},
+	{ slider,	"Horizontal Movement Spd."		, {&m_side},			{0.0},	{15},		{0.5},		{NULL}},
+	{ slider,	"Vertical Movement Spd."		, {&m_forward},			{0.0},	{15},		{0.5},		{NULL}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
 	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{(value_t *)M_ResetMouseValues}},
 };
