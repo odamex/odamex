@@ -111,24 +111,32 @@ struct SpreeBreaker_t
 	int endedPoints;
 
 	int spreeEndedTic;
+
+	int spreeEndedLevel;
+
+	SpreeBreakerType spreeEndedType;
+
 	SpreeBreaker_t()
 	    : spreeEndedName(""), spreeEndedPlayerId(-1), spreeEndedTeam(TEAM_NONE),
 	      spreeEnderName(""), spreeEnderPlayerId(-1), spreeEnderTeam(TEAM_NONE),
 	      spreeEndedBroadcastText(""), spreeEnded(""), spreeEndedColor(CR_GRAY),
-	      spreeEnderMonster(false), endedPoints(0), spreeEndedTic(0)
+	      spreeEnderMonster(false), endedPoints(0), spreeEndedTic(0),
+	      spreeEndedLevel(-1), spreeEndedType(BR_SELF)
 	{
 	}
 	SpreeBreaker_t(
 			std::string SpreeEndedName, int SpreeEndedPlayerId, team_t SpreeEndedTeam,
 			std::string SpreeEnderName, int SpreeEnderPlayerId, team_t SpreeEnderTeam,
 			std::string SpreeEndedBroadcastText, std::string SpreeEnded, EColorRange SpreeEndedColor,
-			bool SpreeEnderMonster, int EndedPoints, int SpreeEndedTic)
+			bool SpreeEnderMonster, int EndedPoints, int SpreeEndedTic,
+			int SpreeEndedLevel, SpreeBreakerType BreakerType)
 	    : spreeEndedName(SpreeEndedName), spreeEndedPlayerId(SpreeEndedPlayerId),
 	      spreeEndedTeam(SpreeEndedTeam), spreeEnderName(SpreeEnderName),
 	      spreeEnderPlayerId(SpreeEnderPlayerId), spreeEnderTeam(SpreeEnderTeam),
 	      spreeEndedBroadcastText(SpreeEndedBroadcastText), spreeEnded(SpreeEnded),
 	      spreeEndedColor(SpreeEndedColor), spreeEnderMonster(SpreeEnderMonster),
-	      endedPoints(EndedPoints), spreeEndedTic(SpreeEndedTic)
+	      endedPoints(EndedPoints), spreeEndedTic(SpreeEndedTic), spreeEndedLevel(SpreeEndedLevel),
+	      spreeEndedType(BreakerType)
 	{
 	}
 };
@@ -271,10 +279,12 @@ public:
 	/// <param name="breaker">A generated spreeBreaker_t struct.</param>
 	/// <param name="level">The spree level the player was on when their spree ended.</param>
 	/// <param name="type">Type of spree breaker.</param>
+	/// <param name="ticsAgo">How many tics ago the spree was broken.</param>
 	void setRawSpreeBreaker(
 	    const SpreeBreaker_t& breaker,
 			const int level,
-	    const SpreeBreakerType type);
+	    const SpreeBreakerType type,
+	    const int ticsAgo);
 
 	/// <summary>
 	/// Sets a raw state of a player's spree.
@@ -283,9 +293,9 @@ public:
 	/// </summary>
 	/// <param name="playerId">Player ID of the player to set the spree.</param>
 	/// <param name="newSpreeLevel">New level of spree to </param>
-	/// <param name="tic">Tic the spree level was achieved on.</param>
+	/// <param name="ticsAgo">How many tics ago the spree level was achieved.</param>
 	/// <returns>True if the update resulted in an upgraded spree level.</returns>
-	bool setRawSpree(const int playerId, const int newSpreeLevel);
+	bool setRawSpree(const int playerId, const int newSpreeLevel, const int ticsAgo);
 
 	/// <summary>
 	/// Checks if the user has a current spree active.
@@ -317,6 +327,12 @@ public:
 	/// <param name="playerid">Player ID of the player to get points for.</param>
 	/// <returns>Amount of points for the specified player.</returns>
 	int getPoints(const int playerid);
+
+	/// <summary>
+	/// Gets every active spree record, keyed by player ID.
+	/// </summary>
+	/// <returns>All current spree records.</returns>
+	[[nodiscard]] const std::unordered_map<int, SpreeRecord_t>& getSpreeRecords() const;
 
 	/// <summary>
 	/// Reads or writes every active spree and the last spree breaker.

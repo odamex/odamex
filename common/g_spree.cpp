@@ -142,7 +142,9 @@ const SpreeBreaker_t& SpreeManager::getSpreeBreaker()
 	return spreeBreaker;
 }
 
-void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType)
+void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int level,
+                                      const SpreeBreakerType breakerType,
+                                      const int ticsAgo)
 {
 	player_t& victim = idplayer(breaker.spreeEndedPlayerId);
 	SpreeBreaker_t newbreaker = breaker;
@@ -151,7 +153,9 @@ void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int l
 	// breaker using the name the server sent us, just without a team color.
 	newbreaker.spreeEndedTeam = validplayer(victim) ? victim.userinfo.team : TEAM_NONE;
 	newbreaker.spreeEnderTeam = TEAM_NONE;
-	newbreaker.spreeEndedTic = ::gametic;
+	newbreaker.spreeEndedTic = ::gametic - ticsAgo;
+	newbreaker.spreeEndedLevel = level;
+	newbreaker.spreeEndedType = breakerType;
 
 	Spree_s spreeLevel = getSpreeLevel(level);
 
@@ -267,17 +271,16 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 
 	                         broadcastText,   spreeEnded,    spreeEndedColor,
 
-	                         enderIsMonster,
+	                         enderIsMonster,   points,       ::gametic,
 
-	                         points,
+	                         level,            type};
 
-	                         ::gametic};
 
 	#ifdef SERVER_APP
 	if (sv_showsprees)
 	{
 		// Broadcast to all clients
-		MSG_BroadcastSVC(CLBUF_NET, SVC_SpreeBreaker(breaker, level, type), -1);
+		MSG_BroadcastSVC(CLBUF_NET, SVC_SpreeBreaker(breaker, level, type, 0), -1);
 	}
 	#endif
 
@@ -390,7 +393,7 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 		if (sv_showsprees)
 		{
 			// Broadcast to all clients
-			MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(newRecord), -1);
+			MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(newRecord, 0), -1);
 		}
 #endif
 		return true;
@@ -419,7 +422,7 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 			if (sv_showsprees)
 			{
 				// Broadcast to all clients
-				MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(record), -1);
+				MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(record, 0), -1);
 			}
 #endif
 			return true;
@@ -429,7 +432,8 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 	return false;
 }
 
-bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel)
+bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel,
+                               const int ticsAgo)
 {
 	if (newSpreeLevel <= -1)
 		return false;
@@ -439,7 +443,13 @@ bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel)
 	if (!validplayer(player))
 		return false;
 
-	return checkForSpreeUpdates(playerId, player.userinfo.netname, newSpreeLevel, ::gametic);
+	return checkForSpreeUpdates(playerId, player.userinfo.netname, newSpreeLevel,
+	                            ::gametic - ticsAgo);
+}
+
+const std::unordered_map<int, SpreeRecord_t>& SpreeManager::getSpreeRecords() const
+{
+	return spreeRecord;
 }
 
 const SpreeRecord_t& SpreeManager::getSpreeRecord(const int playerId)
@@ -640,7 +650,8 @@ void SpreeManager::serialize(FArchive& arc)
 		    << spreeBreaker.spreeEnderPlayerId << spreeBreaker.spreeEnderTeam
 		    << spreeBreaker.spreeEndedBroadcastText << spreeBreaker.spreeEnded
 		    << spreeBreaker.spreeEndedColor << spreeBreaker.spreeEnderMonster
-		    << spreeBreaker.endedPoints << spreeBreaker.spreeEndedTic;
+		    << spreeBreaker.endedPoints << spreeBreaker.spreeEndedTic
+		    << spreeBreaker.spreeEndedLevel << spreeBreaker.spreeEndedType;
 	}
 	else
 	{
@@ -665,7 +676,8 @@ void SpreeManager::serialize(FArchive& arc)
 		    spreeBreaker.spreeEnderPlayerId >> spreeBreaker.spreeEnderTeam >>
 		    spreeBreaker.spreeEndedBroadcastText >> spreeBreaker.spreeEnded >>
 		    spreeBreaker.spreeEndedColor >> spreeBreaker.spreeEnderMonster >>
-		    spreeBreaker.endedPoints >> spreeBreaker.spreeEndedTic;
+		    spreeBreaker.endedPoints >> spreeBreaker.spreeEndedTic >>
+		    spreeBreaker.spreeEndedLevel >> spreeBreaker.spreeEndedType;
 	}
 }
 
