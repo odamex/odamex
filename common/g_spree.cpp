@@ -32,6 +32,7 @@
 #include "g_spree.h"
 #include "m_ostring.h"
 #include "g_gametype.h"
+#include "p_inter.h"
 #include "farchive.h"
 #include "infomap.h"
 #include "svc_message.h"
@@ -748,7 +749,8 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 	}
 }
 
-void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
+void P_ProcessSpreeDamage(const player_t* source, const AActor* target,
+                          const int totalDamage)
 {
 	if (clientside && network_game)
 		return;
@@ -761,6 +763,11 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 	// Check for spree interval, update the spree map with updates
 	// If the gamemode is coop
 	if (!G_IsCoopGame())
+		return;
+
+	// Chipping away at our own friendly monsters doesn't count, the same way killing a
+	// teammate doesn't count towards a kill spree or multi kill.
+	if (P_IsFriendlyDamage(source, target))
 		return;
 
 	bool update = manager.recordPlayerDamage(source, totalDamage);
@@ -784,6 +791,53 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 		// Play the announcer sound for the new multi kill
 		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
 	}
+}
+
+SpreeHudLines_t P_GetSpreeHudLines(const int displayPlayerId)
+{
+	SpreeManager& manager = SpreeManager::getInstance();
+	SpreeHudLines_t lines;
+
+	// A spree for the player we're watching is the big line, and is never echoed on
+	// the small line. Repeats of the top level are the one exception - those are only
+	// ever announced small.
+	const SpreeRecord_t& ownSpree = manager.getSpreeRecord(displayPlayerId);
+	const bool hasOwnSpree = ownSpree.playerId != -1;
+
+	int smallTic = -1;
+
+	if (hasOwnSpree)
+	{
+		if (ownSpree.stillDominating)
+		{
+			lines.smallSpree = &ownSpree;
+			smallTic = ownSpree.spreeStartTic;
+		}
+		else
+		{
+			lines.bigSpree = &ownSpree;
+		}
+	}
+
+	// The small line only has room for one message, so take the latest of whichever of
+	// our own repeated spree, another player's spree, or the last spree breaker.
+	const SpreeRecord_t& otherSpree = manager.getLatestSpreeRecord(displayPlayerId);
+
+	if (otherSpree.playerId != -1 && otherSpree.spreeStartTic > smallTic)
+	{
+		lines.smallSpree = &otherSpree;
+		smallTic = otherSpree.spreeStartTic;
+	}
+
+	const SpreeBreaker_t& breaker = manager.getSpreeBreaker();
+
+	if (breaker.spreeEndedPlayerId != -1 && breaker.spreeEndedTic > smallTic)
+	{
+		lines.smallSpree = nullptr;
+		lines.smallBreaker = &breaker;
+	}
+
+	return lines;
 }
 
 void P_TicSprees()

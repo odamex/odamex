@@ -499,8 +499,44 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target);
 /// Also, remove any spree from a player who was killed, and process any spree breakers.
 /// </summary>
 /// <param name="source">The damager (must be a player)</param>
+/// <param name="target">The thing being damaged, so friendly monsters can be skipped.</param>
 /// <param name="totalDamage">The total damage dealt during this event.</param>
-void P_ProcessSpreeDamage(const player_t* source, const int totalDamage);
+void P_ProcessSpreeDamage(const player_t* source, const AActor* target,
+                          const int totalDamage);
+
+/// <summary>
+/// What the spree HUD should draw, resolved from the current spree records and the
+/// last spree breaker. Kept apart from the drawing so the rules can be tested.
+/// </summary>
+struct SpreeHudLines_t
+{
+	/// <summary>
+	/// Spree to draw as the big line, or null for none.
+	/// </summary>
+	const SpreeRecord_t* bigSpree = nullptr;
+
+	/// <summary>
+	/// Spree to draw on the small line, or null for none.
+	/// </summary>
+	const SpreeRecord_t* smallSpree = nullptr;
+
+	/// <summary>
+	/// Spree breaker to draw on the small line, or null for none. Takes the small line
+	/// over smallSpree when both are set.
+	/// </summary>
+	const SpreeBreaker_t* smallBreaker = nullptr;
+};
+
+/// <summary>
+/// Works out which sprees the HUD should be showing for a given player.
+/// <br />
+/// The watched player's own spree is the big line and is never echoed small, except a
+/// repeat of the top level, which only ever goes small. The small line holds whichever
+/// of that repeat, another player's spree and the last spree breaker happened last.
+/// </summary>
+/// <param name="displayPlayerId">ID of the player being watched.</param>
+/// <returns>The lines to draw, any of which may be null.</returns>
+SpreeHudLines_t P_GetSpreeHudLines(const int displayPlayerId);
 
 /// <summary>
 /// Handles internal ticking for spree bookkeeping.

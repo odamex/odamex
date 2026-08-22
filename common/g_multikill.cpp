@@ -95,15 +95,12 @@ int MultiKillManager::getHighestMultiKillLevel()
 
 const MultiKillLevel_s& MultiKillManager::getMultiKillLevel(const int level)
 {
-	int newlevel = level;
-	if (getHighestMultiKillLevel() <= 0)
+	const int highest = getHighestMultiKillLevel();
+
+	if (highest <= 0 || level < 0)
 		return emptyLevel;
 
-
-	if (level >= multiKillLevels.size())
-		newlevel = multiKillLevels.size() - 1;
-
-	return multiKillLevels.at(newlevel);
+	return multiKillLevels.at(level > highest ? highest : level);
 }
 
 void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills,

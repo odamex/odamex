@@ -176,16 +176,14 @@ static void ParseSpreeText(OScanner& os, std::string& text, std::string token)
 	text = GStrings.maybeLookup(newText);
 }
 
-static void ParseSpreeDef(const int lump, const OLumpName name)
+void G_ParseSpreeDefBuffer(const char* buffer, const size_t length)
 {
-	const char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
-
 	const OScannerConfig config = {
 	    "SPREEDEF", // lumpName
 	    false,      // semiComments
 	    true,       // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + length);
 
 	// Reset everything before parsing
 	MultiKillManager::getInstance().reset();
@@ -311,6 +309,7 @@ void G_ParseSpreeDef()
 
 	while ((lump = W_FindLump("SPREEDEF", lump)) != -1)
 	{
-		ParseSpreeDef(lump, "SPREEDEF");
+		const char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
+		G_ParseSpreeDefBuffer(buffer, W_LumpLength(lump));
 	}
 }

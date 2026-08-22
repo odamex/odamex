@@ -1618,57 +1618,20 @@ void SpreeHud()
 		return;
 	}
 
-	static SpreeManager& manager = SpreeManager::getInstance();
+	const SpreeHudLines_t lines = P_GetSpreeHudLines(displayplayer().id);
 
-	const player_t& p = displayplayer();
-
-	// A spree for the player we're watching is the big line, and is never echoed on
-	// the small line. Repeats of the top level are the one exception - those are only
-	// ever announced small.
-	const SpreeRecord_t& spree_r = manager.getSpreeRecord(p.id);
-	const bool has_own_spree = spree_r.playerId != -1;
-
-	if (has_own_spree && !spree_r.stillDominating)
+	if (lines.bigSpree)
 	{
-		DisplayBigSpree(spree_r);
+		DisplayBigSpree(*lines.bigSpree);
 	}
 
-	// The small line only has room for one message, so take the latest of
-	// whichever of our own repeated spree, another player's spree, or the last
-	// spree breaker.
-	const SpreeRecord_t& other_spree_r = manager.getLatestSpreeRecord(p.id);
-	const SpreeBreaker_t& global_spree_breaker = manager.getSpreeBreaker();
-
-	const SpreeRecord_t* small_spree = nullptr;
-	const SpreeBreaker_t* small_breaker = nullptr;
-	int small_tic = -1;
-
-	if (has_own_spree && spree_r.stillDominating)
+	if (lines.smallBreaker)
 	{
-		small_spree = &spree_r;
-		small_tic = spree_r.spreeStartTic;
+		DisplaySmallSpreeBreaker(*lines.smallBreaker);
 	}
-
-	if (other_spree_r.playerId != -1 && other_spree_r.spreeStartTic > small_tic)
+	else if (lines.smallSpree)
 	{
-		small_spree = &other_spree_r;
-		small_tic = other_spree_r.spreeStartTic;
-	}
-
-	if (global_spree_breaker.spreeEndedPlayerId != -1 &&
-	    global_spree_breaker.spreeEndedTic > small_tic)
-	{
-		small_spree = nullptr;
-		small_breaker = &global_spree_breaker;
-	}
-
-	if (small_breaker)
-	{
-		DisplaySmallSpreeBreaker(*small_breaker);
-	}
-	else if (small_spree)
-	{
-		DisplaySmallSpree(*small_spree);
+		DisplaySmallSpree(*lines.smallSpree);
 	}
 }
 

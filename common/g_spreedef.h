@@ -28,3 +28,11 @@
 /// the spree and multi kill managers.
 /// </summary>
 void G_ParseSpreeDef();
+
+/// <summary>
+/// Parses a single SPREEDEF from a raw buffer. Errors out through I_Error on anything
+/// malformed, as lump parsing does.
+/// </summary>
+/// <param name="buffer">Start of the SPREEDEF text.</param>
+/// <param name="length">Length of the SPREEDEF text.</param>
+void G_ParseSpreeDefBuffer(const char* buffer, const size_t length);

@@ -205,6 +205,12 @@ bool P_GiveMonsterDamage(player_t& player, int num)
 	return true;
 }
 
+bool P_IsFriendlyDamage(const player_t* source, const AActor* target)
+{
+	return source && target && target->IsFriendly() && source->mo &&
+	       P_IsFriendlyThing(source->mo, target);
+}
+
 // Give a specific number of points to a player's team
 bool P_GiveTeamPoints(const player_t& player, int num)
 {
@@ -2441,14 +2447,14 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			P_AddDamagePool(target, actualdamage);
 
 			target->health -= damage; // do the damage to monsters.
-			if (splayer)
+			if (splayer && !P_IsFriendlyDamage(splayer, target))
 			{
 				if (target->health < 0)
 				{
 					if (P_GiveMonsterDamage(*splayer, damage + target->health))
 					{
 						PersistPlayerDamage(*splayer);
-						P_ProcessSpreeDamage(splayer, damage + target->health);
+						P_ProcessSpreeDamage(splayer, target, damage + target->health);
 					}
 				}
 				else
@@ -2456,7 +2462,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 					if (P_GiveMonsterDamage(*splayer, damage))
 					{
 						PersistPlayerDamage(*splayer);
-						P_ProcessSpreeDamage(splayer, damage);
+						P_ProcessSpreeDamage(splayer, target, damage);
 					}
 				}
 			}
