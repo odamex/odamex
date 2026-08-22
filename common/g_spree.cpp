@@ -117,15 +117,12 @@ int SpreeManager::getHighestSpreeLevel()
 
 const Spree_s& SpreeManager::getSpreeLevel(const int level)
 {
-	int newlevel = level;
+	const int highest = getHighestSpreeLevel();
 
-	if (getHighestSpreeLevel() <= -1)
+	if (highest <= -1 || level < 0)
 		return emptySpree;
 
-	if (level >= spreeLevels.size())
-		newlevel = spreeLevels.size() - 1;
-
-	return spreeLevels.at(newlevel);
+	return spreeLevels.at(level > highest ? highest : level);
 }
 
 void SpreeManager::setSpreeLevels(const NewSprees_s& newSprees)
@@ -149,10 +146,9 @@ void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int l
 	player_t& victim = idplayer(breaker.spreeEndedPlayerId);
 	SpreeBreaker_t newbreaker = breaker;
 
-	if (!validplayer(victim))
-		return;
-
-	newbreaker.spreeEndedTeam = victim.userinfo.team;
+	// The victim may have already disconnected, in which case we still show the
+	// breaker using the name the server sent us, just without a team color.
+	newbreaker.spreeEndedTeam = validplayer(victim) ? victim.userinfo.team : TEAM_NONE;
 	newbreaker.spreeEnderTeam = TEAM_NONE;
 	newbreaker.spreeEndedTic = ::gametic;
 
@@ -167,6 +163,9 @@ void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int l
 		case BR_SELF:
 				newbreaker.spreeEndedBroadcastText = spreeEndSelf;
 				newbreaker.spreeEnderMonster = false;
+
+				// The ender is the victim, so they share the same team.
+				newbreaker.spreeEnderTeam = newbreaker.spreeEndedTeam;
 		break;
 	  case BR_PLAYER: {
 				newbreaker.spreeEndedBroadcastText = spreeEndPlayer;
@@ -237,6 +236,7 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	{
 		enderName = endedPlayerName;
 		enderPlayerId = endedPlayerId;
+		enderTeam = endedTeam;
 		broadcastText = spreeEndSelf;
 		type = BR_SELF;
 	}
@@ -244,13 +244,14 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	{
 		enderName = source->player->userinfo.netname;
 		enderPlayerId = source->player->id;
-		team_t enderTeam = source->player->userinfo.team;
+		enderTeam = source->player->userinfo.team;
 		broadcastText = spreeEndPlayer;
 		type = BR_PLAYER;
 	}
 	else // potential monster
 	{
 		enderName = source->info->getDisplayName();
+		enderPlayerId = -1;
 		enderIsMonster = true;
 		broadcastText = spreeEndMonster;
 		type = BR_MONSTER;
@@ -370,11 +371,15 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 		SpreeRecord_t newRecord;
 		newRecord.playerId = playerId;
 		newRecord.playerName = playerName;
-		newRecord.spreeLevel =
-		    newSpreeLevel > maxSpreeLevel ? maxSpreeLevel : newSpreeLevel;
-		newRecord.spree = getSpreeLevel(newRecord.spreeLevel);
+		newRecord.spreeLevel = newSpreeLevel;
+		newRecord.spree = getSpreeLevel(newSpreeLevel);
 		newRecord.spreeStartTic = tic;
-		newRecord.stillDominating = false;
+		newRecord.stillDominating = newSpreeLevel > maxSpreeLevel;
+
+		if (newRecord.stillDominating)
+		{
+			newRecord.spree.spreeBroadcastText = repeatingSpreeText;
+		}
 
 		// Apply sexmessage to the broadcast text
 		setSpreeRecordLanguage(newRecord, playerId);

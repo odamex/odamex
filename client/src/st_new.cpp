@@ -138,6 +138,9 @@ EXTERN_CVAR(g_preroundreset)
 EXTERN_CVAR(cl_showsprees)
 EXTERN_CVAR(cl_showofflinesprees)
 EXTERN_CVAR(sv_showsprees)
+EXTERN_CVAR(cl_showmultikills)
+EXTERN_CVAR(cl_showofflinemultikills)
+EXTERN_CVAR(sv_showmultikills)
 
 void ST_unloadNew()
 {
@@ -1431,19 +1434,20 @@ struct smallSpreeLine_t
 
 static float lucentFade(int tics, const int start, const int end)
 {
+	// A negative tic count means the event hasn't happened yet - we rewound a netdemo
+	// past it.
+	if (tics < 0 || tics >= end)
+	{
+		return 0.0f;
+	}
+
 	if (tics < start)
 	{
 		return 1.0f;
 	}
-	else if (tics < end)
-	{
-		tics %= TICRATE;
-		return static_cast<float>(TICRATE - tics) / TICRATE;
-	}
-	else
-	{
-		return 0.0f;
-	}
+
+	tics %= TICRATE;
+	return static_cast<float>(TICRATE - tics) / TICRATE;
 }
 
 static void LevelStateHorde(levelStateLines_t& lines)
@@ -1510,6 +1514,9 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	lines.lucent = lucentFade(tics, TICRATE * 3, TICRATE * 4);
 }
 
+namespace
+{
+
 void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 {
 	smallSpreeLine_t line;
@@ -1522,7 +1529,8 @@ void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
 	int h = 8 * CleanYfac;
 
-	line.lucent = lucentFade(::gametic - breaker.spreeEndedTic, TICRATE * 3, TICRATE * 4);
+	line.lucent =
+	    lucentFade(::gametic - breaker.spreeEndedTic, SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
 
 	const float oldtrans = ::hud_transparency;
 	::hud_transparency = line.lucent;
@@ -1538,12 +1546,8 @@ void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 	::hud_transparency.ForceSet(oldtrans);
 }
 
-void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
+void DisplayBigSpree(const SpreeRecord_t& record)
 {
-	// We handle "still dominating" sprees elsewhere.
-	if (record.stillDominating)
-		return;
-
 	bigSpreeLine_t line;
 
 	line.spreeText = record.spree.spreeText;
@@ -1555,7 +1559,8 @@ void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
 	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
 
-	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
+	line.lucent =
+	    lucentFade(::gametic - record.spreeStartTic, SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
 
 	const float oldtrans = ::hud_transparency;
 	::hud_transparency = line.lucent;
@@ -1584,7 +1589,8 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
 	int h = 8 * CleanYfac;
 
-	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
+	line.lucent =
+	    lucentFade(::gametic - record.spreeStartTic, SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
 
 	const float oldtrans = ::hud_transparency;
 	::hud_transparency = line.lucent;
@@ -1600,78 +1606,88 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 	::hud_transparency.ForceSet(oldtrans);
 }
 
+} // namespace
+
 void SpreeHud()
 {
 	if (!validplayer(displayplayer()) ||
     !cl_showsprees ||
-    (!cl_showofflinesprees && !network_game) ||
-    (!sv_showsprees && network_game) ||
-    displayplayer().isFreecam)
-  {
-    return;
-  }
+    (!cl_showofflinesprees && !network_game)||
+    (!sv_showsprees && network_game))
+	{
+		return;
+	}
 
 	static SpreeManager& manager = SpreeManager::getInstance();
 
-	// Display the current display player's spree if within time
-	// As big text
 	const player_t& p = displayplayer();
 
+	// A spree for the player we're watching is the big line, and is never echoed on
+	// the small line. Repeats of the top level are the one exception - those are only
+	// ever announced small.
 	const SpreeRecord_t& spree_r = manager.getSpreeRecord(p.id);
+	const bool has_own_spree = spree_r.playerId != -1;
 
-	// Main spree text
-	if (spree_r.playerId != -1 && !spree_r.stillDominating)
+	if (has_own_spree && !spree_r.stillDominating)
 	{
-		DisplayPlayerNormalSpree(spree_r);
+		DisplayBigSpree(spree_r);
 	}
 
-	// If we're not still dominating, check if someone else has a spree.
-	// We'll get the spree breaker as well, to compare and see which one to display.
+	// The small line only has room for one message, so take the latest of
+	// whichever of our own repeated spree, another player's spree, or the last
+	// spree breaker.
 	const SpreeRecord_t& other_spree_r = manager.getLatestSpreeRecord(p.id);
 	const SpreeBreaker_t& global_spree_breaker = manager.getSpreeBreaker();
 
-	int spreeBreakerTic = global_spree_breaker.spreeEndedTic;
-	int spreeTic = other_spree_r.spreeStartTic;
+	const SpreeRecord_t* small_spree = nullptr;
+	const SpreeBreaker_t* small_breaker = nullptr;
+	int small_tic = -1;
 
-	if (spree_r.playerId != -1 && spree_r.stillDominating)
+	if (has_own_spree && spree_r.stillDominating)
 	{
-		// If we're still dominating, we want to show the spree breaker if it's more recent than our spree.
-		if (spreeBreakerTic > spree_r.spreeStartTic)
-		{
-			DisplaySmallSpreeBreaker(global_spree_breaker);
-		}
-		else if (spreeTic > spree_r.spreeStartTic)
-		{
-			DisplaySmallSpree(other_spree_r);
-		}
-		else
-		{
-			DisplaySmallSpree(spree_r);
-		}
+		small_spree = &spree_r;
+		small_tic = spree_r.spreeStartTic;
 	}
-	else
+
+	if (other_spree_r.playerId != -1 && other_spree_r.spreeStartTic > small_tic)
 	{
-		if (spreeBreakerTic > spreeTic)
-		{
-			DisplaySmallSpreeBreaker(global_spree_breaker);
-		}
-		else if (other_spree_r.playerId != -1)
-		{
-			DisplaySmallSpree(other_spree_r);
-		}
+		small_spree = &other_spree_r;
+		small_tic = other_spree_r.spreeStartTic;
+	}
+
+	if (global_spree_breaker.spreeEndedPlayerId != -1 &&
+	    global_spree_breaker.spreeEndedTic > small_tic)
+	{
+		small_spree = nullptr;
+		small_breaker = &global_spree_breaker;
+	}
+
+	if (small_breaker)
+	{
+		DisplaySmallSpreeBreaker(*small_breaker);
+	}
+	else if (small_spree)
+	{
+		DisplaySmallSpree(*small_spree);
 	}
 }
 
 void MultiKillHud()
 {
-	if (!validplayer(displayplayer()) || displayplayer().isFreecam)
+	if (!validplayer(displayplayer()) ||
+    !cl_showmultikills ||
+    (!cl_showofflinemultikills && !network_game) ||
+    (!sv_showmultikills && network_game) ||
+    displayplayer().isFreecam)
+	{
 		return;
+	}
 
 	const player_t& p = displayplayer();
 	const MultiKillTics_s& tics = MultiKillManager::getInstance().getMultiKills(p.id);
 
 	// Display the current display player's multi kills
-	if (tics.multiKills > 1 && ::gametic - tics.lastKillTime < 4 * TICRATE)
+	if (tics.multiKills > 1 && ::gametic - tics.lastKillTime < SPREE_DISPLAY_TICS)
 	{
 		const MultiKillLevel_s& multi =
 		    MultiKillManager::getInstance().getMultiKillLevel(tics.multiKills);
@@ -1687,8 +1703,8 @@ void MultiKillHud()
 		int w = V_StringWidth(line.multiKillText.c_str()) * CleanYfac;
 		int h = 12 * CleanYfac;
 
-		line.lucent = lucentFade(::gametic - tics.lastKillTime,
-			                      TICRATE * 3, TICRATE * 4);
+		line.lucent = lucentFade(::gametic - tics.lastKillTime, SPREE_FADE_TICS,
+			                      SPREE_DISPLAY_TICS);
 
 		const float oldtrans = ::hud_transparency;
 		::hud_transparency = line.lucent;

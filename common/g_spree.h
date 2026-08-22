@@ -33,6 +33,16 @@ void SexMessage(const char* from, char* to, gender_t gender, std::string_view vi
                 std::string_view killer, std::string_view spree);
 
 /// <summary>
+/// The tic a spree, spree breaker or multi kill starts fading out on.
+/// </summary>
+constexpr int SPREE_FADE_TICS = 3 * TICRATE;
+
+/// <summary>
+/// The tic a spree, spree breaker or multi kill stops being displayed.
+/// </summary>
+constexpr int SPREE_DISPLAY_TICS = 4 * TICRATE;
+
+/// <summary>
 /// Type of spree breaker to determine the spree obituary used.
 /// </summary>
 enum SpreeBreakerType
