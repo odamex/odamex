@@ -620,8 +620,6 @@ static bool FindIWAD(OResFile& out)
 	return false;
 }
 
-EXTERN_CVAR(sv_curpwad)
-
 /**
  * @brief Load files that are assumed to be resolved, in the correct order,
  *        and complete.
@@ -640,14 +638,17 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 	::wadfiles = newwadfiles;
 	::patchfiles = newpatchfiles;
 
-	if (::wadfiles.size() < 3) // odamex.wad, iwad, pwad(s)
-	{
-		sv_curpwad.ForceSet("");
-	}
-	else
-	{
-		sv_curpwad.ForceSet(::wadfiles[2].getBasename().c_str());
-	}
+	SERVER_ONLY(
+		EXTERN_CVAR(sv_curpwad)
+		if (::wadfiles.size() < 3) // odamex.wad, iwad, pwad(s)
+		{
+			sv_curpwad.ForceSet("");
+		}
+		else
+		{
+			sv_curpwad.ForceSet(::wadfiles[2].getBasename().c_str());
+		}
+	)
 
 	// Now scan the contents of the IWAD to determine which one it is
 	W_ConfigureGameInfo(::wadfiles.at(1));
