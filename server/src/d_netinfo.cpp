@@ -49,7 +49,7 @@ bool SetServerVar (std::string_view name, const char *value)
 
 void D_SendServerInfoChange (const cvar_t *cvar, const char *value)
 {
-	SetServerVar(cvar->name().c_str(), value);
+	SetServerVar(cvar->name(), value);
 	SV_BroadcastPrintFmt("{}{} has been modified to {}!\n", TEXTCOLOR_YELLOW, cvar->name(), value);
 	SV_ServerSettingChange ();
 }
