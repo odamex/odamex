@@ -62,8 +62,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 	os.mustScanInt();
 	int newLevel = os.getTokenInt();
 
-	if (newLevel <= spreeLevels.size() || newLevel > spreeLevels.size() + 1 ||
-	    newLevel <= 0)
+	if (newLevel < 1 || static_cast<size_t>(newLevel) != spreeLevels.size() + 1)
 		os.error("Spree levels must be defined in ascending order.");
 
 	os.mustScan();
@@ -122,8 +121,7 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 	os.mustScanInt();
 	int newLevel = os.getTokenInt();
 
-	if (newLevel <= multiKillLevels.size() - 1 || newLevel > multiKillLevels.size() + 1 ||
-	    newLevel <= 1)
+	if (newLevel < 2 || static_cast<size_t>(newLevel) != multiKillLevels.size())
 		os.error("Multi kill levels must be defined in ascending order.");
 
 	os.mustScan();
