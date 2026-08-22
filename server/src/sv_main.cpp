@@ -1614,9 +1614,10 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated, AwarenessEnum new
 	return updated;
 }
 
-MessageResultEnum SV_SendPacket(player_t &pl)
+MessageResultEnum SV_SendPacket(player_t& player)
 {
-	return pl.client.messenger->SendAll(gametic, pl.client.address);
+	player.client.messenger->SetDestinationTic(player.tic);
+	return player.client.messenger->SendAll(gametic, player.client.address);
 }
 
 void SV_BroadcastNoiseAlert(const sector_t& sector)

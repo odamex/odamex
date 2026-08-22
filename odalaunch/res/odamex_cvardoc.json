@@ -1741,6 +1741,13 @@
       {
          "default" : false,
          "flags" : [ "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Extended timestamp info in the log file (dd/mm/yyyy hh:mm:ss)",
+         "name" : "log_fulltimestamps",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "Print debugging messages for each packet sent",
          "name" : "log_packetdebug",
          "type" : "boolean"
