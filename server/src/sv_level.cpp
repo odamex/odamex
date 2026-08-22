@@ -377,15 +377,8 @@ void SV_CheckTeam(player_t &pl);
 //
 void G_DoNewGame()
 {
-	for (auto& player : players)
-	{
-		if(!(player.ingame()))
-			continue;
-
-		MSG_WriteSVC(&player.client.reliablebuf,
-		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
-	}
-
+	// Make sure settings changes from startmapscript have happened
+	// before telling clients to load the new map
 	sv_curmap.ForceSet(d_mapname.c_str());
 
 	// run script at the start of each map
@@ -394,6 +387,15 @@ void G_DoNewGame()
 	// reason why the mapscripts ahve to be safe mode?
 	if (!sv_startmapscript.str().empty())
 		AddCommandString(sv_startmapscript.str());
+
+	for (auto& player : players)
+	{
+		if(!(player.ingame()))
+			continue;
+
+		MSG_WriteSVC(&player.client.reliablebuf,
+		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
+	}
 
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;
