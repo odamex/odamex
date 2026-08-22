@@ -42,8 +42,12 @@
 #include "gi.h"
 #include "v_text.h"
 #include "st_stuff.h"
+#include "g_gametype.h"
 
 #undef RANGECHECK
+
+EXTERN_CVAR(r_forceenemycolor)
+EXTERN_CVAR(r_forceteamcolor)
 
 // status bar height at bottom of screen
 // [RH] status bar position at bottom of screen
@@ -87,7 +91,9 @@ void (*R_DrawTranslatedColumn)(void);
 void (*R_DrawTlatedLucentColumn)(void);
 void (*R_DrawSkyForegroundColumn)(void);
 void (*R_DrawSpan)(void);
+void (*R_DrawTranslucentSpan)(void);
 void (*R_DrawSlopeSpan)(void);
+void (*R_DrawTranslucentSlopeSpan)(void);
 void (*R_FillColumn)(void);
 void (*R_FillSpan)(void);
 void (*R_FillTranslucentSpan)(void);
@@ -213,7 +219,11 @@ algorithm that uses RGB tables.
 
 argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
-static byte *translationtablesmem = NULL;
+struct alignas(256) TranslationTables {
+	// 1 player setup menu + 255 players + 3 classic translations + 21 font translations
+    byte data[256 * (1 + MAXPLAYERS + 3 + 21)];
+};
+static std::unique_ptr<TranslationTables> translationtablesmem = nullptr;
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
@@ -227,7 +237,7 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 	static constexpr palindex_t end_index = 0xBF;
 	const int index_range = end_index - start_index + 1;
 
-	palindex_t* dest = (palindex_t*)Ranges + color_num * 256;
+	palindex_t* dest = static_cast<palindex_t*>(Ranges) + color_num * 256;
 
 	if (IsChexMission(gamemission))
 	{
@@ -411,11 +421,12 @@ void R_InitTranslationTables()
 		::friendtable[i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
 	}
 
-	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
+	translationtablesmem = std::make_unique<TranslationTables>();
 
 	// [Toke - fix13]
 	// denis - cleaned this up somewhat
-	translationtables = (byte *)(((ptrdiff_t)translationtablesmem + 255) & ~255);
+	// [EB] alignment now ensured by alignas on the type
+	translationtables = translationtablesmem->data;
 
 	// [RH] Each player now gets their own translation table
 	//		(soon to be palettes). These are set up during
@@ -479,34 +490,46 @@ void R_InitTranslationTables()
 
 void R_FreeTranslationTables (void)
 {
-    delete[] translationtablesmem;
-    translationtablesmem = NULL;
+	translationtablesmem.reset();
 }
 
 // [Nes] Vanilla player translation table.
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
 	const palette_t* pal = V_GetDefaultPalette();
-	int i;
 
-	if (color == 1) // Indigo
-		for (i = 0x70; i < 0x80; i++)
+	const auto buildtranslation = [&](int base)
+	{
+		for (int i = 0x70; i < 0x80; i++)
 		{
-			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+			translationtables[i + (player * 256)] = base + (i & 0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i + (player * 256)]];
 		}
-	else if (color == 2) // Brown
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x40 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 3) // Red
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x20 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
+	};
+
+	switch (color)
+	{
+		case COLOR_GREEN:
+			buildtranslation(0x70);
+			break;
+		case COLOR_INDIGO:
+			buildtranslation(0x60);
+			break;
+		case COLOR_BROWN:
+			buildtranslation(0x40);
+			break;
+		case COLOR_RED:
+			buildtranslation(0x20);
+			break;
+		case COLOR_BLUE:
+			buildtranslation(0xC0);
+			break;
+		case COLOR_ORANGE:
+			buildtranslation(0xD0);
+			break;
+		default:
+			break;
+	}
 }
 
 void R_RebuildPlayerTintTables(int playerid)
@@ -526,47 +549,75 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 	R_RebuildPlayerTintTables(toplayer);
 }
 
+/*
+[Acts 19 quiz] Check if a specific color is being enforced on a sprite due to CVARs or gametype.
+- G_IsTeamGame(): Team modes (CTF and Team DM/LMS) enforce blue, red, or green on all sprites, no exceptions.
+- r_forceteamcolor 1 enforces a user-specified color on teammates in Coop/Horde, but not DM.
+- r_forceenemycolor 1 enforces a user-specified color on rival players in DM, but not Coop/Horde.
+- player != displayplayer_id: r_forceXXXXcolor is ignored on the display player.
+- !consoleplayer().spectator: r_forceXXXXcolor is ignored on others from a spectating display player's POV.
+- player != 0: r_forceXXXXcolor is ignored on the player preview in PLAYER SETUP.
+*/
+bool R_IsForcedColor(int player, bool forceteamcolor, bool forceenemycolor)
+{
+	return G_IsTeamGame() || (player != displayplayer_id && !consoleplayer().spectator &&
+	       player != nullplayer_id && ((forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame())));
+}
+
+CVAR_FUNC_IMPL(cl_customcolor)
+{
+	EXTERN_CVAR(cl_color)
+	cl_color.ForceSet(var.cstring());
+}
+
 // [RH] Create a player's translation table based on
 //		a given mid-range color.
-void R_BuildPlayerTranslation(int player, argb_t dest_color)
+void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
 {
-	const palette_t* pal = V_GetDefaultPalette();
-	byte* table = &translationtables[player * 256];
-
-	const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
-	const float h = hsv_temp.geth();
-	float s = hsv_temp.gets(), v = hsv_temp.getv();
-
-	s -= 0.23f;
-	if (s < 0.0f)
-		s = 0.0f;
-	float sdelta = 0.014375f;
-
-	v += 0.1f;
-	if (v > 1.0f)
-		v = 1.0f;
-	float vdelta = -0.05882f;
-
-	for (int i = 0x70; i < 0x80; i++)
+	if (!R_IsForcedColor(player, r_forceteamcolor, r_forceenemycolor) && colorpreset < NUMVANILLACOLOR)
 	{
-		const argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
+		return R_BuildClassicPlayerTranslation(player, colorpreset);
+	}
+	else
+	{
+		const palette_t* pal = V_GetDefaultPalette();
+		byte* table = &translationtables[player * 256];
 
-		// Set up RGB values for 32bpp translation:
-		translationRGB[player][i - 0x70] = color;
-		table[i] = V_BestColor(pal->basecolors, color);
+		const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
+		const float h = hsv_temp.geth();
+		float s = hsv_temp.gets(), v = hsv_temp.getv();
 
-		s += sdelta;
-		if (s > 1.0f)
+		s -= 0.23f;
+		if (s < 0.0f)
+			s = 0.0f;
+		float sdelta = 0.014375f;
+
+		v += 0.1f;
+		if (v > 1.0f)
+			v = 1.0f;
+		float vdelta = -0.05882f;
+
+		for (int i = 0x70; i < 0x80; i++)
 		{
-			s = 1.0f;
-			sdelta = 0.0f;
-		}
+			const argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
 
-		v += vdelta;
-		if (v < 0.0f)
-		{
-			v = 0.0f;
-			vdelta = 0.0f;
+			// Set up RGB values for 32bpp translation:
+			translationRGB[player][i - 0x70] = color;
+			table[i] = V_BestColor(pal->basecolors, color);
+
+			s += sdelta;
+			if (s > 1.0f)
+			{
+				s = 1.0f;
+				sdelta = 0.0f;
+			}
+
+			v += vdelta;
+			if (v < 0.0f)
+			{
+				v = 0.0f;
+				vdelta = 0.0f;
+			}
 		}
 	}
 }
@@ -891,8 +942,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		const float ustart = iu * mulstart;
 		const float vstart = iv * mulstart;
 
-		fixed_t ufrac = (fixed_t)ustart;
-		fixed_t vfrac = (fixed_t)vstart;
+		fixed_t ufrac = static_cast<fixed_t>(ustart);
+		fixed_t vfrac = static_cast<fixed_t>(vstart);
 
 		iu += ius * SPANJUMP;
 		iv += ivs * SPANJUMP;
@@ -900,8 +951,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		const float uend = iu * mulend;
 		const float vend = iv * mulend;
 
-		const fixed_t ustep = (fixed_t)((uend - ustart) * INTERPSTEP);
-		const fixed_t vstep = (fixed_t)((vend - vstart) * INTERPSTEP);
+		const fixed_t ustep = static_cast<fixed_t>((uend - ustart) * INTERPSTEP);
+		const fixed_t vstep = static_cast<fixed_t>((vend - vstart) * INTERPSTEP);
 
 		int incount = SPANJUMP;
 		while (incount--)
@@ -927,8 +978,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		const float ustart = iu * mulstart;
 		const float vstart = iv * mulstart;
 
-		fixed_t ufrac = (fixed_t)ustart;
-		fixed_t vfrac = (fixed_t)vstart;
+		fixed_t ufrac = static_cast<fixed_t>(ustart);
+		fixed_t vfrac = static_cast<fixed_t>(vstart);
 
 		iu += ius * count;
 		iv += ivs * count;
@@ -936,8 +987,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		const float uend = iu * mulend;
 		const float vend = iv * mulend;
 
-		const fixed_t ustep = (fixed_t)((uend - ustart) / count);
-		const fixed_t vstep = (fixed_t)((vend - vstart) / count);
+		const fixed_t ustep = static_cast<fixed_t>((uend - ustart) / count);
+		const fixed_t vstep = static_cast<fixed_t>((vend - vstart) / count);
 
 		int incount = count;
 		while (incount--)
@@ -1101,6 +1152,35 @@ private:
 	const shaderef_t* colormap;
 };
 
+class PaletteSlopeTranslucentColormapFunc
+{
+public:
+	PaletteSlopeTranslucentColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.slopelighting)
+	{
+		calculate_alpha(drawspan.translevel);
+	}
+
+	forceinline void operator()(byte c, palindex_t* dest)
+	{
+		const palindex_t fg = colormap->index(c);
+		const palindex_t bg = *dest;
+		*dest = rt_blend2<palindex_t>(bg, bga, fg, fga);
+		colormap++;
+	}
+
+private:
+	void calculate_alpha(fixed_t translevel)
+	{
+		fga = (translevel & ~0x03FF) >> 8;
+		fga = fga > 255 ? 255 : fga;
+		bga = 255 - fga;
+	}
+
+	const shaderef_t* colormap;
+	int fga, bga;
+};
+
 class PaletteSkyForegroundColormapFunc
 {
 public:
@@ -1123,7 +1203,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-#define FB_COLDEST_P ((palindex_t*)dcol.destination + dcol.yl * dcol.pitch_in_pixels + dcol.x)
+#define FB_COLDEST_P (static_cast<palindex_t*>(dcol.destination) + dcol.yl * dcol.pitch_in_pixels + dcol.x)
 
 //
 // R_FillColumnP
@@ -1272,6 +1352,18 @@ void R_DrawSpanP()
 }
 
 //
+// R_DrawTranslucentSpanP
+//
+// Renders a span for a level plane to the 8bpp palettized screen buffer from
+// the source buffer dspan.source, blended with the framebuffer by
+// dspan.translevel. Shading is performed using dspan.colormap.
+//
+void R_DrawTranslucentSpanP()
+{
+	R_DrawLevelSpanGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
+}
+
+//
 // R_DrawSlopeSpanP
 //
 // Renders a span for a sloped plane to the 8bpp palettized screen buffer from
@@ -1280,6 +1372,18 @@ void R_DrawSpanP()
 void R_DrawSlopeSpanP()
 {
 	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeColormapFunc>(FB_SPANDEST_P, dspan);
+}
+
+//
+// R_DrawTranslucentSlopeSpanP
+//
+// Renders a span for a sloped plane to the 8bpp palettized screen buffer from
+// the source buffer dspan.source, blended with the framebuffer by
+// dspan.translevel. Shading is performed using dspan.slopelighting.
+//
+void R_DrawTranslucentSlopeSpanP()
+{
+	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
 }
 
 
@@ -1426,6 +1530,35 @@ private:
 	const shaderef_t* colormap;
 };
 
+class DirectSlopeTranslucentColormapFunc
+{
+public:
+	DirectSlopeTranslucentColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.slopelighting)
+	{
+		calculate_alpha(drawspan.translevel);
+	}
+
+	forceinline void operator()(byte c, argb_t* dest)
+	{
+		const argb_t fg = colormap->shade(c);
+		const argb_t bg = *dest;
+		*dest = alphablend2a(bg, bga, fg, fga);
+		colormap++;
+	}
+
+private:
+	void calculate_alpha(fixed_t translevel)
+	{
+		fga = (translevel & ~0x03FF) >> 8;
+		fga = fga > 255 ? 255 : fga;
+		bga = 255 - fga;
+	}
+
+	const shaderef_t* colormap;
+	int fga, bga;
+};
+
 class DirectSkyForegroundColormapFunc
 {
 public:
@@ -1449,7 +1582,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-#define FB_COLDEST_D ((argb_t*)dcol.destination + dcol.yl * dcol.pitch_in_pixels + dcol.x)
+#define FB_COLDEST_D (reinterpret_cast<argb_t*>(dcol.destination) + dcol.yl * dcol.pitch_in_pixels + dcol.x)
 
 //
 // R_FillColumnD
@@ -1550,7 +1683,7 @@ void R_DrawSkyForegroundColumnD()
 //
 // ----------------------------------------------------------------------------
 
-#define FB_SPANDEST_D ((argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1)
+#define FB_SPANDEST_D (reinterpret_cast<argb_t*>(dspan.destination) + dspan.y * dspan.pitch_in_pixels + dspan.x1)
 
 //
 // R_FillSpanD
@@ -1587,6 +1720,30 @@ void R_DrawSpanD_c()
 }
 
 //
+// R_DrawTranslucentSpanD
+//
+// Renders a span for a level plane to the 32bpp ARGB8888 screen buffer from
+// the source buffer dspan.source, blended with the framebuffer by
+// dspan.translevel. Shading is performed using dspan.colormap.
+//
+void R_DrawTranslucentSpanD()
+{
+	R_DrawLevelSpanGeneric<argb_t, DirectTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
+}
+
+//
+// R_DrawTranslucentSlopeSpanD
+//
+// Renders a span for a sloped plane to the 32bpp ARGB8888 screen buffer from
+// the source buffer dspan.source, blended with the framebuffer by
+// dspan.translevel. Shading is performed using dspan.slopelighting.
+//
+void R_DrawTranslucentSlopeSpanD()
+{
+	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
+}
+
+//
 // R_DrawSlopeSpanD
 //
 // Renders a span for a sloped plane to the 32bpp ARGB8888 screen buffer from
@@ -1617,7 +1774,7 @@ void R_InitializeScreenblocksCanvas()
 
 	if (screenblockWidth < surface_width)
 	{
-		float width_scale_ratio = (float)surface_width / (float)screenblockWidth;
+		float width_scale_ratio = static_cast<float>(surface_width) / static_cast<float>(screenblockWidth);
 		screenblockWidth *= width_scale_ratio;
 		screenblockHeight *= width_scale_ratio;
 	}
@@ -1639,7 +1796,7 @@ void R_InitializeScreenblocksCanvas()
 	{
 		// Support high resolution flats
 		unsigned int length = W_LumpLength(lumpnum);
-		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+		const byte* patch_data = W_CacheLumpNum<byte>(lumpnum, PU_CACHE);
 
 		screenblocks_surface->getDefaultCanvas()->FlatFill(0, 0, 320, 200, length, patch_data);
 	}
@@ -1838,7 +1995,7 @@ CVAR_FUNC_IMPL(r_optimize)
 		optimize_kind = optimizations_available.back();
 	else
 	{
-		PrintFmt(PRINT_HIGH, "Invalid value for r_optimize. Availible options are \"{}, detect\"\n",
+		PrintFmt(PRINT_HIGH, "Invalid value for r_optimize. Available options are \"{}, detect\"\n",
 		         get_optimization_name_list(true));
 
 		// Restore the original setting:
@@ -1923,7 +2080,9 @@ void R_InitColumnDrawers ()
 		R_DrawTlatedLucentColumn = R_DrawTlatedLucentColumnP;
 		R_DrawSkyForegroundColumn= R_DrawSkyForegroundColumnP;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanP;
+		R_DrawTranslucentSlopeSpan = R_DrawTranslucentSlopeSpanP;
 		R_DrawSpan				= R_DrawSpanP;
+		R_DrawTranslucentSpan	= R_DrawTranslucentSpanP;
 		R_FillColumn			= R_FillColumnP;
 		R_FillSpan				= R_FillSpanP;
 		R_FillTranslucentSpan	= R_FillTranslucentSpanP;
@@ -1938,7 +2097,9 @@ void R_InitColumnDrawers ()
 		R_DrawTlatedLucentColumn = R_DrawTlatedLucentColumnD;
 		R_DrawSkyForegroundColumn= R_DrawSkyForegroundColumnD;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanD;
+		R_DrawTranslucentSlopeSpan = R_DrawTranslucentSlopeSpanD;
 		R_DrawSpan				= R_DrawSpanD;
+		R_DrawTranslucentSpan	= R_DrawTranslucentSpanD;
 		R_FillColumn			= R_FillColumnD;
 		R_FillSpan				= R_FillSpanD;
 		R_FillTranslucentSpan	= R_FillTranslucentSpanD;

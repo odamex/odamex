@@ -26,6 +26,7 @@
 #include "odamex.h"
 
 
+#include <array>
 #include <sstream>
 #include <algorithm>
 
@@ -48,12 +49,17 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "c_console.h"
+#include "c_dispatch.h"
+#include "c_doc.h"
 #include "i_system.h"
 #include "i_time.h"
 #include "g_game.h"
 #include "g_spawninv.h"
 #include "r_main.h"
+#include "r_data.h"
+#include "r_sprites.h"
 #include "d_main.h"
+#include "g_level.h"
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "gi.h"
@@ -61,6 +67,10 @@
 #include "m_resfile.h"
 #include "odainfo.h"
 #include "infomap.h"
+
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
 
 OResFiles wadfiles;
 OResFiles patchfiles;
@@ -203,7 +213,7 @@ static registry_value_t gog_final_doom =
 	"path",
 };
 
-static char *GetRegistryString(registry_value_t *reg_val)
+static char *GetRegistryString(const registry_value_t *reg_val)
 {
 	HKEY key = 0;
 	DWORD len = 0;
@@ -283,30 +293,71 @@ void D_InitializeDoomObjectTables()
 	);
 }
 
-//
-// D_AddSearchDir
-// denis - Split a new directory string using the separator and append results to the output
-//
-void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
+void D_AddSearchDir(std::vector<std::string>& dirs, const char* newdir, missing_dir_policy_t policy)
 {
-	if(!dir)
+	if (!newdir)
+		return;
+
+	D_AddSearchDir(dirs, std::string{newdir}, policy);
+}
+
+void D_AddSearchDir(std::vector<std::string>& dirs, std::string newdir, missing_dir_policy_t policy)
+{
+	if (newdir.empty())
+		return;
+
+	M_ExpandHomeDir(newdir);
+	newdir = M_CleanPath(newdir);
+	if (M_DirectoryExists(newdir))
+	{
+		dirs.push_back(newdir);
+	}
+	else if (policy == missing_dir_policy_t::WARN ||
+		(policy == missing_dir_policy_t::DEV_WARN && (::developer || ::devparm)))
+	{
+		PrintFmt(PRINT_WARNING, "{}: search directory \"{}\" not found\n", __FUNCTION__, newdir);
+	}
+}
+
+//
+// D_AddSearchDirList
+// denis - Split a new directory string using the path list separator and append results to the output
+//
+void D_AddSearchDirList(std::vector<std::string> &dirs, const char *newdirs, missing_dir_policy_t policy)
+{
+	if (!newdirs)
+		return;
+
+	D_AddSearchDirList(dirs, std::string{newdirs}, policy);
+}
+
+void D_AddSearchDirList(std::vector<std::string> &dirs, std::string newdirs, missing_dir_policy_t policy)
+{
+	if(newdirs.empty())
 		return;
 
 	// search through dwd
-	std::stringstream ss(dir);
+	std::stringstream ss{newdirs};
 	std::string segment;
 
 	while(!ss.eof())
 	{
-		std::getline(ss, segment, separator);
+		std::getline(ss, segment, PATHLISTSEPCHAR);
 
 		if(!segment.length())
 			continue;
 
 		M_ExpandHomeDir(segment);
 		segment = M_CleanPath(segment);
-
-		dirs.push_back(segment);
+		if (M_DirectoryExists(segment))
+		{
+			dirs.push_back(segment);
+		}
+		else if (policy == missing_dir_policy_t::WARN ||
+			(policy == missing_dir_policy_t::DEV_WARN && (::developer || ::devparm)))
+		{
+			PrintFmt(PRINT_WARNING, "{}: search directory \"{}\" not found\n", __FUNCTION__, segment);
+		}
 	}
 }
 
@@ -315,11 +366,9 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 {
 	#if defined(_WIN32)
 
-	const char separator = ';';
-
 	// Doom 95
 	{
-		for (auto& uninstallval : uninstall_values)
+		for (const auto& uninstallval : uninstall_values)
 		{
 			char* val;
 			char* path;
@@ -341,7 +390,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 				path = unstr + strlen(uninstaller_string);
 
 				const char* cpath = path;
-				D_AddSearchDir(dirs, cpath, separator);
+				D_AddSearchDir(dirs, cpath);
 			}
 		}
 	}
@@ -356,7 +405,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 			{
 				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
 
-				D_AddSearchDir(dirs, subpath.c_str(), separator);
+				D_AddSearchDir(dirs, subpath);
 			}
 
 			M_Free(install_path);
@@ -373,7 +422,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 			{
 				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
 
-				D_AddSearchDir(dirs, subpath.c_str(), separator);
+				D_AddSearchDir(dirs, subpath);
 			}
 
 			M_Free(install_path);
@@ -386,7 +435,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (doom_plus_doom2_path != nullptr)
 		{
-			D_AddSearchDir(dirs, doom_plus_doom2_path, separator);
+			D_AddSearchDir(dirs, doom_plus_doom2_path);
 			M_Free(doom_plus_doom2_path);
 		}
 
@@ -394,7 +443,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (doom_path != nullptr)
 		{
-			D_AddSearchDir(dirs, doom_path, separator);
+			D_AddSearchDir(dirs, doom_path);
 			M_Free(doom_path);
 		}
 
@@ -404,8 +453,8 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 		{
 			const std::string full_doom2_path = fmt::format("{}\\{}", doom2_path, "doom2");
 			const std::string master_levels_path = fmt::format("{}\\{}", doom2_path, "master\\wads");
-			D_AddSearchDir(dirs, full_doom2_path.c_str(), separator);
-			D_AddSearchDir(dirs, master_levels_path.c_str(), separator);
+			D_AddSearchDir(dirs, full_doom2_path);
+			D_AddSearchDir(dirs, master_levels_path);
 			M_Free(doom2_path);
 		}
 
@@ -415,44 +464,42 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 		{
 			const std::string plutonia_path = fmt::format("{}\\{}", final_doom_path, "Plutonia");
 			const std::string tnt_path = fmt::format("{}\\{}", final_doom_path, "TNT");
-			D_AddSearchDir(dirs, plutonia_path.c_str(), separator);
-			D_AddSearchDir(dirs, tnt_path.c_str(), separator);
+			D_AddSearchDir(dirs, plutonia_path);
+			D_AddSearchDir(dirs, tnt_path);
 			M_Free(final_doom_path);
 		}
 	}
 
 	// DOS Doom via DEICE
-	D_AddSearchDir(dirs, "\\doom2", separator);    // Doom II
-	D_AddSearchDir(dirs, "\\plutonia", separator); // Final Doom
-	D_AddSearchDir(dirs, "\\tnt", separator);
-	D_AddSearchDir(dirs, "\\doom_se", separator);  // Ultimate Doom
-	D_AddSearchDir(dirs, "\\doom", separator);     // Shareware / Registered Doom
-	D_AddSearchDir(dirs, "\\dooms", separator);    // Shareware versions
-	D_AddSearchDir(dirs, "\\doomsw", separator);
+	D_AddSearchDir(dirs, "\\doom2");    // Doom II
+	D_AddSearchDir(dirs, "\\plutonia"); // Final Doom
+	D_AddSearchDir(dirs, "\\tnt");
+	D_AddSearchDir(dirs, "\\doom_se");  // Ultimate Doom
+	D_AddSearchDir(dirs, "\\doom");     // Shareware / Registered Doom
+	D_AddSearchDir(dirs, "\\dooms");    // Shareware versions
+	D_AddSearchDir(dirs, "\\doomsw");
 
 	#elif defined(UNIX)
 
-	const char separator = ':';
-
 	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator);
-	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator);
+	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", missing_dir_policy_t::DEV_WARN);
 	#endif
 	// Search the maintainer-directed data directory for WADs
 	#if defined(ODAMEX_INSTALL_DATADIR)
-	D_AddSearchDir(dirs, ODAMEX_INSTALL_DATADIR, separator);
+	D_AddSearchDir(dirs, ODAMEX_INSTALL_DATADIR, missing_dir_policy_t::DEV_WARN);
 	#endif
 
-	D_AddSearchDir(dirs, "/usr/share/doom", separator);
-	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
+	D_AddSearchDir(dirs, "/usr/share/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/usr/share/games/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/usr/local/share/games/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/usr/local/share/doom", missing_dir_policy_t::DEV_WARN);
 	// Flatpak sandbox default directories
 	// (Since you need to pass envvars to a Flatpak)
-	D_AddSearchDir(dirs, "/run/host/usr/share/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", separator);
+	D_AddSearchDir(dirs, "/run/host/usr/share/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", missing_dir_policy_t::DEV_WARN);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", missing_dir_policy_t::DEV_WARN);
 
 	#endif
 }
@@ -687,13 +734,13 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		}
 
 #ifdef _WIN32
-		PrintFmt("You can use a tool such as Omniscient "
-		         "<https://drinkybird.net/doom/omniscient> to patch your way to the "
+		PrintFmt(PRINT_ERROR, "You can use a tool such as Omniscient "
+		         "<https://drinkybird.net/doom/omniscient> to patch your wad to the "
 		         "correct version of the data file.\n");
 #else
-		PrintFmt("You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
+		PrintFmt(PRINT_ERROR, "You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
 		         "patches located on Github <https://github.com/Doom-Utils/iwad-patches> "
-		         "to patch your way to the correct version of the data file.\n");
+		         "to patch your wad to the correct version of the data file.\n");
 #endif
 	}
 
@@ -780,6 +827,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	// IWAD //
 
 	bool got_next_iwad = false;
+	bool guessed_iwad = false;
 	if (resolved_wads.size() >= 1)
 	{
 		// See if the first WAD we passed was an IWAD.
@@ -788,6 +836,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 		{
 			next_iwad = possible_iwad;
 			got_next_iwad = true;
+			guessed_iwad = W_IsUnofficialIWAD(possible_iwad);
 			resolved_wads.erase(resolved_wads.begin());
 			if (W_IsIWADDeprecated(next_iwad))
 			{
@@ -795,6 +844,21 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 				              "latest version.\n",
 				              next_iwad.getBasename());
 			}
+		}
+	}
+
+	OResFile fallback_iwad;
+	bool got_fallback_iwad = false;
+	if (guessed_iwad)
+	{
+		if (::wadfiles.size() >= 2 && ::wadfiles.at(1).getMD5() != next_iwad.getMD5())
+		{
+			fallback_iwad = ::wadfiles.at(1);
+			got_fallback_iwad = true;
+		}
+		else
+		{
+			got_fallback_iwad = FindIWAD(fallback_iwad);
 		}
 	}
 
@@ -822,6 +886,59 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	resolved_wads.insert(resolved_wads.begin(), odamex_wad);
 	resolved_wads.insert(resolved_wads.begin() + 1, next_iwad);
 	LoadResolvedFiles(resolved_wads, resolved_patches);
+
+	if (guessed_iwad)
+	{
+		// Have the suspected standalone IWAD undergo checks to determine if
+		// it can stand up on its own or it needs to run under an IWAD.
+		const std::string badsprite = R_FindIncompleteSprite();
+		const std::string badtexture =
+		    badsprite.empty() ? R_FindTextureMissingPatch() : "";
+
+		if (!badsprite.empty() || !badtexture.empty())
+		{
+			const std::string reason =
+			    !badsprite.empty()
+			        ? badsprite
+			        : fmt::format("texture {} is missing a patch", badtexture);
+
+			if (got_fallback_iwad)
+			{
+				PrintFmt_Bold("{} was loaded as an IWAD, but {}.\n"
+				              "Reloading it as a regular PWAD on top of {}.\n",
+				              next_iwad.getBasename(), reason,
+				              fallback_iwad.getBasename());
+
+				D_UndoDehPatch();
+				W_Close();
+
+				// Put the mod back where it belongs, in front of a real IWAD.
+				OResFiles retry_wads = resolved_wads;
+				retry_wads.at(1) = fallback_iwad;
+				retry_wads.insert(retry_wads.begin() + 2, next_iwad);
+				LoadResolvedFiles(retry_wads, resolved_patches);
+			}
+			else if (!badsprite.empty())
+			{
+				// Missing sprites kill the renderer as soon as one is drawn.
+				I_FatalError(
+				    "{} was loaded as an IWAD, but {}.\n"
+				    "It looks like a PWAD rather than a standalone IWAD, and no "
+				    "IWAD could be found to load it on top of. Put an IWAD "
+				    "somewhere Odamex can find it, then load this file with "
+				    "-file instead.\n",
+				    next_iwad.getBasename(), reason);
+			}
+			else
+			{
+				// Missing patches only draw as blanks, so warn and carry on.
+				PrintFmt(PRINT_WARNING,
+				    "{} was loaded as an IWAD, but {}. It may be a PWAD that "
+				    "needs to be loaded with -file on top of a real IWAD.\n",
+				    next_iwad.getBasename(), reason);
+			}
+		}
+	}
 }
 
 /**
@@ -906,6 +1023,11 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	OResFiles oldwadfiles = ::wadfiles;
 	OResFiles oldpatchfiles = ::patchfiles;
 	std::string failmsg;
+
+	#ifdef CLIENT_APP
+	Freecam::reset();
+	#endif
+
 	try
 	{
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
@@ -984,26 +1106,217 @@ static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option
 }
 
 //
+// AddBareCommandLineFiles
+//
+// Adds files passed without a parameter, as happens when they are dropped onto
+// the executable.
+// 
+// Sorted by extension so a dropped patch is not also loaded as a WAD.
+//
+// No extension is assumed to be a WAD.
+//
+namespace
+{
+
+void AddBareCommandLineFiles(OWantFiles& out, ofile_t type)
+{
+	const std::vector<std::string>& exts = M_FileTypeExts(type);
+
+	const DArgs files = Args.GatherBareFiles();
+	for (size_t i = 0; i < files.NumArgs(); i++)
+	{
+		const std::string arg = files.GetArg(i);
+
+		std::string ext;
+		if (!M_ExtractFileExtension(arg, ext))
+		{
+			if (type != OFILE_WAD)
+				continue;
+		}
+		else
+		{
+			if (std::ranges::none_of(exts,
+					[&](const auto& fileext){return iequals(ext, fileext); }))
+				continue;
+		}
+
+		OWantFile file;
+		if (OWantFile::make(file, arg, type))
+			out.push_back(file);
+	}
+}
+
+} // namespace
+
+//
 // D_AddWadCommandLineFiles
 //
-// Add the WAD files specified with -file.
+// Add the WAD files specified with -file, plus any dropped on the executable.
 // Call this from D_DoomMain
 //
 void D_AddWadCommandLineFiles(OWantFiles& out)
 {
 	AddCommandLineOptionFiles(out, "-file", OFILE_WAD);
+	AddBareCommandLineFiles(out, OFILE_WAD);
 }
 
 //
 // D_AddDehCommandLineFiles
 //
-// Adds the DEH/BEX files specified with -bex or -deh.
+// Adds the DEH/BEX files specified with -bex or -deh, plus any dropped on the
+// executable.
 // Call this from D_DoomMain
 //
 void D_AddDehCommandLineFiles(OWantFiles& out)
 {
 	AddCommandLineOptionFiles(out, "-bex", OFILE_DEH);
 	AddCommandLineOptionFiles(out, "-deh", OFILE_DEH);
+	AddBareCommandLineFiles(out, OFILE_DEH);
+}
+
+//
+// AppendUniqueFiles
+//
+// Appends in to out, skipping files whose wanted path is already queued.
+//
+namespace
+{
+
+void AppendUniqueFiles(OWantFiles& out, const OWantFiles& in)
+{
+	for (const auto& file : in)
+	{
+		bool queued = false;
+		for (const auto& have : out)
+		{
+			if (have.getWantedPath() == file.getWantedPath())
+			{
+				queued = true;
+				break;
+			}
+		}
+
+		if (!queued)
+			out.push_back(file);
+	}
+}
+
+} // namespace
+
+//
+// D_AddStartupWadFiles
+//
+// Adds the files a 'wad' command in the config file queued.
+// Command line files are already in the lists and keep their
+// place at the front.
+// Call this from D_DoomMain
+//
+void D_AddStartupWadFiles(OWantFiles& outwadfiles, OWantFiles& outpatchfiles)
+{
+	const DArgs wadparams = Args.GatherFiles("+wad");
+	if (wadparams.NumArgs())
+	{
+		std::vector<std::string> tokens;
+		tokens.reserve(wadparams.NumArgs());
+		for (size_t i = 0; i < wadparams.NumArgs(); i++)
+			tokens.emplace_back(wadparams.GetArg(i));
+
+		OWantFiles wadfiles;
+		OWantFiles patchfiles;
+		G_ParseWadString(C_EscapeWadList(tokens), wadfiles, patchfiles);
+
+		AppendUniqueFiles(outwadfiles, wadfiles);
+		AppendUniqueFiles(outpatchfiles, patchfiles);
+	}
+
+	for (size_t p = Args.CheckParm("+wad"); p; p = Args.CheckParm("+wad"))
+		Args.SetArg(p, "-wad");
+
+	if (::startupwadstring.empty())
+		return;
+
+	OWantFiles wadfiles;
+	OWantFiles patchfiles;
+	G_ParseWadString(::startupwadstring, wadfiles, patchfiles);
+	::startupwadstring.clear();
+
+	AppendUniqueFiles(outwadfiles, wadfiles);
+	AppendUniqueFiles(outpatchfiles, patchfiles);
+}
+
+// ============================================================================
+//
+// Command line information dumps
+//
+// These are informational command line switches that simply dump
+// information and exit before initializing any subsystems.
+// These are allowed to run as root since they exit right after.
+//
+// ============================================================================
+
+// Name the version document after the app, so a client and a server writing
+// into the same directory do not clobber each other.
+#ifdef CLIENT_APP
+constexpr const char* VERSION_BASENAME = "odamex-version";
+#elif defined(SERVER_APP)
+constexpr const char* VERSION_BASENAME = "odasrv-version";
+#elif defined(TEST_APP)
+constexpr const char* VERSION_BASENAME = "odagtest-version";
+#endif
+
+bool C_WriteVersion(infodumpdest_t dest)
+{
+	return EmitInfoDump(fmt::format("Odamex {}\n", NiceVersion()), VERSION_BASENAME,
+	                    ".txt", dest);
+}
+
+namespace
+{
+
+constexpr infodumpdest_t D_InfoDumpDest([[maybe_unused]] infodumpdest_t dest)
+{
+#if defined(_WIN32) && defined(CLIENT_APP)
+	return infodumpdest_t::FILE;
+#else
+	return dest;
+#endif
+}
+
+struct infodump_t
+{
+	const char* param;  // the switch, including its leading dashes
+	bool (*handler)(infodumpdest_t);  // writes the information out, false if it could not
+	infodumpdest_t dest; // whether to write to stdout or a file
+};
+
+const std::array InfoDumps = {
+    infodump_t{"--version", C_WriteVersion, infodumpdest_t::STDOUT},
+    infodump_t{"--cvardoc", C_WriteCvarDoc, infodumpdest_t::FILE},
+    infodump_t{"--cvardocjson", C_WriteCvarDocJSON, infodumpdest_t::STDOUT},
+};
+
+} // namespace
+
+//
+// D_CheckInfoDumps
+//
+// Checks for every information dump named on the command line, then quits if any of
+// them ran.
+//
+void D_CheckInfoDumps()
+{
+	bool ok = true;
+
+	for (const infodump_t& dump : InfoDumps)
+	{
+		if (Args.CheckParm(dump.param))
+		{
+			if (!dump.handler(D_InfoDumpDest(dump.dest)))
+				ok = false;
+
+			exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
+		}
+	}
 }
 
 
@@ -1094,7 +1407,7 @@ public:
 		// mAccumulator can be greater than mFrameDuration so only get the
 		// time remaining until the next frame
 		dtime_t remaining_time = mAccumulator % mFrameDuration;
-		return (float)(double(remaining_time) / mFrameDuration);
+		return static_cast<float>(static_cast<double>(remaining_time) / mFrameDuration);
 	}
 
 private:
@@ -1146,7 +1459,7 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 	}
 }
 
-void STACK_ARGS D_ClearTaskSchedulers()
+void D_ClearTaskSchedulers()
 {
 	simulation_scheduler.reset();
 	display_scheduler.reset();

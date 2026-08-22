@@ -23,12 +23,12 @@
 
 #pragma once
 
-#include <nonstd/span.hpp>
+#include <span>
 
 // forward declarations
 struct mobjinfo_t;
 struct state_t;
 
-nonstd::span<mobjinfo_t> getOdaMobjinfo();
-nonstd::span<state_t> getOdaStates();
-nonstd::span<const char*> getOdaSprNames();
+std::span<mobjinfo_t> getOdaMobjinfo();
+std::span<state_t> getOdaStates();
+std::span<const char*> getOdaSprNames();

@@ -50,32 +50,32 @@
 // drawn directly on the view screen,
 // coordinates are given for a 320*200 view screen.
 //
-typedef enum
+enum psprnum_t : uint8_t
 {
 	ps_weapon,
 	ps_flash,
 	NUMPSPRITES
 
-} psprnum_t;
+};
 
 void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic);
 
-inline FArchive &operator<< (FArchive &arc, psprnum_t i)
-{
-	return arc << (byte)i;
-}
-inline FArchive &operator>> (FArchive &arc, psprnum_t &out)
-{
-	byte in; arc >> in; out = (psprnum_t)in; return arc;
-}
-
 struct pspdef_t
 {
-	state_t*	state;	// a NULL state means not active
+	statenum_t	statenum;	// S_NULL means not active
 	int 		tics;
 
 	fixed_t 	sx;
 	fixed_t 	sy;
+
+	[[nodiscard]] const state_t* state() const
+	{
+		if (statenum == S_NULL)
+			return nullptr;
+
+		const auto it = states.find(statenum);
+		return it != states.end() ? &it->second : nullptr;
+	}
 };
 
 FArchive &operator<< (FArchive &, pspdef_t &);

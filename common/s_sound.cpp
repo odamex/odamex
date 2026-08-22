@@ -153,12 +153,12 @@ void S_ParseSndInfo()
 	int lump = -1;
 	while ((lump = W_FindLump("SNDINFO", lump)) != -1)
 	{
-		char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
+		char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
 
 		const OScannerConfig config = {
-		    "SNDINFO", // lumpName
-		    true,      // semiComments
-		    true,      // cComments
+		    .lumpName     = "SNDINFO",
+		    .semiComments = true,
+		    .cComments    = true,
 		};
 		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
 
@@ -249,11 +249,11 @@ void S_ParseSndInfo()
 						os.warning("Unknown ambient type ({})\n", os.getToken());
 					}
 
-					ambient->periodmin = MAX(0, ambient->periodmin);
-					ambient->periodmax = MAX(ambient->periodmin, ambient->periodmax);
+					ambient->periodmin = std::max(0, ambient->periodmin);
+					ambient->periodmax = std::max(ambient->periodmin, ambient->periodmax);
 
 					os.mustScanFloat();
-					ambient->volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
+					ambient->volume = std::clamp(os.getTokenFloat(), 0.0f, 1.0f);
 
 					if (ambient->mode == amb_mode_t::NONE || ambient->volume == 0.0f ||
 					    (ambient->mode != amb_mode_t::CONTINUOUS &&
@@ -278,7 +278,7 @@ void S_ParseSndInfo()
 				else if (os.compareTokenNoCase("alias"))
 				{
 					os.mustScan();
-					const int sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
+					const int sfxfrom = S_AddSound(os.getToken().c_str(), nullptr);
 					os.mustScan();
 					S_sfx[sfxfrom].link = FindSoundTentative(os.getToken().c_str());
 				}

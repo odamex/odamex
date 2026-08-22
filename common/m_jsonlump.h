@@ -39,33 +39,8 @@ struct JSONLumpVersion
 	int32_t minor;
 	int32_t revision;
 
-	constexpr bool operator > (const JSONLumpVersion& rhs) const
-	{
-		return major > rhs.major
-			|| minor > rhs.minor
-			|| revision > rhs.revision;
-	}
-
-	constexpr bool operator >= (const JSONLumpVersion& rhs) const
-	{
-		return major >= rhs.major
-			|| minor >= rhs.minor
-			|| revision >= rhs.revision;
-	}
-
-	constexpr bool operator < (const JSONLumpVersion& rhs) const
-	{
-		return major < rhs.major
-			|| minor < rhs.minor
-			|| revision < rhs.revision;
-	}
-
-	constexpr bool operator <= (const JSONLumpVersion& rhs) const
-	{
-		return major <= rhs.major
-			|| minor <= rhs.minor
-			|| revision <= rhs.revision;
-	}
+	[[nodiscard]]
+	constexpr auto operator<=>(const JSONLumpVersion&) const = default;
 };
 
 enum class jsonlumpresult_t

@@ -60,6 +60,9 @@ CVAR_FUNC_IMPL(snd_samplerate)
 	S_Init(snd_sfxvolume, snd_musicvolume);
 }
 
+namespace
+{
+
 #if 0
 
 /**
@@ -73,7 +76,7 @@ CVAR_FUNC_IMPL(snd_samplerate)
  * @param length Total length of data to write.
  * @param samplerate Samplerate to put in the header.
  */
-static void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate)
+void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate)
 {
 	FILE* wav;
 	unsigned int i;
@@ -120,7 +123,7 @@ static void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate
 
 //// [Russell] - Chocolate Doom's sound converter code, how awesome!
 //// unused for now
-//static bool ConvertibleRatio(int freq1, int freq2)
+//bool ConvertibleRatio(int freq1, int freq2)
 //{
 //    int ratio;
 //
@@ -151,8 +154,8 @@ static void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate
 
 // Generic sound expansion function for any sample rate
 
-static void ExpandSoundData(byte* data, int samplerate, int bits, int length,
-                            Mix_Chunk* destination)
+void ExpandSoundData(const byte* data, int samplerate, int bits, int length,
+                     Mix_Chunk* destination)
 {
 	Sint16* expanded = reinterpret_cast<Sint16*>(destination->abuf);
 	size_t samplecount = length / (bits / 8);
@@ -211,11 +214,11 @@ static void ExpandSoundData(byte* data, int samplerate, int bits, int length,
 
 	for (size_t i = 2; i < expanded_length * 2; ++i)
 	{
-		expanded[i] = (Sint16)(alpha * expanded[i] + (1 - alpha) * expanded[i - 2]);
+		expanded[i] = static_cast<Sint16>(alpha * expanded[i] + (1 - alpha) * expanded[i - 2]);
 	}
 }
 
-static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
+Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 {
     Mix_Chunk *chunk;
     SDL_RWops *mem_op;
@@ -246,7 +249,7 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     *newsize = chunk->alen;
 
     // allocate some space in the zone heap
-    ret_data = (Uint8 *)Z_Malloc(chunk->alen, PU_STATIC, NULL);
+    ret_data = static_cast<Uint8*>(Z_Malloc(chunk->alen, PU_STATIC));
 
     // copy the converted data to the return buffer
     memcpy(ret_data, chunk->abuf, chunk->alen);
@@ -258,7 +261,7 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     return ret_data;
 }
 
-static void getsfx(sfxinfo_struct *sfx)
+void getsfx(sfxinfo_t *sfx)
 {
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
@@ -266,7 +269,7 @@ static void getsfx(sfxinfo_struct *sfx)
 	if (sfx->lumpnum == -1)
 		return;
 
-    Uint8* data = (Uint8*)W_CacheLumpNum(sfx->lumpnum, PU_STATIC);
+    Uint8* data = W_CacheLumpNum<Uint8>(sfx->lumpnum, PU_STATIC);
 	auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
 
     // [Russell] - ICKY QUICKY HACKY SPACKY *I HATE THIS SOUND MANAGEMENT SYSTEM!*
@@ -276,7 +279,7 @@ static void getsfx(sfxinfo_struct *sfx)
     // [Russell] is it not a doom sound lump?
     if (((data[1] << 8) | data[0]) != 3)
     {
-        chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
+        chunk = Z_Malloc<Mix_Chunk>(PU_STATIC);
         chunk->allocated = 1;
         if (sfx->length < 8) // too short to be anything of interest
         {
@@ -308,21 +311,23 @@ static void getsfx(sfxinfo_struct *sfx)
 	if (length <= 0)
 		return;
 
-    Uint32 expanded_length = (uint32_t)((((uint64_t)length) * mixer_freq) / samplerate);
+    Uint32 expanded_length = static_cast<uint32_t>(((static_cast<uint64_t>(length)) * mixer_freq) / samplerate);
 
     // Double up twice: 8 -> 16 bit and mono -> stereo
 
     expanded_length *= 4;
 
-	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
+	chunk = Z_Malloc<Mix_Chunk>(PU_STATIC);
     chunk->allocated = 1;
     chunk->alen = expanded_length;
-	chunk->abuf = (Uint8*)Z_Malloc(expanded_length, PU_STATIC, NULL);
+	chunk->abuf = static_cast<Uint8*>(Z_Malloc(expanded_length, PU_STATIC));
     chunk->volume = MIX_MAX_VOLUME;
 
-    ExpandSoundData((byte*)data + 8, samplerate, 8, length, chunk);
+    ExpandSoundData(static_cast<byte*>(data) + 8, samplerate, 8, length, chunk);
     sfx->data = chunk;
 }
+
+} // namespace
 
 //
 // SFX API
@@ -353,7 +358,7 @@ int I_StartSound(int id, float vol, int sep, int pitch, bool loop)
 	if (!sound_initialized)
 		return -1;
 
-	Mix_Chunk *chunk = (Mix_Chunk *)S_sfx[id].data;
+	Mix_Chunk *chunk = static_cast<Mix_Chunk*>(S_sfx[id].data);
 
 	// find a free channel, starting from the first after
 	// the last channel we used
@@ -451,7 +456,7 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 	if(!snd_crossover)
 		sep = 255 - sep;
 
-	int volume = (int)((float)MIX_MAX_VOLUME * basevolume * vol);
+	int volume = static_cast<int>(static_cast<float>(MIX_MAX_VOLUME * basevolume * vol));
 
 	if(volume < 0)
 		volume = 0;
@@ -462,7 +467,7 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 	Mix_SetPanning(handle, sep, 255-sep);
 }
 
-void I_LoadSound (sfxinfo_struct *sfx)
+void I_LoadSound (sfxinfo_t *sfx)
 {
 	if (!sound_initialized)
 		return;
@@ -516,17 +521,13 @@ void I_InitSound()
 
 	PrintFmt(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
 
-#ifdef SDL20
     // Apparently, when Mix_OpenAudio requests a certain number of channels
     // and the device claims to not support that number of channels, instead
     // of handling it automatically behind the scenes, Mixer might initialize
     // with a broken audio buffer instead.  Using this function instead works
     // around the problem.
-	if (Mix_OpenAudioDevice((int)snd_samplerate, AUDIO_S16SYS, 2, 1024, NULL,
+	if (Mix_OpenAudioDevice(snd_samplerate.asInt(), AUDIO_S16SYS, 2, 1024, NULL,
 	                        SDL_AUDIO_ALLOW_FREQUENCY_CHANGE) < 0)
-#else
-	if (Mix_OpenAudio((int)snd_samplerate, AUDIO_S16SYS, 2, 1024) < 0)
-#endif
 	{
 		PrintFmt(PRINT_ERROR,
                  "I_InitSound: Error initializing SDL_mixer: {}\n",
@@ -562,7 +563,7 @@ void I_InitSound()
 		channel_in_use[i] = false;
 }
 
-void STACK_ARGS I_ShutdownSound (void)
+void I_ShutdownSound ()
 {
 	if (!sound_initialized)
 		return;

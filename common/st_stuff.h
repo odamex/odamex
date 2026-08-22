@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -54,7 +54,7 @@ extern lumpHandle_t negminus;
 //
 
 // Called by main loop.
-bool ST_Responder(event_t* ev);
+bool ST_Responder(const event_t& ev);
 
 // Called by main loop.
 void ST_Ticker();
@@ -68,7 +68,7 @@ void ST_Start();
 // Called by startup code.
 void ST_Init();
 
-void STACK_ARGS ST_Shutdown();
+void ST_Shutdown();
 
 namespace hud {
 
@@ -101,6 +101,6 @@ void SpectatorHUD();
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD();
 
+// HUD when spying the freecam
+void FreecamHUD();
 }
-
-bool ST_Responder(event_t* ev);

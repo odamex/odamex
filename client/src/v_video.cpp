@@ -121,19 +121,17 @@ EXTERN_CVAR(vid_filter)
 EXTERN_CVAR(vid_widescreen)
 EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
-EXTERN_CVAR(vid_pillarbox)
 EXTERN_CVAR(vid_displayfps)
 EXTERN_CVAR(vid_640x400)
 EXTERN_CVAR(vid_320x200)
 
-static int vid_pillarbox_old = -1;
 static int vid_widescreen_old = -1;
 
 
 static IVideoMode V_GetRequestedVideoMode()
 {
 	const int surface_bpp = vid_32bpp ? 32 : 8;
-	const EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
+	const EWindowMode window_mode = vid_fullscreen.asEnum<EWindowMode>();
 	const bool vsync = (vid_vsync != 0.0f);
 	const std::string& stretch_mode(vid_filter);
 
@@ -157,12 +155,6 @@ bool V_CheckModeAdjustment()
 	if (vid_widescreen.asInt() != vid_widescreen_old)
 	{
 		vid_widescreen_old = vid_widescreen.asInt();
-		return true;
-	}
-
-	if (vid_pillarbox_old != vid_pillarbox)
-	{
-		vid_pillarbox_old = vid_pillarbox;
 		return true;
 	}
 
@@ -254,12 +246,6 @@ CVAR_FUNC_IMPL (vid_widescreen)
 }
 
 
-CVAR_FUNC_IMPL(vid_pillarbox)
-{
-	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-		V_ForceVideoModeAdjustment();
-}
-
 //
 // Only checks to see if the widescreen mode is proper compared to sv_allowwidescreen.
 //
@@ -347,8 +333,8 @@ BEGIN_COMMAND(vid_currentmode)
 	else
 	{
 		char temp_str[9] = { 0 };
-		argb_t* d1 = (argb_t*)temp_str;
-		argb_t* d2 = (argb_t*)temp_str + 1;
+		argb_t* d1 = reinterpret_cast<argb_t*>(temp_str);
+		argb_t* d2 = reinterpret_cast<argb_t*>(temp_str + 1);
 
 		d1->seta('A'); d1->setr('R'); d1->setg('G'); d1->setb('B');
 		d2->seta('0' + format->getABits()); d2->setr('0' + format->getRBits());
@@ -460,7 +446,7 @@ static bool V_DoSetResolution()
 //
 // V_Close
 //
-void STACK_ARGS V_Close()
+void V_Close()
 {
 	R_ShutdownColormaps();
 }
@@ -538,7 +524,6 @@ void V_Init()
 
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
 
-	vid_pillarbox_old = vid_pillarbox;
 	vid_widescreen_old = vid_widescreen.asInt();
 }
 
@@ -789,7 +774,7 @@ static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
 	const int dot_width = CleanXfac, dot_height = CleanYfac;
 	const int pitch_in_pixels = surface->getPitchInPixels();
 
-	PIXEL_T* dest = (PIXEL_T*)surface->getBuffer() +
+	PIXEL_T* dest = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) +
 			(surface->getHeight() - 1 - dot_height) * pitch_in_pixels +
 			2 * n * dot_width;
 
@@ -810,7 +795,7 @@ void V_DrawFPSTicker()
 	const int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
 	static int last_tic = current_tic;
 
-	const int tics = clamp(current_tic - last_tic, 0, 20);
+	const int tics = std::clamp(current_tic - last_tic, 0, 20);
 	last_tic = current_tic;
 
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
@@ -933,7 +918,7 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, unsigned int fl
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
-		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + top * mSurface->getPitchInPixels() + left;
+		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + top * mSurface->getPitchInPixels() + left;
 
 		for (int y = top; y < bottom; y++)
 		{
@@ -948,7 +933,7 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, unsigned int fl
 	}
 	else
 	{
-		argb_t* dest = (argb_t*)mSurface->getBuffer() + top * mSurface->getPitchInPixels() + left;
+		argb_t* dest = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * mSurface->getPitchInPixels() + left;
 
 		for (int y = top; y < bottom; y++)
 		{
@@ -1014,7 +999,7 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
 	if (mSurface->getBitsPerPixel() == 8)
 	{
 		const palindex_t color_index = V_BestColor(V_GetDefaultPalette()->basecolors, color);
-		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + top * surface_pitch_pixels + left;
+		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + top * surface_pitch_pixels + left;
 
 		const int line_length = (right - left) * sizeof(palindex_t);
 		for (int y = top; y < bottom; y++)
@@ -1026,7 +1011,7 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
 	else
 	{
 		color = V_GammaCorrect(color);
-		argb_t* dest = (argb_t*)mSurface->getBuffer() + top * surface_pitch_pixels + left;
+		argb_t* dest = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * surface_pitch_pixels + left;
 
 		for (int y = top; y < bottom; y++)
 		{
@@ -1062,12 +1047,12 @@ void DCanvas::Line(const v2int_t src, const v2int_t dst, argb_t color) const
 	{
 		if (mSurface->getBitsPerPixel() == 8)
 		{
-			palindex_t* dest = (palindex_t*)mSurface->getBuffer(cur.x, cur.y);
+			palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer(cur.x, cur.y));
 			*dest = pal_color;
 		}
 		else
 		{
-			argb_t* dest = (argb_t*)mSurface->getBuffer(cur.x, cur.y);
+			argb_t* dest = reinterpret_cast<argb_t*>(mSurface->getBuffer(cur.x, cur.y));
 			*dest = full_color;
 		}
 
@@ -1126,14 +1111,14 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		int bg;
 		int x, y;
 
-		const int amount = (int)(famount * 64.0f);
+		const int amount = static_cast<int>(famount * 64.0f);
 		const argb_t *fg2rgb = Col2RGB8[amount];
 		const argb_t *bg2rgb = Col2RGB8[64-amount];
 
 		const argb_t color = V_GetColorFromString(color_str);
 		const unsigned int fg = fg2rgb[V_BestColor(V_GetDefaultPalette()->basecolors, color)];
 
-		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + y1 * surface_pitch_pixels + x1;
+		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + y1 * surface_pitch_pixels + x1;
 		const int advance = surface_pitch_pixels - w;
 
 		const int xcount = w / 4;
@@ -1174,7 +1159,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 	{
 		const argb_t color = V_GammaCorrect(V_GetColorFromString(color_str));
 
-		r_dimpatchD(mSurface, color, (int)(famount * 256.0f), x1, y1, w, h);
+		r_dimpatchD(mSurface, color, static_cast<int>(famount * 256.0f), x1, y1, w, h);
 	}
 }
 

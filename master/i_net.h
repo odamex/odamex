@@ -128,7 +128,7 @@ public:
 		return (unsigned char)data[readpos++];
 	}
 
-	int NextByte()
+	int PeekByte()
 	{
 		if(readpos+1 > cursize)
 		{

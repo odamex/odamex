@@ -55,11 +55,6 @@ void P_SetDoorDestroy(DDoor *door)
 
 IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
 
-DDoor::DDoor () :
-	m_Status(init),	m_Line(NULL)
-{
-}
-
 void DDoor::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -105,7 +100,7 @@ void DDoor::RunThink ()
 
 		if (m_Type != doorOpen)
 			PlayDoorSound();
-		// fall through
+		[[fallthrough]];
 	case destroy:
 		P_SetDoorDestroy(this);
 		return;
@@ -730,7 +725,7 @@ bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	fixed_t speed;
 	DDoor* door;
 
-	speed = (fixed_t)speed_byte * FRACUNIT / 8;
+	speed = static_cast<fixed_t>(speed_byte) * FRACUNIT / 8;
 
 	if (lock && !P_CanUnlockZDoomDoor(mo->player, lock, tag))
 		return false;
@@ -832,66 +827,53 @@ bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 // Passed the linedef activating the generalized door
 // Returns true if a thinker created
 //
-bool EV_DoGenDoor(line_t* line)
+bool EV_DoGenDoor(line_t& line)
 {
-	int secnum;
-	bool rtn;
-	sector_t* sec;
-	bool manual;
-	unsigned value = (unsigned)line->special - GenDoorBase;
+	const uint32_t value = static_cast<uint32_t>(line.special) - GenDoorBase;
 
 	// parse the bit fields in the line's special type
 
-	int Dely = (value & DoorDelay) >> DoorDelayShift;
-	int Kind = (value & DoorKind) >> DoorKindShift;
-	int Sped = (value & DoorSpeed) >> DoorSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Dely = (value & DoorDelay) >> DoorDelayShift;
+	const int Kind = (value & DoorKind) >> DoorKindShift;
+	const int Sped = (value & DoorSpeed) >> DoorSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = 0;
-
-	if (line->id == 0)
+	const auto helper = [&](sector_t* sec) -> bool
 	{
-		if (!(sec = line->backsector))
-			return true;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_gendoor;
-	}; // e6y
-	// check if a manual trigger, if so do just the sector on the backside
-	manual = false;
-	if (Trig == PushOnce || Trig == PushMany)
-	{
-		if (!(sec = line->backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_gendoor;
-	}
-
-	secnum = -1;
-	rtn = false;
-
-	// if not manual do all sectors tagged the same as the line
-	while ((secnum = P_FindSectorFromTagOrLine(line->id, line, secnum)) >= 0)
-	{
-		sec = &sectors[secnum];
-manual_gendoor:
 		// Do not start another function if ceiling already moving
 		if (sec->ceilingdata) // jff 2/22/98
-		{
-			if (!manual)
-				continue;
-			else
-				return rtn;
-		}
+			return false;
 
 		// new door thinker
-		new DDoor(sec, line, Dely, Kind, Trig, Sped);
-		rtn = true;
+		new DDoor(sec, &line, Dely, Kind, Trig, Sped);
 		P_AddMovingCeiling(sec);
+		return true;
+	};
 
-		if (manual)
-			return rtn;
+	if (line.id == 0)
+	{
+		if (!line.backsector)
+			return true;
+
+		return helper(line.backsector);
+	}; // e6y
+
+	// check if a manual trigger, if so do just the sector on the backside
+	if (Trig == PushOnce || Trig == PushMany)
+	{
+		if (!line.backsector)
+			return false;
+
+		return helper(line.backsector);
+	}
+
+	int secnum = -1;
+	bool rtn = false;
+
+	// if not manual do all sectors tagged the same as the line
+	while ((secnum = P_FindSectorFromTagOrLine(line.id, &line, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
@@ -904,65 +886,54 @@ manual_gendoor:
 // Passed the linedef activating the generalized locked door
 // Returns true if a thinker created
 //
-bool EV_DoGenLockedDoor(line_t* line)
+bool EV_DoGenLockedDoor(line_t& line)
 {
-	int secnum;
-	bool rtn;
-	sector_t* sec;
-	bool manual;
-	unsigned value = (unsigned)line->special - GenLockedBase;
+	const uint32_t value = static_cast<uint32_t>(line.special) - GenLockedBase;
 
 	// parse the bit fields in the line's special type
 
-	int Kind = (value & LockedKind) >> LockedKindShift;
-	int Sped = (value & LockedSpeed) >> LockedSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Kind = (value & LockedKind) >> LockedKindShift;
+	const int Sped = (value & LockedSpeed) >> LockedSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = 0;
-
-	if (line->id == 0)
+	const auto helper = [&](sector_t* sec) -> bool
 	{
-		if (!(sec = line->backsector))
-			return true;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_genlocked;
-	}; // e6y
-	// check if a manual trigger, if so do just the sector on the backside
-	manual = false;
-	if (Trig == PushOnce || Trig == PushMany)
-	{
-		if (!(sec = line->backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_genlocked;
-	}
-
-	secnum = -1;
-	rtn = false;
-
-	// if not manual do all sectors tagged the same as the line
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
-	{
-		sec = &sectors[secnum];
-manual_genlocked:
 		// Do not start another function if ceiling already moving
 		if (P_CeilingActive(sec)) // jff 2/22/98
-		{
-			if (!manual)
-				continue;
-			else
-				return rtn;
-		}
+			return false;
 
 		// new door thinker
-		new DDoor(sec, line, Kind, Trig, Sped);
-		rtn = true;
+		new DDoor(sec, &line, Kind, Trig, Sped);
 		P_AddMovingCeiling(sec);
 
-		if (manual)
-			return rtn;
+		return true;
+	};
+
+
+	if (line.id == 0)
+	{
+		if (!line.backsector)
+			return true;
+
+		return helper(line.backsector);
+	}; // e6y
+
+	// check if a manual trigger, if so do just the sector on the backside
+	if (Trig == PushOnce || Trig == PushMany)
+	{
+		if (!line.backsector)
+			return false;
+
+		return helper(line.backsector);
+	}
+
+	int secnum = -1;
+	bool rtn = false;
+
+	// if not manual do all sectors tagged the same as the line
+	while ((secnum = P_FindSectorFromLineTag(&line, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }

@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <ctype.h>
+#include <array>
 
 #include "z_zone.h"
 #include "m_random.h"
@@ -57,20 +58,24 @@ size_t P_NumPlayersInGame();
 //
 
 // GLOBAL LOCATIONS
-#define WI_TITLEY				2
-#define WI_SPACINGY 			33
+constexpr int WI_TITLEY = 2;
+constexpr int WI_SPACINGY = 33;
+
+// Halfway across the 320 unit wide screen the intermission is laid out on.
+constexpr int WI_CENTERX = 160;
 
 // Single Player
-#define SP_STATSX		50
-#define SP_STATSY		50
-#define SP_TIMEX		16
-#define SP_TIMEY		168
+constexpr int SP_STATSX = 50;
+constexpr int SP_STATSY = 50;
+constexpr int SP_TIMEX = 16;
+constexpr int SP_TIMEY = 168;
 
 // NET GAME STUFF
-#define NG_STATSY				50
+constexpr int NG_STATSY = 50;
+
 #define NG_STATSX				(32 + pStar->width()/2 + 32*!dofrags)
 
-#define NG_SPACINGX 			64
+constexpr int NG_SPACINGX = 64;
 
 //
 // GENERAL DATA
@@ -83,43 +88,46 @@ size_t P_NumPlayersInGame();
 // in seconds
 #define SHOWNEXTLOCDELAY		4
 
+namespace
+{
+
 // used to accelerate or skip a stage
-static bool				acceleratestage;
+bool				acceleratestage;
 
 // wbs->pnum
-static unsigned			me;
+unsigned			me;
 
  // specifies current state
-static stateenum_t		state;
+stateenum_t		state;
 
 // contains information passed into intermission
-static wbstartstruct_t* wbs;
+wbstartstruct_t* wbs;
 
-static std::vector<wbplayerstruct_t> plrs;	// = wbs->plyr
-static std::vector<int> cnt_kills_c;	// = cnt_kills
-static std::vector<int> cnt_items_c;	// = cnt_items
-static std::vector<int> cnt_secret_c;	// = cnt_secret
-static std::vector<int> cnt_frags_c;	// = cnt_frags
-static lumpHandle_t		faceclassic[4];
-static int dofrags;
-static int ng_state;
+std::vector<wbplayerstruct_t> plrs;	// = wbs->plyr
+std::vector<int> cnt_kills_c;	// = cnt_kills
+std::vector<int> cnt_items_c;	// = cnt_items
+std::vector<int> cnt_secret_c;	// = cnt_secret
+std::vector<int> cnt_frags_c;	// = cnt_frags
+std::array<lumpHandle_t, 4>	faceclassic;
+int dofrags;
+int ng_state;
 
 // used for general timing
-static int				cnt;
+int				cnt;
 
 // used for timing of background animation
-static int				bcnt;
+int				bcnt;
 
 // Since classic is used for singleplayer only...
-static int			cnt_kills;
-static int			cnt_items;
-static int			cnt_secret;
-static int			cnt_time;
-static int			cnt_par;
-static int			cnt_pause;
+int			cnt_kills;
+int			cnt_items;
+int			cnt_secret;
+int			cnt_time;
+int			cnt_par;
+int			cnt_pause;
 
-static int			inter_width;
-static int			inter_height;
+int			inter_width;
+int			inter_height;
 
 
 //
@@ -127,54 +135,60 @@ static int			inter_height;
 //
 
 // %, : graphics
-static lumpHandle_t		percent;
-static lumpHandle_t		colon;
+lumpHandle_t		percent;
+lumpHandle_t		colon;
 
 // 0-9 graphic
-static lumpHandle_t		num[10];
+constexpr size_t WI_NUMDIGITS = 10;
+std::array<lumpHandle_t, WI_NUMDIGITS>	num;
 
 // minus sign
-static lumpHandle_t		wiminus;
+lumpHandle_t		wiminus;
 
 // "Finished!" graphics
-static lumpHandle_t		finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
+lumpHandle_t		finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
 // [Nes] Re-added for singleplayer
 
 // "Entering" graphic
-static lumpHandle_t		entering;
+lumpHandle_t		entering;
 
  // "Kills", "Items", "Secrets"
-static lumpHandle_t		kills;
-static lumpHandle_t		secret;
-static lumpHandle_t		items;
-static lumpHandle_t		frags;
-static lumpHandle_t		scrt;
+lumpHandle_t		kills;
+lumpHandle_t		secret;
+lumpHandle_t		items;
+lumpHandle_t		frags;
+lumpHandle_t		scrt;
 
 // Time sucks.
-static lumpHandle_t		timepatch;
-static lumpHandle_t		par;
-static lumpHandle_t		sucks;
+lumpHandle_t		timepatch;
+lumpHandle_t		par;
+lumpHandle_t		sucks;
 
 // "Total", your face, your dead face
-static lumpHandle_t		total;
-static lumpHandle_t		star;
-static lumpHandle_t		bstar;
+lumpHandle_t		total;
+lumpHandle_t		star;
+lumpHandle_t		bstar;
 
-static lumpHandle_t		p; // [RH] Only one
+lumpHandle_t		p; // [RH] Only one
 
  // Name graphics of each level (centered)
-static lumpHandle_t		lnames[2];
+std::array<lumpHandle_t, 2>	lnames;
 
 // [RH] Info to dynamically generate the level name graphics
-static int				lnamewidths[2];
-static const char*		lnametexts[2];
+std::array<int, 2>			lnamewidths;
+std::array<const char*, 2>	lnametexts;
 
-static IWindowSurface*	background_surface;
+// Map authors, empty when there is none or the title patch already shows it
+std::array<std::string, 2>	lnameauthors;
 
-static IWindowSurface*	anim_surface;
+IWindowSurface*	background_surface;
 
-static interlevel_t* enteranim;
-static interlevel_t* exitanim;
+IWindowSurface*	anim_surface;
+
+interlevel_t* enteranim;
+interlevel_t* exitanim;
+
+} // namespace
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_oldintermission)
@@ -342,7 +356,7 @@ static void WI_updateAnimationStates(std::vector<wi_animationstate_t>& states)
 						int maxtics = frame.maxduration;
 						int mintics = frame.duration;
 						tics = M_Random() % maxtics;
-						tics = clamp(tics, mintics, maxtics);
+						tics = std::clamp(tics, mintics, maxtics);
 					}
 					break;
 
@@ -350,7 +364,7 @@ static void WI_updateAnimationStates(std::vector<wi_animationstate_t>& states)
 					break;
 			}
 
-			state.duration_left = MAX(tics, 1);
+			state.duration_left = std::max(tics, 1);
 
 			if (!state.frame_start)
 			{
@@ -526,14 +540,35 @@ void WI_slamBackground()
 	background_surface->unlock();
 	anim_surface->unlock();
 }
+namespace
+{
 
-static int WI_DrawName (const char *str, int x, int y)
+int WI_BigNameHeight()
+{
+	const patch_t* p = W_CachePatch("FONTB39");
+	return p->height() - p->topoffset();
+}
+
+int WI_DrawName (const char *str, int x, int y)
 {
 	patch_t *p = NULL;
 
 	::V_ColorMap = translationref_t(::Ranges + CR_GREY * 256);
 	while (*str)
 	{
+		// Recolor on a color escape code instead of drawing it.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			int new_color = V_GetTextColor(str);
+			if (new_color == -1)
+				new_color = CR_GREY;
+
+			::V_ColorMap =
+			    translationref_t(::Ranges + (static_cast<ptrdiff_t>(new_color) * 256));
+			str += 2;
+			continue;
+		}
+
 		int lump = W_CheckNumForName(fmt::format("FONTB{:02d}", toupper(*str) - 32));
 
 		if (lump != -1)
@@ -549,18 +584,37 @@ static int WI_DrawName (const char *str, int x, int y)
 		str++;
 	}
 
-	p = W_CachePatch ("FONTB39");
-	return (5*(p->height()-p->topoffset()))/4;
+	const int height = WI_BigNameHeight();
+	return height + (height / 4);
 }
 
-static int WI_DrawSmallName(const char* str, int x, int y)
+constexpr int WI_SMALLNAMEBLANK = 4;
+
+OLumpName WI_SmallNameChar(char c)
+{
+	return fmt::format("STCFN{:03d}", HU_FONTSTART + (toupper(c) - 32) - 1);
+}
+
+int WI_SmallNameHeight()
+{
+	const patch_t* p = W_CachePatch(WI_SmallNameChar('M'));
+	return p->height() - p->topoffset();
+}
+
+int WI_DrawSmallName(const char* str, int x, int y)
 {
 	patch_t* p = NULL;
 
 	while (*str)
 	{
-		const OLumpName charname = fmt::format("STCFN{:03d}", HU_FONTSTART + (toupper(*str) - 32) - 1);
-		int lump = W_CheckNumForName(charname);
+		// This font is drawn untranslated, so color codes are only skipped.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
+		const int lump = W_CheckNumForName(WI_SmallNameChar(*str));
 
 		if (lump != -1)
 		{
@@ -570,14 +624,55 @@ static int WI_DrawSmallName(const char* str, int x, int y)
 		}
 		else
 		{
-			x += 12;
+			x += WI_SMALLNAMEBLANK;
 		}
 		str++;
 	}
 
-	p = W_CachePatch("FONTB39");
-	return (5 * (p->height() - p->topoffset())) / 4;
+	const int height = WI_SmallNameHeight();
+	return height + (height / 4);
 }
+
+// Width of a string drawn by WI_DrawSmallName.
+int WI_CalcSmallWidth(const char* str)
+{
+	int w = 0;
+
+	while (*str)
+	{
+		// Color escape codes take up no space.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
+		const int lump = W_CheckNumForName(WI_SmallNameChar(*str));
+
+		if (lump != -1)
+			w += W_CachePatch(lump)->width() - 1;
+		else
+			w += WI_SMALLNAMEBLANK;
+
+		str++;
+	}
+
+	return w;
+}
+
+// Draws the author centered under a level name of the given height, and returns
+// how far down the drawing position moves as a result.
+//
+// The level name already left a quarter of its height as a gap, so the author
+// is drawn straight into it and the same gap is left below.
+int WI_DrawAuthorName(const char* author, int y, int nameheight)
+{
+	WI_DrawSmallName(author, WI_CENTERX - (WI_CalcSmallWidth(author) / 2), y);
+
+	return WI_SmallNameHeight() + (nameheight / 4);
+}
+
+} // namespace
 
 //Draws "<Levelname> Finished!"
 void WI_drawLF()
@@ -586,19 +681,26 @@ void WI_drawLF()
 		return;
 
 	int y = WI_TITLEY;
+	int nameheight;
 
 	if (!lnames[0].empty())
 	{
 		// draw <LevelName>
 		patch_t* lnames0 = W_ResolvePatchHandle(lnames[0]);
 		screen->DrawPatchClean(lnames0, (320 - lnames0->width()) / 2, y);
-		y += (5 * lnames0->height()) / 4;
+		nameheight = lnames0->height();
+		y += nameheight + (nameheight / 4);
 	}
 	else
 	{
 		// [RH] draw a dynamic title string
-		y += WI_DrawName (lnametexts[0], 160 - lnamewidths[0] / 2, y);
+		nameheight = WI_BigNameHeight();
+		y += WI_DrawName (lnametexts[0], WI_CENTERX - (lnamewidths[0] / 2), y);
 	}
+
+	// draw the author underneath, if the map names one
+	if (!lnameauthors[0].empty())
+		y += WI_DrawAuthorName(lnameauthors[0].c_str(), y, nameheight);
 
 	// draw "Finished!"
 	//if (!multiplayer || sv_maxplayers <= 1)
@@ -626,18 +728,27 @@ void WI_drawEL()
 
 	// [RH] Changed to adjust by height of entering patch instead of title
 	if (lnames1->height() < 200)
-		y += (5 * ent->height()) / 4;
+		y += ent->height() + (ent->height() / 4);
+
+	int nameheight;
 
 	if (!lnames[1].empty())
 	{
 		// draw level
 		screen->DrawPatchClean(lnames1, (320 - lnames1->width()) / 2, y);
+		nameheight = lnames1->height();
+		y += nameheight + (nameheight / 4);
 	}
 	else
 	{
 		// [RH] draw a dynamic title string
-		WI_DrawName (lnametexts[1], 160 - lnamewidths[1] / 2, y);
+		nameheight = WI_BigNameHeight();
+		y += WI_DrawName (lnametexts[1], WI_CENTERX - (lnamewidths[1] / 2), y);
 	}
+
+	// draw the author underneath, if the map names one
+	if (!lnameauthors[1].empty())
+		WI_DrawAuthorName(lnameauthors[1].c_str(), y, nameheight);
 }
 
 void WI_drawAnimatedBack()
@@ -852,7 +963,7 @@ void WI_updateNetgameStats()
 		acceleratestage = 0;
 
 		i = 0;
-		for (Players::iterator it = players.begin();it != players.end();++it,++i)
+		for (auto it = players.begin();it != players.end();++it,++i)
 		{
 			if (!(it->ingame()))
 				continue;
@@ -864,18 +975,18 @@ void WI_updateNetgameStats()
 			if (dofrags)
 				cnt_frags_c[i] = WI_fragSum(*it);
 		}
-		S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 		ng_state = 10;
 	}
 	if (ng_state == 2)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
 		i = 0;
-		for (Players::iterator it = players.begin();it != players.end();++it,++i)
+		for (auto it = players.begin();it != players.end();++it,++i)
 		{
 			if (!(it->ingame()))
 				continue;
@@ -890,14 +1001,14 @@ void WI_updateNetgameStats()
 
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
 	else if (ng_state == 4)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -915,14 +1026,14 @@ void WI_updateNetgameStats()
 		}
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
 	else if (ng_state == 6)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -942,7 +1053,7 @@ void WI_updateNetgameStats()
 
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			ng_state += 1 + 2*!dofrags;
 		}
 	}
@@ -950,7 +1061,7 @@ void WI_updateNetgameStats()
 	{
 		int fsum;
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -970,7 +1081,7 @@ void WI_updateNetgameStats()
 
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "player/male/death1", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/cooptotal", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
@@ -978,7 +1089,10 @@ void WI_updateNetgameStats()
 	{
 		if (acceleratestage)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+			if (dofrags)
+				S_Sound (CHAN_INTERFACE, "intermission/pastdmstats", 1, ATTN_NONE);
+			else
+				S_Sound (CHAN_INTERFACE, "intermission/pastcoopstats", 1, ATTN_NONE);
 			if ((gameinfo.flags & GI_MAPxx) && (enteranim == nullptr || demoplayback))
 				WI_initNoState();
 			else
@@ -1117,7 +1231,7 @@ void WI_updateStats()
 		cnt_time   = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
 		cnt_par    = wminfo.partime / TICRATE;
 
-		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 		sp_state = 10;
 	}
 	if (sp_state == 2)
@@ -1125,12 +1239,12 @@ void WI_updateStats()
 		cnt_kills += 2;
 
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		if (!gameinfo.intermissionCounter || cnt_kills >= finalKillPercent)
 		{
 			cnt_kills = finalKillPercent;
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 		}
 	}
@@ -1139,12 +1253,12 @@ void WI_updateStats()
 		cnt_items += 2;
 
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		if (!gameinfo.intermissionCounter || cnt_items >= finalItemPercent)
 		{
 			cnt_items = finalItemPercent;
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 		}
 	}
@@ -1153,19 +1267,19 @@ void WI_updateStats()
 		cnt_secret += 2;
 
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		if (!gameinfo.intermissionCounter || cnt_secret >= finalSecretPercent)
 		{
 			cnt_secret = finalSecretPercent;
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 		}
 	}
 	else if (sp_state == 8)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		cnt_time += 3;
 
@@ -1180,7 +1294,7 @@ void WI_updateStats()
 
 			if (cnt_time >= plrs[me].stime / TICRATE)
 			{
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 			}
 		}
@@ -1202,7 +1316,7 @@ void WI_updateStats()
 					S_ChangeMusic(gameinfo.intermissionMusic.c_str(), true);
 				// background
 				const OLumpName& bg_lump = enteranim == nullptr ? enterpic : enteranim->backgroundlump;
-				const patch_t* bg_patch = W_CachePatch(bg_lump);
+				const patch_t* bg_patch = W_CachePatch(W_CheckWidescreenPatch(bg_lump));
 
 				inter_width = bg_patch->width();
 				inter_height = bg_patch->height() + (bg_patch->height() / 5);
@@ -1218,7 +1332,7 @@ void WI_updateStats()
 				background_surface->unlock();
 			}
 
-			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/paststats", 1, ATTN_NONE);
 
 			if (gameinfo.flags & GI_MAPxx && (enteranim == nullptr || demoplayback))
 				WI_initNoState();
@@ -1263,11 +1377,11 @@ void WI_drawStats()
 	WI_drawPercent(cnt_secret, 320 - SP_STATSX, SP_STATSY + 2 * lh);
 
 	screen->DrawPatchClean(pTimepatch, SP_TIMEX, SP_TIMEY);
-	WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
+	WI_drawTime(cnt_time, WI_CENTERX - SP_TIMEX, SP_TIMEY);
 
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd < 3)
 	{
-		screen->DrawPatchClean(pPar, SP_TIMEX + 160, SP_TIMEY);
+		screen->DrawPatchClean(pPar, SP_TIMEX + WI_CENTERX, SP_TIMEY);
 		WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
 	}
 }
@@ -1376,6 +1490,13 @@ static int WI_CalcWidth (const char *str)
 
 	while (*str)
 	{
+		// Color escape codes take up no space.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
 		const OLumpName charname = fmt::format("FONTB{:02d}", toupper(*str) - 32);
 		int lump = W_CheckNumForName(charname);
 
@@ -1434,7 +1555,7 @@ void WI_loadData()
 		name = "INTERPIC";
 
 	// background
-	const patch_t* bg_patch = W_CachePatch(name);
+	const patch_t* bg_patch = W_CachePatch(W_CheckWidescreenPatch(name));
 
 	inter_width = bg_patch->width();
 	inter_height = bg_patch->height() + (bg_patch->height() / 5);
@@ -1449,6 +1570,8 @@ void WI_loadData()
 
 	for (int i = 0, j; i < 2; i++)
 	{
+		const level_pwad_info_t& linfo =
+		    levels.findByName(i == 0 ? wbs->current : wbs->next);
 		const OLumpName& lname = (i == 0 ? wbs->lname0 : wbs->lname1);
 
 		if (!lname.empty())
@@ -1463,9 +1586,22 @@ void WI_loadData()
 		else
 		{
 			lnames[i].clear();
-			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name.c_str();
+			lnametexts[i] = linfo.level_name.c_str();
 			lnamewidths[i] = WI_CalcWidth (lnametexts[i]);
 		}
+
+		// Determine if we should display the map author.
+		// MAPINFO can just straight up ask for it to be disabled.
+		const bool patchshowsauthor =
+		    !lnames[i].empty() && (linfo.flags2 & LEVEL2_HIDEAUTHORNAME) != 0;
+
+		// A UMAPINFO map that brings its own title graphic has drawn that graphic
+		// to suit itself, so an author line under it is not wanted.
+		const bool umapinfoshowsauthor = (linfo.flags2 & LEVEL2_FROMUMAPINFO) != 0 &&
+		                                    !linfo.pname.empty() &&
+		                                    W_IsLumpFromPWAD(linfo.pname);
+
+		lnameauthors[i] = (patchshowsauthor || umapinfoshowsauthor) ? "" : linfo.author;
 	}
 
 	for (int i = 0; i < 10; i++)

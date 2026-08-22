@@ -63,32 +63,50 @@ struct v2fixed64_t
 	fixed64_t x, y;
 };
 
-struct v3fixed_t
+template <typename ElementType>
+struct vector3_t
 {
-	v3fixed_t() {}
+	vector3_t() = default;
+	vector3_t(ElementType i_x, ElementType i_y, ElementType i_z) : x(i_x), y(i_y), z(i_z) { }
 
-	v3fixed_t(fixed_t _x, fixed_t _y, fixed_t _z) : x(_x), y(_y), z(_z) { }
+	ElementType x {0};
+	ElementType y {0};
+	ElementType z {0};
 
-	fixed_t x, y, z;
+	template <typename StreamType>
+	friend StreamType& operator<< (StreamType& io_stream, const vector3_t& i_obj)
+	{
+		io_stream
+		    << i_obj.x
+		    << i_obj.y
+		    << i_obj.z;
+		return io_stream;
+	}
+
+	template <typename StreamType>
+	friend StreamType& operator>> (StreamType& io_stream, vector3_t& o_obj)
+	{
+		io_stream
+		    >> o_obj.x
+		    >> o_obj.y
+		    >> o_obj.z;
+		return io_stream;
+	}
+
+	bool MagnitudeIsGreaterThan(const ElementType& length) const requires std::is_integral_v<ElementType>
+	{
+		const int64_t x64 { x };
+		const int64_t y64 { y };
+		const int64_t z64 { z };
+		const int64_t length64 { length };
+
+		return (x64 * x64) + (y64 * y64) + (z64 * z64) > (length64 * length64);
+	}
 };
 
-struct v3float_t
-{
-	v3float_t() {}
-
-	v3float_t(float _x, float _y, float _z) : x(_x), y(_y), z(_z) { }
-
-	float x, y, z;
-};
-
-struct v3double_t
-{
-	v3double_t() {}
-
-	v3double_t(double _x, double _y, double _z) : x(_x), y(_y), z(_z) { }
-
-	double x, y, z;
-};
+using v3fixed_t  = vector3_t<fixed_t>;
+using v3float_t  = vector3_t<float>;
+using v3double_t = vector3_t<double>;
 
 struct rectInt_t
 {
@@ -103,6 +121,9 @@ struct rectInt_t
 
 	v2int_t min, max;
 };
+
+// TODO: use reference instead of pointer parameters so that these can all take temporaries as arguments
+// might make sense to make these members and to make some of all this templated to reduce duplication
 
 //
 // M_SetVec3f
@@ -182,10 +203,10 @@ void M_SubVec3Fixed(v3fixed_t *dest, const v3fixed_t *v1, const v3fixed_t *v2);
 // Quake 2, added by CG.
 // [SL] 2012-02-13 - Courtesy of Eternity Engine
 //
-float M_LengthVec3f(const v3float_t *v);
-double M_LengthVec3(const v3double_t *v);
-fixed_t M_LengthVec2Fixed(const v2fixed_t *v);
-fixed_t M_LengthVec3Fixed(const v3fixed_t *v);
+float M_LengthVec3f(const v3float_t& v);
+double M_LengthVec3(const v3double_t& v);
+fixed_t M_LengthVec2Fixed(const v2fixed_t& v);
+fixed_t M_LengthVec3Fixed(const v3fixed_t& v);
 
 //
 // M_ScaleVec3f

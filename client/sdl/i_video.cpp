@@ -116,7 +116,7 @@ EXTERN_CVAR(sv_allowwidescreen)
 IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelFormat* format,
 								void* buffer, uint16_t pitch) :
 	mCanvas(NULL),
-	mSurfaceBuffer((uint8_t*)buffer), mOwnsSurfaceBuffer(buffer == NULL),
+	mSurfaceBuffer(static_cast<uint8_t*>(buffer)), mOwnsSurfaceBuffer(buffer == NULL),
 	mPalette(V_GetDefaultPalette()->colors), mPixelFormat(*format),
 	mWidth(width), mHeight(height), mPitch(pitch), mLocks(0)
 {
@@ -139,7 +139,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 		uint8_t* buffer = new uint8_t[mPitch * mHeight + alignment];
 
 		// calculate the offset from buffer to the next aligned memory address
-		uintptr_t offset = ((uintptr_t)(buffer + alignment) & ~(alignment - 1)) - (uintptr_t)buffer;
+		uintptr_t offset = (reinterpret_cast<uintptr_t>(buffer + alignment) & ~(alignment - 1)) - reinterpret_cast<uintptr_t>(buffer);
 
 		mSurfaceBuffer = buffer + offset;
 
@@ -175,7 +175,7 @@ IWindowSurface::IWindowSurface(IWindowSurface* base_surface, uint16_t width, uin
 	uint16_t x = (base_surface->getWidth() - mWidth) / 2;
 	uint16_t y = (base_surface->getHeight() - mHeight) / 2;
 
-	mSurfaceBuffer = (uint8_t*)base_surface->getBuffer(x, y);
+	mSurfaceBuffer = static_cast<uint8_t*>(base_surface->getBuffer(x, y));
 
 	mPalette = base_surface->mPalette;
 }
@@ -418,8 +418,8 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 	if (srcbits == 8 && destbits == 8)
 	{
 		const palindex_t* source =
-		    (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		palindex_t* dest = (palindex_t*)getBuffer() + buffery * destpitchpixels + bufferx;
+		    static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
 
 		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
 			destw, desth,
@@ -432,8 +432,8 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 			return;
 
 		const palindex_t* source =
-		    (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + buffery * destpitchpixels + bufferx;
+		    static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
 
 		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
 				destw, desth,
@@ -448,8 +448,8 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 	else if (srcbits == 32 && destbits == 32)
 	{
 		const argb_t* source =
-		    (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + buffery * destpitchpixels + bufferx;
+		    reinterpret_cast<const argb_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
 
 		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
 			destw, desth,
@@ -522,8 +522,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 
 	if (srcbits == 8 && destbits == 8)
 	{
-		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		palindex_t* dest = (palindex_t*)getBuffer() + desty * destpitchpixels + destx;
+		const palindex_t* source = static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer()) + desty * destpitchpixels + destx;
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -532,8 +532,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 		if (palette == NULL)
 			return;
 
-		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
+		const palindex_t* source = static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + desty * destpitchpixels + destx;
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -544,8 +544,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	}
 	else if (srcbits == 32 && destbits == 32)
 	{
-		const argb_t* source = (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
+		const argb_t* source = reinterpret_cast<const argb_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + desty * destpitchpixels + destx;
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -567,7 +567,7 @@ void IWindowSurface::clear()
 	{
 		const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 		palindex_t color_index = V_BestColor(palette_colors, color);
-		palindex_t* dest = (palindex_t*)getBuffer();
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer());
 
 		for (int y = 0; y < getHeight(); y++)
 		{
@@ -577,7 +577,7 @@ void IWindowSurface::clear()
 	}
 	else
 	{
-		argb_t* dest = (argb_t*)getBuffer();
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer());
 
 		for (int y = 0; y < getHeight(); y++)
 		{
@@ -689,8 +689,8 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 	const IVideoMode invalid_mode(0, 0, 0, WINDOW_Windowed);
 	IVideoMode desired_mode = mode;
 
-	desired_mode.width = clamp<uint16_t>(mode.width, 320, MAXWIDTH);
-	desired_mode.height = clamp<uint16_t>(mode.height, 200, MAXHEIGHT);
+	desired_mode.width = std::clamp<uint16_t>(mode.width, 320, MAXWIDTH);
+	desired_mode.height = std::clamp<uint16_t>(mode.height, 200, MAXHEIGHT);
 	desired_mode.bpp = mode.bpp;
 	desired_mode.window_mode = mode.window_mode;
 
@@ -846,8 +846,8 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	}
 
 	// Ensure matted surface dimensions are sane and sanitized.
-	surface_width = clamp<uint16_t>(surface_width, 320, MAXWIDTH);
-	surface_height = clamp<uint16_t>(surface_height, 200, MAXHEIGHT);
+	surface_width = std::clamp<uint16_t>(surface_width, 320, MAXWIDTH);
+	surface_height = std::clamp<uint16_t>(surface_height, 200, MAXHEIGHT);
 
 	// Is matting being used? Create matted_surface based on the primary_surface.
 	if (surface_width != primary_surface->getWidth() ||
@@ -909,7 +909,7 @@ bool I_VideoInitialized()
 //
 // Destroys the application window and frees its memory.
 //
-void STACK_ARGS I_ShutdownHardware()
+void I_ShutdownHardware()
 {
 	I_FreeSurface(loading_icon_background_surface);
 
@@ -1107,6 +1107,44 @@ int I_GetSurfaceHeight()
 	if (I_VideoInitialized())
 		return I_GetPrimarySurface()->getHeight();
 	return 0;
+}
+
+
+//
+// I_WindowToSurfaceCoords
+//
+// Translates a point in window coordinates to the same point in the
+// surface that draws to the window.
+//
+// Returns true if the function was able to translate the position.
+//
+bool I_WindowToSurfaceCoords(int window_x, int window_y, int& surface_x, int& surface_y)
+{
+	if (!I_VideoInitialized() || I_GetWindow() == nullptr)
+		return false;
+
+	int x, y;
+	if (!I_GetWindow()->windowToSurfaceCoords(window_x, window_y, x, y))
+		return false;
+
+	// The surface everything draws to may be a matted sub-surface centered
+	// inside the window's surface, so shift into its coordinate space.
+	const IWindowSurface* window_surface = I_GetWindow()->getPrimarySurface();
+	const IWindowSurface* draw_surface = I_GetPrimarySurface();
+
+	if (window_surface == nullptr || draw_surface == nullptr)
+		return false;
+
+	x -= (window_surface->getWidth() - draw_surface->getWidth()) / 2;
+	y -= (window_surface->getHeight() - draw_surface->getHeight()) / 2;
+
+	if (x < 0 || x >= draw_surface->getWidth() || y < 0 || y >= draw_surface->getHeight())
+		return false;
+
+	surface_x = x;
+	surface_y = y;
+
+	return true;
 }
 
 
@@ -1420,7 +1458,7 @@ const PixelFormat* I_Get32bppPixelFormat()
 
 int I_GetAspectCorrectWidth(int surface_height, int asset_height, int asset_width)
 {
-	float aspect_scale_ratio = (float)surface_height / (float)asset_height;
+	float aspect_scale_ratio = static_cast<float>(surface_height) / static_cast<float>(asset_height);
 	return aspect_scale_ratio * asset_width;
 }
 

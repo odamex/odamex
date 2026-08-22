@@ -50,7 +50,7 @@ struct CvarField_t
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
-#define PROTOCOL_VERSION 7
+#define PROTOCOL_VERSION 1
 
 /*
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -84,17 +84,8 @@ static void IntQryBuildInformation(const uint32_t& EqProtocolVersion,
 	// bond - real protocol
 	MSG_WriteLong(&ml_message, PROTOCOL_VERSION);
 
-	// Built revision of server
-	// TODO: Remove guard before next release
-	QRYNEWINFO(7)
-	{
-		// Send the detailed version - version number was in PROTOCOL_VERSION.
-		MSG_WriteString(&ml_message, NiceVersionDetails());
-	}
-	else
-	{
-		MSG_WriteLong(&ml_message, -1);
-	}
+    // Send the detailed version - version number was in PROTOCOL_VERSION.
+    MSG_WriteString(&ml_message, NiceVersionDetails());
 
 	cvar_t* var = GetFirstCvar();
 
@@ -124,7 +115,7 @@ next:
 	}
 
 	// Cvar count
-	MSG_WriteByte(&ml_message, (byte)Cvars.size());
+	MSG_WriteByte(&ml_message, static_cast<byte>(Cvars.size()));
 
 	// Write cvars
 	for(size_t i = 0; i < Cvars.size(); ++i)
@@ -132,25 +123,25 @@ next:
 		MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
 
 		// Type field
-		MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
+		MSG_WriteByte(&ml_message, static_cast<byte>(Cvars[i].Type));
 
 		switch(Cvars[i].Type)
 		{
 		case CVARTYPE_BYTE:
 		{
-			MSG_WriteByte(&ml_message, (byte)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteByte(&ml_message, ParseNum<byte>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
 		case CVARTYPE_WORD:
 		{
-			MSG_WriteShort(&ml_message, (short)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteShort(&ml_message, ParseNum<short>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
 		case CVARTYPE_INT:
 		{
-			MSG_WriteLong(&ml_message, (int)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteLong(&ml_message, ParseNum<int>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
@@ -172,21 +163,16 @@ next:
 
 	MSG_WriteString(&ml_message, level.mapname.c_str());
 
-	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
-
-	if(timeleft < 0)
-		timeleft = 0;
-
-	// TODO: Remove guard on next release and reset protocol version
-	// TODO: Incorporate code above into block
 	// Only send timeleft if sv_timelimit has been set
-	QRYNEWINFO(6)
-	{
-		if (sv_timelimit.asInt())
-			MSG_WriteShort(&ml_message, timeleft);
-	}
-	else
-		MSG_WriteShort(&ml_message, timeleft);
+    if (sv_timelimit.asInt())
+    {
+        int timeleft = (sv_timelimit.asInt() - level.time/(TICRATE*60));
+
+        if (timeleft < 0)
+            timeleft = 0;
+
+        MSG_WriteShort(&ml_message, timeleft);
+    }
 
 	// Teams
 	if(G_IsTeamGame())
@@ -197,7 +183,7 @@ next:
 
 		for (int i = 0; i < teams; i++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 			MSG_WriteString(&ml_message, teamInfo->ColorString.c_str());
 			MSG_WriteLong(&ml_message, teamInfo->Color);
 			MSG_WriteShort(&ml_message, teamInfo->Points);
@@ -230,8 +216,10 @@ next:
 	{
 		MSG_WriteString(&ml_message, player.userinfo.netname.c_str());
 
-		for (int i = 3; i >= 0; i--)
-			MSG_WriteByte(&ml_message, player.userinfo.color[i]);
+		MSG_WriteByte(&ml_message, player.userinfo.color.geta());
+		MSG_WriteByte(&ml_message, player.userinfo.color.getr());
+		MSG_WriteByte(&ml_message, player.userinfo.color.getg());
+		MSG_WriteByte(&ml_message, player.userinfo.color.getb());
 
 		if(G_IsTeamGame())
 			MSG_WriteByte(&ml_message, player.userinfo.team);

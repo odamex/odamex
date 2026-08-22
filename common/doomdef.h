@@ -74,24 +74,48 @@ extern baseapp_t baseapp;
 /**
  * @brief The passed expression only appears on the client.
  */
-#define CLIENT_ONLY(expr) expr
+#define CLIENT_ONLY(...) __VA_ARGS__
 #else
 /**
  * @brief The passed expression only appears on the client.
  */
-#define CLIENT_ONLY(expr)
+#define CLIENT_ONLY(...)
 #endif
 
 #if defined(SERVER_APP)
 /**
  * @brief The passed expression only appears on the server.
  */
-#define SERVER_ONLY(expr) expr
+#define SERVER_ONLY(...) __VA_ARGS__
 #else
 /**
  * @brief The passed expression only appears on the server.
  */
-#define SERVER_ONLY(expr)
+#define SERVER_ONLY(...)
+#endif
+
+#define DO_PRAGMA(x) _Pragma(#x)
+
+#ifdef __GNUC__
+/**
+ * @brief Disables the passed warning/error on GCC/clang
+ *
+ * Must be paired with `END_DISABLE_WARNING_GNU`
+ */
+#define BEGIN_DISABLE_WARNING_GNU(w) \
+    DO_PRAGMA(GCC diagnostic push) \
+    DO_PRAGMA(GCC diagnostic ignored w)
+
+#define END_DISABLE_WARNING_GNU \
+    DO_PRAGMA(GCC diagnostic pop)
+#else
+/**
+ * @brief Disables the passed warning/error on GCC/clang
+ *
+ * Must be paired with `END_DISABLE_WARNING_GNU`
+ */
+#define BEGIN_DISABLE_WARNING_GNU(w)
+#define END_DISABLE_WARNING_GNU
 #endif
 
 //
@@ -162,7 +186,7 @@ inline bool IsChexMission(GameMission_t mission)
 #define MAXPLAYERS_VANILLA		4
 
 // Margin of error used when calculating percentages against player numbers.
-#define MPEPSILON				(float)1 / (MAXPLAYERS * 2)
+#define MPEPSILON				1.0f / (MAXPLAYERS * 2)
 
 // State updates, number of tics / second.
 #define TICRATE 		35
@@ -170,7 +194,7 @@ inline bool IsChexMission(GameMission_t mission)
 #define SPEED(a) ((a) * (FRACUNIT / 8))
 #define TICS(a) (((a)*TICRATE) / 35)
 #define OCTICS(a) (((a)*TICRATE) / 8)
-#define BYTEANGLE(a) ((angle_t)((a) << 24))
+#define BYTEANGLE(a) (static_cast<angle_t>((a) << 24))
 
 // [RH] Equivalents for BOOM's generalized sector types
 
@@ -401,7 +425,7 @@ enum skill_t
 //
 // Key cards.
 //
-enum card_t
+enum card_t : uint8_t
 {
 	it_bluecard,
 	it_yellowcard,
@@ -437,22 +461,11 @@ enum ItemEquipVal
 };
 
 
-inline FArchive &operator<< (FArchive &arc, card_t i)
-{
-	return arc << (byte)i;
-}
-inline FArchive &operator>> (FArchive &arc, card_t &i)
-{
-	byte in; arc >> in; i = (card_t)in; return arc;
-}
-
-
 // The defined weapons,
 //	including a marker indicating
 //	user has not changed weapon.
-enum weapontype_t
+enum weapontype_t : int8_t
 {
-	wp_none = -1,
 	wp_fist,
 	wp_pistol,
 	wp_shotgun,
@@ -462,6 +475,7 @@ enum weapontype_t
 	wp_bfg,
 	wp_chainsaw,
 	wp_supershotgun,
+	wp_none,
 
 	NUMWEAPONS,
 
@@ -474,18 +488,8 @@ inline auto format_as(weapontype_t eWeaponType)
 	return fmt::underlying(eWeaponType);
 }
 
-inline FArchive &operator<< (FArchive &arc, weapontype_t i)
-{
-	return arc << (byte)i;
-}
-inline FArchive &operator>> (FArchive &arc, weapontype_t &i)
-{
-	byte in; arc >> in; i = (weapontype_t)in; return arc;
-}
-
-
 // Ammunition types defined.
-enum ammotype_t
+enum ammotype_t : int8_t
 {
 	am_clip,	// Pistol / chaingun ammo.
 	am_shell,	// Shotgun / double barreled shotgun.
@@ -501,18 +505,9 @@ inline auto format_as(ammotype_t eAmmoType)
 	return fmt::underlying(eAmmoType);
 }
 
-inline FArchive &operator<< (FArchive &arc, ammotype_t i)
-{
-	return arc << (byte)i;
-}
-inline FArchive &operator>> (FArchive &arc, ammotype_t &i)
-{
-	byte in; arc >> in; i = (ammotype_t)in; return arc;
-}
-
 
 // Power up artifacts.
-enum powertype_t
+enum powertype_t : int8_t
 {
 	pw_none = -1,
 	pw_invulnerability,
@@ -523,16 +518,6 @@ enum powertype_t
 	pw_infrared,
 	NUMPOWERS
 };
-
-inline FArchive &operator<< (FArchive &arc, powertype_t i)
-{
-	return arc << (byte)i;
-}
-inline FArchive &operator>> (FArchive &arc, powertype_t &i)
-{
-	byte in; arc >> in; i = (powertype_t)in; return arc;
-}
-
 
 //
 // Power up durations, how many tics till expiration.
@@ -564,7 +549,7 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 
 // Factor to scale scrolling effect into mobj-carrying properties = 3/32.
 // (This is so scrolling floors and objects on them can move at same speed.)
-#define CARRYFACTOR ((fixed_t)(FRACUNIT * .09375))
+#define CARRYFACTOR (static_cast<fixed_t>(FRACUNIT * .09375))
 
 #ifndef __BIG_ENDIAN__
 #define MAKE_ID(a,b,c,d)	((a)|((b)<<8)|((c)<<16)|((d)<<24))

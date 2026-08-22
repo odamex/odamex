@@ -19,17 +19,17 @@ jobs:
       minor: ${{ steps.gitversion.outputs.minor }}
       patch: ${{ steps.gitversion.outputs.patch }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v4.1.0
+        uses: gittools/actions/gitversion/setup@v4.5
         with:
           versionSpec: '6.x'
       - name: Determine Version
         id:   gitversion
-        uses: gittools/actions/gitversion/execute@v4.1.0
+        uses: gittools/actions/gitversion/execute@v4.5
       - name: Get Commits From Source
         id:   revlist
         shell: bash
@@ -80,9 +80,10 @@ jobs:
       zstd_version: "1.5.7"
       odamex_install_bindir: "/Applications/Odamex"
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+        submodules: recursive
     - name: Run Upversion
       id:   upversion
       shell: pwsh
@@ -91,8 +92,6 @@ jobs:
         MAJORVERSION: ${{ needs.pre_job.outputs.major }}
         MINORVERSION: ${{ needs.pre_job.outputs.minor }}
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
     - name: Cache macOS universal deps
       uses: actions/cache@v4
       with:
@@ -319,14 +318,14 @@ jobs:
           done
         }
         for app_bin in \
-          "build/client/odamex.app/Contents/MacOS/odamex" \
-          "build/odalaunch/odalaunch.app/Contents/MacOS/odalaunch"
+          "build/odamex/odamex.app/Contents/MacOS/odamex" \
+          "build/odamex/odalaunch.app/Contents/MacOS/odalaunch"
         do
           if [ ! -f "${app_bin}" ]; then
             continue
           fi
           is_odamex=0
-          if [[ "${app_bin}" == *"/client/odamex.app/"* ]]; then
+          if [[ "${app_bin}" == *"/odamex/odamex.app/"* ]]; then
             is_odamex=1
           fi
           bundle_dir="$(dirname "${app_bin}")/../Frameworks"
@@ -393,7 +392,7 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-tags: true
     - name: Download universal artifact

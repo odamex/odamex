@@ -62,6 +62,7 @@ EXTERN_CVAR(sv_friendlymonsterfire)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
+EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
@@ -72,25 +73,26 @@ EXTERN_CVAR(g_lives)
 // sapientlion - experimental
 EXTERN_CVAR(sv_weapondrop)
 
+// TODO: does this need to be global?
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
 // a big item has five clip loads
-int maxammo[NUMAMMO] = {200, 50, 300, 50};
-int clipammo[NUMAMMO] = {10, 4, 20, 1};
+std::array<int, NUMAMMO> maxammo  {200, 50, 300, 50};
+std::array<int, NUMAMMO> clipammo { 10,  4,  20,  1};
 
-void AM_Stop(void);
+void AM_Stop();
 void SV_SpawnMobj(AActor *mobj);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
-void SV_TouchSpecial(const AActor& special, player_t& player);
+void SV_TouchSpecial(AActor& special, player_t& player);
 ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
-void SV_SendDamageMobj(const AActor *target, int pain);
-void SV_UpdateMobj(const AActor* mo);
-void SV_ActorTarget(const AActor *actor);
+void SV_SendDamageMobj(AActor *target, int pain);
+void SV_UpdateMobj(AActor* mo);
+void SV_UpdateMobjReliable(AActor* mo);
 void PickupMessage(const AActor *toucher, const char *message);
 void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
@@ -106,7 +108,7 @@ static void PersistPlayerDamage(const player_t& p)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(&player.client.netbuf, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
 }
 
@@ -133,7 +135,7 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(&player.client.netbuf, SVC_PlayerMembers(p, flags));
+		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -148,7 +150,7 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(&player.client.netbuf, SVC_TeamMembers(team));
+		MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_TeamMembers(team));
 	}
 }
 
@@ -257,12 +259,16 @@ int P_GetDeathCount(const player_t& player)
 //
 
 // mbf21: take into account new weapon autoswitch flags
-static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int oldammo)
+static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammotype, int oldammo)
 {
+	const weapontype_t currentweapon = (player.pendingweapon == wp_nochange)
+            ? player.readyweapon
+            : player.pendingweapon;
+
 	// Keep the original behaviour while playbacking demos only.
 	if (demoplayback)
 	{
-		switch (ammo)
+		switch (ammotype)
 		{
 		case am_clip:
 			if (player.readyweapon == wp_fist)
@@ -296,23 +302,30 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int 
 			break;
 		}
 	}
-	else if (player.userinfo.switchweapon != WPSW_NEVER)
+	else if (player.userinfo.switchweapon != WPSW_NEVER &&
+			 weaponinfo[currentweapon].flags & WPF_AUTOSWITCHFROM &&
+			 (weaponinfo[currentweapon].ammotype == am_noammo ||
+				weaponinfo[currentweapon].ammotype != ammotype))
 	{
-		if (weaponinfo[player.readyweapon].flags & WPF_AUTOSWITCHFROM &&
-			(weaponinfo[player.readyweapon].ammotype == am_noammo ||
-		     player.ammo[weaponinfo[player.readyweapon].ammotype] != ammo))
+		// respect the "attack cancels PWO" setting if player is attacking
+		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&
+			sv_allowpwo &&
+            player.cmd.buttons & BT_ATTACK &&
+            player.ammo[ammotype] > 0)
+        {
+            return IEV_EquipRemove;
+        }
+
+		for (int i = NUMWEAPONS - 1; i > currentweapon; --i)
 		{
-			for (int i = NUMWEAPONS - 1; i > player.readyweapon; --i)
+			if (player.weaponowned[i] &&
+				not (weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
+				weaponinfo[i].ammotype == ammotype &&
+				weaponinfo[i].ammopershot > oldammo &&
+				weaponinfo[i].ammopershot <= player.ammo[ammotype])
 			{
-				if (player.weaponowned[i] &&
-				    !(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
-				    weaponinfo[i].ammotype == ammo &&
-				    weaponinfo[i].ammopershot > oldammo &&
-				    weaponinfo[i].ammopershot <= player.ammo[ammo])
-				{
-					player.pendingweapon = (weapontype_t)i;
-					break;
-				}
+				player.pendingweapon = static_cast<weapontype_t>(i);
+				break;
 			}
 		}
 	}
@@ -360,9 +373,9 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 	player.ammo[ammotype] += static_cast<int>(num);
 
 	if (player.ammo[ammotype] > player.maxammo[ammotype])
-    {
+	{
 		player.ammo[ammotype] = player.maxammo[ammotype];
-    }
+	}
 
 	// If non zero ammo,
 	// don't change up weapons,
@@ -381,35 +394,20 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 }
 
 //
-// P_GiveWeapon
-// The weapon name may have a MF_DROPPED flag ored in.
+// P_GiveWeapon and helpers.
 //
-ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool dropped)
+
+/// Handles the case where the weapon being given to a player is the result of touching
+/// a non-dropped weaponstay weapon.  If this function handled the case, then then result
+/// is returned.  Otherwise, nullopt is returned.
+static ItemEquipVal PickupMultiplayerWeaponStayWeapon(player_t& player, weapontype_t weapon)
 {
-	bool gaveammo;
-	bool gaveweapon;
-
-	// [RH] Don't get the weapon if no graphics for it
-	// state_t* state = states + weaponinfo[weapon].readystate;
-	const state_t& state = states[weaponinfo[weapon].readystate];
-	if ((state.frame & FF_FRAMEMASK) >= sprites[state.sprite].numframes)
+	if (not player.weaponowned[weapon])
 	{
-		return IEV_NotEquipped;
-	}
-
-	// [Toke - dmflags] old location of DF_WEAPONS_STAY
-	if (multiplayer && sv_weaponstay && !dropped)
-	{
-		// leave placed weapons forever on net games
-		if (player.weaponowned[weapon])
-		{
-			return IEV_NotEquipped;
-		}
-
-		player.bonuscount = BONUSADD;
 		player.weaponowned[weapon] = true;
+		player.bonuscount = BONUSADD;
 
-		if (!G_IsCoopGame())
+		if (not G_IsCoopGame())
 		{
 			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 5);
 		}
@@ -423,43 +421,72 @@ ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool dropped)
 
 		WeaponPickupMessage(player.mo, weapon);
 
-		return IEV_EquipStay;
-	}
+		return IEV_EquipStay;   // leave placed weapons forever on net games
+    }
+	return IEV_NotEquipped;
+}
+
+
+/// Handles the case where a weapon is given to a player as standard weapon pickup.
+/// The return value indicates whether the weapon was not picked up, or if it was
+/// picked up, whether the item should stay where it is or be removed.
+static ItemEquipVal PickupStandardWeapon(player_t& player, weapontype_t weapon, bool wasDropped)
+{
+	ItemEquipVal result = IEV_NotEquipped;
 
 	if (weaponinfo[weapon].ammotype != am_noammo)
 	{
 		// give one clip with a dropped weapon,
 		// two clips with a found weapon
-		if (dropped)
+		const float clipCount = wasDropped ? 1.0f : 2.0f;
+		if ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, clipCount)) != 0)
 		{
-			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 1)) != 0);
+			result = IEV_EquipRemove;
+		}
+	}
+
+	if (not player.weaponowned[weapon])
+	{
+		player.weaponowned[weapon] = true;
+		if (P_CheckSwitchWeapon(player, weapon))
+		{
+			player.pendingweapon = weapon;
+		}
+
+		result = IEV_EquipRemove;
+	}
+
+	return result;
+}
+
+ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool wasDropped)
+{
+	ItemEquipVal result = IEV_NotEquipped;
+
+	// [RH] Don't get the weapon if no graphics for it
+	const state_t& state            = states[weaponinfo[weapon].readystate];
+	const bool     hasValidGraphics = (state.frame & FF_FRAMEMASK) < sprites[state.sprite].numframes;
+
+	if (hasValidGraphics)
+	{
+		// [Toke - dmflags] old location of DF_WEAPONS_STAY
+		if (multiplayer and sv_weaponstay and not wasDropped)
+		{
+			result = PickupMultiplayerWeaponStayWeapon(player, weapon);
 		}
 		else
 		{
-			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 2)) != 0);
+			result = PickupStandardWeapon(player, weapon, wasDropped);
+		}
+
+		// If we are not playing as the server, make sure we ask the real server to confirm our pickup.
+		if (not serverside and result != IEV_NotEquipped)
+		{
+			player.RequestInventoryCheckFromServer(gametic);
 		}
 	}
-	else
-	{
-		gaveammo = false;
-	}
 
-	if (player.weaponowned[weapon])
-	{
-		gaveweapon = false;
-	}
-	else
-	{
-		gaveweapon = true;
-		player.weaponowned[weapon] = true;
-		if (P_CheckSwitchWeapon(player, weapon))
-			player.pendingweapon = weapon;
-	}
-
-	if (gaveweapon || gaveammo)
-		return IEV_EquipRemove;
-
-	return IEV_NotEquipped;
+	return result;
 }
 
 //
@@ -517,7 +544,7 @@ ItemEquipVal P_GiveCard(player_t& player, card_t card)
 	}
 
 	player.bonuscount = BONUSADD;
-	player.cards[card] = 1;
+	player.cards[card] = true;
 
 	if (multiplayer)
 	{
@@ -629,7 +656,7 @@ static void P_ResurrectPlayerPowerUp(player_t& player)
 	                   player.userinfo.netname, pl->userinfo.netname);
 
 	// Send a res sound directly to this player.
-	MSG_WriteSVC(&pl->client.reliablebuf, SVC_PlayerInfo(*pl));
+	MSG_WriteSVC(pl->client.messenger->ReliableBuf(), SVC_PlayerInfo(*pl));
 	S_PlayerSound(pl, NULL, CHAN_INTERFACE, "misc/plraise", ATTN_NONE);
 
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(*pl, SVC_PM_LIVES),
@@ -652,7 +679,7 @@ static void P_AwardExtraLifePowerUp(player_t& player)
 	                   player.userinfo.netname);
 
 	player.lives += 1;
-	MSG_WriteSVC(&player.client.reliablebuf, SVC_PlayerInfo(player));
+	MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerInfo(player));
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(player, SVC_PM_LIVES),
 	                 player.id);
 }
@@ -666,10 +693,6 @@ static void P_AwardExtraLifePowerUp(player_t& player)
 static void P_GiveCarePack(player_t& player)
 {
 	constexpr int ammomulti[NUMAMMO] = {2, 1, 1, 2};
-
-	// [AM] There is way too much going on in here to accurately predict.
-	if (!::serverside)
-		return;
 
 	// Which weapons will we need ammo for?
 	bool hasWeap[NUMAMMO] = {false, false, false, false};
@@ -834,26 +857,11 @@ static void P_GiveCarePack(player_t& player)
 	if (message.empty())
 		message = "Picked up a supply cache full of health and ammo!";
 
-	if (!::clientside)
+	PrintFmt(PRINT_PICKUP, "{}\n", message.c_str());
+	if (!midmessage.empty())
 	{
-		// [AM] FIXME: This gives players their inventory, with no
-		//             background flash.
-		MSG_WriteSVC(&player.client.reliablebuf, SVC_PlayerInfo(player));
-		MSG_WriteSVC(&player.client.reliablebuf, SVC_Print(PRINT_PICKUP, message + "\n"));
-		if (!midmessage.empty())
-		{
-			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-			MSG_WriteSVC(&player.client.reliablebuf, SVC_MidPrint(buf, 0));
-		}
-	}
-	else
-	{
-		PrintFmt(PRINT_PICKUP, "{}\n", message.c_str());
-		if (!midmessage.empty())
-		{
-			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-			C_MidPrint(buf.c_str(), NULL, 0);
-		}
+		std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
+		C_MidPrint(buf.c_str(), NULL, 0);
 	}
 }
 
@@ -876,10 +884,10 @@ void P_PickupSound(const AActor *ent, int channel, const char *name)
 		S_Sound(ent, channel, name, 1, ATTN_NONE);
 }
 
-void P_GiveSpecial(player_t& player, AActor& special)
+ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 {
 	if (!player.mo)
-		return;
+		return IEV_NotEquipped;
 
 	AActor *toucher = player.mo;
 	enum class SpecialSound
@@ -1193,7 +1201,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 			}
 			for (int i = 0; i < NUMAMMO; i++)
 			{
-				P_GiveAmmo(player, (ammotype_t)i, 1);
+				P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
 			}
 			msg = &GOTBACKPACK;
 			break;
@@ -1301,7 +1309,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 			bool teamItemSuccess = false;
 			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{
-				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+				TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 
 				if (teamInfo->FlagSprite == special.sprite || teamInfo->FlagDownSprite == special.sprite)
 				{
@@ -1314,14 +1322,14 @@ void P_GiveSpecial(player_t& player, AActor& special)
 				if (teamInfo->FlagSocketSprite == special.sprite)
 				{
 					SV_SocketTouch(player, teamInfo->Team);
-					return;
+					return val;
 				}
 			}
 
 			if (!teamItemSuccess)
 			{
 				PrintFmt(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing {}: {}\n", special.sprite, special.info->name);
-				return;
+				return val;
 			}
 		}
 	}
@@ -1333,7 +1341,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 	}
 
 	if (val == IEV_NotEquipped)
-		return;
+		return val;
 
 	//the player equipped/picked up an item
 	player.bonuscount = BONUSADD;
@@ -1341,9 +1349,6 @@ void P_GiveSpecial(player_t& player, AActor& special)
 
 	if (msg != NULL)
 		PickupMessage(toucher, GStrings(*msg));
-
-	if (val == IEV_EquipRemove)
-		special.Destroy();
 
 	const AActor *ent = player.mo;
 	switch (sound)
@@ -1357,7 +1362,12 @@ void P_GiveSpecial(player_t& player, AActor& special)
 	case SpecialSound::Weapon:
 		P_PickupSound(ent, CHAN_ITEM, "misc/w_pkup");
 		break;
+	case SpecialSound::None:
+		break; // do nothing, just for silencing warnings
+	default:
+		OUtil::unreachable();
 	}
+	return val;
 }
 
 
@@ -1374,6 +1384,7 @@ void P_TouchSpecialThing(AActor& special, AActor& toucher)
 	if (!P_IsPlayerOrAvatar(toucher))
 		return;
 
+	// Don't touch things during a non-canonical prediction.
 	if (predicting)
 		return;
 
@@ -1389,8 +1400,12 @@ void P_TouchSpecialThing(AActor& special, AActor& toucher)
 	if (delta > toucher.height || delta < lowerbound)
 		return;
 
-	// Only allow clients to predict touching weapons, not health, armor, etc
-	if (!serverside && (!cl_predictpickup || !P_SpecialIsWeapon(special)))
+	// Only allow clients to predict touching weapons, not health, armor, etc.
+	// Furthermore, they can only predict for themselves, no one else.
+	if (not serverside && not  (cl_predictpickup
+	                            and P_SpecialIsWeapon(special)
+	                            and toucher.player
+	                            and toucher.player->id == consoleplayer_id))
 		return;
 
 	// [Blair] Execute ZDoom thing specials on items that are picked up.
@@ -1405,15 +1420,25 @@ void P_TouchSpecialThing(AActor& special, AActor& toucher)
 
 	if (toucher.type == MT_AVATAR)
 	{
+		bool mustBeDestroyed = false;
 		PlayersView pr = PlayerQuery().execute().players;
 		for (const auto& player : pr)
 		{
-			P_GiveSpecial(*player, special);
+			const ItemEquipVal giveResult = P_GiveSpecial(*player, special);
+			mustBeDestroyed = mustBeDestroyed or giveResult == IEV_EquipRemove;
+		}
+		if (mustBeDestroyed)
+		{
+			special.Destroy();
 		}
 	}
 	else if (toucher.player)
 	{
-		P_GiveSpecial(*toucher.player, special);
+		const ItemEquipVal giveResult = P_GiveSpecial(*toucher.player, special);
+		if (giveResult == IEV_EquipRemove)
+		{
+			special.Destroy();
+		}
 	}
 }
 
@@ -1871,7 +1896,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 					}
 					else if (sv_gametype == GM_CTF)
 					{
-						SV_CTFEvent((team_t)0, SCORE_BETRAYAL, *splayer);
+						SV_CTFEvent(static_cast<team_t>(0), SCORE_BETRAYAL, *splayer);
 					}
 				}
 				else
@@ -1886,11 +1911,12 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 					{
 						if (tplayer->flags[splayer->userinfo.team])
 						{
-							SV_CTFEvent((team_t)0, SCORE_CARRIERKILL, *splayer);
+							// TODO: why is this not just TEAM_BLUE??
+							SV_CTFEvent(static_cast<team_t>(0), SCORE_CARRIERKILL, *splayer);
 						}
 						else
 						{
-							SV_CTFEvent((team_t)0, SCORE_KILL, *splayer);
+							SV_CTFEvent(static_cast<team_t>(0), SCORE_KILL, *splayer);
 						}
 					}
 				}
@@ -1971,6 +1997,8 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 	{
 		target->health = 0;
 	}
+
+	target->UpdateActorLists();
 
 	P_RemoveHealthPool(target);
 	P_QueueCorpseForDestroy(target);
@@ -2155,12 +2183,16 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		return;
 	}
 
-	// No damage with sv_friendlymonsterfire
+	// No damage with sv_friendlymonsterfire.
+	// But keep track of if friendly fire is blocked to apply
+	// thrusting later.
+	bool friendlyfireblocked = false;
 	if (!sv_friendlymonsterfire && source && target != source && mod != MOD_TELEFRAG)
 	{
-		if (source->flags & MF_FRIEND && P_IsFriendlyThing(source, target))
+		if (!(source->player && target->player) && source->flags & MF_FRIEND &&
+		    P_IsFriendlyThing(source, target))
 		{
-			return;
+			friendlyfireblocked = true;
 		}
 	}
 
@@ -2181,13 +2213,14 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			{
 				if ((*player).flags[i])
 				{
-					f = (team_t)i;
+					f = static_cast<team_t>(i);
 				}
 			}
 		}
 	}
 
-	if (target->flags & MF_SKULLFLY)
+	// Don't allow unblocked friendlies to interrupt lost soul flight
+	if (target->flags & MF_SKULLFLY && !friendlyfireblocked)
 	{
 		target->momx = target->momy = target->momz = 0;
 	}
@@ -2220,6 +2253,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		// make fall forwards sometimes
 		if (damage < 40
 			&& damage > target->health
+			&& !friendlyfireblocked
 			&& target->z - inflictor->z > 64 * FRACUNIT && (P_Random(target) & 1))
 		{
 			ang += ANG180;
@@ -2234,6 +2268,10 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		if (target->oflags & MFO_FALLING && target->gear >= MAXGEAR)
 			target->gear = 0;
 	}
+
+	// Knocked about but unhurt.
+	if (friendlyfireblocked)
+		return;
 
 	// player specific
 	if (player)
@@ -2387,12 +2425,12 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 				if (target->info->spawnhealth >= 1000)
 				{
 					// Big bodies get a green armor.
-					damage = MAX((damage * 2) / 3, 1);
+					damage = std::max((damage * 2) / 3, 1);
 				}
 				else
 				{
 					// Small bodies get a blue armor.
-					damage = MAX(damage / 2, 1);
+					damage = std::max(damage / 2, 1);
 				}
 			}
 
@@ -2476,16 +2514,22 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			}
 		}
 
+		bool clientsNeedUpdate = false;
 		if (!player)
 		{
 			SV_SendDamageMobj(target, pain);
+			clientsNeedUpdate = true;
 		}
+
+		bool clientsWereUpdated = false;
+
 		if (pain < target->info->painchance &&
 		    !(target->flags & MF_SKULLFLY) &&
 		    !(player && !damage))
 		{
 			target->flags |= MF_JUSTHIT;	// fight back!
-			P_SetMobjState(target, target->info->painstate);
+			const auto painResult = P_SetMobjState(target, target->info->painstate);
+			clientsWereUpdated = (painResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED);
 		}
 
 		target->reactiontime = 0;			// we're awake now...
@@ -2508,18 +2552,22 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 
 			if (!target->lastenemy || !target->lastenemy->player ||
 				target->lastenemy->health <= 0)
-            {
+			{
 				target->lastenemy = target->target; // remember last enemy - killough
-            }
+			}
 
 			target->target = source->ptr();
 			target->threshold = BASETHRESHOLD;
 			if (target->state == &states[target->info->spawnstate]
 				&& target->info->seestate != S_NULL)
-            {
-				P_SetMobjState(target, target->info->seestate);
-            }
-            SV_ActorTarget(target);
+			{
+				const auto seeResult = P_SetMobjState(target, target->info->seestate);
+				clientsWereUpdated = clientsWereUpdated or seeResult == SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
+			}
+		}
+		if (clientsNeedUpdate and not clientsWereUpdated)
+		{
+			SV_UpdateMobj(target);
 		}
 	}
 	else
@@ -2529,7 +2577,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 }
 
 //The player has left the game (in-game to spectator, or in-game disconnect)
-void P_PlayerLeavesGame(player_s* player)
+void P_PlayerLeavesGame(player_t* player)
 {
 	if (level.behavior)
 	{
@@ -2552,7 +2600,7 @@ void P_PlayerLeavesGame(player_s* player)
 			{
 				if ((*player).flags[i])
 				{
-					f = (team_t)i;
+					f = static_cast<team_t>(i);
 				}
 			}
 		}

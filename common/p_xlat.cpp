@@ -30,6 +30,15 @@
 #include "p_local.h"
 #include "p_mapformat.h"
 
+#define TAG 123 // Special value that gets replaced with the line tag
+
+#define WALK ML_SPAC_CROSS
+#define USE ML_SPAC_USE
+#define SHOOT ML_SPAC_IMPACT
+#define MONST ML_MONSTERSCANACTIVATE
+#define MONWALK ML_SPAC_MCROSS
+#define REP ML_REPEATSPECIAL
+
 static constexpr xlat_t SpecialTranslation[] = {
 /*   0 */ {0, 0, {0, 0, 0, 0, 0}},
 /*   1 */ { USE|MONST|REP,	Door_Raise,					 { 0, doors::SLOW, doors::WAIT } },
@@ -314,7 +323,7 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 {
 	short special = mld->special;
 	short tag = mld->tag;
-	unsigned int flags = (unsigned short)mld->flags;
+	unsigned int flags = static_cast<unsigned short>(mld->flags);
 	bool passthrough = (flags & ML_PASSUSE);
 	int i;
 
@@ -562,17 +571,17 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 		{
 			// Generalized ceiling (tag, speed, height, target, change/model/direct/crush)
 			// Generalized floor (tag, speed, height, target, change/model/direct/crush)
-			if ((unsigned)special >= GenFloorBase)
+			if (static_cast<unsigned>(special) >= GenFloorBase)
 			{
 				ld->special = Generic_Floor;
 			}
-			else if ((unsigned)special >= GenCeilingBase)
+			else if (static_cast<unsigned>(special) >= GenCeilingBase)
 			{
 				ld->special = Generic_Ceiling;
 			}
 			else
 			{
-				PrintFmt(PRINT_HIGH, "Unknown special {}\n", (unsigned)special);
+				PrintFmt(PRINT_HIGH, "Unknown special {}\n", static_cast<unsigned>(special));
 			}
 
 			switch (special & 0x0018)

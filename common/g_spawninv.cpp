@@ -44,7 +44,7 @@ struct spawnInventory_t
 	int health = 100;
 	int armorpoints = 0;
 	int armortype = 0;
-	weapontype_t readyweapon = NUMWEAPONS;
+	weapontype_t readyweapon = wp_none;
 	std::array<bool, NUMWEAPONS> weaponowned{};
 	std::array<int, NUMAMMO> ammo{};
 	bool berserk = false;
@@ -99,7 +99,7 @@ static char WeaponTypeToChar(const weapontype_t type)
 		return 'a';
 	else if (type == wp_supershotgun)
 		return 'c';
-	else if (type == NUMWEAPONS)
+	else if (type == wp_none)
 		return 'x';
 
 	return '?';
@@ -117,7 +117,7 @@ static int WeaponTypeFromChar(const char ch)
 	else if (ch == 'C' || ch == 'c')
 		return wp_supershotgun;
 	else if (ch == 'X' || ch == 'x')
-		return NUMWEAPONS;
+		return wp_none;
 
 	return limits::MININT; // best chance of loud and obvious crash
 }
@@ -204,7 +204,7 @@ static std::string InvInvulStr(const spawnInventory_t& inv)
  */
 static void InvSetHealth(spawnInventory_t& inv, const std::string& value)
 {
-	inv.health = MAX(1, atoi(value.c_str()));
+	inv.health = std::max(1, atoi(value.c_str()));
 	inv.isdefault = false;
 }
 
@@ -214,7 +214,7 @@ static void InvSetHealth(spawnInventory_t& inv, const std::string& value)
 static void InvSetArmor(spawnInventory_t& inv, const int type, const std::string& value)
 {
 	inv.armortype = type;
-	inv.armorpoints = MAX(0, atoi(value.c_str()));
+	inv.armorpoints = std::max(0, atoi(value.c_str()));
 	inv.isdefault = false;
 }
 
@@ -271,7 +271,7 @@ static void InvSetAmmo(spawnInventory_t& inv, const ammotype_t type,
 	{
 		return;
 	}
-	inv.ammo[type] = MAX(0, atoi(value.c_str()));
+	inv.ammo[type] = std::max(0, atoi(value.c_str()));
 	inv.isdefault = false;
 }
 
@@ -327,7 +327,7 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
 		params.push_back(buf);
 	}
 
-	if (inv.readyweapon != NUMWEAPONS)
+	if (inv.readyweapon != wp_none)
 	{
 		buf = fmt::sprintf("rweapon:%s", InvReadyWeaponStr(inv));
 		params.push_back(buf);
@@ -390,6 +390,7 @@ static void SetupDefaultInv()
 	::gDefaultInv.weaponowned.fill(false);
 	::gDefaultInv.weaponowned[wp_fist] = true;
 	::gDefaultInv.weaponowned[wp_pistol] = true;
+	::gDefaultInv.weaponowned[wp_none] = true;
 	::gDefaultInv.ammo.fill(0);
 	::gDefaultInv.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 	::gDefaultInv.berserk = false;
@@ -728,7 +729,7 @@ BEGIN_COMMAND(spawninv)
 		else if (::gSpawnInv.armortype == 2)
 			PrintFmt("Blue Armor: {}\n", ::gSpawnInv.armorpoints);
 
-		if (::gSpawnInv.readyweapon < 0 || ::gSpawnInv.readyweapon >= NUMWEAPONS)
+		if (::gSpawnInv.readyweapon < 0 || ::gSpawnInv.readyweapon == wp_none || ::gSpawnInv.readyweapon >= NUMWEAPONS)
 			PrintFmt("Ready Weapon: None\n");
 		else
 			PrintFmt("Ready Weapon: {}\n", ::weaponnames[::gSpawnInv.readyweapon]);

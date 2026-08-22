@@ -25,7 +25,9 @@
 
 #include "odamex.h"
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "m_alloc.h"
 #include "z_zone.h"
 #include "f_finale.h"
@@ -61,6 +63,7 @@
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "cl_replay.h"
+#include "cl_netgraph.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
 #include "g_spawninv.h"
@@ -69,6 +72,7 @@
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "cl_freecam.h"
 
 #include <math.h> // for pow()
 
@@ -87,8 +91,8 @@ void	G_DoCompleted (void);
 void	G_DoWorldDone (void);
 void	G_DoSaveGame();
 
-bool	C_DoNetDemoKey(event_t *ev);
-bool	C_DoSpectatorKey(event_t *ev);
+bool	C_DoNetDemoKey(const event_t& ev);
+bool	C_DoSpectatorKey(const event_t& ev);
 
 void	CL_QuitCommand();
 
@@ -100,6 +104,7 @@ EXTERN_CVAR (novert)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_respawnsuper)
+EXTERN_CVAR (sv_respawnbarrels)
 EXTERN_CVAR (sv_weaponstay)
 EXTERN_CVAR (sv_keepkeys)
 EXTERN_CVAR (sv_sharekeys)
@@ -123,6 +128,7 @@ int 			gametic;
 
 extern fixed_t bobx;
 extern fixed_t boby;
+extern NetGraph netgraph;
 
 enum demoversion_t
 {
@@ -355,27 +361,31 @@ extern constate_e ConsoleState;
 // or reads it from the demo buffer.
 // If recording a demo, write it out
 //
-void G_BuildTiccmd(ticcmd_t *cmd)
+void G_BuildTiccmd(ticcmd_t& cmd)
 {
 	::localview.skipangle = false;
 	::localview.skippitch = false;
 
-	ticcmd_t* base = I_BaseTiccmd();	// empty or external driver
-	memcpy(cmd, base, sizeof(*cmd));
+	cmd = *I_BaseTiccmd();       // empty or external driver
 
 	int strafe = Actions[ACTION_STRAFE];
 	int speed = Actions[ACTION_SPEED];
 	if (cl_run)
 		speed ^= 1;
 
-	int forward = 0, side = 0, look = 0, fly = 0;
+	int forward = 0;
+	int side    = 0;
+	int look    = 0;
+	int fly     = 0;
 
-	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
+	player_t& player = consoleplayer();
+
+	if (player.spectator and Actions[ACTION_USE] and connected)
 		AddCommandString("join");
 
 	// [RH] only use two stage accelerative turning on the keyboard
-	//		and not the joystick, since we treat the joystick as
-	//		the analog device it is.
+	//      and not the joystick, since we treat the joystick as
+	//      the analog device it is.
 	if ((Actions[ACTION_LEFT]) || (Actions[ACTION_RIGHT]))
 		turnheld += 1;
 	else
@@ -409,7 +419,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		{
 			if (::angleturn[tspeed] != 0)
 			{
-				cmd->yaw -= ::angleturn[tspeed];
+				cmd.yaw -= ::angleturn[tspeed];
 				::localview.skipangle = true;
 			}
 		}
@@ -417,14 +427,19 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		{
 			if (::angleturn[tspeed] != 0)
 			{
-				cmd->yaw += ::angleturn[tspeed];
+				cmd.yaw += ::angleturn[tspeed];
 				::localview.skipangle = true;
 			}
 		}
 	}
 
+	const auto joy_to_int = [](int input, int speed)
+	{
+		return static_cast<int>((static_cast<float>(input) / static_cast<float>(SHRT_MAX)) * speed);
+	};
+
 	// Joystick analog strafing -- Hyper_Eye
-	side += (int)(((float)joystrafe / (float)SHRT_MAX) * sidemove[speed]);
+	side += joy_to_int(joystrafe, sidemove[speed]);
 
 	if (Actions[ACTION_LOOKUP])
 	{
@@ -464,12 +479,12 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if ((joy_freelook && sv_freelook) || consoleplayer().spectator)
+	if ((joy_freelook && sv_freelook) || player.spectator)
 	{
 		if (joy_invert)
-			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
+			look += joy_to_int(joylook, lookspeed[speed]);
 		else
-			look -= (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
+			look -= joy_to_int(joylook, lookspeed[speed]);
 
 		::localview.skippitch = true;
 	}
@@ -486,52 +501,54 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	// buttons
 	// john - only add attack when console up
 	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && HU_ChatMode() == CHAT_INACTIVE)
-		cmd->buttons |= BT_ATTACK;
+		cmd.buttons |= BT_ATTACK;
 
 	if (Actions[ACTION_USE])
-		cmd->buttons |= BT_USE;
+		cmd.buttons |= BT_USE;
 
 	// Ch0wW : Forbid writing ACTION_JUMP to the demofile if recording a vanilla-compatible demo.
 	if (Actions[ACTION_JUMP])
-		cmd->buttons |= BT_JUMP;
+		cmd.buttons |= BT_JUMP;
 
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
 	// FIXME : "weapnext/weapprev" doesn't handle this properly, desyncing the demos.
 	if (Impulse >= 1 && Impulse <= 8)
 	{
-		cmd->buttons |= BT_CHANGE;
-		cmd->buttons |= (Impulse - 1) << BT_WEAPONSHIFT;
+		cmd.buttons |= BT_CHANGE;
+		cmd.buttons |= (Impulse - 1) << BT_WEAPONSHIFT;
 	}
 	else
 	{
-		cmd->impulse = Impulse;
+		cmd.impulse = Impulse;
 	}
 	Impulse = 0;
 
 	// [SL] 2012-03-31 - Let the server know when the client is predicting a
 	// weapon change due to a weapon pickup
-	if (!serverside && cl_predictpickup)
+	if (not serverside and cl_predictpickup)
 	{
-		if (!cmd->impulse && !(cmd->buttons & BT_CHANGE) &&
-			consoleplayer().pendingweapon != wp_nochange)
-			cmd->impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
+		if (not (cmd.impulse
+		        or (cmd.buttons & BT_CHANGE)
+		        or player.pendingweapon == wp_nochange
+		        or (player.mo != nullptr and player.mo->oflags & MFO_ISAWAITINGSPAWN)))
+		{
+			cmd.impulse = 50 + static_cast<int>(player.pendingweapon);
+		}
 	}
 
 	if (::joyturn)
 	{
 		if (strafe || lookstrafe)
 		{
-			side += (int)(((float)::joyturn / (float)SHRT_MAX) * ::sidemove[speed]);
+			side += joy_to_int(::joyturn, ::sidemove[speed]);
 		}
 		else
 		{
 			if (Actions[ACTION_FASTTURN])
-				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-				                    (joy_fastsensitivity / 10));
+				cmd.yaw -= joy_to_int(joyturn, angleturn[1] * (joy_fastsensitivity / 10));
 			else
-				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-				                    (joy_sensitivity / 10));
+				cmd.yaw -= joy_to_int(joyturn, angleturn[1] * (joy_sensitivity / 10));
 		}
 		::localview.skipangle = true;
 	}
@@ -539,24 +556,26 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (Actions[ACTION_MLOOK])
 	{
 		if (joy_invert)
-			look += (int)(((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
+			look += joy_to_int(joyforward, lookspeed[speed]);
 		else
-			look -= (int)(((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
+			look -= joy_to_int(joyforward, lookspeed[speed]);
 		::localview.skippitch = true;
 	}
 	else
 	{
-		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
+		forward -= joy_to_int(joyforward, forwardmove[speed]);
 	}
 
-	if (!consoleplayer().spectator
-		&& !Actions[ACTION_MLOOK] && !cl_mouselook && novert == 0)		// [Toke - Mouse] acts like novert.exe
+	if (not player.spectator
+	    and not Actions[ACTION_MLOOK]
+	    and not cl_mouselook
+	    and novert == 0)            // [Toke - Mouse] acts like novert.exe
 	{
-		forward += (int)(float(mousey) * m_forward);
+		forward += static_cast<int>(static_cast<float>(mousey) * m_forward);
 	}
 
 	if (strafe || lookstrafe)
-		side += (int)(float(mousex) * m_side);
+		side += static_cast<int>(static_cast<float>(mousex) * m_side);
 
 	mousex = mousey = 0;
 
@@ -569,54 +588,55 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	else if (side < -MAXPLMOVE)
 		side = -MAXPLMOVE;
 
-	cmd->forwardmove += forward;
-	cmd->sidemove += side;
-	cmd->upmove = fly;
+	cmd.forwardmove += forward;
+	cmd.sidemove += side;
+	cmd.upmove = fly;
 
 	// special buttons
 	if (sendpause)
 	{
 		sendpause = false;
-		cmd->buttons = BT_SPECIAL | BTS_PAUSE;
+		cmd.buttons = BT_SPECIAL | BTS_PAUSE;
 	}
 
 	if (sendsave)
 	{
 		sendsave = false;
-		cmd->buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT);
+		cmd.buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT);
 	}
 
-	cmd->forwardmove <<= 8;
-	cmd->sidemove <<= 8;
+	cmd.forwardmove <<= 8;
+	cmd.sidemove <<= 8;
 
 	//// [RH] 180-degree turn overrides all other yaws
 	if (turntick)
 	{
 		turntick--;
-		cmd->yaw = (ANG180 / TURN180_TICKS) >> 16;
+		cmd.yaw = (ANG180 / TURN180_TICKS) >> 16;
 		::localview.skipangle = true;
 	}
 
 	if (sendcenterview && ConsoleState == c_up && !menuactive)
 	{
 		sendcenterview = false;
-		cmd->pitch = CENTERVIEW;
+		const short CENTERVIEW = -32768;
+		cmd.pitch = CENTERVIEW;
 	}
 	else
 	{
 		// [AM] LocalViewPitch is an offset on look.
-		cmd->pitch = look + (::localview.pitch >> 16);
+		cmd.pitch = look + (::localview.pitch >> 16);
 	}
 
 	if (::localview.setangle)
 	{
 		// [AM] LocalViewAngle is a global angle, only pave over the existing
 		//      yaw if we have local yaw.
-		cmd->yaw = ::localview.angle >> 16;
+		cmd.yaw = ::localview.angle >> 16;
 	}
 
 	if (!longtics)
-		cmd->yaw = (cmd->yaw + 128) & 0xFF00;
+		cmd.yaw = (cmd.yaw + 128) & 0xFF00;
 
 	::localview.angle = 0;
 	::localview.setangle = false;
@@ -646,11 +666,11 @@ float G_ZDoomDIMouseScaleY(float y)
 	return (y * mouse_sensitivity);
 }
 
-void G_ProcessMouseMovementEvent(const event_t *ev)
+void G_ProcessMouseMovementEvent(const event_t& ev)
 {
 	static float fprevx = 0.0f, fprevy = 0.0f;
-	float fmousex = (float)ev->data2;
-	float fmousey = (float)ev->data3;
+	float fmousex = static_cast<float>(ev.data2);
+	float fmousey = static_cast<float>(ev.data3);
 
 	if (m_filter)
 	{
@@ -665,8 +685,8 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	fmousex = G_ZDoomDIMouseScaleX(fmousex);
 	fmousey = G_ZDoomDIMouseScaleY(fmousey);
 
-	mousex = (int)fmousex;
-	mousey = (int)fmousey;
+	mousex = static_cast<int>(fmousex);
+	mousey = static_cast<int>(fmousey);
 
 	G_AddViewAngle(fmousex * 8.0f * m_yaw);
 	G_AddViewPitch(fmousey * 16.0f * m_pitch);
@@ -693,7 +713,7 @@ void G_AddViewPitch(int pitch)
 		pitch = -pitch;
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) ||
-	    consoleplayer().spectator)
+	    consoleplayer().spectator || displayplayer().isFreecam)
 	{
 		localview.pitch += pitch << 16;
 		localview.setpitch = true;
@@ -702,7 +722,8 @@ void G_AddViewPitch(int pitch)
 
 bool G_ShouldIgnoreMouseInput()
 {
-	if (consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD)
+	if ((consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD) &&
+		not displayplayer().isFreecam)
 		return true;
 
 	return false;
@@ -712,16 +733,16 @@ bool G_ShouldIgnoreMouseInput()
 // G_Responder
 // Get info needed to make ticcmd_ts for the players.
 //
-bool G_Responder (event_t *ev)
+bool G_Responder (const event_t& ev)
 {
 	// any other key pops up menu if in demos
 	// [RH] But only if the key isn't bound to a "special" command
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = Bindings.GetBind(ev->data1).c_str();
+		const char *cmd = Bindings.GetBind(ev.data1).c_str();
 
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
 
 			if (!cmd || (
@@ -743,7 +764,7 @@ bool G_Responder (event_t *ev)
 			}
 			else
 			{
-				return C_DoKey (ev, &Bindings, &DoubleBindings);
+				return C_DoKey(ev, &Bindings, &DoubleBindings);
 			}
 		}
 		if (cmd && cmd[0] == '+')
@@ -759,24 +780,24 @@ bool G_Responder (event_t *ev)
 		if (C_DoSpectatorKey(ev))
 			return true;
 
-		if (HU_Responder (ev))
+		if (HU_Responder(ev))
 			return true;		// chat ate the event
-		if (ST_Responder (ev))
+		if (ST_Responder(ev))
 			return true;		// status window ate it
 		if (!viewactive)
-			if (AM_Responder (ev))
+			if (AM_Responder(ev))
 				return true;	// automap ate it
 	}
 	else if (gamestate == GS_FINALE)
 	{
-		if (F_Responder (ev))
+		if (F_Responder(ev))
 			return true;		// finale ate the event
 	}
 
-	switch (ev->type)
+	switch (ev.type)
 	{
 	  case ev_keydown:
-		if (C_DoKey (ev, &Bindings, &DoubleBindings))
+		if (C_DoKey(ev, &Bindings, &DoubleBindings))
 			return true;
 		break;
 
@@ -794,16 +815,16 @@ bool G_Responder (event_t *ev)
 		break;
 
 	  case ev_joystick:
-	  	if(ev->data1 == 0) // Axis Movement
+	  	if(ev.data1 == 0) // Axis Movement
 		{
-			if(ev->data2 == joy_strafeaxis) // Strafe
-				joystrafe = ev->data3;
-			else if(ev->data2 == joy_forwardaxis) // Move
-				joyforward = ev->data3;
-			else if(ev->data2 == joy_turnaxis) // Turn
-				joyturn = ev->data3;
-			else if(ev->data2 == joy_lookaxis) // Look
-				joylook = ev->data3;
+			if(ev.data2 == joy_strafeaxis) // Strafe
+				joystrafe = ev.data3;
+			else if(ev.data2 == joy_forwardaxis) // Move
+				joyforward = ev.data3;
+			else if(ev.data2 == joy_turnaxis) // Turn
+				joyturn = ev.data3;
+			else if(ev.data2 == joy_lookaxis) // Look
+				joylook = ev.data3;
 			else
 				break; // The default case will be to treat the analog control as a button -- Hyper_Eye
 		}
@@ -818,9 +839,9 @@ bool G_Responder (event_t *ev)
 	if (gamestate == GS_LEVEL && viewactive)
 		return AM_Responder (ev);
 
-	if (ev->type == ev_keydown ||
-		ev->type == ev_mouse ||
-		ev->type == ev_joystick)
+	if (ev.type == ev_keydown ||
+		ev.type == ev_mouse ||
+		ev.type == ev_joystick)
 		return true;
 	else
 		return false;
@@ -847,7 +868,7 @@ void P_CheckInterpPause()
 {
 	// Game pauses when in the menu and not online/demo
 	OInterpolation &oi = OInterpolation::getInstance();
-	if (paused || (!multiplayer && !demoplayback &&
+	if ((paused && not displayplayer().isFreecam) || (!multiplayer && !demoplayback &&
 		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)))
 	{
 		if (oi.enabled())
@@ -976,13 +997,18 @@ void G_Ticker (void)
 			memcpy(&player.cmd, &player.netcmds[buf], sizeof(ticcmd_t));
 		}
 	}
+	// Rude - allow controlling displayplayer if freecam
+	else if (displayplayer().isFreecam)
+	{
+		memcpy(&displayplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
+	}
 	else
 	{
 		memcpy(&consoleplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
 	}
 
-    static int realrate = 0;
-    int packet_size;
+	static int realrate = 0;
+	int packet_size;
 
 	if (demoplayback)
 		G_ReadDemoTiccmd(); // play all player commands
@@ -992,39 +1018,55 @@ void G_Ticker (void)
 		netdemo.readMessages(&net_message);
 	}
 
+	netgraph.start(I_GetTime());
+
 	if (connected && !simulated_connection)
 	{
 		while ((packet_size = NET_GetPacket()) )
 		{
 			// denis - don't accept candy from strangers
-			if(!NET_CompareAdr(serveraddr, net_from))
+			if (not NET_CompareAdr(serveraddr, net_from))
 				break;
 
 			realrate += packet_size;
 			last_received = gametic;
 			noservermsgs = false;
 
-			if (!CL_ReadPacketHeader())
-				continue;
+			const MessageResultEnum initialReadResult = CL_ReadPacketHeader();
 
-			if (netdemo.isRecording())
-				netdemo.capture(&net_message);
+			switch (initialReadResult)
+			{
+				case MessageResultEnum::DEFER:
+					netgraph.addPacketIn();
+					continue;
+				case MessageResultEnum::ABORT:
+					return;
+				case MessageResultEnum::ACCEPT:    // fall-thru: have a purely non-reliable message.
+					netgraph.addPacketIn();
+				default:
+					break;
+			}
 
-			CL_ParseCommands();
-
-			if (gameaction == ga_fullconsole) // Host_EndGame was called
+			// If we're here it's because we need to accept messages right away.
+			const MessageResultEnum immediateResult = CL_ProcessCurrentAvailableMessages();
+			if (immediateResult == MessageResultEnum::ABORT)
 				return;
 		}
 
-		if (!(gametic%TICRATE))
+		// With all the latest packets received, process the reliable message in proper sequence.
+		const MessageResultEnum reliableResult = CL_ProcessCurrentAvailableMessages();
+		if (reliableResult == MessageResultEnum::ABORT)
+			return;
+
+		if ((gametic % TICRATE) == 0)
 		{
 			netin = realrate;
 			realrate = 0;
 		}
 
-		CL_SaveCmd();      // save console commands
+		CL_SaveCmd();      // save player commands
 		if (!noservermsgs)
-			CL_SendCmd();  // send console commands to the server
+			CL_SendCmd();  // send player commands to the server
 
 		if (!(gametic%TICRATE))
 		{
@@ -1052,18 +1094,16 @@ void G_Ticker (void)
 			else if(type == 0)
 			{
 				if (!CL_Connect())
-					memset (&serveraddr, 0, sizeof(serveraddr));
+					serveraddr = {};
 
 				connecttimeout = 0;
 			}
 			else
 			{
 				// we are already connected to this server, quit first
-				MSG_WriteMarker(&net_buffer, clc_disconnect);
-				NET_SendPacket(net_buffer, serveraddr);
-
 				PrintFmt(PRINT_WARNING,
 				         "Got unknown challenge {} while connecting, disconnecting.\n", type);
+				CL_CompleteDisconnect(NQ_ABORT);
 			}
 		}
 	}
@@ -1073,7 +1113,7 @@ void G_Ticker (void)
 
 	// check for special buttons
 	if(serverside && consoleplayer().ingame())
-    {
+	{
 		// [Blair] Let's get all player's commands in a demo playback.
 		// Otherwise we might miss a pause and desync!
 		if (demoplayback)
@@ -1138,32 +1178,65 @@ void G_Ticker (void)
 	switch (gamestate)
 	{
 	case GS_LEVEL:
-		if(clientside && !serverside)
 		{
-			if (!consoleplayer().mo)
+			const bool isClientSideOnly    = clientside and not serverside;
+			const bool isActuallyConnected = connected  and not simulated_connection;
+
+			// We're about to locally tick the client-side sim - aka predict.
+			//
+			// Make sure that the server gives us a canonical inventory statement about any pickups we
+			// believe we get as a result of this.
+			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+
+			if (isClientSideOnly)
 			{
-				// [SL] 2011-12-14 - Spawn message from server has not arrived
-				// yet.  Fake it and hope it arrives soon.
-				AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
-				mobj->flags &= ~MF_SOLID;
-				mobj->flags2 |= MF2_DONTDRAW;
-				consoleplayer().mo = consoleplayer().camera = mobj->ptr();
-				consoleplayer().mo->player = &consoleplayer();
-				G_PlayerReborn(consoleplayer());
-				DPrintFmt("Did not receive spawn for consoleplayer.\n");
+				if (!consoleplayer().mo)
+				{
+					// [SL] 2011-12-14 - Spawn message from server has not arrived
+					// yet.  Fake it and hope it arrives soon.
+					AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
+					mobj->flags &= ~MF_SOLID;
+					mobj->flags2 |= MF2_DONTDRAW;
+					mobj->oflags |= MFO_ISAWAITINGSPAWN;
+					consoleplayer().mo = consoleplayer().camera = mobj->ptr();
+					consoleplayer().mo->player = &consoleplayer();
+					G_PlayerReborn(consoleplayer());
+					DPrintFmt("Did not receive spawn for consoleplayer.\n");
+				}
+
+				CL_SimulateWorld();
+				CL_PredictWorld();
+
+				// Replay item pickups if the items arrived now.
+				ClientReplay::getInstance().itemReplay();
 			}
+			P_CheckInterpPause();
+			P_Ticker ();
+			P_BobTicker();
+			ST_Ticker ();
+			AM_Ticker ();
 
-			CL_SimulateWorld();
-			CL_PredictWorld();
+			consoleplayer().inventoryCheckRequestsAreEnabled = false;
 
-			// Replay item pickups if the items arrived now.
-			ClientReplay::getInstance().itemReplay();
+			if (not netdemo.isPaused())
+			{
+				const RollerRecordResultEnum recordResult = rollerState.Record(gametic, consoleplayer());
+				switch (recordResult)
+				{
+					case RollerRecordResultEnum::CURRENT_REPLACED:
+						DPrintFmt("Successive roller state update on tic {}\n", gametic);
+						break;
+					case RollerRecordResultEnum::INVALID_TIC_FUTURE:
+						DPrintFmt("Rejected roller state update on future tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
+						break;
+					case RollerRecordResultEnum::INVALID_TIC_PAST:
+						DPrintFmt("Rejected roller state update on past tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
+						break;
+					case RollerRecordResultEnum::SUCCESS:
+						break;
+				}
+			}
 		}
-		P_CheckInterpPause();
-		P_Ticker ();
-		P_BobTicker();
-		ST_Ticker ();
-		AM_Ticker ();
 		break;
 
 	case GS_INTERMISSION:
@@ -1242,13 +1315,12 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 
 	p.usedown = p.attackdown = true;	// don't do anything immediately
 	p.playerstate = PST_LIVE;
-	p.weaponowned[NUMWEAPONS] = true;
+	p.weaponowned[wp_none] = true;
 
 	if (!p.spectator)
 		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
-	p.tic = 0;
 }
 
 //
@@ -1328,13 +1400,13 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * ((unsigned int)mthing.angle/45) ) >> ANGLETOFINESHIFT;
+			an = ( ANG45 * (static_cast<unsigned int>(mthing.angle)/45) ) >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = (angle_t)(mthing.angle / 45);
+			angle_t mtangle = static_cast<angle_t>(mthing.angle / 45);
 
 			an = ANG45 * mtangle;
 
@@ -1750,7 +1822,7 @@ void G_DoSaveGame()
 		}
 	}
 
-	arc << (byte)0x1d;			// consistancy marker
+	arc << static_cast<byte>(0x1d);		// consistancy marker
 
 	gameaction = ga_nothing;
 	savedescription[0] = 0;
@@ -1789,19 +1861,19 @@ void G_ReadDemoTiccmd()
 				return;
 			}
 
-			player.cmd.forwardmove = ((signed char)*demo_p++) << 8;
-			player.cmd.sidemove = ((signed char)*demo_p++) << 8;
+			player.cmd.forwardmove = (static_cast<int8_t>(*demo_p++)) << 8;
+			player.cmd.sidemove = (static_cast<int8_t>(*demo_p++)) << 8;
 
 			if (demoversion == LMP_DOOM_1_9)
 			{
-				player.cmd.yaw = ((unsigned char)*demo_p++) << 8;
+				player.cmd.yaw = (static_cast<byte>(*demo_p++)) << 8;
 			}
 			else
 			{
-				player.cmd.yaw = ((unsigned short)*demo_p++);
-				player.cmd.yaw |= ((unsigned short)*demo_p++) << 8;
+				player.cmd.yaw = (static_cast<uint16_t>(*demo_p++));
+				player.cmd.yaw |= (static_cast<uint16_t>(*demo_p++)) << 8;
 			}
-			player.cmd.buttons = (unsigned char)*demo_p++;
+			player.cmd.buttons = static_cast<byte>(*demo_p++);
 		}
 	}
 }
@@ -1884,7 +1956,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	int demolump = W_CheckNumForName(defdemoname);
 	if (demolump != -1)
 	{
-		demobuffer = demo_p = (byte*)W_CacheLumpNum(demolump, PU_STATIC);
+		demobuffer = demo_p = W_CacheLumpNum<byte>(demolump, PU_STATIC);
 		bytelen = W_LumpLength(demolump);
 	}
 	else
@@ -1946,13 +2018,13 @@ void G_DoPlayDemo(bool justStreamInput)
 		if (!justStreamInput)
 			players.clear();
 
-		for (size_t i = 0 ; i < MAXPLAYERS_VANILLA; i++)
+		for (byte i = 0 ; i < MAXPLAYERS_VANILLA; i++)
 		{
 			if (*demo_p++ && !justStreamInput)
 			{
 				player_t* player = &players.emplace_back();
 				player->playerstate = PST_REBORN;
-				player->id = (byte)i + 1;
+				player->id = i + 1;
 			}
 		}
 
@@ -2013,6 +2085,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			}
 
 			sv_respawnsuper.Set(0.0f);
+			sv_respawnbarrels.Set(0.0f);
 
 			usergame = false;
 		}
@@ -2023,11 +2096,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			R_BuildClassicPlayerTranslation(player.id, player.id - 1);
 			argb_t color(translationRGB[player.id][0]);
 
-			player.userinfo.color[0] = color.geta();
-			player.userinfo.color[1] = color.getr();
-			player.userinfo.color[2] = color.getg();
-			player.userinfo.color[3] = color.getb();
-
+			player.userinfo.color   = color;
 			player.userinfo.netname = fmt::format("Players {}", player.id);
 		}
 

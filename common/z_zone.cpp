@@ -35,6 +35,12 @@
 #include "cmdlib.h"
 #include "m_stacktrace.h"
 
+auto constexpr operator <=> (zoneTag_e a, zoneTag_e b)
+{
+	using T = std::underlying_type_t<zoneTag_e>;
+	return static_cast<T>(a) <=> static_cast<T>(b);
+}
+
 struct OFileLine
 {
 	const char* file;
@@ -59,8 +65,6 @@ struct OFileLine
 		return ret;
 	}
 };
-
-#define FILELINE OFileLine::create(__FILE__, __LINE__)
 
 #define CASE_STR(x) \
 	case x:         \
@@ -147,6 +151,7 @@ class OZone
 		}
 	}
 
+	template <bool ZERO_INIT = false>
 	void* alloc(size_t size, zoneTag_e tag, void* user, const OFileLine& info)
 	{
 		// This is implementation-defined behavior with malloc.  Since we
@@ -157,7 +162,12 @@ class OZone
 		}
 
 		// Our interface is malloc-like, so we use malloc and not new.
-		void* ptr = malloc(size);
+		void* ptr;
+		if constexpr (ZERO_INIT)
+			ptr = ::calloc(1, size);
+		else
+			ptr = ::malloc(size);
+
 		if (ptr == NULL)
 		{
 			// Don't format these bytes, the byte formatter allocates.
@@ -184,6 +194,11 @@ class OZone
 		}
 
 		return ptr;
+	}
+
+	void* calloc(size_t size, zoneTag_e tag, void* user, const OFileLine& info)
+	{
+		return alloc<true>(size, tag, user, info);
 	}
 
 	void* realloc(void* ptr, size_t size, zoneTag_e tag, void* user, const OFileLine& info)
@@ -230,7 +245,7 @@ class OZone
 
 		if (tag >= PU_PURGELEVEL && it->second.user == NULL)
 		{
-			I_Error("{}: Found purgable block without an owner at {}:{}, "
+			I_Error("{}: Found purgeable block without an owner at {}:{}, "
 			        "allocated at {}:{}.\n{}",
 			        __FUNCTION__, info.shortFile(), info.line,
 			        it->second.fileLine.shortFile(), it->second.fileLine.line, M_GetStacktrace());
@@ -263,7 +278,7 @@ class OZone
 	/**
 	 * Dealloc all members
 	 */
-	void deallocTags(const int lowtag, const int hightag)
+	void deallocTags(const zoneTag_e lowtag, const zoneTag_e hightag)
 	{
 		for (MemoryBlockTable::iterator it = m_heap.begin();it != m_heap.end();)
 		{
@@ -283,8 +298,8 @@ class OZone
 		for (const auto& [ptr, block] : m_heap)
 		{
 			total += block.size;
-			PrintFmt("0x{} | size:{} tag:{} user:0x{} {}:{}\n", (void*)ptr,
-			         block.size, TagStr(block.tag), (void*)block.user,
+			PrintFmt("0x{:p} | size:{} tag:{} user:0x{:p} {}:{}\n", ptr,
+			         block.size, TagStr(block.tag), static_cast<void*>(block.user),
 			         block.fileLine.shortFile(), block.fileLine.line);
 		}
 
@@ -303,7 +318,7 @@ class OZone
 //
 // Z_Close
 //
-void STACK_ARGS Z_Close()
+void Z_Close()
 {
 	g_zone.clear();
 }
@@ -320,9 +335,9 @@ void Z_Init()
 //
 // Z_Free2
 //
-void Z_Free2(void* ptr, const char* file, int line)
+void Z_Free(void* ptr, const std::source_location location)
 {
-	g_zone.deallocPtr(ptr, OFileLine::create(file, line));
+	g_zone.deallocPtr(ptr, OFileLine::create(location.file_name(), location.line()));
 }
 
 
@@ -330,19 +345,19 @@ void Z_Free2(void* ptr, const char* file, int line)
 // Z_Malloc
 // You can pass a NULL user if the tag is < PU_PURGELEVEL.
 //
-#define MINFRAGMENT	64
-#define ALIGN		8
-
-void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const char* file,
-                const int line)
+void* z_detail::Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const std::source_location location)
 {
-	return g_zone.alloc(size, tag, user, OFileLine::create(file, line));
+	return g_zone.alloc(size, tag, user, OFileLine::create(location.file_name(), location.line()));
 }
 
-void* Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, const char* file,
-                const int line)
+void* z_detail::Z_Calloc2(size_t size, const zoneTag_e tag, void* user, const std::source_location location)
 {
-	return g_zone.realloc(ptr, size, tag, user, OFileLine::create(file, line));
+	return g_zone.calloc(size, tag, user, OFileLine::create(location.file_name(), location.line()));
+}
+
+void* z_detail::Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, const std::source_location location)
+{
+	return g_zone.realloc(ptr, size, tag, user, OFileLine::create(location.file_name(), location.line()));
 }
 
 //
@@ -356,26 +371,26 @@ void Z_FreeTags(const zoneTag_e lowtag, const zoneTag_e hightag)
 //
 // Z_ChangeTag
 //
-void Z_ChangeTag2(void* ptr, const zoneTag_e tag, const char* file, int line)
+void Z_ChangeTag(void* ptr, const zoneTag_e tag, const std::source_location location)
 {
-	return ::g_zone.changeTag(ptr, tag, OFileLine::create(file, line));
+	return ::g_zone.changeTag(ptr, tag, OFileLine::create(location.file_name(), location.line()));
 }
 
 //
 // Z_ChangeOwner
 //
-void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line)
+void Z_ChangeOwner(void* ptr, void* user, const std::source_location location)
 {
-	return ::g_zone.changeOwner(ptr, user, OFileLine::create(file, line));
+	return ::g_zone.changeOwner(ptr, user, OFileLine::create(location.file_name(), location.line()));
 }
 
 //
 // Z_StrDup
 //
-char* Z_StrDup2(const char* s, const zoneTag_e tag, const char* file, int line)
+char* Z_StrDup(const char* s, const zoneTag_e tag, const std::source_location location)
 {
 	size_t len = strlen(s);
-	char* output = (char*)Z_Malloc2(len + 1, tag, NULL, file, line);
+	char* output = Z_Malloc<char>(len + 1, tag, nullptr, location);
 	strncpy(output, s, len);
 	output[len] = '\0';
 	return output;

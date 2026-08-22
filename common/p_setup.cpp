@@ -55,6 +55,11 @@
 #include "g_musinfo.h"
 #include "r_sky.h"
 #include "p_compdb.h"
+#include "p_blockmap.h"
+
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
@@ -118,17 +123,6 @@ bool			HasBehavior = false;
 // blocks of size ...
 // Used to speed up collision detection
 // by spatial subdivision in 2D.
-//
-// Blockmap size.
-int 			bmapwidth;
-int 			bmapheight; 	// size in mapblocks
-
-int				*blockmap;		// int for larger maps ([RH] Made int because BOOM does)
-int				*blockmaplump;	// offsets in blockmap are from here
-
-fixed_t 		bmaporgx;		// origin of block map
-fixed_t 		bmaporgy;
-
 AActor**		blocklinks;		// for thing chains
 
 
@@ -144,9 +138,9 @@ byte*			rejectmatrix;
 bool			rejectempty;
 
 // Maintain single and multi player starting spots.
-std::vector<mapthing2_t> DeathMatchStarts;
-std::vector<mapthing2_t> playerstarts;
-std::vector<mapthing2_t> voodoostarts;
+std::vector<mapthing2_t>         DeathMatchStarts;
+std::vector<mapthing2_t>         playerstarts;
+std::vector<VoodooStartInfoType> voodoostarts;
 
 // Maintain list of helpers to spawn in a given map
 std::vector<HelperSpawns> helperspawns;
@@ -163,17 +157,17 @@ void P_LoadVertexes (int lump)
 	numvertexes = W_LumpLength (lump) / sizeof(mapvertex_t);
 
 	// Allocate zone memory for buffer.
-	vertexes = (vertex_t *)Z_Malloc (numvertexes*sizeof(vertex_t), PU_LEVEL, 0);
+	vertexes = Z_Malloc<vertex_t>(numvertexes, PU_LEVEL);
 
 	// Load data into cache.
-	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	mapvertex_t* data = W_CacheLumpNum<mapvertex_t>(lump, PU_STATIC);
 
 	// Copy and convert vertex coordinates,
 	// internal representation as fixed.
 	for (int i = 0; i < numvertexes; i++)
 	{
-		vertexes[i].x = LESHORT(((mapvertex_t *)data)[i].x)<<FRACBITS;
-		vertexes[i].y = LESHORT(((mapvertex_t *)data)[i].y)<<FRACBITS;
+		vertexes[i].x = LESHORT(data[i].x) << FRACBITS;
+		vertexes[i].y = LESHORT(data[i].y) << FRACBITS;
 	}
 
 	// Free buffer memory.
@@ -251,7 +245,7 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 // P_LoadSegs
 //
 template <typename MapSegType>
-void P_LoadSegs (int lump)
+void P_LoadSegs(int lump)
 {
 	if (!W_LumpLength(lump))
 	{
@@ -260,32 +254,31 @@ void P_LoadSegs (int lump)
 	}
 
 	numsegs = W_LumpLength (lump) / sizeof(MapSegType);
-	segs = (seg_t*) Z_Malloc(numsegs * sizeof(seg_t), PU_LEVEL, 0);
-	memset(segs, 0, numsegs * sizeof(seg_t));
-	byte* const data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
+	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
+	MapSegType* const data = W_CacheLumpNum<MapSegType>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsegs; i++)
 	{
 		seg_t* const li = segs + i;
-		const MapSegType *ml = (MapSegType*) data + i;
-		auto v = OUtil::to_unsigned(LESWAP(ml->v1));
+		const MapSegType& ml = data[i];
+		auto v = OUtil::to_unsigned(LESWAP(ml.v1));
 
 		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex {}", v);
 		else
 			li->v1 = &vertexes[v];
 
-		v = LESWAP(ml->v2);
+		v = LESWAP(ml.v2);
 
 		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex {}", v);
 		else
 			li->v2 = &vertexes[v];
 
-		P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
+		P_LoadSegsHelper(LESHORT(ml.side), LESHORT(ml.angle), LESHORT(ml.linedef), li);
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 //
@@ -301,10 +294,8 @@ void P_LoadSubsectors(int lump)
 	}
 
 	numsubsectors = W_LumpLength (lump) / sizeof(MapSubsectorType);
-	subsectors = static_cast<subsector_t*>(Z_Malloc(numsubsectors*sizeof(subsector_t), PU_LEVEL, nullptr));
-	MapSubsectorType* data = static_cast<MapSubsectorType*>(W_CacheLumpNum(lump, PU_STATIC));
-
-	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
+	subsectors = Z_Calloc<subsector_t>(numsubsectors, PU_LEVEL);
+	MapSubsectorType* data = W_CacheLumpNum<MapSubsectorType>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
@@ -331,18 +322,18 @@ void P_LoadSectors (int lump)
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 
-	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
+	mapsector_t* data = W_CacheLumpNum<mapsector_t>(lump, PU_STATIC);
 
 	const int defSeqType = (level.flags & LEVEL_SNDSEQTOTALCTRL) ? 0 : -1;
 
-	const mapsector_t* ms = (mapsector_t*)data;
+	const mapsector_t* ms = data;
 	sector_t* ss = sectors;
 	for (int i = 0; i < numsectors; i++, ss++, ms++)
 	{
 		ss->floorheight = LESHORT(ms->floorheight)<<FRACBITS;
 		ss->ceilingheight = LESHORT(ms->ceilingheight)<<FRACBITS;
-		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
-		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
+		ss->floorpic = static_cast<short>(R_FlatNumForName(ms->floorpic));
+		ss->ceilingpic = static_cast<short>(R_FlatNumForName(ms->ceilingpic));
 		ss->lightlevel = LESHORT(ms->lightlevel);
 		originalLightLevels.push_back(LESHORT(ms->lightlevel));
 		ss->special = LESHORT(ms->special);
@@ -427,8 +418,8 @@ enum class nodetype_t {
 };
 
 nodetype_t P_CheckNodeType(int lump) {
-	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
-	auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
+	byte *data = W_CacheLumpNum<byte>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
 
 	static constexpr struct {
         std::string_view bytes;
@@ -474,10 +465,10 @@ void P_LoadNodes(int lump)
 		std::is_same_v<MapNodeType, mapnode_deepbsp_t> ? 8 : 0;
 
 	numnodes = (W_LumpLength(lump) - headerSize) / sizeof(MapNodeType);
-	nodes = (node_t*) Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
-	byte* data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
+	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
+	byte* data = reinterpret_cast<byte*>(W_CacheLumpNum<MapNodeType>(lump, PU_STATIC));
 
-	const MapNodeType* mn = (MapNodeType *)(data + headerSize);
+	const MapNodeType* mn = reinterpret_cast<const MapNodeType*>(data + headerSize);
 	node_t* no = nodes;
 
 	for (int i = 0; i < numnodes; i++, no++, mn++)
@@ -515,10 +506,10 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	// first estimate for compression rate:
 	// output buffer size == 2.5 * input size
 	int outlen = 2.5 * len;
-	byte* output = (byte*)Z_Malloc(outlen, PU_STATIC, 0);
+	byte* output = Z_Malloc<byte>(outlen, PU_STATIC);
 
 	// initialize stream state for decompression
-	z_stream* zstream = (z_stream*)M_Malloc(sizeof(*zstream));
+	z_stream* zstream = static_cast<z_stream*>(M_Malloc(sizeof(*zstream)));
 	memset(zstream, 0, sizeof(*zstream));
 	zstream->next_in = data + 4;
 	zstream->avail_in = static_cast<uInt>(len - 4);
@@ -533,7 +524,7 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	{
 		int outlen_old = outlen;
 		outlen = 2 * outlen_old;
-		output = (byte*)Z_Realloc(output, outlen, PU_STATIC, 0);
+		output = Z_Realloc<byte>(output, outlen, PU_STATIC);
 		zstream->next_out = output + outlen_old;
 		zstream->avail_out = outlen - outlen_old;
 	}
@@ -552,16 +543,15 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 }
 
 byte* P_LoadSegs_XNOD(byte* p) {
-	numsegs = LELONG(*(uint32_t *)p); p += 4;
-	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
-	memset(segs, 0, numsegs * sizeof(*segs));
+	numsegs = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
 
 	for (int i = 0; i < numsegs; i++)
 	{
-		const uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
-		const uint32_t v2 = LELONG(*(uint32_t *)p); p += 4;
-		const uint16_t ld = LESHORT(*(uint16_t *)p); p += 2;
-		uint8_t side = *(uint8_t *)p; p += 1;
+		const uint32_t v1 = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+		const uint32_t v2 = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+		const uint16_t ld = LESHORT(*reinterpret_cast<uint16_t*>(p)); p += 2;
+		uint8_t side = *reinterpret_cast<uint8_t*>(p); p += 1;
 
 		if (side != 0 && side != 1)
 			side = 1;
@@ -606,9 +596,8 @@ byte* P_LoadSegs_XGL(byte* p)
 		"P_LoadSegs_XGL can only be instantiated with uint16_t or uint32_t"
 	);
 
-	numsegs = LELONG(*(uint32_t *)p); p += 4;
-	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
-	memset(segs, 0, numsegs * sizeof(*segs));
+	numsegs = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
 
 	uint32_t write_index = 0;
 	for (int i = 0; i < numsubsectors; i++)
@@ -619,11 +608,11 @@ byte* P_LoadSegs_XGL(byte* p)
 		seg_t* first_seg = nullptr;
 		for (uint32_t j = 0; j < subsector.numlines; j++)
 		{
-			const uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
-			// const uint32_t partner = LELONG(*(uint32_t *)p); // unused
+			const uint32_t v1 = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+			// const uint32_t partner = LELONG(*reinterpret_cast<uint32_t*>(p)); // unused
 			p += 4;
-			const LineType ld = LESWAP(*(LineType *)p); p += sizeof(LineType);
-			const uint8_t side = *(uint8_t *)p; p += 1;
+			const LineType ld = LESWAP(*reinterpret_cast<LineType*>(p)); p += sizeof(LineType);
+			const uint8_t side = *reinterpret_cast<uint8_t*>(p); p += 1;
 
 			if (ld == std::numeric_limits<LineType>::max())
 				continue;
@@ -714,10 +703,10 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 				return false;
 		}
 	}();
-	byte *data = static_cast<byte *>(W_CacheLumpNum(lump, PU_STATIC));
+	byte *data = W_CacheLumpNum<byte>(lump, PU_STATIC);
 	byte* data_decompressed = nullptr;
 
-	auto guard = nonstd::make_scope_exit([&]{
+	const auto guard = nonstd::make_scope_exit([&]{
 		Z_Free(data);
 		Z_Free(data_decompressed);
 	});
@@ -735,10 +724,10 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	}
 
 	// Load vertices
-	const uint32_t numorgvert = LELONG(*(uint32_t *)p); p += 4;
-	const uint32_t numnewvert = LELONG(*(uint32_t *)p); p += 4;
+	const uint32_t numorgvert = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	const uint32_t numnewvert = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 
-	vertex_t *newvert = (vertex_t *) Z_Malloc((numorgvert + numnewvert)*sizeof(*newvert), PU_LEVEL, 0);
+	vertex_t *newvert = Z_Malloc<vertex_t>(numorgvert + numnewvert, PU_LEVEL);
 
 	memcpy(newvert, vertexes, numorgvert*sizeof(*newvert));
 	memset(&newvert[numorgvert], 0, numnewvert * sizeof(*newvert));
@@ -746,8 +735,8 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	for (uint32_t i = 0; i < numnewvert; i++)
 	{
 		vertex_t *v = &newvert[numorgvert+i];
-		v->x = LELONG(*(int32_t *)p); p += 4;
-		v->y = LELONG(*(int32_t *)p); p += 4;
+		v->x = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+		v->y = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
 	}
 
 	// Adjust linedefs - since we reallocated the vertex array,
@@ -766,16 +755,15 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 
 	// Load subsectors
 
-	numsubsectors = LELONG(*(uint32_t *)p); p += 4;
-	subsectors = (subsector_t *) Z_Malloc(numsubsectors * sizeof(*subsectors), PU_LEVEL, 0);
-	memset(subsectors, 0, numsubsectors * sizeof(*subsectors));
+	numsubsectors = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	subsectors = Z_Calloc<subsector_t>(numsubsectors, PU_LEVEL);
 
 	uint32_t first_seg = 0;
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
 		subsectors[i].firstline = first_seg;
-		subsectors[i].numlines = LELONG(*(uint32_t *)p); p += 4;
+		subsectors[i].numlines = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 		first_seg += subsectors[i].numlines;
 	}
 
@@ -790,9 +778,8 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 
 	// Load nodes
 
-	numnodes = LELONG(*(uint32_t *)p); p += 4;
-	nodes = (node_t *) Z_Malloc(numnodes * sizeof(*nodes), PU_LEVEL, 0);
-	memset(nodes, 0, numnodes * sizeof(*nodes));
+	numnodes = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	nodes = Z_Calloc<node_t>(numnodes, PU_LEVEL);
 
 	for (int i = 0; i < numnodes; i++)
 	{
@@ -800,30 +787,30 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 
 		if (nodetype == nodetype_t::XGL3 || nodetype == nodetype_t::ZGL3)
 		{
-			node->x = LELONG(*(int32_t *)p); p += 4;
-			node->y = LELONG(*(int32_t *)p); p += 4;
-			node->dx = LELONG(*(int32_t *)p); p += 4;
-			node->dy = LELONG(*(int32_t *)p); p += 4;
+			node->x = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+			node->y = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+			node->dx = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+			node->dy = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
 		}
 		else
 		{
-			node->x = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
-			node->y = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
-			node->dx = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
-			node->dy = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
+			node->x = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
+			node->y = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
+			node->dx = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
+			node->dy = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
 		}
 
 		for (int j = 0; j < 2; j++)
 		{
 			for (int k = 0; k < 4; k++)
 			{
-				node->bbox[j][k] = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
+				node->bbox[j][k] = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
 			}
 		}
 
 		for (int j = 0; j < 2; j++)
 		{
-			node->children[j] = LELONG(*(uint32_t *)p); p += 4;
+			node->children[j] = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 		}
 	}
 }
@@ -833,72 +820,75 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 //
 void P_LoadThings (int lump)
 {
-	mapthing2_t mt2;		// [RH] for translation
-	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	mapthing_t *mt = (mapthing_t *)data;
-	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
+	mapthing_t* data = W_CacheLumpNum<mapthing_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	size_t count = W_LumpLength(lump) / sizeof(mapthing_t);
 
 	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
-		GetTeamInfo((team_t)iTeam)->Starts.clear();
+		GetTeamInfo(static_cast<team_t>(iTeam))->Starts.clear();
 
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
 	//		referenced, we translate them into a Hexen-style thing.
-	for ( ; mt < lastmt; mt++)
+	for (size_t i = 0; i < count; i++)
 	{
-		// [AM] Ensure that we get a fresh mapthing every iteration - sometimes
-		//      P_SpawnMapThing mutates a part of the mapthing that the map
-		//      data doesn't care about, and we don't want it to carry over
-		//      between iterations.
-		memset(&mt2, 0, sizeof(mt2));
-
+		const mapthing_t& mt = data[i];
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
 		//		everything and let it decide what to do with them.
 
 		// [RH] Need to translate the spawn flags to Hexen format.
-		short flags = LESHORT(mt->options);
+		short flags = LESHORT(mt.options);
 		if (flags & BTF_RESERVED || demoplayback) flags &= BTF_RESERVED_MASK;
-		mt2.flags = (short)((flags & 0xf) | 0x7e0);
+		short flags2 = static_cast<short>((flags & 0xf) | 0x7e0);
 		if (flags & BTF_NOTSINGLE)
 		{
 			#ifdef SERVER_APP
 			if (G_IsCoopGame())
 			{
 				if (g_thingfilter == 1)
-					mt2.flags |= MTF_FILTER_COOPWPN;
+					flags2 |= MTF_FILTER_COOPWPN;
 				else if (g_thingfilter == 2)
-					mt2.flags &= ~MTF_COOPERATIVE;
+					flags2 &= ~MTF_COOPERATIVE;
 			}
 			else
 			#endif
-				mt2.flags &= ~MTF_SINGLE;
+				flags2 &= ~MTF_SINGLE;
 		}
-		if (flags & BTF_NOTDEATHMATCH)		mt2.flags &= ~MTF_DEATHMATCH;
-		if (flags & BTF_NOTCOOPERATIVE)		mt2.flags &= ~MTF_COOPERATIVE;
-		if (flags & BTF_FRIEND)				mt2.flags |= MTF_FRIENDLY;
+		if (flags & BTF_NOTDEATHMATCH)  flags2 &= ~MTF_DEATHMATCH;
+		if (flags & BTF_NOTCOOPERATIVE) flags2 &= ~MTF_COOPERATIVE;
+		if (flags & BTF_FRIEND)         flags2 |= MTF_FRIENDLY;
 
-		mt2.x = LESHORT(mt->x);
-		mt2.y = LESHORT(mt->y);
-		mt2.angle = LESHORT(mt->angle);
-		mt2.type = LESHORT(mt->type);
+		mapthing2_t mt2 = {
+			.x = LESHORT(mt.x),
+			.y = LESHORT(mt.y),
+			.angle = LESHORT(mt.angle),
+			.type = LESHORT(mt.type),
+			.flags = flags2
+		};
 
-		P_SpawnMapThing (mt2, 0);
+		// clientside-only freecam start pos
+		#ifdef CLIENT_APP
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(mt2))
+		{
+			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, ANG45 * (mt2.angle / 45));
+		}
+		#endif
+
+		P_SpawnMapThing(mt2, 0);
 	}
 
 	// Sort by player number if starts are not in order
-	std::sort(playerstarts.begin(), playerstarts.end(), [](const mapthing2_t& p1, const mapthing2_t& p2){
+	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
 		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
 	});
 
 	P_SpawnAvatars();
-
-	Z_Free (data);
 }
 
 // [RH]
@@ -911,36 +901,50 @@ void P_LoadThings (int lump)
 //
 void P_LoadThings2 (int lump, int position)
 {
-	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	mapthing2_t *mt = (mapthing2_t *)data;
-	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
+	auto* data = W_CacheLumpNum<mapthing2_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	size_t count = W_LumpLength(lump) / sizeof(mapthing2_t);
 
 	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
-		GetTeamInfo((team_t)iTeam)->Starts.clear();
+		GetTeamInfo(static_cast<team_t>(iTeam))->Starts.clear();
 
-	for ( ; mt < lastmt; mt++)
+	for (size_t i = 0; i < count; i++)
 	{
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
 		//		everything and let it decide what to do with them.
+		mapthing2_t& mt = data[i];
 
-		mt->thingid = LESHORT(mt->thingid);
-		mt->x = LESHORT(mt->x);
-		mt->y = LESHORT(mt->y);
-		mt->z = LESHORT(mt->z);
-		mt->angle = LESHORT(mt->angle);
-		mt->type = LESHORT(mt->type);
-		mt->flags = LESHORT(mt->flags);
+		mt.thingid = LESHORT(mt.thingid);
+		mt.x = LESHORT(mt.x);
+		mt.y = LESHORT(mt.y);
+		mt.z = LESHORT(mt.z);
+		mt.angle = LESHORT(mt.angle);
+		mt.type = LESHORT(mt.type);
+		mt.flags = LESHORT(mt.flags);
 
-		P_SpawnMapThing(*mt, position);
+		// clientside-only freecam start pos
+		#ifdef CLIENT_APP
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(mt))
+		{
+			Freecam::setStartPosition(mt.x << FRACBITS, mt.y << FRACBITS, ONFLOORZ, ANG45 * (mt.angle / 45));
+		}
+		#endif
+
+		P_SpawnMapThing(mt, position);
 	}
 
-	Z_Free (data);
+	// Sort by player number if starts are not in order
+	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
+		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
+	});
+
+	P_SpawnAvatars();
 }
 
 //
@@ -989,6 +993,7 @@ void P_AdjustLine (line_t *ld)
 		ld->bbox[BOXTOP] = v1->y;
 	}
 
+	// TODO: should this all get moved into map_format.post_process_linedef_special?
 	if (map_format.getZDoom())
 	{
 		// [RH] Set line id (as appropriate) here
@@ -1098,8 +1103,16 @@ void P_FinishLoadingLineDefs (void)
 
 	for (int i = numlines, linenum = 0; i--; ld++, linenum++)
 	{
-		ld->frontsector = ld->sidenum[0]!=R_NOSIDE ? sides[ld->sidenum[0]].sector : 0;
-		ld->backsector  = ld->sidenum[1]!=R_NOSIDE ? sides[ld->sidenum[1]].sector : 0;
+		// Substitute sidedef 0 if the front is missing
+		if (ld->sidenum[0] == R_NOSIDE)
+			ld->sidenum[0] = 0;
+
+		// Clear 2s flag for missing back side
+		if (ld->sidenum[1] == R_NOSIDE && !demoplayback)
+			ld->flags &= ~ML_TWOSIDED;
+
+		ld->frontsector = sides[ld->sidenum[0]].sector;
+		ld->backsector  = ld->sidenum[1]!=R_NOSIDE ? sides[ld->sidenum[1]].sector : nullptr;
 		if (ld->sidenum[0] != R_NOSIDE)
 			sides[ld->sidenum[0]].linenum = linenum;
 		if (ld->sidenum[1] != R_NOSIDE)
@@ -1109,20 +1122,19 @@ void P_FinishLoadingLineDefs (void)
 	}
 }
 
-void P_LoadLineDefs (const int lump)
+void P_LoadLineDefs(const int lump)
 {
-	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
-	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, 0);
-	memset (lines, 0, numlines*sizeof(line_t));
-	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	numlines = W_LumpLength(lump) / sizeof(maplinedef_t);
+	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
+	maplinedef_t* data = W_CacheLumpNum<maplinedef_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
 
 	const bool reservedLine = P_GetLevelCompData(::level.level_fingerprint).reservedLineFlag;
 
 	line_t* ld = lines;
 	for (int i = 0; i < numlines; i++, ld++)
 	{
-		const maplinedef_t *mld = ((maplinedef_t *)data) + i;
+		const maplinedef_t *mld = data + i;
 
 		ld->flags = static_cast<uint32_t>(mld->flags);
 		ld->special = mld->special;
@@ -1165,11 +1177,10 @@ void P_LoadLineDefs (const int lump)
 void P_LoadLineDefs2 (int lump)
 {
 	numlines = W_LumpLength (lump) / sizeof(maplinedef2_t);
-	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL,0 );
-	memset (lines, 0, numlines*sizeof(line_t));
-	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
+	maplinedef2_t* data = W_CacheLumpNum<maplinedef2_t>(lump, PU_STATIC);
 
-	maplinedef2_t* mld = (maplinedef2_t *)data;
+	const maplinedef2_t* mld = data;
 	line_t* ld = lines;
 	for (int i = 0; i < numlines; i++, mld++, ld++)
 	{
@@ -1216,8 +1227,7 @@ void P_LoadLineDefs2 (int lump)
 void P_LoadSideDefs (int lump)
 {
 	numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
-	sides = (side_t *)Z_Malloc (numsides*sizeof(side_t), PU_LEVEL, 0);
-	memset (sides, 0, numsides*sizeof(side_t));
+	sides = Z_Calloc<side_t>(numsides, PU_LEVEL);
 }
 
 
@@ -1249,11 +1259,11 @@ argb_t P_GetColorFromTextureName(const char* name)
 
 void P_LoadSideDefs2 (int lump)
 {
-	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
+	mapsidedef_t* data = W_CacheLumpNum<mapsidedef_t>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsides; i++)
 	{
-		mapsidedef_t* msd = (mapsidedef_t*)data + i;
+		mapsidedef_t* msd = data + i;
 		side_t* sd = sides + i;
 		sector_t* sec;
 
@@ -1271,339 +1281,6 @@ void P_LoadSideDefs2 (int lump)
 	Z_Free (data);
 }
 
-
-//
-// jff 10/6/98
-// New code added to speed up calculation of internal blockmap
-// Algorithm is order of nlines*(ncols+nrows) not nlines*ncols*nrows
-//
-
-#define blkshift 7               /* places to shift rel position for cell num */
-#define blkmask ((1<<blkshift)-1)/* mask for rel position within cell */
-#define blkmargin 0              /* size guardband around map used */
-                                 // jff 10/8/98 use guardband>0
-                                 // jff 10/12/98 0 ok with + 1 in rows,cols
-
-struct linelist_t        // type used to list lines in each block
-{
-	int	num;
-	linelist_t *next;
-};
-
-//
-// Actually construct the blockmap lump from the level data
-//
-// This finds the intersection of each linedef with the column and
-// row lines at the left and bottom of each blockmap cell. It then
-// adds the line to all block lists touching the intersection.
-//
-
-void P_CreateBlockMap()
-{
-	std::unique_ptr<linelist_t*[]> blocklists; // array of pointers to lists of lines
-	std::unique_ptr<int[]> blockcount; // array of counters of line lists
-	std::unique_ptr<bool[]> blockdone; // array keeping track of blocks/line
-
-	//
-	// Subroutine to add a line number to a block list
-	// It simply returns if the line is already in the block
-	//
-
-	const auto AddBlockLine = [&blocklists, &blockdone, &blockcount]
-	(
-		int blockno,
-		uint32_t lineno
-	)
-	{
-		if (blockdone[blockno])
-			return;
-
-		linelist_t* l = new linelist_t;
-		l->num = lineno;
-		l->next = blocklists[blockno];
-		blocklists[blockno] = l;
-		blockcount[blockno]++;
-		blockdone[blockno] = true;
-	};
-
-	// scan for map limits, which the blockmap must enclose
-	int map_minx = limits::MAXINT;
-	int map_miny = limits::MAXINT;
-	int map_maxx = limits::MININT;
-	int map_maxy = limits::MININT;
-	for (int i = 0; i < numvertexes; i++)
-	{
-		fixed_t t;
-
-		if ((t = vertexes[i].x) < map_minx)
-			map_minx = t;
-		else if (t > map_maxx)
-			map_maxx = t;
-
-		if ((t = vertexes[i].y) < map_miny)
-			map_miny = t;
-		else if (t > map_maxy)
-			map_maxy = t;
-	}
-	map_minx >>= FRACBITS;    // work in map coords, not fixed_t
-	map_maxx >>= FRACBITS;
-	map_miny >>= FRACBITS;
-	map_maxy >>= FRACBITS;
-
-	// set up blockmap area to enclose level plus margin
-
-	const int xorg = map_minx-blkmargin; // blockmap origin (lower left)
-	const int yorg = map_miny-blkmargin;
-	const int ncols = (map_maxx+blkmargin-xorg+1+blkmask)>>blkshift; //jff 10/12/98
-	const int nrows = (map_maxy+blkmargin-yorg+1+blkmask)>>blkshift; //+1 needed for map exactly 1 cell
-
-	const auto BlockIndex = [ncols](int x, int y){ return (y * ncols) + x; };
-
-	const int NBlocks = ncols*nrows; // number of cells
-
-	// create the array of pointers on NBlocks to blocklists
-	// also create an array of linelist counts on NBlocks
-	// finally make an array in which we can mark blocks done per line
-
-	blocklists = std::make_unique<linelist_t*[]>(NBlocks);
-	std::fill_n(blocklists.get(), NBlocks, nullptr);
-	blockcount = std::make_unique<int[]>(NBlocks);
-	std::fill_n(blockcount.get(), NBlocks, 0);
-	blockdone = std::make_unique<bool[]>(NBlocks);
-
-	// initialize each blocklist, and enter the trailing -1 in all blocklists
-	// note the linked list of lines grows backwards
-
-	for (int i = 0; i < NBlocks; i++)
-	{
-		blocklists[i] = new linelist_t;
-		blocklists[i]->num = -1;
-		blocklists[i]->next = NULL;
-		blockcount[i]++;
-	}
-
-	// For each linedef in the wad, determine all blockmap blocks it touches,
-	// and add the linedef number to the blocklists for those blocks
-
-	for (int i = 0; i < numlines; i++)
-	{
-		const int x1 = lines[i].v1->x>>FRACBITS; // lines[i] map coords
-		const int y1 = lines[i].v1->y>>FRACBITS;
-		const int x2 = lines[i].v2->x>>FRACBITS;
-		const int y2 = lines[i].v2->y>>FRACBITS;
-		const int dx = x2 - x1;
-		const int dy = y2 - y1;
-		const bool vert = (dx == 0);             // lines[i] slopetype
-		const bool horiz = (dy == 0);
-		const bool spos = (dx ^ dy) > 0;
-		const bool sneg = (dx ^ dy) < 0;
-		int bx,by;                              // block cell coords
-		const int minx = x1 > x2 ? x2 : x1;        // extremal lines[i] coords
-		const int maxx = x1 > x2 ? x1 : x2;
-		const int miny = y1 > y2 ? y2 : y1;
-		const int maxy = y1 > y2 ? y1 : y2;
-
-		// no blocks done for this linedef yet
-
-		std::fill_n(blockdone.get(), NBlocks, false);
-
-		// The line always belongs to the blocks containing its endpoints
-
-		bx = (x1-xorg) >> blkshift;
-		by = (y1-yorg) >> blkshift;
-		AddBlockLine (BlockIndex(bx, by), i);
-		bx = (x2-xorg) >> blkshift;
-		by = (y2-yorg) >> blkshift;
-		AddBlockLine (BlockIndex(bx, by), i);
-
-		// For each column, see where the line along its left edge, which
-		// it contains, intersects the Linedef i. Add i to each corresponding
-		// blocklist.
-
-		if (!vert)    // don't interesect vertical lines with columns
-		{
-			for (int j = 0; j < ncols; j++)
-			{
-				// intersection of Linedef with x=xorg+(j<<blkshift)
-				// (y-y1)*dx = dy*(x-x1)
-				// y = dy*(x-x1)+y1*dx;
-
-				int x = xorg+(j<<blkshift);		// (x,y) is intersection
-				int y = (dy*(x-x1))/dx+y1;
-				int yb = (y-yorg)>>blkshift;	// block row number
-				int yp = (y-yorg)&blkmask;		// y position within block
-
-				if (yb<0 || yb>nrows-1)			// outside blockmap, continue
-					continue;
-
-				if (x<minx || x>maxx)			// line doesn't touch column
-					continue;
-
-				// The cell that contains the intersection point is always added
-
-				AddBlockLine(BlockIndex(j, yb), i);
-
-				// if the intersection is at a corner it depends on the slope
-				// (and whether the line extends past the intersection) which
-				// blocks are hit
-
-				if (yp==0)			// intersection at a corner
-				{
-					if (sneg)		//   \ - blocks x,y-, x-,y
-					{
-						if (yb>0 && miny<y)
-							AddBlockLine(BlockIndex(j, yb - 1), i);
-						if (j>0 && minx<x)
-							AddBlockLine(BlockIndex(j - 1, yb), i);
-					}
-					else if (spos)	//   / - block x-,y-
-					{
-						if (yb>0 && j>0 && minx<x)
-							AddBlockLine(BlockIndex(j - 1, yb - 1), i);
-					}
-					else if (horiz)	//   - - block x-,y
-					{
-						if (j>0 && minx<x)
-							AddBlockLine(BlockIndex(j - 1, yb), i);
-					}
-				}
-				else if (j>0 && minx<x)	// else not at corner: x-,y
-					AddBlockLine(BlockIndex(j - 1, yb), i);
-			}
-		}
-
-		// For each row, see where the line along its bottom edge, which
-		// it contains, intersects the Linedef i. Add i to all the corresponding
-		// blocklists.
-
-		if (!horiz)
-		{
-			for (int j = 0; j < nrows; j++)
-			{
-				// intersection of Linedef with y=yorg+(j<<blkshift)
-				// (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
-				// x = dx*(y-y1)/dy+x1;
-
-				const int y = yorg+(j<<blkshift);		// (x,y) is intersection
-				const int x = (dx*(y-y1))/dy+x1;
-				const int xb = (x-xorg)>>blkshift;	// block column number
-				const int xp = (x-xorg)&blkmask;		// x position within block
-
-				if (xb<0 || xb>ncols-1)			// outside blockmap, continue
-					continue;
-
-				if (y<miny || y>maxy)			 // line doesn't touch row
-					continue;
-
-				// The cell that contains the intersection point is always added
-
-				AddBlockLine (BlockIndex(xb, j), i);
-
-				// if the intersection is at a corner it depends on the slope
-				// (and whether the line extends past the intersection) which
-				// blocks are hit
-
-				if (xp==0)			// intersection at a corner
-				{
-					if (sneg)       //   \ - blocks x,y-, x-,y
-					{
-						if (j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb, j - 1), i);
-						if (xb>0 && minx<x)
-							AddBlockLine (BlockIndex(xb - 1, j), i);
-					}
-					else if (vert)  //   | - block x,y-
-					{
-						if (j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb, j - 1), i);
-					}
-					else if (spos)  //   / - block x-,y-
-					{
-						if (xb>0 && j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb - 1, j - 1), i);
-					}
-				}
-				else if (j>0 && miny<y) // else not on a corner: x,y-
-					AddBlockLine (BlockIndex(xb, j - 1), i);
-			}
-		}
-	}
-
-	// Add initial 0 to all blocklists
-	// count the total number of lines (and 0's and -1's)
-	std::fill_n(blockdone.get(), NBlocks, false);
-	uint32_t linetotal = 0;
-	for (int i = 0; i < NBlocks; i++)
-	{
-		AddBlockLine (i, 0);
-		linetotal += blockcount[i];
-	}
-
-	// Create the blockmap lump
-	blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * (4+NBlocks+linetotal), PU_LEVEL, 0);
-
-	// blockmap header
-	//
-	// Rjy: P_CreateBlockMap should not initialise bmaporg{x,y} as P_LoadBlockMap
-	// does so again, resulting in their being left-shifted by FRACBITS twice.
-	//
-	// Thus any map having its blockmap built by the engine would have its
-	// origin at (0,0) regardless of where the walls and monsters actually are,
-	// breaking all collision detection.
-	//
-	// Instead have P_CreateBlockMap create blockmaplump only, so that both
-	// clauses of the conditional in P_LoadBlockMap have the same effect, and
-	// bmap* are only initialised from blockmaplump[0..3] once in the latter.
-	//
-	blockmaplump[0] = xorg;
-	blockmaplump[1] = yorg;
-	blockmaplump[2] = ncols;
-	blockmaplump[3] = nrows;
-
-	// offsets to lists and block lists
-	for (int i = 0; i < NBlocks; i++)
-	{
-		linelist_t *bl = blocklists[i];
-		uint32_t offs = blockmaplump[4+i] =   // set offset to block's list
-			(i? blockmaplump[4+i-1] : 4+NBlocks) + (i? blockcount[i-1] : 0);
-
-		// add the lines in each block's list to the blockmaplump
-		// delete each list node as we go
-
-		while (bl)
-		{
-			linelist_t *tmp = bl->next;
-			blockmaplump[offs++] = bl->num;
-			delete bl;
-			bl = tmp;
-		}
-	}
-}
-
-// jff 10/6/98
-// End new code added to speed up calculation of internal blockmap
-
-void P_SetSkipBlockStart()
-{
-	skipblstart = true;
-
-	for (int y = 0; y < bmapheight; y++)
-	{
-		for (int x = 0; x < bmapwidth; x++)
-		{
-			int32_t* blockoffset = blockmaplump + y * bmapwidth + x + 4;
-
-			int32_t* list = blockmaplump + *blockoffset;
-
-			if (*list != 0)
-			{
-				skipblstart = false;
-				return;
-			}
-		}
-	}
-}
-
 //
 // P_LoadBlockMap
 //
@@ -1611,46 +1288,10 @@ void P_SetSkipBlockStart()
 //
 void P_LoadBlockMap (int lump)
 {
-	int count;
-
-	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000 || count < 4)
-		P_CreateBlockMap();
-	else
-	{
-		short *wadblockmaplump = (short *)W_CacheLumpNum (lump, PU_LEVEL);
-		blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
-
-		// killough 3/1/98: Expand wad blockmap into larger internal one,
-		// by treating all offsets except -1 as unsigned and zero-extending
-		// them. This potentially doubles the size of blockmaps allowed,
-		// because Doom originally considered the offsets as always signed.
-
-		blockmaplump[0] = LESHORT(wadblockmaplump[0]);
-		blockmaplump[1] = LESHORT(wadblockmaplump[1]);
-		blockmaplump[2] = static_cast<uint16_t>(LESHORT(wadblockmaplump[2]));
-		blockmaplump[3] = static_cast<uint16_t>(LESHORT(wadblockmaplump[3]));
-
-		for (int i = 4; i < count; i++)
-		{
-			const short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
-			blockmaplump[i] = t == -1 ? 0xffffffff : static_cast<uint16_t>(t);
-		}
-
-		Z_Free (wadblockmaplump);
-	}
-
-	bmaporgx = blockmaplump[0]<<FRACBITS;
-	bmaporgy = blockmaplump[1]<<FRACBITS;
-	bmapwidth = blockmaplump[2];
-	bmapheight = blockmaplump[3];
+	blockmap = blockmap_t::load(lump);
 
 	// clear out mobj chains
-	count = sizeof(*blocklinks) * bmapwidth*bmapheight;
-	blocklinks = (AActor **)Z_Malloc (count, PU_LEVEL, 0);
-	memset (blocklinks, 0, count);
-	blockmap = blockmaplump+4;
-
-	P_SetSkipBlockStart();
+	blocklinks = Z_Calloc<AActor*>(blockmap.size(), PU_LEVEL);
 }
 
 /*
@@ -1669,13 +1310,13 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 	typedef std::vector<byte> LevelLumps;
 	LevelLumps levellumps;
 
-	const byte* thingbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
-	const byte* lindefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
-	const byte* sidedefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
-	const byte* vertexbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
-	const byte* segsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
-	const byte* ssectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
-	const byte* sectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
+	const byte* thingbytes    = W_CacheLumpNum<const byte>(maplumpnum+ML_THINGS, PU_STATIC);
+	const byte* lindefbytes   = W_CacheLumpNum<const byte>(maplumpnum+ML_LINEDEFS, PU_STATIC);
+	const byte* sidedefbytes  = W_CacheLumpNum<const byte>(maplumpnum+ML_SIDEDEFS, PU_STATIC);
+	const byte* vertexbytes   = W_CacheLumpNum<const byte>(maplumpnum+ML_VERTEXES, PU_STATIC);
+	const byte* segsbytes     = W_CacheLumpNum<const byte>(maplumpnum+ML_SEGS, PU_STATIC);
+	const byte* ssectorsbytes = W_CacheLumpNum<const byte>(maplumpnum+ML_SSECTORS, PU_STATIC);
+	const byte* sectorsbytes  = W_CacheLumpNum<const byte>(maplumpnum+ML_SECTORS, PU_STATIC);
 
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
@@ -1704,7 +1345,7 @@ int P_GroupLines()
 	// look up sector number for each subsector
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		if (subsectors[i].firstline >= (unsigned int)numsegs)
+		if (subsectors[i].firstline >= static_cast<unsigned int>(numsegs))
 			I_Error("subsector[{}].firstline exceeds numsegs ({})", i, numsegs);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
@@ -1733,7 +1374,7 @@ int P_GroupLines()
 	}
 
 	// build line tables for each sector
-	line_t** linebuffer = (line_t **)Z_Malloc (total*sizeof(line_t *), PU_LEVEL, 0);
+	line_t** linebuffer = Z_Malloc<line_t*>(total, PU_LEVEL);
 	sector_t* sector = sectors;
 	DBoundingBox bbox;
 	for (int i = 0 ; i < numsectors ; i++, sector++)
@@ -1757,21 +1398,10 @@ int P_GroupLines()
 		sector->soundorg[1] = (bbox.Top()+bbox.Bottom())/2;
 
 		// adjust bounding box to map blocks
-		int block = (bbox.Top()-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block >= bmapheight ? bmapheight-1 : block;
-		sector->blockbox[BOXTOP]=block;
-
-		block = (bbox.Bottom()-bmaporgy-MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block < 0 ? 0 : block;
-		sector->blockbox[BOXBOTTOM]=block;
-
-		block = (bbox.Right()-bmaporgx+MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block >= bmapwidth ? bmapwidth-1 : block;
-		sector->blockbox[BOXRIGHT]=block;
-
-		block = (bbox.Left()-bmaporgx-MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block < 0 ? 0 : block;
-		sector->blockbox[BOXLEFT]=block;
+		sector->blockbox[BOXTOP] = std::min((bbox.Top()-blockmap.originy()+MAXRADIUS)>>MAPBLOCKSHIFT, blockmap.height() - 1);
+		sector->blockbox[BOXBOTTOM] = std::max((bbox.Bottom()-blockmap.originy()-MAXRADIUS)>>MAPBLOCKSHIFT, 0);;
+		sector->blockbox[BOXRIGHT] = std::min((bbox.Right()-blockmap.originx()+MAXRADIUS)>>MAPBLOCKSHIFT, blockmap.width() - 1);
+		sector->blockbox[BOXLEFT] = std::max((bbox.Left()-blockmap.originx()-MAXRADIUS)>>MAPBLOCKSHIFT, 0);
 	}
 	return total;
 }
@@ -1824,8 +1454,7 @@ int P_GroupLines()
 
 void P_RemoveSlimeTrails()
 {
-	byte* hit = (byte *)Z_Malloc(numvertexes, PU_LEVEL, 0);
-	memset(hit, 0, numvertexes * sizeof(byte));
+	byte* hit = Z_Calloc<byte>(numvertexes, PU_LEVEL);
 
 	for (int i = 0; i < numsegs; i++)
 	{
@@ -1848,8 +1477,8 @@ void P_RemoveSlimeTrails()
 						const int64_t dxy = (l->dx >> FRACBITS) * (l->dy >> FRACBITS);
 						const int64_t s = dx2 + dy2;
 						const fixed_t x0 = v->x, y0 = v->y, x1 = l->v1->x, y1 = l->v1->y;
-						v->x = (fixed_t)((dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s);
-						v->y = (fixed_t)((dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s);
+						v->x = static_cast<fixed_t>((dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s);
+						v->y = static_cast<fixed_t>((dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s);
 					}
 				}  // Obsfucated C contest entry:   :)
 			} while ((v != segs[i].v2) && (v = segs[i].v2));
@@ -1864,7 +1493,7 @@ void P_RemoveSlimeTrails()
 //
 void P_LoadBehavior (int lumpnum)
 {
-	byte *behavior = (byte *)W_CacheLumpNum (lumpnum, PU_LEVEL);
+	byte *behavior = W_CacheLumpNum<byte>(lumpnum, PU_LEVEL);
 
 	level.behavior = std::make_unique<FBehavior>(behavior, lumpinfo[lumpnum].size);
 
@@ -1881,7 +1510,7 @@ void P_InitTagLists(void)
 		sectors[i].firsttag = -1;
 	for (int i = numsectors; --i >= 0; )		// Proceed from last to first sector
 	{									// so that lower sectors appear first
-		int j = (unsigned)sectors[i].tag % (unsigned)numsectors;	// Hash func
+		int j = static_cast<unsigned>(sectors[i].tag) % static_cast<unsigned>(numsectors);	// Hash func
 		sectors[i].nexttag = sectors[j].firsttag;	// Prepend sector to chain
 		sectors[j].firsttag = i;
 	}
@@ -1892,7 +1521,7 @@ void P_InitTagLists(void)
 		lines[i].firstid = -1;
 	for (int i = numlines; --i >= 0; )        // Proceed from last to first linedef
 	{									// so that lower linedefs appear first
-		int j = (unsigned)lines[i].id % (unsigned)numlines;	// Hash func
+		int j = static_cast<unsigned>(lines[i].id) % static_cast<unsigned>(numlines);	// Hash func
 		lines[i].nextid = lines[j].firstid;	// Prepend linedef to chain
 		lines[j].firstid = i;
 	}
@@ -2043,7 +1672,7 @@ void P_LoadReject(int lumpnum, int totallines)
 	else if (lumpsize < correctsize)
 	{
 		DPrintFmt("Reject matrix is not valid. It will be padded to the correct size.\n");
-		rejectmatrix = static_cast<byte*>(Z_Malloc(correctsize, PU_LEVEL, nullptr));
+		rejectmatrix = Z_Malloc<byte>(correctsize, PU_LEVEL);
 		W_ReadLump(lumpnum, rejectmatrix);
 		memset(rejectmatrix + lumpsize, 0, correctsize - lumpsize);
 		// vanilla doom just reads pass the edge of the reject table if its too small
@@ -2071,7 +1700,7 @@ void P_LoadReject(int lumpnum, int totallines)
 	}
 	else
 	{
-		rejectmatrix = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_LEVEL));
+		rejectmatrix = W_CacheLumpNum<byte>(lumpnum, PU_LEVEL);
 	}
 }
 
@@ -2132,6 +1761,7 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	// [RH] Clear all ThingID hash chains.
 	AActor::ClearTIDHashes ();
+	AActor::ClearActorLists();
 
 	// [RH] clear out the mid-screen message
 	C_MidPrint (NULL);
@@ -2243,10 +1873,18 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	P_InitTagLists();   // killough 1/30/98: Create xref tables for tags
 
+	P_ClearSkyPickers();
+	P_ClearStackLinks();
+
 	if (!HasBehavior)
 		P_LoadThings (lumpnum+ML_THINGS);
 	else
 		P_LoadThings2 (lumpnum+ML_THINGS, position);	// [RH] Load Hexen-style things
+
+	// Sky pickers and stacked-sector pairs can only be resolved once every
+	// SkyViewpoint / stack point has spawned.
+	P_ResolveSkyPickers();
+	P_ResolveStackLinks();
 
 	if (!HasBehavior)
 		P_TranslateTeleportThings(); // [RH] Assign teleport destination TIDs
@@ -2298,7 +1936,7 @@ static std::vector<spriteinfo_t*> P_GetSpriteInfos ()
 	std::vector<spriteinfo_t*> infos;
 	for(auto it = sprnames.begin();it != sprnames.end();++it)
 	{
-		spriteinfo_t* spriteinfo = (spriteinfo_t*) Z_Malloc(sizeof(spriteinfo_t), PU_STATIC, nullptr);
+		spriteinfo_t* spriteinfo = Z_Malloc<spriteinfo_t>(PU_STATIC);
 		spriteinfo->sprite = Z_StrDup(it->second.data(), PU_STATIC);
 		spriteinfo->spritenum = it->first;
 		infos.push_back(spriteinfo);

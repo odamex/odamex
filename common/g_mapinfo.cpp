@@ -22,6 +22,7 @@
 #include "odamex.h"
 
 #include "g_episode.h"
+#include "g_mapinfo.h"
 #include "gi.h"
 #include "gstrings.h"
 #include "g_skill.h"
@@ -40,6 +41,9 @@ bool HexenHack;
 
 namespace
 {
+
+// True while the MAPINFO lump being parsed belongs to a PWAD.
+bool mapinfofrompwad = false;
 
 //
 // Assumes that you have munched the last parameter you know how to handle,
@@ -265,7 +269,7 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 			do
 			{
 				os.mustScan();
-				info.must_confirm_text += os.getToken();
+				info.must_confirm_text += GStrings.maybeLookup(os.getToken());
 				info.must_confirm_text += "\n";
 				os.scan();
 			} while (os.compareToken(","));
@@ -293,7 +297,7 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 			do
 			{
 				os.mustScan();
-				info.must_confirm_text += os.getToken();
+				info.must_confirm_text += GStrings.maybeLookup(os.getToken());
 				info.must_confirm_text += "\n";
 				os.scan();
 			} while (os.compareToken(","));
@@ -332,6 +336,15 @@ void MIType_String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	*static_cast<std::string*>(data) = os.getToken();
+}
+
+// Sets the inputted data as a std::string, checking LANGUAGE if it is a $ token
+void MIType_$String(OScanner& os, bool newStyleMapInfo, void* data,
+                    unsigned int /*flags*/, unsigned int /*flags2*/)
+{
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
+
+	*static_cast<std::string*>(data) = GStrings.maybeLookup(os.getToken());
 }
 
 // Sets the inputted data as a color
@@ -526,7 +539,7 @@ void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(StdStringToUpper(os.getToken()).c_str() + 1);
+		const OLumpName s = GStrings.lookup(os.getToken().c_str() + 1);
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -551,7 +564,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(StdStringToUpper(musicname.c_str() + 1));
+		const OLumpName s = GStrings.lookup(musicname.c_str() + 1);
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -582,6 +595,59 @@ void MIType_SoundName(OScanner& os, bool doEquals, void* data, unsigned int flag
 	const std::string soundname = os.getToken();
 
 	strncpy(static_cast<char*>(data), soundname.c_str(), MAX_SNDNAME);
+}
+
+// Sets the map author, remembering whether a PWAD is the one claiming it
+void MIType_Author(OScanner& os, bool newStyleMapInfo, void* data,
+                   unsigned int /*flags*/, unsigned int /*flags2*/)
+{
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
+
+	level_pwad_info_t& info = *static_cast<level_pwad_info_t*>(data);
+
+	const std::string token = os.getToken();
+	info.author = GStrings.maybeLookup(token);
+
+	if (info.author == token)
+	{
+		StringTable::replaceEscapes(info.author);
+	}
+
+	if (mapinfofrompwad)
+		info.flags2 |= LEVEL2_AUTHORFROMPWAD;
+	else
+		info.flags2 &= ~LEVEL2_AUTHORFROMPWAD;
+}
+
+// Sets the intermission title patch, which may carry a hideauthorname token
+void MIType_TitlePatch(OScanner& os, bool newStyleMapInfo, void* data,
+                       unsigned int /*flags*/, unsigned int /*flags2*/)
+{
+	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
+
+	level_pwad_info_t& info = *static_cast<level_pwad_info_t*>(data);
+
+	info.pname = os.getToken();
+
+	// Some title patches spell out the author as part of the graphic, in which
+	// case the map can ask for it not to be drawn a second time.
+	os.scan();
+	if (os.compareToken(","))
+	{
+		os.mustScan();
+		if (os.compareTokenNoCase("hideauthorname"))
+		{
+			info.flags2 |= LEVEL2_HIDEAUTHORNAME;
+		}
+		else
+		{
+			os.error("Unknown titlepatch option \"{}\".", os.getToken());
+		}
+	}
+	else
+	{
+		os.unScan();
+	}
 }
 
 // Sets the sky texture with an OLumpName
@@ -704,7 +770,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			}
 
 			os.mustScan();
-			const OString& s = GStrings(StdStringToUpper(os.getToken()));
+			const std::string s = GStrings.lookup(os.getToken());
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -719,7 +785,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			do
 			{
 				os.mustScan();
-				ctext += os.getToken();
+				ctext += GStrings.maybeLookup(os.getToken());
 				ctext += "\n";
 				os.scan();
 			} while (os.compareToken(","));
@@ -739,7 +805,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		if (os.compareTokenNoCase("lookup"))
 		{
 			os.mustScan();
-			const OString& s = GStrings(StdStringToUpper(os.getToken()));
+			const std::string s = GStrings.lookup(os.getToken());
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -749,7 +815,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		}
 		else
 		{
-			*text = os.getToken();
+			*text = GStrings.maybeLookup(os.getToken());
 		}
 	}
 }
@@ -1088,10 +1154,10 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	}
 }
 
-template <typename DataType>
+template <std::integral T = int32_t>
 void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
 {
-	*static_cast<DataType*>(data) = static_cast<DataType>(flags);
+	*static_cast<T*>(data) = static_cast<T>(flags);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1144,21 +1210,21 @@ struct MapInfoDataSetter<level_pwad_info_t>
 	{
 		mapInfoDataContainer = {
 			{ "levelnum", &MIType_Int, &ref.levelnum },
-	        { "next", &MIType_MapName, &ref.nextmap },
-	        { "secretnext", &MIType_MapName, &ref.secretmap },
+			{ "next", &MIType_MapName, &ref.nextmap },
+			{ "secretnext", &MIType_MapName, &ref.secretmap },
 			{ "secret", &MIType_MapName, &ref.secretmap },
 			{ "cluster", &MIType_Cluster, &ref.cluster },
 			{ "sky1", &MIType_Sky, &ref, 1 },
 			{ "sky2", &MIType_Sky, &ref, 2 },
 			{ "fade", &MIType_Color, &ref.fadeto_color },
 			{ "outsidefog", &MIType_Color, &ref.outsidefog_color },
-			{ "titlepatch", &MIType_LumpName, &ref.pname },
+			{ "titlepatch", &MIType_TitlePatch, &ref },
 			{ "music", &MIType_MusicLumpName, &ref.music },
 			{ "nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION },
 			{ "doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY },
 			{ "nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING },
 			{ "allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
-		       LEVEL_MONSTERSTELEFRAG },
+			     LEVEL_MONSTERSTELEFRAG },
 			{ "map07special", &MIType_Map07Special, &ref.bossactions },
 			{ "baronspecial", &MIType_Special<MT_BRUISER>, &ref.bossactions },
 			{ "cyberdemonspecial", &MIType_Special<MT_CYBORG>, &ref.bossactions },
@@ -1178,9 +1244,9 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "noautosequences", &MIType_SetFlag, &ref.flags, LEVEL_SNDSEQTOTALCTRL },
 			{ "forcenoskystretch", &MIType_SetFlag, &ref.flags, LEVEL_FORCENOSKYSTRETCH },
 			{ "allowfreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_YES,
-		       ~LEVEL_FREELOOK_NO },
+			    ~LEVEL_FREELOOK_NO },
 			{ "nofreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_NO,
-		       ~LEVEL_FREELOOK_YES },
+			    ~LEVEL_FREELOOK_YES },
 			{ "allowjump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
 			{ "nojump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
 			{ "cdtrack", &MIType_EatNext },
@@ -1208,7 +1274,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "compat_shorttex", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_SHORTTEX },
 			{ "compat_limitpain", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_LIMITPAIN },
 			{ "compat_useblocking", &MIType_CompatFlag, &ref.flags }, // special lines block use (not implemented, default odamex behavior)
-		    { "compat_missileclip", &MIType_CompatFlag, &ref.flags }, // original height monsters when it comes to missiles (not implemented)
+			{ "compat_missileclip", &MIType_CompatFlag, &ref.flags }, // original height monsters when it comes to missiles (not implemented)
 			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF }, // todo: not implemented
 			{ "compat_crossdropoff", &MIType_CompatFlag, &ref.flags2, LEVEL2_COMPAT_CROSSDROPOFF },
 			{ "compat_trace", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
@@ -1216,7 +1282,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
 			{ "compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER },
 			{ "compat_invisibility", &MIType_CompatFlag, &ref.flags},  // todo: not implemented
-			{ "author", &MIType_String, &ref.author },
+			{ "author", &MIType_Author, &ref },
 			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
@@ -1410,13 +1476,13 @@ void ParseEpisodeInfo(OScanner& os)
 		if (os.compareToken("{"))
 		{
 			// Detected new-style MAPINFO
-			os.error("Detected incorrectly placed curly brace in MAPINFO episode definiton");
+			os.error("Detected incorrectly placed curly brace in MAPINFO episode definition");
 		}
 		else if (os.compareToken("}"))
 		{
 			if (new_mapinfo == false)
 				os.error("Detected incorrectly placed curly brace in MAPINFO episode "
-				        "definiton");
+				        "definition");
 			else
 				break;
 		}
@@ -1425,13 +1491,20 @@ void ParseEpisodeInfo(OScanner& os)
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			if (picisgfx == false)
-				name = os.getToken();
+				name = GStrings.maybeLookup(os.getToken());
 		}
 		else if (os.compareTokenNoCase("lookup"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
-			// Not implemented
+			const std::string s = GStrings.lookup(os.getToken());
+			if (s.empty())
+			{
+				os.error("Unknown lookup string \"{}\".", os.getToken());
+			}
+
+			if (picisgfx == false)
+				name = s;
 		}
 		else if (os.compareTokenNoCase("picname"))
 		{
@@ -1560,7 +1633,7 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "spawnmulti", &MIType_Bool, &ref.spawn_multi, true },
 			{ "instantreaction", &MIType_Bool, &ref.instant_reaction, true },
 			{ "acsreturn", &MIType_Int, &ref.ACS_return },
-			{ "name", &MIType_String, &ref.menu_name },
+			{ "name", &MIType_$String, &ref.menu_name },
 			{ "picname", &MIType_LumpName, &ref.pic_name },
 			// { "playerclassname", &???, &ref.menu_names_for_player_class } // todo - requires special MIType to work properly
 			{ "mustconfirm", &MIType_MustConfirm, &ref, true },
@@ -1617,6 +1690,20 @@ struct MapInfoDataSetter<automap_dummy>
 };
 } // namespace
 
+// Drops a "by: " or "Author: " style prefix, the same way a
+// level name sheds the "MAP01: " that LANGUAGE puts in front of it.
+std::string G_StripAuthorPrefix(const std::string& author)
+{
+	const size_t pos = author.find(": ");
+	if (pos == std::string::npos)
+		return author;
+
+	std::string stripped = author.substr(pos + 2);
+	TrimString(stripped);
+
+	return stripped.empty() ? author : stripped;
+}
+
 // This function in particular is global rather than local specifically because UMAPINFO
 // also makes use of it.
 void G_MapNameToLevelNum(level_pwad_info_t& info)
@@ -1661,7 +1748,17 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
 
+	mapinfofrompwad = W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+
 	level_pwad_info_t defaultinfo{};
+
+	// if no sky is defined, it will show texture 0 (aastinky/aashitty)
+	// so instead, lets just try to give it the first defined sky in the level set.
+	if (levels.size() > 0 && defaultinfo.skypic == "")
+	{
+		level_pwad_info_t& def = levels.at(0);
+		defaultinfo.skypic = def.skypic;
+	}
 
 	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
@@ -1677,6 +1774,14 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		if (os.compareTokenNoCase("defaultmap"))
 		{
 			defaultinfo = level_pwad_info_t();
+
+			// if no sky is defined, it will show texture 0 (aastinky/aashitty)
+			// so instead, lets just try to give it the first defined sky in the level set.
+			if (levels.size() > 0 && defaultinfo.skypic == "")
+			{
+				level_pwad_info_t& def = levels.at(0);
+				defaultinfo.skypic = def.skypic;
+			}
 
 			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
 			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
@@ -1704,42 +1809,34 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 				    LEVEL_NOINTERMISSION | LEVEL_EVENLIGHTING | LEVEL_SNDSEQTOTALCTRL;
 			}
 
-			// Build upon already defined levels, that way we don't miss any defaults
-			bool levelExists = levels.findByName(map_name).exists();
-
 			// Find the level.
-			level_pwad_info_t& info = levelExists
+			level_pwad_info_t& info = levels.findByName(map_name).exists()
 				? levels.findByName(map_name)
 				: levels.create();
 
-			if (!levelExists)
-				info = defaultinfo;
-
-			// for maps above 32, if no sky is defined, it will show texture 0 (aastinky)
-			// so instead, lets just try to give it the first defined sky in the level set.
-			if (levels.size() > 0 && defaultinfo.skypic == "")
-			{
-				level_pwad_info_t& def = levels.at(0);
-				info.skypic = def.skypic;
-			}
-
+			// Hexen/ZDoom mapinfo always loads from the default defining a new map
+			// Changing this to be conditional will break most wads that use defaultmap
+			info = defaultinfo;
 			info.mapname = map_name;
 
-			// Map name.
+			// Map name.  Either a literal, an explicit "lookup <name>", or a
+			// "$NAME" token that is looked up in LANGUAGE.
 			os.mustScan();
 			if (os.compareTokenNoCase("lookup"))
 			{
 				os.mustScan();
-				const OString& s = GStrings(StdStringToUpper(os.getToken()));
-				if (s.empty())
-				{
-					info.level_name = os.getToken();
-				}
-				info.level_name = s;
+				const std::string s = GStrings.lookup(os.getToken());
+				info.level_name = s.empty() ? os.getToken() : s;
 			}
 			else
 			{
-				info.level_name = os.getToken();
+				const std::string token = os.getToken();
+				info.level_name = GStrings.maybeLookup(token);
+
+				if (info.level_name == token)
+				{
+					StringTable::replaceEscapes(info.level_name);
+				}
 			}
 			info.pname.clear();
 
@@ -1928,9 +2025,22 @@ void G_ParseMapInfo()
 		I_FatalError("{}: You cannot use clearskills in a MAPINFO if you do not define any "
 					"new skills after it.", __FUNCTION__);
 
-	// mark levels as secrets -- for ID24 intermissions
+	// A PWAD that replaces an IWAD map does not inherit the
+	// author of the map it buried. Only an author the PWAD states itself, in
+	// its own MAPINFO or UMAPINFO, survives onto a map the PWAD supplies.
 	LevelInfos& levels = getLevelInfos();
 	size_t numlevels = levels.size();
+	for (size_t i = 0; i < numlevels; i++)
+	{
+		level_pwad_info_t& level = levels.at(i);
+		if (!level.author.empty() && !(level.flags2 & LEVEL2_AUTHORFROMPWAD) &&
+		    W_IsLumpFromPWAD(level.mapname))
+		{
+			level.author.clear();
+		}
+	}
+
+	// mark levels as secrets -- for ID24 intermissions
 	for (size_t i = 0; i < numlevels; i++)
 	{
 		level_pwad_info_t& level = levels.at(i);

@@ -43,11 +43,11 @@ enum
 extern uint32_t LanguageIDs[4];
 extern void SetLanguageIDs ();
 
-void I_BeginRead (void);
-void I_EndRead (void);
+void I_BeginRead();
+void I_EndRead();
 
 // Called by DoomMain.
-void I_Init (void);
+void I_Init();
 
 // Asynchronous interrupt functions should maintain private queues
 // that are read by the synchronous functions
@@ -57,29 +57,29 @@ void I_Init (void);
 // or calls a loadable driver to build it.
 // This ticcmd will then be modified by the gameloop
 // for normal input.
-ticcmd_t *I_BaseTiccmd (void);
+ticcmd_t *I_BaseTiccmd();
 
 
 // Called by M_Responder when quit is selected.
 // Clean exit, displays sell blurb.
-void STACK_ARGS I_Quit (void);
+void I_Quit();
 
-void I_BaseError(const std::string& errortext);
+[[noreturn]] void I_BaseError(const std::string& errortext);
 [[noreturn]] void I_BaseFatalError(const std::string& errortext);
 
 template <typename... ARGS>
-void I_Error(const fmt::string_view format, const ARGS&... args)
+[[noreturn]] void I_Error(fmt::format_string<ARGS...>format, ARGS&&... args)
 {
-	I_BaseError(fmt::format(format, args...));
+	I_BaseError(fmt::format(format, std::forward<ARGS>(args)...));
 }
 
 template <typename... ARGS>
-void I_FatalError(const fmt::string_view format, const ARGS&... args)
+[[noreturn]] void I_FatalError(fmt::format_string<ARGS...> format, ARGS&&... args)
 {
-	I_BaseFatalError(fmt::format(format, args...));
+	I_BaseFatalError(fmt::format(format, std::forward<ARGS>(args)...));
 }
 
-void addterm (void (STACK_ARGS *func)(void), const char *name);
+void addterm (void (*func)(), const char *name);
 #define atterm(t) addterm (t, #t)
 
 std::string I_ConsoleInput (void);

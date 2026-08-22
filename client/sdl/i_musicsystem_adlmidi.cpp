@@ -60,7 +60,7 @@ CVAR_FUNC_IMPL (snd_oplbank)
 		static_cast<AdlMidiMusicSystem *>(musicsystem)->applyCVars();
 }
 
-static int oplCoreMap[] = {ADLMIDI_EMU_DOSBOX, ADLMIDI_EMU_NUKED_174, ADLMIDI_EMU_NUKED};
+static int oplCoreMap[] = {ADLMIDI_EMU_DOSBOX, ADLMIDI_EMU_NUKED_FAST, ADLMIDI_EMU_NUKED};
 static int oplBankMap[] = {16, 14, 72};
 
 
@@ -121,7 +121,7 @@ static void adlmidi_music_hook (void *data, byte *stream, int len)
 	{
 		int16_t samp;
 		memcpy(&samp, stream + i, 2);
-		samp = clamp(samp * hdata->volume, -32768.f, 32767.f);
+		samp = std::clamp(samp * hdata->volume, -32768.f, 32767.f);
 		memcpy(stream + i, &samp, 2);
 	}
 }

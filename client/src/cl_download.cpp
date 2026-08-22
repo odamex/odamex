@@ -30,6 +30,10 @@
 #endif
 #include "curl/curl.h"
 
+#ifdef min
+#   undef min
+#endif
+
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "cmdlib.h"
@@ -310,20 +314,20 @@ static StringTokens GetDownloadDirs()
 	StringTokens dirs;
 
 	// Add all of the sources.
-	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
-	dirs.push_back(M_GetDownloadDir());
+	D_AddSearchDir(dirs, cl_waddownloaddir.str());
+	D_AddSearchDir(dirs, M_GetDownloadDir());
 
 	// These folders should only work on PC versions
 #ifndef GCONSOLE
-	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
+	D_AddSearchDirList(dirs, Args.CheckValue("-waddir"));
+	D_AddSearchDir(dirs, getenv("DOOMWADDIR"));
+	D_AddSearchDirList(dirs, getenv("DOOMWADPATH"));
 #endif
 
-	D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
+	D_AddSearchDirList(dirs, waddirs.str());
 
 #ifdef __SWITCH__
-	dirs.push_back("./wads");
+	D_AddSearchDir(dirs, "./wads");
 #endif
 
 	dirs.push_back(M_GetCWD());
@@ -344,7 +348,7 @@ static void TransferDone(const OTransferInfo& info)
 	PrintFmt("Download completed at {}/s.\n", bytes);
 
 	if (::dlstate.flags & DL_RECONNECT)
-		CL_Reconnect();
+		CL_Reconnect(NQ_SILENT);
 }
 
 static void TransferError(const char* msg)

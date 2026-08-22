@@ -24,11 +24,16 @@
 
 #pragma once
 
+#include <array>
+
 #include "d_event.h"
 
 // Some defines...
 #define LINEHEIGHT	16
 #define SKULLXOFF	-32
+
+#define SLIDER_TRACK_X		5
+#define SLIDER_TRACK_WIDTH	78
 
 //
 // MENUS
@@ -38,7 +43,7 @@
 // Even when the menu is not displayed,
 // this can resize the view and change game parameters.
 // Does all the real work of the menu interaction.
-bool M_Responder (event_t *ev);
+bool M_Responder(const event_t& ev);
 
 // Called by main loop,
 // only used for menu (skull cursor) animation.
@@ -60,10 +65,13 @@ void M_StartControlPanel (void);
 bool M_StartOptionsMenu (void);
 
 // [RH] Handle keys for options menu
-void M_OptResponder (event_t *ev);
+void M_OptResponder(const event_t& ev);
 
 // [RH] Draw options menu
 void M_OptDrawer (void);
+
+// Move the options menu selection to whatever the mouse is hovering over
+void M_OptUpdateMouseItem();
 
 // [RH] Initialize options menu
 void M_OptInit (void);
@@ -109,7 +117,15 @@ typedef void (*cvarfunc)(cvar_t *cvar, float newval);
 typedef void (*voidfunc)(void);
 typedef void (*intfunc)(int);
 
-typedef struct menuitem_s {
+struct value_t {
+	float		value;
+	const char	*name;
+};
+
+// TODO: this is barely functional in c++
+// almost the entire menu is undefined behavior
+// replace with std::variant maybe?
+struct menuitem_t {
 	itemtype		  type;
 	const char			 *label;
 	union {
@@ -132,15 +148,15 @@ typedef struct menuitem_s {
 		char			 *res3;
 	} d;
 	union {
-		struct value_s		*values;
-		const char		*command;
-        	cvarfunc		cfunc;
-	        voidfunc		mfunc;
-        	intfunc			lfunc;
-		int			highlight;
-		int			*flagint;
+		value_t*    values;
+		const char* command;
+		cvarfunc    cfunc;
+		voidfunc    mfunc;
+		intfunc     lfunc;
+		int         highlight;
+		int*        flagint;
 	} e;
-} menuitem_t;
+};
 
 typedef struct menu_s {
 	OLumpName		title;
@@ -152,11 +168,6 @@ typedef struct menu_s {
 	int				scrollpos;
 	void			(*refreshfunc)();	// Callback func for M_OptResponder
 } menu_t;
-
-typedef struct value_s {
-	float		value;
-	const char	*name;
-} value_t;
 
 typedef struct
 {
@@ -195,11 +206,11 @@ typedef struct
 	bool drawSkull;
 } menustack_t;
 
-extern value_t YesNo[2];
-extern value_t NoYes[2];
-extern value_t OnOff[2];
-extern value_t OffOn[2];
-extern value_t OnOffAuto[3];
+extern std::array<value_t, 2> YesNo;
+extern std::array<value_t, 2> NoYes;
+extern std::array<value_t, 2> OnOff;
+extern std::array<value_t, 2> OffOn;
+extern std::array<value_t, 3> OnOffAuto;
 
 extern menustack_t MenuStack[16];
 extern int MenuStackDepth;

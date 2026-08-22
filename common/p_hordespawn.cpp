@@ -86,12 +86,12 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 			if (recipe.isBoss)
 			{
 				// Heavy is the head that wears the crown.
-				mo->effects = FX_YELLOWFOUNTAIN;
+				mo->SetEffects(FX_YELLOWFOUNTAIN);
 				mo->translation = translationref_t(&bosstable[0]);
 
 				// Set flags as a boss.
 				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
-				             MFO_NORAISE | MFO_BOSSPOOL | MFO_FULLBRIGHT;
+				             MFO_NORAISE | MFO_ISHORDEBOSS | MFO_FULLBRIGHT;
 
 				mo->flags3 = MF3_FULLVOLSOUNDS | MF3_DMGIGNORED | MF3_NORADIUSDMG;
 			}
@@ -415,7 +415,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
 		if (it->type != spawn.type)
 			continue;
 
-		SpawnPointWeight spw = {0, 0.0f, 0, false};
+		SpawnPointWeight spw = {nullptr, 0.0f, 0, false};
 		spw.spawn = &*it;
 		spw.dist = P_AproxDistance2(it->mo, spawn.mo);
 		weights.push_back(spw);
@@ -448,7 +448,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
 		if (weight.dist > (1024 * FRACUNIT))
 			continue;
 
-		int groupIter = clamp(left, 1, maxGroupSize);
+		const int groupIter = std::clamp(left, 1, maxGroupSize);
 
 		AActors okIter = SpawnMonsterGroup(*weight.spawn, recipe, groupIter, monsterCounts);
 		ok.insert(ok.end(), okIter.begin(), okIter.end());

@@ -38,23 +38,22 @@
 
 #pragma once
 
+#include <utility>
+
 #include "m_stacktrace.h"
 
 template <typename T>
 class szp
 {
 	// pointer to a common raw pointer
-	T **naive;
+	T** naive { nullptr };
 
 	// circular linked list
-	szp *prev, *next;
-
-	// this should never be used
-	// spawn from other pointers, or use init()
-	szp &operator=(T *other) = delete;
+	szp* prev { nullptr };
+	szp* next { nullptr };
 
 	// utility function to remove oneself from the linked list
-	void inline unlink()
+	void unlink()
 	{
 		if(!next)
 			return;
@@ -69,58 +68,50 @@ class szp
 		if(this == next)
 			delete naive;
 
-		naive = NULL;
+		naive = nullptr;
 	}
 
 public:
 
-	// use as pointer, checking validity
-	inline T* operator ->()
-	{
-		if(!naive || !*naive)
-			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL:"));
+	szp() = default;
 
-		return *naive;
+	// this should never be used
+	// spawn from other pointers, or use init()
+	szp &operator=(T *other) = delete;
+
+	// copy constructor
+	szp(const szp &other)
+	{
+		if(!other.prev || !other.next || !other.naive)
+		{
+			prev = next = this;
+			return;
+		}
+
+		// link
+		naive = other.naive;
+		prev = other.next->prev;
+		next = other.next;
+		prev->next = next->prev = this;
 	}
 
-	const inline T* operator ->() const
+	// unlink from circular list on destruction
+	~szp()
 	{
-		if(!naive || !*naive)
-			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL:"));
-
-		return *naive;
+		unlink();
 	}
 
-	// use as raw pointer
-	inline operator T*()
+	friend void swap(szp& lhs, szp& rhs) noexcept
 	{
-		if(!naive)
-			return NULL;
-		else
-			return *naive;
-	}
+		using std::swap;
 
-	// use as raw pointer
-	inline operator const T*() const
-	{
-		if(!naive)
-			return NULL;
-		else
-			return *naive;
-	}
-
-	// this function can update or zero all related pointers
-	void update_all(T *target)
-	{
-		if(!naive)
-			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL on update_all:"));
-
-		// all copies already have naive, so their pointers will update too
-		*naive = target;
+		swap(lhs.naive, rhs.naive);
+		swap(lhs.prev,  rhs.prev);
+		swap(lhs.next,  rhs.next);
 	}
 
 	// copy a pointer and add self to the "i have this pointer" list
-	inline szp &operator =(szp other)
+	szp &operator =(const szp& other)
 	{
 		// itself?
 		if(&other == this || other.naive == naive)
@@ -148,36 +139,59 @@ public:
 	{
 		unlink();
 
-		// first link
+		// Please note that by using a naive call to `new`, and the fact that we're
+		// in C++17 and up, __STDCPP_DEFAULT_NEW_ALIGNMENT__ applies and can be relied
+		// on to know how many least-significant bits of our address will be zero.
+		// This will be important for our specialization of std::hash.
+		//
 		naive = new T*(target);
+
+		// first link
 		prev = next = this;
 	}
 
-	// cheap constructor
-	inline szp()
-		: naive(NULL), prev(NULL), next(NULL)
-	{ }
-
-	// copy constructor
-	inline szp(const szp &other)
-		: naive(NULL)
+	// this function can update or zero all related pointers
+	void update_all(T *target)
 	{
-		if(!other.prev || !other.next || !other.naive)
-		{
-			prev = next = this;
-			return;
-		}
+		if(!naive)
+			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL on update_all:"));
 
-		// link
-		naive = other.naive;
-		prev = other.next->prev;
-		next = other.next;
-		prev->next = next->prev = this;
+		// all copies already have naive, so their pointers will update too
+		*naive = target;
 	}
 
-	// unlink from circular list on destruction
-	inline ~szp()
+	// use as pointer, checking validity
+	T* operator ->()
 	{
-		unlink();
+		if(!naive || !*naive)
+			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL:"));
+
+		return *naive;
+	}
+
+	const T* operator ->() const
+	{
+		if(!naive || !*naive)
+			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL:"));
+
+		return *naive;
+	}
+
+	// use as raw pointer
+	operator T*()
+	{
+		if(!naive)
+			return nullptr;
+
+		return *naive;
+	}
+
+	// use as raw pointer
+	operator const T*() const
+	{
+		if(!naive)
+			return nullptr;
+
+		return *naive;
 	}
 };

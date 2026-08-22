@@ -279,7 +279,8 @@ class BootWindow : public Fl_Window
 		Fl_Group* clicked = static_cast<Fl_Group*>(tabs->value());
 
 		// Have waddirs changed?
-		bool waddirsChanged = boot->m_genWADDirs != ::waddirs;
+		// needs .str() otherwise it tries to use operator!= for OString
+		bool waddirsChanged = boot->m_genWADDirs != ::waddirs.str();
 
 		// User clicked on the first tab, regenerate the
 		// list of IWADs if waddirs changed.
@@ -466,7 +467,7 @@ class BootWindow : public Fl_Window
 		m_IWADs = M_ScanIWADs();
 		for (const auto& iwad : m_IWADs)
 		{
-			m_IWADBrowser->add(iwad.id->mNiceName.c_str(), (void*)iwad.id);
+			m_IWADBrowser->add(iwad.id->mNiceName.c_str(), const_cast<fileIdentifier_t*>(iwad.id));
 		}
 		m_genWADDirs = ::waddirs.str();
 	}
@@ -627,13 +628,14 @@ static BootWindow* MakeBootWindow()
 scannedWADs_t GUI_BootWindow()
 {
 	// Scale according to 1600x900.
-	Fl::screen_scale(0, MAX(Fl::h() / 900.0f, Fl::screen_scale(0)));
+	// NOLINTNEXTLINE(readability-magic-numbers)
+	Fl::screen_scale(0, std::max(static_cast<float>(Fl::h()) / 900.0f, Fl::screen_scale(0)));
 
 	// This feature is too clever by half, and in my experience just
 	// deforms the window.
 	Fl::keyboard_screen_scaling(0);
 
-	#ifdef __linux__
+	#if !defined(__APPLE__) && !defined(_WIN32)
 	Fl_Window::default_xclass("net.odamex.Odamex.Client");
 	#endif
 
@@ -650,7 +652,7 @@ scannedWADs_t GUI_BootWindow()
 	win->updateWADDirBrowser();
 	win->rescanIWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
-	win->show(fltkargs.NumArgs(), (char**)fltkargs.GetArgv().data());
+	win->show(static_cast<int>(fltkargs.NumArgs()), const_cast<char**>(fltkargs.GetArgv().data()));
 
 
 	// Blocks until the boot window has been closed.

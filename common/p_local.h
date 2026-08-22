@@ -23,9 +23,11 @@
 
 #pragma once
 
-#include "r_local.h"
-
+#include <array>
 #include <set>
+
+#include "r_local.h"
+#include "m_vectors.h"
 
 #define FLOATSPEED		(FRACUNIT*4)
 
@@ -34,23 +36,15 @@
 #define MAXHEALTH		100
 #define VIEWHEIGHT		(41*FRACUNIT)
 
-// mapblocks are used to check movement
-// against lines and things
-#define MAPBLOCKUNITS	128
-#define MAPBLOCKSIZE	(MAPBLOCKUNITS*FRACUNIT)
-#define MAPBLOCKSHIFT	(FRACBITS+7)
-#define MAPBMASK		(MAPBLOCKSIZE-1)
-#define MAPBTOFRAC		(MAPBLOCKSHIFT-FRACBITS)
-
 
 // player radius for movement checking
-#define PLAYERRADIUS	16*FRACUNIT
-#define PLAYERRADIUS64	16*FRACUNIT64
+#define PLAYERRADIUS	(16*FRACUNIT)
+#define PLAYERRADIUS64	(16*FRACUNIT64)
 
 // MAXRADIUS is for precalculated sector block boxes
 // the spider demon is larger,
 // but we do not have any moving sectors nearby
-#define MAXRADIUS		32*FRACUNIT
+#define MAXRADIUS		(32*FRACUNIT)
 
 //#define GRAVITY 		FRACUNIT
 #define MAXMOVE 		(30*FRACUNIT)
@@ -101,9 +95,10 @@ weaponstate_t P_GetWeaponState(const player_t& player);
 //
 void P_FallingDamage (AActor *ent);
 void P_PlayerThink (player_t& player);
-void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers);
+void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS> powers);
 bool P_AreTeammates(const player_t& a, const player_t& b);
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
+void P_BumpPlayerCounters(player_t& player);
 
 //
 // P_MOBJ
@@ -119,7 +114,14 @@ inline std::queue<std::pair<mapthing2_t, int>> itemrespawnque;
 void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
 void	P_RespawnSpecials (void);
 
-bool	P_SetMobjState (AActor* mobj, int32_t state, bool cl_update = false);
+enum class SetMobStateResultEnum
+{
+	DESTROYED,
+	SUCCESSFUL,
+	SUCCESSFUL_AND_CLIENTS_UPDATED,
+};
+
+SetMobStateResultEnum P_SetMobjState (AActor* mobj, int32_t state, bool cl_update = false);
 
 void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
@@ -133,19 +135,21 @@ bool	P_HitFloor (AActor *thing);
 //
 // [RH] P_THINGS
 //
-extern int SpawnableThings[];
-extern const int NumSpawnableThings;
+extern std::array<int, 155> SpawnableThings;
 
-bool	P_Thing_Spawn (int tid, int type, angle_t angle, bool fog);
+bool	P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, std::optional<int> newtid = std::nullopt);
 bool	P_Thing_Projectile (int tid, int type, angle_t angle,
-							fixed_t speed, fixed_t vspeed, bool gravity);
+							fixed_t speed, fixed_t vspeed, bool gravity, std::optional<int> newtid = std::nullopt);
 bool	P_ActivateMobj (AActor *mobj, AActor *activator);
 bool	P_DeactivateMobj (AActor *mobj);
 
 //
 // P_ENEMY
 //
-void	P_NoiseAlert (AActor* target, AActor* emmiter);
+bool P_NoiseAlert (AActor* target, AActor* emmiter);
+bool P_NoiseAlert (AActor& target, sector_t& sec);
+int  P_Massacre();
+
 void	P_SpawnBrainTargets(void);	// killough 3/26/98: spawn icon landings
 
 extern struct brain_s {				// killough 3/26/98: global state of boss brain
@@ -156,30 +160,35 @@ extern struct brain_s {				// killough 3/26/98: global state of boss brain
 //
 // P_MAPUTL
 //
-typedef struct
+struct divline_t
 {
-	fixed_t 	x;
-	fixed_t 	y;
-	fixed_t 	dx;
-	fixed_t 	dy;
+	fixed_t x;
+	fixed_t y;
+	fixed_t dx;
+	fixed_t dy;
 
-} divline_t;
+	divline_t() = default;
+	explicit divline_t(const line_t& li) :
+		x(li.v1->x), y(li.v1->y),
+		dx(li.dx), dy(li.dy)
+	{}
 
-typedef struct
+	divline_t(fixed_t _x, fixed_t _y, fixed_t _dx, fixed_t _dy) :
+		x(_x), y(_y), dx(_dx), dy(_dy)
+	{}
+};
+
+struct intercept_t
 {
-	fixed_t 	frac;			// along trace line
-	bool 	isaline;
+	fixed_t frac;			// along trace line
+	bool    isaline;
 	union {
 		AActor* thing;
 		line_t* line;
-	}					d;
-} intercept_t;
+	} d;
+};
 
-#define MAXINTERCEPTS	128
-
-extern std::vector<intercept_t> intercepts;
-
-typedef bool (*traverser_t) (intercept_t *in);
+inline std::vector<intercept_t> intercepts;
 
 subsector_t* P_PointInSubsector(fixed_t x, fixed_t y);
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
@@ -195,9 +204,8 @@ AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov);
 
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
-void	P_MakeDivline (const line_t *li, divline_t *dl);
 fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1);
-int 	P_BoxOnLineSide (const fixed_t *tmbox, const line_t *ld);
+int 	P_BoxOnLineSide (const std::span<const fixed_t, 4> tmbox, const line_t *ld);
 
 extern fixed_t			opentop;
 extern fixed_t			openbottom;
@@ -206,23 +214,11 @@ extern fixed_t			lowfloor;
 
 void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=limits::MINFIXED, fixed_t refy=0);
 
-bool P_BlockLinesIterator (int x, int y, bool(*func)(line_t*) );
-bool P_BlockThingsIterator (int x, int y, bool(*func)(AActor*), AActor *start=NULL);
-
 #define PT_ADDLINES 	1
 #define PT_ADDTHINGS	2
 #define PT_EARLYOUT 	4
 
 extern divline_t		trace;
-
-bool
-P_PathTraverse
-( fixed_t		x1,
-  fixed_t		y1,
-  fixed_t		x2,
-  fixed_t		y2,
-  int			flags,
-  bool		(*trav) (intercept_t *));
 
 // [ML] 2/1/10: Break out P_PointToAngle from R_PointToAngle2 (from EE)
 angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y);
@@ -247,21 +243,25 @@ extern sector_t			*tmfloorsector;
 
 extern	line_t* 		ceilingline;
 
-void	P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
-						fixed_t &destx, fixed_t &desty, fixed_t &destz);
-bool	P_TestMobjZ (AActor *actor);
-bool	P_TestMobjLocation (AActor *mobj);
-bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
-AActor	*P_CheckOnmobj (AActor *thing);
-void	P_FakeZMovement (AActor *mo);
-bool	P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
-bool	P_TryMove (AActor* thing, fixed_t x, fixed_t y, int dropoff, bool onfloor = false);
-bool	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag);	// [RH] Added z and telefrag parameters
-void	P_SlideMove (AActor* mo);
-bool	P_CheckSight (const AActor* t1, const AActor* t2);
-void	P_UseLines (player_t& player);
-void	P_ApplyTorque(AActor *mo);
-void	P_CopySector(sector_t *dest, sector_t *src);
+void    P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
+                            fixed_t &destx, fixed_t &desty, fixed_t &destz);
+bool    P_TestMobjZ (AActor *actor);
+bool    P_TestMobjLocation (AActor *mobj);
+bool    P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
+AActor* P_CheckOnmobj (AActor *thing);
+void    P_FakeZMovement (AActor *mo);
+bool    P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
+bool    P_TryMove (AActor* thing, fixed_t x, fixed_t y, int dropoff, bool onfloor = false);
+bool    P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag); // [RH] Added z and telefrag parameters
+bool    P_JustTeleported (AActor* thing);
+void    P_ClearJustTeleported ();
+void    P_SlideMove (AActor* mo);
+bool    P_CheckSight (const AActor* t1, const AActor* t2);
+void    P_UseLines (player_t& player);
+void    P_ApplyTorque(AActor *mo);
+void    P_CopySector(sector_t *dest, sector_t *src);
+bool    P_ShouldClipPlayer(const AActor* projectile, const AActor* player);
+bool    P_ShouldClipFriendly(const AActor* projectile, const AActor* monster);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
 double P_PlaneZ(double x, double y, const plane_t *plane);
@@ -287,7 +287,6 @@ bool P_PointOnPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 bool P_PointAbovePlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 bool P_PointBelowPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 
-struct v3fixed_t;
 v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg, const v3fixed_t &linedir);
 
 
@@ -298,7 +297,8 @@ bool	P_ChangeSector (sector_t* sector, int crunch);
 
 extern	AActor*	linetarget; 	// who got hit (or NULL)
 
-fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance);
+fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance,
+                         bool skipunhurtable = true);
 fixed_t P_AutoAimLineAttack(AActor* actor, angle_t& angle, const angle_t spread, const int tracers, fixed_t distance);
 void	P_LineAttack (AActor *t1, angle_t angle, fixed_t distance, fixed_t slope, int damage);
 
@@ -322,25 +322,17 @@ bool	Check_Sides(const AActor *, int, int);					// phares
 //
 extern byte*			rejectmatrix;	// for fast sight rejection
 extern bool				rejectempty;
-extern int*				blockmaplump;	// offsets in blockmap are from here
-extern int*				blockmap;
-extern int				bmapwidth;
-extern int				bmapheight; 	// in mapblocks
-extern fixed_t			bmaporgx;
-extern fixed_t			bmaporgy;		// origin of block map
 extern AActor** 		blocklinks; 	// for thing chains
-inline bool skipblstart; // should the first element of blocklists be skipped
-
-extern std::set<short>	movable_sectors;
-
 
 //
 // P_INTER
 //
-extern int				maxammo[NUMAMMO];
-extern int				clipammo[NUMAMMO];
+extern std::array<int, NUMAMMO> maxammo;
+extern std::array<int, NUMAMMO> clipammo;
 
-void P_GiveSpecial(player_t& player, AActor& special);
+[[ nodiscard("Please check for whether the mobj must be destroyed!!") ]]
+ItemEquipVal P_GiveSpecial(player_t& player, AActor& special);
+
 void P_TouchSpecialThing (AActor& special, AActor& toucher);
 
 void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);
@@ -348,6 +340,7 @@ void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int 
 #define DMG_NO_ARMOR		1
 
 // [RH] Means of death flags (based on Quake2's)
+// TODO: should this be an enum?
 #define MOD_UNKNOWN			0
 #define MOD_FIST			1
 #define MOD_PISTOL			2
@@ -383,23 +376,14 @@ extern	int MeansOfDeath;
 //
 // PO_MAN
 //
-typedef enum
+enum podoortype_t : uint8_t
 {
 	PODOOR_NONE,
 	PODOOR_SLIDE,
 	PODOOR_SWING,
 
 	NUMTYPES
-} podoortype_t;
-
-inline FArchive &operator<< (FArchive &arc, podoortype_t type)
-{
-	return arc << (byte)type;
-}
-inline FArchive &operator>> (FArchive &arc, podoortype_t &out)
-{
-	byte in; arc >> in; out = (podoortype_t)in; return arc;
-}
+};
 
 class DPolyAction : public DThinker
 {
@@ -461,6 +445,19 @@ private:
 	DPolyDoor ();
 };
 
+// Deferred sky picker resolution, so pickers work regardless
+// of their order relative to SkyViewpoints in the THINGS lump,
+// or if sent by a server.
+void P_ClearSkyPickers();
+void P_AddSkyPicker(int secnum, int viewpointTid, int planeflags);
+void P_ResolveSkyPickers();
+
+// Deferred stacked-sector portal pairing, same
+// order as the sky pickers above.
+void P_ClearStackLinks();
+void P_AddStackLink(AActor* mo);
+void P_ResolveStackLinks();
+
 // [RH] Data structure for P_SpawnMapThing() to keep track
 //		of polyobject-related things.
 typedef struct polyspawns_s
@@ -502,8 +499,7 @@ bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest);
 bool P_IsVoodooDoll(const AActor* mo);
 void P_FriendlyEffects();
 void P_FriendlyEffects(AActor* mo);
-void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin);
-bool P_ProjectileImmune(AActor* target, AActor* source);
+bool P_ProjectileImmune(const AActor* target, const AActor* source);
 void P_SetupHelpers();
 void P_ClearHelpers();
 void P_RunHelperTics();
@@ -513,3 +509,101 @@ void P_RunHelperTics();
 // P_SPEC
 //
 #include "p_spec.h"
+
+//
+// P_MAPUTL templates
+//
+
+//
+// BLOCK MAP ITERATORS
+// For each line/thing in the given mapblock,
+// call the passed PIT_* function.
+// If the function returns false,
+// exit with false without checking anything else.
+//
+
+#include "p_blockmap.h"
+
+//
+// P_BlockLinesIterator
+// The validcount flags are used to avoid checking lines
+// that are marked in multiple mapblocks,
+// so increment validcount before the first call
+// to P_BlockLinesIterator, then make one or more calls
+// to it.
+//
+template <typename F, typename... ARGS>
+requires std::predicate<F, line_t&, ARGS...>
+bool P_BlockLinesIterator (int x, int y, F&& func, ARGS&&... args)
+{
+	if (not blockmap.containsCoordinate(x, y))
+		return true;
+
+	std::span<const int> list = blockmap.list(x, y);
+
+	/* [RH] Polyobj stuff from Hexen --> */
+	polyblock_t *polyLink;
+	extern polyblock_t **PolyBlockMap;
+
+	const int offset = (y * blockmap.width()) + x;
+	if (PolyBlockMap)
+	{
+		polyLink = PolyBlockMap[offset];
+
+		while (polyLink)
+		{
+			if (polyLink->polyobj && polyLink->polyobj->validcount != validcount)
+			{
+				seg_t*const* tempSeg = polyLink->polyobj->segs;
+				polyLink->polyobj->validcount = validcount;
+
+				for (int i = polyLink->polyobj->numsegs; i; i--, tempSeg++)
+				{
+					if ((*tempSeg)->linedef->validcount != validcount)
+					{
+						(*tempSeg)->linedef->validcount = validcount;
+						if (!std::invoke(std::forward<F>(func), *(*tempSeg)->linedef, std::forward<ARGS>(args)...))
+							return false;
+					}
+				}
+			}
+			polyLink = polyLink->next;
+		}
+	}
+	/* <-- Polyobj stuff from Hexen */
+
+	for (int idx : list)
+	{
+		line_t& ld = R_GetLines()[idx];
+
+		if (ld.validcount != validcount) {
+			ld.validcount = validcount;
+
+			if (!std::invoke(std::forward<F>(func), ld, std::forward<ARGS>(args)...))
+				return false;
+		}
+	}
+
+	return true;		// everything was checked
+}
+
+//
+// P_BlockThingsIterator
+//
+template <typename F, typename... ARGS>
+requires std::predicate<F, AActor&, ARGS...>
+bool P_BlockThingsIterator (int x, int y, F&& func, AActor *actor, ARGS&&... args)
+{
+	if (not blockmap.containsCoordinate(x, y))
+		return true;
+
+	AActor *mobj = (actor != nullptr ? actor : blocklinks[(y * blockmap.width()) + x]);
+	while (mobj)
+ 	{
+		if (!std::invoke(std::forward<F>(func), *mobj, std::forward<ARGS>(args)...))
+ 			return false;
+		mobj = mobj->bmapnode.Next(x, y);
+	}
+
+	return true;
+}

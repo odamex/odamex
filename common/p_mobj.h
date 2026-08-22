@@ -118,7 +118,7 @@ inline static fixed_t DegToSlope(fixed_t a)
 	if (a >= 0)
 		return AngleToSlope(FixedToAngle(a));
 	else
-		return AngleToSlope(-(int)FixedToAngle(-a));
+		return AngleToSlope(-static_cast<int>(FixedToAngle(-a)));
 }
 
 // killough 11/98:
@@ -127,16 +127,11 @@ inline static fixed_t DegToSlope(fixed_t a)
 
 extern NetIDHandler ServerNetID;
 
-// All oflag mods that are sent to horde bosses.
-inline constexpr uint32_t hordeBossModMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR |
-                                             MFO_QUICK | MFO_NORAISE | MFO_FULLBRIGHT;
-
 void P_ClearAllNetIds();
 AActor* P_FindThingById(uint32_t id);
 void P_SetThingId(AActor* mo, uint32_t newnetid);
 void P_ClearId(uint32_t id);
 
-bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update);
 void P_XYMovement(AActor *mo);
 void P_ZMovement(AActor *mo);
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj); // [CG] Used to be 'static'
@@ -144,13 +139,15 @@ void P_NightmareRespawn(AActor *mo);
 void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);
 void P_SpawnTracerPuff(fixed_t x, fixed_t y, fixed_t z);
 void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
-bool P_CheckMissileSpawn(AActor* th);
+bool P_CheckMissileSpawn(AActor* th, AActor* parent);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
 size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing);
 bool P_VisibleToPlayers(const AActor *mo);
 void P_SetMobjBaseline(AActor& mo);
 uint32_t P_GetMobjBaselineFlags(const AActor& mo);
+bool P_PlayWakeupSound(AActor* actor);
+bool P_IsPlayerSpawnThing(const mapthing2_t& mt);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);

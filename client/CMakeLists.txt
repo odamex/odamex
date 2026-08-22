@@ -1,4 +1,5 @@
 include(OdamexCopyLibs)
+include(OdamexCvarDoc)
 include(OdamexTargetSettings)
 
 # use unquoted #defines
@@ -157,7 +158,8 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
 
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES} ${CLIENT_GUI_SOURCES})
-  odamex_target_settings(odamex)
+  odamex_target_settings(TARGET odamex)
+  odamex_target_errors(odamex)
 
   if(USE_DEFAULT_SIMD)
     if(ODAMEX_TARGET_ARCH STREQUAL "amd64")
@@ -328,6 +330,10 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       COMPONENT client)
   endif()
+endif()
+
+if(TARGET odamex)
+  odamex_cvardoc_refresh(odamex)
 endif()
 
 if(BUILD_OR_FAIL AND NOT TARGET odamex)

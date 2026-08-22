@@ -30,12 +30,12 @@
 #pragma once
 
 #include "doomdata.h"
-#include "d_net.h"
 #include "g_level.h"
 
 // We also need the definition of a cvar
 #include "c_cvars.h"
 #include "d_netinf.h"
+#include "range.h"
 
 // ------------------------
 // Command line parameters.
@@ -154,9 +154,22 @@ extern	int 			gametic;
 extern std::vector<mapthing2_t> DeathMatchStarts;
 
 // Player spawn spots.
-#define MAXPLAYERSTARTS		64
-extern std::vector<mapthing2_t> playerstarts;
-extern std::vector<mapthing2_t> voodoostarts;
+struct VoodooStartInfoType
+{
+	mapthing2_t         mapThing;
+	AActor::AActorPtr   mobj;       // Map-lifetime pointer.
+
+	explicit VoodooStartInfoType(const mapthing2_t& i_mapThing) :
+		mapThing (i_mapThing)
+	{
+	}
+};
+
+inline constexpr int MAXPLAYERSTARTS = 64;
+inline constexpr OUtil::inclusive_range<int16_t> VANILLA_COOP_PLAYER_STARTS{1, 4};
+inline constexpr OUtil::inclusive_range<int16_t> EXTRA_COOP_PLAYER_STARTS{4001, 4001 + MAXPLAYERSTARTS - 4};
+extern std::vector<mapthing2_t>         playerstarts;
+extern std::vector<VoodooStartInfoType> voodoostarts;
 
 // ----------------------------------------------
 
@@ -167,7 +180,7 @@ extern	struct wbstartstruct_s wminfo;
 
 // LUT of ammunition limits for each kind.
 // This doubles with BackPack powerup item.
-extern	int 			maxammo[NUMAMMO];
+extern std::array<int, NUMAMMO> maxammo;
 
 //-----------------------------------------
 // Internal parameters, used for engine.

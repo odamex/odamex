@@ -250,7 +250,7 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	}
 	else // potential monster
 	{
-		enderName = P_MobjToName(static_cast<mobjtype_t>(source->type));
+		enderName = source->info->getDisplayName();
 		enderIsMonster = true;
 		broadcastText = spreeEndMonster;
 		type = BR_MONSTER;
@@ -455,17 +455,11 @@ void SpreeManager::expireOldSprees()
 	//	                "", "", CR_GOLD,   false, 0,  0};
 	//}
 
-	for (auto& it : spreeRecord)
-	{
-		SpreeRecord_t& record = it.second;
-
+	std::erase_if(spreeRecord, [](const auto& pair){
 		// Spree happened in the future, indicating we're in a rewinded demo
 		// Remove it
-		if (record.spreeStartTic > ::gametic)
-		{
-			spreeRecord.erase(it.first);
-		}
-	}
+		return pair.second.spreeStartTic > ::gametic;
+	});
 }
 
 const SpreeRecord_t& SpreeManager::getLatestSpreeRecord(const int notPlayerId)

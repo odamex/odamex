@@ -61,7 +61,7 @@ int LevelState::getCountdown() const
 		return g_preroundtime.asInt();
 	}
 
-	return ceil(period / (float)TICRATE);
+	return ceil(period / static_cast<float>(TICRATE));
 }
 
 /**
@@ -75,8 +75,8 @@ team_t LevelState::getDefendingTeam() const
 	}
 
 	// Blue always goes first, then red, then so on...
-	int teams = clamp(sv_teamsinplay.asInt(), 2, 3);
-	int round0 = MAX(::levelstate.getRound() - 1, 0);
+	const int teams = std::clamp(sv_teamsinplay.asInt(), 2, 3);
+	int round0 = std::max(::levelstate.getRound() - 1, 0);
 	return static_cast<team_t>(round0 % teams);
 }
 
@@ -97,8 +97,8 @@ int LevelState::getJoinTimeLeft() const
 		return 0;
 
 	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
-	int left = ceil((end_time - ::level.time) / (float)TICRATE);
-	return MAX(left, 0);
+	int left = ceil((end_time - ::level.time) / static_cast<float>(TICRATE));
+	return std::max(left, 0);
 }
 
 /**
@@ -270,12 +270,12 @@ void LevelState::readyToggle()
 		return;
 
 	float f_calc = total * sv_warmup_autostart;
-	size_t i_calc = (int)floor(f_calc + 0.5f);
+	size_t i_calc = static_cast<int>(std::round(f_calc));
 	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON)
 	{
 		needed = i_calc + 1;
 	}
-	needed = (int)ceil(f_calc);
+	needed = static_cast<int>(ceil(f_calc));
 
 	if (ready >= needed)
 	{

@@ -59,7 +59,7 @@ EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(co_zdoomammo)
 EXTERN_CVAR(cl_centerbobonfire)
 
-const char *weaponnames[] =
+const char *weaponnames[NUMWEAPONS] =
 {
 	"Fist",
 	"Pistol",
@@ -69,7 +69,8 @@ const char *weaponnames[] =
 	"Plasma Gun",
 	"BFG9000",
 	"Chainsaw",
-	"Super Shotgun"
+	"Super Shotgun",
+	"No weapon"
 };
 
 void A_WeaponReady(AActor* mo);
@@ -85,16 +86,16 @@ fixed_t P_BulletSlope(AActor* mo);
 //
 weaponstate_t P_GetWeaponState(const player_t& player)
 {
-	const pspdef_t& psp = player.psprites[player.psprnum];
+	const state_t* st = player.psprites[player.psprnum].state();
 
-	if (psp.state == NULL)
+	if (st == nullptr)
 		return unknownstate;
 
-	if (psp.state->action == A_WeaponReady)
+	if (st->action == A_WeaponReady)
 		return readystate;
-	if (psp.state->action == A_Lower)
+	if (st->action == A_Lower)
 		return downstate;
-	if (psp.state->action == A_Raise)
+	if (st->action == A_Raise)
 		return upstate;
 
 	// must be in one of the many attack states...
@@ -114,9 +115,11 @@ fixed_t P_CalculateWeaponBobX(player_t& player, float scale_amount)
 
 	const weaponstate_t weaponstate = P_GetWeaponState(player);
 
+	const state_t* st = psp.state();
+
 	fixed_t center_sx = FRACUNIT;
-	if (weaponstate != readystate && psp.state && psp.state->misc1)
-		center_sx = psp.state->misc1 << FRACBITS;
+	if (weaponstate != readystate && st && st->misc1)
+		center_sx = st->misc1 << FRACBITS;
 
 	if (weaponstate == readystate)
 	{
@@ -150,9 +153,11 @@ fixed_t P_CalculateWeaponBobY(player_t& player, float scale_amount)
 	if (weaponstate == upstate || weaponstate == downstate)
 		return psp.sy;
 
+	const state_t* st = psp.state();
+
 	fixed_t center_sy = WEAPONTOP;
-	if (weaponstate != readystate && psp.state && psp.state->misc1)
-		center_sy = psp.state->misc2 << FRACBITS;
+	if (weaponstate != readystate && st && st->misc1)
+		center_sy = st->misc2 << FRACBITS;
 
 	if (weaponstate == readystate)
 	{
@@ -181,7 +186,7 @@ void P_SetPspriteRef(player_t& player, pspdef_t& psp, int32_t stnum)
 		if (!stnum)
 		{
 			// object removed itself
-			psp.state = nullptr;
+			psp.statenum = S_NULL;
 			break;
 		}
 
@@ -189,32 +194,35 @@ void P_SetPspriteRef(player_t& player, pspdef_t& psp, int32_t stnum)
 		if (it == states.end())
 			return;
 
-		psp.state = &it->second;
-		psp.tics = psp.state->tics;		// could be 0
+		psp.statenum = static_cast<statenum_t>(stnum);
 
-		if (psp.state->misc1)
+		const state_t* st = &it->second;
+		psp.tics = st->tics;		// could be 0
+
+		if (st->misc1)
 		{
 			// coordinate set
-			psp.sx = psp.state->misc1 << FRACBITS;
-			psp.sy = psp.state->misc2 << FRACBITS;
+			psp.sx = st->misc1 << FRACBITS;
+			psp.sy = st->misc2 << FRACBITS;
 		}
 
 		// Call action routine.
 		// Modified handling.
-		if (psp.state->action)
+		if (st->action)
 		{
 			if (!player.spectator && player.mo != NULL)
 			{
 				// [CMB] calculate psprnum here using the present psp and length of psprites
-				player.psprnum = &psp - player.psprites;
-				psp.state->action(player.mo);
+				player.psprnum = &psp - &player.psprites[0];
+				st->action(player.mo);
 			}
 
-			if (!psp.state)
+			st = psp.state();
+			if (!st)
 				break;
 		}
 
-		stnum = psp.state->nextstate;
+		stnum = st->nextstate;
 
 	} while (!psp.tics);
 	// an initial state of 0 could cycle through
@@ -272,7 +280,7 @@ bool P_EnoughAmmo(const player_t& player, weapontype_t weapon, bool switching = 
 
 	if (co_zdoomammo || deh.ZDAmmo)
 		// [SL] Fix for when DeHackEd doesn't patch minammo
-		count = MAX(weaponinfo[weapon].minammo, weaponinfo[weapon].ammouse);
+		count = std::max(weaponinfo[weapon].minammo, weaponinfo[weapon].ammouse);
 	else
 		count = weaponinfo[weapon].ammopershot;
 
@@ -298,12 +306,8 @@ bool P_EnoughAmmo(const player_t& player, weapontype_t weapon, bool switching = 
 //
 void P_SwitchWeapon(player_t& player)
 {
-	const byte *prefs;
-
-	if ((multiplayer && !sv_allowpwo) || demoplayback)
-		prefs = UserInfo::weapon_prefs_default;
-	else
-		prefs = player.userinfo.weapon_prefs;
+	const auto& prefs = ((multiplayer and not sv_allowpwo) or demoplayback) ? UserInfo::weapon_prefs_default :
+	                                                                          player.userinfo.weapon_prefs;
 
 	// find which weapon has the highest preference among availible weapons
 	size_t best_weapon_num = 0;
@@ -336,7 +340,7 @@ void P_SwitchWeapon(player_t& player)
 //
 weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 {
-	if (player->readyweapon == NUMWEAPONS || player->pendingweapon == NUMWEAPONS)
+	if (player->readyweapon == wp_none || player->pendingweapon == wp_none)
 		return wp_nochange;
 
 	gitem_t *item;
@@ -372,7 +376,7 @@ weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 			continue;
 		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial && gamemode != commercial_bfg)
 			continue;
-		return (weapontype_t)itemlist[index].offset;
+		return static_cast<weapontype_t>(itemlist[index].offset);
 	}
 
 	return wp_nochange;
@@ -397,18 +401,18 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 
 	// Never switch - player has to manually change themselves
 	// Having no weapons because of ClearInventory/TakeInventory overrides this
-	if (player.userinfo.switchweapon == WPSW_NEVER && player.readyweapon != NUMWEAPONS && player.pendingweapon != NUMWEAPONS)
+	if (player.userinfo.switchweapon == WPSW_NEVER && player.readyweapon != wp_none && player.pendingweapon != wp_none)
 		return false;
 
 	const weapontype_t currentweapon = (player.pendingweapon == wp_nochange)
 			? player.readyweapon
 			: player.pendingweapon;
 
-	if (currentweapon == NUMWEAPONS)
+	if (currentweapon == wp_none)
 		return true;
 
 	// Use player's weapon preferences
-	const byte *prefs = player.userinfo.weapon_prefs;
+	const auto& prefs = player.userinfo.weapon_prefs;
 	if (prefs[weapon] > prefs[currentweapon])
 	{
 		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&
@@ -473,17 +477,8 @@ static void DecreaseAmmo(player_t& player, int amount = 1)
 void P_FireWeapon(player_t& player)
 {
 	// Prevent fire if you don't have any weapon, including fist. See DoClearInv - PCD_CLEARINVENTORY
-	if (!P_CheckAmmo(player) || player.readyweapon == NUMWEAPONS)
+	if (!P_CheckAmmo(player) || player.readyweapon == wp_none)
 		return;
-
-	// [tm512] Send the client the weapon they just fired so
-	// that they can fix any weapon desyncs that they get - apr 14 2012
-#if defined(SERVER_APP)
-	if (serverside && !clientside)
-	{
-		MSG_WriteSVC(&player.client.reliablebuf, SVC_FireWeapon(player));
-	}
-#endif
 
 	P_SetMobjState(player.mo, S_PLAY_ATK1);
 	statenum_t newstatenum = weaponinfo[player.readyweapon].atkstate;
@@ -519,7 +514,7 @@ void A_WeaponReady(AActor* mo)
 	if (player.mo->state == &states[S_PLAY_ATK1] || player.mo->state == &states[S_PLAY_ATK2])
 		P_SetMobjState(player.mo, S_PLAY);
 
-	if (player.readyweapon == wp_chainsaw && psp->state == &states[S_SAW])
+	if (player.readyweapon == wp_chainsaw && psp->statenum == S_SAW)
 		A_FireSound(player, "weapons/sawidle");
 
 	// check for change -  if player is dead, put the weapon away
@@ -614,8 +609,8 @@ void A_Lower(AActor* mo)
 		return;
 	}
 
-	// haleyjd 03/28/10: do not assume pendingweapon is valid - include NUMWEAPONS from ClearInventory
-	if (player.pendingweapon < NUMWEAPONS + 1)
+	// haleyjd 03/28/10: do not assume pendingweapon is valid
+	if (player.pendingweapon < NUMWEAPONS)
 		player.readyweapon = player.pendingweapon;
 
 	P_BringUpWeapon(player);
@@ -738,7 +733,7 @@ void A_Saw(AActor* mo)
 							 linetarget->x, linetarget->y);
 	if (angle - player.mo->angle > ANG180)
 	{
-		if (angle - player.mo->angle < (angle_t)(-ANG90/20))
+		if (angle - player.mo->angle < static_cast<angle_t>(-ANG90/20))
 			player.mo->angle = angle + ANG90/21;
 		else
 			player.mo->angle -= ANG90/20;
@@ -874,11 +869,12 @@ void A_WeaponJump(AActor* mo)
 	player_t& player = *mo->player;
 	pspdef_t& psp = player.psprites[player.psprnum];
 
-	if (!psp.state)
+	const state_t* st = psp.state();
+	if (!st)
 		return;
 
-	if (P_Random(mo) < psp.state->args[1])
-		P_SetPspriteRef(player, psp, (statenum_t)psp.state->args[0]);
+	if (P_Random(mo) < st->args[1])
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(st->args[0]));
 }
 
 
@@ -896,17 +892,18 @@ void A_CheckAmmo(AActor* mo)
 	player_t& player = *mo->player;
 	pspdef_t& psp = player.psprites[player.psprnum];
 
+	const state_t* st = psp.state();
 	const ammotype_t type = weaponinfo[player.readyweapon].ammotype;
-	if (!psp.state || type == am_noammo)
+	if (!st || type == am_noammo)
 		return;
 
-	if (psp.state->args[1] != 0)
-		amount = psp.state->args[1];
+	if (st->args[1] != 0)
+		amount = st->args[1];
 	else
 		amount = weaponinfo[player.readyweapon].ammopershot;
 
 	if (player.ammo[type] < amount)
-		P_SetPspriteRef(player, psp, (statenum_t)psp.state->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(st->args[0]));
 }
 
 
@@ -926,14 +923,15 @@ void A_ConsumeAmmo(AActor* mo)
 		return;
 
 	// don't do dumb things, kids
+	const state_t* st = psp.state();
 	const ammotype_t type = weaponinfo[player.readyweapon].ammotype;
-	if (!psp.state || type == am_noammo)
+	if (!st || type == am_noammo)
 		return;
 
 	// use the weapon's ammo-per-shot amount if zero.
 	// to subtract zero ammo, don't call this function. ;)
-	if (psp.state->args[0] != 0)
-		amount = psp.state->args[0];
+	if (st->args[0] != 0)
+		amount = st->args[0];
 	else
 		amount = weaponinfo[player.readyweapon].ammopershot;
 
@@ -955,15 +953,16 @@ void A_RefireTo(AActor* mo)
 	player_t& player = *mo->player;
 	pspdef_t& psp = player.psprites[player.psprnum];
 
-	if (!psp.state)
+	const state_t* st = psp.state();
+	if (!st)
 		return;
 
-	if ((psp.state->args[1] || P_CheckAmmo(player)) &&
+	if ((st->args[1] || P_CheckAmmo(player)) &&
 	    (player.cmd.buttons & BT_ATTACK) &&
 	    (player.pendingweapon == wp_nochange && player.health))
 	{
 		player.refire++;
-		P_SetPspriteRef(player, psp, (statenum_t)psp.state->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(st->args[0]));
 	}
 	else
 	{
@@ -982,13 +981,14 @@ void A_GunFlashTo(AActor* mo)
 	player_t& player = *mo->player;
 	const pspdef_t& psp = player.psprites[player.psprnum];
 
-	if (!psp.state)
+	const state_t* st = psp.state();
+	if (!st)
 		return;
 
-	if (!psp.state->args[1])
+	if (!st->args[1])
 		P_SetMobjState(player.mo, S_PLAY_ATK2);
 
-	P_SetPsprite(player, ps_flash, (statenum_t)psp.state->args[0]);
+	P_SetPsprite(player, ps_flash, static_cast<statenum_t>(st->args[0]));
 }
 
 //
@@ -1007,22 +1007,23 @@ void A_WeaponProjectile(AActor* mo)
 	player_t* player = mo->player;
 	pspdef_t* psp = &player->psprites[player->psprnum];
 
-	if (!psp->state || !psp->state->args[0])
+	const state_t* st = psp->state();
+	if (!st || !st->args[0])
 		return;
 
-	type = psp->state->args[0] - 1;
-	angle = psp->state->args[1];
-	pitch = psp->state->args[2];
-	spawnofs_xy = psp->state->args[3];
-	spawnofs_z = psp->state->args[4];
+	type = st->args[0] - 1;
+	angle = st->args[1];
+	pitch = st->args[2];
+	spawnofs_xy = st->args[3];
+	spawnofs_z = st->args[4];
 
-	if (!CheckIfDehActorDefined((mobjtype_t)type))
+	if (!CheckIfDehActorDefined(static_cast<mobjtype_t>(type)))
 	{
 		I_Error("A_WeaponProjectile: Attempted to spawn undefined projectile type.");
 	}
 
 	if (serverside)
-		P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
+		P_SpawnMBF21PlayerMissile(player->mo, static_cast<mobjtype_t>(type), angle, pitch, spawnofs_xy, spawnofs_z);
 }
 
 //
@@ -1036,40 +1037,30 @@ void A_WeaponProjectile(AActor* mo)
 //
 void A_WeaponBulletAttack(AActor* mo)
 {
-	int hspread, vspread, numbullets, damagebase, damagemod;
-	int i, damage, angle, slope;
-
 	player_t* player = mo->player;
 	pspdef_t* psp = &player->psprites[player->psprnum];
 
-	if (!psp->state)
+	const state_t* st = psp->state();
+	if (!st)
 		return;
 
-	hspread = psp->state->args[0];
-	vspread = psp->state->args[1];
-	numbullets = psp->state->args[2];
-	damagebase = psp->state->args[3];
-	damagemod = psp->state->args[4];
+	const int hspread    = st->args[0];
+	const int vspread    = st->args[1];
+	const int numbullets = st->args[2];
+	const int damagebase = st->args[3];
+	const int damagemod  = st->args[4];
 
 	Unlag::getInstance().reconcile(player->id);
 
-	bool refire = player->refire ? true : false;
-
-	angle = 0;
-
-	if (refire)
-		angle = P_RandomDiff(player->mo) << 18;
-
 	fixed_t bulletslope = P_BulletSlope(player->mo);
 
-	for (i = 0; i < numbullets; i++)
+	for (int i = 0; i < numbullets; i++)
 	{
-		int bangle = angle;
-		damage = (P_Random(mo) % damagemod + 1) * damagebase;
-		bangle = angle + (int)player->mo->angle + P_RandomHitscanAngle(hspread);
-		slope = bulletslope + P_RandomHitscanSlope(vspread);
+		const int damage = (P_Random(mo) % damagemod + 1) * damagebase;
+		const int angle = static_cast<int>(player->mo->angle) + P_RandomHitscanAngle(hspread);
+		const int slope = bulletslope + P_RandomHitscanSlope(vspread);
 
-		P_LineAttack(player->mo, bangle, MISSILERANGE, slope, damage);
+		P_LineAttack(player->mo, angle, MISSILERANGE, slope, damage);
 	}
 
 	Unlag::getInstance().restore(player->id);
@@ -1093,14 +1084,15 @@ void A_WeaponMeleeAttack(AActor* mo)
 	player_t* player = mo->player;
 	pspdef_t* psp = &player->psprites[player->psprnum];
 
-	if (!psp->state)
+	const state_t* st = psp->state();
+	if (!st)
 		return;
 
-	damagebase = psp->state->args[0];
-	damagemod = psp->state->args[1];
-	zerkfactor = psp->state->args[2];
-	hitsound = psp->state->args[3];
-	range = psp->state->args[4];
+	damagebase = st->args[0];
+	damagemod = st->args[1];
+	zerkfactor = st->args[2];
+	hitsound = st->args[3];
+	range = st->args[4];
 
 	const char* snd;
 
@@ -1164,10 +1156,11 @@ void A_WeaponSound(AActor *mo)
 	const player_t* player = mo->player;
 	const pspdef_t& psp = player->psprites[player->psprnum];
 
-	if (!psp.state)
+	const state_t* st = psp.state();
+	if (!st)
 		return;
 
-	const int sndmap = psp.state->args[0];
+	const int sndmap = st->args[0];
 	const char* snd = nullptr;
 
 	auto soundIt = SoundMap.find(sndmap);
@@ -1177,7 +1170,7 @@ void A_WeaponSound(AActor *mo)
 		snd = soundIt->second.c_str();
 
 	UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, snd,
-	                    (psp.state->args[1] ? ATTN_NONE : ATTN_NORM));
+	                    (st->args[1] ? ATTN_NONE : ATTN_NORM));
 }
 
 
@@ -1202,7 +1195,7 @@ void A_FirePlasma(AActor* mo)
 
 	P_SetPsprite (player,
 				  ps_flash,
-				  (statenum_t)(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
+				  static_cast<statenum_t>(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
 
 	if (serverside)
 	{
@@ -1225,7 +1218,7 @@ void A_FireRailgun(AActor* mo)
 
 	P_SetPsprite (player,
 				  ps_flash,
-				  (statenum_t)(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
+				  static_cast<statenum_t>(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
 
 	if (sv_gametype > 0)
 		damage = 100;
@@ -1462,7 +1455,7 @@ void A_FireCGun(AActor* mo)
 	DecreaseAmmo(player);
 
 	// [CMB] this is expecting to calculate a very specific state based on the pointer arithmetic
-	P_SetPsprite(player, ps_flash, weaponinfo[player.readyweapon].flashstate + psp.state->statenum - states[S_CHAIN1].statenum);
+	P_SetPsprite(player, ps_flash, weaponinfo[player.readyweapon].flashstate + psp.statenum - states[S_CHAIN1].statenum);
 
 	const spreadtype_t accuracy = player.refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan(player, 1, accuracy);
@@ -1524,9 +1517,13 @@ void A_BFGSpray(AActor* mo)
 
 		// mo->target is the originator (player)
 		//	of the missile
-		P_AimLineAttack (mo->target, an, 16*64*FRACUNIT);
+		P_AimLineAttack (mo->target, an, 16*64*FRACUNIT, false);
 
 		if (!linetarget)
+			continue;
+
+		// if the ball didnt clip, dont hit with tracer
+		if (not P_ShouldClipPlayer(mo, linetarget) || not P_ShouldClipFriendly(mo, linetarget))
 			continue;
 
 		new AActor (linetarget->x,
@@ -1560,7 +1557,7 @@ void P_SetupPsprites(player_t& player)
 {
 	// remove all psprites
 	for (int i = 0; i < NUMPSPRITES; i++)
-		player.psprites[i].state = NULL;
+		player.psprites[i].statenum = S_NULL;
 
 	// spawn the gun
 	player.pendingweapon = player.readyweapon;
@@ -1579,7 +1576,8 @@ void P_MovePsprites(player_t& player)
 		pspdef_t* psp = &player.psprites[i];
 
 		// a null state means not active
-		if (psp->state)
+		const state_t* st = psp->state();
+		if (st)
 		{
 			// drop tic count and possibly change state
 			// a -1 tic count never changes
@@ -1589,7 +1587,7 @@ void P_MovePsprites(player_t& player)
 				psp->tics--;
 
 				if (psp->tics == 0)
-					P_SetPsprite(player, i, psp->state->nextstate);
+					P_SetPsprite(player, i, st->nextstate);
 			}
 		}
 	}
@@ -1644,12 +1642,15 @@ void A_ForceWeaponFire(AActor* mo, weapontype_t weapon, int tic)
 
 FArchive &operator<< (FArchive &arc, pspdef_t &def)
 {
-	return arc << def.state << def.tics << def.sx << def.sy;
+	return arc << def.state() << def.tics << def.sx << def.sy;
 }
 
 FArchive &operator>> (FArchive &arc, pspdef_t &def)
 {
-	return arc >> def.state >> def.tics >> def.sx >> def.sy;
+	const state_t* state = nullptr;
+	arc >> state >> def.tics >> def.sx >> def.sy;
+	def.statenum = state ? state->statenum : S_NULL;
+	return arc;
 }
 
 VERSION_CONTROL (p_pspr_cpp, "$Id$")

@@ -133,6 +133,30 @@ TEST(FixedMath, NegativeFloatConversion) {
 	EXPECT_FLOAT_EQ(FIXED2FLOAT(FLOAT2FIXED(-1234.5f)), -1234.5f);
 }
 
+// -------------------------------------------------
+// ------- multiplication and division tests -------
+// -------------------------------------------------
+
+TEST(FixedMath, Multiplication) {
+	EXPECT_EQ(FixedMul(0_fx, 0_fx), 0_fx);
+	EXPECT_EQ(FixedMul(1_fx, 0_fx), 0_fx);
+	EXPECT_EQ(FixedMul(0_fx, 1_fx), 0_fx);
+	EXPECT_EQ(FixedMul(1_fx, 1_fx), 1_fx);
+	EXPECT_EQ(FixedMul(32767_fx, 1_fx), 32767_fx);
+	EXPECT_EQ(FixedMul(16_fx, 16_fx), 256_fx);
+	EXPECT_EQ(FixedMul(3_fx, 4_fx), 12_fx);
+	EXPECT_EQ(FixedMul(2_fx, 16383.5_fx), 32767_fx);
+}
+
+TEST(FixedMath, DISABLED_Division) {
+	EXPECT_EQ(FixedDiv(0_fx, 1_fx), 0_fx);
+	EXPECT_EQ(FixedDiv(1_fx, 1_fx), 1_fx);
+	EXPECT_EQ(FixedDiv(32767_fx, 2_fx), 16383.5_fx);
+	EXPECT_EQ(FixedDiv(256_fx, 16_fx), 16_fx);
+	EXPECT_EQ(FixedDiv(12_fx, 4_fx), 3_fx);
+	EXPECT_EQ(FixedDiv(32767_fx, 1_fx), 32767_fx);
+}
+
 // 44.20 fixed64_t
 
 // -------------------------------------
@@ -262,4 +286,48 @@ TEST(FixedMath64, NegativeFloatConversion) {
 	EXPECT_FLOAT_EQ(FIXED642FLOAT(FLOAT2FIXED64(-1.0f)), -1.0f);
 	EXPECT_FLOAT_EQ(FIXED642FLOAT(FLOAT2FIXED64(-1.25f)), -1.25f);
 	EXPECT_FLOAT_EQ(FIXED642FLOAT(FLOAT2FIXED64(-1234.5f)), -1234.5f);
+}
+
+// ------ fixed to fixed64 ------
+
+TEST(FixedMath64, FixedToFixed64Conversion) {
+	EXPECT_EQ(FIXED2FIXED64(0_fx), 0_fx64);
+	EXPECT_EQ(FIXED2FIXED64(1_fx), 1_fx64);
+	EXPECT_EQ(FIXED2FIXED64(2_fx), 2_fx64);
+	EXPECT_EQ(FIXED2FIXED64(10_fx), 10_fx64);
+	EXPECT_EQ(FIXED2FIXED64(1234_fx), 1234_fx64);
+	EXPECT_EQ(FIXED2FIXED64(32767_fx), 32767_fx64);
+}
+
+TEST(FixedMath64, Fixed64ToFixedConversion) {
+	EXPECT_EQ(FIXED642FIXED(0_fx64), 0_fx);
+	EXPECT_EQ(FIXED642FIXED(1_fx64), 1_fx);
+	EXPECT_EQ(FIXED642FIXED(2_fx64), 2_fx);
+	EXPECT_EQ(FIXED642FIXED(10_fx64), 10_fx);
+	EXPECT_EQ(FIXED642FIXED(1234_fx64), 1234_fx);
+	EXPECT_EQ(FIXED642FIXED(32767_fx64), 32767_fx);
+}
+
+// -------------------------------------------------
+// ------- multiplication and division tests -------
+// -------------------------------------------------
+
+TEST(FixedMath64, Multiplication) {
+	EXPECT_EQ(FixedMul64(0_fx64, 0_fx64), 0_fx64);
+	EXPECT_EQ(FixedMul64(1_fx64, 0_fx64), 0_fx64);
+	EXPECT_EQ(FixedMul64(0_fx64, 1_fx64), 0_fx64);
+	EXPECT_EQ(FixedMul64(1_fx64, 1_fx64), 1_fx64);
+	EXPECT_EQ(FixedMul64(32767_fx64, 1_fx64), 32767_fx64);
+	EXPECT_EQ(FixedMul64(16_fx64, 16_fx64), 256_fx64);
+	EXPECT_EQ(FixedMul64(3_fx64, 4_fx64), 12_fx64);
+	EXPECT_EQ(FixedMul64(2_fx64, 16383.5_fx64), 32767_fx64);
+}
+
+TEST(FixedMath64, Division) {
+	EXPECT_EQ(FixedDiv64(0_fx64, 1_fx64), 0_fx64);
+	EXPECT_EQ(FixedDiv64(1_fx64, 1_fx64), 1_fx64);
+	EXPECT_EQ(FixedDiv64(32767_fx64, 2_fx64), 16383.5_fx64);
+	EXPECT_EQ(FixedDiv64(256_fx64, 16_fx64), 16_fx64);
+	EXPECT_EQ(FixedDiv64(12_fx64, 4_fx64), 3_fx64);
+	EXPECT_EQ(FixedDiv64(32767_fx64, 1_fx64), 32767_fx64);
 }

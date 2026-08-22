@@ -29,8 +29,7 @@
 #include "dsectoreffect.h"
 
 class AActor;
-class player_s;
-typedef player_s player_t;
+class player_t;
 struct sector_t;
 struct line_s;
 typedef line_s line_t;
@@ -593,7 +592,7 @@ public:
 	int		getCeilingTag() const			{ return mCeilingTag; }
 	int		getFloorTag() const				{ return mFloorTag; }
 	line_t*	getCeilingLine() const			{ return mCeilingLine; }
-	line_t*	getFloorLine() const			{ return mFloorLine; }
+	const line_t*	getFloorLine() const	{ return mFloorLine; }
 	fixed_t	getCeilingHeight() const		{ return mCeilingHeight; }
 	fixed_t	getFloorHeight() const			{ return mFloorHeight; }
 	fixed_t getCeilingSpeed() const			{ return mCeilingSpeed; }
@@ -646,7 +645,7 @@ private:
 	int				mCeilingTag;
 	int				mFloorTag;
 	line_t*			mCeilingLine;
-	line_t*			mFloorLine;
+	const line_t*	mFloorLine;
 
 	fixed_t			mCeilingHeight;
 	fixed_t			mFloorHeight;
@@ -715,7 +714,7 @@ class SectorSnapshotManager
 public:
 	SectorSnapshotManager();
 
-	bool empty();
+	bool empty() const;
 	void clearSnapshots();
 
 	int getMostRecentTime() const { return mMostRecent; }

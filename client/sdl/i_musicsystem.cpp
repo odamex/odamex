@@ -105,7 +105,7 @@ void MusicSystem::setTempo(float tempo)
 
 void MusicSystem::setVolume(float volume)
 {
-	m_volume = clamp(volume, 0.0f, 1.0f);
+	m_volume = std::clamp(volume, 0.0f, 1.0f);
 }
 
 // ============================================================================
@@ -134,7 +134,7 @@ static MidiSong* I_RegisterMidiSong(byte* data, size_t length)
 
 		if (!mus2mid(mus, midi))
 		{
-			regdata = (byte*)mem_fgetbuf(midi);
+			regdata = reinterpret_cast<byte*>(mem_fgetbuf(midi));
 			reglength = mem_fsize(midi);
 		}
 		else

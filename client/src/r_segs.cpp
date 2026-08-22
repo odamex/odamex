@@ -45,6 +45,7 @@
 // a pool of bytes allocated for sprite clipping arrays
 Pool<tallpost_t*> masked_midposts_pool(4096);
 Pool<int> sprclip_pool(4096);
+Pool<fixed_t> midscales_pool(4096);
 
 // OPTIMIZE: closed two sided lines as single sided
 
@@ -96,6 +97,7 @@ extern fixed_t FocalLengthY;
 extern float yfoc;
 
 static tallpost_t** masked_midposts;
+static const fixed_t* masked_midscales;
 
 EXTERN_CVAR(r_clipmaskedspecial)
 
@@ -178,7 +180,7 @@ static void R_FillWallHeightArray(
 
 	for (int i = start; i <= stop; i++)
 	{
-		array[i] = clamp((int)frac, ceilingclipinitial[0], floorclipinitial[0]);
+		array[i] = std::clamp(static_cast<int>(frac), ceilingclipinitial[0], floorclipinitial[0]);
 		frac -= step;
 	}
 }
@@ -190,28 +192,40 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
 	tallpost_t* post = dcol.post;
 
+	// R_PrepWall uses floats to calculate scale1 and scale2, which left
+	// the scalestep values vulnerable to floating-point rounding errors.
+	// If a wall is tall enough and a resolution big enough, the scalestep
+	// can be off enough that by accumulation, it draws a row with no data.
+	// Your midtex gap! :)
+	//
+	// Instead we get spryscale from a value precalculated in R_StoreWallRange.
+	spryscale = masked_midscales[dcol.x];
+
 	if (post != NULL && spryscale > 0)
 	{
-		sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
-		dcol.iscale = 0xffffffffu / (unsigned)spryscale;
+		// R_FillWallHeightArray uses centery and so should we.
+		// Otherwise we can have textures drawing at different
+		// heights when mouselook is on.
+		sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
+		dcol.iscale = 0xffffffffu / static_cast<unsigned>(spryscale);
 
 		while (!post->end())
 		{
 			// calculate unclipped screen coordinates for post
-			const int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
+			const int topscreen = sprtopscreen + spryscale * post->topdelta;
 
-			dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
+			dcol.yl = topscreen >> FRACBITS;
 			dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
 
-			dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
-			dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
+			dcol.yl = std::max({dcol.yl, mceilingclip[dcol.x], 0});
+			dcol.yh = std::min(dcol.yh, mfloorclip[dcol.x] - 1);
 
 			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
-				+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
+				+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale);
 
 			if (dcol.texturefrac < 0)
 			{
-				const int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+				const int cnt = R_PixelCeil(-dcol.texturefrac, dcol.iscale);
 				dcol.yl += cnt;
 				dcol.texturefrac += cnt * dcol.iscale;
 			}
@@ -221,7 +235,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 			if (endfrac >= maxfrac)
 			{
-				const int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+				const int cnt = R_PixelCeil(endfrac - maxfrac + 1, dcol.iscale);
 				dcol.yh -= cnt;
 			}
 
@@ -235,8 +249,6 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 		masked_midposts[dcol.x] = NULL;
 	}
-
-	spryscale += rw_scalestep;
 }
 
 //
@@ -249,13 +261,19 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 	if (dcol.post->length != dcol.textureheight >> FRACBITS)
 	{
-		int count = dcol.textureheight >> FRACBITS;
 		tallpost_t* srcpost = dcol.post;
 
 		int destpostlen = 0;
 
 		static byte* destpostraw[512];
-		tallpost_t* destpost = (tallpost_t*) destpostraw;
+		tallpost_t* destpost = reinterpret_cast<tallpost_t*>(destpostraw);
+
+		// a 512 pixel tall post can overflow destpostraw
+		// because of the 4 byte header and 4 byte footer.
+		// so rather than increase it to 513 and imply that we
+		// handle 513px at a time, clamp it instead.
+		const int maxcount = static_cast<int>(sizeof(destpostraw)) - 8;
+		int count = std::min(dcol.textureheight >> FRACBITS, maxcount);
 
 		destpost->topdelta = 0;
 
@@ -265,8 +283,11 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 			if (srcpost->topdelta == destpostlen)
 			{
-				memcpy(destpost->data() + destpostlen, srcpost->data(), srcpost->length);
-					   destpostlen += srcpost->length;
+				// clamp to remaining to ensure malformed post lengths
+				// don't crash
+				const int copylen = std::min<int>(srcpost->length, remaining);
+				memcpy(destpost->data() + destpostlen, srcpost->data(), copylen);
+				destpostlen += copylen;
 			}
 			else
 			{
@@ -314,12 +335,12 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool
 {
 	if (calc_light)
 	{
-		const int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+		const int index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
 		dcol.colormap = basecolormap.with(walllights[index]);
 	}
 
-	dcol.yl = MAX(top[x], 0);
-	dcol.yh = MIN(bottom[x], viewheight - 1);
+	dcol.yl = std::max(top[x], 0);
+	dcol.yh = std::min(bottom[x], viewheight - 1);
 	dcol.post = posts[x];
 }
 
@@ -328,18 +349,18 @@ static inline int R_ColumnRangeMinimumHeight(int start, int stop, int* top)
 {
 	int minheight = viewheight - 1;
 	for (int x = start; x <= stop; x++)
-		minheight = MIN(minheight, top[x]);
+		minheight = std::min(minheight, top[x]);
 
-	return MAX(minheight, 0);
+	return std::max(minheight, 0);
 }
 
 static inline int R_ColumnRangeMaximumHeight(int start, int stop, int* bottom)
 {
 	int maxheight = 0;
 	for (int x = start; x <= stop; x++)
-		maxheight = MAX(maxheight, bottom[x]);
+		maxheight = std::max(maxheight, bottom[x]);
 
-	return MIN(maxheight, viewheight - 1);
+	return std::min(maxheight, viewheight - 1);
 }
 
 //
@@ -407,7 +428,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		{
 			for (int x = start; x <= stop; x++)
 			{
-				const int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+				const int index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
 				light_lookup[x] = walllights[index];
 				rw_light += rw_lightstep;
 			}
@@ -418,7 +439,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
 		{
 			const int blockstartx = bx;
-			const int blockstopx = MIN((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
+			const int blockstopx = std::min((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
 
 			const int miny = R_ColumnRangeMinimumHeight(blockstartx, blockstopx, top);
 			const int maxy = R_ColumnRangeMaximumHeight(blockstartx, blockstopx, bottom);
@@ -434,8 +455,8 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 						dcol.colormap = basecolormap.with(light_lookup[x]);
 
 					dcol.x = x;
-					dcol.yl = MAX(top[x], blockstarty);
-					dcol.yh = MIN(bottom[x], blockstopy);
+					dcol.yl = std::max(top[x], blockstarty);
+					dcol.yh = std::min(bottom[x], blockstopy);
 					dcol.post = posts[x];
 					colblast();
 				}
@@ -468,8 +489,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	// clip the front of the walls to the ceiling and floor
 	for (int x = start; x <= stop; x++)
 	{
-		walltopf[x] = MAX(walltopf[x], ceilingclip[x]);
-		wallbottomf[x] = MIN(wallbottomf[x], floorclip[x]);
+		walltopf[x] = std::max(walltopf[x], ceilingclip[x]);
+		wallbottomf[x] = std::min(wallbottomf[x], floorclip[x]);
 	}
 
 	// mark ceiling-plane areas
@@ -477,8 +498,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	{
 		for (int x = start; x <= stop; x++)
 		{
-			const int top = MAX(ceilingclip[x], 0);
-			const int bottom = MIN(MIN(walltopf[x], floorclip[x]) - 1, viewheight - 1);
+			const int top = std::max(ceilingclip[x], 0);
+			const int bottom = std::min({walltopf[x], floorclip[x] - 1, viewheight - 1});
 
 			if (top <= bottom)
 			{
@@ -493,8 +514,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	{
 		for (int x = start; x <= stop; x++)
 		{
-			const int top = MAX(MAX(wallbottomf[x], ceilingclip[x]), 0);
-			const int bottom = MIN(floorclip[x] - 1, viewheight - 1);
+			const int top = std::max({wallbottomf[x], ceilingclip[x], 0});
+			const int bottom = std::min(floorclip[x] - 1, viewheight - 1);
 
 			if (top <= bottom)
 			{
@@ -532,7 +553,7 @@ void R_RenderSolidSegRange(int start, int stop)
 
 			for (int x = start; x <= stop; x++)
 			{
-				walltopb[x] = MAX(MIN(walltopb[x], floorclip[x]), walltopf[x]);
+				walltopb[x] = std::max(std::min(walltopb[x], floorclip[x]), walltopf[x]);
 				lower[x] = walltopb[x] - 1;
 			}
 
@@ -558,7 +579,7 @@ void R_RenderSolidSegRange(int start, int stop)
 
 			for (int x = start; x <= stop; x++)
 			{
-				wallbottomb[x] = MIN(MAX(wallbottomb[x], ceilingclip[x]), wallbottomf[x]);
+				wallbottomb[x] = std::min(std::max(wallbottomb[x], ceilingclip[x]), wallbottomf[x]);
 				lower[x] = wallbottomf[x] - 1;
 			}
 
@@ -639,9 +660,9 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	// find texture positioning
 	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
-		dcol.texturemid = MAX(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + R_TexInvScaleY(textureheight[texnum], texnum);
+		dcol.texturemid = std::max(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + R_TexInvScaleY(textureheight[texnum], texnum);
 	else
-		dcol.texturemid = MIN(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
+		dcol.texturemid = std::min(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
 
 	dcol.texturemid = R_TexScaleY(dcol.texturemid - viewz, texnum) + curline->sidedef->rowoffset;
 
@@ -670,9 +691,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 		lightnum <  0 ? scalelight[0] : scalelight[lightnum];
 
 	masked_midposts = ds->midposts;
-
-	rw_scalestep = R_TexInvScaleY(ds->scalestep, texnum);
-	spryscale = R_TexInvScaleY(ds->scale1, texnum) + (x1 - ds->x1) * rw_scalestep;
+	masked_midscales = ds->midscales;
 
 	rw_lightstep = ds->lightstep;
 	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
@@ -726,8 +745,8 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 
 	const fixed_t mindist = NEARCLIP;
 	static constexpr fixed_t maxdist = 16384*FRACUNIT;
-	dist1 = clamp(dist1, mindist, maxdist);
-	dist2 = clamp(dist2, mindist, maxdist);
+	dist1 = std::clamp(dist1, mindist, maxdist);
+	dist2 = std::clamp(dist2, mindist, maxdist);
 
 	// calculate texture coordinates at the line's endpoints
 	const float scale1 = yfoc / FIXED2FLOAT(dist1);
@@ -862,6 +881,7 @@ void R_StoreWallRange(int start, int stop)
 	//	and decide if floor / ceiling marks are needed
 	midtexture = toptexture = bottomtexture = maskedtexture = 0;
 	ds_p->midposts = NULL;
+	ds_p->midscales = NULL;
 
 	if (!backsector)
 	{
@@ -956,8 +976,15 @@ void R_StoreWallRange(int start, int stop)
 				   (frontsector->floor_angle + frontsector->base_floor_angle)
 				;
 
+			// Sky hack
+			// MBF sky transfers split the visplane in 2, so in order for sky
+			// transfer skyhack to work, we need to identify both sectors' sky
+			const bool ceilingskyhack =
+				!R_IsSkyFlat(frontsector->ceilingpic) || !R_IsSkyFlat(backsector->ceilingpic);
+
 			markceiling =
-				  !P_IdenticalPlanes(&backsector->ceilingplane, &frontsector->ceilingplane)
+				  (ceilingskyhack &&
+				   !P_IdenticalPlanes(&backsector->ceilingplane, &frontsector->ceilingplane))
 				|| backsector->lightlevel != frontsector->lightlevel
 				|| backsector->ceilingpic != frontsector->ceilingpic
 
@@ -982,10 +1009,6 @@ void R_StoreWallRange(int start, int stop)
 				|| (backsector->ceiling_angle + backsector->base_ceiling_angle) !=
 				   (frontsector->ceiling_angle + frontsector->base_ceiling_angle)
 				;
-
-			// Sky hack
-			markceiling = markceiling &&
-				(!R_IsSkyFlat(frontsector->ceilingpic) || !R_IsSkyFlat(backsector->ceilingpic));
 		}
 
 
@@ -1032,6 +1055,20 @@ void R_StoreWallRange(int start, int stop)
 			// masked midtexture
 			maskedtexture = texturetranslation[sidedef->midtexture];
 			ds_p->midposts = masked_midposts = masked_midposts_pool.alloc(count) - start;
+
+			// save the per-column scales, pre-scaled into the
+			// midtexture's y-scale space, for the masked pass
+			fixed_t* midscales = midscales_pool.alloc(count) - start;
+			if (texturescaley[maskedtexture] == FRACUNIT)
+			{
+				memcpy(midscales + start, wallscalex + start, count * sizeof(*midscales));
+			}
+			else
+			{
+				for (int x = start; x <= stop; x++)
+					midscales[x] = R_TexInvScaleY(wallscalex[x], maskedtexture);
+			}
+			ds_p->midscales = midscales;
 		}
 
 		// [SL] additional fix for sky hack
@@ -1066,7 +1103,7 @@ void R_StoreWallRange(int start, int stop)
 
 			lightnum += R_OrthogonalLightnumAdjustment();
 
-			lightnum = clamp(lightnum, 0, LIGHTLEVELS - 1);
+			lightnum = std::clamp(lightnum, 0, LIGHTLEVELS - 1);
 			walllights = scalelight[lightnum];
 		}
 	}
@@ -1129,6 +1166,7 @@ void R_ClearOpenings()
 {
 	masked_midposts_pool.clear();
 	sprclip_pool.clear();
+	midscales_pool.clear();
 }
 
 VERSION_CONTROL (r_segs_cpp, "$Id$")
