@@ -913,7 +913,7 @@ BEGIN_COMMAND (unalias)
 				return;
 			}
 		}
-		else if(argc == 2)
+		else if(argc >= 2)
 		{
 			PrintFmt(PRINT_HIGH, "{}: not an alias\n", argv[1]);
 			return;

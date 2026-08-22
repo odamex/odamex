@@ -702,6 +702,33 @@ BEGIN_COMMAND (set)
 }
 END_COMMAND (set)
 
+BEGIN_COMMAND (unset)
+{
+	if (argc != 2)
+	{
+		PrintFmt(PRINT_HIGH, "usage: unset <variable>\n");
+	}
+	else
+	{
+		cvar_t *prev;
+		cvar_t* var = cvar_t::FindCVar(argv[1], &prev);
+		if (!var)
+		{
+			PrintFmt(PRINT_HIGH, "{} is not a variable.\n", argv[1]);
+			return;
+		}
+
+		if (not (var->flags() & CVAR_UNSETTABLE))
+		{
+			PrintFmt(PRINT_HIGH, "{} cannot be unset.\n", argv[1]);
+			return;
+		}
+
+		delete var;
+	}
+}
+END_COMMAND (unset)
+
 BEGIN_COMMAND (get)
 {
     cvar_t *prev;
