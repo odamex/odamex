@@ -32,6 +32,7 @@
 #include "g_spree.h"
 #include "m_ostring.h"
 #include "g_gametype.h"
+#include "farchive.h"
 #include "infomap.h"
 #include "svc_message.h"
 
@@ -453,12 +454,14 @@ const SpreeRecord_t& SpreeManager::getSpreeRecord(const int playerId)
 
 void SpreeManager::expireOldSprees()
 {
-	//if (::gametic - spreeBreaker.spreeEndedTic > 4 * TICRATE ||
-	//    spreeBreaker.spreeEndedTic > ::gametic)
-	//{
-	//	spreeBreaker = {"", -1, TEAM_NONE, "",    -1, TEAM_NONE,
-	//	                "", "", CR_GOLD,   false, 0,  0};
-	//}
+	// Drop the last spree breaker once it can no longer be shown, or if it happened
+	// in the future, which means we rewound a demo.
+	if (spreeBreaker.spreeEndedPlayerId != -1 &&
+	    (::gametic - spreeBreaker.spreeEndedTic > SPREE_DISPLAY_TICS ||
+	     spreeBreaker.spreeEndedTic > ::gametic))
+	{
+		spreeBreaker = SpreeBreaker_t();
+	}
 
 	std::erase_if(spreeRecord, [](const auto& pair){
 		// Spree happened in the future, indicating we're in a rewinded demo
@@ -618,6 +621,54 @@ void SpreeManager::clearPoints()
 	pointsSinceLastDeath.clear();
 }
 
+void SpreeManager::serialize(FArchive& arc)
+{
+	if (arc.IsStoring())
+	{
+		arc << static_cast<uint32_t>(spreeRecord.size());
+
+		for (const auto& [playerId, record] : spreeRecord)
+		{
+			arc << playerId << record.playerName << record.spreeLevel
+			    << record.spreeStartTic << record.stillDominating << record.spree.spreeText
+			    << record.spree.spreeBroadcastText << record.spree.gameSfxToken
+			    << record.spree.color;
+		}
+
+		arc << spreeBreaker.spreeEndedName << spreeBreaker.spreeEndedPlayerId
+		    << spreeBreaker.spreeEndedTeam << spreeBreaker.spreeEnderName
+		    << spreeBreaker.spreeEnderPlayerId << spreeBreaker.spreeEnderTeam
+		    << spreeBreaker.spreeEndedBroadcastText << spreeBreaker.spreeEnded
+		    << spreeBreaker.spreeEndedColor << spreeBreaker.spreeEnderMonster
+		    << spreeBreaker.endedPoints << spreeBreaker.spreeEndedTic;
+	}
+	else
+	{
+		spreeRecord.clear();
+
+		uint32_t count = 0;
+		arc >> count;
+
+		for (uint32_t i = 0; i < count; i++)
+		{
+			SpreeRecord_t record;
+			arc >> record.playerId >> record.playerName >> record.spreeLevel >>
+			    record.spreeStartTic >> record.stillDominating >> record.spree.spreeText >>
+			    record.spree.spreeBroadcastText >> record.spree.gameSfxToken >>
+			    record.spree.color;
+
+			spreeRecord[record.playerId] = record;
+		}
+
+		arc >> spreeBreaker.spreeEndedName >> spreeBreaker.spreeEndedPlayerId >>
+		    spreeBreaker.spreeEndedTeam >> spreeBreaker.spreeEnderName >>
+		    spreeBreaker.spreeEnderPlayerId >> spreeBreaker.spreeEnderTeam >>
+		    spreeBreaker.spreeEndedBroadcastText >> spreeBreaker.spreeEnded >>
+		    spreeBreaker.spreeEndedColor >> spreeBreaker.spreeEnderMonster >>
+		    spreeBreaker.endedPoints >> spreeBreaker.spreeEndedTic;
+	}
+}
+
 // ==========================================================
 // Static functions start here.
 // ==========================================================
@@ -652,9 +703,6 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 
 	if (target && G_IsTeamGame() && source->player &&
 	    source->player->userinfo.team == target->userinfo.team)
-		return;
-
-	if (target && G_IsCoopGame())
 		return;
 
 	if (clientside && network_game)
@@ -729,4 +777,9 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 void P_TicSprees()
 {
 	SpreeManager::getInstance().expireOldSprees();
+}
+
+void P_SerializeSprees(FArchive& arc)
+{
+	SpreeManager::getInstance().serialize(arc);
 }

@@ -29,6 +29,8 @@
 #include <map>
 #include <algorithm>
 
+class FArchive;
+
 void SexMessage(const char* from, char* to, gender_t gender, std::string_view victim,
                 std::string_view killer, std::string_view spree);
 
@@ -316,6 +318,11 @@ public:
 	/// <returns>Amount of points for the specified player.</returns>
 	int getPoints(const int playerid);
 
+	/// <summary>
+	/// Reads or writes every active spree and the last spree breaker.
+	/// <param name="arc">Archive to serialize to or from.</param>
+	void serialize(FArchive& arc);
+
 private:
 	/// <summary>
 	/// Adds points (kills or damage depending on gamemode) to a player
@@ -483,3 +490,9 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage);
 /// Handles internal ticking for spree bookkeeping.
 /// </summary>
 void P_TicSprees();
+
+/// <summary>
+/// Serializes spree bookkeeping in and out of netdemo snapshots.
+/// </summary>
+/// <param name="arc">Archive to serialize to or from.</param>
+void P_SerializeSprees(FArchive& arc);
