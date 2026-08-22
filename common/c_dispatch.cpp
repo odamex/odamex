@@ -889,6 +889,39 @@ BEGIN_COMMAND (alias)
 }
 END_COMMAND (alias)
 
+BEGIN_COMMAND (unalias)
+{
+	if (argc == 1)
+	{
+		PrintFmt(PRINT_HIGH, "Current alias commands:\n");
+		DumpHash(true);
+	}
+	else
+	{
+		auto i = Commands().find(StdStringToLower(argv[1]));
+		if(i != Commands().end())
+		{
+			if(i->second->IsAlias())
+			{
+				// Remove the alias
+				delete i->second;
+				Commands().erase(i);
+			}
+			else
+			{
+				PrintFmt(PRINT_HIGH, "{}: is a command, can not be deleted\n", argv[1]);
+				return;
+			}
+		}
+		else if(argc == 2)
+		{
+			PrintFmt(PRINT_HIGH, "{}: not an alias\n", argv[1]);
+			return;
+		}
+	}
+}
+END_COMMAND (unalias)
+
 BEGIN_COMMAND (cmdlist)
 {
 	int count;
