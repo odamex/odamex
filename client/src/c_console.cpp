@@ -105,6 +105,7 @@ EXTERN_CVAR(con_notifytime)
 
 EXTERN_CVAR(message_showpickups)
 EXTERN_CVAR(message_showobituaries)
+EXTERN_CVAR(log_fulltimestamps)
 
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
@@ -1308,6 +1309,61 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 	return strlen(outline);
 }
 
+namespace
+{
+
+// struct tm counts years from 1900.
+constexpr int TM_YEAR_BASE = 1900;
+
+std::string TimeStamp()
+{
+	const time_t ti = time(nullptr);
+	const struct tm* lt = localtime(&ti);
+
+	if (!lt)
+		return "";
+
+	if (log_fulltimestamps)
+	{
+		return fmt::format("[{:02d}/{:02d}/{:02d} {:02d}:{:02d}:{:02d}]", lt->tm_mday,
+		                   lt->tm_mon + 1, // localtime returns 0-based month
+		                   lt->tm_year + TM_YEAR_BASE, lt->tm_hour, lt->tm_min,
+		                   lt->tm_sec);
+	}
+
+	return fmt::format("[{:02d}:{:02d}:{:02d}]", lt->tm_hour, lt->tm_min, lt->tm_sec);
+}
+
+// Writes to the log file, stamping the start of every line.
+// Prints can span several lines or stop mid-line, so where
+// the last one left off is remembered.
+void C_LogString(const std::string& str)
+{
+	static bool at_line_start = true;
+
+	size_t pos = 0;
+	while (pos < str.length())
+	{
+		if (at_line_start)
+		{
+			LOG << TimeStamp() << ' ';
+			at_line_start = false;
+		}
+
+		size_t end = str.find('\n', pos);
+		if (end == std::string::npos)
+			end = str.length() - 1;
+
+		LOG.write(str.data() + pos, static_cast<std::streamsize>(end - pos + 1));
+		at_line_start = (str[end] == '\n');
+		pos = end + 1;
+	}
+
+	LOG.flush();
+}
+
+} // namespace
+
 size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
 	extern bool gameisdead;
@@ -1364,8 +1420,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 		if (con_coloredmessages)
 			StripColorCodes(newStr);
 
-		LOG << newStr;
-		LOG.flush();
+		C_LogString(newStr);
 	}
 
 #if defined (_WIN32) && defined(_DEBUG)
