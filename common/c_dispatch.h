@@ -23,8 +23,11 @@
 
 #pragma once
 
+#include "c_cvars.h"
 #include "dobject.h"
 
+#include <string>
+#include <string_view>
 #include <optional>
 #include <functional>
 
@@ -158,3 +161,9 @@ struct ActionBits
 };
 
 extern unsigned int MakeKey (const char *s);
+
+// if non-empty, runs the contents of the cvar
+// with AddCommandString
+//
+// if resend is true, unlatch cvars and send serverinfo to clients
+void C_RunCVarScriptHook(const cvar_t& var, bool resend);

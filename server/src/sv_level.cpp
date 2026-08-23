@@ -265,11 +265,7 @@ void G_ChangeMap()
 		}
 
 		// run script at the end of each map
-		// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-		// when onlcvars (addcommandstring's second param) is true.  Is there a
-		// reason why the mapscripts ahve to be safe mode?
-		if (strlen(sv_endmapscript.cstring()))
-			AddCommandString(sv_endmapscript.str());
+		C_RunCVarScriptHook(sv_endmapscript, false);
 	}
 }
 
@@ -289,11 +285,7 @@ void G_ChangeMap(size_t index) {
 	Maplist::instance().set_index(index);
 
 	// run script at the end of each map
-	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a
-	// reason why the mapscripts ahve to be safe mode?
-	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.str());
+	C_RunCVarScriptHook(sv_endmapscript, false);
 }
 
 // Determine first map to load on startup
@@ -333,11 +325,7 @@ void G_ChangeMapStartup()
 	}
 
 	// run script at the end of each map
-	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a
-	// reason why the mapscripts ahve to be safe mode?
-	if (!sv_endmapscript.str().empty())
-		AddCommandString(sv_endmapscript.str());
+	C_RunCVarScriptHook(sv_endmapscript, false);
 }
 
 // Restart the current map.
@@ -346,11 +334,7 @@ void G_RestartMap() {
 	G_DeferedInitNew(level.mapname);
 
 	// run script at the end of each map
-	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a
-	// reason why the mapscripts ahve to be safe mode?
-	if(!sv_endmapscript.str().empty())
-		AddCommandString(sv_endmapscript.str());
+	C_RunCVarScriptHook(sv_endmapscript, false);
 }
 
 BEGIN_COMMAND (nextmap) {
@@ -382,11 +366,7 @@ void G_DoNewGame()
 	sv_curmap.ForceSet(d_mapname.c_str());
 
 	// run script at the start of each map
-	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a
-	// reason why the mapscripts ahve to be safe mode?
-	if (!sv_startmapscript.str().empty())
-		AddCommandString(sv_startmapscript.str());
+	C_RunCVarScriptHook(sv_startmapscript, true);
 
 	for (auto& player : players)
 	{
@@ -449,10 +429,7 @@ void G_InitNew(const char *mapname)
 	if (old_gametype != sv_gametype || sv_gametype != GM_COOP)
 		unnatural_level_progression = true;
 
-	// [SL] 2011-09-01 - Change gamestate here so SV_ServerSettingChange will
-	// send changed cvars
-	gamestate = GS_LEVEL;
-	SV_ServerSettingChange();
+	SV_ServerSettingChange(true);
 
 	paused = false;
 
