@@ -56,6 +56,8 @@ static unsigned FlagFromName(const std::string& name)
 		return CVARDOC_SERVERARCHIVE;
 	if (name == "CLIENTARCHIVE")
 		return CVARDOC_CLIENTARCHIVE;
+	if (name == "NOSEND")
+		return CVARDOC_NOSEND;
 	return 0;
 }
 
