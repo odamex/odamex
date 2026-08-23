@@ -37,6 +37,48 @@
 #include "infomap.h"
 #include "svc_message.h"
 
+EXTERN_CVAR(sv_showsprees)
+
+#ifdef CLIENT_APP
+EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(cl_showofflinesprees)
+
+namespace
+{
+
+//
+// Whether spree messages should be shown to this player at all.
+//
+bool CanShowSprees()
+{
+	if (!cl_showsprees)
+		return false;
+
+	if (network_game)
+		return sv_showsprees;
+
+	return cl_showofflinesprees;
+}
+
+//
+// Logs a spree message to the console.
+//
+void PrintSpreeMessage(const std::string& message, const int tic)
+{
+	if (message.empty() || !CanShowSprees())
+		return;
+
+	const int age = ::gametic - tic;
+
+	if (age < 0 || age >= SPREE_DISPLAY_TICS)
+		return;
+
+	PrintFmt(PRINT_FILTERHIGH, TEXTCOLOR_GRAY "{}\n", message);
+}
+
+} // namespace
+#endif
+
 SpreeManager& SpreeManager::getInstance()
 {
 	static SpreeManager instance;
@@ -193,10 +235,12 @@ void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int l
 
 	setBreakerLanguage(newbreaker, breakerType);
 
+#ifdef CLIENT_APP
+	PrintSpreeMessage(newbreaker.spreeEndedBroadcastText, newbreaker.spreeEndedTic);
+#endif
+
 	spreeBreaker = newbreaker;
 }
-
-EXTERN_CVAR(sv_showsprees)
 
 void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 {
@@ -286,6 +330,10 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	#endif
 
 	setBreakerLanguage(breaker, type);
+
+#ifdef CLIENT_APP
+	PrintSpreeMessage(breaker.spreeEndedBroadcastText, breaker.spreeEndedTic);
+#endif
 
 	spreeBreaker = breaker;
 }
@@ -390,6 +438,9 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 		setSpreeRecordLanguage(newRecord, playerId);
 
 		spreeRecord[playerId] = newRecord;
+#ifdef CLIENT_APP
+		PrintSpreeMessage(newRecord.spree.spreeBroadcastText, tic);
+#endif
 #ifdef SERVER_APP
 		if (sv_showsprees)
 		{
@@ -419,6 +470,9 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 
 			// Apply sexmessage to the broadcast text
 			setSpreeRecordLanguage(record, playerId);
+#ifdef CLIENT_APP
+			PrintSpreeMessage(record.spree.spreeBroadcastText, tic);
+#endif
 #ifdef SERVER_APP
 			if (sv_showsprees)
 			{
@@ -685,11 +739,6 @@ void SpreeManager::serialize(FArchive& arc)
 // ==========================================================
 // Static functions start here.
 // ==========================================================
-
-#ifdef CLIENT_APP
-EXTERN_CVAR(cl_showsprees)
-EXTERN_CVAR(cl_showofflinesprees)
-#endif
 
 void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 {
