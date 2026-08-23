@@ -23,6 +23,8 @@
 
 #include "i_net.h"
 
+#include "PacketHeaderType.h"
+
 // This is sized with a theoretical max tolerance assuming a client with about
 // 300 msec of latency with a throughput of 800 KB/s.
 //
@@ -31,9 +33,8 @@ const size_t DEFAULT_RELIABILITY_QUEUE_SIZE = 256;
 /// This type defines the per-packet data that's relevant for managing reliability.
 struct SequenceQueueEntryType
 {
-	buf_t buf               { MAX_UDP_PACKET }; ///< The actual data payload that needs reliability.
-	int   sequence          { -1 };             ///< This packet's ssequence number.
-	int   originatingTic    { -1 };             ///< The local tic on which this packet was sent or received.  Used for retransmit window management.
-	int   lastRetransmitTic { -1 };             ///< The tic number on which this packet was last retransmitted.
-	bool  isAwaiting        { false };          ///< True if this packet needs yet to be acked.
+	buf_t               buf                 { MAX_UDP_PACKET }; ///< The actual data payload that needs reliability.
+	PacketHeaderType    header;                                 ///< This packet's header.
+	int                 lastRetransmitTic   { -1 };             ///< The tic number on which this packet was last retransmitted.
+	bool                isAwaiting          { false };          ///< True if this packet needs yet to be acked.
 };
