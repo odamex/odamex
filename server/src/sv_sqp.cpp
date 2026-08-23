@@ -96,68 +96,68 @@ static void IntQryBuildInformation(const uint32_t& EqProtocolVersion,
 		MSG_WriteLong(&ml_message, -1);
 	}
 
-	cvar_t* var = GetFirstCvar();
+
 
 	// Count our cvars and add them
-	while(var)
+	for (cvar_t* var = GetFirstCvar(); var != nullptr; var = var->GetNext())
 	{
-		if(var->flags() & CVAR_SERVERINFO)
+		if (var->flags() & CVAR_SERVERINFO)
 		{
+			// Skip empty strings
+			if (CvarField.Type == CVARTYPE_STRING && var->str().empty())
+				continue;
+
+			// Skip other types with 0
+			if (var->value() == 0.0f)
+				continue;
+
+			// Skip NOSEND vars
+			if (var->m_Flags & CVAR_NOSEND)
+				continue;
+
 			CvarField.Name = var->name();
 			CvarField.Type = var->type();
 			CvarField.Value = var->str();
 
-			// Skip empty strings
-			if(CvarField.Type == CVARTYPE_STRING && var->cstring()[0] != '\0')
-			{
-				Cvars.push_back(CvarField);
-				goto next;
-			}
-
-			// Skip other types with 0
-			if(var->value() != 0.0f)
-				Cvars.push_back(CvarField);
+			Cvars.push_back(CvarField);
 		}
-
-next:
-		var = var->GetNext();
 	}
 
 	// Cvar count
 	MSG_WriteByte(&ml_message, (byte)Cvars.size());
 
 	// Write cvars
-	for(size_t i = 0; i < Cvars.size(); ++i)
+	for (const auto & Cvar : Cvars)
 	{
-		MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
+		MSG_WriteString(&ml_message, Cvar.Name.c_str());
 
 		// Type field
-		MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
+		MSG_WriteByte(&ml_message, (byte)Cvar.Type);
 
-		switch(Cvars[i].Type)
+		switch(Cvar.Type)
 		{
 		case CVARTYPE_BYTE:
 		{
-			MSG_WriteByte(&ml_message, (byte)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteByte(&ml_message, (byte)atoi(Cvar.Value.c_str()));
 		}
 		break;
 
 		case CVARTYPE_WORD:
 		{
-			MSG_WriteShort(&ml_message, (short)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteShort(&ml_message, (short)atoi(Cvar.Value.c_str()));
 		}
 		break;
 
 		case CVARTYPE_INT:
 		{
-			MSG_WriteLong(&ml_message, (int)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteLong(&ml_message, (int)atoi(Cvar.Value.c_str()));
 		}
 		break;
 
 		case CVARTYPE_FLOAT:
 		case CVARTYPE_STRING:
 		{
-			MSG_WriteString(&ml_message, Cvars[i].Value.c_str());
+			MSG_WriteString(&ml_message, Cvar.Value.c_str());
 		}
 		break;
 

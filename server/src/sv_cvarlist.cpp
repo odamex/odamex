@@ -65,9 +65,6 @@ CVAR(			sv_globalspectatorchat, "1", "Players can see spectator chat",
 CVAR_RANGE(		sv_maxcorpses, "200", "Maximum corpses to appear on map",
 				CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 65536.0f)
 
-CVAR(			sv_clientcount,	"0", "Set to the number of connected players (for scripting)",
-				CVARTYPE_BYTE, CVAR_NOSET | CVAR_NOENABLEDISABLE)
-
 CVAR_RANGE_FUNC_DECL(sv_maxclients, "4", "Maximum clients that can connect to a server",
 				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 2.0f, 255.0f)
 
@@ -85,24 +82,6 @@ CVAR_FUNC_DECL(	rcon_password, "", "Remote console password",
 
 CVAR_FUNC_DECL(	sv_usemasters, "1", "Advertise on master servers",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-
-CVAR(			sv_endmapscript, "",  "Script to run at end of each map (e.g. to choose next map)",
-				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR(			sv_startmapscript, "", "Script to run at start of each map (e.g. to override cvars)",
-				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR(			sv_startwadscript, "", "Script to run at after wad changes (e.g. to override cvars)",
-				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR(			sv_curpwad, "", "Set to the first pwad filename passed to the wad command (for scripting)",
-				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
-
-CVAR(			sv_curmap, "", "Set to the last played map",
-				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
-
-CVAR(			sv_nextmap, "", "Set to the next map to be played",
-				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
 CVAR_FUNC_DECL(	sv_shufflemaplist, "0", "Randomly shuffle the maplist",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
@@ -230,6 +209,42 @@ CVAR(			sv_callvote_scorelimit, "0", "Clients can vote a new scorelimit.",
 
 CVAR(			sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
+// Scripting
+// =========
+
+CVAR(			sv_endmapscript, "",  "Script to run at end of each map (e.g. to choose next map)",
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(			sv_startmapscript, "", "Script to run at start of each map (e.g. to override cvars)",
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(			sv_startwadscript, "", "Script to run at after wad changes (e.g. to override cvars)",
+				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(			sv_curpwad, "", "Set to the first pwad filename passed to the wad command (for scripting)",
+				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
+
+CVAR(			sv_curmap, "", "Set to the last played map",
+				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
+
+CVAR(			sv_nextmap, "", "Set to the next map to be played",
+				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
+
+CVAR(			sv_clientcount,	"0", "Set to the number of connected players (for scripting)",
+				CVARTYPE_BYTE, CVAR_NOSET | CVAR_NOENABLEDISABLE)
+
+CVAR(			result_string, "0", "Generic variable for returning string values from commands",
+				CVARTYPE_STRING, CVAR_NOSEND | CVAR_NOENABLEDISABLE)
+
+CVAR(			result_int, "0", "Generic variable for returning integer values from commands",
+				CVARTYPE_INT, CVAR_NOSEND | CVAR_NOENABLEDISABLE)
+
+CVAR(			result_float, "0", "Generic variable for returning floating point values from commands",
+				CVARTYPE_FLOAT, CVAR_NOSEND | CVAR_NOENABLEDISABLE)
+
+CVAR(			result_bool, "0", "Generic variable for returning boolean values from commands",
+				CVARTYPE_BOOL, CVAR_NOSEND)
 
 // Experimental settings (all categories)
 // =======================================

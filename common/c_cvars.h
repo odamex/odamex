@@ -108,6 +108,11 @@ CVARS (console variables)
  */
 #define CVAR_ARCHIVE (CVAR_CLIENTARCHIVE | CVAR_SERVERARCHIVE)
 
+/**
+ * [EB] Do not send to clients or launchers
+ */
+#define CVAR_NOSEND BIT(14)
+
 // Hints for network code optimization
 typedef enum
 {

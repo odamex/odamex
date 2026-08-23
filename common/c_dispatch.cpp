@@ -34,6 +34,7 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_alloc.h"
+#include "m_random.h"
 #include "d_player.h"
 #include "r_defs.h"
 #include "i_system.h"
@@ -514,8 +515,16 @@ END_COMMAND (exec)
 
 // denis
 // if cvar eq blah "command";
+// TODO: create temporary unevaluated contexts to allow
+// commands that arent immediately executed, similar to
+// what exec is doing with #if, but without requiring it to be in exec
+// this would allow us to add else and elseif commands, with a then and endif
+// to start them, basically like bash
+// right now conditionals are most useful in exec anyway, but this would also open
+// the door to expanding on aliases and creating functions
 BEGIN_COMMAND (if)
 {
+	// TODO: generalize this into boolean exit codes for all commands
 	if_command_result = false;
 
 	if (argc < 4)
@@ -535,11 +544,28 @@ BEGIN_COMMAND (if)
 	// TODO: cvar-overhaul branch - add a `compare` virtual method to cvars
 	// that takes a string and use that here instead
 
-	// TODO: allow boolean cvars to compare against "true" and "false"
-	// and probably also allow to be checked directly without any comparison
+	// TODO: allow boolean cvars  to be checked directly without any comparison
 	if (var->m_Flags & CVARTYPE_BOOL)
 	{
-		const auto compval = ParseNum<int32_t>(argv[3]);
+		std::optional<bool> compval;
+
+		if (strcmp(argv[3], "true") == 0)
+		{
+			compval.emplace(true);
+		}
+		else if (strcmp(argv[3], "false") == 0)
+		{
+			compval.emplace(false);
+		}
+		else
+		{
+			const auto compint = ParseNum<int32_t>(argv[3]);
+			if (compint.has_value() and (compint.value() == 0 or compint.value() == 1))
+			{
+				compval.emplace(static_cast<bool>(compint.value()));
+			}
+		}
+
 		if (not compval.has_value())
 		{
 			PrintFmt(PRINT_HIGH, "if: {} is not a valid boolean\n", argv[3]);
@@ -548,11 +574,11 @@ BEGIN_COMMAND (if)
 
 		if (op == "eq")
 		{
-			if_command_result = var->asInt() == *compval;
+			if_command_result = var->asBool() == *compval;
 		}
 		else if (op == "ne")
 		{
-			if_command_result = var->asInt() != *compval;
+			if_command_result = var->asBool() != *compval;
 		}
 		else
 		{
@@ -1188,5 +1214,85 @@ BEGIN_COMMAND (error)
 	I_Error ("{}", text);
 }
 END_COMMAND (error)
+
+BEGIN_COMMAND (rand)
+{
+	if (argc < 3)
+	{
+		PrintFmt("rand - returns a random number for use in scripting\n");
+		PrintFmt("Usage: rand <type> <max>\n");
+		PrintFmt("       rand <type> <min> <max>\n");
+		PrintFmt("\n");
+		PrintFmt("Result is placed in the result_int/result_float variable\n");
+		PrintFmt("Minimum is zero if not specified\n");
+		return;
+	}
+
+	const bool useMin = argc > 3;
+
+	if (strcmp(argv[1], "int") == 0)
+	{
+		EXTERN_CVAR(result_int)
+		int32_t min;
+		int32_t max;
+		if (useMin)
+		{
+			const auto minopt = ParseNum<int32_t>(argv[2]);
+			const auto maxopt = ParseNum<int32_t>(argv[3]);
+
+			if (not minopt.has_value())
+			{
+				PrintFmt("Minimum ({}) is not a valid integer", argv[2]);
+				return;
+			}
+
+			if (not maxopt.has_value())
+			{
+				PrintFmt("Maxmimum ({}) is not a valid integer", argv[3]);
+				return;
+			}
+
+			min = *minopt;
+			max = *maxopt;
+		}
+		else
+		{
+			const auto maxopt = ParseNum<int32_t>(argv[2]);
+
+			if (not maxopt.has_value())
+			{
+				PrintFmt("Maxmimum ({}) is not a valid integer", argv[2]);
+				return;
+			}
+
+			min = 0;
+			max = *maxopt;
+		}
+
+		if (max < min)
+		{
+			PrintFmt("Maximum must be greater than minimum");
+			return;
+		}
+
+    	const auto range = static_cast<uint32_t>(max - min);
+    	result_int = min + static_cast<int32_t>(M_RandomInt(range));
+	}
+	else if (strcmp(argv[1], "float") == 0)
+	{
+		EXTERN_CVAR(result_float)
+		// TODO: when merging to protobreak, implement this with ParseNum<float>
+		// I can't be bothered to do the proper error checking with atof right now
+		PrintFmt("Sorry, rand is not yet implemented for floats");
+		return;
+	}
+	else
+	{
+		PrintFmt("Invalid type \"{}\"", argv[1]);
+		PrintFmt("Valid types are 'int', 'float'");
+		return;
+	}
+}
+END_COMMAND (rand)
 
 VERSION_CONTROL (c_dispatch_cpp, "$Id$")
