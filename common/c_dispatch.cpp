@@ -521,8 +521,8 @@ BEGIN_COMMAND (if)
 	if (argc < 4)
 		return;
 
-	cvar_t *var, *dummy;
-	var = cvar_t::FindCVar (argv[1], &dummy);
+	cvar_t *dummy;
+	const cvar_t* var = cvar_t::FindCVar (argv[1], &dummy);
 
 	if (!var)
 	{
@@ -532,19 +532,129 @@ BEGIN_COMMAND (if)
 
 	std::string op = argv[2];
 
-	if(op == "eq")
+	// TODO: cvar-overhaul branch - add a `compare` virtual method to cvars
+	// that takes a string and use that here instead
+
+	// TODO: allow boolean cvars to compare against "true" and "false"
+	// and probably also allow to be checked directly without any comparison
+	if (var->m_Flags & CVARTYPE_BOOL)
 	{
-		if_command_result = !strcmp(var->cstring(), argv[3]);
+		const auto compval = ParseNum<int32_t>(argv[3]);
+		if (not compval.has_value())
+		{
+			PrintFmt(PRINT_HIGH, "if: {} is not a valid boolean\n", argv[3]);
+			return;
+		}
+
+		if (op == "eq")
+		{
+			if_command_result = var->asInt() == *compval;
+		}
+		else if (op == "ne")
+		{
+			if_command_result = var->asInt() != *compval;
+		}
+		else
+		{
+			PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
+			PrintFmt(PRINT_HIGH, "if: boolean operators are eq, ne\n");
+			return;
+		}
 	}
-	else if(op == "ne")
+	else if (var->m_Flags & (CVARTYPE_BYTE | CVARTYPE_WORD | CVARTYPE_INT))
 	{
-		if_command_result = ((strcmp(var->cstring(), argv[3])) != 0);
+		const auto compval = ParseNum<int32_t>(argv[3]);
+		if (not compval.has_value())
+		{
+			PrintFmt(PRINT_HIGH, "if: {} is not a valid integer\n", argv[3]);
+			return;
+		}
+
+		if (op == "eq")
+		{
+			if_command_result = var->asInt() == *compval;
+		}
+		else if (op == "ne")
+		{
+			if_command_result = var->asInt() != *compval;
+		}
+		else if (op == "gt")
+		{
+			if_command_result = var->asInt() > *compval;
+		}
+		else if (op == "lt")
+		{
+			if_command_result = var->asInt() < *compval;
+		}
+		else if (op == "geq")
+		{
+			if_command_result = var->asInt() >= *compval;
+		}
+		else if (op == "leq")
+		{
+			if_command_result = var->asInt() <= *compval;
+		}
+		else
+		{
+			PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
+			PrintFmt(PRINT_HIGH, "if: integer operators are eq, ne, gt, lt, geq, leq\n");
+			return;
+		}
 	}
-	else
+	else if (var->m_Flags & CVARTYPE_FLOAT)
 	{
-		PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
-		PrintFmt(PRINT_HIGH, "if: operators are eq, ne\n");
-		return;
+		// TODO: use ParseNum<float> when merging to protobreak
+		const auto compval = atof(argv[3]);
+
+		if (op == "eq")
+		{
+			if_command_result = var->value() == compval;
+		}
+		else if (op == "ne")
+		{
+			if_command_result = var->value() != compval;
+		}
+		else if (op == "gt")
+		{
+			if_command_result = var->value() > compval;
+		}
+		else if (op == "lt")
+		{
+			if_command_result = var->value() < compval;
+		}
+		else if (op == "geq")
+		{
+			if_command_result = var->value() >= compval;
+		}
+		else if (op == "leq")
+		{
+			if_command_result = var->value() <= compval;
+		}
+		else
+		{
+			PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
+			PrintFmt(PRINT_HIGH, "if: float operators are eq, ne, gt, lt, geq, leq\n");
+			return;
+		}
+	}
+	else // for now just treat NONE and MAX the same as strings
+	{
+		// there's not much of any use currently for ordered comparisons yet
+		// so let's not give them until we have a reason
+		if (op == "eq")
+		{
+			if_command_result = (strcmp(var->cstring(), argv[3]) == 0);
+		}
+		else if (op == "ne")
+		{
+			if_command_result = ((strcmp(var->cstring(), argv[3])) != 0);
+		}
+		else
+		{
+			PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
+			PrintFmt(PRINT_HIGH, "if: string operators are eq, ne\n");
+			return;
+		}
 	}
 
 	if(if_command_result && argc > 4)
