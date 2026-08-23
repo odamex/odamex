@@ -700,7 +700,7 @@ BEGIN_COMMAND (maplist) {
 
 BEGIN_COMMAND (addmap) {
 	if (argc < 2) {
-		PrintFmt(PRINT_HIGH, "Usage: addmap <map lump> [wad name] [...]\n");
+		PrintFmt(PRINT_HIGH, "Usage: addmap <map lump> [wad name] [...] [lastmap=<last map lump>]\n");
 		PrintFmt(PRINT_HIGH, "If you don't specify a wad name, it'll load the IWAD by default.\n");
 		return;
 	}
@@ -739,9 +739,103 @@ BEGIN_COMMAND (addmap) {
 	PrintFmt(PRINT_HIGH, "Adding {} to maplist (WAD{} : {})", arguments[0], (arguments.size() > 2)?"s":"", JoinStrings(maplist_entry.wads, " "));
 } END_COMMAND(addmap)
 
+BEGIN_COMMAND (addmaprange) {
+	if (argc < 3) {
+		PrintFmt(PRINT_HIGH, "Usage: addmaprange <start map lump> <end map lump> [wad name] [...]\n");
+		PrintFmt(PRINT_HIGH, "If you don't specify a wad name, it'll load the IWAD by default.\n");
+		PrintFmt(PRINT_HIGH, "Only works with maps using the vanilla MAPxx and ExMy naming schemes.\n");
+		return;
+	}
+
+	enum class MapNameType {
+		MAPxx,
+		ExMy,
+	};
+
+	std::vector<std::string> arguments = VectorArgs(argc, argv);
+
+	// TODO: find something better than sscanf to use here
+	const auto parseMapName =
+		[&](const std::string& mapname) ->
+			std::optional<std::tuple<MapNameType, int, int>>
+		{
+			int mapnum = 0;
+			int episodenum = 0;
+			int numchars = 0;
+			if (sscanf(mapname.c_str(), "E%dM%d%n", &episodenum, &mapnum, &numchars) == 2) {
+				if (static_cast<size_t>(numchars) != mapname.length()) {
+					return std::nullopt;
+				}
+				return {{MapNameType::ExMy, mapnum, episodenum}};
+			}
+			if ((sscanf(mapname.c_str(), "MAP%d%n", &mapnum, &numchars) == 1)) {
+				if (static_cast<size_t>(numchars) != mapname.length()) {
+					return std::nullopt;
+				}
+				return {{MapNameType::MAPxx, mapnum, episodenum}};
+			}
+			return std::nullopt;
+		};
+
+	const auto firstmap = parseMapName(StdStringToUpper(arguments[0]));
+	if (!firstmap) {
+		PrintFmt("addmaprange: Invalid map name {}\n", arguments[0]);
+		return;
+	}
+
+	const auto lastmap = parseMapName(StdStringToUpper(arguments[1]));
+	if (!lastmap) {
+		PrintFmt("addmaprange: Invalid map name {}\n", arguments[1]);
+		return;
+	}
+
+	const auto [firstmaptype, firstmapnum, firstepisodenum] = *firstmap;
+	const auto [lastmaptype, lastmapnum, lastepisodenum] = *lastmap;
+
+	if (firstmaptype != lastmaptype) {
+		PrintFmt("addmaprange: {} and {} have mismatched naming formats\n", arguments[0], arguments[1]);
+		return;
+	}
+
+	if (lastmapnum < firstmapnum) {
+		PrintFmt("addmaprange: Invalid map range. {} is less than {}\n", lastmapnum, firstmapnum);
+		return;
+	}
+
+	if (lastmaptype == MapNameType::ExMy && lastepisodenum != firstepisodenum) {
+		PrintFmt("addmaprange: Invalid map range. All maps must be in the same episode\n");
+		return;
+	}
+
+	std::vector<std::string> wads;
+	// If we specified any WAD files, grab them too.
+	if (arguments.size() > 2) {
+		wads.resize(arguments.size() - 2);
+		std::copy(arguments.begin() + 2, arguments.end(), wads.begin());
+	}
+
+	for (int i = firstmapnum; i <= lastmapnum; i++) {
+		maplist_entry_t maplist_entry;
+		// Grab the map lump.
+		maplist_entry.map = lastmaptype == MapNameType::MAPxx ? fmt::format("MAP{:02d}", i) : fmt::format("E{}M{}", lastepisodenum, i);
+		maplist_entry.wads = wads;
+		if (!Maplist::instance().add(maplist_entry)) {
+			PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
+			return;
+		}
+		// get the list of wads for printing on success
+		if (i == firstmapnum) {
+			wads = maplist_entry.wads;
+		}
+	}
+
+	// Successfully warn the server a map has been added.
+	PrintFmt(PRINT_HIGH, "Adding {}-{} to maplist (WAD{} : {})", arguments[0], arguments[1], (arguments.size() > 2)?"s":"", JoinStrings(wads, " "));
+} END_COMMAND(addmaprange)
+
 BEGIN_COMMAND(insertmap) {
 	if (argc < 3) {
-		PrintFmt(PRINT_HIGH, "Usage: insertmap <maplist position> <map lump> [wad name] [...]\n");
+		PrintFmt(PRINT_HIGH, "Usage: insertmap <maplist position> <map lump> [wad name] [...] [lastmap=<last map lump>]\n");
 	}
 
 	maplist_entry_t maplist_entry;
