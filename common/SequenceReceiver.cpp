@@ -37,17 +37,17 @@ SequenceReceiver::ReceiveTableType::iterator SequenceReceiver::ObtainReceivePack
 	return m_receiveTable.end();
 }
 
-bool SequenceReceiver::RegisterReliablePacket(int sequence, size_t i_size, buf_t& io_bufferRef)
+bool SequenceReceiver::RegisterReliablePacket(const PacketHeaderType& i_header, size_t i_size, buf_t& io_bufferRef)
 {
-	auto iter = ObtainReceivePacket(sequence);
+	auto iter = ObtainReceivePacket(i_header.sequence);
 	if (iter != m_receiveTable.end())
 	{
 		auto& entryRef = iter->second;
 
 		// Only one reliable packet allowed per sequence number.
-		if (entryRef.reliable.sequence < 0)
+		if (entryRef.reliable.header.sequence < 0)
 		{
-			entryRef.reliable.sequence = sequence;
+			entryRef.reliable.header = i_header;
 			entryRef.reliable.buf.WriteChunk(io_bufferRef.ReadChunk(i_size), i_size);
 			return true;
 		}
@@ -55,46 +55,47 @@ bool SequenceReceiver::RegisterReliablePacket(int sequence, size_t i_size, buf_t
 	return false;
 }
 
-bool SequenceReceiver::RegisterBestEffortPacket(int sequence, size_t i_size, buf_t& io_bufferRef)
+bool SequenceReceiver::RegisterBestEffortPacket(const PacketHeaderType& i_header, size_t i_size, buf_t& io_bufferRef)
 {
-	auto iter = ObtainReceivePacket(sequence);
+	auto iter = ObtainReceivePacket(i_header.sequence);
 	if (iter != m_receiveTable.end())
 	{
 		// Best-effort is never retransmitted.  There's no need to check for duplication.
 		SequenceQueueEntryType& entryRef = iter->second.bestEffort.emplace_back();
-		entryRef.sequence = sequence;
+		entryRef.header = i_header;
 		entryRef.buf.WriteChunk(io_bufferRef.ReadChunk(i_size), i_size);
 		return true;
 	}
 	return false;
 }
 
-int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
+std::optional<PacketHeaderType> SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 {
-	int fetchedPacketSequenceNumber = -1;
+	std::optional<PacketHeaderType> fetchedHeader;
 
 	// This is deliberately restrictive.  We do NOT want to process packets
 	// "from the future."  We want to keep a strict sequence to try to be as
 	// deterministic as possible.
 	auto iter = m_receiveTable.find(m_currentSequence);
-	if (iter != m_receiveTable.end() and iter->second.reliable.sequence >= 0)
+	if (iter != m_receiveTable.end() and iter->second.reliable.header.sequence >= 0)
 	{
-		// originatingTic is co-opted to denote that the reliable packet has been processed.
-		if (iter->second.reliable.originatingTic < 0)
+		// isAwaiting is co-opted to denote that the reliable packet has been processed.
+		if (not iter->second.reliable.isAwaiting)
 		{
-			iter->second.reliable.originatingTic = 0;
+			iter->second.reliable.isAwaiting = true;
 			io_bufferRef.swap(iter->second.reliable.buf);
-
-			fetchedPacketSequenceNumber = m_currentSequence;
+			fetchedHeader = iter->second.reliable.header;
 		}
 		else
 		{
 			if (not iter->second.bestEffort.empty())
 			{
-				auto& entry = iter->second.bestEffort.front();
-				io_bufferRef.swap(entry.buf);
+				{
+					auto& entry = iter->second.bestEffort.front();
+					fetchedHeader = entry.header;
+					io_bufferRef.swap(entry.buf);
+				}
 				iter->second.bestEffort.pop_front();
-				fetchedPacketSequenceNumber = m_currentSequence;
 			}
 		}
 
@@ -103,9 +104,8 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 			m_receiveTable.erase(iter);
 			m_currentSequence++;
 		}
-		return fetchedPacketSequenceNumber;
 	}
 
 	// TODO: NonReliable, monotonic sequence with skips
-	return -1;
+	return fetchedHeader;
 }

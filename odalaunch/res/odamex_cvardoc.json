@@ -263,6 +263,15 @@
          "type" : "boolean"
       },
       {
+         "default" : 2,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "How the map author is shown on the automap.\n0 - Off\n1 - Static\n2 - Fade in/out with map name\n3 - Marquee in/out with map name\n4 - Teletype effect with map name",
+         "max" : 4,
+         "min" : 0,
+         "name" : "am_showauthor",
+         "type" : "integer"
+      },
+      {
          "default" : true,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "",
@@ -1728,6 +1737,13 @@
          "helptext" : "Language to use for ingame strings",
          "name" : "language",
          "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Extended timestamp info in the log file (dd/mm/yyyy hh:mm:ss)",
+         "name" : "log_fulltimestamps",
+         "type" : "boolean"
       },
       {
          "default" : false,

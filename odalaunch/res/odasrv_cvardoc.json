@@ -539,8 +539,8 @@
       },
       {
          "default" : false,
-         "flags" : [ "SERVERARCHIVE" ],
-         "helptext" : "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
+         "flags" : [ "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Extended timestamp info in the log file (dd/mm/yyyy hh:mm:ss)",
          "name" : "log_fulltimestamps",
          "type" : "boolean"
       },

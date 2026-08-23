@@ -20,8 +20,13 @@
 
 #pragma once
 
+#include <string>
+
+#include "g_level.h"
+
 extern bool HexenHack; // Semi-Hexen-compatibility mode
 
+std::string G_StripAuthorPrefix(const std::string& author);
 void G_MapNameToLevelNum(level_pwad_info_t& info);
 void G_MapNameToID24LevelNum(level_pwad_info_t& info);
 void G_ParseMapInfo();
