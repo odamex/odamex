@@ -26,6 +26,7 @@
 
 #include "c_cvars.h"
 #include "c_dispatch.h"
+#include "m_random.h"
 #include "sv_main.h"
 
 void C_RunCVarScriptHook(const cvar_t& var, bool resend)
