@@ -45,6 +45,16 @@ void I_CloseJoystick();
 std::string I_GetKeyName(int key);
 int I_GetKeyFromName(const std::string& name);
 
+enum keydevice_t
+{
+	KEYDEV_KEYBOARD,
+	KEYDEV_MOUSE,
+	KEYDEV_JOYSTICK,
+};
+
+keydevice_t I_GetKeyDevice(int key);
+keydevice_t I_GetLastInputDevice();
+
 void I_GetEvents(bool mouseOnly);
 
 
