@@ -2160,6 +2160,7 @@ static bool P_ClipMovementToFloor(AActor* mo)
 		    P_FloorHeight(mo->x, mo->y, mo->subsector->sector) == mo->floorz)
 			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_HitFloor);
 
+		// [RV] Bounce actors upward at their landing velocity.
 		if (!(mo->flags & MF_MISSILE) && mo->floorsector->flags & SECF_SPRINGPAD)
 		{
 			mo->momz = -mo->momz;
