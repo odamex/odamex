@@ -1541,6 +1541,7 @@ enum mobjtype_t: int32_t {
 	// mobjtype nums breaks version compatibility
 	MT_UPPERSTACK,
     MT_LOWERSTACK,
+	MT_SPRINGPAD,
 
     // --------------------------------------------------------------------- //
 

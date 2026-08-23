@@ -2160,6 +2160,13 @@ static bool P_ClipMovementToFloor(AActor* mo)
 		    P_FloorHeight(mo->x, mo->y, mo->subsector->sector) == mo->floorz)
 			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_HitFloor);
 
+		if (!(mo->flags & MF_MISSILE) && mo->floorsector->flags & SECF_SPRINGPAD)
+		{
+			mo->momz = -mo->momz;
+			mo->z = mo->floorz;
+			return true;
+		}
+
 		// Lost Soul hit the floor
 		if (mo->flags & MF_SKULLFLY && P_CorrectLostSoulBounce())
 			mo->momz = -mo->momz;
@@ -3513,12 +3520,13 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	                      (mthing.type >= 9992 && mthing.type <= 9999);
 	const bool isSoundSource = (mthing.type >= 14001 && mthing.type <= 14065);
 	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
+	const bool isSpringPad = inSpawnMap && spawn_map[mthing.type]->type == MT_SPRINGPAD;
 
 	// only servers control spawning of items
 	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
 	// otherwise teleporters or avatars won't work well.
 	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
+	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger || isSpringPad))
 	{
 		return;
 	}
@@ -3656,6 +3664,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	// check for appropriate skill level
 	if (!(mthing.flags & G_GetCurrentSkill().spawn_filter))
 		return;
+
+	if (isSpringPad)
+	{
+		P_PointInSubsector(mthing.x << FRACBITS, mthing.y << FRACBITS)->sector->flags |= SECF_SPRINGPAD;
+		return;
+	}
 
 	// [RH] sound sequence overrides
 	if (mthing.type >= 1400 && mthing.type < 1410)
