@@ -193,6 +193,8 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 		info.push_back("Saved on the server");
 	if (cvar.flags() & CVAR_CLIENTARCHIVE)
 		info.push_back("Saved on the client");
+	if (cvar.flags() & CVAR_NOSEND)
+		info.push_back("Not sent to clients or launchers");
 
 	std::string flagstr = JoinStrings(info, ", ");
 
@@ -333,6 +335,8 @@ static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
 		flags.append("SERVERARCHIVE");
 	if (cvar.flags() & CVAR_CLIENTARCHIVE)
 		flags.append("CLIENTARCHIVE");
+	if (cvar.flags() & CVAR_NOSEND)
+		flags.append("NOSEND");
 	out["flags"] = flags;
 }
 
