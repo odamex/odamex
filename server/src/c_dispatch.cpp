@@ -28,14 +28,17 @@
 #include "c_dispatch.h"
 #include "sv_main.h"
 
-void C_RunCVarScriptHook(const cvar_t& var)
+void C_RunCVarScriptHook(const cvar_t& var, bool resend)
 {
 	if (!var.str().empty())
 	{
 		AddCommandString(var.str());
 		// Make sure any cvar modifications from the script make it to clients
-		cvar_t::UnlatchCVars();
-		SV_ServerSettingChange(true);
+		if (resend)
+		{
+			cvar_t::UnlatchCVars();
+			SV_ServerSettingChange(true);
+		}
 	}
 }
 
