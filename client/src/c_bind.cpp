@@ -456,16 +456,21 @@ int OKeyBindings::GetKeysForCommand(const char* cmd, int* first, int* second)
 }
 
 
+namespace
+{
+
 //
 // C_KeyMatchesDevice
 //
 // Keyboard and mouse binds are interchangeable here - a player on either one
 // is not looking for a gamepad prompt.
 //
-static bool C_KeyMatchesDevice(int key, keydevice_t device)
+bool C_KeyMatchesDevice(int key, keydevice_t device)
 {
 	return (I_GetKeyDevice(key) == KEYDEV_JOYSTICK) == (device == KEYDEV_JOYSTICK);
 }
+
+} // namespace
 
 //
 // OKeyBindings::GetKeysForCommandByLastDevice
