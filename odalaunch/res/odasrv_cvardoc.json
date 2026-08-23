@@ -578,28 +578,28 @@
       },
       {
          "default" : false,
-         "flags" : [],
+         "flags" : [ "NOSEND" ],
          "helptext" : "Generic variable for returning boolean values from commands",
          "name" : "result_bool",
          "type" : "boolean"
       },
       {
          "default" : 0.0,
-         "flags" : [ "NOENABLEDISABLE" ],
+         "flags" : [ "NOENABLEDISABLE", "NOSEND" ],
          "helptext" : "Generic variable for returning floating point values from commands",
          "name" : "result_float",
          "type" : "number"
       },
       {
          "default" : 0,
-         "flags" : [ "NOENABLEDISABLE" ],
+         "flags" : [ "NOENABLEDISABLE", "NOSEND" ],
          "helptext" : "Generic variable for returning integer values from commands",
          "name" : "result_int",
          "type" : "integer"
       },
       {
          "default" : "0",
-         "flags" : [ "NOENABLEDISABLE" ],
+         "flags" : [ "NOENABLEDISABLE", "NOSEND" ],
          "helptext" : "Generic variable for returning string values from commands",
          "name" : "result_string",
          "type" : "string"
