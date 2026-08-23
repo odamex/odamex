@@ -103,13 +103,18 @@ static void IntQryBuildInformation(const uint32_t& EqProtocolVersion,
 	{
 		if (var->flags() & CVAR_SERVERINFO)
 		{
-			// Skip empty strings
-			if (CvarField.Type == CVARTYPE_STRING && var->str().empty())
-				continue;
-
-			// Skip other types with 0
-			if (var->value() == 0.0f)
-				continue;
+			if (var->type() == CVARTYPE_STRING)
+			{
+				// Skip empty strings
+				if (var->str().empty())
+					continue;
+			}
+			else
+			{
+				// Skip other types with 0
+				if (var->value() == 0.0f)
+					continue;
+			}
 
 			// Skip NOSEND vars
 			if (var->m_Flags & CVAR_NOSEND)
