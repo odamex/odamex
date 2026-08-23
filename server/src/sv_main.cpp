@@ -425,17 +425,17 @@ BEGIN_COMMAND (say)
 }
 END_COMMAND (say)
 
-// // TODO: allow the time to be specified?
-// BEGIN_COMMAND (midsay)
-// {
-// 	if (argc > 1)
-// 	{
-// 		std::string message = C_ArgCombine(argc - 1, (const char **)(argv + 1));
-// 		for (auto& player : players)
-// 			SV_MidPrint(message.c_str(), &player, 5);
-// 	}
-// }
-// END_COMMAND (midsay)
+// TODO: allow the time to be specified?
+BEGIN_COMMAND (midsay)
+{
+	if (argc > 1)
+	{
+		std::string message = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		for (auto& player : players)
+			SV_MidPrint(message.c_str(), &player, 5);
+	}
+}
+END_COMMAND (midsay)
 
 void call_terms();
 
