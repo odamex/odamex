@@ -42,6 +42,7 @@ enum CvarDocFlag_t
 	CVARDOC_NOENABLEDISABLE = 1 << 5,
 	CVARDOC_SERVERARCHIVE   = 1 << 6,
 	CVARDOC_CLIENTARCHIVE   = 1 << 7,
+	CVARDOC_NOSEND          = 1 << 8,
 };
 
 // Documentation for a single console variable.
