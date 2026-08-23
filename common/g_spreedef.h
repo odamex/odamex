@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 /// <summary>
 /// Parses all SPREEDEF lumps for consumption by
 /// the spree and multi kill managers.

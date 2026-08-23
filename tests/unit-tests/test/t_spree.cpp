@@ -402,7 +402,7 @@ class SpreeScoringTest : public ::testing::Test
 	// that these tests do not stand up.
 	static AActor* ActorFor(const int playerId)
 	{
-		AActor* actor = new AActor();
+		auto* actor = new AActor();
 		actor->player = &Player(playerId);
 		return actor;
 	}
@@ -415,7 +415,7 @@ class SpreeScoringTest : public ::testing::Test
 
 	static AActor* Monster(const bool friendly)
 	{
-		AActor* monster = new AActor();
+		auto* monster = new AActor();
 
 		if (friendly)
 			monster->flags |= MF_FRIEND;
@@ -676,7 +676,7 @@ TEST_F(SpreeColorTest, PlayerBreakerColorsTheEnderServerSide)
 {
 	EarnSpree(WATCHED);
 
-	AActor* killer = new AActor();
+	auto* killer = new AActor();
 	killer->player = &idplayer(static_cast<byte>(OTHER));
 
 	SpreeManager::getInstance().setSpreeBreaker(killer,
@@ -715,7 +715,6 @@ TEST_F(SpreeColorTest, EachTeamGetsItsOwnColor)
 	SpreeManager::getInstance().setRawSpree(WATCHED, 0, 0);
 	SpreeManager::getInstance().setRawSpree(OTHER, 0, 0);
 
-	const SpreeManager& manager = SpreeManager::getInstance();
 	const std::string blue =
 	    SpreeManager::getInstance().getSpreeRecord(WATCHED).spree.spreeBroadcastText;
 	const std::string red =

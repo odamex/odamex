@@ -24,10 +24,13 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
-#include <string>
-#include <vector>
-#include <map>
 #include <algorithm>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "d_player.h"
 
 class FArchive;
 

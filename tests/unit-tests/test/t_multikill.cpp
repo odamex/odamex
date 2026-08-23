@@ -257,9 +257,9 @@ TEST_F(MultiKillTest, EveryDefaultLevelHasDistinctText)
 TEST_F(MultiKillTest, TheIntervalIsSetInSecondsAndKeptInTics)
 {
 	std::vector<MultiKillLevel_s> levels;
-	levels.push_back(MultiKillLevel_s());
-	levels.push_back(MultiKillLevel_s());
-	levels.push_back({"Double Kill!", "", CR_WHITE});
+	levels.emplace_back();
+	levels.emplace_back();
+	levels.emplace_back("Double Kill!", "", CR_WHITE);
 
 	MultiKillManager::getInstance().setMultiKillLevels(levels, 3);
 	MultiKillManager::getInstance().addKill(KILLER);
@@ -276,7 +276,7 @@ class MultiKillScoringTest : public MultiKillTest
   protected:
 	static AActor* ActorFor(const int playerId)
 	{
-		AActor* actor = new AActor();
+		auto* actor = new AActor();
 		actor->player = &idplayer(static_cast<byte>(playerId));
 		return actor;
 	}
