@@ -164,8 +164,6 @@ void cvar_t::ForceSet(const char* valstr)
 	}
 	else
 	{
-		m_Flags |= CVAR_MODIFIED;
-
 		bool numerical_value = IsRealNum(valstr);
 		bool integral_type = m_Type == CVARTYPE_BOOL || m_Type == CVARTYPE_BYTE ||
 					m_Type == CVARTYPE_WORD || m_Type == CVARTYPE_INT;
@@ -649,9 +647,27 @@ BEGIN_COMMAND (set)
 	}
 	else
 	{
-		cvar_t *var, *prev;
+		cvar_t *prev;
 
-		var = cvar_t::FindCVar (argv[1], &prev);
+		// TODO: cvar-overhaul branch - decouple cvar type from nosend behavior
+		// and allow CVAR_AUTO cvars to be types other than CVARTYPE_NONE
+		// we can take advantage of `set` allowing explicitly setting cvars
+		// and implement a version of getopt so we can basically copy and extend
+		// bash's declare -i, giving us something like:
+		// set -i for integer cvar
+		// set -b for bool
+		// set -s for string
+		// set -f for float
+		// the default would probably be string, as that is closest to
+		// current behavior, so set -s would actually
+		// not do anything different from set, but it would
+		// feel weird to have one missing
+		// using any of these options with an existing, non AUTO cvar would
+		// just fail with a message
+		// for an existing auto cvar i think we could allow it to change the type
+		// it also means when writing out AUTO cvars to configs, we should include
+		// the correct option so that the type is set again when loading the config
+		cvar_t* var = cvar_t::FindCVar (argv[1], &prev);
 		if (!var)
 		{
 			const std::string description = "Unsupported in Odamex v" + std::string(NiceVersion());
