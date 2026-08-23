@@ -1186,7 +1186,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	SpreeManager::getInstance().erasePoints(p.id);
 	MultiKillManager::getInstance().eraseMultiKills(p.id);
-	
+
 	p.mo = p.camera = mobj->ptr();
 	p.fov = 90.0f;
 	p.playerstate = PST_LIVE;
@@ -2141,12 +2141,12 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 
 static void CL_ServerSettings(const odaproto::svc::ServerSettings* msg)
 {
-	cvar_t *var = NULL, *prev = NULL;
+	cvar_t* prev = nullptr;
 
-	std::string CvarKey = msg->key();
-	std::string CvarValue = msg->value();
+	const std::string& CvarKey = msg->key();
+	const std::string& CvarValue = msg->value();
 
-	var = cvar_t::FindCVar(CvarKey.c_str(), &prev);
+	cvar_t* var = cvar_t::FindCVar(CvarKey, &prev);
 
 	// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
 	if (var)

@@ -1601,9 +1601,9 @@ static void SendServerSettings(player_t& pl)
 //
 //	Sends server settings to clients when changed
 //
-void SV_ServerSettingChange()
+void SV_ServerSettingChange(bool force)
 {
-	if (gamestate != GS_LEVEL)
+	if (gamestate != GS_LEVEL && !force)
 	{
 		return;
 	}
