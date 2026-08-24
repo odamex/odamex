@@ -24,6 +24,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <utility>
 
 #include "odamex.h"
 
@@ -952,26 +953,35 @@ void ST_updateWidgets()
 
 void ST_UpdateSurfaceBpp()
 {
-	int currentbpp = screen->getSurface()->getBitsPerPixel();
-	int stnumbpp = stnum_surface->getBitsPerPixel();
-	int stbarbpp = stbar_surface->getBitsPerPixel();
+	const IWindowSurface* surface = R_GetRenderingSurface();
+	if (surface == nullptr)
+		return;
 
-	if (stbar_surface && stbarbpp != currentbpp)
+	const int currentbpp = surface->getBitsPerPixel();
+	bool reallocated = false;
+
+	if (stbar_surface && std::cmp_not_equal(stbar_surface->getBitsPerPixel(), currentbpp))
 	{
-		delete stbar_surface;
+		I_FreeSurface(stbar_surface);
 		stbar_surface = I_AllocateSurface(sbar_width, 32, currentbpp);
+		stbar_surface->clear();
+		reallocated = true;
 	}
 
-	if (stnum_surface && stnumbpp != currentbpp)
+	if (stnum_surface && std::cmp_not_equal(stnum_surface->getBitsPerPixel(), currentbpp))
 	{
-		delete stnum_surface;
+		I_FreeSurface(stnum_surface);
 		stnum_surface = I_AllocateSurface(sbar_width, 32, currentbpp);
+		stnum_surface->clear();
+		reallocated = true;
 	}
+
+	if (reallocated)
+		ST_ForceRefresh();
 }
 
 void ST_Ticker()
 {
-	ST_UpdateSurfaceBpp();
 	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
 		return;
 	st_randomnumber = M_Random();
@@ -1086,6 +1096,8 @@ static void ST_refreshBackground()
 //
 void ST_Drawer()
 {
+	ST_UpdateSurfaceBpp();
+
 	if (st_needrefresh)
 		st_statusbaron = R_StatusBarVisible();
 
