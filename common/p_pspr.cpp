@@ -315,13 +315,18 @@ bool P_EnoughAmmo(const player_t& player, weapontype_t weapon, bool switching = 
 }
 
 //
-// P_SwitchWeapon
+// P_QueueWeaponSwitch
 //
 // Changes to the player's most preferred weapon based on availibilty and ammo.
 // Note that this emulates vanilla Doom bugs relating to the amount of ammo
 // needed to switch to the BFG and SSG.
 //
-void P_SwitchWeapon(player_t& player)
+// The weapon is not lowered here -- A_WeaponReady puts it away once the current
+// firing sequence finishes.
+//
+// Returns true if a switch was queued.
+//
+bool P_QueueWeaponSwitch(player_t& player)
 {
 	const auto& prefs = ((multiplayer and not sv_allowpwo) or demoplayback) ? UserInfo::weapon_prefs_default :
 	                                                                          player.userinfo.weapon_prefs;
@@ -343,6 +348,21 @@ void P_SwitchWeapon(player_t& player)
 	{
 		// Switch to this weapon
 		player.pendingweapon = best_weapon;
+		return true;
+	}
+
+	return false;
+}
+
+//
+// P_SwitchWeapon
+//
+// Queues the switch and starts lowering the current weapon right away.
+//
+void P_SwitchWeapon(player_t& player)
+{
+	if (P_QueueWeaponSwitch(player))
+	{
 		// Now set appropriate weapon overlay.
 		P_SetPsprite(player, ps_weapon, weaponinfo[player.readyweapon].downstate);
 	}
@@ -455,6 +475,24 @@ bool P_CheckAmmo (player_t& player)
 
 	// no enough ammo with the current weapon, choose another one
 	P_SwitchWeapon(player);
+	return false;
+}
+
+//
+// P_CheckAmmoNoLower
+//
+// In Boom, vanilla's behavior of lowering the weapon immediately
+// after failing a P_CheckAmmo check is gated behind a demo_compatibility
+// check, and instead it lets A_ReadyWeapon handle lowering, which enables
+// "charging" attacks that use ammo in a loop, and have it fire if you are
+// out of ammo during the charge, instead of eating it and switching weapons.
+//
+bool P_CheckAmmoNoLower(player_t& player)
+{
+	if (P_EnoughAmmo(player, player.readyweapon))
+		return true;
+
+	P_QueueWeaponSwitch(player);
 	return false;
 }
 
@@ -999,7 +1037,7 @@ void A_RefireTo(AActor* mo)
 		return;
 	}
 
-	if ((st->args[1] || P_CheckAmmo(player)) &&
+	if ((st->args[1] || P_CheckAmmoNoLower(player)) &&
 	    (player.cmd.buttons & BT_ATTACK) &&
 	    (player.pendingweapon == wp_nochange && player.health))
 	{
