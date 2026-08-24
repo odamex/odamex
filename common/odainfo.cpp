@@ -471,6 +471,22 @@ mobjinfo_t odamobjinfo[] = {
 		.name             = "MT_SECTORSILENCER",
 	},
 
+{
+		// MT_SPRINGPAD
+		.type             = MT_SPRINGPAD,
+		.doomednum        = 5068,
+		.spawnstate       = S_TNT1,
+		.spawnhealth      = 1000,
+		.reactiontime     = 8,
+		.radius           = 20_fx,
+		.height           = 16_fx,
+		.cdheight         = 16_fx,
+		.mass             = 100,
+		.flags            = MF_NOBLOCKMAP | MF_NOSECTOR | MF_NOGRAVITY,
+		.flags2           = MF2_DONTDRAW,
+		.name             = "MT_SPRINGPAD",
+	},
+
 	// [Toke - CTF] Blue Socket
 	{
 		//  MT_BSOK
