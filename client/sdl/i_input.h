@@ -52,6 +52,14 @@ enum keydevice_t
 	KEYDEV_JOYSTICK,
 };
 
+// joy_gamepadmode
+enum gamepadmode_t
+{
+	GAMEPADMODE_AUTO,			// follow whichever device was used last
+	GAMEPADMODE_IGNOREMOUSE,	// mouse input does not switch away from the gamepad
+	GAMEPADMODE_ALWAYS,			// always name gamepad buttons
+};
+
 keydevice_t I_GetKeyDevice(int key);
 keydevice_t I_GetLastInputDevice();
 

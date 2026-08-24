@@ -323,14 +323,6 @@ keydevice_t I_GetKeyDevice(int key)
 namespace
 {
 
-// joy_gamepadmode
-enum
-{
-	GAMEPADMODE_AUTO,			// whichever device was used last
-	GAMEPADMODE_IGNOREMOUSE,	// mouse input does not switch away from the gamepad
-	GAMEPADMODE_ALWAYS,			// always name gamepad buttons
-};
-
 keydevice_t last_input_device = KEYDEV_KEYBOARD;
 
 //

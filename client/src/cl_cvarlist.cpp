@@ -26,6 +26,7 @@
 
 #include "am_map.h"
 #include "s_sound.h"
+#include "i_input.h"
 #include "i_music.h"
 
 // Automap
@@ -357,7 +358,7 @@ CVAR_RANGE(joy_gamepadmode, "0",
 		"0 - Follow whichever device was used last\n"
 		"1 - Mouse input does not switch away from the gamepad\n"
 		"2 - Always show gamepad keys",
-		CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+		CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, GAMEPADMODE_AUTO, GAMEPADMODE_ALWAYS)
 
 CVAR_RANGE(joy_lefttrigger_deadzone, "0.2", "Sets the required pressure to trigger a press on the left trigger (Analog controllers only)",
 					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.01f, 1.0f)
