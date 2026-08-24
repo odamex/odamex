@@ -24,6 +24,8 @@
 #include "odamex.h"
 
 #include "g_gametype.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 #include "c_dispatch.h"
 #include "cmdlib.h"
@@ -33,8 +35,6 @@
 #include "svc_message.h"
 #include "v_textcolors.h"
 #include "s_sound.h"
-#include "g_spree.h"
-#include "g_multikill.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -565,6 +565,12 @@ static void GiveTeamWins(team_t team, int wins)
 	}
 }
 
+void G_ClearRoundKillStats()
+{
+	SpreeManager::getInstance().clearSprees();
+	MultiKillManager::getInstance().clearMultiTics();
+}
+
 /**
  * @brief Check if timelimit should end the game.
  */
@@ -584,8 +590,6 @@ void G_TimeCheckEndGame()
 	if (P_NumPlayersInGame() == 0)
 	{
 		::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
-		SpreeManager::getInstance().clearSprees();
-		MultiKillManager::getInstance().clearMultiTics();
 		::levelstate.endRound();
 		return;
 	}
@@ -600,8 +604,6 @@ void G_TimeCheckEndGame()
 			{
 				// Something has seriously gone sideways...
 				::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
-				SpreeManager::getInstance().clearSprees();
-				MultiKillManager::getInstance().clearMultiTics();
 				::levelstate.endRound();
 				return;
 			}
@@ -626,8 +628,6 @@ void G_TimeCheckEndGame()
 			{
 				// Something has seriously gone sideways...
 				::levelstate.setWinner(WinInfo::WIN_UNKNOWN, 0);
-				SpreeManager::getInstance().clearSprees();
-				MultiKillManager::getInstance().clearMultiTics();
 				::levelstate.endRound();
 				return;
 			}
@@ -704,8 +704,6 @@ void G_TimeCheckEndGame()
 	}
 
 	M_CommitWDLLog();
-	SpreeManager::getInstance().clearSprees();
-	MultiKillManager::getInstance().clearMultiTics();
 	::levelstate.endRound();
 }
 
@@ -733,8 +731,6 @@ void G_FragsCheckEndGame()
 			                     top->userinfo.netname);
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, top->id);
 			M_CommitWDLLog();
-			SpreeManager::getInstance().clearSprees();
-			MultiKillManager::getInstance().clearMultiTics();
 			::levelstate.endRound();
 		}
 	}
@@ -762,8 +758,6 @@ void G_TeamFragsCheckEndGame()
 			                     team->ColorString);
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
 			M_CommitWDLLog();
-			SpreeManager::getInstance().clearSprees();
-			MultiKillManager::getInstance().clearMultiTics();
 			::levelstate.endRound();
 			return;
 		}
@@ -792,8 +786,6 @@ void G_TeamScoreCheckEndGame()
 			                     team->ColorizedTeamName());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team->Team);
 			M_CommitWDLLog();
-			SpreeManager::getInstance().clearSprees();
-			MultiKillManager::getInstance().clearMultiTics();
 			::levelstate.endRound();
 			return;
 		}
@@ -859,8 +851,6 @@ void G_LivesCheckEndGame()
 			SV_BroadcastPrintFmt("All players have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_NOBODY, 0);
 			M_CommitWDLLog();
-			SpreeManager::getInstance().clearSprees();
-			MultiKillManager::getInstance().clearMultiTics();
 			::levelstate.endRound();
 		}
 	}
@@ -873,8 +863,6 @@ void G_LivesCheckEndGame()
 			SV_BroadcastPrintFmt("All players have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			M_CommitWDLLog();
-			SpreeManager::getInstance().clearSprees();
-			MultiKillManager::getInstance().clearMultiTics();
 			::levelstate.endRound();
 		}
 		else if (pr.count == 1)
@@ -884,8 +872,6 @@ void G_LivesCheckEndGame()
 			                     pr.players.front()->userinfo.netname);
 			::levelstate.setWinner(WinInfo::WIN_PLAYER, pr.players.front()->id);
 			M_CommitWDLLog();
-			SpreeManager::getInstance().clearSprees();
-			MultiKillManager::getInstance().clearMultiTics();
 			::levelstate.endRound();
 		}
 
@@ -953,8 +939,6 @@ void G_LivesCheckEndGame()
 				    tv.front()->ColorizedTeamName(), teams);
 				::levelstate.setWinner(WinInfo::WIN_TEAM, tv.front()->Team);
 				M_CommitWDLLog();
-				SpreeManager::getInstance().clearSprees();
-				MultiKillManager::getInstance().clearMultiTics();
 				::levelstate.endRound();
 			}
 			else
@@ -963,8 +947,6 @@ void G_LivesCheckEndGame()
 				                     teams);
 				::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 				M_CommitWDLLog();
-				SpreeManager::getInstance().clearSprees();
-				MultiKillManager::getInstance().clearMultiTics();
 				::levelstate.endRound();
 			}
 			G_ResetTeamLastPlayer();
@@ -975,8 +957,6 @@ void G_LivesCheckEndGame()
 			SV_BroadcastPrintFmt("All teams have run out of lives.\n");
 			::levelstate.setWinner(WinInfo::WIN_DRAW, 0);
 			M_CommitWDLLog();
-			SpreeManager::getInstance().clearSprees();
-			MultiKillManager::getInstance().clearMultiTics();
 			::levelstate.endRound();
 			G_ResetTeamLastPlayer();
 		}
@@ -988,8 +968,6 @@ void G_LivesCheckEndGame()
 			                     GetTeamInfo(team)->ColorizedTeamName());
 			::levelstate.setWinner(WinInfo::WIN_TEAM, team);
 			M_CommitWDLLog();
-			SpreeManager::getInstance().clearSprees();
-			MultiKillManager::getInstance().clearMultiTics();
 			::levelstate.endRound();
 			G_ResetTeamLastPlayer();
 		}

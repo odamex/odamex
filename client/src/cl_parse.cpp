@@ -2576,6 +2576,8 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
 
+	G_ClearRoundKillStats();
+
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
 	AActor* mo;
