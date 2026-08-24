@@ -56,6 +56,7 @@ bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
 EXTERN_CVAR(ui_mouse)
+EXTERN_CVAR(joy_gamepadmode)
 
 static IInputSubsystem* input_subsystem = NULL;
 
@@ -322,6 +323,14 @@ keydevice_t I_GetKeyDevice(int key)
 namespace
 {
 
+// joy_gamepadmode
+enum
+{
+	GAMEPADMODE_AUTO,			// whichever device was used last
+	GAMEPADMODE_IGNOREMOUSE,	// mouse input does not switch away from the gamepad
+	GAMEPADMODE_ALWAYS,			// always name gamepad buttons
+};
+
 keydevice_t last_input_device = KEYDEV_KEYBOARD;
 
 //
@@ -329,14 +338,22 @@ keydevice_t last_input_device = KEYDEV_KEYBOARD;
 //
 void I_TrackLastInputDevice(const event_t& ev)
 {
+	const bool ignore_mouse = joy_gamepadmode.asInt() == GAMEPADMODE_IGNOREMOUSE;
+
 	switch (ev.type)
 	{
 	case ev_keydown:
 	case ev_keyup:
-		last_input_device = I_GetKeyDevice(ev.data1);
+	{
+		const keydevice_t device = I_GetKeyDevice(ev.data1);
+		if (ignore_mouse && device == KEYDEV_MOUSE)
+			break;
+		last_input_device = device;
 		break;
+	}
 	case ev_mouse:
-		last_input_device = KEYDEV_MOUSE;
+		if (!ignore_mouse)
+			last_input_device = KEYDEV_MOUSE;
 		break;
 	case ev_joystick:
 		if (ev.data3 != 0)
@@ -355,6 +372,9 @@ void I_TrackLastInputDevice(const event_t& ev)
 //
 keydevice_t I_GetLastInputDevice()
 {
+	if (joy_gamepadmode.asInt() == GAMEPADMODE_ALWAYS)
+		return KEYDEV_JOYSTICK;
+
 	return last_input_device;
 }
 
