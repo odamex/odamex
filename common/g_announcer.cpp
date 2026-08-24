@@ -378,10 +378,6 @@ void AnnouncerManager::flushPendingSounds()
 		if (!pendingSpreeAnnouncerSound.empty() &&
 		    S_FindSound(pendingSpreeAnnouncerSound.c_str()) != -1)
 			S_Sound(CHAN_ANNOUNCER, pendingSpreeAnnouncerSound.c_str(), 1, ATTN_NONE);
-
-		pendingSpreeLevel = -1;
-		pendingSpreeAnnouncerSound.clear();
-		pendingSpreeGameSfx.clear();
 	}
 
 	if (pendingMultiKillLevel >= 0)
@@ -393,11 +389,31 @@ void AnnouncerManager::flushPendingSounds()
 		if (!pendingMultiKillAnnouncerSound.empty() &&
 		    S_FindSound(pendingMultiKillAnnouncerSound.c_str()) != -1)
 			S_Sound(CHAN_ANNOUNCER, pendingMultiKillAnnouncerSound.c_str(), 1, ATTN_NONE);
-
-		pendingMultiKillLevel = -1;
-		pendingMultiKillAnnouncerSound.clear();
-		pendingMultiKillGameSfx.clear();
 	}
+
+	clearPendingSounds();
+}
+
+void AnnouncerManager::clearPendingSounds()
+{
+	pendingSpreeLevel = -1;
+	pendingSpreeAnnouncerSound.clear();
+	pendingSpreeGameSfx.clear();
+
+	pendingMultiKillLevel = -1;
+	pendingMultiKillAnnouncerSound.clear();
+	pendingMultiKillGameSfx.clear();
+}
+
+void AnnouncerManager::resetAnnouncements()
+{
+	resetFragWarnings();
+	resetFightAnnouncement();
+	resetCountdownAnnouncements();
+	resetFirstBloodAnnouncement();
+	resetLeadTracking();
+	clearPendingSounds();
+	clearQueue();
 }
 
 void P_FlushPendingAnnouncerSounds()
@@ -1060,12 +1076,14 @@ void P_CheckLastPlayerAliveAnnouncement()
 		if (!validplayer(player) || !player.ingame())
 			return;
 
-		PlayerResults livingplayers = PlayerQuery().onTeam(player.userinfo.team).hasLives().execute();
+		const PlayerResults livingplayers =
+		    PlayerQuery().onTeam(player.userinfo.team).hasLives().execute();
 
-		if (livingplayers.count > 0 ||
+		// Either teammates are still alive, or the last player alive is not the console
+		// player.
+		if (livingplayers.count != 1 ||
 		    livingplayers.players.front()->id != consoleplayer_id)
 		{
-			// Either teammates are still alive, or the last player alive is not the console player
 			return;
 		}
 	}

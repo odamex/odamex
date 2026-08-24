@@ -28,7 +28,6 @@
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "d_event.h"
-#include "g_announcer.h"
 #include "g_levelstate.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"

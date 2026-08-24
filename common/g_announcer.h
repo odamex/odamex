@@ -490,6 +490,18 @@ public:
 	void flushPendingSounds();
 
 	/// <summary>
+	/// Drops the pending spree and multi kill sounds without playing them.
+	/// </summary>
+	void clearPendingSounds();
+
+	/// <summary>
+	/// Clears every announcement that is scoped to a single round.
+	/// Call this whenever the map is loaded or reset so nothing
+	/// carries over into the next round.
+	/// </summary>
+	void resetAnnouncements();
+
+	/// <summary>
 	/// Function to return whether the 3-frag warning has been announced already.
 	/// </summary>
 	[[nodiscard]] bool hasFragWarning3BeenAnnounced() const { return fragWarning3Announced; }

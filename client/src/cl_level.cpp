@@ -226,11 +226,7 @@ void G_InitNew (const char *mapname)
 	cvar_t::UnlatchCVars ();
 
 	SpreeManager::getInstance().clearSprees();
-	AnnouncerManager::getInstance().resetCountdownAnnouncements();
-	AnnouncerManager::getInstance().resetLeadTracking();
-	AnnouncerManager::getInstance().resetFightAnnouncement();
-	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
-	AnnouncerManager::getInstance().resetFragWarnings();
+	AnnouncerManager::getInstance().resetAnnouncements();
 
 	if (paused)
 	{
@@ -420,11 +416,7 @@ void G_DoCompleted (void)
 	}
 
 	SpreeManager::getInstance().clearSprees();
-	AnnouncerManager::getInstance().resetCountdownAnnouncements();
-	AnnouncerManager::getInstance().resetLeadTracking();
-	AnnouncerManager::getInstance().resetFightAnnouncement();
-	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
-	AnnouncerManager::getInstance().resetFragWarnings();
+	AnnouncerManager::getInstance().resetAnnouncements();
 
 	const WinInfo& win = levelstate.getWinInfo();
 	switch (win.type)
@@ -625,11 +617,7 @@ void G_DoLoadLevel (int position)
 	OInterpolation::getInstance().resetGameInterpolation();
 
 	SpreeManager::getInstance().clearSprees();
-	AnnouncerManager::getInstance().resetCountdownAnnouncements();
-	AnnouncerManager::getInstance().resetLeadTracking();
-	AnnouncerManager::getInstance().resetFightAnnouncement();
-	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
-	AnnouncerManager::getInstance().resetFragWarnings();
+	AnnouncerManager::getInstance().resetAnnouncements();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,

@@ -902,11 +902,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 {
 	ClientReplay::getInstance().reset();
 	MultiKillManager::getInstance().clearMultiTics();
-	AnnouncerManager::getInstance().resetCountdownAnnouncements();
-	AnnouncerManager::getInstance().resetLeadTracking();
-	AnnouncerManager::getInstance().resetFightAnnouncement();
-	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
-	AnnouncerManager::getInstance().resetFragWarnings();
+	AnnouncerManager::getInstance().resetAnnouncements();
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
@@ -2601,11 +2597,7 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
 	MultiKillManager::getInstance().clearMultiTics();
-	AnnouncerManager::getInstance().resetCountdownAnnouncements();
-	AnnouncerManager::getInstance().resetLeadTracking();
-	AnnouncerManager::getInstance().resetFightAnnouncement();
-	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
-	AnnouncerManager::getInstance().resetFragWarnings();
+	AnnouncerManager::getInstance().resetAnnouncements();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.

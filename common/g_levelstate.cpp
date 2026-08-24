@@ -30,7 +30,6 @@
 #include "c_dispatch.h"
 #include "g_gametype.h"
 #include "i_system.h"
-#include "g_announcer.h"
 
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(g_lives_jointimer)
