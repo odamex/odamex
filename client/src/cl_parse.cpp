@@ -1382,7 +1382,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 			rollerState.Record(tic, p);
 		}
 
-		if (!netdemo.isPlaying())
+		if (not netdemo.isPlaying() && not consoleplayer().spectator)
 		{
 				::displayplayer_id = ::consoleplayer_id;
 		}
