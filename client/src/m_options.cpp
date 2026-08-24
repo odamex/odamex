@@ -29,10 +29,15 @@
 
 #include "odamex.h"
 
+#include <array>
+
+#include <algorithm>
 #include <cmath>
 
 #include "gstrings.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -153,9 +158,10 @@ EXTERN_CVAR (co_removesoullimit)
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR (co_novileghosts)
+EXTERN_CVAR (co_zdoomfriendtargeting)
 
 // [Toke - Menu] New Menu Stuff.
-void MouseSetup (void);
+void MouseSetup();
 EXTERN_CVAR (mouse_sensitivity)
 EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (novert)
@@ -184,8 +190,9 @@ EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (snd_votesfx)
 
 // Joystick menu -- Hyper_Eye
-void JoystickSetup (void);
+void JoystickSetup();
 EXTERN_CVAR (use_joystick)
+EXTERN_CVAR (joy_gamepadmode)
 EXTERN_CVAR (joy_active)
 EXTERN_CVAR (joy_forwardaxis)
 EXTERN_CVAR (joy_strafeaxis)
@@ -240,89 +247,120 @@ EXTERN_CVAR (cl_weaponpref_rl)
 EXTERN_CVAR (cl_weaponpref_pls)
 EXTERN_CVAR (cl_weaponpref_bfg)
 
-void M_ChangeMessages(void);
+void M_ChangeMessages();
 void M_SizeDisplay(float diff);
-void M_StartControlPanel(void);
 
 int  M_StringHeight(char *string);
-void M_ClearMenus (void);
+void M_ClearMenus();
+namespace
+{
 
-static bool CanScrollUp;
-static bool CanScrollDown;
-static int VisBottom;
+
+bool CanScrollUp;
+bool CanScrollDown;
+int VisBottom;
+} // namespace
+
 
 EXTERN_CVAR(ui_mouse)
 
-#define MAX_OPT_MOUSE_ROWS	32
+constexpr int MAX_OPT_MOUSE_ROWS = 32;
+
+// The menu lays itself out in the 320x200 "clean" coordinate space.
+constexpr int MENU_CENTER_X = 160;
+constexpr int MENU_TITLE_Y = 10;
+
+// Video modes are listed in three columns of resolution strings.
+constexpr int RESCOLUMN_WIDTH = 104;
+constexpr int RESCOLUMN_TEXT_X = 20;
+constexpr int RESCOLUMN_CURSOR_X = 8;
+
+// Menu item text indents.
+constexpr int MENU_HALFPASTINDENT = 177;
+constexpr int MENU_LONGTEXTINDENT = 240;
 
 struct optmouserow_t
 {
 	int		item;		// index into CurrentMenu->items
 	int		y1, y2;		// surface pixel bounds of the row
 };
-
-static optmouserow_t	OptMouseRows[MAX_OPT_MOUSE_ROWS];
-static int				OptMouseRowCount = 0;
-
-static const int		OPT_WHEEL_LINES = 3;
-
-static int				OptDragItem = -1;
-static menu_t*			OptDragMenu = NULL;
-
-value_t YesNo[2] = {
-	{ 0.0, "No" },
-	{ 1.0, "Yes" }
-};
-
-value_t NoYes[2] = {
-	{ 0.0, "Yes" },
-	{ 1.0, "No" }
-};
-
-value_t OnOff[2] = {
-	{ 0.0, "Off" },
-	{ 1.0, "On" }
-};
-
-value_t HideShow[2] = {
-	{ 0.0, "Hide" },
-	{ 1.0, "Show" }
-};
-
-value_t OffOn[2] = {
-	{ 0.0, "On" },
-	{ 1.0, "Off" }
-};
-
-value_t OnOffAuto[3] = {
-	{ 0.0, "Off" },
-	{ 1.0, "On" },
-	{ 2.0, "Auto" }
-};
-
-value_t DemoRestrictions[2] = {
-	{ 0.0, "Restrict" },
-	{ 1.0, "Allow" }
-};
-
-static value_t DoomOrOdamex[2] =
+namespace
 {
-	{ 0.0, "Odamex" },
-	{ 1.0, "Doom" }
-};
+
+
+std::array<optmouserow_t, MAX_OPT_MOUSE_ROWS>	OptMouseRows;
+int				OptMouseRowCount = 0;
+
+const int		OPT_WHEEL_LINES = 3;
+
+int				OptDragItem = -1;
+menu_t*			OptDragMenu = nullptr;
+} // namespace
+
+
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 2> YesNo = {{
+	{ .value = 0.0, .name = "No"},
+	{ .value = 1.0, .name = "Yes"}
+}};
+
+std::array<value_t, 2> NoYes = {{
+	{ .value = 0.0, .name = "Yes"},
+	{ .value = 1.0, .name = "No"}
+}};
+
+std::array<value_t, 2> OnOff = {{
+	{ .value = 0.0, .name = "Off"},
+	{ .value = 1.0, .name = "On"}
+}};
+
+std::array<value_t, 2> HideShow = {{
+	{ .value = 0.0, .name = "Hide"},
+	{ .value = 1.0, .name = "Show"}
+}};
+
+std::array<value_t, 2> OffOn = {{
+	{ .value = 0.0, .name = "On"},
+	{ .value = 1.0, .name = "Off"}
+}};
+
+std::array<value_t, 3> OnOffAuto = {{
+	{ .value = 0.0, .name = "Off"},
+	{ .value = 1.0, .name = "On"},
+	{ .value = 2.0, .name = "Auto"}
+}};
+
+std::array<value_t, 2> DemoRestrictions = {{
+	{ .value = 0.0, .name = "Restrict"},
+	{ .value = 1.0, .name = "Allow"}
+}};
+namespace
+{
+
+
+std::array<value_t, 2> DoomOrOdamex = {{
+	{ .value = 0.0, .name = "Odamex"},
+	{ .value = 1.0, .name = "Doom"}
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t  *CurrentMenu;
 int		CurrentItem;
 bool configuring_controls = false;
-static bool	WaitingForKey;
-static bool	WaitingForAxis;
-static const char	   *OldContMessage;
-static itemtype OldContType;
-static const char	   *OldAxisMessage;
-static itemtype OldAxisType;
+namespace
+{
 
-static std::string AnnouncerAuthor;
-static std::string AnnouncerDescription;
+bool	WaitingForKey;
+bool	WaitingForAxis;
+const char	   *OldContMessage;
+itemtype OldContType;
+const char	   *OldAxisMessage;
+itemtype OldAxisType;
+
+std::string AnnouncerAuthor;
+std::string AnnouncerDescription;
 
 /*=======================================
  *
@@ -330,52 +368,63 @@ static std::string AnnouncerDescription;
  *
  *=======================================*/
 
-static void PlayerSetup (void);
-static void CustomizeControls (void);
-static void VideoOptions (void);
-static void SoundOptions (void);
-static void CompatOptions (void);
-static void NetworkOptions (void);
-static void WeaponOptions (void);
-static void GoToConsole (void);
-void Reset2Defaults (void);
-void Reset2Saved (void);
+void PlayerSetup();
+void CustomizeControls();
+void VideoOptions();
+void SoundOptions();
+void CompatOptions();
+void NetworkOptions();
+void WeaponOptions();
+void GoToConsole();
+} // namespace
 
-static void SetVidMode (void);
-
-static menuitem_t OptionItems[] =
+void Reset2Defaults();
+void Reset2Saved();
+namespace
 {
-    { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
-	{ more,		"Weapon Preferences",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)WeaponOptions} },
- 	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
-	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
-	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
- 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
- 	{ more,		"Compatibility Options",{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CompatOptions} },
-	{ more,		"Network Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)NetworkOptions} },
-	{ more,		"Sound Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SoundOptions} },
- 	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
-	{ more,		"Set Video Mode",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SetVidMode} },
-    { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ more,		"Go To Console",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)GoToConsole} },
-    { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete,	"Always Run",			{&cl_run},				{2.0}, {0.0},	{0.0}, {OnOff} },
- 	{ discrete, "Skip Boot Window",		{&i_skipbootwin},		{2.0}, {0.0},	{0.0}, {OnOff} },
- 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
- 	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
- 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} }
-};
+
+
+void SetVidMode();
+
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<menuitem_t, 19> OptionItems = {{
+	{ .type = more, 	.label = "Player Setup",     	.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = PlayerSetup}},
+	{ .type = more,		.label = "Weapon Preferences",	.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = WeaponOptions}},
+	{ .type = more,		.label = "Customize Controls",	.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = CustomizeControls}},
+	{ .type = more,		.label = "Mouse Options",	    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = MouseSetup}},
+	{ .type = more,		.label = "Joystick Setup",	    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = JoystickSetup}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = more,		.label = "Compatibility Options",.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = CompatOptions}},
+	{ .type = more,		.label = "Network Options",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = NetworkOptions}},
+	{ .type = more,		.label = "Sound Options",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = SoundOptions}},
+	{ .type = more,		.label = "Display Options",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = VideoOptions}},
+	{ .type = more,		.label = "Set Video Mode",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = SetVidMode}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = more,		.label = "Go To Console",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = GoToConsole}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete,	.label = "Always Run",			.a = {.cvar = &cl_run},				.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Skip Boot Window",		.a = {.cvar = &i_skipbootwin},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = more,		.label = "Reset to defaults",	.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = Reset2Defaults}},
+	{ .type = more,		.label = "Reset to last saved",	.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.mfunc = Reset2Saved}}
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t OptionMenu = {
 	"M_OPTTTL",
 	0,
-	ARRAY_LENGTH(OptionItems),
-	177,
-	OptionItems,
+	OptionItems.size(),
+	MENU_HALFPASTINDENT,
+	OptionItems.data(),
 	0,
 	0,
-	NULL
+	nullptr
 };
+namespace
+{
+
 
 /*=======================================
  *
@@ -383,106 +432,113 @@ menu_t OptionMenu = {
  *
  *=======================================*/
 
-static menuitem_t ControlsItems[] = {
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+// Sized by the initializer: entries here are conditionally compiled,
+// so a fixed std::array size would be wrong on some builds.
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
+menuitem_t ControlsItems[] = {
 #ifdef GCONSOLE
-	{ whitetext,"A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ .type = whitetext,.label = "A to change, START to clear", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 #else
-	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ .type = whitetext,.label = "ENTER to change, BACKSPACE to clear", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 #endif
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
-	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
-	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
-	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveright"} },
-	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
-	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
-	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
-	{ control,	"Always Run",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglerun"} },
-	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
-	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
-	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
-	{ control,	"Alternate Turn",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+fastturn"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
-	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
-	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
-	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Weapons",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Fist/Chainsaw",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 1"} },
-	{ control,	"Pistol",       		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 2"} },
-	{ control,	"Shotgun/SSG",  		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 3"} },
-	{ control,	"Chaingun",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 4"} },
-	{ control,	"Rocket Launcher",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 5"} },
-	{ control,	"Plasma Rifle",   		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 6"} },
-	{ control,	"BFG",          		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 7"} },
-	{ control,	"Chainsaw",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 8"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,	"Automap Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,		"Toggle Automap",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"togglemap"} },
-	{ mapcontrol,	"Follow Player",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_togglefollow"} },
-	{ mapcontrol,	"Toggle Grid",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_grid"} },
-	{ mapcontrol,	"Add Marker",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_setmark"} },
-	{ mapcontrol,	"Clear Markers",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_clearmarks"} },
-	{ mapcontrol,	"Big Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_big"} },
-	{ mapcontrol,	"Zoom In",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomin"} },
-	{ mapcontrol,	"Zoom Out",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomout"} },
-	{ mapcontrol,	"Pan Up",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panup"} },
-	{ mapcontrol,	"Pan Down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_pandown"} },
-	{ mapcontrol,	"Pan Left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panleft"} },
-	{ mapcontrol,	"Pan Right",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panright"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
-	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+movedown"} },
-	{ control,	"Toggle flying",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"fly"} },
-	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookup"} },
-	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookdown"} },
-	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"centerview"} },
-	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
-	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
-	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
-	{ control,	"Ready",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"ready"} },
-	{ control,	"Change teams",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"changeteams"} },
-	{ control,	"Spectate",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spectate"} },
-	{ control,	"Coop Spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
-	{ control,	"Show Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
-	{ control,	"Vote Yes", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_yes"} },
-	{ control,	"Vote No", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_no"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_main"} },
-	{ control,	"Help menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_help"} },
-	{ control,	"Save menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_save"} },
-	{ control,	"Load menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_load"} },
-	{ control,	"Options menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_options"} },
-	{ control,	"Display options",	    {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_display"} },
-	{ control,	"Player setup menu",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_player"} },
-	{ control,	"Configure controls",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_keys"} },
-	{ control,	"Change resolution",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_video"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,	"Netdemo Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ netdemocontrol,"Pause Netdemo",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netpause"} },
-    { netdemocontrol, "Fast Forward", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netff"}},
-    { netdemocontrol, "Rewind", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netrew"}},
-    { netdemocontrol, "Next map", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netnextmap"}},
-	{ netdemocontrol,	"Previous map",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netprevmap"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-    { control,	"Increase screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizeup"} },
-	{ control,	"Reduce screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizedown"} },
-	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
-	{ control,	"Screenshot",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"screenshot"} },
-	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} },
-	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_endgame"} },
-	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_quit"} }
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,.label = "Basic Movement",		.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = control,	.label = "Move forward",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+forward"}},
+	{ .type = control,	.label = "Move backward",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+back"}},
+	{ .type = control,	.label = "Strafe left",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+moveleft"}},
+	{ .type = control,	.label = "Strafe right",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+moveright"}},
+	{ .type = control,	.label = "Turn left",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+left"}},
+	{ .type = control,	.label = "Turn right",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+right"}},
+	{ .type = control,	.label = "Run",					.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+speed"}},
+	{ .type = control,	.label = "Always Run",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "togglerun"}},
+	{ .type = control,	.label = "Strafe",				.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+strafe"}},
+	{ .type = control,	.label = "Jump",					.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+jump"}},
+	{ .type = control,	.label = "Turn 180",				.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "turn180"}},
+	{ .type = control,	.label = "Alternate Turn",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+fastturn"}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,.label = "Actions",		        .a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = control,	.label = "Fire",					.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+attack"}},
+	{ .type = control,	.label = "Use / Open",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+use"}},
+	{ .type = control,	.label = "Next weapon",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "weapnext"}},
+	{ .type = control,	.label = "Previous weapon",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "weapprev"}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,.label = "Weapons",		        .a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = control,	.label = "Fist/Chainsaw",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "impulse 1"}},
+	{ .type = control,	.label = "Pistol",       		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "impulse 2"}},
+	{ .type = control,	.label = "Shotgun/SSG",  		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "impulse 3"}},
+	{ .type = control,	.label = "Chaingun",     		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "impulse 4"}},
+	{ .type = control,	.label = "Rocket Launcher",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "impulse 5"}},
+	{ .type = control,	.label = "Plasma Rifle",   		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "impulse 6"}},
+	{ .type = control,	.label = "BFG",          		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "impulse 7"}},
+	{ .type = control,	.label = "Chainsaw",     		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "impulse 8"}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,	.label = "Automap Controls",	.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = control,		.label = "Toggle Automap",	.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "togglemap"}},
+	{ .type = mapcontrol,	.label = "Follow Player",	.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "am_togglefollow"}},
+	{ .type = mapcontrol,	.label = "Toggle Grid",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "am_grid"}},
+	{ .type = mapcontrol,	.label = "Add Marker",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "am_setmark"}},
+	{ .type = mapcontrol,	.label = "Clear Markers",	.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "am_clearmarks"}},
+	{ .type = mapcontrol,	.label = "Big Automap",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "am_big"}},
+	{ .type = mapcontrol,	.label = "Zoom In",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+am_zoomin"}},
+	{ .type = mapcontrol,	.label = "Zoom Out",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+am_zoomout"}},
+	{ .type = mapcontrol,	.label = "Pan Up",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+am_panup"}},
+	{ .type = mapcontrol,	.label = "Pan Down",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+am_pandown"}},
+	{ .type = mapcontrol,	.label = "Pan Left",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+am_panleft"}},
+	{ .type = mapcontrol,	.label = "Pan Right",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+am_panright"}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,.label = "Advanced Movement",    .a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = control,	.label = "Fly / Swim up",		.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+moveup"}},
+	{ .type = control,	.label = "Fly / Swim down",		.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+movedown"}},
+	{ .type = control,	.label = "Toggle flying",		.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "fly"}},
+	{ .type = control,	.label = "Look up",				.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+lookup"}},
+	{ .type = control,	.label = "Look down",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+lookdown"}},
+	{ .type = control,	.label = "Center view",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "centerview"}},
+	{ .type = control,	.label = "Mouse look",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+mlook"}},
+	{ .type = control,	.label = "Keyboard look",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+klook"}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,.label = "Multiplayer",		    .a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = control,	.label = "Say",					.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "messagemode"}},
+	{ .type = control,	.label = "Team say",				.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "messagemode2"}},
+	{ .type = control,	.label = "Ready",				.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "ready"}},
+	{ .type = control,	.label = "Change teams",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "changeteams"}},
+	{ .type = control,	.label = "Spectate",				.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "spectate"}},
+	{ .type = control,	.label = "Coop Spy",				.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "spynext"}},
+	{ .type = control,	.label = "Show Scoreboard",		.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "+showscores"}},
+	{ .type = control,	.label = "Vote Yes", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "vote_yes"}},
+	{ .type = control,	.label = "Vote No", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "vote_no"}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,.label = "Menus",				.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = control,  .label = "Main menu",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_main"}},
+	{ .type = control,	.label = "Help menu",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_help"}},
+	{ .type = control,	.label = "Save menu",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_save"}},
+	{ .type = control,	.label = "Load menu",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_load"}},
+	{ .type = control,	.label = "Options menu",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_options"}},
+	{ .type = control,	.label = "Display options",	    .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_display"}},
+	{ .type = control,	.label = "Player setup menu",	.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_player"}},
+	{ .type = control,	.label = "Configure controls",	.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_keys"}},
+	{ .type = control,	.label = "Change resolution",	.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_video"}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,	.label = "Netdemo Controls",	.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = netdemocontrol,.label = "Pause Netdemo",	.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "netpause"}},
+	{ .type = netdemocontrol, .label = "Fast Forward", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "netff"}},
+	{ .type = netdemocontrol, .label = "Rewind", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "netrew"}},
+	{ .type = netdemocontrol, .label = "Next map", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "netnextmap"}},
+	{ .type = netdemocontrol,	.label = "Previous map",	.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "netprevmap"}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,.label = "Other",				.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = control,	.label = "Increase screen size",	.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "sizeup"}},
+	{ .type = control,	.label = "Reduce screen size",	.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "sizedown"}},
+	{ .type = control,	.label = "Chasecam",				.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "chase"}},
+	{ .type = control,	.label = "Screenshot",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "screenshot"}},
+	{ .type = control,  .label = "Open console",			.a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "toggleconsole"}},
+	{ .type = control,  .label = "End current game",     .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_endgame"}},
+	{ .type = control,  .label = "Quit Odamex",	        .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_quit"}}
 
 };
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t ControlsMenu = {
 	"M_CONTRO",
@@ -492,7 +548,7 @@ menu_t ControlsMenu = {
 	ControlsItems,
 	2,
 	0,
-	NULL
+	nullptr
 };
 
 // -------------------------------------------------------
@@ -512,38 +568,47 @@ void M_ResetMouseValues()
 	m_side.RestoreDefault();
 	m_forward.RestoreDefault();
 }
-
-
-static menuitem_t MouseItems[] =
+namespace
 {
-	{ slider,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.05},	{2.5},		{0.05},		{NULL}},
-	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.05},	{2.5},		{0.05},		{NULL}},
 
-	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
-	{ discrete,	"Invert Mouse"					, {&invertmouse},		{2.0},	{0.0},		{0.0},		{OnOff}},
-	{ discrete, "Auto SR50 on Strafe"			, {&in_autosr50},		{2.0},	{0.0},		{0.0},		{OnOff}}, // [AM] Does not belong here
-	{ discrete, "Lookspring"					, {&lookspring},		{2.0},	{0.0},		{0.0},		{OnOff}},
-	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ discrete,	"Horizontal Movement"			, {&lookstrafe},		{2.0},	{0.0},		{0.0},		{OnOff}},
-	{ discrete,	"Vertical Movement"				, {&novert},			{2.0},	{0.0},		{0.0},		{OffOn}},
-	{ slider,	"Horizontal Movement Speed"		, {&m_side},			{0.0},	{15},		{0.5},		{NULL}},
-	{ slider,	"Vertical Movement Speed"		, {&m_forward},			{0.0},	{15},		{0.5},		{NULL}},
-	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{(value_t *)M_ResetMouseValues}},
-};
+
+
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<menuitem_t, 14> MouseItems = {{
+	{ .type = slider,	.label = "Overall Sensitivity", .a = {.cvar = &mouse_sensitivity},	.b = {.leftval = 0.05},	.c = {.rightval = 2.5},		.d = {.step = 0.05},		.e = {.values = nullptr}},
+	{ .type = slider,	.label = "Freelook Sensitivity", .a = {.cvar = &m_pitch},			.b = {.leftval = 0.05},	.c = {.rightval = 2.5},		.d = {.step = 0.05},		.e = {.values = nullptr}},
+
+	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = discrete,	.label = "Always FreeLook", .a = {.cvar = &cl_mouselook},		.b = {.leftval = ARRAY_LENGTH(OnOff)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Invert Mouse", .a = {.cvar = &invertmouse},		.b = {.leftval = ARRAY_LENGTH(OnOff)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Auto SR50 on Strafe", .a = {.cvar = &in_autosr50},		.b = {.leftval = ARRAY_LENGTH(OnOff)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}}, // [AM] Does not belong here
+	{ .type = discrete, .label = "Lookspring", .a = {.cvar = &lookspring},		.b = {.leftval = ARRAY_LENGTH(OnOff)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = discrete,	.label = "Horizontal Movement", .a = {.cvar = &lookstrafe},		.b = {.leftval = ARRAY_LENGTH(OnOff)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Vertical Movement", .a = {.cvar = &novert},			.b = {.leftval = ARRAY_LENGTH(OffOn)},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OffOn.data()}},
+	{ .type = slider,	.label = "Horizontal Movement Speed", .a = {.cvar = &m_side},			.b = {.leftval = 0.0},	.c = {.rightval = 15},		.d = {.step = 0.5},		.e = {.values = nullptr}},
+	{ .type = slider,	.label = "Vertical Movement Speed", .a = {.cvar = &m_forward},			.b = {.leftval = 0.0},	.c = {.rightval = 15},		.d = {.step = 0.5},		.e = {.values = nullptr}},
+	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = more,		.label = "Reset mouse to defaults", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.mfunc = M_ResetMouseValues}},
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 
 menu_t MouseMenu = {
-    "M_MOUSET",
-    0,
-    ARRAY_LENGTH(MouseItems),
-    177,
-    MouseItems,
+	"M_MOUSET",
+	0,
+	MouseItems.size(),
+	MENU_HALFPASTINDENT,
+	MouseItems.data(),
 	0,
 	0,
-	NULL
+	nullptr
 };
+namespace
+{
+
 
 
 /*=======================================
@@ -552,31 +617,44 @@ menu_t MouseMenu = {
  *
  *=======================================*/
 
-static menuitem_t JoystickItems[] =
-{
-	{ discrete	,	"Use Joystick"							, {&use_joystick},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ joyactive	,	"Active Joystick"						, {&joy_active},		{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ whitetext	,	"Sensitivity Settings"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
-	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
-	{ slider	,	"Alt. Turn Sensitivity"					, {&joy_fastsensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
-	{ slider	,	"Joystick Deadzone"						, {&joy_deadzone},		{0.0},		{0.75},		{0.05},		{NULL}						},
-};
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 3> GamepadModes = {{
+	{ .value = 0.0, .name = "Auto"},
+	{ .value = 1.0, .name = "Ignore Mouse"},
+	{ .value = 2.0, .name = "Always"}
+}};
+
+std::array<menuitem_t, 12> JoystickItems = {{
+	{ .type = discrete,	.label = "Use Joystick", .a = {.cvar = &use_joystick},		.b = {.leftval = ARRAY_LENGTH(OnOff)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = joyactive,	.label = "Active Joystick", .a = {.cvar = &joy_active},		.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = discrete,	.label = "Always FreeLook", .a = {.cvar = &joy_freelook},		.b = {.leftval = ARRAY_LENGTH(OnOff)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Invert Look Axis", .a = {.cvar = &joy_invert},		.b = {.leftval = ARRAY_LENGTH(OnOff)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Show Gamepad Buttons", .a = {.cvar = &joy_gamepadmode},		.b = {.leftval = ARRAY_LENGTH(GamepadModes)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = GamepadModes.data()}},
+	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = whitetext,	.label = "Sensitivity Settings", .a = {.cvar = nullptr}, 				.b = {.leftval = 0.0}, 		.c = {.rightval = 0.0}, 		.d = {.step = 0.0}, 		.e = {.values = nullptr}},
+	{ .type = slider,	.label = "Turn Sensitivity", .a = {.cvar = &joy_sensitivity},	.b = {.leftval = 1.0},		.c = {.rightval = 30.0},		.d = {.step = 1.0},		.e = {.values = nullptr}},
+	{ .type = slider,	.label = "Alt. Turn Sensitivity", .a = {.cvar = &joy_fastsensitivity},	.b = {.leftval = 1.0},		.c = {.rightval = 30.0},		.d = {.step = 1.0},		.e = {.values = nullptr}},
+	{ .type = slider,	.label = "Joystick Deadzone", .a = {.cvar = &joy_deadzone},		.b = {.leftval = 0.0},		.c = {.rightval = 0.75},		.d = {.step = 0.05},		.e = {.values = nullptr}},
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t JoystickMenu = {
-    "M_JOYSTK",
-    0,
-    ARRAY_LENGTH(JoystickItems),
-    177,
-    JoystickItems,
+	"M_JOYSTK",
+	0,
+	JoystickItems.size(),
+	MENU_HALFPASTINDENT,
+	JoystickItems.data(),
 	0,
 	0,
-	NULL
+	nullptr
 };
+namespace
+{
+
 
  /*=======================================
   *
@@ -584,179 +662,199 @@ menu_t JoystickMenu = {
   *
   *=======================================*/
 
-static value_t MusSys[] = {
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+// Sized by the initializer: entries here are conditionally compiled,
+// so a fixed std::array size would be wrong on some builds.
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
+value_t MusSys[] = {
+	{ .value = MS_AUTO,		.name = "Auto"},
 	#ifndef _WIN32
-	{ MS_SDLMIXER,	"SDL Mixer"},
+	{ .value = MS_SDLMIXER,	.name = "SDL Mixer"},
 	#endif
-	{ MS_LIBADLMIDI,"libADLMIDI (OPL3 FM)"},
+	{ .value = MS_LIBADLMIDI,.name = "libADLMIDI (OPL3 FM)"},
 	#ifdef OSX
-	{ MS_AUDIOUNIT,	"AudioUnit"},
+	{ .value = MS_AUDIOUNIT,	.name = "AudioUnit"},
 	#endif	// OSX
 	#ifdef PORTMIDI
-	{ MS_PORTMIDI,	"PortMidi"},
+	{ .value = MS_PORTMIDI,	.name = "PortMidi"},
 	#endif	// PORTMIDI
 };
 
-static value_t MidiReset[] = {
-	{ 0.0,			"None" },
-	{ 1.0,			"GM" },
-	{ 2.0,			"GS" },
-	{ 3.0,			"XG" }
-};
+std::array<value_t, 4> MidiReset = {{
+	{ .value = 0.0,			.name = "None"},
+	{ .value = 1.0,			.name = "GM"},
+	{ .value = 2.0,			.name = "GS"},
+	{ .value = 3.0,			.name = "XG"}
+}};
 
-static value_t OplCore[] = {
-	{ 0.0,			"Fast (Dosbox)"},
-	{ 1.0,			"Balanced (Nuked-Fast 1.8)"},
-	{ 2.0,			"Accurate (Nuked 1.8)"}
-};
+std::array<value_t, 3> OplCore = {{
+	{ .value = 0.0,			.name = "Fast (Dosbox)"},
+	{ .value = 1.0,			.name = "Balanced (Nuked-Fast 1.8)"},
+	{ .value = 2.0,			.name = "Accurate (Nuked 1.8)"}
+}};
 
-static value_t OplBank[] = {
-	{ 0.0,			"Doom"},
-	{ 1.0,			"Doom II"},
-	{ 2.0,			"DMXOPL3"}
-};
+std::array<value_t, 3> OplBank = {{
+	{ .value = 0.0,			.name = "Doom"},
+	{ .value = 1.0,			.name = "Doom II"},
+	{ .value = 2.0,			.name = "DMXOPL3"}
+}};
 
-static value_t VoxType[] = {
-	{ 0.0,			"Off" },
-	{ 1.0,			"Team Colors" },
-	{ 2.0,			"Possessive" }
-};
+std::array<value_t, 3> VoxType = {{
+	{ .value = 0.0,			.name = "Off"},
+	{ .value = 1.0,			.name = "Team Colors"},
+	{ .value = 2.0,			.name = "Possessive"}
+}};
 
-static value_t ChatSndType[] = {
-	{ 0.0,			"Disabled" },
-	{ 1.0,			"Enabled" },
-	{ 2.0,			"Teamchat only" }
-};
+std::array<value_t, 3> ChatSndType = {{
+	{ .value = 0.0,			.name = "Disabled"},
+	{ .value = 1.0,			.name = "Enabled"},
+	{ .value = 2.0,			.name = "Teamchat only"}
+}};
+// NOLINTEND(readability-magic-numbers)
 
-static void AdvMidiOptions (void);
-static void LibAdlMidiOptions (void);
-static void AnnouncerOptions(void);
+void AdvMidiOptions();
+void LibAdlMidiOptions();
+void AnnouncerOptions();
+} // namespace
 
-static constexpr float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
 
 EXTERN_CVAR(cl_chatsounds)
 
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+// Sized by the initializer: entries here are conditionally compiled,
+// so a fixed std::array size would be wrong on some builds.
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
 static menuitem_t AdvMidiItems[] = {
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext, "Advanced MIDI Options" , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ discrete  , "MIDI Instrument Fallback", {&snd_midifallback}, {4.0}, {0.0}, {0.0}, {OnOff} },
-	{ slider    , "MIDI Reset Delay (ms)", {&snd_mididelay}, {0.0}, {2000.0}, {50.0}, {NULL} },
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = "Advanced MIDI Options", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "MIDI Instrument Fallback", .a = {.cvar = &snd_midifallback}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = slider, .label = "MIDI Reset Delay (ms)", .a = {.cvar = &snd_mididelay}, .b = {.leftval = 0.0}, .c = {.rightval = 2000.0}, .d = {.step = 50.0}, .e = {.values = nullptr}},
 	#ifdef PORTMIDI
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext, "PortMidi Options", {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ discrete  , "MIDI Reset"      , {&snd_midireset}, {4.0}, {0.0}, {0.0}, {MidiReset} },
-	{ discrete  , "Read MIDI SysEx" , {&snd_midisysex}, {4.0}, {0.0}, {0.0}, {OnOff} },
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = "PortMidi Options", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "MIDI Reset", .a = {.cvar = &snd_midireset}, .b = {.leftval = ARRAY_LENGTH(MidiReset)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = MidiReset.data()}},
+	{ .type = discrete, .label = "Read MIDI SysEx", .a = {.cvar = &snd_midisysex}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	#endif
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{yellowtext, "! ! ! NOTICE ! ! !", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {orangetext, "Modifying these settings may cause", {NULL},{0.0}, {0.0}, {0.0}, {NULL}},
-    {orangetext, "unwanted behavior during MIDI playback!", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = "! ! ! NOTICE ! ! !", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = orangetext, .label = "Modifying these settings may cause", .a = {.cvar = nullptr},.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = orangetext, .label = "unwanted behavior during MIDI playback!", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 };
+namespace
+{
 
- static menuitem_t LibAdlMidiItems[] = {
-	{ redtext   , " "                   , {NULL}         , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext, "OPL FM Synth Options", {NULL}         , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext   , " "                   , {NULL}         , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ discrete  , "OPL quality"         , {&snd_oplcore} , {3.0}, {0.0}, {0.0}, {OplCore} },
-	{ discrete  , "Full OPL panning"    , {&snd_oplpan}  , {2.0}, {0.0}, {0.0}, {OnOff} },
-	{ slider    , "# of OPL chips"      , {&snd_oplchips}, {1.0}, {8.0}, {1.0}, {NULL} },
-	{ discrete  , "OPL instruments"     , {&snd_oplbank} , {3.0}, {0.0}, {0.0}, {OplBank} },
-};
 
-static menuitem_t SoundItems[] = {
-	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ yellowtext,   "Sound Levels"             , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ slider    ,	"Music Volume"             , {&snd_musicvolume},    {0.0},        {1.0}, {0.015625}, {NULL} },
-	{ slider    ,	"Sound Volume"             , {&snd_sfxvolume},      {0.0},        {1.0}, {0.015625}, {NULL} },
-	{ slider    ,	"Announcer Volume"         , {&snd_announcervolume},{0.0},        {1.0}, {0.015625}, {NULL} },
-	{ discrete  ,   "Stereo Switch"            , {&snd_crossover},      {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ redtext   ,	" "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ yellowtext,   "Music Options"            , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ discrete  ,   "Midi Synth"               , {&snd_musicsystem},    {num_mussys}, {0.0}, {0.0},      {MusSys} },
-	{ discrete  ,   "Disable Music"            , {&snd_nomusic},        {2.0},        {0.0}, {0.0},      {YesNo} },
-	{ redtext   ,	" "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ more      ,   "OPL FM Synth Options"     , {NULL},                {0.0},        {0.0}, {0.0},      {(value_t *)LibAdlMidiOptions}},
-	{ more      ,   "Advanced MIDI Options"    , {NULL},                {0.0},        {0.0}, {0.0},      {(value_t *)AdvMidiOptions}},
-	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ more      ,   "Announcer Options"        , {NULL},                {0.0},        {0.0}, {0.0},      {(value_t *)AnnouncerOptions} },
-	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ yellowtext,   "Sound Options"            , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ discrete  ,   "Game SFX"                 , {&snd_gamesfx},        {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Announcer Type"           , {&snd_voxtype},        {3.0},        {0.0}, {0.0},      {VoxType} },
-	{ discrete  ,   "Player Connect Alert"     , {&cl_connectalert},    {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Player Disconnect Alert"  , {&cl_disconnectalert}, {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Chat sounds"              , {&cl_chatsounds},      {3.0},        {0.0}, {0.0},      {ChatSndType}},
-	{ discrete	,   "Voting Sounds"            , {&snd_votesfx},        {2.0},        {0.0}, {0.0},	     {OnOff}},
-	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
- };
+ std::array<menuitem_t, 7> LibAdlMidiItems = {{
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = "OPL FM Synth Options", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "OPL quality", .a = {.cvar = &snd_oplcore}, .b = {.leftval = ARRAY_LENGTH(OplCore)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OplCore.data()}},
+	{ .type = discrete, .label = "Full OPL panning", .a = {.cvar = &snd_oplpan}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = slider, .label = "# of OPL chips", .a = {.cvar = &snd_oplchips}, .b = {.leftval = 1.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "OPL instruments", .a = {.cvar = &snd_oplbank}, .b = {.leftval = ARRAY_LENGTH(OplBank)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OplBank.data()}},
+}};
 
-static menuitem_t AnnouncerItems[] = {
-	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ yellowtext,   "Choose Announcer"         , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ announcer ,   " "                        , {&cl_announcer},       {0.0},        {0.0}, {0.0},      {NULL} },
-	{ whitetext ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ orangetext,   "Announcers not currently loaded", {NULL},          {0.0},        {0.0}, {0.0},      {NULL}},
-	{ orangetext,   "will default to the Odamex announcer.", {NULL},    {0.0},        {0.0}, {0.0},      {NULL}},
-	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ discrete  ,   "Announce CTF Events"      , {&snd_announcectf},    {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Announce Horde Events"    , {&snd_announcehorde},  {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Announce Survival Events" , {&snd_announcesurvival},  {2.0},     {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Announce Pre-Round Countdown" , {&snd_announcecountdown},  {2.0},{0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Announce Time Left Warnings"   , {&snd_announcetimewarnings},  {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Announce First Blood"     , {&snd_announcefirstblood},  {2.0},   {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Announce Frag Tracking"   , {&snd_announcefragtracking},  {2.0}, {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Announce Lead Tracking"   , {&snd_announceleadtracking},  {2.0}, {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Announce Match Result Tracking"   , {&snd_announceresulttracking},  {2.0},        {0.0}, {0.0},      {OnOff} },
-};
+std::array<menuitem_t, 24> SoundItems = {{
+	{ .type = redtext,   .label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
+	{ .type = yellowtext,   .label = "Sound Levels", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Music Volume", .a = {.cvar = &snd_musicvolume},    .b = {.leftval = 0.0},        .c = {.rightval = 1.0}, .d = {.step = 0.015625}, .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Sound Volume", .a = {.cvar = &snd_sfxvolume},      .b = {.leftval = 0.0},        .c = {.rightval = 1.0}, .d = {.step = 0.015625}, .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Announcer Volume", .a = {.cvar = &snd_announcervolume},.b = {.leftval = 0.0},        .c = {.rightval = 1.0}, .d = {.step = 0.015625}, .e = {.values = nullptr}},
+	{ .type = discrete,   .label = "Stereo Switch", .a = {.cvar = &snd_crossover},      .b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
+	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
+	{ .type = yellowtext,   .label = "Music Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
+	{ .type = discrete,   .label = "Midi Synth", .a = {.cvar = &snd_musicsystem},    .b = {.leftval = ARRAY_LENGTH(MusSys)}, .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = MusSys}},
+	{ .type = discrete,   .label = "Disable Music", .a = {.cvar = &snd_nomusic},        .b = {.leftval = ARRAY_LENGTH(YesNo)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = YesNo.data()}},
+	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
+	{ .type = more,   .label = "OPL FM Synth Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.mfunc = LibAdlMidiOptions}},
+	{ .type = more,   .label = "Advanced MIDI Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.mfunc = AdvMidiOptions}},
+	{ .type = redtext,   .label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
+	{ .type = more,   .label = "Announcer Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.mfunc = AnnouncerOptions}},
+	{ .type = redtext,   .label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
+	{ .type = yellowtext,   .label = "Sound Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
+	{ .type = discrete,   .label = "Game SFX", .a = {.cvar = &snd_gamesfx},        .b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
+	{ .type = discrete,   .label = "Announcer Type", .a = {.cvar = &snd_voxtype},        .b = {.leftval = ARRAY_LENGTH(VoxType)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = VoxType.data()}},
+	{ .type = discrete,   .label = "Player Connect Alert", .a = {.cvar = &cl_connectalert},    .b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
+	{ .type = discrete,   .label = "Player Disconnect Alert", .a = {.cvar = &cl_disconnectalert}, .b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
+	{ .type = discrete,   .label = "Chat sounds", .a = {.cvar = &cl_chatsounds},      .b = {.leftval = ARRAY_LENGTH(ChatSndType)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = ChatSndType.data()}},
+	{ .type = discrete,   .label = "Voting Sounds", .a = {.cvar = &snd_votesfx},		.b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},	     .e = {.values = OnOff.data()}},
+	{ .type = redtext,   .label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
+ }};
+
+// The author and description lines are filled in at draw time, see ANN_AUTHORLINE.
+std::array<menuitem_t, 18> AnnouncerItems = {{
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = "Choose Announcer", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = announcer, .label = " ", .a = {.cvar = &cl_announcer}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = whitetext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = orangetext, .label = "Announcers not currently loaded", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = orangetext, .label = "will default to the Odamex announcer.", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Announce CTF Events", .a = {.cvar = &snd_announcectf}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Horde Events", .a = {.cvar = &snd_announcehorde}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Survival Events", .a = {.cvar = &snd_announcesurvival}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Pre-Round Countdown", .a = {.cvar = &snd_announcecountdown}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Time Left Warnings", .a = {.cvar = &snd_announcetimewarnings}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce First Blood", .a = {.cvar = &snd_announcefirstblood}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Frag Tracking", .a = {.cvar = &snd_announcefragtracking}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Lead Tracking", .a = {.cvar = &snd_announceleadtracking}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Match Result Tracking", .a = {.cvar = &snd_announceresulttracking}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t AdvMidiMenu = {
 	"M_SOUND",
 	3,
 	ARRAY_LENGTH(AdvMidiItems),
-	177,
+	MENU_HALFPASTINDENT,
 	AdvMidiItems,
 	0,
 	0,
-	NULL
+	nullptr
 };
 
 menu_t LibAdlMidiMenu = {
 	"M_SOUND",
 	3,
-	ARRAY_LENGTH(LibAdlMidiItems),
-	177,
-	LibAdlMidiItems,
+	LibAdlMidiItems.size(),
+	MENU_HALFPASTINDENT,
+	LibAdlMidiItems.data(),
 	0,
 	0,
-	NULL
+	nullptr
 };
 
 menu_t SoundMenu = {
 	"M_SOUND",
 	2,
-	ARRAY_LENGTH(SoundItems),
-	177,
-	SoundItems,
+	SoundItems.size(),
+	MENU_HALFPASTINDENT,
+	SoundItems.data(),
 	0,
 	0,
-	NULL
+	nullptr
 };
+namespace
+{
+
 
 menu_t AnnouncerMenu = {
-	"M_SOUND",
-	2,
-	ARRAY_LENGTH(AnnouncerItems),
-	0,
-	AnnouncerItems,
-	0,
-	0,
-	NULL
+	.title = "M_SOUND",
+	.lastOn = 2,
+	.numitems = AnnouncerItems.size(),
+	.indent = 0,
+	.items = AnnouncerItems.data(),
+	.scrolltop = 0,
+	.scrollpos = 0,
+	.refreshfunc = nullptr,
 };
 
 
@@ -765,49 +863,57 @@ menu_t AnnouncerMenu = {
  * Compatibility Options Menu
  *
  *=======================================*/
-static menuitem_t CompatItems[] ={
-	{yellowtext, "Gameplay",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{svdiscrete, "Finer-precision Autoaim",        {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Fix hit detection at grid edges",{&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Remove pain elemental spawn limit",{&co_removesoullimit}, {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Fix arch-vile ghost bug",			{&co_novileghosts}, {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{yellowtext, "Items and Decoration",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{svdiscrete, "Fix invisible puffs under skies",{&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Items can be walked over/under", {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Items can drop off ledges",      {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{yellowtext, "Engine Compatibility",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{svdiscrete, "BOOM actor/sector/line checks",  {&co_boomphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "MBF movement and collision",  {&co_mbfphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
-  {svdiscrete, "ZDOOM 1.23 ammo checks",         {&co_zdoomammo},         {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "MBF Monster target selection",{&co_pursuit},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monsters help friends (MBF)",{&co_helpfriends},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monsters strafe (MBF)",{&co_monsterbacking},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monster wind/friction (MBF)",{&co_monsterfriction},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monsters avoid crushers (MBF)",{&co_avoidhazards},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monsters climb (MBF)",{&co_monstersclimbsteep},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monsters stay on lifts (MBF)",{&co_staylift},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Friends can drop off (MBF)",{&co_friend_ledgejumping},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{slider,		 "Friend distance (MBF)", {&co_friend_distance}, {0.0}, {2048.0}, {64.0}, {NULL}},
-	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{yellowtext, "Sound",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{svdiscrete, "Fix silent west spawns",         {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "ZDoom Sound Response",			{&co_zdoomsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
-    {svdiscrete, "Global Pickup Sounds",			{&co_globalsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
-};
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<menuitem_t, 31> CompatItems = {{
+	{.type = yellowtext, .label = "Gameplay",							.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = svdiscrete, .label = "Finer-precision Autoaim",        .a = {.cvar = &co_fineautoaim},       .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Fix hit detection at grid edges",.a = {.cvar = &co_blockmapfix},       .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Remove pain elemental spawn limit",.a = {.cvar = &co_removesoullimit}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Fix arch-vile ghost bug",			.a = {.cvar = &co_novileghosts}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = redtext,   .label = " ",								.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = yellowtext, .label = "Items and Decoration",				.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = svdiscrete, .label = "Fix invisible puffs under skies",.a = {.cvar = &co_fixweaponimpacts},  .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Items can be walked over/under", .a = {.cvar = &co_realactorheight},   .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Items can drop off ledges",      .a = {.cvar = &co_allowdropoff},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = redtext,   .label = " ",								.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = yellowtext, .label = "Engine Compatibility",				.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = svdiscrete, .label = "BOOM actor/sector/line checks",  .a = {.cvar = &co_boomphys},			 .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "MBF movement and collision",  .a = {.cvar = &co_mbfphys},			 .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "ZDOOM 1.23 physics",             .a = {.cvar = &co_zdoomphys},         .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "ZDOOM 1.23 ammo checks",         .a = {.cvar = &co_zdoomammo},         .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "ZDOOM Friendly Targeting",       .a = {.cvar = &co_zdoomfriendtargeting},   .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "MBF Monster target selection",.a = {.cvar = &co_pursuit},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monsters help friends (MBF)",.a = {.cvar = &co_helpfriends},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monsters strafe (MBF)",.a = {.cvar = &co_monsterbacking},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monster wind/friction (MBF)",.a = {.cvar = &co_monsterfriction},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monsters avoid crushers (MBF)",.a = {.cvar = &co_avoidhazards},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monsters climb (MBF)",.a = {.cvar = &co_monstersclimbsteep},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Monsters stay on lifts (MBF)",.a = {.cvar = &co_staylift},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Friends can drop off (MBF)",.a = {.cvar = &co_friend_ledgejumping},      .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = slider,		 .label = "Friend distance (MBF)", .a = {.cvar = &co_friend_distance}, .b = {.leftval = 0.0}, .c = {.rightval = 2048.0}, .d = {.step = 64.0}, .e = {.values = nullptr}},
+	{.type = redtext,   .label = " ",								.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = yellowtext, .label = "Sound",							.a = {.cvar = nullptr},                  .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = svdiscrete, .label = "Fix silent west spawns",         .a = {.cvar = &co_nosilentspawns},    .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "ZDoom Sound Response",			.a = {.cvar = &co_zdoomsound},		 .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{.type = svdiscrete, .label = "Global Pickup Sounds",			.a = {.cvar = &co_globalsound},		 .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t CompatMenu = {
 	"M_COMPAT",
 	1,
-	ARRAY_LENGTH(CompatItems),
-	240,
-	CompatItems,
+	CompatItems.size(),
+	MENU_LONGTEXTINDENT,
+	CompatItems.data(),
 	0,
 	0,
-	NULL,
+	nullptr,
 };
+namespace
+{
+
 
 
 /*=======================================
@@ -816,36 +922,43 @@ menu_t CompatMenu = {
  *
  *=======================================*/
 
-static menuitem_t NetworkItems[] = {
-    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,	"Wad Download Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete, 	"Download From Internet", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<menuitem_t, 15> NetworkItems = {{
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,	.label = "Wad Download Settings",		.a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = discrete, 	.label = "Download From Internet", 		.a = {.cvar = &cl_serverdownload}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, 		.c = {.rightval = 0.0}, 		.d = {.step = 0.0}, 		.e = {.values = OnOff.data()}},
 
-	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ yellowtext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Autorecord demos",				{&cl_autorecord},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete,		"Split every map",				{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
+	{ .type = redtext,		.label = " ",							.a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = yellowtext,	.label = "Netdemo Settings",				.a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = discrete,		.label = "Autorecord demos",				.a = {.cvar = &cl_autorecord},	.b = {.leftval = ARRAY_LENGTH(OnOff)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,		.label = "Split every map",				.a = {.cvar = &cl_splitnetdemos},	.b = {.leftval = ARRAY_LENGTH(OnOff)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
 
-	{ redtext,		" ",							{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,	"Autorecord filters",			{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Cooperation",					{&cl_autorecord_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Deathmatch",					{&cl_autorecord_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Team Deathmatch",				{&cl_autorecord_teamdm},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Capture the Flag",				{&cl_autorecord_ctf},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Horde",						{&cl_autorecord_horde},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-};
+	{ .type = redtext,		.label = " ",							.a = {.cvar = nullptr},	.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,	.label = "Autorecord filters",			.a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = discrete,		.label = "Cooperation",					.a = {.cvar = &cl_autorecord_coop},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Deathmatch",					.a = {.cvar = &cl_autorecord_deathmatch},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Duel",							.a = {.cvar = &cl_autorecord_duel},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Team Deathmatch",				.a = {.cvar = &cl_autorecord_teamdm},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Capture the Flag",				.a = {.cvar = &cl_autorecord_ctf},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+	{ .type = discrete,		.label = "Horde",						.a = {.cvar = &cl_autorecord_horde},.b = {.leftval = ARRAY_LENGTH(DemoRestrictions)},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = DemoRestrictions.data()}},
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t NetworkMenu = {
 	"M_NETWRK",
 	2,
-	ARRAY_LENGTH(NetworkItems),
-	177,
-	NetworkItems,
+	NetworkItems.size(),
+	MENU_HALFPASTINDENT,
+	NetworkItems.data(),
 	1,
 	0,
-	NULL
+	nullptr
 };
+namespace
+{
+
 
 
 /*=======================================
@@ -854,48 +967,62 @@ menu_t NetworkMenu = {
  *
  *=======================================*/
 
-static value_t WeapSwitch[] = {
-	{ 0.0,			"Never" },
-	{ 1.0,			"Always" },
-	{ 2.0,			"By Preference" },
-    { 3.0,			"Attack Cancels PWO"}
-};
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 4> WeapSwitch = {{
+	{ .value = 0.0,			.name = "Never"},
+	{ .value = 1.0,			.name = "Always"},
+	{ .value = 2.0,			.name = "By Preference"},
+	{ .value = 3.0,			.name = "Attack Cancels PWO"}
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 extern const char *weaponnames[];
+namespace
+{
 
-static menuitem_t WeaponItems[] = {
-	{yellowtext, "Weapon Preferences",  {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Switch on pickup",    {&cl_switchweapon},   {4.0}, {0.0}, {0.0}, {WeapSwitch}},
-	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{yellowtext, "Weapon Switch Order", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{slider,    weaponnames[0],        {&cl_weaponpref_fst}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[7],        {&cl_weaponpref_csw}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[1],        {&cl_weaponpref_pis}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[2],        {&cl_weaponpref_sg},  {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[8],        {&cl_weaponpref_ssg}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[3],        {&cl_weaponpref_cg},  {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[4],        {&cl_weaponpref_rl},  {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[5],        {&cl_weaponpref_pls}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[6],        {&cl_weaponpref_bfg}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{whitetext, "Weapons with higher", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{whitetext, "preference are selected first", {NULL},     {0.0}, {0.0}, {0.0}, {NULL}},
-    {redtext,	" ",				   {NULL},				 {0.0}, {0.0}, {0.0}, {NULL}},
-    {yellowtext, "! ! ! NOTICE ! ! !", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {orangetext, "While playing online, this feature", {NULL},{0.0}, {0.0}, {0.0}, {NULL}},
-    {orangetext, "only works when the server allows it!", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-};
+
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<menuitem_t, 20> WeaponItems = {{
+	{.type = yellowtext, .label = "Weapon Preferences",  .a = {.cvar = nullptr},               .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = discrete,  .label = "Switch on pickup",    .a = {.cvar = &cl_switchweapon},   .b = {.leftval = ARRAY_LENGTH(WeapSwitch)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = WeapSwitch.data()}},
+	{.type = redtext,   .label = " ",                   .a = {.cvar = nullptr},               .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = yellowtext, .label = "Weapon Switch Order", .a = {.cvar = nullptr},               .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = slider,    .label = weaponnames[0],        .a = {.cvar = &cl_weaponpref_fst}, .b = {.leftval = 0.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
+	{.type = slider,    .label = weaponnames[7],        .a = {.cvar = &cl_weaponpref_csw}, .b = {.leftval = 0.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
+	{.type = slider,    .label = weaponnames[1],        .a = {.cvar = &cl_weaponpref_pis}, .b = {.leftval = 0.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
+	{.type = slider,    .label = weaponnames[2],        .a = {.cvar = &cl_weaponpref_sg},  .b = {.leftval = 0.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
+	{.type = slider,    .label = weaponnames[8],        .a = {.cvar = &cl_weaponpref_ssg}, .b = {.leftval = 0.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
+	{.type = slider,    .label = weaponnames[3],        .a = {.cvar = &cl_weaponpref_cg},  .b = {.leftval = 0.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
+	{.type = slider,    .label = weaponnames[4],        .a = {.cvar = &cl_weaponpref_rl},  .b = {.leftval = 0.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
+	{.type = slider,    .label = weaponnames[5],        .a = {.cvar = &cl_weaponpref_pls}, .b = {.leftval = 0.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
+	{.type = slider,    .label = weaponnames[6],        .a = {.cvar = &cl_weaponpref_bfg}, .b = {.leftval = 0.0}, .c = {.rightval = 8.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
+	{.type = redtext,   .label = " ",                   .a = {.cvar = nullptr},               .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = whitetext, .label = "Weapons with higher", .a = {.cvar = nullptr},               .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = whitetext, .label = "preference are selected first", .a = {.cvar = nullptr},     .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = redtext,	.label = " ",				   .a = {.cvar = nullptr},				 .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = yellowtext, .label = "! ! ! NOTICE ! ! !", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = orangetext, .label = "While playing online, this feature", .a = {.cvar = nullptr},.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{.type = orangetext, .label = "only works when the server allows it!", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t WeaponMenu = {
 	"M_WEAPON",
 	1,
-	ARRAY_LENGTH(WeaponItems),
-	177,
-	WeaponItems,
+	WeaponItems.size(),
+	MENU_HALFPASTINDENT,
+	WeaponItems.data(),
 	0,
 	0,
-	NULL
+	nullptr
 };
+namespace
+{
+
 
 
 /*=======================================
@@ -903,10 +1030,12 @@ menu_t WeaponMenu = {
  * Display Options Menu
  *
  *=======================================*/
-static void StartHUDMenu();
-static void StartMessagesMenu (void);
-static void StartAutomapMenu (void);
-void ResetCustomColors (void);
+void StartHUDMenu();
+void StartMessagesMenu();
+void StartAutomapMenu();
+} // namespace
+
+void ResetCustomColors();
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
@@ -916,6 +1045,7 @@ EXTERN_CVAR (am_showitems)
 EXTERN_CVAR (am_showsecrets)
 EXTERN_CVAR (am_showtime)
 EXTERN_CVAR (am_classicmapstring)
+EXTERN_CVAR (am_showauthor)
 EXTERN_CVAR (am_usecustomcolors)
 EXTERN_CVAR (am_showlocked)
 EXTERN_CVAR (st_scale)
@@ -941,111 +1071,129 @@ EXTERN_CVAR(am_ovlocation)
 EXTERN_CVAR(am_ovscalewidth)
 EXTERN_CVAR(am_ovscaleheight)
 
-static value_t Wipes[] = {
-	{ 0.0, "None" },
-	{ 1.0, "Melt" },
-	{ 2.0, "Burn" },
-	{ 3.0, "Crossfade" }
-};
+namespace
+{
 
-static value_t Overlays[] = {
-    { 0.0, "Off" },
-    { 1.0, "Standard" },
-    { 2.0, "Full" },
-    { 3.0, "Full Only" }
-};
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 4> Wipes = {{
+	{ .value = 0.0, .name = "None"},
+	{ .value = 1.0, .name = "Melt"},
+	{ .value = 2.0, .name = "Burn"},
+	{ .value = 3.0, .name = "Crossfade"}
+}};
 
-static void M_SendUINewColor (int red, int green, int blue);
-static void M_SlideUIRed (int);
-static void M_SlideUIGreen (int);
-static void M_SlideUIBlue (int);
+
+std::array<value_t, 4> Overlays = {{
+	{ .value = 0.0, .name = "Off"},
+	{ .value = 1.0, .name = "Standard"},
+	{ .value = 2.0, .name = "Full"},
+	{ .value = 3.0, .name = "Full Only"}
+}};
+// NOLINTEND(readability-magic-numbers)
+
+void M_SendUINewColor (int red, int green, int blue);
+void M_SlideUIRed (int);
+void M_SlideUIGreen (int);
+void M_SlideUIBlue (int);
+} // namespace
+
 
 int dummy = 0;
 
 CVAR_FUNC_IMPL (ui_transred)
 {
-    M_SlideUIRed(var.asInt());
+	M_SlideUIRed(var.asInt());
 }
 
 CVAR_FUNC_IMPL (ui_transgreen)
 {
-    M_SlideUIGreen(var.asInt());
+	M_SlideUIGreen(var.asInt());
 }
 
 CVAR_FUNC_IMPL (ui_transblue)
 {
-    M_SlideUIBlue(var.asInt());
+	M_SlideUIBlue(var.asInt());
 }
-
-static value_t Endoom[] = {{0.0, "Off"}, {1.0, "On"}, {2.0, "PWAD Only"}};
-
-static menuitem_t VideoItems[] = {
-    {more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)StartHUDMenu}},
-	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartMessagesMenu} },
-	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
-	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
-	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {8.0},	{1.0},  {NULL} },
-	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },
-	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },
-	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
-	{ discrete,	"Visible Spawn Points",		{&cl_showspawns},		{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Center weapon when firing",{&cl_centerbobonfire},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Killing Sprees",		{&cl_showsprees},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Multi Kills",		{&cl_showmultikills},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Sprees Offline",	{&cl_showofflinesprees},{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Multi Kills Offline",	{&cl_showofflinemultikills},{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ greenslider, "Team Color Green",      {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ blueslider,  "Team Color Blue",       {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Force Enemy Color",        {&r_forceenemycolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redslider,   "Enemy Color Red",       {&r_enemycolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ greenslider, "Enemy Color Green",     {&r_enemycolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ blueslider,  "Enemy Color Blue",      {&r_enemycolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
-	{ slider,   "UI Background Red",        {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
-	{ slider,   "UI Background Green",      {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
-	{ slider,   "UI Background Blue",       {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
-	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
-	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "See killer on Death",			{&cl_deathcam},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
-	{ discrete, "Linear Skies",			    {&r_linearsky},	   		{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Use softer invuln effect", {&r_softinvulneffect},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Heart effect on friendlies", {&cl_showfriends},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
-	{ discrete, "Multiplayer Intermissions",{&wi_oldintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
-	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
-    { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{3.0}, {0.0},	{0.0},  {Endoom} },
-
-
-};
-
-static void M_UpdateDisplayOptions()
+namespace
 {
-	const static size_t menu_length = ARRAY_LENGTH(VideoItems);
-	const static size_t gamma_index = M_FindCvarInMenu(gammalevel, VideoItems, menu_length);
+
+
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 3> Endoom = {{{.value = 0.0, .name = "Off"}, {.value = 1.0, .name = "On"}, {.value = 2.0, .name = "PWAD Only"}}};
+
+std::array<menuitem_t, 41> VideoItems = {{
+	{ .type = more, .label = "Heads-up display", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.mfunc = StartHUDMenu}},
+	{ .type = more,		.label = "Messages",				    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.mfunc = StartMessagesMenu}},
+	{ .type = more,		.label = "Automap",				    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.mfunc = StartAutomapMenu}},
+	{ .type = redtext,	.label = " ",					    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Screen size",			    .a = {.cvar = &screenblocks},	   	.b = {.leftval = 3.0}, .c = {.rightval = 12.0},	.d = {.step = 1.0},  .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Brightness",			    .a = {.cvar = &gammalevel},			.b = {.leftval = 1.0}, .c = {.rightval = 8.0},	.d = {.step = 1.0},  .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Red Pain Intensity",		.a = {.cvar = &r_painintensity},		.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.1},  .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Movement bobbing",			.a = {.cvar = &cl_movebob},			.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.1},	.e = {.values = nullptr}},
+	{ .type = slider,   .label = "Weapon Visibility",        .a = {.cvar = &r_drawplayersprites}, .b = {.leftval = 0.0}, .c = {.rightval = 1.0},   .d = {.step = 0.1},  .e = {.values = nullptr}},
+	{ .type = discrete,	.label = "Visible Spawn Points",		.a = {.cvar = &cl_showspawns},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Center weapon when firing",.a = {.cvar = &cl_centerbobonfire},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show Killing Sprees",		.a = {.cvar = &cl_showsprees},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show Multi Kills",		.a = {.cvar = &cl_showmultikills},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show Sprees Offline",	.a = {.cvar = &cl_showofflinesprees},.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show Multi Kills Offline",	.a = {.cvar = &cl_showofflinemultikills},.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = redtext,	.label = " ",					    .a = {.cvar = nullptr},				    .b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Force Team Color",			.a = {.cvar = &r_forceteamcolor},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = redslider,   .label = "Team Color Red",        .a = {.cvar = &r_teamcolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = greenslider, .label = "Team Color Green",      .a = {.cvar = &r_teamcolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = blueslider,  .label = "Team Color Blue",       .a = {.cvar = &r_teamcolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = redtext,	.label = " ",					    .a = {.cvar = nullptr},				    .b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Force Enemy Color",        .a = {.cvar = &r_forceenemycolor},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = redslider,   .label = "Enemy Color Red",       .a = {.cvar = &r_enemycolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = greenslider, .label = "Enemy Color Green",     .a = {.cvar = &r_enemycolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = blueslider,  .label = "Enemy Color Blue",      .a = {.cvar = &r_enemycolor},  .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = redtext,	.label = " ",					    .a = {.cvar = nullptr},				    .b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = slider,   .label = "UI Background Red",        .a = {.cvar = &ui_transred},         .b = {.leftval = 0.0}, .c = {.rightval = 255.0}, .d = {.step = 16.0}, .e = {.values = nullptr}},
+	{ .type = slider,   .label = "UI Background Green",      .a = {.cvar = &ui_transgreen},       .b = {.leftval = 0.0}, .c = {.rightval = 255.0}, .d = {.step = 16.0}, .e = {.values = nullptr}},
+	{ .type = slider,   .label = "UI Background Blue",       .a = {.cvar = &ui_transblue},        .b = {.leftval = 0.0}, .c = {.rightval = 255.0}, .d = {.step = 16.0}, .e = {.values = nullptr}},
+	{ .type = slider,   .label = "UI Background Visibility", .a = {.cvar = &ui_dimamount},        .b = {.leftval = 0.0}, .c = {.rightval = 1.0},   .d = {.step = 0.1},  .e = {.values = nullptr}},
+	{ .type = redtext,	.label = " ",					    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = discrete, .label = "See killer on Death",			.a = {.cvar = &cl_deathcam},   .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Stretch short skies",	    .a = {.cvar = &r_stretchsky},	   	.b = {.leftval = ARRAY_LENGTH(OnOffAuto)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOffAuto.data()}},
+	{ .type = discrete, .label = "Linear Skies",			    .a = {.cvar = &r_linearsky},	   		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Invuln changes skies",		.a = {.cvar = &r_skypalette},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Use softer invuln effect", .a = {.cvar = &r_softinvulneffect},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Heart effect on friendlies", .a = {.cvar = &cl_showfriends},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Screen wipe style",	    .a = {.cvar = &r_wipetype},			.b = {.leftval = ARRAY_LENGTH(Wipes)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Wipes.data()}},
+	{ .type = discrete, .label = "Multiplayer Intermissions",.a = {.cvar = &wi_oldintermission},	.b = {.leftval = ARRAY_LENGTH(DoomOrOdamex)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = DoomOrOdamex.data()}},
+	{ .type = discrete, .label = "Show loading disk icon",	.a = {.cvar = &r_loadicon},			.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Show DOS ending screen",  .a = {.cvar = &r_showendoom},		.b = {.leftval = ARRAY_LENGTH(Endoom)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Endoom.data()}},
+
+
+}};
+// NOLINTEND(readability-magic-numbers)
+
+void M_UpdateDisplayOptions()
+{
+	const static size_t menu_length = VideoItems.size();
+	const static size_t gamma_index = M_FindCvarInMenu(gammalevel, VideoItems.data(), menu_length);
 
 	// update the parameters for gammalevel based on vid_gammatype (doom or zdoom gamma)
 	VideoItems[gamma_index].b.leftval = V_GetMinimumGammaLevel();
 	VideoItems[gamma_index].c.rightval = V_GetMaximumGammaLevel();
 	VideoItems[gamma_index].d.step = 0.1f;
 }
+} // namespace
+
 
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
-	ARRAY_LENGTH(VideoItems),
+	VideoItems.size(),
 	0,
-	VideoItems,
+	VideoItems.data(),
 	4,
 	0,
 	&M_UpdateDisplayOptions
 };
+namespace
+{
+
 
 /*=======================================
  *
@@ -1053,78 +1201,88 @@ menu_t VideoMenu = {
  *
  *=======================================*/
 
-static value_t SecretOptions[] = {
-    {0.0, "Off"},
-    {1.0, "On (with sounds)"},
-    {2.0, "On (w/o sounds)"},
-    {3.0, "Own only"},
-};
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 4> SecretOptions = {{
+	{ .value = 0.0, .name = "Off"},
+	{ .value = 1.0, .name = "On (with sounds)"},
+	{ .value = 2.0, .name = "On (w/o sounds)"},
+	{ .value = 3.0, .name = "Own only"},
+}};
 
-static value_t TimerStyles[] = {
-    {0.0, "No Timer"}, {1.0, "Count Down"}, {2.0, "Count Up"}};
+std::array<value_t, 3> TimerStyles = {{
+	{ .value = 0.0, .name = "No Timer" }, { .value = 1.0, .name = "Count Down" }, { .value = 2.0, .name = "Count Up" }
+}};
 
-static value_t FlagHelds[] = {{0.0, "Off"}, {1.0, "Complete"}, {2.0, "Simple"}};
+std::array<value_t, 3> FlagHelds = {{
+	{ .value = 0.0, .name = "Off" }, { .value = 1.0, .name = "Complete" }, { .value = 2.0, .name = "Simple" }
+}};
 
-static value_t Crosshairs[] = {{0.0, "None"}, {1.0, "Cross 1"}, {2.0, "Cross 2"},
-                               {3.0, "X"},    {4.0, "Diamond"}, {5.0, "Dot"},
-                               {6.0, "Box"},  {7.0, "Angle"},   {8.0, "Big Thing"}};
+std::array<value_t, 9> Crosshairs = {{
+	{ .value = 0.0, .name = "None" }, { .value = 1.0, .name = "Cross 1" }, { .value = 2.0, .name = "Cross 2" },
+	{ .value = 3.0, .name = "X" },    { .value = 4.0, .name = "Diamond" }, { .value = 5.0, .name = "Dot" },
+	{ .value = 6.0, .name = "Box"},  {.value = 7.0, .name = "Angle"},   {.value = 8.0, .name = "Big Thing"}}};
 
-static value_t ExtendedHudStyles[] = {{0.0, "Off"}, {1.0, "Horizontal 1"}, {2.0, "Horizontal 2"},
-								 {3.0, "Vertical 1"}, {4.0, "Vertical 2"},};
+std::array<value_t, 5> ExtendedHudStyles = {{
+	{ .value = 0.0, .name = "Off" }, { .value = 1.0, .name = "Horizontal 1" }, { .value = 2.0, .name = "Horizontal 2" },
+	{ .value = 3.0, .name = "Vertical 1" }, { .value = 4.0, .name = "Vertical 2" }
+}};
 
-static menuitem_t HUDItems[] = {
-    {yellowtext, "Status Bar", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {discrete, "Scale status bar", {&st_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {yellowtext, "Floating HUD elements", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {discrete, "Scale HUD elements", {&hud_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {slider, "HUD Transparency", {&hud_transparency}, {0.0}, {1.0}, {0.1}, {NULL}},
-    {slider, "HUD Anchoring", {&hud_anchoring}, {0.0}, {1.0}, {0.1}, {NULL}},
-    {discrete, "Bigger font in HUD", {&hud_bigfont}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    // clang-format off
-    {discrete, "Show Secret Messages", {&hud_revealsecrets}, {4.0}, {0.0}, {0.0}, {SecretOptions}},
-    {discrete, "Player target names", {&hud_targetnames}, {2.0}, {0.0}, {0.0}, {HideShow}},
-    // clang-format on
-    {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
-    {discrete, "Speedometer", {&hud_speedometer}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {slider, "Feed Timeout", {&hud_feedtime}, {1.0}, {10.0}, {0.25}, {NULL}},
-    {discrete, "Show Kills in Feed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {discrete, "Extended hud", {&hud_extendedinfo}, {5.0}, {0.0}, {0.0}, {ExtendedHudStyles}},
-    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+std::array<menuitem_t, 34> HUDItems = {{
+	{ .type = yellowtext, .label = "Status Bar", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Scale status bar", .a = {.cvar = &st_scale}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = "Floating HUD elements", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Scale HUD elements", .a = {.cvar = &hud_scale}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = slider, .label = "HUD Transparency", .a = {.cvar = &hud_transparency}, .b = {.leftval = 0.0}, .c = {.rightval = 1.0}, .d = {.step = 0.1}, .e = {.values = nullptr}},
+	{ .type = slider, .label = "HUD Anchoring", .a = {.cvar = &hud_anchoring}, .b = {.leftval = 0.0}, .c = {.rightval = 1.0}, .d = {.step = 0.1}, .e = {.values = nullptr}},
+	{.type = discrete, .label = "Bigger font in HUD", .a = {.cvar = &hud_bigfont}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	// clang-format off
+	{ .type = discrete, .label = "Show Secret Messages", .a = {.cvar = &hud_revealsecrets}, .b = {.leftval = ARRAY_LENGTH(SecretOptions)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = SecretOptions.data()}},
+	{ .type = discrete, .label = "Player target names", .a = {.cvar = &hud_targetnames}, .b = {.leftval = ARRAY_LENGTH(HideShow)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = HideShow.data()}},
+	// clang-format on
+	{ .type = discrete, .label = "Timer Type", .a = {.cvar = &hud_timer}, .b = {.leftval = ARRAY_LENGTH(TimerStyles)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = TimerStyles.data()}},
+	{ .type = discrete, .label = "Speedometer", .a = {.cvar = &hud_speedometer}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = slider, .label = "Feed Timeout", .a = {.cvar = &hud_feedtime}, .b = {.leftval = 1.0}, .c = {.rightval = 10.0}, .d = {.step = 0.25}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Show Kills in Feed", .a = {.cvar = &hud_feedobits}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Netdemo infos", .a = {.cvar = &hud_demobar}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Extended hud", .a = {.cvar = &hud_extendedinfo}, .b = {.leftval = ARRAY_LENGTH(ExtendedHudStyles)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = ExtendedHudStyles.data()}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 
-    {yellowtext, "Scoreboard", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {slider, "Scale scoreboard", {&hud_scalescoreboard}, {0.0}, {1.0}, {0.125}, {NULL}},
-    // clang-format off
-	{discrete, "Scores on Death", {&hud_show_scoreboard_ondeath}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    // clang-format on
-    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+	{ .type = yellowtext, .label = "Scoreboard", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = slider, .label = "Scale scoreboard", .a = {.cvar = &hud_scalescoreboard}, .b = {.leftval = 0.0}, .c = {.rightval = 1.0}, .d = {.step = 0.125}, .e = {.values = nullptr}},
+	// clang-format off
+	{ .type = discrete, .label = "Scores on Death", .a = {.cvar = &hud_show_scoreboard_ondeath}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	// clang-format on
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 
-    {yellowtext, "Capture the Flag", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {discrete, "Event Message Type", {&hud_gamemsgtype}, {3.0}, {0.0}, {0.0}, {VoxType}},
-    {discrete, "Held Flag Border", {&hud_heldflag}, {3.0}, {0.0}, {0.0}, {FlagHelds}},
-    {discrete, "Held Flag Flashes", {&hud_heldflag_flash}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+	{ .type = yellowtext, .label = "Capture the Flag", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Event Message Type", .a = {.cvar = &hud_gamemsgtype}, .b = {.leftval = ARRAY_LENGTH(VoxType)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = VoxType.data()}},
+	{ .type = discrete, .label = "Held Flag Border", .a = {.cvar = &hud_heldflag}, .b = {.leftval = ARRAY_LENGTH(FlagHelds)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = FlagHelds.data()}},
+	{ .type = discrete, .label = "Held Flag Flashes", .a = {.cvar = &hud_heldflag_flash}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 
-    {yellowtext, "Crosshair", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {discrete, "Crosshair type", {&hud_crosshair}, {9.0}, {0.0}, {0.0}, {Crosshairs}},
-    {discrete, "Scale crosshair", {&hud_crosshairscale}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {discrete, "Crosshair health", {&hud_crosshairhealth}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {redslider, "Crosshair Red", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {greenslider, "Crosshair Green", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {blueslider, "Crosshair Blue", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-};
+	{ .type = yellowtext, .label = "Crosshair", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Crosshair type", .a = {.cvar = &hud_crosshair}, .b = {.leftval = ARRAY_LENGTH(Crosshairs)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = Crosshairs.data()}},
+	{ .type = discrete, .label = "Scale crosshair", .a = {.cvar = &hud_crosshairscale}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Crosshair health", .a = {.cvar = &hud_crosshairhealth}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = redslider, .label = "Crosshair Red", .a = {.cvar = &hud_crosshaircolor}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = greenslider, .label = "Crosshair Green", .a = {.cvar = &hud_crosshaircolor}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = blueslider, .label = "Crosshair Blue", .a = {.cvar = &hud_crosshaircolor}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t HUDMenu = {
-    "M_HUD",                // title
-    1,                      // lastOn
-    ARRAY_LENGTH(HUDItems), // numitems
-    0,                      // indent
-    HUDItems,               // items
-    0,                      // scrolltop
-    0,                      // scrollpos
-    NULL,                   // refreshfunc
+	"M_HUD",                // title
+	1,                      // lastOn
+	HUDItems.size(),        // numitems
+	0,                      // indent
+	HUDItems.data(),        // items
+	0,                      // scrolltop
+	0,                      // scrollpos
+	nullptr,                // refreshfunc
 };
 
 /*=======================================
@@ -1144,67 +1302,84 @@ EXTERN_CVAR (msg3color)
 EXTERN_CVAR (msg4color)
 EXTERN_CVAR (msgmidcolor)
 
-static value_t TextColors[] =
+namespace
 {
-	{ CR_BRICK,		"brick" },
-	{ CR_TAN,		"tan" },
-	{ CR_GRAY,		"gray" },
-	{ CR_GREEN,		"green" },
-	{ CR_BROWN,		"brown" },
-	{ CR_GOLD, 		"gold" },
-	{ CR_RED,		"red" },
-	{ CR_BLUE,		"blue" },
-	{ CR_ORANGE,	"orange" },
-	{ CR_WHITE,		"white" },
-	{ CR_YELLOW,	"yellow" },
-	{ CR_BLACK,		"black" },
-	{ CR_LIGHTBLUE,	"light blue" },
-	{ CR_CREAM,		"cream" },
-	{ CR_OLIVE,		"olive" },
-	{ CR_DARKGREEN,	"dark green" },
-	{ CR_DARKRED,	"dark red" },
-	{ CR_DARKBROWN,	"dark brown" },
-	{ CR_PURPLE,	"purple" },
-	{ CR_DARKGRAY,	"dark gray" },
-	{ CR_CYAN,		"cyan" }
-};
+
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 21> TextColors =
+{{
+	{ .value = CR_BRICK,		.name = "brick"},
+	{ .value = CR_TAN,		.name = "tan"},
+	{ .value = CR_GRAY,		.name = "gray"},
+	{ .value = CR_GREEN,		.name = "green"},
+	{ .value = CR_BROWN,		.name = "brown"},
+	{ .value = CR_GOLD, 		.name = "gold"},
+	{ .value = CR_RED,		.name = "red"},
+	{ .value = CR_BLUE,		.name = "blue"},
+	{ .value = CR_ORANGE,	.name = "orange"},
+	{ .value = CR_WHITE,		.name = "white"},
+	{ .value = CR_YELLOW,	.name = "yellow"},
+	{ .value = CR_BLACK,		.name = "black"},
+	{ .value = CR_LIGHTBLUE,	.name = "light blue"},
+	{ .value = CR_CREAM,		.name = "cream"},
+	{ .value = CR_OLIVE,		.name = "olive"},
+	{ .value = CR_DARKGREEN,	.name = "dark green"},
+	{ .value = CR_DARKRED,	.name = "dark red"},
+	{ .value = CR_DARKBROWN,	.name = "dark brown"},
+	{ .value = CR_PURPLE,	.name = "purple"},
+	{ .value = CR_DARKGRAY,	.name = "dark gray"},
+	{ .value = CR_CYAN,		.name = "cyan"}
+}};
+
 
 // TODO: Put all language info in one array, auto detect what's in the lump?
 //static value_t Languages[] = { // unused
-//	{ 0.0, "Auto" },
-//	{ 1.0, "English" },
-//	{ 2.0, "French" },
-//	{ 3.0, "Italian" }
+//	{ .value = 0.0, .name = "Auto"},
+//	{ .value = 1.0, .name = "English"},
+//	{ .value = 2.0, .name = "French"},
+//	{ .value = 3.0, .name = "Italian"}
 //};
 
-static value_t ScaleFactors[] = {{0.0, "Auto"}, {1.0, "1X"}, {2.0, "2X"},
-                                 {3.0, "3X"},   {4.0, "4X"}, {5.0, "5X"}};
+// Stops at 4X: hud_scaletext and con_scaletext are both ranged 0 to 4.
+std::array<value_t, 5> ScaleFactors = {{
+	{ .value = 0.0, .name = "Auto"},
+	{ .value = 1.0, .name = "1X"},
+	{ .value = 2.0, .name = "2X"},
+	{ .value = 3.0, .name = "3X"},
+	{ .value = 4.0, .name = "4X"}
+}};
 
-static menuitem_t MessagesItems[] = {
+// Sized by the initializer: entries here are conditionally compiled,
+// so a fixed std::array size would be wrong on some builds.
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
+menuitem_t MessagesItems[] = {
 #if 0
-	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
+	{ .type = discrete, .label = "Language", 			 .a = {.cvar = &language},		   	.b = {.leftval = ARRAY_LENGTH(Languages)}, .c = {.rightval = 0.0},   .d = {.step = 0.0}, .e = {.values = Languages}},
 #endif
-	{ slider,	"Message Timeout",		 {&con_notifytime},		{1.0}, {10.0},	{0.25}, {NULL} },
-	{ slider,	"Center Message Timeout",{&con_midtime},		{1.0}, {10.0},	{0.25}, {NULL} },
-	{ discrete,	"Scale message text",    {&hud_scaletext},		{5.0}, {0.0}, 	{0.0}, {ScaleFactors} },
-	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete,	"Scale console text",   {&con_scaletext},		{5.0}, {0.0}, 	{0.0}, {ScaleFactors} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ yellowtext,"Display settings",	{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete,	"Pickup messages",		{&message_showpickups},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete,	"Death messages",		{&message_showobituaries},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete,	"Spectator messages",	{&mute_spectators},	{2.0}, {0.0},   {0.0},	{OffOn} },
-	{ discrete,	"Enemy messages",		{&mute_enemies},	{2.0}, {0.0},   {0.0},	{OffOn} },
+	{ .type = slider,	.label = "Message Timeout",		 .a = {.cvar = &con_notifytime},		.b = {.leftval = 1.0}, .c = {.rightval = 10.0},	.d = {.step = 0.25}, .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Center Message Timeout",.a = {.cvar = &con_midtime},		.b = {.leftval = 1.0}, .c = {.rightval = 10.0},	.d = {.step = 0.25}, .e = {.values = nullptr}},
+	{ .type = discrete,	.label = "Scale message text",    .a = {.cvar = &hud_scaletext},		.b = {.leftval = ARRAY_LENGTH(ScaleFactors)}, .c = {.rightval = 0.0}, 	.d = {.step = 0.0}, .e = {.values = ScaleFactors.data()}},
+	{ .type = discrete,	.label = "Colorize messages",	.a = {.cvar = &con_coloredmessages},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Scale console text",   .a = {.cvar = &con_scaletext},		.b = {.leftval = ARRAY_LENGTH(ScaleFactors)}, .c = {.rightval = 0.0}, 	.d = {.step = 0.0}, .e = {.values = ScaleFactors.data()}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext,.label = "Display settings",	.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete,	.label = "Pickup messages",		.a = {.cvar = &message_showpickups},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Death messages",		.a = {.cvar = &message_showobituaries},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Spectator messages",	.a = {.cvar = &mute_spectators},	.b = {.leftval = ARRAY_LENGTH(OffOn)}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OffOn.data()}},
+	{ .type = discrete,	.label = "Enemy messages",		.a = {.cvar = &mute_enemies},	.b = {.leftval = ARRAY_LENGTH(OffOn)}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OffOn.data()}},
 
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ yellowtext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Obituaries",			{&msg1color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Chat Messages",		{&msg3color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Team Messages",		{&msg4color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Centered Messages",	{&msgmidcolor},			{21.0}, {0.0},	{0.0}, {TextColors} }
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = "Message Colors",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = cdiscrete, .label = "Item Pickup",			.a = {.cvar = &msg0color},		   	.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
+	{ .type = cdiscrete, .label = "Obituaries",			.a = {.cvar = &msg1color},		   	.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
+	{ .type = cdiscrete, .label = "Critical Messages",	.a = {.cvar = &msg2color},		   	.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
+	{ .type = cdiscrete, .label = "Chat Messages",		.a = {.cvar = &msg3color},		   	.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
+	{ .type = cdiscrete, .label = "Team Messages",		.a = {.cvar = &msg4color},		   	.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
+	{ .type = cdiscrete, .label = "Centered Messages",	.a = {.cvar = &msgmidcolor},			.b = {.leftval = ARRAY_LENGTH(TextColors)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}}
 };
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t MessagesMenu = {
 	"M_MESS",
@@ -1214,8 +1389,11 @@ menu_t MessagesMenu = {
 	MessagesItems,
 	0,
 	0,
-	NULL
+	nullptr
 };
+namespace
+{
+
 
 /*=======================================
  *
@@ -1223,65 +1401,78 @@ menu_t MessagesMenu = {
  *
  *=======================================*/
 
-static value_t ClassicMapStringTypes[] = {
-	{ 0.0, "Odamex" },
-	{ 1.0, "Classic" }
-};
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 2> ClassicMapStringTypes = {{
+	{ .value = 0.0, .name = "Odamex"},
+	{ .value = 1.0, .name = "Classic"}
+}};
 
-static value_t AutomapScales[] = {
-	{ 0.0, "Auto" },
-	{ 1.0, "1X" },
-	{ 2.0, "2X" },
-	{ 3.0, "3X" },
-	{ 4.0, "4X" },
-	{ 5.0, "5X" },
-	{ 6.0, "6X" },
-};
+std::array<value_t, 5> AuthorDisplays = {{
+	{ .value = 0.0, .name = "Off"},
+	{ .value = 1.0, .name = "Static"},
+	{ .value = 2.0, .name = "Fade"},
+	{ .value = 3.0, .name = "Marquee"},
+	{ .value = 4.0, .name = "Teletype"}
+}};
 
-static value_t MinimapLocations[] = {
-	{ 0.0, "Left Top" },
-	{ 1.0, "Left Middle" },
-	{ 2.0, "Left Bottom" },
-	{ 3.0, "Right Top" },
-	{ 4.0, "Right Middle" },
-	{ 5.0, "Right Bottom" },
-};
+std::array<value_t, 7> AutomapScales = {{
+	{ .value = 0.0, .name = "Auto"},
+	{ .value = 1.0, .name = "1X"},
+	{ .value = 2.0, .name = "2X"},
+	{ .value = 3.0, .name = "3X"},
+	{ .value = 4.0, .name = "4X"},
+	{ .value = 5.0, .name = "5X"},
+	{ .value = 6.0, .name = "6X"},
+}};
 
-static menuitem_t AutomapItems[] = {
-	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Line Thickeness",		{&am_thickness},		{7.0}, {0.0},	{0.0},  {AutomapScales} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-    { discrete, "Show item count",		{&am_showitems},		{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Show monster count",	{&am_showmonsters},		{2.0}, {0.0},	{0.0},	{OnOff} },
-    { discrete, "Show secrets count",	{&am_showsecrets},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Show map timer", 	    {&am_showtime}, 	   	{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Map name style",       {&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
+std::array<value_t, 6> MinimapLocations = {{
+	{ .value = 0.0, .name = "Left Top"},
+	{ .value = 1.0, .name = "Left Middle"},
+	{ .value = 2.0, .name = "Left Bottom"},
+	{ .value = 3.0, .name = "Right Top"},
+	{ .value = 4.0, .name = "Right Middle"},
+	{ .value = 5.0, .name = "Right Bottom"},
+}};
 
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ yellowtext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Highlight locked doors",{&am_showlocked},		{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ more,     "Reset custom map colors",  {NULL},    {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
+std::array<menuitem_t, 22> AutomapItems = {{
+	{ .type = discrete, .label = "Rotate automap",		.a = {.cvar = &am_rotate},		   	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Overlay automap",		.a = {.cvar = &am_overlay},			.b = {.leftval = ARRAY_LENGTH(Overlays)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Overlays.data()}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Line Thickeness",		.a = {.cvar = &am_thickness},		.b = {.leftval = ARRAY_LENGTH(AutomapScales)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = AutomapScales.data()}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Show item count",		.a = {.cvar = &am_showitems},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show monster count",	.a = {.cvar = &am_showmonsters},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},	.e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show secrets count",	.a = {.cvar = &am_showsecrets},	   	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Show map timer", 	    .a = {.cvar = &am_showtime}, 	   	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Map name style",       .a = {.cvar = &am_classicmapstring},	.b = {.leftval = ARRAY_LENGTH(ClassicMapStringTypes)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = ClassicMapStringTypes.data()}},
+	{ .type = discrete, .label = "Show map author",     .a = {.cvar = &am_showauthor},		.b = {.leftval = ARRAY_LENGTH(AuthorDisplays)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = AuthorDisplays.data()}},
 
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ yellowtext, "Overlay Minimap Options", {NULL},			{0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Enable Minimap",		{&am_ovminimap},		{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Location",				{&am_ovlocation},		{6.0}, {0.0},	{0.0},  {MinimapLocations} },
-	{ slider,	"Scale Width",			{&am_ovscalewidth},		{0.0}, {1.0},	{0.05}, {NULL} },
-	{ slider,	"Scale Height",			{&am_ovscaleheight},	{0.0}, {1.0},	{0.05}, {NULL} },
-};
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = "Automap Colors",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Highlight locked doors",.a = {.cvar = &am_showlocked},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Custom map colors",	.a = {.cvar = &am_usecustomcolors},	.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = more,     .label = "Reset custom map colors",  .a = {.cvar = nullptr},    .b = {.leftval = 0.0}, .c = {.rightval = 0.0},   .d = {.step = 0.0},  .e = {.mfunc = ResetCustomColors}},
+
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = "Overlay Minimap Options", .a = {.cvar = nullptr},			.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Enable Minimap",		.a = {.cvar = &am_ovminimap},		.b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Location",				.a = {.cvar = &am_ovlocation},		.b = {.leftval = ARRAY_LENGTH(MinimapLocations)}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = MinimapLocations.data()}},
+	{ .type = slider,	.label = "Scale Width",			.a = {.cvar = &am_ovscalewidth},		.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Scale Height",			.a = {.cvar = &am_ovscaleheight},	.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
 
 menu_t AutomapMenu = {
 	"M_AUTOMP",
 	0,
-	ARRAY_LENGTH(AutomapItems),
+	AutomapItems.size(),
 	0,
-	AutomapItems,
+	AutomapItems.data(),
 	0,
 	0,
-	NULL
+	nullptr
 };
 
 
@@ -1291,9 +1482,15 @@ menu_t AutomapMenu = {
  *
  *=======================================*/
 
-int testingmode;		// Holds time to revert to old mode
+// Tick at which the mode test expires, on the same clock as I_MSTime.
+dtime_t testingmode;
+namespace
+{
+		// Holds time to revert to old mode
 
-static bool GetSelectedSize(int line, int *width, int *height);
+bool GetSelectedSize(int line, int *width, int *height);
+} // namespace
+
 
 EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_maxfps)
@@ -1304,10 +1501,13 @@ EXTERN_CVAR (vid_32bpp)
 EXTERN_CVAR(vid_vsync)
 
 static uint16_t old_width, old_height;
+namespace
+{
 
-static void SetModesMenu(int w, int h);
 
-static void M_SetVideoMode(uint16_t width, uint16_t height)
+void SetModesMenu(int w, int h);
+
+void M_SetVideoMode(uint16_t width, uint16_t height)
 {
 	old_width = I_GetVideoWidth();
 	old_height = I_GetVideoHeight();
@@ -1316,6 +1516,8 @@ static void M_SetVideoMode(uint16_t width, uint16_t height)
 
 	SetModesMenu(width, height);
 }
+} // namespace
+
 
 
 void M_RestoreVideoMode()
@@ -1324,79 +1526,94 @@ void M_RestoreVideoMode()
 	M_SetVideoMode(old_width, old_height);
 }
 
+namespace
+{
 
-static value_t Depths[22];
+constexpr int MAX_LINES_ONSCREEN = 22;
+std::array<value_t, MAX_LINES_ONSCREEN> Depths;
 
 #ifdef GCONSOLE
-static const char VMEnterText[] = "Press A to set mode";
-static const char VMTestText[] = "Press X to test mode for 5 seconds";
+constexpr const char VMEnterText[] = "Press A to set mode";
+constexpr const char VMTestText[] = "Press X to test mode for 5 seconds";
 #else
-static const char VMEnterText[] = "Press ENTER to set mode";
-static const char VMTestText[] = "Press T to test mode for 5 seconds";
+constexpr const char VMEnterText[] = "Press ENTER to set mode";
+constexpr const char VMTestText[] = "Press T to test mode for 5 seconds";
 #endif
 
-static const char VMTestWaitText[] = "Please wait 5 seconds...";
+constexpr const char VMTestWaitText[] = "Please wait 5 seconds...";
 
-static value_t VidFPSCaps[] = {
-	{ 35.0,		"35fps" },
-	{ 60.0,		"60fps" },
-	{ 70.0,		"70fps" },
-	{ 90.0,		"90fps" },
-	{ 105.0,	"105fps"},
-	{ 120.0,	"120fps" },
-	{ 140.0,	"140fps"},
-	{ 144.0,	"144fps"},
-	{ 240.0,	"240fps"},
-	{ 0.0,		"Unlimited" }
-};
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 10> VidFPSCaps = {{
+	{ .value = 35.0,	.name = "35fps"},
+	{ .value = 60.0,	.name = "60fps"},
+	{ .value = 70.0,	.name = "70fps"},
+	{ .value = 90.0,	.name = "90fps"},
+	{ .value = 105.0,	.name = "105fps"},
+	{ .value = 120.0,	.name = "120fps"},
+	{ .value = 140.0,	.name = "140fps"},
+	{ .value = 144.0,	.name = "144fps"},
+	{ .value = 240.0,	.name = "240fps"},
+	{ .value = 0.0,		.name = "Unlimited"}
+}};
 
-static value_t FullScreenOptions[] = {
-	{ WINDOW_Windowed,			"Window" },
-	{ WINDOW_Fullscreen,		"Full Screen Exclusive" },
-	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
-};
+std::array<value_t, 3> FullScreenOptions = {{
+	{ .value = WINDOW_Windowed,			.name = "Window"},
+	{ .value = WINDOW_Fullscreen,		.name = "Full Screen Exclusive"},
+	{ .value = WINDOW_DesktopFullscreen,	.name = "Full Screen Window"}
+}};
 
-static value_t WidescreenMode[] = {
-	{ 0.0,			"Off" },
-	{ 1.0,			"Auto" },
-	{ 2.0,			"16:10" },
-	{ 3.0,			"16:9" },
-	{ 4.0,			"21:9" },
-	{ 5.0,			"32:9" }
-};
+std::array<value_t, 6> WidescreenMode = {{
+	{ .value = 0.0,			.name = "Off"},
+	{ .value = 1.0,			.name = "Auto"},
+	{ .value = 2.0,			.name = "16:10"},
+	{ .value = 3.0,			.name = "16:9"},
+	{ .value = 4.0,			.name = "21:9"},
+	{ .value = 5.0,			.name = "32:9"}
+}};
 
-static menuitem_t ModesItems[] = {
+// Sized by the initializer: entries here are conditionally compiled,
+// so a fixed std::array size would be wrong on some builds.
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
+menuitem_t ModesItems[] = {
 #ifdef GCONSOLE
-	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
+	{ .type = slider, .label = "Overscan",				.a = {.cvar = &vid_overscan},		.b = {.leftval = 0.84375}, .c = {.rightval = 1.0}, .d = {.step = 0.03125}, .e = {.values = nullptr}},
 #else
-	{ discrete, "Fullscreen",			{&vid_fullscreen},		{3.0}, {0.0},	{0.0}, {FullScreenOptions} },
+	{ .type = discrete, .label = "Fullscreen",			.a = {.cvar = &vid_fullscreen},		.b = {.leftval = ARRAY_LENGTH(FullScreenOptions)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = FullScreenOptions.data()}},
 #endif
-	{ discrete,	"Widescreen",			{&vid_widescreen},		{6.0}, {0.0},	{0.0}, {WidescreenMode} } ,
-	{ discrete,	"VSync",				{&vid_vsync},			{2.0}, {0.0},	{0.0}, {YesNo} },
-	{ discrete, "Framerate",			{&vid_maxfps},			{9.0}, {0.0},	{0.0}, {VidFPSCaps} },
-	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
-	{ redtext,	"",						{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ whitetext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ yellowtext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
+	{ .type = discrete,	.label = "Widescreen",			.a = {.cvar = &vid_widescreen},		.b = {.leftval = ARRAY_LENGTH(WidescreenMode)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = WidescreenMode.data()}} ,
+	{ .type = discrete,	.label = "VSync",				.a = {.cvar = &vid_vsync},			.b = {.leftval = ARRAY_LENGTH(YesNo)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = YesNo.data()}},
+	{ .type = discrete, .label = "Framerate",			.a = {.cvar = &vid_maxfps},			.b = {.leftval = ARRAY_LENGTH(VidFPSCaps)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = VidFPSCaps.data()}},
+	{ .type = discrete, .label = "32-bit color",			.a = {.cvar = &vid_32bpp},			.b = {.leftval = ARRAY_LENGTH(YesNo)}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = YesNo.data()}},
+	{ .type = redtext,	.label = "",						.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = screenres, .label = nullptr,					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = screenres, .label = nullptr,					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = screenres, .label = nullptr,					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = screenres, .label = nullptr,					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = screenres, .label = nullptr,					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = screenres, .label = nullptr,					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = screenres, .label = nullptr,					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = screenres, .label = nullptr,					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = whitetext, .label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 };
+// NOLINTEND(readability-magic-numbers)
+
+}
 
 #define VM_DEPTHITEM	0
 #define VM_RESSTART		6
 #define VM_ENTERLINE	15
 #define VM_TESTLINE		17
 
-#define ANN_AUTHORLINE 3
-#define ANN_DESCLINE 4
+// Rows in AnnouncerItems whose labels are filled in at draw time.
+constexpr int ANN_AUTHORLINE = 3;
+constexpr int ANN_DESCLINE = 4;
+
+// Character widths the announcer menu truncates its text to.
+constexpr size_t ANN_MAXTEXTWIDTH = 40;
+constexpr size_t ANN_MAXNAMEWIDTH = 30;
 
 menu_t ModesMenu = {
 	"M_VIDMOD",
@@ -1406,14 +1623,17 @@ menu_t ModesMenu = {
 	ModesItems,
 	0,
 	0,
-	NULL
+	nullptr
 };
+namespace
+{
 
-static void BuildModesList(int hiwidth, int hiheight)
+
+void BuildModesList(int hiwidth, int hiheight)
 {
 	// gathers a list of unique resolutions availible for the current
 	// screen mode (windowed or fullscreen)
-	bool fullscreen = I_GetWindow()->getVideoMode().isFullScreen();
+	const bool fullscreen = I_GetWindow()->getVideoMode().isFullScreen();
 
 	typedef std::vector< std::pair<uint16_t, uint16_t> > MenuModeList;
 	MenuModeList menumodelist;
@@ -1426,7 +1646,7 @@ static void BuildModesList(int hiwidth, int hiheight)
 
 	MenuModeList::const_iterator mode_it = menumodelist.begin();
 
-	char** str = NULL;
+	char** str = nullptr;
 
 	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
 	{
@@ -1454,25 +1674,30 @@ static void BuildModesList(int hiwidth, int hiheight)
 			}
 			else
 			{
-				str = NULL;
+				str = nullptr;
 			}
 		}
 	}
 }
+} // namespace
+
 
 void M_RefreshModesList()
 {
 	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 }
+namespace
+{
 
-static bool GetSelectedSize(int line, int* width, int* height)
+
+bool GetSelectedSize(int line, int* width, int* height)
 {
 	if (ModesItems[line].type != screenres)
 		return false;
 
-	int mode_num = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode;
+	const int mode_num = ((line - VM_RESSTART) * 3) + ModesItems[line].a.selmode;
 
-	const char* resolution_str = NULL;
+	const char* resolution_str = nullptr;
 
 	if (mode_num % 3 == 0)
 		resolution_str = ModesItems[line].b.res1;
@@ -1484,22 +1709,28 @@ static bool GetSelectedSize(int line, int* width, int* height)
 	if (!resolution_str)
 		return false;
 
-	size_t xpos = 0;
-	for (const char* s = resolution_str; s; s++, xpos++)
-		if (*s == 'x' || *s == 'X')
-			break;
+	const std::string_view resolution(resolution_str);
+	const size_t xpos = resolution.find_first_of("xX");
+	if (xpos == std::string_view::npos)
+		return false;
 
-	char width_str[5] = { 0 }, height_str[5] = { 0 };
-	strncpy(width_str, resolution_str, xpos);
-	strncpy(height_str, resolution_str + xpos + 1, 4);
+	const std::string_view width_str = resolution.substr(0, xpos);
+	const std::string_view height_str = resolution.substr(xpos + 1);
+	if (width_str.empty() || height_str.empty())
+		return false;
 
-	*width = atoi(width_str);
-	*height = atoi(height_str);
+	const std::optional<int> parsed_width = ParseNum<int>(width_str);
+	const std::optional<int> parsed_height = ParseNum<int>(height_str);
+	if (!parsed_width || !parsed_height)
+		return false;
+
+	*width = *parsed_width;
+	*height = *parsed_height;
 
 	return true;
 }
 
-static void SetModesMenu(int w, int h)
+void SetModesMenu(int w, int h)
 {
 	if (!testingmode)
 	{
@@ -1517,6 +1748,8 @@ static void SetModesMenu(int w, int h)
 
 	BuildModesList(w, h);
 }
+} // namespace
+
 
 //
 // M_ModeFlashTestText
@@ -1530,8 +1763,11 @@ void M_ModeFlashTestText()
 	else
 		ModesItems[VM_TESTLINE].label = "";
 }
+namespace
+{
 
-static void SetVidMode()
+
+void SetVidMode()
 {
 	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight());
 
@@ -1545,52 +1781,66 @@ static void SetVidMode()
 
 
 
-static cvar_t *flagsvar;
+cvar_t *flagsvar;
+} // namespace
+
 
 EXTERN_CVAR(ui_dimcolor)
 
+namespace
+{
+
 // [Russell] - Modified to send new colours
-static void M_SendUINewColor (int red, int green, int blue)
+void M_SendUINewColor (int red, int green, int blue)
 {
 	AddCommandString(fmt::format("ui_dimcolor \"{:02} {:02x} {:02}\"", red, green, blue));
 }
 
-static void M_SlideUIRed(int val)
+} // namespace
+namespace
+{
+
+
+void M_SlideUIRed(int val)
 {
 	argb_t color = V_GetColorFromString(ui_dimcolor);
 	color.setr(val);
 	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
 
-static void M_SlideUIGreen (int val)
+void M_SlideUIGreen (int val)
 {
 	argb_t color = V_GetColorFromString(ui_dimcolor);
 	color.setg(val);
 	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
 
-static void M_SlideUIBlue (int val)
+void M_SlideUIBlue (int val)
 {
 	argb_t color = V_GetColorFromString(ui_dimcolor);
 	color.setb(val);
 	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
+} // namespace
+
 
 
 //
 //		Set some stuff up for the video modes menu
 //
 
-void M_OptInit (void)
+void M_OptInit()
 {
-	for (int i = 0; i < 22; i++)
+	for (size_t i = 0; i < Depths.size(); i++)
 	{
 		Depths[i].value = i;
-		Depths[i].name = NULL;
+		Depths[i].name = nullptr;
 	}
 
 	switch (I_GetVideoCapabilities()->getDisplayType())
 	{
+	// FIXME: this is overriding widescreen even though both fullscreen and windowed
+	// should be allowed to toggle it
 	case DISPLAY_FullscreenOnly:
 		ModesItems[2].type = nochoice;
 		ModesItems[2].b.leftval = 1.f;
@@ -1608,7 +1858,7 @@ void M_OptInit (void)
 //
 //		Toggle messages on/off
 //
-void M_ChangeMessages (void)
+void M_ChangeMessages()
 {
 	if (show_messages)
 	{
@@ -1637,14 +1887,14 @@ void M_SizeDisplay (float diff)
 BEGIN_COMMAND (sizedown)
 {
 	M_SizeDisplay (-1.0);
-	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 }
 END_COMMAND (sizedown)
 
 BEGIN_COMMAND (sizeup)
 {
 	M_SizeDisplay(1.0);
-	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+	S_Sound (CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 }
 END_COMMAND (sizeup)
 
@@ -1665,9 +1915,6 @@ void M_BuildKeyList (menuitem_t *item, int numitems)
 
 void M_SwitchMenu(menu_t* menu)
 {
-	int i, widest = 0, thiswidth;
-	menuitem_t *item;
-
 	MenuStack[MenuStackDepth].menu.newmenu = menu;
 	MenuStack[MenuStackDepth].isNewStyle = true;
 	MenuStack[MenuStackDepth].drawSkull = false;
@@ -1680,23 +1927,23 @@ void M_SwitchMenu(menu_t* menu)
 
 	if (!menu->indent)
 	{
-		for (i = 0; i < menu->numitems; i++)
+		int widest = 0;
+		for (int i = 0; i < menu->numitems; i++)
 		{
-			item = menu->items + i;
+			const menuitem_t* item = menu->items + i;
 			if (item->type != whitetext && item->type != redtext && item->type != orangetext)
 			{
-				thiswidth = V_StringWidth (item->label);
-				if (thiswidth > widest)
-					widest = thiswidth;
+				const int thiswidth = V_StringWidth (item->label);
+				widest = std::max(thiswidth, widest);
 			}
 		}
 		menu->indent = widest + 6;
 	}
 
-	flagsvar = NULL;
+	flagsvar = nullptr;
 }
 
-bool M_StartOptionsMenu (void)
+bool M_StartOptionsMenu()
 {
 	M_SwitchMenu (&OptionMenu);
 	return true;
@@ -1705,23 +1952,23 @@ bool M_StartOptionsMenu (void)
 void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float step)
 {
 	if (leftval < rightval)
-		cur = clamp(cur, leftval, rightval);
+		cur = std::clamp(cur, leftval, rightval);
 	else
-		cur = clamp(cur, rightval, leftval);
+		cur = std::clamp(cur, rightval, leftval);
 
-	float dist = (cur - leftval) / (rightval - leftval);
+	const float dist = (cur - leftval) / (rightval - leftval);
 
 	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
+		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + (i*8), y);
 	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + static_cast<int>(dist * 78.0), y);
 
 	std::string buf;
 	if (step == 0.0f)
 		return;
-	else if (step >= 1.0f)
+	if (step >= 1.0f)
 		buf = fmt::sprintf("%.0f", cur);
 	else if (step >= 0.1f)
 		buf = fmt::sprintf("%.1f", cur);
@@ -1733,24 +1980,24 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
 {
 	if (leftval < rightval)
-		cur = clamp(cur, leftval, rightval);
+		cur = std::clamp(cur, leftval, rightval);
 	else
-		cur = clamp(cur, rightval, leftval);
+		cur = std::clamp(cur, rightval, leftval);
 
-	float dist = (cur - leftval) / (rightval - leftval);
+	const float dist = (cur - leftval) / (rightval - leftval);
 
 	screen->DrawPatchClean(W_CachePatch ("LSLIDE"), x, y);
 
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
+		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + (i*8), y);
 
 	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + static_cast<int>(dist * 78.0), y);
 
 	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 
-	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + static_cast<int>(dist * 78.0), y);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
@@ -1764,39 +2011,46 @@ int M_FindCurVal (float cur, value_t *values, int numvals)
 	return v;
 }
 
-static std::string truncate(std::string str, size_t width, bool show_ellipsis = true)
+namespace
 {
-	if (str.length() > width)
-		if (show_ellipsis)
-			return str.substr(0, width) + "...";
-		else
-			return str.substr(0, width);
-	return str;
-}
+std::string truncate(const std::string& str, size_t width, bool show_ellipsis = true)
+{
+	if (str.length() <= width)
+		return str;
 
-void M_OptDrawer (void)
+	if (show_ellipsis)
+		return str.substr(0, width) + "...";
+
+	return str.substr(0, width);
+}
+} // namespace
+
+void M_OptDrawer()
 {
 	int color;
-	int y, width, i, x, ytop;
-	int x1,y1,x2,y2;
-	int theight = 0;
+	int y;
+	int width;
+	int i;
+	int x;
+	int ytop;
+	const int theight = 0;
 	menuitem_t *item;
 	patch_t *title;
 
-	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
-	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
+	const int x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
+	const int y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
 
-    x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
-	y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
+	const int x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
+	const int y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
 
 	title = W_CachePatch (CurrentMenu->title);
-	screen->DrawPatchClean (title, 160-title->width()/2, 10);
+	screen->DrawPatchClean (title, MENU_CENTER_X - (title->width() / 2), MENU_TITLE_Y);
 
 	y = 15 + title->height();
-	ytop = y + CurrentMenu->scrolltop * 8;
+	ytop = y + (CurrentMenu->scrolltop * 8);
 
 	OptMouseRowCount = 0;
 
@@ -1817,7 +2071,7 @@ void M_OptDrawer (void)
 
 		if (item->type == screenres)
 		{
-			const char *str = NULL;
+			const char *str = nullptr;
 
 			for (x = 0; x < 3; x++)
 			{
@@ -1840,13 +2094,14 @@ void M_OptDrawer (void)
 					else
 						color = CR_RED;
 
-					screen->DrawTextCleanMove (color, 104 * x + 20, y, str);
+					screen->DrawTextCleanMove (color, (RESCOLUMN_WIDTH * x) + RESCOLUMN_TEXT_X, y, str);
 				}
 			}
 
 			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
+				screen->DrawPatchClean (W_CachePatch ("LITLCURS"),
+				                        (item->a.selmode * RESCOLUMN_WIDTH) + RESCOLUMN_CURSOR_X, y);
 		}
 		else
 		{
@@ -1859,22 +2114,22 @@ void M_OptDrawer (void)
 				break;
 
 			case redtext:
-				x = 160 - width / 2;
+				x = MENU_CENTER_X - (width / 2);
 				color = CR_RED;
 				break;
 
 			case whitetext:
-				x = 160 - width / 2;
+				x = MENU_CENTER_X - (width / 2);
 				color = CR_GREY;
 				break;
 
 			case yellowtext:
-				x = 160 - width / 2;
+				x = MENU_CENTER_X - (width / 2);
 				color = CR_YELLOW;
 				break;
 
 			case orangetext:
-				x = 160 - width / 2;
+				x = MENU_CENTER_X - (width / 2);
 				color = CR_ORANGE;
 				break;
 
@@ -1896,9 +2151,10 @@ void M_OptDrawer (void)
 			case cdiscrete:
 			case svdiscrete:
 			{
-				int v, vals;
+				int v;
+				int vals;
 
-				vals = (int)item->b.leftval;
+				vals = static_cast<int>(item->b.leftval);
 				v = M_FindCurVal(item->a.cvar->value(), item->e.values, vals);
 
 				if (v == vals)
@@ -1919,7 +2175,7 @@ void M_OptDrawer (void)
 
 			case nochoice:
 				screen->DrawTextCleanMove (CR_GOLD, CurrentMenu->indent + 14, y,
-										   (item->e.values[(int)item->b.leftval]).name);
+										   (item->e.values[static_cast<int>(item->b.leftval)]).name);
 				break;
 
 			case slider:
@@ -1928,40 +2184,40 @@ void M_OptDrawer (void)
 
 			case redslider:
 			{
-				argb_t color = V_GetColorFromString(*item->a.cvar);
+				const argb_t color = V_GetColorFromString(*item->a.cvar);
 				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getr(), color);
 			}
 			break;
 			case greenslider:
 			{
-				argb_t color = V_GetColorFromString(*item->a.cvar);
+				const argb_t color = V_GetColorFromString(*item->a.cvar);
 				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getg(), color);
 			}
 			break;
 			case blueslider:
 			{
-				argb_t color = V_GetColorFromString(*item->a.cvar);
+				const argb_t color = V_GetColorFromString(*item->a.cvar);
 				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getb(), color);
 			}
 			break;
 
 			case control:
 			{
-				std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
+				const std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
 				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
 			case mapcontrol:
 			{
-				std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
+				const std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
 				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
 			case netdemocontrol:
 			{
-				std::string desc = NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2);
+				const std::string desc = NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2);
 				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
@@ -1972,9 +2228,9 @@ void M_OptDrawer (void)
 				const char *str;
 
 				if (item->b.leftval)
-					value = NoYes;
+					value = NoYes.data();
 				else
-					value = YesNo;
+					value = YesNo.data();
 
 				if (*item->e.flagint & item->a.flagmask)
 					str = value[1].name;
@@ -1989,9 +2245,9 @@ void M_OptDrawer (void)
 			{
 				std::string joyname;
 
-				size_t numjoy = I_GetJoystickCount();
+				const size_t numjoy = I_GetJoystickCount();
 
-				if((size_t)item->a.cvar->value() > numjoy)
+				if(static_cast<size_t>(item->a.cvar->value()) > numjoy)
 					item->a.cvar->Set(0.0);
 
 				if(!numjoy)
@@ -1999,7 +2255,7 @@ void M_OptDrawer (void)
 				else
 				{
 					joyname = item->a.cvar->str();
-					joyname += ": " + I_GetJoystickNameFromIndex((int)item->a.cvar->value());
+					joyname += ": " + I_GetJoystickNameFromIndex(item->a.cvar->asInt());
 				}
 
 				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
@@ -2007,14 +2263,17 @@ void M_OptDrawer (void)
 			break;
 
 			case announcer: {
-				std::string announcername = cl_announcer.str();
-				bool announcerisavailable = AnnouncerManager::getInstance().isAnnouncerLoaded(announcername);
+				const std::string& announcername = cl_announcer.str();
+				const bool announcerisavailable = AnnouncerManager::getInstance().isAnnouncerLoaded(announcername);
 
 				if (announcerisavailable)
 				{
 					const AnnouncerMetaData_s& metadata = AnnouncerManager::getInstance().getAnnouncerMetadata(announcername);
-					AnnouncerAuthor = truncate("By: " + std::string(TEXTCOLOR_TAN) + metadata.author, 40);
-					AnnouncerDescription = truncate(metadata.description, 40);
+					AnnouncerAuthor = truncate(
+					    "By: " + std::string(TEXTCOLOR_TAN) + metadata.author,
+					    ANN_MAXTEXTWIDTH);
+					AnnouncerDescription =
+					    truncate(metadata.description, ANN_MAXTEXTWIDTH);
 					AnnouncerItems[ANN_AUTHORLINE].label = AnnouncerAuthor.c_str();
 					AnnouncerItems[ANN_DESCLINE].label = AnnouncerDescription.c_str();
 				}
@@ -2024,9 +2283,9 @@ void M_OptDrawer (void)
 					AnnouncerItems[ANN_DESCLINE].label = "";
 				}
 
-				int announcerwidth = V_StringWidth(announcername.c_str());
+				const int announcerwidth = V_StringWidth(announcername.c_str());
 
-				std::string truncated = truncate(announcername, 30);
+				const std::string truncated = truncate(announcername, ANN_MAXNAMEWIDTH);
 
 				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent - announcerwidth,
 				                          y, truncated.c_str());
@@ -2065,13 +2324,16 @@ void M_OptDrawer (void)
 	if (CanScrollDown)
 		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
 }
+namespace
+{
+
 
 //
 // M_OptItemSelectable
 //
 // Matches the item types the up/down key handlers skip over.
 //
-static bool M_OptItemSelectable(const menuitem_t* item)
+bool M_OptItemSelectable(const menuitem_t* item)
 {
 	switch (item->type)
 	{
@@ -2081,7 +2343,7 @@ static bool M_OptItemSelectable(const menuitem_t* item)
 	case orangetext:
 		return false;
 	case screenres:
-		return item->b.res1 != NULL;
+		return item->b.res1 != nullptr;
 	default:
 		return true;
 	}
@@ -2093,7 +2355,7 @@ static bool M_OptItemSelectable(const menuitem_t* item)
 //
 // Returns an index into OptMouseRows, or -1 if the cursor isn't over a row.
 //
-static int M_OptRowUnderMouse(int mouse_y)
+int M_OptRowUnderMouse(int mouse_y)
 {
 	for (int i = 0; i < OptMouseRowCount; i++)
 	{
@@ -2110,11 +2372,11 @@ static int M_OptRowUnderMouse(int mouse_y)
 //
 // Returns which of the three resolution columns the cursor is over.
 //
-static int M_OptScreenResColumn(int mouse_x)
+int M_OptScreenResColumn(int mouse_x)
 {
 	for (int col = 2; col > 0; col--)
 	{
-		if (mouse_x >= screen->getCleanX(104 * col + 8))
+		if (mouse_x >= screen->getCleanX((RESCOLUMN_WIDTH * col) + RESCOLUMN_CURSOR_X))
 			return col;
 	}
 
@@ -2127,7 +2389,7 @@ static int M_OptScreenResColumn(int mouse_x)
 //
 // Scrolls the visible portion of the menu without moving the selection.
 //
-static void M_OptScroll(int lines)
+void M_OptScroll(int lines)
 {
 	if (lines < 0 && CanScrollUp)
 	{
@@ -2150,7 +2412,7 @@ static void M_OptScroll(int lines)
 //
 // Sets a slider to the value the cursor was clicked at.
 //
-static void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
+void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
 {
 	const int x = CurrentMenu->indent + 8;
 	const int track_x1 = screen->getCleanX(x + SLIDER_TRACK_X);
@@ -2160,11 +2422,11 @@ static void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
 		return;
 
 	float dist = static_cast<float>(mouse_x - track_x1) / static_cast<float>(track_x2 - track_x1);
-	dist = clamp(dist, 0.0f, 1.0f);
+	dist = std::clamp(dist, 0.0f, 1.0f);
 
 	if (item->type == slider)
 	{
-		float newval = item->b.leftval + dist * (item->c.rightval - item->b.leftval);
+		float newval = item->b.leftval + (dist * (item->c.rightval - item->b.leftval));
 
 		// Snap to the item's step so clicking produces the same set of values
 		// the arrow keys do.
@@ -2172,13 +2434,13 @@ static void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
 		{
 			const float step = (item->c.rightval >= item->b.leftval) ? item->d.step : -item->d.step;
 			newval = item->b.leftval +
-			         step * std::floor((newval - item->b.leftval) / step + 0.5f);
+			         (step * std::floor(((newval - item->b.leftval) / step) + 0.5f));
 		}
 
 		if (item->b.leftval < item->c.rightval)
-			newval = clamp(newval, item->b.leftval, item->c.rightval);
+			newval = std::clamp(newval, item->b.leftval, item->c.rightval);
 		else
-			newval = clamp(newval, item->c.rightval, item->b.leftval);
+			newval = std::clamp(newval, item->c.rightval, item->b.leftval);
 
 		if (item->e.cfunc)
 			item->e.cfunc(item->a.cvar, newval);
@@ -2188,9 +2450,9 @@ static void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
 	else
 	{
 		// Color component sliders move in steps of 17
-		int part = static_cast<int>(dist * 255.0f + 0.5f);
+		int part = static_cast<int>(std::lround(dist * 255.0f));
 		part = ((part + 0x08) / 0x11) * 0x11;
-		part = clamp(part, 0, 0xFF);
+		part = std::clamp(part, 0, 0xFF);
 
 		const char* oldcolor = item->a.cvar->cstring();
 		char newcolor[9];
@@ -2218,7 +2480,7 @@ static void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
 //
 // M_OptItemIsSlider
 //
-static bool M_OptItemIsSlider(const menuitem_t* item)
+bool M_OptItemIsSlider(const menuitem_t* item)
 {
 	return item->type == slider || item->type == redslider ||
 	       item->type == greenslider || item->type == blueslider;
@@ -2228,7 +2490,7 @@ static bool M_OptItemIsSlider(const menuitem_t* item)
 //
 // M_OptMouseClick
 //
-static void M_OptMouseClick(int mouse_x, int mouse_y)
+void M_OptMouseClick(int mouse_x, int mouse_y)
 {
 	const int row = M_OptRowUnderMouse(mouse_y);
 	if (row == -1)
@@ -2252,7 +2514,7 @@ static void M_OptMouseClick(int mouse_x, int mouse_y)
 	if (M_OptItemIsSlider(item))
 	{
 		M_OptSetSliderFromMouse(item, mouse_x);
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 
 		// Keep following the pointer until the button is released
 		OptDragItem = index;
@@ -2275,9 +2537,11 @@ static void M_OptMouseClick(int mouse_x, int mouse_y)
 	}
 
 	// Everything else behaves exactly as though the accept key was pressed.
-	event_t synth_ev(ev_keydown, cycles_value ? OKEY_RIGHTARROW : OKEY_ENTER, 0, 0, 0);
-	M_OptResponder(&synth_ev);
+	const event_t synth_ev(ev_keydown, cycles_value ? OKEY_RIGHTARROW : OKEY_ENTER, 0, 0, 0);
+	M_OptResponder(synth_ev);
 }
+} // namespace
+
 
 
 //
@@ -2289,7 +2553,8 @@ static void M_OptMouseClick(int mouse_x, int mouse_y)
 //
 void M_OptUpdateMouseItem()
 {
-	static int prev_mouse_x = -1, prev_mouse_y = -1;
+	static int prev_mouse_x = -1;
+	static int prev_mouse_y = -1;
 
 	if (ui_mouse.asInt() == 0 || WaitingForKey || WaitingForAxis)
 		return;
@@ -2300,7 +2565,8 @@ void M_OptUpdateMouseItem()
 	     !I_IsUIMouseButtonDown(OKEY_MOUSE1)))
 		OptDragItem = -1;
 
-	int mouse_x, mouse_y;
+	int mouse_x;
+	int mouse_y;
 	if (!I_GetUIMousePosition(mouse_x, mouse_y))
 		return;
 
@@ -2333,25 +2599,23 @@ void M_OptUpdateMouseItem()
 	if (CurrentMenu->items[CurrentItem].type == screenres)
 		CurrentMenu->items[CurrentItem].a.selmode = M_OptScreenResColumn(mouse_x);
 
-	S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+	S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 }
 
-
-void M_OptResponder (event_t *ev)
+void M_OptResponder(const event_t& ev)
 {
-	menuitem_t *item;
-	int ch = ev->data1;
-	int mod = ev->mod;
+	const int ch = ev.data1;
+	const int mod = ev.mod;
 	const char *cmd = Bindings.GetBind(ch).c_str();
 
-	item = CurrentMenu->items + CurrentItem;
+	menuitem_t *item = CurrentMenu->items + CurrentItem;
 
-	bool numlock = mod & OMOD_NUM;
+	const bool numlock = (mod & OMOD_NUM) != 0;
 
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
 	{
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
 			if (!Key_IsMenuKey(ch))
 			{
@@ -2366,6 +2630,7 @@ void M_OptResponder (event_t *ev)
 
 			configuring_controls = false;
 			WaitingForKey = false;
+			// FIXME: magic numbers that could break order of settings changes
 			CurrentMenu->items[0].label = OldContMessage;
 			CurrentMenu->items[0].type = OldContType;
 			return;
@@ -2375,38 +2640,40 @@ void M_OptResponder (event_t *ev)
 	// Waiting on an analog axis motion for setting analog control
 	if (WaitingForAxis)
 	{
-		if(ev->type == ev_keydown)
+		if(ev.type == ev_keydown)
 		{
 			if (Key_IsCancelKey(ch))
 			{
 				WaitingForAxis = false;
+				// FIXME: magic numbers that could break order of settings changes
 				CurrentMenu->items[8].label = OldAxisMessage;
 				CurrentMenu->items[8].type = OldAxisType;
 			}
 		}
-		else if (ev->type == ev_joystick)
+		else if (ev.type == ev_joystick)
 		{
-			if(ev->data1 == 0) // Analog Motion
+			if(ev.data1 == 0) // Analog Motion
 			{
 				// Require the control to be activated to at least the half-way point
 				// to make sure we get the one that is intended -- Hyper_Eye
-				if( (ev->data3 > (SHRT_MAX / 2)) || (ev->data3 < (SHRT_MIN / 2)) )
+				if( (ev.data3 > (SHRT_MAX / 2)) || (ev.data3 < (SHRT_MIN / 2)) )
 				{
-					if ((ev->data2 == joy_forwardaxis.asInt()) &&
+					if ((ev.data2 == joy_forwardaxis.asInt()) &&
 					    joy_forwardaxis.name() != item->a.cvar->name())
 						joy_forwardaxis.Set(item->a.cvar->value());
-					else if ((ev->data2 == joy_strafeaxis.asInt()) &&
+					else if ((ev.data2 == joy_strafeaxis.asInt()) &&
 					         joy_strafeaxis.name() != item->a.cvar->name())
 						joy_strafeaxis.Set(item->a.cvar->value());
-					else if ((ev->data2 == joy_turnaxis.asInt()) &&
+					else if ((ev.data2 == joy_turnaxis.asInt()) &&
 					         joy_turnaxis.name() != item->a.cvar->name())
 						joy_turnaxis.Set(item->a.cvar->value());
-					else if ((ev->data2 == joy_lookaxis.asInt()) &&
+					else if ((ev.data2 == joy_lookaxis.asInt()) &&
 					         joy_lookaxis.name() != item->a.cvar->name())
 						joy_lookaxis.Set(item->a.cvar->value());
 
-					item->a.cvar->Set(ev->data2);
+					item->a.cvar->Set(ev.data2);
 					WaitingForAxis = false;
+					// FIXME: magic numbers that could break order of settings changes
 					CurrentMenu->items[8].label = OldAxisMessage;
 					CurrentMenu->items[8].type = OldAxisType;
 				}
@@ -2415,10 +2682,11 @@ void M_OptResponder (event_t *ev)
 		return;
 	}
 
-	if (ui_mouse.asInt() != 0 && ev->type == ev_keydown &&
+	if (ui_mouse.asBool() && ev.type == ev_keydown &&
 	    ch >= OKEY_MOUSE1 && ch <= OKEY_MWHEELRIGHT)
 	{
-		int mouse_x, mouse_y;
+		int mouse_x;
+		int mouse_y;
 
 		if (ch == OKEY_MOUSE2)
 		{
@@ -2426,7 +2694,7 @@ void M_OptResponder (event_t *ev)
 			M_PopMenuStack();
 			return;
 		}
-		else if (ch == OKEY_MWHEELUP)
+		if (ch == OKEY_MWHEELUP)
 			M_OptScroll(-OPT_WHEEL_LINES);
 		else if (ch == OKEY_MWHEELDOWN)
 			M_OptScroll(OPT_WHEEL_LINES);
@@ -2442,7 +2710,7 @@ void M_OptResponder (event_t *ev)
 	    (Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock) || Key_IsAcceptKey(ch))
 		&& !demoplayback)
 	{
-			int newflags = *item->e.flagint ^ item->a.flagmask;
+			const int newflags = *item->e.flagint ^ item->a.flagmask;
 			char val[16];
 
 			snprintf (val, 16, "%d", newflags);
@@ -2499,7 +2767,7 @@ void M_OptResponder (event_t *ev)
 			if (CurrentMenu->items[CurrentItem].type == screenres)
 				CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 		}
 		else if (Key_IsUpKey(ch, numlock))
 		{
@@ -2522,12 +2790,11 @@ void M_OptResponder (event_t *ev)
 					CurrentItem == CurrentMenu->scrolltop + CurrentMenu->scrollpos)
 				{
 					CurrentMenu->scrollpos--;
-					if (CurrentMenu->scrollpos < 0)
-						CurrentMenu->scrollpos = 0;
+					CurrentMenu->scrollpos = std::max(CurrentMenu->scrollpos, 0);
 				}
 				if (CurrentItem < 0)
 				{
-					CurrentMenu->scrollpos = MAX(0, CurrentMenu->numitems - 22 + CurrentMenu->scrolltop);
+					CurrentMenu->scrollpos = std::max(0, CurrentMenu->numitems - MAX_LINES_ONSCREEN + CurrentMenu->scrolltop);
 					CurrentItem = CurrentMenu->numitems - 1;
 				}
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
@@ -2540,17 +2807,14 @@ void M_OptResponder (event_t *ev)
 			if (CurrentMenu->items[CurrentItem].type == screenres)
 				CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 		}
 		else if (Key_IsPageUpKey(ch, numlock))
 		{
 			if (CanScrollUp)
 			{
 				CurrentMenu->scrollpos -= VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
-				if (CurrentMenu->scrollpos < 0)
-				{
-					CurrentMenu->scrollpos = 0;
-				}
+				CurrentMenu->scrollpos = std::max(CurrentMenu->scrollpos, 0);
 				CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
 				while (CurrentMenu->items[CurrentItem].type == redtext ||
 					CurrentMenu->items[CurrentItem].type == whitetext ||
@@ -2561,14 +2825,14 @@ void M_OptResponder (event_t *ev)
 				{
 					++CurrentItem;
 				}
-				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 			}
 		}
 		else if (Key_IsPageDownKey(ch, numlock))
 		{
 			if (CanScrollDown)
 			{
-				int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
+				const int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
 				CurrentMenu->scrollpos += pagesize;
 				if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->numitems)
 				{
@@ -2584,7 +2848,7 @@ void M_OptResponder (event_t *ev)
 				{
 					++CurrentItem;
 				}
-				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 			}
 		}
 		else if (Key_IsLeftKey(ch, numlock))
@@ -2596,16 +2860,16 @@ void M_OptResponder (event_t *ev)
 			float newval = item->a.cvar->value() - item->d.step;
 
 			if (item->b.leftval < item->c.rightval)
-				newval = MAX(newval, item->b.leftval);
+				newval = std::min(newval, item->b.leftval);
 			else
-				newval = MIN(newval, item->b.leftval);
+				newval = std::max(newval, item->b.leftval);
 
 			if (item->e.cfunc)
 				item->e.cfunc(item->a.cvar, newval);
 			else
 				item->a.cvar->Set(newval);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 		case redslider:
 		case greenslider:
@@ -2619,7 +2883,7 @@ void M_OptResponder (event_t *ev)
 			else
 				memcpy(newcolor, "00 00 00", 9);
 
-			argb_t color = V_GetColorFromString(oldcolor);
+			const argb_t color = V_GetColorFromString(oldcolor);
 			int part = 0;
 
 			if (item->type == redslider)
@@ -2631,8 +2895,7 @@ void M_OptResponder (event_t *ev)
 
 			if (part > 0x00)
 				part -= 0x11;
-			if (part < 0x00)
-				part = 0x00;
+			part = std::max(part, 0x00);
 
 			char singlecolor[3];
 			snprintf(singlecolor, 3, "%02x", part);
@@ -2646,7 +2909,7 @@ void M_OptResponder (event_t *ev)
 
 			item->a.cvar->Set(newcolor);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 		case discrete:
 		case cdiscrete:
@@ -2659,7 +2922,7 @@ void M_OptResponder (event_t *ev)
 				(multiplayer || demoplayback || netdemo.isPlaying()))
 				break;
 
-			numvals = (int)item->b.leftval;
+			numvals = static_cast<int>(item->b.leftval);
 			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
 			if (--cur < 0)
 				cur = numvals - 1;
@@ -2667,10 +2930,10 @@ void M_OptResponder (event_t *ev)
 			item->a.cvar->Set(item->e.values[cur].value);
 
 			// Hack hack. Rebuild list of resolutions
-			if (item->e.values == Depths)
+			if (item->e.values == Depths.data())
 				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 
 		case screenres:
@@ -2694,25 +2957,25 @@ void M_OptResponder (event_t *ev)
 				item->a.selmode = col;
 			}
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 		break;
 
 		case joyactive:
 		{
-			size_t numjoy = I_GetJoystickCount();
+			const size_t numjoy = I_GetJoystickCount();
 
-			if ((size_t)item->a.cvar->value() > numjoy)
+			if (static_cast<size_t>(item->a.cvar->value()) > numjoy)
 				item->a.cvar->Set(0.0);
-			else if ((size_t)item->a.cvar->value() > 0)
+			else if (static_cast<size_t>(item->a.cvar->value()) > 0)
 				item->a.cvar->Set(item->a.cvar->value() - 1);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 
 		case announcer: {
-			std::string newannouncername = AnnouncerManager::getInstance().getLeftAnnouncer(item->a.cvar->str());
+			const std::string newannouncername = AnnouncerManager::getInstance().getLeftAnnouncer(item->a.cvar->str());
 
-			item->a.cvar->Set(newannouncername.c_str());
+			item->a.cvar->Set(newannouncername);
 		}
 		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 		break;
@@ -2730,16 +2993,16 @@ void M_OptResponder (event_t *ev)
 			float newval = item->a.cvar->value() + item->d.step;
 
 			if (item->b.leftval < item->c.rightval)
-				newval = MIN(newval, item->c.rightval);
+				newval = std::min(newval, item->c.rightval);
 			else
-				newval = MAX(newval, item->c.rightval);
+				newval = std::max(newval, item->c.rightval);
 
 			if (item->e.cfunc)
 				item->e.cfunc(item->a.cvar, newval);
 			else
 				item->a.cvar->Set(newval);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 		case redslider:
 		case greenslider:
@@ -2753,7 +3016,7 @@ void M_OptResponder (event_t *ev)
 			else
 				memcpy(newcolor, "00 00 00", 9);
 
-			argb_t color = V_GetColorFromString(oldcolor);
+			const argb_t color = V_GetColorFromString(oldcolor);
 			int part = 0;
 
 			if (item->type == redslider)
@@ -2765,8 +3028,7 @@ void M_OptResponder (event_t *ev)
 
 			if (part < 0xff)
 				part += 0x11;
-			if (part > 0xff)
-				part = 0xff;
+			part = std::min(part, 0xff);
 
 			char singlecolor[3];
 			snprintf(singlecolor, 3, "%02x", part);
@@ -2780,7 +3042,7 @@ void M_OptResponder (event_t *ev)
 
 			item->a.cvar->Set(newcolor);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 		case discrete:
 		case cdiscrete:
@@ -2793,7 +3055,7 @@ void M_OptResponder (event_t *ev)
 				(multiplayer || demoplayback || netdemo.isPlaying()))
 				break;
 
-			numvals = (int)item->b.leftval;
+			numvals = static_cast<int>(item->b.leftval);
 			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
 			if (++cur >= numvals)
 				cur = 0;
@@ -2801,10 +3063,10 @@ void M_OptResponder (event_t *ev)
 			item->a.cvar->Set(item->e.values[cur].value);
 
 			// Hack hack. Rebuild list of resolutions
-			if (item->e.values == Depths)
+			if (item->e.values == Depths.data())
 				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 
 		case screenres:
@@ -2831,26 +3093,26 @@ void M_OptResponder (event_t *ev)
 				item->a.selmode = col;
 			}
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 		break;
 
 		case joyactive:
 		{
-			size_t numjoy = I_GetJoystickCount();
+			const size_t numjoy = I_GetJoystickCount();
 
-			if ((size_t)item->a.cvar->value() >= numjoy)
+			if (static_cast<size_t>(item->a.cvar->value()) >= numjoy)
 				item->a.cvar->Set(0.0);
-			else if ((size_t)item->a.cvar->value() < (numjoy - 1))
+			else if (static_cast<size_t>(item->a.cvar->value()) < (numjoy - 1))
 				item->a.cvar->Set(item->a.cvar->value() + 1);
 
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 
 		case announcer: {
-			std::string newannouncername = AnnouncerManager::getInstance().getRightAnnouncer(item->a.cvar->str());
+			const std::string newannouncername = AnnouncerManager::getInstance().getRightAnnouncer(item->a.cvar->str());
 
-			item->a.cvar->Set(newannouncername.c_str());
+			item->a.cvar->Set(newannouncername);
 		}
 		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 		break;
@@ -2881,7 +3143,8 @@ void M_OptResponder (event_t *ev)
 		{
 			if (CurrentMenu == &ModesMenu)
 			{
-				int width, height;
+				int width;
+				int height;
 
 				if (!(item->type == screenres &&
 				      GetSelectedSize(CurrentItem, &width, &height)))
@@ -2891,12 +3154,12 @@ void M_OptResponder (event_t *ev)
 				}
 
 				M_SetVideoMode(width, height);
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 			}
 			else if (item->type == more && item->e.mfunc)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/advance", 1, ATTN_NONE);
 				item->e.mfunc();
 			}
 			else if (item->type == discrete || item->type == cdiscrete ||
@@ -2909,7 +3172,7 @@ void M_OptResponder (event_t *ev)
 				    (multiplayer || demoplayback || netdemo.isPlaying()))
 					return;
 
-				numvals = (int)item->b.leftval;
+				numvals = static_cast<int>(item->b.leftval);
 				cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
 				if (++cur >= numvals)
 					cur = 0;
@@ -2917,9 +3180,9 @@ void M_OptResponder (event_t *ev)
 				item->a.cvar->Set(item->e.values[cur].value);
 
 				// Hack hack. Rebuild list of resolutions
-				if (item->e.values == Depths)
+				if (item->e.values == Depths.data())
 					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 			}
 			else if (item->type == control || item->type == mapcontrol || item->type == netdemocontrol)
 			{
@@ -2934,12 +3197,13 @@ void M_OptResponder (event_t *ev)
 			else if (item->type == listelement)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 				item->e.lfunc(CurrentItem);
 			}
 			else if (item->type == joyaxis)
 			{
 				WaitingForAxis = true;
+				// FIXME: magic numbers that could break order of settings changes
 				OldAxisMessage = CurrentMenu->items[8].label;
 				OldAxisType = CurrentMenu->items[8].type;
 				CurrentMenu->items[8].label =
@@ -2958,15 +3222,16 @@ void M_OptResponder (event_t *ev)
 		else
 		{
 #ifdef GCONSOLE
-		if (ev->data3 == 't' || ev->data1 == OKEY_JOY3)
+		if (ev.data3 == 't' || ev.data1 == OKEY_JOY3)
 #else
-		if (ev->data3 == 't')
+		if (ev.data3 == 't')
 #endif
 		{
 			// Test selected resolution
 			if (CurrentMenu == &ModesMenu)
 			{
-				int width, height;
+				int width;
+				int height;
 
 				if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
 				{
@@ -2974,10 +3239,11 @@ void M_OptResponder (event_t *ev)
 					height = I_GetVideoHeight();
 				}
 
-				testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
+				constexpr dtime_t testduration = dtime_t{5} * TICRATE;
+				testingmode = (I_MSTime() * TICRATE / MSECS_PER_SEC) + testduration;
 				M_SetVideoMode(width, height);
 
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 			}
 		}
 		}
@@ -2986,63 +3252,76 @@ void M_OptResponder (event_t *ev)
 	if (CurrentMenu->refreshfunc)
 		(*CurrentMenu->refreshfunc)();
 }
+namespace
+{
 
-static void GoToConsole (void)
+
+void GoToConsole()
 {
 	M_ClearMenus ();
 	C_ToggleConsole ();
 }
 
-static void UpdateStuff (void)
+void UpdateStuff()
 {
 	M_SizeDisplay (0.0);
 }
+} // namespace
 
-void Reset2Defaults (void)
+
+void Reset2Defaults()
 {
 	AddCommandString ("unbindall; binddefaults");
 	cvar_t::C_SetCVarsToDefaults(CVAR_CLIENTARCHIVE);
 	UpdateStuff();
 }
 
-void Reset2Saved (void)
+void Reset2Saved()
 {
-	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
+	const std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 	AddCommandString(cmd);
 	UpdateStuff();
 }
+namespace
+{
 
-static void StartHUDMenu()
+
+void StartHUDMenu()
 {
 	M_SwitchMenu(&HUDMenu);
 }
 
-static void StartMessagesMenu (void)
+void StartMessagesMenu()
 {
 	M_SwitchMenu (&MessagesMenu);
 }
 
-static void StartAutomapMenu (void)
+void StartAutomapMenu()
 {
 	M_SwitchMenu (&AutomapMenu);
 }
+} // namespace
 
-void ResetCustomColors (void)
+
+void ResetCustomColors()
 {
 	AddCommandString ("resetcustomcolors");
 }
 
-void MouseSetup (void) // [Toke] for mouse menu
+void MouseSetup () // [Toke] for mouse menu
 {
 	M_SwitchMenu (&MouseMenu);
 }
 
-void JoystickSetup (void)
+void JoystickSetup()
 {
 	M_SwitchMenu (&JoystickMenu);
 }
+namespace
+{
 
-static void CustomizeControls (void)
+
+void CustomizeControls()
 {
 	M_BuildKeyList (ControlsMenu.items, ControlsMenu.numitems);
 	M_SwitchMenu (&ControlsMenu);
@@ -3050,12 +3329,14 @@ static void CustomizeControls (void)
 
 // [Russell] - Hack for getting to the player setup menu, doesn't
 // record the last menu though, unfortunately
-static void PlayerSetup (void)
+void PlayerSetup()
 {
     M_ClearMenus ();
     M_StartControlPanel ();
 	M_PlayerSetup(0);
 }
+} // namespace
+
 
 BEGIN_COMMAND (menu_keys)
 {
@@ -3065,45 +3346,50 @@ BEGIN_COMMAND (menu_keys)
 }
 END_COMMAND (menu_keys)
 
-static void VideoOptions (void)
+namespace
+{
+
+void VideoOptions()
 {
 	M_SwitchMenu (&VideoMenu);
 }
 
-void AdvMidiOptions (void)
+void AdvMidiOptions()
 {
 	M_SwitchMenu (&AdvMidiMenu);
 }
 
-void LibAdlMidiOptions (void)
+void LibAdlMidiOptions()
 {
 	M_SwitchMenu (&LibAdlMidiMenu);
 }
 
-void SoundOptions (void) // [Ralphis] for sound menu
+void SoundOptions () // [Ralphis] for sound menu
 {
 	M_SwitchMenu (&SoundMenu);
 }
 
-void AnnouncerOptions(void)
+void AnnouncerOptions()
 {
 	M_SwitchMenu(&AnnouncerMenu);
 }
 
-void CompatOptions (void) // [Ralphis] for compatibility menu
+void CompatOptions () // [Ralphis] for compatibility menu
 {
 	M_SwitchMenu (&CompatMenu);
 }
 
-void NetworkOptions (void)
+void NetworkOptions()
 {
 	M_SwitchMenu (&NetworkMenu);
 }
 
-void WeaponOptions (void)
+void WeaponOptions()
 {
 	M_SwitchMenu (&WeaponMenu);
 }
+
+} // namespace
 
 BEGIN_COMMAND (menu_display)
 {

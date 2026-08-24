@@ -96,8 +96,6 @@ typedef vertex_s vertex_t;
 struct line_s;
 struct sector_t;
 
-class player_s;
-
 //
 // The SECTORS record, at runtime.
 // Stores things/mobjs.
@@ -120,7 +118,8 @@ enum
 // Ceiling/floor flags
 enum
 {
-	SECF_ABSLIGHTING	= 1		// floor/ceiling light is absolute, not relative
+	SECF_ABSLIGHTING	= 1,	// floor/ceiling light is absolute, not relative
+	SECF_SPRINGPAD		= 2		// floor bounces actors at their landing velocity
 };
 
 // Misc sector flags
@@ -177,7 +176,7 @@ struct plane_s
 };
 typedef plane_s plane_t;
 
-struct dyncolormap_s;
+struct dyncolormap_t;
 
 class DSectorEffect;
 
@@ -260,18 +259,18 @@ struct sector_t
 
 	// list of mobjs that are at least partially in the sector
 	// thinglist is a subset of touching_thinglist
-	msecnode_s *touching_thinglist = nullptr;				// phares 3/14/98
+	msecnode_t *touching_thinglist = nullptr;				// phares 3/14/98
 
 	int linecount = 0;
 	line_s **lines = nullptr;		// [linecount] size
-	nonstd::span<line_s*> getLines() { return nonstd::span(lines, linecount); }
+	std::span<line_s*> getLines() { return std::span(lines, linecount); }
 
 	float gravity = 0.0f;		// [RH] Sector gravity (1.0 is normal)
 	int damageamount = 0;
 	int damageinterval = 0;
 	int leakrate = 0;
 	short mod = 0;			// [RH] Means-of-death for applied damage
-	dyncolormap_s *colormap = nullptr;	// [RH] Per-sector colormap
+	dyncolormap_t *colormap = nullptr;	// [RH] Per-sector colormap
 
 	bool alwaysfake = false;	// [RH] Always apply heightsec modifications?
 	byte waterzone = 0;		// [RH] Sector is underwater?
@@ -334,7 +333,7 @@ typedef enum
 	ST_NEGATIVE
 } slopetype_t;
 
-#define R_NOSIDE ((unsigned short)(-1))
+#define R_NOSIDE (static_cast<unsigned short>(-1))
 
 struct line_s
 {
@@ -398,16 +397,16 @@ typedef line_s line_t;
 //
 // For the links, NULL means top or end of list.
 
-typedef struct msecnode_s
+struct msecnode_t
 {
 	sector_t			*m_sector;	// a sector containing this object
 	AActor				*m_thing;	// this object
-	msecnode_s	*m_tprev;	// prev msecnode_t for this thing
-	msecnode_s	*m_tnext;	// next msecnode_t for this thing
-	msecnode_s	*m_sprev;	// prev msecnode_t for this sector
-	msecnode_s	*m_snext;	// next msecnode_t for this sector
+	msecnode_t	*m_tprev;	// prev msecnode_t for this thing
+	msecnode_t	*m_tnext;	// next msecnode_t for this thing
+	msecnode_t	*m_sprev;	// prev msecnode_t for this sector
+	msecnode_t	*m_snext;	// next msecnode_t for this sector
 	bool visited;	// killough 4/4/98, 4/7/98: used in search algorithms
-} msecnode_t;
+};
 
 //
 // The LineSeg.
@@ -466,13 +465,13 @@ typedef struct polyblock_s
 //	indicating the visible walls that define
 //	(all or some) sides of a convex BSP leaf.
 //
-typedef struct subsector_s
+struct subsector_t
 {
 	sector_t		*sector;
 	unsigned int	numlines;
 	unsigned int	firstline;
 	polyobj_t	    *poly;
-} subsector_t;
+};
 
 //
 // BSP node.
@@ -528,7 +527,7 @@ struct post_t
 	 */
 	byte* data() const
 	{
-		return (byte*)(this) + 3;
+		return const_cast<byte*>(reinterpret_cast<const byte*>(this) + 3);
 	}
 
 	/**
@@ -536,7 +535,7 @@ struct post_t
 	 */
 	post_t* next() const
 	{
-		return (post_t*)((byte*)this + length + 4);
+		return reinterpret_cast<post_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + length + 4));
 	}
 
 	/**
@@ -562,11 +561,11 @@ struct tallpost_t
 	}
 	byte* data() const
 	{
-		return (byte*)(this) + 4;
+		return const_cast<byte*>(reinterpret_cast<const byte*>(this) + 4);
 	}
 	tallpost_t* next() const
 	{
-		return (tallpost_t*)((byte*)(this) + 4 + length);
+		return reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + length + 4));
 	}
 	bool end() const
 	{
@@ -615,7 +614,7 @@ struct drawseg_t
 // A patch holds one or more columns.
 // Patches are used for sprites and all masked pictures, and we compose
 // textures from the TEXTURE1/2 lists of patches.
-struct patch_s
+struct patch_t
 {
 private:
 	short			_width;			// bounding box size
@@ -645,7 +644,7 @@ public:
 	}
 	uint32_t* ofs() const
 	{
-		return (uint32_t*)((byte*)this + 8);
+		return reinterpret_cast<uint32_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + 8));
 	}
 	uint32_t datastart() const
 	{
@@ -653,22 +652,18 @@ public:
 	}
 	post_t* post(const uint32_t ofs)
 	{
-		return (post_t*)((byte*)this + ofs);
+		return reinterpret_cast<post_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + ofs));
 	}
 	tallpost_t* tallpost(const uint32_t ofs)
 	{
-		return (tallpost_t*)((byte*)this + ofs);
+		return reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + ofs));
 	}
 };
-typedef patch_s patch_t;
-
-
-
 
 // A vissprite_t is a thing
 //	that will be drawn during a refresh.
 // I.e. a sprite object that is partly visible.
-struct vissprite_s
+struct vissprite_t
 {
     int				x1;
     int				x2;
@@ -708,9 +703,8 @@ struct vissprite_s
 	fixed_t			translucency;
 	byte			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
 
-	const AActor*			mo;
+	AActor*			mo;
 };
-typedef vissprite_s vissprite_t;
 
 //
 // Sprites are patches with a special naming convention
@@ -743,6 +737,7 @@ struct spriteframe_t
 	// [RH] Move some data out of spritewidth, spriteoffset,
 	//		and spritetopoffset arrays.
 	fixed_t		width[16];
+	fixed_t		height[16];
 	fixed_t		topoffset[16];
 	fixed_t		offset[16];
 };
@@ -761,9 +756,9 @@ struct spritedef_t
 //
 // The infamous visplane
 //
-struct visplane_s
+struct visplane_t
 {
-	visplane_s *next;		// Next visplane in hash chain -- killough
+	visplane_t *next;		// Next visplane in hash chain -- killough
 
 	plane_t		secplane;
 
@@ -782,4 +777,3 @@ struct visplane_s
 	unsigned int pad;				//		allocated immediately after the
 	unsigned int top[3];			//		visplane.
 };
-typedef visplane_s visplane_t;

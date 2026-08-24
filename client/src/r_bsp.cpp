@@ -96,7 +96,7 @@ void R_ReallocDrawSegs(void)
 		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
 		unsigned firstofs = firstdrawseg - drawsegs;
 		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
-		drawsegs = (drawseg_t*)M_Realloc(drawsegs, newmax*sizeof(*drawsegs));
+		drawsegs = static_cast<drawseg_t*>(M_Realloc(drawsegs, newmax*sizeof(*drawsegs)));
 		firstdrawseg = drawsegs + firstofs;
 		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
 		maxdrawsegs = newmax;
@@ -112,7 +112,7 @@ void R_ClearDrawSegs(void)
 	if (drawsegs == NULL)
 	{
 		maxdrawsegs = 256;
-		firstdrawseg = drawsegs = (drawseg_t*)Malloc(maxdrawsegs * sizeof(drawseg_t));
+		firstdrawseg = drawsegs = static_cast<drawseg_t*>(M_Malloc(maxdrawsegs * sizeof(drawseg_t)));
 	}
 	ds_p = drawsegs;
 }
@@ -135,7 +135,7 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 		{
 			// find the first remaining non-solid column
 			// if all columns remaining are solid, we're done
-			byte* p = (byte*)memchr(solidcol + first, 0, last - first + 1);
+			byte* p = static_cast<byte*>(memchr(solidcol + first, 0, last - first + 1));
 			if (p == NULL)
 				return;
 
@@ -145,7 +145,7 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 		{
 			int to;
 			// find where the span of non-solid columns ends
-			byte* p = (byte*)memchr(solidcol + first, 1, last - first + 1);
+			byte* p = static_cast<byte*>(memchr(solidcol + first, 1, last - first + 1));
 			if (p == NULL)
 				to = last;
 			else
@@ -508,7 +508,7 @@ void R_AddLine (const seg_t *line)
 		return;
 	}
 
-	dcol.color = ((line - segs) & 31) * 4;	// [RH] Color if not texturing line
+	dcol.color = ((line - R_GetSegs().data()) & 31) * 4;	// [RH] Color if not texturing line
 
 	// translate the line seg endpoints from world-space to camera-space,
 	// keeping full 64-bit precision (t1, t2) so distant walls on huge maps
@@ -737,7 +737,7 @@ void R_Subsector (int num)
 	const subsector_t& sub = subsectors[num];
 	frontsector = sub.sector;
 	int count = sub.numlines;
-	const seg_t* line = &segs[sub.firstline];
+	const seg_t* line = &R_GetSegs()[sub.firstline];
 
 	// killough 3/8/98, 4/4/98: Deep water / fake ceiling effect
 	frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,

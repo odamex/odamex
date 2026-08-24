@@ -32,6 +32,7 @@
 
 #include <assert.h>
 #include <unordered_map>
+#include <array>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
@@ -90,11 +91,21 @@ constexpr static levelFlags_t LEVEL2_NORMALINFIGHTING = BIT(0);
 constexpr static levelFlags_t LEVEL2_NOINFIGHTING = BIT(1);
 constexpr static levelFlags_t LEVEL2_TOTALINFIGHTING = BIT(2);
 constexpr static levelFlags_t LEVEL2_INFIGHTINGMASK = BIT_MASK(0, 2);
+constexpr static levelFlags_t LEVEL2_HIDEAUTHORNAME = BIT(3);
+constexpr static levelFlags_t LEVEL2_AUTHORFROMPWAD = BIT(4);
+constexpr static levelFlags_t LEVEL2_FROMUMAPINFO = BIT(5);
 constexpr static levelFlags_t LEVEL2_COMPAT_CROSSDROPOFF = BIT(18);
 
 struct acsdefered_t;
 class FBehavior;
-struct bossaction_t;
+
+struct bossaction_t
+{
+	int32_t type    = MT_NULL;
+	int32_t flags   = 0;
+	int16_t special = 0;
+	int16_t tag     = 0;
+};
 
 // struct that contains a FarmHash 128-bit fingerprint.
 struct fhfprint_t
@@ -122,25 +133,8 @@ struct fhfprint_t
 	std::string toString() const
 	{
 		// [Blair] Serialize the hashes before reading.
-		const uint64_t reconsthash1 = (uint64_t)(fingerprint[0]) |
-		                              (uint64_t)(fingerprint[1]) << 8 |
-		                              (uint64_t)(fingerprint[2]) << 16 |
-		                              (uint64_t)(fingerprint[3]) << 24 |
-		                              (uint64_t)(fingerprint[4]) << 32 |
-		                              (uint64_t)(fingerprint[5]) << 40 |
-		                              (uint64_t)(fingerprint[6]) << 48 |
-		                              (uint64_t)(fingerprint[7]) << 56;
-
-		const uint64_t reconsthash2 = (uint64_t)(fingerprint[8]) |
-		                              (uint64_t)(fingerprint[9]) << 8 |
-		                              (uint64_t)(fingerprint[10]) << 16 |
-		                              (uint64_t)(fingerprint[11]) << 24 |
-		                              (uint64_t)(fingerprint[12]) << 32 |
-		                              (uint64_t)(fingerprint[13]) << 40 |
-		                              (uint64_t)(fingerprint[14]) << 48 |
-		                              (uint64_t)(fingerprint[15]) << 56;
-
-		return fmt::format("{:016x}{:016x}", reconsthash1, reconsthash2);
+		const auto [reconsthash1, reconsthash2] = std::bit_cast<std::array<uint64_t, 2>>(fingerprint);
+		return fmt::format("{:016x}{:016x}", LELONGLONG(reconsthash1), LELONGLONG(reconsthash2));
 	}
 
 	[[nodiscard]]
@@ -191,7 +185,7 @@ struct level_info_t
 
 struct level_pwad_info_t
 {
-	// level_info_t
+	// level_info_t // TODO: should this be made into a single member??
 	OLumpName		mapname    = "";
 	int				levelnum   = 0;
 	int				mapnum     = 0;
@@ -364,14 +358,6 @@ typedef uint32_t clusterFlags_t;
 const static clusterFlags_t CLUSTER_HUB = BIT(0);
 const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 
-struct bossaction_t
-{
-	int32_t type    = MT_NULL;
-	int32_t flags   = 0;
-	int16_t special = 0;
-	int16_t tag     = 0;
-};
-
 struct cluster_info_t
 {
 	int				cluster;
@@ -486,6 +472,10 @@ void P_RemoveDefereds();
 bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
                const std::string& mapname = "");
 bool G_LoadWadString(const std::string& str, const std::string& mapname = "", const maplist_lastmaps_t& lastmaps = {});
+void G_ParseWadString(const std::string& str, OWantFiles& newwadfiles,
+                      OWantFiles& newpatchfiles);
+
+extern std::string startupwadstring;
 
 LevelInfos& getLevelInfos();
 ClusterInfos& getClusterInfos();

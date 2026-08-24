@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -40,13 +40,13 @@ extern constate_e	ConsoleState;
 
 // Initialize the console
 void C_InitConsole();
-void STACK_ARGS C_ShutdownConsole();
+void C_ShutdownConsole();
 
 void C_InitConsoleBackground();
-void STACK_ARGS C_ShutdownConsoleBackground();
+void C_ShutdownConsoleBackground();
 
 void C_InitConCharsFont();
-void STACK_ARGS C_ShutdownConCharsFont();
+void C_ShutdownConCharsFont();
 
 void C_ClearCommand();
 
@@ -72,7 +72,7 @@ void C_DrawMid (void);
 void C_GMidPrint(const char* msg, int color, int msgtime);
 void C_DrawGMid (void);
 
-bool C_Responder(event_t* ev);
+bool C_Responder(const event_t& ev);
 
 void C_AddTabCommand (const char *name);
 void C_RemoveTabCommand (const char *name);

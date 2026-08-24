@@ -52,7 +52,7 @@ class IWindowSurface;
 class DCanvas;
 
 void I_InitHardware();
-void STACK_ARGS I_ShutdownHardware();
+void I_ShutdownHardware();
 bool I_VideoInitialized();
 
 void I_SetVideoMode(const IVideoMode& video_mode);
@@ -123,51 +123,7 @@ public:
 	{	return window_mode != WINDOW_Windowed;	}
 
 	[[nodiscard]]
-	bool operator==(const IVideoMode& other) const
-	{
-		return width == other.width && height == other.height &&
-			bpp == other.bpp &&
-			window_mode == other.window_mode &&
-			vsync == other.vsync &&
-			stretch_mode == other.stretch_mode;
-	}
-
-	bool operator!=(const IVideoMode& other) const
-	{
-		return !(operator==(other));
-	}
-
-	bool operator<(const IVideoMode& other) const
-	{
-		if (width != other.width)
-			return width < other.width;
-		if (height != other.height)
-			return height < other.height;
-		if (bpp != other.bpp)
-			return bpp < other.bpp;
-		if (window_mode != other.window_mode)
-			return (int)window_mode < (int)other.window_mode;
-		if (vsync != other.vsync)
-			return (int)vsync < (int)other.vsync;
-		if (stretch_mode != other.stretch_mode)
-			return stretch_mode < other.stretch_mode;
-		return false;
-	}
-
-	bool operator>(const IVideoMode& other) const
-	{
-		return !operator==(other) && !operator<(other);
-	}
-
-	bool operator<=(const IVideoMode& other) const
-	{
-		return operator<(other) || operator==(other);
-	}
-
-	bool operator>=(const IVideoMode& other) const
-	{
-		return operator>(other) || operator==(other);
-	}
+	auto operator<=>(const IVideoMode& other) const = default;
 
 	bool isValid() const
 	{

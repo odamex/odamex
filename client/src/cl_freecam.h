@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2021 by Alex Mayfield.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,21 +16,29 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Server message map.
+//   The freecam is a clientside-only player that is injected and used
+//   with spynext to free roam the map during netdemos or allowed gamemodes
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#include "i_net.h"
+#include "odamex.h"
+#include "cl_main.h"
 
-namespace google
-{
-namespace protobuf
-{
-class Descriptor;
-}
-} // namespace google
+inline constexpr byte freecamplayer_id = 255;
 
-const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header);
-svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc);
+namespace Freecam
+{
+	extern std::string prevmap;
+	void addFreecamPlayer();
+	void savePosition();
+	void reset();
+	void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
+	bool needPosition();
+	bool allowAdd();
+	bool allowSpy();
+	void retireFor255thPlayer(player_t* cam);	
+	bool wipedOnLevelChange(player_t* cam);
+	void buildCam(player_t* p_cam);
+};

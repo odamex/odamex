@@ -30,7 +30,7 @@
 //
 
 // Called by main loop.
-bool F_Responder(event_t* ev);
+bool F_Responder(const event_t& ev);
 
 // Called by main loop.
 void F_Ticker();
@@ -47,4 +47,4 @@ struct finale_options_t
 };
 
 void F_StartFinale(finale_options_t& options);
-void STACK_ARGS F_ShutdownFinale();
+void F_ShutdownFinale();

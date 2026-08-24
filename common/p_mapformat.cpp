@@ -419,12 +419,17 @@ bool P_IsThingNoFogTeleportLine(const short special)
 	       special == 268 || special == 269;
 }
 
+bool P_IsGenLockedDoorLine(const short special)
+{
+	return special >= GenLockedBase && special < GenDoorBase;
+}
+
 bool P_IsCompatibleLockedDoorLine(const short special)
 {
 	if (map_format.getZDoom())
 		return false;
 
-	if (special >= GenLockedBase && special < GenDoorBase)
+	if (P_IsGenLockedDoorLine(special))
 		return true;
 
 	return special == 26 || special == 27 || special == 28 || special == 32 ||
@@ -435,6 +440,9 @@ bool P_IsCompatibleLockedDoorLine(const short special)
 bool P_IsCompatibleMultiKeyDoorLine(const short special)
 {
 	if (map_format.getZDoom())
+		return false;
+
+	if (!P_IsGenLockedDoorLine(special))
 		return false;
 
 	const int lock = (special & LockedKey) >> LockedKeyShift;
@@ -448,7 +456,7 @@ bool P_IsCompatibleBlueDoorLine(const short special)
 		return false;
 
 	const int lock = (special & LockedKey) >> LockedKeyShift;
-	const bool genericlock = lock == BCard || lock == BSkull;
+	const bool genericlock = P_IsGenLockedDoorLine(special) && (lock == BCard || lock == BSkull);
 
 	return special == 26 || special == 32 || special == 99 || special == 133 || genericlock;
 }
@@ -459,7 +467,7 @@ bool P_IsCompatibleRedDoorLine(const short special)
 		return false;
 
 	const int lock = (special & LockedKey) >> LockedKeyShift;
-	const bool genericlock = lock == RCard || lock == RSkull;
+	const bool genericlock = P_IsGenLockedDoorLine(special) && (lock == RCard || lock == RSkull);
 
 	return special == 28 || special == 33 || special == 134 || special == 135 || genericlock;
 }
@@ -470,7 +478,7 @@ bool P_IsCompatibleYellowDoorLine(const short special)
 		return false;
 
 	const int lock = (special & LockedKey) >> LockedKeyShift;
-	const bool genericlock = lock == YCard || lock == YSkull;
+	const bool genericlock = P_IsGenLockedDoorLine(special) && (lock == YCard || lock == YSkull);
 
 	return special == 27 || special == 34 || special == 136 || special == 137 || genericlock;
 }

@@ -184,7 +184,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 		if (cl->allow_rcon && (printlevel == PRINT_HIGH || printlevel == PRINT_WARNING ||
 		                       printlevel == PRINT_ERROR))
 		{
-			MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_WARNING, newStr));
+			MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Print(PRINT_WARNING, newStr));
 		}
 	}
 
@@ -207,7 +207,7 @@ BEGIN_COMMAND (echo)
 {
 	if (argc > 1)
 	{
-		std::string text = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		std::string text = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 		PrintFmt(PRINT_HIGH, "{}\n", text);
 	}
 }

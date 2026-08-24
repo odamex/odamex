@@ -98,8 +98,6 @@ struct ticcmd_t
 		readByte(in.begin() + 11, impulse);
 	}
 
-	int		tic;	// the client's tic when this cmd was sent
-
 	byte	buttons;
 	short	pitch;			// up/down. currently just a y-sheering amount
 	short	yaw;			// left/right
@@ -159,7 +157,7 @@ inline FArchive &operator<< (FArchive &arc, ticcmd_t &cmd)
 	}
 
 	byte len = ptr - buf;
-	arc << (byte)(len + 1) << flags;
+	arc << static_cast<byte>(len + 1) << flags;
 	arc.Write(buf, len);
 
 	return arc;

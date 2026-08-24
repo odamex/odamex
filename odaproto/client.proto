@@ -1,0 +1,199 @@
+syntax = "proto3";
+
+import "common.proto";
+
+package odaproto.clc;
+
+// clc_playerinput
+message PlayerInput
+{
+	         uint32     tic                 =  1;
+	         uint32     world_index         =  2;
+	optional bool       button_attack       =  3;
+	optional bool       button_use          =  4;
+	optional bool       button_pause        =  5;
+	optional bool       button_jump         =  6;
+	optional uint32     button_savegame     =  7;    // If the field is present, the value is the savegame slot.
+	optional uint32     button_weaponchange =  8;
+	optional uint32     impulse             =  9;
+	         sfixed32   angle               = 10;
+	         sfixed32   pitch               = 11;
+	optional int32      move_forward        = 12;
+	optional int32      move_side           = 13;
+	optional int32      move_up             = 14;
+	optional int32      delta_yaw           = 15;
+	optional int32      delta_pitch         = 16;
+	optional uint32     inventory_check_tic = 17;   // The value is the tic we want to verify - in practice, always the previous tic, but be explicit about it for analysis purposes.
+}
+
+// clc_netdemocap
+//
+// NetdemoCap represents a demarcation point.  Everything received leaing up to it and the data contained in it
+// are all the inputs for a client tic, both from the client itself and the server.
+message NetdemoCap
+{
+	bytes    packed_player_input = 1;   // Truth information about the player's state.
+	Actor    actor               = 2;
+	sfixed32 viewz               = 3;   // Here starts a subset of player fields - the only ones that
+	sfixed32 viewheight          = 4;   // are relevant for NetdemoCap, including a few unique ones that
+	sfixed32 deltaviewheight     = 5;   // only NetdemoCap cares about.
+	int32    jumptics            = 6;
+	int32    pendingweapon       = 7;
+	int32    readyweapon         = 8;
+
+	uint32 awaiting_ack_count   =  9;    // Client-side metric for debugging purposes
+	bytes  packed_outgoing_msgs = 10;    // Please note that this is a record of what actually went out into
+	                                     // the outgoing packets, not just truth about the input message.
+}
+
+// clc_netdemostop
+message NetDemoStop
+{
+}
+
+// clc_netdemoloadsnap
+message NetDemoLoadSnap
+{
+}
+
+// clc_disconnectme
+message DisconnectMe
+{
+}
+
+// clc_say
+message Say
+{
+    uint32 visibility = 1;
+    string text       = 2;
+}
+
+// clc_userinfo
+message UserInfo
+{
+    string      netname         = 1;
+    uint32      team            = 2;
+    int32       gender          = 3;
+    int32       colorpreset     = 4;
+    Color       color           = 5;
+    sfixed32    aimdist         = 6;
+    bool        predict_weapons = 7;
+    uint32      switchweapon    = 8;
+    repeated int32 weapon_prefs = 9;
+}
+
+// clc_pingreply
+message PingReply
+{
+	uint64 ms_time = 1;
+}
+
+// clc_kill
+message Kill
+{
+}
+
+// clc_rcon
+message Rcon
+{
+	string command = 1;
+}
+
+// clc_rcon_password
+message RconPassword
+{
+	string challenge = 1;
+}
+
+// clc_rcon_logout
+message RconLogout
+{
+}
+
+// clc_spectate_begin
+message SpectateBegin
+{
+}
+
+// clc_spectate_update
+message SpectateUpdate
+{
+	Vec3 pos = 1;
+}
+
+// clc_spectate_end
+message SpectateEnd
+{
+}
+
+// clc_cheat
+message Cheat
+{
+    uint32 value = 1;
+}
+
+// clc_cheat_give
+message CheatGive
+{
+    string item = 1;
+}
+
+// clc_cheat_summon
+message CheatSummon
+{
+    string monster = 1;
+}
+
+// clc_cheat_summon_friend
+message CheatSummonFriend
+{
+    string monster = 1;
+}
+
+// clc_callvote
+message CallVote
+{
+    uint32          vote_type   = 1;   // enumerated in c_vote.h
+    repeated string arg         = 2;
+}
+
+// clc_maplist
+message Maplist
+{
+    uint32 status = 1;
+}
+
+// clc_maplist_update
+message MaplistUpdate
+{
+}
+
+//clc_getplayerinfo
+message GetPlayerInfo
+{
+}
+
+// clc_netcmd
+message Netcmd
+{
+    repeated string argv = 1;
+}
+
+// clc_spy
+message Spy
+{
+    uint32 player_id = 1;
+}
+
+// clc_privmsg
+message PrivMsg
+{
+    uint32 player_id = 1;
+    string text      = 2;
+}
+
+// clc_sendmobjupdate
+message SendMobjUpdate
+{
+    uint32 netid = 1;
+}

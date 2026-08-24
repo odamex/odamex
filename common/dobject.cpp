@@ -43,7 +43,7 @@ void TypeInfo::RegisterType ()
 	if (m_NumTypes == m_MaxTypes)
 	{
 		m_MaxTypes = m_MaxTypes ? m_MaxTypes*2 : 32;
-		m_Types = (TypeInfo **)M_Realloc (m_Types, m_MaxTypes * sizeof(*m_Types));
+		m_Types = static_cast<TypeInfo**>(M_Realloc(m_Types, m_MaxTypes * sizeof(*m_Types)));
 	}
 	m_Types[m_NumTypes] = this;
 	TypeIndex = m_NumTypes;
@@ -115,7 +115,7 @@ void DObject::EndFrame ()
 	ToDestroy.clear();
 }
 
-void STACK_ARGS DObject::StaticShutdown ()
+void DObject::StaticShutdown ()
 {
 	Inactive = true;
 

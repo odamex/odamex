@@ -125,7 +125,7 @@ void I_FinishClockCalibration ()
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void) {}
+void I_Quit() {}
 
 
 //
@@ -133,9 +133,7 @@ void STACK_ARGS I_Quit (void) {}
 //
 bool gameisdead;
 
-#define MAX_ERRORTEXT	1024
-
-void I_BaseError(const std::string& errortext)
+[[noreturn]] void I_BaseError(const std::string& errortext)
 {
 	throw CRecoverableError(errortext);
 }

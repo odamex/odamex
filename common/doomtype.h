@@ -25,9 +25,11 @@
 
 #pragma once
 
-#include <nonstd/span.hpp>
-
 // Standard libc/STL includes we use in countless places
+
+#include <array>
+#include <limits>
+#include <span>
 
 #include "version.h"
 #include "errors.h"
@@ -45,26 +47,12 @@
 
 using byte = uint8_t;
 
-using OByteSpan = nonstd::span<byte>;
-
-#if defined(_MSC_VER) || defined(__WATCOMC__)
-	#define STACK_ARGS __cdecl
-#else
-	#define STACK_ARGS
-#endif
+using OByteSpan = std::span<byte>;
 
 // Predefined with some OS.
 #if !defined(UNIX) && !defined(_WIN32)
 	#include <limits.h>
 	#include <float.h>
-#endif
-
-#if defined(__GNUC__) && !defined(OSF1)
-	#define __int64 long long
-#endif
-
-#ifdef OSF1
-	#define __int64 long
 #endif
 
 #if defined _MSC_VER
@@ -101,7 +89,7 @@ namespace limits
 	inline constexpr int64_t      MINFIXED64 = std::numeric_limits<int64_t>::min();
 }
 
-typedef uint64_t			dtime_t;
+using dtime_t = uint64_t;
 
 #ifdef _WIN32
 	#define PATHSEP "\\"
@@ -132,7 +120,7 @@ static constexpr uint32_t BIT_MASK(uint32_t a, uint32_t b)
 }
 
 // game print flags
-typedef enum {
+enum printlevel_t {
 	PRINT_PICKUP,		// Pickup messages
 	PRINT_OBITUARY,		// Death messages
 	PRINT_HIGH,			// Regular messages
@@ -150,62 +138,38 @@ typedef enum {
 	PRINT_FILTERHIGH,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
 
 	PRINT_MAXPRINT
-} printlevel_t;
+};
 
 //
 // MIN
 //
-// Returns the minimum of a and b.
-//
 #ifdef MIN
 	#undef MIN
 #endif
-template<class T>
-forceinline constexpr T MIN(const T a, const T b)
-{
-	return a < b ? a : b;
-}
 
 //
 // MAX
 //
-// Returns the maximum of a and b.
-//
 #ifdef MAX
 	#undef MAX
 #endif
-template<class T>
-forceinline constexpr T MAX (const T a, const T b)
-{
-	return a > b ? a : b;
-}
-
-
-
-
-//
-// clamp
-//
-// Clamps the value of in to the range min, max
-//
-#ifdef clamp
-	#undef clamp
-#endif
-template<class T>
-forceinline constexpr T clamp(const T in, const T min, const T max)
-{
-	return in <= min ? min : in >= max ? max : in;
-}
 
 //
 // ARRAY_LENGTH
 //
-// Safely counts the number of items in an C array.
+// Safely counts the number of items in an C array or a std::array.
 //
 template <typename T, size_t N>
-constexpr size_t ARRAY_LENGTH(T (&arr)[N])
+// NOLINTNEXTLINE(modernize-avoid-c-arrays) - the array it measures
+constexpr size_t ARRAY_LENGTH(T (&)[N]) noexcept
 {
 	return std::extent_v<T[N]>;
+}
+
+template <typename T, size_t N>
+constexpr size_t ARRAY_LENGTH(const std::array<T, N>&) noexcept
+{
+	return N;
 }
 
 
@@ -216,7 +180,7 @@ constexpr size_t ARRAY_LENGTH(T (&arr)[N])
 // ----------------------------------------------------------------------------
 
 // 8-bit palette index
-typedef uint8_t				palindex_t;
+using palindex_t = uint8_t;
 
 //
 // argb_t class
@@ -299,7 +263,14 @@ public:
 	{	seta(_a); setr(_r); setg(_g); setb(_b);	}
 
 	inline operator argb_t () const
-	{	return argb_t((uint8_t)(a * 255.0f), (uint8_t)(r * 255.0f), (uint8_t)(g * 255.0f), (uint8_t)(b * 255.0f));	}
+	{
+		return argb_t(
+			static_cast<uint8_t>(a * 255.0f),
+			static_cast<uint8_t>(r * 255.0f),
+			static_cast<uint8_t>(g * 255.0f),
+			static_cast<uint8_t>(b * 255.0f)
+		);
+	}
 
 	inline float geta() const
 	{	return a;	}
@@ -424,16 +395,15 @@ forceinline translationref_t::operator bool() const
 }
 
 
-typedef struct {
+struct shademap_t {
 	palindex_t  *colormap;  // Colormap for 8-bit
 	argb_t      *shademap;  // ARGB8888 values for 32-bit
 	byte        ramp[256];  // Light fall-off as a function of distance
 	                        // Light levels: 0 = black, 255 = full bright.
 	                        // Distance:     0 = near,  255 = far.
-} shademap_t;
+};
 
-struct dyncolormap_s;
-typedef struct dyncolormap_s dyncolormap_t;
+struct dyncolormap_t;
 
 // This represents a clean reference to a map of both 8-bit colors and 32-bit shades.
 struct shaderef_t {

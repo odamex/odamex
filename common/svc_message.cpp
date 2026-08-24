@@ -45,7 +45,7 @@
 /**
  * @brief Pack an array of booleans into a bitfield.
  */
-static uint32_t PackBoolArray(nonstd::span<const bool> bools)
+static uint32_t PackBoolArray(std::span<const bool> bools)
 {
 	uint32_t out = 0;
 	for (size_t i = 0; i < bools.size(); i++)
@@ -73,38 +73,142 @@ odaproto::svc::Disconnect SVC_Disconnect(const char* message)
 /**
  * @brief Send information about a player.
  */
+
+static void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
+{
+	io_msg.set_statenum (psprite.statenum);
+	io_msg.set_tics     (psprite.tics);
+	io_msg.set_sx       (psprite.sx);
+	io_msg.set_sy       (psprite.sy);
+}
+
+static void FillPlayer(odaproto::Player& io_msg, const player_t& player, int destinationClientTicOfValidity)
+{
+	io_msg.set_client_tic   (destinationClientTicOfValidity);
+	io_msg.set_playerid     (player.id);
+	io_msg.set_health       (player.health);
+	io_msg.set_armortype    (player.armortype);
+	io_msg.set_armorpoints  (player.armorpoints);
+	io_msg.set_lives        (player.lives);
+
+	io_msg.set_readyweapon(player.readyweapon);
+	io_msg.set_pendingweapon(player.pendingweapon);
+
+	uint32_t packedweapons = PackBoolArray(player.weaponowned);
+	io_msg.set_weaponowned(packedweapons);
+
+	io_msg.mutable_ammo()->Add   (player.ammo.begin(),    player.ammo.end());
+	io_msg.mutable_maxammo()->Add(player.maxammo.begin(), player.maxammo.end());
+
+	uint32_t packedcards = PackBoolArray(player.cards);
+	io_msg.set_cards(packedcards);
+
+	io_msg.set_backpack(player.backpack);
+
+	for (int i = 0; i < NUMPSPRITES; i++)
+	{
+		FillPsprite(*io_msg.add_psprites(), player.psprites[i]);
+	}
+
+	for (int i = 0; i < NUMPOWERS; i++)
+	{
+		io_msg.add_powers(player.powers[i]);
+	}
+
+	if (!player.spectator)
+		io_msg.set_cheats(player.cheats);
+}
+
+static void FillMapThing(odaproto::MapThing& io_msg, const MapThing& i_mapthing)
+{
+    io_msg.set_thingid  (i_mapthing.thingid);
+    io_msg.set_x        (i_mapthing.x);
+    io_msg.set_y        (i_mapthing.y);
+    io_msg.set_z        (i_mapthing.z);
+    io_msg.set_angle    (i_mapthing.angle);
+    io_msg.set_type     (i_mapthing.type);
+    io_msg.set_flags    (i_mapthing.flags);
+    io_msg.set_special  (i_mapthing.special);
+
+    for (const auto& arg : i_mapthing.args)
+    {
+        io_msg.add_args(arg);
+    }
+}
+
 odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
 
-	uint32_t packedweapons = PackBoolArray(player.weaponowned);
-	msg.mutable_player()->set_weaponowned(packedweapons);
+	FillPlayer(*msg.mutable_player(), player, player.tic);
 
-	uint32_t packedcards = PackBoolArray(player.cards);
-	msg.mutable_player()->set_cards(packedcards);
+	return msg;
+}
 
-	msg.mutable_player()->set_backpack(player.backpack);
+odaproto::svc::PlayerAmmo SVC_PlayerAmmo(const player_t& player)
+{
+	odaproto::svc::PlayerAmmo msg;
 
-	for (int i = 0; i < NUMAMMO; i++)
+	msg.set_player_tic(player.tic);
+	msg.mutable_ammo()->Add(player.ammo.begin(),
+	                        player.ammo.end());
+
+	return msg;
+}
+
+odaproto::svc::PlayerMaxAmmo SVC_PlayerMaxAmmo(const player_t& player)
+{
+	odaproto::svc::PlayerMaxAmmo msg;
+
+	msg.set_player_tic(player.tic);
+	msg.mutable_maxammo()->Add(player.maxammo.begin(),
+	                           player.maxammo.end());
+
+	return msg;
+}
+
+odaproto::svc::PlayerWeaponOwned SVC_PlayerWeaponOwned(const player_t& player)
+{
+	odaproto::svc::PlayerWeaponOwned msg;
+
+	msg.set_player_tic(player.tic);
+	msg.mutable_weaponowned()->Add(player.weaponowned.begin(),
+	                               player.weaponowned.end());
+
+	return msg;
+}
+
+odaproto::svc::PlayerWeaponSelection SVC_PlayerWeaponSelection(const player_t& player)
+{
+	odaproto::svc::PlayerWeaponSelection msg;
+
+	msg.set_player_tic(player.tic);
+	msg.set_readyweapon(player.readyweapon);
+	msg.set_pendingweapon(player.pendingweapon);
+
+	return msg;
+}
+
+odaproto::svc::PlayerPowers SVC_PlayerPowers(const player_t& player)
+{
+	odaproto::svc::PlayerPowers msg;
+
+	msg.set_player_tic(player.tic);
+	msg.mutable_powers()->Add(player.powers.begin(),
+	                          player.powers.end());
+
+	return msg;
+}
+
+odaproto::svc::PlayerPsprites SVC_PlayerPsprites(const player_t& player)
+{
+	odaproto::svc::PlayerPsprites msg;
+
+	msg.set_player_tic(player.tic);
+	for (const auto& psprite : player.psprites)
 	{
-		msg.mutable_player()->add_ammo(player.ammo[i]);
-		msg.mutable_player()->add_maxammo(player.maxammo[i]);
+		FillPsprite(*msg.add_psprites(), psprite);
 	}
-
-	msg.mutable_player()->set_health(player.health);
-	msg.mutable_player()->set_armorpoints(player.armorpoints);
-	msg.mutable_player()->set_armortype(player.armortype);
-	msg.mutable_player()->set_lives(player.lives);
-	msg.mutable_player()->set_readyweapon(player.readyweapon);
-	msg.mutable_player()->set_pendingweapon(player.pendingweapon);
-
-	for (int i = 0; i < NUMPOWERS; i++)
-	{
-		msg.mutable_player()->add_powers(player.powers[i]);
-	}
-
-	if (!player.spectator)
-		msg.mutable_player()->set_cheats(player.cheats);
 
 	return msg;
 }
@@ -117,9 +221,8 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic)
 	odaproto::svc::MovePlayer msg;
 
 	odaproto::Actor* act = msg.mutable_actor();
-	odaproto::Player* pl = msg.mutable_player();
 
-	pl->set_playerid(player.id); // player number
+	msg.set_playerid(player.id); // player number
 
 	// [SL] 2011-09-14 - the most recently processed ticcmd from the
 	// client we're sending this message to.
@@ -149,13 +252,13 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic)
 	mom->set_z(player.mo->momz);
 
 	// Send all available powers information to show the clients
-	pl->mutable_powers()->Resize(NUMPOWERS + 1, 0);
-	pl->set_powers(pw_invulnerability, player.powers[pw_invulnerability]);
-	pl->set_powers(pw_strength, player.powers[pw_strength] > 0 ? 1 : 0);
-	pl->set_powers(pw_invisibility, player.powers[pw_invisibility]);
-	pl->set_powers(pw_ironfeet, player.powers[pw_ironfeet]);
-	pl->set_powers(pw_allmap, player.powers[pw_allmap]);
-	pl->set_powers(pw_infrared, player.powers[pw_infrared]);
+	msg.mutable_powers()->Resize(NUMPOWERS + 1, 0);
+	msg.set_powers(pw_invulnerability,  player.powers[pw_invulnerability]);
+	msg.set_powers(pw_strength,         player.powers[pw_strength] > 0 ? 1 : 0);
+	msg.set_powers(pw_invisibility,     player.powers[pw_invisibility]);
+	msg.set_powers(pw_ironfeet,         player.powers[pw_ironfeet]);
+	msg.set_powers(pw_allmap,           player.powers[pw_allmap]);
+	msg.set_powers(pw_infrared,         player.powers[pw_infrared]);
 
 	return msg;
 }
@@ -302,7 +405,8 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	}
 	if (bflags & baseline_t::POSZ)
 	{
-		apos->set_z(mo->z);
+		// Send the bob center, not the per-tic visual offset.
+		apos->set_z((mo->flags2 & MF2_FLOATBOB) ? mo->floorz + mo->special1 : mo->z);
 	}
 	if (bflags & baseline_t::ANGLE)
 	{
@@ -341,11 +445,43 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		amom->set_z(mo->momz);
 	}
 
-	cur->set_type(mo->type);
-	cur->set_netid(mo->netid);
+	// Now set the basic current info.
 
-	// denis - sending state fixes monster ghosts appearing under doors
+	cur->set_type    (mo->type);
+	cur->set_netid   (mo->netid);
 	cur->set_statenum(mo->state->statenum);
+
+	// Please note that we send the current gametic as the client's initial timebase for mobj-
+	// internal timing.  This ensures that any timed events for this mobj from this point
+	// forward are using the same timebase as the server.  Example:  whether or not A_Tracer
+	// does any actual tracing logic.
+	//
+	msg.set_timebase_tic(gametic);
+
+	// Animation state rics can never be left at 0, because 0 means to proceed to the next state
+	// immediately before returning control back out of the state-advance code.  Therefore we
+	// co-opt the zero / default state to mean -1, which is the "do not animate" value.
+	//
+	if (mo->tics > 0)
+	{
+		cur->set_tics(mo->tics);
+	}
+
+	// Special case:  Did we get spawned in earlier on this tic?  If so, there are some instances
+	// where a mobj spawns in via dehacked SpawnObject, but its frames / state sequencing is such
+	// that multiple states and special actions take effect in the very first RunThink operation.
+	// For such cases, we want to make sure that the first client-side RunThink produces the same
+	// result, and not do the client-side SpawnMobj directly into that post-action state. This is
+	// how we avoid missing sounds and other minor on-spawn desyncs.
+	//
+	if (mo->spawnTic == gametic)
+	{
+		// The following could and, in most cases, usually do just set the same value again.  It's
+		// those cases where they AREN'T the same value that we're really after here.
+		cur->set_statenum(mo->info->spawnstate);
+		cur->set_rndindex(mo->spawnRndindex);
+		cur->set_tics    (states[mo->info->spawnstate].tics);
+	}
 
 	if (mo->type == MT_FOUNTAIN)
 	{
@@ -380,7 +516,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	{
 		msg.set_target_netid(mo->target ? mo->target->netid : 0);
 	}
-	else if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
+	else if (mo->flags & (MF_AMBUSH | MF_DROPPED | MF_FRIEND))
 	{
 		spawnFlags |= SVC_SM_FLAGS;
 		cur->set_flags(mo->flags);
@@ -392,11 +528,19 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		cur->set_flags2(mo->flags2);
 	}
 
-	// odamex flags - only monster flags for now
-	if (mo->oflags & hordeBossModMask)
+	// Who a friendly belongs to decides who it gets along with, and the client
+	// has to agree with us about that or it clips things we let through.
+	if (mo->flags & MF_FRIEND)
+	{
+		spawnFlags |= SVC_SM_FRIEND;
+		cur->set_friend_playerid(mo->friend_playerid);
+		cur->set_friend_teamid(mo->friend_teamid);
+	}
+
+	if (mo->oflags)
 	{
 		spawnFlags |= SVC_SM_OFLAGS;
-		cur->set_oflags(mo->oflags & hordeBossModMask);
+		cur->set_oflags(mo->oflags);
 	}
 
 	// animating corpses
@@ -492,12 +636,13 @@ odaproto::svc::UserInfo SVC_UserInfo(const player_t& player, int64_t time)
 	msg.set_netname(player.userinfo.netname);
 	msg.set_team(player.userinfo.team);
 	msg.set_gender(player.userinfo.gender);
+	msg.set_colorpreset(player.userinfo.colorpreset);
 
 	// [AM] Alpha is always 255.
 	odaproto::Color* color = msg.mutable_color();
-	color->set_r(player.userinfo.color[1]);
-	color->set_g(player.userinfo.color[2]);
-	color->set_b(player.userinfo.color[3]);
+	color->set_r(player.userinfo.color.getr());
+	color->set_g(player.userinfo.color.getg());
+	color->set_b(player.userinfo.color.getb());
 
 	msg.set_join_time(time);
 
@@ -507,10 +652,8 @@ odaproto::svc::UserInfo SVC_UserInfo(const player_t& player, int64_t time)
 /**
  * @brief Update mobj data on the client compared to the baseline.
  */
-odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
+static void FillUpdateMobj(odaproto::svc::UpdateMobj& msg, const AActor& mobj)
 {
-	odaproto::svc::UpdateMobj msg;
-
 	uint32_t flags = P_GetMobjBaselineFlags(mobj);
 	msg.set_flags(flags);
 
@@ -530,7 +673,8 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
 	}
 	if (flags & baseline_t::POSZ)
 	{
-		pos->set_z(mobj.z);
+		// Send the bob center, not the per-tic visual offset.
+		pos->set_z((mobj.flags2 & MF2_FLOATBOB) ? mobj.floorz + mobj.special1 : mobj.z);
 	}
 	if (flags & baseline_t::ANGLE)
 	{
@@ -568,17 +712,37 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
 	{
 		mom->set_z(mobj.momz);
 	}
+}
+
+odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
+{
+	odaproto::svc::UpdateMobj msg;
+	FillUpdateMobj(msg, mobj);
+	return msg;
+}
+
+odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj)
+{
+	odaproto::svc::UpdateMobjWithMode msg;
+
+	FillUpdateMobj(* msg.mutable_update(), mobj);
+
+	msg.set_mode(static_cast<odaproto::svc::MobjModeEnum>(mobj.mode));
+	msg.set_state(mobj.state->statenum);
+	msg.set_tics (mobj.tics);
 
 	return msg;
 }
 
 EXTERN_CVAR(sv_sharekeys);
 
-odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
+odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player, int tic)
 {
 	odaproto::svc::SpawnPlayer msg;
 
 	msg.set_pid(player.id);
+	msg.set_player_tic(player.tic);
+	msg.set_server_tic(tic);
 
 	odaproto::Actor* act = msg.mutable_actor();
 	if (player.mo)
@@ -597,7 +761,6 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 		act->set_netid(limits::MAXSHORT);
 	}
 
-
 	if (sv_sharekeys)
 	{
 		const uint32_t packedcards = PackBoolArray(player.cards);
@@ -607,16 +770,17 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 	return msg;
 }
 
-odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActor* inflictor, int health, int armor)
+odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActor* inflictor, int health, int armor, int destinationClientTicOfValidity)
 {
 	odaproto::svc::DamagePlayer msg;
 
-	msg.set_netid(player.mo->netid);
-	msg.set_inflictorid(inflictor ? inflictor->netid : 0);
-	msg.set_health_damage(health);
-	msg.set_armor_damage(armor);
-	msg.mutable_player()->set_health(player.health);
-	msg.mutable_player()->set_armorpoints(player.armorpoints);
+	msg.set_netid             (player.mo->netid);
+	msg.set_inflictorid       (inflictor ? inflictor->netid : 0);
+	msg.set_health_damage     (health);
+	msg.set_armor_damage      (armor);
+	msg.set_player_health     (player.health);
+	msg.set_player_armorpoints(player.armorpoints);
+	msg.set_client_tic        (destinationClientTicOfValidity);
 
 	return msg;
 }
@@ -625,16 +789,13 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActo
  * @brief Kill a mobj.
  */
 odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
-                                     int mod, bool joinkill)
+                                     int /* methodOfDeath */, bool joinkill)
 {
 	odaproto::svc::KillMobj msg;
-
-	odaproto::Actor* tgt = msg.mutable_target();
 
 	msg.set_source_netid(source ? source->netid : 0);
 	msg.set_inflictor_netid(inflictor ? inflictor->netid : 0);
 	msg.set_health(target->health);
-	msg.set_mod(mod);
 	msg.set_joinkill(joinkill);
 
 	// [AM] Confusingly, we send the lives _before_ we take it away, so
@@ -642,8 +803,8 @@ odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target,
 	msg.set_lives(target->player ? target->player->lives : -1);
 
 	// send death location first
-	tgt->set_netid(target->netid);
-	tgt->set_rndindex(target->rndindex);
+	msg.set_target_netid(target->netid);
+	msg.set_target_rndindex(target->rndindex);
 
 	// [SL] 2012-12-26 - Get real position since this actor is at
 	// a reconciled position due to unlag
@@ -654,14 +815,14 @@ odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target,
 		                                             zoffs);
 	}
 
-	odaproto::Vec3* tgtpos = tgt->mutable_pos();
+	odaproto::Vec3* tgtpos = msg.mutable_target_pos();
 	tgtpos->set_x(target->x + xoffs);
 	tgtpos->set_y(target->y + yoffs);
 	tgtpos->set_z(target->z + zoffs);
 
-	tgt->set_angle(target->angle);
+	msg.set_target_angle(target->angle);
 
-	odaproto::Vec3* tgtmom = tgt->mutable_mom();
+	odaproto::Vec3* tgtmom = msg.mutable_target_mom();
 	tgtmom->set_x(target->momx);
 	tgtmom->set_y(target->momy);
 	tgtmom->set_z(target->momz);
@@ -695,17 +856,11 @@ odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corps
 	cpsmom->set_y(corpse->momy);
 	cpsmom->set_z(corpse->momz);
 
+	cps->set_flags(corpse->flags);
+	cps->set_friend_playerid(corpse->friend_playerid);
+	cps->set_friend_teamid(corpse->friend_teamid);
+
 	msg.set_source_netid(source ? source->netid : 0);
-
-	return msg;
-}
-
-odaproto::svc::FireWeapon SVC_FireWeapon(const player_t& player)
-{
-	odaproto::svc::FireWeapon msg;
-
-	msg.set_readyweapon(player.readyweapon);
-	msg.set_servertic(player.tic);
 
 	return msg;
 }
@@ -825,159 +980,174 @@ odaproto::svc::ActivateLine SVC_ActivateLine(const line_t* line, const AActor* m
 	return msg;
 }
 
-odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector)
+odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sector, int serverTic)
 {
-	odaproto::svc::MovingSector msg;
+	odaproto::svc::MovingSectorElevator msg;
 
-	ptrdiff_t sectornum = &sector - ::sectors;
-
-	// Determine which moving planes are in this sector - governs which
-	// fields to send to the other side.
-	movertype_t floor_mover = SEC_INVALID, ceiling_mover = SEC_INVALID;
-
-	if (sector.ceilingdata && sector.ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
+	if (serverTic >= 0)
 	{
-		ceiling_mover = SEC_CEILING;
-	}
-	if (sector.ceilingdata && sector.ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
-	{
-		ceiling_mover = SEC_DOOR;
-	}
-	if (sector.floordata && sector.floordata->IsA(RUNTIME_CLASS(DFloor)))
-	{
-		floor_mover = SEC_FLOOR;
-	}
-	if (sector.floordata && sector.floordata->IsA(RUNTIME_CLASS(DPlat)))
-	{
-		floor_mover = SEC_PLAT;
-	}
-	if (sector.ceilingdata && sector.ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
-	{
-		ceiling_mover = SEC_ELEVATOR;
-		floor_mover = SEC_INVALID;
-	}
-	if (sector.ceilingdata && sector.ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
-	{
-		ceiling_mover = SEC_PILLAR;
-		floor_mover = SEC_INVALID;
+		msg.set_server_tic(serverTic);
 	}
 
-	// no moving planes?  skip it.
-	if (ceiling_mover == SEC_INVALID && floor_mover == SEC_INVALID)
+	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
+	msg.set_ceiling_height  (P_CeilingHeight(&sector));
+	msg.set_floor_height    (P_FloorHeight(&sector));
+
+	const DElevator* Elevator = static_cast<const DElevator*>(sector.ceilingdata);
+
+	msg.set_ceil_type   (Elevator->m_Type);
+	msg.set_ceil_status (Elevator->m_Status);
+	msg.set_ceil_dir    (Elevator->m_Direction);
+	msg.set_floor_dest  (Elevator->m_FloorDestHeight);
+	msg.set_ceil_dest   (Elevator->m_CeilingDestHeight);
+	msg.set_ceil_speed  (Elevator->m_Speed);
+
+	return msg;
+}
+
+odaproto::svc::MovingSectorPillar SVC_MovingSectorPillar(const sector_t& sector, int serverTic)
+{
+	odaproto::svc::MovingSectorPillar msg;
+
+	if (serverTic >= 0)
 	{
-		return msg;
+		msg.set_server_tic(serverTic);
 	}
 
-	// Create bitfield to denote moving planes in this sector
-	byte movers = byte(ceiling_mover) | (byte(floor_mover) << 4);
+	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
+	msg.set_ceiling_height  (P_CeilingHeight(&sector));
+	msg.set_floor_height    (P_FloorHeight(&sector));
 
-	msg.set_sector(sectornum);
-	msg.set_ceiling_height(P_CeilingHeight(&sector));
+	const DPillar* Pillar = static_cast<const DPillar*>(sector.ceilingdata);
+
+	msg.set_ceil_type   (Pillar->m_Type);
+	msg.set_ceil_status (Pillar->m_Status);
+	msg.set_floor_speed (Pillar->m_FloorSpeed);
+	msg.set_ceil_speed  (Pillar->m_CeilingSpeed);
+	msg.set_floor_dest  (Pillar->m_FloorTarget);
+	msg.set_ceil_dest   (Pillar->m_CeilingTarget);
+	msg.set_ceil_crush  (Pillar->m_Crush);
+
+	return msg;
+}
+
+odaproto::svc::MovingSectorCeiling SVC_MovingSectorCeiling(const sector_t& sector, int serverTic)
+{
+	odaproto::svc::MovingSectorCeiling msg;
+
+	if (serverTic >= 0)
+	{
+		msg.set_server_tic(serverTic);
+	}
+
+	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
+	msg.set_ceiling_height  (P_CeilingHeight(&sector));
+
+	const DCeiling* Ceiling = static_cast<const DCeiling*>(sector.ceilingdata);
+
+	msg.set_ceil_type       (Ceiling->m_Type);
+	msg.set_ceil_low        (Ceiling->m_BottomHeight);
+	msg.set_ceil_high       (Ceiling->m_TopHeight);
+	msg.set_ceil_speed      (Ceiling->m_Speed);
+	msg.set_crusher_speed_1 (Ceiling->m_Speed1);
+	msg.set_crusher_speed_2 (Ceiling->m_Speed2);
+	msg.set_ceil_crush      (Ceiling->m_Crush);
+	msg.set_silent          (Ceiling->m_Silent);
+	msg.set_ceil_dir        (Ceiling->m_Direction);
+	msg.set_ceil_tex        (Ceiling->m_Texture);
+	msg.set_ceil_new_special(Ceiling->m_NewSpecial);
+	msg.set_ceil_tag        (Ceiling->m_Tag);
+	msg.set_ceil_old_dir    (Ceiling->m_OldDirection);
+
+	return msg;
+}
+
+odaproto::svc::MovingSectorDoor SVC_MovingSectorDoor(const sector_t& sector, int serverTic)
+{
+	odaproto::svc::MovingSectorDoor msg;
+
+	if (serverTic >= 0)
+	{
+		msg.set_server_tic(serverTic);
+	}
+
+	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
+	msg.set_ceiling_height  (P_CeilingHeight(&sector));
+
+	const DDoor* Door = static_cast<const DDoor*>(sector.ceilingdata);
+
+	msg.set_ceil_type   (Door->m_Type);
+	msg.set_ceil_height (Door->m_TopHeight);
+	msg.set_ceil_speed  (Door->m_Speed);
+	msg.set_ceil_wait   (Door->m_TopWait);
+	msg.set_ceil_counter(Door->m_TopCountdown);
+	msg.set_ceil_status (Door->m_Status);
+
+	// Check for an invalid m_Line (doors triggered by tag 666)
+	msg.set_ceil_line (Door->m_Line ? (Door->m_Line - lines) : -1);
+
+	return msg;
+}
+
+odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, int serverTic)
+{
+	odaproto::svc::MovingSectorFloor msg;
+
+	if (serverTic >= 0)
+	{
+		msg.set_server_tic(serverTic);
+	}
+
+	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
-	msg.set_movers(movers);
 
-	if (ceiling_mover == SEC_ELEVATOR)
+	const DFloor* Floor = static_cast<const DFloor*>(sector.floordata);
+
+	msg.set_floor_type          (Floor->m_Type);
+	msg.set_floor_status        (Floor->m_Status);
+	msg.set_floor_crush         (Floor->m_Crush);
+	msg.set_floor_dir           (Floor->m_Direction);
+	msg.set_floor_new_special   (Floor->m_NewSpecial);
+	msg.set_floor_tex           (Floor->m_Texture);
+	msg.set_floor_dest          (Floor->m_FloorDestHeight);
+	msg.set_floor_speed         (Floor->m_Speed);
+	msg.set_reset_counter       (Floor->m_ResetCount);
+	msg.set_orig_height         (Floor->m_OrgHeight);
+	msg.set_delay               (Floor->m_Delay);
+	msg.set_pause_time          (Floor->m_PauseTime);
+	msg.set_step_time           (Floor->m_StepTime);
+	msg.set_per_step_time       (Floor->m_PerStepTime);
+	msg.set_floor_line          (Floor->m_Line ? (Floor->m_Line - lines) : -1);
+
+	return msg;
+}
+
+odaproto::svc::MovingSectorPlat SVC_MovingSectorPlat(const sector_t& sector, int serverTic)
+{
+	odaproto::svc::MovingSectorPlat msg;
+
+	if (serverTic >= 0)
 	{
-		DElevator* Elevator = static_cast<DElevator*>(sector.ceilingdata);
-
-		odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
-		ceil->set_ceil_type(Elevator->m_Type);
-		ceil->set_ceil_status(Elevator->m_Status);
-		ceil->set_ceil_dir(Elevator->m_Direction);
-		ceil->set_floor_dest(Elevator->m_FloorDestHeight);
-		ceil->set_ceil_dest(Elevator->m_CeilingDestHeight);
-		ceil->set_ceil_speed(Elevator->m_Speed);
+			msg.set_server_tic(serverTic);
 	}
 
-	if (ceiling_mover == SEC_PILLAR)
-	{
-		DPillar* Pillar = static_cast<DPillar*>(sector.ceilingdata);
+	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
+	msg.set_floor_height(P_FloorHeight(&sector));
 
-		odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
-		ceil->set_ceil_type(Pillar->m_Type);
-		ceil->set_ceil_status(Pillar->m_Status);
-		ceil->set_floor_speed(Pillar->m_FloorSpeed);
-		ceil->set_ceil_speed(Pillar->m_CeilingSpeed);
-		ceil->set_floor_dest(Pillar->m_FloorTarget);
-		ceil->set_ceil_dest(Pillar->m_CeilingTarget);
-		ceil->set_ceil_crush(Pillar->m_Crush);
-	}
+	const DPlat* Plat = static_cast<const DPlat*>(sector.floordata);
 
-	if (ceiling_mover == SEC_CEILING)
-	{
-		DCeiling* Ceiling = static_cast<DCeiling*>(sector.ceilingdata);
-
-		odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
-		ceil->set_ceil_type(Ceiling->m_Type);
-		ceil->set_ceil_low(Ceiling->m_BottomHeight);
-		ceil->set_ceil_high(Ceiling->m_TopHeight);
-		ceil->set_ceil_speed(Ceiling->m_Speed);
-		ceil->set_crusher_speed_1(Ceiling->m_Speed1);
-		ceil->set_crusher_speed_2(Ceiling->m_Speed2);
-		ceil->set_ceil_crush(Ceiling->m_Crush);
-		ceil->set_silent(Ceiling->m_Silent);
-		ceil->set_ceil_dir(Ceiling->m_Direction);
-		ceil->set_ceil_tex(Ceiling->m_Texture);
-		ceil->set_ceil_new_special(Ceiling->m_NewSpecial);
-		ceil->set_ceil_tag(Ceiling->m_Tag);
-		ceil->set_ceil_old_dir(Ceiling->m_OldDirection);
-	}
-
-	if (ceiling_mover == SEC_DOOR)
-	{
-		DDoor* Door = static_cast<DDoor*>(sector.ceilingdata);
-
-		odaproto::svc::MovingSector_Snapshot* ceil = msg.mutable_ceiling_mover();
-		ceil->set_ceil_type(Door->m_Type);
-		ceil->set_ceil_height(Door->m_TopHeight);
-		ceil->set_ceil_speed(Door->m_Speed);
-		ceil->set_ceil_wait(Door->m_TopWait);
-		ceil->set_ceil_counter(Door->m_TopCountdown);
-		ceil->set_ceil_status(Door->m_Status);
-		// Check for an invalid m_Line (doors triggered by tag 666)
-		ceil->set_ceil_line(Door->m_Line ? (Door->m_Line - lines) : -1);
-	}
-
-	if (floor_mover == SEC_FLOOR)
-	{
-		DFloor* Floor = static_cast<DFloor*>(sector.floordata);
-
-		odaproto::svc::MovingSector_Snapshot* floor = msg.mutable_floor_mover();
-		floor->set_floor_type(Floor->m_Type);
-		floor->set_floor_status(Floor->m_Status);
-		floor->set_floor_crush(Floor->m_Crush);
-		floor->set_floor_dir(Floor->m_Direction);
-		floor->set_floor_speed(Floor->m_NewSpecial);
-		floor->set_floor_tex(Floor->m_Texture);
-		floor->set_floor_dest(Floor->m_FloorDestHeight);
-		floor->set_floor_speed(Floor->m_Speed);
-		floor->set_reset_counter(Floor->m_ResetCount);
-		floor->set_orig_height(Floor->m_OrgHeight);
-		floor->set_delay(Floor->m_Delay);
-		floor->set_pause_time(Floor->m_PauseTime);
-		floor->set_step_time(Floor->m_StepTime);
-		floor->set_per_step_time(Floor->m_PerStepTime);
-		floor->set_floor_line(Floor->m_Line ? (Floor->m_Line - lines) : -1);
-	}
-
-	if (floor_mover == SEC_PLAT)
-	{
-		DPlat* Plat = static_cast<DPlat*>(sector.floordata);
-
-		odaproto::svc::MovingSector_Snapshot* floor = msg.mutable_floor_mover();
-		floor->set_floor_speed(Plat->m_Speed);
-		floor->set_floor_low(Plat->m_Low);
-		floor->set_floor_high(Plat->m_High);
-		floor->set_floor_wait(Plat->m_Wait);
-		floor->set_floor_counter(Plat->m_Count);
-		floor->set_floor_status(Plat->m_Status);
-		floor->set_floor_old_status(Plat->m_OldStatus);
-		floor->set_floor_crush(Plat->m_Crush);
-		floor->set_floor_tag(Plat->m_Tag);
-		floor->set_floor_type(Plat->m_Type);
-		floor->set_floor_offset(Plat->m_Height);
-		floor->set_floor_lip(Plat->m_Lip);
-	}
+	msg.set_floor_speed     (Plat->m_Speed);
+	msg.set_floor_low       (Plat->m_Low);
+	msg.set_floor_high      (Plat->m_High);
+	msg.set_floor_wait      (Plat->m_Wait);
+	msg.set_floor_counter   (Plat->m_Count);
+	msg.set_floor_status    (Plat->m_Status);
+	msg.set_floor_old_status(Plat->m_OldStatus);
+	msg.set_floor_crush     (Plat->m_Crush);
+	msg.set_floor_tag       (Plat->m_Tag);
+	msg.set_floor_type      (Plat->m_Type);
+	msg.set_floor_offset    (Plat->m_Height);
+	msg.set_floor_lip       (Plat->m_Lip);
 
 	return msg;
 }
@@ -1008,11 +1178,12 @@ odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, i
 	return msg;
 }
 
-odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor& mo)
+odaproto::svc::TouchSpecial SVC_TouchSpecial(const player_t& player, const AActor& mo)
 {
 	odaproto::svc::TouchSpecial msg;
 
 	msg.set_netid(mo.netid);
+	msg.set_player_tic(player.tic);
 
 	return msg;
 }
@@ -1020,46 +1191,12 @@ odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor& mo)
 /**
  * @brief Send information about a player
  */
-odaproto::svc::PlayerState SVC_PlayerState(const player_t& player)
+
+odaproto::svc::PlayerState SVC_PlayerState(const player_t& player, int destinationClientTicOfValidity)
 {
 	odaproto::svc::PlayerState msg;
 
-	odaproto::Player* pl = msg.mutable_player();
-
-	pl->set_playerid(player.id);
-	pl->set_health(player.health);
-	pl->set_armortype(player.armortype);
-	pl->set_armorpoints(player.armorpoints);
-	pl->set_lives(player.lives);
-	pl->set_readyweapon(player.readyweapon);
-
-	std::bitset<6> cardBits;
-	for (int i = 0; i < NUMCARDS; i++)
-	{
-		cardBits.set(i, player.cards[i]);
-	}
-	pl->set_cards(cardBits.to_ulong());
-
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		pl->add_ammo(player.ammo[i]);
-	}
-
-	for (int i = 0; i < NUMPSPRITES; i++)
-	{
-		const pspdef_t* psp = &player.psprites[i];
-		const int32_t state = psp->state ? psp->state->statenum : 0;
-		odaproto::Player_Psp* plpsp = pl->add_psprites();
-		plpsp->set_statenum(state);
-	}
-
-	for (int i = 0; i < NUMPOWERS; i++)
-	{
-		pl->add_powers(player.powers[i]);
-	}
-
-	if (!player.spectator)
-		pl->set_cheats(player.cheats);
+	FillPlayer(*msg.mutable_player(), player, destinationClientTicOfValidity);
 
 	return msg;
 }
@@ -1216,11 +1353,13 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 	return msg;
 }
 
-odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic)
+odaproto::svc::ServerGametic SVC_ServerGametic(const int tic, const int unackedCount, const int throttle)
 {
 	odaproto::svc::ServerGametic msg;
 
 	msg.set_tic(tic);
+	msg.set_reliable_messages_in_flight(unackedCount);
+	msg.set_throttle(throttle);
 
 	return msg;
 }
@@ -1258,6 +1397,19 @@ odaproto::svc::LineUpdate SVC_LineUpdate(const line_t& line)
 	msg.set_linenum(&line - ::lines);
 	msg.set_flags(line.flags);
 	msg.set_lucency(line.lucency);
+
+	return msg;
+}
+
+odaproto::svc::NoiseAlert SVC_NoiseAlert(const sector_t& sector)
+{
+	odaproto::svc::NoiseAlert msg;
+
+	msg.set_sectornum(&sector - ::sectors);
+	if (sector.soundtarget)
+	{
+		msg.set_soundtarget_netid(sector.soundtarget->netid);
+	}
 
 	return msg;
 }
@@ -1378,6 +1530,30 @@ odaproto::svc::LineSideUpdate SVC_LineSideUpdate(const line_t& line, const int s
 	return msg;
 }
 
+odaproto::svc::WakeupMobj SVC_WakeupMobj(const AActor* mo, bool mustPlaySeeSound)
+{
+	odaproto::svc::WakeupMobj msg;
+
+	msg.set_netid(mo->netid);
+	msg.set_seesound(mustPlaySeeSound);
+	msg.set_angle(mo->angle);
+	if (mo->goal)
+	{
+		msg.set_goalid(mo->goal->netid);
+	}
+	msg.set_lastlook(mo->lastlook);
+	msg.set_movecount(mo->movecount);
+	msg.set_movedir(mo->movedir);
+	msg.set_pursuecount(mo->pursuecount);
+	msg.set_reactiontime(mo->reactiontime);
+	msg.set_special(mo->special);
+	msg.set_strafecount(mo->strafecount);
+	msg.set_targetid(mo->target->netid);
+	msg.set_threshold(mo->threshold);
+
+	return msg;
+}
+
 odaproto::svc::MobjState SVC_MobjState(const AActor* mo)
 {
 	odaproto::svc::MobjState msg;
@@ -1429,7 +1605,7 @@ odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, const lin
 odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
                                                        const AActor* activator,
                                                        const char* print,
-                                                       const nonstd::span<const int> args)
+                                                       const std::span<const int> args)
 {
 	odaproto::svc::ExecuteACSSpecial msg;
 
@@ -1681,44 +1857,23 @@ odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, cons
 	return msg;
 }
 
-odaproto::svc::AnnouncerEvent SVC_AnnouncerEvent(const std::string& key)
+odaproto::svc::AnnouncerEvent SVC_AnnouncerEvent(const std::string_view key)
 {
 	odaproto::svc::AnnouncerEvent msg;
 
-	msg.set_key(key);
+	msg.set_key(std::string(key));
 
 	return msg;
 }
 
-odaproto::svc::NetdemoCap SVC_NetdemoCap(const player_t* player)
+odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(const MapThing& mapthing, uint32_t netid)
 {
-	odaproto::svc::NetdemoCap msg;
+	odaproto::svc::ConfigureAvatar msg;
 
-	odaproto::Actor* act = msg.mutable_actor();
-	odaproto::Player* play = msg.mutable_player();
+	FillMapThing(*msg.mutable_avatar_mapthing(), mapthing);
 
-	const AActor* mo = player->mo;
-
-	player->cmd.serialize(*msg.mutable_player_cmd());
-
-	act->set_waterlevel(mo->waterlevel);
-	act->mutable_pos()->set_x(mo->x);
-	act->mutable_pos()->set_y(mo->y);
-	act->mutable_pos()->set_z(mo->z);
-	act->mutable_mom()->set_x(mo->momx);
-	act->mutable_mom()->set_y(mo->momy);
-	act->mutable_mom()->set_z(mo->momz);
-	act->set_angle(mo->angle);
-	act->set_pitch(mo->pitch);
-	play->set_viewz(player->viewz);
-	play->set_viewheight(player->viewheight);
-	play->set_deltaviewheight(player->deltaviewheight);
-	play->set_jumptics(player->jumpTics);
-	act->set_reactiontime(mo->reactiontime);
-	play->set_readyweapon(player->readyweapon);
-	play->set_pendingweapon(player->pendingweapon);
+	msg.set_netid(netid);
 
 	return msg;
 }
-
 VERSION_CONTROL(svc_message, "$Id$")

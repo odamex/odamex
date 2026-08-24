@@ -34,21 +34,22 @@
 #include "p_horde.h"
 #include "p_tick.h"
 
+namespace
+{
+constexpr int MS_PER_SECOND = 1000;
+constexpr int SECONDS_PER_MINUTE = 60;
+constexpr int FIVE_MINUTES_IN_SECONDS = 5 * SECONDS_PER_MINUTE;
+} // namespace
+
 AnnouncerManager& AnnouncerManager::getInstance()
 {
 	static AnnouncerManager instance;
 	return instance;
 }
 
-AnnouncerManager::AnnouncerManager()
-{
+AnnouncerManager::AnnouncerManager() = default;
 
-}
-
-AnnouncerManager::~AnnouncerManager()
-{
-
-}
+AnnouncerManager::~AnnouncerManager() = default;
 
 void AnnouncerManager::reset()
 {
@@ -59,13 +60,13 @@ void AnnouncerManager::reset()
 
 bool AnnouncerManager::isAnnouncerLoaded(const std::string& announcer) const
 {
-	return announcerDict.find(announcer) != announcerDict.end();
+	return announcerDict.contains(announcer);
 }
 
 bool AnnouncerManager::namedTokenExists(const std::string& tokenName)
 {
 	// Build a list of all tokens if we haven't already.
-	if (allTokens.size() == 0)
+	if (allTokens.empty())
 	{
 		allTokens.insert(allTokens.end(), announcerCTFTokens.begin(), announcerCTFTokens.end());
 		allTokens.insert(allTokens.end(), announcerHordeTokens.begin(), announcerHordeTokens.end());
@@ -78,12 +79,7 @@ bool AnnouncerManager::namedTokenExists(const std::string& tokenName)
 		allTokens.insert(allTokens.end(), announcerResultTrackingTokens.begin(), announcerResultTrackingTokens.end());
 	}
 
-	if (std::find(allTokens.begin(), allTokens.end(), tokenName) != allTokens.end())
-	{
-		return true;
-	}
-
-	return false;
+	return std::ranges::find(allTokens, tokenName) != allTokens.end();
 }
 
 std::string AnnouncerManager::getLeftAnnouncer(const std::string& currentAnnouncer) const
@@ -103,18 +99,13 @@ std::string AnnouncerManager::getLeftAnnouncer(const std::string& currentAnnounc
 	{
 		return announcerDict.begin()->first;
 	}
-	else if (it == announcerDict.begin())
+	if (it == announcerDict.begin())
 	{
 		// Wrap around to the end
-		it = std::prev(announcerDict.end());
+		return std::prev(announcerDict.end())->first;
+	}
 
-		return it->first;
-	}
-	else
-	{
-		it = std::prev(it);
-		return it->first;
-	}
+	return std::prev(it)->first;
 }
 
 std::string AnnouncerManager::getRightAnnouncer(const std::string& currentAnnouncer) const
@@ -132,20 +123,16 @@ std::string AnnouncerManager::getRightAnnouncer(const std::string& currentAnnoun
 	{
 		return announcerDict.begin()->first;
 	}
-	else
-	{
-		it = std::next(it);
 
-		if (it == announcerDict.end())
-		{
-			// Wrap around to the beginning
-			return announcerDict.begin()->first;
-		}
-		else
-		{
-			return it->first;
-		}
+	it = std::next(it);
+
+	if (it == announcerDict.end())
+	{
+		// Wrap around to the beginning
+		return announcerDict.begin()->first;
 	}
+
+	return it->first;
 }
 
 const AnnouncerMetaData_s& AnnouncerManager::getAnnouncerMetadata(const std::string& announcer)
@@ -170,63 +157,63 @@ void AnnouncerManager::loadAnnouncerDefaults()
 
 	// Fill in default sounds
 	// Possessive CTF Announcements
-	defaultAnnouncer.soundDict[ANN_YOURFLAGTAKEN] = "vox/your/flag/take";
-	defaultAnnouncer.soundDict[ANN_ENEMYFLAGTAKEN] = "vox/enemy/flag/take";
-	defaultAnnouncer.soundDict[ANN_YOURFLAGDROPPED] = "vox/your/flag/drop";
-	defaultAnnouncer.soundDict[ANN_ENEMYFLAGDROPPED] = "vox/enemy/flag/drop";
-	defaultAnnouncer.soundDict[ANN_YOURFLAGISBEINGRETURNED] = "vox/your/flag/manualreturn";
-	defaultAnnouncer.soundDict[ANN_ENEMYFLAGISBEINGRETURNED] = "vox/enemy/flag/manualreturn";
-	defaultAnnouncer.soundDict[ANN_YOURFLAGRETURNED] = "vox/your/flag/return";
-	defaultAnnouncer.soundDict[ANN_ENEMYFLAGRETURNED] = "vox/enemy/flag/return";
-	defaultAnnouncer.soundDict[ANN_YOURTEAMSCORES] = "vox/your/score";
-	defaultAnnouncer.soundDict[ANN_ENEMYTEAMSCORES] = "vox/enemy/score";
+	defaultAnnouncer.soundDict.emplace(ANN_YOURFLAGTAKEN, "vox/your/flag/take");
+	defaultAnnouncer.soundDict.emplace(ANN_ENEMYFLAGTAKEN, "vox/enemy/flag/take");
+	defaultAnnouncer.soundDict.emplace(ANN_YOURFLAGDROPPED, "vox/your/flag/drop");
+	defaultAnnouncer.soundDict.emplace(ANN_ENEMYFLAGDROPPED, "vox/enemy/flag/drop");
+	defaultAnnouncer.soundDict.emplace(ANN_YOURFLAGISBEINGRETURNED, "vox/your/flag/manualreturn");
+	defaultAnnouncer.soundDict.emplace(ANN_ENEMYFLAGISBEINGRETURNED, "vox/enemy/flag/manualreturn");
+	defaultAnnouncer.soundDict.emplace(ANN_YOURFLAGRETURNED, "vox/your/flag/return");
+	defaultAnnouncer.soundDict.emplace(ANN_ENEMYFLAGRETURNED, "vox/enemy/flag/return");
+	defaultAnnouncer.soundDict.emplace(ANN_YOURTEAMSCORES, "vox/your/score");
+	defaultAnnouncer.soundDict.emplace(ANN_ENEMYTEAMSCORES, "vox/enemy/score");
 
 	// Team Based CTF Announcements
-	defaultAnnouncer.soundDict[ANN_REDFLAGTAKEN] = "vox/red/flag/take";
-	defaultAnnouncer.soundDict[ANN_BLUEFLAGTAKEN] = "vox/blue/flag/take";
-	defaultAnnouncer.soundDict[ANN_GREENFLAGTAKEN] = "vox/green/flag/take";
-	defaultAnnouncer.soundDict[ANN_REDFLAGDROPPED] = "vox/red/flag/drop";
-	defaultAnnouncer.soundDict[ANN_BLUEFLAGDROPPED] = "vox/blue/flag/drop";
-	defaultAnnouncer.soundDict[ANN_GREENFLAGDROPPED] = "vox/green/flag/drop";
-	defaultAnnouncer.soundDict[ANN_REDFLAGISBEINGRETURNED] = "vox/red/flag/manualreturn";
-	defaultAnnouncer.soundDict[ANN_BLUEFLAGISBEINGRETURNED] = "vox/blue/flag/manualreturn";
-	defaultAnnouncer.soundDict[ANN_GREENFLAGISBEINGRETURNED] = "vox/green/flag/manualreturn";
-	defaultAnnouncer.soundDict[ANN_REDFLAGRETURNED] = "vox/red/flag/return";
-	defaultAnnouncer.soundDict[ANN_BLUEFLAGRETURNED] = "vox/blue/flag/return";
-	defaultAnnouncer.soundDict[ANN_GREENFLAGRETURNED] = "vox/green/flag/return";
-	defaultAnnouncer.soundDict[ANN_REDTEAMSCORES] = "vox/red/score";
-	defaultAnnouncer.soundDict[ANN_BLUETEAMSCORES] = "vox/blue/score";
-	defaultAnnouncer.soundDict[ANN_GREENTEAMSCORES] = "vox/green/score";
+	defaultAnnouncer.soundDict.emplace(ANN_REDFLAGTAKEN, "vox/red/flag/take");
+	defaultAnnouncer.soundDict.emplace(ANN_BLUEFLAGTAKEN, "vox/blue/flag/take");
+	defaultAnnouncer.soundDict.emplace(ANN_GREENFLAGTAKEN, "vox/green/flag/take");
+	defaultAnnouncer.soundDict.emplace(ANN_REDFLAGDROPPED, "vox/red/flag/drop");
+	defaultAnnouncer.soundDict.emplace(ANN_BLUEFLAGDROPPED, "vox/blue/flag/drop");
+	defaultAnnouncer.soundDict.emplace(ANN_GREENFLAGDROPPED, "vox/green/flag/drop");
+	defaultAnnouncer.soundDict.emplace(ANN_REDFLAGISBEINGRETURNED, "vox/red/flag/manualreturn");
+	defaultAnnouncer.soundDict.emplace(ANN_BLUEFLAGISBEINGRETURNED, "vox/blue/flag/manualreturn");
+	defaultAnnouncer.soundDict.emplace(ANN_GREENFLAGISBEINGRETURNED, "vox/green/flag/manualreturn");
+	defaultAnnouncer.soundDict.emplace(ANN_REDFLAGRETURNED, "vox/red/flag/return");
+	defaultAnnouncer.soundDict.emplace(ANN_BLUEFLAGRETURNED, "vox/blue/flag/return");
+	defaultAnnouncer.soundDict.emplace(ANN_GREENFLAGRETURNED, "vox/green/flag/return");
+	defaultAnnouncer.soundDict.emplace(ANN_REDTEAMSCORES, "vox/red/score");
+	defaultAnnouncer.soundDict.emplace(ANN_BLUETEAMSCORES, "vox/blue/score");
+	defaultAnnouncer.soundDict.emplace(ANN_GREENTEAMSCORES, "vox/green/score");
 
 	// Horde Mode Announcements
-	defaultAnnouncer.soundDict[ANN_HORDEBOSSSPAWN] = "vox/horde/bossspawn";
-	defaultAnnouncer.soundDict[ANN_LASTPLAYERALIVE] = "vox/lastplayeralive";
-	defaultAnnouncer.soundDict[ANN_REVIVEDPLAYER] = "vox/horde/revivedplayer";
+	defaultAnnouncer.soundDict.emplace(ANN_HORDEBOSSSPAWN, "vox/horde/bossspawn");
+	defaultAnnouncer.soundDict.emplace(ANN_LASTPLAYERALIVE, "vox/lastplayeralive");
+	defaultAnnouncer.soundDict.emplace(ANN_REVIVEDPLAYER, "vox/horde/revivedplayer");
 
 	// General Announcements
-	defaultAnnouncer.soundDict[ANN_FIVEMINUTEWARNING] = "vox/fiveminutewarning";
-	defaultAnnouncer.soundDict[ANN_ONEMINUTEWARNING] = "vox/oneminutewarning";
-	defaultAnnouncer.soundDict[ANN_THREEFRAGSLEFT] = "vox/threefragsleft";
-	defaultAnnouncer.soundDict[ANN_TWOFRAGSLEFT] = "vox/twofragsleft";
-	defaultAnnouncer.soundDict[ANN_ONEFRAGLEFT] = "vox/onefragleft";
-	defaultAnnouncer.soundDict[ANN_FIVE] = "vox/five";
-	defaultAnnouncer.soundDict[ANN_FOUR] = "vox/four";
-	defaultAnnouncer.soundDict[ANN_THREE] = "vox/three";
-	defaultAnnouncer.soundDict[ANN_TWO] = "vox/two";
-	defaultAnnouncer.soundDict[ANN_ONE] = "vox/one";
-	defaultAnnouncer.soundDict[ANN_FIGHT] = "vox/fight";
-	defaultAnnouncer.soundDict[ANN_PLAYERELIMINATED] = "vox/playereliminated";
-	defaultAnnouncer.soundDict[ANN_FIRSTBLOOD] = "vox/firstblood";
+	defaultAnnouncer.soundDict.emplace(ANN_FIVEMINUTEWARNING, "vox/fiveminutewarning");
+	defaultAnnouncer.soundDict.emplace(ANN_ONEMINUTEWARNING, "vox/oneminutewarning");
+	defaultAnnouncer.soundDict.emplace(ANN_THREEFRAGSLEFT, "vox/threefragsleft");
+	defaultAnnouncer.soundDict.emplace(ANN_TWOFRAGSLEFT, "vox/twofragsleft");
+	defaultAnnouncer.soundDict.emplace(ANN_ONEFRAGLEFT, "vox/onefragleft");
+	defaultAnnouncer.soundDict.emplace(ANN_FIVE, "vox/five");
+	defaultAnnouncer.soundDict.emplace(ANN_FOUR, "vox/four");
+	defaultAnnouncer.soundDict.emplace(ANN_THREE, "vox/three");
+	defaultAnnouncer.soundDict.emplace(ANN_TWO, "vox/two");
+	defaultAnnouncer.soundDict.emplace(ANN_ONE, "vox/one");
+	defaultAnnouncer.soundDict.emplace(ANN_FIGHT, "vox/fight");
+	defaultAnnouncer.soundDict.emplace(ANN_PLAYERELIMINATED, "vox/playereliminated");
+	defaultAnnouncer.soundDict.emplace(ANN_FIRSTBLOOD, "vox/firstblood");
 
 	// Lead Change Announcements
-	defaultAnnouncer.soundDict[ANN_YOUHAVETHELEAD] = "vox/youhavethelead";
-	defaultAnnouncer.soundDict[ANN_YOULOSTTHELEAD] = "vox/youlostthelead";
-	defaultAnnouncer.soundDict[ANN_YOUTIEDFORTHELEAD] = "vox/youtiedforthelead";
+	defaultAnnouncer.soundDict.emplace(ANN_YOUHAVETHELEAD, "vox/youhavethelead");
+	defaultAnnouncer.soundDict.emplace(ANN_YOULOSTTHELEAD, "vox/youlostthelead");
+	defaultAnnouncer.soundDict.emplace(ANN_YOUTIEDFORTHELEAD, "vox/youtiedforthelead");
 
 	// Match Result Announcements
-	defaultAnnouncer.soundDict[ANN_YOUWIN] = "vox/youwin";
-	defaultAnnouncer.soundDict[ANN_YOULOSE] = "vox/youlose";
-	defaultAnnouncer.soundDict[ANN_YOUTIED] = "vox/youtied";
+	defaultAnnouncer.soundDict.emplace(ANN_YOUWIN, "vox/youwin");
+	defaultAnnouncer.soundDict.emplace(ANN_YOULOSE, "vox/youlose");
+	defaultAnnouncer.soundDict.emplace(ANN_YOUTIED, "vox/youtied");
 
 	// Multi Kill Announcements
 	defaultAnnouncer.soundDict["multi 2"] = "vox/multi/doublekill";
@@ -255,9 +242,9 @@ void AnnouncerManager::loadAnnouncerDefaults()
 	loadedAnnouncer = announcerDict[metadata.name];
 }
 
-const std::string AnnouncerManager::getTokenForEvent(const std::string& event)
+std::string AnnouncerManager::getTokenForEvent(const std::string_view event)
 {
-	auto it = loadedAnnouncer.soundDict.find(event);
+	const auto it = loadedAnnouncer.soundDict.find(std::string(event));
 	if (it != loadedAnnouncer.soundDict.end())
 	{
 		return it->second;
@@ -286,11 +273,11 @@ void AnnouncerManager::loadAnnouncerByName(const std::string& announcer)
 	}
 }
 
-void AnnouncerManager::loadAnnouncers(const std::unordered_map<std::string, Announcer_s> newAnnouncers)
+void AnnouncerManager::loadAnnouncers(const std::unordered_map<std::string, Announcer_s>& newAnnouncers)
 {
 	for (auto& it : newAnnouncers)
 	{
-		if (announcerDict.find(it.first) == announcerDict.end())
+		if (!announcerDict.contains(it.first))
 		{
 			announcerDict[it.first] = it.second;
 		}
@@ -314,11 +301,11 @@ void AnnouncerManager::playAndSetDelay(const std::string& soundName)
 	S_Sound(CHAN_ANNOUNCER, soundName.c_str(), 1, ATTN_NONE);
 
 	// Look up the sound's duration and convert to tics for the delay.
-	int sfxId = S_FindSound(soundName.c_str());
+	const int sfxId = S_FindSound(soundName.c_str());
 	if (sfxId != -1)
 	{
-		unsigned int ms = S_sfx[sfxId].ms;
-		delayTicsRemaining = (ms * TICRATE) / 1000;
+		const unsigned int ms = S_sfx[sfxId].ms;
+		delayTicsRemaining = (ms * TICRATE) / MS_PER_SECOND;
 	}
 	else
 	{
@@ -347,7 +334,7 @@ void AnnouncerManager::tick()
 
 	if (delayTicsRemaining <= 0 && !soundQueue.empty())
 	{
-		std::string nextSound = soundQueue.front();
+		const std::string nextSound = soundQueue.front();
 		soundQueue.pop();
 		playAndSetDelay(nextSound);
 	}
@@ -439,7 +426,7 @@ void AnnouncerManager::resetFragWarnings()
 void AnnouncerManager::announceFragWarning3()
 {
 	fragWarning3Announced = true;
-	std::string sound = getTokenForEvent(ANN_THREEFRAGSLEFT);
+	const std::string sound = getTokenForEvent(ANN_THREEFRAGSLEFT);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
@@ -448,7 +435,7 @@ void AnnouncerManager::announceFragWarning2()
 {
 	fragWarning2Announced = true;
 	fragWarning3Announced = true;
-	std::string sound = getTokenForEvent(ANN_TWOFRAGSLEFT);
+	const std::string sound = getTokenForEvent(ANN_TWOFRAGSLEFT);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
@@ -458,21 +445,21 @@ void AnnouncerManager::announceFragWarning1()
 	fragWarning1Announced = true;
 	fragWarning2Announced = true;
 	fragWarning3Announced = true;
-	std::string sound = getTokenForEvent(ANN_ONEFRAGLEFT);
+	const std::string sound = getTokenForEvent(ANN_ONEFRAGLEFT);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
 
 void AnnouncerManager::announceFiveMinuteWarning()
 {
-	std::string sound = getTokenForEvent(ANN_FIVEMINUTEWARNING);
+	const std::string sound = getTokenForEvent(ANN_FIVEMINUTEWARNING);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
 
 void AnnouncerManager::announceOneMinuteWarning()
 {
-	std::string sound = getTokenForEvent(ANN_ONEMINUTEWARNING);
+	const std::string sound = getTokenForEvent(ANN_ONEMINUTEWARNING);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
@@ -515,7 +502,7 @@ void P_CheckFragWarnings()
 			leadingScore = pr.players.front()->fragcount;
 	}
 
-	int fragsRemaining = sv_fraglimit.asInt() - leadingScore;
+	const int fragsRemaining = sv_fraglimit.asInt() - leadingScore;
 
 	if (fragsRemaining > 3)
 	{
@@ -567,17 +554,17 @@ void P_CheckTimeWarnings()
 	AnnouncerManager& instance = AnnouncerManager::getInstance();
 
 	// Calculate remaining time in seconds
-	int endingTic = G_GetEndingTic();
-	int remainingTics = endingTic - ::level.time;
-	int remainingSeconds = remainingTics / TICRATE;
+	const int endingTic = G_GetEndingTic();
+	const int remainingTics = endingTic - ::level.time;
+	const int remainingSeconds = remainingTics / TICRATE;
 
 	// Check for 5 minute warning (299 seconds, so it announces when the clock reads 5:00)
-	if (remainingSeconds == (5 * 60) - 1)
+	if (remainingSeconds == FIVE_MINUTES_IN_SECONDS - 1)
 	{
 		instance.announceFiveMinuteWarning();
 	}
 	// Check for 1 minute warning (59 seconds, so it announces when the clock hits 1:00)
-	else if (remainingSeconds == 60 - 1)
+	else if (remainingSeconds == SECONDS_PER_MINUTE - 1)
 	{
 		instance.announceOneMinuteWarning();
 	}
@@ -611,7 +598,7 @@ void P_CheckFightAnnouncement()
 		return;
 
 	// Check if it's time to announce (when level.time reaches ingame start time)
-	int ingameStartTime = ::levelstate.getIngameStartTime();
+	const int ingameStartTime = ::levelstate.getIngameStartTime();
 
 	if (::levelstate.getState() != LevelState::INGAME)
 		return;
@@ -628,7 +615,7 @@ void P_CheckFightAnnouncement()
 		return;
 
 	instance.setFightAnnounced();
-	std::string sound = instance.getTokenForEvent(ANN_FIGHT);
+	const std::string sound = instance.getTokenForEvent(ANN_FIGHT);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
@@ -652,7 +639,7 @@ void P_CheckCountdownAnnouncements()
 
 	// If we got reset to warmup (player chickened out)
 	// Reset the countdown so we hear it again.
-	LevelState::States levelstate = ::levelstate.getState();
+	const LevelState::States levelstate = ::levelstate.getState();
 	if (levelstate == LevelState::WARMUP)
 	{
 		instance.resetCountdownAnnouncements();
@@ -665,14 +652,15 @@ void P_CheckCountdownAnnouncements()
 		return;
 	}
 
-	int countdown = ::levelstate.getCountdown();
+	const int countdown = ::levelstate.getCountdown();
 
 	// Check if this countdown has already been announced
 	if (instance.hasCountdownBeenAnnounced(countdown))
 		return;
 
 	// Get the appropriate sound token
-	std::string token;
+	std::string_view token;
+	// NOLINTBEGIN(readability-magic-numbers) - the numbers are the countdown seconds
 	switch (countdown)
 	{
 	case 5: token = ANN_FIVE; break;
@@ -682,9 +670,10 @@ void P_CheckCountdownAnnouncements()
 	case 1: token = ANN_ONE; break;
 	default: return;
 	}
+	// NOLINTEND(readability-magic-numbers)
 
 	instance.setCountdownAnnounced(countdown);
-	std::string sound = instance.getTokenForEvent(token);
+	const std::string sound = instance.getTokenForEvent(token);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
@@ -715,7 +704,7 @@ void P_CheckPlayerEliminatedAnnouncement(const player_t* player)
 	if (player->id != displayplayer_id)
 		return;
 
-	std::string sound = AnnouncerManager::getInstance().getTokenForEvent(ANN_PLAYERELIMINATED);
+	const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(ANN_PLAYERELIMINATED);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
@@ -724,13 +713,15 @@ void P_CheckPlayerEliminatedAnnouncement(const player_t* player)
 EXTERN_CVAR(snd_announceleadtracking)
 #endif
 
+namespace
+{
 // Helper function to determine current lead state for the display player
-static bool P_GetDisplayPlayerLeadState(bool& outHasLead, bool& outIsTied)
+bool P_GetDisplayPlayerLeadState(bool& outHasLead, bool& outIsTied)
 {
 	outHasLead = false;
 	outIsTied = false;
 
-	player_t& displayPlayer = idplayer(displayplayer_id);
+	const player_t& displayPlayer = idplayer(displayplayer_id);
 
 	// Make sure the display player is valid and in the game
 	if (!validplayer(displayPlayer) || !displayPlayer.ingame() || displayPlayer.spectator)
@@ -837,6 +828,7 @@ static bool P_GetDisplayPlayerLeadState(bool& outHasLead, bool& outIsTied)
 
 	return true;
 }
+} // namespace
 
 // Call this BEFORE a score change to capture current lead state
 void P_CaptureLeadState()
@@ -891,8 +883,8 @@ void P_CheckLeadChangeAnnouncement()
 	AnnouncerManager& instance = AnnouncerManager::getInstance();
 
 	// Get the previous state (captured before score change)
-	bool previouslyHadLead = instance.doesDisplayPlayerHaveLead();
-	bool previouslyTied = instance.isLeadTied();
+	const bool previouslyHadLead = instance.doesDisplayPlayerHaveLead();
+	const bool previouslyTied = instance.isLeadTied();
 
 	// Get current state (after score change)
 	bool newHasLead = false;
@@ -963,8 +955,8 @@ void P_CheckFirstBloodAnnouncement()
 	if ((sv_gametype != GM_DM && sv_gametype != GM_TEAMDM) || G_IsDuelGame())
 		return;
 
-	PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
-	PlayerResults opr = PlayerQuery().sortFrags().filterSortNotMax().execute();
+	const PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
+	const PlayerResults opr = PlayerQuery().sortFrags().filterSortNotMax().execute();
 
 	if (pr.count > 0)
 	{
@@ -979,7 +971,7 @@ void P_CheckFirstBloodAnnouncement()
 				instance.setFirstBloodAnnounced();
 				return;
 			}
-			else if (player->fragcount == 1)
+			if (player->fragcount == 1)
 			{
 				// Potential first blood
 				if (playerWithOneFrag)
@@ -1027,7 +1019,7 @@ void P_CheckFirstBloodAnnouncement()
 	}
 
 	instance.setFirstBloodAnnounced();
-	std::string sound = instance.getTokenForEvent(ANN_FIRSTBLOOD);
+	const std::string sound = instance.getTokenForEvent(ANN_FIRSTBLOOD);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		instance.queueSound(sound);
 }
@@ -1083,7 +1075,7 @@ void P_CheckLastPlayerAliveAnnouncement()
 		return;
 	}
 
-	std::string sound = AnnouncerManager::getInstance().getTokenForEvent(ANN_LASTPLAYERALIVE);
+	const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(ANN_LASTPLAYERALIVE);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }

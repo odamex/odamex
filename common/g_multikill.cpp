@@ -232,8 +232,8 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 	{
 		const MultiKillLevel_s& level = manager.getMultiKillLevel(status.multiKills);
 
-		int highest = manager.getHighestMultiKillLevel();
-		int levelnum = status.multiKills > highest ? highest : status.multiKills;
+		const int highest = manager.getHighestMultiKillLevel();
+		const int levelnum = status.multiKills > highest ? highest : status.multiKills;
 		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
 		    "multi " + std::to_string(levelnum));
 

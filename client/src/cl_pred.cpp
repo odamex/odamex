@@ -29,6 +29,7 @@
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "cl_netgraph.h"
+#include "clc_message.h"
 
 #include "p_snapshot.h"
 
@@ -40,7 +41,7 @@ extern NetGraph netgraph;
 void P_MovePlayer (player_t& player);
 void P_CalcHeight (player_t& player);
 
-extern NetCommand localcmds[MAXSAVETICS];
+extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
 static PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
 
 bool predicting;
@@ -227,6 +228,23 @@ static void CL_PredictRemotePlayers()
 }
 
 //
+// CL_PredictFreecam
+//
+//
+static void CL_PredictFreecam()
+{
+	player_t& player = displayplayer();
+	if (not player.isFreecam)
+		return;
+
+	predicting = true;
+
+	P_PlayerThink(player);
+
+	predicting = false;
+}
+
+//
 // CL_PredictSpectator
 //
 //
@@ -261,8 +279,8 @@ static void CL_PredictLocalPlayer(int predtic)
 	// Copy the player's previous input ticcmd for the tic 'predtic'
 	// to player.cmd so that P_MovePlayer can simulate their movement in
 	// that tic
-	NetCommand *netcmd = &localcmds[predtic % MAXSAVETICS];
-	netcmd->toPlayer(player);
+	odaproto::clc::PlayerInput& netcmd = localcmds[predtic % MAXSAVETICS];
+	CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
 
 	if (!predicting)
 		P_PlayerThink(player);
@@ -282,6 +300,12 @@ void CL_PredictWorld(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
+	if (netdemo.isPaused() && displayplayer().isFreecam)
+	{
+		CL_PredictFreecam();
+		return;
+	}
+
 	player_t& p = consoleplayer();
 
 	if (!validplayer(p) || !p.mo || noservermsgs || netdemo.isPaused())
@@ -290,7 +314,10 @@ void CL_PredictWorld(void)
 	// tenatively tell the netgraph that our prediction was successful
 	netgraph.setMisprediction(false);
 
-	if (consoleplayer_id != displayplayer_id)
+	if (consoleplayer_id != displayplayer_id && displayplayer().isFreecam)
+		CL_PredictFreecam();
+
+	if (consoleplayer_id != displayplayer_id && not displayplayer().isFreecam)
 		CL_PredictSpying();
 
 	CL_PredictRemotePlayers();
@@ -366,5 +393,12 @@ void CL_PredictWorld(void)
 	CL_PredictLocalPlayer(gametic);
 }
 
+void CL_ResetWorldPrediction()
+{
+	for (auto& savedPlayerSnapshot : cl_savedsnaps)
+	{
+		savedPlayerSnapshot = PlayerSnapshot{};
+	}
+}
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")

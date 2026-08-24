@@ -314,6 +314,11 @@ CVAR_RANGE(g_horde_spawnfull_max, "6",
            CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
            60)
 
+CVAR_RANGE(g_horde_cooldown, "5",
+           "Number of waves a specific Horde wave must wait before it can be chosen again",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0,
+           10)
+
 CVAR_RANGE(g_horde_extralife, "0.0", "Chance to spawn an `extra life powerup` in Horde.\n" \
      "The value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\n" \
      "If `g_lives` isn't greater than 0, this cvar has no effect.",
@@ -360,6 +365,8 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+	CVAR(           co_archvilefirefix, "0", "Fix the vanilla bug where Arch-vile fire is spawned in the wrong location, causing motion and interpolation column-of-fire-type visual glitches",
+	                CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	// Boom-compatibility changes
 	//------------------------------
@@ -430,7 +437,17 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_mbfphys, "0", "Use MBF's movement code. Fixes mancubus fireball clipping and linedef skips.",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
+	CVAR(			co_zdoomfriendtargeting, "0",
+					"Use ZDoom's monster targeting when it comes to friendlies. This is much less taxing than MBF friendly targeting, "
+					"so enable if your system is struggling on slaughter maps with friendlies.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
+	// MBF21-defined compatibility changes
+	// -----------------------------------
+
+	CVAR(co_voodooscroller, "0",
+	     "Use MBF21's comp_voodooscroller behavior -- Enable voodoo dolls on slow scrollers to move too slowly.",
+	     CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	// ZDoom-compatibility changes
 	//------------------------------
@@ -496,6 +513,12 @@ CVAR				(r_softinvulneffect, "1",
 CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(			log_packetdebug, "0", "Print debugging messages for each packet sent",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			log_fulltimestamps, "0", "Extended timestamp info in the log file (dd/mm/yyyy hh:mm:ss)",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
 CVAR(debug_disconnect, "0", "Show source file:line where a disconnect happens",
      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -516,14 +539,6 @@ CVAR(				lookspring, "1", "Generate centerview when mlook encountered",
 
 CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR_RANGE_FUNC_DECL(net_rcvbuf, "131072", "Net receive buffer size in bytes",
-					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
-					1500.0f, 256.0f * 1024.0f * 1024.0f)
-
-CVAR_RANGE_FUNC_DECL(net_sndbuf, "131072", "Net send buffer size in bytes",
-					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
-					1500.0f, 256.0f * 1024.0f * 1024.0f)
 
 // Experimental settings (all categories)
 // =======================================

@@ -456,17 +456,11 @@ void SpreeManager::expireOldSprees()
 	//	                "", "", CR_GOLD,   false, 0,  0};
 	//}
 
-	for (auto& it : spreeRecord)
-	{
-		SpreeRecord_t& record = it.second;
-
+	std::erase_if(spreeRecord, [](const auto& pair){
 		// Spree happened in the future, indicating we're in a rewinded demo
 		// Remove it
-		if (record.spreeStartTic > ::gametic)
-		{
-			spreeRecord.erase(it.first);
-		}
-	}
+		return pair.second.spreeStartTic > ::gametic;
+	});
 }
 
 const SpreeRecord_t& SpreeManager::getLatestSpreeRecord(const int notPlayerId)
@@ -706,7 +700,7 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 	{
 		const SpreeRecord_t& record = manager.getSpreeRecord(source->id);
 
-		std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
+		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
 		    "spree " + std::to_string(record.spreeLevel + 1));
 
 		AnnouncerManager::getInstance().setPendingSpree(

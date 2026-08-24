@@ -193,6 +193,8 @@ protected:
 	static void DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTranslatedPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColoredPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColorLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
 
 	static void DrawPatchD (const byte *source, byte *dest, int count, int pitch);
 	static void DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch);
@@ -205,6 +207,8 @@ protected:
 	static void DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTranslatedPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColoredPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColorLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
 
 	typedef void (*vdrawfunc) (const byte *source, byte *dest, int count, int pitch);
 	typedef void (*vdrawsfunc) (const byte *source, byte *dest, int count, int pitch, int yinc);
@@ -262,31 +266,31 @@ inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const 
 
 inline void DCanvas::DrawText (int normalcolor, int x, int y, const char *string) const
 {
-	TextWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string);
+	TextWrapper (EWrapper_Translated, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 inline void DCanvas::DrawTextLuc (int normalcolor, int x, int y, const char *string) const
 {
-	TextWrapper (EWrapper_TlatedLucent, normalcolor, x, y, (const byte *)string);
+	TextWrapper (EWrapper_TlatedLucent, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 inline void DCanvas::DrawTextClean (int normalcolor, int x, int y, const char *string) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string);
+	TextSWrapper (EWrapper_Translated, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 inline void DCanvas::DrawTextCleanLuc (int normalcolor, int x, int y, const char *string) const
 {
-	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, (const byte *)string);
+	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, getCleanX(x), getCleanY(y), (const byte*)string);
+	TextSWrapper (EWrapper_Translated, normalcolor, getCleanX(x), getCleanY(y), reinterpret_cast<const byte*>(string));
 }
 inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string, scalex, scaley);
+	TextSWrapper (EWrapper_Translated, normalcolor, x, y, reinterpret_cast<const byte *>(string), scalex, scaley);
 }
 inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
 {
-	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, (const byte *)string, scalex, scaley);
+	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, reinterpret_cast<const byte *>(string), scalex, scaley);
 }
 
 inline void DCanvas::DrawPatch (const patch_t *patch, int x, int y) const
@@ -447,7 +451,7 @@ extern argb_t Col2RGB8[65][256];
 extern palindex_t RGB32k[32][32][32];
 
 void V_Init();
-void STACK_ARGS V_Close();
+void V_Close();
 
 void V_ForceVideoModeAdjustment();
 void V_AdjustVideoMode();

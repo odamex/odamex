@@ -25,7 +25,9 @@
 
 #include "odamex.h"
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "d_netinf.h"
 #include "z_zone.h"
 #include "m_misc.h"
@@ -238,13 +240,12 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.usedown = p.attackdown = true;	// don't do anything immediately
 	p.playerstate = PST_LIVE;
 	p.doreborn = false;
-	p.weaponowned[NUMWEAPONS] = true;
+	p.weaponowned[wp_none] = true;
 
 	if (!p.spectator)
 		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
-	p.tic = 0;
 }
 
 //
@@ -324,13 +325,13 @@ bool G_CheckSpot (player_t &player, const mapthing2_t& mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * ((unsigned int)mthing.angle/45) ) >> ANGLETOFINESHIFT;
+			an = ( ANG45 * (static_cast<unsigned int>(mthing.angle)/45) ) >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = (angle_t)(mthing.angle / 45);
+			angle_t mtangle = static_cast<angle_t>(mthing.angle / 45);
 
 			an = ANG45 * mtangle;
 

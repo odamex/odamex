@@ -1,9 +1,8 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -17,13 +16,14 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		Networking stuff
+//   The cvar documentation compiled into the launcher.
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#define BACKUPTICS		12	// number of tics to remember
+#include <string_view>
 
-// Create any new ticcmds and broadcast to other players.
-void NetUpdate();
+// These variables get filled in by cmake on build
+extern const std::string_view ODAMEX_CVARDOC_JSON;
+extern const std::string_view ODASRV_CVARDOC_JSON;

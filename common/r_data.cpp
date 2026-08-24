@@ -104,7 +104,7 @@ size_t R_CalculateNewPatchSize(patch_t *patch, size_t length)
 		return 0;
 
 	int numposts = 0, numpixels = 0;
-	unsigned int *postofs = (unsigned int *)((byte*)patch + 8);
+	unsigned int *postofs = reinterpret_cast<unsigned int*>(reinterpret_cast<byte*>(patch) + 8);
 
 	for (int i = 0; i < patch->width(); i++)
 	{
@@ -114,7 +114,7 @@ size_t R_CalculateNewPatchSize(patch_t *patch, size_t length)
 		if (ofs >= length)
 			return 0;
 
-		post_t *post = (post_t*)((byte*)patch + ofs);
+		post_t *post = reinterpret_cast<post_t*>(reinterpret_cast<byte*>(patch) + ofs);
 
 		while (post->topdelta != 0xFF)
 		{
@@ -123,7 +123,7 @@ size_t R_CalculateNewPatchSize(patch_t *patch, size_t length)
 
 			numposts++;
 			numpixels += post->length;
-			post = (post_t*)((byte*)post + post->length + 4);
+			post = reinterpret_cast<post_t*>(reinterpret_cast<byte*>(post) + post->length + 4);
 		}
 	}
 
@@ -277,8 +277,8 @@ void R_VanillaTextureHacks(texture_t* tex)
 
 void R_GenerateComposite (int texnum)
 {
-	byte *block = (byte *)Z_Malloc (texturecompositesize[texnum], PU_STATIC,
-						   (void **) &texturecomposite[texnum]);
+	byte *block = Z_Malloc<byte>(texturecompositesize[texnum], PU_STATIC,
+	                             &texturecomposite[texnum]);
 	texturecomposite[texnum] = block;
 	texture_t *texture = textures[texnum];
 
@@ -304,8 +304,8 @@ void R_GenerateComposite (int texnum)
 		for (; x1 < x2 ; x1++)
 		{
 			// killough 1/25/98, 4/9/98: Fix medusa bug.
-			tallpost_t *srcpost = (tallpost_t*)((byte*)patch + LELONG(cofs[x1]));
-			tallpost_t *destpost = (tallpost_t*)(block + texturecolumnofs[texnum][x1]);
+			tallpost_t *srcpost = reinterpret_cast<tallpost_t*>(reinterpret_cast<byte*>(patch) + LELONG(cofs[x1]));
+			tallpost_t *destpost = reinterpret_cast<tallpost_t*>(block + texturecolumnofs[texnum][x1]);
 
 			R_DrawColumnInCache(srcpost, destpost->data(), texpatch->originy, texture->height,
 								&marks[x1 * texture->height]);
@@ -318,7 +318,7 @@ void R_GenerateComposite (int texnum)
 	auto tmpdata = std::make_unique<byte[]>(texture->height);		// temporary post data
 	for (int i = 0; i < texture->width; i++)
 	{
-		tallpost_t *post = (tallpost_t *)(block + texturecolumnofs[texnum][i]);
+		tallpost_t *post = reinterpret_cast<tallpost_t*>(block + texturecolumnofs[texnum][i]);
 		const byte *mark = &marks[i * texture->height];
 		int j = 0;
 
@@ -390,11 +390,11 @@ void R_GenerateLookup(int texnum, int *const errors)
 			// killough 4/9/98: keep a count of the number of posts in column,
 			// to fix Medusa bug while allowing for transparent multipatches.
 
-			const tallpost_t *post = (tallpost_t*)((byte*)patch + LELONG(cofs[x]));
+			const tallpost_t *post = const_cast<tallpost_t*>(reinterpret_cast<const tallpost_t*>(reinterpret_cast<const byte*>(patch) + LELONG(cofs[x])));
 
 			// NOTE: this offset will be rewritten later if a composite is generated
 			// for this texture (eg, there's more than one patch)
-			texturecolumnofs[texnum][x] = (byte *)post - (byte *)patch;
+			texturecolumnofs[texnum][x] = reinterpret_cast<const byte*>(post) - reinterpret_cast<const byte*>(patch);
 
 			while (!post->end())
 			{
@@ -407,7 +407,7 @@ void R_GenerateLookup(int texnum, int *const errors)
 	// Now count the number of columns that are covered by more than one patch.
 	// Fill in the lump / offset, so columns with only a single patch are all done.
 
-	texturecomposite[texnum] = 0;
+	texturecomposite[texnum] = nullptr;
 	int csize = 0;
 
 	int x = texture->width;
@@ -437,7 +437,7 @@ void R_GenerateLookup(int texnum, int *const errors)
 tallpost_t* R_GetPatchColumn(int lumpnum, int colnum)
 {
 	patch_t* patch = W_CachePatch(lumpnum, PU_CACHE);
-	return (tallpost_t*)((byte*)patch + LELONG(patch->columnofs[colnum]));
+	return reinterpret_cast<tallpost_t*>(reinterpret_cast<byte*>(patch) + LELONG(patch->columnofs[colnum]));
 }
 
 //
@@ -458,13 +458,13 @@ tallpost_t* R_GetTextureColumn(int texnum, int colnum)
 	if (mask + 1 == width)
 		colnum &= mask;
 	else
-		colnum -= width * std::floor((float)colnum / (float)width);
+		colnum -= width * std::floor(static_cast<float>(colnum) / static_cast<float>(width));
 	int ofs = texturecolumnofs[texnum][colnum];
 
 	if (!texturecomposite[texnum])
 		R_GenerateComposite(texnum);
 
-	return (tallpost_t*)(texturecomposite[texnum] + ofs);
+	return reinterpret_cast<tallpost_t*>(texturecomposite[texnum] + ofs);
 }
 
 //
@@ -513,7 +513,7 @@ struct texlump_t
 		if (lumpnum != -1)
 		{
 			maxoff = W_LumpLength(lumpnum);
-			data = static_cast<int32_t*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+			data = W_CacheLumpNum<int32_t>(lumpnum, PU_STATIC);
 			numtextures = LELONG(*data);
 			directory = data + 1;
 		}
@@ -526,7 +526,7 @@ struct texlump_t
 	}
 };
 
-static int32_t R_LoadTextureLump(const texlump_t& texlump, const nonstd::span<const int> patchlookup, int texnum, texhash_t& texhash)
+static int32_t R_LoadTextureLump(const texlump_t& texlump, const std::span<const int> patchlookup, int texnum, texhash_t& texhash)
 {
 	int32_t* directory = texlump.directory;
 	int i;
@@ -537,12 +537,12 @@ static int32_t R_LoadTextureLump(const texlump_t& texlump, const nonstd::span<co
 		if (offset > texlump.maxoff)
 			I_FatalError("R_InitTextures: bad texture directory");
 
-		maptexture_t* mtexture = (maptexture_t *) ( (byte *)texlump.data + offset);
+		maptexture_t* mtexture = reinterpret_cast<maptexture_t*>(reinterpret_cast<byte*>(texlump.data) + offset);
 
-		texture_t* texture = textures[i] = (texture_t *)
+		texture_t* texture = textures[i] = static_cast<texture_t*>(
 			Z_Malloc (sizeof(texture_t)
 					  + sizeof(texpatch_t)*(SAFESHORT(mtexture->patchcount)-1),
-					  PU_STATIC, nullptr);
+					  PU_STATIC, nullptr));
 
 		texture->width = SAFESHORT(mtexture->width);
 		texture->height = SAFESHORT(mtexture->height);
@@ -581,6 +581,127 @@ static int32_t R_LoadTextureLump(const texlump_t& texlump, const nonstd::span<co
 	return i;
 }
 
+namespace
+{
+
+//
+// R_BuildPatchLookup
+//
+// Resolves PNAMES into lump numbers using the same namespace fallbacks as
+// R_InitTextures. Entries that cannot be resolved are left as -1.
+//
+std::vector<int> R_BuildPatchLookup()
+{
+	std::vector<int> patchlookup;
+
+	const int pnameslump = W_CheckNumForName("PNAMES");
+	if (pnameslump == -1)
+		return patchlookup;
+
+	char* names = static_cast<char*>(W_CacheLumpNum(pnameslump, PU_STATIC));
+
+	int32_t rawcount = 0;
+	memcpy(&rawcount, names, sizeof(rawcount));
+	const int numpatches = LELONG(rawcount);
+
+	if (numpatches > 0)
+	{
+		const char* name_p = names + 4;
+
+		patchlookup.resize(numpatches);
+		for (ptrdiff_t i = 0; i < numpatches; i++)
+		{
+			const char* patchname = name_p + (i * 8);
+
+			patchlookup[i] = W_CheckNumForName(patchname);
+
+			// some wads use the texture namespace but still list them in pnames
+			if (patchlookup[i] == -1)
+				patchlookup[i] = W_CheckNumForName(patchname, ns_textures);
+
+			// killough 4/17/98: some wads use sprites as wall patches
+			if (patchlookup[i] == -1)
+				patchlookup[i] = W_CheckNumForName(patchname, ns_sprites);
+		}
+	}
+
+	Z_Free(names);
+	return patchlookup;
+}
+
+} // namespace
+
+//
+// R_FindTextureMissingPatch
+//
+// Walks TEXTURE1/TEXTURE2 for a texture referencing a patch that cannot be
+// resolved. Returns the first such texture, or an empty string if all resolve.
+//
+// R_InitTextures treats a missing patch as non-fatal and swaps in a blank, so
+// this is only for judging whether a WAD can stand on its own as an IWAD.
+//
+std::string R_FindTextureMissingPatch()
+{
+	const std::vector<int> patchlookup = R_BuildPatchLookup();
+	if (patchlookup.empty())
+		return "";
+
+	static const std::array<const char*, 2> texlumpnames = { "TEXTURE1", "TEXTURE2" };
+
+	for (const char* texlumpname : texlumpnames)
+	{
+		const texlump_t texlump(texlumpname);
+		if (texlump.lumpnum == -1)
+			continue;
+
+		const int32_t* directory = texlump.directory;
+
+		// TODO: Refactor below to not require reinterpret_cast.
+		// The directory offsets are already in bytes, so the data
+		// should be cached as bytes instead of int32_t.
+
+		// The lump is cached as int32_t but the directory offsets below are in
+		// bytes, so it has to be re-viewed as a byte buffer.
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+		const auto* texdata = reinterpret_cast<const byte*>(texlump.data);
+
+		for (int i = 0; i < texlump.numtextures; i++, directory++)
+		{
+			const int32_t offset = LELONG(*directory);
+			if (offset > texlump.maxoff)
+				return texlumpname; // bad directory, certainly not usable
+
+			// TODO: Refactor below to not use reinterpret_cast.
+			// The maptexture_t struct is already packed to match the
+			// on-disk format, so it should be safe to read directly
+			// from the byte buffer.
+
+			// Records are variable length -- patches[] is declared as one
+			// element but is really patchcount long -- so each one is read in
+			// place at its directory offset rather than copied out.
+			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+			const auto* mtexture = reinterpret_cast<const maptexture_t*>(texdata + offset);
+
+			const int patchcount = SAFESHORT(mtexture->patchcount);
+			const mappatch_t* mpatch = &mtexture->patches[0];
+
+			for (int j = 0; j < patchcount; j++, mpatch++)
+			{
+				const int16_t patchnum = LESHORT(mpatch->patch);
+				if (patchnum < 0 ||
+				    static_cast<size_t>(patchnum) >= patchlookup.size() ||
+				    patchlookup[patchnum] == -1)
+				{
+					const OLumpName texname = mtexture->name;
+					return {texname.c_str()};
+				}
+			}
+		}
+	}
+
+	return "";
+}
+
 void R_InitTextures()
 {
 	std::vector<int> patchlookup;
@@ -595,10 +716,10 @@ void R_InitTextures()
 
 	// Load the patch names from pnames.lmp.
 	{
-		char *names = (char *)W_CacheLumpName ("PNAMES", PU_STATIC);
+		char *names = W_CacheLumpName<char>("PNAMES", PU_STATIC);
 		char *name_p = names+4;
 
-		numpatches = LELONG ( *((int *)names) );
+		numpatches = LELONG ( *(reinterpret_cast<int*>(names)) );
 
 		// Put a guard here in case one of the pair is missing.
 		const int tx_startlump = W_CheckNumForName("TX_START");
@@ -663,7 +784,7 @@ void R_InitTextures()
 	numtextures = texture1.numtextures + texture2.numtextures + tx_numtextures;
 
 	const int first_pname_tex = numtextures;
-	const int numpnamestextures = std::count_if(patchlookup.begin(), patchlookup.end(), [](const int patch){ return patch != -1; });
+	const int numpnamestextures = std::ranges::count_if(patchlookup, [](const int patch){ return patch != -1; });
 	numtextures += numpnamestextures;
 
 	textures = new texture_t *[numtextures];
@@ -688,9 +809,7 @@ void R_InitTextures()
 	{
 	    const patch_t* patch = W_CachePatch(patchLump, PU_CACHE);
 
-		texture_t* texture =
-			textures[textureIndex] =
-				static_cast<texture_t*>(Z_Malloc(sizeof(texture_t), PU_STATIC, nullptr));
+		texture_t* texture = textures[textureIndex] = static_cast<texture_t*>(Z_Malloc(sizeof(texture_t), PU_STATIC, nullptr));
 
 		texture->name = lumpinfo[patchLump].name;
 		texture->width = patch->width();
@@ -823,7 +942,7 @@ shademap_t realcolormaps;
 
 void R_ForceDefaultColormap(const char* name)
 {
-	const byte* data = (byte*)W_CacheLumpName(name, PU_CACHE);
+	const byte* data = W_CacheLumpName<byte>(name, PU_CACHE);
 	memcpy(realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
 
 #if 0
@@ -905,8 +1024,8 @@ void R_InitColormaps()
 		numfakecmaps = lastfakecmap - firstfakecmap;
 	}
 
-	realcolormaps.colormap = (byte*)Z_Malloc(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
-	realcolormaps.shademap = (argb_t*)Z_Malloc(256*sizeof(argb_t)*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
+	realcolormaps.colormap = Z_Malloc<byte>(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC);
+	realcolormaps.shademap = Z_Malloc<argb_t>(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC);
 
 	delete[] fakecmaps;
 	fakecmaps = new FakeCmap[numfakecmaps];
@@ -921,7 +1040,7 @@ void R_InitColormaps()
 		{
 			if (W_LumpLength(i) >= (NUMCOLORMAPS+1)*256)
 			{
-				byte* map = (byte*)W_CacheLumpNum(i, PU_CACHE);
+				byte* map = W_CacheLumpNum<byte>(i, PU_CACHE);
 				byte* colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
 				argb_t* shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
 

@@ -71,24 +71,24 @@
   </description>
   <screenshots>
       <screenshot type="default">
-          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/12.2.0/packaging/flatpak/screenshots/doom-e1m1.png</image>
+          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/13.0.0/packaging/flatpak/screenshots/doom-e1m1.png</image>
           <caption>Experience classic DOOM multiplayer with your friends!</caption>
       </screenshot>
       <screenshot>
-          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/12.2.0/packaging/flatpak/screenshots/wdl2021-map01.png</image>
+          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/13.0.0/packaging/flatpak/screenshots/wdl2021-map01.png</image>
           <caption>A host of multiplayer gamemodes including Co-op, Deathmatch, Capture the Flag, and more!</caption>
       </screenshot>
       <screenshot>
-          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/12.2.0/packaging/flatpak/screenshots/odahorde-map02.png</image>
+          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/13.0.0/packaging/flatpak/screenshots/odahorde-map02.png</image>
           <caption>Face down waves of enemies in Horde Mode!</caption>
       </screenshot>
       <screenshot>
-          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/12.2.0/packaging/flatpak/screenshots/hordamex-wdl2022-merged.png</image>
+          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/13.0.0/packaging/flatpak/screenshots/hordamex-wdl2022-merged.png</image>
           <caption>32-bit truecolor rendering!</caption>
       </screenshot>
       <screenshot>
-          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/12.2.0/packaging/flatpak/screenshots/vesperdm-map01.png</image>
-          <caption>Enhanced modding capabilities with MBF21!</caption>
+          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/13.0.0/packaging/flatpak/screenshots/vesperdm-map01.png</image>
+          <caption>Enhanced modding capabilites with MBF21!</caption>
       </screenshot>
   </screenshots>
   <launchable type="desktop-id">net.odamex.Odamex.Client.desktop</launchable>

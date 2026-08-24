@@ -105,6 +105,7 @@ EXTERN_CVAR(con_notifytime)
 
 EXTERN_CVAR(message_showpickups)
 EXTERN_CVAR(message_showobituaries)
+EXTERN_CVAR(log_fulltimestamps)
 
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
@@ -323,7 +324,7 @@ void ConsoleCommandLine::doScrolling()
 		n = cursor_position - ConCols + 2;
 
 	// The cursor_position is beyond the visible part of the line
-	if (((int)cursor_position - (int)scrolled_columns) >= (int)(ConCols - 2))
+	if ((static_cast<int>(cursor_position) - static_cast<int>(scrolled_columns)) >= static_cast<int>(ConCols - 2))
 		n = cursor_position - ConCols + 2;
 
 	// The cursor_positionor is in front of the visible part of the line
@@ -993,7 +994,7 @@ void C_InitConCharsFont()
 //
 // C_ShutdownConCharsFont
 //
-void STACK_ARGS C_ShutdownConCharsFont()
+void C_ShutdownConCharsFont()
 {
 	delete [] ConChars;
 	ConChars = NULL;
@@ -1051,7 +1052,7 @@ void C_InitConsoleBackground()
 //
 // Frees the background_surface
 //
-void STACK_ARGS C_ShutdownConsoleBackground()
+void C_ShutdownConsoleBackground()
 {
 	I_FreeSurface(background_surface);
 }
@@ -1060,7 +1061,7 @@ void STACK_ARGS C_ShutdownConsoleBackground()
 //
 // C_ShutdownConsole
 //
-void STACK_ARGS C_ShutdownConsole()
+void C_ShutdownConsole()
 {
 	Lines.clear();
 	History.clear();
@@ -1110,7 +1111,7 @@ static void C_SetConsoleDimensions(int width, int height)
 				}
 			}
 
-			if ((unsigned)C_StringWidth(current_line_it->text.c_str()) > ConCols*ConCharSize)
+			if (static_cast<unsigned>(C_StringWidth(current_line_it->text.c_str())) > ConCols*ConCharSize)
 			{
 				ConsoleLineList::iterator next_line_it = current_line_it;
 				++next_line_it;
@@ -1187,7 +1188,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	{
 		if (addtype == NEWLINE)
 			memmove(&NotifyStrings[0], &NotifyStrings[1], sizeof(struct NotifyText) * (NUMNOTIFIES-1));
-		M_StringCopy((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string, 256);
+		M_StringCopy(reinterpret_cast<char*>(NotifyStrings[NUMNOTIFIES-1].text), lines[i].string, 256);
 		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (con_notifytime.asInt() * TICRATE);
 		NotifyStrings[NUMNOTIFIES-1].printlevel = printlevel;
 		addtype = NEWLINE;
@@ -1236,7 +1237,7 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 {
 	if (I_VideoInitialized() && !midprinting)
 	{
-		const bool noPickups = printlevel == PRINT_PICKUP && !::message_showpickups;
+		const bool noPickups = printlevel == PRINT_PICKUP && (!::message_showpickups || displayplayer().isFreecam);
 		const bool noObits = printlevel == PRINT_OBITUARY && !::message_showobituaries;
 
 		if (!noPickups && !noObits)
@@ -1308,6 +1309,61 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 	return strlen(outline);
 }
 
+namespace
+{
+
+// struct tm counts years from 1900.
+constexpr int TM_YEAR_BASE = 1900;
+
+std::string TimeStamp()
+{
+	const time_t ti = time(nullptr);
+	const struct tm* lt = localtime(&ti);
+
+	if (!lt)
+		return "";
+
+	if (log_fulltimestamps)
+	{
+		return fmt::format("[{:02d}/{:02d}/{:02d} {:02d}:{:02d}:{:02d}]", lt->tm_mday,
+		                   lt->tm_mon + 1, // localtime returns 0-based month
+		                   lt->tm_year + TM_YEAR_BASE, lt->tm_hour, lt->tm_min,
+		                   lt->tm_sec);
+	}
+
+	return fmt::format("[{:02d}:{:02d}:{:02d}]", lt->tm_hour, lt->tm_min, lt->tm_sec);
+}
+
+// Writes to the log file, stamping the start of every line.
+// Prints can span several lines or stop mid-line, so where
+// the last one left off is remembered.
+void C_LogString(const std::string& str)
+{
+	static bool at_line_start = true;
+
+	size_t pos = 0;
+	while (pos < str.length())
+	{
+		if (at_line_start)
+		{
+			LOG << TimeStamp() << ' ';
+			at_line_start = false;
+		}
+
+		size_t end = str.find('\n', pos);
+		if (end == std::string::npos)
+			end = str.length() - 1;
+
+		LOG.write(str.data() + pos, static_cast<std::streamsize>(end - pos + 1));
+		at_line_start = (str[end] == '\n');
+		pos = end + 1;
+	}
+
+	LOG.flush();
+}
+
+} // namespace
+
 size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
 	extern bool gameisdead;
@@ -1345,7 +1401,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 		// in our string.
 		const int newLineCount = std::count(logStr.begin(), logStr.end(), '\n');
 
-		if (ConRows < (unsigned int)con_buffersize.asInt())
+		if (ConRows < static_cast<unsigned int>(con_buffersize.asInt()))
 			ConRows += (newLineCount > 1) ? newLineCount + 1 : 1;
 	}
 
@@ -1364,8 +1420,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 		if (con_coloredmessages)
 			StripColorCodes(newStr);
 
-		LOG << newStr;
-		LOG.flush();
+		C_LogString(newStr);
 	}
 
 #if defined (_WIN32) && defined(_DEBUG)
@@ -1437,7 +1492,7 @@ void C_Ticker()
 				RowAdjust = 0;
 		}
 
-		if (RowAdjust + (ConBottom/ConCharSize) + 1 > (unsigned int)con_buffersize.asInt())
+		if (RowAdjust + (ConBottom/ConCharSize) + 1 > static_cast<unsigned int>(con_buffersize.asInt()))
 			RowAdjust = con_buffersize.asInt() - (ConBottom/ConCharSize);
 	}
 
@@ -1538,9 +1593,12 @@ void C_AdjustBottom()
 //
 void C_NewModeAdjust()
 {
-	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth();
+	const int surface_height = I_GetSurfaceHeight();
 
-	ConScale = con_scaletext ? con_scaletext : MAX(1, static_cast<int>(std::round(surface_height / 450.0f)));
+	const int auto_scale = std::max(1, static_cast<int>(std::round(static_cast<float>(surface_height) / 450.f)));
+
+	ConScale = con_scaletext ? con_scaletext.asInt() : auto_scale;
 	ConCharSize = 8 * ConScale;
 
 	if (I_VideoInitialized())
@@ -1702,7 +1760,7 @@ void C_DisplayTicker()
 		}
 	}
 
-	if (RowAdjust + (ConBottom / ConCharSize) + 1 > (unsigned int)con_buffersize.asInt())
+	if (RowAdjust + (ConBottom / ConCharSize) + 1 > static_cast<unsigned int>(con_buffersize.asInt()))
 		RowAdjust = con_buffersize.asInt() - (ConBottom / ConCharSize);
 }
 
@@ -1795,8 +1853,8 @@ void C_DrawConsole()
 					else if (i == barchars - 1)
 						ch = '\31'; // empty right
 
-					double barpct = i / (double)barchars;
-					double dlpct = progress.dlnow / (double)progress.dltotal;
+					double barpct = i / static_cast<double>(barchars);
+					double dlpct = progress.dlnow / static_cast<double>(progress.dltotal);
 
 					if (dlpct > barpct)
 						ch += 3; // full bar
@@ -1938,7 +1996,7 @@ void C_DrawConsole()
 		for (; lines > 1 && current_line_it != Lines.rend(); lines--, ++current_line_it)
 		{
 			const char* str = current_line_it->text.c_str();
-			const char* color_code = current_line_it->color_code.c_str();
+			std::string_view color_code = current_line_it->color_code;
 			int color = color_code[0] != '\0' ? V_GetTextColor(color_code) : CR_GRAY;
 			screen->PrintStr(left, offset + lines * CONPX(8), str, color, true, ConScale);
 		}
@@ -1980,10 +2038,10 @@ void C_DrawConsole()
 }
 
 
-static bool C_HandleKey(const event_t* ev)
+static bool C_HandleKey(const event_t& ev)
 {
-	const int ch = ev->data1;
-	const char* cmd = Bindings.GetBind(ev->data1).c_str();
+	const int ch = ev.data1;
+	const char* cmd = Bindings.GetBind(ev.data1).c_str();
 
 	if (Key_IsMenuKey(ch) || (cmd && stricmp(cmd, "toggleconsole") == 0))
 	{
@@ -1997,7 +2055,7 @@ static bool C_HandleKey(const event_t* ev)
 	}
 
 #ifdef __SWITCH__
-	if (ev->data1 == OKEY_JOY3)
+	if (ev.data1 == OKEY_JOY3)
 	{
 		char oldtext[64], text[64], fulltext[65];
 
@@ -2021,10 +2079,10 @@ static bool C_HandleKey(const event_t* ev)
 #endif
 
 	// Add modifiers for these keys
-	KeysCtrl = (ev->mod & OMOD_CTRL);
-	KeysAlt = (ev->mod & OMOD_ALT && !(ev->mod & OMOD_RALT && ev->mod & OMOD_LCTRL)); // Alt without AltGr
-	KeysShifted = (ev->mod & OMOD_SHIFT);
-	NumLockEnabled = (ev->mod & OMOD_NUM);
+	KeysCtrl = (ev.mod & OMOD_CTRL);
+	KeysAlt = (ev.mod & OMOD_ALT && !(ev.mod & OMOD_RALT && ev.mod & OMOD_LCTRL)); // Alt without AltGr
+	KeysShifted = (ev.mod & OMOD_SHIFT);
+	NumLockEnabled = (ev.mod & OMOD_NUM);
 
 	switch (ch)
 	{
@@ -2042,8 +2100,9 @@ static bool C_HandleKey(const event_t* ev)
 			return true;
 		}
 	case OKEY_MOUSE2:
+	case OKEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
-		CmdLine.insertString(I_GetClipboardText());
+		CmdLine.insertString(I_GetClipboardText(ch == OKEY_MOUSE3));
 		CmdCompletions.clear();
 		TabCycleClear();
 		return true;
@@ -2078,7 +2137,7 @@ static bool C_HandleKey(const event_t* ev)
 		}
 		else if (Key_IsPageUpKey(ch, NumLockEnabled))
 		{
-			if ((int)(ConRows) > (int)(ConBottom / ConCharSize))
+			if (static_cast<int>(ConRows) > static_cast<int>(ConBottom / ConCharSize))
 			{
 				if (KeysShifted)
 					// Move to top of console buffer
@@ -2181,27 +2240,38 @@ static bool C_HandleKey(const event_t* ev)
 		}
 	}
 
-	const char keytext = ev->data3;
+	const char keytext = ev.data3;
 
 	if (KeysCtrl)
 	{
 		// handle key combinations
-		// NOTE: we have to use ev->data1 here instead of the
-		// localization-aware ev->data3 since SDL2 does not send a SDL_TEXTINPUT
+		// NOTE: we have to use ev.data1 here instead of the
+		// localization-aware ev.data3 since SDL2 does not send a SDL_TEXTINPUT
 		// event when Ctrl is held down.
 
 		// Go to beginning of line
- 		if (tolower(ev->data1) == 'a')
+ 		if (tolower(ev.data1) == 'a')
 			CmdLine.moveCursorHome();
 
 		// Go to end of line
- 		if (tolower(ev->data1) == 'e')
+ 		if (tolower(ev.data1) == 'e')
 			CmdLine.moveCursorEnd();
 
 		// Paste from clipboard - add each character to command line
- 		if (tolower(ev->data1) == 'v')
+ 		if (tolower(ev.data1) == 'v')
 		{
 			CmdLine.insertString(I_GetClipboardText());
+			TabCycleClear();
+		}
+		return true;
+	}
+
+	if (KeysAlt)
+	{
+		// Paste from primary selection - add each character to command line
+ 		if (tolower(ev.data1) == 'v')
+		{
+			CmdLine.insertString(I_GetClipboardText(true));
 			TabCycleClear();
 		}
 		return true;
@@ -2216,15 +2286,15 @@ static bool C_HandleKey(const event_t* ev)
 	return true;
 }
 
-bool C_Responder(event_t *ev)
+bool C_Responder(const event_t& ev)
 {
 	if (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull || menuactive)
 		return false;
 
-	if (ev->type == ev_keyup)
+	if (ev.type == ev_keyup)
 	{
 		// General Keys used by all systems
-		if (Key_IsPageUpKey(ev->data1, NumLockEnabled) || Key_IsPageDownKey(ev->data1, NumLockEnabled))
+		if (Key_IsPageUpKey(ev.data1, NumLockEnabled) || Key_IsPageDownKey(ev.data1, NumLockEnabled))
 		{
 			ScrollState = SCROLLNO;
 		}
@@ -2233,12 +2303,12 @@ bool C_Responder(event_t *ev)
 				return false;
 		}
 	}
-	else if (ev->type == ev_keydown)
+	else if (ev.type == ev_keydown)
 	{
 		return C_HandleKey(ev);
 	}
 
-	if(ev->type == ev_mouse)
+	if(ev.type == ev_mouse)
 		return true;
 
 	return false;
@@ -2265,7 +2335,7 @@ BEGIN_COMMAND(echo)
 {
 	if (argc > 1)
 	{
-		const std::string str = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		const std::string str = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 		PrintFmt(PRINT_HIGH, "{}\n", str);
 	}
 }
@@ -2312,9 +2382,9 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 		PrintFmt(PRINT_HIGH, "{}\n", newmsg);
 		midprinting = false;
 
-		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
+		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), reinterpret_cast<byte*>(newmsg))) )
 		{
-			MidTicker = (int)(fmsgtime * TICRATE) + gametic;
+			MidTicker = static_cast<int>(fmsgtime * TICRATE) + gametic;
 
 			for (i = 0; MidMsg[i].width != -1; i++)
 				;
@@ -2330,7 +2400,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 
 void C_DrawMid()
 {
-	if (MidMsg)
+	if (MidMsg && not displayplayer().isFreecam)
 	{
 		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
@@ -2349,7 +2419,7 @@ void C_DrawMid()
 		{
 			screen->DrawTextStretched(PrintColors[PRINTLEVELS-1],
 					x - xscale * (MidMsg[i].width / 2),
-					y, (byte *)MidMsg[i].string, xscale, yscale);
+					y, reinterpret_cast<byte*>(MidMsg[i].string), xscale, yscale);
 		}
 
 		if (gametic >= MidTicker)
@@ -2390,9 +2460,9 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 
 		char *newmsg = strdup(str.c_str());
 
-		if ((GameMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
+		if ((GameMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), reinterpret_cast<byte*>(newmsg))))
 		{
-			GameTicker = (int)(fmsgtime * TICRATE) + gametic;
+			GameTicker = static_cast<int>(fmsgtime * TICRATE) + gametic;
 
 			for (i = 0;GameMsg[i].width != -1;i++)
 				;
@@ -2431,7 +2501,7 @@ void C_DrawGMid()
 		{
 			screen->DrawTextStretched(GameColor,
 					x - xscale * (GameMsg[i].width / 2),
-					y, (byte*)GameMsg[i].string, xscale, yscale);
+					y, reinterpret_cast<byte*>(GameMsg[i].string), xscale, yscale);
 		}
 
 		if (gametic >= GameTicker)

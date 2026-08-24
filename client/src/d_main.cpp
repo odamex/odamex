@@ -45,7 +45,9 @@
 
 #include "m_alloc.h"
 #include "m_random.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
@@ -99,7 +101,7 @@ void D_DoAdvanceDemo();
 
 void D_DoomLoop();
 
-extern int testingmode;
+extern dtime_t testingmode;
 extern bool gameisdead;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
@@ -165,18 +167,31 @@ void D_SetPlatform(void)
 #endif
 }
 
+bool step_mode = false;
+
+//
+// D_CheckNetGame
+// Works out player numbers among the net participants
+//
+void D_CheckNetGame (void)
+{
+    CL_InitNetwork ();
+
+    D_SetupUserInfo();
+
+    step_mode = ((Args.CheckParm ("-stepmode")) != 0);
+}
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
 //
 void D_ProcessEvents (void)
 {
-	event_t *ev;
-
 	// [RH] If testing mode, do not accept input until test is over
 	if (testingmode)
 	{
-		if (static_cast <dtime_t>(testingmode) <= I_MSTime() * TICRATE / 1000)
+		if (testingmode <= I_MSTime() * TICRATE / MSECS_PER_SEC)
 			M_RestoreVideoMode();
 		else
 			M_ModeFlashTestText();
@@ -186,12 +201,12 @@ void D_ProcessEvents (void)
 
 	for (; eventtail != eventhead ; eventtail = ++eventtail<MAXEVENTS ? eventtail : 0)
 	{
-		ev = &events[eventtail];
-		if (C_Responder (ev))
+		const event_t& ev = events[eventtail];
+		if (C_Responder(ev))
 			continue;				// console ate the event
-		if (M_Responder (ev))
+		if (M_Responder(ev))
 			continue;				// menu ate the event
-		G_Responder (ev);
+		G_Responder(ev);
 	}
 }
 
@@ -199,16 +214,16 @@ void D_ProcessEvents (void)
 // D_PostEvent
 // Called by the I/O functions when input is detected
 //
-void D_PostEvent (const event_t* ev)
+void D_PostEvent(const event_t& ev)
 {
-	if (ev->type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
-		!paused && ConsoleState != c_down && ConsoleState != c_falling)
+	if (ev.type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
+		(!paused || displayplayer().isFreecam) && ConsoleState != c_down && ConsoleState != c_falling)
 	{
-		G_Responder((event_t*)ev);
+		G_Responder(ev);
 		return;
 	}
 
-	events[eventhead] = *ev;
+	events[eventhead] = ev;
 
 	if(++eventhead >= MAXEVENTS)
 		eventhead = 0;
@@ -532,7 +547,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (!pagename.empty())
 	{
-		const patch_t* patch = W_CachePatch(pagename);
+		const patch_t* patch = W_CachePatch(W_CheckWidescreenPatch(pagename));
 
 		page_width = patch->width();
 		page_height = patch->height() + (patch->height() / 5);
@@ -545,7 +560,7 @@ void D_DoAdvanceDemo (void)
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-			canvas->DrawBlock(0, 0, page_width, page_height, (byte*)patch);
+			canvas->DrawBlock(0, 0, page_width, page_height, reinterpret_cast<const byte*>(patch));
 			page_surface->unlock();
 		}
 		else
@@ -563,7 +578,7 @@ void D_DoAdvanceDemo (void)
 //
 // D_Close
 //
-void STACK_ARGS D_Close()
+void D_Close()
 {
 	I_FreeSurface(page_surface);
 
@@ -604,6 +619,8 @@ EXTERN_CVAR(co_removesoullimit)
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(r_clipmaskedspecial)
 EXTERN_CVAR(r_thingsectorlight)
+EXTERN_CVAR(co_voodooscroller)
+EXTERN_CVAR(co_archvilefirefix)
 
 void G_ReadCOMPLVL()
 {
@@ -611,7 +628,7 @@ void G_ReadCOMPLVL()
 	if (lumpnum == -1)
 		return;
 
-	char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+	char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
 	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
 
 	// don't use !serverside here, it doesn't get set early enough
@@ -641,6 +658,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(0.0f);
 		co_removesoullimit.Set(0.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(0.0f);
+		co_archvilefirefix.Set(0.0f);
 	}
 	else if (iequals("boom", complvl))
 	{
@@ -650,6 +669,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(0.0f);
+		co_archvilefirefix.Set(0.0f);
 	}
 	else if (iequals("mbf", complvl))
 	{
@@ -659,6 +680,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(1.0f);
+		co_archvilefirefix.Set(1.0f);
 	}
 	else if (iequals("mbf21", complvl))
 	{
@@ -668,6 +691,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(1.0f);
+		co_voodooscroller.Set(0.0f);
+		co_archvilefirefix.Set(1.0f);
 	}
 	else
 	{
@@ -755,7 +780,7 @@ void D_Init()
 // Called to shutdown subsystems when unloading a set of WAD resource files.
 // Should be called prior to D_Init when loading a new set of WADs.
 //
-void STACK_ARGS D_Shutdown()
+void D_Shutdown()
 {
 	if (gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
@@ -816,6 +841,8 @@ void STACK_ARGS D_Shutdown()
 
 void C_DoCommand(std::string_view cmd, uint32_t key);
 
+colorpreset_t D_ColorPreset (const char *colorpreset);
+
 //
 // D_DoomMain
 //
@@ -837,8 +864,10 @@ void D_DoomMain()
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
+	BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 	if (lzo_init() != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
+	END_DISABLE_WARNING_GNU
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
@@ -865,14 +894,15 @@ void D_DoomMain()
 		const char* skipParams[] = {
 		    "+connect", "+demotest", "+map",      "+netplay",  "+playdemo",
 		    "-connect", "-file",     "-playdemo", "-timedemo", "-warp",
+		    "+wad",     "-map",      "-wad",      "-iwad",     "-netplay",
+		    "-deh",     "-bex"
 		};
 
 		bool shouldSkip = std::any_of(std::begin(skipParams), std::end(skipParams), [](const auto& param){ return ::Args.CheckValue(param); });
 
-		// Skip boot window if we pass a single argument that isn't the
-		// start of a standard parameter - it must be a path.
-		if (!shouldSkip && ::Args.NumArgs() == 2 && ::Args[1][0] != '+' &&
-		    ::Args[1][0] != '-')
+		// Skip boot window if we were handed files on their own - they must be
+		// paths, as happens when they are dropped onto the executable.
+		if (!shouldSkip && ::Args.GatherBareFiles().NumArgs() > 0)
 		{
 			shouldSkip = true;
 		}
@@ -923,6 +953,7 @@ void D_DoomMain()
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
+	D_AddStartupWadFiles(newwadfiles, newpatchfiles);
 
     // do the deh processing
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
@@ -1007,13 +1038,15 @@ void D_DoomMain()
 	if (p && p < Args.NumArgs()-1)
 	{
 		startmap = Args.GetArg(p+1);
-		((char *)Args.GetArg(p))[0] = '-';
+		(const_cast<char*>(Args.GetArg(p))[0]) = '-';
 		autostart = true;
 	}
 
 	// NOTE(jsd): Set up local player color
+	EXTERN_CVAR(cl_colorpreset);
 	EXTERN_CVAR(cl_color);
-	R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color));
+	R_BuildPlayerTranslation(menuplayer_id, V_GetColorFromString(cl_color), D_ColorPreset(cl_colorpreset.cstring()));
+	R_BuildPlayerTranslation(consoleplayer_id, V_GetColorFromString(cl_color), D_ColorPreset(cl_colorpreset.cstring()));
 
 	I_FinishClockCalibration();
 

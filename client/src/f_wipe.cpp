@@ -82,7 +82,7 @@ static void Wipe_StartMelt()
 	{
 		int random_value = (M_Random() % 3) - 1;
 		worms[x] = worms[x - 1] + random_value;
-		worms[x] = clamp(worms[x], -15, 0);
+		worms[x] = std::clamp(worms[x], -15, 0);
 	}
 
 	// copy each column of the current screen image to wipe_screen
@@ -132,8 +132,8 @@ static inline void Wipe_DrawMeltLoop(int x, int starty)
 	int surface_height = surface->getHeight();
 	int surface_pitch_pixels = surface->getPitchInPixels();
 
-	PIXEL_T* to = (PIXEL_T*)surface->getBuffer() + starty * surface_pitch_pixels + x;
-	const PIXEL_T* from = (PIXEL_T*)wipe_screen + surface_height * x;
+	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + starty * surface_pitch_pixels + x;
+	const PIXEL_T* from = reinterpret_cast<PIXEL_T*>(wipe_screen) + surface_height * x;
 
 	int y = surface_height - starty;
 	while (y--)
@@ -321,8 +321,8 @@ static inline void Wipe_DrawBurnGeneric()
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 	int surface_pitch_pixels = surface->getPitchInPixels();
 
-	PIXEL_T* to = (PIXEL_T*)surface->getBuffer();
-	const PIXEL_T* from = (PIXEL_T*)wipe_screen;
+	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer());
+	const PIXEL_T* from = reinterpret_cast<PIXEL_T*>(wipe_screen);
 
 	fixed_t firex, firey;
 	int x, y;
@@ -392,17 +392,16 @@ static inline void Wipe_DrawFadeGeneric()
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 	int surface_pitch_pixels = surface->getPitchInPixels();
 
-	PIXEL_T* to = (PIXEL_T*)surface->getBuffer();
-	const PIXEL_T* from = (PIXEL_T*)wipe_screen;
+	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer());
+	const PIXEL_T* from = reinterpret_cast<PIXEL_T*>(wipe_screen);
 
 	fixed_t newfade = fade - 2;
 
-	if (newfade < 2)
-		newfade = 2;
+	newfade = std::max(newfade, 2);
 
 	fixed_t fadedelta = newfade + FixedMul(render_lerp_amount, fade - newfade);
 
-	const fixed_t bglevel = MAX(64 - fadedelta, 0);
+	const fixed_t bglevel = std::max(64 - fadedelta, 0);
 
 	for (int y = 0; y < surface_height; y++)
 	{
@@ -465,7 +464,7 @@ void Wipe_Start()
 	if (r_wipetype.asInt() < 0 || r_wipetype.asInt() >= int(wipe_NUMWIPES))
 		current_wipe_type = wipe_Melt;
 	else
-		current_wipe_type = static_cast<wipe_type_t>(r_wipetype.asInt());
+		current_wipe_type = r_wipetype.asEnum<wipe_type_t>();
 
 	if (current_wipe_type == wipe_None)
 		return;

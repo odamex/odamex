@@ -71,11 +71,10 @@ using SArrayId = size_t;
 // SArray interface & implementation
 // ----------------------------------------------------------------------------
 
-template <typename VT, int N = 16
-		// VT has to be default constructible, but this check breaks OString
-		// see https://www.open-std.org/JTC1/SC22/WG21/docs/cwg_active.html#2335
-		// , typename = std::enable_if_t< std::is_default_constructible_v<VT>>
-	>
+template <typename VT, int N = 16>
+// VT has to be default constructible, but this check breaks OString
+// see https://www.open-std.org/JTC1/SC22/WG21/docs/cwg_active.html#2335
+// requires std::is_default_constructible_v<VT>
 class SArray
 {
 private:
@@ -198,28 +197,11 @@ public:
 			return temp.operator* ();
 		}
 
-		bool operator< (const ThisClass& other) const noexcept
+		[[nodiscard]]
+		auto operator<=>(const ThisClass& other) const noexcept
 		{
 			assert(&mSArray == &other.mSArray);
-			return mSlot < other.mSlot;
-		}
-
-		bool operator<= (const ThisClass& other) const noexcept
-		{
-			assert(&mSArray == &other.mSArray);
-			return mSlot <= other.mSlot;
-		}
-
-		bool operator> (const ThisClass& other) const noexcept
-		{
-			assert(&mSArray == &other.mSArray);
-			return mSlot > other.mSlot;
-		}
-
-		bool operator>= (const ThisClass& other) const noexcept
-		{
-			assert(&mSArray == &other.mSArray);
-			return mSlot >= other.mSlot;
+			return mSlot <=> other.mSlot;
 		}
 
 	private:

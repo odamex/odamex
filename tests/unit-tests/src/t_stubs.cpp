@@ -48,7 +48,6 @@ bool predicting;
 int demostartgametic;
 bool isFast;
 int gametic;
-bool simulated_connection;
 gamestate_t gamestate;
 
 CVAR_FUNC_IMPL (sv_allowwidescreen) {}
@@ -85,33 +84,34 @@ void D_DoServerInfoChange(byte **stream) {}
 void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
 void D_ReadUserInfoStrings(int i, byte **stream, bool update) {}
 
-void SV_SpawnMobj(AActor *mobj) {}
-void SV_TouchSpecial(const AActor& special, player_t& player) {}
-ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab) { return IEV_NotEquipped; }
-void SV_SocketTouch (player_t &player, team_t f) {}
-void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill) {}
-void SV_SendRaiseMobj(const AActor* source, const AActor* corpse) {}
-void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage) {}
-void SV_SendDamageMobj(const AActor *target, int pain) {}
-void SV_CTFEvent(team_t f, flag_score_t event, player_t &who) {}
-void SV_UpdateFrags(player_t &player) {}
-void SV_ActorTarget(const AActor *actor) {}
-void SV_SendDestroyActor(const AActor *mo) {}
-void SV_ExplodeMissile(const AActor *mo) {}
-void SV_SendPlayerInfo(player_t &player) {}
-void SV_PreservePlayer(player_t &player) {}
+bool SV_AwarenessUpdate(player_t &pl, AActor* mo, AwarenessEnum requestedAwarenessLevel) { return true; }
 void SV_BroadcastSector(int sectornum) {}
-void SV_UpdateMobj(const AActor* mo) {}
+void SV_CTFEvent(team_t f, flag_score_t event, player_t &who) {}
+void SV_ExplodeMissile(AActor *mo) {}
+ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab) { return IEV_NotEquipped; }
+void SV_PreservePlayer(player_t &player) {}
+void SV_SendDestroyActor(const AActor *mo) {}
+void SV_SendDamageMobj(AActor *target, int pain) {}
+void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage) {}
+void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0, int arg1, int arg2, int arg3, int arg4) {}
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill) {}
+void SV_SendPlayerInfo(player_t &player) {}
+void SV_SendRaiseMobj(const AActor* source, const AActor* corpse) {}
+void SV_SocketTouch (player_t &player, team_t f) {}
+void SV_SpawnHighPriorityMobj(AActor *mo) {}
+void SV_SpawnMobj(AActor *mobj) {}
+void SV_TouchSpecial(AActor& special, player_t& player) {}
+void SV_UpdateFrags(player_t &player) {}
+void SV_UpdateMobj(AActor* mo) {}
+void SV_UpdateMobjBestEffort(AActor* mo) {}
+void SV_UpdateMobjReliable(AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
+void SV_UpdateMonsterRespawnCount() {}
+void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound) {};
 
 void CTF_RememberFlagPos(const mapthing2_t& mthing) {}
 void CTF_SpawnFlag(team_t f) {}
-bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
-void SV_SendPackets(void) {}
-void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
-                               int arg1, int arg2, int arg3, int arg4) {}
 
-void SV_UpdateMonsterRespawnCount() {}
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation) {}
 
 void R_ExitLevel() {}
@@ -278,7 +278,7 @@ angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
 	}
 	else
 	{
-      return (angle_t)(atan2((double)y, (double)x) * (ANG180 / PI));
+      return static_cast<angle_t>(atan2(static_cast<double>(y), static_cast<double>(x)) * (ANG180 / PI));
 	}
 
    return 0;
@@ -356,12 +356,12 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 	}
 
 	// Not found. Create it.
-	colormap = (dyncolormap_t *)Z_Malloc (sizeof(*colormap), PU_LEVEL, 0);
+	colormap = Z_Malloc<dyncolormap_t>(PU_LEVEL);
 	shademap_t *maps = new shademap_t();
-	maps->colormap = (byte *)Z_Malloc (NUMCOLORMAPS*256*sizeof(byte)+3+255, PU_LEVEL, 0);
-	maps->colormap = (byte *)(((ptrdiff_t)maps->colormap + 255) & ~0xff);
-	maps->shademap = (argb_t *)Z_Malloc (NUMCOLORMAPS*256*sizeof(argb_t)+3+255, PU_LEVEL, 0);
-	maps->shademap = (argb_t *)(((ptrdiff_t)maps->shademap + 255) & ~0xff);
+	maps->colormap = static_cast<byte*>(Z_Malloc(NUMCOLORMAPS*256*sizeof(byte)+3+255, PU_LEVEL));
+	maps->colormap = reinterpret_cast<byte*>(((reinterpret_cast<ptrdiff_t>(maps->colormap) + 255) & ~0xff));
+	maps->shademap = static_cast<argb_t*>(Z_Malloc (NUMCOLORMAPS*256*sizeof(argb_t)+3+255, PU_LEVEL));
+	maps->shademap = reinterpret_cast<argb_t*>(((reinterpret_cast<ptrdiff_t>(maps->shademap) + 255) & ~0xff));
 
 	colormap->maps = shaderef_t(maps, 0);
 	colormap->color = color;
@@ -382,7 +382,7 @@ void CTF_CheckFlags (player_t &player)
 		if(player.flags[i])
 		{
 			player.flags[i] = false;
-			GetTeamInfo((team_t)i)->FlagData.flagger = 0;
+			GetTeamInfo(static_cast<team_t>(i))->FlagData.flagger = 0;
 		}
 	}
 }

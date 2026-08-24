@@ -29,8 +29,7 @@
 #include "dsectoreffect.h"
 
 class AActor;
-class player_s;
-typedef player_s player_t;
+class player_t;
 struct sector_t;
 struct line_s;
 typedef line_s line_t;
@@ -715,7 +714,7 @@ class SectorSnapshotManager
 public:
 	SectorSnapshotManager();
 
-	bool empty();
+	bool empty() const;
 	void clearSnapshots();
 
 	int getMostRecentTime() const { return mMostRecent; }

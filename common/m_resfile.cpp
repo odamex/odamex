@@ -238,13 +238,13 @@ std::vector<std::string> M_FileSearchDirs()
 	std::vector<std::string> dirs;
 
 	// [cSc] Add cl_waddownloaddir as default path
-	D_AddSearchDir(dirs, ::cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, ::Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, ::waddirs.cstring(), PATHLISTSEPCHAR);
-	dirs.push_back(M_CleanPath(M_GetUserDir() + PATHSEP "downloads"));
-	dirs.push_back(M_CleanPath(M_GetBinaryDir() + PATHSEP "downloads"));
+	D_AddSearchDir(dirs, ::cl_waddownloaddir.str(), missing_dir_policy_t::WARN);
+	D_AddSearchDirList(dirs, ::Args.CheckValue("-waddir"), missing_dir_policy_t::WARN);
+	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), missing_dir_policy_t::WARN);
+	D_AddSearchDirList(dirs, getenv("DOOMWADPATH"), missing_dir_policy_t::WARN);
+	D_AddSearchDirList(dirs, ::waddirs.str(), missing_dir_policy_t::WARN);
+	D_AddSearchDir(dirs, M_CleanPath(M_GetUserDir() + PATHSEP "downloads"));
+	D_AddSearchDir(dirs, M_CleanPath(M_GetBinaryDir() + PATHSEP "downloads"));
 	dirs.push_back(M_GetUserDir());
 	dirs.push_back(M_GetCWD());
 	dirs.push_back(M_GetBinaryDir());

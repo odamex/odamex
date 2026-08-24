@@ -6,6 +6,11 @@ syntax="proto3";
 
 package odaproto;
 
+// msg_noop
+message Noop
+{
+}
+
 message Color
 {
 	int32 r = 1;
@@ -48,37 +53,37 @@ message Actor
 	int32 waterlevel = 17;
 	uint32 rndindex = 18;
 	fixed32 flags2 = 19;
+	uint32 friend_playerid = 20;
+	int32 friend_teamid = 21;
+}
+
+message PspriteState
+{
+	int32 statenum = 1;
+	int32 tics = 2;
+	sfixed32 sx = 3;
+	sfixed32 sy = 4;
 }
 
 message Player
 {
-	message Psp
-	{
-		int32 statenum = 1;
-		int32 tics = 2;
-		sfixed32 sx = 3;
-		sfixed32 sy = 4;
-	}
+	uint32          playerid        = 1;
+	int32           client_tic      = 2;
+	int32           health          = 3;
+	int32           armorpoints     = 4;
+	int32           armortype       = 5;
+	repeated int32  powers          = 6;
+	uint32          cards           = 7;
+	bool            backpack        = 8;
+	int32           lives           = 9;
+	uint32          cheats          = 10;
+	int32           pendingweapon   = 11;
+	int32           readyweapon     = 12;
+	uint32          weaponowned     = 13;
+	repeated int32  ammo            = 14;
+	repeated int32  maxammo         = 15;
 
-	uint32 playerid = 1;
-	sfixed32 viewz = 2;
-	sfixed32 viewheight = 3;
-	sfixed32 deltaviewheight = 4;
-	int32 health = 5;
-	int32 armorpoints = 6;
-	int32 armortype = 7;
-	repeated int32 powers = 8;
-	uint32 cards = 9;
-	bool backpack = 10;
-	int32 lives = 11;
-	uint32 cheats = 12;
-	int32 pendingweapon = 13;
-	int32 readyweapon = 14;
-	uint32 weaponowned = 15;
-	repeated int32 ammo = 16;
-	repeated int32 maxammo = 17;
-	repeated Psp psprites = 18;
-	int32 jumptics = 19;
+	repeated PspriteState   psprites    = 16;
 }
 
 message Sector
@@ -107,4 +112,17 @@ message Sector
 	sfixed32 base_ceiling_yoffs = 16;
 	sfixed32 base_floor_angle = 17;
 	sfixed32 base_floor_yoffs = 18;
+}
+
+message MapThing
+{
+	uint32          thingid = 1;        // Hexen, Doom 64 things have ID numbers.  All other thing formats just use 0.
+	sint32          x       = 2;
+	sint32          y       = 3;
+	sint32          z       = 4;        // Hexen, Doom 64 things have thing z / height values.  All other formats are 0.
+	sint32          angle   = 5;
+	int32           type    = 6;
+	int32           flags   = 7;
+	uint32          special = 8;        // Hexen
+	repeated uint32 args    = 9;        // Hexen
 }

@@ -76,30 +76,10 @@ void CTF_CheckFlags (player_t &player)
 		if(player.flags[i])
 		{
 			player.flags[i] = false;
-			GetTeamInfo((team_t)i)->FlagData.flagger = 0;
+			GetTeamInfo(static_cast<team_t>(i))->FlagData.flagger = nullplayer_id;
 		}
 	}
 }
-
-//
-//	CTF_TossFlag
-//																					[Toke - CTF - Toss]
-//	Player tosses the flag
-/* [ML] 04/4/06: Remove flagtossing, too buggy
-void CTF_TossFlag (void)
-{
-	MSG_WriteMarker (&net_buffer, clc_ctfcommand);
-
-	if (CTFdata.BlueScreen)	CTFdata.BlueScreen	= false;
-	if (CTFdata.RedScreen)	CTFdata.RedScreen	= false;
-}
-
-BEGIN_COMMAND	(flagtoss)
-{
-	CTF_TossFlag ();
-}
-END_COMMAND		(flagtoss)
-*/
 
 //
 //	[Toke - CTF] CTF_CarryFlag
@@ -131,18 +111,18 @@ void CTF_MoveFlags ()
 	// denis - flag is now a boolean
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 
 		if(teamInfo->FlagData.flagger && teamInfo->FlagData.actor)
 		{
-			player_t &player = idplayer(teamInfo->FlagData.flagger);
+			const player_t &player = idplayer(teamInfo->FlagData.flagger);
 			AActor *flag = teamInfo->FlagData.actor;
 
 			if (!validplayer(player) || !player.mo)
 			{
 				// [SL] 2012-12-13 - Remove a flag if it's being carried but
 				// there's not a valid player carrying it (should not happen)
-				teamInfo->FlagData.flagger = 0;
+				teamInfo->FlagData.flagger = nullplayer_id;
 				teamInfo->FlagData.state = flag_home;
 				if(teamInfo->FlagData.actor)
 					teamInfo->FlagData.actor->Destroy();
@@ -207,7 +187,7 @@ void CTF_RunTics (void)
 	// Don't draw the flag the display player is carrying as it blocks the view.
 	for (size_t flag = 0; flag < NUMTEAMS; flag++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)flag);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(flag));
 
 		if (!teamInfo->FlagData.actor)
 			continue;
@@ -240,7 +220,7 @@ void CTF_DrawHud (void)
 	player_t &player = displayplayer();
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 
 		if(teamInfo->FlagData.state == flag_carried && teamInfo->FlagData.flagger == player.id)
 		{
@@ -350,13 +330,13 @@ static const char *flag_sound[NUM_CTF_SCORE][7] = {
 	{"", "", "", "", "", ""}, // REFRESH
 	{"", "", "", "", "", ""}, // KILL
 	{"", "", "", "", "", ""}, // BETRAYAL
-	{"ctf/your/flag/take", "ctf/enemy/flag/take", ANN_YOURFLAGTAKEN.c_str(), ANN_ENEMYFLAGTAKEN.c_str(), ANN_BLUEFLAGTAKEN.c_str(), ANN_REDFLAGTAKEN.c_str(), ANN_GREENFLAGTAKEN.c_str()}, // GRAB
-	{"ctf/your/flag/take", "ctf/enemy/flag/take", ANN_YOURFLAGTAKEN.c_str(), ANN_ENEMYFLAGTAKEN.c_str(), ANN_BLUEFLAGTAKEN.c_str(), ANN_REDFLAGTAKEN.c_str(), ANN_GREENFLAGTAKEN.c_str()}, // FIRSTGRAB
+	{"ctf/your/flag/take", "ctf/enemy/flag/take", ANN_YOURFLAGTAKEN.data(), ANN_ENEMYFLAGTAKEN.data(), ANN_BLUEFLAGTAKEN.data(), ANN_REDFLAGTAKEN.data(), ANN_GREENFLAGTAKEN.data()}, // GRAB
+	{"ctf/your/flag/take", "ctf/enemy/flag/take", ANN_YOURFLAGTAKEN.data(), ANN_ENEMYFLAGTAKEN.data(), ANN_BLUEFLAGTAKEN.data(), ANN_REDFLAGTAKEN.data(), ANN_GREENFLAGTAKEN.data()}, // FIRSTGRAB
 	{"", "", "", "", "", ""}, // CARRIERKILL
-	{"ctf/your/flag/return", "ctf/enemy/flag/return", ANN_YOURFLAGRETURNED.c_str(), ANN_ENEMYFLAGRETURNED.c_str(), ANN_BLUEFLAGRETURNED.c_str(), ANN_REDFLAGRETURNED.c_str(), ANN_GREENFLAGRETURNED.c_str()}, // RETURN
-	{"ctf/your/score", "ctf/enemy/score", ANN_YOURTEAMSCORES.c_str(), ANN_ENEMYTEAMSCORES.c_str(), ANN_BLUETEAMSCORES.c_str(), ANN_REDTEAMSCORES.c_str(), ANN_GREENTEAMSCORES.c_str()}, // CAPTURE
-	{"ctf/your/flag/drop", "ctf/enemy/flag/drop", ANN_YOURFLAGDROPPED.c_str(), ANN_ENEMYFLAGDROPPED.c_str(), ANN_BLUEFLAGDROPPED.c_str(), ANN_REDFLAGDROPPED.c_str(), ANN_GREENFLAGDROPPED.c_str()}, // DROP
-	{"ctf/your/flag/manualreturn", "ctf/enemy/flag/manualreturn", ANN_YOURFLAGISBEINGRETURNED.c_str(), ANN_ENEMYFLAGISBEINGRETURNED.c_str(), ANN_BLUEFLAGISBEINGRETURNED.c_str(), ANN_REDFLAGISBEINGRETURNED.c_str(), ANN_GREENFLAGISBEINGRETURNED.c_str()}, // MANUALRETURN
+	{"ctf/your/flag/return", "ctf/enemy/flag/return", ANN_YOURFLAGRETURNED.data(), ANN_ENEMYFLAGRETURNED.data(), ANN_BLUEFLAGRETURNED.data(), ANN_REDFLAGRETURNED.data(), ANN_GREENFLAGRETURNED.data()}, // RETURN
+	{"ctf/your/score", "ctf/enemy/score", ANN_YOURTEAMSCORES.data(), ANN_ENEMYTEAMSCORES.data(), ANN_BLUETEAMSCORES.data(), ANN_REDTEAMSCORES.data(), ANN_GREENTEAMSCORES.data()}, // CAPTURE
+	{"ctf/your/flag/drop", "ctf/enemy/flag/drop", ANN_YOURFLAGDROPPED.data(), ANN_ENEMYFLAGDROPPED.data(), ANN_BLUEFLAGDROPPED.data(), ANN_REDFLAGDROPPED.data(), ANN_GREENFLAGDROPPED.data()}, // DROP
+	{"ctf/your/flag/manualreturn", "ctf/enemy/flag/manualreturn", ANN_YOURFLAGISBEINGRETURNED.data(), ANN_ENEMYFLAGISBEINGRETURNED.data(), ANN_BLUEFLAGISBEINGRETURNED.data(), ANN_REDFLAGISBEINGRETURNED.data(), ANN_GREENFLAGISBEINGRETURNED.data()}, // MANUALRETURN
 };
 
 EXTERN_CVAR(snd_voxtype)
@@ -413,7 +393,7 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 			break;
 
 		// Possessive (yours/theirs)
-		if (!consoleplayer().spectator)
+		if (not consoleplayer().spectator && not displayplayer().isFreecam)
 		{
 			team_t playerTeam = consoleplayer().userinfo.team;
 			PossessiveType sound = Theirs;
@@ -428,7 +408,7 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 			if (IsPossesiveEvent(playerTeam, flag, team, ev) && S_FindSound(possessiveSound.c_str()))
 			{
 				if (ev == SCORE_CAPTURE)
-						AnnouncerManager::getInstance().queueSound(possessiveSound);
+					AnnouncerManager::getInstance().queueSound(possessiveSound);
 				else
 					S_Sound(CHAN_ANNOUNCER, possessiveSound.c_str(), 1, ATTN_NONE);
 				break;
@@ -444,10 +424,12 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 		const std::string teamSound = AnnouncerManager::getInstance().getTokenForEvent(flag_sound[ev][4 + sound]);
 
 		if (S_FindSound(teamSound.c_str()) != -1)
+		{
 			if (ev == SCORE_CAPTURE)
 				AnnouncerManager::getInstance().queueSound(teamSound);
 			else
 				S_Sound(CHAN_ANNOUNCER, teamSound.c_str(), 1, ATTN_NONE);
+		}
 		break;
 	}
 		[[fallthrough]];
@@ -481,7 +463,7 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 	{
 	case 2:
 		// Possessive (yours/theirs)
-		if (!consoleplayer().spectator)
+		if (not consoleplayer().spectator && not displayplayer().isFreecam)
 		{
 			PossessiveType msg = Theirs;
 			color = CR_BRICK;
@@ -553,9 +535,9 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 		[[fallthrough]];
 	case 1:
 		if (ev == SCORE_CAPTURE)
-			C_GMidPrint(flag_message[ev][2 + team], V_GetTextColor(GetTeamInfo(team)->TextColor.c_str()), 0);
+			C_GMidPrint(flag_message[ev][2 + team], V_GetTextColor(GetTeamInfo(team)->TextColor), 0);
 		else
-			C_GMidPrint(flag_message[ev][2 + flag], V_GetTextColor(GetTeamInfo(flag)->TextColor.c_str()), 0);
+			C_GMidPrint(flag_message[ev][2 + flag], V_GetTextColor(GetTeamInfo(flag)->TextColor), 0);
 		break;
 	default:
 		break;

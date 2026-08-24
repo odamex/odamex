@@ -24,9 +24,12 @@
 
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <map>
 #include <queue>
 #include <string>
+#include <string_view>
 
 #include "d_player.h"
 
@@ -38,225 +41,225 @@
 /// Plays when the CTF flag on your own team is taken from its pedestal by an enemy, when
 /// the possessive announcer is on.
 /// </summary>
-static const std::string ANN_YOURFLAGTAKEN = "yourflagtaken";
+inline constexpr std::string_view ANN_YOURFLAGTAKEN = "yourflagtaken";
 /// <summary>
 /// Plays when the CTF flag on the enemy team is taken from its pedestal by a teammate (or
 /// you), when the possessive announcer is on.
 /// </summary>
-static const std::string ANN_ENEMYFLAGTAKEN = "enemyflagtaken";
+inline constexpr std::string_view ANN_ENEMYFLAGTAKEN = "enemyflagtaken";
 /// <summary>
 /// Plays when the CTF flag on your own team is dropped, if the possessive announcer is
 /// on.
 /// </summary>
-static const std::string ANN_YOURFLAGDROPPED = "yourflagdropped";
+inline constexpr std::string_view ANN_YOURFLAGDROPPED = "yourflagdropped";
 /// <summary>
 /// Plays when the CTF flag on an enemy team is dropped, if the possessive announcer is
 /// on.
 /// </summary>
-static const std::string ANN_ENEMYFLAGDROPPED = "enemyflagdropped";
+inline constexpr std::string_view ANN_ENEMYFLAGDROPPED = "enemyflagdropped";
 /// <summary>
 /// Plays when the CTF flag on your own team is being returned in manual CTF, when
 /// possessive announcer is on.
 /// </summary>
-static const std::string ANN_YOURFLAGISBEINGRETURNED = "yourflagisbeingreturned";
+inline constexpr std::string_view ANN_YOURFLAGISBEINGRETURNED = "yourflagisbeingreturned";
 /// <summary>
 /// Plays when the CTF flag on an enemy team is being returned in manual CTF, when
 /// possessive announcer is on.
 /// </summary>
-static const std::string ANN_ENEMYFLAGISBEINGRETURNED = "enemyflagisbeingreturned";
+inline constexpr std::string_view ANN_ENEMYFLAGISBEINGRETURNED = "enemyflagisbeingreturned";
 /// <summary>
 /// Plays when the CTF flag on your own team is returned to its pedestal (socket), when
 /// the possessive announcer is on.
 /// </summary>
-static const std::string ANN_YOURFLAGRETURNED = "yourflagreturned";
+inline constexpr std::string_view ANN_YOURFLAGRETURNED = "yourflagreturned";
 /// <summary>
 /// Plays when the CTF flag on an enemy team is returned to its pedestal (socket), when
 /// the possessive announcer is on.
 /// </summary>
-static const std::string ANN_ENEMYFLAGRETURNED = "enemyflagreturned";
+inline constexpr std::string_view ANN_ENEMYFLAGRETURNED = "enemyflagreturned";
 /// <summary>
 /// Plays when your team captures the enemies CTF flag, when the possessive announcer is
 /// on.
 /// </summary>
-static const std::string ANN_YOURTEAMSCORES = "yourteamscores";
+inline constexpr std::string_view ANN_YOURTEAMSCORES = "yourteamscores";
 /// <summary>
 /// Plays when the enemy team captures your CTF flag, when the possessive announcer is on.
 /// </summary>
-static const std::string ANN_ENEMYTEAMSCORES = "enemyteamscores";
+inline constexpr std::string_view ANN_ENEMYTEAMSCORES = "enemyteamscores";
 
 // Team Based CTF Announcements
 
 /// <summary>
 /// Plays when the red flag is taken, when the team colors announcer is on.
 /// </summary>
-static const std::string ANN_REDFLAGTAKEN = "redflagtaken";
+inline constexpr std::string_view ANN_REDFLAGTAKEN = "redflagtaken";
 /// <summary>
 /// Plays when the blue flag is taken, when the team colors announcer is on.
 /// </summary>
-static const std::string ANN_BLUEFLAGTAKEN = "blueflagtaken";
+inline constexpr std::string_view ANN_BLUEFLAGTAKEN = "blueflagtaken";
 /// <summary>
 /// Plays when the green flag is taken, when the team colors announcer is on.
 /// </summary>
-static const std::string ANN_GREENFLAGTAKEN = "greenflagtaken";
+inline constexpr std::string_view ANN_GREENFLAGTAKEN = "greenflagtaken";
 /// <summary>
 /// Plays when the red flag is dropped, when the team colors announcer is on.
 /// </summary>
-static const std::string ANN_REDFLAGDROPPED = "redflagdropped";
+inline constexpr std::string_view ANN_REDFLAGDROPPED = "redflagdropped";
 /// <summary>
 /// Plays when the blue flag is dropped, when the team colors announcer is on.
 /// </summary>
-static const std::string ANN_BLUEFLAGDROPPED = "blueflagdropped";
+inline constexpr std::string_view ANN_BLUEFLAGDROPPED = "blueflagdropped";
 /// <summary>
 /// Plays when the green flag is dropped, when the team colors announcer is on.
 /// </summary>
-static const std::string ANN_GREENFLAGDROPPED = "greenflagdropped";
+inline constexpr std::string_view ANN_GREENFLAGDROPPED = "greenflagdropped";
 /// <summary>
 /// Plays when the red flag is being returned in manual CTF, when the team colors
 /// announcer is on.
 /// </summary>
-static const std::string ANN_REDFLAGISBEINGRETURNED = "redflagisbeingreturned";
+inline constexpr std::string_view ANN_REDFLAGISBEINGRETURNED = "redflagisbeingreturned";
 /// <summary>
 /// Plays when the blue flag is being returned in manual CTF, when the team colors
 /// announcer is on.
 /// </summary>
-static const std::string ANN_BLUEFLAGISBEINGRETURNED = "blueflagisbeingreturned";
+inline constexpr std::string_view ANN_BLUEFLAGISBEINGRETURNED = "blueflagisbeingreturned";
 /// <summary>
 /// Plays when the green flag is being returned in manual CTF, when the team colors
 /// announcer is on.
 /// </summary>
-static const std::string ANN_GREENFLAGISBEINGRETURNED = "greenflagisbeingreturned";
+inline constexpr std::string_view ANN_GREENFLAGISBEINGRETURNED = "greenflagisbeingreturned";
 /// <summary>
 /// Plays when the red flag has been returned to its pedestal (socket), when the team
 /// colors announcer is on.
 /// </summary>
-static const std::string ANN_REDFLAGRETURNED = "redflagreturned";
+inline constexpr std::string_view ANN_REDFLAGRETURNED = "redflagreturned";
 /// <summary>
 /// Plays when the blue flag has been returned to its pedestal (socket), when the team
 /// colors announcer is on.
 /// </summary>
-static const std::string ANN_BLUEFLAGRETURNED = "blueflagreturned";
+inline constexpr std::string_view ANN_BLUEFLAGRETURNED = "blueflagreturned";
 /// <summary>
 /// Plays when the green flag has been returned to its pedestal (socket), when the team
 /// colors announcer is on.
 /// </summary>
-static const std::string ANN_GREENFLAGRETURNED = "greenflagreturned";
+inline constexpr std::string_view ANN_GREENFLAGRETURNED = "greenflagreturned";
 /// <summary>
 /// Plays when the red team scores a CTF flag, when the team colors announcer is on.
 /// </summary>
-static const std::string ANN_REDTEAMSCORES = "redteamscores";
+inline constexpr std::string_view ANN_REDTEAMSCORES = "redteamscores";
 /// <summary>
 /// Plays when the blue team scores a CTF flag, when the team colors announcer is on.
 /// </summary>
-static const std::string ANN_BLUETEAMSCORES = "blueteamscores";
+inline constexpr std::string_view ANN_BLUETEAMSCORES = "blueteamscores";
 /// <summary>
 /// Plays when the green team scores a CTF flag, when the team colors announcer is on.
 /// </summary>
-static const std::string ANN_GREENTEAMSCORES = "greenteamscores";
+inline constexpr std::string_view ANN_GREENTEAMSCORES = "greenteamscores";
 
 // Horde Mode Announcements
 
 /// <summary>
 /// Plays when a Horde boss spawns in at the end of a wave.
 /// </summary>
-static const std::string ANN_HORDEBOSSSPAWN = "hordebossspawn";
+inline constexpr std::string_view ANN_HORDEBOSSSPAWN = "hordebossspawn";
 /// <summary>
 /// Plays when the player is the last alive in a survival game.
 /// </summary>
-static const std::string ANN_LASTPLAYERALIVE = "lastplayeralive";
+inline constexpr std::string_view ANN_LASTPLAYERALIVE = "lastplayeralive";
 /// <summary>
 /// Plays when the player has been revived by a new wave or resurrect player powerup.
 /// </summary>
-static const std::string ANN_REVIVEDPLAYER = "revivedplayer";
+inline constexpr std::string_view ANN_REVIVEDPLAYER = "revivedplayer";
 
 // General Announcements
 
 /// <summary>
 /// Plays when there's 5 minutes left in a time limit game.
 /// </summary>
-static const std::string ANN_FIVEMINUTEWARNING = "fiveminutewarning";
+inline constexpr std::string_view ANN_FIVEMINUTEWARNING = "fiveminutewarning";
 /// <summary>
 /// Plays when there's 1 minute left in a time limit game.
 /// </summary>
-static const std::string ANN_ONEMINUTEWARNING = "oneminutewarning";
+inline constexpr std::string_view ANN_ONEMINUTEWARNING = "oneminutewarning";
 /// <summary>
 /// Plays when there are 3 frags left in a frag limit game.
 /// </summary>
-static const std::string ANN_THREEFRAGSLEFT = "threefragsleft";
+inline constexpr std::string_view ANN_THREEFRAGSLEFT = "threefragsleft";
 /// <summary>
 /// Plays when there are 2 frags left in a frag limit game.
 /// </summary>
-static const std::string ANN_TWOFRAGSLEFT = "twofragsleft";
+inline constexpr std::string_view ANN_TWOFRAGSLEFT = "twofragsleft";
 /// <summary>
 /// Plays when there is 1 frag left in a frag limit game.
 /// </summary>
-static const std::string ANN_ONEFRAGLEFT = "onefragleft";
+inline constexpr std::string_view ANN_ONEFRAGLEFT = "onefragleft";
 /// <summary>
 /// Plays in warmup when there's 5 seconds before the match starts.
 /// </summary>
-static const std::string ANN_FIVE = "five";
+inline constexpr std::string_view ANN_FIVE = "five";
 /// <summary>
 /// Plays in warmup when there's 4 seconds before the match starts.
 /// </summary>
-static const std::string ANN_FOUR = "four";
+inline constexpr std::string_view ANN_FOUR = "four";
 /// <summary>
 /// Plays in warmup when there's 3 seconds before the match starts.
 /// </summary>
-static const std::string ANN_THREE = "three";
+inline constexpr std::string_view ANN_THREE = "three";
 /// <summary>
 /// Plays in warmup when there' 2 seconds before the match starts.
 /// </summary>
-static const std::string ANN_TWO = "two";
+inline constexpr std::string_view ANN_TWO = "two";
 /// <summary>
 /// Plays in warmup when there's 1 second before the match starts.
 /// </summary>
-static const std::string ANN_ONE = "one";
+inline constexpr std::string_view ANN_ONE = "one";
 /// <summary>
 /// Plays when fighting is enabled, either start of a new round or weapons unlocked.
 /// </summary>
-static const std::string ANN_FIGHT = "fight";
+inline constexpr std::string_view ANN_FIGHT = "fight";
 /// <summary>
 /// Plays when the display player runs out of lives.
 /// </summary>
-static const std::string ANN_PLAYERELIMINATED = "playereliminated";
+inline constexpr std::string_view ANN_PLAYERELIMINATED = "playereliminated";
 /// <summary>
 /// Plays when the first frag occurs in a new game.
 /// </summary>
-static const std::string ANN_FIRSTBLOOD = "firstblood";
+inline constexpr std::string_view ANN_FIRSTBLOOD = "firstblood";
 
 // Lead Change Announcements
 
 /// <summary>
 /// Plays when the displayplayer has the lead.
 /// </summary>
-static const std::string ANN_YOUHAVETHELEAD = "youhavethelead";
+inline constexpr std::string_view ANN_YOUHAVETHELEAD = "youhavethelead";
 /// <summary>
 /// Plays when the displayplayer has lost the lead.
 /// </summary>
-static const std::string ANN_YOULOSTTHELEAD = "youlostthelead";
+inline constexpr std::string_view ANN_YOULOSTTHELEAD = "youlostthelead";
 /// <summary>
 /// Plays when the displayplayer has tied for the lead.
 /// </summary>
-static const std::string ANN_YOUTIEDFORTHELEAD = "youtiedforthelead";
+inline constexpr std::string_view ANN_YOUTIEDFORTHELEAD = "youtiedforthelead";
 
 // Match Result Announcements
 
 /// <summary>
 /// Plays when the local player wins.
 /// </summary>
-static const std::string ANN_YOUWIN = "youwin";
+inline constexpr std::string_view ANN_YOUWIN = "youwin";
 /// <summary>
 /// Plays when the local player loses.
 /// </summary>
-static const std::string ANN_YOULOSE = "youlose";
+inline constexpr std::string_view ANN_YOULOSE = "youlose";
 /// <summary>
 /// Plays when the local player ties.
 /// </summary>
-static const std::string ANN_YOUTIED = "youtied";
+inline constexpr std::string_view ANN_YOUTIED = "youtied";
 
 /// <summary>
 /// Contains tokens that would be disabled if snd_announcectf is false.
 /// </summary>
-static const std::vector<std::string> announcerCTFTokens = {
+inline constexpr auto announcerCTFTokens = std::to_array<std::string_view>({
     ANN_YOURFLAGTAKEN,           ANN_ENEMYFLAGTAKEN,
     ANN_YOURFLAGDROPPED,         ANN_ENEMYFLAGDROPPED,
     ANN_YOURFLAGISBEINGRETURNED, ANN_ENEMYFLAGISBEINGRETURNED,
@@ -268,55 +271,54 @@ static const std::vector<std::string> announcerCTFTokens = {
     ANN_REDFLAGISBEINGRETURNED,  ANN_BLUEFLAGISBEINGRETURNED, ANN_GREENFLAGISBEINGRETURNED,
     ANN_REDFLAGRETURNED,         ANN_BLUEFLAGRETURNED,        ANN_GREENFLAGRETURNED,
     ANN_REDTEAMSCORES,           ANN_BLUETEAMSCORES,          ANN_GREENTEAMSCORES
-};
+});
 
 /// <summary>
 /// Contains tokens that would be disabled if snd_announcehorde is false.
 /// </summary>
-static const std::vector<std::string> announcerHordeTokens = {ANN_HORDEBOSSSPAWN,
-                                                              ANN_REVIVEDPLAYER};
+inline constexpr auto announcerHordeTokens =
+    std::to_array<std::string_view>({ANN_HORDEBOSSSPAWN, ANN_REVIVEDPLAYER});
 
 /// <summary>
 /// Contains tokens that would be disabled if snd_announcesurvival is false.
 /// </summary>
-static const std::vector<std::string> announcerSurvivalTokens = {
-    ANN_LASTPLAYERALIVE,
-                                                                 ANN_PLAYERELIMINATED};
+inline constexpr auto announcerSurvivalTokens =
+    std::to_array<std::string_view>({ANN_LASTPLAYERALIVE, ANN_PLAYERELIMINATED});
 
 /// <summary>
 /// Contains tokens that would be disabled if snd_announcecountdown is false.
 /// </summary>
-static const std::vector<std::string> announcerCountdownTokens = {
-    ANN_FIVE, ANN_FOUR, ANN_THREE, ANN_TWO, ANN_ONE, ANN_FIGHT};
+inline constexpr auto announcerCountdownTokens = std::to_array<std::string_view>({
+    ANN_FIVE, ANN_FOUR, ANN_THREE, ANN_TWO, ANN_ONE, ANN_FIGHT});
 
 /// <summary>
 /// Contains tokens that would be disabled if snd_announcecountdown is false.
 /// </summary>
-static const std::vector<std::string> announcerTimeWarningsTokens = {
-    ANN_ONEMINUTEWARNING, ANN_FIVEMINUTEWARNING};
+inline constexpr auto announcerTimeWarningsTokens = std::to_array<std::string_view>({
+    ANN_ONEMINUTEWARNING, ANN_FIVEMINUTEWARNING});
 
 /// <summary>
 /// Contains tokens that would be disabled if snd_announcefirstblood is false.
 /// </summary>
-static const std::vector<std::string> announcerFirstBloodTokens = {ANN_FIRSTBLOOD};
+inline constexpr auto announcerFirstBloodTokens = std::to_array<std::string_view>({ANN_FIRSTBLOOD});
 
 /// <summary>
 /// Contains tokens that would be disabled if snd_announcefragtracking is false.
 /// </summary>
-static const std::vector<std::string> announcerFragTrackingTokens = {
-    ANN_THREEFRAGSLEFT, ANN_TWOFRAGSLEFT, ANN_ONEFRAGLEFT};
+inline constexpr auto announcerFragTrackingTokens = std::to_array<std::string_view>({
+    ANN_THREEFRAGSLEFT, ANN_TWOFRAGSLEFT, ANN_ONEFRAGLEFT});
 
 /// <summary>
 /// Contains tokens that would be disabled if snd_announceleadtracking is false.
 /// </summary>
-static const std::vector<std::string> announcerLeadTrackingTokens = {
-    ANN_YOUHAVETHELEAD, ANN_YOUTIEDFORTHELEAD, ANN_YOULOSTTHELEAD};
+inline constexpr auto announcerLeadTrackingTokens = std::to_array<std::string_view>({
+    ANN_YOUHAVETHELEAD, ANN_YOUTIEDFORTHELEAD, ANN_YOULOSTTHELEAD});
 
 /// <summary>
 /// Contains tokens that would be disabled if snd_announceresulttracking is false.
 /// </summary>
-static const std::vector<std::string> announcerResultTrackingTokens = {
-    ANN_YOUWIN, ANN_YOUTIED, ANN_YOULOSE};
+inline constexpr auto announcerResultTrackingTokens = std::to_array<std::string_view>({
+    ANN_YOUWIN, ANN_YOUTIED, ANN_YOULOSE});
 
 /// <summary>
 /// Holds all the metadata for the specified announcer pack.
@@ -338,13 +340,6 @@ struct AnnouncerMetaData_s
 	/// Displayed in the announcer selection menu.
 	/// </summary>
 	std::string author;
-	AnnouncerMetaData_s() : name(""), description(""), author("") { }
-	AnnouncerMetaData_s(const AnnouncerMetaData_s& other)
-	{
-		name = other.name;
-		description = other.description;
-		author = other.author;
-	}
 };
 
 /// <summary>
@@ -359,12 +354,6 @@ struct Announcer_s
 	/// sound function to play the appropriate sound.
 	/// </summary>
 	std::unordered_map<std::string, std::string> soundDict;
-	Announcer_s() : metadata(), soundDict() { }
-	Announcer_s(const Announcer_s& other)
-	{
-		metadata = other.metadata;
-		soundDict = other.soundDict;
-	}
 };
 
 /// <summary>
@@ -392,7 +381,7 @@ public:
 	/// </summary>
 	/// <param name="announcer">Name of the announcer pack to check.</param>
 	/// <returns>True if the name matches a currently available announcer.</returns>
-	bool isAnnouncerLoaded(const std::string& announcer) const;
+	[[nodiscard]] bool isAnnouncerLoaded(const std::string& announcer) const;
 
 	/// <summary>
 	/// Returns if a named token exists in our repository of named tokens.
@@ -409,7 +398,7 @@ public:
 	/// list.
 	/// </summary>
 	/// <returns>The name of the announcer to the left of this one.</returns>
-	std::string getLeftAnnouncer(const std::string& currentAnnouncer) const;
+	[[nodiscard]] std::string getLeftAnnouncer(const std::string& currentAnnouncer) const;
 
 	/// <summary>
 	/// Gets the name of the announcer to the right of the current one.
@@ -417,7 +406,7 @@ public:
 	/// list.
 	/// </summary>
 	/// <returns>The name of the announcer to the right of this one.</returns>
-	std::string getRightAnnouncer(const std::string& currentAnnouncer) const;
+	[[nodiscard]] std::string getRightAnnouncer(const std::string& currentAnnouncer) const;
 
 	/// <summary>
 	/// Gets the metadata of the specified announcer pack.
@@ -439,7 +428,7 @@ public:
 	/// of the announcements above.</param>
 	/// <returns>The specified sndinfo token for the current announcer, empty if invalid
 	/// or unknown.</returns>
-	const std::string getTokenForEvent(const std::string& event);
+	std::string getTokenForEvent(std::string_view event);
 
 	/// <summary>
 	/// Loads the specified announcer, or if not found, loads the default announcer.
@@ -451,7 +440,7 @@ public:
 	/// Loads the map of new announcers brought in by reading an ONCRINFO lump.
 	/// </summary>
 	/// <param name="newAnnouncers">New announcers to add or merge.</param>
-	void loadAnnouncers(const std::unordered_map<std::string, Announcer_s> newAnnouncers);
+	void loadAnnouncers(const std::unordered_map<std::string, Announcer_s>& newAnnouncers);
 
 	/// <summary>
 	/// Queues an announcer sound to be played. If nothing is currently playing,
@@ -503,17 +492,17 @@ public:
 	/// <summary>
 	/// Function to return whether the 3-frag warning has been announced already.
 	/// </summary>
-	bool hasFragWarning3BeenAnnounced() const { return fragWarning3Announced; }
+	[[nodiscard]] bool hasFragWarning3BeenAnnounced() const { return fragWarning3Announced; }
 
 	/// <summary>
 	/// Function to return whether the 2-frag warning has been announced already.
 	/// </summary>
-	bool hasFragWarning2BeenAnnounced() const { return fragWarning2Announced; }
+	[[nodiscard]] bool hasFragWarning2BeenAnnounced() const { return fragWarning2Announced; }
 
 	/// <summary>
 	/// Function to return whether the 1-frag warning has been announced already.
 	/// </summary>
-	bool hasFragWarning1BeenAnnounced() const { return fragWarning1Announced; }
+	[[nodiscard]] bool hasFragWarning1BeenAnnounced() const { return fragWarning1Announced; }
 
 	/// <summary>
 	/// Function to announce the 3-frag warning.
@@ -548,7 +537,7 @@ public:
 	/// <summary>
 	/// Function to return whether the fight announcement has been played already.
 	/// </summary>
-	bool hasFightBeenAnnounced() const { return fightAnnounced; }
+	[[nodiscard]] bool hasFightBeenAnnounced() const { return fightAnnounced; }
 
 	/// <summary>
 	/// Resets the fight announcement flag to enable an upcoming announcement.
@@ -575,7 +564,8 @@ public:
 	/// <summary>
 	/// Checks if a specific countdown has been announced.
 	/// </summary>
-	bool hasCountdownBeenAnnounced(int countdown) const
+	// NOLINTBEGIN(readability-magic-numbers) - the numbers are the countdown seconds
+	[[nodiscard]] bool hasCountdownBeenAnnounced(int countdown) const
 	{
 		switch (countdown)
 		{
@@ -600,8 +590,10 @@ public:
 		case 3: countdown3Announced = true; break;
 		case 2: countdown2Announced = true; break;
 		case 1: countdown1Announced = true; break;
+		default: break;
 		}
 	}
+	// NOLINTEND(readability-magic-numbers)
 
 	/// <summary>
 	/// Resets lead tracking state for a new game.
@@ -622,7 +614,7 @@ public:
 	/// <summary>
 	/// Gets whether first blood has already been announced.
 	/// </summary>
-	bool hasFirstBloodBeenAnnounced() const { return firstBloodAnnounced; }
+	[[nodiscard]] bool hasFirstBloodBeenAnnounced() const { return firstBloodAnnounced; }
 
 	/// <summary>
 	/// Marks first blood as having been announced.
@@ -632,7 +624,7 @@ public:
 	/// <summary>
 	/// Gets the current leader player ID (for FFA games).
 	/// </summary>
-	int getCurrentLeaderPlayerId() const { return currentLeaderPlayerId; }
+	[[nodiscard]] int getCurrentLeaderPlayerId() const { return currentLeaderPlayerId; }
 
 	/// <summary>
 	/// Sets the current leader player ID (for FFA games).
@@ -642,7 +634,7 @@ public:
 	/// <summary>
 	/// Gets the current leader team (for team games).
 	/// </summary>
-	team_t getCurrentLeaderTeam() const { return currentLeaderTeam; }
+	[[nodiscard]] team_t getCurrentLeaderTeam() const { return currentLeaderTeam; }
 
 	/// <summary>
 	/// Sets the current leader team (for team games).
@@ -652,7 +644,7 @@ public:
 	/// <summary>
 	/// Gets whether the display player currently has the lead.
 	/// </summary>
-	bool doesDisplayPlayerHaveLead() const { return displayPlayerHasLead; }
+	[[nodiscard]] bool doesDisplayPlayerHaveLead() const { return displayPlayerHasLead; }
 
 	/// <summary>
 	/// Sets whether the display player has the lead.
@@ -662,7 +654,7 @@ public:
 	/// <summary>
 	/// Gets whether the lead is currently tied.
 	/// </summary>
-	bool isLeadTied() const { return leadIsTied; }
+	[[nodiscard]] bool isLeadTied() const { return leadIsTied; }
 
 	/// <summary>
 	/// Sets whether the lead is tied.
@@ -673,114 +665,101 @@ public:
 	/// Checks whether the current key is a CTF announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeyCTFToken(const std::string& key) const {
-		return std::find(announcerCTFTokens.begin(), announcerCTFTokens.end(), key) !=
-		       announcerCTFTokens.end();
-	};
+	[[nodiscard]] static bool isKeyCTFToken(const std::string& key)
+	{
+		return std::ranges::find(announcerCTFTokens, key) != announcerCTFTokens.end();
+	}
 
 	/// <summary>
 	/// Checks whether the current key is a Horde announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeyHordeToken(const std::string& key) const
+	[[nodiscard]] static bool isKeyHordeToken(const std::string& key)
 	{
-		return std::find(announcerHordeTokens.begin(), announcerHordeTokens.end(), key) !=
-		       announcerHordeTokens.end();
-	};
+		return std::ranges::find(announcerHordeTokens, key) != announcerHordeTokens.end();
+	}
 
 	/// <summary>
 	/// Checks whether the current key is a Survival announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeySurvivalToken(const std::string& key) const
+	[[nodiscard]] static bool isKeySurvivalToken(const std::string& key)
 	{
-		return std::find(announcerSurvivalTokens.begin(), announcerSurvivalTokens.end(),
-		                 key) != announcerSurvivalTokens.end();
-	};
+		return std::ranges::find(announcerSurvivalTokens, key) != announcerSurvivalTokens.end();
+	}
 
 	/// <summary>
 	/// Checks whether the current key is a countdown announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeyCountdownToken(const std::string& key) const
+	[[nodiscard]] static bool isKeyCountdownToken(const std::string& key)
 	{
-		return std::find(announcerCountdownTokens.begin(), announcerCountdownTokens.end(),
-		                 key) != announcerCountdownTokens.end();
-	};
+		return std::ranges::find(announcerCountdownTokens, key) != announcerCountdownTokens.end();
+	}
 
 	/// <summary>
 	/// Checks whether the current key is a time warning announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeyTimeWarningsToken(const std::string& key) const
+	[[nodiscard]] static bool isKeyTimeWarningsToken(const std::string& key)
 	{
-		return std::find(announcerTimeWarningsTokens.begin(),
-		                 announcerTimeWarningsTokens.end(),
-		                 key) != announcerTimeWarningsTokens.end();
-	};
+		return std::ranges::find(announcerTimeWarningsTokens, key) != announcerTimeWarningsTokens.end();
+	}
 
 	/// <summary>
 	/// Checks whether the current key is a first blood announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeyFirstBloodToken(const std::string& key) const
+	[[nodiscard]] static bool isKeyFirstBloodToken(const std::string& key)
 	{
-		return std::find(announcerFirstBloodTokens.begin(),
-		                 announcerFirstBloodTokens.end(),
-		                 key) != announcerFirstBloodTokens.end();
-	};
+		return std::ranges::find(announcerFirstBloodTokens, key) != announcerFirstBloodTokens.end();
+	}
 
 	/// <summary>
 	/// Checks whether the current key is a frag tracking announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeyFragTrackingToken(const std::string& key) const
+	[[nodiscard]] static bool isKeyFragTrackingToken(const std::string& key)
 	{
-		return std::find(announcerFragTrackingTokens.begin(),
-		                 announcerFragTrackingTokens.end(),
-		                 key) != announcerFragTrackingTokens.end();
-	};
+		return std::ranges::find(announcerFragTrackingTokens, key) != announcerFragTrackingTokens.end();
+	}
 
 	/// <summary>
 	/// Checks whether the current key is a lead tracking announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeyLeadTrackingToken(const std::string& key) const
+	[[nodiscard]] static bool isKeyLeadTrackingToken(const std::string& key)
 	{
-		return std::find(announcerLeadTrackingTokens.begin(),
-		                 announcerLeadTrackingTokens.end(),
-		                 key) != announcerLeadTrackingTokens.end();
-	};
+		return std::ranges::find(announcerLeadTrackingTokens, key) != announcerLeadTrackingTokens.end();
+	}
 
 	/// <summary>
 	/// Checks whether the current key is a result tracking announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeyResultTrackingToken(const std::string& key) const
+	[[nodiscard]] static bool isKeyResultTrackingToken(const std::string& key)
 	{
-		return std::find(announcerResultTrackingTokens.begin(),
-		                 announcerResultTrackingTokens.end(),
-		                 key) != announcerResultTrackingTokens.end();
-	};
+		return std::ranges::find(announcerResultTrackingTokens, key) != announcerResultTrackingTokens.end();
+	}
 
 	/// <summary>
 	/// Checks whether the current key is a spree announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeySpreeToken(const std::string& key) const { return key.find("spree") == 0; };
+	[[nodiscard]] static bool isKeySpreeToken(const std::string& key) { return key.starts_with("spree"); }
 
 	/// <summary>
 	/// Checks whether the current key is a multi kill announcer sound token.
 	/// <param name="key">The token to check.</param>
 	/// </summary>
-	bool isKeyMultiToken(const std::string& key) const { return key.find("multi") == 0; };
+	[[nodiscard]] static bool isKeyMultiToken(const std::string& key) { return key.starts_with("multi"); }
 
 private:
 	/// <summary>
 	/// Contains every named token for announcer packs.
 	/// Must run namedTokenExists() to fill this vector.
 	/// </summary>
-	std::vector<std::string> allTokens;
+	std::vector<std::string_view> allTokens;
 	/// <summary>
 	/// Has the 3-frag warning been announced already?
 	/// </summary>
@@ -888,12 +867,12 @@ private:
 	/// <summary>
 	/// The currently loaded and used announcer.
 	/// </summary>
-	Announcer_s loadedAnnouncer = Announcer_s();
+	Announcer_s loadedAnnouncer;
 
 	/// <summary>
 	/// An empty metadata structure.
 	/// </summary>
-	AnnouncerMetaData_s emptyMetadata = AnnouncerMetaData_s();
+	AnnouncerMetaData_s emptyMetadata;
 };
 
 // In-game announcer logic functions.

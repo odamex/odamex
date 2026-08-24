@@ -24,44 +24,70 @@
 
 #pragma once
 
+#include <array>
+
+#include "doomtype.h"
+
 class NetGraph
 {
 public:
 	NetGraph(int x, int y);
-		
+
 	void setMisprediction(bool val);
 	void setWorldIndexSync(int val);
 	void setInterpolation(int val);
 	void addTrafficIn(int val);
 	void addTrafficOut(int val);
 	void addPacketIn();
+	void setReliableSendDepth(int val);
+	void setReliableNonContiguousRetransmits(int val);
+	void addServerSideMetrics(int reliablePacketsInFlightCount, int throttle);
+
+	void start(dtime_t now);
 	void draw();
 
 private:
-	void drawWorldIndexSync(int x, int y);
-	void drawMispredictions(int x, int y);
-	void drawTrafficIn(int x, int y);
-	void drawTrafficOut(int x, int y);
-	void drawPackets(int x, int y);
+	static constexpr size_t MAX_HISTORY_TICS = 64;
 
 	static constexpr int BAR_HEIGHT_WORLD_INDEX = 4;
 	static constexpr int BAR_WIDTH_WORLD_INDEX = 2;
-	
+
 	static constexpr int BAR_HEIGHT_MISPREDICTION = 2;
 	static constexpr int BAR_WIDTH_MISPREDICTION = 2;
 
 	static constexpr int MAX_WORLD_INDEX = 6;
 	static constexpr int MIN_WORLD_INDEX = -6;
-	
-	static constexpr size_t MAX_HISTORY_TICS = 64;
+
+	void drawWorldIndexSync(int x, int y);
+	void drawMispredictions(int x, int y);
+	void drawTrafficIn(int x, int y);
+	void drawTrafficOut(int x, int y);
+	void drawPackets(int x, int y);
+	void drawQueueDepth(int x, int y, const std::array<int, NetGraph::MAX_HISTORY_TICS>& data, int color);
+	void drawReliableSendDepth(int x, int y);
+	void drawServerQueueDepth(int x, int y);
+	void drawServerThrottle(int x, int y);
+
+	int accumulateSamplesOverDuration(const std::array<int, NetGraph::MAX_HISTORY_TICS>& data, dtime_t duration);
+
+	void InvalidateLatestSampleIfMissedPacket(std::array<int, NetGraph::MAX_HISTORY_TICS>& data);
+	std::string BlankIfNegative(int value);
 
 	int		mX;
 	int		mY;
 
-	bool	mMisprediction[NetGraph::MAX_HISTORY_TICS];
-	int		mWorldIndexSync[NetGraph::MAX_HISTORY_TICS];
-	int		mInterpolation;
-	int		mTrafficIn[NetGraph::MAX_HISTORY_TICS];
-	int		mTrafficOut[NetGraph::MAX_HISTORY_TICS];
-	int		mPacketsIn[NetGraph::MAX_HISTORY_TICS];
+	std::array<bool,    NetGraph::MAX_HISTORY_TICS> mMisprediction;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mWorldIndexSync;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mTrafficIn;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mTrafficOut;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mPacketsIn;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mServerQueueDepth;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mServerMetricsLastUpdate;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mReliableSendDepth;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mReliableNonContiguousRetransmits;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mThrottle;
+	std::array<dtime_t, NetGraph::MAX_HISTORY_TICS> mTimeAtTic;
+
+	dtime_t mNow;
+	int     mInterpolation;
 };

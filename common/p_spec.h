@@ -104,53 +104,14 @@ enum ceilingchange_e
 	CChgTyp,
 };
 
-extern std::list<movingsector_t> movingsectors;
-extern std::list<sector_t*> specialdoors;
-extern bool s_SpecialFromServer;
-
-#define IgnoreSpecial !serverside && !s_SpecialFromServer
-#define NO_TEXTURE 0;
-
-#define CEILSPEED FRACUNIT
-
-std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
-void P_AddMovingCeiling(sector_t *sector);
-void P_AddMovingFloor(sector_t *sector);
-void P_RemoveMovingCeiling(sector_t *sector);
-void P_RemoveMovingFloor(sector_t *sector);
-bool P_MovingCeilingCompleted(sector_t *sector);
-bool P_MovingFloorCompleted(sector_t *sector);
-bool P_HandleSpecialRepeat(line_t* line);
-void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod = 0);
-void P_ApplySectorDamageNoRandom(player_t& player, int damage, int mod = 0);
-void P_ApplySectorDamageNoWait(player_t& player, int damage, int mod = 0);
-void P_ApplySectorDamageEndLevel(player_t& player);
-void P_CollectSecretCommon(sector_t& sector, player_t& player);
-int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
-int P_FindLineFromTag(int tag, int start);
-bool P_FloorActive(const sector_t* sec);
-bool P_LightingActive(const sector_t* sec);
-bool P_CeilingActive(const sector_t* sec);
-fixed_t P_ArgToSpeed(byte arg);
-bool P_ArgToCrushType(byte arg);
-void P_ResetSectorSpecial(sector_t* sector);
-void P_CopySectorSpecial(sector_t* dest, sector_t* source);
-byte P_ArgToChange(byte arg);
-int P_ArgToCrush(byte arg);
-int P_FindSectorFromLineTag(const line_t* line, int start);
-int P_ArgToCrushMode(byte arg, bool slowdown);
-fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f);
-bool P_CheckTag(line_t* line);
-void P_TransferSectorFlags(unsigned int*, unsigned int);
-
 //jff 2/23/98 identify the special classes that can share sectors
 
-typedef enum
+enum special_e
 {
 	floor_special,
 	ceiling_special,
 	lighting_special
-} special_e;
+};
 
 enum crushmode_e
 {
@@ -205,6 +166,45 @@ struct newspecial_s
 	int damageleakrate;
 };
 
+extern std::list<movingsector_t> movingsectors;
+extern std::list<sector_t*> specialdoors;
+extern bool s_SpecialFromServer;
+
+#define IgnoreSpecial !serverside && !s_SpecialFromServer
+#define NO_TEXTURE 0;
+
+#define CEILSPEED FRACUNIT
+
+std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
+void P_AddMovingCeiling(sector_t *sector);
+void P_AddMovingFloor(sector_t *sector);
+void P_RemoveMovingCeiling(sector_t *sector);
+void P_RemoveMovingFloor(sector_t *sector);
+bool P_MovingCeilingCompleted(sector_t *sector);
+bool P_MovingFloorCompleted(sector_t *sector);
+bool P_HandleSpecialRepeat(line_t* line);
+void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod = 0);
+void P_ApplySectorDamageNoRandom(player_t& player, int damage, int mod = 0);
+void P_ApplySectorDamageNoWait(player_t& player, int damage, int mod = 0);
+void P_ApplySectorDamageEndLevel(player_t& player);
+void P_CollectSecretCommon(sector_t& sector, player_t& player);
+int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
+int P_FindLineFromTag(int tag, int start);
+bool P_FloorActive(const sector_t* sec);
+bool P_LightingActive(const sector_t* sec);
+bool P_CeilingActive(const sector_t* sec);
+fixed_t P_ArgToSpeed(byte arg);
+bool P_ArgToCrushType(byte arg);
+void P_ResetSectorSpecial(sector_t* sector);
+void P_CopySectorSpecial(sector_t* dest, sector_t* source);
+byte P_ArgToChange(byte arg);
+int P_ArgToCrush(byte arg);
+int P_FindSectorFromLineTag(const line_t* line, int start);
+crushmode_e P_ArgToCrushMode(byte arg, bool slowdown);
+fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f);
+bool P_CheckTag(line_t* line);
+void P_TransferSectorFlags(unsigned int*, unsigned int);
+
 #define FLOORSPEED FRACUNIT
 
 bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote);
@@ -215,18 +215,23 @@ class DScroller : public DThinker
 {
 	DECLARE_SERIAL (DScroller, DThinker)
 public:
-	enum EScrollType
+	enum EScrollType : uint8_t
 	{
 		sc_side,
 		sc_floor,
 		sc_ceiling,
 		sc_carry,
-		sc_carry_ceiling	// killough 4/11/98: carry objects hanging on ceilings
+		sc_carry_ceiling    // killough 4/11/98: carry objects hanging on ceilings
 
 	};
 
-	DScroller(EScrollType type, fixed_t dx, fixed_t dy, int control, int affectee, int accel);
-	DScroller(fixed_t dx, fixed_t dy, const line_t *l, int control, int accel);
+	DScroller (EScrollType type, fixed_t dx, fixed_t dy, int control, int affectee, int accel);
+	DScroller (fixed_t dx, fixed_t dy, const line_t *l, int control, int accel);
+	virtual ~DScroller ();
+
+	// All live scrollers, so per-tic code can iterate them without walking
+	// every thinker in the level.
+	static const std::vector<DScroller*>& GetScrollers() { return s_scrollers; }
 
 	void RunThink() override;
 
@@ -254,17 +259,10 @@ protected:
 	int         m_Accel      = 0;       // Whether it's accelerative
 
 private:
-	DScroller() = default;
-};
+	DScroller();
 
-inline FArchive &operator<< (FArchive &arc, DScroller::EScrollType type)
-{
-	return arc << (byte)type;
-}
-inline FArchive &operator>> (FArchive &arc, DScroller::EScrollType &out)
-{
-	byte in; arc >> in; out = (DScroller::EScrollType)in; return arc;
-}
+	static std::vector<DScroller*> s_scrollers;
+};
 
 inline bool P_WallScrollType(DScroller::EScrollType type)
 {
@@ -302,7 +300,7 @@ class DPusher : public DThinker
 {
 	DECLARE_SERIAL (DPusher, DThinker)
 public:
-	enum EPusher
+	enum EPusher : uint8_t
 	{
 		p_push,
 		p_pull,
@@ -340,17 +338,8 @@ protected:
 	int m_Y         = 0;          // Y of point source if point pusher
 	int m_Affectee  = 0;          // Number of affected sector
 
-	friend bool PIT_PushThing (AActor *thing);
+	friend bool PIT_PushThing (AActor& thing, DPusher* tmpusher);
 };
-
-inline FArchive &operator<< (FArchive &arc, DPusher::EPusher type)
-{
-	return arc << (byte)type;
-}
-inline FArchive &operator>> (FArchive &arc, DPusher::EPusher &out)
-{
-	byte in; arc >> in; out = (DPusher::EPusher)in; return arc;
-}
 
 bool P_CheckKeys (player_t *p, card_t lock, bool remote);
 
@@ -632,7 +621,7 @@ class DPlat : public DMovingFloor
 {
 	DECLARE_SERIAL (DPlat, DMovingFloor);
 public:
-	enum EPlatState
+	enum EPlatState : uint8_t
 	{
 		init = 0,
 		up,
@@ -646,7 +635,7 @@ public:
 		state_size
 	};
 
-	enum EPlatType
+	enum EPlatType : uint8_t
 	{
 		perpetualRaise,
 		downWaitUpStay,
@@ -673,8 +662,8 @@ public:
 
 	void RunThink () override;
 
-	void SetState(byte state, int count) { m_Status = (EPlatState)state; m_Count = count; }
-	void GetState(byte &state, int &count) { state = (byte)m_Status; count = m_Count; }
+	void SetState(byte state, int count) { m_Status = static_cast<EPlatState>(state); m_Count = count; }
+	void GetState(byte &state, int &count) { state = static_cast<byte>(m_Status); count = m_Count; }
 
 	explicit DPlat(sector_t *sector);
 	DPlat(sector_t *sector, DPlat::EPlatType type, fixed_t height, int speed, int delay, fixed_t lip);
@@ -705,29 +694,12 @@ protected:
 private:
 	DPlat() = default;
 
-	friend bool	EV_DoPlat (int tag, line_t *line, EPlatType type,
-						   fixed_t height, int speed, int delay, fixed_t lip, int change);
+	friend bool EV_DoPlat (int tag, line_t *line, EPlatType type,
+                           fixed_t height, int speed, int delay, fixed_t lip, int change);
 	friend void EV_StopPlat (int tag);
 	friend void P_ActivateInStasis (int tag);
 	friend bool EV_DoGenLift(line_t* line);
 };
-
-inline FArchive &operator<< (FArchive &arc, DPlat::EPlatType type)
-{
-	return arc << (byte)type;
-}
-inline FArchive &operator>> (FArchive &arc, DPlat::EPlatType &out)
-{
-	byte in; arc >> in; out = (DPlat::EPlatType)in; return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DPlat::EPlatState state)
-{
-	return arc << (byte)state;
-}
-inline FArchive &operator>> (FArchive &arc, DPlat::EPlatState &out)
-{
-	byte in; arc >> in; out = (DPlat::EPlatState)in; return arc;
-}
 
 //
 // [RH]
@@ -738,7 +710,7 @@ class DPillar : public DMover
 {
 	DECLARE_SERIAL (DPillar, DMover)
 public:
-	enum EPillarState
+	enum EPillarState : uint8_t
 	{
 		init = 0,
 		finished,
@@ -746,7 +718,7 @@ public:
 		state_size
 	};
 
-	enum EPillar
+	enum EPillar : uint8_t
 	{
 		pillarBuild,
 		pillarOpen
@@ -776,23 +748,6 @@ public:
 	EPillarState m_Status   = init;
 };
 
-inline FArchive &operator<< (FArchive &arc, DPillar::EPillar type)
-{
-	return arc << (byte)type;
-}
-inline FArchive &operator>> (FArchive &arc, DPillar::EPillar &out)
-{
-	byte in; arc >> in; out = (DPillar::EPillar)in; return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DPillar::EPillarState state)
-{
-	return arc << (byte)state;
-}
-inline FArchive &operator>> (FArchive &arc, DPillar::EPillarState &out)
-{
-	byte in; arc >> in; out = (DPillar::EPillarState)in; return arc;
-}
-
 bool EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 				  fixed_t height2, bool crush);
 void P_SpawnDoorCloseIn30 (sector_t *sec);
@@ -805,7 +760,7 @@ class DDoor : public DMovingCeiling
 {
 	DECLARE_SERIAL (DDoor, DMovingCeiling)
 public:
-	enum EVlDoor
+	enum EVlDoor : uint8_t
 	{
 		doorClose,
 		doorOpen,
@@ -830,7 +785,7 @@ public:
 		genBlazeCdO,
 	};
 
-	enum EDoorState
+	enum EDoorState : uint8_t
 	{
 		init = 0,
 		opening,
@@ -844,15 +799,14 @@ public:
 
 	explicit DDoor(sector_t *sector);
 	// Boom Generic Door
-	DDoor(sector_t* sec, line_t* ln, int delay, int time, int trigger,
-	      int speed);
+	DDoor(sector_t* sec, line_t* ln, int delay, int time, int trigger, int speed);
 	// Boom Generic Locked Door
 	DDoor(sector_t* sec, line_t* ln, int kind, int trigger, int speed);
 	// Boom Compatible DDoor
-    DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
+	DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
 	// ZDoom Compatible DDoor
-	DDoor(sector_t* sec, line_t* ln, EVlDoor type, fixed_t speed, int topwait,
-	      byte lighttag, int topcountdown);
+	DDoor(sector_t* sec, line_t* ln, EVlDoor type, fixed_t speed, int topwait, byte lighttag, int topcountdown);
+
 	[[nodiscard]] DDoor* Clone(sector_t* sec) const override;
 
 	friend void P_SetDoorDestroy(DDoor *door);
@@ -889,23 +843,6 @@ private:
 	DDoor() = default;
 };
 
-inline FArchive &operator<< (FArchive &arc, DDoor::EVlDoor type)
-{
-	return arc << (byte)type;
-}
-inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoor &out)
-{
-	byte in; arc >> in; out = (DDoor::EVlDoor)in; return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DDoor::EDoorState state)
-{
-	return arc << (byte)state;
-}
-inline FArchive &operator>> (FArchive &arc, DDoor::EDoorState &out)
-{
-	byte in; arc >> in; out = (DDoor::EDoorState)in; return arc;
-}
-
 //
 // P_CEILNG
 //
@@ -915,7 +852,7 @@ class DCeiling : public DMovingCeiling
 {
 	DECLARE_SERIAL (DCeiling, DMovingCeiling)
 public:
-	enum ECeilingState
+	enum ECeilingState : uint8_t
 	{
 		init = 0,
 		up,
@@ -926,7 +863,7 @@ public:
 		state_size
 	};
 
-	enum ECeiling
+	enum ECeiling : uint8_t
 	{
 		lowerToFloor,
 		raiseToHighest,
@@ -1019,23 +956,6 @@ private:
 	friend bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
 };
 
-inline FArchive &operator<< (FArchive &arc, DCeiling::ECeiling type)
-{
-	return arc << (byte)type;
-}
-inline FArchive &operator>> (FArchive &arc, DCeiling::ECeiling &type)
-{
-	byte in; arc >> in; type = (DCeiling::ECeiling)in; return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DCeiling::ECeilingState state)
-{
-	return arc << (byte)state;
-}
-inline FArchive &operator>> (FArchive &arc, DCeiling::ECeilingState &out)
-{
-	byte in; arc >> in; out = (DCeiling::ECeilingState)in; return arc;
-}
-
 
 //
 // P_FLOOR
@@ -1045,7 +965,7 @@ class DFloor : public DMovingFloor
 {
 	DECLARE_SERIAL (DFloor, DMovingFloor)
 public:
-	enum EFloorState
+	enum EFloorState : uint8_t
 	{
 		init = 0,
 		up,
@@ -1056,7 +976,7 @@ public:
 		state_size
 	};
 
-	enum EFloor
+	enum EFloor : uint8_t
 	{
 		floorLowerToLowest,
 		floorLowerToNearest,
@@ -1162,28 +1082,12 @@ protected:
 	DFloor() = default;
 };
 
-inline FArchive &operator<< (FArchive &arc, DFloor::EFloor type)
-{
-	return arc << (byte)type;
-}
-inline FArchive &operator>> (FArchive &arc, DFloor::EFloor &type)
-{
-	byte in; arc >> in; type = (DFloor::EFloor)in; return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DFloor::EFloorState state)
-{
-	return arc << (byte)state;
-}
-inline FArchive &operator>> (FArchive &arc, DFloor::EFloorState &out)
-{
-	byte in; arc >> in; out = (DFloor::EFloorState)in; return arc;
-}
 
 class DElevator : public DMover
 {
 	DECLARE_SERIAL (DElevator, DMover)
 public:
-	enum EElevatorState
+	enum EElevatorState : uint8_t
 	{
 		init = 0,
 		finished,
@@ -1191,7 +1095,7 @@ public:
 		state_size
 	};
 
-	enum EElevator
+	enum EElevator : uint8_t
 	{
 		elevateUp,
 		elevateDown,
@@ -1225,23 +1129,6 @@ protected:
 private:
 	DElevator() = default;
 };
-
-inline FArchive &operator<< (FArchive &arc, DElevator::EElevator type)
-{
-	return arc << (byte)type;
-}
-inline FArchive &operator>> (FArchive &arc, DElevator::EElevator &out)
-{
-	byte in; arc >> in; out = (DElevator::EElevator)in; return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DElevator::EElevatorState state)
-{
-	return arc << (byte)state;
-}
-inline FArchive &operator>> (FArchive &arc, DElevator::EElevatorState &out)
-{
-	byte in; arc >> in; out = (DElevator::EElevatorState)in; return arc;
-}
 
 // Waggle
 /*
