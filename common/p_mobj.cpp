@@ -1243,16 +1243,41 @@ void AActor::RunThink ()
 
 namespace
 {
-    struct ReferencedMobjIdsType
-    {
-        uint32_t targetId   { 0 };
-        uint32_t goalId     { 0 };
-        uint32_t lastEnemyId{ 0 };
-    };
+	struct ReferencedMobjIdsType
+	{
+		uint32_t targetId   { 0 };
+		uint32_t goalId     { 0 };
+		uint32_t lastEnemyId{ 0 };
+	};
 
-    std::unordered_map<uint32_t, ReferencedMobjIdsType> s_unresolvedIds;
+	std::unordered_map<uint32_t, ReferencedMobjIdsType> s_unresolvedIds;
 }
 
+void P_ResolveMobjToMobjPointers()
+{
+	auto setPointer = [](AActor::AActorPtr& destPtr, uint32_t netId)
+	{
+		if (AActor* other = P_FindThingById(netId))
+		{
+			destPtr = other->ptr();
+		}
+		else
+		{
+			destPtr = AActor::AActorPtr();
+		}
+	};
+
+	for (auto& [actorId, otherIDs] : s_unresolvedIds)
+	{
+		if (AActor* actorPtr = P_FindThingById(actorId))
+		{
+			setPointer(actorPtr->target,    otherIDs.targetId);
+			setPointer(actorPtr->goal,      otherIDs.goalId);
+			setPointer(actorPtr->lastenemy, otherIDs.lastEnemyId);
+		}
+	}
+	s_unresolvedIds.clear();
+}
 
 void AActor::Serialize (FArchive &arc)
 {
@@ -1382,8 +1407,8 @@ void AActor::Serialize (FArchive &arc)
 			>> movedir
 			>> visdir
 			>> movecount
-			>> targetId /*>> target->netid*/
-			>> lastEnemyId /*>> lastenemy->netid*/
+			>> targetId
+			>> lastEnemyId
 			>> reactiontime
 			>> threshold
 			>> playerid
@@ -1396,7 +1421,7 @@ void AActor::Serialize (FArchive &arc)
 			>> args[2]
 			>> args[3]
 			>> args[4]
-			>> goalId /*>> goal->netid*/
+			>> goalId
 			>> translucency
 			>> waterlevel
 			>> gear
