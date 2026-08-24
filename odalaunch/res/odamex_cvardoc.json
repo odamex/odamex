@@ -1677,6 +1677,15 @@
          "type" : "boolean"
       },
       {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Sets the behavior of on-screen prompts of when to name gamepad buttons instead of keyboard keys.\n0 - Follow whichever device was used last\n1 - Mouse input does not switch away from the gamepad\n2 - Always show gamepad keys",
+         "max" : 2,
+         "min" : 0,
+         "name" : "joy_gamepadmode",
+         "type" : "integer"
+      },
+      {
          "default" : 0.0,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "",
