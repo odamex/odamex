@@ -25,6 +25,8 @@
 #pragma once
 
 
+#include <vector>
+
 #include "hashtable.h"
 #include "d_event.h"
 
