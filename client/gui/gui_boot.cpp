@@ -628,13 +628,14 @@ static BootWindow* MakeBootWindow()
 scannedWADs_t GUI_BootWindow()
 {
 	// Scale according to 1600x900.
-	Fl::screen_scale(0, MAX(Fl::h() / 900.0f, Fl::screen_scale(0)));
+	// NOLINTNEXTLINE(readability-magic-numbers)
+	Fl::screen_scale(0, std::max(static_cast<float>(Fl::h()) / 900.0f, Fl::screen_scale(0)));
 
 	// This feature is too clever by half, and in my experience just
 	// deforms the window.
 	Fl::keyboard_screen_scaling(0);
 
-	#ifdef __linux__
+	#if !defined(__APPLE__) && !defined(_WIN32)
 	Fl_Window::default_xclass("net.odamex.Odamex.Client");
 	#endif
 

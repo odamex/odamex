@@ -38,6 +38,7 @@
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
 END_DISABLE_WARNING_GNU
+#include "m_argv.h"
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_ctf.h"
@@ -170,6 +171,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+
+	if (!DefaultsLoaded)
+	{
+		::startupwadstring = wadstr;
+		forcedlastmaps = lastmaps;
+		return;
+	}
+
 	G_LoadWadString(wadstr, "", lastmaps);
 }
 END_COMMAND (wad)
@@ -385,7 +394,7 @@ void G_DoNewGame()
 		if(!(player.ingame()))
 			continue;
 
-		MSG_WriteSVC(player.client.messenger.ReliableBuf(),
+		MSG_WriteSVC(player.client.messenger->ReliableBuf(),
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
 	}
 
@@ -713,7 +722,7 @@ void G_DoResetLevel(bool full_reset)
 			continue;
 
 		client_t* cl = &(player.client);
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), odaproto::svc::ResetMap());
+		MSG_WriteSVC(cl->messenger->ReliableBuf(), odaproto::svc::ResetMap());
 	}
 
 	// Unserialize saved snapshot
@@ -743,8 +752,8 @@ void G_DoResetLevel(bool full_reset)
 	}
 
 	// reset switch activation
-	for (int i = 0; i < numlines; i++)
-		lines[i].switchactive = false;
+	for (auto& line : R_GetLines())
+		line.switchactive = false;
 
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
@@ -889,7 +898,7 @@ void G_DoLoadLevel (int position)
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
 			{
-				MSG_WriteSVC(pit->client.messenger.ReliableBuf(),
+				MSG_WriteSVC(pit->client.messenger->ReliableBuf(),
 				             SVC_PlayerMembers(*it, SVC_PM_READY));
 			}
 		}

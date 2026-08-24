@@ -263,7 +263,7 @@ void OKeyBindings::SetBinds(const OBinding* binds)
 //
 bool C_DoNetDemoKey(const event_t& ev)
 {
-	if (!netdemo.isPlaying() && !netdemo.isPaused())
+	if (not netdemo.isInPlayback())
 		return false;
 
 	const std::string *binding = nullptr;
@@ -300,12 +300,12 @@ bool C_DoSpectatorKey (const event_t& ev)
 	if (G_IsLivesGame())
 	{
 		if (!consoleplayer().spectator && consoleplayer().lives > 0 &&
-		    !netdemo.isPlaying() && !netdemo.isPaused())
+		    !netdemo.isInPlayback())
 		return false;
 	}
 	else
 	{
-		if (!consoleplayer().spectator && !netdemo.isPlaying() && !netdemo.isPaused())
+		if (!consoleplayer().spectator && !netdemo.isInPlayback())
 		return false;
 	}
 
@@ -456,6 +456,51 @@ int OKeyBindings::GetKeysForCommand(const char* cmd, int* first, int* second)
 }
 
 
+namespace
+{
+
+//
+// C_KeyMatchesDevice
+//
+// Keyboard and mouse binds are interchangeable here - a player on either one
+// is not looking for a gamepad prompt.
+//
+bool C_KeyMatchesDevice(int key, keydevice_t device)
+{
+	return (I_GetKeyDevice(key) == KEYDEV_JOYSTICK) == (device == KEYDEV_JOYSTICK);
+}
+
+} // namespace
+
+//
+// OKeyBindings::GetKeysForCommandByLastDevice
+//
+// Returns every key bound to cmd, with the keys belonging to the device the
+// player used last placed first.
+//
+std::vector<int> OKeyBindings::GetKeysForCommandByLastDevice(const char* cmd)
+{
+	const keydevice_t device = I_GetLastInputDevice();
+
+	std::vector<int> keys;
+	std::vector<int> other_keys;
+
+	for (const auto& [key, binding] : Binds)
+	{
+		if (binding.empty() || stricmp(cmd, binding.c_str()) != 0)
+			continue;
+
+		if (C_KeyMatchesDevice(key, device))
+			keys.push_back(key);
+		else
+			other_keys.push_back(key);
+	}
+
+	keys.insert(keys.end(), other_keys.begin(), other_keys.end());
+	return keys;
+}
+
+
 std::string OKeyBindings::GetNameKeys(int first, int second)
 {
 	if (!first && !second)
@@ -526,29 +571,21 @@ const std::string &OKeyBindings::GetBind (int key)
 
 /*
 C_GetKeyStringsFromCommand
-Finds binds from a command and returns it into a std::string .
+Finds binds from a command and returns it into a std::string.
+Prefers the bind on the input device the player used last.
 - If TRUE, second arg returns up to 2 keys. ("x OR y")
 */
 std::string OKeyBindings::GetKeynameFromCommand(const char* cmd, bool bTwoEntries)
 {
-	int first = -1;
-	int second = -1;
+	const std::vector<int> keys = GetKeysForCommandByLastDevice(cmd);
 
-	GetKeysForCommand(cmd, &first, &second);
-
-	if (!first && !second)
+	if (keys.empty())
 		return "<??\?>";
 
 	if (bTwoEntries)
-		return GetNameKeys(first, second);
-	else
-	{
-		if (!first && second)
-			return I_GetKeyName(second);
-		else
-			return I_GetKeyName(first);
-	}
-	return "<??\?>";
+		return GetNameKeys(keys[0], keys.size() > 1 ? keys[1] : 0);
+
+	return I_GetKeyName(keys[0]);
 }
 
 

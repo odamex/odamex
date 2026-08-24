@@ -92,34 +92,34 @@ class OWantFile
 	/**
 	 * @brief Get the original "wanted" path.
 	 */
-	const std::string& getWantedPath() const { return m_wantedpath; }
+	[[nodiscard]] const std::string& getWantedPath() const { return m_wantedpath; }
 
 	/**
 	 * @brief Get the original "wanted" path.
 	 */
-	ofile_t getWantedType() const { return m_wantedtype; }
+	[[nodiscard]] ofile_t getWantedType() const { return m_wantedtype; }
 
 	/**
 	 * @brief Get the assumed hash of the file, or an empty string if there
 	 *        is no hash.
 	 */
-	const OMD5Hash& getWantedMD5() const { return m_wantedMD5; }
+	[[nodiscard]] const OMD5Hash& getWantedMD5() const { return m_wantedMD5; }
 
 	/**
 	 * @brief Get the base filename of the resource, with no directory.
 	 */
-	const std::string& getBasename() const { return m_basename; }
+	[[nodiscard]] const std::string& getBasename() const { return m_basename; }
 
 	/**
 	 * @brief Get the extension of the resource.
 	 */
-	const std::string& getExt() const { return m_extension; }
+	[[nodiscard]] const std::string& getExt() const { return m_extension; }
 
 	static bool make(OWantFile& out, const std::string& file, const ofile_t type);
 	static bool makeWithHash(OWantFile& out, const std::string& file, const ofile_t type,
 	                         const OMD5Hash& hash);
 };
-typedef std::vector<OWantFile> OWantFiles;
+using OWantFiles = std::vector<OWantFile>;
 
 struct fileIdentifier_t;
 

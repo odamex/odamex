@@ -1,3 +1,4 @@
+include(OdamexCvarDoc)
 include(OdamexTargetSettings)
 
 # use unquoted #defines
@@ -38,7 +39,7 @@ endif()
 
 add_executable(odasrv
   ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
-odamex_target_settings(odasrv)
+odamex_target_settings(TARGET odasrv)
 odamex_target_errors(odasrv)
 
 target_include_directories(odasrv PRIVATE src)
@@ -96,6 +97,10 @@ else()
   install(TARGETS odasrv
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     COMPONENT server)
+endif()
+
+if(TARGET odasrv)
+  odamex_cvardoc_refresh(odasrv)
 endif()
 
 # [AM] Not needed right now, but could be in the future...

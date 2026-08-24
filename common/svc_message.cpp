@@ -76,7 +76,7 @@ odaproto::svc::Disconnect SVC_Disconnect(const char* message)
 
 static void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
 {
-	io_msg.set_statenum (psprite.state ? psprite.state->statenum : -1);
+	io_msg.set_statenum (psprite.statenum);
 	io_msg.set_tics     (psprite.tics);
 	io_msg.set_sx       (psprite.sx);
 	io_msg.set_sy       (psprite.sy);
@@ -498,12 +498,29 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		msg.add_args(mo->args[1]);
 	}
 
+	if (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK)
+	{
+		msg.add_args(mo->tid);
+		msg.add_args(mo->args[0]); // boundary flat alpha
+	}
+
+	if (mo->type == MT_SKYVIEWPOINT)
+	{
+		msg.add_args(mo->tid);
+	}
+
+	if (mo->type == MT_SKYPICKER)
+	{
+		msg.add_args(mo->args[0]);
+		msg.add_args(mo->args[1]); // which planes to apply the viewpoint to
+	}
+
 	// denis - check type as that is what the client will be spawning
 	if (mo->flags & MF_MISSILE || mobjinfo[mo->type].flags & MF_MISSILE)
 	{
 		msg.set_target_netid(mo->target ? mo->target->netid : 0);
 	}
-	else if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
+	else if (mo->flags & (MF_AMBUSH | MF_DROPPED | MF_FRIEND))
 	{
 		spawnFlags |= SVC_SM_FLAGS;
 		cur->set_flags(mo->flags);
@@ -513,6 +530,15 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	{
 		spawnFlags |= SVC_SM_FLAGS2;
 		cur->set_flags2(mo->flags2);
+	}
+
+	// Who a friendly belongs to decides who it gets along with, and the client
+	// has to agree with us about that or it clips things we let through.
+	if (mo->flags & MF_FRIEND)
+	{
+		spawnFlags |= SVC_SM_FRIEND;
+		cur->set_friend_playerid(mo->friend_playerid);
+		cur->set_friend_teamid(mo->friend_teamid);
 	}
 
 	if (mo->oflags)
@@ -833,6 +859,10 @@ odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corps
 	cpsmom->set_x(corpse->momx);
 	cpsmom->set_y(corpse->momy);
 	cpsmom->set_z(corpse->momz);
+
+	cps->set_flags(corpse->flags);
+	cps->set_friend_playerid(corpse->friend_playerid);
+	cps->set_friend_teamid(corpse->friend_teamid);
 
 	msg.set_source_netid(source ? source->netid : 0);
 
@@ -1579,7 +1609,7 @@ odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, const lin
 odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
                                                        const AActor* activator,
                                                        const char* print,
-                                                       const std::vector<int>& args)
+                                                       const std::span<const int> args)
 {
 	odaproto::svc::ExecuteACSSpecial msg;
 

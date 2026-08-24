@@ -219,7 +219,7 @@ void upnp_add_redir (const char * addr, int port, const char* protocol)
 	}
 
 	const int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-		port_str.c_str(), port_str.c_str(), addr, sv_upnp_description.cstring(), protocol, NULL, 0);
+		port_str.c_str(), port_str.c_str(), addr, sv_upnp_description.cstring(), protocol, nullptr, nullptr);
 
 	if (r != 0)
 	{
@@ -246,7 +246,7 @@ void upnp_rem_redir (int port, const char* protocol)
 
 	const std::string port_str = fmt::format("{}", port);
 	const int r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
-		port_str.c_str(), protocol, 0);
+		port_str.c_str(), protocol, nullptr);
 
 	if (r != 0)
 	{
@@ -681,7 +681,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 			continue;
 
 		// Select the correct buffer.
-		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger.ReliableBuf().Obtain() : player.client.messenger.NetBuf().Obtain();
+		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger->ReliableBuf().Obtain() : player.client.messenger->NetBuf().Obtain();
 
 		b.WriteUnVarint(header);
 		b.WriteUnVarint(buffer.size());

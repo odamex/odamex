@@ -70,16 +70,6 @@ enum clientBuf_e
 };
 
 /**
- * @brief Compression is enabled for this packet
- */
-#define SVF_COMPRESSED BIT(0)
-
-/**
- * @brief Unused flags - if any of these are set, we have a problem.
- */
-#define SVF_UNUSED_MASK BIT_MASK(1, 7)
-
-/**
  * @brief svc_*: Transmit all possible data.
  */
 #define SVC_MSG_ALL BIT_MASK(0, 7)
@@ -133,6 +123,11 @@ enum clientBuf_e
  * @brief svc_spawnmobj: ZDoom/Heretic flags.
  */
 #define SVC_SM_FLAGS2 BIT(3)
+
+/**
+ * @brief svc_spawnmobj: Which player or team a friendly belongs to.
+ */
+#define SVC_SM_FRIEND BIT(4)
 
 /**
  * @brief svc_updatemobj: Supply mobj position and random index.
@@ -365,10 +360,10 @@ struct netadr_t
 	uint16_t            pad  = 0;
 
 	[[nodiscard]]
-    constexpr auto operator<=>(const netadr_t& other) const
-    {
-        return std::tie(ip, port) <=> std::tie(other.ip, other.port);
-    }
+	constexpr auto operator<=>(const netadr_t& other) const
+	{
+		return std::tie(ip, port) <=> std::tie(other.ip, other.port);
+	}
 };
 
 extern  netadr_t  net_from;  // address of who sent the packet
@@ -387,13 +382,13 @@ public:
 	size_t            writepos  { 0 };
 	bool              overflowed{ false };  // set to true if the buffer size failed
 
-    // Buffer seeking flags
-    typedef enum
-    {
-         BT_START   // From beginning
-        ,BT_CURRENT // From current position
-        ,BT_END     // From end
-    } seek_loc_t;
+	// Buffer seeking flags
+	enum seek_loc_t
+	{
+		BT_START,   // From beginning
+		BT_CURRENT, // From current position
+		BT_END,     // From end
+	};
 
 
 	explicit buf_t(size_t len) :
@@ -657,60 +652,60 @@ public:
 		return reinterpret_cast<const char*>(begin);
 	}
 
-    size_t SeekRead (const size_t &offset, const seek_loc_t &loc)
-    {
-        return Seek(offset, loc, readpos);
-    }
+	size_t SeekRead (const size_t &offset, const seek_loc_t &loc)
+	{
+		return Seek(offset, loc, readpos);
+	}
 
-    size_t SeekWrite (const size_t &offset, const seek_loc_t &loc)
-    {
-        return Seek(offset, loc, writepos);
-    }
+	size_t SeekWrite (const size_t &offset, const seek_loc_t &loc)
+	{
+		return Seek(offset, loc, writepos);
+	}
 
-    size_t Seek (const size_t &offset, const seek_loc_t &loc, size_t& position)
-    {
-        switch (loc)
-        {
-            case BT_START:
-            {
-                if (offset > cursize)
-                {
-                    overflowed = true;
-                    return 0;
-                }
+	size_t Seek (const size_t &offset, const seek_loc_t &loc, size_t& position)
+	{
+		switch (loc)
+		{
+			case BT_START:
+			{
+				if (offset > cursize)
+				{
+					overflowed = true;
+					return 0;
+				}
 
-                position = offset;
-            }
-            break;
-
-            case BT_CURRENT:
-            {
-                if (position+offset > cursize)
-                {
-                    overflowed = true;
-                    return 0;
-                }
-
-                position += offset;
-            }
+				position = offset;
+			}
 			break;
 
-            case BT_END:
-            {
-                if (offset > position)
-                {
-                    // lies, an underflow occured
-                    overflowed = true;
-                    return 0;
-                }
+			case BT_CURRENT:
+			{
+				if (position+offset > cursize)
+				{
+					overflowed = true;
+					return 0;
+				}
 
-                position -= offset;
-            }
+				position += offset;
+			}
 			break;
-        }
 
-        return position;
-    }
+			case BT_END:
+			{
+				if (offset > position)
+				{
+					// lies, an underflow occured
+					overflowed = true;
+					return 0;
+				}
+
+				position -= offset;
+			}
+			break;
+		}
+
+		return position;
+	}
 
 	size_t BytesLeftToRead() const
 	{
@@ -767,7 +762,7 @@ public:
 
 	void resize(size_t len, bool clearbuf = true)
 	{
-        data.resize(len);
+		data.resize(len);
 
 		if (!clearbuf)
 		{
@@ -796,12 +791,12 @@ public:
 		}
 
 		byte *ret = &data[writepos];
-        writepos += length;
+		writepos += length;
 
-        if (writepos > cursize)
-        {
-            cursize = writepos;
-        }
+		if (writepos > cursize)
+		{
+			cursize = writepos;
+		}
 
 		return ret;
 	}
@@ -871,15 +866,15 @@ BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 
 class MiniLzo
 {
-    public:
-        bool Decompress(buf_t& io_buf);
-        bool Compress(buf_t &buf, size_t start_offset, size_t write_gap);
+	public:
+		bool Decompress(buf_t& io_buf);
+		bool Compress(buf_t &buf, size_t start_offset, size_t write_gap);
 
-    protected:
-        buf_t       m_compressionBuffer   { MAX_UDP_PACKET };
-        buf_t       m_decompressionBuffer { MAX_UDP_PACKET };
+	protected:
+		buf_t       m_compressionBuffer   { MAX_UDP_PACKET };
+		buf_t       m_decompressionBuffer { MAX_UDP_PACKET };
 		BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
-        lzo_byte    m_wrkmem[LZO1X_1_MEM_COMPRESS];
+		lzo_byte    m_wrkmem[LZO1X_1_MEM_COMPRESS];
 		END_DISABLE_WARNING_GNU
 };
 

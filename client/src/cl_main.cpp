@@ -69,6 +69,7 @@
 #include "g_gametype.h"
 #include "cl_parse.h"
 #include "cl_replay.h"
+#include "cl_freecam.h"
 
 #include "m_consolecommandstream.h"
 
@@ -77,7 +78,10 @@
 #include "PlayerStateRoller.h"
 
 #include <bitset>
+#include <chrono>
+#include <memory_resource>
 #include <ranges>
+#include <regex>
 #include <set>
 #include <sstream>
 
@@ -126,8 +130,12 @@ netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
 extern NetGraph netgraph;
+namespace
+{
+	auto pool { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
+}
+OdaMessenger messenger { pool };
 
-OdaMessenger messenger;
 static std::unique_ptr<CanarySocketClient> s_canary;
 
 PlayerStateRoller rollerState{};
@@ -421,7 +429,7 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
 
-	if (netdemo.isPlaying() || netdemo.isPaused())
+	if (netdemo.isInPlayback())
 		netdemo.stopPlaying();
 
 	demoplayback = false;
@@ -577,7 +585,8 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 
 	connected = false;
 
-	messenger = OdaMessenger();
+	messenger = OdaMessenger{ pool };
+
 	P_ClearAllNetIds();
 	s_canary.reset();
 	gameaction = ga_fullconsole;
@@ -633,17 +642,21 @@ void CL_CheckDisplayPlayer(void)
 	if (!validplayer(displayplayer()) || !displayplayer().mo)
 		newid = consoleplayer_id;
 
-	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isPlaying() || netdemo.isPaused()))
+	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isInPlayback()))
 		newid = consoleplayer_id;
 
-	if (displayplayer().spectator)
+	if (displayplayer().spectator && not displayplayer().isFreecam)
 		newid = consoleplayer_id;
 
 	if (newid)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Spy(newid));
+		// server doesnt know about clientside freecam, dont tell it
+		if (not displayplayer().isFreecam && newid != freecamplayer_id)
+		{
+			MSG_WriteSVC(messenger.ReliableBuf(), CLC_Spy(newid));
+		}
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility
@@ -707,7 +720,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 		player_t& player = *it;
 
 		// spectators only cycle between active players
-		if (P_CanSpy(self, player, demoplayback || netdemo.isPlaying() || netdemo.isPaused()))
+		if (P_CanSpy(self, player, demoplayback || netdemo.isInPlayback()))
 		{
 			displayplayer_id = player.id;
 			CL_CheckDisplayPlayer();
@@ -776,11 +789,14 @@ void CL_StepTics(unsigned int count)
 
 		G_Ticker ();
 
-		if (!netdemo.isPaused())
-			gametic++;
-
-		if (netdemo.isPlaying() && !netdemo.isPaused())
-			netdemo.ticker();
+		if (netdemo.ticker())
+		{
+			gametic = netdemo.getGametic();
+		}
+		else
+		{
+			++gametic;
+		}
 	}
 
 	DObject::EndFrame ();
@@ -1211,7 +1227,7 @@ BEGIN_COMMAND (spy)
 }
 END_COMMAND (spy)
 
-void STACK_ARGS call_terms (void);
+void call_terms();
 
 void CL_QuitCommand()
 {
@@ -1360,7 +1376,7 @@ END_COMMAND(netplay)
 
 BEGIN_COMMAND(netdemostats)
 {
-	if (!netdemo.isPlaying() && !netdemo.isPaused())
+	if (not netdemo.isInPlayback())
 		return;
 
 	std::vector<int> maptimes = netdemo.getMapChangeTimes();
@@ -1394,7 +1410,7 @@ BEGIN_COMMAND(netrew)
 {
 	if (netdemo.isPlaying())
 		netdemo.prevSnapshot();
-	else if (netdemo.isPaused());
+	else if (netdemo.isPaused())
 		netdemo.prevTic();
 }
 END_COMMAND(netrew)
@@ -1412,6 +1428,185 @@ BEGIN_COMMAND(netprevmap)
 		netdemo.prevMap();
 }
 END_COMMAND(netprevmap)
+
+enum class SeekKindEnum
+{
+	NONE,
+	ABSOLUTE_NETDEMOTIC,
+	RELATIVE_NETDEMOTIC,
+	ABSOLUTE_GAMETIC,
+};
+
+struct SeekParseResult
+{
+	SeekKindEnum kind    { SeekKindEnum::NONE };
+	int          tics    { 0 };
+	bool         isExact { true };
+};
+
+template <typename DurationType>
+auto ParseTimeAs(const char* str, bool isNegative)
+{
+	const static std::regex regexHMS { "(\\d+):(\\d+):(\\d+)" };
+	const static std::regex regexMS  { "(\\d+):(\\d+)" };
+
+	std::tm dateTime {};
+	std::cmatch match;
+	if (std::regex_match(str, match, regexHMS))
+	{
+		std::from_chars(match[1].first, match[1].second, dateTime.tm_hour);
+		std::from_chars(match[2].first, match[2].second, dateTime.tm_min);
+		std::from_chars(match[3].first, match[3].second, dateTime.tm_sec);
+	}
+	else if (std::regex_match(str, match, regexMS))
+	{
+		std::from_chars(match[1].first, match[1].second, dateTime.tm_min);
+		std::from_chars(match[2].first, match[2].second, dateTime.tm_sec);
+	}
+
+	const auto ticks = (DurationType(std::chrono::hours   { dateTime.tm_hour }) +
+	                    DurationType(std::chrono::minutes { dateTime.tm_min  }) +
+	                    DurationType(std::chrono::seconds { dateTime.tm_sec  })).count();
+
+	return isNegative ? -ticks : ticks;
+}
+
+SeekParseResult ParseSeekValue(const char* valueStr)
+{
+	SeekParseResult result;
+
+	if (not valueStr)
+	{
+		return result;
+	}
+
+	switch (*valueStr)
+	{
+		case 'g':       [[ fallthrough ]];
+		case 'G':
+			result.kind = SeekKindEnum::ABSOLUTE_GAMETIC;
+			++valueStr;
+			break;
+
+		case '+':       [[ fallthrough ]];
+		case '-':
+			result.kind = SeekKindEnum::RELATIVE_NETDEMOTIC;
+			break;
+
+		default:
+			result.kind = SeekKindEnum::ABSOLUTE_NETDEMOTIC;
+			break;
+	}
+
+	char*      firstUnparsedPtr {nullptr};
+	const long intValue = std::strtol(valueStr, & firstUnparsedPtr, 0);
+
+	if (intValue and firstUnparsedPtr and *firstUnparsedPtr != ':')
+	{
+		result.tics = (result.kind == SeekKindEnum::ABSOLUTE_GAMETIC ? std::abs(intValue) : intValue);
+		return result;
+	}
+
+	// If we already determined that we have a relative indicator, record the sign
+	// and then skip it before trying to parse a time value.
+	const bool isNegative = *valueStr == '-';
+
+	if (result.kind == SeekKindEnum::RELATIVE_NETDEMOTIC)
+	{
+		++valueStr;
+	}
+
+	using TicsType = std::chrono::duration<int,
+	                                       std::ratio<1, TICRATE>>;
+
+	if (int timeParseResult = ParseTimeAs<TicsType>(valueStr, isNegative))
+	{
+		result.tics = timeParseResult;
+	}
+	// Okay, direct-to-tics didn't work.  Try milliseconds and flooring it to tics.
+	else if (auto timeParseResult = ParseTimeAs<std::chrono::milliseconds>(valueStr, isNegative))
+	{
+		result.tics    = (timeParseResult * TICRATE) / 1000;
+		result.isExact = false;
+	}
+	else
+	{
+		result.kind = SeekKindEnum::NONE;
+	}
+	return result;
+}
+
+BEGIN_COMMAND(netseek)
+{
+	if (argc <= 1)
+	{
+		PrintFmt(PRINT_HIGH, "Absolute seek:\n"
+		                     "    netseek  <netdemo tic number>\n"
+		                     "    netseek g<recorded gametic number>\n"
+		                     "    netseek  <[hh:]mm:ss>\n"
+		                     "Relative seek forward:\n"
+		                     "    netseek +<tics>\n"
+		                     "    netseek +<[hh:]mm:ss>\n"
+		                     "Relative seek backward:\n"
+		                     "    netseek -<tics>\n"
+		                     "    netseek -<[hh:]mm:ss>\n"
+		        );
+		return;
+	}
+	if (not netdemo.isInPlayback())
+	{
+		PrintFmt(PRINT_WARNING, "Cannot seek because a netdemo isn't playing.  Use the 'netplay' command to start.\n");
+		return;
+	}
+
+	const SeekParseResult parseResult = ParseSeekValue(argv[1]);
+
+	DPrintFmt("Seek command: {} tics: {}\n",
+	          parseResult.kind == SeekKindEnum::NONE ? "NONE" :
+	          parseResult.kind == SeekKindEnum::ABSOLUTE_NETDEMOTIC ? "ABSOLUTE_NETDEMOTIC" :
+	          parseResult.kind == SeekKindEnum::RELATIVE_NETDEMOTIC ? "RELATIVE_NETDEMOTIC" :
+	          parseResult.kind == SeekKindEnum::ABSOLUTE_GAMETIC ? "ABSOLUTE_GAMETIC" :
+	          "???",
+	          parseResult.tics);
+
+	if (parseResult.kind != SeekKindEnum::NONE and not parseResult.isExact)
+	{
+		PrintFmt(PRINT_WARNING, "Inexact seek: {} is not an exact tic.  Seeking to closest preceding tic...\n", argv[1]);
+	}
+
+	switch (parseResult.kind)
+	{
+		case SeekKindEnum::NONE:
+			PrintFmt(PRINT_WARNING, "Cannot seek: cannot parse {}\n", argv[1]);
+			break;
+
+		case SeekKindEnum::ABSOLUTE_NETDEMOTIC:
+			if (not netdemo.seekNetdemotic(parseResult.tics))
+			{
+				PrintFmt(PRINT_WARNING, "Cannot seek: {} is an invalid tic number\n", parseResult.tics);
+			}
+			break;
+
+		case SeekKindEnum::RELATIVE_NETDEMOTIC:
+			if (not netdemo.seekNetdemotic(netdemo.getNetdemotic() + parseResult.tics))
+			{
+				PrintFmt(PRINT_WARNING, "Cannot seek: {} {}{} == {} is an invalid tic number\n",
+				         netdemo.getNetdemotic(),
+				         parseResult.tics < 0 ? "" : "+",
+				         parseResult.tics,
+				         netdemo.getNetdemotic() + parseResult.tics);
+			}
+			break;
+
+		case SeekKindEnum::ABSOLUTE_GAMETIC:
+			if (not netdemo.seekGametic(parseResult.tics))
+			{
+				PrintFmt(PRINT_WARNING, "Cannot seek: {} is an invalid gametic number\n", parseResult.tics);
+			}
+			break;
+	}
+}
+END_COMMAND(netseek)
 
 //
 // CL_MoveThing
@@ -1877,7 +2072,7 @@ bool CL_Connect()
 		s_canary->Connect(tcpAddress, udpAddress);
 	}
 
-	messenger = OdaMessenger();
+	messenger = OdaMessenger(pool);
 	messenger.SetMaxRate(20);               // FIXME: total guess.
 	messenger.SetPacketsPerRetransmit(10);  // To align with the size of the traditional cmd buffer.
 	messenger.SetRetransmitDelay(0);        // This causes an immediate retransmit to relieve the risk of
@@ -2109,6 +2304,15 @@ void CL_ParseCommands()
 		if (::net_message.BytesLeftToRead() == 0)
 		{
 			break;
+		}
+
+		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
+		// This is because the High Priority packet is always live and comes out every tic.  It's totally
+		// possible for the server to go without sending anything Reliable or Best-Effort if things are
+		// all-quiet.
+		if (messenger.GetCurrentReceivedIsHighPriority())
+		{
+			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
 		}
 
 		const size_t          byteStart = ::net_message.BytesRead();

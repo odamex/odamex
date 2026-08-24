@@ -70,6 +70,7 @@ END_DISABLE_WARNING_GNU
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
+#include "g_level.h"
 #include "g_musinfo.h"
 
 #include "w_ident.h"
@@ -249,7 +250,7 @@ void D_Init()
 // Called to shutdown subsystems when unloading a set of WAD resource files.
 // Should be called prior to D_Init when loading a new set of WADs.
 //
-void STACK_ARGS D_Shutdown()
+void D_Shutdown()
 {
 	if (gamestate == GS_LEVEL)
 		G_ExitLevel(0, 0);
@@ -329,6 +330,8 @@ void D_DoomMain()
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
+
+	D_AddStartupWadFiles(newwadfiles, newpatchfiles);
 
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 

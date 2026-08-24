@@ -21,6 +21,9 @@
 //-----------------------------------------------------------------------------sx
 #pragma once
 
+#include <memory>
+#include <memory_resource>
+
 #include "MessageQueue.h"
 #include "Packet.h"
 #include "SequenceReceiver.h"
@@ -43,6 +46,37 @@ class OdaMessenger
 		//      800 KBps * 5 sec = 4000 KB backed-up retransmits max
 		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
 		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
+
+		explicit OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>& i_poolPtr)
+			: m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
+			, m_receiver { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
+		{
+		}
+
+		OdaMessenger(const OdaMessenger&)            = delete;
+		OdaMessenger& operator=(const OdaMessenger&) = delete;
+
+		OdaMessenger(OdaMessenger&&)            = default;
+		OdaMessenger& operator=(OdaMessenger&&) = default;
+
+		//  -------------- Basic state management --------------
+		void SetBitBucket(bool i_isBitBucket) { m_isBitBucket = i_isBitBucket; }
+
+		/// The GetCurrentReceived* accessors return the associated tic numbers of the
+		/// packet *currently being processed* in accordance with the most recent call
+		/// to NextReceivedPacket().  From call to call of NextReceivedPacket(), these
+		/// values should be expected to change and reflect the tic numbers contained
+		/// within and associated with the messages contained in that packet.
+		int  GetCurrentReceivedPacketSequenceNumber() const { return m_receivedHeader.sequence; }
+		int  GetCurrentReceivedRemoteTic() const            { return m_receivedHeader.originatorTic; }
+		int  GetCurrentReceivedLocalTic() const             { return m_receivedHeader.destinationTic; }
+		bool GetCurrentReceivedIsReliable() const           { return m_receivedHeader.reliableSize > 0; }
+		bool GetCurrentReceivedIsHighPriority() const       { return (m_receivedHeader.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0; }
+
+		/// The reason we want to allow explicitly setting the destination tic for outbound headers
+		/// is that the server *might not* have used the absolute latest-available command from the
+		/// client, and the client uses the newest available.  It's up to the application.
+		void SetDestinationTic(int i_tic) { m_destinationTic = i_tic; }
 
 		//  -------------- Receiving functions --------------
 
@@ -67,6 +101,9 @@ class OdaMessenger
 		/// finished from the associated socket to ensure reliable data is handled in a timely manner.
 		//
 		/// Returns true if data was available and has been moved into the given raw buffer, false otherwise.
+		///
+		/// PLEASE NOTE: Upon success, the timing / tic numbers associated with the GetCurrentReceived* accessor functions
+		///              will be updated to reflect the tic numbers in the received packet.  Please see their descriptions.
 		bool NextReceivedPacket(buf_t& io_rawBuf);
 
 		/// Optional function to handle whatever Acknowledgements sit at the front of the given buffer.
@@ -155,8 +192,6 @@ class OdaMessenger
 		int GetReliableOverloadCount() const { return m_reliableOverloadCount; }
 		int GetTicBudget() const             { return m_perTicBudget; }
 
-		int GetCurrentReceivedPacketSequenceNumber() const { return m_currentReceivedPacketSequenceNumber; }
-
 	protected:
 
 		size_t PackAsReliable  (Packet& io_packet, const buf_t& messageBuf);
@@ -176,29 +211,34 @@ class OdaMessenger
 		Packet m_packet;
 		Packet m_highPacket;
 
+		PacketHeaderType m_receivedHeader;
+
 		// Send buffers
 		MessageQueue m_outgoingReliableQueue;
 		MessageQueue m_outgoingNonReliableQueue;
 		MessageQueue m_outgoingHighNonReliableQueue;
 
-		buf_t m_immediateReceiveBuffer              { MAX_UDP_PACKET };
-		int   m_immediateReceiveSequenceNumber      { 0 };
-		int   m_currentReceivedPacketSequenceNumber { 0 };
+		buf_t            m_immediateReceiveBuffer{ MAX_UDP_PACKET };
+		PacketHeaderType m_immediateReceiveHeader;
 
 		int m_maxPacketsPerRetransmission   { DEFAULT_RETRANSMISSIONS_PER_TIC };
 		int m_retransmitDelayInTics         { 0 };
 		int m_maxRate                       { 0 };
 		int m_criticalSequenceTimeoutInTics { DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS };
 
-		int m_byteBudget  {  0 };       ///< The live budget.  Signed so that it can also represent debt.
-		int m_perTicBudget{  0 };       ///< The value used to reset the budget every tic.
-		int m_latchedTic  { -1 };       ///< Used for detecting new tics and resetting the budget.
+		int m_byteBudget    {  0 };       ///< The live budget.  Signed so that it can also represent debt.
+		int m_perTicBudget  {  0 };       ///< The value used to reset the budget every tic.
+		int m_latchedTic    { -1 };       ///< Used for detecting new tics and resetting the budget.
+		int m_destinationTic{ -1 };       ///< The remote tic that we're supposed to echo back to the other end.
 
 		int m_reliableOverloadThreshold { 0 };
-		int m_reliableOverloadCount { 0 };
+		int m_reliableOverloadCount     { 0 };
 
 		std::basic_string<byte> m_recordingBuffer;
 		bool                    m_recordingIsEnabled { false };
+
+		bool m_isBitBucket { false };   ///< Set this true to always discard all data.
+		                                ///< Use it to make a transient "stub" messenger for disconnecting clients.
 
 		// Metrics
 		size_t  m_bytesSentWithReliability      {  0 };

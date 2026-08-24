@@ -88,6 +88,15 @@ typedef struct am_default_colors_s
 	std::string ExitColor;
 } am_default_colors_t;
 
+enum authordisplay_t
+{
+	AM_AUTHOR_OFF = 0,
+	AM_AUTHOR_STATIC,
+	AM_AUTHOR_FADE,
+	AM_AUTHOR_MARQUEE,
+	AM_AUTHOR_TELETYPE,
+};
+
 typedef v2fixed64_t mpoint_t;
 
 typedef struct

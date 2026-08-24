@@ -67,7 +67,7 @@
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
 #define VERSION (MAKEVER(13, 0, 0))
-#define PROTOCOL_VERSION 8
+#define PROTOCOL_VERSION 1
 
 #define TAG_ID 0xAD0
 
@@ -173,6 +173,7 @@ struct ServerInfo_t
 	uint32_t                 VersionRealProtocol;
 	uint32_t                 PTime;
 	uint16_t                 ScoreLimit; // Launcher specific: Score limit
+	uint16_t                 FragLimit;
 	uint16_t                 TimeLimit;
 	uint16_t                 TimeLeft;
 	uint8_t                  VersionMajor; // Launcher specific: Version fields
@@ -265,6 +266,11 @@ public:
 	uint64_t GetPing() const
 	{
 		return Ping;
+	}
+
+	void SetPing(uint64_t NewPing)
+	{
+		Ping = NewPing;
 	}
 
 	void SetRetries(int8_t Count)
@@ -500,6 +506,11 @@ public:
 	bool GotResponse() const
 	{
 		return m_ValidResponse;
+	}
+
+	void SetValidResponse(bool Valid)
+	{
+		m_ValidResponse = Valid;
 	}
 
 	int32_t Parse();

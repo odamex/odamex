@@ -130,7 +130,7 @@ bool inTeamPlayer(const player_t& player, const byte team)
 // Returns true if a player is a spectator
 bool spectatingPlayer(const player_t& player)
 {
-	return (!player.ingame() || player.spectator == true);
+	return (not player.ingame() || player.spectator) && not player.isFreecam;
 }
 
 // Returns a sorted player list.  Calculates at most once a gametic.
@@ -643,7 +643,7 @@ std::string PersonalMatchDuelPlacement()
 
 // Return the amount of time elapsed in a netdemo.
 std::string NetdemoElapsed() {
-	if (!(netdemo.isPlaying() || netdemo.isPaused())) {
+	if (not netdemo.isInPlayback()) {
 		return "";
 	}
 
@@ -1663,7 +1663,7 @@ void EATargets(int x, int y, const float scale,
 		return;
 	}
 
-	const bool netdemoplaying = ::netdemo.isPlaying() || ::netdemo.isPaused();
+	const bool netdemoplaying = ::netdemo.isInPlayback();
 	std::vector<TargetInfo_t> Targets;
 
 	// What players should be drawn?
@@ -1731,7 +1731,7 @@ void EATargets(int x, int y, const float scale,
 			break;
 		}
 
-		if (target.PlayPtr == &(consoleplayer()))
+		if (target.PlayPtr == &(consoleplayer()) && not displayplayer().isFreecam)
 		{
 			// You're looking at yourself.
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin, "You",

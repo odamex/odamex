@@ -701,7 +701,7 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 		V_MarkRect(x0, y0, destwidth, destheight);
 
 	byte* desttop = mSurface->getBuffer()+ (y0 * surface_pitch) + (x0 * colstep);
-	int w = MIN(destwidth * xinc, patch->width() << FRACBITS);
+	const int w = std::min(destwidth * xinc, patch->width() << FRACBITS);
 
 	for (int col = 0; col < w; col += xinc, desttop += colstep)
 	{

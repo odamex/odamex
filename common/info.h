@@ -1493,8 +1493,8 @@ inline auto format_as(statenum_t eStateNum)
 	return fmt::underlying(eStateNum);
 }
 
-#define MAXSTATEARGS 8
-typedef long statearg_t;
+inline constexpr auto MAXSTATEARGS = 8;
+using statearg_t = int32_t;
 
 #define STATEF_NONE 0
 #define STATEF_SKILL5FAST BIT(0) // tics halve on nightmare skill
@@ -1524,7 +1524,7 @@ extern state_t boomstates[];
 inline DoomObjectContainer<state_t> states(::NUMSTATES); // statenum_t
 extern state_t odastates[];
 
-inline FArchive &operator<< (FArchive &arc, state_t *state)
+inline FArchive &operator<< (FArchive &arc, const state_t *state)
 {
 	if (state)
 		return arc << static_cast<int32_t>(state->statenum);
@@ -1532,15 +1532,15 @@ inline FArchive &operator<< (FArchive &arc, state_t *state)
 		return arc << static_cast<int32_t>(0xffffffff);
 }
 
-inline FArchive &operator>> (FArchive &arc, state_t *&state)
+inline FArchive &operator>> (FArchive &arc, const state_t *&state)
 {
 	int32_t ofs;
 	arc >> ofs;
-	DoomObjectContainer<state_t, int32_t>::iterator it = states.find(ofs);
+	auto it = states.find(ofs);
 	if (it != states.end())
 		state = &it->second;
 	else
-		state = NULL;
+		state = nullptr;
 	return arc;
 }
 
@@ -1568,6 +1568,8 @@ enum mobjtype_t: int32_t {
     MT_NODE,        //Added by MC:
     MT_WATERZONE,
     MT_SECRETTRIGGER,
+    // MT_UPPERSTACK,
+    // MT_LOWERSTACK,
     MT_SKYVIEWPOINT,
     MT_SKYPICKER,
     MT_SECTORSILENCER,
@@ -1618,6 +1620,12 @@ enum mobjtype_t: int32_t {
     MT_CAREPACK,
 	MT_EXTRALIFE,
 	MT_RESTEAMMATE,
+
+	// TODO: 13.0.0, delete these and uncomment the earlier ones
+	// for 12.3 they have to be here because modifying internal
+	// mobjtype nums breaks version compatibility
+	MT_UPPERSTACK,
+    MT_LOWERSTACK,
 
 	// Skulltag weapons
 	MT_GRENADE,
@@ -1891,7 +1899,7 @@ struct mobjinfo_t
 	int flags               = 0;
 	int flags2              = 0;
 	statenum_t raisestate   = S_NULL;
-	int translucency        = 0x10000;
+	int translucency        = FRACUNIT;
 	const char *name        = nullptr;
 
 	// MBF21 STUFF HERE
@@ -1903,6 +1911,11 @@ struct mobjinfo_t
 	int flags3              = 0;
 	const char* ripsound    = nullptr;
 	int32_t droppeditem     = MT_NULL;
+
+	std::string display_name = "";
+	// indicates it was explicitly overriden from the default by dehacked
+	bool display_name_set    = false;
+	std::string deh_name     = "";
 
 	// ID24 stuff
 	// int minrespawntics      = 420;
@@ -1916,6 +1929,9 @@ struct mobjinfo_t
 	// std::string pickupmessage = "";
 	// OLumpName translation   = nullptr;
 	// fixed_t selfdamage      = FRACUNIT;
+
+	[[nodiscard]]
+	std::string getDisplayName() const;
 };
 
 inline auto format_as(const mobjinfo_t& info)

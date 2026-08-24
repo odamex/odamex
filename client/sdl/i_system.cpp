@@ -243,14 +243,7 @@ void I_Endoom()
 	if (!r_showendoom || Args.CheckParm ("-novideo"))
 		return;
 
-	int lump = -1;
-	int count = 0;
-	while (count < 2 && (lump = W_FindLump("ENDOOM", lump)) != -1)
-	{
-		count++;
-	}
-
-	if (r_showendoom == 2 && count <= 1)
+	if (r_showendoom == 2 && !W_IsLumpReplaced(gameinfo.endoom))
 		return;
 
 	// Hack to stop crash with disk icon
@@ -305,7 +298,7 @@ void I_Endoom()
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void)
+void I_Quit()
 {
 	has_exited = 1;		/* Prevent infinitely recursive exits -- killough */
 
@@ -328,9 +321,7 @@ void STACK_ARGS I_Quit (void)
 //
 bool gameisdead;
 
-#define MAX_ERRORTEXT	1024
-
-void STACK_ARGS call_terms (void);
+void call_terms();
 
 void I_BaseWarning(const std::string& warningtext)
 {
@@ -424,11 +415,17 @@ void I_BaseWarning(const std::string& warningtext)
 // [EB] 20 Mar 2026 - Got rid of all platform specific code
 // Now that we dropped SDL1 support, we can fully rely on SDL for this
 //
-std::string I_GetClipboardText()
+std::string I_GetClipboardText([[maybe_unused]] bool use_primary_selection)
 {
 #if defined(SDL20) || defined(SDL3)
-	char* textp = SDL_GetClipboardText();
-	auto textpExit = nonstd::make_scope_exit([&]() { SDL_free(textp); });
+	#if SDL_VERSION_ATLEAST(2, 26, 0)
+		const auto driver = I_GetVideoDriverName();
+		const bool driver_supports_primary = driver == "wayland" || driver == "x11";
+		char* textp = use_primary_selection && driver_supports_primary ? SDL_GetPrimarySelectionText() : SDL_GetClipboardText();
+	#else
+		char* textp = SDL_GetClipboardText();
+	#endif
+	const auto textpExit = nonstd::make_scope_exit([&]() { SDL_free(textp); });
 
 	if (NULL == textp)
 	{
@@ -498,7 +495,7 @@ void I_ErrorMessageBox(const char* message)
 
 #endif
 
-#if defined(_DEBUG)
+#if defined(ODAMEX_DEBUG)
 
 BEGIN_COMMAND(debug_userfilename)
 {

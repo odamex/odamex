@@ -62,6 +62,7 @@ EXTERN_CVAR(sv_friendlymonsterfire)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
+EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
@@ -72,6 +73,7 @@ EXTERN_CVAR(g_lives)
 // sapientlion - experimental
 EXTERN_CVAR(sv_weapondrop)
 
+// TODO: does this need to be global?
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,
@@ -79,7 +81,7 @@ int MeansOfDeath;
 std::array<int, NUMAMMO> maxammo  {200, 50, 300, 50};
 std::array<int, NUMAMMO> clipammo { 10,  4,  20,  1};
 
-void AM_Stop(void);
+void AM_Stop();
 void SV_SpawnMobj(AActor *mobj);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
@@ -106,7 +108,7 @@ static void PersistPlayerDamage(const player_t& p)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
 }
 
@@ -133,7 +135,7 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMembers(p, flags));
+		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -148,7 +150,7 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_TeamMembers(team));
+		MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_TeamMembers(team));
 	}
 }
 
@@ -257,12 +259,16 @@ int P_GetDeathCount(const player_t& player)
 //
 
 // mbf21: take into account new weapon autoswitch flags
-static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int oldammo)
+static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammotype, int oldammo)
 {
+	const weapontype_t currentweapon = (player.pendingweapon == wp_nochange)
+            ? player.readyweapon
+            : player.pendingweapon;
+
 	// Keep the original behaviour while playbacking demos only.
 	if (demoplayback)
 	{
-		switch (ammo)
+		switch (ammotype)
 		{
 		case am_clip:
 			if (player.readyweapon == wp_fist)
@@ -296,23 +302,30 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int 
 			break;
 		}
 	}
-	else if (player.userinfo.switchweapon != WPSW_NEVER)
+	else if (player.userinfo.switchweapon != WPSW_NEVER &&
+			 weaponinfo[currentweapon].flags & WPF_AUTOSWITCHFROM &&
+			 (weaponinfo[currentweapon].ammotype == am_noammo ||
+				weaponinfo[currentweapon].ammotype != ammotype))
 	{
-		if (weaponinfo[player.readyweapon].flags & WPF_AUTOSWITCHFROM &&
-			(weaponinfo[player.readyweapon].ammotype == am_noammo ||
-		     player.ammo[weaponinfo[player.readyweapon].ammotype] != ammo))
+		// respect the "attack cancels PWO" setting if player is attacking
+		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&
+			sv_allowpwo &&
+            player.cmd.buttons & BT_ATTACK &&
+            player.ammo[ammotype] > 0)
+        {
+            return IEV_EquipRemove;
+        }
+
+		for (int i = NUMWEAPONS - 1; i > currentweapon; --i)
 		{
-			for (int i = NUMWEAPONS - 1; i > player.readyweapon; --i)
+			if (player.weaponowned[i] &&
+				not (weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
+				weaponinfo[i].ammotype == ammotype &&
+				weaponinfo[i].ammopershot > oldammo &&
+				weaponinfo[i].ammopershot <= player.ammo[ammotype])
 			{
-				if (player.weaponowned[i] &&
-				    !(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
-				    weaponinfo[i].ammotype == ammo &&
-				    weaponinfo[i].ammopershot > oldammo &&
-				    weaponinfo[i].ammopershot <= player.ammo[ammo])
-				{
-					player.pendingweapon = static_cast<weapontype_t>(i);
-					break;
-				}
+				player.pendingweapon = static_cast<weapontype_t>(i);
+				break;
 			}
 		}
 	}
@@ -534,7 +547,7 @@ ItemEquipVal P_GiveCard(player_t& player, card_t card)
 	}
 
 	player.bonuscount = BONUSADD;
-	player.cards[card] = 1;
+	player.cards[card] = true;
 
 	if (multiplayer)
 	{
@@ -748,7 +761,7 @@ static void P_ResurrectPlayerPowerUp(player_t& player)
 	                   player.userinfo.netname, pl->userinfo.netname);
 
 	// Send a res sound directly to this player.
-	MSG_WriteSVC(pl->client.messenger.ReliableBuf(), SVC_PlayerInfo(*pl));
+	MSG_WriteSVC(pl->client.messenger->ReliableBuf(), SVC_PlayerInfo(*pl));
 	S_PlayerSound(pl, NULL, CHAN_INTERFACE, "misc/plraise", ATTN_NONE);
 
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(*pl, SVC_PM_LIVES),
@@ -771,7 +784,7 @@ static void P_AwardExtraLifePowerUp(player_t& player)
 	                   player.userinfo.netname);
 
 	player.lives += 1;
-	MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInfo(player));
+	MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerInfo(player));
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(player, SVC_PM_LIVES),
 	                 player.id);
 }
@@ -2376,12 +2389,16 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		return;
 	}
 
-	// No damage with sv_friendlymonsterfire
+	// No damage with sv_friendlymonsterfire.
+	// But keep track of if friendly fire is blocked to apply
+	// thrusting later.
+	bool friendlyfireblocked = false;
 	if (!sv_friendlymonsterfire && source && target != source && mod != MOD_TELEFRAG)
 	{
-		if (source->flags & MF_FRIEND && P_IsFriendlyThing(source, target))
+		if (!(source->player && target->player) && source->flags & MF_FRIEND &&
+		    P_IsFriendlyThing(source, target))
 		{
-			return;
+			friendlyfireblocked = true;
 		}
 	}
 
@@ -2408,7 +2425,8 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		}
 	}
 
-	if (target->flags & MF_SKULLFLY)
+	// Don't allow unblocked friendlies to interrupt lost soul flight
+	if (target->flags & MF_SKULLFLY && !friendlyfireblocked)
 	{
 		target->momx = target->momy = target->momz = 0;
 	}
@@ -2457,6 +2475,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		// make fall forwards sometimes
 		if (damage < 40
 			&& damage > target->health
+			&& !friendlyfireblocked
 			&& target->z - inflictor->z > 64 * FRACUNIT && (P_Random(target) & 1))
 		{
 			ang += ANG180;
@@ -2471,6 +2490,10 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		if (target->oflags & MFO_FALLING && target->gear >= MAXGEAR)
 			target->gear = 0;
 	}
+
+	// Knocked about but unhurt.
+	if (friendlyfireblocked)
+		return;
 
 	// player specific
 	if (player)
@@ -2644,12 +2667,12 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 				if (target->info->spawnhealth >= 1000)
 				{
 					// Big bodies get a green armor.
-					damage = MAX((damage * 2) / 3, 1);
+					damage = std::max((damage * 2) / 3, 1);
 				}
 				else
 				{
 					// Small bodies get a blue armor.
-					damage = MAX(damage / 2, 1);
+					damage = std::max(damage / 2, 1);
 				}
 			}
 

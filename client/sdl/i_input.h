@@ -34,7 +34,7 @@
 #define MOUSE_ZDOOM_DI 1
 
 bool I_InitInput (void);
-void STACK_ARGS I_ShutdownInput (void);
+void I_ShutdownInput ();
 void I_ForceUpdateGrab();
 void I_FlushInput();
 
@@ -45,8 +45,29 @@ void I_CloseJoystick();
 std::string I_GetKeyName(int key);
 int I_GetKeyFromName(const std::string& name);
 
+enum keydevice_t
+{
+	KEYDEV_KEYBOARD,
+	KEYDEV_MOUSE,
+	KEYDEV_JOYSTICK,
+};
+
+// joy_gamepadmode
+enum gamepadmode_t
+{
+	GAMEPADMODE_AUTO,			// follow whichever device was used last
+	GAMEPADMODE_IGNOREMOUSE,	// mouse input does not switch away from the gamepad
+	GAMEPADMODE_ALWAYS,			// always name gamepad buttons
+};
+
+keydevice_t I_GetKeyDevice(int key);
+keydevice_t I_GetLastInputDevice();
+
 void I_GetEvents(bool mouseOnly);
 
+
+bool I_GetUIMousePosition(int& x, int& y);
+bool I_IsUIMouseButtonDown(int button);
 
 // ============================================================================
 //
@@ -63,6 +84,9 @@ public:
 	virtual void pause() = 0;
 	virtual void resume() = 0;
 	virtual void reset() = 0;
+
+	virtual void resumeUI()
+	{	resume();	}
 
 	virtual void gatherEvents() = 0;
 	virtual bool hasEvent() const = 0;
@@ -113,6 +137,9 @@ public:
 
 	virtual void grabInput() = 0;
 	virtual void releaseInput() = 0;
+
+	virtual void grabInputForUI()
+	{	releaseInput();	}
 
 	virtual bool isInputGrabbed() const
 	{	return false;	}

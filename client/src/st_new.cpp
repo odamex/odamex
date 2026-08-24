@@ -745,7 +745,7 @@ void drawProtos()
 
 	V_SetFont("DIGFONT");
 
-	proto_selected = clamp<size_t>(proto_selected, 0, protos.size() - 1);
+	proto_selected = std::clamp<size_t>(proto_selected, 0, protos.size() - 1);
 
 	// Starting y is five rows from the top.
 	const int top = 7 * 5;
@@ -812,7 +812,7 @@ void drawProtos()
 // [AM] Draw netdemo state
 // TODO: This is ripe for commonizing, but I _need_ to get this done soon.
 void drawNetdemo() {
-	if (!(netdemo.isPlaying() || netdemo.isPaused())) {
+	if (not netdemo.isInPlayback()) {
 		return;
 	}
 
@@ -877,7 +877,7 @@ static void drawLevelStats()
 	if (hud_anchoring.value() < 1.0f)
 	{
 		num_ax = ((static_cast<float>(I_GetSurfaceWidth()) - static_cast<float>(I_GetSurfaceHeight()) * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
-		num_ax = MAX(0, num_ax);
+		num_ax = std::max(0, num_ax);
 		text_ax = num_ax / xscale;
 	}
 
@@ -971,7 +971,7 @@ void OdamexHUD() {
 	if (hud_anchoring.value() < 1.0f)
 	{
 		num_ax = ((static_cast<float>(I_GetSurfaceWidth()) - static_cast<float>(I_GetSurfaceHeight()) * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
-		num_ax = MAX(0, num_ax);
+		num_ax = std::max(0, num_ax);
 		text_ax = num_ax / xscale;
 		patch_ax = num_ax / xscale;
 	}
@@ -1602,8 +1602,14 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 
 void SpreeHud()
 {
-	if (!validplayer(displayplayer()) || !cl_showsprees || (!cl_showofflinesprees && !network_game) || (!sv_showsprees && network_game))
-		return;
+	if (!validplayer(displayplayer()) ||
+    !cl_showsprees ||
+    (!cl_showofflinesprees && !network_game) ||
+    (!sv_showsprees && network_game) ||
+    displayplayer().isFreecam)
+  {
+    return;
+  }
 
 	static SpreeManager& manager = SpreeManager::getInstance();
 
@@ -1704,7 +1710,7 @@ void SpreeHud()
 
 void MultiKillHud()
 {
-	if (!validplayer(displayplayer()))
+	if (!validplayer(displayplayer()) || displayplayer().isFreecam)
 		return;
 
 	const player_t& p = displayplayer();
@@ -1758,7 +1764,7 @@ void LevelStateHUD()
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP: {
-		if (consoleplayer().spectator)
+		if (consoleplayer().spectator || displayplayer().isFreecam)
 		{
 			break;
 		}
@@ -2018,6 +2024,37 @@ void DoomHUD()
 		hud::drawLevelStats();
 }
 
+void FreecamHUD()
+{
+	int iy = 4;
+
+	// Draw warmup state or timer
+	if (::hud_timer)
+	{
+		if (::hud_bigfont)
+		{
+			V_SetFont("BIGFONT");
+		}
+
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
+	}
+
+	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, "Freecam", CR_WHITE);
+	iy += V_LineHeight() + 1;
+
+	// Draw targeted player names.
+	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, 0);
+
+	// Draw gametype scoreboard
+	hud::drawGametype();
+}
 }
 
 BEGIN_COMMAND(netprotoup)

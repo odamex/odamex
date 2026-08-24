@@ -24,11 +24,16 @@
 
 #pragma once
 
+#include <array>
+
 #include "d_event.h"
 
 // Some defines...
 #define LINEHEIGHT	16
 #define SKULLXOFF	-32
+
+#define SLIDER_TRACK_X		5
+#define SLIDER_TRACK_WIDTH	78
 
 //
 // MENUS
@@ -64,6 +69,9 @@ void M_OptResponder(const event_t& ev);
 
 // [RH] Draw options menu
 void M_OptDrawer (void);
+
+// Move the options menu selection to whatever the mouse is hovering over
+void M_OptUpdateMouseItem();
 
 // [RH] Initialize options menu
 void M_OptInit (void);
@@ -198,11 +206,11 @@ typedef struct
 	bool drawSkull;
 } menustack_t;
 
-extern value_t YesNo[2];
-extern value_t NoYes[2];
-extern value_t OnOff[2];
-extern value_t OffOn[2];
-extern value_t OnOffAuto[3];
+extern std::array<value_t, 2> YesNo;
+extern std::array<value_t, 2> NoYes;
+extern std::array<value_t, 2> OnOff;
+extern std::array<value_t, 2> OffOn;
+extern std::array<value_t, 3> OnOffAuto;
 
 extern menustack_t MenuStack[16];
 extern int MenuStackDepth;

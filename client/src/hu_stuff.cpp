@@ -208,7 +208,7 @@ void HU_Init()
 //
 // Frees any memory allocated specifically for the HUD.
 //
-void STACK_ARGS HU_Shutdown()
+void HU_Shutdown()
 {
 	::sbline.clear();
 
@@ -534,6 +534,8 @@ void HU_Drawer()
 			{
 				if (spechud)
 					hud::SpectatorHUD();
+				else if (displayplayer().isFreecam)
+					hud::FreecamHUD();
 				else
 					hud::OdamexHUD();
 			}
@@ -615,7 +617,7 @@ static void ShovePrivMsg(byte pid, const std::string& str)
 
 BEGIN_COMMAND (messagemode)
 {
-	if (!connected || ::netdemo.isPlaying() || ::netdemo.isPaused())
+	if (!connected || ::netdemo.isInPlayback())
 		return;
 
 	HU_SetChatMode();
@@ -637,7 +639,7 @@ END_COMMAND (say)
 
 BEGIN_COMMAND (messagemode2)
 {
-	if (!connected || ::netdemo.isPlaying() || ::netdemo.isPaused() ||
+	if (!connected || ::netdemo.isInPlayback() ||
 	   (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF && !consoleplayer().spectator))
 		return;
 
@@ -1732,7 +1734,7 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 		                       hud::X_RIGHT, hud::Y_TOP,
 		                       1, limit, i, true);
 
-		int count = MAX(hud::CountTeamPlayers(i), 4);
+		int count = std::max(hud::CountTeamPlayers(i), 4);
 		yOffset += 14 + count * 8;
 	}
 

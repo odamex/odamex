@@ -75,8 +75,8 @@ team_t LevelState::getDefendingTeam() const
 	}
 
 	// Blue always goes first, then red, then so on...
-	int teams = clamp(sv_teamsinplay.asInt(), 2, 3);
-	int round0 = MAX(::levelstate.getRound() - 1, 0);
+	const int teams = std::clamp(sv_teamsinplay.asInt(), 2, 3);
+	int round0 = std::max(::levelstate.getRound() - 1, 0);
 	return static_cast<team_t>(round0 % teams);
 }
 
@@ -98,7 +98,7 @@ int LevelState::getJoinTimeLeft() const
 
 	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
 	int left = ceil((end_time - ::level.time) / static_cast<float>(TICRATE));
-	return MAX(left, 0);
+	return std::max(left, 0);
 }
 
 /**

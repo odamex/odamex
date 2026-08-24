@@ -53,6 +53,7 @@
 #include "p_horde.h"
 #include "p_inter.h"
 #include "p_lnspec.h"
+#include "p_local.h"
 #include "p_mobj.h"
 #include "r_sky.h"
 #include "r_state.h"
@@ -67,6 +68,7 @@
 #include "cl_netgraph.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "cl_freecam.h"
 
 #include "PlayerItemDataType.h"
 
@@ -727,51 +729,52 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	if (type == MT_SKYVIEWPOINT)
 	{
-		// mo->angle = msg->current().angle(); // done above
+		if (msg->args_size() >= 1)
+			mo->tid = msg->args().Get(0);
+
+		mo->AddToHash();
+
 		// If this actor has no TID, make it the default sky box
 		if (mo->tid == 0)
 		{
-			int j;
-
-			for (j = 0; j < numsectors; j++)
+			for (int j = 0; j < numsectors; j++)
 			{
-				if (sectors[j].Skybox == NULL)
-				{
-					sectors[j].Skybox = mo->ptr();
-				}
+				if (sectors[j].SkyboxCeiling == NULL)
+					sectors[j].SkyboxCeiling = mo->ptr();
+				if (sectors[j].SkyboxFloor == NULL)
+					sectors[j].SkyboxFloor = mo->ptr();
 			}
 		}
+
+		// This viewpoint may satisfy pickers that were waiting on it.
+		P_ResolveSkyPickers();
 	}
 
 	if (type == MT_SKYPICKER)
 	{
-		if (!mo || !mo->subsector)
-			return;
-
-		sector_t* sector = mo->subsector->sector;
-		if (mo->args[0] == 0)
+		if (mo && mo->subsector)
 		{
-			sector->Skybox = AActor::AActorPtr();
+			const int secnum = static_cast<int>(mo->subsector->sector - sectors);
+			const int tid = (msg->args_size() >= 1) ? msg->args().Get(0) : 0;
+			const int planeflags = (msg->args_size() >= 2) ? msg->args().Get(1) : 0;
+			P_AddSkyPicker(secnum, tid, planeflags);
+			P_ResolveSkyPickers();
 		}
-		else
-		{
-			TActorIterator<AActor> iterator(mo->args[0]);
-			AActor* box = iterator.Next();
-
-			if (box != NULL && box->type == MT_SKYVIEWPOINT)
-			{
-				sector->Skybox = box->ptr();
-			}
-			else
-			{
-				PrintFmt("Can't find SkyViewpoint {} for sector {}\n", mo->args[0],
-				         sector - sectors);
-			}
-		}
-		mo->Destroy();
 	}
 
-	mo->UpdateActorLists();
+	if (type == MT_UPPERSTACK || type == MT_LOWERSTACK)
+	{
+		if (msg->args_size() >= 1)
+			mo->tid = msg->args().Get(0);
+
+		if (msg->args_size() >= 2)
+			mo->args[0] = msg->args().Get(1);
+
+		mo->AddToHash();
+
+		P_AddStackLink(mo);
+		P_ResolveStackLinks();
+	}
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
@@ -793,6 +796,14 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->translation = translationref_t(&::bosstable[0]);
 		}
 	}
+
+	if (msg->spawn_flags() & SVC_SM_FRIEND)
+	{
+		mo->friend_playerid = msg->current().friend_playerid();
+		mo->friend_teamid = static_cast<team_t>(msg->current().friend_teamid());
+	}
+
+	mo->UpdateActorLists();
 
 	if (msg->spawn_flags() & SVC_SM_CORPSE)
 	{
@@ -825,6 +836,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		if (mo->player)
 			mo->player->playerstate = PST_DEAD;
 	}
+
+	if (mo->flags & MF_FRIEND)
+		P_FriendlyEffects(mo);
 }
 
 //
@@ -882,7 +896,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
 
-	//am_cheating = 0;
+	am_cheating = 0;
 
 	if (splitnetdemo)
 		netdemo.stopRecording();
@@ -980,7 +994,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	gameaction = ga_nothing;
 
 	// Autorecord netdemo or continue recording in a new file
-	if (!(netdemo.isPlaying() || netdemo.isRecording() || netdemo.isPaused()))
+	if (!(netdemo.isPlaying() || netdemo.isInPlayback()))
 	{
 		std::string filename;
 
@@ -1063,6 +1077,12 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 {
 	player_t* p = &CL_FindPlayer(msg->pid());
+
+	// 255th player just connected and is replacing the freecam, need to retire freecam
+	if (p->id == freecamplayer_id && p->isFreecam)
+	{
+		Freecam::retireFor255thPlayer(p);
+	}
 
 	p->userinfo.netname = msg->netname();
 
@@ -1218,15 +1238,9 @@ static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 	// Special handling: If we get a best-effort / order-not-guaranteed UpdateMobj, make sure that
 	//                   we're not going backwards with it!  This avoids rare ghosts.
 	const int currentSequence = ::messenger.GetCurrentReceivedPacketSequenceNumber();
-	if (currentSequence < 0)
+	if (currentSequence < mo->updatedDuringServerTic)
 	{
-		const int baseSequence = std::abs(mo->updatedDuringServerTic);
-		const int newSequence  = -currentSequence;
-
-		if (newSequence < baseSequence)
-		{
-			return;
-		}
+		return;
 	}
 
 	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
@@ -1433,8 +1447,8 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	}
 	else
 	{
-		player.health = MIN(player.health, health);
-		player.armorpoints = MIN(player.armorpoints, armorpoints);
+		player.health = std::min(player.health, health);
+		player.armorpoints = std::min(player.armorpoints, armorpoints);
 		player.mo->health = player.health;
 
 		if (player.health < 0)
@@ -1448,8 +1462,7 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 				player.health = 0;
 		}
 
-		if (player.armorpoints < 0)
-			player.armorpoints = 0;
+		player.armorpoints = std::max(player.armorpoints, 0);
 	}
 
 	if (player.armorpoints == 0)
@@ -1582,9 +1595,20 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	}
 
 	corpsehit->flags = info->flags;
+
+	if (msg->corpse().flags() & MF_FRIEND)
+	{
+		corpsehit->flags |= MF_FRIEND;
+		corpsehit->friend_playerid = msg->corpse().friend_playerid();
+		corpsehit->friend_teamid = static_cast<team_t>(msg->corpse().friend_teamid());
+	}
+
 	corpsehit->health = info->spawnhealth;
 	corpsehit->target = AActor::AActorPtr();
 	corpsehit->UpdateActorLists();
+
+	if (corpsehit->flags & MF_FRIEND)
+		P_FriendlyEffects(corpsehit);
 }
 
 //

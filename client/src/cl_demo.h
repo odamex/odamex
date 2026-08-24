@@ -23,6 +23,8 @@ public:
 	bool stopRecording();
 	bool pause();
 	bool resume();
+	bool seekNetdemotic(int requestedNetdemotic);
+	bool seekGametic(int requestedGametic);
 
 	void writeMessages();
 	void readMessages(buf_t* netbuffer);
@@ -31,11 +33,16 @@ public:
 	void writeMapChange();
 	void writeIntermission();
 
-	[[nodiscard]] bool isRecording() const { return (state == NetDemo::st_recording); }
-	[[nodiscard]] bool isPlaying() const { return (state == NetDemo::st_playing); }
-	[[nodiscard]] bool isPaused() const { return (state == NetDemo::st_paused); }
+
+	[[nodiscard]] bool isRecording() const  { return (state == NetDemo::st_recording); }
+	[[nodiscard]] bool isPlaying() const    { return (state == NetDemo::st_playing); }
+	[[nodiscard]] bool isPaused() const     { return (state == NetDemo::st_paused); }
+	[[nodiscard]] bool isInPlayback() const { return isPlaying() or isPaused(); }
 
 	[[nodiscard]] int getSpacing() const { return header.snapshot_spacing; }
+
+	[[nodiscard]] int getNetdemotic() const { return netdemotic; }
+	[[nodiscard]] int getGametic() const    { return netdemotic + header.starting_gametic; }
 
 	void nextTic();
 	void prevTic();
@@ -44,7 +51,7 @@ public:
 	void nextMap();
 	void prevMap();
 
-	void ticker();
+	bool ticker();
 	[[nodiscard]] int calculateTimeElapsed() const;
 	[[nodiscard]] int calculateTotalTime() const;
 	[[nodiscard]] const std::vector<int> getMapChangeTimes() const;
@@ -78,6 +85,15 @@ private:
 	{
 		uint32_t        ticnum  { 0 };
 		std::streampos  offset  { 0 };  // offset in the demo file
+
+		auto operator<=>(const netdemo_index_entry_t& other) const
+		{
+			return ticnum <=> other.ticnum;
+		}
+		auto operator<=>(uint32_t otherTic) const
+		{
+			return ticnum <=> otherTic;
+		}
 	};
 
 	void cleanUp();
@@ -85,14 +101,12 @@ private:
 	void fatalError(const std::string &message);
 	void reset();
 
-	[[nodiscard]] const netdemo_index_entry_t *snapshotLookup(int ticnum) const;
 	void writeLauncherSequence(buf_t *netbuffer);
 	void writeConnectionSequence(buf_t *netbuffer);
 
 	void readSnapshotData(std::vector<byte>& buf);
 	void writeSnapshotData(std::vector<byte>& buf);
 
-	void readSnapshot(const netdemo_index_entry_t *snap);
 	void writeChunk(const byte *data, size_t size, netdemo_message_t type);
 	bool writeHeader();
 	bool readHeader();
@@ -101,8 +115,17 @@ private:
 
 	void populateMessageIndexes();
 
-	[[nodiscard]] int getCurrentSnapshotIndex() const;
-	[[nodiscard]] int getCurrentMapIndex() const;
+	using SnapshotVector = std::vector<netdemo_index_entry_t>;
+
+	[[nodiscard]] SnapshotVector::const_iterator getCurrentSnapshotIter      () const;
+	[[nodiscard]] SnapshotVector::const_iterator getCurrentMapIter           () const;
+	[[nodiscard]] SnapshotVector::const_iterator getSnapshotForGametic       (uint32_t gameticnum) const;
+	[[nodiscard]] SnapshotVector::const_iterator getSnapshotForNetdemotic    (uint32_t netdemoticnum) const;
+	[[nodiscard]] SnapshotVector::const_iterator getMapLoadSnapshotForGametic(uint32_t gameticnum) const;
+
+	[[nodiscard]] SnapshotVector::const_iterator lookupSnapshot(const SnapshotVector& i_vector, uint32_t gameticnum) const;
+
+	bool readSnapshot(SnapshotVector::const_iterator snap);
 
 	void writeLocalCmd(buf_t *netbuffer) const;
 	bool readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t &tic);
@@ -169,11 +192,11 @@ private:
 	std::string     filename{ };
 	std::fstream    demofp  { };
 
-	std::deque<buf_t>   captured {};
+	std::deque<buf_t> captured {};
 
-	netdemo_header4_t                  header        {};
-	std::vector<netdemo_index_entry_t> snapshot_index{};
-	std::vector<netdemo_index_entry_t> map_index     {};
+	netdemo_header4_t   header        {};
+	SnapshotVector      snapshot_index{};
+	SnapshotVector      map_index     {};
 
 	std::vector<byte>   snapbuf         { };
 	int                 netdemotic      { 0 };

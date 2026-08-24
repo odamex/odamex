@@ -107,7 +107,7 @@ netid_map_t actor_by_netid;
 // allocations. Dead actors are threaded onto a freelist and reused, so after
 // the initial ramp-up allocation is a couple of pointer swaps, and actors
 // that are alive at the same time tend to sit near each other in memory.
-// 
+//
 // Probably not thread safe.
 //
 namespace
@@ -369,9 +369,9 @@ inline void CredibilityState::Update(const AActor& mobj)
             else
             {
                 if (m_predictedMotionTicCount > 0 or
-                       not (m_crediblePosition.x == mobj.x and
-                            m_crediblePosition.y == mobj.y and
-                            m_crediblePosition.z == mobj.z))
+                       m_crediblePosition.x != mobj.x ||
+                            m_crediblePosition.y != mobj.y ||
+                            m_crediblePosition.z != mobj.z)
                 {
                     ++m_predictedMotionTicCount;
                 }
@@ -402,48 +402,38 @@ inline void CredibilityState::Update(const AActor& mobj)
 }
 
 AActor::AActor()
-    : x(0), y(0), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
-      prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
-      subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
-      height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
-      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
-      flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-      iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
-      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), mode(MobjModeEnum::SPAWN), updatedDuringLocalTic(-1),
-      updatedDuringServerTic(-1), spawnTic(gametic), mobjtic(gametic), bmapnode(this)
+	: spawnTic(gametic), mobjtic(gametic), bmapnode(this)
 {
-	args.fill(0);
 	self.init(this);
 	LinkAllActorsList();
 }
 
 AActor::AActor(const AActor& other)
-    : x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy),
-      prevz(other.prevz), snext(other.snext), sprev(other.sprev), angle(other.angle),
-      prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
-      pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
-      subsector(other.subsector), floorz(other.floorz), ceilingz(other.ceilingz),
-      dropoffz(other.dropoffz), floorsector(other.floorsector), radius(other.radius),
-      height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
-      validcount(other.validcount), type(other.type), info(other.info), tics(other.tics),
-      state(other.state), damage(other.damage),
-      flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags),
-      special1(other.special1), special2(other.special2),
-      health(other.health), movedir(other.movedir), movecount(other.movecount),
-      visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
-      player(other.player), lastlook(other.lastlook), special(other.special), args(other.args),
-      inext(other.inext), iprev(other.iprev), translation(other.translation),
-      translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
-      onground(other.onground), touching_sectorlist(other.touching_sectorlist),
-      deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
-      friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
-      pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
-      baseline_set(false), mode(other.mode), updatedDuringLocalTic(other.updatedDuringLocalTic),
-      updatedDuringServerTic(other.updatedDuringServerTic), spawnTic(other.spawnTic),
-      mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
+	: DThinker(other), x(other.x), y(other.y), z(other.z), prevx(other.prevx), prevy(other.prevy),
+	  prevz(other.prevz), snext(other.snext), sprev(other.sprev), angle(other.angle),
+	  prevangle(other.prevangle), sprite(other.sprite), frame(other.frame),
+	  pitch(other.pitch), prevpitch(other.prevpitch), effects(other.effects),
+	  subsector(other.subsector),
+	  flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags),
+	  health(other.health), type(other.type), translucency(other.translucency), translation(other.translation),
+	  player(other.player), floorz(other.floorz), ceilingz(other.ceilingz), dropoffz(other.dropoffz),
+	  floorsector(other.floorsector), radius(other.radius), height(other.height),
+	  momx(other.momx), momy(other.momy), momz(other.momz),
+	  validcount(other.validcount), info(other.info), tics(other.tics),
+	  state(other.state), damage(other.damage),
+	  special1(other.special1), special2(other.special2),
+	  movedir(other.movedir), movecount(other.movecount),
+	  visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
+	  lastlook(other.lastlook), special(other.special), args(other.args),
+	  inext(other.inext), iprev(other.iprev),
+	  waterlevel(other.waterlevel), gear(other.gear),
+	  onground(other.onground), touching_sectorlist(other.touching_sectorlist),
+	  deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
+	  friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
+	  pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
+	  mode(other.mode), updatedDuringLocalTic(other.updatedDuringLocalTic),
+	  updatedDuringServerTic(other.updatedDuringServerTic), spawnTic(other.spawnTic),
+	  mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
@@ -455,6 +445,9 @@ AActor::AActor(const AActor& other)
 
 AActor &AActor::operator= (const AActor &other)
 {
+	if(&other == this)
+    	return *this;
+
     x = other.x;
     y = other.y;
     z = other.z;
@@ -542,18 +535,8 @@ AActor &AActor::operator= (const AActor &other)
 //
 
 AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
-    : x(ix), y(iy), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
-      prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
-      subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
-      height(0), momx(0), momy(0), momz(0), validcount(0), type(itype),
-      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
-      statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
-      reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
-      iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
-      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), mode(MobjModeEnum::SPAWN), updatedDuringLocalTic(-1),
-      updatedDuringServerTic(-1), spawnTic(gametic), mobjtic(gametic), bmapnode(this)
+	: x(ix), y(iy), type(itype),
+	  spawnTic(gametic), mobjtic(gametic), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	const auto it = ::mobjinfo.find(itype);
@@ -654,8 +637,6 @@ void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
 	if (i_isFriendly)
 	{
 		this->flags |= MF_FRIEND;
-
-		P_FriendlyEffects(this);
 	}
 	else
 	{
@@ -674,6 +655,11 @@ void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
 			this->friend_playerid = owner->friend_playerid;
 			this->friend_teamid = owner->friend_teamid;
 		}
+	}
+
+	if (i_isFriendly)
+	{
+		P_FriendlyEffects(this);
 	}
 }
 
@@ -880,7 +866,7 @@ fixed_t P_CalculateMinMom(const AActor *mo)
 //
 // Floating item bobbing
 //
-// [RV] +FLOATBOB actors use the common ZDoom offset table.  
+// [RV] +FLOATBOB actors use the common ZDoom offset table.
 // special1 stores the center offset from the floor.
 // The table supplies the visual bob.
 //
@@ -1550,7 +1536,7 @@ static std::optional<MobjModeEnum> IdentifyMode(const AActor& mobj, int32_t stat
 // Returns true if the mobj is still present.
 SetMobStateResultEnum P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 {
-	state_t* st;
+	const state_t* st;
 	int cycle_counter = 0;
 
 	do
@@ -1978,8 +1964,8 @@ void P_XYMovement(AActor *mo)
 	fixed_t maxmove = (mo->waterlevel < 2) || (mo->flags & MF_MISSILE) ? MAXMOVE/2 : MAXMOVE/8;
 	fixed_t mom_clamp = maxmove * 2;
 
-	fixed_t xmove = mo->momx = clamp(mo->momx, -mom_clamp, mom_clamp);
-	fixed_t ymove = mo->momy = clamp(mo->momy, -mom_clamp, mom_clamp);
+	fixed_t xmove = mo->momx = std::clamp(mo->momx, -mom_clamp, mom_clamp);
+	fixed_t ymove = mo->momy = std::clamp(mo->momy, -mom_clamp, mom_clamp);
 
 	// [SL] is the destination on a slope and if so, should the actor
 	// continue to be on the floor?
@@ -2234,7 +2220,7 @@ static void P_ApplyGravity(AActor* mo, fixed_t momz_change)
 			fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
 
 			if (mo->momz < sinkspeed)
-				mo->momz = MIN(startmomz, sinkspeed);
+				mo->momz = std::min(startmomz, sinkspeed);
 			else
 				mo->momz = startmomz + ((mo->momz - startmomz) >> WATER_SINK_FACTOR);
 		}
@@ -2773,7 +2759,7 @@ void AActor::RemoveFromHash ()
 			{
 				inext->iprev = iprev;
 				inext = NULL;
-			}
+						}
 			iprev = NULL;
 		}
 	}
@@ -3380,7 +3366,7 @@ void P_RespawnSpecials (void)
 	if (itemrespawnque.empty())
 		return;
 
-	const auto& [mthing, respawntime] = itemrespawnque.front();
+	const auto [mthing, respawntime] = itemrespawnque.front();
 
 	// wait a certain number of seconds before respawning this special
 	if (level.time - respawntime < sv_itemrespawntime * TICRATE)
@@ -3392,6 +3378,7 @@ void P_RespawnSpecials (void)
 	// find which type to spawn
 	auto it = spawn_map.find(mthing.type);
 	if (it == spawn_map.end() ||
+		// TODO: make this account for the possibility that dehacked has replaced these things
 		// Allow or not Partial Invisibility & Invulnerability from respawning
 	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)) ||
 		// pop barrels as well if needed
@@ -3404,14 +3391,8 @@ void P_RespawnSpecials (void)
 
 	const fixed_t z = it->second->flags & MF_SPAWNCEILING ? ONCEILINGZ : ONFLOORZ;
 
-	// spawn a teleport fog at the new spot
-	AActor* mo = new AActor (x, y, z, MT_IFOG);
-	SV_SpawnMobj(mo);
-	if (clientside)
-		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
-
 	// spawn it
-	mo = new AActor (x, y, z, it->second->type);
+	auto* mo = new AActor(x, y, z, it->second->type);
 	mo->spawnpoint = mthing;
 	mo->angle = ANG45 * (mthing.angle / 45);
 
@@ -3426,6 +3407,28 @@ void P_RespawnSpecials (void)
 	}
 
 	mo->special = 0;
+
+	// a solid thing (usually a barrel) would trap whoever is standing there,
+	// so hold it back until the spot is clear
+	if ((mo->flags & MF_SOLID) && !P_TestMobjLocation(mo))
+	{
+		// destroying a barrel puts it back in the queue on its own
+		const bool requeued = mo->info->type == MT_BARREL;
+
+		mo->Destroy();
+		itemrespawnque.pop();
+
+		if (!requeued)
+			itemrespawnque.emplace(mthing, level.time);
+
+		return;
+	}
+
+	// spawn a teleport fog at the new spot
+	auto* fog = new AActor (x, y, z, MT_IFOG);
+	SV_SpawnMobj(fog);
+	if (clientside)
+		S_Sound (fog, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	// pull it from the que
 	itemrespawnque.pop();
@@ -3521,7 +3524,7 @@ size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
-int P_IsPickupableThing(short type)
+bool P_IsPickupableThing(int16_t type)
 {
 	return (type == 82 // SSG
 			|| (type >= 2000 && type <= 2050) // weapons, ammo, health, armor, special items
@@ -3529,6 +3532,183 @@ int P_IsPickupableThing(short type)
 			|| type == 83 // megasphere
 			|| type == 8 // backpack
 	       );
+}
+
+enum
+{
+	SKYPICK_NOFLOOR   = 1,
+	SKYPICK_NOCEILING = 2
+};
+
+struct deferredskypicker_t
+{
+	int secnum;
+	int viewpointTid;
+	int planeflags;
+};
+static std::vector<deferredskypicker_t> DeferredSkyPickers;
+
+void P_ClearSkyPickers()
+{
+	DeferredSkyPickers.clear();
+}
+
+// Record a sky picker (thing 9081) for later resolution.
+void P_AddSkyPicker(int secnum, int viewpointTid, int planeflags)
+{
+	deferredskypicker_t picker;
+	picker.secnum = secnum;
+	picker.viewpointTid = viewpointTid;
+	picker.planeflags = planeflags;
+	DeferredSkyPickers.push_back(picker);
+}
+
+static bool P_IsStackPoint(const AActor* mo)
+{
+	return mo && (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK);
+}
+
+// Assign each recorded picker's sector to its target SkyViewpoint.
+void P_ResolveSkyPickers()
+{
+	for (size_t i = 0; i < DeferredSkyPickers.size();)
+	{
+		sector_t* sector = &sectors[DeferredSkyPickers[i].secnum];
+		int tid = DeferredSkyPickers[i].viewpointTid;
+		int planeflags = DeferredSkyPickers[i].planeflags;
+		bool resolved = false;
+
+		// A picker with no TID clears its planes back to regular sky.
+		AActor::AActorPtr box_ptr;
+
+		if (tid == 0)
+		{
+			resolved = true;
+		}
+		else
+		{
+			TActorIterator<AActor> iterator(tid);
+			AActor* box = iterator.Next();
+
+			if (box != NULL && box->type == MT_SKYVIEWPOINT)
+			{
+				box_ptr = box->ptr();
+				resolved = true;
+			}
+		}
+
+		if (resolved)
+		{
+			if (!(planeflags & SKYPICK_NOCEILING) && !P_IsStackPoint(sector->SkyboxCeiling))
+				sector->SkyboxCeiling = box_ptr;
+
+			if (!(planeflags & SKYPICK_NOFLOOR) && !P_IsStackPoint(sector->SkyboxFloor))
+				sector->SkyboxFloor = box_ptr;
+		}
+		else if (serverside)
+		{
+			PrintFmt("Can't find SkyViewpoint {} for sector {}\n", tid,
+			         DeferredSkyPickers[i].secnum);
+			resolved = true; // drop it
+		}
+
+		if (resolved)
+			DeferredSkyPickers.erase(DeferredSkyPickers.begin() + i);
+		else
+			i++;
+	}
+}
+
+static std::vector<AActor::AActorPtr> DeferredStackLinks;
+
+void P_ClearStackLinks()
+{
+	DeferredStackLinks.clear();
+}
+
+void P_AddStackLink(AActor* mo)
+{
+	DeferredStackLinks.push_back(mo->ptr());
+}
+
+// Pair each recorded stack point with its opposite-type mate by TID.
+// Mate is stored in the AActor::tracer field.
+void P_ResolveStackLinks()
+{
+	for (size_t i = 0; i < DeferredStackLinks.size();)
+	{
+		AActor* self = DeferredStackLinks[i];
+
+		if (self == NULL)
+		{
+			// The stack point was destroyed while waiting.
+			DeferredStackLinks.erase(DeferredStackLinks.begin() + i);
+			continue;
+		}
+
+		bool resolved = false;
+
+		if (self->tid != 0)
+		{
+			const mobjtype_t matetype =
+			    self->type == MT_UPPERSTACK ? MT_LOWERSTACK : MT_UPPERSTACK;
+
+			TActorIterator<AActor> iterator(self->tid);
+			AActor* mate;
+
+			while ((mate = iterator.Next()) != NULL && mate->type != matetype)
+				;
+
+			if (mate != NULL)
+			{
+				self->tracer = mate->ptr();
+				mate->tracer = self->ptr();
+
+				sector_t* sector = self->subsector->sector;
+				if (self->type == MT_UPPERSTACK)
+					sector->SkyboxFloor = mate->ptr();
+				else
+					sector->SkyboxCeiling = mate->ptr();
+
+				resolved = true;
+			}
+		}
+
+		if (!resolved && serverside)
+		{
+			PrintFmt("Can't find {} stack point with TID {} for sector {}\n",
+			         self->type == MT_UPPERSTACK ? "lower" : "upper", self->tid,
+			         self->subsector->sector - sectors);
+			resolved = true; // drop it
+		}
+
+		if (resolved)
+			DeferredStackLinks.erase(DeferredStackLinks.begin() + i);
+		else
+			i++;
+	}
+}
+
+//
+// P_IsPlayerSpawnThing
+//
+// Returns true if the mapthing2_t is a spawn
+//
+bool P_IsPlayerSpawnThing(const mapthing2_t& mt)
+{
+	if (VANILLA_COOP_PLAYER_STARTS.contains(mt.type) || mt.type == 11)  // player1-4, DM
+		return true;
+
+	if (spawn_map.contains(mt.type))
+		return false;
+
+	if (EXTRA_COOP_PLAYER_STARTS.contains(mt.type))
+		return true;
+
+	if (P_IsTeamStart(mt.type))
+		return true;
+
+	return false;
 }
 
 //
@@ -3546,11 +3726,13 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (mthing.type == 0 || mthing.type == -1)
 		return;
 
-	if (sv_allowshowspawns)
+	const bool inSpawnMap = spawn_map.contains(mthing.type);
+
+	if (sv_allowshowspawns && !inSpawnMap)
 		P_ShowSpawns(mthing);
 
-	const bool isPlayerSpawnPoint = (mthing.type >=    1 && mthing.type <=    4) ||
-	                                (mthing.type >= 4001 && mthing.type <= 4001 + MAXPLAYERSTARTS - 4);
+	const bool isPlayerCoopSpawnPoint = (VANILLA_COOP_PLAYER_STARTS.contains(mthing.type) ||
+	                                    (!inSpawnMap && EXTRA_COOP_PLAYER_STARTS.contains(mthing.type)));
 	const bool isTeleportDest = mthing.type == 14;
 	const bool isSecAct = (mthing.type >= 9982 && mthing.type <= 9983) ||
 	                      (mthing.type >= 9992 && mthing.type <= 9999);
@@ -3561,7 +3743,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
 	// otherwise teleporters or avatars won't work well.
 	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isPlayerSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
+	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
 	{
 		return;
 	}
@@ -3575,7 +3757,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// count deathmatch start positions
-	if (mthing.type == 11 || (!sv_teamspawns && mthing.type >= 5080 && mthing.type <= 5082))
+	if (mthing.type == 11 || (!sv_teamspawns && P_IsTeamStart(mthing.type) && !inSpawnMap))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (DeathMatchStarts.size() >= 10 && demoplayback)
@@ -3586,7 +3768,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	if (sv_teamspawns)
+	if (sv_teamspawns && !inSpawnMap)
 	{
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
@@ -3604,6 +3786,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	// [RH] Record polyobject-related things
 	if (HexenHack)
 	{
+		// NOLINTNEXTLINE(bugprone-switch-missing-default-case)
 		switch (mthing.type)
 		{
 		case PO_HEX_ANCHOR_TYPE:
@@ -3618,9 +3801,10 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		}
 	}
 
-	if (mthing.type == PO_ANCHOR_TYPE ||
+	if (!inSpawnMap &&
+		(mthing.type == PO_ANCHOR_TYPE ||
 		mthing.type == PO_SPAWN_TYPE ||
-		mthing.type == PO_SPAWNCRUSH_TYPE)
+		mthing.type == PO_SPAWNCRUSH_TYPE))
 	{
 		polyspawns_t *polyspawn = new polyspawns_t;
 		polyspawn->next = polyspawns;
@@ -3635,7 +3819,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// check for players specially
-	if (isPlayerSpawnPoint)
+	if (isPlayerCoopSpawnPoint)
 	{
 		// [RH] Only spawn spots that match position.
 		if (mthing.args[0] != position)
@@ -3726,25 +3910,6 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	if (P_IsHordeThing(mthing.type))
-	{
-		type = MT_HORDESPAWN;
-		::level.detected_gametype = GM_HORDE;
-	}
-
-	if (mthing.type == 9081)
-	{
-		type = MT_SKYPICKER;
-	}
-	else if (mthing.type == 9080)
-	{
-		type = MT_SKYVIEWPOINT;
-	}
-	else if (mthing.type == 9082)
-	{
-		type = MT_SECTORSILENCER;
-	}
-
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
 	if (mthing.type >= 14001 && mthing.type <= 14064)
@@ -3761,6 +3926,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mthing.args[0] = mthing.type - 14100;
 		mthing.type = mobjinfo[MT_MUSICSOURCE].doomednum;
 		type = MT_MUSICSOURCE;
+	}
+
+	if (!inSpawnMap && P_IsHordeThing(mthing.type))
+	{
+		type = MT_HORDESPAWN;
+		::level.detected_gametype = GM_HORDE;
 	}
 
 	// [CMB] find the value in the mobjinfo table if we asked for a specific type; otherwise check the spawn table
@@ -3897,7 +4068,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	// [RH] Set the thing's special
 	mobj->special = mthing.special;
-	mobj->args    = mthing.args;
+	std::copy(std::begin(mthing.args), std::end(mthing.args), mobj->args.begin());
 
 	// [RH] If it's an ambient sound, activate it
 	if (type == MT_AMBIENT)
@@ -3958,42 +4129,30 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		// If this actor has no TID, make it the default sky box
 		if (mobj->tid == 0)
 		{
-			int j;
-
-			for (j = 0; j < numsectors; j++)
+			for (int j = 0; j < numsectors; j++)
 			{
-				if (sectors[j].Skybox == NULL)
-				{
-					sectors[j].Skybox = mobj->ptr();
-				}
+				if (sectors[j].SkyboxCeiling == NULL)
+					sectors[j].SkyboxCeiling = mobj->ptr();
+				if (sectors[j].SkyboxFloor == NULL)
+					sectors[j].SkyboxFloor = mobj->ptr();
 			}
 		}
+	}
+
+	if (mobj->type == MT_UPPERSTACK || mobj->type == MT_LOWERSTACK)
+	{
+		// Record for deferred resolution.
+		P_AddStackLink(mobj);
 	}
 
 	if (mobj->type == MT_SKYPICKER)
 	{
-		sector_t* sector = mobj->subsector->sector;
-		if (mthing.args[0] == 0)
-		{
-			sector->Skybox = AActor::AActorPtr();
-		}
-		else
-			{
-				TActorIterator<AActor> iterator (mthing.args[0]);
-			    AActor* box = iterator.Next();
-
-				if (box != NULL && box->type == MT_SKYVIEWPOINT)
-				{
-				    sector->Skybox = box->ptr();
-				}
-				else
-				{
-					PrintFmt ("Can't find SkyViewpoint {} for sector {}\n", mthing.args[0],
-				           sector - sectors);
-				}
-			}
-			mobj->Destroy ();
+		// Record for deferred resolution.
+		P_AddSkyPicker(static_cast<int>(mobj->subsector->sector - sectors), mobj->args[0],
+		               mobj->args[1]);
 	}
+
+	SV_SpawnMobj(mobj);
 
 	if ((mthing.type >= 9992 && mthing.type <= 9999) ||
 		(mthing.type >= 9982 && mthing.type <= 9983)) {
