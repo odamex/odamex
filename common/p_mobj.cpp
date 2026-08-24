@@ -2196,6 +2196,14 @@ static bool P_ClipMovementToFloor(AActor* mo)
 		    P_FloorHeight(mo->x, mo->y, mo->subsector->sector) == mo->floorz)
 			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_HitFloor);
 
+		// [RV] Bounce actors upward at their landing velocity.
+		if (!(mo->flags & MF_MISSILE) && mo->floorsector->flags & SECF_SPRINGPAD)
+		{
+			mo->momz = -mo->momz;
+			mo->z = mo->floorz;
+			return true;
+		}
+
 		// Lost Soul hit the floor
 		if (mo->flags & MF_SKULLFLY && P_CorrectLostSoulBounce())
 			mo->momz = -mo->momz;
@@ -3181,7 +3189,7 @@ void P_RespawnSpecials (void)
 	if (itemrespawnque.empty())
 		return;
 
-	const auto& [mthing, respawntime] = itemrespawnque.front();
+	const auto [mthing, respawntime] = itemrespawnque.front();
 
 	// wait a certain number of seconds before respawning this special
 	if (level.time - respawntime < sv_itemrespawntime * TICRATE)
@@ -3206,14 +3214,8 @@ void P_RespawnSpecials (void)
 
 	const fixed_t z = it->second->flags & MF_SPAWNCEILING ? ONCEILINGZ : ONFLOORZ;
 
-	// spawn a teleport fog at the new spot
-	AActor* mo = new AActor (x, y, z, MT_IFOG);
-	SV_SpawnMobj(mo);
-	if (clientside)
-		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
-
 	// spawn it
-	mo = new AActor (x, y, z, it->second->type);
+	auto* mo = new AActor(x, y, z, it->second->type);
 	mo->spawnpoint = mthing;
 	mo->angle = ANG45 * (mthing.angle / 45);
 
@@ -3228,6 +3230,28 @@ void P_RespawnSpecials (void)
 	}
 
 	mo->special = 0;
+
+	// a solid thing (usually a barrel) would trap whoever is standing there,
+	// so hold it back until the spot is clear
+	if ((mo->flags & MF_SOLID) && !P_TestMobjLocation(mo))
+	{
+		// destroying a barrel puts it back in the queue on its own
+		const bool requeued = mo->info->type == MT_BARREL;
+
+		mo->Destroy();
+		itemrespawnque.pop();
+
+		if (!requeued)
+			itemrespawnque.emplace(mthing, level.time);
+
+		return;
+	}
+
+	// spawn a teleport fog at the new spot
+	auto* fog = new AActor (x, y, z, MT_IFOG);
+	SV_SpawnMobj(fog);
+	if (clientside)
+		S_Sound (fog, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	// pull it from the que
 	itemrespawnque.pop();
@@ -3533,12 +3557,13 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	                      (mthing.type >= 9992 && mthing.type <= 9999);
 	const bool isSoundSource = (mthing.type >= 14001 && mthing.type <= 14065);
 	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
+	const bool isSpringPad = inSpawnMap && spawn_map[mthing.type]->type == MT_SPRINGPAD;
 
 	// only servers control spawning of items
 	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
 	// otherwise teleporters or avatars won't work well.
 	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
+	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger || isSpringPad))
 	{
 		return;
 	}
@@ -3676,6 +3701,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	// check for appropriate skill level
 	if (!(mthing.flags & G_GetCurrentSkill().spawn_filter))
 		return;
+
+	if (isSpringPad)
+	{
+		P_PointInSubsector(mthing.x << FRACBITS, mthing.y << FRACBITS)->sector->flags |= SECF_SPRINGPAD;
+		return;
+	}
 
 	// [RH] sound sequence overrides
 	if (mthing.type >= 1400 && mthing.type < 1410)

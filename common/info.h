@@ -1483,12 +1483,12 @@ enum mobjtype_t: int32_t {
     MT_NODE,        //Added by MC:
     MT_WATERZONE,
     MT_SECRETTRIGGER,
-    // MT_UPPERSTACK,
-    // MT_LOWERSTACK,
+    MT_UPPERSTACK,
+    MT_LOWERSTACK,
     MT_SKYVIEWPOINT,
     MT_SKYPICKER,
     MT_SECTORSILENCER,
-
+	MT_SPRINGPAD,
 
     // -----------------------------------
     //    [Toke - CTF]
@@ -1535,12 +1535,6 @@ enum mobjtype_t: int32_t {
     MT_CAREPACK,
 	MT_EXTRALIFE,
 	MT_RESTEAMMATE,
-
-	// TODO: 13.0.0, delete these and uncomment the earlier ones
-	// for 12.3 they have to be here because modifying internal
-	// mobjtype nums breaks version compatibility
-	MT_UPPERSTACK,
-    MT_LOWERSTACK,
 
     // --------------------------------------------------------------------- //
 
