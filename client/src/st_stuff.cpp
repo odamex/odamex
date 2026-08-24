@@ -24,6 +24,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <utility>
 
 #include "odamex.h"
 
@@ -959,7 +960,7 @@ void ST_UpdateSurfaceBpp()
 	const int currentbpp = surface->getBitsPerPixel();
 	bool reallocated = false;
 
-	if (stbar_surface && stbar_surface->getBitsPerPixel() != currentbpp)
+	if (stbar_surface && std::cmp_not_equal(stbar_surface->getBitsPerPixel(), currentbpp))
 	{
 		I_FreeSurface(stbar_surface);
 		stbar_surface = I_AllocateSurface(sbar_width, 32, currentbpp);
@@ -967,7 +968,7 @@ void ST_UpdateSurfaceBpp()
 		reallocated = true;
 	}
 
-	if (stnum_surface && stnum_surface->getBitsPerPixel() != currentbpp)
+	if (stnum_surface && std::cmp_not_equal(stnum_surface->getBitsPerPixel(), currentbpp))
 	{
 		I_FreeSurface(stnum_surface);
 		stnum_surface = I_AllocateSurface(sbar_width, 32, currentbpp);
