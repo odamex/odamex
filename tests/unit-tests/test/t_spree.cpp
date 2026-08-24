@@ -30,6 +30,7 @@
 #include "v_textcolors.h"
 #include "actor.h"
 #include "p_inter.h"
+#include "g_gametype.h"
 
 namespace
 {
@@ -352,6 +353,87 @@ TEST_F(SpreeTest, ClearingSpreesEmptiesTheHud)
 	EXPECT_EQ(lines.bigSpree, nullptr);
 	EXPECT_EQ(lines.smallSpree, nullptr);
 	EXPECT_EQ(lines.smallBreaker, nullptr);
+}
+
+// ==========================================================
+// Round boundaries.
+// ==========================================================
+
+class SpreeRoundTest : public ::testing::Test
+{
+  protected:
+	void SetUp() override
+	{
+		::players.clear();
+		AddPlayer(WATCHED, "Watched");
+		AddPlayer(OTHER, "Other");
+
+		::gametic = 10000;
+
+		SpreeManager::getInstance().reset();
+		SpreeManager::getInstance().loadSpreeDefaults();
+		MultiKillManager::getInstance().reset();
+		MultiKillManager::getInstance().loadMultiKillDefaults();
+	}
+
+	void TearDown() override
+	{
+		SpreeManager::getInstance().reset();
+		SpreeManager::getInstance().loadSpreeDefaults();
+		MultiKillManager::getInstance().reset();
+		MultiKillManager::getInstance().loadMultiKillDefaults();
+		::players.clear();
+	}
+};
+
+TEST_F(SpreeRoundTest, ClearingRoundStatsWipesSpreesAndMultiKills)
+{
+	SpreeManager::getInstance().setRawSpree(WATCHED, 2, 0);
+	SpreeManager::getInstance().setRawSpree(OTHER, 1, 0);
+	MultiKillManager::getInstance().addKill(WATCHED);
+
+	ASSERT_TRUE(SpreeManager::getInstance().hasSpree(WATCHED));
+	ASSERT_EQ(MultiKillManager::getInstance().getMultiKills(WATCHED).multiKills, 1);
+
+	G_ClearRoundKillStats();
+
+	EXPECT_FALSE(SpreeManager::getInstance().hasSpree(WATCHED));
+	EXPECT_FALSE(SpreeManager::getInstance().hasSpree(OTHER));
+	EXPECT_EQ(MultiKillManager::getInstance().getMultiKills(WATCHED).multiKills, 0);
+}
+
+TEST_F(SpreeRoundTest, ClearingRoundStatsWipesTheBreakerAndTheHud)
+{
+	SpreeManager::getInstance().setRawSpree(WATCHED, 2, 0);
+
+	SpreeBreaker_t breaker;
+	breaker.spreeEndedPlayerId = OTHER;
+	breaker.spreeEndedName = "Other";
+	breaker.spreeEnderPlayerId = WATCHED;
+	breaker.spreeEnderName = "Watched";
+	SpreeManager::getInstance().setRawSpreeBreaker(breaker, 1, BR_PLAYER, 0);
+
+	G_ClearRoundKillStats();
+
+	const SpreeHudLines_t lines = P_GetSpreeHudLines(WATCHED);
+
+	EXPECT_EQ(lines.bigSpree, nullptr);
+	EXPECT_EQ(lines.smallSpree, nullptr);
+	EXPECT_EQ(lines.smallBreaker, nullptr);
+}
+
+TEST_F(SpreeRoundTest, ClearingRoundStatsAlsoDropsPoints)
+{
+	const player_t& player = idplayer(static_cast<byte>(WATCHED));
+
+	for (int i = 0; i < 5; i++)
+		SpreeManager::getInstance().recordPlayerKill(&player);
+
+	ASSERT_EQ(SpreeManager::getInstance().getPoints(WATCHED), 5);
+
+	G_ClearRoundKillStats();
+
+	EXPECT_EQ(SpreeManager::getInstance().getPoints(WATCHED), 0);
 }
 
 // ==========================================================
