@@ -657,6 +657,8 @@ static void FillUpdateMobj(odaproto::svc::UpdateMobj& msg, const AActor& mobj)
 	uint32_t flags = P_GetMobjBaselineFlags(mobj);
 	msg.set_flags(flags);
 
+	msg.set_threshold(mobj.threshold);
+
 	odaproto::Actor* act = msg.mutable_actor();
 	odaproto::Vec3* pos = act->mutable_pos();
 	odaproto::Vec3* mom = act->mutable_mom();
