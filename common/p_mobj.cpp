@@ -1340,6 +1340,7 @@ void AActor::Serialize (FArchive &arc)
 		unsigned dummy;
 		unsigned playerid;
 		int newnetid;
+		int dummyInt;
 		AActor* tmptracer;
 
 		arc >> newnetid
@@ -1401,7 +1402,7 @@ void AActor::Serialize (FArchive &arc)
 			>> spawnRndindex
 			>> mode
 			>> updatedDuringLocalTic
-			>> updatedDuringServerTic
+			>> dummyInt //This used to be updatedDuringServerTic, but that caused netdemo desyncs.  FIXME: header tics
 			>> spawnTic
 			>> mobjtic
 			>> credibility;
