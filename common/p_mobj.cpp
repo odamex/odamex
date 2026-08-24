@@ -1438,13 +1438,13 @@ void AActor::Serialize (FArchive &arc)
 
 		P_SetThingId(this, newnetid);
 
-		s_unresolvedIds.emplace(std::make_pair(uint32_t(netid),
+		s_unresolvedIds.emplace(netid,
 		                        ReferencedMobjIdsType
 		                        {
 		                            .targetId    = targetId,
 		                            .goalId      = goalId,
 		                            .lastEnemyId = lastEnemyId
-		                        }));
+		                        });
 
 		uint32_t trans;
 		arc >> trans;
