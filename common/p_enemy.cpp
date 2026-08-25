@@ -2844,7 +2844,7 @@ void A_SpawnObject(AActor* actor)
 	mo->momz = vel_z;
 
 	// A missile answers to whoever fired it, anything else answers for itself.
-	const bool spawnerismissile = actor->info->flags & (MF_MISSILE | MF_BOUNCES);
+	const auto spawnerismissile = actor->info->flags & (MF_MISSILE | MF_BOUNCES);
 
 	// if spawned object is a missile, set target+tracer
 	if (mo->info->flags & (MF_MISSILE | MF_BOUNCES))

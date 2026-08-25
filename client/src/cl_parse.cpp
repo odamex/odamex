@@ -520,9 +520,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	P_ClearId(netid);
 
-	const bool floatbob = (mobjinfo[type].flags2 & MF2_FLOATBOB);
+	const auto floatbob = (mobjinfo[type].flags2 & MF2_FLOATBOB);
 	// Spawn on the floor first so special1 can store the bob center offset.
-	AActor* mo = new AActor(base.pos.x, base.pos.y, floatbob ? ONFLOORZ : base.pos.z, type);
+	auto* mo = new AActor(base.pos.x, base.pos.y, floatbob ? ONFLOORZ : base.pos.z, type);
 	if (floatbob)
 	{
 		mo->UnlinkFromWorld();

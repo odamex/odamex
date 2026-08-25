@@ -98,9 +98,9 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 			SV_SpawnMobj(mo);
 
 			// Spawn a teleport fog if it's not an ambush.
-			if ((spawn.mo->flags & MF_AMBUSH) == 0)
+			if (not (spawn.mo->flags & MF_AMBUSH))
 			{
-				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+				auto* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
 				SV_SpawnMobj(tele);
 				S_NetSound(tele, CHAN_VOICE, "misc/teleport", ATTN_NORM);
 			}
@@ -274,7 +274,7 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 	for (auto& spawn : monsterSpawns)
 	{
 		const mobjinfo_t& info = ::mobjinfo[recipe.type];
-		const bool isFlying = info.flags & (MF_NOGRAVITY | MF_FLOAT);
+		const auto isFlying = info.flags & (MF_NOGRAVITY | MF_FLOAT);
 
 		if (recipe.isBoss && spawn.type != TTYPE_HORDE_BOSS &&
 		    spawn.type != TTYPE_HORDE_SMALLBOSS)
@@ -488,9 +488,9 @@ void P_HordeSpawnItem()
 			SV_SpawnMobj(pack);
 
 			// Play the item respawn sound, so people can listen for it.
-			if ((point.mo->flags & MF_AMBUSH) == 0)
+			if (not (point.mo->flags & MF_AMBUSH))
 			{
-				AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
+				auto* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
 				SV_SpawnMobj(tele);
 				S_NetSound(tele, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
 			}
@@ -529,9 +529,9 @@ void P_HordeSpawnPowerup(const mobjtype_t pw)
 		SV_SpawnMobj(pack);
 
 		// Play the item respawn sound, so people can listen for it.
-		if ((point.mo->flags & MF_AMBUSH) == 0)
+		if (not (point.mo->flags & MF_AMBUSH))
 		{
-			AActor* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
+			auto* tele = new AActor(pack->x, pack->y, pack->z, MT_IFOG);
 			SV_SpawnMobj(tele);
 			S_NetSound(tele, CHAN_VOICE, "misc/spawn", ATTN_IDLE);
 		}

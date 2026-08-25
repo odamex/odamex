@@ -187,7 +187,7 @@ void ActorSnapshot::toActor(AActor *mo) const
 
 			// [AM] Sometimes it is best to ignore parts of snapshots,
 			//      for moving platforms and such.
-			if ((mo->oflags & MFO_NOSNAPZ) == 0)
+			if (not (mo->oflags & MFO_NOSNAPZ))
 				mo->z = destz;
 
 			mo->ceilingz = tmceilingz;

@@ -980,7 +980,7 @@ namespace
 
 bool PIT_CheckThing (AActor& thing)
 {
-	const bool solid = thing.flags & MF_SOLID;
+	const auto solid = thing.flags & MF_SOLID;
 
 	// don't clip against self
 	if (&thing == tmthing)
@@ -1077,7 +1077,7 @@ bool PIT_CheckThing (AActor& thing)
 		if (tmthing->target &&
 			(P_ProjectileImmune(&thing, tmthing->target) &&
 		    !((level.flags2 & LEVEL2_INFIGHTINGMASK) ?
-			    level.flags2 & LEVEL2_TOTALINFIGHTING :
+			    (level.flags2 & LEVEL2_TOTALINFIGHTING).to_bool() :
 			    G_GetCurrentSkill().flags & SKILL_TOTALINFIGHTING)))
 		{
 			// Don't hit same species as originator

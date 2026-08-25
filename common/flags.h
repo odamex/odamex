@@ -41,7 +41,7 @@ namespace flags_detail
 {
 
 using OUtil::to_underlying;
-using OUtil::Bool;
+using OUtil::SafeBool;
 using OUtil::noflag_t;
 using OUtil::noflag;
 
@@ -96,7 +96,7 @@ public:
 	requires FlagEnumWithMax<E>
 	{
 		using unsigned_underlying = std::make_unsigned_t<underlying>;
-		return Derived{(static_cast<unsigned_underlying>(enable_bitflag_operators(E{})) << 1) - unsigned_underlying{1}};
+		return Derived{static_cast<underlying>((static_cast<unsigned_underlying>(enable_bitflag_operators(E{})) << 1) - unsigned_underlying{1})};
 	}
 
 	[[nodiscard]]
@@ -128,7 +128,7 @@ public:
 		return derived_this();
 	}
 
-	constexpr Derived& set(const E e, const Bool auto value) noexcept
+	constexpr Derived& set(const E e, const SafeBool value) noexcept
 	{
 		if (value)
 			set(e);
@@ -189,7 +189,7 @@ public:
 	}
 
 	[[nodiscard]]
-	constexpr Derived set(const E e, const Bool auto value) const noexcept
+	constexpr Derived set(const E e, const SafeBool value) const noexcept
 	{
 		if (value)
 			return set(e);
@@ -208,7 +208,7 @@ public:
 	constexpr Derived toggle() const noexcept
 	{
 		// ugh, cast needed cause of integer promotion
-		return Derived{static_cast<underlying>(m_value ^ all_set())};
+		return Derived{static_cast<underlying>(m_value ^ all_set().m_value)};
 	}
 
 	[[nodiscard]]
@@ -233,27 +233,27 @@ public:
 	}
 
 	[[nodiscard]]
-	constexpr bool is_set(const E e) const noexcept
+	constexpr SafeBool is_set(const E e) const noexcept
 	{
-		return (m_value & to_underlying(e)) != underlying{0};
+		return {(m_value & to_underlying(e)) != underlying{0}};
 	}
 
 	[[nodiscard]]
-	constexpr bool all() const noexcept
+	constexpr SafeBool all() const noexcept
 	{
-		return m_value == all_set().m_value;
+		return {m_value == all_set().m_value};
 	}
 
 	[[nodiscard]]
-	constexpr bool any() const noexcept
+	constexpr SafeBool any() const noexcept
 	{
-		return m_value != none_set().m_value;
+		return {m_value != none_set().m_value};
 	}
 
 	[[nodiscard]]
-	constexpr bool none() const noexcept
+	constexpr SafeBool none() const noexcept
 	{
-		return m_value == none_set().m_value;
+		return {m_value == none_set().m_value};
 	}
 
 	[[nodiscard]]
@@ -263,21 +263,21 @@ public:
 	}
 
 	[[nodiscard]]
-	explicit operator underlying() const noexcept
+	constexpr explicit operator underlying() const noexcept
 	{
 		return m_value;
 	}
 
 	[[nodiscard]]
-	constexpr bool operator==(noflag_t) const noexcept
+	constexpr SafeBool operator==(noflag_t) const noexcept
 	{
-		return m_value == none_set().m_value;
+		return {m_value == none_set().m_value};
 	}
 
 	[[nodiscard]]
-	friend constexpr bool operator==(const Derived lhs, const Derived rhs) noexcept
+	friend constexpr SafeBool operator==(const Derived lhs, const Derived rhs) noexcept
 	{
-		return lhs.m_value == rhs.m_value;
+		return {lhs.m_value == rhs.m_value};
 	}
 
 	// TODO: this is just temporary and should be deleted as soon as its unused
@@ -394,16 +394,16 @@ constexpr flag_set<E> operator|(const flag_set<E> s, const FlagOrCombo<E> auto c
 
 template <FlagEnum E>
 [[nodiscard]]
-constexpr bool operator&(const flag_set<E> s, const E e) noexcept
+constexpr SafeBool operator&(const flag_set<E> s, const E e) noexcept
 {
 	return s.is_set(e);
 }
 
 template <FlagEnum E>
 [[nodiscard]]
-constexpr bool operator&(const flag_set<E> s, const flag_combo<E> c) noexcept
+constexpr SafeBool operator&(const flag_set<E> s, const flag_combo<E> c) noexcept
 {
-	return static_cast<bool>(combo(s).bitwise_and(c).to_int());
+	return {static_cast<bool>(combo(s).bitwise_and(c).to_int())};
 }
 
 template <FlagEnum E>
@@ -443,9 +443,9 @@ constexpr flag_set<E> operator^(const flag_set<E> s, const FlagOrCombo<E> auto c
 
 template <FlagEnum E>
 [[nodiscard]]
-constexpr bool operator==(const flag_combo<E> c, const E e) noexcept
+constexpr SafeBool operator==(const flag_combo<E> c, const E e) noexcept
 {
-	return c == flag_combo<E>{e};
+	return {c == flag_combo<E>{e}};
 }
 
 }

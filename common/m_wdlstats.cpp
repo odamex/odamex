@@ -709,7 +709,7 @@ void M_LogWDLItemRespawnEvent(AActor* activator)
  * respawn is on.
  */
 void M_LogWDLPickupEvent(const player_t* activator, AActor* target, WDLPowerups pickuptype,
-                         bool dropped)
+                         OUtil::SafeBool dropped)
 {
 	if (!::wdlstate.recording)
 		return;

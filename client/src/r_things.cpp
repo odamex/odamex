@@ -272,7 +272,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		is now with the palette field.
 		translated = true;
 		dcol.translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
-			( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) ));
+			( (vis->mobjflags & mask(MF_TRANSLATION)).to_int() >> (MF_TRANSSHIFT-8) ));
 	}
 	int id = vis->mo && vis->mo->player ? vis->mo->player->id : 0;
 
@@ -688,7 +688,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 
 	vis->mobjflags = thing->flags;
 	vis->statusflags = thing->statusflags;
-	vis->spectator = thing->oflags & MFO_SPECTATOR;
+	vis->spectator = (thing->oflags & MFO_SPECTATOR).to_bool();
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->patch = lump;
@@ -1181,7 +1181,7 @@ void R_DrawMasked (void)
 	{
 		R_DrawSprite(vis);
 
-        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and (vis->mo->flags & MF_CORPSE) == 0)
+        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
         {
             closestNonCredibleVisSprite = vis;
         }

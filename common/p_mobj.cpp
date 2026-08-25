@@ -628,7 +628,7 @@ void AActor::ClearFriendly()
 }
 
 
-void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
+void AActor::SetFriendly(OUtil::SafeBool i_isFriendly, const AActor* owner)
 {
 	if (i_isFriendly)
 	{
@@ -1830,7 +1830,7 @@ static void P_ApplyXYFriction(AActor* mo)
 	const bool isRealPlayer             = isPlayer and not isVoodooOrAvatar;
 	const bool isUserCommandingMotion   = mo->player and (mo->player->cmd.forwardmove != 0 or
 	                                                      mo->player->cmd.sidemove != 0);
-	const bool isOnConveyor             = mo->oflags & MFO_ISONCONVEYOR;
+	const auto isOnConveyor             = mo->oflags & MFO_ISONCONVEYOR;
 	const bool isSuperSlowVoodoo        = isVoodooOrAvatar and co_voodooscroller;
 
 	const bool keepInMotion = (isOnConveyor and not isSuperSlowVoodoo)

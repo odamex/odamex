@@ -58,9 +58,28 @@ constexpr auto to_underlying(const E e) noexcept
 	return static_cast<std::underlying_type_t<E>>(e);
 }
 
-// prevent implicit conversions from ints
+// concept to help prevent implicit conversions from ints
+// in function arguments
 template <typename B>
+// should this have remove_cvref_t?
 concept Bool = std::same_as<B, bool>;
+
+// type-safe wrapper around bool
+class SafeBool
+{
+private:
+	bool m_value = false;
+public:
+	constexpr SafeBool() = default;
+	// not explicit so that we can have implicit conversion *from* bool
+	// while using the concept to make sure that multiple steps of implicit conversions do not work
+	// making it work for *only* bool
+	constexpr SafeBool(const Bool auto b) noexcept : m_value(b) {};
+	[[nodiscard]] constexpr bool to_bool() const noexcept { return m_value; }
+	[[nodiscard]] constexpr explicit operator bool () const noexcept { return m_value; }
+	[[nodiscard]] constexpr SafeBool operator==(const Bool auto other) const { return m_value == other; }
+    [[nodiscard]] constexpr SafeBool operator==(const SafeBool other) const { return m_value == other.m_value; }
+};
 
 // Wrapper for easy iteration over containers in reverse with ranged for loops
 template <typename T>

@@ -579,8 +579,8 @@ public:
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
 	void ResetFlagsToDefault();
 
-	[[nodiscard]] bool IsFriendly() const { return flags & MF_FRIEND; }
-	void SetFriendly (bool isFriendly, const AActor* owner);
+	[[nodiscard]] OUtil::SafeBool IsFriendly() const { return flags & MF_FRIEND; }
+	void SetFriendly(OUtil::SafeBool isFriendly, const AActor* owner);
 	void UpdateActorLists();
 	static void ClearActorLists();
 	static ActorClassList& GetFriendlies() { return s_friendlies; }

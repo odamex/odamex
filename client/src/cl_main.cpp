@@ -2223,7 +2223,7 @@ void CL_ClearPlayerJustTeleported(const player_t& player)
 	teleported_players.erase(player.id);
 }
 
-ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, OUtil::SafeBool dropped);
 
 //
 // CL_ClearSectorSnapshots
