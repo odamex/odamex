@@ -185,6 +185,9 @@ include(OdamexCvarDoc)
 # Libraries
 add_subdirectory(libraries)
 
+# WAD building
+add_subdirectory(wad)
+
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
   add_subdirectory(common)
@@ -218,16 +221,6 @@ endif()
 
 # The "cvardocs" target refreshes the committed documentation on demand.
 odamex_cvardoc_add_targets()
-
-# WAD building
-add_subdirectory(wad)
-
-if (TARGET odamex AND TARGET odawad)
-    add_dependencies(odamex odawad)
-endif()
-if (TARGET odasrv AND TARGET odawad)
-    add_dependencies(odasrv odawad)
-endif()
 
 # Bash completion
 add_subdirectory(completion)

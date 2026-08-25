@@ -250,6 +250,10 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
   endif()
 
+  if (TARGET odawad)
+      add_dependencies(odamex odawad)
+  endif()
+
   odamex_copy_libs(odamex)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
