@@ -1241,6 +1241,43 @@ void AActor::RunThink ()
 	}
 }
 
+namespace
+{
+	struct ReferencedMobjIdsType
+	{
+		uint32_t targetId   { 0 };
+		uint32_t goalId     { 0 };
+		uint32_t lastEnemyId{ 0 };
+	};
+
+	std::unordered_map<uint32_t, ReferencedMobjIdsType> s_unresolvedIds;
+}
+
+void P_ResolveMobjToMobjPointers()
+{
+	auto setPointer = [](AActor::AActorPtr& destPtr, uint32_t netId)
+	{
+		if (AActor* other = P_FindThingById(netId))
+		{
+			destPtr = other->ptr();
+		}
+		else
+		{
+			destPtr = AActor::AActorPtr();
+		}
+	};
+
+	for (auto& [actorId, otherIDs] : s_unresolvedIds)
+	{
+		if (AActor* actorPtr = P_FindThingById(actorId))
+		{
+			setPointer(actorPtr->target,    otherIDs.targetId);
+			setPointer(actorPtr->goal,      otherIDs.goalId);
+			setPointer(actorPtr->lastenemy, otherIDs.lastEnemyId);
+		}
+	}
+	s_unresolvedIds.clear();
+}
 
 void AActor::Serialize (FArchive &arc)
 {
@@ -1257,11 +1294,6 @@ void AActor::Serialize (FArchive &arc)
 			<< z
 			<< pitch
 			<< angle
-
-			// [SL] Removed AActor::roll
-			// delete this next time saved-game compatibilty changes
-			<< 0
-
 			<< sprite
 			<< frame
 			<< effects
@@ -1287,8 +1319,8 @@ void AActor::Serialize (FArchive &arc)
 			<< movedir
 			<< visdir
 			<< movecount
-			/*<< target ? target->netid : 0*/
-			/*<< lastenemy ? lastenemy->netid : 0*/
+			<< (target ? target->netid : uint32_t(0))
+			<< (lastenemy ? lastenemy->netid : uint32_t(0))
 			<< reactiontime
 			<< threshold
 			<< playerid
@@ -1301,8 +1333,7 @@ void AActor::Serialize (FArchive &arc)
 			<< args[2]
 			<< args[3]
 			<< args[4]
-			/*<< goal ? goal->netid : 0*/
-			<< 0_u32
+			<< (goal ? goal->netid : uint32_t(0))
 			<< translucency
 			<< waterlevel
 			<< gear
@@ -1337,10 +1368,13 @@ void AActor::Serialize (FArchive &arc)
 	}
 	else
 	{
-		unsigned dummy;
 		unsigned playerid;
 		int newnetid;
+		int dummyInt;
 		AActor* tmptracer;
+		uint32_t targetId;
+		uint32_t goalId;
+		uint32_t lastEnemyId;
 
 		arc >> newnetid
 			>> x
@@ -1348,11 +1382,6 @@ void AActor::Serialize (FArchive &arc)
 			>> z
 			>> pitch
 			>> angle
-
-			// [SL] Removed AActor::roll
-			// delete this next time saved-game compatibilty changes
-			>> dummy
-
 			>> sprite
 			>> frame
 			>> effects
@@ -1378,8 +1407,8 @@ void AActor::Serialize (FArchive &arc)
 			>> movedir
 			>> visdir
 			>> movecount
-			/*>> target->netid*/
-			/*>> lastenemy->netid*/
+			>> targetId
+			>> lastEnemyId
 			>> reactiontime
 			>> threshold
 			>> playerid
@@ -1392,8 +1421,7 @@ void AActor::Serialize (FArchive &arc)
 			>> args[2]
 			>> args[3]
 			>> args[4]
-			/*>> goal->netid*/
-			>> dummy
+			>> goalId
 			>> translucency
 			>> waterlevel
 			>> gear
@@ -1401,7 +1429,7 @@ void AActor::Serialize (FArchive &arc)
 			>> spawnRndindex
 			>> mode
 			>> updatedDuringLocalTic
-			>> updatedDuringServerTic
+			>> dummyInt //This used to be updatedDuringServerTic, but that caused netdemo desyncs.  FIXME: header tics
 			>> spawnTic
 			>> mobjtic
 			>> credibility;
@@ -1409,6 +1437,14 @@ void AActor::Serialize (FArchive &arc)
 		tracer.init(tmptracer);
 
 		P_SetThingId(this, newnetid);
+
+		s_unresolvedIds.emplace(netid,
+		                        ReferencedMobjIdsType
+		                        {
+		                            .targetId    = targetId,
+		                            .goalId      = goalId,
+		                            .lastEnemyId = lastEnemyId
+		                        });
 
 		uint32_t trans;
 		arc >> trans;
@@ -2159,6 +2195,14 @@ static bool P_ClipMovementToFloor(AActor* mo)
 		if (mo->subsector->sector->SecActTarget &&
 		    P_FloorHeight(mo->x, mo->y, mo->subsector->sector) == mo->floorz)
 			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_HitFloor);
+
+		// [RV] Bounce actors upward at their landing velocity.
+		if (!(mo->flags & MF_MISSILE) && mo->floorsector->flags & SECF_SPRINGPAD)
+		{
+			mo->momz = -mo->momz;
+			mo->z = mo->floorz;
+			return true;
+		}
 
 		// Lost Soul hit the floor
 		if (mo->flags & MF_SKULLFLY && P_CorrectLostSoulBounce())
@@ -3513,12 +3557,13 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	                      (mthing.type >= 9992 && mthing.type <= 9999);
 	const bool isSoundSource = (mthing.type >= 14001 && mthing.type <= 14065);
 	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
+	const bool isSpringPad = inSpawnMap && spawn_map[mthing.type]->type == MT_SPRINGPAD;
 
 	// only servers control spawning of items
 	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
 	// otherwise teleporters or avatars won't work well.
 	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
+	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger || isSpringPad))
 	{
 		return;
 	}
@@ -3656,6 +3701,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	// check for appropriate skill level
 	if (!(mthing.flags & G_GetCurrentSkill().spawn_filter))
 		return;
+
+	if (isSpringPad)
+	{
+		P_PointInSubsector(mthing.x << FRACBITS, mthing.y << FRACBITS)->sector->flags |= SECF_SPRINGPAD;
+		return;
+	}
 
 	// [RH] sound sequence overrides
 	if (mthing.type >= 1400 && mthing.type < 1410)
