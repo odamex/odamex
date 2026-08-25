@@ -977,6 +977,7 @@ static void InitNetMessageFormats()
 {
 	// Server Messages.
 	MSG_INFO(msg_noop);
+	MSG_INFO(msg_header);
 
 	MSG_INFO(svc_disconnect);
 	MSG_INFO(svc_playerinfo);

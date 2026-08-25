@@ -2255,6 +2255,7 @@ MessageResultEnum CL_AcceptNetMessage()
 	{
 		if (netdemo.isRecording())
 		{
+			netdemo.capturePacketHeader(::messenger.GetCurrentReceivedPacketHeader());
 			netdemo.capture(&::net_message);
 		}
 
