@@ -110,12 +110,12 @@ void G_DeferedInitNew (const OLumpName& mapname)
 
 void G_DeferedFullReset()
 {
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 }
 
 void G_DeferedReset()
 {
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 }
 
 BEGIN_COMMAND (wad) // denis - changes wads
@@ -228,7 +228,7 @@ void G_InitNew (const char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 
 	if (paused)
 	{
@@ -417,7 +417,7 @@ void G_DoCompleted (void)
 		}
 	}
 
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 
 	const WinInfo& win = levelstate.getWinInfo();
 	switch (win.type)
@@ -617,7 +617,7 @@ void G_DoLoadLevel (int position)
 	// [SL] clear the saved sector data from the last level
 	OInterpolation::getInstance().resetGameInterpolation();
 
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,

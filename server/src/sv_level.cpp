@@ -465,7 +465,7 @@ void G_InitNew(const char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
-	SpreeManager::getInstance().clearSprees();
+	G_ClearRoundState();
 
 	if (old_gametype != sv_gametype || sv_gametype != GM_COOP)
 		unnatural_level_progression = true;
@@ -660,7 +660,7 @@ void G_DoCompleted()
 		if (player.ingame())
 			G_PlayerFinishLevel(player);
 
-	SpreeManager::getInstance().clearSprees();
+	G_ClearRoundState();
 }
 
 extern void G_SerializeLevel(FArchive &arc, bool hubLoad);
@@ -699,7 +699,7 @@ void G_DoResetLevel(bool full_reset)
 	// Clear teamgame state.
 	TeamInfo_ResetScores(full_reset);
 
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 
 	// Reset all keys found
 	for (size_t j = 0; j < NUMCARDS; j++)
@@ -796,8 +796,6 @@ void G_DoResetLevel(bool full_reset)
 
 	// No need to clear the spawn locations because we're not loading a new map.
 	M_StartWDLLog(false);
-
-	G_ClearRoundKillStats();
 
 	// Get queued players in the game.
 	SV_UpdatePlayerQueuePositions(G_CanJoinGameStart, NULL);

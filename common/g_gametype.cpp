@@ -566,7 +566,7 @@ static void GiveTeamWins(team_t team, int wins)
 	}
 }
 
-void G_ClearRoundKillStats()
+void G_ClearRoundState()
 {
 	SpreeManager::getInstance().clearSprees();
 	MultiKillManager::getInstance().clearMultiTics();

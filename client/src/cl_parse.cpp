@@ -901,7 +901,7 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 {
 	ClientReplay::getInstance().reset();
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
@@ -2595,7 +2595,7 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
 
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
