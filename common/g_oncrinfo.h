@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 /// <summary>
 /// Parses all ONCRINFO lumps for consumption by
 /// the AnnouncerManager object.
