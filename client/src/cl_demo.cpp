@@ -40,6 +40,7 @@
 #include "svc_message.h"
 #include "g_gametype.h"
 #include "g_game.h"
+#include "g_spree.h"
 
 #include "PacketHeaderType.h"
 #include "cl_freecam.h"
@@ -1495,6 +1496,8 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 
 	arc << rollerState;
 
+	P_SerializeSprees(arc);
+
 	byte check = 0x1d;
 	arc << check;          // consistancy marker
 
@@ -1639,6 +1642,8 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	G_InitNew(mapname);
 	displayplayer_id = consoleplayer_id = 1;
 	savegamerestore = false;
+
+	P_SerializeSprees(arc);
 
 	// read consistancy marker
 	byte check;

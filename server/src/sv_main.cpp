@@ -62,6 +62,8 @@
 #include "sv_maplist.h"
 #include "g_levelstate.h"
 #include "g_gametype.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "v_textcolors.h"
@@ -114,6 +116,7 @@ EXTERN_CVAR(sv_hostname)
 EXTERN_CVAR(sv_email)
 EXTERN_CVAR(sv_maxrate)
 EXTERN_CVAR(sv_emptyreset)
+EXTERN_CVAR(sv_showsprees)
 EXTERN_CVAR(sv_emptyfreeze)
 EXTERN_CVAR(sv_clientcount)
 EXTERN_CVAR(sv_globalspectatorchat)
@@ -1999,6 +2002,27 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	SV_SendPlayerInfo(pl);
 
+	if (sv_showsprees)
+	{
+		SpreeManager& sprees = SpreeManager::getInstance();
+
+		for (const auto& [playerId, record] : sprees.getSpreeRecords())
+		{
+			MSG_WriteSVC(cl->messenger->ReliableBuf(),
+			             SVC_Spree(record, ::gametic - record.spreeStartTic));
+		}
+
+		const SpreeBreaker_t& breaker = sprees.getSpreeBreaker();
+
+		if (breaker.spreeEndedPlayerId != -1)
+		{
+			MSG_WriteSVC(cl->messenger->ReliableBuf(),
+			             SVC_SpreeBreaker(breaker, breaker.spreeEndedLevel,
+			                              breaker.spreeEndedType,
+			                              ::gametic - breaker.spreeEndedTic));
+		}
+	}
+
 	MSG_WriteSVC(cl->messenger->ReliableBuf(), odaproto::svc::FullUpdateDone());
 
 	SV_ArmInventoryMonitors(pl);
@@ -2476,6 +2500,12 @@ void SV_DisconnectClient(player_t &who)
 
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
+
+	// Player ids get recycled, so anything left behind here would be handed to whoever
+	// joins next under the same id.
+	SpreeManager::getInstance().removeSpree(who.id);
+	SpreeManager::getInstance().erasePoints(who.id);
+	MultiKillManager::getInstance().eraseMultiKills(who.id);
 
 	who.playerstate = PST_DISCONNECT;
 

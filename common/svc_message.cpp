@@ -1839,17 +1839,21 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
 	return msg;
 }
 
-odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree)
+odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree, const int ticsAgo)
 {
 	odaproto::svc::Spree msg;
 
 	msg.set_pid(spree.playerId);
 	msg.set_spree_level(spree.spreeLevel);
+	msg.set_tics_ago(ticsAgo > 0 ? ticsAgo : 0);
 
 	return msg;
 }
 
-odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType)
+odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker,
+                                            const int level,
+                                            const SpreeBreakerType breakerType,
+                                            const int ticsAgo)
 {
 	odaproto::svc::SpreeBreaker msg;
 
@@ -1860,6 +1864,7 @@ odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, cons
 	msg.set_spree_level(level);
 	msg.set_spree_points(breaker.endedPoints);
 	msg.set_spree_breaker_type(breakerType);
+	msg.set_tics_ago(ticsAgo > 0 ? ticsAgo : 0);
 
 	return msg;
 }
