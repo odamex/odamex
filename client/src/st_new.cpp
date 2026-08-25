@@ -1734,7 +1734,7 @@ void LevelStateHUD()
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
 		lines.title = fmt::sprintf("Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
-		if (g_preroundreset)
+		if (g_preroundreset || G_IsMatchDuelGame())
 		{
 			lines.subtitle[0] = fmt::sprintf("Round begins in " TEXTCOLOR_GREEN "%d",
 			                                 ::levelstate.getCountdown());

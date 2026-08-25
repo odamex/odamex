@@ -459,7 +459,10 @@ void LevelState::tic()
 			G_DeferedFullReset();
 
 			m_roundNumber += 1;
-			setState(LevelState::getStartOfRoundState());
+			if (sv_warmup && G_IsMatchDuelGame())
+				setState(LevelState::INGAME);
+			else
+				setState(LevelState::getStartOfRoundState());
 
 			if (g_rounds)
 				printRoundStart();
