@@ -1219,9 +1219,10 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 		mo->momz = update.mom.z;
 	}
 
-	mo->rndindex = update.rndindex;
-	mo->movedir = update.movedir;
+	mo->rndindex  = update.rndindex;
+	mo->movedir   = update.movedir;
 	mo->movecount = update.movecount;
+	mo->threshold = msg->threshold();
 
 	AActor* target = P_FindThingById(update.targetid);
 	if (target)
@@ -2832,11 +2833,11 @@ static void CL_WakeupMobj(const odaproto::svc::WakeupMobj* msg)
 		mo->goal = AActor::AActorPtr();
 	}
 
-	mo->angle = msg->angle();
-	mo->lastlook = msg->lastlook();
-	mo->movecount = msg->movecount();
-	mo->movedir = msg->movedir();
-	mo->pursuecount = msg->pursuecount();
+	mo->angle        = msg->angle();
+	mo->lastlook     = msg->lastlook();
+	mo->movecount    = msg->movecount();
+	mo->movedir      = msg->movedir();
+	mo->pursuecount  = msg->pursuecount();
 	mo->reactiontime = msg->reactiontime();
 	mo->special      = msg->special();
 	mo->strafecount  = msg->strafecount();

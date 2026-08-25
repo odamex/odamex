@@ -1257,14 +1257,8 @@ void P_ResolveMobjToMobjPointers()
 {
 	auto setPointer = [](AActor::AActorPtr& destPtr, uint32_t netId)
 	{
-		if (AActor* other = P_FindThingById(netId))
-		{
-			destPtr = other->ptr();
-		}
-		else
-		{
-			destPtr = AActor::AActorPtr();
-		}
+		AActor* other = P_FindThingById(netId);
+		destPtr = other ? other->ptr() : AActor::AActorPtr();
 	};
 
 	for (auto& [actorId, otherIDs] : s_unresolvedIds)
