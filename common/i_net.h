@@ -837,7 +837,6 @@ void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg);
 void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg);
 void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
                       const int skipPlayer = -1);
-void MSG_WriteRawMsgBuffer(buf_t& b, msg_t messageId, const void* data, size_t length);
 
 int MSG_BytesLeft(void);
 int MSG_PeekByte (void);

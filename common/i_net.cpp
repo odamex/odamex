@@ -575,14 +575,6 @@ namespace
 	}
 }
 
-void MSG_WriteRawMsgBuffer(buf_t& b, msg_t messageId, const void* data, size_t length)
-{
-	if (simulated_connection)
-		return;
-
-	WriteMiniHeader(b, messageId, data, length);
-}
-
 void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 {
 	if (simulated_connection)
