@@ -64,6 +64,7 @@ END_DISABLE_WARNING_GNU
 #include "m_wdlstats.h"
 #include "g_spree.h"
 #include "g_announcer.h"
+#include "g_gametype.h"
 #include "cl_freecam.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
@@ -107,12 +108,14 @@ void G_DeferedInitNew (const OLumpName& mapname)
 	gameaction = ga_newgame;
 }
 
-void G_DeferedFullReset() {
-
+void G_DeferedFullReset()
+{
+	G_ClearRoundKillStats();
 }
 
-void G_DeferedReset() {
-
+void G_DeferedReset()
+{
+	G_ClearRoundKillStats();
 }
 
 BEGIN_COMMAND (wad) // denis - changes wads
