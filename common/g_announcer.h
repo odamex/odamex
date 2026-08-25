@@ -353,7 +353,7 @@ struct Announcer_s
 	/// Each named sound refers to a sndinfo token, which is given to the
 	/// sound function to play the appropriate sound.
 	/// </summary>
-	std::unordered_map<std::string, std::string> soundDict;
+	std::unordered_map<std::string, std::string> soundDict{};
 };
 
 /// <summary>
