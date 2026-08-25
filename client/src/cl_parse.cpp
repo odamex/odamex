@@ -197,6 +197,15 @@ static void CL_Noop(const odaproto::Noop* msg)
 {
 }
 
+static void CL_Header(const odaproto::Header* msg)
+{
+	s_currentHeader.sequence        = msg->sequence();
+	s_currentHeader.originatorTic   = msg->originator_tic();
+	s_currentHeader.destinationTic  = msg->destination_tic();
+	s_currentHeader.reliableSize    = msg->reliable_size();
+	s_currentHeader.flags           = msg->flags();
+}
+
 /**
  * @brief svc_disconnect - Disconnect a client from the server.
  */
@@ -3570,6 +3579,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 
 		/* clang-format off */
 		SV_MSG(msg_noop, CL_Noop, odaproto::Noop);
+		SV_MSG(msg_header, CL_Header, odaproto::Header);
 
 		SV_MSG(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
 		SV_MSG(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
