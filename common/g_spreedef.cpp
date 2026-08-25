@@ -62,8 +62,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 	os.mustScanInt();
 	int newLevel = os.getTokenInt();
 
-	if (newLevel <= spreeLevels.size() || newLevel > spreeLevels.size() + 1 ||
-	    newLevel <= 0)
+	if (newLevel < 1 || static_cast<size_t>(newLevel) != spreeLevels.size() + 1)
 		os.error("Spree levels must be defined in ascending order.");
 
 	os.mustScan();
@@ -122,8 +121,7 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 	os.mustScanInt();
 	int newLevel = os.getTokenInt();
 
-	if (newLevel <= multiKillLevels.size() - 1 || newLevel > multiKillLevels.size() + 1 ||
-	    newLevel <= 1)
+	if (newLevel < 2 || static_cast<size_t>(newLevel) != multiKillLevels.size())
 		os.error("Multi kill levels must be defined in ascending order.");
 
 	os.mustScan();
@@ -178,16 +176,14 @@ static void ParseSpreeText(OScanner& os, std::string& text, std::string token)
 	text = GStrings.maybeLookup(newText);
 }
 
-static void ParseSpreeDef(const int lump, const OLumpName name)
+void G_ParseSpreeDefBuffer(const char* buffer, const size_t length)
 {
-	const char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
-
 	const OScannerConfig config = {
 	    "SPREEDEF", // lumpName
 	    false,      // semiComments
 	    true,       // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + length);
 
 	// Reset everything before parsing
 	MultiKillManager::getInstance().reset();
@@ -313,6 +309,7 @@ void G_ParseSpreeDef()
 
 	while ((lump = W_FindLump("SPREEDEF", lump)) != -1)
 	{
-		ParseSpreeDef(lump, "SPREEDEF");
+		const char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
+		G_ParseSpreeDefBuffer(buffer, W_LumpLength(lump));
 	}
 }
