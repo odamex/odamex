@@ -1241,6 +1241,43 @@ void AActor::RunThink ()
 	}
 }
 
+namespace
+{
+	struct ReferencedMobjIdsType
+	{
+		uint32_t targetId   { 0 };
+		uint32_t goalId     { 0 };
+		uint32_t lastEnemyId{ 0 };
+	};
+
+	std::unordered_map<uint32_t, ReferencedMobjIdsType> s_unresolvedIds;
+}
+
+void P_ResolveMobjToMobjPointers()
+{
+	auto setPointer = [](AActor::AActorPtr& destPtr, uint32_t netId)
+	{
+		if (AActor* other = P_FindThingById(netId))
+		{
+			destPtr = other->ptr();
+		}
+		else
+		{
+			destPtr = AActor::AActorPtr();
+		}
+	};
+
+	for (auto& [actorId, otherIDs] : s_unresolvedIds)
+	{
+		if (AActor* actorPtr = P_FindThingById(actorId))
+		{
+			setPointer(actorPtr->target,    otherIDs.targetId);
+			setPointer(actorPtr->goal,      otherIDs.goalId);
+			setPointer(actorPtr->lastenemy, otherIDs.lastEnemyId);
+		}
+	}
+	s_unresolvedIds.clear();
+}
 
 void AActor::Serialize (FArchive &arc)
 {
@@ -1257,11 +1294,6 @@ void AActor::Serialize (FArchive &arc)
 			<< z
 			<< pitch
 			<< angle
-
-			// [SL] Removed AActor::roll
-			// delete this next time saved-game compatibilty changes
-			<< 0
-
 			<< sprite
 			<< frame
 			<< effects
@@ -1287,8 +1319,8 @@ void AActor::Serialize (FArchive &arc)
 			<< movedir
 			<< visdir
 			<< movecount
-			/*<< target ? target->netid : 0*/
-			/*<< lastenemy ? lastenemy->netid : 0*/
+			<< (target ? target->netid : uint32_t(0))
+			<< (lastenemy ? lastenemy->netid : uint32_t(0))
 			<< reactiontime
 			<< threshold
 			<< playerid
@@ -1301,8 +1333,7 @@ void AActor::Serialize (FArchive &arc)
 			<< args[2]
 			<< args[3]
 			<< args[4]
-			/*<< goal ? goal->netid : 0*/
-			<< 0_u32
+			<< (goal ? goal->netid : uint32_t(0))
 			<< translucency
 			<< waterlevel
 			<< gear
@@ -1337,10 +1368,13 @@ void AActor::Serialize (FArchive &arc)
 	}
 	else
 	{
-		unsigned dummy;
 		unsigned playerid;
 		int newnetid;
+		int dummyInt;
 		AActor* tmptracer;
+		uint32_t targetId;
+		uint32_t goalId;
+		uint32_t lastEnemyId;
 
 		arc >> newnetid
 			>> x
@@ -1348,11 +1382,6 @@ void AActor::Serialize (FArchive &arc)
 			>> z
 			>> pitch
 			>> angle
-
-			// [SL] Removed AActor::roll
-			// delete this next time saved-game compatibilty changes
-			>> dummy
-
 			>> sprite
 			>> frame
 			>> effects
@@ -1378,8 +1407,8 @@ void AActor::Serialize (FArchive &arc)
 			>> movedir
 			>> visdir
 			>> movecount
-			/*>> target->netid*/
-			/*>> lastenemy->netid*/
+			>> targetId
+			>> lastEnemyId
 			>> reactiontime
 			>> threshold
 			>> playerid
@@ -1392,8 +1421,7 @@ void AActor::Serialize (FArchive &arc)
 			>> args[2]
 			>> args[3]
 			>> args[4]
-			/*>> goal->netid*/
-			>> dummy
+			>> goalId
 			>> translucency
 			>> waterlevel
 			>> gear
@@ -1401,7 +1429,7 @@ void AActor::Serialize (FArchive &arc)
 			>> spawnRndindex
 			>> mode
 			>> updatedDuringLocalTic
-			>> updatedDuringServerTic
+			>> dummyInt //This used to be updatedDuringServerTic, but that caused netdemo desyncs.  FIXME: header tics
 			>> spawnTic
 			>> mobjtic
 			>> credibility;
@@ -1409,6 +1437,14 @@ void AActor::Serialize (FArchive &arc)
 		tracer.init(tmptracer);
 
 		P_SetThingId(this, newnetid);
+
+		s_unresolvedIds.emplace(netid,
+		                        ReferencedMobjIdsType
+		                        {
+		                            .targetId    = targetId,
+		                            .goalId      = goalId,
+		                            .lastEnemyId = lastEnemyId
+		                        });
 
 		uint32_t trans;
 		arc >> trans;

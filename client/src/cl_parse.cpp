@@ -1072,7 +1072,7 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 	uint32_t netid = msg->netid();
 
 	AActor* mo = P_FindThingById(netid);
-	if (mo && mo->player && mo->player->id == ::displayplayer_id)
+	if (mo && mo->player && mo->player->id == ::displayplayer_id && not consoleplayer().spectator)
 		::displayplayer_id = ::consoleplayer_id;
 
 	if (mo && mo->flags & MF_COUNTITEM)
@@ -1396,7 +1396,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 			rollerState.Record(tic, p);
 		}
 
-		if (!netdemo.isPlaying())
+		if (not netdemo.isPlaying() && not consoleplayer().spectator)
 		{
 				::displayplayer_id = ::consoleplayer_id;
 		}
