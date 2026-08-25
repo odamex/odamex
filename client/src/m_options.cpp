@@ -279,6 +279,9 @@ constexpr int RESCOLUMN_CURSOR_X = 8;
 constexpr int MENU_HALFPASTINDENT = 177;
 constexpr int MENU_LONGTEXTINDENT = 240;
 
+// A menu row's value is drawn this far past the menu's own indent.
+constexpr int MENU_VALUEINDENT = 14;
+
 struct optmouserow_t
 {
 	int		item;		// index into CurrentMenu->items
@@ -2292,7 +2295,9 @@ void M_OptDrawer()
 
 				if (!announcerisavailable)
 				{
-					screen->DrawTextCleanMove(CR_RED, CurrentMenu->indent + 14, y, "Not Loaded");
+					screen->DrawTextCleanMove(CR_RED,
+					                          CurrentMenu->indent + MENU_VALUEINDENT, y,
+					                          "Not Loaded");
 				}
 			}
 			break;

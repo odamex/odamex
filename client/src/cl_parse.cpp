@@ -3275,7 +3275,9 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type, ticsAgo);
 }
 
-static void CL_AnnouncerEvent(const odaproto::svc::AnnouncerEvent* msg)
+namespace
+{
+void CL_AnnouncerEvent(const odaproto::svc::AnnouncerEvent* msg)
 {
 	AnnouncerManager& instance = AnnouncerManager::getInstance();
 
@@ -3320,6 +3322,7 @@ static void CL_AnnouncerEvent(const odaproto::svc::AnnouncerEvent* msg)
 
 	S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
+} // namespace
 
 static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 {
