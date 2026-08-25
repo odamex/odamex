@@ -81,48 +81,6 @@ public:
     [[nodiscard]] constexpr SafeBool operator==(const SafeBool other) const { return m_value == other.m_value; }
 };
 
-// Wrapper for easy iteration over containers in reverse with ranged for loops
-template <typename T>
-struct reverse_wrapper
-{
-	T& iterable;
-	[[nodiscard]] constexpr auto begin() noexcept(noexcept(std::rbegin(iterable))) { return std::rbegin(iterable); }
-	[[nodiscard]] constexpr auto end() noexcept(noexcept(std::rend(iterable))) { return std::rend(iterable); }
-};
-
-/**
- * @brief Reverse the iteration in a range-based for loop
- */
-template <typename T>
-[[nodiscard]]
-constexpr reverse_wrapper<T> reverse(T& iterable) { return { iterable }; }
-
-// Wrapper for skipping the first N elements in a range-based for loop
-template <typename T>
-struct drop_wrapper
-{
-	T& iterable;
-	size_t count;
-
-	[[nodiscard]]
-	constexpr auto begin() {
-		auto it = std::begin(iterable);
-		auto end_it = std::end(iterable);
-		for (size_t i = 0; i < count && it != end_it; ++i)
-			++it;
-		return it;
-	}
-
-	[[nodiscard]] constexpr auto end() noexcept(noexcept(std::end(iterable))) { return std::end(iterable); }
-};
-
-/**
- * @brief Skip the first `count` elements in a range-based for loop
- */
-template <typename T>
-[[nodiscard]]
-constexpr drop_wrapper<T> drop(T& iterable, std::size_t count) { return { iterable, count }; }
-
 // Helper for use of std::visit with lambdas
 template<class... Ts>
 struct visitor : Ts... { using Ts::operator()...; };

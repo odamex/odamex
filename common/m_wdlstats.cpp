@@ -505,7 +505,7 @@ void M_StartWDLLog(bool newmap)
 static bool LogDamageEvent(WDLEvents eventtype, const player_t& activator, const player_t& target,
                            int arg0, int arg1, int arg2)
 {
-	for (auto& event : OUtil::reverse(::wdlevents))
+	for (auto& event : std::views::reverse(::wdlevents))
 	{
 		if (event.gametic != ::gametic)
 		{
@@ -548,7 +548,7 @@ bool LogAccuracyShot(WDLEvents eventtype, const player_t& activator, int mod, an
 	// If not, we need to create a new one
 	// If there is an existing accuracy event for this tic and it has a target,
 	// then there were more than 1 hits, create a new event.
-	for (auto& event : OUtil::reverse(::wdlevents))
+	for (auto& event : std::views::reverse(::wdlevents))
 	{
 		if (event.gametic != ::gametic)
 		{
@@ -583,7 +583,7 @@ bool LogAccuracyHit(WDLEvents eventtype, const player_t& activator, const player
                     int hits)
 {
 	// See if we have an existing accuracy event for this tic.
-	for (auto& event : OUtil::reverse(::wdlevents))
+	for (auto& event : std::views::reverse(::wdlevents))
 	{
 		if (event.gametic != ::gametic)
 		{

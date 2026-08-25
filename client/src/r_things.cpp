@@ -1177,7 +1177,7 @@ void R_DrawMasked (void)
 
 	closestNonCredibleVisSprite = nullptr;
 
-	for (auto& vis : OUtil::reverse(spritesorter))
+	for (auto& vis : std::views::reverse(spritesorter))
 	{
 		R_DrawSprite(vis);
 
