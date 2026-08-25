@@ -25,7 +25,7 @@
 
 #include "odamex.h"
 
-#include "cl_main.h"
+#include "cl_parse.h"
 #include "p_ctf.h"
 #include "d_player.h"
 #include "m_argv.h"

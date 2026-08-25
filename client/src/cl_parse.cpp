@@ -123,6 +123,11 @@ void P_PlayerLeavesGame(player_t* player);
 void P_SetPsprite(player_t& player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
 
+namespace
+{
+	PacketHeaderType s_currentHeader;
+}
+
 /**
  * @brief Unpack a bitfield into an array of booleans.
  */
@@ -3510,7 +3515,6 @@ const Protos& CL_GetTicProtos()
 	return ::protos;
 }
 
-
 /**
  * @brief Read a server message off the wire.
  */
@@ -3566,6 +3570,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 
 		/* clang-format off */
 		SV_MSG(msg_noop, CL_Noop, odaproto::Noop);
+
 		SV_MSG(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
 		SV_MSG(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
 		SV_MSG(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
@@ -3656,6 +3661,109 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 
 	RecordProto(static_cast<msg_t>(parsedCommand.cmd), parsedCommand.msg.get());
 	return PERR_OK;
+}
+
+namespace
+{
+	std::string SVCName(msg_t header)
+	{
+		std::string svc = ::msg_info[header].getName();
+		if (svc.empty())
+		{
+			svc = fmt::sprintf("svc_%u", header);
+		}
+		return svc;
+	}
+}
+
+//
+// CL_ParseCommands
+//
+void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
+{
+	if (optionalHeader)
+	{
+		s_currentHeader = *optionalHeader;
+	}
+
+	while (connected)
+	{
+		if (::net_message.BytesLeftToRead() == 0)
+		{
+			break;
+		}
+
+		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
+		// This is because the High Priority packet is always live and comes out every tic.  It's totally
+		// possible for the server to go without sending anything Reliable or Best-Effort if things are
+		// all-quiet.
+		if (messenger.GetCurrentReceivedIsHighPriority())
+		{
+			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
+		}
+
+		const size_t          byteStart = ::net_message.BytesRead();
+		const ParseResultType result    = CL_ParseCommand();
+
+		const parseError_e processResult = result.code == PERR_OK ?
+			CL_ProcessCommand(result) :
+			result.code;
+
+		if (processResult != PERR_OK or ::net_message.overflowed)
+		{
+			const Protos& protos = CL_GetTicProtos();
+
+			std::string err;
+			if (result.code == PERR_UNKNOWN_HEADER)
+			{
+				err = "Unknown message header";
+			}
+			else if (result.code == PERR_UNKNOWN_MESSAGE)
+			{
+				err = "Message is not known to message decoder";
+			}
+			else if (result.code == PERR_BAD_DECODE)
+			{
+				err = "Could not decode message";
+			}
+			else if (::net_message.overflowed)
+			{
+				err = "Message overflowed";
+			}
+			else
+			{
+				err = "Unknown error";
+			}
+
+			if (!protos.empty())
+			{
+				PrintFmt(PRINT_WARNING, "CL_ParseCommands: {}\n", err);
+
+				for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
+				{
+					char latest = (it == protos.end() - 1) ? '>' : ' ';
+					ptrdiff_t idx = it - protos.begin() + 1;
+					std::string svc = SVCName(it->header);
+					size_t siz = it->size;
+					PrintFmt(PRINT_WARNING, "{:c} {:>2d} [{}] {}b\n", latest, idx, svc,
+					         siz);
+				}
+			}
+			else
+			{
+				PrintFmt(PRINT_WARNING, "CL_ParseCommands: {}\n", err);
+			}
+
+			CL_QuitNetGame(NQ_PROTO);
+		}
+
+		// Measure length of each message, so we can keep track of bandwidth.
+		if (::net_message.BytesRead() < byteStart)
+		{
+			PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
+			         ::net_message.BytesRead(), byteStart);
+		}
+	}
 }
 
 VERSION_CONTROL (cl_parse_cpp, "$Id$")
