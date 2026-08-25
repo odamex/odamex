@@ -395,17 +395,19 @@ static void HU_DrawCrosshair()
 		static constexpr byte crosshair_color = 0xB0;
 		if (hud_crosshairhealth)
 		{
-			if (camera->health > 75)
+			const int health = camera->player ? camera->player->health : camera->health;
+
+			if (health > 75)
 			{
 				crosshair_trans[crosshair_color] =
 				    V_BestColor(V_GetDefaultPalette()->basecolors, 0x00, 0xFF, 0x00);
 			}
-			else if (camera->health > 50)
+			else if (health > 50)
 			{
 				crosshair_trans[crosshair_color] =
 				    V_BestColor(V_GetDefaultPalette()->basecolors, 0xFF, 0xFF, 0x00);
 			}
-			else if (camera->health > 25)
+			else if (health > 25)
 			{
 				crosshair_trans[crosshair_color] =
 				    V_BestColor(V_GetDefaultPalette()->basecolors, 0xFF, 0x7F, 0x00);
