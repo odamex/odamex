@@ -932,10 +932,11 @@ void P_CaptureLeadState();
 void P_CheckLeadChangeAnnouncement();
 
 /// <summary>
-/// Checks if this is the first frag of the round and announces "first blood".
+/// Checks whether the kill being processed drew first blood and, if so, announces it.
 /// Only plays in non-duel deathmatch games, client-side only.
 /// </summary>
-void P_CheckFirstBloodAnnouncement();
+/// <param name="killer">The player credited with the kill being processed.</param>
+void P_CheckFirstBloodAnnouncement(const player_t& killer);
 
 /// <summary>
 /// Checks if the display player is the last player alive in a survival game.

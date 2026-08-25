@@ -2050,7 +2050,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 	if (source && source->player && target->player && level.time)
 	{
 		// Check for first blood announcement (client-side, non-duel DM only)
-		P_CheckFirstBloodAnnouncement();
+		P_CheckFirstBloodAnnouncement(*source->player);
 
 		// Check for frag warning announcements (client-side)
 		P_CheckFragWarnings();

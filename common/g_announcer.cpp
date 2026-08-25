@@ -946,7 +946,7 @@ void P_CheckLeadChangeAnnouncement()
 EXTERN_CVAR(snd_announcefirstblood)
 #endif
 
-void P_CheckFirstBloodAnnouncement()
+void P_CheckFirstBloodAnnouncement(const player_t& killer)
 {
 	// Only play sounds on the client
 	if (!::clientside || !::multiplayer)
@@ -974,63 +974,61 @@ void P_CheckFirstBloodAnnouncement()
 	const PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
 	const PlayerResults opr = PlayerQuery().sortFrags().filterSortNotMax().execute();
 
-	if (pr.count > 0)
+	if (pr.count == 0)
+		return;
+
+	const player_t* firstBlooder = nullptr;
+
+	for (auto& player : pr.players)
 	{
-		bool playerWithOneFrag = false;
-
-		for (auto& player : pr.players)
+		// Find if one player has one frag
+		if (player->fragcount > 1)
 		{
-			// Find if one player has one frag
-			if (player->fragcount > 1)
+			// We missed first blood
+			instance.setFirstBloodAnnounced();
+			return;
+		}
+		if (player->fragcount == 1)
+		{
+			// Potential first blood
+			if (firstBlooder)
 			{
-				// We missed first blood
+				// Two players with one frag means we missed first blood
 				instance.setFirstBloodAnnounced();
 				return;
 			}
-			if (player->fragcount == 1)
-			{
-				// Potential first blood
-				if (playerWithOneFrag)
-				{
-					// Two players with one frag means we missed first blood
-					instance.setFirstBloodAnnounced();
-					return;
-				}
 
-				playerWithOneFrag = true;
-			}
+			firstBlooder = player;
 		}
+	}
 
-		if (playerWithOneFrag)
+	if (!firstBlooder)
+	{
+		// No player with 1 frag? Try again later.
+		return;
+	}
+
+	// If everyone else has 0 frags or lower, we can call first blood.
+	if (opr.count == 0)
+	{
+		// Where'd everyone go?
+		instance.setFirstBloodAnnounced();
+		return;
+	}
+
+	for (auto& player : opr.players)
+	{
+		if (player->fragcount > 0)
 		{
-			// If everyone else has 0 frags or lower, we can call first blood.
-			if (opr.count > 0)
-			{
-				for (auto& player : opr.players)
-				{
-					if (player->fragcount > 0)
-					{
-						// We missed first blood
-						instance.setFirstBloodAnnounced();
-						return;
-					}
-				}
-			}
-			else
-			{
-				// Where'd everyone go?
-				instance.setFirstBloodAnnounced();
-				return;
-			}
-		}
-		else
-		{
-			// No player with 1 frag? Try again later.
+			// We missed first blood
+			instance.setFirstBloodAnnounced();
 			return;
 		}
 	}
-	else
+
+	if (firstBlooder != &killer)
 	{
+		instance.setFirstBloodAnnounced();
 		return;
 	}
 
