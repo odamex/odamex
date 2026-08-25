@@ -275,7 +275,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
       add_custom_command(
         TARGET odamex
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/wad/odamex.wad ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS)
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE_DIR:odamex>/odamex.wad" ${CMAKE_CURRENT_BINARY_DIR}/odamex.app/Contents/MacOS)
     endif()
 
     set_directory_properties(
