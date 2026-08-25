@@ -84,16 +84,16 @@ void ParseMetadata(OScanner& os, AnnouncerMetaData_s& metaData,
 	}
 }
 
-void ParseOncrInfo(const int lump, const OLumpName& name)
-{
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
+} // namespace
 
+void G_ParseOncrInfoBuffer(const char* buffer, const size_t length)
+{
 	const OScannerConfig config = {
-	    .lumpName = name,
+	    .lumpName = "ONCRINFO",
 	    .semiComments = false,
 	    .cComments = true,
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + length);
 
 	std::unordered_map<std::string, Announcer_s> newAnnouncers;
 
@@ -176,6 +176,15 @@ void ParseOncrInfo(const int lump, const OLumpName& name)
 
 	AnnouncerManager::getInstance().loadAnnouncers(newAnnouncers);
 }
+
+namespace
+{
+void ParseOncrInfoLump(const int lump)
+{
+	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
+
+	G_ParseOncrInfoBuffer(buffer, W_LumpLength(lump));
+}
 } // namespace
 
 #ifdef CLIENT_APP
@@ -197,7 +206,7 @@ void G_ParseOncrInfo()
 
 	while ((lump = W_FindLump("ONCRINFO", lump)) != -1)
 	{
-		ParseOncrInfo(lump, "ONCRINFO");
+		ParseOncrInfoLump(lump);
 	}
 
 #ifdef CLIENT_APP

@@ -28,3 +28,11 @@
 /// the AnnouncerManager object.
 /// </summary>
 void G_ParseOncrInfo();
+
+/// <summary>
+/// Parses a single ONCRINFO from a raw buffer and hands the announcers it defines to
+/// the AnnouncerManager.
+/// </summary>
+/// <param name="buffer">Start of the ONCRINFO lump.</param>
+/// <param name="length">Length of the ONCRINFO lump.</param>
+void G_ParseOncrInfoBuffer(const char* buffer, size_t length);

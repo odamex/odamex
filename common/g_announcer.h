@@ -463,6 +463,14 @@ public:
 	void clearQueue();
 
 	/// <summary>
+	/// Whether an announcer sound is playing or waiting behind one that is.
+	/// </summary>
+	[[nodiscard]] bool isAnnouncing() const
+	{
+		return delayTicsRemaining > 0 || !soundQueue.empty();
+	}
+
+	/// <summary>
 	/// Records a pending spree announcement for this tic. Only the highest
 	/// level reached during a single tic will actually be announced.
 	/// </summary>
@@ -493,6 +501,16 @@ public:
 	/// Drops the pending spree and multi kill sounds without playing them.
 	/// </summary>
 	void clearPendingSounds();
+
+	/// <summary>
+	/// The spree level waiting to be announced this tic, or -1 if none is.
+	/// </summary>
+	[[nodiscard]] int getPendingSpreeLevel() const { return pendingSpreeLevel; }
+
+	/// <summary>
+	/// The multi kill level waiting to be announced this tic, or -1 if none is.
+	/// </summary>
+	[[nodiscard]] int getPendingMultiKillLevel() const { return pendingMultiKillLevel; }
 
 	/// <summary>
 	/// Clears every announcement that is scoped to a single round.
