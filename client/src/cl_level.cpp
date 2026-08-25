@@ -228,8 +228,7 @@ void G_InitNew (const char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
-	SpreeManager::getInstance().clearSprees();
-	AnnouncerManager::getInstance().resetAnnouncements();
+	G_ClearRoundKillStats();
 
 	if (paused)
 	{
@@ -418,8 +417,7 @@ void G_DoCompleted (void)
 		}
 	}
 
-	SpreeManager::getInstance().clearSprees();
-	AnnouncerManager::getInstance().resetAnnouncements();
+	G_ClearRoundKillStats();
 
 	const WinInfo& win = levelstate.getWinInfo();
 	switch (win.type)
@@ -619,8 +617,7 @@ void G_DoLoadLevel (int position)
 	// [SL] clear the saved sector data from the last level
 	OInterpolation::getInstance().resetGameInterpolation();
 
-	SpreeManager::getInstance().clearSprees();
-	AnnouncerManager::getInstance().resetAnnouncements();
+	G_ClearRoundKillStats();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,

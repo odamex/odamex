@@ -901,8 +901,7 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 {
 	ClientReplay::getInstance().reset();
-	MultiKillManager::getInstance().clearMultiTics();
-	AnnouncerManager::getInstance().resetAnnouncements();
+	G_ClearRoundKillStats();
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
@@ -1697,7 +1696,6 @@ static void CL_Print(const odaproto::svc::Print* msg)
 static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 {
 	player_t& p = CL_FindPlayer(msg->pid());
-
 	byte flags = msg->flags();
 
 	if (flags & SVC_PM_SPECTATOR)
@@ -2596,8 +2594,6 @@ void P_SpawnAvatars();
 static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
-	MultiKillManager::getInstance().clearMultiTics();
-	AnnouncerManager::getInstance().resetAnnouncements();
 
 	G_ClearRoundKillStats();
 

@@ -35,6 +35,7 @@
 #include "svc_message.h"
 #include "v_textcolors.h"
 #include "s_sound.h"
+#include "g_announcer.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -569,6 +570,7 @@ void G_ClearRoundKillStats()
 {
 	SpreeManager::getInstance().clearSprees();
 	MultiKillManager::getInstance().clearMultiTics();
+	AnnouncerManager::getInstance().resetAnnouncements();
 }
 
 /**
