@@ -222,6 +222,13 @@ odamex_cvardoc_add_targets()
 # WAD building
 add_subdirectory(wad)
 
+if (TARGET odamex AND TARGET odawad)
+    add_dependencies(odamex odawad)
+endif()
+if (TARGET odasrv AND TARGET odawad)
+    add_dependencies(odasrv odawad)
+endif()
+
 # Bash completion
 add_subdirectory(completion)
 
