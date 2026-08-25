@@ -1058,7 +1058,7 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 	uint32_t netid = msg->netid();
 
 	AActor* mo = P_FindThingById(netid);
-	if (mo && mo->player && mo->player->id == ::displayplayer_id)
+	if (mo && mo->player && mo->player->id == ::displayplayer_id && not consoleplayer().spectator)
 		::displayplayer_id = ::consoleplayer_id;
 
 	if (mo && mo->flags & MF_COUNTITEM)
@@ -1383,7 +1383,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 			rollerState.Record(tic, p);
 		}
 
-		if (!netdemo.isPlaying())
+		if (not netdemo.isPlaying() && not consoleplayer().spectator)
 		{
 				::displayplayer_id = ::consoleplayer_id;
 		}
@@ -2577,6 +2577,8 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
 
+	G_ClearRoundKillStats();
+
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
 	AActor* mo;
@@ -3212,8 +3214,15 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 {
 	int playerId = msg->pid();
 	int spreeLevel = msg->spree_level();
+	const int ticsAgo = static_cast<int>(msg->tics_ago());
 
-	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
+	const bool update =
+	    SpreeManager::getInstance().setRawSpree(playerId, spreeLevel, ticsAgo);
+
+	// Old spree before we connected?
+	// Don't announce it.
+	if (ticsAgo > 0)
+		return;
 
 	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
 	if (cl_showsprees && sv_showsprees && displayplayer_id == playerId && update)
@@ -3232,10 +3241,11 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 	breaker.spreeEnderPlayerId = msg->source_pid();
 	breaker.spreeEnderName = msg->source_name();
 	breaker.endedPoints = msg->spree_points();
-	SpreeBreakerType type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
-	int level = msg->spree_level();
+	const auto type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
+	const int level = msg->spree_level();
+	const int ticsAgo = static_cast<int>(msg->tics_ago());
 
-	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type);
+	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type, ticsAgo);
 }
 
 static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
