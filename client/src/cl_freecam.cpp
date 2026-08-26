@@ -114,13 +114,12 @@ void Freecam::reset()
 
 bool Freecam::allowAdd()
 {
-	return (netdemo.isPlaying() || G_IsLivesGame());
+	return (netdemo.isPlaying() || (G_IsLivesGame() && not G_IsTeamGame()));
 }
 
 bool Freecam::allowSpy()
 {
-	return (netdemo.isPlaying() || 
-			netdemo.isPaused() ||
+	return (netdemo.isInPlayback() || 
 			(consoleplayer().playerstate == PST_DEAD 
 				&& consoleplayer().lives < 1 
 				&& ::levelstate.getState() == LevelState::INGAME));
