@@ -57,6 +57,10 @@ endif()
 
 target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo cpptrace::cpptrace)
 
+if (TARGET odawad)
+    add_dependencies(odasrv odawad)
+endif()
+
 if(USE_INTERNAL_JSONCPP)
   target_link_libraries(odasrv jsoncpp_static)
 else()
