@@ -110,6 +110,7 @@ typedef enum {
 	listelement,
 	joyactive,
 	joyaxis,
+	announcer,
 	nochoice
 } itemtype;
 

@@ -35,6 +35,7 @@
 #include "svc_message.h"
 #include "v_textcolors.h"
 #include "s_sound.h"
+#include "g_announcer.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -565,10 +566,11 @@ static void GiveTeamWins(team_t team, int wins)
 	}
 }
 
-void G_ClearRoundKillStats()
+void G_ClearRoundState()
 {
 	SpreeManager::getInstance().clearSprees();
 	MultiKillManager::getInstance().clearMultiTics();
+	AnnouncerManager::getInstance().resetAnnouncements();
 }
 
 /**

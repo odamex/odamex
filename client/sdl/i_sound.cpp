@@ -63,6 +63,8 @@ CVAR_FUNC_IMPL(snd_samplerate)
 namespace
 {
 
+constexpr Uint32 MS_PER_SECOND = 1000;
+
 #if 0
 
 /**
@@ -264,6 +266,10 @@ Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 void getsfx(sfxinfo_t *sfx)
 {
 	Uint32 new_size = 0;
+
+	Uint32 points;
+	Uint32 frames = 0;
+
 	Mix_Chunk *chunk;
 
 	if (sfx->lumpnum == -1)
@@ -294,6 +300,10 @@ void getsfx(sfxinfo_t *sfx)
         }
         chunk->volume = MIX_MAX_VOLUME;
 
+        points = chunk->alen / ((mixer_format & 0xFF) / 8);
+        frames = points / mixer_channels;
+
+        sfx->ms = ((frames * MS_PER_SECOND) / mixer_freq);
         sfx->data = chunk;
 
         Z_ChangeTag(data, PU_CACHE);
@@ -324,6 +334,11 @@ void getsfx(sfxinfo_t *sfx)
     chunk->volume = MIX_MAX_VOLUME;
 
     ExpandSoundData(static_cast<byte*>(data) + 8, samplerate, 8, length, chunk);
+
+    points = chunk->alen / ((mixer_format & 0xFF) / 8);
+    frames = points / mixer_channels;
+
+    sfx->ms = ((frames * MS_PER_SECOND) / mixer_freq);
     sfx->data = chunk;
 }
 

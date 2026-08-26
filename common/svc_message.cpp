@@ -1864,6 +1864,15 @@ odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker,
 	return msg;
 }
 
+odaproto::svc::AnnouncerEvent SVC_AnnouncerEvent(const std::string_view key)
+{
+	odaproto::svc::AnnouncerEvent msg;
+
+	msg.set_key(std::string(key));
+
+	return msg;
+}
+
 odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(const MapThing& mapthing, uint32_t netid)
 {
 	odaproto::svc::ConfigureAvatar msg;

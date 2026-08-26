@@ -502,6 +502,13 @@
          "type" : "string"
       },
       {
+         "default" : "Official Odamex Announcer",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "The announcer profile to use in-game. Must be an exact match to a currently loaded announcer's name.",
+         "name" : "cl_announcer",
+         "type" : "string"
+      },
+      {
          "default" : 5000.0,
          "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "",
@@ -2134,6 +2141,62 @@
          "type" : "boolean"
       },
       {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce pre-round countdown and fight message.",
+         "name" : "snd_announcecountdown",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce CTF events.",
+         "name" : "snd_announcectf",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce First Blood (first frag) in DM/TDM games.",
+         "name" : "snd_announcefirstblood",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce frag tracking (3/2/1 frags left) in framelimit games.",
+         "name" : "snd_announcefragtracking",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce Horde events.",
+         "name" : "snd_announcehorde",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce lead tracking (all PvP game types).",
+         "name" : "snd_announceleadtracking",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce multi kills if the displayplayer hits a multi kill.",
+         "name" : "snd_announcemultikills",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce win/loss/tie status during intermission.",
+         "name" : "snd_announceresulttracking",
+         "type" : "boolean"
+      },
+      {
          "default" : 1.0,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Announcer volume",
@@ -2141,6 +2204,27 @@
          "min" : 0.0,
          "name" : "snd_announcervolume",
          "type" : "number"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce sprees if the displayplayer hits a spree.",
+         "name" : "snd_announcesprees",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce Survival (g_lives > 1) events.",
+         "name" : "snd_announcesurvival",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Announce time warnings. (one minute and five minute)",
+         "name" : "snd_announcetimewarnings",
+         "type" : "boolean"
       },
       {
          "default" : 32,

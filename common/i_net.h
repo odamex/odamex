@@ -291,6 +291,7 @@ enum msg_t
 	svc_playerpsprites,
 	svc_configureavatar,
 	svc_wakeupmobj,
+	svc_announcerevent,
 
 	// Client-originated messages
 	//

@@ -37,6 +37,7 @@
 #include "s_sound.h"
 #include "v_text.h"
 #include "g_gametype.h"
+#include "g_announcer.h"
 
 static int tintglow = 0;
 
@@ -53,6 +54,7 @@ EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (sv_teamsinplay)
+EXTERN_CVAR (snd_announcectf)
 
 //
 // CTF_Connect
@@ -328,13 +330,13 @@ static const char *flag_sound[NUM_CTF_SCORE][7] = {
 	{"", "", "", "", "", ""}, // REFRESH
 	{"", "", "", "", "", ""}, // KILL
 	{"", "", "", "", "", ""}, // BETRAYAL
-	{"ctf/your/flag/take", "ctf/enemy/flag/take", "vox/your/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take", "vox/green/flag/take"}, // GRAB
-	{"ctf/your/flag/take", "ctf/enemy/flag/take", "vox/your/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take", "vox/green/flag/take"}, // FIRSTGRAB
+	{"ctf/your/flag/take", "ctf/enemy/flag/take", ANN_YOURFLAGTAKEN.data(), ANN_ENEMYFLAGTAKEN.data(), ANN_BLUEFLAGTAKEN.data(), ANN_REDFLAGTAKEN.data(), ANN_GREENFLAGTAKEN.data()}, // GRAB
+	{"ctf/your/flag/take", "ctf/enemy/flag/take", ANN_YOURFLAGTAKEN.data(), ANN_ENEMYFLAGTAKEN.data(), ANN_BLUEFLAGTAKEN.data(), ANN_REDFLAGTAKEN.data(), ANN_GREENFLAGTAKEN.data()}, // FIRSTGRAB
 	{"", "", "", "", "", ""}, // CARRIERKILL
-	{"ctf/your/flag/return", "ctf/enemy/flag/return", "vox/your/flag/return", "vox/enemy/flag/return", "vox/blue/flag/return", "vox/red/flag/return", "vox/green/flag/return"}, // RETURN
-	{"ctf/your/score", "ctf/enemy/score", "vox/your/score", "vox/enemy/score", "vox/blue/score", "vox/red/score", "vox/green/score"}, // CAPTURE
-	{"ctf/your/flag/drop", "ctf/enemy/flag/drop", "vox/your/flag/drop", "vox/enemy/flag/drop", "vox/blue/flag/drop", "vox/red/flag/drop", "vox/green/flag/drop"}, // DROP
-	{"ctf/your/flag/manualreturn", "ctf/enemy/flag/manualreturn", "vox/your/flag/manualreturn", "vox/enemy/flag/manualreturn", "vox/blue/flag/manualreturn", "vox/red/flag/manualreturn", "vox/green/flag/manualreturn"}, // MANUALRETURN
+	{"ctf/your/flag/return", "ctf/enemy/flag/return", ANN_YOURFLAGRETURNED.data(), ANN_ENEMYFLAGRETURNED.data(), ANN_BLUEFLAGRETURNED.data(), ANN_REDFLAGRETURNED.data(), ANN_GREENFLAGRETURNED.data()}, // RETURN
+	{"ctf/your/score", "ctf/enemy/score", ANN_YOURTEAMSCORES.data(), ANN_ENEMYTEAMSCORES.data(), ANN_BLUETEAMSCORES.data(), ANN_REDTEAMSCORES.data(), ANN_GREENTEAMSCORES.data()}, // CAPTURE
+	{"ctf/your/flag/drop", "ctf/enemy/flag/drop", ANN_YOURFLAGDROPPED.data(), ANN_ENEMYFLAGDROPPED.data(), ANN_BLUEFLAGDROPPED.data(), ANN_REDFLAGDROPPED.data(), ANN_GREENFLAGDROPPED.data()}, // DROP
+	{"ctf/your/flag/manualreturn", "ctf/enemy/flag/manualreturn", ANN_YOURFLAGISBEINGRETURNED.data(), ANN_ENEMYFLAGISBEINGRETURNED.data(), ANN_BLUEFLAGISBEINGRETURNED.data(), ANN_REDFLAGISBEINGRETURNED.data(), ANN_GREENFLAGISBEINGRETURNED.data()}, // MANUALRETURN
 };
 
 EXTERN_CVAR(snd_voxtype)
@@ -387,6 +389,9 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 	switch (snd_voxtype.asInt())
 	{
 	case 2:
+		if (!snd_announcectf)
+			break;
+
 		// Possessive (yours/theirs)
 		if (not consoleplayer().spectator && not displayplayer().isFreecam)
 		{
@@ -398,9 +403,14 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 			else if ((ev == SCORE_RETURN || ev == SCORE_MANUALRETURN || ev == SCORE_DROP || ev == SCORE_GRAB || ev == SCORE_FIRSTGRAB) && playerTeam == flag)
 				sound = Yours;
 
-			if (IsPossesiveEvent(playerTeam, flag, team, ev) && S_FindSound(flag_sound[ev][2 + sound]))
+			const std::string possessiveSound = AnnouncerManager::getInstance().getTokenForEvent(flag_sound[ev][2 + sound]);
+
+			if (IsPossesiveEvent(playerTeam, flag, team, ev) && S_FindSound(possessiveSound.c_str()))
 			{
-				S_Sound(CHAN_ANNOUNCER, flag_sound[ev][2 + sound], 1, ATTN_NONE);
+				if (ev == SCORE_CAPTURE)
+					AnnouncerManager::getInstance().queueSound(possessiveSound);
+				else
+					S_Sound(CHAN_ANNOUNCER, possessiveSound.c_str(), 1, ATTN_NONE);
 				break;
 			}
 		}
@@ -411,8 +421,15 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 		if (ev == SCORE_CAPTURE)
 			sound = team;
 
-		if (S_FindSound(flag_sound[ev][4 + sound]) != -1)
-			S_Sound(CHAN_ANNOUNCER, flag_sound[ev][4 + sound], 1, ATTN_NONE);
+		const std::string teamSound = AnnouncerManager::getInstance().getTokenForEvent(flag_sound[ev][4 + sound]);
+
+		if (S_FindSound(teamSound.c_str()) != -1)
+		{
+			if (ev == SCORE_CAPTURE)
+				AnnouncerManager::getInstance().queueSound(teamSound);
+			else
+				S_Sound(CHAN_ANNOUNCER, teamSound.c_str(), 1, ATTN_NONE);
+		}
 		break;
 	}
 		[[fallthrough]];

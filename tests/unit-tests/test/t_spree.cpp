@@ -395,7 +395,7 @@ TEST_F(SpreeRoundTest, ClearingRoundStatsWipesSpreesAndMultiKills)
 	ASSERT_TRUE(SpreeManager::getInstance().hasSpree(WATCHED));
 	ASSERT_EQ(MultiKillManager::getInstance().getMultiKills(WATCHED).multiKills, 1);
 
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 
 	EXPECT_FALSE(SpreeManager::getInstance().hasSpree(WATCHED));
 	EXPECT_FALSE(SpreeManager::getInstance().hasSpree(OTHER));
@@ -413,7 +413,7 @@ TEST_F(SpreeRoundTest, ClearingRoundStatsWipesTheBreakerAndTheHud)
 	breaker.spreeEnderName = "Watched";
 	SpreeManager::getInstance().setRawSpreeBreaker(breaker, 1, BR_PLAYER, 0);
 
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 
 	const SpreeHudLines_t lines = P_GetSpreeHudLines(WATCHED);
 
@@ -431,7 +431,7 @@ TEST_F(SpreeRoundTest, ClearingRoundStatsAlsoDropsPoints)
 
 	ASSERT_EQ(SpreeManager::getInstance().getPoints(WATCHED), 5);
 
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 
 	EXPECT_EQ(SpreeManager::getInstance().getPoints(WATCHED), 0);
 }

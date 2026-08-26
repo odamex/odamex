@@ -30,6 +30,7 @@
 #include "s_sound.h"
 
 #include "g_spree.h"
+#include "g_announcer.h"
 #include "m_ostring.h"
 #include "g_gametype.h"
 #include "p_inter.h"
@@ -740,6 +741,12 @@ void SpreeManager::serialize(FArchive& arc)
 // Static functions start here.
 // ==========================================================
 
+#ifdef CLIENT_APP
+EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(snd_announcesprees)
+EXTERN_CVAR(cl_showofflinesprees)
+#endif
+
 void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 {
 	static SpreeManager& manager = SpreeManager::getInstance();
@@ -779,22 +786,20 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 
 #ifdef CLIENT_APP
 	// Don't announce sprees if the client has showing them disabled
-	if (!cl_showsprees || (!cl_showofflinesprees && !network_game) ||
+	if (!cl_showsprees || !snd_announcesprees || (!cl_showofflinesprees && !network_game) ||
 	    (!sv_showsprees && network_game))
 		return;
 #endif
 
 	if (displayplayer_id == source->player->id && update)
 	{
-		// Play the game sfx first.
 		const SpreeRecord_t& record = manager.getSpreeRecord(source->player->id);
-		// Play the gamesfx sound from the multi kill first.
-		if (!record.spree.gameSfxToken.empty() &&
-		    S_FindSound(record.spree.gameSfxToken.c_str()) != -1)
-			S_Sound(CHAN_GAMEINFO, record.spree.gameSfxToken.c_str(), 1, ATTN_NONE);
 
-		// Play the announcer sound for the new multi kill
-		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
+		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
+		    "spree " + std::to_string(record.spreeLevel + 1));
+
+		AnnouncerManager::getInstance().setPendingSpree(
+		    record.spreeLevel, sound, record.spree.gameSfxToken);
 	}
 }
 
@@ -823,22 +828,20 @@ void P_ProcessSpreeDamage(const player_t* source, const AActor* target,
 
 #ifdef CLIENT_APP
 	// Don't announce sprees if the client has showing them disabled
-	if (!cl_showsprees || (!cl_showofflinesprees && !network_game) ||
+	if (!cl_showsprees || !snd_announcesprees || (!cl_showofflinesprees && !network_game) ||
 	    (!sv_showsprees && network_game))
 		return;
 #endif
 
 	if (displayplayer_id == source->id && update)
 	{
-		// Play the game sfx first.
 		const SpreeRecord_t& record = manager.getSpreeRecord(source->id);
-		// Play the gamesfx sound from the multi kill first.
-		if (!record.spree.gameSfxToken.empty() &&
-		    S_FindSound(record.spree.gameSfxToken.c_str()) != -1)
-			S_Sound(CHAN_GAMEINFO, record.spree.gameSfxToken.c_str(), 1, ATTN_NONE);
 
-		// Play the announcer sound for the new multi kill
-		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
+		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
+		    "spree " + std::to_string(record.spreeLevel + 1));
+
+		AnnouncerManager::getInstance().setPendingSpree(
+		    record.spreeLevel, sound, record.spree.gameSfxToken);
 	}
 }
 

@@ -726,6 +726,35 @@ CVAR_RANGE_FUNC_DECL(	snd_oplchips, "6", "Number of emulated OPL chips",
 CVAR_RANGE_FUNC_DECL(	snd_oplbank, "1", "OPL instrument set",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
+// Announcer
+CVAR_FUNC_DECL( cl_announcer, "Official Odamex Announcer",
+				"The announcer profile to use in-game. Must be an exact match to a currently loaded announcer's name.",
+				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(	snd_announcectf, "1", "Announce CTF events.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(	snd_announcehorde, "1", "Announce Horde events.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR( snd_announcesurvival, "1", "Announce Survival (g_lives > 1) events.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR( snd_announcecountdown, "1", "Announce pre-round countdown and fight message.", CVARTYPE_BOOL,
+     CVAR_CLIENTARCHIVE)
+
+CVAR( snd_announcetimewarnings, "1", "Announce time warnings. (one minute and five minute)", CVARTYPE_BOOL,
+     CVAR_CLIENTARCHIVE)
+
+CVAR( snd_announcefirstblood, "1", "Announce First Blood (first frag) in DM/TDM games.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR( snd_announcefragtracking, "1", "Announce frag tracking (3/2/1 frags left) in framelimit games.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR( snd_announceleadtracking, "1", "Announce lead tracking (all PvP game types).", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(	snd_announceresulttracking, "1", "Announce win/loss/tie status during intermission.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(	snd_announcesprees, "1", "Announce sprees if the displayplayer hits a spree.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(	snd_announcemultikills, "1", "Announce multi kills if the displayplayer hits a multi kill.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			snd_midisysex, "0", "Read SysEx from MIDI files (0: Disable, 1: Enable)",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 

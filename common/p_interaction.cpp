@@ -44,6 +44,7 @@
 #include "g_skill.h"
 #include "p_mapformat.h"
 #include "p_unlag.h"
+#include "g_announcer.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -664,6 +665,8 @@ static void P_ResurrectPlayerPowerUp(player_t& player)
 	// Send a res sound directly to this player.
 	MSG_WriteSVC(pl->client.messenger->ReliableBuf(), SVC_PlayerInfo(*pl));
 	S_PlayerSound(pl, NULL, CHAN_INTERFACE, "misc/plraise", ATTN_NONE);
+	// Also send an announcement
+	MSG_WriteSVC(pl->client.messenger->ReliableBuf(), SVC_AnnouncerEvent(ANN_REVIVEDPLAYER));
 
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(*pl, SVC_PM_LIVES),
 	                 playerid);
@@ -1874,6 +1877,8 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 
 	if (splayer)
 	{
+		P_CaptureLeadState();
+
 		// Don't count any frags at level start, because they're just telefrags
 		// resulting from insufficient deathmatch starts, and it wouldn't be
 		// fair to count them toward a player's score.
@@ -2036,12 +2041,23 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 
 	// [AM] Save the "out of lives" message until after the obit.
 	if (g_lives && tplayer && tplayer->lives <= 0)
-		SV_BroadcastPrintFmt("{} is out of lives.\n",
-		                     tplayer->userinfo.netname.c_str());
+	{
+		SV_BroadcastPrintFmt("{} is out of lives.\n", tplayer->userinfo.netname.c_str());
+		P_CheckPlayerEliminatedAnnouncement(tplayer);
+	}
 
 	// Check sv_fraglimit.
 	if (source && source->player && target->player && level.time)
 	{
+		// Check for first blood announcement (client-side, non-duel DM only)
+		P_CheckFirstBloodAnnouncement(*source->player);
+
+		// Check for frag warning announcements (client-side)
+		P_CheckFragWarnings();
+
+		// Check for lead change announcements (client-side)
+		P_CheckLeadChangeAnnouncement();
+
 		// [Toke] Better sv_fraglimit
 		if (sv_gametype == GM_DM)
 			G_FragsCheckEndGame();
@@ -2054,6 +2070,10 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 	// Check survival endgame
 	if (target->player && level.time)
 		G_LivesCheckEndGame();
+
+	// Check for last player alive announcement (client-side)
+	if (target->player && level.time)
+		P_CheckLastPlayerAliveAnnouncement();
 
 	// Drop stuff.
 	// This determines the kind of object spawned

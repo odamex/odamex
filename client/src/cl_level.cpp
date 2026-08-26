@@ -63,6 +63,7 @@ END_DISABLE_WARNING_GNU
 #include "z_zone.h"
 #include "m_wdlstats.h"
 #include "g_spree.h"
+#include "g_announcer.h"
 #include "g_gametype.h"
 #include "cl_freecam.h"
 
@@ -109,12 +110,12 @@ void G_DeferedInitNew (const OLumpName& mapname)
 
 void G_DeferedFullReset()
 {
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 }
 
 void G_DeferedReset()
 {
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 }
 
 BEGIN_COMMAND (wad) // denis - changes wads
@@ -227,7 +228,7 @@ void G_InitNew (const char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
-	SpreeManager::getInstance().clearSprees();
+	G_ClearRoundState();
 
 	if (paused)
 	{
@@ -416,22 +417,30 @@ void G_DoCompleted (void)
 		}
 	}
 
-	SpreeManager::getInstance().clearSprees();
+	G_ClearRoundState();
 
 	const WinInfo& win = levelstate.getWinInfo();
 	switch (win.type)
 	{
 		case WinInfo::WIN_EVERYBODY:
 			wminfo.winner = true;
+			wminfo.tie = false;
 			break;
 		case WinInfo::WIN_TEAM:
 			wminfo.winner = consoleplayer().userinfo.team == win.id;
+			wminfo.tie = false;
 			break;
 		case WinInfo::WIN_PLAYER:
 			wminfo.winner = consoleplayer_id == win.id;
+			wminfo.tie = false;
+			break;
+	  case WinInfo::WIN_DRAW:
+			wminfo.winner = false;
+			wminfo.tie = true;
 			break;
 		default:
 			wminfo.winner = false;
+			wminfo.tie = false;
 	}
 
 	AM_Stop();
@@ -608,7 +617,7 @@ void G_DoLoadLevel (int position)
 	// [SL] clear the saved sector data from the last level
 	OInterpolation::getInstance().resetGameInterpolation();
 
-	SpreeManager::getInstance().clearSprees();
+	G_ClearRoundState();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,

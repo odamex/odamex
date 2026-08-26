@@ -40,6 +40,7 @@
 #include "cmdlib.h"
 #include "d_main.h"
 #include "d_player.h"
+#include "g_announcer.h"
 #include "g_gametype.h"
 #include "g_levelstate.h"
 #include "gi.h"
@@ -94,7 +95,19 @@ EXTERN_CVAR(show_messages)
 EXTERN_CVAR(co_novileghosts)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(snd_announcectf)
+EXTERN_CVAR(snd_announcehorde)
+EXTERN_CVAR(snd_announcesurvival)
+EXTERN_CVAR(snd_announcecountdown)
+EXTERN_CVAR(snd_announcetimewarnings)
+EXTERN_CVAR(snd_announcefirstblood)
+EXTERN_CVAR(snd_announcefragtracking)
+EXTERN_CVAR(snd_announceleadtracking)
+EXTERN_CVAR(snd_announceresulttracking)
+EXTERN_CVAR(snd_announcesprees)
+EXTERN_CVAR(snd_announcemultikills)
 EXTERN_CVAR(sv_showsprees)
+
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -888,6 +901,7 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 {
 	ClientReplay::getInstance().reset();
+	G_ClearRoundState();
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
@@ -2180,6 +2194,8 @@ static void CL_Say(const odaproto::svc::Say* msg)
 
 static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 {
+	P_CaptureLeadState();
+
 	// clear player flags client may have imagined
 	for (auto& player : players)
 	{
@@ -2218,6 +2234,9 @@ static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 			}
 		}
 	}
+
+	// Check for lead change announcements
+	P_CheckLeadChangeAnnouncement();
 }
 
 static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
@@ -2577,7 +2596,7 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
 
-	G_ClearRoundKillStats();
+	G_ClearRoundState();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
@@ -3227,8 +3246,13 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
 	if (cl_showsprees && sv_showsprees && displayplayer_id == playerId && update)
 	{
-		// Play the sound for the new multi kill
-		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
+		// Play the sound for the new spree
+		const SpreeRecord_t& record = SpreeManager::getInstance().getSpreeRecord(playerId);
+		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
+		    "spree " + std::to_string(record.spreeLevel + 1));
+
+		AnnouncerManager::getInstance().setPendingSpree(record.spreeLevel, sound,
+		                                                record.spree.gameSfxToken);
 	}
 }
 
@@ -3247,6 +3271,55 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 
 	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type, ticsAgo);
 }
+
+namespace
+{
+void CL_AnnouncerEvent(const odaproto::svc::AnnouncerEvent* msg)
+{
+	AnnouncerManager& instance = AnnouncerManager::getInstance();
+
+	const std::string& key = msg->key();
+	const std::string sound = instance.getTokenForEvent(key);
+
+	if (sound.empty() || S_FindSound(sound.c_str()) == -1)
+		return;
+
+	if (!snd_announcectf && AnnouncerManager::isKeyCTFToken(key))
+		return;
+
+	if (!snd_announcehorde && AnnouncerManager::isKeyHordeToken(key))
+		return;
+
+	if (!snd_announcesurvival && AnnouncerManager::isKeySurvivalToken(key))
+		return;
+
+	if (!snd_announcecountdown && AnnouncerManager::isKeyCountdownToken(key))
+		return;
+
+	if (!snd_announcetimewarnings && AnnouncerManager::isKeyTimeWarningsToken(key))
+		return;
+
+	if (!snd_announcefirstblood && AnnouncerManager::isKeyFirstBloodToken(key))
+		return;
+
+	if (!snd_announcefragtracking && AnnouncerManager::isKeyFragTrackingToken(key))
+		return;
+
+	if (!snd_announceleadtracking && AnnouncerManager::isKeyLeadTrackingToken(key))
+		return;
+
+	if (!snd_announceresulttracking && AnnouncerManager::isKeyResultTrackingToken(key))
+		return;
+
+	if (!snd_announcesprees && AnnouncerManager::isKeySpreeToken(key))
+		return;
+
+	if (!snd_announcemultikills && AnnouncerManager::isKeyMultiToken(key))
+		return;
+
+	S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}
+} // namespace
 
 static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 {
@@ -3639,6 +3712,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_hordeinfo, CL_HordeInfo, odaproto::svc::HordeInfo);
 		SV_MSG(svc_spree, CL_Spree, odaproto::svc::Spree);
 		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
+		SV_MSG(svc_announcerevent, CL_AnnouncerEvent, odaproto::svc::AnnouncerEvent);
 		SV_MSG(svc_noisealert, CL_NoiseAlert, odaproto::svc::NoiseAlert);
 		SV_MSG(svc_playerammo, CL_PlayerAmmo, odaproto::svc::PlayerAmmo);
 		SV_MSG(svc_playermaxammo, CL_PlayerMaxAmmo, odaproto::svc::PlayerMaxAmmo);

@@ -91,6 +91,7 @@ END_DISABLE_WARNING_GNU
 #include "g_episode.h"
 #include "g_multikill.h"
 #include "g_spreedef.h"
+#include "g_oncrinfo.h"
 
 extern size_t got_heapsize;
 
@@ -741,6 +742,7 @@ void D_Init()
 	G_ParseMusInfo();
 	S_ParseSndInfo();
 	G_ParseSpreeDef();
+	G_ParseOncrInfo();
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
 

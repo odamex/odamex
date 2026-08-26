@@ -167,3 +167,4 @@ odaproto::svc::PlayerWeaponSelection SVC_PlayerWeaponSelection(const player_t& p
 odaproto::svc::PlayerPowers SVC_PlayerPowers(const player_t& player);
 odaproto::svc::PlayerPsprites SVC_PlayerPsprites(const player_t& player);
 odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(const MapThing& mapthing, uint32_t netid);
+odaproto::svc::AnnouncerEvent SVC_AnnouncerEvent(std::string_view key);

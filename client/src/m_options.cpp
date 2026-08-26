@@ -66,6 +66,8 @@ END_DISABLE_WARNING_GNU
 #include "m_misc.h"
 #include "cl_demo.h"
 
+#include "g_announcer.h"
+
 // Data.
 #include "m_menu.h"
 
@@ -221,6 +223,18 @@ EXTERN_CVAR(cl_showmultikills)
 EXTERN_CVAR(cl_showofflinesprees)
 EXTERN_CVAR(cl_showofflinemultikills)
 
+// Announcer options
+EXTERN_CVAR(cl_announcer)
+EXTERN_CVAR(snd_announcectf)
+EXTERN_CVAR(snd_announcehorde)
+EXTERN_CVAR(snd_announcesurvival)
+EXTERN_CVAR(snd_announcecountdown)
+EXTERN_CVAR(snd_announcetimewarnings)
+EXTERN_CVAR(snd_announcefirstblood)
+EXTERN_CVAR(snd_announcefragtracking)
+EXTERN_CVAR(snd_announceleadtracking)
+EXTERN_CVAR(snd_announceresulttracking)
+
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
 EXTERN_CVAR (cl_weaponpref_fst)
@@ -264,6 +278,9 @@ constexpr int RESCOLUMN_CURSOR_X = 8;
 // Menu item text indents.
 constexpr int MENU_HALFPASTINDENT = 177;
 constexpr int MENU_LONGTEXTINDENT = 240;
+
+// A menu row's value is drawn this far past the menu's own indent.
+constexpr int MENU_VALUEINDENT = 14;
 
 struct optmouserow_t
 {
@@ -344,6 +361,9 @@ const char	   *OldContMessage;
 itemtype OldContType;
 const char	   *OldAxisMessage;
 itemtype OldAxisType;
+
+std::string AnnouncerAuthor;
+std::string AnnouncerDescription;
 
 /*=======================================
  *
@@ -697,6 +717,7 @@ std::array<value_t, 3> ChatSndType = {{
 
 void AdvMidiOptions();
 void LibAdlMidiOptions();
+void AnnouncerOptions();
 } // namespace
 
 
@@ -740,7 +761,7 @@ namespace
 	{ .type = discrete, .label = "OPL instruments", .a = {.cvar = &snd_oplbank}, .b = {.leftval = ARRAY_LENGTH(OplBank)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OplBank.data()}},
 }};
 
-std::array<menuitem_t, 21> SoundItems = {{
+std::array<menuitem_t, 24> SoundItems = {{
 	{ .type = redtext,   .label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
 	{ .type = yellowtext,   .label = "Sound Levels", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
 	{ .type = slider,	.label = "Music Volume", .a = {.cvar = &snd_musicvolume},    .b = {.leftval = 0.0},        .c = {.rightval = 1.0}, .d = {.step = 0.015625}, .e = {.values = nullptr}},
@@ -755,6 +776,8 @@ std::array<menuitem_t, 21> SoundItems = {{
 	{ .type = more,   .label = "OPL FM Synth Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.mfunc = LibAdlMidiOptions}},
 	{ .type = more,   .label = "Advanced MIDI Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.mfunc = AdvMidiOptions}},
 	{ .type = redtext,   .label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
+	{ .type = more,   .label = "Announcer Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.mfunc = AnnouncerOptions}},
+	{ .type = redtext,   .label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
 	{ .type = yellowtext,   .label = "Sound Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
 	{ .type = discrete,   .label = "Game SFX", .a = {.cvar = &snd_gamesfx},        .b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
 	{ .type = discrete,   .label = "Announcer Type", .a = {.cvar = &snd_voxtype},        .b = {.leftval = ARRAY_LENGTH(VoxType)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = VoxType.data()}},
@@ -762,7 +785,30 @@ std::array<menuitem_t, 21> SoundItems = {{
 	{ .type = discrete,   .label = "Player Disconnect Alert", .a = {.cvar = &cl_disconnectalert}, .b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
 	{ .type = discrete,   .label = "Chat sounds", .a = {.cvar = &cl_chatsounds},      .b = {.leftval = ARRAY_LENGTH(ChatSndType)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = ChatSndType.data()}},
 	{ .type = discrete,   .label = "Voting Sounds", .a = {.cvar = &snd_votesfx},		.b = {.leftval = ARRAY_LENGTH(OnOff)},        .c = {.rightval = 0.0}, .d = {.step = 0.0},	     .e = {.values = OnOff.data()}},
+	{ .type = redtext,   .label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
  }};
+
+// The author and description lines are filled in at draw time, see ANN_AUTHORLINE.
+std::array<menuitem_t, 18> AnnouncerItems = {{
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = yellowtext, .label = "Choose Announcer", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = announcer, .label = " ", .a = {.cvar = &cl_announcer}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = whitetext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = orangetext, .label = "Announcers not currently loaded", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = orangetext, .label = "will default to the Odamex announcer.", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
+	{ .type = discrete, .label = "Announce CTF Events", .a = {.cvar = &snd_announcectf}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Horde Events", .a = {.cvar = &snd_announcehorde}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Survival Events", .a = {.cvar = &snd_announcesurvival}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Pre-Round Countdown", .a = {.cvar = &snd_announcecountdown}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Time Left Warnings", .a = {.cvar = &snd_announcetimewarnings}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce First Blood", .a = {.cvar = &snd_announcefirstblood}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Frag Tracking", .a = {.cvar = &snd_announcefragtracking}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Lead Tracking", .a = {.cvar = &snd_announceleadtracking}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = discrete, .label = "Announce Match Result Tracking", .a = {.cvar = &snd_announceresulttracking}, .b = {.leftval = ARRAY_LENGTH(OnOff)}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+}};
 // NOLINTEND(readability-magic-numbers)
 } // namespace
 
@@ -802,6 +848,17 @@ menu_t SoundMenu = {
 namespace
 {
 
+
+menu_t AnnouncerMenu = {
+	.title = "M_SOUND",
+	.lastOn = 2,
+	.numitems = AnnouncerItems.size(),
+	.indent = 0,
+	.items = AnnouncerItems.data(),
+	.scrolltop = 0,
+	.scrollpos = 0,
+	.refreshfunc = nullptr,
+};
 
 
 /*=======================================
@@ -1553,6 +1610,14 @@ menuitem_t ModesItems[] = {
 #define VM_ENTERLINE	15
 #define VM_TESTLINE		17
 
+// Rows in AnnouncerItems whose labels are filled in at draw time.
+constexpr int ANN_AUTHORLINE = 3;
+constexpr int ANN_DESCLINE = 4;
+
+// Character widths the announcer menu truncates its text to.
+constexpr size_t ANN_MAXTEXTWIDTH = 40;
+constexpr size_t ANN_MAXNAMEWIDTH = 30;
+
 menu_t ModesMenu = {
 	"M_VIDMOD",
 	0,
@@ -1949,6 +2014,20 @@ int M_FindCurVal (float cur, value_t *values, int numvals)
 	return v;
 }
 
+namespace
+{
+std::string truncate(const std::string& str, size_t width, bool show_ellipsis = true)
+{
+	if (str.length() <= width)
+		return str;
+
+	if (show_ellipsis)
+		return str.substr(0, width) + "...";
+
+	return str.substr(0, width);
+}
+} // namespace
+
 void M_OptDrawer()
 {
 	int color;
@@ -2183,6 +2262,43 @@ void M_OptDrawer()
 				}
 
 				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
+			}
+			break;
+
+			case announcer: {
+				const std::string& announcername = cl_announcer.str();
+				const bool announcerisavailable = AnnouncerManager::getInstance().isAnnouncerLoaded(announcername);
+
+				if (announcerisavailable)
+				{
+					const AnnouncerMetaData_s& metadata = AnnouncerManager::getInstance().getAnnouncerMetadata(announcername);
+					AnnouncerAuthor = truncate(
+					    "By: " + std::string(TEXTCOLOR_TAN) + metadata.author,
+					    ANN_MAXTEXTWIDTH);
+					AnnouncerDescription =
+					    truncate(metadata.description, ANN_MAXTEXTWIDTH);
+					AnnouncerItems[ANN_AUTHORLINE].label = AnnouncerAuthor.c_str();
+					AnnouncerItems[ANN_DESCLINE].label = AnnouncerDescription.c_str();
+				}
+				else
+				{
+					AnnouncerItems[ANN_AUTHORLINE].label = "";
+					AnnouncerItems[ANN_DESCLINE].label = "";
+				}
+
+				const int announcerwidth = V_StringWidth(announcername.c_str());
+
+				const std::string truncated = truncate(announcername, ANN_MAXNAMEWIDTH);
+
+				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent - announcerwidth,
+				                          y, truncated.c_str());
+
+				if (!announcerisavailable)
+				{
+					screen->DrawTextCleanMove(CR_RED,
+					                          CurrentMenu->indent + MENU_VALUEINDENT, y,
+					                          "Not Loaded");
+				}
 			}
 			break;
 
@@ -2861,6 +2977,14 @@ void M_OptResponder(const event_t& ev)
 		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 		break;
 
+		case announcer: {
+			const std::string newannouncername = AnnouncerManager::getInstance().getLeftAnnouncer(item->a.cvar->str());
+
+			item->a.cvar->Set(newannouncername);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
 		default:
 			break;
 		}
@@ -2988,6 +3112,14 @@ void M_OptResponder(const event_t& ev)
 
 		}
 		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
+		break;
+
+		case announcer: {
+			const std::string newannouncername = AnnouncerManager::getInstance().getRightAnnouncer(item->a.cvar->str());
+
+			item->a.cvar->Set(newannouncername);
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 		break;
 
 		default:
@@ -3240,6 +3372,11 @@ void LibAdlMidiOptions()
 void SoundOptions () // [Ralphis] for sound menu
 {
 	M_SwitchMenu (&SoundMenu);
+}
+
+void AnnouncerOptions()
+{
+	M_SwitchMenu(&AnnouncerMenu);
 }
 
 void CompatOptions () // [Ralphis] for compatibility menu

@@ -895,6 +895,12 @@ message SpreeBreaker
 	uint32 tics_ago = 8;
 }
 
+// svc_announcerevent
+message AnnouncerEvent
+{
+	string key = 1;
+}
+
 // svc_configureavatar
 message ConfigureAvatar
 {

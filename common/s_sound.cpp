@@ -58,6 +58,10 @@ int S_FindSound(const char *logicalname)
 	if (S_sfx.empty())
 		return -1;
 
+	// Prevent division by zero in the case of a single sound.
+	if (S_sfx.size() == 1)
+		return strnicmp(S_sfx[0].name, logicalname, MAX_SNDNAME) == 0 ? 0 : -1;
+
 	int i = S_sfx[MakeKey(logicalname) % static_cast<unsigned>(S_sfx.size() - 1)].index;
 
 	while ((i != -1) && strnicmp(S_sfx[i].name, logicalname, MAX_SNDNAME))
