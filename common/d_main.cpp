@@ -625,6 +625,48 @@ static bool FindIWAD(OResFile& out)
 }
 
 /**
+ * @brief Find an already loaded resource file that satisfies a wanted file.
+ *
+ * Files passed by full path stay loaded from directories that are not part
+ * of the search path, so a later reload that only knows the basename cannot
+ * resolve them again.  Match on hash instead.
+ *
+ * @param out Output OResFile. On error, this object is not touched.
+ * @param wanted Wanted file to satisfy.
+ * @param loaded Currently loaded files to search.
+ * @return True if a loaded file matched, otherwise false.
+ */
+static bool FindLoadedFile(OResFile& out, const OWantFile& wanted,
+                           const OResFiles& loaded)
+{
+	const OMD5Hash& hash = wanted.getWantedMD5();
+	if (hash.empty())
+	{
+		// Without a hash we have no way to know the file is the right one.
+		return false;
+	}
+
+	for (const auto& file : loaded)
+	{
+		if (file.getMD5() != hash)
+		{
+			continue;
+		}
+
+		if (!M_FileExists(file.getFullpath()))
+		{
+			// Where'd it go?
+			continue;
+		}
+
+		out = file;
+		return true;
+	}
+
+	return false;
+}
+
+/**
  * @brief Load files that are assumed to be resolved, in the correct order,
  *        and complete.
  *
@@ -771,7 +813,8 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	for (const auto& wantfile : newwadfiles)
 	{
 		OResFile file;
-		if (!M_ResolveWantedFile(file, wantfile))
+		if (!M_ResolveWantedFile(file, wantfile) &&
+		    !FindLoadedFile(file, wantfile, ::wadfiles))
 		{
 			// Give more useful information when trying to load an IWAD.
 			const bool isCommercial = CommercialIWADWarning(wantfile);
@@ -794,7 +837,8 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	for (const auto& wantfile : newpatchfiles)
 	{
 		OResFile file;
-		if (!M_ResolveWantedFile(file, wantfile))
+		if (!M_ResolveWantedFile(file, wantfile) &&
+		    !FindLoadedFile(file, wantfile, ::patchfiles))
 		{
 			::missingfiles.push_back(wantfile);
 			PrintFmt(PRINT_WARNING, "Could not resolve patch file \"{}\".",
