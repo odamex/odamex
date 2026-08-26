@@ -2015,12 +2015,12 @@ void CL_PlaySound(const odaproto::svc::PlaySound* msg)
 	}
 }
 
-void CL_Reconnect(const odaproto::svc::Reconnect* msg)
+void CL_Reconnect( [[ maybe_unused ]] const odaproto::svc::Reconnect* msg)
 {
 	CL_Reconnect(NQ_SERVER_DROP);
 }
 
-void CL_ExitLevel(const odaproto::svc::ExitLevel* msg)
+void CL_ExitLevel( [[ maybe_unused ]] const odaproto::svc::ExitLevel* msg)
 {
 	gameaction = ga_completed;
 
@@ -2460,7 +2460,7 @@ void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft* msg)
 // Takes care of any business that needs to be done once the client has a full
 // view of the game world.
 //
-void CL_FullUpdateDone(const odaproto::svc::FullUpdateDone* msg)
+void CL_FullUpdateDone( [[ maybe_unused ]] const odaproto::svc::FullUpdateDone* msg)
 {
 	::hasReceivedFullUpdate = true;
 	::isReceivingFullUpdate = false;
@@ -2587,7 +2587,7 @@ void CL_LevelState(const odaproto::svc::LevelState* msg)
 	::levelstate.unserialize(sls);
 }
 
-void CL_ResetMap(const odaproto::svc::ResetMap* msg)
+void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
 
@@ -2667,7 +2667,7 @@ void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
 	player.QueuePosition = queuePos;
 }
 
-void CL_FullUpdateStart(const odaproto::svc::FullUpdateStart* msg)
+void CL_FullUpdateStart( [[ maybe_unused ]] const odaproto::svc::FullUpdateStart* msg)
 {
 	::hasReceivedFullUpdate = false;
 	::isReceivingFullUpdate = true;
@@ -3473,12 +3473,12 @@ void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
 	}
 }
 
-void CL_NetDemoStop(const odaproto::clc::NetDemoStop* msg)
+void CL_NetDemoStop( [[ maybe_unused ]] const odaproto::clc::NetDemoStop* msg)
 {
 	::netdemo.stopPlaying();
 }
 
-void CL_NetDemoLoadSnap(const odaproto::clc::NetDemoLoadSnap* msg)
+void CL_NetDemoLoadSnap( [[ maybe_unused ]] const odaproto::clc::NetDemoLoadSnap* msg)
 {
 	AddCommandString("netprevmap");
 }
