@@ -72,6 +72,7 @@ END_DISABLE_WARNING_GNU
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 #include "cl_freecam.h"
 
 #include <math.h> // for pow()
@@ -1321,6 +1322,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
+	DeathSpotManager::getInstance().eraseDeathSpot(p.id);
 }
 
 //

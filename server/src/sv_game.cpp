@@ -44,6 +44,7 @@ END_DISABLE_WARNING_GNU
 #include "g_spawninv.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 
 void	G_PlayerReborn (player_t &player);
 
@@ -246,6 +247,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
+	DeathSpotManager::getInstance().eraseDeathSpot(p.id);
 }
 
 //
