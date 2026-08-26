@@ -5,6 +5,8 @@
 
 #include "i_net.h"
 
+struct PacketHeaderType;
+
 class NetDemo
 {
 public:
@@ -30,6 +32,7 @@ public:
 	void readMessages(buf_t* netbuffer);
 	void capture(const buf_t* netbuffer);
 	void capture(const std::basic_string<byte>& buffer);
+	void capturePacketHeader(const PacketHeaderType& header);
 	void writeMapChange();
 	void writeIntermission();
 
@@ -193,6 +196,7 @@ private:
 	std::fstream    demofp  { };
 
 	std::deque<buf_t> captured {};
+	buf_t             workingBuffer {MAX_UDP_PACKET};
 
 	netdemo_header4_t   header        {};
 	SnapshotVector      snapshot_index{};
