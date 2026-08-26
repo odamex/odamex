@@ -269,15 +269,15 @@ public:
 	}
 
 	[[nodiscard]]
-	constexpr SafeBool operator==(noflag_t) const noexcept
+	constexpr bool operator==(noflag_t) const noexcept
 	{
-		return {m_value == none_set().m_value};
+		return m_value == none_set().m_value;
 	}
 
 	[[nodiscard]]
-	friend constexpr SafeBool operator==(const Derived lhs, const Derived rhs) noexcept
+	friend constexpr bool operator==(const Derived lhs, const Derived rhs) noexcept
 	{
-		return {lhs.m_value == rhs.m_value};
+		return lhs.m_value == rhs.m_value;
 	}
 
 	// TODO: this is just temporary and should be deleted as soon as its unused
@@ -443,9 +443,9 @@ constexpr flag_set<E> operator^(const flag_set<E> s, const FlagOrCombo<E> auto c
 
 template <FlagEnum E>
 [[nodiscard]]
-constexpr SafeBool operator==(const flag_combo<E> c, const E e) noexcept
+constexpr bool operator==(const flag_combo<E> c, const E e) noexcept
 {
-	return {c == flag_combo<E>{e}};
+	return c == flag_combo<E>{e};
 }
 
 }

@@ -77,8 +77,7 @@ public:
 	constexpr SafeBool(const Bool auto b) noexcept : m_value(b) {};
 	[[nodiscard]] constexpr bool to_bool() const noexcept { return m_value; }
 	[[nodiscard]] constexpr explicit operator bool () const noexcept { return m_value; }
-	[[nodiscard]] constexpr SafeBool operator==(const Bool auto other) const { return m_value == other; }
-    [[nodiscard]] constexpr SafeBool operator==(const SafeBool other) const { return m_value == other.m_value; }
+    [[nodiscard]] constexpr bool operator==(const SafeBool other) const { return m_value == other.m_value; }
 };
 
 // Helper for use of std::visit with lambdas
