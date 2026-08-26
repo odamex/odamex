@@ -204,8 +204,8 @@ void CL_Header(const odaproto::Header* msg)
 	s_currentHeader.sequence        = msg->sequence();
 	s_currentHeader.originatorTic   = msg->originator_tic();
 	s_currentHeader.destinationTic  = msg->destination_tic();
-	s_currentHeader.reliableSize    = msg->reliable_size();
-	s_currentHeader.flags           = msg->flags();
+	s_currentHeader.reliableSize    = static_cast<uint16_t>(msg->reliable_size());
+	s_currentHeader.flags           = static_cast<uint16_t>(msg->flags());
 }
 
 /**
