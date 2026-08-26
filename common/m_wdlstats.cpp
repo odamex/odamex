@@ -29,6 +29,7 @@
 #include "m_wdlstats.h"
 
 #include "c_dispatch.h"
+#include "cmdlib.h"
 #include "p_local.h"
 
 #define WDLSTATS_VERSION 6
@@ -851,7 +852,7 @@ void M_LogWDLEvent(WDLEvents event, const player_t* activator, const player_t* t
 /**
  * Log a WDL event when you have actor pointers.
  */
-void M_LogActorWDLEvent(WDLEvents event, AActor* activator, AActor* target, int arg0,
+void M_LogActorWDLEvent(WDLEvents event, const AActor* activator, const AActor* target, int arg0,
                         int arg1, int arg2, int arg3)
 {
 	if (!::wdlstate.recording)
@@ -964,11 +965,14 @@ void M_CommitWDLLog()
 		return;
 	}
 
+	std::string levelname = ::level.level_name;
+	StripColorCodes(levelname);
+
 	// Header (metadata)
 	fmt::print(fh, "version={}\n", WDLSTATS_VERSION);
 	fmt::print(fh, "time={}\n", iso8601buf);
 	fmt::print(fh, "levelnum={}\n", ::level.levelnum);
-	fmt::print(fh, "levelname={}\n", ::level.level_name);
+	fmt::print(fh, "levelname={}\n", levelname);
 	fmt::print(fh, "levelhash={}\n", ::level.level_fingerprint.toString());
 	fmt::print(fh, "gametype={}\n", ::sv_gametype.str());
 	fmt::print(fh, "lives={}\n", ::g_lives.str());

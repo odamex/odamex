@@ -215,7 +215,7 @@ size_t P_HordePickDefine(const int current, const int total)
 		const float section_offset = (current - 1) * section_size;
 		const float section_choice = M_RandomFloat() * section_size;
 		const float section_limit = nextafter(section_offset + section_size, 0.0f);
-		return MIN<size_t>(section_offset + section_choice, section_limit);
+		return std::min<size_t>(section_offset + section_choice, section_limit);
 	}
 	else if (current <= 1)
 	{
@@ -331,8 +331,8 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		minHealth = define.minGroupHealth;
 	}
 
-	int upper = MAX(maxHealth / health, 1);
-	const int lower = MAX(minHealth / health, 1);
+	int upper = std::max(maxHealth / health, 1);
+	const int lower = std::max(minHealth / health, 1);
 
 	int outTotalCount;
 	if (upper <= lower)
@@ -348,9 +348,9 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 
 	// If we have a limit, reduce the maxHealth to that.
 	if (limit)
-		maxHealth = MIN(maxHealth, *limit * health);
+		maxHealth = std::min(maxHealth, *limit * health);
 
-	upper = MAX(maxHealth / health, 1);
+	upper = std::max(maxHealth / health, 1);
 
 	int outCount;
 	if (upper <= lower)
@@ -367,7 +367,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	out.type = outType;
 	out.count = outCount;
 	out.limit = limit.value_or(0);
-	out.totalCount = MAX(outTotalCount, outCount);
+	out.totalCount = std::max(outTotalCount, outCount);
 	out.isBoss = outIsBoss;
 
 	return true;
@@ -448,7 +448,7 @@ BEGIN_COMMAND(hordedefine)
 						    nextafter(section_offset + section_size, 0.0f);
 						const size_t start = static_cast<size_t>(section_offset);
 						const size_t end =
-						    MIN<size_t>(section_offset + section_choice, section_limit);
+						    std::min<size_t>(section_offset + section_choice, section_limit);
 						PrintFmt("[Wave {}/{} - Start:{} End:{}]\n",
 						         current, total, start, end);
 						PrintDefines(::WAVE_DEFINES.begin() + start,

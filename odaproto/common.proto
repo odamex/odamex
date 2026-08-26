@@ -53,6 +53,8 @@ message Actor
 	int32 waterlevel = 17;
 	uint32 rndindex = 18;
 	fixed32 flags2 = 19;
+	uint32 friend_playerid = 20;
+	int32 friend_teamid = 21;
 }
 
 message PspriteState

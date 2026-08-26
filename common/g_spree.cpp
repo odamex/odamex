@@ -32,8 +32,52 @@
 #include "g_spree.h"
 #include "m_ostring.h"
 #include "g_gametype.h"
+#include "p_inter.h"
+#include "farchive.h"
 #include "infomap.h"
 #include "svc_message.h"
+
+EXTERN_CVAR(sv_showsprees)
+
+#ifdef CLIENT_APP
+EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(cl_showofflinesprees)
+
+namespace
+{
+
+//
+// Whether spree messages should be shown to this player at all.
+//
+bool CanShowSprees()
+{
+	if (!cl_showsprees)
+		return false;
+
+	if (network_game)
+		return sv_showsprees;
+
+	return cl_showofflinesprees;
+}
+
+//
+// Logs a spree message to the console.
+//
+void PrintSpreeMessage(const std::string& message, const int tic)
+{
+	if (message.empty() || !CanShowSprees())
+		return;
+
+	const int age = ::gametic - tic;
+
+	if (age < 0 || age >= SPREE_DISPLAY_TICS)
+		return;
+
+	PrintFmt(PRINT_FILTERHIGH, TEXTCOLOR_GRAY "{}\n", message);
+}
+
+} // namespace
+#endif
 
 SpreeManager& SpreeManager::getInstance()
 {
@@ -117,15 +161,12 @@ int SpreeManager::getHighestSpreeLevel()
 
 const Spree_s& SpreeManager::getSpreeLevel(const int level)
 {
-	int newlevel = level;
+	const int highest = getHighestSpreeLevel();
 
-	if (getHighestSpreeLevel() <= -1)
+	if (highest <= -1 || level < 0)
 		return emptySpree;
 
-	if (level >= spreeLevels.size())
-		newlevel = spreeLevels.size() - 1;
-
-	return spreeLevels.at(newlevel);
+	return spreeLevels.at(level > highest ? highest : level);
 }
 
 void SpreeManager::setSpreeLevels(const NewSprees_s& newSprees)
@@ -144,17 +185,20 @@ const SpreeBreaker_t& SpreeManager::getSpreeBreaker()
 	return spreeBreaker;
 }
 
-void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType)
+void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int level,
+                                      const SpreeBreakerType breakerType,
+                                      const int ticsAgo)
 {
 	player_t& victim = idplayer(breaker.spreeEndedPlayerId);
 	SpreeBreaker_t newbreaker = breaker;
 
-	if (!validplayer(victim))
-		return;
-
-	newbreaker.spreeEndedTeam = victim.userinfo.team;
+	// The victim may have already disconnected, in which case we still show the
+	// breaker using the name the server sent us, just without a team color.
+	newbreaker.spreeEndedTeam = validplayer(victim) ? victim.userinfo.team : TEAM_NONE;
 	newbreaker.spreeEnderTeam = TEAM_NONE;
-	newbreaker.spreeEndedTic = ::gametic;
+	newbreaker.spreeEndedTic = ::gametic - ticsAgo;
+	newbreaker.spreeEndedLevel = level;
+	newbreaker.spreeEndedType = breakerType;
 
 	Spree_s spreeLevel = getSpreeLevel(level);
 
@@ -167,6 +211,9 @@ void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int l
 		case BR_SELF:
 				newbreaker.spreeEndedBroadcastText = spreeEndSelf;
 				newbreaker.spreeEnderMonster = false;
+
+				// The ender is the victim, so they share the same team.
+				newbreaker.spreeEnderTeam = newbreaker.spreeEndedTeam;
 		break;
 	  case BR_PLAYER: {
 				newbreaker.spreeEndedBroadcastText = spreeEndPlayer;
@@ -177,7 +224,7 @@ void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int l
 				if (!validplayer(source))
 						break;
 
-				newbreaker.spreeEndedTeam = source.userinfo.team;
+				newbreaker.spreeEnderTeam = source.userinfo.team;
 				}
 		break;
 		case BR_MONSTER:
@@ -188,10 +235,12 @@ void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int l
 
 	setBreakerLanguage(newbreaker, breakerType);
 
+#ifdef CLIENT_APP
+	PrintSpreeMessage(newbreaker.spreeEndedBroadcastText, newbreaker.spreeEndedTic);
+#endif
+
 	spreeBreaker = newbreaker;
 }
-
-EXTERN_CVAR(sv_showsprees)
 
 void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 {
@@ -237,6 +286,7 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	{
 		enderName = endedPlayerName;
 		enderPlayerId = endedPlayerId;
+		enderTeam = endedTeam;
 		broadcastText = spreeEndSelf;
 		type = BR_SELF;
 	}
@@ -244,13 +294,14 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	{
 		enderName = source->player->userinfo.netname;
 		enderPlayerId = source->player->id;
-		team_t enderTeam = source->player->userinfo.team;
+		enderTeam = source->player->userinfo.team;
 		broadcastText = spreeEndPlayer;
 		type = BR_PLAYER;
 	}
 	else // potential monster
 	{
 		enderName = source->info->getDisplayName();
+		enderPlayerId = -1;
 		enderIsMonster = true;
 		broadcastText = spreeEndMonster;
 		type = BR_MONSTER;
@@ -265,21 +316,24 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 
 	                         broadcastText,   spreeEnded,    spreeEndedColor,
 
-	                         enderIsMonster,
+	                         enderIsMonster,   points,       ::gametic,
 
-	                         points,
+	                         level,            type};
 
-	                         ::gametic};
 
 	#ifdef SERVER_APP
 	if (sv_showsprees)
 	{
 		// Broadcast to all clients
-		MSG_BroadcastSVC(CLBUF_NET, SVC_SpreeBreaker(breaker, level, type), -1);
+		MSG_BroadcastSVC(CLBUF_NET, SVC_SpreeBreaker(breaker, level, type, 0), -1);
 	}
 	#endif
 
 	setBreakerLanguage(breaker, type);
+
+#ifdef CLIENT_APP
+	PrintSpreeMessage(breaker.spreeEndedBroadcastText, breaker.spreeEndedTic);
+#endif
 
 	spreeBreaker = breaker;
 }
@@ -370,21 +424,28 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 		SpreeRecord_t newRecord;
 		newRecord.playerId = playerId;
 		newRecord.playerName = playerName;
-		newRecord.spreeLevel =
-		    newSpreeLevel > maxSpreeLevel ? maxSpreeLevel : newSpreeLevel;
-		newRecord.spree = getSpreeLevel(newRecord.spreeLevel);
+		newRecord.spreeLevel = newSpreeLevel;
+		newRecord.spree = getSpreeLevel(newSpreeLevel);
 		newRecord.spreeStartTic = tic;
-		newRecord.stillDominating = false;
+		newRecord.stillDominating = newSpreeLevel > maxSpreeLevel;
+
+		if (newRecord.stillDominating)
+		{
+			newRecord.spree.spreeBroadcastText = repeatingSpreeText;
+		}
 
 		// Apply sexmessage to the broadcast text
 		setSpreeRecordLanguage(newRecord, playerId);
 
 		spreeRecord[playerId] = newRecord;
+#ifdef CLIENT_APP
+		PrintSpreeMessage(newRecord.spree.spreeBroadcastText, tic);
+#endif
 #ifdef SERVER_APP
 		if (sv_showsprees)
 		{
 			// Broadcast to all clients
-			MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(newRecord), -1);
+			MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(newRecord, 0), -1);
 		}
 #endif
 		return true;
@@ -409,11 +470,14 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 
 			// Apply sexmessage to the broadcast text
 			setSpreeRecordLanguage(record, playerId);
+#ifdef CLIENT_APP
+			PrintSpreeMessage(record.spree.spreeBroadcastText, tic);
+#endif
 #ifdef SERVER_APP
 			if (sv_showsprees)
 			{
 				// Broadcast to all clients
-				MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(record), -1);
+				MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(record, 0), -1);
 			}
 #endif
 			return true;
@@ -423,7 +487,8 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 	return false;
 }
 
-bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel)
+bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel,
+                               const int ticsAgo)
 {
 	if (newSpreeLevel <= -1)
 		return false;
@@ -433,7 +498,13 @@ bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel)
 	if (!validplayer(player))
 		return false;
 
-	return checkForSpreeUpdates(playerId, player.userinfo.netname, newSpreeLevel, ::gametic);
+	return checkForSpreeUpdates(playerId, player.userinfo.netname, newSpreeLevel,
+	                            ::gametic - ticsAgo);
+}
+
+const std::unordered_map<int, SpreeRecord_t>& SpreeManager::getSpreeRecords() const
+{
+	return spreeRecord;
 }
 
 const SpreeRecord_t& SpreeManager::getSpreeRecord(const int playerId)
@@ -448,12 +519,14 @@ const SpreeRecord_t& SpreeManager::getSpreeRecord(const int playerId)
 
 void SpreeManager::expireOldSprees()
 {
-	//if (::gametic - spreeBreaker.spreeEndedTic > 4 * TICRATE ||
-	//    spreeBreaker.spreeEndedTic > ::gametic)
-	//{
-	//	spreeBreaker = {"", -1, TEAM_NONE, "",    -1, TEAM_NONE,
-	//	                "", "", CR_GOLD,   false, 0,  0};
-	//}
+	// Drop the last spree breaker once it can no longer be shown, or if it happened
+	// in the future, which means we rewound a demo.
+	if (spreeBreaker.spreeEndedPlayerId != -1 &&
+	    (::gametic - spreeBreaker.spreeEndedTic > SPREE_DISPLAY_TICS ||
+	     spreeBreaker.spreeEndedTic > ::gametic))
+	{
+		spreeBreaker = SpreeBreaker_t();
+	}
 
 	std::erase_if(spreeRecord, [](const auto& pair){
 		// Spree happened in the future, indicating we're in a rewinded demo
@@ -613,14 +686,59 @@ void SpreeManager::clearPoints()
 	pointsSinceLastDeath.clear();
 }
 
+void SpreeManager::serialize(FArchive& arc)
+{
+	if (arc.IsStoring())
+	{
+		arc << static_cast<uint32_t>(spreeRecord.size());
+
+		for (const auto& [playerId, record] : spreeRecord)
+		{
+			arc << playerId << record.playerName << record.spreeLevel
+			    << record.spreeStartTic << record.stillDominating << record.spree.spreeText
+			    << record.spree.spreeBroadcastText << record.spree.gameSfxToken
+			    << record.spree.color;
+		}
+
+		arc << spreeBreaker.spreeEndedName << spreeBreaker.spreeEndedPlayerId
+		    << spreeBreaker.spreeEndedTeam << spreeBreaker.spreeEnderName
+		    << spreeBreaker.spreeEnderPlayerId << spreeBreaker.spreeEnderTeam
+		    << spreeBreaker.spreeEndedBroadcastText << spreeBreaker.spreeEnded
+		    << spreeBreaker.spreeEndedColor << spreeBreaker.spreeEnderMonster
+		    << spreeBreaker.endedPoints << spreeBreaker.spreeEndedTic
+		    << spreeBreaker.spreeEndedLevel << spreeBreaker.spreeEndedType;
+	}
+	else
+	{
+		spreeRecord.clear();
+
+		uint32_t count = 0;
+		arc >> count;
+
+		for (uint32_t i = 0; i < count; i++)
+		{
+			SpreeRecord_t record;
+			arc >> record.playerId >> record.playerName >> record.spreeLevel >>
+			    record.spreeStartTic >> record.stillDominating >> record.spree.spreeText >>
+			    record.spree.spreeBroadcastText >> record.spree.gameSfxToken >>
+			    record.spree.color;
+
+			spreeRecord[record.playerId] = record;
+		}
+
+		arc >> spreeBreaker.spreeEndedName >> spreeBreaker.spreeEndedPlayerId >>
+		    spreeBreaker.spreeEndedTeam >> spreeBreaker.spreeEnderName >>
+		    spreeBreaker.spreeEnderPlayerId >> spreeBreaker.spreeEnderTeam >>
+		    spreeBreaker.spreeEndedBroadcastText >> spreeBreaker.spreeEnded >>
+		    spreeBreaker.spreeEndedColor >> spreeBreaker.spreeEnderMonster >>
+		    spreeBreaker.endedPoints >> spreeBreaker.spreeEndedTic >>
+		    spreeBreaker.spreeEndedLevel >> spreeBreaker.spreeEndedType;
+	}
+}
+
 // ==========================================================
 // Static functions start here.
 // ==========================================================
-
-#ifdef CLIENT_APP
-EXTERN_CVAR(cl_showsprees)
-EXTERN_CVAR(cl_showofflinesprees)
-#endif
 
 void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 {
@@ -639,6 +757,14 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 	}
 
 	if (!source || !source->player)
+		return;
+
+	// Don't count if the player killed themselves, or if the player killed a teammate.
+	if (target && target->id == source->player->id)
+		return;
+
+	if (target && G_IsTeamGame() && source->player &&
+	    source->player->userinfo.team == target->userinfo.team)
 		return;
 
 	if (clientside && network_game)
@@ -672,7 +798,8 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 	}
 }
 
-void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
+void P_ProcessSpreeDamage(const player_t* source, const AActor* target,
+                          const int totalDamage)
 {
 	if (clientside && network_game)
 		return;
@@ -685,6 +812,11 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 	// Check for spree interval, update the spree map with updates
 	// If the gamemode is coop
 	if (!G_IsCoopGame())
+		return;
+
+	// Chipping away at our own friendly monsters doesn't count, the same way killing a
+	// teammate doesn't count towards a kill spree or multi kill.
+	if (P_IsFriendlyDamage(source, target))
 		return;
 
 	bool update = manager.recordPlayerDamage(source, totalDamage);
@@ -710,7 +842,59 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 	}
 }
 
+SpreeHudLines_t P_GetSpreeHudLines(const int displayPlayerId)
+{
+	SpreeManager& manager = SpreeManager::getInstance();
+	SpreeHudLines_t lines;
+
+	// A spree for the player we're watching is the big line, and is never echoed on
+	// the small line. Repeats of the top level are the one exception - those are only
+	// ever announced small.
+	const SpreeRecord_t& ownSpree = manager.getSpreeRecord(displayPlayerId);
+	const bool hasOwnSpree = ownSpree.playerId != -1;
+
+	int smallTic = -1;
+
+	if (hasOwnSpree)
+	{
+		if (ownSpree.stillDominating)
+		{
+			lines.smallSpree = &ownSpree;
+			smallTic = ownSpree.spreeStartTic;
+		}
+		else
+		{
+			lines.bigSpree = &ownSpree;
+		}
+	}
+
+	// The small line only has room for one message, so take the latest of whichever of
+	// our own repeated spree, another player's spree, or the last spree breaker.
+	const SpreeRecord_t& otherSpree = manager.getLatestSpreeRecord(displayPlayerId);
+
+	if (otherSpree.playerId != -1 && otherSpree.spreeStartTic > smallTic)
+	{
+		lines.smallSpree = &otherSpree;
+		smallTic = otherSpree.spreeStartTic;
+	}
+
+	const SpreeBreaker_t& breaker = manager.getSpreeBreaker();
+
+	if (breaker.spreeEndedPlayerId != -1 && breaker.spreeEndedTic > smallTic)
+	{
+		lines.smallSpree = nullptr;
+		lines.smallBreaker = &breaker;
+	}
+
+	return lines;
+}
+
 void P_TicSprees()
 {
 	SpreeManager::getInstance().expireOldSprees();
+}
+
+void P_SerializeSprees(FArchive& arc)
+{
+	SpreeManager::getInstance().serialize(arc);
 }

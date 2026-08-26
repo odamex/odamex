@@ -24,6 +24,8 @@
 #include "odamex.h"
 
 #include "g_gametype.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 #include "c_dispatch.h"
 #include "cmdlib.h"
@@ -539,7 +541,7 @@ static void GiveWins(player_t& player, int wins)
 	{
 		if (!it->ingame())
 			continue;
-		MSG_WriteSVC(it->client.messenger.ReliableBuf(), SVC_PlayerMembers(player, SVC_PM_SCORE));
+		MSG_WriteSVC(it->client.messenger->ReliableBuf(), SVC_PlayerMembers(player, SVC_PM_SCORE));
 	}
 }
 
@@ -559,8 +561,14 @@ static void GiveTeamWins(team_t team, int wins)
 	{
 		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_TeamMembers(team));
+		MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_TeamMembers(team));
 	}
+}
+
+void G_ClearRoundKillStats()
+{
+	SpreeManager::getInstance().clearSprees();
+	MultiKillManager::getInstance().clearMultiTics();
 }
 
 /**

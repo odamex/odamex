@@ -359,7 +359,7 @@ begin
   begin
     // Is the installed version new enough?
     Log('VC Redist Version check : found ' + Version);
-    Result := (CompareVersion(Version, {#VCRedistVersion})>0);
+    Result := (CompareVersion(Version, '{#VCRedistVersion}')>0);
   end
   else
   begin

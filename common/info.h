@@ -1439,7 +1439,7 @@ extern state_t boomstates[];
 inline DoomObjectContainer<state_t> states(::NUMSTATES); // statenum_t
 extern state_t odastates[];
 
-inline FArchive &operator<< (FArchive &arc, state_t *state)
+inline FArchive &operator<< (FArchive &arc, const state_t *state)
 {
 	if (state)
 		return arc << static_cast<int32_t>(state->statenum);
@@ -1447,7 +1447,7 @@ inline FArchive &operator<< (FArchive &arc, state_t *state)
 		return arc << static_cast<int32_t>(0xffffffff);
 }
 
-inline FArchive &operator>> (FArchive &arc, state_t *&state)
+inline FArchive &operator>> (FArchive &arc, const state_t *&state)
 {
 	int32_t ofs;
 	arc >> ofs;
@@ -1488,7 +1488,7 @@ enum mobjtype_t: int32_t {
     MT_SKYVIEWPOINT,
     MT_SKYPICKER,
     MT_SECTORSILENCER,
-
+	MT_SPRINGPAD,
 
     // -----------------------------------
     //    [Toke - CTF]

@@ -158,8 +158,7 @@ public:
 	// ------------ Streaming-in operations ---------------
 
 	// Integer operators
-	template <typename IntegerType>
-	requires std::is_integral_v<IntegerType>
+	template <std::integral IntegerType>
 	FArchive& operator<< (IntegerType value)
 	{
 		value = BESWAP(value);

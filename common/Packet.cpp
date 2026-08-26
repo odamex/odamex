@@ -69,7 +69,7 @@ void Packet::Compress()
 	if (m_compressor.Compress(m_outgoingPacketBuffer, PacketHeaderType::PACKET_HEADER_SIZE, 0))
 	{
 		// Successful compression, set the compression flag bit.
-		method |= SVF_COMPRESSED;
+		method |= PacketHeaderType::FLAG_COMPRESSED;
 	}
 
 	m_outgoingPacketBuffer.ptr()[PacketHeaderType::PACKET_FLAG_INDEX] |= method;
@@ -89,13 +89,15 @@ size_t Packet::CompressAndSend(const netadr_t& i_dest)
 	return bytesSent;
 }
 
-size_t Packet::ReSend(int sequence, const buf_t& i_dataBuffer, const netadr_t& i_dest)
+size_t Packet::ReSend(int i_historicalLocalTic, int i_destinationTic, int sequence, const buf_t& i_dataBuffer, const netadr_t& i_dest)
 {
 	m_outgoingPacketBuffer.clear();
 
-	m_header.sequence     = sequence;
-	m_header.reliableSize = static_cast<uint16_t>(i_dataBuffer.size());
-	m_header.flags        = 0;
+	m_header.originatorTic  = i_historicalLocalTic;
+	m_header.destinationTic = i_destinationTic;
+	m_header.sequence       = sequence;
+	m_header.reliableSize   = static_cast<uint16_t>(i_dataBuffer.size());
+	m_header.flags          = 0;
 
 	m_header.Pack(m_outgoingPacketBuffer);
 	AddToOutgoingBuffer(i_dataBuffer);
@@ -103,7 +105,7 @@ size_t Packet::ReSend(int sequence, const buf_t& i_dataBuffer, const netadr_t& i
 	return CompressAndSend(i_dest);
 }
 
-size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& i_dest)
+size_t Packet::Send(int i_currentTic, int i_destinationTic, SequenceSender& i_sender, const netadr_t& i_dest)
 {
 	if (m_header.reliableSize)
 	{
@@ -121,15 +123,36 @@ size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& 
 	{
 		// For consistency and metrics collection, packets that are purely non-reliable
 		// use the sequence number of the most-recently-produced reliable packet.  Please
-		// note that it very intentionally does NOT affect the need to immediately process
+		// note that it very intentionally does NOT affect any need to immediately process
 		// the non-reliable data.
-		//
-		// We also negate it as an eye-catcher for reading packet byte dumps.
-		m_header.sequence = -i_sender.MostRecentAcquiredSequence();
+
+		m_header.sequence = i_sender.MostRecentAcquiredSequence();
 	}
+
+	m_header.originatorTic  = i_currentTic;
+	m_header.destinationTic = i_destinationTic;
 
 	m_outgoingPacketBuffer.SeekWrite(0, buf_t::BT_START);
 	m_header.Pack(m_outgoingPacketBuffer);
 
 	return CompressAndSend(i_dest);
 }
+
+size_t Packet::SendHighPriority(int i_currentTic, int i_destinationTic, SequenceSender& i_sender, const netadr_t& i_dest)
+{
+	if (m_header.reliableSize)
+	{
+		PrintFmt(PRINT_WARNING, "High-priority packets cannot include reliable messages, but {} reliable bytes are packed!", m_header.reliableSize);
+	}
+
+	m_header.originatorTic  = i_currentTic;
+	m_header.destinationTic = i_destinationTic;
+	m_header.sequence       = i_sender.MostRecentAcquiredSequence();
+	m_header.flags          |= PacketHeaderType::FLAG_HIGH_PRIORITY;
+
+	m_outgoingPacketBuffer.SeekWrite(0, buf_t::BT_START);
+	m_header.Pack(m_outgoingPacketBuffer);
+
+	return CompressAndSend(i_dest);
+}
+

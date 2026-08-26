@@ -43,5 +43,5 @@ elseif(UNIX AND NOT APPLE)
   target_link_libraries(odagtest rt)
 endif()
 
-odamex_target_settings(odagtest)
+odamex_target_settings(TARGET odagtest NO_DEPLOYMENT_ARTIFACT)
 odamex_target_errors(odagtest)

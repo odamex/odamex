@@ -199,7 +199,7 @@ void R_RenderPlayerView (player_t *player);
 void R_Init();
 
 // Called by exit code.
-void STACK_ARGS R_Shutdown();
+void R_Shutdown();
 
 void R_ExitLevel();
 
@@ -235,7 +235,7 @@ inline byte shaderef_t::ramp() const
 	if (m_mapnum >= NUMCOLORMAPS)
 		return 0;
 
-	int index = clamp(m_mapnum * 256 / NUMCOLORMAPS, 0, 255);
+	int index = std::clamp(m_mapnum * 256 / NUMCOLORMAPS, 0, 255);
 	return m_colors->ramp[index];
 }
 

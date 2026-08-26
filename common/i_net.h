@@ -70,16 +70,6 @@ enum clientBuf_e
 };
 
 /**
- * @brief Compression is enabled for this packet
- */
-#define SVF_COMPRESSED BIT(0)
-
-/**
- * @brief Unused flags - if any of these are set, we have a problem.
- */
-#define SVF_UNUSED_MASK BIT_MASK(1, 7)
-
-/**
  * @brief svc_*: Transmit all possible data.
  */
 #define SVC_MSG_ALL BIT_MASK(0, 7)
@@ -133,6 +123,11 @@ enum clientBuf_e
  * @brief svc_spawnmobj: ZDoom/Heretic flags.
  */
 #define SVC_SM_FLAGS2 BIT(3)
+
+/**
+ * @brief svc_spawnmobj: Which player or team a friendly belongs to.
+ */
+#define SVC_SM_FRIEND BIT(4)
 
 /**
  * @brief svc_updatemobj: Supply mobj position and random index.

@@ -68,6 +68,7 @@
 #include "cl_netgraph.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "cl_freecam.h"
 
 #include "PlayerItemDataType.h"
 
@@ -771,8 +772,6 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		P_ResolveStackLinks();
 	}
 
-	mo->UpdateActorLists();
-
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
 		mo->flags = msg->current().flags();
@@ -793,6 +792,14 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->translation = translationref_t(&::bosstable[0]);
 		}
 	}
+
+	if (msg->spawn_flags() & SVC_SM_FRIEND)
+	{
+		mo->friend_playerid = msg->current().friend_playerid();
+		mo->friend_teamid = static_cast<team_t>(msg->current().friend_teamid());
+	}
+
+	mo->UpdateActorLists();
 
 	if (msg->spawn_flags() & SVC_SM_CORPSE)
 	{
@@ -825,6 +832,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		if (mo->player)
 			mo->player->playerstate = PST_DEAD;
 	}
+
+	if (mo->flags & MF_FRIEND)
+		P_FriendlyEffects(mo);
 }
 
 //
@@ -1048,7 +1058,7 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 	uint32_t netid = msg->netid();
 
 	AActor* mo = P_FindThingById(netid);
-	if (mo && mo->player && mo->player->id == ::displayplayer_id)
+	if (mo && mo->player && mo->player->id == ::displayplayer_id && not consoleplayer().spectator)
 		::displayplayer_id = ::consoleplayer_id;
 
 	if (mo && mo->flags & MF_COUNTITEM)
@@ -1063,6 +1073,12 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 {
 	player_t* p = &CL_FindPlayer(msg->pid());
+
+	// 255th player just connected and is replacing the freecam, need to retire freecam
+	if (p->id == freecamplayer_id && p->isFreecam)
+	{
+		Freecam::retireFor255thPlayer(p);
+	}
 
 	p->userinfo.netname = msg->netname();
 
@@ -1189,9 +1205,10 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 		mo->momz = update.mom.z;
 	}
 
-	mo->rndindex = update.rndindex;
-	mo->movedir = update.movedir;
+	mo->rndindex  = update.rndindex;
+	mo->movedir   = update.movedir;
 	mo->movecount = update.movecount;
+	mo->threshold = msg->threshold();
 
 	AActor* target = P_FindThingById(update.targetid);
 	if (target)
@@ -1218,15 +1235,9 @@ static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 	// Special handling: If we get a best-effort / order-not-guaranteed UpdateMobj, make sure that
 	//                   we're not going backwards with it!  This avoids rare ghosts.
 	const int currentSequence = ::messenger.GetCurrentReceivedPacketSequenceNumber();
-	if (currentSequence < 0)
+	if (currentSequence < mo->updatedDuringServerTic)
 	{
-		const int baseSequence = std::abs(mo->updatedDuringServerTic);
-		const int newSequence  = -currentSequence;
-
-		if (newSequence < baseSequence)
-		{
-			return;
-		}
+		return;
 	}
 
 	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
@@ -1372,7 +1383,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 			rollerState.Record(tic, p);
 		}
 
-		if (!netdemo.isPlaying())
+		if (not netdemo.isPlaying() && not consoleplayer().spectator)
 		{
 				::displayplayer_id = ::consoleplayer_id;
 		}
@@ -1433,8 +1444,8 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	}
 	else
 	{
-		player.health = MIN(player.health, health);
-		player.armorpoints = MIN(player.armorpoints, armorpoints);
+		player.health = std::min(player.health, health);
+		player.armorpoints = std::min(player.armorpoints, armorpoints);
 		player.mo->health = player.health;
 
 		if (player.health < 0)
@@ -1448,8 +1459,7 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 				player.health = 0;
 		}
 
-		if (player.armorpoints < 0)
-			player.armorpoints = 0;
+		player.armorpoints = std::max(player.armorpoints, 0);
 	}
 
 	if (player.armorpoints == 0)
@@ -1582,9 +1592,20 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	}
 
 	corpsehit->flags = info->flags;
+
+	if (msg->corpse().flags() & MF_FRIEND)
+	{
+		corpsehit->flags |= MF_FRIEND;
+		corpsehit->friend_playerid = msg->corpse().friend_playerid();
+		corpsehit->friend_teamid = static_cast<team_t>(msg->corpse().friend_teamid());
+	}
+
 	corpsehit->health = info->spawnhealth;
 	corpsehit->target = AActor::AActorPtr();
 	corpsehit->UpdateActorLists();
+
+	if (corpsehit->flags & MF_FRIEND)
+		P_FriendlyEffects(corpsehit);
 }
 
 //
@@ -2556,6 +2577,8 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
 
+	G_ClearRoundKillStats();
+
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
 	AActor* mo;
@@ -2796,11 +2819,11 @@ static void CL_WakeupMobj(const odaproto::svc::WakeupMobj* msg)
 		mo->goal = AActor::AActorPtr();
 	}
 
-	mo->angle = msg->angle();
-	mo->lastlook = msg->lastlook();
-	mo->movecount = msg->movecount();
-	mo->movedir = msg->movedir();
-	mo->pursuecount = msg->pursuecount();
+	mo->angle        = msg->angle();
+	mo->lastlook     = msg->lastlook();
+	mo->movecount    = msg->movecount();
+	mo->movedir      = msg->movedir();
+	mo->pursuecount  = msg->pursuecount();
 	mo->reactiontime = msg->reactiontime();
 	mo->special      = msg->special();
 	mo->strafecount  = msg->strafecount();
@@ -3191,8 +3214,15 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 {
 	int playerId = msg->pid();
 	int spreeLevel = msg->spree_level();
+	const int ticsAgo = static_cast<int>(msg->tics_ago());
 
-	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
+	const bool update =
+	    SpreeManager::getInstance().setRawSpree(playerId, spreeLevel, ticsAgo);
+
+	// Old spree before we connected?
+	// Don't announce it.
+	if (ticsAgo > 0)
+		return;
 
 	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
 	if (cl_showsprees && sv_showsprees && displayplayer_id == playerId && update)
@@ -3211,10 +3241,11 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 	breaker.spreeEnderPlayerId = msg->source_pid();
 	breaker.spreeEnderName = msg->source_name();
 	breaker.endedPoints = msg->spree_points();
-	SpreeBreakerType type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
-	int level = msg->spree_level();
+	const auto type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
+	const int level = msg->spree_level();
+	const int ticsAgo = static_cast<int>(msg->tics_ago());
 
-	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type);
+	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type, ticsAgo);
 }
 
 static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)

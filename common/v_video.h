@@ -451,7 +451,7 @@ extern argb_t Col2RGB8[65][256];
 extern palindex_t RGB32k[32][32][32];
 
 void V_Init();
-void STACK_ARGS V_Close();
+void V_Close();
 
 void V_ForceVideoModeAdjustment();
 void V_AdjustVideoMode();

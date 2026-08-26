@@ -105,6 +105,7 @@ EXTERN_CVAR(con_notifytime)
 
 EXTERN_CVAR(message_showpickups)
 EXTERN_CVAR(message_showobituaries)
+EXTERN_CVAR(log_fulltimestamps)
 
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
@@ -993,7 +994,7 @@ void C_InitConCharsFont()
 //
 // C_ShutdownConCharsFont
 //
-void STACK_ARGS C_ShutdownConCharsFont()
+void C_ShutdownConCharsFont()
 {
 	delete [] ConChars;
 	ConChars = NULL;
@@ -1051,7 +1052,7 @@ void C_InitConsoleBackground()
 //
 // Frees the background_surface
 //
-void STACK_ARGS C_ShutdownConsoleBackground()
+void C_ShutdownConsoleBackground()
 {
 	I_FreeSurface(background_surface);
 }
@@ -1060,7 +1061,7 @@ void STACK_ARGS C_ShutdownConsoleBackground()
 //
 // C_ShutdownConsole
 //
-void STACK_ARGS C_ShutdownConsole()
+void C_ShutdownConsole()
 {
 	Lines.clear();
 	History.clear();
@@ -1236,7 +1237,7 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 {
 	if (I_VideoInitialized() && !midprinting)
 	{
-		const bool noPickups = printlevel == PRINT_PICKUP && !::message_showpickups;
+		const bool noPickups = printlevel == PRINT_PICKUP && (!::message_showpickups || displayplayer().isFreecam);
 		const bool noObits = printlevel == PRINT_OBITUARY && !::message_showobituaries;
 
 		if (!noPickups && !noObits)
@@ -1308,6 +1309,61 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 	return strlen(outline);
 }
 
+namespace
+{
+
+// struct tm counts years from 1900.
+constexpr int TM_YEAR_BASE = 1900;
+
+std::string TimeStamp()
+{
+	const time_t ti = time(nullptr);
+	const struct tm* lt = localtime(&ti);
+
+	if (!lt)
+		return "";
+
+	if (log_fulltimestamps)
+	{
+		return fmt::format("[{:02d}/{:02d}/{:02d} {:02d}:{:02d}:{:02d}]", lt->tm_mday,
+		                   lt->tm_mon + 1, // localtime returns 0-based month
+		                   lt->tm_year + TM_YEAR_BASE, lt->tm_hour, lt->tm_min,
+		                   lt->tm_sec);
+	}
+
+	return fmt::format("[{:02d}:{:02d}:{:02d}]", lt->tm_hour, lt->tm_min, lt->tm_sec);
+}
+
+// Writes to the log file, stamping the start of every line.
+// Prints can span several lines or stop mid-line, so where
+// the last one left off is remembered.
+void C_LogString(const std::string& str)
+{
+	static bool at_line_start = true;
+
+	size_t pos = 0;
+	while (pos < str.length())
+	{
+		if (at_line_start)
+		{
+			LOG << TimeStamp() << ' ';
+			at_line_start = false;
+		}
+
+		size_t end = str.find('\n', pos);
+		if (end == std::string::npos)
+			end = str.length() - 1;
+
+		LOG.write(str.data() + pos, static_cast<std::streamsize>(end - pos + 1));
+		at_line_start = (str[end] == '\n');
+		pos = end + 1;
+	}
+
+	LOG.flush();
+}
+
+} // namespace
+
 size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
 	extern bool gameisdead;
@@ -1364,8 +1420,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 		if (con_coloredmessages)
 			StripColorCodes(newStr);
 
-		LOG << newStr;
-		LOG.flush();
+		C_LogString(newStr);
 	}
 
 #if defined (_WIN32) && defined(_DEBUG)
@@ -1538,9 +1593,12 @@ void C_AdjustBottom()
 //
 void C_NewModeAdjust()
 {
-	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth();
+	const int surface_height = I_GetSurfaceHeight();
 
-	ConScale = con_scaletext ? con_scaletext : MAX(1, static_cast<int>(std::round(surface_height / 450.0f)));
+	const int auto_scale = std::max(1, static_cast<int>(std::round(static_cast<float>(surface_height) / 450.f)));
+
+	ConScale = con_scaletext ? con_scaletext.asInt() : auto_scale;
 	ConCharSize = 8 * ConScale;
 
 	if (I_VideoInitialized())
@@ -1997,7 +2055,7 @@ static bool C_HandleKey(const event_t& ev)
 	}
 
 #ifdef __SWITCH__
-	if (ev->data1 == OKEY_JOY3)
+	if (ev.data1 == OKEY_JOY3)
 	{
 		char oldtext[64], text[64], fulltext[65];
 
@@ -2042,8 +2100,9 @@ static bool C_HandleKey(const event_t& ev)
 			return true;
 		}
 	case OKEY_MOUSE2:
+	case OKEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
-		CmdLine.insertString(I_GetClipboardText());
+		CmdLine.insertString(I_GetClipboardText(ch == OKEY_MOUSE3));
 		CmdCompletions.clear();
 		TabCycleClear();
 		return true;
@@ -2186,8 +2245,8 @@ static bool C_HandleKey(const event_t& ev)
 	if (KeysCtrl)
 	{
 		// handle key combinations
-		// NOTE: we have to use ev->data1 here instead of the
-		// localization-aware ev->data3 since SDL2 does not send a SDL_TEXTINPUT
+		// NOTE: we have to use ev.data1 here instead of the
+		// localization-aware ev.data3 since SDL2 does not send a SDL_TEXTINPUT
 		// event when Ctrl is held down.
 
 		// Go to beginning of line
@@ -2202,6 +2261,17 @@ static bool C_HandleKey(const event_t& ev)
  		if (tolower(ev.data1) == 'v')
 		{
 			CmdLine.insertString(I_GetClipboardText());
+			TabCycleClear();
+		}
+		return true;
+	}
+
+	if (KeysAlt)
+	{
+		// Paste from primary selection - add each character to command line
+ 		if (tolower(ev.data1) == 'v')
+		{
+			CmdLine.insertString(I_GetClipboardText(true));
 			TabCycleClear();
 		}
 		return true;
@@ -2330,7 +2400,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 
 void C_DrawMid()
 {
-	if (MidMsg)
+	if (MidMsg && not displayplayer().isFreecam)
 	{
 		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 

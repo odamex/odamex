@@ -633,8 +633,6 @@ void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
 	if (i_isFriendly)
 	{
 		this->flags |= MF_FRIEND;
-
-		P_FriendlyEffects(this);
 	}
 	else
 	{
@@ -653,6 +651,11 @@ void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
 			this->friend_playerid = owner->friend_playerid;
 			this->friend_teamid = owner->friend_teamid;
 		}
+	}
+
+	if (i_isFriendly)
+	{
+		P_FriendlyEffects(this);
 	}
 }
 
@@ -1238,6 +1241,37 @@ void AActor::RunThink ()
 	}
 }
 
+namespace
+{
+	struct ReferencedMobjIdsType
+	{
+		uint32_t targetId   { 0 };
+		uint32_t goalId     { 0 };
+		uint32_t lastEnemyId{ 0 };
+	};
+
+	std::unordered_map<uint32_t, ReferencedMobjIdsType> s_unresolvedIds;
+}
+
+void P_ResolveMobjToMobjPointers()
+{
+	auto setPointer = [](AActor::AActorPtr& destPtr, uint32_t netId)
+	{
+		AActor* other = P_FindThingById(netId);
+		destPtr = other ? other->ptr() : AActor::AActorPtr();
+	};
+
+	for (auto& [actorId, otherIDs] : s_unresolvedIds)
+	{
+		if (AActor* actorPtr = P_FindThingById(actorId))
+		{
+			setPointer(actorPtr->target,    otherIDs.targetId);
+			setPointer(actorPtr->goal,      otherIDs.goalId);
+			setPointer(actorPtr->lastenemy, otherIDs.lastEnemyId);
+		}
+	}
+	s_unresolvedIds.clear();
+}
 
 void AActor::Serialize (FArchive &arc)
 {
@@ -1254,11 +1288,6 @@ void AActor::Serialize (FArchive &arc)
 			<< z
 			<< pitch
 			<< angle
-
-			// [SL] Removed AActor::roll
-			// delete this next time saved-game compatibilty changes
-			<< 0
-
 			<< sprite
 			<< frame
 			<< effects
@@ -1284,8 +1313,8 @@ void AActor::Serialize (FArchive &arc)
 			<< movedir
 			<< visdir
 			<< movecount
-			/*<< target ? target->netid : 0*/
-			/*<< lastenemy ? lastenemy->netid : 0*/
+			<< (target ? target->netid : uint32_t(0))
+			<< (lastenemy ? lastenemy->netid : uint32_t(0))
 			<< reactiontime
 			<< threshold
 			<< playerid
@@ -1298,8 +1327,7 @@ void AActor::Serialize (FArchive &arc)
 			<< args[2]
 			<< args[3]
 			<< args[4]
-			/*<< goal ? goal->netid : 0*/
-			<< 0_u32
+			<< (goal ? goal->netid : uint32_t(0))
 			<< translucency
 			<< waterlevel
 			<< gear
@@ -1334,10 +1362,13 @@ void AActor::Serialize (FArchive &arc)
 	}
 	else
 	{
-		unsigned dummy;
 		unsigned playerid;
 		int newnetid;
+		int dummyInt;
 		AActor* tmptracer;
+		uint32_t targetId;
+		uint32_t goalId;
+		uint32_t lastEnemyId;
 
 		arc >> newnetid
 			>> x
@@ -1345,11 +1376,6 @@ void AActor::Serialize (FArchive &arc)
 			>> z
 			>> pitch
 			>> angle
-
-			// [SL] Removed AActor::roll
-			// delete this next time saved-game compatibilty changes
-			>> dummy
-
 			>> sprite
 			>> frame
 			>> effects
@@ -1375,8 +1401,8 @@ void AActor::Serialize (FArchive &arc)
 			>> movedir
 			>> visdir
 			>> movecount
-			/*>> target->netid*/
-			/*>> lastenemy->netid*/
+			>> targetId
+			>> lastEnemyId
 			>> reactiontime
 			>> threshold
 			>> playerid
@@ -1389,8 +1415,7 @@ void AActor::Serialize (FArchive &arc)
 			>> args[2]
 			>> args[3]
 			>> args[4]
-			/*>> goal->netid*/
-			>> dummy
+			>> goalId
 			>> translucency
 			>> waterlevel
 			>> gear
@@ -1398,7 +1423,7 @@ void AActor::Serialize (FArchive &arc)
 			>> spawnRndindex
 			>> mode
 			>> updatedDuringLocalTic
-			>> updatedDuringServerTic
+			>> dummyInt //This used to be updatedDuringServerTic, but that caused netdemo desyncs.  FIXME: header tics
 			>> spawnTic
 			>> mobjtic
 			>> credibility;
@@ -1406,6 +1431,14 @@ void AActor::Serialize (FArchive &arc)
 		tracer.init(tmptracer);
 
 		P_SetThingId(this, newnetid);
+
+		s_unresolvedIds.emplace(netid,
+		                        ReferencedMobjIdsType
+		                        {
+		                            .targetId    = targetId,
+		                            .goalId      = goalId,
+		                            .lastEnemyId = lastEnemyId
+		                        });
 
 		uint32_t trans;
 		arc >> trans;
@@ -1515,7 +1548,7 @@ static std::optional<MobjModeEnum> IdentifyMode(const AActor& mobj, int32_t stat
 // Returns true if the mobj is still present.
 SetMobStateResultEnum P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 {
-	state_t* st;
+	const state_t* st;
 	int cycle_counter = 0;
 
 	do
@@ -1888,8 +1921,8 @@ void P_XYMovement(AActor *mo)
 	fixed_t maxmove = (mo->waterlevel < 2) || (mo->flags & MF_MISSILE) ? MAXMOVE/2 : MAXMOVE/8;
 	fixed_t mom_clamp = maxmove * 2;
 
-	fixed_t xmove = mo->momx = clamp(mo->momx, -mom_clamp, mom_clamp);
-	fixed_t ymove = mo->momy = clamp(mo->momy, -mom_clamp, mom_clamp);
+	fixed_t xmove = mo->momx = std::clamp(mo->momx, -mom_clamp, mom_clamp);
+	fixed_t ymove = mo->momy = std::clamp(mo->momy, -mom_clamp, mom_clamp);
 
 	// [SL] is the destination on a slope and if so, should the actor
 	// continue to be on the floor?
@@ -2078,7 +2111,7 @@ static void P_ApplyGravity(AActor* mo, fixed_t momz_change)
 			fixed_t sinkspeed = mo->flags & MF_CORPSE ? -WATER_SINK_SPEED/3 : -WATER_SINK_SPEED;
 
 			if (mo->momz < sinkspeed)
-				mo->momz = MIN(startmomz, sinkspeed);
+				mo->momz = std::min(startmomz, sinkspeed);
 			else
 				mo->momz = startmomz + ((mo->momz - startmomz) >> WATER_SINK_FACTOR);
 		}
@@ -2156,6 +2189,14 @@ static bool P_ClipMovementToFloor(AActor* mo)
 		if (mo->subsector->sector->SecActTarget &&
 		    P_FloorHeight(mo->x, mo->y, mo->subsector->sector) == mo->floorz)
 			A_TriggerAction(mo->subsector->sector->SecActTarget, mo, SECSPAC_HitFloor);
+
+		// [RV] Bounce actors upward at their landing velocity.
+		if (!(mo->flags & MF_MISSILE) && mo->floorsector->flags & SECF_SPRINGPAD)
+		{
+			mo->momz = -mo->momz;
+			mo->z = mo->floorz;
+			return true;
+		}
 
 		// Lost Soul hit the floor
 		if (mo->flags & MF_SKULLFLY && P_CorrectLostSoulBounce())
@@ -3142,7 +3183,7 @@ void P_RespawnSpecials (void)
 	if (itemrespawnque.empty())
 		return;
 
-	const auto& [mthing, respawntime] = itemrespawnque.front();
+	const auto [mthing, respawntime] = itemrespawnque.front();
 
 	// wait a certain number of seconds before respawning this special
 	if (level.time - respawntime < sv_itemrespawntime * TICRATE)
@@ -3154,6 +3195,7 @@ void P_RespawnSpecials (void)
 	// find which type to spawn
 	auto it = spawn_map.find(mthing.type);
 	if (it == spawn_map.end() ||
+		// TODO: make this account for the possibility that dehacked has replaced these things
 		// Allow or not Partial Invisibility & Invulnerability from respawning
 	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)) ||
 		// pop barrels as well if needed
@@ -3166,14 +3208,8 @@ void P_RespawnSpecials (void)
 
 	const fixed_t z = it->second->flags & MF_SPAWNCEILING ? ONCEILINGZ : ONFLOORZ;
 
-	// spawn a teleport fog at the new spot
-	AActor* mo = new AActor (x, y, z, MT_IFOG);
-	SV_SpawnMobj(mo);
-	if (clientside)
-		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
-
 	// spawn it
-	mo = new AActor (x, y, z, it->second->type);
+	auto* mo = new AActor(x, y, z, it->second->type);
 	mo->spawnpoint = mthing;
 	mo->angle = ANG45 * (mthing.angle / 45);
 
@@ -3188,6 +3224,28 @@ void P_RespawnSpecials (void)
 	}
 
 	mo->special = 0;
+
+	// a solid thing (usually a barrel) would trap whoever is standing there,
+	// so hold it back until the spot is clear
+	if ((mo->flags & MF_SOLID) && !P_TestMobjLocation(mo))
+	{
+		// destroying a barrel puts it back in the queue on its own
+		const bool requeued = mo->info->type == MT_BARREL;
+
+		mo->Destroy();
+		itemrespawnque.pop();
+
+		if (!requeued)
+			itemrespawnque.emplace(mthing, level.time);
+
+		return;
+	}
+
+	// spawn a teleport fog at the new spot
+	auto* fog = new AActor (x, y, z, MT_IFOG);
+	SV_SpawnMobj(fog);
+	if (clientside)
+		S_Sound (fog, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	// pull it from the que
 	itemrespawnque.pop();
@@ -3279,7 +3337,7 @@ size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
-int P_IsPickupableThing(short type)
+bool P_IsPickupableThing(int16_t type)
 {
 	return (type == 82 // SSG
 			|| (type >= 2000 && type <= 2050) // weapons, ammo, health, armor, special items
@@ -3445,6 +3503,28 @@ void P_ResolveStackLinks()
 }
 
 //
+// P_IsPlayerSpawnThing
+//
+// Returns true if the mapthing2_t is a spawn
+//
+bool P_IsPlayerSpawnThing(const mapthing2_t& mt)
+{
+	if (VANILLA_COOP_PLAYER_STARTS.contains(mt.type) || mt.type == 11)  // player1-4, DM
+		return true;
+
+	if (spawn_map.contains(mt.type))
+		return false;
+
+	if (EXTRA_COOP_PLAYER_STARTS.contains(mt.type))
+		return true;
+
+	if (P_IsTeamStart(mt.type))
+		return true;
+
+	return false;
+}
+
+//
 // P_SpawnMapThing
 // This function spawns a thing that originates from the map itself.
 // The fields of the mapthing should
@@ -3459,22 +3539,25 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (mthing.type == 0 || mthing.type == -1)
 		return;
 
-	if (sv_allowshowspawns)
+	const bool inSpawnMap = spawn_map.contains(mthing.type);
+
+	if (sv_allowshowspawns && !inSpawnMap)
 		P_ShowSpawns(mthing);
 
-	const bool isPlayerSpawnPoint = (mthing.type >=    1 && mthing.type <=    4) ||
-	                                (mthing.type >= 4001 && mthing.type <= 4001 + MAXPLAYERSTARTS - 4);
+	const bool isPlayerCoopSpawnPoint = (VANILLA_COOP_PLAYER_STARTS.contains(mthing.type) ||
+	                                    (!inSpawnMap && EXTRA_COOP_PLAYER_STARTS.contains(mthing.type)));
 	const bool isTeleportDest = mthing.type == 14;
 	const bool isSecAct = (mthing.type >= 9982 && mthing.type <= 9983) ||
 	                      (mthing.type >= 9992 && mthing.type <= 9999);
 	const bool isSoundSource = (mthing.type >= 14001 && mthing.type <= 14065);
 	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
+	const bool isSpringPad = inSpawnMap && spawn_map[mthing.type]->type == MT_SPRINGPAD;
 
 	// only servers control spawning of items
 	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
 	// otherwise teleporters or avatars won't work well.
 	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isPlayerSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
+	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger || isSpringPad))
 	{
 		return;
 	}
@@ -3488,7 +3571,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// count deathmatch start positions
-	if (mthing.type == 11 || (!sv_teamspawns && mthing.type >= 5080 && mthing.type <= 5082))
+	if (mthing.type == 11 || (!sv_teamspawns && P_IsTeamStart(mthing.type) && !inSpawnMap))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (DeathMatchStarts.size() >= 10 && demoplayback)
@@ -3499,7 +3582,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	if (sv_teamspawns)
+	if (sv_teamspawns && !inSpawnMap)
 	{
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
@@ -3517,6 +3600,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	// [RH] Record polyobject-related things
 	if (HexenHack)
 	{
+		// NOLINTNEXTLINE(bugprone-switch-missing-default-case)
 		switch (mthing.type)
 		{
 		case PO_HEX_ANCHOR_TYPE:
@@ -3531,9 +3615,10 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		}
 	}
 
-	if (mthing.type == PO_ANCHOR_TYPE ||
+	if (!inSpawnMap &&
+		(mthing.type == PO_ANCHOR_TYPE ||
 		mthing.type == PO_SPAWN_TYPE ||
-		mthing.type == PO_SPAWNCRUSH_TYPE)
+		mthing.type == PO_SPAWNCRUSH_TYPE))
 	{
 		polyspawns_t *polyspawn = new polyspawns_t;
 		polyspawn->next = polyspawns;
@@ -3548,7 +3633,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// check for players specially
-	if (isPlayerSpawnPoint)
+	if (isPlayerCoopSpawnPoint)
 	{
 		// [RH] Only spawn spots that match position.
 		if (mthing.args[0] != position)
@@ -3611,6 +3696,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (!(mthing.flags & G_GetCurrentSkill().spawn_filter))
 		return;
 
+	if (isSpringPad)
+	{
+		P_PointInSubsector(mthing.x << FRACBITS, mthing.y << FRACBITS)->sector->flags |= SECF_SPRINGPAD;
+		return;
+	}
+
 	// [RH] sound sequence overrides
 	if (mthing.type >= 1400 && mthing.type < 1410)
 	{
@@ -3639,33 +3730,6 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	if (P_IsHordeThing(mthing.type))
-	{
-		type = MT_HORDESPAWN;
-		::level.detected_gametype = GM_HORDE;
-	}
-
-	if (mthing.type == 9077)
-	{
-		type = MT_UPPERSTACK;
-	}
-	else if (mthing.type == 9078)
-	{
-		type = MT_LOWERSTACK;
-	}
-	else if (mthing.type == 9080)
-	{
-		type = MT_SKYVIEWPOINT;
-	}
-	else if (mthing.type == 9081)
-	{
-		type = MT_SKYPICKER;
-	}
-	else if (mthing.type == 9082)
-	{
-		type = MT_SECTORSILENCER;
-	}
-
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
 	if (mthing.type >= 14001 && mthing.type <= 14064)
@@ -3682,6 +3746,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mthing.args[0] = mthing.type - 14100;
 		mthing.type = mobjinfo[MT_MUSICSOURCE].doomednum;
 		type = MT_MUSICSOURCE;
+	}
+
+	if (!inSpawnMap && P_IsHordeThing(mthing.type))
+	{
+		type = MT_HORDESPAWN;
+		::level.detected_gametype = GM_HORDE;
 	}
 
 	// [CMB] find the value in the mobjinfo table if we asked for a specific type; otherwise check the spawn table

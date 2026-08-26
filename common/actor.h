@@ -50,6 +50,8 @@
 
 #include "ActorAwarenessState.h"
 
+#include "p_blockmap.h"
+
 //
 // NOTES: AActor
 //
@@ -396,10 +398,6 @@ class CredibilityState
 		int             m_predictedMotionTicCount { 0 };
 };
 
-// Blockmap dimensions, needed by the inline ActorBlockMapListNode::Next.
-extern int bmapwidth;
-extern int bmapheight;
-
 // Map Object definition.
 class AActor : public DThinker
 {
@@ -554,7 +552,7 @@ public:
 
     mobjinfo_t*		info = nullptr;	// &mobjinfo[mobj->type]
     int				tics = 0;	// state tic counter
-	state_t			*state = nullptr;
+	const state_t	*state = nullptr;
 	int				damage = 0;			// For missiles
 	int				special1 = 0;		// Special info
 	int				special2 = 0;		// Special info
@@ -772,7 +770,7 @@ public:
 		[[nodiscard]]
 		AActor* Next(int bmx, int bmy) const
 		{
-			if (bmx < 0 || bmx >= bmapwidth || bmy < 0 || bmy >= bmapheight)
+			if (not blockmap.containsCoordinate(bmx, bmy))
 				return nullptr;
 
 			return m_next[getIndex(bmx, bmy)];
@@ -813,10 +811,10 @@ public:
 		// this actor can inhabit - point at the inline arrays unless the
 		// actor spans more than INLINE_BLOCKS blocks
 		int m_capacity;
+		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext;
+		std::array<AActor**, INLINE_BLOCKS> m_inlineprev;
 		AActor**  m_next;
 		AActor*** m_prev;
-		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext{};
-		std::array<AActor**, INLINE_BLOCKS> m_inlineprev{};
 	};
 
 	// Interaction info, by BLOCKMAP.

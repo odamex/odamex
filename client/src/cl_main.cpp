@@ -69,6 +69,7 @@
 #include "g_gametype.h"
 #include "cl_parse.h"
 #include "cl_replay.h"
+#include "cl_freecam.h"
 
 #include "m_consolecommandstream.h"
 
@@ -78,6 +79,7 @@
 
 #include <bitset>
 #include <chrono>
+#include <memory_resource>
 #include <ranges>
 #include <regex>
 #include <set>
@@ -128,8 +130,12 @@ netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
 extern NetGraph netgraph;
+namespace
+{
+	auto pool { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
+}
+OdaMessenger messenger { pool };
 
-OdaMessenger messenger;
 static std::unique_ptr<CanarySocketClient> s_canary;
 
 PlayerStateRoller rollerState{};
@@ -579,7 +585,8 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 
 	connected = false;
 
-	messenger = OdaMessenger();
+	messenger = OdaMessenger{ pool };
+
 	P_ClearAllNetIds();
 	s_canary.reset();
 	gameaction = ga_fullconsole;
@@ -638,14 +645,18 @@ void CL_CheckDisplayPlayer(void)
 	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isInPlayback()))
 		newid = consoleplayer_id;
 
-	if (displayplayer().spectator)
+	if (displayplayer().spectator && not displayplayer().isFreecam)
 		newid = consoleplayer_id;
 
 	if (newid)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Spy(newid));
+		// server doesnt know about clientside freecam, dont tell it
+		if (not displayplayer().isFreecam && newid != freecamplayer_id)
+		{
+			MSG_WriteSVC(messenger.ReliableBuf(), CLC_Spy(newid));
+		}
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility
@@ -1216,7 +1227,7 @@ BEGIN_COMMAND (spy)
 }
 END_COMMAND (spy)
 
-void STACK_ARGS call_terms (void);
+void call_terms();
 
 void CL_QuitCommand()
 {
@@ -2061,7 +2072,7 @@ bool CL_Connect()
 		s_canary->Connect(tcpAddress, udpAddress);
 	}
 
-	messenger = OdaMessenger();
+	messenger = OdaMessenger(pool);
 	messenger.SetMaxRate(20);               // FIXME: total guess.
 	messenger.SetPacketsPerRetransmit(10);  // To align with the size of the traditional cmd buffer.
 	messenger.SetRetransmitDelay(0);        // This causes an immediate retransmit to relieve the risk of
@@ -2293,6 +2304,15 @@ void CL_ParseCommands()
 		if (::net_message.BytesLeftToRead() == 0)
 		{
 			break;
+		}
+
+		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
+		// This is because the High Priority packet is always live and comes out every tic.  It's totally
+		// possible for the server to go without sending anything Reliable or Best-Effort if things are
+		// all-quiet.
+		if (messenger.GetCurrentReceivedIsHighPriority())
+		{
+			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
 		}
 
 		const size_t          byteStart = ::net_message.BytesRead();

@@ -156,8 +156,9 @@ enum MobjModeEnum
 // svc_updatemobj
 message UpdateMobj
 {
-	uint32 flags = 1;
-	Actor  actor = 2;
+	uint32 flags     = 1;
+	Actor  actor     = 2;
+	uint32 threshold = 3;
 }
 
 // svc_updatemobjwithmode
@@ -878,6 +879,7 @@ message Spree
 {
 	int32 pid = 1;
 	int32 spree_level = 2;
+	uint32 tics_ago = 3;
 }
 
 // svc_spreebreaker
@@ -890,6 +892,7 @@ message SpreeBreaker
 	int32 spree_points = 5;
 	int32 spree_level = 6;
 	int32 spree_breaker_type = 7;
+	uint32 tics_ago = 8;
 }
 
 // svc_configureavatar

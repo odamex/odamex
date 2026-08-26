@@ -55,6 +55,11 @@
 #include "g_musinfo.h"
 #include "r_sky.h"
 #include "p_compdb.h"
+#include "p_blockmap.h"
+
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
@@ -118,17 +123,6 @@ bool			HasBehavior = false;
 // blocks of size ...
 // Used to speed up collision detection
 // by spatial subdivision in 2D.
-//
-// Blockmap size.
-int 			bmapwidth;
-int 			bmapheight; 	// size in mapblocks
-
-int				*blockmap;		// int for larger maps ([RH] Made int because BOOM does)
-int				*blockmaplump;	// offsets in blockmap are from here
-
-fixed_t 		bmaporgx;		// origin of block map
-fixed_t 		bmaporgy;
-
 AActor**		blocklinks;		// for thing chains
 
 
@@ -878,11 +872,19 @@ void P_LoadThings (int lump)
 			.flags = flags2
 		};
 
+		// clientside-only freecam start pos
+		#ifdef CLIENT_APP
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(mt2))
+		{
+			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, ANG45 * (mt2.angle / 45));
+		}
+		#endif
+
 		P_SpawnMapThing(mt2, 0);
 	}
 
 	// Sort by player number if starts are not in order
-	std::sort(playerstarts.begin(), playerstarts.end(), [](const mapthing2_t& p1, const mapthing2_t& p2){
+	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
 		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
 	});
 
@@ -899,7 +901,7 @@ void P_LoadThings (int lump)
 //
 void P_LoadThings2 (int lump, int position)
 {
-	mapthing2_t* data = W_CacheLumpNum<mapthing2_t>(lump, PU_STATIC);
+	auto* data = W_CacheLumpNum<mapthing2_t>(lump, PU_STATIC);
 	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
 	size_t count = W_LumpLength(lump) / sizeof(mapthing2_t);
 
@@ -926,8 +928,23 @@ void P_LoadThings2 (int lump, int position)
 		mt.type = LESHORT(mt.type);
 		mt.flags = LESHORT(mt.flags);
 
+		// clientside-only freecam start pos
+		#ifdef CLIENT_APP
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(mt))
+		{
+			Freecam::setStartPosition(mt.x << FRACBITS, mt.y << FRACBITS, ONFLOORZ, ANG45 * (mt.angle / 45));
+		}
+		#endif
+
 		P_SpawnMapThing(mt, position);
 	}
+
+	// Sort by player number if starts are not in order
+	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
+		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
+	});
+
+	P_SpawnAvatars();
 }
 
 //
@@ -1264,339 +1281,6 @@ void P_LoadSideDefs2 (int lump)
 	Z_Free (data);
 }
 
-
-//
-// jff 10/6/98
-// New code added to speed up calculation of internal blockmap
-// Algorithm is order of nlines*(ncols+nrows) not nlines*ncols*nrows
-//
-
-#define blkshift 7               /* places to shift rel position for cell num */
-#define blkmask ((1<<blkshift)-1)/* mask for rel position within cell */
-#define blkmargin 0              /* size guardband around map used */
-                                 // jff 10/8/98 use guardband>0
-                                 // jff 10/12/98 0 ok with + 1 in rows,cols
-
-struct linelist_t        // type used to list lines in each block
-{
-	int	num;
-	linelist_t *next;
-};
-
-//
-// Actually construct the blockmap lump from the level data
-//
-// This finds the intersection of each linedef with the column and
-// row lines at the left and bottom of each blockmap cell. It then
-// adds the line to all block lists touching the intersection.
-//
-
-void P_CreateBlockMap()
-{
-	std::unique_ptr<linelist_t*[]> blocklists; // array of pointers to lists of lines
-	std::unique_ptr<int[]> blockcount; // array of counters of line lists
-	std::unique_ptr<bool[]> blockdone; // array keeping track of blocks/line
-
-	//
-	// Subroutine to add a line number to a block list
-	// It simply returns if the line is already in the block
-	//
-
-	const auto AddBlockLine = [&blocklists, &blockdone, &blockcount]
-	(
-		int blockno,
-		uint32_t lineno
-	)
-	{
-		if (blockdone[blockno])
-			return;
-
-		linelist_t* l = new linelist_t;
-		l->num = lineno;
-		l->next = blocklists[blockno];
-		blocklists[blockno] = l;
-		blockcount[blockno]++;
-		blockdone[blockno] = true;
-	};
-
-	// scan for map limits, which the blockmap must enclose
-	int map_minx = limits::MAXINT;
-	int map_miny = limits::MAXINT;
-	int map_maxx = limits::MININT;
-	int map_maxy = limits::MININT;
-	for (int i = 0; i < numvertexes; i++)
-	{
-		fixed_t t;
-
-		if ((t = vertexes[i].x) < map_minx)
-			map_minx = t;
-		else if (t > map_maxx)
-			map_maxx = t;
-
-		if ((t = vertexes[i].y) < map_miny)
-			map_miny = t;
-		else if (t > map_maxy)
-			map_maxy = t;
-	}
-	map_minx >>= FRACBITS;    // work in map coords, not fixed_t
-	map_maxx >>= FRACBITS;
-	map_miny >>= FRACBITS;
-	map_maxy >>= FRACBITS;
-
-	// set up blockmap area to enclose level plus margin
-
-	const int xorg = map_minx-blkmargin; // blockmap origin (lower left)
-	const int yorg = map_miny-blkmargin;
-	const int ncols = (map_maxx+blkmargin-xorg+1+blkmask)>>blkshift; //jff 10/12/98
-	const int nrows = (map_maxy+blkmargin-yorg+1+blkmask)>>blkshift; //+1 needed for map exactly 1 cell
-
-	const auto BlockIndex = [ncols](int x, int y){ return (y * ncols) + x; };
-
-	const int NBlocks = ncols*nrows; // number of cells
-
-	// create the array of pointers on NBlocks to blocklists
-	// also create an array of linelist counts on NBlocks
-	// finally make an array in which we can mark blocks done per line
-
-	blocklists = std::make_unique<linelist_t*[]>(NBlocks);
-	std::fill_n(blocklists.get(), NBlocks, nullptr);
-	blockcount = std::make_unique<int[]>(NBlocks);
-	std::fill_n(blockcount.get(), NBlocks, 0);
-	blockdone = std::make_unique<bool[]>(NBlocks);
-
-	// initialize each blocklist, and enter the trailing -1 in all blocklists
-	// note the linked list of lines grows backwards
-
-	for (int i = 0; i < NBlocks; i++)
-	{
-		blocklists[i] = new linelist_t;
-		blocklists[i]->num = -1;
-		blocklists[i]->next = NULL;
-		blockcount[i]++;
-	}
-
-	// For each linedef in the wad, determine all blockmap blocks it touches,
-	// and add the linedef number to the blocklists for those blocks
-
-	for (int i = 0; i < numlines; i++)
-	{
-		const int x1 = lines[i].v1->x>>FRACBITS; // lines[i] map coords
-		const int y1 = lines[i].v1->y>>FRACBITS;
-		const int x2 = lines[i].v2->x>>FRACBITS;
-		const int y2 = lines[i].v2->y>>FRACBITS;
-		const int dx = x2 - x1;
-		const int dy = y2 - y1;
-		const bool vert = (dx == 0);             // lines[i] slopetype
-		const bool horiz = (dy == 0);
-		const bool spos = (dx ^ dy) > 0;
-		const bool sneg = (dx ^ dy) < 0;
-		int bx,by;                              // block cell coords
-		const int minx = x1 > x2 ? x2 : x1;        // extremal lines[i] coords
-		const int maxx = x1 > x2 ? x1 : x2;
-		const int miny = y1 > y2 ? y2 : y1;
-		const int maxy = y1 > y2 ? y1 : y2;
-
-		// no blocks done for this linedef yet
-
-		std::fill_n(blockdone.get(), NBlocks, false);
-
-		// The line always belongs to the blocks containing its endpoints
-
-		bx = (x1-xorg) >> blkshift;
-		by = (y1-yorg) >> blkshift;
-		AddBlockLine (BlockIndex(bx, by), i);
-		bx = (x2-xorg) >> blkshift;
-		by = (y2-yorg) >> blkshift;
-		AddBlockLine (BlockIndex(bx, by), i);
-
-		// For each column, see where the line along its left edge, which
-		// it contains, intersects the Linedef i. Add i to each corresponding
-		// blocklist.
-
-		if (!vert)    // don't interesect vertical lines with columns
-		{
-			for (int j = 0; j < ncols; j++)
-			{
-				// intersection of Linedef with x=xorg+(j<<blkshift)
-				// (y-y1)*dx = dy*(x-x1)
-				// y = dy*(x-x1)+y1*dx;
-
-				int x = xorg+(j<<blkshift);		// (x,y) is intersection
-				int y = (dy*(x-x1))/dx+y1;
-				int yb = (y-yorg)>>blkshift;	// block row number
-				int yp = (y-yorg)&blkmask;		// y position within block
-
-				if (yb<0 || yb>nrows-1)			// outside blockmap, continue
-					continue;
-
-				if (x<minx || x>maxx)			// line doesn't touch column
-					continue;
-
-				// The cell that contains the intersection point is always added
-
-				AddBlockLine(BlockIndex(j, yb), i);
-
-				// if the intersection is at a corner it depends on the slope
-				// (and whether the line extends past the intersection) which
-				// blocks are hit
-
-				if (yp==0)			// intersection at a corner
-				{
-					if (sneg)		//   \ - blocks x,y-, x-,y
-					{
-						if (yb>0 && miny<y)
-							AddBlockLine(BlockIndex(j, yb - 1), i);
-						if (j>0 && minx<x)
-							AddBlockLine(BlockIndex(j - 1, yb), i);
-					}
-					else if (spos)	//   / - block x-,y-
-					{
-						if (yb>0 && j>0 && minx<x)
-							AddBlockLine(BlockIndex(j - 1, yb - 1), i);
-					}
-					else if (horiz)	//   - - block x-,y
-					{
-						if (j>0 && minx<x)
-							AddBlockLine(BlockIndex(j - 1, yb), i);
-					}
-				}
-				else if (j>0 && minx<x)	// else not at corner: x-,y
-					AddBlockLine(BlockIndex(j - 1, yb), i);
-			}
-		}
-
-		// For each row, see where the line along its bottom edge, which
-		// it contains, intersects the Linedef i. Add i to all the corresponding
-		// blocklists.
-
-		if (!horiz)
-		{
-			for (int j = 0; j < nrows; j++)
-			{
-				// intersection of Linedef with y=yorg+(j<<blkshift)
-				// (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
-				// x = dx*(y-y1)/dy+x1;
-
-				const int y = yorg+(j<<blkshift);		// (x,y) is intersection
-				const int x = (dx*(y-y1))/dy+x1;
-				const int xb = (x-xorg)>>blkshift;	// block column number
-				const int xp = (x-xorg)&blkmask;		// x position within block
-
-				if (xb<0 || xb>ncols-1)			// outside blockmap, continue
-					continue;
-
-				if (y<miny || y>maxy)			 // line doesn't touch row
-					continue;
-
-				// The cell that contains the intersection point is always added
-
-				AddBlockLine (BlockIndex(xb, j), i);
-
-				// if the intersection is at a corner it depends on the slope
-				// (and whether the line extends past the intersection) which
-				// blocks are hit
-
-				if (xp==0)			// intersection at a corner
-				{
-					if (sneg)       //   \ - blocks x,y-, x-,y
-					{
-						if (j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb, j - 1), i);
-						if (xb>0 && minx<x)
-							AddBlockLine (BlockIndex(xb - 1, j), i);
-					}
-					else if (vert)  //   | - block x,y-
-					{
-						if (j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb, j - 1), i);
-					}
-					else if (spos)  //   / - block x-,y-
-					{
-						if (xb>0 && j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb - 1, j - 1), i);
-					}
-				}
-				else if (j>0 && miny<y) // else not on a corner: x,y-
-					AddBlockLine (BlockIndex(xb, j - 1), i);
-			}
-		}
-	}
-
-	// Add initial 0 to all blocklists
-	// count the total number of lines (and 0's and -1's)
-	std::fill_n(blockdone.get(), NBlocks, false);
-	uint32_t linetotal = 0;
-	for (int i = 0; i < NBlocks; i++)
-	{
-		AddBlockLine (i, 0);
-		linetotal += blockcount[i];
-	}
-
-	// Create the blockmap lump
-	blockmaplump = Z_Malloc<int>(4 + NBlocks + linetotal, PU_LEVEL);
-
-	// blockmap header
-	//
-	// Rjy: P_CreateBlockMap should not initialise bmaporg{x,y} as P_LoadBlockMap
-	// does so again, resulting in their being left-shifted by FRACBITS twice.
-	//
-	// Thus any map having its blockmap built by the engine would have its
-	// origin at (0,0) regardless of where the walls and monsters actually are,
-	// breaking all collision detection.
-	//
-	// Instead have P_CreateBlockMap create blockmaplump only, so that both
-	// clauses of the conditional in P_LoadBlockMap have the same effect, and
-	// bmap* are only initialised from blockmaplump[0..3] once in the latter.
-	//
-	blockmaplump[0] = xorg;
-	blockmaplump[1] = yorg;
-	blockmaplump[2] = ncols;
-	blockmaplump[3] = nrows;
-
-	// offsets to lists and block lists
-	for (int i = 0; i < NBlocks; i++)
-	{
-		linelist_t *bl = blocklists[i];
-		uint32_t offs = blockmaplump[4+i] =   // set offset to block's list
-			(i? blockmaplump[4+i-1] : 4+NBlocks) + (i? blockcount[i-1] : 0);
-
-		// add the lines in each block's list to the blockmaplump
-		// delete each list node as we go
-
-		while (bl)
-		{
-			linelist_t *tmp = bl->next;
-			blockmaplump[offs++] = bl->num;
-			delete bl;
-			bl = tmp;
-		}
-	}
-}
-
-// jff 10/6/98
-// End new code added to speed up calculation of internal blockmap
-
-void P_SetSkipBlockStart()
-{
-	skipblstart = true;
-
-	for (int y = 0; y < bmapheight; y++)
-	{
-		for (int x = 0; x < bmapwidth; x++)
-		{
-			int32_t* blockoffset = blockmaplump + y * bmapwidth + x + 4;
-
-			int32_t* list = blockmaplump + *blockoffset;
-
-			if (*list != 0)
-			{
-				skipblstart = false;
-				return;
-			}
-		}
-	}
-}
-
 //
 // P_LoadBlockMap
 //
@@ -1604,44 +1288,10 @@ void P_SetSkipBlockStart()
 //
 void P_LoadBlockMap (int lump)
 {
-	int count;
-
-	if (Args.CheckParm("-blockmap") || (count = W_LumpLength(lump)/2) >= 0x10000 || count < 4)
-		P_CreateBlockMap();
-	else
-	{
-		short *wadblockmaplump = W_CacheLumpNum<short>(lump, PU_LEVEL);
-		blockmaplump = Z_Malloc<int>(count, PU_LEVEL);
-
-		// killough 3/1/98: Expand wad blockmap into larger internal one,
-		// by treating all offsets except -1 as unsigned and zero-extending
-		// them. This potentially doubles the size of blockmaps allowed,
-		// because Doom originally considered the offsets as always signed.
-
-		blockmaplump[0] = LESHORT(wadblockmaplump[0]);
-		blockmaplump[1] = LESHORT(wadblockmaplump[1]);
-		blockmaplump[2] = static_cast<uint16_t>(LESHORT(wadblockmaplump[2]));
-		blockmaplump[3] = static_cast<uint16_t>(LESHORT(wadblockmaplump[3]));
-
-		for (int i = 4; i < count; i++)
-		{
-			const short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
-			blockmaplump[i] = t == -1 ? 0xffffffff : static_cast<uint16_t>(t);
-		}
-
-		Z_Free (wadblockmaplump);
-	}
-
-	bmaporgx = blockmaplump[0]<<FRACBITS;
-	bmaporgy = blockmaplump[1]<<FRACBITS;
-	bmapwidth = blockmaplump[2];
-	bmapheight = blockmaplump[3];
+	blockmap = blockmap_t::load(lump);
 
 	// clear out mobj chains
-	blocklinks = Z_Calloc<AActor*>(bmapwidth * bmapheight, PU_LEVEL);
-	blockmap = blockmaplump + 4;
-
-	P_SetSkipBlockStart();
+	blocklinks = Z_Calloc<AActor*>(blockmap.size(), PU_LEVEL);
 }
 
 /*
@@ -1748,21 +1398,10 @@ int P_GroupLines()
 		sector->soundorg[1] = (bbox.Top()+bbox.Bottom())/2;
 
 		// adjust bounding box to map blocks
-		int block = (bbox.Top()-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block >= bmapheight ? bmapheight-1 : block;
-		sector->blockbox[BOXTOP]=block;
-
-		block = (bbox.Bottom()-bmaporgy-MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block < 0 ? 0 : block;
-		sector->blockbox[BOXBOTTOM]=block;
-
-		block = (bbox.Right()-bmaporgx+MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block >= bmapwidth ? bmapwidth-1 : block;
-		sector->blockbox[BOXRIGHT]=block;
-
-		block = (bbox.Left()-bmaporgx-MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block < 0 ? 0 : block;
-		sector->blockbox[BOXLEFT]=block;
+		sector->blockbox[BOXTOP] = std::min((bbox.Top()-blockmap.originy()+MAXRADIUS)>>MAPBLOCKSHIFT, blockmap.height() - 1);
+		sector->blockbox[BOXBOTTOM] = std::max((bbox.Bottom()-blockmap.originy()-MAXRADIUS)>>MAPBLOCKSHIFT, 0);;
+		sector->blockbox[BOXRIGHT] = std::min((bbox.Right()-blockmap.originx()+MAXRADIUS)>>MAPBLOCKSHIFT, blockmap.width() - 1);
+		sector->blockbox[BOXLEFT] = std::max((bbox.Left()-blockmap.originx()-MAXRADIUS)>>MAPBLOCKSHIFT, 0);
 	}
 	return total;
 }

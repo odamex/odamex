@@ -75,8 +75,8 @@ team_t LevelState::getDefendingTeam() const
 	}
 
 	// Blue always goes first, then red, then so on...
-	int teams = clamp(sv_teamsinplay.asInt(), 2, 3);
-	int round0 = MAX(::levelstate.getRound() - 1, 0);
+	const int teams = std::clamp(sv_teamsinplay.asInt(), 2, 3);
+	int round0 = std::max(::levelstate.getRound() - 1, 0);
 	return static_cast<team_t>(round0 % teams);
 }
 
@@ -98,7 +98,7 @@ int LevelState::getJoinTimeLeft() const
 
 	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
 	int left = ceil((end_time - ::level.time) / static_cast<float>(TICRATE));
-	return MAX(left, 0);
+	return std::max(left, 0);
 }
 
 /**
@@ -459,7 +459,10 @@ void LevelState::tic()
 			G_DeferedFullReset();
 
 			m_roundNumber += 1;
-			setState(LevelState::getStartOfRoundState());
+			if (sv_warmup && G_IsMatchDuelGame())
+				setState(LevelState::INGAME);
+			else
+				setState(LevelState::getStartOfRoundState());
 
 			if (g_rounds)
 				printRoundStart();

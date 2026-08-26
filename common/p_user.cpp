@@ -48,6 +48,9 @@
 
 #include <span>
 
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
 //
 // Movement.
 //
@@ -406,7 +409,7 @@ void P_CalcHeight (player_t& player)
 		bob = 0;
 
 	// move viewheight
-	if (player.playerstate == PST_LIVE)
+	if (player.playerstate == PST_LIVE || player.playerstate == PST_FREECAM)
 	{
 		player.viewheight += player.deltaviewheight;
 
@@ -620,14 +623,15 @@ void P_MovePlayer (player_t& player)
 		}
 		else if (sv_allowjump && player.mo->onground && !player.jumpTics)
 		{
-			player.mo->momz += 8*FRACUNIT;
+			const bool springpad = player.mo->floorsector->flags & SECF_SPRINGPAD;
+			player.mo->momz += springpad ? 4*FRACUNIT : 8*FRACUNIT;
 
 //			[SL] No jumping sound...
 //			if(!player.spectator)
 //				UV_SoundAvoidPlayer(player.mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
             player.mo->flags2 &= ~MF2_ONMOBJ;
-            player.jumpTics = 18;
+            player.jumpTics = springpad ? 0 : 18;
 		}
 	}
 }
@@ -770,6 +774,12 @@ bool P_AreTeammates(const player_t &a, const player_t &b)
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 {
+	// server doesnt know or care about the freecam
+	#ifdef CLIENT_APP
+	if (other.isFreecam && Freecam::allowSpy())
+		return true;
+	#endif
+
 	// skip if out of lives in survival
 	if (G_IsLivesGame() && other.lives < 1)
 		return false;
@@ -1412,7 +1422,7 @@ player_t::player_t() :
 	// Can't put this in initializer list?
 	attacker = AActor::AActorPtr();
 
-	pspdef_t zeropsp = { NULL, 0, 0, 0 };
+	const pspdef_t zeropsp = { .statenum = S_NULL, .tics = 0, .sx = 0, .sy = 0 };
 	psprites.fill(zeropsp);
 	ArrayInit(oldvelocity, 0);
 

@@ -75,6 +75,9 @@ EXTERN_CVAR(co_zdoomfriendtargeting)
 EXTERN_CVAR(cl_showfriends)
 #endif
 
+constexpr int FRIENDTARGETSEARCH_FOV = 180;
+constexpr int FRIENDTARGETSEARCH_DIST = 10;
+
 enum dirtype_t
 {
 	DI_EAST,
@@ -360,52 +363,51 @@ bool P_CheckMissileRange (AActor *actor)
 	return true;
 }
 
-static bool P_IsVisible(AActor* actor, AActor* mo, bool allaround)
+namespace
+{
+
+bool P_IsVisible(const AActor& actor, const AActor& mo, const bool allaround)
 {
 	if (!allaround)
 	{
-		angle_t an = R_PointToAngle2(actor->x, actor->y, mo->x, mo->y) - actor->angle;
+		angle_t an = R_PointToAngle2(actor.x, actor.y, mo.x, mo.y) - actor.angle;
 		if (an > ANG90 && an < ANG270 &&
-		    P_AproxDistance(mo->x - actor->x, mo->y - actor->y) > WAKEUPRANGE)
+		    P_AproxDistance(mo.x - actor.x, mo.y - actor.y) > WAKEUPRANGE)
 			return false;
 	}
-	return P_CheckSight(actor, mo);
+	return P_CheckSight(&actor, &mo);
 }
 
-static AActor* current_actor;
-static bool current_allaround = false;
-
-static bool PIT_FindTarget(AActor* mo)
+bool PIT_FindTarget(AActor& mo, AActor& actor, bool allaround)
 {
-	AActor* actor = current_actor;
-
-	if (!((mo->flags ^ actor->flags) & MF_FRIEND && // Invalid target
-	      mo->health > 0 && (mo->flags & MF_COUNTKILL || mo->type == MT_SKULL)))
+	if (!(mo.health > 0 && (mo.flags & MF_COUNTKILL || mo.type == MT_SKULL)))
 		return true;
 
 	// If the monster is already engaged in a one-on-one attack
 	// with a healthy friend, don't attack around 60% the time
-	const AActor* targ = mo->target;
-	if (targ && targ->target == mo && P_Random() > 100 &&
-		(targ->flags ^ mo->flags) & MF_FRIEND &&
+	const AActor* targ = mo.target;
+	if (targ && targ->target == &mo && P_Random() > 100 &&
+		!P_IsFriendlyThing(targ, &mo) &&
 		targ->health * 2 >= targ->info->spawnhealth)
 			return true;
 
-	if (P_IsFriendlyThing(mo, actor))
+	if (P_IsFriendlyThing(&mo, &actor))
 		return true;
 
-	if (!P_IsVisible(actor, mo, current_allaround))
+	if (!P_IsVisible(actor, mo, allaround))
 		return true;
 
-	actor->lastenemy = actor->target; // Remember previous target
-	actor->target = mo->ptr();                // Found target
+	actor.lastenemy = actor.target; // Remember previous target
+	actor.target = mo.ptr();                // Found target
 
 	// Move the selected monster to the end of its associated
 	// list, so that it gets searched last next time.
 
-	mo->UpdateActorLists();
+	mo.UpdateActorLists();
 
 	return false;
+}
+
 }
 
 //
@@ -555,7 +557,7 @@ bool P_SmartMove(AActor* actor)
 	            && target->subsector->sector->tag == actor->subsector->sector->tag
 	            && P_IsOnLift(actor);
 
-	bool under_damage = co_avoidhazards && P_IsUnderDamage(actor); // e6y
+	int under_damage = co_avoidhazards && P_IsUnderDamage(actor); // e6y
 
 	// killough 10/98: allow dogs to drop off of taller ledges sometimes.
 	// dropoff==1 means always allow it, dropoff==2 means only up to 128 high,
@@ -718,28 +720,30 @@ bool P_HitFriend(AActor* self)
 	return false;
 }
 
-static fixed_t dropoff_deltax, dropoff_deltay, floorz;
-extern fixed_t tmbbox[4];
+extern std::array<fixed_t, 4> tmbbox;
 
-static bool PIT_AvoidDropoff(line_t* line)
+namespace
 {
-	if (line->backsector && // Ignore one-sided linedefs
-	    tmbbox[BOXRIGHT] > line->bbox[BOXLEFT] &&
-	    tmbbox[BOXLEFT] < line->bbox[BOXRIGHT] &&
-	    tmbbox[BOXTOP] > line->bbox[BOXBOTTOM] && // Linedef must be contacted
-	    tmbbox[BOXBOTTOM] < line->bbox[BOXTOP] && P_BoxOnLineSide(tmbbox, line) == -1)
+
+bool PIT_AvoidDropoff(const line_t& line, const fixed_t floorz, fixed_t& dropoff_deltax, fixed_t& dropoff_deltay)
+{
+	if (line.backsector && // Ignore one-sided linedefs
+	    tmbbox[BOXRIGHT] > line.bbox[BOXLEFT] &&
+	    tmbbox[BOXLEFT] < line.bbox[BOXRIGHT] &&
+	    tmbbox[BOXTOP] > line.bbox[BOXBOTTOM] && // Linedef must be contacted
+	    tmbbox[BOXBOTTOM] < line.bbox[BOXTOP] && P_BoxOnLineSide(tmbbox, &line) == -1)
 	{
-		fixed_t front = line->frontsector->floorheight;
-		fixed_t back = line->backsector->floorheight;
+		const fixed_t front = line.frontsector->floorheight;
+		const fixed_t back = line.backsector->floorheight;
 		angle_t angle;
 
 		// The monster must contact one of the two floors,
 		// and the other must be a tall dropoff (more than 24).
 
 		if (back == floorz && front < floorz - FRACUNIT * 24)
-			angle = R_PointToAngle2(0, 0, line->dx, line->dy); // front side dropoff
+			angle = R_PointToAngle2(0, 0, line.dx, line.dy); // front side dropoff
 		else if (front == floorz && back < floorz - FRACUNIT * 24)
-			angle = R_PointToAngle2(line->dx, line->dy, 0, 0); // back side dropoff
+			angle = R_PointToAngle2(line.dx, line.dy, 0, 0); // back side dropoff
 		else
 			return true;
 
@@ -755,19 +759,19 @@ static bool PIT_AvoidDropoff(line_t* line)
 // Driver for above
 //
 
-static fixed_t P_AvoidDropoff(AActor* actor)
+fixed_t P_AvoidDropoff(AActor* actor, fixed_t& dropoff_deltax, fixed_t& dropoff_deltay)
 {
 	tmbbox[BOXTOP] = actor->y + actor->radius;
 	tmbbox[BOXBOTTOM] = actor->y - actor->radius;
 	tmbbox[BOXRIGHT] = actor->x + actor->radius;
 	tmbbox[BOXLEFT] = actor->x - actor->radius;
 
-	const int yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
-	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
-	const int xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
-	const int xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - blockmap.originy()) >> MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy()) >> MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - blockmap.originx()) >> MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - blockmap.originx()) >> MAPBLOCKSHIFT;
 
-	floorz = actor->z; // remember floor height
+	const fixed_t floorz = actor->z; // remember floor height
 
 	dropoff_deltax = dropoff_deltay = 0;
 
@@ -776,7 +780,7 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	validcount++;
 	for (int bx = xl; bx <= xh; bx++)
 		for (int by = yl; by <= yh; by++)
-			P_BlockLinesIterator(bx, by, PIT_AvoidDropoff); // all contacted lines
+			P_BlockLinesIterator(bx, by, PIT_AvoidDropoff, floorz, dropoff_deltax, dropoff_deltay); // all contacted lines
 
 	return dropoff_deltax | dropoff_deltay; // Non-zero if movement prescribed
 }
@@ -792,7 +796,7 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 // Uses the new ZDoom chase code
 //
 
-static void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
+void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
 {
 	dirtype_t d[3];
 
@@ -902,6 +906,8 @@ static void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
 	actor->movedir = DI_NODIR; // can not move
 }
 
+} // namespace
+
 void P_NewChaseDir (AActor *actor)
 {
 	if (!actor->target)
@@ -917,11 +923,14 @@ void P_NewChaseDir (AActor *actor)
 
 	actor->strafecount = 0;
 
+	fixed_t dropoff_deltax = 0;
+	fixed_t dropoff_deltay = 0;
+
 	if (P_IsMBFCompatMode())
 	{
 		if (actor->floorz - actor->dropoffz > FRACUNIT * 24 &&
 		    actor->z <= actor->floorz && !(actor->flags & (MF_DROPOFF | MF_FLOAT)) &&
-		    !P_AllowDropOff() && P_AvoidDropoff(actor)) /* Move away from dropoff */
+		    !P_AllowDropOff() && P_AvoidDropoff(actor, dropoff_deltax, dropoff_deltay)) /* Move away from dropoff */
 		{
 			P_DoNewChaseDir(actor, dropoff_deltax, dropoff_deltay);
 
@@ -1000,8 +1009,11 @@ static bool P_HelpFriend(AActor* actor)
 			else if (it->flags & MF_JUSTHIT && it->target &&
 			         it->target != actor->target)
 			{
-				AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)),
-				                                    10, RoughMonsterCheck);
+				AActor* enemy =
+				    P_RoughTargetSearch(actor,
+				      FixedToAngle(INT2FIXED(FRIENDTARGETSEARCH_FOV)),
+				      FRIENDTARGETSEARCH_DIST,
+				      RoughMonsterCheck);
 
 				if (!enemy)
 				{
@@ -1030,19 +1042,17 @@ static bool P_HelpFriend(AActor* actor)
 
 bool P_LookForMonsters(AActor* actor, bool allaround)
 {
-	if (!P_IsMBFCompatMode())
-		return false;
-
 	// Use last known enemy if no hatee sighted -- killough 2/15/98:
-	if (actor->lastenemy && actor->lastenemy->health > 0 &&
-	    !(actor->lastenemy->flags & actor->flags & MF_FRIEND))
+	if (P_IsMBFCompatMode())
 	{
-		actor->target = actor->lastenemy;
-		actor->lastenemy = AActor::AActorPtr();
-		return true;
-	}
-	else
-	{
+		if (actor->lastenemy && actor->lastenemy->health > 0 &&
+		    !(actor->lastenemy->flags & actor->flags & MF_FRIEND))
+		{
+			actor->target = actor->lastenemy;
+			actor->lastenemy = AActor::AActorPtr();
+			return true;
+		}
+
 		actor->lastenemy = AActor::AActorPtr();
 	}
 
@@ -1050,17 +1060,24 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 	if (AActor::GetFriendlies().empty())
 		return false;
 
-	if (actor->IsFriendly() && co_zdoomfriendtargeting)
+	if (co_zdoomfriendtargeting)
 	{
-		AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)), 10, RoughMonsterCheck);
-
-		if (enemy)
+		if (actor->IsFriendly())
 		{
-			actor->target = enemy->ptr();
-			return true;
+			AActor* enemy =
+			      P_RoughTargetSearch(actor,
+			        FixedToAngle(INT2FIXED(FRIENDTARGETSEARCH_FOV)),
+			        FRIENDTARGETSEARCH_DIST,
+			        RoughMonsterCheck);
+
+			if (enemy)
+			{
+				actor->target = enemy->ptr();
+				return true;
+			}
 		}
 	}
-	else if (!co_zdoomfriendtargeting)
+	else
 	{
 		// Let's have a less-taxing check for monsters/friendlies targeting each other.
 		// Emulates MBF's linked mobj lists for friendlies and hostiles.
@@ -1069,33 +1086,35 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		auto& list = actor->IsFriendly() ? AActor::GetHostiles()
 		                                 : AActor::GetFriendlies();
 
-		// Bug out early if the list is empty
-		if (!list.empty())
-		{
-			current_actor = actor;
-			current_allaround = allaround;
+		// A friendly opposes another player's friendlies in a PvP game, so it
+		// has to look through its own list as well.
+		auto* rivals = (actor->IsFriendly() && !G_IsCoopGame())
+		                   ? &AActor::GetFriendlies()
+		                   : nullptr;
 
-			int x = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
-			int y = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
+		// Bug out early if there's nobody to oppose
+		if (!list.empty() || (rivals && !rivals->empty()))
+		{
+			const int x = (actor->x - blockmap.originx()) >> MAPBLOCKSHIFT;
+			const int y = (actor->y - blockmap.originy()) >> MAPBLOCKSHIFT;
 
 			// First we check the exact blockmap for the monster.
-			if (!P_BlockThingsIterator(x, y, PIT_FindTarget))
+			if (!P_BlockThingsIterator(x, y, PIT_FindTarget, nullptr, *actor, allaround))
 				return true;
 
-			int d = 0;
 			// Then we worm around a lil bit
-			for (d = 1; d < 5; d++)
+			for (int d = 1; d < 5; d++)
 			{
 				int i = 1 - d;
 				do
-					if (!P_BlockThingsIterator(x + i, y - d, PIT_FindTarget) ||
-					    !P_BlockThingsIterator(x + i, y + d, PIT_FindTarget))
+					if (!P_BlockThingsIterator(x + i, y - d, PIT_FindTarget, nullptr, *actor, allaround) ||
+					    !P_BlockThingsIterator(x + i, y + d, PIT_FindTarget, nullptr, *actor, allaround))
 						return true;
 				while (++i < d);
 
 				do
-					if (!P_BlockThingsIterator(x - d, y + i, PIT_FindTarget) ||
-					    !P_BlockThingsIterator(x + d, y + i, PIT_FindTarget))
+					if (!P_BlockThingsIterator(x - d, y + i, PIT_FindTarget, nullptr, *actor, allaround) ||
+					    !P_BlockThingsIterator(x + d, y + i, PIT_FindTarget, nullptr, *actor, allaround))
 						return true;
 				while (--i + d >= 0);
 			}
@@ -1103,18 +1122,25 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 			// Random number of monsters, to prevent patterns from forming
 			int n = (P_Random() & 31) + 15;
 
-			for (AActor* mo = list.Head(); mo; mo = mo->tlnext)
+			for (auto* opposing : {&list, rivals})
 			{
-				if (--n < 0)
-				{
-					// Only a subset of the monsters were searched. Move all of
-					// the ones which were searched so far, to the end of the list.
+				if (!opposing)
+					continue;
 
-					list.MoveFrontToEnd(mo);
-					break;
+				for (AActor* mo = opposing->Head(); mo; mo = mo->tlnext)
+				{
+					if (--n < 0)
+					{
+						// Only a subset of the monsters were searched. Move all of
+						// the ones which were searched so far, to the end of the list.
+
+						opposing->MoveFrontToEnd(mo);
+						break;
+					}
+
+					if (!PIT_FindTarget(*mo, *actor, allaround))
+						return true;
 				}
-				else if (!PIT_FindTarget(mo))
-					return true;
 			}
 		}
 	}
@@ -1303,6 +1329,46 @@ void P_RunHelperTics()
 	}
 }
 
+namespace
+{
+
+//
+// P_LookForOwner
+//
+// killough 9/9/98: go back to the player a friendly belongs to, no matter
+// whether it's visible or not.
+//
+bool P_LookForOwner(AActor* actor, bool allaround)
+{
+	for (auto& player : players)
+	{
+		if (player.id == actor->friend_playerid && !player.spectator && player.health > 0)
+		{
+			if (player.ingame() && player.playerstate == PST_LIVE && !player.spectator &&
+			    player.mo && player.mo->health > 0 && P_IsFriendlyThing(player.mo, actor) &&
+			    P_IsVisible(*actor, *player.mo, allaround))
+			{
+				actor->target = player.mo;
+
+				// killough 12/98:
+				// get out of refiring loop, to avoid hitting player accidentally
+
+				if (actor->info->missilestate)
+				{
+					P_SetMobjState(actor, actor->info->seestate);
+					actor->flags &= ~MF_JUSTHIT;
+				}
+
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+} // namespace
+
 //
 // P_LookForPlayers
 // If allaround is false, only look 180 degrees in front.
@@ -1325,42 +1391,18 @@ void P_RunHelperTics()
 bool P_LookForPlayers(AActor *actor, bool allaround)
 {
 	// [AM] Check subsectors first.
-	if (actor->subsector == NULL)
+	if (actor->subsector == nullptr)
 		return false;
 
-	sector_t* sector = actor->subsector->sector;
+	const sector_t* sector = actor->subsector->sector;
 	if (!sector)
 		return false;
 
-	if (actor->flags & MF_FRIEND)
-	{ // killough 9/9/98: friendly monsters go about players differently
-		// Go back to a player, no matter whether it's visible or not
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		{
-			if (it->id == actor->friend_playerid && !it->spectator && it->health > 0)
-			{
-				if (it->ingame() && it->playerstate == PST_LIVE && !it->spectator &&
-				    it->mo && it->mo->health > 0 && P_IsFriendlyThing(it->mo, actor) &&
-				    P_IsVisible(actor, it->mo, allaround))
-				{
-					actor->target = it->mo;
+	// killough 9/9/98: friendly monsters go about players differently
+	// Go back to a player, no matter whether it's visible or not
 
-					// killough 12/98:
-					// get out of refiring loop, to avoid hitting player accidentally
-
-					if (actor->info->missilestate)
-					{
-						P_SetMobjState(actor, actor->info->seestate);
-						actor->flags &= ~MF_JUSTHIT;
-					}
-
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
+	if (actor->flags & MF_FRIEND && G_IsCoopGame())
+		return P_LookForOwner(actor, allaround);
 
 	// Construct our table of ingame players
 	// [AM] TODO: Have the Players container handle this instead of having to
@@ -1414,6 +1456,10 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 				actor->target = actor->goal;
 				return true;
 			}
+
+			if (actor->flags & MF_FRIEND)
+				return P_LookForOwner(actor, allaround);
+
 			return false;
 		}
 
@@ -1431,7 +1477,10 @@ bool P_LookForPlayers(AActor *actor, bool allaround)
 		if (!player->mo)
 			continue; // out of game
 
-		if (!P_IsVisible(actor, player->mo, allaround))
+		if (P_IsFriendlyThing(actor, player->mo))
+			continue;
+
+		if (!P_IsVisible(*actor, *player->mo, allaround))
 		{
 			sightcheckfailed[actor->lastlook] = true;
 			continue;
@@ -2380,35 +2429,30 @@ void A_SkelFist (AActor *actor)
 // Detect a corpse that could be raised.
 //
 AActor* 		corpsehit;
-AActor* 		vileobj;
-fixed_t 		viletryx;
-fixed_t 		viletryy;
-int				viletryradius;
 
-bool PIT_VileCheck (AActor *thing)
+bool PIT_VileCheck (AActor& thing, AActor* /*vileobj*/, const fixed_t viletryx, const fixed_t viletryy, const int viletryradius)
 {
-	int 	maxdist;
-	bool 	check;
+	bool check;
 
-	if (thing->oflags & MFO_NORAISE)
+	if (thing.oflags & MFO_NORAISE)
 		return true;	// [AM] Can't raise
 
-	if (!(thing->flags & MF_CORPSE) )
+	if (!(thing.flags & MF_CORPSE) )
 		return true;	// not a monster
 
-	if (thing->tics != -1)
+	if (thing.tics != -1)
 		return true;	// not lying still yet
 
-	if (thing->info->raisestate == S_NULL)
+	if (thing.info->raisestate == S_NULL)
 		return true;	// monster doesn't have a raise state
 
-	maxdist = thing->info->radius + viletryradius;
+	const int maxdist = thing.info->radius + viletryradius;
 
-	if ( abs(thing->x - viletryx) > maxdist
-		 || abs(thing->y - viletryy) > maxdist )
+	if ( abs(thing.x - viletryx) > maxdist
+		 || abs(thing.y - viletryy) > maxdist )
 		return true;			// not actually touching
 
-	corpsehit = thing;
+	corpsehit = &thing;
 	corpsehit->momx = corpsehit->momy = 0;
 
 	if (P_AllowPassover())
@@ -2416,11 +2460,9 @@ bool PIT_VileCheck (AActor *thing)
 
 	if (co_novileghosts)
 	{
-		int height, radius;
-
 		corpsehit->flags |= MF_SOLID;
-		height = corpsehit->height; // save temporarily
-		radius = corpsehit->radius; // save temporarily
+		const int height = corpsehit->height; // save temporarily
+		const int radius = corpsehit->radius; // save temporarily
 		corpsehit->height = P_ThingInfoHeight(corpsehit->info);
 		corpsehit->radius = corpsehit->info->radius;
 		check = P_CheckPosition(corpsehit, corpsehit->x, corpsehit->y);
@@ -2801,11 +2843,14 @@ void A_SpawnObject(AActor* actor)
 	mo->momy = FixedMul(vel_x, finesine[fan]) + FixedMul(vel_y, finecosine[fan]);
 	mo->momz = vel_z;
 
+	// A missile answers to whoever fired it, anything else answers for itself.
+	const bool spawnerismissile = actor->info->flags & (MF_MISSILE | MF_BOUNCES);
+
 	// if spawned object is a missile, set target+tracer
 	if (mo->info->flags & (MF_MISSILE | MF_BOUNCES))
 	{
 		// if spawner is also a missile, copy 'em
-		if (actor->info->flags & (MF_MISSILE | MF_BOUNCES))
+		if (spawnerismissile)
 		{
 			mo->target = actor->target;
 			mo->tracer = actor->tracer;
@@ -2817,8 +2862,22 @@ void A_SpawnObject(AActor* actor)
 			mo->tracer = actor->target;
 		}
 	}
+	else if (!mo->info->seestate)
+	{
+		// We need this to determine friendly fire
+		// This would transfer friendliness if it was a monster
+		// aka had a seestate, but some things spawn non-missiles
+		// with no see state that explode.
+		mo->target = spawnerismissile ? actor->target : actor->ptr();
+	}
 
-	mo->SetFriendly(actor->IsFriendly(), actor);
+	// A missile carries no friendliness of its own, so ownership
+	// has to come from whoever fired it here too.
+	const AActor* owner = actor;
+	if (spawnerismissile && actor->target)
+		owner = actor->target;
+
+	mo->SetFriendly(mo->info->seestate && owner->IsFriendly(), owner);
 	mo->UpdateActorLists();
 
 	SV_SpawnMobj(mo);
@@ -3003,31 +3062,27 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 		return false;
 	}
 
-	int xl, xh;
-	int yl, yh;
-	int bx, by;
-
 	if (actor->movedir != DI_NODIR)
 	{
 		// check for corpses to raise
-		viletryx = actor->x + actor->info->speed * xspeed[actor->movedir];
-		viletryy = actor->y + actor->info->speed * yspeed[actor->movedir];
+		const fixed_t viletryx = actor->x + (actor->info->speed * xspeed[actor->movedir]);
+		const fixed_t viletryy = actor->y + (actor->info->speed * yspeed[actor->movedir]);
 
-		xl = (viletryx - bmaporgx - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		xh = (viletryx - bmaporgx + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		yl = (viletryy - bmaporgy - MAXRADIUS * 2) >> MAPBLOCKSHIFT;
-		yh = (viletryy - bmaporgy + MAXRADIUS * 2) >> MAPBLOCKSHIFT;
+		const int xl = (viletryx - blockmap.originx() - (MAXRADIUS * 2)) >> MAPBLOCKSHIFT;
+		const int xh = (viletryx - blockmap.originx() + (MAXRADIUS * 2)) >> MAPBLOCKSHIFT;
+		const int yl = (viletryy - blockmap.originy() - (MAXRADIUS * 2)) >> MAPBLOCKSHIFT;
+		const int yh = (viletryy - blockmap.originy() + (MAXRADIUS * 2)) >> MAPBLOCKSHIFT;
 
-		vileobj = actor;
-		viletryradius = radius;
-		for (bx = xl; bx <= xh; bx++)
+		auto* vileobj = actor;
+		const int viletryradius = radius;
+		for (int bx = xl; bx <= xh; bx++)
 		{
-			for (by = yl; by <= yh; by++)
+			for (int by = yl; by <= yh; by++)
 			{
 				// Call PIT_VileCheck to check
 				// whether object is a corpse
 				// that can be raised.
-				if (!P_BlockThingsIterator(bx, by, PIT_VileCheck))
+				if (!P_BlockThingsIterator(bx, by, PIT_VileCheck, nullptr, vileobj, viletryx, viletryy, viletryradius))
 				{
 					mobjinfo_t* info;
 
@@ -3381,7 +3436,7 @@ void A_Stop(AActor* actor)
 #ifdef CLIENT_APP
 static void ApplyFriendlyEffects(AActor* mobj)
 {
-	if (mobj->health <= 0)
+	if (mobj->health <= 0 || mobj->flags & MF_CORPSE)
 	{
 		mobj->SetEffects(mobj->effects & ~FX_FRIENDHEARTS);
 		return;

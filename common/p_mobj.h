@@ -131,6 +131,7 @@ void P_ClearAllNetIds();
 AActor* P_FindThingById(uint32_t id);
 void P_SetThingId(AActor* mo, uint32_t newnetid);
 void P_ClearId(uint32_t id);
+void P_ResolveMobjToMobjPointers();
 
 void P_XYMovement(AActor *mo);
 void P_ZMovement(AActor *mo);
@@ -147,6 +148,7 @@ bool P_VisibleToPlayers(const AActor *mo);
 void P_SetMobjBaseline(AActor& mo);
 uint32_t P_GetMobjBaselineFlags(const AActor& mo);
 bool P_PlayWakeupSound(AActor* actor);
+bool P_IsPlayerSpawnThing(const mapthing2_t& mt);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);

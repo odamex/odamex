@@ -76,7 +76,7 @@ odaproto::svc::Disconnect SVC_Disconnect(const char* message)
 
 static void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
 {
-	io_msg.set_statenum (psprite.state ? psprite.state->statenum : -1);
+	io_msg.set_statenum (psprite.statenum);
 	io_msg.set_tics     (psprite.tics);
 	io_msg.set_sx       (psprite.sx);
 	io_msg.set_sy       (psprite.sy);
@@ -516,7 +516,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	{
 		msg.set_target_netid(mo->target ? mo->target->netid : 0);
 	}
-	else if (mo->flags & MF_AMBUSH || mo->flags & MF_DROPPED)
+	else if (mo->flags & (MF_AMBUSH | MF_DROPPED | MF_FRIEND))
 	{
 		spawnFlags |= SVC_SM_FLAGS;
 		cur->set_flags(mo->flags);
@@ -526,6 +526,15 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	{
 		spawnFlags |= SVC_SM_FLAGS2;
 		cur->set_flags2(mo->flags2);
+	}
+
+	// Who a friendly belongs to decides who it gets along with, and the client
+	// has to agree with us about that or it clips things we let through.
+	if (mo->flags & MF_FRIEND)
+	{
+		spawnFlags |= SVC_SM_FRIEND;
+		cur->set_friend_playerid(mo->friend_playerid);
+		cur->set_friend_teamid(mo->friend_teamid);
 	}
 
 	if (mo->oflags)
@@ -647,6 +656,8 @@ static void FillUpdateMobj(odaproto::svc::UpdateMobj& msg, const AActor& mobj)
 {
 	uint32_t flags = P_GetMobjBaselineFlags(mobj);
 	msg.set_flags(flags);
+
+	msg.set_threshold(mobj.threshold);
 
 	odaproto::Actor* act = msg.mutable_actor();
 	odaproto::Vec3* pos = act->mutable_pos();
@@ -846,6 +857,10 @@ odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corps
 	cpsmom->set_x(corpse->momx);
 	cpsmom->set_y(corpse->momy);
 	cpsmom->set_z(corpse->momz);
+
+	cps->set_flags(corpse->flags);
+	cps->set_friend_playerid(corpse->friend_playerid);
+	cps->set_friend_teamid(corpse->friend_teamid);
 
 	msg.set_source_netid(source ? source->netid : 0);
 
@@ -1819,17 +1834,21 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
 	return msg;
 }
 
-odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree)
+odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree, const int ticsAgo)
 {
 	odaproto::svc::Spree msg;
 
 	msg.set_pid(spree.playerId);
 	msg.set_spree_level(spree.spreeLevel);
+	msg.set_tics_ago(ticsAgo > 0 ? ticsAgo : 0);
 
 	return msg;
 }
 
-odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType)
+odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker,
+                                            const int level,
+                                            const SpreeBreakerType breakerType,
+                                            const int ticsAgo)
 {
 	odaproto::svc::SpreeBreaker msg;
 
@@ -1840,6 +1859,7 @@ odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, cons
 	msg.set_spree_level(level);
 	msg.set_spree_points(breaker.endedPoints);
 	msg.set_spree_breaker_type(breakerType);
+	msg.set_tics_ago(ticsAgo > 0 ? ticsAgo : 0);
 
 	return msg;
 }

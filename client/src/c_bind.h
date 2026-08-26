@@ -25,6 +25,8 @@
 #pragma once
 
 
+#include <vector>
+
 #include "hashtable.h"
 #include "d_event.h"
 
@@ -57,6 +59,7 @@ public :
 	const std::string &GetBind(int key);			// Returns string bound to given key (NULL if none)
 	std::string GetNameKeys(int first, int second);
 	int  GetKeysForCommand(const char* cmd, int* first, int* second);
+	std::vector<int> GetKeysForCommandByLastDevice(const char* cmd);
 	std::string GetKeynameFromCommand(const char* cmd, bool bTwoEntries = false);
 
 	void ArchiveBindings(FILE* f);

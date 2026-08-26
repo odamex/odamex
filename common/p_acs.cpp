@@ -184,7 +184,7 @@ void DoGiveInv(player_t& player, const char* type, int amount)
 			SERVER_ONLY(SV_SendPlayerInfo(player));
 		},
 		[&](const ammotype_t ammo) {
-			player.ammo[ammo] = MIN(player.ammo[ammo]+amount, player.maxammo[ammo]);
+			player.ammo[ammo] = std::min(player.ammo[ammo]+amount, player.maxammo[ammo]);
 			SERVER_ONLY(SV_SendPlayerInfo(player));
 		},
 		[&](const powertype_t power) {
@@ -264,7 +264,7 @@ void TakeAmmo(player_t& player, int ammo, int amount)
 	}
 	else
 	{
-		player.ammo[ammo] = MAX(player.ammo[ammo]-amount, 0);
+		player.ammo[ammo] = std::max(player.ammo[ammo]-amount, 0);
 	}
 	if (player.pendingweapon != wp_nochange)
 	{
@@ -621,7 +621,7 @@ FBehavior::FBehavior (byte* object, int len)
 			int arraynum = level.vars[LELONG(chunk[2])];
 			if (static_cast<unsigned>(arraynum) < static_cast<unsigned>(NumArrays))
 			{
-				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
+				int initsize = std::min<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
 				int32_t *elems = Arrays[arraynum].Elements;
 				for (int i = 0; i < initsize; ++i)
 				{
@@ -653,7 +653,7 @@ FBehavior::~FBehavior ()
 	}
 }
 
-int STACK_ARGS FBehavior::SortScripts (const void *a, const void *b)
+int FBehavior::SortScripts (const void *a, const void *b)
 {
 	const ScriptPtr *ptr1 = reinterpret_cast<const ScriptPtr*>(a);
 	const ScriptPtr *ptr2 = reinterpret_cast<const ScriptPtr*>(b);
@@ -4308,7 +4308,7 @@ auto DLevelScript::CallFunction(const int scriptnum, const int func, const std::
 					auto& sec = sectors[secnum];
 					sec.damageamount = args[1];
 					sec.mod = args.size() > 2 ? StrToMOD(level.behavior->LookupString(args[2])) : MOD_UNKNOWN;
-					sec.damageinterval = args.size() > 3 ? clamp(args[3], 1, limits::MAXINT) : 32;
+					sec.damageinterval = args.size() > 3 ? std::clamp(args[3], 1, limits::MAXINT) : 32;
 					sec.leakrate = args.size() > 4 ? args[4] : 0;
 				}
 				return 0;

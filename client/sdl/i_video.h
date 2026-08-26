@@ -52,7 +52,7 @@ class IWindowSurface;
 class DCanvas;
 
 void I_InitHardware();
-void STACK_ARGS I_ShutdownHardware();
+void I_ShutdownHardware();
 bool I_VideoInitialized();
 
 void I_SetVideoMode(const IVideoMode& video_mode);

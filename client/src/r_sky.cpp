@@ -294,7 +294,7 @@ void R_InitSkyMap()
 	if (fskyheight <= (128 << FRACBITS))
 	{
 		defaultskytexturemid = 200 / 2 * FRACUNIT;
-		skystretch = ((r_stretchsky != 0) && consoleplayer().spectator) ||
+		skystretch = ((r_stretchsky != 0) && (consoleplayer().spectator || displayplayer().isFreecam)) ||
 		             (r_stretchsky == 1) ||
 		             (r_stretchsky == 2 && sv_freelook && (cl_mouselook || joy_freelook));
 	}
@@ -908,7 +908,7 @@ void R_RenderSkyRange(visplane_t* pl)
 			sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
 			tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
 
-			int count = MIN<int>(512, textureheight[frontskytex] >> FRACBITS);
+			int count = std::min<int>(512, textureheight[frontskytex] >> FRACBITS);
 			int destpostlen = 0;
 
 			tallpost_t* destpost = reinterpret_cast<tallpost_t*>(transparentskybuffer[x]);
