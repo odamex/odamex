@@ -636,7 +636,7 @@ static bool FindIWAD(OResFile& out)
  * @param loaded Currently loaded files to search.
  * @return True if a loaded file matched, otherwise false.
  */
-static bool FindLoadedFile(OResFile& out, const OWantFile& wanted,
+bool FindLoadedFile(OResFile& out, const OWantFile& wanted,
                            const OResFiles& loaded)
 {
 	const OMD5Hash& hash = wanted.getWantedMD5();
