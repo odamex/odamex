@@ -25,6 +25,8 @@
 #include "g_gametype.h"
 #include "p_local.h"
 
+EXTERN_CVAR (cl_noclip_spectator)
+
 fixed_t cam_x = 0;
 fixed_t cam_y = 0;
 fixed_t cam_z = 0;
@@ -69,10 +71,14 @@ void Freecam::buildCam(player_t* p_cam)
 
 	// spec stuff
 	p_cam->cheats |= CF_FLY;
-	p_cam->cheats |= CF_NOCLIP;
 	p_cam->spectator = true;
 	p_cam->mo->oflags |= MFO_SPECTATOR;
 	p_cam->mo->flags &= ~MF_SOLID;
+
+	if (cl_noclip_spectator)
+	{
+		p_cam->cheats |= CF_NOCLIP;
+	}
 
 	// player.ingame() should always be false for the freecam
 	p_cam->playerstate = PST_FREECAM;  

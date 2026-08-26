@@ -170,6 +170,7 @@ EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
 
 EXTERN_CVAR (cl_autoaim)
+EXTERN_CVAR (cl_noclip_spectator)
 
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_serverdownload)
@@ -1710,6 +1711,9 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 			player.cheats |= CF_FLY;					// Make players fly by default
 			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
 
+			if (cl_noclip_spectator)
+				player.cheats |= CF_NOCLIP;
+
 			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
 		}
 		else
@@ -1719,6 +1723,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 				displayplayer_id = consoleplayer_id; // get out of spynext
 			}
 			player.cheats &= ~CF_FLY;	// remove flying ability
+			player.cheats &= ~CF_NOCLIP;
 		}
 
 		ClientReplay::getInstance().reset();

@@ -699,6 +699,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Allows spectator/freecam to use noclip",
+         "name" : "cl_noclip_spectator",
+         "type" : "boolean"
+      },
+      {
          "default" : true,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Predict weapon pickups",
