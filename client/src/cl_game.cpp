@@ -1332,19 +1332,25 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // because something is occupying it
 //
 void P_SpawnPlayer(player_t &player, const mapthing2_t& mthing);
+void P_SpawnPlayer(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 
+bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
+{
+	return G_CheckSpot(player, mthing.x << FRACBITS, mthing.y << FRACBITS,
+	                   mthing.z << FRACBITS, ANG45 * (mthing.angle / 45));
+}
+
+bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle)
 {
 	unsigned			an;
 	AActor* 			mo;
 	fixed_t 			xa,ya;
 
-	const fixed_t x = mthing.x << FRACBITS;
-	const fixed_t y = mthing.y << FRACBITS;
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
-		z = mthing.z << FRACBITS;
+		z = startz;
 
 	if (!player.mo)
 	{
@@ -1402,13 +1408,13 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * (static_cast<unsigned int>(mthing.angle)/45) ) >> ANGLETOFINESHIFT;
+			an = angle >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = static_cast<angle_t>(mthing.angle / 45);
+			angle_t mtangle = angle / ANG45;
 
 			an = ANG45 * mtangle;
 

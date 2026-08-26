@@ -257,19 +257,25 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // because something is occupying it
 //
 void P_SpawnPlayer (player_t &player, const mapthing2_t& mthing);
+void P_SpawnPlayer (player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 
+bool G_CheckSpot (player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 bool G_CheckSpot (player_t &player, const mapthing2_t& mthing)
+{
+	return G_CheckSpot(player, mthing.x << FRACBITS, mthing.y << FRACBITS,
+	                   mthing.z << FRACBITS, ANG45 * (mthing.angle / 45));
+}
+
+bool G_CheckSpot (player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle)
 {
 	unsigned			an;
 	AActor* 			mo;
 	fixed_t 			xa,ya;
 
-	const fixed_t x = mthing.x << FRACBITS;
-	const fixed_t y = mthing.y << FRACBITS;
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
-		z = mthing.z << FRACBITS;
+		z = startz;
 
 	if (!player.mo)
 	{
@@ -327,13 +333,13 @@ bool G_CheckSpot (player_t &player, const mapthing2_t& mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * (static_cast<unsigned int>(mthing.angle)/45) ) >> ANGLETOFINESHIFT;
+			an = angle >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = static_cast<angle_t>(mthing.angle / 45);
+			angle_t mtangle = angle / ANG45;
 
 			an = ANG45 * mtangle;
 
@@ -546,6 +552,37 @@ void G_DeathMatchSpawnPlayer(player_t &player)
 	P_SpawnPlayer (player, *spot);
 }
 
+EXTERN_CVAR (g_spawnatdeathsite)
+
+//
+// G_DeathSpotSpawnPlayer
+//
+// Puts the player back on the spot where they fell.
+//
+// Returns false if we determine through rules that the spawn should be blocked.
+//
+bool G_DeathSpotSpawnPlayer(player_t &player)
+{
+	if (!g_spawnatdeathsite)
+		return false;
+
+	if (player.playerstate != PST_REBORN)
+		return false;
+
+	const DeathSpotManager& spots = DeathSpotManager::getInstance();
+
+	if (!spots.hasDeathSpot(player.id))
+		return false;
+
+	const DeathSpot_s& spot = spots.getDeathSpot(player.id);
+
+	if (!G_CheckSpot(player, spot.x, spot.y, spot.z, spot.angle))
+		return false;
+
+	P_SpawnPlayer(player, spot.x, spot.y, spot.z, spot.angle);
+	return true;
+}
+
 //
 // G_DoReborn
 //
@@ -558,6 +595,10 @@ void G_DoReborn (player_t &player)
 	// first disassociate the corpse
 	if (player.mo)
 		player.mo->player = NULL;
+
+	// unless they want to respawn where they died
+	if (G_DeathSpotSpawnPlayer(player))
+		return;
 
 	// spawn at random team spot if in team game
 	if(G_IsTeamGame())
