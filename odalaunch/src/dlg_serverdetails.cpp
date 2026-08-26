@@ -99,8 +99,8 @@ static const CvarCategories& GetCvarCategories()
 	     "sv_monsterdamage", "sv_monstershealth", "sv_monstersrespawn",
 	     "sv_nomonsters", "sv_showplayerpowerups", "sv_skill",
 	     "sv_spawndelaytime", "sv_splashfactor", "sv_weapondamage",
-	     "sv_weapondrop", "sv_weaponstay", "sv_dmfarspawn", "g_spawninv",
-	     "g_thingfilter"});
+	     "sv_weapondrop", "sv_weaponstay", "sv_dmfarspawn", "g_spawnatdeathsite",
+	     "g_spawninv", "g_thingfilter"});
 	Add("Optional Gameplay Functionality",
 	    {"sv_allowcheats", "sv_allowjump", "sv_allowfov", "sv_allowmovebob",
 	     "sv_allowpwo", "sv_allowredscreen", "sv_allowshowspawns",
