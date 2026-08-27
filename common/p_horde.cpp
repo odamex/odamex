@@ -292,7 +292,11 @@ class HordeState
 							attempts = 0;
 							break;
 						}
-						horderolodex = std::max(horderolodex - 1, HORDECOOLDOWN_SIZE - 1);
+						horderolodex--;
+						if (horderolodex < 0)
+						{
+							horderolodex = HORDECOOLDOWN_SIZE - 1;
+						}
 					}
 					else
 					{
@@ -312,7 +316,7 @@ class HordeState
 		if (G_IsHordeMode() && (!G_IsLivesGame() || playerslives.count > 0))
 		{
 			hordecooldown[hordecoolcount] = wavename;
-			hordecoolcount = std::min(hordecoolcount + 1, HORDECOOLDOWN_SIZE);
+			hordecoolcount = (hordecoolcount + 1) % HORDECOOLDOWN_SIZE;
 		}
 	}
 
