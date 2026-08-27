@@ -45,6 +45,7 @@
 
 #include "p_mapformat.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 
 #include <span>
 
@@ -756,6 +757,11 @@ void P_DeathThink (player_t& player)
 		    ((player.cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
 		    ((g_lives && player.lives > 0) || !g_lives))
 		{
+			// Run (shift) + Use (space) erases your death spot so you spawn
+			// at the beginning.
+			if ((player.cmd.buttons & BT_USE) && (player.cmd.modifiers & MOD_RUN))
+				DeathSpotManager::getInstance().eraseDeathSpot(player.id);
+
 			player.playerstate = PST_REBORN;
 		}
 	}

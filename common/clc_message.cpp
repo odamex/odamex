@@ -84,6 +84,11 @@ void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const
 			msg.set_impulse(player.cmd.impulse);
 		}
 
+		if (player.cmd.modifiers)
+		{
+			msg.set_modifiers(player.cmd.modifiers);
+		}
+
 		if (player.playerstate != PST_DEAD)
 		{
 			msg.set_angle(player.mo->angle);
@@ -147,6 +152,7 @@ void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg,
 		}
 
 		player.cmd.impulse = msg.impulse();
+		player.cmd.modifiers = msg.modifiers();
 
 		if (player.playerstate != PST_DEAD)
 		{

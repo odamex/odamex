@@ -606,6 +606,10 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 		cmd.buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT);
 	}
 
+	// Modifiers only ever qualify a button, and doesn't do anything on its own.
+	if (cmd.buttons && Actions[ACTION_SPEED])
+		cmd.modifiers |= MOD_RUN;
+
 	cmd.forwardmove <<= 8;
 	cmd.sidemove <<= 8;
 

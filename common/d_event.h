@@ -119,6 +119,15 @@ typedef enum
 } buttoncode_t;
 
 
+//
+// Modifier codes.
+//
+typedef enum
+{
+	MOD_RUN				= 1, // Holding down the run/slow key, cl_run doesn't count.
+} modifiercode_t;
+
+
 
 
 //
