@@ -106,7 +106,11 @@ using dtime_t = uint64_t;
 /**
  * @brief Returns a bitfield with a specific bit set.
  */
-#define BIT(a) (1U << (a))
+template <std::integral T = uint32_t>
+constexpr T BIT(const int a)
+{
+	return static_cast<T>(1) << a;
+}
 
 /**
  * @brief Returns a bitfield with a range of bits set from a to b, inclusive.
@@ -114,7 +118,7 @@ using dtime_t = uint64_t;
  * @param a Low bit in the mask.
  * @param b High bit in the mask.
  */
-static constexpr uint32_t BIT_MASK(uint32_t a, uint32_t b)
+constexpr uint32_t BIT_MASK(uint32_t a, uint32_t b)
 {
     return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
 }

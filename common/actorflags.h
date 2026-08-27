@@ -24,6 +24,7 @@
 #pragma once
 
 #include "flags.h"
+#include "doomtype.h" // for BIT
 
 //
 // Misc. mobj flags

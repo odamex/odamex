@@ -25,8 +25,10 @@
 #pragma once
 
 #include <array>
+#include <span>
 
 #include "d_event.h"
+#include "olumpname.cpp"
 
 // Some defines...
 #define LINEHEIGHT	16
@@ -159,13 +161,13 @@ struct menuitem_t {
 };
 
 typedef struct menu_s {
-	OLumpName		title;
-	int				lastOn;
-	int				indent;
+	OLumpName             title;
+	int                   lastOn;
+	int                   indent;
 	std::span<menuitem_t> items;
-	int				scrolltop;
-	int				scrollpos;
-	void			(*refreshfunc)();	// Callback func for M_OptResponder
+	int                   scrolltop;
+	int                   scrollpos;
+	void                  (*refreshfunc)(); // Callback func for M_OptResponder
 } menu_t;
 
 typedef struct
