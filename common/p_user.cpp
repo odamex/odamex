@@ -1375,6 +1375,7 @@ player_t::player_t() :
 	usedown(0),
 	cheats(0),
 	refire(0),
+	playerInfoIsRequested(false),
 	damagecount(0),
 	bonuscount(0),
 	extralight(0),

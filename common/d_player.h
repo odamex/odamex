@@ -268,6 +268,8 @@ public:
 	// Refired shots are less accurate.
 	short		refire;
 
+	bool playerInfoIsRequested;
+
 	// For screen flashing (red or bright).
 	int			damagecount, bonuscount;
 

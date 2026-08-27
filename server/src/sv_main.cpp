@@ -3669,6 +3669,12 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		MSG_WriteSVC(player.client.messenger->HighBuf(), SVC_MovePlayer(otherPlayer, player.tic));
 	}
 
+	// Send inventory stuff.
+	if (player.playerInfoIsRequested)
+	{
+		player.playerInfoIsRequested = false;
+		SV_SendPlayerInfo(player);
+	}
 	SV_SendMonitoredInventoryChanges(player);
 	SV_ArmInventoryMonitors(player);
 
@@ -3812,13 +3818,6 @@ int SV_CalculateNumTiccmds(player_t &player)
 		// Process all queued ticcmds.
 		return maximum_queue_size;
 	}
-	// Make sure that if we have an upcoming inventory check request, we do a complete
-	// tick using the preceding command so that we can respond with an accurate
-	// inventory on the next tic.
-	if (player.cmdqueue.size() > 1 && player.cmdqueue[1].has_inventory_check_tic())
-	{
-		return 1;
-	}
 	if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
 	{
 		// Player is not moving
@@ -3878,15 +3877,12 @@ void SV_ProcessPlayerCmd(player_t &player)
 	{
 		odaproto::clc::PlayerInput& netcmd = player.cmdqueue.front();
 
-		// Please note that we have a safety check in SV_CalculateNumTiccmds to ensure that
-		// if we're processing more than one command in this loop, the inventory check will
-		// be the first one.
-		//
-		// It's very important that we send the inventory / rollback info before we do any
-		// of the player's thinking this tic.
+		// The user has requested an inventory check, so send a PlayerInfo after we're
+		// finished integrating the current command and stepping the server tic. This
+		// is for pickup prediction validation.
 		if (netcmd.has_inventory_check_tic())
 		{
-			SV_SendPlayerInfo(player);
+			player.playerInfoIsRequested = true;
 		}
 
 		player.cmd = ticcmd_t();
