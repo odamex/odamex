@@ -68,16 +68,33 @@ TEST(CmdLib, TrimString) {
     test = "he   llo";
     EXPECT_EQ(TrimString(test), "he   llo");
 }
-TEST(CmdLib, TicsToShortTimeTenths) {
-    // Tenths round down, so the display never overshoots what it counts to.
-    EXPECT_EQ("9.9", TicsToShortTime(10 * TICRATE - 1, 10 * TICRATE, true));
-    EXPECT_EQ("1.0", TicsToShortTime(TICRATE, 10 * TICRATE, true));
-    EXPECT_EQ("0.9", TicsToShortTime(TICRATE - 1, 10 * TICRATE, true));
-    EXPECT_EQ("0.1", TicsToShortTime(4, 10 * TICRATE, true));
+TEST(CmdLib, TicsToShortTimeTenthsCountingDown) {
+    // Counting down rounds up, so 0.0 means a true zero and nothing else does -
+    // a single tic still to run is enough to hold the clock at 0.1.
+    EXPECT_EQ("0.0", TicsToShortTime(0, 10 * TICRATE, true));
+    EXPECT_EQ("0.1", TicsToShortTime(1, 10 * TICRATE, true));
+    EXPECT_EQ("0.1", TicsToShortTime(3, 10 * TICRATE, true));
+    EXPECT_EQ("0.2", TicsToShortTime(4, 10 * TICRATE, true));
 
-    // The last few tics before the event read 0.0 - it has not happened yet.
-    EXPECT_EQ("0.0", TicsToShortTime(3, 10 * TICRATE, true));
-    EXPECT_EQ("0.0", TicsToShortTime(1, 10 * TICRATE, true));
+    // Rounding up has to carry into the seconds rather than print "0.10".
+    EXPECT_EQ("1.0", TicsToShortTime(TICRATE - 1, 10 * TICRATE, true));
+    EXPECT_EQ("1.0", TicsToShortTime(TICRATE, 10 * TICRATE, true));
+    EXPECT_EQ("1.1", TicsToShortTime(TICRATE + 1, 10 * TICRATE, true));
+    EXPECT_EQ("10.0", TicsToShortTime(10 * TICRATE, 10 * TICRATE, true));
+
+    // Every tic below a full second must be off zero.
+    for (int t = 1; t < TICRATE; t++)
+        EXPECT_NE("0.0", TicsToShortTime(t, 10 * TICRATE, true)) << "at tic " << t;
+}
+
+TEST(CmdLib, TicsToShortTimeTenthsCountingUp) {
+    // Counting up rounds down, so it never claims more time than has elapsed -
+    // here 0.0 is the whole first tenth, which is what an elapsed clock wants.
+    EXPECT_EQ("0.0", TicsToShortTime(0, 10 * TICRATE, false));
+    EXPECT_EQ("0.0", TicsToShortTime(3, 10 * TICRATE, false));
+    EXPECT_EQ("0.1", TicsToShortTime(4, 10 * TICRATE, false));
+    EXPECT_EQ("0.9", TicsToShortTime(TICRATE - 1, 10 * TICRATE, false));
+    EXPECT_EQ("1.0", TicsToShortTime(TICRATE, 10 * TICRATE, false));
 }
 
 TEST(CmdLib, TicsToShortTimeWholeSeconds) {
@@ -103,12 +120,14 @@ TEST(CmdLib, TicsToShortTimeThreshold) {
     EXPECT_EQ("1", TicsToShortTime(1, 0, true));
     EXPECT_EQ("3", TicsToShortTime(3 * TICRATE, 0, false));
 
-    // Every tenth is reachable and the sequence never rises as tics fall.
+    // Counting down never rises as tics fall, and only bottoms out at zero.
     std::string prev;
-    for (int t = 10 * TICRATE; t > 0; t--) {
+    for (int t = 10 * TICRATE; t >= 0; t--) {
         const std::string cur = TicsToShortTime(t, 10 * TICRATE, true);
         if (!prev.empty())
             EXPECT_LE(std::stod(cur), std::stod(prev)) << "at tic " << t;
+        if (t > 0)
+            EXPECT_NE("0.0", cur) << "at tic " << t;
         prev = cur;
     }
     EXPECT_EQ("0.0", prev);

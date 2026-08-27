@@ -190,9 +190,11 @@ void TicsToTime(OTimespan& span, int time, bool ceilsec = false);
  * @brief Render a tic count as a compact seconds string, growing a tenths part
  *        once it is small enough to be worth watching closely.
  *
- * Tenths always round down, so the display never overshoots the moment it is
- * counting to - "0.0" means the event is a few tics away, rather than time being
- * on the board and you being respawned before it reaches 0.0.
+ * Both halves round the same way, chosen by ceilsec. Rounding up suits a
+ * countdown: the number never claims less time than is left, and "0.0" is only
+ * ever reached at a true zero, because a single tic still to go rounds up to
+ * "0.1". Rounding down suits counting up, so it never claims more time than
+ * has actually elapsed.
  *
  * @param tics       Tics to render. Negative counts as zero.
  * @param tenthstics Render "Seconds.Tenths" at or below this many tics, and
@@ -200,10 +202,7 @@ void TicsToTime(OTimespan& span, int time, bool ceilsec = false);
  *                   Zero for whole seconds only. Keep this an exact multiple of
  *                   TICRATE when ceilsec is set, or the handover flashes a
  *                   value for a single tic.
- * @param ceilsec    Round whole seconds up rather than down. Counting down
- *                   requires this, so the number never claims less time than
- *                   is left. Counting up needs it off, so it never claims more
- *                   time than has elapsed.
+ * @param ceilsec    Round up rather than down, as described above.
  */
 inline std::string TicsToShortTime(int tics, const int tenthstics,
                                    const bool ceilsec = false)
@@ -213,8 +212,10 @@ inline std::string TicsToShortTime(int tics, const int tenthstics,
 
 	if (tenthstics > 0 && tics <= tenthstics)
 	{
-		return std::to_string(tics / TICRATE) + "." +
-		       std::to_string(((tics % TICRATE) * 10) / TICRATE);
+		const int tenths = ceilsec ? (tics * 10 + TICRATE - 1) / TICRATE
+		                           : (tics * 10) / TICRATE;
+
+		return std::to_string(tenths / 10) + "." + std::to_string(tenths % 10);
 	}
 
 	if (ceilsec)
