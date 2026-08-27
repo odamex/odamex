@@ -845,8 +845,11 @@ void P_LoadThings (int lump)
 		// [RH] Need to translate the spawn flags to Hexen format.
 		auto flags = OFlags<mapthingflag_t>::unsafe_from_int(LESHORT(mt.options));
 		if (flags & BTF_RESERVED || demoplayback) flags &= BTF_RESERVED_MASK;
+		// difficulty + ambush flags are the same between the two
 		auto flags2 = MapThingFlags::unsafe_from_int((flags & mask(BTF_EASY|BTF_MEDIUM|BTF_HARD|BTF_AMBUSH)).to_int());
 		flags2 |= MTF_SINGLE|MTF_DEATHMATCH|MTF_COOPERATIVE;
+		// spawn it for all classes since these flags can't be set for doom format
+		flags2 |= MTF_FIGHTER|MTF_CLERIC|MTF_MAGE;
 		if (flags & BTF_NOTSINGLE)
 		{
 			#ifdef SERVER_APP

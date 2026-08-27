@@ -267,6 +267,9 @@ enum class mapthing2flag_t : int16_t
 	MTF_AMBUSH         = 0x0008, // Thing is deaf
 
 	MTF_DORMANT        = 0x0010, // Thing is dormant (use Thing_Activate)
+	MTF_FIGHTER        = 0x0020,
+	MTF_CLERIC         = 0x0040,
+	MTF_MAGE           = 0x0080,
 	MTF_SINGLE         = 0x0100, // Thing appears in single-player games
 	MTF_COOPERATIVE    = 0x0200, // Thing appears in cooperative games
 	MTF_DEATHMATCH     = 0x0400, // Thing appears in deathmatch games
@@ -274,7 +277,12 @@ enum class mapthing2flag_t : int16_t
 	MTF_FRIENDLY       = 0x2000, // zdoom
 
 	// Custom MapThing Flags
-	// TODO: get this out of the flags,
+	// TODO: get this out of the flags
+	// when we're loading hexen format maps, we load these flags directly as an integer
+	// from the THINGS lump, so who knows how this bit might be set there
+	// this is the same bit as zdooms MTF_SHADOW
+	// also, this is only getting used in P_LoadThings, but not P_LoadThings2, so g_thingfilter
+	// probably doesn't even work properly on hexen format maps
 	MTF_FILTER_COOPWPN = 0x0800, // Weapon thing is filtered with g_thingfilter 1.
 	                             // (Hate this method but it works...)
 };
