@@ -187,6 +187,53 @@ bool StrToTime(std::string str, time_t &tim);
 void TicsToTime(OTimespan& span, int time, bool ceilsec = false);
 
 /**
+ * @brief Round a tic count to tenths of a second.
+ *
+ * Callers that go on to split the result into seconds, minutes and hours must
+ * round here first and divide afterwards.
+ *
+ * @param tics    Tics to round. Negative counts as zero.
+ * @param ceilsec Round up rather than down.
+ */
+inline int TicsToTenths(int tics, const bool ceilsec = false)
+{
+	if (tics < 0)
+		tics = 0;
+
+	return ceilsec ? (tics * 10 + TICRATE - 1) / TICRATE : (tics * 10) / TICRATE;
+}
+
+/**
+ * @brief Render a tic count as a clock with a tenths place - "mm:ss.t", or
+ *        "hh:mm:ss.t" if there is an hour to show. (currently limited to 60s)
+ *
+ * @param tics    Tics to render. Negative counts as zero.
+ * @param ceilsec Round up rather than down. Counting down wants this so the
+ *                clock never claims less time than is left, and counting up wants
+ *                it off so it never claims more time than has elapsed.
+ */
+inline std::string TicsToClockTenths(const int tics, const bool ceilsec = false)
+{
+	const int tenths = TicsToTenths(tics, ceilsec);
+	const int secs = tenths / 10;
+	const int hours = secs / 3600;
+
+	const auto pad = [](const int n) {
+		return (n < 10 ? "0" : "") + std::to_string(n);
+	};
+
+	const std::string clock = pad((secs / 60) % 60) + ":" + pad(secs % 60) + "." +
+	                          std::to_string(tenths % 10);
+
+	if (hours)
+	{
+		return pad(hours) + ":" + clock;
+	}
+
+	return clock;
+}
+
+/**
  * @brief Render a tic count as a compact seconds string, growing a tenths part
  *        once it is small enough to be worth watching closely.
  *
@@ -212,8 +259,7 @@ inline std::string TicsToShortTime(int tics, const int tenthstics,
 
 	if (tenthstics > 0 && tics <= tenthstics)
 	{
-		const int tenths = ceilsec ? (tics * 10 + TICRATE - 1) / TICRATE
-		                           : (tics * 10) / TICRATE;
+		const int tenths = TicsToTenths(tics, ceilsec);
 
 		return std::to_string(tenths / 10) + "." + std::to_string(tenths % 10);
 	}
