@@ -565,6 +565,16 @@ void MSG_WriteChunk (buf_t *b, const void *p, size_t l)
 	b->WriteChunk(static_cast<const char*>(p), l);
 }
 
+namespace
+{
+	void WriteMiniHeader(buf_t& b, msg_t messageId, const void* data, size_t length)
+	{
+		b.WriteUnVarint(messageId);
+		b.WriteUnVarint(length);
+		b.WriteChunk(data, length);
+	}
+}
+
 void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 {
 	if (simulated_connection)
@@ -596,9 +606,7 @@ void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 		msg.ShortDebugString());
 #endif
 
-	b->WriteUnVarint(header);
-	b->WriteUnVarint(buffer.size());
-	b->WriteChunk(buffer.data(), buffer.size());
+	WriteMiniHeader(*b, header, buffer.data(), buffer.size());
 }
 
 void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
@@ -632,11 +640,9 @@ void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
 		msg.ShortDebugString());
 #endif
 
-    buf_t& b = io_queue.Obtain();
+	buf_t& b = io_queue.Obtain();
 
-	b.WriteUnVarint(header);
-	b.WriteUnVarint(buffer.size());
-	b.WriteChunk(buffer.data(), buffer.size());
+	WriteMiniHeader(b, header, buffer.data(), buffer.size());
 }
 
 /**
@@ -683,9 +689,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		// Select the correct buffer.
 		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger->ReliableBuf().Obtain() : player.client.messenger->NetBuf().Obtain();
 
-		b.WriteUnVarint(header);
-		b.WriteUnVarint(buffer.size());
-		b.WriteChunk(buffer.data(), buffer.size());
+		WriteMiniHeader(b, header, buffer.data(), buffer.size());
 	}
 }
 
@@ -965,6 +969,7 @@ static void InitNetMessageFormats()
 {
 	// Server Messages.
 	MSG_INFO(msg_noop);
+	MSG_INFO(msg_header);
 
 	MSG_INFO(svc_disconnect);
 	MSG_INFO(svc_playerinfo);

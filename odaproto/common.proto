@@ -11,6 +11,16 @@ message Noop
 {
 }
 
+// msg_header
+message Header
+{
+	int32   sequence        = 1;
+	int32   originator_tic  = 2;
+	int32   destination_tic = 3;
+	uint32  reliable_size   = 4;
+	uint32  flags           = 5;
+}
+
 message Color
 {
 	int32 r = 1;
