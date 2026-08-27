@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 #include "gstrings.h"
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
@@ -391,14 +392,15 @@ std::array<menuitem_t, 19> OptionItems = {{
 
 
 menu_t OptionMenu = {
-	"M_OPTTTL",
-	0,
-	MENU_HALFPASTINDENT,
-	OptionItems,
-	0,
-	0,
-	nullptr
+	.title       = "M_OPTTTL",
+	.lastOn      = 0,
+	.indent      = MENU_HALFPASTINDENT,
+	.items       = OptionItems,
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
+
 namespace
 {
 
@@ -518,13 +520,13 @@ menuitem_t ControlsItems[] = {
 
 
 menu_t ControlsMenu = {
-	"M_CONTRO",
-	3,
-	0,
-	{ControlsItems, ARRAY_LENGTH(ControlsItems)},
-	2,
-	0,
-	nullptr
+	.title       = "M_CONTRO",
+	.lastOn      = 3,
+	.indent      = 0,
+	.items       = {ControlsItems, ARRAY_LENGTH(ControlsItems)},
+	.scrolltop   = 2,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
 
 // -------------------------------------------------------
@@ -570,13 +572,13 @@ std::array<menuitem_t, 14> MouseItems = {{
 } // namespace
 
 menu_t MouseMenu = {
-	"M_MOUSET",
-	0,
-	MENU_HALFPASTINDENT,
-	MouseItems,
-	0,
-	0,
-	nullptr
+	.title       = "M_MOUSET",
+	.lastOn      = 0,
+	.indent      = MENU_HALFPASTINDENT,
+	.items       = MouseItems,
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
 
 namespace
@@ -614,14 +616,15 @@ std::array<menuitem_t, 12> JoystickItems = {{
 
 
 menu_t JoystickMenu = {
-	"M_JOYSTK",
-	0,
-	MENU_HALFPASTINDENT,
-	JoystickItems,
-	0,
-	0,
-	nullptr
+	.title       = "M_JOYSTK",
+	.lastOn      = 0,
+	.indent      = MENU_HALFPASTINDENT,
+	.items       = JoystickItems,
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
+
 namespace
 {
 
@@ -756,33 +759,33 @@ std::array<menuitem_t, 21> SoundItems = {{
 
 
 menu_t AdvMidiMenu = {
-	"M_SOUND",
-	3,
-	MENU_HALFPASTINDENT,
-	{AdvMidiItems, ARRAY_LENGTH(AdvMidiItems)},
-	0,
-	0,
-	nullptr
+	.title       = "M_SOUND",
+	.lastOn      = 3,
+	.indent      = MENU_HALFPASTINDENT,
+	.items       = {AdvMidiItems, ARRAY_LENGTH(AdvMidiItems)},
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
 
 menu_t LibAdlMidiMenu = {
-	"M_SOUND",
-	3,
-	MENU_HALFPASTINDENT,
-	LibAdlMidiItems,
-	0,
-	0,
-	nullptr
+	.title       = "M_SOUND",
+	.lastOn      = 3,
+	.indent      = MENU_HALFPASTINDENT,
+	.items       = LibAdlMidiItems,
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
 
 menu_t SoundMenu = {
-	"M_SOUND",
-	2,
-	MENU_HALFPASTINDENT,
-	SoundItems,
-	0,
-	0,
-	nullptr
+	.title       = "M_SOUND",
+	.lastOn      = 2,
+	.indent      = MENU_HALFPASTINDENT,
+	.items       = SoundItems,
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
 
 namespace
@@ -832,14 +835,15 @@ std::array<menuitem_t, 31> CompatItems = {{
 
 
 menu_t CompatMenu = {
-	"M_COMPAT",
-	1,
-	MENU_LONGTEXTINDENT,
-	CompatItems,
-	0,
-	0,
-	nullptr,
+	.title       = "M_COMPAT",
+	.lastOn      = 1,
+	.indent      = MENU_LONGTEXTINDENT,
+	.items       = CompatItems,
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr,
 };
+
 namespace
 {
 
@@ -875,13 +879,13 @@ std::array<menuitem_t, 15> NetworkItems = {{
 } // namespace
 
 menu_t NetworkMenu = {
-	"M_NETWRK",
-	2,
-	MENU_HALFPASTINDENT,
-	NetworkItems,
-	1,
-	0,
-	nullptr
+	.title       = "M_NETWRK",
+	.lastOn      = 2,
+	.indent      = MENU_HALFPASTINDENT,
+	.items       = NetworkItems,
+	.scrolltop   = 1,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
 
 namespace
@@ -936,13 +940,13 @@ std::array<menuitem_t, 20> WeaponItems = {{
 
 
 menu_t WeaponMenu = {
-	"M_WEAPON",
-	1,
-	MENU_HALFPASTINDENT,
-	WeaponItems,
-	0,
-	0,
-	nullptr
+	.title       = "M_WEAPON",
+	.lastOn      = 1,
+	.indent      = MENU_HALFPASTINDENT,
+	.items       = WeaponItems,
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
 namespace
 {
@@ -1106,14 +1110,15 @@ void M_UpdateDisplayOptions()
 
 
 menu_t VideoMenu = {
-	"M_VIDEO",
-	0,
-	0,
-	VideoItems,
-	4,
-	0,
-	&M_UpdateDisplayOptions
+	.title       = "M_VIDEO",
+	.lastOn      = 0,
+	.indent      = 0,
+	.items       = VideoItems,
+	.scrolltop   = 4,
+	.scrollpos   = 0,
+	.refreshfunc = &M_UpdateDisplayOptions
 };
+
 namespace
 {
 
@@ -1194,17 +1199,18 @@ std::array<menuitem_t, 34> HUDItems = {{
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 }};
 // NOLINTEND(readability-magic-numbers)
+
 } // namespace
 
 
 menu_t HUDMenu = {
-	"M_HUD",                // title
-	1,                      // lastOn
-	0,                      // indent
-	HUDItems,               // items
-	0,                      // scrolltop
-	0,                      // scrollpos
-	nullptr,                // refreshfunc
+	.title       = "M_HUD",
+	.lastOn      = 1,
+	.indent      = 0,
+	.items       = HUDItems,
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr,
 };
 
 /*=======================================
@@ -1304,14 +1310,15 @@ menuitem_t MessagesItems[] = {
 
 
 menu_t MessagesMenu = {
-	"M_MESS",
-	0,
-	0,
-	{MessagesItems, ARRAY_LENGTH(MessagesItems)},
-	0,
-	0,
-	nullptr
+	.title       = "M_MESS",
+	.lastOn      = 0,
+	.indent      = 0,
+	.items       = {MessagesItems, ARRAY_LENGTH(MessagesItems)},
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
+
 namespace
 {
 
@@ -1382,17 +1389,18 @@ std::array<menuitem_t, 22> AutomapItems = {{
 	{ .type = slider,	.label = "Scale Height",			.a = {.cvar = &am_ovscaleheight},	.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
 }};
 // NOLINTEND(readability-magic-numbers)
+
 } // namespace
 
 
 menu_t AutomapMenu = {
-	"M_AUTOMP",
-	0,
-	0,
-	AutomapItems,
-	0,
-	0,
-	nullptr
+	.title       = "M_AUTOMP",
+	.lastOn      = 0,
+	.indent      = 0,
+	.items       = AutomapItems,
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
 
 
@@ -1403,12 +1411,13 @@ menu_t AutomapMenu = {
  *=======================================*/
 
 // Tick at which the mode test expires, on the same clock as I_MSTime.
-dtime_t testingmode;
+dtime_t testingmode; // Holds time to revert to old mode
+
 namespace
 {
-		// Holds time to revert to old mode
 
 bool GetSelectedSize(int line, int *width, int *height);
+
 } // namespace
 
 
@@ -1528,17 +1537,17 @@ menuitem_t ModesItems[] = {
 #define VM_TESTLINE		17
 
 menu_t ModesMenu = {
-	"M_VIDMOD",
-	0,
-	130,
-	{ModesItems, ARRAY_LENGTH(ModesItems)},
-	0,
-	0,
-	nullptr
+	.title       = "M_VIDMOD",
+	.lastOn      = 0,
+	.indent      = 130,
+	.items       = {ModesItems, ARRAY_LENGTH(ModesItems)},
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr
 };
+
 namespace
 {
-
 
 void BuildModesList(int hiwidth, int hiheight)
 {
@@ -1940,12 +1949,12 @@ void M_OptDrawer()
 	screen->DrawPatchClean(title, MENU_CENTER_X - (title->width() / 2), MENU_TITLE_Y);
 
 	int y = 15 + title->height();
-	int ytop = y + (CurrentMenu->scrolltop * 8);
+	const int ytop = y + (CurrentMenu->scrolltop * 8);
 
 	OptMouseRowCount = 0;
 
 	size_t i;
-	for (i = 0; i < static_cast<int>(CurrentMenu->items.size()) && y <= maxy; i++, y += 8)	// TIJ
+	for (i = 0; std::cmp_less(i, CurrentMenu->items.size()) && y <= maxy; i++, y += 8)	// TIJ
 	{
 		if (i == CurrentMenu->scrolltop)
 			i += CurrentMenu->scrollpos;
@@ -2169,7 +2178,7 @@ void M_OptDrawer()
 
 	VisBottom = i - 1;
 	CanScrollUp = (CurrentMenu->scrollpos != 0);
-	CanScrollDown = (i < static_cast<int>(CurrentMenu->items.size()));
+	CanScrollDown = std::cmp_less(i, CurrentMenu->items.size());
 
 	if (CanScrollUp)
 		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
@@ -2254,7 +2263,7 @@ void M_OptScroll(int lines)
 	{
 		const int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
 		CurrentMenu->scrollpos += lines;
-		if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > static_cast<int>(CurrentMenu->items.size()))
+		if (std::cmp_greater(CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize, CurrentMenu->items.size()))
 			CurrentMenu->scrollpos = static_cast<int>(CurrentMenu->items.size()) - CurrentMenu->scrolltop - pagesize;
 	}
 }
@@ -2413,7 +2422,7 @@ void M_OptUpdateMouseItem()
 		return;
 
 	if (OptDragItem != -1 &&
-	    (OptDragMenu != CurrentMenu || OptDragItem >= static_cast<int>(CurrentMenu->items.size()) ||
+	    (OptDragMenu != CurrentMenu || std::cmp_greater_equal(OptDragItem, CurrentMenu->items.size()) ||
 	     !M_OptItemIsSlider(&CurrentMenu->items[OptDragItem]) ||
 	     !I_IsUIMouseButtonDown(OKEY_MOUSE1)))
 		OptDragItem = -1;
@@ -2605,7 +2614,7 @@ void M_OptResponder(const event_t& ev)
 					CurrentMenu->scrollpos++;
 					VisBottom++;
 				}
-				if (CurrentItem == static_cast<int>(CurrentMenu->items.size()))
+				if (std::cmp_equal(CurrentItem, CurrentMenu->items.size()))
 				{
 					CurrentMenu->scrollpos = 0;
 					CurrentItem = 0;
