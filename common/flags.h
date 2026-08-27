@@ -22,9 +22,74 @@
 //
 //-----------------------------------------------------------------------------
 
-// ==============================================================
+// ============================================================================
 //
-// ==============================================================
+// OFlags is a type-safe bitflag type that prevents common mistakes
+// by splitting sets of flags into 3 conceptual catgories:
+//
+// 1. A flag set - This is OFlags itself. Used for storing flags in
+//    an object. Flags can be checked, set, toggled, or cleared.
+//
+// 2. A flag combination - Used to set, toggle, and check flags in a flag set.
+//    This is the type obtained by |ing individual flags togther.
+//
+// 3. A flag mask - Used to clear flags in a flag set. Obtained from ~ing
+//    a combo or an individual flag.
+//
+// Converting between these types is done with the `mask` and `combo'
+// functions. 'mask' converts a set, combo, or single flag into a mask, and
+// 'combo' converts a set or a mask into a combo.
+//
+// ----------------------------------------------------------------------------
+// Other notes:
+//
+// OFlags can only be templated on enum classes. Allowing plain enums
+// would worsen its type-safety. If migrating old code, 'using enum'
+// might be helpful.
+//
+// OFlags<E> requires that there is a function
+// 'consteval E enable_bitflag_operators(E)' that returns the variant
+// of E corresponding to the highest bit used.
+//
+// ----------------------------------------------------------------------------
+// Examples:
+//
+// enum class Flags : uint8_t
+// {
+//     Flag1 = 0x01,
+//     Flag2 = 0x02,
+//     Flag3 = 0x04,
+// };
+// using enum Flags;
+// consteval Flags enable_bitflag_operators(Flags) { return Flag3; }
+//
+// OFlags<Flags> flags = OFlags<Flags>::all_set();
+//
+// flags &= ~Flag1;       // clears Flag1
+// flags &= Flag1;        // error: &= requires a mask
+// flags &= mask(Flag1);  // clears all flags except for Flag1
+//
+// flags |= Flag1;        // sets Flag1
+// flags |= ~Flag1;       // error: |= requires a combo or single flag
+// flags |= combo(~Flag1) // sets all flags except Flag1
+//
+// // operator & with a single flag or combo returns a boolean
+// // indicating whether or not the flag(s) is/are set
+// if (flags & (Flag1|Flag3))
+//
+// // operator & with a mask returns a new flag_set with those flags cleared
+// if (flags & ~(Flag1|Flag3)) // error: mask is not convertible to bool
+//
+// // maybe we want to check if two flag sets have any of the same flags set
+// OFlags<Flags> flags2;
+// // we can just convert one of them to a combo
+// if (flags & combo(flags2))
+//
+// // similarly, one can be converted to a mask if needed
+// // e.g. to check if a particular flag is set in both
+// if ((flags & mask(flags2)) & Flag2)
+//
+// ============================================================================
 
 #pragma once
 
