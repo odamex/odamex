@@ -56,6 +56,7 @@ bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
 EXTERN_CVAR(ui_mouse)
+EXTERN_CVAR(joy_gamepadmode)
 
 static IInputSubsystem* input_subsystem = NULL;
 
@@ -302,6 +303,71 @@ std::string I_GetKeyName(int key)
 		return it->second;
 
 	return fmt::format("#{}", key);
+}
+
+
+//
+// I_GetKeyDevice
+//
+// Returns the kind of device the given key code comes from.
+//
+keydevice_t I_GetKeyDevice(int key)
+{
+	if (key >= OKEY_MOUSE1 && key <= OKEY_MWHEELRIGHT)
+		return KEYDEV_MOUSE;
+	if (key >= OKEY_JOY1 && key <= OKEY_HAT8)
+		return KEYDEV_JOYSTICK;
+	return KEYDEV_KEYBOARD;
+}
+
+namespace
+{
+
+keydevice_t last_input_device = KEYDEV_KEYBOARD;
+
+//
+// I_TrackLastInputDevice
+//
+void I_TrackLastInputDevice(const event_t& ev)
+{
+	const bool ignore_mouse = joy_gamepadmode.asInt() == GAMEPADMODE_IGNOREMOUSE;
+
+	switch (ev.type)
+	{
+	case ev_keydown:
+	case ev_keyup:
+	{
+		const keydevice_t device = I_GetKeyDevice(ev.data1);
+		if (ignore_mouse && device == KEYDEV_MOUSE)
+			break;
+		last_input_device = device;
+		break;
+	}
+	case ev_mouse:
+		if (!ignore_mouse)
+			last_input_device = KEYDEV_MOUSE;
+		break;
+	case ev_joystick:
+		if (ev.data3 != 0)
+			last_input_device = KEYDEV_JOYSTICK;
+		break;
+	}
+}
+
+} // namespace
+
+//
+// I_GetLastInputDevice
+//
+// Returns the device the player used most recently, so that on-screen prompts
+// can name the controls the player actually has in hand.
+//
+keydevice_t I_GetLastInputDevice()
+{
+	if (joy_gamepadmode.asInt() == GAMEPADMODE_ALWAYS)
+		return KEYDEV_JOYSTICK;
+
+	return last_input_device;
 }
 
 
@@ -720,6 +786,7 @@ void I_GetEvents(bool mouseOnly)
 	while (input_subsystem->hasEvent())
 	{
 		input_subsystem->getEvent(&ev);
+		I_TrackLastInputDevice(ev);
 		D_PostEvent(ev);
 	}
 }

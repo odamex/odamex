@@ -190,6 +190,7 @@ EXTERN_CVAR (snd_votesfx)
 // Joystick menu -- Hyper_Eye
 void JoystickSetup();
 EXTERN_CVAR (use_joystick)
+EXTERN_CVAR (joy_gamepadmode)
 EXTERN_CVAR (joy_active)
 EXTERN_CVAR (joy_forwardaxis)
 EXTERN_CVAR (joy_strafeaxis)
@@ -593,13 +594,20 @@ namespace
  *=======================================*/
 
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
-std::array<menuitem_t, 11> JoystickItems = {{
+std::array<value_t, 3> GamepadModes = {{
+	{ .value = 0.0, .name = "Auto"},
+	{ .value = 1.0, .name = "Ignore Mouse"},
+	{ .value = 2.0, .name = "Always"}
+}};
+
+std::array<menuitem_t, 12> JoystickItems = {{
 	{ .type = discrete,	.label = "Use Joystick", .a = {.cvar = &use_joystick},		.b = {.leftval = OnOff.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = joyactive,	.label = "Active Joystick", .a = {.cvar = &joy_active},		.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = discrete,	.label = "Always FreeLook", .a = {.cvar = &joy_freelook},		.b = {.leftval = OnOff.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
 	{ .type = discrete,	.label = "Invert Look Axis", .a = {.cvar = &joy_invert},		.b = {.leftval = OnOff.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
+	{ .type = discrete,	.label = "Show Gamepad Buttons", .a = {.cvar = &joy_gamepadmode},		.b = {.leftval = GamepadModes.size()},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = GamepadModes.data()}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},		.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = whitetext,	.label = "Sensitivity Settings", .a = {.cvar = nullptr}, 				.b = {.leftval = 0.0}, 		.c = {.rightval = 0.0}, 		.d = {.step = 0.0}, 		.e = {.values = nullptr}},
 	{ .type = slider,	.label = "Turn Sensitivity", .a = {.cvar = &joy_sensitivity},	.b = {.leftval = 1.0},		.c = {.rightval = 30.0},		.d = {.step = 1.0},		.e = {.values = nullptr}},

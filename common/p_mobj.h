@@ -131,6 +131,7 @@ void P_ClearAllNetIds();
 AActor* P_FindThingById(uint32_t id);
 void P_SetThingId(AActor* mo, uint32_t newnetid);
 void P_ClearId(uint32_t id);
+void P_ResolveMobjToMobjPointers();
 
 void P_XYMovement(AActor *mo);
 void P_ZMovement(AActor *mo);

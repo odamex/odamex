@@ -118,7 +118,8 @@ enum
 // Ceiling/floor flags
 enum
 {
-	SECF_ABSLIGHTING	= 1		// floor/ceiling light is absolute, not relative
+	SECF_ABSLIGHTING	= 1,	// floor/ceiling light is absolute, not relative
+	SECF_SPRINGPAD		= 2		// floor bounces actors at their landing velocity
 };
 
 // Misc sector flags

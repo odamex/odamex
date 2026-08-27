@@ -24,6 +24,8 @@
 #include "odamex.h"
 
 #include "g_gametype.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 #include "c_dispatch.h"
 #include "cmdlib.h"
@@ -561,6 +563,12 @@ static void GiveTeamWins(team_t team, int wins)
 			continue;
 		MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_TeamMembers(team));
 	}
+}
+
+void G_ClearRoundKillStats()
+{
+	SpreeManager::getInstance().clearSprees();
+	MultiKillManager::getInstance().clearMultiTics();
 }
 
 /**

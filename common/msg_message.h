@@ -3,8 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,24 +16,14 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Handles parsing all SPREEDEF lumps.
+//  Builders for sender-agnostic messages
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#include <cstddef>
+#include "common.pb.h"
 
-/// <summary>
-/// Parses all SPREEDEF lumps for consumption by
-/// the spree and multi kill managers.
-/// </summary>
-void G_ParseSpreeDef();
+struct PacketHeaderType;
 
-/// <summary>
-/// Parses a single SPREEDEF from a raw buffer. Errors out through I_Error on anything
-/// malformed, as lump parsing does.
-/// </summary>
-/// <param name="buffer">Start of the SPREEDEF text.</param>
-/// <param name="length">Length of the SPREEDEF text.</param>
-void G_ParseSpreeDefBuffer(const char* buffer, const size_t length);
+odaproto::Header MSG_Header(const PacketHeaderType& i_header);
