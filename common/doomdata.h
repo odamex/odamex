@@ -27,6 +27,7 @@
 
 #include <array>
 #include "flags.h"
+#include "doomtype.h"
 
 //
 // Map level types.
@@ -273,6 +274,7 @@ enum class mapthing2flag_t : int16_t
 	MTF_FRIENDLY       = 0x2000, // zdoom
 
 	// Custom MapThing Flags
+	// TODO: get this out of the flags,
 	MTF_FILTER_COOPWPN = 0x0800, // Weapon thing is filtered with g_thingfilter 1.
 	                             // (Hate this method but it works...)
 };

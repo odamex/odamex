@@ -845,7 +845,8 @@ void P_LoadThings (int lump)
 		// [RH] Need to translate the spawn flags to Hexen format.
 		auto flags = OFlags<mapthingflag_t>::unsafe_from_int(LESHORT(mt.options));
 		if (flags & BTF_RESERVED || demoplayback) flags &= BTF_RESERVED_MASK;
-		auto flags2 = MapThingFlags::unsafe_from_int(static_cast<int16_t>((flags.to_int() & 0xf) | 0x7e0));
+		auto flags2 = MapThingFlags::unsafe_from_int((flags & mask(BTF_EASY|BTF_MEDIUM|BTF_HARD|BTF_AMBUSH)).to_int());
+		flags2 |= MTF_SINGLE|MTF_DEATHMATCH|MTF_COOPERATIVE;
 		if (flags & BTF_NOTSINGLE)
 		{
 			#ifdef SERVER_APP
