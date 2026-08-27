@@ -90,6 +90,8 @@ enum class levelflags_t : uint32_t
 	LEVEL_CHANGEMAPCHEAT    = BIT(30),
 	// Used for intermission map
 	LEVEL_VISITED           = BIT(31),
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum levelflags_t;
@@ -102,10 +104,12 @@ enum class levelflags2_t : uint32_t
 	LEVEL2_NOINFIGHTING        = BIT(1),
 	LEVEL2_TOTALINFIGHTING     = BIT(2),
 	LEVEL2_INFIGHTINGMASK      = BIT_MASK(0, 2),
-	LEVEL2_HIDEAUTHORNAME      = BIT(3),
-	LEVEL2_AUTHORFROMPWAD      = BIT(4),
-	LEVEL2_FROMUMAPINFO        = BIT(5),
-	LEVEL2_COMPAT_CROSSDROPOFF = BIT(18),
+	LEVEL2_COMPAT_CROSSDROPOFF = BIT(3),
+	LEVEL2_HIDEAUTHORNAME      = BIT(4),
+	LEVEL2_AUTHORFROMPWAD      = BIT(5),
+	LEVEL2_FROMUMAPINFO        = BIT(6),
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum levelflags2_t;

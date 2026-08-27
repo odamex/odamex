@@ -285,6 +285,9 @@ enum class mapthing2flag_t : int16_t
 	// probably doesn't even work properly on hexen format maps
 	MTF_FILTER_COOPWPN = 0x0800, // Weapon thing is filtered with g_thingfilter 1.
 	                             // (Hate this method but it works...)
+
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum mapthing2flag_t;
@@ -309,6 +312,8 @@ enum class mapthingflag_t : int16_t
 	BTF_NOTCOOPERATIVE = 0x0040, // (TF_SINGLE|TF_DEATHMATCH)
 	BTF_FRIEND         = 0x0080, // mbf
 	BTF_RESERVED       = 0x0100, // mbf reserved bit
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum mapthingflag_t;

@@ -81,6 +81,8 @@ enum class mobjflag_t : uint32_t
 	MF_FRIEND       = BIT(30), // MBF
 
 	MF_TRANSLUCENT  = BIT(31),
+	// if modifying this enum (which almost certainly shouldn't happen), make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum mobjflag_t;
@@ -131,6 +133,8 @@ enum class mobjflag2_t : uint32_t
 	MF2_ICEDAMAGE         = BIT(29), // does ice damage
 	MF2_SEEKERMISSILE     = BIT(30), // is a seeker (for reflection)
 	MF2_REFLECTIVE        = BIT(31), // reflects missiles
+	// if modifying this enum (which almost certainly shouldn't happen), make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum mobjflag2_t;
@@ -160,6 +164,8 @@ enum class mobjflag3_t : uint32_t
 	MF3_E4M8BOSS       = BIT(16), // is an E4M8 boss
 	                              // BIT 17 is MF2_RIP -- RESERVED
 	MF3_FULLVOLSOUNDS  = BIT(18), // full volume see / death sound
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum mobjflag3_t;
@@ -187,6 +193,8 @@ enum class mobjoflag_t : uint32_t
 	MFO_ISONCONVEYOR        =     0x4000,   // [INTERNAL] Mobj is in motion due to being carried by a sector
 	MFO_MOVESLIKEAMONSTER   =     0x8000,   // [INTERNAL] Mobj has been updated through monster movement routines
 	MFO_ISAWAITINGSPAWN     =    0x10000,   // [INTERNAL] Mobj is a temporary mobj for a client-side player object awaiting its SpawnPlayer message
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum mobjoflag_t;
