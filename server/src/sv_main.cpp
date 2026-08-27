@@ -3880,7 +3880,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		// The user has requested an inventory check, so send a PlayerInfo after we're
 		// finished integrating the current command and stepping the server tic. This
 		// is for pickup prediction validation.
-		if (netcmd.has_inventory_check_tic())
+		if (netcmd.has_inventory_check())
 		{
 			player.playerInfoIsRequested = true;
 		}

@@ -268,8 +268,6 @@ public:
 	// Refired shots are less accurate.
 	short		refire;
 
-	bool playerInfoIsRequested;
-
 	// For screen flashing (red or bright).
 	int			damagecount, bonuscount;
 
@@ -345,10 +343,10 @@ public:
 	};
 	std::vector<ActorDistanceType> sortedMobjs;
 
+	bool playerInfoIsRequested;
 	bool inventoryCheckRequestsAreEnabled;
-	int  inventoryCheckIsRequestedForTic;
 
-	void RequestInventoryCheckFromServer(int i_tic) { inventoryCheckIsRequestedForTic = inventoryCheckRequestsAreEnabled ? i_tic : -1; }
+	void RequestInventoryCheckFromServer() { playerInfoIsRequested = inventoryCheckRequestsAreEnabled; }
 
 	hordeInfo_t hordeInfo;
 
