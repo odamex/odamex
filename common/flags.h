@@ -48,7 +48,7 @@
 // might be helpful.
 //
 // OFlags<E> requires that there is a function
-// 'consteval E enable_bitflag_operators(E)' that returns the variant
+// 'constexpr E enable_bitflag_operators(E)' that returns the variant
 // of E corresponding to the highest bit used.
 //
 // ----------------------------------------------------------------------------
@@ -61,7 +61,7 @@
 //     Flag3 = 0x04,
 // };
 // using enum Flags;
-// consteval Flags enable_bitflag_operators(Flags) { return Flag3; }
+// constexpr Flags enable_bitflag_operators(Flags) { return Flag3; }
 //
 // OFlags<Flags> flags = OFlags<Flags>::all_set();
 //
@@ -185,15 +185,21 @@ public:
 	template <typename Derived2>
 	constexpr explicit flags_impl(const flags_impl<E, Derived2> other) noexcept : m_value(other.m_value) {}
 
-	constexpr Derived& set(const E e) noexcept
-	{
-		m_value |= to_underlying(e);
-		return derived_this();
-	}
-
 	constexpr Derived& clear(const E e) noexcept
 	{
 		m_value &= ~to_underlying(e);
+		return derived_this();
+	}
+
+	constexpr Derived& clear() noexcept
+	{
+		m_value = 0;
+		return derived_this();
+	}
+
+	constexpr Derived& set(const E e) noexcept
+	{
+		m_value |= to_underlying(e);
 		return derived_this();
 	}
 
@@ -204,12 +210,6 @@ public:
 		else
 			clear(e);
 
-		return derived_this();
-	}
-
-	constexpr Derived& clear() noexcept
-	{
-		m_value = 0;
 		return derived_this();
 	}
 
@@ -244,17 +244,23 @@ public:
 	}
 
 	[[nodiscard]]
-	constexpr Derived set(const E e) const noexcept
-	{
-		// ugh, cast needed cause of integer promotion
-		return Derived{static_cast<underlying>(m_value | to_underlying(e))};
-	}
-
-	[[nodiscard]]
 	constexpr Derived clear(const E e) const noexcept
 	{
 		// ugh, cast needed cause of integer promotion
 		return Derived{static_cast<underlying>(m_value & ~to_underlying(e))};
+	}
+
+	[[nodiscard]]
+	constexpr Derived clear() const noexcept
+	{
+		return none_set();
+	}
+
+	[[nodiscard]]
+	constexpr Derived set(const E e) const noexcept
+	{
+		// ugh, cast needed cause of integer promotion
+		return Derived{static_cast<underlying>(m_value | to_underlying(e))};
 	}
 
 	[[nodiscard]]
@@ -338,9 +344,9 @@ public:
 	}
 
 	[[nodiscard]]
-	constexpr bool operator==(noflag_t) const noexcept
+	friend constexpr bool operator==(const Derived flags, noflag_t) noexcept
 	{
-		return m_value == none_set().m_value;
+		return flags.m_value == none_set().m_value;
 	}
 
 	[[nodiscard]]
@@ -389,16 +395,16 @@ private:
 public:
 	constexpr flag_set() noexcept = default;
 	constexpr flag_set(noflag_t) noexcept : flag_set() {};
-	constexpr flag_set(const FlagOrCombo<E> auto other) noexcept : base(other) {};
+	constexpr flag_set(const FlagOrCombo<E> auto c) noexcept : base(c) {};
 
-	constexpr flag_set& operator|=(const FlagOrCombo<E> auto other) noexcept
+	constexpr flag_set& operator|=(const FlagOrCombo<E> auto c) noexcept
 	{
-		return this->bitwise_or(flag_combo<E>{other});
+		return this->bitwise_or(flag_set<E>{c});
 	}
 
-	constexpr flag_set& operator^=(const FlagOrCombo<E> auto other) noexcept
+	constexpr flag_set& operator^=(const FlagOrCombo<E> auto c) noexcept
 	{
-		return this->bitwise_xor(flag_combo<E>{other});
+		return this->bitwise_xor(flag_set<E>{c});
 	}
 
 	constexpr flag_set& operator&=(const flag_mask<E> m) noexcept
@@ -406,9 +412,9 @@ public:
 		return this->bitwise_and(flag_set<E>{m});
 	}
 
-	constexpr flag_set operator~() noexcept
+	constexpr flag_set operator~() const noexcept
 	{
-		return flag_set{}.toggle();
+		return this->toggle();
 	}
 
 	// TODO: finish this up
@@ -470,7 +476,7 @@ template <FlagEnum E>
 [[nodiscard]]
 constexpr flag_set<E> operator|(const flag_set<E> s, const FlagOrCombo<E> auto c) noexcept
 {
-	return combo(s).bitwise_or(flag_combo<E>{c});
+	return s.bitwise_or(flag_set<E>{c});
 }
 
 template <FlagEnum E>
@@ -498,7 +504,7 @@ template <FlagEnum E>
 [[nodiscard]]
 constexpr flag_mask<E> operator&(const flag_mask<E> m1, const flag_mask<E> m2) noexcept
 {
-	return flag_mask{m1}.bitwise_and(m2);
+	return m1.bitwise_and(m2);
 }
 
 template <FlagEnum E>
@@ -519,7 +525,14 @@ template <FlagEnum E>
 [[nodiscard]]
 constexpr flag_set<E> operator^(const flag_set<E> s, const FlagOrCombo<E> auto c) noexcept
 {
-	return combo(s).bitwise_xor(flag_combo<E>{c});
+	return s.bitwise_xor(flag_set<E>{c});
+}
+
+template <FlagEnum E>
+[[nodiscard]]
+constexpr bool operator==(const flag_set<E> s, const FlagOrCombo<E> auto c) noexcept
+{
+	return combo(s) == c;
 }
 
 template <FlagEnum E>

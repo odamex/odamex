@@ -95,7 +95,7 @@ enum class levelflags_t : uint32_t
 };
 
 using enum levelflags_t;
-consteval levelflags_t enable_bitflag_operators(levelflags_t) { return LEVEL_VISITED; };
+constexpr levelflags_t enable_bitflag_operators(levelflags_t) { return LEVEL_VISITED; };
 using LevelFlags1 = OFlags<levelflags_t>;
 
 enum class levelflags2_t : uint32_t
@@ -113,7 +113,7 @@ enum class levelflags2_t : uint32_t
 };
 
 using enum levelflags2_t;
-consteval levelflags2_t enable_bitflag_operators(levelflags2_t) { return LEVEL2_COMPAT_CROSSDROPOFF; };
+constexpr levelflags2_t enable_bitflag_operators(levelflags2_t) { return LEVEL2_COMPAT_CROSSDROPOFF; };
 using LevelFlags2 = OFlags<levelflags2_t>;
 
 struct acsdefered_t;

@@ -291,7 +291,7 @@ enum class mapthing2flag_t : int16_t
 };
 
 using enum mapthing2flag_t;
-consteval mapthing2flag_t enable_bitflag_operators(mapthing2flag_t) { return MTF_FRIENDLY; };
+constexpr mapthing2flag_t enable_bitflag_operators(mapthing2flag_t) { return MTF_FRIENDLY; };
 using MapThingFlags = OFlags<mapthing2flag_t>;
 
 // we're using this in mapthing2_t where it gets loaded from raw bytes
@@ -318,7 +318,7 @@ enum class mapthingflag_t : int16_t
 
 using enum mapthingflag_t;
 
-consteval mapthingflag_t enable_bitflag_operators(mapthingflag_t) { return BTF_RESERVED; };
+constexpr mapthingflag_t enable_bitflag_operators(mapthingflag_t) { return BTF_RESERVED; };
 
 inline constexpr auto BTF_RESERVED_MASK = mask(BTF_EASY|BTF_MEDIUM|BTF_HARD|BTF_AMBUSH|BTF_NOTSINGLE);
 

@@ -86,7 +86,7 @@ enum class mobjflag_t : uint32_t
 };
 
 using enum mobjflag_t;
-consteval mobjflag_t enable_bitflag_operators(mobjflag_t) { return MF_TRANSLUCENT; }
+constexpr mobjflag_t enable_bitflag_operators(mobjflag_t) { return MF_TRANSLUCENT; }
 using ActorFlags1 = OFlags<mobjflag_t>;
 
 enum class mobjflag2_t : uint32_t
@@ -138,7 +138,7 @@ enum class mobjflag2_t : uint32_t
 };
 
 using enum mobjflag2_t;
-consteval mobjflag2_t enable_bitflag_operators(mobjflag2_t) { return MF2_REFLECTIVE; }
+constexpr mobjflag2_t enable_bitflag_operators(mobjflag2_t) { return MF2_REFLECTIVE; }
 using ActorFlags2 = OFlags<mobjflag2_t>;
 
 enum class mobjflag3_t : uint32_t
@@ -169,7 +169,7 @@ enum class mobjflag3_t : uint32_t
 };
 
 using enum mobjflag3_t;
-consteval mobjflag3_t enable_bitflag_operators(mobjflag3_t) { return MF3_FULLVOLSOUNDS; }
+constexpr mobjflag3_t enable_bitflag_operators(mobjflag3_t) { return MF3_FULLVOLSOUNDS; }
 using ActorFlags3 = OFlags<mobjflag3_t>;
 
 enum class mobjoflag_t : uint32_t
@@ -198,7 +198,7 @@ enum class mobjoflag_t : uint32_t
 };
 
 using enum mobjoflag_t;
-consteval mobjoflag_t enable_bitflag_operators(mobjoflag_t) { return MFO_ISAWAITINGSPAWN; }
+constexpr mobjoflag_t enable_bitflag_operators(mobjoflag_t) { return MFO_ISAWAITINGSPAWN; }
 using ActorOFlags = OFlags<mobjoflag_t>;
 
 //
