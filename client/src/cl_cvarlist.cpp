@@ -629,6 +629,14 @@ CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down T
 
 CVAR(hud_speedometer, "0", "Show the HUD speedometer", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(			cl_shotclock, "1", "In the last seconds of a match, show the HUD timer " \
+				"as a shot clock counting tenths of a second instead of whole seconds",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE(		cl_shotclocksecleft, "10", "Seconds left in a match before the HUD " \
+				"timer turns into a shot clock, if cl_shotclock is enabled",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
+
 CVAR_RANGE(		hud_transparency, "1.0", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 

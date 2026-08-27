@@ -77,6 +77,8 @@ EXTERN_CVAR(hud_targetnames)
 EXTERN_CVAR(hud_targethealth_debug)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(hud_timer)
+EXTERN_CVAR(cl_shotclock)
+EXTERN_CVAR(cl_shotclocksecleft)
 
 size_t P_NumPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
@@ -323,13 +325,13 @@ std::vector<std::string> RespawnText()
 
 	// While the spawn delay is running the use key does nothing, so the wait
 	// replaces the prompt rather than joining it.
-	const int delay_left = plyr.death_time +
-	                       static_cast<int>(::sv_spawndelaytime * TICRATE) - ::level.time;
+	const int delay_tics = static_cast<int>(::sv_spawndelaytime * TICRATE);
+	const int delay_left = plyr.death_time + delay_tics - ::level.time;
 
 	const int force_left = plyr.death_time +
 	                       static_cast<int>(::sv_forcerespawntime * TICRATE) - ::level.time;
 
-	if (delay_left > 0)
+	if (delay_tics > 0 && delay_left >= 0)
 	{
 		// A forced respawn ignores the delay, so if it lands first then that,
 		// not the delay, is when the player actually gets up.
@@ -348,7 +350,7 @@ std::vector<std::string> RespawnText()
 	    fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to respawn",
 	                 ::Bindings.GetKeynameFromCommand("+use"));
 
-	if (::sv_forcerespawn && force_left > 0)
+	if (::sv_forcerespawn)
 	{
 		line += fmt::sprintf(", or wait " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL " seconds",
 		                     TicsToShortTime(force_left, 10 * TICRATE, true));
@@ -444,6 +446,28 @@ std::string Timer()
 	}
 	else
 	{
+		const int timeleft = G_GetEndingTic() - level.time;
+
+		// If we're in the danger zone flip the color.
+		int warning = G_GetEndingTic() - (60 * TICRATE);
+		if (level.time > warning)
+		{
+			color = TEXTCOLOR_BRICK;
+		}
+
+		// Show a tenths place.
+		const int shotclock = ::cl_shotclocksecleft.asInt() * TICRATE;
+
+		if (::cl_shotclock && shotclock > 0 && timeleft >= 0 && timeleft <= shotclock)
+		{
+			// Counting up runs on the elapsed time and rounds down, counting
+			// down runs on what's left and rounds up.
+			if (hud_timer == 2)
+				return fmt::sprintf("%s%s", color, TicsToClockTenths(level.time));
+
+			return fmt::sprintf("%s%s", color, TicsToClockTenths(timeleft, true));
+		}
+
 		if (hud_timer == 2)
 		{
 			// Timer counts up.
@@ -452,15 +476,7 @@ std::string Timer()
 		else if (hud_timer == 1)
 		{
 			// Timer counts down.
-			int timeleft = G_GetEndingTic() - level.time;
 			TicsToTime(tspan, timeleft, true);
-		}
-
-		// If we're in the danger zone flip the color.
-		int warning = G_GetEndingTic() - (60 * TICRATE);
-		if (level.time > warning)
-		{
-			color = TEXTCOLOR_BRICK;
 		}
 	}
 
