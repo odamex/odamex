@@ -301,8 +301,8 @@ CVAR(				cl_connectalert, "1", "Plays a sound when a player joins",
 CVAR(				cl_disconnectalert, "1", "Plays a sound when a player quits",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_noclip_spectator, "0", "Allows spectator/freecam to use noclip",
-						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR_FUNC_DECL(		cl_noclip_spectator, "0", "Allows the spectator/freecam to move through walls",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE			(cl_chatsounds, "1", "Plays a sound when a chat message appears (0 = never, 1 = always, " \
 					"2 = only teamchat)",

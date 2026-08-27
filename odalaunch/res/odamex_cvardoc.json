@@ -701,7 +701,7 @@
       {
          "default" : false,
          "flags" : [ "CLIENTARCHIVE" ],
-         "helptext" : "Allows spectator/freecam to use noclip",
+         "helptext" : "Allows the spectator/freecam to move through walls",
          "name" : "cl_noclip_spectator",
          "type" : "boolean"
       },

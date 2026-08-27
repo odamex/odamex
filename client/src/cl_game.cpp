@@ -196,6 +196,24 @@ CVAR_FUNC_IMPL(joy_freelook)
 	R_InitSkyMap();
 }
 
+CVAR_FUNC_IMPL(cl_noclip_spectator)
+{
+	if (consoleplayer().spectator && not netdemo.isInPlayback())
+	{
+		if (var.asInt())
+			consoleplayer().cheats |= CF_NOCLIP;
+		else
+			consoleplayer().cheats &= ~CF_NOCLIP;
+	}
+	if (displayplayer().isFreecam)
+	{
+		if (var.asInt())
+			displayplayer().cheats |= CF_NOCLIP;
+		else
+			displayplayer().cheats &= ~CF_NOCLIP;
+	}
+}
+
 char			demoname[256];
 
 extern bool		simulated_connection;
