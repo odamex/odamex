@@ -139,3 +139,52 @@ TEST(CmdLib, TicsToShortTimeNegative) {
     EXPECT_EQ("0.0", TicsToShortTime(-1000, 10 * TICRATE, true));
     EXPECT_EQ("0", TicsToShortTime(-1, 0, true));
 }
+
+TEST(CmdLib, TicsToClockTenthsCountingDown) {
+    // Counting down rounds up, so 0.0 is only ever a true zero.
+    EXPECT_EQ("00:10.0", TicsToClockTenths(10 * TICRATE, true));
+    EXPECT_EQ("00:10.0", TicsToClockTenths(10 * TICRATE - 1, true));
+    EXPECT_EQ("00:00.1", TicsToClockTenths(1, true));
+    EXPECT_EQ("00:00.0", TicsToClockTenths(0, true));
+
+    // Minutes and seconds keep their leading zeroes.
+    EXPECT_EQ("05:00.0", TicsToClockTenths(5 * 60 * TICRATE, true));
+    EXPECT_EQ("01:09.0", TicsToClockTenths(69 * TICRATE, true));
+}
+
+TEST(CmdLib, TicsToClockTenthsCountingUp) {
+    // Counting up rounds down, so the first tenth covers the first few tics.
+    EXPECT_EQ("00:00.0", TicsToClockTenths(0));
+    EXPECT_EQ("00:00.0", TicsToClockTenths(3));
+    EXPECT_EQ("00:00.1", TicsToClockTenths(4));
+
+    EXPECT_EQ("04:59.9", TicsToClockTenths(5 * 60 * TICRATE - 1));
+    EXPECT_EQ("05:00.0", TicsToClockTenths(5 * 60 * TICRATE));
+}
+
+TEST(CmdLib, TicsToClockTenthsHours) {
+    // The hour field only appears once there is one, and pads like the rest.
+    EXPECT_EQ("59:59.9", TicsToClockTenths(60 * 60 * TICRATE - 1));
+    EXPECT_EQ("01:00:00.0", TicsToClockTenths(60 * 60 * TICRATE));
+    EXPECT_EQ("01:01:01.0", TicsToClockTenths(3661 * TICRATE));
+    EXPECT_EQ("10:00:00.0", TicsToClockTenths(10 * 60 * 60 * TICRATE));
+}
+
+TEST(CmdLib, TicsToClockTenthsRoundingCarries) {
+    // One tic short of an hour, rounding up has to carry through the tenths,
+    // the seconds AND the minutes to reach the hour.
+    EXPECT_EQ("01:00:00.0", TicsToClockTenths(60 * 60 * TICRATE - 1, true));
+
+    // The same count rounded down stays just under.
+    EXPECT_EQ("59:59.9", TicsToClockTenths(60 * 60 * TICRATE - 1, false));
+
+    // Carrying out of the tenths into the seconds, and out of the seconds
+    // into the minutes.
+    EXPECT_EQ("00:01.0", TicsToClockTenths(TICRATE - 1, true));
+    EXPECT_EQ("01:00.0", TicsToClockTenths(60 * TICRATE - 1, true));
+}
+
+TEST(CmdLib, TicsToClockTenthsNegative) {
+    EXPECT_EQ("00:00.0", TicsToClockTenths(-1, true));
+    EXPECT_EQ("00:00.0", TicsToClockTenths(-1000));
+}
