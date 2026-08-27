@@ -759,6 +759,22 @@
          "type" : "boolean"
       },
       {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "In the last seconds of a match, show the HUD timer as a shot clock counting tenths of a second instead of whole seconds",
+         "name" : "cl_shotclock",
+         "type" : "boolean"
+      },
+      {
+         "default" : 10,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Seconds left in a match before the HUD timer turns into a shot clock, if cl_shotclock is enabled",
+         "max" : 60,
+         "min" : 0,
+         "name" : "cl_shotclocksecleft",
+         "type" : "integer"
+      },
+      {
          "default" : false,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Show an indicator on friendly monsters.",
