@@ -238,17 +238,15 @@ void M_SizeDisplay(float diff);
 
 int  M_StringHeight(char *string);
 void M_ClearMenus();
+
+EXTERN_CVAR(ui_mouse)
+
 namespace
 {
-
 
 bool CanScrollUp;
 bool CanScrollDown;
 int VisBottom;
-} // namespace
-
-
-EXTERN_CVAR(ui_mouse)
 
 constexpr int MAX_OPT_MOUSE_ROWS = 32;
 
@@ -267,22 +265,19 @@ constexpr int MENU_LONGTEXTINDENT = 240;
 
 struct optmouserow_t
 {
-	int		item;		// index into CurrentMenu->items
-	int		y1, y2;		// surface pixel bounds of the row
+	int item;   // index into CurrentMenu->items
+	int y1, y2; // surface pixel bounds of the row
 };
-namespace
-{
-
 
 std::array<optmouserow_t, MAX_OPT_MOUSE_ROWS>	OptMouseRows;
 int				OptMouseRowCount = 0;
 
-const int		OPT_WHEEL_LINES = 3;
+constexpr int	OPT_WHEEL_LINES = 3;
 
 int				OptDragItem = -1;
 menu_t*			OptDragMenu = nullptr;
-} // namespace
 
+} // namespace
 
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
 std::array<value_t, 2> YesNo = {{
@@ -331,10 +326,10 @@ std::array<value_t, 2> DoomOrOdamex = {{
 // NOLINTEND(readability-magic-numbers)
 } // namespace
 
-
-menu_t  *CurrentMenu;
-int		CurrentItem;
+menu_t* CurrentMenu;
+int     CurrentItem;
 bool configuring_controls = false;
+
 namespace
 {
 
@@ -1927,14 +1922,10 @@ int M_FindCurVal (float cur, value_t *values, int numvals)
 void M_OptDrawer()
 {
 	int color;
-	int y;
 	int width;
-	int i;
 	int x;
-	int ytop;
-	const int theight = 0;
-	menuitem_t *item;
-	patch_t *title;
+	// 200 - row height of 8?
+	static constexpr int maxy = 192;
 
 	const int x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
 	const int y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
@@ -1945,20 +1936,21 @@ void M_OptDrawer()
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
 
-	title = W_CachePatch (CurrentMenu->title);
-	screen->DrawPatchClean (title, MENU_CENTER_X - (title->width() / 2), MENU_TITLE_Y);
+	const patch_t* title = W_CachePatch(CurrentMenu->title);
+	screen->DrawPatchClean(title, MENU_CENTER_X - (title->width() / 2), MENU_TITLE_Y);
 
-	y = 15 + title->height();
-	ytop = y + (CurrentMenu->scrolltop * 8);
+	int y = 15 + title->height();
+	int ytop = y + (CurrentMenu->scrolltop * 8);
 
 	OptMouseRowCount = 0;
 
-	for (i = 0; i < CurrentMenu->items.size() && y <= 192 - theight; i++, y += 8)	// TIJ
+	size_t i;
+	for (i = 0; i < static_cast<int>(CurrentMenu->items.size()) && y <= maxy; i++, y += 8)	// TIJ
 	{
 		if (i == CurrentMenu->scrolltop)
 			i += CurrentMenu->scrollpos;
 
-		item = &CurrentMenu->items[i];
+		menuitem_t* item = &CurrentMenu->items[i];
 
 		if (OptMouseRowCount < MAX_OPT_MOUSE_ROWS)
 		{
@@ -2050,11 +2042,8 @@ void M_OptDrawer()
 			case cdiscrete:
 			case svdiscrete:
 			{
-				int v;
-				int vals;
-
-				vals = static_cast<int>(item->b.leftval);
-				v = M_FindCurVal(item->a.cvar->value(), item->e.values, vals);
+				const int vals = static_cast<int>(item->b.leftval);
+				const int v = M_FindCurVal(item->a.cvar->value(), item->e.values, vals);
 
 				if (v == vals)
 				{
@@ -2180,7 +2169,7 @@ void M_OptDrawer()
 
 	VisBottom = i - 1;
 	CanScrollUp = (CurrentMenu->scrollpos != 0);
-	CanScrollDown = (i < CurrentMenu->items.size());
+	CanScrollDown = (i < static_cast<int>(CurrentMenu->items.size()));
 
 	if (CanScrollUp)
 		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
@@ -2265,8 +2254,8 @@ void M_OptScroll(int lines)
 	{
 		const int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
 		CurrentMenu->scrollpos += lines;
-		if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->items.size())
-			CurrentMenu->scrollpos = CurrentMenu->items.size() - CurrentMenu->scrolltop - pagesize;
+		if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > static_cast<int>(CurrentMenu->items.size()))
+			CurrentMenu->scrollpos = static_cast<int>(CurrentMenu->items.size()) - CurrentMenu->scrolltop - pagesize;
 	}
 }
 
@@ -2424,7 +2413,7 @@ void M_OptUpdateMouseItem()
 		return;
 
 	if (OptDragItem != -1 &&
-	    (OptDragMenu != CurrentMenu || OptDragItem >= CurrentMenu->items.size() ||
+	    (OptDragMenu != CurrentMenu || OptDragItem >= static_cast<int>(CurrentMenu->items.size()) ||
 	     !M_OptItemIsSlider(&CurrentMenu->items[OptDragItem]) ||
 	     !I_IsUIMouseButtonDown(OKEY_MOUSE1)))
 		OptDragItem = -1;
@@ -2616,7 +2605,7 @@ void M_OptResponder(const event_t& ev)
 					CurrentMenu->scrollpos++;
 					VisBottom++;
 				}
-				if (CurrentItem == CurrentMenu->items.size())
+				if (CurrentItem == static_cast<int>(CurrentMenu->items.size()))
 				{
 					CurrentMenu->scrollpos = 0;
 					CurrentItem = 0;
@@ -2658,8 +2647,8 @@ void M_OptResponder(const event_t& ev)
 				}
 				if (CurrentItem < 0)
 				{
-					CurrentMenu->scrollpos = std::max<int>(0, CurrentMenu->items.size() - MAX_LINES_ONSCREEN + CurrentMenu->scrolltop);
-					CurrentItem = CurrentMenu->items.size() - 1;
+					CurrentMenu->scrollpos = std::max<int>(0, static_cast<int>(CurrentMenu->items.size()) - MAX_LINES_ONSCREEN + CurrentMenu->scrolltop);
+					CurrentItem = static_cast<int>(CurrentMenu->items.size()) - 1;
 				}
 			} while (CurrentMenu->items[CurrentItem].type == redtext ||
 				CurrentMenu->items[CurrentItem].type == whitetext ||
@@ -2698,9 +2687,9 @@ void M_OptResponder(const event_t& ev)
 			{
 				const int pagesize = VisBottom - CurrentMenu->scrollpos - CurrentMenu->scrolltop;
 				CurrentMenu->scrollpos += pagesize;
-				if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > CurrentMenu->items.size())
+				if (CurrentMenu->scrollpos + CurrentMenu->scrolltop + pagesize > static_cast<int>(CurrentMenu->items.size()))
 				{
-					CurrentMenu->scrollpos = CurrentMenu->items.size() - CurrentMenu->scrolltop - pagesize;
+					CurrentMenu->scrollpos = static_cast<int>(CurrentMenu->items.size()) - CurrentMenu->scrolltop - pagesize;
 				}
 				CurrentItem = CurrentMenu->scrolltop + CurrentMenu->scrollpos + 1;
 				while (CurrentMenu->items[CurrentItem].type == redtext ||
@@ -2932,7 +2921,7 @@ void M_OptResponder(const event_t& ev)
 			col = item->a.selmode + 1;
 			if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
 			{
-				if (CurrentMenu->items.size() - 1 > CurrentItem)
+				if (static_cast<int>(CurrentMenu->items.size()) - 1 > CurrentItem)
 				{
 					if (CurrentMenu->items[CurrentItem + 1].type == screenres)
 					{

@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <string>
+
 class OLumpName
 {
 	char m_data[9];
