@@ -28,7 +28,7 @@
 #include <span>
 
 #include "d_event.h"
-#include "olumpname.cpp"
+#include "olumpname.h"
 
 // Some defines...
 #define LINEHEIGHT	16

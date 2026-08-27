@@ -57,11 +57,17 @@
 
 // TODO: make as many of these non-global as possible
 std::array<fixed_t, 4> tmbbox;
-static AActor  *tmthing;
-static ActorFlags1 tmflags;
-static fixed_t	tmx;
-static fixed_t	tmy;
-static fixed_t	tmz;	// [RH] Needed for third dimension of teleporters
+
+namespace
+{
+
+AActor*     tmthing;
+ActorFlags1 tmflags;
+fixed_t     tmx;
+fixed_t     tmy;
+fixed_t     tmz;     // [RH] Needed for third dimension of teleporters
+
+} // namespace
 
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".

@@ -2897,7 +2897,9 @@ bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t 
 //
 AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 {
-    fixed_t dest_x, dest_y, dest_z;
+    fixed_t dest_x;
+    fixed_t dest_y;
+    fixed_t dest_z;
 	ActorFlags1 dest_flags;
 
 	// denis: missile spawn code from chocolate doom
@@ -2926,7 +2928,7 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
         dest_flags.clear();
     }
 
-	AActor* th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
+	auto* th = new AActor (source->x, source->y, source->z + 32_fx, type);
 
     if (th->info->seesound)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
