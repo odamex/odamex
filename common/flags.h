@@ -485,3 +485,9 @@ constexpr flags_detail::flag_mask<E> mask(const E e) noexcept
 
 template <flags_detail::FlagEnum E>
 using OFlags = flags_detail::flag_set<E>;
+
+template <flags_detail::FlagEnum E>
+using OFlagCombo = flags_detail::flag_combo<E>;
+
+template <flags_detail::FlagEnum E>
+using OFlagMask = flags_detail::flag_mask<E>;

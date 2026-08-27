@@ -3788,7 +3788,7 @@ void A_BossDeath(AActor *actor)
 		// see if a BossAction applies to this type
 		const auto ba = std::find_if(level.bossactions.begin(), level.bossactions.end(),
 			[&actor](bossaction_t ba){
-				return (ba.type == actor->type) || (ba.flags & combo(actor->flags3));
+				return (ba.type == actor->type) || (actor->flags3 & ba.flags);
 			}
 		);
 		if (ba == level.bossactions.end())

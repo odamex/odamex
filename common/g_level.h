@@ -118,7 +118,7 @@ class FBehavior;
 struct bossaction_t
 {
 	int32_t type    = MT_NULL;
-	ActorFlags3 flags;
+	OFlagCombo<mobjflag3_t> flags;
 	int16_t special = 0;
 	int16_t tag     = 0;
 };
