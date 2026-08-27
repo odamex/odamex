@@ -3788,7 +3788,7 @@ void A_BossDeath(AActor *actor)
 		// see if a BossAction applies to this type
 		const auto ba = std::find_if(level.bossactions.begin(), level.bossactions.end(),
 			[&actor](bossaction_t ba){
-				return (ba.type == actor->type) || (actor->flags3 & ba.flags);
+				return (ba.type == actor->type) || (actor->flags3 & combo(ba.flags));
 			}
 		);
 		if (ba == level.bossactions.end())
@@ -3809,7 +3809,7 @@ void A_BossDeath(AActor *actor)
 
 		for (const bossaction_t& ba : level.bossactions)
 		{
-			if ((ba.type == actor->type) || (actor->flags3 & ba.flags))
+			if ((ba.type == actor->type) || (actor->flags3 & combo(ba.flags)))
 			{
 				// TODO: if a standardized line special for massacre is introduced, use that instead
 				if (ba.special == 280)
