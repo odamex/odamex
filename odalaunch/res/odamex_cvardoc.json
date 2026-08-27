@@ -1378,7 +1378,7 @@
          "default" : false,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
          "helptext" : "Players respawn on the spot where they died instead of at a player start.",
-         "name" : "g_spawnatdeathsite",
+         "name" : "g_spawnatdeathspot",
          "type" : "boolean"
       },
       {

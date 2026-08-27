@@ -552,7 +552,7 @@ void G_DeathMatchSpawnPlayer(player_t &player)
 	P_SpawnPlayer (player, *spot);
 }
 
-EXTERN_CVAR (g_spawnatdeathsite)
+EXTERN_CVAR (g_spawnatdeathspot)
 
 //
 // G_DeathSpotSpawnPlayer
@@ -563,7 +563,7 @@ EXTERN_CVAR (g_spawnatdeathsite)
 //
 bool G_DeathSpotSpawnPlayer(player_t &player)
 {
-	if (!g_spawnatdeathsite)
+	if (!g_spawnatdeathspot)
 		return false;
 
 	if (player.playerstate != PST_REBORN)

@@ -67,7 +67,7 @@ EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR (g_lives)
 EXTERN_CVAR (g_rounds)
-EXTERN_CVAR (g_spawnatdeathsite)
+EXTERN_CVAR (g_spawnatdeathspot)
 EXTERN_CVAR (sv_forcerespawn)
 EXTERN_CVAR (sv_forcerespawntime)
 EXTERN_CVAR (sv_spawndelaytime)
@@ -419,7 +419,7 @@ std::vector<std::string> RespawnText()
 	std::string spawnline =
 	    fmt::sprintf("Press %s to respawn", KeyPrompt("+use"));
 
-	spawnline += ::g_spawnatdeathsite ? " at death spot" : "";
+	spawnline += ::g_spawnatdeathspot ? " at death spot" : "";
 
 	lines.push_back(spawnline);
 
@@ -431,7 +431,7 @@ std::vector<std::string> RespawnText()
 		                             wait, SecondsWord(wait)));
 	}
 
-	if (::g_spawnatdeathsite)
+	if (::g_spawnatdeathspot)
 	{
 		lines.push_back(fmt::sprintf("Press %s + %s to respawn normally",
 		                             KeyPrompt("+speed"), KeyPrompt("+use")));
