@@ -28,6 +28,7 @@
 #include <sstream>
 
 #include "c_bind.h"
+#include "c_dispatch.h"
 #include "cl_demo.h"
 #include "m_fixed.h" // This should probably go into d_netinf.h
 #include "d_netinf.h"
@@ -303,6 +304,26 @@ std::string Countdown()
 }
 
 /**
+ * @brief Name the key bound to a command, lit green while it is being held.
+ *
+ * The action is looked up from the command itself, so the colour can never
+ * end up tracking a different key than the one being named.
+ */
+std::string KeyPrompt(const char* command)
+{
+	// Actions are registered without the leading +/- of the command.
+	const char* action = command;
+	if (*action == '+' || *action == '-')
+		action++;
+
+	const int bit = GetActionBit(MakeKey(action));
+	const bool held = bit >= 0 && ::Actions[bit];
+
+	return fmt::sprintf("%s%s" TEXTCOLOR_NORMAL, held ? TEXTCOLOR_GREEN : TEXTCOLOR_GOLD,
+	                    ::Bindings.GetKeynameFromCommand(command));
+}
+
+/**
  * @brief Return a "help" string.
  */
 std::string HelpText()
@@ -334,8 +355,7 @@ std::string HelpText()
 			                    joinmsg, queuePos, ordinal(queuePos));
 		}
 
-		return fmt::sprintf("%s - Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to queue",
-		                    joinmsg, ::Bindings.GetKeynameFromCommand("+use"));
+		return fmt::sprintf("%s - Press %s to queue", joinmsg, KeyPrompt("+use"));
 	}
 
 	if (G_CanShowJoinTimer())
@@ -343,14 +363,12 @@ std::string HelpText()
 		const std::string left =
 		    CountdownText(::levelstate.getJoinTicsLeft());
 
-		return fmt::sprintf(
-		          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
-		          " to join - " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL "%s left",
-		          ::Bindings.GetKeynameFromCommand("+use"), left, SecondsWord(left));
+		return fmt::sprintf("Press %s to join - " TEXTCOLOR_GREEN
+		                    "%s" TEXTCOLOR_NORMAL "%s left",
+		                    KeyPrompt("+use"), left, SecondsWord(left));
 	}
 
-	return fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",
-	                    ::Bindings.GetKeynameFromCommand("+use"));
+	return fmt::sprintf("Press %s to join", KeyPrompt("+use"));
 }
 
 /**
@@ -398,8 +416,8 @@ std::vector<std::string> RespawnText()
 		return lines;
 	}
 
-	std::string spawnline = fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to respawn",
-	             ::Bindings.GetKeynameFromCommand("+use"));
+	std::string spawnline =
+	    fmt::sprintf("Press %s to respawn", KeyPrompt("+use"));
 
 	spawnline += ::g_spawnatdeathsite ? " at death spot" : "";
 
@@ -415,11 +433,8 @@ std::vector<std::string> RespawnText()
 
 	if (::g_spawnatdeathsite)
 	{
-		lines.push_back(fmt::sprintf(
-		    "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " + " TEXTCOLOR_GOLD
-		    "%s" TEXTCOLOR_NORMAL " to respawn normally",
-		    ::Bindings.GetKeynameFromCommand("+speed"),
-		    ::Bindings.GetKeynameFromCommand("+use")));
+		lines.push_back(fmt::sprintf("Press %s + %s to respawn normally",
+		                             KeyPrompt("+speed"), KeyPrompt("+use")));
 	}
 
 	return lines;

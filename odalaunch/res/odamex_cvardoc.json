@@ -768,7 +768,7 @@
       {
          "default" : 10,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
-         "helptext" : "Seconds left in a match before the HUD timer turns into a shot clock, if cl_shotclock is enabled",
+         "helptext" : "Seconds left before a HUD timer starts displaying tenths of a second, if cl_shotclock is enabled",
          "max" : 60,
          "min" : 0,
          "name" : "cl_shotclocksecondsleft",
