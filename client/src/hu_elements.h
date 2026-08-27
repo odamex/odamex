@@ -26,6 +26,8 @@
 namespace hud {
 
 std::string HelpText();
+std::vector<std::string> RespawnText();
+int DrawRespawnText(int y);
 std::string SpyPlayerName();
 std::string IntermissionTimer();
 std::string Timer();

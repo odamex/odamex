@@ -1061,6 +1061,8 @@ void OdamexHUD() {
 			V_SetFont("SMALLFONT");
 	}
 
+	iy = hud::DrawRespawnText(iy);
+
 	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
 	{
 		if (::hud_bigfont)
@@ -1928,6 +1930,8 @@ void DoomHUD()
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
 		st_y += V_LineHeight() + 1;
 	}
+
+	st_y = hud::DrawRespawnText(st_y);
 
 	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
 	{

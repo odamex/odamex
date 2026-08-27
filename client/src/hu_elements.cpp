@@ -66,8 +66,13 @@ EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR (g_lives)
 EXTERN_CVAR (g_rounds)
+EXTERN_CVAR (g_spawnatdeathsite)
+EXTERN_CVAR (sv_forcerespawn)
+EXTERN_CVAR (sv_forcerespawntime)
+EXTERN_CVAR (sv_spawndelaytime)
 EXTERN_CVAR(g_winlimit)
 
+EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_targetnames)
 EXTERN_CVAR(hud_targethealth_debug)
 EXTERN_CVAR(sv_allowtargetnames)
@@ -294,6 +299,95 @@ std::string HelpText()
 
 	return fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",
 	                    ::Bindings.GetKeynameFromCommand("+use"));
+}
+
+/**
+ * @brief Return the lines telling a dead player how to get back into the game,
+ *        or nothing at all if they're in no position to respawn.
+ */
+std::vector<std::string> RespawnText()
+{
+	std::vector<std::string> lines;
+
+	const player_t& plyr = consoleplayer();
+
+	// This is about our own corpse, not whoever we happen to be looking
+	// through - a dead player spying a teammate still wants to know this.
+	// Spectators can't respawn at all, so they get the join prompt instead.
+	if (plyr.playerstate != PST_DEAD || plyr.spectator)
+		return lines;
+
+	// Out of lives - there is nothing you can do.
+	if (::g_lives && plyr.lives <= 0)
+		return lines;
+
+	// While the spawn delay is running the use key does nothing, so the wait
+	// replaces the prompt rather than joining it.
+	const int delay_left = plyr.death_time +
+	                       static_cast<int>(::sv_spawndelaytime * TICRATE) - ::level.time;
+
+	const int force_left = plyr.death_time +
+	                       static_cast<int>(::sv_forcerespawntime * TICRATE) - ::level.time;
+
+	if (delay_left > 0)
+	{
+		// A forced respawn ignores the delay, so if it lands first then that,
+		// not the delay, is when the player actually gets up.
+		int wait_left = delay_left;
+
+		if (::sv_forcerespawn && force_left < wait_left)
+			wait_left = force_left;
+
+		lines.push_back(fmt::sprintf("Wait " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL
+		                             " seconds to respawn",
+		                             TicsToShortTime(wait_left, 10 * TICRATE, true)));
+		return lines;
+	}
+
+	std::string line =
+	    fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to respawn",
+	                 ::Bindings.GetKeynameFromCommand("+use"));
+
+	if (::sv_forcerespawn && force_left > 0)
+	{
+		line += fmt::sprintf(", or wait " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL " seconds",
+		                     TicsToShortTime(force_left, 10 * TICRATE, true));
+	}
+
+	lines.push_back(line);
+
+	if (::g_spawnatdeathsite)
+	{
+		lines.push_back(fmt::sprintf(
+		    "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " + " TEXTCOLOR_GOLD
+		    "%s" TEXTCOLOR_NORMAL " to respawn at level start",
+		    ::Bindings.GetKeynameFromCommand("+speed"),
+		    ::Bindings.GetKeynameFromCommand("+use")));
+	}
+
+	return lines;
+}
+
+/**
+ * @brief Draw the respawn prompt into a bottom-centered stack of lines.
+ *
+ * @param y Height of the stack so far.
+ * @return New height of the stack - unchanged if there was nothing to say.
+ */
+int DrawRespawnText(int y)
+{
+	const std::vector<std::string> lines = RespawnText();
+
+	// The stack grows upwards from the bottom edge, so walk the lines backwards
+	// to leave them reading top-down with the plain respawn first.
+	for (auto it = lines.rbegin(); it != lines.rend(); ++it)
+	{
+		hud::DrawText(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, it->c_str(), CR_GREY);
+		y += V_LineHeight() + 1;
+	}
+
+	return y;
 }
 
 /**
