@@ -2091,8 +2091,10 @@ bool CL_Connect()
 	else
 	{
 		PrintFmt("Requesting server state...\n");
-		messenger.NextReceivedPacket(::net_message);
-		CL_ParseCommands();
+		if (messenger.NextReceivedPacket(::net_message))
+		{
+			CL_ParseCommands(messenger.GetCurrentReceivedPacketHeader());
+		}
 	}
 
 	messenger.SendAll(gametic, ::serveraddr);
@@ -2253,10 +2255,11 @@ MessageResultEnum CL_AcceptNetMessage()
 	{
 		if (netdemo.isRecording())
 		{
+			netdemo.capturePacketHeader(::messenger.GetCurrentReceivedPacketHeader());
 			netdemo.capture(&::net_message);
 		}
 
-		CL_ParseCommands();
+		CL_ParseCommands(::messenger.GetCurrentReceivedPacketHeader());
 
 		if (gameaction == ga_fullconsole) // Host_EndGame was called
 		{
@@ -2277,108 +2280,11 @@ MessageResultEnum CL_ProcessCurrentAvailableMessages()
 	return result;
 }
 
-
 void CL_Clear()
 {
 	size_t left = MSG_BytesLeft();
 	MSG_ReadChunk(left);
 }
-
-static std::string SVCName(msg_t header)
-{
-	std::string svc = ::msg_info[header].getName();
-	if (svc.empty())
-	{
-		svc = fmt::sprintf("svc_%u", header);
-	}
-	return svc;
-}
-
-//
-// CL_ParseCommands
-//
-void CL_ParseCommands()
-{
-	while (connected)
-	{
-		if (::net_message.BytesLeftToRead() == 0)
-		{
-			break;
-		}
-
-		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
-		// This is because the High Priority packet is always live and comes out every tic.  It's totally
-		// possible for the server to go without sending anything Reliable or Best-Effort if things are
-		// all-quiet.
-		if (messenger.GetCurrentReceivedIsHighPriority())
-		{
-			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
-		}
-
-		const size_t          byteStart = ::net_message.BytesRead();
-		const ParseResultType result    = CL_ParseCommand();
-
-		const parseError_e processResult = result.code == PERR_OK ?
-			CL_ProcessCommand(result) :
-			result.code;
-
-		if (processResult != PERR_OK or ::net_message.overflowed)
-		{
-			const Protos& protos = CL_GetTicProtos();
-
-			std::string err;
-			if (result.code == PERR_UNKNOWN_HEADER)
-			{
-				err = "Unknown message header";
-			}
-			else if (result.code == PERR_UNKNOWN_MESSAGE)
-			{
-				err = "Message is not known to message decoder";
-			}
-			else if (result.code == PERR_BAD_DECODE)
-			{
-				err = "Could not decode message";
-			}
-			else if (::net_message.overflowed)
-			{
-				err = "Message overflowed";
-			}
-			else
-			{
-				err = "Unknown error";
-			}
-
-			if (!protos.empty())
-			{
-				PrintFmt(PRINT_WARNING, "CL_ParseCommands: {}\n", err);
-
-				for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
-				{
-					char latest = (it == protos.end() - 1) ? '>' : ' ';
-					ptrdiff_t idx = it - protos.begin() + 1;
-					std::string svc = SVCName(it->header);
-					size_t siz = it->size;
-					PrintFmt(PRINT_WARNING, "{:c} {:>2d} [{}] {}b\n", latest, idx, svc,
-					         siz);
-				}
-			}
-			else
-			{
-				PrintFmt(PRINT_WARNING, "CL_ParseCommands: {}\n", err);
-			}
-
-			CL_QuitNetGame(NQ_PROTO);
-		}
-
-		// Measure length of each message, so we can keep track of bandwidth.
-		if (::net_message.BytesRead() < byteStart)
-		{
-			PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
-			         ::net_message.BytesRead(), byteStart);
-		}
-	}
-}
-
 
 void CL_SaveCmd(void)
 {
