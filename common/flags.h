@@ -341,6 +341,18 @@ public:
 	{
 		return flag_set{}.toggle();
 	}
+
+	// TODO: finish this up
+	// left unfinished until we know the exact needs for this
+	// template <FlagEnum E2>
+	// [[nodiscard]]
+	// static constexpr flag_set<E> unsafe_from_other(const flag_set<E2> other)
+	// {
+	// 	// should we enforce that they have the same underlying type?
+	// 	return flag_set<E>::unsafe_from_int(other.to_int());
+	// 	// or should we not?
+	// 	return flag_set<E>::unsafe_from_int(static_cast<base::underlying>(other.to_int()));
+	// }
 };
 
 template <FlagEnum E>
