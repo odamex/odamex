@@ -184,8 +184,8 @@ public:
 	// Overload bool because its size is implementation-defined, and we want archived sizes to be exact.
 	FArchive& operator<< (bool b) { return operator<< (uint8_t(b)); }
 
-	template <typename ElementType>
-	FArchive& operator<< (const std::span<ElementType>& i_array)
+	template <typename ElementType, size_t N>
+	FArchive& operator<< (const std::array<ElementType, N>& i_array)
 	{
 		*this << i_array.size();
 		for (const auto& element : i_array)
@@ -242,13 +242,13 @@ public:
 		return *this;
 	}
 
-	template <typename ElementType>
-	FArchive& operator>> (std::span<ElementType>& o_array)
+	template <typename ElementType, size_t N>
+	FArchive& operator>> (std::array<ElementType, N>& o_array)
 	{
 		size_t arraySize{0};
 
 		*this >> arraySize;
-		// TODO: should we use I_Error here?
+		// TODO: should we probably just use I_Error here?
 		assert(arraySize == o_array.size());
 
 		for (auto& element : o_array)
