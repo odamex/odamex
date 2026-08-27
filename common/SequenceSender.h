@@ -58,12 +58,6 @@ class SequenceSender
 			CRITICAL_FAILURE,
 		};
 
-		struct QueueEntryResultType
-		{
-			buf_t* buffer   {nullptr};
-			int    sequence {-1};
-		};
-
 	public:  // Functions.
 
 		explicit SequenceSender(size_t i_initialSize, const std::pmr::polymorphic_allocator<SequenceQueueEntryType> & i_allocator = {}) :
@@ -79,7 +73,7 @@ class SequenceSender
 		// the caller must manage these and specify them when obtaining a reliability
 		// slot.
 		//
-		QueueEntryResultType ObtainSendPacket(int currentTic=-1);
+		SequenceQueueEntryType& ObtainSendPacket();
 
 		// This function declares that the packet associated with the given sequence number has been
 		// acknowledged by its intended recipient.

@@ -42,20 +42,18 @@ SequenceQueueEntryType* SequenceSender::UnackedIterator::Next()
 	return nullptr;
 }
 
-SequenceSender::QueueEntryResultType SequenceSender::ObtainSendPacket(int currentTic)
+SequenceQueueEntryType& SequenceSender::ObtainSendPacket()
 {
 	SequenceQueueEntryType& newEntryRef = m_sendTable[m_nextSequence];
 
 	newEntryRef.isAwaiting           = true;
 	newEntryRef.header.sequence      = m_nextSequence;
-	newEntryRef.header.originatorTic = currentTic;
 	newEntryRef.lastRetransmitTic    = -1;
 
 	m_unackedSequences.push_back(m_nextSequence);
 	++m_nextSequence;
 
-	return QueueEntryResultType {.buffer    = & newEntryRef.buf,
-	                             .sequence  = newEntryRef.header.sequence };
+	return newEntryRef;
 }
 
 bool SequenceSender::Acknowledge(int sequence)
