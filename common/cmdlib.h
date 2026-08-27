@@ -237,18 +237,20 @@ inline std::string TicsToClockTenths(const int tics, const bool ceilsec = false)
  * @brief Render a tic count as a compact seconds string, growing a tenths part
  *        once it is small enough to be worth watching closely.
  *
- * Both halves round the same way, chosen by ceilsec. Rounding up suits a
- * countdown: the number never claims less time than is left, and "0.0" is only
- * ever reached at a true zero, because a single tic still to go rounds up to
- * "0.1". Rounding down suits counting up, so it never claims more time than
- * has actually elapsed.
+ * Both halves round the same way, chosen by ceilsec.
+ *
+ * Rounding down is what a countdown on screen wants. Every value then holds for
+ * its own full share of time, so the last whole second before the tenths take
+ * over gets a whole second rather than a few tics, and hands over to "x.9".
+ *
+ * Rounding up buys a "0.0" that only ever appears at a true zero, at the cost
+ * of that first tenths value flashing past.
  *
  * @param tics       Tics to render. Negative counts as zero.
- * @param tenthstics Render "Seconds.Tenths" at or below this many tics, and
- *                   whole seconds above it.
+ * @param tenthstics Render "Seconds.Tenths" BELOW this many tics, and whole
+ *                   seconds at or above it.
  *                   Zero for whole seconds only. Keep this an exact multiple of
- *                   TICRATE when ceilsec is set, or the handover flashes a
- *                   value for a single tic.
+ *                   TICRATE, or the last whole second is cut short.
  * @param ceilsec    Round up rather than down, as described above.
  */
 inline std::string TicsToShortTime(int tics, const int tenthstics,
@@ -257,7 +259,7 @@ inline std::string TicsToShortTime(int tics, const int tenthstics,
 	if (tics < 0)
 		tics = 0;
 
-	if (tenthstics > 0 && tics <= tenthstics)
+	if (tenthstics > 0 && tics < tenthstics)
 	{
 		const int tenths = TicsToTenths(tics, ceilsec);
 

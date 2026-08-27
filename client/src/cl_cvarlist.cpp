@@ -629,7 +629,7 @@ CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down T
 
 CVAR(hud_speedometer, "0", "Show the HUD speedometer", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			cl_shotclock, "1", "In the last seconds of a match, show the HUD timer " \
+CVAR(			cl_shotclock, "0", "In the last seconds of a match, show the HUD timer " \
 				"as a shot clock counting tenths of a second instead of whole seconds",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 

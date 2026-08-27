@@ -80,7 +80,6 @@ TEST(CmdLib, TicsToShortTimeTenthsCountingDown) {
     EXPECT_EQ("1.0", TicsToShortTime(TICRATE - 1, 10 * TICRATE, true));
     EXPECT_EQ("1.0", TicsToShortTime(TICRATE, 10 * TICRATE, true));
     EXPECT_EQ("1.1", TicsToShortTime(TICRATE + 1, 10 * TICRATE, true));
-    EXPECT_EQ("10.0", TicsToShortTime(10 * TICRATE, 10 * TICRATE, true));
 
     // Every tic below a full second must be off zero.
     for (int t = 1; t < TICRATE; t++)
@@ -110,10 +109,9 @@ TEST(CmdLib, TicsToShortTimeWholeSeconds) {
 }
 
 TEST(CmdLib, TicsToShortTimeThreshold) {
-    // The threshold is inclusive, which is what keeps a ceilinged handover from
-    // flashing a value for a single tic.
-    EXPECT_EQ("10.0", TicsToShortTime(10 * TICRATE, 10 * TICRATE, true));
-    EXPECT_EQ("11", TicsToShortTime(10 * TICRATE + 1, 10 * TICRATE, true));
+    // The threshold tic belongs to the whole seconds, not the tenths.
+    EXPECT_EQ("10", TicsToShortTime(10 * TICRATE, 10 * TICRATE, false));
+    EXPECT_EQ("9.9", TicsToShortTime(10 * TICRATE - 1, 10 * TICRATE, false));
 
     // A zero threshold means whole seconds only.
     EXPECT_EQ("0", TicsToShortTime(0, 0, true));
@@ -187,4 +185,32 @@ TEST(CmdLib, TicsToClockTenthsRoundingCarries) {
 TEST(CmdLib, TicsToClockTenthsNegative) {
     EXPECT_EQ("00:00.0", TicsToClockTenths(-1, true));
     EXPECT_EQ("00:00.0", TicsToClockTenths(-1000));
+}
+
+TEST(CmdLib, TicsToShortTimeWholeSecondDwell) {
+    const int threshold = 10 * TICRATE;
+
+    int showing_ten = 0;
+    for (int t = 0; t <= 12 * TICRATE; t++) {
+        if (TicsToShortTime(t, threshold, false) == "10")
+            showing_ten++;
+    }
+    EXPECT_EQ(TICRATE, showing_ten);
+
+    // ...and it hands straight over to x.9, with nothing repeated or skipped.
+    EXPECT_EQ("11", TicsToShortTime(11 * TICRATE, threshold, false));
+    EXPECT_EQ("10", TicsToShortTime(threshold, threshold, false));
+    EXPECT_EQ("9.9", TicsToShortTime(threshold - 1, threshold, false));
+
+    // No tenths value should outlast a whole second's worth of tics either.
+    for (int v = 0; v < 100; v++) {
+        const std::string want = std::to_string(v / 10) + "." + std::to_string(v % 10);
+        int seen = 0;
+        for (int t = 0; t < threshold; t++) {
+            if (TicsToShortTime(t, threshold, false) == want)
+                seen++;
+        }
+        EXPECT_GE(seen, 3) << "tenths value " << want << " barely shows";
+        EXPECT_LE(seen, 4) << "tenths value " << want << " lingers";
+    }
 }

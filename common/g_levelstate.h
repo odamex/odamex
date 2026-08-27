@@ -72,9 +72,10 @@ class LevelState
 	      m_roundNumber(0), m_setStateCB(NULL)
 	{
 	}
-	int getCountdown() const;
+	int getCountdownTics() const;
 	team_t getDefendingTeam() const;
 	int getIngameStartTime() const;
+	int getJoinTicsLeft() const;
 	int getJoinTimeLeft() const;
 	int getRound() const;
 	LevelState::States getState() const;

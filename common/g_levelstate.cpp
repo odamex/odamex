@@ -49,7 +49,7 @@ LevelState levelstate;
 /**
  * @brief Countdown getter.
  */
-int LevelState::getCountdown() const
+int LevelState::getCountdownTics() const
 {
 	if (m_state == LevelState::WARMUP || m_state == LevelState::INGAME)
 		return 0;
@@ -58,10 +58,10 @@ int LevelState::getCountdown() const
 	if (period < 0)
 	{
 		// Time desync at the start of a round, force to maximum.
-		return g_preroundtime.asInt();
+		return g_preroundtime.asInt() * TICRATE;
 	}
 
-	return ceil(period / static_cast<float>(TICRATE));
+	return period;
 }
 
 /**
@@ -91,14 +91,21 @@ int LevelState::getIngameStartTime() const
 /**
  * @brief Amount of time left for a player to join the game.
  */
-int LevelState::getJoinTimeLeft() const
+int LevelState::getJoinTicsLeft() const
 {
 	if (m_state != LevelState::INGAME)
 		return 0;
 
 	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
-	int left = ceil((end_time - ::level.time) / static_cast<float>(TICRATE));
-	return std::max(left, 0);
+	return std::max(end_time - ::level.time, 0);
+}
+
+/**
+ * @brief Get the amount of time left to join the game, in seconds.
+ */
+int LevelState::getJoinTimeLeft() const
+{
+	return static_cast<int>(ceil(getJoinTicsLeft() / static_cast<float>(TICRATE)));
 }
 
 /**

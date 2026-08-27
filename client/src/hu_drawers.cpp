@@ -170,6 +170,132 @@ void Dim(int x, int y,
 }
 
 
+// Width of the widest digit, so that a clock's digits can be given equal cells.
+int digitCellWidth()
+{
+	int cell = 0;
+
+	for (char c = '0'; c <= '9'; c++)
+	{
+		const int i = toupper(c) - HU_FONTSTART;
+
+		if (i < 0 || i >= HU_FONTSIZE || ::hu_font[i].empty())
+			continue;
+
+		cell = std::max<int>(cell, W_ResolvePatchHandle(::hu_font[i])->width());
+	}
+
+	return cell;
+}
+
+// Width of one character's cell - digits are padded out to a common width..
+int charCellWidth(const char c, const int cell)
+{
+	const int i = toupper(c) - HU_FONTSTART;
+
+	if (i < 0 || i >= HU_FONTSIZE || ::hu_font[i].empty())
+		return 4;
+
+	const int width = W_ResolvePatchHandle(::hu_font[i])->width();
+
+	return (c >= '0' && c <= '9') ? std::max(width, cell) : width;
+}
+
+// Draw hu_font text with every digit in a cell of the same width.
+// Width of a string laid out on the fixed digit pitch.
+int StringWidthMono(const char* str)
+{
+	if (!str)
+		return 0;
+
+	const int cell = digitCellWidth();
+
+	int w = 0;
+
+	for (const char* p = str; *p;)
+	{
+		if (p[0] == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		{
+			p += 2;
+			continue;
+		}
+
+		w += charCellWidth(*p, cell);
+		p++;
+	}
+
+	return w;
+}
+
+// Draw hu_font text on the fixed digit pitch at an absolute position, for
+// callers that do their own placing and scaling.
+void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
+                    const char* str, const int color, const bool force_opaque)
+{
+	if (!str)
+		return;
+
+	const int cell = digitCellWidth();
+
+	// Each glyph is drawn on its own, so the active color has to be carried
+	// forward by hand - one call cannot see the escape from the last.
+	char escape[2] = { 0, 0 };
+	int cx = x;
+
+	for (const char* p = str; *p;)
+	{
+		if (p[0] == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		{
+			escape[0] = p[0];
+			escape[1] = p[1];
+			p += 2;
+			continue;
+		}
+
+		char buf[4];
+		int n = 0;
+
+		if (escape[0])
+		{
+			buf[n++] = escape[0];
+			buf[n++] = escape[1];
+		}
+
+		buf[n++] = *p;
+		buf[n] = '\0';
+
+		// Center the glyph in its cell so a narrow digit doesn't sit left.
+		const int cellw = charCellWidth(*p, cell);
+		const int gx = cx + (((cellw - V_StringWidth(buf)) / 2) * x_scale);
+
+		if (force_opaque)
+			screen->DrawTextStretched(color, gx, y, buf, x_scale, y_scale);
+		else
+			screen->DrawTextStretchedLuc(color, gx, y, buf, x_scale, y_scale);
+
+		cx += cellw * x_scale;
+		p++;
+	}
+}
+
+void DrawTextMono(int x, int y, const float scale,
+                  const x_align_t x_align, const y_align_t y_align,
+                  const x_align_t x_origin, const y_align_t y_origin,
+                  const char* str, const int color,
+                  const bool force_opaque)
+{
+	if (!str)
+		return;
+
+	unsigned short w = StringWidthMono(str);
+	unsigned short h = V_LineHeight();
+
+	int x_scale, y_scale;
+	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+
+	DrawTextMonoAt(x, y, x_scale, y_scale, str, color, force_opaque);
+}
+
 // Draw hu_font text.
 void DrawText(int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,

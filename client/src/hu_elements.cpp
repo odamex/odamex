@@ -255,6 +255,54 @@ static const char *ordinal(int n)
 }
 
 /**
+ * @brief Tics below the threshold where a countdown shows tenths, or zero for
+ * whole seconds.
+ *
+ * Zero is what TicsToShortTime wants when the shot clock is switched off, so
+ * the same value drives every countdown on the HUD.
+ */
+static int ShotClockTics()
+{
+	if (!::cl_shotclock)
+		return 0;
+
+	return ::cl_shotclocksecleft.asInt() * TICRATE;
+}
+
+/**
+ * @brief Render a HUD countdown, gaining tenths once the shot clock says so.
+ *
+ * Whole seconds on their own round UP, so the count never claims less time than
+ * is left and never sits on zero for a second before the event.
+ * Once tenths  are in play everything rounds DOWN instead, so each value holds
+ * for its own share of time and the handover from whole seconds lands on "x.9".
+ */
+static std::string CountdownText(const int tics)
+{
+	const int shotclock = ShotClockTics();
+
+	return TicsToShortTime(tics, shotclock, shotclock <= 0);
+}
+
+/**
+ * @brief The right noun for a rendered count - "1 second", "0 seconds".
+ */
+static const char* SecondsWord(const std::string& count)
+{
+	return count == "1" ? " second" : " seconds";
+}
+
+/**
+ * @brief Render the levelstate countdown - match start, preround, next round.
+ *
+ * Bare number, no unit: the lines it lands in supply their own wording.
+ */
+std::string Countdown()
+{
+	return CountdownText(::levelstate.getCountdownTics());
+}
+
+/**
  * @brief Return a "help" string.
  */
 std::string HelpText()
@@ -292,11 +340,13 @@ std::string HelpText()
 
 	if (G_CanShowJoinTimer())
 	{
+		const std::string left =
+		    CountdownText(::levelstate.getJoinTicsLeft());
+
 		return fmt::sprintf(
 		          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
-		          " to join - " TEXTCOLOR_GREEN "%d" TEXTCOLOR_NORMAL " secs left",
-		          ::Bindings.GetKeynameFromCommand("+use"),
-		          ::levelstate.getJoinTimeLeft());
+		          " to join - " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL "%s left",
+		          ::Bindings.GetKeynameFromCommand("+use"), left, SecondsWord(left));
 	}
 
 	return fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",
@@ -340,29 +390,34 @@ std::vector<std::string> RespawnText()
 		if (::sv_forcerespawn && force_left < wait_left)
 			wait_left = force_left;
 
+		const std::string wait = CountdownText(wait_left);
+
 		lines.push_back(fmt::sprintf("Wait " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL
-		                             " seconds to respawn",
-		                             TicsToShortTime(wait_left, 10 * TICRATE, true)));
+		                             "%s to respawn",
+		                             wait, SecondsWord(wait)));
 		return lines;
 	}
 
-	std::string line =
-	    fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to respawn",
-	                 ::Bindings.GetKeynameFromCommand("+use"));
+	std::string spawnline = fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to respawn",
+	             ::Bindings.GetKeynameFromCommand("+use"));
+
+	spawnline += ::g_spawnatdeathsite ? " at death spot" : "";
+
+	lines.push_back(spawnline);
 
 	if (::sv_forcerespawn)
 	{
-		line += fmt::sprintf(", or wait " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL " seconds",
-		                     TicsToShortTime(force_left, 10 * TICRATE, true));
-	}
+		const std::string wait = CountdownText(force_left);
 
-	lines.push_back(line);
+		lines.push_back(fmt::sprintf("Or wait " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL "%s",
+		                             wait, SecondsWord(wait)));
+	}
 
 	if (::g_spawnatdeathsite)
 	{
 		lines.push_back(fmt::sprintf(
 		    "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " + " TEXTCOLOR_GOLD
-		    "%s" TEXTCOLOR_NORMAL " to respawn at level start",
+		    "%s" TEXTCOLOR_NORMAL " to respawn normally",
 		    ::Bindings.GetKeynameFromCommand("+speed"),
 		    ::Bindings.GetKeynameFromCommand("+use")));
 	}
@@ -384,8 +439,8 @@ int DrawRespawnText(int y)
 	// to leave them reading top-down with the plain respawn first.
 	for (auto it = lines.rbegin(); it != lines.rend(); ++it)
 	{
-		hud::DrawText(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, it->c_str(), CR_GREY);
+		hud::DrawTextMono(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
+		                  hud::X_CENTER, hud::Y_BOTTOM, it->c_str(), CR_GREY);
 		y += V_LineHeight() + 1;
 	}
 
@@ -411,6 +466,33 @@ std::string SpyPlayerName()
 	}
 
 	return fmt::sprintf("%s%s", color, plyr.userinfo.netname);
+}
+
+/**
+ * @brief Whether the HUD timer is currently showing a shot clock.
+ *
+ * No lower bound on the time left - once it runs out the clock stays on tenths
+ * reading 00:00.0, rather than dropping the digit.
+ */
+bool TimerIsShotClock()
+{
+	if (ShotClockTics() <= 0 || gamestate != GS_LEVEL)
+		return false;
+
+	if (sv_timelimit <= 0.0f || (level.flags & LEVEL_LOBBYSPECIAL))
+		return false;
+
+	// Warmup runs its own countdown and is not part of the match.
+	if (::levelstate.getState() == LevelState::WARMUP ||
+	    ::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
+	    ::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN)
+	{
+		return false;
+	}
+
+	const int shotclock = ShotClockTics();
+
+	return shotclock > 0 && (G_GetEndingTic() - level.time) < shotclock;
 }
 
 /**
@@ -456,16 +538,14 @@ std::string Timer()
 		}
 
 		// Show a tenths place.
-		const int shotclock = ::cl_shotclocksecleft.asInt() * TICRATE;
-
-		if (::cl_shotclock && shotclock > 0 && timeleft >= 0 && timeleft <= shotclock)
+		if (TimerIsShotClock())
 		{
-			// Counting up runs on the elapsed time and rounds down, counting
-			// down runs on what's left and rounds up.
+			// Both directions round down, so every value gets its full share of
+			// screen time and the handover from mm:ss lands on x.9.
 			if (hud_timer == 2)
 				return fmt::sprintf("%s%s", color, TicsToClockTenths(level.time));
 
-			return fmt::sprintf("%s%s", color, TicsToClockTenths(timeleft, true));
+			return fmt::sprintf("%s%s", color, TicsToClockTenths(timeleft));
 		}
 
 		if (hud_timer == 2)
@@ -476,7 +556,7 @@ std::string Timer()
 		else if (hud_timer == 1)
 		{
 			// Timer counts down.
-			TicsToTime(tspan, timeleft, true);
+			TicsToTime(tspan, timeleft, ShotClockTics() <= 0);
 		}
 	}
 
@@ -490,6 +570,28 @@ std::string Timer()
 		str = fmt::sprintf("%s%02d:%02d", color, tspan.minutes, tspan.seconds);
 	}
 	return str;
+}
+
+/**
+ * @brief Draw the HUD timer, centred, into a bottom-anchored stack.
+ *
+ * @param y     Height of the stack so far.
+ * @param color Color to draw with.
+ */
+void DrawTimerText(const int y, const int color)
+{
+	const std::string str = Timer();
+
+	// A shot clock changes every tick of the clock, so give it a fixed pitch.
+	if (TimerIsShotClock())
+	{
+		hud::DrawTextMono(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
+		                  hud::X_CENTER, hud::Y_BOTTOM, str.c_str(), color);
+		return;
+	}
+
+	hud::DrawText(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, str.c_str(), color);
 }
 
 std::string IntermissionTimer()

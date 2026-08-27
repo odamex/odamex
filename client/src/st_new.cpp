@@ -1053,8 +1053,7 @@ void OdamexHUD() {
 		if (::hud_bigfont)
 			V_SetFont("BIGFONT");
 
-		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		hud::DrawTimerText(iy, CR_GREY);
 		iy += V_LineHeight() + 1;
 
 		if (::hud_bigfont)
@@ -1730,21 +1729,21 @@ void LevelStateHUD()
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN: {
 		lines.title = fmt::sprintf("%s", G_GametypeName());
-		lines.subtitle[0] = fmt::sprintf("Match begins in " TEXTCOLOR_GREEN "%d",
-		                                 ::levelstate.getCountdown());
+		lines.subtitle[0] = fmt::sprintf("Match begins in " TEXTCOLOR_GREEN "%s",
+		                                 hud::Countdown());
 		break;
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
 		lines.title = fmt::sprintf("Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
 		if (g_preroundreset || G_IsMatchDuelGame())
 		{
-			lines.subtitle[0] = fmt::sprintf("Round begins in " TEXTCOLOR_GREEN "%d",
-			                                 ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Round begins in " TEXTCOLOR_GREEN "%s",
+			                                 hud::Countdown());
 		}
 		else
 		{
-			lines.subtitle[0] = fmt::sprintf("Weapons unlocked in " TEXTCOLOR_GREEN "%d",
-			                                 ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Weapons unlocked in " TEXTCOLOR_GREEN "%s",
+			                                 hud::Countdown());
 		}
 		break;
 	}
@@ -1813,11 +1812,11 @@ void LevelStateHUD()
 			lines.subtitle[0] = fmt::sprintf("%s team wins the round",
 			                                 WinToColorString(win));
 		else if (G_IsCoopGame() || G_IsHordeMode())
-			lines.subtitle[0] = fmt::sprintf("Next attempt in " TEXTCOLOR_GREEN "%d",
-			                                 ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Next attempt in " TEXTCOLOR_GREEN "%s",
+			                                 hud::Countdown());
 		else
-			lines.subtitle[0] = fmt::sprintf("Next round in " TEXTCOLOR_GREEN "%d",
-			                                 ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Next round in " TEXTCOLOR_GREEN "%s",
+			                                 hud::Countdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
@@ -1840,8 +1839,8 @@ void LevelStateHUD()
 		else if (win.type == WinInfo::WIN_TEAM)
 			lines.subtitle[0] = fmt::sprintf("%s team wins!", WinToColorString(win));
 		else
-			lines.subtitle[0] = fmt::sprintf("Intermission in " TEXTCOLOR_GREEN "%d",
-			                                 ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Intermission in " TEXTCOLOR_GREEN "%s",
+			                                 hud::Countdown());
 		break;
 	}
 	default:
@@ -1869,15 +1868,15 @@ void LevelStateHUD()
 
 	for (size_t i = 0; i < lines.subtitle.size(); i++)
 	{
-		w = V_StringWidth(lines.subtitle[i].c_str()) * ::CleanYfac;
+		w = hud::StringWidthMono(lines.subtitle[i].c_str()) * ::CleanYfac;
 		h = 8 * ::CleanYfac;
 		if (::hud_transparency > 0.0f)
 		{
-			::screen->DrawTextStretchedLuc(
-			    CR_GREY, surface_width / 2 - w / 2,
+			hud::DrawTextMonoAt(
+			    surface_width / 2 - w / 2,
 			    (surface_height / 4 - h / 2) + (12 * ::CleanYfac) +
 			        (i * height * ::CleanYfac),
-			    lines.subtitle[i].c_str(), ::CleanYfac, ::CleanYfac);
+			    ::CleanYfac, ::CleanYfac, lines.subtitle[i].c_str(), CR_GREY);
 		}
 	}
 
@@ -1897,8 +1896,7 @@ void SpectatorHUD()
 			V_SetFont("BIGFONT");
 		}
 
-		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		hud::DrawTimerText(iy, CR_GREY);
 		iy += V_LineHeight() + 1;
 
 		if (::hud_bigfont)
@@ -1906,8 +1904,8 @@ void SpectatorHUD()
 	}
 
 	// Draw help text - spy player name is handled elsewhere.
-	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-	              hud::Y_BOTTOM, hud::HelpText().c_str(), CR_GREY);
+	hud::DrawTextMono(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	                  hud::Y_BOTTOM, hud::HelpText().c_str(), CR_GREY);
 	iy += V_LineHeight() + 1;
 
 	// Draw targeted player names.
@@ -1926,8 +1924,7 @@ void DoomHUD()
 	// Draw warmup state or timer
 	if (hud_timer)
 	{
-		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
+		hud::DrawTimerText(st_y, CR_UNTRANSLATED);
 		st_y += V_LineHeight() + 1;
 	}
 
@@ -1973,8 +1970,7 @@ void FreecamHUD()
 			V_SetFont("BIGFONT");
 		}
 
-		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		hud::DrawTimerText(iy, CR_GREY);
 		iy += V_LineHeight() + 1;
 
 		if (::hud_bigfont)
