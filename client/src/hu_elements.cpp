@@ -78,7 +78,7 @@ EXTERN_CVAR(hud_targethealth_debug)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(hud_timer)
 EXTERN_CVAR(cl_shotclock)
-EXTERN_CVAR(cl_shotclocksecleft)
+EXTERN_CVAR(cl_shotclocksecondsleft)
 
 size_t P_NumPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
@@ -266,7 +266,7 @@ static int ShotClockTics()
 	if (!::cl_shotclock)
 		return 0;
 
-	return ::cl_shotclocksecleft.asInt() * TICRATE;
+	return ::cl_shotclocksecondsleft.asInt() * TICRATE;
 }
 
 /**

@@ -759,9 +759,9 @@
          "type" : "boolean"
       },
       {
-         "default" : true,
+         "default" : false,
          "flags" : [ "CLIENTARCHIVE" ],
-         "helptext" : "In the last seconds of a match, show the HUD timer as a shot clock counting tenths of a second instead of whole seconds",
+         "helptext" : "Show tenths of a second on all HUD timers, starting when the timer reaches cl_shotclocksecondsleft.",
          "name" : "cl_shotclock",
          "type" : "boolean"
       },
@@ -771,7 +771,7 @@
          "helptext" : "Seconds left in a match before the HUD timer turns into a shot clock, if cl_shotclock is enabled",
          "max" : 60,
          "min" : 0,
-         "name" : "cl_shotclocksecleft",
+         "name" : "cl_shotclocksecondsleft",
          "type" : "integer"
       },
       {
