@@ -343,6 +343,10 @@ public:
 	};
 	std::vector<ActorDistanceType> sortedMobjs;
 
+	// Client:  Indicate that we want the server to send us a PlayerInfo for inventory validation.
+	//          Cleared when the command is packed.
+	// Server:  If set true, send a reliable PlayerInfo message back to the client.  Cleared when
+	//          the PlayerInfo is packed.
 	bool playerInfoIsRequested;
 	bool inventoryCheckRequestsAreEnabled;
 
