@@ -3809,7 +3809,7 @@ void A_BossDeath(AActor *actor)
 
 		for (const bossaction_t& ba : level.bossactions)
 		{
-			if ((ba.type == actor->type) || (ba.flags & combo(actor->flags3)))
+			if ((ba.type == actor->type) || (actor->flags3 & ba.flags))
 			{
 				// TODO: if a standardized line special for massacre is introduced, use that instead
 				if (ba.special == 280)
