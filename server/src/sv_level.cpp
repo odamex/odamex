@@ -59,6 +59,7 @@
 #include "g_episode.h"
 #include "g_skill.h"
 #include "g_spree.h"
+#include "sv_pickup.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -367,6 +368,11 @@ void G_DoNewGame()
 
 	// run script at the start of each map
 	C_RunCVarScriptHook(sv_startmapscript, true);
+
+	// TODO: finish this up and test it more fully
+	EXTERN_CVAR(sv_shuffleteams)
+	if (sv_shuffleteams)
+		Pickup_DistributePlayers2();
 
 	for (auto& player : players)
 	{

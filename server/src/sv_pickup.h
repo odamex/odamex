@@ -23,6 +23,12 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+#include <nonstd/expected.hpp>
+
 bool Pickup_DistributePlayers(size_t num_players, std::string &error);
 bool CMD_RandpickupCheck(const std::vector<std::string> &args,
 						 std::string &error, size_t &num_players);
+nonstd::expected<void, std::string> Pickup_DistributePlayers2();
+

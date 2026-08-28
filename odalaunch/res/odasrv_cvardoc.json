@@ -1198,6 +1198,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Randomize teams when starting a new match",
+         "name" : "sv_shuffleteams",
+         "type" : "boolean"
+      },
+      {
          "default" : 3,
          "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE", "SERVERARCHIVE" ],
          "helptext" : "Sets the skill level, values are:\n// 0 - No things mode\n// 1 - I'm Too Young To Die\n// 2 - Hey, Not Too Rough\n// 3 - Hurt Me Plenty\n// 4 - Ultra-Violence\n// 5 - Nightmare",

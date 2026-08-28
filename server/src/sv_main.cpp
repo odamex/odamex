@@ -3327,20 +3327,44 @@ void SV_JoinPlayer(player_t& player, bool silent)
 	// Figure out which team the player should be assigned to.
 	if (G_IsTeamGame())
 	{
-		bool invalidteam = player.userinfo.team >= sv_teamsinplay;
-		bool toomanyplayers =
-		    sv_maxplayersperteam &&
-		    P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam;
-		if (invalidteam || toomanyplayers)
+		EXTERN_CVAR(sv_shuffleteams)
+		if (sv_shuffleteams)
 		{
-			// If this check fails, our "CanJoin" function didn't do a good-enough
-			// job of scoping out a potential team.
-			team_t newteam = SV_GoodTeam();
-			if (newteam == TEAM_NONE)
-				return;
+			size_t min = std::numeric_limits<size_t>::max();
+			team_t minteam = TEAM_NONE;
+			for (int i = 0; i < sv_teamsinplay.asInt(); i++)
+			{
+				size_t numplayers = P_NumPlayersOnTeam((team_t)i);
+				if (numplayers < min)
+				{
+					min = numplayers;
+					minteam = (team_t)i;
+				}
+			}
 
-			SV_ForceSetTeam(player, newteam);
-			SV_CheckTeam(player);
+			if (minteam != TEAM_NONE)
+			{
+				SV_ForceSetTeam(player, minteam);
+				SV_CheckTeam(player);
+			}
+		}
+		else
+		{
+			bool invalidteam = player.userinfo.team >= sv_teamsinplay;
+			bool toomanyplayers =
+			    sv_maxplayersperteam &&
+			    P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam;
+			if (invalidteam || toomanyplayers)
+			{
+				// If this check fails, our "CanJoin" function didn't do a good-enough
+				// job of scoping out a potential team.
+				team_t newteam = SV_GoodTeam();
+				if (newteam == TEAM_NONE)
+					return;
+
+				SV_ForceSetTeam(player, newteam);
+				SV_CheckTeam(player);
+			}
 		}
 	}
 

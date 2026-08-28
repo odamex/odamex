@@ -162,3 +162,55 @@ BEGIN_COMMAND (randcaps) {
 		PrintFmt(PRINT_HIGH, "{}\n", error);
 	}
 } END_COMMAND (randcaps)
+
+// randomize all players' teams
+// not really finished, yet just the basic stuff needed for friday night fragfest
+nonstd::expected<void, std::string> Pickup_DistributePlayers2() {
+	// This function shouldn't do anything unless you're in a teamgame.
+	if (!G_IsTeamGame()) {
+		return nonstd::make_unexpected("Server is not in a team game.");
+	}
+
+	// Track all eligible players.
+	std::vector<std::reference_wrapper<player_t>> eligible;
+	for (auto& player : players) {
+		if (validplayer(player)) {
+			eligible.emplace_back(player);
+		}
+	}
+
+	if (eligible.empty()) {
+		return nonstd::make_unexpected("No eligible players for distribution.");
+	}
+
+	// Jumble up our eligible players and cut the number of
+	// eligible players to the passed number.
+	std::shuffle(eligible.begin(), eligible.end(), rng);
+
+	// Rip through our eligible vector, forcing players in the vector
+	// onto alternating teams.
+	team_t dest_team = TEAM_BLUE;
+	size_t i = 0;
+	int teamCount = sv_teamsinplay.asInt();
+	for (auto it = eligible.begin();it != eligible.end();++it,++i) {
+		player_t& player = *it;
+
+		// Is the last player an odd-one-out?  Randomize the team he is put on.
+		// Do not randomize if num_players = teamCount for randcaps (3 way ctf)
+		if (static_cast<int>(eligible.size()) != teamCount && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
+			dest_team = (team_t)(M_Random() % teamCount);
+
+		SV_ForceSetTeam(player, dest_team);
+		SV_CheckTeam(player);
+		for (auto& pit : players) {
+			SV_SendUserInfo(player, &(pit.client));
+		}
+
+		int iTeam = dest_team;
+		iTeam = (iTeam + 1) % teamCount;
+		dest_team = (team_t)iTeam;
+		i++;
+	}
+
+	return {};
+}
