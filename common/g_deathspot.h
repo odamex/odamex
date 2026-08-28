@@ -68,10 +68,6 @@ public:
 	static DeathSpotManager& getInstance();
 
 	/// <summary>
-	/// </summary>
-	void reset();
-
-	/// <summary>
 	/// Records where a player fell.
 	/// Replaces any spot they already had.
 	/// </summary>
@@ -177,8 +173,8 @@ enum blockerAction_t
 /// Whether the floor of a sector kills anything that lands on it outright.
 ///
 /// Both map formats have to be asked, because they store it in different
-/// places: Doom/Boom keeps the kill in the sector special, while the ZDoom
-/// uses either Damage_InstantDeath as a sector special, or damagecount for
+/// places: Doom/Boom keeps the kill in the sector special, while ZDoom uses
+/// either Damage_InstantDeath as a sector special, or damageamount for
 /// Sector_SetDamage.
 /// </summary>
 /// <param name="sec">Sector the spot sits in.</param>
@@ -208,8 +204,8 @@ deathSpotBlock_t G_CheckDeathSpot(const player_t& player);
 /// Telefrags everything on a death spot that the rules allow us to move, so the
 /// freshly spawned player has the spot to themselves.
 ///
-/// Call it only once the player has been spawned - the new newly spawned player
-/// is the source of the damage, so the telefrag is credited to whoever took the
+/// Call it only once the player has been spawned - the newly spawned player is
+/// the source of the damage, so the telefrag is credited to whoever took the
 /// spot.
 /// The spot is passed in rather than looked up because spawning erases it.
 /// </summary>
