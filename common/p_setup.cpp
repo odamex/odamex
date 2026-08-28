@@ -154,7 +154,7 @@ std::vector<VoodooStartInfoType> voodoostarts;
 //
 BEGIN_COMMAND(dumpspawns)
 {
-	PrintFmt(PRINT_HIGH, "playerstarts ({} entries, indexed by player.id - 1 wrapped)\n",
+	PrintFmt(PRINT_HIGH, "playerstarts ({} entries, sorted by player number)\n",
 	         ::playerstarts.size());
 
 	for (size_t i = 0; i < ::playerstarts.size(); i++)
@@ -190,11 +190,12 @@ BEGIN_COMMAND(dumpspawns)
 			if (!pl.ingame())
 				continue;
 
-			const size_t index = (pl.id - 1) % ::playerstarts.size();
+			const mapthing2_t& start = P_GetPlayerStart(pl.id - 1);
+			const size_t index = &start - ::playerstarts.data();
 
 			PrintFmt(PRINT_HIGH, "  {} (id {}) -> playerstarts[{}], the player {} start\n",
 			         pl.userinfo.netname, pl.id, index,
-			         P_GetMapThingPlayerNumber(::playerstarts[index]) + 1);
+			         P_GetMapThingPlayerNumber(start) + 1);
 		}
 	}
 }
