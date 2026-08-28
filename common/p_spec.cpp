@@ -2156,7 +2156,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 			P_ClearJustTeleported();
 		}
 
-		if (map_format.getZDoom() && !bossaction)
+		if (map_format.getZDoom() && !bossaction && serverside)
 		{
 			bool repeat = (line->flags & ML_REPEATSPECIAL) != 0 && P_HandleSpecialRepeat(line);
 			P_ChangeSwitchTexture(line, repeat, true);
