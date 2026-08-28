@@ -2112,7 +2112,8 @@ void CL_Switch(const odaproto::svc::Switch* msg)
 		return;
 
 	// denis - fixme - security
-	if (!P_SetButtonInfo(&lines[l], state, time) && switchactive)
+	if (!P_SetButtonInfo(&lines[l], state, time) && switchactive &&
+	    !lines[l].switchactive)
 	{
 		// only playsound if we've received the full update from
 		// the server (not setting up the map from the server)
@@ -2627,6 +2628,11 @@ void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 	}
 
 	P_DestroyButtonThinkers();
+
+	for (int i = 0; i < numlines; i++)
+	{
+		lines[i].switchactive = false;
+	}
 
 	P_DestroyScrollerThinkers();
 
