@@ -56,6 +56,8 @@
 #include "r_sky.h"
 #include "p_compdb.h"
 #include "p_blockmap.h"
+#include "c_dispatch.h"
+#include "d_player.h"
 
 #ifdef CLIENT_APP
 #include "cl_freecam.h"
@@ -141,6 +143,62 @@ bool			rejectempty;
 std::vector<mapthing2_t>         DeathMatchStarts;
 std::vector<mapthing2_t>         playerstarts;
 std::vector<VoodooStartInfoType> voodoostarts;
+
+//
+// dumpspawns
+//
+// Prints the player starts and voodoo starts.
+//
+// Runs on server and client, which should have the same logic.
+// Any disagreements is a bug.
+//
+BEGIN_COMMAND(dumpspawns)
+{
+	PrintFmt(PRINT_HIGH, "playerstarts ({} entries, indexed by player.id - 1 wrapped)\n",
+	         ::playerstarts.size());
+
+	for (size_t i = 0; i < ::playerstarts.size(); i++)
+	{
+		const mapthing2_t& mt = ::playerstarts[i];
+
+		PrintFmt(PRINT_HIGH, "  [{}] player {} - type {} at {},{} angle {}\n", i,
+		         P_GetMapThingPlayerNumber(mt) + 1, mt.type, mt.x, mt.y, mt.angle);
+	}
+
+	PrintFmt(PRINT_HIGH, "voodoostarts ({} entries, in lump order)\n",
+	         ::voodoostarts.size());
+
+	for (size_t i = 0; i < ::voodoostarts.size(); i++)
+	{
+		const VoodooStartInfoType& voodoo = ::voodoostarts[i];
+		const AActor* mo = voodoo.mobj;
+
+		PrintFmt(PRINT_HIGH, "  [{}] player {} - type {} at {},{} - avatar {}\n", i,
+		         P_GetMapThingPlayerNumber(voodoo.mapThing) + 1, voodoo.mapThing.type,
+		         voodoo.mapThing.x, voodoo.mapThing.y,
+		         mo ? fmt::sprintf("netid %d at %d,%d", mo->netid, mo->x >> FRACBITS,
+		                           mo->y >> FRACBITS)
+		            : std::string("none"));
+	}
+
+	if (!::playerstarts.empty())
+	{
+		PrintFmt(PRINT_HIGH, "who gets what\n");
+
+		for (const player_t& pl : ::players)
+		{
+			if (!pl.ingame())
+				continue;
+
+			const size_t index = (pl.id - 1) % ::playerstarts.size();
+
+			PrintFmt(PRINT_HIGH, "  {} (id {}) -> playerstarts[{}], the player {} start\n",
+			         pl.userinfo.netname, pl.id, index,
+			         P_GetMapThingPlayerNumber(::playerstarts[index]) + 1);
+		}
+	}
+}
+END_COMMAND(dumpspawns)
 
 // Maintain list of helpers to spawn in a given map
 std::vector<HelperSpawns> helperspawns;
