@@ -3354,6 +3354,9 @@ const mapthing2_t& P_GetPlayerStart(const size_t playernum)
 			return start;
 	}
 
+	if (::playerstarts.empty())
+		I_Error("No player starts");
+
 	// Nothing here for this player number, so give one out.
 	return ::playerstarts[playernum % ::playerstarts.size()];
 }
