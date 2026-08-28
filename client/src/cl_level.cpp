@@ -752,16 +752,14 @@ void G_DoLoadLevel (int position)
 	// clientside only freecam, added after other players are added in G_UnSnapshotLevel
 	if (Freecam::allowAdd())
 	{
-		if (Freecam::needPosition() && not playerstarts.empty())
+		if (Freecam::needPosition())
 		{
-			mapthing2_t s = playerstarts[0];
-			Freecam::setStartPosition(s.x << FRACBITS, s.y << FRACBITS, ONFLOORZ, ANG45 * (s.angle / 45));
+			Freecam::setStartPosition();
 		}
-
 		Freecam::addFreecamPlayer();
 	}
 
-    P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
+	P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 
 	::levelstate.reset();
 

@@ -86,12 +86,39 @@ void Freecam::buildCam(player_t* p_cam)
 	p_cam->isFreecam = true;
 }
 
-void Freecam::setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
+void Freecam::setStartPosition()
 {
-	cam_x = x;
-	cam_y = y;
-	cam_z = z;
-	cam_angle = angle;
+	mapthing2_t* start = nullptr;
+
+	if (not playerstarts.empty())
+	{
+		start = &playerstarts.front();
+	}
+	else if (not DeathMatchStarts.empty())
+	{
+		start = &DeathMatchStarts.front();
+	}
+	else
+	{
+		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
+
+			if (not teamInfo->Starts.empty())
+			{
+				start = &teamInfo->Starts.front();
+				break;
+			}
+		}
+	}
+
+	if (start)
+	{
+		cam_x = start->x << FRACBITS;
+		cam_y = start->y << FRACBITS;
+		cam_z = ONFLOORZ;
+		cam_angle = ANG45 * (start->angle / 45);
+	}
 }
 
 void Freecam::moveToDeathSpot(fixed_t x, fixed_t y, fixed_t z, angle_t angle)

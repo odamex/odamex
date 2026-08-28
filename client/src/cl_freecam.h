@@ -34,7 +34,7 @@ namespace Freecam
 	void addFreecamPlayer();
 	void savePosition();
 	void reset();
-	void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
+	void setStartPosition();
 	void moveToDeathSpot(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
 	bool needPosition();
 	bool allowAdd();
