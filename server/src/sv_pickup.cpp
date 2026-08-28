@@ -90,6 +90,8 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 
 		// Is the last player an odd-one-out?  Randomize the team he is put on.
 		// Do not randomize if num_players = teamCount for randcaps (3 way ctf)
+		// TODO: this modulo check only considers 2 team modes
+		// need to do something for when we have 1 or 2 extra players in a 3 team mode
 		if (static_cast<int>(num_players) != teamCount && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
 			dest_team = (team_t)(M_Random() % teamCount);
 
@@ -196,8 +198,9 @@ nonstd::expected<void, std::string> Pickup_DistributePlayers2() {
 		player_t& player = *it;
 
 		// Is the last player an odd-one-out?  Randomize the team he is put on.
-		// Do not randomize if num_players = teamCount for randcaps (3 way ctf)
-		if (static_cast<int>(eligible.size()) != teamCount && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
+		// TODO: this check only considers 2 team modes
+		// need to do something for when we have 1 or 2 extra players in a 3 team mode
+		if ((eligible.size() % 2) == 1 && i == (eligible.size() - 1))
 			dest_team = (team_t)(M_Random() % teamCount);
 
 		SV_ForceSetTeam(player, dest_team);
