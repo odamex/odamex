@@ -188,10 +188,11 @@ int digitCellWidth()
 	return cell;
 }
 
-// Width of one character's cell - digits are padded out to a common width..
+// Width of one character's cell - digits are padded out to a common width.
 int charCellWidth(const char c, const int cell)
 {
-	const int i = toupper(c) - HU_FONTSTART;
+	// Masked like V_StringWidth, so a high byte cannot reach toupper.
+	const int i = toupper(c & 0x7f) - HU_FONTSTART;
 
 	if (i < 0 || i >= HU_FONTSIZE || ::hu_font[i].empty())
 		return 4;
@@ -201,7 +202,6 @@ int charCellWidth(const char c, const int cell)
 	return (c >= '0' && c <= '9') ? std::max(width, cell) : width;
 }
 
-// Draw hu_font text with every digit in a cell of the same width.
 // Width of a string laid out on the fixed digit pitch.
 int StringWidthMono(const char* str)
 {
@@ -278,6 +278,7 @@ void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
 	}
 }
 
+// Draw hu_font text with every digit in a cell of the same width.
 void DrawTextMono(int x, int y, const float scale,
                   const x_align_t x_align, const y_align_t y_align,
                   const x_align_t x_origin, const y_align_t y_origin,
