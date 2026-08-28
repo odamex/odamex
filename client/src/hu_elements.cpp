@@ -34,6 +34,7 @@
 #include "d_netinf.h"
 #include "d_player.h"
 #include "g_gametype.h"
+#include "g_deathspot.h"
 #include "g_levelstate.h"
 #include "hu_drawers.h"
 #include "p_ctf.h"
@@ -372,6 +373,26 @@ std::string HelpText()
 }
 
 /**
+ * @brief Say why a dead player cannot go back to where they fell.
+ *
+ * Only reached for a blocked verdict, so the clear cases have no wording.
+ */
+const char* BlockedText(const deathSpotBlock_t block)
+{
+	switch (block)
+	{
+	case DEATHSPOT_BLOCKED_DEADLY:
+		return "Death spot blocked - insta kill floor";
+	case DEATHSPOT_BLOCKED_NOROOM:
+		return "Death spot blocked - no room to spawn";
+	case DEATHSPOT_BLOCKED_PLAYER:
+		return "Death spot blocked - player in the way";
+	default:
+		return "Death spot blocked - object in the way";
+	}
+}
+
+/**
  * @brief Return the lines telling a dead player how to get back into the game,
  *        or nothing at all if they're in no position to respawn.
  */
@@ -416,19 +437,40 @@ std::vector<std::string> RespawnText()
 		return lines;
 	}
 
-	std::string spawnline =
-	    fmt::sprintf("Press %s to respawn", KeyPrompt("+use"));
+	const deathSpotBlock_t deathspot = G_CheckDeathSpot(plyr);
+	const bool deathspotblocked = G_IsDeathSpotBlocked(deathspot);
 
-	spawnline += ::g_spawnatdeathspot ? " at death spot" : "";
+	// Someone or something is standing on the spot, so there is no point
+	// offering the key that would put us there - say what it is instead.
+	if (deathspotblocked)
+	{
+		lines.push_back(std::string(TEXTCOLOR_RED) + BlockedText(deathspot));
+	}
+	else
+	{
+		std::string spawnline =
+		    fmt::sprintf("Press %s to respawn", KeyPrompt("+use"));
 
-	lines.push_back(spawnline);
+		spawnline += ::g_spawnatdeathspot ? " at death spot" : "";
+
+		lines.push_back(spawnline);
+	}
 
 	if (::sv_forcerespawn)
 	{
 		const std::string wait = CountdownText(force_left);
-
-		lines.push_back(fmt::sprintf("Or wait " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL "%s",
-		                             wait, SecondsWord(wait)));
+		if (deathspotblocked)
+		{
+			lines.push_back(fmt::sprintf("Respawning normally in " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL
+			                             "%s",
+			                             wait, SecondsWord(wait)));
+		}
+		else
+		{
+			lines.push_back(fmt::sprintf("Or wait " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL
+			                             "%s",
+			                             wait, SecondsWord(wait)));
+		}
 	}
 
 	if (::g_spawnatdeathspot)

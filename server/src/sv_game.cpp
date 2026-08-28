@@ -251,9 +251,88 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 }
 
 //
+// G_SpawnSpotFog
+//
+// Puts the teleport fog and its sound on a spawn spot.
+//
+void G_SpawnSpotFog(player_t& player, const fixed_t x, const fixed_t y,
+                    const fixed_t z, const angle_t angle, const bool mapthingangle)
+{
+	unsigned			an;
+	fixed_t 			xa,ya;
+
+	// ONLY IF THEY ARE NOT A SPECTATOR
+	if (player.spectator)
+		return;
+
+	// emulate out-of-bounds access to finecosine / finesine tables
+	// which cause west-facing player spawns to have the spawn-fog
+	// and its sound located off the map in vanilla Doom.
+
+	// borrowed from Eternity Engine
+
+	// haleyjd: There was a weird bug with this statement:
+	//
+	// an = (ANG45 * (mthing->angle/45)) >> ANGLETOFINESHIFT;
+	//
+	// Even though this code stores the result into an unsigned variable, most
+	// compilers seem to ignore that fact in the optimizer and use the resulting
+	// value directly in a lea instruction. This causes the signed mapthing_t
+	// angle value to generate an out-of-bounds access into the fine trig
+	// lookups. In vanilla, this accesses the finetangent table and other parts
+	// of the finesine table, and the result is what I call the "ninja spawn,"
+	// which is missing the fog and sound, as it spawns somewhere out in the
+	// far reaches of the void.
+
+	// An arbitrary angle has no vanilla behaviour to preserve.
+	if (co_nosilentspawns || !mapthingangle)
+	{
+		an = angle >> ANGLETOFINESHIFT;
+		xa = finecosine[an];
+		ya = finesine[an];
+	}
+	else
+	{
+		angle_t mtangle = angle / ANG45;
+
+		an = ANG45 * mtangle;
+
+		switch(mtangle)
+		{
+			case 4: // 180 degrees (0x80000000 >> 19 == -4096)
+				xa = finetangent[2048];
+				ya = finetangent[0];
+				break;
+			case 5: // 225 degrees (0xA0000000 >> 19 == -3072)
+				xa = finetangent[3072];
+				ya = finetangent[1024];
+				break;
+			case 6: // 270 degrees (0xC0000000 >> 19 == -2048)
+				xa = finesine[0];
+				ya = finetangent[2048];
+				break;
+			case 7: // 315 degrees (0xE0000000 >> 19 == -1024)
+				xa = finesine[1024];
+				ya = finetangent[3072];
+				break;
+			default: // everything else works properly
+				xa = finecosine[an >> ANGLETOFINESHIFT];
+				ya = finesine[an >> ANGLETOFINESHIFT];
+				break;
+		}
+	}
+
+	AActor* mo =
+	    new AActor(x + 20 * xa, y + 20 * ya, z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+
+	// send new object
+	SV_SpawnMobj(mo);
+}
+
+//
 // G_CheckSpot
 // Returns false if the player cannot be respawned
-// at the given mapthing2_t spot
+// at the given x/y/z spot
 // because something is occupying it
 //
 void P_SpawnPlayer (player_t &player, const mapthing2_t& mthing);
@@ -268,10 +347,6 @@ bool G_CheckSpot (player_t &player, const mapthing2_t& mthing)
 
 bool G_CheckSpot (player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle)
 {
-	unsigned			an;
-	AActor* 			mo;
-	fixed_t 			xa,ya;
-
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
@@ -308,71 +383,7 @@ bool G_CheckSpot (player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_
 	if (!valid_position)
 		return false;
 
-	// spawn a teleport fog
-//	if (!player.spectator && !player.deadspectator)	// ONLY IF THEY ARE NOT A SPECTATOR
-	if (!player.spectator)	// ONLY IF THEY ARE NOT A SPECTATOR
-	{
-		// emulate out-of-bounds access to finecosine / finesine tables
-		// which cause west-facing player spawns to have the spawn-fog
-		// and its sound located off the map in vanilla Doom.
-
-		// borrowed from Eternity Engine
-
-		// haleyjd: There was a weird bug with this statement:
-		//
-		// an = (ANG45 * (mthing->angle/45)) >> ANGLETOFINESHIFT;
-		//
-		// Even though this code stores the result into an unsigned variable, most
-		// compilers seem to ignore that fact in the optimizer and use the resulting
-		// value directly in a lea instruction. This causes the signed mapthing_t
-		// angle value to generate an out-of-bounds access into the fine trig
-		// lookups. In vanilla, this accesses the finetangent table and other parts
-		// of the finesine table, and the result is what I call the "ninja spawn,"
-		// which is missing the fog and sound, as it spawns somewhere out in the
-		// far reaches of the void.
-
-		if (co_nosilentspawns)
-		{
-			an = angle >> ANGLETOFINESHIFT;
-			xa = finecosine[an];
-			ya = finesine[an];
-		}
-		else
-		{
-			angle_t mtangle = angle / ANG45;
-
-			an = ANG45 * mtangle;
-
-			switch(mtangle)
-			{
-				case 4: // 180 degrees (0x80000000 >> 19 == -4096)
-					xa = finetangent[2048];
-					ya = finetangent[0];
-					break;
-				case 5: // 225 degrees (0xA0000000 >> 19 == -3072)
-					xa = finetangent[3072];
-					ya = finetangent[1024];
-					break;
-				case 6: // 270 degrees (0xC0000000 >> 19 == -2048)
-					xa = finesine[0];
-					ya = finetangent[2048];
-					break;
-				case 7: // 315 degrees (0xE0000000 >> 19 == -1024)
-					xa = finesine[1024];
-					ya = finetangent[3072];
-					break;
-				default: // everything else works properly
-					xa = finecosine[an >> ANGLETOFINESHIFT];
-					ya = finesine[an >> ANGLETOFINESHIFT];
-					break;
-			}
-		}
-
-		mo = new AActor(x + 20 * xa, y + 20 * ya, z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
-
-		// send new object
-		SV_SpawnMobj(mo);
-	}
+	G_SpawnSpotFog(player, x, y, z, angle, true);
 
 	return true;
 }
@@ -559,9 +570,12 @@ EXTERN_CVAR (g_spawnatdeathspot)
 //
 // Puts the player back on the spot where they fell.
 //
+// The verdict is passed in because it has to be taken before the corpse is
+// disassociated.
+//
 // Returns false if we determine through rules that the spawn should be blocked.
 //
-bool G_DeathSpotSpawnPlayer(player_t &player)
+bool G_DeathSpotSpawnPlayer(player_t &player, const deathSpotBlock_t deathspot)
 {
 	if (!g_spawnatdeathspot)
 		return false;
@@ -569,17 +583,21 @@ bool G_DeathSpotSpawnPlayer(player_t &player)
 	if (player.playerstate != PST_REBORN)
 		return false;
 
-	const DeathSpotManager& spots = DeathSpotManager::getInstance();
-
-	if (!spots.hasDeathSpot(player.id))
+	// Anything standing on the spot that we are not allowed to stomp.
+	if (deathspot != DEATHSPOT_CLEAR)
 		return false;
 
-	const DeathSpot_s& spot = spots.getDeathSpot(player.id);
+	const DeathSpot_s spot = DeathSpotManager::getInstance().getDeathSpot(player.id);
+	const fixed_t z = (level.flags & LEVEL_USEPLAYERSTARTZ)
+	                      ? spot.z
+	                      : P_FloorHeight(spot.x, spot.y);
 
-	if (!G_CheckSpot(player, spot.x, spot.y, spot.z, spot.angle))
-		return false;
+
+	G_SpawnSpotFog(player, spot.x, spot.y, z, spot.angle, false);
 
 	P_SpawnPlayer(player, spot.x, spot.y, spot.z, spot.angle);
+
+	G_StompDeathSpot(player, spot);
 	return true;
 }
 
@@ -591,13 +609,15 @@ void G_DoReborn (player_t &player)
 	if(!serverside)
 		return;
 
+	const deathSpotBlock_t deathspot = G_CheckDeathSpot(player);
+
 	// respawn at the start
 	// first disassociate the corpse
 	if (player.mo)
 		player.mo->player = NULL;
 
 	// unless they want to respawn where they died
-	if (G_DeathSpotSpawnPlayer(player))
+	if (G_DeathSpotSpawnPlayer(player, deathspot))
 		return;
 
 	// spawn at random team spot if in team game

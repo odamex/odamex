@@ -26,6 +26,10 @@
 #include "m_fixed.h"
 #include "tables.h"
 
+class AActor;
+class player_t;
+struct sector_t;
+
 /// <summary>
 /// The place a player was standing when they were killed.
 /// </summary>
@@ -116,3 +120,100 @@ private:
 	/// </summary>
 	DeathSpot_s emptySpot;
 };
+
+/// <summary>
+/// Whether the spot a player died on can be respawned onto right now, and if
+/// not, what is stopping it - the HUD tells the player which it is.
+/// </summary>
+enum deathSpotBlock_t
+{
+	/// <summary>The feature is off, or there is nowhere to go back to.</summary>
+	DEATHSPOT_NOSPOT,
+
+	/// <summary>Free to respawn on, once anything stompable is stomped.</summary>
+	DEATHSPOT_CLEAR,
+
+	/// <summary>The floor there kills on contact.</summary>
+	DEATHSPOT_BLOCKED_DEADLY,
+
+	/// <summary>A crusher, door or floor has left no room to stand.</summary>
+	DEATHSPOT_BLOCKED_NOROOM,
+
+	/// <summary>A player we are not allowed to telefrag is standing there.</summary>
+	DEATHSPOT_BLOCKED_PLAYER,
+
+	/// <summary>Something that will never move is standing there.</summary>
+	DEATHSPOT_BLOCKED_OBSTACLE,
+};
+
+/// <summary>
+/// Whether a verdict means the player cannot be put back where they fell.
+/// </summary>
+/// <param name="block">Verdict from G_CheckDeathSpot.</param>
+/// <returns>True for every blocked reason, false for clear or no spot.</returns>
+inline bool G_IsDeathSpotBlocked(const deathSpotBlock_t block)
+{
+	return block != DEATHSPOT_NOSPOT && block != DEATHSPOT_CLEAR;
+}
+
+/// <summary>
+/// What the rules say to do about one thing standing on a death spot.
+/// </summary>
+enum blockerAction_t
+{
+	/// <summary>Not in the way, or allowed to share the spot.</summary>
+	BLOCKER_IGNORE,
+
+	/// <summary>Telefrag it and take the spot.</summary>
+	BLOCKER_STOMP,
+
+	/// <summary>
+	/// Nothing we can do - the spawn has to wait. Whether that wait ever ends
+	/// is decided by the caller from what the thing is.
+	/// </summary>
+	BLOCKER_BLOCKS,
+};
+
+/// <summary>
+/// Whether the floor of a sector kills anything that lands on it outright.
+///
+/// Both map formats have to be asked, because they store it in different
+/// places: Doom/Boom keeps the kill in the sector special, while the ZDoom
+/// spawn masks the special down and turns Damage_InstantDeath into a damage
+/// amount nothing survives.
+/// </summary>
+/// <param name="sec">Sector the spot sits in.</param>
+/// <returns>True if respawning here would just repeat the same death.</returns>
+bool G_IsInstantDeathSector(const sector_t& sec);
+
+/// <summary>
+/// Decides what a single thing sitting on a death spot means for the spawn.
+/// </summary>
+/// <param name="thing">Thing found overlapping the spot.</param>
+/// <param name="player">Player who wants their spot back.</param>
+/// <returns>Whether to ignore it, telefrag it, or give up on the spot.</returns>
+blockerAction_t G_ClassifyDeathSpotBlocker(const AActor& thing, const player_t& player);
+
+/// <summary>
+/// Looks at what is standing on the spot a player died on and decides whether
+/// they can be put back there.
+///
+/// Runs the same on the client, so the HUD can warn about a blocked spot
+/// without asking the server.
+/// </summary>
+/// <param name="player">Player who wants to go back to where they fell.</param>
+/// <returns>Whether the spot is usable, blocked, or not there at all.</returns>
+deathSpotBlock_t G_CheckDeathSpot(const player_t& player);
+
+/// <summary>
+/// Telefrags everything on a death spot that the rules allow us to move, so the
+/// freshly spawned player has the spot to themselves.
+///
+/// Call it only once the player has been spawned - the new newly spawned player
+/// is the source of the damage, so the telefrag is credited to whoever took the
+/// spot.
+/// The spot is passed in rather than looked up because spawning erases it.
+/// </summary>
+/// <param name="player">Player who has just respawned on their death spot.</param>
+/// <param name="spot">Spot they were put back on.</param>
+void G_StompDeathSpot(player_t& player, const DeathSpot_s& spot);
