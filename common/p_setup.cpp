@@ -874,6 +874,47 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 }
 
 //
+// P_SetFreecamStart
+//
+// Puts the freecam on a real player start.
+//
+void P_SetFreecamStart()
+{
+	#ifdef CLIENT_APP
+	if (!Freecam::allowAdd() || !Freecam::needPosition())
+		return;
+
+	// Sorted by player number, so this is player 1's start where there is one.
+	const mapthing2_t* start = nullptr;
+
+	if (!::playerstarts.empty())
+		start = &::playerstarts.front();
+	else if (!::DeathMatchStarts.empty())
+		start = &::DeathMatchStarts.front();
+	else
+	{
+		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		{
+			const std::vector<mapthing2_t>& starts =
+			    GetTeamInfo(static_cast<team_t>(iTeam))->Starts;
+
+			if (!starts.empty())
+			{
+				start = &starts.front();
+				break;
+			}
+		}
+	}
+
+	if (!start)
+		return;
+
+	Freecam::setStartPosition(start->x << FRACBITS, start->y << FRACBITS, ONFLOORZ,
+	                          ANG45 * (start->angle / 45));
+	#endif
+}
+
+//
 // P_LoadThings
 //
 void P_LoadThings (int lump)
@@ -930,14 +971,6 @@ void P_LoadThings (int lump)
 			.flags = flags2
 		};
 
-		// clientside-only freecam start pos
-		#ifdef CLIENT_APP
-		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(mt2))
-		{
-			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, ANG45 * (mt2.angle / 45));
-		}
-		#endif
-
 		P_SpawnMapThing(mt2, 0);
 	}
 
@@ -945,6 +978,8 @@ void P_LoadThings (int lump)
 	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
 		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
 	});
+
+	P_SetFreecamStart();
 
 	P_SpawnAvatars();
 }
@@ -986,14 +1021,6 @@ void P_LoadThings2 (int lump, int position)
 		mt.type = LESHORT(mt.type);
 		mt.flags = LESHORT(mt.flags);
 
-		// clientside-only freecam start pos
-		#ifdef CLIENT_APP
-		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(mt))
-		{
-			Freecam::setStartPosition(mt.x << FRACBITS, mt.y << FRACBITS, ONFLOORZ, ANG45 * (mt.angle / 45));
-		}
-		#endif
-
 		P_SpawnMapThing(mt, position);
 	}
 
@@ -1001,6 +1028,8 @@ void P_LoadThings2 (int lump, int position)
 	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
 		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
 	});
+
+	P_SetFreecamStart();
 
 	P_SpawnAvatars();
 }
