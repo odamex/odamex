@@ -67,6 +67,7 @@
 #include "m_doomobjcontainer.h"
 #include "cl_netgraph.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 #include "g_multikill.h"
 #include "cl_freecam.h"
 
@@ -2596,6 +2597,8 @@ void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 	ClientReplay::getInstance().reset();
 
 	G_ClearRoundKillStats();
+
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
