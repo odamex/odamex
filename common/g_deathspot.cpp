@@ -121,6 +121,10 @@ blockerAction_t G_ClassifyDeathSpotBlocker(const AActor& thing,
 		return sv_unblockplayers ? BLOCKER_IGNORE : BLOCKER_BLOCKS;
 	}
 
+	// An avatar cannot be stomped
+	if (thing.type == MT_AVATAR)
+		return BLOCKER_BLOCKS;
+
 	// Anything that cannot think cannot be told to move, and decorations and
 	// barrels never wander off on their own.
 	if (!sentient(&thing))
