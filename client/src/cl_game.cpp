@@ -1540,17 +1540,23 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 
 	const mapthing2_t* spawnspot = spot;
 
-	if (!spot && !playerstarts.empty())
+	if (spot)
+	{
+		if (player.id < 4)
+			spot->type = player.id+1;
+		else
+			spot->type = player.id+4001-4;	// [RH] > 4 players
+	}
+	else if (!playerstarts.empty())
 	{
 		// no good spot, so the player will probably get stuck
 		spawnspot = &P_GetPlayerStart(player.id - 1);
 	}
 	else
 	{
-		if (player.id < 4)
-			spot->type = player.id+1;
-		else
-			spot->type = player.id+4001-4;	// [RH] > 4 players
+		// There is at least one deathmatch start or we would
+		// have errored out above, so telefrag into it.
+		spawnspot = &DeathMatchStarts.front();
 	}
 
 	P_SpawnPlayer (player, *spawnspot);
