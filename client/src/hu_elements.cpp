@@ -402,6 +402,9 @@ std::vector<std::string> RespawnText()
 
 	const player_t& plyr = consoleplayer();
 
+	if (!::multiplayer)
+		return lines;
+
 	// This is about our own corpse, not whoever we happen to be looking
 	// through - a dead player spying a teammate still wants to know this.
 	// Spectators can't respawn at all, so they get the join prompt instead.
@@ -437,10 +440,8 @@ std::vector<std::string> RespawnText()
 		return lines;
 	}
 
-	// Can't spawn at death spot in single player (without resurrect cheat)
-	const bool usedeathspot = ::g_spawnatdeathspot && ::multiplayer;
 	const deathSpotBlock_t deathspot =
-	    usedeathspot ? G_CheckDeathSpot(plyr) : DEATHSPOT_NOSPOT;
+	    ::g_spawnatdeathspot ? G_CheckDeathSpot(plyr) : DEATHSPOT_NOSPOT;
 	const bool deathspotblocked = G_IsDeathSpotBlocked(deathspot);
 
 	// Someone or something is standing on the spot, so there is no point
@@ -454,7 +455,7 @@ std::vector<std::string> RespawnText()
 		std::string spawnline =
 		    fmt::sprintf("Press %s to respawn", KeyPrompt("+use"));
 
-		spawnline += usedeathspot ? " at death spot" : "";
+		spawnline += ::g_spawnatdeathspot ? " at death spot" : "";
 
 		lines.push_back(spawnline);
 	}
@@ -476,7 +477,7 @@ std::vector<std::string> RespawnText()
 		}
 	}
 
-	if (usedeathspot)
+	if (::g_spawnatdeathspot)
 	{
 		lines.push_back(fmt::sprintf("Press %s + %s to respawn normally",
 		                             KeyPrompt("+speed"), KeyPrompt("+use")));
