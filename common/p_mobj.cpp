@@ -4060,6 +4060,45 @@ void P_SpawnAvatars()
 }
 
 
+//
+// P_AvatarBlocksSpot
+//
+// Check if an avatar is blocking a spawn.
+// This tries to work around map errors where a player start
+// is misplaced and the player wants to spawn in a voodoo closet.
+// Instead, it will report this spawn is blocked and to try another.
+//
+bool P_AvatarBlocksSpot(const fixed_t x, const fixed_t y, const fixed_t z)
+{
+	for (const auto& voodoo : ::voodoostarts)
+	{
+		const AActor* avatar = voodoo.mobj;
+
+		// Check for dead avatars.
+		if (!avatar || avatar->type != MT_AVATAR || !(avatar->flags & MF_SHOOTABLE))
+			continue;
+
+		// Same overlap PIT_StompThing will measure when the spawn stomps.
+		const fixed_t blockdist = avatar->radius + mobjinfo[MT_PLAYER].radius;
+
+		if (abs(avatar->x - x) >= blockdist || abs(avatar->y - y) >= blockdist)
+			continue;
+
+		if (P_AllowPassover())
+		{
+			if (z > avatar->z + avatar->height)
+				continue;
+			if (z + mobjinfo[MT_PLAYER].height < avatar->z)
+				continue;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+
 void SpawnFlag(const mapthing2_t& mthing, team_t flag)
 {
 	if (GetTeamInfo(flag)->FlagData.flaglocated)

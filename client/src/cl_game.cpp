@@ -1367,7 +1367,8 @@ bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t
 			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
 		}
-		return true;
+
+		return !P_AvatarBlocksSpot(x, y, z);
 	}
 
 	fixed_t oldz = player.mo->z;	// [RH] Need to save corpse's z-height

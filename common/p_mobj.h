@@ -150,6 +150,7 @@ void P_SetMobjBaseline(AActor& mo);
 uint32_t P_GetMobjBaselineFlags(const AActor& mo);
 bool P_PlayWakeupSound(AActor* actor);
 bool P_IsPlayerSpawnThing(const mapthing2_t& mt);
+bool P_AvatarBlocksSpot(fixed_t x, fixed_t y, fixed_t z);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);
