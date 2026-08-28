@@ -437,7 +437,10 @@ std::vector<std::string> RespawnText()
 		return lines;
 	}
 
-	const deathSpotBlock_t deathspot = G_CheckDeathSpot(plyr);
+	// Can't spawn at death spot in single player (without resurrect cheat)
+	const bool usedeathspot = ::g_spawnatdeathspot && ::multiplayer;
+	const deathSpotBlock_t deathspot =
+	    usedeathspot ? G_CheckDeathSpot(plyr) : DEATHSPOT_NOSPOT;
 	const bool deathspotblocked = G_IsDeathSpotBlocked(deathspot);
 
 	// Someone or something is standing on the spot, so there is no point
@@ -451,7 +454,7 @@ std::vector<std::string> RespawnText()
 		std::string spawnline =
 		    fmt::sprintf("Press %s to respawn", KeyPrompt("+use"));
 
-		spawnline += ::g_spawnatdeathspot ? " at death spot" : "";
+		spawnline += usedeathspot ? " at death spot" : "";
 
 		lines.push_back(spawnline);
 	}
@@ -473,7 +476,7 @@ std::vector<std::string> RespawnText()
 		}
 	}
 
-	if (::g_spawnatdeathspot)
+	if (usedeathspot)
 	{
 		lines.push_back(fmt::sprintf("Press %s + %s to respawn normally",
 		                             KeyPrompt("+speed"), KeyPrompt("+use")));
