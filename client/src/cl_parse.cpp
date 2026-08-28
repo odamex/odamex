@@ -2112,6 +2112,9 @@ void CL_Switch(const odaproto::svc::Switch* msg)
 		return;
 
 	// denis - fixme - security
+
+	// P_ChangeSwitchTexture toggles, so the presser has to skip the server's
+	// copy of its own change.
 	if (!P_SetButtonInfo(&lines[l], state, time) && switchactive &&
 	    !lines[l].switchactive)
 	{
@@ -2629,6 +2632,8 @@ void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 
 	P_DestroyButtonThinkers();
 
+	// Nothing else clears these once the buttons are gone, and a line left
+	// marked active ignores every switch message the new round sends it.
 	for (int i = 0; i < numlines; i++)
 	{
 		lines[i].switchactive = false;
