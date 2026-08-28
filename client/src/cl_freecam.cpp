@@ -33,7 +33,7 @@ fixed_t cam_z = 0;
 angle_t cam_angle = 0;
 fixed_t cam_pitch = 0;
 
-std::string Freecam::prevmap = "";
+std::string Freecam::prevmap;
 
 void Freecam::addFreecamPlayer()
 {
@@ -55,7 +55,7 @@ void Freecam::addFreecamPlayer()
 
 bool Freecam::wipedOnLevelChange(player_t* cam)
 {
-	return (cam->id == freecamplayer_id && cam->isFreecam && not cam->mo && not cam->camera);
+	return (cam->id == freecamplayer_id && cam->isFreecam && cam->mo == nullptr && cam->camera == nullptr);
 }
 
 void Freecam::buildCam(player_t* p_cam)
