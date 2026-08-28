@@ -135,6 +135,9 @@ CVAR(			sv_ticbuffer, "1", "Buffer controller input from players experiencing su
 				"latency spikes for smoother movement",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR(			sv_shuffleteams, "0", "Randomize teams when starting a new match",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 
 // Ban settings
 // ============
