@@ -1984,8 +1984,13 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		tplayer->suicidedelay = SuicideDelay;
 		tplayer->death_time = level.time;
 
-		DeathSpotManager::getInstance().setDeathSpot(tplayer->id, target->x, target->y,
-		                                             target->z, target->angle);
+		// Don't drop a death spot if you died by spawning into an avatar
+		if (!P_IsVoodooDoll(target))
+		{
+			DeathSpotManager::getInstance().setDeathSpot(tplayer->id, target->x,
+			                                             target->y, target->z,
+			                                             target->angle);
+		}
 
 		if (target == consoleplayer().camera)
 		{
