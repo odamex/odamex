@@ -1537,10 +1537,12 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
 	mapthing2_t* spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
 
+	const mapthing2_t* spawnspot = spot;
+
 	if (!spot && !playerstarts.empty())
 	{
 		// no good spot, so the player will probably get stuck
-		spot = &playerstarts[player.id%playerstarts.size()];
+		spawnspot = &P_GetPlayerStart(player.id - 1);
 	}
 	else
 	{
@@ -1550,7 +1552,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
 
-	P_SpawnPlayer (player, *spot);
+	P_SpawnPlayer (player, *spawnspot);
 }
 
 //
@@ -1583,11 +1585,11 @@ void G_DoReborn (player_t &player)
 	if(playerstarts.empty())
 		I_Error("No player starts");
 
-	unsigned int playernum = player.id - 1;
+	const mapthing2_t& start = P_GetPlayerStart(player.id - 1);
 
-	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, start) )
 	{
-		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, start);
 		return;
 	}
 
@@ -1602,7 +1604,7 @@ void G_DoReborn (player_t &player)
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, start);
 }
 
 

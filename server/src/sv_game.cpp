@@ -506,8 +506,10 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 	if (selections < 1)
 		I_Error("No appropriate team starts");
 
+	const mapthing2_t* spawnspot = spot;
+
 	if (!spot && !playerstarts.empty())
-		spot = &playerstarts[player.id%playerstarts.size()];
+		spawnspot = &P_GetPlayerStart(player.id - 1);
 	else
 	{
 		if (player.id < 4)
@@ -516,7 +518,7 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 			spot->type = player.id+4001-4;
 	}
 
-	P_SpawnPlayer(player, *spot);
+	P_SpawnPlayer(player, *spawnspot);
 }
 
 EXTERN_CVAR (sv_dmfarspawn)
@@ -547,10 +549,12 @@ void G_DeathMatchSpawnPlayer(player_t &player)
 	else
 		spot = SelectRandomDeathmatchSpot (player, selections);
 
+	const mapthing2_t* spawnspot = spot;
+
 	if (!spot && !playerstarts.empty())
 	{
 		// no good spot, so the player will probably get stuck
-		spot = &playerstarts[player.id%playerstarts.size()];
+		spawnspot = &P_GetPlayerStart(player.id - 1);
 	}
 	else
 	{
@@ -560,7 +564,7 @@ void G_DeathMatchSpawnPlayer(player_t &player)
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
 
-	P_SpawnPlayer (player, *spot);
+	P_SpawnPlayer (player, *spawnspot);
 }
 
 EXTERN_CVAR (g_spawnatdeathspot)
@@ -637,11 +641,11 @@ void G_DoReborn (player_t &player)
 	if(playerstarts.empty())
 		I_Error("No player starts");
 
-	unsigned int playernum = player.id - 1;
+	const mapthing2_t& start = P_GetPlayerStart(player.id - 1);
 
-	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, start) )
 	{
-		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, start);
 		return;
 	}
 
@@ -656,7 +660,7 @@ void G_DoReborn (player_t &player)
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, start);
 }
 
 VERSION_CONTROL (g_game_cpp, "$Id$")

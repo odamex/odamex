@@ -3337,6 +3337,24 @@ size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
+//
+// P_GetPlayerStart
+//
+// Returns the start belonging to a player number, or a shared one when the map
+// has no start of its own for them.
+//
+const mapthing2_t& P_GetPlayerStart(const size_t playernum)
+{
+	for (const mapthing2_t& start : ::playerstarts)
+	{
+		if (P_GetMapThingPlayerNumber(start) == playernum)
+			return start;
+	}
+
+	// Nothing here for this player number, so give one out.
+	return ::playerstarts[playernum % ::playerstarts.size()];
+}
+
 bool P_IsPickupableThing(int16_t type)
 {
 	return (type == 82 // SSG
