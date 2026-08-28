@@ -749,9 +749,15 @@ void G_DoLoadLevel (int position)
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
 
-	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
+	// clientside only freecam, added after other players are added in G_UnSnapshotLevel
 	if (Freecam::allowAdd())
 	{
+		if (Freecam::needPosition() && not playerstarts.empty())
+		{
+			mapthing2_t s = playerstarts[0];
+			Freecam::setStartPosition(s.x << FRACBITS, s.y << FRACBITS, ONFLOORZ, ANG45 * (s.angle / 45));
+		}
+
 		Freecam::addFreecamPlayer();
 	}
 
