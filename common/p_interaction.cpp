@@ -475,6 +475,55 @@ ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool dropped)
 	return IEV_NotEquipped;
 }
 
+constexpr int HORDE_AMMOMULTI[NUMAMMO] = {2, 1, 1, 2};
+
+//
+// P_GiveLowAmmoBonus
+// 
+// Tops off a player who is running dry on one ammo type.
+// startAmmo is the amount held before whatever prompted
+// the bonus, so a weapon's own clips don't count against it.
+//
+// Returns true if ammo was handed out.
+//
+bool P_GiveLowAmmoBonus(player_t& player, const ammotype_t ammo, const int startAmmo)
+{
+	if (ammo < 0 || ammo >= NUMAMMO)
+		return false;
+
+	// Missle clip is a bit stingy, so we double our handouts.
+	const int lowLimit = HORDE_AMMOMULTI[ammo] * 2;
+	if (startAmmo >= ::clipammo[ammo] * lowLimit)
+		return false;
+
+	const float give = static_cast<float>(HORDE_AMMOMULTI[ammo] * 5);
+	return P_GiveAmmo(player, ammo, give) != IEV_NotEquipped;
+}
+
+//
+// P_GiveWeaponPickup
+// 
+// Gives a weapon that was picked up or handed out.
+// 
+// In Horde, a weapon the player doesn't own yet comes
+// with the low ammo bonus, so nobody ends up holding
+// a gun they can't use.
+//
+ItemEquipVal P_GiveWeaponPickup(player_t& player, const weapontype_t weapon,
+                                const bool dropped)
+{
+	const ammotype_t ammo = ::weaponinfo[weapon].ammotype;
+	const bool isNew = !player.weaponowned[weapon];
+	const int startAmmo = (ammo < 0 || ammo >= NUMAMMO) ? 0 : player.ammo[ammo];
+
+	const ItemEquipVal val = P_GiveWeapon(player, weapon, dropped);
+
+	if (isNew && G_IsHordeMode() && (val == IEV_EquipRemove || val == IEV_EquipStay))
+		P_GiveLowAmmoBonus(player, ammo, startAmmo);
+
+	return val;
+}
+
 //
 // P_GiveBody
 // Returns false if the body isn't needed at all
@@ -678,8 +727,6 @@ static void P_AwardExtraLifePowerUp(player_t& player)
  */
 static void P_GiveCarePack(player_t& player)
 {
-	constexpr int ammomulti[NUMAMMO] = {2, 1, 1, 2};
-
 	// [AM] There is way too much going on in here to accurately predict.
 	if (!::serverside)
 		return;
@@ -727,13 +774,8 @@ static void P_GiveCarePack(player_t& player)
 			continue;
 		}
 
-		// Missle clip is a bit stingy, so we double our handouts.
-		const int lowLimit = ammomulti[ammo] * 2;
-		const float giveAmount = static_cast<float>(ammomulti[ammo] * 5);
-
-		if (player.ammo[ammo] < ::clipammo[ammo] * lowLimit)
+		if (P_GiveLowAmmoBonus(player, ammo, player.ammo[ammo]))
 		{
-			P_GiveAmmo(player, ammo, giveAmount);
 			blocks -= 1;
 		}
 	}
@@ -764,8 +806,15 @@ static void P_GiveCarePack(player_t& player)
 			}
 			else if (weapon != wp_none && !player.weaponowned[weapon])
 			{
-				P_GiveWeapon(player, weapon, false);
+				P_GiveWeaponPickup(player, weapon, false);
 				blocks -= 1;
+
+				// The new weapon needs feeding like anything else we hold.
+				const ammotype_t newAmmo = ::weaponinfo[weapon].ammotype;
+				if (newAmmo != am_noammo)
+				{
+					hasWeap[newAmmo] = true;
+				}
 
 				message = "You found a weapon in this supply cache!";
 				switch (weapon)
@@ -823,7 +872,7 @@ static void P_GiveCarePack(player_t& player)
 				continue;
 			}
 
-			P_GiveAmmo(player, ammo, ammomulti[ammo]);
+			P_GiveAmmo(player, ammo, HORDE_AMMOMULTI[ammo]);
 		}
 		blocks -= 1;
 	}
@@ -1233,7 +1282,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 
 		// weapons
 		case SPR_BFUG:
-			val = P_GiveWeapon(player, wp_bfg, special.flags & MF_DROPPED);
+			val = P_GiveWeaponPickup(player, wp_bfg, special.flags & MF_DROPPED);
 			msg = &GOTBFG9000;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
@@ -1244,7 +1293,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 			break;
 
 		case SPR_MGUN:
-			val = P_GiveWeapon(player, wp_chaingun, special.flags & MF_DROPPED);
+			val = P_GiveWeaponPickup(player, wp_chaingun, special.flags & MF_DROPPED);
 			msg = &GOTCHAINGUN;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
@@ -1255,7 +1304,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 			break;
 
 		case SPR_CSAW:
-			val = P_GiveWeapon(player, wp_chainsaw, special.flags & MF_DROPPED);
+			val = P_GiveWeaponPickup(player, wp_chainsaw, special.flags & MF_DROPPED);
 			msg = &GOTCHAINSAW;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
@@ -1266,7 +1315,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 			break;
 
 		case SPR_LAUN:
-			val = P_GiveWeapon(player, wp_missile, special.flags & MF_DROPPED);
+			val = P_GiveWeaponPickup(player, wp_missile, special.flags & MF_DROPPED);
 			msg = &GOTLAUNCHER;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
@@ -1277,7 +1326,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 			break;
 
 		case SPR_PLAS:
-			val = P_GiveWeapon(player, wp_plasma, special.flags & MF_DROPPED);
+			val = P_GiveWeaponPickup(player, wp_plasma, special.flags & MF_DROPPED);
 			msg = &GOTPLASMA;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
@@ -1288,7 +1337,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 			break;
 
 		case SPR_SHOT:
-			val = P_GiveWeapon(player, wp_shotgun, special.flags & MF_DROPPED);
+			val = P_GiveWeaponPickup(player, wp_shotgun, special.flags & MF_DROPPED);
 			msg = &GOTSHOTGUN;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
@@ -1299,7 +1348,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 			break;
 
 		case SPR_SGN2:
-			val = P_GiveWeapon(player, wp_supershotgun, special.flags & MF_DROPPED);
+			val = P_GiveWeaponPickup(player, wp_supershotgun, special.flags & MF_DROPPED);
 			msg = &GOTSHOTGUN2;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
