@@ -179,8 +179,8 @@ enum blockerAction_t
 ///
 /// Both map formats have to be asked, because they store it in different
 /// places: Doom/Boom keeps the kill in the sector special, while the ZDoom
-/// spawn masks the special down and turns Damage_InstantDeath into a damage
-/// amount nothing survives.
+/// uses either Damage_InstantDeath as a sector special, or damagecount for
+/// Sector_SetDamage.
 /// </summary>
 /// <param name="sec">Sector the spot sits in.</param>
 /// <returns>True if respawning here would just repeat the same death.</returns>

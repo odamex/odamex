@@ -32,6 +32,8 @@
 #include "d_player.h"
 #include "g_level.h"
 #include "p_local.h"
+#include "p_lnspec.h"
+#include "p_mapformat.h"
 
 EXTERN_CVAR(g_spawnatdeathspot)
 EXTERN_CVAR(sv_friendlyfire)
@@ -134,11 +136,15 @@ blockerAction_t G_ClassifyDeathSpotBlocker(const AActor& thing,
 
 bool G_IsInstantDeathSector(const sector_t& sec)
 {
-	// Boom's extended sector types carry the kill in the special itself.
+	// Boom's extended sector types carry the kill in the special itself
 	if (sec.special & DEATH_MASK)
 		return true;
 
-	// ZDoom-format maps express the same thing as damageamount.
+	// ZDoom maps can either get it thru the sector special or damageamount
+	// (set with line specials or scripts)
+	if (map_format.getZDoom() && sec.special == Damage_InstantDeath)
+		return true;
+
 	return sec.damageamount >= 999;
 }
 
