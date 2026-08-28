@@ -68,7 +68,6 @@ public:
 	static DeathSpotManager& getInstance();
 
 	/// <summary>
-	/// Resets the state of the manager.
 	/// </summary>
 	void reset();
 

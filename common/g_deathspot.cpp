@@ -53,12 +53,7 @@ DeathSpotManager::DeathSpotManager()
 
 DeathSpotManager::~DeathSpotManager()
 {
-	reset();
-}
-
-void DeathSpotManager::reset()
-{
-	deathSpotPlayerDict.clear();
+	clearDeathSpots();
 }
 
 void DeathSpotManager::setDeathSpot(const int playerid, const fixed_t x, const fixed_t y,
