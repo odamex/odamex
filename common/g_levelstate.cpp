@@ -443,7 +443,8 @@ void LevelState::tic()
 		}
 
 		// If autostart is zeroed out, start immediately.
-		if (sv_warmup_autostart == 0.0f)
+		// unless there are no players, so that we don't keep looping between warmup and countdown
+		if (sv_warmup_autostart == 0.0f && P_NumPlayersInGame() != 0)
 		{
 			setState(LevelState::WARMUP_COUNTDOWN);
 			return;

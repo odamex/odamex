@@ -160,6 +160,7 @@ BEGIN_COMMAND (randpickup) {
 
 BEGIN_COMMAND (randcaps) {
 	std::string error;
+	// TODO: should this be sv_teamsinplay instead of always being 2?
 	if (!Pickup_DistributePlayers(2, error)) {
 		PrintFmt(PRINT_HIGH, "{}\n", error);
 	}
