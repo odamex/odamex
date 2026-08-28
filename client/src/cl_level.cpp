@@ -609,7 +609,7 @@ void G_DoLoadLevel (int position)
 	// [SL] clear the saved sector data from the last level
 	OInterpolation::getInstance().resetGameInterpolation();
 
-	SpreeManager::getInstance().clearSprees();
+	G_ClearRoundKillStats();
 
 	DeathSpotManager::getInstance().clearDeathSpots();
 
