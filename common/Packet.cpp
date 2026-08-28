@@ -113,12 +113,12 @@ size_t Packet::Send(int i_currentTic, int i_destinationTic, SequenceSender& i_se
 	if (m_header.reliableSize)
 	{
 		// Save off the data for incoming ack checking and retransmission.
-		auto& saveMessageRef    = i_sender.ObtainSendPacket();
-		m_header.sequence       = saveMessageRef.header.sequence;
-		saveMessageRef.header   = m_header;
-		saveMessageRef.buf.WriteChunk(m_outgoingPacketBuffer.ptr(),
-		                              m_header.reliableSize,
-		                              PacketHeaderType::PACKET_MESSAGE_INDEX);
+		auto saveMessage        = i_sender.ObtainSendPacket();
+		m_header.sequence       = saveMessage.headerRef.sequence;
+		saveMessage.headerRef   = m_header;
+		saveMessage.bufferRef.WriteChunk(m_outgoingPacketBuffer.ptr(),
+		                                 m_header.reliableSize,
+		                                 PacketHeaderType::PACKET_MESSAGE_INDEX);
 	}
 	else
 	{

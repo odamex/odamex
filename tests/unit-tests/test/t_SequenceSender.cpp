@@ -21,10 +21,10 @@ TEST(ReliableSequenceSender, DefaultEmptyBuffer)
 {
     SequenceSender sender1(10);
 
-    auto& packet = sender1.ObtainSendPacket();
+    auto packet = sender1.ObtainSendPacket();
 
-    REQUIRE(packet.header.sequence  == 0);
-    REQUIRE(packet.buf.size()       == 0);
+    REQUIRE(packet.headerRef.sequence == 0);
+    REQUIRE(packet.bufferRef.size()   == 0);
 }
 
 TEST(ReliableSequenceSender, OneSendOneAckAndNullIter)
