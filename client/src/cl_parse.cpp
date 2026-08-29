@@ -536,9 +536,9 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	P_ClearId(netid);
 
-	const bool floatbob = (mobjinfo[type].flags2 & MF2_FLOATBOB);
+	const auto floatbob = (mobjinfo[type].flags2 & MF2_FLOATBOB);
 	// Spawn on the floor first so special1 can store the bob center offset.
-	AActor* mo = new AActor(base.pos.x, base.pos.y, floatbob ? ONFLOORZ : base.pos.z, type);
+	auto* mo = new AActor(base.pos.x, base.pos.y, floatbob ? ONFLOORZ : base.pos.z, type);
 	if (floatbob)
 	{
 		mo->UnlinkFromWorld();
@@ -790,17 +790,17 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
-		mo->flags = msg->current().flags();
+		mo->flags = ActorFlags1::unsafe_from_int(msg->current().flags());
 	}
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS2)
 	{
-		mo->flags2 = msg->current().flags2();
+		mo->flags2 = ActorFlags2::unsafe_from_int(msg->current().flags2());
 	}
 
 	if (msg->spawn_flags() & SVC_SM_OFLAGS)
 	{
-		mo->oflags = msg->current().oflags();
+		mo->oflags = ActorOFlags::unsafe_from_int(msg->current().oflags());
 
 		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
@@ -1609,7 +1609,9 @@ void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 
 	corpsehit->flags = info->flags;
 
-	if (msg->corpse().flags() & MF_FRIEND)
+	const auto msgflags = OFlags<mobjflag_t>::unsafe_from_int(msg->corpse().flags());
+
+	if (msgflags & MF_FRIEND)
 	{
 		corpsehit->flags |= MF_FRIEND;
 		corpsehit->friend_playerid = msg->corpse().friend_playerid();
@@ -3385,7 +3387,7 @@ void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
     avatarMapthing.z        = mapthing.z();
     avatarMapthing.angle    = mapthing.angle();
     avatarMapthing.type     = mapthing.type();
-    avatarMapthing.flags    = mapthing.flags();
+    avatarMapthing.flags    = MapThingFlags::unsafe_from_int(static_cast<int16_t>(mapthing.flags()));
     avatarMapthing.special  = mapthing.special();
 
 	const size_t argCount = std::min(avatarMapthing.args.size(), static_cast<size_t>(mapthing.args_size()));
@@ -3395,8 +3397,7 @@ void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 
 	const uint32_t netid = msg->netid();
 
-	const auto avatarIter = std::find_if(::voodoostarts.begin(),
-	                                     ::voodoostarts.end(),
+	const auto avatarIter = std::ranges::find_if(::voodoostarts,
 	                                     [&avatarMapthing](const auto& voodooStart)
 	                                     {
 	                                         return voodooStart.mapThing == avatarMapthing;
@@ -3411,7 +3412,7 @@ void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 		        avatarMapthing.thingid,
 		        avatarMapthing.angle,
 		        avatarMapthing.type,
-		        avatarMapthing.flags,
+		        avatarMapthing.flags.to_int(),
 		        int(avatarMapthing.special));
 		return;
 	}

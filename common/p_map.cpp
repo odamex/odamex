@@ -57,11 +57,17 @@
 
 // TODO: make as many of these non-global as possible
 std::array<fixed_t, 4> tmbbox;
-static AActor  *tmthing;
-static int 		tmflags;
-static fixed_t	tmx;
-static fixed_t	tmy;
-static fixed_t	tmz;	// [RH] Needed for third dimension of teleporters
+
+namespace
+{
+
+AActor*     tmthing;
+ActorFlags1 tmflags;
+fixed_t     tmx;
+fixed_t     tmy;
+fixed_t     tmz;     // [RH] Needed for third dimension of teleporters
+
+} // namespace
 
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
@@ -980,7 +986,7 @@ namespace
 
 bool PIT_CheckThing (AActor& thing)
 {
-	const bool solid = thing.flags & MF_SOLID;
+	const auto solid = thing.flags & MF_SOLID;
 
 	// don't clip against self
 	if (&thing == tmthing)
@@ -1077,7 +1083,7 @@ bool PIT_CheckThing (AActor& thing)
 		if (tmthing->target &&
 			(P_ProjectileImmune(&thing, tmthing->target) &&
 		    !((level.flags2 & LEVEL2_INFIGHTINGMASK) ?
-			    level.flags2 & LEVEL2_TOTALINFIGHTING :
+			    (level.flags2 & LEVEL2_TOTALINFIGHTING).to_bool() :
 			    G_GetCurrentSkill().flags & SKILL_TOTALINFIGHTING)))
 		{
 			// Don't hit same species as originator
@@ -1087,7 +1093,7 @@ bool PIT_CheckThing (AActor& thing)
 			if (!thing.player)
 			{
 				// Run friendly clip check early if same species
-				if ((thing.flags & tmthing->target->flags & MF_FRIEND) &&
+				if (((thing.flags & mask(tmthing->target->flags)) & MF_FRIEND) &&
 				    !P_ShouldClipFriendly(tmthing, &thing))
 					return true;
 
@@ -1325,7 +1331,7 @@ bool PIT_CheckOnmobjZ (AActor& thing)
 //
 bool P_TestMobjLocation (AActor *mobj)
 {
-	int flags = mobj->flags;
+	const auto flags = mobj->flags;
 	mobj->flags &= ~MF_PICKUP;
 
 	if (P_CheckPosition(mobj, mobj->x, mobj->y))
@@ -1940,7 +1946,7 @@ void P_ApplyTorque (AActor *mo)
 			mo->y - mo->radius) - blockmap.originy()) >> MAPBLOCKSHIFT;
 	const int yh = ((tmbbox[BOXTOP] =
 			mo->y + mo->radius) - blockmap.originy()) >> MAPBLOCKSHIFT;
-	int flags = mo->oflags;	//Remember the current state, for gear-change
+	const auto flags = mo->oflags; //Remember the current state, for gear-change
 
 	tmthing = mo;
 	validcount++; // prevents checking same line twice
@@ -1962,7 +1968,7 @@ void P_ApplyTorque (AActor *mo)
 	// of rotation, so we have to creatively simulate these
 	// systems somehow :)
 
-	if (!((mo->oflags | flags) & MFO_FALLING))	// If not falling for a while,
+	if (!((mo->oflags | combo(flags)) & MFO_FALLING))	// If not falling for a while,
 		mo->gear = 0;							// Reset it to full strength
 	else if (mo->gear < MAXGEAR)				// Else if not at max gear,
 		mo->gear++;								// move up a gear

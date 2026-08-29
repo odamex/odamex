@@ -246,166 +246,183 @@ void A_GunFlashTo(AActor* mo);
 struct CodePtr
 {
 	const char* name;
-	actionf_p1 func;
-	int argcount;
-	long default_args[MAXSTATEARGS];
+	actionf_p1 func = nullptr;
+	int argcount = 0;
+	std::array<statearg_t, MAXSTATEARGS> default_args{};
 };
 
-static constexpr CodePtr CodePtrs[] = {
-    {"NULL", NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"MonsterRail", A_MonsterRail, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireRailgun", A_FireRailgun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireRailgunLeft", A_FireRailgunLeft, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireRailgunRight", A_FireRailgunRight, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"RailWait", A_RailWait, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Light0", A_Light0, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"WeaponReady", A_WeaponReady, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Lower", A_Lower, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Raise", A_Raise, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Punch", A_Punch, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"ReFire", A_ReFire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FirePistol", A_FirePistol, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Light1", A_Light1, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireShotgun", A_FireShotgun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Light2", A_Light2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireShotgun2", A_FireShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CheckReload", A_CheckReload, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"OpenShotgun2", A_OpenShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"LoadShotgun2", A_LoadShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CloseShotgun2", A_CloseShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireCGun", A_FireCGun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"GunFlash", A_GunFlash, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireMissile", A_FireMissile, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Saw", A_Saw, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FirePlasma", A_FirePlasma, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BFGsound", A_BFGsound, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireBFG", A_FireBFG, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BFGSpray", A_BFGSpray, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Explode", A_Explode, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Pain", A_Pain, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"PlayerScream", A_PlayerScream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Fall", A_Fall, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"XScream", A_XScream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Look", A_Look, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Chase", A_Chase, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FaceTarget", A_FaceTarget, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"PosAttack", A_PosAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Scream", A_Scream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SPosAttack", A_SPosAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"VileChase", A_VileChase, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"VileStart", A_VileStart, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"VileTarget", A_VileTarget, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"VileAttack", A_VileAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"StartFire", A_StartFire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Fire", A_Fire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireCrackle", A_FireCrackle, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Tracer", A_Tracer, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SkelWhoosh", A_SkelWhoosh, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SkelFist", A_SkelFist, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SkelMissile", A_SkelMissile, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FatRaise", A_FatRaise, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FatAttack1", A_FatAttack1, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FatAttack2", A_FatAttack2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FatAttack3", A_FatAttack3, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BossDeath", A_BossDeath, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CPosAttack", A_CPosAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CPosRefire", A_CPosRefire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"TroopAttack", A_TroopAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SargAttack", A_SargAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"HeadAttack", A_HeadAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BruisAttack", A_BruisAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SkullAttack", A_SkullAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Metal", A_Metal, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SpidRefire", A_SpidRefire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BabyMetal", A_BabyMetal, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BspiAttack", A_BspiAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Hoof", A_Hoof, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CyberAttack", A_CyberAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"PainAttack", A_PainAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"PainDie", A_PainDie, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"KeenDie", A_KeenDie, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainPain", A_BrainPain, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainScream", A_BrainScream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainDie", A_BrainDie, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainAwake", A_BrainAwake, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainSpit", A_BrainSpit, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SpawnSound", A_SpawnSound, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SpawnFly", A_SpawnFly, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainExplode", A_BrainExplode, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Detonate", A_Detonate, 0, {0, 0, 0, 0, 0, 0, 0, 0}},     // killough 8/9/98
-    {"Mushroom", A_Mushroom, 0, {0, 0, 0, 0, 0, 0, 0, 0}},     // killough 10/98
-    {"Die", A_Die, 0, {0, 0, 0, 0, 0, 0, 0, 0}},               // killough 11/98
-    {"Spawn", A_Spawn, 0, {0, 0, 0, 0, 0, 0, 0, 0}},           // killough 11/98
-    {"Turn", A_Turn, 0, {0, 0, 0, 0, 0, 0, 0, 0}},             // killough 11/98
-    {"Face", A_Face, 0, {0, 0, 0, 0, 0, 0, 0, 0}},             // killough 11/98
-    {"Scratch", A_Scratch, 0, {0, 0, 0, 0, 0, 0, 0, 0}},       // killough 11/98
-    {"PlaySound", A_PlaySound, 0, {0, 0, 0, 0, 0, 0, 0, 0}},   // killough 11/98
-    {"RandomJump", A_RandomJump, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, // killough 11/98
-    {"LineEffect", A_LineEffect, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, // killough 11/98
-    {"BetaSkullAttack", A_BetaSkullAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-	{"Stop", A_Stop, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+namespace
+{
+
+constexpr std::array<CodePtr, 120> CodePtrs = {{
+    {.name = "NULL"},
+    {.name = "MonsterRail",      .func = A_MonsterRail     },
+    {.name = "FireRailgun",      .func = A_FireRailgun     },
+    {.name = "FireRailgunLeft",  .func = A_FireRailgunLeft },
+    {.name = "FireRailgunRight", .func = A_FireRailgunRight},
+    {.name = "RailWait",         .func = A_RailWait        },
+    {.name = "Light0",           .func = A_Light0          },
+    {.name = "WeaponReady",      .func = A_WeaponReady     },
+    {.name = "Lower",            .func = A_Lower           },
+    {.name = "Raise",            .func = A_Raise           },
+    {.name = "Punch",            .func = A_Punch           },
+    {.name = "ReFire",           .func = A_ReFire          },
+    {.name = "FirePistol",       .func = A_FirePistol      },
+    {.name = "Light1",           .func = A_Light1          },
+    {.name = "FireShotgun",      .func = A_FireShotgun     },
+    {.name = "Light2",           .func = A_Light2          },
+    {.name = "FireShotgun2",     .func = A_FireShotgun2    },
+    {.name = "CheckReload",      .func = A_CheckReload     },
+    {.name = "OpenShotgun2",     .func = A_OpenShotgun2    },
+    {.name = "LoadShotgun2",     .func = A_LoadShotgun2    },
+    {.name = "CloseShotgun2",    .func = A_CloseShotgun2   },
+    {.name = "FireCGun",         .func = A_FireCGun        },
+    {.name = "GunFlash",         .func = A_GunFlash        },
+    {.name = "FireMissile",      .func = A_FireMissile     },
+    {.name = "Saw",              .func = A_Saw             },
+    {.name = "FirePlasma",       .func = A_FirePlasma      },
+    {.name = "BFGsound",         .func = A_BFGsound        },
+    {.name = "FireBFG",          .func = A_FireBFG         },
+    {.name = "BFGSpray",         .func = A_BFGSpray        },
+    {.name = "Explode",          .func = A_Explode         },
+    {.name = "Pain",             .func = A_Pain            },
+    {.name = "PlayerScream",     .func = A_PlayerScream    },
+    {.name = "Fall",             .func = A_Fall            },
+    {.name = "XScream",          .func = A_XScream         },
+    {.name = "Look",             .func = A_Look            },
+    {.name = "Chase",            .func = A_Chase           },
+    {.name = "FaceTarget",       .func = A_FaceTarget      },
+    {.name = "PosAttack",        .func = A_PosAttack       },
+    {.name = "Scream",           .func = A_Scream          },
+    {.name = "SPosAttack",       .func = A_SPosAttack      },
+    {.name = "VileChase",        .func = A_VileChase       },
+    {.name = "VileStart",        .func = A_VileStart       },
+    {.name = "VileTarget",       .func = A_VileTarget      },
+    {.name = "VileAttack",       .func = A_VileAttack      },
+    {.name = "StartFire",        .func = A_StartFire       },
+    {.name = "Fire",             .func = A_Fire            },
+    {.name = "FireCrackle",      .func = A_FireCrackle     },
+    {.name = "Tracer",           .func = A_Tracer          },
+    {.name = "SkelWhoosh",       .func = A_SkelWhoosh      },
+    {.name = "SkelFist",         .func = A_SkelFist        },
+    {.name = "SkelMissile",      .func = A_SkelMissile     },
+    {.name = "FatRaise",         .func = A_FatRaise        },
+    {.name = "FatAttack1",       .func = A_FatAttack1      },
+    {.name = "FatAttack2",       .func = A_FatAttack2      },
+    {.name = "FatAttack3",       .func = A_FatAttack3      },
+    {.name = "BossDeath",        .func = A_BossDeath       },
+    {.name = "CPosAttack",       .func = A_CPosAttack      },
+    {.name = "CPosRefire",       .func = A_CPosRefire      },
+    {.name = "TroopAttack",      .func = A_TroopAttack     },
+    {.name = "SargAttack",       .func = A_SargAttack      },
+    {.name = "HeadAttack",       .func = A_HeadAttack      },
+    {.name = "BruisAttack",      .func = A_BruisAttack     },
+    {.name = "SkullAttack",      .func = A_SkullAttack     },
+    {.name = "Metal",            .func = A_Metal           },
+    {.name = "SpidRefire",       .func = A_SpidRefire      },
+    {.name = "BabyMetal",        .func = A_BabyMetal       },
+    {.name = "BspiAttack",       .func = A_BspiAttack      },
+    {.name = "Hoof",             .func = A_Hoof            },
+    {.name = "CyberAttack",      .func = A_CyberAttack     },
+    {.name = "PainAttack",       .func = A_PainAttack      },
+    {.name = "PainDie",          .func = A_PainDie         },
+    {.name = "KeenDie",          .func = A_KeenDie         },
+    {.name = "BrainPain",        .func = A_BrainPain       },
+    {.name = "BrainScream",      .func = A_BrainScream     },
+    {.name = "BrainDie",         .func = A_BrainDie        },
+    {.name = "BrainAwake",       .func = A_BrainAwake      },
+    {.name = "BrainSpit",        .func = A_BrainSpit       },
+    {.name = "SpawnSound",       .func = A_SpawnSound      },
+    {.name = "SpawnFly",         .func = A_SpawnFly        },
+    {.name = "BrainExplode",     .func = A_BrainExplode    },
+    {.name = "Detonate",         .func = A_Detonate        }, // killough 8/9/98
+    {.name = "Mushroom",         .func = A_Mushroom        }, // killough 10/98
+    {.name = "Die",              .func = A_Die             }, // killough 11/98
+    {.name = "Spawn",            .func = A_Spawn           }, // killough 11/98
+    {.name = "Turn",             .func = A_Turn            }, // killough 11/98
+    {.name = "Face",             .func = A_Face            }, // killough 11/98
+    {.name = "Scratch",          .func = A_Scratch         }, // killough 11/98
+    {.name = "PlaySound",        .func = A_PlaySound       }, // killough 11/98
+    {.name = "RandomJump",       .func = A_RandomJump      }, // killough 11/98
+    {.name = "LineEffect",       .func = A_LineEffect      }, // killough 11/98
+    {.name = "BetaSkullAttack",  .func = A_BetaSkullAttack },
+	{.name = "Stop",             .func = A_Stop            },
 
     // MBF21 Pointers
-    {"SpawnObject", A_SpawnObject, 8, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"MonsterProjectile", A_MonsterProjectile, 5, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"MonsterBulletAttack", A_MonsterBulletAttack, 5, {0, 0, 1, 3, 5, 0, 0, 0}},
-    {"MonsterMeleeAttack", A_MonsterMeleeAttack, 4, {3, 8, 0, 0, 0, 0, 0, 0}},
-    {"RadiusDamage", A_RadiusDamage, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"NoiseAlert", A_NoiseAlert, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"HealChase", A_HealChase, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SeekTracer", A_SeekTracer, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FindTracer", A_FindTracer, 2, {0, 10, 0, 0, 0, 0, 0, 0}},
-    {"ClearTracer", A_ClearTracer, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfHealthBelow", A_JumpIfHealthBelow, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfTargetInSight", A_JumpIfTargetInSight, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfTargetCloser", A_JumpIfTargetCloser, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfTracerInSight", A_JumpIfTracerInSight, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfTracerCloser", A_JumpIfTracerCloser, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfFlagsSet", A_JumpIfFlagsSet, 3, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"AddFlags", A_AddFlags, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"RemoveFlags", A_RemoveFlags, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {.name = "SpawnObject",         .func = A_SpawnObject,         .argcount = 8                                              },
+    {.name = "MonsterProjectile",   .func = A_MonsterProjectile,   .argcount = 5                                              },
+    {.name = "MonsterBulletAttack", .func = A_MonsterBulletAttack, .argcount = 5, .default_args = {0, 0, 1, 3, 5, 0, 0, 0}    },
+    {.name = "MonsterMeleeAttack",  .func = A_MonsterMeleeAttack,  .argcount = 4, .default_args = {3, 8, 0, 0, 0, 0, 0, 0}    },
+    {.name = "RadiusDamage",        .func = A_RadiusDamage,        .argcount = 2                                              },
+    {.name = "NoiseAlert",          .func = A_NoiseAlert                                                                      },
+    {.name = "HealChase",           .func = A_HealChase,           .argcount = 2                                              },
+    {.name = "SeekTracer",          .func = A_SeekTracer,          .argcount = 2                                              },
+    {.name = "FindTracer",          .func = A_FindTracer,          .argcount = 2, .default_args = {0, 10, 0, 0, 0, 0, 0, 0}   },
+    {.name = "ClearTracer",         .func = A_ClearTracer                                                                     },
+    {.name = "JumpIfHealthBelow",   .func = A_JumpIfHealthBelow,   .argcount = 2                                              },
+    {.name = "JumpIfTargetInSight", .func = A_JumpIfTargetInSight, .argcount = 2                                              },
+    {.name = "JumpIfTargetCloser",  .func = A_JumpIfTargetCloser,  .argcount = 2                                              },
+    {.name = "JumpIfTracerInSight", .func = A_JumpIfTracerInSight, .argcount = 2                                              },
+    {.name = "JumpIfTracerCloser",  .func = A_JumpIfTracerCloser,  .argcount = 2                                              },
+    {.name = "JumpIfFlagsSet",      .func = A_JumpIfFlagsSet,      .argcount = 3                                              },
+    {.name = "AddFlags",            .func = A_AddFlags,            .argcount = 2                                              },
+    {.name = "RemoveFlags",         .func = A_RemoveFlags,         .argcount = 2                                              },
     // MBF21 Weapon Pointers
-    {"WeaponProjectile", A_WeaponProjectile, 5, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"WeaponBulletAttack", A_WeaponBulletAttack, 5, {0, 0, 1, 5, 3, 0, 0, 0}},
-    {"WeaponMeleeAttack", A_WeaponMeleeAttack, 5, {2, 10, 1 * FRACUNIT, 0, 0, 0, 0, 0}},
-    {"WeaponSound", A_WeaponSound, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"WeaponAlert", A_WeaponAlert, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"WeaponJump", A_WeaponJump, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"ConsumeAmmo", A_ConsumeAmmo, 1, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CheckAmmo", A_CheckAmmo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"RefireTo", A_RefireTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"GunFlashTo", A_GunFlashTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-};
+    {.name = "WeaponProjectile",    .func = A_WeaponProjectile,    .argcount = 5                                              },
+    {.name = "WeaponBulletAttack",  .func = A_WeaponBulletAttack,  .argcount = 5, .default_args = {0, 0, 1, 5, 3, 0, 0, 0}    },
+    {.name = "WeaponMeleeAttack",   .func = A_WeaponMeleeAttack,   .argcount = 5, .default_args = {2, 10, 1_fx, 0, 0, 0, 0, 0}},
+    {.name = "WeaponSound",         .func = A_WeaponSound,         .argcount = 2                                              },
+    {.name = "WeaponAlert",         .func = A_WeaponAlert,         .argcount = 0                                              },
+    {.name = "WeaponJump",          .func = A_WeaponJump,          .argcount = 2                                              },
+    {.name = "ConsumeAmmo",         .func = A_ConsumeAmmo,         .argcount = 1                                              },
+    {.name = "CheckAmmo",           .func = A_CheckAmmo,           .argcount = 2                                              },
+    {.name = "RefireTo",            .func = A_RefireTo,            .argcount = 2                                              },
+    {.name = "GunFlashTo",          .func = A_GunFlashTo,          .argcount = 2                                              },
+}};
 
-static constexpr struct
+struct flag_mapper_t
 {
 	std::string_view name;
-	int32_t mobjinfo_t::* flags;
 	int32_t dehBit;
-	int32_t internalBit;
-} mbf21flagtranslation[] = {
-	// flags2
-	{ "LOGRAV",         &mobjinfo_t::flags2, BIT(0),  MF2_LOGRAV },
-	{ "BOSS",           &mobjinfo_t::flags2, BIT(9),  MF2_BOSS },
-	{ "RIP",            &mobjinfo_t::flags2, BIT(17), MF2_RIP },
-	// flags3
-	{ "SHORTMRANGE",    &mobjinfo_t::flags3, BIT(1),  MF3_SHORTMRANGE },
-	{ "DMGIGNORED",     &mobjinfo_t::flags3, BIT(2),  MF3_DMGIGNORED },
-	{ "NORADIUSDMG",    &mobjinfo_t::flags3, BIT(3),  MF3_NORADIUSDMG },
-	{ "FORCERADIUSDMG", &mobjinfo_t::flags3, BIT(4),  MF3_FORCERADIUSDMG },
-	{ "HIGHERMPROB",    &mobjinfo_t::flags3, BIT(5),  MF3_HIGHERMPROB },
-	{ "RANGEHALF",      &mobjinfo_t::flags3, BIT(6),  MF3_RANGEHALF },
-	{ "NOTHRESHOLD",    &mobjinfo_t::flags3, BIT(7),  MF3_NOTHRESHOLD },
-	{ "LONGMELEE",      &mobjinfo_t::flags3, BIT(8),  MF3_LONGMELEE },
-	{ "MAP07BOSS1",     &mobjinfo_t::flags3, BIT(10), MF3_MAP07BOSS1 },
-	{ "MAP07BOSS2",     &mobjinfo_t::flags3, BIT(11), MF3_MAP07BOSS2 },
-	{ "E1M8BOSS",       &mobjinfo_t::flags3, BIT(12), MF3_E1M8BOSS },
-	{ "E2M8BOSS",       &mobjinfo_t::flags3, BIT(13), MF3_E2M8BOSS },
-	{ "E3M8BOSS",       &mobjinfo_t::flags3, BIT(14), MF3_E3M8BOSS },
-	{ "E4M6BOSS",       &mobjinfo_t::flags3, BIT(15), MF3_E4M6BOSS },
-	{ "E4M8BOSS",       &mobjinfo_t::flags3, BIT(16), MF3_E4M8BOSS },
-	{ "FULLVOLSOUNDS",  &mobjinfo_t::flags3, BIT(18), MF3_FULLVOLSOUNDS },
+	void (*setter)(mobjinfo_t&);
 };
+
+// for mapping dehacked MBF21 Bits property to the actual internal flags
+// dehBit is the bit used in a numeric MBF21 Bits, setter sets corresponding internal flag
+constexpr std::array<flag_mapper_t, 19> mbf21flagtranslation = {{
+	// flags2
+	{ .name = "LOGRAV",         .dehBit = BIT(0),  .setter = [](mobjinfo_t& info) { info.flags2 |= MF2_LOGRAV; } },
+	{ .name = "BOSS",           .dehBit = BIT(9),  .setter = [](mobjinfo_t& info) { info.flags2 |= MF2_BOSS; } },
+	{ .name = "RIP",            .dehBit = BIT(17), .setter = [](mobjinfo_t& info) { info.flags2 |= MF2_RIP; } },
+	// flags3
+	{ .name = "SHORTMRANGE",    .dehBit = BIT(1),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_SHORTMRANGE; } },
+	{ .name = "DMGIGNORED",     .dehBit = BIT(2),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_DMGIGNORED; } },
+	{ .name = "NORADIUSDMG",    .dehBit = BIT(3),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_NORADIUSDMG; } },
+	{ .name = "FORCERADIUSDMG", .dehBit = BIT(4),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_FORCERADIUSDMG; } },
+	{ .name = "HIGHERMPROB",    .dehBit = BIT(5),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_HIGHERMPROB; } },
+	{ .name = "RANGEHALF",      .dehBit = BIT(6),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_RANGEHALF; } },
+	{ .name = "NOTHRESHOLD",    .dehBit = BIT(7),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_NOTHRESHOLD; } },
+	{ .name = "LONGMELEE",      .dehBit = BIT(8),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_LONGMELEE; } },
+	{ .name = "MAP07BOSS1",     .dehBit = BIT(10), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_MAP07BOSS1; } },
+	{ .name = "MAP07BOSS2",     .dehBit = BIT(11), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_MAP07BOSS2; } },
+	{ .name = "E1M8BOSS",       .dehBit = BIT(12), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_E1M8BOSS; } },
+	{ .name = "E2M8BOSS",       .dehBit = BIT(13), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_E2M8BOSS; } },
+	{ .name = "E3M8BOSS",       .dehBit = BIT(14), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_E3M8BOSS; } },
+	{ .name = "E4M6BOSS",       .dehBit = BIT(15), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_E4M6BOSS; } },
+	{ .name = "E4M8BOSS",       .dehBit = BIT(16), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_E4M8BOSS; } },
+	{ .name = "FULLVOLSOUNDS",  .dehBit = BIT(18), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_FULLVOLSOUNDS; } },
+}};
+
+constexpr void ClearMBF21Bits(mobjinfo_t& info)
+{
+	info.flags2 &= ~(MF2_LOGRAV|MF2_BOSS|MF2_RIP);
+	info.flags3 &= ~(MF3_SHORTMRANGE|MF3_DMGIGNORED|MF3_NORADIUSDMG|MF3_FORCERADIUSDMG|
+	                 MF3_HIGHERMPROB|MF3_RANGEHALF|MF3_NOTHRESHOLD|MF3_LONGMELEE|
+	                 MF3_MAP07BOSS1|MF3_MAP07BOSS2|MF3_E1M8BOSS|MF3_E2M8BOSS|MF3_E3M8BOSS|
+	                 MF3_E4M6BOSS|MF3_E4M8BOSS|MF3_FULLVOLSOUNDS);
+};
+
+}
 
 struct Key
 {
@@ -1257,22 +1274,7 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 		}
 		else if (iequals(key, "MBF21 Bits"))
 		{
-			static constexpr auto make_mask = [](const auto flagsPtr) -> int32_t
-			{
-			    int32_t mask = 0;
-			    for (const auto& f : mbf21flagtranslation)
-				{
-			        if (f.flags == flagsPtr)
-			            mask |= f.internalBit;
-				}
-			    return mask;
-			};
-
-			static constexpr int32_t flags2mask = make_mask(&mobjinfo_t::flags2);
-			static constexpr int32_t flags3mask = make_mask(&mobjinfo_t::flags3);
-
-			info->flags2 &= ~flags2mask;
-			info->flags3 &= ~flags3mask;
+			ClearMBF21Bits(*info);
 
 			for (const auto strval : SplitBexBits(value, ",+| \t\f\r"))
 			{
@@ -1281,20 +1283,20 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 					// TODO: maybe give a warning for out of range bits
 					const int32_t tempval = ParseNum<int32_t>(strval).value_or(0);
 
-					for (const auto& [_, flags, dehflag, internalflag] : mbf21flagtranslation)
+					for (const auto& [_, dehflag, setter] : mbf21flagtranslation)
 					{
 						if (tempval & dehflag)
-							info->*flags |= internalflag;
+							setter(*info);
 					}
 				}
 				else
 				{
 					bool found = false;
-					for (const auto& [name, flags, _, internalflag] : mbf21flagtranslation)
+					for (const auto& [name, _, setter] : mbf21flagtranslation)
 					{
 						if (iequals(strval, name))
 						{
-							info->*flags |= internalflag;
+							setter(*info);
 							found = true;
 						}
 					}
@@ -1353,15 +1355,15 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 			}
 			if (vchanged[0])
 			{
-				if (value[0] & MF_TRANSLUCENT)
+				info->flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(value[0]));
+				if (info->flags & MF_TRANSLUCENT)
 				{
 					info->translucency = TRANSLUC66;
 				}
-				info->flags = value[0];
 			}
 			if (vchanged[1])
 			{
-				info->flags2 = value[1];
+				info->flags2 = ActorFlags2::unsafe_from_int(static_cast<uint32_t>(value[1]));
 			}
 			if (vchanged[2])
 			{
@@ -2592,28 +2594,28 @@ static void D_PostProcessDeh(const DehScanner::ParsedState& dp)
 		    bexptr_match->func == A_RemoveFlags ||
 		    bexptr_match->func == A_JumpIfFlagsSet)
 		{
-			const int mbf21flags = bexptr_match->func == A_JumpIfFlagsSet ? state.args[2] : state.args[1];
-			int flags2 = 0, flags3 = 0;
-			for (const auto& [_, flags, dehflag, internalflag]  : mbf21flagtranslation)
+			const statearg_t mbf21flags = bexptr_match->func == A_JumpIfFlagsSet ? state.args[2] : state.args[1];
+			mobjinfo_t dummy;
+			dummy.flags2.clear();
+			dummy.flags3.clear();
+
+			for (const auto& [_, dehflag, setter]  : mbf21flagtranslation)
 			{
 				if (mbf21flags & dehflag)
 				{
-					if (flags == &mobjinfo_t::flags2)
-						flags2 |= internalflag;
-					else if (flags == &mobjinfo_t::flags3)
-						flags3 |= internalflag;
+					setter(dummy);
 				}
 			}
 
 			if (bexptr_match->func == A_JumpIfFlagsSet)
 			{
-				state.args[2] = flags2;
-				state.args[3] = flags3;
+				state.args[2] = dummy.flags2.to_int();
+				state.args[3] = dummy.flags3.to_int();
 			}
 			else
 			{
-				state.args[1] = flags2;
-				state.args[2] = flags3;
+				state.args[1] = dummy.flags2.to_int();
+				state.args[2] = dummy.flags3.to_int();
 			}
 		}
 	}
@@ -2656,41 +2658,44 @@ bool CheckIfDehActorDefined(const mobjtype_t mobjtype)
 	auto it = ::mobjinfo.find(mobjtype);
 	if (it == ::mobjinfo.end())
 		return false;
+
+	const mobjinfo_t defaults{};
 	const auto& mobj = it->second;
-	if (mobj.doomednum == -1 &&
+	if (mobj.doomednum == defaults.doomednum &&
 		mobj.spawnstate == S_TNT1 &&
-		mobj.spawnhealth == 0 &&
-		mobj.gibhealth == 0 &&
-		mobj.seestate == S_NULL &&
-		mobj.seesound == NULL &&
-	    mobj.reactiontime == 0 &&
-		mobj.attacksound == NULL &&
-		mobj.painstate == S_NULL &&
-	    mobj.painchance == 0 &&
-		mobj.painsound == NULL &&
-		mobj.meleestate == S_NULL &&
-	    mobj.missilestate == S_NULL &&
-		mobj.deathstate == S_NULL &&
-	    mobj.xdeathstate == S_NULL &&
-		mobj.deathsound == NULL &&
-		mobj.speed == 0 &&
-	    mobj.radius == 0 &&
-		mobj.height == 0 &&
-		mobj.cdheight == 0 &&
-	    mobj.mass == 0 &&
-	    mobj.damage == 0 &&
-		mobj.activesound == NULL &&
-		mobj.flags == 0 &&
-	    mobj.flags2 == 0 &&
-		mobj.raisestate == S_NULL &&
-		mobj.translucency == 0x10000 &&
-	    mobj.altspeed == NO_ALTSPEED &&
-		mobj.infighting_group == IG_DEFAULT &&
-		mobj.projectile_group == PG_DEFAULT &&
-		mobj.splash_group == SG_DEFAULT &&
-		mobj.ripsound == NULL &&
-		mobj.meleerange == (64 * FRACUNIT) &&
-		mobj.droppeditem == MT_NULL)
+		mobj.spawnhealth == defaults.spawnhealth &&
+		mobj.gibhealth == defaults.gibhealth &&
+		mobj.seestate == defaults.seestate &&
+		mobj.seesound == defaults.seesound &&
+	    mobj.reactiontime == defaults.reactiontime &&
+		mobj.attacksound == defaults.attacksound &&
+		mobj.painstate == defaults.painstate &&
+	    mobj.painchance == defaults.painchance &&
+		mobj.painsound == defaults.painsound &&
+		mobj.meleestate == defaults.meleestate &&
+	    mobj.missilestate == defaults.missilestate &&
+		mobj.deathstate == defaults.deathstate &&
+	    mobj.xdeathstate == defaults.xdeathstate &&
+		mobj.deathsound == defaults.deathsound &&
+		mobj.speed == defaults.speed &&
+	    mobj.radius == defaults.radius &&
+		mobj.height == defaults.height &&
+		mobj.cdheight == defaults.cdheight &&
+	    mobj.mass == defaults.mass &&
+	    mobj.damage == defaults.damage &&
+		mobj.activesound == defaults.activesound &&
+		mobj.flags == defaults.flags &&
+	    mobj.flags2 == defaults.flags2 &&
+		mobj.flags3 == defaults.flags3 &&
+		mobj.raisestate == defaults.raisestate &&
+		mobj.translucency == defaults.translucency &&
+	    mobj.altspeed == defaults.altspeed &&
+		mobj.infighting_group == defaults.infighting_group &&
+		mobj.projectile_group == defaults.projectile_group &&
+		mobj.splash_group == defaults.splash_group &&
+		mobj.ripsound == defaults.ripsound &&
+		mobj.meleerange == defaults.meleerange &&
+		mobj.droppeditem == defaults.droppeditem)
 	{
 		return false;
 	}

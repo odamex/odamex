@@ -106,7 +106,11 @@ using dtime_t = uint64_t;
 /**
  * @brief Returns a bitfield with a specific bit set.
  */
-#define BIT(a) (1U << (a))
+template <std::integral T = uint32_t>
+constexpr T BIT(const int a)
+{
+	return static_cast<T>(1) << a;
+}
 
 /**
  * @brief Returns a bitfield with a range of bits set from a to b, inclusive.
@@ -114,7 +118,7 @@ using dtime_t = uint64_t;
  * @param a Low bit in the mask.
  * @param b High bit in the mask.
  */
-static constexpr uint32_t BIT_MASK(uint32_t a, uint32_t b)
+constexpr uint32_t BIT_MASK(uint32_t a, uint32_t b)
 {
     return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
 }
@@ -157,7 +161,7 @@ enum printlevel_t {
 //
 // ARRAY_LENGTH
 //
-// Safely counts the number of items in an C array or a std::array.
+// Safely counts the number of items in an C array.
 //
 template <typename T, size_t N>
 // NOLINTNEXTLINE(modernize-avoid-c-arrays) - the array it measures
@@ -165,13 +169,6 @@ constexpr size_t ARRAY_LENGTH(T (&)[N]) noexcept
 {
 	return std::extent_v<T[N]>;
 }
-
-template <typename T, size_t N>
-constexpr size_t ARRAY_LENGTH(const std::array<T, N>&) noexcept
-{
-	return N;
-}
-
 
 // ----------------------------------------------------------------------------
 //

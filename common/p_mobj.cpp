@@ -628,7 +628,7 @@ void AActor::ClearFriendly()
 }
 
 
-void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
+void AActor::SetFriendly(OUtil::SafeBool i_isFriendly, const AActor* owner)
 {
 	if (i_isFriendly)
 	{
@@ -1860,7 +1860,7 @@ static void P_ApplyXYFriction(AActor* mo)
 	const bool isRealPlayer             = isPlayer and not isVoodooOrAvatar;
 	const bool isUserCommandingMotion   = mo->player and (mo->player->cmd.forwardmove != 0 or
 	                                                      mo->player->cmd.sidemove != 0);
-	const bool isOnConveyor             = mo->oflags & MFO_ISONCONVEYOR;
+	const auto isOnConveyor             = mo->oflags & MFO_ISONCONVEYOR;
 	const bool isSuperSlowVoodoo        = isVoodooOrAvatar and co_voodooscroller;
 
 	const bool keepInMotion = (isOnConveyor and not isSuperSlowVoodoo)
@@ -2935,10 +2935,10 @@ bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t 
 //
 AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 {
-    AActor *th;
-    angle_t	an;
-    int		dist;
-    fixed_t     dest_x, dest_y, dest_z, dest_flags;
+    fixed_t dest_x;
+    fixed_t dest_y;
+    fixed_t dest_z;
+	ActorFlags1 dest_flags;
 
 	// denis: missile spawn code from chocolate doom
 	//
@@ -2963,16 +2963,16 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
         dest_x = 0;
         dest_y = 0;
         dest_z = 0;
-        dest_flags = 0;
+        dest_flags.clear();
     }
 
-	th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
+	auto* th = new AActor (source->x, source->y, source->z + 32_fx, type);
 
     if (th->info->seesound)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
     th->target = source->ptr();	// where it came from
-    an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
+    angle_t an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
 	// Horde boss? Make their projectiles look bossy
 	if (source->oflags & MFO_ISHORDEBOSS)
@@ -2995,11 +2995,8 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 	th->momx = FixedMul(th->info->speed, finecosine[an]);
 	th->momy = FixedMul(th->info->speed, finesine[an]);
 
-    dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
-	dist = dist / th->info->speed;
-
-    if (dist < 1)
-		dist = 1;
+    int dist = P_AproxDistance (dest_x - source->x, dest_y - source->y);
+	dist = std::max(dist / th->info->speed, 1);
 
     th->momz = (dest_z - source->z) / dist;
 
@@ -3693,7 +3690,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 
 	// check for appropriate skill level
-	if (!(mthing.flags & G_GetCurrentSkill().spawn_filter))
+	// TODO: change type of spawn_filter to MapThingFlags after merging with type-safe mapinfo PR
+	if (!(mthing.flags & combo(MapThingFlags::unsafe_from_int(static_cast<int16_t>(G_GetCurrentSkill().spawn_filter)))))
 		return;
 
 	if (isSpringPad)
@@ -3820,12 +3818,12 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		case MT_MISC28: // plasma gun
 			if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
 			{
-				if ((mthing.flags & (MTF_DEATHMATCH | MTF_SINGLE)) == MTF_DEATHMATCH)
+				if ((mthing.flags & MTF_DEATHMATCH) && !(mthing.flags & MTF_SINGLE))
 					return;
 			}
 			else
 			{
-				if ((mthing.flags & (MTF_FILTER_COOPWPN)))
+				if ((mthing.flags & MTF_FILTER_COOPWPN))
 					return;
 			}
 			break;
