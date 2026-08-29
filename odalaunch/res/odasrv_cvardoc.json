@@ -531,7 +531,7 @@
       {
          "default" : 1,
          "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
-         "helptext" : "Print colored messages\n// 0 - Disabled\n// 1 - Enabled (terminal output only) \n//2 - Enabled (terminal and log files)",
+         "helptext" : "Print colored messages\n// // 0 - Disabled\n// // 1 - Enabled (terminal output only) \n//// 2 - Enabled (terminal and log files)",
          "max" : 2,
          "min" : 0,
          "name" : "log_color",

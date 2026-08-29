@@ -33,9 +33,9 @@ CVAR(sv_latency, "80", "Latency simulation", CVARTYPE_INT, CVAR_SERVERARCHIVE | 
 // -----------------
 
 CVAR_RANGE(		log_color, "1", "Print colored messages\n// " \
-				"0 - Disabled\n// " \
-				"1 - Enabled (terminal output only) \n//" \
-				"2 - Enabled (terminal and log files)",
+				"// 0 - Disabled\n// " \
+				"// 1 - Enabled (terminal output only) \n//" \
+				"// 2 - Enabled (terminal and log files)",
 				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.f, 2.f)
 
 // Server administrative settings

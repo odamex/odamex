@@ -403,10 +403,13 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 // P_GiveWeapon and helpers.
 //
 
+namespace
+{
+
 /// Handles the case where the weapon being given to a player is the result of touching
 /// a non-dropped weaponstay weapon.  If this function handled the case, then then result
 /// is returned.  Otherwise, nullopt is returned.
-static ItemEquipVal PickupMultiplayerWeaponStayWeapon(player_t& player, weapontype_t weapon)
+ItemEquipVal PickupMultiplayerWeaponStayWeapon(player_t& player, weapontype_t weapon)
 {
 	if (not player.weaponowned[weapon])
 	{
@@ -436,7 +439,7 @@ static ItemEquipVal PickupMultiplayerWeaponStayWeapon(player_t& player, weaponty
 /// Handles the case where a weapon is given to a player as standard weapon pickup.
 /// The return value indicates whether the weapon was not picked up, or if it was
 /// picked up, whether the item should stay where it is or be removed.
-static ItemEquipVal PickupStandardWeapon(player_t& player, weapontype_t weapon, bool wasDropped)
+ItemEquipVal PickupStandardWeapon(player_t& player, weapontype_t weapon, OUtil::SafeBool wasDropped)
 {
 	ItemEquipVal result = IEV_NotEquipped;
 
@@ -465,7 +468,9 @@ static ItemEquipVal PickupStandardWeapon(player_t& player, weapontype_t weapon, 
 	return result;
 }
 
-ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool wasDropped)
+} // namespace
+
+ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, OUtil::SafeBool wasDropped)
 {
 	ItemEquipVal result = IEV_NotEquipped;
 
@@ -2549,7 +2554,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		    (!target->threshold || target->flags3 & MF3_NOTHRESHOLD) &&
 		    !P_InfightingImmune(target, source) &&
 		    !((level.flags2 & LEVEL2_INFIGHTINGMASK) ?
-			    level.flags2 & LEVEL2_NOINFIGHTING :
+			    (level.flags2 & LEVEL2_NOINFIGHTING).to_bool() :
 			    G_GetCurrentSkill().flags & SKILL_NOINFIGHTING))
 		{
 			// if not intent on another player, chase after this one

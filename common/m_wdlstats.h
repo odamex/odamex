@@ -137,7 +137,7 @@ void M_LogWDLPlayerSpawn(const mapthing2_t& mthing);
 void M_RemoveWDLPlayerSpawn(const mapthing2_t& mthing);
 void M_LogWDLItemRespawnEvent(AActor* activator);
 void M_LogWDLFlagLocation(const mapthing2_t& activator, team_t team);
-void M_LogWDLPickupEvent(const player_t* activator, AActor* target, WDLPowerups pickuptype, bool dropped);
+void M_LogWDLPickupEvent(const player_t* activator, AActor* target, WDLPowerups pickuptype, OUtil::SafeBool dropped);
 void M_LogWDLItemSpawn(const AActor& target, WDLPowerups type);
 int M_GetPlayerSpawn(int x, int y);
 void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname, int netid);
