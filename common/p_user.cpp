@@ -1422,8 +1422,8 @@ player_t::player_t() :
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
+	playerInfoIsRequested(false),
 	inventoryCheckRequestsAreEnabled(false),
-	inventoryCheckIsRequestedForTic(-1),
 	client{}
 {
 	cmd.clear();
