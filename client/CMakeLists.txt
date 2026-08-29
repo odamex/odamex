@@ -301,6 +301,20 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     install(TARGETS odamex
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       COMPONENT client)
+    install(FILES ${CMAKE_SOURCE_DIR}/packaging/linux/net.odamex.Odamex.Client.desktop
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+      COMPONENT client)
+    install(FILES ${CMAKE_SOURCE_DIR}/media/icon_odamex_512.png
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps
+      RENAME net.odamex.Odamex.Client.png
+      COMPONENT client)
+    install(FILES ${CMAKE_SOURCE_DIR}/media/icon_odademo_512.png
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/mimetypes
+      RENAME net.odamex.Odamex-application-odamex-demo.png
+      COMPONENT client)
+    install(FILES ${CMAKE_SOURCE_DIR}/packaging/linux/net.odamex.Odamex-mime.xml
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/mime/packages
+      COMPONENT client)
   endif()
 endif()
 
