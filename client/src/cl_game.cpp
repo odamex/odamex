@@ -1342,7 +1342,7 @@ bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t
 bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 {
 	return G_CheckSpot(player, mthing.x << FRACBITS, mthing.y << FRACBITS,
-	                   mthing.z << FRACBITS, ANG45 * (mthing.angle / 45));
+	                   mthing.z << FRACBITS, MapThingToAngle(mthing.angle));
 }
 
 bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle)

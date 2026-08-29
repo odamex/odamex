@@ -634,6 +634,7 @@ CVAR(			cl_shotclock, "0", "Show tenths of a second on all HUD timers, starting 
 
 CVAR_RANGE(		cl_shotclocksecondsleft, "10", "Seconds left before a HUD timer starts displaying " \
 				"tenths of a second, if cl_shotclock is enabled",
+				// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
 
 CVAR_RANGE(		hud_transparency, "1.0", "HUD transparency",

@@ -293,8 +293,10 @@ void DrawTextMono(int x, int y, const float scale,
 	if (!str)
 		return;
 
+	// NOLINTBEGIN(google-runtime-int) - matches the other hud:: draw calls
 	const unsigned short w = StringWidthMono(str);
 	const unsigned short h = V_LineHeight();
+	// NOLINTEND(google-runtime-int)
 
 	int x_scale;
 	int y_scale;

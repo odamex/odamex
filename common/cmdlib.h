@@ -223,8 +223,10 @@ inline std::string TicsToClockTenths(const int tics, const bool ceilsec = false)
 	const int secs = tenths / TENTHS_PER_SECOND;
 	const int hours = secs / SECONDS_PER_HOUR;
 
+	constexpr int PAD_BELOW = 10;
+
 	const auto pad = [](const int n) {
-		return (n < 10 ? "0" : "") + std::to_string(n);
+		return (n < PAD_BELOW ? "0" : "") + std::to_string(n);
 	};
 
 	std::string clock = pad((secs / SECONDS_PER_MINUTE) % MINUTES_PER_HOUR) + ":" +

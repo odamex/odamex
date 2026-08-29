@@ -55,6 +55,7 @@ struct ticcmd_t
 	}
   public:
 
+	// NOLINTNEXTLINE(google-runtime-int) - sizeof of the actual field type
 	static constexpr size_t SERIALIZED_SIZE = 3 + (sizeof(short) * 5);
 
 	ticcmd_t()
@@ -73,6 +74,9 @@ struct ticcmd_t
 		impulse = 0;
 		modifiers = 0;
 	}
+
+	// NOLINTBEGIN(readability-magic-numbers) - byte offset in a
+	// hand-packed layout, like every other field above
 
 	void serialize(std::string& out) const
 	{
@@ -101,6 +105,8 @@ struct ticcmd_t
 		readByte(in.begin() + 12, modifiers);
 	}
 
+	// NOLINTEND(readability-magic-numbers)
+
 	byte	buttons;
 	short	pitch;			// up/down. currently just a y-sheering amount
 	short	yaw;			// left/right
@@ -111,6 +117,8 @@ struct ticcmd_t
 	byte	modifiers;
 };
 
+// NOLINTBEGIN(modernize-macro-to-enum,cppcoreguidelines-macro-usage) -
+// one of the UCMDF_* family above, which are all macros
 
 #define UCMDF_BUTTONS		0x01
 #define UCMDF_PITCH			0x02
@@ -120,6 +128,8 @@ struct ticcmd_t
 #define UCMDF_UPMOVE		0x20
 #define UCMDF_IMPULSE		0x40
 #define UCMDF_MODIFIERS		0x80
+
+// NOLINTEND(modernize-macro-to-enum,cppcoreguidelines-macro-usage)
 
 inline FArchive &operator<< (FArchive &arc, ticcmd_t &cmd)
 {

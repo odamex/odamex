@@ -911,7 +911,7 @@ void P_SetFreecamStart()
 		return;
 
 	Freecam::setStartPosition(start->x << FRACBITS, start->y << FRACBITS, ONFLOORZ,
-	                          ANG45 * (start->angle / 45));
+	                          MapThingToAngle(start->angle));
 	#endif
 }
 

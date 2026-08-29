@@ -64,7 +64,7 @@ void P_SetSpectatorFlags(player_t &player)
 void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 {
 	P_SpawnPlayer(player, mthing.x << FRACBITS, mthing.y << FRACBITS,
-	              mthing.z << FRACBITS, ANG45 * (mthing.angle / 45));
+	              mthing.z << FRACBITS, MapThingToAngle(mthing.angle));
 }
 
 void P_SpawnPlayer(player_t& player, const fixed_t x, const fixed_t y,
