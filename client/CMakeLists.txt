@@ -15,9 +15,6 @@ endif()
 # Enable default SIMD settings for standard builds.
 option(USE_DEFAULT_SIMD "Use default SIMD optimization settings" ON)
 
-# #define CLIENT_APP for use in the source code
-add_definitions(-DCLIENT_APP)
-
 # Client
 set(CLIENT_DIR sdl src)
 file(GLOB CLIENT_SOURCES src/*.cpp src/*.h)
@@ -47,26 +44,14 @@ source_group("Client" FILES ${CLIENT_SOURCES})
 source_group("SDL" FILES ${CLIENT_SDL_SOURCES})
 source_group("GUI" FILES ${CLIENT_GUI_SOURCES})
 
-get_target_property(COMMON_SOURCES odacommon INTERFACE_SOURCES)
-source_group("Common" FILES ${COMMON_SOURCES})
+get_target_property(COMMON_DIRS     odacommon INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(COMMON_SOURCES  odacommon INTERFACE_SOURCES)
 
-# Client definitions
-include_directories(${COMMON_DIR} ${CLIENT_DIR})
+source_group("Common" FILES ${COMMON_SOURCES})
 
 # Make sure we don't find libraries that are in Program Files/Odamex
 if(WIN32)
   list(REMOVE_ITEM CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
-endif()
-
-# X11 configuration
-# TODO: do we need to update this at all for wayland?
-if(UNIX AND NOT APPLE)
-  find_package(X11)
-  if(X11_FOUND)
-    add_definitions(-DX11)
-    include_directories(${X11_INCLUDE_DIR})
-    link_libraries(${X11_LIBRARIES})
-  endif()
 endif()
 
 # PortMidi configuration
@@ -141,8 +126,13 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
     set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.cpp)
 
-    include_directories(${TEXTSCREEN_DIR})
     add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
+    target_include_directories(${TEXTSCREEN_LIBRARY}
+        PUBLIC
+            ${TEXTSCREEN_DIR}
+        PRIVATE
+            ${COMMON_DIRS}
+        )
   endif()
 
   if(TARGET SDL::SDL)
@@ -151,18 +141,13 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(${TEXTSCREEN_LIBRARY} SDL2::SDL2)
   endif()
 
-  if (NOT GCONSOLE)
-    target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
-  else()
-    include_directories(../common)
-  endif()
-
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${CLIENT_GUI_SOURCES})
   odamex_target_settings(TARGET odamex)
   odamex_target_errors(odamex)
 
   target_link_libraries(odamex odacommon)
+  target_include_directories(odamex PRIVATE src sdl)
   target_compile_definitions(odamex PRIVATE CLIENT_APP)
 
   if(USE_DEFAULT_SIMD)
@@ -231,8 +216,14 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
   endif()
 
-  if(UNIX AND X11_FOUND AND NOT APPLE)
-      target_link_libraries(odamex X11)
+  # X11 configuration
+  # TODO: do we need to update this at all for wayland?
+  if (UNIX AND NOT APPLE)
+    find_package(X11)
+    if (X11_FOUND)
+      target_compile_definitions(odamex PRIVATE X11)
+      target_link_libraries(odamex X11::X11)
+    endif()
   endif()
 
   if (TARGET odawad)
