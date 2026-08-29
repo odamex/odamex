@@ -33,6 +33,7 @@ void CheckFlags(TestFlags flags, bool oneSet, bool twoSet, bool threeSet)
 		EXPECT_EQ(flags, TestFlags::all_set());
 		EXPECT_NE(flags, TestFlags::none_set());
 		EXPECT_TRUE(flags & (Flag1|Flag2|Flag3));
+		EXPECT_EQ(flags.to_int(), 0b111);
 	}
 
 	if (oneSet || twoSet || threeSet)
@@ -52,6 +53,7 @@ void CheckFlags(TestFlags flags, bool oneSet, bool twoSet, bool threeSet)
 		EXPECT_EQ(flags, OUtil::noflag);
 		EXPECT_NE(flags, TestFlags::all_set());
 		EXPECT_EQ(flags, TestFlags::none_set());
+		EXPECT_EQ(flags.to_int(), 0);
 	}
 
 	if (oneSet && !twoSet && !threeSet)
@@ -59,36 +61,42 @@ void CheckFlags(TestFlags flags, bool oneSet, bool twoSet, bool threeSet)
 		EXPECT_EQ(flags, Flag1);
 		EXPECT_EQ(flags, combo(~Flag2 & ~Flag3));
 		EXPECT_TRUE(flags & Flag1);
+		EXPECT_EQ(flags.to_int(), 0b001);
 	}
 	else if (!oneSet && twoSet && !threeSet)
 	{
 		EXPECT_EQ(flags, Flag2);
 		EXPECT_EQ(flags, combo(~Flag1 & ~Flag3));
 		EXPECT_TRUE(flags & Flag2);
+		EXPECT_EQ(flags.to_int(), 0b010);
 	}
 	else if (!oneSet && !twoSet && threeSet)
 	{
 		EXPECT_EQ(flags, Flag3);
 		EXPECT_EQ(flags, combo(~Flag1 & ~Flag2));
 		EXPECT_TRUE(flags & Flag3);
+		EXPECT_EQ(flags.to_int(), 0b100);
 	}
 	else if (oneSet && twoSet && !threeSet)
 	{
 		EXPECT_EQ(flags, Flag1|Flag2);
 		EXPECT_EQ(flags, combo(~Flag3));
 		EXPECT_TRUE(flags & (Flag1|Flag2));
+		EXPECT_EQ(flags.to_int(), 0b011);
 	}
 	else if (!oneSet && twoSet && threeSet)
 	{
 		EXPECT_EQ(flags, Flag2|Flag3);
 		EXPECT_EQ(flags, combo(~Flag1));
 		EXPECT_TRUE(flags & (Flag2|Flag3));
+		EXPECT_EQ(flags.to_int(), 0b110);
 	}
 	else if (oneSet && !twoSet && threeSet)
 	{
 		EXPECT_EQ(flags, Flag1|Flag3);
 		EXPECT_EQ(flags, combo(~Flag2));
 		EXPECT_TRUE(flags & (Flag1|Flag3));
+		EXPECT_EQ(flags.to_int(), 0b101);
 	}
 }
 
