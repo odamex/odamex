@@ -105,7 +105,7 @@ int LevelState::getJoinTicsLeft() const
  */
 int LevelState::getJoinTimeLeft() const
 {
-	return static_cast<int>(ceil(getJoinTicsLeft() / static_cast<float>(TICRATE)));
+	return static_cast<int>(std::ceil(getJoinTicsLeft() / static_cast<float>(TICRATE)));
 }
 
 /**

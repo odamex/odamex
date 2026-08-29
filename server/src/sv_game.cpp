@@ -259,7 +259,10 @@ void G_SpawnSpotFog(player_t& player, const fixed_t x, const fixed_t y,
                     const fixed_t z, const angle_t angle, const bool mapthingangle)
 {
 	unsigned			an;
-	fixed_t 			xa,ya;
+	fixed_t 			xa;
+	fixed_t 			ya;
+
+	constexpr int FOG_OFFSET = 20;
 
 	// ONLY IF THEY ARE NOT A SPECTATOR
 	if (player.spectator)
@@ -297,6 +300,8 @@ void G_SpawnSpotFog(player_t& player, const fixed_t x, const fixed_t y,
 
 		an = ANG45 * mtangle;
 
+		// Need to stay this way to emulate vanilla spawn west silently bug
+		// NOLINTBEGIN(readability-magic-numbers)
 		switch(mtangle)
 		{
 			case 4: // 180 degrees (0x80000000 >> 19 == -4096)
@@ -320,10 +325,11 @@ void G_SpawnSpotFog(player_t& player, const fixed_t x, const fixed_t y,
 				ya = finesine[an >> ANGLETOFINESHIFT];
 				break;
 		}
+		// NOLINTEND(readability-magic-numbers)
 	}
 
-	AActor* mo =
-	    new AActor(x + 20 * xa, y + 20 * ya, z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+	auto* mo = new AActor(x + (FOG_OFFSET * xa), y + (FOG_OFFSET * ya),
+	                      z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
 
 	// send new object
 	SV_SpawnMobj(mo);

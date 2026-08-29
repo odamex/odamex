@@ -1349,7 +1349,10 @@ bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t
 {
 	unsigned			an;
 	AActor* 			mo;
-	fixed_t 			xa,ya;
+	fixed_t 			xa;
+	fixed_t 			ya;
+
+	constexpr int FOG_OFFSET = 20;
 
 	fixed_t z = P_FloorHeight(x, y);
 
@@ -1423,6 +1426,8 @@ bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t
 
 			an = ANG45 * mtangle;
 
+			// Need to stay this way to emulate vanilla spawn west silently bug
+			// NOLINTBEGIN(readability-magic-numbers)
 			switch(mtangle)
 			{
 				case 4: // 180 degrees (0x80000000 >> 19 == -4096)
@@ -1446,9 +1451,11 @@ bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t
 					ya = finesine[an >> ANGLETOFINESHIFT];
 					break;
 			}
+			// NOLINTEND(readability-magic-numbers)
 		}
 
-		mo = new AActor(x + 20 * xa, y + 20 * ya, z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+		mo = new AActor(x + (FOG_OFFSET * xa), y + (FOG_OFFSET * ya),
+		                z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
 
 		if (level.time)
 			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);	// don't start sound on first frame

@@ -186,6 +186,11 @@ bool StrToTime(std::string str, time_t &tim);
 
 void TicsToTime(OTimespan& span, int time, bool ceilsec = false);
 
+inline constexpr int TENTHS_PER_SECOND = 10;
+inline constexpr int SECONDS_PER_MINUTE = 60;
+inline constexpr int MINUTES_PER_HOUR = 60;
+inline constexpr int SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
+
 /**
  * @brief Round a tic count to tenths of a second.
  *
@@ -197,10 +202,10 @@ void TicsToTime(OTimespan& span, int time, bool ceilsec = false);
  */
 inline int TicsToTenths(int tics, const bool ceilsec = false)
 {
-	if (tics < 0)
-		tics = 0;
+	tics = std::max(tics, 0);
 
-	return ceilsec ? (tics * 10 + TICRATE - 1) / TICRATE : (tics * 10) / TICRATE;
+	return ceilsec ? ((tics * TENTHS_PER_SECOND) + TICRATE - 1) / TICRATE
+	               : (tics * TENTHS_PER_SECOND) / TICRATE;
 }
 
 /**
@@ -215,15 +220,16 @@ inline int TicsToTenths(int tics, const bool ceilsec = false)
 inline std::string TicsToClockTenths(const int tics, const bool ceilsec = false)
 {
 	const int tenths = TicsToTenths(tics, ceilsec);
-	const int secs = tenths / 10;
-	const int hours = secs / 3600;
+	const int secs = tenths / TENTHS_PER_SECOND;
+	const int hours = secs / SECONDS_PER_HOUR;
 
 	const auto pad = [](const int n) {
 		return (n < 10 ? "0" : "") + std::to_string(n);
 	};
 
-	const std::string clock = pad((secs / 60) % 60) + ":" + pad(secs % 60) + "." +
-	                          std::to_string(tenths % 10);
+	std::string clock = pad((secs / SECONDS_PER_MINUTE) % MINUTES_PER_HOUR) + ":" +
+	                    pad(secs % SECONDS_PER_MINUTE) + "." +
+	                    std::to_string(tenths % TENTHS_PER_SECOND);
 
 	if (hours)
 	{
@@ -256,14 +262,14 @@ inline std::string TicsToClockTenths(const int tics, const bool ceilsec = false)
 inline std::string TicsToShortTime(int tics, const int tenthstics,
                                    const bool ceilsec = false)
 {
-	if (tics < 0)
-		tics = 0;
+	tics = std::max(tics, 0);
 
 	if (tenthstics > 0 && tics < tenthstics)
 	{
 		const int tenths = TicsToTenths(tics, ceilsec);
 
-		return std::to_string(tenths / 10) + "." + std::to_string(tenths % 10);
+		return std::to_string(tenths / TENTHS_PER_SECOND) + "." +
+		       std::to_string(tenths % TENTHS_PER_SECOND);
 	}
 
 	if (ceilsec)

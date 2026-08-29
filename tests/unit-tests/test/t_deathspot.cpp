@@ -65,7 +65,7 @@ TEST_F(DeathSpotFixture, EraseAndClear)
 
 TEST_F(DeathSpotFixture, SpotIsKeptAtFullPrecision)
 {
-	const fixed_t x = 64 * FRACUNIT + (FRACUNIT / 2);
+	const fixed_t x = (64 * FRACUNIT) + (FRACUNIT / 2);
 	const angle_t angle = ANG45 + 12345;
 
 	m_spots.setDeathSpot(1, x, 0, 0, angle);

@@ -64,7 +64,7 @@ void DeathSpotManager::setDeathSpot(const int playerid, const fixed_t x, const f
 
 bool DeathSpotManager::hasDeathSpot(const int playerid) const
 {
-	return deathSpotPlayerDict.find(playerid) != deathSpotPlayerDict.end();
+	return deathSpotPlayerDict.contains(playerid);
 }
 
 const DeathSpot_s& DeathSpotManager::getDeathSpot(const int playerid) const
@@ -144,7 +144,9 @@ bool G_IsInstantDeathSector(const sector_t& sec)
 	if (map_format.getZDoom() && sec.special == Damage_InstantDeath)
 		return true;
 
-	return sec.damageamount >= 999;
+	constexpr int INSTANT_DEATH_DAMAGE = 999;
+
+	return sec.damageamount >= INSTANT_DEATH_DAMAGE;
 }
 
 /// <summary>
@@ -204,11 +206,8 @@ bool SpotHasRoom(const DeathSpot_s& spot, const sector_t& sec, const fixed_t rad
 				// headroom test below then rejects.
 				P_LineOpening(&ld, spot.x, spot.y, spot.x, spot.y);
 
-				if (opentop < ceilingz)
-					ceilingz = opentop;
-
-				if (openbottom > floorz)
-					floorz = openbottom;
+				ceilingz = std::min(ceilingz, opentop);
+				floorz = std::max(floorz, openbottom);
 			}
 		}
 	}
@@ -289,8 +288,7 @@ deathSpotBlock_t ScanDeathSpot(const player_t& player, const DeathSpot_s& spot,
 		case BLOCKER_STOMP:
 			// A thing can be linked into several blockmap cells, so make sure
 			// we only line it up for a stomping once.
-			if (victims && std::find(victims->begin(), victims->end(), &thing) ==
-			                   victims->end())
+			if (victims && std::ranges::find(*victims, &thing) == victims->end())
 			{
 				victims->push_back(&thing);
 			}

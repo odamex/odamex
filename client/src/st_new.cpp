@@ -1873,7 +1873,7 @@ void LevelStateHUD()
 		if (::hud_transparency > 0.0f)
 		{
 			hud::DrawTextMonoAt(
-			    surface_width / 2 - w / 2,
+			    (surface_width / 2) - (w / 2),
 			    (surface_height / 4 - h / 2) + (12 * ::CleanYfac) +
 			        (i * height * ::CleanYfac),
 			    ::CleanYfac, ::CleanYfac, lines.subtitle[i].c_str(), CR_GREY);
