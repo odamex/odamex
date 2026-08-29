@@ -101,6 +101,13 @@ else()
   install(TARGETS odasrv
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     COMPONENT server)
+  install(FILES ${CMAKE_SOURCE_DIR}/packaging/linux/net.odamex.Odamex.Server.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+    COMPONENT server)
+  install(FILES ${CMAKE_SOURCE_DIR}/media/icon_odasrv_512.png
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps
+    RENAME net.odamex.Odamex.Server.png
+    COMPONENT server)
 endif()
 
 if(TARGET odasrv)
