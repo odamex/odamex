@@ -180,7 +180,7 @@ int digitCellWidth()
 
 	for (char c = '0'; c <= '9'; c++)
 	{
-		const int i = toupper(c) - HU_FONTSTART;
+		const int i = c - HU_FONTSTART;
 
 		if (i < 0 || i >= HU_FONTSIZE || ::hu_font[i].empty())
 			continue;
