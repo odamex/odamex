@@ -493,7 +493,9 @@ ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, OUtil::SafeBool
 		// If we are not playing as the server, make sure we ask the real server to confirm our pickup.
 		if (not serverside and result != IEV_NotEquipped)
 		{
-			player.RequestInventoryCheckFromServer(gametic);
+			// Please note that the following function only does anything if it's explicitly enabled
+			// ahead of time.  In practice, this enabled only during clientside-only prediction.
+			player.RequestInventoryCheckFromServer();
 		}
 	}
 

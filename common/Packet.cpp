@@ -107,17 +107,18 @@ size_t Packet::ReSend(int i_historicalLocalTic, int i_destinationTic, int sequen
 
 size_t Packet::Send(int i_currentTic, int i_destinationTic, SequenceSender& i_sender, const netadr_t& i_dest)
 {
+	m_header.originatorTic  = i_currentTic;
+	m_header.destinationTic = i_destinationTic;
+
 	if (m_header.reliableSize)
 	{
 		// Save off the data for incoming ack checking and retransmission.
-		auto saveMessage = i_sender.ObtainSendPacket(i_currentTic);
-		if (saveMessage.buffer)
-		{
-			saveMessage.buffer->WriteChunk(m_outgoingPacketBuffer.ptr(),
-			                               m_header.reliableSize,
-			                               PacketHeaderType::PACKET_MESSAGE_INDEX);
-		}
-		m_header.sequence = saveMessage.sequence;
+		auto saveMessage        = i_sender.ObtainSendPacket();
+		m_header.sequence       = saveMessage.headerRef.sequence;
+		saveMessage.headerRef   = m_header;
+		saveMessage.bufferRef.WriteChunk(m_outgoingPacketBuffer.ptr(),
+		                                 m_header.reliableSize,
+		                                 PacketHeaderType::PACKET_MESSAGE_INDEX);
 	}
 	else
 	{
@@ -128,9 +129,6 @@ size_t Packet::Send(int i_currentTic, int i_destinationTic, SequenceSender& i_se
 
 		m_header.sequence = i_sender.MostRecentAcquiredSequence();
 	}
-
-	m_header.originatorTic  = i_currentTic;
-	m_header.destinationTic = i_destinationTic;
 
 	m_outgoingPacketBuffer.SeekWrite(0, buf_t::BT_START);
 	m_header.Pack(m_outgoingPacketBuffer);
