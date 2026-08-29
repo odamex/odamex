@@ -116,6 +116,13 @@ if(wxWidgets_FOUND)
     install(TARGETS odalaunch
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       COMPONENT odalaunch)
+    install(FILES ${CMAKE_SOURCE_DIR}/packaging/linux/net.odamex.Odamex.Launcher.desktop
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+      COMPONENT odalaunch)
+    install(FILES ${CMAKE_SOURCE_DIR}/media/icon_odalaunch_512.png
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps
+      RENAME net.odamex.Odamex.Launcher.png
+      COMPONENT odalaunch)
   endif()
 endif()
 
