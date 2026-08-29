@@ -216,16 +216,6 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
   endif()
 
-  # X11 configuration
-  # TODO: do we need to update this at all for wayland?
-  if (UNIX AND NOT APPLE)
-    find_package(X11)
-    if (X11_FOUND)
-      target_compile_definitions(odamex PRIVATE X11)
-      target_link_libraries(odamex X11::X11)
-    endif()
-  endif()
-
   if (TARGET odawad)
       add_dependencies(odamex odawad)
   endif()
