@@ -61,6 +61,9 @@ void calculateOrigin(int& x, int& y,
 {
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
+	x_scale = 1;
+	y_scale = 1;
+
 	// No such thing as "absolute origin".
 	if (x_origin == X_ABSOLUTE || y_origin == Y_ABSOLUTE)
 		return;
@@ -239,7 +242,7 @@ void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
 
 	// Each glyph is drawn on its own, so the active color has to be carried
 	// forward by hand - one call cannot see the escape from the last.
-	char escape[2] = { 0, 0 };
+	std::array<char, 2> escape = { 0, 0 };
 	int cx = x;
 
 	for (const char* p = str; *p;)
@@ -252,7 +255,7 @@ void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
 			continue;
 		}
 
-		char buf[4];
+		std::array<char, 4> buf{};
 		int n = 0;
 
 		if (escape[0])
@@ -264,14 +267,16 @@ void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
 		buf[n++] = *p;
 		buf[n] = '\0';
 
+		const char* glyph = buf.data();
+
 		// Center the glyph in its cell so a narrow digit doesn't sit left.
 		const int cellw = charCellWidth(*p, cell);
-		const int gx = cx + (((cellw - V_StringWidth(buf)) / 2) * x_scale);
+		const int gx = cx + (((cellw - V_StringWidth(glyph)) / 2) * x_scale);
 
 		if (force_opaque)
-			screen->DrawTextStretched(color, gx, y, buf, x_scale, y_scale);
+			screen->DrawTextStretched(color, gx, y, glyph, x_scale, y_scale);
 		else
-			screen->DrawTextStretchedLuc(color, gx, y, buf, x_scale, y_scale);
+			screen->DrawTextStretchedLuc(color, gx, y, glyph, x_scale, y_scale);
 
 		cx += cellw * x_scale;
 		p++;
@@ -288,10 +293,11 @@ void DrawTextMono(int x, int y, const float scale,
 	if (!str)
 		return;
 
-	unsigned short w = StringWidthMono(str);
-	unsigned short h = V_LineHeight();
+	const unsigned short w = StringWidthMono(str);
+	const unsigned short h = V_LineHeight();
 
-	int x_scale, y_scale;
+	int x_scale;
+	int y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
 
 	DrawTextMonoAt(x, y, x_scale, y_scale, str, color, force_opaque);

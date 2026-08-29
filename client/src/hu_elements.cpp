@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <algorithm>
+#include <ranges>
 #include <sstream>
 
 #include "c_bind.h"
@@ -263,7 +264,7 @@ static const char *ordinal(int n)
  * Zero is what TicsToShortTime wants when the shot clock is switched off, so
  * the same value drives every countdown on the HUD.
  */
-static int ShotClockTics()
+int ShotClockTics()
 {
 	if (!::cl_shotclock)
 		return 0;
@@ -279,7 +280,7 @@ static int ShotClockTics()
  * Once tenths  are in play everything rounds DOWN instead, so each value holds
  * for its own share of time and the handover from whole seconds lands on "x.9".
  */
-static std::string CountdownText(const int tics)
+std::string CountdownText(const int tics)
 {
 	const int shotclock = ShotClockTics();
 
@@ -289,7 +290,7 @@ static std::string CountdownText(const int tics)
 /**
  * @brief The right noun for a rendered count - "1 second", "0 seconds".
  */
-static const char* SecondsWord(const std::string& count)
+const char* SecondsWord(const std::string& count)
 {
 	return count == "1" ? " second" : " seconds";
 }
@@ -498,10 +499,10 @@ int DrawRespawnText(int y)
 
 	// The stack grows upwards from the bottom edge, so walk the lines backwards
 	// to leave them reading top-down with the plain respawn first.
-	for (auto it = lines.rbegin(); it != lines.rend(); ++it)
+	for (const std::string& line : std::views::reverse(lines))
 	{
 		hud::DrawTextMono(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
-		                  hud::X_CENTER, hud::Y_BOTTOM, it->c_str(), CR_GREY);
+		                  hud::X_CENTER, hud::Y_BOTTOM, line.c_str(), CR_GREY);
 		y += V_LineHeight() + 1;
 	}
 
@@ -592,7 +593,8 @@ std::string Timer()
 		const int timeleft = G_GetEndingTic() - level.time;
 
 		// If we're in the danger zone flip the color.
-		int warning = G_GetEndingTic() - (60 * TICRATE);
+		constexpr int WARNING_SECONDS = 60;
+		const int warning = G_GetEndingTic() - (WARNING_SECONDS * TICRATE);
 		if (level.time > warning)
 		{
 			color = TEXTCOLOR_BRICK;

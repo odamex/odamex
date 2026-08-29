@@ -88,7 +88,8 @@ void P_SpawnPlayer(player_t& player, const fixed_t x, const fixed_t y,
 //		mobj = new AActor(player.mo->x, player.mo->y, ONFLOORZ, MT_PLAYER);
 //	else
 //		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
-	mobj = new AActor(x, y, ONFLOORZ, MT_PLAYER);
+	mobj = new AActor(x, y,
+		(level.flags & LEVEL_USEPLAYERSTARTZ ? startz : ONFLOORZ), MT_PLAYER);
 
 	mobj->credibility.Lionize();
 

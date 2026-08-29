@@ -1419,7 +1419,7 @@ bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t
 		}
 		else
 		{
-			angle_t mtangle = angle / ANG45;
+			const angle_t mtangle = angle / ANG45;
 
 			an = ANG45 * mtangle;
 

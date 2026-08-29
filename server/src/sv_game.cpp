@@ -293,7 +293,7 @@ void G_SpawnSpotFog(player_t& player, const fixed_t x, const fixed_t y,
 	}
 	else
 	{
-		angle_t mtangle = angle / ANG45;
+		const angle_t mtangle = angle / ANG45;
 
 		an = ANG45 * mtangle;
 
