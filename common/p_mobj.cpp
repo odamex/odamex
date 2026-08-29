@@ -2533,7 +2533,7 @@ void P_NightmareRespawn (AActor *mobj)
 	{
 		mo = new AActor (x, y, z, mobj->type);
 		mo->spawnpoint = mobj->spawnpoint;
-		mo->angle = ANG45 * (mthing->angle/45);
+		mo->angle = MapThingToAngle(mthing->angle);
 
 		if (mthing->flags & MTF_AMBUSH)
 			mo->flags |= MF_AMBUSH;
@@ -3214,7 +3214,7 @@ void P_RespawnSpecials (void)
 	// spawn it
 	auto* mo = new AActor(x, y, z, it->second->type);
 	mo->spawnpoint = mthing;
-	mo->angle = ANG45 * (mthing.angle / 45);
+	mo->angle = MapThingToAngle(mthing.angle);
 
 	if (z == ONFLOORZ)
 		mo->z += mthing.z << FRACBITS;
@@ -3937,7 +3937,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mobj->tics = 1 + (P_Random(mobj) % mobj->tics);
 
 	if (type != MT_SPARK)
-		mobj->angle = ANG45 * (mthing.angle/45);
+		mobj->angle = MapThingToAngle(mthing.angle);
 
 	if (mthing.flags & MTF_AMBUSH)
 		mobj->flags |= MF_AMBUSH;
@@ -4057,7 +4057,7 @@ void P_SpawnAvatars()
 
 		// Assign spawnpoint so that it gets archived and can be matched back up with voodoostarts after deserialization.
 		voodoo.mobj->spawnpoint = voodoo.mapThing;
-		voodoo.mobj->angle      = ANG45 * (voodoo.mapThing.angle/45);
+		voodoo.mobj->angle      = MapThingToAngle(voodoo.mapThing.angle);
 		voodoo.mobj->credibility.Lionize();
 	}
 }
