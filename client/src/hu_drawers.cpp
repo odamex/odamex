@@ -61,6 +61,9 @@ void calculateOrigin(int& x, int& y,
 {
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
+	x_scale = 1;
+	y_scale = 1;
+
 	// No such thing as "absolute origin".
 	if (x_origin == X_ABSOLUTE || y_origin == Y_ABSOLUTE)
 		return;
@@ -169,6 +172,138 @@ void Dim(int x, int y,
 	screen->Dim(x, y, w * x_scale, h * y_scale);
 }
 
+
+// Width of the widest digit, so that a clock's digits can be given equal cells.
+int digitCellWidth()
+{
+	int cell = 0;
+
+	for (char c = '0'; c <= '9'; c++)
+	{
+		const int i = c - HU_FONTSTART;
+
+		if (i < 0 || i >= HU_FONTSIZE || ::hu_font[i].empty())
+			continue;
+
+		cell = std::max<int>(cell, W_ResolvePatchHandle(::hu_font[i])->width());
+	}
+
+	return cell;
+}
+
+// Width of one character's cell - digits are padded out to a common width.
+int charCellWidth(const char c, const int cell)
+{
+	// Masked like V_StringWidth, so a high byte cannot reach toupper.
+	const int i = toupper(c & 0x7f) - HU_FONTSTART;
+
+	if (i < 0 || i >= HU_FONTSIZE || ::hu_font[i].empty())
+		return 4;
+
+	const int width = W_ResolvePatchHandle(::hu_font[i])->width();
+
+	return (c >= '0' && c <= '9') ? std::max(width, cell) : width;
+}
+
+// Width of a string laid out on the fixed digit pitch.
+int StringWidthMono(const char* str)
+{
+	if (!str)
+		return 0;
+
+	const int cell = digitCellWidth();
+
+	int w = 0;
+
+	for (const char* p = str; *p;)
+	{
+		if (p[0] == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		{
+			p += 2;
+			continue;
+		}
+
+		w += charCellWidth(*p, cell);
+		p++;
+	}
+
+	return w;
+}
+
+// Draw hu_font text on the fixed digit pitch at an absolute position, for
+// callers that do their own placing and scaling.
+void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
+                    const char* str, const int color, const bool force_opaque)
+{
+	if (!str)
+		return;
+
+	const int cell = digitCellWidth();
+
+	// Each glyph is drawn on its own, so the active color has to be carried
+	// forward by hand - one call cannot see the escape from the last.
+	std::array<char, 2> escape = { 0, 0 };
+	int cx = x;
+
+	for (const char* p = str; *p;)
+	{
+		if (p[0] == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		{
+			escape[0] = p[0];
+			escape[1] = p[1];
+			p += 2;
+			continue;
+		}
+
+		std::array<char, 4> buf{};
+		int n = 0;
+
+		if (escape[0])
+		{
+			buf[n++] = escape[0];
+			buf[n++] = escape[1];
+		}
+
+		buf[n++] = *p;
+		buf[n] = '\0';
+
+		const char* glyph = buf.data();
+
+		// Center the glyph in its cell so a narrow digit doesn't sit left.
+		const int cellw = charCellWidth(*p, cell);
+		const int gx = cx + (((cellw - V_StringWidth(glyph)) / 2) * x_scale);
+
+		if (force_opaque)
+			screen->DrawTextStretched(color, gx, y, glyph, x_scale, y_scale);
+		else
+			screen->DrawTextStretchedLuc(color, gx, y, glyph, x_scale, y_scale);
+
+		cx += cellw * x_scale;
+		p++;
+	}
+}
+
+// Draw hu_font text with every digit in a cell of the same width.
+void DrawTextMono(int x, int y, const float scale,
+                  const x_align_t x_align, const y_align_t y_align,
+                  const x_align_t x_origin, const y_align_t y_origin,
+                  const char* str, const int color,
+                  const bool force_opaque)
+{
+	if (!str)
+		return;
+
+	// NOLINTBEGIN(google-runtime-int) - matches the other hud:: draw calls
+	const unsigned short w = StringWidthMono(str);
+	const unsigned short h = V_LineHeight();
+	// NOLINTEND(google-runtime-int)
+
+	int x_scale;
+	int y_scale;
+	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+
+	DrawTextMonoAt(x, y, x_scale, y_scale, str, color, force_opaque);
+}
 
 // Draw hu_font text.
 void DrawText(int x, int y, const float scale,

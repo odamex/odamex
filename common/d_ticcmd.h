@@ -55,7 +55,8 @@ struct ticcmd_t
 	}
   public:
 
-	static constexpr size_t SERIALIZED_SIZE = 2 + sizeof(short) * 5;
+	// NOLINTNEXTLINE(google-runtime-int) - sizeof of the actual field type
+	static constexpr size_t SERIALIZED_SIZE = 3 + (sizeof(short) * 5);
 
 	ticcmd_t()
 	{
@@ -71,7 +72,11 @@ struct ticcmd_t
 		sidemove = 0;
 		upmove = 0;
 		impulse = 0;
+		modifiers = 0;
 	}
+
+	// NOLINTBEGIN(readability-magic-numbers) - byte offset in a
+	// hand-packed layout, like every other field above
 
 	void serialize(std::string& out) const
 	{
@@ -83,6 +88,7 @@ struct ticcmd_t
 		writeShort(out.begin() + 7, sidemove);
 		writeShort(out.begin() + 9, upmove);
 		writeByte(out.begin() + 11, impulse);
+		writeByte(out.begin() + 12, modifiers);
 	}
 
 	void unserialize(const std::string& in)
@@ -96,7 +102,10 @@ struct ticcmd_t
 		readShort(in.begin() + 7, sidemove);
 		readShort(in.begin() + 9, upmove);
 		readByte(in.begin() + 11, impulse);
+		readByte(in.begin() + 12, modifiers);
 	}
+
+	// NOLINTEND(readability-magic-numbers)
 
 	byte	buttons;
 	short	pitch;			// up/down. currently just a y-sheering amount
@@ -105,8 +114,11 @@ struct ticcmd_t
 	short	sidemove;
 	short	upmove;
 	byte	impulse;
+	byte	modifiers;
 };
 
+// NOLINTBEGIN(modernize-macro-to-enum,cppcoreguidelines-macro-usage) -
+// one of the UCMDF_* family above, which are all macros
 
 #define UCMDF_BUTTONS		0x01
 #define UCMDF_PITCH			0x02
@@ -115,6 +127,9 @@ struct ticcmd_t
 #define UCMDF_SIDEMOVE		0x10
 #define UCMDF_UPMOVE		0x20
 #define UCMDF_IMPULSE		0x40
+#define UCMDF_MODIFIERS		0x80
+
+// NOLINTEND(modernize-macro-to-enum,cppcoreguidelines-macro-usage)
 
 inline FArchive &operator<< (FArchive &arc, ticcmd_t &cmd)
 {
@@ -154,6 +169,10 @@ inline FArchive &operator<< (FArchive &arc, ticcmd_t &cmd)
 	if (cmd.impulse) {
 		flags |= UCMDF_IMPULSE;
 		*ptr++ = cmd.impulse;
+	}
+	if (cmd.modifiers) {
+		flags |= UCMDF_MODIFIERS;
+		*ptr++ = cmd.modifiers;
 	}
 
 	byte len = ptr - buf;
@@ -199,6 +218,10 @@ inline FArchive &operator>> (FArchive &arc, ticcmd_t &cmd)
 	}
 	if (flags & UCMDF_IMPULSE) {
 		cmd.impulse = *ptr++;
+	}
+
+	if (flags & UCMDF_MODIFIERS) {
+		cmd.modifiers = *ptr++;
 	}
 
 	return arc;

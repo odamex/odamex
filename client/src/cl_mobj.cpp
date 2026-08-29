@@ -39,6 +39,8 @@
 #include "g_spree.h"
 #include "g_multikill.h"
 
+void P_SpawnPlayer(player_t& player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
+
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
 EXTERN_CVAR(chasedemo)
@@ -54,6 +56,13 @@ void G_PlayerReborn(player_t &player);
 //	between levels.
 //
 void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
+{
+	P_SpawnPlayer(player, mthing.x << FRACBITS, mthing.y << FRACBITS,
+	              mthing.z << FRACBITS, MapThingToAngle(mthing.angle));
+}
+
+void P_SpawnPlayer(player_t& player, const fixed_t x, const fixed_t y,
+                   const fixed_t startz, const angle_t angle)
 {
 	// denis - clients should not control spawning
 	if (!serverside)
@@ -79,7 +88,8 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 //		mobj = new AActor(player.mo->x, player.mo->y, ONFLOORZ, MT_PLAYER);
 //	else
 //		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
-	mobj = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS, ONFLOORZ, MT_PLAYER);
+	mobj = new AActor(x, y,
+		(level.flags & LEVEL_USEPLAYERSTARTZ ? startz : ONFLOORZ), MT_PLAYER);
 
 	mobj->credibility.Lionize();
 
@@ -104,7 +114,7 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 //		mobj->angle = ANG45 * (mthing->angle/45);
 //		mobj->pitch = 0;
 //	}
-	mobj->angle = ANG45 * (mthing.angle/45);
+	mobj->angle = angle;
 	mobj->pitch = 0;
 
 	mobj->player = &player;

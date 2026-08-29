@@ -39,6 +39,7 @@ EXTERN_CVAR(sv_maxplayers)
 
 void G_PlayerReborn(player_t &player);
 void CTF_RememberFlagPos(const mapthing2_t& mthing);
+void P_SpawnPlayer(player_t& player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 
 void P_SetSpectatorFlags(player_t &player)
 {
@@ -61,6 +62,13 @@ void P_SetSpectatorFlags(player_t &player)
 //	between levels.
 //
 void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
+{
+	P_SpawnPlayer(player, mthing.x << FRACBITS, mthing.y << FRACBITS,
+	              mthing.z << FRACBITS, MapThingToAngle(mthing.angle));
+}
+
+void P_SpawnPlayer(player_t& player, const fixed_t x, const fixed_t y,
+                   const fixed_t startz, const angle_t angle)
 {
 	// denis - clients should not control spawning
 	if (!serverside)
@@ -86,8 +94,8 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 //		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
 	//[RK] If level flag for z-height spawning isn't set then, spawn the player on floor
-	mobj = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS,
-		(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing.z << FRACBITS : ONFLOORZ), MT_PLAYER);
+	mobj = new AActor(x, y,
+		(level.flags & LEVEL_USEPLAYERSTARTZ ? startz : ONFLOORZ), MT_PLAYER);
 
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
@@ -103,7 +111,7 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 //		mobj->angle = ANG45 * (mthing->angle/45);
 //		mobj->pitch = 0;
 //	}
-	mobj->angle = ANG45 * (mthing.angle/45);
+	mobj->angle = angle;
 	mobj->pitch = 0;
 
 
@@ -164,7 +172,7 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 		if (!player.spectator)
 		{
 			M_LogWDLEvent(WDL_EVENT_SPAWNPLAYER, &player, NULL, team, 0,
-			              M_GetPlayerSpawn(mthing.x, mthing.y), 0);
+			              M_GetPlayerSpawn(x >> FRACBITS, y >> FRACBITS), 0);
 		}
 
 		// send new objects

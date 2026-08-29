@@ -25,14 +25,17 @@
 #include "odamex.h"
 
 #include <algorithm>
+#include <ranges>
 #include <sstream>
 
 #include "c_bind.h"
+#include "c_dispatch.h"
 #include "cl_demo.h"
 #include "m_fixed.h" // This should probably go into d_netinf.h
 #include "d_netinf.h"
 #include "d_player.h"
 #include "g_gametype.h"
+#include "g_deathspot.h"
 #include "g_levelstate.h"
 #include "hu_drawers.h"
 #include "p_ctf.h"
@@ -66,12 +69,19 @@ EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR(sv_warmup)
 EXTERN_CVAR (g_lives)
 EXTERN_CVAR (g_rounds)
+EXTERN_CVAR (g_spawnatdeathspot)
+EXTERN_CVAR (sv_forcerespawn)
+EXTERN_CVAR (sv_forcerespawntime)
+EXTERN_CVAR (sv_spawndelaytime)
 EXTERN_CVAR(g_winlimit)
 
+EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_targetnames)
 EXTERN_CVAR(hud_targethealth_debug)
 EXTERN_CVAR(sv_allowtargetnames)
 EXTERN_CVAR(hud_timer)
+EXTERN_CVAR(cl_shotclock)
+EXTERN_CVAR(cl_shotclocksecondsleft)
 
 size_t P_NumPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
@@ -248,6 +258,74 @@ static const char *ordinal(int n)
 }
 
 /**
+ * @brief Tics below the threshold where a countdown shows tenths, or zero for
+ * whole seconds.
+ *
+ * Zero is what TicsToShortTime wants when the shot clock is switched off, so
+ * the same value drives every countdown on the HUD.
+ */
+int ShotClockTics()
+{
+	if (!::cl_shotclock)
+		return 0;
+
+	return ::cl_shotclocksecondsleft.asInt() * TICRATE;
+}
+
+/**
+ * @brief Render a HUD countdown, gaining tenths once the shot clock says so.
+ *
+ * Whole seconds on their own round UP, so the count never claims less time than
+ * is left and never sits on zero for a second before the event.
+ * Once tenths  are in play everything rounds DOWN instead, so each value holds
+ * for its own share of time and the handover from whole seconds lands on "x.9".
+ */
+std::string CountdownText(const int tics)
+{
+	const int shotclock = ShotClockTics();
+
+	return TicsToShortTime(tics, shotclock, shotclock <= 0);
+}
+
+/**
+ * @brief The right noun for a rendered count - "1 second", "0 seconds".
+ */
+const char* SecondsWord(const std::string& count)
+{
+	return count == "1" ? " second" : " seconds";
+}
+
+/**
+ * @brief Render the levelstate countdown - match start, preround, next round.
+ *
+ * Bare number, no unit: the lines it lands in supply their own wording.
+ */
+std::string Countdown()
+{
+	return CountdownText(::levelstate.getCountdownTics());
+}
+
+/**
+ * @brief Name the key bound to a command, lit green while it is being held.
+ *
+ * The action is looked up from the command itself, so the colour can never
+ * end up tracking a different key than the one being named.
+ */
+std::string KeyPrompt(const char* command)
+{
+	// Actions are registered without the leading +/- of the command.
+	const char* action = command;
+	if (*action == '+' || *action == '-')
+		action++;
+
+	const int bit = GetActionBit(MakeKey(action));
+	const bool held = bit >= 0 && ::Actions[bit];
+
+	return fmt::sprintf("%s%s" TEXTCOLOR_NORMAL, held ? TEXTCOLOR_GREEN : TEXTCOLOR_GOLD,
+	                    ::Bindings.GetKeynameFromCommand(command));
+}
+
+/**
  * @brief Return a "help" string.
  */
 std::string HelpText()
@@ -279,21 +357,156 @@ std::string HelpText()
 			                    joinmsg, queuePos, ordinal(queuePos));
 		}
 
-		return fmt::sprintf("%s - Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to queue",
-		                    joinmsg, ::Bindings.GetKeynameFromCommand("+use"));
+		return fmt::sprintf("%s - Press %s to queue", joinmsg, KeyPrompt("+use"));
 	}
 
 	if (G_CanShowJoinTimer())
 	{
-		return fmt::sprintf(
-		          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
-		          " to join - " TEXTCOLOR_GREEN "%d" TEXTCOLOR_NORMAL " secs left",
-		          ::Bindings.GetKeynameFromCommand("+use"),
-		          ::levelstate.getJoinTimeLeft());
+		const std::string left =
+		    CountdownText(::levelstate.getJoinTicsLeft());
+
+		return fmt::sprintf("Press %s to join - " TEXTCOLOR_GREEN
+		                    "%s" TEXTCOLOR_NORMAL "%s left",
+		                    KeyPrompt("+use"), left, SecondsWord(left));
 	}
 
-	return fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",
-	                    ::Bindings.GetKeynameFromCommand("+use"));
+	return fmt::sprintf("Press %s to join", KeyPrompt("+use"));
+}
+
+/**
+ * @brief Say why a dead player cannot go back to where they fell.
+ *
+ * Only reached for a blocked verdict, so the clear cases have no wording.
+ */
+const char* BlockedText(const deathSpotBlock_t block)
+{
+	switch (block)
+	{
+	case DEATHSPOT_BLOCKED_DEADLY:
+		return "Death spot blocked - insta kill floor";
+	case DEATHSPOT_BLOCKED_NOROOM:
+		return "Death spot blocked - no room to spawn";
+	case DEATHSPOT_BLOCKED_PLAYER:
+		return "Death spot blocked - player in the way";
+	default:
+		return "Death spot blocked - object in the way";
+	}
+}
+
+/**
+ * @brief Return the lines telling a dead player how to get back into the game,
+ *        or nothing at all if they're in no position to respawn.
+ */
+std::vector<std::string> RespawnText()
+{
+	std::vector<std::string> lines;
+
+	const player_t& plyr = consoleplayer();
+
+	if (!::multiplayer)
+		return lines;
+
+	// This is about our own corpse, not whoever we happen to be looking
+	// through - a dead player spying a teammate still wants to know this.
+	// Spectators can't respawn at all, so they get the join prompt instead.
+	if (plyr.playerstate != PST_DEAD || plyr.spectator)
+		return lines;
+
+	// Out of lives - there is nothing you can do.
+	if (::g_lives && plyr.lives <= 0)
+		return lines;
+
+	// While the spawn delay is running the use key does nothing, so the wait
+	// replaces the prompt rather than joining it.
+	const int delay_tics = static_cast<int>(::sv_spawndelaytime * TICRATE);
+	const int delay_left = plyr.death_time + delay_tics - ::level.time;
+
+	const int force_left = plyr.death_time +
+	                       static_cast<int>(::sv_forcerespawntime * TICRATE) - ::level.time;
+
+	if (delay_tics > 0 && delay_left >= 0)
+	{
+		// A forced respawn ignores the delay, so if it lands first then that,
+		// not the delay, is when the player actually gets up.
+		int wait_left = delay_left;
+
+		if (::sv_forcerespawn && force_left < wait_left)
+			wait_left = force_left;
+
+		const std::string wait = CountdownText(wait_left);
+
+		lines.push_back(fmt::sprintf("Wait " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL
+		                             "%s to respawn",
+		                             wait, SecondsWord(wait)));
+		return lines;
+	}
+
+	const deathSpotBlock_t deathspot =
+	    ::g_spawnatdeathspot ? G_CheckDeathSpot(plyr) : DEATHSPOT_NOSPOT;
+	const bool deathspotblocked = G_IsDeathSpotBlocked(deathspot);
+
+	// Someone or something is standing on the spot, so there is no point
+	// offering the key that would put us there - say what it is instead.
+	if (deathspotblocked)
+	{
+		lines.push_back(std::string(TEXTCOLOR_RED) + BlockedText(deathspot));
+	}
+	else
+	{
+		std::string spawnline =
+		    fmt::sprintf("Press %s to respawn", KeyPrompt("+use"));
+
+		spawnline += ::g_spawnatdeathspot ? " at death spot" : "";
+
+		lines.push_back(spawnline);
+	}
+
+	if (::sv_forcerespawn)
+	{
+		const std::string wait = CountdownText(force_left);
+		if (deathspotblocked)
+		{
+			lines.push_back(fmt::sprintf("Respawning normally in " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL
+			                             "%s",
+			                             wait, SecondsWord(wait)));
+		}
+		else
+		{
+			lines.push_back(fmt::sprintf("Or wait " TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL
+			                             "%s",
+			                             wait, SecondsWord(wait)));
+		}
+	}
+
+	if (::g_spawnatdeathspot)
+	{
+		lines.push_back(fmt::sprintf("Press %s + %s to respawn normally",
+		                             KeyPrompt("+speed"), KeyPrompt("+use")));
+	}
+
+	return lines;
+}
+
+/**
+ * @brief Draw the respawn prompt into a bottom-centered stack of lines.
+ *
+ * @param y Height of the stack so far.
+ * @return New height of the stack - unchanged if there was nothing to say.
+ */
+int DrawRespawnText(int y)
+{
+	const std::vector<std::string> lines = RespawnText();
+
+	// The stack grows upwards from the bottom edge, so walk the lines backwards
+	// to leave them reading top-down with the plain respawn first.
+	for (const std::string& line : std::views::reverse(lines))
+	{
+		hud::DrawTextMono(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
+		                  hud::X_CENTER, hud::Y_BOTTOM, line.c_str(), CR_GREY);
+		y += V_LineHeight() + 1;
+	}
+
+	return y;
 }
 
 /**
@@ -315,6 +528,33 @@ std::string SpyPlayerName()
 	}
 
 	return fmt::sprintf("%s%s", color, plyr.userinfo.netname);
+}
+
+/**
+ * @brief Whether the HUD timer is currently showing a shot clock.
+ *
+ * No lower bound on the time left - once it runs out the clock stays on tenths
+ * reading 00:00.0, rather than dropping the digit.
+ */
+bool TimerIsShotClock()
+{
+	if (ShotClockTics() <= 0 || gamestate != GS_LEVEL)
+		return false;
+
+	if (sv_timelimit <= 0.0f || (level.flags & LEVEL_LOBBYSPECIAL))
+		return false;
+
+	// Warmup runs its own countdown and is not part of the match.
+	if (::levelstate.getState() == LevelState::WARMUP ||
+	    ::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
+	    ::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN)
+	{
+		return false;
+	}
+
+	const int shotclock = ShotClockTics();
+
+	return shotclock > 0 && (G_GetEndingTic() - level.time) < shotclock;
 }
 
 /**
@@ -350,6 +590,27 @@ std::string Timer()
 	}
 	else
 	{
+		const int timeleft = G_GetEndingTic() - level.time;
+
+		// If we're in the danger zone flip the color.
+		constexpr int WARNING_SECONDS = 60;
+		const int warning = G_GetEndingTic() - (WARNING_SECONDS * TICRATE);
+		if (level.time > warning)
+		{
+			color = TEXTCOLOR_BRICK;
+		}
+
+		// Show a tenths place.
+		if (TimerIsShotClock())
+		{
+			// Both directions round down, so every value gets its full share of
+			// screen time and the handover from mm:ss lands on x.9.
+			if (hud_timer == 2)
+				return fmt::sprintf("%s%s", color, TicsToClockTenths(level.time));
+
+			return fmt::sprintf("%s%s", color, TicsToClockTenths(timeleft));
+		}
+
 		if (hud_timer == 2)
 		{
 			// Timer counts up.
@@ -358,15 +619,7 @@ std::string Timer()
 		else if (hud_timer == 1)
 		{
 			// Timer counts down.
-			int timeleft = G_GetEndingTic() - level.time;
-			TicsToTime(tspan, timeleft, true);
-		}
-
-		// If we're in the danger zone flip the color.
-		int warning = G_GetEndingTic() - (60 * TICRATE);
-		if (level.time > warning)
-		{
-			color = TEXTCOLOR_BRICK;
+			TicsToTime(tspan, timeleft, ShotClockTics() <= 0);
 		}
 	}
 
@@ -380,6 +633,28 @@ std::string Timer()
 		str = fmt::sprintf("%s%02d:%02d", color, tspan.minutes, tspan.seconds);
 	}
 	return str;
+}
+
+/**
+ * @brief Draw the HUD timer, centred, into a bottom-anchored stack.
+ *
+ * @param y     Height of the stack so far.
+ * @param color Color to draw with.
+ */
+void DrawTimerText(const int y, const int color)
+{
+	const std::string str = Timer();
+
+	// A shot clock changes every tick of the clock, so give it a fixed pitch.
+	if (TimerIsShotClock())
+	{
+		hud::DrawTextMono(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
+		                  hud::X_CENTER, hud::Y_BOTTOM, str.c_str(), color);
+		return;
+	}
+
+	hud::DrawText(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, str.c_str(), color);
 }
 
 std::string IntermissionTimer()

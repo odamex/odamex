@@ -616,6 +616,7 @@ ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power)
 
 #include "v_textcolors.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 #include "g_spree.h"
 
 	/*
@@ -1984,6 +1985,21 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 
 		tplayer->suicidedelay = SuicideDelay;
 		tplayer->death_time = level.time;
+
+		// Erase death spot if the player teleported into, spawned into,
+		// or was teleported into by an avatar.
+		// Rather than let the user spawn at their pre-avatar demise, make them
+		// go home.
+		if (P_IsVoodooDoll(target) || (source && source->type == MT_AVATAR))
+		{
+			DeathSpotManager::getInstance().eraseDeathSpot(tplayer->id);
+		}
+		else
+		{
+			DeathSpotManager::getInstance().setDeathSpot(tplayer->id, target->x,
+			                                             target->y, target->z,
+			                                             target->angle);
+		}
 
 		if (target == consoleplayer().camera)
 		{

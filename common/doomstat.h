@@ -167,7 +167,7 @@ struct VoodooStartInfoType
 
 inline constexpr int MAXPLAYERSTARTS = 64;
 inline constexpr OUtil::inclusive_range<int16_t> VANILLA_COOP_PLAYER_STARTS{1, 4};
-inline constexpr OUtil::inclusive_range<int16_t> EXTRA_COOP_PLAYER_STARTS{4001, 4001 + MAXPLAYERSTARTS - 4};
+inline constexpr OUtil::inclusive_range<int16_t> EXTRA_COOP_PLAYER_STARTS{4001, 4001 + MAXPLAYERSTARTS - 5};
 extern std::vector<mapthing2_t>         playerstarts;
 extern std::vector<VoodooStartInfoType> voodoostarts;
 

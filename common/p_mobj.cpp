@@ -1125,9 +1125,12 @@ void AActor::RunThink ()
 		return;
 	}
 
-	prevx = x;
-	prevy = y;
-	prevz = z;
+	if (!player || !player->isFreecam)
+	{
+		prevx = x;
+		prevy = y;
+		prevz = z;
+	}
 
 	if (!player || P_IsVoodooDoll(this))    // True voodoo dolls have non-null player pointers, but we still want
 	{                                       // to update the dolls' previous angles, so check for that.
@@ -2530,7 +2533,7 @@ void P_NightmareRespawn (AActor *mobj)
 	{
 		mo = new AActor (x, y, z, mobj->type);
 		mo->spawnpoint = mobj->spawnpoint;
-		mo->angle = ANG45 * (mthing->angle/45);
+		mo->angle = MapThingToAngle(mthing->angle);
 
 		if (mthing->flags & MTF_AMBUSH)
 			mo->flags |= MF_AMBUSH;
@@ -3211,7 +3214,7 @@ void P_RespawnSpecials (void)
 	// spawn it
 	auto* mo = new AActor(x, y, z, it->second->type);
 	mo->spawnpoint = mthing;
-	mo->angle = ANG45 * (mthing.angle / 45);
+	mo->angle = MapThingToAngle(mthing.angle);
 
 	if (z == ONFLOORZ)
 		mo->z += mthing.z << FRACBITS;
@@ -3335,6 +3338,27 @@ size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 	return mthing.type <= 4 ?
 			mthing.type - 1 :
 			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
+}
+
+//
+// P_GetPlayerStart
+//
+// Returns the start belonging to a player number, or a shared one when the map
+// has no start of its own for them.
+//
+const mapthing2_t& P_GetPlayerStart(const size_t playernum)
+{
+	for (const mapthing2_t& start : ::playerstarts)
+	{
+		if (P_GetMapThingPlayerNumber(start) == playernum)
+			return start;
+	}
+
+	if (::playerstarts.empty())
+		I_Error("No player starts");
+
+	// Nothing here for this player number, so give one out.
+	return ::playerstarts[playernum % ::playerstarts.size()];
 }
 
 bool P_IsPickupableThing(int16_t type)
@@ -3913,7 +3937,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mobj->tics = 1 + (P_Random(mobj) % mobj->tics);
 
 	if (type != MT_SPARK)
-		mobj->angle = ANG45 * (mthing.angle/45);
+		mobj->angle = MapThingToAngle(mthing.angle);
 
 	if (mthing.flags & MTF_AMBUSH)
 		mobj->flags |= MF_AMBUSH;
@@ -4033,9 +4057,48 @@ void P_SpawnAvatars()
 
 		// Assign spawnpoint so that it gets archived and can be matched back up with voodoostarts after deserialization.
 		voodoo.mobj->spawnpoint = voodoo.mapThing;
-		voodoo.mobj->angle      = ANG45 * (voodoo.mapThing.angle/45);
+		voodoo.mobj->angle      = MapThingToAngle(voodoo.mapThing.angle);
 		voodoo.mobj->credibility.Lionize();
 	}
+}
+
+
+//
+// P_AvatarBlocksSpot
+//
+// Check if an avatar is blocking a spawn.
+// This tries to work around map errors where a player start
+// is misplaced and the player wants to spawn in a voodoo closet.
+// Instead, it will report this spawn is blocked and to try another.
+//
+bool P_AvatarBlocksSpot(const fixed_t x, const fixed_t y, const fixed_t z)
+{
+	for (const auto& voodoo : ::voodoostarts)
+	{
+		const AActor* avatar = voodoo.mobj;
+
+		// Check for dead avatars.
+		if (!avatar || avatar->type != MT_AVATAR || !(avatar->flags & MF_SHOOTABLE))
+			continue;
+
+		// Same overlap PIT_StompThing will measure when the spawn stomps.
+		const fixed_t blockdist = avatar->radius + mobjinfo[MT_PLAYER].radius;
+
+		if (abs(avatar->x - x) >= blockdist || abs(avatar->y - y) >= blockdist)
+			continue;
+
+		if (P_AllowPassover())
+		{
+			if (z > avatar->z + avatar->height)
+				continue;
+			if (z + mobjinfo[MT_PLAYER].height < avatar->z)
+				continue;
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 

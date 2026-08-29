@@ -62,6 +62,7 @@ END_DISABLE_WARNING_GNU
 #include "g_episode.h"
 #include "g_skill.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -761,6 +762,9 @@ void G_DoResetLevel(bool full_reset)
 	// destroyed and replaced with the serialized items will start respawning.
 	itemrespawnque = {};
 
+	// A reset puts everyone back on a player start.
+	DeathSpotManager::getInstance().clearDeathSpots();
+
 	// Clear player information.
 	for (auto& player : players)
 	{
@@ -880,6 +884,9 @@ void G_DoLoadLevel (int position)
 		sky2texture = R_TextureNumForName(level.skypic2);
 	else
 		sky2texture = 0;
+
+	// Clear death spots as we're on a new map.
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{

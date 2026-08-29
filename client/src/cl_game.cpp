@@ -72,6 +72,7 @@ END_DISABLE_WARNING_GNU
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 #include "cl_freecam.h"
 
 #include <math.h> // for pow()
@@ -604,6 +605,10 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 		sendsave = false;
 		cmd.buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT);
 	}
+
+	// Modifiers only ever qualify a button, and do nothing on their own.
+	if (cmd.buttons && Actions[ACTION_SPEED])
+		cmd.modifiers |= MOD_RUN;
 
 	cmd.forwardmove <<= 8;
 	cmd.sidemove <<= 8;
@@ -1321,6 +1326,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
+	DeathSpotManager::getInstance().eraseDeathSpot(p.id);
 }
 
 //
@@ -1330,19 +1336,28 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // because something is occupying it
 //
 void P_SpawnPlayer(player_t &player, const mapthing2_t& mthing);
+void P_SpawnPlayer(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 
+bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
+{
+	return G_CheckSpot(player, mthing.x << FRACBITS, mthing.y << FRACBITS,
+	                   mthing.z << FRACBITS, MapThingToAngle(mthing.angle));
+}
+
+bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle)
 {
 	unsigned			an;
 	AActor* 			mo;
-	fixed_t 			xa,ya;
+	fixed_t 			xa;
+	fixed_t 			ya;
 
-	const fixed_t x = mthing.x << FRACBITS;
-	const fixed_t y = mthing.y << FRACBITS;
+	constexpr int FOG_OFFSET = 20;
+
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
-		z = mthing.z << FRACBITS;
+		z = startz;
 
 	if (!player.mo)
 	{
@@ -1355,7 +1370,8 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
 		}
-		return true;
+
+		return !P_AvatarBlocksSpot(x, y, z);
 	}
 
 	fixed_t oldz = player.mo->z;	// [RH] Need to save corpse's z-height
@@ -1400,16 +1416,18 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * (static_cast<unsigned int>(mthing.angle)/45) ) >> ANGLETOFINESHIFT;
+			an = angle >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = static_cast<angle_t>(mthing.angle / 45);
+			const angle_t mtangle = angle / ANG45;
 
 			an = ANG45 * mtangle;
 
+			// Need to stay this way to emulate vanilla spawn west silently bug
+			// NOLINTBEGIN(readability-magic-numbers)
 			switch(mtangle)
 			{
 				case 4: // 180 degrees (0x80000000 >> 19 == -4096)
@@ -1433,9 +1451,11 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 					ya = finesine[an >> ANGLETOFINESHIFT];
 					break;
 			}
+			// NOLINTEND(readability-magic-numbers)
 		}
 
-		mo = new AActor(x + 20 * xa, y + 20 * ya, z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+		mo = new AActor(x + (FOG_OFFSET * xa), y + (FOG_OFFSET * ya),
+		                z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
 
 		if (level.time)
 			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);	// don't start sound on first frame
@@ -1525,20 +1545,28 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
 	mapthing2_t* spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
 
-	if (!spot && !playerstarts.empty())
-	{
-		// no good spot, so the player will probably get stuck
-		spot = &playerstarts[player.id%playerstarts.size()];
-	}
-	else
+	const mapthing2_t* spawnspot = spot;
+
+	if (spot)
 	{
 		if (player.id < 4)
 			spot->type = player.id+1;
 		else
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
+	else if (!playerstarts.empty())
+	{
+		// no good spot, so the player will probably get stuck
+		spawnspot = &P_GetPlayerStart(player.id - 1);
+	}
+	else
+	{
+		// There is at least one deathmatch start or we would
+		// have errored out above, so telefrag into it.
+		spawnspot = &DeathMatchStarts.front();
+	}
 
-	P_SpawnPlayer (player, *spot);
+	P_SpawnPlayer (player, *spawnspot);
 }
 
 //
@@ -1571,11 +1599,11 @@ void G_DoReborn (player_t &player)
 	if(playerstarts.empty())
 		I_Error("No player starts");
 
-	unsigned int playernum = player.id - 1;
+	const mapthing2_t& start = P_GetPlayerStart(player.id - 1);
 
-	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, start) )
 	{
-		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, start);
 		return;
 	}
 
@@ -1590,7 +1618,7 @@ void G_DoReborn (player_t &player)
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, start);
 }
 
 

@@ -1179,7 +1179,7 @@ AActor::AActorPtr SpawnHelper(const MapThing SpawnPoint, mobjtype_t SpawnType, c
 			mo->SetFriendly(true, origin);
 			mo->UpdateActorLists();
 
-			mo->angle = ANG45 * (SpawnPoint.angle / 45);
+			mo->angle = MapThingToAngle(SpawnPoint.angle);
 
 			SV_SpawnMobj(mo);
 
