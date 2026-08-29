@@ -178,6 +178,8 @@ TEST(OFlags, Operators)
 	CheckFlags(flags, false, false, true);
 	flags |= ~mask(Flag3);
 	CheckFlags(flags, true, true, true);
+	// Only have 3 flags so gonna have a duplicate in this expression
+	// NOLINTNEXTLINE(misc-redundant-expression)
 	flags &= mask((Flag1 | Flag2) | (Flag2 | Flag3)) & ~Flag2;
 	CheckFlags(flags, true, false, true);
 	flags = flags & ~Flag1;
