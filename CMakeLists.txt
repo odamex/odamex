@@ -265,6 +265,12 @@ if(NOT APPLE)
     install(FILES ${CONFIG_SAMPLES}
       DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex/config-samples
       COMPONENT common)
+    install(FILES packaging/linux/net.odamex.Odamex.metainfo.xml
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo
+      COMPONENT common)
+    install(FILES packaging/linux/net.odamex.Odamex.releases.xml
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo/releases
+      COMPONENT common)
 
     option(ODAMEX_COMPONENT_PACKAGES "Create several rpm/deb packages for repository maintainers." OFF)
     if(ODAMEX_COMPONENT_PACKAGES)
