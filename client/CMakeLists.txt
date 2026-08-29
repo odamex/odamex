@@ -47,6 +47,9 @@ source_group("Client" FILES ${CLIENT_SOURCES})
 source_group("SDL" FILES ${CLIENT_SDL_SOURCES})
 source_group("GUI" FILES ${CLIENT_GUI_SOURCES})
 
+get_target_property(COMMON_SOURCES odacommon INTERFACE_SOURCES)
+source_group("Common" FILES ${COMMON_SOURCES})
+
 # Client definitions
 include_directories(${COMMON_DIR} ${CLIENT_DIR})
 

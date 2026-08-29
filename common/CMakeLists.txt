@@ -9,7 +9,7 @@ if (UNIX)
 endif()
 
 add_library(odacommon INTERFACE)
-target_sources(odacommon PUBLIC  ${COMMON_SOURCES} ${COMMON_HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/git_describe.h")
+target_sources(odacommon PUBLIC ${COMMON_SOURCES} ${COMMON_HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/git_describe.h")
 
 target_include_directories(odacommon INTERFACE . ${CMAKE_CURRENT_BINARY_DIR})
 if (HAVE_BACKTRACE)

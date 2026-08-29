@@ -26,6 +26,11 @@ odamex_target_errors(odasrv)
 target_link_libraries(odasrv odacommon)
 target_compile_definitions(odasrv PRIVATE SERVER_APP)
 
+get_target_property(COMMON_SOURCES odacommon INTERFACE_SOURCES)
+source_group("Common" FILES ${COMMON_SOURCES})
+source_group("Server" FILES ${SERVER_SOURCES})
+source_group("Win32" FILES ${SERVER_WIN32_SOURCES})
+
 # Server definitions
 if (USE_MINIUPNP)
     target_compile_definitions(odasrv PRIVATE ODA_HAVE_MINIUPNP)
