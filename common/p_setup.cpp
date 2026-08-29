@@ -59,9 +59,6 @@
 #include "c_dispatch.h"
 #include "d_player.h"
 
-#ifdef CLIENT_APP
-#include "cl_freecam.h"
-#endif
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
@@ -200,6 +197,33 @@ BEGIN_COMMAND(dumpspawns)
 	}
 }
 END_COMMAND(dumpspawns)
+
+//
+// P_GetFirstAvailableSpawn
+//
+// The first spawn the map offers that a player could be put on.
+//
+std::optional<mapthing2_t> P_GetFirstAvailableSpawn()
+{
+	// Sorted by player number, so this is player 1's start where there is one.
+	if (!::playerstarts.empty())
+		return ::playerstarts.front();
+
+	if (!::DeathMatchStarts.empty())
+		return ::DeathMatchStarts.front();
+
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+	{
+		const std::vector<mapthing2_t>& starts =
+		    GetTeamInfo(static_cast<team_t>(iTeam))->Starts;
+
+		if (!starts.empty())
+			return starts.front();
+	}
+
+	// A map with no starts of any kind.
+	return std::nullopt;
+}
 
 // Maintain list of helpers to spawn in a given map
 std::vector<HelperSpawns> helperspawns;
@@ -875,47 +899,6 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 }
 
 //
-// P_SetFreecamStart
-//
-// Puts the freecam on a real player start.
-//
-void P_SetFreecamStart()
-{
-	#ifdef CLIENT_APP
-	if (!Freecam::allowAdd() || !Freecam::needPosition())
-		return;
-
-	// Sorted by player number, so this is player 1's start where there is one.
-	const mapthing2_t* start = nullptr;
-
-	if (!::playerstarts.empty())
-		start = &::playerstarts.front();
-	else if (!::DeathMatchStarts.empty())
-		start = &::DeathMatchStarts.front();
-	else
-	{
-		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
-		{
-			const std::vector<mapthing2_t>& starts =
-			    GetTeamInfo(static_cast<team_t>(iTeam))->Starts;
-
-			if (!starts.empty())
-			{
-				start = &starts.front();
-				break;
-			}
-		}
-	}
-
-	if (!start)
-		return;
-
-	Freecam::setStartPosition(start->x << FRACBITS, start->y << FRACBITS, ONFLOORZ,
-	                          MapThingToAngle(start->angle));
-	#endif
-}
-
-//
 // P_LoadThings
 //
 void P_LoadThings (int lump)
@@ -980,8 +963,6 @@ void P_LoadThings (int lump)
 		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
 	});
 
-	P_SetFreecamStart();
-
 	P_SpawnAvatars();
 }
 
@@ -1029,8 +1010,6 @@ void P_LoadThings2 (int lump, int position)
 	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
 		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
 	});
-
-	P_SetFreecamStart();
 
 	P_SpawnAvatars();
 }

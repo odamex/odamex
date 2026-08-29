@@ -755,6 +755,18 @@ void G_DoLoadLevel (int position)
 	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
 	if (Freecam::allowAdd())
 	{
+		if (Freecam::needPosition())
+		{
+			const std::optional<mapthing2_t> start = P_GetFirstAvailableSpawn();
+
+			if (start.has_value())
+			{
+				Freecam::setStartPosition(start->x << FRACBITS, start->y << FRACBITS,
+				    level.flags & LEVEL_USEPLAYERSTARTZ ? start->z << FRACBITS : ONFLOORZ,
+				    MapThingToAngle(start->angle));
+			}
+		}
+
 		Freecam::addFreecamPlayer();
 	}
 
