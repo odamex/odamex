@@ -850,6 +850,7 @@ void G_InitLevelLocals()
 	::level.cluster = info.cluster;
 	::level.flags = info.flags;
 	::level.flags2 = info.flags2;
+	::level.metadataflags = info.metadataflags;
 	::level.levelnum = info.levelnum;
 	::level.level_fingerprint = info.level_fingerprint;
 

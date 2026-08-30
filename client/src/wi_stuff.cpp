@@ -1597,7 +1597,7 @@ void WI_loadData()
 
 		// A UMAPINFO map that brings its own title graphic has drawn that graphic
 		// to suit itself, so an author line under it is not wanted.
-		const bool umapinfoshowsauthor = (linfo.flags2 & LEVEL2_FROMUMAPINFO) &&
+		const bool umapinfoshowsauthor = (linfo.metadataflags & METADATA_AUTHORFROMUMAPINFO) &&
 		                                    !linfo.pname.empty() &&
 		                                    W_IsLumpFromPWAD(linfo.pname);
 

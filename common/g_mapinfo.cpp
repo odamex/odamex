@@ -591,9 +591,9 @@ void MIType_Author(OScanner& os, bool newStyleMapInfo, level_pwad_info_t& info)
 	}
 
 	if (mapinfofrompwad)
-		info.flags2 |= LEVEL2_AUTHORFROMPWAD;
+		info.metadataflags |= METADATA_AUTHORFROMPWAD;
 	else
-		info.flags2 &= ~LEVEL2_AUTHORFROMPWAD;
+		info.metadataflags &= ~METADATA_AUTHORFROMPWAD;
 }
 
 // Sets the intermission title patch, which may carry a hideauthorname token
@@ -2064,7 +2064,7 @@ void G_ParseMapInfo()
 	for (size_t i = 0; i < numlevels; i++)
 	{
 		level_pwad_info_t& level = levels.at(i);
-		if (!level.author.empty() && !(level.flags2 & LEVEL2_AUTHORFROMPWAD) &&
+		if (!level.author.empty() && !(level.metadataflags & METADATA_AUTHORFROMPWAD) &&
 		    W_IsLumpFromPWAD(level.mapname))
 		{
 			level.author.clear();

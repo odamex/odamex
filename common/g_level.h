@@ -114,6 +114,19 @@ using enum levelflags2_t;
 constexpr levelflags2_t enable_bitflag_operators(levelflags2_t) { return LEVEL2_HIDEAUTHORNAME; };
 using LevelFlags2 = OFlags<levelflags2_t>;
 
+// Map metadata to determine downstream behavior
+enum class metadataflags_t : uint32_t
+{
+	METADATA_AUTHORFROMPWAD     = BIT(0),
+	METADATA_AUTHORFROMUMAPINFO = BIT(1),
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
+};
+
+using enum metadataflags_t;
+constexpr metadataflags_t enable_bitflag_operators(metadataflags_t) { return METADATA_AUTHORFROMUMAPINFO; };
+using MetaDataFlags = OFlags<metadataflags_t>;
+
 struct acsdefered_t;
 class FBehavior;
 
@@ -199,6 +212,7 @@ struct level_info_t
 	OLumpName     music      = "";
 	LevelFlags1   flags      = LevelFlags1::none_set();
 	LevelFlags2   flags2     = LevelFlags2::none_set();
+	MetaDataFlags metadataflags = MetaDataFlags::none_set();
 	int           cluster    = 0;
 	FLZOMemFile*  snapshot   = nullptr;
 	acsdefered_t* defered    = nullptr;
@@ -227,6 +241,7 @@ struct level_pwad_info_t
 	OLumpName		music      = "";
 	LevelFlags1     flags      = LevelFlags1::none_set();
 	LevelFlags2     flags2     = LevelFlags2::none_set();
+	MetaDataFlags metadataflags = MetaDataFlags::none_set();
 	int				cluster    = 0;
 	FLZOMemFile*	snapshot   = nullptr;
 	acsdefered_t*	defered    = nullptr;
@@ -280,7 +295,8 @@ struct level_pwad_info_t
 	    : mapname(other.mapname), levelnum(other.levelnum), mapnum(other.mapnum), episodenum(other.episodenum),
 	      level_name(other.level_name), level_fingerprint(other.level_fingerprint), pname(other.pname), nextmap(other.nextmap),
 	      secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
-	      music(other.music), flags(other.flags), flags2(other.flags2), cluster(other.cluster),
+	      music(other.music), flags(other.flags), flags2(other.flags2),
+	      metadataflags(other.metadataflags), cluster(other.cluster),
 	      snapshot(other.snapshot), defered(other.defered)
 	{
 	}
@@ -315,6 +331,7 @@ struct level_locals_t
 
 	LevelFlags1     flags;
 	LevelFlags2     flags2;
+	MetaDataFlags   metadataflags;
 
 	// [SL] use 4 bytes for color types instead of argb_t so that the struct
 	// can consist of only plain-old-data types. It is also important to have

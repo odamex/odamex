@@ -245,9 +245,9 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		mape->author = os.getToken();
 
 		if (umapinfofrompwad)
-			mape->flags2 |= LEVEL2_AUTHORFROMPWAD;
+			mape->metadataflags |= METADATA_AUTHORFROMPWAD;
 		else
-			mape->flags2 &= ~LEVEL2_AUTHORFROMPWAD;
+			mape->metadataflags &= ~METADATA_AUTHORFROMPWAD;
 	}
 	else if (!stricmp(pname.c_str(), "next"))
 	{
@@ -598,7 +598,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 		pnamemodified = false;
 
 		info.mapname = mapname;
-		info.flags2 |= LEVEL2_FROMUMAPINFO;
+		info.metadataflags |= METADATA_AUTHORFROMUMAPINFO;
 
 		G_MapNameToLevelNum(info);
 		G_MapNameToID24LevelNum(info);
