@@ -119,6 +119,14 @@ using LevelFlags2 = OFlags<levelflags2_t>;
 struct acsdefered_t;
 class FBehavior;
 
+// Sector tags the boss actions operate on.
+inline constexpr int16_t BOSSACTION_TAG = 666;
+inline constexpr int16_t BOSSACTION_TAG_ALT = 667;
+
+// UMAPINFO magic number to indicate that a
+// boss action should kill all monsters.
+inline constexpr int16_t BOSSACTION_MASSACRE = 280;
+
 struct bossaction_t
 {
 	int32_t type    = MT_NULL;
@@ -381,19 +389,15 @@ const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 
 struct cluster_info_t
 {
-	int				cluster;
+	int				cluster = 0;
 	OLumpName		messagemusic;
 	OLumpName		finaleflat;
 	std::string		exittext;
 	std::string		entertext;
-	int				flags;
+	clusterFlags_t	flags = 0;
 	OLumpName		finalepic;
 
-	cluster_info_t()
-	    : cluster(0), messagemusic(""), finaleflat(""), exittext(""), entertext(""),
-	      flags(0)
-	{
-	}
+	cluster_info_t() = default;
 
 	bool exists() const
 	{

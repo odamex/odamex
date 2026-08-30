@@ -23,6 +23,15 @@
 
 #pragma once
 
+#include "c_cvars.h"
+#include "doomtype.h"
+#include "olumpname.h"
+
+#include <array>
+#include <string>
+
+EXTERN_CVAR(sv_skill)
+
 #define MAX_SKILLS 7
 
 inline constexpr uint32_t SKILL_NOINFIGHTING = BIT(0);
@@ -62,7 +71,7 @@ struct SkillInfo
 	bool must_confirm             = false;
 	std::string must_confirm_text = "$NIGHTMARE";
 	char shortcut                 = 0;
-	byte text_color[4]            = { 0 };	// not implemented
+	std::array<byte, 4> text_color = { 0 };	// not implemented
 	//SkillActorReplacement replace;	// not implemented
 	//SkillActorReplacement replaced;	// not implemented
 	float monster_health          = 1.0f;	// not implemented
