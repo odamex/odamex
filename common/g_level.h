@@ -382,10 +382,17 @@ struct level_locals_t
 	float			detected_gametype;
 };
 
-typedef uint32_t clusterFlags_t;
+enum class clusterflags_t : uint32_t
+{
+	CLUSTER_HUB            = BIT(0),
+	CLUSTER_EXITTEXTISLUMP = BIT(1),
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
+};
 
-const static clusterFlags_t CLUSTER_HUB = BIT(0);
-const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
+using enum clusterflags_t;
+constexpr clusterflags_t enable_bitflag_operators(clusterflags_t) { return CLUSTER_EXITTEXTISLUMP; };
+using ClusterFlags = OFlags<clusterflags_t>;
 
 struct cluster_info_t
 {
@@ -394,7 +401,7 @@ struct cluster_info_t
 	OLumpName		finaleflat;
 	std::string		exittext;
 	std::string		entertext;
-	clusterFlags_t	flags = 0;
+	ClusterFlags	flags;
 	OLumpName		finalepic;
 
 	cluster_info_t() = default;
