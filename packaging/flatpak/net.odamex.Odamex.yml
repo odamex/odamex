@@ -48,6 +48,7 @@ modules:
   # cpptrace dependencies
   - name: libdwarf
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -D BUILD_DWARFDUMP=OFF
     sources:
@@ -58,6 +59,7 @@ modules:
   # Odalaunch dependencies
   - name: WxWidgets
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -D wxBUILD_SHARED=ON
       - -D wxBUILD_TESTS=OFF
@@ -86,6 +88,7 @@ modules:
   # Odamex (combined)
   - name: Odamex
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -D CMAKE_BUILD_TYPE=RelWithDebInfo
       - -D BUILD_OR_FAIL=1
@@ -94,7 +97,6 @@ modules:
       - -D BUILD_LAUNCHER=1
       - -D BUILD_TESTS=0
       - -D BUILD_MASTER=0
-      - -D BUILD_TESTS=0
       - -D USE_INTERNAL_LIBS=0
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
       - -D ODAMEX_INSTALL_DATADIR=/app/share
@@ -102,7 +104,12 @@ modules:
       - -D ODAMEX_NO_GITVER=0
       - -D ODAMEX_UPDATE_CVARDOCS=0
     post-install:
-      - ./flatpak-post-install.sh
+      # Install timidity config
+      - install -Dm644 ../packaging/flatpak/timidity.cfg /app/etc/timidity.cfg
+      # Install helper script
+      - install -Dm755 ../packaging/flatpak/select-exe.sh /app/bin/select-exe
+      # Install shell integration
+      - install -Dm644 ../packaging/flatpak/posix_aliases.sh /app/share/odamex/shell/posix_aliases.sh
       # delete files that cleanup can't see
       - rm -rf /app/bin/wx*
       - rm -rf /app/lib/cmake
@@ -114,5 +121,3 @@ modules:
     sources:
       - type: dir
         path: ../..
-      - type: file
-        path: ./flatpak-post-install.sh
