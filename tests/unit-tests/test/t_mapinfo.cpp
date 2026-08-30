@@ -149,7 +149,7 @@ TEST_F(MapInfoParse, TitlePatchCanHideTheAuthorName)
 TEST_F(MapInfoParse, InterPicSplitsLumpFromScript)
 {
 	const level_pwad_info_t& info =
-	    parse("map MAP01 \"Test\" { enterpic = INTERPIC exitpic = \"$SCRIPT\" }");
+	    parse(R"(map MAP01 "Test" { enterpic = INTERPIC exitpic = "$SCRIPT" })");
 
 	EXPECT_EQ(info.enterpic, "INTERPIC");
 	EXPECT_TRUE(info.enterscript.empty());
