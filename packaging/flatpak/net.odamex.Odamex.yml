@@ -121,5 +121,3 @@ modules:
     sources:
       - type: dir
         path: ../..
-      - type: file
-        path: ./flatpak-post-install.sh
