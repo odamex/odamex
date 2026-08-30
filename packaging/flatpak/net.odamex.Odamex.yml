@@ -97,7 +97,6 @@ modules:
       - -D BUILD_LAUNCHER=1
       - -D BUILD_TESTS=0
       - -D BUILD_MASTER=0
-      - -D BUILD_TESTS=0
       - -D USE_INTERNAL_LIBS=0
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
       - -D ODAMEX_INSTALL_DATADIR=/app/share
