@@ -102,7 +102,12 @@ modules:
       - -D ODAMEX_NO_GITVER=0
       - -D ODAMEX_UPDATE_CVARDOCS=0
     post-install:
-      - ./flatpak-post-install.sh
+      # Install timidity config
+      - install -Dm644 packaging/flatpak/timidity.cfg /app/etc/timidity.cfg
+      # Install helper script
+      - install -Dm755 packaging/flatpak/select-exe.sh /app/bin/select-exe
+      # Install shell integration
+      - install -Dm644 packaging/flatpak/posix_aliases.sh /app/share/odamex/shell/posix_aliases.sh
       # delete files that cleanup can't see
       - rm -rf /app/bin/wx*
       - rm -rf /app/lib/cmake
