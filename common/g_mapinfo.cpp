@@ -1753,12 +1753,10 @@ void G_MapNameToID24LevelNum(level_pwad_info_t& info)
 namespace
 {
 
-void ParseMapInfoLump(int lump, const OLumpName& lumpname)
+void ParseMapInfoBuffer(const char* buffer, size_t length, const OLumpName& lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
-
-	mapinfofrompwad = W_IsLumpFromPWAD(static_cast<unsigned>(lump));
 
 	level_pwad_info_t defaultinfo{};
 
@@ -1770,14 +1768,12 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		defaultinfo.skypic = def.skypic;
 	}
 
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
-
 	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    true,     // semiComments
 	    true,     // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + length);
 
 	while (os.scan())
 	{
@@ -1947,7 +1943,32 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		}
 	}
 }
+
+void ParseMapInfoLump(int lump, const OLumpName& lumpname)
+{
+	mapinfofrompwad = W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+
+	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+	ParseMapInfoBuffer(buffer, W_LumpLength(lump), lumpname);
+}
 } // namespace
+
+//
+// G_ParseMapInfoBuffer
+// Parses MAPINFO text from memory instead of from a lump and generates
+// data for wadlevelinfos and wadclusterinfos.
+//
+void G_ParseMapInfoBuffer(const char* buffer, size_t length, const OLumpName& lumpname,
+                          bool fromPWAD)
+{
+	mapinfofrompwad = fromPWAD;
+	ParseMapInfoBuffer(buffer, length, lumpname);
+}
+
+void G_ParseMapInfoString(const std::string& text, const OLumpName& lumpname, bool fromPWAD)
+{
+	G_ParseMapInfoBuffer(text.data(), text.size(), lumpname, fromPWAD);
+}
 
 //
 // G_ParseMapInfo
