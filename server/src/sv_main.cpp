@@ -436,7 +436,7 @@ BEGIN_COMMAND (say_to)
 {
 	if (argc > 2)
 	{
-		player_t& player = nameplayer(argv[1]);
+		player_t const& player = nameplayer(argv[1]);
 		if (!validplayer(player))
 			{
 				PrintFmt("Player \"{}\" was not found.\n", argv[1]);
