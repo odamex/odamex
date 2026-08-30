@@ -106,14 +106,12 @@ enum class levelflags2_t : uint32_t
 	LEVEL2_INFIGHTINGMASK      = BIT_MASK(0, 2),
 	LEVEL2_COMPAT_CROSSDROPOFF = BIT(3),
 	LEVEL2_HIDEAUTHORNAME      = BIT(4),
-	LEVEL2_AUTHORFROMPWAD      = BIT(5),
-	LEVEL2_FROMUMAPINFO        = BIT(6),
 	// if modifying this enum, make sure to update the
 	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum levelflags2_t;
-constexpr levelflags2_t enable_bitflag_operators(levelflags2_t) { return LEVEL2_COMPAT_CROSSDROPOFF; };
+constexpr levelflags2_t enable_bitflag_operators(levelflags2_t) { return LEVEL2_HIDEAUTHORNAME; };
 using LevelFlags2 = OFlags<levelflags2_t>;
 
 struct acsdefered_t;
