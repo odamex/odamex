@@ -482,7 +482,7 @@ void GiveTo(player_t& player, const char* name)
 	}
 	else if (it->flags & IT_WEAPON)
 	{
-		P_GiveWeapon(player, static_cast<weapontype_t>(it->offset), 0);
+		P_GiveWeapon(player, static_cast<weapontype_t>(it->offset), false);
 	}
 	else if (it->flags & IT_KEY)
 	{

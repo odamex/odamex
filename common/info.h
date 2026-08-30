@@ -29,6 +29,7 @@
 #include "dthinker.h"
 #include "farchive.h"
 #include "m_doomobjcontainer.h"
+#include "actorflags.h"
 
 #define NO_ALTSPEED -1
 #ifndef MELEERANGE // TODO: only have a single spot this is defined
@@ -1783,8 +1784,8 @@ struct mobjinfo_t
 	int mass                = 0;
 	int damage              = 0;
 	const char *activesound = nullptr; // [RH] not int
-	int flags               = 0;
-	int flags2              = 0;
+	ActorFlags1 flags       = ActorFlags1::none_set();
+	ActorFlags2 flags2      = ActorFlags2::none_set();
 	statenum_t raisestate   = S_NULL;
 	int translucency        = FRACUNIT;
 	const char *name        = nullptr;
@@ -1795,7 +1796,7 @@ struct mobjinfo_t
 	int infighting_group    = IG_DEFAULT;
 	int projectile_group    = PG_DEFAULT;
 	int splash_group        = SG_DEFAULT;
-	int flags3              = 0;
+	ActorFlags3 flags3      = ActorFlags3::none_set();
 	const char* ripsound    = nullptr;
 	int32_t droppeditem     = MT_NULL;
 
@@ -1844,7 +1845,7 @@ inline auto format_as(const mobjinfo_t& info)
 		getstring(info.seesound), getstring(info.attacksound), getstring(info.painsound),
 		getstring(info.deathsound), getstring(info.activesound), getstring(info.ripsound),
 		info.infighting_group, info.projectile_group, info.splash_group,
-		info.flags, info.flags2, info.flags3
+		info.flags.to_int(), info.flags2.to_int(), info.flags3.to_int()
 	);
 }
 

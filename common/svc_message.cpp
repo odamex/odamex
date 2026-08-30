@@ -127,7 +127,7 @@ static void FillMapThing(odaproto::MapThing& io_msg, const MapThing& i_mapthing)
     io_msg.set_z        (i_mapthing.z);
     io_msg.set_angle    (i_mapthing.angle);
     io_msg.set_type     (i_mapthing.type);
-    io_msg.set_flags    (i_mapthing.flags);
+    io_msg.set_flags    (i_mapthing.flags.to_int());
     io_msg.set_special  (i_mapthing.special);
 
     for (const auto& arg : i_mapthing.args)
@@ -520,13 +520,13 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	else if (mo->flags & (MF_AMBUSH | MF_DROPPED | MF_FRIEND))
 	{
 		spawnFlags |= SVC_SM_FLAGS;
-		cur->set_flags(mo->flags);
+		cur->set_flags(mo->flags.to_int());
 	}
 
 	if (mo->flags2 & MF2_DORMANT)
 	{
 		spawnFlags |= SVC_SM_FLAGS2;
-		cur->set_flags2(mo->flags2);
+		cur->set_flags2(mo->flags2.to_int());
 	}
 
 	// Who a friendly belongs to decides who it gets along with, and the client
@@ -538,10 +538,10 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		cur->set_friend_teamid(mo->friend_teamid);
 	}
 
-	if (mo->oflags)
+	if (mo->oflags.any())
 	{
 		spawnFlags |= SVC_SM_OFLAGS;
-		cur->set_oflags(mo->oflags);
+		cur->set_oflags(mo->oflags.to_int());
 	}
 
 	// animating corpses
@@ -657,6 +657,8 @@ static void FillUpdateMobj(odaproto::svc::UpdateMobj& msg, const AActor& mobj)
 {
 	uint32_t flags = P_GetMobjBaselineFlags(mobj);
 	msg.set_flags(flags);
+
+	msg.set_threshold(mobj.threshold);
 
 	odaproto::Actor* act = msg.mutable_actor();
 	odaproto::Vec3* pos = act->mutable_pos();
@@ -857,7 +859,7 @@ odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corps
 	cpsmom->set_y(corpse->momy);
 	cpsmom->set_z(corpse->momz);
 
-	cps->set_flags(corpse->flags);
+	cps->set_flags(corpse->flags.to_int());
 	cps->set_friend_playerid(corpse->friend_playerid);
 	cps->set_friend_teamid(corpse->friend_teamid);
 

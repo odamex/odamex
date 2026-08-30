@@ -1,6 +1,8 @@
 # CMake >= 3.13 needed for -S and -B params in library compilation.
-# CMake >= 3.19 needed for policy CMP0112: target-dependent generator expressions
-#               do not implicitly add target-level dependencies.
+# CMake >= 3.19 needed for:
+#               - policy CMP0112: target-dependent generator expressions
+#                 do not implicitly add target-level dependencies.
+#               - add_library(<name> INTERFACE) plus PUBLIC target_sources.
 # CMake >= 3.20 needed for restricted set of generator expressions allowed in custom command OUTPUT args.
 #
 # Note that if you are running Linux, there are many ways to get newer
@@ -185,10 +187,13 @@ include(OdamexCvarDoc)
 # Libraries
 add_subdirectory(libraries)
 
+# WAD building
+add_subdirectory(wad)
+
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
-  add_subdirectory(common)
   add_subdirectory(odaproto)
+  add_subdirectory(common)
 endif()
 if(BUILD_CLIENT)
   add_subdirectory(client)
@@ -218,9 +223,6 @@ endif()
 
 # The "cvardocs" target refreshes the committed documentation on demand.
 odamex_cvardoc_add_targets()
-
-# WAD building
-add_subdirectory(wad)
 
 # Bash completion
 add_subdirectory(completion)
@@ -264,6 +266,12 @@ if(NOT APPLE)
       COMPONENT common)
     install(FILES ${CONFIG_SAMPLES}
       DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex/config-samples
+      COMPONENT common)
+    install(FILES packaging/linux/net.odamex.Odamex.metainfo.xml
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo
+      COMPONENT common)
+    install(FILES packaging/linux/net.odamex.Odamex.releases.xml
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo/releases
       COMPONENT common)
 
     option(ODAMEX_COMPONENT_PACKAGES "Create several rpm/deb packages for repository maintainers." OFF)

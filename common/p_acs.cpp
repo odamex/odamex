@@ -70,7 +70,7 @@ struct FBehavior::ArrayInfo
 };
 
 ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, float num);
-ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, OUtil::SafeBool dropped);
 ItemEquipVal P_GiveCard(player_t *player, card_t card);
 ItemEquipVal P_GivePower(player_t *player, int  power);
 
