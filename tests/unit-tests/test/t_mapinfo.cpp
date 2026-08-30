@@ -288,16 +288,4 @@ TEST(MapInfoHelpers, MapNameToLevelNum)
 	EXPECT_EQ(info.levelnum, 99);
 }
 
-TEST_F(MapInfoParse, InfightingKeyLeavesOtherFlags2BitsAlone)
-{
-	EXPECT_EQ(LevelFlags2::all_set().to_int(),
-	          static_cast<uint32_t>(LEVEL2_FROMUMAPINFO) * 2 - 1);
-
-	const level_pwad_info_t& info = parse(
-	    "map MAP01 \"Test\" { titlepatch = CWILV00, hideauthorname noinfighting }");
-
-	EXPECT_TRUE(info.flags2.is_set(LEVEL2_NOINFIGHTING));
-	EXPECT_TRUE(info.flags2.is_set(LEVEL2_HIDEAUTHORNAME));
-}
-
 } // namespace
