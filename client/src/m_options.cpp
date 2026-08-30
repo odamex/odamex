@@ -2722,9 +2722,9 @@ void M_OptResponder(const event_t& ev)
 			float newval = item->a.cvar->value() - item->d.step;
 
 			if (item->b.leftval < item->c.rightval)
-				newval = std::min(newval, item->b.leftval);
-			else
 				newval = std::max(newval, item->b.leftval);
+			else
+				newval = std::min(newval, item->b.leftval);
 
 			if (item->e.cfunc)
 				item->e.cfunc(item->a.cvar, newval);
