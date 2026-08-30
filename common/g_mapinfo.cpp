@@ -1285,7 +1285,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "compat_limitpain", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_LIMITPAIN },
 			{ "compat_useblocking", MIType_CompatFlag, ref.flags, OUtil::noflag }, // special lines block use (not implemented, default odamex behavior)
 			{ "compat_missileclip", MIType_CompatFlag, ref.flags, OUtil::noflag }, // original height monsters when it comes to missiles (not implemented)
-			{ "compat_dropoff", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_DROPOFF }, // todo: not implemented
+			{ "compat_dropoff", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_DROPOFF },
 			{ "compat_crossdropoff", MIType_CompatFlag, ref.flags2, LEVEL2_COMPAT_CROSSDROPOFF },
 			{ "compat_trace", MIType_CompatFlag, ref.flags, OUtil::noflag }, // todo: not implemented
 			{ "compat_boomscroll", MIType_CompatFlag, ref.flags, OUtil::noflag }, // todo: not implemented
