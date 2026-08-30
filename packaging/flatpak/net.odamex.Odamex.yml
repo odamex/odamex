@@ -48,6 +48,7 @@ modules:
   # cpptrace dependencies
   - name: libdwarf
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -D BUILD_DWARFDUMP=OFF
     sources:
@@ -58,6 +59,7 @@ modules:
   # Odalaunch dependencies
   - name: WxWidgets
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -D wxBUILD_SHARED=ON
       - -D wxBUILD_TESTS=OFF
@@ -86,6 +88,7 @@ modules:
   # Odamex (combined)
   - name: Odamex
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -D CMAKE_BUILD_TYPE=RelWithDebInfo
       - -D BUILD_OR_FAIL=1
