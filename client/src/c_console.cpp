@@ -123,17 +123,18 @@ static struct NotifyText
 } NotifyStrings[NUMNOTIFIES];
 
 // Default Printlevel
-std::array<int, 9> PrintColors =
-{	CR_RED,		// Pickup
-	CR_GOLD,	// Obituaries
-	CR_GRAY,	// Messages
-	CR_GREEN,	// Chat
-	CR_GREEN,	// Team chat
+constexpr std::array PrintColors =
+{
+	CR_RED,    // Pickup
+	CR_GOLD,   // Obituaries
+	CR_GRAY,   // Messages
+	CR_GREEN,  // Chat
+	CR_GREEN,  // Team chat
 
-	CR_GOLD,	// Server chat
-	CR_YELLOW,	// Warning messages
-	CR_RED,		// Critical messages
-	CR_GOLD,	// Centered Messages
+	CR_GOLD,   // Server chat
+	CR_YELLOW, // Warning messages
+	CR_RED,    // Critical messages
+	CR_GOLD,   // Centered Messages
 };
 
 
