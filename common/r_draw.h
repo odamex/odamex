@@ -27,6 +27,7 @@
 #include "r_defs.h"
 
 #include <array>
+#include <vector>
 
 typedef struct
 {
@@ -291,10 +292,26 @@ void R_ClearTranslation(translationtable_t& tlate);
 void R_BuildTranslationRamp(translationtable_t& tlate, palindex_t start, palindex_t end,
                             argb_t dest_color);
 
-// Recolors from start to end into a linear gradient, the way font translations are
-// built.
+// Recolors an ordered run of source indices into a linear gradient, the way font
+// translations are built.
+//
+// The source is a list rather than a range because a font's colors are neither guaranteed
+// to be contiguous nor to run dark to light in palette order.
+void R_BuildTranslationGradient(translationtable_t& tlate, const palindex_t* src, size_t count,
+                                argb_t start_color, argb_t end_color);
+
+// Same, but for a source that happens to be the contiguous range from start to end.
 void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, palindex_t end,
                                 argb_t start_color, argb_t end_color);
+
+// Collects the palette indices a run of patches actually uses, ordered darkest
+// to brightest.
+//
+// This is needed because gfx that do not sit on one of the palette's standard ramps -
+// like a font with its own colors - has to be sampled before it can be recolored,
+// since there is no other way to know which indices to translate.
+void R_SampleLuminosity(const patch_t* const* patches, size_t count,
+                        std::vector<palindex_t>& out);
 
 //
 // Shared translation lifetime

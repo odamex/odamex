@@ -654,26 +654,87 @@ void R_BuildTranslationRamp(translationtable_t& tlate, palindex_t start, palinde
 	R_BuildColorRamp(dest_color, start, end, tlate.remap.data(), tlate.rgb.data(), 0);
 }
 
-void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, palindex_t end,
+void R_BuildTranslationGradient(translationtable_t& tlate, const palindex_t* src, size_t count,
                                 argb_t start_color, argb_t end_color)
 {
+	if (count == 0)
+		return;
+
 	const palette_t* pal = V_GetDefaultPalette();
 
-	const int range = end - start + 1;
+	const int range = static_cast<int>(count);
 	const int r_diff = end_color.getr() - start_color.getr();
 	const int g_diff = end_color.getg() - start_color.getg();
 	const int b_diff = end_color.getb() - start_color.getb();
 
-	for (int i = start; i <= end; i++)
+	for (int step = 0; step < range; step++)
 	{
-		const int step = i - start;
 		const argb_t color(start_color.getr() + step * r_diff / range,
 		                   start_color.getg() + step * g_diff / range,
 		                   start_color.getb() + step * b_diff / range);
 
-		tlate.rgb[i] = color;
-		tlate.remap[i] = V_BestColor(pal->basecolors, color);
+		const palindex_t index = src[step];
+		tlate.rgb[index] = color;
+		tlate.remap[index] = V_BestColor(pal->basecolors, color);
 	}
+}
+
+void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, palindex_t end,
+                                argb_t start_color, argb_t end_color)
+{
+	std::array<palindex_t, 256> src;
+	const size_t count = end - start + 1;
+
+	for (size_t i = 0; i < count; i++)
+		src[i] = static_cast<palindex_t>(start + i);
+
+	R_BuildTranslationGradient(tlate, src.data(), count, start_color, end_color);
+}
+
+//
+// R_SampleLuminosity
+//
+// Walks the pixels of patches and reports which palette indices it actually
+// uses, sorting by darkest first.
+//
+void R_SampleLuminosity(const patch_t* const* patches, size_t count, std::vector<palindex_t>& out)
+{
+	std::array<bool, 256> used;
+	used.fill(false);
+
+	for (size_t i = 0; i < count; i++)
+	{
+		const patch_t* patch = patches[i];
+		if (patch == NULL)
+			continue;
+
+		for (int col = 0; col < patch->width(); col++)
+		{
+			const tallpost_t* post = reinterpret_cast<const tallpost_t*>(
+			    reinterpret_cast<const byte*>(patch) + LELONG(patch->columnofs[col]));
+
+			while (!post->end())
+			{
+				const byte* data = post->data();
+				for (unsigned int pixel = 0; pixel < post->length; pixel++)
+					used[data[pixel]] = true;
+
+				post = post->next();
+			}
+		}
+	}
+
+	out.clear();
+	for (int i = 0; i < 256; i++)
+	{
+		if (used[i])
+			out.push_back(static_cast<palindex_t>(i));
+	}
+
+	const palette_t* pal = V_GetDefaultPalette();
+	std::stable_sort(out.begin(), out.end(), [pal](palindex_t a, palindex_t b) {
+		return V_Luminance(pal->basecolors[a]) < V_Luminance(pal->basecolors[b]);
+	});
 }
 
 //
