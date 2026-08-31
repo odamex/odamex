@@ -29,6 +29,8 @@
 
 #define BONUSADD 6
 
+inline constexpr int HORDE_AMMOMULTI[NUMAMMO] = {2, 1, 1, 2};
+
 bool P_GiveFrags(player_t& player, int num);
 bool P_GiveKills(player_t& player, int num);
 bool P_GiveDeaths(player_t& player, int num);

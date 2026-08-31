@@ -475,8 +475,6 @@ ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool dropped)
 	return IEV_NotEquipped;
 }
 
-constexpr int HORDE_AMMOMULTI[NUMAMMO] = {2, 1, 1, 2};
-
 //
 // P_GiveLowAmmoBonus
 // 

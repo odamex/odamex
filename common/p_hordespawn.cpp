@@ -32,6 +32,7 @@
 #include "gi.h"
 #include "m_random.h"
 #include "p_hordedefine.h"
+#include "p_inter.h"
 #include "p_local.h"
 #include "s_sound.h"
 
@@ -499,6 +500,85 @@ void P_HordeSpawnItem()
 }
 
 /**
+ * @brief Ammo type a weapon handout feeds on, or am_noammo if it needs none.
+ */
+static ammotype_t WeaponAmmoType(const mobjtype_t weapon)
+{
+	switch (weapon)
+	{
+	case MT_CHAINGUN:
+		return am_clip;
+	case MT_SHOTGUN:
+	case MT_SUPERSHOTGUN:
+		return am_shell;
+	case MT_MISC25: // BFG9000.
+	case MT_MISC28: // Plasma rifle.
+		return am_cell;
+	case MT_MISC27: // Rocket launcher.
+		return am_misl;
+	default:
+		return am_noammo;
+	}
+}
+
+/**
+ * @brief Small pickup for an ammo type.
+ *        Every one of them is worth a single clip, whatever the type.
+ */
+static mobjtype_t AmmoPickup(const ammotype_t ammo)
+{
+	switch (ammo)
+	{
+	case am_clip:
+		return MT_CLIP; // Clip.
+	case am_shell:
+		return MT_MISC22; // Four shells.
+	case am_cell:
+		return MT_MISC20; // Cell.
+	case am_misl:
+		return MT_MISC18; // Rocket.
+	default:
+		return MT_NULL;
+	}
+}
+
+/**
+ * @brief Erupt a weapon's ammo out of the spot it spawned at.
+ *
+ * @detail The pile comes out to the same helping of ammo as a low ammo bonus,
+ *         handed over as pickups since the weapon itself can't vary what it
+ *         gives.
+ */
+static void SpawnWeaponAmmo(const AActor& weapon)
+{
+	const ammotype_t ammo = WeaponAmmoType(static_cast<mobjtype_t>(weapon.type));
+	const mobjtype_t pickup = AmmoPickup(ammo);
+	if (pickup == MT_NULL)
+		return;
+
+	// A low ammo bonus is five clips per handout multiplier, and every pickup
+	// is worth one clip - except a dropped bullet clip, which is worth half,
+	// so it takes twice as many of those.
+	int count = HORDE_AMMOMULTI[ammo] * 5;
+	if (ammo == am_clip)
+		count *= 2;
+
+	for (int i = 0; i < count; i++)
+	{
+		AActor* drop = new AActor(weapon.x, weapon.y, weapon.z, pickup);
+
+		// Spit it into the air so the pile is easy to spot.
+		drop->momx = (static_cast<int>(P_RandomInt(512)) - 256) << 9;
+		drop->momy = (static_cast<int>(P_RandomInt(512)) - 256) << 9;
+		drop->momz = (6 * FRACUNIT) + (static_cast<int>(P_RandomInt(256)) << 10);
+
+		// Don't respawn the usual way.
+		drop->flags |= MF_DROPPED;
+		SV_SpawnMobj(drop);
+	}
+}
+
+/**
  * @brief Spawn a powerup at one of the available item spawners.
  */
 void P_HordeSpawnPowerup(const mobjtype_t pw)
@@ -527,6 +607,9 @@ void P_HordeSpawnPowerup(const mobjtype_t pw)
 		// Don't respawn the usual way.
 		pack->flags |= MF_DROPPED;
 		SV_SpawnMobj(pack);
+
+		// Drop some ammo too eh?
+		SpawnWeaponAmmo(*pack);
 
 		// Play the item respawn sound, so people can listen for it.
 		if ((point.mo->flags & MF_AMBUSH) == 0)
