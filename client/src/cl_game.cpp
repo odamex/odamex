@@ -1919,7 +1919,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			Z_Free(demobuffer);
 
 		PrintFmt(PRINT_WARNING, "DOOM Demo file too short\n");
-		gameaction = ga_fullconsole;
+		gameaction = singledemo ? ga_fullconsole : ga_nothing;
 		return;
 	}
 
