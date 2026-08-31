@@ -120,6 +120,7 @@ CVAR_FUNC_DECL(	sv_upnp, "1", "Enable UPnP support",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 CVAR_RANGE_FUNC_DECL(sv_upnp_discovertimeout, "2000", "UPnP Router discovery timeout",
+				// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
 				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 500.0f, 10000.0f)
 
 CVAR_FUNC_DECL(	sv_upnp_description, "",  "Router-side description of port mapping",
@@ -131,29 +132,23 @@ CVAR_FUNC_DECL(	sv_upnp_internalip, "", "Set to the local machine IP address",
 CVAR_FUNC_DECL(	sv_upnp_externalip, "", "Set to the router IP address",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
-#ifdef ODA_HAVE_MINIUPNP
-#define UPNP_CVAR_FUNC(name) CVAR_FUNC_IMPL(name) { }
-#else
-void SV_NoUPnPSupport(const cvar_t& var)
+void SV_UPnPCvarChanged([[maybe_unused]] const cvar_t& var)
 {
+#ifndef ODA_HAVE_MINIUPNP
 	if (!(var.flags() & CVAR_MODIFIED))
 		return;
 
 	PrintFmt(PRINT_WARNING,
 		"{}: This build of odasrv was not compiled with UPnP support.\n",
 		var.name());
+#endif
 }
 
-#define UPNP_CVAR_FUNC(name) CVAR_FUNC_IMPL(name) { SV_NoUPnPSupport(var); }
-#endif
-
-UPNP_CVAR_FUNC(sv_upnp)
-UPNP_CVAR_FUNC(sv_upnp_discovertimeout)
-UPNP_CVAR_FUNC(sv_upnp_description)
-UPNP_CVAR_FUNC(sv_upnp_internalip)
-UPNP_CVAR_FUNC(sv_upnp_externalip)
-
-#undef UPNP_CVAR_FUNC
+CVAR_FUNC_IMPL(sv_upnp) { SV_UPnPCvarChanged(var); }
+CVAR_FUNC_IMPL(sv_upnp_discovertimeout) { SV_UPnPCvarChanged(var); }
+CVAR_FUNC_IMPL(sv_upnp_description) { SV_UPnPCvarChanged(var); }
+CVAR_FUNC_IMPL(sv_upnp_internalip) { SV_UPnPCvarChanged(var); }
+CVAR_FUNC_IMPL(sv_upnp_externalip) { SV_UPnPCvarChanged(var); }
 
 // Gameplay settings
 // =================
