@@ -128,7 +128,7 @@ void RefreshPalettes (void) {}
 void V_RefreshColormaps() {}
 
 void C_MidPrint (const char *msg, player_t *p, int msgtime) {}
-size_t C_BasePrint(const printlevel_t printlevel, const char* color_code, const std::string& str) { return 0; }
+size_t C_BasePrint(const printlevel_t /*printlevel*/, const char* /*color_code*/, const std::string& /*str*/) { return 0; }
 
 void S_NoiseDebug() {}
 void S_Init(float sfxVolume, float musicVolume) {}

@@ -51,6 +51,7 @@
 
 #include <list>
 #include <algorithm>
+#include <utility>
 
 #ifdef __SWITCH__
 #include "nx_io.h"
@@ -150,7 +151,7 @@ class ConsoleLine
 {
 public:
 	ConsoleLine();
-	ConsoleLine(const std::string& _text, const std::string& _color_code = "\034-",	// TEXTCOLOR_ESCAPE
+	ConsoleLine(std::string _text, std::string _color_code = "\034-",	// TEXTCOLOR_ESCAPE
 			printlevel_t _print_level = PRINT_HIGH);
 
 	void join(const ConsoleLine& other);
@@ -177,9 +178,9 @@ ConsoleLine::ConsoleLine()
 {
 }
 
-ConsoleLine::ConsoleLine(const std::string& _text, const std::string& _color_code,
+ConsoleLine::ConsoleLine(std::string  _text, std::string  _color_code,
                          printlevel_t _print_level)
-    : text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
+    : text(std::move(_text)), color_code(std::move(_color_code)), wrapped(false), print_level(_print_level),
       timeout(gametic + int(con_notifytime * TICRATE))
 {
 }
@@ -886,36 +887,46 @@ static void TabComplete(TabCompleteDirection dir)
 	TabCycleStart();
 }
 
-static void setmsgcolor(int index, const char *color);
+namespace
+{
+
+void setmsgcolor(int index, int color)
+{
+	if (color < 0 || color >= NUM_TEXT_COLORS)
+		color = 0;
+	PrintColors[index] = static_cast<EColorRange>(color);
+}
+
+}
 
 CVAR_FUNC_IMPL(msg0color)
 {
-	setmsgcolor(0, var.cstring());
+	setmsgcolor(0, var.asInt());
 }
 
 CVAR_FUNC_IMPL(msg1color)
 {
-	setmsgcolor(1, var.cstring());
+	setmsgcolor(1, var.asInt());
 }
 
 CVAR_FUNC_IMPL(msg2color)
 {
-	setmsgcolor(2, var.cstring());
+	setmsgcolor(2, var.asInt());
 }
 
 CVAR_FUNC_IMPL(msg3color)
 {
-	setmsgcolor(3, var.cstring());
+	setmsgcolor(3, var.asInt());
 }
 
 CVAR_FUNC_IMPL(msg4color)
 {
-	setmsgcolor(4, var.cstring());
+	setmsgcolor(4, var.asInt());
 }
 
 CVAR_FUNC_IMPL(msgmidcolor)
 {
-	setmsgcolor(PrintColors.size()-1, var.cstring());
+	setmsgcolor(PrintColors.size()-1, var.asInt());
 }
 
 CVAR_FUNC_IMPL(con_scaletext)
@@ -1127,22 +1138,13 @@ static void C_SetConsoleDimensions(int width, int height)
 	}
 }
 
-static void setmsgcolor(int index, const char *color)
-{
-	int i = atoi(color);
-	if (i < 0 || i >= NUM_TEXT_COLORS)
-		i = 0;
-	PrintColors[index] = i;
-}
-
-
 //
 // C_AddNotifyString
 //
 // Prioritise messages on top of screen
 // Break up the lines so that they wrap around the screen boundary
 //
-void C_AddNotifyString(printlevel_t printlevel, const char* color_code, const char* source)
+void C_AddNotifyString(printlevel_t printlevel, const char* /*color_code*/, const char* source)
 {
 	static enum
 	{
@@ -1223,13 +1225,16 @@ void C_AddNotifyString(printlevel_t printlevel, const char* color_code, const ch
 	}
 }
 
+namespace
+{
+
 //
 // C_PrintStringStdOut
 //
 // Prints the given string to stdout, stripping away any color markup
 // escape codes.
 //
-static size_t C_PrintStringStdOut(std::string str)
+size_t C_PrintStringStdOut(std::string str)
 {
 	StripColorCodes(str);
 
@@ -1246,7 +1251,7 @@ static size_t C_PrintStringStdOut(std::string str)
 // Provide our own Printf() that is sensitive of the
 // console status (in or out of game).
 //
-static size_t C_PrintString(printlevel_t printlevel, const char* color_code, const char* outline)
+size_t C_PrintString(printlevel_t printlevel, const char* color_code, const char* outline)
 {
 	if (I_VideoInitialized() && !midprinting)
 	{
@@ -1325,9 +1330,6 @@ static size_t C_PrintString(printlevel_t printlevel, const char* color_code, con
 
 	return strlen(outline);
 }
-
-namespace
-{
 
 // struct tm counts years from 1900.
 constexpr int TM_YEAR_BASE = 1900;
@@ -2239,8 +2241,8 @@ static bool C_HandleKey(const event_t& ev)
 			History.addString(CmdLine.text);
 			History.resetPosition();
 
-			PrintFmt(PRINT_HIGH, "]{}\n", CmdLine.text.c_str());
-			AddCommandString(CmdLine.text.c_str());
+			PrintFmt(PRINT_HIGH, "]{}\n", CmdLine.text);
+			AddCommandString(CmdLine.text);
 			CmdLine.clear();
 			CmdCompletions.clear();
 
@@ -2435,7 +2437,7 @@ void C_DrawMid()
 		for (int i = 0; i < MidLines; i++, y += line_height)
 		{
 			screen->DrawTextStretched(PrintColors.back(),
-					x - xscale * (MidMsg[i].width / 2),
+					x - (xscale * (MidMsg[i].width / 2)),
 					y, reinterpret_cast<byte*>(MidMsg[i].string), xscale, yscale);
 		}
 

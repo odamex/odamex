@@ -99,7 +99,10 @@ char *TimeStamp()
 
 EXTERN_CVAR(log_color)
 
-static size_t PrintString(printlevel_t printlevel, std::string str)
+namespace
+{
+
+size_t PrintString(printlevel_t printlevel, std::string str)
 {
 	StripColorCodes(str);
 
@@ -152,6 +155,8 @@ static size_t PrintString(printlevel_t printlevel, std::string str)
 
 	return str.length();
 }
+
+} // namespace
 
 extern bool gameisdead;
 

@@ -57,8 +57,6 @@ void SV_DrawScores();
 void SV_ServerSettingChange();
 bool SV_IsPlayerAllowedToSee(const player_t &pl, const AActor *mobj);
 
-void SV_BasePrint(client_t* cl, const printlevel_t printlevel, const std::string& str);
-
 // Print directly to a specific player.
 template <typename... ARGS>
 void SV_PlayerPrintFmt(printlevel_t level, int player_id, fmt::format_string<ARGS...> format, ARGS&&... args)
