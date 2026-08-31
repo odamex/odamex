@@ -544,14 +544,9 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	if ((mo->flags & MF_CORPSE) && mo->state->statenum != S_GIBS)
 	{
 		// This sets off some additional logic on the client.
-        //
-        // Please note that we also set statenum because it can happen where a mobj both spawns and
-        // instantly gibs on a single tic, especially in horde mode.  And in those cases, we don't
-        // want the special spawn
 		spawnFlags |= SVC_SM_CORPSE;
 		cur->set_frame(mo->frame);
 		cur->set_tics(mo->tics);
-		cur->set_statenum(mo->state->statenum);
 	}
 
 	msg.set_spawn_flags(spawnFlags);
