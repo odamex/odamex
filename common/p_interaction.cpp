@@ -1335,14 +1335,14 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 				if (teamInfo->FlagSocketSprite == special.sprite)
 				{
 					SV_SocketTouch(player, teamInfo->Team);
-					return val;
+					return IEV_NotEquipped;
 				}
 			}
 
 			if (!teamItemSuccess)
 			{
 				PrintFmt(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing {}: {}\n", special.sprite, special.info->name);
-				return val;
+				return IEV_NotEquipped;
 			}
 		}
 	}
