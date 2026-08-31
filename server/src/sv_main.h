@@ -38,16 +38,6 @@ extern bool keysfound[NUMCARDS];
 // retransmissions.
 constexpr int MAX_PING = 999;
 
-class client_c
-{
-public:
-
-	size_t size() { return players.size(); }
-	client_c() {}
-};
-
-extern client_c clients;
-
 void SV_InitNetwork (void);
 void SV_SendAndFlushDisconnectSignal();
 void SV_SendAndFlushReconnectSignal();

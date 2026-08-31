@@ -300,9 +300,6 @@ CVAR_FUNC_IMPL(sv_sharekeys)
 	}
 }
 
-client_c clients;
-
-
 #define CLIENT_TIMEOUT 65 // 65 seconds
 
 void SV_UpdateConsolePlayer(player_t &player);
