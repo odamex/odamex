@@ -124,7 +124,8 @@ constexpr uint32_t BIT_MASK(uint32_t a, uint32_t b)
 }
 
 // game print flags
-enum printlevel_t {
+enum class printlevel_t : uint8_t
+{
 	PRINT_PICKUP,		// Pickup messages
 	PRINT_OBITUARY,		// Death messages
 	PRINT_HIGH,			// Regular messages
@@ -141,8 +142,12 @@ enum printlevel_t {
 	PRINT_FILTERCHAT,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
 	PRINT_FILTERHIGH,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
 
+	PRINT_SHOWALWAYS,	// Same as PRINT_HIGH but always shown regardless of whether show_messages is enabled
+
 	PRINT_MAXPRINT
 };
+
+using enum printlevel_t;
 
 //
 // MIN

@@ -168,6 +168,7 @@ EXTERN_CVAR (cl_predictsectors)
 
 EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
+EXTERN_CVAR (mute_chat)
 
 EXTERN_CVAR (cl_autoaim)
 
@@ -412,6 +413,7 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 
 	mute_spectators = 0.f;
 	mute_enemies = 0.f;
+	mute_chat = 0.f;
 
 	{
 		// [jsd] unlink player pointers from AActors; solves crash in R_ProjectSprites after a svc_disconnect message.

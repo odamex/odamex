@@ -887,7 +887,7 @@ odaproto::svc::Print SVC_Print(printlevel_t level, const std::string& str)
 {
 	odaproto::svc::Print msg;
 
-	msg.set_level(level);
+	msg.set_level(static_cast<byte>(level));
 	msg.set_message(str);
 
 	return msg;

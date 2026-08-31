@@ -1782,12 +1782,12 @@ void M_ChangeMessages()
 {
 	if (show_messages)
 	{
-		PrintFmt(128, "{}\n", GStrings(MSGOFF));
+		PrintFmt(PRINT_SHOWALWAYS, "{}\n", GStrings(MSGOFF));
 		show_messages.Set (0.0f);
 	}
 	else
 	{
-		PrintFmt(128, "{}\n", GStrings(MSGON));
+		PrintFmt(PRINT_SHOWALWAYS, "{}\n", GStrings(MSGON));
 		show_messages.Set (1.0f);
 	}
 }

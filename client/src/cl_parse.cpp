@@ -90,6 +90,7 @@ EXTERN_CVAR(cl_team)
 EXTERN_CVAR(hud_revealsecrets)
 EXTERN_CVAR(mute_enemies)
 EXTERN_CVAR(mute_spectators)
+EXTERN_CVAR(mute_chat)
 EXTERN_CVAR(show_messages)
 EXTERN_CVAR(co_novileghosts)
 EXTERN_CVAR(sv_sharekeys)
@@ -1669,7 +1670,7 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 //
 void CL_Print(const odaproto::svc::Print* msg)
 {
-	byte level = msg->level();
+	const auto level = static_cast<printlevel_t>(msg->level());
 	const std::string& str = msg->message();
 
 	// Disallow getting NORCON messages
@@ -1686,7 +1687,7 @@ void CL_Print(const odaproto::svc::Print* msg)
 	else
 		PrintFmt(level, "{}", str);
 
-	if (show_messages)
+	if (not mute_chat)
 	{
 		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
 			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
@@ -2165,6 +2166,9 @@ void CL_Say(const odaproto::svc::Say* msg)
 		    (G_IsFFAGame() ||
 		     (G_IsTeamGame() && player.userinfo.team != consoleplayer().userinfo.team)))
 			filtermessage = true;
+
+		if (mute_chat)
+			filtermessage = true;
 	}
 
 	const std::string& name = player.userinfo.netname;
@@ -2178,7 +2182,7 @@ void CL_Say(const odaproto::svc::Say* msg)
 		else
 			PrintFmt(publicmsg, "{}: {}\n", name, message);
 
-		if (show_messages && !filtermessage)
+		if (mute_chat && !filtermessage)
 		{
 			if (cl_chatsounds == 1)
 				S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
@@ -2191,7 +2195,7 @@ void CL_Say(const odaproto::svc::Say* msg)
 		else
 			PrintFmt(publicteammsg, "{}: {}\n", name, message);
 
-		if (show_messages && cl_chatsounds && !filtermessage)
+		if (!mute_chat && cl_chatsounds && !filtermessage)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
 }

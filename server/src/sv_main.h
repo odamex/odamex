@@ -57,11 +57,11 @@ void SV_DrawScores();
 void SV_ServerSettingChange();
 bool SV_IsPlayerAllowedToSee(const player_t &pl, const AActor *mobj);
 
-void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
+void SV_BasePrint(client_t* cl, const printlevel_t printlevel, const std::string& str);
 
 // Print directly to a specific player.
 template <typename... ARGS>
-void SV_PlayerPrintFmt(int level, int player_id, fmt::format_string<ARGS...> format, ARGS&&... args)
+void SV_PlayerPrintFmt(printlevel_t level, int player_id, fmt::format_string<ARGS...> format, ARGS&&... args)
 {
 	client_t* cl = &idplayer(player_id).client;
 	SV_ClientPrintFmt(cl, level, format, std::forward<ARGS>(args)...);
@@ -69,7 +69,7 @@ void SV_PlayerPrintFmt(int level, int player_id, fmt::format_string<ARGS...> for
 
 // Print to all spectators
 template <typename... ARGS>
-void SV_SpectatorPrintFmt(int level, fmt::format_string<ARGS...> format, ARGS&&... args)
+void SV_SpectatorPrintFmt(printlevel_t level, fmt::format_string<ARGS...> format, ARGS&&... args)
 {
 	std::string string = fmt::format(format, std::forward<ARGS>(args)...);
 	PrintFmt(level, "{}", string);  // print to the console
@@ -87,7 +87,7 @@ void SV_SpectatorPrintFmt(int level, fmt::format_string<ARGS...> format, ARGS&&.
 }
 
 template <typename... ARGS>
-void SV_TeamPrintFmt(int level, int who, fmt::format_string<ARGS...> format, ARGS&&... args)
+void SV_TeamPrintFmt(printlevel_t level, int who, fmt::format_string<ARGS...> format, ARGS&&... args)
 {
 	if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
 		return;

@@ -1905,6 +1905,13 @@
       {
          "default" : false,
          "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Mute all player chat.",
+         "name" : "mute_chat",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Mute enemy players chat.",
          "name" : "mute_enemies",
          "type" : "boolean"
