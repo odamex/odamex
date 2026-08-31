@@ -123,7 +123,7 @@ static struct NotifyText
 } NotifyStrings[NUMNOTIFIES];
 
 // Default Printlevel
-constexpr std::array PrintColors =
+std::array PrintColors =
 {
 	CR_RED,    // Pickup
 	CR_GOLD,   // Obituaries
@@ -1294,7 +1294,7 @@ static size_t C_PrintString(printlevel_t printlevel, const char* color_code, con
 		strncpy(str, line_start, len);
 		str[len] = '\0';
 
-		const bool wrap_new_line = *line_end != '\n';
+		const bool wrap_new_line = *line_end != '\n' || len > ConCols;
 		ConsoleLine new_line(str, color_code);
 		new_line.wrapped = wrap_new_line;
 
