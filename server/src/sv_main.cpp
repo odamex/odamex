@@ -427,10 +427,27 @@ BEGIN_COMMAND (say)
 	if (argc > 1)
 	{
 		std::string chat = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
-		SV_BroadcastPrintFmt(PRINT_SERVERCHAT, "[console]: {}\n", chat);
+		SV_BroadcastPrintFmt(PRINT_SERVERCHAT, "[server]: {}\n", chat);
 	}
 }
 END_COMMAND (say)
+
+BEGIN_COMMAND (say_to)
+{
+	if (argc > 2)
+	{
+		player_t const& player = nameplayer(argv[1]);
+		if (!validplayer(player))
+			{
+				PrintFmt("Player \"{}\" was not found.\n", argv[1]);
+				return;
+			}
+
+		SV_PlayerPrintFmt(PRINT_SERVERCHAT, player.id, "[server]: {}\n",
+		                  JoinStrings(VectorArgs(argc - 1, argv + 1), " "));
+	}
+}
+END_COMMAND (say_to)
 
 void call_terms();
 
