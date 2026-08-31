@@ -247,17 +247,23 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	static constexpr palindex_t range_stop = 0x7F;
 
 	const int pid = translation.getPlayerID();
+	const argb_t* rgb = translation.getRGB();
 
 	// Not a player color translation:
-	if (pid == -1)
+	if (pid == -1 && rgb == NULL)
 		return shade(translation.tlate(c));
 
 	// Special effect:
 	if (m_mapnum >= NUMCOLORMAPS)
 		return shade(translation.tlate(c));
 
+	// A translation carrying its own colors says which indices it covers by
+	// leaving the rest at zero alpha:
+	if (rgb != NULL && rgb[c].geta() == 0)
+		return shade(translation.tlate(c));
+
 	// Is a player color translation, but not a player color index:
-	if (c < range_start || c > range_stop)
+	if (rgb == NULL && (c < range_start || c > range_stop))
 		return shade(c);
 
 	// Default to white light:
@@ -271,8 +277,8 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 		fadecolor = m_dyncolormap->fade;
 	}
 
-	// Find the shading for the custom player colors:
-	const argb_t trancolor = translationRGB[pid][c - range_start];
+	// Find the shading for the custom colors.
+	const argb_t trancolor = rgb != NULL ? rgb[c] : translationRGB[pid][c - range_start];
 
 	unsigned int r = (trancolor.getr() * lightcolor.getr() * (NUMCOLORMAPS - m_mapnum) / 255
 					+ fadecolor.getr() * m_mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;

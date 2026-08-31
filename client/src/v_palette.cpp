@@ -92,17 +92,17 @@ static OLumpName palette_lumpname;
 static int current_palette_num;
 
 translationref_t::translationref_t() :
-	m_table(NULL), m_player_id(-1)
+	m_table(NULL), m_player_id(-1), m_rgb(NULL)
 {
 }
 
 translationref_t::translationref_t(const byte *table) :
-	m_table(table), m_player_id(-1)
+	m_table(table), m_player_id(-1), m_rgb(NULL)
 {
 }
 
 translationref_t::translationref_t(const byte *table, const int player_id) :
-	m_table(table), m_player_id(player_id)
+	m_table(table), m_player_id(player_id), m_rgb(NULL)
 {
 }
 
@@ -912,85 +912,6 @@ BEGIN_COMMAND (testfade)
 	}
 }
 END_COMMAND (testfade)
-
-/****** Colorspace Conversion Functions ******/
-
-//
-// V_RGBtoHSV
-//
-// Converts from the RGB color space to the HSV color space.
-// Code from http://www.cs.rit.edu/~yxv4997/t_convert.html
-//
-// r,g,b values are from 0 to 1
-// h = [0,360], s = [0,1], v = [0,1]
-// if s == 0, then h = -1 (undefined)
-// RGB - 0: {    .46  1 .429 } 7: {    .254 .571 .206 } 15: {    .0317 .0794 .0159 }
-// HSV - 0: { 116.743 .571 1 } 7: { 112.110 .639 .571 } 15: { 105.071  .800 .0794 }
-//
-fahsv_t V_RGBtoHSV(const fargb_t &color)
-{
-	float a = color.geta(), r = color.getr(), g = color.getg(), b = color.getb();
-
-	float smallest = std::min(std::min(r, g), b);
-	float largest = std::max(std::max(r, g), b);
-	float delta = largest - smallest;
-
-	if (delta == 0.0f)
-		return fahsv_t(a, 0, 0, largest);
-
-	float hue;
-
-	if (largest == r)
-		hue = (g - b) / delta;					// between yellow & magenta
-	else if (largest == g)
-		hue = 2.0f + (b - r) / delta;				// between cyan & yellow
-	else
-		hue = 4.0f + (r - g) / delta;				// between magenta & cyan
-
-	hue *= 60.f;
-	if (hue < 0.0f)
-		hue += 360.0f;
-
-	return fahsv_t(a, hue, delta / largest, largest);
-}
-
-
-//
-// V_HSVtoRGB
-//
-// Converts from the HSV color space to the RGB color space.
-//
-fargb_t V_HSVtoRGB(const fahsv_t &color)
-{
-	float a = color.geta(), h = color.geth(), s = color.gets(), v = color.getv();
-
-	if (s == 0.0f)						// achromatic (grey)
-		return fargb_t(a, v, v, v);
-
-	float f = (h / 60.0f) - floor(h / 60.0f);
-	float p = v * (1.0f - s);
-	float q = v * (1.0f - s * f);
-	float t = v * (1.0f - s * (1.0f - f));
-
-	int sector = int(h / 60.0f);
-	switch (sector)
-	{
-		case 0:
-			return fargb_t(a, v, t, p);
-		case 1:
-			return fargb_t(a, q, v, p);
-		case 2:
-			return fargb_t(a, p, v, t);
-		case 3:
-			return fargb_t(a, p, q, v);
-		case 4:
-			return fargb_t(a, t, p, v);
-		case 5:
-			return fargb_t(a, v, p, q);
-	}
-
-	return fargb_t(a, v, v, v);
-}
 
 
 /****** Colored Lighting Stuffs (Sorry, 8-bit only) ******/

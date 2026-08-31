@@ -26,6 +26,8 @@
 #include "r_intrin.h"
 #include "r_defs.h"
 
+#include <array>
+
 typedef struct
 {
 	byte*				source;
@@ -250,6 +252,87 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset);
 
 // [Nes] Classic player translation table.
 void R_BuildClassicPlayerTranslation(int player, int color);
+
+// The green ramp that player colors are built out of.
+constexpr palindex_t PLAYER_COLOR_START = 0x70;
+constexpr palindex_t PLAYER_COLOR_END = 0x7F;
+
+//
+// A self-contained color translation
+//
+// Unlike the global translationtables / translationRGB pair, which are fixed
+// arrays indexed by player id and only ever recolor the player range, this owns
+// both halves of a translation over any part of the palette and can be handed
+// out by pointer.
+//
+// Corpses use these today, but can be expanded for:
+// 
+// 1. blood colors
+// 2. recolored fonts
+// 3. player translations
+//
+// An rgb entry with zero alpha means that index is not translated in 32bpp and
+// falls back to the 8bpp remap, so a translation may cover as much or as
+// little of the palette as it likes.
+//
+struct translationtable_t
+{
+	std::array<palindex_t, 256> remap; // 8bpp palette remap
+	std::array<argb_t, 256>     rgb;   // 32bpp colors, alpha 0 where untranslated
+
+	translationref_t ref() const { return translationref_t(remap.data(), rgb.data()); }
+};
+
+// Resets a translation to the identity, translating nothing.
+void R_ClearTranslation(translationtable_t& tlate);
+
+// Recolors from start to end into a ramp running towards dest_color, the way player
+// colors are built.
+void R_BuildTranslationRamp(translationtable_t& tlate, palindex_t start, palindex_t end,
+                            argb_t dest_color);
+
+// Recolors from start to end into a linear gradient, the way font translations are
+// built.
+void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, palindex_t end,
+                                argb_t start_color, argb_t end_color);
+
+//
+// Shared translation lifetime
+//
+enum translationlife_t
+{
+	TRANSLIFE_MAP,    // until the map is unloaded - corpses and the like
+	TRANSLIFE_WAD,    // until the resource set changes - dehacked and font recolors
+	TRANSLIFE_STATIC, // for the run - fonts and other engine-defined colors
+};
+
+//
+// Shared translations, built on demand and reused between everyone asking for
+// the same one.
+//
+// If you request a translation with a color that exists in a shorter lifetime,
+// that translation gets "promoted" rather than rebuilt.
+//
+translationref_t R_GetRampTranslation(translationlife_t life, palindex_t start, palindex_t end,
+                                      argb_t color);
+translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t start,
+                                          palindex_t end, argb_t start_color, argb_t end_color);
+
+// Drops every shared translation that does not outlive the specified lifetime.
+void R_ExpireTranslations(translationlife_t life);
+
+// Rebuilds every shared translation against the current palette.
+// The tables keep their addresses, so refs already handed out pick up the new colors.
+void R_RebuildTranslations();
+
+// The colors a corpse's owner died wearing.
+// Corpses do not survive the map, so neither do their translations.
+// (Except during hub travel, entering a hub should promote the corpse colors,
+// but even if it doesn't it will just rebuild on hud map load)
+inline translationref_t R_GetCorpseTranslation(argb_t color)
+{
+	return R_GetRampTranslation(TRANSLIFE_MAP, PLAYER_COLOR_START, PLAYER_COLOR_END, color);
+}
 
 // If the view size is not full screen, draws a border around it.
 void R_DrawViewBorder (void);

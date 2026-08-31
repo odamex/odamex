@@ -29,6 +29,8 @@
 #include <assert.h>
 #include <cmath>
 #include <algorithm>
+#include <map>
+#include <tuple>
 
 #include "i_sdl.h"
 #include "r_intrin.h"
@@ -486,6 +488,9 @@ void R_InitTranslationTables()
 	R_BuildFontTranslation(CR_PURPLE,	argb_t(0xCF, 0x00, 0xCF), argb_t(0x23, 0x00, 0x23));
 	R_BuildFontTranslation(CR_DARKGRAY,	argb_t(0x8B, 0x8B, 0x8B), argb_t(0x23, 0x23, 0x23));
 	R_BuildFontTranslation(CR_CYAN,		argb_t(0x00, 0xF0, 0xF0), argb_t(0x00, 0x1F, 0x1F));
+
+	R_ExpireTranslations(TRANSLIFE_WAD);
+	R_RebuildTranslations();
 }
 
 void R_FreeTranslationTables (void)
@@ -570,6 +575,55 @@ CVAR_FUNC_IMPL(cl_customcolor)
 	cl_color.ForceSet(var.cstring());
 }
 
+// Recolor a palette range towards a given color range, writing the
+//		8bpp remap into table and the matching 32bpp colors into rgb, which is
+//		indexed starting from rgb_base rather than from zero.
+void R_BuildColorRamp(argb_t dest_color, palindex_t start, palindex_t end,
+                             palindex_t* table, argb_t* rgb, palindex_t rgb_base)
+{
+	const palette_t* pal = V_GetDefaultPalette();
+
+	const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
+	const float h = hsv_temp.geth();
+	float s = hsv_temp.gets(), v = hsv_temp.getv();
+
+	s -= 0.23f;
+	if (s < 0.0f)
+		s = 0.0f;
+
+	v += 0.1f;
+	if (v > 1.0f)
+		v = 1.0f;
+
+	const float scale = 16.0f / static_cast<float>(end - start + 1);
+	float sdelta = 0.014375f * scale;
+	float vdelta = -0.05882f * scale;
+
+	for (int i = start; i <= end; i++)
+	{
+		argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
+		color.seta(255);
+
+		// Set up RGB values for 32bpp translation:
+		rgb[i - rgb_base] = color;
+		table[i] = V_BestColor(pal->basecolors, color);
+
+		s += sdelta;
+		if (s > 1.0f)
+		{
+			s = 1.0f;
+			sdelta = 0.0f;
+		}
+
+		v += vdelta;
+		if (v < 0.0f)
+		{
+			v = 0.0f;
+			vdelta = 0.0f;
+		}
+	}
+}
+
 // [RH] Create a player's translation table based on
 //		a given mid-range color.
 void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
@@ -580,46 +634,150 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
 	}
 	else
 	{
-		const palette_t* pal = V_GetDefaultPalette();
-		byte* table = &translationtables[player * 256];
-
-		const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
-		const float h = hsv_temp.geth();
-		float s = hsv_temp.gets(), v = hsv_temp.getv();
-
-		s -= 0.23f;
-		if (s < 0.0f)
-			s = 0.0f;
-		float sdelta = 0.014375f;
-
-		v += 0.1f;
-		if (v > 1.0f)
-			v = 1.0f;
-		float vdelta = -0.05882f;
-
-		for (int i = 0x70; i < 0x80; i++)
-		{
-			const argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
-
-			// Set up RGB values for 32bpp translation:
-			translationRGB[player][i - 0x70] = color;
-			table[i] = V_BestColor(pal->basecolors, color);
-
-			s += sdelta;
-			if (s > 1.0f)
-			{
-				s = 1.0f;
-				sdelta = 0.0f;
-			}
-
-			v += vdelta;
-			if (v < 0.0f)
-			{
-				v = 0.0f;
-				vdelta = 0.0f;
-			}
-		}
+		R_BuildColorRamp(dest_color, PLAYER_COLOR_START, PLAYER_COLOR_END,
+		                 &translationtables[player * 256], translationRGB[player],
+		                 PLAYER_COLOR_START);
 	}
+}
+
+void R_ClearTranslation(translationtable_t& tlate)
+{
+	for (size_t i = 0; i < tlate.remap.size(); i++)
+		tlate.remap[i] = static_cast<palindex_t>(i);
+
+	tlate.rgb.fill(argb_t(0, 0, 0, 0));
+}
+
+void R_BuildTranslationRamp(translationtable_t& tlate, palindex_t start, palindex_t end,
+                            argb_t dest_color)
+{
+	R_BuildColorRamp(dest_color, start, end, tlate.remap.data(), tlate.rgb.data(), 0);
+}
+
+void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, palindex_t end,
+                                argb_t start_color, argb_t end_color)
+{
+	const palette_t* pal = V_GetDefaultPalette();
+
+	const int range = end - start + 1;
+	const int r_diff = end_color.getr() - start_color.getr();
+	const int g_diff = end_color.getg() - start_color.getg();
+	const int b_diff = end_color.getb() - start_color.getb();
+
+	for (int i = start; i <= end; i++)
+	{
+		const int step = i - start;
+		const argb_t color(start_color.getr() + step * r_diff / range,
+		                   start_color.getg() + step * g_diff / range,
+		                   start_color.getb() + step * b_diff / range);
+
+		tlate.rgb[i] = color;
+		tlate.remap[i] = V_BestColor(pal->basecolors, color);
+	}
+}
+
+//
+// Shared translations
+//
+// Entries are keyed on the recipe that built them, which is also what lets them
+// be rebuilt in place when the palette changes.
+//
+// The map owns the tables that translationrefs point into, so it has to be a
+// container with stable references - a ref outlives any number of later insertions.
+//
+namespace
+{
+enum translationkind_t
+{
+	TRANSLATE_RAMP,
+	TRANSLATE_GRADIENT,
+};
+
+struct translationrecipe_t
+{
+	translationkind_t kind;
+	palindex_t        start;
+	palindex_t        end;
+	uint32_t          color;
+	uint32_t          endcolor;
+
+	bool operator<(const translationrecipe_t& other) const
+	{
+		return std::tie(kind, start, end, color, endcolor) <
+		       std::tie(other.kind, other.start, other.end, other.color, other.endcolor);
+	}
+};
+
+struct cachedtranslation_t
+{
+	translationtable_t table;
+	translationlife_t life = translationlife_t::TRANSLIFE_MAP;
+};
+
+std::map<translationrecipe_t, cachedtranslation_t> cachedtranslations;
+
+void R_BuildRecipe(translationtable_t& tlate, const translationrecipe_t& recipe)
+{
+	R_ClearTranslation(tlate);
+
+	switch (recipe.kind)
+	{
+	case TRANSLATE_RAMP:
+		R_BuildTranslationRamp(tlate, recipe.start, recipe.end, recipe.color);
+		break;
+	case TRANSLATE_GRADIENT:
+		R_BuildTranslationGradient(tlate, recipe.start, recipe.end, recipe.color,
+		                           recipe.endcolor);
+		break;
+	}
+}
+
+translationref_t R_GetTranslation(translationlife_t life, const translationrecipe_t& recipe)
+{
+	auto it = cachedtranslations.find(recipe);
+	if (it == cachedtranslations.end())
+	{
+		it = cachedtranslations.emplace(recipe, cachedtranslation_t()).first;
+		it->second.life = life;
+		R_BuildRecipe(it->second.table, recipe);
+	}
+	else if (it->second.life < life)
+	{
+		// Someone needs this to outlast whoever asked for it first.
+		it->second.life = life;
+	}
+
+	return it->second.table.ref();
+}
+} // namespace
+
+translationref_t R_GetRampTranslation(translationlife_t life, palindex_t start, palindex_t end,
+                                      argb_t color)
+{
+	return R_GetTranslation(life, {TRANSLATE_RAMP, start, end, color, 0});
+}
+
+translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t start,
+                                          palindex_t end, argb_t start_color, argb_t end_color)
+{
+	return R_GetTranslation(life, {TRANSLATE_GRADIENT, start, end, start_color, end_color});
+}
+
+void R_ExpireTranslations(translationlife_t life)
+{
+	for (auto it = cachedtranslations.begin(); it != cachedtranslations.end();)
+	{
+		if (it->second.life <= life)
+			it = cachedtranslations.erase(it);
+		else
+			++it;
+	}
+}
+
+void R_RebuildTranslations()
+{
+	for (auto& [recipe, cached] : cachedtranslations)
+		R_BuildRecipe(cached.table, recipe);
 }
 
 
