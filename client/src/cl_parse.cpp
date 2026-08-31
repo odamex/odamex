@@ -691,6 +691,19 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	//              from CL_SpawnMobj.  This allows things like immediate sound effects and
 	//              secondary mobjs to work (think a noisy, instant gib spawner).
 
+	// FIXME:   Huge open question - should we do all the SetMobjState stuff after we setup the
+	//          rest of the mobj attributes?
+
+	if (msg->is_spawn_tic())
+	{
+		// Now do one advancement of the state, because that has happened between the creation of
+		// the mobj and its corresponding SpawnMobj message.  Any associated actions will execute,
+		// which is particularly important for a number of dehacked custom mobjs that do one-off
+		// things on spawn.
+		P_SetMobjState(mo, mo->info->spawnstate);
+		P_AnimationTick(mo);
+	}
+
 	statenum_t statenum = static_cast<statenum_t>(msg->current().statenum());
 
 	if (statenum >= S_NULL && states.contains(statenum))

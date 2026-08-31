@@ -476,11 +476,8 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	//
 	if (mo->spawnTic == gametic)
 	{
-		// The following could and, in most cases, usually do just set the same value again.  It's
-		// those cases where they AREN'T the same value that we're really after here.
-		cur->set_statenum(mo->info->spawnstate);
 		cur->set_rndindex(mo->spawnRndindex);
-		cur->set_tics    (states[mo->info->spawnstate].tics);
+		msg.set_is_spawn_tic(true);
 	}
 
 	if (mo->type == MT_FOUNTAIN)
@@ -547,9 +544,14 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	if ((mo->flags & MF_CORPSE) && mo->state->statenum != S_GIBS)
 	{
 		// This sets off some additional logic on the client.
+        //
+        // Please note that we also set statenum because it can happen where a mobj both spawns and
+        // instantly gibs on a single tic, especially in horde mode.  And in those cases, we don't
+        // want the special spawn
 		spawnFlags |= SVC_SM_CORPSE;
 		cur->set_frame(mo->frame);
 		cur->set_tics(mo->tics);
+		cur->set_statenum(mo->state->statenum);
 	}
 
 	msg.set_spawn_flags(spawnFlags);
