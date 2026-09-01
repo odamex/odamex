@@ -706,13 +706,25 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	statenum_t statenum = static_cast<statenum_t>(msg->current().statenum());
 
-	if (statenum >= S_NULL && states.contains(statenum))
+	if (statenum >= S_NULL)
 	{
-		P_SetMobjState(mo, statenum);
-
-		// Set animation tic to ensure that the initial state is consistent with the server.
-		const int32_t tics = msg->current().tics();
-		mo->tics = tics ? tics : -1;
+		auto iter = states.find(statenum);
+		if (iter != states.end())
+		{
+			// In the rare case that we do the spawnstate animation tic above and the state
+			// we ultimately wind up in has a custom action, we want to make sure that we
+			// don't inadvertently cause that custom action to fire twice by calling
+			// P_SetMobjState twice.  Please note that this double-action does not necessarily
+			// mean that the statenum must also be the spawnstate - spawnstate could have
+			// led to it!
+			if (mo->state != &iter->second)
+			{
+				P_SetMobjState(mo, statenum);
+			}
+			// Set animation tic to ensure that the initial state is consistent with the server.
+			const int32_t tics = msg->current().tics();
+			mo->tics = tics ? tics : -1;
+		}
 	}
 
 	if (serverside && mo->flags & MF_COUNTKILL)
