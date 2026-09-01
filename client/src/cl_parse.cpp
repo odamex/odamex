@@ -404,7 +404,7 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 
 	// The server has processed the ticcmd that the local client sent
 	// during the the tic referenced below
-	p.tic = msg->tic();
+	p.tic = s_currentHeader.destinationTic;
 
 	fixed_t x = msg->actor().pos().x();
 	fixed_t y = msg->actor().pos().y();

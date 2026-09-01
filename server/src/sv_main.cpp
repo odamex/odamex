@@ -3953,7 +3953,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 	if (not player.spectator)
 	{
 		// client player will update his position if packets were missed
-		MSG_WriteSVC(cl->messenger->HighBuf(), SVC_UpdateLocalPlayer(*mo, player.tic));
+		MSG_WriteSVC(cl->messenger->HighBuf(), SVC_UpdateLocalPlayer(*mo));
 	}
 
 	SV_UpdateMovingSectors(player);

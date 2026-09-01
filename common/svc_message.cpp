@@ -261,15 +261,12 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player)
 /**
  * @brief Send the local player position for a client.
  */
-odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(const AActor& mo, const int tic)
+odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(const AActor& mo)
 {
 	odaproto::svc::UpdateLocalPlayer msg;
 
 	// client player will update his position if packets were missed
 	odaproto::Actor* act = msg.mutable_actor();
-
-	// client-tic of the most recently processed ticcmd for this client
-	msg.set_tic(tic);
 
 	odaproto::Vec3* pos = act->mutable_pos();
 	pos->set_x(mo.x);

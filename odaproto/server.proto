@@ -43,8 +43,7 @@ message MovePlayer
 // svc_updatelocalplayer
 message UpdateLocalPlayer
 {
-	int32 tic = 1;
-	Actor actor = 2;
+	Actor actor = 1;
 }
 
 // svc_levellocals

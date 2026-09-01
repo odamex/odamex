@@ -83,7 +83,7 @@ struct PlaySoundType
 odaproto::svc::Disconnect SVC_Disconnect(const char* message = NULL);
 odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player);
 odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player);
-odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(const AActor& mo, const int tic);
+odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(const AActor& mo);
 odaproto::svc::LevelLocals SVC_LevelLocals(const level_locals_t& locals, uint32_t flags);
 odaproto::svc::PingRequest SVC_PingRequest();
 odaproto::svc::UpdatePing SVC_UpdatePing(const player_t& player);
