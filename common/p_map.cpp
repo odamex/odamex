@@ -2840,6 +2840,15 @@ fixed_t P_AimLineAttack(AActor *t1, angle_t angle, fixed_t distance,
 	fixed_t topslope;
 	fixed_t bottomslope;
 
+	if (demoplayback)
+	{
+		// Vanilla autoaim clamp
+		// Not entirely sold this desyncs anything but is a difference
+		topslope = 100 * FRACUNIT / 160;
+		bottomslope = -100 * FRACUNIT / 160;
+	}
+	else
+	{
 	if (topangle <= ANG360 - ANG180)
 		topslope = finetangent[FINEANGLES/2-1];
 	else
@@ -2849,6 +2858,7 @@ fixed_t P_AimLineAttack(AActor *t1, angle_t angle, fixed_t distance,
 		bottomslope = finetangent[0];
 	else
 		bottomslope = finetangent[FINEANGLES/4-(static_cast<signed>(bottomangle)>>ANGLETOFINESHIFT)];
+	}
 
 	attackrange = distance;
 	linetarget = NULL;
