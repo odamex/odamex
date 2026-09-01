@@ -3470,7 +3470,7 @@ bool PIT_DoomRadiusAttack(AActor& thing,
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (((thing.type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
+	if (((thing.type == MT_CYBORG && bombsource && bombsource->type == MT_CYBORG) ||
 		(thing.flags3 & MF3_NORADIUSDMG || thing.flags2 & MF2_BOSS)) &&
 		!(bombspot->flags3 & MF3_FORCERADIUSDMG))
 		return true;
@@ -3535,7 +3535,7 @@ bool PIT_ZDoomRadiusAttack(AActor& thing,
 
 	// Boss spider and cyborg
 	// take no damage from concussion.
-	if (((thing.type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
+	if (((thing.type == MT_CYBORG && bombsource && bombsource->type == MT_CYBORG) ||
 	   (thing.flags3 & MF3_NORADIUSDMG || thing.flags2 & MF2_BOSS)) &&
 	   !(bombspot->flags3 & MF3_FORCERADIUSDMG))
 		return true;
