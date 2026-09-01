@@ -1032,6 +1032,8 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	header.originatorTic  = last_svgametic;
 	header.destinationTic = player.tic;
 
+	// Please note that we pack the header in proper socket-style for the connection sequence
+	// because the netdemo connection playback actually uses the messenger via CL_Connect.
 	header.Pack(*netbuffer);
 
 	// Server sends our player id and digest
