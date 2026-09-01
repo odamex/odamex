@@ -855,7 +855,7 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 	const auto helper = [&](sector_t* sec) -> bool
 	{
 		// if ceiling already moving, don't start a second function on it
-		if (sec->ceilingdata)
+		if (P_SectorActive(ceiling_special, sec))
 			return false;
 
 		const fixed_t ceilingheight = P_CeilingHeight(sec);
@@ -1109,7 +1109,7 @@ bool EV_DoGenCeiling(line_t& line)
 	const auto helper = [&](sector_t* sec) -> bool
 	{
 		// Do not start another function if ceiling already moving
-		if (sec->ceilingdata) // jff 2/22/98
+		if (P_SectorActive(ceiling_special, sec)) // jff 2/22/98
 			return false;
 
 		// new ceiling thinker
@@ -1161,7 +1161,7 @@ bool EV_DoGenCrusher(line_t& line)
 	const auto helper = [&](sector_t* sec) -> bool
 	{
 		// Do not start another function if ceiling already moving
-		if (sec->ceilingdata) // jff 2/22/98
+		if (P_SectorActive(ceiling_special, sec)) // jff 2/22/98
 			return false;
 
 		// new ceiling thinker

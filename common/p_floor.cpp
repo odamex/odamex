@@ -935,7 +935,7 @@ bool EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 	const auto helper = [&](sector_t* sec) -> bool
 	{
 		// ALREADY MOVING?	IF SO, KEEP GOING...
-		if (sec->floordata || (demoplayback && sec->ceilingdata))
+		if (P_SectorActive(floor_special, sec))
 			return false;
 
 		// new floor thinker
@@ -990,7 +990,7 @@ bool EV_DoGenFloor(line_t& line)
 	const auto helper = [&](sector_t* sec) -> bool
 	{
 		// ALREADY MOVING?	IF SO, KEEP GOING...
-		if (sec->floordata)
+		if (P_SectorActive(floor_special, sec))
 			return false;
 
 		// new floor thinker
@@ -1025,7 +1025,7 @@ bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
 	const auto helper = [&](sector_t* sec) -> bool
 	{
 		// ALREADY MOVING?	IF SO, KEEP GOING...
-		if (sec->floordata)
+		if (P_SectorActive(floor_special, sec))
 			return false;
 
 		// new floor thinker
@@ -1126,7 +1126,7 @@ bool EV_DoGenStairs(line_t& line)
 		// ALREADY MOVING?	IF SO, KEEP GOING...
 		// jff 2/26/98 add special lockout condition to wait for entire
 		// staircase to build before retriggering
-		if (sec->floordata || sec->stairlock)
+		if (P_SectorActive(floor_special, sec) || sec->stairlock)
 			return false;
 
 		fixed_t floorheight = P_FloorHeight(sec);
@@ -1305,7 +1305,7 @@ bool EV_BuildStairs(const int tag, const DFloor::EStair type, const line_t *line
 
 	const auto helper = [&](sector_t* sec, int secnum) -> bool
 	{
-		if (sec->floordata || sec->stairlock)
+		if (P_SectorActive(floor_special, sec) || sec->stairlock)
 			return false;
 
 		const fixed_t floorheight = P_FloorHeight(sec);
@@ -1681,7 +1681,7 @@ static bool SpawnCommonElevator(const line_t* line, DElevator::EElevator type, f
 			sec->floordata = NULL;
 		}
 
-		if (sec->floordata || sec->ceilingdata) // jff 2/22/98
+		if (P_SectorActive(floor_special, sec) || sec->ceilingdata) // jff 2/22/98
 			continue;
 
 		const fixed_t floorheight = P_FloorHeight(sec);

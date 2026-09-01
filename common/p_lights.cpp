@@ -305,7 +305,7 @@ void EV_StartLightStrobing (int tag, int upper, int lower, int utics, int ltics)
 	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
 	{
 		sector_t *sec = &sectors[secnum];
-		if (sec->lightingdata)
+		if (P_SectorActive(lighting_special, sec))
 			continue;
 
 		new DStrobe (sec, upper, lower, utics, ltics);
@@ -323,7 +323,7 @@ void EV_StartLightStrobing (int tag, int utics, int ltics)
 	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
 	{
 		sector_t *sec = &sectors[secnum];
-		if (sec->lightingdata)
+		if (P_SectorActive(lighting_special, sec))
 			continue;
 
 		new DStrobe (sec, utics, ltics, false);
@@ -628,7 +628,7 @@ void EV_StartLightGlowing (int tag, int upper, int lower, int tics)
 	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
 	{
 		sector_t *sec = &sectors[secnum];
-		if (sec->lightingdata)
+		if (P_SectorActive(lighting_special, sec))
 			continue;
 		new DGlow2 (sec, upper, lower, tics, false);
 	}
@@ -645,7 +645,7 @@ void EV_StartLightFading (int tag, int value, int tics)
 	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
 	{
 		sector_t *sec = &sectors[secnum];
-		if (sec->lightingdata)
+		if (P_SectorActive(lighting_special, sec))
 			continue;
 
 		// No need to fade if lightlevel is already at desired value.

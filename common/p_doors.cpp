@@ -664,7 +664,7 @@ bool EV_DoDoor (DDoor::EVlDoor type, line_t *line, const AActor *thing,
 		{
 			sec = &sectors[secnum];
 			// if the ceiling already moving, don't start the door action
-			if (sec->ceilingdata)
+			if (P_SectorActive(ceiling_special, sec))
 				continue;
 
 			door = new DDoor(sec, line, type, speed, delay);
@@ -841,7 +841,7 @@ bool EV_DoGenDoor(line_t& line)
 	const auto helper = [&](sector_t* sec) -> bool
 	{
 		// Do not start another function if ceiling already moving
-		if (sec->ceilingdata) // jff 2/22/98
+		if (P_SectorActive(ceiling_special, sec)) // jff 2/22/98
 			return false;
 
 		// new door thinker

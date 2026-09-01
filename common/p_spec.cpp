@@ -755,6 +755,31 @@ static void ParseAnim(OScanner &os, byte istex)
 }
 
 //
+// P_SectorActive()
+//
+// Check to see if a sector is moving or not.
+// In Vanilla, sectordata was 1 field that shared floor/ceiling/lighting
+// data, so we need to check each of these in demo mode.
+//
+bool P_SectorActive(special_e t, const sector_t* sec)
+{
+	if (demoplayback)
+		return sec->floordata || sec->ceilingdata || sec->lightingdata;
+
+	switch (t)
+	{
+	case floor_special:
+		return sec->floordata != NULL;
+	case ceiling_special:
+		return sec->ceilingdata != NULL;
+	case lighting_special:
+		return sec->lightingdata != NULL;
+	}
+
+	return true; // unknown class, assume it clashes
+}
+
+//
 // P_CheckTag()
 //
 // Passed a line, returns true if the tag is non-zero or the line special

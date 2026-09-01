@@ -203,6 +203,7 @@ int P_FindSectorFromLineTag(const line_t* line, int start);
 crushmode_e P_ArgToCrushMode(byte arg, bool slowdown);
 fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f);
 bool P_CheckTag(line_t* line);
+bool P_SectorActive(special_e t, const sector_t* sec);
 void P_TransferSectorFlags(unsigned int*, unsigned int);
 
 #define FLOORSPEED FRACUNIT

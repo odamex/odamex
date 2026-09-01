@@ -488,7 +488,7 @@ bool EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 {
 	const auto helper = [&](sector_t* sec, int secnum) -> bool
 	{
-		if (sec->floordata)
+		if (P_SectorActive(floor_special, sec))
 			return false;
 
 		// Find lowest & highest floors around sector
@@ -556,7 +556,7 @@ bool EV_DoGenLift(line_t& line)
 
 	const auto helper = [&](sector_t* sec) -> bool
 	{
-		if (sec->floordata)
+		if (P_SectorActive(floor_special, sec))
 			return false;
 
 		// Find lowest & highest floors around sector
