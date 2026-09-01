@@ -2349,27 +2349,32 @@ void CL_SendCmd(void)
 		}
 	}
 
-	messenger.StartTicSend(gametic);
-	messenger.SendHighPriority(gametic, serveraddr);
-	const MessageResultEnum sendResult = messenger.SendStandard(gametic, serveraddr);
-
-	if (sendResult == MessageResultEnum::ABORT)
 	{
-		CL_QuitNetGame(NQ_SERVER_DROP);
-	}
-	else
-	{
-		const size_t retransmittedByteCount = messenger.SendRetransmissions(gametic, serveraddr);
+		// In normal client operation, we use the fine-grained messenger sending APIs so that we can
+		// have the retransmissions to go out immediately instead of on the next tic.  This is key
+		// for ensuring that the send of a brand-new, most-current PlayerInput message has immediate
+		// packet redundancy so that no _single_ packet drop can cause player input to arrive late.
 
-		const int currentSendSize    = messenger.GetLastSendSize();
-		const int totalSentByteCount = currentSendSize + static_cast<int>(retransmittedByteCount);
+		OdaMessenger::TicGuard guard(messenger, gametic);
 
-		netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
-		netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
-		netgraph.addTrafficOut(totalSentByteCount);
-		outrate += totalSentByteCount;
+		messenger.SendHighPriority(gametic, serveraddr);
+		if (messenger.SendStandard(gametic, serveraddr) == MessageResultEnum::ABORT)
+		{
+			CL_QuitNetGame(NQ_SERVER_DROP);
+		}
+		else
+		{
+			const size_t retransmittedByteCount = messenger.SendRetransmissions(gametic, serveraddr);
+
+			const int currentSendSize    = messenger.GetLastSendSize();
+			const int totalSentByteCount = currentSendSize + static_cast<int>(retransmittedByteCount);
+
+			netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
+			netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
+			netgraph.addTrafficOut(totalSentByteCount);
+			outrate += totalSentByteCount;
+		}
 	}
-	messenger.EndTicSend();
 }
 
 //

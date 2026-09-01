@@ -440,12 +440,11 @@ void OdaMessenger::EndTicSend()
 
 MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
 {
-	StartTicSend(i_currentTic);
+	TicGuard guard(*this, i_currentTic);
+
 	SendHighPriority(i_currentTic, i_dest);
 	SendRetransmissions(i_currentTic, i_dest);
-	const MessageResultEnum sendResult = SendStandard(i_currentTic, i_dest);
-	EndTicSend();
-	return sendResult;
+	return SendStandard(i_currentTic, i_dest);
 }
 
 size_t OdaMessenger::SendRetransmissions(int i_currentTic, const netadr_t& i_dest)

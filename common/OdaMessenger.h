@@ -131,6 +131,21 @@ class OdaMessenger
 
 		// -------------- Fine-grained sending functions --------------
 
+		class TicGuard
+		{
+			public:
+				explicit TicGuard(OdaMessenger& i_messengerRef, int i_currentTic) : m_messengerRef {i_messengerRef}
+				{
+					m_messengerRef.StartTicSend(i_currentTic);
+				}
+				~TicGuard()
+				{
+					m_messengerRef.EndTicSend();
+				}
+			protected:
+				OdaMessenger& m_messengerRef;
+		};
+
 		void StartTicSend(int i_currentTic);
 
 		size_t SendHighPriority(int i_currentTic, const netadr_t& i_dest);
