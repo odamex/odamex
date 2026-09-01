@@ -2053,7 +2053,7 @@ void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	// of the pickup *at that old point in time*.  With that result in hand, we undo the
 	// switcheroo and resolve the potentially-modified history.
 
-	const int oldTic = msg->player_tic();
+	const int oldTic = s_currentHeader.destinationTic;
 	auto optionalHistory = rollerState.GetStateAtTic(oldTic);
 	const PlayerItemDataType currentClientSideState {player};
 
