@@ -376,7 +376,7 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
-	const int snaptime = s_currentHeader.destinationTic;
+	const int snaptime = s_currentHeader.originatorTic;
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
 
@@ -416,7 +416,7 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 
 	byte waterlevel = msg->actor().waterlevel();
 
-	int snaptime = ::last_svgametic;
+	int snaptime = s_currentHeader.originatorTic;
 	PlayerSnapshot newsnapshot(snaptime);
 	newsnapshot.setAuthoritative(true);
 	newsnapshot.setX(x);
@@ -1196,7 +1196,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 	if (mo->player)
 	{
 		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = last_svgametic;
+		int snaptime = s_currentHeader.originatorTic;
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
@@ -1521,7 +1521,7 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	if (target->player)
 	{
 		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = last_svgametic;
+		int snaptime = s_currentHeader.originatorTic;
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
@@ -1660,7 +1660,7 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 
 	P_ChangeSector(sector, false);
 
-	SectorSnapshot snap(last_svgametic, sector);
+	SectorSnapshot snap(s_currentHeader.originatorTic, sector);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
