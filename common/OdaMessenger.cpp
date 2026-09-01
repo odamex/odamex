@@ -348,8 +348,8 @@ MessageResultEnum OdaMessenger::SendStandard(int i_currentTic, const netadr_t& i
 {
 	ManageBudget(i_currentTic);
 
-	// Phase zero:  Detect if the client has become dangerously non-responsive,
-	//              and abort if so.
+	// Before doing anything, judge whether or not the client has become dangerously
+	// non-responsive, and abort if so.
 	if (m_criticalSequenceTimeoutInTics > 0)
 	{
 		if (SequenceQueueEntryType* oldestOutgoingUnackedEntry = m_sender.IterateUnackedPackets().Next())
@@ -362,7 +362,7 @@ MessageResultEnum OdaMessenger::SendStandard(int i_currentTic, const netadr_t& i
 		}
 	}
 
-	// Second phase - send reliables, padded out to MAX_UDP_SIZE-ish with non-reliable best-effort messages.
+	// Now send reliables, padded out to MAX_UDP_SIZE-ish with non-reliable best-effort messages.
 	m_bytesSentWithReliability = 0;
 	while (m_outgoingReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
