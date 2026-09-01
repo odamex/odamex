@@ -283,7 +283,7 @@ void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	// Until then, we just flatly apply the PlayerInfo to the player.
 	if (::hasReceivedFullUpdate)
 	{
-		const int oldTic = playerInfo.client_tic();
+		const int oldTic = s_currentHeader.destinationTic;
 
 		const RollerResolveEnum result = rollerState.Resolve(oldTic, playerState, player);
 		switch (result)
@@ -1442,7 +1442,7 @@ void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	const int       armorpoints  = msg->player_armorpoints();
 	const int       oldTic       = msg->client_tic();
 
-	AActor* actor = P_FindThingById(netid);
+	AActor* actor    = P_FindThingById(netid);
 	AActor* attacker = P_FindThingById(attackerid);
 
 	if (!actor || !actor->player)

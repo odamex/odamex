@@ -118,7 +118,7 @@ odaproto::svc::MovingSectorPlat     SVC_MovingSectorPlat(const sector_t& sector,
 odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, int sfx_id,
                                        float volume, int attenuation);
 odaproto::svc::TouchSpecial SVC_TouchSpecial(const player_t& player, const AActor& mo);
-odaproto::svc::PlayerState SVC_PlayerState(const player_t& player, int destinationClientTicOfValidity);
+odaproto::svc::PlayerState SVC_PlayerState(const player_t& player);
 odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls);
 odaproto::svc::PlayerQueuePos SVC_PlayerQueuePos(const player_t& source);
 odaproto::svc::ForceTeam SVC_ForceTeam(team_t team);

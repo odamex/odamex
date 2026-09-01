@@ -82,9 +82,8 @@ static void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
 	io_msg.set_sy       (psprite.sy);
 }
 
-static void FillPlayer(odaproto::Player& io_msg, const player_t& player, int destinationClientTicOfValidity)
+static void FillPlayer(odaproto::Player& io_msg, const player_t& player)
 {
-	io_msg.set_client_tic   (destinationClientTicOfValidity);
 	io_msg.set_playerid     (player.id);
 	io_msg.set_health       (player.health);
 	io_msg.set_armortype    (player.armortype);
@@ -140,7 +139,7 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
 
-	FillPlayer(*msg.mutable_player(), player, player.tic);
+	FillPlayer(*msg.mutable_player(), player);
 
 	return msg;
 }
@@ -1194,11 +1193,11 @@ odaproto::svc::TouchSpecial SVC_TouchSpecial(const player_t& player, const AActo
  * @brief Send information about a player
  */
 
-odaproto::svc::PlayerState SVC_PlayerState(const player_t& player, int destinationClientTicOfValidity)
+odaproto::svc::PlayerState SVC_PlayerState(const player_t& player)
 {
 	odaproto::svc::PlayerState msg;
 
-	FillPlayer(*msg.mutable_player(), player, destinationClientTicOfValidity);
+	FillPlayer(*msg.mutable_player(), player);
 
 	return msg;
 }
