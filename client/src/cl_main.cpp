@@ -2355,16 +2355,16 @@ void CL_SendCmd(void)
 		// for ensuring that the send of a brand-new, most-current PlayerInput message has immediate
 		// packet redundancy so that no _single_ packet drop can cause player input to arrive late.
 
-		OdaMessenger::TicGuard guard(messenger, gametic);
+		OdaMessenger::Sender guard(messenger, gametic, serveraddr);
 
-		messenger.SendHighPriority(gametic, serveraddr);
-		if (messenger.SendStandard(gametic, serveraddr) == MessageResultEnum::ABORT)
+		guard.SendHighPriority();
+		if (guard.SendStandard() == MessageResultEnum::ABORT)
 		{
 			CL_QuitNetGame(NQ_SERVER_DROP);
 		}
 		else
 		{
-			const size_t retransmittedByteCount = messenger.SendRetransmissions(gametic, serveraddr);
+			const size_t retransmittedByteCount = guard.SendRetransmissions();
 
 			const int currentSendSize    = messenger.GetLastSendSize();
 			const int totalSentByteCount = currentSendSize + static_cast<int>(retransmittedByteCount);
