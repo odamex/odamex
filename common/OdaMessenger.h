@@ -153,7 +153,7 @@ class OdaMessenger
 		class Sender
 		{
 			public:
-				explicit Sender(OdaMessenger& i_messengerRef, int i_currentTic, const netadr_t& i_dest) :
+				Sender(OdaMessenger& i_messengerRef, int i_currentTic, const netadr_t& i_dest) :
 					m_messengerRef  {i_messengerRef},
 					m_currentTic    {i_currentTic},
 					m_dest          {i_dest}
