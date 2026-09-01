@@ -85,6 +85,8 @@ message SpawnMobj
 	uint32          target_netid    = 5;
 	repeated int32  args            = 6;
 	uint32          timebase_tic    = 7;
+	optional uint32 corpse_color    = 8;
+	optional int32  corpse_team     = 9;
 }
 
 // svc_disconnectclient

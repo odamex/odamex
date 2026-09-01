@@ -552,6 +552,12 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		cur->set_tics(mo->tics);
 	}
 
+	if ((mo->flags & MF_CORPSE) && mo->corpse_color)
+	{
+		msg.set_corpse_color(mo->corpse_color);
+		msg.set_corpse_team(mo->corpse_team);
+	}
+
 	msg.set_spawn_flags(spawnFlags);
 
 	return msg;
