@@ -33,6 +33,7 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "c_bind.h"
+#include "i_input.h"
 #include "i_system.h"
 #include "i_video.h"
 #include "v_palette.h"
@@ -1627,6 +1628,8 @@ void C_FullConsole()
 	TabCycleClear();
 
 	C_AdjustBottom();
+
+	I_EnableTextEntry();
 }
 
 
@@ -1642,6 +1645,7 @@ void C_HideConsole()
 	CmdLine.clear();
 	CmdCompletions.clear();
 	History.resetPosition();
+	I_DisableTextEntry();
 }
 
 
@@ -1684,6 +1688,7 @@ void C_ToggleConsole()
 			ConsoleState = c_falling;
 
 		TabCycleClear();
+		I_EnableTextEntry();
 	}
 	else
 	{
@@ -1693,6 +1698,7 @@ void C_ToggleConsole()
 			ConsoleState = c_rising;
 
 		C_FlushDisplay();
+		I_DisableTextEntry();
 	}
 
 	CmdLine.clear();
