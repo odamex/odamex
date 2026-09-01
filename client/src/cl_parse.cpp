@@ -1394,7 +1394,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		// Any intervening updates to important state will come in subsequent
 		// reliable, well-ordered messages.
 		rollerState.Clear();
-		for (int32_t tic = msg->player_tic(); tic <= gametic; ++tic)
+		for (int32_t tic = s_currentHeader.destinationTic; tic <= gametic; ++tic)
 		{
 			rollerState.Record(tic, p);
 		}
@@ -1421,7 +1421,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 			::level.behavior->StartTypedScripts(SCRIPT_Enter, p.mo);
 	}
 
-	const int snaptime = msg->server_tic();
+	const int snaptime = s_currentHeader.originatorTic;
 	PlayerSnapshot newsnap(snaptime, p);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);

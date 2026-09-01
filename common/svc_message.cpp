@@ -730,13 +730,11 @@ odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj)
 
 EXTERN_CVAR(sv_sharekeys);
 
-odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player, int tic)
+odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 {
 	odaproto::svc::SpawnPlayer msg;
 
 	msg.set_pid(player.id);
-	msg.set_player_tic(player.tic);
-	msg.set_server_tic(tic);
 
 	odaproto::Actor* act = msg.mutable_actor();
 	if (player.mo)
