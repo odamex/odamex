@@ -376,7 +376,7 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
-	const int snaptime = ::last_svgametic;
+	const int snaptime = s_currentHeader.destinationTic;
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
 

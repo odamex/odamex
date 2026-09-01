@@ -215,17 +215,13 @@ odaproto::svc::PlayerPsprites SVC_PlayerPsprites(const player_t& player)
 /**
  * @brief Change the location of a player.
  */
-odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic)
+odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player)
 {
 	odaproto::svc::MovePlayer msg;
 
 	odaproto::Actor* act = msg.mutable_actor();
 
 	msg.set_playerid(player.id); // player number
-
-	// [SL] 2011-09-14 - the most recently processed ticcmd from the
-	// client we're sending this message to.
-	msg.set_tic(tic);
 
 	odaproto::Vec3* pos = act->mutable_pos();
 	pos->set_x(player.mo->x);

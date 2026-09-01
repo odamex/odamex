@@ -3683,7 +3683,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		if(not SV_IsPlayerAllowedToSee(player, otherPlayer.mo))
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->HighBuf(), SVC_MovePlayer(otherPlayer, player.tic));
+		MSG_WriteSVC(player.client.messenger->HighBuf(), SVC_MovePlayer(otherPlayer));
 	}
 
 	// Send inventory stuff.
