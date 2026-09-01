@@ -3551,8 +3551,8 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 
 	case 47:
 		// 47 G1 raise floor to nearest and change texture and type
-		if (EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(doors::SLOW), 0, 0,
-		              1) ||
+		if (EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(plats::SLOW / 2), 0,
+		              0, 1) ||
 		    demoplayback)
 		{
 			return true;
