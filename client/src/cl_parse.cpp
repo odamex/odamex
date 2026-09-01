@@ -704,7 +704,7 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		P_AnimationTick(mo);
 	}
 
-	statenum_t statenum = static_cast<statenum_t>(msg->current().statenum());
+	const auto statenum = statenum_t(msg->current().statenum());
 
 	if (statenum >= S_NULL)
 	{
