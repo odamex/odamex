@@ -214,44 +214,38 @@ message RaiseMobj
 // svc_playerammo
 message PlayerAmmo
 {
-	int32           player_tic  = 1;
-	repeated int32  ammo        = 2;    // ammo[ammo_type] = ammo_quantity
+	repeated int32 ammo = 1;    // ammo[ammo_type] = ammo_quantity
 }
 
 // svc_playermaxammo
 message PlayerMaxAmmo
 {
-	int32           player_tic  = 1;
-	repeated int32  maxammo     = 2;    // maxammo[ammo_type] = maximum allowed
+	repeated int32 maxammo = 1;    // maxammo[ammo_type] = maximum allowed
 }
 
 // svc_playerweaponowned
 message PlayerWeaponOwned
 {
-	int32         player_tic    = 1;
-	repeated bool weaponowned   = 2;     // weaponowned[weapon_type] = is_owned
+	repeated bool weaponowned = 1;     // weaponowned[weapon_type] = is_owned
 }
 
 // svc_playerweaponselection
 message PlayerWeaponSelection
 {
-	int32  player_tic    = 1;
-	uint32 readyweapon   = 2;
-	uint32 pendingweapon = 3;
+	uint32 readyweapon   = 1;
+	uint32 pendingweapon = 2;
 }
 
 // svc_playerpowers
 message PlayerPowers
 {
-	int32           player_tic = 1;
-	repeated int32  powers     = 2;    // powers[power_type] = monotonic counter
+	repeated int32 powers = 1;    // powers[power_type] = monotonic counter
 }
 
 // svc_playerpsprites
 message PlayerPsprites
 {
-	int32                 player_tic = 1;
-	repeated PspriteState psprites   = 2;   // psprite[psprite_type] = psprite
+	repeated PspriteState psprites = 1;   // psprite[psprite_type] = psprite
 }
 
 // svc_updatesector

@@ -3288,10 +3288,10 @@ void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
 	          msg->ammo().end(),
 	          ammo.begin());
 
-	if (rollerState.ResolveAmmo(msg->player_tic(), ammo, consoleplayer()))
+	if (rollerState.ResolveAmmo(s_currentHeader.destinationTic, ammo, consoleplayer()))
 	{
 		DPrintFmt("Reconciled ammo on tic {}\n",
-		          msg->player_tic());
+		          s_currentHeader.destinationTic);
 	}
 }
 
@@ -3302,12 +3302,12 @@ void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
 	          msg->maxammo().end(),
 	          maxammo.begin());
 
-	if (rollerState.ResolveMaxAmmo(msg->player_tic(),
+	if (rollerState.ResolveMaxAmmo(s_currentHeader.destinationTic,
 	                               maxammo,
 	                               consoleplayer()))
 	{
 		DPrintFmt("Reconciled maxammo on tic {}\n",
-		          msg->player_tic());
+		          s_currentHeader.destinationTic);
 	}
 }
 
@@ -3318,24 +3318,24 @@ void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
 	          msg->weaponowned().end(),
 	          weaponowned.begin());
 
-	if (rollerState.ResolveWeaponOwned(msg->player_tic(),
+	if (rollerState.ResolveWeaponOwned(s_currentHeader.destinationTic,
 	                                   weaponowned,
 	                                   consoleplayer()))
 	{
 		DPrintFmt("Reconciled weaponowned on tic {}\n",
-		          msg->player_tic());
+		          s_currentHeader.destinationTic);
 	}
 }
 
 void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection* msg)
 {
-	if (rollerState.ResolveWeaponSelection(msg->player_tic(),
+	if (rollerState.ResolveWeaponSelection(s_currentHeader.destinationTic,
 	                                       static_cast<weapontype_t>(msg->readyweapon()),
 	                                       static_cast<weapontype_t>(msg->pendingweapon()),
 	                                       consoleplayer()))
 	{
 		DPrintFmt("Reconciled weapon selection on tic {}\n",
-		          msg->player_tic());
+		          s_currentHeader.destinationTic);
 	}
 }
 
@@ -3346,12 +3346,12 @@ void CL_PlayerPowers(const odaproto::svc::PlayerPowers* msg)
 	          msg->powers().end(),
 	          powers.begin());
 
-	if (rollerState.ResolvePowers(msg->player_tic(),
+	if (rollerState.ResolvePowers(s_currentHeader.destinationTic,
 	                              powers,
 	                              consoleplayer()))
 	{
 		DPrintFmt("Reconciled powers on tic {}\n",
-		          msg->player_tic());
+		          s_currentHeader.destinationTic);
 	}
 
 }
@@ -3366,12 +3366,12 @@ void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
 	    psprites[i].tics     = msg->psprites(i).tics();
 	}
 
-	if (rollerState.ResolvePsprites(msg->player_tic(),
+	if (rollerState.ResolvePsprites(s_currentHeader.destinationTic,
 	                                psprites,
 	                                consoleplayer()))
 	{
 		DPrintFmt("Reconciled psprites on tic {}\n",
-		          msg->player_tic());
+		          s_currentHeader.destinationTic);
 	}
 }
 
