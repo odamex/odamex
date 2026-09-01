@@ -165,6 +165,14 @@ class OdaMessenger
 					m_messengerRef.EndTicSend();
 				}
 
+				// Non-copyable.
+				Sender(const Sender&)            = delete;
+				Sender& operator=(const Sender&) = delete;
+
+				// Non-movable.
+				Sender(Sender&&)            = delete;
+				Sender& operator=(Sender&&) = delete;
+
 				/// Assembles the messages queued up via HighBuf() into packets and sends them.  If the tic budget is
 				/// exhausted, then the remaining HighPriority content remains enqueued for subsequent Send calls.
 				///
