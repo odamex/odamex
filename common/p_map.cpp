@@ -2694,8 +2694,8 @@ bool P_ShootLine(line_t& li, const fixed_t frac)
 	}
 	else
 	{
-		puffpos.x = trace.x + FixedMul(trace.dx, frac);
-		puffpos.y = trace.y + FixedMul(trace.dy, frac);
+		puffpos.x = trace.x + FixedMul(trace.dx, pufffrac);
+		puffpos.y = trace.y + FixedMul(trace.dy, pufffrac);
 		puffpos.z = z;
 	}
 
