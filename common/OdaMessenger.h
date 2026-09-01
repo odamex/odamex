@@ -115,7 +115,7 @@ class OdaMessenger
 		/// empty or its next message is the first non-ack message in the buffer.
 		void HandleAcks(buf_t& io_rawBuf);
 
-		//  -------------- Sending functions --------------
+		//  -------------- Top-level sending functions --------------
 
 		/// Assembles all new packets from enqueued outgoing messages and transmits them.  Packets and their content are ordered as
 		/// Reliable content first, followed by Acks, followed by any remaining non-reliable messages.  The number of packets is
@@ -129,6 +129,17 @@ class OdaMessenger
 		///  ABORT  - Critical error sending: Time to drop the connection.
 		MessageResultEnum SendAll(int i_currentTic, const netadr_t& i_dest);
 
+		// -------------- Fine-grained sending functions --------------
+
+		void StartTicSend(int i_currentTic);
+
+		size_t SendHighPriority(int i_currentTic, const netadr_t& i_dest);
+		size_t SendRetransmissions(int i_currentTic, const netadr_t& i_dest);
+
+		MessageResultEnum SendStandard(int i_currentTic, const netadr_t& i_dest);
+
+		void EndTicSend();
+
 		/// Retransmit the oldest reliable packets that were previously sent and are older than RetransmitDelay
 		/// (see Get/Set methods) but haven't yet been acknowledged.
 		///
@@ -138,8 +149,9 @@ class OdaMessenger
 		/// are no unacknowledged reliable packets older than the RetransmitDelay, nothing is sent.
 		///
 		/// Returns the number of bytes sent as part of this retransmission cycle.
-		int HandleRetransmissions(int i_currentTic, const netadr_t& i_dest);
+		//int HandleRetransmissions(int i_currentTic, const netadr_t& i_dest);
 
+		// -------------- Outgoing message management functions --------------
 
 		/// Mark a previously-sent reliable message as having been acknowledged by the recipient.  If the old
 		/// message has been included in retransmissions, then it stops being retransmitted.
@@ -193,6 +205,7 @@ class OdaMessenger
 		int GetPendingAckCount() const       { return m_sender.GetPendingAckCount(); }
 		int GetReliableOverloadCount() const { return m_reliableOverloadCount; }
 		int GetTicBudget() const             { return m_perTicBudget; }
+		int GetAvailableBudget() const       { return m_byteBudget; }
 
 	protected:
 
@@ -228,10 +241,11 @@ class OdaMessenger
 		int m_maxRate                       { 0 };
 		int m_criticalSequenceTimeoutInTics { DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS };
 
-		int m_byteBudget    {  0 };       ///< The live budget.  Signed so that it can also represent debt.
-		int m_perTicBudget  {  0 };       ///< The value used to reset the budget every tic.
-		int m_latchedTic    { -1 };       ///< Used for detecting new tics and resetting the budget.
-		int m_destinationTic{ -1 };       ///< The remote tic that we're supposed to echo back to the other end.
+		int m_byteBudget                {  0 };     ///< The live budget.  Signed so that it can also represent debt.
+		int m_perTicBudget              {  0 };     ///< The value used to reset the budget every tic.
+		int m_currentTicStartingBudget  {  0 };     ///< The budget available at the time we started sending this tic.
+		int m_latchedTic                { -1 };     ///< Used for detecting new tics and resetting the budget.
+		int m_destinationTic            { -1 };     ///< The remote tic that we're supposed to echo back to the other end.
 
 		int m_reliableOverloadThreshold { 0 };
 		int m_reliableOverloadCount     { 0 };

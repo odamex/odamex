@@ -302,7 +302,7 @@ size_t OdaMessenger::PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf
 	return io_packet.AddUnreliableMessage(messageBuf);
 }
 
-MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
+void OdaMessenger::StartTicSend(int i_currentTic)
 {
 	// Once a second, recalculate the budget to incorporate any changes made to maxRate.
 	const int ticPhase = i_currentTic % TICRATE;
@@ -314,8 +314,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 
 	ManageBudget(i_currentTic);
 
-	const int startBudget = m_byteBudget;
-
+	m_currentTicStartingBudget = m_byteBudget;
 	m_lastSendSize = 0;
 
 	if (m_recordingIsEnabled)
@@ -327,6 +326,27 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	{
 		Clear();
 	}
+}
+
+size_t OdaMessenger::SendHighPriority(int i_currentTic, const netadr_t& i_dest)
+{
+	ManageBudget(i_currentTic);
+
+	size_t bytesSentBestEffort = 0;
+	while (m_outgoingHighNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
+	{
+		m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
+
+		const size_t sendSize = m_highPacket.SendHighPriority(i_currentTic, m_destinationTic, m_sender, i_dest);
+		bytesSentBestEffort += sendSize;
+		m_byteBudget        -= static_cast<int>(sendSize);
+	}
+	return bytesSentBestEffort;
+}
+
+MessageResultEnum OdaMessenger::SendStandard(int i_currentTic, const netadr_t& i_dest)
+{
+	ManageBudget(i_currentTic);
 
 	// Phase zero:  Detect if the client has become dangerously non-responsive,
 	//              and abort if so.
@@ -340,17 +360,6 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 				return MessageResultEnum::ABORT;
 			}
 		}
-	}
-
-	// First phase - send high-priority non-reliables (acks, servertic, player updates)
-	size_t bytesSentBestEffort = 0;
-	while (m_outgoingHighNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
-	{
-		m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
-
-		const size_t sendSize = m_highPacket.SendHighPriority(i_currentTic, m_destinationTic, m_sender, i_dest);
-		bytesSentBestEffort += sendSize;
-		m_byteBudget        -= static_cast<int>(sendSize);
 	}
 
 	// Second phase - send reliables, padded out to MAX_UDP_SIZE-ish with non-reliable best-effort messages.
@@ -389,7 +398,6 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 			if (m_packet.SizeOfReliablePortion() == 0)
 			{
 				const size_t bestEffortBytes = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
-				bytesSentBestEffort         += bestEffortBytes;
 				m_byteBudget                -= static_cast<int>(bestEffortBytes);
 			}
 			else
@@ -417,25 +425,34 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	{
 		m_bytesSentWithReliability += lastTotalSent;
 	}
-	else
-	{
-		bytesSentBestEffort += lastTotalSent;
-	}
-
-	m_lastSendSize = std::max(0, startBudget - m_byteBudget);
-
-	const int reliableOverloadAdjustment = m_bytesSentWithReliability > m_reliableOverloadThreshold ? 1 : -1;
-
-	m_reliableOverloadCount = std::max(0, std::min(m_reliableOverloadCount + reliableOverloadAdjustment, 10));
 
 	return m_byteBudget > 0 ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
 }
 
-int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
+void OdaMessenger::EndTicSend()
+{
+	m_lastSendSize = std::max(0, m_currentTicStartingBudget - m_byteBudget);
+
+	const int reliableOverloadAdjustment = m_bytesSentWithReliability > m_reliableOverloadThreshold ? 1 : -1;
+
+	m_reliableOverloadCount = std::max(0, std::min(m_reliableOverloadCount + reliableOverloadAdjustment, 10));
+}
+
+MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
+{
+	StartTicSend(i_currentTic);
+	SendHighPriority(i_currentTic, i_dest);
+	SendRetransmissions(i_currentTic, i_dest);
+	const MessageResultEnum sendResult = SendStandard(i_currentTic, i_dest);
+	EndTicSend();
+	return sendResult;
+}
+
+size_t OdaMessenger::SendRetransmissions(int i_currentTic, const netadr_t& i_dest)
 {
 	if (m_isBitBucket)
 	{
-		return 0;
+		m_sender.Clear();
 	}
 
 	int retransmissionsSent = 0;

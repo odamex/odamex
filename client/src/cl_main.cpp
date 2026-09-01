@@ -507,7 +507,6 @@ static void CL_GracefulClientInitiatedDisconnect()
 		I_Sleep(oneTicInNanosec);
 
 		++fakeTics;
-		messenger.HandleRetransmissions(fakeTics, serveraddr);
 		while (NET_GetPacket())
 		{
 			if (messenger.Receive(::net_message) == MessageResultEnum::ACCEPT)
@@ -2350,7 +2349,9 @@ void CL_SendCmd(void)
 		}
 	}
 
-	const MessageResultEnum sendResult = messenger.SendAll(gametic, serveraddr);
+	messenger.StartTicSend(gametic);
+	messenger.SendHighPriority(gametic, serveraddr);
+	const MessageResultEnum sendResult = messenger.SendStandard(gametic, serveraddr);
 
 	if (sendResult == MessageResultEnum::ABORT)
 	{
@@ -2358,16 +2359,17 @@ void CL_SendCmd(void)
 	}
 	else
 	{
-		const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
+		const size_t retransmittedByteCount = messenger.SendRetransmissions(gametic, serveraddr);
 
 		const int currentSendSize    = messenger.GetLastSendSize();
-		const int totalSentByteCount = currentSendSize + retransmittedByteCount;
+		const int totalSentByteCount = currentSendSize + static_cast<int>(retransmittedByteCount);
 
 		netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
 		netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
 		netgraph.addTrafficOut(totalSentByteCount);
 		outrate += totalSentByteCount;
 	}
+	messenger.EndTicSend();
 }
 
 //
