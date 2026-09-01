@@ -1786,7 +1786,7 @@ void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = s_currentHeader.originatorTic;
 	SectorSnapshot snap(serverTic);
 
 	// Elevators
@@ -1820,7 +1820,7 @@ void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = s_currentHeader.originatorTic;
 	SectorSnapshot snap(serverTic);
 
 		// Pillars
@@ -1854,7 +1854,7 @@ void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = s_currentHeader.originatorTic;
 	SectorSnapshot snap(serverTic);
 
 	// Ceilings / Crushers
@@ -1886,7 +1886,7 @@ void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = s_currentHeader.originatorTic;
 	SectorSnapshot snap(serverTic);
 
 	// Doors
@@ -1919,7 +1919,7 @@ void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = s_currentHeader.originatorTic;
 	SectorSnapshot snap(serverTic);
 
 	// Floors/Stairbuilders
@@ -1961,7 +1961,7 @@ void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = s_currentHeader.originatorTic;
 	SectorSnapshot snap(serverTic);
 
 	// Platforms/Lifts

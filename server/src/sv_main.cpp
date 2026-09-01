@@ -1791,16 +1791,15 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 	if (floorMover != SEC_INVALID)
 	{
 		const bool    floorIsCompleted     = P_MovingFloorCompleted  (sector);
-		const int     floorMoverMsgTic     = floorIsCompleted ? gametic : -1;
 		MessageQueue& outgoingMessageQueue = floorIsCompleted ? player.client.messenger->ReliableBuf() :
 		                                                        player.client.messenger->HighBuf();
 		switch (floorMover)
 		{
 			case SEC_FLOOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorFloor(*sector, floorMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorFloor(*sector));
 				break;
 			case SEC_PLAT:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPlat(*sector, floorMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPlat(*sector));
 				break;
 			default:
 				break;
@@ -1810,23 +1809,22 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 	if (ceilingMover != SEC_INVALID)
 	{
 		const bool    ceilingIsCompleted   = P_MovingCeilingCompleted(sector);
-		const int     ceilingMoverMsgTic   = ceilingIsCompleted ? gametic : -1;
 		MessageQueue& outgoingMessageQueue = ceilingIsCompleted ? player.client.messenger->ReliableBuf() :
 		                                                          player.client.messenger->HighBuf();
 
 		switch (ceilingMover)
 		{
 			case SEC_DOOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorDoor(*sector, ceilingMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorDoor(*sector));
 				break;
 			case SEC_CEILING:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorCeiling(*sector, ceilingMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorCeiling(*sector));
 				break;
 			case SEC_ELEVATOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorElevator(*sector, ceilingMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorElevator(*sector));
 				break;
 			case SEC_PILLAR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPillar(*sector, ceilingMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPillar(*sector));
 				break;
 			default:
 				break;
