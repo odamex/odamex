@@ -397,7 +397,7 @@ bool PIT_FindTarget(AActor& mo, AActor& actor, bool allaround)
 	if (!P_IsVisible(actor, mo, allaround))
 		return true;
 
-	actor.lastenemy = actor.target; // Remember previous target
+	actor.lastenemy = actor.target.get(); // Remember previous target
 	actor.target = mo.ptr();                // Found target
 
 	// Move the selected monster to the end of its associated
@@ -2274,7 +2274,7 @@ void A_SkelMissile (AActor *actor)
 
 		mo->x += mo->momx;
 		mo->y += mo->momy;
-		mo->tracer = actor->target;
+		mo->tracer = actor->target.get();
 	}
 }
 
@@ -2567,7 +2567,7 @@ void A_VileTarget (AActor *actor)
 
 		actor->tracer = fog->ptr();
 		fog->target = actor->ptr();
-		fog->tracer = actor->target;
+		fog->tracer = actor->target.get();
 		A_Fire (fog);
 	}
 }
@@ -2859,7 +2859,7 @@ void A_SpawnObject(AActor* actor)
 		else
 		{
 			mo->target = actor->ptr();
-			mo->tracer = actor->target;
+			mo->tracer = actor->target.get();
 		}
 	}
 	else if (!mo->info->seestate)
@@ -2931,7 +2931,7 @@ void A_MonsterProjectile(AActor* actor)
 
 	// always set the 'tracer' field, so this pointer
 	// can be used to fire seeker missiles at will.
-	mo->tracer = actor->target;
+	mo->tracer = actor->target.get();
 
 	SV_UpdateMobj(mo);
 }

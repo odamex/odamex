@@ -2566,7 +2566,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			if (!target->lastenemy || !target->lastenemy->player ||
 				target->lastenemy->health <= 0)
 			{
-				target->lastenemy = target->target; // remember last enemy - killough
+				target->lastenemy = target->target.get(); // remember last enemy - killough
 			}
 
 			target->target = source->ptr();

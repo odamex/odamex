@@ -255,36 +255,72 @@ class AActor : public DThinker
 	{
 		AActorPtr ptr;
 
+		// refCount is not mutable, so a const referent still has to be counted
+		// through a cast.
+		static void acquire(const AActorPtr& p)
+		{
+			if(p)
+				const_cast<AActorPtr&>(p)->refCount++;
+		}
+
+		static void release(const AActorPtr& p)
+		{
+			if(p)
+				const_cast<AActorPtr&>(p)->refCount--;
+		}
+
 		public:
 
 		AActorPtrCounted() = default;
 
-		// TODO: should these be returning AActorPtrCounted& instead?
-		// clang-tidy gives warnings about this
-		AActorPtr &operator= (const AActorPtr& other)
+		AActorPtrCounted(const AActorPtrCounted& other) : ptr(other.ptr)
 		{
-			if(ptr)
-				ptr->refCount--;
-			if(other)
-				const_cast<AActorPtr&>(other)->refCount++; // TODO: should refCount maybe be declared as mutable?
-			ptr = other;
-			return ptr;
+			acquire(ptr);
 		}
 
-		AActorPtr &operator= (const AActorPtrCounted& other)
+		// Moving transfers the existing count rather than churning it.
+		AActorPtrCounted(AActorPtrCounted&& other) noexcept : ptr(other.ptr)
 		{
-			if(ptr)
-				ptr->refCount--;
-			if(other)
-				const_cast<AActorPtrCounted&>(other)->refCount++; // TODO: should refCount maybe be declared as mutable?
+			other.ptr = AActorPtr();
+		}
+
+		// Acquire before releasing, so assigning a pointer to itself cannot
+		// drop the count to zero on the way through.
+		AActorPtrCounted &operator= (const AActorPtr& other)
+		{
+			acquire(other);
+			release(ptr);
+			ptr = other;
+			return *this;
+		}
+
+		AActorPtrCounted &operator= (const AActorPtrCounted& other)
+		{
+			acquire(other.ptr);
+			release(ptr);
 			ptr = other.ptr;
-			return ptr;
+			return *this;
+		}
+
+		AActorPtrCounted &operator= (AActorPtrCounted&& other) noexcept
+		{
+			if(this != &other)
+			{
+				release(ptr);
+				ptr = other.ptr;
+				other.ptr = AActorPtr();
+			}
+			return *this;
 		}
 
 		~AActorPtrCounted()
 		{
-			if(ptr)
-				ptr->refCount--;
+			release(ptr);
+		}
+
+		const AActorPtr &get() const
+		{
+			return ptr;
 		}
 
 		operator AActorPtr()
@@ -410,7 +446,7 @@ public:
 
     // Thing being chased/attacked (or NULL),
     // also the originator for missiles.
-	AActorPtr		target;
+	AActorPtrCounted	target;
 	AActorPtr		lastenemy;		// Last known enemy -- killogh 2/15/98
 
     // Reaction time: if non 0, don't attack yet.

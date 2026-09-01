@@ -2849,15 +2849,15 @@ fixed_t P_AimLineAttack(AActor *t1, angle_t angle, fixed_t distance,
 	}
 	else
 	{
-	if (topangle <= ANG360 - ANG180)
-		topslope = finetangent[FINEANGLES/2-1];
-	else
-		topslope = finetangent[FINEANGLES/4-(static_cast<signed>(topangle)>>ANGLETOFINESHIFT)];
+		if (topangle <= ANG360 - ANG180)
+			topslope = finetangent[FINEANGLES/2-1];
+		else
+			topslope = finetangent[FINEANGLES/4-(static_cast<signed>(topangle)>>ANGLETOFINESHIFT)];
 
-	if (bottomangle >= ANG180)
-		bottomslope = finetangent[0];
-	else
-		bottomslope = finetangent[FINEANGLES/4-(static_cast<signed>(bottomangle)>>ANGLETOFINESHIFT)];
+		if (bottomangle >= ANG180)
+			bottomslope = finetangent[0];
+		else
+			bottomslope = finetangent[FINEANGLES/4-(static_cast<signed>(bottomangle)>>ANGLETOFINESHIFT)];
 	}
 
 	attackrange = distance;

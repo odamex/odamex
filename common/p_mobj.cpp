@@ -1255,7 +1255,8 @@ namespace
 
 void P_ResolveMobjToMobjPointers()
 {
-	auto setPointer = [](AActor::AActorPtr& destPtr, uint32_t netId)
+	// Generic because these members are not all the same pointer type.
+	auto setPointer = [](auto& destPtr, uint32_t netId)
 	{
 		AActor* other = P_FindThingById(netId);
 		destPtr = other ? other->ptr() : AActor::AActorPtr();
