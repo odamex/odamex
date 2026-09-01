@@ -252,7 +252,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 2:
 		// Open Door
-		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(doors::SLOW), 0, NoKey))
+		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(doors::SLOW), 0,
+		              NoKey) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -261,7 +262,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 3:
 		// Close Door
-		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(doors::SLOW), 0, NoKey))
+		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(doors::SLOW), 0,
+		              NoKey) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -271,7 +273,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 4:
 		// Raise Door
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(doors::SLOW),
-		              TICS(doors::WAIT), NoKey))
+		              TICS(doors::WAIT), NoKey) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -281,7 +283,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 5:
 		// Raise Floor
 		if (EV_DoFloor(DFloor::floorRaiseToLowestCeiling, line, line->id, SPEED(floors::SLOW),
-		               0, 0, 0))
+		               0, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -291,7 +293,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 6:
 		// Fast Ceiling Crush & Raise
 		if (EV_DoCeiling(DCeiling::fastCrushAndRaise, line, line->id, SPEED(ceilings::NORMAL),
-		                 SPEED(ceilings::NORMAL), 0, true, 0, 0))
+		                 SPEED(ceilings::NORMAL), 0, true, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -301,7 +303,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 8:
 		// Build Stairs
 		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT, SPEED(stairs::SLOW),
-		                   TICS(0), 0, 0, 0))
+		                   TICS(0), 0, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -311,7 +313,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 10:
 		// PlatDownWaitUp
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(plats::FAST),
-		              TICS(plats::WAIT), 0 * FRACUNIT, 0))
+		              TICS(plats::WAIT), 0 * FRACUNIT, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -335,7 +337,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 16:
 		// Close Door 30
 		if (EV_DoDoor(DDoor::doorCloseWaitOpen, line, thing, line->id, SPEED(doors::SLOW),
-		              OCTICS(240), NoKey))
+		              OCTICS(240), NoKey) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -352,7 +354,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 19:
 		// Lower Floor
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(floors::SLOW),
-		               (128 - 128) * FRACUNIT, 0, 0))
+		               (128 - 128) * FRACUNIT, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -362,7 +364,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 22:
 		// Raise floor to nearest height and change texture
 		if (EV_DoPlat(line->id, line, DPlat::platRaiseAndStay, 0, SPEED(plats::SLOW / 2), 0, 0,
-		              1))
+		              1) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -372,7 +374,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 25:
 		// Ceiling Crush and Raise
 		if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(ceilings::SLOW),
-		                 SPEED(ceilings::SLOW), 0, true, 0, 0))
+		                 SPEED(ceilings::SLOW), 0, true, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -383,7 +385,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Raise floor to shortest texture height
 		//  on either side of lines.
 		if (EV_DoFloor(DFloor::floorRaiseByTexture, line, line->id, SPEED(floors::SLOW), 0, 0,
-		               0))
+		               0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -400,7 +402,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 36:
 		// Lower Floor (TURBO)
 		if (EV_DoFloor(DFloor::floorLowerToHighest, line, line->id, SPEED(floors::FAST),
-		               (136 - 128) * FRACUNIT, 0, 0))
+		               (136 - 128) * FRACUNIT, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -410,7 +412,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 37:
 		// LowerAndChange
 		if (EV_DoFloor(DFloor::floorLowerAndChange, line, line->id, SPEED(floors::SLOW),
-		               0 * FRACUNIT, 0, 0))
+		               0 * FRACUNIT, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -420,7 +422,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 38:
 		// Lower Floor To Lowest
 		if (EV_DoFloor(DFloor::floorLowerToLowest, line, line->id, SPEED(floors::SLOW), 0, 0,
-		               0))
+		               0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -429,7 +431,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 39:
 		// TELEPORT! //jff 02/09/98 fix using up with wrong side crossing
-		if (EV_LineTeleport(line, side, thing))
+		if (EV_LineTeleport(line, side, thing) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -447,7 +449,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 44:
 		// Ceiling Crush
 		if (EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(ceilings::SLOW),
-		                 SPEED(ceilings::SLOW) / 2, 0, true, 0, 0))
+		                 SPEED(ceilings::SLOW) / 2, 0, true, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -471,7 +473,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 53:
 		// Perpetual Platform Raise
 		if (EV_DoPlat(line->id, line, DPlat::platPerpetualRaise, 0, SPEED(plats::SLOW),
-		              TICS(plats::WAIT), 0 * FRACUNIT, 0))
+		              TICS(plats::WAIT), 0 * FRACUNIT, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -488,7 +490,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 56:
 		// Raise Floor Crush
 		if (EV_DoFloor(DFloor::floorRaiseAndCrush, line, line->id, SPEED(floors::SLOW), 0, true,
-		               0))
+		               0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -497,7 +499,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 57:
 		// Ceiling Crush Stop
-		if (EV_CeilingCrushStop(line->id))
+		if (EV_CeilingCrushStop(line->id) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -507,7 +509,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 58:
 		// Raise Floor 24
 		if (EV_DoFloor(DFloor::floorRaiseByValue, line, line->id, SPEED(floors::SLOW),
-		               FRACUNIT * 24, 0, 0))
+		               FRACUNIT * 24, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -517,7 +519,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 59:
 		// Raise Floor 24 And Change
 		if (EV_DoFloor(DFloor::floorRaiseAndChange, line, line->id, SPEED(floors::SLOW),
-		               24 * FRACUNIT, 0, 0))
+		               24 * FRACUNIT, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -527,7 +529,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 100:
 		// Build Stairs Turbo 16
 		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT, SPEED(stairs::TURBO),
-		                   TICS(0), 0, 0, 0))
+		                   TICS(0), 0, 0, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -544,7 +546,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 108:
 		// Blazing Door Raise (faster than TURBO!)
 		if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id, SPEED(doors::FAST),
-		              TICS(doors::WAIT), NoKey))
+		              TICS(doors::WAIT), NoKey) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -553,7 +555,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 109:
 		// Blazing Door Open (faster than TURBO!)
-		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(doors::FAST), 0, NoKey))
+		if (EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(doors::FAST), 0,
+		              NoKey) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -562,7 +565,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 110:
 		// Blazing Door Close (faster than TURBO!)
-		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(doors::FAST), 0, NoKey))
+		if (EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(doors::FAST), 0,
+		              NoKey) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -572,7 +576,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 119:
 		// Raise floor to nearest surr. floor
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(floors::SLOW), 0, 0,
-		               0))
+		               0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -582,7 +586,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 121:
 		// Blazing PlatDownWaitUpStay
 		if (EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(plats::TURBO),
-		              TICS(plats::WAIT), 0 * FRACUNIT, 0))
+		              TICS(plats::WAIT), 0 * FRACUNIT, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -607,7 +611,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 125:
 		// TELEPORT MonsterONLY
 		if (!P_IsPlayerOrAvatar(*thing) &&
-		    (EV_LineTeleport(line, side, thing)))
+		    (EV_LineTeleport(line, side, thing) || demoplayback))
 		{
 			return true;
 			//line->special = 0;
@@ -617,7 +621,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 130:
 		// Raise Floor Turbo
 		if (EV_DoFloor(DFloor::floorRaiseToNearest, line, line->id, SPEED(floors::FAST), 0, 0,
-		               0))
+		               0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
@@ -627,7 +631,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 141:
 		// Silent Ceiling Crush & Raise
 		if (EV_DoCeiling(DCeiling::silentCrushAndRaise, line, line->id, SPEED(ceilings::SLOW),
-		                 SPEED(ceilings::SLOW), 0, true, 1, 0))
+		                 SPEED(ceilings::SLOW), 0, true, 1, 0) || demoplayback)
 		{
 			return true;
 			//line->special = 0;
