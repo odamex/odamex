@@ -2628,7 +2628,9 @@ static void D_PostProcessDeh(const DehScanner::ParsedState& dp)
 		{
 			I_Error("Sound {} is not defined. Check your DEHACKED.\n", index);
 		}
-		*soundPtr = soundIt->second.c_str();
+		// This needs to be null for no sound or it will cause a P_Random to fire in
+		// A_Chase.
+		*soundPtr = soundIt->second.empty() ? nullptr : soundIt->second.c_str();
 	}
 
 	// Check dropped items for validity
