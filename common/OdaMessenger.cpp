@@ -437,7 +437,7 @@ void OdaMessenger::EndTicSend(int i_currentTic)
 	bool isOldestTooOld = false;
 	if (auto averageRTT = m_averageHeaderRoundTripTics.Update(i_currentTic - m_mostRecentEchoedTic))
 	{
-		const int STARVED_FOR_ACKS_THRESHOLD = 7;
+		const int STARVED_FOR_ACKS_THRESHOLD = 3;
 		if (const SequenceQueueEntryType* oldestUnacked = m_sender.IterateUnackedPackets().Next())
 		{
 			isOldestTooOld = (i_currentTic - oldestUnacked->header.originatorTic > (*averageRTT + STARVED_FOR_ACKS_THRESHOLD));
@@ -445,7 +445,7 @@ void OdaMessenger::EndTicSend(int i_currentTic)
 	}
 
 	const bool reliableExceedsBandwidthThreshold = m_bytesSentWithReliability > m_reliableOverloadThreshold;
-	const int reliableOverloadAdjustment = reliableExceedsBandwidthThreshold ? 1 : -1;
+	const int reliableOverloadAdjustment = reliableExceedsBandwidthThreshold or isOldestTooOld ? 1 : -1;
 
 	m_reliableOverloadCount = std::max(0, std::min(m_reliableOverloadCount + reliableOverloadAdjustment, 10));
 }
