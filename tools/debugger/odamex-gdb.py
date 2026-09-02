@@ -1,5 +1,7 @@
 import gdb
 
+# load this with:
+# source path/to/odamexlldb.py
 
 class OFlagsPrinter:
     def __init__(self, value: gdb.Value):
