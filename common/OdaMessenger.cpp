@@ -33,6 +33,8 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 	m_immediateReceiveBuffer.clear();
 
+	m_mostRecentEchoedTic = std::max(m_mostRecentEchoedTic, header.destinationTic);
+
 	if (m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
 	{
 		return MessageResultEnum::ABORT;

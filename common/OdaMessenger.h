@@ -301,6 +301,7 @@ class OdaMessenger
 		int m_currentTicStartingBudget  {  0 };     ///< The budget available at the time we started sending this tic.
 		int m_latchedTic                { -1 };     ///< Used for detecting new tics and resetting the budget.
 		int m_destinationTic            { -1 };     ///< The remote tic that we're supposed to echo back to the other end.
+		int m_mostRecentEchoedTic       { -1 };     ///< The highest-numbered tic we've seen echoed back to us as a received destinationTic.
 
 		int m_reliableOverloadThreshold { 0 };
 		int m_reliableOverloadCount     { 0 };
