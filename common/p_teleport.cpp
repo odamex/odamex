@@ -179,7 +179,10 @@ bool EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 	const fixed_t oldy = thing->y;
 	const fixed_t oldz = thing->z;
 
-	const fixed_t destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
+	const fixed_t destz =
+	    (m->type == MT_TELEPORTMAN)
+	        ? (UseFinalDoomTeleportZBug() ? thing->z : P_FloorHeight(m))
+	        : m->z;
 
 	if (!P_TeleportMove (thing, m->x, m->y, destz, false))
 		return false;
@@ -292,7 +295,7 @@ bool EV_LineTeleport (line_t *line, int side, AActor *thing)
 				fixed_t destz;
 
 				if (UseFinalDoomTeleportZBug())
-					destz = m->z;	// Make sure we have the original Z-Height bug on Final Doom.
+					destz = thing->z;	// Make sure we have the original Z-Height bug on Final Doom.
 				else
 					destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
 
