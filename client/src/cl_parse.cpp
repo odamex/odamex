@@ -354,7 +354,7 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	// Mark the gametic this update arrived in for prediction code
 	p.tic = gametic;
 	p.mo->updatedDuringLocalTic  = gametic;
-	p.mo->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	p.mo->updatedDuringServerTic = ThisMessageServerTic();
 
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p.spectator && (&p != &consoleplayer()))
@@ -550,7 +550,7 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	}
 	mo->baseline               = base;
 	mo->updatedDuringLocalTic  = gametic;
-	mo->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	mo->updatedDuringServerTic = ThisMessageServerTic();
 	mo->mobjtic                = msg->timebase_tic();
 
 	P_SetThingId(mo, netid);
@@ -1139,7 +1139,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 		}
 	}
 
-	mo->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	mo->updatedDuringServerTic = ThisMessageServerTic();
 	mo->updatedDuringLocalTic = gametic;
 
 	uint32_t flags = msg->flags();
@@ -1252,8 +1252,7 @@ void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 
 	// Special handling: If we get a best-effort / order-not-guaranteed UpdateMobj, make sure that
 	//                   we're not going backwards with it!  This avoids rare ghosts.
-	const int currentSequence = ::messenger.GetCurrentReceivedPacketSequenceNumber();
-	if (currentSequence < mo->updatedDuringServerTic)
+	if (ThisMessageServerTic() < mo->updatedDuringServerTic)
 	{
 		return;
 	}
@@ -1331,7 +1330,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	mobj->momx = mobj->momy = mobj->momz = 0;
 
-	mobj->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	mobj->updatedDuringServerTic = ThisMessageServerTic();
 	mobj->updatedDuringLocalTic  = gametic;
 	mobj->credibility.Lionize();
 
@@ -1547,7 +1546,7 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		target->momy = msg->target_mom().y();
 		target->momz = msg->target_mom().z();
 
-		target->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+		target->updatedDuringServerTic = ThisMessageServerTic();
 		target->updatedDuringLocalTic = gametic;
 	}
 
@@ -1591,7 +1590,7 @@ void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	corpsehit->momy = msg->corpse().mom().y();
 	corpsehit->momz = msg->corpse().mom().z();
 
-	corpsehit->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	corpsehit->updatedDuringServerTic = ThisMessageServerTic();
 	corpsehit->updatedDuringLocalTic  = gametic;
 
 	mobjinfo_t* info = corpsehit->info;
