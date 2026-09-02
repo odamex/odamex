@@ -52,5 +52,5 @@ def OFlagsSummary(valobj, _):
 
 def __lldb_init_module(debugger, _):
     debugger.HandleCommand(
-        'type summary add -x -F odamexlldb.OFlagsSummary "flags_detail::flag_(set|combo|mask)<.*>"'
+        'type summary add -x -F odamex_lldb.OFlagsSummary "flags_detail::flag_(set|combo|mask)<.*>"'
     )
