@@ -3,6 +3,9 @@ import gdb
 # load this with:
 # source path/to/odamexlldb.py
 
+# TODO: install this to /usr/share/gdb/auto-load
+# and figure out how to include that in the flatpak .Debug extension
+
 class OFlagsPrinter:
     def __init__(self, value: gdb.Value):
         self.value = value
