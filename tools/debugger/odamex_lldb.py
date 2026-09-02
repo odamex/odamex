@@ -8,6 +8,9 @@ def OFlagsSummary(valobj, _):
     enum_type = type.GetTemplateArgumentType(0)
 
     type_name = type.GetName()
+    if type_name.startswith("flags_detail::flag_set"):
+        type_name = f"OFlags<{enum_type.GetName()}>"
+
     value = valobj.GetChildMemberWithName("m_value").GetValueAsUnsigned()
 
     if value == 0:
