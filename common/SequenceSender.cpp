@@ -65,6 +65,10 @@ bool SequenceSender::Acknowledge(int sequence)
 	{
 		if (m_sendTable.erase(sequence))
 		{
+			// We use std::find because in practice, the majority of the time, sequence acks
+			// arrive in order, meaning they're frequently the first element of the unacked
+			// container.  As a deque, that means this find and erase is usually going to be
+			// constant-time.
 			auto unackIter = std::find(m_unackedSequences.begin(),
 			                           m_unackedSequences.end(),
 			                           sequence);
