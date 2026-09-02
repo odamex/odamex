@@ -26,6 +26,7 @@
 #include <utility>
 
 #include "MessageQueue.h"
+#include "MovingAverage.h"
 #include "Packet.h"
 #include "SequenceReceiver.h"
 #include "SequenceSender.h"
@@ -143,7 +144,7 @@ class OdaMessenger
 
 	protected:
 		void StartTicSend(int i_currentTic);
-		void EndTicSend();
+		void EndTicSend  (int i_currentTic);
 
 		size_t            SendHighPriority   (int i_currentTic, const netadr_t& i_dest);
 		size_t            SendRetransmissions(int i_currentTic, const netadr_t& i_dest);
@@ -162,7 +163,7 @@ class OdaMessenger
 				}
 				~Sender()
 				{
-					m_messengerRef.EndTicSend();
+					m_messengerRef.EndTicSend(m_currentTic);
 				}
 
 				// Non-copyable.
@@ -281,7 +282,8 @@ class OdaMessenger
 		Packet m_packet;
 		Packet m_highPacket;
 
-		PacketHeaderType m_receivedHeader;
+		PacketHeaderType        m_receivedHeader;
+		MovingAverage<int, 5>   m_averageHeaderRoundTripTics;   // 32 samples.. approx 1 sec assuming 35 TICRATE.
 
 		// Send buffers
 		MessageQueue m_outgoingReliableQueue;

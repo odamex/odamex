@@ -207,7 +207,6 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 #endif
 
 	}
-
 	return MessageResultEnum::DEFER;
 }
 
@@ -431,11 +430,22 @@ MessageResultEnum OdaMessenger::SendStandard(int i_currentTic, const netadr_t& i
 	return m_byteBudget > 0 ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
 }
 
-void OdaMessenger::EndTicSend()
+void OdaMessenger::EndTicSend(int i_currentTic)
 {
 	m_lastSendSize = std::max(0, m_currentTicStartingBudget - m_byteBudget);
 
-	const int reliableOverloadAdjustment = m_bytesSentWithReliability > m_reliableOverloadThreshold ? 1 : -1;
+	bool isOldestTooOld = false;
+	if (auto averageRTT = m_averageHeaderRoundTripTics.Update(i_currentTic - m_mostRecentEchoedTic))
+	{
+		const int STARVED_FOR_ACKS_THRESHOLD = 7;
+		if (const SequenceQueueEntryType* oldestUnacked = m_sender.IterateUnackedPackets().Next())
+		{
+			isOldestTooOld = (i_currentTic - oldestUnacked->header.originatorTic > (*averageRTT + STARVED_FOR_ACKS_THRESHOLD));
+		}
+	}
+
+	const bool reliableExceedsBandwidthThreshold = m_bytesSentWithReliability > m_reliableOverloadThreshold;
+	const int reliableOverloadAdjustment = reliableExceedsBandwidthThreshold ? 1 : -1;
 
 	m_reliableOverloadCount = std::max(0, std::min(m_reliableOverloadCount + reliableOverloadAdjustment, 10));
 }
