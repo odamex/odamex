@@ -1,7 +1,7 @@
 import lldb
 
 # load this with:
-# command script import path/to/odamexlldb.py
+# command script import path/to/odamex_lldb.py
 
 def OFlagsSummary(valobj, _):
     type = valobj.GetType()

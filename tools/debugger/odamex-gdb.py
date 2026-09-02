@@ -1,7 +1,7 @@
 import gdb
 
 # load this with:
-# source path/to/odamexlldb.py
+# source path/to/odamex-gdb.py
 
 # TODO: install this to /usr/share/gdb/auto-load
 # and figure out how to include that in the flatpak .Debug extension
