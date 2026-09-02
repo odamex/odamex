@@ -67,6 +67,8 @@ class OdaMessenger
 		/// to NextReceivedPacket().  From call to call of NextReceivedPacket(), these
 		/// values should be expected to change and reflect the tic numbers contained
 		/// within and associated with the messages contained in that packet.
+		const PacketHeaderType& GetCurrentReceivedPacketHeader() const { return m_receivedHeader; }
+
 		int  GetCurrentReceivedPacketSequenceNumber() const { return m_receivedHeader.sequence; }
 		int  GetCurrentReceivedRemoteTic() const            { return m_receivedHeader.originatorTic; }
 		int  GetCurrentReceivedLocalTic() const             { return m_receivedHeader.destinationTic; }

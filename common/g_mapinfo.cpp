@@ -960,7 +960,7 @@ void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	arachnoaction.tag = 667;
 }
 
-template <int32_t TYPE, int32_t FLAG = 0>
+template <int32_t TYPE, auto FLAG = OUtil::noflag>
 void MIType_Special(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                          unsigned int flags2)
 {
@@ -1220,11 +1220,11 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "outsidefog", &MIType_Color, &ref.outsidefog_color },
 			{ "titlepatch", &MIType_TitlePatch, &ref },
 			{ "music", &MIType_MusicLumpName, &ref.music },
-			{ "nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION },
-			{ "doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY },
-			{ "nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING },
-			{ "allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
-			     LEVEL_MONSTERSTELEFRAG },
+			{ "nointermission", &MIType_SetFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_NOINTERMISSION) },
+			{ "doublesky", &MIType_SetFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_DOUBLESKY) },
+			{ "nosoundclipping", &MIType_SetFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_NOSOUNDCLIPPING) },
+			{ "allowmonstertelefrags", &MIType_SetFlag, &ref.flags.data(),
+			     static_cast<uint32_t>(LEVEL_MONSTERSTELEFRAG) },
 			{ "map07special", &MIType_Map07Special, &ref.bossactions },
 			{ "baronspecial", &MIType_Special<MT_BRUISER>, &ref.bossactions },
 			{ "cyberdemonspecial", &MIType_Special<MT_CYBORG>, &ref.bossactions },
@@ -1240,15 +1240,15 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "specialaction_killmonsters", &MIType_SpecialAction<280>, &ref.bossactions },
 			{ "lightning" },
 			{ "fadetable", &MIType_LumpName, &ref.fadetable },
-			{ "evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING },
-			{ "noautosequences", &MIType_SetFlag, &ref.flags, LEVEL_SNDSEQTOTALCTRL },
-			{ "forcenoskystretch", &MIType_SetFlag, &ref.flags, LEVEL_FORCENOSKYSTRETCH },
-			{ "allowfreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_YES,
-			    ~LEVEL_FREELOOK_NO },
-			{ "nofreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_NO,
-			    ~LEVEL_FREELOOK_YES },
-			{ "allowjump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
-			{ "nojump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
+			{ "evenlighting", &MIType_SetFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_EVENLIGHTING) },
+			{ "noautosequences", &MIType_SetFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_SNDSEQTOTALCTRL) },
+			{ "forcenoskystretch", &MIType_SetFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_FORCENOSKYSTRETCH) },
+			{ "allowfreelook", &MIType_SCFlags, &ref.flags.data(), static_cast<uint32_t>(LEVEL_FREELOOK_YES),
+			    ~static_cast<uint32_t>(LEVEL_FREELOOK_NO) },
+			{ "nofreelook", &MIType_SCFlags, &ref.flags.data(), static_cast<uint32_t>(LEVEL_FREELOOK_NO),
+			    ~static_cast<uint32_t>(LEVEL_FREELOOK_YES) },
+			{ "allowjump", &MIType_SCFlags, &ref.flags.data(), static_cast<uint32_t>(LEVEL_JUMP_YES), ~static_cast<uint32_t>(LEVEL_JUMP_NO) },
+			{ "nojump", &MIType_SCFlags, &ref.flags.data(), static_cast<uint32_t>(LEVEL_JUMP_NO), ~static_cast<uint32_t>(LEVEL_JUMP_YES) },
 			{ "cdtrack", &MIType_EatNext },
 			{ "cd_start_track", &MIType_EatNext },
 			{ "cd_end1_track", &MIType_EatNext },
@@ -1260,8 +1260,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "gravity", &MIType_Float, &ref.gravity },
 			{ "aircontrol", &MIType_Float, &ref.aircontrol },
 			{ "airsupply", &MIType_Int, &ref.airsupply },
-			{ "islobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL },
-			{ "lobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL },
+			{ "islobby", &MIType_SetFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_LOBBYSPECIAL) },
+			{ "lobby", &MIType_SetFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_LOBBYSPECIAL) },
 			{ "nocrouch" },
 			{ "intermusic", &MIType_LumpName, &ref.zintermusic },
 			{ "par", &MIType_Int, &ref.partime },
@@ -1271,21 +1271,21 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "enteranim", &MIType_LumpName, &ref.enteranim },
 			{ "exitanim", &MIType_LumpName, &ref.exitanim },
 			{ "translator", &MIType_EatNext },
-			{ "compat_shorttex", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_SHORTTEX },
-			{ "compat_limitpain", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_LIMITPAIN },
-			{ "compat_useblocking", &MIType_CompatFlag, &ref.flags }, // special lines block use (not implemented, default odamex behavior)
-			{ "compat_missileclip", &MIType_CompatFlag, &ref.flags }, // original height monsters when it comes to missiles (not implemented)
-			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF }, // todo: not implemented
-			{ "compat_crossdropoff", &MIType_CompatFlag, &ref.flags2, LEVEL2_COMPAT_CROSSDROPOFF },
-			{ "compat_trace", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_boomscroll", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER },
-			{ "compat_invisibility", &MIType_CompatFlag, &ref.flags},  // todo: not implemented
+			{ "compat_shorttex", &MIType_CompatFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_COMPAT_SHORTTEX) },
+			{ "compat_limitpain", &MIType_CompatFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_COMPAT_LIMITPAIN) },
+			{ "compat_useblocking", &MIType_CompatFlag, &ref.flags.data() }, // special lines block use (not implemented, default odamex behavior)
+			{ "compat_missileclip", &MIType_CompatFlag, &ref.flags.data() }, // original height monsters when it comes to missiles (not implemented)
+			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_COMPAT_DROPOFF) }, // todo: not implemented
+			{ "compat_crossdropoff", &MIType_CompatFlag, &ref.flags2.data(), static_cast<uint32_t>(LEVEL2_COMPAT_CROSSDROPOFF) },
+			{ "compat_trace", &MIType_CompatFlag, &ref.flags.data() }, // todo: not implemented
+			{ "compat_boomscroll", &MIType_CompatFlag, &ref.flags.data() }, // todo: not implemented
+			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags.data() }, // todo: not implemented
+			{ "compat_nopassover", &MIType_CompatFlag, &ref.flags.data(), static_cast<uint32_t>(LEVEL_COMPAT_NOPASSOVER) },
+			{ "compat_invisibility", &MIType_CompatFlag, &ref.flags.data()},  // todo: not implemented
 			{ "author", &MIType_Author, &ref },
-			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
-			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
-			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "normalinfighting", &MIType_SCFlags, &ref.flags2.data(), static_cast<uint32_t>(LEVEL2_NORMALINFIGHTING), ~static_cast<uint32_t>(LEVEL2_INFIGHTINGMASK) },
+			{ "noinfighting", &MIType_SCFlags, &ref.flags2.data(), static_cast<uint32_t>(LEVEL2_NOINFIGHTING), ~static_cast<uint32_t>(LEVEL2_INFIGHTINGMASK) },
+			{ "totalinfighting", &MIType_SCFlags, &ref.flags2.data(), static_cast<uint32_t>(LEVEL2_TOTALINFIGHTING), ~static_cast<uint32_t>(LEVEL2_INFIGHTINGMASK) },
 			{ "smoothlighting" } // TODO: not implemented
 		};
 	}
@@ -1793,7 +1793,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		}
 		else if (os.compareTokenNoCase("map"))
 		{
-			uint32_t& levelflags = defaultinfo.flags;
+			auto& levelflags = defaultinfo.flags;
 			os.mustScan();
 
 			OLumpName map_name = os.getToken();

@@ -1593,11 +1593,11 @@ void WI_loadData()
 		// Determine if we should display the map author.
 		// MAPINFO can just straight up ask for it to be disabled.
 		const bool patchshowsauthor =
-		    !lnames[i].empty() && (linfo.flags2 & LEVEL2_HIDEAUTHORNAME) != 0;
+		    !lnames[i].empty() && (linfo.flags2 & LEVEL2_HIDEAUTHORNAME);
 
 		// A UMAPINFO map that brings its own title graphic has drawn that graphic
 		// to suit itself, so an author line under it is not wanted.
-		const bool umapinfoshowsauthor = (linfo.flags2 & LEVEL2_FROMUMAPINFO) != 0 &&
+		const bool umapinfoshowsauthor = (linfo.flags2 & LEVEL2_FROMUMAPINFO) &&
 		                                    !linfo.pname.empty() &&
 		                                    W_IsLumpFromPWAD(linfo.pname);
 

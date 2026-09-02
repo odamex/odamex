@@ -58,10 +58,10 @@ class SequenceSender
 			CRITICAL_FAILURE,
 		};
 
-		struct QueueEntryResultType
+		struct ObtainResultType
 		{
-			buf_t* buffer   {nullptr};
-			int    sequence {-1};
+			buf_t&            bufferRef;
+			PacketHeaderType& headerRef;
 		};
 
 	public:  // Functions.
@@ -79,7 +79,7 @@ class SequenceSender
 		// the caller must manage these and specify them when obtaining a reliability
 		// slot.
 		//
-		QueueEntryResultType ObtainSendPacket(int currentTic=-1);
+		ObtainResultType ObtainSendPacket();
 
 		// This function declares that the packet associated with the given sequence number has been
 		// acknowledged by its intended recipient.
