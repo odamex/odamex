@@ -1324,7 +1324,9 @@ bool EV_BuildStairs(const int tag, const DFloor::EStair type, const line_t *line
 			floor->m_StepTime = floor->m_PerStepTime = persteptime;
 			//jff 2/27/98 fix uninitialized crush field
 			floor->m_Crush =
-				(!usespecials && speed == 4 * FRACUNIT) ? DOOM_CRUSH : NO_CRUSH;
+				demoplayback
+					? STAIRS_CRUSH
+					: ((!usespecials && speed == 4 * FRACUNIT) ? DOOM_CRUSH : NO_CRUSH);
 			floor->m_ResetCount = reset;	// [RH] Tics until reset (0 if never)
 			floor->m_OrgHeight = floorheight;	// [RH] Height to reset to
 

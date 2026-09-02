@@ -3760,7 +3760,9 @@ bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 
 	if (crushchange > 0 && !(level.time&3) )
 	{
-		P_DamageMobj(&thing, nullptr, nullptr, crushchange, MOD_CRUSH);
+		const int damage = (crushchange == STAIRS_CRUSH) ? DOOM_CRUSH : crushchange;
+
+		P_DamageMobj(&thing, nullptr, nullptr, damage, MOD_CRUSH);
 
 		// spray blood in a random direction
 		if (!(thing.flags&MF_NOBLOOD))

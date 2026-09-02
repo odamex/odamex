@@ -361,6 +361,7 @@ using MapThing = mapthing2_t;
 
 #define NO_CRUSH	-1
 #define DOOM_CRUSH	10
+#define STAIRS_CRUSH	256
 
 //
 // Texture definition.
