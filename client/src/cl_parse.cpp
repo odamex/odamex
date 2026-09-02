@@ -129,6 +129,8 @@ namespace
 
 PacketHeaderType s_currentHeader;
 
+int32_t ThisMessageClientTic() { return s_currentHeader.destinationTic; }
+int32_t ThisMessageServerTic() { return s_currentHeader.originatorTic; }
 
 /**
  * @brief Unpack a bitfield into an array of booleans.
@@ -283,7 +285,7 @@ void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	// Until then, we just flatly apply the PlayerInfo to the player.
 	if (::hasReceivedFullUpdate)
 	{
-		const int oldTic = s_currentHeader.destinationTic;
+		const int oldTic = ThisMessageClientTic();
 
 		const RollerResolveEnum result = rollerState.Resolve(oldTic, playerState, player);
 		switch (result)
@@ -376,7 +378,7 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
-	const int snaptime = s_currentHeader.originatorTic;
+	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
 
@@ -404,7 +406,7 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 
 	// The server has processed the ticcmd that the local client sent
 	// during the the tic referenced below
-	p.tic = s_currentHeader.destinationTic;
+	p.tic = ThisMessageClientTic();
 
 	fixed_t x = msg->actor().pos().x();
 	fixed_t y = msg->actor().pos().y();
@@ -416,7 +418,7 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 
 	byte waterlevel = msg->actor().waterlevel();
 
-	int snaptime = s_currentHeader.originatorTic;
+	int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnapshot(snaptime);
 	newsnapshot.setAuthoritative(true);
 	newsnapshot.setX(x);
@@ -1196,7 +1198,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 	if (mo->player)
 	{
 		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = s_currentHeader.originatorTic;
+		int snaptime = ThisMessageServerTic();
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
@@ -1394,7 +1396,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		// Any intervening updates to important state will come in subsequent
 		// reliable, well-ordered messages.
 		rollerState.Clear();
-		for (int32_t tic = s_currentHeader.destinationTic; tic <= gametic; ++tic)
+		for (int32_t tic = ThisMessageClientTic(); tic <= gametic; ++tic)
 		{
 			rollerState.Record(tic, p);
 		}
@@ -1421,7 +1423,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 			::level.behavior->StartTypedScripts(SCRIPT_Enter, p.mo);
 	}
 
-	const int snaptime = s_currentHeader.originatorTic;
+	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnap(snaptime, p);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);
@@ -1440,7 +1442,7 @@ void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	//const int armorDamage = msg->armor_damage(); // unused for now...
 	const int       health       = msg->player_health();
 	const int       armorpoints  = msg->player_armorpoints();
-	const int       oldTic       = s_currentHeader.destinationTic;
+	const int       oldTic       = ThisMessageClientTic();
 
 	AActor* actor    = P_FindThingById(netid);
 	AActor* attacker = P_FindThingById(attackerid);
@@ -1521,7 +1523,7 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	if (target->player)
 	{
 		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = s_currentHeader.originatorTic;
+		int snaptime = ThisMessageServerTic();
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
@@ -1660,7 +1662,7 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 
 	P_ChangeSector(sector, false);
 
-	SectorSnapshot snap(s_currentHeader.originatorTic, sector);
+	SectorSnapshot snap(ThisMessageServerTic(), sector);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1786,7 +1788,7 @@ void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-	const int serverTic = s_currentHeader.originatorTic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 	// Elevators
@@ -1820,7 +1822,7 @@ void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-	const int serverTic = s_currentHeader.originatorTic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 		// Pillars
@@ -1854,7 +1856,7 @@ void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-	const int serverTic = s_currentHeader.originatorTic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 	// Ceilings / Crushers
@@ -1886,7 +1888,7 @@ void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-	const int serverTic = s_currentHeader.originatorTic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 	// Doors
@@ -1919,7 +1921,7 @@ void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-	const int serverTic = s_currentHeader.originatorTic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 	// Floors/Stairbuilders
@@ -1961,7 +1963,7 @@ void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-	const int serverTic = s_currentHeader.originatorTic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 	// Platforms/Lifts
@@ -2053,7 +2055,7 @@ void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	// of the pickup *at that old point in time*.  With that result in hand, we undo the
 	// switcheroo and resolve the potentially-modified history.
 
-	const int oldTic = s_currentHeader.destinationTic;
+	const int oldTic = ThisMessageClientTic();
 	auto optionalHistory = rollerState.GetStateAtTic(oldTic);
 	const PlayerItemDataType currentClientSideState {player};
 
@@ -3288,10 +3290,10 @@ void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
 	          msg->ammo().end(),
 	          ammo.begin());
 
-	if (rollerState.ResolveAmmo(s_currentHeader.destinationTic, ammo, consoleplayer()))
+	if (rollerState.ResolveAmmo(ThisMessageClientTic(), ammo, consoleplayer()))
 	{
 		DPrintFmt("Reconciled ammo on tic {}\n",
-		          s_currentHeader.destinationTic);
+		          ThisMessageClientTic());
 	}
 }
 
@@ -3302,12 +3304,12 @@ void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
 	          msg->maxammo().end(),
 	          maxammo.begin());
 
-	if (rollerState.ResolveMaxAmmo(s_currentHeader.destinationTic,
+	if (rollerState.ResolveMaxAmmo(ThisMessageClientTic(),
 	                               maxammo,
 	                               consoleplayer()))
 	{
 		DPrintFmt("Reconciled maxammo on tic {}\n",
-		          s_currentHeader.destinationTic);
+		          ThisMessageClientTic());
 	}
 }
 
@@ -3318,24 +3320,24 @@ void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
 	          msg->weaponowned().end(),
 	          weaponowned.begin());
 
-	if (rollerState.ResolveWeaponOwned(s_currentHeader.destinationTic,
+	if (rollerState.ResolveWeaponOwned(ThisMessageClientTic(),
 	                                   weaponowned,
 	                                   consoleplayer()))
 	{
 		DPrintFmt("Reconciled weaponowned on tic {}\n",
-		          s_currentHeader.destinationTic);
+		          ThisMessageClientTic());
 	}
 }
 
 void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection* msg)
 {
-	if (rollerState.ResolveWeaponSelection(s_currentHeader.destinationTic,
+	if (rollerState.ResolveWeaponSelection(ThisMessageClientTic(),
 	                                       static_cast<weapontype_t>(msg->readyweapon()),
 	                                       static_cast<weapontype_t>(msg->pendingweapon()),
 	                                       consoleplayer()))
 	{
 		DPrintFmt("Reconciled weapon selection on tic {}\n",
-		          s_currentHeader.destinationTic);
+		          ThisMessageClientTic());
 	}
 }
 
@@ -3346,12 +3348,12 @@ void CL_PlayerPowers(const odaproto::svc::PlayerPowers* msg)
 	          msg->powers().end(),
 	          powers.begin());
 
-	if (rollerState.ResolvePowers(s_currentHeader.destinationTic,
+	if (rollerState.ResolvePowers(ThisMessageClientTic(),
 	                              powers,
 	                              consoleplayer()))
 	{
 		DPrintFmt("Reconciled powers on tic {}\n",
-		          s_currentHeader.destinationTic);
+		          ThisMessageClientTic());
 	}
 
 }
@@ -3366,12 +3368,12 @@ void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
 	    psprites[i].tics     = msg->psprites(i).tics();
 	}
 
-	if (rollerState.ResolvePsprites(s_currentHeader.destinationTic,
+	if (rollerState.ResolvePsprites(ThisMessageClientTic(),
 	                                psprites,
 	                                consoleplayer()))
 	{
 		DPrintFmt("Reconciled psprites on tic {}\n",
-		          s_currentHeader.destinationTic);
+		          ThisMessageClientTic());
 	}
 }
 
