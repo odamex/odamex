@@ -1416,7 +1416,7 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 	}
 
 	// Set a default gibhealth if none was assigned.
-	if (!gibhealth && info->spawnhealth && !info->gibhealth)
+	if (!gibhealth && info->spawnhealth)
 	{
 		info->gibhealth = -info->spawnhealth;
 	}
