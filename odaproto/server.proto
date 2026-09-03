@@ -83,6 +83,7 @@ message SpawnMobj
 	uint32          target_netid    = 5;
 	repeated int32  args            = 6;
 	uint32          timebase_tic    = 7;
+	bool            is_spawn_tic    = 8;    // Indicates that the client must perform a spawn animation tic immediately.
 }
 
 // svc_disconnectclient

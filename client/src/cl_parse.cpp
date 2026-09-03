@@ -694,15 +694,40 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	//              from CL_SpawnMobj.  This allows things like immediate sound effects and
 	//              secondary mobjs to work (think a noisy, instant gib spawner).
 
-	statenum_t statenum = static_cast<statenum_t>(msg->current().statenum());
+	// FIXME:   Huge open question - should we do all the SetMobjState stuff after we setup the
+	//          rest of the mobj attributes?
 
-	if (statenum >= S_NULL && states.contains(statenum))
+	if (msg->is_spawn_tic())
 	{
-		P_SetMobjState(mo, statenum);
+		// Now do one advancement of the state, because that has happened between the creation of
+		// the mobj and its corresponding SpawnMobj message.  Any associated actions will execute,
+		// which is particularly important for a number of dehacked custom mobjs that do one-off
+		// things on spawn.
+		P_SetMobjState(mo, mo->info->spawnstate);
+		P_AnimationTick(mo);
+	}
 
-		// Set animation tic to ensure that the initial state is consistent with the server.
-		const int32_t tics = msg->current().tics();
-		mo->tics = tics ? tics : -1;
+	const auto statenum = statenum_t(msg->current().statenum());
+
+	if (statenum >= S_NULL)
+	{
+		auto iter = states.find(statenum);
+		if (iter != states.end())
+		{
+			// In the rare case that we do the spawnstate animation tic above and the state
+			// we ultimately wind up in has a custom action, we want to make sure that we
+			// don't inadvertently cause that custom action to fire twice by calling
+			// P_SetMobjState twice.  Please note that this double-action does not necessarily
+			// mean that the statenum must also be the spawnstate - spawnstate could have
+			// led to it!
+			if (mo->state != &iter->second)
+			{
+				P_SetMobjState(mo, statenum);
+			}
+			// Set animation tic to ensure that the initial state is consistent with the server.
+			const int32_t tics = msg->current().tics();
+			mo->tics = tics ? tics : -1;
+		}
 	}
 
 	if (serverside && mo->flags & MF_COUNTKILL)

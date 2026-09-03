@@ -467,11 +467,8 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	//
 	if (mo->spawnTic == gametic)
 	{
-		// The following could and, in most cases, usually do just set the same value again.  It's
-		// those cases where they AREN'T the same value that we're really after here.
-		cur->set_statenum(mo->info->spawnstate);
 		cur->set_rndindex(mo->spawnRndindex);
-		cur->set_tics    (states[mo->info->spawnstate].tics);
+		msg.set_is_spawn_tic(true);
 	}
 
 	if (mo->type == MT_FOUNTAIN)
