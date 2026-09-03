@@ -92,13 +92,13 @@ namespace
 		io_msg.set_readyweapon(player.readyweapon);
 		io_msg.set_pendingweapon(player.pendingweapon);
 
-		uint32_t packedweapons = PackBoolArray(player.weaponowned);
+		const uint32_t packedweapons = PackBoolArray(player.weaponowned);
 		io_msg.set_weaponowned(packedweapons);
 
 		io_msg.mutable_ammo()->Add   (player.ammo.begin(),    player.ammo.end());
 		io_msg.mutable_maxammo()->Add(player.maxammo.begin(), player.maxammo.end());
 
-		uint32_t packedcards = PackBoolArray(player.cards);
+		const uint32_t packedcards = PackBoolArray(player.cards);
 		io_msg.set_cards(packedcards);
 
 		io_msg.set_backpack(player.backpack);
