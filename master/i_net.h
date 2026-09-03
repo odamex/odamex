@@ -25,6 +25,14 @@
 #ifndef __I_NET_H__
 #define __I_NET_H__
 
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
+
 // Max packet size to send and receive, in bytes
 #define	MAX_UDP_PACKET	1400
 
@@ -40,11 +48,46 @@ typedef unsigned char byte;
 extern int localport;
 extern int msg_badread;
 
+/**
+ * @brief Network address structure supporting both IPv4 and IPv6
+ * 
+ * This structure can hold either an IPv4 address (4 bytes) or an IPv6 address (16 bytes).
+ * The family field indicates which type is stored.
+ */
 typedef struct
 {
-   byte ip[4];
-   unsigned short port;
-   unsigned short pad;
+    // Address family: AF_INET (IPv4) or AF_INET6 (IPv6)
+    unsigned short family;
+    
+    // Port number (network byte order)
+    unsigned short port;
+    
+    // Union to hold either IPv4 or IPv6 address
+    union {
+        byte ipv4[4];      // IPv4 address (4 bytes)
+        byte ipv6[16];     // IPv6 address (16 bytes)
+    } ip;
+    
+    // Padding for alignment (legacy compatibility)
+    unsigned short pad;
+    
+    // Constructor for default initialization
+    netadr_t() : family(AF_INET), port(0), pad(0)
+    {
+        memset(&ip, 0, sizeof(ip));
+    }
+    
+    // Check if this is an IPv4 address
+    bool isIPv4() const { return family == AF_INET; }
+    
+    // Check if this is an IPv6 address
+    bool isIPv6() const { return family == AF_INET6; }
+    
+    // Get the address length in bytes
+    size_t getAddressLength() const 
+    { 
+        return family == AF_INET6 ? 16 : 4; 
+    }
 } netadr_t;
 
 extern netadr_t net_from;  // address of who sent the packet
@@ -306,7 +349,7 @@ void I_SetPort(netadr_t &addr, int port);
 void I_DoSelect(void);
 
 char *NET_AdrToString(netadr_t a, bool displayport = true);
-bool NET_StringToAdr(char *s, netadr_t *a);
+bool NET_StringToAdr(const char *s, netadr_t *a);
 bool NET_CompareAdr(netadr_t a, netadr_t b);
 int  NET_GetPacket(void);
 void NET_SendPacket(int length, byte *data, netadr_t to);
