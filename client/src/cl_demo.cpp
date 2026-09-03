@@ -1025,7 +1025,7 @@ extern int last_svgametic;
 
 void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 {
-	player_t& player = consoleplayer();
+	const player_t& player = consoleplayer();
 
 	PacketHeaderType header {0};
 

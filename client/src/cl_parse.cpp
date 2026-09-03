@@ -419,7 +419,7 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 
 	byte waterlevel = msg->actor().waterlevel();
 
-	int snaptime = ThisMessageServerTic();
+	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnapshot(snaptime);
 	newsnapshot.setAuthoritative(true);
 	newsnapshot.setX(x);
@@ -1199,7 +1199,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 	if (mo->player)
 	{
 		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = ThisMessageServerTic();
+		const int snaptime = ThisMessageServerTic();
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
@@ -1445,8 +1445,8 @@ void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	const int       armorpoints  = msg->player_armorpoints();
 	const int       oldTic       = ThisMessageClientTic();
 
-	AActor* actor    = P_FindThingById(netid);
-	AActor* attacker = P_FindThingById(attackerid);
+	const AActor* actor    = P_FindThingById(netid);
+	const AActor* attacker = P_FindThingById(attackerid);
 
 	if (!actor || !actor->player)
 		return;
@@ -1524,7 +1524,7 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	if (target->player)
 	{
 		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = ThisMessageServerTic();
+		const int snaptime = ThisMessageServerTic();
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
@@ -1663,7 +1663,7 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 
 	P_ChangeSector(sector, false);
 
-	SectorSnapshot snap(ThisMessageServerTic(), sector);
+	const SectorSnapshot snap(ThisMessageServerTic(), sector);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 

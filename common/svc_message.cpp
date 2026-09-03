@@ -70,70 +70,75 @@ odaproto::svc::Disconnect SVC_Disconnect(const char* message)
 	return msg;
 }
 
+namespace
+{
+
+	void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
+	{
+		io_msg.set_statenum (psprite.statenum);
+		io_msg.set_tics     (psprite.tics);
+		io_msg.set_sx       (psprite.sx);
+		io_msg.set_sy       (psprite.sy);
+	}
+
+	void FillPlayer(odaproto::Player& io_msg, const player_t& player)
+	{
+		io_msg.set_playerid     (player.id);
+		io_msg.set_health       (player.health);
+		io_msg.set_armortype    (player.armortype);
+		io_msg.set_armorpoints  (player.armorpoints);
+		io_msg.set_lives        (player.lives);
+
+		io_msg.set_readyweapon(player.readyweapon);
+		io_msg.set_pendingweapon(player.pendingweapon);
+
+		uint32_t packedweapons = PackBoolArray(player.weaponowned);
+		io_msg.set_weaponowned(packedweapons);
+
+		io_msg.mutable_ammo()->Add   (player.ammo.begin(),    player.ammo.end());
+		io_msg.mutable_maxammo()->Add(player.maxammo.begin(), player.maxammo.end());
+
+		uint32_t packedcards = PackBoolArray(player.cards);
+		io_msg.set_cards(packedcards);
+
+		io_msg.set_backpack(player.backpack);
+
+		for (int i = 0; i < NUMPSPRITES; i++)
+		{
+			FillPsprite(*io_msg.add_psprites(), player.psprites[i]);
+		}
+
+		for (int i = 0; i < NUMPOWERS; i++)
+		{
+			io_msg.add_powers(player.powers[i]);
+		}
+
+		if (!player.spectator)
+			io_msg.set_cheats(player.cheats);
+	}
+
+	void FillMapThing(odaproto::MapThing& io_msg, const MapThing& i_mapthing)
+	{
+		io_msg.set_thingid  (i_mapthing.thingid);
+		io_msg.set_x        (i_mapthing.x);
+		io_msg.set_y        (i_mapthing.y);
+		io_msg.set_z        (i_mapthing.z);
+		io_msg.set_angle    (i_mapthing.angle);
+		io_msg.set_type     (i_mapthing.type);
+		io_msg.set_flags    (i_mapthing.flags.to_int());
+		io_msg.set_special  (i_mapthing.special);
+
+		for (const auto& arg : i_mapthing.args)
+		{
+			io_msg.add_args(arg);
+		}
+	}
+
+}
+
 /**
  * @brief Send information about a player.
  */
-
-static void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
-{
-	io_msg.set_statenum (psprite.statenum);
-	io_msg.set_tics     (psprite.tics);
-	io_msg.set_sx       (psprite.sx);
-	io_msg.set_sy       (psprite.sy);
-}
-
-static void FillPlayer(odaproto::Player& io_msg, const player_t& player)
-{
-	io_msg.set_playerid     (player.id);
-	io_msg.set_health       (player.health);
-	io_msg.set_armortype    (player.armortype);
-	io_msg.set_armorpoints  (player.armorpoints);
-	io_msg.set_lives        (player.lives);
-
-	io_msg.set_readyweapon(player.readyweapon);
-	io_msg.set_pendingweapon(player.pendingweapon);
-
-	uint32_t packedweapons = PackBoolArray(player.weaponowned);
-	io_msg.set_weaponowned(packedweapons);
-
-	io_msg.mutable_ammo()->Add   (player.ammo.begin(),    player.ammo.end());
-	io_msg.mutable_maxammo()->Add(player.maxammo.begin(), player.maxammo.end());
-
-	uint32_t packedcards = PackBoolArray(player.cards);
-	io_msg.set_cards(packedcards);
-
-	io_msg.set_backpack(player.backpack);
-
-	for (int i = 0; i < NUMPSPRITES; i++)
-	{
-		FillPsprite(*io_msg.add_psprites(), player.psprites[i]);
-	}
-
-	for (int i = 0; i < NUMPOWERS; i++)
-	{
-		io_msg.add_powers(player.powers[i]);
-	}
-
-	if (!player.spectator)
-		io_msg.set_cheats(player.cheats);
-}
-
-static void FillMapThing(odaproto::MapThing& io_msg, const MapThing& i_mapthing)
-{
-    io_msg.set_thingid  (i_mapthing.thingid);
-    io_msg.set_x        (i_mapthing.x);
-    io_msg.set_y        (i_mapthing.y);
-    io_msg.set_z        (i_mapthing.z);
-    io_msg.set_angle    (i_mapthing.angle);
-    io_msg.set_type     (i_mapthing.type);
-    io_msg.set_flags    (i_mapthing.flags.to_int());
-    io_msg.set_special  (i_mapthing.special);
-
-    for (const auto& arg : i_mapthing.args)
-    {
-        io_msg.add_args(arg);
-    }
-}
 
 odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 {
