@@ -104,6 +104,23 @@ weaponstate_t P_GetWeaponState(const player_t& player)
 
 
 //
+// P_SanePspriteOffset
+//
+// Outside of a raise or lower, nothing moves a psprite further than one bob away
+// from where its state parks it, so anything beyond that is a position we were
+// never told about - typically a player we just started spying, whose psprites
+// we've been holding at whatever they were the last time we had real data.
+// Fall back on the resting position instead of drawing their weapon on the floor.
+//
+namespace
+{
+	fixed_t P_SanePspriteOffset(fixed_t value, fixed_t center)
+	{
+		return std::clamp(value, center - MAXBOB, center + MAXBOB);
+	}
+}
+
+//
 // P_CalculateWeaponBobX
 //
 // Returns the player's weapon position in the x-axis after applying movebob
@@ -133,7 +150,7 @@ fixed_t P_CalculateWeaponBobX(player_t& player, float scale_amount)
 	}
 
 	// scale the weapon's distance away from center
-	return center_sx + scale_amount * (psp.sx - center_sx);
+	return center_sx + (scale_amount * (P_SanePspriteOffset(psp.sx, center_sx) - center_sx));
 }
 
 
@@ -171,7 +188,7 @@ fixed_t P_CalculateWeaponBobY(player_t& player, float scale_amount)
 	}
 
 	// scale the weapon's distance away from center
-	return center_sy + scale_amount * (psp.sy - center_sy);
+	return center_sy + (scale_amount * (P_SanePspriteOffset(psp.sy, center_sy) - center_sy));
 }
 
 
@@ -538,6 +555,19 @@ void P_DropWeapon(player_t& player)
 
 
 //
+// P_WeaponIsRemotelyDriven
+//
+// True when we are a client animating a player whose inputs we never see.
+//
+namespace
+{
+	bool P_WeaponIsRemotelyDriven(const player_t& player)
+	{
+		return !serverside && player.id != consoleplayer_id;
+	}
+}
+
+//
 // A_WeaponReady
 //
 // The player can fire the weapon or change to another weapon at this time.
@@ -591,6 +621,12 @@ void A_WeaponReady(AActor* mo)
 void A_ReFire(AActor* mo)
 {
     player_t& player = *mo->player;
+
+	if (P_WeaponIsRemotelyDriven(player))
+	{
+		player.psprites[player.psprnum].tics = -1;
+		return;
+	}
 
 	// check for fire
 	//	(if a weaponchange is pending, let it go through instead)
@@ -994,6 +1030,12 @@ void A_RefireTo(AActor* mo)
 	const state_t* st = psp.state();
 	if (!st)
 		return;
+
+	if (P_WeaponIsRemotelyDriven(player))
+	{
+		psp.tics = -1;
+		return;
+	}
 
 	if ((st->args[1] || P_CheckAmmoNoLower(player)) &&
 	    (player.cmd.buttons & BT_ATTACK) &&
@@ -1600,6 +1642,22 @@ void P_SetupPsprites(player_t& player)
 	// spawn the gun
 	player.pendingweapon = player.readyweapon;
 	P_BringUpWeapon(player);
+}
+
+//
+// P_RestPsprites
+//
+// Parks the weapon at its neutral position without touching the state it is in.
+// Used when we start viewing a player whose psprite positions we don't know, so
+// that we don't draw their weapon down at the bottom of the screen.
+//
+void P_RestPsprites(player_t& player)
+{
+	for (auto& psp : player.psprites)
+	{
+		psp.sx = FRACUNIT;
+		psp.sy = WEAPONTOP;
+	}
 }
 
 //
