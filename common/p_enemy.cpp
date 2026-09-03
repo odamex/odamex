@@ -1681,9 +1681,31 @@ bool P_PlayWakeupSound(AActor* actor)
 
 		M_StringCopy(sound, actor->info->seesound, MAX_SNDNAME);
 
-		if (sound[strlen(sound) - 1] == '1')
+		// Instead of testing for a trailing 1, lets just test all the
+		// sound names vanilla uses that triggers a P_Random
+		static const char* const positSounds[] = {"grunt/sight1", "grunt/sight2",
+		                                          "grunt/sight3", "shotguy/sight1",
+		                                          "chainguy/sight1"};
+		static const char* const bgsitSounds[] = {"imp/sight1", "imp/sight2"};
+
+		int variants = 0;
+
+		if (demoplayback)
 		{
-			sound[strlen(sound) - 1] = P_Random(actor)%3 + '1';
+			for (const char* name : positSounds)
+				if (!stricmp(sound, name))
+					variants = 3;
+
+			for (const char* name : bgsitSounds)
+				if (!stricmp(sound, name))
+					variants = 2;
+		}
+		else if (sound[strlen(sound) - 1] == '1')
+			variants = 3;
+
+		if (variants)
+		{
+			sound[strlen(sound) - 1] = P_Random(actor) % variants + '1';
 			if (S_FindSound (sound) == -1)
 				sound[strlen(sound) - 1] = '1';
 		}
@@ -3641,7 +3663,11 @@ void A_Scream (AActor *actor)
 
 	M_StringCopy(sound, actor->info->deathsound, MAX_SNDNAME);
 
+    // Instead of testing for a trailing 1, lets just test all the
+    // sound names vanilla uses that triggers a P_Random
     if (stricmp(sound, "grunt/death1") == 0 ||
+        stricmp(sound, "grunt/death2") == 0 ||
+        stricmp(sound, "grunt/death3") == 0 ||
         stricmp(sound, "shotguy/death1") == 0 ||
         stricmp(sound, "chainguy/death1") == 0)
     {
