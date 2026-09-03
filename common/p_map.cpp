@@ -3765,7 +3765,8 @@ bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 		P_DamageMobj(&thing, nullptr, nullptr, damage, MOD_CRUSH);
 
 		// spray blood in a random direction
-		if (!(thing.flags&MF_NOBLOOD))
+		// In vanilla, we always spawn blood when crushing.
+		if (demoplayback || !(thing.flags&MF_NOBLOOD))
 		{
 			auto *mo = new AActor (thing.x,
 									 thing.y,
