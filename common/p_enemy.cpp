@@ -117,8 +117,6 @@ void SV_UpdateMobj(const AActor* mo);
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
 
-extern bool isFast;
-
 //
 // ENEMY THINKING
 // Enemies are always spawned
