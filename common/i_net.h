@@ -322,11 +322,46 @@ class Message;
 }
 } // namespace google
 
+/**
+ * @brief Network address structure supporting both IPv4 and IPv6
+ * 
+ * This structure can hold either an IPv4 address (4 bytes) or an IPv6 address (16 bytes).
+ * The family field indicates which type is stored.
+ */
 typedef struct
 {
-   byte    ip[4];
-   unsigned short  port;
-   unsigned short  pad;
+	// Address family: AF_INET (IPv4) or AF_INET6 (IPv6)
+	unsigned short family;
+	
+	// Port number (network byte order)
+	unsigned short port;
+	
+	// Union to hold either IPv4 or IPv6 address
+	union {
+		byte ipv4[4];      // IPv4 address (4 bytes)
+		byte ipv6[16];     // IPv6 address (16 bytes)
+	} ip;
+	
+	// Padding for alignment (legacy compatibility)
+	unsigned short pad;
+	
+	// Constructor for default initialization
+	netadr_t() : family(AF_INET), port(0), pad(0)
+	{
+		memset(&ip, 0, sizeof(ip));
+	}
+	
+	// Check if this is an IPv4 address
+	bool isIPv4() const { return family == AF_INET; }
+	
+	// Check if this is an IPv6 address
+	bool isIPv6() const { return family == AF_INET6; }
+	
+	// Get the address length in bytes
+	size_t getAddressLength() const 
+	{ 
+		return family == AF_INET6 ? 16 : 4; 
+	}
 } netadr_t;
 
 extern  netadr_t  net_from;  // address of who sent the packet
@@ -801,3 +836,4 @@ size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc);
 
 bool MSG_DecompressMinilzo ();
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);
+
