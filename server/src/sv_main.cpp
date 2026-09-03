@@ -751,8 +751,6 @@ namespace
 				{
 					iter->second.messenger->HandleAcks(packetBuffer);
 				}
-
-				iter->second.messenger->HandleRetransmissions(currentTic, iter->first);
 				iter->second.messenger->SendAll(currentTic, iter->first);
 			}
 
@@ -1633,6 +1631,23 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated, AwarenessEnum new
 
 MessageResultEnum SV_SendPacket(player_t& player)
 {
+	// Total hack:  We check for the player being in the first second of their connection because there's something
+	// in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
+	if (player.GameTime > 0)
+	{
+		// The following results in fractional tics rounding up.
+		const int pingInTics = (player.ping * TICRATE + 999) / 1000;
+
+		// Adjust upwards because in the real world, tic boundaries don't align and can drift.
+		const int retransmitDelayInTics = pingInTics + 1;
+
+		player.client.messenger->SetRetransmitDelay(retransmitDelayInTics);
+	}
+	else
+	{
+		player.client.messenger->SetRetransmitDelay(0);
+	}
+
 	player.client.messenger->SetDestinationTic(player.tic);
 	return player.client.messenger->SendAll(gametic, player.client.address);
 }
@@ -4672,38 +4687,6 @@ void SV_ParseCommands(player_t &player)
 	}
 }
 
-void SV_HandleReliableRetransmissions()
-{
-	for (auto& player : players)
-	{
-		// Players that are on their way out get their retries serviced elsewhere.
-		if (player.playerstate == PST_DISCONNECT)
-		{
-			continue;
-		}
-
-		// Total hack:  We check for the player being in the first second of their connection because there's something
-		// in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
-		if (player.GameTime > 0)
-		{
-			// The following results in fractional tics rounding up.
-			const int pingInTics = (player.ping * TICRATE + 999) / 1000;
-
-			// Adjust upwards because in the real world, tic boundaries don't align and can drift.
-			const int retransmitDelayInTics = pingInTics + 1;
-
-			player.client.messenger->SetRetransmitDelay(retransmitDelayInTics);
-		}
-		else
-		{
-			player.client.messenger->SetRetransmitDelay(0);
-		}
-
-		player.client.messenger->HandleRetransmissions(gametic, player.client.address);
-	}
-}
-
-
 static void TimeCheck()
 {
 	G_TimeCheckEndGame();
@@ -4866,7 +4849,6 @@ void SV_DisplayTics()
 
 auto frameStopwatch      = TimingInstr::Get().CreateStopwatch("FrameTime");
 auto getPacketsStopwatch = TimingInstr::Get().CreateStopwatch("SV_GetPackets");
-auto retransmitStopwatch = TimingInstr::Get().CreateStopwatch("SV_HandleReliableRetransmissions");
 
 //
 // SV_RunTics
@@ -4883,10 +4865,6 @@ void SV_RunTics()
 
 	SV_CheckCanaries();
 	SV_CheckDepartingMessengers(gametic);
-
-	retransmitStopwatch->Start();
-	SV_HandleReliableRetransmissions();
-	retransmitStopwatch->Stop();
 
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())

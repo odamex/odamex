@@ -94,6 +94,12 @@ class SequenceSender
 
 		int MostRecentAcquiredSequence() const { return m_nextSequence - 1; }
 
+		void Clear()
+		{
+			m_unackedSequences.clear();
+			m_sendTable.clear();
+		}
+
 	protected:
 
 		std::vector<int> m_unackedSequences;
