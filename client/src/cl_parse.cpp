@@ -277,6 +277,7 @@ void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	{
 		// stop spying so you know you're back from the dead.
 		::displayplayer_id = ::consoleplayer_id;
+		CL_CheckDisplayPlayer();
 	}
 
 	// We only rollback after we complete the reception of a full update.
@@ -1427,6 +1428,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		if (not netdemo.isPlaying() && not consoleplayer().spectator)
 		{
 				::displayplayer_id = ::consoleplayer_id;
+				CL_CheckDisplayPlayer();
 		}
 	}
 
