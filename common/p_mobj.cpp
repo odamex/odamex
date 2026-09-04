@@ -1192,6 +1192,10 @@ void AActor::RunThink ()
 		P_MoveActor(this);
 	}
 
+	// Don't process tics immediately on anything that was destroyed 
+	if (ObjectFlags & OF_Destroyed)
+		return;
+
 	if(predicting)
 		return;
 
