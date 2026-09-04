@@ -2046,7 +2046,7 @@ void AM_drawMarks()
 void AM_drawCrosshair(am_color_t color)
 {
 	// Don't draw on top of the player arrow
-	if (am_followplayer || (am_ovminimap && viewactive))
+	if (am_followplayer || minimapactive)
 		return;
 
 	// single point for now
