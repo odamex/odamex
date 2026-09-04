@@ -113,6 +113,7 @@ EXTERN_CVAR (gammalevel)
 EXTERN_CVAR (language)
 EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
+EXTERN_CVAR (mute_chat)
 EXTERN_CVAR (wi_oldintermission)
 
 // [electricbrass - Menu] HUD Menu
@@ -1295,6 +1296,7 @@ menuitem_t MessagesItems[] = {
 	{ .type = discrete,	.label = "Death messages",		.a = {.cvar = &message_showobituaries},	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OnOff.data()}},
 	{ .type = discrete,	.label = "Spectator messages",	.a = {.cvar = &mute_spectators},	.b = {.leftval = OffOn.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OffOn.data()}},
 	{ .type = discrete,	.label = "Enemy messages",		.a = {.cvar = &mute_enemies},	.b = {.leftval = OffOn.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OffOn.data()}},
+	{ .type = discrete,	.label = "All player messages",		.a = {.cvar = &mute_chat},	.b = {.leftval = OffOn.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0},	.e = {.values = OffOn.data()}},
 
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "Message Colors",		.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -1782,12 +1784,12 @@ void M_ChangeMessages()
 {
 	if (show_messages)
 	{
-		PrintFmt(128, "{}\n", GStrings(MSGOFF));
+		PrintFmt(PRINT_SHOWALWAYS, "{}\n", GStrings(MSGOFF));
 		show_messages.Set (0.0f);
 	}
 	else
 	{
-		PrintFmt(128, "{}\n", GStrings(MSGON));
+		PrintFmt(PRINT_SHOWALWAYS, "{}\n", GStrings(MSGON));
 		show_messages.Set (1.0f);
 	}
 }

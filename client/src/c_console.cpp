@@ -51,6 +51,7 @@
 
 #include <list>
 #include <algorithm>
+#include <utility>
 
 #ifdef __SWITCH__
 #include "nx_io.h"
@@ -118,23 +119,23 @@ int V_TextScaleYAmount();
 static struct NotifyText
 {
 	int timeout;
-	int printlevel;
+	printlevel_t printlevel;
 	byte text[256];
 } NotifyStrings[NUMNOTIFIES];
 
 // Default Printlevel
-#define PRINTLEVELS 9 //(5 + 3)
-int PrintColors[PRINTLEVELS] =
-{	CR_RED,		// Pickup
-	CR_GOLD,	// Obituaries
-	CR_GRAY,	// Messages
-	CR_GREEN,	// Chat
-	CR_GREEN,	// Team chat
+std::array PrintColors =
+{
+	CR_RED,    // Pickup
+	CR_GOLD,   // Obituaries
+	CR_GRAY,   // Messages
+	CR_GREEN,  // Chat
+	CR_GREEN,  // Team chat
 
-	CR_GOLD,	// Server chat
-	CR_YELLOW,	// Warning messages
-	CR_RED,		// Critical messages
-	CR_GOLD,	// Centered Messages
+	CR_GOLD,   // Server chat
+	CR_YELLOW, // Warning messages
+	CR_RED,    // Critical messages
+	CR_GOLD,   // Centered Messages
 };
 
 
@@ -150,8 +151,8 @@ class ConsoleLine
 {
 public:
 	ConsoleLine();
-	ConsoleLine(const std::string& _text, const std::string& _color_code = "\034-",	// TEXTCOLOR_ESCAPE
-			int _print_level = PRINT_HIGH);
+	ConsoleLine(std::string _text, std::string _color_code = "\034-",	// TEXTCOLOR_ESCAPE
+			printlevel_t _print_level = PRINT_HIGH);
 
 	void join(const ConsoleLine& other);
 	ConsoleLine split(size_t max_width);
@@ -160,7 +161,7 @@ public:
 	std::string		text;
 	std::string		color_code;
 	bool			wrapped;
-	int				print_level;
+	printlevel_t	print_level;
 	int				timeout;
 };
 
@@ -177,9 +178,9 @@ ConsoleLine::ConsoleLine()
 {
 }
 
-ConsoleLine::ConsoleLine(const std::string& _text, const std::string& _color_code,
-                         int _print_level)
-    : text(_text), color_code(_color_code), wrapped(false), print_level(_print_level),
+ConsoleLine::ConsoleLine(std::string  _text, std::string  _color_code,
+                         printlevel_t _print_level)
+    : text(std::move(_text)), color_code(std::move(_color_code)), wrapped(false), print_level(_print_level),
       timeout(gametic + int(con_notifytime * TICRATE))
 {
 }
@@ -886,36 +887,46 @@ static void TabComplete(TabCompleteDirection dir)
 	TabCycleStart();
 }
 
-static void setmsgcolor(int index, const char *color);
+namespace
+{
+
+void setmsgcolor(int index, int color)
+{
+	if (color < 0 || color >= NUM_TEXT_COLORS)
+		color = 0;
+	PrintColors[index] = static_cast<EColorRange>(color);
+}
+
+}
 
 CVAR_FUNC_IMPL(msg0color)
 {
-	setmsgcolor(0, var.cstring());
+	setmsgcolor(0, var.asInt());
 }
 
 CVAR_FUNC_IMPL(msg1color)
 {
-	setmsgcolor(1, var.cstring());
+	setmsgcolor(1, var.asInt());
 }
 
 CVAR_FUNC_IMPL(msg2color)
 {
-	setmsgcolor(2, var.cstring());
+	setmsgcolor(2, var.asInt());
 }
 
 CVAR_FUNC_IMPL(msg3color)
 {
-	setmsgcolor(3, var.cstring());
+	setmsgcolor(3, var.asInt());
 }
 
 CVAR_FUNC_IMPL(msg4color)
 {
-	setmsgcolor(4, var.cstring());
+	setmsgcolor(4, var.asInt());
 }
 
 CVAR_FUNC_IMPL(msgmidcolor)
 {
-	setmsgcolor(PRINTLEVELS-1, var.cstring());
+	setmsgcolor(PrintColors.size()-1, var.asInt());
 }
 
 CVAR_FUNC_IMPL(con_scaletext)
@@ -1127,22 +1138,13 @@ static void C_SetConsoleDimensions(int width, int height)
 	}
 }
 
-static void setmsgcolor(int index, const char *color)
-{
-	int i = atoi(color);
-	if (i < 0 || i >= NUM_TEXT_COLORS)
-		i = 0;
-	PrintColors[index] = i;
-}
-
-
 //
 // C_AddNotifyString
 //
 // Prioritise messages on top of screen
 // Break up the lines so that they wrap around the screen boundary
 //
-void C_AddNotifyString(int printlevel, const char* color_code, const char* source)
+void C_AddNotifyString(printlevel_t printlevel, const char* /*color_code*/, const char* source)
 {
 	static enum
 	{
@@ -1156,8 +1158,21 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 
 	const size_t len = strlen(source);
 
-	if ((printlevel != 128 && !show_messages) || len == 0 ||
-		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
+	if (not show_messages)
+	{
+		switch (printlevel)
+		{
+			case PRINT_SHOWALWAYS:
+			case PRINT_CHAT:
+			case PRINT_TEAMCHAT:
+			case PRINT_SERVERCHAT:
+				break;
+			default:
+				return;
+		}
+	}
+
+	if (len == 0 || (gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
 		return;
 
 	// Do not display filtered chat messages
@@ -1210,13 +1225,16 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	}
 }
 
+namespace
+{
+
 //
 // C_PrintStringStdOut
 //
 // Prints the given string to stdout, stripping away any color markup
 // escape codes.
 //
-static size_t C_PrintStringStdOut(std::string str)
+size_t C_PrintStringStdOut(std::string str)
 {
 	StripColorCodes(str);
 
@@ -1233,7 +1251,7 @@ static size_t C_PrintStringStdOut(std::string str)
 // Provide our own Printf() that is sensitive of the
 // console status (in or out of game).
 //
-static size_t C_PrintString(int printlevel, const char* color_code, const char* outline)
+size_t C_PrintString(printlevel_t printlevel, const char* color_code, const char* outline)
 {
 	if (I_VideoInitialized() && !midprinting)
 	{
@@ -1248,7 +1266,7 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 	if (printlevel == PRINT_FILTERCHAT)
 		printlevel = PRINT_CHAT;
 
-	if (printlevel == PRINT_FILTERHIGH)
+	if (printlevel == PRINT_FILTERHIGH || printlevel == PRINT_SHOWALWAYS)
 		printlevel = PRINT_HIGH;
 
 	const char* line_start = outline;
@@ -1258,9 +1276,12 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 	// ...unless it's supposed to be formatted bold.
 	static char printlevel_color_code[3];
 
-	if (color_code && color_code[1] != '+' && printlevel >= 0 && printlevel < PRINTLEVELS)
+	// TODO: have a proper mapping of printlevel to color instead of converting print levels above and then indexing directly with it
+	const auto printcolorindex = static_cast<size_t>(printlevel);
+
+	if (color_code && color_code[1] != '+' && printcolorindex >= 0 && printcolorindex < PrintColors.size())
 	{
-		snprintf(printlevel_color_code, sizeof(printlevel_color_code), "\034%c", 'a' + PrintColors[printlevel]);
+		snprintf(printlevel_color_code, sizeof(printlevel_color_code), "\034%c", 'a' + PrintColors[printcolorindex]);
 		color_code = printlevel_color_code;
 	}
 
@@ -1278,8 +1299,9 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 		strncpy(str, line_start, len);
 		str[len] = '\0';
 
-		const bool wrap_new_line = *line_end != '\n';
-		ConsoleLine new_line(str, color_code, wrap_new_line);
+		const bool wrap_new_line = *line_end != '\n' || len > ConCols;
+		ConsoleLine new_line(str, color_code);
+		new_line.wrapped = wrap_new_line;
 
 		// Add a new line to ConsoleLineList if the last line in ConsoleLineList
 		// ends in \n, or add onto the last line if does not.
@@ -1308,9 +1330,6 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 
 	return strlen(outline);
 }
-
-namespace
-{
 
 // struct tm counts years from 1900.
 constexpr int TM_YEAR_BASE = 1900;
@@ -1364,7 +1383,7 @@ void C_LogString(const std::string& str)
 
 } // namespace
 
-size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
+size_t C_BasePrint(const printlevel_t printlevel, const char* color_code, const std::string& str)
 {
 	extern bool gameisdead;
 	if (gameisdead)
@@ -1522,14 +1541,14 @@ static void C_DrawNotifyText()
 	{
 		if (notify.timeout > gametic)
 		{
-			if (!show_messages && notify.printlevel != 128)
+			if (!show_messages && notify.printlevel != PRINT_SHOWALWAYS)
 				continue;
 
 			int color;
-			if (notify.printlevel >= PRINTLEVELS)
+			if (static_cast<size_t>(notify.printlevel) >= PrintColors.size())
 				color = CR_RED;
 			else
-				color = PrintColors[notify.printlevel];
+				color = PrintColors[static_cast<size_t>(notify.printlevel)];
 
 			screen->DrawTextStretched(color, 0, ypos, notify.text,
 						V_TextScaleXAmount(), V_TextScaleYAmount());
@@ -2072,7 +2091,7 @@ static bool C_HandleKey(const event_t& ev)
 		History.addString(text);
 		History.resetPosition();
 
-		PrintFmt(127, "]{}\n", text);
+		PrintFmt(PRINT_HIGH, "]{}\n", text);
 		AddCommandString(text);
 		CmdLine.clear();
 	}
@@ -2222,8 +2241,8 @@ static bool C_HandleKey(const event_t& ev)
 			History.addString(CmdLine.text);
 			History.resetPosition();
 
-			PrintFmt(127, "]{}\n", CmdLine.text.c_str());
-			AddCommandString(CmdLine.text.c_str());
+			PrintFmt(PRINT_HIGH, "]{}\n", CmdLine.text);
+			AddCommandString(CmdLine.text);
 			CmdLine.clear();
 			CmdCompletions.clear();
 
@@ -2417,8 +2436,8 @@ void C_DrawMid()
 
 		for (int i = 0; i < MidLines; i++, y += line_height)
 		{
-			screen->DrawTextStretched(PrintColors[PRINTLEVELS-1],
-					x - xscale * (MidMsg[i].width / 2),
+			screen->DrawTextStretched(PrintColors.back(),
+					x - (xscale * (MidMsg[i].width / 2)),
 					y, reinterpret_cast<byte*>(MidMsg[i].string), xscale, yscale);
 		}
 

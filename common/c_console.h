@@ -56,7 +56,7 @@ void C_NewModeAdjust (void);
 void C_Ticker (void);
 void C_DisplayTicker(void);
 
-void C_AddNotifyString (int printlevel, const char *s);
+void C_AddNotifyString (printlevel_t printlevel, const char *s);
 void C_DrawConsole (void);
 void C_ToggleConsole (void);
 void C_FullConsole (void);
