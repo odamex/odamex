@@ -1809,10 +1809,10 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 		switch (floorMover)
 		{
 			case SEC_FLOOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorFloor(*sector));
+				outgoingMessageQueue.Write( SVC_MovingSectorFloor(*sector));
 				break;
 			case SEC_PLAT:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPlat(*sector));
+				outgoingMessageQueue.Write( SVC_MovingSectorPlat(*sector));
 				break;
 			default:
 				break;
@@ -1828,16 +1828,16 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 		switch (ceilingMover)
 		{
 			case SEC_DOOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorDoor(*sector));
+				outgoingMessageQueue.Write( SVC_MovingSectorDoor(*sector));
 				break;
 			case SEC_CEILING:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorCeiling(*sector));
+				outgoingMessageQueue.Write( SVC_MovingSectorCeiling(*sector));
 				break;
 			case SEC_ELEVATOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorElevator(*sector));
+				outgoingMessageQueue.Write( SVC_MovingSectorElevator(*sector));
 				break;
 			case SEC_PILLAR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPillar(*sector));
+				outgoingMessageQueue.Write( SVC_MovingSectorPillar(*sector));
 				break;
 			default:
 				break;
@@ -3247,12 +3247,12 @@ static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
 				case AwarenessEnum::FULLY_AWARE:
 					mobj.updatedDuringLocalTic = gametic;
-					MSG_WriteSVC(fullAwareQueue, message);
+					fullAwareQueue.Write( message);
 					break;
 
 				case AwarenessEnum::SEMI_AWARE:
 					mobj.updatedDuringLocalTic = gametic;
-					MSG_WriteSVC(semiAwareQueue, message);
+					semiAwareQueue.Write( message);
 					break;
 			}
 		}

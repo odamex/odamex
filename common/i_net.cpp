@@ -609,42 +609,6 @@ void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 	WriteMiniHeader(*b, header, buffer.data(), buffer.size());
 }
 
-void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
-{
-	if (simulated_connection)
-		return;
-
-	std::string& buffer = io_queue.GetSerializationBufferRef();
-	if (!msg.SerializeToString(&buffer))
-	{
-		PrintFmt(
-		    PRINT_WARNING,
-		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name());
-		return;
-	}
-
-	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
-	if (header == msg_noop)
-	{
-		PrintFmt(PRINT_WARNING,
-		         "WARNING: Could not find svc header for message \"{}\".  This is most "
-		         "likely a bug.\n",
-		         msg.GetDescriptor()->full_name());
-		return;
-	}
-
-#if 0
-	PrintFmt("{} ({})\n, {}\n",
-		::msg_info[header].getName(), msg.ByteSize(),
-		msg.ShortDebugString());
-#endif
-
-	buf_t& b = io_queue.Obtain();
-
-	WriteMiniHeader(b, header, buffer.data(), buffer.size());
-}
-
 /**
  * @brief Broadcast message to all players.
  *
