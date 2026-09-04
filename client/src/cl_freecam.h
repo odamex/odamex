@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2026 by Jess W
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,8 @@ namespace Freecam
 	void addFreecamPlayer();
 	void savePosition();
 	void reset();
-	void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
+	void setStartPosition();
+	void moveToDeathSpot(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
 	bool needPosition();
 	bool allowAdd();
 	bool allowSpy();
