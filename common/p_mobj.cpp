@@ -1202,8 +1202,9 @@ void AActor::RunThink ()
     // calling action functions at transitions
 	if (tics != -1)
 	{
-		// run P_AnimationTick on everything except players who aren't voodoo dolls
-		if (!(player && this == player->mo))
+		// run P_AnimationTick on everything except players who aren't voodoo
+		// dolls, unless we are running a vanilla demo.
+		if (demoplayback || !(player && this == player->mo))
 			P_AnimationTick(this);
 	}
 	else
