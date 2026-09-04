@@ -571,7 +571,7 @@ std::function<parse_string_result_t()> ParseString(std::string_view data, bool e
 	auto base = [data]() mutable -> parse_string_result_t {
 		std::string token;
 
-		while (!data.empty() && data[0] <= ' ')
+		while (!data.empty() && IsTokenSpace(data[0]))
 			data.remove_prefix(1);
 
 		if (data.empty())
@@ -618,7 +618,7 @@ std::function<parse_string_result_t()> ParseString(std::string_view data, bool e
 
 		while (true) {
 			// Parse a regular word.
-			if (data.empty() || data[0] <= ' ')
+			if (data.empty() || IsTokenSpace(data[0]))
 			{
 				// End of word.
 				break;

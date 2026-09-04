@@ -10,6 +10,15 @@
   </trustInfo>
 
   <asmv3:application>
+    <!-- Read narrow strings - argv, the paths handed to fopen and ifstream, the
+       console - as UTF-8 rather than the system ANSI code page. Without this a
+       path containing any character that code page cannot represent arrives as
+       a literal '?' and the open fails, so a WAD or demo under a Cyrillic or
+       CJK directory is unreachable. Windows 10 1903 and later; older Windows
+       ignores the setting and behaves exactly as before. -->
+    <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">
+      <activeCodePage>UTF-8</activeCodePage>
+    </asmv3:windowsSettings>
     <!-- Enable newer Segment Heap instead of the older NT Heap. It improves
        memory footprint and performance. -->
     <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2020/WindowsSettings">

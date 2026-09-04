@@ -57,6 +57,23 @@ struct OTimespan
 	OTimespan() : csecs(0), tics(0), seconds(0), minutes(0), hours(0) { }
 };
 
+// True for the space and control characters that separate tokens.
+//
+// Bytes above 0x7f (127) belong to the 2nd byte of a code point --
+// char is signed, so testing one against ' ' directly reads every
+// byte of a UTF-8 sequence as whitespace and cuts the code point down
+// at the first byte.
+//
+// So we check for unsigned 0-32, which is the range of ASCII and UTF-8
+// control characters and space, and treat everything else as non-whitespace.
+//
+// This should only affect Windows/MacOS builds, since Linux uses UTF-8 by default
+// and char is unsigned there.
+inline bool IsTokenSpace(char c) noexcept
+{
+	return static_cast<unsigned char>(c) <= ' ';
+}
+
 int		ParseHex(const char *str);
 int 	ParseNum(const char *str);
 bool	IsNum(const char* str);		// [RH] added

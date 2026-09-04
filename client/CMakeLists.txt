@@ -22,6 +22,8 @@ file(GLOB CLIENT_SDL_SOURCES sdl/*.cpp sdl/*.h)
 if(WIN32)
   configure_file(sdl/client.rc.in "${CMAKE_CURRENT_BINARY_DIR}/client.rc" @ONLY)
   list(APPEND CLIENT_SDL_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/client.rc")
+  set_property(SOURCE "${CMAKE_CURRENT_BINARY_DIR}/client.rc" APPEND PROPERTY
+    OBJECT_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/sdl/manifest.xml")
 endif()
 
 # Include console folders if compiling

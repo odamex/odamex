@@ -433,7 +433,7 @@ static long ParseCommandLine (const char *args, int *argc, char **argv)
 
 	for (;;)
 	{
-		while (*args <= ' ' && *args)
+		while (*args && IsTokenSpace(*args))
 		{ // skip white space
 			args++;
 		}
@@ -476,7 +476,7 @@ static long ParseCommandLine (const char *args, int *argc, char **argv)
 		{ // read unquoted string
 			const char *start = args++, *end;
 
-			while (*args && *args > ' ' && *args != '\"')
+			while (*args && !IsTokenSpace(*args) && *args != '\"')
 				args++;
 			end = args;
 			if (argv != NULL)

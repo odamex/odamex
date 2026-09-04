@@ -17,6 +17,8 @@ if(WIN32)
   file(GLOB SERVER_WIN32_SOURCES win32/*.h)
   configure_file(win32/server.rc.in "${CMAKE_CURRENT_BINARY_DIR}/server.rc" @ONLY)
   list(APPEND SERVER_WIN32_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/server.rc")
+  set_property(SOURCE "${CMAKE_CURRENT_BINARY_DIR}/server.rc" APPEND PROPERTY
+    OBJECT_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/win32/manifest.xml")
 endif()
 
 add_executable(odasrv ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
