@@ -2499,7 +2499,7 @@ void AM_Drawer()
 	if (G_IsHordeMode() || G_GetCurrentSkill().easy_key || (am_cheating == 2))
 		AM_drawThings();
 
-	if (!(viewactive && am_overlay < 2))
+	if (!(viewactive && am_overlay < 2) && !am_followplayer.asBool())
 		AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
 
 	AM_drawMarks();
