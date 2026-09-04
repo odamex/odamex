@@ -85,9 +85,15 @@ void P_Ticker (void)
 	// called only once per tick.  AActor::RunThink is called whenever the
 	// server receives a cmd from the client, which can happen multiple times
 	// in a single gametic.
+	//
+	// Except when running a vanilla demo, which depends on these tics
+	// being run in AActor::RunThink.
+	if (!demoplayback)
+	{
 	for (auto& player : players)
 	{
 		P_AnimationTick(player.mo);
+	}
 	}
 
 	DThinker::RunThinkers ();
