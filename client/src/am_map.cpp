@@ -2043,6 +2043,10 @@ void AM_drawMarks()
 
 void AM_drawCrosshair(am_color_t color)
 {
+	// Don't draw on top of the player arrow
+	if (am_followplayer || (am_ovminimap && viewactive))
+		return;
+
 	// single point for now
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.index);
@@ -2499,8 +2503,7 @@ void AM_Drawer()
 	if (G_IsHordeMode() || G_GetCurrentSkill().easy_key || (am_cheating == 2))
 		AM_drawThings();
 
-	if (!(viewactive && am_overlay < 2) && !am_followplayer.asBool())
-		AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
+	AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
 
 	AM_drawMarks();
 
