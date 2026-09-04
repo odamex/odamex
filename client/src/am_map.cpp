@@ -898,7 +898,9 @@ bool AM_Responder(const event_t& ev)
 		{
 			// check for am_pan* and ignore in follow mode
 			const std::string defbind = AutomapBindings.Binds[ev.data1];
-			if (iequals(defbind, "+am_pan"))
+			// don't replace this with iequals, we're checking a prefix
+			const auto pan_prefix = "+am_pan"sv;
+			if (!strnicmp(defbind.c_str(), pan_prefix.data(), pan_prefix.size()))
 				return false;
 		}
 
