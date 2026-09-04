@@ -1805,7 +1805,7 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 	{
 		const bool    floorIsCompleted     = P_MovingFloorCompleted  (sector);
 		MessageQueue& outgoingMessageQueue = floorIsCompleted ? player.client.messenger->Reliable() :
-		                                                        player.client.messenger->HighBuf();
+		                                                        player.client.messenger->HighPriority();
 		switch (floorMover)
 		{
 			case SEC_FLOOR:
@@ -1823,7 +1823,7 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 	{
 		const bool    ceilingIsCompleted   = P_MovingCeilingCompleted(sector);
 		MessageQueue& outgoingMessageQueue = ceilingIsCompleted ? player.client.messenger->Reliable() :
-		                                                          player.client.messenger->HighBuf();
+		                                                          player.client.messenger->HighPriority();
 
 		switch (ceilingMover)
 		{
@@ -1867,9 +1867,9 @@ void SV_UpdateMovingSectors(player_t &player)
 //
 void SV_SendGametic(client_t& client)
 {
-	MSG_WriteSVC(client.messenger->HighBuf(), SVC_ServerGametic(gametic,
-	                                                           client.messenger->GetPendingAckCount(),
-	                                                           client.messenger->GetReliableOverloadCount()));
+	client.messenger->HighPriority().Write( SVC_ServerGametic(gametic,
+	                                                          client.messenger->GetPendingAckCount(),
+	                                                          client.messenger->GetReliableOverloadCount()));
 }
 
 void SV_LineStateUpdate(client_t *cl)
@@ -3169,7 +3169,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	                                     sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
 	if (isHyperAware)
 	{
-		MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_UpdateMobjWithMode(*mo));
+		player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
 	}
 	else
 	{
@@ -3208,7 +3208,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 					break;
 
 				default:
-					MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_UpdateMobjWithMode(*mo));
+					player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
 					break;
 			}
 		}
@@ -3234,10 +3234,10 @@ static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 	{
 		if (player.ingame() and SV_IsPlayerAllowedToSee(player, &mobj))
 		{
-			MessageQueue& fullAwareQueue = transport == TransportEnum::BEST_EFFORT ? player.client.messenger->NetBuf()
+			MessageQueue& fullAwareQueue = transport == TransportEnum::BEST_EFFORT ? player.client.messenger->BestEffort()
 			                                                                       : player.client.messenger->Reliable();
 			MessageQueue& semiAwareQueue = transport == TransportEnum::RELIABLE ? player.client.messenger->Reliable()
-                                                                                : player.client.messenger->NetBuf();
+                                                                                : player.client.messenger->BestEffort();
 			switch (mobj.playersAware.Get(player.id))
 			{
 				case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
@@ -3347,7 +3347,7 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 				break;
 
 			default:
-				MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_UpdateMobjWithMode(*mo));
+				player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
 				break;
 		}
 	}
@@ -3360,7 +3360,7 @@ void SV_UpdateAvatars(player_t& player)
 		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
 		{
 			voodooInfo.mobj->updatedDuringLocalTic = gametic;    // Avoid a potential duplicate send.
-			MSG_WriteSVC(player.client.messenger->HighBuf(), SVC_UpdateMobj(*voodooInfo.mobj));
+			player.client.messenger->HighPriority().Write( SVC_UpdateMobj(*voodooInfo.mobj));
 		}
 	}
 }
@@ -3425,7 +3425,7 @@ void SV_SendPingRequest(client_t* cl)
 	if (!P_AtInterval(100))
 		return;
 
-	MSG_WriteSVC(cl->messenger->HighBuf(), SVC_PingRequest());
+	cl->messenger->HighPriority().Write( SVC_PingRequest());
 }
 
 void SV_UpdateMonsterRespawnCount()
@@ -3526,7 +3526,7 @@ void SV_SendPlayerStateUpdate(client_t* client, player_t* player)
 
 	if (client != &player->client)
 	{
-		MSG_WriteSVC(client->messenger->HighBuf(), SVC_PlayerState(*player));
+		client->messenger->HighPriority().Write( SVC_PlayerState(*player));
 	}
 	else
 	{
@@ -3693,7 +3693,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		if(not SV_IsPlayerAllowedToSee(player, otherPlayer.mo))
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->HighBuf(), SVC_MovePlayer(otherPlayer));
+		player.client.messenger->HighPriority().Write( SVC_MovePlayer(otherPlayer));
 	}
 
 	// Send inventory stuff.
@@ -3963,7 +3963,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 	if (not player.spectator)
 	{
 		// client player will update his position if packets were missed
-		MSG_WriteSVC(cl->messenger->HighBuf(), SVC_UpdateLocalPlayer(*mo));
+		cl->messenger->HighPriority().Write( SVC_UpdateLocalPlayer(*mo));
 	}
 
 	SV_UpdateMovingSectors(player);
@@ -4688,7 +4688,7 @@ static void TimeCheck()
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
 		for (auto& player : players)
-			MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_LevelLocals(level, SVC_LL_TIME));
+			player.client.messenger->Reliable().Write( SVC_LevelLocals(level, SVC_LL_TIME));
 	}
 }
 
@@ -4702,7 +4702,7 @@ static void IntermissionTimeCheck()
 	{
 		for (auto& player : players)
 		{
-			MSG_WriteSVC((player.client.messenger->NetBuf()), SVC_IntTimeLeft(level.inttimeleft));
+			player.client.messenger->Reliable().Write( SVC_IntTimeLeft(level.inttimeleft));
 		}
 	}
 }
@@ -5225,12 +5225,12 @@ void SV_ExplodeMissile(AActor *mo)
 
 			case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
 				mo->updatedDuringLocalTic = gametic;
-				MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_UpdateMobj(*mo));
+				player.client.messenger->BestEffort().Write( SVC_UpdateMobj(*mo));
 				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
 
 			case AwarenessEnum::BARELY_AWARE:                          // See an explosion, almost certainly in the wrong position.
-				MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_ExplodeMissile(*mo));
+				player.client.messenger->BestEffort().Write( SVC_ExplodeMissile(*mo));
 				break;
 		}
 	}

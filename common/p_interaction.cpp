@@ -150,7 +150,7 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_TeamMembers(team));
+		player.client.messenger->Reliable().Write( SVC_TeamMembers(team));
 	}
 }
 

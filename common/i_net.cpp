@@ -686,10 +686,10 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		if (static_cast<int>(player.id) == skipPlayer)
 			continue;
 
-		// Select the correct buffer.
-		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger->Reliable().Obtain() : player.client.messenger->NetBuf().Obtain();
+		// Select the correct queue.
+		MessageQueue& queue = buf == CLBUF_RELIABLE ? player.client.messenger->Reliable() : player.client.messenger->BestEffort();
 
-		WriteMiniHeader(b, header, buffer.data(), buffer.size());
+		queue.Write(header, buffer);
 	}
 }
 

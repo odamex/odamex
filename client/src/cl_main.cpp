@@ -2314,7 +2314,7 @@ void CL_SendCmd(void)
 		// GhostlyDeath -- If we are spectating, tell the server of our new position
 		if (player.spectator)
 		{
-			MSG_WriteSVC(messenger.NetBuf(), CLC_SpectateUpdate(player));
+			messenger.BestEffort().Write (CLC_SpectateUpdate(player));
 		}
 
 		if (closestNonCredibleVisSprite)
