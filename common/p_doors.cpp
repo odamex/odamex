@@ -618,48 +618,45 @@ bool EV_DoDoor (DDoor::EVlDoor type, line_t *line, const AActor *thing,
 		if (!door)
 			door = static_cast<DDoor *>(sec->lightingdata);
 
-		if (door)
+		// ONLY FOR "RAISE" DOORS, NOT "OPEN"s
+		if (door && door->m_Type == DDoor::doorRaise && type == DDoor::doorRaise)
 		{
-			// ONLY FOR "RAISE" DOORS, NOT "OPEN"s
-			if (door->m_Type == DDoor::doorRaise && type == DDoor::doorRaise)
+			if (sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DDoor)))
 			{
-				if (sec->ceilingdata && sec->ceilingdata->IsKindOf (RUNTIME_CLASS(DDoor)))
+				if (door->m_Status == DDoor::closing)
 				{
-					if (door->m_Status == DDoor::closing)
-					{
-						// go back up
-						door->m_Status = DDoor::reopening;
-						door->PlayDoorSound();
-						return true;
-					}
-					else if (map_format.getZDoom() && (line->flags & ML_SPAC_PUSH))
-					{
-						// [RH] activate push doors don't go back down when you
-						// run into them (otherwise opening them would be
-						// a real pain).
-						door->m_Line = line;
-						return true;
-					}
-					else if (thing && thing->player)
-					{
-						// go back down
-						door->m_Status = DDoor::closing;
-						door->PlayDoorSound();
-						return true;
-					}
+					// go back up
+					door->m_Status = DDoor::reopening;
+					door->PlayDoorSound();
+					return true;
 				}
-				return false;
+				else if (map_format.getZDoom() && (line->flags & ML_SPAC_PUSH))
+				{
+					// [RH] activate push doors don't go back down when you
+					// run into them (otherwise opening them would be
+					// a real pain).
+					door->m_Line = line;
+					return true;
+				}
+				else if (thing && thing->player)
+				{
+					// go back down
+					door->m_Status = DDoor::closing;
+					door->PlayDoorSound();
+					return true;
+				}
 			}
+			return false;
 		}
-        else
-        {
-            door = new DDoor(sec, line, type, speed, delay);
-            P_AddMovingCeiling(sec);
-        }
-		if (door)
-        {
-			rtn = true;
-        }
+		const bool opensAndStays =
+		    type != DDoor::doorRaise && type != DDoor::blazeRaise;
+
+		if (!door || opensAndStays)
+		{
+			door = new DDoor(sec, line, type, speed, delay);
+			P_AddMovingCeiling(sec);
+		}
+		rtn = true;
 	}
 	else
 	{	// [RH] Remote door
