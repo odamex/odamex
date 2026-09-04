@@ -56,10 +56,15 @@ void P_Ticker (void)
 		displayplayer().mo->RunThink();
 	}
 
+	// The first tic needs to be rendered in demos.
+	// Players are generally frozen at this time but we could
+	// miss a first tic TAS pause.
+	const bool renderFirstTic = players.begin()->viewz == 1 && !demoplayback;
+
 	// Game pauses when in the menu and not online/demo
 	if ((paused || (!multiplayer && !demoplayback &&
 		(menuactive || ConsoleState == c_down || ConsoleState == c_falling))) &&
-		(players.begin()->viewz != 1)) // Render the first tic to get proper viewheight
+		!renderFirstTic)
 	{
 		return;
 	}
@@ -90,10 +95,10 @@ void P_Ticker (void)
 	// being run in AActor::RunThink.
 	if (!demoplayback)
 	{
-	for (auto& player : players)
-	{
-		P_AnimationTick(player.mo);
-	}
+		for (auto& player : players)
+		{
+			P_AnimationTick(player.mo);
+		}
 	}
 
 	DThinker::RunThinkers ();
