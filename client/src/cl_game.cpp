@@ -1936,6 +1936,26 @@ END_COMMAND(streamdemo)
 
 
 //
+// A demo that will not load leaves +demotest with nothing to report. Dropping
+// to the console is the right answer for someone sitting at the game and a
+// hang for a batch run, which has nobody there to notice, so that case exits.
+//
+static void G_DemoFailed()
+{
+	extern bool demotest;
+	void call_terms();
+
+	if (demotest)
+	{
+		PrintFmt(PRINT_ERROR, "demotest:could not play demo\n");
+		call_terms();
+		exit(EXIT_FAILURE);
+	}
+
+	gameaction = ga_fullconsole;
+}
+
+//
 // G_DoPlayDemo
 //
 // Plays the vanilla LMP demo defdemoname (either in the loaded WAD files
@@ -1966,7 +1986,7 @@ void G_DoPlayDemo(bool justStreamInput)
 		if (found.empty())
 		{
 			PrintFmt(PRINT_WARNING, "Could not find demo {}\n", ::defdemoname);
-			gameaction = ga_fullconsole;
+			G_DemoFailed();
 			return;
 		}
 		::defdemoname = found;
@@ -2108,7 +2128,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	{
 		PrintFmt(PRINT_WARNING, "Unsupported demo format.  If you are trying to play an Odamex " \
 						"netdemo, please use the netplay command\n");
-		gameaction = ga_nothing;
+		G_DemoFailed();
 	}
 }
 
