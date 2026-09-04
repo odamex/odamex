@@ -77,23 +77,22 @@ message PspriteState
 
 message Player
 {
-	uint32          playerid        = 1;
-	int32           client_tic      = 2;
-	int32           health          = 3;
-	int32           armorpoints     = 4;
-	int32           armortype       = 5;
-	repeated int32  powers          = 6;
-	uint32          cards           = 7;
-	bool            backpack        = 8;
-	int32           lives           = 9;
-	uint32          cheats          = 10;
-	int32           pendingweapon   = 11;
-	int32           readyweapon     = 12;
-	uint32          weaponowned     = 13;
-	repeated int32  ammo            = 14;
-	repeated int32  maxammo         = 15;
+	uint32          playerid        =  1;
+	int32           health          =  2;
+	int32           armorpoints     =  3;
+	int32           armortype       =  4;
+	repeated int32  powers          =  5;
+	uint32          cards           =  6;
+	bool            backpack        =  7;
+	int32           lives           =  8;
+	uint32          cheats          =  9;
+	int32           pendingweapon   = 10;
+	int32           readyweapon     = 11;
+	uint32          weaponowned     = 12;
+	repeated int32  ammo            = 13;
+	repeated int32  maxammo         = 14;
 
-	repeated PspriteState   psprites    = 16;
+	repeated PspriteState psprites  = 15;
 }
 
 message Sector

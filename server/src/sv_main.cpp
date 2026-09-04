@@ -1490,7 +1490,7 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
 		}
 		else
 		{
-			MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_SpawnPlayer(*mo->player, gametic));
+			MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_SpawnPlayer(*mo->player));
 		}
 		return true;
 	}
@@ -1806,16 +1806,15 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 	if (floorMover != SEC_INVALID)
 	{
 		const bool    floorIsCompleted     = P_MovingFloorCompleted  (sector);
-		const int     floorMoverMsgTic     = floorIsCompleted ? gametic : -1;
 		MessageQueue& outgoingMessageQueue = floorIsCompleted ? player.client.messenger->ReliableBuf() :
 		                                                        player.client.messenger->HighBuf();
 		switch (floorMover)
 		{
 			case SEC_FLOOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorFloor(*sector, floorMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorFloor(*sector));
 				break;
 			case SEC_PLAT:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPlat(*sector, floorMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPlat(*sector));
 				break;
 			default:
 				break;
@@ -1825,23 +1824,22 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 	if (ceilingMover != SEC_INVALID)
 	{
 		const bool    ceilingIsCompleted   = P_MovingCeilingCompleted(sector);
-		const int     ceilingMoverMsgTic   = ceilingIsCompleted ? gametic : -1;
 		MessageQueue& outgoingMessageQueue = ceilingIsCompleted ? player.client.messenger->ReliableBuf() :
 		                                                          player.client.messenger->HighBuf();
 
 		switch (ceilingMover)
 		{
 			case SEC_DOOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorDoor(*sector, ceilingMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorDoor(*sector));
 				break;
 			case SEC_CEILING:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorCeiling(*sector, ceilingMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorCeiling(*sector));
 				break;
 			case SEC_ELEVATOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorElevator(*sector, ceilingMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorElevator(*sector));
 				break;
 			case SEC_PILLAR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPillar(*sector, ceilingMoverMsgTic));
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPillar(*sector));
 				break;
 			default:
 				break;
@@ -3524,14 +3522,14 @@ void SV_SendPackets()
 	}
 }
 
-void SV_SendPlayerStateUpdate(client_t* client, player_t* player, int destinationClientTicOfValidity)
+void SV_SendPlayerStateUpdate(client_t* client, player_t* player)
 {
 	if (!client || !player || !player->mo)
 		return;
 
 	if (client != &player->client)
 	{
-		MSG_WriteSVC(client->messenger->HighBuf(), SVC_PlayerState(*player, destinationClientTicOfValidity));
+		MSG_WriteSVC(client->messenger->HighBuf(), SVC_PlayerState(*player));
 	}
 	else
 	{
@@ -3548,7 +3546,7 @@ void SV_SpyPlayer(player_t& viewer, const odaproto::clc::Spy& msg)
 		return;
 
 	viewer.spying = id;
-	SV_SendPlayerStateUpdate(&viewer.client, &other, viewer.tic);
+	SV_SendPlayerStateUpdate(&viewer.client, &other);
 }
 
 // When we break up the mobjs into 3 groups based on relative distance, there are two boundaries:
@@ -3698,7 +3696,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		if(not SV_IsPlayerAllowedToSee(player, otherPlayer.mo))
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->HighBuf(), SVC_MovePlayer(otherPlayer, player.tic));
+		MSG_WriteSVC(player.client.messenger->HighBuf(), SVC_MovePlayer(otherPlayer));
 	}
 
 	// Send inventory stuff.
@@ -3714,7 +3712,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	player_t& target = idplayer(player.spying);
 	if (validplayer(target) && &player != &target && P_CanSpy(player, target))
 	{
-		SV_SendPlayerStateUpdate(&(player.client), &target, player.tic);
+		SV_SendPlayerStateUpdate(&(player.client), &target);
 	}
 
 	SV_UpdateConsolePlayer(player);
@@ -3968,7 +3966,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 	if (not player.spectator)
 	{
 		// client player will update his position if packets were missed
-		MSG_WriteSVC(cl->messenger->HighBuf(), SVC_UpdateLocalPlayer(*mo, player.tic));
+		MSG_WriteSVC(cl->messenger->HighBuf(), SVC_UpdateLocalPlayer(*mo));
 	}
 
 	SV_UpdateMovingSectors(player);
@@ -4416,8 +4414,7 @@ void SV_Cheat(player_t &player, const odaproto::clc::Cheat& msg)
 		{
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
-				client_t* cl = &it->client;
-				SV_SendPlayerStateUpdate(cl, &player, it->tic);
+				SV_SendPlayerStateUpdate(&it->client, &player);
 			}
 		}
 	}
@@ -4431,8 +4428,7 @@ void SV_CheatGive(player_t &player, const odaproto::clc::CheatGive& msg)
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			client_t* cl = &it->client;
-			SV_SendPlayerStateUpdate(cl, &player, it->tic);
+			SV_SendPlayerStateUpdate(&it->client, &player);
 		}
 
 	}
@@ -4766,7 +4762,7 @@ void SV_TouchSpecial(AActor& special, player_t& player)
 		SV_AwarenessUpdate(player, &special, AwarenessEnum::FULLY_AWARE);
 	}
 
-	MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_TouchSpecial(player, special));
+	MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_TouchSpecial(special));
 }
 
 void SV_PlayerTimes (void)
@@ -5140,7 +5136,7 @@ void SV_SendDamagePlayer(player_t* damagedPlayer, const AActor* inflictor, int h
 	for (auto& destinationPlayer : players)
 	{
 		MSG_WriteSVC(destinationPlayer.client.messenger->ReliableBuf(),
-		             SVC_DamagePlayer(*damagedPlayer, inflictor, healthDamage, armorDamage, destinationPlayer.tic));
+		             SVC_DamagePlayer(*damagedPlayer, inflictor, healthDamage, armorDamage));
 	}
 }
 
