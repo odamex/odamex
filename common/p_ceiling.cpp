@@ -1066,9 +1066,10 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 		return helper(sec) || rtn;
 	}
 
-	//	Reactivate in-stasis ceilings...for certain types.
+	// Reactivate in-stasis ceilings...for certain types.
 	// This restarts a crusher after it has been stopped
-	if (type == DCeiling::crushAndRaise)
+	if (type == DCeiling::crushAndRaise || type == DCeiling::fastCrushAndRaise ||
+	    type == DCeiling::silentCrushAndRaise)
 	{
 		rtn |= P_ActivateInStasisCeiling(tag);
 	}
