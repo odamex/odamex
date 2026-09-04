@@ -237,14 +237,10 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	// Dispatch on the line special value to the line's action routine
 	// If a once only function, and successful, clear the line special
 
-	// Do not teleport on the wrong side
-	if (side)
-	{
-		if (P_IsTeleportLine(line->special))
-		{
-			return false;
-		}
-	}
+	// Do not teleport on the wrong side, unless in demoplayback mode.
+	// Boom fixes this, vanilla allows it
+	if (side && !demoplayback && P_IsTeleportLine(line->special))
+		return false;
 
 	switch (line->special)
 	{
