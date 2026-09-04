@@ -249,7 +249,11 @@ void DDoor::RunThink ()
 			case genOpen:
 			case genCdO:
 			case genBlazeCdO:
+				// Vanilla unlinks these thinkers in the same tic.
 				m_Status = finished;
+				if (m_Type != doorOpen)
+					PlayDoorSound();
+				P_SetDoorDestroy(this);
 				return;
 
 			default:
