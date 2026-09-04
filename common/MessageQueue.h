@@ -40,6 +40,9 @@ class MessageQueue
 		buf_t& Obtain();
 		void Emplace(buf_t& io_str);
 
+		void Write(const google::protobuf::Message& msg);
+		void Write(msg_t id, const std::string& msg);
+
 		// Using messages.
 		const buf_t& Front() const { return m_queue.front(); }
 

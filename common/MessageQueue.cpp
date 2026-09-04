@@ -22,6 +22,10 @@
 
 #include "MessageQueue.h"
 
+#include "msg_map.h"
+
+#include <google/protobuf/message.h>
+
 buf_t& MessageQueue::Obtain()
 {
 	if (m_queue.size() > 0)
@@ -53,6 +57,44 @@ void MessageQueue::Emplace(buf_t& io_str)
 
 	obtainedBuffer.swap(io_str);
 	io_str.clear();
+}
+
+void MessageQueue::Write(msg_t id, const std::string& msg)
+{
+	if (simulated_connection)
+		return;
+
+	buf_t& buffer = Obtain();
+	buffer.WriteUnVarint(id);
+	buffer.WriteUnVarint(msg.size());
+	buffer.WriteChunk(msg.data(), msg.size());
+}
+
+void MessageQueue::Write(const google::protobuf::Message& msg)
+{
+	if (simulated_connection)
+		return;
+
+	if (not msg.SerializeToString(& m_serializationBuffer))
+	{
+		PrintFmt(
+		    PRINT_WARNING,
+		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name());
+		return;
+	}
+
+	const msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
+	if (header == msg_noop)
+	{
+		PrintFmt(PRINT_WARNING,
+		         "WARNING: Could not find svc header for message \"{}\".  This is most "
+		         "likely a bug.\n",
+		         msg.GetDescriptor()->full_name());
+		return;
+	}
+
+	Write(header, m_serializationBuffer);
 }
 
 void MessageQueue::PopFromQueueToFreeStack()
