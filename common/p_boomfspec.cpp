@@ -462,7 +462,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 52:
 		// EXIT!
 		// killough 10/98: prevent zombies from exiting levels
-		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
+		if (bossaction || ((!(thing->player && thing->player->health <= 0 &&
+		                      !P_ZombiesCanTrigger())) &&
 		                   CheckIfExitIsGood(thing)))
 		{
 			G_ExitLevel(0, 1, resetinv);
@@ -600,7 +601,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		// Secret EXIT
 		// killough 10/98: prevent zombies from exiting levels
 		// CPhipps - change for lxdoom's compatibility handling
-		if (bossaction || ((!(thing->player && thing->player->health <= 0)) &&
+		if (bossaction || ((!(thing->player && thing->player->health <= 0 &&
+		                      !P_ZombiesCanTrigger())) &&
 		                   CheckIfExitIsGood(thing)))
 		{
 			G_SecretExitLevel(0, 1, resetinv);
@@ -2234,7 +2236,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		/* Exit level
 		 * killough 10/98: prevent zombies from exiting levels
 		 */
-		if (!bossaction && thing && thing->player && thing->player->health <= 0)
+		if (!bossaction && thing && thing->player && thing->player->health <= 0 &&
+		    !P_ZombiesCanTrigger())
 		{
 			return false;
 		}
@@ -2361,7 +2364,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		/* Secret EXIT
 		 * killough 10/98: prevent zombies from exiting levels
 		 */
-		if (!bossaction && thing && thing->player && thing->player->health <= 0)
+		if (!bossaction && thing && thing->player && thing->player->health <= 0 &&
+		    !P_ZombiesCanTrigger())
 		{
 			return false;
 		}
@@ -3571,7 +3575,8 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		case 197:
 			// Exit to next level
 			// killough 10/98: prevent zombies from exiting levels
-			if (thing && thing->player && thing->player->health <= 0)
+			if (thing && thing->player && thing->player->health <= 0 &&
+			    !P_ZombiesCanTrigger())
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{
@@ -3586,7 +3591,8 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		case 198:
 			// Exit to secret level
 			// killough 10/98: prevent zombies from exiting levels
-			if (thing && thing->player && thing->player->health <= 0)
+			if (thing && thing->player && thing->player->health <= 0 &&
+			    !P_ZombiesCanTrigger())
 				break;
 			if (thing && CheckIfExitIsGood(thing))
 			{

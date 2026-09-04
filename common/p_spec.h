@@ -204,6 +204,7 @@ crushmode_e P_ArgToCrushMode(byte arg, bool slowdown);
 fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f);
 bool P_CheckTag(line_t* line);
 bool P_SectorActive(special_e t, const sector_t* sec);
+bool P_ZombiesCanTrigger();
 void P_TransferSectorFlags(unsigned int*, unsigned int);
 
 #define FLOORSPEED FRACUNIT

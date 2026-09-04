@@ -761,6 +761,14 @@ static void ParseAnim(OScanner &os, byte istex)
 // In Vanilla, sectordata was 1 field that shared floor/ceiling/lighting
 // data, so we need to check each of these in demo mode.
 //
+
+// Rather make this intent known rather than insert yet another demoplayback
+// in an if somewhere.
+bool P_ZombiesCanTrigger()
+{
+	return demoplayback;
+}
+
 bool P_SectorActive(special_e t, const sector_t* sec)
 {
 	if (demoplayback)
@@ -2003,7 +2011,7 @@ void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 
 	// spectators and dead players can't cross special lines
 	// [Blair] Unless they're teleport lines.
-	if (thing && thing->player &&
+	if (!P_ZombiesCanTrigger() && thing && thing->player &&
 	    (thing->player->spectator || thing->player->playerstate != PST_LIVE) &&
 	    !P_IsTeleportLine(line->special))
 		return;
