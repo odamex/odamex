@@ -46,7 +46,6 @@ wbstartstruct_t wminfo;
 
 bool predicting;
 int demostartgametic;
-bool isFast;
 int gametic;
 gamestate_t gamestate;
 
