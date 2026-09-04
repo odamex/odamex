@@ -504,7 +504,7 @@ void SV_Maplist(player_t &player, maplist_status_t status) {
 	case MAPLIST_OK:
 		// Valid statuses
 		DPrintFmt("SV_Maplist: Sending status {} to pid {}\n", status, player.id);
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Maplist(status));
+		cl->messenger->Reliable().Write (SVC_Maplist(status));
 	default:
 		// Invalid statuses
 		return;
@@ -529,7 +529,7 @@ void SV_MaplistIndex(player_t &player) {
 		}
 	}
 
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_MaplistIndex(count, this_index, next_index));
+	cl->messenger->Reliable().Write (SVC_MaplistIndex(count, this_index, next_index));
 }
 
 // Send a full maplist update to a specific player
@@ -541,7 +541,7 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
 		DPrintFmt("SV_MaplistUpdate: Sending status {} to pid {}\n", status, player.id);
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_MaplistUpdate(status, nullptr));
+		cl->messenger->Reliable().Write (SVC_MaplistUpdate(status, nullptr));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic
@@ -557,8 +557,8 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 
 	odaproto::svc::MaplistUpdate update = SVC_MaplistUpdate(MAPLIST_OUTDATED, &maplist);
 
-    // FIXME:  Does this need to be fragmented?  Could this be too large??
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), update);
+	// FIXME:  Does this need to be fragmented?  Could this be too large??
+	cl->messenger->Reliable().Write (update);
 
 	// Update the timeout to ensure the player doesn't abuse the server
 	Maplist::instance().set_timeout(player.id);

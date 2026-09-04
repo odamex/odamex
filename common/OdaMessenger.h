@@ -190,7 +190,7 @@ class OdaMessenger
 				/// Returns the number of bytes sent as part of this retransmission cycle.
 				size_t SendRetransmissions() { return m_messengerRef.SendRetransmissions (m_currentTic, m_dest); }
 
-				/// Assembles the messages queued up via ReliableBuf and NetBuf into packets and sends them.  If the
+				/// Assembles the messages queued up via Reliable() and NetBuf into packets and sends them.  If the
 				/// tic budget is exhausted, then the remaining Reliable content remains enqueued for subsequent Send
 				/// calls, but the NetBuf / best-effort messages are discarded.
 				///
@@ -216,7 +216,7 @@ class OdaMessenger
 
 		/// Return the requested message queue.  Use these queues to Obtain new messages into which to pack
 		/// new outgoing data.
-		MessageQueue& ReliableBuf() { return m_outgoingReliableQueue; }
+		MessageQueue& Reliable() { return m_outgoingReliableQueue; }
 		MessageQueue& NetBuf() { return m_outgoingNonReliableQueue; }
 		MessageQueue& HighBuf() { return m_outgoingHighNonReliableQueue; }
 
