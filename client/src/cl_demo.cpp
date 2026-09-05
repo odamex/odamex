@@ -1026,15 +1026,22 @@ extern int last_svgametic;
 
 void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 {
+	const player_t& player = consoleplayer();
+
 	PacketHeaderType header {0};
 
+	header.originatorTic  = last_svgametic;
+	header.destinationTic = player.tic;
+
+	// Please note that we pack the header in proper socket-style for the connection sequence
+	// because the netdemo connection playback actually uses the messenger via CL_Connect.
 	header.Pack(*netbuffer);
 
 	// Server sends our player id and digest
-	MSG_WriteSVCBuffer(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));
+	MSG_WriteSVCBuffer(netbuffer, SVC_ConsolePlayer(player, digest));
 
 	// our userinfo
-	MSG_WriteSVCBuffer(netbuffer, SVC_UserInfo(consoleplayer(), consoleplayer().GameTime));
+	MSG_WriteSVCBuffer(netbuffer, SVC_UserInfo(player, player.GameTime));
 
 	// Server sends its settings
 	cvar_t *var = GetFirstCvar();
@@ -1048,13 +1055,13 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	}
 
 	// Server tells everyone if we're a spectator
-	MSG_WriteSVCBuffer(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
+	MSG_WriteSVCBuffer(netbuffer, SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
 
 	// Server sends wads & map name
 	MSG_WriteSVCBuffer(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
 
 	// Server spawns the player
-	MSG_WriteSVCBuffer(netbuffer, SVC_SpawnPlayer(consoleplayer(), last_svgametic));
+	MSG_WriteSVCBuffer(netbuffer, SVC_SpawnPlayer(player));
 }
 
 

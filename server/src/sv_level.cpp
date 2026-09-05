@@ -90,8 +90,6 @@ bool firstmapinit = true; // Nes - Avoid drawing same init text during every reb
 extern bool sendpause;
 
 
-bool isFast = false;
-
 //
 // G_InitNew
 // Can be called by the startup code or the menu task,
@@ -484,47 +482,7 @@ void G_InitNew(const char *mapname)
 	}
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
-	if (wantFast != isFast)
-	{
-		if (wantFast)
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST &&
-				    (state.tics != 1 || demoplayback))
-					state.tics >>= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.speed;
-					minfo.speed = minfo.altspeed;
-					minfo.altspeed = swap;
-				}
-			}
-		}
-		else
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST)
-					state.tics <<= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.altspeed;
-					minfo.altspeed = minfo.speed;
-					minfo.speed = swap;
-				}
-			}
-		}
-		isFast = wantFast;
-	}
+	G_SetFast(wantFast);
 
 	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
 	Unlag::getInstance().reset();

@@ -70,77 +70,81 @@ odaproto::svc::Disconnect SVC_Disconnect(const char* message)
 	return msg;
 }
 
+namespace
+{
+
+	void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
+	{
+		io_msg.set_statenum (psprite.statenum);
+		io_msg.set_tics     (psprite.tics);
+		io_msg.set_sx       (psprite.sx);
+		io_msg.set_sy       (psprite.sy);
+	}
+
+	void FillPlayer(odaproto::Player& io_msg, const player_t& player)
+	{
+		io_msg.set_playerid     (player.id);
+		io_msg.set_health       (player.health);
+		io_msg.set_armortype    (player.armortype);
+		io_msg.set_armorpoints  (player.armorpoints);
+		io_msg.set_lives        (player.lives);
+
+		io_msg.set_readyweapon(player.readyweapon);
+		io_msg.set_pendingweapon(player.pendingweapon);
+
+		const uint32_t packedweapons = PackBoolArray(player.weaponowned);
+		io_msg.set_weaponowned(packedweapons);
+
+		io_msg.mutable_ammo()->Add   (player.ammo.begin(),    player.ammo.end());
+		io_msg.mutable_maxammo()->Add(player.maxammo.begin(), player.maxammo.end());
+
+		const uint32_t packedcards = PackBoolArray(player.cards);
+		io_msg.set_cards(packedcards);
+
+		io_msg.set_backpack(player.backpack);
+
+		for (int i = 0; i < NUMPSPRITES; i++)
+		{
+			FillPsprite(*io_msg.add_psprites(), player.psprites[i]);
+		}
+
+		for (int i = 0; i < NUMPOWERS; i++)
+		{
+			io_msg.add_powers(player.powers[i]);
+		}
+
+		if (!player.spectator)
+			io_msg.set_cheats(player.cheats);
+	}
+
+	void FillMapThing(odaproto::MapThing& io_msg, const MapThing& i_mapthing)
+	{
+		io_msg.set_thingid  (i_mapthing.thingid);
+		io_msg.set_x        (i_mapthing.x);
+		io_msg.set_y        (i_mapthing.y);
+		io_msg.set_z        (i_mapthing.z);
+		io_msg.set_angle    (i_mapthing.angle);
+		io_msg.set_type     (i_mapthing.type);
+		io_msg.set_flags    (i_mapthing.flags.to_int());
+		io_msg.set_special  (i_mapthing.special);
+
+		for (const auto& arg : i_mapthing.args)
+		{
+			io_msg.add_args(arg);
+		}
+	}
+
+}
+
 /**
  * @brief Send information about a player.
  */
-
-static void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
-{
-	io_msg.set_statenum (psprite.statenum);
-	io_msg.set_tics     (psprite.tics);
-	io_msg.set_sx       (psprite.sx);
-	io_msg.set_sy       (psprite.sy);
-}
-
-static void FillPlayer(odaproto::Player& io_msg, const player_t& player, int destinationClientTicOfValidity)
-{
-	io_msg.set_client_tic   (destinationClientTicOfValidity);
-	io_msg.set_playerid     (player.id);
-	io_msg.set_health       (player.health);
-	io_msg.set_armortype    (player.armortype);
-	io_msg.set_armorpoints  (player.armorpoints);
-	io_msg.set_lives        (player.lives);
-
-	io_msg.set_readyweapon(player.readyweapon);
-	io_msg.set_pendingweapon(player.pendingweapon);
-
-	uint32_t packedweapons = PackBoolArray(player.weaponowned);
-	io_msg.set_weaponowned(packedweapons);
-
-	io_msg.mutable_ammo()->Add   (player.ammo.begin(),    player.ammo.end());
-	io_msg.mutable_maxammo()->Add(player.maxammo.begin(), player.maxammo.end());
-
-	uint32_t packedcards = PackBoolArray(player.cards);
-	io_msg.set_cards(packedcards);
-
-	io_msg.set_backpack(player.backpack);
-
-	for (int i = 0; i < NUMPSPRITES; i++)
-	{
-		FillPsprite(*io_msg.add_psprites(), player.psprites[i]);
-	}
-
-	for (int i = 0; i < NUMPOWERS; i++)
-	{
-		io_msg.add_powers(player.powers[i]);
-	}
-
-	if (!player.spectator)
-		io_msg.set_cheats(player.cheats);
-}
-
-static void FillMapThing(odaproto::MapThing& io_msg, const MapThing& i_mapthing)
-{
-    io_msg.set_thingid  (i_mapthing.thingid);
-    io_msg.set_x        (i_mapthing.x);
-    io_msg.set_y        (i_mapthing.y);
-    io_msg.set_z        (i_mapthing.z);
-    io_msg.set_angle    (i_mapthing.angle);
-    io_msg.set_type     (i_mapthing.type);
-    io_msg.set_flags    (i_mapthing.flags.to_int());
-    io_msg.set_special  (i_mapthing.special);
-
-    for (const auto& arg : i_mapthing.args)
-    {
-        io_msg.add_args(arg);
-    }
-}
 
 odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
 
-	FillPlayer(*msg.mutable_player(), player, player.tic);
+	FillPlayer(*msg.mutable_player(), player);
 
 	return msg;
 }
@@ -149,7 +153,6 @@ odaproto::svc::PlayerAmmo SVC_PlayerAmmo(const player_t& player)
 {
 	odaproto::svc::PlayerAmmo msg;
 
-	msg.set_player_tic(player.tic);
 	msg.mutable_ammo()->Add(player.ammo.begin(),
 	                        player.ammo.end());
 
@@ -160,7 +163,6 @@ odaproto::svc::PlayerMaxAmmo SVC_PlayerMaxAmmo(const player_t& player)
 {
 	odaproto::svc::PlayerMaxAmmo msg;
 
-	msg.set_player_tic(player.tic);
 	msg.mutable_maxammo()->Add(player.maxammo.begin(),
 	                           player.maxammo.end());
 
@@ -171,7 +173,6 @@ odaproto::svc::PlayerWeaponOwned SVC_PlayerWeaponOwned(const player_t& player)
 {
 	odaproto::svc::PlayerWeaponOwned msg;
 
-	msg.set_player_tic(player.tic);
 	msg.mutable_weaponowned()->Add(player.weaponowned.begin(),
 	                               player.weaponowned.end());
 
@@ -182,7 +183,6 @@ odaproto::svc::PlayerWeaponSelection SVC_PlayerWeaponSelection(const player_t& p
 {
 	odaproto::svc::PlayerWeaponSelection msg;
 
-	msg.set_player_tic(player.tic);
 	msg.set_readyweapon(player.readyweapon);
 	msg.set_pendingweapon(player.pendingweapon);
 
@@ -193,7 +193,6 @@ odaproto::svc::PlayerPowers SVC_PlayerPowers(const player_t& player)
 {
 	odaproto::svc::PlayerPowers msg;
 
-	msg.set_player_tic(player.tic);
 	msg.mutable_powers()->Add(player.powers.begin(),
 	                          player.powers.end());
 
@@ -204,7 +203,6 @@ odaproto::svc::PlayerPsprites SVC_PlayerPsprites(const player_t& player)
 {
 	odaproto::svc::PlayerPsprites msg;
 
-	msg.set_player_tic(player.tic);
 	msg.set_pid(player.id);
 	for (const auto& psprite : player.psprites)
 	{
@@ -217,17 +215,13 @@ odaproto::svc::PlayerPsprites SVC_PlayerPsprites(const player_t& player)
 /**
  * @brief Change the location of a player.
  */
-odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic)
+odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player)
 {
 	odaproto::svc::MovePlayer msg;
 
 	odaproto::Actor* act = msg.mutable_actor();
 
 	msg.set_playerid(player.id); // player number
-
-	// [SL] 2011-09-14 - the most recently processed ticcmd from the
-	// client we're sending this message to.
-	msg.set_tic(tic);
 
 	odaproto::Vec3* pos = act->mutable_pos();
 	pos->set_x(player.mo->x);
@@ -267,15 +261,12 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic)
 /**
  * @brief Send the local player position for a client.
  */
-odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(const AActor& mo, const int tic)
+odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(const AActor& mo)
 {
 	odaproto::svc::UpdateLocalPlayer msg;
 
 	// client player will update his position if packets were missed
 	odaproto::Actor* act = msg.mutable_actor();
-
-	// client-tic of the most recently processed ticcmd for this client
-	msg.set_tic(tic);
 
 	odaproto::Vec3* pos = act->mutable_pos();
 	pos->set_x(mo.x);
@@ -477,11 +468,8 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	//
 	if (mo->spawnTic == gametic)
 	{
-		// The following could and, in most cases, usually do just set the same value again.  It's
-		// those cases where they AREN'T the same value that we're really after here.
-		cur->set_statenum(mo->info->spawnstate);
 		cur->set_rndindex(mo->spawnRndindex);
-		cur->set_tics    (states[mo->info->spawnstate].tics);
+		msg.set_is_spawn_tic(true);
 	}
 
 	if (mo->type == MT_FOUNTAIN)
@@ -739,13 +727,11 @@ odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj)
 
 EXTERN_CVAR(sv_sharekeys);
 
-odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player, int tic)
+odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 {
 	odaproto::svc::SpawnPlayer msg;
 
 	msg.set_pid(player.id);
-	msg.set_player_tic(player.tic);
-	msg.set_server_tic(tic);
 
 	odaproto::Actor* act = msg.mutable_actor();
 	if (player.mo)
@@ -773,7 +759,7 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player, int tic)
 	return msg;
 }
 
-odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActor* inflictor, int health, int armor, int destinationClientTicOfValidity)
+odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActor* inflictor, int health, int armor)
 {
 	odaproto::svc::DamagePlayer msg;
 
@@ -783,7 +769,6 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActo
 	msg.set_armor_damage      (armor);
 	msg.set_player_health     (player.health);
 	msg.set_player_armorpoints(player.armorpoints);
-	msg.set_client_tic        (destinationClientTicOfValidity);
 
 	return msg;
 }
@@ -989,14 +974,9 @@ odaproto::svc::ActivateLine SVC_ActivateLine(const line_t* line, const AActor* m
 	return msg;
 }
 
-odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sector, int serverTic)
+odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sector)
 {
 	odaproto::svc::MovingSectorElevator msg;
-
-	if (serverTic >= 0)
-	{
-		msg.set_server_tic(serverTic);
-	}
 
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
@@ -1014,14 +994,9 @@ odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sec
 	return msg;
 }
 
-odaproto::svc::MovingSectorPillar SVC_MovingSectorPillar(const sector_t& sector, int serverTic)
+odaproto::svc::MovingSectorPillar SVC_MovingSectorPillar(const sector_t& sector)
 {
 	odaproto::svc::MovingSectorPillar msg;
-
-	if (serverTic >= 0)
-	{
-		msg.set_server_tic(serverTic);
-	}
 
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
@@ -1040,14 +1015,9 @@ odaproto::svc::MovingSectorPillar SVC_MovingSectorPillar(const sector_t& sector,
 	return msg;
 }
 
-odaproto::svc::MovingSectorCeiling SVC_MovingSectorCeiling(const sector_t& sector, int serverTic)
+odaproto::svc::MovingSectorCeiling SVC_MovingSectorCeiling(const sector_t& sector)
 {
 	odaproto::svc::MovingSectorCeiling msg;
-
-	if (serverTic >= 0)
-	{
-		msg.set_server_tic(serverTic);
-	}
 
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
@@ -1071,14 +1041,9 @@ odaproto::svc::MovingSectorCeiling SVC_MovingSectorCeiling(const sector_t& secto
 	return msg;
 }
 
-odaproto::svc::MovingSectorDoor SVC_MovingSectorDoor(const sector_t& sector, int serverTic)
+odaproto::svc::MovingSectorDoor SVC_MovingSectorDoor(const sector_t& sector)
 {
 	odaproto::svc::MovingSectorDoor msg;
-
-	if (serverTic >= 0)
-	{
-		msg.set_server_tic(serverTic);
-	}
 
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
@@ -1098,14 +1063,9 @@ odaproto::svc::MovingSectorDoor SVC_MovingSectorDoor(const sector_t& sector, int
 	return msg;
 }
 
-odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, int serverTic)
+odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector)
 {
 	odaproto::svc::MovingSectorFloor msg;
-
-	if (serverTic >= 0)
-	{
-		msg.set_server_tic(serverTic);
-	}
 
 	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
@@ -1131,14 +1091,9 @@ odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, i
 	return msg;
 }
 
-odaproto::svc::MovingSectorPlat SVC_MovingSectorPlat(const sector_t& sector, int serverTic)
+odaproto::svc::MovingSectorPlat SVC_MovingSectorPlat(const sector_t& sector)
 {
 	odaproto::svc::MovingSectorPlat msg;
-
-	if (serverTic >= 0)
-	{
-			msg.set_server_tic(serverTic);
-	}
 
 	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
@@ -1187,12 +1142,11 @@ odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, i
 	return msg;
 }
 
-odaproto::svc::TouchSpecial SVC_TouchSpecial(const player_t& player, const AActor& mo)
+odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor& mo)
 {
 	odaproto::svc::TouchSpecial msg;
 
 	msg.set_netid(mo.netid);
-	msg.set_player_tic(player.tic);
 
 	return msg;
 }
@@ -1201,11 +1155,11 @@ odaproto::svc::TouchSpecial SVC_TouchSpecial(const player_t& player, const AActo
  * @brief Send information about a player
  */
 
-odaproto::svc::PlayerState SVC_PlayerState(const player_t& player, int destinationClientTicOfValidity)
+odaproto::svc::PlayerState SVC_PlayerState(const player_t& player)
 {
 	odaproto::svc::PlayerState msg;
 
-	FillPlayer(*msg.mutable_player(), player, destinationClientTicOfValidity);
+	FillPlayer(*msg.mutable_player(), player);
 
 	return msg;
 }

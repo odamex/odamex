@@ -127,8 +127,6 @@ void SV_UpdateMobjBestEffort(AActor* mo);
 void SV_UpdateMonsterRespawnCount();
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound);
 
-extern bool isFast;
-
 //
 // ENEMY THINKING
 // Enemies are always spawned
