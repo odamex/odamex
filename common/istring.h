@@ -151,8 +151,14 @@ struct case_insensitive_char_traits : std::char_traits<char>
 using IString     = std::basic_string     <char, case_insensitive_char_traits>;
 using IStringView = std::basic_string_view<char, case_insensitive_char_traits>;
 
+#if __cpp_lib_constexpr_string >= 201907L
+	#define ISTRING_CONSTEXPR constexpr
+#else
+	#define ISTRING_CONSTEXPR
+#endif
+
 [[nodiscard]]
-constexpr IString StdStringToIString(const std::string_view sv)
+ISTRING_CONSTEXPR IString StdStringToIString(const std::string_view sv)
 {
 	return {sv.begin(), sv.end()};
 }
@@ -178,7 +184,7 @@ constexpr auto operator<=>(const IStringView isv, const std::string_view sv)
 }
 
 [[nodiscard]]
-constexpr IString operator""_is(const char* s, const std::size_t l)
+ISTRING_CONSTEXPR IString operator""_is(const char* s, const std::size_t l)
 {
 	return {s, l};
 }
@@ -189,3 +195,5 @@ consteval IStringView operator""_isv(const char* s, const std::size_t l)
 {
 	return {s, l};
 }
+
+#undef ISTRING_CONSTEXPR
