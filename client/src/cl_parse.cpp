@@ -1717,7 +1717,7 @@ void CL_Print(const odaproto::svc::Print* msg)
 	if (show_messages)
 	{
 		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
-			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound.data(), 1, ATTN_NONE);
 		else if (level == PRINT_TEAMCHAT)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
@@ -2209,7 +2209,7 @@ void CL_Say(const odaproto::svc::Say* msg)
 		if (show_messages && !filtermessage)
 		{
 			if (cl_chatsounds == 1)
-				S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, gameinfo.chatSound.data(), 1, ATTN_NONE);
 		}
 	}
 	else if (message_visibility == 1)
