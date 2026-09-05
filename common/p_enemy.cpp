@@ -1868,16 +1868,20 @@ void A_Chase (AActor *actor)
 	}
 
 	// [RH] If the target is dead or a friend (and not a goal), stop chasing it.
-	if (actor->target && actor->target != actor->goal && actor->target->health <= 0)
+	// Vanilla and MBF leave the pointer alone here
+	if (!demoplayback && actor->target && actor->target != actor->goal &&
+	    actor->target->health <= 0)
 		actor->target = AActor::AActorPtr();
 
 	if (!actor->target || !(actor->target->flags & MF_SHOOTABLE))
 	{
 		// look for a new target
-		if (P_LookForTargets (actor, true) && actor->target != actor->goal)
+		const bool found = P_LookForTargets (actor, true);
+
+		if (found && actor->target != actor->goal)
 			return; 	// got a new target
 
-		if (!actor->target)
+		if (!found)
 		{
 			if (actor->flags & MF_FRIEND)
 			{
