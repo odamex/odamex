@@ -71,7 +71,7 @@ typedef int SOCKET;
 
 #include "i_system.h"
 #include "i_net.h"
-#include "msg_map.h"
+#include "msg_pack.h"
 #include "d_player.h"
 #include "m_alloc.h"
 
@@ -579,37 +579,22 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		return;
 
 	static std::string buffer;
-	if (!msg.SerializeToString(&buffer))
+
+	if (const auto messageId = MSG_Pack(buffer, msg))
 	{
-		PrintFmt(
-		    PRINT_WARNING,
-		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name());
-		return;
-	}
+		for (auto& player : players)
+		{
+			if (!player.ingame())
+				continue;
 
-	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
-	if (header == msg_noop)
-	{
-		PrintFmt(PRINT_WARNING,
-		         "WARNING: Could not find svc header for message \"{}\".  This is most "
-		         "likely a bug.\n",
-		         msg.GetDescriptor()->full_name());
-		return;
-	}
+			if (static_cast<int>(player.id) == skipPlayer)
+				continue;
 
-	for (auto& player : players)
-	{
-		if (!player.ingame())
-			continue;
+			// Select the correct queue.
+			MessageQueue& queue = buf == CLBUF_RELIABLE ? player.client.messenger->Reliable() : player.client.messenger->BestEffort();
 
-		if (static_cast<int>(player.id) == skipPlayer)
-			continue;
-
-		// Select the correct queue.
-		MessageQueue& queue = buf == CLBUF_RELIABLE ? player.client.messenger->Reliable() : player.client.messenger->BestEffort();
-
-		queue.Write(header, buffer);
+			queue.Write(*messageId, buffer);
+		}
 	}
 }
 
