@@ -1989,7 +1989,11 @@ bool P_ThingHeightClip (AActor* thing)
 	if (!thing)
 		return true;
 
-	bool onfloor = (thing->z <= thing->floorz);
+	// Restore vanilla onfloor behavior for zdoom maps, which require this for
+	// slope clipping.
+	const bool onfloor = map_format.getZDoom() ?
+	    (thing->z <= thing->floorz) :
+	    (thing->z == thing->floorz);
 
 	AActor *underthing = P_CheckOnmobj(thing);
 	bool onthing = P_AllowPassover() && underthing && underthing->z < thing->z;
