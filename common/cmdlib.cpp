@@ -111,18 +111,6 @@ int ParseHex(const char* hex)
 	return num;
 }
 
-//
-// ParseNum
-//
-int ParseNum(const char* str)
-{
-	if (str[0] == '$')
-		return ParseHex(str+1);
-	if (str[0] == '0' && str[1] == 'x')
-		return ParseHex(str+2);
-	return atol(str);
-}
-
 // [RH] Returns true if the specified string is a valid decimal number
 
 bool IsNum(const char* str)
