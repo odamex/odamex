@@ -2204,7 +2204,12 @@ bool G_CheckDemoStatus (void)
 		extern bool demotest;
 		if (demotest)
 		{
-			AActor *mo = idplayer(1).mo;
+			// Get the consoleplayer.
+			// If no consoleplayer, get the first player in the demo
+			AActor* mo = idplayer(consoleplayer_id).mo;
+
+			if (!mo && !players.empty())
+				mo = players.front().mo;
 
 			if (mo)
 				PrintFmt(PRINT_HIGH, "demotest:{:x} {:x} {:x} {:x}\n",
