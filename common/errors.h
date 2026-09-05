@@ -26,7 +26,7 @@
 
 #include <stdexcept>
 
-class CDoomError : std::runtime_error
+class CDoomError : public std::runtime_error
 {
 public:
 	using std::runtime_error::runtime_error;
