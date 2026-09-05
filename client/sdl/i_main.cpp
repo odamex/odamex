@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
 		}
 
-		I_ErrorMessageBox(error.GetMsg().c_str());
+		I_ErrorMessageBox(error.GetMsg());
 
 		call_terms();
 		exit(EXIT_FAILURE);
