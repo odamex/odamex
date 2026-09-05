@@ -587,7 +587,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 			if (!player.ingame())
 				continue;
 
-			if (static_cast<int>(player.id) == skipPlayer)
+			if (std::cmp_equal(player.id, skipPlayer))
 				continue;
 
 			// Select the correct queue.
