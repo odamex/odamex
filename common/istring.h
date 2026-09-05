@@ -22,11 +22,10 @@
 
 #pragma once
 
-#include <algorithm>
+#include <cstdint>
 #include <cstring>
 #include <string>
 #include <string_view>
-#include <type_traits>
 
 struct case_insensitive_char_traits : std::char_traits<char>
 {
@@ -38,62 +37,6 @@ struct case_insensitive_char_traits : std::char_traits<char>
 	static constexpr int to_ascii_lowercase_int(const int c) noexcept
 	{
 		return c >= 'A' && c <= 'Z' ? c + ('a' - 'A') : c;
-	}
-
-	static constexpr void assign(char& c1, const char& c2) noexcept
-	{
-		c1 = to_ascii_lowercase(c2);
-	}
-
-	static constexpr char* assign(char* ptr, std::size_t count, char c2) noexcept
-	{
-		if (std::is_constant_evaluated())
-		{
-			for (std::size_t i = 0; i < count; i++)
-			{
-				ptr[i] = to_ascii_lowercase(c2);
-			}
-		}
-		else
-		{
-			std::memset(ptr, to_ascii_lowercase(c2), count);
-		}
-
-		return ptr;
-	}
-
-	static constexpr char* copy(char* dest, const char* src, std::size_t count) noexcept
-	{
-		if (count == 0)
-			return dest;
-
-		std::ranges::transform(src, src + count, dest, to_ascii_lowercase);
-		return dest;
-	}
-
-	static constexpr char* move(char* dest, const char* src, std::size_t count) noexcept
-	{
-		if (count == 0)
-			return dest;
-
-		if (std::is_constant_evaluated())
-		{
-			if (dest > src && dest < src + count)
-			{
-				for (std::size_t i = count; i-- > 0;)
-					dest[i] = to_ascii_lowercase(src[i]);
-			}
-			else
-			{
-				copy(dest, src, count);
-			}
-
-			return dest;
-		}
-
-		std::memmove(dest, src, count * sizeof(char_type));
-		std::ranges::transform(dest, dest + count, dest, to_ascii_lowercase);
-		return dest;
 	}
 
 	static constexpr bool eq(const char a, const char b) noexcept
@@ -170,6 +113,13 @@ ISTRING_CONSTEXPR std::string IStringToStdString(const IStringView sv)
 }
 
 [[nodiscard]]
+constexpr IStringView StdStringToIStringView(const std::string_view sv)
+	noexcept(noexcept(IStringView{sv.data(), sv.length()}))
+{
+	return {sv.data(), sv.length()};
+}
+
+[[nodiscard]]
 constexpr std::string_view IStringToStdStringView(const IStringView sv)
 	noexcept(noexcept(std::string_view{sv.data(), sv.length()}))
 {
@@ -181,6 +131,16 @@ constexpr auto operator<=>(const IStringView isv, const std::string_view sv)
 	noexcept(noexcept(IStringView{sv.data(), sv.length()}))
 {
 	return isv <=> IStringView{sv.data(), sv.length()};
+}
+
+constexpr IString& operator+=(IString& lhs, std::string_view rhs)
+{
+	return lhs += IStringView(rhs.data(), rhs.length());
+}
+
+constexpr std::string& operator+=(std::string& lhs, IStringView rhs)
+{
+	return lhs += std::string_view(rhs.data(), rhs.length());
 }
 
 [[nodiscard]]
@@ -197,3 +157,37 @@ consteval IStringView operator""_isv(const char* s, const std::size_t l)
 }
 
 #undef ISTRING_CONSTEXPR
+
+// maybe we should wrap std::hash<std::string_view> so that the hashes are equivalent?
+// the tradeoff is that there's no way to do that without allocating
+// the other way of getting that would be normalizing IString but that means we lose
+// case preservation
+template<>
+struct std::hash<IStringView>
+{
+	constexpr std::size_t operator()(IStringView str) const noexcept
+	{
+		constexpr std::uint32_t offset = 0x811c9dc5;
+		constexpr std::uint32_t prime = 0x1000193;
+		std::uint32_t hash = offset;
+
+		for (char value : str)
+		{
+			hash = hash ^ static_cast<std::uint8_t>(
+				IStringView::traits_type::to_ascii_lowercase(value)
+			);
+			hash *= prime;
+		}
+
+		return hash;
+	}
+};
+
+template<>
+struct std::hash<IString>
+{
+	constexpr std::size_t operator()(const IString& str) const noexcept
+	{
+		return std::hash<IStringView>{}(str);
+	}
+};
