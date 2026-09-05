@@ -164,7 +164,7 @@ ISTRING_CONSTEXPR IString StdStringToIString(const std::string_view sv)
 }
 
 [[nodiscard]]
-constexpr std::string IStringToStdString(const IStringView sv)
+ISTRING_CONSTEXPR std::string IStringToStdString(const IStringView sv)
 {
 	return {sv.begin(), sv.end()};
 }
