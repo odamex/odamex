@@ -47,6 +47,8 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+#include "istring.h"
+
 struct OTimespan
 {
 	int csecs;
@@ -146,6 +148,8 @@ std::optional<T> ParseNum(std::string_view str)
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
 bool iequals(std::string_view, std::string_view);
+bool iequals(const char*, const char*);
+bool iequals(IStringView, IStringView);
 
 size_t  StdStringFind(const std::string& haystack, const std::string& needle,
     size_t pos = 0, size_t n = std::string::npos, bool CIS = false);

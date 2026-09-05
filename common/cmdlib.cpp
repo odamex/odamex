@@ -221,9 +221,17 @@ bool IsRealNum(std::string_view str)
 // sensitivity
 bool iequals(std::string_view s1, std::string_view s2)
 {
-	if (s1.size() != s2.size())
-		return false;
-	return strnicmp(s1.data(), s2.data(), s1.size()) == 0;
+	return IStringView{s1.data(), s1.length()} == IStringView{s2.data(), s2.length()};
+}
+
+bool iequals(const char* s1, const char* s2)
+{
+	return IStringView(s1) == s2;
+}
+
+bool iequals(IStringView s1, IStringView s2)
+{
+	return s1 == s2;
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,
