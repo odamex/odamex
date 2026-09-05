@@ -782,13 +782,13 @@ public:
 
 	byte *SZ_GetSpace(size_t length)
 	{
-		if (writepos + length >= maxsize())
+		if (writepos + length > maxsize())
 		{
 			clear();
 			overflowed = true;
-#if defined(ODAMEX_DEBUG)
+
 			PrintFmt(PRINT_HIGH, "SZ_GetSpace: overflow\n");
-#endif
+
 		}
 
 		byte *ret = &data[writepos];
