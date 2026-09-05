@@ -1180,48 +1180,48 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, std::vector<mline_t>& out
 /// MapInfoData
 
 // A MAPINFO key paired with the action that consumes its value.
-struct MapInfoData
+class MapInfoData
 {
-	const char* name;
-	std::function<void(OScanner&, bool)> fn;
-
-	// A key that is recognised but has nothing to set (unimplemented, or a
-	// block we only need to parse past).
-	MapInfoData(const char* _name) : name(_name)
-	{
-	}
+  public:
+	// A key that is recognised but has nothing to set (unimplemented, or a block we
+	// only need to parse past).
+	MapInfoData(const char* name) : m_name(name) { }
 
 	// A setter that writes to global state rather than to the block being parsed.
-	MapInfoData(const char* _name, void (*_fn)(OScanner&, bool)) : name(_name), fn(_fn)
+	MapInfoData(const char* name, void (*fn)(OScanner&, bool)) : m_name(name), m_fn(fn)
 	{
 	}
 
-	// A setter written as a generic callable, for setters that accept more than one
-	// destination type (the flag setters).
+	// A setter bound to the field it writes, plus any trailing arguments it takes.
+	// Fn is any callable - a plain setter function, or one of the flag setters, which
+	// are function objects so they can stay generic over the flag word's type. The
+	// invocable constraint is what rejects a setter aimed at the wrong field.
 	template <typename Fn, typename T, typename... Args>
-	    requires(!std::is_pointer_v<Fn>) &&
-	                std::invocable<const Fn&, OScanner&, bool, T&, Args...>
-	MapInfoData(const char* _name, Fn _fn, T& _ref, Args... _args)
-	    : name(_name), fn([_fn, &_ref, _bound = std::tuple<Args...>(_args...)](
-	                          OScanner& os, bool newStyleMapInfo) {
-		      std::apply([&](Args... a) { _fn(os, newStyleMapInfo, _ref, a...); },
-		                 _bound);
-	      })
+	    requires std::invocable<const Fn&, OScanner&, bool, T&, Args...>
+	MapInfoData(const char* name, Fn fn, T& ref, Args... args)
+		: m_name(name), m_fn(
+			[fn, &ref, args...](
+				OScanner& os, bool newStyleMapInfo
+				) {
+						std::invoke(fn, os, newStyleMapInfo, ref, args...);
+					}
+				)
 	{
 	}
 
-	// A setter bound to the field it writes.
-	template <typename T, typename... Args>
-	MapInfoData(const char* _name, void (*_fn)(OScanner&, bool, T&, Args...), T& _ref,
-	            std::type_identity_t<Args>... _args)
-	    : name(_name),
-	      fn([_fn, &_ref, _bound = std::tuple<Args...>(_args...)](
-	             OScanner& os, bool newStyleMapInfo) {
-		      std::apply([&](Args... a) { _fn(os, newStyleMapInfo, _ref, a...); },
-		                 _bound);
-	      })
+	[[nodiscard]] const char* getName() const { return m_name; }
+
+	// Runs the bound setter. Keys that only need recognising have nothing bound, so
+	// the emptiness check lives here rather than at every call site.
+	void operator()(OScanner& os, bool newStyleMapInfo) const
 	{
+		if (m_fn)
+			m_fn(os, newStyleMapInfo);
 	}
+
+  private:
+	const char* m_name;
+	std::function<void(OScanner&, bool)> m_fn;
 };
 
 // container holding all MapInfoData types
@@ -1441,14 +1441,10 @@ void ParseMapInfoLower(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 		MapInfoDataContainer::iterator it = mapInfoDataContainer.begin();
 		for (; it != mapInfoDataContainer.end(); ++it)
 		{
-			if (os.compareTokenNoCase(it->name))
+			if (os.compareTokenNoCase(it->getName()))
 			{
-				if (it->fn)
-				{
-					it->fn(os, newMapInfoStack > 0);
-				}
-
 				// [AM] Some tokens are no-ops, we want to break out either way.
+				(*it)(os, newMapInfoStack > 0);
 				break;
 			}
 		}
