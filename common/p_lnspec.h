@@ -24,6 +24,9 @@
 #pragma once
 
 #include "r_defs.h"
+#include "flags.h"
+
+#include <concepts>
 
 typedef enum {
     // Removed 11/3/06 by ML - No more polyobjects! (1-9)
@@ -665,14 +668,15 @@ enum class boomLineSpecial_t : int16_t
 	ST_TransferSkyFlipped = 272,
 };
 
-constexpr int16_t lineSpecialValue(doomLineSpecial_t special)
-{
-	return static_cast<int16_t>(special);
-}
+// A linedef type as a Doom or Boom format map stores it.
+template <typename T>
+concept DoomFormatLineSpecial =
+    std::same_as<T, doomLineSpecial_t> || std::same_as<T, boomLineSpecial_t>;
 
-constexpr int16_t lineSpecialValue(boomLineSpecial_t special)
+// Linedef specials are stored as plain int16_t on line_t and bossaction_t.
+constexpr auto lineSpecialValue(const DoomFormatLineSpecial auto special)
 {
-	return static_cast<int16_t>(special);
+	return OUtil::to_underlying(special);
 }
 
 typedef enum {

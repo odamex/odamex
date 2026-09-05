@@ -992,9 +992,11 @@ void MIType_SpecialAction(OScanner& /*os*/, bool /*newStyleMapInfo*/,
 }
 
 // Ensure the bossaction line specials are valid.
-template <auto SPECIAL, int16_t TAG = 0>
-    requires std::same_as<decltype(SPECIAL), doomLineSpecial_t> ||
-             std::same_as<decltype(SPECIAL), boomLineSpecial_t>
+//
+// The NOLINT suppresses a clang-tidy false positive: it reads any function
+// call appearing inside a dependent template argument as a functional cast,
+// so it reports the plain lineSpecialValue() call below as a C-style cast.
+template <DoomFormatLineSpecial auto SPECIAL, int16_t TAG = 0>
 constexpr auto MIType_LineSpecialAction =
     MIType_SpecialAction<lineSpecialValue(SPECIAL), TAG>; // NOLINT(modernize-avoid-c-style-cast)
 
