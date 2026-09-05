@@ -60,7 +60,6 @@ struct OTimespan
 };
 
 int		ParseHex(const char *str);
-bool	IsNum(const char* str);		// [RH] added
 bool	IsNum(std::string_view str);
 bool	IsRealNum(const char* str);
 bool	IsRealNum(std::string_view str);

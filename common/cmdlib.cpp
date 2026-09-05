@@ -111,29 +111,19 @@ int ParseHex(const char* hex)
 	return num;
 }
 
-// [RH] Returns true if the specified string is a valid decimal number
-
-bool IsNum(const char* str)
-{
-	bool result = true;
-
-	while (*str)
-	{
-		if (((*str < '0') || (*str > '9')) && (*str != '-'))
-		{
-			result = false;
-			break;
-		}
-		str++;
-	}
-	return result;
-}
+// [RH] Returns true if the specified string is a valid decimal integer
 
 bool IsNum(std::string_view str)
 {
-	return std::all_of(str.begin(), str.end(), [](char c)
+	if (str.empty())
+		return false;
+
+	if (str.front() == '-')
+		str.remove_prefix(1);
+
+	return std::ranges::all_of(str, [](char c)
 	{
-		if (((c < '0') || (c > '9')) && (c != '-'))
+		if (((c < '0') || (c > '9')))
 		{
 			return false;
 		}
