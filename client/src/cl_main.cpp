@@ -507,7 +507,6 @@ static void CL_GracefulClientInitiatedDisconnect()
 		I_Sleep(oneTicInNanosec);
 
 		++fakeTics;
-		messenger.HandleRetransmissions(fakeTics, serveraddr);
 		while (NET_GetPacket())
 		{
 			if (messenger.Receive(::net_message) == MessageResultEnum::ACCEPT)
@@ -2350,23 +2349,31 @@ void CL_SendCmd(void)
 		}
 	}
 
-	const MessageResultEnum sendResult = messenger.SendAll(gametic, serveraddr);
-
-	if (sendResult == MessageResultEnum::ABORT)
 	{
-		CL_QuitNetGame(NQ_SERVER_DROP);
-	}
-	else
-	{
-		const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
+		// In normal client operation, we use the fine-grained messenger sending APIs so that we can
+		// have the retransmissions to go out immediately instead of on the next tic.  This is key
+		// for ensuring that the send of a brand-new, most-current PlayerInput message has immediate
+		// packet redundancy so that no _single_ packet drop can cause player input to arrive late.
 
-		const int currentSendSize    = messenger.GetLastSendSize();
-		const int totalSentByteCount = currentSendSize + retransmittedByteCount;
+		OdaMessenger::Sender guard(messenger, gametic, serveraddr);
 
-		netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
-		netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
-		netgraph.addTrafficOut(totalSentByteCount);
-		outrate += totalSentByteCount;
+		guard.SendHighPriority();
+		if (guard.SendStandard() == MessageResultEnum::ABORT)
+		{
+			CL_QuitNetGame(NQ_SERVER_DROP);
+		}
+		else
+		{
+			const size_t retransmittedByteCount = guard.SendRetransmissions();
+
+			const int currentSendSize    = messenger.GetLastSendSize();
+			const int totalSentByteCount = currentSendSize + static_cast<int>(retransmittedByteCount);
+
+			netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
+			netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
+			netgraph.addTrafficOut(totalSentByteCount);
+			outrate += totalSentByteCount;
+		}
 	}
 }
 

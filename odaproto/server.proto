@@ -34,18 +34,16 @@ message PlayerState
 // svc_moveplayer
 message MovePlayer
 {
-	int32           tic      = 1;
-	int32           frame    = 2;
-	uint32          playerid = 3;
-	repeated int32  powers   = 4;
-	Actor           actor    = 5;
+	int32           frame    = 1;
+	uint32          playerid = 2;
+	repeated int32  powers   = 3;
+	Actor           actor    = 4;
 }
 
 // svc_updatelocalplayer
 message UpdateLocalPlayer
 {
-	int32 tic = 1;
-	Actor actor = 2;
+	Actor actor = 1;
 }
 
 // svc_levellocals
@@ -85,6 +83,7 @@ message SpawnMobj
 	uint32          target_netid    = 5;
 	repeated int32  args            = 6;
 	uint32          timebase_tic    = 7;
+	bool            is_spawn_tic    = 8;    // Indicates that the client must perform a spawn animation tic immediately.
 }
 
 // svc_disconnectclient
@@ -176,8 +175,6 @@ message SpawnPlayer
 	int32  pid = 1;
 	Actor  actor = 2;
 	uint32 cards = 3;
-	int32  player_tic = 4;
-	int32  server_tic = 5;
 }
 
 // svc_damageplayer
@@ -189,7 +186,6 @@ message DamagePlayer
 	int32   inflictorid         = 4;
 	int32   player_health       = 5;
 	int32   player_armorpoints  = 6;
-	int32   client_tic          = 7;    // The tic-of-validity for the client receiving the message.  Not strictly the player taking damage.
 }
 
 // svc_killmobj
@@ -219,44 +215,38 @@ message RaiseMobj
 // svc_playerammo
 message PlayerAmmo
 {
-	int32           player_tic  = 1;
-	repeated int32  ammo        = 2;    // ammo[ammo_type] = ammo_quantity
+	repeated int32 ammo = 1;    // ammo[ammo_type] = ammo_quantity
 }
 
 // svc_playermaxammo
 message PlayerMaxAmmo
 {
-	int32           player_tic  = 1;
-	repeated int32  maxammo     = 2;    // maxammo[ammo_type] = maximum allowed
+	repeated int32 maxammo = 1;    // maxammo[ammo_type] = maximum allowed
 }
 
 // svc_playerweaponowned
 message PlayerWeaponOwned
 {
-	int32         player_tic    = 1;
-	repeated bool weaponowned   = 2;     // weaponowned[weapon_type] = is_owned
+	repeated bool weaponowned = 1;     // weaponowned[weapon_type] = is_owned
 }
 
 // svc_playerweaponselection
 message PlayerWeaponSelection
 {
-	int32  player_tic    = 1;
-	uint32 readyweapon   = 2;
-	uint32 pendingweapon = 3;
+	uint32 readyweapon   = 1;
+	uint32 pendingweapon = 2;
 }
 
 // svc_playerpowers
 message PlayerPowers
 {
-	int32           player_tic = 1;
-	repeated int32  powers     = 2;    // powers[power_type] = monotonic counter
+	repeated int32 powers = 1;    // powers[power_type] = monotonic counter
 }
 
 // svc_playerpsprites
 message PlayerPsprites
 {
-	int32                 player_tic = 1;
-	repeated PspriteState psprites   = 2;   // psprite[psprite_type] = psprite
+	repeated PspriteState psprites = 1;   // psprite[psprite_type] = psprite
 }
 
 // svc_updatesector
@@ -317,14 +307,6 @@ message ActivateLine
 
 // ------------------- Moving sector messages ------------------------
 //
-// These have optional server_tic fields because the *final* state of
-// a moving sector is sent Reliably, meaning that it can be retransmitted
-// if necessary.  If that happens, we can't rely on the "last received
-// server gametic," because it would have moved onto a subsequent tic.
-// However, all updates up to that point are sent as "High best effort"
-// which is also where the server gametic is transported, so we can
-// naturally use that.
-
 //		sint32 floor_old_dir = 16; // Direction is 1 or -1.
 //		int32 ceil_change = 45;
 
@@ -333,9 +315,9 @@ message ActivateLine
 // Elevators move both floor and ceiling.
 message MovingSectorElevator
 {
-    int32 sector                = 1;
-    sfixed32 ceiling_height     = 2;
-    sfixed32 floor_height       = 3;
+	int32 sector                = 1;
+	sfixed32 ceiling_height     = 2;
+	sfixed32 floor_height       = 3;
 
 	int32 ceil_type             = 4;
 	int32 ceil_status           = 5;
@@ -343,8 +325,6 @@ message MovingSectorElevator
 	sfixed32 ceil_dest          = 7;
 	sfixed32 floor_dest         = 8;
 	int32 ceil_speed            = 9; // Speed might be fixed_t, but it's also centered on 0.
-
-    optional int32 server_tic   = 10;
 }
 
 // svc_movingsectorpillar
@@ -352,9 +332,9 @@ message MovingSectorElevator
 // Pillars move both floor and ceiling.
 message MovingSectorPillar
 {
-    int32 sector                = 1;
-    sfixed32 ceiling_height     = 2;
-    sfixed32 floor_height       = 3;
+	int32 sector                = 1;
+	sfixed32 ceiling_height     = 2;
+	sfixed32 floor_height       = 3;
 
 	int32 ceil_type             = 4;
 	int32 ceil_status           = 5;
@@ -363,15 +343,13 @@ message MovingSectorPillar
 	sfixed32 floor_dest         = 8;
 	sfixed32 ceil_dest          = 9;
 	bool ceil_crush             = 10;
-
-    optional int32 server_tic   = 11;
 }
 
 // svc_movingsectorceiling
 message MovingSectorCeiling
 {
-    int32 sector                = 1;
-    sfixed32 ceiling_height     = 2;
+	int32 sector                = 1;
+	sfixed32 ceiling_height     = 2;
 
 	int32 ceil_type             = 3;
 	sfixed32 ceil_low           = 4;
@@ -386,16 +364,14 @@ message MovingSectorCeiling
 	int32 ceil_new_special      = 13;
 	int32 ceil_tag              = 14;
 	sint32 ceil_old_dir         = 15; // Direction is 1 or -1.
-
-    optional int32 server_tic   = 16;
 }
 
 
 // svc_movingsectordoor
 message MovingSectorDoor
 {
-    int32 sector                = 1;
-    sfixed32 ceiling_height     = 2;
+	int32 sector                = 1;
+	sfixed32 ceiling_height     = 2;
 
 	int32 ceil_type             = 3;
 	sfixed32 ceil_height        = 4;
@@ -404,15 +380,13 @@ message MovingSectorDoor
 	int32 ceil_counter          = 7;
 	int32 ceil_status           = 8;
 	sint32 ceil_line            = 9; // Default is -1
-
-    optional int32 server_tic   = 10;
 }
 
 // svc_movingsectorfloor
 message MovingSectorFloor
 {
-    int32 sector                = 1;
-    sfixed32 floor_height       = 2;
+	int32 sector                = 1;
+	sfixed32 floor_height       = 2;
 
 	int32 floor_type            = 3;
 	int32 floor_status          = 4;
@@ -431,15 +405,13 @@ message MovingSectorFloor
 	int32 floor_change          = 17;
 	sint32 floor_line           = 18; // Default is -1
 	int32 floor_new_special     = 19;
-
-    optional int32 server_tic   = 20;
 }
 
 // svc_movingsectorplat
 message MovingSectorPlat
 {
-    int32 sector                = 1;
-    sfixed32 floor_height       = 2;
+	int32 sector                = 1;
+	sfixed32 floor_height       = 2;
 
 	int32 floor_type            = 3;
 	int32 floor_speed           = 4; // Speed might be fixed_t, but it's also centered on 0.
@@ -453,8 +425,6 @@ message MovingSectorPlat
 	int32 floor_tag             = 12;
 	sfixed32 floor_lip          = 13;
 	sfixed32 floor_offset       = 14;
-
-    optional int32 server_tic   = 15;
 }
 
 // svc_playsound
@@ -485,7 +455,6 @@ message ExitLevel
 message TouchSpecial
 {
 	uint32 netid = 1;
-	int32  player_tic = 2;
 }
 
 // svc_missedpacket
