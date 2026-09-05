@@ -541,7 +541,7 @@ static void GiveWins(player_t& player, int wins)
 	{
 		if (!it->ingame())
 			continue;
-		MSG_WriteSVC(it->client.messenger->ReliableBuf(), SVC_PlayerMembers(player, SVC_PM_SCORE));
+		it->client.messenger->Reliable().Write( SVC_PlayerMembers(player, SVC_PM_SCORE));
 	}
 }
 
@@ -561,7 +561,7 @@ static void GiveTeamWins(team_t team, int wins)
 	{
 		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_TeamMembers(team));
+		player.client.messenger->BestEffort().Write( SVC_TeamMembers(team));
 	}
 }
 
