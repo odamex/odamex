@@ -172,22 +172,18 @@ OKeyBindings Bindings, DoubleBindings, AutomapBindings, NetDemoBindings;
 
 struct KeyState
 {
-	KeyState() :
-		double_click_time(0), double_clicked(false), key_down(false)
-	{}
-
-	int double_click_time;
-	bool double_clicked;
-	bool key_down;
+	int double_click_time = 0;
+	bool double_clicked = false;
+	bool key_down = false;
 };
 
-typedef OHashTable<int, KeyState> KeyStateTable;
+using KeyStateTable = OHashTable<int, KeyState>;
 static KeyStateTable KeyStates;
 
 
-void OKeyBindings::SetBindingType(std::string cmd)
+void OKeyBindings::SetBindingType(IString cmd)
 {
-	command = cmd;
+	command = std::move(cmd);
 }
 
 void OKeyBindings::UnbindKey(const char* key)
@@ -219,7 +215,7 @@ void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 		else
 		{
 			if (argc == 2)
-				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", key_name, C_QuoteString(Binds[key]));
+				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", key_name, C_QuoteString(IStringToStdStringView(Binds[key])));
 			else
 				Binds[key] = argv[2];
 		}
@@ -230,7 +226,7 @@ void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 		for (const auto& [key, binding] : Binds)
 		{
 			if (!binding.empty())
-				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", I_GetKeyName(key), C_QuoteString(binding));
+				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", I_GetKeyName(key), C_QuoteString(IStringToStdStringView(binding)));
 		}
 	}
 }
@@ -266,7 +262,7 @@ bool C_DoNetDemoKey(const event_t& ev)
 	if (not netdemo.isInPlayback())
 		return false;
 
-	const std::string *binding = nullptr;
+	const IString *binding = nullptr;
 
 	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return false;
@@ -282,7 +278,7 @@ bool C_DoNetDemoKey(const event_t& ev)
 		return false;
 
 	if (ev.type == ev_keydown)
-		AddCommandString(*binding, ev.data1);
+		AddCommandString(IStringToStdStringView(*binding), ev.data1);
 
 	return true;
 }
@@ -329,7 +325,7 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return false;
 
-	const std::string* binding = NULL;
+	const IString* binding = NULL;
 	int key = ev.data1;
 
 	KeyState& key_state = KeyStates[key];
@@ -366,7 +362,7 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 	{
 		if (ev.type == ev_keydown)
 		{
-			AddCommandString(*binding, key);
+			AddCommandString(IStringToStdStringView(*binding), key);
 			key_state.key_down = true;
 		}
 		else if (ev.type == ev_keyup)
@@ -379,9 +375,9 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 
 			if (achar == 0 || (*binding)[achar - 1] <= ' ')
 			{
-				std::string action_release(*binding);
+				IString action_release(*binding);
 				action_release[achar] = '-';
-				AddCommandString(action_release, key);
+				AddCommandString(IStringToStdStringView(action_release), key);
 			}
 		}
 
@@ -404,15 +400,15 @@ void C_ReleaseKeys()
 		if (key_state.key_down)
 		{
 			key_state.key_down = false;
-			std::string *binding = &Bindings.Binds[key];
+			IString *binding = &Bindings.Binds[key];
 			if (!binding->empty())
 			{
 				size_t achar = binding->find_first_of('+');
-				if (achar != std::string::npos && (achar == 0 || (*binding)[achar - 1] <= ' '))
+				if (achar != IString::npos && (achar == 0 || (*binding)[achar - 1] <= ' '))
 				{
-					std::string action_release(*binding);
+					IString action_release(*binding);
 					action_release[achar] = '-';
-					AddCommandString(action_release, key);
+					AddCommandString(IStringToStdStringView(action_release), key);
 				}
 			}
 		}
@@ -426,7 +422,7 @@ void OKeyBindings::ArchiveBindings(FILE* f)
 	for (const auto& [key, binding] : Binds)
 	{
 		if (!binding.empty())
-			fmt::print(f, "{} {} {}\n", command, C_QuoteString(I_GetKeyName(key)), C_QuoteString(binding));
+			fmt::print(f, "{} {} {}\n", command, C_QuoteString(I_GetKeyName(key)), C_QuoteString(IStringToStdStringView(binding)));
 	}
 }
 
@@ -438,7 +434,7 @@ int OKeyBindings::GetKeysForCommand(const char* cmd, int* first, int* second)
 
 	for (const auto& [key, binding] : Binds)
 	{
-		if (!binding.empty() && stricmp(cmd, binding.c_str()) == 0)
+		if (!binding.empty() && binding == cmd)
 		{
 			c++;
 			if (c == 1)
@@ -487,7 +483,7 @@ std::vector<int> OKeyBindings::GetKeysForCommandByLastDevice(const char* cmd)
 
 	for (const auto& [key, binding] : Binds)
 	{
-		if (binding.empty() || stricmp(cmd, binding.c_str()) != 0)
+		if (binding.empty() || binding.c_str() != cmd)
 			continue;
 
 		if (C_KeyMatchesDevice(key, device))
@@ -528,7 +524,7 @@ void OKeyBindings::UnbindACommand(const char* str)
 {
 	for (BindingTable::iterator it = Binds.begin(); it != Binds.end(); ++it)
 	{
-		const std::string& binding = it->second;
+		const IString& binding = it->second;
 		if (!binding.empty() && stricmp(str, binding.c_str()) == 0)
 		{
 			Binds.erase(it);
@@ -564,7 +560,7 @@ void OKeyBindings::ChangeBinding (const char *str, int newone)
 }
 
 
-const std::string &OKeyBindings::GetBind (int key)
+const IString &OKeyBindings::GetBind (int key)
 {
 	return Binds[key];
 }

@@ -29,6 +29,7 @@
 
 #include "hashtable.h"
 #include "d_event.h"
+#include "istring.h"
 
 struct OBinding
 {
@@ -39,13 +40,13 @@ struct OBinding
 class OKeyBindings
 {
 private:
-	typedef OHashTable<int, std::string> BindingTable;
+	using BindingTable = OHashTable<int, IString>;
 
 public :
 	BindingTable Binds;
-	std::string command;
+	IString command;
 
-	void SetBindingType(std::string cmd);
+	void SetBindingType(IString cmd);
 	void SetBinds(const OBinding* binds);
 	void BindAKey(size_t argc, char** argv, const char* msg);
 	void DoBind(const char* key, const char* bind);
@@ -56,8 +57,8 @@ public :
 
 	void ChangeBinding(const char* str, int newone);	// Stuff used by the customize controls menu
 
-	const std::string &GetBind(int key);			// Returns string bound to given key (NULL if none)
-	std::string GetNameKeys(int first, int second);
+	const IString &GetBind(int key);			// Returns string bound to given key (NULL if none)
+	static std::string GetNameKeys(int first, int second);
 	int  GetKeysForCommand(const char* cmd, int* first, int* second);
 	std::vector<int> GetKeysForCommandByLastDevice(const char* cmd);
 	std::string GetKeynameFromCommand(const char* cmd, bool bTwoEntries = false);

@@ -740,24 +740,24 @@ bool G_Responder (const event_t& ev)
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = Bindings.GetBind(ev.data1).c_str();
+		const IStringView cmd = Bindings.GetBind(ev.data1);
 
 		if (ev.type == ev_keydown)
 		{
 
-			if (!cmd || (
-				strnicmp (cmd, "menu_", 5) &&
-				stricmp (cmd, "toggleconsole") &&
-				stricmp (cmd, "sizeup") &&
-				stricmp (cmd, "sizedown") &&
-				stricmp (cmd, "togglemap") &&
-				stricmp (cmd, "spynext") &&
-				stricmp (cmd, "chase") &&
-				stricmp (cmd, "+showscores") &&
-				stricmp (cmd, "bumpgamma") &&
-				stricmp (cmd, "screenshot") &&
-                stricmp (cmd, "stepmode") &&
-                stricmp (cmd, "step")))
+			if (cmd.empty() || (
+				cmd.starts_with("menu_") &&
+				cmd == "toggleconsole" &&
+				cmd == "sizeup" &&
+				cmd == "sizedown" &&
+				cmd == "togglemap" &&
+				cmd == "spynext" &&
+				cmd == "chase" &&
+				cmd == "+showscores" &&
+				cmd == "bumpgamma" &&
+				cmd == "screenshot" &&
+                cmd == "stepmode" &&
+                cmd == "step"))
 			{
 				M_StartControlPanel ();
 				return true;
@@ -767,7 +767,7 @@ bool G_Responder (const event_t& ev)
 				return C_DoKey(ev, &Bindings, &DoubleBindings);
 			}
 		}
-		if (cmd && cmd[0] == '+')
+		if (!cmd.empty() && cmd[0] == '+')
 			return C_DoKey(ev, &Bindings, &DoubleBindings);
 
 		return false;
