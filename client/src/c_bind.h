@@ -26,6 +26,7 @@
 
 
 #include <vector>
+#include <span>
 
 #include "hashtable.h"
 #include "d_event.h"
@@ -47,7 +48,7 @@ public :
 	IString command;
 
 	void SetBindingType(IString cmd);
-	void SetBinds(const OBinding* binds);
+	void SetBinds(std::span<const OBinding> binds);
 	void BindAKey(size_t argc, char** argv, const char* msg);
 	void DoBind(const char* key, const char* bind);
 

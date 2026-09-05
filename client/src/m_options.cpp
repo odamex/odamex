@@ -412,10 +412,7 @@ namespace
  *=======================================*/
 
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
-// Sized by the initializer: entries here are conditionally compiled,
-// so a fixed std::array size would be wrong on some builds.
-// NOLINTNEXTLINE(modernize-avoid-c-arrays)
-menuitem_t ControlsItems[] = {
+std::array ControlsItems = std::to_array<menuitem_t>({
 #ifdef GCONSOLE
 	{ .type = whitetext,.label = "A to change, START to clear", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 #else
@@ -514,7 +511,7 @@ menuitem_t ControlsItems[] = {
 	{ .type = control,  .label = "End current game",     .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_endgame"}},
 	{ .type = control,  .label = "Quit Odamex",	        .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.command = "menu_quit"}}
 
-};
+});
 // NOLINTEND(readability-magic-numbers)
 } // namespace
 
@@ -523,7 +520,7 @@ menu_t ControlsMenu = {
 	.title       = "M_CONTRO",
 	.lastOn      = 3,
 	.indent      = 0,
-	.items       = {ControlsItems, ARRAY_LENGTH(ControlsItems)},
+	.items       = ControlsItems,
 	.scrolltop   = 2,
 	.scrollpos   = 0,
 	.refreshfunc = nullptr
@@ -636,10 +633,7 @@ namespace
   *=======================================*/
 
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
-// Sized by the initializer: entries here are conditionally compiled,
-// so a fixed std::array size would be wrong on some builds.
-// NOLINTNEXTLINE(modernize-avoid-c-arrays)
-value_t MusSys[] = {
+std::array MusSys = std::to_array<value_t>({
 	{ .value = MS_AUTO,		.name = "Auto"},
 	#ifndef _WIN32
 	{ .value = MS_SDLMIXER,	.name = "SDL Mixer"},
@@ -651,7 +645,7 @@ value_t MusSys[] = {
 	#ifdef PORTMIDI
 	{ .value = MS_PORTMIDI,	.name = "PortMidi"},
 	#endif	// PORTMIDI
-};
+});
 
 std::array<value_t, 4> MidiReset = {{
 	{ .value = 0.0,			.name = "None"},
@@ -692,11 +686,11 @@ void LibAdlMidiOptions();
 
 EXTERN_CVAR(cl_chatsounds)
 
+namespace
+{
+
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
-// Sized by the initializer: entries here are conditionally compiled,
-// so a fixed std::array size would be wrong on some builds.
-// NOLINTNEXTLINE(modernize-avoid-c-arrays)
-static menuitem_t AdvMidiItems[] = {
+std::array AdvMidiItems = std::to_array<menuitem_t>({
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "Advanced MIDI Options", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -715,13 +709,10 @@ static menuitem_t AdvMidiItems[] = {
 	{ .type = yellowtext, .label = "! ! ! NOTICE ! ! !", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = orangetext, .label = "Modifying these settings may cause", .a = {.cvar = nullptr},.b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = orangetext, .label = "unwanted behavior during MIDI playback!", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
-};
-
-namespace
-{
+});
 
 
- std::array<menuitem_t, 7> LibAdlMidiItems = {{
+std::array<menuitem_t, 7> LibAdlMidiItems = {{
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = "OPL FM Synth Options", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -740,7 +731,7 @@ std::array<menuitem_t, 21> SoundItems = {{
 	{ .type = discrete,   .label = "Stereo Switch", .a = {.cvar = &snd_crossover},      .b = {.leftval = OnOff.size()},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = OnOff.data()}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
 	{ .type = yellowtext,   .label = "Music Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
-	{ .type = discrete,   .label = "Midi Synth", .a = {.cvar = &snd_musicsystem},    .b = {.leftval = std::size(MusSys)}, .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = MusSys}},
+	{ .type = discrete,   .label = "Midi Synth", .a = {.cvar = &snd_musicsystem},    .b = {.leftval = std::size(MusSys)}, .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = MusSys.data()}},
 	{ .type = discrete,   .label = "Disable Music", .a = {.cvar = &snd_nomusic},        .b = {.leftval = YesNo.size()},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = YesNo.data()}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.values = nullptr}},
 	{ .type = more,   .label = "OPL FM Synth Options", .a = {.cvar = nullptr},                .b = {.leftval = 0.0},        .c = {.rightval = 0.0}, .d = {.step = 0.0},      .e = {.mfunc = LibAdlMidiOptions}},
@@ -762,7 +753,7 @@ menu_t AdvMidiMenu = {
 	.title       = "M_SOUND",
 	.lastOn      = 3,
 	.indent      = MENU_HALFPASTINDENT,
-	.items       = {AdvMidiItems, ARRAY_LENGTH(AdvMidiItems)},
+	.items       = AdvMidiItems,
 	.scrolltop   = 0,
 	.scrollpos   = 0,
 	.refreshfunc = nullptr
@@ -1277,10 +1268,7 @@ std::array<value_t, 5> ScaleFactors = {{
 	{ .value = 4.0, .name = "4X"}
 }};
 
-// Sized by the initializer: entries here are conditionally compiled,
-// so a fixed std::array size would be wrong on some builds.
-// NOLINTNEXTLINE(modernize-avoid-c-arrays)
-menuitem_t MessagesItems[] = {
+std::array MessagesItems = std::to_array<menuitem_t>({
 #if 0
 	{ .type = discrete, .label = "Language", 			 .a = {.cvar = &language},		   	.b = {.leftval = Languages.size()}, .c = {.rightval = 0.0},   .d = {.step = 0.0}, .e = {.values = Languages}},
 #endif
@@ -1304,7 +1292,7 @@ menuitem_t MessagesItems[] = {
 	{ .type = cdiscrete, .label = "Chat Messages",		.a = {.cvar = &msg3color},		   	.b = {.leftval = TextColors.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
 	{ .type = cdiscrete, .label = "Team Messages",		.a = {.cvar = &msg4color},		   	.b = {.leftval = TextColors.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}},
 	{ .type = cdiscrete, .label = "Centered Messages",	.a = {.cvar = &msgmidcolor},			.b = {.leftval = TextColors.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = TextColors.data()}}
-};
+});
 // NOLINTEND(readability-magic-numbers)
 } // namespace
 
@@ -1313,7 +1301,7 @@ menu_t MessagesMenu = {
 	.title       = "M_MESS",
 	.lastOn      = 0,
 	.indent      = 0,
-	.items       = {MessagesItems, ARRAY_LENGTH(MessagesItems)},
+	.items       = MessagesItems,
 	.scrolltop   = 0,
 	.scrollpos   = 0,
 	.refreshfunc = nullptr
@@ -1500,10 +1488,7 @@ std::array<value_t, 6> WidescreenMode = {{
 	{ .value = 5.0,			.name = "32:9"}
 }};
 
-// Sized by the initializer: entries here are conditionally compiled,
-// so a fixed std::array size would be wrong on some builds.
-// NOLINTNEXTLINE(modernize-avoid-c-arrays)
-menuitem_t ModesItems[] = {
+std::array ModesItems = std::to_array<menuitem_t>({
 #ifdef GCONSOLE
 	{ .type = slider, .label = "Overscan",				.a = {.cvar = &vid_overscan},		.b = {.leftval = 0.84375}, .c = {.rightval = 1.0}, .d = {.step = 0.03125}, .e = {.values = nullptr}},
 #else
@@ -1526,7 +1511,7 @@ menuitem_t ModesItems[] = {
 	{ .type = whitetext, .label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = yellowtext, .label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
-};
+});
 // NOLINTEND(readability-magic-numbers)
 
 }
@@ -1540,7 +1525,7 @@ menu_t ModesMenu = {
 	.title       = "M_VIDMOD",
 	.lastOn      = 0,
 	.indent      = 130,
-	.items       = {ModesItems, ARRAY_LENGTH(ModesItems)},
+	.items       = ModesItems,
 	.scrolltop   = 0,
 	.scrollpos   = 0,
 	.refreshfunc = nullptr
