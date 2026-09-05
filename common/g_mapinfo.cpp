@@ -591,9 +591,9 @@ void MIType_Author(OScanner& os, bool newStyleMapInfo, level_pwad_info_t& info)
 	}
 
 	if (mapinfofrompwad)
-		info.metadataflags |= METADATA_AUTHORFROMPWAD;
+		info.metadataflags |= metadataflags_t::AUTHORFROMPWAD;
 	else
-		info.metadataflags &= ~METADATA_AUTHORFROMPWAD;
+		info.metadataflags &= ~metadataflags_t::AUTHORFROMPWAD;
 }
 
 // Sets the intermission title patch, which may carry a hideauthorname token

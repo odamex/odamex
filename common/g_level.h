@@ -117,14 +117,16 @@ using LevelFlags2 = OFlags<levelflags2_t>;
 // Map metadata to determine downstream behavior
 enum class metadataflags_t : uint32_t
 {
-	METADATA_AUTHORFROMPWAD     = BIT(0),
-	METADATA_AUTHORFROMUMAPINFO = BIT(1),
+	AUTHORFROMPWAD     = BIT(0),
+	AUTHORFROMUMAPINFO = BIT(1),
 	// if modifying this enum, make sure to update the
 	// enable_bitflag_operators below to return the highest bit variant
 };
 
-using enum metadataflags_t;
-constexpr metadataflags_t enable_bitflag_operators(metadataflags_t) { return METADATA_AUTHORFROMUMAPINFO; };
+constexpr metadataflags_t enable_bitflag_operators(metadataflags_t)
+{
+	return metadataflags_t::AUTHORFROMUMAPINFO;
+};
 using MetaDataFlags = OFlags<metadataflags_t>;
 
 struct acsdefered_t;
