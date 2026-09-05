@@ -1247,7 +1247,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "specialaction_exitlevel", MIType_LineSpecialAction<S1_Exit_Normal>, ref.bossactions },
 			{ "specialaction_opendoor", MIType_LineSpecialAction<W1_Door_OpenFast, BOSSACTION_TAG>, ref.bossactions },
 			{ "specialaction_lowerfloor", MIType_LineSpecialAction<S1_Floor_LowerToLowest, BOSSACTION_TAG>, ref.bossactions },
-			{ "specialaction_killmonsters", MIType_SpecialAction<BOSSACTION_MASSACRE>,ref.bossactions },
+			{ "specialaction_killmonsters", MIType_SpecialAction<BOSSACTION_MASSACRE>, ref.bossactions },
 			{ "lightning" },
 			{ "fadetable", MIType_LumpName, ref.fadetable },
 			{ "evenlighting", MIType_SetFlag, ref.flags, LEVEL_EVENLIGHTING },
