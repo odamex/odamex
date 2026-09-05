@@ -666,6 +666,22 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, level_pwad_info_t& info)
 	}
 }
 
+// The three flag setters below are function objects rather than plain function
+// templates.
+//
+// They have to stay generic, because the flags they write are different types
+// (levelflags_t, levelflags2_t, clusterflags_t, skillflags_t).
+//
+// Function templates would require the caller to specify the type of the flags,
+// which is inconvenient and unnecessary, as we can infer the types of its input
+// and output.
+//
+// If this were a templated function instead, something like this would be required:
+//
+// { "islobby", MIType_SetFlag<levelFlags_t>, ref.flags, LEVEL_LOBBYSPECIAL }
+// instead of:
+// { "islobby", MIType_SetFlag, ref.flags, LEVEL_LOBBYSPECIAL }
+
 // Sets a flag
 struct MIType_SetFlag_t
 {
