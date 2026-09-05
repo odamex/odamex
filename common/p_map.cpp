@@ -53,6 +53,8 @@
 #include "p_mapformat.h"
 #include <math.h>
 #include <algorithm>
+#include <bit>
+#include <concepts>
 #include <set>
 
 // TODO: make as many of these non-global as possible
@@ -121,6 +123,138 @@ divline_t trace;
 namespace
 {
 
+// Vanilla's intercepts[] is a fixed array of 128 entries and nothing checks the
+// bound, so a trace that crosses more than that writes straight past the end of
+// the array into the globals the linker happened to place behind it.
+//
+// Demos recorded on vanilla depend on the result - the usual symptom is bmapwidth
+// going to zero mid-tic, after which every blockmap iterator rejects every
+// block for the rest of the traversal.
+//
+// Odamex holds the intercepts in a vector, which cannot overflow, so the writes
+// are replayed here instead.
+//
+// Three of vanilla's vars have no counterpart here and are left unmodelled:
+// - bulletslope is a local in Odamex rather than a global
+// - playerstarts needs overwrite emulation if its own
+// - the pointer written into the third word of each entry is
+//   a zone address that cannot be reconstructed, so we simply
+//   convert it to a word and move on.
+//
+// For true vanilla emulation, these need to be accounted for.
+//
+// Their lengths still have to be carried so that everything after them
+// lands on the right offset.
+constexpr int MAXINTERCEPTS_VANILLA = 128;
+
+// Vanilla's intercept_t is three 32-bit words -- a fixed_t, a boolean and a
+// pointer.
+//
+// Thus, 12 bytes.
+constexpr int VANILLA_INTERCEPT_SIZE = 12;
+
+enum class overrunTarget_t
+{
+	unmodelled,
+	lowfloor,
+	openbottom,
+	opentop,
+	openrange,
+	bmapwidth,
+	bmaporgx,
+	bmaporgy,
+	bmapheight,
+};
+
+struct overrunSlot_t
+{
+	int len;
+	overrunTarget_t target;
+};
+
+constexpr overrunSlot_t interceptsOverrun[] = {
+	{4, overrunTarget_t::unmodelled},                     // (padding)
+	{4, overrunTarget_t::unmodelled},                     // earlyout
+	{4, overrunTarget_t::unmodelled},                     // intercept_p
+	{4, overrunTarget_t::lowfloor},       {4, overrunTarget_t::openbottom},
+	{4, overrunTarget_t::opentop},        {4, overrunTarget_t::openrange},
+	{4, overrunTarget_t::unmodelled},                     // (padding)
+	{120, overrunTarget_t::unmodelled},                   // activeplats
+	{8, overrunTarget_t::unmodelled},                     // (padding)
+	{4, overrunTarget_t::unmodelled},                     // bulletslope
+	{4, overrunTarget_t::unmodelled},                     // swingx
+	{4, overrunTarget_t::unmodelled},                     // swingy
+	{4, overrunTarget_t::unmodelled},                     // (padding)
+	{40, overrunTarget_t::unmodelled},                    // playerstarts
+	{4, overrunTarget_t::unmodelled},                     // blocklinks
+	{4, overrunTarget_t::bmapwidth},
+	{4, overrunTarget_t::unmodelled},                     // blockmap
+	{4, overrunTarget_t::bmaporgx},       {4, overrunTarget_t::bmaporgy},
+	{4, overrunTarget_t::unmodelled},                     // blockmaplump
+	{4, overrunTarget_t::bmapheight},
+};
+
+// What vanilla spills into is just words (4 bytes), so each field arrives here already
+// flattened to one.
+void P_InterceptsMemoryOverrun(int location, int32_t word)
+{
+	int offset = 0;
+
+	for (const overrunSlot_t& slot : interceptsOverrun)
+	{
+		if (offset + slot.len > location)
+		{
+			// Every slot we model is one word wide, so a hit is always the
+			// whole thing.
+			switch (slot.target)
+			{
+			case overrunTarget_t::lowfloor: lowfloor = word; break;
+			case overrunTarget_t::openbottom: openbottom = word; break;
+			case overrunTarget_t::opentop: opentop = word; break;
+			case overrunTarget_t::openrange: openrange = word; break;
+			case overrunTarget_t::bmapwidth: blockmap.overrunWidth(word); break;
+			case overrunTarget_t::bmaporgx: blockmap.overrunOriginX(word); break;
+			case overrunTarget_t::bmaporgy: blockmap.overrunOriginY(word); break;
+			case overrunTarget_t::bmapheight: blockmap.overrunHeight(word); break;
+			case overrunTarget_t::unmodelled: break;
+			}
+
+			return;
+		}
+
+		offset += slot.len;
+	}
+}
+
+// What a trace can hit, and so what the third word of a vanilla intercept_t
+// could hold.
+template <typename T>
+concept InterceptTarget = std::same_as<T, line_t> || std::same_as<T, AActor>;
+
+// P_InterceptsOverrun
+// 
+// count is the index the new intercept is about to take, matching vanilla's
+// intercept_p - intercepts before it is stepped on.
+// frac is the fractional intercept point
+// T* is a pointer to an actor or line, depending on what kind of intercept
+// this is.
+template <InterceptTarget T>
+void P_InterceptsOverrun(size_t count, fixed_t frac, const T* hit)
+{
+	if (!demoplayback || count <= MAXINTERCEPTS_VANILLA)
+		return;
+
+	const int location =
+	    static_cast<int>(count - MAXINTERCEPTS_VANILLA - 1) * VANILLA_INTERCEPT_SIZE;
+
+	const uint32_t address = static_cast<uint32_t>(std::bit_cast<uintptr_t>(hit));
+	constexpr bool isaline = std::same_as<T, line_t>;
+
+	P_InterceptsMemoryOverrun(location, static_cast<int32_t>(frac));
+	P_InterceptsMemoryOverrun(location + 4, static_cast<int32_t>(isaline));
+	P_InterceptsMemoryOverrun(location + 8, static_cast<int32_t>(address));
+}
+
 //
 // PIT_AddLineIntercepts.
 // Looks for lines in the given block
@@ -175,6 +309,7 @@ bool PIT_AddLineIntercepts(line_t& ld, bool earlyout)
 		.isaline = true,
 		.d       = { .line = &ld },
 	};
+	P_InterceptsOverrun(intercepts.size(), frac, &ld);
 	intercepts.push_back(intercept);
 
 	return true;		// continue
@@ -228,6 +363,7 @@ bool PIT_AddThingIntercepts (AActor& thing)
 		.isaline = false,
 		.d       = { .thing = &thing },
 	};
+	P_InterceptsOverrun(intercepts.size(), frac, &thing);
 	intercepts.push_back(intercept);
 
 	return true;				// keep going

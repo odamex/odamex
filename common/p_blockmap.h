@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <algorithm>
 
@@ -98,6 +99,34 @@ public:
 	int size() const noexcept
 	{
 		return m_width * m_height;
+	}
+
+	// Vanilla stores these four as globals sitting right behind intercepts[],
+	// so its intercepts overrun writes over them.
+	// 
+	// P_InterceptsOverrun replays those writes, and nothing else may move
+	// a blockmap once it is loaded.
+	void overrunWidth(int value) noexcept { m_width = value; clampToStorage(); }
+	void overrunHeight(int value) noexcept { m_height = value; clampToStorage(); }
+	void overrunOriginX(fixed_t value) noexcept { m_originx = value; }
+	void overrunOriginY(fixed_t value) noexcept { m_originy = value; }
+
+private:
+
+	// Vanilla goes on to index its blockmap with whatever landed in these,
+	// reading whatever zone memory follows.
+	// To emulate, we keep the dimensions within the lists actually loaded.
+	// 
+	// The only value the overrun can write to the width is a 0 or a 1, so this
+	// only ever binds on a wild height.
+	void clampToStorage() noexcept
+	{
+		m_width = std::max(m_width, 0);
+		m_height = std::max(m_height, 0);
+
+		const int64_t cap = static_cast<int64_t>(m_blocklists.size());
+		if (m_width > 0 && static_cast<int64_t>(m_width) * m_height > cap)
+			m_height = static_cast<int>(cap / m_width);
 	}
 };
 
