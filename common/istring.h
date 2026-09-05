@@ -154,7 +154,7 @@ using IStringView = std::basic_string_view<char, case_insensitive_char_traits>;
 #if __cpp_lib_constexpr_string >= 201907L
 	#define ISTRING_CONSTEXPR constexpr
 #else
-	#define ISTRING_CONSTEXPR
+	#define ISTRING_CONSTEXPR inline
 #endif
 
 [[nodiscard]]
