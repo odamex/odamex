@@ -1504,6 +1504,7 @@ bool P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed
 			P_AddMovingFloor(s2);
 
 			newspecial_s newspec;
+			newspec.flags = s2->flags;
 			P_ResetTransferSpecial(&newspec);
 
 			floor->m_Type = DFloor::donutRaise;
