@@ -217,7 +217,7 @@ int __cdecl main(int argc, char *argv[])
 
 		D_DoomMain();
 	}
-	catch (CDoomError& error)
+	catch (const CDoomError& error)
 	{
 		// It's possible that the fatal error was encountered before
 		// loading the config file or setting cvars set from the command line
@@ -241,7 +241,7 @@ int __cdecl main(int argc, char *argv[])
 			if (DefaultsLoaded && log_color && I_ConsoleUseColor())
 				style = ERROR_STYLE;
 		}
-		catch (CDoomError&)
+		catch (const CDoomError&)
 		{}
 
 		fmt::print(stderr, style, "=== ERROR: {} ===\n\n", error.GetMsg());
@@ -364,7 +364,7 @@ int main(int argc, char **argv)
 
 		D_DoomMain();
 	}
-	catch (CDoomError& error)
+	catch (const CDoomError& error)
 	{
 		// It's possible that the fatal error was encountered before
 		// loading the config file or setting cvars set from the command line

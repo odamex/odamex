@@ -638,7 +638,7 @@ static void P_InitAnimDefs ()
 			}
 		}
 	}
-    catch (CRecoverableError &)
+    catch (const CRecoverableError&)
     {
 
     }

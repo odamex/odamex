@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 		// proper termination needs to occur -- Hyper_Eye
 		call_terms ();
 	}
-	catch (CDoomError &error)
+	catch (const CDoomError& error)
 	{
 		if (LOG.is_open())
 		{
