@@ -242,7 +242,7 @@ public:
 
 	byte *SZ_GetSpace(size_t length)
 	{
-		if (cursize + length >= allocsize)
+		if (cursize + length > allocsize)
 		{
 			clear();
 			overflowed = true;
