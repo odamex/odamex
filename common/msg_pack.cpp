@@ -27,3 +27,12 @@ std::optional<msg_t> MSG_Pack(std::string& serializationBuffer, const google::pr
 
 	return header;
 }
+
+void MSG_Pack(buf_t& serializationBuffer, const google::protobuf::Message& msg)
+{
+	std::string buffer;
+	if (const auto messageId = MSG_Pack(buffer, msg))
+	{
+		serializationBuffer.WriteMessage(*messageId, buffer);
+	}
+}

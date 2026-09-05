@@ -65,6 +65,7 @@
 #include "p_acs.h"
 #include "i_input.h"
 #include "i_time.h"
+#include "msg_pack.h"
 
 #include "g_gametype.h"
 #include "cl_parse.h"
@@ -1641,7 +1642,10 @@ void CL_SendUserInfo(buf_t& netBuf)
 {
 	D_SetupUserInfo();
 
-	MSG_WriteSVCBuffer(&netBuf, CLC_UserInfo(consoleplayer().userinfo));
+	if (not simulated_connection)
+	{
+		MSG_Pack(netBuf, CLC_UserInfo(consoleplayer().userinfo));
+	}
 
 	// Refresh Player Translations AFTER sending the new status to the server.
 	CL_RebuildAllPlayerTranslations();

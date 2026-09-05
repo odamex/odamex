@@ -565,50 +565,6 @@ void MSG_WriteChunk (buf_t *b, const void *p, size_t l)
 	b->WriteChunk(static_cast<const char*>(p), l);
 }
 
-namespace
-{
-	void WriteMiniHeader(buf_t& b, msg_t messageId, const void* data, size_t length)
-	{
-		b.WriteUnVarint(messageId);
-		b.WriteUnVarint(length);
-		b.WriteChunk(data, length);
-	}
-}
-
-void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
-{
-	if (simulated_connection)
-		return;
-
-	static std::string buffer;
-	if (!msg.SerializeToString(&buffer))
-	{
-		PrintFmt(
-		    PRINT_WARNING,
-		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name());
-		return;
-	}
-
-	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
-	if (header == msg_noop)
-	{
-		PrintFmt(PRINT_WARNING,
-		         "WARNING: Could not find svc header for message \"{}\".  This is most "
-		         "likely a bug.\n",
-		         msg.GetDescriptor()->full_name());
-		return;
-	}
-
-#if 0
-	PrintFmt("{} ({})\n, {}\n",
-		::msg_info[header].getName(), msg.ByteSize(),
-		msg.ShortDebugString());
-#endif
-
-	WriteMiniHeader(*b, header, buffer.data(), buffer.size());
-}
-
 /**
  * @brief Broadcast message to all players.
  *

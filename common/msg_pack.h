@@ -13,3 +13,4 @@ namespace google
 }
 
 std::optional<msg_t> MSG_Pack(std::string& serializationBuffer, const google::protobuf::Message& msg);
+void                 MSG_Pack(buf_t&       serializationBuffer, const google::protobuf::Message& msg);
