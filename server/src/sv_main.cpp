@@ -2306,9 +2306,14 @@ void SV_ConnectClient()
 		static buf_t smallbuf(1024);
 		if (smallbuf.size() == 0)
 		{
+			MessageQueue smallQueue;
 			PacketHeaderType header(0);
+
+			smallQueue.Write( SVC_Disconnect("Server is full\n") );
+
 			header.Pack(smallbuf);
-			MSG_WriteSVCBuffer(&smallbuf, SVC_Disconnect("Server is full\n"));
+			smallbuf.WriteChunk(smallQueue.Front().ptr(),
+			                    smallQueue.Front().size());
 		}
 
 		NET_SendPacket(smallbuf, net_from);

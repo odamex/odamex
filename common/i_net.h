@@ -529,6 +529,13 @@ public:
 		}
 	}
 
+	void WriteMessage(msg_t messageId, const std::string& msg)
+	{
+		WriteUnVarint(messageId);
+		WriteUnVarint(msg.length());
+		WriteChunk(msg.data(), msg.length());
+	}
+
 	int ReadByte()
 	{
 		if(readpos+1 > cursize)
