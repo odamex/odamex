@@ -171,14 +171,14 @@ ISTRING_CONSTEXPR std::string IStringToStdString(const IStringView sv)
 
 [[nodiscard]]
 constexpr std::string_view IStringToStdStringView(const IStringView sv)
-	noexcept(noexcept(std::string_view(sv.data(), sv.length())))
+	noexcept(noexcept(std::string_view{sv.data(), sv.length()}))
 {
 	return {sv.data(), sv.length()};
 }
 
 [[nodiscard]]
 constexpr auto operator<=>(const IStringView isv, const std::string_view sv)
-	noexcept(noexcept(IStringView(sv.data(), sv.length())))
+	noexcept(noexcept(IStringView{sv.data(), sv.length()}))
 {
 	return isv <=> IStringView{sv.data(), sv.length()};
 }
@@ -191,7 +191,7 @@ ISTRING_CONSTEXPR IString operator""_is(const char* s, const std::size_t l)
 
 [[nodiscard]]
 consteval IStringView operator""_isv(const char* s, const std::size_t l)
-	noexcept(noexcept(IStringView(s, l)))
+	noexcept(noexcept(IStringView{s, l}))
 {
 	return {s, l};
 }
