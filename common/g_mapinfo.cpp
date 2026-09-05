@@ -2064,7 +2064,7 @@ void G_ParseMapInfo()
 	for (size_t i = 0; i < numlevels; i++)
 	{
 		level_pwad_info_t& level = levels.at(i);
-		if (!level.author.empty() && !(level.metadataflags & METADATA_AUTHORFROMPWAD) &&
+		if (!level.author.empty() && !(level.metadataflags & metadataflags_t::AUTHORFROMPWAD) &&
 		    W_IsLumpFromPWAD(level.mapname))
 		{
 			level.author.clear();
