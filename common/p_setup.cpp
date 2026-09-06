@@ -73,7 +73,7 @@ void P_SpawnCompatibleSectorSpecial(sector_t* sector);
 namespace {
 void P_SetupLevelFloorPlane(sector_t *sector);
 void P_SetupLevelCeilingPlane(sector_t *sector);
-void P_SetupSlopes();
+void P_SetupLineSlopes();
 }
 
 void P_InvertPlane(plane_t *plane);
@@ -1628,7 +1628,7 @@ void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 	srcplane->texy = refvert->y;
 }
 
-void P_SetupSlopes()
+void P_SetupLineSlopes()
 {
 	for (line_t& line : R_GetLines())
 	{
@@ -1654,6 +1654,82 @@ void P_SetupSlopes()
 				P_SetupPlane(line.frontsector, &line, false);
 			else if (align_side == 2)
 				P_SetupPlane(line.backsector, &line, false);
+		}
+	}
+}
+
+void P_CopyPlane(int tag, sector_t& dest, bool copyCeiling)
+{
+	const int secnum = P_FindSectorFromTag(tag, -1);
+	if (secnum == -1)
+		return;
+
+	const sector_t& source = R_GetSectors()[secnum];
+
+	if (copyCeiling)
+		dest.ceilingplane = source.ceilingplane;
+	else
+		dest.floorplane = source.floorplane;
+};
+
+void P_CopyPlane(int tag, fixed_t x, fixed_t y, bool copyCeiling)
+{
+	sector_t& dest = *P_PointInSubsector(x, y)->sector;
+	P_CopyPlane(tag, dest, copyCeiling);
+}
+
+void P_CopySlopes()
+{
+	for (line_t& line : R_GetLines())
+	{
+		if (not (map_format.getZDoom() && line.special == Plane_Copy))
+			continue;
+
+		line.special = 0;
+		if (line.args[0])
+			P_CopyPlane(line.args[0], *line.frontsector, false);
+		if (line.args[1])
+			P_CopyPlane(line.args[1], *line.frontsector, true);
+
+		if (not line.backsector)
+			continue;
+
+		if (line.args[2])
+			P_CopyPlane(line.args[2], *line.backsector, false);
+		if (line.args[3])
+			P_CopyPlane(line.args[3], *line.backsector, true);
+
+		static constexpr int floor_mask = 0b11;
+		static constexpr int ceiling_mask = 0b1100;
+		enum
+		{
+			FloorFrontToBack = 0b01,
+			FloorBackToFront = 0b10,
+			CeilFrontToBack  = 0b0100,
+			CeilBackToFront  = 0b1000,
+		};
+
+		// other cases are intentionally ignored
+		// NOLINTNEXTLINE(bugprone-switch-missing-default-case)
+		switch (line.args[4] & floor_mask)
+		{
+			case FloorFrontToBack:
+				line.backsector->floorplane = line.frontsector->floorplane;
+				break;
+			case FloorBackToFront:
+				line.frontsector->floorplane = line.backsector->floorplane;
+				break;
+		}
+
+		// NOLINTNEXTLINE(bugprone-switch-missing-default-case)
+		switch (line.args[4] & ceiling_mask)
+		{
+			case CeilFrontToBack:
+				line.backsector->ceilingplane = line.frontsector->ceilingplane;
+				break;
+			case CeilBackToFront:
+				line.frontsector->ceilingplane = line.backsector->ceilingplane;
+				break;
 		}
 	}
 }
@@ -1871,7 +1947,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	if (!demoplayback)
 		P_RemoveSlimeTrails();
 
-	P_SetupSlopes();
+	P_SetupLineSlopes();
 
     po_NumPolyobjs = 0;
 
@@ -1889,6 +1965,8 @@ void P_SetupLevel (const char *lumpname, int position)
 	// SkyViewpoint / stack point has spawned.
 	P_ResolveSkyPickers();
 	P_ResolveStackLinks();
+
+	P_CopySlopes();
 
 	if (!HasBehavior)
 		P_TranslateTeleportThings(); // [RH] Assign teleport destination TIDs
