@@ -1523,6 +1523,8 @@ namespace
 //
 void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker, int mod)
 {
+	// sexmessage properly initializes it
+	// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 	std::array<char, 1024> gendermessage;
 
 	if (!self || !self->player)
@@ -1784,9 +1786,9 @@ void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker, int
 
 	if (message && attacker && attacker->player)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
+		SexMessage(message, gendermessage.data(), gender, self->player->userinfo.netname,
 		           attacker->player->userinfo.netname, "");
-		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
+		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage.data());
 
 		toast_t toast;
 		toast.flags = toast_t::LEFT_PID | toast_t::ICON | toast_t::RIGHT_PID;
@@ -1803,9 +1805,9 @@ void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker, int
 		return;
 	}
 
-	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
+	SexMessage(GStrings(OB_DEFAULT), gendermessage.data(), gender,
 	           self->player->userinfo.netname, self->player->userinfo.netname, "");
-	SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
+	SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage.data());
 
 	toast_t toast;
 	toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
