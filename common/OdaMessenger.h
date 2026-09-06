@@ -25,7 +25,9 @@
 #include <memory_resource>
 #include <utility>
 
+#include "LargeMessageQueue.h"
 #include "MessageQueue.h"
+
 #include "Packet.h"
 #include "SequenceReceiver.h"
 #include "SequenceSender.h"
@@ -284,9 +286,10 @@ class OdaMessenger
 		PacketHeaderType m_receivedHeader;
 
 		// Send buffers
-		MessageQueue m_outgoingReliableQueue;
-		MessageQueue m_outgoingNonReliableQueue;
-		MessageQueue m_outgoingHighNonReliableQueue;
+		MessageQueue        m_outgoingReliableQueue;
+		MessageQueue        m_outgoingNonReliableQueue;
+		MessageQueue        m_outgoingHighNonReliableQueue;
+		LargeMessageQueue   m_outgoingLargeMessageQueue;
 
 		buf_t            m_immediateReceiveBuffer{ MAX_UDP_PACKET };
 		PacketHeaderType m_immediateReceiveHeader;

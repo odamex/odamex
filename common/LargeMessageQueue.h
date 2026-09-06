@@ -16,42 +16,86 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Utilities for monitoring changes to player attribute items.
+//  Queue for Large Messages that need to be fragmented and reassembled
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#include <deque>
-#include <string>
-#include <vector>
-
 #include "i_net.h"
-
-namespace google::protobuf
-{
-	class Message;
-}
+#include "MessageQueue.h"
 
 enum class FragmentationStateEnum
 {
-	NONE,           ///< No large messages are enqueued.
-	START,          ///< This is the first fragment of a new large message.
-	RUNNING,        ///< Fragmentation of a previously-started large message is ongoing.
-	END,            ///< This is the last fragment of a large message.
+	NONE,                   ///< No large messages are enqueued.
+	FIRST_FRAGMENT,         ///< This is the first fragment of a new large message.
+	CONTINUATION_FRAGMENT,  ///< The next fragment in the sequence, but not the last.
+	LAST_FRAGMENT,          ///< This is the last fragment of a large message.
+	ONE_SHOT,               ///< The fragment is the entirety of the message. (both START and END)
+	INVALID_FRAGMENT_SIZE,  ///< An invalid fragmentation was requested.
+	MESSAGE_OVERFLOW,       ///< The fragment overflowed somehow...  Should never happen.
 };
 
 class LargeMessageQueue
 {
 	public:
-		void Write(const google::protobuf::Message& msg);
-		void Write(msg_t id, const std::string& msg);
 
+		// Expose the queue's Write APIs.
+		void Write(auto&&... args)
+		{
+			m_queue.Write(std::forward<decltype(args)>(args)...);
+		}
+
+		template <typename IteratorType>
 		[[ nodiscard ]]
-		FragmentationStateEnum NextFragment(buf_t& o_buffer, size_t maxSize);
+		FragmentationStateEnum NextFragment(size_t maxSize, IteratorType outIter)
+		{
+			if (m_queue.SizeInMessages() == 0)
+				return FragmentationStateEnum::NONE;
+
+			if (maxSize == 0)
+				return FragmentationStateEnum::INVALID_FRAGMENT_SIZE;
+
+			buf_t& bufferRef = m_queue.Front();
+
+			// Did we get an empty message in the queue somehow?  Pop it off and try the next one.
+			if (bufferRef.BytesLeftToRead() == 0)
+			{
+				m_queue.Pop();
+				return NextFragment(maxSize, outIter);
+			}
+
+			const size_t numberOfBytesToExtract = std::min(maxSize, bufferRef.BytesLeftToRead());
+
+			const bool  isAtStartOfMessage = bufferRef.TellRead() == 0;
+			const byte* dataPtr            = bufferRef.ReadChunk(numberOfBytesToExtract);
+			const bool  isAtEndOfMessage   = bufferRef.BytesLeftToRead() == 0;
+
+			// This should never happen due to the above checks.  Still, play it safe.
+			if (dataPtr == nullptr)
+				return FragmentationStateEnum::MESSAGE_OVERFLOW;
+
+			std::copy(dataPtr, dataPtr + numberOfBytesToExtract, outIter);
+
+			if (isAtEndOfMessage)
+			{
+				m_queue.Pop();
+
+				if (isAtStartOfMessage)
+				{
+					return FragmentationStateEnum::ONE_SHOT;
+				}
+				return FragmentationStateEnum::LAST_FRAGMENT;
+			}
+			if (isAtStartOfMessage)
+			{
+				return FragmentationStateEnum::FIRST_FRAGMENT;
+			}
+			return FragmentationStateEnum::CONTINUATION_FRAGMENT;
+		}
 
 	protected:
-		std::deque<buf_t>  m_queue;
-		std::vector<buf_t> m_freeStack;
-		std::string        m_serializationBuffer;
+
+		static const size_t MAX_LARGE_MESSAGE_SIZE { 64 * 1024 };
+		MessageQueue m_queue { MAX_LARGE_MESSAGE_SIZE };
 };
