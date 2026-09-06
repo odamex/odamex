@@ -355,15 +355,6 @@ public:
 		return lhs.m_value == rhs.m_value;
 	}
 
-	// TODO: this is just temporary and should be deleted as soon as its unused
-	// this is here for limiting the impact on the mapinfo parser until merging with the
-	// type safe mapinfo pr
-	[[nodiscard, deprecated]]
-	constexpr underlying& data() noexcept
-	{
-		return m_value;
-	}
-
 };
 
 template <FlagEnum E>

@@ -30,3 +30,10 @@ std::string G_StripAuthorPrefix(const std::string& author);
 void G_MapNameToLevelNum(level_pwad_info_t& info);
 void G_MapNameToID24LevelNum(level_pwad_info_t& info);
 void G_ParseMapInfo();
+
+// Parse MAPINFO text held in memory rather than in a lump. Intended for tests and
+// tooling; G_ParseMapInfo() remains the normal entry point.
+void G_ParseMapInfoBuffer(const char* buffer, size_t length, const OLumpName& lumpname,
+                          bool fromPWAD = true);
+void G_ParseMapInfoString(const std::string& text, const OLumpName& lumpname,
+                          bool fromPWAD = true);

@@ -96,10 +96,10 @@ void SV_CTFEvent(team_t f, flag_score_t event, player_t& who)
 	{
 		client_t* cl = &(player.client);
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_CTFEvent(event, f, who));
+		cl->messenger->Reliable().Write (SVC_CTFEvent(event, f, who));
 		if (event == SCORE_CAPTURE)
 		{
-			MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_CTFRefresh(tv, false));
+			cl->messenger->Reliable().Write (SVC_CTFRefresh(tv, false));
 		}
 	}
 }
@@ -112,7 +112,7 @@ void CTF_Connect(player_t &player)
 {
 	client_t *cl = &player.client;
 
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_CTFRefresh(TeamQuery().execute(), true));
+	cl->messenger->Reliable().Write (SVC_CTFRefresh(TeamQuery().execute(), true));
 }
 
 //
