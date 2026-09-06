@@ -59,9 +59,8 @@ struct OTimespan
 	OTimespan() : csecs(0), tics(0), seconds(0), minutes(0), hours(0) { }
 };
 
-bool	IsNum(std::string_view str);
-bool	IsRealNum(const char* str);
-bool	IsRealNum(std::string_view str);
+bool IsNum(std::string_view str);
+bool IsRealNum(std::string_view str);
 
 template<std::integral T>
 std::optional<T> ParseNum$Hex(std::string_view str, int base = 10)

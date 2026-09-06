@@ -91,7 +91,7 @@ bool IsNum(std::string_view str)
 	if (str.empty())
 		return false;
 
-	if (str.front() == '-')
+	if (str.starts_with('-'))
 		str.remove_prefix(1);
 
 	return std::ranges::all_of(str, [](char c)
@@ -102,39 +102,6 @@ bool IsNum(std::string_view str)
 		}
 		return true;
 	});
-}
-
-//
-// IsRealNum
-//
-// [SL] Returns true if the specified string is a valid real number
-//
-bool IsRealNum(const char* str)
-{
-	bool seen_decimal = false;
-
-	if (str == NULL || *str == 0)
-		return false;
-
-	if (str[0] == '+' || str[0] == '-')
-		str++;
-
-	while (*str)
-	{
-		if (*str == '.')
-		{
-			if (seen_decimal)
-				return false;		// second decimal point
-			else
-				seen_decimal = true;
-		}
-		else if (*str < '0' || *str > '9')
-			return false;
-
-		str++;
-	}
-
-	return true;
 }
 
 //
