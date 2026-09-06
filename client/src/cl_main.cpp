@@ -65,6 +65,7 @@
 #include "p_acs.h"
 #include "i_input.h"
 #include "i_time.h"
+#include "msg_pack.h"
 
 #include "g_gametype.h"
 #include "cl_parse.h"
@@ -491,7 +492,7 @@ static void CL_GracefulClientInitiatedDisconnect()
 	// Again, make sure that we allow for immediate retransmits.
 	messenger.SetRetransmitDelay(0);
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_DisconnectMe());
+	messenger.Reliable().Write(CLC_DisconnectMe());
 	messenger.SendAll(gametic, serveraddr);
 
 	const dtime_t disconnectStartTime   = I_GetTime();
@@ -507,7 +508,6 @@ static void CL_GracefulClientInitiatedDisconnect()
 		I_Sleep(oneTicInNanosec);
 
 		++fakeTics;
-		messenger.HandleRetransmissions(fakeTics, serveraddr);
 		while (NET_GetPacket())
 		{
 			if (messenger.Receive(::net_message) == MessageResultEnum::ACCEPT)
@@ -655,7 +655,7 @@ void CL_CheckDisplayPlayer(void)
 		// server doesnt know about clientside freecam, dont tell it
 		if (not displayplayer().isFreecam && newid != freecamplayer_id)
 		{
-			MSG_WriteSVC(messenger.ReliableBuf(), CLC_Spy(newid));
+			messenger.Reliable().Write(CLC_Spy(newid));
 		}
 		displayplayer_id = newid;
 
@@ -1005,7 +1005,7 @@ END_COMMAND (playerinfo)
 BEGIN_COMMAND (kill)
 {
     if (sv_allowcheats || G_IsCoopGame())
-        MSG_WriteSVC(messenger.ReliableBuf(), CLC_Kill());
+        messenger.Reliable().Write(CLC_Kill());
     else
         PrintFmt("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
 }
@@ -1065,7 +1065,7 @@ BEGIN_COMMAND (rcon)
 	{
 		const std::string_view commandString {args, std::min(size_t(256), strlen(args)) };
 
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Rcon(commandString));
+		messenger.Reliable().Write(CLC_Rcon(commandString));
 	}
 }
 END_COMMAND (rcon)
@@ -1075,7 +1075,7 @@ BEGIN_COMMAND (rcon_password)
 {
 	if (connected && argc > 1)
 	{
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_RconPassword(MD5SUM(std::string(argv[1]) + digest)));
+		messenger.Reliable().Write(CLC_RconPassword(MD5SUM(std::string(argv[1]) + digest)));
 	}
 }
 END_COMMAND (rcon_password)
@@ -1084,7 +1084,7 @@ BEGIN_COMMAND (rcon_logout)
 {
 	if (connected)
 	{
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_RconLogout());
+		messenger.Reliable().Write(CLC_RconLogout());
 	}
 }
 END_COMMAND (rcon_logout)
@@ -1121,14 +1121,14 @@ BEGIN_COMMAND (spectate)
 	// Only send message if currently not a spectator, or to remove from play queue
 	if (!spectator || consoleplayer().QueuePosition > 0)
 	{
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_SpectateBegin());
+		messenger.Reliable().Write(CLC_SpectateBegin());
 	}
 }
 END_COMMAND (spectate)
 
 BEGIN_COMMAND(ready)
 {
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd("ready"));
+	messenger.Reliable().Write(CLC_Netcmd("ready"));
 }
 END_COMMAND(ready)
 
@@ -1155,7 +1155,7 @@ BEGIN_COMMAND(netcmd)
 		return;
 	}
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(argv+1, argv + argc));
+	messenger.Reliable().Write(CLC_Netcmd(argv+1, argv + argc));
 }
 END_COMMAND(netcmd)
 
@@ -1167,7 +1167,7 @@ BEGIN_COMMAND (join)
 	//	return;
 	//}
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_SpectateEnd());
+	messenger.Reliable().Write(CLC_SpectateEnd());
 }
 END_COMMAND (join)
 
@@ -1642,7 +1642,10 @@ void CL_SendUserInfo(buf_t& netBuf)
 {
 	D_SetupUserInfo();
 
-	MSG_WriteSVCBuffer(&netBuf, CLC_UserInfo(consoleplayer().userinfo));
+	if (not simulated_connection)
+	{
+		MSG_Pack(netBuf, CLC_UserInfo(consoleplayer().userinfo));
+	}
 
 	// Refresh Player Translations AFTER sending the new status to the server.
 	CL_RebuildAllPlayerTranslations();
@@ -2315,14 +2318,14 @@ void CL_SendCmd(void)
 		// GhostlyDeath -- If we are spectating, tell the server of our new position
 		if (player.spectator)
 		{
-			MSG_WriteSVC(messenger.NetBuf(), CLC_SpectateUpdate(player));
+			messenger.BestEffort().Write (CLC_SpectateUpdate(player));
 		}
 
 		if (closestNonCredibleVisSprite)
 		{
 			closestNonCredibleVisSprite->mo->credibility.Challenge();
 
-			MSG_WriteSVC(messenger.ReliableBuf(), CLC_SendMobjUpdate(closestNonCredibleVisSprite->mo->netid));
+			messenger.Reliable().Write(CLC_SendMobjUpdate(closestNonCredibleVisSprite->mo->netid));
 			closestNonCredibleVisSprite = nullptr;
 		}
 
@@ -2332,7 +2335,7 @@ void CL_SendCmd(void)
 		// when sending svc_updatelocalplayer so the client knows which ticcmds
 		// need to be used for client's positional prediction and item data reconciliation.
 		currentNetcmd.set_tic(gametic);
-		MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
+		messenger.Reliable().Write(currentNetcmd);
 	}
 
 	if (netdemo.isRecording())
@@ -2350,23 +2353,31 @@ void CL_SendCmd(void)
 		}
 	}
 
-	const MessageResultEnum sendResult = messenger.SendAll(gametic, serveraddr);
-
-	if (sendResult == MessageResultEnum::ABORT)
 	{
-		CL_QuitNetGame(NQ_SERVER_DROP);
-	}
-	else
-	{
-		const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
+		// In normal client operation, we use the fine-grained messenger sending APIs so that we can
+		// have the retransmissions to go out immediately instead of on the next tic.  This is key
+		// for ensuring that the send of a brand-new, most-current PlayerInput message has immediate
+		// packet redundancy so that no _single_ packet drop can cause player input to arrive late.
 
-		const int currentSendSize    = messenger.GetLastSendSize();
-		const int totalSentByteCount = currentSendSize + retransmittedByteCount;
+		OdaMessenger::Sender guard(messenger, gametic, serveraddr);
 
-		netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
-		netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
-		netgraph.addTrafficOut(totalSentByteCount);
-		outrate += totalSentByteCount;
+		guard.SendHighPriority();
+		if (guard.SendStandard() == MessageResultEnum::ABORT)
+		{
+			CL_QuitNetGame(NQ_SERVER_DROP);
+		}
+		else
+		{
+			const size_t retransmittedByteCount = guard.SendRetransmissions();
+
+			const int currentSendSize    = messenger.GetLastSendSize();
+			const int totalSentByteCount = currentSendSize + static_cast<int>(retransmittedByteCount);
+
+			netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
+			netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
+			netgraph.addTrafficOut(totalSentByteCount);
+			outrate += totalSentByteCount;
+		}
 	}
 }
 
@@ -2387,7 +2398,7 @@ void CL_PlayerTimes()
 //
 void CL_SendCheat(int cheats)
 {
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Cheat(cheats));
+	messenger.Reliable().Write(CLC_Cheat(cheats));
 }
 
 //
@@ -2395,7 +2406,7 @@ void CL_SendCheat(int cheats)
 //
 void CL_SendGiveCheat(const char* item)
 {
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatGive(item));
+	messenger.Reliable().Write(CLC_CheatGive(item));
 }
 
 //
@@ -2403,7 +2414,7 @@ void CL_SendGiveCheat(const char* item)
 //
 void CL_SendSummonCheat(const char* summon)
 {
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatSummon(summon));
+	messenger.Reliable().Write(CLC_CheatSummon(summon));
 }
 
 //
@@ -2411,7 +2422,7 @@ void CL_SendSummonCheat(const char* summon)
 //
 void CL_SendSummonFriendCheat(const char* summon)
 {
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatSummonFriend(summon));
+	messenger.Reliable().Write(CLC_CheatSummonFriend(summon));
 }
 
 

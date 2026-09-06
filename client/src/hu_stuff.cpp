@@ -393,19 +393,25 @@ static void HU_DrawCrosshair()
 	if (hud_crosshair && crosshair_lump)
 	{
 		static constexpr byte crosshair_color = 0xB0;
+
+		constexpr int threequarters = 75;
+		constexpr int half = 50;
+		constexpr int quarter = 25;
 		if (hud_crosshairhealth)
 		{
-			if (camera->health > 75)
+			const int health = camera->player ? camera->player->health : camera->health;
+
+			if (health > threequarters)
 			{
 				crosshair_trans[crosshair_color] =
 				    V_BestColor(V_GetDefaultPalette()->basecolors, 0x00, 0xFF, 0x00);
 			}
-			else if (camera->health > 50)
+			else if (health > half)
 			{
 				crosshair_trans[crosshair_color] =
 				    V_BestColor(V_GetDefaultPalette()->basecolors, 0xFF, 0xFF, 0x00);
 			}
-			else if (camera->health > 25)
+			else if (health > quarter)
 			{
 				crosshair_trans[crosshair_color] =
 				    V_BestColor(V_GetDefaultPalette()->basecolors, 0xFF, 0x7F, 0x00);
@@ -599,9 +605,9 @@ static void ShoveChatStr (const std::string& str, byte visibility)
 	if (str.length() == 0)
 		return;
 
-    const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
+	const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Say(visiblePortion, visibility));
+	messenger.Reliable().Write(CLC_Say(visiblePortion, visibility));
 }
 
 static void ShovePrivMsg(byte pid, const std::string& str)
@@ -612,7 +618,7 @@ static void ShovePrivMsg(byte pid, const std::string& str)
 
 	const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_PrivMsg(pid, visiblePortion));
+	messenger.Reliable().Write(CLC_PrivMsg(pid, visiblePortion));
 }
 
 BEGIN_COMMAND (messagemode)

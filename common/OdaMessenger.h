@@ -23,6 +23,7 @@
 
 #include <memory>
 #include <memory_resource>
+#include <utility>
 
 #include "MessageQueue.h"
 #include "Packet.h"
@@ -115,31 +116,97 @@ class OdaMessenger
 		/// empty or its next message is the first non-ack message in the buffer.
 		void HandleAcks(buf_t& io_rawBuf);
 
-		//  -------------- Sending functions --------------
-
+		//  ================= Sending functions =================
+		//
+		//  To send packets, either make a single call to the top-level SendAll() function,
+		//  or use the fine-grained functions.
+		//
+		//  -------------- Top-level sending function --------------
+		//
 		/// Assembles all new packets from enqueued outgoing messages and transmits them.  Packets and their content are ordered as
-		/// Reliable content first, followed by Acks, followed by any remaining non-reliable messages.  The number of packets is
-		/// determined by the number of enqueued messages and constrained by MaxRate (see SetMaxRate()).  If the MaxRate cap is
-		/// hit, Reliable and Ack messages remain enqueued for subsequent SendAll, but all remaining non-reliable messages are
-		/// discarded.
+		/// HighPriority content first (including Acks), then Reliable retransmissions, then new Reliable content, followed by any
+		/// remaining non-reliable messages.  The number of packets is determined by the number of enqueued messages and constrained
+		/// by MaxRate (see SetMaxRate()).  If the MaxRate cap is hit, HighPriority and Reliable messages remain enqueued for
+		/// subsequent SendAll, but all remaining non-reliable messages are discarded.
 		///
 		/// Return values:
 		///  ACCEPT - Normal result: Packet(s) were sent as needed without hitting a cap.
-		///  DEFER  - Packet(s) may have been sent, but a cap has been enountered.
-		///  ABORT  - Critical error sending: Time to drop the connection.
+		///  DEFER  - Packet(s) may have been sent, but a cap has been encountered.
+		///  ABORT  - Critical error: Time to drop the connection.
 		MessageResultEnum SendAll(int i_currentTic, const netadr_t& i_dest);
 
-		/// Retransmit the oldest reliable packets that were previously sent and are older than RetransmitDelay
-		/// (see Get/Set methods) but haven't yet been acknowledged.
-		///
-		/// Up to MaxPacketsPerRetransmission (see Get/Set methods) packets may be sent.  Please note that
-		/// only the reliable portions of old packets are retransmitted - if the original packet had both
-		/// reliable and unreliable data, the unreliable data is NOT included in the retransmission.  If there
-		/// are no unacknowledged reliable packets older than the RetransmitDelay, nothing is sent.
-		///
-		/// Returns the number of bytes sent as part of this retransmission cycle.
-		int HandleRetransmissions(int i_currentTic, const netadr_t& i_dest);
+		// -------------- Fine-grained sending functions --------------
+		//
+		// Because of the criticality of the budget maintenance done by the StartTicSend() and EndTicSend() APIs, the
+		// fine-grained Send APIs are accessible only through a Sender object that will call the Start/End APIs
+		// automatically upon construction and destruction.
 
+	protected:
+		void StartTicSend(int i_currentTic);
+		void EndTicSend();
+
+		size_t            SendHighPriority   (int i_currentTic, const netadr_t& i_dest);
+		size_t            SendRetransmissions(int i_currentTic, const netadr_t& i_dest);
+		MessageResultEnum SendStandard       (int i_currentTic, const netadr_t& i_dest);
+
+	public:
+		class Sender
+		{
+			public:
+				Sender(OdaMessenger& i_messengerRef, int i_currentTic, const netadr_t& i_dest) :
+					m_messengerRef  {i_messengerRef},
+					m_currentTic    {i_currentTic},
+					m_dest          {i_dest}
+				{
+					m_messengerRef.StartTicSend(m_currentTic);
+				}
+				~Sender()
+				{
+					m_messengerRef.EndTicSend();
+				}
+
+				// Non-copyable.
+				Sender(const Sender&)            = delete;
+				Sender& operator=(const Sender&) = delete;
+
+				// Non-movable.
+				Sender(Sender&&)            = delete;
+				Sender& operator=(Sender&&) = delete;
+
+				/// Assembles the messages queued up via HighPriority() into packets and sends them.  If the tic budget is
+				/// exhausted, then the remaining HighPriority content remains enqueued for subsequent Send calls.
+				///
+				/// Returns the number of bytes sent.
+				size_t SendHighPriority () { return m_messengerRef.SendHighPriority(m_currentTic, m_dest); }
+
+				/// Retransmit the oldest reliable packets that were previously sent and are older than RetransmitDelay
+				/// (see Get/Set methods) but haven't yet been acknowledged.
+				///
+				/// Up to MaxPacketsPerRetransmission (see Get/Set methods) packets may be sent.  Please note that
+				/// only the reliable portions of old packets are retransmitted - if the original packet had both
+				/// reliable and unreliable data, the unreliable data is NOT included in the retransmission.  If there
+				/// are no unacknowledged reliable packets older than the RetransmitDelay, nothing is sent.
+				///
+				/// Returns the number of bytes sent as part of this retransmission cycle.
+				size_t SendRetransmissions() { return m_messengerRef.SendRetransmissions (m_currentTic, m_dest); }
+
+				/// Assembles the messages queued up via Reliable() and BestEffort() into packets and sends them.  If the
+				/// tic budget is exhausted, then the remaining Reliable content remains enqueued for subsequent Send
+				/// calls, but the best-effort messages are discarded.
+				///
+				/// Return values:
+				///  ACCEPT - Normal result: Packet(s) were sent as needed without hitting a cap.
+				///  DEFER  - Packet(s) may have been sent, but a cap has been encountered.
+				///  ABORT  - Critical error: Time to drop the connection.
+				MessageResultEnum SendStandard () { return m_messengerRef.SendStandard (m_currentTic, m_dest); }
+
+			protected:
+				OdaMessenger& m_messengerRef;
+				int           m_currentTic;
+				netadr_t      m_dest;
+		};
+
+		// -------------- Outgoing message management functions --------------
 
 		/// Mark a previously-sent reliable message as having been acknowledged by the recipient.  If the old
 		/// message has been included in retransmissions, then it stops being retransmitted.
@@ -149,9 +216,9 @@ class OdaMessenger
 
 		/// Return the requested message queue.  Use these queues to Obtain new messages into which to pack
 		/// new outgoing data.
-		MessageQueue& ReliableBuf() { return m_outgoingReliableQueue; }
-		MessageQueue& NetBuf() { return m_outgoingNonReliableQueue; }
-		MessageQueue& HighBuf() { return m_outgoingHighNonReliableQueue; }
+		MessageQueue& Reliable() { return m_outgoingReliableQueue; }
+		MessageQueue& BestEffort() { return m_outgoingNonReliableQueue; }
+		MessageQueue& HighPriority() { return m_outgoingHighNonReliableQueue; }
 
 		/// Discard all outgoing data that has yet to be sent.
 		void Clear()
@@ -193,6 +260,7 @@ class OdaMessenger
 		int GetPendingAckCount() const       { return m_sender.GetPendingAckCount(); }
 		int GetReliableOverloadCount() const { return m_reliableOverloadCount; }
 		int GetTicBudget() const             { return m_perTicBudget; }
+		int GetAvailableBudget() const       { return m_byteBudget; }
 
 	protected:
 
@@ -228,10 +296,11 @@ class OdaMessenger
 		int m_maxRate                       { 0 };
 		int m_criticalSequenceTimeoutInTics { DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS };
 
-		int m_byteBudget    {  0 };       ///< The live budget.  Signed so that it can also represent debt.
-		int m_perTicBudget  {  0 };       ///< The value used to reset the budget every tic.
-		int m_latchedTic    { -1 };       ///< Used for detecting new tics and resetting the budget.
-		int m_destinationTic{ -1 };       ///< The remote tic that we're supposed to echo back to the other end.
+		int m_byteBudget                {  0 };     ///< The live budget.  Signed so that it can also represent debt.
+		int m_perTicBudget              {  0 };     ///< The value used to reset the budget every tic.
+		int m_currentTicStartingBudget  {  0 };     ///< The budget available at the time we started sending this tic.
+		int m_latchedTic                { -1 };     ///< Used for detecting new tics and resetting the budget.
+		int m_destinationTic            { -1 };     ///< The remote tic that we're supposed to echo back to the other end.
 
 		int m_reliableOverloadThreshold { 0 };
 		int m_reliableOverloadCount     { 0 };

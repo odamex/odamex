@@ -108,7 +108,7 @@ static void PersistPlayerDamage(const player_t& p)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		player.client.messenger->Reliable().Write(SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
 }
 
@@ -135,7 +135,7 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerMembers(p, flags));
+		player.client.messenger->Reliable().Write(SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -150,7 +150,7 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_TeamMembers(team));
+		player.client.messenger->Reliable().Write( SVC_TeamMembers(team));
 	}
 }
 
@@ -669,7 +669,7 @@ static void P_ResurrectPlayerPowerUp(player_t& player)
 	                   player.userinfo.netname, pl->userinfo.netname);
 
 	// Send a res sound directly to this player.
-	MSG_WriteSVC(pl->client.messenger->ReliableBuf(), SVC_PlayerInfo(*pl));
+	pl->client.messenger->Reliable().Write(SVC_PlayerInfo(*pl));
 	S_PlayerSound(pl, NULL, CHAN_INTERFACE, "misc/plraise", ATTN_NONE);
 
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(*pl, SVC_PM_LIVES),
@@ -692,7 +692,7 @@ static void P_AwardExtraLifePowerUp(player_t& player)
 	                   player.userinfo.netname);
 
 	player.lives += 1;
-	MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerInfo(player));
+	player.client.messenger->Reliable().Write(SVC_PlayerInfo(player));
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(player, SVC_PM_LIVES),
 	                 player.id);
 }
@@ -1335,14 +1335,14 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 				if (teamInfo->FlagSocketSprite == special.sprite)
 				{
 					SV_SocketTouch(player, teamInfo->Team);
-					return val;
+					return IEV_NotEquipped;
 				}
 			}
 
 			if (!teamItemSuccess)
 			{
 				PrintFmt(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing {}: {}\n", special.sprite, special.info->name);
-				return val;
+				return IEV_NotEquipped;
 			}
 		}
 	}
