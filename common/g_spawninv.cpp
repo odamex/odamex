@@ -711,6 +711,12 @@ BEGIN_COMMAND(spawninv)
 {
 	static const char* ammonames[] = {"Bullets", "Shells", "Rockets", "Cells"};
 
+	if (not serverside)
+	{
+		PrintFmt("Spawn inventory is under server control");
+		return;
+	}
+
 	if (argc < 2)
 	{
 		SpawninvHelp();
