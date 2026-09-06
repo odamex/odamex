@@ -342,13 +342,21 @@ void R_ExpireTranslations(translationlife_t life);
 // The tables keep their addresses, so refs already handed out pick up the new colors.
 void R_RebuildTranslations();
 
-// The colors a corpse's owner died wearing.
+// The color a player is drawn in, once the game mode and the r_force*color
+// cvars have had their say.
+// isconsoleplayer is asked because playerids are recycled between the players
+// who hold them (depending on connect/disconnect during a game).
+argb_t R_GetPlayerDrawColor(argb_t user_color, team_t team, bool isconsoleplayer);
+
+// A translation for one player identity.
+translationref_t R_GetPlayerTranslation(translationlife_t life, argb_t user_color, team_t team,
+                                        bool isconsoleplayer);
+
+// The identity a corpse's owner died with.
 // Corpses do not survive the map, so neither do their translations.
-// (Except during hub travel, entering a hub should promote the corpse colors,
-// but even if it doesn't it will just rebuild on hud map load)
-inline translationref_t R_GetCorpseTranslation(argb_t color)
+inline translationref_t R_GetCorpseTranslation(argb_t user_color, team_t team, bool isconsoleplayer)
 {
-	return R_GetRampTranslation(TRANSLIFE_MAP, PLAYER_COLOR_START, PLAYER_COLOR_END, color);
+	return R_GetPlayerTranslation(TRANSLIFE_MAP, user_color, team, isconsoleplayer);
 }
 
 // If the view size is not full screen, draws a border around it.

@@ -50,6 +50,8 @@
 
 EXTERN_CVAR(r_forceenemycolor)
 EXTERN_CVAR(r_forceteamcolor)
+EXTERN_CVAR(r_enemycolor)
+EXTERN_CVAR(r_teamcolor)
 
 // status bar height at bottom of screen
 // [RH] status bar position at bottom of screen
@@ -575,6 +577,40 @@ CVAR_FUNC_IMPL(cl_customcolor)
 	cl_color.ForceSet(var.cstring());
 }
 
+//
+// R_GetPlayerDrawColor
+//
+// The color a player is drawn in, once the game mode and the r_force*color
+// cvars have had their say.
+// isconsoleplayer is asked because playerids are recycled between the players
+// who hold them (depending on connect/disconnect during a game).
+argb_t R_GetPlayerDrawColor(argb_t user_color, team_t team, bool isconsoleplayer)
+{
+	argb_t base_color(255, user_color.getr(), user_color.getg(), user_color.getb());
+	const argb_t shade_color = base_color;
+
+	bool teammate = false;
+	if (G_IsCoopGame())
+		teammate = true;
+	if (G_IsFFAGame())
+		teammate = false;
+	if (G_IsTeamGame())
+	{
+		// P_AreTeammates, spelled out against a bare team rather than a player.
+		teammate = !isconsoleplayer && (G_IsCoopGame() || team == consoleplayer().userinfo.team);
+		base_color = GetTeamInfo(team)->Color;
+	}
+	if (!isconsoleplayer && !consoleplayer().spectator)
+	{
+		if (r_forceteamcolor && teammate)
+			base_color = V_GetColorFromString(r_teamcolor);
+		else if (r_forceenemycolor && !teammate)
+			base_color = V_GetColorFromString(r_enemycolor);
+	}
+
+	return V_ShadePlayerColor(base_color, shade_color);
+}
+
 // Recolor a palette range towards a given color range, writing the
 //		8bpp remap into table and the matching 32bpp colors into rgb, which is
 //		indexed starting from rgb_base rather than from zero.
@@ -752,6 +788,7 @@ enum translationkind_t
 {
 	TRANSLATE_RAMP,
 	TRANSLATE_GRADIENT,
+	TRANSLATE_PLAYER,
 };
 
 struct translationrecipe_t
@@ -761,11 +798,14 @@ struct translationrecipe_t
 	palindex_t        end;
 	uint32_t          color;
 	uint32_t          endcolor;
+	int               team;   // TRANSLATE_PLAYER: who they were, so that
+	bool              isself; // R_GetPlayerDrawColor can be redone on demand
 
 	bool operator<(const translationrecipe_t& other) const
 	{
-		return std::tie(kind, start, end, color, endcolor) <
-		       std::tie(other.kind, other.start, other.end, other.color, other.endcolor);
+		return std::tie(kind, start, end, color, endcolor, team, isself) <
+		       std::tie(other.kind, other.start, other.end, other.color, other.endcolor,
+		                other.team, other.isself);
 	}
 };
 
@@ -789,6 +829,12 @@ void R_BuildRecipe(translationtable_t& tlate, const translationrecipe_t& recipe)
 	case TRANSLATE_GRADIENT:
 		R_BuildTranslationGradient(tlate, recipe.start, recipe.end, recipe.color,
 		                           recipe.endcolor);
+		break;
+	case TRANSLATE_PLAYER:
+		R_BuildTranslationRamp(tlate, recipe.start, recipe.end,
+		                       R_GetPlayerDrawColor(recipe.color,
+		                                            static_cast<team_t>(recipe.team),
+		                                            recipe.isself));
 		break;
 	}
 }
@@ -815,13 +861,21 @@ translationref_t R_GetTranslation(translationlife_t life, const translationrecip
 translationref_t R_GetRampTranslation(translationlife_t life, palindex_t start, palindex_t end,
                                       argb_t color)
 {
-	return R_GetTranslation(life, {TRANSLATE_RAMP, start, end, color, 0});
+	return R_GetTranslation(life, {TRANSLATE_RAMP, start, end, color, 0, TEAM_NONE, false});
+}
+
+translationref_t R_GetPlayerTranslation(translationlife_t life, argb_t user_color, team_t team,
+                                        bool isconsoleplayer)
+{
+	return R_GetTranslation(life, {TRANSLATE_PLAYER, PLAYER_COLOR_START, PLAYER_COLOR_END,
+	                               user_color, 0, team, isconsoleplayer});
 }
 
 translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t start,
                                           palindex_t end, argb_t start_color, argb_t end_color)
 {
-	return R_GetTranslation(life, {TRANSLATE_GRADIENT, start, end, start_color, end_color});
+	return R_GetTranslation(
+	    life, {TRANSLATE_GRADIENT, start, end, start_color, end_color, TEAM_NONE, false});
 }
 
 void R_ExpireTranslations(translationlife_t life)
