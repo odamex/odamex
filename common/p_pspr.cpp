@@ -462,6 +462,44 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 	return false;
 }
 
+//
+// P_WeaponIsRemotelyDriven
+//
+// True when we are a client animating a player whose inputs we never see.
+//
+bool P_WeaponIsRemotelyDriven(const player_t& player)
+{
+	return !serverside && player.id != consoleplayer_id;
+}
+
+// We never see another player's ticcmd, so their weapon fire frames has to
+// be inferred.
+// 
+// The server broadcasts the player's sprite every tic, and the attack frames
+// are only ever reached by firing, which makes them a usable stand-in for
+// BT_ATTACK.
+bool P_RemotePlayerIsFiring(const player_t& player)
+{
+	if (!player.mo)
+		return false;
+
+	const int frame = player.mo->frame & FF_FRAMEMASK;
+
+	return frame == (states[S_PLAY_ATK1].frame & FF_FRAMEMASK) ||
+		frame == (states[S_PLAY_ATK2].frame & FF_FRAMEMASK);
+}
+
+// True while the weapon should keep firing.
+//
+// Ours comes from the button we are holding, everyone else's from what
+// their player sprite is doing.
+bool P_WeaponWantsToFire(const player_t& player)
+{
+	if (P_WeaponIsRemotelyDriven(player))
+		return P_RemotePlayerIsFiring(player);
+
+	return (player.cmd.buttons & BT_ATTACK) && G_CanFireWeapon();
+}
 
 //
 // P_CheckAmmo
@@ -470,6 +508,12 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 //
 bool P_CheckAmmo (player_t& player)
 {
+	// Players who are not updated (like spying a player in a demo who wasn't spied
+	// when the demo was created) have stale ammo counts most of the time,
+	// lets not do an ammo check here.
+	if (P_WeaponIsRemotelyDriven(player))
+		return true;
+
 	if (P_EnoughAmmo(player, player.readyweapon))
 		return true;
 
@@ -489,6 +533,12 @@ bool P_CheckAmmo (player_t& player)
 //
 bool P_CheckAmmoNoLower(player_t& player)
 {
+	// Players who are not updated (like spying a player in a demo who wasn't spied
+	// when the demo was created) have stale ammo counts most of the time,
+	// lets not do an ammo check here.
+	if (P_WeaponIsRemotelyDriven(player))
+		return true;
+
 	if (P_EnoughAmmo(player, player.readyweapon))
 		return true;
 
@@ -553,20 +603,6 @@ void P_DropWeapon(player_t& player)
 	P_SetPsprite(player, ps_weapon, weaponinfo[player.readyweapon].downstate);
 }
 
-
-//
-// P_WeaponIsRemotelyDriven
-//
-// True when we are a client animating a player whose inputs we never see.
-//
-namespace
-{
-	bool P_WeaponIsRemotelyDriven(const player_t& player)
-	{
-		return !serverside && player.id != consoleplayer_id;
-	}
-}
-
 //
 // A_WeaponReady
 //
@@ -596,7 +632,7 @@ void A_WeaponReady(AActor* mo)
 
 	// check for fire - the missile launcher and bfg do not auto fire
 	// [AM] Allow warmup to disallow weapon firing.
-	if (player.cmd.buttons & BT_ATTACK && G_CanFireWeapon())
+	if (P_WeaponWantsToFire(player))
 	{
 		if (!player.attackdown || !(weaponinfo[player.readyweapon].flags & WPF_NOAUTOFIRE))
 		{
@@ -622,16 +658,10 @@ void A_ReFire(AActor* mo)
 {
     player_t& player = *mo->player;
 
-	if (P_WeaponIsRemotelyDriven(player))
-	{
-		player.psprites[player.psprnum].tics = -1;
-		return;
-	}
-
 	// check for fire
 	//	(if a weaponchange is pending, let it go through instead)
 	// [AM] Allow warmup to disallow weapon refiring.
-	if ((player.cmd.buttons & BT_ATTACK && G_CanFireWeapon())
+	if (P_WeaponWantsToFire(player)
 		 && player.pendingweapon == wp_nochange
 		 && player.health)
 	{
@@ -1031,14 +1061,8 @@ void A_RefireTo(AActor* mo)
 	if (!st)
 		return;
 
-	if (P_WeaponIsRemotelyDriven(player))
-	{
-		psp.tics = -1;
-		return;
-	}
-
 	if ((st->args[1] || P_CheckAmmoNoLower(player)) &&
-	    (player.cmd.buttons & BT_ATTACK) &&
+	    P_WeaponWantsToFire(player) &&
 	    (player.pendingweapon == wp_nochange && player.health))
 	{
 		player.refire++;
@@ -1397,7 +1421,7 @@ void P_FireHitscan (player_t& player, size_t quantity, spreadtype_t spread)
 	const bool predict_puffs =
 		clientside && !serverside &&
 		player.id == consoleplayer_id &&
-						 consoleplayer().userinfo.predict_weapons;
+		consoleplayer().userinfo.predict_weapons;
 
 	if (!serverside && !predict_puffs)
 		return;
