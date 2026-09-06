@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2026 by Jess W
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,13 +25,15 @@
 #include "g_gametype.h"
 #include "p_local.h"
 
+EXTERN_CVAR (cl_noclip_spectator)
+
 fixed_t cam_x = 0;
 fixed_t cam_y = 0;
 fixed_t cam_z = 0;
 angle_t cam_angle = 0;
 fixed_t cam_pitch = 0;
 
-std::string Freecam::prevmap = "";
+std::string Freecam::prevmap;
 
 void Freecam::addFreecamPlayer()
 {
@@ -53,7 +55,7 @@ void Freecam::addFreecamPlayer()
 
 bool Freecam::wipedOnLevelChange(player_t* cam)
 {
-	return (cam->id == freecamplayer_id && cam->isFreecam && not cam->mo && not cam->camera);
+	return (cam->id == freecamplayer_id && cam->isFreecam && cam->mo == nullptr && cam->camera == nullptr);
 }
 
 void Freecam::buildCam(player_t* p_cam)
@@ -69,10 +71,14 @@ void Freecam::buildCam(player_t* p_cam)
 
 	// spec stuff
 	p_cam->cheats |= CF_FLY;
-	p_cam->cheats |= CF_NOCLIP;
 	p_cam->spectator = true;
 	p_cam->mo->oflags |= MFO_SPECTATOR;
 	p_cam->mo->flags &= ~MF_SOLID;
+
+	if (cl_noclip_spectator)
+	{
+		p_cam->cheats |= CF_NOCLIP;
+	}
 
 	// player.ingame() should always be false for the freecam
 	p_cam->playerstate = PST_FREECAM;  
@@ -80,12 +86,54 @@ void Freecam::buildCam(player_t* p_cam)
 	p_cam->isFreecam = true;
 }
 
-void Freecam::setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
+void Freecam::setStartPosition()
 {
-	cam_x = x;
-	cam_y = y;
-	cam_z = z;
-	cam_angle = angle;
+	mapthing2_t* start = nullptr;
+
+	if (not playerstarts.empty())
+	{
+		start = &playerstarts.front();
+	}
+	else if (not DeathMatchStarts.empty())
+	{
+		start = &DeathMatchStarts.front();
+	}
+	else
+	{
+		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+		{
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
+
+			if (not teamInfo->Starts.empty())
+			{
+				start = &teamInfo->Starts.front();
+				break;
+			}
+		}
+	}
+
+	if (start)
+	{
+		cam_x = start->x << FRACBITS;
+		cam_y = start->y << FRACBITS;
+		cam_z = ONFLOORZ;
+		cam_angle = ANG45 * (start->angle / 45);
+	}
+}
+
+void Freecam::moveToDeathSpot(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
+{
+	player_t* cam = &idplayer(freecamplayer_id);
+
+	if (cam->id == freecamplayer_id && cam->isFreecam)
+	{
+		cam->mo->x = x;
+		cam->mo->y = y;
+		cam->mo->z = z;
+		cam->mo->angle = angle;
+		cam->mo->pitch = 0;
+		cam->viewheight = VIEWHEIGHT;
+	}
 }
 
 void Freecam::savePosition()
@@ -114,13 +162,12 @@ void Freecam::reset()
 
 bool Freecam::allowAdd()
 {
-	return (netdemo.isPlaying() || G_IsLivesGame());
+	return (netdemo.isPlaying() || (G_IsLivesGame() && not G_IsTeamGame()));
 }
 
 bool Freecam::allowSpy()
 {
-	return (netdemo.isPlaying() || 
-			netdemo.isPaused() ||
+	return (netdemo.isInPlayback() || 
 			(consoleplayer().playerstate == PST_DEAD 
 				&& consoleplayer().lives < 1 
 				&& ::levelstate.getState() == LevelState::INGAME));

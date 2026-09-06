@@ -1587,6 +1587,10 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		ClientReplay::getInstance().reset();
 		for (size_t i = 0; i < MAXSAVETICS; i++)
 			localcmds[i].Clear();
+
+		if (not netdemo.isInPlayback() && Freecam::allowAdd())
+			Freecam::moveToDeathSpot(msg->target_pos().x(), msg->target_pos().y(),
+			                         msg->target_pos().z(), msg->target_angle());
 	}
 
 	if (target->player && lives >= 0)

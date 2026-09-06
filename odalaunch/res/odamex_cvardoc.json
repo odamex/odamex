@@ -699,6 +699,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Allows the spectator/freecam to move through walls",
+         "name" : "cl_noclip_spectator",
+         "type" : "boolean"
+      },
+      {
          "default" : true,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Predict weapon pickups",
