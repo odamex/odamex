@@ -84,106 +84,24 @@ char *copystring (const char *s)
 	return b;
 }
 
-//
-// ParseNum / ParseHex
-//
-int ParseHex(const char* hex)
-{
-	int num = 0;
-	const char* str = hex;
-
-	while (*str)
-	{
-		num <<= 4;
-		if (*str >= '0' && *str <= '9')
-			num += *str-'0';
-		else if (*str >= 'a' && *str <= 'f')
-			num += 10 + *str-'a';
-		else if (*str >= 'A' && *str <= 'F')
-			num += 10 + *str-'A';
-		else {
-			DPrintFmt("Bad hex number: {}\n",hex);
-			return 0;
-		}
-		str++;
-	}
-
-	return num;
-}
-
-//
-// ParseNum
-//
-int ParseNum(const char* str)
-{
-	if (str[0] == '$')
-		return ParseHex(str+1);
-	if (str[0] == '0' && str[1] == 'x')
-		return ParseHex(str+2);
-	return atol(str);
-}
-
-// [RH] Returns true if the specified string is a valid decimal number
-
-bool IsNum(const char* str)
-{
-	bool result = true;
-
-	while (*str)
-	{
-		if (((*str < '0') || (*str > '9')) && (*str != '-'))
-		{
-			result = false;
-			break;
-		}
-		str++;
-	}
-	return result;
-}
+// [RH] Returns true if the specified string is a valid decimal integer
 
 bool IsNum(std::string_view str)
 {
-	return std::all_of(str.begin(), str.end(), [](char c)
+	if (str.empty())
+		return false;
+
+	if (str.starts_with('-'))
+		str.remove_prefix(1);
+
+	return std::ranges::all_of(str, [](char c)
 	{
-		if (((c < '0') || (c > '9')) && (c != '-'))
+		if (((c < '0') || (c > '9')))
 		{
 			return false;
 		}
 		return true;
 	});
-}
-
-//
-// IsRealNum
-//
-// [SL] Returns true if the specified string is a valid real number
-//
-bool IsRealNum(const char* str)
-{
-	bool seen_decimal = false;
-
-	if (str == NULL || *str == 0)
-		return false;
-
-	if (str[0] == '+' || str[0] == '-')
-		str++;
-
-	while (*str)
-	{
-		if (*str == '.')
-		{
-			if (seen_decimal)
-				return false;		// second decimal point
-			else
-				seen_decimal = true;
-		}
-		else if (*str < '0' || *str > '9')
-			return false;
-
-		str++;
-	}
-
-	return true;
 }
 
 //
@@ -221,9 +139,17 @@ bool IsRealNum(std::string_view str)
 // sensitivity
 bool iequals(std::string_view s1, std::string_view s2)
 {
-	if (s1.size() != s2.size())
-		return false;
-	return strnicmp(s1.data(), s2.data(), s1.size()) == 0;
+	return IStringView{s1.data(), s1.length()} == IStringView{s2.data(), s2.length()};
+}
+
+bool iequals(const char* s1, const char* s2)
+{
+	return IStringView(s1) == s2;
+}
+
+bool iequals(IStringView s1, IStringView s2)
+{
+	return s1 == s2;
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,

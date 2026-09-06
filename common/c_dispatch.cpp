@@ -317,86 +317,89 @@ void C_DoCommand(std::string_view cmd, uint32_t key)
 	}
 }
 
-void AddCommandString(const std::string &str, uint32_t key)
+void AddCommandString(const std::string_view str, uint32_t key)
 {
-	size_t totallen = str.length();
-	if (!totallen)
+	if (str.empty())
 		return;
 
-	// pointers to the start and end of the current substring in str.c_str()
-	const char* cstart = str.c_str();
-	const char* cend;
+	size_t start = 0;
 
-	// stores a copy of the current substring
-	auto command = std::make_unique<char[]>(totallen + 1);
+	const auto next2chars = [str](const size_t end, const char c1, const char c2)
+	{
+		return end + 1 < str.size() && str[end] == c1 && str[end + 1] == c2;
+	};
 
 	// scan for a command ending
-	while (*cstart)
+	while (start < str.size())
 	{
-		const char* cp = cstart;
+		size_t end = start;
 
 		// read until the next command (separated by semicolon) or until comment (two slashes)
-		while (*cp != ';' && !(cp[0] == '/' && cp[1] == '/') && *cp != 0)
+		while (end < str.size())
 		{
-			if (cp[0] == '\\' && cp[1] != 0)
+			if (str[end] == ';')
+				break;
+
+			if (next2chars(end, '/', '/'))
+				break;
+
+			if (str[end] == '\\' && end + 1 < str.size())
 			{
 				// [AM] Skip two chars if escaped.
-				cp += 2;
+				end += 2;
+				continue;
 			}
-			else if (*cp == '"')
+
+			if (str[end] == '"')
 			{
+				end++;
+
 				// Ignore ';' if it is inside a pair of quotes.
-				while (1)
+				while (end < str.size())
 				{
-					cp++;
-					if (*cp == 0)
-					{
-						// End of string.
-						break;
-					}
-					if (cp[0] == '\\' && cp[1] == '"')
+					if (next2chars(end, '\\', '"'))
 					{
 						// [AM] Skip over escaped quote.
-						cp++;
+						end += 2;
+						continue;
 					}
-					else if (*cp == '"')
+
+					if (str[end] == '"')
 					{
 						// End of quote.  Skip over ending quote.
-						cp++;
+						end++;
 						break;
 					}
+
+					end++;
 				}
+
+				continue;
 			}
-			else
-			{
-				// Advance to next char.
-				cp++;
-			}
+
+			// Advance to next char.
+			end++;
 		}
 
-		cend = cp - 1;
+		auto command = str.substr(start, end - start);
 
 		// remove leading and trailing whitespace
-		while (cstart < cend && *cstart == ' ')
-			cstart++;
-		while (cend > cstart && *cend == ' ')
-			cend--;
+		while (command.starts_with(' '))
+			command.remove_prefix(1);
+		while (command.ends_with(' '))
+			command.remove_prefix(1);
 
-		size_t clength = cend - cstart + 1;
-		memcpy(command.get(), cstart, clength);
-		command[clength] = '\0';
-
-		C_DoCommand(command.get(), key);
+		C_DoCommand(command, key);
 
 		// don't parse anymore if there's a comment
-		if (cp[0] == '/' && cp[1] == '/')
+		if (next2chars(end, '/', '/'))
 			break;
 
 		// are there more commands following this one?
-		if (*cp == ';')
-			cstart = cp + 1;
-		else
-			cstart = cp;
+		if (end < str.size() && str[end] == ';')
+			end++;
+
+		start = end;
 	}
 }
 
@@ -770,7 +773,7 @@ std::string BuildString (size_t argc, std::vector<std::string> args)
 
 // [AM] Take a string, quote it, and escape it, making it suitable for parsing
 //      as an argument.
-std::string C_QuoteString(const std::string &argstr)
+std::string C_QuoteString(const std::string_view argstr)
 {
 	std::ostringstream buffer;
 	buffer << "\"";

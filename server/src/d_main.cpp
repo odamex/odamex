@@ -110,7 +110,7 @@ void D_DoomLoop (void)
 		{
 			D_RunTics(SV_RunTics, SV_DisplayTics);
 		}
-		catch (CRecoverableError &error)
+		catch (const CRecoverableError& error)
 		{
 			PrintFmt(PRINT_ERROR, "ERROR: {}\n", error.GetMsg());
 			PrintFmt("sleeping for 10 seconds before map reload...");

@@ -43,162 +43,154 @@ extern NetDemo netdemo;
 /* Most of these bindings are equivalent
  * to the original DOOM's keymappings.
  */
-OBinding DefaultBindings[] =
+constexpr std::array DefaultBindings = std::to_array<OBinding>(
 {
-	{"tilde", "toggleconsole"},
-	{"grave", "toggleconsole"},		// <- This is new
-	{"1", "impulse 1"},
-	{"2", "impulse 2"},
-	{"3", "impulse 3"},
-	{"4", "impulse 4"},
-	{"5", "impulse 5"},
-	{"6", "impulse 6"},
-	{"7", "impulse 7"},
-	{"8", "impulse 8"},
-	{"-", "sizedown"},
-	{"=", "sizeup"},
-	{"leftctrl", "+attack"},
-	{"leftalt", "+strafe"},
-	{"leftshift", "+speed"},
-	{"rightshift", "+speed"},
-	{"capslock", "togglerun"},
-	{"space", "+use"},
-	{"e", "+use"},
-	{"uparrow", "+forward"},
-	{"downarrow", "+back"},
-	{"rightarrow", "+right"},
-	{"leftarrow", "+left"},
-	{"w", "+forward"},
-	{"s", "+back"},
-	{"a", "+moveleft"},
-	{"d", "+moveright"},
+	{.Key = "tilde",      .Bind = "toggleconsole" },
+	{.Key = "grave",      .Bind = "toggleconsole" }, // <- This is new
+	{.Key = "1",          .Bind = "impulse 1"     },
+	{.Key = "2",          .Bind = "impulse 2"     },
+	{.Key = "3",          .Bind = "impulse 3"     },
+	{.Key = "4",          .Bind = "impulse 4"     },
+	{.Key = "5",          .Bind = "impulse 5"     },
+	{.Key = "6",          .Bind = "impulse 6"     },
+	{.Key = "7",          .Bind = "impulse 7"     },
+	{.Key = "8",          .Bind = "impulse 8"     },
+	{.Key = "-",          .Bind = "sizedown"      },
+	{.Key = "=",          .Bind = "sizeup"        },
+	{.Key = "leftctrl",   .Bind = "+attack"       },
+	{.Key = "leftalt",    .Bind = "+strafe"       },
+	{.Key = "leftshift",  .Bind = "+speed"        },
+	{.Key = "rightshift", .Bind = "+speed"        },
+	{.Key = "capslock",   .Bind = "togglerun"     },
+	{.Key = "space",      .Bind = "+use"          },
+	{.Key = "e",          .Bind = "+use"          },
+	{.Key = "uparrow",    .Bind = "+forward"      },
+	{.Key = "downarrow",  .Bind = "+back"         },
+	{.Key = "rightarrow", .Bind = "+right"        },
+	{.Key = "leftarrow",  .Bind = "+left"         },
+	{.Key = "w",          .Bind = "+forward"      },
+	{.Key = "s",          .Bind = "+back"         },
+	{.Key = "a",          .Bind = "+moveleft"     },
+	{.Key = "d",          .Bind = "+moveright"    },
 #ifdef GCONSOLE
-	{"hat1right", "messagemode2"},
-	{"hat1left", "spynext"},
-	{"hat1up", "messagemode"},
-	{"hat1down", "impulse 3"},
-	{"joy1", "+use"},
-	{"joy2", "weapnext"},
-	{"joy3", "+jump"},
-	{"joy4", "weapprev"},
-	{"joy5", "togglemap"},
-	{"joy6", "+showscores"},
-	{"joy7", "+speed"},
-	{"joy8", "+attack"},
-	{"joy10", "toggleconsole"},
-	{"joy12", "centerview"},
+	{.Key = "hat1right",  .Bind = "messagemode2"  },
+	{.Key = "hat1left",   .Bind = "spynext"       },
+	{.Key = "hat1up",     .Bind = "messagemode"   },
+	{.Key = "hat1down",   .Bind = "impulse 3"     },
+	{.Key = "joy1",       .Bind = "+use"          },
+	{.Key = "joy2",       .Bind = "weapnext"      },
+	{.Key = "joy3",       .Bind = "+jump"         },
+	{.Key = "joy4",       .Bind = "weapprev"      },
+	{.Key = "joy5",       .Bind = "togglemap"     },
+	{.Key = "joy6",       .Bind = "+showscores"   },
+	{.Key = "joy7",       .Bind = "+speed"        },
+	{.Key = "joy8",       .Bind = "+attack"       },
+	{.Key = "joy10",      .Bind = "toggleconsole" },
+	{.Key = "joy12",      .Bind = "centerview"    },
 #else
-	{"mouse1", "+attack"},
-	{"mouse2", "+strafe"},
-	{"mouse3", "+forward"},
-	{"mouse4", "+jump"},		// <- So is this <- change to jump
-	{"mouse5", "+speed"},		// <- new for +speed
-	{"joy1", "+jump"},
-	{"joy2", "+use"},
-	{"joy5", "+showscores"},
-	{"joy8", "togglemap"},
-	{"joy9", "ready"},
-	{"joy10", "weapprev"},
-	{"joy11", "weapnext"},
-	{"joy20", "+use"},
-	{"joy21", "+attack"},
-	{"mwheelup", "weapprev"},
-	{"mwheeldown", "weapnext"},
+	{.Key = "mouse1",     .Bind = "+attack"       },
+	{.Key = "mouse2",     .Bind = "+strafe"       },
+	{.Key = "mouse3",     .Bind = "+forward"      },
+	{.Key = "mouse4",     .Bind = "+jump"         }, // <- So is this <- change to jump
+	{.Key = "mouse5",     .Bind = "+speed"        }, // <- new for +speed
+	{.Key = "joy1",       .Bind = "+jump"         },
+	{.Key = "joy2",       .Bind = "+use"          },
+	{.Key = "joy5",       .Bind = "+showscores"   },
+	{.Key = "joy8",       .Bind = "togglemap"     },
+	{.Key = "joy9",       .Bind = "ready"         },
+	{.Key = "joy10",      .Bind = "weapprev"      },
+	{.Key = "joy11",      .Bind = "weapnext"      },
+	{.Key = "joy20",      .Bind = "+use"          },
+	{.Key = "joy21",      .Bind = "+attack"       },
+	{.Key = "mwheelup",   .Bind = "weapprev"      },
+	{.Key = "mwheeldown", .Bind = "weapnext"      },
 #endif
-	{"f1", "menu_help"},
-	{"f2", "menu_save"},
-	{"f3", "menu_load"},
-	{"f4", "menu_options"},		// <- Since we don't have a separate sound menu anymore
-	{"f5", "menu_display"},		// <- More useful than just changing the detail level
-	{"f6", "quicksave"},
-	{"f7", "menu_endgame"},
-	{"f8", "togglemessages"},
-	{"f9", "quickload"},
-	{"f10", "menu_quit"},
-	{"tab", "togglemap"},
-	{"pause", "pause"},
-	{"sysrq", "screenshot"},	// <- Also known as the Print Screen key
-	{"print", "screenshot"},	// <- AZERTY equivalent
-	{"t", "messagemode"},
-	{"enter", "messagemode"},
-	{"y", "messagemode2"},
-	{"\\", "+showscores"},		// <- Another new command
-	{"f11", "bumpgamma"},
-	{"f12", "spynext"},
-	{"pgup", "vote_yes"},		// <- New for voting
-	{"pgdn", "vote_no"},		// <- New for voting
-	{"home", "ready"},
-	{"end", "spectate"},
-	{"m", "changeteams"},
-	{ NULL, NULL }
-};
+	{.Key = "f1",         .Bind = "menu_help"     },
+	{.Key = "f2",         .Bind = "menu_save"     },
+	{.Key = "f3",         .Bind = "menu_load"     },
+	{.Key = "f4",         .Bind = "menu_options"  }, // <- Since we don't have a separate sound menu anymore
+	{.Key = "f5",         .Bind = "menu_display"  }, // <- More useful than just changing the detail level
+	{.Key = "f6",         .Bind = "quicksave"     },
+	{.Key = "f7",         .Bind = "menu_endgame"  },
+	{.Key = "f8",         .Bind = "togglemessages"},
+	{.Key = "f9",         .Bind = "quickload"     },
+	{.Key = "f10",        .Bind = "menu_quit"     },
+	{.Key = "tab",        .Bind = "togglemap"     },
+	{.Key = "pause",      .Bind = "pause"         },
+	{.Key = "sysrq",      .Bind = "screenshot"    }, // <- Also known as the Print Screen key
+	{.Key = "print",      .Bind = "screenshot"    }, // <- AZERTY equivalent
+	{.Key = "t",          .Bind = "messagemode"   },
+	{.Key = "enter",      .Bind = "messagemode"   },
+	{.Key = "y",          .Bind = "messagemode2"  },
+	{.Key = "\\",         .Bind = "+showscores"   }, // <- Another new command
+	{.Key = "f11",        .Bind = "bumpgamma"     },
+	{.Key = "f12",        .Bind = "spynext"       },
+	{.Key = "pgup",       .Bind = "vote_yes"      }, // <- New for voting
+	{.Key = "pgdn",       .Bind = "vote_no"       }, // <- New for voting
+	{.Key = "home",       .Bind = "ready"         },
+	{.Key = "end",        .Bind = "spectate"      },
+	{.Key = "m",          .Bind = "changeteams"   },
+});
 
 /* Special bindings when it comes
  * to Odamex's demo playbacking.
  */
-OBinding DefaultNetDemoBindings[] =
+constexpr std::array DefaultNetDemoBindings = std::to_array<OBinding>(
 {
-	{"leftarrow", "netrew"},
-	{"rightarrow", "netff"},
-	{"uparrow", "netprevmap"},
-	{"downarrow", "netnextmap"},
-	{"space", "netpause"},
-	{"pgup", "netprotoup"},
-	{"pgdn", "netprotodown"},
-	{ NULL, NULL }
-};
+	{.Key = "leftarrow",  .Bind = "netrew"      },
+	{.Key = "rightarrow", .Bind = "netff"       },
+	{.Key = "uparrow",    .Bind = "netprevmap"  },
+	{.Key = "downarrow",  .Bind = "netnextmap"  },
+	{.Key = "space",      .Bind = "netpause"    },
+	{.Key = "pgup",       .Bind = "netprotoup"  },
+	{.Key = "pgdn",       .Bind = "netprotodown"},
+});
 
 /* Special bindings for the automap
  */
-OBinding DefaultAutomapBindings[] =
+constexpr std::array DefaultAutomapBindings = std::to_array<OBinding>(
 {
-	{ "g", "am_grid" },
-	{ "m", "am_setmark" },
-	{ "c", "am_clearmarks" },
-	{ "f", "am_togglefollow" },
-	{ "=", "+am_zoomin" },
-	{ "kp+", "+am_zoomin" },
-	{ "-", "+am_zoomout" },
-	{ "kp-", "+am_zoomout" },
-	{ "uparrow", "+am_panup"},
-	{ "downarrow", "+am_pandown"},
-	{ "leftarrow", "+am_panleft"},
-	{ "rightarrow", "+am_panright"},
-	{ "0", "am_big"},
-	{ NULL, NULL }
-};
+	{.Key = "g",          .Bind = "am_grid"        },
+	{.Key = "m",          .Bind = "am_setmark"     },
+	{.Key = "c",          .Bind = "am_clearmarks"  },
+	{.Key = "f",          .Bind = "am_togglefollow"},
+	{.Key = "=",          .Bind = "+am_zoomin"     },
+	{.Key = "kp+",        .Bind = "+am_zoomin"     },
+	{.Key = "-",          .Bind = "+am_zoomout"    },
+	{.Key = "kp-",        .Bind = "+am_zoomout"    },
+	{.Key = "uparrow",    .Bind = "+am_panup"      },
+	{.Key = "downarrow",  .Bind = "+am_pandown"    },
+	{.Key = "leftarrow",  .Bind = "+am_panleft"    },
+	{.Key = "rightarrow", .Bind = "+am_panright"   },
+	{.Key = "0",          .Bind = "am_big"         },
+});
 
 OKeyBindings Bindings, DoubleBindings, AutomapBindings, NetDemoBindings;
 
 struct KeyState
 {
-	KeyState() :
-		double_click_time(0), double_clicked(false), key_down(false)
-	{}
-
-	int double_click_time;
-	bool double_clicked;
-	bool key_down;
+	int double_click_time = 0;
+	bool double_clicked = false;
+	bool key_down = false;
 };
 
-typedef OHashTable<int, KeyState> KeyStateTable;
+using KeyStateTable = OHashTable<int, KeyState>;
 static KeyStateTable KeyStates;
 
 
-void OKeyBindings::SetBindingType(std::string cmd)
+void OKeyBindings::SetBindingType(IString cmd)
 {
-	command = cmd;
+	command = std::move(cmd);
 }
 
-void OKeyBindings::UnbindKey(const char* key)
+void OKeyBindings::UnbindKey(IStringView keyname)
 {
-	std::string keyname = StdStringToLower(key);
-	int keycode = I_GetKeyFromName(keyname);
+	const auto keycode = I_GetKeyFromName(keyname);
 
 	if (keycode)
-		Binds.erase(keycode);
+		Binds.erase(keycode.value());
 	else
-		PrintFmt(PRINT_WARNING, "Unknown key {:s}\n", C_QuoteString(key));
+		PrintFmt(PRINT_WARNING, "Unknown key {:s}\n", C_QuoteString(IStringToStdStringView(keyname)));
 }
 
 void OKeyBindings::UnbindAll()
@@ -210,8 +202,8 @@ void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 {
 	if (argc > 1)
 	{
-		std::string key_name = StdStringToLower(argv[1]);
-		int key = I_GetKeyFromName(key_name);
+		IString key_name = argv[1];
+		auto key = I_GetKeyFromName(key_name);
 		if (!key)
 		{
 			PrintFmt(PRINT_HIGH, "Unknown key {:s}\n", C_QuoteString(argv[1]));
@@ -219,9 +211,9 @@ void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 		else
 		{
 			if (argc == 2)
-				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", key_name, C_QuoteString(Binds[key]));
+				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", key_name, C_QuoteString(IStringToStdStringView(Binds[key.value()])));
 			else
-				Binds[key] = argv[2];
+				Binds[key.value()] = argv[2];
 		}
 	}
 	else
@@ -230,26 +222,25 @@ void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 		for (const auto& [key, binding] : Binds)
 		{
 			if (!binding.empty())
-				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", I_GetKeyName(key), C_QuoteString(binding));
+				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", I_GetKeyName(key), C_QuoteString(IStringToStdStringView(binding)));
 		}
 	}
 }
 
-void OKeyBindings::DoBind(const char* key, const char* bind)
+void OKeyBindings::DoBind(IStringView key, const char* bind)
 {
-	int keynum = I_GetKeyFromName(StdStringToLower(key));
-	if (keynum != 0)
+	auto keynum = I_GetKeyFromName(key);
+	if (keynum)
 	{
-		this->Binds[keynum] = bind;
+		this->Binds[keynum.value()] = bind;
 	}
 }
 
-void OKeyBindings::SetBinds(const OBinding* binds)
+void OKeyBindings::SetBinds(std::span<const OBinding> binds)
 {
-	while (binds->Key)
+	for (const auto& [key, bind] : binds)
 	{
-		DoBind(binds->Key, binds->Bind);
-		binds++;
+		DoBind(key, bind);
 	}
 }
 
@@ -266,7 +257,7 @@ bool C_DoNetDemoKey(const event_t& ev)
 	if (not netdemo.isInPlayback())
 		return false;
 
-	const std::string *binding = nullptr;
+	const IString *binding = nullptr;
 
 	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return false;
@@ -275,14 +266,14 @@ bool C_DoNetDemoKey(const event_t& ev)
 
 	// hardcode the pause key to also control netpause
 	if (iequals(Bindings.Binds[ev.data1], "pause"))
-		binding = &NetDemoBindings.Binds[I_GetKeyFromName("space")];
+		binding = &NetDemoBindings.Binds[I_GetKeyFromName("space").value()];
 
 	// nothing bound to this key specific to netdemos?
 	if (binding->empty())
 		return false;
 
 	if (ev.type == ev_keydown)
-		AddCommandString(*binding, ev.data1);
+		AddCommandString(IStringToStdStringView(*binding), ev.data1);
 
 	return true;
 }
@@ -329,7 +320,7 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return false;
 
-	const std::string* binding = NULL;
+	const IString* binding = NULL;
 	int key = ev.data1;
 
 	KeyState& key_state = KeyStates[key];
@@ -366,7 +357,7 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 	{
 		if (ev.type == ev_keydown)
 		{
-			AddCommandString(*binding, key);
+			AddCommandString(IStringToStdStringView(*binding), key);
 			key_state.key_down = true;
 		}
 		else if (ev.type == ev_keyup)
@@ -379,9 +370,9 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 
 			if (achar == 0 || (*binding)[achar - 1] <= ' ')
 			{
-				std::string action_release(*binding);
+				IString action_release(*binding);
 				action_release[achar] = '-';
-				AddCommandString(action_release, key);
+				AddCommandString(IStringToStdStringView(action_release), key);
 			}
 		}
 
@@ -404,15 +395,15 @@ void C_ReleaseKeys()
 		if (key_state.key_down)
 		{
 			key_state.key_down = false;
-			std::string *binding = &Bindings.Binds[key];
+			IString *binding = &Bindings.Binds[key];
 			if (!binding->empty())
 			{
 				size_t achar = binding->find_first_of('+');
-				if (achar != std::string::npos && (achar == 0 || (*binding)[achar - 1] <= ' '))
+				if (achar != IString::npos && (achar == 0 || (*binding)[achar - 1] <= ' '))
 				{
-					std::string action_release(*binding);
+					IString action_release(*binding);
 					action_release[achar] = '-';
-					AddCommandString(action_release, key);
+					AddCommandString(IStringToStdStringView(action_release), key);
 				}
 			}
 		}
@@ -426,7 +417,7 @@ void OKeyBindings::ArchiveBindings(FILE* f)
 	for (const auto& [key, binding] : Binds)
 	{
 		if (!binding.empty())
-			fmt::print(f, "{} {} {}\n", command, C_QuoteString(I_GetKeyName(key)), C_QuoteString(binding));
+			fmt::print(f, "{} {} {}\n", command, C_QuoteString(I_GetKeyName(key)), C_QuoteString(IStringToStdStringView(binding)));
 	}
 }
 
@@ -438,7 +429,7 @@ int OKeyBindings::GetKeysForCommand(const char* cmd, int* first, int* second)
 
 	for (const auto& [key, binding] : Binds)
 	{
-		if (!binding.empty() && stricmp(cmd, binding.c_str()) == 0)
+		if (!binding.empty() && binding == cmd)
 		{
 			c++;
 			if (c == 1)
@@ -487,7 +478,7 @@ std::vector<int> OKeyBindings::GetKeysForCommandByLastDevice(const char* cmd)
 
 	for (const auto& [key, binding] : Binds)
 	{
-		if (binding.empty() || stricmp(cmd, binding.c_str()) != 0)
+		if (binding.empty() || binding.c_str() != cmd)
 			continue;
 
 		if (C_KeyMatchesDevice(key, device))
@@ -528,7 +519,7 @@ void OKeyBindings::UnbindACommand(const char* str)
 {
 	for (BindingTable::iterator it = Binds.begin(); it != Binds.end(); ++it)
 	{
-		const std::string& binding = it->second;
+		const IString& binding = it->second;
 		if (!binding.empty() && stricmp(str, binding.c_str()) == 0)
 		{
 			Binds.erase(it);
@@ -564,7 +555,7 @@ void OKeyBindings::ChangeBinding (const char *str, int newone)
 }
 
 
-const std::string &OKeyBindings::GetBind (int key)
+const IString &OKeyBindings::GetBind (int key)
 {
 	return Binds[key];
 }
@@ -589,7 +580,7 @@ std::string OKeyBindings::GetKeynameFromCommand(const char* cmd, bool bTwoEntrie
 }
 
 
-void C_BindingsInit(void)
+void C_BindingsInit()
 {
 	Bindings.SetBindingType("bind");
 	DoubleBindings.SetBindingType("doublebind");
@@ -598,7 +589,7 @@ void C_BindingsInit(void)
 }
 
 // Bind default bindings
-void C_BindDefaults(void)
+void C_BindDefaults()
 {
 	Bindings.SetBinds(DefaultBindings);
 	AutomapBindings.SetBinds(DefaultAutomapBindings);

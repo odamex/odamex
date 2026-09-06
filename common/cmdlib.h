@@ -47,34 +47,26 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+#include "istring.h"
+
 struct OTimespan
 {
-	int csecs;
-	int tics;
-	int seconds;
-	int minutes;
-	int hours;
-	OTimespan() : csecs(0), tics(0), seconds(0), minutes(0), hours(0) { }
+	int csecs   = 0;
+	int tics    = 0;
+	int seconds = 0;
+	int minutes = 0;
+	int hours   = 0;
 };
 
-int		ParseHex(const char *str);
-int 	ParseNum(const char *str);
-bool	IsNum(const char* str);		// [RH] added
-bool	IsNum(std::string_view str);
-bool	IsRealNum(const char* str);
-bool	IsRealNum(std::string_view str);
+bool IsNum(std::string_view str);
+bool IsRealNum(std::string_view str);
 
-template<std::integral T>
+template <std::integral T>
 std::optional<T> ParseNum(std::string_view str, int base = 10)
 {
     T out;
 	while (!str.empty() && std::isspace(static_cast<unsigned char>(str.front())))
 		str.remove_prefix(1);
-	if (str[0] == '$')
-	{
-		str.remove_prefix(1);
-		base = 16;
-	}
     const std::from_chars_result result = std::from_chars(str.data(), str.data() + str.size(), out, base);
     if (result.ec != std::errc())
     {
@@ -86,7 +78,7 @@ std::optional<T> ParseNum(std::string_view str, int base = 10)
 namespace cmd_detail
 {
 
-template<typename T>
+template <typename T>
 concept has_from_chars_float =
 requires(const char* f, const char* l, T v)
 {
@@ -98,7 +90,7 @@ inline constexpr bool always_false = false;
 
 }
 
-template<typename T>
+template <typename T>
 requires std::is_floating_point_v<T>
 std::optional<T> ParseNum(std::string_view str)
 {
@@ -146,6 +138,8 @@ std::optional<T> ParseNum(std::string_view str)
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
 bool iequals(std::string_view, std::string_view);
+bool iequals(const char*, const char*);
+bool iequals(IStringView, IStringView);
 
 size_t  StdStringFind(const std::string& haystack, const std::string& needle,
     size_t pos = 0, size_t n = std::string::npos, bool CIS = false);

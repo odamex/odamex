@@ -32,14 +32,14 @@ void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
 // add commands to the console as if they were typed in
 // for map changing, etc
-void AddCommandString(const std::string &cmd, uint32_t key = 0);
+void AddCommandString(const std::string_view cmd, uint32_t key = 0);
 
 struct parse_string_result_t
 {
 	std::optional<std::string> token;
 	std::string_view rest;
 
-	operator bool() const
+	explicit operator bool() const
 	{
 		return token.has_value();
 	}
@@ -53,7 +53,7 @@ std::string C_ArgCombine(size_t argc, const char **argv);
 std::string BuildString (size_t argc, std::vector<std::string> args);
 
 // quote a string
-std::string C_QuoteString(const std::string &argstr);
+std::string C_QuoteString(const std::string_view argstr);
 
 // escape a list of wads
 std::string C_EscapeWadList(const std::vector<std::string> wadlist);
