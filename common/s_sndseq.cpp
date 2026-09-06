@@ -337,7 +337,7 @@ static void AssignTranslations (OScanner &os, int seq, seqtype_t type)
 
 	while (os.scan() && !os.crossed())
 	{
-		if (IsNum(os.getToken().c_str()))
+		if (IsNum(os.getToken()))
 		{
 			SeqTrans[(os.getTokenInt() & 63) + type * 64] = seq;
 		}
