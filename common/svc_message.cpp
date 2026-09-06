@@ -203,7 +203,6 @@ odaproto::svc::PlayerPsprites SVC_PlayerPsprites(const player_t& player)
 {
 	odaproto::svc::PlayerPsprites msg;
 
-	msg.set_pid(player.id);
 	for (const auto& psprite : player.psprites)
 	{
 		FillPsprite(*msg.add_psprites(), psprite);

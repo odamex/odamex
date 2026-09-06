@@ -3673,15 +3673,7 @@ static void SV_SendMonitoredInventoryChanges(player_t& player)
 
 	if (player.pspriteMonitors.EvaluateAsChanged())
 	{
-		// The monitor only latches on a state number change, not every tic, so an idle
-		// weapon costs nothing here and a firing one is a handful of messages a second.
-		// Everyone gets them because a netdemo is only ever recorded from one client's
-		// stream - without this there is nothing to animate the weapon of a player that
-		// the recorder happened not to be spying.
-		const odaproto::svc::PlayerPsprites psprites = SVC_PlayerPsprites(player);
-
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), psprites);
-		MSG_BroadcastSVC(CLBUF_RELIABLE, psprites, player.id);
+		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerPsprites(player));
 	}
 }
 

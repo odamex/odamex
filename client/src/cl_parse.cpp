@@ -3439,21 +3439,6 @@ void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
 	    psprites[i].tics     = msg->psprites(i).tics();
 	}
 
-	// Nothing predicts another player's weapon, just take what the server says.
-	if (msg->pid() != consoleplayer_id)
-	{
-		player_t& p = idplayer(msg->pid());
-		if (!validplayer(p) || !p.mo)
-			return;
-
-		for (size_t i = 0; i < count; ++i)
-		{
-			p.psprites[i].statenum = psprites[i].statenum;
-			p.psprites[i].tics = psprites[i].tics;
-		}
-		return;
-	}
-
 	if (rollerState.ResolvePsprites(ThisMessageClientTic(),
 	                                psprites,
 	                                consoleplayer()))
