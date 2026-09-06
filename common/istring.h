@@ -163,8 +163,6 @@ consteval IStringView operator""_isv(const char* s, const std::size_t l)
 	return {s, l};
 }
 
-#undef ISTRING_CONSTEXPR
-
 // maybe we should wrap std::hash<std::string_view> so that the hashes are equivalent?
 // the tradeoff is that there's no way to do that without allocating
 // the other way of getting that would be normalizing IString but that means we lose
@@ -193,8 +191,10 @@ struct std::hash<IStringView>
 template<>
 struct std::hash<IString>
 {
-	constexpr std::size_t operator()(const IString& str) const noexcept
+	ISTRING_CONSTEXPR std::size_t operator()(const IString& str) const noexcept
 	{
 		return std::hash<IStringView>{}(str);
 	}
 };
+
+#undef ISTRING_CONSTEXPR
