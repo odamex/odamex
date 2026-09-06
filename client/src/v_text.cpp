@@ -35,6 +35,9 @@
 
 #include "hashtable.h"
 #include "cmdlib.h"
+#include "c_dispatch.h"
+#include "r_draw.h"
+#include "v_palette.h"
 
 EXTERN_CVAR(msg0color)
 EXTERN_CVAR(msg1color)
@@ -631,5 +634,122 @@ void V_FreeBrokenLines(brokenlines_t* lines)
 	}
 }
 
+
+//
+// Look up one of the fonts by name, or NULL if there is no such font.
+//
+static const lumpHandle_t* V_FontByName(const char* fontname)
+{
+	if (!stricmp(fontname, "BIGFONT"))
+		return ::hu_bigfont;
+	else if (!stricmp(fontname, "SMALLFONT"))
+		return ::hu_smallfont;
+	else if (!stricmp(fontname, "DIGFONT"))
+		return ::hu_digfont;
+
+	return NULL;
+}
+
+//
+// Temporary cvar dumpfontcolors
+//
+// Reports which palette indices a font's glyphs actually uses.
+//
+// Recoloring a font means translating those indices, so this is
+// how you find out whether a font sits on one of the ramps
+// R_BuildFontTranslation hardcodes:
+// 
+// 0xb0-0xbf for Doom, Doom 2, Final Doom, and Freedoom
+// 0x70-0x7f for Chex Quest
+// 0xc3-0xcf and 0xf0-0xf2 for HacX
+//
+// Using this it should be easy to get the index range, sorted by
+// luminance, and then pick a ramp to translate it to.
+//
+// UZDoom does something similar to recolor font glyphs outside
+// the normal ramps.
+//
+BEGIN_COMMAND(dumpfontcolors)
+{
+	const lumpHandle_t* font = ::hu_font.data();
+	const char* fontname = "current";
+
+	if (argc > 1)
+	{
+		font = V_FontByName(argv[1]);
+		fontname = argv[1];
+
+		if (font == NULL)
+		{
+			PrintFmt(PRINT_HIGH, "dumpfontcolors [BIGFONT|SMALLFONT|DIGFONT]\n");
+			return;
+		}
+	}
+
+	if (font == NULL)
+	{
+		PrintFmt(PRINT_HIGH, "No font loaded.\n");
+		return;
+	}
+
+	std::vector<const patch_t*> glyphs;
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		if (!font[i].empty())
+			glyphs.push_back(W_ResolvePatchHandle(font[i]));
+	}
+
+	std::vector<palindex_t> indices;
+	R_SampleLuminosity(glyphs.data(), glyphs.size(), indices);
+
+	if (indices.empty())
+	{
+		PrintFmt(PRINT_HIGH, "{} font: {} glyphs, no colors sampled.\n", fontname,
+		         glyphs.size());
+		return;
+	}
+
+	PrintFmt(PRINT_HIGH, "{} font: {} glyphs, {} colors.\n", fontname, glyphs.size(),
+	         indices.size());
+
+	// Ascending, collapsed into runs, to line up against the hardcoded ramps.
+	std::vector<palindex_t> ascending = indices;
+	std::sort(ascending.begin(), ascending.end());
+
+	std::string ranges;
+	for (size_t i = 0; i < ascending.size();)
+	{
+		size_t run = i;
+		while (run + 1 < ascending.size() && ascending[run + 1] == ascending[run] + 1)
+			run++;
+
+		if (!ranges.empty())
+			ranges += ", ";
+
+		if (run == i)
+			ranges += fmt::format("{:02x}", ascending[i]);
+		else
+			ranges += fmt::format("{:02x}-{:02x}", ascending[i], ascending[run]);
+
+		i = run + 1;
+	}
+	PrintFmt(PRINT_HIGH, "  indices: {}\n", ranges);
+
+	// The order a translation would actually walk them in.
+	const palette_t* pal = V_GetDefaultPalette();
+	std::string ordered;
+	for (size_t i = 0; i < indices.size(); i++)
+	{
+		if (!ordered.empty())
+			ordered += " ";
+
+		ordered += fmt::format("{:02x}", indices[i]);
+	}
+	PrintFmt(PRINT_HIGH, "  darkest first: {}\n", ordered);
+	PrintFmt(PRINT_HIGH, "  luminance {:.3f} to {:.3f}\n",
+	         V_Luminance(pal->basecolors[indices.front()]),
+	         V_Luminance(pal->basecolors[indices.back()]));
+}
+END_COMMAND(dumpfontcolors)
 
 VERSION_CONTROL (v_text_cpp, "$Id$")
