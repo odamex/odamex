@@ -276,7 +276,7 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 // Map reloads are supported through WAD reload so no need for vanilla tilde
 // reload hack here
 //
-void AddFile(const OResFile& file)
+void AddFile(const OResFile& file, int filenum)
 {
 	const std::string filename = file.getFullpath();
 	auto handle = std::make_shared<std::ifstream>(filename,
@@ -307,6 +307,7 @@ void AddFile(const OResFile& file)
 
 		lumpinfo.emplace_back(lumpname);    // FYI - OLumpName's constructor does the toupper.
 		lumpinfo.back().size = static_cast<int>(M_FileLength(*handle));
+		lumpinfo.back().file = filenum;
 
 		PrintFmt(PRINT_HIGH, " (single lump)\n");
 	}
@@ -332,7 +333,7 @@ void AddFile(const OResFile& file)
 				PrintFmt(PRINT_HIGH, "failed to read file info for lump number {} in {}\n", i, filename);
 				return;
 			}
-			lumpinfo.emplace_back(handle, lump);
+			lumpinfo.emplace_back(handle, lump, filenum);
 		}
 		PrintFmt(PRINT_HIGH, " ({} lumps)\n", header.numlumps);
 	}
@@ -501,7 +502,7 @@ void W_InitMultipleFiles(const OResFiles& files)
 		if (std::find(loaded.begin(), loaded.end(), files.at(i).getMD5()) ==
 		    loaded.end())
 		{
-			AddFile(files.at(i));
+			AddFile(files.at(i), static_cast<int>(i));
 			loaded.push_back(files.at(i).getMD5());
 		}
 	}
@@ -831,6 +832,18 @@ patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 	return static_cast<patch_t*>(lumpcache[lumpnum]);
 }
 
+OLumpName W_CheckWidescreenPatch(const OLumpName& lump_main)
+{
+	OLumpName lump_wide = "W_";
+	static constexpr int max_lump_name_length = 8;
+  	strncpy(&lump_wide[2], lump_main.data(), max_lump_name_length - 2);
+
+	if (W_CheckNumForName(lump_wide) >= 0)
+		return lump_wide;
+
+	return lump_main;
+}
+
 patch_t* W_CachePatch(const char* name, const zoneTag_e tag)
 {
 	return W_CachePatch(W_GetNumForName(name), tag);
@@ -907,6 +920,60 @@ int W_FindLump (const char *name, int lastlump)
 	}
 
 	return -1;
+}
+
+//
+// W_GetLumpFile
+//
+// Returns the index into wadfiles of the file a lump came from, or -1 if
+// the engine generated the lump instead of reading it.
+//
+int W_GetLumpFile(unsigned lump)
+{
+	if (lump >= lumpinfo.size())
+		I_Error("{}: {} >= numlumps", __FUNCTION__, lump);
+
+	return lumpinfo[lump].file;
+}
+
+//
+// W_IsLumpFromPWAD
+//
+bool W_IsLumpFromPWAD(unsigned lump)
+{
+	return W_GetLumpFile(lump) >= WADFILE_FIRSTPWAD;
+}
+
+bool W_IsLumpFromPWAD(const char* name, namespace_t namespc)
+{
+	const int lump = W_CheckNumForName(name, namespc);
+
+	return lump >= 0 && W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+}
+
+//
+// W_IsLumpReplaced
+//
+// Returns true if an IWAD/Odamex lump was replaced by a PWAD.
+// 
+// If this lump didn't have an original to replace (meaning its
+// original to the PWAD) it will return false.
+//
+bool W_IsLumpReplaced(const char* name, namespace_t namespc)
+{
+	const int lump = W_CheckNumForName(name, namespc);
+
+	if (lump < 0 || !W_IsLumpFromPWAD(static_cast<unsigned>(lump)))
+		return false;
+
+	for (int i = lumpinfo[lump].next; i >= 0; i = lumpinfo[i].next)
+	{
+		if (!strnicmp(lumpinfo[i].name.c_str(), name, 8) &&
+		    lumpinfo[i].namespc == namespc)
+			return true;
+	}
+
+	return false;
 }
 
 //

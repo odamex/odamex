@@ -21,14 +21,14 @@ trap cleanup EXIT
 odamex_dir="Odamex"
 mkdir -p "${staging_dir}/${odamex_dir}"
 
-if [ -d "build/client/odamex.app" ]; then
-  cp -R "build/client/odamex.app" "${staging_dir}/${odamex_dir}/Odamex.app"
+if [ -d "build/odamex/odamex.app" ]; then
+  cp -R "build/odamex/odamex.app" "${staging_dir}/${odamex_dir}/Odamex.app"
 fi
-if [ -d "build/odalaunch/odalaunch.app" ]; then
-  cp -R "build/odalaunch/odalaunch.app" "${staging_dir}/${odamex_dir}/odalaunch.app"
+if [ -d "build/odamex/odalaunch.app" ]; then
+  cp -R "build/odamex/odalaunch.app" "${staging_dir}/${odamex_dir}/odalaunch.app"
 fi
-if [ -f "build/server/odasrv" ]; then
-  cp "build/server/odasrv" "${staging_dir}/${odamex_dir}/odasrv"
+if [ -f "build/odamex/odasrv" ]; then
+  cp "build/odamex/odasrv" "${staging_dir}/${odamex_dir}/odasrv"
 fi
 if [ -f "${staging_dir}/${odamex_dir}/Odamex.app/Contents/MacOS/odamex.wad" ]; then
   ln -s "Odamex.app/Contents/MacOS/odamex.wad" "${staging_dir}/${odamex_dir}/odamex.wad"
@@ -93,8 +93,8 @@ set_custom_icon() {
 }
 
 folder_icon="media/odamex.icns"
-if [ -f "build/client/odamex.app/Contents/Resources/odamex.icns" ]; then
-  folder_icon="build/client/odamex.app/Contents/Resources/odamex.icns"
+if [ -f "build/odamex/odamex.app/Contents/Resources/odamex.icns" ]; then
+  folder_icon="build/odamex/odamex.app/Contents/Resources/odamex.icns"
 fi
 set_custom_icon "${staging_dir}/${odamex_dir}" "${folder_icon}"
 set_custom_icon "${staging_dir}/${odamex_dir}/odasrv" "media/odasrv.icns"

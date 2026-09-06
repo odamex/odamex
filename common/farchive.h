@@ -30,6 +30,7 @@
 
 #include "dobject.h"
 #include "doomtype.h"
+#include "flags.h"
 
 #define FA_RESET (1 << 0)
 
@@ -158,20 +159,25 @@ public:
 	// ------------ Streaming-in operations ---------------
 
 	// Integer operators
-	template <typename IntegerType>
-	requires std::is_integral_v<IntegerType>
-	FArchive& operator<< (IntegerType value)
+	FArchive& operator<< (std::integral auto value)
 	{
 		value = BESWAP(value);
 		Write(&value, sizeof(value));
 		return *this;
 	}
 
-	template <typename EnumeratedType>
-	requires std::is_enum_v<EnumeratedType>
-	FArchive& operator<< (EnumeratedType value)
+	// any enum or enum class without their own overload for operator<<
+	// will use this version
+	FArchive& operator<< (const OUtil::Enum auto value)
 	{
-		*this << static_cast<std::underlying_type_t<EnumeratedType> >(value);
+		*this << OUtil::to_underlying(value);
+		return *this;
+	}
+
+	template <typename E>
+	FArchive& operator<< (const OFlags<E> value)
+	{
+		*this << value.to_int();
 		return *this;
 	}
 
@@ -202,27 +208,33 @@ public:
 	// ------------ Streaming-out operations ---------------
 
 	// Integer operators
-	template <typename IntegerType>
-	requires std::is_integral_v<IntegerType>
-	FArchive& operator>> (IntegerType& value)
+	FArchive& operator>> (std::integral auto& value)
 	{
 		Read(&value, sizeof(value));
 		value = BESWAP(value);
 		return *this;
 	}
 
-	template <typename EnumeratedType>
-	requires std::is_enum_v<EnumeratedType>
-	FArchive& operator>> (EnumeratedType& value)
+	template <OUtil::Enum E>
+	FArchive& operator>> (E& value)
 	{
-		std::underlying_type_t<EnumeratedType> temp;
+		std::underlying_type_t<E> temp;
 		*this >> temp;
-		value = static_cast<EnumeratedType>(temp);
+		value = static_cast<E>(temp);
+		return *this;
+	}
+
+	template <typename E>
+	FArchive& operator>> (OFlags<E>& value)
+	{
+		std::remove_cvref_t<decltype(value.to_int())> temp;
+		*this >> temp;
+		value = OFlags<E>::unsafe_from_int(temp);
 		return *this;
 	}
 
 	// Overload bool because its size is implementation-defined, and we want archived sizes to be exact.
-	FArchive& operator>>(bool& b)
+	FArchive& operator>> (bool& b)
 	{
 		uint8_t value;
 		*this >> value;
@@ -236,6 +248,7 @@ public:
 		size_t arraySize{0};
 
 		*this >> arraySize;
+		// TODO: should we probably just use I_Error here?
 		assert(arraySize == o_array.size());
 
 		for (auto& element : o_array)

@@ -56,18 +56,18 @@ typedef struct gameinfo_s
 {
 	int flags;
 	OLumpName titlePage;
-	OLumpName creditPages[2];
+	std::array<OLumpName, 2> creditPages;
 	OLumpName titleMusic;
 	int titleTime;
 	int advisoryTime;
 	bool noLoopFinaleMusic;
 	int pageTime;
-	char chatSound[MAX_SNDNAME + 1];
+	std::array<char, MAX_SNDNAME + 1> chatSound;
 	OLumpName finaleMusic;
 	OLumpName finaleFlat;
-	OLumpName finalePage[3];
-	OLumpName infoPage[3];
-	char quitSound[MAX_SNDNAME + 1];
+	std::array<OLumpName, 3> finalePage;
+	std::array<OLumpName, 3> infoPage;
+	std::array<char, MAX_SNDNAME + 1> quitSound;
 	int maxSwitch;
 	OLumpName borderFlat;
 	gameborder_t border;

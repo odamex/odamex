@@ -74,24 +74,24 @@ extern baseapp_t baseapp;
 /**
  * @brief The passed expression only appears on the client.
  */
-#define CLIENT_ONLY(expr) expr
+#define CLIENT_ONLY(...) __VA_ARGS__
 #else
 /**
  * @brief The passed expression only appears on the client.
  */
-#define CLIENT_ONLY(expr)
+#define CLIENT_ONLY(...)
 #endif
 
 #if defined(SERVER_APP)
 /**
  * @brief The passed expression only appears on the server.
  */
-#define SERVER_ONLY(expr) expr
+#define SERVER_ONLY(...) __VA_ARGS__
 #else
 /**
  * @brief The passed expression only appears on the server.
  */
-#define SERVER_ONLY(expr)
+#define SERVER_ONLY(...)
 #endif
 
 #define DO_PRAGMA(x) _Pragma(#x)

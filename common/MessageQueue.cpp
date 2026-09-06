@@ -22,6 +22,8 @@
 
 #include "MessageQueue.h"
 
+#include "msg_pack.h"
+
 buf_t& MessageQueue::Obtain()
 {
 	if (m_queue.size() > 0)
@@ -47,12 +49,24 @@ buf_t& MessageQueue::Obtain()
 	return m_queue.back();
 }
 
-void MessageQueue::Emplace(buf_t& io_str)
+void MessageQueue::Write(msg_t id, const std::string& msg)
 {
-	buf_t& obtainedBuffer = MessageQueue::Obtain();
+	if (simulated_connection)
+		return;
 
-	obtainedBuffer.swap(io_str);
-	io_str.clear();
+	buf_t& buffer = Obtain();
+	buffer.WriteMessage(id, msg);
+}
+
+void MessageQueue::Write(const google::protobuf::Message& msg)
+{
+	if (simulated_connection)
+		return;
+
+	if (const auto messageId = MSG_Pack(m_serializationBuffer, msg))
+	{
+		Write(*messageId, m_serializationBuffer);
+	}
 }
 
 void MessageQueue::PopFromQueueToFreeStack()

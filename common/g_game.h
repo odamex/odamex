@@ -67,6 +67,8 @@ void G_AddViewAngle(int yaw);
 void G_AddViewPitch(int pitch);
 bool G_ShouldIgnoreMouseInput();
 
+void G_SetFast(const bool wantFast);
+
 extern int mapchange;
 
 inline bool timingdemo; // if true, exit with report on completion

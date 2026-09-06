@@ -36,6 +36,7 @@
 #include "d_dehacked.h"
 #include "m_doomobjcontainer.h"
 #include "d_items.h"
+#include "g_game.h"
 #include "gstrings.h"
 #include "i_system.h"
 #include "info.h"
@@ -51,7 +52,10 @@
 // specifies that a thing should be hanging from the ceiling but doesn't specify
 // a height for the thing, since these are the heights it probably wants.
 
-static constexpr byte OrgHeights[] = {
+namespace
+{
+
+constexpr byte OrgHeights[] = {
     56, 56,  56, 56, 16, 56, 8,  16, 64, 8,  56, 56, 56, 56, 56, 64, 8,  64, 56, 100,
     64, 110, 56, 56, 72, 16, 32, 32, 32, 16, 42, 8,  8,  8,  8,  8,  8,  16, 16, 16,
     16, 16,  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
@@ -62,17 +66,17 @@ static constexpr byte OrgHeights[] = {
 };
 
 // English strings for DeHackEd replacement.
-static StringTable ENGStrings;
+StringTable ENGStrings;
 
 // This is an offset to be used for computing the text stuff.
 // Straight from the DeHackEd source which was
 // Written by Greg Lewis, gregl@umich.edu.
-static constexpr int toff[] = {129044, 129284, 129380};
+constexpr std::array<int, 3> toff = {129044, 129284, 129380};
 
 // A conversion array to convert from the 448 code pointers to the 966
 // Frames that exist.
 // Again taken from the DeHackEd source.
-static constexpr short codepconv[522] = {
+constexpr std::array<int16_t, 522> codepconv = {
     1, 2, 3, 4, 6, 9, 10, 11, 12, 14, 16, 17, 18, 19, 20, 22, 29, 30, 31, 32, 33, 34, 36,
     38, 39, 41, 43, 44, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
     63, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
@@ -109,10 +113,12 @@ static constexpr short codepconv[522] = {
     1075 // Total: 522
 };
 
-static bool BackedUpData = false;
+bool BackedUpData = false;
 // This is the original data before it gets replaced by a patch.
-static std::string OrgSprNames[::NUMSPRITES];
-static actionf_p1 OrgActionPtrs[::NUMSTATES];
+std::array<std::string, ::NUMSPRITES> OrgSprNames;
+std::array<actionf_p1, ::NUMSTATES> OrgActionPtrs;
+
+} // namespace
 
 // Functions used in a .bex [CODEPTR] chunk
 void A_FireRailgun(AActor*);
@@ -241,166 +247,183 @@ void A_GunFlashTo(AActor* mo);
 struct CodePtr
 {
 	const char* name;
-	actionf_p1 func;
-	int argcount;
-	long default_args[MAXSTATEARGS];
+	actionf_p1 func = nullptr;
+	int argcount = 0;
+	std::array<statearg_t, MAXSTATEARGS> default_args{};
 };
 
-static constexpr CodePtr CodePtrs[] = {
-    {"NULL", NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"MonsterRail", A_MonsterRail, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireRailgun", A_FireRailgun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireRailgunLeft", A_FireRailgunLeft, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireRailgunRight", A_FireRailgunRight, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"RailWait", A_RailWait, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Light0", A_Light0, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"WeaponReady", A_WeaponReady, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Lower", A_Lower, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Raise", A_Raise, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Punch", A_Punch, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"ReFire", A_ReFire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FirePistol", A_FirePistol, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Light1", A_Light1, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireShotgun", A_FireShotgun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Light2", A_Light2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireShotgun2", A_FireShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CheckReload", A_CheckReload, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"OpenShotgun2", A_OpenShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"LoadShotgun2", A_LoadShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CloseShotgun2", A_CloseShotgun2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireCGun", A_FireCGun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"GunFlash", A_GunFlash, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireMissile", A_FireMissile, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Saw", A_Saw, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FirePlasma", A_FirePlasma, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BFGsound", A_BFGsound, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireBFG", A_FireBFG, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BFGSpray", A_BFGSpray, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Explode", A_Explode, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Pain", A_Pain, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"PlayerScream", A_PlayerScream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Fall", A_Fall, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"XScream", A_XScream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Look", A_Look, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Chase", A_Chase, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FaceTarget", A_FaceTarget, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"PosAttack", A_PosAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Scream", A_Scream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SPosAttack", A_SPosAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"VileChase", A_VileChase, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"VileStart", A_VileStart, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"VileTarget", A_VileTarget, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"VileAttack", A_VileAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"StartFire", A_StartFire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Fire", A_Fire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FireCrackle", A_FireCrackle, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Tracer", A_Tracer, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SkelWhoosh", A_SkelWhoosh, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SkelFist", A_SkelFist, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SkelMissile", A_SkelMissile, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FatRaise", A_FatRaise, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FatAttack1", A_FatAttack1, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FatAttack2", A_FatAttack2, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FatAttack3", A_FatAttack3, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BossDeath", A_BossDeath, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CPosAttack", A_CPosAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CPosRefire", A_CPosRefire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"TroopAttack", A_TroopAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SargAttack", A_SargAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"HeadAttack", A_HeadAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BruisAttack", A_BruisAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SkullAttack", A_SkullAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Metal", A_Metal, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SpidRefire", A_SpidRefire, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BabyMetal", A_BabyMetal, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BspiAttack", A_BspiAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Hoof", A_Hoof, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CyberAttack", A_CyberAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"PainAttack", A_PainAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"PainDie", A_PainDie, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"KeenDie", A_KeenDie, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainPain", A_BrainPain, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainScream", A_BrainScream, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainDie", A_BrainDie, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainAwake", A_BrainAwake, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainSpit", A_BrainSpit, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SpawnSound", A_SpawnSound, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SpawnFly", A_SpawnFly, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"BrainExplode", A_BrainExplode, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"Detonate", A_Detonate, 0, {0, 0, 0, 0, 0, 0, 0, 0}},     // killough 8/9/98
-    {"Mushroom", A_Mushroom, 0, {0, 0, 0, 0, 0, 0, 0, 0}},     // killough 10/98
-    {"Die", A_Die, 0, {0, 0, 0, 0, 0, 0, 0, 0}},               // killough 11/98
-    {"Spawn", A_Spawn, 0, {0, 0, 0, 0, 0, 0, 0, 0}},           // killough 11/98
-    {"Turn", A_Turn, 0, {0, 0, 0, 0, 0, 0, 0, 0}},             // killough 11/98
-    {"Face", A_Face, 0, {0, 0, 0, 0, 0, 0, 0, 0}},             // killough 11/98
-    {"Scratch", A_Scratch, 0, {0, 0, 0, 0, 0, 0, 0, 0}},       // killough 11/98
-    {"PlaySound", A_PlaySound, 0, {0, 0, 0, 0, 0, 0, 0, 0}},   // killough 11/98
-    {"RandomJump", A_RandomJump, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, // killough 11/98
-    {"LineEffect", A_LineEffect, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, // killough 11/98
-    {"BetaSkullAttack", A_BetaSkullAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-	{"Stop", A_Stop, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+namespace
+{
+
+constexpr std::array<CodePtr, 120> CodePtrs = {{
+    {.name = "NULL"},
+    {.name = "MonsterRail",      .func = A_MonsterRail     },
+    {.name = "FireRailgun",      .func = A_FireRailgun     },
+    {.name = "FireRailgunLeft",  .func = A_FireRailgunLeft },
+    {.name = "FireRailgunRight", .func = A_FireRailgunRight},
+    {.name = "RailWait",         .func = A_RailWait        },
+    {.name = "Light0",           .func = A_Light0          },
+    {.name = "WeaponReady",      .func = A_WeaponReady     },
+    {.name = "Lower",            .func = A_Lower           },
+    {.name = "Raise",            .func = A_Raise           },
+    {.name = "Punch",            .func = A_Punch           },
+    {.name = "ReFire",           .func = A_ReFire          },
+    {.name = "FirePistol",       .func = A_FirePistol      },
+    {.name = "Light1",           .func = A_Light1          },
+    {.name = "FireShotgun",      .func = A_FireShotgun     },
+    {.name = "Light2",           .func = A_Light2          },
+    {.name = "FireShotgun2",     .func = A_FireShotgun2    },
+    {.name = "CheckReload",      .func = A_CheckReload     },
+    {.name = "OpenShotgun2",     .func = A_OpenShotgun2    },
+    {.name = "LoadShotgun2",     .func = A_LoadShotgun2    },
+    {.name = "CloseShotgun2",    .func = A_CloseShotgun2   },
+    {.name = "FireCGun",         .func = A_FireCGun        },
+    {.name = "GunFlash",         .func = A_GunFlash        },
+    {.name = "FireMissile",      .func = A_FireMissile     },
+    {.name = "Saw",              .func = A_Saw             },
+    {.name = "FirePlasma",       .func = A_FirePlasma      },
+    {.name = "BFGsound",         .func = A_BFGsound        },
+    {.name = "FireBFG",          .func = A_FireBFG         },
+    {.name = "BFGSpray",         .func = A_BFGSpray        },
+    {.name = "Explode",          .func = A_Explode         },
+    {.name = "Pain",             .func = A_Pain            },
+    {.name = "PlayerScream",     .func = A_PlayerScream    },
+    {.name = "Fall",             .func = A_Fall            },
+    {.name = "XScream",          .func = A_XScream         },
+    {.name = "Look",             .func = A_Look            },
+    {.name = "Chase",            .func = A_Chase           },
+    {.name = "FaceTarget",       .func = A_FaceTarget      },
+    {.name = "PosAttack",        .func = A_PosAttack       },
+    {.name = "Scream",           .func = A_Scream          },
+    {.name = "SPosAttack",       .func = A_SPosAttack      },
+    {.name = "VileChase",        .func = A_VileChase       },
+    {.name = "VileStart",        .func = A_VileStart       },
+    {.name = "VileTarget",       .func = A_VileTarget      },
+    {.name = "VileAttack",       .func = A_VileAttack      },
+    {.name = "StartFire",        .func = A_StartFire       },
+    {.name = "Fire",             .func = A_Fire            },
+    {.name = "FireCrackle",      .func = A_FireCrackle     },
+    {.name = "Tracer",           .func = A_Tracer          },
+    {.name = "SkelWhoosh",       .func = A_SkelWhoosh      },
+    {.name = "SkelFist",         .func = A_SkelFist        },
+    {.name = "SkelMissile",      .func = A_SkelMissile     },
+    {.name = "FatRaise",         .func = A_FatRaise        },
+    {.name = "FatAttack1",       .func = A_FatAttack1      },
+    {.name = "FatAttack2",       .func = A_FatAttack2      },
+    {.name = "FatAttack3",       .func = A_FatAttack3      },
+    {.name = "BossDeath",        .func = A_BossDeath       },
+    {.name = "CPosAttack",       .func = A_CPosAttack      },
+    {.name = "CPosRefire",       .func = A_CPosRefire      },
+    {.name = "TroopAttack",      .func = A_TroopAttack     },
+    {.name = "SargAttack",       .func = A_SargAttack      },
+    {.name = "HeadAttack",       .func = A_HeadAttack      },
+    {.name = "BruisAttack",      .func = A_BruisAttack     },
+    {.name = "SkullAttack",      .func = A_SkullAttack     },
+    {.name = "Metal",            .func = A_Metal           },
+    {.name = "SpidRefire",       .func = A_SpidRefire      },
+    {.name = "BabyMetal",        .func = A_BabyMetal       },
+    {.name = "BspiAttack",       .func = A_BspiAttack      },
+    {.name = "Hoof",             .func = A_Hoof            },
+    {.name = "CyberAttack",      .func = A_CyberAttack     },
+    {.name = "PainAttack",       .func = A_PainAttack      },
+    {.name = "PainDie",          .func = A_PainDie         },
+    {.name = "KeenDie",          .func = A_KeenDie         },
+    {.name = "BrainPain",        .func = A_BrainPain       },
+    {.name = "BrainScream",      .func = A_BrainScream     },
+    {.name = "BrainDie",         .func = A_BrainDie        },
+    {.name = "BrainAwake",       .func = A_BrainAwake      },
+    {.name = "BrainSpit",        .func = A_BrainSpit       },
+    {.name = "SpawnSound",       .func = A_SpawnSound      },
+    {.name = "SpawnFly",         .func = A_SpawnFly        },
+    {.name = "BrainExplode",     .func = A_BrainExplode    },
+    {.name = "Detonate",         .func = A_Detonate        }, // killough 8/9/98
+    {.name = "Mushroom",         .func = A_Mushroom        }, // killough 10/98
+    {.name = "Die",              .func = A_Die             }, // killough 11/98
+    {.name = "Spawn",            .func = A_Spawn           }, // killough 11/98
+    {.name = "Turn",             .func = A_Turn            }, // killough 11/98
+    {.name = "Face",             .func = A_Face            }, // killough 11/98
+    {.name = "Scratch",          .func = A_Scratch         }, // killough 11/98
+    {.name = "PlaySound",        .func = A_PlaySound       }, // killough 11/98
+    {.name = "RandomJump",       .func = A_RandomJump      }, // killough 11/98
+    {.name = "LineEffect",       .func = A_LineEffect      }, // killough 11/98
+    {.name = "BetaSkullAttack",  .func = A_BetaSkullAttack },
+	{.name = "Stop",             .func = A_Stop            },
 
     // MBF21 Pointers
-    {"SpawnObject", A_SpawnObject, 8, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"MonsterProjectile", A_MonsterProjectile, 5, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"MonsterBulletAttack", A_MonsterBulletAttack, 5, {0, 0, 1, 3, 5, 0, 0, 0}},
-    {"MonsterMeleeAttack", A_MonsterMeleeAttack, 4, {3, 8, 0, 0, 0, 0, 0, 0}},
-    {"RadiusDamage", A_RadiusDamage, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"NoiseAlert", A_NoiseAlert, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"HealChase", A_HealChase, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"SeekTracer", A_SeekTracer, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"FindTracer", A_FindTracer, 2, {0, 10, 0, 0, 0, 0, 0, 0}},
-    {"ClearTracer", A_ClearTracer, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfHealthBelow", A_JumpIfHealthBelow, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfTargetInSight", A_JumpIfTargetInSight, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfTargetCloser", A_JumpIfTargetCloser, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfTracerInSight", A_JumpIfTracerInSight, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfTracerCloser", A_JumpIfTracerCloser, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"JumpIfFlagsSet", A_JumpIfFlagsSet, 3, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"AddFlags", A_AddFlags, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"RemoveFlags", A_RemoveFlags, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+    {.name = "SpawnObject",         .func = A_SpawnObject,         .argcount = 8                                              },
+    {.name = "MonsterProjectile",   .func = A_MonsterProjectile,   .argcount = 5                                              },
+    {.name = "MonsterBulletAttack", .func = A_MonsterBulletAttack, .argcount = 5, .default_args = {0, 0, 1, 3, 5, 0, 0, 0}    },
+    {.name = "MonsterMeleeAttack",  .func = A_MonsterMeleeAttack,  .argcount = 4, .default_args = {3, 8, 0, 0, 0, 0, 0, 0}    },
+    {.name = "RadiusDamage",        .func = A_RadiusDamage,        .argcount = 2                                              },
+    {.name = "NoiseAlert",          .func = A_NoiseAlert                                                                      },
+    {.name = "HealChase",           .func = A_HealChase,           .argcount = 2                                              },
+    {.name = "SeekTracer",          .func = A_SeekTracer,          .argcount = 2                                              },
+    {.name = "FindTracer",          .func = A_FindTracer,          .argcount = 2, .default_args = {0, 10, 0, 0, 0, 0, 0, 0}   },
+    {.name = "ClearTracer",         .func = A_ClearTracer                                                                     },
+    {.name = "JumpIfHealthBelow",   .func = A_JumpIfHealthBelow,   .argcount = 2                                              },
+    {.name = "JumpIfTargetInSight", .func = A_JumpIfTargetInSight, .argcount = 2                                              },
+    {.name = "JumpIfTargetCloser",  .func = A_JumpIfTargetCloser,  .argcount = 2                                              },
+    {.name = "JumpIfTracerInSight", .func = A_JumpIfTracerInSight, .argcount = 2                                              },
+    {.name = "JumpIfTracerCloser",  .func = A_JumpIfTracerCloser,  .argcount = 2                                              },
+    {.name = "JumpIfFlagsSet",      .func = A_JumpIfFlagsSet,      .argcount = 3                                              },
+    {.name = "AddFlags",            .func = A_AddFlags,            .argcount = 2                                              },
+    {.name = "RemoveFlags",         .func = A_RemoveFlags,         .argcount = 2                                              },
     // MBF21 Weapon Pointers
-    {"WeaponProjectile", A_WeaponProjectile, 5, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"WeaponBulletAttack", A_WeaponBulletAttack, 5, {0, 0, 1, 5, 3, 0, 0, 0}},
-    {"WeaponMeleeAttack", A_WeaponMeleeAttack, 5, {2, 10, 1 * FRACUNIT, 0, 0, 0, 0, 0}},
-    {"WeaponSound", A_WeaponSound, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"WeaponAlert", A_WeaponAlert, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"WeaponJump", A_WeaponJump, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"ConsumeAmmo", A_ConsumeAmmo, 1, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"CheckAmmo", A_CheckAmmo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"RefireTo", A_RefireTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-    {"GunFlashTo", A_GunFlashTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
-};
+    {.name = "WeaponProjectile",    .func = A_WeaponProjectile,    .argcount = 5                                              },
+    {.name = "WeaponBulletAttack",  .func = A_WeaponBulletAttack,  .argcount = 5, .default_args = {0, 0, 1, 5, 3, 0, 0, 0}    },
+    {.name = "WeaponMeleeAttack",   .func = A_WeaponMeleeAttack,   .argcount = 5, .default_args = {2, 10, 1_fx, 0, 0, 0, 0, 0}},
+    {.name = "WeaponSound",         .func = A_WeaponSound,         .argcount = 2                                              },
+    {.name = "WeaponAlert",         .func = A_WeaponAlert,         .argcount = 0                                              },
+    {.name = "WeaponJump",          .func = A_WeaponJump,          .argcount = 2                                              },
+    {.name = "ConsumeAmmo",         .func = A_ConsumeAmmo,         .argcount = 1                                              },
+    {.name = "CheckAmmo",           .func = A_CheckAmmo,           .argcount = 2                                              },
+    {.name = "RefireTo",            .func = A_RefireTo,            .argcount = 2                                              },
+    {.name = "GunFlashTo",          .func = A_GunFlashTo,          .argcount = 2                                              },
+}};
 
-static constexpr struct
+struct flag_mapper_t
 {
 	std::string_view name;
-	int32_t mobjinfo_t::* flags;
 	int32_t dehBit;
-	int32_t internalBit;
-} mbf21flagtranslation[] = {
-	// flags2
-	{ "LOGRAV",         &mobjinfo_t::flags2, BIT(0),  MF2_LOGRAV },
-	{ "BOSS",           &mobjinfo_t::flags2, BIT(9),  MF2_BOSS },
-	{ "RIP",            &mobjinfo_t::flags2, BIT(17), MF2_RIP },
-	// flags3
-	{ "SHORTMRANGE",    &mobjinfo_t::flags3, BIT(1),  MF3_SHORTMRANGE },
-	{ "DMGIGNORED",     &mobjinfo_t::flags3, BIT(2),  MF3_DMGIGNORED },
-	{ "NORADIUSDMG",    &mobjinfo_t::flags3, BIT(3),  MF3_NORADIUSDMG },
-	{ "FORCERADIUSDMG", &mobjinfo_t::flags3, BIT(4),  MF3_FORCERADIUSDMG },
-	{ "HIGHERMPROB",    &mobjinfo_t::flags3, BIT(5),  MF3_HIGHERMPROB },
-	{ "RANGEHALF",      &mobjinfo_t::flags3, BIT(6),  MF3_RANGEHALF },
-	{ "NOTHRESHOLD",    &mobjinfo_t::flags3, BIT(7),  MF3_NOTHRESHOLD },
-	{ "LONGMELEE",      &mobjinfo_t::flags3, BIT(8),  MF3_LONGMELEE },
-	{ "MAP07BOSS1",     &mobjinfo_t::flags3, BIT(10), MF3_MAP07BOSS1 },
-	{ "MAP07BOSS2",     &mobjinfo_t::flags3, BIT(11), MF3_MAP07BOSS2 },
-	{ "E1M8BOSS",       &mobjinfo_t::flags3, BIT(12), MF3_E1M8BOSS },
-	{ "E2M8BOSS",       &mobjinfo_t::flags3, BIT(13), MF3_E2M8BOSS },
-	{ "E3M8BOSS",       &mobjinfo_t::flags3, BIT(14), MF3_E3M8BOSS },
-	{ "E4M6BOSS",       &mobjinfo_t::flags3, BIT(15), MF3_E4M6BOSS },
-	{ "E4M8BOSS",       &mobjinfo_t::flags3, BIT(16), MF3_E4M8BOSS },
-	{ "FULLVOLSOUNDS",  &mobjinfo_t::flags3, BIT(18), MF3_FULLVOLSOUNDS },
+	void (*setter)(mobjinfo_t&);
 };
+
+// for mapping dehacked MBF21 Bits property to the actual internal flags
+// dehBit is the bit used in a numeric MBF21 Bits, setter sets corresponding internal flag
+constexpr std::array<flag_mapper_t, 19> mbf21flagtranslation = {{
+	// flags2
+	{ .name = "LOGRAV",         .dehBit = BIT(0),  .setter = [](mobjinfo_t& info) { info.flags2 |= MF2_LOGRAV; } },
+	{ .name = "BOSS",           .dehBit = BIT(9),  .setter = [](mobjinfo_t& info) { info.flags2 |= MF2_BOSS; } },
+	{ .name = "RIP",            .dehBit = BIT(17), .setter = [](mobjinfo_t& info) { info.flags2 |= MF2_RIP; } },
+	// flags3
+	{ .name = "SHORTMRANGE",    .dehBit = BIT(1),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_SHORTMRANGE; } },
+	{ .name = "DMGIGNORED",     .dehBit = BIT(2),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_DMGIGNORED; } },
+	{ .name = "NORADIUSDMG",    .dehBit = BIT(3),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_NORADIUSDMG; } },
+	{ .name = "FORCERADIUSDMG", .dehBit = BIT(4),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_FORCERADIUSDMG; } },
+	{ .name = "HIGHERMPROB",    .dehBit = BIT(5),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_HIGHERMPROB; } },
+	{ .name = "RANGEHALF",      .dehBit = BIT(6),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_RANGEHALF; } },
+	{ .name = "NOTHRESHOLD",    .dehBit = BIT(7),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_NOTHRESHOLD; } },
+	{ .name = "LONGMELEE",      .dehBit = BIT(8),  .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_LONGMELEE; } },
+	{ .name = "MAP07BOSS1",     .dehBit = BIT(10), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_MAP07BOSS1; } },
+	{ .name = "MAP07BOSS2",     .dehBit = BIT(11), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_MAP07BOSS2; } },
+	{ .name = "E1M8BOSS",       .dehBit = BIT(12), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_E1M8BOSS; } },
+	{ .name = "E2M8BOSS",       .dehBit = BIT(13), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_E2M8BOSS; } },
+	{ .name = "E3M8BOSS",       .dehBit = BIT(14), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_E3M8BOSS; } },
+	{ .name = "E4M6BOSS",       .dehBit = BIT(15), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_E4M6BOSS; } },
+	{ .name = "E4M8BOSS",       .dehBit = BIT(16), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_E4M8BOSS; } },
+	{ .name = "FULLVOLSOUNDS",  .dehBit = BIT(18), .setter = [](mobjinfo_t& info) { info.flags3 |= MF3_FULLVOLSOUNDS; } },
+}};
+
+constexpr void ClearMBF21Bits(mobjinfo_t& info)
+{
+	info.flags2 &= ~(MF2_LOGRAV|MF2_BOSS|MF2_RIP);
+	info.flags3 &= ~(MF3_SHORTMRANGE|MF3_DMGIGNORED|MF3_NORADIUSDMG|MF3_FORCERADIUSDMG|
+	                 MF3_HIGHERMPROB|MF3_RANGEHALF|MF3_NOTHRESHOLD|MF3_LONGMELEE|
+	                 MF3_MAP07BOSS1|MF3_MAP07BOSS2|MF3_E1M8BOSS|MF3_E2M8BOSS|MF3_E3M8BOSS|
+	                 MF3_E4M6BOSS|MF3_E4M8BOSS|MF3_FULLVOLSOUNDS);
+};
+
+}
 
 struct Key
 {
@@ -410,27 +433,28 @@ struct Key
 
 class DehScanner;
 
-static void PatchThing(int, DehScanner&);
+static void PatchThing(int, std::string_view, DehScanner&);
 static void PatchSound(int, DehScanner&);
-static void PatchSounds(int, DehScanner&);
+static void PatchSounds(DehScanner&);
 static void PatchFrame(int, DehScanner&);
 static void PatchSprite(int, DehScanner&);
-static void PatchSprites(int, DehScanner&);
+static void PatchSprites(DehScanner&);
 static void PatchAmmo(int, DehScanner&);
 static void PatchWeapon(int, DehScanner&);
 static void PatchPointer(int, DehScanner&);
-static void PatchCheats(int, DehScanner&);
-static void PatchMisc(int, DehScanner&);
-static void PatchText(int, DehScanner&);
-static void PatchStrings(int, DehScanner&);
-static void PatchPars(int, DehScanner&);
-static void PatchCodePtrs(int, DehScanner&);
-static void PatchMusic(int, DehScanner&);
-static void PatchHelper(int, DehScanner&);
+static void PatchCheats(DehScanner&);
+static void PatchMisc(DehScanner&);
+static void PatchText(int, int, DehScanner&);
+static void PatchStrings(DehScanner&);
+static void PatchPars(DehScanner&);
+static void PatchCodePtrs(DehScanner&);
+static void PatchMusic(DehScanner&);
+static void PatchHelper(DehScanner&);
 static int DoInclude(std::string_view, size_t);
 
+static std::tuple<int, std::string_view> ParseThingHeader(std::string_view, size_t);
 static int ParsePointerHeader(std::string_view, size_t);
-static int ParseTextHeader(std::string_view, size_t);
+static std::tuple<int, int> ParseTextHeader(std::string_view, size_t);
 static int ParseClassicHeader(std::string_view header, size_t length)
 {
 	std::string_view textNum = header.substr(length);
@@ -445,41 +469,85 @@ static int ParseClassicHeader(std::string_view header, size_t length)
 	}
 };
 
+template <typename... Args>
+struct ModeFuncs
+{
+	void (*parsebody)(Args..., DehScanner&) = nullptr;
+
+	using HeaderResult =
+		std::conditional_t<
+			sizeof...(Args) == 1,
+			// Args...[0]
+			std::tuple_element_t<0, std::tuple<Args...>>,
+			std::tuple<Args...>>;
+
+	HeaderResult (*parseheader)(std::string_view, size_t) = nullptr;
+
+	void operator()(std::string_view header, size_t length, DehScanner& scanner) const
+	{
+		if constexpr (sizeof...(Args) == 1)
+		{
+			parsebody(parseheader(header, length), scanner);
+		}
+		else
+		{
+			std::apply(
+				[&](auto&&... args)
+				{
+					parsebody(std::forward<decltype(args)>(args)..., scanner);
+				},
+				parseheader(header, length)
+			);
+		}
+
+	}
+};
+
+template <>
+struct ModeFuncs<>
+{
+	void (*parsebody)(DehScanner&);
+
+	void operator()(std::string_view, size_t, DehScanner& scanner) const
+	{
+		parsebody(scanner);
+	}
+};
+
 static constexpr struct
 {
 	std::string_view name;
-	void (*parsebody)(int, DehScanner&);
-	int (*parseheader)(std::string_view, size_t) = [](std::string_view, size_t){ return 0; };
+	std::variant<ModeFuncs<>, ModeFuncs<int>, ModeFuncs<int, int>, ModeFuncs<int, std::string_view>> funcs;
 } Modes[] = {
     // https://eternity.youfailit.net/wiki/DeHackEd_/_BEX_Reference
 
     // These appear in .deh and .bex files
-    {"Thing", PatchThing, ParseClassicHeader},
-    {"Sound", PatchSound, ParseClassicHeader},
-    {"Frame", PatchFrame, ParseClassicHeader},
-    {"Sprite", PatchSprite, ParseClassicHeader},
-    {"Ammo", PatchAmmo, ParseClassicHeader},
-    {"Weapon", PatchWeapon, ParseClassicHeader},
-    {"Pointer", PatchPointer, ParsePointerHeader},
-    {"Cheat", PatchCheats},
-    {"Misc", PatchMisc},
-    {"Text", PatchText, ParseTextHeader},
+    {"Thing", ModeFuncs<int, std::string_view>{ PatchThing, ParseThingHeader }},
+    {"Sound", ModeFuncs<int>{ PatchSound, ParseClassicHeader }},
+    {"Frame", ModeFuncs<int>{ PatchFrame, ParseClassicHeader }},
+    {"Sprite", ModeFuncs<int>{ PatchSprite, ParseClassicHeader }},
+    {"Ammo", ModeFuncs<int>{ PatchAmmo, ParseClassicHeader }},
+    {"Weapon", ModeFuncs<int>{ PatchWeapon, ParseClassicHeader }},
+    {"Pointer", ModeFuncs<int>{ PatchPointer, ParsePointerHeader }},
+    {"Cheat", ModeFuncs<>{ PatchCheats }},
+    {"Misc", ModeFuncs<>{ PatchMisc }},
+    {"Text", ModeFuncs<int, int>{ PatchText, ParseTextHeader }},
     // These appear in .bex files
-    {"include", [](int, DehScanner&){}, DoInclude},
-    {"[STRINGS]", PatchStrings},
-    {"[PARS]", PatchPars},
-    {"[CODEPTR]", PatchCodePtrs},
+    {"include", ModeFuncs<int>{ [](int, DehScanner&){}, DoInclude }},
+    {"[STRINGS]", ModeFuncs<>{ PatchStrings }},
+    {"[PARS]", ModeFuncs<>{ PatchPars }},
+    {"[CODEPTR]", ModeFuncs<>{ PatchCodePtrs }},
     // Eternity engine added a few more features to BEX
-    {"[MUSIC]", PatchMusic},
+    {"[MUSIC]", ModeFuncs<>{ PatchMusic }},
 	// DSDHacked BEX additions
-	{"[SPRITES]", PatchSprites},
-	{"[SOUNDS]", PatchSounds},
-	{"[HELPER]", PatchHelper},
+	{"[SPRITES]", ModeFuncs<>{ PatchSprites }},
+	{"[SOUNDS]", ModeFuncs<>{ PatchSounds }},
+	{"[HELPER]", ModeFuncs<>{ PatchHelper }},
 };
 
 static bool HandleKey(std::span<const Key> keys, void* structure, std::string_view key, int value,
                       const int structsize);
-static void BackupData(void);
+static void BackupData();
 
 class DehScanner
 {
@@ -515,6 +583,7 @@ private:
         return true;
     }
 
+	[[nodiscard]]
 	bool isEmptyLine() const
 	{
 		return m_currentLine.empty() ||
@@ -525,11 +594,13 @@ private:
 			);
 	}
 
+	[[nodiscard]]
 	bool isCommentLine() const
 	{
 		return !m_currentLine.empty() && m_currentLine[0] == '#';
 	}
 
+	[[nodiscard]]
 	bool isKVLine() const
 	{
 		return !m_currentLine.empty() && m_currentLine.find('=') != std::string_view::npos;
@@ -544,6 +615,7 @@ private:
 		return str;
 	}
 
+	[[nodiscard]]
 	KVLine parseKV() const
     {
         size_t equalPos = m_currentLine.find('=');
@@ -552,11 +624,13 @@ private:
         return { key, value };
     }
 
+	[[nodiscard]]
     HeaderLine parseHeader() const
     {
         return trimSpace(m_currentLine);
     }
 
+	[[nodiscard]]
 	std::optional<Line> parseCurrentLine() const
     {
         if (isKVLine())
@@ -667,11 +741,16 @@ static void PrintUnknown(std::string_view key, const char* loc, const size_t idx
 
 static void HandleMode(std::string_view header, DehScanner& scanner)
 {
-	for (const auto& [name, parsebody, parseheader] : Modes)
+	// TODO C++20: restore the structured bindings here
+	// apparently apple clang doesn't support this yet even in C++20 mode
+	// for (const auto& [name, funcs] : Modes)
+	for (const auto& mode : Modes)
 	{
-		if (!strnicmp(name.data(), header.data(), name.size()))
+		if (header.length() >= mode.name.length() && !strnicmp(mode.name.data(), header.data(), mode.name.size()))
 		{
-			parsebody(parseheader(header, name.length()), scanner);
+			std::visit([&](const auto& func) {
+				func(header, mode.name.length(), scanner);
+			}, mode.funcs);
 			return;
 		}
 	}
@@ -719,10 +798,10 @@ struct DoomBackup_t
 } doomBackup;
 
 // [CMB] useful typedefs for iteration over global doom object containers
-typedef DoomObjectContainer<state_t, int32_t>::iterator StatesIterator;
-typedef DoomObjectContainer<mobjinfo_t, int32_t>::iterator MobjIterator;
-typedef DoomObjectContainer<std::string, int32_t>::iterator SpriteNamesIterator;
-typedef DoomObjectContainer<std::string, int32_t>::iterator SoundMapIterator;
+using StatesIterator = DoomObjectContainer<state_t, int32_t>::iterator;
+using MobjIterator = DoomObjectContainer<mobjinfo_t, int32_t>::iterator;
+using SpriteNamesIterator = DoomObjectContainer<std::string, int32_t>::iterator;
+using SoundMapIterator = DoomObjectContainer<std::string, int32_t>::iterator;
 
 static void BackupData(void)
 {
@@ -730,6 +809,9 @@ static void BackupData(void)
 	{
 		return;
 	}
+
+	// Make sure we undo any nightmare speed changes
+	G_SetFast(false);
 
 	// backup sprites
 	for (int i = 0; i < ::NUMSPRITES; i++)
@@ -770,9 +852,6 @@ void D_UndoDehPatch()
 	SoundMap = std::move(doomBackup.backupSoundMap);
 
 	D_BuildSpawnMap();
-
-	extern bool isFast;
-	isFast = false;
 
 	weaponinfo = doomBackup.backupWeaponInfo;
 	clipammo   = doomBackup.backupClipAmmo;
@@ -886,7 +965,38 @@ static auto SplitBexBits(std::string_view str, std::string_view delims)
     return out;
 }
 
-static void PatchThing(int thingNum, DehScanner& scanner)
+static std::tuple<int, std::string_view> ParseThingHeader(std::string_view header, size_t length) {
+	int thingNum;
+	std::string_view textNum = TrimStringViewStart(header.substr(length));
+	if (auto num = ParseNum<int32_t>(textNum))
+	{
+		thingNum = *num;
+	}
+	else
+	{
+		DPrintFmt("Invalid thing header: '{}'\n", header);
+		return { -1, "" };
+	}
+
+	const auto idxPastNum = textNum.find_first_not_of("0123456789");
+	if (idxPastNum == std::string_view::npos)
+		return { thingNum, "" };
+
+	std::string_view thingName = textNum.substr(idxPastNum);
+
+	thingName = TrimStringView(thingName);
+
+	if (thingName.size() < 2)
+		return { thingNum, "" };
+
+	// remove parentheses
+	thingName.remove_prefix(1);
+	thingName.remove_suffix(1);
+
+	return { thingNum, thingName };
+}
+
+static void PatchThing(int thingNum, std::string_view thingName, DehScanner& scanner)
 {
 	// flags can be specified by name (a .bex extension):
 	struct
@@ -991,7 +1101,9 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		info = &mobjinfo_it->second;
 	}
 
-#if defined _DEBUG
+	info->deh_name = thingName;
+
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Thing {} found.\n", thingNum);
 #endif
 
@@ -1014,7 +1126,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 
 		if (ends_with(key, " frame"))
 		{
-			statenum_t state = static_cast<statenum_t>(val);
+			const auto state = static_cast<statenum_t>(val);
 
 			if (starts_with(key, "Initial frame"))
 			{
@@ -1163,22 +1275,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		}
 		else if (iequals(key, "MBF21 Bits"))
 		{
-			static constexpr auto make_mask = [](const auto flagsPtr) -> int32_t
-			{
-			    int32_t mask = 0;
-			    for (const auto& f : mbf21flagtranslation)
-				{
-			        if (f.flags == flagsPtr)
-			            mask |= f.internalBit;
-				}
-			    return mask;
-			};
-
-			static constexpr int32_t flags2mask = make_mask(&mobjinfo_t::flags2);
-			static constexpr int32_t flags3mask = make_mask(&mobjinfo_t::flags3);
-
-			info->flags2 &= ~flags2mask;
-			info->flags3 &= ~flags3mask;
+			ClearMBF21Bits(*info);
 
 			for (const auto strval : SplitBexBits(value, ",+| \t\f\r"))
 			{
@@ -1187,20 +1284,20 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 					// TODO: maybe give a warning for out of range bits
 					const int32_t tempval = ParseNum<int32_t>(strval).value_or(0);
 
-					for (const auto& [_, flags, dehflag, internalflag] : mbf21flagtranslation)
+					for (const auto& [_, dehflag, setter] : mbf21flagtranslation)
 					{
 						if (tempval & dehflag)
-							info->*flags |= internalflag;
+							setter(*info);
 					}
 				}
 				else
 				{
 					bool found = false;
-					for (const auto& [name, flags, _, internalflag] : mbf21flagtranslation)
+					for (const auto& [name, _, setter] : mbf21flagtranslation)
 					{
 						if (iequals(strval, name))
 						{
-							info->*flags |= internalflag;
+							setter(*info);
 							found = true;
 						}
 					}
@@ -1259,15 +1356,15 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 			}
 			if (vchanged[0])
 			{
-				if (value[0] & MF_TRANSLUCENT)
+				info->flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(value[0]));
+				if (info->flags & MF_TRANSLUCENT)
 				{
 					info->translucency = TRANSLUC66;
 				}
-				info->flags = value[0];
 			}
 			if (vchanged[1])
 			{
-				info->flags2 = value[1];
+				info->flags2 = ActorFlags2::unsafe_from_int(static_cast<uint32_t>(value[1]));
 			}
 			if (vchanged[2])
 			{
@@ -1295,6 +1392,11 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		else if (iequals(key, "Mass"))
 		{
 			info->mass = val;
+		}
+		else if (iequals(key, "Tag"))
+		{
+			info->display_name = value;
+			info->display_name_set = true;
 		}
 		else
 		{
@@ -1419,7 +1521,7 @@ static void PatchFrame(int frameNum, DehScanner& scanner)
 			}
 		}
 	}
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	SpriteNamesIterator sprnames_it = sprnames.find(info->sprite);
 	// TODO: sprname might appear as <No Sprite> when it's just not be defined yet
 	std::string_view sprname = (sprnames_it == sprnames.end()) ? "<No Sprite>"sv : sprnames_it->second;
@@ -1435,7 +1537,7 @@ static void PatchSprite(int sprNum, DehScanner& scanner)
 
 	if (sprNum >= 0 && sprNum < ::NUMSPRITES)
 	{
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Sprite {}\n", sprNum);
 #endif
 	}
@@ -1480,10 +1582,10 @@ static void PatchSprite(int sprNum, DehScanner& scanner)
  *
  * @param dummy - int value for function pointer
  */
-static void PatchSprites(int dummy, DehScanner& scanner)
+static void PatchSprites(DehScanner& scanner)
 {
 	static constexpr size_t maxsprlen = 4;
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[SPRITES]\n");
 #endif
 
@@ -1507,7 +1609,7 @@ static void PatchSprites(int dummy, DehScanner& scanner)
 		else
 		{
 			// find the value that matches
-			for (int i = 0; i < ARRAY_LENGTH(OrgSprNames); i++)
+			for (int i = 0; i < OrgSprNames.size(); i++)
 			{
 				if (strnicmp(key.data(), OrgSprNames[i].c_str(), maxsprlen) == 0)
 				{
@@ -1520,7 +1622,7 @@ static void PatchSprites(int dummy, DehScanner& scanner)
 			DPrintFmt("Invalid sprite index {}.\n", key);
 			continue; // TODO: should this be an error instead?
 		}
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		SpriteNamesIterator sprnames_it = sprnames.find(sprIdx);
 		const char* prevSprName =
 		    sprnames_it != sprnames.end() ? sprnames_it->second.c_str() : "No Sprite";
@@ -1531,9 +1633,9 @@ static void PatchSprites(int dummy, DehScanner& scanner)
 	}
 }
 
-static void PatchSounds(int dummy, DehScanner& scanner)
+static void PatchSounds(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Sounds]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -1574,7 +1676,7 @@ static void PatchAmmo(int ammoNum, DehScanner& scanner)
 
 	if (ammoNum >= 0 && ammoNum < NUMAMMO)
 	{
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Ammo {}.\n", ammoNum);
 #endif
 		max = &maxammo[ammoNum];
@@ -1624,7 +1726,7 @@ static void PatchWeapon(int weapNum, DehScanner& scanner)
 	if (weapNum >= 0 && weapNum < NUMWEAPONS)
 	{
 		info = &weaponinfo[weapNum];
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Weapon {}\n", weapNum);
 #endif
 	}
@@ -1706,27 +1808,26 @@ static void PatchWeapon(int weapNum, DehScanner& scanner)
 
 static int ParsePointerHeader(std::string_view header, size_t) {
 	auto headerParser = ParseString(header, false);
-	int ptr, frame;
 
 	// skip first token, we already know it's "Pointer"
 	headerParser();
 
 	auto expect_token = [&](std::string_view match = "") -> std::optional<std::string> {
 		auto t = headerParser().token;
-        if (t && (match.empty() || iequals(*t, match))) return *t;
-        DPrintFmt("Pointer block header is invalid: \"{}\"\n", header);
-        return std::nullopt;
+		if (t && (match.empty() || iequals(*t, match))) return t;
+		DPrintFmt("Pointer block header is invalid: \"{}\"\n", header);
+		return std::nullopt;
     };
 
-    auto expect_number = [&]() -> std::optional<int> {
-        auto tok = expect_token();
-        if (!tok) return std::nullopt;
+	auto expect_number = [&]() -> std::optional<int> {
+		auto tok = expect_token();
+		if (!tok) return std::nullopt;
 
-        if (auto num = ParseNum<int32_t>(*tok)) return *num;
+		if (auto num = ParseNum<int32_t>(*tok)) return num;
 
-        DPrintFmt("Pointer block header is invalid: \"{}\"\n", header);
-        return std::nullopt;
-    };
+		DPrintFmt("Pointer block header is invalid: \"{}\"\n", header);
+		return std::nullopt;
+	};
 
 	const auto ptrNum = expect_number();
 	if (!ptrNum)
@@ -1739,14 +1840,14 @@ static int ParsePointerHeader(std::string_view header, size_t) {
 	if (!frameNum)
 		return -1;
 
-	ptr = *ptrNum;
-	frame = *frameNum;
+	const int ptr = *ptrNum;
+	const int frame = *frameNum;
 
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Pointer {}\n", ptr);
 #endif
 
-	if (ptr < 0 || ptr >= ARRAY_LENGTH(codepconv)) {
+	if (ptr < 0 || ptr >= codepconv.size()) {
 		DPrintFmt("Pointer {} out of range.\n", ptr);
 		return -1;
 	}
@@ -1787,7 +1888,7 @@ static void PatchPointer(int ptrNum, DehScanner& scanner)
 	}
 }
 
-static void PatchCheats(int dummy, DehScanner& scanner)
+static void PatchCheats(DehScanner& scanner)
 {
 	DPrintFmt("[DeHackEd] Cheats support is deprecated. Ignoring these lines...\n");
 
@@ -1795,7 +1896,7 @@ static void PatchCheats(int dummy, DehScanner& scanner)
 	while (const auto line = scanner.getNextKeyValue());
 }
 
-static void PatchMisc(int dummy, DehScanner& scanner)
+static void PatchMisc(DehScanner& scanner)
 {
 	static constexpr Key keys[] = {
 	    {"Initial Health", offsetof(DehInfo, StartHealth)},
@@ -1815,7 +1916,7 @@ static void PatchMisc(int dummy, DehScanner& scanner)
 	    {"BFG Cells/Shot", offsetof(DehInfo, BFGCells)},
 	    {"Monsters Infight", offsetof(DehInfo, Infight)}};
 	gitem_t* item;
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Misc\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -1851,9 +1952,9 @@ static void PatchMisc(int dummy, DehScanner& scanner)
 	deh.Infight = deh.Infight == 0xDD ? 1 : 0;
 }
 
-static void PatchPars(int dummy, DehScanner& scanner)
+static void PatchPars(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Pars]\n");
 #endif
 	while (const auto line = scanner.getNextLine())
@@ -1925,15 +2026,15 @@ static void PatchPars(int dummy, DehScanner& scanner)
 		}
 
 		info.partime = time;
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Par for {} changed to {}\n", mapname, time);
 #endif
 	}
 }
 
-static void PatchCodePtrs(int dummy, DehScanner& scanner)
+static void PatchCodePtrs(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[CodePtr]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -1976,9 +2077,9 @@ static void PatchCodePtrs(int dummy, DehScanner& scanner)
 	}
 }
 
-static void PatchMusic(int dummy, DehScanner& scanner)
+static void PatchMusic(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Music]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -1995,9 +2096,9 @@ static void PatchMusic(int dummy, DehScanner& scanner)
 	}
 }
 
-static void PatchHelper(int dummy, DehScanner& scanner)
+static void PatchHelper(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Helper]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -2014,11 +2115,12 @@ static void PatchHelper(int dummy, DehScanner& scanner)
 	}
 }
 
-static int ParseTextHeader(std::string_view header, size_t)
+static std::tuple<int, int> ParseTextHeader(std::string_view header, size_t)
 {
 	std::string_view idk = header.substr(4);
 	auto parser = ParseString(idk, false);
-	int oldsize = -1, newsize = -1;
+	int oldsize = -1;
+	int newsize = -1;
 	if (auto token = parser().token)
 	{
 		if (auto num = ParseNum<int32_t>(*token))
@@ -2038,20 +2140,17 @@ static int ParseTextHeader(std::string_view header, size_t)
 	if (oldsize == -1 || newsize == -1)
 	{
 		DPrintFmt("Invalid Text header: '{}'\n", header);
-		return -1;
+		return { -1, -1 };
 	}
 
 	// awful hack, but we know that the max size here is only a few hundred
-	return (oldsize << 16) + newsize;
+	return { oldsize, newsize };
 }
 
-static void PatchText(int sizes, DehScanner& scanner)
+static void PatchText(const int oldSize, const int newSize, DehScanner& scanner)
 {
-	if (sizes == -1)
+	if (oldSize == -1)
 		return;
-
-	int newSize = (sizes & 0xFFFF);
-	int oldSize = sizes >> 16;
 
 	const auto oldStr = scanner.readTextString(oldSize);
 	const auto newStr = scanner.readTextString(newSize);
@@ -2103,9 +2202,9 @@ static void PatchText(int sizes, DehScanner& scanner)
 	DPrintFmt("   (Unmatched)\n");
 }
 
-static void PatchStrings(int dummy, DehScanner& scanner)
+static void PatchStrings(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Strings]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -2213,7 +2312,7 @@ static int DoInclude(std::string_view include, size_t)
 
 	std::string filename = *token;
 
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Including {}\n", filename);
 #endif
 
@@ -2279,6 +2378,16 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool
 		if (read < filelen)
 		{
 			DPrintFmt("Could not read file\n");
+			return false;
+		}
+
+		// Check to see if this file is really a WAD, and if so, don't parse it as a
+		// DEH file.
+		if (buffer.size() >= 4 &&
+		    (!memcmp(buffer.data(), "IWAD", 4) || !memcmp(buffer.data(), "PWAD", 4)))
+		{
+			PrintFmt(PRINT_WARNING, "\"{}\" is a WAD file, not a DeHackEd patch.\n",
+			         patchfile->getBasename());
 			return false;
 		}
 	}
@@ -2503,28 +2612,28 @@ static void D_PostProcessDeh(const DehScanner::ParsedState& dp)
 		    bexptr_match->func == A_RemoveFlags ||
 		    bexptr_match->func == A_JumpIfFlagsSet)
 		{
-			const int mbf21flags = bexptr_match->func == A_JumpIfFlagsSet ? state.args[2] : state.args[1];
-			int flags2 = 0, flags3 = 0;
-			for (const auto& [_, flags, dehflag, internalflag]  : mbf21flagtranslation)
+			const statearg_t mbf21flags = bexptr_match->func == A_JumpIfFlagsSet ? state.args[2] : state.args[1];
+			mobjinfo_t dummy;
+			dummy.flags2.clear();
+			dummy.flags3.clear();
+
+			for (const auto& [_, dehflag, setter]  : mbf21flagtranslation)
 			{
 				if (mbf21flags & dehflag)
 				{
-					if (flags == &mobjinfo_t::flags2)
-						flags2 |= internalflag;
-					else if (flags == &mobjinfo_t::flags3)
-						flags3 |= internalflag;
+					setter(dummy);
 				}
 			}
 
 			if (bexptr_match->func == A_JumpIfFlagsSet)
 			{
-				state.args[2] = flags2;
-				state.args[3] = flags3;
+				state.args[2] = dummy.flags2.to_int();
+				state.args[3] = dummy.flags3.to_int();
 			}
 			else
 			{
-				state.args[1] = flags2;
-				state.args[2] = flags3;
+				state.args[1] = dummy.flags2.to_int();
+				state.args[2] = dummy.flags3.to_int();
 			}
 		}
 	}
@@ -2567,41 +2676,44 @@ bool CheckIfDehActorDefined(const mobjtype_t mobjtype)
 	auto it = ::mobjinfo.find(mobjtype);
 	if (it == ::mobjinfo.end())
 		return false;
+
+	const mobjinfo_t defaults{};
 	const auto& mobj = it->second;
-	if (mobj.doomednum == -1 &&
+	if (mobj.doomednum == defaults.doomednum &&
 		mobj.spawnstate == S_TNT1 &&
-		mobj.spawnhealth == 0 &&
-		mobj.gibhealth == 0 &&
-		mobj.seestate == S_NULL &&
-		mobj.seesound == NULL &&
-	    mobj.reactiontime == 0 &&
-		mobj.attacksound == NULL &&
-		mobj.painstate == S_NULL &&
-	    mobj.painchance == 0 &&
-		mobj.painsound == NULL &&
-		mobj.meleestate == S_NULL &&
-	    mobj.missilestate == S_NULL &&
-		mobj.deathstate == S_NULL &&
-	    mobj.xdeathstate == S_NULL &&
-		mobj.deathsound == NULL &&
-		mobj.speed == 0 &&
-	    mobj.radius == 0 &&
-		mobj.height == 0 &&
-		mobj.cdheight == 0 &&
-	    mobj.mass == 0 &&
-	    mobj.damage == 0 &&
-		mobj.activesound == NULL &&
-		mobj.flags == 0 &&
-	    mobj.flags2 == 0 &&
-		mobj.raisestate == S_NULL &&
-		mobj.translucency == 0x10000 &&
-	    mobj.altspeed == NO_ALTSPEED &&
-		mobj.infighting_group == IG_DEFAULT &&
-		mobj.projectile_group == PG_DEFAULT &&
-		mobj.splash_group == SG_DEFAULT &&
-		mobj.ripsound == NULL &&
-		mobj.meleerange == (64 * FRACUNIT) &&
-		mobj.droppeditem == MT_NULL)
+		mobj.spawnhealth == defaults.spawnhealth &&
+		mobj.gibhealth == defaults.gibhealth &&
+		mobj.seestate == defaults.seestate &&
+		mobj.seesound == defaults.seesound &&
+	    mobj.reactiontime == defaults.reactiontime &&
+		mobj.attacksound == defaults.attacksound &&
+		mobj.painstate == defaults.painstate &&
+	    mobj.painchance == defaults.painchance &&
+		mobj.painsound == defaults.painsound &&
+		mobj.meleestate == defaults.meleestate &&
+	    mobj.missilestate == defaults.missilestate &&
+		mobj.deathstate == defaults.deathstate &&
+	    mobj.xdeathstate == defaults.xdeathstate &&
+		mobj.deathsound == defaults.deathsound &&
+		mobj.speed == defaults.speed &&
+	    mobj.radius == defaults.radius &&
+		mobj.height == defaults.height &&
+		mobj.cdheight == defaults.cdheight &&
+	    mobj.mass == defaults.mass &&
+	    mobj.damage == defaults.damage &&
+		mobj.activesound == defaults.activesound &&
+		mobj.flags == defaults.flags &&
+	    mobj.flags2 == defaults.flags2 &&
+		mobj.flags3 == defaults.flags3 &&
+		mobj.raisestate == defaults.raisestate &&
+		mobj.translucency == defaults.translucency &&
+	    mobj.altspeed == defaults.altspeed &&
+		mobj.infighting_group == defaults.infighting_group &&
+		mobj.projectile_group == defaults.projectile_group &&
+		mobj.splash_group == defaults.splash_group &&
+		mobj.ripsound == defaults.ripsound &&
+		mobj.meleerange == defaults.meleerange &&
+		mobj.droppeditem == defaults.droppeditem)
 	{
 		return false;
 	}

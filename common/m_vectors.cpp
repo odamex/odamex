@@ -282,31 +282,31 @@ void M_SubVec3Fixed(v3fixed_t *dest, const v3fixed_t *v1, const v3fixed_t *v2)
 // Returns the length of a given vector (relative to the origin).  Taken from
 // Quake 2, added by CG.
 //
-float M_LengthVec3f(const v3float_t *v)
+float M_LengthVec3f(const v3float_t& v)
 {
-	return sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
+	return sqrtf((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
 }
 
-double M_LengthVec3(const v3double_t *v)
+double M_LengthVec3(const v3double_t& v)
 {
-	return sqrt(v->x * v->x + v->y * v->y + v->z * v->z);
+	return sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
 }
 
-fixed_t M_LengthVec2Fixed(const v2fixed_t *v)
+fixed_t M_LengthVec2Fixed(const v2fixed_t& v)
 {
-	double fx = FIXED2DOUBLE(v->x);
-	double fy = FIXED2DOUBLE(v->y);
+	const double fx = FIXED2DOUBLE(v.x);
+	const double fy = FIXED2DOUBLE(v.y);
 
-	return DOUBLE2FIXED(sqrt(fx * fx + fy * fy));
+	return DOUBLE2FIXED(sqrt((fx * fx) + (fy * fy)));
 }
 
-fixed_t M_LengthVec3Fixed(const v3fixed_t *v)
+fixed_t M_LengthVec3Fixed(const v3fixed_t& v)
 {
-	double fx = FIXED2DOUBLE(v->x);
-	double fy = FIXED2DOUBLE(v->y);
-	double fz = FIXED2DOUBLE(v->z);
+	const double fx = FIXED2DOUBLE(v.x);
+	const double fy = FIXED2DOUBLE(v.y);
+	const double fz = FIXED2DOUBLE(v.z);
 
-	return DOUBLE2FIXED(sqrt(fx * fx + fy * fy + fz * fz));
+	return DOUBLE2FIXED(sqrt((fx * fx) + (fy * fy) + (fz * fz)));
 }
 
 
@@ -361,7 +361,7 @@ void M_ScaleVec3fToLength(v3float_t* dest, const v3float_t* v, float a)
 	if (M_IsZeroVec3f(v))
 		M_ZeroVec3f(dest);
 	else
-		M_ScaleVec3f(dest, v, a / M_LengthVec3f(v));
+		M_ScaleVec3f(dest, v, a / M_LengthVec3f(*v));
 }
 
 void M_ScaleVec3ToLength(v3double_t* dest, const v3double_t* v, double a)
@@ -369,7 +369,7 @@ void M_ScaleVec3ToLength(v3double_t* dest, const v3double_t* v, double a)
 	if (M_IsZeroVec3(v))
 		M_ZeroVec3(dest);
 	else
-		M_ScaleVec3(dest, v, a / M_LengthVec3(v));
+		M_ScaleVec3(dest, v, a / M_LengthVec3(*v));
 }
 
 void M_ScaleVec2FixedToLength(v2fixed_t* dest, const v2fixed_t* v, fixed_t a)
@@ -377,7 +377,7 @@ void M_ScaleVec2FixedToLength(v2fixed_t* dest, const v2fixed_t* v, fixed_t a)
 	if (M_IsZeroVec2Fixed(v))
 		M_ZeroVec2Fixed(dest);
 	else
-		M_ScaleVec2Fixed(dest, v, FixedDiv(a, M_LengthVec2Fixed(v)));
+		M_ScaleVec2Fixed(dest, v, FixedDiv(a, M_LengthVec2Fixed(*v)));
 }
 
 void M_ScaleVec3FixedToLength(v3fixed_t* dest, const v3fixed_t* v, fixed_t a)
@@ -385,7 +385,7 @@ void M_ScaleVec3FixedToLength(v3fixed_t* dest, const v3fixed_t* v, fixed_t a)
 	if (M_IsZeroVec3Fixed(v))
 		M_ZeroVec3Fixed(dest);
 	else
-		M_ScaleVec3Fixed(dest, v, FixedDiv(a, M_LengthVec3Fixed(v)));
+		M_ScaleVec3Fixed(dest, v, FixedDiv(a, M_LengthVec3Fixed(*v)));
 }
 
 

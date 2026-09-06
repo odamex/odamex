@@ -133,18 +133,6 @@ struct hordeDefine_t
 	StringTokens weaponStrings(player_t* player) const;
 };
 
-template <>
-struct hashfunc<mobjtype_t>
-{
-	unsigned int operator()(mobjtype_t val) const
-	{
-		if (sizeof(mobjtype_t) == 8)
-			return __hash_jenkins_64bit(val);
-		else
-			return __hash_jenkins_32bit(val);
-	}
-};
-
 typedef OHashTable<int32_t, int> mobjCounts_t;
 
 void G_ParseHordeDefs();

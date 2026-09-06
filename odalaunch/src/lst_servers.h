@@ -56,6 +56,10 @@ public:
 	wxInt32 FindServer(wxString Address);
 	wxInt32 GetSelectedServerIndex();
 
+	// Non-responding servers are always
+	// sorted to the bottom of the list.
+	virtual bool IsSortedToBottom(long item);
+
 protected:
 
     void SetBlockedInfo(long item);

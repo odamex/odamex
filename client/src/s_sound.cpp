@@ -423,7 +423,7 @@ static void ApplyDistanceScaling(float dist_scale, fixed_t *approx_dist)
 	if (dist_scale > 0.0f)
 	{
 		float scaled_dist = FIXED2FLOAT(*approx_dist) * dist_scale;
-		scaled_dist = clamp(scaled_dist, 0.0f, 32767.0f);
+		scaled_dist = std::clamp(scaled_dist, 0.0f, 32767.0f);
 		*approx_dist = FLOAT2FIXED(scaled_dist);
 	}
 }
@@ -498,7 +498,7 @@ static void AdjustSoundParamsDoom(const AActor* listener, fixed_t x, fixed_t y,
 	ApplyDistanceScaling(dist_scale, &approx_dist);
 
 	if (S_UseMap8Volume())
-		approx_dist = MIN(approx_dist, S_CLIPPING_DIST);
+		approx_dist = std::min(approx_dist, S_CLIPPING_DIST);
 
 	if (approx_dist > S_CLIPPING_DIST)
 	{
@@ -683,7 +683,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 
 	while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 	{
-		sfx_id = ResolveSound(sfxinfo->link);
+		sfx_id = ResolveSound(sfx_id);
 		sfxinfo = &S_sfx[sfx_id];
 	}
 
@@ -692,7 +692,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 		I_LoadSound(sfxinfo);
 		while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 		{
-			sfx_id = ResolveSound(sfxinfo->link);
+			sfx_id = ResolveSound(sfx_id);
 			sfxinfo = &S_sfx[sfx_id];
 		}
 	}
@@ -709,7 +709,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 	if (sfxinfo->lumpnum == sfx_empty)
 		return;
 
-	volume = MIN(volume, 1.0f);
+	volume = std::min(volume, 1.0f);
 	const float initial_volume = volume;
 	int sep = NORM_SEP;
 	fixed_t dist = 0;

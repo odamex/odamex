@@ -407,7 +407,7 @@ void R_GenerateLookup(int texnum, int *const errors)
 	// Now count the number of columns that are covered by more than one patch.
 	// Fill in the lump / offset, so columns with only a single patch are all done.
 
-	texturecomposite[texnum] = 0;
+	texturecomposite[texnum] = nullptr;
 	int csize = 0;
 
 	int x = texture->width;
@@ -526,7 +526,7 @@ struct texlump_t
 	}
 };
 
-static int32_t R_LoadTextureLump(const texlump_t& texlump, const std::span<const int> patchlookup, int texnum, texhash_t& texhash, int& errors)
+static int32_t R_LoadTextureLump(const texlump_t& texlump, const std::span<const int> patchlookup, int texnum, texhash_t& texhash)
 {
 	int32_t* directory = texlump.directory;
 	int i;
@@ -557,11 +557,19 @@ static int32_t R_LoadTextureLump(const texlump_t& texlump, const std::span<const
 		{
 			patch->originx = LESHORT(mpatch->originx);
 			patch->originy = LESHORT(mpatch->originy);
-			patch->patch = patchlookup[LESHORT(mpatch->patch)];
+			const int16_t patchnum = LESHORT(mpatch->patch);
+			if (patchnum >= 0 && static_cast<size_t>(patchnum) < patchlookup.size())
+				patch->patch = patchlookup[patchnum];
+			else
+			 	patch->patch = -1;
 			if (patch->patch == -1)
 			{
+				patch->patch = W_CheckNumForName("TNT1A0", ns_sprites);
 				PrintFmt(PRINT_WARNING, "R_InitTextures: Missing patch in texture {}\n", texture->name);
-				errors++;
+				// [EB] Make missing patches non-fatal
+				// other ports have annoyingly started doing this
+				// and so we do to if we want all the wads to work...
+				// errors++;
 			}
 		}
 
@@ -571,6 +579,127 @@ static int32_t R_LoadTextureLump(const texlump_t& texlump, const std::span<const
 			texhash[texture->name] = i;
 	}
 	return i;
+}
+
+namespace
+{
+
+//
+// R_BuildPatchLookup
+//
+// Resolves PNAMES into lump numbers using the same namespace fallbacks as
+// R_InitTextures. Entries that cannot be resolved are left as -1.
+//
+std::vector<int> R_BuildPatchLookup()
+{
+	std::vector<int> patchlookup;
+
+	const int pnameslump = W_CheckNumForName("PNAMES");
+	if (pnameslump == -1)
+		return patchlookup;
+
+	char* names = static_cast<char*>(W_CacheLumpNum(pnameslump, PU_STATIC));
+
+	int32_t rawcount = 0;
+	memcpy(&rawcount, names, sizeof(rawcount));
+	const int numpatches = LELONG(rawcount);
+
+	if (numpatches > 0)
+	{
+		const char* name_p = names + 4;
+
+		patchlookup.resize(numpatches);
+		for (ptrdiff_t i = 0; i < numpatches; i++)
+		{
+			const char* patchname = name_p + (i * 8);
+
+			patchlookup[i] = W_CheckNumForName(patchname);
+
+			// some wads use the texture namespace but still list them in pnames
+			if (patchlookup[i] == -1)
+				patchlookup[i] = W_CheckNumForName(patchname, ns_textures);
+
+			// killough 4/17/98: some wads use sprites as wall patches
+			if (patchlookup[i] == -1)
+				patchlookup[i] = W_CheckNumForName(patchname, ns_sprites);
+		}
+	}
+
+	Z_Free(names);
+	return patchlookup;
+}
+
+} // namespace
+
+//
+// R_FindTextureMissingPatch
+//
+// Walks TEXTURE1/TEXTURE2 for a texture referencing a patch that cannot be
+// resolved. Returns the first such texture, or an empty string if all resolve.
+//
+// R_InitTextures treats a missing patch as non-fatal and swaps in a blank, so
+// this is only for judging whether a WAD can stand on its own as an IWAD.
+//
+std::string R_FindTextureMissingPatch()
+{
+	const std::vector<int> patchlookup = R_BuildPatchLookup();
+	if (patchlookup.empty())
+		return "";
+
+	static const std::array<const char*, 2> texlumpnames = { "TEXTURE1", "TEXTURE2" };
+
+	for (const char* texlumpname : texlumpnames)
+	{
+		const texlump_t texlump(texlumpname);
+		if (texlump.lumpnum == -1)
+			continue;
+
+		const int32_t* directory = texlump.directory;
+
+		// TODO: Refactor below to not require reinterpret_cast.
+		// The directory offsets are already in bytes, so the data
+		// should be cached as bytes instead of int32_t.
+
+		// The lump is cached as int32_t but the directory offsets below are in
+		// bytes, so it has to be re-viewed as a byte buffer.
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+		const auto* texdata = reinterpret_cast<const byte*>(texlump.data);
+
+		for (int i = 0; i < texlump.numtextures; i++, directory++)
+		{
+			const int32_t offset = LELONG(*directory);
+			if (offset > texlump.maxoff)
+				return texlumpname; // bad directory, certainly not usable
+
+			// TODO: Refactor below to not use reinterpret_cast.
+			// The maptexture_t struct is already packed to match the
+			// on-disk format, so it should be safe to read directly
+			// from the byte buffer.
+
+			// Records are variable length -- patches[] is declared as one
+			// element but is really patchcount long -- so each one is read in
+			// place at its directory offset rather than copied out.
+			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+			const auto* mtexture = reinterpret_cast<const maptexture_t*>(texdata + offset);
+
+			const int patchcount = SAFESHORT(mtexture->patchcount);
+			const mappatch_t* mpatch = &mtexture->patches[0];
+
+			for (int j = 0; j < patchcount; j++, mpatch++)
+			{
+				const int16_t patchnum = LESHORT(mpatch->patch);
+				if (patchnum < 0 ||
+				    static_cast<size_t>(patchnum) >= patchlookup.size() ||
+				    patchlookup[patchnum] == -1)
+				{
+					const OLumpName texname = mtexture->name;
+					return {texname.c_str()};
+				}
+			}
+		}
+	}
+
+	return "";
 }
 
 void R_InitTextures()
@@ -655,7 +784,7 @@ void R_InitTextures()
 	numtextures = texture1.numtextures + texture2.numtextures + tx_numtextures;
 
 	const int first_pname_tex = numtextures;
-	const int numpnamestextures = std::count_if(patchlookup.begin(), patchlookup.end(), [](const int patch){ return patch != -1; });
+	const int numpnamestextures = std::ranges::count_if(patchlookup, [](const int patch){ return patch != -1; });
 	numtextures += numpnamestextures;
 
 	textures = new texture_t *[numtextures];
@@ -670,8 +799,8 @@ void R_InitTextures()
 	texhash_t texturehash2;
 	// [EB] texture1 goes to texturehash2 because .insert only inserts for keys that don't already exist
 	//      and we need texture2 to override texture1
-	int texnum = R_LoadTextureLump(texture1, patchlookup, 0, texturehash2, errors);
-	texnum = R_LoadTextureLump(texture2, patchlookup, texnum, texturehash, errors);
+	int texnum = R_LoadTextureLump(texture1, patchlookup, 0, texturehash2);
+	texnum = R_LoadTextureLump(texture2, patchlookup, texnum, texturehash);
 	texturehash.insert(texturehash2.begin(), texturehash2.end());
 
 	const auto createTexture = [&](int textureIndex,

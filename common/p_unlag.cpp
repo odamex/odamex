@@ -33,11 +33,13 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <algorithm>
 
 #include "odamex.h"
 
 #include "m_vectors.h"
 #include "p_unlag.h"
+
 #include "p_local.h"
 
 #ifdef _UNLAG_DEBUG_
@@ -551,13 +553,12 @@ void Unlag::setRoundtripDelay(byte player_id, byte svgametic)
 		return;
 
 	size_t maxdelay = TICRATE * sv_maxunlagtime;
-	if (maxdelay > Unlag::MAX_HISTORY_TICS)
-		maxdelay = Unlag::MAX_HISTORY_TICS;
+	maxdelay = std::min(maxdelay, Unlag::MAX_HISTORY_TICS);
 
 	size_t delay = ((gametic & 0xFF) + 256 - svgametic) & 0xFF;
 
 	size_t player_index = player_id_map[player_id];
-	player_history[player_index].current_lag = MIN(delay, maxdelay);
+	player_history[player_index].current_lag = std::min(delay, maxdelay);
 
 	#ifdef _UNLAG_DEBUG_
 	DPrintFmt("Unlag ({:03d}): received gametic {} from player {}, lag = {}\n",

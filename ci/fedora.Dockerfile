@@ -19,6 +19,7 @@ RUN cmake .. -GNinja \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_MINIUPNP=0 \
     -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
     -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 \
+    -DODAMEX_UPDATE_CVARDOCS=0 \
     -DwxWidgets_wxrc_EXECUTABLE=/usr/bin/wxrc-3.0
 
 CMD ["ninja"]

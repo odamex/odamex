@@ -79,7 +79,7 @@ private:
 
 		// did we change player's MF_SHOOTABLE flag during reconciliation?
 		bool		changed_flags;
-		int			backup_flags;
+		ActorFlags1 backup_flags;
 
 		size_t		current_lag;
 	} PlayerHistoryRecord;

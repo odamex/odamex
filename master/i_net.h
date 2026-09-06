@@ -25,6 +25,8 @@
 #ifndef __I_NET_H__
 #define __I_NET_H__
 
+#include <cstddef>
+
 // Max packet size to send and receive, in bytes
 #define	MAX_UDP_PACKET	1400
 
@@ -242,7 +244,7 @@ public:
 
 	byte *SZ_GetSpace(size_t length)
 	{
-		if (cursize + length >= allocsize)
+		if (cursize + length > allocsize)
 		{
 			clear();
 			overflowed = true;

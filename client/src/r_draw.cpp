@@ -91,7 +91,9 @@ void (*R_DrawTranslatedColumn)(void);
 void (*R_DrawTlatedLucentColumn)(void);
 void (*R_DrawSkyForegroundColumn)(void);
 void (*R_DrawSpan)(void);
+void (*R_DrawTranslucentSpan)(void);
 void (*R_DrawSlopeSpan)(void);
+void (*R_DrawTranslucentSlopeSpan)(void);
 void (*R_FillColumn)(void);
 void (*R_FillSpan)(void);
 void (*R_FillTranslucentSpan)(void);
@@ -1150,6 +1152,35 @@ private:
 	const shaderef_t* colormap;
 };
 
+class PaletteSlopeTranslucentColormapFunc
+{
+public:
+	PaletteSlopeTranslucentColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.slopelighting)
+	{
+		calculate_alpha(drawspan.translevel);
+	}
+
+	forceinline void operator()(byte c, palindex_t* dest)
+	{
+		const palindex_t fg = colormap->index(c);
+		const palindex_t bg = *dest;
+		*dest = rt_blend2<palindex_t>(bg, bga, fg, fga);
+		colormap++;
+	}
+
+private:
+	void calculate_alpha(fixed_t translevel)
+	{
+		fga = (translevel & ~0x03FF) >> 8;
+		fga = fga > 255 ? 255 : fga;
+		bga = 255 - fga;
+	}
+
+	const shaderef_t* colormap;
+	int fga, bga;
+};
+
 class PaletteSkyForegroundColormapFunc
 {
 public:
@@ -1321,6 +1352,18 @@ void R_DrawSpanP()
 }
 
 //
+// R_DrawTranslucentSpanP
+//
+// Renders a span for a level plane to the 8bpp palettized screen buffer from
+// the source buffer dspan.source, blended with the framebuffer by
+// dspan.translevel. Shading is performed using dspan.colormap.
+//
+void R_DrawTranslucentSpanP()
+{
+	R_DrawLevelSpanGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
+}
+
+//
 // R_DrawSlopeSpanP
 //
 // Renders a span for a sloped plane to the 8bpp palettized screen buffer from
@@ -1329,6 +1372,18 @@ void R_DrawSpanP()
 void R_DrawSlopeSpanP()
 {
 	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeColormapFunc>(FB_SPANDEST_P, dspan);
+}
+
+//
+// R_DrawTranslucentSlopeSpanP
+//
+// Renders a span for a sloped plane to the 8bpp palettized screen buffer from
+// the source buffer dspan.source, blended with the framebuffer by
+// dspan.translevel. Shading is performed using dspan.slopelighting.
+//
+void R_DrawTranslucentSlopeSpanP()
+{
+	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
 }
 
 
@@ -1473,6 +1528,35 @@ public:
 
 private:
 	const shaderef_t* colormap;
+};
+
+class DirectSlopeTranslucentColormapFunc
+{
+public:
+	DirectSlopeTranslucentColormapFunc(const drawspan_t& drawspan) :
+			colormap(drawspan.slopelighting)
+	{
+		calculate_alpha(drawspan.translevel);
+	}
+
+	forceinline void operator()(byte c, argb_t* dest)
+	{
+		const argb_t fg = colormap->shade(c);
+		const argb_t bg = *dest;
+		*dest = alphablend2a(bg, bga, fg, fga);
+		colormap++;
+	}
+
+private:
+	void calculate_alpha(fixed_t translevel)
+	{
+		fga = (translevel & ~0x03FF) >> 8;
+		fga = fga > 255 ? 255 : fga;
+		bga = 255 - fga;
+	}
+
+	const shaderef_t* colormap;
+	int fga, bga;
 };
 
 class DirectSkyForegroundColormapFunc
@@ -1633,6 +1717,30 @@ void R_FillTranslucentSpanD()
 void R_DrawSpanD_c()
 {
 	R_DrawLevelSpanGeneric<argb_t, DirectColormapFunc>(FB_SPANDEST_D, dspan);
+}
+
+//
+// R_DrawTranslucentSpanD
+//
+// Renders a span for a level plane to the 32bpp ARGB8888 screen buffer from
+// the source buffer dspan.source, blended with the framebuffer by
+// dspan.translevel. Shading is performed using dspan.colormap.
+//
+void R_DrawTranslucentSpanD()
+{
+	R_DrawLevelSpanGeneric<argb_t, DirectTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
+}
+
+//
+// R_DrawTranslucentSlopeSpanD
+//
+// Renders a span for a sloped plane to the 32bpp ARGB8888 screen buffer from
+// the source buffer dspan.source, blended with the framebuffer by
+// dspan.translevel. Shading is performed using dspan.slopelighting.
+//
+void R_DrawTranslucentSlopeSpanD()
+{
+	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
 }
 
 //
@@ -1972,7 +2080,9 @@ void R_InitColumnDrawers ()
 		R_DrawTlatedLucentColumn = R_DrawTlatedLucentColumnP;
 		R_DrawSkyForegroundColumn= R_DrawSkyForegroundColumnP;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanP;
+		R_DrawTranslucentSlopeSpan = R_DrawTranslucentSlopeSpanP;
 		R_DrawSpan				= R_DrawSpanP;
+		R_DrawTranslucentSpan	= R_DrawTranslucentSpanP;
 		R_FillColumn			= R_FillColumnP;
 		R_FillSpan				= R_FillSpanP;
 		R_FillTranslucentSpan	= R_FillTranslucentSpanP;
@@ -1987,7 +2097,9 @@ void R_InitColumnDrawers ()
 		R_DrawTlatedLucentColumn = R_DrawTlatedLucentColumnD;
 		R_DrawSkyForegroundColumn= R_DrawSkyForegroundColumnD;
 		R_DrawSlopeSpan			= R_DrawSlopeSpanD;
+		R_DrawTranslucentSlopeSpan = R_DrawTranslucentSlopeSpanD;
 		R_DrawSpan				= R_DrawSpanD;
+		R_DrawTranslucentSpan	= R_DrawTranslucentSpanD;
 		R_FillColumn			= R_FillColumnD;
 		R_FillSpan				= R_FillSpanD;
 		R_FillTranslucentSpan	= R_FillTranslucentSpanD;

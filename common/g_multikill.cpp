@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include "g_gametype.h"
+
 #include "p_mobj.h"
 #include "p_local.h"
 #include "s_sound.h"
@@ -93,15 +95,12 @@ int MultiKillManager::getHighestMultiKillLevel()
 
 const MultiKillLevel_s& MultiKillManager::getMultiKillLevel(const int level)
 {
-	int newlevel = level;
-	if (getHighestMultiKillLevel() <= 0)
+	const int highest = getHighestMultiKillLevel();
+
+	if (highest <= 0 || level < 0)
 		return emptyLevel;
 
-
-	if (level >= multiKillLevels.size())
-		newlevel = multiKillLevels.size() - 1;
-
-	return multiKillLevels.at(newlevel);
+	return multiKillLevels.at(level > highest ? highest : level);
 }
 
 void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills,
@@ -212,6 +211,16 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 	}
 
 	if (!source || !source->player)
+		return;
+
+	// Don't count if the player killed themselves, or if the player killed a teammate.
+	if (target && target->id == source->player->id)
+		return;
+
+	if (target && G_IsTeamGame() && source->player && source->player->userinfo.team == target->userinfo.team)
+		return;
+
+	if (target && G_IsCoopGame())
 		return;
 
 	manager.addKill(source->player->id);

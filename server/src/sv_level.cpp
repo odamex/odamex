@@ -38,6 +38,7 @@
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
 END_DISABLE_WARNING_GNU
+#include "m_argv.h"
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_ctf.h"
@@ -88,8 +89,6 @@ bool firstmapinit = true; // Nes - Avoid drawing same init text during every reb
 
 extern bool sendpause;
 
-
-bool isFast = false;
 
 //
 // G_InitNew
@@ -170,6 +169,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+
+	if (!DefaultsLoaded)
+	{
+		::startupwadstring = wadstr;
+		forcedlastmaps = lastmaps;
+		return;
+	}
+
 	G_LoadWadString(wadstr, "", lastmaps);
 }
 END_COMMAND (wad)
@@ -385,7 +392,7 @@ void G_DoNewGame()
 		if(!(player.ingame()))
 			continue;
 
-		MSG_WriteSVC(player.client.messenger.ReliableBuf(),
+		player.client.messenger->Reliable().Write (
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
 	}
 
@@ -436,7 +443,7 @@ void SV_ServerSettingChange();
 
 void G_InitNew(const char *mapname)
 {
-	levelFlags_t previousLevelFlags = level.flags;
+	const auto previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
 		G_ClearSnapshots ();
@@ -475,47 +482,7 @@ void G_InitNew(const char *mapname)
 	}
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
-	if (wantFast != isFast)
-	{
-		if (wantFast)
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST &&
-				    (state.tics != 1 || demoplayback))
-					state.tics >>= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.speed;
-					minfo.speed = minfo.altspeed;
-					minfo.altspeed = swap;
-				}
-			}
-		}
-		else
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST)
-					state.tics <<= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.altspeed;
-					minfo.altspeed = minfo.speed;
-					minfo.speed = swap;
-				}
-			}
-		}
-		isFast = wantFast;
-	}
+	G_SetFast(wantFast);
 
 	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
 	Unlag::getInstance().reset();
@@ -690,6 +657,8 @@ void G_DoResetLevel(bool full_reset)
 	// Clear teamgame state.
 	TeamInfo_ResetScores(full_reset);
 
+	G_ClearRoundKillStats();
+
 	// Reset all keys found
 	for (size_t j = 0; j < NUMCARDS; j++)
 		keysfound[j] = false;
@@ -713,7 +682,7 @@ void G_DoResetLevel(bool full_reset)
 			continue;
 
 		client_t* cl = &(player.client);
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), odaproto::svc::ResetMap());
+		cl->messenger->Reliable().Write (odaproto::svc::ResetMap());
 	}
 
 	// Unserialize saved snapshot
@@ -743,8 +712,8 @@ void G_DoResetLevel(bool full_reset)
 	}
 
 	// reset switch activation
-	for (int i = 0; i < numlines; i++)
-		lines[i].switchactive = false;
+	for (auto& line : R_GetLines())
+		line.switchactive = false;
 
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
@@ -889,7 +858,7 @@ void G_DoLoadLevel (int position)
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
 			{
-				MSG_WriteSVC(pit->client.messenger.ReliableBuf(),
+				pit->client.messenger->Reliable().Write (
 				             SVC_PlayerMembers(*it, SVC_PM_READY));
 			}
 		}

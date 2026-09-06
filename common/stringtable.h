@@ -92,6 +92,22 @@ class StringTable
 	}
 
 	//
+	// Obtain a string by name, retrying with the name uppercased.
+	//
+	// String names are conventionally uppercase but the table is
+	// case-sensitive, so this finds names either way.
+	//
+	[[nodiscard]] const char* lookup(const std::string& name) const;
+
+	//
+	// Resolve a "$NAME" token into the string it names.
+	//
+	// Tokens without the $ prefix, and lookups that find nothing, are
+	// returned unchanged.
+	//
+	[[nodiscard]] std::string maybeLookup(const std::string& token) const;
+
+	//
 	// Obtain a string by index.
 	//
 	[[nodiscard]]

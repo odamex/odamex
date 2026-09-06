@@ -72,6 +72,7 @@ END_DISABLE_WARNING_GNU
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "cl_freecam.h"
 
 #include <math.h> // for pow()
 
@@ -372,14 +373,19 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 	if (cl_run)
 		speed ^= 1;
 
-	int forward = 0, side = 0, look = 0, fly = 0;
+	int forward = 0;
+	int side    = 0;
+	int look    = 0;
+	int fly     = 0;
 
-	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
+	player_t& player = consoleplayer();
+
+	if (player.spectator and Actions[ACTION_USE] and connected)
 		AddCommandString("join");
 
 	// [RH] only use two stage accelerative turning on the keyboard
-	//		and not the joystick, since we treat the joystick as
-	//		the analog device it is.
+	//      and not the joystick, since we treat the joystick as
+	//      the analog device it is.
 	if ((Actions[ACTION_LEFT]) || (Actions[ACTION_RIGHT]))
 		turnheld += 1;
 	else
@@ -473,7 +479,7 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if ((joy_freelook && sv_freelook) || consoleplayer().spectator)
+	if ((joy_freelook && sv_freelook) || player.spectator)
 	{
 		if (joy_invert)
 			look += joy_to_int(joylook, lookspeed[speed]);
@@ -520,11 +526,15 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 
 	// [SL] 2012-03-31 - Let the server know when the client is predicting a
 	// weapon change due to a weapon pickup
-	if (!serverside && cl_predictpickup)
+	if (not serverside and cl_predictpickup)
 	{
-		if (!cmd.impulse && !(cmd.buttons & BT_CHANGE) &&
-			consoleplayer().pendingweapon != wp_nochange)
-			cmd.impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
+		if (not (cmd.impulse
+		        or (cmd.buttons & BT_CHANGE)
+		        or player.pendingweapon == wp_nochange
+		        or (player.mo != nullptr and player.mo->oflags & MFO_ISAWAITINGSPAWN)))
+		{
+			cmd.impulse = 50 + static_cast<int>(player.pendingweapon);
+		}
 	}
 
 	if (::joyturn)
@@ -556,8 +566,10 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 		forward -= joy_to_int(joyforward, forwardmove[speed]);
 	}
 
-	if (!consoleplayer().spectator
-		&& !Actions[ACTION_MLOOK] && !cl_mouselook && novert == 0)		// [Toke - Mouse] acts like novert.exe
+	if (not player.spectator
+	    and not Actions[ACTION_MLOOK]
+	    and not cl_mouselook
+	    and novert == 0)            // [Toke - Mouse] acts like novert.exe
 	{
 		forward += static_cast<int>(static_cast<float>(mousey) * m_forward);
 	}
@@ -701,7 +713,7 @@ void G_AddViewPitch(int pitch)
 		pitch = -pitch;
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) ||
-	    consoleplayer().spectator)
+	    consoleplayer().spectator || displayplayer().isFreecam)
 	{
 		localview.pitch += pitch << 16;
 		localview.setpitch = true;
@@ -710,7 +722,8 @@ void G_AddViewPitch(int pitch)
 
 bool G_ShouldIgnoreMouseInput()
 {
-	if (consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD)
+	if ((consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD) &&
+		not displayplayer().isFreecam)
 		return true;
 
 	return false;
@@ -855,7 +868,7 @@ void P_CheckInterpPause()
 {
 	// Game pauses when in the menu and not online/demo
 	OInterpolation &oi = OInterpolation::getInstance();
-	if (paused || (!multiplayer && !demoplayback &&
+	if ((paused && not displayplayer().isFreecam) || (!multiplayer && !demoplayback &&
 		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)))
 	{
 		if (oi.enabled())
@@ -873,6 +886,7 @@ void P_CheckInterpPause()
 }
 
 void CL_SimulateWorld();
+void CL_CheckDisplayPlayer();
 //
 // G_Ticker
 // Make ticcmd_ts for the players.
@@ -973,6 +987,15 @@ void G_Ticker (void)
 		C_AdjustBottom ();
 	}
 
+	// The freecam is only valid while dead and out of lives (or in a netdemo)
+	// Nothing checks the inverse, so check it here and reset the view when we hit it.
+	if (displayplayer().isFreecam && not netdemo.isInPlayback() && not demoplayback &&
+	    not Freecam::allowSpy())
+	{
+		displayplayer_id = consoleplayer_id;
+		CL_CheckDisplayPlayer();
+	}
+
 	buf = gametic % BACKUPTICS;
 
     // get commands
@@ -983,6 +1006,14 @@ void G_Ticker (void)
 		{
 			memcpy(&player.cmd, &player.netcmds[buf], sizeof(ticcmd_t));
 		}
+	}
+	// Rude - allow controlling displayplayer if freecam
+	else if (displayplayer().isFreecam)
+	{
+		memcpy(&displayplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
+
+		// Clear consoleplayer.cmd since they reapply every tic.
+		consoleplayer().cmd.clear();
 	}
 	else
 	{
@@ -1029,15 +1060,14 @@ void G_Ticker (void)
 					break;
 			}
 
-			// If we're here it's because we need to accept a message right away.
-
-			const MessageResultEnum nonReliableResult = CL_AcceptNetMessage();
-			if (nonReliableResult == MessageResultEnum::ABORT)
+			// If we're here it's because we need to accept messages right away.
+			const MessageResultEnum immediateResult = CL_ProcessCurrentAvailableMessages();
+			if (immediateResult == MessageResultEnum::ABORT)
 				return;
 		}
 
 		// With all the latest packets received, process the reliable message in proper sequence.
-		const MessageResultEnum reliableResult = CL_ProcessCurrentReliableMessages();
+		const MessageResultEnum reliableResult = CL_ProcessCurrentAvailableMessages();
 		if (reliableResult == MessageResultEnum::ABORT)
 			return;
 
@@ -1180,6 +1210,7 @@ void G_Ticker (void)
 					AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
 					mobj->flags &= ~MF_SOLID;
 					mobj->flags2 |= MF2_DONTDRAW;
+					mobj->oflags |= MFO_ISAWAITINGSPAWN;
 					consoleplayer().mo = consoleplayer().camera = mobj->ptr();
 					consoleplayer().mo->player = &consoleplayer();
 					G_PlayerReborn(consoleplayer());
@@ -1965,7 +1996,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			Z_Free(demobuffer);
 
 		PrintFmt(PRINT_WARNING, "DOOM Demo file too short\n");
-		gameaction = ga_fullconsole;
+		gameaction = singledemo ? ga_fullconsole : ga_nothing;
 		return;
 	}
 

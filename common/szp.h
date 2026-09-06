@@ -38,6 +38,8 @@
 
 #pragma once
 
+#include <utility>
+
 #include "m_stacktrace.h"
 
 template <typename T>
@@ -49,10 +51,6 @@ class szp
 	// circular linked list
 	szp* prev { nullptr };
 	szp* next { nullptr };
-
-	// this should never be used
-	// spawn from other pointers, or use init()
-	szp &operator=(T *other) = delete;
 
 	// utility function to remove oneself from the linked list
 	void unlink()
@@ -70,12 +68,16 @@ class szp
 		if(this == next)
 			delete naive;
 
-		naive = NULL;
+		naive = nullptr;
 	}
 
 public:
 
 	szp() = default;
+
+	// this should never be used
+	// spawn from other pointers, or use init()
+	szp &operator=(T *other) = delete;
 
 	// copy constructor
 	szp(const szp &other)
@@ -99,7 +101,7 @@ public:
 		unlink();
 	}
 
-	friend inline void swap(szp& lhs, szp& rhs)
+	friend void swap(szp& lhs, szp& rhs) noexcept
 	{
 		using std::swap;
 
@@ -109,7 +111,7 @@ public:
 	}
 
 	// copy a pointer and add self to the "i have this pointer" list
-	inline szp &operator =(const szp& other)
+	szp &operator =(const szp& other)
 	{
 		// itself?
 		if(&other == this || other.naive == naive)
@@ -179,17 +181,17 @@ public:
 	operator T*()
 	{
 		if(!naive)
-			return NULL;
-		else
-			return *naive;
+			return nullptr;
+
+		return *naive;
 	}
 
 	// use as raw pointer
 	operator const T*() const
 	{
 		if(!naive)
-			return NULL;
-		else
-			return *naive;
+			return nullptr;
+
+		return *naive;
 	}
 };

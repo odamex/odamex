@@ -49,7 +49,6 @@
 #include <wx/msgdlg.h>
 #include <wx/richmsgdlg.h>
 #include <wx/utils.h>
-#include <wx/tipwin.h>
 #include <wx/app.h>
 #include <wx/imaglist.h>
 #include <wx/artprov.h>
@@ -67,11 +66,14 @@
 #include <wx/stream.h>
 #include <wx/sstream.h>
 
+#include <json/json.h>
+
 #include "net_utils.h"
 #include "oda_defs.h"
 #include "plat_utils.h"
 #include "query_thread.h"
 #include "str_utils.h"
+#include "dlg_serverdetails.h"
 
 #include "md5.h"
 
@@ -113,6 +115,7 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 
 	EVT_MENU(Id_MnuItmGetList, dlgMain::OnGetList)
 	EVT_MENU(XRCID("Id_MnuItmRefreshServer"), dlgMain::OnRefreshServer)
+	EVT_MENU(XRCID("Id_MnuItmViewServerDetails"), dlgMain::OnViewServerDetails)
 	EVT_MENU(XRCID("Id_MnuItmRefreshAll"), dlgMain::OnRefreshAll)
 
 	EVT_MENU(wxID_PREFERENCES, dlgMain::OnOpenSettingsDialog)
@@ -183,6 +186,33 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	m_PnlServerFilter = XRCCTRL(*this, "Id_PnlServerFilter", wxPanel);
 	m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxSearchCtrl);
 	m_StatusBar = GetStatusBar();
+
+	// Middle-clicking a server opens the detailed server view.
+	m_LstCtrlServers->Bind(wxEVT_MIDDLE_DOWN,
+	                       &dlgMain::OnServerListMiddleDown, this);
+
+	#if wxUSE_POPUPWIN
+	// Frameless popovers are available: show server info / players on hover and
+	// collapse the permanent panels so the server list reclaims their space.
+	m_HoverItem = -1;
+	m_HoverColumn = -1;
+
+	m_ServerInfoPopover = new ServerInfoPopover(this);
+	m_PlayerListPopover = new PlayerListPopover(this);
+
+	m_LstCtrlServers->Bind(wxEVT_MOTION, &dlgMain::OnServerListMouseMove, this);
+	m_LstCtrlServers->Bind(wxEVT_LEAVE_WINDOW, &dlgMain::OnServerListMouseLeave,
+	                       this);
+
+	{
+		wxSplitterWindow* SrvSplitter =
+		    XRCCTRL(*this, "Id_SrvSplitter", wxSplitterWindow);
+		wxWindow* SrvInfoPanel = XRCCTRL(*this, "Id_PnlSrvInfo", wxPanel);
+
+		if(SrvSplitter && SrvInfoPanel)
+			SrvSplitter->Unsplit(SrvInfoPanel);
+	}
+	#endif
 
 	#if defined(__linux__) && wxCHECK_VERSION(3, 3, 0)
 	const auto res = wxFileConfig::MigrateLocalFile("odalaunch", wxCONFIG_USE_XDG, wxCONFIG_USE_LOCAL_FILE);
@@ -305,6 +335,15 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 		m_TimerNewList->Start(m_NewListInterval);
 		m_TimerRefresh->Start(m_RefreshInterval);
 	}
+
+	// Pre-build the server details dialog now (deferred until the frame is
+	// fully constructed) so the heavy one-time build is paid at startup and
+	// every open, including the first, is instant.
+	CallAfter([this]()
+	{
+		if(!m_ServerDetailsDlg)
+			m_ServerDetailsDlg = new dlgServerDetails(this);
+	});
 }
 
 // Window Destructor
@@ -445,44 +484,55 @@ void dlgMain::OnCheckVersionResponse(wxWebRequestEvent& evt)
         wxStringOutputStream out(&json);
         stream->Read(out);
 
-        // Hacky extraction of the tag_name without properly
-		// parsing the json to avoid needing extra libraries
-        const wxString key = "\"tag_name\":\"";
-        int start = json.Find(key);
-        if (start == wxNOT_FOUND)
+        // Pull the release tag out of the GitHub API response.
+        const wxScopedCharBuffer utf8 = json.utf8_str();
+
+        Json::CharReaderBuilder builder;
+        const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+
+        Json::Value root;
+        std::string errors;
+        if (!reader->parse(utf8.data(), utf8.data() + utf8.length(), &root, &errors) ||
+            !root.isObject())
+        {
+            InfoBar->ShowMessage("Unable to check for updates.");
+            wxLogWarning(
+                "Odalaunch tried to parse malformed JSON when checking for updates.");
             return;
+        }
 
-        start += key.Length();
-        int end = json.find('"', start);
-        if (end == wxNOT_FOUND)
+        const wxString tag = wxString::FromUTF8(
+            root.get("tag_name", "").asString().c_str());
+
+        if (tag.IsEmpty())
+        {
+            InfoBar->ShowMessage("Unable to check for updates.");
+            wxLogWarning(
+                "Odalaunch couldn't find a new version to compare against when checking for updates.");
             return;
+        }
 
-		const wxString tag = json.SubString(start, end - 1);
+        const wxString VerMsg = wxString::Format("New! Odamex version %s is available", tag);
 
-    	if (tag.IsEmpty())
-    	{
-    	    InfoBar->ShowMessage("Unable to check for updates.");
-    	    return;
-    	}
+        wxArrayString v = wxSplit(tag, '.');
+        if (MAKEVER(wxAtoi(v[0]), wxAtoi(v[1]), wxAtoi(v[2])) <= VERSION)
+        {
+            if (m_UpdateCheckWasAutomatic)
+                return;
 
-    	const wxString VerMsg = wxString::Format("New! Odamex version %s is available", tag);
+            InfoBar->ShowMessage("No new version available.");
+            return;
+        }
 
-		wxArrayString v = wxSplit(tag, '.');
-    	if (MAKEVER(wxAtoi(v[0]), wxAtoi(v[1]), wxAtoi(v[2])) <= VERSION)
-    	{
-    	    if (m_UpdateCheckWasAutomatic)
-    	        return;
-
-    	    InfoBar->ShowMessage("No new version available.");
-    	    return;
-    	}
-
-    	InfoBar->ShowMessage(VerMsg, XRCID("Id_VisitReleases"),
-    	    wxCommandEventHandler(dlgMain::OnOpenReleases), "Download Release");
+        InfoBar->ShowMessage(VerMsg, XRCID("Id_VisitReleases"),
+            wxCommandEventHandler(dlgMain::OnOpenReleases), "Download Release");
     }
     else if (evt.GetState() == wxWebRequest::State_Failed)
     {
         InfoBar->ShowMessage("Unable to check for updates.");
+        wxLogWarning(
+            "Odalaunch could not connect to %s to check for updates.",
+            evt.GetResponse().GetURL().c_str());
     }
 }
 #endif
@@ -1016,7 +1066,11 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 
 		const wxInt32 i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
 
+		HideHoverPopovers();
+
+		#if !wxUSE_POPUPWIN
 		m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
+		#endif
 
 		ThisServer.ResetData();
 
@@ -1048,9 +1102,11 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 		m_LstCtrlServers->AddServerToList(ThisServer, Result->ServerListIndex,
                                     false, cs);
 
+		#if !wxUSE_POPUPWIN
 		m_LstCtrlPlayers->AddPlayersToList(ThisServer);
 
 		m_LstOdaSrvDetails->LoadDetailsFromServer(ThisServer);
+		#endif
 
 		TotalPlayers += ThisServer.Info.Players.size();
 	}
@@ -1135,7 +1191,11 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 
 		const wxInt32 i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
 
+		HideHoverPopovers();
+
+		#if !wxUSE_POPUPWIN
 		m_LstCtrlPlayers->DeleteAllItems();
+		#endif
 
 		ThisServer.ResetData();
 
@@ -1265,26 +1325,22 @@ void dlgMain::OnTextSearch(wxCommandEvent& event)
 	m_LstCtrlServers->ApplyFilter(event.GetString());
 }
 
-// Launch button click
-void dlgMain::OnLaunch(wxCommandEvent& event)
+// Connects to (launches the game against) a server, prompting for a password
+// first if it is passworded. DialogParent owns any dialogs shown (defaults to
+// the main window); callers from a modal dialog should pass themselves.
+void dlgMain::ConnectToServer(const odalpapi::Server& s, wxWindow* DialogParent)
 {
+	if(DialogParent == NULL)
+		DialogParent = this;
+
 	wxString Password;
-	wxString UsrPwHash;
-	wxString SrvPwHash;
-	wxInt32 i;
-
-	i = GetSelectedServerArrayIndex();
-
-	if(i == -1)
-		return;
+	wxString SrvPwHash = stdstr_towxstr(s.Info.PasswordHash);
 
 	// If the server is passworded, pop up a password entry dialog for them to
 	// specify one before going any further
-	SrvPwHash = stdstr_towxstr(QServer[i].Info.PasswordHash);
-
 	if(SrvPwHash.IsEmpty() == false)
 	{
-		wxPasswordEntryDialog ped(this, "Please enter a password",
+		wxPasswordEntryDialog ped(DialogParent, "Please enter a password",
 		                          "This server is passworded", "");
 
 		SrvPwHash.MakeUpper();
@@ -1300,7 +1356,7 @@ void dlgMain::OnLaunch(wxCommandEvent& event)
 			if(Password.IsEmpty())
 				return;
 
-			UsrPwHash = MD5SUM(Password);
+			wxString UsrPwHash = MD5SUM(Password);
 			UsrPwHash.MakeUpper();
 
 			// Do an MD5 comparison of the password with the servers one, if it
@@ -1308,7 +1364,7 @@ void dlgMain::OnLaunch(wxCommandEvent& event)
 			// dive out and connect to the server
 			if(SrvPwHash != UsrPwHash)
 			{
-				wxMessageDialog Message(this, "Incorrect password",
+				wxMessageDialog Message(DialogParent, "Incorrect password",
 				                        "Incorrect password", wxOK | wxICON_HAND);
 
 				Message.ShowModal();
@@ -1331,8 +1387,99 @@ void dlgMain::OnLaunch(wxCommandEvent& event)
 		ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
 	}
 
-	LaunchGame(stdstr_towxstr(QServer[i].GetAddress()), OdamexDirectory,
-	           DelimWadPaths, Password);
+	LaunchGame(stdstr_towxstr(s.GetAddress()), OdamexDirectory, DelimWadPaths,
+	           Password);
+}
+
+void dlgMain::ApplyServerRefresh(const odalpapi::Server& Refreshed)
+{
+	const wxString Address = stdstr_towxstr(Refreshed.GetAddress());
+
+	const wxInt32 ai = FindServer(Address);
+
+	if(ai == -1)
+		return;
+
+	// Keep the running player tally in sync with the new player count.
+	TotalPlayers -= QServer[ai].Info.Players.size();
+
+	QServer[ai].Info = Refreshed.Info;
+	QServer[ai].SetPing(Refreshed.GetPing());
+	QServer[ai].SetValidResponse(Refreshed.GotResponse());
+
+	TotalPlayers += QServer[ai].Info.Players.size();
+
+	// Repaint the status bar's player total so it reflects the new count.
+	m_StatusBar->SetStatusText(
+	    wxString::Format("Total Players: %d", (wxInt32)TotalPlayers), 3);
+
+	// Update the visible list row in place (it may be filtered out of view).
+	const wxInt32 li = m_LstCtrlServers->FindServer(Address);
+
+	if(li != -1)
+	{
+		const bool cs = MServer.IsCustomServer(QServer[ai].GetAddress());
+		m_LstCtrlServers->AddServerToList(QServer[ai], li, false, cs);
+	}
+}
+
+// Launch button click
+void dlgMain::OnLaunch(wxCommandEvent& event)
+{
+	wxInt32 i = GetSelectedServerArrayIndex();
+
+	if(i == -1)
+		return;
+
+	ConnectToServer(QServer[i]);
+}
+
+// Middle-click on the server list: open the detailed server view.
+void dlgMain::OnServerListMiddleDown(wxMouseEvent& event)
+{
+	int Flags = 0;
+	long Item = m_LstCtrlServers->HitTest(event.GetPosition(), Flags);
+
+	if(Item != wxNOT_FOUND)
+	{
+		m_LstCtrlServers->Select(Item);
+		m_LstCtrlServers->Focus(Item);
+
+		wxCommandEvent Dummy;
+		OnViewServerDetails(Dummy);
+	}
+
+	event.Skip();
+}
+
+// Opens the modal server details dialog for the selected server, pausing the
+// main window's refresh timers while it is up.
+void dlgMain::OnViewServerDetails(wxCommandEvent& event)
+{
+	wxInt32 i = GetSelectedServerArrayIndex();
+
+	if(i == -1)
+		return;
+
+	HideHoverPopovers();
+
+	// Pause the main window's automatic refresh while the dialog owns the view.
+	m_TimerNewList->Stop();
+	m_TimerRefresh->Stop();
+
+	// The dialog is built once and reused so repeat opens are fast; it just
+	// re-seeds from the (already-queried) list entry and repaints. No blocking
+	// network query happens until the user turns on its Refresh toggle.
+	if(!m_ServerDetailsDlg)
+		m_ServerDetailsDlg = new dlgServerDetails(this);
+
+	m_ServerDetailsDlg->ShowForServer(QServer[i]);
+
+	if(m_UseRefreshTimer)
+	{
+		m_TimerNewList->Start(m_NewListInterval);
+		m_TimerRefresh->Start(m_RefreshInterval);
+	}
 }
 
 // Update program state and get a new list of servers
@@ -1342,8 +1489,13 @@ void dlgMain::DoGetList(bool IsARTRefresh)
 	m_SrchCtrlGlobal->SetValue("");
 	m_SrchCtrlGlobal->Enable(false);
 
+	HideHoverPopovers();
+
 	m_LstCtrlServers->DeleteAllItems();
+
+	#if !wxUSE_POPUPWIN
 	m_LstCtrlPlayers->DeleteAllItems();
+	#endif
 
 	QueriedServers = 0;
 	TotalPlayers = 0;
@@ -1366,8 +1518,13 @@ void dlgMain::DoRefreshList(bool IsARTRefresh)
 	m_SrchCtrlGlobal->SetValue("");
 	m_SrchCtrlGlobal->Enable(false);
 
+	HideHoverPopovers();
+
 	m_LstCtrlServers->DeleteAllItems();
+
+	#if !wxUSE_POPUPWIN
 	m_LstCtrlPlayers->DeleteAllItems();
+	#endif
 
 	QueriedServers = 0;
 	TotalPlayers = 0;
@@ -1419,7 +1576,11 @@ void dlgMain::OnRefreshServer(wxCommandEvent& event)
 	if(li == -1 || ai == -1)
 		return;
 
+	HideHoverPopovers();
+
+	#if !wxUSE_POPUPWIN
 	m_LstCtrlPlayers->DeleteAllItems();
+	#endif
 
 	TotalPlayers -= QServer[ai].Info.Players.size();
 
@@ -1429,6 +1590,13 @@ void dlgMain::OnRefreshServer(wxCommandEvent& event)
 // when the user clicks on the server list
 void dlgMain::OnServerListClick(wxListEvent& event)
 {
+	#if wxUSE_POPUPWIN
+	// Selection is still tracked for Launch/Refresh actions, but server
+	// details and the player list are surfaced via hover popovers
+	// (see OnServerListMouseMove), so there's nothing to populate here.
+	event.Skip();
+	#else
+	// No popovers available: populate the permanent fallback panels.
 	wxInt32 i;
 
 	i = GetSelectedServerArrayIndex();
@@ -1444,6 +1612,143 @@ void dlgMain::OnServerListClick(wxListEvent& event)
 		m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
 	else
 		m_LstOdaSrvDetails->LoadDetailsFromServer(QServer[i]);
+	#endif
+}
+
+// Hides any visible hover popover and clears the hover-tracking state
+void dlgMain::HideHoverPopovers()
+{
+	#if wxUSE_POPUPWIN
+	if(m_ServerInfoPopover && m_ServerInfoPopover->IsShown())
+		m_ServerInfoPopover->Hide();
+
+	if(m_PlayerListPopover && m_PlayerListPopover->IsShown())
+		m_PlayerListPopover->Hide();
+
+	m_HoverItem = -1;
+	m_HoverColumn = -1;
+	#endif
+}
+
+// Shows a frameless popover when the cursor is over a server's name or players
+// cell, anchored next to the cursor so it never sits underneath it.
+void dlgMain::OnServerListMouseMove(wxMouseEvent& event)
+{
+	event.Skip();
+
+	#if wxUSE_POPUPWIN
+	const wxPoint Pt = event.GetPosition();
+
+	int Flags = 0;
+	long Item = m_LstCtrlServers->HitTest(Pt, Flags, nullptr);
+
+	// Work out which column the cursor is over by walking the column widths
+	// relative to the row's on-screen rectangle (this also accounts for any
+	// horizontal scrolling, and is portable since in old wxWidgets, HitTest
+	// is wxMSW only).
+	int Column = -1;
+	wxRect RowRect;
+
+	if(Item != wxNOT_FOUND && m_LstCtrlServers->GetItemRect(Item, RowRect))
+	{
+		int x = RowRect.x;
+		const int ColumnCount = m_LstCtrlServers->GetColumnCount();
+
+		for(int pos = 0; pos < ColumnCount; ++pos)
+		{
+			// Get the column index from the column order, if supported,
+			// otherwise just use its initial position since it can't move.
+			#ifdef wxHAS_LISTCTRL_COLUMN_ORDER
+			const int c = m_LstCtrlServers->GetColumnIndexFromOrder(pos);
+			#else
+			const int c = pos;
+			#endif
+
+			const int w = m_LstCtrlServers->GetColumnWidth(c);
+
+			if(Pt.x >= x && Pt.x < x + w)
+			{
+				Column = c;
+				break;
+			}
+
+			x += w;
+		}
+	}
+
+	// Only the name and players columns have popovers
+	const bool IsName = (Column == serverlist_field_name);
+	const bool IsPlayers = (Column == serverlist_field_players);
+
+	if(Item == wxNOT_FOUND || (!IsName && !IsPlayers))
+	{
+		HideHoverPopovers();
+		return;
+	}
+
+	// Already showing the popover for this exact cell? Leave it where it is.
+	if(Item == m_HoverItem && Column == m_HoverColumn)
+		return;
+
+	HideHoverPopovers();
+
+	// Resolve the server's array index from the row's address cell
+	wxListItem Li;
+	Li.SetId(Item);
+	Li.SetColumn(serverlist_field_address);
+	Li.SetMask(wxLIST_MASK_TEXT);
+	m_LstCtrlServers->GetItem(Li);
+
+	const wxInt32 ai = FindServer(Li.GetText());
+
+	if(ai == -1 || QServer[ai].GotResponse() == false)
+		return;
+
+	wxPopupWindow* Popover = nullptr;
+
+	if(IsName)
+	{
+		m_ServerInfoPopover->Populate(QServer[ai]);
+		Popover = m_ServerInfoPopover;
+	}
+	else
+	{
+		m_PlayerListPopover->Populate(QServer[ai]);
+		Popover = m_PlayerListPopover;
+	}
+
+	// Anchor next to the cursor, offset down-right so the cursor stays over the
+	// cell (keeping the popover open) rather than over the popover itself.
+	wxPoint Anchor = wxGetMousePosition() + wxPoint(16, 16);
+
+	const wxSize PopSize = Popover->GetSize();
+	const wxRect Display = wxGetClientDisplayRect();
+
+	// Clip popover to the "client Display Rect" which on Windows
+	// is available screen space minus the task bar.
+	if(Anchor.x + PopSize.GetWidth() > Display.GetRight())
+		Anchor.x = Display.GetRight() - PopSize.GetWidth();
+	if(Anchor.y + PopSize.GetHeight() > Display.GetBottom())
+		Anchor.y = Display.GetBottom() - PopSize.GetHeight();
+	if(Anchor.x < Display.GetLeft())
+		Anchor.x = Display.GetLeft();
+	if(Anchor.y < Display.GetTop())
+		Anchor.y = Display.GetTop();
+
+	Popover->Move(Anchor);
+	Popover->Show();
+
+	m_HoverItem = Item;
+	m_HoverColumn = Column;
+	#endif
+}
+
+// Hides the popovers once the cursor leaves the server list entirely
+void dlgMain::OnServerListMouseLeave(wxMouseEvent& event)
+{
+	event.Skip();
+
+	HideHoverPopovers();
 }
 
 void dlgMain::LaunchGame(const wxString& Address, const wxString& ODX_Path,

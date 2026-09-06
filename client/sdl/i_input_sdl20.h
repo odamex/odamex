@@ -92,6 +92,7 @@ public:
 
 	virtual void pause();
 	virtual void resume();
+	virtual void resumeUI();
 	virtual void reset();
 
 	virtual void gatherEvents();
@@ -104,7 +105,11 @@ public:
 	virtual void flushEvents();
 
 private:
+	void enableEvents(bool relative);
+
 	bool			mActive;
+
+	bool			mUIMode;
 
 	typedef std::queue<event_t> EventQueue;
 	EventQueue		mEvents;
@@ -167,6 +172,7 @@ public:
 
 	virtual void grabInput();
 	virtual void releaseInput();
+	virtual void grabInputForUI();
 
 	virtual bool isInputGrabbed() const
 	{	return mInputGrabbed;	}

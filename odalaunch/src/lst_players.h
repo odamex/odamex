@@ -38,6 +38,8 @@ public:
 
 	void AddPlayersToList(const odalpapi::Server& s);
 
+	void AddPlayersAndSlotsToList(const odalpapi::Server& s);
+
 protected:
 
 	void SetupPlayerListColumns();

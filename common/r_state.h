@@ -67,12 +67,6 @@ extern bool				g_ValidLevel;
 extern int				numsprites;
 extern OHashTable<int32_t, spritedef_t> sprites;
 
-extern int				numvertexes;
-extern vertex_t*		vertexes;
-
-extern int				numsegs;
-extern seg_t*			segs;
-
 extern int				numsectors;
 extern sector_t*		sectors;
 
@@ -88,9 +82,19 @@ extern line_t*			lines;
 extern int				numsides;
 extern side_t*			sides;
 
-inline std::span<vertex_t>    R_GetVertices() { return std::span(vertexes, numvertexes); }
+inline std::span<vertex_t> R_GetVertices()
+{
+	extern int numvertexes;
+	extern vertex_t* vertexes;
+	return { vertexes, static_cast<size_t>(numvertexes) };
+}
 
-inline std::span<seg_t>       R_GetSegs() { return std::span(segs, numsegs); }
+inline std::span<seg_t> R_GetSegs()
+{
+	extern int numsegs;
+	extern seg_t* segs;
+	return { segs, static_cast<size_t>(numsegs) };
+}
 
 inline std::span<sector_t>    R_GetSectors() { return std::span(sectors, numsectors); }
 

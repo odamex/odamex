@@ -38,6 +38,8 @@ EXTERN_CVAR(co_avoidhazards)
 EXTERN_CVAR(co_monstersclimbsteep)
 EXTERN_CVAR(co_mbfphys)
 
+void SV_UpdateMobj(AActor* mo);
+
 //
 // P_CrossCompatibleSpecialLine - Walkover Trigger Dispatcher
 //
@@ -1928,6 +1930,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	if (side) // jff 6/1/98 fix inadvertent deletion of side test
 		return false;
 
+	P_ClearJustTeleported();
+
 	// jff 02/04/98 add check here for generalized floor/ceil mover
 
 	// pointer to line function is NULL by default, set non-null if
@@ -3366,6 +3370,16 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// The ActivateLine must go out first because P_ChangeSwitchTexture clears
 			// the special, resulting in a 0 special on both the Switch and ActivateLine messages.
 			SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
+
+			// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
+			// because client-side prediction immediately followed by the ActivateLine _may_
+			// result in a wildly inaccurate position, depending on a variety of factors, and
+			// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+			if (P_JustTeleported(thing))
+			{
+				SV_UpdateMobj(thing);
+				P_ClearJustTeleported();
+			}
 
 			P_ChangeSwitchTexture(line, reuse, true);
 			OnChangedSwitchTexture(line, reuse);

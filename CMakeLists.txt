@@ -1,6 +1,9 @@
 # CMake >= 3.13 needed for -S and -B params in library compilation.
-# CMake >= 3.19 needed for policy CMP0112: target-dependent generator expressions
-#               do not implicitly add target-level dependencies.
+# CMake >= 3.19 needed for:
+#               - policy CMP0112: target-dependent generator expressions
+#                 do not implicitly add target-level dependencies.
+#               - add_library(<name> INTERFACE) plus PUBLIC target_sources.
+# CMake >= 3.20 needed for restricted set of generator expressions allowed in custom command OUTPUT args.
 #
 # Note that if you are running Linux, there are many ways to get newer
 # versions of CMake.
@@ -14,7 +17,7 @@
 # - If you have Python installed, you can install CMake through pip.
 #
 
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.20)
 
 project(Odamex VERSION 13.0.0)
 
@@ -57,7 +60,7 @@ cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIB
 cmake_dependent_option( USE_INTERNAL_ZSTD "Use internal zstd" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_TESTS" 0 )
-cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
+cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS OR BUILD_LAUNCHER" 0 )
 cmake_dependent_option( USE_INTERNAL_CPPTRACE "Use internal cpptrace" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_FLTK "Use internal FLTK" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
@@ -69,6 +72,8 @@ cmake_dependent_option( USE_INTERNAL_LIBADLMIDI "Use internal libADLMIDI" 1 BUIL
 
 set(ODAMEX_INSTALL_BINDIR "/usr/local/bin" CACHE PATH "Smart default for bin dir location")
 set(ODAMEX_INSTALL_DATADIR "/usr/local/share" CACHE PATH "Smart default for data dir location")
+
+set(ODAMEX_ARTIFACT_DIR "${CMAKE_BINARY_DIR}/odamex" CACHE PATH "The build directory in which to place deployable end items such as executables, dynamic libraries, and data resources.")
 
 if(NOT APPLE AND NOT WIN32)
   add_definitions(-DODAMEX_INSTALL_BINDIR="${ODAMEX_INSTALL_BINDIR}")
@@ -136,20 +141,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS "${CMAKE_EXPORT_COMPILE_COMMANDS}" CACHE BOOL
   FORCE)
 
 # Global compile options as shown in a GUI.
+option(USE_SANITIZE_ADDRESS "Turn on Address Sanitizer in Debug builds." OFF)
 if(NOT MSVC)
-  set(USE_COLOR_DIAGNOSTICS ON CACHE BOOL
-    "Force the use of color diagnostics, necessary to get color output with Ninja.")
-  set(USE_STATIC_STDLIB OFF CACHE BOOL
-    "Statically link against the C and C++ Standard Library.")
-  set(USE_SANITIZE_ADDRESS OFF CACHE BOOL
-    "Turn on Address Sanitizer in Debug builds.")
-  set(USE_SANITIZE_THREAD OFF CACHE BOOL
-    "Turn on Thread Sanitizer in Debug builds.")
+  option(USE_COLOR_DIAGNOSTICS "Force the use of color diagnostics, necessary to get color output with Ninja." ON)
+  option(USE_STATIC_STDLIB "Statically link against the C and C++ Standard Library." OFF)
+  option(USE_SANITIZE_THREAD "Turn on Thread Sanitizer in Debug builds." OFF)
   if(USE_SANITIZE_ADDRESS AND USE_SANITIZE_THREAD)
     message(FATAL_ERROR "USE_SANITIZE_ADDRESS and USE_SANITIZE_THREAD are mutually exclusive options.")
   endif()
-  set(USE_SANITIZE_UNDEFINED OFF CACHE BOOL
-    "Turn on Undefined Behavior Sanitizer in Debug builds.")
+  option(USE_SANITIZE_UNDEFINED "Turn on Undefined Behavior Sanitizer in Debug builds." OFF)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )
@@ -181,13 +181,19 @@ git_branch(HEAD GIT_BRANCH)
 string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
+# Cvar documentation
+include(OdamexCvarDoc)
+
 # Libraries
 add_subdirectory(libraries)
 
+# WAD building
+add_subdirectory(wad)
+
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
-  add_subdirectory(common)
   add_subdirectory(odaproto)
+  add_subdirectory(common)
 endif()
 if(BUILD_CLIENT)
   add_subdirectory(client)
@@ -215,8 +221,8 @@ if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_LAUN
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
 
-# WAD building
-add_subdirectory(wad)
+# The "cvardocs" target refreshes the committed documentation on demand.
+odamex_cvardoc_add_targets()
 
 # Bash completion
 add_subdirectory(completion)
@@ -260,6 +266,12 @@ if(NOT APPLE)
       COMPONENT common)
     install(FILES ${CONFIG_SAMPLES}
       DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex/config-samples
+      COMPONENT common)
+    install(FILES packaging/linux/net.odamex.Odamex.metainfo.xml
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo
+      COMPONENT common)
+    install(FILES packaging/linux/net.odamex.Odamex.releases.xml
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo/releases
       COMPONENT common)
 
     option(ODAMEX_COMPONENT_PACKAGES "Create several rpm/deb packages for repository maintainers." OFF)

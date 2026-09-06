@@ -99,7 +99,7 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 		// [SL] Kill the player if they are switching teams so they don't end up
 		// holding their own team's flags
 		if (player.mo && player.userinfo.team != dest_team)
-			P_DamageMobj(player.mo, 0, 0, 1000, 0);
+			P_DamageMobj(player.mo, nullptr, nullptr, 1000, 0);
 
 		SV_ForceSetTeam(player, dest_team);
 		SV_CheckTeam(player);

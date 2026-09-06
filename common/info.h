@@ -29,6 +29,7 @@
 #include "dthinker.h"
 #include "farchive.h"
 #include "m_doomobjcontainer.h"
+#include "actorflags.h"
 
 #define NO_ALTSPEED -1
 #ifndef MELEERANGE // TODO: only have a single spot this is defined
@@ -1408,8 +1409,8 @@ inline auto format_as(statenum_t eStateNum)
 	return fmt::underlying(eStateNum);
 }
 
-#define MAXSTATEARGS 8
-typedef long statearg_t;
+inline constexpr auto MAXSTATEARGS = 8;
+using statearg_t = int32_t;
 
 #define STATEF_NONE 0
 #define STATEF_SKILL5FAST BIT(0) // tics halve on nightmare skill
@@ -1439,7 +1440,7 @@ extern state_t boomstates[];
 inline DoomObjectContainer<state_t> states(::NUMSTATES); // statenum_t
 extern state_t odastates[];
 
-inline FArchive &operator<< (FArchive &arc, state_t *state)
+inline FArchive &operator<< (FArchive &arc, const state_t *state)
 {
 	if (state)
 		return arc << static_cast<int32_t>(state->statenum);
@@ -1447,15 +1448,15 @@ inline FArchive &operator<< (FArchive &arc, state_t *state)
 		return arc << static_cast<int32_t>(0xffffffff);
 }
 
-inline FArchive &operator>> (FArchive &arc, state_t *&state)
+inline FArchive &operator>> (FArchive &arc, const state_t *&state)
 {
 	int32_t ofs;
 	arc >> ofs;
-	DoomObjectContainer<state_t, int32_t>::iterator it = states.find(ofs);
+	auto it = states.find(ofs);
 	if (it != states.end())
 		state = &it->second;
 	else
-		state = NULL;
+		state = nullptr;
 	return arc;
 }
 
@@ -1483,10 +1484,12 @@ enum mobjtype_t: int32_t {
     MT_NODE,        //Added by MC:
     MT_WATERZONE,
     MT_SECRETTRIGGER,
+    MT_UPPERSTACK,
+    MT_LOWERSTACK,
     MT_SKYVIEWPOINT,
     MT_SKYPICKER,
     MT_SECTORSILENCER,
-
+	MT_SPRINGPAD,
 
     // -----------------------------------
     //    [Toke - CTF]
@@ -1781,10 +1784,10 @@ struct mobjinfo_t
 	int mass                = 0;
 	int damage              = 0;
 	const char *activesound = nullptr; // [RH] not int
-	int flags               = 0;
-	int flags2              = 0;
+	ActorFlags1 flags       = ActorFlags1::none_set();
+	ActorFlags2 flags2      = ActorFlags2::none_set();
 	statenum_t raisestate   = S_NULL;
-	int translucency        = 0x10000;
+	int translucency        = FRACUNIT;
 	const char *name        = nullptr;
 
 	// MBF21 STUFF HERE
@@ -1793,9 +1796,14 @@ struct mobjinfo_t
 	int infighting_group    = IG_DEFAULT;
 	int projectile_group    = PG_DEFAULT;
 	int splash_group        = SG_DEFAULT;
-	int flags3              = 0;
+	ActorFlags3 flags3      = ActorFlags3::none_set();
 	const char* ripsound    = nullptr;
 	int32_t droppeditem     = MT_NULL;
+
+	std::string display_name = "";
+	// indicates it was explicitly overriden from the default by dehacked
+	bool display_name_set    = false;
+	std::string deh_name     = "";
 
 	// ID24 stuff
 	// int minrespawntics      = 420;
@@ -1809,6 +1817,9 @@ struct mobjinfo_t
 	// std::string pickupmessage = "";
 	// OLumpName translation   = nullptr;
 	// fixed_t selfdamage      = FRACUNIT;
+
+	[[nodiscard]]
+	std::string getDisplayName() const;
 };
 
 inline auto format_as(const mobjinfo_t& info)
@@ -1834,7 +1845,7 @@ inline auto format_as(const mobjinfo_t& info)
 		getstring(info.seesound), getstring(info.attacksound), getstring(info.painsound),
 		getstring(info.deathsound), getstring(info.activesound), getstring(info.ripsound),
 		info.infighting_group, info.projectile_group, info.splash_group,
-		info.flags, info.flags2, info.flags3
+		info.flags.to_int(), info.flags2.to_int(), info.flags3.to_int()
 	);
 }
 

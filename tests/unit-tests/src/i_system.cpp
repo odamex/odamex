@@ -125,15 +125,13 @@ void I_FinishClockCalibration ()
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void) {}
+void I_Quit() {}
 
 
 //
 // I_Error
 //
 bool gameisdead;
-
-#define MAX_ERRORTEXT	1024
 
 [[noreturn]] void I_BaseError(const std::string& errortext)
 {

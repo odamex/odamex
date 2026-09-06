@@ -12,12 +12,18 @@ mkdir artifact | Out-Null
 
 # Copy all built files into artifact directory
 Copy-Item `
-    -Path ".\client\RelWithDebInfo\odamex.exe", ".\client\RelWithDebInfo\odamex.pdb", `
-    ".\server\RelWithDebInfo\odasrv.exe", ".\server\RelWithDebInfo\odasrv.pdb", `
-    ".\wad\odamex.wad", `
-    ".\libraries\SDL2-2.32.8\lib\x86\*.dll", ".\libraries\SDL2_mixer-2.8.1\lib\x86\*.dll", ".\libraries\SDL2_mixer-2.8.1\lib\x86\optional\*.dll", `
-    "C:\Windows\System32\msvcp140.dll", "C:\Windows\System32\vcruntime140.dll", `
-    "C:\Windows\System32\vcruntime140_1.dll" `
+    -Path `
+        ".\odamex\RelWithDebInfo\odamex.exe", `
+        ".\odamex\RelWithDebInfo\odamex.pdb", `
+        ".\odamex\RelWithDebInfo\odasrv.exe", `
+        ".\odamex\RelWithDebInfo\odasrv.pdb", `
+        ".\odamex\RelWithDebInfo\odamex.wad", `
+        ".\libraries\SDL2-2.32.8\lib\x86\*.dll", `
+        ".\libraries\SDL2_mixer-2.8.1\lib\x86\*.dll", `
+        ".\libraries\SDL2_mixer-2.8.1\lib\x86\optional\*.dll", `
+        "C:\Windows\System32\msvcp140.dll", `
+        "C:\Windows\System32\vcruntime140.dll", `
+        "C:\Windows\System32\vcruntime140_1.dll" `
     -Destination "artifact"
 
 # Archive files into a zip

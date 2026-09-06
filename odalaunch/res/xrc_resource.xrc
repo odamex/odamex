@@ -434,7 +434,7 @@
                   <flag>wxEXPAND</flag>
                   <border>5</border>
                   <option>1</option>
-                  <object class="wxSplitterWindow" name="11">
+                  <object class="wxSplitterWindow" name="Id_SrvSplitter">
                     <style>wxSP_3DSASH|wxSP_NOBORDER</style>
                     <sashpos>0</sashpos>
                     <gravity>1</gravity>
@@ -454,7 +454,7 @@
                         </object>
                       </object>
                     </object>
-                    <object class="wxPanel" name="41">
+                    <object class="wxPanel" name="Id_PnlSrvInfo">
                       <style>wxTAB_TRAVERSAL</style>
                       <object class="wxBoxSizer" name="5">
                         <orient>wxHORIZONTAL</orient>
@@ -1686,8 +1686,181 @@
       </object>
     </object>
   </object>
+  <object class="wxDialog" name="dlgServerDetails">
+    <style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
+    <size>900,720</size>
+    <title>Server Details</title>
+    <object class="wxBoxSizer">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <flag>wxEXPAND|wxALL</flag>
+        <border>5</border>
+        <option>0</option>
+        <object class="wxStaticBoxSizer">
+          <orient>wxVERTICAL</orient>
+          <label>Message of the day</label>
+          <object class="sizeritem">
+            <flag>wxEXPAND|wxALL</flag>
+            <border>3</border>
+            <option>1</option>
+            <object class="wxTextCtrl" name="Id_TxtMotd">
+              <style>wxTE_MULTILINE|wxTE_READONLY|wxTE_BESTWRAP|wxTE_CENTRE</style>
+              <size>-1,70</size>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxEXPAND|wxALL</flag>
+        <border>0</border>
+        <option>1</option>
+        <object class="wxBoxSizer">
+          <orient>wxHORIZONTAL</orient>
+          <object class="sizeritem">
+            <flag>wxEXPAND</flag>
+            <border>0</border>
+            <option>1</option>
+            <object class="wxBoxSizer">
+              <orient>wxVERTICAL</orient>
+              <object class="sizeritem">
+                <flag>wxEXPAND|wxALL</flag>
+                <border>5</border>
+                <option>0</option>
+                <object class="wxStaticBoxSizer">
+                  <orient>wxVERTICAL</orient>
+                  <label>Server Metadata</label>
+                  <object class="sizeritem">
+                    <flag>wxEXPAND|wxALL</flag>
+                    <border>3</border>
+                    <option>1</option>
+                    <object class="wxPanel" name="Id_PnlMetadata">
+                      <style>wxTAB_TRAVERSAL</style>
+                    </object>
+                  </object>
+                </object>
+              </object>
+              <object class="sizeritem">
+                <flag>wxEXPAND|wxALL</flag>
+                <border>5</border>
+                <option>1</option>
+                <object class="wxStaticBoxSizer">
+                  <orient>wxVERTICAL</orient>
+                  <label>Server Variables</label>
+                  <object class="sizeritem">
+                    <flag>wxEXPAND|wxALL</flag>
+                    <border>3</border>
+                    <option>1</option>
+                    <object class="wxScrolledWindow" name="Id_PnlServerVars">
+                      <style>wxVSCROLL</style>
+                      <scrollrate>5,5</scrollrate>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxEXPAND</flag>
+            <border>0</border>
+            <option>1</option>
+            <object class="wxBoxSizer">
+              <orient>wxVERTICAL</orient>
+              <object class="sizeritem">
+                <flag>wxEXPAND|wxALL</flag>
+                <border>5</border>
+                <option>0</option>
+                <object class="wxStaticBoxSizer">
+                  <orient>wxVERTICAL</orient>
+                  <label>Gameplay Variables</label>
+                  <object class="sizeritem">
+                    <flag>wxEXPAND|wxALL</flag>
+                    <border>3</border>
+                    <option>1</option>
+                    <object class="wxPanel" name="Id_PnlGameplayVars">
+                      <style>wxTAB_TRAVERSAL</style>
+                    </object>
+                  </object>
+                </object>
+              </object>
+              <object class="sizeritem">
+                <flag>wxEXPAND|wxALL</flag>
+                <border>5</border>
+                <option>1</option>
+                <object class="wxStaticBoxSizer">
+                  <orient>wxVERTICAL</orient>
+                  <label>Player List</label>
+                  <object class="sizeritem">
+                    <flag>wxEXPAND|wxALL</flag>
+                    <border>3</border>
+                    <option>1</option>
+                    <object class="wxPanel" name="Id_PnlPlayerList">
+                      <style>wxTAB_TRAVERSAL</style>
+                    </object>
+                  </object>
+                  <object class="sizeritem">
+                    <flag>wxEXPAND|wxALL</flag>
+                    <border>3</border>
+                    <option>0</option>
+                    <object class="wxBoxSizer">
+                      <orient>wxHORIZONTAL</orient>
+                      <object class="sizeritem">
+                        <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT</flag>
+                        <border>5</border>
+                        <option>0</option>
+                        <object class="wxToggleButton" name="Id_BtnRefresh">
+                          <label>Refresh</label>
+                        </object>
+                      </object>
+                      <object class="sizeritem">
+                        <flag>wxEXPAND</flag>
+                        <border>0</border>
+                        <option>1</option>
+                        <object class="wxGauge" name="Id_GaugeRefresh">
+                          <range>100</range>
+                          <value>0</value>
+                          <size>-1,16</size>
+                        </object>
+                      </object>
+                      <object class="sizeritem">
+                        <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
+                        <border>5</border>
+                        <option>0</option>
+                        <object class="wxButton" name="Id_BtnJoin">
+                          <label>Join</label>
+                        </object>
+                      </object>
+                      <object class="sizeritem">
+                        <flag>wxALIGN_CENTER_VERTICAL|wxLEFT</flag>
+                        <border>5</border>
+                        <option>0</option>
+                        <object class="wxToggleButton" name="Id_BtnJoinWhenFree">
+                          <label>Join when slot free</label>
+                          <hidden>1</hidden>
+                        </object>
+                      </object>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
   <object class="wxMenu" name="Id_mnuServersPopup">
     <label>Action</label>
+    <object class="wxMenuItem" name="Id_MnuItmRefreshServer">
+      <label>Refresh Server</label>
+      <accel></accel>
+      <help>Refresh the selected server</help>
+    </object>
+    <object class="wxMenuItem" name="Id_MnuItmViewServerDetails">
+      <label>View Server Details...</label>
+      <accel></accel>
+      <help>Open a detailed view of the selected server</help>
+    </object>
+    <object class="separator"/>
     <object class="wxMenuItem" name="Id_mnuServersCopyAddress">
       <label>Copy Server Address</label>
       <accel></accel>

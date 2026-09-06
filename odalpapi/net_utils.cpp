@@ -27,16 +27,20 @@
 #include <iostream>
 
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <WinSock2.h>
-#include <Windows.h>
+#   ifndef WIN32_LEAN_AND_MEAN
+#       define WIN32_LEAN_AND_MEAN
+#   endif
+#   ifndef NOMINMAX
+#       define NOMINMAX
+#   endif
+#   include <WinSock2.h>
+#   include <Windows.h>
 #else
-#include <sys/time.h>
+#   include <sys/time.h>
 #endif
 
 #ifdef max
-	#undef max
+#   undef max
 #endif
 
 #include <limits>

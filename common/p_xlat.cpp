@@ -30,6 +30,15 @@
 #include "p_local.h"
 #include "p_mapformat.h"
 
+#define TAG 123 // Special value that gets replaced with the line tag
+
+#define WALK ML_SPAC_CROSS
+#define USE ML_SPAC_USE
+#define SHOOT ML_SPAC_IMPACT
+#define MONST ML_MONSTERSCANACTIVATE
+#define MONWALK ML_SPAC_MCROSS
+#define REP ML_REPEATSPECIAL
+
 static constexpr xlat_t SpecialTranslation[] = {
 /*   0 */ {0, 0, {0, 0, 0, 0, 0}},
 /*   1 */ { USE|MONST|REP,	Door_Raise,					 { 0, doors::SLOW, doors::WAIT } },

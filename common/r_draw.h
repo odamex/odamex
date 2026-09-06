@@ -138,6 +138,11 @@ extern void (*R_DrawSkyForegroundColumn)(void);
 // No Sepctre effect needed.
 extern void (*R_DrawSpan)(void);
 
+// Textured spans blended over the framebuffer by dspan.translevel
+// (stacked-sector portal boundary flats).
+extern void (*R_DrawTranslucentSpan)(void);
+extern void (*R_DrawTranslucentSlopeSpan)(void);
+
 extern void (*R_DrawSlopeSpan)(void);
 
 extern void (*R_FillColumn)(void);
@@ -154,6 +159,10 @@ void	R_DrawFuzzColumnP (void);
 void	R_DrawTranslucentColumnP (void);
 void	R_DrawTranslatedColumnP (void);
 void	R_DrawSpanP (void);
+void	R_DrawTranslucentSpanP (void);
+void	R_DrawTranslucentSpanD (void);
+void	R_DrawTranslucentSlopeSpanP (void);
+void	R_DrawTranslucentSlopeSpanD (void);
 void	R_DrawSlopeSpanIdealP_C (void);
 
 void	R_DrawColumnD (void);

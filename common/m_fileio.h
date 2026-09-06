@@ -109,6 +109,7 @@ bool M_WriteLE(std::ostream& io_stream, const ElementType (&i_dataArray)[N])
 uintmax_t M_FileLength (std::istream& f);
 bool M_FileExists(const std::string& filename);
 bool M_FileExistsExt(const std::string& filename, const char* ext);
+bool M_DirectoryExists(const std::string& filename);
 
 bool M_WriteFile(std::string filename, void *source, size_t length);
 size_t M_ReadFile(const std::string& filename, byte **buffer);

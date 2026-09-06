@@ -27,6 +27,7 @@
 
 #include "m_fixed.h"
 #include "dsectoreffect.h"
+#include "actorflags.h"
 
 class AActor;
 class player_t;
@@ -102,23 +103,23 @@ public:
 
 	void toActor(AActor *mo) const;
 
-	fixed_t getX() const			{ return mX; }
-	fixed_t getY() const			{ return mY; }
-	fixed_t getZ() const			{ return mZ; }
-	fixed_t getMomX() const			{ return mMomX; }
-	fixed_t getMomY() const			{ return mMomY; }
-	fixed_t getMomZ() const			{ return mMomZ; }
-	angle_t getAngle() const		{ return mAngle; }
-	angle_t getPitch() const		{ return mPitch; }
-	bool	getOnGround() const		{ return mOnGround; }
-	fixed_t getCeilingZ() const		{ return mCeilingZ; }
-	fixed_t getFloorZ() const		{ return mFloorZ; }
-	int		getReactionTime() const	{ return mReactionTime; }
-	int		getWaterLevel() const	{ return mWaterLevel; }
-	int		getFlags() const		{ return mFlags; }
-	int		getFlags2() const		{ return mFlags2; }
-	int		getFlags3() const		{ return mFlags3; }
-	int		getFrame() const		{ return mFrame; }
+	[[nodiscard]] fixed_t     getX()            const { return mX; }
+	[[nodiscard]] fixed_t     getY()            const { return mY; }
+	[[nodiscard]] fixed_t     getZ()            const { return mZ; }
+	[[nodiscard]] fixed_t     getMomX()         const { return mMomX; }
+	[[nodiscard]] fixed_t     getMomY()         const { return mMomY; }
+	[[nodiscard]] fixed_t     getMomZ()         const { return mMomZ; }
+	[[nodiscard]] angle_t     getAngle()        const { return mAngle; }
+	[[nodiscard]] angle_t     getPitch()        const { return mPitch; }
+	[[nodiscard]] bool        getOnGround()     const { return mOnGround; }
+	[[nodiscard]] fixed_t     getCeilingZ()     const { return mCeilingZ; }
+	[[nodiscard]] fixed_t     getFloorZ()       const { return mFloorZ; }
+	[[nodiscard]] int         getReactionTime() const { return mReactionTime; }
+	[[nodiscard]] int         getWaterLevel()   const { return mWaterLevel; }
+	[[nodiscard]] ActorFlags1 getFlags()        const { return mFlags; }
+	[[nodiscard]] ActorFlags2 getFlags2()       const { return mFlags2; }
+	[[nodiscard]] ActorFlags3 getFlags3()       const { return mFlags3; }
+	[[nodiscard]] int         getFrame()        const { return mFrame; }
 
 	void setX(fixed_t val)
 	{
@@ -198,19 +199,19 @@ public:
 		mFields |= ACT_WATERLEVEL;
 	}
 
-	void setFlags(int val)
+	void setFlags(ActorFlags1 val)
 	{
 		mFlags = val;
 		mFields |= ACT_FLAGS;
 	}
 
-	void setFlags2(int val)
+	void setFlags2(ActorFlags2 val)
 	{
 		mFlags2 = val;
 		mFields |= ACT_FLAGS2;
 	}
 
-	void setFlags3(int val)
+	void setFlags3(ActorFlags3 val)
 	{
 		mFlags3 = val;
 		mFields |= ACT_FLAGS3;
@@ -261,9 +262,9 @@ private:
 	int				mReactionTime;
 	int				mWaterLevel;
 
-	int				mFlags;
-	int				mFlags2;
-	int				mFlags3;
+	ActorFlags1		mFlags;
+	ActorFlags2		mFlags2;
+	ActorFlags3		mFlags3;
 	int				mFrame;
 };
 
@@ -287,27 +288,27 @@ public:
 
 	void toPlayer(player_t& player) const;
 
-	fixed_t getViewHeight() const		{ return mViewHeight; }
-	fixed_t getDeltaViewHeight() const	{ return mDeltaViewHeight; }
-	int		getJumpTime() const			{ return mJumpTime; }
+	[[nodiscard]] fixed_t getViewHeight()      const { return mViewHeight; }
+	[[nodiscard]] fixed_t getDeltaViewHeight() const { return mDeltaViewHeight; }
+	[[nodiscard]] int     getJumpTime()        const { return mJumpTime; }
 
-	fixed_t getX() const				{ return mActorSnap.getX(); }
-	fixed_t getY() const				{ return mActorSnap.getY(); }
-	fixed_t getZ() const				{ return mActorSnap.getZ(); }
-	fixed_t getMomX() const				{ return mActorSnap.getMomX(); }
-	fixed_t getMomY() const				{ return mActorSnap.getMomY(); }
-	fixed_t getMomZ() const				{ return mActorSnap.getMomZ(); }
-	angle_t getAngle() const			{ return mActorSnap.getAngle(); }
-	angle_t getPitch() const			{ return mActorSnap.getPitch(); }
-	bool	getOnGround() const			{ return mActorSnap.getOnGround(); }
-	fixed_t getCeilingZ() const			{ return mActorSnap.getCeilingZ(); }
-	fixed_t getFloorZ() const			{ return mActorSnap.getFloorZ(); }
-	int		getReactionTime() const		{ return mActorSnap.getReactionTime(); }
-	int		getWaterLevel() const		{ return mActorSnap.getWaterLevel(); }
-	int		getFlags() const			{ return mActorSnap.getFlags(); }
-	int		getFlags2() const			{ return mActorSnap.getFlags2(); }
-	int		getFlags3() const			{ return mActorSnap.getFlags3(); }
-	int		getFrame() const			{ return mActorSnap.getFrame(); }
+	[[nodiscard]] fixed_t     getX()            const { return mActorSnap.getX(); }
+	[[nodiscard]] fixed_t     getY()            const { return mActorSnap.getY(); }
+	[[nodiscard]] fixed_t     getZ()            const { return mActorSnap.getZ(); }
+	[[nodiscard]] fixed_t     getMomX()         const { return mActorSnap.getMomX(); }
+	[[nodiscard]] fixed_t     getMomY()         const { return mActorSnap.getMomY(); }
+	[[nodiscard]] fixed_t     getMomZ()         const { return mActorSnap.getMomZ(); }
+	[[nodiscard]] angle_t     getAngle()        const { return mActorSnap.getAngle(); }
+	[[nodiscard]] angle_t     getPitch()        const { return mActorSnap.getPitch(); }
+	[[nodiscard]] bool        getOnGround()     const { return mActorSnap.getOnGround(); }
+	[[nodiscard]] fixed_t     getCeilingZ()     const { return mActorSnap.getCeilingZ(); }
+	[[nodiscard]] fixed_t     getFloorZ()       const { return mActorSnap.getFloorZ(); }
+	[[nodiscard]] int         getReactionTime() const { return mActorSnap.getReactionTime(); }
+	[[nodiscard]] int         getWaterLevel()   const { return mActorSnap.getWaterLevel(); }
+	[[nodiscard]] ActorFlags1 getFlags()        const { return mActorSnap.getFlags(); }
+	[[nodiscard]] ActorFlags2 getFlags2()       const { return mActorSnap.getFlags2(); }
+	[[nodiscard]] ActorFlags3 getFlags3()       const { return mActorSnap.getFlags3(); }
+	[[nodiscard]] int         getFrame()        const { return mActorSnap.getFrame(); }
 
 	void setAuthoritative(bool val) override
 	{
@@ -405,19 +406,19 @@ public:
 		mFields |= PLY_REACTIONTIME;
 	}
 
-	void setFlags(int val)
+	void setFlags(ActorFlags1 val)
 	{
 		mActorSnap.setFlags(val);
 		mFields |= PLY_FLAGS;
 	}
 
-	void setFlags2(int val)
+	void setFlags2(ActorFlags2 val)
 	{
 		mActorSnap.setFlags2(val);
 		mFields |= PLY_FLAGS2;
 	}
 
-	void setFlags3(int val)
+	void setFlags3(ActorFlags3 val)
 	{
 		mActorSnap.setFlags3(val);
 		mFields |= PLY_FLAGS3;

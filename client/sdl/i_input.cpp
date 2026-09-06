@@ -55,9 +55,21 @@
 bool tab_keydown = false;	// [ML] Actual status of tab key
 #endif
 
+EXTERN_CVAR(ui_mouse)
+EXTERN_CVAR(joy_gamepadmode)
+
 static IInputSubsystem* input_subsystem = NULL;
 
 static bool nomouse = false;
+
+enum EInputMode
+{
+	INPUT_MODE_RELEASED,
+	INPUT_MODE_UI,
+	INPUT_MODE_GAME
+};
+
+static EInputMode current_input_mode = INPUT_MODE_RELEASED;
 
 KeyNameTable key_names;
 
@@ -295,6 +307,71 @@ std::string I_GetKeyName(int key)
 
 
 //
+// I_GetKeyDevice
+//
+// Returns the kind of device the given key code comes from.
+//
+keydevice_t I_GetKeyDevice(int key)
+{
+	if (key >= OKEY_MOUSE1 && key <= OKEY_MWHEELRIGHT)
+		return KEYDEV_MOUSE;
+	if (key >= OKEY_JOY1 && key <= OKEY_HAT8)
+		return KEYDEV_JOYSTICK;
+	return KEYDEV_KEYBOARD;
+}
+
+namespace
+{
+
+keydevice_t last_input_device = KEYDEV_KEYBOARD;
+
+//
+// I_TrackLastInputDevice
+//
+void I_TrackLastInputDevice(const event_t& ev)
+{
+	const bool ignore_mouse = joy_gamepadmode.asInt() == GAMEPADMODE_IGNOREMOUSE;
+
+	switch (ev.type)
+	{
+	case ev_keydown:
+	case ev_keyup:
+	{
+		const keydevice_t device = I_GetKeyDevice(ev.data1);
+		if (ignore_mouse && device == KEYDEV_MOUSE)
+			break;
+		last_input_device = device;
+		break;
+	}
+	case ev_mouse:
+		if (!ignore_mouse)
+			last_input_device = KEYDEV_MOUSE;
+		break;
+	case ev_joystick:
+		if (ev.data3 != 0)
+			last_input_device = KEYDEV_JOYSTICK;
+		break;
+	}
+}
+
+} // namespace
+
+//
+// I_GetLastInputDevice
+//
+// Returns the device the player used most recently, so that on-screen prompts
+// can name the controls the player actually has in hand.
+//
+keydevice_t I_GetLastInputDevice()
+{
+	if (joy_gamepadmode.asInt() == GAMEPADMODE_ALWAYS)
+		return KEYDEV_JOYSTICK;
+
+	return last_input_device;
+}
+
+
+//
 // I_FlushInput
 //
 // Eat all pending input from outside the game
@@ -341,16 +418,17 @@ static bool I_CanRepeat()
 
 
 //
-// I_CanGrab
+// I_GetDesiredInputMode
 //
-// Returns true if the input (mouse & keyboard) can be grabbed in
-// the current game state.
+// Returns how the mouse should be handled in the current game state:
+// captured for gameplay, freed but still delivering buttons for the menu and
+// console, or shut off entirely.
 //
-static bool I_CanGrab()
+static EInputMode I_GetDesiredInputMode()
 {
 	#ifdef GCONSOLE
-	return true;
-	#endif
+	return INPUT_MODE_GAME;
+	#else
 
 	extern bool configuring_controls;
 	extern constate_e ConsoleState;
@@ -359,46 +437,60 @@ static bool I_CanGrab()
 
 	// If the window doesn't have the focus, don't grab
 	if (!I_GetWindow()->isFocused())
-		return false;
+		return INPUT_MODE_RELEASED;
+
+	const bool console_active = ConsoleState == c_down || ConsoleState == c_falling ||
+	                            ConsoleState == c_fallfull;
+
+	const bool attract_active = gamestate == GS_DEMOSCREEN || gamestate == GS_FINALE ||
+	                            ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) &&
+	                             demoplayback);
+
+	const bool ui_active = menuactive || console_active || attract_active;
+	if (ui_active && !configuring_controls)
+	{
+		if (nomouse || ui_mouse.asInt() == 0)
+			return INPUT_MODE_RELEASED;
+		return INPUT_MODE_UI;
+	}
 
 	// If the window is full screen and has only one monitor, always grab
 	if (I_GetWindow()->isFullScreen() && I_GetMonitorCount() <= 1)
-		return true;
+		return INPUT_MODE_GAME;
 
 	if (nomouse)
-		return false;
+		return INPUT_MODE_RELEASED;
 
 	// Always grab when configuring controllers in the menu
 	if (configuring_controls)
-		return true;
+		return INPUT_MODE_GAME;
 
 	// If paused, in the menu or in the console, don't grab
-	if (menuactive || ConsoleState == c_down || paused)
-		return false;
+	if (menuactive || ConsoleState == c_down || (paused && not displayplayer().isFreecam))
+		return INPUT_MODE_RELEASED;
 
 	// If playing the game, always grab
 	if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) && !demoplayback)
-		return true;
+		return INPUT_MODE_GAME;
 
-	return false;
+	return INPUT_MODE_RELEASED;
+	#endif
 }
 
 
 //
-// I_GrabInput
+// I_ApplyInputMode
 //
-static void I_GrabInput()
+static void I_ApplyInputMode(EInputMode mode)
 {
-	input_subsystem->grabInput();
-}
+	current_input_mode = mode;
 
-
-//
-// I_UngrabInput
-//
-static void I_UngrabInput()
-{
-	input_subsystem->releaseInput();
+	if (mode == INPUT_MODE_GAME)
+		input_subsystem->grabInput();
+	else if (mode == INPUT_MODE_UI)
+		input_subsystem->grabInputForUI();
+	else
+		input_subsystem->releaseInput();
 }
 
 
@@ -412,10 +504,7 @@ static void I_UngrabInput()
 //
 void I_ForceUpdateGrab()
 {
-	if (I_CanGrab())
-		I_GrabInput();
-	else
-		I_UngrabInput();
+	I_ApplyInputMode(I_GetDesiredInputMode());
 }
 
 
@@ -436,11 +525,47 @@ static void I_UpdateGrab()
 	prev_fullscreen = fullscreen;
 
 	// check if the window focus changed (or menu/console status changed)
-	if (!input_subsystem->isInputGrabbed() && I_CanGrab())
-		I_GrabInput();
-	else if (input_subsystem->isInputGrabbed() && !I_CanGrab())
-		I_UngrabInput();
+	const EInputMode desired = I_GetDesiredInputMode();
+	if (desired != current_input_mode)
+		I_ApplyInputMode(desired);
 #endif
+}
+
+
+//
+// I_GetUIMousePosition
+//
+bool I_GetUIMousePosition(int& x, int& y)
+{
+	if (current_input_mode != INPUT_MODE_UI)
+		return false;
+
+	int window_x, window_y;
+	SDL_GetMouseState(&window_x, &window_y);
+
+	return I_WindowToSurfaceCoords(window_x, window_y, x, y);
+}
+
+
+//
+// I_IsUIMouseButtonDown
+//
+bool I_IsUIMouseButtonDown(int button)
+{
+	if (current_input_mode != INPUT_MODE_UI)
+		return false;
+
+	const uint32_t state = SDL_GetMouseState(NULL, NULL);
+
+	switch (button)
+	{
+	case OKEY_MOUSE1:	return (state & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;
+	case OKEY_MOUSE2:	return (state & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0;
+	case OKEY_MOUSE3:	return (state & SDL_BUTTON(SDL_BUTTON_MIDDLE)) != 0;
+	case OKEY_MOUSE4:	return (state & SDL_BUTTON(SDL_BUTTON_X1)) != 0;
+	case OKEY_MOUSE5:	return (state & SDL_BUTTON(SDL_BUTTON_X2)) != 0;
+	default:			return false;
+	}
 }
 
 
@@ -616,11 +741,11 @@ bool I_InitInput()
 //
 // I_ShutdownInput
 //
-void STACK_ARGS I_ShutdownInput()
+void I_ShutdownInput()
 {
 	input_subsystem->disableTextEntry();
 
-	I_UngrabInput();
+	I_ApplyInputMode(INPUT_MODE_RELEASED);
 
 	delete input_subsystem;
 	input_subsystem = NULL;
@@ -661,6 +786,7 @@ void I_GetEvents(bool mouseOnly)
 	while (input_subsystem->hasEvent())
 	{
 		input_subsystem->getEvent(&ev);
+		I_TrackLastInputDevice(ev);
 		D_PostEvent(ev);
 	}
 }
@@ -790,16 +916,18 @@ void IInputSubsystem::disableTextEntry()
 // concurrently as long as they are held down. Thus a unique value is returned
 // for each of them.
 //
-static int I_GetEventRepeaterKey(const event_t* ev)
+static int I_GetEventRepeaterKey(const event_t& ev)
 {
-	if (ev->type != ev_keydown && ev->type != ev_keyup)
+	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return 0;
 
-	int button = ev->data1;
+	const int button = ev.data1;
 	if (button == OKEY_CAPSLOCK || button == OKEY_SCRLCK ||
 		button == OKEY_LSHIFT || button == OKEY_LCTRL || button == OKEY_LALT ||
 		button == OKEY_RSHIFT || button == OKEY_RCTRL || button == OKEY_RALT ||
 		button == OKEY_NUMLOCK)
+		return 0;
+	else if (button >= OKEY_MOUSE1 && button <= OKEY_MWHEELRIGHT)
 		return 0;
 	else if (button >= OKEY_HAT1 && button <= OKEY_HAT8)
 		return button;
@@ -816,7 +944,7 @@ static int I_GetEventRepeaterKey(const event_t* ev)
 void IInputSubsystem::addToEventRepeaters(event_t& ev)
 {
 	// Check if the event needs to be added/removed from the list of repeatable events
-	const int key = I_GetEventRepeaterKey(&ev);
+	const int key = I_GetEventRepeaterKey(ev);
 	if (ev.type == ev_keydown && key)
 	{
 		// If there is an existing repeater event for "key",

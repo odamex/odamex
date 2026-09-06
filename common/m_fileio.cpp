@@ -57,7 +57,7 @@ std::string M_JoinPath(std::string_view path1, std::string_view path2)
 */
 void M_ExpandHomeDir(std::string& path)
 {
-	if (!path.length())
+	if (path.empty())
 		return;
 
 	if (path[0] != '~')
@@ -95,7 +95,8 @@ std::string M_FindUserFileName(const std::string& file, const char* ext)
 	{
 		return found;
 	}
-	else if (ext != NULL)
+
+	if (ext != nullptr)
 	{
 		found = M_GetUserFileName(std::string(file) + ext);
 		if (M_FileExists(found))
@@ -188,6 +189,18 @@ bool M_FileExistsExt(const std::string& filename, const char* ext)
 	}
 
 	return false;
+}
+
+/**
+ * @brief Checks to see whether a file exists and is a directory or not
+ *
+ * @param filename Filename to check.
+ */
+bool M_DirectoryExists(const std::string& path)
+{
+	// Returns false on errors
+	std::error_code ec;
+	return fs::is_directory(path, ec);
 }
 
 //
@@ -394,11 +407,13 @@ std::string M_GetUserFileName(const std::string& file)
 	std::string path = file;
 	return M_CleanPath(path);
 #else
-	fs::path path(file);
+	std::string expanded(file);
+	M_ExpandHomeDir(expanded);
+	fs::path path(expanded);
 	// Is absolute path?  If so, stop here.
 	if (path.is_absolute())
 	{
-		return file;
+		return expanded;
 	}
 
 	// Is this an explicitly relative path?  If so, stop here.
@@ -407,7 +422,8 @@ std::string M_GetUserFileName(const std::string& file)
 	{
 		return file;
 	}
-	else if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
+
+	if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
 	{
 		return file;
 	}

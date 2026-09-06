@@ -37,7 +37,7 @@
 #define HU_FONTSIZE 	(HU_FONTEND - HU_FONTSTART + 1)
 
 void HU_Init();
-void STACK_ARGS HU_Shutdown();
+void HU_Shutdown();
 
 void HU_Ticker();
 bool HU_Responder(const event_t& ev);

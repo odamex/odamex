@@ -181,8 +181,8 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 		dcol.yl = topscreen >> FRACBITS;
 		dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
 
-		dcol.yl = MAX(dcol.yl, MAX(mceilingclip[dcol.x], 0));
-		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
+		dcol.yl = std::max({dcol.yl, mceilingclip[dcol.x], 0});
+		dcol.yh = std::min(dcol.yh, mfloorclip[dcol.x] - 1);
 
 		dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
 			+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale);
@@ -272,7 +272,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		is now with the palette field.
 		translated = true;
 		dcol.translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
-			( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) ));
+			( (vis->mobjflags & mask(MF_TRANSLATION)).to_int() >> (MF_TRANSSHIFT-8) ));
 	}
 	int id = vis->mo && vis->mo->player ? vis->mo->player->id : 0;
 
@@ -376,8 +376,8 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 		fixed_t height, fixed_t width,
 		fixed_t topoffs, fixed_t sideoffs, bool flip)
 {
-	// x / y are in world-space, tx / ty are the same point already
-	// translated into camera-space by the caller
+	// translate the sprite edges from world-space to camera-space
+	// and store in t1 & t2
 	fixed_t t1xold;
 
 	v2fixed_t t1, t2;
@@ -573,10 +573,12 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		return;
 
 	// [SL] interpolate the position of thing
+  // except if paused and using freecam
 	fixed_t thingx, thingy, thingz;
 
 	if (projlerp &&
-		P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT)
+	    P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
+	    not (paused && displayplayer().isFreecam))
 	{
 		// the actor probably did not teleport
 		// interpolate between previous and current position
@@ -595,7 +597,11 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 
 	// Clip sprites that are definitely out of view.
 	fixed_t camx, camy;
-	R_RotatePoint(thingx - viewx, thingy - viewy, ANG90 - viewangle, camx, camy);
+
+	// too far from the camera to draw anyway if its distance is greater than ~32767
+	// fracunits.
+	if (R_RotatePointSafe(int64_t(thingx) - viewx, int64_t(thingy) - viewy, ANG90 - viewangle, camx, camy))
+		return;
 
 	if (camy < NEARCLIP)
 		return;
@@ -682,7 +688,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 
 	vis->mobjflags = thing->flags;
 	vis->statusflags = thing->statusflags;
-	vis->spectator = thing->oflags & MFO_SPECTATOR;
+	vis->spectator = (thing->oflags & MFO_SPECTATOR).to_bool();
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->patch = lump;
@@ -712,7 +718,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	{
 		// diminished light
 		int index = (vis->yscale*lightscalexmul)>>LIGHTSCALESHIFT;	// [RH]
-		index = clamp(index, 0, MAXLIGHTSCALE - 1);
+		index = std::clamp(index, 0, MAXLIGHTSCALE - 1);
 
 		vis->colormap = basecolormap.with(spritelights[index]);	// [RH] Use basecolormap
 	}
@@ -796,26 +802,30 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 //
 // R_DrawPSprite
 //
-void R_DrawPSprite(const pspdef_t& psp, unsigned flags)
+void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
 {
 	vissprite_t 		avis;
 
+	const state_t* st = psp.state();
+	if (!st)
+		return;
+
 	// decide which patch to use
-	auto it = sprites.find(psp.state->sprite);
+	auto it = sprites.find(st->sprite);
 #ifdef RANGECHECK
 	if (it == sprites.end()) {
-		DPrintFmt("R_DrawPSprite: invalid sprite number {}\n", psp.state->sprite);
+		DPrintFmt("R_DrawPSprite: invalid sprite number {}\n", st->sprite);
 		return;
 	}
 #endif
 	const spritedef_t* sprdef = &it->second;
 #ifdef RANGECHECK
-	if ( (psp.state->frame & FF_FRAMEMASK) >= sprdef->numframes) {
-		DPrintFmt("R_DrawPSprite: invalid sprite frame {} : {}\n", psp.state->sprite, psp.state->frame);
+	if ( (st->frame & FF_FRAMEMASK) >= sprdef->numframes) {
+		DPrintFmt("R_DrawPSprite: invalid sprite frame {} : {}\n", st->sprite, st->frame);
 		return;
 	}
 #endif
-	const spriteframe_t* sprframe = &sprdef->spriteframes[ psp.state->frame & FF_FRAMEMASK ];
+	const spriteframe_t* sprframe = &sprdef->spriteframes[ st->frame & FF_FRAMEMASK ];
 
 	const int32_t lump = sprframe->lump[0];
 	const bool flip = sprframe->flip[0];
@@ -887,7 +897,7 @@ void R_DrawPSprite(const pspdef_t& psp, unsigned flags)
 		// fixed color
 		vis->colormap = fixedcolormap;
 	}
-	else if (psp.state->frame & FF_FULLBRIGHT)
+	else if (st->frame & FF_FULLBRIGHT)
 	{
 		// full bright
 		vis->colormap = basecolormap;	// [RH] use basecolormap
@@ -915,7 +925,9 @@ void R_DrawPSprite(const pspdef_t& psp, unsigned flags)
 	}
 
 	// Don't display the weapon sprite if using spectating without spynext
-	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
+	// or using freecam
+	if ((consoleplayer().spectator && displayplayer_id == consoleplayer_id) ||
+		displayplayer().isFreecam)
 		return;
 
 	R_DrawVisSprite (vis, vis->x1, vis->x2);
@@ -965,7 +977,7 @@ void R_DrawPlayerSprites()
 	mceilingclip = negonearray;
 
 	{
-		int centerhack = centery;
+		const int centerhack = centery;
 
 		centery = (viewheight >> 1) + 1;	// Ch0wW : Fix for the weapon sprite's offset.
 		centeryfrac = centery << FRACBITS;
@@ -973,8 +985,8 @@ void R_DrawPlayerSprites()
 		// add all active psprites
 		for (const auto& psp : camera->player->psprites)
 		{
-			if (psp.state)
-				R_DrawPSprite (psp, 0);
+			if (psp.statenum != S_NULL)
+				R_DrawPSprite(psp, ActorFlags1::none_set());
 		}
 
 		centery = centerhack;
@@ -1033,14 +1045,8 @@ void R_DrawSprite (vissprite_t *spr)
 	static int			cliptop[MAXWIDTH];
 	static int			clipbot[MAXWIDTH];
 
-	drawseg_t*			ds;
-	int 				x;
-	int 				r1, r2;
-	fixed_t 			segscale1, segscale2;
-
-	int					topclip = 0, botclip = viewheight;
-	int*				clip1;
-	int*				clip2;
+	int topclip = 0;
+	int botclip = viewheight;
 
 	// [RH] Quickly reject sprites with bad x ranges.
 	if (spr->x1 > spr->x2)
@@ -1060,12 +1066,12 @@ void R_DrawSprite (vissprite_t *spr)
 			if (spr->FakeFlat == FAKED_BelowFloor)
 			{ // seen below floor: clip top
 				if (h > topclip)
-					topclip = MIN<int>(h, viewheight);
+					topclip = std::min<int>(h, viewheight);
 			}
 			else
 			{ // seen in the middle: clip bottom
 				if (h < botclip)
-					botclip = MAX<int>(0, h);
+					botclip = std::max<int>(0, h);
 			}
 		}
 		if (spr->FakeFlat != FAKED_BelowFloor)
@@ -1076,20 +1082,23 @@ void R_DrawSprite (vissprite_t *spr)
 			if (spr->FakeFlat == FAKED_AboveCeiling)
 			{ // seen above ceiling: clip bottom
 				if (h < botclip)
-					botclip = MAX<int>(0, h);
+					botclip = std::max<int>(0, h);
 			}
 			else
 			{ // seen in the middle: clip top
 				if (h > topclip)
-					topclip = MIN<int>(h, viewheight);
+					topclip = std::min<int>(h, viewheight);
 			}
 		}
 	}
 
 	// initialize the clipping arrays
 	int i = spr->x2 - spr->x1 + 1;
-	clip1 = clipbot + spr->x1;
-	clip2 = cliptop + spr->x1;
+	// clang-tidy has a false positive here
+	// NOLINTBEGIN(misc-const-correctness)
+	int* clip1 = clipbot + spr->x1;
+	int* clip2 = cliptop + spr->x1;
+	// NOLINTEND(misc-const-correctness)
 	do
 	{
 		*clip1++ = botclip;
@@ -1103,7 +1112,7 @@ void R_DrawSprite (vissprite_t *spr)
 	// (pointer check was originally nonportable
 	// and buggy, by going past LEFT end of array):
 
-	for (ds = ds_p ; ds-- > firstdrawseg ; )  // new -- killough
+	for (drawseg_t* ds = ds_p ; ds-- > firstdrawseg ; )  // new -- killough
 	{
 		// determine if the drawseg obscures the sprite
 		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 ||
@@ -1113,11 +1122,11 @@ void R_DrawSprite (vissprite_t *spr)
 			continue;
 		}
 
-		r1 = MAX<int>(ds->x1, spr->x1);
-		r2 = MIN<int>(ds->x2, spr->x2);
+		const int r1 = std::max<int>(ds->x1, spr->x1);
+		const int r2 = std::min<int>(ds->x2, spr->x2);
 
-		segscale1 = MAX<int>(ds->scale1, ds->scale2);
-		segscale2 = MIN<int>(ds->scale1, ds->scale2);
+		const fixed_t segscale1 = std::max<fixed_t>(ds->scale1, ds->scale2);
+		const fixed_t segscale2 = std::min<fixed_t>(ds->scale1, ds->scale2);
 
 		// check if the seg is in front of the sprite
 		if (!(!ds->curline) && (segscale1 < spr->yscale ||
@@ -1133,7 +1142,7 @@ void R_DrawSprite (vissprite_t *spr)
 		// clip this piece of the sprite
 		// killough 3/27/98: optimized and made much shorter
 
-		for (x = r1; x <= r2; x++)
+		for (int x = r1; x <= r2; x++)
 		{
 			if (ds->silhouette & SIL_BOTTOM && clipbot[x] > ds->sprbottomclip[x])
 				clipbot[x] = ds->sprbottomclip[x];
@@ -1168,11 +1177,11 @@ void R_DrawMasked (void)
 
 	closestNonCredibleVisSprite = nullptr;
 
-	for (auto& vis : OUtil::reverse(spritesorter))
+	for (auto& vis : std::views::reverse(spritesorter))
 	{
 		R_DrawSprite(vis);
 
-        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and (vis->mo->flags & MF_CORPSE) == 0)
+        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
         {
             closestNonCredibleVisSprite = vis;
         }
@@ -1267,7 +1276,8 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 
 	// translate the particle's position into camera space
 	fixed_t tx, ty;
-	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
+	if (R_RotatePointSafe(int64_t(x) - viewx, int64_t(y) - viewy, ANG90 - viewangle, tx, ty))
+		return;
 
 	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, tx, ty, height, width, topoffs, sideoffs, false);
 
@@ -1279,18 +1289,17 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->statusflags = 0;
 	vis->mo = NULL;
 	vis->spectator = false;
+	vis->mobjflags.clear();
+	vis->translucency = (particle->trans + 1) << 8;
 
 	if (particle->sprite == NO_PARTICLE)
 	{
 		vis->startfrac = particle->color;
 		vis->patch = NO_PARTICLE;
-		vis->mobjflags = particle->trans;
 	}
 	else
 	{
 		vis->patch = particle->sprite;
-		vis->translucency = (particle->trans + 1) << 8;
-		vis->mobjflags = 0;
 	}
 
 	// get light level
@@ -1316,8 +1325,8 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 			int index = (vis->yscale*lightscalexmul)>>(LIGHTSCALESHIFT-1);
 			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
-			index = clamp(index, 0, MAXLIGHTSCALE - 1);
-			lightnum = clamp(lightnum, 0, LIGHTLEVELS - 1);
+			index = std::clamp(index, 0, MAXLIGHTSCALE - 1);
+			lightnum = std::clamp(lightnum, 0, LIGHTLEVELS - 1);
 
 			vis->colormap = map.with(scalelight[lightnum][index]);
 		}
@@ -1327,15 +1336,15 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 void R_DrawParticle(vissprite_t* vis)
 {
 	// Don't bother clipping each individual column
-	int x1 = vis->x1, x2 = vis->x2;
-	int y1 = MAX(vis->y1, MAX(mceilingclip[x1], mceilingclip[x2]));
-	int y2 = MIN(vis->y2, MIN(mfloorclip[x1] - 1, mfloorclip[x2] - 1));
+	const int x1 = vis->x1;
+	const int x2 = vis->x2;
+	const int y1 = std::max({vis->y1, mceilingclip[x1], mceilingclip[x2]});
+	const int y2 = std::min({vis->y2, mfloorclip[x1] - 1, mfloorclip[x2] - 1});
 
 	dspan.x1 = vis->x1;
 	dspan.x2 = vis->x2;
 	dspan.colormap = vis->colormap;
-	// vis->mobjflags holds translucency level (0-255)
-	dspan.translevel = (vis->mobjflags + 1) << 8;
+	dspan.translevel = vis->translucency;
 	// vis->startfrac holds palette color index
 	dspan.color = vis->startfrac;
 

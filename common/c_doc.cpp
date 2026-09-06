@@ -29,17 +29,21 @@
 #include <json/json.h>
 
 #include "c_dispatch.h"
+#include "c_doc.h"
 #include "cmdlib.h"
 #include "i_system.h"
 #include "m_fileio.h"
 #include "version.h"
 
 #ifdef CLIENT_APP
-#define CS_STRING "Odamex Client"
+constexpr const char* CS_STRING = "Odamex Client";
+constexpr const char* CVARDOC_BASENAME = "odamex_cvardoc";
 #elif defined(SERVER_APP)
-#define CS_STRING "Odamex Server"
+constexpr const char* CS_STRING = "Odamex Server";
+constexpr const char* CVARDOC_BASENAME = "odasrv_cvardoc";
 #elif defined(TEST_APP)
-#define CS_STRING "Odamex Unit Tests"
+constexpr const char* CS_STRING = "Odamex Unit Tests";
+constexpr const char* CVARDOC_BASENAME = "odagtest_cvardoc";
 #endif
 
 // A view to a list of Cvars.
@@ -332,42 +336,28 @@ static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
 	out["flags"] = flags;
 }
 
-BEGIN_COMMAND(cvardoc)
+namespace
 {
+
+/**
+ * @brief Render the cvar documentation as a complete HTML document.
+ */
+std::string BuildCvarDocHTML()
+{
+	std::string doc;
 	std::string buffer;
-	std::string path = M_GetWriteDir();
-	if (!M_IsPathSep(path.back()))
-	{
-		path += PATHSEP;
-	}
-
-#ifdef CLIENT_APP
-	path += "odamex_cvardoc.html";
-#elif defined(SERVER_APP)
-	path += "odasrv_cvardoc.html";
-#elif defined(TEST_APP)
-	path += "odagtest_cvardoc.html";
-#endif
-
-	// Try and open a file in our write directory.
-	FILE* fh = fopen(path.c_str(), "wt+");
-	if (fh == NULL)
-	{
-		PrintFmt("error: Could not open \"{}\" for writing.\n", path);
-		return;
-	}
 
 	// First the header.
 	std::string title;
 	title = fmt::sprintf("%s %s Console Variables", CS_STRING, DOTVERSIONSTR);
 	HTMLHeader(buffer, title);
-	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
+	doc += buffer;
 
 	// Then the title and initial paragraph.
 	const char* PREAMBLE =
 	    "<h2>%s</h2>"
 	    "<p>"
-	    "These are the console variables known to the " CS_STRING " as of revision %s."
+	    "These are the console variables known to the %s as of revision %s."
 	    "</p><p>"
 	    "In order to understand some of the documentation below, it's important to get "
 	    "some definitions out of the way first.  A Boolean is a true/false value, a Byte "
@@ -375,60 +365,34 @@ BEGIN_COMMAND(cvardoc)
 	    "number with a decimal point in it, like 3.14."
 	    "</p>";
 
-	buffer = fmt::sprintf(PREAMBLE, title, NiceVersion());
-	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
+	doc += fmt::sprintf(PREAMBLE, title, CS_STRING, NiceVersion());
 
 	// Initial tag for cvars.
-	fputs("<dl>", fh);
+	doc += "<dl>";
 
 	// Stamp out our CVars
 	CvarView view = GetSortedCvarView();
 	for (const auto& cvar : view)
 	{
 		HTMLCvarRow(buffer, *cvar);
-		fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
+		doc += buffer;
 	}
 
 	// Ending tag for cvars.
-	fputs("</dl>", fh);
+	doc += "</dl>";
 
 	// Lastly the footer.
 	HTMLFooter(buffer);
-	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
+	doc += buffer;
 
-	long bytes = ftell(fh);
-	fclose(fh);
-
-	// Success!
-	PrintFmt("Wrote {} bytes to \"{}\"\n", bytes, path);
+	return doc;
 }
-END_COMMAND(cvardoc)
 
-BEGIN_COMMAND(cvardocjson)
+/**
+ * @brief Render the cvar documentation as a complete JSON document.
+ */
+std::string BuildCvarDocJSON()
 {
-	std::string path = M_GetWriteDir();
-	if (!M_IsPathSep(path.back()))
-	{
-		path += PATHSEP;
-	}
-
-#ifdef CLIENT_APP
-	path += "odamex_cvardoc.json";
-#elif defined(SERVER_APP)
-	path += "odasrv_cvardoc.json";
-#elif defined(TEST_APP)
-	path += "odagtest_cvardoc.json";
-#endif
-
-	// Try and open a file in our write directory.
-	FILE* fh = fopen(path.c_str(), "wt+");
-	if (fh == NULL)
-	{
-		PrintFmt("error: Could not open \"{}\" for writing.\n", path);
-		return;
-	}
-
-	// Build the final json document.
 	Json::Value root(Json::objectValue);
 	root["schema_version"] = 1;
 	root["odamex_version"] = DOTVERSIONSTR;
@@ -447,15 +411,78 @@ BEGIN_COMMAND(cvardocjson)
 	}
 	root["cvars"] = cvars;
 
-
 	Json::StyledWriter writer;
-	std::string buffer = writer.write(root);
-	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
+	return writer.write(root);
+}
+
+} // namespace
+
+/**
+ * @brief Emit a generated document.
+ *
+ * infodumpdest_t::FILE writes a file in the write directory.
+ * infodumpdest_t::STDOUT prints the document to stdout instead.
+ *
+ * @param doc Document contents to emit.
+ * @param basename Name to give the file, without an extension.
+ * @param ext Extension to give the file, including the leading dot.
+ * @param dest Where the document should go.
+ * @return False if the document could not be written.
+ */
+bool EmitInfoDump(const std::string& doc, const char* basename, const char* ext,
+                  infodumpdest_t dest)
+{
+	if (dest == infodumpdest_t::STDOUT)
+	{
+		fwrite(doc.data(), sizeof(char), doc.size(), stdout);
+		fflush(stdout);
+		return true;
+	}
+
+	std::string path = M_GetWriteDir();
+	if (!M_IsPathSep(path.back()))
+	{
+		path += PATHSEP;
+	}
+	path += basename;
+	path += ext;
+
+
+	FILE* fh = fopen(path.c_str(), "wt+");
+	if (fh == nullptr)
+	{
+		PrintFmt("error: Could not open \"{}\" for writing.\n", path);
+		return false;
+	}
+
+	fwrite(doc.data(), sizeof(char), doc.size(), fh);
 
 	long bytes = ftell(fh);
 	fclose(fh);
 
 	// Success!
 	PrintFmt("Wrote {} bytes to \"{}\"\n", bytes, path);
+	return true;
+}
+
+bool C_WriteCvarDoc(infodumpdest_t dest)
+{
+	return EmitInfoDump(BuildCvarDocHTML(), CVARDOC_BASENAME, ".html", dest);
+}
+
+bool C_WriteCvarDocJSON(infodumpdest_t dest)
+{
+	return EmitInfoDump(BuildCvarDocJSON(), CVARDOC_BASENAME, ".json", dest);
+}
+
+BEGIN_COMMAND(cvardoc)
+{
+	C_WriteCvarDoc(infodumpdest_t::FILE);
+}
+END_COMMAND(cvardoc)
+
+BEGIN_COMMAND(cvardocjson)
+{
+	C_WriteCvarDocJSON(infodumpdest_t::FILE);
 }
 END_COMMAND(cvardocjson)

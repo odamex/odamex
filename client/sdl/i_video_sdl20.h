@@ -98,6 +98,8 @@ public:
 	virtual void startRefresh();
 	virtual void finishRefresh();
 
+	virtual bool windowToSurfaceCoords(int window_x, int window_y, int& surface_x, int& surface_y) const;
+
 private:
 	ISDL20Window*			mWindow;
 	SDL_Renderer*			mSDLRenderer;
@@ -110,9 +112,6 @@ private:
 	uint16_t				mHeight;
 
 	PixelFormat				mFormat;
-
-	bool mDrawLogicalRect;
-	SDL_Rect mLogicalRect;
 
 	SDL_Renderer* createRenderer(bool vsync) const;
 };
@@ -190,6 +189,13 @@ public:
 
 	virtual void startRefresh();
 	virtual void finishRefresh();
+
+	virtual bool windowToSurfaceCoords(int window_x, int window_y, int& surface_x, int& surface_y) const
+	{
+		if (mSurfaceManager)
+			return mSurfaceManager->windowToSurfaceCoords(window_x, window_y, surface_x, surface_y);
+		return false;
+	}
 
 	virtual void lockSurface();
 	virtual void unlockSurface();

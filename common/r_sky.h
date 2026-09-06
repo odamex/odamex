@@ -45,3 +45,7 @@ bool R_IsSkyFlat(int flatnum);
 void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures);
 
 void R_RenderSkyRange(visplane_t* pl);
+
+// Sets scroll speed of the current map's sky1 and sky2
+// For ZDoom maps and ACS, may result in strange behavior with skydefs
+void R_SetSkyScrollSpeed(int skynum, fixed_t speed);

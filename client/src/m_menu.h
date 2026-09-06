@@ -24,11 +24,19 @@
 
 #pragma once
 
+#include <array>
+#include <span>
+
 #include "d_event.h"
+#include "olumpname.h"
+#include "c_cvars.h"
 
 // Some defines...
 #define LINEHEIGHT	16
 #define SKULLXOFF	-32
+
+#define SLIDER_TRACK_X		5
+#define SLIDER_TRACK_WIDTH	78
 
 //
 // MENUS
@@ -65,23 +73,27 @@ void M_OptResponder(const event_t& ev);
 // [RH] Draw options menu
 void M_OptDrawer (void);
 
+// Move the options menu selection to whatever the mouse is hovering over
+void M_OptUpdateMouseItem();
+
 // [RH] Initialize options menu
-void M_OptInit (void);
+void M_OptInit();
 
-void M_PlayerSetup (int choice);
+void M_PlayerSetup(int choice);
 
-struct menu_s;
-void M_SwitchMenu (struct menu_s *menu);
+struct menu_t;
+void M_SwitchMenu(menu_t* menu);
 
-void M_PopMenuStack (void);
+void M_PopMenuStack();
 
 // [RH] Called whenever the display mode changes
-void M_RefreshModesList ();
+void M_RefreshModesList();
 
 //
 // MENU TYPEDEFS
 //
-typedef enum {
+enum itemtype
+{
 	whitetext,
 	redtext,
 	yellowtext,
@@ -103,11 +115,11 @@ typedef enum {
 	joyactive,
 	joyaxis,
 	nochoice
-} itemtype;
+};
 
-typedef void (*cvarfunc)(cvar_t *cvar, float newval);
-typedef void (*voidfunc)(void);
-typedef void (*intfunc)(int);
+using cvarfunc = void (*)(cvar_t *cvar, float newval);
+using voidfunc = void (*)();
+using intfunc = void (*)(int);
 
 struct value_t {
 	float		value;
@@ -150,18 +162,17 @@ struct menuitem_t {
 	} e;
 };
 
-typedef struct menu_s {
-	OLumpName		title;
-	int				lastOn;
-	int				numitems;
-	int				indent;
-	menuitem_t	   *items;
-	int				scrolltop;
-	int				scrollpos;
-	void			(*refreshfunc)();	// Callback func for M_OptResponder
-} menu_t;
+struct menu_t {
+	OLumpName             title;
+	int                   lastOn;
+	int                   indent;
+	std::span<menuitem_t> items;
+	int                   scrolltop;
+	int                   scrollpos;
+	void                  (*refreshfunc)(); // Callback func for M_OptResponder
+};
 
-typedef struct
+struct oldmenuitem_t
 {
 	// -1 = no cursor here, 1 = ok, 2 = arrows ok
 	short		status;
@@ -176,9 +187,9 @@ typedef struct
 
 	// hotkey in menu
 	char		alphaKey;
-} oldmenuitem_t;
+};
 
-typedef struct oldmenu_s
+struct oldmenu_t
 {
 	short				numitems;		// # of menu items
 	oldmenuitem_t		*menuitems;		// menu items
@@ -186,9 +197,9 @@ typedef struct oldmenu_s
 	short				x;
 	short				y;				// x,y of menu
 	short				lastOn; 		// last item user was on in menu
-} oldmenu_t;
+};
 
-typedef struct
+struct menustack_t
 {
 	union {
 		menu_t *newmenu;
@@ -196,19 +207,19 @@ typedef struct
 	} menu;
 	bool isNewStyle;
 	bool drawSkull;
-} menustack_t;
+};
 
-extern value_t YesNo[2];
-extern value_t NoYes[2];
-extern value_t OnOff[2];
-extern value_t OffOn[2];
-extern value_t OnOffAuto[3];
+extern std::array<value_t, 2> YesNo;
+extern std::array<value_t, 2> NoYes;
+extern std::array<value_t, 2> OnOff;
+extern std::array<value_t, 2> OffOn;
+extern std::array<value_t, 3> OnOffAuto;
 
 extern menustack_t MenuStack[16];
 extern int MenuStackDepth;
 
-extern menu_t  *CurrentMenu;
-extern int		CurrentItem;
+extern menu_t* CurrentMenu;
+extern int     CurrentItem;
 
 extern short	 itemOn;
 extern oldmenu_t *currentMenu;

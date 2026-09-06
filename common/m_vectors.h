@@ -122,6 +122,9 @@ struct rectInt_t
 	v2int_t min, max;
 };
 
+// TODO: use reference instead of pointer parameters so that these can all take temporaries as arguments
+// might make sense to make these members and to make some of all this templated to reduce duplication
+
 //
 // M_SetVec3f
 //
@@ -200,10 +203,10 @@ void M_SubVec3Fixed(v3fixed_t *dest, const v3fixed_t *v1, const v3fixed_t *v2);
 // Quake 2, added by CG.
 // [SL] 2012-02-13 - Courtesy of Eternity Engine
 //
-float M_LengthVec3f(const v3float_t *v);
-double M_LengthVec3(const v3double_t *v);
-fixed_t M_LengthVec2Fixed(const v2fixed_t *v);
-fixed_t M_LengthVec3Fixed(const v3fixed_t *v);
+float M_LengthVec3f(const v3float_t& v);
+double M_LengthVec3(const v3double_t& v);
+fixed_t M_LengthVec2Fixed(const v2fixed_t& v);
+fixed_t M_LengthVec3Fixed(const v3fixed_t& v);
 
 //
 // M_ScaleVec3f

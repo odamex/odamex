@@ -154,7 +154,7 @@ void _ReportError(const char* file, int line, const char* func,
 #endif
 }
 
-#if _MSC_VER < 1400
+#if defined(_MSC_VER) && _MSC_VER < 1400
 void NET_ReportError(const char* fmt, ...)
 {
 	va_list ap;

@@ -48,7 +48,7 @@ struct PspriteStateType
 
 	PspriteStateType& operator=(const pspdef_t& pspdef)
 	{
-		statenum = pspdef.state ? pspdef.state->statenum : static_cast<statenum_t>(-1);
+		statenum = pspdef.statenum;
 		tics     = pspdef.tics;
 		return *this;
 	}

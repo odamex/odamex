@@ -21,9 +21,12 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
+#include <functional>
+#include <memory_resource>
+#include <unordered_map>
 #include <vector>
 
-#include "PacketTable.h"
+#include "SequenceQueueEntryType.h"
 
 class SequenceSender
 {
@@ -55,18 +58,16 @@ class SequenceSender
 			CRITICAL_FAILURE,
 		};
 
-		struct QueueEntryResultType
+		struct ObtainResultType
 		{
-			buf_t* buffer   {nullptr};
-			int    sequence {-1};
+			buf_t&            bufferRef;
+			PacketHeaderType& headerRef;
 		};
 
 	public:  // Functions.
 
-		explicit SequenceSender(size_t i_initialSize);
-
-		SequenceSender() :
-			SequenceSender(DEFAULT_RELIABILITY_QUEUE_SIZE)
+		explicit SequenceSender(size_t i_initialSize, const std::pmr::polymorphic_allocator<SequenceQueueEntryType> & i_allocator = {}) :
+			m_sendTable { i_initialSize, i_allocator }
 		{
 		}
 
@@ -78,7 +79,7 @@ class SequenceSender
 		// the caller must manage these and specify them when obtaining a reliability
 		// slot.
 		//
-		QueueEntryResultType ObtainSendPacket(int currentTic=-1);
+		ObtainResultType ObtainSendPacket();
 
 		// This function declares that the packet associated with the given sequence number has been
 		// acknowledged by its intended recipient.
@@ -93,12 +94,18 @@ class SequenceSender
 
 		int MostRecentAcquiredSequence() const { return m_nextSequence - 1; }
 
+		void Clear()
+		{
+			m_unackedSequences.clear();
+			m_sendTable.clear();
+		}
+
 	protected:
 
-		std::vector<int>  m_unackedSequences;
-		SinglePacketTable m_sendTable;
+		std::vector<int> m_unackedSequences;
 
-		int m_nextSequence;                 // The sequence number to assign to the next requested packet.
+		std::pmr::unordered_map<int, SequenceQueueEntryType, std::identity> m_sendTable;
 
-		SenderModeEnum m_mode;
+		int             m_nextSequence  { 0 };                 // The sequence number to assign to the next requested packet.
+		SenderModeEnum  m_mode          { NORMAL };
 };

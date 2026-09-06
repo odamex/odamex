@@ -105,7 +105,7 @@ void MusicSystem::setTempo(float tempo)
 
 void MusicSystem::setVolume(float volume)
 {
-	m_volume = clamp(volume, 0.0f, 1.0f);
+	m_volume = std::clamp(volume, 0.0f, 1.0f);
 }
 
 // ============================================================================

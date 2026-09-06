@@ -34,7 +34,7 @@ static void FillColor(odaproto::Color& io_msg, const argb_t& color)
 	io_msg.set_b(color.getb());
 }
 
-void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const player_t& player, int clientTic, int clientWorldIndex)
+void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, player_t& player, int clientTic, int clientWorldIndex)
 {
 	if (player.mo)
 	{
@@ -46,9 +46,10 @@ void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const
 		//                    Once processed, we locally tic forward.  During that time, we may detect
 		//                    conditions for which we set the Inventory Check Request, which means that
 		//                    we want to send the request on the following tic.
-		if (player.inventoryCheckIsRequestedForTic == clientTic - 1 and clientTic > 0)
+		if (player.playerInfoIsRequested)
 		{
-			msg.set_inventory_check_tic(player.inventoryCheckIsRequestedForTic);
+			msg.set_inventory_check(true);
+			player.playerInfoIsRequested = false;
 		}
 
 		if (player.cmd.buttons & BT_ATTACK)

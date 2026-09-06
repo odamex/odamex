@@ -73,6 +73,7 @@ int G_GetEndingTic();
 
 void G_EndGame();
 void G_AssertValidPlayerCount();
+void G_ClearRoundKillStats();
 void G_TimeCheckEndGame();
 void G_FragsCheckEndGame();
 void G_TeamFragsCheckEndGame();

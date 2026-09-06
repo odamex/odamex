@@ -121,12 +121,10 @@ EXTERN_CVAR(vid_filter)
 EXTERN_CVAR(vid_widescreen)
 EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
-EXTERN_CVAR(vid_pillarbox)
 EXTERN_CVAR(vid_displayfps)
 EXTERN_CVAR(vid_640x400)
 EXTERN_CVAR(vid_320x200)
 
-static int vid_pillarbox_old = -1;
 static int vid_widescreen_old = -1;
 
 
@@ -157,12 +155,6 @@ bool V_CheckModeAdjustment()
 	if (vid_widescreen.asInt() != vid_widescreen_old)
 	{
 		vid_widescreen_old = vid_widescreen.asInt();
-		return true;
-	}
-
-	if (vid_pillarbox_old != vid_pillarbox)
-	{
-		vid_pillarbox_old = vid_pillarbox;
 		return true;
 	}
 
@@ -253,12 +245,6 @@ CVAR_FUNC_IMPL (vid_widescreen)
 		V_ForceVideoModeAdjustment();
 }
 
-
-CVAR_FUNC_IMPL(vid_pillarbox)
-{
-	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
-		V_ForceVideoModeAdjustment();
-}
 
 //
 // Only checks to see if the widescreen mode is proper compared to sv_allowwidescreen.
@@ -460,7 +446,7 @@ static bool V_DoSetResolution()
 //
 // V_Close
 //
-void STACK_ARGS V_Close()
+void V_Close()
 {
 	R_ShutdownColormaps();
 }
@@ -538,7 +524,6 @@ void V_Init()
 
 	BuildTransTable(V_GetDefaultPalette()->basecolors);
 
-	vid_pillarbox_old = vid_pillarbox;
 	vid_widescreen_old = vid_widescreen.asInt();
 }
 
@@ -810,7 +795,7 @@ void V_DrawFPSTicker()
 	const int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
 	static int last_tic = current_tic;
 
-	const int tics = clamp(current_tic - last_tic, 0, 20);
+	const int tics = std::clamp(current_tic - last_tic, 0, 20);
 	last_tic = current_tic;
 
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)

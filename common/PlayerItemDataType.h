@@ -144,8 +144,8 @@ struct PlayerItemDataType
 
 		for (size_t i = 0; i < psprites.size(); ++i)
 		{
-			auto iter = ::states.find(psprites[i].statenum);
-			player.psprites[i].state = iter != ::states.end() ? &iter->second : nullptr;
+			player.psprites[i].statenum =
+			    ::states.contains(psprites[i].statenum) ? psprites[i].statenum : S_NULL;
 			player.psprites[i].tics = psprites[i].tics;
 		}
 

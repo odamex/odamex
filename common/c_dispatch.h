@@ -86,10 +86,10 @@ protected:
 		public: \
 			Cmd_##n () : DConsoleCommand (#n) {} \
 			Cmd_##n (const char *name) : DConsoleCommand (name) {} \
-			void Run (uint32_t key = 0)
+			void Run ([[maybe_unused]] uint32_t key) override
 
 #define END_COMMAND(n)		}; \
-	static Cmd_##n Cmd_instance##n;
+	namespace { Cmd_##n Cmd_instance##n; }
 
 class DConsoleAlias : public DConsoleCommand
 {

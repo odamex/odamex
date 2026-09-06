@@ -42,28 +42,19 @@ SequenceQueueEntryType* SequenceSender::UnackedIterator::Next()
 	return nullptr;
 }
 
-SequenceSender::SequenceSender(size_t i_initialSize) :
-	m_sendTable      (i_initialSize),
-	m_nextSequence   (0),
-	m_mode           (NORMAL)
+SequenceSender::ObtainResultType SequenceSender::ObtainSendPacket()
 {
-}
+	SequenceQueueEntryType& newEntryRef = m_sendTable[m_nextSequence];
 
-SequenceSender::QueueEntryResultType SequenceSender::ObtainSendPacket(int currentTic)
-{
-	auto result = m_sendTable.Emplace(m_nextSequence);
-	auto iter   = result.first;
+	newEntryRef.isAwaiting           = true;
+	newEntryRef.header.sequence      = m_nextSequence;
+	newEntryRef.lastRetransmitTic    = -1;
 
 	m_unackedSequences.push_back(m_nextSequence);
 	++m_nextSequence;
 
-	iter->second.isAwaiting        = true;
-	iter->second.sequence          = iter->first;
-	iter->second.originatingTic    = currentTic;
-	iter->second.lastRetransmitTic = -1;
-	iter->second.buf.clear();
-
-	return QueueEntryResultType {& iter->second.buf, iter->second.sequence};
+	return ObtainResultType {.bufferRef = newEntryRef.buf,
+	                         .headerRef = newEntryRef.header};
 }
 
 bool SequenceSender::Acknowledge(int sequence)
@@ -72,9 +63,7 @@ bool SequenceSender::Acknowledge(int sequence)
 	// Just ignore those.
 	if (sequence >= 0)
 	{
-		auto iter = m_sendTable.find(sequence);
-
-		if (m_sendTable.Erase(iter))
+		if (m_sendTable.erase(sequence))
 		{
 			auto unackIter = std::find(m_unackedSequences.begin(),
 			                           m_unackedSequences.end(),
