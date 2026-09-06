@@ -369,7 +369,6 @@ void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int 
 #define MOD_HITSCAN			25 // Odamex-specific - monster hitscan.
 #define MOD_VILEFIRE		26 // Odamex-specific - vile fire.
 #define NUMMODS				(MOD_VILEFIRE + 1)
-#define MOD_FRIENDLY_FIRE	0x80000000
 
 //
 // PO_MAN

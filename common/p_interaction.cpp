@@ -1535,15 +1535,14 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 	if (inflictor && inflictor->player == self->player)
 		mod = MOD_UNKNOWN;
 
+	bool friendly = false;
 	if (G_IsCoopGame())
-		mod |= MOD_FRIENDLY_FIRE;
+		friendly = true;
 
 	if (G_IsTeamGame() && attacker && attacker->player &&
 	    self->player->userinfo.team == attacker->player->userinfo.team)
-		mod |= MOD_FRIENDLY_FIRE;
+		friendly = true;;
 
-	bool friendly = mod & MOD_FRIENDLY_FIRE;
-	mod = mod & ~MOD_FRIENDLY_FIRE;
 	const char* message = NULL;
 	OString messagename;
 
