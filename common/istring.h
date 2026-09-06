@@ -133,12 +133,12 @@ constexpr auto operator<=>(const IStringView isv, const std::string_view sv)
 	return isv <=> IStringView{sv.data(), sv.length()};
 }
 
-constexpr IString& operator+=(IString& lhs, std::string_view rhs)
+ISTRING_CONSTEXPR IString& operator+=(IString& lhs, std::string_view rhs)
 {
 	return lhs += IStringView(rhs.data(), rhs.length());
 }
 
-constexpr std::string& operator+=(std::string& lhs, IStringView rhs)
+ISTRING_CONSTEXPR std::string& operator+=(std::string& lhs, IStringView rhs)
 {
 	return lhs += std::string_view(rhs.data(), rhs.length());
 }
