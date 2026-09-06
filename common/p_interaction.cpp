@@ -73,9 +73,6 @@ EXTERN_CVAR(g_lives)
 // sapientlion - experimental
 EXTERN_CVAR(sv_weapondrop)
 
-// TODO: does this need to be global?
-int MeansOfDeath;
-
 // a weapon is found with two clip loads,
 // a big item has five clip loads
 std::array<int, NUMAMMO> maxammo  {200, 50, 300, 50};
@@ -88,7 +85,7 @@ void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
 void SV_TouchSpecial(AActor& special, player_t& player);
 ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, team_t f);
-void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill, int mod);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_UpdateMobj(AActor* mo);
@@ -1521,7 +1518,7 @@ void SexMessage (const char *from, char *to, gender_t gender, std::string_view v
 // [RH]
 // ClientObituary: Show a message when a player dies
 //
-static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker)
+static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker, int mod)
 {
 	char gendermessage[1024];
 
@@ -1536,17 +1533,17 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 
 	// Treat voodoo dolls as unknown deaths
 	if (inflictor && inflictor->player == self->player)
-		MeansOfDeath = MOD_UNKNOWN;
+		mod = MOD_UNKNOWN;
 
 	if (G_IsCoopGame())
-		MeansOfDeath |= MOD_FRIENDLY_FIRE;
+		mod |= MOD_FRIENDLY_FIRE;
 
 	if (G_IsTeamGame() && attacker && attacker->player &&
 	    self->player->userinfo.team == attacker->player->userinfo.team)
-		MeansOfDeath |= MOD_FRIENDLY_FIRE;
+		mod |= MOD_FRIENDLY_FIRE;
 
-	bool friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
-	int mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
+	bool friendly = mod & MOD_FRIENDLY_FIRE;
+	mod = mod & ~MOD_FRIENDLY_FIRE;
 	const char* message = NULL;
 	OString messagename;
 
@@ -1817,9 +1814,9 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 //
 // P_KillMobj
 //
-void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool joinkill)
+void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool joinkill, int mod)
 {
-	SV_SendKillMobj(source, target, inflictor, joinkill);
+	SV_SendKillMobj(source, target, inflictor, joinkill, mod);
 	AActor *mo;
 	player_t *splayer;
 	player_t *tplayer;
@@ -2028,17 +2025,14 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 
 	target->tics -= P_Random(target) & 3;
 
-	if (target->tics < 1)
-	{
-		target->tics = 1;
-	}
+	target->tics = std::max(target->tics, 1);
 
 	// [RH] Death messages
 	// Nes - Server now broadcasts obituaries.
 	// [CG] Since this is a stub, no worries anymore.
 	if (target->player && ::level.time && !::clientside && !::demoplayback && !joinkill)
 	{
-		ClientObituary(target, inflictor, source);
+		ClientObituary(target, inflictor, source, mod);
 	}
 
 	// [AM] Save the "out of lives" message until after the obit.
@@ -2208,8 +2202,6 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			friendlyfireblocked = true;
 		}
 	}
-
-	MeansOfDeath = mod;
 
 	TeamInfo* teamInfo = NULL;
 	bool targethasflag = false;
@@ -2497,7 +2489,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod, 0);
 		}
 
-		P_KillMobj(source, target, inflictor, false);
+		P_KillMobj(source, target, inflictor, false, mod);
 
 		return;
 	}
