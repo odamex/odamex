@@ -24,7 +24,7 @@
 #pragma once
 
 #include "r_defs.h"
-#include "flags.h"
+#include "util.h"
 
 #include <concepts>
 
