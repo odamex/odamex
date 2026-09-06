@@ -497,22 +497,11 @@ void MIType_LumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 	out = os.getToken();
 }
 
-// Which of the two intermission screens a key writes to.
-enum class interLump_t
-{
-	Enter,
-	Exit,
-};
-
 // Handle lump names that can also be intermission scripts
-template <interLump_t SLOT>
-void MIType_InterLumpName(OScanner& os, bool newStyleMapInfo, level_pwad_info_t& info)
+void MIType_InterLumpName(OScanner& os, bool newStyleMapInfo, OLumpName& pic,
+                          OLumpName& script)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
-
-	OLumpName& pic = SLOT == interLump_t::Enter ? info.enterpic : info.exitpic;
-	OLumpName& script =
-	    SLOT == interLump_t::Enter ? info.enterscript : info.exitscript;
 
 	const std::string tok = os.getToken();
 	if (!tok.empty() && tok.at(0) == '$')
@@ -1306,8 +1295,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "intermusic", MIType_LumpName, ref.zintermusic },
 			{ "par", MIType_Int, ref.partime },
 			{ "sucktime", MIType_EatNext },
-			{ "enterpic", MIType_InterLumpName<interLump_t::Enter>, ref },
-			{ "exitpic", MIType_InterLumpName<interLump_t::Exit>, ref },
+			{ "enterpic", MIType_InterLumpName, ref.enterpic, ref.enterscript },
+			{ "exitpic", MIType_InterLumpName, ref.exitpic, ref.exitscript },
 			{ "enteranim", MIType_LumpName, ref.enteranim },
 			{ "exitanim", MIType_LumpName, ref.exitanim },
 			{ "translator", MIType_EatNext },
