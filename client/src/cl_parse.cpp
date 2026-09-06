@@ -1532,7 +1532,6 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	const int      health   = msg->health();
 	const bool     joinkill = msg->joinkill();
 	const int      lives    = msg->lives();
-	const int      mod      = msg->mod();
 
 	AActor* source = P_FindThingById(srcid);
 	AActor* target = P_FindThingById(tgtid);
@@ -1591,7 +1590,7 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	if (target->player && lives >= 0)
 		target->player->lives = lives;
 
-	P_KillMobj(source, target, inflictor, joinkill, mod);
+	P_KillMobj(source, target, inflictor, joinkill, MOD_NONE);
 }
 
 //
