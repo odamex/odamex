@@ -51,12 +51,11 @@
 
 struct OTimespan
 {
-	int csecs;
-	int tics;
-	int seconds;
-	int minutes;
-	int hours;
-	OTimespan() : csecs(0), tics(0), seconds(0), minutes(0), hours(0) { }
+	int csecs   = 0;
+	int tics    = 0;
+	int seconds = 0;
+	int minutes = 0;
+	int hours   = 0;
 };
 
 bool IsNum(std::string_view str);
