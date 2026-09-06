@@ -4058,7 +4058,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 
 	// Whatever mobj we had it doesn't matter anymore.
 	if (player.mo)
-		P_KillMobj(NULL, player.mo, NULL, true, MOD_NONE);
+		P_KillMobj(nullptr, player.mo, nullptr, true, MOD_NONE);
 
 	// Fresh joins get fresh player scores.
 	P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
