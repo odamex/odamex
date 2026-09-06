@@ -41,7 +41,7 @@ void COM_PushToast(const toast_t& toast)
 #if defined(SERVER_APP)
 	for (auto& player : ::players)
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_Toast(toast));
+		player.client.messenger->Reliable().Write(SVC_Toast(toast));
 	}
 #elif defined(CLIENT_APP)
 	hud::PushToast(toast);

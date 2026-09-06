@@ -94,7 +94,7 @@ void NetDemo::reset()
 
 	filename = "";
 	header = netdemo_header4_t{};
-	captured.clear();
+	captured.Clear();
 }
 
 //
@@ -374,23 +374,19 @@ bool NetDemo::startRecording(const std::string &filename)
 	{
 		// write a simulation of the connection sequence since the server
 		// has already sent it to the client and it wasn't captured
-		static buf_t tempbuf(NETDEMO_STARTUP_PACKET_SIZE);
 
 		// Fake the launcher query response
-		SZ_Clear(&tempbuf);
-		writeLauncherSequence(&tempbuf);
-		capture(&tempbuf);
-		writeMessages();
+		{
+			buf_t& launcherBuffer = captured.Obtain();
+			writeLauncherSequence(&launcherBuffer);
+			writeMessages();
+		}
 
 		// Fake the server's side of the connection sequence
-		SZ_Clear(&tempbuf);
-		writeConnectionSequence(&tempbuf);
-		capture(&tempbuf);
+		writeConnectionSequence();
 		writeMessages();
 
-		SZ_Clear(&tempbuf);
-		MSG_WriteSVCBuffer(&tempbuf, odaproto::clc::NetDemoLoadSnap());
-		capture(&tempbuf);
+		captured.Write( odaproto::clc::NetDemoLoadSnap() );
 		writeMessages();
 
 		// Record any additional messages (usually a full update if auto-recording))
@@ -589,21 +585,6 @@ bool NetDemo::stopPlaying()
 	return true;
 }
 
-//
-// writeLocalCmd()
-//
-//   Generates a message indicating the current position and angle of the
-//   consoleplayer, taking the place of ticcmds.
-void NetDemo::writeLocalCmd(buf_t *netbuffer) const
-{
-	// Record the local player's data
-	player_t& player = consoleplayer();
-	if (not player.mo)
-		return;
-
-	MSG_WriteSVCBuffer(netbuffer, CLC_NetdemoCap(player, localcmds[gametic % MAXSAVETICS], ::messenger));
-}
-
 
 void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 {
@@ -679,8 +660,6 @@ void NetDemo::writeMessages()
 	if (!isRecording())
 		return;
 
-	static buf_t netbuf_localcmd(1024);
-
 	if (atSnapshotInterval())
 	{
 		writeSnapshotData(snapbuf);
@@ -689,28 +668,29 @@ void NetDemo::writeMessages()
 
 	if (connected)
 	{
-		// Write the console player's game data
-		SZ_Clear(&netbuf_localcmd);
-		writeLocalCmd(&netbuf_localcmd);
-		captured.push_back(netbuf_localcmd);
+		// Record the local player's data
+		player_t& player = consoleplayer();
+		if (player.mo)
+		{
+			captured.Write( CLC_NetdemoCap(player, localcmds[gametic % MAXSAVETICS], ::messenger) );
+		}
 	}
 
-	auto output_buf = std::make_unique<byte[]>(captured.size() * MAX_UDP_PACKET);
+	outputBuffer.clear();
 
-	uint32_t output_len = 0;
-	while (!captured.empty())
+	if (outputBuffer.maxsize() < captured.SizeInBytes())
 	{
-		buf_t netbuf(captured.front());
-		uint32_t len = netbuf.BytesLeftToRead();
-
-		byte *chunk = netbuf.ReadChunk(len);
-		memcpy(&output_buf[output_len], chunk, len);
-		output_len += len;
-
-		captured.pop_front();
+		outputBuffer.resize(captured.SizeInBytes());
 	}
 
-	writeChunk(output_buf.get(), output_len, NetDemo::msg_packet);
+	while (captured.SizeInMessages() > 0)
+	{
+		outputBuffer.WriteChunk(captured.Front().ptr(),
+		                        captured.Front().size());
+		captured.Pop();
+	}
+
+	writeChunk(outputBuffer.ptr(), outputBuffer.size(), NetDemo::msg_packet);
 }
 
 
@@ -861,7 +841,8 @@ void NetDemo::capture(const buf_t* inputbuffer)
 
 	if (inputbuffer->size() > 0)
 	{
-		captured.emplace_back(*inputbuffer);
+		buf_t& buffer = captured.Obtain();
+		buffer.WriteChunk(inputbuffer->ptr(), inputbuffer->size());
 	}
 }
 
@@ -871,7 +852,8 @@ void NetDemo::capture(const std::basic_string<byte>& buffer)
 	{
 		if (buffer.size() > 0)
 		{
-			captured.emplace_back(buffer);
+			buf_t& queueBuffer = captured.Obtain();
+			queueBuffer.WriteChunk(buffer.data(), buffer.length());
 		}
 	}
 }
@@ -880,9 +862,7 @@ void NetDemo::capturePacketHeader(const PacketHeaderType& header)
 {
 	if (isRecording())
 	{
-		workingBuffer.clear();
-		MSG_WriteSVCBuffer(& workingBuffer, MSG_Header(header));
-		captured.emplace_back(workingBuffer);
+		captured.Write( MSG_Header(header) );
 	}
 }
 
@@ -1024,24 +1004,28 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 extern int last_svgametic;
 
-void NetDemo::writeConnectionSequence(buf_t *netbuffer)
+void NetDemo::writeConnectionSequence()
 {
 	const player_t& player = consoleplayer();
 
-	PacketHeaderType header {0};
+	{
+		buf_t& headerBuffer = captured.Obtain();
 
-	header.originatorTic  = last_svgametic;
-	header.destinationTic = player.tic;
+		PacketHeaderType header {0};
 
-	// Please note that we pack the header in proper socket-style for the connection sequence
-	// because the netdemo connection playback actually uses the messenger via CL_Connect.
-	header.Pack(*netbuffer);
+		header.originatorTic  = last_svgametic;
+		header.destinationTic = player.tic;
+
+		// Please note that we pack the header in proper socket-style for the connection sequence
+		// because the netdemo connection playback actually uses the messenger via CL_Connect.
+		header.Pack(headerBuffer);
+	}
 
 	// Server sends our player id and digest
-	MSG_WriteSVCBuffer(netbuffer, SVC_ConsolePlayer(player, digest));
+	captured.Write( SVC_ConsolePlayer(player, digest) );
 
 	// our userinfo
-	MSG_WriteSVCBuffer(netbuffer, SVC_UserInfo(player, player.GameTime));
+	captured.Write( SVC_UserInfo(player, player.GameTime) );
 
 	// Server sends its settings
 	cvar_t *var = GetFirstCvar();
@@ -1049,19 +1033,19 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
 		{
-			MSG_WriteSVCBuffer(netbuffer, SVC_ServerSettings(*var));
+			captured.Write( SVC_ServerSettings(*var) );
 		}
 		var = var->GetNext();
 	}
 
 	// Server tells everyone if we're a spectator
-	MSG_WriteSVCBuffer(netbuffer, SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
+	captured.Write( SVC_PlayerMembers(player, SVC_PM_SPECTATOR) );
 
 	// Server sends wads & map name
-	MSG_WriteSVCBuffer(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
+	captured.Write( SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time) );
 
 	// Server spawns the player
-	MSG_WriteSVCBuffer(netbuffer, SVC_SpawnPlayer(player));
+	captured.Write( SVC_SpawnPlayer(player) );
 }
 
 
