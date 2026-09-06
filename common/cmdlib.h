@@ -61,7 +61,7 @@ struct OTimespan
 bool IsNum(std::string_view str);
 bool IsRealNum(std::string_view str);
 
-template<std::integral T>
+template <std::integral T>
 std::optional<T> ParseNum(std::string_view str, int base = 10)
 {
     T out;
@@ -78,7 +78,7 @@ std::optional<T> ParseNum(std::string_view str, int base = 10)
 namespace cmd_detail
 {
 
-template<typename T>
+template <typename T>
 concept has_from_chars_float =
 requires(const char* f, const char* l, T v)
 {
@@ -90,7 +90,7 @@ inline constexpr bool always_false = false;
 
 }
 
-template<typename T>
+template <typename T>
 requires std::is_floating_point_v<T>
 std::optional<T> ParseNum(std::string_view str)
 {
