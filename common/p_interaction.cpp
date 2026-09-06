@@ -85,7 +85,7 @@ void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
 void SV_TouchSpecial(AActor& special, player_t& player);
 ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, team_t f);
-void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill, int mod);
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 void SV_UpdateMobj(AActor* mo);
@@ -1816,7 +1816,7 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 //
 void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool joinkill, int mod)
 {
-	SV_SendKillMobj(source, target, inflictor, joinkill, mod);
+	SERVER_ONLY(SV_SendKillMobj(source, target, inflictor, joinkill));
 	AActor *mo;
 	player_t *splayer;
 	player_t *tplayer;

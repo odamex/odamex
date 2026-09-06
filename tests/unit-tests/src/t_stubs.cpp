@@ -93,7 +93,6 @@ void SV_SendDestroyActor(const AActor *mo) {}
 void SV_SendDamageMobj(AActor *target, int pain) {}
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage) {}
 void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0, int arg1, int arg2, int arg3, int arg4) {}
-void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill, int mod) {}
 void SV_SendPlayerInfo(player_t &player) {}
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse) {}
 void SV_SocketTouch (player_t &player, team_t f) {}

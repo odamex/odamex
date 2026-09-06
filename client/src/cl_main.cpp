@@ -1696,7 +1696,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	if (!player.spectator && !wasalive)
 	{
 		if (player.mo)
-			P_KillMobj(NULL, player.mo, NULL, true, MOD_UNKNOWN);
+			P_KillMobj(NULL, player.mo, NULL, true, MOD_NONE);
 
 		player.playerstate = PST_REBORN;
 	}

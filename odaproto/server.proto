@@ -203,7 +203,6 @@ message KillMobj
 	int32   health          = 8;
 	bool    joinkill        = 9;
 	sint32  lives           = 10; // Default is -1.
-	int32   mod             = 11;
 }
 
 // svc_raisemobj

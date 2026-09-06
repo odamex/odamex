@@ -340,8 +340,8 @@ void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int 
 #define DMG_NO_ARMOR		1
 
 // [RH] Means of death flags (based on Quake2's)
-// TODO: should this be an enum?
 #define MOD_UNKNOWN			0
+#define MOD_NONE			0
 #define MOD_FIST			1
 #define MOD_PISTOL			2
 #define MOD_SHOTGUN			3
