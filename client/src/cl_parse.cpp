@@ -2559,10 +2559,10 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	struct PspriteUpdate
 	{
-		statenum_t	statenum = S_NULL;
-		fixed_t		sx = 0;
-		fixed_t		sy = 0;
-		bool		positioned = false;
+		statenum_t statenum   = S_NULL;
+		fixed_t    sx         = 0;
+		fixed_t    sy         = 0;
+		bool       positioned = false;
 	};
 
 	std::array<PspriteUpdate, NUMPSPRITES> pspupdates;
