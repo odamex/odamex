@@ -340,35 +340,42 @@ void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int 
 #define DMG_NO_ARMOR		1
 
 // [RH] Means of death flags (based on Quake2's)
-#define MOD_UNKNOWN			0
-#define MOD_NONE			0
-#define MOD_FIST			1
-#define MOD_PISTOL			2
-#define MOD_SHOTGUN			3
-#define MOD_CHAINGUN		4
-#define MOD_ROCKET			5
-#define MOD_R_SPLASH		6
-#define MOD_PLASMARIFLE		7
-#define MOD_BFG_BOOM		8
-#define MOD_BFG_SPLASH		9
-#define MOD_CHAINSAW		10
-#define MOD_SSHOTGUN		11
-#define MOD_WATER			12
-#define MOD_SLIME			13
-#define MOD_LAVA			14
-#define MOD_CRUSH			15
-#define MOD_TELEFRAG		16
-#define MOD_FALLING			17
-#define MOD_SUICIDE			18
-#define MOD_BARREL			19
-#define MOD_EXIT			20
-#define MOD_SPLASH			21
-#define MOD_HIT				22
-#define MOD_RAILGUN			23
-#define MOD_FIREBALL		24 // Odamex-specific - monster fireball.
-#define MOD_HITSCAN			25 // Odamex-specific - monster hitscan.
-#define MOD_VILEFIRE		26 // Odamex-specific - vile fire.
-#define NUMMODS				(MOD_VILEFIRE + 1)
+// FIXME: convert to enum class for type safety
+//        will require reorganization of files
+//        since p_local.h cannot be included everywhere that needs the type
+//        also will require updating wdlstats code
+enum means_of_death_t
+{
+	MOD_NONE,
+	MOD_UNKNOWN = MOD_NONE,
+	MOD_FIST,
+	MOD_PISTOL,
+	MOD_SHOTGUN,
+	MOD_CHAINGUN,
+	MOD_ROCKET,
+	MOD_R_SPLASH,
+	MOD_PLASMARIFLE,
+	MOD_BFG_BOOM,
+	MOD_BFG_SPLASH,
+	MOD_CHAINSAW,
+	MOD_SSHOTGUN,
+	MOD_WATER,
+	MOD_SLIME,
+	MOD_LAVA,
+	MOD_CRUSH,
+	MOD_TELEFRAG,
+	MOD_FALLING,
+	MOD_SUICIDE,
+	MOD_BARREL,
+	MOD_EXIT,
+	MOD_SPLASH,
+	MOD_HIT,
+	MOD_RAILGUN,
+	MOD_FIREBALL, // Odamex-specific - monster fireball.
+	MOD_HITSCAN,  // Odamex-specific - monster hitscan.
+	MOD_VILEFIRE, // Odamex-specific - vile fire.
+	NUMMODS,
+};
 
 //
 // PO_MAN
