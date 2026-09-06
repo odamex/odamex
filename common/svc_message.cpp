@@ -776,7 +776,7 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActo
  * @brief Kill a mobj.
  */
 odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
-                                     int /* methodOfDeath */, bool joinkill)
+                                     int mod, bool joinkill)
 {
 	odaproto::svc::KillMobj msg;
 
@@ -784,6 +784,7 @@ odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target,
 	msg.set_inflictor_netid(inflictor ? inflictor->netid : 0);
 	msg.set_health(target->health);
 	msg.set_joinkill(joinkill);
+	msg.set_mod(mod);
 
 	// [AM] Confusingly, we send the lives _before_ we take it away, so
 	//      the lives logic can live in the kill function.

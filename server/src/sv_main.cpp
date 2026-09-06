@@ -5157,7 +5157,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 }
 
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor,
-                     bool joinkill)
+                     bool joinkill, int mod)
 {
 	if (!target)
 		return;
@@ -5169,7 +5169,7 @@ void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *i
 		if (SV_IsPlayerAllowedToSee(player, target))
 		{
 			player.client.messenger->Reliable().Write (
-			             SVC_KillMobj(source, target, inflictor, ::MeansOfDeath, joinkill));
+			             SVC_KillMobj(source, target, inflictor, mod, joinkill));
 		}
 	}
 }

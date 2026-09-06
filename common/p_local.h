@@ -371,8 +371,6 @@ void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int 
 #define NUMMODS				(MOD_VILEFIRE + 1)
 #define MOD_FRIENDLY_FIRE	0x80000000
 
-extern	int MeansOfDeath;
-
 //
 // PO_MAN
 //

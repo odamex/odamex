@@ -146,7 +146,7 @@ void SV_MidPrint (const char *msg, player_t *p, int msgtime=0);
 extern std::vector<std::string> wadnames;
 
 void SV_SendPlayerInfo(player_t& player);
-void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill, int mod);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 // Tells clients to remove an actor from the world as it doesn't exist anymore
