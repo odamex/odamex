@@ -199,6 +199,8 @@ argb_t CL_GetPlayerColor(const player_t& player)
 
 static void CL_RebuildAllPlayerTranslations()
 {
+	R_RebuildTranslations();
+
 	// [SL] vanilla demo colors override
 	if (demoplayback)
 		return;

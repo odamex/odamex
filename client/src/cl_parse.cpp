@@ -1031,6 +1031,7 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	::teleported_players.clear();
 
 	CL_ClearSectorSnapshots();
+	R_ExpireTranslations(TRANSLIFE_MAP);
 	for (auto& player : players)
 		player.snapshots.clearSnapshots();
 
