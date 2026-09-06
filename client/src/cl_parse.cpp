@@ -845,6 +845,15 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	mo->UpdateActorLists();
 
+	if (msg->has_corpse_color())
+	{
+		mo->corpse_color = msg->corpse_color();
+		mo->corpse_team = static_cast<team_t>(msg->corpse_team());
+
+		mo->translation =
+		    R_GetCorpseTranslation(mo->corpse_color, mo->corpse_team, mo->corpse_isself);
+	}
+
 	if (msg->spawn_flags() & SVC_SM_CORPSE)
 	{
 		int frame = msg->current().frame();

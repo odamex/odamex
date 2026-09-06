@@ -183,24 +183,7 @@ EXTERN_CVAR (r_forceteamcolor)
 EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR(debug_disconnect)
 
-static argb_t enemycolor, teamcolor;
-
 void P_PlayerLeavesGame(player_t* player);
-
-//
-// CL_ShadePlayerColor
-//
-// Shades base_color darker using the intensity of shade_color.
-//
-argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
-{
-	if (base_color == shade_color)
-		return base_color;
-
-	fahsv_t color = V_RGBtoHSV(base_color);
-	color.setv(0.7f * color.getv() + 0.3f * V_RGBtoHSV(shade_color).getv());
-	return V_HSVtoRGB(color);
-}
 
 //
 // CL_GetPlayerColor
@@ -210,30 +193,8 @@ argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 //
 argb_t CL_GetPlayerColor(const player_t& player)
 {
-	argb_t base_color(255, player.userinfo.color.getr(),
-	                       player.userinfo.color.getg(),
-	                       player.userinfo.color.getb());
-	argb_t shade_color = base_color;
-
-	bool teammate = false;
-	if (G_IsCoopGame())
-		teammate = true;
-	if (G_IsFFAGame())
-		teammate = false;
-	if (G_IsTeamGame())
-	{
-		teammate = P_AreTeammates(consoleplayer(), player);
-		base_color = GetTeamInfo(player.userinfo.team)->Color;
-	}
-	if (player.id != consoleplayer_id && !consoleplayer().spectator)
-	{
-		if (r_forceteamcolor && teammate)
-			base_color = teamcolor;
-		else if (r_forceenemycolor && !teammate)
-			base_color = enemycolor;
-	}
-
-	return CL_ShadePlayerColor(base_color, shade_color);
+	return R_GetPlayerDrawColor(player.userinfo.color, player.userinfo.team,
+	                            player.id == consoleplayer_id);
 }
 
 static void CL_RebuildAllPlayerTranslations()
@@ -250,15 +211,11 @@ static void CL_RebuildAllPlayerTranslations()
 
 CVAR_FUNC_IMPL (r_enemycolor)
 {
-	// cache the color whenever the user changes it
-	enemycolor = V_GetColorFromString(var);
 	CL_RebuildAllPlayerTranslations();
 }
 
 CVAR_FUNC_IMPL (r_teamcolor)
 {
-	// cache the color whenever the user changes it
-	teamcolor = V_GetColorFromString(var);
 	CL_RebuildAllPlayerTranslations();
 }
 

@@ -44,9 +44,14 @@
 #include "g_skill.h"
 #include "p_mapformat.h"
 #include "p_unlag.h"
+#include "v_palette.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
+#endif
+
+#ifdef CLIENT_APP
+#include "r_draw.h"
 #endif
 
 extern bool predicting;
@@ -1844,6 +1849,20 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 
 	target->flags |= MF_CORPSE|MF_DROPOFF;
 	target->height >>= 2;
+
+	// Take the colors off the player and give them to the corpse.
+	if (target->player)
+	{
+		const argb_t color = target->player->userinfo.color;
+
+		target->corpse_color = argb_t(255, color.getr(), color.getg(), color.getb());
+		target->corpse_team = target->player->userinfo.team;
+#ifdef CLIENT_APP
+		target->corpse_isself = target->player->id == consoleplayer_id;
+		target->translation = R_GetCorpseTranslation(target->corpse_color, target->corpse_team,
+		                                            target->corpse_isself);
+#endif
+	}
 
 	// [RH] If the thing has a special, execute and remove it
 	//		Note that the thing that killed it is considered
