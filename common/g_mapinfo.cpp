@@ -1197,15 +1197,15 @@ class MapInfoData
 	// are function objects so they can stay generic over the flag word's type. The
 	// invocable constraint is what rejects a setter aimed at the wrong field.
 	template <typename Fn, typename T, typename... Args>
-	    requires std::invocable<const Fn&, OScanner&, bool, T&, Args...>
-	MapInfoData(const char* name, Fn fn, T& ref, Args... args)
-		: m_name(name), m_fn(
-			[fn, &ref, args...](
-				OScanner& os, bool newStyleMapInfo
-				) {
-						std::invoke(fn, os, newStyleMapInfo, ref, args...);
-					}
-				)
+		requires std::invocable<const Fn&, OScanner&, bool, T&, Args...>
+	MapInfoData(const char* _name, Fn&& _fn, T& _ref, Args&&... _args)
+		: m_name(_name), m_fn([_fn = std::forward<Fn>(_fn), &_ref,
+			_bound = std::tuple<Args...>(std::forward<Args>(_args)...)](
+				OScanner& os, bool newStyleMapInfo) {
+					std::apply([&](auto&... a) { _fn(os, newStyleMapInfo, _ref, a...); },
+						_bound);
+				}
+		)
 	{
 	}
 
