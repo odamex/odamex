@@ -84,33 +84,6 @@ char *copystring (const char *s)
 	return b;
 }
 
-//
-// ParseNum / ParseHex
-//
-int ParseHex(const char* hex)
-{
-	int num = 0;
-	const char* str = hex;
-
-	while (*str)
-	{
-		num <<= 4;
-		if (*str >= '0' && *str <= '9')
-			num += *str-'0';
-		else if (*str >= 'a' && *str <= 'f')
-			num += 10 + *str-'a';
-		else if (*str >= 'A' && *str <= 'F')
-			num += 10 + *str-'A';
-		else {
-			DPrintFmt("Bad hex number: {}\n",hex);
-			return 0;
-		}
-		str++;
-	}
-
-	return num;
-}
-
 // [RH] Returns true if the specified string is a valid decimal integer
 
 bool IsNum(std::string_view str)

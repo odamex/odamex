@@ -59,7 +59,6 @@ struct OTimespan
 	OTimespan() : csecs(0), tics(0), seconds(0), minutes(0), hours(0) { }
 };
 
-int		ParseHex(const char *str);
 bool	IsNum(std::string_view str);
 bool	IsRealNum(const char* str);
 bool	IsRealNum(std::string_view str);
