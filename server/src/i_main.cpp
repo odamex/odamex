@@ -51,8 +51,6 @@
 #include "m_fileio.h"
 #include "m_consolecommandstream.h"
 
-void AddCommandString(std::string cmd);
-
 #ifdef _WIN32
 extern UINT TimerPeriod;
 #endif
