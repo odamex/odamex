@@ -1514,13 +1514,16 @@ void SexMessage (const char *from, char *to, gender_t gender, std::string_view v
 	} while (*from++);
 }
 
+namespace
+{
+
 //
 // [RH]
 // ClientObituary: Show a message when a player dies
 //
-static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker, int mod)
+void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker, int mod)
 {
-	char gendermessage[1024];
+	std::array<char, 1024> gendermessage;
 
 	if (!self || !self->player)
 		return;
@@ -1704,9 +1707,10 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 
 	if (message)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
+		// TODO: don't use .data and add a proper bounds check to sexmessage
+		SexMessage(message, gendermessage.data(), gender, self->player->userinfo.netname,
 		           self->player->userinfo.netname, "");
-		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
+		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage.data());
 
 		toast_t toast;
 		toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
@@ -1809,6 +1813,8 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 	toast.right_pid = self->player->id;
 	COM_PushToast(toast);
 }
+
+} // namespace
 
 //
 // P_KillMobj
