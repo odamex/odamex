@@ -776,7 +776,7 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActo
  * @brief Kill a mobj.
  */
 odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
-                                     int /* methodOfDeath */, bool joinkill)
+                                     bool joinkill)
 {
 	odaproto::svc::KillMobj msg;
 
