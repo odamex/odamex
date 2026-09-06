@@ -3648,6 +3648,11 @@ static void SV_SendMonitoredInventoryChanges(player_t& player)
 		player.client.messenger->Reliable().Write (SVC_PlayerWeaponSelection(player));
 	}
 
+	if (pendingWeaponWasChanged or readyWeaponWasChanged)
+	{
+		MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(player, SVC_PM_WEAPON), player.id);
+	}
+
 	if (player.weaponOwnedMonitors.EvaluateAsChanged())
 	{
 		player.client.messenger->Reliable().Write (SVC_PlayerWeaponOwned(player));

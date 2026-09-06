@@ -1768,6 +1768,24 @@ void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		if (!p.spectator)
 			p.cheats = msg->cheats();
 	}
+
+	// Our own weapon is driven by prediction and the rollback state, so this is only
+	// here to tell us what everyone else is holding.
+	if ((flags & SVC_PM_WEAPON) && p.id != consoleplayer_id)
+	{
+		const int32_t ready = msg->readyweapon();
+		const int32_t pending = msg->pendingweapon();
+
+		if (ready >= 0 && ready < NUMWEAPONS && p.readyweapon != ready)
+		{
+			p.readyweapon = static_cast<weapontype_t>(ready);
+			p.pendingweapon = wp_nochange;
+			P_BringUpWeapon(p);
+		}
+
+		if (pending >= 0 && pending < NUMWEAPONS)
+			p.pendingweapon = static_cast<weapontype_t>(pending);
+	}
 }
 
 //
@@ -2521,7 +2539,7 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	int armortype = msg->player().armortype();
 	int armorpoints = msg->player().armorpoints();
 	int lives = msg->player().lives();
-	weapontype_t weap = static_cast<weapontype_t>(msg->player().readyweapon());
+	const int32_t readyweapon = msg->player().readyweapon();
 
 	byte cardByte = msg->player().cards();
 	std::bitset<6> cardBits(cardByte);
@@ -2539,17 +2557,29 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		}
 	}
 
-	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
+	struct PspriteUpdate
+	{
+		statenum_t statenum   = S_NULL;
+		fixed_t    sx         = 0;
+		fixed_t    sy         = 0;
+		bool       positioned = false;
+	};
+
+	std::array<PspriteUpdate, NUMPSPRITES> pspupdates;
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		if (i < msg->player().psprites_size())
 		{
-			const int32_t state = msg->player().psprites().Get(i).statenum();
+			const odaproto::PspriteState& psprite = msg->player().psprites().Get(i);
+			const int32_t state = psprite.statenum();
             if (!states.contains(state))
 			{
 				continue;
 			}
-			stnum[i] = static_cast<statenum_t>(state);
+			pspupdates[i].statenum = static_cast<statenum_t>(state);
+			pspupdates[i].sx = psprite.sx();
+			pspupdates[i].sy = psprite.sy();
+			pspupdates[i].positioned = true;
 		}
 	}
 
@@ -2577,20 +2607,33 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	player.armorpoints = armorpoints;
 	player.lives = lives;
 
-	player.readyweapon = weap;
-	player.pendingweapon = wp_nochange;
+	if (readyweapon >= 0 && readyweapon < NUMWEAPONS)
+	{
+		const auto weap = static_cast<weapontype_t>(readyweapon);
+
+		player.readyweapon = weap;
+		player.pendingweapon = wp_nochange;
+
+		if (!player.weaponowned[weap])
+			P_GiveWeapon(player, weap, false);
+	}
 
 	for (int i = 0; i < NUMCARDS; i++)
 		player.cards[i] = cardBits[i];
-
-	if (!player.weaponowned[weap])
-		P_GiveWeapon(player, weap, false);
 
 	for (int i = 0; i < NUMAMMO; i++)
 		player.ammo[i] = ammo[i];
 
 	for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(player, i, stnum[i]);
+	{
+		P_SetPsprite(player, i, pspupdates[i].statenum);
+
+		if (pspupdates[i].positioned && player.psprites[i].statenum != S_NULL)
+		{
+			player.psprites[i].sx = pspupdates[i].sx;
+			player.psprites[i].sy = pspupdates[i].sy;
+		}
+	}
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
@@ -3388,7 +3431,9 @@ void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
 {
 	std::array<PspriteStateType, NUMPSPRITES> psprites;
 
-	for (size_t i = 0; i < psprites.size(); ++i)
+	const size_t count = std::min(psprites.size(),
+	                              static_cast<size_t>(msg->psprites_size()));
+	for (size_t i = 0; i < count; ++i)
 	{
 	    psprites[i].statenum = static_cast<statenum_t>(msg->psprites(i).statenum());
 	    psprites[i].tics     = msg->psprites(i).tics();

@@ -104,6 +104,23 @@ weaponstate_t P_GetWeaponState(const player_t& player)
 
 
 //
+// P_SanePspriteOffset
+//
+// Outside of a raise or lower, nothing moves a psprite further than one bob away
+// from where its state parks it, so anything beyond that is a position we were
+// never told about - typically a player we just started spying, whose psprites
+// we've been holding at whatever they were the last time we had real data.
+// Fall back on the resting position instead of drawing their weapon on the floor.
+//
+namespace
+{
+	fixed_t P_SanePspriteOffset(fixed_t value, fixed_t center)
+	{
+		return std::clamp(value, center - MAXBOB, center + MAXBOB);
+	}
+}
+
+//
 // P_CalculateWeaponBobX
 //
 // Returns the player's weapon position in the x-axis after applying movebob
@@ -133,7 +150,7 @@ fixed_t P_CalculateWeaponBobX(player_t& player, float scale_amount)
 	}
 
 	// scale the weapon's distance away from center
-	return center_sx + scale_amount * (psp.sx - center_sx);
+	return center_sx + (scale_amount * (P_SanePspriteOffset(psp.sx, center_sx) - center_sx));
 }
 
 
@@ -171,7 +188,7 @@ fixed_t P_CalculateWeaponBobY(player_t& player, float scale_amount)
 	}
 
 	// scale the weapon's distance away from center
-	return center_sy + scale_amount * (psp.sy - center_sy);
+	return center_sy + (scale_amount * (P_SanePspriteOffset(psp.sy, center_sy) - center_sy));
 }
 
 
@@ -445,6 +462,44 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 	return false;
 }
 
+//
+// P_WeaponIsRemotelyDriven
+//
+// True when we are a client animating a player whose inputs we never see.
+//
+bool P_WeaponIsRemotelyDriven(const player_t& player)
+{
+	return !serverside && player.id != consoleplayer_id;
+}
+
+// We never see another player's ticcmd, so their weapon fire frames has to
+// be inferred.
+// 
+// The server broadcasts the player's sprite every tic, and the attack frames
+// are only ever reached by firing, which makes them a usable stand-in for
+// BT_ATTACK.
+bool P_RemotePlayerIsFiring(const player_t& player)
+{
+	if (!player.mo)
+		return false;
+
+	const int frame = player.mo->frame & FF_FRAMEMASK;
+
+	return frame == (states[S_PLAY_ATK1].frame & FF_FRAMEMASK) ||
+		frame == (states[S_PLAY_ATK2].frame & FF_FRAMEMASK);
+}
+
+// True while the weapon should keep firing.
+//
+// Ours comes from the button we are holding, everyone else's from what
+// their player sprite is doing.
+bool P_WeaponWantsToFire(const player_t& player)
+{
+	if (P_WeaponIsRemotelyDriven(player))
+		return P_RemotePlayerIsFiring(player);
+
+	return (player.cmd.buttons & BT_ATTACK) && G_CanFireWeapon();
+}
 
 //
 // P_CheckAmmo
@@ -453,6 +508,12 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 //
 bool P_CheckAmmo (player_t& player)
 {
+	// Players who are not updated (like spying a player in a demo who wasn't spied
+	// when the demo was created) have stale ammo counts most of the time,
+	// lets not do an ammo check here.
+	if (P_WeaponIsRemotelyDriven(player))
+		return true;
+
 	if (P_EnoughAmmo(player, player.readyweapon))
 		return true;
 
@@ -472,6 +533,12 @@ bool P_CheckAmmo (player_t& player)
 //
 bool P_CheckAmmoNoLower(player_t& player)
 {
+	// Players who are not updated (like spying a player in a demo who wasn't spied
+	// when the demo was created) have stale ammo counts most of the time,
+	// lets not do an ammo check here.
+	if (P_WeaponIsRemotelyDriven(player))
+		return true;
+
 	if (P_EnoughAmmo(player, player.readyweapon))
 		return true;
 
@@ -536,7 +603,6 @@ void P_DropWeapon(player_t& player)
 	P_SetPsprite(player, ps_weapon, weaponinfo[player.readyweapon].downstate);
 }
 
-
 //
 // A_WeaponReady
 //
@@ -566,7 +632,7 @@ void A_WeaponReady(AActor* mo)
 
 	// check for fire - the missile launcher and bfg do not auto fire
 	// [AM] Allow warmup to disallow weapon firing.
-	if (player.cmd.buttons & BT_ATTACK && G_CanFireWeapon())
+	if (P_WeaponWantsToFire(player))
 	{
 		if (!player.attackdown || !(weaponinfo[player.readyweapon].flags & WPF_NOAUTOFIRE))
 		{
@@ -595,7 +661,7 @@ void A_ReFire(AActor* mo)
 	// check for fire
 	//	(if a weaponchange is pending, let it go through instead)
 	// [AM] Allow warmup to disallow weapon refiring.
-	if ((player.cmd.buttons & BT_ATTACK && G_CanFireWeapon())
+	if (P_WeaponWantsToFire(player)
 		 && player.pendingweapon == wp_nochange
 		 && player.health)
 	{
@@ -996,7 +1062,7 @@ void A_RefireTo(AActor* mo)
 		return;
 
 	if ((st->args[1] || P_CheckAmmoNoLower(player)) &&
-	    (player.cmd.buttons & BT_ATTACK) &&
+	    P_WeaponWantsToFire(player) &&
 	    (player.pendingweapon == wp_nochange && player.health))
 	{
 		player.refire++;
@@ -1352,8 +1418,10 @@ void P_FireHitscan (player_t& player, size_t quantity, spreadtype_t spread)
 	if (!player.mo)
 		return;
 
-	bool predict_puffs = clientside && !serverside &&
-						 consoleplayer().userinfo.predict_weapons;
+	const bool predict_puffs =
+		clientside && !serverside &&
+		player.id == consoleplayer_id &&
+		consoleplayer().userinfo.predict_weapons;
 
 	if (!serverside && !predict_puffs)
 		return;
@@ -1600,6 +1668,22 @@ void P_SetupPsprites(player_t& player)
 	// spawn the gun
 	player.pendingweapon = player.readyweapon;
 	P_BringUpWeapon(player);
+}
+
+//
+// P_RestPsprites
+//
+// Parks the weapon at its neutral position without touching the state it is in.
+// Used when we start viewing a player whose psprite positions we don't know, so
+// that we don't draw their weapon down at the bottom of the screen.
+//
+void P_RestPsprites(player_t& player)
+{
+	for (auto& psp : player.psprites)
+	{
+		psp.sx = FRACUNIT;
+		psp.sy = WEAPONTOP;
+	}
 }
 
 //

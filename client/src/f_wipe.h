@@ -34,3 +34,5 @@ bool Wipe_Ticker();
 void Wipe_Drawer();
 
 extern int NoWipe;
+
+void Wipe_Suppress(int frames);

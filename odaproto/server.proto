@@ -285,6 +285,9 @@ message PlayerMembers
 
 	// Ch0wW: Include Cheats...
 	uint32 cheats = 15;
+
+	int32 readyweapon = 16;
+	int32 pendingweapon = 17;
 }
 
 // svc_teammembers

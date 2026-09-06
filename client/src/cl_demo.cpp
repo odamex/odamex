@@ -45,6 +45,7 @@
 
 #include "PacketHeaderType.h"
 #include "cl_freecam.h"
+#include "f_wipe.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -1274,6 +1275,9 @@ bool NetDemo::readSnapshot(SnapshotVector::const_iterator snap)
 
 	readSnapshotData(snapbuf);
 	netdemotic = snap->ticnum - header.starting_gametic;
+
+	Wipe_Suppress(2);
+
 	return true;
 }
 
@@ -1659,15 +1663,6 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 		displayplayer_id = did;
 	else
 		displayplayer_id = cid;
-
-	// setup psprites and restore player colors
-	for (auto& player : players)
-	{
-		P_SetupPsprites(player);
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
-	}
-
-	R_CopyTranslationRGB(menuplayer_id, consoleplayer_id);
 
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;

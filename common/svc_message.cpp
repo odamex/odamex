@@ -935,6 +935,12 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(const player_t& player, byte flag
 			msg.set_cheats(player.cheats);
 	}
 
+	if (flags & SVC_PM_WEAPON)
+	{
+		msg.set_readyweapon(player.readyweapon);
+		msg.set_pendingweapon(player.pendingweapon);
+	}
+
 	return msg;
 }
 
