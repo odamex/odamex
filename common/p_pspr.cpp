@@ -1394,7 +1394,9 @@ void P_FireHitscan (player_t& player, size_t quantity, spreadtype_t spread)
 	if (!player.mo)
 		return;
 
-	bool predict_puffs = clientside && !serverside &&
+	const bool predict_puffs =
+		clientside && !serverside &&
+		player.id == consoleplayer_id &&
 						 consoleplayer().userinfo.predict_weapons;
 
 	if (!serverside && !predict_puffs)
