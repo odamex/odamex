@@ -287,19 +287,19 @@ class AActor : public DThinker
 				ptr->refCount--;
 		}
 
-		operator AActorPtr()
-		{
-			return ptr;
-		}
+		// NOLINTNEXTLINE(misc-explicit-constructor)
 		operator AActor*()
 		{
 			return ptr;
 		}
 
-		operator const AActorPtr() const
+		// NOLINTNEXTLINE(misc-explicit-constructor)
+		operator AActorPtr() const
 		{
 			return ptr;
 		}
+
+		// NOLINTNEXTLINE(misc-explicit-constructor)
 		operator const AActor*() const
 		{
 			return ptr;

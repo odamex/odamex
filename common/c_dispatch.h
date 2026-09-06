@@ -39,7 +39,7 @@ struct parse_string_result_t
 	std::optional<std::string> token;
 	std::string_view rest;
 
-	operator bool() const
+	explicit operator bool() const
 	{
 		return token.has_value();
 	}

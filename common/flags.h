@@ -394,8 +394,10 @@ private:
 	using base::base;
 public:
 	constexpr flag_set() noexcept = default;
+	// NOLINTBEGIN(misc-explicit-constructor)
 	constexpr flag_set(noflag_t) noexcept : flag_set() {};
 	constexpr flag_set(const FlagOrCombo<E> auto c) noexcept : base(c) {};
+	// NOLINTEND(misc-explicit-constructor)
 
 	constexpr flag_set& operator|=(const FlagOrCombo<E> auto c) noexcept
 	{
