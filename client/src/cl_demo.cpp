@@ -1292,7 +1292,7 @@ bool NetDemo::readSnapshot(SnapshotVector::const_iterator snap)
 	readSnapshotData(snapbuf);
 	netdemotic = snap->ticnum - header.starting_gametic;
 
-	NoWipe = 2;
+	Wipe_Suppress(2);
 
 	return true;
 }

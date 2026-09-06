@@ -452,6 +452,16 @@ void Wipe_Stop()
 }
 
 //
+// Wipe_Suppress
+//
+// Skip any wipe that would otherwise begin during the next few screen updates.
+//
+void Wipe_Suppress(int frames)
+{
+	NoWipe = std::max(frames, 0);
+}
+
+//
 // Wipe_Start
 //
 // Initializes the function pointers for the wiping animation system.
