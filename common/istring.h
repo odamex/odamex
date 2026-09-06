@@ -133,6 +133,13 @@ constexpr auto operator<=>(const IStringView isv, const std::string_view sv)
 	return isv <=> IStringView{sv.data(), sv.length()};
 }
 
+[[nodiscard]]
+constexpr bool operator==(const IStringView isv, const std::string_view sv)
+	noexcept(noexcept(IStringView{sv.data(), sv.length()}))
+{
+	return isv == IStringView{sv.data(), sv.length()};
+}
+
 ISTRING_CONSTEXPR IString& operator+=(IString& lhs, std::string_view rhs)
 {
 	return lhs += IStringView(rhs.data(), rhs.length());

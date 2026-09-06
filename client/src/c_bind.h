@@ -34,7 +34,7 @@
 
 struct OBinding
 {
-	const char* Key;
+	IStringView Key;
 	const char* Bind;
 };
 
@@ -50,9 +50,9 @@ public :
 	void SetBindingType(IString cmd);
 	void SetBinds(std::span<const OBinding> binds);
 	void BindAKey(size_t argc, char** argv, const char* msg);
-	void DoBind(const char* key, const char* bind);
+	void DoBind(IStringView key, const char* bind);
 
-	void UnbindKey(const char* key);
+	void UnbindKey(IStringView key);
 	void UnbindACommand(const char* str);
 	void UnbindAll();
 

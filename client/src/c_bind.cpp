@@ -183,15 +183,14 @@ void OKeyBindings::SetBindingType(IString cmd)
 	command = std::move(cmd);
 }
 
-void OKeyBindings::UnbindKey(const char* key)
+void OKeyBindings::UnbindKey(IStringView keyname)
 {
-	std::string keyname = StdStringToLower(key);
-	int keycode = I_GetKeyFromName(keyname);
+	const auto keycode = I_GetKeyFromName(keyname);
 
 	if (keycode)
-		Binds.erase(keycode);
+		Binds.erase(keycode.value());
 	else
-		PrintFmt(PRINT_WARNING, "Unknown key {:s}\n", C_QuoteString(key));
+		PrintFmt(PRINT_WARNING, "Unknown key {:s}\n", C_QuoteString(IStringToStdStringView(keyname)));
 }
 
 void OKeyBindings::UnbindAll()
@@ -203,8 +202,8 @@ void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 {
 	if (argc > 1)
 	{
-		std::string key_name = StdStringToLower(argv[1]);
-		int key = I_GetKeyFromName(key_name);
+		IString key_name = argv[1];
+		auto key = I_GetKeyFromName(key_name);
 		if (!key)
 		{
 			PrintFmt(PRINT_HIGH, "Unknown key {:s}\n", C_QuoteString(argv[1]));
@@ -212,9 +211,9 @@ void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 		else
 		{
 			if (argc == 2)
-				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", key_name, C_QuoteString(IStringToStdStringView(Binds[key])));
+				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", key_name, C_QuoteString(IStringToStdStringView(Binds[key.value()])));
 			else
-				Binds[key] = argv[2];
+				Binds[key.value()] = argv[2];
 		}
 	}
 	else
@@ -228,12 +227,12 @@ void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 	}
 }
 
-void OKeyBindings::DoBind(const char* key, const char* bind)
+void OKeyBindings::DoBind(IStringView key, const char* bind)
 {
-	int keynum = I_GetKeyFromName(StdStringToLower(key));
-	if (keynum != 0)
+	auto keynum = I_GetKeyFromName(key);
+	if (keynum)
 	{
-		this->Binds[keynum] = bind;
+		this->Binds[keynum.value()] = bind;
 	}
 }
 
@@ -267,7 +266,7 @@ bool C_DoNetDemoKey(const event_t& ev)
 
 	// hardcode the pause key to also control netpause
 	if (iequals(Bindings.Binds[ev.data1], "pause"))
-		binding = &NetDemoBindings.Binds[I_GetKeyFromName("space")];
+		binding = &NetDemoBindings.Binds[I_GetKeyFromName("space").value()];
 
 	// nothing bound to this key specific to netdemos?
 	if (binding->empty())
