@@ -361,6 +361,7 @@ visplane_t *R_FindPlane (const plane_t &secplane, int picnum, int lightlevel,
 		else if (P_IdenticalPlanes(&secplane, &check->secplane) &&
 				picnum == check->picnum &&
 				lightlevel == check->lightlevel &&
+				skybox == check->skybox &&	// boundary flats draw at their own alpha
 				xoffs == check->xoffs && // killough 2/28/98: Add offset checks
 				yoffs == check->yoffs &&
 				basecolormap == check->colormap && // [RH] Add colormap check
