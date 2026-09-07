@@ -85,7 +85,7 @@ static int R_StackFlatAlpha(const AActor* mo)
 	const AActor* local = mo->tracer;
 
 	// Unpaired boundary: nothing to see through, so draw the flat as it is.
-	if (local == NULL)
+	if (local == nullptr)
 		return 255;
 
 	return std::clamp(static_cast<int>(local->args[0]), 0, 255);
@@ -99,28 +99,23 @@ bool R_IsStackBoundary(const AActor* mo)
 }
 
 // Stack points of the portal passes being rendered, innermost last.
-static std::vector<AActor*> r_ActiveStackPortals;
+std::vector<AActor*> r_ActiveStackPortals;
 
 // Is either end of this boundary's pair already being rendered?
 // If so, prevent it from being entered again.
-static bool R_IsStackPairActive(const AActor* mo)
+bool R_IsStackPairActive(const AActor* mo)
 {
-	for (const AActor* active : r_ActiveStackPortals)
+	const auto samepair = [mo](const AActor* active)
 	{
-		if (active == mo)
-			return true;
-
 		const AActor* mate = active->tracer;
+		return active == mo || (mate != nullptr && mate == mo);
+	};
 
-		if (mate != NULL && mate == mo)
-			return true;
-	}
-
-	return false;
+	return std::ranges::any_of(r_ActiveStackPortals, samepair);
 }
 
 // Does this plane render a portal pass, or only its own boundary flat?
-static bool R_IsStackPortal(const AActor* mo)
+bool R_IsStackPortal(const AActor* mo)
 {
 	return R_IsStackBoundary(mo) && !R_IsStackPairActive(mo);
 }
