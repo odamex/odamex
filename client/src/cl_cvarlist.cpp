@@ -284,8 +284,11 @@ CVAR_RANGE_FUNC_DECL(ui_transgreen, "0", "",
 CVAR_RANGE_FUNC_DECL(ui_transblue, "0", "",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 255.0f)
 
-CVAR(				ui_mouse, "1", "Navigate the menus and console with the mouse",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR_RANGE(				ui_mouse, "1", "Navigate the menus and console with the mouse (0:Off, 1:On, 2:Touchscreen)",
+						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
+CVAR(					ui_clickprompt, "0", "Answer yes/no prompts by clicking anywhere, left for yes and right for no, instead of with on-screen buttons",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 // Init settings
 // -------------
 
