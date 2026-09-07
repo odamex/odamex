@@ -2452,6 +2452,8 @@ void AM_Drawer()
 		case 2:
 			f_h = std::min(f_w, v_height);
 			break;
+		default:
+			break;
 		}
 
 		switch (loc)
