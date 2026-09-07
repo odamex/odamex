@@ -312,7 +312,7 @@ void M_Ticker(void);
 
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
-void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill);
+void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill, int mod);
 void P_SetPsprite (player_t& player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
 bool P_CheckMissileSpawn (AActor* th);
@@ -1696,7 +1696,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	if (!player.spectator && !wasalive)
 	{
 		if (player.mo)
-			P_KillMobj(NULL, player.mo, NULL, true);
+			P_KillMobj(nullptr, player.mo, nullptr, true, MOD_NONE);
 
 		player.playerstate = PST_REBORN;
 	}

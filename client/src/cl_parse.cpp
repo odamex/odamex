@@ -1521,8 +1521,6 @@ void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	}
 }
 
-extern int MeansOfDeath;
-
 //
 // CL_KillMobj
 //
@@ -1592,7 +1590,7 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	if (target->player && lives >= 0)
 		target->player->lives = lives;
 
-	P_KillMobj(source, target, inflictor, joinkill);
+	P_KillMobj(source, target, inflictor, joinkill, MOD_NONE);
 }
 
 //

@@ -4058,7 +4058,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 
 	// Whatever mobj we had it doesn't matter anymore.
 	if (player.mo)
-		P_KillMobj(NULL, player.mo, NULL, true);
+		P_KillMobj(nullptr, player.mo, nullptr, true, MOD_NONE);
 
 	// Fresh joins get fresh player scores.
 	P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
@@ -5169,7 +5169,7 @@ void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *i
 		if (SV_IsPlayerAllowedToSee(player, target))
 		{
 			player.client.messenger->Reliable().Write (
-			             SVC_KillMobj(source, target, inflictor, ::MeansOfDeath, joinkill));
+			             SVC_KillMobj(source, target, inflictor, joinkill));
 		}
 	}
 }
