@@ -958,7 +958,7 @@ static void R_RenderPortalView(visplane_t* pl)
 	// Set up ceiling/floor clip arrays for this visplane.
 	for (i = pl->minx; i <= pl->maxx; i++)
 	{
-		if (pl->top[i] == static_cast<unsigned int>(viewheight))
+		if (std::cmp_equal(pl->top[i], viewheight))
 		{
 			ceilingclip[i] = viewheight;
 			floorclip[i] = -1;
