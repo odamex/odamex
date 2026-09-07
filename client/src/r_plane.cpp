@@ -78,18 +78,51 @@ static bool R_IsStackPoint(const AActor* mo)
 	return mo && (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK);
 }
 
-// Alpha of the boundary flat drawn over a stack portal's content, from the
-// remote stack thing's arg0: 0 = invisible flat, 255 = fully opaque.
+// Alpha of the boundary flat drawn over a stack portal's content: 0 = invisible
+// flat, 255 = fully opaque.
 static int R_StackFlatAlpha(const AActor* mo)
 {
-	return std::clamp(static_cast<int>(mo->args[0]), 0, 255);
+	const AActor* local = mo->tracer;
+
+	// Unpaired boundary: nothing to see through, so draw the flat as it is.
+	if (local == NULL)
+		return 255;
+
+	return std::clamp(static_cast<int>(local->args[0]), 0, 255);
 }
 
-// Does this plane render as a portal? A boundary flat at full opacity would
-// completely hide the portal view, so skip the pass and draw it normally.
-static bool R_IsStackPortal(const AActor* mo)
+// Can the view see through this boundary? A flat at full opacity hides
+// whatever is behind it, so the plane just draws normally.
+bool R_IsStackBoundary(const AActor* mo)
 {
 	return R_IsStackPoint(mo) && R_StackFlatAlpha(mo) < 255;
+}
+
+// Stack points of the portal passes being rendered, innermost last.
+static std::vector<AActor*> r_ActiveStackPortals;
+
+// Is either end of this boundary's pair already being rendered?
+// If so, prevent it from being entered again.
+static bool R_IsStackPairActive(const AActor* mo)
+{
+	for (const AActor* active : r_ActiveStackPortals)
+	{
+		if (active == mo)
+			return true;
+
+		const AActor* mate = active->tracer;
+
+		if (mate != NULL && mate == mo)
+			return true;
+	}
+
+	return false;
+}
+
+// Does this plane render a portal pass, or only its own boundary flat?
+static bool R_IsStackPortal(const AActor* mo)
+{
+	return R_IsStackBoundary(mo) && !R_IsStackPairActive(mo);
 }
 
 visplane_t 				*floorplane;
@@ -785,6 +818,10 @@ void R_DrawPlanes (void)
 			{
 				R_RenderSkyRange(pl);
 			}
+			else if (R_IsStackBoundary(pl->skybox) && R_StackFlatAlpha(pl->skybox) > 0)
+			{
+				R_DrawStackFlatBlend(pl);
+			}
 			else
 			{
 				R_DrawSingleFlatPlane(pl);
@@ -890,6 +927,7 @@ static void R_RenderPortalView(visplane_t* pl)
 	ptrdiff_t savedds_p = ds_p - drawsegs;
 	ptrdiff_t savedfirstdrawseg = firstdrawseg - drawsegs;
 	AActor* savedcamera = camera;
+	bool pushedstackportal = false;
 
 	int i;
 
@@ -904,8 +942,10 @@ static void R_RenderPortalView(visplane_t* pl)
 
 		viewx = savedx + sky->x - mate->x;
 		viewy = savedy + sky->y - mate->y;
-		viewz = savedz + sky->z - mate->z;
+		viewz = savedz;
 		camera = sky;
+		r_ActiveStackPortals.push_back(sky);
+		pushedstackportal = true;
 	}
 	else
 	{
@@ -920,20 +960,20 @@ static void R_RenderPortalView(visplane_t* pl)
 	R_ClearPlanes(false);
 	R_ClearClipSegs();
 
-		// Set up ceiling/floor clip arrays for this visplane.
-		for (i = pl->minx; i <= pl->maxx; i++)
+	// Set up ceiling/floor clip arrays for this visplane.
+	for (i = pl->minx; i <= pl->maxx; i++)
+	{
+		if (pl->top[i] == static_cast<unsigned int>(viewheight))
 		{
-			if (pl->top[i] == static_cast<unsigned int>(viewheight))
-			{
-				ceilingclip[i] = viewheight;
-				floorclip[i] = -1;
-			}
-			else
-			{
-				ceilingclip[i] = pl->top[i];
-				floorclip[i] = pl->bottom[i] + 1;
-			}
+			ceilingclip[i] = viewheight;
+			floorclip[i] = -1;
 		}
+		else
+		{
+			ceilingclip[i] = pl->top[i];
+			floorclip[i] = pl->bottom[i] + 1;
+		}
+	}
 
 	// Create a drawseg to clip sprites to the sky plane.
 	R_ReallocDrawSegs();
@@ -966,6 +1006,9 @@ static void R_RenderPortalView(visplane_t* pl)
 	ds_p = drawsegs + savedds_p;
 
 	camera = savedcamera;
+
+	if (pushedstackportal)
+		r_ActiveStackPortals.pop_back();
 	viewx = savedx;
 	viewy = savedy;
 	viewz = savedz;
@@ -976,6 +1019,9 @@ void R_DrawPortals()
 {
 	if (visplanes[MAXVISPLANES] == NULL)
 		return;
+
+	// A render aborted mid-pass can leave entries behind.
+	r_ActiveStackPortals.clear();
 
 	// Don't let gun flashes brighten portal views
 	int savedextralight = extralight;
