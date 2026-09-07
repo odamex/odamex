@@ -463,11 +463,12 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 }
 
 //
-// P_WeaponIsRemotelyDriven
+// P_PlayerInputIsUnknown
 //
-// True when we are a client animating a player whose inputs we never see.
+// True when we are a client and this is not our own player, so their ticcmd
+// never reaches us and anything derived from it can only be a guess.
 //
-bool P_WeaponIsRemotelyDriven(const player_t& player)
+bool P_PlayerInputIsUnknown(const player_t& player)
 {
 	return !serverside && player.id != consoleplayer_id;
 }
@@ -489,16 +490,48 @@ bool P_RemotePlayerIsFiring(const player_t& player)
 		frame == (states[S_PLAY_ATK2].frame & FF_FRAMEMASK);
 }
 
+// True while we are actually spying this player, in which case the server sends
+// their psprites every tic and there is nothing left worth guessing at.
+//
+// The window rides out a dropped packet or two rather than falling back to
+// guesswork in the middle of a burst.
+bool P_HasRecentPspriteAuthority(const player_t& player)
+{
+	if (player.psprite_authority_tic == PSPRITE_AUTHORITY_NONE)
+		return false;
+
+	const int age = gametic - player.psprite_authority_tic;
+
+	// A netdemo seek can move gametic backwards, leaving the stamp meaningless.
+	return age >= 0 && age <= TICRATE;
+}
+
 // True while the weapon should keep firing.
 //
 // Ours comes from the button we are holding, everyone else's from what
-// their player sprite is doing.
+// their player sprite is doing - unless the server is telling us about them,
+// in which case it decides and we keep out of the way.
 bool P_WeaponWantsToFire(const player_t& player)
 {
-	if (P_WeaponIsRemotelyDriven(player))
-		return P_RemotePlayerIsFiring(player);
+	if (P_PlayerInputIsUnknown(player))
+		return !P_HasRecentPspriteAuthority(player) && P_RemotePlayerIsFiring(player);
 
 	return (player.cmd.buttons & BT_ATTACK) && G_CanFireWeapon();
+}
+
+// Refire states run with 0 tics, so simply declining to fire would fall straight
+// through to the ready state and start bobbing.
+//
+// Hold the frame instead and let the server's next psprite message move it along.
+bool P_HoldWeaponForServer(player_t& player, pspdef_t& psp)
+{
+	if (P_PlayerInputIsUnknown(player) && P_HasRecentPspriteAuthority(player))
+	{
+		psp.tics = -1;
+		return true;
+	}
+
+	return false;
 }
 
 //
@@ -511,7 +544,7 @@ bool P_CheckAmmo (player_t& player)
 	// Players who are not updated (like spying a player in a demo who wasn't spied
 	// when the demo was created) have stale ammo counts most of the time,
 	// lets not do an ammo check here.
-	if (P_WeaponIsRemotelyDriven(player))
+	if (P_PlayerInputIsUnknown(player))
 		return true;
 
 	if (P_EnoughAmmo(player, player.readyweapon))
@@ -536,7 +569,7 @@ bool P_CheckAmmoNoLower(player_t& player)
 	// Players who are not updated (like spying a player in a demo who wasn't spied
 	// when the demo was created) have stale ammo counts most of the time,
 	// lets not do an ammo check here.
-	if (P_WeaponIsRemotelyDriven(player))
+	if (P_PlayerInputIsUnknown(player))
 		return true;
 
 	if (P_EnoughAmmo(player, player.readyweapon))
@@ -657,6 +690,9 @@ void A_WeaponReady(AActor* mo)
 void A_ReFire(AActor* mo)
 {
     player_t& player = *mo->player;
+
+	if (P_HoldWeaponForServer(player, player.psprites[player.psprnum]))
+		return;
 
 	// check for fire
 	//	(if a weaponchange is pending, let it go through instead)
@@ -1059,6 +1095,9 @@ void A_RefireTo(AActor* mo)
 
 	const state_t* st = psp.state();
 	if (!st)
+		return;
+
+	if (P_HoldWeaponForServer(player, psp))
 		return;
 
 	if ((st->args[1] || P_CheckAmmoNoLower(player)) &&
@@ -1664,6 +1703,10 @@ void P_SetupPsprites(player_t& player)
 	// remove all psprites
 	for (int i = 0; i < NUMPSPRITES; i++)
 		player.psprites[i].statenum = S_NULL;
+
+	// whatever the server last told us about these psprites describes the ones we
+	// just threw away
+	player.psprite_authority_tic = PSPRITE_AUTHORITY_NONE;
 
 	// spawn the gun
 	player.pendingweapon = player.readyweapon;

@@ -2624,6 +2624,8 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	for (int i = 0; i < NUMAMMO; i++)
 		player.ammo[i] = ammo[i];
 
+	player.psprite_authority_tic = gametic;
+
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		P_SetPsprite(player, i, pspupdates[i].statenum);
