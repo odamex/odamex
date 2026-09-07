@@ -106,18 +106,39 @@ enum class levelflags2_t : uint32_t
 	LEVEL2_INFIGHTINGMASK      = BIT_MASK(0, 2),
 	LEVEL2_COMPAT_CROSSDROPOFF = BIT(3),
 	LEVEL2_HIDEAUTHORNAME      = BIT(4),
-	LEVEL2_AUTHORFROMPWAD      = BIT(5),
-	LEVEL2_FROMUMAPINFO        = BIT(6),
 	// if modifying this enum, make sure to update the
 	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum levelflags2_t;
-constexpr levelflags2_t enable_bitflag_operators(levelflags2_t) { return LEVEL2_COMPAT_CROSSDROPOFF; };
+constexpr levelflags2_t enable_bitflag_operators(levelflags2_t) { return LEVEL2_HIDEAUTHORNAME; };
 using LevelFlags2 = OFlags<levelflags2_t>;
+
+// Map metadata to determine downstream behavior
+enum class metadataflags_t : uint32_t
+{
+	AUTHORFROMPWAD     = BIT(0),
+	AUTHORFROMUMAPINFO = BIT(1),
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
+};
+
+constexpr metadataflags_t enable_bitflag_operators(metadataflags_t)
+{
+	return metadataflags_t::AUTHORFROMUMAPINFO;
+};
+using MetaDataFlags = OFlags<metadataflags_t>;
 
 struct acsdefered_t;
 class FBehavior;
+
+// Sector tags the boss actions operate on.
+inline constexpr int16_t BOSSACTION_TAG = 666;
+inline constexpr int16_t BOSSACTION_TAG_ALT = 667;
+
+// UMAPINFO magic number to indicate that a
+// boss action should kill all monsters.
+inline constexpr int16_t BOSSACTION_MASSACRE = 280;
 
 struct bossaction_t
 {
@@ -193,6 +214,7 @@ struct level_info_t
 	OLumpName     music      = "";
 	LevelFlags1   flags      = LevelFlags1::none_set();
 	LevelFlags2   flags2     = LevelFlags2::none_set();
+	MetaDataFlags metadataflags = MetaDataFlags::none_set();
 	int           cluster    = 0;
 	FLZOMemFile*  snapshot   = nullptr;
 	acsdefered_t* defered    = nullptr;
@@ -221,6 +243,7 @@ struct level_pwad_info_t
 	OLumpName		music      = "";
 	LevelFlags1     flags      = LevelFlags1::none_set();
 	LevelFlags2     flags2     = LevelFlags2::none_set();
+	MetaDataFlags metadataflags = MetaDataFlags::none_set();
 	int				cluster    = 0;
 	FLZOMemFile*	snapshot   = nullptr;
 	acsdefered_t*	defered    = nullptr;
@@ -274,7 +297,8 @@ struct level_pwad_info_t
 	    : mapname(other.mapname), levelnum(other.levelnum), mapnum(other.mapnum), episodenum(other.episodenum),
 	      level_name(other.level_name), level_fingerprint(other.level_fingerprint), pname(other.pname), nextmap(other.nextmap),
 	      secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
-	      music(other.music), flags(other.flags), flags2(other.flags2), cluster(other.cluster),
+	      music(other.music), flags(other.flags), flags2(other.flags2),
+	      metadataflags(other.metadataflags), cluster(other.cluster),
 	      snapshot(other.snapshot), defered(other.defered)
 	{
 	}
@@ -309,6 +333,7 @@ struct level_locals_t
 
 	LevelFlags1     flags;
 	LevelFlags2     flags2;
+	MetaDataFlags   metadataflags;
 
 	// [SL] use 4 bytes for color types instead of argb_t so that the struct
 	// can consist of only plain-old-data types. It is also important to have
@@ -374,26 +399,29 @@ struct level_locals_t
 	float			detected_gametype;
 };
 
-typedef uint32_t clusterFlags_t;
+enum class clusterflags_t : uint32_t
+{
+	CLUSTER_HUB            = BIT(0),
+	CLUSTER_EXITTEXTISLUMP = BIT(1),
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
+};
 
-const static clusterFlags_t CLUSTER_HUB = BIT(0);
-const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
+using enum clusterflags_t;
+constexpr clusterflags_t enable_bitflag_operators(clusterflags_t) { return CLUSTER_EXITTEXTISLUMP; };
+using ClusterFlags = OFlags<clusterflags_t>;
 
 struct cluster_info_t
 {
-	int				cluster;
+	int				cluster = 0;
 	OLumpName		messagemusic;
 	OLumpName		finaleflat;
 	std::string		exittext;
 	std::string		entertext;
-	int				flags;
+	ClusterFlags	flags;
 	OLumpName		finalepic;
 
-	cluster_info_t()
-	    : cluster(0), messagemusic(""), finaleflat(""), exittext(""), entertext(""),
-	      flags(0)
-	{
-	}
+	cluster_info_t() = default;
 
 	bool exists() const
 	{

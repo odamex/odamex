@@ -127,8 +127,6 @@ void SV_UpdateMobjBestEffort(AActor* mo);
 void SV_UpdateMonsterRespawnCount();
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound);
 
-extern bool isFast;
-
 //
 // ENEMY THINKING
 // Enemies are always spawned
@@ -3812,7 +3810,7 @@ void A_BossDeath(AActor *actor)
 			if ((ba.type == actor->type) || (actor->flags3 & combo(ba.flags)))
 			{
 				// TODO: if a standardized line special for massacre is introduced, use that instead
-				if (ba.special == 280)
+				if (ba.special == BOSSACTION_MASSACRE)
 				{
 					P_Massacre();
 					continue;

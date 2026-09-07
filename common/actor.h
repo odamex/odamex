@@ -586,7 +586,8 @@ public:
 	static ActorClassList& GetFriendlies() { return s_friendlies; }
 	static ActorClassList& GetHostiles() { return s_hostiles; }
 
-	AActorPtr ptr() { return self; }
+	[[ nodiscard ]]
+	AActorPtr ptr() const { return self; }
 
 	//
 	// ActorBlockMapListNode

@@ -3160,7 +3160,7 @@ void P_RailAttack(AActor *source, int damage, int offset)
 			if (!mo || mo == source)
 				continue;
 
-			MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_RailTrail(start, end));
+			player.client.messenger->Reliable().Write( SVC_RailTrail(start, end));
 		}
 	}
 }

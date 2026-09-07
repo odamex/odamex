@@ -133,6 +133,7 @@ void P_SetThingId(AActor* mo, uint32_t newnetid);
 void P_ClearId(uint32_t id);
 void P_ResolveMobjToMobjPointers();
 
+void P_AnimationTick(AActor *mo);
 void P_XYMovement(AActor *mo);
 void P_ZMovement(AActor *mo);
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj); // [CG] Used to be 'static'

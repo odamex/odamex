@@ -563,8 +563,8 @@ std::array<menuitem_t, 14> MouseItems = {{
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = discrete,	.label = "Horizontal Movement", .a = {.cvar = &lookstrafe},		.b = {.leftval = OnOff.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
 	{ .type = discrete,	.label = "Vertical Movement", .a = {.cvar = &novert},			.b = {.leftval = OffOn.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OffOn.data()}},
-	{ .type = slider,	.label = "Horizontal Movement Speed", .a = {.cvar = &m_side},			.b = {.leftval = 0.0},	.c = {.rightval = 15},		.d = {.step = 0.5},		.e = {.values = nullptr}},
-	{ .type = slider,	.label = "Vertical Movement Speed", .a = {.cvar = &m_forward},			.b = {.leftval = 0.0},	.c = {.rightval = 15},		.d = {.step = 0.5},		.e = {.values = nullptr}},
+	{ .type = slider,	.label = "Horizontal Movement Spd.", .a = {.cvar = &m_side},			.b = {.leftval = 0.0},	.c = {.rightval = 15},		.d = {.step = 0.5},		.e = {.values = nullptr}},
+	{ .type = slider,	.label = "Vertical Movement Spd.", .a = {.cvar = &m_forward},			.b = {.leftval = 0.0},	.c = {.rightval = 15},		.d = {.step = 0.5},		.e = {.values = nullptr}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = more,		.label = "Reset mouse to defaults", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.mfunc = M_ResetMouseValues}},
 }};
