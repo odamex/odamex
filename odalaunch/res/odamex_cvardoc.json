@@ -2047,10 +2047,10 @@
          "type" : "boolean"
       },
       {
-         "default" : 16,
+         "default" : 4,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
-         "max" : 64,
+         "max" : 16,
          "min" : 0,
          "name" : "r_portalrecursions",
          "type" : "integer"
