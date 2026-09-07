@@ -2763,6 +2763,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Answer yes/no prompts by clicking anywhere, left for yes and right for no, instead of with on-screen buttons",
+         "name" : "ui_clickprompt",
+         "type" : "boolean"
+      },
+      {
          "default" : 0.69999999999999996,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "",
@@ -2779,11 +2786,13 @@
          "type" : "string"
       },
       {
-         "default" : true,
-         "flags" : [ "CLIENTARCHIVE" ],
-         "helptext" : "Navigate the menus and console with the mouse",
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Navigate the menus and console with the mouse (0:Off, 1:On, 2:Touchscreen)",
+         "max" : 2,
+         "min" : 0,
          "name" : "ui_mouse",
-         "type" : "boolean"
+         "type" : "integer"
       },
       {
          "default" : 0,
