@@ -780,8 +780,9 @@ CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the
 CVAR(           r_drawnetcredibility, "0", "Add a particle to each actor indicating how credible the client considers the actor's position",
                 CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR_RANGE(		r_portalrecursions, "16", "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
+CVAR_RANGE(		r_portalrecursions, "4", "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
+				// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 16.0f)
 
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
