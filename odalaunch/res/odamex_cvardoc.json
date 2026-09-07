@@ -156,6 +156,15 @@
          "type" : "number"
       },
       {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Overlay minimap scale lock (0:None, 1:Width, 2:Height)",
+         "max" : 2,
+         "min" : 0,
+         "name" : "am_ovscalelock",
+         "type" : "integer"
+      },
+      {
          "default" : 0.25,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Scale width of overlay minimap",

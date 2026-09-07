@@ -146,6 +146,7 @@ EXTERN_CVAR(am_ovbackcolor)
 EXTERN_CVAR(am_ovbackalpha)
 EXTERN_CVAR(am_ovscalewidth)
 EXTERN_CVAR(am_ovscaleheight)
+EXTERN_CVAR(am_ovscalelock)
 EXTERN_CVAR(am_ovlocation)
 
 EXTERN_CVAR(netdebug_automap)
@@ -2435,12 +2436,23 @@ void AM_Drawer()
 		const int v_width = R_ViewWidth(surface_width, surface_height);
 		const int v_height = R_ViewHeight(surface_width, surface_height);
 		const int loc = am_ovlocation;
+		const int lock = am_ovscalelock;
 
 		int x_offset = 0;
 		int y_offset = 0;
 
 		f_w = v_width * am_ovscalewidth;
 		f_h = v_height * am_ovscaleheight;
+
+		switch (lock)
+		{
+		case 1:
+			f_w = std::min(f_h, v_width);
+			break;
+		case 2:
+			f_h = std::min(f_w, v_height);
+			break;
+		}
 
 		switch (loc)
 		{
