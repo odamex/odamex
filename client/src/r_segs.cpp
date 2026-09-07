@@ -499,7 +499,7 @@ void R_RenderSolidSegRange(int start, int stop)
 		for (int x = start; x <= stop; x++)
 		{
 			const int top = std::max(ceilingclip[x], 0);
-			const int bottom = std::min({walltopf[x], floorclip[x] - 1, viewheight - 1});
+			const int bottom = std::min({walltopf[x] - 1, floorclip[x] - 1, viewheight - 1});
 
 			if (top <= bottom)
 			{
