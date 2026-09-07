@@ -52,6 +52,11 @@ bool M_Responder(const event_t& ev);
 // only used for menu (skull cursor) animation.
 void M_Ticker (void);
 
+// Called once per rendered frame, just before M_Drawer. Everything the mouse
+// drives lives here so the cursor keeps up with the pointer instead of being
+// pinned to the gametic.
+void M_DisplayTicker();
+
 // Called by main loop,
 // draws the menus directly into the screen buffer.
 void M_Drawer (void);
@@ -75,6 +80,25 @@ void M_OptDrawer (void);
 
 // Move the options menu selection to whatever the mouse is hovering over
 void M_OptUpdateMouseItem();
+
+// Act on a left mouse button release in the options menu
+bool M_OptMouseRelease();
+
+// How the menus react to the mouse, as set by the ui_mouse cvar.
+enum class uimouse_t
+{
+	off = 0,    // mouse does nothing
+	hover = 1,  // selection follows the pointer, clicks activate
+	touch = 2,  // selection stays put, only clicks do anything
+};
+
+// True when the menu selection should follow the pointer.
+bool M_UIMouseHovers();
+
+// The menu cursor hides while the pointer sits clear of the item list. The
+// selection is kept, so a key press brings the cursor back where it was.
+bool M_UICursorHidden();
+void M_HideUICursor(bool hide);
 
 // [RH] Initialize options menu
 void M_OptInit();

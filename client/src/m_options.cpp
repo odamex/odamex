@@ -241,6 +241,7 @@ int  M_StringHeight(char *string);
 void M_ClearMenus();
 
 EXTERN_CVAR(ui_mouse)
+EXTERN_CVAR(ui_clickprompt)
 
 namespace
 {
@@ -271,12 +272,17 @@ struct optmouserow_t
 };
 
 std::array<optmouserow_t, MAX_OPT_MOUSE_ROWS>	OptMouseRows;
-int				OptMouseRowCount = 0;
+int       OptMouseRowCount = 0;
 
 constexpr int	OPT_WHEEL_LINES = 3;
 
-int				OptDragItem = -1;
-menu_t*			OptDragMenu = nullptr;
+int       OptDragItem = -1;
+menu_t*   OptDragMenu = nullptr;
+
+// The menu a MOUSE1 press landed in, or null when no press is outstanding.
+// Items commit on the release, so the press only records where it began.
+menu_t*   OptPressMenu = nullptr;
+bool      OptPressDrag = false; // press is dragging a slider
 
 } // namespace
 
@@ -545,13 +551,21 @@ void M_ResetMouseValues()
 	novert.RestoreDefault();
 	m_side.RestoreDefault();
 	m_forward.RestoreDefault();
+	ui_mouse.RestoreDefault();
+	ui_clickprompt.RestoreDefault();
 }
 
 namespace
 {
 
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
-std::array<menuitem_t, 14> MouseItems = {{
+std::array<value_t, 3> MenuMouse = {{
+	{ .value = 0.0, .name = "Off"},
+	{ .value = 1.0, .name = "On"},
+	{ .value = 2.0, .name = "Touchscreen"}
+}};
+
+std::array<menuitem_t, 17> MouseItems = {{
 	{ .type = slider,	.label = "Overall Sensitivity", .a = {.cvar = &mouse_sensitivity},	.b = {.leftval = 0.05},	.c = {.rightval = 2.5},		.d = {.step = 0.05},		.e = {.values = nullptr}},
 	{ .type = slider,	.label = "Freelook Sensitivity", .a = {.cvar = &m_pitch},			.b = {.leftval = 0.05},	.c = {.rightval = 2.5},		.d = {.step = 0.05},		.e = {.values = nullptr}},
 
@@ -565,6 +579,9 @@ std::array<menuitem_t, 14> MouseItems = {{
 	{ .type = discrete,	.label = "Vertical Movement", .a = {.cvar = &novert},			.b = {.leftval = OffOn.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OffOn.data()}},
 	{ .type = slider,	.label = "Horizontal Movement Spd.", .a = {.cvar = &m_side},			.b = {.leftval = 0.0},	.c = {.rightval = 15},		.d = {.step = 0.5},		.e = {.values = nullptr}},
 	{ .type = slider,	.label = "Vertical Movement Spd.", .a = {.cvar = &m_forward},			.b = {.leftval = 0.0},	.c = {.rightval = 15},		.d = {.step = 0.5},		.e = {.values = nullptr}},
+	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
+	{ .type = discrete,	.label = "Menu Mouse", .a = {.cvar = &ui_mouse},			.b = {.leftval = MenuMouse.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = MenuMouse.data()}},
+	{ .type = discrete,	.label = "Click to Answer Prompts", .a = {.cvar = &ui_clickprompt},	.b = {.leftval = OnOff.size()},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = OnOff.data()}},
 	{ .type = redtext,	.label = " ", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.values = nullptr}},
 	{ .type = more,		.label = "Reset mouse to defaults", .a = {.cvar = nullptr},				.b = {.leftval = 0.0},	.c = {.rightval = 0.0},		.d = {.step = 0.0},		.e = {.mfunc = M_ResetMouseValues}},
 }};
@@ -1953,6 +1970,10 @@ void M_OptDrawer()
 
 	OptMouseRowCount = 0;
 
+	// The cursor hides while the pointer is clear of the list, but it has to
+	// stay put while a key or an axis is being bound.
+	const bool draw_cursor = !M_UICursorHidden() || WaitingForKey || WaitingForAxis;
+
 	size_t i;
 	for (i = 0; std::cmp_less(i, CurrentMenu->items.size()) && y <= maxy; i++, y += 8)	// TIJ
 	{
@@ -1998,7 +2019,8 @@ void M_OptDrawer()
 				}
 			}
 
-			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey))
+			if (i == CurrentItem && draw_cursor &&
+				((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
 				screen->DrawPatchClean (W_CachePatch ("LITLCURS"),
 				                        (item->a.selmode * RESCOLUMN_WIDTH) + RESCOLUMN_CURSOR_X, y);
@@ -2169,7 +2191,8 @@ void M_OptDrawer()
 				break;
 			}
 
-			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey || WaitingForAxis))
+			if (i == CurrentItem && draw_cursor &&
+				(skullAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
 				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
 			}
@@ -2304,6 +2327,11 @@ void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
 		else
 			newval = std::clamp(newval, item->c.rightval, item->b.leftval);
 
+		// A drag is sampled every frame, so don't run the cvar's callback for a
+		// value that hasn't actually changed.
+		if (newval == item->a.cvar->value())
+			return;
+
 		if (item->e.cfunc)
 			item->e.cfunc(item->a.cvar, newval);
 		else
@@ -2334,7 +2362,8 @@ void M_OptSetSliderFromMouse(menuitem_t* item, int mouse_x)
 		else if (item->type == blueslider)
 			memcpy(newcolor + 6, singlecolor, 2);
 
-		item->a.cvar->Set(newcolor);
+		if (strcmp(newcolor, oldcolor) != 0)
+			item->a.cvar->Set(newcolor);
 	}
 }
 
@@ -2350,19 +2379,22 @@ bool M_OptItemIsSlider(const menuitem_t* item)
 
 
 //
-// M_OptMouseClick
+// M_OptSelectRow
 //
-void M_OptMouseClick(int mouse_x, int mouse_y)
+// Moves the selection onto the row the cursor is over and hands back the item
+// it holds, or null when the cursor isn't over anything selectable.
+//
+menuitem_t* M_OptSelectRow(int mouse_x, int mouse_y)
 {
 	const int row = M_OptRowUnderMouse(mouse_y);
 	if (row == -1)
-		return;
+		return nullptr;
 
 	const int index = OptMouseRows[row].item;
 	menuitem_t* item = &CurrentMenu->items[index];
 
 	if (!M_OptItemSelectable(item))
-		return;
+		return nullptr;
 
 	// The resolution list keeps its column in the item being left behind
 	if (CurrentMenu->items[CurrentItem].type == screenres && CurrentItem != index)
@@ -2373,16 +2405,74 @@ void M_OptMouseClick(int mouse_x, int mouse_y)
 	if (item->type == screenres)
 		item->a.selmode = M_OptScreenResColumn(mouse_x);
 
-	if (M_OptItemIsSlider(item))
+	return item;
+}
+
+
+//
+// M_OptMouseClick
+//
+// A press moves the selection and starts any slider drag. Everything else
+// waits for the button to come back up.
+//
+void M_OptMouseClick(int mouse_x, int mouse_y)
+{
+	menuitem_t* item = M_OptSelectRow(mouse_x, mouse_y);
+
+	if (item != nullptr && M_OptItemIsSlider(item))
 	{
 		M_OptSetSliderFromMouse(item, mouse_x);
 		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 
 		// Keep following the pointer until the button is released
-		OptDragItem = index;
+		OptDragItem = CurrentItem;
 		OptDragMenu = CurrentMenu;
-		return;
+		OptPressDrag = true;
 	}
+
+	// A press is held onto wherever it started, so one that begins off the
+	// items can still be dragged onto one before it commits.
+	OptPressMenu = CurrentMenu;
+}
+} // namespace
+
+
+//
+// M_OptMouseRelease
+//
+// Acts on a MOUSE1 release. Whatever the cursor landed on is what gets picked,
+// so a press can be dragged onto another item -- or off the menu, to back out
+// of it -- before it commits.
+//
+bool M_OptMouseRelease()
+{
+	const menu_t* const pressed = OptPressMenu;
+	const bool was_drag = OptPressDrag;
+
+	OptPressMenu = nullptr;
+	OptPressDrag = false;
+
+	// The touchscreen mode only takes the cursor away while a press is being
+	// dragged about, so letting go brings it back.
+	if (!M_UIMouseHovers())
+		M_HideUICursor(false);
+
+	if (pressed == nullptr || pressed != CurrentMenu)
+		return false;
+
+	// A slider that was dragged has already had its say.
+	if (was_drag)
+		return true;
+
+	int mouse_x;
+	int mouse_y;
+	if (!I_GetUIMousePosition(mouse_x, mouse_y))
+		return true;
+
+	// Released off the menu, or on a row that can't be picked: drop the press.
+	const menuitem_t* item = M_OptSelectRow(mouse_x, mouse_y);
+	if (item == nullptr || M_OptItemIsSlider(item))
+		return true;
 
 	bool cycles_value = false;
 	switch (item->type)
@@ -2401,8 +2491,12 @@ void M_OptMouseClick(int mouse_x, int mouse_y)
 	// Everything else behaves exactly as though the accept key was pressed.
 	const event_t synth_ev(ev_keydown, cycles_value ? OKEY_RIGHTARROW : OKEY_ENTER, 0, 0, 0);
 	M_OptResponder(synth_ev);
+
+	if (CurrentMenu->refreshfunc)
+		(*CurrentMenu->refreshfunc)();
+
+	return true;
 }
-} // namespace
 
 
 
@@ -2445,12 +2539,22 @@ void M_OptUpdateMouseItem()
 		return;
 	}
 
-	const int row = M_OptRowUnderMouse(mouse_y);
-	if (row == -1)
+	// Touchscreen mode leaves the selection where it is until something is
+	// clicked, but a held press still drags the highlight along with it.
+	if (!M_UIMouseHovers() && OptPressMenu != CurrentMenu)
 		return;
 
-	const int index = OptMouseRows[row].item;
-	if (index == CurrentItem || !M_OptItemSelectable(&CurrentMenu->items[index]))
+	const int row = M_OptRowUnderMouse(mouse_y);
+	const int index = (row != -1) ? OptMouseRows[row].item : -1;
+	const bool on_item =
+	    index != -1 && M_OptItemSelectable(&CurrentMenu->items[index]);
+
+	// The cursor only sits on what letting go would actually pick, so it goes
+	// away rather than pointing at something that would do nothing. The
+	// selection is left alone, so a key press puts it straight back.
+	M_HideUICursor(!on_item);
+
+	if (!on_item || index == CurrentItem)
 		return;
 
 	if (CurrentMenu->items[CurrentItem].type == screenres)
@@ -2460,8 +2564,6 @@ void M_OptUpdateMouseItem()
 
 	if (CurrentMenu->items[CurrentItem].type == screenres)
 		CurrentMenu->items[CurrentItem].a.selmode = M_OptScreenResColumn(mouse_x);
-
-	S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 }
 
 void M_OptResponder(const event_t& ev)

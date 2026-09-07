@@ -281,6 +281,7 @@ void D_Display()
         case GS_CONNECTED:
 			C_DrawConsole();
 			C_DisplayTicker();
+			M_DisplayTicker();
 			M_Drawer();
 			I_FinishUpdate();
 			return;
@@ -358,6 +359,7 @@ void D_Display()
 
 	C_DrawConsole();	// draw console
 	C_DisplayTicker(); // Display console tic
+	M_DisplayTicker();	// let the menu follow the mouse at the display rate
 	M_Drawer();			// menu is drawn even on top of everything
 	I_FinishUpdate();	// page flip or blit buffer
 

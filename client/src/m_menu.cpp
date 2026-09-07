@@ -58,6 +58,7 @@
 
 EXTERN_CVAR(g_resetinvonexit)
 EXTERN_CVAR(ui_mouse)
+EXTERN_CVAR(ui_clickprompt)
 
 bool I_GetUIMousePosition(int& x, int& y);
 bool I_IsUIMouseButtonDown(int button);
@@ -200,6 +201,27 @@ static int PSetupSliderX1 = 0;
 static int PSetupSliderX2 = 0;
 
 static int PSetupDragItem = -1;
+
+// A MOUSE1 press that hasn't been let go of yet. Menu items and prompt buttons
+// commit on the release, so the press only records where it began and the
+// release decides what to act on.
+static oldmenu_t* MousePressMenu = nullptr;	// menu the press landed in
+static bool MousePressDrag = false;			// press is dragging a slider
+static bool MousePressMessage = false;		// press landed on a prompt button
+
+// Set while the pointer sits clear of the item list. Only the drawing of the
+// cursor is affected -- the selection stays where it was left.
+static bool UICursorHidden = false;
+
+// Top left corner of the on-screen back button, and the surface-space bounds
+// the last draw put it at.
+static constexpr int BACKBUTTON_X = 0;
+static constexpr int BACKBUTTON_Y = 0;
+
+static int BackButtonX1, BackButtonX2;
+static int BackButtonY1, BackButtonY2;
+
+static bool MousePressBack = false;		// press landed on the back button
 
 enum
 {
@@ -1896,6 +1918,79 @@ int M_StringHeight(char* string)
 //
 
 //
+// M_UIMouseHovers
+//
+// True when the selection should follow the cursor. The touchscreen mode
+// leaves the selection where the keyboard put it and only reacts to clicks.
+//
+bool M_UIMouseHovers()
+{
+	return ui_mouse.asEnum<uimouse_t>() == uimouse_t::hover;
+}
+
+
+//
+// M_UICursorHidden
+//
+bool M_UICursorHidden()
+{
+	// The mouse can only take the cursor away while it is driving the menu, so
+	// switching it off brings the cursor back whatever the flag was left at.
+	return UICursorHidden && ui_mouse.asBool();
+}
+
+
+//
+// M_HideUICursor
+//
+void M_HideUICursor(bool hide)
+{
+	UICursorHidden = hide;
+}
+
+
+//
+// M_BackButtonShown
+//
+// The back button stands in for a right click, so it is up whenever there is
+// something to back out of and the mouse can reach it.
+//
+bool M_BackButtonShown()
+{
+	return ui_mouse.asBool() && (menuactive || messageToPrint != 0);
+}
+
+
+//
+// M_OverBackButton
+//
+bool M_OverBackButton()
+{
+	if (!M_BackButtonShown() || BackButtonX2 <= BackButtonX1)
+		return false;
+
+	int mouse_x;
+	int mouse_y;
+	if (!I_GetUIMousePosition(mouse_x, mouse_y))
+		return false;
+
+	return mouse_x >= BackButtonX1 && mouse_x < BackButtonX2 &&
+	       mouse_y >= BackButtonY1 && mouse_y < BackButtonY2;
+}
+
+
+//
+// M_MessageClicks
+//
+// True when a confirmation prompt is answered by clicking anywhere -- left for
+// yes, right for no -- rather than with on-screen buttons.
+//
+bool M_MessageClicks()
+{
+	return ui_mouse.asBool() && ui_clickprompt.asBool();
+}
+
+//
 // M_GetMouseItem
 //
 // Returns the index of the item in the current old-style menu underneath the
@@ -1967,7 +2062,8 @@ static int M_GetMouseItem()
 //
 static int M_GetMessageButton()
 {
-	if (ui_mouse.asInt() == 0 || !messageToPrint || !messageNeedsInput)
+	if (ui_mouse.asInt() == 0 || M_MessageClicks() || !messageToPrint ||
+	    !messageNeedsInput)
 		return MSGBUTTON_NONE;
 
 	int mouse_x, mouse_y;
@@ -1988,6 +2084,17 @@ static int M_GetMessageButton()
 	return MSGBUTTON_NONE;
 }
 
+void M_DrawBackButton()
+{
+	const patch_t* button = W_CachePatch("FLAGIC4R");
+
+	screen->DrawPatchClean(button, BACKBUTTON_X, BACKBUTTON_Y);
+
+	BackButtonX1 = screen->getCleanX(BACKBUTTON_X);
+	BackButtonX2 = screen->getCleanX(BACKBUTTON_X + button->width());
+	BackButtonY1 = screen->getCleanY(BACKBUTTON_Y);
+	BackButtonY2 = screen->getCleanY(BACKBUTTON_Y + button->height());
+}
 
 //
 // M_DrawMessageButtons
@@ -1997,6 +2104,17 @@ static int M_GetMessageButton()
 //
 static void M_DrawMessageButtons(int y)
 {
+	if (M_MessageClicks())
+	{
+		// Nothing to aim at, so say which button does what instead.
+		static const char* hint = "Left click: YES     Right click: NO";
+		const int w = V_StringWidth(hint);
+		const int bx = 160 - w / 2;
+
+		screen->DrawTextCleanMove(CR_RED, bx, y, hint);
+		return;
+	}
+
 	static const char* labels[2] = { "YES", "NO" };
 	// Draw order
 	static const int order[2] = {MSGBUTTON_YES, MSGBUTTON_NO};
@@ -2049,11 +2167,8 @@ static void M_UpdateMessageSelection()
 		return;
 
 	const int button = M_GetMessageButton();
-	if (button != MSGBUTTON_NONE && button != messageSelection)
-	{
+	if (button != MSGBUTTON_NONE)
 		messageSelection = button;
-		S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
-	}
 }
 
 
@@ -2138,12 +2253,20 @@ static void M_UpdateMouseItem()
 		return;
 	}
 
+	// Touchscreen mode leaves the selection where it is until something is
+	// clicked, but a held press still drags the highlight along with it.
+	if (!M_UIMouseHovers() && MousePressMenu != currentMenu)
+		return;
+
 	const int item = M_GetMouseItem();
-	if (item != -1 && item != itemOn)
-	{
+
+	// The cursor only sits on what letting go would actually pick, so it goes
+	// away rather than pointing at something that would do nothing. The
+	// selection is left alone, so a key press puts it straight back.
+	M_HideUICursor(item == -1);
+
+	if (item != -1)
 		itemOn = item;
-		S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
-	}
 }
 
 
@@ -2163,7 +2286,8 @@ static void M_SetPlayerColorFromMouse(int item, int mouse_x)
 
 	const int part = std::clamp(static_cast<int>(std::round(dist * 255.0f)), 0, 255);
 
-	argb_t color = V_GetColorFromString(cl_color);
+	const argb_t oldcolor = V_GetColorFromString(cl_color);
+	argb_t color = oldcolor;
 
 	if (item == playerred)
 		color.setr(part);
@@ -2171,6 +2295,11 @@ static void M_SetPlayerColorFromMouse(int item, int mouse_x)
 		color.setg(part);
 	else
 		color.setb(part);
+
+	// A drag is sampled every frame, so don't announce a colour that hasn't
+	// actually changed.
+	if (color == oldcolor)
+		return;
 
 	SendNewColor(color.getr(), color.getg(), color.getb());
 }
@@ -2198,6 +2327,107 @@ static void M_ActivateItem(int item)
 		currentMenu->menuitems[item].routine(item);
 		S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 	}
+}
+
+
+//
+// M_DismissMessage
+//
+// Hands an answer to the message's routine and takes the prompt back down.
+//
+void M_DismissMessage(int answer)
+{
+	menuactive = messageLastMenuActive;
+	messageToPrint = 0;
+
+	if (messageRoutine)
+		messageRoutine(answer);
+
+	menuactive = false;
+	M_ResumeSound();
+	S_Sound(CHAN_INTERFACE, "menu/dismiss", 1, ATTN_NONE);
+}
+
+
+//
+// M_GoBack
+//
+// The back button does what a right click already does everywhere: leave the
+// prompt, cancel the entry, or step back up one menu.
+//
+void M_GoBack()
+{
+	const event_t back_ev(ev_keydown, OKEY_MOUSE2, 0, 0, 0);
+	M_Responder(back_ev);
+}
+
+
+//
+// M_MouseRelease
+//
+// Acts on a MOUSE1 release. Whatever the cursor landed on is what gets picked,
+// so a press can be dragged onto another item -- or off the menu, to back out
+// of it -- before it commits.
+//
+bool M_MouseRelease()
+{
+	const bool on_message = MousePressMessage;
+	const bool was_drag = MousePressDrag;
+	const oldmenu_t* const pressed = MousePressMenu;
+
+	MousePressMessage = false;
+	MousePressDrag = false;
+	MousePressMenu = nullptr;
+
+	// The touchscreen mode only takes the cursor away while a press is being
+	// dragged about, so letting go brings it back.
+	if (!M_UIMouseHovers())
+		M_HideUICursor(false);
+
+	if (on_message)
+	{
+		if (!messageToPrint)
+			return false;
+
+		if (!messageNeedsInput)
+		{
+			// "Press any key" messages are dismissed by any click
+			M_DismissMessage(' ');
+			return true;
+		}
+
+		if (M_MessageClicks())
+		{
+			// A left click anywhere means yes
+			M_DismissMessage('y');
+			return true;
+		}
+
+		// Released off the buttons: the press is simply dropped.
+		const int button = M_GetMessageButton();
+		if (button == MSGBUTTON_NONE)
+			return true;
+
+		messageSelection = button;
+		M_DismissMessage(button == MSGBUTTON_YES ? 'y' : 'n');
+		return true;
+	}
+
+	if (pressed == nullptr || pressed != currentMenu || !menuactive)
+		return false;
+
+	// A slider that was dragged has already had its say.
+	if (was_drag)
+		return true;
+
+	// Released off the menu: the press is simply dropped.
+	const int item = M_GetMouseItem();
+	if (item == -1)
+		return true;
+
+	itemOn = item;
+	M_ActivateItem(item);
+	return true;
 }
 
 
@@ -2231,6 +2461,28 @@ bool M_Responder(const event_t& ev)
 			repeatKey = 0;
 			repeatCount = 0;
 		}
+
+		// Menu items commit when the button comes back up rather than when it
+		// goes down, so a press can be dragged around before it settles.
+		if (ev.data1 == OKEY_MOUSE1 && ui_mouse.asBool() &&
+		    HU_ChatMode() == CHAT_INACTIVE)
+		{
+			if (MousePressBack)
+			{
+				MousePressBack = false;
+
+				// Released off the button: the press is simply dropped.
+				if (M_OverBackButton())
+					M_GoBack();
+
+				return true;
+			}
+
+			if (menuactive && OptionsActive)
+				return M_OptMouseRelease();
+
+			return M_MouseRelease();
+		}
 	}
 
 	if (ev.type == ev_keydown)
@@ -2238,10 +2490,22 @@ bool M_Responder(const event_t& ev)
 		ch = ev.data1; 		// scancode
 		ch2 = ev.data3;		// ASCII
 		mod = ev.mod;			// key mods
+
+		// Anything but the mouse brings the cursor back where it was left.
+		if (ch < OKEY_MOUSE1 || ch > OKEY_MWHEELRIGHT)
+			M_HideUICursor(false);
 	}
 
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
 		return false;
+
+	// The back button is checked ahead of everything else so that it behaves
+	// the same in a menu, a prompt or a text field.
+	if (ch == OKEY_MOUSE1 && M_OverBackButton())
+	{
+		MousePressBack = true;
+		return true;
+	}
 
 	// Transfer any action to the Options Menu Responder
 	// if we're not on the main menu.
@@ -2319,7 +2583,8 @@ bool M_Responder(const event_t& ev)
 	{
 		int answer = 0;
 
-		const bool buttons_shown = ui_mouse.asBool() && messageNeedsInput;
+		const bool buttons_shown =
+		    ui_mouse.asBool() && messageNeedsInput && !M_MessageClicks();
 
 		if (buttons_shown && (Key_IsUpKey(ch, numlock) || Key_IsDownKey(ch, numlock) ||
 		                      Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock)))
@@ -2329,25 +2594,25 @@ bool M_Responder(const event_t& ev)
 			return true;
 		}
 
-		if (ui_mouse.asBool() && (ch == OKEY_MOUSE1 || ch == OKEY_MOUSE2))
+		if (ui_mouse.asBool() && ch == OKEY_MOUSE1)
 		{
-			if (!messageNeedsInput)
-			{
-				// "Press any key" messages are dismissed by any click
-				answer = ' ';
-			}
-			else if (ch == OKEY_MOUSE2)
-			{
-				answer = 'n';
-			}
-			else
-			{
-				const int button = M_GetMessageButton();
-				if (button == MSGBUTTON_NONE)
-					return true;
+			// The prompt answers on the release, so the press only moves the
+			// highlight and notes that it started somewhere the release can
+			// act on. Clicking anywhere counts when there are no buttons.
+			const int button = M_GetMessageButton();
 
-				answer = (button == MSGBUTTON_YES) ? 'y' : 'n';
-			}
+			MousePressMessage = !messageNeedsInput || M_MessageClicks() ||
+			                    button != MSGBUTTON_NONE;
+			if (button != MSGBUTTON_NONE)
+				messageSelection = button;
+
+			return true;
+		}
+
+		if (ui_mouse.asBool() && ch == OKEY_MOUSE2)
+		{
+			// A right click always means no
+			answer = messageNeedsInput ? 'n' : ' ';
 		}
 		else if (buttons_shown && Key_IsAcceptKey(ch))
 		{
@@ -2358,21 +2623,10 @@ bool M_Responder(const event_t& ev)
 			(isascii(ch2) && (toupper(ch2) == 'N' || toupper(ch2) == 'Y')))))
 			return true;
 
-		menuactive = messageLastMenuActive;
-		messageToPrint = 0;
-		if (messageRoutine)
-		{
-			if (answer)
-				messageRoutine(answer);
-			else if (ch == '\0' && ch2 != '\0')
-				messageRoutine(ch2);
-			else
-				messageRoutine(ch);
-		}
+		if (!answer)
+			answer = (ch == '\0' && ch2 != '\0') ? ch2 : ch;
 
-		menuactive = false;
-		M_ResumeSound();
-		S_Sound (CHAN_INTERFACE, "menu/dismiss", 1, ATTN_NONE);
+		M_DismissMessage(answer);
 		return true;
 	}
 
@@ -2438,12 +2692,13 @@ bool M_Responder(const event_t& ev)
 
 					// Keep following the pointer until the button is released
 					PSetupDragItem = item;
-				}
-				else
-				{
-					M_ActivateItem(item);
+					MousePressDrag = true;
 				}
 			}
+
+			// A press is held onto wherever it started, so one that begins off
+			// the items can still be dragged onto one before it commits.
+			MousePressMenu = currentMenu;
 			return true;
 		}
 		else if (ch == OKEY_MOUSE2)
@@ -2552,6 +2807,7 @@ void M_StartControlPanel()
 		return;
 
 	drawSkull = true;
+	M_HideUICursor(false);
 	MenuStackDepth = 0;
 	menuactive = 1;
 	currentMenu = &MainDef;
@@ -2623,13 +2879,16 @@ void M_Drawer()
 
 
 			// DRAW SKULL
-			if (drawSkull)
+			if (drawSkull && !M_UICursorHidden())
 			{
 				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
 					x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
 			}
 		}
 	}
+
+	if (M_BackButtonShown())
+		M_DrawBackButton();
 
 	// [SL] force the status bar to be redrawn in case the menu
 	// draws over a portion of the status bar background
@@ -2712,8 +2971,20 @@ void M_Ticker()
 		skullAnimCounter = 8;
 	}
 
-	if (messageToPrint && messageNeedsInput && ui_mouse.asBool())
+	if (currentMenu == &PSetupDef)
+		M_PlayerSetupTicker ();
+}
+
+
+//
+// M_DisplayTicker
+//
+void M_DisplayTicker()
+{
+	if (messageToPrint && messageNeedsInput && (M_UIMouseHovers() || MousePressMessage))
+	{
 		M_UpdateMessageSelection();
+	}
 	else if (menuactive)
 	{
 		if (OptionsActive)
@@ -2721,9 +2992,6 @@ void M_Ticker()
 		else
 			M_UpdateMouseItem();
 	}
-
-	if (currentMenu == &PSetupDef)
-		M_PlayerSetupTicker ();
 }
 
 
