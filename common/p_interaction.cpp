@@ -1546,7 +1546,7 @@ void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker, int
 
 	if (G_IsTeamGame() && attacker && attacker->player &&
 	    self->player->userinfo.team == attacker->player->userinfo.team)
-		friendly = true;;
+		friendly = true;
 
 	const char* message = NULL;
 	OString messagename;

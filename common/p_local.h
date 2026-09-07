@@ -374,8 +374,9 @@ enum means_of_death_t
 	MOD_FIREBALL, // Odamex-specific - monster fireball.
 	MOD_HITSCAN,  // Odamex-specific - monster hitscan.
 	MOD_VILEFIRE, // Odamex-specific - vile fire.
-	NUMMODS,
 };
+
+inline constexpr auto NUMMODS = static_cast<size_t>(MOD_VILEFIRE) + 1;
 
 //
 // PO_MAN
