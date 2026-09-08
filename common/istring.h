@@ -176,7 +176,7 @@ struct std::hash<IStringView>
 		constexpr std::uint32_t prime = 0x1000193;
 		std::uint32_t hash = offset;
 
-		for (char value : str)
+		for (const char value : str)
 		{
 			hash = hash ^ static_cast<std::uint8_t>(
 				IStringView::traits_type::to_ascii_lowercase(value)

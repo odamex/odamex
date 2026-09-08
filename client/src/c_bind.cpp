@@ -266,6 +266,7 @@ bool C_DoNetDemoKey(const event_t& ev)
 
 	// hardcode the pause key to also control netpause
 	if (iequals(Bindings.Binds[ev.data1], "pause"))
+		// NOLINTNEXTLINE(bugprone-unchecked-optional-access) - we know "space" is in the map
 		binding = &NetDemoBindings.Binds[I_GetKeyFromName("space").value()];
 
 	// nothing bound to this key specific to netdemos?
@@ -320,11 +321,11 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return false;
 
-	const IString* binding = NULL;
+	const IString* binding = nullptr;
 	int key = ev.data1;
 
 	KeyState& key_state = KeyStates[key];
-	if (doublebinds != NULL && ev.type == ev_keydown && key_state.double_click_time > level.time)
+	if (doublebinds != nullptr && ev.type == ev_keydown && key_state.double_click_time > level.time)
 	{
 		// Key pressed for a double click
 		binding = &doublebinds->Binds[key];
@@ -338,7 +339,7 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 			binding = &binds->Binds[key];
 			key_state.double_click_time = level.time + 20;
 		}
-		else if (doublebinds != NULL && key_state.double_clicked)
+		else if (doublebinds != nullptr && key_state.double_clicked)
 		{
 			// Key released from a double click
 			binding = &doublebinds->Binds[key];

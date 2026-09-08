@@ -32,7 +32,7 @@ void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
 // add commands to the console as if they were typed in
 // for map changing, etc
-void AddCommandString(const std::string_view cmd, uint32_t key = 0);
+void AddCommandString(const std::string_view str, uint32_t key = 0);
 
 struct parse_string_result_t
 {

@@ -16,7 +16,7 @@ void PrintTo(const IStringView value, std::ostream* os)
 
 TEST(IString, Equality)
 {
-	IString test{"TEST"};
+	const IString test{"TEST"};
 	EXPECT_EQ(test, "test");
 	EXPECT_EQ(test, "TEST");
 	EXPECT_STREQ(test.c_str(), "TEST");
@@ -28,7 +28,7 @@ TEST(IString, Equality)
 
 TEST(IString, Find)
 {
-	IString test{"ABCabcxyzXYZ"};
+	const IString test{"ABCabcxyzXYZ"};
 	EXPECT_EQ(test.find('a'), 0);
 	EXPECT_EQ(test.find('A'), 0);
 	EXPECT_EQ(test.find('b'), 1);
