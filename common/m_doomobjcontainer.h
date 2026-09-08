@@ -35,12 +35,12 @@
 
 #include "i_system.h"
 #include "m_stacktrace.h"
+
+#include <memory>
 #include <span>
 #include <functional>
 #include <unordered_map>
 #include <vector>
-#include <typeinfo>
-#include <optional>
 #include <iterator>
 
 // Forward declarations:

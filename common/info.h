@@ -25,15 +25,18 @@
 
 #pragma once
 
+#include "fmt/format.h"
+
 // Needed for action function pointer handling.
 #include "dthinker.h"
 #include "farchive.h"
 #include "m_doomobjcontainer.h"
 #include "actorflags.h"
+#include "m_fixed.h"
 
 #define NO_ALTSPEED -1
 #ifndef MELEERANGE // TODO: only have a single spot this is defined
-#define MELEERANGE (64 * FRACUNIT)
+#define MELEERANGE (64_fx)
 #endif
 
 enum spritenum_t: int32_t
