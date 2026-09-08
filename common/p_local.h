@@ -36,6 +36,8 @@
 #define MAXHEALTH		100
 #define VIEWHEIGHT		(41*FRACUNIT)
 
+constexpr fixed_t MAXBOB = 0x100000;	// 16 pixels of bob
+
 
 // player radius for movement checking
 #define PLAYERRADIUS	(16*FRACUNIT)
@@ -85,6 +87,8 @@ enum weaponstate_t
 
 void P_SetupPsprites (player_t& curplayer);
 void P_MovePsprites (player_t& curplayer);
+void P_RestPsprites (player_t& curplayer);
+void P_BringUpWeapon (player_t& player);
 void P_DropWeapon (player_t& player);
 
 weaponstate_t P_GetWeaponState(const player_t& player);
