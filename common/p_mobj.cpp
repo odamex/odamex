@@ -3616,7 +3616,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mthing.type == PO_SPAWN_TYPE ||
 		mthing.type == PO_SPAWNCRUSH_TYPE))
 	{
-		polyspawns_t *polyspawn = new polyspawns_t;
+		auto* polyspawn = new polyspawns_t;
 		polyspawn->next = polyspawns;
 		polyspawn->x = mthing.x << FRACBITS;
 		polyspawn->y = mthing.y << FRACBITS;
@@ -3858,7 +3858,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	AActor* mobj = new AActor(x, y, z, info->type);
+	auto* mobj = new AActor(x, y, z, info->type);
 
 	if (type == MT_HORDESPAWN)
 	{
@@ -3884,7 +3884,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	// [RH] Set the thing's special
 	mobj->special = mthing.special;
-	std::copy(std::begin(mthing.args), std::end(mthing.args), mobj->args.begin());
+	std::ranges::copy(mthing.args, mobj->args.begin());
 
 	// [RH] If it's an ambient sound, activate it
 	if (type == MT_AMBIENT)
@@ -3909,7 +3909,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mobj->tics = 1 + (P_Random(mobj) % mobj->tics);
 
 	if (type != MT_SPARK)
-		mobj->angle = ANG45 * (mthing.angle/45);
+		mobj->angle = ANG(mthing.angle);
 
 	if (mthing.flags & MTF_AMBUSH)
 		mobj->flags |= MF_AMBUSH;
