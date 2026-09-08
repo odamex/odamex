@@ -871,24 +871,28 @@ bool P_CheckTag(line_t* line)
  */
 void P_InitPicAnims()
 {
-	byte* anim_p;
-
 	// denis - allow reinitialisation
 	anims.clear();
 
 	// [RH] Load an ANIMDEFS lump first
 	P_InitAnimDefs();
 
-	if (W_CheckNumForName ("ANIMATED") == -1)
+	const int lumpnum = W_CheckNumForName("ANIMATED");
+
+	if (lumpnum == -1)
 		return;
 
-	byte* animdefs = W_CacheLumpName<byte>("ANIMATED", PU_STATIC);
+	byte* animdefs = W_CacheLumpNum<byte>(lumpnum, PU_STATIC);
 	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(animdefs); });
+	const auto length = W_LumpLength(lumpnum);
 
 	// Init animation
 
-	for (anim_p = animdefs; *anim_p != 255; anim_p += 23)
+	for (byte* anim_p = animdefs; *anim_p != 255; anim_p += 23)
 	{
+		if (anim_p + 22 >= animdefs + length)
+			I_Error("Tried to read past end of ANIMATED lump");
+
 		anim_t* lastanim = &anims.emplace_back();
 
 		if (*anim_p /* .istexture */ & 1)

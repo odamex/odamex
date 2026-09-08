@@ -210,6 +210,7 @@ OLumpName W_GetOLumpName(unsigned lump);
 
 // wadfiles always begins with odamex.wad followed by the IWAD, so every file
 // from here on is a PWAD.
+// TODO: this will need to be updated for id24res.wad, which gets loaded *before* the iwad
 constexpr int WADFILE_FIRSTPWAD = 2;
 
 // [RH] Returns file handle for specified lump
