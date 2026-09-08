@@ -259,7 +259,7 @@ struct mapnode_deepbsp_t
 
 // [RH] MapThing flags.
 
-enum class mapthing2flag_t : int16_t
+enum class mapthing2flag_t : uint16_t
 {
 	MTF_EASY           = 0x0001, // Thing will appear on easy skill setting
 	MTF_MEDIUM         = 0x0002, // Thing will appear on medium skill setting
@@ -267,21 +267,24 @@ enum class mapthing2flag_t : int16_t
 	MTF_AMBUSH         = 0x0008, // Thing is deaf
 
 	MTF_DORMANT        = 0x0010, // Thing is dormant (use Thing_Activate)
-	MTF_FIGHTER        = 0x0020,
-	MTF_CLERIC         = 0x0040,
-	MTF_MAGE           = 0x0080,
+	MTF_FIGHTER        = 0x0020, // unused - spawns only for hexen fighter class
+	MTF_CLERIC         = 0x0040, // unused - spawns only for hexen cleric class
+	MTF_MAGE           = 0x0080, // unused - spawns only for hexen mage class
 	MTF_SINGLE         = 0x0100, // Thing appears in single-player games
 	MTF_COOPERATIVE    = 0x0200, // Thing appears in cooperative games
 	MTF_DEATHMATCH     = 0x0400, // Thing appears in deathmatch games
-
-	MTF_FRIENDLY       = 0x2000, // zdoom
+	MTF_TRANSLUCENT    = 0x0800, // 25% translucency - and gamesim behavior of MF_SHADOW but not the fuzz effect
+	MTF_INVISIBLE      = 0x1000, // unimplemented - completely invisible
+	MTF_FRIENDLY       = 0x2000, // zdoom friendly
+	MTF_STANDSTILL     = 0x4000, // unimplemented - something from strife, not sure exact details yet
+	MTF_SECRET         = 0x8000, // unimplemented - picking up thing triggers a secret
 
 	// if modifying this enum, make sure to update the
 	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum mapthing2flag_t;
-constexpr mapthing2flag_t enable_bitflag_operators(mapthing2flag_t) { return MTF_FRIENDLY; };
+constexpr mapthing2flag_t enable_bitflag_operators(mapthing2flag_t) { return MTF_SECRET; };
 using MapThingFlags = OFlags<mapthing2flag_t>;
 
 // we're using this in mapthing2_t where it gets loaded from raw bytes
@@ -290,7 +293,7 @@ static_assert(sizeof(MapThingFlags) == sizeof(mapthing2flag_t));
 
 // BOOM and DOOM compatible versions of some of the above
 
-enum class mapthingflag_t : int16_t
+enum class mapthingflag_t : uint16_t
 {
 	BTF_EASY           = 0x0001, // Thing will appear on easy skill setting
 	BTF_MEDIUM         = 0x0002, // Thing will appear on medium skill setting
@@ -321,7 +324,7 @@ struct mapthing_t
 	int16_t y;
 	int16_t angle;
 	int16_t type;
-	int16_t options;
+	uint16_t options;
 };
 
 // forward declaration

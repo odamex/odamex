@@ -3460,7 +3460,7 @@ void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
     avatarMapthing.z        = mapthing.z();
     avatarMapthing.angle    = mapthing.angle();
     avatarMapthing.type     = mapthing.type();
-    avatarMapthing.flags    = MapThingFlags::unsafe_from_int(static_cast<int16_t>(mapthing.flags()));
+    avatarMapthing.flags    = MapThingFlags::unsafe_from_int(static_cast<uint16_t>(mapthing.flags()));
     avatarMapthing.special  = mapthing.special();
 
 	const size_t argCount = std::min(avatarMapthing.args.size(), static_cast<size_t>(mapthing.args_size()));
