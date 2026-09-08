@@ -934,7 +934,10 @@ EXTERN_CVAR(con_scrlock)
 
 static constexpr int CONCHARS_GLYPH_DIM = 8;
 static constexpr int CONCHARS_COUNT = 256;
-static constexpr int CONCHARS_GLYPH_BYTES = CONCHARS_GLYPH_DIM * CONCHARS_GLYPH_DIM * 2;
+
+static constexpr int CONCHARS_ROW_BYTES = 2 * CONCHARS_GLYPH_DIM;
+static constexpr int CONCHARS_GLYPH_BYTES = CONCHARS_GLYPH_DIM * CONCHARS_ROW_BYTES;
+static constexpr size_t CONCHARS_BYTES = static_cast<size_t>(CONCHARS_COUNT) * CONCHARS_GLYPH_BYTES;
 static constexpr palindex_t CONCHARS_TRANSCOLOR = 0xF7;
 
 //
@@ -951,7 +954,8 @@ static constexpr palindex_t CONCHARS_TRANSCOLOR = 0xF7;
 bool C_BlendConCharsSheet(int lumpnum)
 {
 	const patch_t* patch = W_CachePatch(lumpnum);
-	const int width = patch->width(), height = patch->height();
+	const int width = patch->width();
+	const int height = patch->height();
 
 	// W_CachePatch hands back an empty 0x0 header for lumps that aren't patches
 	// at all, so this rejects those along with sheets of the wrong shape
@@ -964,23 +968,26 @@ bool C_BlendConCharsSheet(int lumpnum)
 	const int glyph_count =
 		std::min(cols * (height / CONCHARS_GLYPH_DIM), CONCHARS_COUNT);
 
-	// Draw the sheet into a linear byte buffer with a background of 0xF7
+	// Draw the sheet into a linear byte buffer with a background of
+	// 'CONCHARS_TRANSCOLOR' so glyph pixels can be told from empty space
 	IWindowSurface* temp_surface = I_AllocateSurface(width, height, 8);
 	temp_surface->lock();
 
-	for (int y = 0; y < height; y++)
-		memset(temp_surface->getBuffer() + y * temp_surface->getPitchInPixels(),
-		       CONCHARS_TRANSCOLOR, width);
+	// the surface is 8bpp, so its pitch is both bytes and pixels per row
+	const ptrdiff_t pitch = temp_surface->getPitch();
+
+	for (ptrdiff_t y = 0; y < height; y++)
+		memset(temp_surface->getBuffer() + (y * pitch), CONCHARS_TRANSCOLOR, width);
 
 	const DCanvas* canvas = temp_surface->getDefaultCanvas();
 	canvas->DrawPatch(patch, 0, 0);
 
-	for (int i = 0; i < glyph_count; i++)
+	for (ptrdiff_t i = 0; i < glyph_count; i++)
 	{
-		byte* dest = ConChars + i * CONCHARS_GLYPH_BYTES;
+		byte* dest = ConChars + (i * CONCHARS_GLYPH_BYTES);
 		const byte* source = temp_surface->getBuffer() +
-		                     (i % cols) * CONCHARS_GLYPH_DIM +
-		                     (i / cols) * CONCHARS_GLYPH_DIM * temp_surface->getPitch();
+		                     ((i / cols) * CONCHARS_GLYPH_DIM * pitch) +
+		                     ((i % cols) * CONCHARS_GLYPH_DIM);
 
 		for (int z = 0; z < CONCHARS_GLYPH_DIM; z++)
 		{
@@ -990,17 +997,17 @@ bool C_BlendConCharsSheet(int lumpnum)
 				if (val == CONCHARS_TRANSCOLOR)
 				{
 					dest[a] = 0x00;
-					dest[a + 8] = 0xff;
+					dest[a + CONCHARS_GLYPH_DIM] = 0xff;
 				}
 				else
 				{
 					dest[a] = val;
-					dest[a + 8] = 0x00;
+					dest[a + CONCHARS_GLYPH_DIM] = 0x00;
 				}
 			}
 
-			dest += 16;
-			source += temp_surface->getPitch();
+			dest += CONCHARS_ROW_BYTES;
+			source += pitch;
 		}
 	}
 
@@ -1018,13 +1025,17 @@ bool C_BlendConCharsSheet(int lumpnum)
 //
 void C_InitConCharsFont()
 {
-	ConChars = new byte[CONCHARS_COUNT * CONCHARS_GLYPH_BYTES];
+	ConChars = new byte[CONCHARS_BYTES];
 
 	// characters that no sheet supplies stay fully transparent
-	for (int i = 0; i < CONCHARS_COUNT * CONCHARS_GLYPH_DIM; i++)
+	for (ptrdiff_t i = 0; i < CONCHARS_COUNT; i++)
 	{
-		memset(ConChars + i * 16, 0x00, 8);
-		memset(ConChars + i * 16 + 8, 0xff, 8);
+		byte* dest = ConChars + (i * CONCHARS_GLYPH_BYTES);
+		for (int z = 0; z < CONCHARS_GLYPH_DIM; z++, dest += CONCHARS_ROW_BYTES)
+		{
+			memset(dest, 0x00, CONCHARS_GLYPH_DIM);
+			memset(dest + CONCHARS_GLYPH_DIM, 0xff, CONCHARS_GLYPH_DIM);
+		}
 	}
 
 	int sheets = 0;
@@ -1038,9 +1049,9 @@ void C_InitConCharsFont()
 		}
 
 		const int filenum = W_GetLumpFile(lumpnum);
-		const char* filename = filenum >= 0 && filenum < static_cast<int>(wadfiles.size())
-		                           ? wadfiles[filenum].getBasename().c_str()
-		                           : "an unknown file";
+		const char* filename = "an unknown file";
+		if (filenum >= 0 && std::cmp_less(filenum, wadfiles.size()))
+			filename = wadfiles[static_cast<size_t>(filenum)].getBasename().c_str();
 
 		PrintFmt(PRINT_WARNING,
 		         "CONCHARS in {} is not a grid of 8x8 glyphs, ignoring it.\n",
@@ -1059,7 +1070,7 @@ void C_InitConCharsFont()
 void C_ShutdownConCharsFont()
 {
 	delete [] ConChars;
-	ConChars = NULL;
+	ConChars = nullptr;
 }
 
 //
