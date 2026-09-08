@@ -31,7 +31,17 @@ class LargeMessage
 			return true;
 		}
 
-		bool IsComplete() const { return m_buffer.TellWrite() == m_buffer.size(); }
+		[[ nodiscard ]]
+		size_t TotalSize() const { return m_buffer.size(); }
+
+		[[ nodiscard ]]
+		size_t CurrentSize() const { return m_buffer.TellWrite(); }
+
+		[[ nodiscard ]]
+		bool IsComplete() const { return CurrentSize() == TotalSize(); }
+
+		[[ nodiscard ]]
+		buf_t& GetBufferRef() { return m_buffer; }
 
 	protected:
 		buf_t m_buffer { MAX_SIZE };

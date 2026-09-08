@@ -205,3 +205,72 @@ TEST_F(LargeMessageQueueFixture, MultiMessage)
     EXPECT_EQ(result.state, FragmentationStateEnum::NONE);
 }
 
+TEST_F(LargeMessageQueueFixture, Reassembly)
+{
+    const std::string greatAdvice = "We can't stop here!  This is BAT COUNTRY!";
+    m_queue.Write(svc_print, greatAdvice);
+
+    LargeMessage msg;
+
+    const size_t totalSize = m_queue.GetMessageSize();
+    EXPECT_EQ(totalSize, greatAdvice.size() + 2);       // +2 for the mini header.
+
+    EXPECT_EQ(true, msg.Restart(totalSize));
+
+    EXPECT_EQ(43,    msg.TotalSize());
+    EXPECT_EQ(0,     msg.CurrentSize());
+    EXPECT_EQ(false, msg.IsComplete());
+
+    std::array<char, 8> fragment;
+
+    auto fragmentInfo = m_queue.NextFragment(fragment.size(), fragment.begin());
+    EXPECT_EQ(fragmentInfo.state, FragmentationStateEnum::FIRST_FRAGMENT);
+    EXPECT_EQ(true,  msg.Append(fragment.data(), fragmentInfo.size));
+    EXPECT_EQ(43,    msg.TotalSize());
+    EXPECT_EQ(8,     msg.CurrentSize());
+    EXPECT_EQ(false, msg.IsComplete());
+
+    fragmentInfo = m_queue.NextFragment(fragment.size(), fragment.begin());
+    EXPECT_EQ(fragmentInfo.state, FragmentationStateEnum::CONTINUATION_FRAGMENT);
+    EXPECT_EQ(true,  msg.Append(fragment.data(), fragmentInfo.size));
+    EXPECT_EQ(43,    msg.TotalSize());
+    EXPECT_EQ(16,    msg.CurrentSize());
+    EXPECT_EQ(false, msg.IsComplete());
+
+    fragmentInfo = m_queue.NextFragment(fragment.size(), fragment.begin());
+    EXPECT_EQ(fragmentInfo.state, FragmentationStateEnum::CONTINUATION_FRAGMENT);
+    EXPECT_EQ(true,  msg.Append(fragment.data(), fragmentInfo.size));
+    EXPECT_EQ(43,    msg.TotalSize());
+    EXPECT_EQ(24,    msg.CurrentSize());
+    EXPECT_EQ(false, msg.IsComplete());
+
+    fragmentInfo = m_queue.NextFragment(fragment.size(), fragment.begin());
+    EXPECT_EQ(fragmentInfo.state, FragmentationStateEnum::CONTINUATION_FRAGMENT);
+    EXPECT_EQ(true,  msg.Append(fragment.data(), fragmentInfo.size));
+    EXPECT_EQ(43,    msg.TotalSize());
+    EXPECT_EQ(32,    msg.CurrentSize());
+    EXPECT_EQ(false, msg.IsComplete());
+
+    fragmentInfo = m_queue.NextFragment(fragment.size(), fragment.begin());
+    EXPECT_EQ(fragmentInfo.state, FragmentationStateEnum::CONTINUATION_FRAGMENT);
+    EXPECT_EQ(true,  msg.Append(fragment.data(), fragmentInfo.size));
+    EXPECT_EQ(43,    msg.TotalSize());
+    EXPECT_EQ(40,    msg.CurrentSize());
+    EXPECT_EQ(false, msg.IsComplete());
+
+    fragmentInfo = m_queue.NextFragment(fragment.size(), fragment.begin());
+    EXPECT_EQ(fragmentInfo.state, FragmentationStateEnum::LAST_FRAGMENT);
+    EXPECT_EQ(true,  msg.Append(fragment.data(), fragmentInfo.size));
+    EXPECT_EQ(43,    msg.TotalSize());
+    EXPECT_EQ(43,    msg.CurrentSize());
+    EXPECT_EQ(true,  msg.IsComplete());
+
+    auto& buffer = msg.GetBufferRef();
+    EXPECT_EQ(svc_print, buffer.ReadUnVarint());
+
+    const size_t payloadSize = buffer.ReadUnVarint();
+    EXPECT_EQ(41, payloadSize);
+
+    const std::string receivedAdvice (reinterpret_cast<char*>(buffer.ReadChunk(payloadSize)), buffer.BytesLeftToRead());
+    EXPECT_EQ(receivedAdvice, "We can't stop here!  This is BAT COUNTRY!");
+}
