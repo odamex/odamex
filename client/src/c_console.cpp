@@ -932,62 +932,124 @@ CVAR_FUNC_IMPL(con_scaletext)
 // con_scrlock 2 = Nothing brings scroll to the bottom.
 EXTERN_CVAR(con_scrlock)
 
-//
-// C_InitConCharsFont
-//
-// Loads the CONCHARS lump from disk and converts it to the format used by
-// the console for printing text.
-//
-void C_InitConCharsFont()
-{
-	static palindex_t transcolor = 0xF7;
+static constexpr int CONCHARS_GLYPH_DIM = 8;
+static constexpr int CONCHARS_COUNT = 256;
+static constexpr int CONCHARS_GLYPH_BYTES = CONCHARS_GLYPH_DIM * CONCHARS_GLYPH_DIM * 2;
+static constexpr palindex_t CONCHARS_TRANSCOLOR = 0xF7;
 
-	// Load the CONCHARS lump and convert it from patch_t format
-	// to a raw linear byte buffer with a background color of 'transcolor'
-	IWindowSurface* temp_surface = I_AllocateSurface(128, 128, 8);
+//
+// C_BlendConCharsSheet
+//
+// Converts one CONCHARS lump into the format used by the console and writes it
+// over the characters the sheet covers, leaving the rest of the font alone.
+// We attempt to support all CONCHAR lumps with all ports here.
+// Odamex's own is 16x16 and supplies all 256 chars (with support chars), while
+// sheets written for other ports are usually 32x4 and only cover only ASCII chars.
+//
+// Returns false if the lump isn't a usable sheet.
+//
+bool C_BlendConCharsSheet(int lumpnum)
+{
+	const patch_t* patch = W_CachePatch(lumpnum);
+	const int width = patch->width(), height = patch->height();
+
+	// W_CachePatch hands back an empty 0x0 header for lumps that aren't patches
+	// at all, so this rejects those along with sheets of the wrong shape
+	if (width < CONCHARS_GLYPH_DIM || width % CONCHARS_GLYPH_DIM != 0 ||
+		height < CONCHARS_GLYPH_DIM || height % CONCHARS_GLYPH_DIM != 0 ||
+		patch->leftoffset() != 0 || patch->topoffset() != 0)
+		return false;
+
+	const int cols = width / CONCHARS_GLYPH_DIM;
+	const int glyph_count =
+		std::min(cols * (height / CONCHARS_GLYPH_DIM), CONCHARS_COUNT);
+
+	// Draw the sheet into a linear byte buffer with a background of 0xF7
+	IWindowSurface* temp_surface = I_AllocateSurface(width, height, 8);
 	temp_surface->lock();
 
-	// fill with color 'transcolor'
-	for (int y = 0; y < 128; y++)
-		memset(temp_surface->getBuffer() + y * temp_surface->getPitchInPixels(), transcolor, 128);
+	for (int y = 0; y < height; y++)
+		memset(temp_surface->getBuffer() + y * temp_surface->getPitchInPixels(),
+		       CONCHARS_TRANSCOLOR, width);
 
-	// paste the patch into the linear byte bufer
 	const DCanvas* canvas = temp_surface->getDefaultCanvas();
-	canvas->DrawPatch(W_CachePatch("CONCHARS"), 0, 0);
+	canvas->DrawPatch(patch, 0, 0);
 
-	ConChars = new byte[256*8*8*2];
-	byte* dest = ConChars;
-
-	for (int y = 0; y < 16; y++)
+	for (int i = 0; i < glyph_count; i++)
 	{
-		for (int x = 0; x < 16; x++)
-		{
-			const byte* source = temp_surface->getBuffer() + x * 8 + (y * 8 * temp_surface->getPitch());
-			for (int z = 0; z < 8; z++)
-			{
-				for (int a = 0; a < 8; a++)
-				{
-					const byte val = source[a];
-					if (val == transcolor)
-					{
-						dest[a] = 0x00;
-						dest[a + 8] = 0xff;
-					}
-					else
-					{
-						dest[a] = val;
-						dest[a + 8] = 0x00;
-					}
-				}
+		byte* dest = ConChars + i * CONCHARS_GLYPH_BYTES;
+		const byte* source = temp_surface->getBuffer() +
+		                     (i % cols) * CONCHARS_GLYPH_DIM +
+		                     (i / cols) * CONCHARS_GLYPH_DIM * temp_surface->getPitch();
 
-				dest += 16;
-				source += temp_surface->getPitch();
+		for (int z = 0; z < CONCHARS_GLYPH_DIM; z++)
+		{
+			for (int a = 0; a < CONCHARS_GLYPH_DIM; a++)
+			{
+				const byte val = source[a];
+				if (val == CONCHARS_TRANSCOLOR)
+				{
+					dest[a] = 0x00;
+					dest[a + 8] = 0xff;
+				}
+				else
+				{
+					dest[a] = val;
+					dest[a + 8] = 0x00;
+				}
 			}
+
+			dest += 16;
+			source += temp_surface->getPitch();
 		}
 	}
 
 	temp_surface->unlock();
 	I_FreeSurface(temp_surface);
+	return true;
+}
+
+//
+// C_InitConCharsFont
+//
+// Builds the console font by layering every CONCHARS lump in load order. Each
+// sheet only replaces the characters it actually spans, so a PWAD sheet that
+// stops at ASCII keeps the glyphs an earlier sheet supplied above it.
+//
+void C_InitConCharsFont()
+{
+	ConChars = new byte[CONCHARS_COUNT * CONCHARS_GLYPH_BYTES];
+
+	// characters that no sheet supplies stay fully transparent
+	for (int i = 0; i < CONCHARS_COUNT * CONCHARS_GLYPH_DIM; i++)
+	{
+		memset(ConChars + i * 16, 0x00, 8);
+		memset(ConChars + i * 16 + 8, 0xff, 8);
+	}
+
+	int sheets = 0;
+	for (int lumpnum = W_FindLump("CONCHARS", -1); lumpnum != -1;
+	     lumpnum = W_FindLump("CONCHARS", lumpnum))
+	{
+		if (C_BlendConCharsSheet(lumpnum))
+		{
+			sheets++;
+			continue;
+		}
+
+		const int filenum = W_GetLumpFile(lumpnum);
+		const char* filename = filenum >= 0 && filenum < static_cast<int>(wadfiles.size())
+		                           ? wadfiles[filenum].getBasename().c_str()
+		                           : "an unknown file";
+
+		PrintFmt(PRINT_WARNING,
+		         "CONCHARS in {} is not a grid of 8x8 glyphs, ignoring it.\n",
+		         filename);
+	}
+
+	if (sheets == 0)
+		PrintFmt(PRINT_WARNING,
+		         "No usable CONCHARS lump was found; console text will be blank.\n");
 }
 
 
