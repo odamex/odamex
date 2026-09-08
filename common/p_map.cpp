@@ -4170,8 +4170,7 @@ fixed_t P_FloorHeight(const sector_t *sector)
 	if (!sector)
 		return limits::MAXFIXED;
 
-	const plane_t *plane = &sector->floorplane;
-	return P_PlaneZ(plane->texx, plane->texy, plane);
+	return sector->floorheight;
 }
 
 //
@@ -4207,8 +4206,7 @@ fixed_t P_CeilingHeight(const sector_t *sector)
 	if (!sector)
 		return limits::MAXFIXED;
 
-	const plane_t *plane = &sector->ceilingplane;
-	return P_PlaneZ(plane->texx, plane->texy, plane);
+	return sector->ceilingheight;
 }
 
 //
@@ -4320,8 +4318,7 @@ void P_SetCeilingHeight(sector_t *sector, fixed_t value)
 	if (!sector)
 		return;
 
-	plane_t *plane = &sector->ceilingplane;
-	fixed_t oldvalue = P_PlaneZ(plane->texx, plane->texy, plane);
+	fixed_t oldvalue = sector->ceilingheight;
 
 	P_ChangeCeilingHeight(sector, value - oldvalue);
 }
@@ -4331,8 +4328,7 @@ void P_SetFloorHeight(sector_t *sector, fixed_t value)
 	if (!sector)
 		return;
 
-	plane_t *plane = &sector->floorplane;
-	fixed_t oldvalue = P_PlaneZ(plane->texx, plane->texy, plane);
+	fixed_t oldvalue = sector->floorheight;
 
 	P_ChangeFloorHeight(sector, value - oldvalue);
 }

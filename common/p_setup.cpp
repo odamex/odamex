@@ -1544,7 +1544,6 @@ void P_SetupLevelFloorPlane(sector_t *sector)
 	sector->floorplane.a = sector->floorplane.b = 0;
 	sector->floorplane.c = sector->floorplane.invc = FRACUNIT;
 	sector->floorplane.d = -sector->floorheight;
-	sector->floorplane.texx = sector->floorplane.texy = 0;
 	sector->floorplane.sector = sector;
 }
 
@@ -1556,7 +1555,6 @@ void P_SetupLevelCeilingPlane(sector_t *sector)
 	sector->ceilingplane.a = sector->ceilingplane.b = 0;
 	sector->ceilingplane.c = sector->ceilingplane.invc = -FRACUNIT;
 	sector->ceilingplane.d = sector->ceilingheight;
-	sector->ceilingplane.texx = sector->ceilingplane.texy = 0;
 	sector->ceilingplane.sector = sector;
 }
 
@@ -1628,8 +1626,6 @@ void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 	srcplane->c = FLOAT2FIXED(cross.z);
 	srcplane->invc = FLOAT2FIXED(1.f/cross.z);
 	srcplane->d = -FixedMul(srcplane->a, line->v1->x) - FixedMul(srcplane->b, line->v1->y) - FixedMul(srcplane->c, destheight);
-	srcplane->texx = refvert->x;
-	srcplane->texy = refvert->y;
 }
 
 void P_SetupLineSlopes()
@@ -1787,9 +1783,6 @@ void P_SlopeLineToPoint (const int lineid, const fixed_t x, const fixed_t y, con
 			(cross.y * FIXED2DOUBLE(y)) +
 			(cross.z * FIXED2DOUBLE(z))
 		);
-		// TODO: verify that this is correct
-		plane.texx = line.v1->x;
-		plane.texy = line.v1->y;
 	}
 }
 
@@ -1829,9 +1822,6 @@ void P_SetSlope(plane_t& plane, const int xyang_deg, const int zang_deg,
 		(norm.y * FIXED2DOUBLE(y)) +
 		(norm.z * FIXED2DOUBLE(z))
 	);
-	// TODO: verify that this is correct
-	plane.texx = x;
-	plane.texy = y;
 }
 
 void P_VavoomSlope(sector_t& sec, const int id, fixed_t x, fixed_t y, fixed_t z, const bool floor)
@@ -1882,9 +1872,6 @@ void P_VavoomSlope(sector_t& sec, const int id, fixed_t x, fixed_t y, fixed_t z,
 			(cross.y * FIXED2DOUBLE(y)) +
 			(cross.z * FIXED2DOUBLE(z))
 		);
-		// TODO: verify that this is correct
-		plane.texx = x;
-		plane.texy = y;
 
 		return;
 	}
@@ -2014,8 +2001,6 @@ void P_SetupVertexSlopes(std::span<MapThing> things)
 				(cross.y * FIXED2DOUBLE(vertexes[vi3].y)) +
 				(cross.z * vt3.z)
 			);
-			plane.texx = vertexes[vi3].x;
-			plane.texy = vertexes[vi3].y;
 		}
 	}
 }

@@ -170,7 +170,6 @@ struct plane_t
 	// Planes are defined by the equation ax + by + cz + d = 0
 	fixed_t		a, b, c, d;
 	fixed_t		invc;		// pre-calculated 1/c, used to solve for z value
-	fixed_t		texx, texy;
 	sector_t	*sector;
 };
 
