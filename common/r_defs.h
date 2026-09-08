@@ -180,8 +180,11 @@ class DSectorEffect;
 struct sector_t
 {
 	// FIXME: set the real default values instead of 0 for everything. this was just to replace memsetting the struct for now
-	fixed_t 	floorheight = 0;
-	fixed_t 	ceilingheight = 0;
+	// these were previously the vanilla floorheight/ceilingheight
+	// now with slopes their primary purpose is for aligning textures
+	// with height instead obtained from P_FloorHeight/P_CeilingHeight
+	fixed_t 	floortexz = 0;
+	fixed_t 	ceilingtexz = 0;
 	short		floorpic = 0;
 	short		ceilingpic = 0;
 	short		lightlevel = 0;

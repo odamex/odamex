@@ -566,11 +566,11 @@ DFloor::DFloor(sector_t* sec, const line_t* line, int speed,
 		m_FloorDestHeight = P_FindLowestCeilingSurrounding(sec);
 		break;
 	case FtoC:
-		m_FloorDestHeight = sec->ceilingheight;
+		m_FloorDestHeight = sec->ceilingtexz;
 		break;
 	case FbyST:
 		m_FloorDestHeight =
-		    (sec->floorheight >> FRACBITS) +
+		    (sec->floortexz >> FRACBITS) +
 		    m_Direction * (P_FindShortestTextureAround(sec) >> FRACBITS);
 		if (m_FloorDestHeight > 32000)      // jff 3/13/98 prevent overflow
 			m_FloorDestHeight = 32000; // wraparound in floor height
@@ -580,10 +580,10 @@ DFloor::DFloor(sector_t* sec, const line_t* line, int speed,
 		break;
 	case Fby24:
 		m_FloorDestHeight =
-		    sec->floorheight + m_Direction * 24 * FRACUNIT;
+		    sec->floortexz + m_Direction * 24 * FRACUNIT;
 		break;
 	case Fby32:
-		m_FloorDestHeight = sec->floorheight + m_Direction * 32 * FRACUNIT;
+		m_FloorDestHeight = sec->floortexz + m_Direction * 32 * FRACUNIT;
 		break;
 	}
 
@@ -1176,7 +1176,7 @@ bool EV_DoGenStairs(line_t& line)
 		}
 
 		const fixed_t speed = floor->m_Speed;
-		int height = sec->floorheight + floor->m_Direction * stairsize;
+		int height = sec->floortexz + floor->m_Direction * stairsize;
 		floor->m_FloorDestHeight = height;
 		const int texture = sec->floorpic;
 		floor->m_Crush = NO_CRUSH;

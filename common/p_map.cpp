@@ -4170,7 +4170,7 @@ fixed_t P_FloorHeight(const sector_t *sector)
 	if (!sector)
 		return limits::MAXFIXED;
 
-	return sector->floorheight;
+	return sector->floortexz;
 }
 
 //
@@ -4206,7 +4206,7 @@ fixed_t P_CeilingHeight(const sector_t *sector)
 	if (!sector)
 		return limits::MAXFIXED;
 
-	return sector->ceilingheight;
+	return sector->ceilingtexz;
 }
 
 //
@@ -4297,7 +4297,7 @@ void P_ChangeCeilingHeight(sector_t *sector, fixed_t amount)
 
 	// The sector's ceilingheight variable is still used for (among other things)
 	// calculating wall texture offsets
-	sector->ceilingheight += amount;
+	sector->ceilingtexz += amount;
 }
 
 void P_ChangeFloorHeight(sector_t *sector, fixed_t amount)
@@ -4310,7 +4310,7 @@ void P_ChangeFloorHeight(sector_t *sector, fixed_t amount)
 
 	// The sector's floorheight variable is still used for (among other things)
 	// calculating wall texture offsets
-	sector->floorheight += amount;
+	sector->floortexz += amount;
 }
 
 void P_SetCeilingHeight(sector_t *sector, fixed_t value)
@@ -4318,9 +4318,7 @@ void P_SetCeilingHeight(sector_t *sector, fixed_t value)
 	if (!sector)
 		return;
 
-	fixed_t oldvalue = sector->ceilingheight;
-
-	P_ChangeCeilingHeight(sector, value - oldvalue);
+	P_ChangeCeilingHeight(sector, value - sector->ceilingtexz);
 }
 
 void P_SetFloorHeight(sector_t *sector, fixed_t value)
@@ -4328,9 +4326,7 @@ void P_SetFloorHeight(sector_t *sector, fixed_t value)
 	if (!sector)
 		return;
 
-	fixed_t oldvalue = sector->floorheight;
-
-	P_ChangeFloorHeight(sector, value - oldvalue);
+	P_ChangeFloorHeight(sector, value - sector->floortexz);
 }
 
 //
@@ -4448,8 +4444,8 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	if (!dest || !src)
 		return;
 
-	dest->floorheight			= src->floorheight;
-	dest->ceilingheight			= src->ceilingheight;
+	dest->floortexz			= src->floortexz;
+	dest->ceilingtexz			= src->ceilingtexz;
 	dest->floorpic				= src->floorpic;
 	dest->ceilingpic			= src->ceilingpic;
 	dest->lightlevel			= src->lightlevel;

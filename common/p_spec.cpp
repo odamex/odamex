@@ -2605,7 +2605,7 @@ void DScroller::RunThink ()
 	if (m_Control != -1)
 	{	// compute scroll amounts based on a sector's height changes
 		sector_t *sector = &sectors[m_Control];
-		fixed_t height = sector->ceilingheight + sector->floorheight;
+		fixed_t height = sector->ceilingtexz + sector->floortexz;
 
 		fixed_t delta = height - m_LastHeight;
 		m_LastHeight = height;
@@ -2707,7 +2707,7 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t height = sector->ceilingheight + sector->floorheight;
+		fixed_t height = sector->ceilingtexz + sector->floortexz;
 
 		m_LastHeight = height;
 	}
@@ -2743,7 +2743,7 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 	if ((m_Control = control) != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t height = sector->ceilingheight + sector->floorheight;
+		fixed_t height = sector->ceilingtexz + sector->floortexz;
 
 		m_LastHeight = height;
 	}

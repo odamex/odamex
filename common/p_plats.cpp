@@ -395,32 +395,32 @@ DPlat::DPlat(sector_t* sec, int target, int delay, int speed, int trigger)
 	m_Status = DPlat::down;
 	m_Height = 0;
 	m_Lip = 0;
-	m_High = sec->floorheight;
+	m_High = sec->floortexz;
 
 	// setup the target destination height
 	switch (target)
 	{
 	case F2LnF:
 		m_Low = P_FindLowestFloorSurrounding(sec);
-		if (m_Low > sec->floorheight)
-			m_Low = sec->floorheight;
+		if (m_Low > sec->floortexz)
+			m_Low = sec->floortexz;
 		break;
 	case F2NnF:
 		m_Low = P_FindNextLowestFloor(sec);
 		break;
 	case F2LnC:
 		m_Low = P_FindLowestCeilingSurrounding(sec);
-		if (m_Low > sec->floorheight)
-			m_Low = sec->floorheight;
+		if (m_Low > sec->floortexz)
+			m_Low = sec->floortexz;
 		break;
 	case LnF2HnF:
 		m_Type = genPerpetual;
 		m_Low = P_FindLowestFloorSurrounding(sec);
-		if (m_Low > sec->floorheight)
-			m_Low = sec->floorheight;
+		if (m_Low > sec->floortexz)
+			m_Low = sec->floortexz;
 		m_High = P_FindHighestFloorSurrounding(sec);
-		if (m_High < sec->floorheight)
-			m_High = sec->floorheight;
+		if (m_High < sec->floortexz)
+			m_High = sec->floortexz;
 		m_Status = P_Random() & 1 ? DPlat::down : DPlat::up;
 		break;
 	default:

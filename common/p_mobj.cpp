@@ -1039,7 +1039,7 @@ void P_MoveActor(AActor *mo)
 		sector_t *hsec = mo->subsector->sector->heightsec;
 		if (hsec && hsec->waterzone && !mo->subsector->sector->waterzone)
 		{
-			if (mo->z < hsec->floorheight)
+			if (mo->z < P_FloorHeight(hsec))
 			{
 				fixed_t floorheight = P_FloorHeight(mo->x, mo->y, hsec);
 				if (mo->z < floorheight)
@@ -1057,7 +1057,7 @@ void P_MoveActor(AActor *mo)
 					mo->waterlevel = 3;
 				}
 			}
-			else if (mo->z + mo->height > hsec->ceilingheight)
+			else if (mo->z + mo->height > P_CeilingHeight(hsec))
 			{
 				mo->waterlevel = 3;
 			}
@@ -1844,7 +1844,7 @@ static void P_ApplyXYFriction(AActor* mo)
 	     mo->oflags & MFO_FALLING) &&
 	    (mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 || mo->momy > FRACUNIT / 4 ||
 	     mo->momy < -FRACUNIT / 4) &&
-	    mo->floorz != mo->subsector->sector->floorheight)
+	    mo->floorz != P_FloorHeight(mo->subsector->sector))
 		return; // do not stop sliding if halfway off a step with some momentum
 
 	// keep corpses sliding if halfway off a step with some momentum
@@ -2364,7 +2364,7 @@ static void P_ApplyBouncyPhysics(AActor *mo)
 		{
 			if (ceilingline && ceilingline->backsector &&
 			    R_IsSkyFlat(ceilingline->backsector->ceilingpic) &&
-			    mo->z > ceilingline->backsector->ceilingheight)
+			    mo->z > P_CeilingHeight(ceilingline->backsector))
 				mo->Destroy();
 			else
 				P_ExplodeMissile(mo);

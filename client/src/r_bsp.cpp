@@ -236,7 +236,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 	// Gate r_fakingunderwater to only apply to heightsecs with
 	// possible deep water, since it applies to every heightsec in frame.
-	bool underwater = (r_fakingunderwater && s->floorheight > sec->floorheight) ||
+	bool underwater = (r_fakingunderwater && P_FloorHeight(s) >P_FloorHeight(sec)) ||
 		(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));
 	bool doorunderwater = false;
 	int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
@@ -305,7 +305,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	// sectors at the same time.
 
 	if (back && !r_fakingunderwater && curline->frontsector->heightsec == NULL &&
-		s->floorheight > sec->floorheight)
+		P_FloorHeight(s) > P_FloorHeight(sec))
 	{
 		fixed_t fcz1 = P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector);
 		fixed_t fcz2 = P_CeilingHeight(curline->v2->x, curline->v2->y, frontsector);

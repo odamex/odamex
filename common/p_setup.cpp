@@ -331,8 +331,8 @@ void P_LoadSectors (int lump)
 	sector_t* ss = sectors;
 	for (int i = 0; i < numsectors; i++, ss++, ms++)
 	{
-		ss->floorheight = LESHORT(ms->floorheight)<<FRACBITS;
-		ss->ceilingheight = LESHORT(ms->ceilingheight)<<FRACBITS;
+		ss->floortexz = LESHORT(ms->floorheight)<<FRACBITS;
+		ss->ceilingtexz = LESHORT(ms->ceilingheight)<<FRACBITS;
 		ss->floorpic = static_cast<short>(R_FlatNumForName(ms->floorpic));
 		ss->ceilingpic = static_cast<short>(R_FlatNumForName(ms->ceilingpic));
 		ss->lightlevel = LESHORT(ms->lightlevel);
@@ -1543,7 +1543,7 @@ void P_SetupLevelFloorPlane(sector_t *sector)
 
 	sector->floorplane.a = sector->floorplane.b = 0;
 	sector->floorplane.c = sector->floorplane.invc = FRACUNIT;
-	sector->floorplane.d = -sector->floorheight;
+	sector->floorplane.d = -sector->floortexz;
 	sector->floorplane.sector = sector;
 }
 
@@ -1554,7 +1554,7 @@ void P_SetupLevelCeilingPlane(sector_t *sector)
 
 	sector->ceilingplane.a = sector->ceilingplane.b = 0;
 	sector->ceilingplane.c = sector->ceilingplane.invc = -FRACUNIT;
-	sector->ceilingplane.d = sector->ceilingheight;
+	sector->ceilingplane.d = sector->ceilingtexz;
 	sector->ceilingplane.sector = sector;
 }
 
@@ -1602,8 +1602,8 @@ void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 
 	const sector_t* refsec = line->frontsector == sec ? line->backsector : line->frontsector;
 	plane_t* srcplane = floor ? &sec->floorplane : &sec->ceilingplane;
-	const fixed_t srcheight = floor ? sec->floorheight : sec->ceilingheight;
-	const fixed_t destheight = floor ? refsec->floorheight : refsec->ceilingheight;
+	const fixed_t srcheight = floor ? sec->floortexz : sec->ceilingtexz;
+	const fixed_t destheight = floor ? refsec->floortexz : refsec->ceilingtexz;
 
 	v3float_t p, v1, v2, cross;
 	M_SetVec3f(&p, line->v1->x, line->v1->y, destheight);

@@ -195,7 +195,7 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-			if (m_LightTag && m_TopHeight - m_Sector->floorheight)
+			if (m_LightTag && m_TopHeight - m_Sector->floortexz)
             {
 				EV_LightTurnOnPartway(m_LightTag, 0);
             }
@@ -480,19 +480,19 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int delay, int kind, int trigger, int sp
 	case OdCDoor:
 		m_Status = opening;
 		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - (4 * FRACUNIT);
-		if (m_TopHeight != sec->ceilingheight)
+		if (m_TopHeight != sec->ceilingtexz)
 			PlayDoorSound();
 		m_Type = speed >= SpeedFast ? genBlazeRaise : genRaise;
 		break;
 	case ODoor:
 		m_Status = opening;
 		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
-		if (m_TopHeight != sec->ceilingheight)
+		if (m_TopHeight != sec->ceilingtexz)
 			PlayDoorSound();
 		m_Type = speed >= SpeedFast ? genBlazeOpen : genOpen;
 		break;
 	case CdODoor:
-		m_TopHeight = sec->ceilingheight;
+		m_TopHeight = sec->ceilingtexz;
 		m_Status = closing;
 		PlayDoorSound();
 		m_Type = speed >= SpeedFast ? genBlazeCdO : genCdO;

@@ -318,8 +318,8 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
 	m_NewFlags = sec->flags;
 	m_Tag = sec->tag;
 	m_Silent = m_Type == genSilentCrusher ? 2 : 1;
-	m_TopHeight = sec->ceilingheight;
-	m_BottomHeight = sec->floorheight + (8 * FRACUNIT);
+	m_TopHeight = sec->ceilingtexz;
+	m_BottomHeight = sec->floortexz + (8 * FRACUNIT);
 
 	// setup ceiling motion speed
 	switch (speed)
@@ -381,7 +381,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 	}
 
 	// set destination target height
-	targheight = sec->ceilingheight;
+	targheight = sec->ceilingtexz;
 	switch (target)
 	{
 	case CtoHnC:
@@ -399,11 +399,11 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 		targheight = P_FindHighestFloorSurrounding(sec);
 		break;
 	case CtoF:
-		targheight = sec->floorheight;
+		targheight = sec->floortexz;
 		break;
 	case CbyST:
 		targheight =
-		    (sec->ceilingheight >> FRACBITS) +
+		    (sec->ceilingtexz >> FRACBITS) +
 		             m_Direction * (P_FindShortestUpperAround(sec) >> FRACBITS);
 		if (targheight > 32000)     // jff 3/13/98 prevent overflow
 			targheight = 32000; // wraparound in ceiling height
@@ -413,11 +413,11 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 		break;
 	case Cby24:
 		targheight =
-		    sec->ceilingheight + m_Direction * 24 * FRACUNIT;
+		    sec->ceilingtexz + m_Direction * 24 * FRACUNIT;
 		break;
 	case Cby32:
 		targheight =
-		   sec->ceilingheight + m_Direction * 32 * FRACUNIT;
+		   sec->ceilingtexz + m_Direction * 32 * FRACUNIT;
 		break;
 	default:
 		break;
@@ -734,13 +734,13 @@ bool P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 		// Don't make noise for instant movement ceilings
 		if (ceiling->m_Direction < 0)
 		{
-			if (ceiling->m_Speed >= sec->ceilingheight - ceiling->m_BottomHeight)
+			if (ceiling->m_Speed >= sec->ceilingtexz - ceiling->m_BottomHeight)
 				if (silent & 4)
 					ceiling->m_Silent = 2;
 		}
 		else
 		{
-			if (ceiling->m_Speed >= ceiling->m_TopHeight - sec->ceilingheight)
+			if (ceiling->m_Speed >= ceiling->m_TopHeight - sec->ceilingtexz)
 				if (silent & 4)
 					ceiling->m_Silent = 2;
 		}
