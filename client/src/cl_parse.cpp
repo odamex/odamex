@@ -2970,7 +2970,7 @@ void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial* msg)
 	if (linenum != -1 && linenum >= ::numlines)
 		return;
 
-	line_t* line = NULL;
+	line_t* line = nullptr;
 	if (linenum != -1)
 		line = &::lines[linenum];
 

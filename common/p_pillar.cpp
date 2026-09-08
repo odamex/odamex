@@ -240,10 +240,10 @@ bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag, fixed_t spee
 		if (P_FloorActive(sec) || P_CeilingActive(sec))
 			continue;
 
-		if (type == DPillar::pillarBuild && sec->floortexz == sec->ceilingtexz)
+		if (type == DPillar::pillarBuild && P_FloorHeight(sec) == P_CeilingHeight(sec))
 			continue;
 
-		if (type == DPillar::pillarOpen && sec->floortexz != sec->ceilingtexz)
+		if (type == DPillar::pillarOpen && P_FloorHeight(sec) != P_CeilingHeight(sec))
 			continue;
 
 		rtn = true;

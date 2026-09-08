@@ -303,23 +303,18 @@ DCeiling::DCeiling (sector_t *sec, fixed_t speed1, fixed_t speed2, int silent)
 }
 
 DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
-    : DMovingCeiling(sec), m_Status(init)
+	: DMovingCeiling{sec}, m_Type{silent ? genSilentCrusher : genCrusher},
+	  m_BottomHeight{P_FloorHeight(sec) + 8_fx},
+	  m_TopHeight{P_CeilingHeight(sec)},
+	  m_Crush{DOOM_CRUSH}, m_Silent{silent ? 2 : 1},
+	  m_Direction{-1}, m_Texture{sec->ceilingpic},
+	  m_NewSpecial{sec->special}, m_NewFlags{sec->flags},
+	  m_NewDamageRate{static_cast<int16_t>(sec->damageamount)},
+	  m_NewLeakRate{static_cast<byte>(sec->leakrate)},
+	  m_NewDmgInterval{static_cast<byte>(sec->damageinterval)},
+	  m_Tag{sec->tag},
 {
-	m_Type = silent ? genSilentCrusher : genCrusher;
-	m_Crush = DOOM_CRUSH;
-	m_CrushMode = crushDoom;
-	m_Direction = -1;
 	m_Sector = sec;
-	m_Texture = sec->ceilingpic;
-	m_NewSpecial = sec->special;
-	m_NewDamageRate = sec->damageamount;
-	m_NewDmgInterval = sec->damageinterval;
-	m_NewLeakRate = sec->leakrate;
-	m_NewFlags = sec->flags;
-	m_Tag = sec->tag;
-	m_Silent = m_Type == genSilentCrusher ? 2 : 1;
-	m_TopHeight = sec->ceilingtexz;
-	m_BottomHeight = sec->floortexz + (8 * FRACUNIT);
 
 	// setup ceiling motion speed
 	switch (speed)
@@ -381,7 +376,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 	}
 
 	// set destination target height
-	targheight = sec->ceilingtexz;
+	targheight = P_CeilingHeight(sec);
 	switch (target)
 	{
 	case CtoHnC:
@@ -399,25 +394,25 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 		targheight = P_FindHighestFloorSurrounding(sec);
 		break;
 	case CtoF:
-		targheight = sec->floortexz;
+		targheight = P_FloorHeight(sec);
 		break;
 	case CbyST:
 		targheight =
-		    (sec->ceilingtexz >> FRACBITS) +
-		             m_Direction * (P_FindShortestUpperAround(sec) >> FRACBITS);
+			FIXED2INT(P_CeilingHeight(sec)) +
+			(m_Direction * FIXED2INT(P_FindShortestUpperAround(sec)));
 		if (targheight > 32000)     // jff 3/13/98 prevent overflow
 			targheight = 32000; // wraparound in ceiling height
 		if (targheight < -32000)
 			targheight = -32000;
-		targheight <<= FRACBITS;
+		targheight = INT2FIXED(targheight);
 		break;
 	case Cby24:
 		targheight =
-		    sec->ceilingtexz + m_Direction * 24 * FRACUNIT;
+		    P_CeilingHeight(sec) + (m_Direction * 24_fx); // NOLINT(readability-magic-numbers) - by 24 moves by 24
 		break;
 	case Cby32:
 		targheight =
-		   sec->ceilingtexz + m_Direction * 32 * FRACUNIT;
+		   P_CeilingHeight(sec) + (m_Direction * 32_fx);
 		break;
 	default:
 		break;
@@ -734,13 +729,13 @@ bool P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 		// Don't make noise for instant movement ceilings
 		if (ceiling->m_Direction < 0)
 		{
-			if (ceiling->m_Speed >= sec->ceilingtexz - ceiling->m_BottomHeight)
+			if (ceiling->m_Speed >= P_CeilingHeight(sec) - ceiling->m_BottomHeight)
 				if (silent & 4)
 					ceiling->m_Silent = 2;
 		}
 		else
 		{
-			if (ceiling->m_Speed >= ceiling->m_TopHeight - sec->ceilingtexz)
+			if (ceiling->m_Speed >= ceiling->m_TopHeight - P_CeilingHeight(sec))
 				if (silent & 4)
 					ceiling->m_Silent = 2;
 		}

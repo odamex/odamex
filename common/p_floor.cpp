@@ -566,24 +566,24 @@ DFloor::DFloor(sector_t* sec, const line_t* line, int speed,
 		m_FloorDestHeight = P_FindLowestCeilingSurrounding(sec);
 		break;
 	case FtoC:
-		m_FloorDestHeight = sec->ceilingtexz;
+		m_FloorDestHeight = P_CeilingHeight(sec);
 		break;
 	case FbyST:
 		m_FloorDestHeight =
-		    (sec->floortexz >> FRACBITS) +
-		    m_Direction * (P_FindShortestTextureAround(sec) >> FRACBITS);
+			FIXED2INT(P_FloorHeight(sec)) +
+			(m_Direction * FIXED2INT((P_FindShortestTextureAround(sec))));
 		if (m_FloorDestHeight > 32000)      // jff 3/13/98 prevent overflow
 			m_FloorDestHeight = 32000; // wraparound in floor height
 		if (m_FloorDestHeight < -32000)
 			m_FloorDestHeight = -32000;
-		m_FloorDestHeight <<= FRACBITS;
+		m_FloorDestHeight = INT2FIXED(m_FloorDestHeight);
 		break;
 	case Fby24:
 		m_FloorDestHeight =
-		    sec->floortexz + m_Direction * 24 * FRACUNIT;
+		    P_FloorHeight(sec) + (m_Direction * 24_fx); // NOLINT(readability-magic-numbers) - by 24 moves by 24
 		break;
 	case Fby32:
-		m_FloorDestHeight = sec->floortexz + m_Direction * 32 * FRACUNIT;
+		m_FloorDestHeight = P_FloorHeight(sec) + (m_Direction * 32_fx);
 		break;
 	}
 
@@ -1115,11 +1115,11 @@ bool EV_DoGenStairs(line_t& line)
 	const uint32_t value = static_cast<uint32_t>(line.special) - GenStairsBase;
 
 	// parse the bit fields in the line's special type
-	const int Igno = (value & StairIgnore) >> StairIgnoreShift;
-	const int Dirn = (value & StairDirection) >> StairDirectionShift;
-	const int Step = (value & StairStep) >> StairStepShift;
-	const int Sped = (value & StairSpeed) >> StairSpeedShift;
-	const int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const auto Igno = (value & StairIgnore) >> StairIgnoreShift;
+	const auto Dirn = (value & StairDirection) >> StairDirectionShift;
+	const auto Step = (value & StairStep) >> StairStepShift;
+	const auto Sped = (value & StairSpeed) >> StairSpeedShift;
+	const auto Trig = (value & TriggerType) >> TriggerTypeShift;
 
 	const auto helper = [&](sector_t* sec, int secnum) -> bool
 	{
@@ -1132,7 +1132,7 @@ bool EV_DoGenStairs(line_t& line)
 		fixed_t floorheight = P_FloorHeight(sec);
 
 		// new floor thinker
-		DFloor* floor = new DFloor(sec);
+		auto* floor = new DFloor(sec);
 		P_AddMovingFloor(sec);
 
 		floor->m_Direction = Dirn ? 1 : -1;
@@ -1161,6 +1161,7 @@ bool EV_DoGenStairs(line_t& line)
 		fixed_t stairsize;
 		switch (Step)
 		{
+		default:
 		case StepSize4:
 			stairsize = 4 * FRACUNIT;
 			break;
@@ -1176,7 +1177,7 @@ bool EV_DoGenStairs(line_t& line)
 		}
 
 		const fixed_t speed = floor->m_Speed;
-		int height = sec->floortexz + floor->m_Direction * stairsize;
+		int height = P_FloorHeight(sec) + (floor->m_Direction * stairsize);
 		floor->m_FloorDestHeight = height;
 		const int texture = sec->floorpic;
 		floor->m_Crush = NO_CRUSH;

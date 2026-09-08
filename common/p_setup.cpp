@@ -1826,7 +1826,7 @@ void P_SetSlope(plane_t& plane, const int xyang_deg, const int zang_deg,
 
 void P_VavoomSlope(sector_t& sec, const int id, fixed_t x, fixed_t y, fixed_t z, const bool floor)
 {
-	for (line_t* line : sec.getLines())
+	for (const line_t* line : sec.getLines())
 	{
 		if (line->args[0] != id)
 			continue;
