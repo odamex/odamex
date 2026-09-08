@@ -2237,6 +2237,14 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		target->momx = target->momy = target->momz = 0;
 	}
 
+  	if (target == source or target == inflictor)
+	{
+		if (source != nullptr)
+			damage = FixedMul(damage, source->info->selfdamage);
+		else if (inflictor != nullptr)
+			damage = FixedMul(damage, inflictor->info->selfdamage);
+	}
+
 	if (player)
     {
 		damage = static_cast<int>(static_cast<float>(damage) * G_GetCurrentSkill().damage_factor);

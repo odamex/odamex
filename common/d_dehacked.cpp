@@ -1406,6 +1406,10 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 		{
 			info->respawndice = val;
 		}
+		else if (iequals(key, "Self damage factor"))
+		{
+			info->selfdamage = val;
+		}
 		else if (iequals(key, "ID24 Bits"))
 		{
 			// TODO: except for the translation table and the clearing, this is identical to mbf21 bits section

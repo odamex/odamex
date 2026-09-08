@@ -1819,7 +1819,7 @@ struct mobjinfo_t
 	// const char* pickupsound = nullptr;
 	// std::string pickupmessage = "";
 	// OLumpName translation   = nullptr;
-	// fixed_t selfdamage      = FRACUNIT;
+	fixed_t selfdamage      = FRACUNIT;
 
 	[[nodiscard]]
 	std::string getDisplayName() const;
