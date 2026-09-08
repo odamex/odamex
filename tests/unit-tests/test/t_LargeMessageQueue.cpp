@@ -205,6 +205,21 @@ TEST_F(LargeMessageQueueFixture, MultiMessage)
     EXPECT_EQ(result.state, FragmentationStateEnum::NONE);
 }
 
+TEST_F(LargeMessageQueueFixture, DefaultLargeMessage)
+{
+    LargeMessage msg;
+    EXPECT_EQ(0,    msg.TotalSize());
+    EXPECT_EQ(0,    msg.CurrentSize());
+    EXPECT_EQ(true, msg.IsComplete());
+
+    auto someData = std::to_array("Hey there.");
+
+    EXPECT_EQ(false, msg.Append(someData.data(), someData.size()));
+    EXPECT_EQ(0,     msg.TotalSize());
+    EXPECT_EQ(0,     msg.CurrentSize());
+    EXPECT_EQ(true,  msg.IsComplete());
+}
+
 TEST_F(LargeMessageQueueFixture, Reassembly)
 {
     const std::string greatAdvice = "We can't stop here!  This is BAT COUNTRY!";
@@ -273,4 +288,11 @@ TEST_F(LargeMessageQueueFixture, Reassembly)
 
     const std::string receivedAdvice (reinterpret_cast<char*>(buffer.ReadChunk(payloadSize)), buffer.BytesLeftToRead());
     EXPECT_EQ(receivedAdvice, "We can't stop here!  This is BAT COUNTRY!");
+
+    // Now, test adding more data than we should.
+
+    EXPECT_EQ(false, msg.Append(fragment.data(), fragmentInfo.size));
+    EXPECT_EQ(43,    msg.TotalSize());
+    EXPECT_EQ(43,    msg.CurrentSize());
+    EXPECT_EQ(true,  msg.IsComplete());
 }
