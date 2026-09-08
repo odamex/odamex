@@ -2015,6 +2015,7 @@ void P_SetupThingSlopes(std::span<MapThing> things)
 		// 3rd separate internal type, and when doing that it
 		// checks the spawn map a single time per-mapthing in P_LoadThings(2)
 		// though their spawn map stores slightly different information
+		// we will need to do the 3rd separate type when we add UDMF support anyways
 		if (spawn_map.contains(mt.type))
 			continue;
 
