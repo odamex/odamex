@@ -1990,7 +1990,7 @@ static void PatchMisc(DehScanner& scanner)
 
 		// [SL] manually check if BFG Cells/Shot is being changed and
 		// update weaponinfo accordingly. BFGCells should be considered depricated.
-		if (iequals(key, "BFG Cells/Shot") == 0)
+		if (iequals(key, "BFG Cells/Shot"))
 		{
 			weaponinfo[wp_bfg].ammouse = deh.BFGCells;
 			weaponinfo[wp_bfg].minammo = deh.BFGCells;
