@@ -36,6 +36,18 @@ enum class FragmentationStateEnum
 	MESSAGE_OVERFLOW,       ///< The fragment overflowed somehow...  Should never happen.
 };
 
+struct FragmentationResultType
+{
+	FragmentationStateEnum state { FragmentationStateEnum::NONE };
+	size_t                 size  { 0 };
+
+	FragmentationResultType(FragmentationStateEnum i_state, size_t i_size) :
+	    state { i_state },
+	    size  { i_size }
+	{
+	}
+};
+
 class LargeMessageQueue
 {
 	public:
@@ -48,13 +60,13 @@ class LargeMessageQueue
 
 		template <typename IteratorType>
 		[[ nodiscard ]]
-		FragmentationStateEnum NextFragment(size_t maxSize, IteratorType outIter)
+		FragmentationResultType NextFragment(size_t maxSize, IteratorType outIter)
 		{
 			if (m_queue.SizeInMessages() == 0)
-				return FragmentationStateEnum::NONE;
+				return FragmentationResultType {FragmentationStateEnum::NONE, 0};
 
 			if (maxSize == 0)
-				return FragmentationStateEnum::INVALID_FRAGMENT_SIZE;
+				return FragmentationResultType {FragmentationStateEnum::INVALID_FRAGMENT_SIZE, 0};
 
 			buf_t& bufferRef = m_queue.Front();
 
@@ -73,7 +85,7 @@ class LargeMessageQueue
 
 			// This should never happen due to the above checks.  Still, play it safe.
 			if (dataPtr == nullptr)
-				return FragmentationStateEnum::MESSAGE_OVERFLOW;
+				return FragmentationResultType {FragmentationStateEnum::MESSAGE_OVERFLOW, 0};
 
 			std::copy(dataPtr, dataPtr + numberOfBytesToExtract, outIter);
 
@@ -83,15 +95,15 @@ class LargeMessageQueue
 
 				if (isAtStartOfMessage)
 				{
-					return FragmentationStateEnum::ONE_SHOT;
+					return FragmentationResultType {FragmentationStateEnum::ONE_SHOT, numberOfBytesToExtract};
 				}
-				return FragmentationStateEnum::LAST_FRAGMENT;
+				return FragmentationResultType {FragmentationStateEnum::LAST_FRAGMENT, numberOfBytesToExtract};
 			}
 			if (isAtStartOfMessage)
 			{
-				return FragmentationStateEnum::FIRST_FRAGMENT;
+				return FragmentationResultType {FragmentationStateEnum::FIRST_FRAGMENT, numberOfBytesToExtract};
 			}
-			return FragmentationStateEnum::CONTINUATION_FRAGMENT;
+			return FragmentationResultType {FragmentationStateEnum::CONTINUATION_FRAGMENT, numberOfBytesToExtract};
 		}
 
 	protected:
