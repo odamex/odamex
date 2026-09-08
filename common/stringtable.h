@@ -113,7 +113,7 @@ class StringTable
 	[[nodiscard]]
 	const char* getIndex(int index) const
 	{
-		if (index >= 0 && static_cast<size_t>(index) < ARRAY_LENGTH(::stringIndexes))
+		if (index >= 0 && static_cast<size_t>(index) < ::stringIndexes.size())
 		{
 			const OString* name = ::stringIndexes[index];
 			StringHash::const_iterator it = _stringHash.find(*name);

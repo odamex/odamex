@@ -277,13 +277,12 @@ void StringTable::prepareIndexes()
 	// All of the default strings have index numbers that represent their
 	// position in the now-removed enumeration.  This function simply sets
 	// them all up.
-	for (size_t i = 0; i < ARRAY_LENGTH(::stringIndexes); i++)
+	for (size_t i = 0; i < ::stringIndexes.size(); i++)
 	{
 		OString name = *(::stringIndexes[i]);
-		StringHash::iterator it = _stringHash.find(name);
-		if (it == _stringHash.end())
+		if (not _stringHash.contains(name))
 		{
-			TableEntry entry = {std::make_pair(false, ""_os), 0xFF, static_cast<int>(i)};
+			TableEntry entry = {.string = std::make_pair(false, ""_os), .pass = 0xFF, .index = static_cast<int>(i)};
 			_stringHash.emplace(name, entry);
 		}
 	}
