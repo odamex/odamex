@@ -1656,6 +1656,7 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "aggressiveness", MIType_Float, ref.aggressiveness },
 			{ "spawnfilter", MIType_SpawnFilter, ref.spawn_filter },
 			{ "spawnmulti", MIType_Assign<bool>, ref.spawn_multi, true },
+			{ "spawnmulticooponly", MIType_Assign<bool>, ref.spawn_multi_coop_only, true },
 			{ "instantreaction", MIType_Assign<bool>, ref.instant_reaction, true },
 			{ "acsreturn", MIType_Int, ref.ACS_return },
 			{ "name", MIType_$String, ref.menu_name },

@@ -73,6 +73,7 @@ struct SkillInfo
 	float aggressiveness          = 1.0f;	// not implemented
 	int spawn_filter              = 0;
 	bool spawn_multi              = false;
+	bool spawn_multi_coop_only    = false;
 	bool instant_reaction         = false;
 	int ACS_return                = limits::MAXINT;
 	std::string menu_name;

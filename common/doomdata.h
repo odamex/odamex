@@ -276,16 +276,6 @@ enum class mapthing2flag_t : int16_t
 
 	MTF_FRIENDLY       = 0x2000, // zdoom
 
-	// Custom MapThing Flags
-	// TODO: get this out of the flags
-	// when we're loading hexen format maps, we load these flags directly as an integer
-	// from the THINGS lump, so who knows how this bit might be set there
-	// this is the same bit as zdooms MTF_SHADOW
-	// also, this is only getting used in P_LoadThings, but not P_LoadThings2, so g_thingfilter
-	// probably doesn't even work properly on hexen format maps
-	MTF_FILTER_COOPWPN = 0x0800, // Weapon thing is filtered with g_thingfilter 1.
-	                             // (Hate this method but it works...)
-
 	// if modifying this enum, make sure to update the
 	// enable_bitflag_operators below to return the highest bit variant
 };

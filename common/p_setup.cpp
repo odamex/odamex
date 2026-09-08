@@ -850,22 +850,10 @@ void P_LoadThings (int lump)
 		flags2 |= MTF_SINGLE|MTF_DEATHMATCH|MTF_COOPERATIVE;
 		// spawn it for all classes since these flags can't be set for doom format
 		flags2 |= MTF_FIGHTER|MTF_CLERIC|MTF_MAGE;
-		if (flags & BTF_NOTSINGLE)
-		{
-			#ifdef SERVER_APP
-			if (G_IsCoopGame())
-			{
-				if (g_thingfilter == 1)
-					flags2 |= MTF_FILTER_COOPWPN;
-				else if (g_thingfilter == 2)
-					flags2 &= ~MTF_COOPERATIVE;
-			}
-			else
-			#endif
-				flags2 &= ~MTF_SINGLE;
-		}
+		if (flags & BTF_NOTSINGLE)      flags2 &= ~MTF_SINGLE;
 		if (flags & BTF_NOTDEATHMATCH)  flags2 &= ~MTF_DEATHMATCH;
 		if (flags & BTF_NOTCOOPERATIVE) flags2 &= ~MTF_COOPERATIVE;
+		if (g_thingfilter == 2)         flags2 &= ~MTF_COOPERATIVE;
 		if (flags & BTF_FRIEND)         flags2 |= MTF_FRIENDLY;
 
 		mapthing2_t mt2 = {

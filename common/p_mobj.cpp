@@ -3670,21 +3670,28 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// Filter mapthings based on the gamemode
-	if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
+	MapThingFlags spawn_mask;
+	if (!multiplayer)
 	{
-		if (!(mthing.flags & MTF_SINGLE))
-			return;
+		if (g_thingfilter == -1 || G_GetCurrentSkill().spawn_multi_coop_only)
+			spawn_mask = MTF_COOPERATIVE;
+		else if (G_GetCurrentSkill().spawn_multi)
+			spawn_mask = MTF_SINGLE | MTF_COOPERATIVE;
+		else
+			spawn_mask = MTF_SINGLE;
 	}
+	// should this also include CTF?
 	else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
 	{
-		if (!(mthing.flags & MTF_DEATHMATCH))
-			return;
+		spawn_mask = MTF_DEATHMATCH;
 	}
 	else if (G_IsCoopGame())
 	{
-		if (!(mthing.flags & MTF_COOPERATIVE))
-			return;
+		spawn_mask = MTF_COOPERATIVE;
 	}
+
+	if (not (mthing.flags & combo(spawn_mask)))
+		return;
 
 	if (g_thingfilter == 3 && P_IsPickupableThing(mthing.type))
 		return;
@@ -3805,7 +3812,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (!G_IsCoopGame() && info->flags & MF_NOTDMATCH)
 		return;
 
-	// don't spawn deathmatch weapons in offline single player mode
+	// filter out extra weapons in coop
+	if (g_thingfilter == 1)
 	{
 		switch (type)
 		{
@@ -3816,17 +3824,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		case MT_MISC26: // chainsaw
 		case MT_MISC27: // rocket launcher
 		case MT_MISC28: // plasma gun
-			if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
-			{
-				if ((mthing.flags & MTF_DEATHMATCH) && !(mthing.flags & MTF_SINGLE))
-					return;
-			}
-			else
-			{
-				if ((mthing.flags & MTF_FILTER_COOPWPN))
-					return;
-			}
-			break;
+			if (multiplayer and G_IsCoopGame() and not (mthing.flags & MTF_SINGLE))
+				return;
 		default:
 			break;
 		}
