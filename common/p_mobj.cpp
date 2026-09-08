@@ -3689,8 +3689,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 
 	// check for appropriate skill level
-	// TODO: change type of spawn_filter to MapThingFlags after merging with type-safe mapinfo PR
-	if (!(mthing.flags & combo(MapThingFlags::unsafe_from_int(static_cast<int16_t>(G_GetCurrentSkill().spawn_filter)))))
+	if (!(mthing.flags & combo(G_GetCurrentSkill().spawn_filter)))
 		return;
 
 	if (isSpringPad)
