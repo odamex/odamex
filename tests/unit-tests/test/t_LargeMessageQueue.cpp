@@ -9,6 +9,15 @@ struct LargeMessageQueueFixture : testing::Test
     LargeMessageQueue m_queue;
 };
 
+TEST_F(LargeMessageQueueFixture, EmptyQueue)
+{
+    std::array<char, 5> fragment;
+
+    const FragmentationResultType result = m_queue.NextFragment(fragment.size(), fragment.begin());
+    EXPECT_EQ(FragmentationStateEnum::NONE,     result.state);
+    EXPECT_EQ(0,                                result.size);
+}
+
 TEST_F(LargeMessageQueueFixture, BasicSingleMessage)
 {
     m_queue.Write(svc_print, "HelloWorld");
