@@ -1398,6 +1398,14 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 			info->display_name = value;
 			info->display_name_set = true;
 		}
+		else if (iequals(key, "Min respawn tics"))
+		{
+			info->minrespawntics = val;
+		}
+		else if (iequals(key, "Respawn dice"))
+		{
+			info->respawndice = val;
+		}
 		else
 		{
 			PrintUnknown(key, "Thing", thingNum);

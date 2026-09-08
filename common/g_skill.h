@@ -33,7 +33,7 @@
 
 EXTERN_CVAR(sv_skill)
 
-#define MAX_SKILLS 7
+inline constexpr int MAX_SKILLS = 7;
 
 enum class skillflags_t : uint32_t
 {
@@ -67,7 +67,7 @@ struct SkillInfo
 
 	bool easy_boss_brain          = false;
 	bool easy_key                 = false;
-	bool no_menu                  = 0;		// not implemented
+	bool no_menu                  = false;	// not implemented
 	int respawn_counter           = 0;
 	int respawn_limit             = 0;		// not implemented
 	float aggressiveness          = 1.0f;	// not implemented
@@ -98,6 +98,6 @@ inline const SkillInfo& G_GetCurrentSkill()
 {
 	if (sv_skill == 0)
 		return SkillInfos[MAX_SKILLS];
-	else
-		return SkillInfos[sv_skill.asInt() - 1];
+
+	return SkillInfos[sv_skill.asInt() - 1];
 }

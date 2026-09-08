@@ -1216,6 +1216,7 @@ void AActor::RunThink ()
 
 		// Ch0wW - Let the server handle it alone.
 		// (CHECKME: Does that interfere with vanilla demos?)
+		// should this just be !serverside?
 		if ((multiplayer && clientside && !serverside))
 			return;
 
@@ -1223,21 +1224,21 @@ void AActor::RunThink ()
 
 		int respawntimer = 0;
 
-		if (G_GetCurrentSkill().respawn_counter < 0)
+		if (G_GetCurrentSkill().respawn_counter != 0)
 			respawntimer = G_GetCurrentSkill().respawn_counter;
 		else
-			respawntimer = 12 * TICRATE;
+			respawntimer = this->info->minrespawntics;
 
 		if (movecount < respawntimer)
-		return;
+			return;
 
 		if (level.time & 31)
 			return;
 
-		if (P_Random (this) > 4)
+		if (P_Random(this) > this->info->respawndice)
 			return;
 
-		P_NightmareRespawn (this);
+		P_NightmareRespawn(this);
 	}
 }
 

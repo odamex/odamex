@@ -1806,8 +1806,8 @@ struct mobjinfo_t
 	std::string deh_name     = "";
 
 	// ID24 stuff
-	// int minrespawntics      = 420;
-	// int respawndice         = 4;
+	int minrespawntics      = 420; // 12 * TICRATE
+	int respawndice         = 4;
 	// int pickupammotype      = -1;
 	// int pickupammocategory  = -1;
 	// int pickupweapontype    = -1;
