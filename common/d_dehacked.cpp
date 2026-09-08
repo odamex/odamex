@@ -1406,6 +1406,54 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 		{
 			info->respawndice = val;
 		}
+		else if (iequals(key, "ID24 Bits"))
+		{
+			// TODO: except for the translation table and the clearing, this is identical to mbf21 bits section
+			// probably should factor out into a function
+			// might try to make it flexible enough to handle the mnemonic-only bits from the classic Bits field
+
+			info->flags3 &= ~(MF3_NORESPAWN | MF3_SPECSTAYSSINGLE | MF3_SPECSTAYSCOOP | MF3_SPECSTAYSDM);
+
+			static constexpr std::array<flag_mapper_t, 4> id24flagtranslation
+			{{
+				{ .name = "NORESPAWN",          .dehBit = BIT(0), .setter = [](mobjinfo_t& info){ info.flags3 |= MF3_NORESPAWN; }       },
+				{ .name = "SPECIALSTAYSSINGLE", .dehBit = BIT(1), .setter = [](mobjinfo_t& info){ info.flags3 |= MF3_SPECSTAYSSINGLE; } },
+				{ .name = "SPECIALSTAYSCOOP",   .dehBit = BIT(2), .setter = [](mobjinfo_t& info){ info.flags3 |= MF3_SPECSTAYSCOOP; }   },
+				{ .name = "SPECIALSTAYSDM",     .dehBit = BIT(3), .setter = [](mobjinfo_t& info){ info.flags3 |= MF3_SPECSTAYSDM; }     },
+			}};
+
+			for (const auto strval : SplitBexBits(value, ",+| \t\f\r"))
+			{
+				if (IsNum(strval))
+				{
+					// TODO: maybe give a warning for out of range bits
+					const int32_t tempval = ParseNum<int32_t>(strval).value_or(0);
+
+					for (const auto& [_, dehflag, setter] : id24flagtranslation)
+					{
+						if (tempval & dehflag)
+							setter(*info);
+					}
+				}
+				else
+				{
+					bool found = false;
+					for (const auto& [name, _, setter] : id24flagtranslation)
+					{
+						if (iequals(strval, name))
+						{
+							setter(*info);
+							found = true;
+						}
+					}
+
+					if (!found)
+					{
+						DPrintFmt("Unknown bit mnemonic {}\n", strval);
+					}
+				}
+			}
+		}
 		else
 		{
 			PrintUnknown(key, "Thing", thingNum);

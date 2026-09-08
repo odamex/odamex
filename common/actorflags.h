@@ -145,31 +145,36 @@ enum class mobjflag3_t : uint32_t
 {
 	// --- mobj.flags3 ---
 	// MBF21-specific flags
-	                              // BIT0 will be MF2_LOGRAV
-	MF3_SHORTMRANGE    = BIT(1),  // has short missile range (archvile)
-	MF3_DMGIGNORED     = BIT(2),  // other things ignore its attacks (archvile)
-	MF3_NORADIUSDMG    = BIT(3),  // doesn't take splash damage
-	MF3_FORCERADIUSDMG = BIT(4),  // does radius damage to everything, no exceptions
-	MF3_HIGHERMPROB    = BIT(5),  // min prob. of miss. att. = 37.5% vs 22%
-	MF3_RANGEHALF      = BIT(6),  // use half actual distance for missile attack probability
-	MF3_NOTHRESHOLD    = BIT(7),  // has no targeting threshold (archvile)
-	MF3_LONGMELEE      = BIT(8),  // long melee range
-	                              // BIT 9 is MF2_BOSS -- RESERVED
-	MF3_MAP07BOSS1     = BIT(10), // is a MAP07 boss type 1 (666)
-	MF3_MAP07BOSS2     = BIT(11), // is a MAP07 boss type 2 (667)
-	MF3_E1M8BOSS       = BIT(12), // is an E1M8 boss
-	MF3_E2M8BOSS       = BIT(13), // is an E1M8 boss
-	MF3_E3M8BOSS       = BIT(14), // is an E3M8 boss
-	MF3_E4M6BOSS       = BIT(15), // is an E4M6 boss
-	MF3_E4M8BOSS       = BIT(16), // is an E4M8 boss
-	                              // BIT 17 is MF2_RIP -- RESERVED
-	MF3_FULLVOLSOUNDS  = BIT(18), // full volume see / death sound
+	                               // BIT0 will be MF2_LOGRAV
+	MF3_SHORTMRANGE     = BIT(1),  // has short missile range (archvile)
+	MF3_DMGIGNORED      = BIT(2),  // other things ignore its attacks (archvile)
+	MF3_NORADIUSDMG     = BIT(3),  // doesn't take splash damage
+	MF3_FORCERADIUSDMG  = BIT(4),  // does radius damage to everything, no exceptions
+	MF3_HIGHERMPROB     = BIT(5),  // min prob. of miss. att. = 37.5% vs 22%
+	MF3_RANGEHALF       = BIT(6),  // use half actual distance for missile attack probability
+	MF3_NOTHRESHOLD     = BIT(7),  // has no targeting threshold (archvile)
+	MF3_LONGMELEE       = BIT(8),  // long melee range
+	                               // BIT 9 is MF2_BOSS -- RESERVED
+	MF3_MAP07BOSS1      = BIT(10), // is a MAP07 boss type 1 (666)
+	MF3_MAP07BOSS2      = BIT(11), // is a MAP07 boss type 2 (667)
+	MF3_E1M8BOSS        = BIT(12), // is an E1M8 boss
+	MF3_E2M8BOSS        = BIT(13), // is an E1M8 boss
+	MF3_E3M8BOSS        = BIT(14), // is an E3M8 boss
+	MF3_E4M6BOSS        = BIT(15), // is an E4M6 boss
+	MF3_E4M8BOSS        = BIT(16), // is an E4M8 boss
+	                               // BIT 17 is MF2_RIP -- RESERVED
+	MF3_FULLVOLSOUNDS   = BIT(18), // full volume see / death sound
+	// ID24 flags
+	MF3_NORESPAWN       = BIT(19), // does not respawn with monster respawning enabled
+	MF3_SPECSTAYSSINGLE = BIT(20), // unimplemented
+	MF3_SPECSTAYSCOOP   = BIT(21), // unimplemented
+	MF3_SPECSTAYSDM     = BIT(22), // unimplemented
 	// if modifying this enum, make sure to update the
 	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum mobjflag3_t;
-constexpr mobjflag3_t enable_bitflag_operators(mobjflag3_t) { return MF3_FULLVOLSOUNDS; }
+constexpr mobjflag3_t enable_bitflag_operators(mobjflag3_t) { return MF3_SPECSTAYSDM; }
 using ActorFlags3 = OFlags<mobjflag3_t>;
 
 enum class mobjoflag_t : uint32_t

@@ -1211,7 +1211,7 @@ void AActor::RunThink ()
 		const bool respawnmonsters = (G_GetCurrentSkill().respawn_counter || sv_monstersrespawn);
 
 		// check for nightmare respawn
-		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
+		if (!(flags & MF_COUNTKILL) || !respawnmonsters || this->info->flags3 & MF3_NORESPAWN)
 			return;
 
 		// Ch0wW - Let the server handle it alone.
