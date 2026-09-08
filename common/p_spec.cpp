@@ -539,18 +539,18 @@ void DPusher::Serialize (FArchive &arc)
 //
 #define MAX_ANIM_FRAMES	32
 
-typedef struct
+struct anim_t
 {
 	short 	basepic;
 	short	numframes;
 	byte 	istexture;
-	byte	uniqueframes;
+	bool	uniqueframes;
 	byte	countdown;
 	byte	curframe;
 	byte 	speedmin[MAX_ANIM_FRAMES];
 	byte	speedmax[MAX_ANIM_FRAMES];
 	short	framepic[MAX_ANIM_FRAMES];
-} anim_t;
+};
 
 
 
@@ -887,24 +887,24 @@ void P_InitPicAnims()
 	const auto length = W_LumpLength(lumpnum);
 
 	// Init animation
-
-	for (byte* anim_p = animdefs; *anim_p != 255; anim_p += 23)
+	static constexpr auto anim_size = 23;
+	for (byte* anim_p = animdefs; *anim_p != 255; anim_p += anim_size)
 	{
-		if (anim_p + 22 >= animdefs + length)
+		if (anim_p + anim_size - 1 >= animdefs + length)
 			I_Error("Tried to read past end of ANIMATED lump");
 
 		anim_t* lastanim = &anims.emplace_back();
 
 		if (*anim_p /* .istexture */ & 1)
 		{
+			const int starttex = R_CheckTextureNumForName(anim_p + 10 /* .startname */);
+			const int endtex = R_CheckTextureNumForName(anim_p + 1 /* .endname */);
 			// different episode ?
-			if (R_CheckTextureNumForName (anim_p + 10 /* .startname */) == -1 ||
-				R_CheckTextureNumForName (anim_p + 1 /* .endname */) == -1)
+			if (starttex == -1 or endtex == -1)
 				continue;
 
-			lastanim->basepic = R_TextureNumForName (anim_p + 10 /* .startname */);
-			lastanim->numframes = R_TextureNumForName (anim_p + 1 /* .endname */)
-								  - lastanim->basepic + 1;
+			lastanim->basepic = static_cast<int16_t>(starttex);
+			lastanim->numframes = static_cast<int16_t>(endtex - lastanim->basepic + 1);
 			/*if (*anim_p & 2)
 			{ // [RH] Bit 1 set means allow decals on walls with this texture
 				texturenodecals[lastanim->basepic] = 0;
@@ -2325,7 +2325,7 @@ void P_UpdateSpecials()
 
 		if (anim.uniqueframes)
 		{
-			int pic = anim.framepic[anim.curframe];
+			const int pic = anim.framepic[anim.curframe];
 
 			if (anim.istexture)
 				for (int i = 0; i < anim.numframes; i++)
@@ -2338,7 +2338,7 @@ void P_UpdateSpecials()
 		{
 			for (int i = anim.basepic; i < anim.basepic + anim.numframes; i++)
 			{
-				int pic = anim.basepic + ((anim.curframe + i) % anim.numframes);
+				const int pic = anim.basepic + ((anim.curframe + i) % anim.numframes);
 
 				if (anim.istexture)
 					texturetranslation[i] = pic;
