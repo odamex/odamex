@@ -23,6 +23,7 @@
 #pragma once
 
 #include "i_net.h"
+#include "LargeMessage.h"
 #include "MessageQueue.h"
 
 enum class FragmentationStateEnum
@@ -57,6 +58,9 @@ class LargeMessageQueue
 		{
 			m_queue.Write(std::forward<decltype(args)>(args)...);
 		}
+
+		[[ nodiscard ]]
+		size_t GetMessageSize() const { return m_queue.SizeInMessages() != 0 ? m_queue.Front().size() : 0; }
 
 		template <typename IteratorType>
 		[[ nodiscard ]]
@@ -108,6 +112,5 @@ class LargeMessageQueue
 
 	protected:
 
-		static const size_t MAX_LARGE_MESSAGE_SIZE { 64 * 1024 };
-		MessageQueue m_queue { MAX_LARGE_MESSAGE_SIZE };
+		MessageQueue m_queue { LargeMessage::MAX_SIZE };
 };
