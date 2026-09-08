@@ -936,10 +936,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 		// bonus items
 		case SPR_BON1:
 			player.health += static_cast<int>(G_GetCurrentSkill().health_factor); // can go over 100%
-			if (player.health > deh.MaxSoulsphere)
-			{
-				player.health = deh.MaxSoulsphere;
-			}
+			player.health = std::min(player.health, deh.MaxSoulsphere);
 			player.mo->health = player.health;
 			msg = &GOTHTHBONUS;
 			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_HEALTHBONUS, false);
@@ -947,10 +944,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 
 		case SPR_BON2:
 			player.armorpoints += static_cast<int>(G_GetCurrentSkill().armor_factor); // can go over 100%
-			if (player.armorpoints > deh.MaxArmor)
-			{
-				player.armorpoints = deh.MaxArmor;
-			}
+			player.armorpoints = std::min(player.armorpoints, deh.MaxArmor);
 			if (!player.armortype)
 			{
 				player.armortype = deh.GreenAC;
@@ -961,10 +955,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 
 		case SPR_SOUL:
 			player.health += static_cast<int>(static_cast<float>(deh.SoulsphereHealth) * G_GetCurrentSkill().health_factor);
-			if (player.health > deh.MaxSoulsphere)
-			{
-			    player.health = deh.MaxSoulsphere;
-			}
+			player.health = std::min(player.health, deh.MaxSoulsphere);
 			player.mo->health = player.health;
 			msg = &GOTSUPER;
 			sound = SpecialSound::PowerUp;
