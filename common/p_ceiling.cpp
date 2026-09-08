@@ -312,7 +312,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
 	  m_NewDamageRate{static_cast<int16_t>(sec->damageamount)},
 	  m_NewLeakRate{static_cast<byte>(sec->leakrate)},
 	  m_NewDmgInterval{static_cast<byte>(sec->damageinterval)},
-	  m_Tag{sec->tag},
+	  m_Tag{sec->tag}
 {
 	m_Sector = sec;
 
