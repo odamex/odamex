@@ -74,6 +74,7 @@ namespace {
 void P_SetupLevelFloorPlane(sector_t *sector);
 void P_SetupLevelCeilingPlane(sector_t *sector);
 void P_SetupLineSlopes();
+void P_SetupThingSlopes(std::span<MapThing> things);
 }
 
 void P_InvertPlane(plane_t *plane);
@@ -908,6 +909,7 @@ void P_LoadThings2 (int lump, int position)
 	auto* data = W_CacheLumpNum<mapthing2_t>(lump, PU_STATIC);
 	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
 	size_t count = W_LumpLength(lump) / sizeof(mapthing2_t);
+	auto things = std::span{data, count};
 
 	P_HordeClearSpawns();
 	playerstarts.clear();
@@ -916,13 +918,12 @@ void P_LoadThings2 (int lump, int position)
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		GetTeamInfo(static_cast<team_t>(iTeam))->Starts.clear();
 
-	for (size_t i = 0; i < count; i++)
+	for (auto& mt : things)
 	{
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
 		//		everything and let it decide what to do with them.
-		mapthing2_t& mt = data[i];
 
 		mt.thingid = LESHORT(mt.thingid);
 		mt.x = LESHORT(mt.x);
@@ -939,9 +940,12 @@ void P_LoadThings2 (int lump, int position)
 			Freecam::setStartPosition(mt.x << FRACBITS, mt.y << FRACBITS, ONFLOORZ, ANG45 * (mt.angle / 45));
 		}
 		#endif
-
-		P_SpawnMapThing(mt, position);
 	}
+
+	P_SetupThingSlopes(things);
+
+	for (auto& mt : things)
+		P_SpawnMapThing(mt, position);
 
 	// Sort by player number if starts are not in order
 	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
@@ -1658,7 +1662,7 @@ void P_SetupLineSlopes()
 	}
 }
 
-void P_CopyPlane(int tag, sector_t& dest, bool copyCeiling)
+void P_CopyPlane(const int tag, sector_t& dest, const bool floor)
 {
 	const int secnum = P_FindSectorFromTag(tag, -1);
 	if (secnum == -1)
@@ -1666,38 +1670,38 @@ void P_CopyPlane(int tag, sector_t& dest, bool copyCeiling)
 
 	const sector_t& source = R_GetSectors()[secnum];
 
-	if (copyCeiling)
-		dest.ceilingplane = source.ceilingplane;
-	else
+	if (floor)
 		dest.floorplane = source.floorplane;
+	else
+		dest.ceilingplane = source.ceilingplane;
 };
 
-void P_CopyPlane(int tag, fixed_t x, fixed_t y, bool copyCeiling)
+void P_CopyPlane(const int tag, const fixed_t x, const fixed_t y, const bool floor)
 {
 	sector_t& dest = *P_PointInSubsector(x, y)->sector;
-	P_CopyPlane(tag, dest, copyCeiling);
+	P_CopyPlane(tag, dest, floor);
 }
 
 void P_CopySlopes()
 {
 	for (line_t& line : R_GetLines())
 	{
-		if (not (map_format.getZDoom() && line.special == Plane_Copy))
+		if (not (map_format.getZDoom() and line.special == Plane_Copy))
 			continue;
 
 		line.special = 0;
 		if (line.args[0])
-			P_CopyPlane(line.args[0], *line.frontsector, false);
+			P_CopyPlane(line.args[0], *line.frontsector, true);
 		if (line.args[1])
-			P_CopyPlane(line.args[1], *line.frontsector, true);
+			P_CopyPlane(line.args[1], *line.frontsector, false);
 
 		if (not line.backsector)
 			continue;
 
 		if (line.args[2])
-			P_CopyPlane(line.args[2], *line.backsector, false);
+			P_CopyPlane(line.args[2], *line.backsector, true);
 		if (line.args[3])
-			P_CopyPlane(line.args[3], *line.backsector, true);
+			P_CopyPlane(line.args[3], *line.backsector, false);
 
 		static constexpr int floor_mask = 0b11;
 		static constexpr int ceiling_mask = 0b1100;
@@ -1730,6 +1734,345 @@ void P_CopySlopes()
 			case CeilBackToFront:
 				line.frontsector->ceilingplane = line.backsector->ceilingplane;
 				break;
+		}
+	}
+}
+
+void P_SlopeLineToPoint (const int lineid, const fixed_t x, const fixed_t y, const fixed_t z, const bool floor)
+{
+	int linenum = -1;
+	while ((linenum = P_FindLineFromID(lineid, linenum)) != -1)
+	{
+		const line_t& line = R_GetLines()[linenum];
+		sector_t* sec = P_PointOnLineSide(x, y, &line) == 0 ? line.frontsector : line.backsector;
+
+		if (sec == nullptr)
+			continue;
+
+		plane_t& plane = floor ? sec->floorplane : sec->ceilingplane;
+
+		v3double_t p;
+		p.x = FIXED2DOUBLE(line.v1->x);
+		p.y = FIXED2DOUBLE(line.v1->y);
+		p.z = P_PlaneZ(FIXED2DOUBLE(line.v1->x), FIXED2DOUBLE(line.v1->y), &plane);
+
+		v3double_t v1;
+		v1.x = FIXED2DOUBLE(line.dx);
+		v1.y = FIXED2DOUBLE(line.dy);
+		v1.y = P_PlaneZ(FIXED2DOUBLE(line.v2->x), FIXED2DOUBLE(line.v2->y), &plane) - p.y;
+
+		v3double_t v2;
+		v2.x = FIXED2DOUBLE(x - line.v1->x);
+		v2.y = FIXED2DOUBLE(y - line.v1->y);
+		v2.y = FIXED2DOUBLE(z) - p.y;
+
+		v3double_t cross;
+		M_CrossProductVec3(&cross, &v1, &v2);
+		M_NormalizeVec3(&cross, &cross);
+
+		// Fix backward normals
+		if ((cross.y < 0 and floor) or (cross.y > 0 and not floor))
+		{
+			cross.x = -cross.x;
+			cross.y = -cross.y;
+			cross.z = -cross.z;
+		}
+
+		plane.a = DOUBLE2FIXED(cross.x);
+		plane.b = DOUBLE2FIXED(cross.y);
+		plane.c = DOUBLE2FIXED(cross.z);
+		plane.invc = DOUBLE2FIXED(1.0 / cross.z);
+		plane.d = -DOUBLE2FIXED(
+			(cross.x * FIXED2DOUBLE(x)) +
+			(cross.y * FIXED2DOUBLE(y)) +
+			(cross.z * FIXED2DOUBLE(z))
+		);
+		// TODO: verify that this is correct
+		plane.texx = line.v1->x;
+		plane.texy = line.v1->y;
+	}
+}
+
+void P_SetSlope(plane_t& plane, const int xyang_deg, const int zang_deg,
+                const fixed_t x, const fixed_t y, const fixed_t z, const bool floor)
+{
+	angle_t zang;
+	if (zang_deg >= 180) // NOLINT(readability-magic-numbers) - I think 180 degrees is obvious
+		zang = ANG180 - ANG(1);
+	else if (zang_deg <= 0)
+		zang = ANG(1);
+	else
+		zang = ANG(zang_deg);
+
+	if (not floor)
+		zang += ANG180;
+
+	zang >>= ANGLETOFINESHIFT;
+
+	const angle_t xyang = ANG(xyang_deg) >> ANGLETOFINESHIFT;
+
+	v3double_t norm;
+	norm.x = FIXED2DOUBLE(finecosine[zang]) *
+	         FIXED2DOUBLE(finecosine[xyang]);
+	norm.y = FIXED2DOUBLE(finecosine[zang]) *
+	         FIXED2DOUBLE(finesine[xyang]);
+	norm.z = FIXED2DOUBLE(finesine[zang]);
+
+	M_NormalizeVec3(&norm, &norm);
+
+	plane.a = DOUBLE2FIXED(norm.x);
+	plane.b = DOUBLE2FIXED(norm.y);
+	plane.c = DOUBLE2FIXED(norm.z);
+	plane.invc = DOUBLE2FIXED(1.0 / norm.z);
+	plane.d = -DOUBLE2FIXED(
+		(norm.x * FIXED2DOUBLE(x)) +
+		(norm.y * FIXED2DOUBLE(y)) +
+		(norm.z * FIXED2DOUBLE(z))
+	);
+	// TODO: verify that this is correct
+	plane.texx = x;
+	plane.texy = y;
+}
+
+void P_VavoomSlope(sector_t& sec, const int id, fixed_t x, fixed_t y, fixed_t z, const bool floor)
+{
+	for (line_t* line : sec.getLines())
+	{
+		if (line->args[0] != id)
+			continue;
+
+		const fixed_t height = floor ?  P_FloorHeight(&sec) : P_CeilingHeight(&sec);
+
+		v3double_t v1;
+		v1.x = FIXED2DOUBLE(x - line->v2->x);
+		v1.y = FIXED2DOUBLE(y - line->v2->y);
+		v1.z = FIXED2DOUBLE(z - height);
+
+		v3double_t v2;
+		v2.x = FIXED2DOUBLE(x - line->v1->x);
+		v2.y = FIXED2DOUBLE(y - line->v1->y);
+		v2.z = FIXED2DOUBLE(z - height);
+
+		v3double_t cross;
+		M_CrossProductVec3(&cross, &v1, &v2);
+
+		const auto length = M_LengthVec3(cross);
+		if (length == 0.0)
+		{
+			PrintFmt(PRINT_WARNING, "Slope thing at ({},{}) is directly on target line\n", FIXED2INT(x), FIXED2INT(y));
+			return;
+		}
+
+		M_NormalizeVec3(&cross, &cross);
+
+		if ((cross.z < 0 and floor) or (cross.z > 0 and not floor))
+		{
+			cross.x = -cross.x;
+			cross.y = -cross.y;
+			cross.z = -cross.z;
+		}
+
+		plane_t& plane = floor ? sec.floorplane : sec.ceilingplane;
+		plane.a = DOUBLE2FIXED(cross.x);
+		plane.b = DOUBLE2FIXED(cross.y);
+		plane.c = DOUBLE2FIXED(cross.z);
+		plane.invc = DOUBLE2FIXED(1.0 / cross.z);
+		plane.d = -DOUBLE2FIXED(
+			(cross.x * FIXED2DOUBLE(x)) +
+			(cross.y * FIXED2DOUBLE(y)) +
+			(cross.z * FIXED2DOUBLE(z))
+		);
+		// TODO: verify that this is correct
+		plane.texx = x;
+		plane.texy = y;
+
+		return;
+	}
+}
+
+enum
+{
+	Slope_VavoomFloor           = 1500,
+	Slope_VavoomCeiling         = 1501,
+	Slope_VavoomVertexFloor     = 1504,
+	Slope_VavoomVertexCeiling   = 1505,
+	Slope_SlopeFloorPointLine   = 9500,
+	Slope_SlopeCeilingPointLine = 9501,
+	Slope_SetFloorSlope         = 9502,
+	Slope_SetCeilingSlope       = 9503,
+	Slope_CopyFloorPlane        = 9510,
+	Slope_CopyCeilingPlane      = 9511,
+};
+
+void P_SetupVertexSlopes(std::span<MapThing> things)
+{
+	std::array<std::unordered_map<ptrdiff_t, double>, 2> vt_heights;
+	static constexpr auto floor_idx = 0;
+	static constexpr auto ceil_idx = 1;
+
+	for (auto& mt : things)
+	{
+		if (spawn_map.contains(mt.type))
+			continue;
+
+		if (mt.type != Slope_VavoomVertexCeiling and mt.type != Slope_VavoomVertexFloor)
+			continue;
+
+		for (int i = 0; i < numvertexes; i++)
+		{
+			if (vertexes[i].x == INT2FIXED(mt.x) and vertexes[i].y == INT2FIXED(mt.y))
+			{
+				if (mt.type == Slope_VavoomVertexCeiling)
+					vt_heights[ceil_idx][i] = mt.z;
+				else
+					vt_heights[floor_idx][i] = mt.z;
+			}
+		}
+
+		mt.type = 0;
+	}
+
+	// don't bother iterating over all sectors if there's nothing to do
+	if (vt_heights[0].empty() and vt_heights[1].empty())
+		return;
+
+	for (auto& sec : R_GetSectors())
+	{
+		if (sec.getLines().size() != 3)
+			continue;
+
+		const auto vi1 = sec.getLines()[0]->v1 - vertexes;
+		const auto vi2 = sec.getLines()[0]->v2 - vertexes;
+		const auto vi3 =
+			(sec.getLines()[1]->v1 == sec.getLines()[0]->v1 or sec.getLines()[1]->v1 == sec.getLines()[0]->v2) ?
+				sec.getLines()[1]->v2 - vertexes :
+				sec.getLines()[1]->v1 - vertexes;
+
+		v3double_t vt1;
+		vt1.x = FIXED2DOUBLE(vertexes[vi1].x);
+		vt1.y = FIXED2DOUBLE(vertexes[vi1].y);
+
+		v3double_t vt2;
+		vt2.x = FIXED2DOUBLE(vertexes[vi2].x);
+		vt2.y = FIXED2DOUBLE(vertexes[vi2].y);
+
+		v3double_t vt3;
+		vt3.x = FIXED2DOUBLE(vertexes[vi3].x);
+		vt3.y = FIXED2DOUBLE(vertexes[vi3].y);
+
+		for (int i = 0; i < 2; i++)
+		{
+			const bool floor = i == floor_idx;
+			const auto h1 = vt_heights[i].find(vi1);
+			const auto h2 = vt_heights[i].find(vi2);
+			const auto h3 = vt_heights[i].find(vi3);
+
+			if (h1 == vt_heights[i].end() and h2 == vt_heights[i].end() and h3 == vt_heights[i].end())
+				continue;
+
+			const auto sector_height = floor ? FIXED2DOUBLE(P_FloorHeight(&sec)) : FIXED2DOUBLE(P_CeilingHeight(&sec));
+			vt1.z = h1 != vt_heights[i].end() ? h1->second : sector_height;
+			vt2.z = h2 != vt_heights[i].end() ? h2->second : sector_height;
+			vt3.z = h3 != vt_heights[i].end() ? h3->second : sector_height;
+
+			v3double_t vec1;
+			v3double_t vec2;
+			if (P_PointOnLineSide(vertexes[vi3].x, vertexes[vi3].y, sec.getLines()[0]) == 0)
+			{
+				M_SubVec3(&vec1, &vt2, &vt3);
+				M_SubVec3(&vec2, &vt1, &vt3);
+			}
+			else
+			{
+				M_SubVec3(&vec1, &vt1, &vt3);
+				M_SubVec3(&vec2, &vt2, &vt3);
+			}
+
+			v3double_t cross;
+			M_CrossProductVec3(&cross, &vec1, &vec2);
+
+			const auto length = M_LengthVec3(cross);
+			if (length == 0.0)
+				continue;
+
+			M_NormalizeVec3(&cross, &cross);
+
+			if ((cross.z < 0 and floor) or (cross.z > 0 and not floor))
+			{
+				cross.x = -cross.x;
+				cross.y = -cross.y;
+				cross.z = -cross.z;
+			}
+
+			plane_t& plane = floor ? sec.floorplane : sec.ceilingplane;
+			plane.a = DOUBLE2FIXED(cross.x);
+			plane.b = DOUBLE2FIXED(cross.y);
+			plane.c = DOUBLE2FIXED(cross.z);
+			plane.invc = DOUBLE2FIXED(1.0/cross.z);
+			plane.d = -DOUBLE2FIXED(
+				(cross.x * FIXED2DOUBLE(vertexes[vi3].x)) +
+				(cross.y * FIXED2DOUBLE(vertexes[vi3].y)) +
+				(cross.z * vt3.z)
+			);
+			plane.texx = vertexes[vi3].x;
+			plane.texy = vertexes[vi3].y;
+		}
+	}
+}
+
+void P_SetupThingSlopes(std::span<MapThing> things)
+{
+	for (auto& mt : things)
+	{
+		// TODO: we really need a better way of handling this
+		// so we don't have to keep calling .contains all over
+		// modern zdoom converts doom and hexen mapthings to a
+		// 3rd separate internal type, and when doing that it
+		// checks the spawn map a single time per-mapthing in P_LoadThings(2)
+		// though their spawn map stores slightly different information
+		if (spawn_map.contains(mt.type))
+			continue;
+
+		if (not ((mt.type >= Slope_SlopeFloorPointLine and mt.type <= Slope_SetCeilingSlope) or (mt.type == Slope_VavoomFloor) or (mt.type == Slope_VavoomCeiling)))
+			continue;
+
+		const fixed_t x = INT2FIXED(mt.x);
+		const fixed_t y = INT2FIXED(mt.y);
+		sector_t& sec = *R_PointInSubsector(x, y)->sector;
+		plane_t* plane;
+		bool floor;
+		if (mt.type & 1)
+		{
+			plane = &sec.ceilingplane;
+			floor = false;
+		}
+		else
+		{
+			plane = &sec.floorplane;
+			floor = true;
+		}
+
+		if (mt.type <= Slope_VavoomCeiling)
+			P_VavoomSlope(sec, mt.thingid, x, y, INT2FIXED(mt.z), floor);
+		else if (mt.type <= Slope_SlopeCeilingPointLine)
+			P_SlopeLineToPoint(mt.args[0], x, y, P_PlaneZ(x, y, plane) + INT2FIXED(mt.z), floor);
+		else
+			P_SetSlope(*plane, mt.angle, mt.args[0], x, y, P_PlaneZ(x, y, plane) + INT2FIXED(mt.z), floor);
+
+		mt.type = 0;
+	}
+	P_SetupVertexSlopes(things);
+
+	for (auto& mt : things)
+	{
+		if (spawn_map.contains(mt.type))
+			continue;
+
+		if (mt.type == Slope_CopyFloorPlane or
+			mt.type == Slope_CopyCeilingPlane)
+		{
+			P_CopyPlane(mt.args[0], INT2FIXED(mt.x), INT2FIXED(mt.y), mt.type == Slope_CopyFloorPlane);
+			mt.type = 0;
 		}
 	}
 }
