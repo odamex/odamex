@@ -2157,8 +2157,6 @@ void P_SetupLevel (const char *lumpname, int position)
 		}
 	}
 
-	// To use the correct nodes for
-
 	// Initial height of PointOfView will be set by player think.
 	consoleplayer().viewz = 1;
 
