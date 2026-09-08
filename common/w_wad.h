@@ -222,11 +222,11 @@ int W_GetLumpFile(unsigned int lump);
 // The name overloads ask about the lump the engine resolves for that name,
 // which is the one the game actually uses.
 bool W_IsLumpFromPWAD(unsigned int lump);
-bool W_IsLumpFromPWAD(const OLumpName& name, namespace_t namespc = ns_global)
+bool W_IsLumpFromPWAD(const OLumpName& name, namespace_t namespc = ns_global);
 
 // True when a PWAD covers up a lump of the same name from an earlier file, as
 // opposed to contributing one the game did not already have.
-bool W_IsLumpReplaced(const OLumpName& name, namespace_t namespc = ns_global)
+bool W_IsLumpReplaced(const OLumpName& name, namespace_t namespc = ns_global);
 
 // [RH] Put a lump in a certain namespace
 //void W_SetLumpNamespace (unsigned lump, int nmspace);
