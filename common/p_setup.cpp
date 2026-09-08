@@ -2023,7 +2023,7 @@ void P_SetupThingSlopes(std::span<MapThing> things)
 
 		const fixed_t x = INT2FIXED(mt.x);
 		const fixed_t y = INT2FIXED(mt.y);
-		sector_t& sec = *R_PointInSubsector(x, y)->sector;
+		sector_t& sec = *P_PointInSubsector(x, y)->sector;
 		plane_t* plane;
 		bool floor;
 		if (mt.type & 1)
