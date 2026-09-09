@@ -136,16 +136,19 @@ message MapThing
 	repeated uint32 args    = 9;        // Hexen
 }
 
+// msg_largemessagestart
 message LargeMessageStart
 {
 	uint32 size = 1;
 }
 
+// msg_largemessagefragment
 message LargeMessageFragment
 {
 	bytes payload = 1;
 }
 
+// msg_largemessageend
 message LargeMessageEnd
 {
 }
