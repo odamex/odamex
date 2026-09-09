@@ -782,7 +782,7 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActo
  * @brief Kill a mobj.
  */
 odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
-                                     int /* methodOfDeath */, bool joinkill)
+                                     bool joinkill)
 {
 	odaproto::svc::KillMobj msg;
 
@@ -939,6 +939,12 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(const player_t& player, byte flag
 	{
 		if (!player.spectator)
 			msg.set_cheats(player.cheats);
+	}
+
+	if (flags & SVC_PM_WEAPON)
+	{
+		msg.set_readyweapon(player.readyweapon);
+		msg.set_pendingweapon(player.pendingweapon);
 	}
 
 	return msg;
