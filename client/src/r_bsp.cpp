@@ -747,6 +747,7 @@ void R_Subsector (int num)
 
 	ceilingplane = P_CeilingHeight(viewx, viewy, frontsector) > viewz ||
 		R_IsSkyFlat(frontsector->ceilingpic) ||
+		R_IsStackBoundary(frontsector->SkyboxCeiling) ||
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		R_IsSkyFlat(frontsector->heightsec->floorpic)) ?
@@ -767,6 +768,7 @@ void R_Subsector (int num)
 	// killough 3/16/98: add floorlightlevel
 	// killough 10/98: add support for skies transferred from sidedefs
 	floorplane = P_FloorHeight(viewx, viewy, frontsector) < viewz || // killough 3/7/98
+		R_IsStackBoundary(frontsector->SkyboxFloor) ||
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		R_IsSkyFlat(frontsector->heightsec->ceilingpic)) ?
