@@ -1436,8 +1436,7 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 		}
 		else if (iequals(key, "Pickup message"))
 		{
-			// TODO: we need to resolved strings at the end
-			// info->pickupmsg = value;
+			info->pickupmsg = OString{value};
 		}
 		else if (iequals(key, "ID24 Bits"))
 		{

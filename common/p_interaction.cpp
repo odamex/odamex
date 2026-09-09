@@ -1308,7 +1308,7 @@ ItemEquipVal P_GiveSpecialClassic(player_t& player, AActor& special)
 		return val;
 
 	if (special.info->pickupmsg)
-		msg = special.info->pickupmsg;
+		msg = &special.info->pickupmsg.value();
 
 	if (msg != nullptr)
 		PickupMessage(toucher, GStrings(*msg));
@@ -1336,7 +1336,7 @@ ItemEquipVal P_GiveSpecialClassic(player_t& player, AActor& special)
 ItemEquipVal P_GiveSpecialID24(player_t& player, AActor& special)
 {
 	const auto& info = *special.info;
-	const OString* msg = info.pickupmsg;
+	const OString* msg = info.pickupmsg ? &info.pickupmsg.value() : nullptr;
 	ItemEquipVal val = IEV_NotEquipped;
 	if (info.pickupammo == am_noammo and info.pickupweapon == wp_nochange and
 	    (info.pickupitem == id24pickup_t::None or info.pickupitem == id24pickup_t::MsgOnly))

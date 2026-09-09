@@ -79,6 +79,51 @@ enum spritenum_t: int32_t
     SPR_CARE,
 	SPR_O1UP,
 	SPR_RSTM,
+    // --------------------id24 sprites---------------------- //
+	SPR_BSH1 = -1879048192,
+	SPR_BSH2,
+	SPR_BSHE,
+	SPR_CBR2,
+	SPR_CHR1,
+	SPR_CSPI,
+	SPR_CYB2,
+	SPR_FLMF,
+	SPR_FLMG,
+	SPR_GBAL,
+	SPR_GHUL,
+	SPR_GOR6,
+	SPR_GOR7,
+	SPR_GOR8,
+	SPR_GORA,
+	SPR_HBB2,
+	SPR_HBBQ,
+	SPR_HDB7,
+	SPR_HDB8,
+	SPR_HETB,
+	SPR_HETC,
+	SPR_HETF,
+	SPR_HETG,
+	SPR_IFLM,
+	SPR_LAMP,
+	SPR_PHED,
+	SPR_POB6,
+	SPR_POL7,
+	SPR_POLA,
+	SPR_PPOS,
+	SPR_STC1,
+	SPR_STC2,
+	SPR_STC3,
+	SPR_STG1,
+	SPR_STG2,
+	SPR_STG3,
+	SPR_STMI,
+	SPR_TLP6,
+	SPR_VASS,
+	SPR_VFLM,
+	SPR_INCN,
+	SPR_CBLD,
+	SPR_FCPU,
+	SPR_FTNK,
     // ------------------------------------------------------ //
 	SPR_TROO = 0,
 	SPR_SHTG,
@@ -356,6 +401,11 @@ enum statenum_t: int32_t
 	S_NOWEAPON,
 
 	//------------------------------------
+
+	//------------ id24 states -----------
+
+	// there no names in the code, and its difficult to tell what they correspond to
+	S_ID24_1 = -1879048192,
 
 	//------------ doom states -----------
 	S_NULL = 0,
@@ -1541,6 +1591,70 @@ enum mobjtype_t: int32_t {
 	MT_EXTRALIFE,
 	MT_RESTEAMMATE,
 
+    // --------------------- id24 things ----------------------------------- //
+
+	MT_GHOUL = -1879048192,
+	MT_BANSHEE,
+	MT_MINDWEAVER,
+	MT_SHOCKTROOPER,
+	MT_VASSAGO,
+	MT_TYRANT,
+	MT_TYRANT_BOSS_1,
+	MT_TYRANT_BOSS_2,
+	MT_INCINERATOR_FLAME,
+	MT_HEATWAVE_SPAWNER,
+	MT_HEATWAVE_RIPPER,
+	MT_GHOUL_BALL,
+	MT_SHOCKTROOPER_HEAD,
+	MT_SHOCKTROOPER_TORSO,
+	MT_VASSAGO_FLAME,
+	MT_STALAGMITE_GRAY,
+	MT_LARGE_CORPSE_PILE,
+	MT_HUMAN_BBQ_1,
+	MT_HUMAN_BBQ_2,
+	MT_HANGING_VICTIM_BOTH_LEGS,
+	MT_HANGING_VICTIM_BOTH_LEGS_BLOCKING,
+	MT_HANGING_VICTIM_CRUCIFIED,
+	MT_HANGING_VICTIM_CRUCIFIED_BLOCKING,
+	MT_HANGING_VICTIM_ARMS_BOUND,
+	MT_HANGING_VICTIM_ARMS_BOUND_BLOCKING,
+	MT_HANGING_BARON_OF_HELL,
+	MT_HANGING_BARON_OF_HELL_BLOCKING,
+	MT_HANGING_VICTIM_CHAINED,
+	MT_HANGING_VICTIM_CHAINED_BLOCKING,
+	MT_HANGING_TORSO_CHAINED,
+	MT_HANGING_TORSO_CHAINED_BLOCKING,
+	MT_SKULL_POLE_TRIO,
+	MT_SKULL_GIBS,
+	MT_BUSH_SHORT,
+	MT_BUSH_SHORT_BURNED_1,
+	MT_BUSH_SHORT_BURNED_2,
+	MT_BUSH_TALL,
+	MT_BUSH_TALL_BURNED_1,
+	MT_BUSH_TALL_BURNED_2,
+	MT_CAVE_ROCK_COLUMN,
+	MT_CAVE_STALAGMITE_LARGE,
+	MT_CAVE_STALAGMITE_MEDIUM,
+	MT_CAVE_STALAGMITE_SMALL,
+	MT_CAVE_STALACTITE_LARGE,
+	MT_CAVE_STALACTITE_LARGE_BLOCKING,
+	MT_CAVE_STALACTITE_MEDIUM,
+	MT_CAVE_STALACTITE_MEDIUM_BLOCKING,
+	MT_CAVE_STALACTITE_SMALL,
+	MT_CAVE_STALACTITE_SMALL_BLOCKING,
+	MT_OFFICE_CHAIR,
+	MT_OFFICE_LAMP_BREAKABLE,
+	MT_CEILING_LAMP,
+	MT_CANDELABRA_SHORT,
+	MT_AMBIENT_KLAXON,
+	MT_AMBIENT_PORTAL_OPEN,
+	MT_AMBIENT_PORTAL_LOOP,
+	MT_AMBIENT_PORTAL_CLOSE,
+	MT_FUEL_CAN,
+	MT_FUEL_TANK,
+	MT_CALAMITY_BLADE,
+	MT_INCINERATOR,
+
     // --------------------------------------------------------------------- //
 
 	MT_NULL = -1, // ferk: null/invalid mobj (zero is reserved for MT_PLAYER)
@@ -1848,7 +1962,7 @@ struct mobjinfo_t
 	id24pickup_t pickupitem = id24pickup_t::None;
 	int pickupbonuscount    = 6; // BONUSADD
 	const char* pickupsound = nullptr;
-	const OString* pickupmsg= nullptr;
+	std::optional<OString> pickupmsg = std::nullopt;
 	// OLumpName translation   = "";
 	fixed_t selfdamage      = FRACUNIT;
 
