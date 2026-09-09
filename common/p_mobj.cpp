@@ -3909,7 +3909,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mobj->tics = 1 + (P_Random(mobj) % mobj->tics);
 
 	if (type != MT_SPARK)
-		mobj->angle = ANG(mthing.angle);
+		mobj->angle = ANG45 * (mthing.angle / 45);
 
 	if (mthing.flags & MTF_AMBUSH)
 		mobj->flags |= MF_AMBUSH;
