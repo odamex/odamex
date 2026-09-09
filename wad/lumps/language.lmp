@@ -1206,18 +1206,18 @@ OMULTI11 = "Terminator!";
 
 // ID24 stuff
 
-ID24_GOTINCINERATOR = "You got the incinerator!"
-ID24_GOTCALAMITYBLADE = "You got the calamity blade! Hot damn!"
-ID24_GOTFUELCAN = "Picked up a fuel can."
-ID24_GOTFUELTANK = "Picked up a fuel tank."
-ID24_COLOR_GREEN = "Green"
-ID24_COLOR_INDIGO = "Indigo"
-ID24_COLOR_BROWN = "Brown"
-ID24_COLOR_RED = "Red"
-ID24_COLOR_YELLOW = "Yellow"
-ID24_COLOR_BLUE = "Blue"
-ID24_COLOR_NAVY = "Navy"
-ID24_COLOR_MAGENTA = "Magenta"
+ID24_GOTINCINERATOR = "You got the incinerator!";
+ID24_GOTCALAMITYBLADE = "You got the calamity blade! Hot damn!";
+ID24_GOTFUELCAN = "Picked up a fuel can.";
+ID24_GOTFUELTANK = "Picked up a fuel tank.";
+ID24_COLOR_GREEN = "Green";
+ID24_COLOR_INDIGO = "Indigo";
+ID24_COLOR_BROWN = "Brown";
+ID24_COLOR_RED = "Red";
+ID24_COLOR_YELLOW = "Yellow";
+ID24_COLOR_BLUE = "Blue";
+ID24_COLOR_NAVY = "Navy";
+ID24_COLOR_MAGENTA = "Magenta";
 
 
 /******************************** French ********************************/
