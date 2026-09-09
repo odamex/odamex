@@ -374,11 +374,7 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 
 	const int oldammotype = player.ammo[ammotype];
 	player.ammo[ammotype] += static_cast<int>(num);
-
-	if (player.ammo[ammotype] > player.maxammo[ammotype])
-	{
-		player.ammo[ammotype] = player.maxammo[ammotype];
-	}
+	player.ammo[ammotype] = std::min(player.ammo[ammotype], player.maxammo[ammotype]);
 
 	// If non zero ammo,
 	// don't change up weapons,
@@ -511,10 +507,7 @@ ItemEquipVal P_GiveBody(player_t& player, int num)
 	}
 
 	player.health += static_cast<int>(static_cast<float>(num) * G_GetCurrentSkill().health_factor);
-	if (player.health > MAXHEALTH)
-	{
-		player.health = MAXHEALTH;
-	}
+	player.health = std::min(player.health, MAXHEALTH);
 	player.mo->health = player.health;
 
 	return IEV_EquipRemove;
@@ -537,8 +530,7 @@ ItemEquipVal P_GiveArmor(player_t& player, int armortype)
 
 	player.armortype = armortype;
 	player.armorpoints += hits_real;
-	if (player.armorpoints > hits)
-		player.armorpoints = hits;
+	player.armorpoints = std::min(player.armorpoints, hits);
 
 	return IEV_EquipRemove;
 }
@@ -852,10 +844,7 @@ static void P_GiveCarePack(player_t& player)
 	if (blocks >= 1 && player.armorpoints + 10 < 95)
 	{
 		player.armorpoints += 10;
-		if (player.armorpoints > ::deh.MaxArmor)
-		{
-			player.armorpoints = ::deh.MaxArmor;
-		}
+		player.armorpoints = std::min(player.armorpoints, ::deh.MaxArmor);
 		if (!player.armortype)
 		{
 			player.armortype = ::deh.GreenAC;
@@ -2001,10 +1990,8 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		P_ProcessSpreeKill(source, target->player);
 	}
 
-	if (target->health > 0) // denis - when this function is used standalone
-	{
-		target->health = 0;
-	}
+	 // denis - when this function is used standalone
+	target->health = std::min(target->health, 0);
 
 	target->UpdateActorLists();
 
@@ -2420,8 +2407,8 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		player->attacker = source ? source->ptr() : AActor::AActorPtr();
 		player->damagecount += damage; // add damage after armor / invuln
 
-		if (player->damagecount > 100)
-			player->damagecount = 100; // teleport stomp does 10k points...
+		 // teleport stomp does 10k points...
+		player->damagecount = std::min(player->damagecount, 100);
 
 		SV_SendDamagePlayer(player, inflictor, damage, armorDamage);
 	}
@@ -2651,11 +2638,8 @@ void P_HealMobj(AActor* mo, int num)
 	}
 	else
 	{
-		const int max = mobjinfo[mo->type].spawnhealth;
-
 		mo->health += num;
-		if (mo->health > max)
-			mo->health = max;
+		mo->health = std::min(mo->health, mobjinfo[mo->type].spawnhealth);
 	}
 }
 
