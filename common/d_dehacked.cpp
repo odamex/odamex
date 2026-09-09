@@ -1186,6 +1186,9 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 			else if (starts_with(key, "Rip"))
 			{
 				scanner.m_state.soundMapIndices.emplace_back(&info->ripsound, val);
+			} else if (starts_with(key, "Pickup"))
+			{
+				scanner.m_state.soundMapIndices.emplace_back(&info->pickupsound, val);
 			}
 		}
 		else if (iequals(key, "Projectile group"))
@@ -1409,6 +1412,32 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 		else if (iequals(key, "Self damage factor"))
 		{
 			info->selfdamage = val;
+		}
+		else if (iequals(key, "Pickup ammo type"))
+		{
+			// id24: remap old am_noammo value to new one
+			info->pickupammo = val == am_noammo_old ?  am_noammo : static_cast<ammotype_t>(val);
+		}
+		else if (iequals(key, "Pickup ammo category"))
+		{
+			info->pickupammocategory = val;
+		}
+		else if (iequals(key, "Pickup weapon type"))
+		{
+			info->pickupweapon = val;
+		}
+		else if (iequals(key, "Pickup item type"))
+		{
+			info->pickupitem = static_cast<id24pickup_t>(val);
+		}
+		else if (iequals(key, "Pickup bonus count"))
+		{
+			info->pickupbonuscount = val;
+		}
+		else if (iequals(key, "Pickup message"))
+		{
+			// TODO: we need to resolved strings at the end
+			// info->pickupmsg = value;
 		}
 		else if (iequals(key, "ID24 Bits"))
 		{
@@ -1862,9 +1891,8 @@ static void PatchWeapon(int weapNum, DehScanner& scanner)
 			}
 			else if (iequals(key, "Ammo type"))
 			{
-				static constexpr int32_t am_noammo_old = 5;
 				// id24: remap old am_noammo value to new one
-				info->ammotype = (val == am_noammo_old) ? static_cast<ammotype_t>(val) : am_noammo;
+				info->ammotype = (val == am_noammo_old) ? am_noammo : static_cast<ammotype_t>(val);
 			}
 			else
 			{

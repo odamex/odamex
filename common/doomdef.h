@@ -467,7 +467,7 @@ using enum ItemEquipVal;
 // The defined weapons,
 //	including a marker indicating
 //	user has not changed weapon.
-enum weapontype_t : int8_t
+enum weapontype_t : int32_t
 {
 	// No pending weapon change.
 	wp_nochange = -1,
@@ -496,7 +496,7 @@ inline auto format_as(weapontype_t eWeaponType)
 }
 
 // Ammunition types defined.
-enum ammotype_t : int8_t
+enum ammotype_t : int32_t
 {
 	am_noammo = -1, // Unlimited for chainsaw / fist.
 	am_clip,	// Pistol / chaingun ammo.
@@ -506,6 +506,8 @@ enum ammotype_t : int8_t
 	NUMAMMO,
 	am_reserved,// 5 is an invalid value that should always be mapped back to -1
 };
+
+static constexpr int32_t am_noammo_old = 5;
 
 inline auto format_as(ammotype_t eAmmoType)
 {
