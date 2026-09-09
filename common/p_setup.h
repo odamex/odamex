@@ -27,6 +27,9 @@
 
 #include "doomdata.h"
 
+struct line_s;
+using line_t = line_s;
+
 // NOT called by W_Ticker. Fixme.
 //
 // [RH] The only parameter used is mapname, so I removed playermask and skill.
