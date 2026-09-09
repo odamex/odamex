@@ -453,13 +453,14 @@ enum card_t : uint8_t
         CardIsSkull = 128
 };
 
-enum ItemEquipVal
+enum class ItemEquipVal
 {
 	IEV_NotEquipped, //was not equipped, item should stay
 	IEV_EquipStay, //equipped, item should stay
 	IEV_EquipRemove //equipped, item should be removed
 };
 
+using enum ItemEquipVal;
 
 // The defined weapons,
 //	including a marker indicating

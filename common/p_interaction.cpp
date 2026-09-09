@@ -445,7 +445,7 @@ ItemEquipVal PickupStandardWeapon(player_t& player, weapontype_t weapon, OUtil::
 		// give one clip with a dropped weapon,
 		// two clips with a found weapon
 		const float clipCount = wasDropped ? 1.0f : 2.0f;
-		if ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, clipCount)) != 0)
+		if ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, clipCount)) != IEV_NotEquipped)
 		{
 			result = IEV_EquipRemove;
 		}
