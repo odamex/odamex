@@ -716,7 +716,7 @@ void R_BuildTranslationGradient(translationtable_t& tlate, const palindex_t* src
 void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, palindex_t end,
                                 argb_t start_color, argb_t end_color)
 {
-	std::array<palindex_t, 256> src;
+	std::array<palindex_t, 256> src{};
 	const size_t count = end - start + 1;
 
 	for (size_t i = 0; i < count; i++)
@@ -733,8 +733,7 @@ void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, pal
 //
 void R_SampleLuminosity(const patch_t* const* patches, size_t count, std::vector<palindex_t>& out)
 {
-	std::array<bool, 256> used;
-	used.fill(false);
+	std::array<bool, 256> used{};
 
 	for (size_t i = 0; i < count; i++)
 	{

@@ -246,8 +246,13 @@ inline argb_t V_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 	if (base_color == shade_color)
 		return base_color;
 
+	// How much of each color's brightness survives the blend.
+	constexpr float base_weight = 0.7f;
+	constexpr float shade_weight = 0.3f;
+
 	fahsv_t color = V_RGBtoHSV(base_color);
-	color.setv((0.7f * color.getv()) + (0.3f * V_RGBtoHSV(shade_color).getv()));
+	color.setv((base_weight * color.getv()) +
+	           (shade_weight * V_RGBtoHSV(shade_color).getv()));
 	return V_HSVtoRGB(color);
 }
 
