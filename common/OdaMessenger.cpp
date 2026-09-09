@@ -22,6 +22,8 @@
 #include "OdaMessenger.h"
 
 #include "i_net.h"
+#include "msg_message.h"
+#include "msg_pack.h"
 
 EXTERN_CVAR (log_packetdebug)
 
@@ -376,7 +378,75 @@ MessageResultEnum OdaMessenger::SendStandard(int i_currentTic, const netadr_t& i
 		m_byteBudget               -= static_cast<int>(sendSize);
 	}
 
-	// Okay, done with the "really important" stuff.  Now onto purely best-effort unreliable packets.
+	// Okay, done with the "really important" stuff.  Divide up the remaining budget between best effort
+	// and large message fragments.
+    while (m_outgoingLargeMessageQueue.GetMessageSize() > 0 and m_byteBudget > 0)
+    {
+        const size_t fairSize = std::min(MAX_UDP_SIZE / 2, m_byteBudget / 2);
+
+        // Allow fragments to grow to full size if there are no more best effort messages.
+        const size_t fragmentSize = m_outgoingNonReliableQueue.SizeInBytes() < fairSize ?
+                                    fairSize + (fairSize - m_outgoingNonReliableQueue.SizeInBytes()) :
+                                    fairSize;
+
+        m_outgoingLargeMessageFragment.setcursize(fragmentSize);
+
+        const auto fragmentInfo = m_outgoingLargeMessageQueue.NextFragment(m_outgoingLargeMessageFragment.size(),
+                                                                           m_outgoingLargeMessageFragment.ptr());
+
+        // Please note that we deliberately don't add these reliable messages to the reliable queue because
+        // we don't want to inadvertently wind up in a situation where the fragments are elevated in priority
+        // in a subsequent tic.
+        switch (fragmentInfo.state)
+        {
+            case FragmentationStateEnum::NONE:
+                break;
+
+            case FragmentationStateEnum::FIRST_FRAGMENT:
+                m_scratchpadBuffer.clear();
+                MSG_Pack(m_scratchpadBuffer, MSG_LargeMessageStart   (m_outgoingLargeMessageQueue.GetMessageSize()));
+                MSG_Pack(m_scratchpadBuffer, MSG_LargeMessageFragment(m_outgoingLargeMessageFragment.ptr(),
+                                                                      fragmentInfo.size));
+                PackAsReliable(m_packet, m_scratchpadBuffer);
+                break;
+
+            case FragmentationStateEnum::CONTINUATION_FRAGMENT:
+                m_scratchpadBuffer.clear();
+                MSG_Pack(m_scratchpadBuffer, MSG_LargeMessageFragment(m_outgoingLargeMessageFragment.ptr(),
+                                                                      fragmentInfo.size));
+                PackAsReliable(m_packet, m_scratchpadBuffer);
+                break;
+
+            case FragmentationStateEnum::LAST_FRAGMENT:
+                m_scratchpadBuffer.clear();
+                MSG_Pack(m_scratchpadBuffer, MSG_LargeMessageFragment(m_outgoingLargeMessageFragment.ptr(),
+                                                                      fragmentInfo.size));
+                MSG_Pack(m_scratchpadBuffer, odaproto::LargeMessageEnd());
+                PackAsReliable(m_packet, m_scratchpadBuffer);
+                break;
+
+            case FragmentationStateEnum::ONE_SHOT:
+                // This odd case fires if someone puts a small message into the large message queue.
+                // The fragment itself is a whole message, just put it into the packet.
+                PackAsReliable(m_packet, m_outgoingLargeMessageFragment);
+                break;
+
+            case FragmentationStateEnum::INVALID_FRAGMENT_SIZE:
+                break;
+            case FragmentationStateEnum::MESSAGE_OVERFLOW:
+                break;
+        }
+
+		// Now fill out the remaining space with best effort messages.
+		m_outgoingNonReliableQueue.Pack([this](const buf_t& messageBuf) { return PackAsUnreliable(m_packet, messageBuf); });
+
+		const size_t sendSize = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
+		m_bytesSentWithReliability += sendSize;
+		m_byteBudget               -= static_cast<int>(sendSize);
+    }
+
+    // We're out of large message fragments or didn't have any to begin with.
+    // Now onto purely best-effort unreliable packets.
 	while (m_outgoingNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
 		if (static_cast<int>(m_packet.Size() + m_outgoingNonReliableQueue.Front().size()) > m_byteBudget)

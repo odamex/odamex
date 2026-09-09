@@ -135,3 +135,17 @@ message MapThing
 	uint32          special = 8;        // Hexen
 	repeated uint32 args    = 9;        // Hexen
 }
+
+message LargeMessageStart
+{
+	uint32 size = 1;
+}
+
+message LargeMessageFragment
+{
+	bytes payload = 1;
+}
+
+message LargeMessageEnd
+{
+}

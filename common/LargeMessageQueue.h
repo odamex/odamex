@@ -59,8 +59,16 @@ class LargeMessageQueue
 			m_queue.Write(std::forward<decltype(args)>(args)...);
 		}
 
+		void Clear()
+		{
+			m_queue.Clear();
+		}
+
 		[[ nodiscard ]]
 		size_t GetMessageSize() const { return m_queue.SizeInMessages() != 0 ? m_queue.Front().size() : 0; }
+
+		[[ nodiscard ]]
+		size_t SizeInBytes() const { return m_queue.SizeInMessages() != 0 ? m_queue.SizeInBytes() - m_queue.Front().TellRead() : 0; }
 
 		template <typename IteratorType>
 		[[ nodiscard ]]

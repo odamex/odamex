@@ -208,6 +208,9 @@ enum msg_t
 	msg_noop,
 	msg_ack,
 	msg_header,
+	msg_largemessagestart,
+	msg_largemessagefragment,
+	msg_largemessageend,
 
 	clc_netdemocap,         // netdemos - NullPoint
 	clc_netdemostop,        // netdemos - NullPoint
