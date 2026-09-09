@@ -87,7 +87,7 @@ TEST_F(LargeMessageQueueFixture, GiantMessage)
     const size_t firstRunOfPayload = firstFragment.BytesLeftToRead();
     EXPECT_GT(firstRunOfPayload, 0);
 
-    for (int i = 0; i < firstRunOfPayload; ++i)
+    for (size_t i = 0; i < firstRunOfPayload; ++i)
     {
         EXPECT_EQ(firstFragment.ReadByte(), 'a');
     }
@@ -286,7 +286,7 @@ TEST_F(LargeMessageQueueFixture, Reassembly)
     const size_t payloadSize = buffer.ReadUnVarint();
     EXPECT_EQ(41, payloadSize);
 
-    const std::string receivedAdvice (reinterpret_cast<char*>(buffer.ReadChunk(payloadSize)), buffer.BytesLeftToRead());
+    const std::string receivedAdvice (reinterpret_cast<char*>(buffer.ReadChunk(payloadSize)), payloadSize);
     EXPECT_EQ(receivedAdvice, "We can't stop here!  This is BAT COUNTRY!");
 
     // Now, test adding more data than we should.
