@@ -132,6 +132,8 @@ PacketHeaderType s_currentHeader;
 int32_t ThisMessageClientTic() { return s_currentHeader.destinationTic; }
 int32_t ThisMessageServerTic() { return s_currentHeader.originatorTic; }
 
+LargeMessage s_receivedLargeMessage;
+
 /**
  * @brief Unpack a bitfield into an array of booleans.
  */
@@ -208,6 +210,25 @@ void CL_Header(const odaproto::Header* msg)
 	s_currentHeader.destinationTic  = msg->destination_tic();
 	s_currentHeader.reliableSize    = static_cast<uint16_t>(msg->reliable_size());
 	s_currentHeader.flags           = static_cast<uint16_t>(msg->flags());
+}
+
+void CL_LargeMessageStart(const odaproto::LargeMessageStart* msg)
+{
+	s_receivedLargeMessage.Restart(msg->size());
+}
+
+void CL_LargeMessageFragment(const odaproto::LargeMessageFragment* msg)
+{
+	s_receivedLargeMessage.Append(msg->payload().data(), msg->payload().length());
+}
+
+void CL_LargeMessageEnd(const odaproto::LargeMessageEnd* )
+{
+	if (s_receivedLargeMessage.IsComplete() and not s_receivedLargeMessage.IsEmpty())
+	{
+		CL_ParseCommand(s_receivedLargeMessage.GetBufferRef());
+		s_receivedLargeMessage.Restart(0);
+	}
 }
 
 /**
@@ -3559,12 +3580,12 @@ const Protos& CL_GetTicProtos()
 /**
  * @brief Read a server message off the wire.
  */
-ParseResultType CL_ParseCommand()
+ParseResultType CL_ParseCommand(buf_t& buffer)
 {
 	ParseResultType result;
 
 	// What type of message we have.
-	result.cmd = static_cast<msg_t>(MSG_ReadUnVarint());
+	result.cmd = static_cast<msg_t>(buffer.ReadUnVarint());
 
 	if (result.cmd == msg_ack)
 	{
@@ -3576,7 +3597,7 @@ ParseResultType CL_ParseCommand()
 		// proper way of defering ack handling to ProcessCommand.  It's just a lot
 		// easier and less complication overall to say that acks get special handling,
 		// especially as something that has to operate as part of the protocol itself.
-		const int sequence = MSG_ReadLong();
+		const int sequence = buffer.ReadLong();
 		messenger.Acknowledge(sequence);
 		result.code = PERR_OK;
 		return result;
@@ -3584,7 +3605,7 @@ ParseResultType CL_ParseCommand()
 
 	// Turn the message into a protobuf.
 	google::protobuf::Message* msg = nullptr;
-	result.code = MSG_ParseMessage(msg, result.cmd);
+	result.code = MSG_ParseMessage(msg, result.cmd, buffer);
 	result.msg.reset(msg);                      // This does the right thing even if nullptr.
 
 	// Because the result type contains a unique_ptr, which is uncopyable,
@@ -3612,6 +3633,10 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		/* clang-format off */
 		SV_MSG(msg_noop, CL_Noop, odaproto::Noop);
 		SV_MSG(msg_header, CL_Header, odaproto::Header);
+
+		SV_MSG(msg_largemessagestart,    CL_LargeMessageStart,    odaproto::LargeMessageStart);
+		SV_MSG(msg_largemessagefragment, CL_LargeMessageFragment, odaproto::LargeMessageFragment);
+		SV_MSG(msg_largemessageend,      CL_LargeMessageEnd,      odaproto::LargeMessageEnd);
 
 		SV_MSG(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
 		SV_MSG(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
@@ -3745,7 +3770,7 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 		}
 
 		const size_t          byteStart = ::net_message.BytesRead();
-		const ParseResultType result    = CL_ParseCommand();
+		const ParseResultType result    = CL_ParseCommand(::net_message);
 
 		const parseError_e processResult = result.code == PERR_OK ?
 			CL_ProcessCommand(result) :

@@ -26,7 +26,7 @@
 
 #include "msg_map.h"
 
-parseError_e MSG_ParseMessage(google::protobuf::Message*& out, const msg_t cmd)
+parseError_e MSG_ParseMessage(google::protobuf::Message*& out, const msg_t cmd, buf_t& buffer)
 {
 	// A message factory + Descriptor gives us the proper message.
 	google::protobuf::MessageFactory* factory =
@@ -44,12 +44,12 @@ parseError_e MSG_ParseMessage(google::protobuf::Message*& out, const msg_t cmd)
 		return PERR_UNKNOWN_MESSAGE;
 	}
 
-	const size_t size   = MSG_ReadUnVarint();
-	const void*  buffer = MSG_ReadChunk(size);
+	const size_t size = buffer.ReadUnVarint();
+	const void*  data = buffer.ReadChunk(size);
 
 	// Allocated with "new" - can't be null, and we own it.
 	google::protobuf::Message* msg = defmsg->New();
-	if (!msg->ParseFromArray(buffer, size))
+	if (!msg->ParseFromArray(data, size))
 	{
 		return PERR_BAD_DECODE;
 	}

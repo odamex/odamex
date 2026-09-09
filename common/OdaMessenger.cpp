@@ -207,7 +207,6 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 #endif
 
 	}
-
 	return MessageResultEnum::DEFER;
 }
 

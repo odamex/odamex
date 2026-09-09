@@ -60,6 +60,9 @@ class LargeMessage
 		size_t CurrentSize() const { return m_buffer.TellWrite(); }
 
 		[[ nodiscard ]]
+		bool IsEmpty() const { return CurrentSize() == 0; }
+
+		[[ nodiscard ]]
 		bool IsComplete() const { return CurrentSize() == TotalSize(); }
 
 		[[ nodiscard ]]
