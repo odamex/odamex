@@ -1258,6 +1258,32 @@ std::string mobjinfo_t::getDisplayName() const
 	return P_MobjToName(static_cast<mobjtype_t>(this->type));
 }
 
+bool mobjinfo_t::isID24Pickup() const
+{
+	// check that all id24 pickup type and sound fields
+	// are set to their defaults
+	return
+		pickupitem     != id24pickup_t::None or
+		pickupweapon   != wp_nochange or
+		pickupammo     != am_noammo or
+		pickupsound    != nullptr;
+}
+
+bool mobjinfo_t::hasWeaponPickup() const
+{
+	if (isID24Pickup())
+		return pickupweapon != wp_nochange;
+
+	return
+		type == MT_CHAINGUN or
+		type == MT_SHOTGUN or
+		type == MT_SUPERSHOTGUN or
+		type == MT_MISC25 or
+		type == MT_MISC26 or
+		type == MT_MISC27 or
+		type == MT_MISC28;
+}
+
 // [Blair] Since Odamex has more out-of-the-box states,
 // the new DEHExtra state spec starts at 1100, while we have around
 // 1130.
@@ -2293,6 +2319,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC4",
+	.flags3           = MF3_SPECSTAYSCOOP,
 	.display_name     = "$TAG_BLUECARD",
 	},
 
@@ -2308,6 +2335,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC5",
+	.flags3           = MF3_SPECSTAYSCOOP,
 	.display_name     = "$TAG_REDCARD",
 	},
 
@@ -2323,6 +2351,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC6",
+	.flags3           = MF3_SPECSTAYSCOOP,
 	.display_name     = "$TAG_YELLOWCARD",
 	},
 
@@ -2338,6 +2367,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC7",
+	.flags3           = MF3_SPECSTAYSCOOP,
 	.display_name     = "$TAG_YELLOWSKULL",
 	},
 
@@ -2353,6 +2383,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC8",
+	.flags3           = MF3_SPECSTAYSCOOP,
 	.display_name     = "$TAG_REDSKULL",
 	},
 
@@ -2368,6 +2399,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.mass             = 100,
 	.flags            = MF_SPECIAL|MF_NOTDMATCH,
 	.name             = "MT_MISC9",
+	.flags3           = MF3_SPECSTAYSCOOP,
 	.display_name     = "$TAG_BLUESKULL",
 	},
 

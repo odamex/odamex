@@ -166,9 +166,9 @@ enum class mobjflag3_t : uint32_t
 	MF3_FULLVOLSOUNDS   = BIT(18), // full volume see / death sound
 	// ID24 flags
 	MF3_NORESPAWN       = BIT(19), // does not respawn with monster respawning enabled
-	MF3_SPECSTAYSSINGLE = BIT(20), // unimplemented
-	MF3_SPECSTAYSCOOP   = BIT(21), // unimplemented
-	MF3_SPECSTAYSDM     = BIT(22), // unimplemented
+	MF3_SPECSTAYSSINGLE = BIT(20), // stays when picked up in singleplayer
+	MF3_SPECSTAYSCOOP   = BIT(21), // stays when picked up in coop
+	MF3_SPECSTAYSDM     = BIT(22), // stays when picked up in dm
 	// if modifying this enum, make sure to update the
 	// enable_bitflag_operators below to return the highest bit variant
 };

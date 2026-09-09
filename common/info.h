@@ -33,6 +33,7 @@
 #include "m_doomobjcontainer.h"
 #include "actorflags.h"
 #include "m_fixed.h"
+#include "m_ostring.h"
 
 #define NO_ALTSPEED -1
 #ifndef MELEERANGE // TODO: only have a single spot this is defined
@@ -1761,6 +1762,33 @@ enum class MobjModeEnum
 	RAISE,
 };
 
+enum class id24pickup_t
+{
+	None = -1,
+	MsgOnly,
+	BlueKey,
+	YellowKey,
+	RedKey,
+	BlueSkull,
+	YellowSkull,
+	RedSkull,
+	Backpack,
+	HealthBonus,
+	Stimpack,
+	Medikit,
+	Soulsphere,
+	Megasphere,
+	ArmorBonus,
+	GreenArmor,
+	BlueArmor,
+	ComputerMap,
+	LightGoggles,
+	Berserk,
+	PartialInvis,
+	RadSuit,
+	Invuln,
+};
+
 struct mobjinfo_t
 {
 	int32_t type            = MT_NULL;
@@ -1809,20 +1837,24 @@ struct mobjinfo_t
 	std::string deh_name     = "";
 
 	// ID24 stuff
+	// couple of these have named constants that aren't
+	// defined in good places to be able to use here
+	// until we do some reorganization, let's just comment the name
 	int minrespawntics      = 420; // 12 * TICRATE
 	int respawndice         = 4;
-	// int pickupammotype      = -1;
-	// int pickupammocategory  = -1;
-	// int pickupweapontype    = -1;
-	// powertype_t pickupitemtype = pw_none;
-	// int pickupbonuscount    = 6;
-	// const char* pickupsound = nullptr;
-	// std::string pickupmessage = "";
-	// OLumpName translation   = nullptr;
+	int pickupammo          = -1; // am_noammo
+	int pickupammocategory  = -1;
+	int pickupweapon        = -1; // wp_nochange
+	id24pickup_t pickupitem = id24pickup_t::None;
+	int pickupbonuscount    = 6; // BONUSADD
+	const char* pickupsound = nullptr;
+	const OString* pickupmsg= nullptr;
+	// OLumpName translation   = "";
 	fixed_t selfdamage      = FRACUNIT;
 
-	[[nodiscard]]
-	std::string getDisplayName() const;
+	[[nodiscard]] std::string getDisplayName() const;
+	[[nodiscard]] bool isID24Pickup() const;
+	[[nodiscard]] bool hasWeaponPickup() const;
 };
 
 inline auto format_as(const mobjinfo_t& info)

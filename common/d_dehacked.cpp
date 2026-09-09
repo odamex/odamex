@@ -1734,6 +1734,9 @@ static void PatchAmmo(int ammoNum, DehScanner& scanner)
 	int* per;
 	int dummy;
 
+	// TODO: when id24 ammo expands the valid index range,
+	// we have to remap 5 to -1 before doing anything else
+
 	if (ammoNum >= 0 && ammoNum < NUMAMMO)
 	{
 #if defined ODAMEX_DEBUG
@@ -1765,7 +1768,6 @@ static void PatchAmmo(int ammoNum, DehScanner& scanner)
 static void PatchWeapon(int weapNum, DehScanner& scanner)
 {
 	static constexpr Key keys[] = {
-	    {"Ammo type", offsetof(weaponinfo_t, ammotype)},
 	    {"Deselect frame", offsetof(weaponinfo_t, upstate)},
 	    {"Select frame", offsetof(weaponinfo_t, downstate)},
 	    {"Bobbing frame", offsetof(weaponinfo_t, readystate)},
@@ -1857,6 +1859,12 @@ static void PatchWeapon(int weapNum, DehScanner& scanner)
 			{
 				info->minammo = val;
 				deh.ZDAmmo = true;
+			}
+			else if (iequals(key, "Ammo type"))
+			{
+				static constexpr int32_t am_noammo_old = 5;
+				// id24: remap old am_noammo value to new one
+				info->ammotype = (val == am_noammo_old) ? static_cast<ammotype_t>(val) : am_noammo;
 			}
 			else
 			{

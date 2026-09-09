@@ -3813,23 +3813,13 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 
 	// filter out extra weapons in coop
-	if (g_thingfilter == 1)
+	if (g_thingfilter == 1 and info->hasWeaponPickup())
 	{
-		switch (type)
-		{
-		case MT_CHAINGUN:
-		case MT_SHOTGUN:
-		case MT_SUPERSHOTGUN:
-		case MT_MISC25: // BFG
-		case MT_MISC26: // chainsaw
-		case MT_MISC27: // rocket launcher
-		case MT_MISC28: // plasma gun
-			if (multiplayer and G_IsCoopGame() and not (mthing.flags & MTF_SINGLE))
-				return;
-		default:
-			break;
-		}
+		// nested just for slightly more readability than a big long condition
+		if (multiplayer and G_IsCoopGame() and not (mthing.flags & MTF_SINGLE))
+			return;
 	}
+
 	// [csDoom] don't spawn any monsters
 	if (sv_nomonsters || !serverside)
 	{

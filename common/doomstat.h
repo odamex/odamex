@@ -224,6 +224,5 @@ struct DehInfo
 	int Infight          = 0;
 	bool ZDAmmo          = false;
 	int32_t helper       = MT_NULL;
-	bool id24pickups     = false;
 };
 inline DehInfo deh{};
