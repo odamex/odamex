@@ -26,6 +26,8 @@
 
 #include <ctype.h>
 
+#include <algorithm>
+
 #include "v_text.h"
 
 #include "i_video.h"
@@ -636,19 +638,22 @@ void V_FreeBrokenLines(brokenlines_t* lines)
 
 
 //
-// Look up one of the fonts by name, or NULL if there is no such font.
+// Look up one of the fonts by name, or nullptr if there is no such font.
 //
-static const lumpHandle_t* V_FontByName(const char* fontname)
+namespace
+{
+const lumpHandle_t* V_FontByName(const char* fontname)
 {
 	if (!stricmp(fontname, "BIGFONT"))
 		return ::hu_bigfont;
-	else if (!stricmp(fontname, "SMALLFONT"))
+	if (!stricmp(fontname, "SMALLFONT"))
 		return ::hu_smallfont;
-	else if (!stricmp(fontname, "DIGFONT"))
+	if (!stricmp(fontname, "DIGFONT"))
 		return ::hu_digfont;
 
-	return NULL;
+	return nullptr;
 }
+} // namespace
 
 //
 // Temporary cvar dumpfontcolors
@@ -679,14 +684,14 @@ BEGIN_COMMAND(dumpfontcolors)
 		font = V_FontByName(argv[1]);
 		fontname = argv[1];
 
-		if (font == NULL)
+		if (font == nullptr)
 		{
 			PrintFmt(PRINT_HIGH, "dumpfontcolors [BIGFONT|SMALLFONT|DIGFONT]\n");
 			return;
 		}
 	}
 
-	if (font == NULL)
+	if (font == nullptr)
 	{
 		PrintFmt(PRINT_HIGH, "No font loaded.\n");
 		return;
@@ -714,7 +719,7 @@ BEGIN_COMMAND(dumpfontcolors)
 
 	// Ascending, collapsed into runs, to line up against the hardcoded ramps.
 	std::vector<palindex_t> ascending = indices;
-	std::sort(ascending.begin(), ascending.end());
+	std::ranges::sort(ascending);
 
 	std::string ranges;
 	for (size_t i = 0; i < ascending.size();)
@@ -738,12 +743,12 @@ BEGIN_COMMAND(dumpfontcolors)
 	// The order a translation would actually walk them in.
 	const palette_t* pal = V_GetDefaultPalette();
 	std::string ordered;
-	for (size_t i = 0; i < indices.size(); i++)
+	for (const palindex_t index : indices)
 	{
 		if (!ordered.empty())
 			ordered += " ";
 
-		ordered += fmt::format("{:02x}", indices[i]);
+		ordered += fmt::format("{:02x}", index);
 	}
 	PrintFmt(PRINT_HIGH, "  darkest first: {}\n", ordered);
 	PrintFmt(PRINT_HIGH, "  luminance {:.3f} to {:.3f}\n",

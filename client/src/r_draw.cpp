@@ -619,23 +619,23 @@ void R_BuildColorRamp(argb_t dest_color, palindex_t start, palindex_t end,
 {
 	const palette_t* pal = V_GetDefaultPalette();
 
+	constexpr float ramp_length = 16.0f;
+	constexpr float sat_offset = 0.23f;
+	constexpr float val_offset = 0.1f;
+	constexpr float sat_step = 0.014375f;
+	constexpr float val_step = -0.05882f;
+
 	const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
 	const float h = hsv_temp.geth();
-	float s = hsv_temp.gets(), v = hsv_temp.getv();
+	float s = std::max(hsv_temp.gets() - sat_offset, 0.0f);
+	float v = std::min(hsv_temp.getv() + val_offset, 1.0f);
 
-	s -= 0.23f;
-	if (s < 0.0f)
-		s = 0.0f;
+	const float scale = ramp_length / static_cast<float>(end - start + 1);
+	float sdelta = sat_step * scale;
+	float vdelta = val_step * scale;
 
-	v += 0.1f;
-	if (v > 1.0f)
-		v = 1.0f;
-
-	const float scale = 16.0f / static_cast<float>(end - start + 1);
-	float sdelta = 0.014375f * scale;
-	float vdelta = -0.05882f * scale;
-
-	for (int i = start; i <= end; i++)
+	const int last = end;
+	for (int i = start; i <= last; i++)
 	{
 		argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
 		color.seta(255);
@@ -668,12 +668,10 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
 	{
 		return R_BuildClassicPlayerTranslation(player, colorpreset);
 	}
-	else
-	{
-		R_BuildColorRamp(dest_color, PLAYER_COLOR_START, PLAYER_COLOR_END,
-		                 &translationtables[player * 256], translationRGB[player],
-		                 PLAYER_COLOR_START);
-	}
+
+	R_BuildColorRamp(dest_color, PLAYER_COLOR_START, PLAYER_COLOR_END,
+	                 &translationtables[static_cast<ptrdiff_t>(player) * 256],
+	                 translationRGB[player], PLAYER_COLOR_START);
 }
 
 void R_ClearTranslation(translationtable_t& tlate)
@@ -705,9 +703,9 @@ void R_BuildTranslationGradient(translationtable_t& tlate, const palindex_t* src
 
 	for (int step = 0; step < range; step++)
 	{
-		const argb_t color(start_color.getr() + step * r_diff / range,
-		                   start_color.getg() + step * g_diff / range,
-		                   start_color.getb() + step * b_diff / range);
+		const argb_t color(start_color.getr() + ((step * r_diff) / range),
+		                   start_color.getg() + ((step * g_diff) / range),
+		                   start_color.getb() + ((step * b_diff) / range));
 
 		const palindex_t index = src[step];
 		tlate.rgb[index] = color;
@@ -741,12 +739,12 @@ void R_SampleLuminosity(const patch_t* const* patches, size_t count, std::vector
 	for (size_t i = 0; i < count; i++)
 	{
 		const patch_t* patch = patches[i];
-		if (patch == NULL)
+		if (patch == nullptr)
 			continue;
 
 		for (int col = 0; col < patch->width(); col++)
 		{
-			const tallpost_t* post = reinterpret_cast<const tallpost_t*>(
+			const auto* post = reinterpret_cast<const tallpost_t*>(
 			    reinterpret_cast<const byte*>(patch) + LELONG(patch->columnofs[col]));
 
 			while (!post->end())
@@ -768,7 +766,7 @@ void R_SampleLuminosity(const patch_t* const* patches, size_t count, std::vector
 	}
 
 	const palette_t* pal = V_GetDefaultPalette();
-	std::stable_sort(out.begin(), out.end(), [pal](palindex_t a, palindex_t b) {
+	std::ranges::stable_sort(out, [pal](palindex_t a, palindex_t b) {
 		return V_Luminance(pal->basecolors[a]) < V_Luminance(pal->basecolors[b]);
 	});
 }
@@ -861,21 +859,37 @@ translationref_t R_GetTranslation(translationlife_t life, const translationrecip
 translationref_t R_GetRampTranslation(translationlife_t life, palindex_t start, palindex_t end,
                                       argb_t color)
 {
-	return R_GetTranslation(life, {TRANSLATE_RAMP, start, end, color, 0, TEAM_NONE, false});
+	return R_GetTranslation(life, {.kind = TRANSLATE_RAMP,
+	                               .start = start,
+	                               .end = end,
+	                               .color = color,
+	                               .endcolor = 0,
+	                               .team = TEAM_NONE,
+	                               .isself = false});
 }
 
 translationref_t R_GetPlayerTranslation(translationlife_t life, argb_t user_color, team_t team,
                                         bool isconsoleplayer)
 {
-	return R_GetTranslation(life, {TRANSLATE_PLAYER, PLAYER_COLOR_START, PLAYER_COLOR_END,
-	                               user_color, 0, team, isconsoleplayer});
+	return R_GetTranslation(life, {.kind = TRANSLATE_PLAYER,
+	                               .start = PLAYER_COLOR_START,
+	                               .end = PLAYER_COLOR_END,
+	                               .color = user_color,
+	                               .endcolor = 0,
+	                               .team = team,
+	                               .isself = isconsoleplayer});
 }
 
 translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t start,
                                           palindex_t end, argb_t start_color, argb_t end_color)
 {
-	return R_GetTranslation(
-	    life, {TRANSLATE_GRADIENT, start, end, start_color, end_color, TEAM_NONE, false});
+	return R_GetTranslation(life, {.kind = TRANSLATE_GRADIENT,
+	                               .start = start,
+	                               .end = end,
+	                               .color = start_color,
+	                               .endcolor = end_color,
+	                               .team = TEAM_NONE,
+	                               .isself = false});
 }
 
 void R_ExpireTranslations(translationlife_t life)

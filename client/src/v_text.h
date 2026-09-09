@@ -53,7 +53,7 @@ struct OGlobalFont
 	{
 		return m_lineHeight;
 	}
-	const lumpHandle_t* data() const
+	[[nodiscard]] const lumpHandle_t* data() const
 	{
 		return m_fontData;
 	}

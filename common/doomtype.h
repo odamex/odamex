@@ -365,7 +365,7 @@ public:
 	palindex_t tlate(const byte c) const;
 	int getPlayerID() const;
 	const palindex_t *getTable() const;
-	const argb_t *getRGB() const;
+	[[nodiscard]] const argb_t *getRGB() const;
 
 	operator bool() const;
 };

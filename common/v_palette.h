@@ -135,31 +135,37 @@ void V_ResetPalette();
 // RGB - 0: {    .46  1 .429 } 7: {    .254 .571 .206 } 15: {    .0317 .0794 .0159 }
 // HSV - 0: { 116.743 .571 1 } 7: { 112.110 .639 .571 } 15: { 105.071  .800 .0794 }
 //
+constexpr float hue_sector_degrees = 60.0f;
+constexpr float hue_circle_degrees = 360.0f;
+
 inline fahsv_t V_RGBtoHSV(const fargb_t &color)
 {
-	float a = color.geta(), r = color.getr(), g = color.getg(), b = color.getb();
+	const float a = color.geta();
+	const float r = color.getr();
+	const float g = color.getg();
+	const float b = color.getb();
 
-	float smallest = std::min(std::min(r, g), b);
-	float largest = std::max(std::max(r, g), b);
-	float delta = largest - smallest;
+	const float smallest = std::min({r, g, b});
+	const float largest = std::max({r, g, b});
+	const float delta = largest - smallest;
 
 	if (delta == 0.0f)
-		return fahsv_t(a, 0, 0, largest);
+		return {a, 0, 0, largest};
 
 	float hue;
 
 	if (largest == r)
 		hue = (g - b) / delta;					// between yellow & magenta
 	else if (largest == g)
-		hue = 2.0f + (b - r) / delta;				// between cyan & yellow
+		hue = 2.0f + ((b - r) / delta);				// between cyan & yellow
 	else
-		hue = 4.0f + (r - g) / delta;				// between magenta & cyan
+		hue = 4.0f + ((r - g) / delta);				// between magenta & cyan
 
-	hue *= 60.f;
+	hue *= hue_sector_degrees;
 	if (hue < 0.0f)
-		hue += 360.0f;
+		hue += hue_circle_degrees;
 
-	return fahsv_t(a, hue, delta / largest, largest);
+	return {a, hue, delta / largest, largest};
 }
 
 //
@@ -169,34 +175,39 @@ inline fahsv_t V_RGBtoHSV(const fargb_t &color)
 //
 inline fargb_t V_HSVtoRGB(const fahsv_t &color)
 {
-	float a = color.geta(), h = color.geth(), s = color.gets(), v = color.getv();
+	const float a = color.geta();
+	const float h = color.geth();
+	const float s = color.gets();
+	const float v = color.getv();
 
 	if (s == 0.0f)						// achromatic (grey)
-		return fargb_t(a, v, v, v);
+		return {a, v, v, v};
 
-	float f = (h / 60.0f) - std::floor(h / 60.0f);
-	float p = v * (1.0f - s);
-	float q = v * (1.0f - s * f);
-	float t = v * (1.0f - s * (1.0f - f));
+	const float f = (h / hue_sector_degrees) - std::floor(h / hue_sector_degrees);
+	const float p = v * (1.0f - s);
+	const float q = v * (1.0f - (s * f));
+	const float t = v * (1.0f - (s * (1.0f - f)));
 
-	int sector = int(h / 60.0f);
+	const int sector = static_cast<int>(h / hue_sector_degrees);
 	switch (sector)
 	{
 		case 0:
-			return fargb_t(a, v, t, p);
+			return {a, v, t, p};
 		case 1:
-			return fargb_t(a, q, v, p);
+			return {a, q, v, p};
 		case 2:
-			return fargb_t(a, p, v, t);
+			return {a, p, v, t};
 		case 3:
-			return fargb_t(a, p, q, v);
+			return {a, p, q, v};
 		case 4:
-			return fargb_t(a, t, p, v);
+			return {a, t, p, v};
 		case 5:
-			return fargb_t(a, v, p, q);
+			return {a, v, p, q};
+		default:
+			break;
 	}
 
-	return fargb_t(a, v, v, v);
+	return {a, v, v, v};
 }
 
 //
@@ -208,7 +219,15 @@ inline fargb_t V_HSVtoRGB(const fahsv_t &color)
 //
 inline float V_Luminance(argb_t color)
 {
-	return (0.299f * color.getr() + 0.587f * color.getg() + 0.114f * color.getb()) / 255.0f;
+	// Rec. 601 luma weights.
+	constexpr float red_weight = 0.299f;
+	constexpr float green_weight = 0.587f;
+	constexpr float blue_weight = 0.114f;
+
+	return ((red_weight * static_cast<float>(color.getr())) +
+	        (green_weight * static_cast<float>(color.getg())) +
+	        (blue_weight * static_cast<float>(color.getb()))) /
+	       255.0f;
 }
 
 //
@@ -222,7 +241,7 @@ inline argb_t V_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 		return base_color;
 
 	fahsv_t color = V_RGBtoHSV(base_color);
-	color.setv(0.7f * color.getv() + 0.3f * V_RGBtoHSV(shade_color).getv());
+	color.setv((0.7f * color.getv()) + (0.3f * V_RGBtoHSV(shade_color).getv()));
 	return V_HSVtoRGB(color);
 }
 

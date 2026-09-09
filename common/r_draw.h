@@ -278,10 +278,10 @@ constexpr palindex_t PLAYER_COLOR_END = 0x7F;
 //
 struct translationtable_t
 {
-	std::array<palindex_t, 256> remap; // 8bpp palette remap
-	std::array<argb_t, 256>     rgb;   // 32bpp colors, alpha 0 where untranslated
+	std::array<palindex_t, 256> remap{}; // 8bpp palette remap
+	std::array<argb_t, 256>     rgb;     // 32bpp colors, alpha 0 where untranslated
 
-	translationref_t ref() const { return translationref_t(remap.data(), rgb.data()); }
+	[[nodiscard]] translationref_t ref() const { return {remap.data(), rgb.data()}; }
 };
 
 // Resets a translation to the identity, translating nothing.
