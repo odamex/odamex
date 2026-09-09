@@ -744,7 +744,10 @@ void R_SampleLuminosity(const patch_t* const* patches, size_t count, std::vector
 
 		for (int col = 0; col < patch->width(); col++)
 		{
+			// A need to view this as a byte buffer with an offset.
+			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
 			const auto* post = reinterpret_cast<const tallpost_t*>(
+			    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
 			    reinterpret_cast<const byte*>(patch) + LELONG(patch->columnofs[col]));
 
 			while (!post->end())
@@ -813,7 +816,15 @@ struct cachedtranslation_t
 	translationlife_t life = translationlife_t::TRANSLIFE_MAP;
 };
 
-std::map<translationrecipe_t, cachedtranslation_t> cachedtranslations;
+using translationcache_t = std::map<translationrecipe_t, cachedtranslation_t>;
+
+// Built on first use rather than during static initialization, so that a throw
+// while constructing it is catchable.
+translationcache_t& CachedTranslations()
+{
+	static translationcache_t cachedtranslations;
+	return cachedtranslations;
+}
 
 void R_BuildRecipe(translationtable_t& tlate, const translationrecipe_t& recipe)
 {
@@ -839,10 +850,12 @@ void R_BuildRecipe(translationtable_t& tlate, const translationrecipe_t& recipe)
 
 translationref_t R_GetTranslation(translationlife_t life, const translationrecipe_t& recipe)
 {
-	auto it = cachedtranslations.find(recipe);
-	if (it == cachedtranslations.end())
+	translationcache_t& cache = CachedTranslations();
+
+	auto it = cache.find(recipe);
+	if (it == cache.end())
 	{
-		it = cachedtranslations.emplace(recipe, cachedtranslation_t()).first;
+		it = cache.emplace(recipe, cachedtranslation_t()).first;
 		it->second.life = life;
 		R_BuildRecipe(it->second.table, recipe);
 	}
@@ -894,10 +907,12 @@ translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t sta
 
 void R_ExpireTranslations(translationlife_t life)
 {
-	for (auto it = cachedtranslations.begin(); it != cachedtranslations.end();)
+	translationcache_t& cache = CachedTranslations();
+
+	for (auto it = cache.begin(); it != cache.end();)
 	{
 		if (it->second.life <= life)
-			it = cachedtranslations.erase(it);
+			it = cache.erase(it);
 		else
 			++it;
 	}
@@ -905,7 +920,7 @@ void R_ExpireTranslations(translationlife_t life)
 
 void R_RebuildTranslations()
 {
-	for (auto& [recipe, cached] : cachedtranslations)
+	for (auto& [recipe, cached] : CachedTranslations())
 		R_BuildRecipe(cached.table, recipe);
 }
 

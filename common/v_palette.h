@@ -138,6 +138,9 @@ void V_ResetPalette();
 constexpr float hue_sector_degrees = 60.0f;
 constexpr float hue_circle_degrees = 360.0f;
 
+constexpr float hue_green_sector = 2.0f;
+constexpr float hue_blue_sector = 4.0f;
+
 inline fahsv_t V_RGBtoHSV(const fargb_t &color)
 {
 	const float a = color.geta();
@@ -155,11 +158,11 @@ inline fahsv_t V_RGBtoHSV(const fargb_t &color)
 	float hue;
 
 	if (largest == r)
-		hue = (g - b) / delta;					// between yellow & magenta
+		hue = (g - b) / delta;                      // between yellow & magenta
 	else if (largest == g)
-		hue = 2.0f + ((b - r) / delta);				// between cyan & yellow
+		hue = hue_green_sector + ((b - r) / delta); // between cyan & yellow
 	else
-		hue = 4.0f + ((r - g) / delta);				// between magenta & cyan
+		hue = hue_blue_sector + ((r - g) / delta);  // between magenta & cyan
 
 	hue *= hue_sector_degrees;
 	if (hue < 0.0f)
@@ -188,6 +191,8 @@ inline fargb_t V_HSVtoRGB(const fahsv_t &color)
 	const float q = v * (1.0f - (s * f));
 	const float t = v * (1.0f - (s * (1.0f - f)));
 
+	// The case labels are sector indices, not magic values.
+	// NOLINTBEGIN(readability-magic-numbers)
 	const int sector = static_cast<int>(h / hue_sector_degrees);
 	switch (sector)
 	{
@@ -206,6 +211,7 @@ inline fargb_t V_HSVtoRGB(const fahsv_t &color)
 		default:
 			break;
 	}
+	// NOLINTEND(readability-magic-numbers)
 
 	return {a, v, v, v};
 }
