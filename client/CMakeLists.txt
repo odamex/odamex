@@ -15,9 +15,6 @@ endif()
 # Enable default SIMD settings for standard builds.
 option(USE_DEFAULT_SIMD "Use default SIMD optimization settings" ON)
 
-# #define CLIENT_APP for use in the source code
-add_definitions(-DCLIENT_APP)
-
 # Client
 set(CLIENT_DIR sdl src)
 file(GLOB CLIENT_SOURCES src/*.cpp src/*.h)
@@ -43,29 +40,18 @@ if(NOT GCONSOLE)
 endif()
 
 # Tag source files with correct directories
-get_target_property(COMMON_SOURCES odamex-common INTERFACE_SOURCES)
 source_group("Client" FILES ${CLIENT_SOURCES})
-source_group("Common" FILES ${COMMON_SOURCES})
 source_group("SDL" FILES ${CLIENT_SDL_SOURCES})
 source_group("GUI" FILES ${CLIENT_GUI_SOURCES})
 
-# Client definitions
-include_directories(${COMMON_DIR} ${CLIENT_DIR})
+get_target_property(COMMON_DIRS     odacommon INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(COMMON_SOURCES  odacommon INTERFACE_SOURCES)
+
+source_group("Common" FILES ${COMMON_SOURCES})
 
 # Make sure we don't find libraries that are in Program Files/Odamex
 if(WIN32)
   list(REMOVE_ITEM CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
-endif()
-
-# X11 configuration
-# TODO: do we need to update this at all for wayland?
-if(UNIX AND NOT APPLE)
-  find_package(X11)
-  if(X11_FOUND)
-    add_definitions(-DX11)
-    include_directories(${X11_INCLUDE_DIR})
-    link_libraries(${X11_LIBRARIES})
-  endif()
 endif()
 
 # PortMidi configuration
@@ -140,8 +126,13 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
     set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.cpp)
 
-    include_directories(${TEXTSCREEN_DIR})
     add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
+    target_include_directories(${TEXTSCREEN_LIBRARY}
+        PUBLIC
+            ${TEXTSCREEN_DIR}
+        PRIVATE
+            ${COMMON_DIRS}
+        )
   endif()
 
   if(TARGET SDL::SDL)
@@ -150,16 +141,14 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(${TEXTSCREEN_LIBRARY} SDL2::SDL2)
   endif()
 
-  if (NOT GCONSOLE)
-    target_include_directories(${TEXTSCREEN_LIBRARY} PRIVATE ../common)
-  else()
-    include_directories(../common)
-  endif()
-
   add_executable(odamex MACOSX_BUNDLE WIN32
-    ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES} ${CLIENT_GUI_SOURCES})
+    ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${CLIENT_GUI_SOURCES})
   odamex_target_settings(TARGET odamex)
   odamex_target_errors(odamex)
+
+  target_link_libraries(odamex odacommon)
+  target_include_directories(odamex PRIVATE src sdl)
+  target_compile_definitions(odamex PRIVATE CLIENT_APP)
 
   if(USE_DEFAULT_SIMD)
     if(ODAMEX_TARGET_ARCH STREQUAL "amd64")
@@ -193,8 +182,6 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     set_target_properties(odamex PROPERTIES LINK_FLAGS "/MANIFEST:NO")
   endif()
 
-  target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex odamex-common odaproto tinylibs)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
     if(TARGET SDL::SDLmain)
@@ -219,35 +206,14 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
   endif()
 
-  if(USE_INTERNAL_JSONCPP)
-    target_link_libraries(odamex jsoncpp_static)
-  else()
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(JSONCPP jsoncpp REQUIRED IMPORTED_TARGET)
-    target_link_libraries(odamex PkgConfig::JSONCPP)
-  endif()
-
   if(ENABLE_PORTMIDI)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
-  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt minilzo cpptrace::cpptrace libADLMIDI::ADLMIDI_static curl_interface)
+  target_link_libraries(odamex ${TEXTSCREEN_LIBRARY} PNG::PNG libADLMIDI::ADLMIDI_static curl_interface)
 
-  if(WIN32)
-    target_link_libraries(odamex winmm wsock32 shlwapi)
-  elseif(APPLE)
-    target_link_libraries(odamex ${APPLE_FRAMEWORKS})
-  elseif(NSWITCH)
+  if(NSWITCH)
     target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
-  elseif(SOLARIS)
-    target_link_libraries(odamex socket nsl)
-  endif()
-
-  if(UNIX AND NOT APPLE)
-    target_link_libraries(odamex rt)
-    if(X11_FOUND)
-      target_link_libraries(odamex X11)
-    endif()
   endif()
 
   if (TARGET odawad)
@@ -265,6 +231,8 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   set(MACOSX_BUNDLE_GUI_IDENTIFIER net.odamex.odamex)
 
   if(APPLE)
+    target_link_libraries(odamex ${APPLE_FRAMEWORKS})
+
     add_custom_command(
       TARGET odamex
       POST_BUILD

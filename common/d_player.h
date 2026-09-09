@@ -149,6 +149,9 @@ inline constexpr int SuicideDelay = TICRATE * 10;
 
 inline constexpr int BACKUPTICS = 12;
 
+// psprite_authority_tic when the server has never told us a player's psprites.
+inline constexpr int PSPRITE_AUTHORITY_NONE = -1;
+
 class player_t
 {
 public:
@@ -234,6 +237,12 @@ public:
 	std::array<int, NUMAMMO>          maxammo;
 	int                               psprnum;
 	std::array<pspdef_t, NUMPSPRITES> psprites;     // Overlay view sprites (gun, etc).
+
+	// The gametic we last had authoritative psprites for this player, or
+	// PSPRITE_AUTHORITY_NONE if we never have.
+	// Used to tell whether their weapon still needs guessing at.
+	// Client only
+	int                               psprite_authority_tic { PSPRITE_AUTHORITY_NONE };
 
 	// This is the comparator for the psprite latch vs the real data value.
 	// We specifically ONLY compare the statenum and not the tics because we don't want to trigger

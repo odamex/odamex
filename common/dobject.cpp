@@ -72,7 +72,7 @@ DObject::~DObject ()
 			// object is queued for deletion, but is not being deleted
 			// by the destruction process, so remove it from the
 			// ToDestroy array and do other necessary stuff.
-			for (auto& obj : OUtil::reverse(ToDestroy))
+			for (auto& obj : std::views::reverse(ToDestroy))
 			{
 				if (obj == this)
 				{

@@ -62,11 +62,11 @@ CVAR(					am_classicmapstring, "0", "",
 
 CVAR_RANGE(am_showauthor, "2",
 		"How the map author is shown on the automap.\n"
-		"0 - Off\n"
-		"1 - Static\n"
-		"2 - Fade in/out with map name\n"
-		"3 - Marquee in/out with map name\n"
-		"4 - Teletype effect with map name",
+		"// 0 - Off\n"
+		"// 1 - Static\n"
+		"// 2 - Fade in/out with map name\n"
+		"// 3 - Marquee in/out with map name\n"
+		"// 4 - Teletype effect with map name",
 		CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,
 		AM_AUTHOR_OFF, AM_AUTHOR_TELETYPE)
 
@@ -355,9 +355,9 @@ CVAR_RANGE (joy_deadzone, "0.20", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_
 
 CVAR_RANGE(joy_gamepadmode, "0",
 		"Sets the behavior of on-screen prompts of when to name gamepad buttons instead of keyboard keys.\n"
-		"0 - Follow whichever device was used last\n"
-		"1 - Mouse input does not switch away from the gamepad\n"
-		"2 - Always show gamepad keys",
+		"// 0 - Follow whichever device was used last\n"
+		"// 1 - Mouse input does not switch away from the gamepad\n"
+		"// 2 - Always show gamepad keys",
 		CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, GAMEPADMODE_AUTO, GAMEPADMODE_ALWAYS)
 
 CVAR_RANGE(joy_lefttrigger_deadzone, "0.2", "Sets the required pressure to trigger a press on the left trigger (Analog controllers only)",
@@ -445,7 +445,7 @@ CVAR_FUNC_DECL(		cl_name, "Player", "",
 #endif
 
 CVAR(				cl_color, "40 cf 00", "",
-					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE | CVAR_NOSET)
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_NOENABLEDISABLE | CVAR_NOSET)
 
 CVAR_FUNC_DECL(		cl_customcolor, "40 cf 00", "",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -788,8 +788,9 @@ CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the
 CVAR(           r_drawnetcredibility, "0", "Add a particle to each actor indicating how credible the client considers the actor's position",
                 CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR_RANGE(		r_portalrecursions, "16", "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
+CVAR_RANGE(		r_portalrecursions, "4", "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
+				// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 16.0f)
 
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",

@@ -325,7 +325,7 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	if (sv_showsprees)
 	{
 		// Broadcast to all clients
-		MSG_BroadcastSVC(CLBUF_NET, SVC_SpreeBreaker(breaker, level, type, 0), -1);
+		MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_SpreeBreaker(breaker, level, type, 0), -1);
 	}
 	#endif
 
@@ -445,7 +445,7 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 		if (sv_showsprees)
 		{
 			// Broadcast to all clients
-			MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(newRecord, 0), -1);
+			MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_Spree(newRecord, 0), -1);
 		}
 #endif
 		return true;
@@ -477,7 +477,7 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 			if (sv_showsprees)
 			{
 				// Broadcast to all clients
-				MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(record, 0), -1);
+				MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_Spree(record, 0), -1);
 			}
 #endif
 			return true;

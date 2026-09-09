@@ -592,6 +592,7 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad)
 		unsigned int playernum = p->isFreecam ? players.size() - 1 : players.size();
 		arc << level.flags
 			<< level.flags2
+			<< level.metadataflags
 			<< level.fadeto_color[0] << level.fadeto_color[1] << level.fadeto_color[2] << level.fadeto_color[3]
 			<< level.found_secrets
 			<< level.found_items
@@ -611,6 +612,7 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad)
 	{
 		arc >> level.flags
 			>> level.flags2
+			>> level.metadataflags
 			>> level.fadeto_color[0] >> level.fadeto_color[1] >> level.fadeto_color[2] >> level.fadeto_color[3]
 			>> level.found_secrets
 			>> level.found_items
@@ -850,6 +852,7 @@ void G_InitLevelLocals()
 	::level.cluster = info.cluster;
 	::level.flags = info.flags;
 	::level.flags2 = info.flags2;
+	::level.metadataflags = info.metadataflags;
 	::level.levelnum = info.levelnum;
 	::level.level_fingerprint = info.level_fingerprint;
 
@@ -1176,7 +1179,7 @@ ClusterInfos& getClusterInfos()
 // P_AllowDropOff()
 bool P_AllowDropOff()
 {
-	return co_allowdropoff && !(level.flags & LEVEL2_COMPAT_CROSSDROPOFF);
+	return co_allowdropoff && !(level.flags2 & LEVEL2_COMPAT_CROSSDROPOFF);
 }
 
 bool P_AllowPassover()

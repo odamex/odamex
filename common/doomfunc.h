@@ -133,70 +133,10 @@ void SV_ClientPrintFmt(client_t *cl, int level, fmt::format_string<ARGS...> form
 
 #endif
 
+#include "util.h"
+
 namespace OUtil
 {
-
-// Wrapper for easy iteration over containers in reverse with ranged for loops
-template <typename T>
-struct reverse_wrapper
-{
-    T& iterable;
-    inline auto begin() { return std::rbegin(iterable); }
-    inline auto end() { return std::rend(iterable); }
-};
-
-/**
- * @brief Reverse the iteration in a range-based for loop
- */
-template <typename T>
-inline reverse_wrapper<T> reverse(T&& iterable) { return { iterable }; }
-
-// Wrapper for skipping the first N elements in a range-based for loop
-template <typename T>
-struct drop_wrapper
-{
-    T& iterable;
-    size_t count;
-
-    auto begin() {
-        auto it = std::begin(iterable);
-        auto end_it = std::end(iterable);
-        for (size_t i = 0; i < count && it != end_it; ++i)
-            ++it;
-        return it;
-    }
-
-    auto end() { return std::end(iterable); }
-};
-
-/**
- * @brief Skip the first `count` elements in a range-based for loop
- */
-template <typename T>
-inline drop_wrapper<T> drop(T&& iterable, std::size_t count) { return { iterable, count }; }
-
-// Helper for use of std::visit with lambdas
-template<class... Ts>
-struct visitor : Ts... { using Ts::operator()...; };
-// This shouldn't be needed in C++20, but for some reason macOS builds fail without it
-template<class... Ts>
-visitor(Ts...) -> visitor<Ts...>;
-
-template <std::integral T>
-constexpr auto to_unsigned(T x)
-{
-	return static_cast<std::make_unsigned_t<T>>(x);
-}
-
-// C++23 std::unreachable
-[[noreturn]] inline void unreachable()
-{
-#if defined(_MSC_VER) && !defined(__clang__)
-	__assume(false);
-#else
-	__builtin_unreachable();
-#endif
-}
 
 constexpr uint32_t CONST_HASH(std::string_view str)
 {
@@ -230,7 +170,6 @@ constexpr uint32_t CONST_HASH_NO_CASE(std::string_view str)
 
 	return hash;
 }
-
 
 }
 

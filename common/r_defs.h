@@ -694,7 +694,7 @@ struct vissprite_t
     //  maxbright frames as well
     shaderef_t		colormap;
 
-	int 			mobjflags;
+	ActorFlags1		mobjflags;
 	int				statusflags;	// Status of player to show (powers, etc)
 	bool			spectator;		// [Blair] Mark if this visprite belongs to a spectator.
 

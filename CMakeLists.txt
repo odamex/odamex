@@ -1,6 +1,8 @@
 # CMake >= 3.13 needed for -S and -B params in library compilation.
-# CMake >= 3.19 needed for policy CMP0112: target-dependent generator expressions
-#               do not implicitly add target-level dependencies.
+# CMake >= 3.19 needed for:
+#               - policy CMP0112: target-dependent generator expressions
+#                 do not implicitly add target-level dependencies.
+#               - add_library(<name> INTERFACE) plus PUBLIC target_sources.
 # CMake >= 3.20 needed for restricted set of generator expressions allowed in custom command OUTPUT args.
 #
 # Note that if you are running Linux, there are many ways to get newer
@@ -190,8 +192,8 @@ add_subdirectory(wad)
 
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
-  add_subdirectory(common)
   add_subdirectory(odaproto)
+  add_subdirectory(common)
 endif()
 if(BUILD_CLIENT)
   add_subdirectory(client)
