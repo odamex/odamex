@@ -222,12 +222,21 @@ void CL_LargeMessageFragment(const odaproto::LargeMessageFragment* msg)
 	s_receivedLargeMessage.Append(msg->payload().data(), msg->payload().length());
 }
 
+void CL_ParseBuffer(buf_t& buffer);
+
 void CL_LargeMessageEnd(const odaproto::LargeMessageEnd* )
 {
 	if (s_receivedLargeMessage.IsComplete() and not s_receivedLargeMessage.IsEmpty())
 	{
-		CL_ParseCommand(s_receivedLargeMessage.GetBufferRef());
+		CL_ParseBuffer(s_receivedLargeMessage.GetBufferRef());
 		s_receivedLargeMessage.Restart(0);
+	}
+	else
+	{
+		PrintFmt(PRINT_WARNING,
+		        "Incomplete large message!  total: {}, current: {}\n",
+		        s_receivedLargeMessage.TotalSize(),
+		        s_receivedLargeMessage.CurrentSize());
 	}
 }
 
@@ -3741,42 +3750,16 @@ namespace
 		}
 		return svc;
 	}
-}
 
-//
-// CL_ParseCommands
-//
-void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
-{
-	if (optionalHeader)
+	void CL_ParseBuffer(buf_t& buffer)
 	{
-		s_currentHeader = *optionalHeader;
-	}
-
-	while (connected)
-	{
-		if (::net_message.BytesLeftToRead() == 0)
-		{
-			break;
-		}
-
-		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
-		// This is because the High Priority packet is always live and comes out every tic.  It's totally
-		// possible for the server to go without sending anything Reliable or Best-Effort if things are
-		// all-quiet.
-		if (messenger.GetCurrentReceivedIsHighPriority())
-		{
-			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
-		}
-
-		const size_t          byteStart = ::net_message.BytesRead();
-		const ParseResultType result    = CL_ParseCommand(::net_message);
+		const ParseResultType result = CL_ParseCommand(buffer);
 
 		const parseError_e processResult = result.code == PERR_OK ?
 			CL_ProcessCommand(result) :
 			result.code;
 
-		if (processResult != PERR_OK or ::net_message.overflowed)
+		if (processResult != PERR_OK or buffer.overflowed)
 		{
 			const Protos& protos = CL_GetTicProtos();
 
@@ -3793,7 +3776,7 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 			{
 				err = "Could not decode message";
 			}
-			else if (::net_message.overflowed)
+			else if (buffer.overflowed)
 			{
 				err = "Message overflowed";
 			}
@@ -3823,6 +3806,38 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 
 			CL_QuitNetGame(NQ_PROTO);
 		}
+	}
+
+}
+
+//
+// CL_ParseCommands
+//
+void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
+{
+	if (optionalHeader)
+	{
+		s_currentHeader = *optionalHeader;
+	}
+
+	while (connected)
+	{
+		if (::net_message.BytesLeftToRead() == 0)
+		{
+			break;
+		}
+
+		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
+		// This is because the High Priority packet is always live and comes out every tic.  It's totally
+		// possible for the server to go without sending anything Reliable or Best-Effort if things are
+		// all-quiet.
+		if (messenger.GetCurrentReceivedIsHighPriority())
+		{
+			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
+		}
+
+		const size_t byteStart = ::net_message.BytesRead();
+		CL_ParseBuffer(::net_message);
 
 		// Measure length of each message, so we can keep track of bandwidth.
 		if (::net_message.BytesRead() < byteStart)
