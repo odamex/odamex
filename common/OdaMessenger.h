@@ -279,6 +279,7 @@ class OdaMessenger
 		void ManageBudget(int i_currentTic);
 
 		int SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest);
+		size_t SendFragments();
 
 		SequenceSender   m_sender;
 		SequenceReceiver m_receiver;
