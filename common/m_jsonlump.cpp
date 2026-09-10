@@ -99,5 +99,5 @@ jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSON
 		return jsonlumpresult_t::VERSIONMISMATCH;
 	}
 
-	return parsefunc(data, versiondata, W_IsLumpFromExternalWad(lumpindex));
+	return parsefunc(data, versiondata, not W_IsLumpFromExternalWad(lumpindex));
 }
