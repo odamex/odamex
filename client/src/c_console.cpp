@@ -957,9 +957,9 @@ bool C_BlendConCharsSheet(int lumpnum)
 
 	// W_CachePatch hands back an empty 0x0 header for lumps that aren't patches
 	// at all, so this rejects those along with sheets of the wrong shape
-	if (width < CONCHARS_GLYPH_DIM || width % CONCHARS_GLYPH_DIM != 0 ||
-		height < CONCHARS_GLYPH_DIM || height % CONCHARS_GLYPH_DIM != 0 ||
-		patch->leftoffset() != 0 || patch->topoffset() != 0)
+	if (width < CONCHARS_GLYPH_DIM or width % CONCHARS_GLYPH_DIM != 0 or
+		height < CONCHARS_GLYPH_DIM or height % CONCHARS_GLYPH_DIM != 0 or
+		patch->leftoffset() != 0 or patch->topoffset() != 0)
 		return false;
 
 	const int cols = width / CONCHARS_GLYPH_DIM;
