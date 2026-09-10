@@ -99,6 +99,21 @@ void Freecam::setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
 	cam_angle = angle;
 }
 
+void Freecam::moveToPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
+{
+	player_t* cam = &idplayer(freecamplayer_id);
+
+	if (cam->id == freecamplayer_id and cam->isFreecam)
+	{
+		cam->mo->x = x;
+		cam->mo->y = y;
+		cam->mo->z = z;
+		cam->mo->angle = angle;
+		cam->mo->pitch = 0;
+		cam->viewheight = VIEWHEIGHT;
+	}
+}
+
 void Freecam::savePosition()
 {
 	player_t* cam = &idplayer(freecamplayer_id);
