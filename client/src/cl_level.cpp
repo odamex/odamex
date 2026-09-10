@@ -63,6 +63,7 @@ END_DISABLE_WARNING_GNU
 #include "z_zone.h"
 #include "m_wdlstats.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 #include "g_gametype.h"
 #include "cl_freecam.h"
 
@@ -565,7 +566,9 @@ void G_DoLoadLevel (int position)
 	// [SL] clear the saved sector data from the last level
 	OInterpolation::getInstance().resetGameInterpolation();
 
-	SpreeManager::getInstance().clearSprees();
+	G_ClearRoundKillStats();
+
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
@@ -709,6 +712,18 @@ void G_DoLoadLevel (int position)
 	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
 	if (Freecam::allowAdd())
 	{
+		if (Freecam::needPosition())
+		{
+			const std::optional<mapthing2_t> start = P_GetFirstAvailableSpawn();
+
+			if (start.has_value())
+			{
+				Freecam::setStartPosition(INT2FIXED(start->x), INT2FIXED(start->y),
+				    level.flags & LEVEL_USEPLAYERSTARTZ ? INT2FIXED(start->z) : ONFLOORZ,
+				    MapThingToAngle(start->angle));
+			}
+		}
+
 		Freecam::addFreecamPlayer();
 	}
 
