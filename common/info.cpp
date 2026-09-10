@@ -1912,10 +1912,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
 	.raisestate       = S_SSWV_RAISE1,
 	.name             = "MT_WOLFSS",
-	.altspeed         = NO_ALTSPEED,
-	.infighting_group = IG_DEFAULT,
-	.projectile_group = PG_DEFAULT,
-	.splash_group     = SG_DEFAULT,
 	.droppeditem      = MT_CLIP,
 	.display_name     = "$FN_WOLFSS",
 	},
@@ -2059,10 +2055,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_PCROSS|MF2_IMPACT,
 	.name             = "MT_TROOPSHOT",
 	.altspeed         = 20_fx,
-	.infighting_group = IG_DEFAULT,
-	.projectile_group = PG_DEFAULT,
-	.splash_group     = SG_DEFAULT,
-	.droppeditem      = MT_NULL
 	},
 
 	{ // MT_HEADSHOT
@@ -2084,10 +2076,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.flags2           = MF2_PCROSS|MF2_IMPACT,
 	.name             = "MT_HEADSHOT",
 	.altspeed         = 20_fx,
-	.infighting_group = IG_DEFAULT,
-	.projectile_group = PG_DEFAULT,
-	.splash_group     = SG_DEFAULT,
-	.droppeditem      = MT_NULL
 	},
 
 	{ // MT_ROCKET

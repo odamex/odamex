@@ -1047,3 +1047,5 @@ std::span<state_t> getOdaStates() {
 std::span<const char*> getOdaSprNames() {
 	return { odasprnames, ARRAY_LENGTH(odasprnames) };
 }
+
+VERSION_CONTROL (odainfo_cpp, "$Id$")
