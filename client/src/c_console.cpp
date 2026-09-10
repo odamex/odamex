@@ -1046,14 +1046,9 @@ void C_InitConCharsFont()
 			continue;
 		}
 
-		const int filenum = W_GetLumpFile(lumpnum);
-		const char* filename = "an unknown file";
-		if (filenum >= 0 && std::cmp_less(filenum, wadfiles.size()))
-			filename = wadfiles[static_cast<size_t>(filenum)].getBasename().c_str();
-
 		PrintFmt(PRINT_WARNING,
 		         "CONCHARS in {} is not a grid of 8x8 glyphs, ignoring it.\n",
-		         filename);
+		         W_LumpFileName(lumpnum));
 	}
 
 	if (sheets == 0)
