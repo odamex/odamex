@@ -118,7 +118,7 @@ shotguy/death1			dspodth1
 shotguy/death2			dspodth2
 shotguy/death3			dspodth3
 shotguy/attack			dsshotgn
-$random shotguy/sight { shotguy/sight1 shotguy/sight2 shotgu/sight3 }
+$random shotguy/sight { shotguy/sight1 shotguy/sight2 shotguy/sight3 }
 $random shotguy/death { shotguy/death1 shotguy/death2 shotguy/death3 }
 
 // Archvile
