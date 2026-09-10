@@ -63,8 +63,8 @@ void P_SetSpectatorFlags(player_t &player)
 //
 void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 {
-	P_SpawnPlayer(player, mthing.x << FRACBITS, mthing.y << FRACBITS,
-	              mthing.z << FRACBITS, MapThingToAngle(mthing.angle));
+	P_SpawnPlayer(player, INT2FIXED(mthing.x), INT2FIXED(mthing.y),
+	              INT2FIXED(mthing.z), MapThingToAngle(mthing.angle));
 }
 
 void P_SpawnPlayer(player_t& player, const fixed_t x, const fixed_t y,
@@ -172,7 +172,7 @@ void P_SpawnPlayer(player_t& player, const fixed_t x, const fixed_t y,
 		if (!player.spectator)
 		{
 			M_LogWDLEvent(WDL_EVENT_SPAWNPLAYER, &player, NULL, team, 0,
-			              M_GetPlayerSpawn(x >> FRACBITS, y >> FRACBITS), 0);
+			              M_GetPlayerSpawn(FIXED2INT(x), FIXED2INT(y)), 0);
 		}
 
 		// send new objects

@@ -173,8 +173,8 @@ BEGIN_COMMAND(dumpspawns)
 		PrintFmt(PRINT_HIGH, "  [{}] player {} - type {} at {},{} - avatar {}\n", i,
 		         P_GetMapThingPlayerNumber(voodoo.mapThing) + 1, voodoo.mapThing.type,
 		         voodoo.mapThing.x, voodoo.mapThing.y,
-		         mo ? fmt::sprintf("netid %d at %d,%d", mo->netid, mo->x >> FRACBITS,
-		                           mo->y >> FRACBITS)
+		         mo ? fmt::format("netid {} at {},{}", mo->netid, FIXED2INT(mo->x),
+		                          FIXED2INT(mo->y))
 		            : std::string("none"));
 	}
 

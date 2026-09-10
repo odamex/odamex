@@ -718,8 +718,8 @@ void G_DoLoadLevel (int position)
 
 			if (start.has_value())
 			{
-				Freecam::setStartPosition(start->x << FRACBITS, start->y << FRACBITS,
-				    level.flags & LEVEL_USEPLAYERSTARTZ ? start->z << FRACBITS : ONFLOORZ,
+				Freecam::setStartPosition(INT2FIXED(start->x), INT2FIXED(start->y),
+				    level.flags & LEVEL_USEPLAYERSTARTZ ? INT2FIXED(start->z) : ONFLOORZ,
 				    MapThingToAngle(start->angle));
 			}
 		}

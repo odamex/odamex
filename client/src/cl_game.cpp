@@ -1354,8 +1354,8 @@ void P_SpawnPlayer(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle
 bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 {
-	return G_CheckSpot(player, mthing.x << FRACBITS, mthing.y << FRACBITS,
-	                   mthing.z << FRACBITS, MapThingToAngle(mthing.angle));
+	return G_CheckSpot(player, INT2FIXED(mthing.x), INT2FIXED(mthing.y),
+	                   INT2FIXED(mthing.z), MapThingToAngle(mthing.angle));
 }
 
 bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle)
