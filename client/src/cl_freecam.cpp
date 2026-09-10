@@ -44,7 +44,7 @@ void Freecam::addFreecamPlayer()
 		Freecam::buildCam(cam);
 	}
 
-	if (cam->id != freecamplayer_id && players.size() < MAXPLAYERS) // initial add
+	if (cam->id != freecamplayer_id and players.size() < MAXPLAYERS) // initial add
 	{
 		cam = &players.emplace_back();
 		cam->id = freecamplayer_id;
@@ -55,7 +55,7 @@ void Freecam::addFreecamPlayer()
 
 bool Freecam::wipedOnLevelChange(player_t* cam)
 {
-	return (cam->id == freecamplayer_id && cam->isFreecam && cam->mo == nullptr && cam->camera == nullptr);
+	return (cam->id == freecamplayer_id and cam->isFreecam and cam->mo == nullptr and cam->camera == nullptr);
 }
 
 void Freecam::buildCam(player_t* p_cam)
@@ -118,7 +118,7 @@ void Freecam::savePosition()
 {
 	player_t* cam = &idplayer(freecamplayer_id);
 
-	if (cam->id == freecamplayer_id && cam->isFreecam)
+	if (cam->id == freecamplayer_id and cam->isFreecam)
 	{
 		cam_x = cam->mo->x;
 		cam_y = cam->mo->y;
@@ -130,7 +130,7 @@ void Freecam::savePosition()
 
 bool Freecam::needPosition() 
 {
-	return (cam_x == 0 && cam_y == 0);
+	return (cam_x == 0 and cam_y == 0);
 }
 
 void Freecam::reset()
@@ -140,15 +140,15 @@ void Freecam::reset()
 
 bool Freecam::allowAdd()
 {
-	return (netdemo.isPlaying() || (G_IsLivesGame() && not G_IsTeamGame()));
+	return (netdemo.isPlaying() or (G_IsLivesGame() and not G_IsTeamGame()));
 }
 
 bool Freecam::allowSpy()
 {
-	return (netdemo.isInPlayback() || 
+	return (netdemo.isInPlayback() or
 			(consoleplayer().playerstate == PST_DEAD 
-				&& consoleplayer().lives < 1 
-				&& ::levelstate.getState() == LevelState::INGAME));
+				and consoleplayer().lives < 1 
+				and ::levelstate.getState() == LevelState::INGAME));
 }
     
 // a real 255th player connected (CL_UserInfo) and is taking the freecam spot

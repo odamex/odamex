@@ -202,7 +202,7 @@ CVAR_FUNC_IMPL(cl_noclip_spectator)
 	player_t& c = consoleplayer();
 	player_t& d = displayplayer();
 
-	if (c.spectator && not netdemo.isInPlayback())
+	if (c.spectator and not netdemo.isInPlayback())
 	{
 		if (var.asInt())
 			c.cheats |= CF_NOCLIP;
