@@ -469,7 +469,7 @@ static void CL_HandleDisconnectCompletionPacket()
 	// confirmation.
 	while (::net_message.BytesLeftToRead() > 0)
 	{
-		const ParseResultType result = CL_ParseCommand();
+		const ParseResultType result = CL_ParseCommand(::net_message);
 
 		switch (result.cmd)
 		{

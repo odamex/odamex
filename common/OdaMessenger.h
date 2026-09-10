@@ -25,7 +25,9 @@
 #include <memory_resource>
 #include <utility>
 
+#include "LargeMessageQueue.h"
 #include "MessageQueue.h"
+
 #include "Packet.h"
 #include "SequenceReceiver.h"
 #include "SequenceSender.h"
@@ -216,9 +218,10 @@ class OdaMessenger
 
 		/// Return the requested message queue.  Use these queues to Obtain new messages into which to pack
 		/// new outgoing data.
-		MessageQueue& Reliable() { return m_outgoingReliableQueue; }
-		MessageQueue& BestEffort() { return m_outgoingNonReliableQueue; }
-		MessageQueue& HighPriority() { return m_outgoingHighNonReliableQueue; }
+		MessageQueue&      Reliable() { return m_outgoingReliableQueue; }
+		MessageQueue&      BestEffort() { return m_outgoingNonReliableQueue; }
+		MessageQueue&      HighPriority() { return m_outgoingHighNonReliableQueue; }
+		LargeMessageQueue& LargeMessage() { return m_outgoingLargeMessageQueue; }
 
 		/// Discard all outgoing data that has yet to be sent.
 		void Clear()
@@ -226,6 +229,7 @@ class OdaMessenger
 			m_outgoingReliableQueue.Clear();
 			m_outgoingNonReliableQueue.Clear();
 			m_outgoingHighNonReliableQueue.Clear();
+			m_outgoingLargeMessageQueue.Clear();
 		}
 
 		bool RecordingIsEnabled() const { return m_recordingIsEnabled; }
@@ -256,7 +260,8 @@ class OdaMessenger
 		int GetNonContiguousRetransmitPackets() const { return m_noncontiguousRetransmitCount; }
 		size_t GetOutgoingSizeInBytes() const         { return m_outgoingReliableQueue.SizeInBytes()
 		                                                     + m_outgoingNonReliableQueue.SizeInBytes()
-		                                                     + m_outgoingHighNonReliableQueue.SizeInBytes(); }
+		                                                     + m_outgoingHighNonReliableQueue.SizeInBytes()
+		                                                     + m_outgoingLargeMessageQueue.SizeInBytes(); }
 		int GetPendingAckCount() const       { return m_sender.GetPendingAckCount(); }
 		int GetReliableOverloadCount() const { return m_reliableOverloadCount; }
 		int GetTicBudget() const             { return m_perTicBudget; }
@@ -274,6 +279,7 @@ class OdaMessenger
 		void ManageBudget(int i_currentTic);
 
 		int SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest);
+		size_t SendFragments();
 
 		SequenceSender   m_sender;
 		SequenceReceiver m_receiver;
@@ -284,12 +290,16 @@ class OdaMessenger
 		PacketHeaderType m_receivedHeader;
 
 		// Send buffers
-		MessageQueue m_outgoingReliableQueue;
-		MessageQueue m_outgoingNonReliableQueue;
-		MessageQueue m_outgoingHighNonReliableQueue;
+		MessageQueue        m_outgoingReliableQueue;
+		MessageQueue        m_outgoingNonReliableQueue;
+		MessageQueue        m_outgoingHighNonReliableQueue;
+		LargeMessageQueue   m_outgoingLargeMessageQueue;
+		buf_t               m_outgoingLargeMessageFragment { MAX_UDP_PACKET };
 
 		buf_t            m_immediateReceiveBuffer{ MAX_UDP_PACKET };
 		PacketHeaderType m_immediateReceiveHeader;
+
+		buf_t m_scratchpadBuffer { MAX_UDP_PACKET };
 
 		int m_maxPacketsPerRetransmission   { DEFAULT_RETRANSMISSIONS_PER_TIC };
 		int m_retransmitDelayInTics         { 0 };

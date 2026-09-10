@@ -27,3 +27,6 @@
 struct PacketHeaderType;
 
 odaproto::Header MSG_Header(const PacketHeaderType& i_header);
+
+odaproto::LargeMessageStart     MSG_LargeMessageStart(size_t i_size);
+odaproto::LargeMessageFragment  MSG_LargeMessageFragment(const void* i_data, size_t i_size);
