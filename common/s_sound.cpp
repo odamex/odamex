@@ -314,6 +314,22 @@ void S_ParseSndInfo()
 						S_AddRandomSound(owner, list);
 					}
 				}
+				else if (os.compareTokenNoCase("overrideifexists"))
+				{
+					if (W_IsLumpFromExternalWad(lump))
+						os.error("$overrideifexists is an extension for internal use only.\n");
+
+					os.mustScan();
+					char name[MAX_SNDNAME + 1];
+
+					strncpy(name, os.getToken().c_str(), MAX_SNDNAME);
+					name[MAX_SNDNAME] = 0;
+					os.mustScan();
+
+					const auto lumpname = os.getToken();
+					if (W_CheckNumForName(lumpname) != -1)
+						S_AddSound(name, lumpname.c_str());
+				}
 				else
 				{
 					os.warning("Unknown SNDINFO command {}\n", os.getToken());

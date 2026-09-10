@@ -951,11 +951,17 @@ bool W_IsLumpFromPWAD(const char* name, namespace_t namespc)
 	return lump >= 0 && W_IsLumpFromPWAD(static_cast<unsigned>(lump));
 }
 
+bool W_IsLumpFromExternalWad(uint32_t lumpnum)
+{
+	const auto file = W_GetLumpFile(lumpnum);
+	return not (file == WADFILE_GENERATED or file == WADFILE_ODAMEX);
+}
+
 //
 // W_IsLumpReplaced
 //
 // Returns true if an IWAD/Odamex lump was replaced by a PWAD.
-// 
+//
 // If this lump didn't have an original to replace (meaning its
 // original to the PWAD) it will return false.
 //

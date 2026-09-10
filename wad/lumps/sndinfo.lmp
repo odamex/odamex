@@ -627,3 +627,26 @@ $alias intermission/nextstage     weapons/rocklx
 $alias intermission/paststats     weapons/shotgr
 $alias intermission/pastcoopstats weapons/shotgr
 $alias intermission/pastdmstats   player/male/gibbed
+
+$overrideifexists menu/activate dsmnuopn
+$overrideifexists menu/prompt   dsmnuopn
+$overrideifexists menu/clear    dsmnucls
+$overrideifexists menu/dismiss  dsmnucls
+$overrideifexists menu/invalid  dsmnuerr
+$overrideifexists menu/choose   dsmnuact
+$overrideifexists menu/backup   dsmnubak
+$overrideifexists menu/cursor   dsmnumov
+$overrideifexists menu/change   dsmnusli
+// alternate cursor sound used in boom ports
+// no standard zdoom name for it,
+// nor does the engine currently use it
+// so for now its commented out
+// they use dsitemup when dsmnusel is not present
+//$overrideifexists menu/boomcursor   dsmnusel
+
+$overrideifexists intermission/tick           dsinttic
+$overrideifexists intermission/cooptotal      dsintnet
+$overrideifexists intermission/nextstage      dsinttot
+$overrideifexists intermission/paststats      dsintnex
+$overrideifexists intermission/pastcoopstates dsintnex
+$overrideifexists intermission/pastdmstats    dsintdms

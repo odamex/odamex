@@ -216,7 +216,10 @@ OLumpName W_GetOLumpName(unsigned lump);
 
 // wadfiles always begins with odamex.wad followed by the IWAD, so every file
 // from here on is a PWAD.
-constexpr int WADFILE_FIRSTPWAD = 2;
+inline constexpr int WADFILE_GENERATED = -1;
+inline constexpr int WADFILE_ODAMEX = 0;
+inline constexpr int WADFILE_IWAD = 1;
+inline constexpr int WADFILE_FIRSTPWAD = 2;
 
 // [RH] Returns file handle for specified lump
 int W_GetLumpFile (unsigned lump);
@@ -234,6 +237,9 @@ inline bool W_IsLumpFromPWAD(const OLumpName& name, namespace_t ns = ns_global) 
 // opposed to contributing one the game did not already have.
 bool W_IsLumpReplaced(const char* name, namespace_t namespc = ns_global);
 inline bool W_IsLumpReplaced(const OLumpName& name, namespace_t ns = ns_global) { return W_IsLumpReplaced(name.c_str(), ns); };
+
+// True when lump comes from a wad other than odamex.wad
+bool W_IsLumpFromExternalWad(uint32_t lumpnum);
 
 // [RH] Put a lump in a certain namespace
 //void W_SetLumpNamespace (unsigned lump, int nmspace);
