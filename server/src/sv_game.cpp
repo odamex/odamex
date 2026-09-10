@@ -288,7 +288,7 @@ void G_SpawnSpotFog(player_t& player, const fixed_t x, const fixed_t y,
 	// far reaches of the void.
 
 	// An arbitrary angle has no vanilla behaviour to preserve.
-	if (co_nosilentspawns || !mapthingangle)
+	if (co_nosilentspawns or not mapthingangle)
 	{
 		an = angle >> ANGLETOFINESHIFT;
 		xa = finecosine[an];
@@ -370,7 +370,7 @@ bool G_CheckSpot (player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_
 				return false;
 		}
 
-		return !P_AvatarBlocksSpot(x, y, z);
+		return not P_AvatarBlocksSpot(x, y, z);
 	}
 
 	fixed_t oldz = player.mo->z;	// [RH] Need to save corpse's z-height
@@ -522,12 +522,12 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 		else
 			spot->type = player.id+4001-4;
 	}
-	else if (!playerstarts.empty())
+	else if (not playerstarts.empty())
 	{
 		spawnspot = &P_GetPlayerStart(player.id - 1);
 	}
 
-	if (!spawnspot)
+	if (not spawnspot)
 		I_Error("No appropriate team starts");
 
 	P_SpawnPlayer(player, *spawnspot);
@@ -570,7 +570,7 @@ void G_DeathMatchSpawnPlayer(player_t &player)
 		else
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
-	else if (!playerstarts.empty())
+	else if (not playerstarts.empty())
 	{
 		// no good spot, so the player will probably get stuck
 		spawnspot = &P_GetPlayerStart(player.id - 1);
@@ -599,7 +599,7 @@ EXTERN_CVAR (g_spawnatdeathspot)
 //
 bool G_DeathSpotSpawnPlayer(player_t &player, const deathSpotBlock_t deathspot)
 {
-	if (!g_spawnatdeathspot)
+	if (not g_spawnatdeathspot)
 		return false;
 
 	if (player.playerstate != PST_REBORN)

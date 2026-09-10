@@ -1999,7 +1999,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		// or was teleported into by an avatar.
 		// Rather than let the user spawn at their pre-avatar demise, make them
 		// go home.
-		if (P_IsVoodooDoll(target) || (source && source->type == MT_AVATAR))
+		if (P_IsVoodooDoll(target) or (source and source->type == MT_AVATAR))
 		{
 			DeathSpotManager::getInstance().eraseDeathSpot(tplayer->id);
 		}

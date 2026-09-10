@@ -94,21 +94,21 @@ blockerAction_t G_ClassifyDeathSpotBlocker(const AActor& thing,
 {
 	// Only solid things stand in the way. This is also what keeps the corpse
 	// we are about to leave behind from blocking its own spot.
-	if (!(thing.flags & MF_SOLID))
+	if (not (thing.flags & MF_SOLID))
 		return BLOCKER_IGNORE;
 
 	// Spectators are not really there.
-	if (thing.player && thing.player->spectator)
+	if (thing.player and thing.player->spectator)
 		return BLOCKER_IGNORE;
 
 	// Never trip over ourselves.
-	if (thing.player == &player || &thing == player.mo)
+	if (thing.player == &player or &thing == player.mo)
 		return BLOCKER_IGNORE;
 
 	if (thing.player)
 	{
 		// Friendly fire only has a say over an actual teammate.
-		if (sv_friendlyfire || !P_AreTeammates(*thing.player, player))
+		if (sv_friendlyfire or not P_AreTeammates(*thing.player, player))
 			return BLOCKER_STOMP;
 
 		// sv_unblockplayers only lets us share the spot with a teammate - it
@@ -122,11 +122,11 @@ blockerAction_t G_ClassifyDeathSpotBlocker(const AActor& thing,
 
 	// Anything that cannot think cannot be told to move, and decorations and
 	// barrels never wander off on their own.
-	if (!sentient(&thing))
+	if (not sentient(&thing))
 		return BLOCKER_BLOCKS;
 
 	// Monsters get stomped, friendly or not. Only the unblock cvar spares them.
-	if (thing.flags & MF_FRIEND && P_IsFriendlyThing(&thing, player.mo) &&
+	if ((thing.flags & MF_FRIEND) and P_IsFriendlyThing(&thing, player.mo) and
 	    sv_unblockfriendly)
 		return BLOCKER_IGNORE;
 
@@ -141,7 +141,7 @@ bool G_IsInstantDeathSector(const sector_t& sec)
 
 	// ZDoom maps can either get it thru the sector special or damageamount
 	// (set with line specials or scripts)
-	if (map_format.getZDoom() && sec.special == Damage_InstantDeath)
+	if (map_format.getZDoom() and sec.special == Damage_InstantDeath)
 		return true;
 
 	constexpr int INSTANT_DEATH_DAMAGE = 999;
@@ -176,16 +176,16 @@ bool SpotHasRoom(const DeathSpot_s& spot, const sector_t& sec, const fixed_t rad
 	{
 		for (int by = yl; by <= yh; by++)
 		{
-			if (!blockmap.containsCoordinate(bx, by))
+			if (not blockmap.containsCoordinate(bx, by))
 				continue;
 
 			for (const int idx : blockmap.list(bx, by))
 			{
 				const line_t& ld = R_GetLines()[idx];
 
-				if (bbox[BOXRIGHT] <= ld.bbox[BOXLEFT] ||
-				    bbox[BOXLEFT] >= ld.bbox[BOXRIGHT] ||
-				    bbox[BOXTOP] <= ld.bbox[BOXBOTTOM] ||
+				if (bbox[BOXRIGHT] <= ld.bbox[BOXLEFT] or
+				    bbox[BOXLEFT] >= ld.bbox[BOXRIGHT] or
+				    bbox[BOXTOP] <= ld.bbox[BOXBOTTOM] or
 				    bbox[BOXBOTTOM] >= ld.bbox[BOXTOP])
 				{
 					continue;
@@ -196,7 +196,7 @@ bool SpotHasRoom(const DeathSpot_s& spot, const sector_t& sec, const fixed_t rad
 
 				// A wall, or a line that turns players away, inside the
 				// footprint - there is no standing here at any height.
-				if (!ld.backsector ||
+				if (not ld.backsector or
 				    (ld.flags & (ML_BLOCKING | ML_BLOCKEVERYTHING | ML_BLOCKPLAYERS)))
 				{
 					return false;
@@ -237,7 +237,7 @@ deathSpotBlock_t ScanDeathSpot(const player_t& player, const DeathSpot_s& spot,
 	// used to be the one guarding against this.
 	const subsector_t* subsec = P_PointInSubsector(spot.x, spot.y);
 
-	if (!subsec || !subsec->sector)
+	if (not subsec or not subsec->sector)
 		return DEATHSPOT_BLOCKED_NOROOM;
 
 	const sector_t& sec = *subsec->sector;
@@ -251,7 +251,7 @@ deathSpotBlock_t ScanDeathSpot(const player_t& player, const DeathSpot_s& spot,
 	// player takes up, and a door that shut across the footprint walls it off
 	// sideways. Both are moving targets, so the answer is only good for the tic
 	// it is asked in.
-	if (!SpotHasRoom(spot, sec, radius, height))
+	if (not SpotHasRoom(spot, sec, radius, height))
 		return DEATHSPOT_BLOCKED_NOROOM;
 
 	// Matches the height G_CheckSpot and P_SpawnPlayer will settle on.
@@ -264,7 +264,7 @@ deathSpotBlock_t ScanDeathSpot(const player_t& player, const DeathSpot_s& spot,
 	auto visit = [&](AActor& thing) -> bool {
 		const fixed_t blockdist = thing.radius + radius;
 
-		if (abs(thing.x - spot.x) >= blockdist || abs(thing.y - spot.y) >= blockdist)
+		if (abs(thing.x - spot.x) >= blockdist or abs(thing.y - spot.y) >= blockdist)
 			return true; // didn't hit it
 
 		if (P_AllowPassover())
@@ -280,15 +280,15 @@ deathSpotBlock_t ScanDeathSpot(const player_t& player, const DeathSpot_s& spot,
 		case BLOCKER_BLOCKS:
 			// Something that will never move outranks someone who might, so
 			// the prompt does not send the player off waiting for a barrel.
-			if (thing.player && blocked != DEATHSPOT_BLOCKED_OBSTACLE)
+			if (thing.player and blocked != DEATHSPOT_BLOCKED_OBSTACLE)
 				blocked = DEATHSPOT_BLOCKED_PLAYER;
-			else if (!thing.player)
+			else if (not thing.player)
 				blocked = DEATHSPOT_BLOCKED_OBSTACLE;
 			break;
 		case BLOCKER_STOMP:
 			// A thing can be linked into several blockmap cells, so make sure
 			// we only line it up for a stomping once.
-			if (victims && std::ranges::find(*victims, &thing) == victims->end())
+			if (victims and std::ranges::find(*victims, &thing) == victims->end())
 			{
 				victims->push_back(&thing);
 			}
@@ -328,12 +328,12 @@ deathSpotBlock_t ScanDeathSpot(const player_t& player, const DeathSpot_s& spot,
 
 deathSpotBlock_t G_CheckDeathSpot(const player_t& player)
 {
-	if (!g_spawnatdeathspot)
+	if (not g_spawnatdeathspot)
 		return DEATHSPOT_NOSPOT;
 
 	const DeathSpotManager& spots = DeathSpotManager::getInstance();
 
-	if (!spots.hasDeathSpot(player.id))
+	if (not spots.hasDeathSpot(player.id))
 		return DEATHSPOT_NOSPOT;
 
 	return ScanDeathSpot(player, spots.getDeathSpot(player.id), nullptr);
@@ -341,7 +341,7 @@ deathSpotBlock_t G_CheckDeathSpot(const player_t& player)
 
 void G_StompDeathSpot(player_t& player, const DeathSpot_s& spot)
 {
-	if (!player.mo)
+	if (not player.mo)
 		return;
 
 	std::vector<AActor*> victims;

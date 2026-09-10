@@ -756,13 +756,13 @@ void P_DeathThink (player_t& player)
 		{
 			// Run (shift) + Use (space) erases your death spot so you spawn
 			// at the beginning.
-			if ((player.cmd.buttons & BT_USE) && (player.cmd.modifiers & MOD_RUN))
+			if ((player.cmd.buttons & BT_USE) and (player.cmd.modifiers & MOD_RUN))
 				DeathSpotManager::getInstance().eraseDeathSpot(player.id);
 
 			// Something is standing where we would come back, so there is
 			// nowhere to go yet. Stay dead until it moves.
 			// A forced respawn gives up on the spot and instead uses a normal start.
-			if (multiplayer && !force_respawn &&
+			if (multiplayer and not force_respawn and
 			    G_IsDeathSpotBlocked(G_CheckDeathSpot(player)))
 			{
 				return;

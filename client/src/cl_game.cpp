@@ -607,7 +607,7 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 	}
 
 	// Modifiers only ever qualify a button, and do nothing on their own.
-	if (cmd.buttons && Actions[ACTION_SPEED])
+	if (cmd.buttons and Actions[ACTION_SPEED])
 		cmd.modifiers |= MOD_RUN;
 
 	cmd.forwardmove <<= 8;
@@ -1384,7 +1384,7 @@ bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t
 				return false;
 		}
 
-		return !P_AvatarBlocksSpot(x, y, z);
+		return not P_AvatarBlocksSpot(x, y, z);
 	}
 
 	fixed_t oldz = player.mo->z;	// [RH] Need to save corpse's z-height
@@ -1567,7 +1567,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 		else
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
-	else if (!playerstarts.empty())
+	else if (not playerstarts.empty())
 	{
 		// no good spot, so the player will probably get stuck
 		spawnspot = &P_GetPlayerStart(player.id - 1);

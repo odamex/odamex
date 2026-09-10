@@ -138,7 +138,7 @@ enum deathSpotBlock_t
  */
 inline bool G_IsDeathSpotBlocked(const deathSpotBlock_t block)
 {
-	return block != DEATHSPOT_NOSPOT && block != DEATHSPOT_CLEAR;
+	return block != DEATHSPOT_NOSPOT and block != DEATHSPOT_CLEAR;
 }
 
 /**

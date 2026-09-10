@@ -1125,7 +1125,7 @@ void AActor::RunThink ()
 		return;
 	}
 
-	if (!player || !player->isFreecam)
+	if (not player or not player->isFreecam)
 	{
 		prevx = x;
 		prevy = y;
@@ -4075,13 +4075,13 @@ bool P_AvatarBlocksSpot(const fixed_t x, const fixed_t y, const fixed_t z)
 		const AActor* avatar = voodoo.mobj;
 
 		// Check for dead avatars.
-		if (!avatar || avatar->type != MT_AVATAR || !(avatar->flags & MF_SHOOTABLE))
+		if (not avatar or avatar->type != MT_AVATAR or not (avatar->flags & MF_SHOOTABLE))
 			continue;
 
 		// Same overlap PIT_StompThing will measure when the spawn stomps.
 		const fixed_t blockdist = avatar->radius + mobjinfo[MT_PLAYER].radius;
 
-		if (abs(avatar->x - x) >= blockdist || abs(avatar->y - y) >= blockdist)
+		if (abs(avatar->x - x) >= blockdist or abs(avatar->y - y) >= blockdist)
 			continue;
 
 		if (P_AllowPassover())

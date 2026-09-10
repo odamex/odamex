@@ -182,7 +182,7 @@ int digitCellWidth()
 	{
 		const int i = c - HU_FONTSTART;
 
-		if (i < 0 || i >= HU_FONTSIZE || ::hu_font[i].empty())
+		if (i < 0 or i >= HU_FONTSIZE or ::hu_font[i].empty())
 			continue;
 
 		cell = std::max<int>(cell, W_ResolvePatchHandle(::hu_font[i])->width());
@@ -197,18 +197,18 @@ int charCellWidth(const char c, const int cell)
 	// Masked like V_StringWidth, so a high byte cannot reach toupper.
 	const int i = toupper(c & 0x7f) - HU_FONTSTART;
 
-	if (i < 0 || i >= HU_FONTSIZE || ::hu_font[i].empty())
+	if (i < 0 or i >= HU_FONTSIZE or ::hu_font[i].empty())
 		return 4;
 
 	const int width = W_ResolvePatchHandle(::hu_font[i])->width();
 
-	return (c >= '0' && c <= '9') ? std::max(width, cell) : width;
+	return (c >= '0' and c <= '9') ? std::max(width, cell) : width;
 }
 
 // Width of a string laid out on the fixed digit pitch.
 int StringWidthMono(const char* str)
 {
-	if (!str)
+	if (not str)
 		return 0;
 
 	const int cell = digitCellWidth();
@@ -217,7 +217,7 @@ int StringWidthMono(const char* str)
 
 	for (const char* p = str; *p;)
 	{
-		if (p[0] == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		if (p[0] == TEXTCOLOR_ESCAPE and p[1] != '\0')
 		{
 			p += 2;
 			continue;
@@ -235,7 +235,7 @@ int StringWidthMono(const char* str)
 void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
                     const char* str, const int color, const bool force_opaque)
 {
-	if (!str)
+	if (not str)
 		return;
 
 	const int cell = digitCellWidth();
@@ -247,7 +247,7 @@ void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
 
 	for (const char* p = str; *p;)
 	{
-		if (p[0] == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		if (p[0] == TEXTCOLOR_ESCAPE and p[1] != '\0')
 		{
 			escape[0] = p[0];
 			escape[1] = p[1];
@@ -290,7 +290,7 @@ void DrawTextMono(int x, int y, const float scale,
                   const char* str, const int color,
                   const bool force_opaque)
 {
-	if (!str)
+	if (not str)
 		return;
 
 	// NOLINTBEGIN(google-runtime-int) - matches the other hud:: draw calls

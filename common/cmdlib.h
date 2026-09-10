@@ -266,7 +266,7 @@ inline std::string TicsToShortTime(int tics, const int tenthstics,
 {
 	tics = std::max(tics, 0);
 
-	if (tenthstics > 0 && tics < tenthstics)
+	if (tenthstics > 0 and tics < tenthstics)
 	{
 		const int tenths = TicsToTenths(tics, ceilsec);
 

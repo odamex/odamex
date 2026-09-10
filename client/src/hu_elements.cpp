@@ -266,7 +266,7 @@ static const char *ordinal(int n)
  */
 int ShotClockTics()
 {
-	if (!::cl_shotclock)
+	if (not::cl_shotclock)
 		return 0;
 
 	return ::cl_shotclocksecondsleft.asInt() * TICRATE;
@@ -315,11 +315,11 @@ std::string KeyPrompt(const char* command)
 {
 	// Actions are registered without the leading +/- of the command.
 	const char* action = command;
-	if (*action == '+' || *action == '-')
+	if (*action == '+' or *action == '-')
 		action++;
 
 	const int bit = GetActionBit(MakeKey(action));
-	const bool held = bit >= 0 && ::Actions[bit];
+	const bool held = bit >= 0 and ::Actions[bit];
 
 	return fmt::sprintf("%s%s" TEXTCOLOR_NORMAL, held ? TEXTCOLOR_GREEN : TEXTCOLOR_GOLD,
 	                    ::Bindings.GetKeynameFromCommand(command));
@@ -403,17 +403,17 @@ std::vector<std::string> RespawnText()
 
 	const player_t& plyr = consoleplayer();
 
-	if (!::multiplayer)
+	if (not::multiplayer)
 		return lines;
 
 	// This is about our own corpse, not whoever we happen to be looking
 	// through - a dead player spying a teammate still wants to know this.
 	// Spectators can't respawn at all, so they get the join prompt instead.
-	if (plyr.playerstate != PST_DEAD || plyr.spectator)
+	if (plyr.playerstate != PST_DEAD or plyr.spectator)
 		return lines;
 
 	// Out of lives - there is nothing you can do.
-	if (::g_lives && plyr.lives <= 0)
+	if (::g_lives and plyr.lives <= 0)
 		return lines;
 
 	// While the spawn delay is running the use key does nothing, so the wait
@@ -424,13 +424,13 @@ std::vector<std::string> RespawnText()
 	const int force_left = plyr.death_time +
 	                       static_cast<int>(::sv_forcerespawntime * TICRATE) - ::level.time;
 
-	if (delay_tics > 0 && delay_left >= 0)
+	if (delay_tics > 0 and delay_left >= 0)
 	{
 		// A forced respawn ignores the delay, so if it lands first then that,
 		// not the delay, is when the player actually gets up.
 		int wait_left = delay_left;
 
-		if (::sv_forcerespawn && force_left < wait_left)
+		if (::sv_forcerespawn and force_left < wait_left)
 			wait_left = force_left;
 
 		const std::string wait = CountdownText(wait_left);
@@ -538,15 +538,15 @@ std::string SpyPlayerName()
  */
 bool TimerIsShotClock()
 {
-	if (ShotClockTics() <= 0 || gamestate != GS_LEVEL)
+	if (ShotClockTics() <= 0 or gamestate != GS_LEVEL)
 		return false;
 
-	if (sv_timelimit <= 0.0f || (level.flags & LEVEL_LOBBYSPECIAL))
+	if (sv_timelimit <= 0.0f or (level.flags & LEVEL_LOBBYSPECIAL))
 		return false;
 
 	// Warmup runs its own countdown and is not part of the match.
-	if (::levelstate.getState() == LevelState::WARMUP ||
-	    ::levelstate.getState() == LevelState::WARMUP_COUNTDOWN ||
+	if (::levelstate.getState() == LevelState::WARMUP or
+	    ::levelstate.getState() == LevelState::WARMUP_COUNTDOWN or
 	    ::levelstate.getState() == LevelState::WARMUP_FORCED_COUNTDOWN)
 	{
 		return false;
@@ -554,7 +554,7 @@ bool TimerIsShotClock()
 
 	const int shotclock = ShotClockTics();
 
-	return shotclock > 0 && (G_GetEndingTic() - level.time) < shotclock;
+	return shotclock > 0 and (G_GetEndingTic() - level.time) < shotclock;
 }
 
 /**

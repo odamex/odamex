@@ -122,7 +122,7 @@ TEST(CmdLib, TicsToShortTimeThreshold) {
     std::string prev;
     for (int t = 10 * TICRATE; t >= 0; t--) {
         const std::string cur = TicsToShortTime(t, 10 * TICRATE, true);
-        if (!prev.empty())
+        if (not prev.empty())
             EXPECT_LE(std::stod(cur), std::stod(prev)) << "at tic " << t;
         if (t > 0)
             EXPECT_NE("0.0", cur) << "at tic " << t;

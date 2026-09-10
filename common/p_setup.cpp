@@ -178,13 +178,13 @@ BEGIN_COMMAND(dumpspawns)
 		            : std::string("none"));
 	}
 
-	if (!::playerstarts.empty())
+	if (not::playerstarts.empty())
 	{
 		PrintFmt(PRINT_HIGH, "who gets what\n");
 
 		for (const player_t& pl : ::players)
 		{
-			if (!pl.ingame())
+			if (not pl.ingame())
 				continue;
 
 			const mapthing2_t& start = P_GetPlayerStart(pl.id - 1);
@@ -206,10 +206,10 @@ END_COMMAND(dumpspawns)
 std::optional<mapthing2_t> P_GetFirstAvailableSpawn()
 {
 	// Sorted by player number, so this is player 1's start where there is one.
-	if (!::playerstarts.empty())
+	if (not::playerstarts.empty())
 		return ::playerstarts.front();
 
-	if (!::DeathMatchStarts.empty())
+	if (not::DeathMatchStarts.empty())
 		return ::DeathMatchStarts.front();
 
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
@@ -217,7 +217,7 @@ std::optional<mapthing2_t> P_GetFirstAvailableSpawn()
 		const std::vector<mapthing2_t>& starts =
 		    GetTeamInfo(static_cast<team_t>(iTeam))->Starts;
 
-		if (!starts.empty())
+		if (not starts.empty())
 			return starts.front();
 	}
 
