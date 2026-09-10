@@ -4,6 +4,9 @@
 #include <fstream>
 
 #include "i_net.h"
+#include "MessageQueue.h"
+
+struct PacketHeaderType;
 
 class NetDemo
 {
@@ -30,6 +33,7 @@ public:
 	void readMessages(buf_t* netbuffer);
 	void capture(const buf_t* netbuffer);
 	void capture(const std::basic_string<byte>& buffer);
+	void capturePacketHeader(const PacketHeaderType& header);
 	void writeMapChange();
 	void writeIntermission();
 
@@ -102,7 +106,7 @@ private:
 	void reset();
 
 	void writeLauncherSequence(buf_t *netbuffer);
-	void writeConnectionSequence(buf_t *netbuffer);
+	void writeConnectionSequence();
 
 	void readSnapshotData(std::vector<byte>& buf);
 	void writeSnapshotData(std::vector<byte>& buf);
@@ -127,7 +131,6 @@ private:
 
 	bool readSnapshot(SnapshotVector::const_iterator snap);
 
-	void writeLocalCmd(buf_t *netbuffer) const;
 	bool readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t &tic);
 	void readMessageBody(buf_t *netbuffer, uint32_t len);
 
@@ -192,12 +195,14 @@ private:
 	std::string     filename{ };
 	std::fstream    demofp  { };
 
-	std::deque<buf_t> captured {};
+	MessageQueue      captured {};
+	buf_t             workingBuffer {MAX_UDP_PACKET};
 
 	netdemo_header4_t   header        {};
 	SnapshotVector      snapshot_index{};
 	SnapshotVector      map_index     {};
 
+	buf_t               outputBuffer    { NETDEMO_STARTUP_PACKET_SIZE };
 	std::vector<byte>   snapbuf         { };
 	int                 netdemotic      { 0 };
 	int                 pause_netdemotic{ 0 };

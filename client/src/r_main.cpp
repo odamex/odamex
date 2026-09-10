@@ -1138,7 +1138,7 @@ void R_RenderPlayerView(player_t* player)
 	// Never draw the player unless in chasecam mode
 	if (camera && camera->player && !(player->cheats & CF_CHASECAM))
 	{
-		int flags2_backup = camera->flags2;
+		const auto flags2_backup = camera->flags2;
 		camera->flags2 |= MF2_DONTDRAW;
 		R_RenderBSPNode(numnodes - 1);
 		camera->flags2 = flags2_backup;

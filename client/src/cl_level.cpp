@@ -63,6 +63,7 @@ END_DISABLE_WARNING_GNU
 #include "z_zone.h"
 #include "m_wdlstats.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 #include "g_gametype.h"
 #include "cl_freecam.h"
 
@@ -89,9 +90,6 @@ extern bool r_underwater;
 
 extern int mousex, mousey, joyforward, joystrafe, joyturn, joylook, Impulse;
 extern bool sendpause, sendsave, sendcenterview;
-
-
-bool isFast = false;
 
 //
 // G_InitNew
@@ -248,47 +246,7 @@ void G_InitNew (const char *mapname)
 	}
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
-	if (wantFast != isFast)
-	{
-		if (wantFast)
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST &&
-				    (state.tics != 1 || demoplayback))
-					state.tics >>= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.speed;
-					minfo.speed = minfo.altspeed;
-					minfo.altspeed = swap;
-				}
-			}
-		}
-		else
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST)
-					state.tics <<= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.altspeed;
-					minfo.altspeed = minfo.speed;
-					minfo.speed = swap;
-				}
-			}
-		}
-		isFast = wantFast;
-	}
+	G_SetFast(wantFast);
 
 	if (!savegamerestore)
 	{
@@ -608,7 +566,9 @@ void G_DoLoadLevel (int position)
 	// [SL] clear the saved sector data from the last level
 	OInterpolation::getInstance().resetGameInterpolation();
 
-	SpreeManager::getInstance().clearSprees();
+	G_ClearRoundKillStats();
+
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
@@ -754,8 +714,16 @@ void G_DoLoadLevel (int position)
 	{
 		if (Freecam::needPosition())
 		{
-			Freecam::setStartPosition();
+			const std::optional<mapthing2_t> start = P_GetFirstAvailableSpawn();
+
+			if (start.has_value())
+			{
+				Freecam::setStartPosition(INT2FIXED(start->x), INT2FIXED(start->y),
+				    level.flags & LEVEL_USEPLAYERSTARTZ ? INT2FIXED(start->z) : ONFLOORZ,
+				    MapThingToAngle(start->angle));
+			}
 		}
+
 		Freecam::addFreecamPlayer();
 	}
 

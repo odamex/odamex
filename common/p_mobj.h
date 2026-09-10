@@ -133,6 +133,7 @@ void P_SetThingId(AActor* mo, uint32_t newnetid);
 void P_ClearId(uint32_t id);
 void P_ResolveMobjToMobjPointers();
 
+void P_AnimationTick(AActor *mo);
 void P_XYMovement(AActor *mo);
 void P_ZMovement(AActor *mo);
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj); // [CG] Used to be 'static'
@@ -144,11 +145,13 @@ bool P_CheckMissileSpawn(AActor* th, AActor* parent);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
 size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing);
+const mapthing2_t& P_GetPlayerStart(const size_t playernum);
 bool P_VisibleToPlayers(const AActor *mo);
 void P_SetMobjBaseline(AActor& mo);
 uint32_t P_GetMobjBaselineFlags(const AActor& mo);
 bool P_PlayWakeupSound(AActor* actor);
 bool P_IsPlayerSpawnThing(const mapthing2_t& mt);
+bool P_AvatarBlocksSpot(fixed_t x, fixed_t y, fixed_t z);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);

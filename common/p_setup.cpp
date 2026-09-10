@@ -56,6 +56,8 @@
 #include "r_sky.h"
 #include "p_compdb.h"
 #include "p_blockmap.h"
+#include "c_dispatch.h"
+#include "d_player.h"
 
 
 void SV_PreservePlayer(player_t &player);
@@ -138,6 +140,90 @@ bool			rejectempty;
 std::vector<mapthing2_t>         DeathMatchStarts;
 std::vector<mapthing2_t>         playerstarts;
 std::vector<VoodooStartInfoType> voodoostarts;
+
+//
+// dumpspawns
+//
+// Prints the player starts and voodoo starts.
+//
+// Runs on server and client, which should have the same logic.
+// Any disagreements is a bug.
+//
+BEGIN_COMMAND(dumpspawns)
+{
+	PrintFmt(PRINT_HIGH, "playerstarts ({} entries, sorted by player number)\n",
+	         ::playerstarts.size());
+
+	for (size_t i = 0; i < ::playerstarts.size(); i++)
+	{
+		const mapthing2_t& mt = ::playerstarts[i];
+
+		PrintFmt(PRINT_HIGH, "  [{}] player {} - type {} at {},{} angle {}\n", i,
+		         P_GetMapThingPlayerNumber(mt) + 1, mt.type, mt.x, mt.y, mt.angle);
+	}
+
+	PrintFmt(PRINT_HIGH, "voodoostarts ({} entries, in lump order)\n",
+	         ::voodoostarts.size());
+
+	for (size_t i = 0; i < ::voodoostarts.size(); i++)
+	{
+		const VoodooStartInfoType& voodoo = ::voodoostarts[i];
+		const AActor* mo = voodoo.mobj;
+
+		PrintFmt(PRINT_HIGH, "  [{}] player {} - type {} at {},{} - avatar {}\n", i,
+		         P_GetMapThingPlayerNumber(voodoo.mapThing) + 1, voodoo.mapThing.type,
+		         voodoo.mapThing.x, voodoo.mapThing.y,
+		         mo ? fmt::format("netid {} at {},{}", mo->netid, FIXED2INT(mo->x),
+		                          FIXED2INT(mo->y))
+		            : std::string("none"));
+	}
+
+	if (not::playerstarts.empty())
+	{
+		PrintFmt(PRINT_HIGH, "who gets what\n");
+
+		for (const player_t& pl : ::players)
+		{
+			if (not pl.ingame())
+				continue;
+
+			const mapthing2_t& start = P_GetPlayerStart(pl.id - 1);
+			const size_t index = &start - ::playerstarts.data();
+
+			PrintFmt(PRINT_HIGH, "  {} (id {}) -> playerstarts[{}], the player {} start\n",
+			         pl.userinfo.netname, pl.id, index,
+			         P_GetMapThingPlayerNumber(start) + 1);
+		}
+	}
+}
+END_COMMAND(dumpspawns)
+
+//
+// P_GetFirstAvailableSpawn
+//
+// The first spawn the map offers that a player could be put on.
+//
+std::optional<mapthing2_t> P_GetFirstAvailableSpawn()
+{
+	// Sorted by player number, so this is player 1's start where there is one.
+	if (not::playerstarts.empty())
+		return ::playerstarts.front();
+
+	if (not::DeathMatchStarts.empty())
+		return ::DeathMatchStarts.front();
+
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+	{
+		const std::vector<mapthing2_t>& starts =
+		    GetTeamInfo(static_cast<team_t>(iTeam))->Starts;
+
+		if (not starts.empty())
+			return starts.front();
+	}
+
+	// A map with no starts of any kind.
+	return std::nullopt;
+}
 
 // Maintain list of helpers to spawn in a given map
 std::vector<HelperSpawns> helperspawns;
@@ -840,9 +926,13 @@ void P_LoadThings (int lump)
 		//		everything and let it decide what to do with them.
 
 		// [RH] Need to translate the spawn flags to Hexen format.
-		short flags = LESHORT(mt.options);
+		auto flags = OFlags<mapthingflag_t>::unsafe_from_int(LESHORT(mt.options));
 		if (flags & BTF_RESERVED || demoplayback) flags &= BTF_RESERVED_MASK;
-		short flags2 = static_cast<short>((flags & 0xf) | 0x7e0);
+		// difficulty + ambush flags are the same between the two
+		auto flags2 = MapThingFlags::unsafe_from_int((flags & mask(BTF_EASY|BTF_MEDIUM|BTF_HARD|BTF_AMBUSH)).to_int());
+		flags2 |= MTF_SINGLE|MTF_DEATHMATCH|MTF_COOPERATIVE;
+		// spawn it for all classes since these flags can't be set for doom format
+		flags2 |= MTF_FIGHTER|MTF_CLERIC|MTF_MAGE;
 		if (flags & BTF_NOTSINGLE)
 		{
 			#ifdef SERVER_APP
@@ -915,7 +1005,7 @@ void P_LoadThings2 (int lump, int position)
 		mt.z = LESHORT(mt.z);
 		mt.angle = LESHORT(mt.angle);
 		mt.type = LESHORT(mt.type);
-		mt.flags = LESHORT(mt.flags);
+		mt.flags = MapThingFlags::unsafe_from_int(LESHORT(mt.flags.to_int()));
 
 		P_SpawnMapThing(mt, position);
 	}

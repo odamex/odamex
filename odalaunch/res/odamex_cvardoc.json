@@ -265,7 +265,7 @@
       {
          "default" : 2,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
-         "helptext" : "How the map author is shown on the automap.\n0 - Off\n1 - Static\n2 - Fade in/out with map name\n3 - Marquee in/out with map name\n4 - Teletype effect with map name",
+         "helptext" : "How the map author is shown on the automap.\n// 0 - Off\n// 1 - Static\n// 2 - Fade in/out with map name\n// 3 - Marquee in/out with map name\n// 4 - Teletype effect with map name",
          "max" : 4,
          "min" : 0,
          "name" : "am_showauthor",
@@ -584,7 +584,7 @@
       },
       {
          "default" : "40 cf 00",
-         "flags" : [ "USERINFO", "NOSET", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "flags" : [ "USERINFO", "NOSET", "NOENABLEDISABLE" ],
          "helptext" : "",
          "name" : "cl_color",
          "type" : "string"
@@ -764,6 +764,22 @@
          "helptext" : "Enable or disable downloading game files and resources from the internet (see cl_downloadsites for more information)",
          "name" : "cl_serverdownload",
          "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show tenths of a second on all HUD timers, starting when the timer reaches cl_shotclocksecondsleft.",
+         "name" : "cl_shotclock",
+         "type" : "boolean"
+      },
+      {
+         "default" : 10,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Seconds left before a HUD timer starts displaying tenths of a second, if cl_shotclock is enabled",
+         "max" : 60,
+         "min" : 0,
+         "name" : "cl_shotclocksecondsleft",
+         "type" : "integer"
       },
       {
          "default" : false,
@@ -1366,6 +1382,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Players respawn on the spot where they died instead of at a player start.",
+         "name" : "g_spawnatdeathspot",
+         "type" : "boolean"
+      },
+      {
          "default" : "default",
          "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
          "helptext" : "The default inventory a player should spawn with.  See the \"spawninv\" console command.",
@@ -1686,7 +1709,7 @@
       {
          "default" : 0,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
-         "helptext" : "Sets the behavior of on-screen prompts of when to name gamepad buttons instead of keyboard keys.\n0 - Follow whichever device was used last\n1 - Mouse input does not switch away from the gamepad\n2 - Always show gamepad keys",
+         "helptext" : "Sets the behavior of on-screen prompts of when to name gamepad buttons instead of keyboard keys.\n// 0 - Follow whichever device was used last\n// 1 - Mouse input does not switch away from the gamepad\n// 2 - Always show gamepad keys",
          "max" : 2,
          "min" : 0,
          "name" : "joy_gamepadmode",
@@ -2054,10 +2077,10 @@
          "type" : "boolean"
       },
       {
-         "default" : 16,
+         "default" : 4,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
-         "max" : 64,
+         "max" : 16,
          "min" : 0,
          "name" : "r_portalrecursions",
          "type" : "integer"

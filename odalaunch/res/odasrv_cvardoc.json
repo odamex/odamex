@@ -485,6 +485,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Players respawn on the spot where they died instead of at a player start.",
+         "name" : "g_spawnatdeathspot",
+         "type" : "boolean"
+      },
+      {
          "default" : "default",
          "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
          "helptext" : "The default inventory a player should spawn with.  See the \"spawninv\" console command.",
@@ -531,7 +538,7 @@
       {
          "default" : 1,
          "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE" ],
-         "helptext" : "Print colored messages\n// 0 - Disabled\n// 1 - Enabled (terminal output only) \n//2 - Enabled (terminal and log files)",
+         "helptext" : "Print colored messages\n// // 0 - Disabled\n// // 1 - Enabled (terminal output only) \n//// 2 - Enabled (terminal and log files)",
          "max" : 2,
          "min" : 0,
          "name" : "log_color",

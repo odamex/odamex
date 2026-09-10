@@ -265,7 +265,7 @@ void P_UpdateButtons(client_t *cl)
 		// record that we acted on this line:
 		actedlines[l] = true;
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Switch(lines[l], state, timer));
+		cl->messenger->Reliable().Write(SVC_Switch(lines[l], state, timer));
 	}
 
 	for (int l=0; l<numlines; l++)
@@ -273,7 +273,7 @@ void P_UpdateButtons(client_t *cl)
 		// update all button state except those that have actors assigned:
 		if (!actedlines[l] && lines[l].wastoggled)
 		{
-			MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Switch(lines[l], 0, 0));
+			cl->messenger->Reliable().Write(SVC_Switch(lines[l], 0, 0));
 		}
 	}
 }

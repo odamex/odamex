@@ -23,9 +23,8 @@ TEST(ReliableSequenceSender, DefaultEmptyBuffer)
 
     auto packet = sender1.ObtainSendPacket();
 
-    REQUIRE(packet.sequence       == 0);
-    REQUIRE(packet.buffer         != nullptr);
-    REQUIRE(packet.buffer->size() == 0);
+    REQUIRE(packet.headerRef.sequence == 0);
+    REQUIRE(packet.bufferRef.size()   == 0);
 }
 
 TEST(ReliableSequenceSender, OneSendOneAckAndNullIter)

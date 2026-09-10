@@ -272,7 +272,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		is now with the palette field.
 		translated = true;
 		dcol.translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
-			( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) ));
+			( (vis->mobjflags & mask(MF_TRANSLATION)).to_int() >> (MF_TRANSSHIFT-8) ));
 	}
 	int id = vis->mo && vis->mo->player ? vis->mo->player->id : 0;
 
@@ -688,7 +688,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 
 	vis->mobjflags = thing->flags;
 	vis->statusflags = thing->statusflags;
-	vis->spectator = thing->oflags & MFO_SPECTATOR;
+	vis->spectator = (thing->oflags & MFO_SPECTATOR).to_bool();
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->patch = lump;
@@ -802,7 +802,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 //
 // R_DrawPSprite
 //
-void R_DrawPSprite(const pspdef_t& psp, unsigned flags)
+void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
 {
 	vissprite_t 		avis;
 
@@ -977,7 +977,7 @@ void R_DrawPlayerSprites()
 	mceilingclip = negonearray;
 
 	{
-		int centerhack = centery;
+		const int centerhack = centery;
 
 		centery = (viewheight >> 1) + 1;	// Ch0wW : Fix for the weapon sprite's offset.
 		centeryfrac = centery << FRACBITS;
@@ -986,7 +986,7 @@ void R_DrawPlayerSprites()
 		for (const auto& psp : camera->player->psprites)
 		{
 			if (psp.statenum != S_NULL)
-				R_DrawPSprite (psp, 0);
+				R_DrawPSprite(psp, ActorFlags1::none_set());
 		}
 
 		centery = centerhack;
@@ -1177,11 +1177,11 @@ void R_DrawMasked (void)
 
 	closestNonCredibleVisSprite = nullptr;
 
-	for (auto& vis : OUtil::reverse(spritesorter))
+	for (auto& vis : std::views::reverse(spritesorter))
 	{
 		R_DrawSprite(vis);
 
-        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and (vis->mo->flags & MF_CORPSE) == 0)
+        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
         {
             closestNonCredibleVisSprite = vis;
         }
@@ -1289,18 +1289,17 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->statusflags = 0;
 	vis->mo = NULL;
 	vis->spectator = false;
+	vis->mobjflags.clear();
+	vis->translucency = (particle->trans + 1) << 8;
 
 	if (particle->sprite == NO_PARTICLE)
 	{
 		vis->startfrac = particle->color;
 		vis->patch = NO_PARTICLE;
-		vis->mobjflags = particle->trans;
 	}
 	else
 	{
 		vis->patch = particle->sprite;
-		vis->translucency = (particle->trans + 1) << 8;
-		vis->mobjflags = 0;
 	}
 
 	// get light level
@@ -1345,8 +1344,7 @@ void R_DrawParticle(vissprite_t* vis)
 	dspan.x1 = vis->x1;
 	dspan.x2 = vis->x2;
 	dspan.colormap = vis->colormap;
-	// vis->mobjflags holds translucency level (0-255)
-	dspan.translevel = (vis->mobjflags + 1) << 8;
+	dspan.translevel = vis->translucency;
 	// vis->startfrac holds palette color index
 	dspan.color = vis->startfrac;
 

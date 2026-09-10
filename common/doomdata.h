@@ -26,6 +26,8 @@
 #pragma once
 
 #include <array>
+#include "flags.h"
+#include "doomtype.h"
 
 //
 // Map level types.
@@ -254,16 +256,82 @@ struct mapnode_deepbsp_t
     int children[2];
 };
 
+
+// [RH] MapThing flags.
+
+enum class mapthing2flag_t : int16_t
+{
+	MTF_EASY           = 0x0001, // Thing will appear on easy skill setting
+	MTF_MEDIUM         = 0x0002, // Thing will appear on medium skill setting
+	MTF_HARD           = 0x0004, // Thing will appear on hard skill setting
+	MTF_AMBUSH         = 0x0008, // Thing is deaf
+
+	MTF_DORMANT        = 0x0010, // Thing is dormant (use Thing_Activate)
+	MTF_FIGHTER        = 0x0020,
+	MTF_CLERIC         = 0x0040,
+	MTF_MAGE           = 0x0080,
+	MTF_SINGLE         = 0x0100, // Thing appears in single-player games
+	MTF_COOPERATIVE    = 0x0200, // Thing appears in cooperative games
+	MTF_DEATHMATCH     = 0x0400, // Thing appears in deathmatch games
+
+	MTF_FRIENDLY       = 0x2000, // zdoom
+
+	// Custom MapThing Flags
+	// TODO: get this out of the flags
+	// when we're loading hexen format maps, we load these flags directly as an integer
+	// from the THINGS lump, so who knows how this bit might be set there
+	// this is the same bit as zdooms MTF_SHADOW
+	// also, this is only getting used in P_LoadThings, but not P_LoadThings2, so g_thingfilter
+	// probably doesn't even work properly on hexen format maps
+	MTF_FILTER_COOPWPN = 0x0800, // Weapon thing is filtered with g_thingfilter 1.
+	                             // (Hate this method but it works...)
+
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
+};
+
+using enum mapthing2flag_t;
+constexpr mapthing2flag_t enable_bitflag_operators(mapthing2flag_t) { return MTF_FRIENDLY; };
+using MapThingFlags = OFlags<mapthing2flag_t>;
+
+// we're using this in mapthing2_t where it gets loaded from raw bytes
+// have to make sure it's 16 bits
+static_assert(sizeof(MapThingFlags) == sizeof(mapthing2flag_t));
+
+// BOOM and DOOM compatible versions of some of the above
+
+enum class mapthingflag_t : int16_t
+{
+	BTF_EASY           = 0x0001, // Thing will appear on easy skill setting
+	BTF_MEDIUM         = 0x0002, // Thing will appear on medium skill setting
+	BTF_HARD           = 0x0004, // Thing will appear on hard skill setting
+	BTF_AMBUSH         = 0x0008, // Thing is deaf
+
+	BTF_NOTSINGLE      = 0x0010, // (TF_COOPERATIVE|TF_DEATHMATCH)
+	BTF_NOTDEATHMATCH  = 0x0020, // (TF_SINGLE|TF_COOPERATIVE)
+	BTF_NOTCOOPERATIVE = 0x0040, // (TF_SINGLE|TF_DEATHMATCH)
+	BTF_FRIEND         = 0x0080, // mbf
+	BTF_RESERVED       = 0x0100, // mbf reserved bit
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
+};
+
+using enum mapthingflag_t;
+
+constexpr mapthingflag_t enable_bitflag_operators(mapthingflag_t) { return BTF_RESERVED; };
+
+inline constexpr auto BTF_RESERVED_MASK = mask(BTF_EASY|BTF_MEDIUM|BTF_HARD|BTF_AMBUSH|BTF_NOTSINGLE);
+
 // Thing definition, position, orientation and type,
 // plus skill/visibility flags and attributes.
 // Thing for Doom.
 struct mapthing_t
 {
-	short		x;
-	short		y;
-	short		angle;
-	short		type;
-	short		options;
+	int16_t x;
+	int16_t y;
+	int16_t angle;
+	int16_t type;
+	int16_t options;
 };
 
 // forward declaration
@@ -278,7 +346,7 @@ struct mapthing2_t
 	int16_t             z       = 0;
 	int16_t             angle   = 0;
 	int16_t             type    = 0;
-	int16_t             flags   = 0;
+	MapThingFlags       flags   = MapThingFlags::none_set();
 	byte                special = 0;
 	std::array<byte, 5> args    = { 0, 0, 0, 0, 0 };
 
@@ -290,35 +358,6 @@ struct mapthing2_t
 using MapThing = mapthing2_t;
 
 #define NO_INDEX (static_cast<unsigned short>(-1))
-
-// [RH] MapThing flags.
-
-
-#define MTF_EASY			0x0001	// Thing will appear on easy skill setting
-#define MTF_MEDIUM			0x0002	// Thing will appear on medium skill setting
-#define MTF_HARD			0x0004	// Thing will appear on hard skill setting
-#define MTF_AMBUSH			0x0008	// Thing is deaf
-
-#define MTF_DORMANT			0x0010	// Thing is dormant (use Thing_Activate)
-#define MTF_SINGLE			0x0100	// Thing appears in single-player games
-#define MTF_COOPERATIVE		0x0200	// Thing appears in cooperative games
-#define MTF_DEATHMATCH		0x0400	// Thing appears in deathmatch games
-
-#define MTF_FRIENDLY			0x2000 // zdoom
-
-// Custom MapThing Flags
-#define MTF_FILTER_COOPWPN  0x0800  // Weapon thing is filtered with g_thingfilter 1.
-									// (Hate this method but it works...)
-
-
-// BOOM and DOOM compatible versions of some of the above
-
-#define BTF_NOTSINGLE		0x0010	// (TF_COOPERATIVE|TF_DEATHMATCH)
-#define BTF_NOTDEATHMATCH	0x0020	// (TF_SINGLE|TF_COOPERATIVE)
-#define BTF_NOTCOOPERATIVE	0x0040	// (TF_SINGLE|TF_DEATHMATCH)
-#define BTF_FRIEND			0x0080	// mbf
-#define BTF_RESERVED		0x0100	// mbf reserved bit
-#define BTF_RESERVED_MASK   (MTF_EASY|MTF_MEDIUM|MTF_HARD|MTF_AMBUSH|BTF_NOTSINGLE)
 
 #define NO_CRUSH	-1
 #define DOOM_CRUSH	10

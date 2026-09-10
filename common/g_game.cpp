@@ -21,7 +21,40 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <utility>
 
 #include "odamex.h"
 
 #include "g_game.h"
+
+void G_SetFast(const bool wantFast)
+{
+	static bool isFast = false;
+	if (wantFast != isFast)
+	{
+		for (auto&& [_, minfo] : mobjinfo)
+		{
+			if (minfo.altspeed != NO_ALTSPEED)
+				std::swap(minfo.speed, minfo.altspeed);
+		}
+
+		if (wantFast)
+		{
+			for (auto&& [_, state] : states)
+			{
+				if (state.flags & STATEF_SKILL5FAST && (state.tics != 1 || demoplayback))
+					state.tics >>= 1; // don't change 1->0 since it causes cycles
+			}
+		}
+		else
+		{
+			for (auto&& [_, state] : states)
+			{
+				if (state.flags & STATEF_SKILL5FAST)
+					state.tics <<= 1;
+			}
+		}
+
+		isFast = wantFast;
+	}
+}

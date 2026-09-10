@@ -62,6 +62,7 @@ END_DISABLE_WARNING_GNU
 #include "g_episode.h"
 #include "g_skill.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -89,8 +90,6 @@ bool firstmapinit = true; // Nes - Avoid drawing same init text during every reb
 
 extern bool sendpause;
 
-
-bool isFast = false;
 
 //
 // G_InitNew
@@ -394,7 +393,7 @@ void G_DoNewGame()
 		if(!(player.ingame()))
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(),
+		player.client.messenger->Reliable().Write (
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
 	}
 
@@ -445,7 +444,7 @@ void SV_ServerSettingChange();
 
 void G_InitNew(const char *mapname)
 {
-	levelFlags_t previousLevelFlags = level.flags;
+	const auto previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
 		G_ClearSnapshots ();
@@ -484,47 +483,7 @@ void G_InitNew(const char *mapname)
 	}
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
-	if (wantFast != isFast)
-	{
-		if (wantFast)
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST &&
-				    (state.tics != 1 || demoplayback))
-					state.tics >>= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.speed;
-					minfo.speed = minfo.altspeed;
-					minfo.altspeed = swap;
-				}
-			}
-		}
-		else
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST)
-					state.tics <<= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.altspeed;
-					minfo.altspeed = minfo.speed;
-					minfo.speed = swap;
-				}
-			}
-		}
-		isFast = wantFast;
-	}
+	G_SetFast(wantFast);
 
 	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
 	Unlag::getInstance().reset();
@@ -724,7 +683,7 @@ void G_DoResetLevel(bool full_reset)
 			continue;
 
 		client_t* cl = &(player.client);
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), odaproto::svc::ResetMap());
+		cl->messenger->Reliable().Write (odaproto::svc::ResetMap());
 	}
 
 	// Unserialize saved snapshot
@@ -760,6 +719,9 @@ void G_DoResetLevel(bool full_reset)
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
 	itemrespawnque = {};
+
+	// A reset puts everyone back on a player start.
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Clear player information.
 	for (auto& player : players)
@@ -881,6 +843,9 @@ void G_DoLoadLevel (int position)
 	else
 		sky2texture = 0;
 
+	// Clear death spots as we're on a new map.
+	DeathSpotManager::getInstance().clearDeathSpots();
+
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->ingame() && (::g_resetinvonexit || it->playerstate == PST_DEAD))
@@ -900,7 +865,7 @@ void G_DoLoadLevel (int position)
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
 			{
-				MSG_WriteSVC(pit->client.messenger->ReliableBuf(),
+				pit->client.messenger->Reliable().Write (
 				             SVC_PlayerMembers(*it, SVC_PM_READY));
 			}
 		}

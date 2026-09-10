@@ -67,6 +67,7 @@
 #include "m_doomobjcontainer.h"
 #include "cl_netgraph.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 #include "g_multikill.h"
 #include "cl_freecam.h"
 
@@ -122,11 +123,20 @@ void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_t* player);
 void P_SetPsprite(player_t& player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
+void P_SpawnAvatars();
+
+namespace
+{
+
+PacketHeaderType s_currentHeader;
+
+int32_t ThisMessageClientTic() { return s_currentHeader.destinationTic; }
+int32_t ThisMessageServerTic() { return s_currentHeader.originatorTic; }
 
 /**
  * @brief Unpack a bitfield into an array of booleans.
  */
-static void UnpackBoolArray(std::span<bool> bools, uint32_t in)
+void UnpackBoolArray(std::span<bool> bools, uint32_t in)
 {
 	for (size_t i = 0; i < bools.size(); i++)
 	{
@@ -137,7 +147,7 @@ static void UnpackBoolArray(std::span<bool> bools, uint32_t in)
 /**
  * @brief Common code for activating a line.
  */
-static void ActivateLine(AActor* mo, line_s* line, byte side,
+void ActivateLine(AActor* mo, line_s* line, byte side,
                          LineActivationType activationType, const bool bossaction,
                          byte special = 0, int arg0 = 0, int arg1 = 0, int arg2 = 0,
                          int arg3 = 0, int arg4 = 0)
@@ -188,14 +198,23 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 /**
  * @brief msg_noop - Nothing to see here. Move along.
  */
-static void CL_Noop(const odaproto::Noop* msg)
+void CL_Noop(const odaproto::Noop* msg)
 {
+}
+
+void CL_Header(const odaproto::Header* msg)
+{
+	s_currentHeader.sequence        = msg->sequence();
+	s_currentHeader.originatorTic   = msg->originator_tic();
+	s_currentHeader.destinationTic  = msg->destination_tic();
+	s_currentHeader.reliableSize    = static_cast<uint16_t>(msg->reliable_size());
+	s_currentHeader.flags           = static_cast<uint16_t>(msg->flags());
 }
 
 /**
  * @brief svc_disconnect - Disconnect a client from the server.
  */
-static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
+void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 {
 	if (!msg->message().empty())
 	{
@@ -212,7 +231,7 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 /**
  * @brief svc_playerinfo - Your personal arsenal, as supplied by the server.
  */
-static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
+void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 {
 	player_t& player = consoleplayer();
 
@@ -261,13 +280,14 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	{
 		// stop spying so you know you're back from the dead.
 		::displayplayer_id = ::consoleplayer_id;
+		CL_CheckDisplayPlayer();
 	}
 
 	// We only rollback after we complete the reception of a full update.
 	// Until then, we just flatly apply the PlayerInfo to the player.
 	if (::hasReceivedFullUpdate)
 	{
-		const int oldTic = playerInfo.client_tic();
+		const int oldTic = ThisMessageClientTic();
 
 		const RollerResolveEnum result = rollerState.Resolve(oldTic, playerState, player);
 		switch (result)
@@ -300,7 +320,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 /**
  * @brief svc_moveplayer - Move a player.
  */
-static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
+void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 {
 	byte who = msg->playerid();
 	player_t& p = idplayer(who);
@@ -336,7 +356,7 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	// Mark the gametic this update arrived in for prediction code
 	p.tic = gametic;
 	p.mo->updatedDuringLocalTic  = gametic;
-	p.mo->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	p.mo->updatedDuringServerTic = ThisMessageServerTic();
 
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p.spectator && (&p != &consoleplayer()))
@@ -360,7 +380,7 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
-	const int snaptime = ::last_svgametic;
+	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
 
@@ -382,13 +402,13 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	p.snapshots.addSnapshot(newsnap);
 }
 
-static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
+void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 {
 	player_t& p = consoleplayer();
 
 	// The server has processed the ticcmd that the local client sent
 	// during the the tic referenced below
-	p.tic = msg->tic();
+	p.tic = ThisMessageClientTic();
 
 	fixed_t x = msg->actor().pos().x();
 	fixed_t y = msg->actor().pos().y();
@@ -400,7 +420,7 @@ static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 
 	byte waterlevel = msg->actor().waterlevel();
 
-	int snaptime = ::last_svgametic;
+	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnapshot(snaptime);
 	newsnapshot.setAuthoritative(true);
 	newsnapshot.setX(x);
@@ -420,7 +440,7 @@ static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 }
 
 // Set level locals.
-static void CL_LevelLocals(const odaproto::svc::LevelLocals* msg)
+void CL_LevelLocals(const odaproto::svc::LevelLocals* msg)
 {
 	uint32_t flags = msg->flags();
 
@@ -465,16 +485,16 @@ static void CL_LevelLocals(const odaproto::svc::LevelLocals* msg)
 // [SL] 2011-05-11 - Changed from CL_ResendSvGametic to CL_SendPingReply
 // for clarity since it sends timestamps, not gametics.
 //
-static void CL_PingRequest(const odaproto::svc::PingRequest* msg)
+void CL_PingRequest(const odaproto::svc::PingRequest* msg)
 {
-	MSG_WriteSVC(messenger.NetBuf(), CLC_PingReply(msg->ms_time()));
+	messenger.BestEffort().Write (CLC_PingReply(msg->ms_time()));
 }
 
 //
 // CL_UpdatePing
 // Update ping value
 //
-static void CL_UpdatePing(const odaproto::svc::UpdatePing* msg)
+void CL_UpdatePing(const odaproto::svc::UpdatePing* msg)
 {
 	player_t& p = idplayer(msg->pid());
 	if (!validplayer(p))
@@ -486,7 +506,7 @@ static void CL_UpdatePing(const odaproto::svc::UpdatePing* msg)
 //
 // CL_SpawnMobj
 //
-static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
+void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 {
 	// Read baseline
 
@@ -520,9 +540,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	P_ClearId(netid);
 
-	const bool floatbob = (mobjinfo[type].flags2 & MF2_FLOATBOB);
+	const auto floatbob = (mobjinfo[type].flags2 & MF2_FLOATBOB);
 	// Spawn on the floor first so special1 can store the bob center offset.
-	AActor* mo = new AActor(base.pos.x, base.pos.y, floatbob ? ONFLOORZ : base.pos.z, type);
+	auto* mo = new AActor(base.pos.x, base.pos.y, floatbob ? ONFLOORZ : base.pos.z, type);
 	if (floatbob)
 	{
 		mo->UnlinkFromWorld();
@@ -532,7 +552,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	}
 	mo->baseline               = base;
 	mo->updatedDuringLocalTic  = gametic;
-	mo->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	mo->updatedDuringServerTic = ThisMessageServerTic();
 	mo->mobjtic                = msg->timebase_tic();
 
 	P_SetThingId(mo, netid);
@@ -675,15 +695,40 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	//              from CL_SpawnMobj.  This allows things like immediate sound effects and
 	//              secondary mobjs to work (think a noisy, instant gib spawner).
 
-	statenum_t statenum = static_cast<statenum_t>(msg->current().statenum());
+	// FIXME:   Huge open question - should we do all the SetMobjState stuff after we setup the
+	//          rest of the mobj attributes?
 
-	if (statenum >= S_NULL && states.contains(statenum))
+	if (msg->is_spawn_tic())
 	{
-		P_SetMobjState(mo, statenum);
+		// Now do one advancement of the state, because that has happened between the creation of
+		// the mobj and its corresponding SpawnMobj message.  Any associated actions will execute,
+		// which is particularly important for a number of dehacked custom mobjs that do one-off
+		// things on spawn.
+		P_SetMobjState(mo, mo->info->spawnstate);
+		P_AnimationTick(mo);
+	}
 
-		// Set animation tic to ensure that the initial state is consistent with the server.
-		const int32_t tics = msg->current().tics();
-		mo->tics = tics ? tics : -1;
+	const auto statenum = statenum_t(msg->current().statenum());
+
+	if (statenum >= S_NULL)
+	{
+		auto iter = states.find(statenum);
+		if (iter != states.end())
+		{
+			// In the rare case that we do the spawnstate animation tic above and the state
+			// we ultimately wind up in has a custom action, we want to make sure that we
+			// don't inadvertently cause that custom action to fire twice by calling
+			// P_SetMobjState twice.  Please note that this double-action does not necessarily
+			// mean that the statenum must also be the spawnstate - spawnstate could have
+			// led to it!
+			if (mo->state != &iter->second)
+			{
+				P_SetMobjState(mo, statenum);
+			}
+			// Set animation tic to ensure that the initial state is consistent with the server.
+			const int32_t tics = msg->current().tics();
+			mo->tics = tics ? tics : -1;
+		}
 	}
 
 	if (serverside && mo->flags & MF_COUNTKILL)
@@ -774,17 +819,17 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
-		mo->flags = msg->current().flags();
+		mo->flags = ActorFlags1::unsafe_from_int(msg->current().flags());
 	}
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS2)
 	{
-		mo->flags2 = msg->current().flags2();
+		mo->flags2 = ActorFlags2::unsafe_from_int(msg->current().flags2());
 	}
 
 	if (msg->spawn_flags() & SVC_SM_OFLAGS)
 	{
-		mo->oflags = msg->current().oflags();
+		mo->oflags = ActorOFlags::unsafe_from_int(msg->current().oflags());
 
 		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
@@ -840,7 +885,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 //
 // CL_DisconnectClient
 //
-static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
+void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 {
 	player_t& player = idplayer(msg->pid());
 	if (players.empty() || !validplayer(player))
@@ -885,7 +930,7 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 // Read wad & deh filenames and map name from the server and loads
 // the appropriate wads & map.
 //
-static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
+void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 {
 	ClientReplay::getInstance().reset();
 	bool splitnetdemo =
@@ -1031,7 +1076,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		netdemo.writeMapChange();
 }
 
-static void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer* msg)
+void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer* msg)
 {
 	::displayplayer_id = ::consoleplayer_id = msg->pid();
 	::digest = msg->digest();
@@ -1040,7 +1085,7 @@ static void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer* msg)
 //
 // CL_ExplodeMissile
 //
-static void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile* msg)
+void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile* msg)
 {
 	AActor* mo = P_FindThingById(msg->netid());
 
@@ -1053,7 +1098,7 @@ static void CL_ExplodeMissile(const odaproto::svc::ExplodeMissile* msg)
 //
 // CL_RemoveMobj
 //
-static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
+void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 {
 	uint32_t netid = msg->netid();
 
@@ -1070,7 +1115,7 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 //
 // CL_SetupUserInfo
 //
-static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
+void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 {
 	player_t* p = &CL_FindPlayer(msg->pid());
 
@@ -1121,7 +1166,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 		}
 	}
 
-	mo->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	mo->updatedDuringServerTic = ThisMessageServerTic();
 	mo->updatedDuringLocalTic = gametic;
 
 	uint32_t flags = msg->flags();
@@ -1180,7 +1225,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 	if (mo->player)
 	{
 		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = last_svgametic;
+		const int snaptime = ThisMessageServerTic();
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
@@ -1225,7 +1270,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 	return mo;
 }
 
-static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
+void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 {
 	AActor* mo = P_FindThingById(msg->update().actor().netid());
 
@@ -1234,8 +1279,7 @@ static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 
 	// Special handling: If we get a best-effort / order-not-guaranteed UpdateMobj, make sure that
 	//                   we're not going backwards with it!  This avoids rare ghosts.
-	const int currentSequence = ::messenger.GetCurrentReceivedPacketSequenceNumber();
-	if (currentSequence < mo->updatedDuringServerTic)
+	if (ThisMessageServerTic() < mo->updatedDuringServerTic)
 	{
 		return;
 	}
@@ -1287,7 +1331,7 @@ static void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 //
 // CL_SpawnPlayer
 //
-static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
+void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 {
 	const size_t playernum = msg->pid();
 	const size_t netid = msg->actor().netid();
@@ -1313,7 +1357,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	mobj->momx = mobj->momy = mobj->momz = 0;
 
-	mobj->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	mobj->updatedDuringServerTic = ThisMessageServerTic();
 	mobj->updatedDuringLocalTic  = gametic;
 	mobj->credibility.Lionize();
 
@@ -1378,7 +1422,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		// Any intervening updates to important state will come in subsequent
 		// reliable, well-ordered messages.
 		rollerState.Clear();
-		for (int32_t tic = msg->player_tic(); tic <= gametic; ++tic)
+		for (int32_t tic = ThisMessageClientTic(); tic <= gametic; ++tic)
 		{
 			rollerState.Record(tic, p);
 		}
@@ -1386,6 +1430,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		if (not netdemo.isPlaying() && not consoleplayer().spectator)
 		{
 				::displayplayer_id = ::consoleplayer_id;
+				CL_CheckDisplayPlayer();
 		}
 	}
 
@@ -1405,7 +1450,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 			::level.behavior->StartTypedScripts(SCRIPT_Enter, p.mo);
 	}
 
-	const int snaptime = msg->server_tic();
+	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnap(snaptime, p);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);
@@ -1416,7 +1461,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 //
 // CL_DamagePlayer
 //
-static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
+void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 {
 	const uint32_t  netid        = msg->netid();
 	const uint32_t  attackerid   = msg->inflictorid();
@@ -1424,10 +1469,10 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	//const int armorDamage = msg->armor_damage(); // unused for now...
 	const int       health       = msg->player_health();
 	const int       armorpoints  = msg->player_armorpoints();
-	const int       oldTic       = msg->client_tic();
+	const int       oldTic       = ThisMessageClientTic();
 
-	AActor* actor = P_FindThingById(netid);
-	AActor* attacker = P_FindThingById(attackerid);
+	const AActor* actor    = P_FindThingById(netid);
+	const AActor* attacker = P_FindThingById(attackerid);
 
 	if (!actor || !actor->player)
 		return;
@@ -1477,12 +1522,10 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	}
 }
 
-extern int MeansOfDeath;
-
 //
 // CL_KillMobj
 //
-static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
+void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 {
 	const uint32_t srcid    = msg->source_netid();
 	const uint32_t tgtid    = msg->target_netid();
@@ -1505,7 +1548,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	if (target->player)
 	{
 		// [SL] 2013-07-21 - Save the position information to a snapshot
-		int snaptime = last_svgametic;
+		const int snaptime = ThisMessageServerTic();
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
@@ -1529,7 +1572,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		target->momy = msg->target_mom().y();
 		target->momz = msg->target_mom().z();
 
-		target->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+		target->updatedDuringServerTic = ThisMessageServerTic();
 		target->updatedDuringLocalTic = gametic;
 	}
 
@@ -1552,13 +1595,13 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	if (target->player && lives >= 0)
 		target->player->lives = lives;
 
-	P_KillMobj(source, target, inflictor, joinkill);
+	P_KillMobj(source, target, inflictor, joinkill, MOD_NONE);
 }
 
 //
 // CL_RaiseMobj
 //
-static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
+void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 {
 	uint32_t srcid = msg->source_netid();
 	uint32_t cpsid = msg->corpse().netid();
@@ -1577,7 +1620,7 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	corpsehit->momy = msg->corpse().mom().y();
 	corpsehit->momz = msg->corpse().mom().z();
 
-	corpsehit->updatedDuringServerTic = ::messenger.GetCurrentReceivedPacketSequenceNumber();
+	corpsehit->updatedDuringServerTic = ThisMessageServerTic();
 	corpsehit->updatedDuringLocalTic  = gametic;
 
 	mobjinfo_t* info = corpsehit->info;
@@ -1597,7 +1640,9 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 
 	corpsehit->flags = info->flags;
 
-	if (msg->corpse().flags() & MF_FRIEND)
+	const auto msgflags = OFlags<mobjflag_t>::unsafe_from_int(msg->corpse().flags());
+
+	if (msgflags & MF_FRIEND)
 	{
 		corpsehit->flags |= MF_FRIEND;
 		corpsehit->friend_playerid = msg->corpse().friend_playerid();
@@ -1616,7 +1661,7 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 // CL_UpdateSector
 // Updates floorheight and ceilingheight of a sector.
 //
-static void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
+void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 {
 	int sectornum = msg->sectornum();
 	fixed_t floorheight = msg->sector().floor_height();
@@ -1646,14 +1691,14 @@ static void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 
 	P_ChangeSector(sector, false);
 
-	SectorSnapshot snap(last_svgametic, sector);
+	const SectorSnapshot snap(ThisMessageServerTic(), sector);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
 //
 // CL_Print
 //
-static void CL_Print(const odaproto::svc::Print* msg)
+void CL_Print(const odaproto::svc::Print* msg)
 {
 	byte level = msg->level();
 	const std::string& str = msg->message();
@@ -1675,7 +1720,7 @@ static void CL_Print(const odaproto::svc::Print* msg)
 	if (show_messages)
 	{
 		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
-			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound.data(), 1, ATTN_NONE);
 		else if (level == PRINT_TEAMCHAT)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
@@ -1684,7 +1729,7 @@ static void CL_Print(const odaproto::svc::Print* msg)
 /**
  * @brief Updates less-vital members of a player struct.
  */
-static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
+void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 {
 	player_t& p = CL_FindPlayer(msg->pid());
 	byte flags = msg->flags();
@@ -1726,12 +1771,30 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		if (!p.spectator)
 			p.cheats = msg->cheats();
 	}
+
+	// Our own weapon is driven by prediction and the rollback state, so this is only
+	// here to tell us what everyone else is holding.
+	if ((flags & SVC_PM_WEAPON) && p.id != consoleplayer_id)
+	{
+		const int32_t ready = msg->readyweapon();
+		const int32_t pending = msg->pendingweapon();
+
+		if (ready >= 0 && ready < NUMWEAPONS && p.readyweapon != ready)
+		{
+			p.readyweapon = static_cast<weapontype_t>(ready);
+			p.pendingweapon = wp_nochange;
+			P_BringUpWeapon(p);
+		}
+
+		if (pending >= 0 && pending < NUMWEAPONS)
+			p.pendingweapon = static_cast<weapontype_t>(pending);
+	}
 }
 
 //
 // [deathz0r] Receive team frags/captures
 //
-static void CL_TeamMembers(const odaproto::svc::TeamMembers* msg)
+void CL_TeamMembers(const odaproto::svc::TeamMembers* msg)
 {
 	team_t team = static_cast<team_t>(msg->team());
 	int points = msg->points();
@@ -1746,7 +1809,7 @@ static void CL_TeamMembers(const odaproto::svc::TeamMembers* msg)
 	info->RoundWins = roundWins;
 }
 
-static void CL_ActivateLine(const odaproto::svc::ActivateLine* msg)
+void CL_ActivateLine(const odaproto::svc::ActivateLine* msg)
 {
 	int linenum = msg->linenum();
 	AActor* mo = P_FindThingById(msg->activator_netid());
@@ -1765,14 +1828,14 @@ static void CL_ActivateLine(const odaproto::svc::ActivateLine* msg)
 // Sector movers
 //
 
-static void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* msg)
+void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* msg)
 {
 	int sectornum = msg->sector();
 
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 	// Elevators
@@ -1799,14 +1862,14 @@ static void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* m
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
-static void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
+void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
 {
 	int sectornum = msg->sector();
 
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 		// Pillars
@@ -1833,14 +1896,14 @@ static void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
-static void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg)
+void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg)
 {
 	int sectornum = msg->sector();
 
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 	// Ceilings / Crushers
@@ -1865,14 +1928,14 @@ static void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
-static void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
+void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
 {
 	int sectornum = msg->sector();
 
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 	// Doors
@@ -1898,14 +1961,14 @@ static void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
-static void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
+void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
 {
 	int sectornum = msg->sector();
 
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 	// Floors/Stairbuilders
@@ -1940,14 +2003,14 @@ static void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
-static void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
+void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
 {
 	int sectornum = msg->sector();
 
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
 
-    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	const int serverTic = ThisMessageServerTic();
 	SectorSnapshot snap(serverTic);
 
 	// Platforms/Lifts
@@ -1974,7 +2037,7 @@ static void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
 //
 // CL_Sound
 //
-static void CL_PlaySound(const odaproto::svc::PlaySound* msg)
+void CL_PlaySound(const odaproto::svc::PlaySound* msg)
 {
 	int channel = msg->channel();
 	int sfx_id = msg->sfxid();
@@ -2003,12 +2066,12 @@ static void CL_PlaySound(const odaproto::svc::PlaySound* msg)
 	}
 }
 
-static void CL_Reconnect(const odaproto::svc::Reconnect* msg)
+void CL_Reconnect( [[ maybe_unused ]] const odaproto::svc::Reconnect* msg)
 {
 	CL_Reconnect(NQ_SERVER_DROP);
 }
 
-static void CL_ExitLevel(const odaproto::svc::ExitLevel* msg)
+void CL_ExitLevel( [[ maybe_unused ]] const odaproto::svc::ExitLevel* msg)
 {
 	gameaction = ga_completed;
 
@@ -2018,7 +2081,7 @@ static void CL_ExitLevel(const odaproto::svc::ExitLevel* msg)
 		netdemo.writeIntermission();
 }
 
-static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
+void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 {
 	uint32_t id = msg->netid();
 	AActor* mo = P_FindThingById(id);
@@ -2039,7 +2102,7 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	// of the pickup *at that old point in time*.  With that result in hand, we undo the
 	// switcheroo and resolve the potentially-modified history.
 
-	const int oldTic = msg->player_tic();
+	const int oldTic = ThisMessageClientTic();
 	auto optionalHistory = rollerState.GetStateAtTic(oldTic);
 	const PlayerItemDataType currentClientSideState {player};
 
@@ -2069,7 +2132,7 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 //	Allows server to force set a players team setting
 // ---------------------------------------------------------------------------------------------------------
 
-static void CL_ForceTeam(const odaproto::svc::ForceTeam* msg)
+void CL_ForceTeam(const odaproto::svc::ForceTeam* msg)
 {
 	team_t t = static_cast<team_t>(msg->team());
 
@@ -2087,7 +2150,7 @@ static void CL_ForceTeam(const odaproto::svc::ForceTeam* msg)
 // CL_Switch
 // denis - switch state and timing
 // Note: this will also be called for doors
-static void CL_Switch(const odaproto::svc::Switch* msg)
+void CL_Switch(const odaproto::svc::Switch* msg)
 {
 	int l = msg->linenum();
 	byte switchactive = msg->switch_active();
@@ -2100,7 +2163,11 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 		return;
 
 	// denis - fixme - security
-	if (!P_SetButtonInfo(&lines[l], state, time) && switchactive)
+
+	// P_ChangeSwitchTexture toggles, so the presser has to skip the server's
+	// copy of its own change.
+	if (not P_SetButtonInfo(&lines[l], state, time) and switchactive and
+	    not lines[l].switchactive)
 	{
 		// only playsound if we've received the full update from
 		// the server (not setting up the map from the server)
@@ -2127,7 +2194,7 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
  * Handle the svc_say server message, which contains a message from another
  * client with a player id attached to it.
  */
-static void CL_Say(const odaproto::svc::Say* msg)
+void CL_Say(const odaproto::svc::Say* msg)
 {
 	byte message_visibility = msg->visibility();
 	byte player_id = msg->pid();
@@ -2167,7 +2234,7 @@ static void CL_Say(const odaproto::svc::Say* msg)
 		if (show_messages && !filtermessage)
 		{
 			if (cl_chatsounds == 1)
-				S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, gameinfo.chatSound.data(), 1, ATTN_NONE);
 		}
 	}
 	else if (message_visibility == 1)
@@ -2182,7 +2249,7 @@ static void CL_Say(const odaproto::svc::Say* msg)
 	}
 }
 
-static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
+void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 {
 	// clear player flags client may have imagined
 	for (auto& player : players)
@@ -2224,7 +2291,7 @@ static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 	}
 }
 
-static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
+void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
 {
 	// Range checking on events.
 	if (msg->event() <= SCORE_REFRESH || msg->event() >= NUM_CTF_SCORE)
@@ -2331,7 +2398,7 @@ static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
 // CL_SecretEvent
 // Client interpretation of a secret found by another player
 //
-static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
+void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 {
 	player_t& player = idplayer(msg->pid());
 	int sectornum = static_cast<int>(msg->sectornum());
@@ -2359,7 +2426,7 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
 }
 
-static void CL_ServerSettings(const odaproto::svc::ServerSettings* msg)
+void CL_ServerSettings(const odaproto::svc::ServerSettings* msg)
 {
 	cvar_t *var = NULL, *prev = NULL;
 
@@ -2393,7 +2460,7 @@ static void CL_ServerSettings(const odaproto::svc::ServerSettings* msg)
 //
 // CL_ConnectClient
 //
-static void CL_ConnectClient(const odaproto::svc::ConnectClient* msg)
+void CL_ConnectClient(const odaproto::svc::ConnectClient* msg)
 {
 	player_t& player = idplayer(msg->pid());
 
@@ -2410,7 +2477,7 @@ static void CL_ConnectClient(const odaproto::svc::ConnectClient* msg)
 }
 
 // Print a message in the middle of the screen
-static void CL_MidPrint(const odaproto::svc::MidPrint* msg)
+void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 {
 	C_MidPrint(msg->message().c_str(), NULL, msg->time());
 }
@@ -2422,7 +2489,7 @@ static void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 // sent back to the server with the next cmd.
 //
 // [SL] 2011-05-11
-static void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
+void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
 	::last_svgametic = msg->tic();
 
@@ -2437,7 +2504,7 @@ static void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 // CL_UpdateIntTimeLeft
 // Changes the value of level.inttimeleft
 //
-static void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft* msg)
+void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft* msg)
 {
 	::level.inttimeleft = msg->timeleft(); // convert from seconds to tics
 }
@@ -2448,7 +2515,7 @@ static void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft* msg)
 // Takes care of any business that needs to be done once the client has a full
 // view of the game world.
 //
-static void CL_FullUpdateDone(const odaproto::svc::FullUpdateDone* msg)
+void CL_FullUpdateDone( [[ maybe_unused ]] const odaproto::svc::FullUpdateDone* msg)
 {
 	::hasReceivedFullUpdate = true;
 	::isReceivingFullUpdate = false;
@@ -2457,7 +2524,7 @@ static void CL_FullUpdateDone(const odaproto::svc::FullUpdateDone* msg)
 //
 // CL_RailTrail
 //
-static void CL_RailTrail(const odaproto::svc::RailTrail* msg)
+void CL_RailTrail(const odaproto::svc::RailTrail* msg)
 {
 	v3double_t start, end;
 
@@ -2472,14 +2539,14 @@ static void CL_RailTrail(const odaproto::svc::RailTrail* msg)
 	P_DrawRailTrail(start, end);
 }
 
-static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
+void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 {
 	byte id = msg->player().playerid();
 	int health = msg->player().health();
 	int armortype = msg->player().armortype();
 	int armorpoints = msg->player().armorpoints();
 	int lives = msg->player().lives();
-	weapontype_t weap = static_cast<weapontype_t>(msg->player().readyweapon());
+	const int32_t readyweapon = msg->player().readyweapon();
 
 	byte cardByte = msg->player().cards();
 	std::bitset<6> cardBits(cardByte);
@@ -2497,17 +2564,29 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		}
 	}
 
-	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
+	struct PspriteUpdate
+	{
+		statenum_t statenum   = S_NULL;
+		fixed_t    sx         = 0;
+		fixed_t    sy         = 0;
+		bool       positioned = false;
+	};
+
+	std::array<PspriteUpdate, NUMPSPRITES> pspupdates;
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		if (i < msg->player().psprites_size())
 		{
-			const int32_t state = msg->player().psprites().Get(i).statenum();
+			const odaproto::PspriteState& psprite = msg->player().psprites().Get(i);
+			const int32_t state = psprite.statenum();
             if (!states.contains(state))
 			{
 				continue;
 			}
-			stnum[i] = static_cast<statenum_t>(state);
+			pspupdates[i].statenum = static_cast<statenum_t>(state);
+			pspupdates[i].sx = psprite.sx();
+			pspupdates[i].sy = psprite.sy();
+			pspupdates[i].positioned = true;
 		}
 	}
 
@@ -2535,20 +2614,35 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	player.armorpoints = armorpoints;
 	player.lives = lives;
 
-	player.readyweapon = weap;
-	player.pendingweapon = wp_nochange;
+	if (readyweapon >= 0 && readyweapon < NUMWEAPONS)
+	{
+		const auto weap = static_cast<weapontype_t>(readyweapon);
+
+		player.readyweapon = weap;
+		player.pendingweapon = wp_nochange;
+
+		if (!player.weaponowned[weap])
+			P_GiveWeapon(player, weap, false);
+	}
 
 	for (int i = 0; i < NUMCARDS; i++)
 		player.cards[i] = cardBits[i];
 
-	if (!player.weaponowned[weap])
-		P_GiveWeapon(player, weap, false);
-
 	for (int i = 0; i < NUMAMMO; i++)
 		player.ammo[i] = ammo[i];
 
+	player.psprite_authority_tic = gametic;
+
 	for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(player, i, stnum[i]);
+	{
+		P_SetPsprite(player, i, pspupdates[i].statenum);
+
+		if (pspupdates[i].positioned && player.psprites[i].statenum != S_NULL)
+		{
+			player.psprites[i].sx = pspupdates[i].sx;
+			player.psprites[i].sy = pspupdates[i].sy;
+		}
+	}
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
@@ -2562,7 +2656,7 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 /**
  * @brief Set local levelstate.
  */
-static void CL_LevelState(const odaproto::svc::LevelState* msg)
+void CL_LevelState(const odaproto::svc::LevelState* msg)
 {
 	// Set local levelstate.
 	SerializedLevelState sls;
@@ -2575,13 +2669,13 @@ static void CL_LevelState(const odaproto::svc::LevelState* msg)
 	::levelstate.unserialize(sls);
 }
 
-void P_SpawnAvatars();
-
-static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
+void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
 
 	G_ClearRoundKillStats();
+
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
@@ -2618,6 +2712,13 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 
 	P_DestroyButtonThinkers();
 
+	// Nothing else clears these once the buttons are gone, and a line left
+	// marked active ignores every switch message the new round sends it.
+	for (int i = 0; i < numlines; i++)
+	{
+		lines[i].switchactive = false;
+	}
+
 	P_DestroyScrollerThinkers();
 
 	P_DestroyLightThinkers();
@@ -2637,7 +2738,7 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 		netdemo.writeMapChange();
 }
 
-static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
+void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
 {
 	player_t& player = idplayer(msg->pid());
 	byte queuePos = msg->queuepos();
@@ -2657,13 +2758,13 @@ static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
 	player.QueuePosition = queuePos;
 }
 
-static void CL_FullUpdateStart(const odaproto::svc::FullUpdateStart* msg)
+void CL_FullUpdateStart( [[ maybe_unused ]] const odaproto::svc::FullUpdateStart* msg)
 {
 	::hasReceivedFullUpdate = false;
 	::isReceivingFullUpdate = true;
 }
 
-static void CL_LineUpdate(const odaproto::svc::LineUpdate* msg)
+void CL_LineUpdate(const odaproto::svc::LineUpdate* msg)
 {
 	int linenum = msg->linenum();
 	short flags = msg->flags();
@@ -2680,7 +2781,7 @@ static void CL_LineUpdate(const odaproto::svc::LineUpdate* msg)
 /**
  * @brief Update sector properties dynamically.
  */
-static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
+void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 {
 	int secnum = msg->sectornum();
 	uint32_t changes = msg->changes();
@@ -2756,7 +2857,7 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 	}
 }
 
-static void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate* msg)
+void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate* msg)
 {
 	int linenum = msg->linenum();
 	int side = msg->side();
@@ -2793,7 +2894,7 @@ static void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate* msg)
 	}
 }
 
-static void CL_WakeupMobj(const odaproto::svc::WakeupMobj* msg)
+void CL_WakeupMobj(const odaproto::svc::WakeupMobj* msg)
 {
 	AActor* mo = P_FindThingById(msg->netid());
 
@@ -2842,7 +2943,7 @@ static void CL_WakeupMobj(const odaproto::svc::WakeupMobj* msg)
 //
 // CL_SetMobjState
 //
-static void CL_SetMobjState(const odaproto::svc::MobjState* msg)
+void CL_SetMobjState(const odaproto::svc::MobjState* msg)
 {
 	AActor* mo = P_FindThingById(msg->netid());
 	int s = msg->mostate();
@@ -2856,7 +2957,7 @@ static void CL_SetMobjState(const odaproto::svc::MobjState* msg)
 //
 // CL_DamageMobj
 //
-static void CL_DamageMobj(const odaproto::svc::DamageMobj* msg)
+void CL_DamageMobj(const odaproto::svc::DamageMobj* msg)
 {
 	uint32_t netid = msg->netid();
 	int health = msg->health();
@@ -2873,7 +2974,7 @@ static void CL_DamageMobj(const odaproto::svc::DamageMobj* msg)
 		P_SetMobjState(mo, mo->info->painstate);
 }
 
-static void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial* msg)
+void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial* msg)
 {
 	byte special = msg->special();
 	int linenum = msg->linenum();
@@ -2895,7 +2996,7 @@ static void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial* msg)
 	             arg4);
 }
 
-static void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial* msg)
+void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial* msg)
 {
 	byte special = msg->special();
 	uint32_t netid = msg->activator_netid();
@@ -2980,7 +3081,7 @@ static void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial* msg)
 /**
  * @brief Update a thinker.
  */
-static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
+void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 {
 	switch (msg->thinker_case())
 	{
@@ -3091,7 +3192,7 @@ static void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 	}
 }
 
-static void CL_VoteUpdate(const odaproto::svc::VoteUpdate* msg)
+void CL_VoteUpdate(const odaproto::svc::VoteUpdate* msg)
 {
 	vote_result_t result = static_cast<vote_result_t>(msg->result());
 
@@ -3112,7 +3213,7 @@ static void CL_VoteUpdate(const odaproto::svc::VoteUpdate* msg)
 }
 
 // Got a packet that contains the maplist status
-static void CL_Maplist(const odaproto::svc::Maplist* msg)
+void CL_Maplist(const odaproto::svc::Maplist* msg)
 {
 	// The update status might require us to bail out.
 	maplist_status_t status = static_cast<maplist_status_t>(msg->status());
@@ -3123,7 +3224,7 @@ static void CL_Maplist(const odaproto::svc::Maplist* msg)
 }
 
 // Got a packet that contains a chunk of the maplist.
-static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate* msg)
+void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate* msg)
 {
 	// The update status might require us to bail out.
 	maplist_status_t status = static_cast<maplist_status_t>(msg->status());
@@ -3165,7 +3266,7 @@ static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate* msg)
 }
 
 // Got a packet that contains the next and current index.
-static void CL_MaplistIndex(const odaproto::svc::MaplistIndex* msg)
+void CL_MaplistIndex(const odaproto::svc::MaplistIndex* msg)
 {
 	if (msg->count() > 0)
 	{
@@ -3181,7 +3282,7 @@ static void CL_MaplistIndex(const odaproto::svc::MaplistIndex* msg)
 	}
 }
 
-static void CL_Toast(const odaproto::svc::Toast* msg)
+void CL_Toast(const odaproto::svc::Toast* msg)
 {
 	toast_t toast;
 	toast.flags = msg->flags();
@@ -3196,7 +3297,7 @@ static void CL_Toast(const odaproto::svc::Toast* msg)
 	COM_PushToast(toast);
 }
 
-static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
+void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
 {
 	hordeInfo_t info;
 
@@ -3214,7 +3315,7 @@ static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
 	P_SetHordeInfo(info);
 }
 
-static void CL_Spree(const odaproto::svc::Spree* msg)
+void CL_Spree(const odaproto::svc::Spree* msg)
 {
 	int playerId = msg->pid();
 	int spreeLevel = msg->spree_level();
@@ -3236,7 +3337,7 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 	}
 }
 
-static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
+void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 {
 	SpreeBreaker_t breaker;
 
@@ -3252,7 +3353,7 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type, ticsAgo);
 }
 
-static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
+void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 {
 	const uint32_t sectorIndex = msg->sectornum();
 
@@ -3269,101 +3370,103 @@ static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 	}
 }
 
-static void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
+void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
 {
 	std::array<int, NUMAMMO> ammo;
 	std::copy(msg->ammo().begin(),
 	          msg->ammo().end(),
 	          ammo.begin());
 
-	if (rollerState.ResolveAmmo(msg->player_tic(), ammo, consoleplayer()))
+	if (rollerState.ResolveAmmo(ThisMessageClientTic(), ammo, consoleplayer()))
 	{
 		DPrintFmt("Reconciled ammo on tic {}\n",
-		          msg->player_tic());
+		          ThisMessageClientTic());
 	}
 }
 
-static void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
+void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
 {
 	std::array<int, NUMAMMO> maxammo;
 	std::copy(msg->maxammo().begin(),
 	          msg->maxammo().end(),
 	          maxammo.begin());
 
-	if (rollerState.ResolveMaxAmmo(msg->player_tic(),
+	if (rollerState.ResolveMaxAmmo(ThisMessageClientTic(),
 	                               maxammo,
 	                               consoleplayer()))
 	{
 		DPrintFmt("Reconciled maxammo on tic {}\n",
-		          msg->player_tic());
+		          ThisMessageClientTic());
 	}
 }
 
-static void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
+void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
 {
 	std::array<bool, NUMWEAPONS> weaponowned;
 	std::copy(msg->weaponowned().begin(),
 	          msg->weaponowned().end(),
 	          weaponowned.begin());
 
-	if (rollerState.ResolveWeaponOwned(msg->player_tic(),
+	if (rollerState.ResolveWeaponOwned(ThisMessageClientTic(),
 	                                   weaponowned,
 	                                   consoleplayer()))
 	{
 		DPrintFmt("Reconciled weaponowned on tic {}\n",
-		          msg->player_tic());
+		          ThisMessageClientTic());
 	}
 }
 
-static void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection* msg)
+void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection* msg)
 {
-	if (rollerState.ResolveWeaponSelection(msg->player_tic(),
+	if (rollerState.ResolveWeaponSelection(ThisMessageClientTic(),
 	                                       static_cast<weapontype_t>(msg->readyweapon()),
 	                                       static_cast<weapontype_t>(msg->pendingweapon()),
 	                                       consoleplayer()))
 	{
 		DPrintFmt("Reconciled weapon selection on tic {}\n",
-		          msg->player_tic());
+		          ThisMessageClientTic());
 	}
 }
 
-static void CL_PlayerPowers(const odaproto::svc::PlayerPowers* msg)
+void CL_PlayerPowers(const odaproto::svc::PlayerPowers* msg)
 {
 	std::array<int, NUMPOWERS> powers;
 	std::copy(msg->powers().begin(),
 	          msg->powers().end(),
 	          powers.begin());
 
-	if (rollerState.ResolvePowers(msg->player_tic(),
+	if (rollerState.ResolvePowers(ThisMessageClientTic(),
 	                              powers,
 	                              consoleplayer()))
 	{
 		DPrintFmt("Reconciled powers on tic {}\n",
-		          msg->player_tic());
+		          ThisMessageClientTic());
 	}
 
 }
 
-static void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
+void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
 {
 	std::array<PspriteStateType, NUMPSPRITES> psprites;
 
-	for (size_t i = 0; i < psprites.size(); ++i)
+	const size_t count = std::min(psprites.size(),
+	                              static_cast<size_t>(msg->psprites_size()));
+	for (size_t i = 0; i < count; ++i)
 	{
 	    psprites[i].statenum = static_cast<statenum_t>(msg->psprites(i).statenum());
 	    psprites[i].tics     = msg->psprites(i).tics();
 	}
 
-	if (rollerState.ResolvePsprites(msg->player_tic(),
+	if (rollerState.ResolvePsprites(ThisMessageClientTic(),
 	                                psprites,
 	                                consoleplayer()))
 	{
 		DPrintFmt("Reconciled psprites on tic {}\n",
-		          msg->player_tic());
+		          ThisMessageClientTic());
 	}
 }
 
-static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
+void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 {
     MapThing avatarMapthing;
 
@@ -3375,7 +3478,7 @@ static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
     avatarMapthing.z        = mapthing.z();
     avatarMapthing.angle    = mapthing.angle();
     avatarMapthing.type     = mapthing.type();
-    avatarMapthing.flags    = mapthing.flags();
+    avatarMapthing.flags    = MapThingFlags::unsafe_from_int(static_cast<int16_t>(mapthing.flags()));
     avatarMapthing.special  = mapthing.special();
 
 	const size_t argCount = std::min(avatarMapthing.args.size(), static_cast<size_t>(mapthing.args_size()));
@@ -3385,8 +3488,7 @@ static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 
 	const uint32_t netid = msg->netid();
 
-	const auto avatarIter = std::find_if(::voodoostarts.begin(),
-	                                     ::voodoostarts.end(),
+	const auto avatarIter = std::ranges::find_if(::voodoostarts,
 	                                     [&avatarMapthing](const auto& voodooStart)
 	                                     {
 	                                         return voodooStart.mapThing == avatarMapthing;
@@ -3401,7 +3503,7 @@ static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 		        avatarMapthing.thingid,
 		        avatarMapthing.angle,
 		        avatarMapthing.type,
-		        avatarMapthing.flags,
+		        avatarMapthing.flags.to_int(),
 		        int(avatarMapthing.special));
 		return;
 	}
@@ -3428,7 +3530,7 @@ static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 	}
 }
 
-static void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
+void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
 {
 	odaproto::clc::PlayerInput& currentInputMessage = localcmds[gametic % MAXSAVETICS];
 	currentInputMessage.ParseFromString(msg->packed_player_input());
@@ -3463,12 +3565,12 @@ static void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
 	}
 }
 
-static void CL_NetDemoStop(const odaproto::clc::NetDemoStop* msg)
+void CL_NetDemoStop( [[ maybe_unused ]] const odaproto::clc::NetDemoStop* msg)
 {
 	::netdemo.stopPlaying();
 }
 
-static void CL_NetDemoLoadSnap(const odaproto::clc::NetDemoLoadSnap* msg)
+void CL_NetDemoLoadSnap( [[ maybe_unused ]] const odaproto::clc::NetDemoLoadSnap* msg)
 {
 	AddCommandString("netprevmap");
 }
@@ -3479,7 +3581,7 @@ static void CL_NetDemoLoadSnap(const odaproto::clc::NetDemoLoadSnap* msg)
 
 Protos protos;
 
-static void RecordProto(const msg_t header, google::protobuf::Message* msg)
+void RecordProto(const msg_t header, google::protobuf::Message* msg)
 {
 	static int protostic;
 
@@ -3510,11 +3612,12 @@ static void RecordProto(const msg_t header, google::protobuf::Message* msg)
 	::protos.push_back(proto);
 }
 
+}   // end of the big honking anonymous namespace.
+
 const Protos& CL_GetTicProtos()
 {
 	return ::protos;
 }
-
 
 /**
  * @brief Read a server message off the wire.
@@ -3571,6 +3674,8 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 
 		/* clang-format off */
 		SV_MSG(msg_noop, CL_Noop, odaproto::Noop);
+		SV_MSG(msg_header, CL_Header, odaproto::Header);
+
 		SV_MSG(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
 		SV_MSG(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
 		SV_MSG(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
@@ -3661,6 +3766,109 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 
 	RecordProto(static_cast<msg_t>(parsedCommand.cmd), parsedCommand.msg.get());
 	return PERR_OK;
+}
+
+namespace
+{
+	std::string SVCName(msg_t header)
+	{
+		std::string svc = ::msg_info[header].getName();
+		if (svc.empty())
+		{
+			svc = fmt::sprintf("svc_%u", header);
+		}
+		return svc;
+	}
+}
+
+//
+// CL_ParseCommands
+//
+void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
+{
+	if (optionalHeader)
+	{
+		s_currentHeader = *optionalHeader;
+	}
+
+	while (connected)
+	{
+		if (::net_message.BytesLeftToRead() == 0)
+		{
+			break;
+		}
+
+		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
+		// This is because the High Priority packet is always live and comes out every tic.  It's totally
+		// possible for the server to go without sending anything Reliable or Best-Effort if things are
+		// all-quiet.
+		if (messenger.GetCurrentReceivedIsHighPriority())
+		{
+			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
+		}
+
+		const size_t          byteStart = ::net_message.BytesRead();
+		const ParseResultType result    = CL_ParseCommand();
+
+		const parseError_e processResult = result.code == PERR_OK ?
+			CL_ProcessCommand(result) :
+			result.code;
+
+		if (processResult != PERR_OK or ::net_message.overflowed)
+		{
+			const Protos& protos = CL_GetTicProtos();
+
+			std::string err;
+			if (result.code == PERR_UNKNOWN_HEADER)
+			{
+				err = "Unknown message header";
+			}
+			else if (result.code == PERR_UNKNOWN_MESSAGE)
+			{
+				err = "Message is not known to message decoder";
+			}
+			else if (result.code == PERR_BAD_DECODE)
+			{
+				err = "Could not decode message";
+			}
+			else if (::net_message.overflowed)
+			{
+				err = "Message overflowed";
+			}
+			else
+			{
+				err = "Unknown error";
+			}
+
+			if (!protos.empty())
+			{
+				PrintFmt(PRINT_WARNING, "CL_ParseCommands: {}\n", err);
+
+				for (auto it = protos.begin(); it != protos.end(); ++it)
+				{
+					char latest = (it == protos.end() - 1) ? '>' : ' ';
+					ptrdiff_t idx = it - protos.begin() + 1;
+					std::string svc = SVCName(it->header);
+					size_t siz = it->size;
+					PrintFmt(PRINT_WARNING, "{:c} {:>2d} [{}] {}b\n", latest, idx, svc,
+					         siz);
+				}
+			}
+			else
+			{
+				PrintFmt(PRINT_WARNING, "CL_ParseCommands: {}\n", err);
+			}
+
+			CL_QuitNetGame(NQ_PROTO);
+		}
+
+		// Measure length of each message, so we can keep track of bandwidth.
+		if (::net_message.BytesRead() < byteStart)
+		{
+			PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
+			         ::net_message.BytesRead(), byteStart);
+		}
+	}
 }
 
 VERSION_CONTROL (cl_parse_cpp, "$Id$")

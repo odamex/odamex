@@ -150,8 +150,7 @@ CVAR_FUNC_IMPL (sv_maxclients)
 	{
 		if (count <= 0)
 		{
-			MSG_WriteSVC(
-			    it->client.messenger->ReliableBuf(),
+			it->client.messenger->Reliable().Write (
 			    SVC_Print(PRINT_CHAT,
 			              "Client limit reduced. Please try connecting again later.\n"));
 
@@ -191,7 +190,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 
 				for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 				{
-					MSG_WriteSVC(pit->client.messenger->ReliableBuf(),
+					pit->client.messenger->Reliable().Write (
 					             SVC_PlayerMembers(*it, SVC_PM_SPECTATOR));
 				}
 
@@ -199,8 +198,7 @@ CVAR_FUNC_IMPL (sv_maxplayers)
 				SV_BroadcastPrintFmt(PRINT_HIGH, "{} became a spectator. ({})\n",
 					it->userinfo.netname, status);
 
-				MSG_WriteSVC(
-				    it->client.messenger->ReliableBuf(),
+				it->client.messenger->Reliable().Write (
 				    SVC_Print(PRINT_HIGH,
 				              "Active player limit reduced. You are now a spectator!\n"));
 			}
@@ -427,10 +425,27 @@ BEGIN_COMMAND (say)
 	if (argc > 1)
 	{
 		std::string chat = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
-		SV_BroadcastPrintFmt(PRINT_SERVERCHAT, "[console]: {}\n", chat);
+		SV_BroadcastPrintFmt(PRINT_SERVERCHAT, "[server]: {}\n", chat);
 	}
 }
 END_COMMAND (say)
+
+BEGIN_COMMAND (say_to)
+{
+	if (argc > 2)
+	{
+		player_t const& player = nameplayer(argv[1]);
+		if (!validplayer(player))
+			{
+				PrintFmt("Player \"{}\" was not found.\n", argv[1]);
+				return;
+			}
+
+		SV_PlayerPrintFmt(PRINT_SERVERCHAT, player.id, "[server]: {}\n",
+		                  JoinStrings(VectorArgs(argc - 1, argv + 1), " "));
+	}
+}
+END_COMMAND (say_to)
 
 void call_terms();
 
@@ -466,7 +481,7 @@ static void SendLevelState(SerializedLevelState sls)
 	for (auto& player : players)
 	{
 		client_t& cl = player.client;
-		MSG_WriteSVC(cl.messenger->ReliableBuf(), SVC_LevelState(sls));
+		cl.messenger->Reliable().Write (SVC_LevelState(sls));
 	}
 }
 
@@ -734,8 +749,6 @@ namespace
 				{
 					iter->second.messenger->HandleAcks(packetBuffer);
 				}
-
-				iter->second.messenger->HandleRetransmissions(currentTic, iter->first);
 				iter->second.messenger->SendAll(currentTic, iter->first);
 			}
 
@@ -991,18 +1004,18 @@ void SV_MidPrint(const char* msg, player_t* p, int msgtime)
 {
 	client_t* cl = &p->client;
 
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_MidPrint(msg, msgtime));
+	cl->messenger->Reliable().Write (SVC_MidPrint(msg, msgtime));
 }
 
 void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str)
 {
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Print(static_cast<printlevel_t>(printlevel), str));
+	cl->messenger->Reliable().Write (SVC_Print(static_cast<printlevel_t>(printlevel), str));
 }
 
 void SV_BasePrintAllPlayers(const int printlevel, const std::string& str)
 {
 	for (auto& player : players)
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_Print(static_cast<printlevel_t>(printlevel), str));
+		player.client.messenger->Reliable().Write (SVC_Print(static_cast<printlevel_t>(printlevel), str));
 }
 
 void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std::string& str)
@@ -1016,7 +1029,7 @@ void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std:
 		if (cl == excluded_client)
 			continue;
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Print(static_cast<printlevel_t>(printlevel), str));
+		cl->messenger->Reliable().Write (SVC_Print(static_cast<printlevel_t>(printlevel), str));
 	}
 }
 
@@ -1037,7 +1050,7 @@ void SV_Sound (const AActor *mo, byte channel, const char *name, byte attenuatio
 	{
 		client_t* cl = &(player.client);
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
+		cl->messenger->Reliable().Write (SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
 		                                             1.0f, attenuation));
 	}
 }
@@ -1055,7 +1068,7 @@ void SV_Sound(player_t& pl, const AActor* mo, const byte channel, const char* na
 
 	client_t *cl = &pl.client;
 
-	MSG_WriteSVC(cl->messenger->ReliableBuf(),
+	cl->messenger->Reliable().Write (
 	             SVC_PlaySound(PlaySoundType(mo), channel, sfx_id, 1.0f, attenuation));
 }
 
@@ -1085,7 +1098,7 @@ void UV_SoundAvoidPlayer (const AActor *mo, byte channel, const char *name, byte
 
 		client_t* cl = &(player.client);
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
+		cl->messenger->Reliable().Write (SVC_PlaySound(PlaySoundType(mo), channel, sfx_id,
 		                                             1.0f, attenuation));
 	}
 }
@@ -1110,7 +1123,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 		{
 			client_t* cl = &(player.client);
 
-			MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_PlaySound(PlaySoundType(), channel, sfx_id,
+			cl->messenger->Reliable().Write (SVC_PlaySound(PlaySoundType(), channel, sfx_id,
 			                                             1.0f, attenuation));
 		}
 	}
@@ -1133,7 +1146,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 		client_t* cl = &(player.client);
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
+		cl->messenger->Reliable().Write (SVC_PlaySound(PlaySoundType(x, y), channel, sfx_id,
 		                                             1.0f, attenuation));
 	}
 }
@@ -1146,7 +1159,7 @@ void SV_UpdateFrags(const player_t &player)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		client_t *cl = &(it->client);
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_PlayerMembers(player, SVC_PM_SCORE));
+		cl->messenger->Reliable().Write (SVC_PlayerMembers(player, SVC_PM_SCORE));
 	}
 }
 
@@ -1155,7 +1168,7 @@ void SV_UpdateFrags(const player_t &player)
 //
 void SV_SendUserInfo (const player_t &player, client_t* cl)
 {
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_UserInfo(player, time(nullptr) - player.JoinTime));
+	cl->messenger->Reliable().Write (SVC_UserInfo(player, time(nullptr) - player.JoinTime));
 }
 
 /**
@@ -1358,7 +1371,7 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 	who.userinfo.team = team;
 	PrintFmt(PRINT_HIGH, "Forcing {} to {} team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : V_GetTeamColor(team).c_str());
 
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_ForceTeam(team));
+	cl->messenger->Reliable().Write (SVC_ForceTeam(team));
 }
 
 //
@@ -1449,7 +1462,7 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
 
 	if (awarenessLevel == AwarenessEnum::NOT_AWARE)
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_RemoveMobj(*mo));
+		player.client.messenger->Reliable().Write (SVC_RemoveMobj(*mo));
 		return true;
 	}
 
@@ -1461,7 +1474,7 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
 			{
 				if (mo == ::voodoostarts[i].mobj)
 				{
-					MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_ConfigureAvatar(::voodoostarts[i].mapThing, mo->netid));
+					player.client.messenger->Reliable().Write (SVC_ConfigureAvatar(::voodoostarts[i].mapThing, mo->netid));
 					return false;   // does NOT count towards the spawn quota!
 				}
 			}
@@ -1471,11 +1484,11 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
 
 		if (not mo->player or mo->player->playerstate != PST_LIVE)
 		{
-			MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_SpawnMobj(mo));
+			player.client.messenger->Reliable().Write (SVC_SpawnMobj(mo));
 		}
 		else
 		{
-			MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_SpawnPlayer(*mo->player, gametic));
+			player.client.messenger->Reliable().Write (SVC_SpawnPlayer(*mo->player));
 		}
 		return true;
 	}
@@ -1616,6 +1629,23 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated, AwarenessEnum new
 
 MessageResultEnum SV_SendPacket(player_t& player)
 {
+	// Total hack:  We check for the player being in the first second of their connection because there's something
+	// in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
+	if (player.GameTime > 0)
+	{
+		// The following results in fractional tics rounding up.
+		const int pingInTics = (player.ping * TICRATE + 999) / 1000;
+
+		// Adjust upwards because in the real world, tic boundaries don't align and can drift.
+		const int retransmitDelayInTics = pingInTics + 1;
+
+		player.client.messenger->SetRetransmitDelay(retransmitDelayInTics);
+	}
+	else
+	{
+		player.client.messenger->SetRetransmitDelay(0);
+	}
+
 	player.client.messenger->SetDestinationTic(player.tic);
 	return player.client.messenger->SendAll(gametic, player.client.address);
 }
@@ -1629,7 +1659,7 @@ void SV_BroadcastNoiseAlert(const sector_t& sector)
 	// the server.
 	for (auto& player : players)
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_NoiseAlert(sector));
+		player.client.messenger->Reliable().Write (SVC_NoiseAlert(sector));
 	}
 }
 
@@ -1640,7 +1670,7 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 	// Only update moveable sectors to clients
 	if (sector != nullptr && sector->moveable)
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_UpdateSector(*sector));
+		cl->messenger->Reliable().Write (SVC_UpdateSector(*sector));
 	}
 }
 
@@ -1657,7 +1687,7 @@ void SV_UpdateSectorProperties(client_t* cl, int sectornum)
 	// Only update sectors with changes
 	if (sector != nullptr && sector->SectorChanges)
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_SectorProperties(*sector));
+		cl->messenger->Reliable().Write (SVC_SectorProperties(*sector));
 	}
 }
 
@@ -1681,7 +1711,7 @@ void SV_UpdateSectors(client_t* cl)
 		if (!sector.SectorChanges)
 			continue;
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_SectorProperties(sector));
+		cl->messenger->Reliable().Write (SVC_SectorProperties(sector));
 	}
 }
 
@@ -1774,16 +1804,15 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 	if (floorMover != SEC_INVALID)
 	{
 		const bool    floorIsCompleted     = P_MovingFloorCompleted  (sector);
-		const int     floorMoverMsgTic     = floorIsCompleted ? gametic : -1;
-		MessageQueue& outgoingMessageQueue = floorIsCompleted ? player.client.messenger->ReliableBuf() :
-		                                                        player.client.messenger->HighBuf();
+		MessageQueue& outgoingMessageQueue = floorIsCompleted ? player.client.messenger->Reliable() :
+		                                                        player.client.messenger->HighPriority();
 		switch (floorMover)
 		{
 			case SEC_FLOOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorFloor(*sector, floorMoverMsgTic));
+				outgoingMessageQueue.Write( SVC_MovingSectorFloor(*sector));
 				break;
 			case SEC_PLAT:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPlat(*sector, floorMoverMsgTic));
+				outgoingMessageQueue.Write( SVC_MovingSectorPlat(*sector));
 				break;
 			default:
 				break;
@@ -1793,23 +1822,22 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 	if (ceilingMover != SEC_INVALID)
 	{
 		const bool    ceilingIsCompleted   = P_MovingCeilingCompleted(sector);
-		const int     ceilingMoverMsgTic   = ceilingIsCompleted ? gametic : -1;
-		MessageQueue& outgoingMessageQueue = ceilingIsCompleted ? player.client.messenger->ReliableBuf() :
-		                                                          player.client.messenger->HighBuf();
+		MessageQueue& outgoingMessageQueue = ceilingIsCompleted ? player.client.messenger->Reliable() :
+		                                                          player.client.messenger->HighPriority();
 
 		switch (ceilingMover)
 		{
 			case SEC_DOOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorDoor(*sector, ceilingMoverMsgTic));
+				outgoingMessageQueue.Write( SVC_MovingSectorDoor(*sector));
 				break;
 			case SEC_CEILING:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorCeiling(*sector, ceilingMoverMsgTic));
+				outgoingMessageQueue.Write( SVC_MovingSectorCeiling(*sector));
 				break;
 			case SEC_ELEVATOR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorElevator(*sector, ceilingMoverMsgTic));
+				outgoingMessageQueue.Write( SVC_MovingSectorElevator(*sector));
 				break;
 			case SEC_PILLAR:
-				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPillar(*sector, ceilingMoverMsgTic));
+				outgoingMessageQueue.Write( SVC_MovingSectorPillar(*sector));
 				break;
 			default:
 				break;
@@ -1839,9 +1867,9 @@ void SV_UpdateMovingSectors(player_t &player)
 //
 void SV_SendGametic(client_t& client)
 {
-	MSG_WriteSVC(client.messenger->HighBuf(), SVC_ServerGametic(gametic,
-	                                                           client.messenger->GetPendingAckCount(),
-	                                                           client.messenger->GetReliableOverloadCount()));
+	client.messenger->HighPriority().Write( SVC_ServerGametic(gametic,
+	                                                          client.messenger->GetPendingAckCount(),
+	                                                          client.messenger->GetReliableOverloadCount()));
 }
 
 void SV_LineStateUpdate(client_t *cl)
@@ -1850,7 +1878,7 @@ void SV_LineStateUpdate(client_t *cl)
 	{
 		if (line.PropertiesChanged)
 		{
-			MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_LineUpdate(line));
+			cl->messenger->Reliable().Write (SVC_LineUpdate(line));
 		}
 
 		if (!line.SidedefChanged)
@@ -1864,7 +1892,7 @@ void SV_LineStateUpdate(client_t *cl)
 				if (!currentSideDef->SidedefChanges)
 					continue;
 
-				MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_LineSideUpdate(line, sideNum));
+				cl->messenger->Reliable().Write (SVC_LineSideUpdate(line, sideNum));
 			}
 		}
 	}
@@ -1876,56 +1904,56 @@ void SV_ThinkerUpdate(client_t* cl)
 	DScroller* scroller;
 	while ((scroller = scrollIter.Next()))
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_ThinkerUpdate(scroller));
+		cl->messenger->Reliable().Write (SVC_ThinkerUpdate(scroller));
 	}
 
 	TThinkerIterator<DFireFlicker> fireIter;
 	DFireFlicker* fireFlicker;
 	while ((fireFlicker = fireIter.Next()))
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_ThinkerUpdate(fireFlicker));
+		cl->messenger->Reliable().Write (SVC_ThinkerUpdate(fireFlicker));
 	}
 
 	TThinkerIterator<DFlicker> flickerIter;
 	DFlicker* flicker;
 	while ((flicker = flickerIter.Next()))
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_ThinkerUpdate(flicker));
+		cl->messenger->Reliable().Write (SVC_ThinkerUpdate(flicker));
 	}
 
 	TThinkerIterator<DLightFlash> lightFlashIter;
 	DLightFlash* lightFlash;
 	while ((lightFlash = lightFlashIter.Next()))
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_ThinkerUpdate(lightFlash));
+		cl->messenger->Reliable().Write (SVC_ThinkerUpdate(lightFlash));
 	}
 
 	TThinkerIterator<DStrobe> strobeIter;
 	DStrobe* strobe;
 	while ((strobe = strobeIter.Next()))
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_ThinkerUpdate(strobe));
+		cl->messenger->Reliable().Write (SVC_ThinkerUpdate(strobe));
 	}
 
 	TThinkerIterator<DGlow> glowIter;
 	DGlow* glow;
 	while ((glow = glowIter.Next()))
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_ThinkerUpdate(glow));
+		cl->messenger->Reliable().Write (SVC_ThinkerUpdate(glow));
 	}
 
 	TThinkerIterator<DGlow2> glow2Iter;
 	DGlow2* glow2;
 	while ((glow2 = glow2Iter.Next()))
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_ThinkerUpdate(glow2));
+		cl->messenger->Reliable().Write (SVC_ThinkerUpdate(glow2));
 	}
 
 	TThinkerIterator<DPhased> phasedIter;
 	DPhased* phased;
 	while ((phased = phasedIter.Next()))
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_ThinkerUpdate(phased));
+		cl->messenger->Reliable().Write (SVC_ThinkerUpdate(phased));
 	}
 }
 
@@ -1947,10 +1975,10 @@ void SV_ClientFullUpdate(player_t &pl)
 {
 	client_t *cl = &pl.client;
 
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), odaproto::svc::FullUpdateStart());
+	cl->messenger->Reliable().Write (odaproto::svc::FullUpdateStart());
 
 	// Send the player all level locals.
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_LevelLocals(::level, SVC_MSG_ALL));
+	cl->messenger->Reliable().Write (SVC_LevelLocals(::level, SVC_MSG_ALL));
 
 	// send player's info to the client
 	for (Players::iterator it = players.begin();it != players.end();++it)
@@ -1962,17 +1990,17 @@ void SV_ClientFullUpdate(player_t &pl)
 	}
 
 	// update levelstate
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_LevelState(::levelstate.serialize()));
+	cl->messenger->Reliable().Write (SVC_LevelState(::levelstate.serialize()));
 
 	// update all player members
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_PlayerMembers(*it, SVC_MSG_ALL));
+		cl->messenger->Reliable().Write (SVC_PlayerMembers(*it, SVC_MSG_ALL));
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
 	if (G_IsTeamGame())
 	{
 		for (int i = 0; i < NUMTEAMS; i++)
-			MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_TeamMembers(static_cast<team_t>(i)));
+			cl->messenger->Reliable().Write (SVC_TeamMembers(static_cast<team_t>(i)));
 	}
 
 	int hiddenUpdates = 0;
@@ -2008,7 +2036,7 @@ void SV_ClientFullUpdate(player_t &pl)
 
 		for (const auto& [playerId, record] : sprees.getSpreeRecords())
 		{
-			MSG_WriteSVC(cl->messenger->ReliableBuf(),
+			cl->messenger->Reliable().Write (
 			             SVC_Spree(record, ::gametic - record.spreeStartTic));
 		}
 
@@ -2016,14 +2044,14 @@ void SV_ClientFullUpdate(player_t &pl)
 
 		if (breaker.spreeEndedPlayerId != -1)
 		{
-			MSG_WriteSVC(cl->messenger->ReliableBuf(),
+			cl->messenger->Reliable().Write (
 			             SVC_SpreeBreaker(breaker, breaker.spreeEndedLevel,
 			                              breaker.spreeEndedType,
 			                              ::gametic - breaker.spreeEndedTic));
 		}
 	}
 
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), odaproto::svc::FullUpdateDone());
+	cl->messenger->Reliable().Write (odaproto::svc::FullUpdateDone());
 
 	SV_ArmInventoryMonitors(pl);
 
@@ -2044,14 +2072,14 @@ void SV_UpdateSecret(sector_t& sector, player_t &player)
 	{
 		client_t* cl = &(it->client);
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_LevelLocals(::level, SVC_LL_SECRETS));
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_PlayerMembers(player, SVC_PM_SCORE));
+		cl->messenger->Reliable().Write (SVC_LevelLocals(::level, SVC_LL_SECRETS));
+		cl->messenger->Reliable().Write (SVC_PlayerMembers(player, SVC_PM_SCORE));
 
 		if (&*it == &player)
 			continue;
 
 		if (!(sector.special & SECRET_MASK) && sector.secretsector)
-			MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_SecretEvent(player, sector));
+			cl->messenger->Reliable().Write (SVC_SecretEvent(player, sector));
 	}
 }
 
@@ -2077,7 +2105,7 @@ static void SendServerSettings(player_t& pl)
 		{
 			odaproto::svc::ServerSettings settings = SVC_ServerSettings(*var);
 
-			MSG_WriteSVC(cl->messenger->ReliableBuf(), settings);
+			cl->messenger->Reliable().Write (settings);
 		}
 
 		var = var->GetNext();
@@ -2164,9 +2192,9 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 		// GhostlyDeath -- Now we tell them our built up message and boot em
 		cl->displaydisconnect = false;	// Don't spam the players
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Print(PRINT_WARNING, msg));
+		cl->messenger->Reliable().Write (SVC_Print(PRINT_WARNING, msg));
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Disconnect());
+		cl->messenger->Reliable().Write (SVC_Disconnect());
 
 		SV_SendPacket(*it);
 
@@ -2278,9 +2306,14 @@ void SV_ConnectClient()
 		static buf_t smallbuf(1024);
 		if (smallbuf.size() == 0)
 		{
+			MessageQueue smallQueue;
 			PacketHeaderType header(0);
+
+			smallQueue.Write( SVC_Disconnect("Server is full\n") );
+
 			header.Pack(smallbuf);
-			MSG_WriteSVCBuffer(&smallbuf, SVC_Disconnect("Server is full\n"));
+			smallbuf.WriteChunk(smallQueue.Front().ptr(),
+			                    smallQueue.Front().size());
 		}
 
 		NET_SendPacket(smallbuf, net_from);
@@ -2360,8 +2393,7 @@ void SV_ConnectClient()
 	{
 		PrintFmt("{} disconnected (password failed).\n", NET_AdrToString(net_from));
 
-		MSG_WriteSVC(
-		    cl->messenger->ReliableBuf(),
+		cl->messenger->Reliable().Write (
 		    SVC_Print(PRINT_HIGH,
 		              "Server is passworded, no password specified or bad password.\n"));
 
@@ -2371,7 +2403,7 @@ void SV_ConnectClient()
 	}
 
 	// send consoleplayer number
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_ConsolePlayer(*player, cl->digest));
+	cl->messenger->Reliable().Write (SVC_ConsolePlayer(*player, cl->digest));
 	SV_SendPacket(*player);
 }
 
@@ -2402,19 +2434,19 @@ void SV_ConnectClient2(player_t& player)
 		player.spectator = true;
 		for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 		{
-			MSG_WriteSVC(pit->client.messenger->ReliableBuf(),
+			pit->client.messenger->Reliable().Write (
 			             SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
 		}
 	}
 
 	// Send a map name
-	MSG_WriteSVC(player.client.messenger->ReliableBuf(),
+	player.client.messenger->Reliable().Write (
 	             SVC_LoadMap(::wadfiles, ::patchfiles, level.mapname.c_str(), level.time));
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
 	{
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), odaproto::svc::ExitLevel());
+		cl->messenger->Reliable().Write (odaproto::svc::ExitLevel());
 	}
 
 	G_DoReborn(player);
@@ -2425,7 +2457,7 @@ void SV_ConnectClient2(player_t& player)
 	// tell others clients about it
 	for (Players::iterator pit = players.begin(); pit != players.end(); ++pit)
 	{
-		MSG_WriteSVC(pit->client.messenger->ReliableBuf(), SVC_ConnectClient(player));
+		pit->client.messenger->Reliable().Write (SVC_ConnectClient(player));
 	}
 
 	// Notify this player of other player's queue positions
@@ -2488,7 +2520,7 @@ void SV_DisconnectClient(player_t &who)
 	for (auto& player : players)
 	{
 		client_t &cl = player.client;
-		MSG_WriteSVC(cl.messenger->ReliableBuf(), SVC_DisconnectClient(who));
+		cl.messenger->Reliable().Write (SVC_DisconnectClient(who));
 	}
 
 	// Put the disconnecting client's final message on the wire right away.
@@ -2530,7 +2562,7 @@ void SV_DropClient(player_t &who)
 {
 	client_t *cl = &who.client;
 
-	MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Disconnect());
+	cl->messenger->Reliable().Write (SVC_Disconnect());
 
 	SV_SendPacket(who);
 
@@ -2549,7 +2581,7 @@ static void SV_SendAndFlushClientsFinalSignal(const google::protobuf::Message& f
 	for (auto& player : players)
 	{
 		player.client.messenger->Clear();
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), finalMessage);
+		player.client.messenger->Reliable().Write (finalMessage);
 		SV_SendPacket(player);
 
 		// Move the client's messenger to the departing messenger manager.
@@ -2609,7 +2641,7 @@ void SV_ExitLevel()
 {
 	for (auto& player : players)
 	{
-		MSG_WriteSVC((player.client.messenger->ReliableBuf()), odaproto::svc::ExitLevel());
+		player.client.messenger->Reliable().Write (odaproto::svc::ExitLevel());
 	}
 }
 
@@ -2929,7 +2961,7 @@ void SVC_TeamSay(player_t &player, const char* message)
 		if (spectator || it->userinfo.team != player.userinfo.team)
 			continue;
 
-		MSG_WriteSVC(it->client.messenger->ReliableBuf(), SVC_Say(true, player.id, message));
+		it->client.messenger->Reliable().Write (SVC_Say(true, player.id, message));
 	}
 }
 
@@ -2957,7 +2989,7 @@ void SVC_SpecSay(player_t &player, const char* message)
 		if (!spectator)
 			continue;
 
-		MSG_WriteSVC(it->client.messenger->ReliableBuf(), SVC_Say(true, player.id, message));
+		it->client.messenger->Reliable().Write (SVC_Say(true, player.id, message));
 	}
 }
 
@@ -2980,7 +3012,7 @@ void SVC_Say(player_t &player, const char* message)
 		if (!validplayer(*it))
 			continue;
 
-		MSG_WriteSVC(it->client.messenger->ReliableBuf(), SVC_Say(false, player.id, message));
+		it->client.messenger->Reliable().Write (SVC_Say(false, player.id, message));
 	}
 }
 
@@ -3000,13 +3032,13 @@ void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 		PrintFmt(PRINT_CHAT, "<PRIVMSG> {} (to {}): {}\n",
 				player.userinfo.netname, dplayer.userinfo.netname, message);
 
-	MSG_WriteSVC(dplayer.client.messenger->ReliableBuf(), SVC_Say(true, player.id, message));
+	dplayer.client.messenger->Reliable().Write (SVC_Say(true, player.id, message));
 
 	// [AM] Send a duplicate message to the sender, so he knows the message
 	//      went through.
 	if (player.id != dplayer.id)
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_Say(true, player.id, message));
+		player.client.messenger->Reliable().Write (SVC_Say(true, player.id, message));
 	}
 }
 
@@ -3142,7 +3174,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	                                     sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
 	if (isHyperAware)
 	{
-		MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_UpdateMobjWithMode(*mo));
+		player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
 	}
 	else
 	{
@@ -3181,7 +3213,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 					break;
 
 				default:
-					MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_UpdateMobjWithMode(*mo));
+					player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
 					break;
 			}
 		}
@@ -3207,10 +3239,10 @@ static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 	{
 		if (player.ingame() and SV_IsPlayerAllowedToSee(player, &mobj))
 		{
-			MessageQueue& fullAwareQueue = transport == TransportEnum::BEST_EFFORT ? player.client.messenger->NetBuf()
-			                                                                       : player.client.messenger->ReliableBuf();
-			MessageQueue& semiAwareQueue = transport == TransportEnum::RELIABLE ? player.client.messenger->ReliableBuf()
-                                                                                : player.client.messenger->NetBuf();
+			MessageQueue& fullAwareQueue = transport == TransportEnum::BEST_EFFORT ? player.client.messenger->BestEffort()
+			                                                                       : player.client.messenger->Reliable();
+			MessageQueue& semiAwareQueue = transport == TransportEnum::RELIABLE ? player.client.messenger->Reliable()
+                                                                                : player.client.messenger->BestEffort();
 			switch (mobj.playersAware.Get(player.id))
 			{
 				case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
@@ -3220,12 +3252,12 @@ static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
 				case AwarenessEnum::FULLY_AWARE:
 					mobj.updatedDuringLocalTic = gametic;
-					MSG_WriteSVC(fullAwareQueue, message);
+					fullAwareQueue.Write( message);
 					break;
 
 				case AwarenessEnum::SEMI_AWARE:
 					mobj.updatedDuringLocalTic = gametic;
-					MSG_WriteSVC(semiAwareQueue, message);
+					semiAwareQueue.Write( message);
 					break;
 			}
 		}
@@ -3263,7 +3295,7 @@ void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound)
 					break;
 
 				default:
-					MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_WakeupMobj(mo, mustPlaySeeSound));
+					player.client.messenger->Reliable().Write (SVC_WakeupMobj(mo, mustPlaySeeSound));
 					break;
 			}
 		}
@@ -3284,7 +3316,7 @@ void SV_UpdateMobjState(const AActor* mo)
 					break;
 
 				default:
-					MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_MobjState(mo));
+					player.client.messenger->Reliable().Write (SVC_MobjState(mo));
 					break;
 			}
 		}
@@ -3320,7 +3352,7 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 				break;
 
 			default:
-				MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_UpdateMobjWithMode(*mo));
+				player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
 				break;
 		}
 	}
@@ -3333,7 +3365,7 @@ void SV_UpdateAvatars(player_t& player)
 		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
 		{
 			voodooInfo.mobj->updatedDuringLocalTic = gametic;    // Avoid a potential duplicate send.
-			MSG_WriteSVC(player.client.messenger->HighBuf(), SVC_UpdateMobj(*voodooInfo.mobj));
+			player.client.messenger->HighPriority().Write( SVC_UpdateMobj(*voodooInfo.mobj));
 		}
 	}
 }
@@ -3346,7 +3378,7 @@ void SV_UpdateGametype(player_t& player)
 		if (player.hordeInfo != info)
 		{
 			player.hordeInfo = info;
-			MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_HordeInfo(info));
+			player.client.messenger->Reliable().Write (SVC_HordeInfo(info));
 		}
 	}
 }
@@ -3398,7 +3430,7 @@ void SV_SendPingRequest(client_t* cl)
 	if (!P_AtInterval(100))
 		return;
 
-	MSG_WriteSVC(cl->messenger->HighBuf(), SVC_PingRequest());
+	cl->messenger->HighPriority().Write( SVC_PingRequest());
 }
 
 void SV_UpdateMonsterRespawnCount()
@@ -3409,7 +3441,7 @@ void SV_UpdateMonsterRespawnCount()
 	for (auto& player : players)
 	{
 		client_t* cl = &(player.client);
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_LevelLocals(::level, SVC_LL_MONSTER_RESPAWNS));
+		cl->messenger->Reliable().Write (SVC_LevelLocals(::level, SVC_LL_MONSTER_RESPAWNS));
 	}
 }
 
@@ -3439,7 +3471,7 @@ void SV_UpdatePing(client_t* cl)
 		if (!(player.ingame()))
 			continue;
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_UpdatePing(player));
+		cl->messenger->Reliable().Write (SVC_UpdatePing(player));
 	}
 }
 
@@ -3492,18 +3524,18 @@ void SV_SendPackets()
 	}
 }
 
-void SV_SendPlayerStateUpdate(client_t* client, player_t* player, int destinationClientTicOfValidity)
+void SV_SendPlayerStateUpdate(client_t* client, player_t* player)
 {
 	if (!client || !player || !player->mo)
 		return;
 
 	if (client != &player->client)
 	{
-		MSG_WriteSVC(client->messenger->HighBuf(), SVC_PlayerState(*player, destinationClientTicOfValidity));
+		client->messenger->HighPriority().Write( SVC_PlayerState(*player));
 	}
 	else
 	{
-		MSG_WriteSVC(client->messenger->ReliableBuf(), SVC_PlayerInfo(*player));
+		client->messenger->Reliable().Write (SVC_PlayerInfo(*player));
 	}
 }
 
@@ -3516,7 +3548,7 @@ void SV_SpyPlayer(player_t& viewer, const odaproto::clc::Spy& msg)
 		return;
 
 	viewer.spying = id;
-	SV_SendPlayerStateUpdate(&viewer.client, &other, viewer.tic);
+	SV_SendPlayerStateUpdate(&viewer.client, &other);
 }
 
 // When we break up the mobjs into 3 groups based on relative distance, there are two boundaries:
@@ -3613,32 +3645,37 @@ static void SV_SendMonitoredInventoryChanges(player_t& player)
 	const bool readyWeaponWasChanged   = player.readyweaponMonitor.EvaluateAsChanged();
 	if (pendingWeaponWasChanged or readyWeaponWasChanged)
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerWeaponSelection(player));
+		player.client.messenger->Reliable().Write (SVC_PlayerWeaponSelection(player));
+	}
+
+	if (pendingWeaponWasChanged or readyWeaponWasChanged)
+	{
+		MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(player, SVC_PM_WEAPON), player.id);
 	}
 
 	if (player.weaponOwnedMonitors.EvaluateAsChanged())
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerWeaponOwned(player));
+		player.client.messenger->Reliable().Write (SVC_PlayerWeaponOwned(player));
 	}
 
 	if (player.ammoMonitors.EvaluateAsChanged())
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerAmmo(player));
+		player.client.messenger->Reliable().Write (SVC_PlayerAmmo(player));
 	}
 
 	if (player.maxAmmoMonitors.EvaluateAsChanged())
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerMaxAmmo(player));
+		player.client.messenger->Reliable().Write (SVC_PlayerMaxAmmo(player));
 	}
 
 	if (player.powerMonitors.EvaluateAsChanged())
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerPowers(player));
+		player.client.messenger->Reliable().Write (SVC_PlayerPowers(player));
 	}
 
 	if (player.pspriteMonitors.EvaluateAsChanged())
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerPsprites(player));
+		player.client.messenger->Reliable().Write (SVC_PlayerPsprites(player));
 	}
 }
 
@@ -3666,9 +3703,15 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		if(not SV_IsPlayerAllowedToSee(player, otherPlayer.mo))
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->HighBuf(), SVC_MovePlayer(otherPlayer, player.tic));
+		player.client.messenger->HighPriority().Write( SVC_MovePlayer(otherPlayer));
 	}
 
+	// Send inventory stuff.
+	if (player.playerInfoIsRequested)
+	{
+		player.playerInfoIsRequested = false;
+		SV_SendPlayerInfo(player);
+	}
 	SV_SendMonitoredInventoryChanges(player);
 	SV_ArmInventoryMonitors(player);
 
@@ -3676,7 +3719,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	player_t& target = idplayer(player.spying);
 	if (validplayer(target) && &player != &target && P_CanSpy(player, target))
 	{
-		SV_SendPlayerStateUpdate(&(player.client), &target, player.tic);
+		SV_SendPlayerStateUpdate(&(player.client), &target);
 	}
 
 	SV_UpdateConsolePlayer(player);
@@ -3747,7 +3790,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 			// Now in this case we're okay with *potentially* going overbudget or behind-by-one tic,
 			// because the player has a mobj that's multiple seconds out of date.  Being a even little
 			// late is better than that.
-			MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_UpdateMobjWithMode(*sortedMobjIter->actorPtr));
+			player.client.messenger->Reliable().Write (SVC_UpdateMobjWithMode(*sortedMobjIter->actorPtr));
 			player.requestedNetIdUpdate = 0;
 		}
 	}
@@ -3812,13 +3855,6 @@ int SV_CalculateNumTiccmds(player_t &player)
 		// Process all queued ticcmds.
 		return maximum_queue_size;
 	}
-	// Make sure that if we have an upcoming inventory check request, we do a complete
-	// tick using the preceding command so that we can respond with an accurate
-	// inventory on the next tic.
-	if (player.cmdqueue.size() > 1 && player.cmdqueue[1].has_inventory_check_tic())
-	{
-		return 1;
-	}
 	if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
 	{
 		// Player is not moving
@@ -3878,15 +3914,12 @@ void SV_ProcessPlayerCmd(player_t &player)
 	{
 		odaproto::clc::PlayerInput& netcmd = player.cmdqueue.front();
 
-		// Please note that we have a safety check in SV_CalculateNumTiccmds to ensure that
-		// if we're processing more than one command in this loop, the inventory check will
-		// be the first one.
-		//
-		// It's very important that we send the inventory / rollback info before we do any
-		// of the player's thinking this tic.
-		if (netcmd.has_inventory_check_tic())
+		// The user has requested an inventory check, so send a PlayerInfo after we're
+		// finished integrating the current command and stepping the server tic. This
+		// is for pickup prediction validation.
+		if (netcmd.has_inventory_check())
 		{
-			SV_SendPlayerInfo(player);
+			player.playerInfoIsRequested = true;
 		}
 
 		player.cmd = ticcmd_t();
@@ -3940,7 +3973,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 	if (not player.spectator)
 	{
 		// client player will update his position if packets were missed
-		MSG_WriteSVC(cl->messenger->HighBuf(), SVC_UpdateLocalPlayer(*mo, player.tic));
+		cl->messenger->HighPriority().Write( SVC_UpdateLocalPlayer(*mo));
 	}
 
 	SV_UpdateMovingSectors(player);
@@ -4030,7 +4063,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 
 	// Whatever mobj we had it doesn't matter anymore.
 	if (player.mo)
-		P_KillMobj(NULL, player.mo, NULL, true);
+		P_KillMobj(nullptr, player.mo, nullptr, true, MOD_NONE);
 
 	// Fresh joins get fresh player scores.
 	P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
@@ -4051,7 +4084,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 		if (!it->ingame())
 			continue;
 
-		MSG_WriteSVC(it->client.messenger->ReliableBuf(), SVC_PlayerMembers(player, SVC_MSG_ALL));
+		it->client.messenger->Reliable().Write (SVC_PlayerMembers(player, SVC_MSG_ALL));
 	}
 
 	// Everything is set, now warn everyone the player joined.
@@ -4086,7 +4119,7 @@ void SV_SpecPlayer(player_t &player, bool silent)
 	player.spectator = true;
 	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
 	{
-		MSG_WriteSVC(it->client.messenger->ReliableBuf(),
+		it->client.messenger->Reliable().Write (
 		             SVC_PlayerMembers(player, SVC_PM_SPECTATOR));
 	}
 
@@ -4205,7 +4238,7 @@ void SV_SetReady(player_t &player, bool setting, bool silent)
 		// Broadcast the new ready state to all connected players.
 		for (Players::iterator it = players.begin();it != players.end();++it)
 		{
-			MSG_WriteSVC(it->client.messenger->ReliableBuf(),
+			it->client.messenger->Reliable().Write (
 			             SVC_PlayerMembers(player, SVC_PM_READY));
 		}
 	}
@@ -4352,7 +4385,7 @@ void SV_RConPassword (player_t& player, const std::string& challenge)
 	else
 	{
 		PrintFmt(PRINT_HIGH, "RCON login failure from {} - {}", player.userinfo.netname, NET_AdrToString(cl->address));
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Print(PRINT_HIGH, "Bad password\n"));
+		cl->messenger->Reliable().Write (SVC_Print(PRINT_HIGH, "Bad password\n"));
 	}
 }
 
@@ -4388,8 +4421,7 @@ void SV_Cheat(player_t &player, const odaproto::clc::Cheat& msg)
 		{
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
-				client_t* cl = &it->client;
-				SV_SendPlayerStateUpdate(cl, &player, it->tic);
+				SV_SendPlayerStateUpdate(&it->client, &player);
 			}
 		}
 	}
@@ -4403,8 +4435,7 @@ void SV_CheatGive(player_t &player, const odaproto::clc::CheatGive& msg)
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			client_t* cl = &it->client;
-			SV_SendPlayerStateUpdate(cl, &player, it->tic);
+			SV_SendPlayerStateUpdate(&it->client, &player);
 		}
 
 	}
@@ -4659,38 +4690,6 @@ void SV_ParseCommands(player_t &player)
 	}
 }
 
-void SV_HandleReliableRetransmissions()
-{
-	for (auto& player : players)
-	{
-		// Players that are on their way out get their retries serviced elsewhere.
-		if (player.playerstate == PST_DISCONNECT)
-		{
-			continue;
-		}
-
-		// Total hack:  We check for the player being in the first second of their connection because there's something
-		// in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
-		if (player.GameTime > 0)
-		{
-			// The following results in fractional tics rounding up.
-			const int pingInTics = (player.ping * TICRATE + 999) / 1000;
-
-			// Adjust upwards because in the real world, tic boundaries don't align and can drift.
-			const int retransmitDelayInTics = pingInTics + 1;
-
-			player.client.messenger->SetRetransmitDelay(retransmitDelayInTics);
-		}
-		else
-		{
-			player.client.messenger->SetRetransmitDelay(0);
-		}
-
-		player.client.messenger->HandleRetransmissions(gametic, player.client.address);
-	}
-}
-
-
 static void TimeCheck()
 {
 	G_TimeCheckEndGame();
@@ -4699,7 +4698,7 @@ static void TimeCheck()
 	if (P_AtInterval(1 * TICRATE)) // every second
 	{
 		for (auto& player : players)
-			MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_LevelLocals(level, SVC_LL_TIME));
+			player.client.messenger->Reliable().Write( SVC_LevelLocals(level, SVC_LL_TIME));
 	}
 }
 
@@ -4713,7 +4712,7 @@ static void IntermissionTimeCheck()
 	{
 		for (auto& player : players)
 		{
-			MSG_WriteSVC((player.client.messenger->NetBuf()), SVC_IntTimeLeft(level.inttimeleft));
+			player.client.messenger->Reliable().Write( SVC_IntTimeLeft(level.inttimeleft));
 		}
 	}
 }
@@ -4770,7 +4769,7 @@ void SV_TouchSpecial(AActor& special, player_t& player)
 		SV_AwarenessUpdate(player, &special, AwarenessEnum::FULLY_AWARE);
 	}
 
-	MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_TouchSpecial(player, special));
+	player.client.messenger->Reliable().Write (SVC_TouchSpecial(special));
 }
 
 void SV_PlayerTimes (void)
@@ -4853,7 +4852,6 @@ void SV_DisplayTics()
 
 auto frameStopwatch      = TimingInstr::Get().CreateStopwatch("FrameTime");
 auto getPacketsStopwatch = TimingInstr::Get().CreateStopwatch("SV_GetPackets");
-auto retransmitStopwatch = TimingInstr::Get().CreateStopwatch("SV_HandleReliableRetransmissions");
 
 //
 // SV_RunTics
@@ -4870,10 +4868,6 @@ void SV_RunTics()
 
 	SV_CheckCanaries();
 	SV_CheckDepartingMessengers(gametic);
-
-	retransmitStopwatch->Start();
-	SV_HandleReliableRetransmissions();
-	retransmitStopwatch->Stop();
 
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
@@ -5125,7 +5119,7 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 	{
 		client_t *cl = &(player.client);
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Switch(*line, state, time));
+		cl->messenger->Reliable().Write (SVC_Switch(*line, state, time));
 	}
 }
 
@@ -5139,7 +5133,7 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 		if (player.mo == mo or not player.ingame())
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_ActivateLine(line, mo, side, activationType));
+		player.client.messenger->Reliable().Write (SVC_ActivateLine(line, mo, side, activationType));
 	}
 }
 
@@ -5148,8 +5142,8 @@ void SV_SendDamagePlayer(player_t* damagedPlayer, const AActor* inflictor, int h
 	// No check for awareness.  All players always stay informed about all players.
 	for (auto& destinationPlayer : players)
 	{
-		MSG_WriteSVC(destinationPlayer.client.messenger->ReliableBuf(),
-		             SVC_DamagePlayer(*damagedPlayer, inflictor, healthDamage, armorDamage, destinationPlayer.tic));
+		destinationPlayer.client.messenger->Reliable().Write (
+		             SVC_DamagePlayer(*damagedPlayer, inflictor, healthDamage, armorDamage));
 	}
 }
 
@@ -5162,7 +5156,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 	{
 		if (SV_IsPlayerAllowedToSee(player, target))
 		{
-			MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_DamageMobj(target, pain));
+			player.client.messenger->Reliable().Write (SVC_DamageMobj(target, pain));
 		}
 	}
 }
@@ -5179,8 +5173,8 @@ void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *i
 		// they're only barely aware of the mobj.
 		if (SV_IsPlayerAllowedToSee(player, target))
 		{
-			MSG_WriteSVC(player.client.messenger->ReliableBuf(),
-			             SVC_KillMobj(source, target, inflictor, ::MeansOfDeath, joinkill));
+			player.client.messenger->Reliable().Write (
+			             SVC_KillMobj(source, target, inflictor, joinkill));
 		}
 	}
 }
@@ -5196,7 +5190,7 @@ void SV_SendRaiseMobj(const AActor* source, const AActor* corpse)
 		// they're only barely aware of the mobj.
 		if (SV_IsPlayerAllowedToSee(player, corpse))
 		{
-			MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_RaiseMobj(source, corpse));
+			player.client.messenger->Reliable().Write (SVC_RaiseMobj(source, corpse));
 		}
 	}
 }
@@ -5216,7 +5210,7 @@ void SV_SendDestroyActor(const AActor *mo)
 			// generate any more traffic to fill up the pipes.
 			if (mo->playersAware.IsAware(player.id))
 			{
-				MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_RemoveMobj(*mo));
+				player.client.messenger->Reliable().Write (SVC_RemoveMobj(*mo));
 			}
 		}
 	}
@@ -5235,18 +5229,18 @@ void SV_ExplodeMissile(AActor *mo)
 			case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
 			case AwarenessEnum::FULLY_AWARE:
 				mo->updatedDuringLocalTic = gametic;
-				MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_UpdateMobj(*mo));
-				MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_ExplodeMissile(*mo));
+				player.client.messenger->Reliable().Write (SVC_UpdateMobj(*mo));
+				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
 
 			case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
 				mo->updatedDuringLocalTic = gametic;
-				MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_UpdateMobj(*mo));
-				MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_ExplodeMissile(*mo));
+				player.client.messenger->BestEffort().Write( SVC_UpdateMobj(*mo));
+				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
 
 			case AwarenessEnum::BARELY_AWARE:                          // See an explosion, almost certainly in the wrong position.
-				MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_ExplodeMissile(*mo));
+				player.client.messenger->BestEffort().Write( SVC_ExplodeMissile(*mo));
 				break;
 		}
 	}
@@ -5259,7 +5253,7 @@ void SV_ExplodeMissile(AActor *mo)
 //
 void SV_SendPlayerInfo(player_t& player)
 {
-	MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerInfo(player));
+	player.client.messenger->Reliable().Write (SVC_PlayerInfo(player));
 }
 
 //
@@ -5421,7 +5415,7 @@ void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)
 
 void SV_SendPlayerQueuePosition(const player_t* source, player_t* dest)
 {
-	MSG_WriteSVC((dest->client.messenger->ReliableBuf()), SVC_PlayerQueuePos(*source));
+	dest->client.messenger->Reliable().Write (SVC_PlayerQueuePos(*source));
 }
 
 bool CompareQueuePosition(const player_t* p1, const player_t* p2)
@@ -5454,7 +5448,7 @@ void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* a
 		client_t* cl = &player.client;
 
 		int args[5] = { arg0, arg1, arg2, arg3, arg4 };
-		MSG_WriteSVC(cl->messenger->ReliableBuf(),
+		cl->messenger->Reliable().Write (
 		             SVC_ExecuteLineSpecial(special, line, activator, args));
 	}
 }
@@ -5477,7 +5471,7 @@ void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* pri
 
 		client_t* cl = &player.client;
 
-		MSG_WriteSVC(cl->messenger->ReliableBuf(),
+		cl->messenger->Reliable().Write (
 		             SVC_ExecuteACSSpecial(special, activator, print, args));
 	}
 }
