@@ -67,6 +67,7 @@
 #include "m_doomobjcontainer.h"
 #include "cl_netgraph.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 #include "g_multikill.h"
 #include "cl_freecam.h"
 
@@ -2158,7 +2159,11 @@ void CL_Switch(const odaproto::svc::Switch* msg)
 		return;
 
 	// denis - fixme - security
-	if (!P_SetButtonInfo(&lines[l], state, time) && switchactive)
+
+	// P_ChangeSwitchTexture toggles, so the presser has to skip the server's
+	// copy of its own change.
+	if (not P_SetButtonInfo(&lines[l], state, time) and switchactive and
+	    not lines[l].switchactive)
 	{
 		// only playsound if we've received the full update from
 		// the server (not setting up the map from the server)
@@ -2666,6 +2671,8 @@ void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 
 	G_ClearRoundKillStats();
 
+	DeathSpotManager::getInstance().clearDeathSpots();
+
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
 	AActor* mo;
@@ -2700,6 +2707,13 @@ void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 	}
 
 	P_DestroyButtonThinkers();
+
+	// Nothing else clears these once the buttons are gone, and a line left
+	// marked active ignores every switch message the new round sends it.
+	for (int i = 0; i < numlines; i++)
+	{
+		lines[i].switchactive = false;
+	}
 
 	P_DestroyScrollerThinkers();
 

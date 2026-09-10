@@ -895,15 +895,35 @@ int W_FindLump (const char *name, int lastlump)
 //
 // W_GetLumpFile
 //
-// Returns the index into wadfiles of the file a lump came from, or -1 if
-// the engine generated the lump instead of reading it.
+// Returns the index into wadfiles of the file a lump came from, or std::nullopt
+// if the engine generated the lump instead of reading it.
 //
-int W_GetLumpFile(unsigned int lump)
+std::optional<size_t> W_GetLumpFile(unsigned int lump)
 {
 	if (lump >= lumpinfo.size())
 		I_Error("{}: {} >= numlumps", __FUNCTION__, lump);
 
-	return lumpinfo[lump].file;
+	if (lumpinfo[lump].file < 0)
+		return std::nullopt;
+
+	return static_cast<size_t>(lumpinfo[lump].file);
+}
+
+//
+// W_LumpFileName
+//
+// Names the file a lump came from so error messages can point at it. Engine
+// lumps and out of range indices both come back as a placeholder, so callers
+// never have to guard the result.
+//
+std::string_view W_LumpFileName(unsigned int lump)
+{
+	const std::optional<size_t> filenum = W_GetLumpFile(lump);
+
+	if (not filenum.has_value() or *filenum >= wadfiles.size())
+		return "an unknown file";
+
+	return wadfiles[*filenum].getBasename();
 }
 
 //
@@ -911,7 +931,9 @@ int W_GetLumpFile(unsigned int lump)
 //
 bool W_IsLumpFromPWAD(unsigned int lump)
 {
-	return W_GetLumpFile(lump) >= WADFILE_FIRSTPWAD;
+	const std::optional<size_t> filenum = W_GetLumpFile(lump);
+
+	return filenum.has_value() and *filenum >= WADFILE_FIRSTPWAD;
 }
 
 bool W_IsLumpFromPWAD(const OLumpName& name, namespace_t namespc)
