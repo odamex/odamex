@@ -147,7 +147,7 @@ void UnpackBoolArray(std::span<bool> bools, uint32_t in)
 /**
  * @brief Common code for activating a line.
  */
-void ActivateLine(AActor* mo, line_s* line, byte side,
+void ActivateLine(AActor* mo, line_t* line, byte side,
                          LineActivationType activationType, const bool bossaction,
                          byte special = 0, int arg0 = 0, int arg1 = 0, int arg2 = 0,
                          int arg3 = 0, int arg4 = 0)
@@ -2984,7 +2984,7 @@ void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial* msg)
 	if (linenum != -1 && linenum >= ::numlines)
 		return;
 
-	line_s* line = NULL;
+	line_t* line = nullptr;
 	if (linenum != -1)
 		line = &::lines[linenum];
 
