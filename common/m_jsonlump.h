@@ -70,7 +70,7 @@ constexpr std::string_view M_JSONLumpResultToString(jsonlumpresult_t jlr)
 	return JSON_LUMP_RESULT_ERROR_STRINGS[static_cast<int>(jlr)];
 }
 
-using JSONLumpFunc = std::function<jsonlumpresult_t(const Json::Value& elem, const JSONLumpVersion& version)>;
+using JSONLumpFunc = std::function<jsonlumpresult_t(const Json::Value& elem, const JSONLumpVersion& version, bool internalextensions)>;
 
 jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc);
 

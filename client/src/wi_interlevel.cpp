@@ -51,6 +51,26 @@ jsonlumpresult_t WI_ParseInterlevelArray(const Json::Value& array, std::vector<T
 	return jsonlumpresult_t::SUCCESS;
 }
 
+template<typename T>
+jsonlumpresult_t WI_ParseInterlevelArray(const Json::Value& array, std::vector<T>& output,
+                                         std::function<jsonlumpresult_t(const Json::Value&, T&, bool)>&& parse,
+										 bool allowextensions)
+{
+	if (!array.isArray())
+	{
+		return jsonlumpresult_t::PARSEERROR;
+	}
+
+	for (const auto& arrayelem : array)
+	{
+		jsonlumpresult_t res = parse(arrayelem, output.emplace_back(), allowextensions);
+		if(res != jsonlumpresult_t::SUCCESS)
+			return res;
+	}
+
+	return jsonlumpresult_t::SUCCESS;
+}
+
 jsonlumpresult_t WI_ParseInterlevelCondition(const Json::Value& condition, interlevelcond_t& output)
 {
 	const Json::Value& animcondition = condition["condition"];
@@ -73,8 +93,13 @@ jsonlumpresult_t WI_ParseInterlevelCondition(const Json::Value& condition, inter
 	return jsonlumpresult_t::SUCCESS;
 }
 
-jsonlumpresult_t WI_ParseInterlevelFrame(const Json::Value& frame, interlevelframe_t& output)
+jsonlumpresult_t WI_ParseInterlevelFrame(const Json::Value& frame, interlevelframe_t& output, bool allowextensions)
 {
+	if (not allowextensions and frame.isMember("altimage"))
+	{
+		return jsonlumpresult_t::PARSEERROR;
+	}
+
 	const Json::Value& image = frame["image"];
 	const Json::Value& altimage = frame["altimage"]; // nonstandard - should only be used internally by lumps in odamex.wad
 	const Json::Value& type = frame["type"];
@@ -110,7 +135,7 @@ jsonlumpresult_t WI_ParseInterlevelFrame(const Json::Value& frame, interlevelfra
 	return jsonlumpresult_t::SUCCESS;
 }
 
-jsonlumpresult_t WI_ParseInterlevelAnim(const Json::Value& anim, interlevelanim_t& output)
+jsonlumpresult_t WI_ParseInterlevelAnim(const Json::Value& anim, interlevelanim_t& output, bool allowextensions)
 {
 	const Json::Value& xpos = anim["x"];
 	const Json::Value& ypos = anim["y"];
@@ -127,7 +152,7 @@ jsonlumpresult_t WI_ParseInterlevelAnim(const Json::Value& anim, interlevelanim_
 
 	output.xpos = xpos.asInt();
 	output.ypos = ypos.asInt();
-	jsonlumpresult_t res = WI_ParseInterlevelArray<interlevelframe_t>(frames, output.frames, WI_ParseInterlevelFrame);
+	jsonlumpresult_t res = WI_ParseInterlevelArray<interlevelframe_t>(frames, output.frames, WI_ParseInterlevelFrame, allowextensions);
 	if (res != jsonlumpresult_t::SUCCESS)
 		return res;
 
@@ -141,12 +166,12 @@ jsonlumpresult_t WI_ParseInterlevelAnim(const Json::Value& anim, interlevelanim_
 	return jsonlumpresult_t::SUCCESS;
 }
 
-jsonlumpresult_t WI_ParseInterlevelLayer(const Json::Value& anim, interlevellayer_t& output)
+jsonlumpresult_t WI_ParseInterlevelLayer(const Json::Value& anim, interlevellayer_t& output, bool allowextensions)
 {
 	const Json::Value& anims = anim["anims"];
 	const Json::Value& conditions = anim["conditions"];
 
-	jsonlumpresult_t res = WI_ParseInterlevelArray<interlevelanim_t>(anims, output.anims, WI_ParseInterlevelAnim);
+	jsonlumpresult_t res = WI_ParseInterlevelArray<interlevelanim_t>(anims, output.anims, WI_ParseInterlevelAnim, allowextensions);
 	if (res != jsonlumpresult_t::SUCCESS)
 		return res;
 
@@ -169,7 +194,7 @@ interlevel_t* WI_GetInterlevel(const OLumpName& lumpname)
 	}
 
 	std::unique_ptr<interlevel_t> output = nullptr;
-	auto ParseInterlevel = [&output]( const Json::Value& elem, const JSONLumpVersion& version ) -> jsonlumpresult_t
+	auto ParseInterlevel = [&output]( const Json::Value& elem, const JSONLumpVersion& version, bool allowextensions) -> jsonlumpresult_t
 	{
 		const Json::Value& music = elem["music"];
 		const Json::Value& backgroundimage = elem["backgroundimage"];
@@ -187,7 +212,7 @@ interlevel_t* WI_GetInterlevel(const OLumpName& lumpname)
 		jsonlumpresult_t res = jsonlumpresult_t::SUCCESS;
 		if(!layers.isNull())
 		{
-			res = WI_ParseInterlevelArray<interlevellayer_t>(layers, output->layers, WI_ParseInterlevelLayer);
+			res = WI_ParseInterlevelArray<interlevellayer_t>(layers, output->layers, WI_ParseInterlevelLayer, allowextensions);
 		}
 
 		return res;

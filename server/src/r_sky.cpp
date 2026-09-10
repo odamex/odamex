@@ -35,7 +35,7 @@ std::unordered_set<int32_t> skyflatlookup;
 
 void R_InitSkyDefs()
 {
-	auto ParseSkydef = [](const Json::Value& elem, const JSONLumpVersion& version) -> jsonlumpresult_t
+	auto ParseSkydef = [](const Json::Value& elem, const JSONLumpVersion& version, bool) -> jsonlumpresult_t
 	{
 		const Json::Value& skyarray = elem["skies"];
 		const Json::Value& flatmappings = elem["flatmapping"];
