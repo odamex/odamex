@@ -75,6 +75,19 @@ extern const fixed_t		finetangent[FINEANGLES/2];
 
 typedef uint32_t			angle_t;
 
+//
+// MapThingToAngle
+//
+// A mapthing stores whole degrees, which vanilla snaps to the 45-degree grid
+// as it spawns.
+//
+inline angle_t MapThingToAngle(const int degrees)
+{
+	constexpr int DEGREES_PER_OCTANT = 45;
+
+	return ANG45 * (degrees / DEGREES_PER_OCTANT);
+}
+
 
 // Effective size is 2049;
 // The +1 size is to handle the case when x==y without additional checking.
