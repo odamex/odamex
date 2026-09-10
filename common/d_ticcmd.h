@@ -37,7 +37,7 @@ struct ticcmd_t
 		b = static_cast<uint8_t>(*it);
 	}
 
-	static void readShort(std::string::const_iterator it, short& s)
+	static void readShort(std::string::const_iterator it, int16_t& s)
 	{
 		s = static_cast<uint8_t>(*it);
 		s |= static_cast<uint8_t>(*(it + 1)) << 8;
@@ -48,15 +48,14 @@ struct ticcmd_t
 		*it = b;
 	}
 
-	static void writeShort(std::string::iterator it, short s)
+	static void writeShort(std::string::iterator it, int16_t s)
 	{
 		*it = s & 0xFF;
 		*(it + 1) = s >> 8;
 	}
   public:
 
-	// NOLINTNEXTLINE(google-runtime-int) - sizeof of the actual field type
-	static constexpr size_t SERIALIZED_SIZE = 3 + (sizeof(short) * 5);
+	static constexpr size_t SERIALIZED_SIZE = 3 + (sizeof(int16_t) * 5);
 
 	ticcmd_t()
 	{
@@ -74,9 +73,6 @@ struct ticcmd_t
 		impulse = 0;
 		modifiers = 0;
 	}
-
-	// NOLINTBEGIN(readability-magic-numbers) - byte offset in a
-	// hand-packed layout, like every other field above
 
 	void serialize(std::string& out) const
 	{
@@ -105,31 +101,28 @@ struct ticcmd_t
 		readByte(in.begin() + 12, modifiers);
 	}
 
-	// NOLINTEND(readability-magic-numbers)
-
 	byte	buttons;
-	short	pitch;			// up/down. currently just a y-sheering amount
-	short	yaw;			// left/right
-	short	forwardmove;
-	short	sidemove;
-	short	upmove;
+	int16_t	pitch;			// up/down. currently just a y-sheering amount
+	int16_t	yaw;			// left/right
+	int16_t	forwardmove;
+	int16_t	sidemove;
+	int16_t	upmove;
 	byte	impulse;
 	byte	modifiers;
 };
 
-// NOLINTBEGIN(modernize-macro-to-enum,cppcoreguidelines-macro-usage) -
-// one of the UCMDF_* family above, which are all macros
-
-#define UCMDF_BUTTONS		0x01
-#define UCMDF_PITCH			0x02
-#define UCMDF_YAW			0x04
-#define UCMDF_FORWARDMOVE	0x08
-#define UCMDF_SIDEMOVE		0x10
-#define UCMDF_UPMOVE		0x20
-#define UCMDF_IMPULSE		0x40
-#define UCMDF_MODIFIERS		0x80
-
-// NOLINTEND(modernize-macro-to-enum,cppcoreguidelines-macro-usage)
+// Which fields an archived ticcmd actually carries.
+enum ucmdflags_t
+{
+	UCMDF_BUTTONS		= 0x01,
+	UCMDF_PITCH			= 0x02,
+	UCMDF_YAW			= 0x04,
+	UCMDF_FORWARDMOVE	= 0x08,
+	UCMDF_SIDEMOVE		= 0x10,
+	UCMDF_UPMOVE		= 0x20,
+	UCMDF_IMPULSE		= 0x40,
+	UCMDF_MODIFIERS		= 0x80,
+};
 
 inline FArchive &operator<< (FArchive &arc, ticcmd_t &cmd)
 {
