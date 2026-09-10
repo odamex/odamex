@@ -195,7 +195,7 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-			if (m_LightTag && m_TopHeight - P_FloorHeight(m_Sector))
+			if (m_LightTag and m_TopHeight - P_FloorHeight(m_Sector))
             {
 				EV_LightTurnOnPartway(m_LightTag, 0);
             }

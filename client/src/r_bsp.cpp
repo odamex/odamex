@@ -236,8 +236,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 	// Gate r_fakingunderwater to only apply to heightsecs with
 	// possible deep water, since it applies to every heightsec in frame.
-	const bool underwater = (r_fakingunderwater && P_FloorHeight(s) >P_FloorHeight(sec)) ||
-		(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));
+	const bool underwater = (r_fakingunderwater and P_FloorHeight(s) >P_FloorHeight(sec)) or
+		(heightsec and viewz <= P_FloorHeight(viewx, viewy, heightsec));
 	bool doorunderwater = false;
 	int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
 

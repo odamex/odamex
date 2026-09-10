@@ -3713,7 +3713,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 
 	// check for appropriate skill level
-	if (!(mthing.flags & combo(G_GetCurrentSkill().spawn_filter)))
+	if (not (mthing.flags & combo(G_GetCurrentSkill().spawn_filter)))
 		return;
 
 	if (isSpringPad)
