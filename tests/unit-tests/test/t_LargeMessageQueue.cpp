@@ -9,6 +9,11 @@ struct LargeMessageQueueFixture : testing::Test
     LargeMessageQueue m_queue;
 };
 
+namespace
+{
+    size_t KB(auto value) { return value << 10; }
+}
+
 TEST_F(LargeMessageQueueFixture, EmptyQueue)
 {
     std::array<char, 5> fragment{};
@@ -58,7 +63,7 @@ TEST_F(LargeMessageQueueFixture, BasicSingleMessage)
 
 TEST_F(LargeMessageQueueFixture, GiantMessage)
 {
-    std::string bigBoy(63u * 1024u, '_');
+    std::string bigBoy(KB(63), '_');
 
     char crawler = 'a';
     for (auto iter = bigBoy.begin(); iter < bigBoy.end(); iter += 1024)

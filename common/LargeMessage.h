@@ -27,7 +27,7 @@
 class LargeMessage
 {
 	public:
-		static const size_t MAX_SIZE { 64u * 1024u };
+		static const size_t MAX_SIZE { 64 << 10 };      // 64 KB:  The absolute largest message payload we allow.
 
 		bool Restart(size_t totalLength)
 		{
