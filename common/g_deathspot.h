@@ -30,9 +30,9 @@ class AActor;
 class player_t;
 struct sector_t;
 
-/// <summary>
-/// The place a player was standing when they were killed.
-/// </summary>
+/**
+ * @brief The place a player was standing when they were killed.
+ */
 struct DeathSpot_s
 {
 	fixed_t x;
@@ -47,168 +47,155 @@ struct DeathSpot_s
 	}
 };
 
-/// <summary>
-/// A singleton class that remembers where each player last died on the current
-/// level.
-///
-/// The spot has to be recorded at the moment of death rather than read off the
-/// corpse later, because the corpse can be destroyed before the player gets
-/// around to respawning.
-/// </summary>
+/**
+ * @brief A singleton class that remembers where each player last died on the
+ *        current level.
+ *
+ * The spot has to be recorded at the moment of death rather than read off the
+ * corpse later, because the corpse can be destroyed before the player gets
+ * around to respawning.
+ */
 class DeathSpotManager
 {
 public:
 	DeathSpotManager();
 	~DeathSpotManager();
 
-	/// <summary>
-	/// Gets the only instance of this singleton class.
-	/// </summary>
-	/// <returns>A reference to the only allowable DeathSpotManager object.</returns>
+	/**
+	 * @brief Gets the only instance of this singleton class.
+	 *
+	 * @return A reference to the only allowable DeathSpotManager object.
+	 */
 	static DeathSpotManager& getInstance();
 
-	/// <summary>
-	/// Records where a player fell.
-	/// Replaces any spot they already had.
-	/// </summary>
-	/// <param name="playerid">Player ID of the player who died.</param>
-	/// <param name="x">Map x coordinate of the death.</param>
-	/// <param name="y">Map y coordinate of the death.</param>
-	/// <param name="z">Map z coordinate of the death.</param>
-	/// <param name="angle">Angle the player was facing when they died.</param>
+	/**
+	 * @brief Records where a player fell.  Replaces any spot they already had.
+	 *
+	 * @param playerid Player ID of the player who died.
+	 * @param x Map x coordinate of the death.
+	 * @param y Map y coordinate of the death.
+	 * @param z Map z coordinate of the death.
+	 * @param angle Angle the player was facing when they died.
+	 */
 	void setDeathSpot(const int playerid, const fixed_t x, const fixed_t y,
 	                  const fixed_t z, const angle_t angle);
 
-	/// <summary>
-	/// Whether we have somewhere to send this player back to.
-	/// </summary>
-	/// <param name="playerid">Player ID to look up.</param>
-	/// <returns>True if the player has a death spot on this level.</returns>
+	/**
+	 * @brief Whether we have somewhere to send this player back to.
+	 *
+	 * @param playerid Player ID to look up.
+	 * @return True if the player has a death spot on this level.
+	 */
 	bool hasDeathSpot(const int playerid) const;
 
-	/// <summary>
-	/// Gets the spot a player last died on.
-	/// </summary>
-	/// <param name="playerid">Player ID to look up.</param>
-	/// <returns>The player's death spot, or an empty one if they have none.</returns>
+	/**
+	 * @brief Gets the spot a player last died on.
+	 *
+	 * @param playerid Player ID to look up.
+	 * @return The player's death spot, or an empty one if they have none.
+	 */
 	const DeathSpot_s& getDeathSpot(const int playerid) const;
 
-	/// <summary>
-	/// Forgets where a player died.
-	/// </summary>
-	/// <param name="playerid">Player ID to forget.</param>
+	/**
+	 * @brief Forgets where a player died.
+	 *
+	 * @param playerid Player ID to forget.
+	 */
 	void eraseDeathSpot(const int playerid);
 
-	/// <summary>
-	/// Forgets everyone's death spot, after a map change/restart/new round.
-	/// </summary>
+	/**
+	 * @brief Forgets everyone's death spot, after a map change/restart/new round.
+	 */
 	void clearDeathSpots();
 
 private:
-	/// <summary>
-	/// Bookkeeping dictionary of death spots per player.
-	/// </summary>
+	// Bookkeeping dictionary of death spots per player.
 	std::unordered_map<int, DeathSpot_s> deathSpotPlayerDict;
 
-	/// <summary>
-	/// Empty death spot struct for returning when invalid.
-	/// </summary>
+	// Empty death spot struct for returning when invalid.
 	DeathSpot_s emptySpot;
 };
 
-/// <summary>
-/// Whether the spot a player died on can be respawned onto right now, and if
-/// not, what is stopping it - the HUD tells the player which it is.
-/// </summary>
+/**
+ * @brief Whether the spot a player died on can be respawned onto right now, and
+ *        if not, what is stopping it - the HUD tells the player which it is.
+ */
 enum deathSpotBlock_t
 {
-	/// <summary>The feature is off, or there is nowhere to go back to.</summary>
-	DEATHSPOT_NOSPOT,
-
-	/// <summary>Free to respawn on, once anything stompable is stomped.</summary>
-	DEATHSPOT_CLEAR,
-
-	/// <summary>The floor there kills on contact.</summary>
-	DEATHSPOT_BLOCKED_DEADLY,
-
-	/// <summary>A crusher, door or floor has left no room to stand.</summary>
-	DEATHSPOT_BLOCKED_NOROOM,
-
-	/// <summary>A player we are not allowed to telefrag is standing there.</summary>
-	DEATHSPOT_BLOCKED_PLAYER,
-
-	/// <summary>Something that will never move is standing there.</summary>
-	DEATHSPOT_BLOCKED_OBSTACLE,
+	DEATHSPOT_NOSPOT,           // The feature is off, or there is nowhere to go back to.
+	DEATHSPOT_CLEAR,            // Free to respawn on, once anything stompable is stomped.
+	DEATHSPOT_BLOCKED_DEADLY,   // The floor there kills on contact.
+	DEATHSPOT_BLOCKED_NOROOM,   // A crusher, door or floor has left no room to stand.
+	DEATHSPOT_BLOCKED_PLAYER,   // A player we are not allowed to telefrag is standing there.
+	DEATHSPOT_BLOCKED_OBSTACLE, // Something that will never move is standing there.
 };
 
-/// <summary>
-/// Whether a verdict means the player cannot be put back where they fell.
-/// </summary>
-/// <param name="block">Verdict from G_CheckDeathSpot.</param>
-/// <returns>True for every blocked reason, false for clear or no spot.</returns>
+/**
+ * @brief Whether a verdict means the player cannot be put back where they fell.
+ *
+ * @param block Verdict from G_CheckDeathSpot.
+ * @return True for every blocked reason, false for clear or no spot.
+ */
 inline bool G_IsDeathSpotBlocked(const deathSpotBlock_t block)
 {
 	return block != DEATHSPOT_NOSPOT && block != DEATHSPOT_CLEAR;
 }
 
-/// <summary>
-/// What the rules say to do about one thing standing on a death spot.
-/// </summary>
+/**
+ * @brief What the rules say to do about one thing standing on a death spot.
+ */
 enum blockerAction_t
 {
-	/// <summary>Not in the way, or allowed to share the spot.</summary>
-	BLOCKER_IGNORE,
+	BLOCKER_IGNORE, // Not in the way, or allowed to share the spot.
+	BLOCKER_STOMP,  // Telefrag it and take the spot.
 
-	/// <summary>Telefrag it and take the spot.</summary>
-	BLOCKER_STOMP,
-
-	/// <summary>
-	/// Nothing we can do - the spawn has to wait. Whether that wait ever ends
-	/// is decided by the caller from what the thing is.
-	/// </summary>
+	// Nothing we can do - the spawn has to wait. Whether that wait ever ends
+	// is decided by the caller from what the thing is.
 	BLOCKER_BLOCKS,
 };
 
-/// <summary>
-/// Whether the floor of a sector kills anything that lands on it outright.
-///
-/// Both map formats have to be asked, because they store it in different
-/// places: Doom/Boom keeps the kill in the sector special, while ZDoom uses
-/// either Damage_InstantDeath as a sector special, or damageamount for
-/// Sector_SetDamage.
-/// </summary>
-/// <param name="sec">Sector the spot sits in.</param>
-/// <returns>True if respawning here would just repeat the same death.</returns>
+/**
+ * @brief Whether the floor of a sector kills anything that lands on it outright.
+ *
+ * Both map formats have to be asked, because they store it in different places:
+ * Doom/Boom keeps the kill in the sector special, while ZDoom uses either
+ * Damage_InstantDeath as a sector special, or damageamount for Sector_SetDamage.
+ *
+ * @param sec Sector the spot sits in.
+ * @return True if respawning here would just repeat the same death.
+ */
 bool G_IsInstantDeathSector(const sector_t& sec);
 
-/// <summary>
-/// Decides what a single thing sitting on a death spot means for the spawn.
-/// </summary>
-/// <param name="thing">Thing found overlapping the spot.</param>
-/// <param name="player">Player who wants their spot back.</param>
-/// <returns>Whether to ignore it, telefrag it, or give up on the spot.</returns>
+/**
+ * @brief Decides what a single thing sitting on a death spot means for the spawn.
+ *
+ * @param thing Thing found overlapping the spot.
+ * @param player Player who wants their spot back.
+ * @return Whether to ignore it, telefrag it, or give up on the spot.
+ */
 blockerAction_t G_ClassifyDeathSpotBlocker(const AActor& thing, const player_t& player);
 
-/// <summary>
-/// Looks at what is standing on the spot a player died on and decides whether
-/// they can be put back there.
-///
-/// Runs the same on the client, so the HUD can warn about a blocked spot
-/// without asking the server.
-/// </summary>
-/// <param name="player">Player who wants to go back to where they fell.</param>
-/// <returns>Whether the spot is usable, blocked, or not there at all.</returns>
+/**
+ * @brief Looks at what is standing on the spot a player died on and decides
+ *        whether they can be put back there.
+ *
+ * Runs the same on the client, so the HUD can warn about a blocked spot without
+ * asking the server.
+ *
+ * @param player Player who wants to go back to where they fell.
+ * @return Whether the spot is usable, blocked, or not there at all.
+ */
 deathSpotBlock_t G_CheckDeathSpot(const player_t& player);
 
-/// <summary>
-/// Telefrags everything on a death spot that the rules allow us to move, so the
-/// freshly spawned player has the spot to themselves.
-///
-/// Call it only once the player has been spawned - the newly spawned player is
-/// the source of the damage, so the telefrag is credited to whoever took the
-/// spot.
-/// The spot is passed in rather than looked up because spawning erases it.
-/// </summary>
-/// <param name="player">Player who has just respawned on their death spot.</param>
-/// <param name="spot">Spot they were put back on.</param>
+/**
+ * @brief Telefrags everything on a death spot that the rules allow us to move,
+ *        so the freshly spawned player has the spot to themselves.
+ *
+ * Call it only once the player has been spawned - the newly spawned player is
+ * the source of the damage, so the telefrag is credited to whoever took the
+ * spot. The spot is passed in rather than looked up because spawning erases it.
+ *
+ * @param player Player who has just respawned on their death spot.
+ * @param spot Spot they were put back on.
+ */
 void G_StompDeathSpot(player_t& player, const DeathSpot_s& spot);
