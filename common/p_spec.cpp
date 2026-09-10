@@ -891,7 +891,7 @@ void P_InitPicAnims()
 	for (byte* anim_p = animdefs; *anim_p != 255; anim_p += anim_size)
 	{
 		if (anim_p + anim_size - 1 >= animdefs + length)
-			I_Error("Tried to read past end of ANIMATED lump");
+			I_Error("Tried to read past end of ANIMATED lump in {}", W_LumpFileName(lumpnum));
 
 		anim_t* lastanim = &anims.emplace_back();
 
