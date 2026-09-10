@@ -24,6 +24,9 @@
 
 #pragma once
 
+#include <optional>
+#include <string_view>
+
 #include "z_zone.h"
 #include "r_defs.h"
 #include "m_resfile.h"
@@ -216,10 +219,15 @@ OLumpName W_GetOLumpName(unsigned lump);
 
 // wadfiles always begins with odamex.wad followed by the IWAD, so every file
 // from here on is a PWAD.
-constexpr int WADFILE_FIRSTPWAD = 2;
+constexpr size_t WADFILE_FIRSTPWAD = 2;
 
-// [RH] Returns file handle for specified lump
-int W_GetLumpFile (unsigned lump);
+// The index into wadfiles of the file a lump came from, or nothing at all when
+// the engine generated the lump instead of reading it.
+std::optional<size_t> W_GetLumpFile(unsigned lump);
+
+// The base name of the file a lump came from, for use in diagnostics. Falls
+// back to a placeholder rather than failing, so it is always printable.
+std::string_view W_LumpFileName(unsigned lump);
 
 // True when a lump was supplied by a PWAD rather than by the IWAD, odamex.wad,
 // or the engine itself.
