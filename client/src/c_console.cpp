@@ -83,8 +83,6 @@ int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, 
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
 
-extern byte *ConChars;
-
 bool		KeysShifted;
 bool		KeysCtrl;
 bool		KeysAlt;
@@ -984,7 +982,7 @@ bool C_BlendConCharsSheet(int lumpnum)
 
 	for (ptrdiff_t i = 0; i < glyph_count; i++)
 	{
-		byte* dest = ConChars + (i * CONCHARS_GLYPH_BYTES);
+		byte* dest = ConChars.data() + (i * CONCHARS_GLYPH_BYTES);
 		const byte* source = temp_surface->getBuffer() +
 		                     ((i / cols) * CONCHARS_GLYPH_DIM * pitch) +
 		                     ((i % cols) * CONCHARS_GLYPH_DIM);
@@ -1025,12 +1023,12 @@ bool C_BlendConCharsSheet(int lumpnum)
 //
 void C_InitConCharsFont()
 {
-	ConChars = new byte[CONCHARS_BYTES];
+	ConChars.resize(CONCHARS_BYTES);
 
 	// characters that no sheet supplies stay fully transparent
 	for (ptrdiff_t i = 0; i < CONCHARS_COUNT; i++)
 	{
-		byte* dest = ConChars + (i * CONCHARS_GLYPH_BYTES);
+		byte* dest = ConChars.data() + (i * CONCHARS_GLYPH_BYTES);
 		for (int z = 0; z < CONCHARS_GLYPH_DIM; z++, dest += CONCHARS_ROW_BYTES)
 		{
 			memset(dest, 0x00, CONCHARS_GLYPH_DIM);
@@ -1061,16 +1059,6 @@ void C_InitConCharsFont()
 	if (sheets == 0)
 		PrintFmt(PRINT_WARNING,
 		         "No usable CONCHARS lump was found; console text will be blank.\n");
-}
-
-
-//
-// C_ShutdownConCharsFont
-//
-void C_ShutdownConCharsFont()
-{
-	delete [] ConChars;
-	ConChars = nullptr;
 }
 
 //
