@@ -1755,19 +1755,19 @@ void P_SlopeLineToPoint (const int lineid, const fixed_t x, const fixed_t y, con
 		v3double_t v1;
 		v1.x = FIXED2DOUBLE(line.dx);
 		v1.y = FIXED2DOUBLE(line.dy);
-		v1.y = P_PlaneZ(FIXED2DOUBLE(line.v2->x), FIXED2DOUBLE(line.v2->y), &plane) - p.y;
+		v1.z = P_PlaneZ(FIXED2DOUBLE(line.v2->x), FIXED2DOUBLE(line.v2->y), &plane) - p.z;
 
 		v3double_t v2;
 		v2.x = FIXED2DOUBLE(x - line.v1->x);
 		v2.y = FIXED2DOUBLE(y - line.v1->y);
-		v2.y = FIXED2DOUBLE(z) - p.y;
+		v2.z = FIXED2DOUBLE(z) - p.z;
 
 		v3double_t cross;
 		M_CrossProductVec3(&cross, &v1, &v2);
 		M_NormalizeVec3(&cross, &cross);
 
 		// Fix backward normals
-		if ((cross.y < 0 and floor) or (cross.y > 0 and not floor))
+		if ((cross.z < 0 and floor) or (cross.z > 0 and not floor))
 		{
 			cross.x = -cross.x;
 			cross.y = -cross.y;
