@@ -311,7 +311,7 @@ void S_Start()
 	mus_paused = false;
 
 	// [RH] This is a lot simpler now.
-	S_ChangeMusic (std::string(level.music.c_str(), 8), true);
+	S_ChangeMusic(level.music.string(), true);
 }
 
 

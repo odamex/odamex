@@ -62,7 +62,9 @@ class OLumpName
 	// string operations
 	[[nodiscard]] const char* c_str() const;
 	[[nodiscard]] const char* data() const;
-	inline operator std::string_view() const { return { m_data, size() }; };
+	[[nodiscard]] std::string string() const { return { m_data, size() }; };
+	// NOLINTNEXTLINE(misc-explicit-constructor)
+	operator std::string_view() const { return { m_data, size() }; };
 	// Note: comparison operations are done without regard to case sensitivity.
 	[[nodiscard]] int compare(const OLumpName& other) const;
 	[[nodiscard]] int compare(const char* other) const;
