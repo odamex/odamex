@@ -542,7 +542,7 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		do
 		{
-			if (!IsRealNum(os.getToken().c_str()))
+			if (!IsRealNum(os.getToken()))
 				os.scan();
 
 		} while (os.compareToken(","));

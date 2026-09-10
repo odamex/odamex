@@ -699,22 +699,22 @@ static void R_DrawSingleFlatPlane(visplane_t* pl)
 	// regular flat
 	int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
 
-				dspan.color += 4;	// [RH] color if r_drawflat is 1
-				dspan.source = W_CacheLumpNum<byte>(firstflat + useflatnum, PU_STATIC);
+	dspan.color += 4;	// [RH] color if r_drawflat is 1
+	dspan.source = W_CacheLumpNum<byte>(firstflat + useflatnum, PU_STATIC);
 
-				// [RH] warp a flat if desired
-				if (flatwarp[useflatnum])
-				{
-					if (warpedflats[useflatnum] && flatwarpedwhen[useflatnum] == level.time)
-					{
-						Z_ChangeTag(dspan.source, PU_CACHE);
-						dspan.source = warpedflats[useflatnum];
-						Z_ChangeTag(dspan.source, PU_STATIC);
-					}
-					else
-					{
-						if (!warpedflats[useflatnum])
-							warpedflats[useflatnum] = Z_Malloc<byte>(64*64, PU_STATIC, &warpedflats[useflatnum]);
+	// [RH] warp a flat if desired
+	if (flatwarp[useflatnum])
+	{
+		if (warpedflats[useflatnum] && flatwarpedwhen[useflatnum] == level.time)
+		{
+			Z_ChangeTag(dspan.source, PU_CACHE);
+			dspan.source = warpedflats[useflatnum];
+			Z_ChangeTag(dspan.source, PU_STATIC);
+		}
+		else
+		{
+			if (!warpedflats[useflatnum])
+				warpedflats[useflatnum] = Z_Malloc<byte>(64*64, PU_STATIC, &warpedflats[useflatnum]);
 
 			static byte buffer[64];
 			int timebase = level.time*23;

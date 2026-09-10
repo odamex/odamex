@@ -56,7 +56,7 @@ void G_ParseMusInfo()
 
 			while (os.scan())
 			{
-				if (!IsNum(os.getToken().c_str()))
+				if (!IsNum(os.getToken()))
 				{
 					os.unScan();
 					break;

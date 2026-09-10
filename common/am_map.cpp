@@ -45,7 +45,7 @@ static bool ScanAndCompareString(OScanner& os, std::string cmp)
 static bool ScanAndSetRealNum(OScanner& os, fixed64_t& num)
 {
 	os.scan();
-	if (!IsRealNum(os.getToken().c_str()))
+	if (!IsRealNum(os.getToken()))
 	{
 		os.warning("Expected number, got \"{}\". Aborting parsing", os.getToken());
 		return false;

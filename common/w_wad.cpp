@@ -141,21 +141,6 @@ void W_HashLumps(void)
 }
 
 
-//
-// uppercoppy
-//
-// [RH] Copy up to 8 chars, upper-casing them in the process
-//
-void uppercopy (char *to, const char *from)
-{
-	int i;
-
-	for (i = 0; i < 8 && from[i]; i++)
-		to[i] = toupper (from[i]);
-	for (; i < 8; i++)
-		to[i] = 0;
-}
-
 /**
  * @brief Calculate a CRC32 hash from a file.
  *
@@ -717,21 +702,6 @@ bool W_CheckLumpName (unsigned lump, const char *name)
 }
 
 //
-// W_GetLumpName
-//
-void W_GetLumpName(char *to, unsigned lump)
-{
-	if (lump >= lumpinfo.size())
-		*to = 0;
-	else
-	{
-		memcpy (to, lumpinfo[lump].name.c_str(), 8); // denis - todo -string limit?
-		to[8] = '\0';
-		std::transform(to, to + strlen(to), to, toupper);
-	}
-}
-
-//
 // W_GetOLumpName
 //
 void W_GetOLumpName(OLumpName& to, unsigned lump)
@@ -928,7 +898,7 @@ int W_FindLump (const char *name, int lastlump)
 // Returns the index into wadfiles of the file a lump came from, or std::nullopt
 // if the engine generated the lump instead of reading it.
 //
-std::optional<size_t> W_GetLumpFile(unsigned lump)
+std::optional<size_t> W_GetLumpFile(unsigned int lump)
 {
 	if (lump >= lumpinfo.size())
 		I_Error("{}: {} >= numlumps", __FUNCTION__, lump);
@@ -946,7 +916,7 @@ std::optional<size_t> W_GetLumpFile(unsigned lump)
 // lumps and out of range indices both come back as a placeholder, so callers
 // never have to guard the result.
 //
-std::string_view W_LumpFileName(unsigned lump)
+std::string_view W_LumpFileName(unsigned int lump)
 {
 	const std::optional<size_t> filenum = W_GetLumpFile(lump);
 
@@ -959,38 +929,38 @@ std::string_view W_LumpFileName(unsigned lump)
 //
 // W_IsLumpFromPWAD
 //
-bool W_IsLumpFromPWAD(unsigned lump)
+bool W_IsLumpFromPWAD(unsigned int lump)
 {
 	const std::optional<size_t> filenum = W_GetLumpFile(lump);
 
 	return filenum.has_value() and *filenum >= WADFILE_FIRSTPWAD;
 }
 
-bool W_IsLumpFromPWAD(const char* name, namespace_t namespc)
+bool W_IsLumpFromPWAD(const OLumpName& name, namespace_t namespc)
 {
 	const int lump = W_CheckNumForName(name, namespc);
 
-	return lump >= 0 && W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+	return lump >= 0 && W_IsLumpFromPWAD(static_cast<unsigned int>(lump));
 }
 
 //
 // W_IsLumpReplaced
 //
 // Returns true if an IWAD/Odamex lump was replaced by a PWAD.
-// 
+//
 // If this lump didn't have an original to replace (meaning its
 // original to the PWAD) it will return false.
 //
-bool W_IsLumpReplaced(const char* name, namespace_t namespc)
+bool W_IsLumpReplaced(const OLumpName& name, namespace_t namespc)
 {
 	const int lump = W_CheckNumForName(name, namespc);
 
-	if (lump < 0 || !W_IsLumpFromPWAD(static_cast<unsigned>(lump)))
+	if (lump < 0 || !W_IsLumpFromPWAD(static_cast<unsigned int>(lump)))
 		return false;
 
 	for (int i = lumpinfo[lump].next; i >= 0; i = lumpinfo[i].next)
 	{
-		if (!strnicmp(lumpinfo[i].name.c_str(), name, 8) &&
+		if (lumpinfo[i].name == name and
 		    lumpinfo[i].namespc == namespc)
 			return true;
 	}

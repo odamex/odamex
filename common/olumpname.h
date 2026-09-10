@@ -35,8 +35,10 @@ class OLumpName
 	// constructors/assignment operators
 	OLumpName();
 	OLumpName(const OLumpName& other);
+	// NOLINTBEGIN(misc-explicit-constructor)
 	OLumpName(const char* other);
 	OLumpName(const std::string& other);
+	// NOLINTEND(misc-explicit-constructor)
 	OLumpName& operator=(const OLumpName& other);
 	OLumpName& operator=(const char* other);
 	OLumpName& operator=(const std::string& other);

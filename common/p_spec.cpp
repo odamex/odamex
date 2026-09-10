@@ -34,6 +34,8 @@
 
 #include "odamex.h"
 
+#include <nonstd/scope.hpp>
+
 #include "m_alloc.h"
 #include "gstrings.h"
 
@@ -537,26 +539,27 @@ void DPusher::Serialize (FArchive &arc)
 //
 #define MAX_ANIM_FRAMES	32
 
-typedef struct
+struct anim_t
 {
 	short 	basepic;
 	short	numframes;
 	byte 	istexture;
-	byte	uniqueframes;
+	bool	uniqueframes;
 	byte	countdown;
 	byte	curframe;
 	byte 	speedmin[MAX_ANIM_FRAMES];
 	byte	speedmax[MAX_ANIM_FRAMES];
 	short	framepic[MAX_ANIM_FRAMES];
-} anim_t;
+};
 
 
 
 #define MAXANIMS	32		// Really just a starting point
 
-static anim_t*  lastanim;
-static anim_t*  anims;
-static size_t	maxanims;
+namespace
+{
+std::vector<anim_t> anims;
+} // namespace
 
 // killough 3/7/98: Initialize generalized scrolling
 static void P_SpawnScrollers();
@@ -594,9 +597,9 @@ static void P_InitAnimDefs ()
 			const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
 
 			OScannerConfig config = {
-			    "ANIMDEFS", // lumpName
-			    false,      // semiComments
-			    true,       // cComments
+			    .lumpName     = "ANIMDEFS",
+			    .semiComments = false,
+			    .cComments    = true,
 			};
 			OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
 
@@ -622,13 +625,13 @@ static void P_InitAnimDefs ()
 					if (os.compareTokenNoCase("flat"))
 					{
 						os.mustScan();
-						flatwarp[R_FlatNumForName(os.getToken().c_str())] = true;
+						flatwarp[R_FlatNumForName(os.getToken())] = true;
 					}
 					else if (os.compareTokenNoCase("texture"))
 					{
 						// TODO: Make texture warping work with wall textures
 						os.mustScan();
-						R_TextureNumForName(os.getToken().c_str());
+						R_TextureNumForName(os.getToken());
 					}
 					else
 					{
@@ -638,9 +641,10 @@ static void P_InitAnimDefs ()
 			}
 		}
 	}
-    catch (CRecoverableError &)
+    catch (const CRecoverableError& e)
     {
-
+		// for now let's at least log it so it obvious to modders when a feature is unsupported
+		PrintFmt(PRINT_WARNING, "{}", e.what());
     }
 }
 
@@ -660,25 +664,15 @@ static void ParseAnim(OScanner &os, byte istex)
 	}
 	else
 	{
-		for (place = anims; place < lastanim; place++)
-		{
-			if (place->basepic == picnum && place->istexture == istex)
-			{
-				break;
-			}
-		}
-		if (place == lastanim)
-		{
-			lastanim++;
-			if (lastanim > anims + maxanims)
-			{
-				const size_t newmax = maxanims ? maxanims * 2 : MAXANIMS;
-				anims = static_cast<anim_t*>(M_Realloc(anims, newmax * sizeof(*anims)));
-				place = anims + maxanims;
-				lastanim = place + 1;
-				maxanims = newmax;
-			}
-		}
+		auto it = std::ranges::find_if(anims, [&](const anim_t& anim){
+			return anim.basepic == picnum and anim.istexture == istex;
+		});
+
+		if (it == anims.end())
+			place = &anims.emplace_back();
+		else
+			place = &*it;
+
 		// no decals on animating textures by default
 		//if (istex)
 		//{
@@ -875,88 +869,78 @@ bool P_CheckTag(line_t* line)
  *no assumptions about how the compiler packs the animdefs array.
  *
  */
-void P_InitPicAnims (void)
+void P_InitPicAnims()
 {
-	byte *animdefs, *anim_p;
-
 	// denis - allow reinitialisation
-	if(anims)
-	{
-		M_Free(anims);
-		lastanim = nullptr;
-		maxanims = 0;
-	}
+	anims.clear();
 
 	// [RH] Load an ANIMDEFS lump first
-	P_InitAnimDefs ();
+	P_InitAnimDefs();
 
-	if (W_CheckNumForName ("ANIMATED") == -1)
+	const int lumpnum = W_CheckNumForName("ANIMATED");
+
+	if (lumpnum == -1)
 		return;
 
-	animdefs = W_CacheLumpName<byte>("ANIMATED", PU_STATIC);
+	byte* animdefs = W_CacheLumpNum<byte>(lumpnum, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(animdefs); });
+	const auto length = W_LumpLength(lumpnum);
 
 	// Init animation
+	static constexpr auto anim_size = 23;
+	for (byte* anim_p = animdefs; *anim_p != 255; anim_p += anim_size)
+	{
+		if (anim_p + anim_size - 1 >= animdefs + length)
+			I_Error("Tried to read past end of ANIMATED lump in {}", W_LumpFileName(lumpnum));
 
-		for (anim_p = animdefs; *anim_p != 255; anim_p += 23)
+		anim_t* lastanim = &anims.emplace_back();
+
+		if (*anim_p /* .istexture */ & 1)
 		{
-			// 1/11/98 killough -- removed limit by array-doubling
-			if (lastanim >= anims + maxanims)
-			{
-				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-				anims = static_cast<anim_t*>(M_Realloc(anims, newmax*sizeof(*anims)));   // killough
-				lastanim = anims + maxanims;
-				maxanims = newmax;
-			}
+			const int starttex = R_CheckTextureNumForName(anim_p + 10 /* .startname */);
+			const int endtex = R_CheckTextureNumForName(anim_p + 1 /* .endname */);
+			// different episode ?
+			if (starttex == -1 or endtex == -1)
+				continue;
 
-			if (*anim_p /* .istexture */ & 1)
-			{
-				// different episode ?
-				if (R_CheckTextureNumForName (anim_p + 10 /* .startname */) == -1 ||
-					R_CheckTextureNumForName (anim_p + 1 /* .endname */) == -1)
-					continue;
-
-				lastanim->basepic = R_TextureNumForName (anim_p + 10 /* .startname */);
-				lastanim->numframes = R_TextureNumForName (anim_p + 1 /* .endname */)
-									  - lastanim->basepic + 1;
-				/*if (*anim_p & 2)
-				{ // [RH] Bit 1 set means allow decals on walls with this texture
-					texturenodecals[lastanim->basepic] = 0;
-				}
-				else
-				{
-					texturenodecals[lastanim->basepic] = 1;
-				}*/
+			lastanim->basepic = static_cast<int16_t>(starttex);
+			lastanim->numframes = static_cast<int16_t>(endtex - lastanim->basepic + 1);
+			/*if (*anim_p & 2)
+			{ // [RH] Bit 1 set means allow decals on walls with this texture
+				texturenodecals[lastanim->basepic] = 0;
 			}
 			else
 			{
-				if (W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 10 /* .startname */, ns_flats) == -1 ||
-					W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 1 /* .startname */, ns_flats) == -1)
-					continue;
-
-				lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
-				lastanim->numframes = R_FlatNumForName (anim_p + 1 /* .endname */)
-									  - lastanim->basepic + 1;
-			}
-
-			lastanim->istexture = *anim_p /* .istexture */;
-			lastanim->uniqueframes = false;
-			lastanim->curframe = 0;
-
-			if (lastanim->numframes < 2)
-				PrintFmt(PRINT_WARNING, "P_InitPicAnims: bad cycle from {} to {}",
-						 fmt::ptr(anim_p + 10) /* .startname */,
-						 fmt::ptr(anim_p + 1) /* .endname */);
-
-			lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
-						/* .speed */
-						(anim_p[19] << 0) |
-						(anim_p[20] << 8) |
-						(anim_p[21] << 16) |
-						(anim_p[22] << 24);
-
-			lastanim++;
+				texturenodecals[lastanim->basepic] = 1;
+			}*/
 		}
-	Z_Free (animdefs);
+		else
+		{
+			if (W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 10 /* .startname */, ns_flats) == -1 ||
+				W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 1 /* .startname */, ns_flats) == -1)
+				continue;
+
+			lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
+			lastanim->numframes = R_FlatNumForName (anim_p + 1 /* .endname */)
+								  - lastanim->basepic + 1;
+		}
+
+		lastanim->istexture = *anim_p /* .istexture */;
+		lastanim->uniqueframes = false;
+		lastanim->curframe = 0;
+
+		if (lastanim->numframes < 2)
+			PrintFmt(PRINT_WARNING, "P_InitPicAnims: bad cycle from {} to {}",
+					 fmt::ptr(anim_p + 10) /* .startname */,
+					 fmt::ptr(anim_p + 1) /* .endname */);
+
+		lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
+					/* .speed */
+					(anim_p[19] << 0) |
+					(anim_p[20] << 8) |
+					(anim_p[21] << 16) |
+					(anim_p[22] << 24);
+	}
 }
 
 
@@ -2316,50 +2300,47 @@ void P_CollectSecretVanilla(sector_t& sector, player_t& player)
 // Animate planes, scroll walls, etc.
 //
 
-void P_UpdateSpecials (void)
+void P_UpdateSpecials()
 {
-	anim_t *anim;
-	int i;
-
 	// ANIMATE FLATS AND TEXTURES GLOBALLY
 	// [RH] Changed significantly to work with ANIMDEFS lumps
-	for (anim = anims; anim < lastanim; anim++)
+	for (auto& anim : anims)
 	{
-		if (--anim->countdown == 0)
+		if (--anim.countdown == 0)
 		{
 			int speedframe;
 
-			anim->curframe = (anim->numframes) ?
-					(anim->curframe + 1) % anim->numframes : 0;
+			anim.curframe = (anim.numframes) ?
+					(anim.curframe + 1) % anim.numframes : 0;
 
-			speedframe = (anim->uniqueframes) ? anim->curframe : 0;
+			speedframe = (anim.uniqueframes) ? anim.curframe : 0;
 
-			if (anim->speedmin[speedframe] == anim->speedmax[speedframe])
-				anim->countdown = anim->speedmin[speedframe];
+			if (anim.speedmin[speedframe] == anim.speedmax[speedframe])
+				anim.countdown = anim.speedmin[speedframe];
 			else
-				anim->countdown = M_Random() %
-					(anim->speedmax[speedframe] - anim->speedmin[speedframe]) +
-					anim->speedmin[speedframe];
+				anim.countdown = (M_Random() %
+					(anim.speedmax[speedframe] - anim.speedmin[speedframe])) +
+					anim.speedmin[speedframe];
 		}
 
-		if (anim->uniqueframes)
+		if (anim.uniqueframes)
 		{
-			int pic = anim->framepic[anim->curframe];
+			const int pic = anim.framepic[anim.curframe];
 
-			if (anim->istexture)
-				for (i = 0; i < anim->numframes; i++)
-					texturetranslation[anim->framepic[i]] = pic;
+			if (anim.istexture)
+				for (int i = 0; i < anim.numframes; i++)
+					texturetranslation[anim.framepic[i]] = pic;
 			else
-				for (i = 0; i < anim->numframes; i++)
-					flattranslation[anim->framepic[i]] = pic;
+				for (int i = 0; i < anim.numframes; i++)
+					flattranslation[anim.framepic[i]] = pic;
 		}
 		else
 		{
-			for (i = anim->basepic; i < anim->basepic + anim->numframes; i++)
+			for (int i = anim.basepic; i < anim.basepic + anim.numframes; i++)
 			{
-				int pic = anim->basepic + (anim->curframe + i) % anim->numframes;
+				const int pic = anim.basepic + ((anim.curframe + i) % anim.numframes);
 
-				if (anim->istexture)
+				if (anim.istexture)
 					texturetranslation[i] = pic;
 				else
 					flattranslation[i] = pic;

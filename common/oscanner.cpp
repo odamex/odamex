@@ -313,7 +313,7 @@ void OScanner::mustScanInt()
 	}
 
 	std::string str = m_token;
-	if (IsNum(str.c_str()) == false && str != "MAXINT")
+	if (IsNum(str) == false && str != "MAXINT")
 	{
 		error("Expected integer, got \"{}\".", m_token);
 	}
@@ -330,7 +330,7 @@ void OScanner::mustScanFloat()
 	}
 
 	std::string str = m_token;
-	if (IsRealNum(str.c_str()) == false)
+	if (IsRealNum(str) == false)
 	{
 		error("Expected float, got \"{}\".", m_token);
 	}

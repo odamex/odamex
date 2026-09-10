@@ -580,7 +580,7 @@ argb_t V_GetColorFromString(const std::string& input_string)
 			while (p < 4)
 				val[p++] = *g++;
 
-			c[i] = ParseHex(val);
+			c[i] = ParseNum<int32_t>(val, 16).value_or(0);
 		}
 	}
 
