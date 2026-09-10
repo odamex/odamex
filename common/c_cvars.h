@@ -292,4 +292,4 @@ cvar_t* GetFirstCvar(void);
 
 #define CVAR_FUNC_IMPL(name) \
     EXTERN_CVAR(name) \
-    void cvarfunc_##name(cvar_t &var)
+    void cvarfunc_##name([[maybe_unused]] cvar_t &var)
