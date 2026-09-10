@@ -761,6 +761,22 @@
       {
          "default" : false,
          "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show tenths of a second on all HUD timers, starting when the timer reaches cl_shotclocksecondsleft.",
+         "name" : "cl_shotclock",
+         "type" : "boolean"
+      },
+      {
+         "default" : 10,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Seconds left before a HUD timer starts displaying tenths of a second, if cl_shotclock is enabled",
+         "max" : 60,
+         "min" : 0,
+         "name" : "cl_shotclocksecondsleft",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Show an indicator on friendly monsters.",
          "name" : "cl_showfriends",
          "type" : "boolean"
@@ -1356,6 +1372,13 @@
          "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
          "helptext" : "Turns on offensive vs defensive sides for team-based game modes - teams on offense don't have to defend any team objective, teams on defense win if time expires, and if rounds are enabled the team on defense changes every round",
          "name" : "g_sides",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Players respawn on the spot where they died instead of at a player start.",
+         "name" : "g_spawnatdeathspot",
          "type" : "boolean"
       },
       {
