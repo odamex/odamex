@@ -41,7 +41,7 @@ struct sfxinfo_t
 	void* data;
 
 	size_t link;
-	enum { NO_LINK = 0xffffffff };
+	enum : size_t { NO_LINK = static_cast<size_t>(-1) };
 
 	int lumpnum;              // lump number of sfx
 	unsigned int ms;          // [RH] length of sfx in milliseconds

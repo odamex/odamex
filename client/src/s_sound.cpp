@@ -681,7 +681,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 
 	sfxinfo_t* sfxinfo = &S_sfx[sfx_id];
 
-	while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
+	while (sfxinfo->link != sfxinfo_t::NO_LINK)
 	{
 		sfx_id = ResolveSound(sfx_id);
 		sfxinfo = &S_sfx[sfx_id];
@@ -690,7 +690,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 	if (!sfxinfo->data)
 	{
 		I_LoadSound(sfxinfo);
-		while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
+		while (sfxinfo->link != sfxinfo_t::NO_LINK)
 		{
 			sfx_id = ResolveSound(sfx_id);
 			sfxinfo = &S_sfx[sfx_id];
@@ -1120,7 +1120,7 @@ void S_UpdateSounds(const AActor* listener)
 				else
 					c->volume *= snd_sfxvolume;
 
-				if (sfx->link != static_cast<int>(sfxinfo_t::NO_LINK))
+				if (sfx->link != sfxinfo_t::NO_LINK)
 				{
 					if (c->volume <= 0.0f)
 					{
@@ -1383,7 +1383,7 @@ END_COMMAND (snd_soundlist)
 BEGIN_COMMAND (snd_soundlinks)
 {
 	for (const auto& sfx : S_sfx)
-		if (sfx.link != static_cast<int>(sfxinfo_t::NO_LINK))
+		if (sfx.link != sfxinfo_t::NO_LINK)
 			PrintFmt(PRINT_HIGH, "{} -> {}\n", sfx.name, S_sfx[sfx.link].name);
 }
 END_COMMAND (snd_soundlinks)
