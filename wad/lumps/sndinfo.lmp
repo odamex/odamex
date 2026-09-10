@@ -104,6 +104,8 @@ grunt/death1			dspodth1
 grunt/death2			dspodth2
 grunt/death3			dspodth3
 grunt/attack			dspistol
+$random grunt/sight { grunt/sight1 grunt/sight2 grunt/sight3 }
+$random grunt/death { grunt/death1 grunt/death2 grunt/death3 }
 
 // Shotgun guy
 
@@ -116,6 +118,8 @@ shotguy/death1			dspodth1
 shotguy/death2			dspodth2
 shotguy/death3			dspodth3
 shotguy/attack			dsshotgn
+$random shotguy/sight { shotguy/sight1 shotguy/sight2 shotgu/sight3 }
+$random shotguy/death { shotguy/death1 shotguy/death2 shotguy/death3 }
 
 // Archvile
 
@@ -161,6 +165,8 @@ chainguy/death1			dspodth1
 chainguy/death2			dspodth2
 chainguy/death3			dspodth3
 chainguy/attack			dsshotgn
+$random chainguy/sight { chainguy/sight1 chainguy/sight2 chainguy/sight3 }
+$random chainguy/death { chainguy/death1 chainguy/death2 chainguy/death3 }
 
 // Imp
 
@@ -173,6 +179,8 @@ imp/death1			dsbgdth1
 imp/death2			dsbgdth2
 imp/attack			dsfirsht
 imp/shotx			dsfirxpl
+$random imp/sight { imp/sight1  imp/sight2 }
+$random imp/death { imp/death1  imp/death2 }
 
 // Demon
 
