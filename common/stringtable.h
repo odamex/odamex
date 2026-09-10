@@ -97,7 +97,7 @@ class StringTable
 	// String names are conventionally uppercase but the table is
 	// case-sensitive, so this finds names either way.
 	//
-	[[nodiscard]] const char* lookup(const std::string& name) const;
+	[[nodiscard]] const char* lookup(std::string_view name) const;
 
 	//
 	// Resolve a "$NAME" token into the string it names.

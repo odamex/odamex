@@ -164,10 +164,10 @@ void S_ParseSndInfo()
 
 		while (os.scan())
 		{
-			std::string tok = os.getToken();
+			const std::string tok = os.getToken();
 
 			// check if token is a command
-			if (tok[0] == '$')
+			if (tok.starts_with('$'))
 			{
 				os.mustScan();
 				if (os.compareTokenNoCase("ambient"))
@@ -270,7 +270,7 @@ void S_ParseSndInfo()
 					const OLumpName mapname = fmt::format("MAP{:02d}", os.getTokenInt());
 					level_pwad_info_t& info = getLevelInfos().findByName(mapname);
 					os.mustScan();
-					if (info.mapname[0])
+					if (not info.mapname.empty())
 					{
 						info.music = os.getToken();
 					}

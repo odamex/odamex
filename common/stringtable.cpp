@@ -417,7 +417,7 @@ void StringTable::loadStrings(const bool engOnly)
 //
 // Obtain a string by name, retrying with the name uppercased.
 //
-const char* StringTable::lookup(const std::string& name) const
+const char* StringTable::lookup(std::string_view name) const
 {
 	const char* text = operator()(OString(name));
 	if (text[0] == '\0')

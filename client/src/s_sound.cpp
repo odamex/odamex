@@ -1211,7 +1211,7 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 	if (mus_playing.name == musicname)
 		return;
 
-	if (!musicname.length() || musicname[0] == 0)
+	if (musicname.empty())
 	{
 		// Don't choke if the map doesn't have a song attached
 		S_StopMusic();

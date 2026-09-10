@@ -504,7 +504,7 @@ void MIType_InterLumpName(OScanner& os, bool newStyleMapInfo, OLumpName& pic,
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	const std::string tok = os.getToken();
-	if (!tok.empty() && tok.at(0) == '$')
+	if (tok.starts_with('$'))
 	{
 		// intermission script lump
 		script = tok.substr(1);
@@ -517,21 +517,22 @@ void MIType_InterLumpName(OScanner& os, bool newStyleMapInfo, OLumpName& pic,
 void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
+	const auto tok = os.getToken();
 
-	if (os.getToken()[0] == '$')
+	if (tok.starts_with('$'))
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OLumpName s = GStrings.lookup(os.getToken().c_str() + 1);
+		const OLumpName s = GStrings.lookup(tok.substr(1));
 		if (s.empty())
 		{
-			os.error("Unknown lookup string \"{}\".", os.getToken());
+			os.error("Unknown lookup string \"{}\".", tok);
 		}
 		out = s;
 	}
 	else
 	{
-		out = os.getToken();
+		out = tok;
 	}
 }
 
@@ -542,7 +543,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 	const std::string musicname = os.getToken();
 
-	if (musicname[0] == '$')
+	if (musicname.starts_with('$'))
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
