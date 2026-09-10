@@ -27,7 +27,7 @@
 class LargeMessage
 {
 	public:
-		static const size_t MAX_SIZE { 64 * 1024 };
+		static const size_t MAX_SIZE { 64u * 1024u };
 
 		bool Restart(size_t totalLength)
 		{

@@ -11,7 +11,7 @@ struct LargeMessageQueueFixture : testing::Test
 
 TEST_F(LargeMessageQueueFixture, EmptyQueue)
 {
-    std::array<char, 5> fragment;
+    std::array<char, 5> fragment{};
 
     const FragmentationResultType result = m_queue.NextFragment(fragment.size(), fragment.begin());
     EXPECT_EQ(FragmentationStateEnum::NONE,     result.state);
@@ -22,7 +22,7 @@ TEST_F(LargeMessageQueueFixture, BasicSingleMessage)
 {
     m_queue.Write(svc_print, "HelloWorld");
 
-    std::array<char, 5> fragment;
+    std::array<char, 5> fragment{};
 
     const FragmentationResultType firstResult = m_queue.NextFragment(fragment.size(), fragment.begin());
 
@@ -58,7 +58,7 @@ TEST_F(LargeMessageQueueFixture, BasicSingleMessage)
 
 TEST_F(LargeMessageQueueFixture, GiantMessage)
 {
-    std::string bigBoy(63 * 1024, '_');
+    std::string bigBoy(63u * 1024u, '_');
 
     char crawler = 'a';
     for (auto iter = bigBoy.begin(); iter < bigBoy.end(); iter += 1024)
@@ -175,7 +175,7 @@ TEST_F(LargeMessageQueueFixture, MultiMessage)
     m_queue.Write(svc_print, "HelloWorld");
     m_queue.Write(svc_print, "FooBar");
 
-    std::array<char, 8> fragment;
+    std::array<char, 8> fragment{};
 
     auto result = m_queue.NextFragment(fragment.size(), fragment.begin());
 
@@ -236,7 +236,7 @@ TEST_F(LargeMessageQueueFixture, Reassembly)
     EXPECT_EQ(0,     msg.CurrentSize());
     EXPECT_EQ(false, msg.IsComplete());
 
-    std::array<char, 8> fragment;
+    std::array<char, 8> fragment{};
 
     auto fragmentInfo = m_queue.NextFragment(fragment.size(), fragment.begin());
     EXPECT_EQ(fragmentInfo.state, FragmentationStateEnum::FIRST_FRAGMENT);
@@ -286,6 +286,7 @@ TEST_F(LargeMessageQueueFixture, Reassembly)
     const size_t payloadSize = buffer.ReadUnVarint();
     EXPECT_EQ(41, payloadSize);
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     const std::string receivedAdvice (reinterpret_cast<char*>(buffer.ReadChunk(payloadSize)), payloadSize);
     EXPECT_EQ(receivedAdvice, "We can't stop here!  This is BAT COUNTRY!");
 

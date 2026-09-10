@@ -32,14 +32,14 @@ parseError_e MSG_ParseMessage(google::protobuf::Message*& out, const msg_t cmd, 
 	google::protobuf::MessageFactory* factory =
 	    google::protobuf::MessageFactory::generated_factory();
 	const google::protobuf::Descriptor* desc = MSG_ResolveHeader(cmd);
-	if (desc == NULL)
+	if (desc == nullptr)
 	{
 		return PERR_UNKNOWN_HEADER;
 	}
 
 	// Can we get the mssage prototype from the descriptor?
 	const google::protobuf::Message* defmsg = factory->GetPrototype(desc);
-	if (defmsg == NULL)
+	if (defmsg == nullptr)
 	{
 		return PERR_UNKNOWN_MESSAGE;
 	}
@@ -49,7 +49,7 @@ parseError_e MSG_ParseMessage(google::protobuf::Message*& out, const msg_t cmd, 
 
 	// Allocated with "new" - can't be null, and we own it.
 	google::protobuf::Message* msg = defmsg->New();
-	if (!msg->ParseFromArray(data, size))
+	if (not msg->ParseFromArray(data, size))
 	{
 		return PERR_BAD_DECODE;
 	}

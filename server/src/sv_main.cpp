@@ -4620,8 +4620,7 @@ parseError_e SV_ParseCommandSVC(const msg_t cmd, player_t& player, buf_t& buffer
 
 void SV_AcknowledgePacket(player_t &player, buf_t& buffer)
 {
-	int sequence = buffer.ReadLong();
-
+	const int sequence = buffer.ReadLong();
 	const bool isFresh = player.client.messenger->Acknowledge(sequence);
 
 	if (sequence == 0 and isFresh)
