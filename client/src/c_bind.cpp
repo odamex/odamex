@@ -479,7 +479,7 @@ std::vector<int> OKeyBindings::GetKeysForCommandByLastDevice(const char* cmd)
 
 	for (const auto& [key, binding] : Binds)
 	{
-		if (binding.empty() || binding.c_str() != cmd)
+		if (binding.empty() || binding != cmd)
 			continue;
 
 		if (C_KeyMatchesDevice(key, device))

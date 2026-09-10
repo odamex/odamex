@@ -387,7 +387,7 @@ void AddCommandString(const std::string_view str, uint32_t key)
 		while (command.starts_with(' '))
 			command.remove_prefix(1);
 		while (command.ends_with(' '))
-			command.remove_prefix(1);
+			command.remove_suffix(1);
 
 		C_DoCommand(command, key);
 
