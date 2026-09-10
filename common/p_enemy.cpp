@@ -1675,21 +1675,10 @@ bool P_PlayWakeupSound(AActor* actor)
 {
 	if (actor->info->seesound)
 	{
-		char sound[MAX_SNDNAME];
-
-		M_StringCopy(sound, actor->info->seesound, MAX_SNDNAME);
-
-		if (sound[strlen(sound) - 1] == '1')
-		{
-			sound[strlen(sound) - 1] = P_Random(actor)%3 + '1';
-			if (S_FindSound (sound) == -1)
-				sound[strlen(sound) - 1] = '1';
-		}
-
-		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
-			S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
+		if (not co_zdoomsound or (actor->flags2 & MF2_BOSS or actor->flags3 & MF3_FULLVOLSOUNDS))
+			S_Sound(CHAN_VOICE, actor->info->seesound, 1, ATTN_NORM);
 		else
-			S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+			S_Sound(actor, CHAN_VOICE, actor->info->seesound, 1, ATTN_NORM);
 
 		return true;
 	}
