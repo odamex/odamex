@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <algorithm>
+#include <fmt/ranges.h>
 
 #include "cl_main.h"
 
@@ -1369,12 +1370,22 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 BEGIN_COMMAND (snd_soundlist)
 {
 	for (unsigned i = 0; i < S_sfx.size(); i++)
-		if (S_sfx[i].lumpnum != -1)
+		if (S_sfx[i].israndom)
+		{
+			PrintFmt(PRINT_HIGH, "{:>3d}. {} -> {{ {} }}\n", i + 1, S_sfx[i].name,
+				fmt::join(
+					S_rnd[S_sfx[i].link] |
+					std::views::transform([](const auto index){
+						return S_sfx[index].name;
+					}),
+					" "
+				));
+		}
+		else if (S_sfx[i].lumpnum != -1)
 		{
 			const OLumpName lumpname = lumpinfo[S_sfx[i].lumpnum].name;
 			PrintFmt(PRINT_HIGH, "{:>3d}. {} ({})\n", i+1, S_sfx[i].name, lumpname);
 		}
-		// todo: check if sounds are multiple lumps rather than just one (i.e. random sounds)
 		else
 			PrintFmt(PRINT_HIGH, "{:>3d}. {} **not present**\n", i+1, S_sfx[i].name);
 }
@@ -1383,7 +1394,8 @@ END_COMMAND (snd_soundlist)
 BEGIN_COMMAND (snd_soundlinks)
 {
 	for (const auto& sfx : S_sfx)
-		if (sfx.link != sfxinfo_t::NO_LINK)
+		// random sfx link back to themselves
+		if (sfx.link != sfxinfo_t::NO_LINK and not sfx.israndom)
 			PrintFmt(PRINT_HIGH, "{} -> {}\n", sfx.name, S_sfx[sfx.link].name);
 }
 END_COMMAND (snd_soundlinks)
