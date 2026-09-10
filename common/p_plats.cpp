@@ -388,39 +388,26 @@ DPlat::DPlat(sector_t *sec, DPlat::EPlatType type, fixed_t height,
 }
 
 DPlat::DPlat(sector_t* sec, int target, int delay, int speed, int trigger)
-    : DMovingFloor(sec), m_Status(init)
+	: DMovingFloor{sec}, m_High{P_FloorHeight(sec)},
+	  m_Status{DPlat::down}, m_Type{genLift}
 {
-	m_Crush = false;
-	m_Type = genLift;
-	m_Status = DPlat::down;
-	m_Height = 0;
-	m_Lip = 0;
-	m_High = sec->floorheight;
 
 	// setup the target destination height
 	switch (target)
 	{
 	case F2LnF:
-		m_Low = P_FindLowestFloorSurrounding(sec);
-		if (m_Low > sec->floorheight)
-			m_Low = sec->floorheight;
+		m_Low = std::min(P_FindLowestFloorSurrounding(sec), P_FloorHeight(sec));
 		break;
 	case F2NnF:
 		m_Low = P_FindNextLowestFloor(sec);
 		break;
 	case F2LnC:
-		m_Low = P_FindLowestCeilingSurrounding(sec);
-		if (m_Low > sec->floorheight)
-			m_Low = sec->floorheight;
+		m_Low = std::min(P_FindLowestCeilingSurrounding(sec), P_FloorHeight(sec));
 		break;
 	case LnF2HnF:
 		m_Type = genPerpetual;
-		m_Low = P_FindLowestFloorSurrounding(sec);
-		if (m_Low > sec->floorheight)
-			m_Low = sec->floorheight;
-		m_High = P_FindHighestFloorSurrounding(sec);
-		if (m_High < sec->floorheight)
-			m_High = sec->floorheight;
+		m_Low = std::min(P_FindLowestFloorSurrounding(sec), P_FloorHeight(sec));
+		m_High = std::max(P_FindHighestFloorSurrounding(sec), P_FloorHeight(sec));
 		m_Status = P_Random() & 1 ? DPlat::down : DPlat::up;
 		break;
 	default:
