@@ -55,7 +55,10 @@ void Freecam::addFreecamPlayer()
 
 bool Freecam::wipedOnLevelChange(player_t* cam)
 {
-	return (cam->id == freecamplayer_id and cam->isFreecam and cam->mo == nullptr and cam->camera == nullptr);
+	return (cam->id == freecamplayer_id and
+		    cam->isFreecam and
+		    cam->mo == nullptr and
+	        cam->camera == nullptr);
 }
 
 void Freecam::buildCam(player_t* p_cam)
