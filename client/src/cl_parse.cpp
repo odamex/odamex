@@ -1597,7 +1597,7 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		Freecam::allowAdd() and
 		target->player == &consoleplayer())
 	{
-		DeathSpot_s spot = DeathSpotManager::getInstance().getDeathSpot(consoleplayer_id);
+		const DeathSpot_s spot = DeathSpotManager::getInstance().getDeathSpot(consoleplayer_id);
 		Freecam::moveToPosition(spot.x, spot.y, spot.z, spot.angle);
 	}
 }
