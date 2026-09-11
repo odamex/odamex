@@ -655,10 +655,10 @@ void M_RotatePointAroundVector(v3double_t *dest, const v3double_t *dir, const v3
 	memset( zrot, 0, sizeof( zrot ) );
 	zrot[0][0] = zrot[1][1] = zrot[2][2] = 1.0;
 
-	zrot[0][0] = (float)cos(DEG2RAD(degrees));
-	zrot[0][1] = (float)sin(DEG2RAD(degrees));
-	zrot[1][0] = (float)-sin(DEG2RAD(degrees));
-	zrot[1][1] = (float)cos(DEG2RAD(degrees));
+	zrot[0][0] = static_cast<float>(cos(DEG2RAD(degrees)));
+	zrot[0][1] = static_cast<float>(sin(DEG2RAD(degrees)));
+	zrot[1][0] = static_cast<float>(-sin(DEG2RAD(degrees)));
+	zrot[1][1] = static_cast<float>(cos(DEG2RAD(degrees)));
 
 	M_ConcatRotations(tmpmat, m, zrot);
 	M_ConcatRotations(rot, tmpmat, im);

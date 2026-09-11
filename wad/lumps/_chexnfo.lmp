@@ -35,6 +35,7 @@ map E1M1 lookup "CHUSTR_E1M1"
 {
 	levelnum = 1
 	titlepatch = "WILV00"
+	author = "Digital Cafe"
 	next = "E1M2"
 	secretnext = "E1M9"
 	sky1 = "SKY1"
@@ -47,6 +48,7 @@ map E1M2 lookup "CHUSTR_E1M2"
 {
 	levelnum = 2
 	titlepatch = "WILV01"
+	author = "Digital Cafe"
 	next = "E1M3"
 	secretnext = "E1M9"
 	sky1 = "SKY1"
@@ -59,6 +61,7 @@ map E1M3 lookup "CHUSTR_E1M3"
 {
 	levelnum = 3
 	titlepatch = "WILV02"
+	author = "Digital Cafe"
 	next = "E1M4"
 	secretnext = "E1M9"
 	sky1 = "SKY1"
@@ -71,6 +74,7 @@ map E1M4 lookup "CHUSTR_E1M4"
 {
 	levelnum = 4
 	titlepatch = "WILV03"
+	author = "Digital Cafe"
 	next = "E1M5"
 	secretnext = "E1M9"
 	sky1 = "SKY1"
@@ -83,6 +87,7 @@ map E1M5 lookup "CHUSTR_E1M5"
 {
 	levelnum = 5
 	titlepatch = "WILV04"
+	author = "Digital Cafe"
 	next = "EndGame1"
 	secretnext = "E1M9"
 	sky1 = "SKY1"

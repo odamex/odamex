@@ -49,7 +49,6 @@
 #include "cmdlib.h"
 #include "i_system.h"
 #include "m_argv.h"
-#include "m_ostring.h"
 #include "w_wad.h"
 
 namespace fs = std::filesystem;

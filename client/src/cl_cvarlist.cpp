@@ -24,7 +24,9 @@
 
 #include "odamex.h"
 
+#include "am_map.h"
 #include "s_sound.h"
+#include "i_input.h"
 #include "i_music.h"
 
 // Automap
@@ -56,6 +58,17 @@ CVAR(					am_showtime, "1", "",
 
 CVAR(					am_classicmapstring, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+
+CVAR_RANGE(am_showauthor, "2",
+		"How the map author is shown on the automap.\n"
+		"// 0 - Off\n"
+		"// 1 - Static\n"
+		"// 2 - Fade in/out with map name\n"
+		"// 3 - Marquee in/out with map name\n"
+		"// 4 - Teletype effect with map name",
+		CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,
+		AM_AUTHOR_OFF, AM_AUTHOR_TELETYPE)
 
 CVAR(					am_usecustomcolors, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -340,6 +353,13 @@ CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE (joy_deadzone, "0.20", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 0.75f)
 
+CVAR_RANGE(joy_gamepadmode, "0",
+		"Sets the behavior of on-screen prompts of when to name gamepad buttons instead of keyboard keys.\n"
+		"// 0 - Follow whichever device was used last\n"
+		"// 1 - Mouse input does not switch away from the gamepad\n"
+		"// 2 - Always show gamepad keys",
+		CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, GAMEPADMODE_AUTO, GAMEPADMODE_ALWAYS)
+
 CVAR_RANGE(joy_lefttrigger_deadzone, "0.2", "Sets the required pressure to trigger a press on the left trigger (Analog controllers only)",
 					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.01f, 1.0f)
 
@@ -382,26 +402,36 @@ CVAR(cl_downloadsites,
      "with ZIP.",
      CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE_FUNC_DECL(cl_interp, "1", "Interpolate enemy player positions",
-					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
+CVAR_RANGE_FUNC_DECL(cl_interp, "1",
+                    "Interpolate enemy player positions",
+                    CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
-CVAR_RANGE(			cl_prednudge,	"0.70", "Smooth out collisions",
-					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.05f, 1.0f)
+CVAR_RANGE(cl_prednudge, "0.70",
+            "Smooth out collisions",
+            CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.05f, 1.0f)
 
-CVAR(				cl_predictweapons, "1", "Draw weapon effects immediately",
-					CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
+CVAR(cl_predictweapons, "1",
+    "Draw weapon effects immediately",
+    CVARTYPE_BOOL, CVAR_USERINFO | CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_netgraph, "0", "Show a graph of network related statistics",
-					CVARTYPE_BOOL, CVAR_NULL)
+CVAR(cl_netgraph, "0",
+    "Show a graph of network related statistics",
+     CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(				cl_serverdownload, "1", "Enable or disable downloading game files and resources from the internet " \
-											"(see cl_downloadsites for more information)",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR(cl_serverdownload, "1",
+    "Enable or disable downloading game files and resources from the internet "
+    "(see cl_downloadsites for more information)",
+    CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file when connecting " \
-											"to a server, even if the client already has that file " \
-											"(requires developer 1).",
-					CVARTYPE_BOOL, CVAR_NULL)
+CVAR(cl_forcedownload, "0",
+    "Forces the client to download the last WAD file when connecting "
+    "to a server, even if the client already has that file "
+    "(requires developer 1).",
+    CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(netdebug_automap, "0",
+    "Enables display of various netcode debugging information on the automap.  Requires iddt level 2 cheat.",
+    CVARTYPE_BOOL, CVAR_NULL)
 
 // Client Preferences
 // ------------------
@@ -415,13 +445,13 @@ CVAR_FUNC_DECL(		cl_name, "Player", "",
 #endif
 
 CVAR(				cl_color, "40 cf 00", "",
-					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_NOENABLEDISABLE | CVAR_NOSET)
 
-CVAR(				cl_customcolor, "40 cf 00", "",
-					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+CVAR_FUNC_DECL(		cl_customcolor, "40 cf 00", "",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				cl_colorpreset, "custom", "",
-					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				cl_gender, "male", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -599,6 +629,14 @@ CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down T
 
 CVAR(hud_speedometer, "0", "Show the HUD speedometer", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(			cl_shotclock, "0", "Show tenths of a second on all HUD timers, starting when the timer reaches cl_shotclocksecondsleft.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE(		cl_shotclocksecondsleft, "10", "Seconds left before a HUD timer starts displaying " \
+				"tenths of a second, if cl_shotclock is enabled",
+				// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
+
 CVAR_RANGE(		hud_transparency, "1.0", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
@@ -744,11 +782,15 @@ CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 CVAR(			r_clipmaskedspecial, "0", "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transferred light levels (mimics MBF behavior)",
+CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR_RANGE(		r_portalrecursions, "16", "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
+CVAR(           r_drawnetcredibility, "0", "Add a particle to each actor indicating how credible the client considers the actor's position",
+                CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR_RANGE(		r_portalrecursions, "4", "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
+				// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 16.0f)
 
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",

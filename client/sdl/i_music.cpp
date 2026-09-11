@@ -192,7 +192,7 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 		return;
 	}
 
-	switch ((int)musicsystem_type)
+	switch (musicsystem_type)
 	{
 		#ifdef OSX
 		case MS_AUDIOUNIT:

@@ -49,7 +49,7 @@ LevelState levelstate;
 /**
  * @brief Countdown getter.
  */
-int LevelState::getCountdown() const
+int LevelState::getCountdownTics() const
 {
 	if (m_state == LevelState::WARMUP || m_state == LevelState::INGAME)
 		return 0;
@@ -58,10 +58,10 @@ int LevelState::getCountdown() const
 	if (period < 0)
 	{
 		// Time desync at the start of a round, force to maximum.
-		return g_preroundtime.asInt();
+		return g_preroundtime.asInt() * TICRATE;
 	}
 
-	return ceil(period / (float)TICRATE);
+	return period;
 }
 
 /**
@@ -76,7 +76,7 @@ team_t LevelState::getDefendingTeam() const
 
 	// Blue always goes first, then red, then so on...
 	const int teams = std::clamp(sv_teamsinplay.asInt(), 2, 3);
-	int round0 = MAX(::levelstate.getRound() - 1, 0);
+	int round0 = std::max(::levelstate.getRound() - 1, 0);
 	return static_cast<team_t>(round0 % teams);
 }
 
@@ -91,14 +91,21 @@ int LevelState::getIngameStartTime() const
 /**
  * @brief Amount of time left for a player to join the game.
  */
-int LevelState::getJoinTimeLeft() const
+int LevelState::getJoinTicsLeft() const
 {
 	if (m_state != LevelState::INGAME)
 		return 0;
 
 	int end_time = m_ingameStartTime + g_lives_jointimer * TICRATE;
-	int left = ceil((end_time - ::level.time) / (float)TICRATE);
-	return MAX(left, 0);
+	return std::max(end_time - ::level.time, 0);
+}
+
+/**
+ * @brief Get the amount of time left to join the game, in seconds.
+ */
+int LevelState::getJoinTimeLeft() const
+{
+	return static_cast<int>(std::ceil(getJoinTicsLeft() / static_cast<float>(TICRATE)));
 }
 
 /**
@@ -270,12 +277,12 @@ void LevelState::readyToggle()
 		return;
 
 	float f_calc = total * sv_warmup_autostart;
-	size_t i_calc = (int)floor(f_calc + 0.5f);
+	size_t i_calc = static_cast<int>(std::round(f_calc));
 	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON)
 	{
 		needed = i_calc + 1;
 	}
-	needed = (int)ceil(f_calc);
+	needed = static_cast<int>(ceil(f_calc));
 
 	if (ready >= needed)
 	{
@@ -459,7 +466,10 @@ void LevelState::tic()
 			G_DeferedFullReset();
 
 			m_roundNumber += 1;
-			setState(LevelState::getStartOfRoundState());
+			if (sv_warmup && G_IsMatchDuelGame())
+				setState(LevelState::INGAME);
+			else
+				setState(LevelState::getStartOfRoundState());
 
 			if (g_rounds)
 				printRoundStart();

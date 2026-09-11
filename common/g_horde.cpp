@@ -377,7 +377,7 @@ static void ParseAlias(OScanner& os)
 
 static void ParseHordeDef(const int lump, const OLumpName& name)
 {
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+	const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
 
 	OScannerConfig config = {
 	    name,  // lumpName

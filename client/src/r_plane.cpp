@@ -78,18 +78,46 @@ static bool R_IsStackPoint(const AActor* mo)
 	return mo && (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK);
 }
 
-// Alpha of the boundary flat drawn over a stack portal's content, from the
-// remote stack thing's arg0: 0 = invisible flat, 255 = fully opaque.
+// Alpha of the boundary flat drawn over a stack portal's content: 0 = invisible
+// flat, 255 = fully opaque.
 static int R_StackFlatAlpha(const AActor* mo)
 {
-	return std::clamp(static_cast<int>(mo->args[0]), 0, 255);
+	const AActor* local = mo->tracer;
+
+	// Unpaired boundary: nothing to see through, so draw the flat as it is.
+	if (local == nullptr)
+		return 255;
+
+	return std::clamp(static_cast<int>(local->args[0]), 0, 255);
 }
 
-// Does this plane render as a portal? A boundary flat at full opacity would
-// completely hide the portal view, so skip the pass and draw it normally.
-static bool R_IsStackPortal(const AActor* mo)
+// Can the view see through this boundary? A flat at full opacity hides
+// whatever is behind it, so the plane just draws normally.
+bool R_IsStackBoundary(const AActor* mo)
 {
 	return R_IsStackPoint(mo) && R_StackFlatAlpha(mo) < 255;
+}
+
+// Stack points of the portal passes being rendered, innermost last.
+std::vector<AActor*> r_ActiveStackPortals;
+
+// Is either end of this boundary's pair already being rendered?
+// If so, prevent it from being entered again.
+bool R_IsStackPairActive(const AActor* mo)
+{
+	const auto samepair = [mo](const AActor* active)
+	{
+		const AActor* mate = active->tracer;
+		return active == mo || (mate != nullptr && mate == mo);
+	};
+
+	return std::ranges::any_of(r_ActiveStackPortals, samepair);
+}
+
+// Does this plane render a portal pass, or only its own boundary flat?
+bool R_IsStackPortal(const AActor* mo)
+{
+	return R_IsStackBoundary(mo) && !R_IsStackPairActive(mo);
 }
 
 visplane_t 				*floorplane;
@@ -100,7 +128,7 @@ visplane_t				*skyplane;
 // Empirically verified to be fairly uniform:
 
 #define visplane_hash(picnum,lightlevel,secplane) \
-  ((unsigned)((picnum)*3+(lightlevel)+(secplane.d)*7) & (MAXVISPLANES-1))
+  (static_cast<unsigned>((picnum)*3+(lightlevel)+(secplane.d)*7) & (MAXVISPLANES-1))
 
 //
 // Clip values are the solid pixel bounding the range.
@@ -204,7 +232,7 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 
 		for (int i = 0; i < len; i++)
 		{
-			int index = (int)(map >> FRACBITS) + 1;
+			int index = static_cast<int>(map >> FRACBITS) + 1;
 			index -= (foggy ? 0 : extralight << 2);
 
 			if (index < 0)
@@ -245,7 +273,7 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 void R_MapLevelPlane(int y, int x1, int x2)
 {
 	fixed_t distance = FixedMul(planeheight, yslope[y]);
-	fixed_t slope = (fixed_t)(focratio * FixedDiv(planeheight, abs(centery - y) << FRACBITS));
+	fixed_t slope = static_cast<fixed_t>(focratio * FixedDiv(planeheight, abs(centery - y) << FRACBITS));
 
 	dspan.xstep = FixedMul(pl_xstepscale, slope);
 	dspan.ystep = FixedMul(pl_ystepscale, slope);
@@ -308,7 +336,7 @@ static visplane_t *new_visplane(unsigned hash)
 
 	if (!check)
 	{
-		check = (visplane_t *)M_Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth());
+		check = static_cast<visplane_t*>(M_Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth()));
 		check->bottom = &check->top[I_GetSurfaceWidth() + 2];
 	}
 	else
@@ -361,6 +389,7 @@ visplane_t *R_FindPlane (const plane_t &secplane, int picnum, int lightlevel,
 		else if (P_IdenticalPlanes(&secplane, &check->secplane) &&
 				picnum == check->picnum &&
 				lightlevel == check->lightlevel &&
+				skybox == check->skybox &&	// boundary flats draw at their own alpha
 				xoffs == check->xoffs && // killough 2/28/98: Add offset checks
 				yoffs == check->yoffs &&
 				basecolormap == check->colormap && // [RH] Add colormap check
@@ -425,7 +454,7 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		intrh = stop;
 	}
 
-	for (x = intrl ; x <= intrh && pl->top[x] == (unsigned int)viewheight; x++)
+	for (x = intrl ; x <= intrh && pl->top[x] == static_cast<unsigned int>(viewheight); x++)
 		;
 
 	if (x > intrh)
@@ -559,7 +588,7 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 	// Translate the points to their position relative to viewx, viewy and
 	// rotate them based on viewangle
-	angle_t rotation = (angle_t)(-(int)viewangle + ANG90);
+	angle_t rotation = static_cast<angle_t>(-static_cast<int>(viewangle) + ANG90);
 	M_TranslateVec3f(&p, &viewpos, rotation);
 	M_TranslateVec3f(&t, &viewpos, rotation);
 	M_TranslateVec3f(&s, &viewpos, rotation);
@@ -670,22 +699,22 @@ static void R_DrawSingleFlatPlane(visplane_t* pl)
 	// regular flat
 	int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
 
-	dspan.color += 4;	// [RH] color if r_drawflat is 1
-	dspan.source = (byte *)W_CacheLumpNum (firstflat + useflatnum, PU_STATIC);
+				dspan.color += 4;	// [RH] color if r_drawflat is 1
+				dspan.source = W_CacheLumpNum<byte>(firstflat + useflatnum, PU_STATIC);
 
-	// [RH] warp a flat if desired
-	if (flatwarp[useflatnum])
-	{
-		if (warpedflats[useflatnum] && flatwarpedwhen[useflatnum] == level.time)
-		{
-			Z_ChangeTag(dspan.source, PU_CACHE);
-			dspan.source = warpedflats[useflatnum];
-			Z_ChangeTag(dspan.source, PU_STATIC);
-		}
-		else
-		{
-			if (!warpedflats[useflatnum])
-				warpedflats[useflatnum] = (byte*)Z_Malloc(64*64, PU_STATIC, &warpedflats[useflatnum]);
+				// [RH] warp a flat if desired
+				if (flatwarp[useflatnum])
+				{
+					if (warpedflats[useflatnum] && flatwarpedwhen[useflatnum] == level.time)
+					{
+						Z_ChangeTag(dspan.source, PU_CACHE);
+						dspan.source = warpedflats[useflatnum];
+						Z_ChangeTag(dspan.source, PU_STATIC);
+					}
+					else
+					{
+						if (!warpedflats[useflatnum])
+							warpedflats[useflatnum] = Z_Malloc<byte>(64*64, PU_STATIC, &warpedflats[useflatnum]);
 
 			static byte buffer[64];
 			int timebase = level.time*23;
@@ -783,6 +812,10 @@ void R_DrawPlanes (void)
 			if (R_IsSkyFlat(pl->picnum) || pl->picnum & PL_SKYFLAT)
 			{
 				R_RenderSkyRange(pl);
+			}
+			else if (R_IsStackBoundary(pl->skybox) && R_StackFlatAlpha(pl->skybox) > 0)
+			{
+				R_DrawStackFlatBlend(pl);
 			}
 			else
 			{
@@ -889,6 +922,7 @@ static void R_RenderPortalView(visplane_t* pl)
 	ptrdiff_t savedds_p = ds_p - drawsegs;
 	ptrdiff_t savedfirstdrawseg = firstdrawseg - drawsegs;
 	AActor* savedcamera = camera;
+	bool pushedstackportal = false;
 
 	int i;
 
@@ -903,8 +937,10 @@ static void R_RenderPortalView(visplane_t* pl)
 
 		viewx = savedx + sky->x - mate->x;
 		viewy = savedy + sky->y - mate->y;
-		viewz = savedz + sky->z - mate->z;
+		viewz = savedz;
 		camera = sky;
+		r_ActiveStackPortals.push_back(sky);
+		pushedstackportal = true;
 	}
 	else
 	{
@@ -922,7 +958,7 @@ static void R_RenderPortalView(visplane_t* pl)
 	// Set up ceiling/floor clip arrays for this visplane.
 	for (i = pl->minx; i <= pl->maxx; i++)
 	{
-		if (pl->top[i] == (unsigned int)viewheight)
+		if (std::cmp_equal(pl->top[i], viewheight))
 		{
 			ceilingclip[i] = viewheight;
 			floorclip[i] = -1;
@@ -965,6 +1001,9 @@ static void R_RenderPortalView(visplane_t* pl)
 	ds_p = drawsegs + savedds_p;
 
 	camera = savedcamera;
+
+	if (pushedstackportal)
+		r_ActiveStackPortals.pop_back();
 	viewx = savedx;
 	viewy = savedy;
 	viewz = savedz;
@@ -975,6 +1014,9 @@ void R_DrawPortals()
 {
 	if (visplanes[MAXVISPLANES] == NULL)
 		return;
+
+	// A render aborted mid-pass can leave entries behind.
+	r_ActiveStackPortals.clear();
 
 	// Don't let gun flashes brighten portal views
 	int savedextralight = extralight;

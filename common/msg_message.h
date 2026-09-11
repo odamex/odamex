@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2021 by Alex Mayfield.
+// Copyright (C) 2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,21 +16,14 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Server message map.
+//  Builders for sender-agnostic messages
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
-#include "i_net.h"
+#include "common.pb.h"
 
-namespace google
-{
-namespace protobuf
-{
-class Descriptor;
-}
-} // namespace google
+struct PacketHeaderType;
 
-const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header);
-svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc);
+odaproto::Header MSG_Header(const PacketHeaderType& i_header);

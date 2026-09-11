@@ -99,8 +99,8 @@ static const CvarCategories& GetCvarCategories()
 	     "sv_monsterdamage", "sv_monstershealth", "sv_monstersrespawn",
 	     "sv_nomonsters", "sv_showplayerpowerups", "sv_skill",
 	     "sv_spawndelaytime", "sv_splashfactor", "sv_weapondamage",
-	     "sv_weapondrop", "sv_weaponstay", "sv_dmfarspawn", "g_spawninv",
-	     "g_thingfilter"});
+	     "sv_weapondrop", "sv_weaponstay", "sv_dmfarspawn", "g_spawnatdeathspot",
+	     "g_spawninv", "g_thingfilter"});
 	Add("Optional Gameplay Functionality",
 	    {"sv_allowcheats", "sv_allowjump", "sv_allowfov", "sv_allowmovebob",
 	     "sv_allowpwo", "sv_allowredscreen", "sv_allowshowspawns",
@@ -136,7 +136,7 @@ static const CvarCategories& GetCvarCategories()
 	    {"sv_maxrate", "sv_natport", "sv_ticbuffer", "sv_upnp",
 	     "sv_upnp_description", "sv_upnp_discovertimeout", "sv_upnp_externalip",
 	     "sv_upnp_internalip", "sv_usemasters", "net_rcvbuf", "net_sndbuf",
-	     "port"});
+	     "net_maxthreads", "port"});
 	Add("Console Log", {"log_color", "log_fulltimestamps", "log_packetdebug"});
 	Add("Chat", {"sv_globalspectatorchat"});
 	Add("Maplist", {"sv_shufflemaplist"});
@@ -149,7 +149,8 @@ static const CvarCategories& GetCvarCategories()
 	     "co_mbfphys", "co_monsterbacking", "co_monsterfriction",
 	     "co_monstersclimbsteep", "co_nosilentspawns", "co_novileghosts",
 	     "co_pursuit", "co_realactorheight", "co_removesoullimit", "co_staylift",
-	     "co_zdoomammo", "co_zdoomphys", "co_zdoomsound"});
+	     "co_zdoomammo", "co_zdoomphys", "co_zdoomsound", "co_archvilefirefix",
+	     "co_voodooscroller", "co_zdoomfriendtargeting"});
 	Add("CTF", {"g_ctf_notouchreturn", "ctf_flagtimeout", "ctf_flagathometoscore", "ctf_manualreturn"});
 	Add("Horde",
 	    {"g_horde_extralife", "g_horde_goalhp", "g_horde_maxtotalhp",

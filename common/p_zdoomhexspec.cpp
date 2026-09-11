@@ -740,7 +740,7 @@ void P_SpawnZDoomExtra(int i)
 			if (IgnoreSpecial)
 				break;
 			float grav =
-			    ((float)P_AproxDistance(lines[i].dx, lines[i].dy)) / (FRACUNIT * 100.0f);
+			    (static_cast<float>(P_AproxDistance(lines[i].dx, lines[i].dy))) / (FRACUNIT * 100.0f);
 			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
 				sectors[s].gravity = grav;
 		}
@@ -1037,9 +1037,9 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* s
 			if (fog != 0x000000 || color != 0xffffff)
 			{
 				dyncolormap_t* colormap =
-				    GetSpecialLights(((argb_t)color).getr(), ((argb_t)color).getg(),
-				                     ((argb_t)color).getb(), ((argb_t)fog).getr(),
-				                     ((argb_t)fog).getg(), ((argb_t)fog).getb());
+				    GetSpecialLights((static_cast<argb_t>(color)).getr(), (static_cast<argb_t>(color)).getg(),
+				                     (static_cast<argb_t>(color)).getb(), (static_cast<argb_t>(fog)).getr(),
+				                     (static_cast<argb_t>(fog)).getg(), (static_cast<argb_t>(fog)).getb());
 
 				for (sector_t& sector : R_GetSectors())
 				{
@@ -1112,24 +1112,23 @@ void P_PostProcessZDoomLinedefSpecial(line_t* line)
 {
 	switch (line->special)
 	{ // killough 4/11/98: handle special types
-		int j;
 	case TranslucentLine: // killough 4/11/98: translucent 2s textures
 #if 0
 				lump = sides[*line->sidenum].special;		// translucency from sidedef
 				if (!line->tag)							// if tag==0,
 					line->tranlump = lump;				// affect this linedef only
 				else
-					for (j=0;j<numlines;j++)			// if tag!=0,
+					for (int j=0;j<numlines;j++)			// if tag!=0,
 						if (lines[j].tag == ld->tag)	// affect all matching linedefs
 							lines[j].tranlump = lump;
 #else
 	                      // [RH] Second arg controls how opaque it is.
 		if (!line->args[0])
-			line->lucency = (byte)line->args[1];
+			line->lucency = static_cast<byte>(line->args[1]);
 		else
-			for (j = 0; j < numlines; j++)
-				if (lines[j].id == line->args[0])
-					lines[j].lucency = (byte)line->args[1];
+			for (auto& other : R_GetLines())
+				if (other.id == line->args[0])
+					other.lucency = static_cast<byte>(line->args[1]);
 #endif
 		line->special = 0;
 		break;

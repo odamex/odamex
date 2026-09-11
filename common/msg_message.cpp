@@ -1,10 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,13 +16,23 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		Networking stuff
+//  Builders for sender-agnostic messages
 //
 //-----------------------------------------------------------------------------
 
-#pragma once
+#include "msg_message.h"
 
-#define BACKUPTICS		12	// number of tics to remember
+#include "PacketHeaderType.h"
 
-// Create any new ticcmds and broadcast to other players.
-void NetUpdate();
+odaproto::Header MSG_Header(const PacketHeaderType& i_header)
+{
+	odaproto::Header msg;
+
+	msg.set_sequence        (i_header.sequence);
+	msg.set_originator_tic  (i_header.originatorTic);
+	msg.set_destination_tic (i_header.destinationTic);
+	msg.set_reliable_size   (i_header.reliableSize);
+	msg.set_flags           (i_header.flags);
+
+	return msg;
+}

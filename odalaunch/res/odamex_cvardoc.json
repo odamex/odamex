@@ -263,6 +263,15 @@
          "type" : "boolean"
       },
       {
+         "default" : 2,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "How the map author is shown on the automap.\n// 0 - Off\n// 1 - Static\n// 2 - Fade in/out with map name\n// 3 - Marquee in/out with map name\n// 4 - Teletype effect with map name",
+         "max" : 4,
+         "min" : 0,
+         "name" : "am_showauthor",
+         "type" : "integer"
+      },
+      {
          "default" : true,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "",
@@ -575,14 +584,14 @@
       },
       {
          "default" : "40 cf 00",
-         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "flags" : [ "USERINFO", "NOSET", "NOENABLEDISABLE" ],
          "helptext" : "",
          "name" : "cl_color",
          "type" : "string"
       },
       {
          "default" : "custom",
-         "flags" : [ "CLIENTARCHIVE" ],
+         "flags" : [ "USERINFO", "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "",
          "name" : "cl_colorpreset",
          "type" : "string"
@@ -596,7 +605,7 @@
       },
       {
          "default" : "40 cf 00",
-         "flags" : [ "CLIENTARCHIVE" ],
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "",
          "name" : "cl_customcolor",
          "type" : "string"
@@ -748,6 +757,22 @@
          "helptext" : "Enable or disable downloading game files and resources from the internet (see cl_downloadsites for more information)",
          "name" : "cl_serverdownload",
          "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show tenths of a second on all HUD timers, starting when the timer reaches cl_shotclocksecondsleft.",
+         "name" : "cl_shotclock",
+         "type" : "boolean"
+      },
+      {
+         "default" : 10,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Seconds left before a HUD timer starts displaying tenths of a second, if cl_shotclock is enabled",
+         "max" : 60,
+         "min" : 0,
+         "name" : "cl_shotclocksecondsleft",
+         "type" : "integer"
       },
       {
          "default" : false,
@@ -912,6 +937,13 @@
       {
          "default" : false,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Fix the vanilla bug where Arch-vile fire is spawned in the wrong location, causing motion and interpolation column-of-fire-type visual glitches",
+         "name" : "co_archvilefirefix",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "Use MBF monster_avoid_hazards behavior -- monsters will avoid some damaging sectors and crushers.",
          "name" : "co_avoidhazards",
          "type" : "boolean"
@@ -1069,8 +1101,22 @@
       {
          "default" : false,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use MBF21's comp_voodooscroller behavior -- Enable voodoo dolls on slow scrollers to move too slowly.",
+         "name" : "co_voodooscroller",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "Enable/disable ZDoom 1.23b33-based ammo checks",
          "name" : "co_zdoomammo",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Use ZDoom's monster targeting when it comes to friendlies. This is much less taxing than MBF friendly targeting, so enable if your system is struggling on slaughter maps with friendlies.",
+         "name" : "co_zdoomfriendtargeting",
          "type" : "boolean"
       },
       {
@@ -1138,7 +1184,7 @@
          "type" : "boolean"
       },
       {
-         "default" : "012030",
+         "default" : "013000",
          "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
          "helptext" : "",
          "name" : "configver",
@@ -1326,6 +1372,13 @@
          "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
          "helptext" : "Turns on offensive vs defensive sides for team-based game modes - teams on offense don't have to defend any team objective, teams on defense win if time expires, and if rounds are enabled the team on defense changes every round",
          "name" : "g_sides",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Players respawn on the spot where they died instead of at a player start.",
+         "name" : "g_spawnatdeathspot",
          "type" : "boolean"
       },
       {
@@ -1647,6 +1700,15 @@
          "type" : "boolean"
       },
       {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Sets the behavior of on-screen prompts of when to name gamepad buttons instead of keyboard keys.\n// 0 - Follow whichever device was used last\n// 1 - Mouse input does not switch away from the gamepad\n// 2 - Always show gamepad keys",
+         "max" : 2,
+         "min" : 0,
+         "name" : "joy_gamepadmode",
+         "type" : "integer"
+      },
+      {
          "default" : 0.0,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "",
@@ -1707,6 +1769,20 @@
          "helptext" : "Language to use for ingame strings",
          "name" : "language",
          "type" : "string"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Extended timestamp info in the log file (dd/mm/yyyy hh:mm:ss)",
+         "name" : "log_fulltimestamps",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERARCHIVE", "CLIENTARCHIVE" ],
+         "helptext" : "Print debugging messages for each packet sent",
+         "name" : "log_packetdebug",
+         "type" : "boolean"
       },
       {
          "default" : true,
@@ -1864,22 +1940,11 @@
          "type" : "boolean"
       },
       {
-         "default" : 131072,
-         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
-         "helptext" : "Net receive buffer size in bytes",
-         "max" : 268435456,
-         "min" : 1500,
-         "name" : "net_rcvbuf",
-         "type" : "integer"
-      },
-      {
-         "default" : 131072,
-         "flags" : [ "NOENABLEDISABLE", "SERVERARCHIVE", "CLIENTARCHIVE" ],
-         "helptext" : "Net send buffer size in bytes",
-         "max" : 268435456,
-         "min" : 1500,
-         "name" : "net_sndbuf",
-         "type" : "integer"
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Enables display of various netcode debugging information on the automap.  Requires iddt level 2 cheat.",
+         "name" : "netdebug_automap",
+         "type" : "boolean"
       },
       {
          "default" : false,
@@ -1921,6 +1986,13 @@
          "flags" : [],
          "helptext" : "Disables all texturing of walls, floors and ceilings",
          "name" : "r_drawflat",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Add a particle to each actor indicating how credible the client considers the actor's position",
+         "name" : "r_drawnetcredibility",
          "type" : "boolean"
       },
       {
@@ -1998,10 +2070,10 @@
          "type" : "boolean"
       },
       {
-         "default" : 16,
+         "default" : 4,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
-         "max" : 64,
+         "max" : 16,
          "min" : 0,
          "name" : "r_portalrecursions",
          "type" : "integer"
@@ -2048,7 +2120,7 @@
       {
          "default" : false,
          "flags" : [],
-         "helptext" : "Things are lit according to the average of the transferred light levels (mimics MBF behavior)",
+         "helptext" : "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
          "name" : "r_thingsectorlight",
          "type" : "boolean"
       },
@@ -2898,6 +2970,6 @@
    ],
    "odamex_branchname" : "",
    "odamex_commithash" : "",
-   "odamex_version" : "12.3.0",
+   "odamex_version" : "13.0.0",
    "schema_version" : 1
 }

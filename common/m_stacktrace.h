@@ -23,4 +23,4 @@
 
 #pragma once
 
-std::string M_GetStacktrace(std::string header = "Stack trace:");
+std::string M_GetStacktrace(std::string header = "Stack trace:", bool report_message = true);

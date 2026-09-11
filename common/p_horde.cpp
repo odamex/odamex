@@ -292,7 +292,7 @@ class HordeState
 							attempts = 0;
 							break;
 						}
-						horderolodex = horderolodex--;
+						horderolodex--;
 						if (horderolodex < 0)
 						{
 							horderolodex = HORDECOOLDOWN_SIZE - 1;
@@ -316,11 +316,7 @@ class HordeState
 		if (G_IsHordeMode() && (!G_IsLivesGame() || playerslives.count > 0))
 		{
 			hordecooldown[hordecoolcount] = wavename;
-			hordecoolcount = ++hordecoolcount;
-			if (hordecoolcount >= HORDECOOLDOWN_SIZE)
-			{
-				hordecoolcount = 0;
-			}
+			hordecoolcount = (hordecoolcount + 1) % HORDECOOLDOWN_SIZE;
 		}
 	}
 
@@ -353,7 +349,7 @@ class HordeState
 				if (player->lives < g_lives)
 				{
 					player->lives += 1;
-					MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
+					player->client.messenger->Reliable().Write(SVC_PlayerInfo(*player));
 					MSG_BroadcastSVC(CLBUF_RELIABLE,
 					                 SVC_PlayerMembers(*player, SVC_PM_LIVES),
 					                 player->id);
@@ -368,7 +364,7 @@ class HordeState
 			for (const auto& player : queued)
 			{
 				player->lives = 1;
-				MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
+				player->client.messenger->Reliable().Write(SVC_PlayerInfo(*player));
 				MSG_BroadcastSVC(CLBUF_RELIABLE,
 				                 SVC_PlayerMembers(*player, SVC_PM_LIVES), player->id);
 			}
@@ -520,7 +516,7 @@ class HordeState
 		m_bosses.clear();
 		while ((mo = iterator.Next()))
 		{
-			if (mo->oflags & MFO_BOSSPOOL)
+			if (mo->oflags & MFO_ISHORDEBOSS)
 			{
 				m_bosses.push_back(mo->ptr());
 			}
@@ -537,7 +533,7 @@ class HordeState
 	 */
 	void recountMonstersHelper(mobjCounts_t& monsterCounts, int32_t type)
 	{
-		if (monsterCounts.count(type))
+		if (monsterCounts.contains(type))
 		{
 			monsterCounts[type] += 1;
 		}
@@ -563,7 +559,7 @@ class HordeState
 		{
 			if (mo->health > 0)
 			{
-				if (mo->oflags & MFO_BOSSPOOL)
+				if (mo->oflags & MFO_ISHORDEBOSS)
 				{
 					recountMonstersHelper(m_bossCounts, mo->type);
 				}
@@ -587,16 +583,16 @@ class HordeState
 
 	void decrementCount(AActor* mo)
 	{
-		if (mo->oflags & MFO_BOSSPOOL)
+		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
-			if (m_bossCounts.count(mo->type))
+			if (m_bossCounts.contains(mo->type))
 			{
 				m_bossCounts[mo->type] -= 1;
 			}
 		}
 		else
 		{
-			if (m_monsterCounts.count(mo->type))
+			if (m_monsterCounts.contains(mo->type))
 			{
 				m_monsterCounts[mo->type] -= 1;
 			}
@@ -703,14 +699,14 @@ void HordeState::getNextSpawnTime(int& min, int& max)
 		const double falloff = Remap(::level.time, m_waveTime, FALLOFF_TIME, 1.0, 0.0);
 		const double floormin = Remap(falloff, 0.0, 1.0, 0.0, EMPTY_MIN_SPAWN);
 		const double floormax = Remap(falloff, 0.0, 1.0, 0.0, EMPTY_MAX_SPAWN);
-		minf = MAX(minf, floormin);
-		maxf = MAX(maxf, floormax);
+		minf = std::max(minf, floormin);
+		maxf = std::max(maxf, floormax);
 	}
 
 	// Turn into integers.
-	min = MAX(int(round(minf)), 1);
-	max = MAX(int(round(maxf)), 1);
-	max = MAX(max, min);
+	min = std::max(int(round(minf)), 1);
+	max = std::max(int(round(maxf)), 1);
+	max = std::max(max, min);
 }
 
 /**
@@ -916,7 +912,7 @@ void P_AddHealthPool(AActor* mo)
 	::g_HordeDirector.addSpawnHealth(::mobjinfo[mo->type].spawnhealth);
 
 	// Bosses also have health added to a separate pool for display purposes.
-	if (mo->oflags & MFO_BOSSPOOL)
+	if (mo->oflags & MFO_ISHORDEBOSS)
 	{
 		::g_HordeDirector.addBossHealth(::mobjinfo[mo->type].spawnhealth);
 	}
@@ -939,11 +935,11 @@ void P_RemoveHealthPool(AActor* mo)
 void P_AddDamagePool(AActor* mo, const int damage)
 {
 	// Not a part of the pool
-	if (!(mo->oflags & MFO_BOSSPOOL))
+	if (not (mo->oflags & MFO_ISHORDEBOSS))
 		return;
 
 	// Counts as a monster?
-	if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
+	if (not (mo->flags & MF_COUNTKILL or mo->type == MT_SKULL))
 		return;
 
 	::g_HordeDirector.addBossDamage(damage);

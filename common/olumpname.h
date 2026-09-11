@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <string>
+
 class OLumpName
 {
 	char m_data[9];
@@ -98,3 +100,9 @@ struct std::hash<OLumpName>
 };
 
 auto inline format_as(const OLumpName& s) { return s.data(); }
+
+// TODO: make it possible for this to be consteval
+inline OLumpName operator""_ln(const char* s, size_t)
+{
+	return OLumpName(s);
+}

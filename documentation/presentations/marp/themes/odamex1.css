@@ -1,0 +1,106 @@
+/*!
+ *
+ * @theme odamex1
+ *
+ * @auto-scaling true
+ * @size 16:9 1280px 720px
+ * @size 4:3 960px 720px
+ */
+
+@import 'default';
+
+:root
+{
+    color-scheme: dark;
+
+    --h1-color:         #ffa300;
+    --heading-strong-color: #00a3ff;    /* Give heading strong emphasis an eye-catching color. */
+    --bgColor-default:  #313135;
+    --paginate-color:   #000000;
+    --borderColor-default: #ffa300;
+}
+header
+{
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    height: 50px;
+    background-image: url(themes/menulogo.png), linear-gradient(to bottom, #333333, #111111);
+    background-size: 140px 50px;
+    background-position: left top, center top;
+    background-repeat: no-repeat, repeat;
+}
+section
+{
+    display: flex;
+    justify-content: flex-start;
+}
+section.lead
+{
+    text-align: right;
+    justify-content: flex-end;
+    background-image: url(themes/slide-1.jpg);
+    background-size:  1280px;
+    background-repeat: no-repeat;
+    font-size: 300%;
+}
+section.bumper
+{
+    align-items: center;
+    text-align: center;
+    flex-direction: column;
+    background-image: url(themes/slide-1.jpg);
+    background-size:  1280px;
+    background-repeat: no-repeat;
+    background-position-y: 50px;    /* start immediately after the header */
+    padding-top: 480px;             /* start immediately after the header + background */
+    font-size: 300%;
+}
+
+h1
+{
+    text-shadow: 5px 5px 10px black;
+}
+h2
+{
+    color: #ffa300;
+}
+h3
+{
+    color: #00a3ff;
+}
+
+strong
+{
+    color: #00a3ff;
+}
+
+h1+h2,                  /* For h2 directly following an h1 */
+div.two-columns div h2  /* For h2 directly at the top of a column in a two-column div */
+{
+    margin-top: 0;
+    padding-top: 0;
+}
+
+ul, ol
+{
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 80%;
+}
+li, li+li
+{
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+div.two-columns
+{
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 50px;
+}
+

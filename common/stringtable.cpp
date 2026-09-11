@@ -31,6 +31,7 @@
 #include "i_system.h"
 #include "oscanner.h"
 #include "stringenums.h"
+#include "v_textcolors.h"
 #include "w_wad.h"
 
 /**
@@ -66,7 +67,7 @@ static bool IfGameZDoom(const std::string& str)
 
 bool StringTable::canSetPassString(int pass, const std::string& name) const
 {
-	StringHash::const_iterator it = _stringHash.find(name);
+	StringHash::const_iterator it = _stringHash.find(OString(name));
 
 	// New string?
 	if (it == _stringHash.end())
@@ -210,7 +211,7 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char
 				{
 					continue;
 				}
-				setPassString(pass, name, value);
+				setPassString(pass, OString(name), OString(value));
 			}
 		}
 		else
@@ -282,20 +283,69 @@ void StringTable::prepareIndexes()
 		StringHash::iterator it = _stringHash.find(name);
 		if (it == _stringHash.end())
 		{
-			TableEntry entry = {std::make_pair(false, ""), 0xFF, static_cast<int>(i)};
+			TableEntry entry = {std::make_pair(false, ""_os), 0xFF, static_cast<int>(i)};
 			_stringHash.emplace(name, entry);
 		}
 	}
 }
 
+namespace
+{
+
+//
+// Rewrite the ZDoom color escape at the given position into the escape
+// character form the text drawing code understands.
+//
+// Handles both the "\cX" letter form and the "\c[Name]" named form.
+//
+// Returns false and leaves a malformed escape alone.
+//
+bool replaceColorEscape(std::string& str, size_t index)
+{
+	// "\c" needs at least one more character to name a color with.
+	if (index + 2 >= str.length())
+		return false;
+
+	if (str.at(index + 2) != '[')
+	{
+		// Letter form. Our color letters are the same as ZDoom's, so only
+		// the escape character itself has to change.
+		const std::string code = {TEXTCOLOR_ESCAPE, str.at(index + 2)};
+		str.replace(index, 3, code);
+		return true;
+	}
+
+	// Named form. We have no custom translations, so resolve the name to
+	// the nearest built-in color range.
+	const size_t close = str.find(']', index + 3);
+	if (close == std::string::npos)
+		return false;
+
+	const std::string name = str.substr(index + 3, close - (index + 3));
+	str.replace(index, close - index + 1, TextColorFromRange(TextColorFromString(name)));
+	return true;
+}
+
+//
+// True if the string ends with a color escape code, which makes appending
+// another one pointless.
+//
+bool endsWithColorCode(const std::string& str)
+{
+	return str.length() >= 2 && str.at(str.length() - 2) == TEXTCOLOR_ESCAPE;
+}
+
+} // namespace
+
 void StringTable::replaceEscapes(std::string& str)
 {
 	size_t index = 0;
+	bool colored = false;
 
 	for (;;)
 	{
 		// Find the initial slash.
-		index = str.find("\\", index);
+		index = str.find('\\', index);
 		if (index == std::string::npos || index == str.length() - 1)
 			break;
 
@@ -308,9 +358,15 @@ void StringTable::replaceEscapes(std::string& str)
 		case '\\':
 			str.replace(index, 2, "\\");
 			break;
+		case 'c':
+			colored |= replaceColorEscape(str, index);
+			break;
 		}
 		index += 1;
 	}
+
+	if (colored && !endsWithColorCode(str))
+		str += TEXTCOLOR_NORMAL;
 }
 
 //
@@ -359,6 +415,30 @@ void StringTable::loadStrings(const bool engOnly)
 }
 
 //
+// Obtain a string by name, retrying with the name uppercased.
+//
+const char* StringTable::lookup(const std::string& name) const
+{
+	const char* text = operator()(OString(name));
+	if (text[0] == '\0')
+		text = operator()(OStringToUpper(name));
+
+	return text;
+}
+
+//
+// Resolve a "$NAME" token into the string it names.
+//
+std::string StringTable::maybeLookup(const std::string& token) const
+{
+	if (token.length() < 2 || token[0] != '$')
+		return token;
+
+	const char* text = lookup(token.substr(1));
+	return text[0] == '\0' ? token : text;
+}
+
+//
 // Find a string with the same text.
 //
 const OString& StringTable::matchString(const OString& string) const
@@ -371,7 +451,7 @@ const OString& StringTable::matchString(const OString& string) const
 			return first;
 	}
 
-	static OString empty = "";
+	static OString empty = ""_os;
 	return empty;
 }
 

@@ -97,7 +97,7 @@ jobs:
         name: Odamex-Win-x64-pdb
         path: Output/pdb/*.zip
     - name: Upload release binary and debug pdb (x64)
-      uses: softprops/action-gh-release@v3.0.2
+      uses: softprops/action-gh-release@v3.0.3
       with:
         files: |
           ./Output/zip/odamex-win64-${{env.new_version}}.zip
@@ -144,7 +144,7 @@ jobs:
         name: Odamex-Win-x86-pdb
         path: Output/pdb/*.zip
     - name: Upload release binary and debug pdb (x86)
-      uses: softprops/action-gh-release@v3.0.2
+      uses: softprops/action-gh-release@v3.0.3
       with:
         files: |
           ./Output/zip/odamex-win32-${{env.new_version}}.zip
@@ -172,7 +172,7 @@ jobs:
       shell: bash
       run: rm -rf .git
     - name: Run build
-      uses: flatpak/flatpak-github-actions/flatpak-builder@8e357b1556f526e3642244bdf1a6d585be36de54
+      uses: flatpak/flatpak-github-actions/flatpak-builder@v6.8
       with:
         manifest-path: packaging/flatpak/net.odamex.Odamex.yml
         bundle: odamex-linux-x86_64-${{ env.new_version }}.flatpak
@@ -180,7 +180,7 @@ jobs:
         build-debug-bundle: true
         artifact-name: Odamex-Flatpak-x86_64
     - name: Upload release binary (x86_64)
-      uses: softprops/action-gh-release@v3.0.2
+      uses: softprops/action-gh-release@v3.0.3
       with:
         files: |
           odamex-linux-x86_64-${{ env.new_version }}.flatpak
@@ -208,7 +208,7 @@ jobs:
       shell: bash
       run: rm -rf .git
     - name: Run build
-      uses: flatpak/flatpak-github-actions/flatpak-builder@8e357b1556f526e3642244bdf1a6d585be36de54
+      uses: flatpak/flatpak-github-actions/flatpak-builder@v6.8
       with:
         manifest-path: packaging/flatpak/net.odamex.Odamex.yml
         arch: aarch64
@@ -217,7 +217,7 @@ jobs:
         build-debug-bundle: true
         artifact-name: Odamex-Flatpak-arm64
     - name: Upload release binary (arm64)
-      uses: softprops/action-gh-release@v3.0.2
+      uses: softprops/action-gh-release@v3.0.3
       env:
         GITHUB_TOKEN: ${{ github.token }}
       with:
@@ -470,14 +470,14 @@ jobs:
           done
         }
         for app_bin in \
-          "build/client/odamex.app/Contents/MacOS/odamex" \
-          "build/odalaunch/odalaunch.app/Contents/MacOS/odalaunch"
+          "build/odamex/odamex.app/Contents/MacOS/odamex" \
+          "build/odamex/odalaunch.app/Contents/MacOS/odalaunch"
         do
           if [ ! -f "${app_bin}" ]; then
             continue
           fi
           is_odamex=0
-          if [[ "${app_bin}" == *"/client/odamex.app/"* ]]; then
+          if [[ "${app_bin}" == *"/odamex/odamex.app/"* ]]; then
             is_odamex=1
           fi
           bundle_dir="$(dirname "${app_bin}")/../Frameworks"
@@ -537,7 +537,7 @@ jobs:
         name: Odamex-macOS-universal
         path: odamex-macos-${{ env.new_version }}.dmg
     - name: Upload release binary (Universal)
-      uses: softprops/action-gh-release@v3.0.2
+      uses: softprops/action-gh-release@v3.0.3
       with:
         files: odamex-macos-${{ env.new_version }}.dmg
   package-and-upload-windows:
@@ -591,7 +591,7 @@ jobs:
         name: Odamex-src-zip
         path: './odamex-src-${{ env.new_version }}.zip'
     - name: Upload zip and installer to Github Release Artifacts
-      uses: softprops/action-gh-release@v3.0.2
+      uses: softprops/action-gh-release@v3.0.3
       with:
         files: |
           ./odamex-src-${{env.new_version}}.zip
@@ -631,7 +631,7 @@ jobs:
         name: Odamex-tar-gz
         path: './*.tar.gz'
     - name: Upload tar.gz and tar.xz to Github Release Artifacts
-      uses: softprops/action-gh-release@v3.0.2
+      uses: softprops/action-gh-release@v3.0.3
       with:
         files: |
           ./odamex-src-${{env.new_version}}.tar.gz

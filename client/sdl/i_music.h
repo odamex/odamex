@@ -56,8 +56,7 @@ typedef enum
 // The music system to use when the user has expressed no preference, which
 // depends on what the platform does best.
 //
-// TODO: convert this to consteval when merging to protobreak
-constexpr MusicSystemType I_GetDefaultMusicSystem()
+consteval MusicSystemType I_GetDefaultMusicSystem()
 {
 #ifdef _WIN32
 	return MS_PORTMIDI;

@@ -39,6 +39,8 @@
 #include "g_spree.h"
 #include "g_multikill.h"
 
+void P_SpawnPlayer(player_t& player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
+
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
 EXTERN_CVAR(chasedemo)
@@ -54,6 +56,13 @@ void G_PlayerReborn(player_t &player);
 //	between levels.
 //
 void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
+{
+	P_SpawnPlayer(player, INT2FIXED(mthing.x), INT2FIXED(mthing.y),
+	              INT2FIXED(mthing.z), MapThingToAngle(mthing.angle));
+}
+
+void P_SpawnPlayer(player_t& player, const fixed_t x, const fixed_t y,
+                   const fixed_t startz, const angle_t angle)
 {
 	// denis - clients should not control spawning
 	if (!serverside)
@@ -79,7 +88,10 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 //		mobj = new AActor(player.mo->x, player.mo->y, ONFLOORZ, MT_PLAYER);
 //	else
 //		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
-	mobj = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS, ONFLOORZ, MT_PLAYER);
+	mobj = new AActor(x, y,
+		(level.flags & LEVEL_USEPLAYERSTARTZ ? startz : ONFLOORZ), MT_PLAYER);
+
+	mobj->credibility.Lionize();
 
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
@@ -89,7 +101,7 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 		// NOTE(jsd): Copy the player setup menu's translation to the player_id's:
 		// [SL] don't screw with vanilla demo player colors
 		if (!demoplayback)
-			R_CopyTranslationRGB(0, player.id);
+			R_CopyTranslationRGB(menuplayer_id, player.id);
 	}
 
 //	if (player.deadspectator && player.mo)
@@ -102,7 +114,7 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 //		mobj->angle = ANG45 * (mthing->angle/45);
 //		mobj->pitch = 0;
 //	}
-	mobj->angle = ANG45 * (mthing.angle/45);
+	mobj->angle = angle;
 	mobj->pitch = 0;
 
 	mobj->player = &player;
@@ -182,7 +194,7 @@ void P_ShowSpawns(const mapthing2_t& mthing)
 
 	if (clientside && cl_showspawns)
 	{
-		AActor* spawn = 0;
+		AActor* spawn = nullptr;
 
 		if (sv_gametype == GM_DM && mthing.type == 11)
 		{
@@ -197,7 +209,7 @@ void P_ShowSpawns(const mapthing2_t& mthing)
 		{
 			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{
-				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+				TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 				if (teamInfo->TeamSpawnThingNum == mthing.type)
 				{
 					// [RK] If we're not using z-height spawns, spawn the fountain on the floor
@@ -211,7 +223,7 @@ void P_ShowSpawns(const mapthing2_t& mthing)
 		}
 
 		if (spawn) {
-			spawn->effects = spawn->args[0] << FX_FOUNTAINSHIFT;
+			spawn->SetEffects(spawn->args[0] << FX_FOUNTAINSHIFT);
 		}
 	}
 }

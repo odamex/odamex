@@ -46,7 +46,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
 
     // Called by IO functions when input is detected.
-void D_PostEvent(const event_t* ev);
+void D_PostEvent(const event_t& ev);
 
 //
 // BASE LEVEL
@@ -86,6 +86,7 @@ void D_RunTics(void (*sim_func)(), void(*display_func)());
 
 void D_AddWadCommandLineFiles(OWantFiles& out);
 void D_AddDehCommandLineFiles(OWantFiles& out);
+void D_AddStartupWadFiles(OWantFiles& outwadfiles, OWantFiles& outpatchfiles);
 
 void D_CheckInfoDumps();
 

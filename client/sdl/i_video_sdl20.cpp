@@ -71,7 +71,7 @@ EXTERN_CVAR (vid_widescreen)
 static void I_AddSDL20VideoModes(IVideoModeList* modelist, int bpp)
 {
 	int display_index = 0;
-	SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
+	SDL_DisplayMode mode = { .format = SDL_PIXELFORMAT_UNKNOWN, .w = 0, .h = 0, .refresh_rate = 0, .driverdata = nullptr };
 
 	int display_mode_count = SDL_GetNumDisplayModes(display_index);
 	if (display_mode_count < 1)
@@ -617,7 +617,7 @@ void ISDL20Window::getEvents()
 					DPrintFmt("SDL_WINDOWEVENT_RESIZED ({}x{})\n", width, height);
 
 					int current_time = I_MSTime();
-					if ((EWindowMode)vid_fullscreen.asInt() == WINDOW_Windowed && current_time > mAcceptResizeEventsTime)
+					if (vid_fullscreen.asEnum<EWindowMode>() == WINDOW_Windowed && current_time > mAcceptResizeEventsTime)
 					{
 						AddCommandString(fmt::format("vid_setmode {} {}", width, height));
 					}
@@ -702,7 +702,7 @@ void ISDL20Window::setWindowIcon()
 
 	#if !defined(_WIN32)
 	SDL_Surface* icon_surface = SDL_CreateRGBSurfaceFrom(
-											(void*)app_icon.pixel_data, app_icon.width, app_icon.height,
+											const_cast<byte*>(app_icon.pixel_data), app_icon.width, app_icon.height,
 											app_icon.bytes_per_pixel * 8, app_icon.width * app_icon.bytes_per_pixel,
 											0xff << 0, 0xff << 8, 0xff << 16, 0xff << 24);
 

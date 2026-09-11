@@ -34,7 +34,7 @@ void G_ParseMusInfo()
 	while ((lump = W_FindLump("MUSINFO", lump)) != -1)
 	{
 		LevelInfos& levels = getLevelInfos();
-		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+		const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
 
 		const OScannerConfig config = {
 		    "MUSINFO", // lumpName

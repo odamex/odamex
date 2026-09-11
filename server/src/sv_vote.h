@@ -79,7 +79,15 @@ public:
 	}
 };
 
-void SV_Callvote(player_t &player);
+namespace odaproto
+{
+    namespace clc
+    {
+        class CallVote;
+    }
+}
+
+void SV_Callvote(player_t &player, const odaproto::clc::CallVote& msg);
 void SV_VoteCmd(player_t& player, const std::vector<std::string>& args);
 void Vote_Disconnect(player_t &player);
 void Vote_Runtic();
