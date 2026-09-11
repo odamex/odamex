@@ -1367,7 +1367,7 @@ std::array<value_t, 6> MinimapLocations = {{
 	{ .value = 5.0, .name = "Right Bottom"},
 }};
 
-std::array<value_t, 6> MinimapScaleLock = {{
+std::array<value_t, 3> MinimapScaleLock = {{
 	{.value = 0.0, .name = "None"},
 	{.value = 1.0, .name = "Width"},
 	{.value = 2.0, .name = "Height"},

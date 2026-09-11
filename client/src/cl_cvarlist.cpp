@@ -205,7 +205,7 @@ CVAR_RANGE(				am_ovscalewidth, "0.25", "Scale width of overlay minimap",
 CVAR_RANGE(				am_ovscaleheight, "0.5", "Scale height of overlay minimap",
 						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR_RANGE(				am_ovscalelock, "0", "Overlay minimap scale lock (0:None, 1:Width, 2:Height)",
+CVAR_RANGE(				am_ovscalelock, "2", "Overlay minimap scale lock (0:None, 1:Width, 2:Height)",
 						// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
 						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 

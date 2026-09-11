@@ -156,7 +156,7 @@
          "type" : "number"
       },
       {
-         "default" : 0,
+         "default" : 2,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Overlay minimap scale lock (0:None, 1:Width, 2:Height)",
          "max" : 2,
