@@ -1663,6 +1663,21 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(const DThinker* thinker)
 		pmsg->set_base_level(phased->GetBaseLevel());
 		pmsg->set_phase(phased->GetPhase());
 	}
+	else if (thinker->IsA(RUNTIME_CLASS(DWaggle)))
+	{
+		const auto* waggle = static_cast<const DWaggle*>(thinker);
+		odaproto::svc::ThinkerUpdate_Waggle* wmsg = msg.mutable_waggle();
+		wmsg->set_sector(waggle->GetSector() - sectors);
+		wmsg->set_ceiling(waggle->m_Ceiling);
+		wmsg->set_original_height(waggle->m_OriginalHeight);
+		wmsg->set_accumulator(waggle->m_Accumulator);
+		wmsg->set_acc_delta(waggle->m_AccDelta);
+		wmsg->set_target_scale(waggle->m_TargetScale);
+		wmsg->set_scale(waggle->m_Scale);
+		wmsg->set_scale_delta(waggle->m_ScaleDelta);
+		wmsg->set_ticker(waggle->m_Ticker);
+		wmsg->set_state(waggle->m_State);
+	}
 
 	return msg;
 }

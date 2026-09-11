@@ -26,6 +26,7 @@
 
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "p_unlag.h"
 #include "s_sound.h"
 #include "r_state.h"
 #include "tables.h"
@@ -1785,34 +1786,35 @@ static constexpr fixed_t FloatBobOffsets[64] = {
     -370728, -405281, -435930, -462381, -484380, -501713, -514215, -521764,
     -524288, -521764, -514214, -501713, -484379, -462381, -435930, -405280,
     -370728, -332605, -291279, -247148, -200637, -152193, -102284, -51389};
-/*
 bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
-                             int timer, bool ceiling)
+                         int timer, bool ceiling)
 {
-	int sectorIndex;
-	sector_t* sector;
-	bool retCode;
+	bool retCode = false;
+	int sectorIndex = -1;
 
-	retCode = false;
-	sectorIndex = -1;
 	while ((sectorIndex = P_FindSectorFromTagOrLine(tag, line, sectorIndex)) >= 0)
 	{
-		sector = &sectors[sectorIndex];
+		auto* sector = &sectors[sectorIndex];
+
 		if (ceiling ? P_CeilingActive(sector) : P_FloorActive(sector))
 		{ // Already busy with another thinker
 			continue;
 		}
-		retCode = true;
-		new DWaggle(sector, height, speed, offset, timer, ceiling);
 
-		if (ceiling)
-		{
-			P_AddMovingCeiling(sector);
-		}
-		else
-		{
-			P_AddMovingFloor(sector);
-		}
+		retCode = true;
+
+		// Deliberately not registered with P_AddMovingFloor/P_AddMovingCeiling:
+		// clients run this thinker themselves, so the sector must stay out of
+		// the per-tic moving sector update stream.
+		//
+		// However, unlag is a separate concern, so lets reconcile waggle
+		// for hitscans.
+		const auto* waggle = new DWaggle(sector, height, speed, offset, timer, ceiling);
+		Unlag::getInstance().registerSector(sector);
+
+		// Announce the waggle once, clients that already started their own
+		// copy ignore the message.
+		SV_SendThinkerUpdate(waggle);
 	}
 
 	return retCode;
@@ -1833,8 +1835,7 @@ void DWaggle::Serialize(FArchive& arc)
 		    << m_ScaleDelta
 			<< m_Ticker
 			<< m_State
-			<< m_Ceiling
-			<< m_StartTic;
+			<< m_Ceiling;
 	}
 	else
 	{
@@ -1846,14 +1847,8 @@ void DWaggle::Serialize(FArchive& arc)
 			>> m_ScaleDelta
 			>> m_Ticker
 			>> m_State
-			>> m_Ceiling
-			>> m_StartTic;
+			>> m_Ceiling;
 	}
-}
-
-DWaggle::DWaggle()
-{
-
 }
 
 DWaggle::DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
@@ -1862,35 +1857,55 @@ DWaggle::DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
 	if (ceiling)
 	{
 		sector->ceilingdata = this;
-		m_OriginalHeight = sector->ceilingheight;
+		m_OriginalHeight = P_CeilingHeight(sector);
 	}
 	else
 	{
 		sector->floordata = this;
-		m_OriginalHeight = sector->floorheight;
+		m_OriginalHeight = P_FloorHeight(sector);
 	}
+
 	m_Sector = sector;
 	m_Accumulator = offset * FRACUNIT;
 	m_AccDelta = speed << 10;
 	m_Scale = 0;
 	m_TargetScale = height << 10;
-	m_ScaleDelta = m_TargetScale / (35 + ((3 * 35) * height) / 255);
-	m_Ticker = timer ? timer * 35 : -1;
+	m_ScaleDelta = m_TargetScale / (TICRATE + (((3 * TICRATE) * height) / 255));
+	m_Ticker = timer ? timer * TICRATE : -1;
 	m_State = init;
 	m_Ceiling = ceiling;
-	m_StartTic = ::level.time; // [Blair] Used for client side synchronization
+}
+
+DWaggle::DWaggle(sector_t* sector, bool ceiling, fixed_t originalHeight,
+                 fixed_t accumulator, fixed_t accDelta, fixed_t targetScale,
+                 fixed_t scale, fixed_t scaleDelta, int ticker, int state)
+{
+	if (ceiling)
+		sector->ceilingdata = this;
+	else
+		sector->floordata = this;
+
+	m_Sector = sector;
+	m_OriginalHeight = originalHeight;
+	m_Accumulator = accumulator;
+	m_AccDelta = accDelta;
+	m_TargetScale = targetScale;
+	m_Scale = scale;
+	m_ScaleDelta = scaleDelta;
+	m_Ticker = ticker;
+	m_State = state;
+	m_Ceiling = ceiling;
 }
 
 void DWaggle::RunThink()
 {
+	// Prediction and snapshot simulation both tick sector movers on the client.
+	if (m_LastTic == level.time)
+		return;
+	m_LastTic = level.time;
+
 	switch (m_State)
 	{
-	case finished:
-		Destroy();
-		m_State = destroy;
-	case destroy:
-		return;
-		break;
 	case init:
 		m_State = expand;
 		// fall thru
@@ -1905,15 +1920,12 @@ void DWaggle::RunThink()
 		if ((m_Scale -= m_ScaleDelta) <= 0)
 		{ // Remove
 			if (m_Ceiling)
-			{
 				P_SetCeilingHeight(m_Sector, m_OriginalHeight);
-			}
 			else
-			{
 				P_SetFloorHeight(m_Sector, m_OriginalHeight);
-			}
+
 			P_ChangeSector(m_Sector, DOOM_CRUSH);
-			m_State = finished;
+			Destroy();
 			return;
 		}
 		break;
@@ -1921,40 +1933,23 @@ void DWaggle::RunThink()
 		if (m_Ticker != -1)
 		{
 			if (!--m_Ticker)
-			{
 				m_State = reduce;
-			}
 		}
 		break;
 	}
 
 	m_Accumulator += m_AccDelta;
-	fixed_t changeamount = m_OriginalHeight + FixedMul(FloatBobOffsets[(m_Accumulator >> FRACBITS) & 63], m_Scale);
+
+	const fixed_t height =
+	    m_OriginalHeight +
+	    FixedMul(FloatBobOffsets[(m_Accumulator >> FRACBITS) & 63], m_Scale);
 
 	if (m_Ceiling)
-	{
-		P_SetCeilingHeight(m_Sector, changeamount);
-	}
+		P_SetCeilingHeight(m_Sector, height);
 	else
-	{
-		P_SetFloorHeight(m_Sector, changeamount);
-	}
+		P_SetFloorHeight(m_Sector, height);
+
 	P_ChangeSector(m_Sector, DOOM_CRUSH);
 }
 
-DWaggle::DWaggle(sector_t* sec) : Super(sec) { }
-
-// Clones a DWaggle and returns a pointer to that clone.
-//
-// The caller owns the pointer, and it must be deleted with `delete`.
-DWaggle* DWaggle::Clone(sector_t* sec) const
-{
-	DWaggle* ele = new DWaggle(*this);
-
-	ele->Orphan();
-	ele->m_Sector = sec;
-
-	return ele;
-}
-*/
 VERSION_CONTROL (p_floor_cpp, "$Id$")

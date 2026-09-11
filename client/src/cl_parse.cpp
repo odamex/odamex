@@ -3159,6 +3159,27 @@ void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 			new DGlow2(&::sectors[secnum], start, end, tics, oneShot);
 		break;
 	}
+	case odaproto::svc::ThinkerUpdate::kWaggle: {
+		const odaproto::svc::ThinkerUpdate_Waggle& wmsg = msg->waggle();
+		const int secnum = wmsg.sector();
+
+		if (::numsectors <= 0)
+			break;
+
+		sector_t* sector = &::sectors[secnum];
+		const bool ceiling = wmsg.ceiling();
+
+		// A waggle owns its plane for as long as it runs, so don't stack a
+		// second one on a sector that already has a mover on that plane.
+		if (ceiling ? sector->ceilingdata != nullptr : sector->floordata != nullptr)
+			break;
+
+		if (secnum < ::numsectors)
+			new DWaggle(sector, ceiling, wmsg.original_height(), wmsg.accumulator(),
+			           wmsg.acc_delta(), wmsg.target_scale(), wmsg.scale(),
+			           wmsg.scale_delta(), wmsg.ticker(), wmsg.state());
+		break;
+	}
 	case odaproto::svc::ThinkerUpdate::kPhased: {
 		short secnum = msg->phased().sector();
 		int base = msg->phased().base_level();

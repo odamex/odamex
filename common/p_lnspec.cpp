@@ -60,6 +60,10 @@ bool EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t 
 // Returns true if the special for line will cause a DMovingFloor or
 // DMovingCeiling object to be created.
 //
+// Floor_Waggle and Ceiling_Waggle are intentionally absent -- their movement is
+// never sent to clients, so clients have to run the special themselves even
+// when cl_predictsectors is off.
+//
 bool P_LineSpecialMovesSector(short special)
 {
 	static bool initialized = false;
@@ -93,7 +97,7 @@ bool P_LineSpecialMovesSector(short special)
 		zdoomspecials[Stairs_BuildUpSync]			= true;		// 32
 		zdoomspecials[Floor_RaiseByValueTimes8]		= true;		// 35
 		zdoomspecials[Floor_LowerByValueTimes8]		= true;		// 36
-		zdoomspecials[Ceiling_Waggle]				= true;		// 38
+		//zdoomspecials[Ceiling_Waggle]				= true;		// 38
 		zdoomspecials[Ceiling_LowerByValue]			= true;		// 40
 		zdoomspecials[Ceiling_RaiseByValue]			= true;		// 41
 		zdoomspecials[Ceiling_CrushAndRaise]		= true;		// 42
@@ -117,7 +121,7 @@ bool P_LineSpecialMovesSector(short special)
 		zdoomspecials[Ceiling_CrushAndRaiseSilentDist] = true;  // 104
 		zdoomspecials[Door_WaitRaise]				= true;		// 105
 		zdoomspecials[Door_WaitClose]				= true;		// 106
-		zdoomspecials[Floor_Waggle]					= true;		// 138
+		//zdoomspecials[Floor_Waggle]					= true;		// 138
 		zdoomspecials[Ceiling_CrushAndRaiseDist]	= true;		// 168
 		zdoomspecials[Generic_Crusher2]				= true;		// 169
 		zdoomspecials[Plat_UpNearestWaitDownStay]	= true;		// 172
@@ -819,15 +823,13 @@ FUNC(LS_Floor_LowerToLowestTxTy)
 FUNC(LS_Floor_Waggle)
 // Floor_Waggle (tag, amplitude, frequency, delay, time)
 {
-	//return EV_StartPlaneWaggle(arg0, ln, arg1, arg2, arg3, arg4, false);
-	return false;
+	return EV_StartPlaneWaggle(arg0, ln, arg1, arg2, arg3, arg4, false);
 }
 
 FUNC(LS_Ceiling_Waggle)
 // Ceiling_Waggle (tag, amplitude, frequency, delay, time)
 {
-	//return EV_StartPlaneWaggle(arg0, ln, arg1, arg2, arg3, arg4, true);
-	return false;
+	return EV_StartPlaneWaggle(arg0, ln, arg1, arg2, arg3, arg4, true);
 }
 
 FUNC(LS_Floor_TransferTrigger)
