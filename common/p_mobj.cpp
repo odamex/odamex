@@ -430,6 +430,8 @@ AActor::AActor(const AActor& other)
 	  onground(other.onground), touching_sectorlist(other.touching_sectorlist),
 	  deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
 	  friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
+	  corpse_color(other.corpse_color), corpse_team(other.corpse_team),
+	  corpse_isself(other.corpse_isself),
 	  pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
 	  mode(other.mode), updatedDuringLocalTic(other.updatedDuringLocalTic),
 	  updatedDuringServerTic(other.updatedDuringServerTic), spawnTic(other.spawnTic),
@@ -507,6 +509,9 @@ AActor &AActor::operator= (const AActor &other)
     spawnRndindex = other.spawnRndindex;
     friend_playerid = other.friend_playerid;
     friend_teamid = other.friend_teamid;
+    corpse_color = other.corpse_color;
+    corpse_team = other.corpse_team;
+    corpse_isself = other.corpse_isself;
     pursuecount = other.pursuecount;
     strafecount = other.strafecount;
     netid = other.netid;
