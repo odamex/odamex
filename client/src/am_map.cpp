@@ -1478,13 +1478,13 @@ void AM_drawWalls()
 					else
 						AM_drawMline(&l, gameinfo.currentAutomapColors.WallColor);
 				}
-				else if (line.backsector->floorheight !=
-				         line.frontsector->floorheight)
+				else if (P_FloorHeight(line.backsector) !=
+				         P_FloorHeight(line.frontsector))
 				{
 					AM_drawMline(&l, gameinfo.currentAutomapColors.FDWallColor); // floor level change
 				}
-				else if (line.backsector->ceilingheight !=
-				         line.frontsector->ceilingheight)
+				else if (P_CeilingHeight(line.backsector) !=
+				         P_CeilingHeight(line.frontsector))
 				{
 					AM_drawMline(&l, gameinfo.currentAutomapColors.CDWallColor); // ceiling level change
 				}

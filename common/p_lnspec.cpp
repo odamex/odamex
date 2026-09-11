@@ -2769,7 +2769,7 @@ std::array<lnSpecFunc, 283> LineSpecials =
 	LS_Light_Flicker,
 	LS_Light_Strobe,
 	LS_Light_Stop,
-	LS_NOP,		// 118 Plane_Copy (handled elsewhere/not supported)
+	LS_NOP,		// 118 Plane_Copy (handled elsewhere)
     LS_Thing_Damage,
 	LS_Radius_Quake,
 	LS_NOP,		// 123 Set_LineIdentification (handled elsewhere)

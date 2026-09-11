@@ -101,7 +101,7 @@ odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj);
 odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player);
 odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActor *inflictor, int health, int armor);
 odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
-                                     int mod, bool joinkill);
+                                     bool joinkill);
 odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corpse);
 odaproto::svc::UpdateSector SVC_UpdateSector(const sector_t& sector);
 odaproto::svc::Print SVC_Print(printlevel_t level, const std::string& str);

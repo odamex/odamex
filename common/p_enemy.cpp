@@ -731,8 +731,8 @@ bool PIT_AvoidDropoff(const line_t& line, const fixed_t floorz, fixed_t& dropoff
 	    tmbbox[BOXTOP] > line.bbox[BOXBOTTOM] && // Linedef must be contacted
 	    tmbbox[BOXBOTTOM] < line.bbox[BOXTOP] && P_BoxOnLineSide(tmbbox, &line) == -1)
 	{
-		const fixed_t front = line.frontsector->floorheight;
-		const fixed_t back = line.backsector->floorheight;
+		const fixed_t front = P_FloorHeight(line.frontsector);
+		const fixed_t back = P_FloorHeight(line.backsector);
 		angle_t angle;
 
 		// The monster must contact one of the two floors,
@@ -1177,7 +1177,7 @@ AActor::AActorPtr SpawnHelper(const MapThing SpawnPoint, mobjtype_t SpawnType, c
 			mo->SetFriendly(true, origin);
 			mo->UpdateActorLists();
 
-			mo->angle = ANG45 * (SpawnPoint.angle / 45);
+			mo->angle = MapThingToAngle(SpawnPoint.angle);
 
 			SV_SpawnMobj(mo);
 
