@@ -1007,8 +1007,6 @@ void P_LoadThings2 (int lump, int position)
 		mt.angle = LESHORT(mt.angle);
 		mt.type = LESHORT(mt.type);
 		mt.flags = MapThingFlags::unsafe_from_int(LESHORT(mt.flags.to_int()));
-
-		P_SpawnMapThing(mt, position);
 	}
 
 	P_SetupThingSlopes(things);
