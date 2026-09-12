@@ -89,6 +89,6 @@ class LocalSectorHistory
 		fixed_t liveCeiling = 0;
 	};
 
-	std::vector<PlaneRecord> m_records;
+	std::vector<PlaneRecord> m_records{};
 	bool m_replaying = false;
 };
