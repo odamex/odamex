@@ -1039,7 +1039,7 @@ void P_MoveActor(AActor *mo)
 		sector_t *hsec = mo->subsector->sector->heightsec;
 		if (hsec && hsec->waterzone && !mo->subsector->sector->waterzone)
 		{
-			if (mo->z < hsec->floorheight)
+			if (mo->z < P_FloorHeight(hsec))
 			{
 				fixed_t floorheight = P_FloorHeight(mo->x, mo->y, hsec);
 				if (mo->z < floorheight)
@@ -1057,7 +1057,7 @@ void P_MoveActor(AActor *mo)
 					mo->waterlevel = 3;
 				}
 			}
-			else if (mo->z + mo->height > hsec->ceilingheight)
+			else if (mo->z + mo->height > P_CeilingHeight(hsec))
 			{
 				mo->waterlevel = 3;
 			}
@@ -1125,9 +1125,12 @@ void AActor::RunThink ()
 		return;
 	}
 
-	prevx = x;
-	prevy = y;
-	prevz = z;
+	if (not player or not player->isFreecam)
+	{
+		prevx = x;
+		prevy = y;
+		prevz = z;
+	}
 
 	if (!player || P_IsVoodooDoll(this))    // True voodoo dolls have non-null player pointers, but we still want
 	{                                       // to update the dolls' previous angles, so check for that.
@@ -1844,7 +1847,7 @@ static void P_ApplyXYFriction(AActor* mo)
 	     mo->oflags & MFO_FALLING) &&
 	    (mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 || mo->momy > FRACUNIT / 4 ||
 	     mo->momy < -FRACUNIT / 4) &&
-	    mo->floorz != mo->subsector->sector->floorheight)
+	    mo->floorz != P_FloorHeight(mo->subsector->sector))
 		return; // do not stop sliding if halfway off a step with some momentum
 
 	// keep corpses sliding if halfway off a step with some momentum
@@ -2364,7 +2367,7 @@ static void P_ApplyBouncyPhysics(AActor *mo)
 		{
 			if (ceilingline && ceilingline->backsector &&
 			    R_IsSkyFlat(ceilingline->backsector->ceilingpic) &&
-			    mo->z > ceilingline->backsector->ceilingheight)
+			    mo->z > P_CeilingHeight(ceilingline->backsector))
 				mo->Destroy();
 			else
 				P_ExplodeMissile(mo);
@@ -2529,7 +2532,7 @@ void P_NightmareRespawn (AActor *mobj)
 	{
 		mo = new AActor (x, y, z, mobj->type);
 		mo->spawnpoint = mobj->spawnpoint;
-		mo->angle = ANG45 * (mthing->angle/45);
+		mo->angle = MapThingToAngle(mthing->angle);
 
 		if (mthing->flags & MTF_AMBUSH)
 			mo->flags |= MF_AMBUSH;
@@ -3207,7 +3210,7 @@ void P_RespawnSpecials (void)
 	// spawn it
 	auto* mo = new AActor(x, y, z, it->second->type);
 	mo->spawnpoint = mthing;
-	mo->angle = ANG45 * (mthing.angle / 45);
+	mo->angle = MapThingToAngle(mthing.angle);
 
 	if (z == ONFLOORZ)
 		mo->z += mthing.z << FRACBITS;
@@ -3331,6 +3334,27 @@ size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 	return mthing.type <= 4 ?
 			mthing.type - 1 :
 			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
+}
+
+//
+// P_GetPlayerStart
+//
+// Returns the start belonging to a player number, or a shared one when the map
+// has no start of its own for them.
+//
+const mapthing2_t& P_GetPlayerStart(const size_t playernum)
+{
+	for (const mapthing2_t& start : ::playerstarts)
+	{
+		if (P_GetMapThingPlayerNumber(start) == playernum)
+			return start;
+	}
+
+	if (::playerstarts.empty())
+		I_Error("No player starts");
+
+	// Nothing here for this player number, so give one out.
+	return ::playerstarts[playernum % ::playerstarts.size()];
 }
 
 bool P_IsPickupableThing(int16_t type)
@@ -3616,7 +3640,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mthing.type == PO_SPAWN_TYPE ||
 		mthing.type == PO_SPAWNCRUSH_TYPE))
 	{
-		polyspawns_t *polyspawn = new polyspawns_t;
+		auto* polyspawn = new polyspawns_t;
 		polyspawn->next = polyspawns;
 		polyspawn->x = mthing.x << FRACBITS;
 		polyspawn->y = mthing.y << FRACBITS;
@@ -3689,8 +3713,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 
 	// check for appropriate skill level
-	// TODO: change type of spawn_filter to MapThingFlags after merging with type-safe mapinfo PR
-	if (!(mthing.flags & combo(MapThingFlags::unsafe_from_int(static_cast<int16_t>(G_GetCurrentSkill().spawn_filter)))))
+	if (not (mthing.flags & combo(G_GetCurrentSkill().spawn_filter)))
 		return;
 
 	if (isSpringPad)
@@ -3859,7 +3882,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	AActor* mobj = new AActor(x, y, z, info->type);
+	auto* mobj = new AActor(x, y, z, info->type);
 
 	if (type == MT_HORDESPAWN)
 	{
@@ -3885,7 +3908,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	// [RH] Set the thing's special
 	mobj->special = mthing.special;
-	std::copy(std::begin(mthing.args), std::end(mthing.args), mobj->args.begin());
+	std::ranges::copy(mthing.args, mobj->args.begin());
 
 	// [RH] If it's an ambient sound, activate it
 	if (type == MT_AMBIENT)
@@ -3910,7 +3933,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mobj->tics = 1 + (P_Random(mobj) % mobj->tics);
 
 	if (type != MT_SPARK)
-		mobj->angle = ANG45 * (mthing.angle/45);
+		mobj->angle = MapThingToAngle(mthing.angle);
 
 	if (mthing.flags & MTF_AMBUSH)
 		mobj->flags |= MF_AMBUSH;
@@ -4030,9 +4053,48 @@ void P_SpawnAvatars()
 
 		// Assign spawnpoint so that it gets archived and can be matched back up with voodoostarts after deserialization.
 		voodoo.mobj->spawnpoint = voodoo.mapThing;
-		voodoo.mobj->angle      = ANG45 * (voodoo.mapThing.angle/45);
+		voodoo.mobj->angle      = MapThingToAngle(voodoo.mapThing.angle);
 		voodoo.mobj->credibility.Lionize();
 	}
+}
+
+
+//
+// P_AvatarBlocksSpot
+//
+// Check if an avatar is blocking a spawn.
+// This tries to work around map errors where a player start
+// is misplaced and the player wants to spawn in a voodoo closet.
+// Instead, it will report this spawn is blocked and to try another.
+//
+bool P_AvatarBlocksSpot(const fixed_t x, const fixed_t y, const fixed_t z)
+{
+	for (const auto& voodoo : ::voodoostarts)
+	{
+		const AActor* avatar = voodoo.mobj;
+
+		// Check for dead avatars.
+		if (not avatar or avatar->type != MT_AVATAR or not (avatar->flags & MF_SHOOTABLE))
+			continue;
+
+		// Same overlap PIT_StompThing will measure when the spawn stomps.
+		const fixed_t blockdist = avatar->radius + mobjinfo[MT_PLAYER].radius;
+
+		if (abs(avatar->x - x) >= blockdist or abs(avatar->y - y) >= blockdist)
+			continue;
+
+		if (P_AllowPassover())
+		{
+			if (z > avatar->z + avatar->height)
+				continue;
+			if (z + mobjinfo[MT_PLAYER].height < avatar->z)
+				continue;
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 

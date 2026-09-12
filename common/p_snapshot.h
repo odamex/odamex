@@ -32,8 +32,7 @@
 class AActor;
 class player_t;
 struct sector_t;
-struct line_s;
-typedef line_s line_t;
+struct line_t;
 
 class PlayerSnapshotManager;
 

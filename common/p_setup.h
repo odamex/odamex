@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -23,6 +23,12 @@
 
 #pragma once
 
+#include <optional>
+
+#include "doomdata.h"
+
+struct line_t;
+
 // NOT called by W_Ticker. Fixme.
 //
 // [RH] The only parameter used is mapname, so I removed playermask and skill.
@@ -30,6 +36,7 @@
 //		of single-player start spots should be spawned in the level.
 void P_SetupLevel (const char *mapname, int position);
 void P_TranslateLineDef(line_t* ld, maplinedef_t* mld);
+std::optional<mapthing2_t> P_GetFirstAvailableSpawn();
 
 // Called by startup code.
 void P_Init();
