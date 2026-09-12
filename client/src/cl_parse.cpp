@@ -2631,7 +2631,7 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		if (i == ps_flash && stnum[i] == S_NULL)
+		if (i == ps_flash && pspupdates[i].statenum == S_NULL)
 			player.extralight = 0;
 
 		P_SetPsprite(player, i, pspupdates[i].statenum);
