@@ -87,7 +87,7 @@ weaponstate_t P_GetWeaponState(const player_t& player)
 {
 	const state_t* st = player.psprites[player.psprnum].state();
 
-	if (st == NULL)
+	if (st == nullptr)
 		return unknownstate;
 
 	if (st->action == A_WeaponReady)
@@ -195,7 +195,7 @@ void P_SetPspriteRef(player_t& player, pspdef_t& psp, int32_t stnum)
 
 		psp.statenum = static_cast<statenum_t>(stnum);
 
-		state_t* st = &it->second;
+		const state_t* st = &it->second;
 		psp.tics = st->tics;		// could be 0
 
 		if (st->misc1)
@@ -886,7 +886,7 @@ void A_WeaponJump(AActor* mo)
 		return;
 
 	if (P_Random(mo) < st->args[1])
-		P_SetPspriteRef(player, psp, (statenum_t)st->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(st->args[0]));
 }
 
 
@@ -915,7 +915,7 @@ void A_CheckAmmo(AActor* mo)
 		amount = weaponinfo[player.readyweapon].ammopershot;
 
 	if (player.ammo[type] < amount)
-		P_SetPspriteRef(player, psp, (statenum_t)st->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(st->args[0]));
 }
 
 
@@ -974,7 +974,7 @@ void A_RefireTo(AActor* mo)
 	    (player.pendingweapon == wp_nochange && player.health))
 	{
 		player.refire++;
-		P_SetPspriteRef(player, psp, (statenum_t)st->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(st->args[0]));
 	}
 	else
 	{
@@ -1000,7 +1000,7 @@ void A_GunFlashTo(AActor* mo)
 	if (!st->args[1])
 		P_SetMobjState(player.mo, S_PLAY_ATK2);
 
-	P_SetPsprite(player, ps_flash, (statenum_t)st->args[0]);
+	P_SetPsprite(player, ps_flash, static_cast<statenum_t>(st->args[0]));
 }
 
 //
@@ -1662,7 +1662,7 @@ FArchive &operator<< (FArchive &arc, pspdef_t &def)
 
 FArchive &operator>> (FArchive &arc, pspdef_t &def)
 {
-	state_t* state = NULL;
+	state_t* state = nullptr;
 	arc >> state >> def.tics >> def.sx >> def.sy;
 	def.statenum = state ? static_cast<statenum_t>(state->statenum) : S_NULL;
 	return arc;
