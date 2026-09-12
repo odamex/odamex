@@ -1165,6 +1165,12 @@ class DWaggle : public DMover
 
 	void RunThink() override;
 
+	// Runs the waggle forward without moving the plane.
+	// The state a client receives was sampled on an
+	// earlier server tic, so this closes the gap
+	// before the thinker starts ticking locally.
+	void CatchUp(int tics);
+
 	fixed_t m_OriginalHeight = 0;
 	fixed_t m_Accumulator    = 0;
 	fixed_t m_AccDelta       = 0;
@@ -1177,6 +1183,16 @@ class DWaggle : public DMover
 
   private:
 	DWaggle() = default;
+
+	// Advances the state machine, with no side effects on the sector.
+	// Returns false once the waggle has shrunk away.
+	bool AdvanceTics(int tics);
+
+	// Puts the plane back where it started and removes the thinker.
+	void Finish();
+
+	// Moves the plane to whatever the current state says it should be.
+	void ApplyHeight();
 
 	// The client is asked to tick sector movers from more than one place, so
 	// refuse to advance twice in the same tic.

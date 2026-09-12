@@ -1897,49 +1897,92 @@ DWaggle::DWaggle(sector_t* sector, bool ceiling, fixed_t originalHeight,
 	m_Ceiling = ceiling;
 }
 
-void DWaggle::RunThink()
+bool DWaggle::AdvanceTics(int tics)
 {
-	// Prediction and snapshot simulation both tick sector movers on the client.
-	if (m_LastTic == level.time)
-		return;
-	m_LastTic = level.time;
-
-	switch (m_State)
+	while (tics > 0)
 	{
-	case init:
-		m_State = expand;
-		// fall thru
-	case expand:
-		if ((m_Scale += m_ScaleDelta) >= m_TargetScale)
+		if (m_State == stable and m_Ticker == -1)
 		{
-			m_Scale = m_TargetScale;
-			m_State = stable;
+			constexpr int64_t period = 64LL << FRACBITS;
+			m_Accumulator +=
+			    static_cast<fixed_t>((static_cast<int64_t>(m_AccDelta) * tics) % period);
+			return true;
 		}
-		break;
-	case reduce:
-		if ((m_Scale -= m_ScaleDelta) <= 0)
-		{ // Remove
-			if (m_Ceiling)
-				P_SetCeilingHeight(m_Sector, m_OriginalHeight);
-			else
-				P_SetFloorHeight(m_Sector, m_OriginalHeight);
 
-			P_ChangeSector(m_Sector, DOOM_CRUSH);
-			Destroy();
-			return;
-		}
-		break;
-	case stable:
-		if (m_Ticker != -1)
+		switch (m_State)
 		{
-			if (!--m_Ticker)
-				m_State = reduce;
+		case init:
+			m_State = expand;
+			// fall thru
+		case expand:
+			m_Scale += m_ScaleDelta;
+			if (m_Scale >= m_TargetScale)
+			{
+				m_Scale = m_TargetScale;
+				m_State = stable;
+			}
+			break;
+		case reduce:
+			m_Scale -= m_ScaleDelta;
+			if (m_Scale <= 0)
+				return false;
+			break;
+		case stable:
+			if (m_Ticker != -1)
+			{
+				m_Ticker--;
+				if (m_Ticker == 0)
+					m_State = reduce;
+			}
+			break;
+		default:
+			break;
 		}
-		break;
+
+		m_Accumulator += m_AccDelta;
+		tics--;
 	}
 
-	m_Accumulator += m_AccDelta;
+	return true;
+}
 
+void DWaggle::Finish()
+{
+	if (m_Ceiling)
+		P_SetCeilingHeight(m_Sector, m_OriginalHeight);
+	else
+		P_SetFloorHeight(m_Sector, m_OriginalHeight);
+
+	P_ChangeSector(m_Sector, DOOM_CRUSH);
+	Destroy();
+}
+
+void DWaggle::CatchUp(int tics)
+{
+	if (tics <= 0)
+		return;
+
+	// Back up waggle state before we run AdvanceTics
+	// Starting late is recoverable, never starting is not.
+	const fixed_t accumulator = m_Accumulator;
+	const fixed_t scale       = m_Scale;
+	const int     ticker      = m_Ticker;
+	const int     state       = m_State;
+
+	if (not AdvanceTics(tics))
+	{
+		m_Accumulator = accumulator;
+		m_Scale       = scale;
+		m_Ticker      = ticker;
+		m_State       = state;
+		return;
+	}
+
+	ApplyHeight();
+}
+
+void DWaggle::ApplyHeight()
+{
 	const fixed_t height =
 	    m_OriginalHeight +
 	    FixedMul(FloatBobOffsets[(m_Accumulator >> FRACBITS) & 63], m_Scale);
@@ -1950,6 +1993,23 @@ void DWaggle::RunThink()
 		P_SetFloorHeight(m_Sector, height);
 
 	P_ChangeSector(m_Sector, DOOM_CRUSH);
+}
+
+void DWaggle::RunThink()
+{
+	// Prediction and snapshot simulation both tick sector movers on the client.
+	// A waggle is already ticked by DThinker::RunThinkers, so ignore the extras.
+	if (m_LastTic == level.time)
+		return;
+	m_LastTic = level.time;
+
+	if (not AdvanceTics(1))
+	{
+		Finish();
+		return;
+	}
+
+	ApplyHeight();
 }
 
 VERSION_CONTROL (p_floor_cpp, "$Id$")
