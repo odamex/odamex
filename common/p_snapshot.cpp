@@ -76,7 +76,7 @@ ActorSnapshot::ActorSnapshot(int time) :
 		mX(0), mY(0), mZ(0),
 		mMomX(0), mMomY(0), mMomZ(0), mAngle(0), mPitch(0), mOnGround(true),
 		mCeilingZ(0), mFloorZ(0), mReactionTime(0), mWaterLevel(0),
-		mFlags(0), mFlags2(0), mFlags3(0), mFrame(0)
+		mFrame(0)
 {
 }
 
@@ -187,7 +187,7 @@ void ActorSnapshot::toActor(AActor *mo) const
 
 			// [AM] Sometimes it is best to ignore parts of snapshots,
 			//      for moving platforms and such.
-			if ((mo->oflags & MFO_NOSNAPZ) == 0)
+			if (not (mo->oflags & MFO_NOSNAPZ))
 				mo->z = destz;
 
 			mo->ceilingz = tmceilingz;
@@ -828,12 +828,12 @@ void SectorSnapshot::toSector(sector_t *sector) const
 	if (!sector)
 		return;
 
-	P_SetCeilingHeight(sector, mCeilingHeight);
-	P_SetFloorHeight(sector, mFloorHeight);
-	P_ChangeSector(sector, false);
-
 	if (mCeilingMoverType == SEC_PILLAR && mCeilingStatus != DPillar::destroy)
 	{
+		P_SetCeilingHeight(sector, mCeilingHeight);
+		P_SetFloorHeight(sector, mFloorHeight);
+		P_ChangeSector(sector, false);
+
 		int status = mCeilingStatus;
 
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
@@ -870,6 +870,10 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 	if (mCeilingMoverType == SEC_ELEVATOR && mCeilingStatus != DElevator::destroy)
 	{
+		P_SetCeilingHeight(sector, mCeilingHeight);
+		P_SetFloorHeight(sector, mFloorHeight);
+		P_ChangeSector(sector, false);
+
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
 		{
 			sector->ceilingdata->Destroy();
@@ -898,6 +902,9 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 	if (mCeilingMoverType == SEC_CEILING && mCeilingStatus != DCeiling::destroy)
 	{
+		P_SetCeilingHeight(sector, mCeilingHeight);
+		P_ChangeSector(sector, false);
+
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
 		{
 			sector->ceilingdata->Destroy();
@@ -926,6 +933,9 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 	if (mCeilingMoverType == SEC_DOOR && mCeilingStatus != DDoor::destroy)
 	{
+		P_SetCeilingHeight(sector, mCeilingHeight);
+		P_ChangeSector(sector, false);
+
 		if (sector->ceilingdata && !sector->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
 		{
 			sector->ceilingdata->Destroy();
@@ -952,6 +962,9 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 	if (mFloorMoverType == SEC_FLOOR && mFloorStatus != DFloor::destroy)
 	{
+		P_SetFloorHeight(sector, mFloorHeight);
+		P_ChangeSector(sector, false);
+
 		if (sector->floordata && !sector->floordata->IsA(RUNTIME_CLASS(DFloor)))
 		{
 			sector->floordata->Destroy();
@@ -986,6 +999,9 @@ void SectorSnapshot::toSector(sector_t *sector) const
 
 	if (mFloorMoverType == SEC_PLAT && mFloorStatus != DPlat::destroy)
 	{
+		P_SetFloorHeight(sector, mFloorHeight);
+		P_ChangeSector(sector, false);
+
 		if (sector->floordata && !sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
 		{
 			sector->floordata->Destroy();
@@ -1061,7 +1077,7 @@ bool SectorSnapshotManager::mValidSnapshot(int time) const
 //
 // Returns true if the container does not contain any valid snapshots
 //
-bool SectorSnapshotManager::empty()
+bool SectorSnapshotManager::empty() const
 {
 	return (!mValidSnapshot(mMostRecent));
 }

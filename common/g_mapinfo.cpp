@@ -22,11 +22,13 @@
 #include "odamex.h"
 
 #include "g_episode.h"
+#include "g_mapinfo.h"
 #include "gi.h"
 #include "gstrings.h"
 #include "g_skill.h"
 #include "i_system.h"
 #include "oscanner.h"
+#include "p_lnspec.h"
 #include "p_setup.h"
 #include "r_sky.h"
 #include "v_video.h"
@@ -40,6 +42,9 @@ bool HexenHack;
 
 namespace
 {
+
+// True while the MAPINFO lump being parsed belongs to a PWAD.
+bool mapinfofrompwad = false;
 
 //
 // Assumes that you have munched the last parameter you know how to handle,
@@ -83,7 +88,7 @@ void SkipUnknownType(OScanner& os)
 //
 // This function does not work with old-school ZDoom MAPINFO.
 //
-void SkipUnknownBlock(OScanner& os)
+[[maybe_unused]] void SkipUnknownBlock(OScanner& os)
 {
 	int stack = 0;
 
@@ -132,7 +137,7 @@ void MustGet<float>(OScanner& os)
 
 // ensure token is bool
 template <>
-void MustGet<bool>(OScanner& os)
+[[maybe_unused]] void MustGet<bool>(OScanner& os)
 {
 	os.mustScanBool();
 }
@@ -187,7 +192,7 @@ void ParseMapInfoHelper(OScanner& os, bool newStyleMapInfo)
 }
 
 template <>
-void ParseMapInfoHelper<void>(OScanner& os, bool newStyleMapInfo)
+[[maybe_unused]] void ParseMapInfoHelper<void>(OScanner& os, bool newStyleMapInfo)
 {
 	// do nothing
 }
@@ -195,64 +200,53 @@ void ParseMapInfoHelper<void>(OScanner& os, bool newStyleMapInfo)
 //////////////////////////////////////////////////////////////////////
 /// MapInfo type functions
 
-// Eats the next block and does nothing with the data
-void MIType_EatNext(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                    unsigned int flags2)
+// Eats the next value and does nothing with it
+void MIType_EatNext(OScanner& os, bool newStyleMapInfo)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 }
 
-// Literally does nothing
-void MIType_DoNothing(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                    unsigned int flags2)
+// Assigns a fixed value that is spelled out by the key itself rather than parsed.
+// T is deduced from the setter and from the destination, so the two must agree.
+template <typename T>
+void MIType_Assign(OScanner& /*os*/, bool /*newStyleMapInfo*/, T& out, T value)
 {
+	out = value;
 }
 
 // Sets the inputted data as an int
-void MIType_Int(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                unsigned int flags2)
+void MIType_Int(OScanner& os, bool newStyleMapInfo, int& out)
 {
 	ParseMapInfoHelper<int>(os, newStyleMapInfo);
 
-	*static_cast<int*>(data) = os.getTokenInt();
+	out = os.getTokenInt();
 }
 
 // Sets the inputted data as a float
-void MIType_Float(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                  unsigned int flags2)
+void MIType_Float(OScanner& os, bool newStyleMapInfo, float& out)
 {
 	ParseMapInfoHelper<float>(os, newStyleMapInfo);
 
-	*static_cast<float*>(data) = os.getTokenFloat();
-}
-
-// Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
-void MIType_Bool(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                  unsigned int flags2)
-{
-	*static_cast<bool*>(data) = flags;
+	out = os.getTokenFloat();
 }
 
 // Sets the inputted data as a bool from a string
-void MIType_BoolString(OScanner& os, bool doEquals, void* data, unsigned int flags,
-                 unsigned int flags2)
+void MIType_BoolString(OScanner& os, bool doEquals, bool& out)
 {
 	ParseMapInfoHelper<std::string>(os, doEquals);
 
 	if (os.compareTokenNoCase("true"))
-		*static_cast<bool*>(data) = true;
+		out = true;
 	else if (os.compareTokenNoCase("false"))
-		*static_cast<bool*>(data) = false;
+		out = false;
 	else
 		os.error("Expected \"true\" or \"false\" in boolean statement, got \"{}\"",
 		         os.getToken());
 }
 
-// Sets the inputted data as a bool (that is, if flags != 0, set to true; else false)
-void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                 unsigned int flags2)
+// Sets the skill's confirmation prompt, which may carry replacement text
+void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, SkillInfo& info)
 {
-	SkillInfo& info = *static_cast<SkillInfo*>(data);
 	info.must_confirm = true;
 
 	if (newStyleMapInfo)
@@ -265,7 +259,7 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 			do
 			{
 				os.mustScan();
-				info.must_confirm_text += os.getToken();
+				info.must_confirm_text += GStrings.maybeLookup(os.getToken());
 				info.must_confirm_text += "\n";
 				os.scan();
 			} while (os.compareToken(","));
@@ -293,7 +287,7 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 			do
 			{
 				os.mustScan();
-				info.must_confirm_text += os.getToken();
+				info.must_confirm_text += GStrings.maybeLookup(os.getToken());
 				info.must_confirm_text += "\n";
 				os.scan();
 			} while (os.compareToken(","));
@@ -314,43 +308,46 @@ void MIType_MustConfirm(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 }
 
 // Sets the inputted data as a char
-void MIType_Char(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                 unsigned int flags2)
+void MIType_Char(OScanner& os, bool newStyleMapInfo, char& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	if (os.getToken().size() > 1)
 		os.error("Expected single character string, got multi-character string");
 
-	*static_cast<char*>(data) = os.getToken()[0];
+	out = os.getToken()[0];
 }
 
 // Sets the inputted data as a std::string
-void MIType_String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                 unsigned int flags2)
+void MIType_String(OScanner& os, bool newStyleMapInfo, std::string& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
-	*static_cast<std::string*>(data) = os.getToken();
+	out = os.getToken();
+}
+
+// Sets the inputted data as a std::string, checking LANGUAGE if it is a $ token
+void MIType_$String(OScanner& os, bool newStyleMapInfo, std::string& out)
+{
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
+
+	out = GStrings.maybeLookup(os.getToken());
 }
 
 // Sets the inputted data as a color
-void MIType_Color(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                  unsigned int flags2)
+void MIType_Color(OScanner& os, bool newStyleMapInfo, std::array<byte, 4>& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	const argb_t color(V_GetColorFromString(os.getToken()));
-	uint8_t* ptr = static_cast<uint8_t*>(data);
-	ptr[0] = color.geta();
-	ptr[1] = color.getr();
-	ptr[2] = color.getg();
-	ptr[3] = color.getb();
+	out[0] = color.geta();
+	out[1] = color.getr();
+	out[2] = color.getg();
+	out[3] = color.getb();
 }
 
 // Sets the inputted data as an OLumpName map name
-void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                    unsigned int flags2)
+void MIType_MapName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
@@ -372,17 +369,17 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 	}
 	else if (os.compareTokenNoCase("EndBunny"))
 	{
-		*static_cast<OLumpName*>(data) = "EndGame3";
+		out = "EndGame3";
 		return;
 	}
 	else if (os.compareTokenNoCase("EndGame1"))
 	{
-		*static_cast<OLumpName*>(data) = "EndGame1";
+		out = "EndGame1";
 		return;
 	}
 	else if (os.compareTokenNoCase("EndGame2"))
 	{
-		*static_cast<OLumpName*>(data) = "EndGame2";
+		out = "EndGame2";
 		return;
 	}
 	else if (os.compareTokenNoCase("EndGameW"))
@@ -392,17 +389,17 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 	}
 	else if (os.compareTokenNoCase("EndGame4"))
 	{
-		*static_cast<OLumpName*>(data) = "EndGame4";
+		out = "EndGame4";
 		return;
 	}
 	else if (os.compareTokenNoCase("EndGameC"))
 	{
-		*static_cast<OLumpName*>(data) = "EndGameC";
+		out = "EndGameC";
 		return;
 	}
 	else if (os.compareTokenNoCase("EndGame3"))
 	{
-		*static_cast<OLumpName*>(data) = "EndGame3";
+		out = "EndGame3";
 		return;
 	}
 	else if (os.compareTokenNoCase("EndDemon"))
@@ -458,7 +455,7 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 			}
 			else if (os.compareTokenNoCase("cast"))
 			{
-				*static_cast<OLumpName*>(data) = "EndGameC";
+				out = "EndGameC";
 			}
 			if (os.compareTokenNoCase("music"))
 			{
@@ -488,37 +485,36 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 			map_name = fmt::format("MAP{:02d}", map);
 		}
 
-		*static_cast<OLumpName*>(data) = map_name;
+		out = map_name;
 	}
 }
 
 // Sets the inputted data as an OLumpName
-void MIType_LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                     unsigned int flags2)
+void MIType_LumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 {
 	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
-	*static_cast<OLumpName*>(data) = os.getToken();
+	out = os.getToken();
 }
 
 // Handle lump names that can also be intermission scripts
-void MIType_InterLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                          unsigned int flags2)
+void MIType_InterLumpName(OScanner& os, bool newStyleMapInfo, OLumpName& pic,
+                          OLumpName& script)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
+
 	const std::string tok = os.getToken();
 	if (!tok.empty() && tok.at(0) == '$')
 	{
 		// intermission script lump
-		*static_cast<std::pair<OLumpName*, OLumpName*>*>(data)->second = tok.substr(1);
+		script = tok.substr(1);
 		return;
 	}
-	*static_cast<std::pair<OLumpName*, OLumpName*>*>(data)->first = tok;
+	pic = tok;
 }
 
 // Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName
-void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                      unsigned int flags2)
+void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
@@ -526,23 +522,22 @@ void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(StdStringToUpper(os.getToken()).c_str() + 1);
+		const OLumpName s = GStrings.lookup(os.getToken().c_str() + 1);
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
 		}
-		*static_cast<OLumpName*>(data) = s;
+		out = s;
 	}
 	else
 	{
-		*static_cast<OLumpName*>(data) = os.getToken();
+		out = os.getToken();
 	}
 }
 
 // Sets the inputted data as an OLumpName, checking LANGUAGE for the actual OLumpName
 // (Music variant)
-void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                          unsigned int flags2)
+void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 	const std::string musicname = os.getToken();
@@ -551,7 +546,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 	{
 		// It is possible to pass a DeHackEd string
 		// prefixed by a $.
-		const OString& s = GStrings(StdStringToUpper(musicname.c_str() + 1));
+		const OLumpName s = GStrings.lookup(musicname.c_str() + 1);
 		if (s.empty())
 		{
 			os.error("Unknown lookup string \"{}\".", os.getToken());
@@ -562,39 +557,85 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		OLumpName lumpname = fmt::format("D_{}", s);
 		if (W_CheckNumForName(lumpname) != -1)
 		{
-			*static_cast<OLumpName*>(data) = lumpname;
+			out = lumpname;
 		}
 	}
 	else
 	{
 		if (W_CheckNumForName(musicname) != -1)
 		{
-			*static_cast<OLumpName*>(data) = musicname;
+			out = musicname;
 		}
 	}
 }
 
 // Sets inputted data as a sound name
-void MIType_SoundName(OScanner& os, bool doEquals, void* data, unsigned int flags,
-                      unsigned int flags2)
+void MIType_SoundName(OScanner& os, bool doEquals, std::array<char, MAX_SNDNAME + 1>& out)
 {
 	ParseMapInfoHelper<std::string>(os, doEquals);
 	const std::string soundname = os.getToken();
 
-	strncpy(static_cast<char*>(data), soundname.c_str(), MAX_SNDNAME);
+	strncpy(out.data(), soundname.c_str(), out.size() - 1);
 }
 
-// Sets the sky texture with an OLumpName
-void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                unsigned int flags2)
+// Sets the map author, remembering whether a PWAD is the one claiming it
+void MIType_Author(OScanner& os, bool newStyleMapInfo, level_pwad_info_t& info)
+{
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
+
+	const std::string token = os.getToken();
+	info.author = GStrings.maybeLookup(token);
+
+	if (info.author == token)
+	{
+		StringTable::replaceEscapes(info.author);
+	}
+
+	if (mapinfofrompwad)
+		info.metadataflags |= metadataflags_t::AUTHORFROMPWAD;
+	else
+		info.metadataflags &= ~metadataflags_t::AUTHORFROMPWAD;
+}
+
+// Sets the intermission title patch, which may carry a hideauthorname token
+void MIType_TitlePatch(OScanner& os, bool newStyleMapInfo, level_pwad_info_t& info)
 {
 	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
-	level_pwad_info_t& info = *static_cast<level_pwad_info_t*>(data);
+	info.pname = os.getToken();
+
+	// Some title patches spell out the author as part of the graphic, in which
+	// case the map can ask for it not to be drawn a second time.
+	os.scan();
+	if (os.compareToken(","))
+	{
+		os.mustScan();
+		if (os.compareTokenNoCase("hideauthorname"))
+		{
+			info.flags2 |= LEVEL2_HIDEAUTHORNAME;
+		}
+		else
+		{
+			os.error("Unknown titlepatch option \"{}\".", os.getToken());
+		}
+	}
+	else
+	{
+		os.unScan();
+	}
+}
+
+// Sets one of the two sky textures with an OLumpName
+template <int SKY>
+void MIType_Sky(OScanner& os, bool newStyleMapInfo, level_pwad_info_t& info)
+{
+	static_assert(SKY == 1 || SKY == 2, "MIType_Sky handles sky1 and sky2 only");
+
+	ParseMapInfoHelper<OLumpName>(os, newStyleMapInfo);
 
 	std::string pic = os.getToken();
 
-	if (flags == 1)
+	if constexpr (SKY == 1)
 	{
 		info.skypic = pic;
 	}
@@ -611,7 +652,7 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 	}
 	if (IsRealNum(os.getToken().c_str()))
 	{
-		if (flags == 1)
+		if constexpr (SKY == 1)
 		{
 			info.sky1ScrollDelta = FLOAT2FIXED(os.getTokenFloat());
 		}
@@ -626,54 +667,97 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 	}
 }
 
+// The three flag setters below are function objects rather than plain function
+// templates.
+//
+// They have to stay generic, because the flags they write are different types
+// (levelflags_t, levelflags2_t, clusterflags_t, skillflags_t).
+//
+// Function templates would require the caller to specify the type of the flags,
+// which is inconvenient and unnecessary, as we can infer the types of its input
+// and output.
+//
+// If this were a templated function instead, something like this would be required:
+//
+// { "islobby", MIType_SetFlag<levelFlags_t>, ref.flags, LEVEL_LOBBYSPECIAL }
+// instead of:
+// { "islobby", MIType_SetFlag, ref.flags, LEVEL_LOBBYSPECIAL }
+
 // Sets a flag
-void MIType_SetFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                    unsigned int flags2)
+struct MIType_SetFlag_t
 {
-	*static_cast<uint32_t*>(data) |= flags;
-}
+	template <typename F, typename B>
+	    requires requires(F& out, B bits) { out |= bits; }
+	void operator()(OScanner& /*os*/, bool /*newStyleMapInfo*/, F& out, B bits) const
+	{
+		out |= bits;
+	}
+};
+inline constexpr MIType_SetFlag_t MIType_SetFlag{};
 
 // Sets a compatibility flag for maps
-void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                       unsigned int flags2)
+struct MIType_CompatFlag_t
 {
-	os.scan();
-	if (os.compareToken("="))
+	template <typename F, typename B>
+	    requires requires(F& out, B bits) { out |= bits; out &= ~bits; }
+	void operator()(OScanner& os, bool /*newStyleMapInfo*/, F& out, B bits) const
 	{
-		os.mustScanInt();
-		if (os.getTokenInt())
-			*static_cast<uint32_t*>(data) |= flags;
-		else
-			*static_cast<uint32_t*>(data) &= ~flags;
-	}
-	else
-	{
-		if (IsNum(os.getToken().c_str()))
+		os.scan();
+		if (os.compareToken("="))
 		{
-			*static_cast<uint32_t*>(data) |= os.getTokenInt() ? flags : 0;
+			os.mustScanInt();
+			if (os.getTokenInt())
+				out |= bits;
+			else
+				out &= ~bits;
 		}
 		else
 		{
-			os.unScan();
-			*static_cast<uint32_t*>(data) |= flags;
+			if (IsNum(os.getToken().c_str()))
+			{
+				if (os.getTokenInt())
+					out |= bits;
+			}
+			else
+			{
+				os.unScan();
+				out |= bits;
+			}
 		}
 	}
-}
 
-// Sets an SC flag
-void MIType_SCFlags(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                    unsigned int flags2)
+	template <typename F>
+	void operator()(OScanner& os, bool /*newStyleMapInfo*/, F& /*out*/,
+	                OUtil::noflag_t) const
+	{
+		os.scan();
+		if (os.compareToken("="))
+			os.mustScanInt();
+		else if (!IsNum(os.getToken().c_str()))
+			os.unScan();
+	}
+};
+inline constexpr MIType_CompatFlag_t MIType_CompatFlag{};
+
+// Sets an SC flag, clearing whichever bits the key supersedes
+struct MIType_SCFlags_t
 {
-	*static_cast<uint32_t*>(data) = (*static_cast<uint32_t*>(data) & flags2) | flags;
-}
+	template <typename F, typename B, typename M>
+	    requires requires(F& out, B bits, M keepmask) { out = (out & keepmask) | bits; }
+	void operator()(OScanner& /*os*/, bool /*newStyleMapInfo*/, F& out, B bits,
+	                M keepmask) const
+	{
+		out = (out & keepmask) | bits;
+	}
+};
+inline constexpr MIType_SCFlags_t MIType_SCFlags{};
 
 // Sets a cluster
-void MIType_Cluster(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                    unsigned int flags2)
+void MIType_Cluster(OScanner& os, bool newStyleMapInfo, int& out)
 {
 	ParseMapInfoHelper<int>(os, newStyleMapInfo);
 
-	*static_cast<int*>(data) = os.getTokenInt();
+	out = os.getTokenInt();
 	if (HexenHack)
 	{
 		ClusterInfos& clusters = getClusterInfos();
@@ -686,12 +770,9 @@ void MIType_Cluster(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 }
 
 // Sets a cluster string
-void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                          unsigned int flags2)
+void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, std::string& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
-
-	std::string* text = static_cast<std::string*>(data);
 
 	if (newStyleMapInfo)
 	{
@@ -704,12 +785,12 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			}
 
 			os.mustScan();
-			const OString& s = GStrings(StdStringToUpper(os.getToken()));
+			const std::string s = GStrings.lookup(os.getToken());
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
 			}
-			*text = s;
+			out = s;
 		}
 		else
 		{
@@ -719,7 +800,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 			do
 			{
 				os.mustScan();
-				ctext += os.getToken();
+				ctext += GStrings.maybeLookup(os.getToken());
 				ctext += "\n";
 				os.scan();
 			} while (os.compareToken(","));
@@ -731,7 +812,7 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 				ctext.resize(ctext.length() - 1);
 			}
 
-			*text = ctext;
+			out = ctext;
 		}
 	}
 	else
@@ -739,77 +820,79 @@ void MIType_ClusterString(OScanner& os, bool newStyleMapInfo, void* data, unsign
 		if (os.compareTokenNoCase("lookup"))
 		{
 			os.mustScan();
-			const OString& s = GStrings(StdStringToUpper(os.getToken()));
+			const std::string s = GStrings.lookup(os.getToken());
 			if (s.empty())
 			{
 				os.error("Unknown lookup string \"{}\".", os.getToken());
 			}
 
-			*text = s;
+			out = s;
 		}
 		else
 		{
-			*text = os.getToken();
+			out = GStrings.maybeLookup(os.getToken());
 		}
 	}
 }
 
-// Sets the credit pages from a gameinfo lump
-void MIType_Pages(OScanner& os, bool doEquals, void* data, unsigned int flags,
-                        unsigned int flags2)
+// Sets the pages of a gameinfo lump.  The destination array's extent decides how
+// many pages the key accepts, so a two-page key can never write a third.
+template <size_t N>
+void MIType_Pages(OScanner& os, bool doEquals, std::array<OLumpName, N>& out)
 {
+	static_assert(N == 2 || N == 3, "Page keys hold either two or three pages");
+
 	ParseMapInfoHelper<OLumpName>(os, doEquals);
 
 	const std::string page = os.getToken();
-	static_cast<OLumpName*>(data)[0] = page;
+	out[0] = page;
 
 	os.scan();
 	if (os.compareToken(","))
 	{
 		os.mustScan();
 		if (os.isQuotedString())
-			static_cast<OLumpName*>(data)[1] = os.getToken();
+			out[1] = os.getToken();
 		else
 			os.error("Trailing comma in Page definition; expected lump name");
 
 		// Do a third page if finalePage/infoPage instead of creditPages
-		if (flags)
+		if constexpr (N >= 3)
 		{
 			os.scan();
 			if (os.compareToken(","))
 			{
 				os.mustScan();
 				if (os.isQuotedString())
-					static_cast<OLumpName*>(data)[2] = os.getToken();
+					out[2] = os.getToken();
 				else
 					os.error("Trailing comma in Page definition; expected lump name");
 			}
 			else
 			{
 				os.unScan();
-				static_cast<OLumpName*>(data)[2] = page;
+				out[2] = page;
 			}
 		}
 	}
 	else
 	{
 		os.unScan();
-		static_cast<OLumpName*>(data)[1] = page;
-		if (flags)
-			static_cast<OLumpName*>(data)[2] = page;
+		out[1] = page;
+		if constexpr (N >= 3)
+			out[2] = page;
 	}
 
 	SkipUnknownType(os);
 }
 
 // Sets multiple lumpnames in a vector
-void MIType_$VectorLumpName(OScanner& os, bool doEquals, void* data, unsigned int flags,
-                            unsigned int flags2)
+[[maybe_unused]] void MIType_$VectorLumpName(OScanner& os, bool doEquals,
+                                             std::vector<OLumpName>& out)
 {
 	ParseMapInfoHelper<OLumpName>(os, doEquals);
 
-	const std::string page = os.getToken();
-	static_cast<std::vector<OLumpName>*>(data)->push_back(page);
+	out.emplace_back(os.getToken());
 
 	while (os.scan())
 	{
@@ -817,7 +900,7 @@ void MIType_$VectorLumpName(OScanner& os, bool doEquals, void* data, unsigned in
 		{
 			os.mustScan();
 			if (os.isQuotedString())
-				static_cast<OLumpName*>(data)[1] = os.getToken();
+				out.emplace_back(os.getToken());
 			else
 				os.error("Unexpected trailing comma; expected lump name");
 		}
@@ -829,9 +912,8 @@ void MIType_$VectorLumpName(OScanner& os, bool doEquals, void* data, unsigned in
 	}
 }
 
-// Sets the inputted data as a std::string
-void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                   unsigned int flags2)
+// Sets the skill levels a spawn filter applies to
+void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, MapThingFlags& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
@@ -842,14 +924,14 @@ void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 		{
 			case 1:
 			case 2:
-				*static_cast<int*>(data) |= 1;
+				out |= MTF_EASY;
 				break;
 			case 3:
-				*static_cast<int*>(data) |= 2;
+				out |= MTF_MEDIUM;
 				break;
 			case 4:
 			case 5:
-				*static_cast<int*>(data) |= 4;
+				out |= MTF_HARD;
 				break;
 			default:
 				return;
@@ -857,50 +939,42 @@ void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 	}
 	else
 	{
-		if (os.compareTokenNoCase("baby"))
-			*static_cast<int*>(data) |= 1;
-		else if (os.compareTokenNoCase("easy"))
-			*static_cast<int*>(data) |= 1;
+		if (os.compareTokenNoCase("baby") || os.compareTokenNoCase("easy"))
+			out |= MTF_EASY;
 		else if (os.compareTokenNoCase("normal"))
-			*static_cast<int*>(data) |= 2;
-		else if (os.compareTokenNoCase("hard"))
-			*static_cast<int*>(data) |= 4;
-		else if (os.compareTokenNoCase("nightmare"))
-			*static_cast<int*>(data) |= 4;
+			out |= MTF_MEDIUM;
+		else if (os.compareTokenNoCase("hard") || os.compareTokenNoCase("nightmare"))
+			out |= MTF_HARD;
 	}
 }
 
 // Sets the map to use the specific map07 bossactions
-void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                         unsigned int flags2)
+void MIType_Map07Special(OScanner& /*os*/, bool /*newStyleMapInfo*/,
+                         std::vector<bossaction_t>& bossactionvector)
 {
-	std::vector<bossaction_t>& bossactionvector =
-	    *static_cast<std::vector<bossaction_t>*>(data);
+	using enum doomLineSpecial_t;
 
 	// mancubus
 	bossaction_t& mancaction = bossactionvector.emplace_back();;
 
 	mancaction.type = MT_FATSO;
 	mancaction.flags = MF3_MAP07BOSS1;
-	mancaction.special = 23;
-	mancaction.tag = 666;
+	mancaction.special = lineSpecialValue(S1_Floor_LowerToLowest);
+	mancaction.tag = BOSSACTION_TAG;
 
 	// arachnotron
 	bossaction_t& arachnoaction = bossactionvector.emplace_back();;
 
 	arachnoaction.type = MT_BABY;
 	arachnoaction.flags = MF3_MAP07BOSS2;
-	arachnoaction.special = 30;
-	arachnoaction.tag = 667;
+	arachnoaction.special = lineSpecialValue(W1_Floor_RaiseByTexture);
+	arachnoaction.tag = BOSSACTION_TAG_ALT;
 }
 
-template <int32_t TYPE, int32_t FLAG = 0>
-void MIType_Special(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                         unsigned int flags2)
+template <int32_t TYPE, auto FLAG = OUtil::noflag>
+void MIType_Special(OScanner& /*os*/, bool /*newStyleMapInfo*/,
+                    std::vector<bossaction_t>& bossactionvector)
 {
-	std::vector<bossaction_t>& bossactionvector =
-	    *static_cast<std::vector<bossaction_t>*>(data);
-
 	if (bossactionvector.size() == 0)
 		bossactionvector.emplace_back();
 
@@ -916,11 +990,9 @@ void MIType_Special(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 }
 
 template <int16_t SPECIAL, int16_t TAG = 0>
-void MIType_SpecialAction(OScanner& os, bool newStyleMapInfo, void* data,
-                          unsigned int flags, unsigned int flags2)
+void MIType_SpecialAction(OScanner& /*os*/, bool /*newStyleMapInfo*/,
+                          std::vector<bossaction_t>& bossactionvector)
 {
-	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
-
 	for (auto& bossaction : bossactionvector)
 	{
 		if (bossaction.special == 0)
@@ -936,9 +1008,17 @@ void MIType_SpecialAction(OScanner& os, bool newStyleMapInfo, void* data,
 	action.tag = TAG;
 }
 
+// Ensure the bossaction line specials are valid.
+//
+// The NOLINT suppresses a clang-tidy false positive: it reads any function
+// call appearing inside a dependent template argument as a functional cast,
+// so it reports the plain lineSpecialValue() call below as a C-style cast.
+template <DoomFormatLineSpecial auto SPECIAL, int16_t TAG = 0>
+constexpr auto MIType_LineSpecialAction =
+    MIType_SpecialAction<lineSpecialValue(SPECIAL), TAG>; // NOLINT(modernize-avoid-c-style-cast)
+
 // border around smaller screen sizes
-void MIType_Border(OScanner& os, bool doEquals, void* data,
-                                       unsigned int flags, unsigned int flags2)
+void MIType_Border(OScanner& os, bool doEquals)
 {
 	if (doEquals)
 		MustGetStringName(os, "=");
@@ -1005,8 +1085,7 @@ void MIType_Border(OScanner& os, bool doEquals, void* data,
 }
 
 //
-void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                        unsigned int flags2)
+void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
@@ -1021,8 +1100,7 @@ void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 }
 
 //
-void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                      unsigned int flags2)
+void MIType_MapArrows(OScanner& os, bool newStyleMapInfo)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
@@ -1064,8 +1142,7 @@ void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 }
 
 //
-void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                      unsigned int flags2)
+void MIType_MapKey(OScanner& os, bool newStyleMapInfo, std::vector<mline_t>& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
@@ -1073,7 +1150,7 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	const auto lines = AM_ParseVectorLump(name);
 	if (lines)
 	{
-		*static_cast<std::vector<mline_t>*>(data) = lines.value();
+		out = lines.value();
 	}
 	else
 	{
@@ -1088,31 +1165,52 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	}
 }
 
-template <typename DataType>
-void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
-{
-	*static_cast<DataType*>(data) = static_cast<DataType>(flags);
-}
-
 //////////////////////////////////////////////////////////////////////
 /// MapInfoData
 
-typedef void (*MITypeFunctionPtr)(OScanner&, bool, void*, unsigned int, unsigned int);
-
-// data structure containing all of the information needed to set a value from mapinfo
-struct MapInfoData
+// A MAPINFO key paired with the action that consumes its value.
+class MapInfoData
 {
-	const char* name;
-	MITypeFunctionPtr fn;
-	void* data;
-	unsigned int flags;
-	unsigned int flags2;
+  public:
+	// A key that is recognised but has nothing to set (unimplemented, or a block we
+	// only need to parse past).
+	MapInfoData(const char* name) : m_name(name) { }
 
-	MapInfoData(const char* _name, MITypeFunctionPtr _fn = NULL, void* _data = NULL,
-	            unsigned int _flags = 0, unsigned int _flags2 = 0)
-	    : name(_name), fn(_fn), data(_data), flags(_flags), flags2(_flags2)
+	// A setter that writes to global state rather than to the block being parsed.
+	MapInfoData(const char* name, void (*fn)(OScanner&, bool)) : m_name(name), m_fn(fn)
 	{
 	}
+
+	// A setter bound to the field it writes, plus any trailing arguments it takes.
+	// Fn is any callable - a plain setter function, or one of the flag setters, which
+	// are function objects so they can stay generic over the flag word's type. The
+	// invocable constraint is what rejects a setter aimed at the wrong field.
+	template <typename Fn, typename T, typename... Args>
+		requires std::invocable<const Fn&, OScanner&, bool, T&, Args...>
+	MapInfoData(const char* _name, Fn&& _fn, T& _ref, Args&&... _args)
+		: m_name(_name), m_fn([_fn = std::forward<Fn>(_fn), &_ref,
+			_bound = std::tuple<Args...>(std::forward<Args>(_args)...)](
+				OScanner& os, bool newStyleMapInfo) {
+					std::apply([&](auto&... a) { _fn(os, newStyleMapInfo, _ref, a...); },
+						_bound);
+				}
+		)
+	{
+	}
+
+	[[nodiscard]] const char* getName() const { return m_name; }
+
+	// Runs the bound setter. Keys that only need recognising have nothing bound, so
+	// the emptiness check lives here rather than at every call site.
+	void operator()(OScanner& os, bool newStyleMapInfo) const
+	{
+		if (m_fn)
+			m_fn(os, newStyleMapInfo);
+	}
+
+  private:
+	const char* m_name;
+	std::function<void(OScanner&, bool)> m_fn;
 };
 
 // container holding all MapInfoData types
@@ -1134,92 +1232,89 @@ struct MapInfoDataSetter
 template <>
 struct MapInfoDataSetter<level_pwad_info_t>
 {
+	using enum doomLineSpecial_t;
 	MapInfoDataContainer mapInfoDataContainer;
-	std::pair<OLumpName*, OLumpName*> enterpicscript;
-	std::pair<OLumpName*, OLumpName*> exitpicscript;
 
-	MapInfoDataSetter(level_pwad_info_t& ref) :
-	enterpicscript(&ref.enterpic, &ref.enterscript),
-	exitpicscript(&ref.exitpic, &ref.exitscript)
+	MapInfoDataSetter(level_pwad_info_t& ref)
 	{
 		mapInfoDataContainer = {
-			{ "levelnum", &MIType_Int, &ref.levelnum },
-	        { "next", &MIType_MapName, &ref.nextmap },
-	        { "secretnext", &MIType_MapName, &ref.secretmap },
-			{ "secret", &MIType_MapName, &ref.secretmap },
-			{ "cluster", &MIType_Cluster, &ref.cluster },
-			{ "sky1", &MIType_Sky, &ref, 1 },
-			{ "sky2", &MIType_Sky, &ref, 2 },
-			{ "fade", &MIType_Color, &ref.fadeto_color },
-			{ "outsidefog", &MIType_Color, &ref.outsidefog_color },
-			{ "titlepatch", &MIType_LumpName, &ref.pname },
-			{ "music", &MIType_MusicLumpName, &ref.music },
-			{ "nointermission", &MIType_SetFlag, &ref.flags, LEVEL_NOINTERMISSION },
-			{ "doublesky", &MIType_SetFlag, &ref.flags, LEVEL_DOUBLESKY },
-			{ "nosoundclipping", &MIType_SetFlag, &ref.flags, LEVEL_NOSOUNDCLIPPING },
-			{ "allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
-		       LEVEL_MONSTERSTELEFRAG },
-			{ "map07special", &MIType_Map07Special, &ref.bossactions },
-			{ "baronspecial", &MIType_Special<MT_BRUISER>, &ref.bossactions },
-			{ "cyberdemonspecial", &MIType_Special<MT_CYBORG>, &ref.bossactions },
-			{ "spidermastermindspecial", &MIType_Special<MT_SPIDER>, &ref.bossactions },
-			{ "e1m8special", &MIType_Special<MT_NULL, MF3_E1M8BOSS>, &ref.bossactions },
-			{ "e2m8special", &MIType_Special<MT_NULL, MF3_E2M8BOSS>, &ref.bossactions },
-			{ "e3m8special", &MIType_Special<MT_NULL, MF3_E3M8BOSS>, &ref.bossactions },
-			{ "e4m6special", &MIType_Special<MT_NULL, MF3_E4M6BOSS>, &ref.bossactions },
-			{ "e4m8special", &MIType_Special<MT_NULL, MF3_E4M8BOSS>, &ref.bossactions },
-			{ "specialaction_exitlevel", &MIType_SpecialAction<11>, &ref.bossactions },
-			{ "specialaction_opendoor", &MIType_SpecialAction<109, 666>, &ref.bossactions },
-			{ "specialaction_lowerfloor", &MIType_SpecialAction<23, 666>, &ref.bossactions },
-			{ "specialaction_killmonsters", &MIType_SpecialAction<280>, &ref.bossactions },
+			{ "levelnum", MIType_Int, ref.levelnum },
+			{ "next", MIType_MapName, ref.nextmap },
+			{ "secretnext", MIType_MapName, ref.secretmap },
+			{ "secret", MIType_MapName, ref.secretmap },
+			{ "cluster", MIType_Cluster, ref.cluster },
+			{ "sky1", MIType_Sky<1>, ref },
+			{ "sky2", MIType_Sky<2>, ref },
+			{ "fade", MIType_Color, ref.fadeto_color },
+			{ "outsidefog", MIType_Color, ref.outsidefog_color },
+			{ "titlepatch", MIType_TitlePatch, ref },
+			{ "music", MIType_MusicLumpName, ref.music },
+			{ "nointermission", MIType_SetFlag, ref.flags, LEVEL_NOINTERMISSION },
+			{ "doublesky", MIType_SetFlag, ref.flags, LEVEL_DOUBLESKY },
+			{ "nosoundclipping", MIType_SetFlag, ref.flags, LEVEL_NOSOUNDCLIPPING },
+			{ "allowmonstertelefrags", MIType_SetFlag, ref.flags,
+			     LEVEL_MONSTERSTELEFRAG },
+			{ "map07special", MIType_Map07Special, ref.bossactions },
+			{ "baronspecial", MIType_Special<MT_BRUISER>, ref.bossactions },
+			{ "cyberdemonspecial", MIType_Special<MT_CYBORG>, ref.bossactions },
+			{ "spidermastermindspecial", MIType_Special<MT_SPIDER>, ref.bossactions },
+			{ "e1m8special", MIType_Special<MT_NULL, MF3_E1M8BOSS>, ref.bossactions },
+			{ "e2m8special", MIType_Special<MT_NULL, MF3_E2M8BOSS>, ref.bossactions },
+			{ "e3m8special", MIType_Special<MT_NULL, MF3_E3M8BOSS>, ref.bossactions },
+			{ "e4m6special", MIType_Special<MT_NULL, MF3_E4M6BOSS>, ref.bossactions },
+			{ "e4m8special", MIType_Special<MT_NULL, MF3_E4M8BOSS>, ref.bossactions },
+			{ "specialaction_exitlevel", MIType_LineSpecialAction<S1_Exit_Normal>, ref.bossactions },
+			{ "specialaction_opendoor", MIType_LineSpecialAction<W1_Door_OpenFast, BOSSACTION_TAG>, ref.bossactions },
+			{ "specialaction_lowerfloor", MIType_LineSpecialAction<S1_Floor_LowerToLowest, BOSSACTION_TAG>, ref.bossactions },
+			{ "specialaction_killmonsters", MIType_SpecialAction<BOSSACTION_MASSACRE>, ref.bossactions },
 			{ "lightning" },
-			{ "fadetable", &MIType_LumpName, &ref.fadetable },
-			{ "evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING },
-			{ "noautosequences", &MIType_SetFlag, &ref.flags, LEVEL_SNDSEQTOTALCTRL },
-			{ "forcenoskystretch", &MIType_SetFlag, &ref.flags, LEVEL_FORCENOSKYSTRETCH },
-			{ "allowfreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_YES,
-		       ~LEVEL_FREELOOK_NO },
-			{ "nofreelook", &MIType_SCFlags, &ref.flags, LEVEL_FREELOOK_NO,
-		       ~LEVEL_FREELOOK_YES },
-			{ "allowjump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
-			{ "nojump", &MIType_SCFlags, &ref.flags, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
-			{ "cdtrack", &MIType_EatNext },
-			{ "cd_start_track", &MIType_EatNext },
-			{ "cd_end1_track", &MIType_EatNext },
-			{ "cd_end2_track", &MIType_EatNext },
-			{ "cd_end3_track", &MIType_EatNext },
-			{ "cd_intermission_track", &MIType_EatNext },
-			{ "cd_title_track", &MIType_EatNext },
-			{ "warptrans", &MIType_EatNext },
-			{ "gravity", &MIType_Float, &ref.gravity },
-			{ "aircontrol", &MIType_Float, &ref.aircontrol },
-			{ "airsupply", &MIType_Int, &ref.airsupply },
-			{ "islobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL },
-			{ "lobby", &MIType_SetFlag, &ref.flags, LEVEL_LOBBYSPECIAL },
+			{ "fadetable", MIType_LumpName, ref.fadetable },
+			{ "evenlighting", MIType_SetFlag, ref.flags, LEVEL_EVENLIGHTING },
+			{ "noautosequences", MIType_SetFlag, ref.flags, LEVEL_SNDSEQTOTALCTRL },
+			{ "forcenoskystretch", MIType_SetFlag, ref.flags, LEVEL_FORCENOSKYSTRETCH },
+			{ "allowfreelook", MIType_SCFlags, ref.flags, LEVEL_FREELOOK_YES,
+			    ~LEVEL_FREELOOK_NO },
+			{ "nofreelook", MIType_SCFlags, ref.flags, LEVEL_FREELOOK_NO,
+			    ~LEVEL_FREELOOK_YES },
+			{ "allowjump", MIType_SCFlags, ref.flags, LEVEL_JUMP_YES, ~LEVEL_JUMP_NO },
+			{ "nojump", MIType_SCFlags, ref.flags, LEVEL_JUMP_NO, ~LEVEL_JUMP_YES },
+			{ "cdtrack", MIType_EatNext },
+			{ "cd_start_track", MIType_EatNext },
+			{ "cd_end1_track", MIType_EatNext },
+			{ "cd_end2_track", MIType_EatNext },
+			{ "cd_end3_track", MIType_EatNext },
+			{ "cd_intermission_track", MIType_EatNext },
+			{ "cd_title_track", MIType_EatNext },
+			{ "warptrans", MIType_EatNext },
+			{ "gravity", MIType_Float, ref.gravity },
+			{ "aircontrol", MIType_Float, ref.aircontrol },
+			{ "airsupply", MIType_Int, ref.airsupply },
+			{ "islobby", MIType_SetFlag, ref.flags, LEVEL_LOBBYSPECIAL },
+			{ "lobby", MIType_SetFlag, ref.flags, LEVEL_LOBBYSPECIAL },
 			{ "nocrouch" },
-			{ "intermusic", &MIType_LumpName, &ref.zintermusic },
-			{ "par", &MIType_Int, &ref.partime },
-			{ "sucktime", &MIType_EatNext },
-			{ "enterpic", &MIType_InterLumpName, &enterpicscript },
-			{ "exitpic", &MIType_InterLumpName, &exitpicscript },
-			{ "enteranim", &MIType_LumpName, &ref.enteranim },
-			{ "exitanim", &MIType_LumpName, &ref.exitanim },
-			{ "translator", &MIType_EatNext },
-			{ "compat_shorttex", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_SHORTTEX },
-			{ "compat_limitpain", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_LIMITPAIN },
-			{ "compat_useblocking", &MIType_CompatFlag, &ref.flags }, // special lines block use (not implemented, default odamex behavior)
-		    { "compat_missileclip", &MIType_CompatFlag, &ref.flags }, // original height monsters when it comes to missiles (not implemented)
-			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF }, // todo: not implemented
-			{ "compat_crossdropoff", &MIType_CompatFlag, &ref.flags2, LEVEL2_COMPAT_CROSSDROPOFF },
-			{ "compat_trace", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_boomscroll", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
-			{ "compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER },
-			{ "compat_invisibility", &MIType_CompatFlag, &ref.flags},  // todo: not implemented
-			{ "author", &MIType_String, &ref.author },
-			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
-			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
-			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "intermusic", MIType_LumpName, ref.zintermusic },
+			{ "par", MIType_Int, ref.partime },
+			{ "sucktime", MIType_EatNext },
+			{ "enterpic", MIType_InterLumpName, ref.enterpic, ref.enterscript },
+			{ "exitpic", MIType_InterLumpName, ref.exitpic, ref.exitscript },
+			{ "enteranim", MIType_LumpName, ref.enteranim },
+			{ "exitanim", MIType_LumpName, ref.exitanim },
+			{ "translator", MIType_EatNext },
+			{ "compat_shorttex", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_SHORTTEX },
+			{ "compat_limitpain", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_LIMITPAIN },
+			{ "compat_useblocking", MIType_CompatFlag, ref.flags, OUtil::noflag }, // special lines block use (not implemented, default odamex behavior)
+			{ "compat_missileclip", MIType_CompatFlag, ref.flags, OUtil::noflag }, // original height monsters when it comes to missiles (not implemented)
+			{ "compat_dropoff", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_DROPOFF },
+			{ "compat_crossdropoff", MIType_CompatFlag, ref.flags2, LEVEL2_COMPAT_CROSSDROPOFF },
+			{ "compat_trace", MIType_CompatFlag, ref.flags, OUtil::noflag }, // todo: not implemented
+			{ "compat_boomscroll", MIType_CompatFlag, ref.flags, OUtil::noflag }, // todo: not implemented
+			{ "compat_sectorsounds", MIType_CompatFlag, ref.flags, OUtil::noflag }, // todo: not implemented
+			{ "compat_nopassover", MIType_CompatFlag, ref.flags, LEVEL_COMPAT_NOPASSOVER },
+			{ "compat_invisibility", MIType_CompatFlag, ref.flags, OUtil::noflag },  // todo: not implemented
+			{ "author", MIType_Author, ref },
+			{ "normalinfighting", MIType_SCFlags, ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "noinfighting", MIType_SCFlags, ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "totalinfighting", MIType_SCFlags, ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "smoothlighting" } // TODO: not implemented
 		};
 	}
@@ -1234,13 +1329,13 @@ struct MapInfoDataSetter<cluster_info_t>
 	MapInfoDataSetter(cluster_info_t& ref)
 	{
 	    mapInfoDataContainer = {
-			{ "entertext", &MIType_ClusterString, &ref.entertext },
-			{ "exittext", &MIType_ClusterString, &ref.exittext },
-			{ "exittextislump", &MIType_SetFlag, &ref.flags, CLUSTER_EXITTEXTISLUMP },
-			{ "music", &MIType_MusicLumpName, &ref.messagemusic },
-			{ "flat", &MIType_$LumpName, &ref.finaleflat },
-			{ "hub", &MIType_SetFlag, &ref.flags, CLUSTER_HUB },
-			{ "pic", &MIType_$LumpName, &ref.finalepic }
+			{ "entertext", MIType_ClusterString, ref.entertext },
+			{ "exittext", MIType_ClusterString, ref.exittext },
+			{ "exittextislump", MIType_SetFlag, ref.flags, CLUSTER_EXITTEXTISLUMP },
+			{ "music", MIType_MusicLumpName, ref.messagemusic },
+			{ "flat", MIType_$LumpName, ref.finaleflat },
+			{ "hub", MIType_SetFlag, ref.flags, CLUSTER_HUB },
+			{ "pic", MIType_$LumpName, ref.finalepic }
 	    };
 	}
 };
@@ -1254,33 +1349,33 @@ struct MapInfoDataSetter<gameinfo_t>
 	MapInfoDataSetter()
 	{
 		mapInfoDataContainer = {
-			{ "advisorytime", &MIType_Int, &gameinfo.advisoryTime },
-			{ "border", &MIType_Border },
-			{ "borderflat", &MIType_LumpName, &gameinfo.borderFlat },
-			{ "chatsound", &MIType_SoundName, &gameinfo.chatSound },
-			{ "creditpage", &MIType_Pages, &gameinfo.creditPages },
-			{ "intermissioncounter", &MIType_BoolString, &gameinfo.intermissionCounter },
-			{ "intermissionmusic", &MIType_MusicLumpName, &gameinfo.intermissionMusic },
-			{ "noloopfinalemusic", &MIType_BoolString, &gameinfo.noLoopFinaleMusic },
-			{ "pagetime", &MIType_Int, &gameinfo.pageTime },
-			{ "quitsound", &MIType_SoundName, &gameinfo.quitSound },
-			{ "finaleflat", &MIType_LumpName, &gameinfo.finaleFlat },
-			{ "finalemusic", &MIType_MusicLumpName, &gameinfo.finaleMusic },
-			{ "finalepage", &MIType_Pages, &gameinfo.finalePage, 1 },
-			{ "infopage", &MIType_Pages, &gameinfo.infoPage, 1 },
-			{ "telefogheight", &MIType_Int, &gameinfo.telefogHeight },
-			{ "titlemusic", &MIType_MusicLumpName, &gameinfo.titleMusic },
-			{ "titlepage", &MIType_LumpName, &gameinfo.titlePage },
-			{ "titletime", &MIType_Int, &gameinfo.titleTime },
-			{ "defkickback", &MIType_Int, &gameinfo.defKickback },
-			{ "endoom", &MIType_LumpName, &gameinfo.endoom },
-			{ "pausesign", &MIType_LumpName, &gameinfo.pauseSign },
-			{ "gibfactor", &MIType_Float, &gameinfo.gibFactor },
-			{ "textscreenx", &MIType_Int, &gameinfo.textScreenX },
-			{ "textscreeny", &MIType_Int, &gameinfo.textScreenY },
-			{ "maparrow", &MIType_MapArrows },
-			{ "cheatkey", &MIType_MapKey, &gameinfo.cheatKey },
-			{ "easykey", &MIType_MapKey, &gameinfo.easyKey }
+			{ "advisorytime", MIType_Int, gameinfo.advisoryTime },
+			{ "border", MIType_Border },
+			{ "borderflat", MIType_LumpName, gameinfo.borderFlat },
+			{ "chatsound", MIType_SoundName, gameinfo.chatSound },
+			{ "creditpage", MIType_Pages<2>, gameinfo.creditPages },
+			{ "intermissioncounter", MIType_BoolString, gameinfo.intermissionCounter },
+			{ "intermissionmusic", MIType_MusicLumpName, gameinfo.intermissionMusic },
+			{ "noloopfinalemusic", MIType_BoolString, gameinfo.noLoopFinaleMusic },
+			{ "pagetime", MIType_Int, gameinfo.pageTime },
+			{ "quitsound", MIType_SoundName, gameinfo.quitSound },
+			{ "finaleflat", MIType_LumpName, gameinfo.finaleFlat },
+			{ "finalemusic", MIType_MusicLumpName, gameinfo.finaleMusic },
+			{ "finalepage", MIType_Pages<3>, gameinfo.finalePage },
+			{ "infopage", MIType_Pages<3>, gameinfo.infoPage },
+			{ "telefogheight", MIType_Int, gameinfo.telefogHeight },
+			{ "titlemusic", MIType_MusicLumpName, gameinfo.titleMusic },
+			{ "titlepage", MIType_LumpName, gameinfo.titlePage },
+			{ "titletime", MIType_Int, gameinfo.titleTime },
+			{ "defkickback", MIType_Int, gameinfo.defKickback },
+			{ "endoom", MIType_LumpName, gameinfo.endoom },
+			{ "pausesign", MIType_LumpName, gameinfo.pauseSign },
+			{ "gibfactor", MIType_Float, gameinfo.gibFactor },
+			{ "textscreenx", MIType_Int, gameinfo.textScreenX },
+			{ "textscreeny", MIType_Int, gameinfo.textScreenY },
+			{ "maparrow", MIType_MapArrows },
+			{ "cheatkey", MIType_MapKey, gameinfo.cheatKey },
+			{ "easykey", MIType_MapKey, gameinfo.easyKey }
 		};
 	}
 };
@@ -1335,14 +1430,10 @@ void ParseMapInfoLower(OScanner& os, MapInfoDataSetter<T>& mapInfoDataSetter)
 		MapInfoDataContainer::iterator it = mapInfoDataContainer.begin();
 		for (; it != mapInfoDataContainer.end(); ++it)
 		{
-			if (os.compareTokenNoCase(it->name))
+			if (os.compareTokenNoCase(it->getName()))
 			{
-				if (it->fn)
-				{
-					it->fn(os, newMapInfoStack > 0, it->data, it->flags, it->flags2);
-				}
-
 				// [AM] Some tokens are no-ops, we want to break out either way.
+				(*it)(os, newMapInfoStack > 0);
 				break;
 			}
 		}
@@ -1425,13 +1516,20 @@ void ParseEpisodeInfo(OScanner& os)
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			if (picisgfx == false)
-				name = os.getToken();
+				name = GStrings.maybeLookup(os.getToken());
 		}
 		else if (os.compareTokenNoCase("lookup"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
-			// Not implemented
+			const std::string s = GStrings.lookup(os.getToken());
+			if (s.empty())
+			{
+				os.error("Unknown lookup string \"{}\".", os.getToken());
+			}
+
+			if (picisgfx == false)
+				name = s;
 		}
 		else if (os.compareTokenNoCase("picname"))
 		{
@@ -1537,43 +1635,43 @@ struct MapInfoDataSetter<SkillInfo>
 	MapInfoDataSetter(SkillInfo& ref)
 	{
 		mapInfoDataContainer = {
-			{ "ammofactor", &MIType_Float, &ref.ammo_factor },
-			{ "doubleammofactor", &MIType_Float, &ref.double_ammo_factor },
-			{ "dropammofactor", &MIType_Float, &ref.drop_ammo_factor },
-			{ "damagefactor", &MIType_Float, &ref.damage_factor },
-			{ "armorfactor", &MIType_Float, &ref.armor_factor },
-			{ "healthfactor", &MIType_Float, &ref.health_factor },
-			{ "kickbackfactor", &MIType_Float, &ref.kickback_factor },
+			{ "ammofactor", MIType_Float, ref.ammo_factor },
+			{ "doubleammofactor", MIType_Float, ref.double_ammo_factor },
+			{ "dropammofactor", MIType_Float, ref.drop_ammo_factor },
+			{ "damagefactor", MIType_Float, ref.damage_factor },
+			{ "armorfactor", MIType_Float, ref.armor_factor },
+			{ "healthfactor", MIType_Float, ref.health_factor },
+			{ "kickbackfactor", MIType_Float, ref.kickback_factor },
 
-			{ "fastmonsters", &MIType_Bool, &ref.fast_monsters, true },
-			{ "slowmonsters", &MIType_Bool, &ref.slow_monsters, true },
-			{ "disablecheats", &MIType_Bool, &ref.disable_cheats, true },
-			{ "autousehealth", &MIType_Bool, &ref.auto_use_health, true },
+			{ "fastmonsters", MIType_Assign<bool>, ref.fast_monsters, true },
+			{ "slowmonsters", MIType_Assign<bool>, ref.slow_monsters, true },
+			{ "disablecheats", MIType_Assign<bool>, ref.disable_cheats, true },
+			{ "autousehealth", MIType_Assign<bool>, ref.auto_use_health, true },
 
-			{ "easybossbrain", &MIType_Bool, &ref.easy_boss_brain, true },
-			{ "easykey", &MIType_Bool, &ref.easy_key, true },
-			{ "nomenu", &MIType_Bool, &ref.no_menu, true },
-			{ "respawntime", &MIType_Int, &ref.respawn_counter },
-			{ "respawnlimit", &MIType_Int, &ref.respawn_limit },
-			{ "aggressiveness", &MIType_Float, &ref.aggressiveness },
-			{ "spawnfilter", &MIType_SpawnFilter, &ref.spawn_filter },
-			{ "spawnmulti", &MIType_Bool, &ref.spawn_multi, true },
-			{ "instantreaction", &MIType_Bool, &ref.instant_reaction, true },
-			{ "acsreturn", &MIType_Int, &ref.ACS_return },
-			{ "name", &MIType_String, &ref.menu_name },
-			{ "picname", &MIType_LumpName, &ref.pic_name },
+			{ "easybossbrain", MIType_Assign<bool>, ref.easy_boss_brain, true },
+			{ "easykey", MIType_Assign<bool>, ref.easy_key, true },
+			{ "nomenu", MIType_Assign<bool>, ref.no_menu, true },
+			{ "respawntime", MIType_Int, ref.respawn_counter },
+			{ "respawnlimit", MIType_Int, ref.respawn_limit },
+			{ "aggressiveness", MIType_Float, ref.aggressiveness },
+			{ "spawnfilter", MIType_SpawnFilter, ref.spawn_filter },
+			{ "spawnmulti", MIType_Assign<bool>, ref.spawn_multi, true },
+			{ "instantreaction", MIType_Assign<bool>, ref.instant_reaction, true },
+			{ "acsreturn", MIType_Int, ref.ACS_return },
+			{ "name", MIType_$String, ref.menu_name },
+			{ "picname", MIType_LumpName, ref.pic_name },
 			// { "playerclassname", &???, &ref.menu_names_for_player_class } // todo - requires special MIType to work properly
-			{ "mustconfirm", &MIType_MustConfirm, &ref, true },
-			{ "key", &MIType_Char, &ref.shortcut },
-			{ "textcolor", &MIType_Color, &ref.text_color },
+			{ "mustconfirm", MIType_MustConfirm, ref },
+			{ "key", MIType_Char, ref.shortcut },
+			{ "textcolor", MIType_Color, ref.text_color },
 			// { "replaceactor", &???, &ref.replace) } // todo - requires special MIType to work properly
-			{ "monsterhealth", &MIType_Float, &ref.monster_health },
-			{ "friendlyhealth", &MIType_Float, &ref.friendly_health },
-			{ "nopain", &MIType_Bool, &ref.no_pain, true },
-			{ "noinfighting", &MIType_SCFlags, &ref.flags, SKILL_NOINFIGHTING, ~SKILL_TOTALINFIGHTING },
-			{ "totalinfighting", &MIType_SCFlags, &ref.flags, SKILL_TOTALINFIGHTING, ~SKILL_NOINFIGHTING },
-			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true },
-			{ "defaultskill", &MIType_SetInt<decltype(defaultskillmenu)>, &defaultskillmenu, skillnum }
+			{ "monsterhealth", MIType_Float, ref.monster_health },
+			{ "friendlyhealth", MIType_Float, ref.friendly_health },
+			{ "nopain", MIType_Assign<bool>, ref.no_pain, true },
+			{ "noinfighting", MIType_SCFlags, ref.flags, SKILL_NOINFIGHTING, ~SKILL_TOTALINFIGHTING },
+			{ "totalinfighting", MIType_SCFlags, ref.flags, SKILL_TOTALINFIGHTING, ~SKILL_NOINFIGHTING },
+			{ "playerrespawn", MIType_Assign<bool>, ref.player_respawn, true },
+			{ "defaultskill", MIType_Assign<byte>, defaultskillmenu, skillnum }
 		};
 	}
 };
@@ -1589,33 +1687,47 @@ struct MapInfoDataSetter<automap_dummy>
 	MapInfoDataSetter()
 	{
 		mapInfoDataContainer = {
-			{ "base", &MIType_AutomapBase },
-			{ "showlocks", &MIType_Bool, &gameinfo.showLocks  },
-			{ "background", &MIType_String, &gameinfo.defaultAutomapColors.Background  },
-			{ "yourcolor", &MIType_String, &gameinfo.defaultAutomapColors.YourColor  },
-			{ "wallcolor", &MIType_String, &gameinfo.defaultAutomapColors.WallColor  },
-			{ "twosidedwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.TSWallColor  },
-			{ "floordiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.FDWallColor  },
-			{ "ceilingdiffwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.CDWallColor  },
-			{ "thingcolor", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor  },
-			{ "thingcolor_item", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Item  },
-			{ "thingcolor_countitem", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_CountItem  },
-			{ "thingcolor_monster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Monster  },
-			{ "thingcolor_nocountmonster", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_NoCountMonster  },
-			{ "thingcolor_friend", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Friend  },
-			{ "thingcolor_projectile", &MIType_String, &gameinfo.defaultAutomapColors.ThingColor_Projectile  },
-			{ "secretwallcolor", &MIType_String, &gameinfo.defaultAutomapColors.SecretWallColor  },
-			{ "gridcolor", &MIType_String, &gameinfo.defaultAutomapColors.GridColor  },
-			{ "xhaircolor", &MIType_String, &gameinfo.defaultAutomapColors.XHairColor  },
-			{ "notseencolor", &MIType_String, &gameinfo.defaultAutomapColors.NotSeenColor  },
-			{ "lockedcolor", &MIType_String, &gameinfo.defaultAutomapColors.LockedColor  },
-			{ "almostbackgroundcolor", &MIType_String, &gameinfo.defaultAutomapColors.AlmostBackground  },
-			{ "intrateleportcolor", &MIType_String, &gameinfo.defaultAutomapColors.TeleportColor  },
-			{ "exitcolor", &MIType_String, &gameinfo.defaultAutomapColors.ExitColor  }
+			{ "base", MIType_AutomapBase },
+			{ "showlocks", MIType_Assign<bool>, gameinfo.showLocks, false },
+			{ "background", MIType_String, gameinfo.defaultAutomapColors.Background  },
+			{ "yourcolor", MIType_String, gameinfo.defaultAutomapColors.YourColor  },
+			{ "wallcolor", MIType_String, gameinfo.defaultAutomapColors.WallColor  },
+			{ "twosidedwallcolor", MIType_String, gameinfo.defaultAutomapColors.TSWallColor  },
+			{ "floordiffwallcolor", MIType_String, gameinfo.defaultAutomapColors.FDWallColor  },
+			{ "ceilingdiffwallcolor", MIType_String, gameinfo.defaultAutomapColors.CDWallColor  },
+			{ "thingcolor", MIType_String, gameinfo.defaultAutomapColors.ThingColor  },
+			{ "thingcolor_item", MIType_String, gameinfo.defaultAutomapColors.ThingColor_Item  },
+			{ "thingcolor_countitem", MIType_String, gameinfo.defaultAutomapColors.ThingColor_CountItem  },
+			{ "thingcolor_monster", MIType_String, gameinfo.defaultAutomapColors.ThingColor_Monster  },
+			{ "thingcolor_nocountmonster", MIType_String, gameinfo.defaultAutomapColors.ThingColor_NoCountMonster  },
+			{ "thingcolor_friend", MIType_String, gameinfo.defaultAutomapColors.ThingColor_Friend  },
+			{ "thingcolor_projectile", MIType_String, gameinfo.defaultAutomapColors.ThingColor_Projectile  },
+			{ "secretwallcolor", MIType_String, gameinfo.defaultAutomapColors.SecretWallColor  },
+			{ "gridcolor", MIType_String, gameinfo.defaultAutomapColors.GridColor  },
+			{ "xhaircolor", MIType_String, gameinfo.defaultAutomapColors.XHairColor  },
+			{ "notseencolor", MIType_String, gameinfo.defaultAutomapColors.NotSeenColor  },
+			{ "lockedcolor", MIType_String, gameinfo.defaultAutomapColors.LockedColor  },
+			{ "almostbackgroundcolor", MIType_String, gameinfo.defaultAutomapColors.AlmostBackground  },
+			{ "intrateleportcolor", MIType_String, gameinfo.defaultAutomapColors.TeleportColor  },
+			{ "exitcolor", MIType_String, gameinfo.defaultAutomapColors.ExitColor  }
 		};
 	}
 };
 } // namespace
+
+// Drops a "by: " or "Author: " style prefix, the same way a
+// level name sheds the "MAP01: " that LANGUAGE puts in front of it.
+std::string G_StripAuthorPrefix(const std::string& author)
+{
+	const size_t pos = author.find(": ");
+	if (pos == std::string::npos)
+		return author;
+
+	std::string stripped = author.substr(pos + 2);
+	TrimString(stripped);
+
+	return stripped.empty() ? author : stripped;
+}
 
 // This function in particular is global rather than local specifically because UMAPINFO
 // also makes use of it.
@@ -1656,7 +1768,7 @@ void G_MapNameToID24LevelNum(level_pwad_info_t& info)
 namespace
 {
 
-void ParseMapInfoLump(int lump, const OLumpName& lumpname)
+void ParseMapInfoBuffer(const char* buffer, size_t length, const OLumpName& lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
 	ClusterInfos& clusters = getClusterInfos();
@@ -1671,14 +1783,12 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		defaultinfo.skypic = def.skypic;
 	}
 
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
-
 	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    true,     // semiComments
 	    true,     // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + length);
 
 	while (os.scan())
 	{
@@ -1704,7 +1814,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		}
 		else if (os.compareTokenNoCase("map"))
 		{
-			uint32_t& levelflags = defaultinfo.flags;
+			auto& levelflags = defaultinfo.flags;
 			os.mustScan();
 
 			OLumpName map_name = os.getToken();
@@ -1730,21 +1840,24 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 			info = defaultinfo;
 			info.mapname = map_name;
 
-			// Map name.
+			// Map name.  Either a literal, an explicit "lookup <name>", or a
+			// "$NAME" token that is looked up in LANGUAGE.
 			os.mustScan();
 			if (os.compareTokenNoCase("lookup"))
 			{
 				os.mustScan();
-				const OString& s = GStrings(StdStringToUpper(os.getToken()));
-				if (s.empty())
-				{
-					info.level_name = os.getToken();
-				}
-				info.level_name = s;
+				const std::string s = GStrings.lookup(os.getToken());
+				info.level_name = s.empty() ? os.getToken() : s;
 			}
 			else
 			{
-				info.level_name = os.getToken();
+				const std::string token = os.getToken();
+				info.level_name = GStrings.maybeLookup(token);
+
+				if (info.level_name == token)
+				{
+					StringTable::replaceEscapes(info.level_name);
+				}
 			}
 			info.pname.clear();
 
@@ -1845,7 +1958,32 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		}
 	}
 }
+
+void ParseMapInfoLump(int lump, const OLumpName& lumpname)
+{
+	mapinfofrompwad = W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+
+	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+	ParseMapInfoBuffer(buffer, W_LumpLength(lump), lumpname);
+}
 } // namespace
+
+//
+// G_ParseMapInfoBuffer
+// Parses MAPINFO text from memory instead of from a lump and generates
+// data for wadlevelinfos and wadclusterinfos.
+//
+void G_ParseMapInfoBuffer(const char* buffer, size_t length, const OLumpName& lumpname,
+                          bool fromPWAD)
+{
+	mapinfofrompwad = fromPWAD;
+	ParseMapInfoBuffer(buffer, length, lumpname);
+}
+
+void G_ParseMapInfoString(const std::string& text, const OLumpName& lumpname, bool fromPWAD)
+{
+	G_ParseMapInfoBuffer(text.data(), text.size(), lumpname, fromPWAD);
+}
 
 //
 // G_ParseMapInfo
@@ -1933,9 +2071,22 @@ void G_ParseMapInfo()
 		I_FatalError("{}: You cannot use clearskills in a MAPINFO if you do not define any "
 					"new skills after it.", __FUNCTION__);
 
-	// mark levels as secrets -- for ID24 intermissions
+	// A PWAD that replaces an IWAD map does not inherit the
+	// author of the map it buried. Only an author the PWAD states itself, in
+	// its own MAPINFO or UMAPINFO, survives onto a map the PWAD supplies.
 	LevelInfos& levels = getLevelInfos();
 	size_t numlevels = levels.size();
+	for (size_t i = 0; i < numlevels; i++)
+	{
+		level_pwad_info_t& level = levels.at(i);
+		if (!level.author.empty() && !(level.metadataflags & metadataflags_t::AUTHORFROMPWAD) &&
+		    W_IsLumpFromPWAD(level.mapname))
+		{
+			level.author.clear();
+		}
+	}
+
+	// mark levels as secrets -- for ID24 intermissions
 	for (size_t i = 0; i < numlevels; i++)
 	{
 		level_pwad_info_t& level = levels.at(i);

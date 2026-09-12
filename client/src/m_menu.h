@@ -24,7 +24,12 @@
 
 #pragma once
 
+#include <array>
+#include <span>
+
 #include "d_event.h"
+#include "olumpname.h"
+#include "c_cvars.h"
 
 // Some defines...
 #define LINEHEIGHT	16
@@ -41,7 +46,7 @@
 // Even when the menu is not displayed,
 // this can resize the view and change game parameters.
 // Does all the real work of the menu interaction.
-bool M_Responder (event_t *ev);
+bool M_Responder(const event_t& ev);
 
 // Called by main loop,
 // only used for menu (skull cursor) animation.
@@ -63,7 +68,7 @@ void M_StartControlPanel (void);
 bool M_StartOptionsMenu (void);
 
 // [RH] Handle keys for options menu
-void M_OptResponder (event_t *ev);
+void M_OptResponder(const event_t& ev);
 
 // [RH] Draw options menu
 void M_OptDrawer (void);
@@ -72,22 +77,23 @@ void M_OptDrawer (void);
 void M_OptUpdateMouseItem();
 
 // [RH] Initialize options menu
-void M_OptInit (void);
+void M_OptInit();
 
-void M_PlayerSetup (int choice);
+void M_PlayerSetup(int choice);
 
-struct menu_s;
-void M_SwitchMenu (struct menu_s *menu);
+struct menu_t;
+void M_SwitchMenu(menu_t* menu);
 
-void M_PopMenuStack (void);
+void M_PopMenuStack();
 
 // [RH] Called whenever the display mode changes
-void M_RefreshModesList ();
+void M_RefreshModesList();
 
 //
 // MENU TYPEDEFS
 //
-typedef enum {
+enum itemtype
+{
 	whitetext,
 	redtext,
 	yellowtext,
@@ -109,13 +115,21 @@ typedef enum {
 	joyactive,
 	joyaxis,
 	nochoice
-} itemtype;
+};
 
-typedef void (*cvarfunc)(cvar_t *cvar, float newval);
-typedef void (*voidfunc)(void);
-typedef void (*intfunc)(int);
+using cvarfunc = void (*)(cvar_t *cvar, float newval);
+using voidfunc = void (*)();
+using intfunc = void (*)(int);
 
-typedef struct menuitem_s {
+struct value_t {
+	float		value;
+	const char	*name;
+};
+
+// TODO: this is barely functional in c++
+// almost the entire menu is undefined behavior
+// replace with std::variant maybe?
+struct menuitem_t {
 	itemtype		  type;
 	const char			 *label;
 	union {
@@ -138,33 +152,27 @@ typedef struct menuitem_s {
 		char			 *res3;
 	} d;
 	union {
-		struct value_s		*values;
-		const char		*command;
-        	cvarfunc		cfunc;
-	        voidfunc		mfunc;
-        	intfunc			lfunc;
-		int			highlight;
-		int			*flagint;
+		value_t*    values;
+		const char* command;
+		cvarfunc    cfunc;
+		voidfunc    mfunc;
+		intfunc     lfunc;
+		int         highlight;
+		int*        flagint;
 	} e;
-} menuitem_t;
+};
 
-typedef struct menu_s {
-	OLumpName		title;
-	int				lastOn;
-	int				numitems;
-	int				indent;
-	menuitem_t	   *items;
-	int				scrolltop;
-	int				scrollpos;
-	void			(*refreshfunc)();	// Callback func for M_OptResponder
-} menu_t;
+struct menu_t {
+	OLumpName             title;
+	int                   lastOn;
+	int                   indent;
+	std::span<menuitem_t> items;
+	int                   scrolltop;
+	int                   scrollpos;
+	void                  (*refreshfunc)(); // Callback func for M_OptResponder
+};
 
-typedef struct value_s {
-	float		value;
-	const char	*name;
-} value_t;
-
-typedef struct
+struct oldmenuitem_t
 {
 	// -1 = no cursor here, 1 = ok, 2 = arrows ok
 	short		status;
@@ -179,9 +187,9 @@ typedef struct
 
 	// hotkey in menu
 	char		alphaKey;
-} oldmenuitem_t;
+};
 
-typedef struct oldmenu_s
+struct oldmenu_t
 {
 	short				numitems;		// # of menu items
 	oldmenuitem_t		*menuitems;		// menu items
@@ -189,9 +197,9 @@ typedef struct oldmenu_s
 	short				x;
 	short				y;				// x,y of menu
 	short				lastOn; 		// last item user was on in menu
-} oldmenu_t;
+};
 
-typedef struct
+struct menustack_t
 {
 	union {
 		menu_t *newmenu;
@@ -199,19 +207,19 @@ typedef struct
 	} menu;
 	bool isNewStyle;
 	bool drawSkull;
-} menustack_t;
+};
 
-extern value_t YesNo[2];
-extern value_t NoYes[2];
-extern value_t OnOff[2];
-extern value_t OffOn[2];
-extern value_t OnOffAuto[3];
+extern std::array<value_t, 2> YesNo;
+extern std::array<value_t, 2> NoYes;
+extern std::array<value_t, 2> OnOff;
+extern std::array<value_t, 2> OffOn;
+extern std::array<value_t, 3> OnOffAuto;
 
 extern menustack_t MenuStack[16];
 extern int MenuStackDepth;
 
-extern menu_t  *CurrentMenu;
-extern int		CurrentItem;
+extern menu_t* CurrentMenu;
+extern int     CurrentItem;
 
 extern short	 itemOn;
 extern oldmenu_t *currentMenu;

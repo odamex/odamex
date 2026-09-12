@@ -62,7 +62,7 @@ if(wxWidgets_FOUND)
     ${LAUNCH_SOURCES} ${LAUNCH_HEADERS}
     ${CVARDOC_SOURCE}
     ${XRCRES_HEADER} ${LAUNCH_WIN32_RESOURCES})
-  odamex_target_settings(odalaunch)
+  odamex_target_settings(TARGET odalaunch)
 
   target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
 
@@ -115,6 +115,13 @@ if(wxWidgets_FOUND)
   else()
     install(TARGETS odalaunch
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      COMPONENT odalaunch)
+    install(FILES ${CMAKE_SOURCE_DIR}/packaging/linux/net.odamex.Odamex.Launcher.desktop
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+      COMPONENT odalaunch)
+    install(FILES ${CMAKE_SOURCE_DIR}/media/icon_odalaunch_512.png
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps
+      RENAME net.odamex.Odamex.Launcher.png
       COMPONENT odalaunch)
   endif()
 endif()

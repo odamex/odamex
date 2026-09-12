@@ -32,16 +32,10 @@ CVAR(sv_latency, "80", "Latency simulation", CVARTYPE_INT, CVAR_SERVERARCHIVE | 
 // Log file settings
 // -----------------
 
-CVAR(			log_fulltimestamps, "0", "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-
-CVAR(			log_packetdebug, "0", "Print debugging messages for each packet sent",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-
 CVAR_RANGE(		log_color, "1", "Print colored messages\n// " \
-				"0 - Disabled\n// " \
-				"1 - Enabled (terminal output only) \n//" \
-				"2 - Enabled (terminal and log files)",
+				"// 0 - Disabled\n// " \
+				"// 1 - Enabled (terminal output only) \n//" \
+				"// 2 - Enabled (terminal and log files)",
 				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.f, 2.f)
 
 // Server administrative settings
@@ -107,6 +101,9 @@ CVAR(			sv_nextmap, "", "Set to the next map to be played",
 CVAR_FUNC_DECL(	sv_shufflemaplist, "0", "Randomly shuffle the maplist",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+CVAR_RANGE_FUNC_DECL (net_maxthreads, "0", "Number of threads to use for client messaging (0 to auto-select based on core count)",
+                      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 256.0)
+
 // Network settings
 // ----------------
 
@@ -116,25 +113,42 @@ CVAR_RANGE(		sv_natport,	"0", "NAT firewall workaround, this is a port number",
 CVAR_RANGE(		sv_flooddelay, "1.5", "Chat flood protection time (in seconds)",
 				CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
 
-CVAR_RANGE_FUNC_DECL(sv_maxrate, "200", "Forces clients to be on or below this rate",
+CVAR_RANGE_FUNC_DECL(sv_maxrate, "800", "Forces clients to be on or below this rate",
 				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 100000.0f)
 
-#ifdef ODA_HAVE_MINIUPNP
-CVAR(			sv_upnp, "1", "Enable UPnP support",
+CVAR_FUNC_DECL(	sv_upnp, "1", "Enable UPnP support",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
-CVAR_RANGE(		sv_upnp_discovertimeout, "2000", "UPnP Router discovery timeout",
+CVAR_RANGE_FUNC_DECL(sv_upnp_discovertimeout, "2000", "UPnP Router discovery timeout",
+				// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
 				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 500.0f, 10000.0f)
 
-CVAR(			sv_upnp_description, "",  "Router-side description of port mapping",
+CVAR_FUNC_DECL(	sv_upnp_description, "",  "Router-side description of port mapping",
 				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR(			sv_upnp_internalip, "", "Set to the local machine IP address",
+CVAR_FUNC_DECL(	sv_upnp_internalip, "", "Set to the local machine IP address",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
-CVAR(			sv_upnp_externalip, "", "Set to the router IP address",
+CVAR_FUNC_DECL(	sv_upnp_externalip, "", "Set to the router IP address",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
+
+void SV_UPnPCvarChanged([[maybe_unused]] const cvar_t& var)
+{
+#ifndef ODA_HAVE_MINIUPNP
+	if (!(var.flags() & CVAR_MODIFIED))
+		return;
+
+	PrintFmt(PRINT_WARNING,
+		"{}: This build of odasrv was not compiled with UPnP support.\n",
+		var.name());
 #endif
+}
+
+CVAR_FUNC_IMPL(sv_upnp) { SV_UPnPCvarChanged(var); }
+CVAR_FUNC_IMPL(sv_upnp_discovertimeout) { SV_UPnPCvarChanged(var); }
+CVAR_FUNC_IMPL(sv_upnp_description) { SV_UPnPCvarChanged(var); }
+CVAR_FUNC_IMPL(sv_upnp_internalip) { SV_UPnPCvarChanged(var); }
+CVAR_FUNC_IMPL(sv_upnp_externalip) { SV_UPnPCvarChanged(var); }
 
 // Gameplay settings
 // =================

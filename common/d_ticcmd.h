@@ -37,7 +37,7 @@ struct ticcmd_t
 		b = static_cast<uint8_t>(*it);
 	}
 
-	static void readShort(std::string::const_iterator it, short& s)
+	static void readShort(std::string::const_iterator it, int16_t& s)
 	{
 		s = static_cast<uint8_t>(*it);
 		s |= static_cast<uint8_t>(*(it + 1)) << 8;
@@ -48,14 +48,14 @@ struct ticcmd_t
 		*it = b;
 	}
 
-	static void writeShort(std::string::iterator it, short s)
+	static void writeShort(std::string::iterator it, int16_t s)
 	{
 		*it = s & 0xFF;
 		*(it + 1) = s >> 8;
 	}
   public:
 
-	static constexpr size_t SERIALIZED_SIZE = 2 + sizeof(short) * 5;
+	static constexpr size_t SERIALIZED_SIZE = 3 + (sizeof(int16_t) * 5);
 
 	ticcmd_t()
 	{
@@ -71,6 +71,7 @@ struct ticcmd_t
 		sidemove = 0;
 		upmove = 0;
 		impulse = 0;
+		modifiers = 0;
 	}
 
 	void serialize(std::string& out) const
@@ -83,6 +84,7 @@ struct ticcmd_t
 		writeShort(out.begin() + 7, sidemove);
 		writeShort(out.begin() + 9, upmove);
 		writeByte(out.begin() + 11, impulse);
+		writeByte(out.begin() + 12, modifiers);
 	}
 
 	void unserialize(const std::string& in)
@@ -96,27 +98,31 @@ struct ticcmd_t
 		readShort(in.begin() + 7, sidemove);
 		readShort(in.begin() + 9, upmove);
 		readByte(in.begin() + 11, impulse);
+		readByte(in.begin() + 12, modifiers);
 	}
 
-	int		tic;	// the client's tic when this cmd was sent
-
 	byte	buttons;
-	short	pitch;			// up/down. currently just a y-sheering amount
-	short	yaw;			// left/right
-	short	forwardmove;
-	short	sidemove;
-	short	upmove;
+	int16_t	pitch;			// up/down. currently just a y-sheering amount
+	int16_t	yaw;			// left/right
+	int16_t	forwardmove;
+	int16_t	sidemove;
+	int16_t	upmove;
 	byte	impulse;
+	byte	modifiers;
 };
 
-
-#define UCMDF_BUTTONS		0x01
-#define UCMDF_PITCH			0x02
-#define UCMDF_YAW			0x04
-#define UCMDF_FORWARDMOVE	0x08
-#define UCMDF_SIDEMOVE		0x10
-#define UCMDF_UPMOVE		0x20
-#define UCMDF_IMPULSE		0x40
+// Which fields an archived ticcmd actually carries.
+enum ucmdflags_t
+{
+	UCMDF_BUTTONS		= 0x01,
+	UCMDF_PITCH			= 0x02,
+	UCMDF_YAW			= 0x04,
+	UCMDF_FORWARDMOVE	= 0x08,
+	UCMDF_SIDEMOVE		= 0x10,
+	UCMDF_UPMOVE		= 0x20,
+	UCMDF_IMPULSE		= 0x40,
+	UCMDF_MODIFIERS		= 0x80,
+};
 
 inline FArchive &operator<< (FArchive &arc, ticcmd_t &cmd)
 {
@@ -157,9 +163,13 @@ inline FArchive &operator<< (FArchive &arc, ticcmd_t &cmd)
 		flags |= UCMDF_IMPULSE;
 		*ptr++ = cmd.impulse;
 	}
+	if (cmd.modifiers) {
+		flags |= UCMDF_MODIFIERS;
+		*ptr++ = cmd.modifiers;
+	}
 
 	byte len = ptr - buf;
-	arc << (byte)(len + 1) << flags;
+	arc << static_cast<byte>(len + 1) << flags;
 	arc.Write(buf, len);
 
 	return arc;
@@ -201,6 +211,10 @@ inline FArchive &operator>> (FArchive &arc, ticcmd_t &cmd)
 	}
 	if (flags & UCMDF_IMPULSE) {
 		cmd.impulse = *ptr++;
+	}
+
+	if (flags & UCMDF_MODIFIERS) {
+		cmd.modifiers = *ptr++;
 	}
 
 	return arc;

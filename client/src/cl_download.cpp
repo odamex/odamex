@@ -30,6 +30,10 @@
 #endif
 #include "curl/curl.h"
 
+#ifdef min
+#   undef min
+#endif
+
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "cmdlib.h"
@@ -344,7 +348,7 @@ static void TransferDone(const OTransferInfo& info)
 	PrintFmt("Download completed at {}/s.\n", bytes);
 
 	if (::dlstate.flags & DL_RECONNECT)
-		CL_Reconnect();
+		CL_Reconnect(NQ_SILENT);
 }
 
 static void TransferError(const char* msg)

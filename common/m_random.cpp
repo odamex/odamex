@@ -127,7 +127,7 @@ int M_Random()
 // A PRNG commonly known as "Jenkins Small Fast" by Bob Jenkins.
 // Released into the public domain.
 // http://burtleburtle.net/bob/rand/talksmall.html
-// 
+//
 
 struct jsf32ctx_t
 {
@@ -207,7 +207,7 @@ uint32_t P_RandomInt(const uint32_t range)
 
 /**
  * @brief Return a random floating point number that is not tied to game state.
- * 
+ *
  * @return A random float in the half-open range of [0.0, 1.0).
  */
 float M_RandomFloat()
@@ -218,7 +218,7 @@ float M_RandomFloat()
 
 /**
  * @brief Return a random floating point number that is tied to game state.
- * 
+ *
  * @return A random float in the half-open range of [0.0, 1.0).
  */
 float P_RandomFloat()
@@ -284,7 +284,7 @@ int P_RandomHitscanAngle(fixed_t spread)
 	// so for convenience take just the absolute value.
 	spread_bam = (spread < 0 ? FixedToAngle(-spread) : FixedToAngle(spread));
 	t = P_Random();
-	return (int)((spread_bam * (t - P_Random())) / 255);
+	return static_cast<int>((spread_bam * (t - P_Random())) / 255);
 }
 
 //

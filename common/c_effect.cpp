@@ -241,13 +241,10 @@ void P_RunEffects (void)
 	if (!clientside)
 		return;
 
-	AActor *actor;
-	TThinkerIterator<AActor> iterator;
-
-	while ( (actor = iterator.Next ()) )
+	// only actors with nonzero effects are on this list
+	for (AActor* actor = AActor::FirstEffectsActor(); actor; actor = actor->enext)
 	{
-		if (actor->effects)
-			P_RunEffect (actor, actor->effects);
+		P_RunEffect (actor, actor->effects);
 	}
 }
 
@@ -341,7 +338,7 @@ void P_DrawRailTrail(const v3double_t &start, const v3double_t &end)
 	M_SubVec3(&dir, &end, &start);
 
 	double length = M_LengthVec3(dir);
-	int steps = (int)(length*0.3333);
+	int steps = static_cast<int>(length*0.3333);
 
 	if (!length)	// line is 0 length, so nothing to do
 		return;

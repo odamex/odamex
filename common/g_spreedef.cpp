@@ -29,26 +29,6 @@
 #include "oscanner.h"
 #include "gstrings.h"
 
-static std::string UseStringTableOrToken(std::string token)
-{
-	if (token.find_first_of("$") == 0)
-	{
-		std::string text = GStrings(token.substr(1));
-		if (text.empty())
-		{
-			return token;
-		}
-		else
-		{
-			return text;
-		}
-	}
-	else
-	{
-		return token;
-	}
-}
-
 static void ParseSpreeKillInterval(OScanner& os, int& killinterval)
 {
 	os.assertTokenIs("spreekillinterval");
@@ -82,8 +62,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 	os.mustScanInt();
 	int newLevel = os.getTokenInt();
 
-	if (newLevel <= spreeLevels.size() || newLevel > spreeLevels.size() + 1 ||
-	    newLevel <= 0)
+	if (newLevel < 1 || static_cast<size_t>(newLevel) != spreeLevels.size() + 1)
 		os.error("Spree levels must be defined in ascending order.");
 
 	os.mustScan();
@@ -107,7 +86,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 			os.assertTokenIs("=");
 			os.mustScan();
 			std::string text = os.getToken();
-			spree.spreeText = UseStringTableOrToken(text);
+			spree.spreeText = GStrings.maybeLookup(text);
 		}
 		else if (os.compareTokenNoCase("broadcasttext"))
 		{
@@ -115,7 +94,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 			os.assertTokenIs("=");
 			os.mustScan();
 			std::string broadcastText = os.getToken();
-			spree.spreeBroadcastText = UseStringTableOrToken(broadcastText);
+			spree.spreeBroadcastText = GStrings.maybeLookup(broadcastText);
 		}
 		else if (os.compareTokenNoCase("gamesfx"))
 		{
@@ -128,8 +107,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Spree Token \"%s\".", os.getToken());
-			os.warning(buffer);
+			os.warning("Unknown Spree Token \"{:s}\".", os.getToken());
 		}
 		os.mustScan();
 	}
@@ -143,8 +121,7 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 	os.mustScanInt();
 	int newLevel = os.getTokenInt();
 
-	if (newLevel <= multiKillLevels.size() - 1 || newLevel > multiKillLevels.size() + 1 ||
-	    newLevel <= 1)
+	if (newLevel < 2 || static_cast<size_t>(newLevel) != multiKillLevels.size())
 		os.error("Multi kill levels must be defined in ascending order.");
 
 	os.mustScan();
@@ -168,7 +145,7 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 			os.assertTokenIs("=");
 			os.mustScan();
 			std::string text = os.getToken();
-			level.multikilltext = UseStringTableOrToken(text);
+			level.multikilltext = GStrings.maybeLookup(text);
 		}
 		else if (os.compareTokenNoCase("gamesfx"))
 		{
@@ -181,9 +158,7 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer =
-			    fmt::sprintf("Unknown Multi Kill Token \"%s\".", os.getToken());
-			os.warning(buffer);
+			os.warning("Unknown Multi Kill Token \"{:s}\".", os.getToken());
 		}
 		os.mustScan();
 	}
@@ -198,19 +173,17 @@ static void ParseSpreeText(OScanner& os, std::string& text, std::string token)
 	os.assertTokenIs("=");
 	os.mustScan();
 	std::string newText = os.getToken();
-	text = UseStringTableOrToken(newText);
+	text = GStrings.maybeLookup(newText);
 }
 
-static void ParseSpreeDef(const int lump, const OLumpName name)
+void G_ParseSpreeDefBuffer(const char* buffer, const size_t length)
 {
-	char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
-
 	const OScannerConfig config = {
 	    "SPREEDEF", // lumpName
 	    false,      // semiComments
 	    true,       // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + length);
 
 	// Reset everything before parsing
 	MultiKillManager::getInstance().reset();
@@ -273,8 +246,7 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Token \"%s\".", os.getToken());
-			os.error(buffer);
+			os.error("Unknown Token \"{:s}\".", os.getToken());
 		}
 	}
 
@@ -337,6 +309,7 @@ void G_ParseSpreeDef()
 
 	while ((lump = W_FindLump("SPREEDEF", lump)) != -1)
 	{
-		ParseSpreeDef(lump, "SPREEDEF");
+		const char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
+		G_ParseSpreeDefBuffer(buffer, W_LumpLength(lump));
 	}
 }

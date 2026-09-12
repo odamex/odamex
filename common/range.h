@@ -24,8 +24,8 @@
 #pragma once
 
 #include <algorithm>
-#include <type_traits>
-// #include <ranges>
+#include <concepts>
+#include <ranges>
 
 namespace OUtil
 {
@@ -38,9 +38,7 @@ enum class clusivity_t {
 	exclusive
 };
 
-template <typename T, clusivity_t clusivity, typename = std::enable_if_t<std::is_integral_v<T>>>
-// TODO: C++20, use the version below (swap include from <type_traits> to <concepts>)
-// template <std::integral T>
+template <std::integral T, clusivity_t clusivity>
 class range
 {
 private:
@@ -75,17 +73,17 @@ public:
 	// 	// TODO: figure this out, or maybe just don't bother and use iota directly idk
 	// }
 
-	// constexpr auto view() const
-	// requires (clusivity == clusivity_t::exclusive)
-	// {
-	// 	return std::views::iota(m_low, m_high);
-	// }
+	constexpr auto view() const
+	requires (clusivity == clusivity_t::exclusive)
+	{
+		return std::views::iota(m_low, m_high);
+	}
 };
 
-template <typename T>
+template <std::integral T>
 using exclusive_range = range<T, clusivity_t::exclusive>;
 
-template <typename T>
+template <std::integral T>
 using inclusive_range = range<T, clusivity_t::inclusive>;
 
 } // namespace OUtil

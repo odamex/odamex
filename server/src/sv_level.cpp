@@ -35,7 +35,10 @@
 
 #include "i_system.h"
 #include "i_time.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
+#include "m_argv.h"
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_ctf.h"
@@ -59,6 +62,7 @@
 #include "g_episode.h"
 #include "g_skill.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -86,8 +90,6 @@ bool firstmapinit = true; // Nes - Avoid drawing same init text during every reb
 
 extern bool sendpause;
 
-
-bool isFast = false;
 
 //
 // G_InitNew
@@ -168,6 +170,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+
+	if (!DefaultsLoaded)
+	{
+		::startupwadstring = wadstr;
+		forcedlastmaps = lastmaps;
+		return;
+	}
+
 	G_LoadWadString(wadstr, "", lastmaps);
 }
 END_COMMAND (wad)
@@ -383,7 +393,7 @@ void G_DoNewGame()
 		if(!(player.ingame()))
 			continue;
 
-		MSG_WriteSVC(&player.client.reliablebuf,
+		player.client.messenger->Reliable().Write (
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
 	}
 
@@ -418,7 +428,7 @@ void G_DoNewGame()
 		if (G_IsTeamGame())
 			SV_CheckTeam(player);
 		else
-			memcpy(player.userinfo.color, player.prefcolor, 4);
+			player.userinfo.color = player.prefcolor;
 
 		SV_ClientFullUpdate(player);
 	}
@@ -434,7 +444,7 @@ void SV_ServerSettingChange();
 
 void G_InitNew(const char *mapname)
 {
-	levelFlags_t previousLevelFlags = level.flags;
+	const auto previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
 		G_ClearSnapshots ();
@@ -473,47 +483,7 @@ void G_InitNew(const char *mapname)
 	}
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
-	if (wantFast != isFast)
-	{
-		if (wantFast)
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST &&
-				    (state.tics != 1 || demoplayback))
-					state.tics >>= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.speed;
-					minfo.speed = minfo.altspeed;
-					minfo.altspeed = swap;
-				}
-			}
-		}
-		else
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST)
-					state.tics <<= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.altspeed;
-					minfo.altspeed = minfo.speed;
-					minfo.speed = swap;
-				}
-			}
-		}
-		isFast = wantFast;
-	}
+	G_SetFast(wantFast);
 
 	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
 	Unlag::getInstance().reset();
@@ -688,6 +658,8 @@ void G_DoResetLevel(bool full_reset)
 	// Clear teamgame state.
 	TeamInfo_ResetScores(full_reset);
 
+	G_ClearRoundKillStats();
+
 	// Reset all keys found
 	for (size_t j = 0; j < NUMCARDS; j++)
 		keysfound[j] = false;
@@ -711,7 +683,7 @@ void G_DoResetLevel(bool full_reset)
 			continue;
 
 		client_t* cl = &(player.client);
-		MSG_WriteSVC(&cl->reliablebuf, odaproto::svc::ResetMap());
+		cl->messenger->Reliable().Write (odaproto::svc::ResetMap());
 	}
 
 	// Unserialize saved snapshot
@@ -741,12 +713,15 @@ void G_DoResetLevel(bool full_reset)
 	}
 
 	// reset switch activation
-	for (int i = 0; i < numlines; i++)
-		lines[i].switchactive = false;
+	for (auto& line : R_GetLines())
+		line.switchactive = false;
 
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
 	itemrespawnque = {};
+
+	// A reset puts everyone back on a player start.
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Clear player information.
 	for (auto& player : players)
@@ -868,6 +843,9 @@ void G_DoLoadLevel (int position)
 	else
 		sky2texture = 0;
 
+	// Clear death spots as we're on a new map.
+	DeathSpotManager::getInstance().clearDeathSpots();
+
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->ingame() && (::g_resetinvonexit || it->playerstate == PST_DEAD))
@@ -887,7 +865,7 @@ void G_DoLoadLevel (int position)
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
 			{
-				MSG_WriteSVC(&pit->client.reliablebuf,
+				pit->client.messenger->Reliable().Write (
 				             SVC_PlayerMembers(*it, SVC_PM_READY));
 			}
 		}
@@ -929,7 +907,7 @@ void G_DoLoadLevel (int position)
 	if (sv_gametype == GM_CTF) {
 
 		for (int i = 0; i < NUMTEAMS; i++)
-			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
+			GetTeamInfo(static_cast<team_t>(i))->FlagData.flaglocated = false;
 	}
 
 	specialdoors.clear();
@@ -941,7 +919,7 @@ void G_DoLoadLevel (int position)
 	{
 		for (int i = 0; i < sv_teamsinplay; i++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 			if (!teamInfo->FlagData.flaglocated)
 			{
 				const char* teamColor = teamInfo->ColorString.c_str();

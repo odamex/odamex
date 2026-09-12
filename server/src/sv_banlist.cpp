@@ -54,7 +54,7 @@ IPRange::IPRange()
 {
 	for (byte i = 0; i < 4; i++)
 	{
-		this->ip[i] = (byte)0;
+		this->ip[i] = 0_u8;
 		this->mask[i] = false;
 	}
 }
@@ -150,7 +150,7 @@ bool IPRange::set(const std::string &input)
 			return false;
 		}
 
-		this->ip[i] = (byte)octet;
+		this->ip[i] = static_cast<byte>(octet);
 	}
 
 	return true;
@@ -169,7 +169,7 @@ std::string IPRange::string() const
 		}
 		else
 		{
-			buffer << (unsigned short)this->ip[i];
+			buffer << static_cast<unsigned short>(this->ip[i]);
 		}
 
 		if (i < 3)

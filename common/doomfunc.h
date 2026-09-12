@@ -23,9 +23,17 @@
 
 #pragma once
 
+#include "fmt/format.h"
+
+#include "doomstat.h"
+
 #include "v_textcolors.h"
 
 #ifdef SERVER_APP
+
+struct client_t;
+
+void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
 void SV_BasePrintAllPlayers(const int printlevel, const std::string& str);
 void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std::string& str);
 #endif
@@ -115,63 +123,20 @@ void SV_BroadcastPrintFmtButPlayer(int printlevel, int player_id, fmt::format_st
 
 	SV_BasePrintButPlayer(printlevel, player_id, string);
 }
+
+// Print directly to a specific client.
+template <typename... ARGS>
+void SV_ClientPrintFmt(client_t *cl, int level, fmt::format_string<ARGS...> format, ARGS&&... args)
+{
+	SV_BasePrint(cl, level, fmt::format(format, std::forward<ARGS>(args)...));
+}
+
 #endif
+
+#include "util.h"
 
 namespace OUtil
 {
-
-// Wrapper for easy iteration over containers in reverse with ranged for loops
-template <typename T>
-struct reverse_wrapper
-{
-    T& iterable;
-    inline auto begin() { return std::rbegin(iterable); }
-    inline auto end() { return std::rend(iterable); }
-};
-
-/**
- * @brief Reverse the iteration in a range-based for loop
- */
-template <typename T>
-inline reverse_wrapper<T> reverse(T&& iterable) { return { iterable }; }
-
-// Wrapper for skipping the first N elements in a range-based for loop
-template <typename T>
-struct drop_wrapper
-{
-    T& iterable;
-    size_t count;
-
-    auto begin() {
-        auto it = std::begin(iterable);
-        auto end_it = std::end(iterable);
-        for (size_t i = 0; i < count && it != end_it; ++i)
-            ++it;
-        return it;
-    }
-
-    inline auto end() { return std::end(iterable); }
-};
-
-/**
- * @brief Skip the first `count` elements in a range-based for loop
- */
-template <typename T>
-inline drop_wrapper<T> drop(T&& iterable, std::size_t count) { return { iterable, count }; }
-
-// Helper for use of std::visit with lambdas
-template<class... Ts>
-struct visitor : Ts... { using Ts::operator()...; };
-// TODO: remove deduction guide in C++20
-template<class... Ts>
-visitor(Ts...) -> visitor<Ts...>;
-
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-// requires std::is_integral_v<T>
-constexpr auto to_unsigned(T x)
-{
-	return static_cast<std::make_unsigned_t<T>>(x);
-}
 
 constexpr uint32_t CONST_HASH(std::string_view str)
 {
@@ -206,4 +171,70 @@ constexpr uint32_t CONST_HASH_NO_CASE(std::string_view str)
 	return hash;
 }
 
+}
+
+// Literals for stdint types
+
+[[nodiscard]]
+consteval int8_t operator ""_i8(unsigned long long x)
+{
+	if (x > std::numeric_limits<int8_t>::max())
+		throw "Literal out of range for type int8_t";
+	return static_cast<int8_t>(x);
+}
+
+[[nodiscard]]
+consteval uint8_t operator ""_u8(unsigned long long x)
+{
+	if (x > std::numeric_limits<uint8_t>::max())
+		throw "Literal out of range for type uint8_t";
+	return static_cast<uint8_t>(x);
+}
+
+[[nodiscard]]
+consteval int16_t operator ""_i16(unsigned long long x)
+{
+	if (x > std::numeric_limits<int16_t>::max())
+		throw "Literal out of range for type int16_t";
+	return static_cast<int16_t>(x);
+}
+
+[[nodiscard]]
+consteval uint16_t operator ""_u16(unsigned long long x)
+{
+	if (x > std::numeric_limits<uint16_t>::max())
+		throw "Literal out of range for type uint16_t";
+	return static_cast<uint16_t>(x);
+}
+
+[[nodiscard]]
+consteval int32_t operator ""_i32(unsigned long long x)
+{
+	if (x > std::numeric_limits<int32_t>::max())
+		throw "Literal out of range for type int32_t";
+	return static_cast<int32_t>(x);
+}
+
+[[nodiscard]]
+consteval uint32_t operator ""_u32(unsigned long long x)
+{
+	if (x > std::numeric_limits<uint32_t>::max())
+		throw "Literal out of range for type uint32_t";
+	return static_cast<uint32_t>(x);
+}
+
+[[nodiscard]]
+consteval int64_t operator ""_i64(unsigned long long x)
+{
+	if (x > std::numeric_limits<int64_t>::max())
+		throw "Literal out of range for type int64_t";
+	return static_cast<int64_t>(x);
+}
+
+[[nodiscard]]
+consteval uint64_t operator ""_u64(unsigned long long x)
+{
+	if (x > std::numeric_limits<uint64_t>::max())
+		throw "Literal out of range for type uint65_t";
+	return static_cast<uint64_t>(x);
 }

@@ -25,6 +25,8 @@
 #pragma once
 
 
+#include <vector>
+
 #include "hashtable.h"
 #include "d_event.h"
 
@@ -57,6 +59,7 @@ public :
 	const std::string &GetBind(int key);			// Returns string bound to given key (NULL if none)
 	std::string GetNameKeys(int first, int second);
 	int  GetKeysForCommand(const char* cmd, int* first, int* second);
+	std::vector<int> GetKeysForCommandByLastDevice(const char* cmd);
 	std::string GetKeynameFromCommand(const char* cmd, bool bTwoEntries = false);
 
 	void ArchiveBindings(FILE* f);
@@ -66,7 +69,7 @@ void C_BindingsInit();
 void C_BindDefaults();
 
 // DoKey now have a binding responder, used to switch between Binds and Automap binds
-bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds);
+bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds);
 
 void C_ReleaseKeys();
 

@@ -1,0 +1,195 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 2026 by Jim Thoenen.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//  Client rollback manager for player states
+//
+//-----------------------------------------------------------------------------
+
+#pragma once
+
+#include <unordered_map>
+
+#include "PlayerItemDataType.h"
+
+class player_t;
+
+enum class RollerRecordResultEnum
+{
+	SUCCESS,            ///< All good.
+	CURRENT_REPLACED,   ///< Current tic already had an entry, but it was replaced with something.
+	INVALID_TIC_FUTURE, ///< The tic was NOT recorded because it was too far in the future.
+	INVALID_TIC_PAST,   ///< The tic was NOT recorded because it was in the past.
+};
+
+enum class RollerResolveEnum
+{
+	NO_CHANGE,
+	CURRENT_STATE_CHANGED,  ///< Indicates that an inventory was applied immediately without adjusting history.  Intended for initial tic edge case.
+	HISTORY_CHANGED,
+	INVALID_TIC,
+};
+
+class PlayerStateRoller
+{
+	public:
+
+		/// Constructor: Build a state roller with recorded history starting at the upcoming first recorded tic.
+		PlayerStateRoller();
+
+		/// Remove history and start over.
+		void Clear();
+
+		/// Add the current player state to history for the current gametic.  It is assumed and
+		/// required that tic numbers given to this function only ever be incrementing by
+		/// 1 for each successive call.  If current state is added to history, then SUCCESS is
+		/// returned.  Otherwise, an enumeral describing the error condition is returned.
+		RollerRecordResultEnum Record(int currentTic, const player_t& player);
+
+		/// Resolve the canonical statement about player data at the given tic against recorded
+		/// history.  If history is rewritten, then the resulting state is rolled forward, and
+		/// the ultimate resulting player data is written into the given player structure.
+		/// The result is indicated by the returned enumeration.
+		RollerResolveEnum Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player);
+
+		/// Resolve the canonical statement about player ammo at the given tic against recorded
+		/// history.  If history is rewritten, then the resulting state is rolled forward, the
+		/// ultimate resulting ammo count is written into the given player structure, and
+		/// true is returned.  Otherwise, history and the player state are unmodified and false
+		/// is returned.
+		///
+		/// The ammo roll is unique in that tic-to-tic deltas are preserved with the assumption
+		/// that the player can be locally firing the weapon, consuming ammo that should not
+		/// necessarily be replenished when a rollback happens.
+		bool ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player);
+
+		/// Similar to ResolveAmmo, except it works on maxammo and does not roll deltas - changes
+		/// to this value are treated as absolute, coarse adjustments.
+		bool ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo, player_t& io_player);
+
+		/// Similar to ResolveAmmoMax: absolute adjustment of weapon ownership state.
+		bool ResolveWeaponOwned(int i_oldTic, const std::array<bool, NUMWEAPONS>& i_weaponOwned, player_t& io_player);
+
+		/// Similar to ResolveWeaponOwned: absolute adjustment of weapon selection state.
+		bool ResolveWeaponSelection(int i_oldTic, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon, player_t& io_player);
+
+		/// Similar to ResolveAmmo:  delta adjustment of power counters, with the exception of pw_allmap,
+		/// which is a boolean thus absolute.
+		bool ResolvePowers(int i_oldTic, const std::array<int, NUMPOWERS>& i_powers, player_t& io_player);
+
+		/// Unique resolver for Psprite states.  Please see comments in the function body for description of
+		/// the algorithm.
+		bool ResolvePsprites(int i_oldTic, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites, player_t& io_player);
+
+		/// Similar to ResolveAmmo:  delta adjustment of health quantity
+		bool ResolveHealth(int i_oldTic, int i_health, player_t& io_player);
+
+		/// Similar to ResolveAmmo:  delta adjustment of armorpoints
+		bool ResolveArmorpoints(int i_oldTic, int i_armorpoints, player_t& io_player);
+
+		/// Generic stream-in operator.
+		template <typename StreamType>
+		friend StreamType& operator<<(StreamType& io_stream, const PlayerStateRoller& i_thisRef)
+		{
+			io_stream << i_thisRef.m_history.size();
+			for (const auto& [tic, historyItem] : i_thisRef.m_history)
+			{
+				io_stream << tic << historyItem;
+			}
+			io_stream << i_thisRef.m_mostRecentTic;
+			io_stream << i_thisRef.m_oldestTic;
+
+			return io_stream;
+		}
+
+		/// Generic stream-out operator.
+		template <typename StreamType>
+		friend StreamType& operator>>(StreamType& io_stream, PlayerStateRoller& o_thisRef)
+		{
+			o_thisRef.m_history.clear();
+
+			size_t historySize {0};
+			io_stream >> historySize;
+
+			for (size_t i = 0; i < historySize; ++i)
+			{
+				int tic {0};
+				io_stream >> tic;
+				io_stream >> o_thisRef.m_history[tic];
+			}
+			io_stream >> o_thisRef.m_mostRecentTic;
+			io_stream >> o_thisRef.m_oldestTic;
+
+			return io_stream;
+		}
+
+		std::optional<std::reference_wrapper<const PlayerItemDataType>> GetStateAtTic(int i_oldTic) const
+		{
+			const auto iter = m_history.find(i_oldTic);
+			if (iter != m_history.end())
+			{
+				return std::cref(iter->second);
+			}
+			return {};
+		}
+
+		int ExpectedTic() const { return m_mostRecentTic + 1; }
+
+	protected:
+
+		struct IdentityHasher
+		{
+			size_t operator()(int ticNumber) const { return static_cast<size_t>(ticNumber); }
+		};
+
+		using HistoryTableType = std::unordered_map<int, PlayerItemDataType, IdentityHasher>;
+
+		void ApplyMostRecentToPlayer(player_t& io_player);
+
+		std::optional<HistoryTableType::iterator> ObtainHistory(int i_oldTic, const player_t& i_player);
+
+		bool RollbackAmmo       (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_ammo);
+		bool RollbackMaxAmmo    (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_maxAmmo);
+		bool RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>&              i_weaponOwned, player_t& io_player);
+		bool RollbackPowers     (HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS>                 i_powers);
+		bool RollbackPsprites   (HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites);
+
+		bool RollbackWeaponSelection(HistoryTableType::iterator i_historyIter, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon);
+
+		bool RollbackHealth     (HistoryTableType::iterator i_historyIter, const int                         i_health);
+		bool RollbackArmorpoints(HistoryTableType::iterator i_historyIter, const int                         i_armorpoints);
+		bool RollbackArmortype  (HistoryTableType::iterator i_historyIter, const int                         i_armortype);
+		bool RollbackLives      (HistoryTableType::iterator i_historyIter, const int                         i_lives);
+		bool RollbackBackpack   (HistoryTableType::iterator i_historyIter, const bool                        i_backpack);
+		bool RollbackCards      (HistoryTableType::iterator i_historyIter, const std::array<bool, NUMCARDS>& i_cards);
+		bool RollbackCheats     (HistoryTableType::iterator i_historyIter, const uint32_t                    i_cheats);
+
+		template <typename Callable>
+		void Roll(int i_oldTic, Callable&& i_callable);
+
+		template <typename Callable>
+		void RollIter(int i_oldTic, Callable&& i_callable);
+
+		// History keyed on *client* tic number.
+		HistoryTableType m_history;
+
+		// The very first step of any rollback is to capture the current state as the final step of rolling.
+		PlayerItemDataType m_currentState;
+
+		int m_mostRecentTic;
+		int m_oldestTic;
+};

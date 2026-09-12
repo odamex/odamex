@@ -45,7 +45,7 @@ jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSON
 		return jsonlumpresult_t::NOTFOUND;
 	}
 
-	const char* jsondata = (const char*)W_CacheLumpNum(lumpindex, PU_STATIC);
+	const char* jsondata = W_CacheLumpNum<const char>(lumpindex, PU_STATIC);
 
     Json::CharReaderBuilder builder;
     builder["collectComments"] = false;

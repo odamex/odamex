@@ -25,6 +25,9 @@
 
 #pragma once
 
+void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
+                        const LineActivationType activationType, const bool bossaction);
+
 void OnChangedSwitchTexture(line_t* line, int useAgain);
 void G_SecretExitLevel(int position, int drawscores, bool resetinv);
 void P_DamageMobj(AActor* target, const AActor* inflictor, AActor* source, int damage, int mod,

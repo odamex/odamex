@@ -36,12 +36,16 @@
 #include "f_finale.h"
 #include "g_game.h"
 #include "g_levelstate.h"
+#include "g_mapinfo.h"
 #include "gi.h"
 #include "g_skill.h"
 #include "i_system.h"
 #include "i_music.h"
 #include "i_time.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
+#include "m_argv.h"
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_local.h"
@@ -59,6 +63,8 @@
 #include "z_zone.h"
 #include "m_wdlstats.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
+#include "g_gametype.h"
 #include "cl_freecam.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
@@ -85,9 +91,6 @@ extern bool r_underwater;
 extern int mousex, mousey, joyforward, joystrafe, joyturn, joylook, Impulse;
 extern bool sendpause, sendsave, sendcenterview;
 
-
-bool isFast = false;
-
 //
 // G_InitNew
 // Can be called by the startup code or the menu task,
@@ -102,12 +105,14 @@ void G_DeferedInitNew (const OLumpName& mapname)
 	gameaction = ga_newgame;
 }
 
-void G_DeferedFullReset() {
-
+void G_DeferedFullReset()
+{
+	G_ClearRoundKillStats();
 }
 
-void G_DeferedReset() {
-
+void G_DeferedReset()
+{
+	G_ClearRoundKillStats();
 }
 
 BEGIN_COMMAND (wad) // denis - changes wads
@@ -124,6 +129,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	    return;
 	}
 
+	const std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+
+	if (!DefaultsLoaded)
+	{
+		::startupwadstring = wadstr;
+		return;
+	}
+
 	if (paused)
 	{
 		paused = false;
@@ -132,7 +145,6 @@ BEGIN_COMMAND (wad) // denis - changes wads
 
 	C_HideConsole();
 
-	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
 	G_LoadWadString(wadstr);
 
 	D_StartTitle ();
@@ -234,47 +246,7 @@ void G_InitNew (const char *mapname)
 	}
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
-	if (wantFast != isFast)
-	{
-		if (wantFast)
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST &&
-				    (state.tics != 1 || demoplayback))
-					state.tics >>= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.speed;
-					minfo.speed = minfo.altspeed;
-					minfo.altspeed = swap;
-				}
-			}
-		}
-		else
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST)
-					state.tics <<= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.altspeed;
-					minfo.altspeed = minfo.speed;
-					minfo.speed = swap;
-				}
-			}
-		}
-		isFast = wantFast;
-	}
+	G_SetFast(wantFast);
 
 	if (!savegamerestore)
 	{
@@ -567,9 +539,14 @@ void G_DoLoadLevel (int position)
 
 	G_InitLevelLocals ();
 
+	std::string title =
+	    fmt::format("{}: \"{}" TEXTCOLOR_BOLD "\"", level.mapname, level.level_name);
+	if (!level.author.empty())
+		title += fmt::format(" by {}" TEXTCOLOR_BOLD, G_StripAuthorPrefix(level.author));
+
     PrintFmt_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
                  "\36\36\36\36\36\36\36\36\36\36\36\36\37\n"
-                 "{}: \"{}\"\n\n", level.mapname, level.level_name);
+                 "{}\n\n", title);
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
@@ -577,6 +554,9 @@ void G_DoLoadLevel (int position)
 	const bool demoscreen = (gamestate == GS_DEMOSCREEN);
 
 	gamestate = GS_LEVEL;
+
+	// We're entering the level state - reset the rollback history.
+	rollerState = PlayerStateRoller {};
 
 	// [SL] Hide the console unless this is just part of the demo loop
 	// It's annoying to have the console close every time a new demo starts...
@@ -586,7 +566,9 @@ void G_DoLoadLevel (int position)
 	// [SL] clear the saved sector data from the last level
 	OInterpolation::getInstance().resetGameInterpolation();
 
-	SpreeManager::getInstance().clearSprees();
+	G_ClearRoundKillStats();
+
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
@@ -685,7 +667,7 @@ void G_DoLoadLevel (int position)
 
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 			for (auto& teamstart : teamInfo->Starts)
 			{
 				if (G_CheckSpot(consoleplayer(), teamstart))
@@ -700,7 +682,7 @@ void G_DoLoadLevel (int position)
 		// unless level load is from a netdemo snapshot and display is freecam
 		displayplayer_id = consoleplayer_id;
 	}
-	
+
 	ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;
 
@@ -730,6 +712,18 @@ void G_DoLoadLevel (int position)
 	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
 	if (Freecam::allowAdd())
 	{
+		if (Freecam::needPosition())
+		{
+			const std::optional<mapthing2_t> start = P_GetFirstAvailableSpawn();
+
+			if (start.has_value())
+			{
+				Freecam::setStartPosition(INT2FIXED(start->x), INT2FIXED(start->y),
+				    level.flags & LEVEL_USEPLAYERSTARTZ ? INT2FIXED(start->z) : ONFLOORZ,
+				    MapThingToAngle(start->angle));
+			}
+		}
+
 		Freecam::addFreecamPlayer();
 	}
 
@@ -758,12 +752,15 @@ void G_WorldDone()
 	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
 
 	// Sort out default options to pass to F_StartFinale
-	finale_options_t options = { "", "", "", "" };
+	finale_options_t options = { .music = "", .flat = "", .text = "", .pic = "" };
 	options.music = !level.intermusic.empty() ? level.intermusic : thiscluster.messagemusic;
 
 	if (!level.interbackdrop.empty())
 	{
-		options.flat = level.interbackdrop;
+		if (W_CheckNumForName(level.interbackdrop, ns_flats) == -1)
+			options.pic = level.interbackdrop;
+		else
+			options.flat = level.interbackdrop;
 	}
 	else if (!thiscluster.finalepic.empty())
 	{
@@ -788,7 +785,7 @@ void G_WorldDone()
 		AM_Stop();
 		if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 		{
-			options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+			options.text = W_CacheLumpName<const char>(thiscluster.exittext, PU_STATIC);
 		}
 		F_StartFinale(options);
 	}
@@ -824,7 +821,7 @@ void G_WorldDone()
 				AM_Stop();
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
-					options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+					options.text = W_CacheLumpName<const char>(thiscluster.exittext, PU_STATIC);
 				}
 				F_StartFinale(options);
 			}

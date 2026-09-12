@@ -36,7 +36,7 @@ void OLumpName::MakeDataPresentable()
 	for (int i = 0; i < 8; ++i)
 		m_data[i] = static_cast<char>(toupper(m_data[i]));
 
-	// ensure last char is escape character
+	// ensure last char is a null terminator
 	m_data[8] = '\0';
 }
 

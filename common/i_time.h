@@ -30,6 +30,8 @@ dtime_t I_GetTime();
 // [RH] Returns current time in milliseconds.
 dtime_t I_MSTime (void);
 
+constexpr dtime_t MSECS_PER_SEC = 1000;
+
 dtime_t I_ConvertTimeToMs(dtime_t value);
 dtime_t I_ConvertTimeFromMs(dtime_t value);
 

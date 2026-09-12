@@ -318,14 +318,14 @@ jobs:
           done
         }
         for app_bin in \
-          "build/client/odamex.app/Contents/MacOS/odamex" \
-          "build/odalaunch/odalaunch.app/Contents/MacOS/odalaunch"
+          "build/odamex/odamex.app/Contents/MacOS/odamex" \
+          "build/odamex/odalaunch.app/Contents/MacOS/odalaunch"
         do
           if [ ! -f "${app_bin}" ]; then
             continue
           fi
           is_odamex=0
-          if [[ "${app_bin}" == *"/client/odamex.app/"* ]]; then
+          if [[ "${app_bin}" == *"/odamex/odamex.app/"* ]]; then
             is_odamex=1
           fi
           bundle_dir="$(dirname "${app_bin}")/../Frameworks"

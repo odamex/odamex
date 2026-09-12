@@ -29,6 +29,7 @@
 #include "dthinker.h"
 #include "farchive.h"
 #include "m_doomobjcontainer.h"
+#include "actorflags.h"
 
 #define NO_ALTSPEED -1
 #ifndef MELEERANGE // TODO: only have a single spot this is defined
@@ -257,9 +258,6 @@ inline auto format_as(spritenum_t eSpriteNum)
 {
 	return fmt::underlying(eSpriteNum);
 }
-
-inline FArchive &operator<< (FArchive &arc, spritenum_t i) { uint32_t out; out = i; return arc << out; }
-inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { uint32_t in; arc >> in; i = (spritenum_t)in; return arc; }
 
 enum statenum_t: int32_t
 {
@@ -1411,26 +1409,22 @@ inline auto format_as(statenum_t eStateNum)
 	return fmt::underlying(eStateNum);
 }
 
-inline FArchive &operator<< (FArchive &arc, statenum_t i) { uint32_t out; out = i; return arc << out; }
-inline FArchive &operator>> (FArchive &arc, statenum_t &i) { uint32_t in; arc >> in; i = (statenum_t)in; return arc; }
-
-
-#define MAXSTATEARGS 8
-typedef long statearg_t;
+inline constexpr auto MAXSTATEARGS = 8;
+using statearg_t = int32_t;
 
 #define STATEF_NONE 0
 #define STATEF_SKILL5FAST BIT(0) // tics halve on nightmare skill
 
 struct state_t
 {
-	int32_t statenum  = -1;
-	int32_t	sprite    = SPR_TNT1;
-	int	frame         = 0;
-	int	tics          = -1;
-	actionf_p1 action = nullptr;
-	int32_t	nextstate = -1;
-	int	misc1         = 0;
-	int misc2         = 0;
+	statenum_t statenum  = static_cast<statenum_t>(-1);
+	int32_t    sprite    = SPR_TNT1;
+	int        frame     = 0;
+	int        tics      = -1;
+	actionf_p1 action    = nullptr;
+	statenum_t nextstate = static_cast<statenum_t>(-1);
+	int        misc1     = 0;
+	int        misc2     = 0;
 
 	// MBF21
 	statearg_t args[MAXSTATEARGS] = { 0 }; // [XA] mbf21 args
@@ -1446,23 +1440,23 @@ extern state_t boomstates[];
 inline DoomObjectContainer<state_t> states(::NUMSTATES); // statenum_t
 extern state_t odastates[];
 
-inline FArchive &operator<< (FArchive &arc, state_t *state)
+inline FArchive &operator<< (FArchive &arc, const state_t *state)
 {
 	if (state)
-		return arc << (int32_t)(state->statenum);
+		return arc << static_cast<int32_t>(state->statenum);
 	else
-		return arc << (int32_t)0xffffffff;
+		return arc << static_cast<int32_t>(0xffffffff);
 }
 
-inline FArchive &operator>> (FArchive &arc, state_t *&state)
+inline FArchive &operator>> (FArchive &arc, const state_t *&state)
 {
 	int32_t ofs;
 	arc >> ofs;
-	DoomObjectContainer<state_t, int32_t>::iterator it = states.find(ofs);
+	auto it = states.find(ofs);
 	if (it != states.end())
 		state = &it->second;
 	else
-		state = NULL;
+		state = nullptr;
 	return arc;
 }
 
@@ -1490,12 +1484,12 @@ enum mobjtype_t: int32_t {
     MT_NODE,        //Added by MC:
     MT_WATERZONE,
     MT_SECRETTRIGGER,
-    // MT_UPPERSTACK,
-    // MT_LOWERSTACK,
+    MT_UPPERSTACK,
+    MT_LOWERSTACK,
     MT_SKYVIEWPOINT,
     MT_SKYPICKER,
     MT_SECTORSILENCER,
-
+	MT_SPRINGPAD,
 
     // -----------------------------------
     //    [Toke - CTF]
@@ -1542,12 +1536,6 @@ enum mobjtype_t: int32_t {
     MT_CAREPACK,
 	MT_EXTRALIFE,
 	MT_RESTEAMMATE,
-
-	// TODO: 13.0.0, delete these and uncomment the earlier ones
-	// for 12.3 they have to be here because modifying internal
-	// mobjtype nums breaks version compatibility
-	MT_UPPERSTACK,
-    MT_LOWERSTACK,
 
     // --------------------------------------------------------------------- //
 
@@ -1733,9 +1721,6 @@ inline auto format_as(mobjtype_t eType)
 	return fmt::underlying(eType);
 }
 
-inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { uint32_t out; out = i; return arc << out; }
-inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { uint32_t in; arc >> in; i = (mobjtype_t)in; return arc; }
-
 enum infighting_group_t
 {
 	IG_DEFAULT,
@@ -1757,7 +1742,21 @@ enum splash_group_t
 	SG_END
 };
 
-std::string P_MobjToName(mobjtype_t);
+/// This enum describes the top-level mode of operation of the mobj based on transitions into the
+/// main top-level states as captured in the mobjinfo_t below.
+//
+// KEEP THIS IN SYNC WITH ITS COUNTERPART IN server.proto!
+enum class MobjModeEnum
+{
+	SPAWN,
+	SEE,
+	PAIN,
+	MELEE,
+	MISSILE,
+	DEATH,
+	XDEATH,
+	RAISE,
+};
 
 struct mobjinfo_t
 {
@@ -1785,10 +1784,10 @@ struct mobjinfo_t
 	int mass                = 0;
 	int damage              = 0;
 	const char *activesound = nullptr; // [RH] not int
-	int flags               = 0;
-	int flags2              = 0;
+	ActorFlags1 flags       = ActorFlags1::none_set();
+	ActorFlags2 flags2      = ActorFlags2::none_set();
 	statenum_t raisestate   = S_NULL;
-	int translucency        = 0x10000;
+	int translucency        = FRACUNIT;
 	const char *name        = nullptr;
 
 	// MBF21 STUFF HERE
@@ -1797,7 +1796,7 @@ struct mobjinfo_t
 	int infighting_group    = IG_DEFAULT;
 	int projectile_group    = PG_DEFAULT;
 	int splash_group        = SG_DEFAULT;
-	int flags3              = 0;
+	ActorFlags3 flags3      = ActorFlags3::none_set();
 	const char* ripsound    = nullptr;
 	int32_t droppeditem     = MT_NULL;
 
@@ -1846,7 +1845,7 @@ inline auto format_as(const mobjinfo_t& info)
 		getstring(info.seesound), getstring(info.attacksound), getstring(info.painsound),
 		getstring(info.deathsound), getstring(info.activesound), getstring(info.ripsound),
 		info.infighting_group, info.projectile_group, info.splash_group,
-		info.flags, info.flags2, info.flags3
+		info.flags.to_int(), info.flags2.to_int(), info.flags3.to_int()
 	);
 }
 
@@ -1861,9 +1860,9 @@ void D_BuildSpawnMap();
 inline FArchive &operator<< (FArchive &arc, mobjinfo_t *info)
 {
 	if (info)
-		return arc << (int32_t)(info->type);
+		return arc << static_cast<int32_t>(info->type);
 	else
-		return arc << (int32_t)0xffffffff;
+		return arc << static_cast<int32_t>(0xffffffff);
 }
 
 inline FArchive &operator>> (FArchive &arc, mobjinfo_t *&info)

@@ -43,7 +43,7 @@ void TypeInfo::RegisterType ()
 	if (m_NumTypes == m_MaxTypes)
 	{
 		m_MaxTypes = m_MaxTypes ? m_MaxTypes*2 : 32;
-		m_Types = (TypeInfo **)M_Realloc (m_Types, m_MaxTypes * sizeof(*m_Types));
+		m_Types = static_cast<TypeInfo**>(M_Realloc(m_Types, m_MaxTypes * sizeof(*m_Types)));
 	}
 	m_Types[m_NumTypes] = this;
 	TypeIndex = m_NumTypes;
@@ -72,7 +72,7 @@ DObject::~DObject ()
 			// object is queued for deletion, but is not being deleted
 			// by the destruction process, so remove it from the
 			// ToDestroy array and do other necessary stuff.
-			for (auto& obj : OUtil::reverse(ToDestroy))
+			for (auto& obj : std::views::reverse(ToDestroy))
 			{
 				if (obj == this)
 				{

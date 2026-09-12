@@ -25,11 +25,16 @@
 #pragma once
 
 #include <stdexcept>
+#include <vector>
 
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 #include "hu_stuff.h"
 #include "r_defs.h"
 #include "w_wad.h"
+
+// The console font: 256 glyphs of 8 rows, each row 8 color bytes followed by 8
+// transparency mask bytes. Built from the CONCHARS lumps by C_InitConCharsFont.
+extern std::vector<byte> ConChars;
 
 struct OGlobalFont
 {
@@ -73,12 +78,12 @@ struct brokenlines_t
 };
 
 int V_StringWidth(const byte* str);
-inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }
+inline int V_StringWidth(const char* str) { return V_StringWidth(reinterpret_cast<const byte*>(str)); }
 int V_StringHeight(const char* str);
 int V_LineHeight();
 
 brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);
-inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, (const byte *)str); }
+inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, reinterpret_cast<const byte*>(str)); }
 
-int V_GetTextColor(const char* str);
+int V_GetTextColor(std::string_view str);

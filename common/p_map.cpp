@@ -52,20 +52,22 @@
 #include "m_vectors.h"
 #include "p_mapformat.h"
 #include <math.h>
+#include <algorithm>
 #include <set>
 
-bool P_ShouldClipPlayer(AActor* projectile, AActor* player);
+// TODO: make as many of these non-global as possible
+std::array<fixed_t, 4> tmbbox;
 
-fixed_t 		tmbbox[4];
-static AActor  *tmthing;
-static int 		tmflags;
-static fixed_t	tmx;
-static fixed_t	tmy;
-static fixed_t	tmz;	// [RH] Needed for third dimension of teleporters
-static int		pe_x;	// Pain Elemental position for Lost Soul checks	// phares
-static int		pe_y;	// Pain Elemental position for Lost Soul checks	// phares
-static int		ls_x;	// Lost Soul position for Lost Soul checks		// phares
-static int		ls_y;	// Lost Soul position for Lost Soul checks		// phares
+namespace
+{
+
+AActor*     tmthing;
+ActorFlags1 tmflags;
+fixed_t     tmx;
+fixed_t     tmy;
+fixed_t     tmz;     // [RH] Needed for third dimension of teleporters
+
+} // namespace
 
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
@@ -94,9 +96,6 @@ AActor *BlockingMobj;
 // Temporary holder for thing_sectorlist threads
 msecnode_t* sector_list = NULL;		// phares 3/16/98
 
-// [SL] 2012-03-07 - Sectors that can change floor/ceiling height
-std::set<short>	movable_sectors;
-
 EXTERN_CVAR (co_fixweaponimpacts)
 EXTERN_CVAR (co_boomphys)				// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_zdoomphys)
@@ -112,6 +111,297 @@ CVAR_FUNC_IMPL (sv_gravity)
 {
 	level.gravity = var;
 }
+
+//
+// INTERCEPT ROUTINES
+//
+
+divline_t trace;
+
+namespace
+{
+
+//
+// PIT_AddLineIntercepts.
+// Looks for lines in the given block
+// that intercept the given trace
+// to add to the intercepts list.
+//
+// A line is crossed if its endpoints
+// are on opposite sides of the trace.
+// Returns true if earlyout and a solid line hit.
+//
+bool PIT_AddLineIntercepts(line_t& ld, bool earlyout)
+{
+	int 				s1;
+	int 				s2;
+
+	// avoid precision problems with two routines
+	if ( trace.dx > FRACUNIT*16
+		 || trace.dy > FRACUNIT*16
+		 || trace.dx < -FRACUNIT*16
+		 || trace.dy < -FRACUNIT*16)
+	{
+		s1 = P_PointOnDivlineSide (ld.v1->x, ld.v1->y, &trace);
+		s2 = P_PointOnDivlineSide (ld.v2->x, ld.v2->y, &trace);
+	}
+	else
+	{
+		s1 = P_PointOnLineSide (trace.x, trace.y, &ld);
+		s2 = P_PointOnLineSide (trace.x+trace.dx, trace.y+trace.dy, &ld);
+	}
+
+	if (s1 == s2)
+		return true;	// line isn't crossed
+
+	// hit the line
+	const divline_t dl{ld};
+	const fixed_t frac = P_InterceptVector (&trace, &dl);
+
+	if (frac < 0)
+		return true;	// behind source
+
+	// try to early out the check
+	if (earlyout
+		&& frac < FRACUNIT
+		&& !ld.backsector)
+	{
+		return false;	// stop checking
+	}
+
+
+	intercept_t intercept {
+		.frac    = frac,
+		.isaline = true,
+		.d       = { .line = &ld },
+	};
+	intercepts.push_back(intercept);
+
+	return true;		// continue
+}
+
+//
+// PIT_AddThingIntercepts
+//
+bool PIT_AddThingIntercepts (AActor& thing)
+{
+	fixed_t 		x1;
+	fixed_t 		y1;
+	fixed_t 		x2;
+	fixed_t 		y2;
+
+	const bool tracepositive = (trace.dx ^ trace.dy)>0;
+
+	// check a corner to corner crossection for hit
+	if (tracepositive)
+	{
+		x1 = thing.x - thing.radius;
+		y1 = thing.y + thing.radius;
+
+		x2 = thing.x + thing.radius;
+		y2 = thing.y - thing.radius;
+	}
+	else
+	{
+		x1 = thing.x - thing.radius;
+		y1 = thing.y - thing.radius;
+
+		x2 = thing.x + thing.radius;
+		y2 = thing.y + thing.radius;
+	}
+
+	const int s1 = P_PointOnDivlineSide (x1, y1, &trace);
+	const int s2 = P_PointOnDivlineSide (x2, y2, &trace);
+
+	if (s1 == s2)
+		return true;			// line isn't crossed
+
+	const divline_t dl {x1, y1, x2 - x1, y2 - y1};
+
+	const fixed_t frac = P_InterceptVector (&trace, &dl);
+
+	if (frac < 0)
+		return true;			// behind source
+
+	intercept_t intercept {
+		.frac    = frac,
+		.isaline = false,
+		.d       = { .thing = &thing },
+	};
+	intercepts.push_back(intercept);
+
+	return true;				// keep going
+}
+
+
+//
+// P_TraverseIntercepts
+// Returns true if the traverser function returns true
+// for all lines.
+//
+template <typename F, typename... ARGS>
+requires std::predicate<F, intercept_t&, ARGS...>
+bool P_TraverseIntercepts(F&& func, fixed_t maxfrac, ARGS&&... args)
+{
+	size_t 				count = intercepts.size();
+	fixed_t 			dist;
+	intercept_t*		in = nullptr;
+
+	while (count--)
+	{
+		dist = limits::MAXFIXED;
+		for (intercept_t& intercept : intercepts)
+		{
+			if (intercept.frac < dist)
+			{
+				dist = intercept.frac;
+				in = &intercept;
+			}
+		}
+
+		if (dist > maxfrac)
+			return true;		// checked everything in range
+
+
+		if (!std::invoke(std::forward<F>(func), *in, std::forward<ARGS>(args)...))
+			return false;		// don't bother going farther
+
+		in->frac = limits::MAXFIXED;
+	}
+
+	return true;				// everything was traversed
+}
+
+//
+// P_PathTraverse
+// Traces a line from x1,y1 to x2,y2,
+// calling the traverser function for each.
+// Returns true if the traverser function returns true
+// for all lines.
+//
+template <typename F, typename... ARGS>
+requires std::predicate<F, intercept_t&, ARGS...>
+bool P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, F&& trav, ARGS&&... args)
+{
+	fixed_t 	xstep;
+	fixed_t 	ystep;
+
+	fixed_t 	partial;
+
+	int 		mapxstep;
+	int 		mapystep;
+
+	const bool earlyout = flags & PT_EARLYOUT;
+
+	validcount++;
+
+	intercepts.clear();
+
+	if ( ((x1-blockmap.originx())&(MAPBLOCKSIZE-1)) == 0)
+		x1 += FRACUNIT; // don't side exactly on a line
+
+	if ( ((y1-blockmap.originy())&(MAPBLOCKSIZE-1)) == 0)
+		y1 += FRACUNIT; // don't side exactly on a line
+
+	trace.x = x1;
+	trace.y = y1;
+	trace.dx = x2 - x1;
+	trace.dy = y2 - y1;
+
+	x1 -= blockmap.originx();
+	y1 -= blockmap.originy();
+	const fixed_t xt1 = x1>>MAPBLOCKSHIFT;
+	const fixed_t yt1 = y1>>MAPBLOCKSHIFT;
+
+	x2 -= blockmap.originx();
+	y2 -= blockmap.originy();
+	const fixed_t xt2 = x2>>MAPBLOCKSHIFT;
+	const fixed_t yt2 = y2>>MAPBLOCKSHIFT;
+
+	if (xt2 > xt1)
+	{
+		mapxstep = 1;
+		partial = FRACUNIT -((x1>>MAPBTOFRAC)&(FRACUNIT-1));
+		ystep = FixedDiv (y2-y1,abs(x2-x1));
+	}
+	else if (xt2 < xt1)
+	{
+		mapxstep = -1;
+		partial = (x1>>MAPBTOFRAC)&(FRACUNIT-1);
+		ystep = FixedDiv(y2-y1,abs(x2-x1));
+	}
+	else
+	{
+		mapxstep = 0;
+		partial = FRACUNIT;
+		ystep = 256*FRACUNIT;
+	}
+
+	fixed_t yintercept = (y1>>MAPBTOFRAC) + FixedMul (partial, ystep);
+
+
+	if (yt2 > yt1)
+	{
+		mapystep = 1;
+		partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
+		xstep = FixedDiv(x2-x1,abs(y2-y1));
+	}
+	else if (yt2 < yt1)
+	{
+		mapystep = -1;
+		partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
+		xstep = FixedDiv(x2-x1,abs(y2-y1));
+	}
+	else
+	{
+		mapystep = 0;
+		partial = FRACUNIT;
+		xstep = 256*FRACUNIT;
+	}
+	fixed_t xintercept = (x1>>MAPBTOFRAC) + FixedMul(partial, xstep);
+
+	// Step through map blocks.
+	// Count is present to prevent a round off error
+	// from skipping the break.
+	int mapx = xt1;
+	int mapy = yt1;
+
+	for (int count = 0 ; count < 64 ; count++)
+	{
+		if (flags & PT_ADDLINES)
+		{
+			if (!P_BlockLinesIterator(mapx, mapy,PIT_AddLineIntercepts, earlyout))
+				return false;	// early out
+		}
+
+		if (flags & PT_ADDTHINGS)
+		{
+			if (!P_BlockThingsIterator(mapx, mapy,PIT_AddThingIntercepts, nullptr))
+				return false;	// early out
+		}
+
+		if (mapx == xt2 && mapy == yt2)
+		{
+			break;
+		}
+
+		if ((yintercept >> FRACBITS) == mapy)
+		{
+			yintercept += ystep;
+			mapx += mapxstep;
+		}
+		else if ((xintercept >> FRACBITS) == mapx)
+		{
+			xintercept += xstep;
+			mapy += mapystep;
+		}
+
+	}
+	// go through the sorted list
+	return P_TraverseIntercepts(std::forward<F>(trav), FRACUNIT, std::forward<ARGS>(args)...);
+}
+
+} // namespace
 
 //
 // TELEPORT MOVE
@@ -179,6 +469,20 @@ bool PIT_StompThing (AActor& thing, const bool StompAlwaysFrags)
 	return false;
 }
 
+namespace
+{
+	AActor* teleportedThing;
+}
+
+void P_ClearJustTeleported()
+{
+	teleportedThing = nullptr;
+}
+
+bool P_JustTeleported (AActor* thing)
+{
+	return teleportedThing != nullptr && teleportedThing == thing;
+}
 
 //
 // P_TeleportMove
@@ -191,15 +495,6 @@ bool PIT_StompThing (AActor& thing, const bool StompAlwaysFrags)
 //		was being teleported between two non-overlapping height ranges.
 bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag)
 {
-	int 				xl;
-	int 				xh;
-	int 				yl;
-	int 				yh;
-	int 				bx;
-	int 				by;
-
-	subsector_t*		newsubsec;
-
 	// kill anything occupying the position
 	tmthing = thing;
 
@@ -207,6 +502,8 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	tmy = y;
 	tmz = z;
 
+	// Because voodoo dolls have legit pointers to players, we want to make sure that
+	// we don't accidentally mess up real players' cameras when one teleports.
 	if (!P_IsVoodooDoll(thing))
 	{
 		player_t* player = thing->player;
@@ -228,7 +525,7 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
-	newsubsec = P_PointInSubsector (x,y);
+	const subsector_t* newsubsec = P_PointInSubsector (x,y);
 	ceilingline = NULL;
 
 	// The base floor/ceiling is from the subsector
@@ -246,14 +543,14 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	                              (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
-	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
-	for (bx=xl ; bx<=xh ; bx++)
-		for (by=yl ; by<=yh ; by++)
-			if (!P_BlockThingsIterator(bx,by,PIT_StompThing, nullptr, StompAlwaysFrags))
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
+			if (!P_BlockThingsIterator(bx, by, PIT_StompThing, nullptr, StompAlwaysFrags))
 				return false;
 
 	// the move is ok,
@@ -263,6 +560,8 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	thing->ceilingz = tmceilingz;
 	thing->dropoffz = tmfloorz;
 	thing->floorsector = tmfloorsector;
+
+	teleportedThing = thing;
 
 	return true;
 }
@@ -389,7 +688,7 @@ void CheckForPushSpecial (line_t *line, int side, AActor *mobj)
 
 // killough 3/26/98: make static
 // now in anonymous namespace
-bool PIT_CrossLine (const line_t& ld)
+bool PIT_CrossLine (const line_t& ld, int pe_x, int pe_y, int ls_x, int ls_y)
 {
 	if (!(ld.flags & ML_TWOSIDED) ||
 		(ld.flags & (ML_BLOCKING|ML_BLOCKMONSTERS|ML_BLOCKEVERYTHING)))
@@ -435,7 +734,7 @@ bool PIT_CheckLine(line_t& ld, bool tmunstuck)
     		tmbbox[BOXLEFT]>= ld.bbox[BOXRIGHT] ||
     		tmbbox[BOXTOP] <= ld.bbox[BOXBOTTOM] ||
     		tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP] ||
-    		P_BoxOnLineSide(tmbbox.data(), &ld) != -1;
+    		P_BoxOnLineSide(tmbbox, &ld) != -1;
 	};
 
     // A line has been hit
@@ -561,36 +860,81 @@ bool PIT_CheckLine(line_t& ld, bool tmunstuck)
 	return true;
 }
 
+//
+// P_IsFriendlyMonster
+// Checks that thing is specifically a friendly monster that source gets along
+// with.
+// Because P_IsFriendlyThing checks not friendlies for friendliness
+//
+bool P_IsFriendlyMonster(const AActor* source, const AActor* thing)
+{
+	if (!source || !thing)
+		return false;
+
+	if (thing->player)
+		return false;
+
+	if (!(thing->flags & MF_FRIEND))
+		return false;
+
+	return P_IsFriendlyThing(source, thing);
+}
+
+//
+// P_IsFriendlyFireBlocked
+// Whether the friendly fire cvars on their own stop source from hurting
+// thing, regardless of whether the two are set to collide.
+//
+bool P_IsFriendlyFireBlocked(const AActor* source, const AActor* thing)
+{
+	if (!source || !thing)
+		return false;
+
+	if (source->player && thing->player)
+		return !sv_friendlyfire && P_AreTeammates(*source->player, *thing->player);
+
+	if (!sv_friendlymonsterfire)
+	{
+		if (P_IsFriendlyMonster(source, thing))
+			return true;
+
+		// A friendly and the player it belongs to. Player on player is
+		// sv_friendlyfire's business, handled above.
+		if (!source->player && source->flags & MF_FRIEND && thing->player &&
+		    P_IsFriendlyThing(thing, source))
+			return true;
+	}
+
+	return false;
+}
+
 } // namespace
 
 /*
  * @brief Determines if a projectile should clip a friendly monster.
  *
  * @param projectile (suspected) projectile actor
- * @param player (suspected) player actor
- * @return true if the player should be clipped.
+ * @param monster (suspected) friendly monster
+ * @return true if the monster should be clipped.
  */
-bool P_ShouldClipFriendly(AActor* projectile, AActor* monster)
+bool P_ShouldClipFriendly(const AActor* projectile, const AActor* monster)
 {
-	if (!sv_unblockfriendly)
-	{
-		return true; // Clip all friendlies all the time.
-	}
-	else if (projectile->target && projectile->target->flags & MF_FRIEND && P_IsFriendlyThing(projectile->target, monster))
-	{
-		if (sv_friendlymonsterfire && !P_ProjectileImmune(monster, projectile->target))
-		{
-			return true; // Always clip if friendly monster fire is on.
-		}
-		else
-		{
-			return false; // Friendly monster
-		}
-	}
-	else
-	{
-		return true; // Not a friendly.
-	}
+	// Clip all friendlies all the time, and always clip when friendly monster
+	// fire is on.
+	if (!sv_unblockfriendly || sv_friendlymonsterfire)
+		return true;
+
+	// Friendly monster, no matter who fired at it
+	if (P_IsFriendlyMonster(projectile->target, monster))
+		return false;
+
+	// Friendly player
+	if (projectile->target && !projectile->target->player &&
+	    projectile->target->flags & MF_FRIEND &&
+	    P_IsFriendlyThing(projectile->target, monster))
+		return false;
+
+	return true; // Not a friendly.
 }
 
 /*
@@ -600,40 +944,30 @@ bool P_ShouldClipFriendly(AActor* projectile, AActor* monster)
  * @param player (suspected) player actor
  * @return true if the player should be clipped.
  */
-bool P_ShouldClipPlayer(AActor* projectile, AActor* player)
+bool P_ShouldClipPlayer(const AActor* projectile, const AActor* player)
 {
-	if (!sv_unblockplayers)
-	{
-		return true; // Clip all players all the time.
-	}
-	else if (projectile->target && projectile->target->player && player->player)
-	{
-		if (sv_friendlyfire)
-		{
-			return true; // Always clip if friendly fire is on.
-		}
-		else if (G_IsCoopGame() ||
-		    (projectile->target->player->userinfo.team == player->player->userinfo.team &&
-		     G_IsTeamGame()))
-		{
-			return false; // Friendly player
-		}
-		else
-		{
-			return true; // Enemy player
-		}
-	}
-	else
-	{
-		return true; // Not a player.
-	}
+	// Clip all players all the time, and always clip when friendly fire is on.
+	if (!sv_unblockplayers || sv_friendlyfire)
+		return true;
+
+	// Not a player.
+	if (!projectile->target || !projectile->target->player || !player->player)
+		return true;
+
+	// Friendly player
+	if (G_IsCoopGame() ||
+	    (projectile->target->player->userinfo.team == player->player->userinfo.team &&
+	     G_IsTeamGame()))
+		return false;
+
+	return true; // Enemy player
 }
 
 //
 // PIT_CheckThing
 //
 
-bool P_ProjectileImmune(AActor* target, AActor* source)
+bool P_ProjectileImmune(const AActor* target, const AActor* source)
 {
 	return ( // PG_GROUPLESS means no immunity, even to own species
 	           mobjinfo[target->type].projectile_group != PG_GROUPLESS ||
@@ -652,7 +986,7 @@ namespace
 
 bool PIT_CheckThing (AActor& thing)
 {
-	const bool solid = thing.flags & MF_SOLID;
+	const auto solid = thing.flags & MF_SOLID;
 
 	// don't clip against self
 	if (&thing == tmthing)
@@ -660,6 +994,15 @@ bool PIT_CheckThing (AActor& thing)
 
 	if (!(thing.flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE|MF_TOUCHY)) )
 		return true;	// can't hit thing
+
+	// Reject things that are too far away before the pricier player/friendly
+	// checks below.
+	const fixed_t blockdist = thing.radius + tmthing->radius;
+	if (abs(thing.x - tmx) >= blockdist || abs(thing.y - tmy) >= blockdist)
+	{
+		// didn't hit thing
+		return true;
+	}
 
 	// GhostlyDeath -- Spectators go through everything!
 	if ((thing.player && thing.player->spectator) ||
@@ -669,16 +1012,10 @@ bool PIT_CheckThing (AActor& thing)
 	if (tmthing->player && thing.player && sv_unblockplayers)
 		return true;
 
-	if (tmthing && thing.flags & MF_FRIEND &&
-	    P_IsFriendlyThing(&thing, tmthing) && sv_unblockfriendly)
+	if (tmthing && !(tmthing->player && thing.player) &&
+	    thing.flags & MF_FRIEND && P_IsFriendlyThing(&thing, tmthing) &&
+	    sv_unblockfriendly)
 		return true;
-
-	const fixed_t blockdist = thing.radius + tmthing->radius;
-	if (abs(thing.x - tmx) >= blockdist || abs(thing.y - tmy) >= blockdist)
-	{
-		// didn't hit thing
-		return true;
-	}
 
 	if (P_AllowPassover())
 		BlockingMobj = &thing;
@@ -746,7 +1083,7 @@ bool PIT_CheckThing (AActor& thing)
 		if (tmthing->target &&
 			(P_ProjectileImmune(&thing, tmthing->target) &&
 		    !((level.flags2 & LEVEL2_INFIGHTINGMASK) ?
-			    level.flags2 & LEVEL2_TOTALINFIGHTING :
+			    (level.flags2 & LEVEL2_TOTALINFIGHTING).to_bool() :
 			    G_GetCurrentSkill().flags & SKILL_TOTALINFIGHTING)))
 		{
 			// Don't hit same species as originator
@@ -756,14 +1093,12 @@ bool PIT_CheckThing (AActor& thing)
 			if (!thing.player)
 			{
 				// Run friendly clip check early if same species
-				if ((thing.flags & tmthing->target->flags & MF_FRIEND) &&
+				if (((thing.flags & mask(tmthing->target->flags)) & MF_FRIEND) &&
 				    !P_ShouldClipFriendly(tmthing, &thing))
 					return true;
 
 				// [RH] DeHackEd infighting is here.
-				if (!deh.Infight &&
-						(!((thing.flags ^ tmthing->target->flags) & MF_FRIEND) ||
-						(thing.flags & tmthing->target->flags & MF_FRIEND && P_IsFriendlyThing(&thing, tmthing->target))))
+				if (!deh.Infight && P_IsFriendlyThing(&thing, tmthing->target))
 					return false; // Hit same species as originator, explode, no damage
 			}
 		}
@@ -782,9 +1117,11 @@ bool PIT_CheckThing (AActor& thing)
 		if (tmthing->flags2 & MF2_RIP)
 		{
 			int damage = ((P_Random(tmthing) & 3) + 2) * tmthing->info->damage;
-			if (!(thing.flags & MF_NOBLOOD))
+			const bool canhurt = !P_IsFriendlyFireBlocked(tmthing->target, &thing);
+
+			if (canhurt && !(thing.flags & MF_NOBLOOD) && !(thing.flags2 & MF2_DORMANT))
 				P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage);
-			if (tmthing->info->ripsound)
+			if (canhurt && tmthing->info->ripsound)
 				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
 
 			P_DamageMobj(&thing, tmthing, tmthing->target, damage, MOD_UNKNOWN);
@@ -800,7 +1137,7 @@ bool PIT_CheckThing (AActor& thing)
 		// damage / explode
 		if (tmthing->info->damage)
 		{
-			int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
+			const int damage = ((P_Random(tmthing)%8)+1) * tmthing->info->damage;
 			{
 				// [RH] figure out the means of death
 				int mod;
@@ -872,6 +1209,17 @@ bool PIT_CheckThing (AActor& thing)
 		         (tmthing->flags & MF_SOLID || (demoplayback || !co_boomphys)));
 }
 
+// Odamex does not have ZDoom's later "acts like a bridge" flag.  Keep this
+// local to the +FLOATBOB bridge check so other special things are not affected.
+bool P_IsBridgeMobj(const AActor& thing)
+{
+	return (thing.type == MT_BRIDGE ||
+	        thing.type == MT_BRIDGE32 ||
+	        thing.type == MT_BRIDGE16 ||
+	        thing.type == MT_BRIDGE8 ||
+	        thing.type == MT_ZDOOMBRIDGE);
+}
+
 } // namespace
 
 
@@ -890,10 +1238,10 @@ bool PIT_CheckThing (AActor& thing)
 
 bool Check_Sides(const AActor* actor, int x, int y)
 {
-	pe_x = actor->x;
-	pe_y = actor->y;
-	ls_x = x;
-	ls_y = y;
+	const int pe_x = actor->x; // Pain Elemental position for Lost Soul checks // phares
+	const int pe_y = actor->y; // Pain Elemental position for Lost Soul checks // phares
+	const int ls_x = x;        // Lost Soul position for Lost Soul checks      // phares
+	const int ls_y = y;        // Lost Soul position for Lost Soul checks      // phares
 
 	// Here is the bounding box of the trajectory
 
@@ -904,18 +1252,18 @@ bool Check_Sides(const AActor* actor, int x, int y)
 
 	// Determine which blocks to look in for blocking lines
 
-	const int xl = (tmbbox[BOXLEFT]   - bmaporgx)>>MAPBLOCKSHIFT;
-	const int xh = (tmbbox[BOXRIGHT]  - bmaporgx)>>MAPBLOCKSHIFT;
-	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	const int yh = (tmbbox[BOXTOP]    - bmaporgy)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT]   - blockmap.originx())>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT]  - blockmap.originx())>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP]    - blockmap.originy())>>MAPBLOCKSHIFT;
 
 	// xl->xh, yl->yh determine the mapblock set to search
 
 	validcount++; // prevents checking same line twice
 	for (int bx = xl ; bx <= xh ; bx++)
 		for (int by = yl ; by <= yh ; by++)
-			if (!P_BlockLinesIterator(bx,by,PIT_CrossLine))
-				return true;										//   ^
+			if (!P_BlockLinesIterator(bx, by, PIT_CrossLine, pe_x, pe_y, ls_x, ls_y))
+				return true;									//   ^
 	return false;												//   |
 }																// phares
 
@@ -935,6 +1283,9 @@ bool PIT_CheckOnmobjZ (AActor& thing)
 	if (thing.flags & (MF_CORPSE|MF_SPECIAL))
 		return true;
 
+	if ((tmthing->flags & MF_SPECIAL) && !P_IsBridgeMobj(thing))
+		return true;
+
 	// Don't clip against self
 	if (&thing == tmthing)
 		return true;
@@ -944,8 +1295,9 @@ bool PIT_CheckOnmobjZ (AActor& thing)
 		return true;
 
 	// Don't clip against friendlies
-	if (tmthing && thing.flags & MF_FRIEND &&
-	    P_IsFriendlyThing(&thing, tmthing) && sv_unblockfriendly)
+	if (tmthing && !(tmthing->player && thing.player) &&
+	    thing.flags & MF_FRIEND && P_IsFriendlyThing(&thing, tmthing) &&
+	    sv_unblockfriendly)
 		return true;
 
 	// over / under thing
@@ -954,8 +1306,9 @@ bool PIT_CheckOnmobjZ (AActor& thing)
 	if (tmthing->z + tmthing->height <= thing.z)
 		return true;
 
-	// Don't clip the projectile unless it's not a teammate.
-	if (tmthing->flags & MF_MISSILE && !P_ShouldClipPlayer(tmthing, &thing))
+	// Don't clip the projectile unless it's not a teammate or a friendly.
+	if (tmthing->flags & MF_MISSILE &&
+	    (!P_ShouldClipPlayer(tmthing, &thing) || !P_ShouldClipFriendly(tmthing, &thing)))
 		return true;
 
 	const fixed_t blockdist = thing.radius+tmthing->radius;
@@ -978,7 +1331,7 @@ bool PIT_CheckOnmobjZ (AActor& thing)
 //
 bool P_TestMobjLocation (AActor *mobj)
 {
-	int flags = mobj->flags;
+	const auto flags = mobj->flags;
 	mobj->flags &= ~MF_PICKUP;
 
 	if (P_CheckPosition(mobj, mobj->x, mobj->y))
@@ -1059,16 +1412,16 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 	// because DActors are grouped into mapblocks
 	// based on their origin point, and can overlap
 	// into adjacent blocks by up to MAXRADIUS units.
-	int xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	int xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	int yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	int yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
 	BlockingMobj = NULL;
 
 	if (P_AllowPassover() && !spectator)
 	{
-		if (thing->player)	// [RH] Fake taller height to catch stepping up into things.
+		if (P_IsPlayerOrAvatar(*thing))      // [RH] Fake taller height to catch stepping up into things.
 			thing->height += 24*FRACUNIT;
 
 		for (int bx = xl; bx <= xh; bx++)
@@ -1135,9 +1488,9 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 	else
 	{
 		// vanilla Doom's check for blocking things
-		for (int bx=xl ; bx<=xh ; bx++)
-			for (int by=yl ; by<=yh ; by++)
-				if (!P_BlockThingsIterator(bx,by,PIT_CheckThing, nullptr))
+		for (int bx = xl; bx <= xh; bx++)
+			for (int by = yl; by <= yh; by++)
+				if (!P_BlockThingsIterator(bx, by, PIT_CheckThing, nullptr))
 					return false;
 
 		if (tmflags & MF_NOCLIP)
@@ -1149,10 +1502,10 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 	if (not isSpawnCheck || demoplayback)
 	{
 		// check lines
-		xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
-		xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
-		yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
-		yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
+		xl = (tmbbox[BOXLEFT] - blockmap.originx()) >> MAPBLOCKSHIFT;
+		xh = (tmbbox[BOXRIGHT] - blockmap.originx()) >> MAPBLOCKSHIFT;
+		yl = (tmbbox[BOXBOTTOM] - blockmap.originy()) >> MAPBLOCKSHIFT;
+		yh = (tmbbox[BOXTOP] - blockmap.originy()) >> MAPBLOCKSHIFT;
 
 		// from mbf, allows players to get unstuck if they end up spawned
 		// partially inside a wall or blocking line
@@ -1182,6 +1535,8 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 AActor *P_CheckOnmobj (AActor *thing)
 {
 	const fixed_t oldz = thing->z;
+	if (thing->flags2 & MF2_FLOATBOB)
+		thing->z = thing->floorz + thing->special1; // test from the bob center
 	P_FakeZMovement (thing);
 	const bool good = P_TestMobjZ (thing);
 	thing->z = oldz;
@@ -1191,13 +1546,13 @@ AActor *P_CheckOnmobj (AActor *thing)
 
 bool P_TestMobjZ (AActor *actor)
 {
-	int	xl,xh,yl,yh,bx,by;
 	fixed_t x, y;
 
 	if (actor->flags & MF_NOCLIP)
 		return true;
 
-	if (!(actor->flags & MF_SOLID))
+	if (!(actor->flags & MF_SOLID) &&
+	    !((actor->flags & MF_SPECIAL) && (actor->flags2 & MF2_FLOATBOB)))
 		return true;
 
 	tmx = x = actor->x;
@@ -1213,14 +1568,14 @@ bool P_TestMobjZ (AActor *actor)
 // into mapblocks based on their origin point, and can overlap into adjacent
 // blocks by up to MAXRADIUS units
 //
-	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS)>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS)>>MAPBLOCKSHIFT;
 
-	for (bx = xl; bx <= xh; bx++)
-		for (by = yl; by <= yh; by++)
-			if (!P_BlockThingsIterator (bx, by, PIT_CheckOnmobjZ, nullptr))
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
+			if (!P_BlockThingsIterator(bx, by, PIT_CheckOnmobjZ, nullptr))
 				return false;
 
 	return true;
@@ -1280,7 +1635,7 @@ void P_CheckPushLines(AActor *thing)
 		{
 			// see which lines were pushed
 			line_t *ld = spechit[i];
-			int side = P_PointOnLineSide(thing->x, thing->y, ld);
+			const int side = P_PointOnLineSide(thing->x, thing->y, ld);
 			CheckForPushSpecial(ld, side, thing);
 		}
 	}
@@ -1462,10 +1817,10 @@ bool P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 			line_t *ld = spechit.back();
 			spechit.pop_back();
 
-			int side = P_PointOnLineSide (thing->x, thing->y, ld);
-			int oldside = P_PointOnLineSide (oldx, oldy, ld);
+			const int side = P_PointOnLineSide(thing->x, thing->y, ld);
+			const int oldside = P_PointOnLineSide(oldx, oldy, ld);
 			if (side != oldside && ld->special)
-				P_CrossSpecialLine (ld, oldside, thing, false);
+				P_CrossSpecialLine(ld, oldside, thing, false);
 		}
 	}
 
@@ -1591,22 +1946,21 @@ bool PIT_ApplyTorque (const line_t& ld)
 
 void P_ApplyTorque (AActor *mo)
 {
-	int xl = ((tmbbox[BOXLEFT] =
-			mo->x - mo->radius) - bmaporgx) >> MAPBLOCKSHIFT;
-	int xh = ((tmbbox[BOXRIGHT] =
-			mo->x + mo->radius) - bmaporgx) >> MAPBLOCKSHIFT;
-	int yl = ((tmbbox[BOXBOTTOM] =
-			mo->y - mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
-	int yh = ((tmbbox[BOXTOP] =
-			mo->y + mo->radius) - bmaporgy) >> MAPBLOCKSHIFT;
-	int bx,by;
-	int flags = mo->oflags;	//Remember the current state, for gear-change
+	const int xl = ((tmbbox[BOXLEFT] =
+			mo->x - mo->radius) - blockmap.originx()) >> MAPBLOCKSHIFT;
+	const int xh = ((tmbbox[BOXRIGHT] =
+			mo->x + mo->radius) - blockmap.originx()) >> MAPBLOCKSHIFT;
+	const int yl = ((tmbbox[BOXBOTTOM] =
+			mo->y - mo->radius) - blockmap.originy()) >> MAPBLOCKSHIFT;
+	const int yh = ((tmbbox[BOXTOP] =
+			mo->y + mo->radius) - blockmap.originy()) >> MAPBLOCKSHIFT;
+	const auto flags = mo->oflags; //Remember the current state, for gear-change
 
 	tmthing = mo;
 	validcount++; // prevents checking same line twice
 
-	for (bx = xl ; bx <= xh ; bx++)
-		for (by = yl ; by <= yh ; by++)
+	for (int bx = xl ; bx <= xh ; bx++)
+		for (int by = yl ; by <= yh ; by++)
 			P_BlockLinesIterator(bx, by, PIT_ApplyTorque);
 
 	// If any momentum, mark object as 'falling' using engine-internal flags
@@ -1622,7 +1976,7 @@ void P_ApplyTorque (AActor *mo)
 	// of rotation, so we have to creatively simulate these
 	// systems somehow :)
 
-	if (!((mo->oflags | flags) & MFO_FALLING))	// If not falling for a while,
+	if (!((mo->oflags | combo(flags)) & MFO_FALLING))	// If not falling for a while,
 		mo->gear = 0;							// Reset it to full strength
 	else if (mo->gear < MAXGEAR)				// Else if not at max gear,
 		mo->gear++;								// move up a gear
@@ -1908,14 +2262,12 @@ void P_HitSlideLine (line_t* ld)
 //
 // PTR_SlideTraverse
 //
-bool PTR_SlideTraverse (intercept_t* in)
+bool PTR_SlideTraverse(const intercept_t& in)
 {
-	line_t* 	li;
-
-	if (!in->isaline)
+	if (!in.isaline)
 		I_Error ("PTR_SlideTraverse: non-line intercept\n");
 
-	li = in->d.line;
+	line_t* li = in.d.line;
 
 	if ( ! (li->flags & ML_TWOSIDED) )
 	{
@@ -1928,8 +2280,8 @@ bool PTR_SlideTraverse (intercept_t* in)
 	}
 
 	// set openrange, opentop, openbottom
-	P_LineOpening(li, trace.x + FixedMul(trace.dx, in->frac),
-				trace.y + FixedMul(trace.dy, in->frac));
+	P_LineOpening(li, trace.x + FixedMul(trace.dx, in.frac),
+				trace.y + FixedMul(trace.dy, in.frac));
 
 	if (openrange < slidemo->height)
 		goto isblocking;				// doesn't fit
@@ -1958,18 +2310,16 @@ bool PTR_SlideTraverse (intercept_t* in)
 	// the line does block movement,
 	// see if it is closer than best so far
   isblocking:
-	if (in->frac < bestslidefrac)
+	if (in.frac < bestslidefrac)
 	{
 		secondslidefrac = bestslidefrac;
 		secondslideline = bestslideline;
-		bestslidefrac = in->frac;
+		bestslidefrac = in.frac;
 		bestslideline = li;
 	}
 
 	return false;		// stop
 }
-
-
 
 //
 // P_SlideMove
@@ -2106,117 +2456,132 @@ int 			la_damage;
 fixed_t 		attackrange;
 fixed_t 		aimslope;
 
-// slopes to top and bottom of target
-// killough 4/20/98: make static instead of using ones in p_sight.c
-static fixed_t	topslope;
-static fixed_t	bottomslope;
-
-
-//
-// PTR_AimTraverse
-// Sets linetaget and aimslope when a target is aimed at.
-//
-bool PTR_AimTraverse (intercept_t* in)
+namespace
 {
-	line_t* 			li;
-	AActor* 			th;
-	fixed_t 			slope;
-	fixed_t 			thingtopslope;
-	fixed_t 			thingbottomslope;
-	fixed_t 			dist;
 
-	if (in->isaline)
+// Whether the current aim should ignore things the shooter can't hurt.
+bool		aimskipunhurtable = true;
+
+//
+// P_ShouldSpareFriendly
+// Determines if an attack from source should leave a thing alone entirely.
+//
+bool P_ShouldSpareFriendly(AActor* source, AActor* thing)
+{
+	if (!source || !thing)
+		return false;
+
+	// Only shoot through the things you can't hurt anyway.
+	if (source->player && thing->player)
+		return sv_unblockplayers && P_IsFriendlyFireBlocked(source, thing);
+
+	return sv_unblockfriendly && P_IsFriendlyFireBlocked(source, thing);
+}
+
+bool AimTraverseLine(const line_t& li, const fixed_t frac, fixed_t& topslope, fixed_t& bottomslope)
+{
+	if (!(li.flags & ML_TWOSIDED))
+		return false;				// stop
+
+	// Crosses a two sided line.
+	// A two sided line will restrict
+	// the possible target ranges.
+	P_LineOpening(&li, trace.x + FixedMul(trace.dx, frac),
+			trace.y + FixedMul(trace.dy, frac));
+
+	if (openbottom >= opentop)
+		return false;				// stop
+
+	const fixed_t dist = FixedMul (attackrange, frac);
+
+	// [SL] 2012-02-08 - Calculate the point where the intercept crosses
+	// the line
+	const fixed_t crossx = trace.x + FixedMul(trace.dx, frac);
+	const fixed_t crossy = trace.y + FixedMul(trace.dy, frac);
+
+	fixed_t slope;
+
+	if (P_FloorHeight(crossx, crossy, li.frontsector) !=
+		P_FloorHeight(crossx, crossy, li.backsector))
 	{
-		li = in->d.line;
-
-		if ( !(li->flags & ML_TWOSIDED) )
-			return false;				// stop
-
-		// Crosses a two sided line.
-		// A two sided line will restrict
-		// the possible target ranges.
-		P_LineOpening(li, trace.x + FixedMul(trace.dx, in->frac),
-				trace.y + FixedMul(trace.dy, in->frac));
-
-		if (openbottom >= opentop)
-			return false;				// stop
-
-		dist = FixedMul (attackrange, in->frac);
-
-		// [SL] 2012-02-08 - Calculate the point where the intercept crosses
-		// the line
-		fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
-		fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);
-
-		if (P_FloorHeight(crossx, crossy, li->frontsector) !=
-			P_FloorHeight(crossx, crossy, li->backsector))
-		{
-			slope = FixedDiv (openbottom - shootz , dist);
-			if (slope > bottomslope)
-				bottomslope = slope;
-		}
-
-		if (P_CeilingHeight(crossx, crossy, li->frontsector) !=
-			P_CeilingHeight(crossx, crossy, li->backsector))
-		{
-			slope = FixedDiv (opentop - shootz , dist);
-			if (slope < topslope)
-				topslope = slope;
-		}
-
-		if (topslope <= bottomslope)
-			return false;				// stop
-
-		return true;					// shot continues
+		slope = FixedDiv (openbottom - shootz , dist);
+		bottomslope = std::max(slope, bottomslope);
 	}
 
+	if (P_CeilingHeight(crossx, crossy, li.frontsector) !=
+		P_CeilingHeight(crossx, crossy, li.backsector))
+	{
+		slope = FixedDiv (opentop - shootz , dist);
+		topslope = std::min(slope, topslope);
+	}
+
+	if (topslope <= bottomslope)
+		return false;				// stop
+
+	return true;					// shot continues
+}
+
+bool AimTraverseThing(AActor& th, const fixed_t frac, const fixed_t topslope, const fixed_t bottomslope)
+{
 	// shoot a thing
-	th = in->d.thing;
-	if (th == shootthing)
+	if (&th == shootthing)
 		return true;					// can't shoot self
 
-	if (!(th->flags&MF_SHOOTABLE))
+	if (!(th.flags & MF_SHOOTABLE))
 		return true;					// corpse or something
 
 	// GhostlyDeath -- dont autoaim on spectators
-	if ((th->player && th->player->spectator))
+	if ((th.player && th.player->spectator))
 		return true;
 
-	// [SL] 2011-10-31 - Don't aim at teammates
-	if ((sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) &&
-		shootthing->player && th->player &&
-		shootthing->player->userinfo.team == th->player->userinfo.team &&
-		!sv_friendlyfire)
-		return true;
+	if (aimskipunhurtable)
+	{
+		// [SL] 2011-10-31 - Don't aim at teammates
+		if (!sv_friendlyfire && shootthing->player && th.player &&
+		    P_AreTeammates(*shootthing->player, *th.player))
+			return true;
 
-	// Don't aim at friendlies if you're a player
-	if (shootthing->player && th->flags & MF_FRIEND && P_IsFriendlyThing(shootthing, th) &&
-	    !sv_friendlymonsterfire)
+		// Don't aim at friendlies you can't hurt
+		if (!sv_friendlymonsterfire && P_IsFriendlyMonster(shootthing, &th))
+			return true;
+	}
+	else if (P_ShouldSpareFriendly(shootthing, &th))
+	{
 		return true;
+	}
 
 	// check angles to see if the thing can be aimed at
-	dist = FixedMul (attackrange, in->frac);
-	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
+	const fixed_t thingdist = FixedMul (attackrange, frac);
+	fixed_t thingtopslope = FixedDiv (th.z + th.height - shootz , thingdist);
 
 	if (thingtopslope < bottomslope)
 		return true;					// shot over the thing
 
-	thingbottomslope = FixedDiv (th->z - shootz, dist);
+	fixed_t thingbottomslope = FixedDiv (th.z - shootz, thingdist);
 
 	if (thingbottomslope > topslope)
 		return true;					// shot under the thing
 
 	// this thing can be hit!
-	if (thingtopslope > topslope)
-		thingtopslope = topslope;
-
-	if (thingbottomslope < bottomslope)
-		thingbottomslope = bottomslope;
+	thingtopslope = std::min(thingtopslope, topslope);
+	thingbottomslope = std::max(thingbottomslope, bottomslope);
 
 	aimslope = (thingtopslope+thingbottomslope)/2;
-	linetarget = th;
+	linetarget = &th;
 
 	return false;						// don't go any farther
+}
+
+//
+// PTR_AimTraverse
+// Sets linetaget and aimslope when a target is aimed at.
+//
+bool PTR_AimTraverse(const intercept_t& in, fixed_t& topslope, fixed_t& bottomslope)
+{
+	if (in.isaline)
+		return AimTraverseLine(*in.d.line, in.frac, topslope, bottomslope);
+
+	return AimTraverseThing(*in.d.thing, in.frac, topslope, bottomslope);
 }
 
 //
@@ -2226,57 +2591,53 @@ bool PTR_AimTraverse (intercept_t* in)
 // hits a line or the floor/ceiling. Returns true if the intercept should continue
 // because it did not hit a solid line.
 //
-bool P_ShootLine(intercept_t* in)
+bool P_ShootLine(line_t& li, const fixed_t frac)
 {
-	bool precise = (co_fixweaponimpacts != 0);
-	line_t* li = in->d.line;
+	const bool precise = (co_fixweaponimpacts != 0);
 
-	if (!in->isaline)
-		return true;
+	if (li.special)
+		P_ShootSpecialLine(shootthing, &li);
 
-	if (li->special)
-		P_ShootSpecialLine(shootthing, li);
-
-	short spe;
+	int16_t spe;
 	if (map_format.getZDoom())
 		spe = Line_Horizon;
 	else
 		spe = 337;
 
 	// don't shoot horizon lines
-	if (li->special == spe)
+	if (li.special == spe)
 		return false;
 
 	// [SL] 2012-02-08 - Calculates where the intercept crosses the line
-	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
-	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);
+	const fixed_t crossx = trace.x + FixedMul(trace.dx, frac);
+	const fixed_t crossy = trace.y + FixedMul(trace.dy, frac);
 
 	// [SL] determine which sector is on the side of the line that faces the shooter
 	sector_t *sec1, *sec2;
-	if (!precise || !li->backsector	|| !P_PointOnLineSide(trace.x, trace.y, li))
+	if (!precise || !li.backsector	|| !P_PointOnLineSide(trace.x, trace.y, &li))
 	{
-		sec1 = li->frontsector;
-		sec2 = li->backsector;
+		sec1 = li.frontsector;
+		sec2 = li.backsector;
 	}
 	else
 	{
-		sec1 = li->backsector;
-		sec2 = li->frontsector;
+		sec1 = li.backsector;
+		sec2 = li.frontsector;
 	}
 
-	fixed_t ceilingheight1 = P_CeilingHeight(crossx, crossy, sec1);
-	fixed_t ceilingheight2 = sec2 ? P_CeilingHeight(crossx, crossy, sec2) : limits::MAXINT;
-	fixed_t floorheight1 = P_FloorHeight(crossx, crossy, sec1);
-	fixed_t floorheight2 = sec2 ? P_FloorHeight(crossx, crossy, sec2) : limits::MAXINT;
+	const fixed_t ceilingheight1 = P_CeilingHeight(crossx, crossy, sec1);
+	const fixed_t ceilingheight2 = sec2 ? P_CeilingHeight(crossx, crossy, sec2) : limits::MAXINT;
+	const fixed_t floorheight1 = P_FloorHeight(crossx, crossy, sec1);
+	const fixed_t floorheight2 = sec2 ? P_FloorHeight(crossx, crossy, sec2) : limits::MAXINT;
 
 	// position the destination for the bullet puff a bit closer
-	fixed_t frac = in->frac - FixedDiv(4 * FRACUNIT, attackrange);
-	fixed_t z = shootz + FixedMul(aimslope, FixedMul(frac, attackrange));
+	const fixed_t pufffrac = frac - FixedDiv(4 * FRACUNIT, attackrange);
+	const fixed_t z = shootz + FixedMul(aimslope, FixedMul(pufffrac, attackrange));
 
-	if (li->flags & ML_TWOSIDED && !(li->flags & ML_BLOCKEVERYTHING))
+	if (li.flags & ML_TWOSIDED && !(li.flags & ML_BLOCKEVERYTHING))
 	{
 		// crosses a two sided line
-		P_LineOpening(li, trace.x + FixedMul(trace.dx, in->frac), trace.y + FixedMul(trace.dy, in->frac));
+		P_LineOpening(&li, trace.x + FixedMul(trace.dx, frac), trace.y + FixedMul(trace.dy, frac));
 
 		if (precise)
 		{
@@ -2293,10 +2654,10 @@ bool P_ShootLine(intercept_t* in)
 			// e6y: emulation of missed back side on two-sided lines.
 			// backsector can be NULL when emulating missing back side.
 
-			fixed_t dist = FixedMul(attackrange, in->frac);
-			bool hittop = (li->backsector == NULL || ceilingheight1 != ceilingheight2) &&
+			const fixed_t dist = FixedMul(attackrange, frac);
+			const bool hittop = (li.backsector == nullptr || ceilingheight1 != ceilingheight2) &&
 						FixedDiv(opentop - shootz, dist) < aimslope;
-			bool hitbottom = (li->backsector == NULL || floorheight1 != floorheight2) &&
+			const bool hitbottom = (li.backsector == nullptr || floorheight1 != floorheight2) &&
 						FixedDiv(openbottom - shootz, dist) > aimslope;
 
 			if (!hittop && !hitbottom)
@@ -2306,8 +2667,8 @@ bool P_ShootLine(intercept_t* in)
 
 	// definitely hit the solid part of the line
 
-	bool skyceiling1 = R_IsSkyFlat(sec1->ceilingpic);
-	bool skyceiling2 = sec2 && R_IsSkyFlat(sec2->ceilingpic);
+	const bool skyceiling1 = R_IsSkyFlat(sec1->ceilingpic);
+	const bool skyceiling2 = sec2 != nullptr && R_IsSkyFlat(sec2->ceilingpic);
 
 	// sky wall hack
 	if (skyceiling1 && skyceiling2)
@@ -2355,18 +2716,13 @@ bool P_ShootLine(intercept_t* in)
 //
 // PTR_ShootTraverse
 //
-bool PTR_ShootTraverse (intercept_t* in)
+bool PTR_ShootTraverse(const intercept_t& in)
 {
-	fixed_t x, y, z;
-	fixed_t frac;
-	AActor *th;
-	fixed_t thingtopslope, thingbottomslope;
-
-	if (in->isaline)
-		return P_ShootLine(in);
+	if (in.isaline)
+		return P_ShootLine(*in.d.line, in.frac);
 
 	// shoot a thing
-	th = in->d.thing;
+	AActor* th = in.d.thing;
 	if (th == shootthing)
 		return true;			// can't shoot self
 
@@ -2377,29 +2733,33 @@ bool PTR_ShootTraverse (intercept_t* in)
 	if ((th->player && th->player->spectator))
 		return true;
 
+	// Don't let unblocked teammates or friendlies soak up the shot.
+	if (P_ShouldSpareFriendly(shootthing, th))
+		return true;
+
 	// check angles to see if the thing can be aimed at
-	fixed_t dist = FixedMul(attackrange, in->frac);
-	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
+	const fixed_t dist = FixedMul(attackrange, in.frac);
+	const fixed_t thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
 
 	if (thingtopslope < aimslope)
 		return true;			// shot over the thing
 
-	thingbottomslope = FixedDiv (th->z - shootz, dist);
+	const fixed_t thingbottomslope = FixedDiv (th->z - shootz, dist);
 
 	if (thingbottomslope > aimslope)
 		return true;			// shot under the thing
 
 	// hit thing
 	// position a bit closer
-	frac = in->frac - FixedDiv (10*FRACUNIT,attackrange);
+	const fixed_t frac = in.frac - FixedDiv (10*FRACUNIT,attackrange);
 
-	x = trace.x + FixedMul (trace.dx, frac);
-	y = trace.y + FixedMul (trace.dy, frac);
-	z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+	fixed_t x = trace.x + FixedMul (trace.dx, frac);
+	fixed_t y = trace.y + FixedMul (trace.dy, frac);
+	fixed_t z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
-	// Spawn bullet puffs or blod spots,
+	// Spawn bullet puffs or blood spots,
 	// depending on target type.
-	bool spawnblood = !(in->d.thing->flags & MF_NOBLOOD);
+	bool spawnblood = !(th->flags & MF_NOBLOOD) && !(th->flags2 & MF2_DORMANT);
 
 	// [SL] 2011-05-11 - In unlagged games, spawn blood at the target's current
 	// position, not at their reconciled position
@@ -2413,7 +2773,7 @@ bool PTR_ShootTraverse (intercept_t* in)
 			spawnblood = false;
 	}
 
-	if (th->flags & MF_FRIEND && P_IsFriendlyThing(th, shootthing) && !sv_friendlymonsterfire)
+	if (P_IsFriendlyMonster(shootthing, th) && !sv_friendlymonsterfire)
 		spawnblood = false;
 
 	if (spawnblood)
@@ -2457,44 +2817,51 @@ bool PTR_ShootTraverse (intercept_t* in)
 	return false;
 }
 
+} // namespace
+
 EXTERN_CVAR(sv_freelook)
 
 //
 // P_AimLineAttack
 //
-fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
+fixed_t P_AimLineAttack(AActor *t1, angle_t angle, fixed_t distance,
+                        bool skipunhurtable)
 {
-	fixed_t x2;
-	fixed_t y2;
-
 	angle >>= ANGLETOFINESHIFT;
 	shootthing = t1;
+	aimskipunhurtable = skipunhurtable;
 
-	x2 = t1->x + (distance>>FRACBITS)*finecosine[angle];
-	y2 = t1->y + (distance>>FRACBITS)*finesine[angle];
-	shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
+	const fixed_t x2 = t1->x + ((distance>>FRACBITS)*finecosine[angle]);
+	const fixed_t y2 = t1->y + ((distance>>FRACBITS)*finesine[angle]);
+	shootz = t1->z + (t1->height>>1) + (8*FRACUNIT);
 
 	// can't shoot outside view angles
 
 	// [RH] Technically, this is now correct for an engine with true 6 DOF
 	// instead of one which implements y-shearing, like we currently do.
-	angle_t topangle = t1->pitch - ANG(32);
-	angle_t bottomangle = t1->pitch + ANG(32);
+	const angle_t topangle = t1->pitch - ANG(32);
+	const angle_t bottomangle = t1->pitch + ANG(32);
+
+	// slopes to top and bottom of target
+	// killough 4/20/98: make static instead of using ones in p_sight.c
+	// now local instead of static globals
+	fixed_t topslope;
+	fixed_t bottomslope;
 
 	if (topangle <= ANG360 - ANG180)
 		topslope = finetangent[FINEANGLES/2-1];
 	else
-		topslope = finetangent[FINEANGLES/4-((signed)topangle>>ANGLETOFINESHIFT)];
+		topslope = finetangent[FINEANGLES/4-(static_cast<signed>(topangle)>>ANGLETOFINESHIFT)];
 
 	if (bottomangle >= ANG180)
 		bottomslope = finetangent[0];
 	else
-		bottomslope = finetangent[FINEANGLES/4-((signed)bottomangle>>ANGLETOFINESHIFT)];
+		bottomslope = finetangent[FINEANGLES/4-(static_cast<signed>(bottomangle)>>ANGLETOFINESHIFT)];
 
 	attackrange = distance;
 	linetarget = NULL;
 
-	P_PathTraverse (t1->x, t1->y, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_AimTraverse);
+	P_PathTraverse(t1->x, t1->y, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_AimTraverse, topslope, bottomslope);
 
 	if (linetarget)
 		return aimslope;
@@ -2556,17 +2923,15 @@ fixed_t P_AutoAimLineAttack(AActor* actor, angle_t& angle, const angle_t spread,
 // If damage == 0, it is just a test trace
 // that will leave linetarget set.
 //
-void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
-				   fixed_t slope, int damage)
+void P_LineAttack(AActor *t1, angle_t angle, fixed_t distance,
+                  fixed_t slope, int damage)
 {
-	fixed_t x2, y2;
-
 	angle >>= ANGLETOFINESHIFT;
 	shootthing = t1;
 	la_damage = damage;
-	x2 = t1->x + (distance>>FRACBITS)*finecosine[angle];
-	y2 = t1->y + (distance>>FRACBITS)*finesine[angle];
-	shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
+	const fixed_t x2 = t1->x + ((distance >> FRACBITS) * finecosine[angle]);
+	const fixed_t y2 = t1->y + ((distance >> FRACBITS) * finesine[angle]);
+	shootz = t1->z + (t1->height >> 1) + (8 * FRACUNIT);
 	attackrange = distance;
 	aimslope = slope;
 
@@ -2616,51 +2981,37 @@ void P_LineAttack (AActor *t1, angle_t angle, fixed_t distance,
 //
 // [RH] PTR_RailTraverse
 //
-static int MaxRailHits, NumRailHits;
-static struct SRailHit {
+struct SRailHit {
 	AActor *hitthing;
 	fixed_t x,y,z;
-} *RailHits;
-static v3double_t RailEnd;
+};
+std::vector<SRailHit> RailHits;
 
-bool PTR_RailTraverse (intercept_t *in)
+bool PTR_RailTraverse(const intercept_t& in, v3double_t& RailEnd)
 {
-	fixed_t 			x;
-	fixed_t 			y;
-	fixed_t 			z;
-	fixed_t 			frac;
-
-	line_t* 			li;
-
-	AActor* 			th;
-
-	fixed_t 			dist;
-	fixed_t 			thingtopslope;
-	fixed_t 			thingbottomslope;
-	fixed_t				floorheight;
-	fixed_t				ceilingheight;
-
-	if (in->isaline)
+	if (in.isaline)
 	{
-		li = in->d.line;
+		line_t* li = in.d.line;
 
-		fixed_t crossx = trace.x + FixedMul (trace.dx, in->frac);
-		fixed_t crossy = trace.y + FixedMul (trace.dy, in->frac);
+		const fixed_t crossx = trace.x + FixedMul (trace.dx, in.frac);
+		const fixed_t crossy = trace.y + FixedMul (trace.dy, in.frac);
 
 		// [SL] 2012-04-18 - origin and direction vectors for the shot
 		v3fixed_t lineorg, linedir;
 		M_SetVec3Fixed(&lineorg, trace.x, trace.y, shootz);
 		M_SetVec3Fixed(&linedir, trace.dx, trace.dy, FixedMul(aimslope, attackrange));
 
-		frac = in->frac;
-		z = shootz + FixedMul (aimslope, FixedMul (frac, attackrange));
+		const fixed_t frac = in.frac;
+		fixed_t x;
+		fixed_t y;
+		fixed_t z = shootz + FixedMul (aimslope, FixedMul (frac, attackrange));
 
 		if (!(li->flags & ML_TWOSIDED) || (li->flags & ML_BLOCKEVERYTHING))
 			goto hitline;
 
 		// crosses a two sided line
-		P_LineOpening(li, trace.x + FixedMul(trace.dx, in->frac),
-				trace.y + FixedMul(trace.dy, in->frac));
+		P_LineOpening(li, trace.x + FixedMul(trace.dx, in.frac),
+				trace.y + FixedMul(trace.dy, in.frac));
 
 		if (z >= opentop || z <= openbottom)
 			goto hitline;
@@ -2675,7 +3026,8 @@ bool PTR_RailTraverse (intercept_t *in)
 		// hit line
 	  hitline:
 		plane_t *floorplane, *ceilingplane;
-
+		fixed_t floorheight;
+		fixed_t ceilingheight;
 		if (!li->backsector || !P_PointOnLineSide (trace.x, trace.y, li))
 		{
 			ceilingplane = &li->frontsector->ceilingplane;
@@ -2720,7 +3072,7 @@ bool PTR_RailTraverse (intercept_t *in)
 	}
 
 	// shoot a thing
-	th = in->d.thing;
+	AActor* th = in.d.thing;
 	if (th == shootthing)
 		return true;			// can't shoot self
 
@@ -2728,13 +3080,13 @@ bool PTR_RailTraverse (intercept_t *in)
 		return true;			// corpse or something
 
 	// check angles to see if the thing can be aimed at
-	dist = FixedMul (attackrange, in->frac);
-	thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
+	const fixed_t dist = FixedMul (attackrange, in.frac);
+	const fixed_t thingtopslope = FixedDiv (th->z+th->height - shootz , dist);
 
 	if (thingtopslope < aimslope)
 		return true;			// shot over the thing
 
-	thingbottomslope = FixedDiv (th->z - shootz, dist);
+	const fixed_t thingbottomslope = FixedDiv (th->z - shootz, dist);
 
 	if (thingbottomslope > aimslope)
 		return true;			// shot under the thing
@@ -2745,29 +3097,24 @@ bool PTR_RailTraverse (intercept_t *in)
 		return false;
 
 	// position a bit closer
-	frac = in->frac - FixedDiv (10*FRACUNIT,attackrange);
+	const fixed_t frac = in.frac - FixedDiv (10*FRACUNIT,attackrange);
 
-	x = trace.x + FixedMul (trace.dx, frac);
-	y = trace.y + FixedMul (trace.dy, frac);
-	z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+	const fixed_t x = trace.x + FixedMul (trace.dx, frac);
+	const fixed_t y = trace.y + FixedMul (trace.dy, frac);
+	const fixed_t z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
 	// Save this thing for damaging later
-	if (NumRailHits >= MaxRailHits)
-	{
-		MaxRailHits = MaxRailHits ? MaxRailHits * 2 : 16;
-		RailHits = (SRailHit *) M_Realloc(RailHits, sizeof(*RailHits) * MaxRailHits);
-	}
-	RailHits[NumRailHits].hitthing = th;
-	RailHits[NumRailHits].x = x;
-	RailHits[NumRailHits].y = y;
-	RailHits[NumRailHits].z = z;
-	NumRailHits++;
+	auto& RailHit = RailHits.emplace_back();
+	RailHit.hitthing = th;
+	RailHit.x = x;
+	RailHit.y = y;
+	RailHit.z = z;
 
 	// continue the trace
 	return true;
 }
 
-void P_RailAttack (AActor *source, int damage, int offset)
+void P_RailAttack(AActor *source, int damage, int offset)
 {
 	v3double_t start, end;
 
@@ -2783,11 +3130,12 @@ void P_RailAttack (AActor *source, int damage, int offset)
 	attackrange = 8192*FRACUNIT;
 	aimslope = finetangent[FINEANGLES/4-(source->pitch>>ANGLETOFINESHIFT)];
 	shootthing = source;
-	NumRailHits = 0;
+	RailHits.clear();
+	v3double_t RailEnd;
 
 	M_SetVec3(&start, x1, y1, shootz);
 
-	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_RailTraverse))
+	if (P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES|PT_ADDTHINGS, PTR_RailTraverse, RailEnd))
 	{
 		// Nothing hit, so just shoot the air
 		M_AngleToVec3(&end, source->angle, source->pitch);
@@ -2800,13 +3148,13 @@ void P_RailAttack (AActor *source, int damage, int offset)
 		// Hit a wall, maybe some things as well
 		end = RailEnd;
 
-		for (int i = 0; i < NumRailHits; i++)
+		for (const auto& RailHit : RailHits)
 		{
-			if (RailHits[i].hitthing->flags & MF_NOBLOOD)
-				P_SpawnPuff(RailHits[i].x, RailHits[i].y, RailHits[i].z);
+			if (RailHit.hitthing->flags & MF_NOBLOOD)
+				P_SpawnPuff(RailHit.x, RailHit.y, RailHit.z);
 			else
-				P_SpawnBlood(RailHits[i].x, RailHits[i].y, RailHits[i].z, damage);
-			P_DamageMobj (RailHits[i].hitthing, source, source, damage, MOD_RAILGUN);
+				P_SpawnBlood(RailHit.x, RailHit.y, RailHit.z, damage);
+			P_DamageMobj (RailHit.hitthing, source, source, damage, MOD_RAILGUN);
 		}
 	}
 
@@ -2820,9 +3168,7 @@ void P_RailAttack (AActor *source, int damage, int offset)
 			if (!mo || mo == source)
 				continue;
 
-			buf_t* buf = &(player.client.netbuf);
-
-			MSG_WriteSVC(buf, SVC_RailTrail(start, end));
+			player.client.messenger->Reliable().Write( SVC_RailTrail(start, end));
 		}
 	}
 }
@@ -2834,23 +3180,19 @@ fixed_t CameraX, CameraY, CameraZ;
 sector_t* CameraSector;
 #define CAMERA_DIST	0x1000	// Minimum distance between camera and walls
 
-bool PTR_CameraTraverse (intercept_t* in)
+bool PTR_CameraTraverse(const intercept_t& in)
 {
-	fixed_t z;
-	fixed_t frac;
-	line_t *li;
-
 	// ignore mobjs
-	if (!in->isaline)
+	if (!in.isaline)
 		return true;
 
-	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
-	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);
+	const fixed_t crossx = trace.x + FixedMul(trace.dx, in.frac);
+	const fixed_t crossy = trace.y + FixedMul(trace.dy, in.frac);
 
-	frac = in->frac - CAMERA_DIST;
-	z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+	fixed_t frac = in.frac - CAMERA_DIST;
+	fixed_t z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
-	li = in->d.line;
+	const line_t* li = in.d.line;
 
 	if (!(li->flags & ML_TWOSIDED))
 		goto hitline;
@@ -2905,18 +3247,18 @@ EXTERN_CVAR (chase_dist)
 
 void P_AimCamera (AActor *t1)
 {
-	fixed_t distance = (fixed_t)(chase_dist * FRACUNIT);
+	fixed_t distance = static_cast<fixed_t>(chase_dist * FRACUNIT);
 	angle_t angle = (t1->angle - ANG180) >> ANGLETOFINESHIFT;
 	fixed_t x2 = t1->x + (distance>>FRACBITS)*finecosine[angle];
 	fixed_t y2 = t1->y + (distance>>FRACBITS)*finesine[angle];
 	subsector_t *subsector;
 
 	shootthing = t1;
-	shootz = t1->z + t1->height + (fixed_t)(chase_height * FRACUNIT);
+	shootz = t1->z + t1->height + static_cast<fixed_t>(chase_height * FRACUNIT);
 	attackrange = distance;
 	aimslope = finetangent[FINEANGLES/4+(t1->pitch>>ANGLETOFINESHIFT)];
 
-	CameraZ = shootz + (fixed_t)(chase_dist * aimslope);
+	CameraZ = shootz + static_cast<fixed_t>(chase_dist * aimslope);
 	subsector = P_PointInSubsector (x2, y2);
 	if (subsector) {
 		fixed_t ceilingheight = P_CeilingHeight(x2, y2, subsector->sector) - CAMERA_DIST;
@@ -2946,23 +3288,22 @@ void P_AimCamera (AActor *t1)
 //
 // USE LINES
 //
-AActor *usething;
-bool foundline;
-
-bool PTR_UseTraverse (intercept_t *in)
+bool PTR_UseTraverse(const intercept_t& in, AActor* usething, bool& foundline)
 {
-	if (!in->isaline)
-		I_Error ("PTR_UseTraverse: non-line intercept\n");
+	if (!in.isaline)
+		I_Error("PTR_UseTraverse: non-line intercept\n");
 
-	if (!in->d.line->special)
+	line_t* li = in.d.line;
+
+	if (!li->special)
 	{
-		P_LineOpening(in->d.line, trace.x + FixedMul(trace.dx, in->frac),
-				trace.y + FixedMul(trace.dy, in->frac));
+		P_LineOpening(li, trace.x + FixedMul(trace.dx, in.frac),
+				trace.y + FixedMul(trace.dy, in.frac));
 
 		if (openrange <= 0)
 		{
 			// [RH] Give sector a chance to intercept the use
-			sector_t *sec = in->d.line->frontsector;
+			sector_t *sec = li->frontsector;
 			if ((!sec->SecActTarget ||
 			    !A_TriggerAction(sec->SecActTarget, usething, SECSPAC_Use|SECSPAC_UseWall)) &&
 			    usething->player)
@@ -2977,9 +3318,9 @@ bool PTR_UseTraverse (intercept_t *in)
 		return true; // not a special line, but keep checking
 	}
 
-	int side = (P_PointOnLineSide (usething->x, usething->y, in->d.line) == 1);
+	const int side = P_PointOnLineSide(usething->x, usething->y, li);
 
-    P_UseSpecialLine (usething, in->d.line, side, false);
+    P_UseSpecialLine(usething, li, side, false);
 
 	//WAS can't use more than one special line in a row
 	//jff 3/21/98 NOW multiple use allowed with enabling line flag
@@ -2992,15 +3333,15 @@ bool PTR_UseTraverse (intercept_t *in)
 	bool donteatuse;
 	if (map_format.getZDoom())
 	{
-		donteatuse = ((in->d.line->flags & ML_SPAC_USE) ||
-		          (!(in->d.line->flags & ML_SPAC_CROSSTHROUGH) &&
-		           (!(in->d.line->flags & ML_SPAC_USETHROUGH))))
+		donteatuse = ((li->flags & ML_SPAC_USE) ||
+		          (!(li->flags & ML_SPAC_CROSSTHROUGH) &&
+		           (!(li->flags & ML_SPAC_USETHROUGH))))
 		             ? false
 		             : true;
 	}
 	else
 	{
-		donteatuse = (in->d.line->flags & ML_PASSUSE);
+		donteatuse = (li->flags & ML_PASSUSE);
 	}
 
 	return donteatuse;
@@ -3016,17 +3357,17 @@ bool PTR_UseTraverse (intercept_t *in)
 // by Lee Killough
 //
 
-bool PTR_NoWayTraverse (intercept_t *in)
+bool PTR_NoWayTraverse(const intercept_t& in, const AActor* usething)
 {
-	if (!in->isaline)
-		I_Error ("PTR_NoWayTraverse: non-line intercept\n");
+	if (!in.isaline)
+		I_Error("PTR_NoWayTraverse: non-line intercept\n");
 
-	line_t *ld = in->d.line;					// This linedef
+	const line_t *ld = in.d.line;					// This linedef
 
 	return ld->special || !(					// Ignore specials
 		ld->flags & (ML_BLOCKING|ML_BLOCKEVERYTHING) || (		// Always blocking
-		P_LineOpening(ld, trace.x + FixedMul(trace.dx, in->frac),
-				trace.y + FixedMul(trace.dy, in->frac)),		// Find openings
+		P_LineOpening(ld, trace.x + FixedMul(trace.dx, in.frac),
+				trace.y + FixedMul(trace.dy, in.frac)),		// Find openings
 		openrange <= 0 ||						// No opening
 		openbottom > usething->z+24*FRACUNIT ||	// Too high it blocks
 		opentop < usething->z+usething->height	// Too low it blocks
@@ -3044,8 +3385,10 @@ void P_UseLines (player_t& player)
 	if (player.spectator)
 		return;
 
-	usething = player.mo;
-	foundline = false;
+	AActor* usething = player.mo;
+	// clang-tidy has a false positive here
+	// NOLINTNEXTLINE(misc-const-correctness)
+	bool foundline = false;
 
 	//Added by MC: Check if bot and use special activating (spin round) if it is.
 	const int angle = player.mo->angle >> ANGLETOFINESHIFT;
@@ -3055,7 +3398,7 @@ void P_UseLines (player_t& player)
 	const fixed_t x2 = x1 + (USERANGE >> FRACBITS) * finecosine[angle];
 	const fixed_t y2 = y1 + (USERANGE >> FRACBITS) * finesine[angle];
 
-	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse)) {
+	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse, usething, foundline)) {
 		// [RH] Give sector a chance to eat the use
 		if (usething->subsector)
 		{
@@ -3064,7 +3407,7 @@ void P_UseLines (player_t& player)
 			if (foundline)
 				spac |= SECSPAC_UseWall;
 			if ((!sec->SecActTarget || !A_TriggerAction(sec->SecActTarget, usething, spac)) &&
-			    (co_boomphys && !P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse)))
+			    (co_boomphys && !P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse, usething)))
 			{
 				// This added test makes the "oof" sound work on 2s lines -- killough:
 				// [ML] It also apparently allows additional silent bfg tricks not present in vanilla...
@@ -3118,6 +3461,9 @@ bool PIT_DoomRadiusAttack(AActor& thing,
 
 	// MBF21
 	if (P_SplashImmune(thing, *bombspot))
+		return true;
+
+	if (P_ShouldSpareFriendly(bombsource, &thing))
 		return true;
 
 	// Boss spider and cyborg
@@ -3182,6 +3528,9 @@ bool PIT_ZDoomRadiusAttack(AActor& thing,
 	if (P_SplashImmune(thing, *bombspot))
 		return true;
 
+	if (P_ShouldSpareFriendly(bombsource, &thing))
+		return true;
+
 	// Boss spider and cyborg
 	// take no damage from concussion.
 	if (((thing.type == MT_CYBORG && bombsource->type == MT_CYBORG) ||
@@ -3243,7 +3592,7 @@ bool PIT_ZDoomRadiusAttack(AActor& thing,
 
 		const fixed_t momx = thing.momx;
 		const fixed_t momy = thing.momy;
-		const int damage = (int)points;
+		const int damage = static_cast<int>(points);
 
 		P_DamageMobj(&thing, bombspot, bombsource, damage, bombmod);
 
@@ -3251,15 +3600,15 @@ bool PIT_ZDoomRadiusAttack(AActor& thing,
 		if (bombsource == &thing)
 			thrust *= selfthrustscale;
 
-		float momz = (float)(thing.z + (thing.height>>1) - bombspot->z) * thrust;
+		float momz = static_cast<float>(thing.z + (thing.height>>1) - bombspot->z) * thrust;
 		if (bombsource != &thing)
 			momz *= 0.5f;
 		else
 			momz *= 0.8f;
 
-		thing.momx = momx + (fixed_t)((thing.x - bombspot->x) * thrust);
-		thing.momy = momy + (fixed_t)((thing.y - bombspot->y) * thrust);
-		thing.momz += (fixed_t)momz;
+		thing.momx = momx + static_cast<fixed_t>((thing.x - bombspot->x) * thrust);
+		thing.momy = momy + static_cast<fixed_t>((thing.y - bombspot->y) * thrust);
+		thing.momz += static_cast<fixed_t>(momz);
 	}
 	else
 	{
@@ -3284,13 +3633,13 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bool hurtSource, int mod)
 {
 	const fixed_t dist = (distance+MAXRADIUS)<<FRACBITS;
-	const int yh = std::min<int>((spot->y + dist - bmaporgy)>>MAPBLOCKSHIFT, bmapheight - 1);
-	const int yl = std::max<int>((spot->y - dist - bmaporgy)>>MAPBLOCKSHIFT, 0);
-	const int xh = std::min<int>((spot->x + dist - bmaporgx)>>MAPBLOCKSHIFT, bmapwidth - 1);
-	const int xl = std::max<int>((spot->x - dist - bmaporgx)>>MAPBLOCKSHIFT, 0);
+	const int yh = std::min<int>((spot->y + dist - blockmap.originy())>>MAPBLOCKSHIFT, blockmap.height() - 1);
+	const int yl = std::max<int>((spot->y - dist - blockmap.originy())>>MAPBLOCKSHIFT, 0);
+	const int xh = std::min<int>((spot->x + dist - blockmap.originx())>>MAPBLOCKSHIFT, blockmap.width() - 1);
+	const int xl = std::max<int>((spot->x - dist - blockmap.originx())>>MAPBLOCKSHIFT, 0);
 	AActor* bombsource = source;
-	const auto bombdamagefloat = (float)damage;
-	const float bombdistancefloat = 1.f / (float)distance;
+	const auto bombdamagefloat = static_cast<float>(damage);
+	const float bombdistancefloat = 1.f / static_cast<float>(distance);
 
 	// [Blair] Prevent crash from barrels hit by crushers
 	if (!demoplayback && bombsource == nullptr && spot != nullptr)
@@ -3309,12 +3658,12 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 		// So we make a list of unique actors in the surrounding blocks and
 		// then call the radius attack function once for each actor.
 
-		std::set<AActor*> actorset;
+		std::unordered_set<AActor*> actorset;
 		for (int y=yl ; y<=yh ; y++)
 		{
 			for (int x=xl ; x<=xh ; x++)
 			{
-				AActor *mobj = blocklinks[y*bmapwidth+x];
+				AActor *mobj = blocklinks[(y * blockmap.width()) + x];
 				while (mobj)
 				{
 					actorset.insert(mobj);
@@ -3370,8 +3719,8 @@ bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 	// crunch bodies to giblets
 	if (thing.health <= 0)
 	{
-		P_SetMobjState (&thing, S_GIBS);
-		thing.effects = 0;
+		P_SetMobjState(&thing, S_GIBS);
+		thing.SetEffects(0);
 
 		// [Nes] - Classic demo compatability: Ghost monster bug.
 		if ((demoplayback)) {
@@ -3502,7 +3851,7 @@ msecnode_t *P_GetSecnode()
 		headsecnode = headsecnode->m_snext;
 	}
 	else
-		node = (msecnode_t *)Z_Malloc (sizeof(*node), PU_LEVEL, NULL);
+		node = Z_Malloc<msecnode_t>(PU_LEVEL);
 	return node;
 }
 
@@ -3667,20 +4016,12 @@ bool PIT_GetSectors (const line_t& ld)
 
 void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 {
-	int xl;
-	int xh;
-	int yl;
-	int yh;
-	int bx;
-	int by;
-	msecnode_t *node;
-
 	// First, clear out the existing m_thing fields. As each node is
 	// added or verified as needed, m_thing will be set properly. When
 	// finished, delete all nodes where m_thing is still NULL. These
 	// represent the sectors the Thing has vacated.
 
-	node = sector_list;
+	msecnode_t* node = sector_list;
 	while (node)
 	{
 		node->m_thing = NULL;
@@ -3692,7 +4033,7 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 	// so we need to back up tmthing and then restore it
 	AActor *last_tmthing = tmthing;
 	int last_tmx = tmx, last_tmy = tmy;
-	int last_tmbbox[4] = {tmbbox[0], tmbbox[1], tmbbox[2], tmbbox[3]};
+	const auto last_tmbbox = tmbbox;
 
 	tmthing = thing;
 	tmx = x;
@@ -3705,14 +4046,14 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 
 	validcount++; // used to make sure we only process a line once
 
-	xl = (tmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - blockmap.originx())>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - blockmap.originx())>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - blockmap.originy())>>MAPBLOCKSHIFT;
 
-	for (bx=xl ; bx<=xh ; bx++)
-		for (by=yl ; by<=yh ; by++)
-			P_BlockLinesIterator (bx,by,PIT_GetSectors);
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
+			P_BlockLinesIterator(bx, by, PIT_GetSectors);
 
 	// Add the sector of the (x,y) point to sector_list.
 
@@ -3740,10 +4081,7 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 	// denis - restore tmthing
 	tmthing = last_tmthing;
 	tmx = last_tmx; tmy = last_tmy;
-	tmbbox[0] = last_tmbbox[0];
-	tmbbox[1] = last_tmbbox[1];
-	tmbbox[2] = last_tmbbox[2];
-	tmbbox[3] = last_tmbbox[3];
+	tmbbox = last_tmbbox;
 }
 
 //
@@ -3840,8 +4178,7 @@ fixed_t P_FloorHeight(const sector_t *sector)
 	if (!sector)
 		return limits::MAXFIXED;
 
-	const plane_t *plane = &sector->floorplane;
-	return P_PlaneZ(plane->texx, plane->texy, plane);
+	return sector->floortexz;
 }
 
 //
@@ -3877,8 +4214,7 @@ fixed_t P_CeilingHeight(const sector_t *sector)
 	if (!sector)
 		return limits::MAXFIXED;
 
-	const plane_t *plane = &sector->ceilingplane;
-	return P_PlaneZ(plane->texx, plane->texy, plane);
+	return sector->ceilingtexz;
 }
 
 //
@@ -3969,7 +4305,7 @@ void P_ChangeCeilingHeight(sector_t *sector, fixed_t amount)
 
 	// The sector's ceilingheight variable is still used for (among other things)
 	// calculating wall texture offsets
-	sector->ceilingheight += amount;
+	sector->ceilingtexz += amount;
 }
 
 void P_ChangeFloorHeight(sector_t *sector, fixed_t amount)
@@ -3982,7 +4318,7 @@ void P_ChangeFloorHeight(sector_t *sector, fixed_t amount)
 
 	// The sector's floorheight variable is still used for (among other things)
 	// calculating wall texture offsets
-	sector->floorheight += amount;
+	sector->floortexz += amount;
 }
 
 void P_SetCeilingHeight(sector_t *sector, fixed_t value)
@@ -3990,10 +4326,7 @@ void P_SetCeilingHeight(sector_t *sector, fixed_t value)
 	if (!sector)
 		return;
 
-	plane_t *plane = &sector->ceilingplane;
-	fixed_t oldvalue = P_PlaneZ(plane->texx, plane->texy, plane);
-
-	P_ChangeCeilingHeight(sector, value - oldvalue);
+	P_ChangeCeilingHeight(sector, value - sector->ceilingtexz);
 }
 
 void P_SetFloorHeight(sector_t *sector, fixed_t value)
@@ -4001,10 +4334,7 @@ void P_SetFloorHeight(sector_t *sector, fixed_t value)
 	if (!sector)
 		return;
 
-	plane_t *plane = &sector->floorplane;
-	fixed_t oldvalue = P_PlaneZ(plane->texx, plane->texy, plane);
-
-	P_ChangeFloorHeight(sector, value - oldvalue);
+	P_ChangeFloorHeight(sector, value - sector->floortexz);
 }
 
 //
@@ -4122,8 +4452,8 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	if (!dest || !src)
 		return;
 
-	dest->floorheight			= src->floorheight;
-	dest->ceilingheight			= src->ceilingheight;
+	dest->floortexz			= src->floortexz;
+	dest->ceilingtexz			= src->ceilingtexz;
 	dest->floorpic				= src->floorpic;
 	dest->ceilingpic			= src->ceilingpic;
 	dest->lightlevel			= src->lightlevel;

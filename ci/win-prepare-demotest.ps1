@@ -5,15 +5,15 @@ New-Item -Name "demotest" -ItemType "directory" | Out-Null
 
 # Copy all built files into artifact directory
 Copy-Item -Path `
-    ".\client\RelWithDebInfo\odamex.exe", `
-    ".\client\RelWithDebInfo\odamex.pdb", `
-    ".\client\RelWithDebInfo\*.dll", `
-    ".\server\RelWithDebInfo\odasrv.exe", `
-    ".\server\RelWithDebInfo\odasrv.pdb", `
-    ".\odalaunch\RelWithDebInfo\odalaunch.exe", `
-    ".\odalaunch\RelWithDebInfo\odalaunch.pdb", `
-    ".\odalaunch\RelWithDebInfo\*.dll", `
-    ".\wad\odamex.wad", `
+    ".\odamex\RelWithDebInfo\odamex.exe", `
+    ".\odamex\RelWithDebInfo\odamex.pdb", `
+    ".\odamex\RelWithDebInfo\*.dll", `
+    ".\odamex\RelWithDebInfo\odasrv.exe", `
+    ".\odamex\RelWithDebInfo\odasrv.pdb", `
+    ".\odamex\RelWithDebInfo\odalaunch.exe", `
+    ".\odamex\RelWithDebInfo\odalaunch.pdb", `
+    ".\odamex\RelWithDebInfo\*.dll", `
+    ".\odamex\RelWithDebInfo\odamex.wad", `
     "C:\Windows\System32\msvcp140.dll", `
     "C:\Windows\System32\vcruntime140.dll", `
     "C:\Windows\System32\vcruntime140_1.dll" `

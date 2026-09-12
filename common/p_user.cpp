@@ -45,8 +45,9 @@
 
 #include "p_mapformat.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 
-#include <nonstd/span.hpp>
+#include <span>
 
 #ifdef CLIENT_APP
 #include "cl_freecam.h"
@@ -54,9 +55,6 @@
 //
 // Movement.
 //
-
-// 16 pixels of bob
-#define MAXBOB			0x100000
 
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (cl_mouselook)
@@ -172,21 +170,6 @@ void P_ClearPlayerScores(player_t& p, byte flags)
 	}
 }
 
-static bool cmpFrags(player_t* a, player_t* b)
-{
-	return a->fragcount < b->fragcount;
-}
-
-static bool cmpLives(player_t* a, player_t* b)
-{
-	return a->lives < b->lives;
-}
-
-static bool cmpWins(player_t* a, const player_t* b)
-{
-	return a->roundwins < b->roundwins;
-}
-
 /**
  * @brief Execute the query.
  *
@@ -239,69 +222,42 @@ PlayerResults PlayerQuery::execute()
 	case SORT_NONE:
 		break;
 	case SORT_FRAGS:
-		std::sort(results.players.rbegin(), results.players.rend(), cmpFrags);
+		std::sort(results.players.rbegin(), results.players.rend(),
+			[](const player_t* a, const player_t* b){ return a->fragcount < b->fragcount; });
 		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
 		{
 			// Since it's sorted, we know the top fragger is at the front.
 			int top = results.players.at(0)->fragcount;
-			for (PlayersView::iterator it = results.players.begin();
-			     it != results.players.end();)
-			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
-				                                         : (*it)->fragcount == top;
-				if (cmp)
-				{
-					it = results.players.erase(it);
-				}
-				else
-				{
-					++it;
-				}
-			}
+			std::erase_if(results.players, [this, top](const player_t* player){
+				return (m_sortFilter == SFILTER_MAX) ? player->fragcount != top
+				                                     : player->fragcount == top;
+			});
 		}
 		break;
 	case SORT_LIVES:
-		std::sort(results.players.rbegin(), results.players.rend(), cmpLives);
+		std::sort(results.players.rbegin(), results.players.rend(),
+			[](const player_t* a, const player_t* b){ return a->lives < b->lives; });
 		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
 		{
-			// Since it's sorted, we know the top fragger is at the front.
+			// Since it's sorted, we know the player with top lives is at the front.
 			int top = results.players.at(0)->lives;
-			for (PlayersView::iterator it = results.players.begin();
-			     it != results.players.end();)
-			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->lives != top
-				                                         : (*it)->lives == top;
-				if (cmp)
-				{
-					it = results.players.erase(it);
-				}
-				else
-				{
-					++it;
-				}
-			}
+			std::erase_if(results.players, [this, top](const player_t* player){
+				return (m_sortFilter == SFILTER_MAX) ? player->lives != top
+				                                     : player->lives == top;
+			});
 		}
 		break;
 	case SORT_WINS:
-		std::sort(results.players.rbegin(), results.players.rend(), cmpWins);
+		std::sort(results.players.rbegin(), results.players.rend(),
+			[](const player_t* a, const player_t* b){ return a->roundwins < b->roundwins; });
 		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
 		{
 			// Since it's sorted, we know the top winner is at the front.
 			int top = results.players.at(0)->roundwins;
-			for (PlayersView::iterator it = results.players.begin();
-			     it != results.players.end();)
-			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->roundwins != top
-				                                         : (*it)->roundwins == top;
-				if (cmp)
-				{
-					it = results.players.erase(it);
-				}
-				else
-				{
-					++it;
-				}
-			}
+			std::erase_if(results.players, [this, top](const player_t* player){
+				return (m_sortFilter == SFILTER_MAX) ? player->roundwins != top
+				                                     : player->roundwins == top;
+			});
 		}
 		break;
 	}
@@ -389,7 +345,7 @@ void P_ForwardThrust (player_t& player, angle_t angle, fixed_t move)
 	if ((player.mo->waterlevel || (player.mo->flags2 & MF2_FLY))
 		&& player.mo->pitch != 0)
 	{
-		angle_t pitch = (angle_t)player.mo->pitch >> ANGLETOFINESHIFT;
+		angle_t pitch = static_cast<angle_t>(player.mo->pitch) >> ANGLETOFINESHIFT;
 		fixed_t zpush = FixedMul (move, finesine[pitch]);
 		if (player.mo->waterlevel && player.mo->waterlevel < 2 && zpush < 0)
 			zpush = 0;
@@ -532,8 +488,8 @@ void P_PlayerLookUpDown (player_t& p)
 
 CVAR_FUNC_IMPL (sv_aircontrol)
 {
-	level.aircontrol = (fixed_t)((float)var * 65536.f);
-	G_AirControlChanged ();
+	level.aircontrol = static_cast<fixed_t>(static_cast<float>(var) * 65536.f);
+	G_AirControlChanged();
 }
 
 //
@@ -587,13 +543,10 @@ void P_MovePlayer (player_t& player)
 	}
 
 	// Look left/right
-	if(clientside || step_mode)
-	{
-		mo->angle += player.cmd.yaw << 16;
+	mo->angle += player.cmd.yaw << 16;
 
-		// Look up/down stuff
-		P_PlayerLookUpDown(player);
-	}
+	// Look up/down stuff
+	P_PlayerLookUpDown(player);
 
 	// killough 10/98:
 	//
@@ -668,14 +621,15 @@ void P_MovePlayer (player_t& player)
 		}
 		else if (sv_allowjump && player.mo->onground && !player.jumpTics)
 		{
-			player.mo->momz += 8*FRACUNIT;
+			const bool springpad = player.mo->floorsector->flags & SECF_SPRINGPAD;
+			player.mo->momz += springpad ? 4*FRACUNIT : 8*FRACUNIT;
 
 //			[SL] No jumping sound...
 //			if(!player.spectator)
 //				UV_SoundAvoidPlayer(player.mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
             player.mo->flags2 &= ~MF2_ONMOBJ;
-            player.jumpTics = 18;
+            player.jumpTics = springpad ? 0 : 18;
 		}
 	}
 }
@@ -699,13 +653,13 @@ void P_FallingDamage (AActor *ent)
 		&& (!(ent->flags2 & MF2_ONMOBJ)
 			|| !(ent->z <= ent->floorz)))
 	{
-		delta = (float)ent->player->oldvelocity[2];
+		delta = static_cast<float>(ent->player->oldvelocity[2]);
 	}
 	else
 	{
 		if (!(ent->flags2 & MF2_ONMOBJ))
 			return;
-		delta = (float)(ent->momz - ent->player->oldvelocity[2]);
+		delta = static_cast<float>(ent->momz - ent->player->oldvelocity[2]);
 	}
 	delta = delta*delta * 2.03904313e-11f;
 
@@ -720,7 +674,7 @@ void P_FallingDamage (AActor *ent)
 
 	if (delta > 30)
 	{
-		damage = (int)((delta-30)/2);
+		damage = static_cast<int>((delta-30)/2);
 		if (damage < 1)
 			damage = 1;
 
@@ -769,7 +723,7 @@ void P_DeathThink (player_t& player)
 
 		angle_t delta = angle - player.mo->angle;
 
-		if (delta < ANG5 || delta > (unsigned)-ANG5)
+		if (delta < ANG5 || delta > static_cast<unsigned>(-ANG5))
 			player.mo->angle = angle;
 		else
 		{
@@ -800,6 +754,20 @@ void P_DeathThink (player_t& player)
 		    ((player.cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
 		    ((g_lives && player.lives > 0) || !g_lives))
 		{
+			// Run (shift) + Use (space) erases your death spot so you spawn
+			// at the beginning.
+			if ((player.cmd.buttons & BT_USE) and (player.cmd.modifiers & MOD_RUN))
+				DeathSpotManager::getInstance().eraseDeathSpot(player.id);
+
+			// Something is standing where we would come back, so there is
+			// nowhere to go yet. Stay dead until it moves.
+			// A forced respawn gives up on the spot and instead uses a normal start.
+			if (multiplayer and not force_respawn and
+			    G_IsDeathSpotBlocked(G_CheckDeathSpot(player)))
+			{
+				return;
+			}
+
 			player.playerstate = PST_REBORN;
 		}
 	}
@@ -879,9 +847,7 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	return false;
 }
 
-void SV_SendPlayerInfo(player_t &);
-
-void P_SetPlayerInvulnBleed(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
+void P_SetPlayerInvulnBleed(player_t& player, std::span<const int, NUMPOWERS> powers)
 {
 	if (sv_showplayerpowerups)
 	{
@@ -941,7 +907,7 @@ void P_BumpPlayerCounters(player_t& player)
 		player.hazardcount--;
 }
 
-void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
+void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS> powers)
 {
 	if (!player.mo)
 		return;
@@ -1055,12 +1021,12 @@ void P_PlayerThink (player_t& player)
 	{
 		// [RH] Support direct weapon changes
 		if (player.cmd.impulse) {
-			newweapon = (weapontype_t)(player.cmd.impulse - 50);
+			newweapon = static_cast<weapontype_t>(player.cmd.impulse - 50);
 		} else {
 			// The actual changing of the weapon is done
 			//	when the weapon psprite can do it
 			//	(read: not in the middle of an attack).
-			newweapon = (weapontype_t)((player.cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
+			newweapon = static_cast<weapontype_t>((player.cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
 
 			if (newweapon == wp_fist
 				&& player.weaponowned[wp_chainsaw]
@@ -1264,7 +1230,7 @@ BEGIN_COMMAND(cheat_players)
 }
 END_COMMAND(cheat_players)
 
-void player_s::Serialize (FArchive &arc)
+void player_t::Serialize (FArchive &arc)
 {
 	size_t i;
 
@@ -1381,12 +1347,12 @@ void player_s::Serialize (FArchive &arc)
 	}
 }
 
-player_s::player_s() :
+player_t::player_t() :
 	id(0),
 	playerstate(PST_LIVE),
 	mo(AActor::AActorPtr()),
 	cmd(ticcmd_t()),
-	cmdqueue(std::queue<NetCommand>()),
+	cmdqueue(),
 	userinfo(UserInfo()),
 	fov(90.0),
 	viewz(0 << FRACBITS),
@@ -1409,6 +1375,14 @@ player_s::player_s() :
 	secretcount(0),
 	pendingweapon(wp_fist),
 	readyweapon(wp_fist),
+	psprnum(0),
+	pendingweaponMonitor{ pendingweapon },
+	readyweaponMonitor  { readyweapon },
+	weaponOwnedMonitors { weaponowned },
+	ammoMonitors        { ammo },
+	maxAmmoMonitors     { maxammo },
+	powerMonitors       { powers },
+	pspriteMonitors     { psprites },
 	attackdown(0),
 	usedown(0),
 	cheats(0),
@@ -1418,7 +1392,6 @@ player_s::player_s() :
 	extralight(0),
 	fixedcolormap(0),
 	xviewshift(0),
-	psprnum(0),
 	jumpTics(0),
 	death_time(0),
 	suicidedelay(0),
@@ -1428,7 +1401,7 @@ player_s::player_s() :
 	JoinTime(time_t()),
 	ping(0),
 	last_received(0),
-	tic(0),
+	tic(-1),
 	snapshots(PlayerSnapshotManager()),
 	spying(0),
 	spectator(false),
@@ -1437,14 +1410,18 @@ player_s::player_s() :
 	timeout_vote(0),
 	ready(false),
 	timeout_ready(0),
+	prefcolor(argb_t(0, 0, 0, 0)),
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
 	QueuePosition(0),
+	requestedNetIdUpdate(0),
 	hazardcount(0),
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
-	client(player_s::client_t())
+	playerInfoIsRequested(false),
+	inventoryCheckRequestsAreEnabled(false),
+	client{}
 {
 	cmd.clear();
 	powers.fill(0);
@@ -1457,10 +1434,9 @@ player_s::player_s() :
 	// Can't put this in initializer list?
 	attacker = AActor::AActorPtr();
 
-	pspdef_t zeropsp = { NULL, 0, 0, 0 };
-	ArrayInit(psprites, zeropsp);
+	const pspdef_t zeropsp = { .statenum = S_NULL, .tics = 0, .sx = 0, .sy = 0 };
+	psprites.fill(zeropsp);
 	ArrayInit(oldvelocity, 0);
-	ArrayInit(prefcolor, 0);
 
 	LastMessage.Time = 0;
 	LastMessage.Message = "";
@@ -1468,121 +1444,7 @@ player_s::player_s() :
 	ArrayInit(netcmds, ticcmd_t());
 }
 
-player_s &player_s::operator =(const player_s &other)
-{
-	if (this == &other)
-		return *this;
-
-	id = other.id;
-	playerstate = other.playerstate;
-	mo = other.mo;
-	cmd = other.cmd;
-	cmdqueue = other.cmdqueue;
-	userinfo = other.userinfo;
-	fov = other.fov;
-	viewz = other.viewz;
-	viewheight = other.viewheight;
-	deltaviewheight = other.deltaviewheight;
-	bob = other.bob;
-
-	health = other.health;
-	armorpoints = other.armorpoints;
-	armortype = other.armortype;
-
-	powers = other.powers;
-	cards = other.cards;
-
-	lives = other.lives;
-	roundwins = other.roundwins;
-
-	flags = other.flags;
-
-	points = other.points;
-	backpack = other.backpack;
-
-	fragcount = other.fragcount;
-	deathcount = other.deathcount;
-	monsterdmgcount = other.monsterdmgcount;
-	killcount = other.killcount;
-	totalpoints = other.totalpoints;
-	totaldeaths = other.totaldeaths;
-
-	pendingweapon = other.pendingweapon;
-	readyweapon = other.readyweapon;
-
-	weaponowned = other.weaponowned;
-	ammo = other.ammo;
-	maxammo = other.maxammo;
-
-	attackdown = other.attackdown;
-	usedown = other.usedown;
-
-	cheats = other.cheats;
-
-	refire = other.refire;
-
-	damagecount = other.damagecount;
-	bonuscount = other.bonuscount;
-
-	attacker = other.attacker;
-
-	extralight = other.extralight;
-	fixedcolormap = other.fixedcolormap;
-
-	xviewshift = other.xviewshift;
-
-	ArrayCopy(psprites, other.psprites);
-
-    jumpTics = other.jumpTics;
-
-	death_time = other.death_time;
-
-	ArrayCopy(oldvelocity, other.oldvelocity);
-
-	camera = other.camera;
-	air_finished = other.air_finished;
-
-	GameTime = other.GameTime;
-	JoinTime = other.JoinTime;
-	ping = other.ping;
-
-	last_received = other.last_received;
-
-	tic = other.tic;
-	spying = other.spying;
-	spectator = other.spectator;
-//	deadspectator = other.deadspectator;
-	joindelay = other.joindelay;
-	timeout_callvote = other.timeout_callvote;
-	timeout_vote = other.timeout_vote;
-
-	ready = other.ready;
-	timeout_ready = other.timeout_ready;
-
-	ArrayCopy(prefcolor, other.prefcolor);
-	ArrayCopy(netcmds, other.netcmds);
-
-    LastMessage.Time = other.LastMessage.Time;
-	LastMessage.Message = other.LastMessage.Message;
-
-	blend_color = other.blend_color;
-
-	client = other.client;
-
-	snapshots = other.snapshots;
-
-	to_spawn = other.to_spawn;
-
-	doreborn = other.doreborn;
-	QueuePosition = other.QueuePosition;
-	
-	hazardcount = other.hazardcount;
-	hazardinterval = other.hazardinterval;
-
-	return *this;
-}
-
-player_s::~player_s()
+player_t::~player_t()
 {
 }
 

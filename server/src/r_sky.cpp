@@ -64,7 +64,7 @@ void R_InitSkyDefs()
 
 bool R_IsSkyFlat(int flatnum)
 {
-    return flatnum == skyflatnum || skyflatlookup.count(flatnum);
+    return flatnum == skyflatnum || skyflatlookup.contains(flatnum);
 }
 
 void R_ClearSkyDefs()

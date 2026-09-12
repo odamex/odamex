@@ -158,3 +158,5 @@ struct ActionBits
 };
 
 extern unsigned int MakeKey (const char *s);
+
+extern int GetActionBit(unsigned int key);

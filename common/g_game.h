@@ -57,7 +57,7 @@ void G_CleanupDemo();
 void G_WorldDone(void);
 
 void G_Ticker(void);
-bool G_Responder(event_t*	ev);
+bool G_Responder(const event_t&	ev);
 
 void G_ScreenShot(const char* filename);
 
@@ -66,6 +66,8 @@ void G_PlayerFinishLevel(player_t &player);
 void G_AddViewAngle(int yaw);
 void G_AddViewPitch(int pitch);
 bool G_ShouldIgnoreMouseInput();
+
+void G_SetFast(const bool wantFast);
 
 extern int mapchange;
 

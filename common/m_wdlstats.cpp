@@ -29,6 +29,7 @@
 #include "m_wdlstats.h"
 
 #include "c_dispatch.h"
+#include "cmdlib.h"
 #include "p_local.h"
 
 #define WDLSTATS_VERSION 6
@@ -504,7 +505,7 @@ void M_StartWDLLog(bool newmap)
 static bool LogDamageEvent(WDLEvents eventtype, const player_t& activator, const player_t& target,
                            int arg0, int arg1, int arg2)
 {
-	for (auto& event : OUtil::reverse(::wdlevents))
+	for (auto& event : std::views::reverse(::wdlevents))
 	{
 		if (event.gametic != ::gametic)
 		{
@@ -547,7 +548,7 @@ bool LogAccuracyShot(WDLEvents eventtype, const player_t& activator, int mod, an
 	// If not, we need to create a new one
 	// If there is an existing accuracy event for this tic and it has a target,
 	// then there were more than 1 hits, create a new event.
-	for (auto& event : OUtil::reverse(::wdlevents))
+	for (auto& event : std::views::reverse(::wdlevents))
 	{
 		if (event.gametic != ::gametic)
 		{
@@ -582,7 +583,7 @@ bool LogAccuracyHit(WDLEvents eventtype, const player_t& activator, const player
                     int hits)
 {
 	// See if we have an existing accuracy event for this tic.
-	for (auto& event : OUtil::reverse(::wdlevents))
+	for (auto& event : std::views::reverse(::wdlevents))
 	{
 		if (event.gametic != ::gametic)
 		{
@@ -708,7 +709,7 @@ void M_LogWDLItemRespawnEvent(AActor* activator)
  * respawn is on.
  */
 void M_LogWDLPickupEvent(const player_t* activator, AActor* target, WDLPowerups pickuptype,
-                         bool dropped)
+                         OUtil::SafeBool dropped)
 {
 	if (!::wdlstate.recording)
 		return;
@@ -964,11 +965,14 @@ void M_CommitWDLLog()
 		return;
 	}
 
+	std::string levelname = ::level.level_name;
+	StripColorCodes(levelname);
+
 	// Header (metadata)
 	fmt::print(fh, "version={}\n", WDLSTATS_VERSION);
 	fmt::print(fh, "time={}\n", iso8601buf);
 	fmt::print(fh, "levelnum={}\n", ::level.levelnum);
-	fmt::print(fh, "levelname={}\n", ::level.level_name);
+	fmt::print(fh, "levelname={}\n", levelname);
 	fmt::print(fh, "levelhash={}\n", ::level.level_fingerprint.toString());
 	fmt::print(fh, "gametype={}\n", ::sv_gametype.str());
 	fmt::print(fh, "lives={}\n", ::g_lives.str());

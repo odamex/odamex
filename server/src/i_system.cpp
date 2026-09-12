@@ -167,7 +167,7 @@ void I_Quit()
     #endif
 
     G_ClearSnapshots ();
-    SV_SendDisconnectSignal();
+    SV_SendAndFlushDisconnectSignal();
 
     CloseNetwork ();
 

@@ -96,7 +96,7 @@ void R_ReallocDrawSegs(void)
 		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
 		unsigned firstofs = firstdrawseg - drawsegs;
 		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
-		drawsegs = (drawseg_t*)M_Realloc(drawsegs, newmax*sizeof(*drawsegs));
+		drawsegs = static_cast<drawseg_t*>(M_Realloc(drawsegs, newmax*sizeof(*drawsegs)));
 		firstdrawseg = drawsegs + firstofs;
 		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
 		maxdrawsegs = newmax;
@@ -112,7 +112,7 @@ void R_ClearDrawSegs(void)
 	if (drawsegs == NULL)
 	{
 		maxdrawsegs = 256;
-		firstdrawseg = drawsegs = (drawseg_t*)Malloc(maxdrawsegs * sizeof(drawseg_t));
+		firstdrawseg = drawsegs = static_cast<drawseg_t*>(M_Malloc(maxdrawsegs * sizeof(drawseg_t)));
 	}
 	ds_p = drawsegs;
 }
@@ -135,7 +135,7 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 		{
 			// find the first remaining non-solid column
 			// if all columns remaining are solid, we're done
-			byte* p = (byte*)memchr(solidcol + first, 0, last - first + 1);
+			byte* p = static_cast<byte*>(memchr(solidcol + first, 0, last - first + 1));
 			if (p == NULL)
 				return;
 
@@ -145,7 +145,7 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 		{
 			int to;
 			// find where the span of non-solid columns ends
-			byte* p = (byte*)memchr(solidcol + first, 1, last - first + 1);
+			byte* p = static_cast<byte*>(memchr(solidcol + first, 1, last - first + 1));
 			if (p == NULL)
 				to = last;
 			else
@@ -236,8 +236,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 	// Gate r_fakingunderwater to only apply to heightsecs with
 	// possible deep water, since it applies to every heightsec in frame.
-	bool underwater = (r_fakingunderwater && s->floorheight > sec->floorheight) ||
-		(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));
+	const bool underwater = (r_fakingunderwater and P_FloorHeight(s) >P_FloorHeight(sec)) or
+		(heightsec and viewz <= P_FloorHeight(viewx, viewy, heightsec));
 	bool doorunderwater = false;
 	int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
 
@@ -305,7 +305,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	// sectors at the same time.
 
 	if (back && !r_fakingunderwater && curline->frontsector->heightsec == NULL &&
-		s->floorheight > sec->floorheight)
+		P_FloorHeight(s) > P_FloorHeight(sec))
 	{
 		fixed_t fcz1 = P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector);
 		fixed_t fcz2 = P_CeilingHeight(curline->v2->x, curline->v2->y, frontsector);
@@ -508,7 +508,7 @@ void R_AddLine (const seg_t *line)
 		return;
 	}
 
-	dcol.color = ((line - segs) & 31) * 4;	// [RH] Color if not texturing line
+	dcol.color = ((line - R_GetSegs().data()) & 31) * 4;	// [RH] Color if not texturing line
 
 	// translate the line seg endpoints from world-space to camera-space,
 	// keeping full 64-bit precision (t1, t2) so distant walls on huge maps
@@ -737,7 +737,7 @@ void R_Subsector (int num)
 	const subsector_t& sub = subsectors[num];
 	frontsector = sub.sector;
 	int count = sub.numlines;
-	const seg_t* line = &segs[sub.firstline];
+	const seg_t* line = &R_GetSegs()[sub.firstline];
 
 	// killough 3/8/98, 4/4/98: Deep water / fake ceiling effect
 	frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,
@@ -747,6 +747,7 @@ void R_Subsector (int num)
 
 	ceilingplane = P_CeilingHeight(viewx, viewy, frontsector) > viewz ||
 		R_IsSkyFlat(frontsector->ceilingpic) ||
+		R_IsStackBoundary(frontsector->SkyboxCeiling) ||
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		R_IsSkyFlat(frontsector->heightsec->floorpic)) ?
@@ -767,6 +768,7 @@ void R_Subsector (int num)
 	// killough 3/16/98: add floorlightlevel
 	// killough 10/98: add support for skies transferred from sidedefs
 	floorplane = P_FloorHeight(viewx, viewy, frontsector) < viewz || // killough 3/7/98
+		R_IsStackBoundary(frontsector->SkyboxFloor) ||
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		R_IsSkyFlat(frontsector->heightsec->ceilingpic)) ?
