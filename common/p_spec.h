@@ -1131,7 +1131,13 @@ private:
 };
 
 // Waggle
-/*
+//
+// A waggle is deterministic: its plane height depends only on its own state,
+// so both sides simulate it independently instead of broadcasting its state
+// like the other sector mover thinkers.
+//
+// It is deliberately kept out of movingsectors, because a waggle that never
+// finishes would cost a SVC_MovingSector* per player per tic forever.
 class DWaggle : public DMover
 {
 	DECLARE_SERIAL(DWaggle, DMover)
@@ -1141,36 +1147,63 @@ class DWaggle : public DMover
 		init = 0,
 		expand,
 		reduce,
-		stable,
-		finished,
-		destroy,
-		state_size
+		stable
 	};
-	DWaggle(sector_t* sec);
+
 	DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
-	                 bool ceiling);
-	DWaggle* Clone(sector_t* sec) const override;
-	friend void P_SetWaggleDestroy(DWaggle* waggle);
+	        bool ceiling);
+
+	// Rebuilds a waggle that is already running, for a client that joined
+	// mid-waggle and so never saw the line special that started it.
+	DWaggle(sector_t* sector, bool ceiling, fixed_t originalHeight,
+	        fixed_t accumulator, fixed_t accDelta, fixed_t targetScale,
+	        fixed_t scale, fixed_t scaleDelta, int ticker, int state);
+
+	// Don't clone as snapshot processes retick this if copied by P_CopySector,
+	// which depends on Clone().
+	[[nodiscard]] DWaggle* Clone(sector_t*) const override { return nullptr; }
 
 	void RunThink() override;
 
-	fixed_t m_OriginalHeight;
-	fixed_t m_Accumulator;
-	fixed_t m_AccDelta;
-	fixed_t m_TargetScale;
-	fixed_t m_Scale;
-	fixed_t m_ScaleDelta;
-	fixed_t m_StartTic; // [Blair] Client will predict a created (or serialized) waggle based on the start tic.
-	int m_Ticker;
-	int m_State;
-	bool m_Ceiling;
-	DWaggle();
+	// Runs the waggle forward without moving the plane.
+	// The state a client receives was sampled on an
+	// earlier server tic, so this closes the gap
+	// before the thinker starts ticking locally.
+	void CatchUp(int tics);
 
-  protected:
-	friend bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed,
-	                                int offset, int timer, bool ceiling);
+	fixed_t m_OriginalHeight = 0;
+	fixed_t m_Accumulator    = 0;
+	fixed_t m_AccDelta       = 0;
+	fixed_t m_TargetScale    = 0;
+	fixed_t m_Scale          = 0;
+	fixed_t m_ScaleDelta     = 0;
+	int     m_Ticker         = 0;
+	int     m_State          = init;
+	bool    m_Ceiling        = false;
+
+  private:
+	DWaggle() = default;
+
+	// Advances the state machine, with no side effects on the sector.
+	// Returns false once the waggle has shrunk away.
+	bool AdvanceTics(int tics);
+
+	// Puts the plane back where it started and removes the thinker.
+	void Finish();
+
+	// Moves the plane to whatever the current state says it should be.
+	void ApplyHeight();
+
+	// The client is asked to tick sector movers from more than one place, so
+	// refuse to advance twice in the same tic.
+	int m_LastTic = -1;
 };
-*/
+
+bool EV_StartPlaneWaggle(int tag, line_t* line, int height, int speed, int offset,
+                         int timer, bool ceiling);
+
+void SV_SendThinkerUpdate(const DThinker* thinker);
+
 //jff 3/15/98 pure texture/type change for better generalized support
 enum EChange
 {

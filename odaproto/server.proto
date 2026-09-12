@@ -763,6 +763,22 @@ message ThinkerUpdate
 		int32 phase = 3;
 	}
 
+	// Waggles are not streamed like the other sector movers, so a client that
+	// joins mid-waggle is handed the whole thinker state and simulates it.
+	message Waggle
+	{
+		int32 sector = 1;
+		bool ceiling = 2;              // If the same sector has a floor and
+		sfixed32 original_height = 3;  // ceiling waggle, 2 will be sent.
+		sfixed32 accumulator = 4;
+		sfixed32 acc_delta = 5;
+		sfixed32 target_scale = 6;
+		sfixed32 scale = 7;
+		sfixed32 scale_delta = 8;
+		sint32 ticker = 9; // -1 means the waggle never stops.
+		int32 state = 10;
+	}
+
 	oneof thinker
 	{
 		Scroller scroller = 1;
@@ -773,6 +789,7 @@ message ThinkerUpdate
 		Glow glow = 6;
 		Glow2 glow2 = 7;
 		Phased phased = 8;
+		Waggle waggle = 9;
 	}
 }
 

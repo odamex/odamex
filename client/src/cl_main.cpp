@@ -2776,6 +2776,7 @@ void CL_SimulateWorld()
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
+void SV_SendThinkerUpdate(const DThinker* thinker) {}
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction)
 {

@@ -1955,6 +1955,16 @@ void SV_ThinkerUpdate(client_t* cl)
 	{
 		cl->messenger->Reliable().Write (SVC_ThinkerUpdate(phased));
 	}
+
+	// One of these things is not like the others!
+	// Waggles get no per-tic updates, so this is the only shot a joining
+	// client has to pick up one that is already running.
+	TThinkerIterator<DWaggle> waggleIter;
+	DWaggle* waggle;
+	while ((waggle = waggleIter.Next()))
+	{
+		cl->messenger->Reliable().Write (SVC_ThinkerUpdate(waggle));
+	}
 }
 
 static void SV_ArmInventoryMonitors(player_t& player)
@@ -5120,6 +5130,15 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 		client_t *cl = &(player.client);
 
 		cl->messenger->Reliable().Write (SVC_Switch(*line, state, time));
+	}
+}
+
+void SV_SendThinkerUpdate(const DThinker* thinker)
+{
+	for (auto& player : players)
+	{
+		if (player.ingame())
+			player.client.messenger->Reliable().Write (SVC_ThinkerUpdate(thinker));
 	}
 }
 

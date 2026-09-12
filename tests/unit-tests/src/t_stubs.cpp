@@ -180,6 +180,7 @@ FArchive &operator<< (FArchive &arc, UserInfo &info) { return arc; }
 FArchive &operator>> (FArchive &arc, UserInfo &info) { return arc; }
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
     const LineActivationType activationType, const bool bossaction) {}
+void SV_SendThinkerUpdate(const DThinker* thinker) {}
 void UV_SoundAvoidPlayer(const AActor *mo, byte channel, const char *name, byte attenuation) {}
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 
