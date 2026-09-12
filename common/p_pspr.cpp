@@ -1662,6 +1662,7 @@ FArchive &operator<< (FArchive &arc, pspdef_t &def)
 
 FArchive &operator>> (FArchive &arc, pspdef_t &def)
 {
+	//NOLINTNEXTLINE(misc-const-correctness) - false positive
 	state_t* state = nullptr;
 	arc >> state >> def.tics >> def.sx >> def.sy;
 	def.statenum = state ? static_cast<statenum_t>(state->statenum) : S_NULL;
