@@ -3639,7 +3639,7 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 	return partitions;
 }
 
-static void SV_SendMonitoredInventoryChanges(player_t& player)
+static void SV_WriteMonitoredInventoryChanges(player_t& player)
 {
 	const bool pendingWeaponWasChanged = player.pendingweaponMonitor.EvaluateAsChanged();
 	const bool readyWeaponWasChanged   = player.readyweaponMonitor.EvaluateAsChanged();
@@ -3712,8 +3712,6 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		player.playerInfoIsRequested = false;
 		SV_SendPlayerInfo(player);
 	}
-	SV_SendMonitoredInventoryChanges(player);
-	SV_ArmInventoryMonitors(player);
 
 	// [SL] Send client info about player he is spying on
 	player_t& target = idplayer(player.spying);
@@ -3805,6 +3803,14 @@ void SV_WriteCommands(void)
 	// they can be reconciled later for unlagging
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
+
+	// Do any last minute broadcasting here, because any attempt to do so from the
+	// worker threads can and eventually will corrupt another player's messenger.
+	for (player_t& player : players)
+	{
+		SV_WriteMonitoredInventoryChanges(player);
+		SV_ArmInventoryMonitors(player);
+	}
 
 	// Palm off the job of writing the player messages onto the worker threads.
 	std::vector<std::future<void> > futures;
