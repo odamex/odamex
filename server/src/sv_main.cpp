@@ -3639,7 +3639,10 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 	return partitions;
 }
 
-static void SV_WriteMonitoredInventoryChanges(player_t& player)
+namespace
+{
+
+void SV_WriteMonitoredInventoryChanges(player_t& player)
 {
 	const bool pendingWeaponWasChanged = player.pendingweaponMonitor.EvaluateAsChanged();
 	const bool readyWeaponWasChanged   = player.readyweaponMonitor.EvaluateAsChanged();
@@ -3835,6 +3838,7 @@ void SV_WriteCommands(void)
 	}
 }
 
+}
 
 void SV_PlayerTriedToCheat(player_t &player)
 {
