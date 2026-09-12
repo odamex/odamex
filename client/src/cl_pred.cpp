@@ -26,6 +26,7 @@
 
 #include "d_player.h"
 #include "p_local.h"
+#include "p_localhistory.h"
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "cl_netgraph.h"
@@ -43,6 +44,12 @@ void P_CalcHeight (player_t& player);
 
 extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
 static PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
+
+namespace
+{
+// Last tic the local player stood on a plane this client simulates itself.
+int cl_lastLocalPlaneTic = -1;
+} // namespace
 
 bool predicting;
 
@@ -357,17 +364,49 @@ void CL_PredictWorld(void)
 	if (cl_predictsectors)
 		CL_ResetSectors();
 
+	// A locally simulated plane runs behind the server's copy by however long an
+	// update takes to arrive, so the z the server reports for a player riding one
+	// is for a phase this client has not reached.
+	//
+	// Taking it fights the replay, which drives z from the local plane history -
+	// and while the plane is rising P_ThingHeightClip cannot pull the player
+	// back down, because it decides "was I on the floor" from a z that now sits
+	// above it.
+	// This is what MFO_NOSNAPZ is for: keep the local z and let the replay own it.
+	const sector_t* standingOn = p.mo->floorsector;
+	if (not standingOn and p.mo->subsector)
+		standingOn = p.mo->subsector->sector;
+
+	if (LocalSectorHistory::getInstance().watching(standingOn))
+		cl_lastLocalPlaneTic = gametic;
+
+	// Hold this for as long as the replay still reaches back to a tic where the
+	// player was riding such a plane.
+	if (cl_lastLocalPlaneTic >= p.tic)
+		p.mo->oflags |= MFO_NOSNAPZ;
+
 	// Move the client to the last position received from the sever
 	int snaptime = p.snapshots.getMostRecentTime();
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
+	// Planes the client simulates itself have no server snapshot for
+	// CL_ResetSectors to rewind them to, so borrow them for the replay and give
+	// them back afterwards.
+	LocalSectorHistory& localSectors = LocalSectorHistory::getInstance();
+	localSectors.beginReplay();
+
 	while (++predtic < gametic)
 	{
 		if (cl_predictsectors)
 			CL_PredictSectors(predtic);
+
+		localSectors.restore(predtic);
+
 		CL_PredictLocalPlayer(predtic);
 	}
+
+	localSectors.endReplay();
 
 	// If the player didn't just spawn or teleport, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
@@ -406,6 +445,8 @@ void CL_ResetWorldPrediction()
 	{
 		savedPlayerSnapshot = PlayerSnapshot{};
 	}
+
+	cl_lastLocalPlaneTic = -1;
 }
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")

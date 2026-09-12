@@ -26,6 +26,7 @@
 
 #include "p_local.h"
 #include "p_lnspec.h"
+#include "p_localhistory.h"
 #include "p_unlag.h"
 #include "s_sound.h"
 #include "r_state.h"
@@ -1867,6 +1868,11 @@ DWaggle::DWaggle(sector_t* sector, int height, int speed, int offset, int timer,
 	}
 
 	m_Sector = sector;
+
+	// Nothing broadcasts this plane, so prediction has to replay it from a local
+	// history instead of a server snapshot.
+	LocalSectorHistory::getInstance().watch(sector);
+
 	m_Accumulator = offset * FRACUNIT;
 	m_AccDelta = speed << 10;
 	m_Scale = 0;
@@ -1887,6 +1893,8 @@ DWaggle::DWaggle(sector_t* sector, bool ceiling, fixed_t originalHeight,
 		sector->floordata = this;
 
 	m_Sector = sector;
+	LocalSectorHistory::getInstance().watch(sector);
+
 	m_OriginalHeight = originalHeight;
 	m_Accumulator = accumulator;
 	m_AccDelta = accDelta;

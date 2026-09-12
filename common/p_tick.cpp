@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include "p_local.h"
+#include "p_localhistory.h"
 #include "c_effect.h"
 #include "p_acs.h"
 #include "c_console.h"
@@ -99,6 +100,10 @@ void P_Ticker (void)
 
 	if (clientside)
 		P_RunEffects(); // [RH] Run particle effects
+
+	// Locally simulated planes have finished moving for this tic, so log where
+	// they ended up for prediction to replay against.
+	LocalSectorHistory::getInstance().record(gametic);
 
 	// for par times
 	level.time++;
