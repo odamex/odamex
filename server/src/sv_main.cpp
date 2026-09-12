@@ -419,7 +419,7 @@ BEGIN_COMMAND (say)
 {
 	if (argc > 1)
 	{
-		std::string chat = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
+		const std::string chat = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 		SV_BroadcastPrintFmt(PRINT_SERVERCHAT, "[server]: {}\n", chat);
 	}
 }
@@ -429,7 +429,7 @@ BEGIN_COMMAND (say_to)
 {
 	if (argc > 2)
 	{
-		player_t const& player = nameplayer(argv[1]);
+		const player_t& player = nameplayer(argv[1]);
 		if (!validplayer(player))
 			{
 				PrintFmt("Player \"{}\" was not found.\n", argv[1]);
