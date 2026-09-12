@@ -35,6 +35,7 @@
 #include "d_dehacked.h"
 #include "m_doomobjcontainer.h"
 #include "d_items.h"
+#include "g_game.h"
 #include "gstrings.h"
 #include "i_system.h"
 #include "info.h"
@@ -798,6 +799,9 @@ static void BackupData(void)
 		return;
 	}
 
+	// Make sure we undo any nightmare speed changes
+	G_SetFast(false);
+
 	// backup sprites
 	for (int i = 0; i < ::NUMSPRITES; i++)
 	{
@@ -836,9 +840,6 @@ void D_UndoDehPatch()
 	SoundMap = std::move(doomBackup.backupSoundMap);
 
 	D_BuildSpawnMap();
-
-	extern bool isFast;
-	isFast = false;
 
 	std::copy(doomBackup.backupWeaponInfo, doomBackup.backupWeaponInfo + ::NUMWEAPONS,
 	          weaponinfo);
