@@ -129,7 +129,7 @@ static void IntQryBuildInformation(const uint32_t& EqProtocolVersion,
 	}
 
 	// Cvar count
-	MSG_WriteByte(&ml_message, (byte)Cvars.size());
+	MSG_WriteByte(&ml_message, static_cast<byte>(Cvars.size()));
 
 	// Write cvars
 	for (const auto & Cvar : Cvars)
@@ -137,25 +137,25 @@ static void IntQryBuildInformation(const uint32_t& EqProtocolVersion,
 		MSG_WriteString(&ml_message, Cvar.Name.c_str());
 
 		// Type field
-		MSG_WriteByte(&ml_message, (byte)Cvar.Type);
+		MSG_WriteByte(&ml_message, static_cast<byte>(Cvar.Type));
 
 		switch(Cvar.Type)
 		{
 		case CVARTYPE_BYTE:
 		{
-			MSG_WriteByte(&ml_message, (byte)atoi(Cvar.Value.c_str()));
+			MSG_WriteByte(&ml_message, static_cast<byte>(atoi(Cvar.Value.c_str())));
 		}
 		break;
 
 		case CVARTYPE_WORD:
 		{
-			MSG_WriteShort(&ml_message, (short)atoi(Cvar.Value.c_str()));
+			MSG_WriteShort(&ml_message, static_cast<int16_t>(atoi(Cvar.Value.c_str())));
 		}
 		break;
 
 		case CVARTYPE_INT:
 		{
-			MSG_WriteLong(&ml_message, (int)atoi(Cvar.Value.c_str()));
+			MSG_WriteLong(&ml_message, atoi(Cvar.Value.c_str()));
 		}
 		break;
 
