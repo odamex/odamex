@@ -4187,6 +4187,8 @@ void SV_RunTics()
 		}
 		else
 		{
+			// Unlatch just in case there's any pending changes
+			cvar_t::UnlatchCVars();
 			// [AM] Make a copy of mapname for safety's sake.
 			OLumpName mapname = ::level.mapname;
 			G_InitNew(mapname);

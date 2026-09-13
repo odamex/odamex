@@ -219,7 +219,7 @@ void D_Init()
 	// [EB] have to do this elsewhere on startup to be sure that cvar callbacks are enabled
 	if (!first_time)
 	{
-		C_RunCVarScriptHook(sv_startwadscript, true);
+		C_RunCVarScriptHook(sv_startwadscript);
 	}
 
 	if (first_time)
@@ -423,7 +423,7 @@ void D_DoomMain()
 
 	level.mapname = startmap;
 
-	C_RunCVarScriptHook(sv_startwadscript, true);
+	C_RunCVarScriptHook(sv_startwadscript);
 
 	G_ChangeMapStartup();
 

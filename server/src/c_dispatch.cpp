@@ -29,17 +29,12 @@
 #include "m_random.h"
 #include "sv_main.h"
 
-void C_RunCVarScriptHook(const cvar_t& var, bool resend)
+void C_RunCVarScriptHook(const cvar_t& var)
 {
+	// TODO: allow array cvars that can have multiple script callbacks
 	if (!var.str().empty())
 	{
 		AddCommandString(var.str());
-		// Make sure any cvar modifications from the script make it to clients
-		if (resend)
-		{
-			cvar_t::UnlatchCVars();
-			SV_ServerSettingChange(true);
-		}
 	}
 }
 
