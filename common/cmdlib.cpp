@@ -96,7 +96,7 @@ bool IsNum(std::string_view str)
 
 	return std::ranges::all_of(str, [](char c)
 	{
-		if (((c < '0') || (c > '9')))
+		if (((c < '0') or (c > '9')))
 		{
 			return false;
 		}

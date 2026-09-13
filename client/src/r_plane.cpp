@@ -705,7 +705,7 @@ static void R_DrawSingleFlatPlane(visplane_t* pl)
 	// [RH] warp a flat if desired
 	if (flatwarp[useflatnum])
 	{
-		if (warpedflats[useflatnum] && flatwarpedwhen[useflatnum] == level.time)
+		if (warpedflats[useflatnum] and flatwarpedwhen[useflatnum] == level.time)
 		{
 			Z_ChangeTag(dspan.source, PU_CACHE);
 			dspan.source = warpedflats[useflatnum];
@@ -713,8 +713,8 @@ static void R_DrawSingleFlatPlane(visplane_t* pl)
 		}
 		else
 		{
-			if (!warpedflats[useflatnum])
-				warpedflats[useflatnum] = Z_Malloc<byte>(64*64, PU_STATIC, &warpedflats[useflatnum]);
+			if (not warpedflats[useflatnum])
+				warpedflats[useflatnum] = Z_Malloc<byte>(64_uz * 64_uz, PU_STATIC, static_cast<void*>(&warpedflats[useflatnum]));
 
 			static byte buffer[64];
 			int timebase = level.time*23;

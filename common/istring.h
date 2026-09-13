@@ -31,12 +31,12 @@ struct case_insensitive_char_traits : std::char_traits<char>
 {
 	static constexpr char to_ascii_lowercase(const char c) noexcept
 	{
-		return c >= 'A' && c <= 'Z' ? static_cast<char>(c + ('a' - 'A')) : c;
+		return c >= 'A' and c <= 'Z' ? static_cast<char>(c + ('a' - 'A')) : c;
 	}
 
 	static constexpr int to_ascii_lowercase_int(const int c) noexcept
 	{
-		return c >= 'A' && c <= 'Z' ? c + ('a' - 'A') : c;
+		return c >= 'A' and c <= 'Z' ? c + ('a' - 'A') : c;
 	}
 
 	static constexpr bool eq(const char a, const char b) noexcept

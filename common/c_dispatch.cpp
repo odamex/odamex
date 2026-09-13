@@ -326,7 +326,7 @@ void AddCommandString(const std::string_view str, uint32_t key)
 
 	const auto next2chars = [str](const size_t end, const char c1, const char c2)
 	{
-		return end + 1 < str.size() && str[end] == c1 && str[end + 1] == c2;
+		return end + 1 < str.size() and str[end] == c1 and str[end + 1] == c2;
 	};
 
 	// scan for a command ending
@@ -343,7 +343,7 @@ void AddCommandString(const std::string_view str, uint32_t key)
 			if (next2chars(end, '/', '/'))
 				break;
 
-			if (str[end] == '\\' && end + 1 < str.size())
+			if (str[end] == '\\' and end + 1 < str.size())
 			{
 				// [AM] Skip two chars if escaped.
 				end += 2;
@@ -396,7 +396,7 @@ void AddCommandString(const std::string_view str, uint32_t key)
 			break;
 
 		// are there more commands following this one?
-		if (end < str.size() && str[end] == ';')
+		if (end < str.size() and str[end] == ';')
 			end++;
 
 		start = end;

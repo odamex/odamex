@@ -916,7 +916,7 @@ void P_InitPicAnims()
 		}
 		else
 		{
-			if (W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 10 /* .startname */, ns_flats) == -1 ||
+			if (W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 10 /* .startname */, ns_flats) == -1 or
 				W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 1 /* .startname */, ns_flats) == -1)
 				continue;
 
@@ -931,8 +931,8 @@ void P_InitPicAnims()
 
 		if (lastanim->numframes < 2)
 			PrintFmt(PRINT_WARNING, "P_InitPicAnims: bad cycle from {} to {}",
-					 fmt::ptr(anim_p + 10) /* .startname */,
-					 fmt::ptr(anim_p + 1) /* .endname */);
+					 reinterpret_cast<char*>(anim_p + 10) /* .startname */,
+					 reinterpret_cast<char*>(anim_p + 1) /* .endname */);
 
 		lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
 					/* .speed */

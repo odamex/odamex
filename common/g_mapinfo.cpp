@@ -733,7 +733,7 @@ struct MIType_CompatFlag_t
 		os.scan();
 		if (os.compareToken("="))
 			os.mustScanInt();
-		else if (!IsNum(os.getToken().c_str()))
+		else if (not IsNum(os.getToken()))
 			os.unScan();
 	}
 };

@@ -313,7 +313,7 @@ void OScanner::mustScanInt()
 	}
 
 	std::string str = m_token;
-	if (IsNum(str) == false && str != "MAXINT")
+	if (not IsNum(str) and str != "MAXINT")
 	{
 		error("Expected integer, got \"{}\".", m_token);
 	}

@@ -259,7 +259,7 @@ bool C_DoNetDemoKey(const event_t& ev)
 
 	const IString *binding = nullptr;
 
-	if (ev.type != ev_keydown && ev.type != ev_keyup)
+	if (ev.type != ev_keydown and ev.type != ev_keyup)
 		return false;
 
 	binding = &NetDemoBindings.Binds[ev.data1];
@@ -291,22 +291,22 @@ bool C_DoSpectatorKey (const event_t& ev)
 {
 	if (G_IsLivesGame())
 	{
-		if (!consoleplayer().spectator && consoleplayer().lives > 0 &&
-		    !netdemo.isInPlayback())
+		if (not consoleplayer().spectator and consoleplayer().lives > 0 and
+		    not netdemo.isInPlayback())
 		return false;
 	}
 	else
 	{
-		if (!consoleplayer().spectator && !netdemo.isInPlayback())
+		if (not consoleplayer().spectator and not netdemo.isInPlayback())
 		return false;
 	}
 
-	if (ev.type == ev_keydown && Key_IsSpyPrevKey(ev.data1))
+	if (ev.type == ev_keydown and Key_IsSpyPrevKey(ev.data1))
 	{
 		AddCommandString("spyprev", ev.data1);
 		return true;
 	}
-	if (ev.type == ev_keydown && Key_IsSpyNextKey(ev.data1))
+	if (ev.type == ev_keydown and Key_IsSpyNextKey(ev.data1))
 	{
 		AddCommandString("spynext", ev.data1);
 		return true;
@@ -318,14 +318,14 @@ bool C_DoSpectatorKey (const event_t& ev)
 
 bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 {
-	if (ev.type != ev_keydown && ev.type != ev_keyup)
+	if (ev.type != ev_keydown and ev.type != ev_keyup)
 		return false;
 
 	const IString* binding = nullptr;
 	int key = ev.data1;
 
 	KeyState& key_state = KeyStates[key];
-	if (doublebinds != nullptr && ev.type == ev_keydown && key_state.double_click_time > level.time)
+	if (doublebinds != nullptr and ev.type == ev_keydown and key_state.double_click_time > level.time)
 	{
 		// Key pressed for a double click
 		binding = &doublebinds->Binds[key];
@@ -339,7 +339,7 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 			binding = &binds->Binds[key];
 			key_state.double_click_time = level.time + 20;
 		}
-		else if (doublebinds != nullptr && key_state.double_clicked)
+		else if (doublebinds != nullptr and key_state.double_clicked)
 		{
 			// Key released from a double click
 			binding = &doublebinds->Binds[key];
@@ -354,7 +354,7 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 	if (binding->empty())
 		binding = &binds->Binds[key];
 
-	if (!binding->empty() && (HU_ChatMode() == CHAT_INACTIVE || key < 256))
+	if (not binding->empty() and (HU_ChatMode() == CHAT_INACTIVE or key < 256))
 	{
 		if (ev.type == ev_keydown)
 		{
@@ -369,7 +369,7 @@ bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 			if (achar == std::string::npos)
 				return false;
 
-			if (achar == 0 || (*binding)[achar - 1] <= ' ')
+			if (achar == 0 or (*binding)[achar - 1] <= ' ')
 			{
 				IString action_release(*binding);
 				action_release[achar] = '-';
@@ -400,7 +400,7 @@ void C_ReleaseKeys()
 			if (!binding->empty())
 			{
 				size_t achar = binding->find_first_of('+');
-				if (achar != IString::npos && (achar == 0 || (*binding)[achar - 1] <= ' '))
+				if (achar != IString::npos and (achar == 0 or (*binding)[achar - 1] <= ' '))
 				{
 					IString action_release(*binding);
 					action_release[achar] = '-';
@@ -417,7 +417,7 @@ void OKeyBindings::ArchiveBindings(FILE* f)
 {
 	for (const auto& [key, binding] : Binds)
 	{
-		if (!binding.empty())
+		if (not binding.empty())
 			fmt::print(f, "{} {} {}\n", command, C_QuoteString(I_GetKeyName(key)), C_QuoteString(IStringToStdStringView(binding)));
 	}
 }
@@ -430,7 +430,7 @@ int OKeyBindings::GetKeysForCommand(const char* cmd, int* first, int* second)
 
 	for (const auto& [key, binding] : Binds)
 	{
-		if (!binding.empty() && binding == cmd)
+		if (not binding.empty() and binding == cmd)
 		{
 			c++;
 			if (c == 1)
@@ -479,7 +479,7 @@ std::vector<int> OKeyBindings::GetKeysForCommandByLastDevice(const char* cmd)
 
 	for (const auto& [key, binding] : Binds)
 	{
-		if (binding.empty() || binding != cmd)
+		if (binding.empty() or binding != cmd)
 			continue;
 
 		if (C_KeyMatchesDevice(key, device))
@@ -495,7 +495,7 @@ std::vector<int> OKeyBindings::GetKeysForCommandByLastDevice(const char* cmd)
 
 std::string OKeyBindings::GetNameKeys(int first, int second)
 {
-	if (!first && !second)
+	if (first == 0 and second == 0)
 		return "???";
 
 	std::string out;
@@ -521,7 +521,7 @@ void OKeyBindings::UnbindACommand(const char* str)
 	for (BindingTable::iterator it = Binds.begin(); it != Binds.end(); ++it)
 	{
 		const IString& binding = it->second;
-		if (!binding.empty() && stricmp(str, binding.c_str()) == 0)
+		if (not binding.empty() and binding == str)
 		{
 			Binds.erase(it);
 			it = Binds.begin();		// restart iteration since the container was modified during iteration
@@ -539,7 +539,7 @@ void OKeyBindings::ChangeBinding (const char *str, int newone)
 
 	GetKeysForCommand(str, &first, &second);
 
-	if (newone == first || newone == second)
+	if (newone == first or newone == second)
 	{
 		return;
 	}

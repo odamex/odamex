@@ -774,13 +774,13 @@ bool G_Responder (const event_t& ev)
 				return C_DoKey(ev, &Bindings, &DoubleBindings);
 			}
 		}
-		if (!cmd.empty() && cmd[0] == '+')
+		if (not cmd.empty() and cmd[0] == '+')
 			return C_DoKey(ev, &Bindings, &DoubleBindings);
 
 		return false;
 	}
 
-	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+	if (gamestate == GS_LEVEL or gamestate == GS_INTERMISSION)
 	{
 		if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
 			return true;

@@ -940,7 +940,7 @@ bool W_IsLumpFromPWAD(const OLumpName& name, namespace_t namespc)
 {
 	const int lump = W_CheckNumForName(name, namespc);
 
-	return lump >= 0 && W_IsLumpFromPWAD(static_cast<unsigned int>(lump));
+	return lump >= 0 and W_IsLumpFromPWAD(static_cast<unsigned int>(lump));
 }
 
 //
@@ -955,7 +955,7 @@ bool W_IsLumpReplaced(const OLumpName& name, namespace_t namespc)
 {
 	const int lump = W_CheckNumForName(name, namespc);
 
-	if (lump < 0 || !W_IsLumpFromPWAD(static_cast<unsigned int>(lump)))
+	if (lump < 0 or not W_IsLumpFromPWAD(static_cast<unsigned int>(lump)))
 		return false;
 
 	for (int i = lumpinfo[lump].next; i >= 0; i = lumpinfo[i].next)

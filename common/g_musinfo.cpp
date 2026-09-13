@@ -48,7 +48,7 @@ void G_ParseMusInfo()
 			const std::string map_name = os.getToken();
 			level_pwad_info_t& map = levels.findByName(map_name);
 
-			if (!map.exists())
+			if (not map.exists())
 			{
 				// Don't abort for invalid maps
 				os.warning("Unknown map '{}'", map_name);
@@ -56,7 +56,7 @@ void G_ParseMusInfo()
 
 			while (os.scan())
 			{
-				if (!IsNum(os.getToken()))
+				if (not IsNum(os.getToken()))
 				{
 					os.unScan();
 					break;

@@ -542,14 +542,14 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		do
 		{
-			if (!IsRealNum(os.getToken()))
+			if (not IsRealNum(os.getToken()))
 				os.scan();
 
 		} while (os.compareToken(","));
 	}
 	os.scan();
 
-	return 1;
+	return true;
 }
 
 void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
