@@ -913,7 +913,7 @@ void MIType_Pages(OScanner& os, bool doEquals, std::array<OLumpName, N>& out)
 }
 
 // Sets the skill levels a spawn filter applies to
-void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, int& out)
+void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, MapThingFlags& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
@@ -924,14 +924,14 @@ void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, int& out)
 		{
 			case 1:
 			case 2:
-				out |= 1;
+				out |= MTF_EASY;
 				break;
 			case 3:
-				out |= 2;
+				out |= MTF_MEDIUM;
 				break;
 			case 4:
 			case 5:
-				out |= 4;
+				out |= MTF_HARD;
 				break;
 			default:
 				return;
@@ -940,11 +940,11 @@ void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, int& out)
 	else
 	{
 		if (os.compareTokenNoCase("baby") || os.compareTokenNoCase("easy"))
-			out |= 1;
+			out |= MTF_EASY;
 		else if (os.compareTokenNoCase("normal"))
-			out |= 2;
+			out |= MTF_MEDIUM;
 		else if (os.compareTokenNoCase("hard") || os.compareTokenNoCase("nightmare"))
-			out |= 4;
+			out |= MTF_HARD;
 	}
 }
 
