@@ -375,7 +375,7 @@ void GiveTo(player_t& player, const char* name)
 
 	const int health_len = 6;
 
-	if (giveall || strnicmp(name, "health", health_len) == 0)
+	if (giveall or strnicmp(name, "health", health_len) == 0)
 	{
 		const int h = giveall ? 0 : ParseNum<int>(name + health_len).value_or(0);
 
