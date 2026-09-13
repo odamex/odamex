@@ -374,7 +374,7 @@ void G_DoNewGame()
 	// TODO: finish this up and test it more fully
 	EXTERN_CVAR(sv_shuffleteams)
 	if (sv_shuffleteams)
-		Pickup_DistributePlayers2();
+		Pickup_DistributeAllPlayers();
 
 	for (auto& player : players)
 	{
