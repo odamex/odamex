@@ -3355,15 +3355,25 @@ void SV_JoinPlayer(player_t& player, bool silent)
 		EXTERN_CVAR(sv_shuffleteams)
 		if (sv_shuffleteams)
 		{
+			// assign player to the team with the fewest players
+			// choose randomly if multiple teams are tied for minimum
 			size_t min = std::numeric_limits<size_t>::max();
 			team_t minteam = TEAM_NONE;
+			int mincount = 0;
 			for (int i = 0; i < sv_teamsinplay.asInt(); i++)
 			{
-				size_t numplayers = P_NumPlayersOnTeam((team_t)i);
+				const size_t numplayers = P_NumPlayersOnTeam(static_cast<team_t>(i));
 				if (numplayers < min)
 				{
 					min = numplayers;
-					minteam = (team_t)i;
+					minteam = static_cast<team_t>(i);
+					mincount = 1;
+				}
+				else if (numplayers == min)
+				{
+					mincount++;
+					if (M_Random() % mincount == 0)
+						minteam = static_cast<team_t>(i);
 				}
 			}
 
