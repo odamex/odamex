@@ -442,18 +442,6 @@ BEGIN_COMMAND (say_to)
 }
 END_COMMAND (say_to)
 
-// TODO: allow the time to be specified?
-BEGIN_COMMAND (midsay)
-{
-	if (argc > 1)
-	{
-		std::string message = C_ArgCombine(argc - 1, (const char **)(argv + 1));
-		for (auto& player : players)
-			SV_MidPrint(message.c_str(), &player, 5);
-	}
-}
-END_COMMAND (midsay)
-
 void call_terms();
 
 void SV_QuitCommand()
@@ -3377,15 +3365,15 @@ void SV_JoinPlayer(player_t& player, bool silent)
 		}
 		else
 		{
-			bool invalidteam = player.userinfo.team >= sv_teamsinplay;
-			bool toomanyplayers =
+			const bool invalidteam = player.userinfo.team >= sv_teamsinplay;
+			const bool toomanyplayers =
 			    sv_maxplayersperteam &&
 			    P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam;
 			if (invalidteam || toomanyplayers)
 			{
 				// If this check fails, our "CanJoin" function didn't do a good-enough
 				// job of scoping out a potential team.
-				team_t newteam = SV_GoodTeam();
+				const team_t newteam = SV_GoodTeam();
 				if (newteam == TEAM_NONE)
 					return;
 

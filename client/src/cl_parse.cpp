@@ -2141,6 +2141,7 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 
 static void CL_ServerSettings(const odaproto::svc::ServerSettings* msg)
 {
+	// NOLINTNEXTLINE(misc-const-correctness) - false positive
 	cvar_t* prev = nullptr;
 
 	const std::string& CvarKey = msg->key();
