@@ -360,11 +360,11 @@ public:
 	translationref_t(const palindex_t *table);
 	translationref_t(const palindex_t *table, const int player_id);
 
-	palindex_t tlate(const byte c) const;
-	int getPlayerID() const;
-	const palindex_t *getTable() const;
+	[[nodiscard]] palindex_t tlate(const byte c) const;
+	[[nodiscard]] int getPlayerID() const;
+	[[nodiscard]] const palindex_t *getTable() const;
 
-	operator bool() const;
+	explicit operator bool() const;
 };
 
 forceinline palindex_t translationref_t::tlate(const byte c) const

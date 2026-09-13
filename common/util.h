@@ -74,6 +74,7 @@ public:
 	// not explicit so that we can have implicit conversion *from* bool
 	// while using the concept to make sure that multiple steps of implicit conversions do not work
 	// making it work for *only* bool
+	// NOLINTNEXTLINE(misc-explicit-constructor)
 	constexpr SafeBool(const Bool auto b) noexcept : m_value(b) {};
 	[[nodiscard]] constexpr bool to_bool() const noexcept { return m_value; }
 	[[nodiscard]] constexpr explicit operator bool () const noexcept { return m_value; }
