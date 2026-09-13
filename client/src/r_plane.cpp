@@ -570,8 +570,11 @@ void R_DrawSlopedPlane(visplane_t *pl)
 {
 	const double xoffs = FIXED2DOUBLE(pl->xoffs);
 	const double yoffs = FIXED2DOUBLE(pl->yoffs);
-	const double scaledflatwidth = flatwidth * FIXED2DOUBLE(pl->xscale);
-	const double scaledflatheight = flatheight * FIXED2DOUBLE(pl->yscale);
+
+	const double xscale = FIXED2DOUBLE(pl->xscale);
+	const double yscale = FIXED2DOUBLE(pl->yscale);
+	const double scaledflatwidth = flatwidth / (xscale != 0.0 ? xscale : 1.0);
+	const double scaledflatheight = flatheight / (yscale != 0.0 ? yscale : 1.0);
 
 	// world-space points on the plane (x, z horizontal, y = height)
 	double px, py, pz, tx, ty, tz, sx, sy, sz;
@@ -732,8 +735,8 @@ void R_DrawLevelPlane(visplane_t *pl)
 	pl_ystepscale = pl_viewcos * pl_yscale;
 
 	// cache a calculation used by R_MapLevelPlane
-	pl_viewxtrans = (pl_viewx + xoffs) * pl_xscale;
-	pl_viewytrans = (pl_viewy + yoffs) * pl_yscale;
+	pl_viewxtrans = pl_viewx * pl_xscale;
+	pl_viewytrans = pl_viewy * pl_yscale;
 
 	basecolormap = pl->colormap;	// [RH] set basecolormap
 
@@ -761,7 +764,14 @@ static void R_DrawSingleFlatPlane(visplane_t* pl)
 	dspan.color += 4;	// [RH] color if r_drawflat is 1
 
 	const ResourceId res_id = Res_GetAnimatedTextureResourceId(pl->res_id);
-	const Texture* texture = Res_CacheTexture(res_id, PU_STATIC);
+	const Texture* cached = Res_CacheTexture(res_id, PU_STATIC);
+	if (cached == NULL)
+		return;
+
+	// The span drawers below tile with power-of-two masks, which a wall texture
+	// put on a plane need not have, so sample a resized copy of those instead.
+	const Texture* texture = Res_PlaneTexture(res_id, cached);
+
 	dspan.source = texture->mData;
 	// the 32bpp drawers sample the native ARGB plane when the
 	// texture carries one (NULL otherwise)
@@ -785,7 +795,7 @@ static void R_DrawSingleFlatPlane(visplane_t* pl)
 	else
 		R_DrawSlopedPlane(pl);
 
-	Z_ChangeTag(texture, PU_CACHE);
+	Z_ChangeTag(cached, PU_CACHE);
 }
 
 //

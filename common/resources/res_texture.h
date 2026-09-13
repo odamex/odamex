@@ -112,6 +112,25 @@ inline const Texture* Res_CacheTexture(const OLumpName& lump_name, TextureSearch
 
 
 //
+// Res_PlaneTexture
+//
+// Returns a texture safe for the floor/ceiling span drawers to sample.
+//
+// Those drawers address texels with power-of-two masks and a column stride of
+// 1 << mHeightBits, while a Texture's columns are really mHeight apart. The two
+// agree only when both dimensions are powers of two, which is always true of
+// flats but not of the wall textures the unified texture system lets a map put
+// on a plane. A texture that does not qualify is sampled from a copy resized to
+// the nearest power-of-two dimensions, built on first use and cached until the
+// resource files are closed.
+//
+// Pass the already-cached source texture: a qualifying one is handed straight
+// back, so the caller's zone bookkeeping for it is unchanged.
+//
+const Texture* Res_PlaneTexture(const ResourceId res_id, const Texture* source);
+
+
+//
 // Res_CopySubimage
 //
 // Copies the [sx1,sy1]-[sx2,sy2] region of source_texture into the
@@ -436,6 +455,9 @@ public:
 
 	const ResourceId getResourceId(const ResourceId res_id) const;
 
+	// True for a texture whose pixels this manager rewrites in place every tic.
+	bool isWarped(const ResourceId res_id) const;
+
 private:
 	void clear();
 	void loadAnimationsFromAnimatedLump();
@@ -466,6 +488,7 @@ private:
 
 	struct warp_t
 	{
+		ResourceId res_id;
 		Texture* original_texture;
 		Texture* working_texture;
 	};

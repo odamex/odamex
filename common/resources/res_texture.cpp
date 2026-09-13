@@ -220,6 +220,16 @@ TextureManager::~TextureManager()
 static std::string missing_patch_texture;
 
 
+// Power-of-two copies of textures whose own dimensions are not, built on demand
+// for the plane drawers and keyed by the ResourceId they were made from. Owned
+// here, and thrown away when the resource files close.
+//
+using PlaneTextureTable = OHashTable<ResourceId, Texture*>;
+static PlaneTextureTable plane_textures;
+
+static void Res_ClearPlaneTextures();
+
+
 //
 // TextureManager::clear
 //
@@ -233,6 +243,8 @@ void TextureManager::clear()
 	mResourceLoaderLookup.clear();
 
 	missing_patch_texture.clear();
+
+	Res_ClearPlaneTextures();
 }
 
 
@@ -934,6 +946,7 @@ void AnimatedTextureManager::addWarpedTexture(const ResourceId res_id)
 		return;
 
 	AnimatedTextureManager::warp_t warp;
+	warp.res_id = res_id;
 	warp.working_texture = const_cast<Texture*>(Res_CacheTexture(res_id, PU_STATIC));
 	size_t size = Texture::calculateSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
 	warp.original_texture = reinterpret_cast<Texture*>(new uint8_t[size]);
@@ -991,6 +1004,18 @@ void AnimatedTextureManager::updateAnimatedTextures()
 	{
 		Res_WarpTexture(mWarpedTextures[i].working_texture, mWarpedTextures[i].original_texture);
 	}
+}
+
+
+//
+// AnimatedTextureManager::isWarped
+//
+bool AnimatedTextureManager::isWarped(const ResourceId res_id) const
+{
+	for (size_t i = 0; i < mWarpedTextures.size(); i++)
+		if (mWarpedTextures[i].res_id == res_id)
+			return true;
+	return false;
 }
 
 
@@ -1173,4 +1198,161 @@ const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag)
 const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, zoneTag_e tag)
 {
 	return Res_CacheTexture(Res_GetTextureResourceId(lump_name, ordering), tag);
+}
+
+
+// ============================================================================
+//
+// Power-of-two plane textures
+//
+// ============================================================================
+
+//
+// Res_IsPlaneSafeTexture
+//
+// True when a texture's dimensions match the power-of-two masks the plane
+// drawers tile with, so they can sample it directly.
+//
+static bool Res_IsPlaneSafeTexture(const Texture* texture)
+{
+	return texture->mWidthMask + 1 == texture->mWidth &&
+	       texture->mHeightMask + 1 == texture->mHeight;
+}
+
+
+//
+// Res_NearestPowerOfTwo
+//
+// Rounds to the nearest power of two, rounding up on a tie, so that resizing
+// distorts the image as little as it can. Capped at the largest power of two a
+// texture dimension can hold.
+//
+static uint16_t Res_NearestPowerOfTwo(const uint16_t value)
+{
+	static constexpr uint32_t max_dimension = 1 << 15;
+
+	if (value <= 1)
+		return 1;
+
+	const uint32_t lower = 1u << Log2(value);
+	if (lower == value)
+		return static_cast<uint16_t>(lower);
+
+	const uint32_t upper = lower << 1;
+	if (upper >= max_dimension)
+		return static_cast<uint16_t>(std::min(max_dimension, lower));
+
+	return static_cast<uint16_t>(value - lower < upper - value ? lower : upper);
+}
+
+
+//
+// Res_ResizeTextureForPlane
+//
+// Builds a power-of-two copy of a texture for the plane drawers, scaling both
+// the palettized plane and, where the source has one, the native ARGB plane.
+//
+static Texture* Res_ResizeTextureForPlane(const Texture* source)
+{
+	const uint16_t width = Res_NearestPowerOfTwo(source->mWidth);
+	const uint16_t height = Res_NearestPowerOfTwo(source->mHeight);
+
+	uint32_t size = Texture::calculateSize(width, height);
+	if (source->mARGBData)
+		size += (sizeof(argb_t) - 1) + sizeof(argb_t) * width * height;
+
+	Texture* dest = reinterpret_cast<Texture*>(new uint8_t[size]);
+	dest->init(width, height);
+	dest->mScaleX = source->mScaleX;
+	dest->mScaleY = source->mScaleY;
+	dest->mMaskColor = source->mMaskColor;
+
+	argb_t* dest_argb = NULL;
+	if (source->mARGBData)
+	{
+		// The ARGB plane follows the palettized one inside the allocation,
+		// aligned to the pixel size, laid out as the loaders lay it out.
+		uintptr_t plane_addr = reinterpret_cast<uintptr_t>(
+		    dest->mData + sizeof(palindex_t) * width * height);
+		plane_addr = (plane_addr + sizeof(argb_t) - 1) & ~static_cast<uintptr_t>(sizeof(argb_t) - 1);
+		dest_argb = reinterpret_cast<argb_t*>(plane_addr);
+		dest->mARGBData = dest_argb;
+	}
+
+	// Nearest-neighbour sample, stepping both planes together so they cannot
+	// disagree about which source texel a destination texel came from.
+	const fixed_t xstep = FixedDiv(source->mWidth << FRACBITS, width << FRACBITS);
+	const fixed_t ystep = FixedDiv(source->mHeight << FRACBITS, height << FRACBITS);
+
+	fixed_t xfrac = 0;
+	for (int x = 0; x < width; x++, xfrac += xstep)
+	{
+		const int sx = std::min<int>(xfrac >> FRACBITS, source->mWidth - 1);
+
+		const palindex_t* source_column = source->mData + source->mHeight * sx;
+		palindex_t* dest_column = dest->mData + height * x;
+
+		const argb_t* source_argb_column =
+		    dest_argb ? source->mARGBData + source->mHeight * sx : NULL;
+		argb_t* dest_argb_column = dest_argb ? dest_argb + height * x : NULL;
+
+		fixed_t yfrac = 0;
+		for (int y = 0; y < height; y++, yfrac += ystep)
+		{
+			const int sy = std::min<int>(yfrac >> FRACBITS, source->mHeight - 1);
+
+			dest_column[y] = source_column[sy];
+			if (dest_argb_column)
+				dest_argb_column[y] = source_argb_column[sy];
+		}
+	}
+
+	return dest;
+}
+
+
+//
+// Res_ClearPlaneTextures
+//
+static void Res_ClearPlaneTextures()
+{
+	for (PlaneTextureTable::iterator it = plane_textures.begin(); it != plane_textures.end(); ++it)
+		delete[] reinterpret_cast<uint8_t*>(it->second);
+	plane_textures.clear();
+}
+
+
+//
+// Res_PlaneTexture
+//
+const Texture* Res_PlaneTexture(const ResourceId res_id, const Texture* source)
+{
+	if (source == NULL || Res_IsPlaneSafeTexture(source))
+		return source;
+
+	// A warped texture's pixels are rewritten in place every tic, so a copy of
+	// them would freeze. Those are rare enough to just resize every frame.
+	const bool warped = animated_texture_manager.isWarped(res_id);
+
+	const PlaneTextureTable::iterator it = plane_textures.find(res_id);
+	if (it != plane_textures.end())
+	{
+		if (!warped)
+			return it->second;
+
+		delete[] reinterpret_cast<uint8_t*>(it->second);
+		plane_textures.erase(it);
+	}
+
+	Texture* resized = Res_ResizeTextureForPlane(source);
+	plane_textures.insert(std::make_pair(res_id, resized));
+
+	if (!warped)
+	{
+		DPrintFmt("Res_PlaneTexture: resized {} from {}x{} to {}x{} for plane rendering\n",
+		          Res_GetResourceName(res_id).c_str(),
+		          source->mWidth, source->mHeight, resized->mWidth, resized->mHeight);
+	}
+
+	return resized;
 }

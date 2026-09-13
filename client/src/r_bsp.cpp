@@ -593,7 +593,7 @@ void R_AddLine (const seg_t *line)
 
 		// killough 3/7/98: Take flats offsets into account:
 		&& backsector->floor_xoffs == frontsector->floor_xoffs
-		&& (backsector->floor_yoffs + backsector->base_floor_yoffs) == (frontsector->floor_yoffs + backsector->base_floor_yoffs)
+		&& (backsector->floor_yoffs + backsector->base_floor_yoffs) == (frontsector->floor_yoffs + frontsector->base_floor_yoffs)
 		&& backsector->ceiling_xoffs == frontsector->ceiling_xoffs
 		&& (backsector->ceiling_yoffs + backsector->base_ceiling_yoffs) == (frontsector->ceiling_yoffs + frontsector->base_ceiling_yoffs)
 
