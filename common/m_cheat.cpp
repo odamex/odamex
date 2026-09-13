@@ -377,7 +377,7 @@ void GiveTo(player_t& player, const char* name)
 	{
 		int h;
 
-		if (0 < (h = ParseNum<int>(name + 6).value_or(0)))
+		if (0 < (h = giveall ? 0 : ParseNum<int>(name + 6).value_or(0)))
 		{
 			if (player.mo)
 			{
