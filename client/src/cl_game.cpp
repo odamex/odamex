@@ -750,19 +750,21 @@ bool G_Responder (const event_t& ev)
 		if (ev.type == ev_keydown)
 		{
 
-			if (cmd.empty() || (
-				cmd.starts_with("menu_") &&
-				cmd == "toggleconsole" &&
-				cmd == "sizeup" &&
-				cmd == "sizedown" &&
-				cmd == "togglemap" &&
-				cmd == "spynext" &&
-				cmd == "chase" &&
-				cmd == "+showscores" &&
-				cmd == "bumpgamma" &&
-				cmd == "screenshot" &&
-                cmd == "stepmode" &&
-                cmd == "step"))
+			static constexpr std::array idk {
+				"toggleconsole",
+				"sizeup",
+				"sizedown",
+				"togglemap",
+				"spynext",
+				"chase",
+				"+showscores",
+				"bumpgamma",
+				"stepmode",
+				"step",
+			};
+			if (cmd.empty() or
+			    (not cmd.starts_with("menu_") and
+				 std::ranges::none_of(idk, [&cmd](const auto& str){ return cmd != str; })))
 			{
 				M_StartControlPanel ();
 				return true;
