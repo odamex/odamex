@@ -727,7 +727,7 @@ BEGIN_COMMAND (unset)
 	else
 	{
 		cvar_t *prev;
-		cvar_t* var = cvar_t::FindCVar(argv[1], &prev);
+		const cvar_t* var = cvar_t::FindCVar(argv[1], &prev);
 		if (!var)
 		{
 			PrintFmt(PRINT_HIGH, "{} is not a variable.\n", argv[1]);
