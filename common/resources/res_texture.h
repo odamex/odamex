@@ -51,6 +51,16 @@ enum TextureSearchOrdering {
 
 
 //
+// Res_FindTextureMissingPatch
+//
+// The name of the first composite texture referencing a patch that does not
+// resolve, or an empty string when they all do. Used to judge whether a WAD
+// can stand on its own as an IWAD.
+//
+std::string Res_FindTextureMissingPatch();
+
+
+//
 // Res_GetTextureResourceId
 //
 const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering, bool use_placeholder = true);
@@ -180,6 +190,25 @@ inline const Texture* W_CachePatch(const OLumpName& name, zoneTag_e tag = PU_CAC
 inline const Texture* W_CachePatch(const lumpHandle_t handle, zoneTag_e tag = PU_CACHE)
 {
 	return Res_CacheTexture(handle, tag);
+}
+
+//
+// W_CheckWidescreenPatch
+//
+// A widescreen variant of a patch is the same name with the first two
+// characters replaced by "W_", so STBAR has W_STBAR. Returns the widescreen
+// name when a resource file supplies one, otherwise the name it was given.
+//
+inline OLumpName W_CheckWidescreenPatch(const OLumpName& lump_main)
+{
+	OLumpName lump_wide = "W_";
+	static constexpr int max_lump_name_length = 8;
+	strncpy(&lump_wide[2], lump_main.data(), max_lump_name_length - 2);
+
+	if (!Res_GetTextureResourceId(OStringToUpper(lump_wide.c_str()), PATCH).empty())
+		return lump_wide;
+
+	return lump_main;
 }
 
 

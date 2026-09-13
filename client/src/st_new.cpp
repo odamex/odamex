@@ -137,6 +137,9 @@ EXTERN_CVAR(g_preroundreset)
 EXTERN_CVAR(cl_showsprees)
 EXTERN_CVAR(cl_showofflinesprees)
 EXTERN_CVAR(sv_showsprees)
+EXTERN_CVAR(cl_showmultikills)
+EXTERN_CVAR(cl_showofflinemultikills)
+EXTERN_CVAR(sv_showmultikills)
 
 void ST_unloadNew()
 {
@@ -750,7 +753,7 @@ void drawProtos()
 	if (protos.size() == 0)
 		return;
 
-	proto_selected = clamp<size_t>(proto_selected, 0, protos.size() - 1);
+	proto_selected = std::clamp<size_t>(proto_selected, 0, protos.size() - 1);
 
 	// Starting y is five rows from the top.
 	const int top = 7 * 5;
@@ -878,7 +881,7 @@ static void drawLevelStats()
 	if (hud_anchoring.value() < 1.0f)
 	{
 		num_ax = ((static_cast<float>(I_GetSurfaceWidth()) - static_cast<float>(I_GetSurfaceHeight()) * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
-		num_ax = MAX(0, num_ax);
+		num_ax = std::max(0, num_ax);
 		text_ax = num_ax / xscale;
 	}
 
@@ -970,7 +973,7 @@ void OdamexHUD() {
 	if (hud_anchoring.value() < 1.0f)
 	{
 		num_ax = ((static_cast<float>(I_GetSurfaceWidth()) - static_cast<float>(I_GetSurfaceHeight()) * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
-		num_ax = MAX(0, num_ax);
+		num_ax = std::max(0, num_ax);
 		text_ax = num_ax / xscale;
 		patch_ax = num_ax / xscale;
 	}
@@ -1047,12 +1050,11 @@ void OdamexHUD() {
 
 	if (::hud_timer)
 	{
-
-		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY, false, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
+		hud::DrawTimerText(iy, CR_GREY, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
 		iy += hud::GetLineHeight(::hud_scale, ::hud_bigfont ? FACE_BIG : FACE_SMALL) + 1;
-
 	}
+
+	iy = hud::DrawRespawnText(iy);
 
 	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
 	{
@@ -1418,19 +1420,20 @@ struct smallSpreeLine_t
 
 static float lucentFade(int tics, const int start, const int end)
 {
+	// A negative tic count means the event hasn't happened yet - we rewound a netdemo
+	// past it.
+	if (tics < 0 || tics >= end)
+	{
+		return 0.0f;
+	}
+
 	if (tics < start)
 	{
 		return 1.0f;
 	}
-	else if (tics < end)
-	{
-		tics %= TICRATE;
-		return static_cast<float>(TICRATE - tics) / TICRATE;
-	}
-	else
-	{
-		return 0.0f;
-	}
+
+	tics %= TICRATE;
+	return static_cast<float>(TICRATE - tics) / TICRATE;
 }
 
 static void LevelStateHorde(levelStateLines_t& lines)
@@ -1497,6 +1500,9 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	lines.lucent = lucentFade(tics, TICRATE * 3, TICRATE * 4);
 }
 
+namespace
+{
+
 void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 {
 	smallSpreeLine_t line;
@@ -1509,7 +1515,8 @@ void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 	int w = banner_font->getTextWidth(line.spreeText.c_str());
 	int h = banner_font->getHeight();
 
-	line.lucent = lucentFade(::gametic - breaker.spreeEndedTic, TICRATE * 3, TICRATE * 4);
+	line.lucent =
+	    lucentFade(::gametic - breaker.spreeEndedTic, SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
 
 	const float oldtrans = ::hud_transparency;
 	::hud_transparency = line.lucent;
@@ -1525,12 +1532,8 @@ void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 	::hud_transparency.ForceSet(oldtrans);
 }
 
-void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
+void DisplayBigSpree(const SpreeRecord_t& record)
 {
-	// We handle "still dominating" sprees elsewhere.
-	if (record.stillDominating)
-		return;
-
 	bigSpreeLine_t line;
 
 	line.spreeText = record.spree.spreeText;
@@ -1542,7 +1545,8 @@ void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
 	int w = banner_font->getTextWidth(line.spreeText.c_str());
 	int h = banner_font->getHeight();
 
-	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
+	line.lucent =
+	    lucentFade(::gametic - record.spreeStartTic, SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
 
 	const float oldtrans = ::hud_transparency;
 	::hud_transparency = line.lucent;
@@ -1570,7 +1574,8 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 	int w = banner_font->getTextWidth(line.spreeText.c_str());
 	int h = banner_font->getHeight();
 
-	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
+	line.lucent =
+	    lucentFade(::gametic - record.spreeStartTic, SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
 
 	const float oldtrans = ::hud_transparency;
 	::hud_transparency = line.lucent;
@@ -1586,118 +1591,51 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 	::hud_transparency.ForceSet(oldtrans);
 }
 
+} // namespace
+
 void SpreeHud()
 {
-	if (!validplayer(displayplayer()) || !cl_showsprees || (!cl_showofflinesprees && !network_game) || (!sv_showsprees && network_game))
-		return;
-
-	static SpreeManager& manager = SpreeManager::getInstance();
-
-	// Display the current display player's spree if within time
-	// As big text
-	const player_t& p = displayplayer();
-
-	const SpreeRecord_t& spree_r = manager.getSpreeRecord(p.id);
-
-	// Main spree text
-	if (spree_r.playerId != -1 && !spree_r.stillDominating)
-	{
-		DisplayPlayerNormalSpree(spree_r);
-	}
-
-	// If we're not still dominating, check if someone else has a spree.
-	// We'll get the spree breaker as well, to compare and see which one to display.
-	const SpreeRecord_t& other_spree_r = manager.getLatestSpreeRecord(p.id);
-	const SpreeBreaker_t& global_spree_breaker = manager.getSpreeBreaker();
-
-	bool otherPlayerValid = false;
-	bool spreeBreakerValid = false;
-	bool playerStillDominatingValid = false;
-
-	if (spree_r.playerId == -1 && other_spree_r.playerId == -1 && global_spree_breaker.spreeEndedPlayerId == -1)
-	{
-		// All are invalid, bomb out here.
-		return;
-	}
-
-	// Still dominating text only shows up as small text.
-	if (spree_r.playerId != -1 && spree_r.stillDominating)
-	{
-		playerStillDominatingValid = true;
-	}
-
-	if (other_spree_r.playerId != -1)
-	{
-		otherPlayerValid = true;
-	}
-
-	if (global_spree_breaker.spreeEndedPlayerId != -1)
-	{
-		spreeBreakerValid = true;
-	}
-
-	if (!otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
+	if (!validplayer(displayplayer()) ||
+    !cl_showsprees ||
+    (!cl_showofflinesprees && !network_game)||
+    (!sv_showsprees && network_game))
 	{
 		return;
 	}
-	else if (otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
-	{
-		// Just display the other player's spree
-		DisplaySmallSpree(other_spree_r);
-	}
-	else if (!otherPlayerValid && spreeBreakerValid && !playerStillDominatingValid)
-	{
-		// Just display the spree breaker
-		DisplaySmallSpreeBreaker(global_spree_breaker);
-	}
-	else if (!otherPlayerValid && !spreeBreakerValid && playerStillDominatingValid)
-	{
-		// Just display the still dominating text.
-		DisplaySmallSpree(spree_r);
-	}
-	else
-	{
-		// All 3 are valid, compare times
-		if (other_spree_r.spreeStartTic > global_spree_breaker.spreeEndedTic)
-		{
 
-			if (other_spree_r.spreeStartTic > spree_r.spreeStartTic)
-			{
-				// Display other player's spree
-				DisplaySmallSpree(other_spree_r);
-			}
-			else
-			{
-				// Display still dominating
-				DisplaySmallSpree(spree_r);
-			}
-		}
-		else
-		{
-			if (global_spree_breaker.spreeEndedTic > spree_r.spreeStartTic)
-			{
-				// Display spree breaker
-				DisplaySmallSpreeBreaker(global_spree_breaker);
-			}
-			else
-			{
-				// Display still dominating
-				DisplaySmallSpree(spree_r);
-			}
-		}
+	const SpreeHudLines_t lines = P_GetSpreeHudLines(displayplayer().id);
+
+	if (lines.bigSpree)
+	{
+		DisplayBigSpree(*lines.bigSpree);
+	}
+
+	if (lines.smallBreaker)
+	{
+		DisplaySmallSpreeBreaker(*lines.smallBreaker);
+	}
+	else if (lines.smallSpree)
+	{
+		DisplaySmallSpree(*lines.smallSpree);
 	}
 }
 
 void MultiKillHud()
 {
-	if (!validplayer(displayplayer()))
+	if (!validplayer(displayplayer()) ||
+    !cl_showmultikills ||
+    (!cl_showofflinemultikills && !network_game) ||
+    (!sv_showmultikills && network_game) ||
+    displayplayer().isFreecam)
+	{
 		return;
+	}
 
 	const player_t& p = displayplayer();
 	const MultiKillTics_s& tics = MultiKillManager::getInstance().getMultiKills(p.id);
 
 	// Display the current display player's multi kills
-	if (tics.multiKills > 1 && ::gametic - tics.lastKillTime < 4 * TICRATE)
+	if (tics.multiKills > 1 && ::gametic - tics.lastKillTime < SPREE_DISPLAY_TICS)
 	{
 		const MultiKillLevel_s& multi =
 		    MultiKillManager::getInstance().getMultiKillLevel(tics.multiKills);
@@ -1713,8 +1651,8 @@ void MultiKillHud()
 		int w = banner_font->getTextWidth(line.multiKillText.c_str());
 		int h = banner_font->getHeight();
 
-		line.lucent = lucentFade(::gametic - tics.lastKillTime,
-			                      TICRATE * 3, TICRATE * 4);
+		line.lucent = lucentFade(::gametic - tics.lastKillTime, SPREE_FADE_TICS,
+			                      SPREE_DISPLAY_TICS);
 
 		const float oldtrans = ::hud_transparency;
 		::hud_transparency = line.lucent;
@@ -1743,7 +1681,7 @@ void LevelStateHUD()
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP: {
-		if (consoleplayer().spectator)
+		if (consoleplayer().spectator || displayplayer().isFreecam)
 		{
 			break;
 		}
@@ -1774,21 +1712,21 @@ void LevelStateHUD()
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN: {
 		lines.title = fmt::sprintf("%s", G_GametypeName());
-		lines.subtitle[0] = fmt::sprintf("Match begins in " TEXTCOLOR_GREEN "%d",
-		                                 ::levelstate.getCountdown());
+		lines.subtitle[0] = fmt::sprintf("Match begins in " TEXTCOLOR_GREEN "%s",
+		                                 hud::Countdown());
 		break;
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
 		lines.title = fmt::sprintf("Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
-		if (g_preroundreset)
+		if (g_preroundreset || G_IsMatchDuelGame())
 		{
-			lines.subtitle[0] = fmt::sprintf("Round begins in " TEXTCOLOR_GREEN "%d",
-			                                 ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Round begins in " TEXTCOLOR_GREEN "%s",
+			                                 hud::Countdown());
 		}
 		else
 		{
-			lines.subtitle[0] = fmt::sprintf("Weapons unlocked in " TEXTCOLOR_GREEN "%d",
-			                                 ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Weapons unlocked in " TEXTCOLOR_GREEN "%s",
+			                                 hud::Countdown());
 		}
 		break;
 	}
@@ -1857,11 +1795,11 @@ void LevelStateHUD()
 			lines.subtitle[0] = fmt::sprintf("%s team wins the round",
 			                                 WinToColorString(win));
 		else if (G_IsCoopGame() || G_IsHordeMode())
-			lines.subtitle[0] = fmt::sprintf("Next attempt in " TEXTCOLOR_GREEN "%d",
-			                                 ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Next attempt in " TEXTCOLOR_GREEN "%s",
+			                                 hud::Countdown());
 		else
-			lines.subtitle[0] = fmt::sprintf("Next round in " TEXTCOLOR_GREEN "%d",
-			                                 ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Next round in " TEXTCOLOR_GREEN "%s",
+			                                 hud::Countdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
@@ -1884,8 +1822,8 @@ void LevelStateHUD()
 		else if (win.type == WinInfo::WIN_TEAM)
 			lines.subtitle[0] = fmt::sprintf("%s team wins!", WinToColorString(win));
 		else
-			lines.subtitle[0] = fmt::sprintf("Intermission in " TEXTCOLOR_GREEN "%d",
-			                                 ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Intermission in " TEXTCOLOR_GREEN "%s",
+			                                 hud::Countdown());
 		break;
 	}
 	default:
@@ -1914,14 +1852,15 @@ void LevelStateHUD()
 
 	for (size_t i = 0; i < lines.subtitle.size(); i++)
 	{
-		w = subtitle_font->getTextWidth(lines.subtitle[i].c_str());
+		// The countdown ticks every frame, so give the line a fixed pitch.
+		w = hud::StringWidthMono(subtitle_font, lines.subtitle[i].c_str());
 		h = subtitle_font->getHeight();
 		if (::hud_transparency > 0.0f)
 		{
-			::screen->DrawFontText(subtitle_font, CR_GREY, surface_width / 2 - w / 2,
+			hud::DrawTextMonoAt(subtitle_font, surface_width / 2 - w / 2,
 			    (surface_height / 4 - h / 2) + (12 * ::CleanYfac) +
 			        (i * line_spacing),
-			    lines.subtitle[i].c_str(), false);
+			    lines.subtitle[i].c_str(), CR_GREY);
 		}
 	}
 
@@ -1941,15 +1880,14 @@ void SpectatorHUD()
 	if (::hud_timer)
 	{
 
-		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY, false, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
+		hud::DrawTimerText(iy, CR_GREY, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
 		iy += hud::GetLineHeight(::hud_scale, ::hud_bigfont ? FACE_BIG : FACE_SMALL) + 1;
 
 	}
 
 	// Draw help text - spy player name is handled elsewhere.
-	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-	              hud::Y_BOTTOM, hud::HelpText().c_str(), CR_GREY);
+	hud::DrawTextMono(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	                  hud::Y_BOTTOM, hud::HelpText().c_str(), CR_GREY);
 	iy += hud::GetLineHeight(::hud_scale) + 1;
 
 	// Draw targeted player names.
@@ -1968,10 +1906,11 @@ void DoomHUD()
 	// Draw warmup state or timer
 	if (hud_timer)
 	{
-		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
+		hud::DrawTimerText(st_y, CR_UNTRANSLATED);
 		st_y += hud::GetLineHeight(::hud_scale) + 1;
 	}
+
+	st_y = hud::DrawRespawnText(st_y);
 
 	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
 	{
@@ -2001,6 +1940,28 @@ void DoomHUD()
 		hud::drawLevelStats();
 }
 
+void FreecamHUD()
+{
+	int iy = 4;
+
+	// Draw warmup state or timer
+	if (::hud_timer)
+	{
+		hud::DrawTimerText(iy, CR_GREY, ::hud_bigfont ? FACE_BIG : FACE_SMALL);
+		iy += hud::GetLineHeight(::hud_scale, ::hud_bigfont ? FACE_BIG : FACE_SMALL) + 1;
+	}
+
+	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, "Freecam", CR_WHITE);
+	iy += hud::GetLineHeight(::hud_scale) + 1;
+
+	// Draw targeted player names.
+	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, 0);
+
+	// Draw gametype scoreboard
+	hud::drawGametype();
+}
 }
 
 BEGIN_COMMAND(netprotoup)

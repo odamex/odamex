@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include "v_video.h"
 #include "i_video.h"
 #include "r_main.h"
@@ -762,10 +764,10 @@ void DCanvas::DrawGlyphBlended(const palindex_t* fill, const byte* coverage,
 	const int surface_pitch = mSurface->getPitch();
 
 	// clip to the surface
-	const int x1 = MAX(x, 0);
-	const int y1 = MAX(y, 0);
-	const int x2 = MIN(x + width, surface_width);
-	const int y2 = MIN(y + height, surface_height);
+	const int x1 = std::max(x, 0);
+	const int y1 = std::max(y, 0);
+	const int x2 = std::min(x + width, surface_width);
+	const int y2 = std::min(y + height, surface_height);
 
 	if (x1 >= x2 || y1 >= y2)
 		return;
@@ -883,7 +885,7 @@ static int V_ARGBDrawLevel(const DCanvas::EWrapperCode drawer, const Texture* te
 		return 255;
 
 	if (drawer == DCanvas::EWrapper_Lucent)
-		return clamp(static_cast<int>(hud_transparency * 255), 0, 255);
+		return std::clamp(static_cast<int>(hud_transparency * 255), 0, 255);
 
 	return -1;
 }
@@ -1025,7 +1027,7 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 		V_MarkRect(x0, y0, destwidth, destheight);
 
 	byte* desttop = mSurface->getBuffer()+ (y0 * surface_pitch) + (x0 * colstep);
-	int w = MIN(destwidth * xinc, texture->mWidth << FRACBITS);
+	int w = std::min(destwidth * xinc, texture->mWidth << FRACBITS);
 
 	// True-color (PNG) textures are drawn natively on 32bpp surfaces
 	// with per-pixel alpha blending, other drawers and 8bpp surfaces use

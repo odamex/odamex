@@ -412,7 +412,13 @@ BEGIN_COMMAND (exec)
 	static std::vector<std::string> exec_stack;
 	static std::vector<bool>	tag_stack;
 
-	std::string found = M_FindUserFileName(argv[1], ".cfg");
+	// TODO: clean this up into a clearer ordering of search directories
+	// CWD, M_FindUserFileName, -cfgdir, ODAMEX_INSTALL_DATADIR, M_GetBinaryDir
+	// the last two are so that config-sample can always be easily exec'd
+	// not sure where exactly -cfgdir should be in the priority, it could be argued
+	// that it should be above user directory and/or CWD
+	std::string found = M_FileExists(argv[1]) ?
+		M_CleanPath(argv[1]) : M_FindUserFileName(argv[1], ".cfg");
 	if (found.empty())
 	{
 		const char* cfgdir = Args.CheckValue("-cfgdir");

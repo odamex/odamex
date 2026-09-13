@@ -119,7 +119,6 @@ void SV_CheckTimeouts (void);
 void SV_ConnectClient(void);
 void SV_ConnectClient2(player_t& player);
 void SV_ExpectResourceDigests(client_t& cl);
-void SV_WriteCommands(void);
 MessageResultEnum SV_SendPacket(player_t &pl);
 void SV_DisplayTics();
 void SV_RunTics();

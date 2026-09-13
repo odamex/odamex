@@ -31,8 +31,8 @@
 #include <thread>
 
 #ifdef _WIN32
-#   define WIN32_LEAN_AND_MEAN
-#   include <windows.h>
+
+#include "win32inc.h"
 
 //  IMPORTANT WIN32 NOTE:
 //
@@ -183,7 +183,7 @@ namespace {
 				else
 				{
 					m_thread.detach();
-				}				
+				}
 #else
 				// Pthreads lets us do a Cancel operation, which defaults to ending the
 				// thread when control is in a "cancelation point" function.  Fortunately

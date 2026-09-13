@@ -35,13 +35,17 @@ function(lib_buildgen)
     set(_SRCDIR "${CMAKE_CURRENT_SOURCE_DIR}/${_LIBRARY}")
   endif()
 
+  # A ;-separated prefix path would otherwise be split into stray
+  # positional arguments by execute_process.
+  string(REPLACE ";" "\\;" _PREFIX_PATH "${CMAKE_PREFIX_PATH}")
+
   # Baseline library generation.
   set(_COMMAND "${CMAKE_COMMAND}"
     -S "${_SRCDIR}"
     -B "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
     -G "${CMAKE_GENERATOR}"
     "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-    "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+    "-DCMAKE_PREFIX_PATH=${_PREFIX_PATH}"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
     "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
 

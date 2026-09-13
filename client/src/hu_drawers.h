@@ -63,6 +63,20 @@ void DrawText(int x, int y, const float scale,
               const bool force_opaque = false,
               const fontface_t face = FACE_SMALL,
               const int y_pixel_nudge = 0);
+int StringWidthMono(const OFont* font, const char* str);
+int StringWidthMono(const char* str, const int pixel_scale = 1,
+                    const fontface_t face = FACE_SMALL);
+void DrawTextMonoAt(const OFont* font, int x, int y,
+                    const char* str, const int color, const bool force_opaque = false);
+void DrawTextMonoAt(int x, int y, const int pixel_scale,
+                    const char* str, const int color, const bool force_opaque = false,
+                    const fontface_t face = FACE_SMALL);
+void DrawTextMono(int x, int y, const float scale,
+                  const x_align_t x_align, const y_align_t y_align,
+                  const x_align_t x_origin, const y_align_t y_origin,
+                  const char* str, const int color,
+                  const bool force_opaque = false,
+                  const fontface_t face = FACE_SMALL);
 void DrawTexture(int x, int y, const float scale,
                const x_align_t x_align, const y_align_t y_align,
                const x_align_t x_origin, const y_align_t y_origin,

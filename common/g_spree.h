@@ -24,13 +24,28 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
-#include <string>
-#include <vector>
-#include <map>
 #include <algorithm>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "d_player.h"
+
+class FArchive;
 
 void SexMessage(const char* from, char* to, gender_t gender, std::string_view victim,
                 std::string_view killer, std::string_view spree);
+
+/// <summary>
+/// The tic a spree, spree breaker or multi kill starts fading out on.
+/// </summary>
+constexpr int SPREE_FADE_TICS = 3 * TICRATE;
+
+/// <summary>
+/// The tic a spree, spree breaker or multi kill stops being displayed.
+/// </summary>
+constexpr int SPREE_DISPLAY_TICS = 4 * TICRATE;
 
 /// <summary>
 /// Type of spree breaker to determine the spree obituary used.
@@ -99,24 +114,32 @@ struct SpreeBreaker_t
 	int endedPoints;
 
 	int spreeEndedTic;
+
+	int spreeEndedLevel;
+
+	SpreeBreakerType spreeEndedType;
+
 	SpreeBreaker_t()
 	    : spreeEndedName(""), spreeEndedPlayerId(-1), spreeEndedTeam(TEAM_NONE),
 	      spreeEnderName(""), spreeEnderPlayerId(-1), spreeEnderTeam(TEAM_NONE),
 	      spreeEndedBroadcastText(""), spreeEnded(""), spreeEndedColor(CR_GRAY),
-	      spreeEnderMonster(false), endedPoints(0), spreeEndedTic(0)
+	      spreeEnderMonster(false), endedPoints(0), spreeEndedTic(0),
+	      spreeEndedLevel(-1), spreeEndedType(BR_SELF)
 	{
 	}
 	SpreeBreaker_t(
 			std::string SpreeEndedName, int SpreeEndedPlayerId, team_t SpreeEndedTeam,
 			std::string SpreeEnderName, int SpreeEnderPlayerId, team_t SpreeEnderTeam,
 			std::string SpreeEndedBroadcastText, std::string SpreeEnded, EColorRange SpreeEndedColor,
-			bool SpreeEnderMonster, int EndedPoints, int SpreeEndedTic)
+			bool SpreeEnderMonster, int EndedPoints, int SpreeEndedTic,
+			int SpreeEndedLevel, SpreeBreakerType BreakerType)
 	    : spreeEndedName(SpreeEndedName), spreeEndedPlayerId(SpreeEndedPlayerId),
 	      spreeEndedTeam(SpreeEndedTeam), spreeEnderName(SpreeEnderName),
 	      spreeEnderPlayerId(SpreeEnderPlayerId), spreeEnderTeam(SpreeEnderTeam),
 	      spreeEndedBroadcastText(SpreeEndedBroadcastText), spreeEnded(SpreeEnded),
 	      spreeEndedColor(SpreeEndedColor), spreeEnderMonster(SpreeEnderMonster),
-	      endedPoints(EndedPoints), spreeEndedTic(SpreeEndedTic)
+	      endedPoints(EndedPoints), spreeEndedTic(SpreeEndedTic), spreeEndedLevel(SpreeEndedLevel),
+	      spreeEndedType(BreakerType)
 	{
 	}
 };
@@ -259,10 +282,12 @@ public:
 	/// <param name="breaker">A generated spreeBreaker_t struct.</param>
 	/// <param name="level">The spree level the player was on when their spree ended.</param>
 	/// <param name="type">Type of spree breaker.</param>
+	/// <param name="ticsAgo">How many tics ago the spree was broken.</param>
 	void setRawSpreeBreaker(
 	    const SpreeBreaker_t& breaker,
 			const int level,
-	    const SpreeBreakerType type);
+	    const SpreeBreakerType type,
+	    const int ticsAgo);
 
 	/// <summary>
 	/// Sets a raw state of a player's spree.
@@ -271,9 +296,9 @@ public:
 	/// </summary>
 	/// <param name="playerId">Player ID of the player to set the spree.</param>
 	/// <param name="newSpreeLevel">New level of spree to </param>
-	/// <param name="tic">Tic the spree level was achieved on.</param>
+	/// <param name="ticsAgo">How many tics ago the spree level was achieved.</param>
 	/// <returns>True if the update resulted in an upgraded spree level.</returns>
-	bool setRawSpree(const int playerId, const int newSpreeLevel);
+	bool setRawSpree(const int playerId, const int newSpreeLevel, const int ticsAgo);
 
 	/// <summary>
 	/// Checks if the user has a current spree active.
@@ -305,6 +330,17 @@ public:
 	/// <param name="playerid">Player ID of the player to get points for.</param>
 	/// <returns>Amount of points for the specified player.</returns>
 	int getPoints(const int playerid);
+
+	/// <summary>
+	/// Gets every active spree record, keyed by player ID.
+	/// </summary>
+	/// <returns>All current spree records.</returns>
+	[[nodiscard]] const std::unordered_map<int, SpreeRecord_t>& getSpreeRecords() const;
+
+	/// <summary>
+	/// Reads or writes every active spree and the last spree breaker.
+	/// <param name="arc">Archive to serialize to or from.</param>
+	void serialize(FArchive& arc);
 
 private:
 	/// <summary>
@@ -466,10 +502,52 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target);
 /// Also, remove any spree from a player who was killed, and process any spree breakers.
 /// </summary>
 /// <param name="source">The damager (must be a player)</param>
+/// <param name="target">The thing being damaged, so friendly monsters can be skipped.</param>
 /// <param name="totalDamage">The total damage dealt during this event.</param>
-void P_ProcessSpreeDamage(const player_t* source, const int totalDamage);
+void P_ProcessSpreeDamage(const player_t* source, const AActor* target,
+                          const int totalDamage);
+
+/// <summary>
+/// What the spree HUD should draw, resolved from the current spree records and the
+/// last spree breaker. Kept apart from the drawing so the rules can be tested.
+/// </summary>
+struct SpreeHudLines_t
+{
+	/// <summary>
+	/// Spree to draw as the big line, or null for none.
+	/// </summary>
+	const SpreeRecord_t* bigSpree = nullptr;
+
+	/// <summary>
+	/// Spree to draw on the small line, or null for none.
+	/// </summary>
+	const SpreeRecord_t* smallSpree = nullptr;
+
+	/// <summary>
+	/// Spree breaker to draw on the small line, or null for none. Takes the small line
+	/// over smallSpree when both are set.
+	/// </summary>
+	const SpreeBreaker_t* smallBreaker = nullptr;
+};
+
+/// <summary>
+/// Works out which sprees the HUD should be showing for a given player.
+/// <br />
+/// The watched player's own spree is the big line and is never echoed small, except a
+/// repeat of the top level, which only ever goes small. The small line holds whichever
+/// of that repeat, another player's spree and the last spree breaker happened last.
+/// </summary>
+/// <param name="displayPlayerId">ID of the player being watched.</param>
+/// <returns>The lines to draw, any of which may be null.</returns>
+SpreeHudLines_t P_GetSpreeHudLines(const int displayPlayerId);
 
 /// <summary>
 /// Handles internal ticking for spree bookkeeping.
 /// </summary>
 void P_TicSprees();
+
+/// <summary>
+/// Serializes spree bookkeeping in and out of netdemo snapshots.
+/// </summary>
+/// <param name="arc">Archive to serialize to or from.</param>
+void P_SerializeSprees(FArchive& arc);

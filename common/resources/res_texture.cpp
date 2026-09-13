@@ -23,6 +23,8 @@
 //-----------------------------------------------------------------------------
 
 #include "odamex.h"
+
+#include <algorithm>
 #include "m_fixed.h"
 
 #include "tables.h"
@@ -210,6 +212,14 @@ TextureManager::~TextureManager()
 }
 
 
+// The first composite texture found to reference a patch that does not
+// resolve, recorded while TEXTURE1/TEXTURE2 are parsed. A missing patch is
+// non-fatal (the patch simply draws as blank), so this only exists so that
+// D_DoomWadReboot can judge whether a WAD stands on its own as an IWAD.
+//
+static std::string missing_patch_texture;
+
+
 //
 // TextureManager::clear
 //
@@ -221,6 +231,20 @@ void TextureManager::clear()
 	for (ResourceLoaderLookupTable::iterator it = mResourceLoaderLookup.begin(); it != mResourceLoaderLookup.end(); ++it)
 		delete it->second;
 	mResourceLoaderLookup.clear();
+
+	missing_patch_texture.clear();
+}
+
+
+//
+// Res_FindTextureMissingPatch
+//
+// Returns the name of the first composite texture that references a patch
+// which could not be resolved, or an empty string when every texture resolves.
+//
+std::string Res_FindTextureMissingPatch()
+{
+	return missing_patch_texture;
 }
 
 
@@ -352,6 +376,7 @@ const ResourceLoader* TextureManager::getResourceLoader(const ResourceId res_id)
 
 
 //
+//
 // TextureManager::addCompositeTextureResources
 //
 // Parses the TEXTURE1 & TEXTURE2 lumps and adds the composite textures
@@ -402,6 +427,19 @@ void TextureManager::addCompositeTextureResources(ResourceManager* manager, cons
 			continue;
 
 		CompositeTextureDefinition tex_def = buildCompositeTextureDefinition(raw_def_data + tex_offset, pnames_lookup);
+
+		if (missing_patch_texture.empty())
+		{
+			for (const auto& patch_def : tex_def.mPatchDefs)
+			{
+				if (!Res_CheckResource(patch_def.mResId))
+				{
+					missing_patch_texture = texture_lump_name.c_str();
+					break;
+				}
+			}
+		}
+
 		ResourceLoader* loader = new CompositeTextureLoader(manager->getRawResourceAccessor(), tex_def);
 		ResourcePath path = textures_directory_name + texture_lump_name;
 		const ResourceId res_id = manager->addResource(path, this, loader);
@@ -781,7 +819,7 @@ void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering searc
 		if (os.compareTokenNoCase("tics"))
 		{
 			os.mustScanInt();
-			duration_min = duration_max = clamp(os.getTokenInt(), 0, 255);
+			duration_min = duration_max = std::clamp(os.getTokenInt(), 0, 255);
 		}
 		else if (os.compareTokenNoCase("rand"))
 		{

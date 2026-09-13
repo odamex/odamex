@@ -32,7 +32,6 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 	const PacketHeaderType header {io_rawBuf};
 
 	m_immediateReceiveBuffer.clear();
-	m_immediateReceiveSequenceNumber = 0;
 
 	if (m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
 	{
@@ -45,12 +44,26 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		return MessageResultEnum::ABORT;
 	}
 
-	if (header.flags & SVF_UNUSED_MASK)
+	if (header.flags & PacketHeaderType::FLAG_UNUSED_MASK)
 	{
-		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood", header.flags);
+		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood\n", header.flags);
 		return MessageResultEnum::ABORT;
 	}
-	else if (header.flags & SVF_COMPRESSED)
+
+	if (header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY and header.reliableSize)
+	{
+		PrintFmt(PRINT_WARNING, "High priority packet {} had a reliable payload: {} bytes\n",
+		         -header.sequence,
+		         header.reliableSize);
+		return MessageResultEnum::ABORT;
+	}
+
+	if (m_isBitBucket)
+	{
+		return MessageResultEnum::DEFER;
+	}
+
+	if (header.flags & PacketHeaderType::FLAG_COMPRESSED)
 	{
 		m_packet.GetCompressorRef().Decompress(io_rawBuf);
 	}
@@ -71,7 +84,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 	if (header.reliableSize)
 	{
-		if (not m_receiver.RegisterReliablePacket(header.sequence, header.reliableSize, io_rawBuf))
+		if (not m_receiver.RegisterReliablePacket(header, header.reliableSize, io_rawBuf))
 		{
 			// Was it a worthless / duplicate retransmit?  Skip over the content.
 			io_rawBuf.SeekRead(header.reliableSize, buf_t::BT_CURRENT);
@@ -87,15 +100,110 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 	}
 
 	const size_t bestEffortSize = io_rawBuf.BytesLeftToRead();
+
 	if (bestEffortSize > 0)
 	{
 		if (bestEffortSize > m_immediateReceiveBuffer.maxsize())
 		{
 			m_immediateReceiveBuffer.resize(bestEffortSize + 1);    // +1 because that's what buf_t needs...
 		}
+
+		// IMPORTANT NOTE:  The best-effort packet queuing and deferred reception is a part of a future
+		//                  broader mobj rollback reconciliation feature.  We disable it for now because
+		//                  if we don't have mobj rollback enabled, then it can cause updates that should
+		//                  be handled in a timely manner to be deferred if network latency jitter or packet
+		//                  loss is prevalent, causing a visible backwards stutter on missiles and other
+		//                  things.
+		//
+		//                  Do not enable the following until holistic rollback is implemented.
+
+#ifdef ODAMESSENGER_ENABLE_BE_PACKET_QUEUE
+
+		// One subtlety: Best effort / normal-priority messages that are "too old" are still handled
+		//               because they could still have data mobjs that's more current than the mobjs'
+		//               last reliable update, which could be even older.
+		//
+		// Another subtlety: the header sequence will be -1 for any best-effort-only packets that predate
+		//                   any reliable messages.  Therefore we can't consider the sequence to be "old"
+		//                   unless it has a value >= 0.
+		//
+		// Another one: When a best-effort payload and reliable payload are delivered together, the BE
+		//              portion is considered "too new" which means it gets placed in the BE queue of
+		//              the same table entry that the reliable portion goes into.  After we handle the
+		//              reliable portion, subsequent BE-only packets are handled via the immediate buffer.
+
+		// TODO:  Perhaps header.seque should be checked against receiver.CurrentSequence instead of the
+		//        current received packet sequence number, because the latter can be misordered in some
+		//        situations.
+
+		const bool isHighPriority   = (header.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0;
+		const bool isNormalPriority = not isHighPriority;
+		const bool isHighTooOld     = isHighPriority   and header.sequence >= 0 and header.sequence < GetCurrentReceivedPacketSequenceNumber();
+		const bool isNormalTooNew   = isNormalPriority and header.sequence > GetCurrentReceivedPacketSequenceNumber();
+
+		// No matter what, we want to handle any acks and ping requests that are in the packet
+		// immediately, regardless of whether they're older or newer than expected.  These are
+		// critical to keeping retransmissions under control under rough network conditions.
+		// We do this by copying these messages into the immediate receive buffer so that they
+		// get evaluated very shortly after we return from this function, assuming
+		// NextReceivedPacket() is called shortly thereafter.
+
+		if (isHighTooOld or isNormalTooNew)
+		{
+			const size_t startOfBestEffort = io_rawBuf.TellRead();
+			while (io_rawBuf.BytesLeftToRead())
+			{
+				const auto msgFormatID = msg_t(io_rawBuf.ReadUnVarint());
+				switch (msgFormatID)
+				{
+					case msg_ack:
+						m_immediateReceiveBuffer.WriteUnVarint(msgFormatID);
+						m_immediateReceiveBuffer.WriteLong(io_rawBuf.ReadLong());   // sequence number
+						break;
+
+					case svc_pingrequest:
+						{
+							const size_t msgSize = io_rawBuf.ReadUnVarint();
+							m_immediateReceiveBuffer.WriteUnVarint(msgFormatID);
+							m_immediateReceiveBuffer.WriteUnVarint(msgSize);
+							m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(msgSize), msgSize);
+						}
+						break;
+
+					default:
+						io_rawBuf.SeekRead(io_rawBuf.ReadUnVarint(), buf_t::BT_CURRENT);    // read msg size + skip
+						break;
+				}
+			}
+			io_rawBuf.SeekRead(startOfBestEffort, buf_t::BT_START);
+		}
+
+		if (isNormalTooNew)
+		{
+			// Anything else in this "too new" best-effort payload will be handled after its reliable packet comes in.
+			// FYI - It doesn't hurt to have a duplicate ack handled whenever the owning packet is considered "current".
+
+			m_receiver.RegisterBestEffortPacket(header, bestEffortSize, io_rawBuf);
+		}
+		else if (not isHighTooOld)
+		{
+			m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
+		}
+
+		if (m_immediateReceiveBuffer.size())
+		{
+			m_immediateReceiveHeader = header;
+			return MessageResultEnum::ACCEPT;
+		}
+
+#else // ... we're not deferring best-effort packet reception.  Do it immediately!
+
 		m_immediateReceiveBuffer.WriteChunk(io_rawBuf.ReadChunk(bestEffortSize), bestEffortSize);
-		m_immediateReceiveSequenceNumber = header.sequence;
+		m_immediateReceiveHeader = header;
 		return MessageResultEnum::ACCEPT;
+
+#endif
+
 	}
 
 	return MessageResultEnum::DEFER;
@@ -103,28 +211,41 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 bool OdaMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 {
-	if (m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
+	if (m_isBitBucket or m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
 	{
 		return false;
 	}
 
-	// Do the reliable traffic first because it's possible or even likely for a reliable mobj update
-	// (or critical event) to be followed up by an UpdateMobj that includes post-physics dynamics.
-	const int receivedReliableSequenceNumber = m_receiver.NextPacket(io_rawBuf);
-	if (receivedReliableSequenceNumber >= 0)
+	// Make sure that a high-priority immediate receive buffer goes first, even ahead of
+	// any reliable packets.
+	if (m_immediateReceiveBuffer.size() and (m_immediateReceiveHeader.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0)
 	{
-		m_currentReceivedPacketSequenceNumber = receivedReliableSequenceNumber;
+		io_rawBuf.swap(m_immediateReceiveBuffer);
+		m_immediateReceiveBuffer.clear();
+
+		m_receivedHeader = m_immediateReceiveHeader;
 		return true;
 	}
 
+	// Now do the reliable packets.
+	if (const auto nextHeader = m_receiver.NextPacket(io_rawBuf))
+	{
+		m_receivedHeader = nextHeader.value();      // it's a std::optional.
+		return true;
+	}
+
+	// Finally do any best-effort mobj updates...  Please note that this can still be an
+	// out-of-order reception if the best-effort update originated after a dropped or
+	// jittered-out reliable packet.
 	if (m_immediateReceiveBuffer.size())
 	{
 		io_rawBuf.swap(m_immediateReceiveBuffer);
-		m_currentReceivedPacketSequenceNumber = m_immediateReceiveSequenceNumber;
-		m_immediateReceiveSequenceNumber = 0;
 		m_immediateReceiveBuffer.clear();
+
+		m_receivedHeader = m_immediateReceiveHeader;
 		return true;
 	}
+
 	return false;
 }
 
@@ -181,7 +302,7 @@ size_t OdaMessenger::PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf
 	return io_packet.AddUnreliableMessage(messageBuf);
 }
 
-MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
+void OdaMessenger::StartTicSend(int i_currentTic)
 {
 	// Once a second, recalculate the budget to incorporate any changes made to maxRate.
 	const int ticPhase = i_currentTic % TICRATE;
@@ -193,8 +314,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 
 	ManageBudget(i_currentTic);
 
-	const int startBudget = m_byteBudget;
-
+	m_currentTicStartingBudget = m_byteBudget;
 	m_lastSendSize = 0;
 
 	if (m_recordingIsEnabled)
@@ -202,18 +322,39 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		m_recordingBuffer.clear();
 	}
 
-	if (simulated_connection)
+	if (m_isBitBucket or simulated_connection)
 	{
 		Clear();
 	}
+}
 
-	// Phase zero:  Detect if the client has become dangerously non-responsive,
-	//              and abort if so.
+size_t OdaMessenger::SendHighPriority(int i_currentTic, const netadr_t& i_dest)
+{
+	ManageBudget(i_currentTic);
+
+	size_t bytesSentBestEffort = 0;
+	while (m_outgoingHighNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
+	{
+		m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
+
+		const size_t sendSize = m_highPacket.SendHighPriority(i_currentTic, m_destinationTic, m_sender, i_dest);
+		bytesSentBestEffort += sendSize;
+		m_byteBudget        -= static_cast<int>(sendSize);
+	}
+	return bytesSentBestEffort;
+}
+
+MessageResultEnum OdaMessenger::SendStandard(int i_currentTic, const netadr_t& i_dest)
+{
+	ManageBudget(i_currentTic);
+
+	// Before doing anything, judge whether or not the client has become dangerously
+	// non-responsive, and abort if so.
 	if (m_criticalSequenceTimeoutInTics > 0)
 	{
 		if (SequenceQueueEntryType* oldestOutgoingUnackedEntry = m_sender.IterateUnackedPackets().Next())
 		{
-			if (i_currentTic > oldestOutgoingUnackedEntry->originatingTic + m_criticalSequenceTimeoutInTics)
+			if (i_currentTic > oldestOutgoingUnackedEntry->header.originatorTic + m_criticalSequenceTimeoutInTics)
 			{
 				m_sender.SetMode(SequenceSender::CRITICAL_FAILURE);
 				return MessageResultEnum::ABORT;
@@ -221,18 +362,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		}
 	}
 
-	// First phase - send high-priority non-reliables (acks, servertic, player updates)
-	size_t bytesSentBestEffort = 0;
-	while (m_outgoingHighNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
-	{
-		m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
-
-		const size_t sendSize = m_highPacket.Send(i_currentTic, m_sender, i_dest);
-		bytesSentBestEffort += sendSize;
-		m_byteBudget        -= static_cast<int>(sendSize);
-	}
-
-	// Second phase - send reliables, padded out to MAX_UDP_SIZE-ish with non-reliable best-effort messages.
+	// Now send reliables, padded out to MAX_UDP_SIZE-ish with non-reliable best-effort messages.
 	m_bytesSentWithReliability = 0;
 	while (m_outgoingReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
@@ -241,7 +371,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		// Now cover the case where we have leftover space enough for an unreliable portion.
 		m_outgoingNonReliableQueue.Pack([this](const buf_t& messageBuf) { return PackAsUnreliable(m_packet, messageBuf); });
 
-		const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
+		const size_t sendSize = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
 		m_bytesSentWithReliability += sendSize;
 		m_byteBudget               -= static_cast<int>(sendSize);
 	}
@@ -267,13 +397,12 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		{
 			if (m_packet.SizeOfReliablePortion() == 0)
 			{
-				const size_t bestEffortBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
-				bytesSentBestEffort         += bestEffortBytes;
+				const size_t bestEffortBytes = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
 				m_byteBudget                -= static_cast<int>(bestEffortBytes);
 			}
 			else
 			{
-				const size_t reliableBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
+				const size_t reliableBytes = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
 				m_bytesSentWithReliability  += reliableBytes;
 				m_byteBudget                -= static_cast<int>(reliableBytes);
 			}
@@ -289,29 +418,42 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	// it contains only a header.
 
 	const size_t lastReliableBytesSent = m_packet.SizeOfReliablePortion();
-	const size_t lastTotalSent         = m_packet.Send(i_currentTic, m_sender, i_dest);
+	const size_t lastTotalSent         = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
 	m_byteBudget                      -= static_cast<int>(lastTotalSent);
 
 	if (lastReliableBytesSent)
 	{
 		m_bytesSentWithReliability += lastTotalSent;
 	}
-	else
-	{
-		bytesSentBestEffort += lastTotalSent;
-	}
-
-	m_lastSendSize = std::max(0, startBudget - m_byteBudget);
-
-	const int reliableOverloadAdjustment = m_bytesSentWithReliability > m_reliableOverloadThreshold ? 1 : -1;
-
-	m_reliableOverloadCount = std::max(0, std::min(m_reliableOverloadCount + reliableOverloadAdjustment, 10));
 
 	return m_byteBudget > 0 ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
 }
 
-int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
+void OdaMessenger::EndTicSend()
 {
+	m_lastSendSize = std::max(0, m_currentTicStartingBudget - m_byteBudget);
+
+	const int reliableOverloadAdjustment = m_bytesSentWithReliability > m_reliableOverloadThreshold ? 1 : -1;
+
+	m_reliableOverloadCount = std::max(0, std::min(m_reliableOverloadCount + reliableOverloadAdjustment, 10));
+}
+
+MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
+{
+	Sender guard(*this, i_currentTic, i_dest);
+
+	guard.SendHighPriority();
+	guard.SendRetransmissions();
+	return guard.SendStandard();
+}
+
+size_t OdaMessenger::SendRetransmissions(int i_currentTic, const netadr_t& i_dest)
+{
+	if (m_isBitBucket)
+	{
+		m_sender.Clear();
+	}
+
 	int retransmissionsSent = 0;
 	int bytesSent = 0;
 
@@ -341,7 +483,7 @@ int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest
 
 	// If we have retransmissions, setup previousPacketSeq to appear that the first retransmitted
 	// packet counts as the first of a contiguous run of packets.
-	int previousPacketSeq          = sendQueueEntry ? sendQueueEntry->sequence - 1 : -1;
+	int previousPacketSeq          = sendQueueEntry ? sendQueueEntry->header.sequence - 1 : -1;
 	m_noncontiguousRetransmitCount = 0;
 
 	for (; sendQueueEntry != nullptr; sendQueueEntry = iter.Next())
@@ -351,17 +493,21 @@ int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest
 		// during development.
 		//
 		// In any case, natural scaling works well now, probably because we have a working throttle.
-		if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
+		if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->header.originatorTic) or sendQueueEntry->lastRetransmitTic != -1)
 		{
 			if (++retransmissionsSent > m_maxPacketsPerRetransmission or m_byteBudget <= 0)
 			{
 				break;
 			}
-			m_noncontiguousRetransmitCount += previousPacketSeq != sendQueueEntry->sequence - 1 ? 1 : 0;
-			previousPacketSeq = sendQueueEntry->sequence;
+			m_noncontiguousRetransmitCount += previousPacketSeq != sendQueueEntry->header.sequence - 1 ? 1 : 0;
+			previousPacketSeq = sendQueueEntry->header.sequence;
 
 			sendQueueEntry->lastRetransmitTic = i_currentTic;
-			const int resendSize = static_cast<int>(m_packet.ReSend(sendQueueEntry->sequence, sendQueueEntry->buf, i_dest));
+			const int resendSize = static_cast<int>(m_packet.ReSend(sendQueueEntry->header.originatorTic,
+			                                                        sendQueueEntry->header.destinationTic,
+			                                                        sendQueueEntry->header.sequence,
+			                                                        sendQueueEntry->buf,
+			                                                        i_dest));
 			bytesSent    += resendSize;
 			m_byteBudget -= resendSize;
 		}

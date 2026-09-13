@@ -34,4 +34,25 @@ OCRC32Sum Res_CRC32(const std::string& filename);
 
 std::string Res_CleanseFilename(const std::string& filename);
 
-void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir, const char separator);
+//
+// What to do about a search directory that does not exist. A path the user
+// asked for is worth a warning; the speculative platform paths are not.
+//
+enum struct missing_dir_policy_t
+{
+	SILENT,
+	WARN,
+	DEV_WARN,
+};
+
+// Appends one directory.
+void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir,
+                      missing_dir_policy_t policy = missing_dir_policy_t::SILENT);
+void Res_AddSearchDir(std::vector<std::string>& search_dirs, std::string dir,
+                      missing_dir_policy_t policy = missing_dir_policy_t::SILENT);
+
+// Appends every directory in a SEARCHPATHSEPCHAR-separated list.
+void Res_AddSearchDirList(std::vector<std::string>& search_dirs, const char* dirs,
+                          missing_dir_policy_t policy = missing_dir_policy_t::SILENT);
+void Res_AddSearchDirList(std::vector<std::string>& search_dirs, std::string dirs,
+                          missing_dir_policy_t policy = missing_dir_policy_t::SILENT);

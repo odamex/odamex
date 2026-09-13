@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include "i_video.h"
 #include "v_video.h"
 #include "m_random.h"
@@ -82,7 +84,7 @@ static void Wipe_StartMelt()
 	{
 		int random_value = (M_Random() % 3) - 1;
 		worms[x] = worms[x - 1] + random_value;
-		worms[x] = clamp(worms[x], -15, 0);
+		worms[x] = std::clamp(worms[x], -15, 0);
 	}
 
 	// copy each column of the current screen image to wipe_screen
@@ -397,12 +399,11 @@ static inline void Wipe_DrawFadeGeneric()
 
 	fixed_t newfade = fade - 2;
 
-	if (newfade < 2)
-		newfade = 2;
+	newfade = std::max(newfade, 2);
 
 	fixed_t fadedelta = newfade + FixedMul(render_lerp_amount, fade - newfade);
 
-	const fixed_t bglevel = MAX(64 - fadedelta, 0);
+	const fixed_t bglevel = std::max(64 - fadedelta, 0);
 
 	for (int y = 0; y < surface_height; y++)
 	{
@@ -450,6 +451,16 @@ void Wipe_Stop()
 	}
 
 	NoWipe = 0;
+}
+
+//
+// Wipe_Suppress
+//
+// Skip any wipe that would otherwise begin during the next few screen updates.
+//
+void Wipe_Suppress(int frames)
+{
+	NoWipe = std::max(frames, 0);
 }
 
 //

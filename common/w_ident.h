@@ -74,6 +74,7 @@ const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32);
 const FileIdentifier* W_GameInfo(const OMD5Hash& md5);
 bool W_IsKnownIWAD(const OWantFile& file);
 bool W_IsIWAD(const OResFile& file);
+bool W_IsUnofficialIWAD(const OResFile& file);
 bool W_IsFilenameCommercialWAD(const std::string& filename);
 bool W_IsFilehashCommercialWAD(const OMD5Hash& fileHash);
 bool W_IsFileCommercialWAD(const std::string& filename);

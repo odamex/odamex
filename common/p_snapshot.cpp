@@ -76,7 +76,7 @@ ActorSnapshot::ActorSnapshot(int time) :
 		mX(0), mY(0), mZ(0),
 		mMomX(0), mMomY(0), mMomZ(0), mAngle(0), mPitch(0), mOnGround(true),
 		mCeilingZ(0), mFloorZ(0), mReactionTime(0), mWaterLevel(0),
-		mFlags(0), mFlags2(0), mFlags3(0), mFrame(0)
+		mFrame(0)
 {
 }
 
@@ -187,7 +187,7 @@ void ActorSnapshot::toActor(AActor *mo) const
 
 			// [AM] Sometimes it is best to ignore parts of snapshots,
 			//      for moving platforms and such.
-			if ((mo->oflags & MFO_NOSNAPZ) == 0)
+			if (not (mo->oflags & MFO_NOSNAPZ))
 				mo->z = destz;
 
 			mo->ceilingz = tmceilingz;

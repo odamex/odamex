@@ -25,7 +25,7 @@
 
 #include "odamex.h"
 
-#include "cl_main.h"
+#include "cl_parse.h"
 #include "p_ctf.h"
 #include "d_player.h"
 #include "m_argv.h"
@@ -37,13 +37,18 @@
 #include "st_stuff.h"
 #include "p_mobj.h"
 #include "clc_message.h"
+#include "msg_message.h"
 #include "svc_message.h"
 #include "g_gametype.h"
 #include "g_level.h"
 #include "resources/res_main.h"
 #include "resources/res_filelib.h"
+#include "g_game.h"
+#include "g_spree.h"
 
 #include "PacketHeaderType.h"
+#include "cl_freecam.h"
+#include "f_wipe.h"
 
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
@@ -91,7 +96,7 @@ void NetDemo::reset()
 
 	filename = "";
 	header = netdemo_header4_t{};
-	captured.clear();
+	captured.Clear();
 }
 
 //
@@ -104,7 +109,7 @@ void NetDemo::cleanUp()
 {
 	if (isRecording())
 	{
-		stopRecording();	// Try to write any unwritten data
+		stopRecording();    // Try to write any unwritten data
 	}
 
 	// close all files
@@ -114,6 +119,7 @@ void NetDemo::cleanUp()
 	map_index.clear();
 	state = oldstate = NetDemo::st_stopped;
 	netdemotic = pause_netdemotic = last_map_tic = 0;
+	timingdemo = false;
 }
 
 /**
@@ -177,44 +183,44 @@ bool NetDemo::writeHeader()
 
 bool NetDemo::netdemo_header_id_t::Read(std::fstream& io_stream)
 {
-    if (io_stream.good())
-    {
-        return  M_ReadLE(io_stream, identifier)
-            and M_ReadLE(io_stream, version);
-    }
-    return false;
+	if (io_stream.good())
+	{
+		return  M_ReadLE(io_stream, identifier)
+		    and M_ReadLE(io_stream, version);
+	}
+	return false;
 }
 
 bool NetDemo::netdemo_header3_t::Read(std::fstream& io_stream)
 {
-    if (io_stream.good())
-    {
-        return  id.Read(io_stream)
-            and M_ReadLE(io_stream, compression)
-            and M_ReadLE(io_stream, snapshot_index_size)
-            and M_ReadLE(io_stream, snapshot_index_offset)
-            and M_ReadLE(io_stream, map_index_size)
-            and M_ReadLE(io_stream, map_index_offset)
-            and M_ReadLE(io_stream, snapshot_spacing)
-            and M_ReadLE(io_stream, starting_gametic)
-            and M_ReadLE(io_stream, ending_gametic)
-            and M_ReadLE(io_stream, reserved);
-    }
-    return false;
+	if (io_stream.good())
+	{
+		return  id.Read(io_stream)
+		    and M_ReadLE(io_stream, compression)
+		    and M_ReadLE(io_stream, snapshot_index_size)
+		    and M_ReadLE(io_stream, snapshot_index_offset)
+		    and M_ReadLE(io_stream, map_index_size)
+		    and M_ReadLE(io_stream, map_index_offset)
+		    and M_ReadLE(io_stream, snapshot_spacing)
+		    and M_ReadLE(io_stream, starting_gametic)
+		    and M_ReadLE(io_stream, ending_gametic)
+		    and M_ReadLE(io_stream, reserved);
+	}
+	return false;
 }
 
 bool NetDemo::netdemo_header4_t::Read(std::fstream& io_stream)
 {
-    if (io_stream.good())
-    {
-        return  id.Read(io_stream)
-            and M_ReadLE(io_stream, compression)
-            and M_ReadLE(io_stream, snapshot_spacing)
-            and M_ReadLE(io_stream, starting_gametic)
-            and M_ReadLE(io_stream, ending_gametic)
-            and M_ReadLE(io_stream, reserved);
-    }
-    return false;
+	if (io_stream.good())
+	{
+		return  id.Read(io_stream)
+		    and M_ReadLE(io_stream, compression)
+		    and M_ReadLE(io_stream, snapshot_spacing)
+		    and M_ReadLE(io_stream, starting_gametic)
+		    and M_ReadLE(io_stream, ending_gametic)
+		    and M_ReadLE(io_stream, reserved);
+	}
+	return false;
 }
 
 //
@@ -229,49 +235,49 @@ bool NetDemo::readHeader()
 	demofp.seekg(0, std::ios::beg);
 	const auto startingPosition = demofp.tellg();
 
-    netdemo_header_id_t headerId;
-    const bool headerIDOk = headerId.Read(demofp);
+	netdemo_header_id_t headerId;
+	const bool headerIDOk = headerId.Read(demofp);
 
-    if (not (headerIDOk
-             and headerId.identifier[0] == 'O'
-             and headerId.identifier[1] == 'D'
-             and headerId.identifier[2] == 'A'
-             and headerId.identifier[3] == 'D'))
-    {
-        return false;
-    }
+	if (not (headerIDOk
+	         and headerId.identifier[0] == 'O'
+	         and headerId.identifier[1] == 'D'
+	         and headerId.identifier[2] == 'A'
+	         and headerId.identifier[3] == 'D'))
+	{
+		return false;
+	}
 
-    header.id = headerId;
+	header.id = headerId;
 
-    if (header.id.version == NETDEMOVER)
-    {
-        demofp.seekg(startingPosition, std::ios::beg);
+	if (header.id.version == NETDEMOVER)
+	{
+		demofp.seekg(startingPosition, std::ios::beg);
 
-        return header.Read(demofp)
-                and demofp.tellg() - startingPosition == HEADER_SIZE;
-    }
+		return header.Read(demofp)
+		        and demofp.tellg() - startingPosition == HEADER_SIZE;
+	}
 
-    if (header.id.version == 3)
-    {
-        demofp.seekg(startingPosition, std::ios::beg);
+	if (header.id.version == 3)
+	{
+		demofp.seekg(startingPosition, std::ios::beg);
 
-        netdemo_header3_t header3;
+		netdemo_header3_t header3;
 
-        if (header3.Read(demofp)
-                and demofp.tellg() - startingPosition == HEADER_SIZE)
-        {
-            // Translate from 3 to NETDEMOVER
-            header.Import(header3);
-            return true;
-        }
-    }
+		if (header3.Read(demofp)
+		        and demofp.tellg() - startingPosition == HEADER_SIZE)
+		{
+			// Translate from 3 to NETDEMOVER
+			header.Import(header3);
+			return true;
+		}
+	}
 	return false;
 }
 
 //
 // pouplateMessageIndexes()
 //
-//   called from startPlaying, seeks through the demo and populates 
+//   called from startPlaying, seeks through the demo and populates
 //   map_index and snapshot_index vecs
 void NetDemo::populateMessageIndexes()
 {
@@ -370,23 +376,19 @@ bool NetDemo::startRecording(const std::string &filename)
 	{
 		// write a simulation of the connection sequence since the server
 		// has already sent it to the client and it wasn't captured
-		static buf_t tempbuf(NETDEMO_STARTUP_PACKET_SIZE);
 
 		// Fake the launcher query response
-		SZ_Clear(&tempbuf);
-		writeLauncherSequence(&tempbuf);
-		capture(&tempbuf);
-		writeMessages();
+		{
+			buf_t& launcherBuffer = captured.Obtain();
+			writeLauncherSequence(&launcherBuffer);
+			writeMessages();
+		}
 
 		// Fake the server's side of the connection sequence
-		SZ_Clear(&tempbuf);
-		writeConnectionSequence(&tempbuf);
-		capture(&tempbuf);
+		writeConnectionSequence();
 		writeMessages();
 
-		SZ_Clear(&tempbuf);
-		MSG_WriteSVCBuffer(&tempbuf, odaproto::clc::NetDemoLoadSnap());
-		capture(&tempbuf);
+		captured.Write( odaproto::clc::NetDemoLoadSnap() );
 		writeMessages();
 
 		// Record any additional messages (usually a full update if auto-recording))
@@ -442,11 +444,11 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-    if constexpr (TRY_LOADING_OLD_NETDEMOS)
-    {
-        PrintFmt(PRINT_WARNING, "Attempting to load a version {} netdemo...\n", header.id.version);
-    }
-    else if (header.id.version != NETDEMOVER)
+	if constexpr (TRY_LOADING_OLD_NETDEMOS)
+	{
+		PrintFmt(PRINT_WARNING, "Attempting to load a version {} netdemo...\n", header.id.version);
+	}
+	else if (header.id.version != NETDEMOVER)
 	{
 		std::string buffer;
 		const int latestVersion = LatestDemoVersion(header.id.version);
@@ -492,6 +494,7 @@ bool NetDemo::pause()
 {
 	if (isPlaying())
 	{
+		timingdemo = false;
 		oldstate = state;
 		state = NetDemo::st_paused;
 		return true;
@@ -579,22 +582,9 @@ bool NetDemo::stopPlaying()
 	gameaction = ga_fullconsole;
 	gamestate = GS_FULLCONSOLE;
 
+	Freecam::reset();
+
 	return true;
-}
-
-//
-// writeLocalCmd()
-//
-//   Generates a message indicating the current position and angle of the
-//   consoleplayer, taking the place of ticcmds.
-void NetDemo::writeLocalCmd(buf_t *netbuffer) const
-{
-	// Record the local player's data
-	player_t& player = consoleplayer();
-	if (not player.mo)
-		return;
-
-	MSG_WriteSVCBuffer(netbuffer, CLC_NetdemoCap(player, localcmds[gametic % MAXSAVETICS], ::messenger));
 }
 
 
@@ -642,15 +632,22 @@ bool NetDemo::atSnapshotInterval()
 }
 
 
-void NetDemo::ticker()
+bool NetDemo::ticker()
 {
-	netdemotic++;
-	if (netdemotic == pause_netdemotic)
+	if (not isInPlayback())
+		return false;
+
+	if (isPlaying())
 	{
-		pause_netdemotic = 0;
-		pause();
-		::paused = true;
+		netdemotic++;
+		if (netdemotic == pause_netdemotic)
+		{
+			pause_netdemotic = 0;
+			pause();
+			::paused = true;
+		}
 	}
+	return true;
 }
 
 //
@@ -665,8 +662,6 @@ void NetDemo::writeMessages()
 	if (!isRecording())
 		return;
 
-	static buf_t netbuf_localcmd(1024);
-
 	if (atSnapshotInterval())
 	{
 		writeSnapshotData(snapbuf);
@@ -675,28 +670,29 @@ void NetDemo::writeMessages()
 
 	if (connected)
 	{
-		// Write the console player's game data
-		SZ_Clear(&netbuf_localcmd);
-		writeLocalCmd(&netbuf_localcmd);
-		captured.push_back(netbuf_localcmd);
+		// Record the local player's data
+		player_t& player = consoleplayer();
+		if (player.mo)
+		{
+			captured.Write( CLC_NetdemoCap(player, localcmds[gametic % MAXSAVETICS], ::messenger) );
+		}
 	}
 
-	auto output_buf = std::make_unique<byte[]>(captured.size() * MAX_UDP_PACKET);
+	outputBuffer.clear();
 
-	uint32_t output_len = 0;
-	while (!captured.empty())
+	if (outputBuffer.maxsize() < captured.SizeInBytes())
 	{
-		buf_t netbuf(captured.front());
-		uint32_t len = netbuf.BytesLeftToRead();
-
-		byte *chunk = netbuf.ReadChunk(len);
-		memcpy(&output_buf[output_len], chunk, len);
-		output_len += len;
-
-		captured.pop_front();
+		outputBuffer.resize(captured.SizeInBytes());
 	}
 
-	writeChunk(output_buf.get(), output_len, NetDemo::msg_packet);
+	while (captured.SizeInMessages() > 0)
+	{
+		outputBuffer.WriteChunk(captured.Front().ptr(),
+		                        captured.Front().size());
+		captured.Pop();
+	}
+
+	writeChunk(outputBuffer.ptr(), outputBuffer.size(), NetDemo::msg_packet);
 }
 
 
@@ -826,7 +822,8 @@ void NetDemo::readMessages(buf_t* netbuffer)
 	}
 
 	// read from the input file and put the data into netbuffer
-	gametic = tic;
+	gametic     = tic;
+	netdemotic  = gametic - header.starting_gametic;
 	readMessageBody(netbuffer, len);
 }
 
@@ -846,7 +843,8 @@ void NetDemo::capture(const buf_t* inputbuffer)
 
 	if (inputbuffer->size() > 0)
 	{
-		captured.emplace_back(*inputbuffer);
+		buf_t& buffer = captured.Obtain();
+		buffer.WriteChunk(inputbuffer->ptr(), inputbuffer->size());
 	}
 }
 
@@ -856,11 +854,19 @@ void NetDemo::capture(const std::basic_string<byte>& buffer)
 	{
 		if (buffer.size() > 0)
 		{
-			captured.emplace_back(buffer);
+			buf_t& queueBuffer = captured.Obtain();
+			queueBuffer.WriteChunk(buffer.data(), buffer.length());
 		}
 	}
 }
 
+void NetDemo::capturePacketHeader(const PacketHeaderType& header)
+{
+	if (isRecording())
+	{
+		captured.Write( MSG_Header(header) );
+	}
+}
 
 //
 // writeLauncherSequence()
@@ -1002,17 +1008,28 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 extern int last_svgametic;
 
-void NetDemo::writeConnectionSequence(buf_t *netbuffer)
+void NetDemo::writeConnectionSequence()
 {
-	PacketHeaderType header {0};
+	const player_t& player = consoleplayer();
 
-	header.Pack(*netbuffer);
+	{
+		buf_t& headerBuffer = captured.Obtain();
+
+		PacketHeaderType header {0};
+
+		header.originatorTic  = last_svgametic;
+		header.destinationTic = player.tic;
+
+		// Please note that we pack the header in proper socket-style for the connection sequence
+		// because the netdemo connection playback actually uses the messenger via CL_Connect.
+		header.Pack(headerBuffer);
+	}
 
 	// Server sends our player id and digest
-	MSG_WriteSVCBuffer(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));
+	captured.Write( SVC_ConsolePlayer(player, digest) );
 
 	// our userinfo
-	MSG_WriteSVCBuffer(netbuffer, SVC_UserInfo(consoleplayer(), consoleplayer().GameTime));
+	captured.Write( SVC_UserInfo(player, player.GameTime) );
 
 	// Server sends its settings
 	cvar_t *var = GetFirstCvar();
@@ -1020,75 +1037,98 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
 		{
-			MSG_WriteSVCBuffer(netbuffer, SVC_ServerSettings(*var));
+			captured.Write( SVC_ServerSettings(*var) );
 		}
 		var = var->GetNext();
 	}
 
 	// Server tells everyone if we're a spectator
-	MSG_WriteSVCBuffer(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
+	captured.Write( SVC_PlayerMembers(player, SVC_PM_SPECTATOR) );
 
 	// Server sends wads & map name
-	MSG_WriteSVCBuffer(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
+	captured.Write( SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time) );
 
 	// Server spawns the player
-	MSG_WriteSVCBuffer(netbuffer, SVC_SpawnPlayer(consoleplayer(), last_svgametic));
+	captured.Write( SVC_SpawnPlayer(player) );
 }
 
 
-//
-// snapshotLookup()
-//
-//      Returns the snapshot that preceeds the ticnum parameter or returns
-//      NULL if the ticnum is out of bounds.
-//
-const NetDemo::netdemo_index_entry_t *NetDemo::snapshotLookup(int ticnum) const
+NetDemo::SnapshotVector::const_iterator NetDemo::lookupSnapshot(const SnapshotVector& i_vector, uint32_t gameticnum) const
 {
-	int index = (ticnum - header.starting_gametic) / header.snapshot_spacing - 1;
+	if (gameticnum < header.starting_gametic or
+	    gameticnum > header.ending_gametic or
+	    i_vector.empty())
+	{
+		return i_vector.end();
+	}
 
-	if (index >= snapshot_index.size())
-		return NULL;
+	auto iter = std::upper_bound(i_vector.begin(),
+	                             i_vector.end(),
+	                             gameticnum);
 
-	int mapindex = getCurrentMapIndex();
-	if (index < 0 || snapshot_index[index].ticnum < map_index[mapindex].ticnum)
-		return &map_index[mapindex];
+	// We know that the tic number is within the valid range and that there's at least one snapshot,
+	// but upper_bound will return end() if the tic number is between the start of the last snapshot
+	// and the ending_gametic.
+	//
+	// In any case, we want to return the element BEFORE the result of upper_bound, unless it's the
+	// very first element.
 
-	return &snapshot_index[index];
+	if (iter == i_vector.begin())
+	{
+		return iter;
+	}
+	return iter-1;
 }
 
+
+// getSnapshotForNetdemotic()
 //
-// getCurrentSnapshotIndex()
+//      Returns the snapshot that preceeds the netdemoticnum parameter or returns
+//      snapshot_index.end() if the netdemoticnum is out of bounds.
 //
-//      Returns the index into the snapshot_index vector that immediately
+NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForNetdemotic(uint32_t i_netdemoticnum) const
+{
+	return lookupSnapshot(snapshot_index, header.starting_gametic + i_netdemoticnum);
+}
+
+// getSnapshotForGametic()
+//
+//      Returns the snapshot that preceeds the gameticnum parameter or returns
+//      snapshot_index.end() if the gameticnum is out of bounds.
+//
+NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForGametic(uint32_t gameticnum) const
+{
+	return lookupSnapshot(snapshot_index, gameticnum);
+}
+
+// getMapLoadSnapshotForGametic()
+//
+//      Returns the snapshot that loaded the map that is being played as of the given gametic.
+//      Returns map_index.end() if the gametic is out of bounds.
+NetDemo::SnapshotVector::const_iterator NetDemo::getMapLoadSnapshotForGametic(uint32_t gameticnum) const
+{
+	return lookupSnapshot(map_index, gameticnum);
+}
+
+// getCurrentSnapshotIter()
+//
+//      Returns the iterator into the snapshot_index vector that immediately
 //      preceeds the current gametic.
 //
-int NetDemo::getCurrentSnapshotIndex() const
+NetDemo::SnapshotVector::const_iterator NetDemo::getCurrentSnapshotIter() const
 {
-	for (int i = 0; i < snapshot_index.size() - 1; i++)
-	{
-		if (static_cast<int>(snapshot_index[i + 1].ticnum) > gametic)
-			return i;
-	}
-
-	return snapshot_index.size() - 1;
+	return lookupSnapshot(snapshot_index, static_cast<uint32_t>(gametic));
 }
 
-
 //
-// getCurrentMapIndex()
+// getCurrentMapIter()
 //
-//      Returns the index into the map_index vector for the map that the
+//      Returns the iterator into the map_index vector for the map that the
 //      is currently being played.
 //
-int NetDemo::getCurrentMapIndex() const
+NetDemo::SnapshotVector::const_iterator NetDemo::getCurrentMapIter() const
 {
-	for (int i = 0; i < map_index.size() - 1; i++)
-	{
-		if (static_cast<int>(map_index[i + 1].ticnum) > gametic)
-			return i;
-	}
-
-	return map_index.size() - 1;
+	return lookupSnapshot(map_index, static_cast<uint32_t>(gametic));
 }
 
 //
@@ -1118,9 +1158,7 @@ void NetDemo::prevTic()
 	if (!isPaused())
 		return;
 
-	pause_netdemotic = netdemotic - 1;
-	state = oldstate;
-	::paused = false;
+	seekNetdemotic(netdemotic - 1);
 }
 
 //
@@ -1131,16 +1169,15 @@ void NetDemo::prevTic()
 //
 void NetDemo::nextSnapshot()
 {
-	if (snapshot_index.empty())
+	auto currentIter = getCurrentSnapshotIter();
+
+	if (currentIter   == snapshot_index.end() or
+	    currentIter+1 == snapshot_index.end())
+	{
 		return;
+	}
 
-	int nextsnapindex = getCurrentSnapshotIndex() + 1;
-
-	// don't read past the last snapshot
-	if (nextsnapindex >= snapshot_index.size())
-		return;
-
-	readSnapshot(&snapshot_index[nextsnapindex]);
+	readSnapshot(currentIter+1);
 }
 
 
@@ -1152,15 +1189,17 @@ void NetDemo::nextSnapshot()
 //
 void NetDemo::prevSnapshot()
 {
-	if (snapshot_index.empty())
+	auto iter = getCurrentSnapshotIter();
+
+	if (iter == snapshot_index.end())        // Unlikely, but validate it anyway.
 		return;
 
-	int prevsnapindex = getCurrentSnapshotIndex() - 1;
+	if (iter != snapshot_index.begin())
+	{
+		iter -= 1;
+	}
 
-	if (prevsnapindex < 0)
-		prevsnapindex = 0;
-
-	readSnapshot(&snapshot_index[prevsnapindex]);
+	readSnapshot(iter);
 }
 
 //
@@ -1171,16 +1210,16 @@ void NetDemo::prevSnapshot()
 //
 void NetDemo::nextMap()
 {
-	if (map_index.empty())
+	auto iter = getCurrentMapIter();
+	if (iter == map_index.end())
 		return;
 
-	int nextmapindex = getCurrentMapIndex() + 1;
-	if (nextmapindex >= map_index.size())
+	iter += 1;
+
+	if (iter == map_index.end())
 		return;
 
-	const NetDemo::netdemo_index_entry_t *snap = &map_index[nextmapindex];
-
-	readSnapshot(snap);
+	readSnapshot(iter);
 }
 
 //
@@ -1191,16 +1230,17 @@ void NetDemo::nextMap()
 //
 void NetDemo::prevMap()
 {
-	if (map_index.empty())
+	auto iter = getCurrentMapIter();
+
+	if (iter == map_index.end())
 		return;
 
-	int prevmapindex = getCurrentMapIndex() - 1;
-	if (prevmapindex < 0)
-		prevmapindex = 0;
+	if (iter != map_index.begin())
+	{
+		iter -= 1;
+	}
 
-	const NetDemo::netdemo_index_entry_t *snap = &map_index[prevmapindex];
-
-	readSnapshot(snap);
+	readSnapshot(iter);
 }
 
 
@@ -1208,10 +1248,10 @@ void NetDemo::prevMap()
 // readSnapshot()
 //
 //
-void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
+bool NetDemo::readSnapshot(SnapshotVector::const_iterator snap)
 {
-	if (!isPlaying() || !snap)
-		return;
+	if (not isPlaying())
+		return false;
 
 	gametic = snap->ticnum;
 	int file_offset = snap->offset;
@@ -1223,7 +1263,7 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 	if (!readMessageHeader(type, len, tic))
 	{
 		fatalError("Failed to read netdemo message header.");
-		return;
+		return false;
 	}
 
 	// Clear the snapshot buffer and read into it.
@@ -1234,11 +1274,15 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 	if (demofp.gcount() < len)
 	{
 		fatalError("Unable to read snapshot from data file");
-		return;
+		return false;
 	}
 
 	readSnapshotData(snapbuf);
 	netdemotic = snap->ticnum - header.starting_gametic;
+
+	Wipe_Suppress(2);
+
+	return true;
 }
 
 
@@ -1288,6 +1332,69 @@ const std::vector<int> NetDemo::getMapChangeTimes() const
 	return times;
 }
 
+bool NetDemo::seekGametic(int requestedGametic)
+{
+	if (not isInPlayback()
+	    or requestedGametic < header.starting_gametic
+	    or requestedGametic > header.ending_gametic)
+	{
+		return false;
+	}
+
+	if (requestedGametic == gametic)
+		return true;
+
+	auto snapshotIter = getSnapshotForGametic(requestedGametic);
+	if (snapshotIter == snapshot_index.end())
+		return false;
+
+	// First, we have to be playing to load a snapshot.  Then we have to be playing to
+	// fast-forward to the requested tic.  If we fail, we just simply pause.
+	resume();
+
+	// If we're switching maps, then load the snapshot that walks the client through the
+	// proper map-change message sequence before we try to load the commanded snapshot.
+	// This avoids some glitches, including missing mobjs and mis-interpolations.
+	const auto currentMapLoadIter = getCurrentMapIter();
+	const auto destinationMapIter = getMapLoadSnapshotForGametic(requestedGametic);
+	if (currentMapLoadIter != destinationMapIter)
+	{
+		readSnapshot(destinationMapIter);
+	}
+
+	auto currentSnapshotIter = getCurrentSnapshotIter();
+
+	// We want to force a snapshot load if we need to skip backwards by any amount or if
+	// we're advancing to another snapshot, and the target is more than a second out.
+	// The only reason for the one second out is that we can just easily fast-forward
+	// 35 tics.  It's pretty arbitary really.
+	const bool mustLoadSnapshot = requestedGametic < gametic
+	                              or (snapshotIter != currentSnapshotIter
+	                                  and requestedGametic > gametic + TICRATE);
+
+	const bool isReadyToFF = mustLoadSnapshot ? readSnapshot(snapshotIter) : true;
+
+	if (isReadyToFF)
+	{
+		// FIXME:   If we try to pause at the very beginning of a snapshot, we get a horrible
+		//          view interpolation error.  Workaround: advance one tic.
+		if (requestedGametic == snapshotIter->ticnum)
+		{
+			requestedGametic += 1;
+		}
+		timingdemo = true;
+		pause_netdemotic = requestedGametic - header.starting_gametic;
+
+		return true;
+	}
+	pause();
+	return false;
+}
+
+bool NetDemo::seekNetdemotic(int requestedNetdemotic)
+{
+	return seekGametic(requestedNetdemotic + header.starting_gametic);
+}
 
 void NetDemo::writeMapChange()
 {
@@ -1394,6 +1501,8 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 
 	arc << rollerState;
 
+	P_SerializeSprees(arc);
+
 	byte check = 0x1d;
 	arc << check;          // consistancy marker
 
@@ -1415,6 +1524,8 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 {
 	byte cid = consoleplayer_id;
 	byte did = displayplayer_id;
+
+	Freecam::savePosition();
 
 	P_ClearAllNetIds();
 
@@ -1538,6 +1649,8 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	displayplayer_id = consoleplayer_id = 1;
 	savegamerestore = false;
 
+	P_SerializeSprees(arc);
+
 	// read consistancy marker
 	byte check;
 	arc >> check;
@@ -1551,19 +1664,10 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 
 	// try to restore display player
 	player_t *disp = &idplayer(did);
-	if (validplayer(*disp) && disp->ingame() && !disp->spectator)
+	if ((validplayer(*disp) && disp->ingame() && !disp->spectator) || disp->isFreecam)
 		displayplayer_id = did;
 	else
 		displayplayer_id = cid;
-
-	// setup psprites and restore player colors
-	for (auto& player : players)
-	{
-		P_SetupPsprites(player);
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
-	}
-
-	R_CopyTranslationRGB(menuplayer_id, consoleplayer_id);
 
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;

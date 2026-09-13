@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <math.h>
 
 #include "m_mempool.h"
@@ -152,7 +154,7 @@ static void R_FillWallHeightArray(
 	{
 		const double z = z1 + (z2 - z1) * wallufrac[i];
 		const double frac = horizon - z * wallscaled[i];
-		array[i] = clamp(static_cast<int>(frac), ceilingclipinitial[0], floorclipinitial[0]);
+		array[i] = std::clamp(static_cast<int>(frac), ceilingclipinitial[0], floorclipinitial[0]);
 	}
 }
 
@@ -193,8 +195,8 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 	if (mceilingclip[dcol.x] + 1 > yl)
 		texturefrac = (mceilingclip[dcol.x] + 1 - yl) * dcol.iscale;
 
-	yl = MAX<int64_t>(yl, MAX(mceilingclip[dcol.x], 0));
-	yh = MIN<int64_t>(yh, mfloorclip[dcol.x] - 1);
+	yl = std::max<int64_t>(yl, std::max(mceilingclip[dcol.x], 0));
+	yh = std::min<int64_t>(yh, mfloorclip[dcol.x] - 1);
 
 	if (yl > yh || texturefrac >= dcol.textureheight)
 		return;
@@ -251,12 +253,12 @@ inline void R_ColumnSetup(int x, const int* top, const int* bottom, const palind
 {
 	if (calc_light)
 	{
-		const int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+		const int index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
 		dcol.colormap = basecolormap.with(walllights[index]);
 	}
 
-	dcol.yl = MAX(top[x], 0);
-	dcol.yh = MIN(bottom[x], viewheight - 1);
+	dcol.yl = std::max(top[x], 0);
+	dcol.yh = std::min(bottom[x], viewheight - 1);
 	dcol.source = posts[x];
 }
 
@@ -265,18 +267,18 @@ static inline int R_ColumnRangeMinimumHeight(int start, int stop, const int* top
 {
 	int minheight = viewheight - 1;
 	for (int x = start; x <= stop; x++)
-		minheight = MIN(minheight, top[x]);
+		minheight = std::min(minheight, top[x]);
 
-	return MAX(minheight, 0);
+	return std::max(minheight, 0);
 }
 
 static inline int R_ColumnRangeMaximumHeight(int start, int stop, const int* bottom)
 {
 	int maxheight = 0;
 	for (int x = start; x <= stop; x++)
-		maxheight = MAX(maxheight, bottom[x]);
+		maxheight = std::max(maxheight, bottom[x]);
 
-	return MIN(maxheight, viewheight - 1);
+	return std::min(maxheight, viewheight - 1);
 }
 
 
@@ -315,14 +317,14 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		{
 			if (calc_light)
 			{
-				int light_index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+				int light_index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
 				dcol.colormap = basecolormap.with(walllights[light_index]);
 				rw_light += rw_lightstep;
 			}
 
 			dcol.x = x;
-			dcol.yl = MAX(0, top[x]);
-			dcol.yh = MIN(viewheight -1, bottom[x]);
+			dcol.yl = std::max(0, top[x]);
+			dcol.yh = std::min(viewheight -1, bottom[x]);
 			dcol.source = posts[x];
 			colblast();
 		}
@@ -341,7 +343,7 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		{
 			for (int x = start; x <= stop; x++)
 			{
-				int index = clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+				const int index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
 				light_lookup[x] = walllights[index];
 				rw_light += rw_lightstep;
 			}
@@ -350,7 +352,7 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 		for (int bx = start; bx <= stop; bx = (bx & ~BLOCKMASK) + BLOCKSIZE)
 		{
 			const int blockstartx = bx;
-			const int blockstopx = MIN((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
+			const int blockstopx = std::min((bx & ~BLOCKMASK) + BLOCKSIZE - 1, stop);
 
 			const int miny = R_ColumnRangeMinimumHeight(blockstartx, blockstopx, top);
 			const int maxy = R_ColumnRangeMaximumHeight(blockstartx, blockstopx, bottom);
@@ -358,7 +360,7 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 			for (int by = miny; by <= maxy; by = (by & ~BLOCKMASK) + BLOCKSIZE)
 			{
 				const int blockstarty = by;
-				const int blockstopy = MIN((by & ~BLOCKMASK) + BLOCKSIZE - 1, viewheight - 1);
+				const int blockstopy = std::min((by & ~BLOCKMASK) + BLOCKSIZE - 1, viewheight - 1);
 
 				for (int x = blockstartx; x <= blockstopx; x++)
 				{
@@ -366,8 +368,8 @@ void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
 						dcol.colormap = basecolormap.with(light_lookup[x]);
 
 					dcol.x = x;
-					dcol.yl = MAX(top[x], blockstarty);
-					dcol.yh = MIN(bottom[x], blockstopy);
+					dcol.yl = std::max(top[x], blockstarty);
+					dcol.yh = std::min(bottom[x], blockstopy);
 					dcol.source = posts[x];
 					colblast();
 				}
@@ -403,8 +405,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	// clip the front of the walls to the ceiling and floor
 	for (int x = start; x <= stop; x++)
 	{
-		walltopf[x] = MAX(walltopf[x], ceilingclip[x]);
-		wallbottomf[x] = MIN(wallbottomf[x], floorclip[x]);
+		walltopf[x] = std::max(walltopf[x], ceilingclip[x]);
+		wallbottomf[x] = std::min(wallbottomf[x], floorclip[x]);
 	}
 
 	// mark ceiling-plane areas
@@ -412,8 +414,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	{
 		for (int x = start; x <= stop; x++)
 		{
-			const int top = MAX(ceilingclip[x], 0);
-			const int bottom = MIN(MIN(walltopf[x], floorclip[x]) - 1, viewheight - 1);
+			const int top = std::max(ceilingclip[x], 0);
+			const int bottom = std::min({walltopf[x] - 1, floorclip[x] - 1, viewheight - 1});
 
 			if (top <= bottom)
 			{
@@ -428,8 +430,8 @@ void R_RenderSolidSegRange(int start, int stop)
 	{
 		for (int x = start; x <= stop; x++)
 		{
-			const int top = MAX(MAX(wallbottomf[x], ceilingclip[x]), 0);
-			const int bottom = MIN(floorclip[x] - 1, viewheight - 1);
+			const int top = std::max({wallbottomf[x], ceilingclip[x], 0});
+			const int bottom = std::min(floorclip[x] - 1, viewheight - 1);
 
 			if (top <= bottom)
 			{
@@ -468,7 +470,7 @@ void R_RenderSolidSegRange(int start, int stop)
 
 			for (int x = start; x <= stop; x++)
 			{
-				walltopb[x] = MAX(MIN(walltopb[x], floorclip[x]), walltopf[x]);
+				walltopb[x] = std::max(std::min(walltopb[x], floorclip[x]), walltopf[x]);
 				lower[x] = walltopb[x] - 1;
 			}
 
@@ -495,7 +497,7 @@ void R_RenderSolidSegRange(int start, int stop)
 
 			for (int x = start; x <= stop; x++)
 			{
-				wallbottomb[x] = MIN(MAX(wallbottomb[x], ceilingclip[x]), wallbottomf[x]);
+				wallbottomb[x] = std::min(std::max(wallbottomb[x], ceilingclip[x]), wallbottomf[x]);
 				lower[x] = wallbottomf[x] - 1;
 			}
 
@@ -579,10 +581,10 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	// find texture positioning
 	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
 		// offset by the world-space height of one tile (texel height / y-scale)
-		dcol.texturemid = MAX(P_FloorHeight(frontsector), P_FloorHeight(backsector)) +
+		dcol.texturemid = std::max(frontsector->floortexz, backsector->floortexz) +
 		                  FixedDiv(texture->mHeight << FRACBITS, texture->mScaleY);
 	else
-		dcol.texturemid = MIN(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
+		dcol.texturemid = std::min(frontsector->ceilingtexz, backsector->ceilingtexz);
 
 	dcol.texturemid = FixedMul(dcol.texturemid - viewz, texture->mScaleY) +
 	                  curline->sidedef->rowoffset;
@@ -703,7 +705,7 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 		const double raydx = (i + 0.5 - centerx) / xfoc;
 		const double den = raydx * wdy - wdx;
 		double depth = den != 0.0 ? wallconst / den : maxdepth;
-		depth = clamp(depth, mindepth, maxdepth);
+		depth = std::clamp(depth, mindepth, maxdepth);
 
 		const double scale = yfoc / depth;
 		wallscaled[i] = scale;
@@ -854,13 +856,13 @@ void R_StoreWallRange(int start, int stop)
 			{
 				// world-space height of one tile: texel height divided by y-scale
 				fixed_t texheight = FixedDiv(midtexture->mHeight << FRACBITS, midtexture->mScaleY);
-				rw_midtexturemid = P_FloorHeight(frontsector) - viewz + texheight;
+				rw_midtexturemid = frontsector->floortexz - viewz + texheight;
 			}
 		}
 		else
 		{
 			// top of texture at top
-			const fixed_t fc = P_CeilingHeight(frontsector);
+			const fixed_t fc = frontsector->ceilingtexz;
 			rw_midtexturemid = fc - viewz;
 		}
 
@@ -978,14 +980,14 @@ void R_StoreWallRange(int start, int stop)
 			if (linedef->flags & ML_DONTPEGTOP)
 			{
 				// top of texture at top
-				rw_toptexturemid = P_CeilingHeight(frontsector) - viewz;
+				rw_toptexturemid = frontsector->ceilingtexz - viewz;
 			}
 			else if (toptexture)
 			{
 				// bottom of texture
 				// world-space height of one tile: texel height divided by y-scale
 				fixed_t texheight = FixedDiv(toptexture->mHeight << FRACBITS, toptexture->mScaleY);
-				rw_toptexturemid = P_CeilingHeight(backsector) - viewz + texheight;
+				rw_toptexturemid = backsector->ceilingtexz - viewz + texheight;
 			}
 		}
 
@@ -996,12 +998,12 @@ void R_StoreWallRange(int start, int stop)
 			if (linedef->flags & ML_DONTPEGBOTTOM)
 			{
 				// bottom of texture at bottom, top of texture at top
-				rw_bottomtexturemid = P_CeilingHeight(frontsector) - viewz;
+				rw_bottomtexturemid = frontsector->ceilingtexz - viewz;
 			}
 			else
 			{
 				// top of texture at top
-				rw_bottomtexturemid = P_FloorHeight(backsector) - viewz;
+				rw_bottomtexturemid = backsector->floortexz - viewz;
 			}
 		}
 
@@ -1059,7 +1061,7 @@ void R_StoreWallRange(int start, int stop)
 
 			lightnum += R_OrthogonalLightnumAdjustment();
 
-			lightnum = clamp(lightnum, 0, LIGHTLEVELS - 1);
+			lightnum = std::clamp(lightnum, 0, LIGHTLEVELS - 1);
 			walllights = scalelight[lightnum];
 		}
 	}

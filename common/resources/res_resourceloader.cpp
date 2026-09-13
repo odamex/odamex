@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <cmath>
 
 #include "resources/res_main.h"
@@ -94,8 +96,8 @@ static void Res_DrawPatchIntoTexture(
 		lump_length < 8 + patchwidth * sizeof(*colofs))		// long enough for column offset table?
 		return;
 
-	int x1 = MAX(xoffs, 0);
-	int x2 = MIN(xoffs + patchwidth - 1, texwidth - 1);
+	int x1 = std::max(xoffs, 0);
+	int x2 = std::min(xoffs + patchwidth - 1, texwidth - 1);
 
 	for (int x = x1; x <= x2; x++)
 	{
@@ -126,8 +128,8 @@ static void Res_DrawPatchIntoTexture(
 				abstopdelta = posttopdelta;
 
 			int topoffset = yoffs + abstopdelta;
-			int y1 = MAX(topoffset, 0);
-			int y2 = MIN(topoffset + postlength - 1, texheight - 1);
+			int y1 = std::max(topoffset, 0);
+			int y2 = std::min(topoffset + postlength - 1, texheight - 1);
 
 			if (y1 <= y2)
 			{

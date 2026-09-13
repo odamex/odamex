@@ -83,8 +83,8 @@ struct PlaySoundType
 
 odaproto::svc::Disconnect SVC_Disconnect(const char* message = NULL);
 odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player);
-odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic);
-odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(const AActor& mo, const int tic);
+odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player);
+odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(const AActor& mo);
 odaproto::svc::LevelLocals SVC_LevelLocals(const level_locals_t& locals, uint32_t flags);
 odaproto::svc::PingRequest SVC_PingRequest();
 odaproto::svc::UpdatePing SVC_UpdatePing(const player_t& player);
@@ -99,10 +99,10 @@ odaproto::svc::RemoveMobj SVC_RemoveMobj(const AActor& mobj);
 odaproto::svc::UserInfo SVC_UserInfo(const player_t& player, int64_t time);
 odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj);
 odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj);
-odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player, int tic);
-odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActor *inflictor, int health, int armor, int destinationClientTicOfValidity);
+odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player);
+odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActor *inflictor, int health, int armor);
 odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
-                                     int mod, bool joinkill);
+                                     bool joinkill);
 odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corpse);
 odaproto::svc::UpdateSector SVC_UpdateSector(const sector_t& sector);
 odaproto::svc::Print SVC_Print(printlevel_t level, const std::string& str);
@@ -110,16 +110,16 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(const player_t& player, byte flag
 odaproto::svc::TeamMembers SVC_TeamMembers(team_t team);
 odaproto::svc::ActivateLine SVC_ActivateLine(const line_t* line, const AActor* mo, int side,
                                              LineActivationType type);
-odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sector, int serverTic);
-odaproto::svc::MovingSectorPillar   SVC_MovingSectorPillar(const sector_t& sector, int serverTic);
-odaproto::svc::MovingSectorCeiling  SVC_MovingSectorCeiling(const sector_t& sector, int serverTic);
-odaproto::svc::MovingSectorDoor     SVC_MovingSectorDoor(const sector_t& sector, int serverTic);
-odaproto::svc::MovingSectorFloor    SVC_MovingSectorFloor(const sector_t& sector, int serverTic);
-odaproto::svc::MovingSectorPlat     SVC_MovingSectorPlat(const sector_t& sector, int serverTic);
+odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sector);
+odaproto::svc::MovingSectorPillar   SVC_MovingSectorPillar(const sector_t& sector);
+odaproto::svc::MovingSectorCeiling  SVC_MovingSectorCeiling(const sector_t& sector);
+odaproto::svc::MovingSectorDoor     SVC_MovingSectorDoor(const sector_t& sector);
+odaproto::svc::MovingSectorFloor    SVC_MovingSectorFloor(const sector_t& sector);
+odaproto::svc::MovingSectorPlat     SVC_MovingSectorPlat(const sector_t& sector);
 odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, int sfx_id,
                                        float volume, int attenuation);
-odaproto::svc::TouchSpecial SVC_TouchSpecial(const player_t& player, const AActor& mo);
-odaproto::svc::PlayerState SVC_PlayerState(const player_t& player, int destinationClientTicOfValidity);
+odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor& mo);
+odaproto::svc::PlayerState SVC_PlayerState(const player_t& player);
 odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls);
 odaproto::svc::PlayerQueuePos SVC_PlayerQueuePos(const player_t& source);
 odaproto::svc::ForceTeam SVC_ForceTeam(team_t team);
@@ -158,8 +158,8 @@ odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this
                                              const size_t next_index);
 odaproto::svc::Toast SVC_Toast(const toast_t& toast);
 odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde);
-odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree);
-odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType);
+odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree, const int ticsAgo);
+odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType, const int ticsAgo);
 odaproto::svc::NoiseAlert SVC_NoiseAlert(const sector_t& sector);
 odaproto::svc::PlayerAmmo SVC_PlayerAmmo(const player_t& player);
 odaproto::svc::PlayerMaxAmmo SVC_PlayerMaxAmmo(const player_t& player);

@@ -180,7 +180,10 @@ bool OWantFile::make(OWantFile& out, const std::string& file, const ofile_t type
 	std::string extension;
 	M_ExtractFileExtension(basename, extension);
 
-	out.m_wantedpath = file;
+	std::string expanded(file);
+	M_ExpandHomeDir(expanded);
+
+	out.m_wantedpath = expanded;
 	out.m_wantedtype = type;
 	out.m_basename = basename;
 	out.m_extension = extension;
@@ -208,7 +211,10 @@ bool OWantFile::makeWithHash(OWantFile& out, const std::string& file, const ofil
 	std::string extension;
 	M_ExtractFileExtension(basename, extension);
 
-	out.m_wantedpath = file;
+	std::string expanded(file);
+	M_ExpandHomeDir(expanded);
+
+	out.m_wantedpath = expanded;
 	out.m_wantedtype = type;
 	out.m_wantedMD5 = hash;
 	out.m_basename = basename;
@@ -278,13 +284,13 @@ std::vector<std::string> M_FileSearchDirs()
 	std::vector<std::string> dirs;
 
 	// [cSc] Add cl_waddownloaddir as default path
-	Res_AddSearchDir(dirs, ::cl_waddownloaddir.cstring(), SEARCHPATHSEPCHAR);
-	Res_AddSearchDir(dirs, ::Args.CheckValue("-waddir"), SEARCHPATHSEPCHAR);
-	Res_AddSearchDir(dirs, getenv("DOOMWADDIR"), SEARCHPATHSEPCHAR);
-	Res_AddSearchDir(dirs, getenv("DOOMWADPATH"), SEARCHPATHSEPCHAR);
-	Res_AddSearchDir(dirs, ::waddirs.cstring(), SEARCHPATHSEPCHAR);
-	dirs.push_back(M_CleanPath(M_GetUserDir() + PATHSEP "downloads"));
-	dirs.push_back(M_CleanPath(M_GetBinaryDir() + PATHSEP "downloads"));
+	Res_AddSearchDir(dirs, ::cl_waddownloaddir.str(), missing_dir_policy_t::WARN);
+	Res_AddSearchDirList(dirs, ::Args.CheckValue("-waddir"), missing_dir_policy_t::WARN);
+	Res_AddSearchDir(dirs, getenv("DOOMWADDIR"), missing_dir_policy_t::WARN);
+	Res_AddSearchDirList(dirs, getenv("DOOMWADPATH"), missing_dir_policy_t::WARN);
+	Res_AddSearchDirList(dirs, ::waddirs.str(), missing_dir_policy_t::WARN);
+	Res_AddSearchDir(dirs, M_CleanPath(M_GetUserDir() + PATHSEP "downloads"));
+	Res_AddSearchDir(dirs, M_CleanPath(M_GetBinaryDir() + PATHSEP "downloads"));
 	dirs.push_back(M_GetUserDir());
 	dirs.push_back(M_GetCWD());
 	dirs.push_back(M_GetBinaryDir());
@@ -510,16 +516,6 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	return false;
 }
 
-static bool ScanIWADCmp(const scannedIWAD_t& a, const scannedIWAD_t& b)
-{
-	return a.id->weight < b.id->weight;
-}
-
-static bool ScanPWADCmp(const scannedPWAD_t& a, const scannedPWAD_t& b)
-{
-	return StdStringToLower(a.filename) < StdStringToLower(b.filename);
-}
-
 /**
  * @brief Scan all file search directories for IWAD files.
  */
@@ -559,7 +555,10 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 	}
 
 	// Sort the results by weight.
-	std::sort(rvo.begin(), rvo.end(), ScanIWADCmp);
+	std::sort(rvo.begin(), rvo.end(),
+		[](const scannedIWAD_t& a, const scannedIWAD_t& b) {
+			return a.id->weight < b.id->weight;
+		});
 
 	return rvo;
 }
@@ -611,7 +610,10 @@ std::vector<scannedPWAD_t> M_ScanPWADs()
 	}
 
 	// Sort the results alphabetically
-	std::sort(rvo.begin(), rvo.end(), ScanPWADCmp);
+	std::sort(rvo.begin(), rvo.end(),
+		[](const scannedPWAD_t& a, const scannedPWAD_t& b){
+			return StdStringToLower(a.filename) < StdStringToLower(b.filename);
+		});
 
 	return rvo;
 }

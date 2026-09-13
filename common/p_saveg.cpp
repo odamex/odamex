@@ -42,7 +42,12 @@ void P_SerializePlayers (FArchive &arc)
 	if (arc.IsStoring ())
 	{
 		for (const auto& player : players)
-			arc << static_cast<int>(player.playerstate);
+		{
+			if (not player.isFreecam) // dont serialize the freecam
+			{
+				arc << static_cast<int>(player.playerstate);
+			}
+		}
 	}
 	else
 	{
@@ -72,8 +77,8 @@ void P_SerializeWorld (FArchive &arc)
 		// do sectors
 		for (sector_t& sec : R_GetSectors())
 		{
-			arc << sec.floorheight
-				<< sec.ceilingheight
+			arc << sec.floortexz
+				<< sec.ceilingtexz
 				<< sec.floorplane.a
 				<< sec.floorplane.b
 				<< sec.floorplane.c
@@ -168,8 +173,8 @@ void P_SerializeWorld (FArchive &arc)
 			AActor* SkyboxCeiling;
 			AActor* SkyboxFloor;
 
-			arc >> sec.floorheight
-				>> sec.ceilingheight
+			arc >> sec.floortexz
+				>> sec.ceilingtexz
 				>> sec.floorplane.a
 				>> sec.floorplane.b
 				>> sec.floorplane.c

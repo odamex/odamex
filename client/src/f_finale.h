@@ -47,4 +47,4 @@ struct finale_options_t
 };
 
 void F_StartFinale(finale_options_t& options);
-void STACK_ARGS F_ShutdownFinale();
+void F_ShutdownFinale();

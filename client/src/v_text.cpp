@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <ctype.h>
 #include <map>
 
@@ -52,7 +54,7 @@ EXTERN_CVAR(ui_font_menu)
 EXTERN_CVAR(ui_font_hud)
 
 
-byte *ConChars;
+std::vector<byte> ConChars;
 extern byte *Ranges;
 
 OFont* menu_font = NULL;
@@ -121,7 +123,7 @@ static OFont* V_CreateFontAtSize(unsigned int stylemask, int size, const char* l
 		return font;
 
 	delete font;
-	return new SmallDoomFont(MAX(1, size / 8) * FRACUNIT);
+	return new SmallDoomFont(std::max(1, size / 8) * FRACUNIT);
 }
 
 
@@ -133,7 +135,7 @@ OFont* V_GetFont(const char* lumpname, int pixel_size)
 	typedef std::map<std::string, OFont*> FontCache;
 	static FontCache cache;
 
-	pixel_size = clamp(pixel_size, 4, 128);
+	pixel_size = std::clamp(pixel_size, 4, 128);
 
 	const std::string key = fmt::format("{}:{}", lumpname, pixel_size);
 
@@ -164,7 +166,7 @@ OFont* V_GetBitmapFont(const char* lumpname, int pixel_size)
 	typedef std::map<std::string, OFont*> FontCache;
 	static FontCache cache;
 
-	pixel_size = clamp(pixel_size, 4, 128);
+	pixel_size = std::clamp(pixel_size, 4, 128);
 	const std::string key = fmt::format("{}:{}", lumpname, pixel_size);
 
 	FontCache::iterator it = cache.find(key);
@@ -175,17 +177,17 @@ OFont* V_GetBitmapFont(const char* lumpname, int pixel_size)
 	if (!strnicmp(lumpname, "FONT_BIG", 8))
 	{
 		// The large red font's glyphs are roughly twice the small font's height.
-		const fixed_t scale = MAX(1, pixel_size / 16) * FRACUNIT;
+		const fixed_t scale = std::max(1, pixel_size / 16) * FRACUNIT;
 		font = new LargeDoomFont(scale);
 	}
 	else if (!strnicmp(lumpname, "FONT_CON", 8))
 	{
-		const fixed_t scale = MAX(1, pixel_size / 8) * FRACUNIT;
+		const fixed_t scale = std::max(1, pixel_size / 8) * FRACUNIT;
 		font = new ConCharsFont(scale);
 	}
 	else
 	{
-		const fixed_t scale = MAX(1, pixel_size / 8) * FRACUNIT;
+		const fixed_t scale = std::max(1, pixel_size / 8) * FRACUNIT;
 		font = new SmallDoomFont(scale);
 	}
 
@@ -206,7 +208,7 @@ OFont* V_GetStyledFont(const char* lumpname, int pixel_size, unsigned int stylem
 	typedef std::map<std::string, OFont*> FontCache;
 	static FontCache cache;
 
-	pixel_size = clamp(pixel_size, 4, 128);
+	pixel_size = std::clamp(pixel_size, 4, 128);
 	const std::string key = fmt::format("{}:{}:{}", lumpname, pixel_size, stylemask);
 
 	FontCache::iterator it = cache.find(key);
@@ -231,7 +233,7 @@ OFont* V_GetGradientFont(const char* lumpname, int pixel_size, argb_t top, argb_
 	typedef std::map<std::string, OFont*> FontCache;
 	static FontCache cache;
 
-	pixel_size = clamp(pixel_size, 4, 128);
+	pixel_size = std::clamp(pixel_size, 4, 128);
 	const std::string key = fmt::format("{}:{}:{:08x}:{:08x}", lumpname, pixel_size,
 	                                    static_cast<uint32_t>(top), static_cast<uint32_t>(bottom));
 
@@ -244,7 +246,7 @@ OFont* V_GetGradientFont(const char* lumpname, int pixel_size, argb_t top, argb_
 	if (!font->isUsable())
 	{
 		delete font;
-		font = new SmallDoomFont(MAX(1, pixel_size / 8) * FRACUNIT);
+		font = new SmallDoomFont(std::max(1, pixel_size / 8) * FRACUNIT);
 	}
 	cache[key] = font;
 	return font;
@@ -260,7 +262,7 @@ OFont* V_GetVariableFont(const char* lumpname, int pixel_size, unsigned int styl
 	typedef std::map<std::string, OFont*> FontCache;
 	static FontCache cache;
 
-	pixel_size = clamp(pixel_size, 4, 128);
+	pixel_size = std::clamp(pixel_size, 4, 128);
 
 	// key on the lump, size, style, and every axis setting so that each
 	// distinct instance is cached separately
@@ -277,7 +279,7 @@ OFont* V_GetVariableFont(const char* lumpname, int pixel_size, unsigned int styl
 	if (!font->isUsable())
 	{
 		delete font;
-		font = new SmallDoomFont(MAX(1, pixel_size / 8) * FRACUNIT);
+		font = new SmallDoomFont(std::max(1, pixel_size / 8) * FRACUNIT);
 	}
 	cache[key] = font;
 	return font;
@@ -308,7 +310,7 @@ OFont* V_GetFaceFont(fontface_t face, int pixel_scale)
 {
 	// The bitmap HUD font is 8 pixels tall, so a scale factor of N matches a
 	// face built at N times its base size.
-	pixel_scale = MAX(1, pixel_scale);
+	pixel_scale = std::max(1, pixel_scale);
 
 	const hudfacedef_t& def = hud_faces[face];
 	const int size = def.base_size * pixel_scale;
@@ -430,7 +432,7 @@ int V_GetTextColor(std::string_view str)
         set('D', 'd', CR_GREEN);
         set('E', 'e', CR_BROWN);
         set('F', 'f', CR_GOLD);
-        set('G', 'e', CR_RED);
+        set('G', 'g', CR_RED);
         set('H', 'h', CR_BLUE);
         set('I', 'i', CR_ORANGE);
         set('J', 'j', CR_WHITE);
@@ -475,7 +477,7 @@ int V_GetTextColor(std::string_view str)
 void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes, int scale) const
 {
 	// Don't try and print a string without conchars loaded.
-	if (::ConChars == NULL)
+	if (::ConChars.empty())
 		return;
 
 	const int char_size = 8 * scale;
@@ -598,12 +600,12 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 static bool V_DrawRuleChar(const DCanvas* canvas, byte c, int x, int y,
 		int advance, int line_height)
 {
-	if (c < RULE_CHAR_FIRST || c > RULE_CHAR_LAST || ::ConChars == nullptr || advance <= 0)
+	if (c < RULE_CHAR_FIRST || c > RULE_CHAR_LAST || ::ConChars.empty() || advance <= 0)
 		return false;
 
 	// Each CONCHARS glyph is 8 rows of 8 colour bytes followed by 8 mask
 	// bytes, where a mask byte of 0 means the pixel is drawn.
-	const byte* glyph = ::ConChars + static_cast<int>(c) * 128;
+	const byte* glyph = ::ConChars.data() + static_cast<int>(c) * 128;
 
 	int first_row = -1, last_row = -1;
 	palindex_t color_index = 0;
@@ -635,15 +637,15 @@ static bool V_DrawRuleChar(const DCanvas* canvas, byte c, int x, int y,
 	int left = x;
 	int right = x + advance;
 	int top = y + (first_row * line_height) / 8;
-	int bottom = MAX(y + ((last_row + 1) * line_height) / 8, top + 1);
+	int bottom = std::max(y + ((last_row + 1) * line_height) / 8, top + 1);
 
 	// Clear does no bounds checking, so clip the bar to the surface before
 	// handing it over -- console text can be positioned partly off-screen.
 	const IWindowSurface* surface = canvas->getSurface();
-	left = MAX(left, 0);
-	top = MAX(top, 0);
-	right = MIN(right, static_cast<int>(surface->getWidth()));
-	bottom = MIN(bottom, static_cast<int>(surface->getHeight()));
+	left = std::max(left, 0);
+	top = std::max(top, 0);
+	right = std::min(right, static_cast<int>(surface->getWidth()));
+	bottom = std::min(bottom, static_cast<int>(surface->getHeight()));
 
 	if (left < right && top < bottom)
 	{
@@ -679,7 +681,7 @@ void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 	int blend_level = 255;
 
 	if (drawer == EWrapper_Lucent || drawer == EWrapper_TlatedLucent)
-		blend_level = clamp(static_cast<int>(hud_transparency * 255), 0, 255);
+		blend_level = std::clamp(static_cast<int>(hud_transparency * 255), 0, 255);
 
 	for (const char* str = string; str[0] != '\0'; )
 	{
@@ -777,7 +779,7 @@ int V_FontStringWidthClean(const OFont* font, const char* str)
 	if (!font || !str)
 		return 0;
 
-	return font->getTextWidth(str) / MAX(1, CleanXfac);
+	return font->getTextWidth(str) / std::max(1, CleanXfac);
 }
 
 //
@@ -788,7 +790,7 @@ int V_FontLineHeightClean(const OFont* font)
 	if (!font)
 		return 0;
 
-	return font->getHeight() / MAX(1, CleanYfac);
+	return font->getHeight() / std::max(1, CleanYfac);
 }
 
 
@@ -823,7 +825,7 @@ static void breakitFont(const OFont* font, brokenlines_t* line, const byte* star
 //
 brokenlines_t* V_BreakLinesFont(const OFont* font, int maxwidth, const byte* str)
 {
-	return V_BreakLinesFontPixels(font, maxwidth * MAX(1, CleanXfac), str);
+	return V_BreakLinesFontPixels(font, maxwidth * std::max(1, CleanXfac), str);
 }
 
 

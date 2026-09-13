@@ -25,7 +25,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -36,9 +36,9 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Install Python packages
       uses: insightsengineering/pip-action@v2
       with:
@@ -53,6 +53,8 @@ jobs:
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
     - name: Run unit tests
       run: .\build\tests\unit-tests\RelWithDebInfo\odagtest
+    - name: Check cvar documentation is up to date
+      run: cmake --build .\build\ --target cvardocs-check --config RelWithDebInfo
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
     - name: Stage artifacts for testing
@@ -121,9 +123,9 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v6
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      uses: actions/checkout@v7
+      with:
+        submodules: recursive
     - name: Install Python packages
       uses: insightsengineering/pip-action@v2
       with:
@@ -133,6 +135,8 @@ jobs:
       run: .\ci\win-x32-buildgen.ps1
     - name: Run build
       run: cmake --build .\build-x32\ --config RelWithDebInfo --parallel
+    - name: Check cvar documentation is up to date
+      run: cmake --build .\build-x32\ --target cvardocs-check --config RelWithDebInfo
     - name: Prepare artifact
       run: .\ci\win-x32-artifact.ps1
     - name: Upload artifact to B2

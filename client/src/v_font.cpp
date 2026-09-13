@@ -174,8 +174,8 @@ static void V_FillGradient(Texture* dest_texture, palindex_t start_color, palind
 			for (int y = 0; y < dest_texture->mHeight; y++)
 			{
 				int color = start_color + ((y * frac) >> FRACBITS);
-				color = MAX(color, static_cast<int>(start_color));
-				color = MIN(color, static_cast<int>(end_color));
+				color = std::max(color, static_cast<int>(start_color));
+				color = std::min(color, static_cast<int>(end_color));
 				*dest++ = static_cast<palindex_t>(color);
 			}
 		}
@@ -196,13 +196,13 @@ static void V_FillGradientRGB(Texture* dest_texture, argb_t top, argb_t bottom, 
 	const int w = dest_texture->mWidth;
 	const int h = dest_texture->mHeight;
 	const argb_t* palette = V_GetDefaultPalette()->basecolors;
-	const int span = MAX(1, dist - 1);
+	const int span = std::max(1, dist - 1);
 
 	// One matched palette index per row (V_BestColor is expensive, so cache it).
 	std::vector<palindex_t> rowcolor(h);
 	for (int y = 0; y < h; y++)
 	{
-		const int t = MIN(y, span);
+		const int t = std::min(y, span);
 		const int r = top.getr() + (bottom.getr() - top.getr()) * t / span;
 		const int g = top.getg() + (bottom.getg() - top.getg()) * t / span;
 		const int b = top.getb() + (bottom.getb() - top.getb()) * t / span;
@@ -243,7 +243,7 @@ fixed_t V_FontScaleHudText()
 
 fixed_t V_FontScaleClean()
 {
-	return MIN(CleanXfac, CleanYfac) * FRACUNIT;
+	return std::min(CleanXfac, CleanYfac) * FRACUNIT;
 }
 
 
@@ -529,7 +529,7 @@ int OFont::getTextHeight(const char* str) const
 
 	while (*str)
 	{
-		height = MAX(height, getTextHeight(*str));
+		height = std::max(height, getTextHeight(*str));
 		str++;
 	}
 
@@ -809,7 +809,7 @@ static void V_ApplyFontVariations(FT_Library library, FT_Face face,
 			if (v.tag == static_cast<uint32_t>(axis.tag))
 			{
 				FT_Fixed value = static_cast<FT_Fixed>(v.value * 65536.0f);
-				coords[i] = clamp(value, axis.minimum, axis.maximum);
+				coords[i] = std::clamp(value, axis.minimum, axis.maximum);
 				break;
 			}
 		}
@@ -835,7 +835,7 @@ void TrueTypeFont::buildGlyphs()
 	const unsigned int stylemask = mStyleMask;
 
 	// the requested pixel size is the base size taken at the current scale
-	const int size = MAX(1, (mBaseSize * getScale()) >> FRACBITS);
+	const int size = std::max(1, (mBaseSize * getScale()) >> FRACBITS);
 
 	mHeight = 0;
 	mAscent = 0;
@@ -905,13 +905,13 @@ void TrueTypeFont::buildGlyphs()
 	if (stylemask & TTF_TEXTURE)
 		background_texture = cacheSourceTexture("FONTBACK");
 
-	const int outline_size = (stylemask & TTF_OUTLINE) ? MAX(1, size / 16) : 0;
-	const int shadow_size = (stylemask & TTF_SHADOW) ? MAX(1, size / 8) : 0;
+	const int outline_size = (stylemask & TTF_OUTLINE) ? std::max(1, size / 16) : 0;
+	const int shadow_size = (stylemask & TTF_SHADOW) ? std::max(1, size / 8) : 0;
 
 	const int pad_left = outline_size;
 	const int pad_top = outline_size;
-	const int pad_right = MAX(outline_size, shadow_size);
-	const int pad_bottom = MAX(outline_size, shadow_size);
+	const int pad_right = std::max(outline_size, shadow_size);
+	const int pad_bottom = std::max(outline_size, shadow_size);
 
 	const bool decorated = (outline_size > 0 || shadow_size > 0);
 	const palindex_t decoration_color = decorated ? V_FindDecorationColor() : 0;
@@ -1129,7 +1129,7 @@ void TrueTypeFont::buildGlyphs()
 	FT_Done_Face(face);
 	FT_Done_FreeType(ftlibrary);
 
-	mMissingGlyphWidth = MAX(1, size / 2);
+	mMissingGlyphWidth = std::max(1, size / 2);
 }
 
 int TrueTypeFont::getGlyphAdvance(char c) const

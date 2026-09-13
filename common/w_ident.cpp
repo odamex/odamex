@@ -1729,6 +1729,22 @@ bool W_IsIWAD(const OResFile& file)
 
 
 //
+// W_IsUnofficialIWAD
+//
+// Returns true if the given file only passes as an IWAD because of the lump
+// sniffing in isIWAD(), i.e. it's not an IWAD we actually know about and we
+// are guessing.
+//
+bool W_IsUnofficialIWAD(const OResFile& file)
+{
+	if (::identtab.isKnownIWAD(file.getMD5()))
+		return false;
+
+	return ::identtab.isIWAD(file);
+}
+
+
+//
 // W_IsIWADDeprecated
 //
 // Checks to see whether a given resolved file is an IWAD flagged as "deprecated"

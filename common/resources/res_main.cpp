@@ -31,6 +31,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <filesystem>
 #include <fstream>
 
@@ -197,7 +199,7 @@ void ResourceManager::addResourceContainer(
 
 	const size_t needed = mResources.size() + container->getResourceCount();
 	if (mResources.capacity() < needed)
-		mResources.reserve(MAX(needed, mResources.capacity() * 2));
+		mResources.reserve(std::max(needed, mResources.capacity() * 2));
 
 	container->addResources(this);
 }
@@ -368,6 +370,32 @@ const std::string& ResourceManager::getResourceContainerFileName(const ResourceI
 		return getResourceContainerRecord(container)->mFileName;
 	static std::string empty_string;
 	return empty_string;
+}
+
+
+//
+// ResourceManager::getResourceContainerIndex
+//
+std::optional<size_t> ResourceManager::getResourceContainerIndex(const ResourceId res_id) const
+{
+	const ResourceContainer* container = getResourceContainer(res_id);
+	if (!container)
+		return std::nullopt;
+
+	for (size_t i = 0; i < mResourceContainers.size(); i++)
+	{
+		if (mResourceContainers[i].mResourceContainer != container)
+			continue;
+
+		// The unified texture system is appended after the real files, so an
+		// index past them belongs to no file on disk.
+		if (i >= mResourceFileNames.size())
+			return std::nullopt;
+
+		return i;
+	}
+
+	return std::nullopt;
 }
 
 
@@ -646,6 +674,31 @@ const std::string& Res_GetResourceContainerFileName(const ResourceId res_id)
 
 
 //
+// Res_IsResourceFromPWAD
+//
+bool Res_IsResourceFromPWAD(const ResourceId res_id)
+{
+	const std::optional<size_t> index = resource_manager.getResourceContainerIndex(res_id);
+
+	return index.has_value() && index.value() >= RESOURCE_FILE_FIRSTPWAD;
+}
+
+
+//
+// Res_IsResourceReplaced
+//
+// A resource is replaced when more than one file supplies its path and the one
+// the game resolves comes from a PWAD.
+//
+bool Res_IsResourceReplaced(const ResourcePath& path)
+{
+	const ResourceIdList res_ids = Res_GetAllResourceIds(path);
+
+	return res_ids.size() > 1 && Res_IsResourceFromPWAD(res_ids.back());
+}
+
+
+//
 // Res_GetResourceName
 //
 // Looks for the name of the resource lump that matches id. If the lump is not
@@ -691,6 +744,19 @@ bool Res_CheckMap(const OString& mapname)
 	ResourcePath directory = Res_MakeResourcePath(mapname, maps_directory_name);
 	const ResourceId res_id = Res_GetResourceId(mapname, directory);
 	return resource_manager.validateResourceId(res_id);
+}
+
+
+//
+// Res_IsMapFromPWAD
+//
+// True when the map marker the game resolves for this name came from a PWAD.
+//
+bool Res_IsMapFromPWAD(const OString& mapname)
+{
+	ResourcePath directory = Res_MakeResourcePath(mapname, maps_directory_name);
+
+	return Res_IsResourceFromPWAD(Res_GetResourceId(mapname, directory));
 }
 
 

@@ -1,6 +1,9 @@
 # CMake >= 3.13 needed for -S and -B params in library compilation.
-# CMake >= 3.19 needed for policy CMP0112: target-dependent generator expressions
-#               do not implicitly add target-level dependencies.
+# CMake >= 3.19 needed for:
+#               - policy CMP0112: target-dependent generator expressions
+#                 do not implicitly add target-level dependencies.
+#               - add_library(<name> INTERFACE) plus PUBLIC target_sources.
+# CMake >= 3.20 needed for restricted set of generator expressions allowed in custom command OUTPUT args.
 #
 # Note that if you are running Linux, there are many ways to get newer
 # versions of CMake.
@@ -14,7 +17,7 @@
 # - If you have Python installed, you can install CMake through pip.
 #
 
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.20)
 
 project(Odamex VERSION 13.0.0)
 
@@ -70,6 +73,8 @@ cmake_dependent_option( USE_INTERNAL_LIBADLMIDI "Use internal libADLMIDI" 1 BUIL
 
 set(ODAMEX_INSTALL_BINDIR "/usr/local/bin" CACHE PATH "Smart default for bin dir location")
 set(ODAMEX_INSTALL_DATADIR "/usr/local/share" CACHE PATH "Smart default for data dir location")
+
+set(ODAMEX_ARTIFACT_DIR "${CMAKE_BINARY_DIR}/odamex" CACHE PATH "The build directory in which to place deployable end items such as executables, dynamic libraries, and data resources.")
 
 if(NOT APPLE AND NOT WIN32)
   add_definitions(-DODAMEX_INSTALL_BINDIR="${ODAMEX_INSTALL_BINDIR}")
@@ -177,13 +182,19 @@ git_branch(HEAD GIT_BRANCH)
 string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
   "\\4" GIT_SHORT_HASH "${GIT_DESCRIBE}")
 
+# Cvar documentation
+include(OdamexCvarDoc)
+
 # Libraries
 add_subdirectory(libraries)
 
+# WAD building
+add_subdirectory(wad)
+
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
-  add_subdirectory(common)
   add_subdirectory(odaproto)
+  add_subdirectory(common)
 endif()
 if(BUILD_CLIENT)
   add_subdirectory(client)
@@ -211,8 +222,8 @@ if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_LAUN
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
 
-# WAD building
-add_subdirectory(wad)
+# The "cvardocs" target refreshes the committed documentation on demand.
+odamex_cvardoc_add_targets()
 
 # Bash completion
 add_subdirectory(completion)
@@ -256,6 +267,12 @@ if(NOT APPLE)
       COMPONENT common)
     install(FILES ${CONFIG_SAMPLES}
       DESTINATION ${CMAKE_INSTALL_DATADIR}/odamex/config-samples
+      COMPONENT common)
+    install(FILES packaging/linux/net.odamex.Odamex.metainfo.xml
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo
+      COMPONENT common)
+    install(FILES packaging/linux/net.odamex.Odamex.releases.xml
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo/releases
       COMPONENT common)
 
     option(ODAMEX_COMPONENT_PACKAGES "Create several rpm/deb packages for repository maintainers." OFF)

@@ -82,6 +82,8 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 			arc >> more;
 		}
 
+		P_ResolveMobjToMobjPointers();
+
 		// killough 3/26/98: Spawn icon landings:
 		P_SpawnBrainTargets ();
 	}

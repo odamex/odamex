@@ -26,6 +26,7 @@
 #include "odamex.h"
 
 
+#include <array>
 #include <sstream>
 #include <algorithm>
 
@@ -48,12 +49,18 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "c_console.h"
+#include "c_dispatch.h"
+#include "c_doc.h"
 #include "i_system.h"
 #include "i_time.h"
 #include "g_game.h"
 #include "g_spawninv.h"
 #include "r_main.h"
+#include "r_data.h"
+#include "r_sprites.h"
+#include "resources/res_texture.h"
 #include "d_main.h"
+#include "g_level.h"
 #include "d_dehacked.h"
 #include "s_sound.h"
 #include "gi.h"
@@ -63,6 +70,10 @@
 #include "resources/res_filelib.h"
 #include "odainfo.h"
 #include "infomap.h"
+
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
 
 OResFiles wadfiles;
 OResFiles patchfiles;
@@ -236,6 +247,48 @@ static bool FindIWAD(OResFile& out)
 }
 
 /**
+ * @brief Find an already loaded resource file that satisfies a wanted file.
+ *
+ * Files passed by full path stay loaded from directories that are not part
+ * of the search path, so a later reload that only knows the basename cannot
+ * resolve them again.  Match on hash instead.
+ *
+ * @param out Output OResFile. On error, this object is not touched.
+ * @param wanted Wanted file to satisfy.
+ * @param loaded Currently loaded files to search.
+ * @return True if a loaded file matched, otherwise false.
+ */
+bool FindLoadedFile(OResFile& out, const OWantFile& wanted,
+                           const OResFiles& loaded)
+{
+	const OMD5Hash& hash = wanted.getWantedMD5();
+	if (hash.empty())
+	{
+		// Without a hash we have no way to know the file is the right one.
+		return false;
+	}
+
+	for (const auto& file : loaded)
+	{
+		if (file.getMD5() != hash)
+		{
+			continue;
+		}
+
+		if (!M_FileExists(file.getFullpath()))
+		{
+			// Where'd it go?
+			continue;
+		}
+
+		out = file;
+		return true;
+	}
+
+	return false;
+}
+
+/**
  * @brief Load files that are assumed to be resolved, in the correct order,
  *        and complete.
  *
@@ -387,7 +440,8 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	for (const auto& wantfile : newwadfiles)
 	{
 		OResFile file;
-		if (!M_ResolveWantedFile(file, wantfile))
+		if (!M_ResolveWantedFile(file, wantfile) &&
+		    !FindLoadedFile(file, wantfile, ::wadfiles))
 		{
 			// Give more useful information when trying to load an IWAD.
 			const bool isCommercial = CommercialIWADWarning(wantfile);
@@ -410,7 +464,8 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	for (const auto& wantfile : newpatchfiles)
 	{
 		OResFile file;
-		if (!M_ResolveWantedFile(file, wantfile))
+		if (!M_ResolveWantedFile(file, wantfile) &&
+		    !FindLoadedFile(file, wantfile, ::patchfiles))
 		{
 			::missingfiles.push_back(wantfile);
 			PrintFmt(PRINT_WARNING, "Could not resolve patch file \"{}\".",
@@ -446,6 +501,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	// IWAD //
 
 	bool got_next_iwad = false;
+	bool guessed_iwad = false;
 	if (resolved_wads.size() >= 1)
 	{
 		// See if the first WAD we passed was an IWAD.
@@ -454,6 +510,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 		{
 			next_iwad = possible_iwad;
 			got_next_iwad = true;
+			guessed_iwad = W_IsUnofficialIWAD(possible_iwad);
 			resolved_wads.erase(resolved_wads.begin());
 			if (W_IsIWADDeprecated(next_iwad))
 			{
@@ -461,6 +518,21 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 				              "latest version.\n",
 				              next_iwad.getBasename());
 			}
+		}
+	}
+
+	OResFile fallback_iwad;
+	bool got_fallback_iwad = false;
+	if (guessed_iwad)
+	{
+		if (::wadfiles.size() >= 2 && ::wadfiles.at(1).getMD5() != next_iwad.getMD5())
+		{
+			fallback_iwad = ::wadfiles.at(1);
+			got_fallback_iwad = true;
+		}
+		else
+		{
+			got_fallback_iwad = FindIWAD(fallback_iwad);
 		}
 	}
 
@@ -488,6 +560,59 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 	resolved_wads.insert(resolved_wads.begin(), odamex_wad);
 	resolved_wads.insert(resolved_wads.begin() + 1, next_iwad);
 	LoadResolvedFiles(resolved_wads, resolved_patches);
+
+	if (guessed_iwad)
+	{
+		// Have the suspected standalone IWAD undergo checks to determine if
+		// it can stand up on its own or it needs to run under an IWAD.
+		const std::string badsprite = R_FindIncompleteSprite();
+		const std::string badtexture =
+		    badsprite.empty() ? Res_FindTextureMissingPatch() : "";
+
+		if (!badsprite.empty() || !badtexture.empty())
+		{
+			const std::string reason =
+			    !badsprite.empty()
+			        ? badsprite
+			        : fmt::format("texture {} is missing a patch", badtexture);
+
+			if (got_fallback_iwad)
+			{
+				PrintFmt_Bold("{} was loaded as an IWAD, but {}.\n"
+				              "Reloading it as a regular PWAD on top of {}.\n",
+				              next_iwad.getBasename(), reason,
+				              fallback_iwad.getBasename());
+
+				D_UndoDehPatch();
+				Res_CloseAllResourceFiles();
+
+				// Put the mod back where it belongs, in front of a real IWAD.
+				OResFiles retry_wads = resolved_wads;
+				retry_wads.at(1) = fallback_iwad;
+				retry_wads.insert(retry_wads.begin() + 2, next_iwad);
+				LoadResolvedFiles(retry_wads, resolved_patches);
+			}
+			else if (!badsprite.empty())
+			{
+				// Missing sprites kill the renderer as soon as one is drawn.
+				I_FatalError(
+				    "{} was loaded as an IWAD, but {}.\n"
+				    "It looks like a PWAD rather than a standalone IWAD, and no "
+				    "IWAD could be found to load it on top of. Put an IWAD "
+				    "somewhere Odamex can find it, then load this file with "
+				    "-file instead.\n",
+				    next_iwad.getBasename(), reason);
+			}
+			else
+			{
+				// Missing patches only draw as blanks, so warn and carry on.
+				PrintFmt(PRINT_WARNING,
+				    "{} was loaded as an IWAD, but {}. It may be a PWAD that "
+				    "needs to be loaded with -file on top of a real IWAD.\n",
+				    next_iwad.getBasename(), reason);
+			}
+		}
+	}
 }
 
 /**
@@ -604,6 +729,11 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	OResFiles oldwadfiles = ::wadfiles;
 	OResFiles oldpatchfiles = ::patchfiles;
 	std::string failmsg;
+
+	#ifdef CLIENT_APP
+	Freecam::reset();
+	#endif
+
 	try
 	{
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
@@ -691,26 +821,217 @@ static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option
 }
 
 //
+// AddBareCommandLineFiles
+//
+// Adds files passed without a parameter, as happens when they are dropped onto
+// the executable.
+// 
+// Sorted by extension so a dropped patch is not also loaded as a WAD.
+//
+// No extension is assumed to be a WAD.
+//
+namespace
+{
+
+void AddBareCommandLineFiles(OWantFiles& out, ofile_t type)
+{
+	const std::vector<std::string>& exts = M_FileTypeExts(type);
+
+	const DArgs files = Args.GatherBareFiles();
+	for (size_t i = 0; i < files.NumArgs(); i++)
+	{
+		const std::string arg = files.GetArg(i);
+
+		std::string ext;
+		if (!M_ExtractFileExtension(arg, ext))
+		{
+			if (type != OFILE_WAD)
+				continue;
+		}
+		else
+		{
+			if (std::ranges::none_of(exts,
+					[&](const auto& fileext){return iequals(ext, fileext); }))
+				continue;
+		}
+
+		OWantFile file;
+		if (OWantFile::make(file, arg, type))
+			out.push_back(file);
+	}
+}
+
+} // namespace
+
+//
 // D_AddWadCommandLineFiles
 //
-// Add the WAD files specified with -file.
+// Add the WAD files specified with -file, plus any dropped on the executable.
 // Call this from D_DoomMain
 //
 void D_AddWadCommandLineFiles(OWantFiles& out)
 {
 	AddCommandLineOptionFiles(out, "-file", OFILE_WAD);
+	AddBareCommandLineFiles(out, OFILE_WAD);
 }
 
 //
 // D_AddDehCommandLineFiles
 //
-// Adds the DEH/BEX files specified with -bex or -deh.
+// Adds the DEH/BEX files specified with -bex or -deh, plus any dropped on the
+// executable.
 // Call this from D_DoomMain
 //
 void D_AddDehCommandLineFiles(OWantFiles& out)
 {
 	AddCommandLineOptionFiles(out, "-bex", OFILE_DEH);
 	AddCommandLineOptionFiles(out, "-deh", OFILE_DEH);
+	AddBareCommandLineFiles(out, OFILE_DEH);
+}
+
+//
+// AppendUniqueFiles
+//
+// Appends in to out, skipping files whose wanted path is already queued.
+//
+namespace
+{
+
+void AppendUniqueFiles(OWantFiles& out, const OWantFiles& in)
+{
+	for (const auto& file : in)
+	{
+		bool queued = false;
+		for (const auto& have : out)
+		{
+			if (have.getWantedPath() == file.getWantedPath())
+			{
+				queued = true;
+				break;
+			}
+		}
+
+		if (!queued)
+			out.push_back(file);
+	}
+}
+
+} // namespace
+
+//
+// D_AddStartupWadFiles
+//
+// Adds the files a 'wad' command in the config file queued.
+// Command line files are already in the lists and keep their
+// place at the front.
+// Call this from D_DoomMain
+//
+void D_AddStartupWadFiles(OWantFiles& outwadfiles, OWantFiles& outpatchfiles)
+{
+	const DArgs wadparams = Args.GatherFiles("+wad");
+	if (wadparams.NumArgs())
+	{
+		std::vector<std::string> tokens;
+		tokens.reserve(wadparams.NumArgs());
+		for (size_t i = 0; i < wadparams.NumArgs(); i++)
+			tokens.emplace_back(wadparams.GetArg(i));
+
+		OWantFiles wadfiles;
+		OWantFiles patchfiles;
+		G_ParseWadString(C_EscapeWadList(tokens), wadfiles, patchfiles);
+
+		AppendUniqueFiles(outwadfiles, wadfiles);
+		AppendUniqueFiles(outpatchfiles, patchfiles);
+	}
+
+	for (size_t p = Args.CheckParm("+wad"); p; p = Args.CheckParm("+wad"))
+		Args.SetArg(p, "-wad");
+
+	if (::startupwadstring.empty())
+		return;
+
+	OWantFiles wadfiles;
+	OWantFiles patchfiles;
+	G_ParseWadString(::startupwadstring, wadfiles, patchfiles);
+	::startupwadstring.clear();
+
+	AppendUniqueFiles(outwadfiles, wadfiles);
+	AppendUniqueFiles(outpatchfiles, patchfiles);
+}
+
+// ============================================================================
+//
+// Command line information dumps
+//
+// These are informational command line switches that simply dump
+// information and exit before initializing any subsystems.
+// These are allowed to run as root since they exit right after.
+//
+// ============================================================================
+
+// Name the version document after the app, so a client and a server writing
+// into the same directory do not clobber each other.
+#ifdef CLIENT_APP
+constexpr const char* VERSION_BASENAME = "odamex-version";
+#elif defined(SERVER_APP)
+constexpr const char* VERSION_BASENAME = "odasrv-version";
+#elif defined(TEST_APP)
+constexpr const char* VERSION_BASENAME = "odagtest-version";
+#endif
+
+bool C_WriteVersion(infodumpdest_t dest)
+{
+	return EmitInfoDump(fmt::format("Odamex {}\n", NiceVersion()), VERSION_BASENAME,
+	                    ".txt", dest);
+}
+
+namespace
+{
+
+constexpr infodumpdest_t D_InfoDumpDest([[maybe_unused]] infodumpdest_t dest)
+{
+#if defined(_WIN32) && defined(CLIENT_APP)
+	return infodumpdest_t::FILE;
+#else
+	return dest;
+#endif
+}
+
+struct infodump_t
+{
+	const char* param;  // the switch, including its leading dashes
+	bool (*handler)(infodumpdest_t);  // writes the information out, false if it could not
+	infodumpdest_t dest; // whether to write to stdout or a file
+};
+
+const std::array InfoDumps = {
+    infodump_t{"--version", C_WriteVersion, infodumpdest_t::STDOUT},
+    infodump_t{"--cvardoc", C_WriteCvarDoc, infodumpdest_t::FILE},
+    infodump_t{"--cvardocjson", C_WriteCvarDocJSON, infodumpdest_t::STDOUT},
+};
+
+} // namespace
+
+//
+// D_CheckInfoDumps
+//
+// Checks for every information dump named on the command line, then quits if any of
+// them ran.
+//
+void D_CheckInfoDumps()
+{
+	bool ok = true;
+
+	for (const infodump_t& dump : InfoDumps)
+	{
+		if (Args.CheckParm(dump.param))
+		{
+			if (!dump.handler(D_InfoDumpDest(dump.dest)))
+				ok = false;
+
+			exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
+		}
+	}
 }
 
 
@@ -853,7 +1174,7 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 	}
 }
 
-void STACK_ARGS D_ClearTaskSchedulers()
+void D_ClearTaskSchedulers()
 {
 	simulation_scheduler.reset();
 	display_scheduler.reset();

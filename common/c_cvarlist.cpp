@@ -221,6 +221,10 @@ CVAR_FUNC_DECL(g_spawninv, "default",
                CVARTYPE_STRING,
                CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
+CVAR(g_spawnatdeathspot, "0",
+     "Players respawn on the spot where they died instead of at a player start.",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 CVAR(g_ctf_notouchreturn, "0",
      "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
      CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH)
@@ -313,6 +317,11 @@ CVAR_RANGE(g_horde_spawnfull_max, "6",
            "Maximum number of seconds it takes to spawn a monster in a full horde map",
            CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
            60)
+
+CVAR_RANGE(g_horde_cooldown, "5",
+           "Number of waves a specific Horde wave must wait before it can be chosen again",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0,
+           10)
 
 CVAR_RANGE(g_horde_extralife, "0.0", "Chance to spawn an `extra life powerup` in Horde.\n" \
      "The value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\n" \
@@ -509,6 +518,9 @@ CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR(			log_packetdebug, "0", "Print debugging messages for each packet sent",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
+CVAR(			log_fulltimestamps, "0", "Extended timestamp info in the log file (dd/mm/yyyy hh:mm:ss)",
 				CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 CVAR(debug_disconnect, "0", "Show source file:line where a disconnect happens",

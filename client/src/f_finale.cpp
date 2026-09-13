@@ -228,7 +228,7 @@ void F_StartFinale(finale_options_t& options)
 //
 // Frees any memory allocated specifically for the finale
 //
-void STACK_ARGS F_ShutdownFinale()
+void F_ShutdownFinale()
 {
 	I_FreeSurface(cast_surface);
 	I_FreeSurface(finale_surface);
@@ -333,8 +333,8 @@ void F_TextWrite ()
 	{
 	case FINALE_GRAPHIC:
 	{
-		const ResourceId res_id =
-		    Res_GetTextureResourceId(OStringToUpper(finalelump.c_str()), GRAPHICS, false);
+		const ResourceId res_id = Res_GetTextureResourceId(
+		    OStringToUpper(W_CheckWidescreenPatch(finalelump).c_str()), GRAPHICS, false);
 		if (Res_CheckResource(res_id))
 		{
 			screen->DrawTextureFullScreen(Res_CacheTexture(res_id, PU_CACHE), true);
@@ -616,7 +616,8 @@ void F_CastDrawer()
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
-	const Texture* background_texture = Res_CacheTexture("BOSSBACK", PATCH);
+	const Texture* background_texture =
+	    Res_CacheTexture(W_CheckWidescreenPatch("BOSSBACK"), PATCH);
 
 	finale_width = background_texture->width();
 	finale_height = background_texture->height() + (background_texture->height() / 5);
@@ -670,8 +671,8 @@ void F_BunnyScroll()
 {
 	static int	laststage;
 
-	const Texture* p1 = W_CachePatch("PFUB1");
-	const Texture* p2 = W_CachePatch("PFUB2");
+	const Texture* p1 = W_CachePatch(W_CheckWidescreenPatch("PFUB1"));
+	const Texture* p2 = W_CachePatch(W_CheckWidescreenPatch("PFUB2"));
 
 	I_FreeSurface(bunny1_surface);
 	I_FreeSurface(bunny2_surface);
@@ -802,7 +803,7 @@ void F_DrawEndPic(const OLumpName& page)
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear(); // ensure black background in matted modes
 
-	const Texture* background_patch = W_CachePatch(page);
+	const Texture* background_patch = W_CachePatch(W_CheckWidescreenPatch(page));
 
 	finale_width = background_patch->width();
 	finale_height = background_patch->height() + (background_patch->height() / 5);

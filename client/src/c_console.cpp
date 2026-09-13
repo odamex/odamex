@@ -88,7 +88,7 @@ static const OFont* C_Font()
 	if (!V_FontsReady())
 		return nullptr;
 
-	const int size = 8 * MAX(1u, ConScale);
+	const int size = 8 * std::max(1u, ConScale);
 	if (ui_font_console.asInt() == FONT_BITMAP)
 		return V_GetBitmapFont("FONT_CON", size);
 	return V_GetFont("FONT_CON", size);
@@ -113,7 +113,7 @@ static int C_CharWidth(char c)
 //
 static const OFont* C_MessageFont()
 {
-	const int size = 8 * MAX(1, V_TextScaleXAmount());
+	const int size = 8 * std::max(1, V_TextScaleXAmount());
 	if (ui_font_messages.asInt() == FONT_BITMAP)
 		return V_GetBitmapFont("FONT_SM", size);
 	return V_GetHudFontSized(size);
@@ -129,8 +129,6 @@ int			ConBottomStep; // Console fall/raise bottom pixels at the end of the tic, 
 
 int			CursorTicker, ScrollState = 0;
 constate_e	ConsoleState = c_up;
-
-extern byte *ConChars;
 
 bool		KeysShifted;
 bool		KeysCtrl;
@@ -152,6 +150,7 @@ EXTERN_CVAR(con_notifytime)
 
 EXTERN_CVAR(message_showpickups)
 EXTERN_CVAR(message_showobituaries)
+EXTERN_CVAR(log_fulltimestamps)
 
 static unsigned int TickerAt, TickerMax;
 static const char *TickerLabel;
@@ -364,7 +363,7 @@ private:
 void ConsoleCommandLine::doScrolling()
 {
 	const OFont* font = C_Font();
-	const int avail = MAX(1, static_cast<int>(ConWrapWidth) - font->getTextWidth("] "));
+	const int avail = std::max(1, static_cast<int>(ConWrapWidth) - font->getTextWidth("] "));
 
 	int n = scrolled_columns;
 
@@ -981,74 +980,136 @@ CVAR_FUNC_IMPL(con_scaletext)
 // con_scrlock 2 = Nothing brings scroll to the bottom.
 EXTERN_CVAR(con_scrlock)
 
-//
-// C_InitConCharsFont
-//
-// Loads the CONCHARS lump from disk and converts it to the format used by
-// the console for printing text.
-//
-void C_InitConCharsFont()
-{
-	static palindex_t transcolor = 0xF7;
+static constexpr int CONCHARS_GLYPH_DIM = 8;
+static constexpr int CONCHARS_COUNT = 256;
 
-	// Load the CONCHARS lump and convert it from patch_t format
-	// to a raw linear byte buffer with a background color of 'transcolor'
-	IWindowSurface* temp_surface = I_AllocateSurface(128, 128, 8);
+static constexpr int CONCHARS_ROW_BYTES = 2 * CONCHARS_GLYPH_DIM;
+static constexpr int CONCHARS_GLYPH_BYTES = CONCHARS_GLYPH_DIM * CONCHARS_ROW_BYTES;
+static constexpr size_t CONCHARS_BYTES = static_cast<size_t>(CONCHARS_COUNT) * CONCHARS_GLYPH_BYTES;
+static constexpr palindex_t CONCHARS_TRANSCOLOR = 0xF7;
+
+//
+// C_BlendConCharsSheet
+//
+// Converts one CONCHARS lump into the format used by the console and writes it
+// over the characters the sheet covers, leaving the rest of the font alone.
+// We attempt to support all CONCHAR lumps with all ports here.
+// Odamex's own is 16x16 and supplies all 256 chars (with support chars), while
+// sheets written for other ports are usually 32x4 and only cover only ASCII chars.
+//
+// Returns false if the lump isn't a usable sheet.
+//
+bool C_BlendConCharsSheet(const ResourceId res_id)
+{
+	const Texture* texture = Res_CacheTexture(res_id, PU_STATIC);
+	const int width = texture->width();
+	const int height = texture->height();
+
+	// A lump that isn't a graphic at all resolves to the placeholder or an
+	// empty texture, so this rejects those along with sheets of the wrong shape
+	if (width < CONCHARS_GLYPH_DIM or width % CONCHARS_GLYPH_DIM != 0 or
+		height < CONCHARS_GLYPH_DIM or height % CONCHARS_GLYPH_DIM != 0 or
+		texture->leftoffset() != 0 or texture->topoffset() != 0)
+		return false;
+
+	const int cols = width / CONCHARS_GLYPH_DIM;
+	const int glyph_count =
+		std::min(cols * (height / CONCHARS_GLYPH_DIM), CONCHARS_COUNT);
+
+	// Draw the sheet into a linear byte buffer with a background of
+	// 'CONCHARS_TRANSCOLOR' so glyph pixels can be told from empty space
+	IWindowSurface* temp_surface = I_AllocateSurface(width, height, 8);
 	temp_surface->lock();
 
-	// fill with color 'transcolor'
-	for (int y = 0; y < 128; y++)
-		memset(temp_surface->getBuffer() + y * temp_surface->getPitchInPixels(), transcolor, 128);
+	// the surface is 8bpp, so its pitch is both bytes and pixels per row
+	const ptrdiff_t pitch = temp_surface->getPitch();
 
-	// paste the patch into the linear byte bufer
+	for (ptrdiff_t y = 0; y < height; y++)
+		memset(temp_surface->getBuffer() + (y * pitch), CONCHARS_TRANSCOLOR, width);
+
+	// paste the sheet into the linear byte buffer
 	DCanvas* canvas = temp_surface->getDefaultCanvas();
-
-	const Texture* texture = Res_CacheTexture("CONCHARS", GRAPHICS);
 	canvas->DrawTexture(texture, 0, 0);
 
-	ConChars = new byte[256*8*8*2];
-	byte* dest = ConChars;
-
-	for (int y = 0; y < 16; y++)
+	for (ptrdiff_t i = 0; i < glyph_count; i++)
 	{
-		for (int x = 0; x < 16; x++)
-		{
-			const byte* source = temp_surface->getBuffer() + x * 8 + (y * 8 * temp_surface->getPitch());
-			for (int z = 0; z < 8; z++)
-			{
-				for (int a = 0; a < 8; a++)
-				{
-					const byte val = source[a];
-					if (val == transcolor)
-					{
-						dest[a] = 0x00;
-						dest[a + 8] = 0xff;
-					}
-					else
-					{
-						dest[a] = val;
-						dest[a + 8] = 0x00;
-					}
-				}
+		byte* dest = ConChars.data() + (i * CONCHARS_GLYPH_BYTES);
+		const byte* source = temp_surface->getBuffer() +
+		                     ((i / cols) * CONCHARS_GLYPH_DIM * pitch) +
+		                     ((i % cols) * CONCHARS_GLYPH_DIM);
 
-				dest += 16;
-				source += temp_surface->getPitch();
+		for (int z = 0; z < CONCHARS_GLYPH_DIM; z++)
+		{
+			for (int a = 0; a < CONCHARS_GLYPH_DIM; a++)
+			{
+				const byte val = source[a];
+				if (val == CONCHARS_TRANSCOLOR)
+				{
+					dest[a] = 0x00;
+					dest[a + CONCHARS_GLYPH_DIM] = 0xff;
+				}
+				else
+				{
+					dest[a] = val;
+					dest[a + CONCHARS_GLYPH_DIM] = 0x00;
+				}
 			}
+
+			dest += CONCHARS_ROW_BYTES;
+			source += pitch;
 		}
 	}
 
 	temp_surface->unlock();
 	I_FreeSurface(temp_surface);
+	return true;
 }
 
-
 //
-// C_ShutdownConCharsFont
+// C_InitConCharsFont
 //
-void STACK_ARGS C_ShutdownConCharsFont()
+// Builds the console font by layering every CONCHARS lump in load order. Each
+// sheet only replaces the characters it actually spans, so a PWAD sheet that
+// stops at ASCII keeps the glyphs an earlier sheet supplied above it.
+//
+void C_InitConCharsFont()
 {
-	delete [] ConChars;
-	ConChars = NULL;
+	ConChars.resize(CONCHARS_BYTES);
+
+	// characters that no sheet supplies stay fully transparent
+	for (ptrdiff_t i = 0; i < CONCHARS_COUNT; i++)
+	{
+		byte* dest = ConChars.data() + (i * CONCHARS_GLYPH_BYTES);
+		for (int z = 0; z < CONCHARS_GLYPH_DIM; z++, dest += CONCHARS_ROW_BYTES)
+		{
+			memset(dest, 0x00, CONCHARS_GLYPH_DIM);
+			memset(dest + CONCHARS_GLYPH_DIM, 0xff, CONCHARS_GLYPH_DIM);
+		}
+	}
+
+	// Every CONCHARS shares one resource path, so the name translator hands
+	// them back in load order.
+	const ResourceId top = Res_GetTextureResourceId("CONCHARS", GRAPHICS, false);
+	const ResourceIdList sheet_ids =
+	    top.empty() ? ResourceIdList() : Res_GetAllResourceIds(Res_GetResourcePath(top));
+
+	int sheets = 0;
+	for (const ResourceId res_id : sheet_ids)
+	{
+		if (C_BlendConCharsSheet(res_id))
+		{
+			sheets++;
+			continue;
+		}
+
+		PrintFmt(PRINT_WARNING,
+		         "CONCHARS in {} is not a grid of 8x8 glyphs, ignoring it.\n",
+		         Res_GetResourceContainerFileName(res_id));
+	}
+
+	if (sheets == 0)
+		PrintFmt(PRINT_WARNING,
+		         "No usable CONCHARS lump was found; console text will be blank.\n");
 }
 
 //
@@ -1102,7 +1163,7 @@ void C_InitConsoleBackground()
 //
 // Frees the background_surface
 //
-void STACK_ARGS C_ShutdownConsoleBackground()
+void C_ShutdownConsoleBackground()
 {
 	I_FreeSurface(background_surface);
 }
@@ -1111,7 +1172,7 @@ void STACK_ARGS C_ShutdownConsoleBackground()
 //
 // C_ShutdownConsole
 //
-void STACK_ARGS C_ShutdownConsole()
+void C_ShutdownConsole()
 {
 	Lines.clear();
 	History.clear();
@@ -1291,7 +1352,7 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 {
 	if (I_VideoInitialized() && !midprinting)
 	{
-		const bool noPickups = printlevel == PRINT_PICKUP && !::message_showpickups;
+		const bool noPickups = printlevel == PRINT_PICKUP && (!::message_showpickups || displayplayer().isFreecam);
 		const bool noObits = printlevel == PRINT_OBITUARY && !::message_showobituaries;
 
 		if (!noPickups && !noObits)
@@ -1363,6 +1424,61 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 	return strlen(outline);
 }
 
+namespace
+{
+
+// struct tm counts years from 1900.
+constexpr int TM_YEAR_BASE = 1900;
+
+std::string TimeStamp()
+{
+	const time_t ti = time(nullptr);
+	const struct tm* lt = localtime(&ti);
+
+	if (!lt)
+		return "";
+
+	if (log_fulltimestamps)
+	{
+		return fmt::format("[{:02d}/{:02d}/{:02d} {:02d}:{:02d}:{:02d}]", lt->tm_mday,
+		                   lt->tm_mon + 1, // localtime returns 0-based month
+		                   lt->tm_year + TM_YEAR_BASE, lt->tm_hour, lt->tm_min,
+		                   lt->tm_sec);
+	}
+
+	return fmt::format("[{:02d}:{:02d}:{:02d}]", lt->tm_hour, lt->tm_min, lt->tm_sec);
+}
+
+// Writes to the log file, stamping the start of every line.
+// Prints can span several lines or stop mid-line, so where
+// the last one left off is remembered.
+void C_LogString(const std::string& str)
+{
+	static bool at_line_start = true;
+
+	size_t pos = 0;
+	while (pos < str.length())
+	{
+		if (at_line_start)
+		{
+			LOG << TimeStamp() << ' ';
+			at_line_start = false;
+		}
+
+		size_t end = str.find('\n', pos);
+		if (end == std::string::npos)
+			end = str.length() - 1;
+
+		LOG.write(str.data() + pos, static_cast<std::streamsize>(end - pos + 1));
+		at_line_start = (str[end] == '\n');
+		pos = end + 1;
+	}
+
+	LOG.flush();
+}
+
+} // namespace
+
 size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
 	extern bool gameisdead;
@@ -1419,8 +1535,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 		if (con_coloredmessages)
 			StripColorCodes(newStr);
 
-		LOG << newStr;
-		LOG.flush();
+		C_LogString(newStr);
 	}
 
 #if defined (_WIN32) && defined(_DEBUG)
@@ -1593,9 +1708,14 @@ void C_AdjustBottom()
 //
 void C_NewModeAdjust()
 {
-	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth();
+	const int surface_height = I_GetSurfaceHeight();
 
-	ConScale = con_scaletext ? con_scaletext : MAX(1, static_cast<int>(std::round(surface_height / 330.0f)));
+	// The TrueType console face wants a smaller step than the old bitmap one.
+	const int auto_scale =
+	    std::max(1, static_cast<int>(std::round(static_cast<float>(surface_height) / 330.f)));
+
+	ConScale = con_scaletext ? con_scaletext.asInt() : auto_scale;
 	ConCharSize = 8 * ConScale;
 
 	if (I_VideoInitialized())
@@ -1925,7 +2045,7 @@ void C_DrawConsole()
 			int cColWidth = 0;
 			for (size_t i = 0; i < ::CmdCompletions.size(); i++)
 			{
-				cColWidth = MAX(cColWidth,
+				cColWidth = std::max(cColWidth,
 				                cfont->getTextWidth(::CmdCompletions.at(i).c_str()));
 			}
 			cColWidth += cfont->getTextWidth("  ");
@@ -2008,7 +2128,7 @@ void C_DrawConsole()
 			// width rather than of a column count.
 			const size_t scrolled =
 			    std::min<size_t>(CmdLine.scrolled_columns, CmdLine.text.length());
-			const int avail = MAX(1, static_cast<int>(ConWrapWidth) - (text_x - left));
+			const int avail = std::max(1, static_cast<int>(ConWrapWidth) - (text_x - left));
 
 			std::string visible = CmdLine.text.substr(scrolled);
 			while (!visible.empty() && font->getTextWidth(visible.c_str()) > avail)
@@ -2061,7 +2181,7 @@ static bool C_HandleKey(const event_t& ev)
 	}
 
 #ifdef __SWITCH__
-	if (ev->data1 == OKEY_JOY3)
+	if (ev.data1 == OKEY_JOY3)
 	{
 		char oldtext[64], text[64], fulltext[65];
 
@@ -2106,8 +2226,9 @@ static bool C_HandleKey(const event_t& ev)
 			return true;
 		}
 	case OKEY_MOUSE2:
+	case OKEY_MOUSE3:
 		// Paste from clipboard - add each character to command line
-		CmdLine.insertString(I_GetClipboardText());
+		CmdLine.insertString(I_GetClipboardText(ch == OKEY_MOUSE3));
 		CmdCompletions.clear();
 		TabCycleClear();
 		return true;
@@ -2250,8 +2371,8 @@ static bool C_HandleKey(const event_t& ev)
 	if (KeysCtrl)
 	{
 		// handle key combinations
-		// NOTE: we have to use ev->data1 here instead of the
-		// localization-aware ev->data3 since SDL2 does not send a SDL_TEXTINPUT
+		// NOTE: we have to use ev.data1 here instead of the
+		// localization-aware ev.data3 since SDL2 does not send a SDL_TEXTINPUT
 		// event when Ctrl is held down.
 
 		// Go to beginning of line
@@ -2266,6 +2387,17 @@ static bool C_HandleKey(const event_t& ev)
  		if (tolower(ev.data1) == 'v')
 		{
 			CmdLine.insertString(I_GetClipboardText());
+			TabCycleClear();
+		}
+		return true;
+	}
+
+	if (KeysAlt)
+	{
+		// Paste from primary selection - add each character to command line
+ 		if (tolower(ev.data1) == 'v')
+		{
+			CmdLine.insertString(I_GetClipboardText(true));
 			TabCycleClear();
 		}
 		return true;
@@ -2394,7 +2526,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 
 void C_DrawMid()
 {
-	if (MidMsg)
+	if (MidMsg && not displayplayer().isFreecam)
 	{
 		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 

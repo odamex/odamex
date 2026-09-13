@@ -113,9 +113,6 @@ private:
 
 	PixelFormat				mFormat;
 
-	bool mDrawLogicalRect;
-	SDL_Rect mLogicalRect;
-
 	SDL_Renderer* createRenderer(bool vsync) const;
 };
 

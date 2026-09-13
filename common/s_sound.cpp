@@ -23,6 +23,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include "resources/res_main.h"
 
 #include "s_sound.h"
@@ -160,9 +162,9 @@ void S_ParseSndInfo()
 		const char* buffer = Res_LoadResource<char>(res_id, PU_CACHE);
 
 		const OScannerConfig config = {
-		    "SNDINFO", // lumpName
-		    true,      // semiComments
-		    true,      // cComments
+		    .lumpName     = "SNDINFO",
+		    .semiComments = true,
+		    .cComments    = true,
 		};
 		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
 
@@ -253,11 +255,11 @@ void S_ParseSndInfo()
 						os.warning("Unknown ambient type ({})\n", os.getToken());
 					}
 
-					ambient->periodmin = MAX(0, ambient->periodmin);
-					ambient->periodmax = MAX(ambient->periodmin, ambient->periodmax);
+					ambient->periodmin = std::max(0, ambient->periodmin);
+					ambient->periodmax = std::max(ambient->periodmin, ambient->periodmax);
 
 					os.mustScanFloat();
-					ambient->volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
+					ambient->volume = std::clamp(os.getTokenFloat(), 0.0f, 1.0f);
 
 					if (ambient->mode == amb_mode_t::NONE || ambient->volume == 0.0f ||
 					    (ambient->mode != amb_mode_t::CONTINUOUS &&
@@ -282,7 +284,7 @@ void S_ParseSndInfo()
 				else if (os.compareTokenNoCase("alias"))
 				{
 					os.mustScan();
-					const int sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
+					const int sfxfrom = S_AddSound(os.getToken().c_str(), nullptr);
 					os.mustScan();
 					S_sfx[sfxfrom].link = FindSoundTentative(os.getToken().c_str());
 				}

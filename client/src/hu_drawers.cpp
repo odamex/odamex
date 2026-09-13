@@ -23,6 +23,8 @@
 
 #include "odamex.h"
 
+#include <array>
+
 #include "hu_drawers.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -62,6 +64,9 @@ void calculateOrigin(int& x, int& y,
                      const x_align_t x_origin, const y_align_t y_origin)
 {
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+
+	x_scale = 1;
+	y_scale = 1;
 
 	// No such thing as "absolute origin".
 	if (x_origin == X_ABSOLUTE || y_origin == Y_ABSOLUTE)
@@ -198,6 +203,143 @@ int GetLineHeight(const float scale, const fontface_t face)
 {
 	const int y_scale = std::max(1, static_cast<int>(scale * CleanYfac));
 	return V_GetFaceFont(face, y_scale)->getHeight() / y_scale;
+}
+
+
+// Width of the widest digit, so that a clock's digits can be given equal cells.
+static int digitCellWidth(const OFont* font)
+{
+	int cell = 0;
+
+	for (char c = '0'; c <= '9'; c++)
+		cell = std::max(cell, font->getTextWidth(c));
+
+	return cell;
+}
+
+// Width of one character's cell - digits are padded out to a common width.
+static int charCellWidth(const OFont* font, const char c, const int cell)
+{
+	const int width = font->getTextWidth(c);
+
+	return (c >= '0' && c <= '9') ? std::max(width, cell) : width;
+}
+
+// Width of a string laid out on the fixed digit pitch, in real pixels.
+int StringWidthMono(const OFont* font, const char* str)
+{
+	if (!str)
+		return 0;
+
+	const int cell = digitCellWidth(font);
+	int w = 0;
+
+	for (const char* p = str; *p;)
+	{
+		if (p[0] == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		{
+			p += 2;
+			continue;
+		}
+
+		w += charCellWidth(font, *p, cell);
+		p++;
+	}
+
+	return w;
+}
+
+int StringWidthMono(const char* str, const int pixel_scale, const fontface_t face)
+{
+	return StringWidthMono(V_GetFaceFont(face, std::max(1, pixel_scale)), str);
+}
+
+// Draw text on the fixed digit pitch at an absolute position, for callers that
+// do their own placing and scaling.
+void DrawTextMonoAt(const OFont* font, int x, int y,
+                    const char* str, const int color, const bool force_opaque)
+{
+	if (!str)
+		return;
+
+	const int cell = digitCellWidth(font);
+
+	// Each glyph is drawn on its own, so the active color has to be carried
+	// forward by hand - one call cannot see the escape from the last.
+	std::array<char, 2> escape = { 0, 0 };
+	int cx = x;
+
+	for (const char* p = str; *p;)
+	{
+		if (p[0] == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		{
+			escape[0] = p[0];
+			escape[1] = p[1];
+			p += 2;
+			continue;
+		}
+
+		std::array<char, 4> buf{};
+		int n = 0;
+
+		if (escape[0])
+		{
+			buf[n++] = escape[0];
+			buf[n++] = escape[1];
+		}
+
+		buf[n++] = *p;
+		buf[n] = '\0';
+
+		// Center the glyph in its cell so a narrow digit doesn't sit left.
+		const int cellw = charCellWidth(font, *p, cell);
+		const int gx = cx + ((cellw - font->getTextWidth(*p)) / 2);
+
+		screen->DrawFontText(font, color, gx, y, buf.data(), force_opaque);
+
+		cx += cellw;
+		p++;
+	}
+}
+
+void DrawTextMonoAt(int x, int y, const int pixel_scale,
+                    const char* str, const int color, const bool force_opaque,
+                    const fontface_t face)
+{
+	DrawTextMonoAt(V_GetFaceFont(face, std::max(1, pixel_scale)), x, y, str, color,
+	               force_opaque);
+}
+
+// Draw text with every digit in a cell of the same width.
+void DrawTextMono(int x, int y, const float scale,
+                  const x_align_t x_align, const y_align_t y_align,
+                  const x_align_t x_origin, const y_align_t y_origin,
+                  const char* str, const int color,
+                  const bool force_opaque, const fontface_t face)
+{
+	if (!str)
+		return;
+
+	// Turn our scaled coordinates into real coordinates.
+	int x_scale = 1, y_scale = 1;
+	calculateOrigin(x, y, 0, 0, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+
+	const OFont* font = V_GetFaceFont(face, x_scale);
+	const int w = StringWidthMono(font, str);
+	const int h = font->getHeight();
+
+	// apply the origin offset ourselves, in real pixels
+	if (x_origin == X_CENTER)
+		x -= w >> 1;
+	else if (x_origin == X_RIGHT)
+		x -= w;
+
+	if (y_origin == Y_MIDDLE)
+		y -= h >> 1;
+	else if (y_origin == Y_BOTTOM)
+		y -= h;
+
+	DrawTextMonoAt(font, x, y, str, color, force_opaque);
 }
 
 

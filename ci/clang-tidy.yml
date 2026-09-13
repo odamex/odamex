@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://www.schemastore.org/clang-tidy.json
+---
+InheritParentConfig: true
+# these are checks we want enabled while using clangd but produce too much noise
+# in the PR reviews for now
+# the goal should be to address these still, but they require greater changes to other
+# parts of the code to address well
+Checks: |
+  -readability-implicit-bool-conversion
+  -bugprone-narrowing-conversions

@@ -74,16 +74,6 @@ enum clientBuf_e
 };
 
 /**
- * @brief Compression is enabled for this packet
- */
-#define SVF_COMPRESSED BIT(0)
-
-/**
- * @brief Unused flags - if any of these are set, we have a problem.
- */
-#define SVF_UNUSED_MASK BIT_MASK(1, 7)
-
-/**
  * @brief svc_*: Transmit all possible data.
  */
 #define SVC_MSG_ALL BIT_MASK(0, 7)
@@ -137,6 +127,11 @@ enum clientBuf_e
  * @brief svc_spawnmobj: ZDoom/Heretic flags.
  */
 #define SVC_SM_FLAGS2 BIT(3)
+
+/**
+ * @brief svc_spawnmobj: Which player or team a friendly belongs to.
+ */
+#define SVC_SM_FRIEND BIT(4)
 
 /**
  * @brief svc_updatemobj: Supply mobj position and random index.
@@ -193,6 +188,12 @@ enum clientBuf_e
  */
 #define SVC_PM_CHEATS BIT(5)
 
+/**
+ * @brief svc_playermembers: Weapon in hand. Broadcast so that viewers other than
+ *        the owner know which weapon to draw when spying them.
+ */
+#define SVC_PM_WEAPON BIT(6)
+
 extern int   localport;
 extern int   msg_badread;
 extern bool  simulated_connection;
@@ -216,6 +217,7 @@ enum msg_t
 {
 	msg_noop,
 	msg_ack,
+	msg_header,
 
 	clc_netdemocap,         // netdemos - NullPoint
 	clc_netdemostop,        // netdemos - NullPoint
@@ -539,6 +541,13 @@ public:
 		}
 	}
 
+	void WriteMessage(msg_t messageId, const std::string& msg)
+	{
+		WriteUnVarint(messageId);
+		WriteUnVarint(msg.length());
+		WriteChunk(msg.data(), msg.length());
+	}
+
 	int ReadByte()
 	{
 		if(readpos+1 > cursize)
@@ -792,13 +801,13 @@ public:
 
 	byte *SZ_GetSpace(size_t length)
 	{
-		if (writepos + length >= maxsize())
+		if (writepos + length > maxsize())
 		{
 			clear();
 			overflowed = true;
-#if defined(ODAMEX_DEBUG)
+
 			PrintFmt(PRINT_HIGH, "SZ_GetSpace: overflow\n");
-#endif
+
 		}
 
 		byte *ret = &data[writepos];
@@ -844,8 +853,6 @@ void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, size_t l);
-void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg);
-void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg);
 void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
                       const int skipPlayer = -1);
 

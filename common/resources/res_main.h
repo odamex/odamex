@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include <vector>
 #include <string>
 
@@ -163,6 +165,11 @@ public:
 	}
 
 	const std::string& getResourceContainerFileName(const ResourceId res_id) const;
+
+	// The index of the resource file a resource came from, in the order the
+	// files were opened, or nothing at all for resources the engine generated
+	// (the unified texture system) rather than read from a file.
+	std::optional<size_t> getResourceContainerIndex(const ResourceId res_id) const;
 
 	uint32_t getResourceSize(const ResourceId res_id) const;
 
@@ -428,8 +435,21 @@ static inline void Res_ReleaseResource(const OString& name)
 
 const std::string& Res_GetResourceContainerFileName(const ResourceId res_id);
 
+// Resource files are opened in load order with the engine's own file first and
+// the IWAD second, so anything past those came from a PWAD.
+constexpr size_t RESOURCE_FILE_FIRSTPWAD = 2;
+
+// True when a resource was supplied by a PWAD rather than by the IWAD,
+// odamex.wad, or the engine itself.
+bool Res_IsResourceFromPWAD(const ResourceId res_id);
+
+// True when a PWAD covers up a resource of the same path from an earlier file,
+// as opposed to contributing one the game did not already have.
+bool Res_IsResourceReplaced(const ResourcePath& path);
+
 
 bool Res_CheckMap(const OString& mapname);
+bool Res_IsMapFromPWAD(const OString& mapname);
 const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
 
 static inline const ResourceId Res_GetMapResourceId(const char* lump_name, const OString& mapname)

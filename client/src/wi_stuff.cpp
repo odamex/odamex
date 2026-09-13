@@ -24,7 +24,10 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <ctype.h>
+#include <array>
 
 #include "z_zone.h"
 #include "m_random.h"
@@ -57,20 +60,24 @@ size_t P_NumPlayersInGame();
 //
 
 // GLOBAL LOCATIONS
-#define WI_TITLEY				2
-#define WI_SPACINGY 			33
+constexpr int WI_TITLEY = 2;
+constexpr int WI_SPACINGY = 33;
+
+// Halfway across the 320 unit wide screen the intermission is laid out on.
+constexpr int WI_CENTERX = 160;
 
 // Single Player
-#define SP_STATSX		50
-#define SP_STATSY		50
-#define SP_TIMEX		16
-#define SP_TIMEY		168
+constexpr int SP_STATSX = 50;
+constexpr int SP_STATSY = 50;
+constexpr int SP_TIMEX = 16;
+constexpr int SP_TIMEY = 168;
 
 // NET GAME STUFF
-#define NG_STATSY				50
+constexpr int NG_STATSY = 50;
+
 #define NG_STATSX				(32 + star->mWidth / 2 + 32*!dofrags)
 
-#define NG_SPACINGX 			64
+constexpr int NG_SPACINGX = 64;
 
 //
 // GENERAL DATA
@@ -83,43 +90,46 @@ size_t P_NumPlayersInGame();
 // in seconds
 #define SHOWNEXTLOCDELAY		4
 
+namespace
+{
+
 // used to accelerate or skip a stage
-static bool				acceleratestage;
+bool				acceleratestage;
 
 // wbs->pnum
-static unsigned			me;
+unsigned			me;
 
  // specifies current state
-static stateenum_t		state;
+stateenum_t		state;
 
 // contains information passed into intermission
-static wbstartstruct_t* wbs;
+wbstartstruct_t* wbs;
 
-static std::vector<wbplayerstruct_t> plrs;	// = wbs->plyr
-static std::vector<int> cnt_kills_c;	// = cnt_kills
-static std::vector<int> cnt_items_c;	// = cnt_items
-static std::vector<int> cnt_secret_c;	// = cnt_secret
-static std::vector<int> cnt_frags_c;	// = cnt_frags
-static const Texture*	faceclassic[4];
-static int dofrags;
-static int ng_state;
+std::vector<wbplayerstruct_t> plrs;	// = wbs->plyr
+std::vector<int> cnt_kills_c;	// = cnt_kills
+std::vector<int> cnt_items_c;	// = cnt_items
+std::vector<int> cnt_secret_c;	// = cnt_secret
+std::vector<int> cnt_frags_c;	// = cnt_frags
+std::array<const Texture*, 4>	faceclassic;
+int dofrags;
+int ng_state;
 
 // used for general timing
-static int				cnt;
+int				cnt;
 
 // used for timing of background animation
-static int				bcnt;
+int				bcnt;
 
 // Since classic is used for singleplayer only...
-static int			cnt_kills;
-static int			cnt_items;
-static int			cnt_secret;
-static int			cnt_time;
-static int			cnt_par;
-static int			cnt_pause;
+int			cnt_kills;
+int			cnt_items;
+int			cnt_secret;
+int			cnt_time;
+int			cnt_par;
+int			cnt_pause;
 
-static int			inter_width;
-static int			inter_height;
+int			inter_width;
+int			inter_height;
 
 
 //
@@ -127,54 +137,60 @@ static int			inter_height;
 //
 
 // %, : graphics
-static const Texture*	percent;
-static const Texture*	colon;
+const Texture*		percent;
+const Texture*		colon;
 
 // 0-9 graphic
-static const Texture* 	num[10];
+constexpr size_t WI_NUMDIGITS = 10;
+std::array<const Texture*, WI_NUMDIGITS>	num;
 
 // minus sign
-static const Texture* 	wiminus;
+const Texture*		wiminus;
 
 // "Finished!" graphics
-static const Texture* 	finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
+const Texture*		finished; //(Removed) Dan - Causes GUI Issues |FIX-ME|
 // [Nes] Re-added for singleplayer
 
 // "Entering" graphic
-static const Texture* 	entering;
+const Texture*		entering;
 
  // "Kills", "Items", "Secrets"
-static const Texture*	kills;
-static const Texture*	secret;
-static const Texture*	items;
-static const Texture*	frags;
-static const Texture*	scrt;
+const Texture*		kills;
+const Texture*		secret;
+const Texture*		items;
+const Texture*		frags;
+const Texture*		scrt;
 
 // Time sucks.
-static const Texture*	timepatch;
-static const Texture*	par;
-static const Texture*	sucks;
+const Texture*		timepatch;
+const Texture*		par;
+const Texture*		sucks;
 
 // "Total", your face, your dead face
-static const Texture* 	total;
-static const Texture* 	star;
-static const Texture* 	bstar;
+const Texture*		total;
+const Texture*		star;
+const Texture*		bstar;
 
-static const Texture* 	p;		// [RH] Only one
+const Texture*		p; // [RH] Only one
 
  // Name graphics of each level (centered)
-static const Texture*	lnames[2];
+std::array<const Texture*, 2>	lnames;
 
 // [RH] Info to dynamically generate the level name graphics
-static int				lnamewidths[2];
-static const char*		lnametexts[2];
+std::array<int, 2>			lnamewidths;
+std::array<const char*, 2>	lnametexts;
 
-static IWindowSurface*	background_surface;
+// Map authors, empty when there is none or the title patch already shows it
+std::array<std::string, 2>	lnameauthors;
 
-static IWindowSurface*	anim_surface;
+IWindowSurface*	background_surface;
 
-static interlevel_t* enteranim;
-static interlevel_t* exitanim;
+IWindowSurface*	anim_surface;
+
+interlevel_t* enteranim;
+interlevel_t* exitanim;
+
+} // namespace
 
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_oldintermission)
@@ -342,7 +358,7 @@ static void WI_updateAnimationStates(std::vector<wi_animationstate_t>& states)
 						int maxtics = frame.maxduration;
 						int mintics = frame.duration;
 						tics = M_Random() % maxtics;
-						tics = clamp(tics, mintics, maxtics);
+						tics = std::clamp(tics, mintics, maxtics);
 					}
 					break;
 
@@ -350,7 +366,7 @@ static void WI_updateAnimationStates(std::vector<wi_animationstate_t>& states)
 					break;
 			}
 
-			state.duration_left = MAX(tics, 1);
+			state.duration_left = std::max(tics, 1);
 
 			if (!state.frame_start)
 			{
@@ -526,14 +542,35 @@ void WI_slamBackground()
 	background_surface->unlock();
 	anim_surface->unlock();
 }
+namespace
+{
 
-static int WI_DrawName (const char *str, int x, int y)
+int WI_BigNameHeight()
+{
+	const Texture* p = W_CachePatch("FONTB39");
+	return p->height() - p->topoffset();
+}
+
+int WI_DrawName (const char *str, int x, int y)
 {
 	char charname[9];
 
 	::V_ColorMap = translationref_t(::Ranges + CR_GREY * 256);
 	while (*str)
 	{
+		// Recolor on a color escape code instead of drawing it.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			int new_color = V_GetTextColor(str);
+			if (new_color == -1)
+				new_color = CR_GREY;
+
+			::V_ColorMap =
+			    translationref_t(::Ranges + (static_cast<ptrdiff_t>(new_color) * 256));
+			str += 2;
+			continue;
+		}
+
 		const ResourceId lump = Res_GetTextureResourceId(
 		    OStringToUpper(fmt::format("FONTB{:02d}", toupper(*str) - 32)), GRAPHICS, false);
 
@@ -550,16 +587,37 @@ static int WI_DrawName (const char *str, int x, int y)
 		str++;
 	}
 
-	const Texture* texture = Res_CacheTexture("FONTB39", GRAPHICS);
-	return (5 * (texture->mHeight - texture->mOffsetY)) / 4;
+	const int height = WI_BigNameHeight();
+	return height + (height / 4);
 }
 
-static int WI_DrawSmallName(const char* str, int x, int y)
+constexpr int WI_SMALLNAMEBLANK = 4;
+
+OLumpName WI_SmallNameChar(char c)
+{
+	return fmt::format("STCFN{:03d}", HU_FONTSTART + (toupper(c) - 32) - 1);
+}
+
+int WI_SmallNameHeight()
+{
+	const Texture* p = W_CachePatch(WI_SmallNameChar('M'));
+	return p->height() - p->topoffset();
+}
+
+int WI_DrawSmallName(const char* str, int x, int y)
 {
 	while (*str)
 	{
-		const OLumpName charname = fmt::format("STCFN{:03d}", HU_FONTSTART + (toupper(*str) - 32) - 1);
-		const ResourceId lump = Res_GetTextureResourceId(OStringToUpper(charname.c_str()), GRAPHICS, false);
+		// This font is drawn untranslated, so color codes are only skipped.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
+		const ResourceId lump =
+		    Res_GetTextureResourceId(OStringToUpper(WI_SmallNameChar(*str).c_str()),
+		                             GRAPHICS, false);
 
 		if (Res_CheckResource(lump))
 		{
@@ -569,14 +627,57 @@ static int WI_DrawSmallName(const char* str, int x, int y)
 		}
 		else
 		{
-			x += 12;
+			x += WI_SMALLNAMEBLANK;
 		}
 		str++;
 	}
 
-	const Texture* texture = Res_CacheTexture("FONTB39", GRAPHICS);
-	return (5 * (texture->mHeight - texture->mOffsetY)) / 4;
+	const int height = WI_SmallNameHeight();
+	return height + (height / 4);
 }
+
+// Width of a string drawn by WI_DrawSmallName.
+int WI_CalcSmallWidth(const char* str)
+{
+	int w = 0;
+
+	while (*str)
+	{
+		// Color escape codes take up no space.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
+		const ResourceId lump =
+		    Res_GetTextureResourceId(OStringToUpper(WI_SmallNameChar(*str).c_str()),
+		                             GRAPHICS, false);
+
+		if (Res_CheckResource(lump))
+			w += Res_CacheTexture(lump, PU_CACHE)->width() - 1;
+		else
+			w += WI_SMALLNAMEBLANK;
+
+		str++;
+	}
+
+	return w;
+}
+
+// Draws the author centered under a level name of the given height, and returns
+// how far down the drawing position moves as a result.
+//
+// The level name already left a quarter of its height as a gap, so the author
+// is drawn straight into it and the same gap is left below.
+int WI_DrawAuthorName(const char* author, int y, int nameheight)
+{
+	WI_DrawSmallName(author, WI_CENTERX - (WI_CalcSmallWidth(author) / 2), y);
+
+	return WI_SmallNameHeight() + (nameheight / 4);
+}
+
+} // namespace
 
 //Draws "<Levelname> Finished!"
 void WI_drawLF()
@@ -585,18 +686,25 @@ void WI_drawLF()
 		return;
 
 	int y = WI_TITLEY;
+	int nameheight;
 
 	if (lnames[0])
 	{
 		// draw <LevelName>
-		screen->DrawTextureClean(lnames[0], (320 - lnames[0]->mWidth)/2, y);
-		y += (5*lnames[0]->mHeight)/4;
+		screen->DrawTextureClean(lnames[0], (320 - lnames[0]->mWidth) / 2, y);
+		nameheight = lnames[0]->mHeight;
+		y += nameheight + (nameheight / 4);
 	}
 	else
 	{
 		// [RH] draw a dynamic title string
-		y += WI_DrawName (lnametexts[0], 160 - lnamewidths[0] / 2, y);
+		nameheight = WI_BigNameHeight();
+		y += WI_DrawName (lnametexts[0], WI_CENTERX - (lnamewidths[0] / 2), y);
 	}
+
+	// draw the author underneath, if the map names one
+	if (!lnameauthors[0].empty())
+		y += WI_DrawAuthorName(lnameauthors[0].c_str(), y, nameheight);
 
 	// draw "Finished!"
 	//if (!multiplayer || sv_maxplayers <= 1)
@@ -618,18 +726,27 @@ void WI_drawEL()
 
 	// [RH] Changed to adjust by height of entering patch instead of title
 	if (entering->mHeight < 200)
-		y += (5 * entering->mHeight) / 4;
+		y += entering->mHeight + (entering->mHeight / 4);
+
+	int nameheight;
 
 	if (lnames[1])
 	{
 		// draw level
-		screen->DrawTextureClean(lnames[1], (320 - lnames[1]->mWidth)/2, y);
+		screen->DrawTextureClean(lnames[1], (320 - lnames[1]->mWidth) / 2, y);
+		nameheight = lnames[1]->mHeight;
+		y += nameheight + (nameheight / 4);
 	}
 	else
 	{
 		// [RH] draw a dynamic title string
-		WI_DrawName (lnametexts[1], 160 - lnamewidths[1] / 2, y);
+		nameheight = WI_BigNameHeight();
+		y += WI_DrawName (lnametexts[1], WI_CENTERX - (lnamewidths[1] / 2), y);
 	}
+
+	// draw the author underneath, if the map names one
+	if (!lnameauthors[1].empty())
+		WI_DrawAuthorName(lnameauthors[1].c_str(), y, nameheight);
 }
 
 void WI_drawAnimatedBack()
@@ -845,7 +962,7 @@ void WI_updateNetgameStats()
 		acceleratestage = 0;
 
 		i = 0;
-		for (Players::iterator it = players.begin();it != players.end();++it,++i)
+		for (auto it = players.begin();it != players.end();++it,++i)
 		{
 			if (!(it->ingame()))
 				continue;
@@ -857,18 +974,18 @@ void WI_updateNetgameStats()
 			if (dofrags)
 				cnt_frags_c[i] = WI_fragSum(*it);
 		}
-		S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 		ng_state = 10;
 	}
 	if (ng_state == 2)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
 		i = 0;
-		for (Players::iterator it = players.begin();it != players.end();++it,++i)
+		for (auto it = players.begin();it != players.end();++it,++i)
 		{
 			if (!(it->ingame()))
 				continue;
@@ -883,14 +1000,14 @@ void WI_updateNetgameStats()
 
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
 	else if (ng_state == 4)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -908,14 +1025,14 @@ void WI_updateNetgameStats()
 		}
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
 	else if (ng_state == 6)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -935,7 +1052,7 @@ void WI_updateNetgameStats()
 
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/rocklx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			ng_state += 1 + 2*!dofrags;
 		}
 	}
@@ -943,7 +1060,7 @@ void WI_updateNetgameStats()
 	{
 		int fsum;
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		stillticking = false;
 
@@ -963,7 +1080,7 @@ void WI_updateNetgameStats()
 
 		if (!stillticking)
 		{
-			S_Sound (CHAN_INTERFACE, "player/male/death1", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/cooptotal", 1, ATTN_NONE);
 			ng_state++;
 		}
 	}
@@ -971,7 +1088,10 @@ void WI_updateNetgameStats()
 	{
 		if (acceleratestage)
 		{
-			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+			if (dofrags)
+				S_Sound (CHAN_INTERFACE, "intermission/pastdmstats", 1, ATTN_NONE);
+			else
+				S_Sound (CHAN_INTERFACE, "intermission/pastcoopstats", 1, ATTN_NONE);
 			if ((gameinfo.flags & GI_MAPxx) && (enteranim == nullptr || demoplayback))
 				WI_initNoState();
 			else
@@ -1102,7 +1222,7 @@ void WI_updateStats()
 		cnt_time   = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
 		cnt_par    = wminfo.partime / TICRATE;
 
-		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 		sp_state = 10;
 	}
 	if (sp_state == 2)
@@ -1110,12 +1230,12 @@ void WI_updateStats()
 		cnt_kills += 2;
 
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		if (!gameinfo.intermissionCounter || cnt_kills >= finalKillPercent)
 		{
 			cnt_kills = finalKillPercent;
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 		}
 	}
@@ -1124,12 +1244,12 @@ void WI_updateStats()
 		cnt_items += 2;
 
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		if (!gameinfo.intermissionCounter || cnt_items >= finalItemPercent)
 		{
 			cnt_items = finalItemPercent;
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 		}
 	}
@@ -1138,19 +1258,19 @@ void WI_updateStats()
 		cnt_secret += 2;
 
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		if (!gameinfo.intermissionCounter || cnt_secret >= finalSecretPercent)
 		{
 			cnt_secret = finalSecretPercent;
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 		}
 	}
 	else if (sp_state == 8)
 	{
 		if (!(bcnt&3))
-			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/tick", 1, ATTN_NONE);
 
 		cnt_time += 3;
 
@@ -1165,7 +1285,7 @@ void WI_updateStats()
 
 			if (cnt_time >= plrs[me].stime / TICRATE)
 			{
-			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/nextstage", 1, ATTN_NONE);
 			sp_state++;
 			}
 		}
@@ -1187,7 +1307,7 @@ void WI_updateStats()
 					S_ChangeMusic(gameinfo.intermissionMusic.c_str(), true);
 				// background
 				const OLumpName& bg_lump = enteranim == nullptr ? enterpic : enteranim->backgroundlump;
-				const Texture* bg_patch = W_CachePatch(bg_lump);
+				const Texture* bg_patch = W_CachePatch(W_CheckWidescreenPatch(bg_lump));
 
 				inter_width = bg_patch->width();
 				inter_height = bg_patch->height() + (bg_patch->height() / 5);
@@ -1203,7 +1323,7 @@ void WI_updateStats()
 				background_surface->unlock();
 			}
 
-			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "intermission/paststats", 1, ATTN_NONE);
 
 			if (gameinfo.flags & GI_MAPxx && (enteranim == nullptr || demoplayback))
 				WI_initNoState();
@@ -1241,14 +1361,14 @@ void WI_drawStats()
     screen->DrawTextureClean(secret, SP_STATSX, SP_STATSY+2*lh);
     WI_drawPercent(cnt_secret, 320 - SP_STATSX, SP_STATSY+2*lh);
 
-    screen->DrawTextureClean(timepatch, SP_TIMEX, SP_TIMEY);
-    WI_drawTime(cnt_time, 160 - SP_TIMEX, SP_TIMEY);
+	screen->DrawTextureClean(timepatch, SP_TIMEX, SP_TIMEY);
+	WI_drawTime(cnt_time, WI_CENTERX - SP_TIMEX, SP_TIMEY);
 
 	if ((gameinfo.flags & GI_MAPxx) || wbs->epsd < 3)
-    {
-    	screen->DrawTextureClean(par, SP_TIMEX + 160, SP_TIMEY);
-    	WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
-    }
+	{
+		screen->DrawTextureClean(par, SP_TIMEX + WI_CENTERX, SP_TIMEY);
+		WI_drawTime(cnt_par, 320 - SP_TIMEX, SP_TIMEY);
+	}
 }
 
 void WI_checkForAccelerate()
@@ -1356,6 +1476,13 @@ static int WI_CalcWidth(const char *str)
 
 	while (*str)
 	{
+		// Color escape codes take up no space.
+		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		{
+			str += 2;
+			continue;
+		}
+
 		const OLumpName charname = fmt::format("FONTB{:02d}", toupper(*str) - 32);
 		const ResourceId lump = Res_GetTextureResourceId(OStringToUpper(charname.c_str()), GRAPHICS, false);
 
@@ -1414,7 +1541,7 @@ void WI_loadData()
 		name = "INTERPIC";
 
 	// background
-	const Texture* bg_patch = W_CachePatch(name);
+	const Texture* bg_patch = W_CachePatch(W_CheckWidescreenPatch(name));
 
 	inter_width = bg_patch->width();
 	inter_height = bg_patch->height() + (bg_patch->height() / 5);
@@ -1429,6 +1556,8 @@ void WI_loadData()
 
 	for (int i = 0; i < 2; i++)
 	{
+		const level_pwad_info_t& linfo =
+		    levels.findByName(i == 0 ? wbs->current : wbs->next);
 		const OLumpName& lname = (i == 0 ? wbs->lname0 : wbs->lname1);
 
 		ResourceId lname_res_id = ResourceId::INVALID_ID;
@@ -1442,9 +1571,23 @@ void WI_loadData()
 		else
 		{
 			lnames[i] = NULL;
-			lnametexts[i] = levels.findByName(i == 0 ? wbs->current : wbs->next).level_name.c_str();
+			lnametexts[i] = linfo.level_name.c_str();
 			lnamewidths[i] = WI_CalcWidth (lnametexts[i]);
 		}
+
+		// Determine if we should display the map author.
+		// MAPINFO can just straight up ask for it to be disabled.
+		const bool patchshowsauthor =
+		    lnames[i] != NULL && (linfo.flags2 & LEVEL2_HIDEAUTHORNAME);
+
+		// A UMAPINFO map that brings its own title graphic has drawn that graphic
+		// to suit itself, so an author line under it is not wanted.
+		const bool umapinfoshowsauthor = (linfo.metadataflags & metadataflags_t::AUTHORFROMUMAPINFO) &&
+		                                    !linfo.pname.empty() &&
+		                                    Res_IsResourceFromPWAD(Res_GetResourceId(
+		                                        linfo.pname.c_str(), NS_GLOBAL));
+
+		lnameauthors[i] = (patchshowsauthor || umapinfoshowsauthor) ? "" : linfo.author;
 	}
 
 	for (int i = 0; i < 10; i++)

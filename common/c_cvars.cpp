@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <cmath>
 #include <exception>
 
@@ -176,7 +178,7 @@ void cvar_t::ForceSet(std::string_view valstr)
 		if (integral_type)
 			valf = std::round(valf);
 
-		valf = clamp(valf, m_MinValue, m_MaxValue);
+		valf = std::clamp(valf, m_MinValue, m_MaxValue);
 
 		if (numerical_value || integral_type || floating_type)
 		{

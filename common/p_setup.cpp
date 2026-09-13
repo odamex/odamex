@@ -59,6 +59,10 @@
 #include "g_musinfo.h"
 #include "r_sky.h"
 #include "p_compdb.h"
+#include "p_blockmap.h"
+#include "c_dispatch.h"
+#include "d_player.h"
+
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
@@ -89,7 +93,8 @@ void P_SpawnCompatibleSectorSpecial(sector_t* sector);
 namespace {
 void P_SetupLevelFloorPlane(sector_t *sector);
 void P_SetupLevelCeilingPlane(sector_t *sector);
-void P_SetupSlopes();
+void P_SetupLineSlopes();
+void P_SetupThingSlopes(std::span<MapThing> things);
 }
 
 void P_InvertPlane(plane_t *plane);
@@ -139,17 +144,6 @@ bool			HasBehavior = false;
 // blocks of size ...
 // Used to speed up collision detection
 // by spatial subdivision in 2D.
-//
-// Blockmap size.
-int 			bmapwidth;
-int 			bmapheight; 	// size in mapblocks
-
-int				*blockmap;		// int for larger maps ([RH] Made int because BOOM does)
-int				*blockmaplump;	// offsets in blockmap are from here
-
-fixed_t 		bmaporgx;		// origin of block map
-fixed_t 		bmaporgy;
-
 AActor**		blocklinks;		// for thing chains
 
 
@@ -168,6 +162,90 @@ bool			rejectempty;
 std::vector<mapthing2_t>         DeathMatchStarts;
 std::vector<mapthing2_t>         playerstarts;
 std::vector<VoodooStartInfoType> voodoostarts;
+
+//
+// dumpspawns
+//
+// Prints the player starts and voodoo starts.
+//
+// Runs on server and client, which should have the same logic.
+// Any disagreements is a bug.
+//
+BEGIN_COMMAND(dumpspawns)
+{
+	PrintFmt(PRINT_HIGH, "playerstarts ({} entries, sorted by player number)\n",
+	         ::playerstarts.size());
+
+	for (size_t i = 0; i < ::playerstarts.size(); i++)
+	{
+		const mapthing2_t& mt = ::playerstarts[i];
+
+		PrintFmt(PRINT_HIGH, "  [{}] player {} - type {} at {},{} angle {}\n", i,
+		         P_GetMapThingPlayerNumber(mt) + 1, mt.type, mt.x, mt.y, mt.angle);
+	}
+
+	PrintFmt(PRINT_HIGH, "voodoostarts ({} entries, in lump order)\n",
+	         ::voodoostarts.size());
+
+	for (size_t i = 0; i < ::voodoostarts.size(); i++)
+	{
+		const VoodooStartInfoType& voodoo = ::voodoostarts[i];
+		const AActor* mo = voodoo.mobj;
+
+		PrintFmt(PRINT_HIGH, "  [{}] player {} - type {} at {},{} - avatar {}\n", i,
+		         P_GetMapThingPlayerNumber(voodoo.mapThing) + 1, voodoo.mapThing.type,
+		         voodoo.mapThing.x, voodoo.mapThing.y,
+		         mo ? fmt::format("netid {} at {},{}", mo->netid, FIXED2INT(mo->x),
+		                          FIXED2INT(mo->y))
+		            : std::string("none"));
+	}
+
+	if (not::playerstarts.empty())
+	{
+		PrintFmt(PRINT_HIGH, "who gets what\n");
+
+		for (const player_t& pl : ::players)
+		{
+			if (not pl.ingame())
+				continue;
+
+			const mapthing2_t& start = P_GetPlayerStart(pl.id - 1);
+			const size_t index = &start - ::playerstarts.data();
+
+			PrintFmt(PRINT_HIGH, "  {} (id {}) -> playerstarts[{}], the player {} start\n",
+			         pl.userinfo.netname, pl.id, index,
+			         P_GetMapThingPlayerNumber(start) + 1);
+		}
+	}
+}
+END_COMMAND(dumpspawns)
+
+//
+// P_GetFirstAvailableSpawn
+//
+// The first spawn the map offers that a player could be put on.
+//
+std::optional<mapthing2_t> P_GetFirstAvailableSpawn()
+{
+	// Sorted by player number, so this is player 1's start where there is one.
+	if (not::playerstarts.empty())
+		return ::playerstarts.front();
+
+	if (not::DeathMatchStarts.empty())
+		return ::DeathMatchStarts.front();
+
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+	{
+		const std::vector<mapthing2_t>& starts =
+		    GetTeamInfo(static_cast<team_t>(iTeam))->Starts;
+
+		if (not starts.empty())
+			return starts.front();
+	}
+
+	// A map with no starts of any kind.
+	return std::nullopt;
+}
 
 // Maintain list of helpers to spawn in a given map
 std::vector<HelperSpawns> helperspawns;
@@ -357,8 +435,8 @@ void P_LoadSectors (const ResourceId lump)
 	sector_t* ss = sectors;
 	for (int i = 0; i < numsectors; i++, ss++, ms++)
 	{
-		ss->floorheight = LESHORT(ms->floorheight)<<FRACBITS;
-		ss->ceilingheight = LESHORT(ms->ceilingheight)<<FRACBITS;
+		ss->floortexz = LESHORT(ms->floorheight)<<FRACBITS;
+		ss->ceilingtexz = LESHORT(ms->ceilingheight)<<FRACBITS;
 		ss->floor_res_id = Res_GetTextureResourceId(OStringToUpper(ms->floorpic, 8), FLOOR);
 		ss->ceiling_res_id = Res_GetTextureResourceId(OStringToUpper(ms->ceilingpic, 8), FLOOR);
 		ss->lightlevel = LESHORT(ms->lightlevel);
@@ -870,9 +948,13 @@ void P_LoadThings (const ResourceId lump)
 		//		everything and let it decide what to do with them.
 
 		// [RH] Need to translate the spawn flags to Hexen format.
-		short flags = LESHORT(mt.options);
+		auto flags = OFlags<mapthingflag_t>::unsafe_from_int(LESHORT(mt.options));
 		if (flags & BTF_RESERVED || demoplayback) flags &= BTF_RESERVED_MASK;
-		short flags2 = static_cast<short>((flags & 0xf) | 0x7e0);
+		// difficulty + ambush flags are the same between the two
+		auto flags2 = MapThingFlags::unsafe_from_int((flags & mask(BTF_EASY|BTF_MEDIUM|BTF_HARD|BTF_AMBUSH)).to_int());
+		flags2 |= MTF_SINGLE|MTF_DEATHMATCH|MTF_COOPERATIVE;
+		// spawn it for all classes since these flags can't be set for doom format
+		flags2 |= MTF_FIGHTER|MTF_CLERIC|MTF_MAGE;
 		if (flags & BTF_NOTSINGLE)
 		{
 			#ifdef SERVER_APP
@@ -903,7 +985,7 @@ void P_LoadThings (const ResourceId lump)
 	}
 
 	// Sort by player number if starts are not in order
-	std::sort(playerstarts.begin(), playerstarts.end(), [](const mapthing2_t& p1, const mapthing2_t& p2){
+	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
 		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
 	});
 
@@ -923,6 +1005,7 @@ void P_LoadThings2 (const ResourceId lump, int position)
 	mapthing2_t* data = P_CacheMapLump<mapthing2_t>(lump, PU_STATIC);
 	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
 	size_t count = P_MapLumpLength(lump) / sizeof(mapthing2_t);
+	auto things = std::span{data, count};
 
 	P_HordeClearSpawns();
 	playerstarts.clear();
@@ -931,13 +1014,12 @@ void P_LoadThings2 (const ResourceId lump, int position)
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		GetTeamInfo(static_cast<team_t>(iTeam))->Starts.clear();
 
-	for (size_t i = 0; i < count; i++)
+	for (auto& mt : things)
 	{
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
 		//		everything and let it decide what to do with them.
-		mapthing2_t& mt = data[i];
 
 		mt.thingid = LESHORT(mt.thingid);
 		mt.x = LESHORT(mt.x);
@@ -945,10 +1027,22 @@ void P_LoadThings2 (const ResourceId lump, int position)
 		mt.z = LESHORT(mt.z);
 		mt.angle = LESHORT(mt.angle);
 		mt.type = LESHORT(mt.type);
-		mt.flags = LESHORT(mt.flags);
+		mt.flags = MapThingFlags::unsafe_from_int(LESHORT(mt.flags.to_int()));
 
 		P_SpawnMapThing(mt, position);
 	}
+
+	P_SetupThingSlopes(things);
+
+	for (auto& mt : things)
+		P_SpawnMapThing(mt, position);
+
+	// Sort by player number if starts are not in order
+	std::ranges::sort(playerstarts, [](const mapthing2_t& p1, const mapthing2_t& p2){
+		return P_GetMapThingPlayerNumber(p1) < P_GetMapThingPlayerNumber(p2);
+	});
+
+	P_SpawnAvatars();
 }
 
 //
@@ -1285,339 +1379,6 @@ void P_LoadSideDefs2 (const ResourceId lump)
 	Z_Free (data);
 }
 
-
-//
-// jff 10/6/98
-// New code added to speed up calculation of internal blockmap
-// Algorithm is order of nlines*(ncols+nrows) not nlines*ncols*nrows
-//
-
-#define blkshift 7               /* places to shift rel position for cell num */
-#define blkmask ((1<<blkshift)-1)/* mask for rel position within cell */
-#define blkmargin 0              /* size guardband around map used */
-                                 // jff 10/8/98 use guardband>0
-                                 // jff 10/12/98 0 ok with + 1 in rows,cols
-
-struct linelist_t        // type used to list lines in each block
-{
-	int	num;
-	linelist_t *next;
-};
-
-//
-// Actually construct the blockmap lump from the level data
-//
-// This finds the intersection of each linedef with the column and
-// row lines at the left and bottom of each blockmap cell. It then
-// adds the line to all block lists touching the intersection.
-//
-
-void P_CreateBlockMap()
-{
-	std::unique_ptr<linelist_t*[]> blocklists; // array of pointers to lists of lines
-	std::unique_ptr<int[]> blockcount; // array of counters of line lists
-	std::unique_ptr<bool[]> blockdone; // array keeping track of blocks/line
-
-	//
-	// Subroutine to add a line number to a block list
-	// It simply returns if the line is already in the block
-	//
-
-	const auto AddBlockLine = [&blocklists, &blockdone, &blockcount]
-	(
-		int blockno,
-		uint32_t lineno
-	)
-	{
-		if (blockdone[blockno])
-			return;
-
-		linelist_t* l = new linelist_t;
-		l->num = lineno;
-		l->next = blocklists[blockno];
-		blocklists[blockno] = l;
-		blockcount[blockno]++;
-		blockdone[blockno] = true;
-	};
-
-	// scan for map limits, which the blockmap must enclose
-	int map_minx = limits::MAXINT;
-	int map_miny = limits::MAXINT;
-	int map_maxx = limits::MININT;
-	int map_maxy = limits::MININT;
-	for (int i = 0; i < numvertexes; i++)
-	{
-		fixed_t t;
-
-		if ((t = vertexes[i].x) < map_minx)
-			map_minx = t;
-		else if (t > map_maxx)
-			map_maxx = t;
-
-		if ((t = vertexes[i].y) < map_miny)
-			map_miny = t;
-		else if (t > map_maxy)
-			map_maxy = t;
-	}
-	map_minx >>= FRACBITS;    // work in map coords, not fixed_t
-	map_maxx >>= FRACBITS;
-	map_miny >>= FRACBITS;
-	map_maxy >>= FRACBITS;
-
-	// set up blockmap area to enclose level plus margin
-
-	const int xorg = map_minx-blkmargin; // blockmap origin (lower left)
-	const int yorg = map_miny-blkmargin;
-	const int ncols = (map_maxx+blkmargin-xorg+1+blkmask)>>blkshift; //jff 10/12/98
-	const int nrows = (map_maxy+blkmargin-yorg+1+blkmask)>>blkshift; //+1 needed for map exactly 1 cell
-
-	const auto BlockIndex = [ncols](int x, int y){ return (y * ncols) + x; };
-
-	const int NBlocks = ncols*nrows; // number of cells
-
-	// create the array of pointers on NBlocks to blocklists
-	// also create an array of linelist counts on NBlocks
-	// finally make an array in which we can mark blocks done per line
-
-	blocklists = std::make_unique<linelist_t*[]>(NBlocks);
-	std::fill_n(blocklists.get(), NBlocks, nullptr);
-	blockcount = std::make_unique<int[]>(NBlocks);
-	std::fill_n(blockcount.get(), NBlocks, 0);
-	blockdone = std::make_unique<bool[]>(NBlocks);
-
-	// initialize each blocklist, and enter the trailing -1 in all blocklists
-	// note the linked list of lines grows backwards
-
-	for (int i = 0; i < NBlocks; i++)
-	{
-		blocklists[i] = new linelist_t;
-		blocklists[i]->num = -1;
-		blocklists[i]->next = NULL;
-		blockcount[i]++;
-	}
-
-	// For each linedef in the wad, determine all blockmap blocks it touches,
-	// and add the linedef number to the blocklists for those blocks
-
-	for (int i = 0; i < numlines; i++)
-	{
-		const int x1 = lines[i].v1->x>>FRACBITS; // lines[i] map coords
-		const int y1 = lines[i].v1->y>>FRACBITS;
-		const int x2 = lines[i].v2->x>>FRACBITS;
-		const int y2 = lines[i].v2->y>>FRACBITS;
-		const int dx = x2 - x1;
-		const int dy = y2 - y1;
-		const bool vert = (dx == 0);             // lines[i] slopetype
-		const bool horiz = (dy == 0);
-		const bool spos = (dx ^ dy) > 0;
-		const bool sneg = (dx ^ dy) < 0;
-		int bx,by;                              // block cell coords
-		const int minx = x1 > x2 ? x2 : x1;        // extremal lines[i] coords
-		const int maxx = x1 > x2 ? x1 : x2;
-		const int miny = y1 > y2 ? y2 : y1;
-		const int maxy = y1 > y2 ? y1 : y2;
-
-		// no blocks done for this linedef yet
-
-		std::fill_n(blockdone.get(), NBlocks, false);
-
-		// The line always belongs to the blocks containing its endpoints
-
-		bx = (x1-xorg) >> blkshift;
-		by = (y1-yorg) >> blkshift;
-		AddBlockLine (BlockIndex(bx, by), i);
-		bx = (x2-xorg) >> blkshift;
-		by = (y2-yorg) >> blkshift;
-		AddBlockLine (BlockIndex(bx, by), i);
-
-		// For each column, see where the line along its left edge, which
-		// it contains, intersects the Linedef i. Add i to each corresponding
-		// blocklist.
-
-		if (!vert)    // don't interesect vertical lines with columns
-		{
-			for (int j = 0; j < ncols; j++)
-			{
-				// intersection of Linedef with x=xorg+(j<<blkshift)
-				// (y-y1)*dx = dy*(x-x1)
-				// y = dy*(x-x1)+y1*dx;
-
-				int x = xorg+(j<<blkshift);		// (x,y) is intersection
-				int y = (dy*(x-x1))/dx+y1;
-				int yb = (y-yorg)>>blkshift;	// block row number
-				int yp = (y-yorg)&blkmask;		// y position within block
-
-				if (yb<0 || yb>nrows-1)			// outside blockmap, continue
-					continue;
-
-				if (x<minx || x>maxx)			// line doesn't touch column
-					continue;
-
-				// The cell that contains the intersection point is always added
-
-				AddBlockLine(BlockIndex(j, yb), i);
-
-				// if the intersection is at a corner it depends on the slope
-				// (and whether the line extends past the intersection) which
-				// blocks are hit
-
-				if (yp==0)			// intersection at a corner
-				{
-					if (sneg)		//   \ - blocks x,y-, x-,y
-					{
-						if (yb>0 && miny<y)
-							AddBlockLine(BlockIndex(j, yb - 1), i);
-						if (j>0 && minx<x)
-							AddBlockLine(BlockIndex(j - 1, yb), i);
-					}
-					else if (spos)	//   / - block x-,y-
-					{
-						if (yb>0 && j>0 && minx<x)
-							AddBlockLine(BlockIndex(j - 1, yb - 1), i);
-					}
-					else if (horiz)	//   - - block x-,y
-					{
-						if (j>0 && minx<x)
-							AddBlockLine(BlockIndex(j - 1, yb), i);
-					}
-				}
-				else if (j>0 && minx<x)	// else not at corner: x-,y
-					AddBlockLine(BlockIndex(j - 1, yb), i);
-			}
-		}
-
-		// For each row, see where the line along its bottom edge, which
-		// it contains, intersects the Linedef i. Add i to all the corresponding
-		// blocklists.
-
-		if (!horiz)
-		{
-			for (int j = 0; j < nrows; j++)
-			{
-				// intersection of Linedef with y=yorg+(j<<blkshift)
-				// (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
-				// x = dx*(y-y1)/dy+x1;
-
-				const int y = yorg+(j<<blkshift);		// (x,y) is intersection
-				const int x = (dx*(y-y1))/dy+x1;
-				const int xb = (x-xorg)>>blkshift;	// block column number
-				const int xp = (x-xorg)&blkmask;		// x position within block
-
-				if (xb<0 || xb>ncols-1)			// outside blockmap, continue
-					continue;
-
-				if (y<miny || y>maxy)			 // line doesn't touch row
-					continue;
-
-				// The cell that contains the intersection point is always added
-
-				AddBlockLine (BlockIndex(xb, j), i);
-
-				// if the intersection is at a corner it depends on the slope
-				// (and whether the line extends past the intersection) which
-				// blocks are hit
-
-				if (xp==0)			// intersection at a corner
-				{
-					if (sneg)       //   \ - blocks x,y-, x-,y
-					{
-						if (j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb, j - 1), i);
-						if (xb>0 && minx<x)
-							AddBlockLine (BlockIndex(xb - 1, j), i);
-					}
-					else if (vert)  //   | - block x,y-
-					{
-						if (j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb, j - 1), i);
-					}
-					else if (spos)  //   / - block x-,y-
-					{
-						if (xb>0 && j>0 && miny<y)
-							AddBlockLine (BlockIndex(xb - 1, j - 1), i);
-					}
-				}
-				else if (j>0 && miny<y) // else not on a corner: x,y-
-					AddBlockLine (BlockIndex(xb, j - 1), i);
-			}
-		}
-	}
-
-	// Add initial 0 to all blocklists
-	// count the total number of lines (and 0's and -1's)
-	std::fill_n(blockdone.get(), NBlocks, false);
-	uint32_t linetotal = 0;
-	for (int i = 0; i < NBlocks; i++)
-	{
-		AddBlockLine (i, 0);
-		linetotal += blockcount[i];
-	}
-
-	// Create the blockmap lump
-	blockmaplump = Z_Malloc<int>(4 + NBlocks + linetotal, PU_LEVEL);
-
-	// blockmap header
-	//
-	// Rjy: P_CreateBlockMap should not initialise bmaporg{x,y} as P_LoadBlockMap
-	// does so again, resulting in their being left-shifted by FRACBITS twice.
-	//
-	// Thus any map having its blockmap built by the engine would have its
-	// origin at (0,0) regardless of where the walls and monsters actually are,
-	// breaking all collision detection.
-	//
-	// Instead have P_CreateBlockMap create blockmaplump only, so that both
-	// clauses of the conditional in P_LoadBlockMap have the same effect, and
-	// bmap* are only initialised from blockmaplump[0..3] once in the latter.
-	//
-	blockmaplump[0] = xorg;
-	blockmaplump[1] = yorg;
-	blockmaplump[2] = ncols;
-	blockmaplump[3] = nrows;
-
-	// offsets to lists and block lists
-	for (int i = 0; i < NBlocks; i++)
-	{
-		linelist_t *bl = blocklists[i];
-		uint32_t offs = blockmaplump[4+i] =   // set offset to block's list
-			(i? blockmaplump[4+i-1] : 4+NBlocks) + (i? blockcount[i-1] : 0);
-
-		// add the lines in each block's list to the blockmaplump
-		// delete each list node as we go
-
-		while (bl)
-		{
-			linelist_t *tmp = bl->next;
-			blockmaplump[offs++] = bl->num;
-			delete bl;
-			bl = tmp;
-		}
-	}
-}
-
-// jff 10/6/98
-// End new code added to speed up calculation of internal blockmap
-
-void P_SetSkipBlockStart()
-{
-	skipblstart = true;
-
-	for (int y = 0; y < bmapheight; y++)
-	{
-		for (int x = 0; x < bmapwidth; x++)
-		{
-			int32_t* blockoffset = blockmaplump + y * bmapwidth + x + 4;
-
-			int32_t* list = blockmaplump + *blockoffset;
-
-			if (*list != 0)
-			{
-				skipblstart = false;
-				return;
-			}
-		}
-	}
-}
-
 //
 // P_LoadBlockMap
 //
@@ -1625,44 +1386,10 @@ void P_SetSkipBlockStart()
 //
 void P_LoadBlockMap (const ResourceId lump)
 {
-	int count;
-
-	if (Args.CheckParm("-blockmap") || (count = P_MapLumpLength(lump)/2) >= 0x10000 || count < 4)
-		P_CreateBlockMap();
-	else
-	{
-		short *wadblockmaplump = P_CacheMapLump<short>(lump, PU_LEVEL);
-		blockmaplump = Z_Malloc<int>(count, PU_LEVEL);
-
-		// killough 3/1/98: Expand wad blockmap into larger internal one,
-		// by treating all offsets except -1 as unsigned and zero-extending
-		// them. This potentially doubles the size of blockmaps allowed,
-		// because Doom originally considered the offsets as always signed.
-
-		blockmaplump[0] = LESHORT(wadblockmaplump[0]);
-		blockmaplump[1] = LESHORT(wadblockmaplump[1]);
-		blockmaplump[2] = static_cast<uint16_t>(LESHORT(wadblockmaplump[2]));
-		blockmaplump[3] = static_cast<uint16_t>(LESHORT(wadblockmaplump[3]));
-
-		for (int i = 4; i < count; i++)
-		{
-			const short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
-			blockmaplump[i] = t == -1 ? 0xffffffff : static_cast<uint16_t>(t);
-		}
-
-		Z_Free (wadblockmaplump);
-	}
-
-	bmaporgx = blockmaplump[0]<<FRACBITS;
-	bmaporgy = blockmaplump[1]<<FRACBITS;
-	bmapwidth = blockmaplump[2];
-	bmapheight = blockmaplump[3];
+	blockmap = blockmap_t::load(lump);
 
 	// clear out mobj chains
-	blocklinks = Z_Calloc<AActor*>(bmapwidth * bmapheight, PU_LEVEL);
-	blockmap = blockmaplump + 4;
-
-	P_SetSkipBlockStart();
+	blocklinks = Z_Calloc<AActor*>(blockmap.size(), PU_LEVEL);
 }
 
 /*
@@ -1770,21 +1497,10 @@ int P_GroupLines()
 		sector->soundorg[1] = (bbox.Top()+bbox.Bottom())/2;
 
 		// adjust bounding box to map blocks
-		int block = (bbox.Top()-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block >= bmapheight ? bmapheight-1 : block;
-		sector->blockbox[BOXTOP]=block;
-
-		block = (bbox.Bottom()-bmaporgy-MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block < 0 ? 0 : block;
-		sector->blockbox[BOXBOTTOM]=block;
-
-		block = (bbox.Right()-bmaporgx+MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block >= bmapwidth ? bmapwidth-1 : block;
-		sector->blockbox[BOXRIGHT]=block;
-
-		block = (bbox.Left()-bmaporgx-MAXRADIUS)>>MAPBLOCKSHIFT;
-		block = block < 0 ? 0 : block;
-		sector->blockbox[BOXLEFT]=block;
+		sector->blockbox[BOXTOP] = std::min((bbox.Top()-blockmap.originy()+MAXRADIUS)>>MAPBLOCKSHIFT, blockmap.height() - 1);
+		sector->blockbox[BOXBOTTOM] = std::max((bbox.Bottom()-blockmap.originy()-MAXRADIUS)>>MAPBLOCKSHIFT, 0);;
+		sector->blockbox[BOXRIGHT] = std::min((bbox.Right()-blockmap.originx()+MAXRADIUS)>>MAPBLOCKSHIFT, blockmap.width() - 1);
+		sector->blockbox[BOXLEFT] = std::max((bbox.Left()-blockmap.originx()-MAXRADIUS)>>MAPBLOCKSHIFT, 0);
 	}
 	return total;
 }
@@ -1918,8 +1634,7 @@ void P_SetupLevelFloorPlane(sector_t *sector)
 
 	sector->floorplane.a = sector->floorplane.b = 0;
 	sector->floorplane.c = sector->floorplane.invc = FRACUNIT;
-	sector->floorplane.d = -sector->floorheight;
-	sector->floorplane.texx = sector->floorplane.texy = 0;
+	sector->floorplane.d = -sector->floortexz;
 	sector->floorplane.sector = sector;
 }
 
@@ -1930,8 +1645,7 @@ void P_SetupLevelCeilingPlane(sector_t *sector)
 
 	sector->ceilingplane.a = sector->ceilingplane.b = 0;
 	sector->ceilingplane.c = sector->ceilingplane.invc = -FRACUNIT;
-	sector->ceilingplane.d = sector->ceilingheight;
-	sector->ceilingplane.texx = sector->ceilingplane.texy = 0;
+	sector->ceilingplane.d = sector->ceilingtexz;
 	sector->ceilingplane.sector = sector;
 }
 
@@ -1979,8 +1693,8 @@ void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 
 	const sector_t* refsec = line->frontsector == sec ? line->backsector : line->frontsector;
 	plane_t* srcplane = floor ? &sec->floorplane : &sec->ceilingplane;
-	const fixed_t srcheight = floor ? sec->floorheight : sec->ceilingheight;
-	const fixed_t destheight = floor ? refsec->floorheight : refsec->ceilingheight;
+	const fixed_t srcheight = floor ? sec->floortexz : sec->ceilingtexz;
+	const fixed_t destheight = floor ? refsec->floortexz : refsec->ceilingtexz;
 
 	v3float_t p, v1, v2, cross;
 	M_SetVec3f(&p, line->v1->x, line->v1->y, destheight);
@@ -2003,11 +1717,9 @@ void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
 	srcplane->c = FLOAT2FIXED(cross.z);
 	srcplane->invc = FLOAT2FIXED(1.f/cross.z);
 	srcplane->d = -FixedMul(srcplane->a, line->v1->x) - FixedMul(srcplane->b, line->v1->y) - FixedMul(srcplane->c, destheight);
-	srcplane->texx = refvert->x;
-	srcplane->texy = refvert->y;
 }
 
-void P_SetupSlopes()
+void P_SetupLineSlopes()
 {
 	for (line_t& line : R_GetLines())
 	{
@@ -2033,6 +1745,411 @@ void P_SetupSlopes()
 				P_SetupPlane(line.frontsector, &line, false);
 			else if (align_side == 2)
 				P_SetupPlane(line.backsector, &line, false);
+		}
+	}
+}
+
+void P_CopyPlane(const int tag, sector_t& dest, const bool floor)
+{
+	const int secnum = P_FindSectorFromTag(tag, -1);
+	if (secnum == -1)
+		return;
+
+	const sector_t& source = R_GetSectors()[secnum];
+
+	if (floor)
+		dest.floorplane = source.floorplane;
+	else
+		dest.ceilingplane = source.ceilingplane;
+};
+
+void P_CopyPlane(const int tag, const fixed_t x, const fixed_t y, const bool floor)
+{
+	sector_t& dest = *P_PointInSubsector(x, y)->sector;
+	P_CopyPlane(tag, dest, floor);
+}
+
+void P_CopySlopes()
+{
+	for (line_t& line : R_GetLines())
+	{
+		if (not (map_format.getZDoom() and line.special == Plane_Copy))
+			continue;
+
+		line.special = 0;
+		if (line.args[0])
+			P_CopyPlane(line.args[0], *line.frontsector, true);
+		if (line.args[1])
+			P_CopyPlane(line.args[1], *line.frontsector, false);
+
+		if (not line.backsector)
+			continue;
+
+		if (line.args[2])
+			P_CopyPlane(line.args[2], *line.backsector, true);
+		if (line.args[3])
+			P_CopyPlane(line.args[3], *line.backsector, false);
+
+		static constexpr int floor_mask = 0b11;
+		static constexpr int ceiling_mask = 0b1100;
+		enum
+		{
+			FloorFrontToBack = 0b01,
+			FloorBackToFront = 0b10,
+			CeilFrontToBack  = 0b0100,
+			CeilBackToFront  = 0b1000,
+		};
+
+		// other cases are intentionally ignored
+		// NOLINTNEXTLINE(bugprone-switch-missing-default-case)
+		switch (line.args[4] & floor_mask)
+		{
+			case FloorFrontToBack:
+				line.backsector->floorplane = line.frontsector->floorplane;
+				break;
+			case FloorBackToFront:
+				line.frontsector->floorplane = line.backsector->floorplane;
+				break;
+		}
+
+		// NOLINTNEXTLINE(bugprone-switch-missing-default-case)
+		switch (line.args[4] & ceiling_mask)
+		{
+			case CeilFrontToBack:
+				line.backsector->ceilingplane = line.frontsector->ceilingplane;
+				break;
+			case CeilBackToFront:
+				line.frontsector->ceilingplane = line.backsector->ceilingplane;
+				break;
+		}
+	}
+}
+
+void P_SlopeLineToPoint (const int lineid, const fixed_t x, const fixed_t y, const fixed_t z, const bool floor)
+{
+	int linenum = -1;
+	while ((linenum = P_FindLineFromID(lineid, linenum)) != -1)
+	{
+		const line_t& line = R_GetLines()[linenum];
+		sector_t* sec = P_PointOnLineSide(x, y, &line) == 0 ? line.frontsector : line.backsector;
+
+		if (sec == nullptr)
+			continue;
+
+		plane_t& plane = floor ? sec->floorplane : sec->ceilingplane;
+
+		v3double_t p;
+		p.x = FIXED2DOUBLE(line.v1->x);
+		p.y = FIXED2DOUBLE(line.v1->y);
+		p.z = P_PlaneZ(FIXED2DOUBLE(line.v1->x), FIXED2DOUBLE(line.v1->y), &plane);
+
+		v3double_t v1;
+		v1.x = FIXED2DOUBLE(line.dx);
+		v1.y = FIXED2DOUBLE(line.dy);
+		v1.z = P_PlaneZ(FIXED2DOUBLE(line.v2->x), FIXED2DOUBLE(line.v2->y), &plane) - p.z;
+
+		v3double_t v2;
+		v2.x = FIXED2DOUBLE(x - line.v1->x);
+		v2.y = FIXED2DOUBLE(y - line.v1->y);
+		v2.z = FIXED2DOUBLE(z) - p.z;
+
+		v3double_t cross;
+		M_CrossProductVec3(&cross, &v1, &v2);
+		M_NormalizeVec3(&cross, &cross);
+
+		// Fix backward normals
+		if ((cross.z < 0 and floor) or (cross.z > 0 and not floor))
+		{
+			cross.x = -cross.x;
+			cross.y = -cross.y;
+			cross.z = -cross.z;
+		}
+
+		plane.a = DOUBLE2FIXED(cross.x);
+		plane.b = DOUBLE2FIXED(cross.y);
+		plane.c = DOUBLE2FIXED(cross.z);
+		plane.invc = DOUBLE2FIXED(1.0 / cross.z);
+		plane.d = -DOUBLE2FIXED(
+			(cross.x * FIXED2DOUBLE(x)) +
+			(cross.y * FIXED2DOUBLE(y)) +
+			(cross.z * FIXED2DOUBLE(z))
+		);
+	}
+}
+
+void P_SetSlope(plane_t& plane, const int xyang_deg, const int zang_deg,
+                const fixed_t x, const fixed_t y, const fixed_t z, const bool floor)
+{
+	angle_t zang;
+	if (zang_deg >= 180) // NOLINT(readability-magic-numbers) - I think 180 degrees is obvious
+		zang = ANG180 - ANG(1);
+	else if (zang_deg <= 0)
+		zang = ANG(1);
+	else
+		zang = ANG(zang_deg);
+
+	if (not floor)
+		zang += ANG180;
+
+	zang >>= ANGLETOFINESHIFT;
+
+	const angle_t xyang = ANG(xyang_deg) >> ANGLETOFINESHIFT;
+
+	v3double_t norm;
+	norm.x = FIXED2DOUBLE(finecosine[zang]) *
+	         FIXED2DOUBLE(finecosine[xyang]);
+	norm.y = FIXED2DOUBLE(finecosine[zang]) *
+	         FIXED2DOUBLE(finesine[xyang]);
+	norm.z = FIXED2DOUBLE(finesine[zang]);
+
+	M_NormalizeVec3(&norm, &norm);
+
+	plane.a = DOUBLE2FIXED(norm.x);
+	plane.b = DOUBLE2FIXED(norm.y);
+	plane.c = DOUBLE2FIXED(norm.z);
+	plane.invc = DOUBLE2FIXED(1.0 / norm.z);
+	plane.d = -DOUBLE2FIXED(
+		(norm.x * FIXED2DOUBLE(x)) +
+		(norm.y * FIXED2DOUBLE(y)) +
+		(norm.z * FIXED2DOUBLE(z))
+	);
+}
+
+void P_VavoomSlope(sector_t& sec, const int id, fixed_t x, fixed_t y, fixed_t z, const bool floor)
+{
+	for (const line_t* line : sec.getLines())
+	{
+		if (line->args[0] != id)
+			continue;
+
+		const fixed_t height = floor ?  P_FloorHeight(&sec) : P_CeilingHeight(&sec);
+
+		v3double_t v1;
+		v1.x = FIXED2DOUBLE(x - line->v2->x);
+		v1.y = FIXED2DOUBLE(y - line->v2->y);
+		v1.z = FIXED2DOUBLE(z - height);
+
+		v3double_t v2;
+		v2.x = FIXED2DOUBLE(x - line->v1->x);
+		v2.y = FIXED2DOUBLE(y - line->v1->y);
+		v2.z = FIXED2DOUBLE(z - height);
+
+		v3double_t cross;
+		M_CrossProductVec3(&cross, &v1, &v2);
+
+		const auto length = M_LengthVec3(cross);
+		if (length == 0.0)
+		{
+			PrintFmt(PRINT_WARNING, "Slope thing at ({},{}) is directly on target line\n", FIXED2INT(x), FIXED2INT(y));
+			return;
+		}
+
+		M_NormalizeVec3(&cross, &cross);
+
+		if ((cross.z < 0 and floor) or (cross.z > 0 and not floor))
+		{
+			cross.x = -cross.x;
+			cross.y = -cross.y;
+			cross.z = -cross.z;
+		}
+
+		plane_t& plane = floor ? sec.floorplane : sec.ceilingplane;
+		plane.a = DOUBLE2FIXED(cross.x);
+		plane.b = DOUBLE2FIXED(cross.y);
+		plane.c = DOUBLE2FIXED(cross.z);
+		plane.invc = DOUBLE2FIXED(1.0 / cross.z);
+		plane.d = -DOUBLE2FIXED(
+			(cross.x * FIXED2DOUBLE(x)) +
+			(cross.y * FIXED2DOUBLE(y)) +
+			(cross.z * FIXED2DOUBLE(z))
+		);
+
+		return;
+	}
+}
+
+enum
+{
+	Slope_VavoomFloor           = 1500,
+	Slope_VavoomCeiling         = 1501,
+	Slope_VavoomVertexFloor     = 1504,
+	Slope_VavoomVertexCeiling   = 1505,
+	Slope_SlopeFloorPointLine   = 9500,
+	Slope_SlopeCeilingPointLine = 9501,
+	Slope_SetFloorSlope         = 9502,
+	Slope_SetCeilingSlope       = 9503,
+	Slope_CopyFloorPlane        = 9510,
+	Slope_CopyCeilingPlane      = 9511,
+};
+
+void P_SetupVertexSlopes(std::span<MapThing> things)
+{
+	std::array<std::unordered_map<ptrdiff_t, double>, 2> vt_heights;
+	static constexpr auto floor_idx = 0;
+	static constexpr auto ceil_idx = 1;
+
+	for (auto& mt : things)
+	{
+		if (spawn_map.contains(mt.type))
+			continue;
+
+		if (mt.type != Slope_VavoomVertexCeiling and mt.type != Slope_VavoomVertexFloor)
+			continue;
+
+		for (int i = 0; i < numvertexes; i++)
+		{
+			if (vertexes[i].x == INT2FIXED(mt.x) and vertexes[i].y == INT2FIXED(mt.y))
+			{
+				if (mt.type == Slope_VavoomVertexCeiling)
+					vt_heights[ceil_idx][i] = mt.z;
+				else
+					vt_heights[floor_idx][i] = mt.z;
+			}
+		}
+
+		mt.type = 0;
+	}
+
+	// don't bother iterating over all sectors if there's nothing to do
+	if (vt_heights[0].empty() and vt_heights[1].empty())
+		return;
+
+	for (auto& sec : R_GetSectors())
+	{
+		if (sec.getLines().size() != 3)
+			continue;
+
+		const auto vi1 = sec.getLines()[0]->v1 - vertexes;
+		const auto vi2 = sec.getLines()[0]->v2 - vertexes;
+		const auto vi3 =
+			(sec.getLines()[1]->v1 == sec.getLines()[0]->v1 or sec.getLines()[1]->v1 == sec.getLines()[0]->v2) ?
+				sec.getLines()[1]->v2 - vertexes :
+				sec.getLines()[1]->v1 - vertexes;
+
+		v3double_t vt1;
+		vt1.x = FIXED2DOUBLE(vertexes[vi1].x);
+		vt1.y = FIXED2DOUBLE(vertexes[vi1].y);
+
+		v3double_t vt2;
+		vt2.x = FIXED2DOUBLE(vertexes[vi2].x);
+		vt2.y = FIXED2DOUBLE(vertexes[vi2].y);
+
+		v3double_t vt3;
+		vt3.x = FIXED2DOUBLE(vertexes[vi3].x);
+		vt3.y = FIXED2DOUBLE(vertexes[vi3].y);
+
+		for (int i = 0; i < 2; i++)
+		{
+			const bool floor = i == floor_idx;
+			const auto h1 = vt_heights[i].find(vi1);
+			const auto h2 = vt_heights[i].find(vi2);
+			const auto h3 = vt_heights[i].find(vi3);
+
+			if (h1 == vt_heights[i].end() and h2 == vt_heights[i].end() and h3 == vt_heights[i].end())
+				continue;
+
+			const auto sector_height = floor ? FIXED2DOUBLE(P_FloorHeight(&sec)) : FIXED2DOUBLE(P_CeilingHeight(&sec));
+			vt1.z = h1 != vt_heights[i].end() ? h1->second : sector_height;
+			vt2.z = h2 != vt_heights[i].end() ? h2->second : sector_height;
+			vt3.z = h3 != vt_heights[i].end() ? h3->second : sector_height;
+
+			v3double_t vec1;
+			v3double_t vec2;
+			if (P_PointOnLineSide(vertexes[vi3].x, vertexes[vi3].y, sec.getLines()[0]) == 0)
+			{
+				M_SubVec3(&vec1, &vt2, &vt3);
+				M_SubVec3(&vec2, &vt1, &vt3);
+			}
+			else
+			{
+				M_SubVec3(&vec1, &vt1, &vt3);
+				M_SubVec3(&vec2, &vt2, &vt3);
+			}
+
+			v3double_t cross;
+			M_CrossProductVec3(&cross, &vec1, &vec2);
+
+			const auto length = M_LengthVec3(cross);
+			if (length == 0.0)
+				continue;
+
+			M_NormalizeVec3(&cross, &cross);
+
+			if ((cross.z < 0 and floor) or (cross.z > 0 and not floor))
+			{
+				cross.x = -cross.x;
+				cross.y = -cross.y;
+				cross.z = -cross.z;
+			}
+
+			plane_t& plane = floor ? sec.floorplane : sec.ceilingplane;
+			plane.a = DOUBLE2FIXED(cross.x);
+			plane.b = DOUBLE2FIXED(cross.y);
+			plane.c = DOUBLE2FIXED(cross.z);
+			plane.invc = DOUBLE2FIXED(1.0/cross.z);
+			plane.d = -DOUBLE2FIXED(
+				(cross.x * FIXED2DOUBLE(vertexes[vi3].x)) +
+				(cross.y * FIXED2DOUBLE(vertexes[vi3].y)) +
+				(cross.z * vt3.z)
+			);
+		}
+	}
+}
+
+void P_SetupThingSlopes(std::span<MapThing> things)
+{
+	for (auto& mt : things)
+	{
+		// TODO: we really need a better way of handling this
+		// so we don't have to keep calling .contains all over
+		// modern zdoom converts doom and hexen mapthings to a
+		// 3rd separate internal type, and when doing that it
+		// checks the spawn map a single time per-mapthing in P_LoadThings(2)
+		// though their spawn map stores slightly different information
+		// we will need to do the 3rd separate type when we add UDMF support anyways
+		if (spawn_map.contains(mt.type))
+			continue;
+
+		if (not ((mt.type >= Slope_SlopeFloorPointLine and mt.type <= Slope_SetCeilingSlope) or (mt.type == Slope_VavoomFloor) or (mt.type == Slope_VavoomCeiling)))
+			continue;
+
+		const fixed_t x = INT2FIXED(mt.x);
+		const fixed_t y = INT2FIXED(mt.y);
+		sector_t& sec = *P_PointInSubsector(x, y)->sector;
+		plane_t* plane;
+		bool floor;
+		if (mt.type & 1)
+		{
+			plane = &sec.ceilingplane;
+			floor = false;
+		}
+		else
+		{
+			plane = &sec.floorplane;
+			floor = true;
+		}
+
+		if (mt.type <= Slope_VavoomCeiling)
+			P_VavoomSlope(sec, mt.thingid, x, y, INT2FIXED(mt.z), floor);
+		else if (mt.type <= Slope_SlopeCeilingPointLine)
+			P_SlopeLineToPoint(mt.args[0], x, y, P_PlaneZ(x, y, plane) + INT2FIXED(mt.z), floor);
+		else
+			P_SetSlope(*plane, mt.angle, mt.args[0], x, y, P_PlaneZ(x, y, plane) + INT2FIXED(mt.z), floor);
+
+		mt.type = 0;
+	}
+	P_SetupVertexSlopes(things);
+
+	for (auto& mt : things)
+	{
+		if (spawn_map.contains(mt.type))
+			continue;
+
+		if (mt.type == Slope_CopyFloorPlane or
+			mt.type == Slope_CopyCeilingPlane)
+		{
+			P_CopyPlane(mt.args[0], INT2FIXED(mt.x), INT2FIXED(mt.y), mt.type == Slope_CopyFloorPlane);
+			mt.type = 0;
 		}
 	}
 }
@@ -2133,8 +2250,6 @@ void P_SetupLevel (const OString& lumpname, int position)
 			player.killcount = player.secretcount = player.itemcount = 0;
 		}
 	}
-
-	// To use the correct nodes for
 
 	// Initial height of PointOfView will be set by player think.
 	consoleplayer().viewz = 1;
@@ -2264,7 +2379,7 @@ void P_SetupLevel (const OString& lumpname, int position)
 	if (!demoplayback)
 		P_RemoveSlimeTrails();
 
-	P_SetupSlopes();
+	P_SetupLineSlopes();
 
     po_NumPolyobjs = 0;
 
@@ -2282,6 +2397,8 @@ void P_SetupLevel (const OString& lumpname, int position)
 	// SkyViewpoint / stack point has spawned.
 	P_ResolveSkyPickers();
 	P_ResolveStackLinks();
+
+	P_CopySlopes();
 
 	if (!HasBehavior)
 		P_TranslateTeleportThings(); // [RH] Assign teleport destination TIDs

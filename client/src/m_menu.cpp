@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <ctime>
 
 #include "gstrings.h"
@@ -850,7 +852,7 @@ void M_QuickSaveResponse(int ch)
 	if (ch == 'y' || Key_IsYesKey(ch))
 	{
 		M_DoSave (quickSaveSlot);
-		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "menu/dismiss", 1, ATTN_NONE);
 	}
 }
 
@@ -858,14 +860,14 @@ void M_QuickSave()
 {
 	if (multiplayer)
 	{
-		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "menu/invalid", 1, ATTN_NONE);
 		M_ClearMenus ();
 		return;
 	}
 
 	if (!usergame)
 	{
-		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "menu/invalid", 1, ATTN_NONE);
 		M_ClearMenus ();
 		return;
 	}
@@ -897,7 +899,7 @@ void M_QuickLoadResponse(int ch)
 	if (ch == 'y' || Key_IsYesKey(ch))
 	{
 		M_LoadSelect(quickSaveSlot);
-		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "menu/dismiss", 1, ATTN_NONE);
 	}
 }
 
@@ -956,7 +958,7 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 	const Texture* center_texture = Res_CacheTexture("M_LSCNTR", GRAPHICS);
 
 	// Vertically center the box on the field text.
-	const int cleany = MAX(1, CleanYfac);
+	const int cleany = std::max(1, CleanYfac);
 	const int font_h = (V_FontsReady() && ::menu_font) ? ::menu_font->getHeight() / cleany : 8;
 	const int box_y = y + font_h / 2 - center_texture->mHeight / 2 + center_texture->mOffsetY;
 
@@ -1164,13 +1166,10 @@ void M_ChooseSkill(int choice)
 	}
 	else if (SkillInfos[choice].must_confirm)
 	{
-		const char* must_confirm_text = SkillInfos[choice].must_confirm_text.c_str();
+		static std::string must_confirm_text;
+		must_confirm_text = GStrings.maybeLookup(SkillInfos[choice].must_confirm_text);
 
-		if (must_confirm_text[0] == '$')
-			M_StartMessage(GStrings(OStringToUpper(must_confirm_text + 1)),
-		               M_VerifyNightmare, true);
-		else
-			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);
+		M_StartMessage(must_confirm_text.c_str(), M_VerifyNightmare, true);
 
 		skillchoice = choice;
 
@@ -1215,7 +1214,7 @@ void M_Expansion(int choice)
 //
 void M_DrawReadThis1()
 {
-	const Texture*p = W_CachePatch(gameinfo.infoPage[0]);
+	const Texture* p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[0]));
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1224,7 +1223,7 @@ void M_DrawReadThis1()
 //
 void M_DrawReadThis2()
 {
-	const Texture*p = W_CachePatch(gameinfo.infoPage[1]);
+	const Texture* p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[1]));
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1233,7 +1232,7 @@ void M_DrawReadThis2()
 //
 void M_DrawReadThis3()
 {
-	const Texture*p = W_CachePatch(gameinfo.infoPage[2]);
+	const Texture* p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[2]));
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1274,7 +1273,7 @@ void M_EndGame(int)
 {
 	if (!usergame)
 	{
-		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "menu/invalid", 1, ATTN_NONE);
 		return;
 	}
 
@@ -1285,7 +1284,7 @@ void M_EndGame(int)
 // M_QuitDOOM
 //
 
-void STACK_ARGS call_terms();
+void call_terms();
 
 void M_QuitResponse(int ch)
 {
@@ -1297,14 +1296,14 @@ void M_QuitResponse(int ch)
 
 	// Stop the music so we do not get stuck notes
 	I_StopSong();
-	if (snd_musicsystem.asInt() == MS_PORTMIDI)
+	if (I_ResolveMusicSystem(snd_musicsystem.asInt()) == MS_PORTMIDI)
 		I_ShutdownMusic();
 
 	if (!multiplayer)
 	{
 		if (gameinfo.quitSound[0])
 		{
-			S_Sound(CHAN_INTERFACE, gameinfo.quitSound, 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.quitSound.data(), 1, ATTN_NONE);
 			I_WaitVBL (105);
 		}
 	}
@@ -2037,8 +2036,8 @@ static void M_DrawMessageButtons(int y)
 
 		if (button == messageSelection && skullAnimCounter < 6)
 		{
-			const int cleanx = MAX(1, CleanXfac);
-			const int cleany = MAX(1, CleanYfac);
+			const int cleanx = std::max(1, CleanXfac);
+			const int cleany = std::max(1, CleanYfac);
 			const int font_height = ::menu_font->getHeight();
 			const int text_center = screen->getCleanY(by) + font_height / 2;
 			const int cursor_height = cursor->mHeight * cleany;
@@ -2078,7 +2077,7 @@ static void M_UpdateMessageSelection()
 	if (button != MSGBUTTON_NONE && button != messageSelection)
 	{
 		messageSelection = button;
-		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 	}
 }
 
@@ -2168,7 +2167,7 @@ static void M_UpdateMouseItem()
 	if (item != -1 && item != itemOn)
 	{
 		itemOn = item;
-		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 	}
 }
 
@@ -2185,9 +2184,9 @@ static void M_SetPlayerColorFromMouse(int item, int mouse_x)
 		return;
 
 	float dist = static_cast<float>(mouse_x - PSetupSliderX1) / static_cast<float>(PSetupSliderX2 - PSetupSliderX1);
-	dist = clamp(dist, 0.0f, 1.0f);
+	dist = std::clamp(dist, 0.0f, 1.0f);
 
-	const int part = clamp(static_cast<int>(dist * 255.0f + 0.5f), 0, 255);
+	const int part = std::clamp(static_cast<int>(std::round(dist * 255.0f)), 0, 255);
 
 	argb_t color = V_GetColorFromString(cl_color);
 
@@ -2217,12 +2216,12 @@ static void M_ActivateItem(int item)
 	if (currentMenu->menuitems[item].status == 2)
 	{
 		currentMenu->menuitems[item].routine(1);		// right arrow
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 	}
 	else
 	{
 		currentMenu->menuitems[item].routine(item);
-		S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+		S_Sound(CHAN_INTERFACE, "menu/choose", 1, ATTN_NONE);
 	}
 }
 
@@ -2305,7 +2304,7 @@ bool M_Responder(const event_t& ev)
 			}
 		}
 		else if (Key_IsCancelKey(ch) ||
-		         (ui_mouse.asInt() != 0 && ch == OKEY_MOUSE2))
+		         (ui_mouse.asBool() && ch == OKEY_MOUSE2))
 		{
 			// Escape, or a right click, cancels the entry and restores the
 			// previous text.
@@ -2345,17 +2344,17 @@ bool M_Responder(const event_t& ev)
 	{
 		int answer = 0;
 
-		const bool buttons_shown = ui_mouse.asInt() != 0 && messageNeedsInput;
+		const bool buttons_shown = ui_mouse.asBool() && messageNeedsInput;
 
 		if (buttons_shown && (Key_IsUpKey(ch, numlock) || Key_IsDownKey(ch, numlock) ||
 		                      Key_IsLeftKey(ch, numlock) || Key_IsRightKey(ch, numlock)))
 		{
 			messageSelection = (messageSelection == MSGBUTTON_YES) ? MSGBUTTON_NO : MSGBUTTON_YES;
-			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 			return true;
 		}
 
-		if (ui_mouse.asInt() != 0 && (ch == OKEY_MOUSE1 || ch == OKEY_MOUSE2))
+		if (ui_mouse.asBool() && (ch == OKEY_MOUSE1 || ch == OKEY_MOUSE2))
 		{
 			if (!messageNeedsInput)
 			{
@@ -2398,7 +2397,7 @@ bool M_Responder(const event_t& ev)
 
 		menuactive = false;
 		M_ResumeSound();
-		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "menu/dismiss", 1, ATTN_NONE);
 		return true;
 	}
 
@@ -2422,7 +2421,7 @@ bool M_Responder(const event_t& ev)
 		                     ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) &&
 		                      demoplayback);
 
-		if (ui_mouse.asInt() != 0 && attract && (ch == OKEY_MOUSE1 || ch == OKEY_MOUSE2))
+		if (ui_mouse.asBool() && attract && (ch == OKEY_MOUSE1 || ch == OKEY_MOUSE2))
 		{
 			AddCommandString("menu_main");
 			return true;
@@ -2441,7 +2440,7 @@ bool M_Responder(const event_t& ev)
 		}
 	}
 
-	if (ui_mouse.asInt() != 0)
+	if (ui_mouse.asBool())
 	{
 		if (ch == OKEY_MOUSE1)
 		{
@@ -2460,7 +2459,7 @@ bool M_Responder(const event_t& ev)
 				if (colorslider && I_GetUIMousePosition(mouse_x, mouse_y))
 				{
 					M_SetPlayerColorFromMouse(item, mouse_x);
-					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+					S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 
 					// Keep following the pointer until the button is released
 					PSetupDragItem = item;
@@ -2489,7 +2488,7 @@ bool M_Responder(const event_t& ev)
 					itemOn = 0;
 				else
 					itemOn++;
-				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 			} while (currentMenu->menuitems[itemOn].status == -1);
 			return true;
 		}
@@ -2500,7 +2499,7 @@ bool M_Responder(const event_t& ev)
 					itemOn = currentMenu->numitems - 1;
 				else
 					itemOn--;
-				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 			} while (currentMenu->menuitems[itemOn].status == -1);
 			return true;
 		}
@@ -2509,7 +2508,7 @@ bool M_Responder(const event_t& ev)
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status == 2)
 			{
-				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 				currentMenu->menuitems[itemOn].routine(0);
 			}
 			return true;
@@ -2519,7 +2518,7 @@ bool M_Responder(const event_t& ev)
 			if (currentMenu->menuitems[itemOn].routine &&
 				currentMenu->menuitems[itemOn].status == 2)
 			{
-				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, "menu/change", 1, ATTN_NONE);
 				currentMenu->menuitems[itemOn].routine(1);
 			}
 			return true;
@@ -2546,14 +2545,14 @@ bool M_Responder(const event_t& ev)
 					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 					{
 						itemOn = i;
-						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+						S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 						return true;
 					}
 				for (int i = 0; i <= itemOn; i++)
 					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
 					{
 						itemOn = i;
-						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+						S_Sound(CHAN_INTERFACE, "menu/cursor", 1, ATTN_NONE);
 						return true;
 					}
 			}
@@ -2584,7 +2583,7 @@ void M_StartControlPanel()
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
 	M_PauseSound();
-	S_Sound(CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
+	S_Sound(CHAN_INTERFACE, "menu/activate", 1, ATTN_NONE);
 }
 
 
@@ -2617,7 +2616,7 @@ void M_Drawer()
 
 		V_FreeBrokenLines (lines);
 
-		if (messageNeedsInput && ui_mouse.asInt() != 0)
+		if (messageNeedsInput && ui_mouse.asBool())
 			M_DrawMessageButtons(y + V_FontLineHeightClean(::menu_font));
 	}
 	else if (menuactive)
@@ -2712,7 +2711,7 @@ void M_PopMenuStack()
 		}
 		drawSkull = MenuStack[MenuStackDepth].drawSkull;
 		MenuStackDepth++;
-		S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "menu/backup", 1, ATTN_NONE);
 	} else {
 		M_ClearMenus ();
 		if (currentMenu == &PSetupDef && PSetupDepth > 0)			// hack for PlayerSetup
@@ -2723,7 +2722,7 @@ void M_PopMenuStack()
 			M_Options(0);
 		}
 		else
-			S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "menu/clear", 1, ATTN_NONE);
 	}
 }
 
@@ -2739,7 +2738,7 @@ void M_Ticker()
 		skullAnimCounter = 8;
 	}
 
-	if (messageToPrint && messageNeedsInput && ui_mouse.asInt() != 0)
+	if (messageToPrint && messageNeedsInput && ui_mouse.asBool())
 		M_UpdateMessageSelection();
 	else if (menuactive)
 	{

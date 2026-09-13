@@ -50,9 +50,13 @@ class Packet
 		// If the packet contains a reliable section, then that section is saved off
 		// into the given i_sender for ack and retransmit handling.
 		//
-		// ReSend() is intended for sending retransmission buffers.
-		size_t Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& i_dest);
-		size_t ReSend(int sequence, const buf_t& i_dataBuffer, const netadr_t& i_dest);
+		// ReSend() is intended for sending retransmission buffers, which are owned elsewhere.
+		//
+		// SendHighPriority() is intended for sending best-effort-only packets that precede
+		// all other reliable and best-effort packets.
+		size_t Send(int i_currentTic, int i_destinationTic, SequenceSender& i_sender, const netadr_t& i_dest);
+		size_t ReSend(int i_historicalLocalTic, int i_destinationTic, int sequence, const buf_t& i_dataBuffer, const netadr_t& i_dest);
+		size_t SendHighPriority(int i_currentTic, int i_destinationTic, SequenceSender& i_sender, const netadr_t& i_dest);
 
 		size_t Size() const { return m_outgoingPacketBuffer.size(); }
 		int    RemainingBytes() const { return MAX_UDP_SIZE - static_cast<int>(m_outgoingPacketBuffer.size()); }

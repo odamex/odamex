@@ -45,15 +45,16 @@
 
 #include "p_mapformat.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 
 #include <span>
 
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
 //
 // Movement.
 //
-
-// 16 pixels of bob
-#define MAXBOB			0x100000
 
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (cl_mouselook)
@@ -406,7 +407,7 @@ void P_CalcHeight (player_t& player)
 		bob = 0;
 
 	// move viewheight
-	if (player.playerstate == PST_LIVE)
+	if (player.playerstate == PST_LIVE || player.playerstate == PST_FREECAM)
 	{
 		player.viewheight += player.deltaviewheight;
 
@@ -620,14 +621,15 @@ void P_MovePlayer (player_t& player)
 		}
 		else if (sv_allowjump && player.mo->onground && !player.jumpTics)
 		{
-			player.mo->momz += 8*FRACUNIT;
+			const bool springpad = player.mo->floorsector->flags & SECF_SPRINGPAD;
+			player.mo->momz += springpad ? 4*FRACUNIT : 8*FRACUNIT;
 
 //			[SL] No jumping sound...
 //			if(!player.spectator)
 //				UV_SoundAvoidPlayer(player.mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
             player.mo->flags2 &= ~MF2_ONMOBJ;
-            player.jumpTics = 18;
+            player.jumpTics = springpad ? 0 : 18;
 		}
 	}
 }
@@ -752,6 +754,20 @@ void P_DeathThink (player_t& player)
 		    ((player.cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
 		    ((g_lives && player.lives > 0) || !g_lives))
 		{
+			// Run (shift) + Use (space) erases your death spot so you spawn
+			// at the beginning.
+			if ((player.cmd.buttons & BT_USE) and (player.cmd.modifiers & MOD_RUN))
+				DeathSpotManager::getInstance().eraseDeathSpot(player.id);
+
+			// Something is standing where we would come back, so there is
+			// nowhere to go yet. Stay dead until it moves.
+			// A forced respawn gives up on the spot and instead uses a normal start.
+			if (multiplayer and not force_respawn and
+			    G_IsDeathSpotBlocked(G_CheckDeathSpot(player)))
+			{
+				return;
+			}
+
 			player.playerstate = PST_REBORN;
 		}
 	}
@@ -770,6 +786,12 @@ bool P_AreTeammates(const player_t &a, const player_t &b)
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 {
+	// server doesnt know or care about the freecam
+	#ifdef CLIENT_APP
+	if (other.isFreecam && Freecam::allowSpy())
+		return true;
+	#endif
+
 	// skip if out of lives in survival
 	if (G_IsLivesGame() && other.lives < 1)
 		return false;
@@ -1397,8 +1419,8 @@ player_t::player_t() :
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
+	playerInfoIsRequested(false),
 	inventoryCheckRequestsAreEnabled(false),
-	inventoryCheckIsRequestedForTic(-1),
 	client{}
 {
 	cmd.clear();
@@ -1412,7 +1434,7 @@ player_t::player_t() :
 	// Can't put this in initializer list?
 	attacker = AActor::AActorPtr();
 
-	pspdef_t zeropsp = { NULL, 0, 0, 0 };
+	const pspdef_t zeropsp = { .statenum = S_NULL, .tics = 0, .sx = 0, .sy = 0 };
 	psprites.fill(zeropsp);
 	ArrayInit(oldvelocity, 0);
 

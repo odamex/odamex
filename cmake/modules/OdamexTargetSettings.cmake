@@ -9,74 +9,91 @@ function(checked_add_compile_flag _LIST _FLAG _VAR)
   endif()
 endfunction()
 
-function(odamex_target_settings _TARGET)
+function(odamex_target_settings)
+  set(options NO_DEPLOYMENT_ARTIFACT)
+  set(oneValueArgs TARGET)
+  set(multiValueArgs )
+
+  cmake_parse_arguments(PARSE_ARGV 0 arg "${options}" "${oneValueArgs}" "${multiValueArgs}")
+
   set(ODAMEX_DLLS "")
 
-  set_property(TARGET "${_TARGET}" PROPERTY CXX_STANDARD 20)
+  set_target_properties("${arg_TARGET}" PROPERTIES CXX_STANDARD 20)
+
+  if (NOT arg_NO_DEPLOYMENT_ARTIFACT)
+    set_target_properties("${arg_TARGET}" PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${ODAMEX_ARTIFACT_DIR}")
+  endif()
 
   if(HAS_LTO)
-    set_property(TARGET "${_TARGET}"
+    set_property(TARGET "${arg_TARGET}"
       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
   endif()
 
   if(APPLE)
-    target_compile_definitions("${_TARGET}" PRIVATE OSX UNIX)
-    set_target_properties("${_TARGET}" PROPERTIES
+    target_compile_definitions("${arg_TARGET}" PRIVATE OSX UNIX)
+    set_target_properties("${arg_TARGET}" PROPERTIES
       XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
   elseif(SOLARIS)
-    target_compile_definitions("${_TARGET}" PRIVATE SOLARIS UNIX BSD_COMP)
-    target_compile_options("${_TARGET}" PRIVATE -gstabs+)
+    target_compile_definitions("${arg_TARGET}" PRIVATE SOLARIS UNIX BSD_COMP)
+    target_compile_options("${arg_TARGET}" PRIVATE -gstabs+)
   elseif(UNIX)
-    target_compile_definitions("${_TARGET}" PRIVATE UNIX)
+    target_compile_definitions("${arg_TARGET}" PRIVATE UNIX)
+  endif()
+
+  target_compile_definitions("${arg_TARGET}" PRIVATE $<$<CONFIG:Debug>:ODAMEX_DEBUG>)
+
+  if (WIN32)
+      target_compile_definitions("${arg_TARGET}"
+          PRIVATE
+            _CRT_SECURE_NO_WARNINGS
+            WIN32_LEAN_AND_MEAN
+            NOMINMAX
+            NODRAWTEXT
+            )
   endif()
 
   if(MSVC)
-    # jsd: hide warnings about using insecure crt functions:
-    target_compile_definitions("${_TARGET}" PRIVATE
-      $<$<CONFIG:Debug>:ODAMEX_DEBUG> _CRT_SECURE_NO_WARNINGS)
-    target_compile_options("${_TARGET}" PRIVATE /MP)
+    target_compile_options("${arg_TARGET}" PRIVATE /MP)
     if(USE_SANITIZE_ADDRESS)
-      target_compile_options("${_TARGET}" PRIVATE /fsanitize=address)
+      target_compile_options("${arg_TARGET}" PRIVATE /fsanitize=address)
     endif()
   else()
-    target_compile_definitions("${_TARGET}" PRIVATE
-      $<$<CONFIG:Debug>:ODAMEX_DEBUG>)
-    target_compile_options("${_TARGET}" PRIVATE -Wall -Wextra)
+    target_compile_options("${arg_TARGET}" PRIVATE -Wall -Wextra)
 
     if(USE_GPROF)
-      target_compile_options("${_TARGET}" PRIVATE -p)
+      target_compile_options("${arg_TARGET}" PRIVATE -p)
     endif()
 
     if(USE_COLOR_DIAGNOSTICS)
       if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options("${_TARGET}" PRIVATE -fcolor-diagnostics)
+        target_compile_options("${arg_TARGET}" PRIVATE -fcolor-diagnostics)
       else()
-        target_compile_options("${_TARGET}" PRIVATE -fdiagnostics-color=always)
+        target_compile_options("${arg_TARGET}" PRIVATE -fdiagnostics-color=always)
       endif()
     endif()
 
     if(USE_STATIC_STDLIB)
-      target_link_options("${_TARGET}" PRIVATE -static-libgcc -static-libstdc++)
+      target_link_options("${arg_TARGET}" PRIVATE -static-libgcc -static-libstdc++)
     endif()
 
     if(USE_SANITIZE_ADDRESS)
-      target_compile_options("${_TARGET}" PRIVATE
+      target_compile_options("${arg_TARGET}" PRIVATE
         -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls)
-      target_link_options("${_TARGET}" PRIVATE -fsanitize=address)
+      target_link_options("${arg_TARGET}" PRIVATE -fsanitize=address)
     endif()
 
     if(USE_SANITIZE_THREAD)
-      target_compile_options("${_TARGET}" PRIVATE
+      target_compile_options("${arg_TARGET}" PRIVATE
         -fsanitize=thread -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls)
-      target_link_options("${_TARGET}" PRIVATE -fsanitize=thread)
+      target_link_options("${arg_TARGET}" PRIVATE -fsanitize=thread)
     endif()
 
     if(USE_SANITIZE_UNDEFINED)
       # doom is full of left shifts of negative values, which is UB
       # but since there's so many, it drowns out the rest of the UB warnings
-      target_compile_options("${_TARGET}" PRIVATE
+      target_compile_options("${arg_TARGET}" PRIVATE
         -fsanitize=undefined -fno-sanitize=shift -O1)
-      target_link_options("${_TARGET}" PRIVATE -fsanitize=undefined -fno-sanitize=shift)
+      target_link_options("${arg_TARGET}" PRIVATE -fsanitize=undefined -fno-sanitize=shift)
     endif()
   endif()
 
@@ -98,22 +115,22 @@ function(odamex_target_settings _TARGET)
     checked_add_compile_flag(CHECKED_OPTIONS -Wno-unused-parameter W_NO_UNUSED_PARAMETER)
     checked_add_compile_flag(CHECKED_OPTIONS -Wstrict-aliasing W_STRICT_ALIASING)
   endif()
-  target_compile_options("${_TARGET}" PRIVATE ${CHECKED_OPTIONS})
-  target_compile_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:${CHECKED_RELEASE_OPTIONS}>)
+  target_compile_options("${arg_TARGET}" PRIVATE ${CHECKED_OPTIONS})
+  target_compile_options("${arg_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:${CHECKED_RELEASE_OPTIONS}>)
 
   # Add link options - checked link options need at least 3.18.
   if(MSVC)
     if(USE_SANITIZE_ADDRESS)
-      target_link_options("${_TARGET}" PRIVATE /INCREMENTAL:NO)
+      target_link_options("${arg_TARGET}" PRIVATE /INCREMENTAL:NO)
     else()
-      target_link_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:/INCREMENTAL:NO>)
+      target_link_options("${arg_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:/INCREMENTAL:NO>)
     endif()
-    target_link_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:/LTCG>)
+    target_link_options("${arg_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:/LTCG>)
   endif()
 
   # Ensure we get a useful stack trace on Linux.
   if(UNIX AND NOT APPLE)
-    target_link_options("${_TARGET}" PRIVATE -rdynamic)
+    target_link_options("${arg_TARGET}" PRIVATE -rdynamic)
   endif()
 
   if(MINGW)
@@ -138,9 +155,9 @@ function(odamex_target_settings _TARGET)
 
   # Copy library files to target directory.
   foreach(ODAMEX_DLL ${ODAMEX_DLLS})
-    add_custom_command(TARGET "${_TARGET}" POST_BUILD
+    add_custom_command(TARGET "${arg_TARGET}" POST_BUILD
       COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-      "${ODAMEX_DLL}" $<TARGET_FILE_DIR:${_TARGET}> VERBATIM)
+      "${ODAMEX_DLL}" $<TARGET_FILE_DIR:${arg_TARGET}> VERBATIM)
   endforeach()
 endfunction()
 

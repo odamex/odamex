@@ -62,29 +62,29 @@
 EXTERN_CVAR (r_centerwindow)
 
 // functions to be called at shutdown are stored in this stack
-typedef void (STACK_ARGS *term_func_t)(void);
+using term_func_t = void (*)();
 std::stack< std::pair<term_func_t, std::string> > TermFuncs;
 
-void addterm (void (STACK_ARGS *func) (), const char *name)
+void addterm(term_func_t func, const char *name)
 {
-	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
+	TermFuncs.emplace(func, name);
 }
 
-void STACK_ARGS call_terms (void)
+void call_terms()
 {
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
 #ifdef __SWITCH__
-void STACK_ARGS nx_early_init (void)
+void nx_early_init (void)
 {
 	socketInitializeDefault();
 #ifdef ODAMEX_DEBUG
 	nxlinkStdio();
 #endif
 }
-void STACK_ARGS nx_early_deinit (void)
+void nx_early_deinit (void)
 {
 	socketExit();
 }
@@ -110,31 +110,15 @@ int main(int argc, char *argv[])
 		atterm(nx_early_deinit);
 #endif
 
+		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
+		::Args.SetArgs(argc, argv);
+
+		D_CheckInfoDumps();
+
 #if defined(UNIX) && !defined(GCONSOLE)
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 #endif
-
-		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
-		::Args.SetArgs(argc, argv);
-
-		if (::Args.CheckParm("--version"))
-		{
-#ifdef _WIN32
-			FILE* fh = fopen("odamex-version.txt", "w");
-			if (!fh)
-				exit(EXIT_FAILURE);
-
-			const int ok = fprintf(fh, "Odamex %s\n", NiceVersion());
-			if (!ok)
-				exit(EXIT_FAILURE);
-
-			fclose(fh);
-#else
-			fmt::print("Odamex {}\n", NiceVersion());
-#endif
-			exit(EXIT_SUCCESS);
-		}
 
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)
@@ -168,7 +152,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-#if defined(__linux__) && defined(SDL20)
+#if !defined(__APPLE__) && !defined(_WIN32) && defined(SDL20)
 		// despite the name, this also sets wayland app id
 		SDL_setenv("SDL_VIDEO_X11_WMCLASS", "net.odamex.Odamex.Client", false);
 #endif

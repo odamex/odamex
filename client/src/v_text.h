@@ -33,6 +33,10 @@
 #include "w_wad.h"
 #include "resources/res_texture.h"
 
+// The console font: 256 glyphs of 8 rows, each row 8 color bytes followed by 8
+// transparency mask bytes. Built from the CONCHARS lumps by C_InitConCharsFont.
+extern std::vector<byte> ConChars;
+
 void V_TextInit();
 void V_TextShutdown();
 int V_TextScaleXAmount();

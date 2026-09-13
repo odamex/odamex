@@ -198,14 +198,27 @@ int P_ArgToCrush(byte arg)
  */
 int P_IsUnderDamage(const AActor* actor)
 {
-	const struct msecnode_t* seclist;
-	const DCeiling* cr; // Crushing ceiling
 	int dir = 0;
-	for (seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
+	for (const msecnode_t* seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
 	{
-		if ((cr = static_cast<DCeiling*>(seclist->m_sector->ceilingdata)) && cr->m_Status == 2) // Down
+		const DSectorEffect* ceilingdata = seclist->m_sector->ceilingdata; // Crushing ceiling
+		if (ceilingdata && ceilingdata->IsKindOf(RUNTIME_CLASS(DCeiling)))
 		{
-			cr->m_Crush > NO_CRUSH ? dir = 1 : dir = 0;
+			const auto* cl = static_cast<const DCeiling*>(ceilingdata);
+			if (cl->m_Crush > NO_CRUSH)
+			{
+				dir |= cl->m_Direction; // 1 = up, 0 = waiting, -1 = down
+			}
+		}
+
+		const DSectorEffect* floordata = seclist->m_sector->floordata; // Crushing floor
+		if (floordata && floordata->IsKindOf(RUNTIME_CLASS(DFloor)))
+		{
+			const auto* fl = static_cast<const DFloor*>(floordata);
+			if (fl->m_Crush > NO_CRUSH)
+			{
+				dir |= -fl->m_Direction; // need to negate since up is when damage happens for floors
+			}
 		}
 	}
 	return dir;
@@ -226,50 +239,66 @@ bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest)
 		return true;
 	}
 
-	if (friendshiptest->flags & MF_FRIEND)
+	// Swap order if the friendshiptest actor isn't a MF_FRIEND
+	// (but the other one is)
+	if ((friendshiptest->player && !actor->player) ||
+	    (!(friendshiptest->flags & MF_FRIEND) && actor->flags & MF_FRIEND))
 	{
+		const AActor* swap = actor;
+		actor = friendshiptest;
+		friendshiptest = swap;
+	}
+
+	if (!(friendshiptest->flags & MF_FRIEND))
+	{
+		return !actor->player && !friendshiptest->player;
+	}
+
+	if (actor->player)
+	{
+		// Everyone shares the friendlies in a coop game.
 		if (G_IsCoopGame())
+			return true;
+
+		if (actor->player->id == friendshiptest->friend_playerid)
 		{
-			if (actor->flags & MF_FRIEND)
-				return true;
-		}
-		else if (actor->player)
-		{
-			if (actor->player->id == friendshiptest->friend_playerid)
-			{
-				// Don't attack me, I love you!
-				return true;
-			}
-			else if (G_IsTeamGame())
-			{
-				if (actor->player->userinfo.team == friendshiptest->friend_teamid)
-				{
-				   return true;
-				}
-			}
-		}
-		else if (actor->friend_playerid == 0 || friendshiptest->friend_playerid == 0 ||
-		         actor->friend_playerid == friendshiptest->friend_playerid)
-		{
-			// Fellow friend (or general friend)
-			// Do not attack.
+			// Don't attack me, I love you!
 			return true;
 		}
-		else if (G_IsTeamGame())
+
+		if (G_IsTeamGame() && actor->player->userinfo.team == friendshiptest->friend_teamid)
 		{
-			if (actor->friend_teamid == friendshiptest->friend_teamid)
-			{
-				// Friendly is of the same team as this friendly.
-				// Don't attack
-				return true;
-			}
+			// Friendly belongs to a player on this player's team.
+			return true;
 		}
+
+		return false;
 	}
-	else
+
+	if (!(actor->flags & MF_FRIEND))
 	{
-		if (!(actor->flags & MF_FRIEND))
-			return true;
+		// Monsters that aren't friendly have no love for friendlies.
+		return false;
 	}
+
+	if (G_IsCoopGame())
+		return true;
+
+	if (actor->friend_playerid == 0 || friendshiptest->friend_playerid == 0 ||
+	    actor->friend_playerid == friendshiptest->friend_playerid)
+	{
+		// Fellow friend (or general friend)
+		// Do not attack.
+		return true;
+	}
+
+	if (G_IsTeamGame() && actor->friend_teamid == friendshiptest->friend_teamid)
+	{
+		// Friendly is of the same team as this friendly.
+		// Don't attack
+		return true;
+	}
+
 	return false;
 }
 
@@ -2254,7 +2283,7 @@ void DScroller::RunThink ()
 	if (m_Control != -1)
 	{	// compute scroll amounts based on a sector's height changes
 		sector_t *sector = &sectors[m_Control];
-		fixed_t height = sector->ceilingheight + sector->floorheight;
+		const fixed_t height = P_CeilingHeight(sector) + P_FloorHeight(sector);
 
 		fixed_t delta = height - m_LastHeight;
 		m_LastHeight = height;
@@ -2343,20 +2372,15 @@ void DScroller::RunThink ()
 // accel: non-zero if this is an accelerative effect
 //
 
-DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
-					  int control, int affectee, int accel)
+DScroller::DScroller(EScrollType type, fixed_t dx, fixed_t dy,
+                     int control, int affectee, int accel)
+	: m_Type{type}, m_dx{dx}, m_dy{dy}, m_Control{control}, m_Accel{accel}
 {
-	s_scrollers.push_back(this);
-	m_Type = type;
-	m_dx = dx;
-	m_dy = dy;
-        m_vdx = 0;
-        m_vdy = 0;
-        m_Accel = accel;
-	if ((m_Control = control) != -1)
+	s_scrollers.push_back(this); // FIXME: incomplete object escapes constructor
+	if (control != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t height = sector->ceilingheight + sector->floorheight;
+		const fixed_t height = P_CeilingHeight(sector) + P_FloorHeight(sector);
 
 		m_LastHeight = height;
 	}
@@ -2371,28 +2395,29 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 //
 // killough 5/25/98: cleaned up arithmetic to avoid drift due to roundoff
 
-DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
-					 int control, int accel)
+DScroller::DScroller(fixed_t dx, fixed_t dy, const line_t *l,
+                     int control, int accel)
+	: m_Control{control}, m_Accel{accel}
 {
-	s_scrollers.push_back(this);
-	fixed_t x = abs(l->dx), y = abs(l->dy), d;
+	s_scrollers.push_back(this); // FIXME: incomplete object escapes contructors
+	fixed_t x = abs(l->dx);
+	fixed_t y = abs(l->dy);
 	if (y > x)
-		d = x, x = y, y = d;
-	d = FixedDiv (x, finesine[(tantoangle[FixedDiv(y,x) >> DBITS] + ANG90)
-						  >> ANGLETOFINESHIFT]);
+	{
+		std::swap(x, y);
+	}
+	const fixed_t d = FixedDiv (x, finesine[(tantoangle[FixedDiv(y,x) >> DBITS] + ANG90)
+	                                    >> ANGLETOFINESHIFT]);
 	x = -FixedDiv (FixedMul(dy, l->dy) + FixedMul(dx, l->dx), d);
 	y = -FixedDiv (FixedMul(dx, l->dy) - FixedMul(dy, l->dx), d);
 
-	m_Type = sc_side;
 	m_dx = x;
 	m_dy = y;
-	m_vdx = m_vdy = 0;
-	m_Accel = accel;
 
-	if ((m_Control = control) != -1)
+	if (control != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t height = sector->ceilingheight + sector->floorheight;
+		const fixed_t height = P_CeilingHeight(sector) + P_FloorHeight(sector);
 
 		m_LastHeight = height;
 	}
@@ -2614,18 +2639,16 @@ DPusher::DPusher (DPusher::EPusher type, line_t *l, int magnitude, int angle,
 // tmpusher belongs to the point source (MT_PUSH/MT_PULL).
 //
 
-DPusher *tmpusher; // pusher structure for blockmap searches
-
-bool PIT_PushThing (AActor *thing)
+bool PIT_PushThing (AActor& thing, DPusher* tmpusher)
 {
 	if (!P_IsMBFCompatMode() ?
-			thing->player && !(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) :
-			(sentient(thing) || thing->flags & MF_SHOOTABLE) &&
-			!(thing->flags & MF_NOCLIP))
+			thing.player && !(thing.flags & (MF_NOGRAVITY | MF_NOCLIP)) :
+			(sentient(&thing) || thing.flags & MF_SHOOTABLE) &&
+			!(thing.flags & MF_NOCLIP))
 	{
 		int sx = tmpusher->m_X;
 		int sy = tmpusher->m_Y;
-		int dist = P_AproxDistance (thing->x - sx,thing->y - sy);
+		const int dist = P_AproxDistance (thing.x - sx,thing.y - sy);
 		int speed = (tmpusher->m_Magnitude -
 					((dist>>FRACBITS)>>1))<<(FRACBITS-PUSH_FACTOR-1);
 
@@ -2639,22 +2662,22 @@ bool PIT_PushThing (AActor *thing)
 
 		if (speed > 0 && P_IsMBFCompatMode())
 		{
-			int x = (thing->x - sx) >> FRACBITS;
-			int y = (thing->y - sy) >> FRACBITS;
-			speed = static_cast<int>((static_cast<uint64_t>(tmpusher->m_Magnitude) << 23) / (x * x + y * y + 1));
+			const int x = (thing.x - sx) >> FRACBITS;
+			const int y = (thing.y - sy) >> FRACBITS;
+			speed = static_cast<int>((static_cast<uint64_t>(tmpusher->m_Magnitude) << 23) / ((x * x) + (y * y) + 1));
 		}
 
 		// If speed <= 0, you're outside the effective radius. You also have
 		// to be able to see the push/pull source point.
 
-		if (speed > 0 && P_CheckSight(thing, tmpusher->m_Source))
+		if (speed > 0 && P_CheckSight(&thing, tmpusher->m_Source))
 		{
-			angle_t pushangle = P_PointToAngle (thing->x, thing->y, sx, sy);
+			angle_t pushangle = P_PointToAngle (thing.x, thing.y, sx, sy);
 			if (tmpusher->m_Source->type == MT_PUSH)
 				pushangle += ANG180;    // away
 			pushangle >>= ANGLETOFINESHIFT;
-			thing->momx += FixedMul (speed, finecosine[pushangle]);
-			thing->momy += FixedMul (speed, finesine[pushangle]);
+			thing.momx += FixedMul (speed, finecosine[pushangle]);
+			thing.momy += FixedMul (speed, finesine[pushangle]);
 		}
 	}
 	return true;
@@ -2665,19 +2688,14 @@ bool PIT_PushThing (AActor *thing)
 // T_Pusher looks for all objects that are inside the radius of
 // the effect.
 //
-extern fixed_t tmbbox[4];
+extern std::array<fixed_t, 4> tmbbox;
 
 void DPusher::RunThink ()
 {
-	sector_t *sec;
-	AActor *thing;
-	msecnode_t *node;
 	int xspeed,yspeed;
-	int xl,xh,yl,yh,bx,by;
-	int radius;
 	int ht = 0;
 
-	sec = sectors + m_Affectee;
+	const sector_t* sec = sectors + m_Affectee;
 
 	// Be sure the special sector type is still turned on. If so, proceed.
 	// Else, bail out; the sector type has been changed on us.
@@ -2708,20 +2726,19 @@ void DPusher::RunThink ()
 		// Seek out all pushable things within the force radius of this
 		// point pusher. Crosses sectors, so use blockmap.
 
-		tmpusher = this; // MT_PUSH/MT_PULL point source
-		radius = m_Radius; // where force goes to zero
+		const int radius = m_Radius; // where force goes to zero
 		tmbbox[BOXTOP]    = m_Y + radius;
 		tmbbox[BOXBOTTOM] = m_Y - radius;
 		tmbbox[BOXRIGHT]  = m_X + radius;
 		tmbbox[BOXLEFT]   = m_X - radius;
 
-		xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-		xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-		yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-		yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
-		for (bx=xl ; bx<=xh ; bx++)
-			for (by=yl ; by<=yh ; by++)
-				P_BlockThingsIterator (bx, by, PIT_PushThing);
+		const int xl = (tmbbox[BOXLEFT] - blockmap.originx() - MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int xh = (tmbbox[BOXRIGHT] - blockmap.originx() + MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy() - MAXRADIUS) >> MAPBLOCKSHIFT;
+		const int yh = (tmbbox[BOXTOP] - blockmap.originy() + MAXRADIUS) >> MAPBLOCKSHIFT;
+		for (int bx = xl; bx <= xh; bx++)
+			for (int by = yl; by <= yh; by++)
+				P_BlockThingsIterator(bx, by, PIT_PushThing, nullptr, this /*MT_PUSH/MT_PULL point source*/);
 		return;
 	}
 
@@ -2729,10 +2746,10 @@ void DPusher::RunThink ()
 
 	if (sec->heightsec) // special water sector?
 		ht = P_FloorHeight(sec->heightsec);
-	node = sec->touching_thinglist; // things touching this sector
+	const msecnode_t* node = sec->touching_thinglist; // things touching this sector
 	for ( ; node ; node = node->m_snext)
 	{
-		thing = node->m_thing;
+		AActor* thing = node->m_thing;
 		if (!P_IsPlayerOrAvatar(*thing) || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 			continue;
 		if (m_Type == p_wind)

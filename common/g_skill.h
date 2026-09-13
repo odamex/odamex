@@ -23,15 +23,35 @@
 
 #pragma once
 
+#include "c_cvars.h"
+#include "doomdata.h"
+#include "doomtype.h"
+#include "flags.h"
+#include "olumpname.h"
+
+#include <array>
+#include <string>
+
+EXTERN_CVAR(sv_skill)
+
 #define MAX_SKILLS 7
 
-inline constexpr uint32_t SKILL_NOINFIGHTING = BIT(0);
-inline constexpr uint32_t SKILL_TOTALINFIGHTING = BIT(1);
+enum class skillflags_t : uint32_t
+{
+	SKILL_NOINFIGHTING    = BIT(0),
+	SKILL_TOTALINFIGHTING = BIT(1),
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
+};
+
+using enum skillflags_t;
+constexpr skillflags_t enable_bitflag_operators(skillflags_t) { return SKILL_TOTALINFIGHTING; };
+using SkillFlags = OFlags<skillflags_t>;
 
 struct SkillInfo
 {
 	std::string name;
-	uint32_t flags                = 0;
+	SkillFlags flags;
 
 	float ammo_factor             = 1.0f;
 	float double_ammo_factor      = 2.0f;
@@ -52,7 +72,7 @@ struct SkillInfo
 	int respawn_counter           = 0;
 	int respawn_limit             = 0;		// not implemented
 	float aggressiveness          = 1.0f;	// not implemented
-	int spawn_filter              = 0;
+	MapThingFlags spawn_filter    = MapThingFlags::none_set();
 	bool spawn_multi              = false;
 	bool instant_reaction         = false;
 	int ACS_return                = limits::MAXINT;
@@ -62,7 +82,7 @@ struct SkillInfo
 	bool must_confirm             = false;
 	std::string must_confirm_text = "$NIGHTMARE";
 	char shortcut                 = 0;
-	byte text_color[4]            = { 0 };	// not implemented
+	std::array<byte, 4> text_color = { 0 };	// not implemented
 	//SkillActorReplacement replace;	// not implemented
 	//SkillActorReplacement replaced;	// not implemented
 	float monster_health          = 1.0f;	// not implemented

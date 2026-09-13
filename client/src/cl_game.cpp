@@ -72,6 +72,8 @@ END_DISABLE_WARNING_GNU
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
+#include "cl_freecam.h"
 
 #include <math.h> // for pow()
 
@@ -604,6 +606,10 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 		cmd.buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT);
 	}
 
+	// Modifiers only ever qualify a button, and do nothing on their own.
+	if (cmd.buttons and Actions[ACTION_SPEED])
+		cmd.modifiers |= MOD_RUN;
+
 	cmd.forwardmove <<= 8;
 	cmd.sidemove <<= 8;
 
@@ -712,7 +718,7 @@ void G_AddViewPitch(int pitch)
 		pitch = -pitch;
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) ||
-	    consoleplayer().spectator)
+	    consoleplayer().spectator || displayplayer().isFreecam)
 	{
 		localview.pitch += pitch << 16;
 		localview.setpitch = true;
@@ -721,7 +727,8 @@ void G_AddViewPitch(int pitch)
 
 bool G_ShouldIgnoreMouseInput()
 {
-	if (consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD)
+	if ((consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD) &&
+		not displayplayer().isFreecam)
 		return true;
 
 	return false;
@@ -866,7 +873,7 @@ void P_CheckInterpPause()
 {
 	// Game pauses when in the menu and not online/demo
 	OInterpolation &oi = OInterpolation::getInstance();
-	if (paused || (!multiplayer && !demoplayback &&
+	if ((paused && not displayplayer().isFreecam) || (!multiplayer && !demoplayback &&
 		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)))
 	{
 		if (oi.enabled())
@@ -884,6 +891,7 @@ void P_CheckInterpPause()
 }
 
 void CL_SimulateWorld();
+void CL_CheckDisplayPlayer();
 //
 // G_Ticker
 // Make ticcmd_ts for the players.
@@ -984,6 +992,15 @@ void G_Ticker (void)
 		C_AdjustBottom ();
 	}
 
+	// The freecam is only valid while dead and out of lives (or in a netdemo)
+	// Nothing checks the inverse, so check it here and reset the view when we hit it.
+	if (displayplayer().isFreecam && not netdemo.isInPlayback() && not demoplayback &&
+	    not Freecam::allowSpy())
+	{
+		displayplayer_id = consoleplayer_id;
+		CL_CheckDisplayPlayer();
+	}
+
 	buf = gametic % BACKUPTICS;
 
     // get commands
@@ -994,6 +1011,14 @@ void G_Ticker (void)
 		{
 			memcpy(&player.cmd, &player.netcmds[buf], sizeof(ticcmd_t));
 		}
+	}
+	// Rude - allow controlling displayplayer if freecam
+	else if (displayplayer().isFreecam)
+	{
+		memcpy(&displayplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
+
+		// Clear consoleplayer.cmd since they reapply every tic.
+		consoleplayer().cmd.clear();
 	}
 	else
 	{
@@ -1314,6 +1339,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
+	DeathSpotManager::getInstance().eraseDeathSpot(p.id);
 }
 
 //
@@ -1323,19 +1349,28 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // because something is occupying it
 //
 void P_SpawnPlayer(player_t &player, const mapthing2_t& mthing);
+void P_SpawnPlayer(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 
+bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
+{
+	return G_CheckSpot(player, INT2FIXED(mthing.x), INT2FIXED(mthing.y),
+	                   INT2FIXED(mthing.z), MapThingToAngle(mthing.angle));
+}
+
+bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle)
 {
 	unsigned			an;
 	AActor* 			mo;
-	fixed_t 			xa,ya;
+	fixed_t 			xa;
+	fixed_t 			ya;
 
-	const fixed_t x = mthing.x << FRACBITS;
-	const fixed_t y = mthing.y << FRACBITS;
+	constexpr int FOG_OFFSET = 20;
+
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
-		z = mthing.z << FRACBITS;
+		z = startz;
 
 	if (!player.mo)
 	{
@@ -1348,7 +1383,8 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
 		}
-		return true;
+
+		return not P_AvatarBlocksSpot(x, y, z);
 	}
 
 	fixed_t oldz = player.mo->z;	// [RH] Need to save corpse's z-height
@@ -1393,16 +1429,18 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * (static_cast<unsigned int>(mthing.angle)/45) ) >> ANGLETOFINESHIFT;
+			an = angle >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = static_cast<angle_t>(mthing.angle / 45);
+			const angle_t mtangle = angle / ANG45;
 
 			an = ANG45 * mtangle;
 
+			// Need to stay this way to emulate vanilla spawn west silently bug
+			// NOLINTBEGIN(readability-magic-numbers)
 			switch(mtangle)
 			{
 				case 4: // 180 degrees (0x80000000 >> 19 == -4096)
@@ -1426,9 +1464,11 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 					ya = finesine[an >> ANGLETOFINESHIFT];
 					break;
 			}
+			// NOLINTEND(readability-magic-numbers)
 		}
 
-		mo = new AActor(x + 20 * xa, y + 20 * ya, z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+		mo = new AActor(x + (FOG_OFFSET * xa), y + (FOG_OFFSET * ya),
+		                z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
 
 		if (level.time)
 			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);	// don't start sound on first frame
@@ -1518,20 +1558,28 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
 	mapthing2_t* spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
 
-	if (!spot && !playerstarts.empty())
-	{
-		// no good spot, so the player will probably get stuck
-		spot = &playerstarts[player.id%playerstarts.size()];
-	}
-	else
+	const mapthing2_t* spawnspot = spot;
+
+	if (spot)
 	{
 		if (player.id < 4)
 			spot->type = player.id+1;
 		else
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
+	else if (not playerstarts.empty())
+	{
+		// no good spot, so the player will probably get stuck
+		spawnspot = &P_GetPlayerStart(player.id - 1);
+	}
+	else
+	{
+		// There is at least one deathmatch start or we would
+		// have errored out above, so telefrag into it.
+		spawnspot = &DeathMatchStarts.front();
+	}
 
-	P_SpawnPlayer (player, *spot);
+	P_SpawnPlayer (player, *spawnspot);
 }
 
 //
@@ -1564,11 +1612,11 @@ void G_DoReborn (player_t &player)
 	if(playerstarts.empty())
 		I_Error("No player starts");
 
-	unsigned int playernum = player.id - 1;
+	const mapthing2_t& start = P_GetPlayerStart(player.id - 1);
 
-	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, start) )
 	{
-		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, start);
 		return;
 	}
 
@@ -1583,7 +1631,7 @@ void G_DoReborn (player_t &player)
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, start);
 }
 
 
@@ -1977,7 +2025,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			Res_ReleaseResource(demo_res_id);
 
 		PrintFmt(PRINT_WARNING, "DOOM Demo file too short\n");
-		gameaction = ga_fullconsole;
+		gameaction = singledemo ? ga_fullconsole : ga_nothing;
 		return;
 	}
 

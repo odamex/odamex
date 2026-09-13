@@ -58,15 +58,15 @@ extern UINT TimerPeriod;
 #endif
 
 // functions to be called at shutdown are stored in this stack
-typedef void (STACK_ARGS *term_func_t)(void);
+using term_func_t = void (*)();
 std::stack< std::pair<term_func_t, std::string> > TermFuncs;
 
-void addterm (void (STACK_ARGS *func) (), const char *name)
+void addterm (void (*func) (), const char *name)
 {
-	TermFuncs.push(std::pair<term_func_t, std::string>(func, name));
+	TermFuncs.emplace(func, name);
 }
 
-void STACK_ARGS call_terms (void)
+void call_terms()
 {
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
@@ -183,11 +183,7 @@ int __cdecl main(int argc, char *argv[])
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		::Args.SetArgs(argc, argv);
 
-		if (::Args.CheckParm("--version"))
-		{
-			fmt::print("Odamex {}\n", NiceVersion());
-			exit(EXIT_SUCCESS);
-		}
+		D_CheckInfoDumps();
 
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)
@@ -311,6 +307,10 @@ int main(int argc, char **argv)
 
     try
     {
+		::Args.SetArgs(argc, argv);
+
+		D_CheckInfoDumps();
+
 		if(!getuid() || !geteuid())
 			I_FatalError("root user detected, quitting odamex immediately");
 
@@ -318,14 +318,6 @@ int main(int argc, char **argv)
 
 		if(r_euid < 0)
 			perror(NULL);
-
-		::Args.SetArgs(argc, argv);
-
-		if (::Args.CheckParm("--version"))
-		{
-			fmt::print("Odamex {}\n", NiceVersion());
-			exit(EXIT_SUCCESS);
-		}
 
 		const char* crashdir = ::Args.CheckValue("-crashdir");
 		if (crashdir)

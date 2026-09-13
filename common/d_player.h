@@ -25,6 +25,8 @@
 
 #include <deque>
 #include <list>
+#include <memory>
+#include <memory_resource>
 #include <queue>
 
 #include <time.h>
@@ -59,9 +61,10 @@
 
 struct client_t
 {
-	OdaMessenger messenger  { };
-	netadr_t     address    { };
+	std::unique_ptr<std::pmr::unsynchronized_pool_resource> pool     { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
+	std::unique_ptr<OdaMessenger>                           messenger{ std::make_unique<OdaMessenger>(pool) };
 
+	netadr_t    address           { };
 	short       version           { 0 };    // protocol version supported by the client
 	int         packedversion     { 0 };
 	int         last_received     { 0 };    // for timeouts
@@ -85,6 +88,9 @@ struct client_t
 	// Clients are not copyable.  They can be moved, but not copied.
 	client_t(const client_t &other)            = delete;
 	client_t& operator=(const client_t& other) = delete;
+
+	client_t(client_t&&)            = default;
+	client_t& operator=(client_t&&) = default;
 };
 
 //
@@ -117,7 +123,10 @@ typedef enum
 	PST_DISCONNECT,
 
     // [BC] Entered the game
-	PST_ENTER
+	PST_ENTER,
+	
+	// this player is the freecam
+	PST_FREECAM
 
 } playerstate_t;
 
@@ -142,6 +151,9 @@ inline constexpr int ReJoinDelay = TICRATE * 5;
 inline constexpr int SuicideDelay = TICRATE * 10;
 
 inline constexpr int BACKUPTICS = 12;
+
+// psprite_authority_tic when the server has never told us a player's psprites.
+inline constexpr int PSPRITE_AUTHORITY_NONE = -1;
 
 class player_t
 {
@@ -169,6 +181,9 @@ public:
 
 	// [RH] who is this?
 	UserInfo	userinfo;
+
+	// is this the clientside-only freecam player?
+	bool isFreecam = false;
 
 	// FOV in degrees
 	float		fov;
@@ -226,6 +241,12 @@ public:
 	int                               psprnum;
 	std::array<pspdef_t, NUMPSPRITES> psprites;     // Overlay view sprites (gun, etc).
 
+	// The gametic we last had authoritative psprites for this player, or
+	// PSPRITE_AUTHORITY_NONE if we never have.
+	// Used to tell whether their weapon still needs guessing at.
+	// Client only
+	int                               psprite_authority_tic { PSPRITE_AUTHORITY_NONE };
+
 	// This is the comparator for the psprite latch vs the real data value.
 	// We specifically ONLY compare the statenum and not the tics because we don't want to trigger
 	// the PlayerPsprite message unless the state number has changed - we're happy to just let the
@@ -234,7 +255,7 @@ public:
 	{
 		bool operator()(const PspriteStateType& i_latch, const pspdef_t& i_psp) const
 		{
-			return i_latch.statenum == (i_psp.state ? i_psp.state->statenum : static_cast<statenum_t>(-1));
+			return i_latch.statenum == i_psp.statenum;
 		}
 	};
 
@@ -334,10 +355,14 @@ public:
 	};
 	std::vector<ActorDistanceType> sortedMobjs;
 
+	// Client:  Indicate that we want the server to send us a PlayerInfo for inventory validation.
+	//          Cleared when the command is packed.
+	// Server:  If set true, send a reliable PlayerInfo message back to the client.  Cleared when
+	//          the PlayerInfo is packed.
+	bool playerInfoIsRequested;
 	bool inventoryCheckRequestsAreEnabled;
-	int  inventoryCheckIsRequestedForTic;
 
-	void RequestInventoryCheckFromServer(int i_tic) { inventoryCheckIsRequestedForTic = inventoryCheckRequestsAreEnabled ? i_tic : -1; }
+	void RequestInventoryCheckFromServer() { playerInfoIsRequested = inventoryCheckRequestsAreEnabled; }
 
 	hordeInfo_t hordeInfo;
 

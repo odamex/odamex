@@ -28,6 +28,12 @@
 //#define SIMULATE_LATENCY
 
 #include <cfloat>
+#include <cmath>
+#include <string>
+#include <vector>
+
+#include "doomtype.h"
+#include "util.h"
 
 /*
 ==========================================================
@@ -146,8 +152,7 @@ public:
 	[[nodiscard]] int asInt() const { return static_cast<int>(std::round(m_Value)); }
 	[[nodiscard]] bool asBool() const { return m_Value != 0; }
 
-	template <typename E>
-		requires std::is_enum_v<E>
+	template <OUtil::Enum E>
 	[[nodiscard]] E asEnum() const { return static_cast<E>(asInt()); }
 
 	template <typename E>

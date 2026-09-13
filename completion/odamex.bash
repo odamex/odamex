@@ -5,7 +5,7 @@ function __odamex {
 
   # options present on both client and server
   local -ar opts=(
-    --version
+    --version --cvardoc --cvardocjson
     -iwad -file -deh -bex
     -map +map -wad -warp
     -config -port +logfile -confile
@@ -50,11 +50,12 @@ function __odamex {
     [-confile]=any
   )
 
-  # options that don't make sense to use alongside others
-  # for now this is only --version, but it's been designed
-  # to be flexible in case we do anything like --help
+  # options that don't make sense to use alongside others,
+  # these all dump some information and exit immediately
   local -Ar exclusiveopts=(
     [--version]=1
+    [--cvardoc]=1
+    [--cvardocjson]=1
   )
 
   # options that might get used more than once

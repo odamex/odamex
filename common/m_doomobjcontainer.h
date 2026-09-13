@@ -175,6 +175,8 @@ public:
 		return *(this->m_lookuptable[idx] = m_inordertable.back().get());
 	}
 
+	// TODO: add overload that takes a lambda to allow geting the index from the objects themselves instead of assuming a contiguous range
+	// or add some sort of traits type that can be specialized for such behaviors
 	void insert(std::span<ObjType> objs, IdxType start_idx)
 	{
 		IdxType idx = start_idx;

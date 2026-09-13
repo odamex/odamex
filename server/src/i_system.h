@@ -65,12 +65,12 @@ void *I_ZoneBase (size_t *size);
 // or calls a loadable driver to build it.
 // This ticcmd will then be modified by the gameloop
 // for normal input.
-ticcmd_t *I_BaseTiccmd (void);
+ticcmd_t *I_BaseTiccmd();
 
 
 // Called by M_Responder when quit is selected.
 // Clean exit, displays sell blurb.
-void STACK_ARGS I_Quit (void);
+void I_Quit();
 
 [[noreturn]] void I_BaseError(const std::string& errortext);
 [[noreturn]] void I_BaseFatalError(const std::string& errortext);
@@ -87,7 +87,7 @@ template <typename... ARGS>
 	I_BaseFatalError(fmt::format(format, std::forward<ARGS>(args)...));
 }
 
-void addterm (void (STACK_ARGS *func)(void), const char *name);
+void addterm (void (*func)(), const char *name);
 #define atterm(t) addterm (t, #t)
 
 bool I_ConsoleUseColor();

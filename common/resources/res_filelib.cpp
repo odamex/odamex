@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 #include "odamex.h"
+
+#include "resources/res_filelib.h"
 #include "m_fileio.h"
 #include "md5.h"
 #include "cmdlib.h"
@@ -125,33 +127,83 @@ std::string Res_CleanseFilename(const std::string& filename)
 
 
 //
+// Res_AddOneSearchDir
+//
+// Appends a single directory, honouring the missing-directory policy.
+//
+static void Res_AddOneSearchDir(std::vector<std::string>& search_dirs, std::string dir,
+                                missing_dir_policy_t policy)
+{
+	if (dir.empty())
+		return;
+
+	FixPathSeparator(dir);
+	M_ExpandHomeDir(dir);
+	dir = M_CleanPath(dir);
+
+	if (!M_DirectoryExists(dir))
+	{
+		if (policy == missing_dir_policy_t::WARN ||
+		    (policy == missing_dir_policy_t::DEV_WARN && (::developer || ::devparm)))
+		{
+			PrintFmt(PRINT_WARNING, "{}: search directory \"{}\" not found\n",
+			         __FUNCTION__, dir);
+		}
+
+		return;
+	}
+
+	if (dir[dir.length() - 1] != PATHSEPCHAR)
+		dir += PATHSEP;
+
+	search_dirs.push_back(dir);
+}
+
+//
 // Res_AddSearchDir
+//
+void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir,
+                      missing_dir_policy_t policy)
+{
+	if (!dir)
+		return;
+
+	Res_AddOneSearchDir(search_dirs, std::string(dir), policy);
+}
+
+void Res_AddSearchDir(std::vector<std::string>& search_dirs, std::string dir,
+                      missing_dir_policy_t policy)
+{
+	Res_AddOneSearchDir(search_dirs, std::move(dir), policy);
+}
+
+//
+// Res_AddSearchDirList
 //
 // denis - Split a new directory string using the separator and append results to the output
 //
-void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir, const char separator)
+void Res_AddSearchDirList(std::vector<std::string>& search_dirs, const char* dirs,
+                          missing_dir_policy_t policy)
 {
-	if (!dir || dir[0] == '\0')
+	if (!dirs)
 		return;
 
-	// search through dwd
-	std::stringstream ss(dir);
+	Res_AddSearchDirList(search_dirs, std::string(dirs), policy);
+}
+
+void Res_AddSearchDirList(std::vector<std::string>& search_dirs, std::string dirs,
+                          missing_dir_policy_t policy)
+{
+	if (dirs.empty())
+		return;
+
+	std::stringstream ss(dirs);
 	std::string segment;
 
 	while (!ss.eof())
 	{
-		std::getline(ss, segment, separator);
-
-		if (segment.empty())
-			continue;
-
-		FixPathSeparator(segment);
-		M_ExpandHomeDir(segment);
-
-		if (segment[segment.length() - 1] != PATHSEPCHAR)
-			segment += PATHSEP;
-
-		search_dirs.push_back(segment);
+		std::getline(ss, segment, SEARCHPATHSEPCHAR);
+		Res_AddOneSearchDir(search_dirs, segment, policy);
 	}
 }
 
@@ -258,6 +310,34 @@ static const char* steam_install_subdirs[] =
 	"steamapps\\common\\ultimate doom\\rerelease",
 };
 
+static registry_value_t gog_doom_plus_doom2 =
+{
+	HKEY_LOCAL_MACHINE,
+	SOFTWARE_KEY "\\GOG.com\\Games\\1413291984",
+	"path",
+};
+
+static registry_value_t gog_doom =
+{
+	HKEY_LOCAL_MACHINE,
+	SOFTWARE_KEY "\\GOG.com\\Games\\1435827232",
+	"path",
+};
+
+static registry_value_t gog_doom2 =
+{
+	HKEY_LOCAL_MACHINE,
+	SOFTWARE_KEY "\\GOG.com\\Games\\1435848814",
+	"path",
+};
+
+static registry_value_t gog_final_doom =
+{
+	HKEY_LOCAL_MACHINE,
+	SOFTWARE_KEY "\\GOG.com\\Games\\1435848742",
+	"path",
+};
+
 
 static char* GetRegistryString(registry_value_t *reg_val)
 {
@@ -316,7 +396,7 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 			else
 			{
 				char* path = unstr + strlen(uninstaller_string);
-				Res_AddSearchDir(search_dirs, path, SEARCHPATHSEPCHAR);
+				Res_AddSearchDir(search_dirs, path);
 			}
 		}
 	}
@@ -332,7 +412,7 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 				                             + strlen(collectors_edition_subdirs[i])
 				                             + 5));
 				sprintf(subpath, "%s\\%s", install_path, collectors_edition_subdirs[i]);
-				Res_AddSearchDir(search_dirs, subpath, SEARCHPATHSEPCHAR);
+				Res_AddSearchDir(search_dirs, subpath);
 				free(subpath);
 			}
 
@@ -350,7 +430,7 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 				char* subpath = static_cast<char*>(malloc(strlen(install_path)
 				                             + strlen(steam_install_subdirs[i]) + 5));
 				sprintf(subpath, "%s\\%s", install_path, steam_install_subdirs[i]);
-				Res_AddSearchDir(search_dirs, subpath, SEARCHPATHSEPCHAR);
+				Res_AddSearchDir(search_dirs, subpath);
 				free(subpath);
 			}
 
@@ -358,26 +438,78 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 		}
 	}
 
+	// Doom on GOG
+	{
+		char* doom_plus_doom2_path = GetRegistryString(&gog_doom_plus_doom2);
+
+		if (doom_plus_doom2_path != NULL)
+		{
+			Res_AddSearchDir(search_dirs, doom_plus_doom2_path);
+			free(doom_plus_doom2_path);
+		}
+
+		char* doom_path = GetRegistryString(&gog_doom);
+
+		if (doom_path != NULL)
+		{
+			Res_AddSearchDir(search_dirs, doom_path);
+			free(doom_path);
+		}
+
+		char* doom2_path = GetRegistryString(&gog_doom2);
+
+		if (doom2_path != NULL)
+		{
+			Res_AddSearchDir(search_dirs, fmt::format("{}\\{}", doom2_path, "doom2"));
+			Res_AddSearchDir(search_dirs, fmt::format("{}\\{}", doom2_path, "master\\wads"));
+			free(doom2_path);
+		}
+
+		char* final_doom_path = GetRegistryString(&gog_final_doom);
+
+		if (final_doom_path != NULL)
+		{
+			Res_AddSearchDir(search_dirs, fmt::format("{}\\{}", final_doom_path, "Plutonia"));
+			Res_AddSearchDir(search_dirs, fmt::format("{}\\{}", final_doom_path, "TNT"));
+			free(final_doom_path);
+		}
+	}
+
 	// DOS Doom via DEICE
-	Res_AddSearchDir(search_dirs, "\\doom2", SEARCHPATHSEPCHAR);    // Doom II
-	Res_AddSearchDir(search_dirs, "\\plutonia", SEARCHPATHSEPCHAR); // Final Doom
-	Res_AddSearchDir(search_dirs, "\\tnt", SEARCHPATHSEPCHAR);
-	Res_AddSearchDir(search_dirs, "\\doom_se", SEARCHPATHSEPCHAR);  // Ultimate Doom
-	Res_AddSearchDir(search_dirs, "\\doom", SEARCHPATHSEPCHAR);     // Shareware / Registered Doom
-	Res_AddSearchDir(search_dirs, "\\dooms", SEARCHPATHSEPCHAR);    // Shareware versions
-	Res_AddSearchDir(search_dirs, "\\doomsw", SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, "\\doom2");    // Doom II
+	Res_AddSearchDir(search_dirs, "\\plutonia"); // Final Doom
+	Res_AddSearchDir(search_dirs, "\\tnt");
+	Res_AddSearchDir(search_dirs, "\\doom_se");  // Ultimate Doom
+	Res_AddSearchDir(search_dirs, "\\doom");     // Shareware / Registered Doom
+	Res_AddSearchDir(search_dirs, "\\dooms");    // Shareware versions
+	Res_AddSearchDir(search_dirs, "\\doomsw");
 #endif	// _WIN32 && !_XBOX
 
 #ifdef UNIX
 	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-	Res_AddSearchDir(search_dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", SEARCHPATHSEPCHAR);
-	Res_AddSearchDir(search_dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex",
+	                 missing_dir_policy_t::DEV_WARN);
+	Res_AddSearchDir(search_dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex",
+	                 missing_dir_policy_t::DEV_WARN);
+	#endif
+	// Search the maintainer-directed data directory for WADs
+	#if defined(ODAMEX_INSTALL_DATADIR)
+	Res_AddSearchDir(search_dirs, ODAMEX_INSTALL_DATADIR, missing_dir_policy_t::DEV_WARN);
 	#endif
 
-	Res_AddSearchDir(search_dirs, "/usr/share/doom", SEARCHPATHSEPCHAR);
-	Res_AddSearchDir(search_dirs, "/usr/share/games/doom", SEARCHPATHSEPCHAR);
-	Res_AddSearchDir(search_dirs, "/usr/local/share/games/doom", SEARCHPATHSEPCHAR);
-	Res_AddSearchDir(search_dirs, "/usr/local/share/doom", SEARCHPATHSEPCHAR);
+	Res_AddSearchDir(search_dirs, "/usr/share/doom", missing_dir_policy_t::DEV_WARN);
+	Res_AddSearchDir(search_dirs, "/usr/share/games/doom", missing_dir_policy_t::DEV_WARN);
+	Res_AddSearchDir(search_dirs, "/usr/local/share/games/doom", missing_dir_policy_t::DEV_WARN);
+	Res_AddSearchDir(search_dirs, "/usr/local/share/doom", missing_dir_policy_t::DEV_WARN);
+	// Flatpak sandbox default directories
+	// (Since you need to pass envvars to a Flatpak)
+	Res_AddSearchDir(search_dirs, "/run/host/usr/share/doom", missing_dir_policy_t::DEV_WARN);
+	Res_AddSearchDir(search_dirs, "/run/host/usr/share/games/doom",
+	                 missing_dir_policy_t::DEV_WARN);
+	Res_AddSearchDir(search_dirs, "/run/host/usr/local/share/games/doom",
+	                 missing_dir_policy_t::DEV_WARN);
+	Res_AddSearchDir(search_dirs, "/run/host/usr/local/share/doom",
+	                 missing_dir_policy_t::DEV_WARN);
 #endif	// UNIX
 }
 
