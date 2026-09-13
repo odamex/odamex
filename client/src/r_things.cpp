@@ -1032,14 +1032,65 @@ struct SpriteClipStats
 {
 	uint64_t	frames;
 	uint64_t	drawsegs;   // summed over frames
+	uint64_t	clipsegs;   // ... of those, the ones that can clip a sprite
 	uint64_t	sprites;    // summed over frames
-	uint64_t	scanned;    // drawsegs visited by R_DrawSprite
-	uint64_t	overlapped; // ... that survived the reject at the top
+	uint64_t	scanned;    // clipseg entries visited by R_DrawSprite
+	uint64_t	overlapped; // ... that overlap the sprite's columns
 	uint32_t	peak_drawsegs;
+	uint32_t	peak_clipsegs;
 	uint32_t	peak_sprites;
 };
 
 SpriteClipStats spriteclip_stats;
+
+
+//
+// clipextent_t
+//
+// A drawseg's screen extent, held apart from drawseg_t so R_DrawSprite's
+// reject test streams 4 bytes per candidate instead of pulling a 72-byte
+// drawseg through the cache to read two of its fields.
+//
+struct clipextent_t
+{
+	int16_t  x1;
+	int16_t  x2;
+};
+
+static_assert(MAXWIDTH <= 32767, "clipextent_t holds screen columns in int16_t");
+
+std::vector<clipextent_t> clipseg_extents;
+std::vector<drawseg_t*>   clipseg_drawsegs;
+
+
+//
+// R_BuildClipSegs
+//
+// Collects the drawsegs that can clip a sprite, newest first so the scan
+// visits them in the same order a backwards walk of the drawseg array would.
+//
+void R_BuildClipSegs()
+{
+	clipseg_extents.clear();
+	clipseg_drawsegs.clear();
+
+	const size_t count = static_cast<size_t>(ds_p - firstdrawseg);
+	clipseg_extents.reserve(count);
+	clipseg_drawsegs.reserve(count);
+
+	for (drawseg_t* ds = ds_p ; ds-- > firstdrawseg ; )
+	{
+		// a drawseg with no silhouette and no masked midtexture can neither
+		// clip a sprite nor be drawn by one
+		if (!(ds->silhouette & SIL_BOTH) && !ds->midposts)
+			continue;
+
+		const clipextent_t extent = { static_cast<int16_t>(ds->x1),
+		                              static_cast<int16_t>(ds->x2) };
+		clipseg_extents.push_back(extent);
+		clipseg_drawsegs.push_back(ds);
+	}
+}
 
 } // namespace
 
@@ -1114,20 +1165,28 @@ void R_DrawSprite (vissprite_t *spr)
 
 	// Scan drawsegs from end to start for obscuring segs.
 	// The first drawseg that has a greater scale is the clip seg.
+	//
+	// The scan walks the clipseg extents rather than the drawsegs themselves -
+	// the vast majority of candidates are rejected on their screen extent
+	// alone, and only the survivors are worth a drawseg's worth of cache.
 
-	// Modified by Lee Killough:
-	// (pointer check was originally nonportable
-	// and buggy, by going past LEFT end of array):
+	const size_t clipsegcount = clipseg_extents.size();
+	const clipextent_t* const extents = clipseg_extents.data();
+	drawseg_t* const* const clipdrawsegs = clipseg_drawsegs.data();
 
-	spriteclip_stats.scanned += static_cast<uint64_t>(ds_p - firstdrawseg);
+	const int sprx1 = spr->x1, sprx2 = spr->x2;
 
-	for (drawseg_t* ds = ds_p ; ds-- > firstdrawseg ; )  // new -- killough
+	spriteclip_stats.scanned += clipsegcount;
+
+	for (size_t seg = 0; seg < clipsegcount; seg++)
 	{
 		// determine if the drawseg obscures the sprite
-		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 || (!(ds->silhouette & SIL_BOTH) && !ds->midposts))
+		if (extents[seg].x1 > sprx2 || extents[seg].x2 < sprx1)
 			continue; // does not cover sprite
 
 		spriteclip_stats.overlapped++;
+
+		drawseg_t* const ds = clipdrawsegs[seg];
 
 		const int r1 = std::max<int>(ds->x1, spr->x1);
 		const int r2 = std::min<int>(ds->x2, spr->x2);
@@ -1181,15 +1240,19 @@ void R_DrawMasked (void)
 	drawseg_t		 *ds;
 
 	R_SortVisSprites ();
+	R_BuildClipSegs();
 
 	{
 		const uint32_t segcount = static_cast<uint32_t>(ds_p - firstdrawseg);
+		const uint32_t clipcount = static_cast<uint32_t>(clipseg_extents.size());
 		const uint32_t sprcount = static_cast<uint32_t>(spritesorter.size());
 
 		spriteclip_stats.frames++;
 		spriteclip_stats.drawsegs += segcount;
+		spriteclip_stats.clipsegs += clipcount;
 		spriteclip_stats.sprites += sprcount;
 		spriteclip_stats.peak_drawsegs = std::max(spriteclip_stats.peak_drawsegs, segcount);
+		spriteclip_stats.peak_clipsegs = std::max(spriteclip_stats.peak_clipsegs, clipcount);
 		spriteclip_stats.peak_sprites = std::max(spriteclip_stats.peak_sprites, sprcount);
 	}
 
@@ -1245,13 +1308,15 @@ BEGIN_COMMAND(drawsegstats)
 	PrintFmt(PRINT_HIGH, "drawsegstats over {} frames:\n", s.frames);
 	PrintFmt(PRINT_HIGH, "  drawsegs/frame   avg {:.0f}   peak {}\n",
 	    static_cast<double>(s.drawsegs) / frames, s.peak_drawsegs);
+	PrintFmt(PRINT_HIGH, "  clipsegs/frame   avg {:.0f}   peak {}\n",
+	    static_cast<double>(s.clipsegs) / frames, s.peak_clipsegs);
 	PrintFmt(PRINT_HIGH, "  sprites/frame    avg {:.0f}   peak {}\n",
 	    static_cast<double>(s.sprites) / frames, s.peak_sprites);
-	PrintFmt(PRINT_HIGH, "  clip scan        avg {:.0f} drawsegs/frame, {:.1f}% overlap a sprite\n",
+	PrintFmt(PRINT_HIGH, "  clip scan        avg {:.0f} entries/frame, {:.1f}% overlap a sprite\n",
 	    scanned, overlap);
-	PrintFmt(PRINT_HIGH, "  scan traffic     {:.2f} MB/frame at {} bytes per drawseg\n",
-	    scanned * static_cast<double>(sizeof(drawseg_t)) / (1024.0 * 1024.0),
-	    static_cast<uint32_t>(sizeof(drawseg_t)));
+	PrintFmt(PRINT_HIGH, "  scan traffic     {:.2f} MB/frame at {} bytes per entry\n",
+	    scanned * static_cast<double>(sizeof(clipextent_t)) / (1024.0 * 1024.0),
+	    static_cast<uint32_t>(sizeof(clipextent_t)));
 
 	spriteclip_stats = SpriteClipStats();
 }
