@@ -168,7 +168,7 @@ BEGIN_COMMAND (randcaps) {
 
 // randomize all players' teams
 // not really finished, yet just the basic stuff needed for friday night fragfest
-nonstd::expected<void, std::string> Pickup_DistributePlayers2() {
+nonstd::expected<void, std::string> Pickup_DistributeAllPlayers() {
 	// This function shouldn't do anything unless you're in a teamgame.
 	if (!G_IsTeamGame()) {
 		return nonstd::make_unexpected("Server is not in a team game.");
@@ -186,34 +186,29 @@ nonstd::expected<void, std::string> Pickup_DistributePlayers2() {
 		return nonstd::make_unexpected("No eligible players for distribution.");
 	}
 
-	// Jumble up our eligible players and cut the number of
-	// eligible players to the passed number.
+	const int teamCount = sv_teamsinplay.asInt();
+	std::vector<team_t> team_order;
+	team_order.reserve(teamCount);
+
+	for (int i = 0; i < teamCount; i++)
+		team_order.push_back(static_cast<team_t>(i));
+
+	// Jumble up our eligible players
 	std::shuffle(eligible.begin(), eligible.end(), rng);
+	// and the teams too, to make sure which team gets an odd one out is random
+	std::shuffle(team_order.begin(), team_order.end(), rng);
 
 	// Rip through our eligible vector, forcing players in the vector
 	// onto alternating teams.
-	team_t dest_team = TEAM_BLUE;
-	size_t i = 0;
-	int teamCount = sv_teamsinplay.asInt();
-	for (auto it = eligible.begin();it != eligible.end();++it,++i) {
-		player_t& player = *it;
+	for (size_t i = 0; i < eligible.size(); i++) {
+		player_t& player = eligible[i];
 
-		// Is the last player an odd-one-out?  Randomize the team he is put on.
-		// TODO: this check only considers 2 team modes
-		// need to do something for when we have 1 or 2 extra players in a 3 team mode
-		if ((eligible.size() % 2) == 1 && i == (eligible.size() - 1))
-			dest_team = (team_t)(M_Random() % teamCount);
-
-		SV_ForceSetTeam(player, dest_team);
+		SV_ForceSetTeam(player, team_order[i % teamCount]);
 		SV_CheckTeam(player);
+
 		for (auto& pit : players) {
 			SV_SendUserInfo(player, &(pit.client));
 		}
-
-		int iTeam = dest_team;
-		iTeam = (iTeam + 1) % teamCount;
-		dest_team = (team_t)iTeam;
-		i++;
 	}
 
 	return {};
