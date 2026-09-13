@@ -164,6 +164,4 @@ extern unsigned int MakeKey (const char *s);
 
 // if non-empty, runs the contents of the cvar
 // with AddCommandString
-//
-// if resend is true, unlatch cvars and send serverinfo to clients
-void C_RunCVarScriptHook(const cvar_t& var, bool resend);
+void C_RunCVarScriptHook(const cvar_t& var);
