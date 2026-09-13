@@ -43,6 +43,7 @@
 #include "p_local.h"
 
 #include "c_console.h"
+#include "c_dispatch.h"
 
 #include "v_video.h"
 
@@ -1018,6 +1019,31 @@ void R_SortVisSprites()
 }
 
 
+// ----------------------------------------------------------------------------
+//
+// Sprite occlusion statistics
+//
+// ----------------------------------------------------------------------------
+
+namespace
+{
+
+struct SpriteClipStats
+{
+	uint64_t	frames;
+	uint64_t	drawsegs;   // summed over frames
+	uint64_t	sprites;    // summed over frames
+	uint64_t	scanned;    // drawsegs visited by R_DrawSprite
+	uint64_t	overlapped; // ... that survived the reject at the top
+	uint32_t	peak_drawsegs;
+	uint32_t	peak_sprites;
+};
+
+SpriteClipStats spriteclip_stats;
+
+} // namespace
+
+
 //
 // R_DrawSprite
 //
@@ -1093,11 +1119,15 @@ void R_DrawSprite (vissprite_t *spr)
 	// (pointer check was originally nonportable
 	// and buggy, by going past LEFT end of array):
 
+	spriteclip_stats.scanned += static_cast<uint64_t>(ds_p - firstdrawseg);
+
 	for (drawseg_t* ds = ds_p ; ds-- > firstdrawseg ; )  // new -- killough
 	{
 		// determine if the drawseg obscures the sprite
 		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 || (!(ds->silhouette & SIL_BOTH) && !ds->midposts))
 			continue; // does not cover sprite
+
+		spriteclip_stats.overlapped++;
 
 		const int r1 = std::max<int>(ds->x1, spr->x1);
 		const int r2 = std::min<int>(ds->x2, spr->x2);
@@ -1152,6 +1182,17 @@ void R_DrawMasked (void)
 
 	R_SortVisSprites ();
 
+	{
+		const uint32_t segcount = static_cast<uint32_t>(ds_p - firstdrawseg);
+		const uint32_t sprcount = static_cast<uint32_t>(spritesorter.size());
+
+		spriteclip_stats.frames++;
+		spriteclip_stats.drawsegs += segcount;
+		spriteclip_stats.sprites += sprcount;
+		spriteclip_stats.peak_drawsegs = std::max(spriteclip_stats.peak_drawsegs, segcount);
+		spriteclip_stats.peak_sprites = std::max(spriteclip_stats.peak_sprites, sprcount);
+	}
+
 	closestNonCredibleVisSprite = nullptr;
 
 	for (auto& vis : std::views::reverse(spritesorter))
@@ -1179,6 +1220,42 @@ void R_DrawMasked (void)
 	// draw the psprites on top of everything
 	R_DrawPlayerSprites();
 }
+
+
+//
+// drawsegstats
+//
+// Reports the sprite clip scan's cost since the last call, then resets.
+//
+BEGIN_COMMAND(drawsegstats)
+{
+	const SpriteClipStats& s = spriteclip_stats;
+
+	if (s.frames == 0)
+	{
+		PrintFmt(PRINT_HIGH, "drawsegstats: nothing rendered since the last reset\n");
+		return;
+	}
+
+	const double frames = static_cast<double>(s.frames);
+	const double scanned = static_cast<double>(s.scanned) / frames;
+	const double overlap = s.scanned ?
+	    100.0 * static_cast<double>(s.overlapped) / static_cast<double>(s.scanned) : 0.0;
+
+	PrintFmt(PRINT_HIGH, "drawsegstats over {} frames:\n", s.frames);
+	PrintFmt(PRINT_HIGH, "  drawsegs/frame   avg {:.0f}   peak {}\n",
+	    static_cast<double>(s.drawsegs) / frames, s.peak_drawsegs);
+	PrintFmt(PRINT_HIGH, "  sprites/frame    avg {:.0f}   peak {}\n",
+	    static_cast<double>(s.sprites) / frames, s.peak_sprites);
+	PrintFmt(PRINT_HIGH, "  clip scan        avg {:.0f} drawsegs/frame, {:.1f}% overlap a sprite\n",
+	    scanned, overlap);
+	PrintFmt(PRINT_HIGH, "  scan traffic     {:.2f} MB/frame at {} bytes per drawseg\n",
+	    scanned * static_cast<double>(sizeof(drawseg_t)) / (1024.0 * 1024.0),
+	    static_cast<uint32_t>(sizeof(drawseg_t)));
+
+	spriteclip_stats = SpriteClipStats();
+}
+END_COMMAND(drawsegstats)
 
 void R_InitParticles (void)
 {
