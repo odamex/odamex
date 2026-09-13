@@ -264,7 +264,7 @@ void G_ChangeMap()
 		}
 
 		// run script at the end of each map
-		C_RunCVarScriptHook(sv_endmapscript, false);
+		C_RunCVarScriptHook(sv_endmapscript);
 	}
 }
 
@@ -284,7 +284,7 @@ void G_ChangeMap(size_t index) {
 	Maplist::instance().set_index(index);
 
 	// run script at the end of each map
-	C_RunCVarScriptHook(sv_endmapscript, false);
+	C_RunCVarScriptHook(sv_endmapscript);
 }
 
 // Determine first map to load on startup
@@ -324,7 +324,7 @@ void G_ChangeMapStartup()
 	}
 
 	// run script at the end of each map
-	C_RunCVarScriptHook(sv_endmapscript, false);
+	C_RunCVarScriptHook(sv_endmapscript);
 }
 
 // Restart the current map.
@@ -333,7 +333,7 @@ void G_RestartMap() {
 	G_DeferedInitNew(level.mapname);
 
 	// run script at the end of each map
-	C_RunCVarScriptHook(sv_endmapscript, false);
+	C_RunCVarScriptHook(sv_endmapscript);
 }
 
 BEGIN_COMMAND (nextmap) {
@@ -360,12 +360,16 @@ void SV_CheckTeam(player_t &pl);
 //
 void G_DoNewGame()
 {
-	// Make sure settings changes from startmapscript have happened
-	// before telling clients to load the new map
 	sv_curmap.ForceSet(d_mapname.c_str());
 
 	// run script at the start of each map
-	C_RunCVarScriptHook(sv_startmapscript, true);
+	C_RunCVarScriptHook(sv_startmapscript);
+
+	// We need to do this before telling clients to load the map
+	// because otherwise they use the old settings when starting the map
+	// and some cvars, e.g. sv_skill, affect map load
+	cvar_t::UnlatchCVars();
+	SV_ServerSettingChange(true);
 
 	// TODO: finish this up and test it more fully
 	EXTERN_CVAR(sv_shuffleteams)
@@ -426,14 +430,10 @@ void G_InitNew(const char *mapname)
 
 	const int old_gametype = sv_gametype.asInt();
 
-	cvar_t::UnlatchCVars ();
-
 	SpreeManager::getInstance().clearSprees();
 
 	if (old_gametype != sv_gametype || sv_gametype != GM_COOP)
 		unnatural_level_progression = true;
-
-	SV_ServerSettingChange(true);
 
 	paused = false;
 
