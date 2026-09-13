@@ -82,6 +82,7 @@ EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(idmypos)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(sv_allowcrosshair)
 
 static int crosshair_lump;
 
@@ -388,6 +389,10 @@ static void HU_DrawCrosshair()
 
 	// Don't draw the crosshair in spectator mode
 	if (camera->player && camera->player->spectator)
+		return;
+
+	// servers can disallow
+	if (connected and not netdemo.isInPlayback() and not sv_allowcrosshair)
 		return;
 
 	if (hud_crosshair && crosshair_lump)
