@@ -583,30 +583,33 @@ struct tallpost_t
 
 struct drawseg_t
 {
-	const seg_t*	curline;
+	const seg_t*  curline;
 
-    int				x1;
-    int				x2;
+	// Pointers to lists for sprite clipping,
+	// all three adjusted so [x1] is first value.
+	const int*    sprtopclip;
+	const int*    sprbottomclip;
+	const palindex_t** midposts;
 
-    fixed_t			scale1;
-    fixed_t			scale2;
-    fixed_t			scalestep;
+	int       x1;
+	int       x2;
 
-	fixed_t			light, lightstep;
+	fixed_t   scale1;
+	fixed_t   scale2;
 
-    // 0=none, 1=bottom, 2=top, 3=both
-    int				silhouette;
+	// 0=none, 1=bottom, 2=top, 3=both
+	int       silhouette;
 
-    // Pointers to lists for sprite clipping,
-    //  all three adjusted so [x1] is first value.
-    const int*		sprtopclip;
-    const int*		sprbottomclip;
-	const palindex_t**	midposts;
+	// only R_RenderMaskedSegRange reads past this point
+
+	fixed_t   scalestep;
+
+	fixed_t   light, lightstep;
 
 	// per-column scales for the masked midtexture, in texture y-scale
 	// space; saved from wallscalex so the masked pass draws with the same
 	// scales R_PrepWall gave the wall tiers
-	fixed_t*		midscales;
+	fixed_t*  midscales;
 };
 
 
