@@ -514,15 +514,23 @@ END_COMMAND (exec)
 
 // denis
 // if cvar eq blah "command";
+// TODO: create temporary unevaluated contexts to allow
+// commands that arent immediately executed, similar to
+// what exec is doing with #if, but without requiring it to be in exec
+// this would allow us to add else and elseif commands, with a then and endif
+// to start them, basically like bash
+// right now conditionals are most useful in exec anyway, but this would also open
+// the door to expanding on aliases and creating functions
 BEGIN_COMMAND (if)
 {
+	// TODO: generalize this into boolean exit codes for all commands
 	if_command_result = false;
 
 	if (argc < 4)
 		return;
 
-	cvar_t *var, *dummy;
-	var = cvar_t::FindCVar (argv[1], &dummy);
+	cvar_t *dummy;
+	const cvar_t* var = cvar_t::FindCVar (argv[1], &dummy);
 
 	if (!var)
 	{
@@ -532,19 +540,146 @@ BEGIN_COMMAND (if)
 
 	std::string op = argv[2];
 
-	if(op == "eq")
+	// TODO: cvar-overhaul branch - add a `compare` virtual method to cvars
+	// that takes a string and use that here instead
+
+	// TODO: allow boolean cvars  to be checked directly without any comparison
+	if (var->m_Flags & CVARTYPE_BOOL)
 	{
-		if_command_result = !strcmp(var->cstring(), argv[3]);
+		std::optional<bool> compval;
+
+		if (strcmp(argv[3], "true") == 0)
+		{
+			compval.emplace(true);
+		}
+		else if (strcmp(argv[3], "false") == 0)
+		{
+			compval.emplace(false);
+		}
+		else
+		{
+			const auto compint = ParseNum<int32_t>(argv[3]);
+			if (compint.has_value() and (compint.value() == 0 or compint.value() == 1))
+			{
+				compval.emplace(static_cast<bool>(compint.value()));
+			}
+		}
+
+		if (not compval.has_value())
+		{
+			PrintFmt(PRINT_HIGH, "if: {} is not a valid boolean\n", argv[3]);
+			return;
+		}
+
+		if (op == "eq")
+		{
+			if_command_result = var->asBool() == *compval;
+		}
+		else if (op == "ne")
+		{
+			if_command_result = var->asBool() != *compval;
+		}
+		else
+		{
+			PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
+			PrintFmt(PRINT_HIGH, "if: boolean operators are eq, ne\n");
+			return;
+		}
 	}
-	else if(op == "ne")
+	else if (var->m_Flags & (CVARTYPE_BYTE | CVARTYPE_WORD | CVARTYPE_INT))
 	{
-		if_command_result = ((strcmp(var->cstring(), argv[3])) != 0);
+		const auto compval = ParseNum<int32_t>(argv[3]);
+		if (not compval.has_value())
+		{
+			PrintFmt(PRINT_HIGH, "if: {} is not a valid integer\n", argv[3]);
+			return;
+		}
+
+		if (op == "eq")
+		{
+			if_command_result = var->asInt() == *compval;
+		}
+		else if (op == "ne")
+		{
+			if_command_result = var->asInt() != *compval;
+		}
+		else if (op == "gt")
+		{
+			if_command_result = var->asInt() > *compval;
+		}
+		else if (op == "lt")
+		{
+			if_command_result = var->asInt() < *compval;
+		}
+		else if (op == "geq")
+		{
+			if_command_result = var->asInt() >= *compval;
+		}
+		else if (op == "leq")
+		{
+			if_command_result = var->asInt() <= *compval;
+		}
+		else
+		{
+			PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
+			PrintFmt(PRINT_HIGH, "if: integer operators are eq, ne, gt, lt, geq, leq\n");
+			return;
+		}
 	}
-	else
+	else if (var->m_Flags & CVARTYPE_FLOAT)
 	{
-		PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
-		PrintFmt(PRINT_HIGH, "if: operators are eq, ne\n");
-		return;
+		// TODO: use ParseNum<float> when merging to protobreak
+		const auto compval = atof(argv[3]);
+
+		if (op == "eq")
+		{
+			if_command_result = var->value() == compval;
+		}
+		else if (op == "ne")
+		{
+			if_command_result = var->value() != compval;
+		}
+		else if (op == "gt")
+		{
+			if_command_result = var->value() > compval;
+		}
+		else if (op == "lt")
+		{
+			if_command_result = var->value() < compval;
+		}
+		else if (op == "geq")
+		{
+			if_command_result = var->value() >= compval;
+		}
+		else if (op == "leq")
+		{
+			if_command_result = var->value() <= compval;
+		}
+		else
+		{
+			PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
+			PrintFmt(PRINT_HIGH, "if: float operators are eq, ne, gt, lt, geq, leq\n");
+			return;
+		}
+	}
+	else // for now just treat NONE and MAX the same as strings
+	{
+		// there's not much of any use currently for ordered comparisons yet
+		// so let's not give them until we have a reason
+		if (op == "eq")
+		{
+			if_command_result = (strcmp(var->cstring(), argv[3]) == 0);
+		}
+		else if (op == "ne")
+		{
+			if_command_result = ((strcmp(var->cstring(), argv[3])) != 0);
+		}
+		else
+		{
+			PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
+			PrintFmt(PRINT_HIGH, "if: string operators are eq, ne\n");
+			return;
+		}
 	}
 
 	if(if_command_result && argc > 4)
@@ -888,6 +1023,39 @@ BEGIN_COMMAND (alias)
 	}
 }
 END_COMMAND (alias)
+
+BEGIN_COMMAND (unalias)
+{
+	if (argc == 1)
+	{
+		PrintFmt(PRINT_HIGH, "Current alias commands:\n");
+		DumpHash(true);
+	}
+	else
+	{
+		auto i = Commands().find(StdStringToLower(argv[1]));
+		if(i != Commands().end())
+		{
+			if(i->second->IsAlias())
+			{
+				// Remove the alias
+				delete i->second;
+				Commands().erase(i);
+			}
+			else
+			{
+				PrintFmt(PRINT_HIGH, "{}: is a command, can not be deleted\n", argv[1]);
+				return;
+			}
+		}
+		else if(argc >= 2)
+		{
+			PrintFmt(PRINT_HIGH, "{}: not an alias\n", argv[1]);
+			return;
+		}
+	}
+}
+END_COMMAND (unalias)
 
 BEGIN_COMMAND (cmdlist)
 {

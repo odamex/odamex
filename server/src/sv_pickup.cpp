@@ -77,21 +77,24 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	std::shuffle(eligible.begin(), eligible.end(), rng);
 	eligible.resize(num_players);
 
+	const int teamCount = sv_teamsinplay.asInt();
+	std::vector<team_t> team_order;
+	team_order.reserve(teamCount);
+
+	for (int i = 0; i < teamCount; i++)
+		team_order.push_back(static_cast<team_t>(i));
+
+	// and the teams too, to make sure which team gets an odd one out is random
+	std::shuffle(team_order.begin(), team_order.end(), rng);
+
 	// Rip through our eligible vector, forcing players in the vector
 	// onto alternating teams.
-	team_t dest_team = TEAM_BLUE;
-	size_t i = 0;
-	int teamCount = sv_teamsinplay.asInt();
-	for (std::vector<player_t*>::iterator it = eligible.begin();it != eligible.end();++it,++i) {
-		player_t &player = **it;
+	for (size_t i = 0; i < eligible.size(); i++) {
+		player_t& player = *eligible[i];
+		const team_t dest_team = team_order[i % teamCount];
 
 		// Force-join the player if he's spectating.
 		SV_SetPlayerSpec(player, false, true);
-
-		// Is the last player an odd-one-out?  Randomize the team he is put on.
-		// Do not randomize if num_players = teamCount for randcaps (3 way ctf)
-		if (static_cast<int>(num_players) != teamCount && (eligible.size() % 2) == 1 && i == (eligible.size() - 1))
-			dest_team = (team_t)(P_Random() % teamCount);
 
 		// Switch player to the proper team, ensure the correct color,
 		// and then update everyone else in the game about it.
@@ -103,14 +106,9 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 
 		SV_ForceSetTeam(player, dest_team);
 		SV_CheckTeam(player);
-		for (Players::iterator pit = players.begin();pit != players.end();++pit) {
-			SV_SendUserInfo(player, &(pit->client));
+		for (auto & pit : players) {
+			SV_SendUserInfo(player, &(pit.client));
 		}
-
-		int iTeam = dest_team;
-		iTeam = (iTeam + 1) % teamCount;
-		dest_team = (team_t)iTeam;
-		i++;
 	}
 
 	// Force-spectate everyone who is not eligible.
@@ -158,7 +156,55 @@ BEGIN_COMMAND (randpickup) {
 
 BEGIN_COMMAND (randcaps) {
 	std::string error;
-	if (!Pickup_DistributePlayers(2, error)) {
+	if (!Pickup_DistributePlayers(sv_teamsinplay.asInt(), error)) {
 		PrintFmt(PRINT_HIGH, "{}\n", error);
 	}
 } END_COMMAND (randcaps)
+
+// randomize all players' teams
+nonstd::expected<void, std::string> Pickup_DistributeAllPlayers() {
+	// This function shouldn't do anything unless you're in a teamgame.
+	if (!G_IsTeamGame()) {
+		return nonstd::make_unexpected("Server is not in a team game.");
+	}
+
+	// Track all eligible players.
+	std::vector<std::reference_wrapper<player_t>> eligible;
+	for (auto& player : players) {
+		if (validplayer(player)) {
+			eligible.emplace_back(player);
+		}
+	}
+
+	if (eligible.empty()) {
+		return nonstd::make_unexpected("No eligible players for distribution.");
+	}
+
+	const int teamCount = sv_teamsinplay.asInt();
+	std::vector<team_t> team_order;
+	team_order.reserve(teamCount);
+
+	for (int i = 0; i < teamCount; i++) {
+		team_order.push_back(static_cast<team_t>(i));
+	}
+
+	// Jumble up our eligible players
+	std::shuffle(eligible.begin(), eligible.end(), rng);
+	// and the teams too, to make sure which team gets an odd one out is random
+	std::shuffle(team_order.begin(), team_order.end(), rng);
+
+	// Rip through our eligible vector, forcing players in the vector
+	// onto alternating teams.
+	for (size_t i = 0; i < eligible.size(); i++) {
+		player_t& player = eligible[i];
+
+		SV_ForceSetTeam(player, team_order[i % teamCount]);
+		SV_CheckTeam(player);
+
+		for (auto& pit : players) {
+			SV_SendUserInfo(player, &(pit.client));
+		}
+	}
+
+	return {};
+}
