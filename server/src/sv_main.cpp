@@ -218,7 +218,7 @@ CVAR_FUNC_IMPL (sv_maxplayersperteam)
 				if (normalcount > var)
 				{
 					SV_SetPlayerSpec(player, true);
-					SV_PlayerPrintFmt(player.id, PRINT_HIGH, "Active player limit reduced. You are now a spectator!\n");
+					SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Active player limit reduced. You are now a spectator!\n");
 				}
 			}
 		}
