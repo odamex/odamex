@@ -602,13 +602,20 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	}
 	else
 	{
-		const double sinang = sin((pl->angle + ANG90) * ANGLE_TO_RAD);
-		const double cosang = cos((pl->angle + ANG90) * ANGLE_TO_RAD);
+		const angle_t rotation = 0u - pl->angle;
+		const double sinang = sin((rotation + ANG90) * ANGLE_TO_RAD);
+		const double cosang = cos((rotation + ANG90) * ANGLE_TO_RAD);
 
-		// Point p is the anchor point of the texture.  It starts out as the
-		// map coordinate (0, 0, planez(0,0)) but texture offset and rotation get applied
-		px = -yoffs * cosang - xoffs * sinang;
-		pz = -xoffs * cosang + yoffs * sinang;
+		if (map_format.getZDoom())
+		{
+			px = yoffs * cosang - xoffs * sinang;
+			pz = xoffs * cosang + yoffs * sinang;
+		}
+		else
+		{
+			px = -xoffs;
+			pz = yoffs;
+		}
 		py = P_PlaneZ(px, pz, &pl->secplane);
 
 		// Point t is the point along the plane (texwidth, 0, planez(texwidth, 0)) with texture
