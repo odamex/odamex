@@ -922,6 +922,14 @@ void G_InitLevelLocals()
 	::level.secretmap = info.secretmap;
 	::level.music = info.music;
 	::level.skypic = info.skypic;
+
+	if (::level.skypic.empty())
+	{
+		LevelInfos& levels = getLevelInfos();
+		if (levels.size() > 0)
+			::level.skypic = levels.at(0).skypic;
+	}
+
 	if (::level.skypic2.empty())
 	{
 		::level.skypic2 = ::level.skypic;

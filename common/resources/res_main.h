@@ -294,6 +294,8 @@ private:
 
 	ResourceCache*					mCache;
 
+	bool							mLoadingResource = false;
+
 };
 
 

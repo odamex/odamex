@@ -754,7 +754,10 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 	sky2texture = Res_CacheTexture(OStringToUpper(sky2_name), WALL);
 
 	if (!sky1texture)
-		I_Error("Invalid sky1 texture \"{}\"", OStringToUpper(sky1_name));
+	{
+		PrintFmt(PRINT_WARNING, "Unnamed sky1 texture not found\n");
+		sky1texture = Res_CacheTexture("-MISSING-", WALL);
+	}
 
 	if (sky2texture && sky1texture->mHeight != sky2texture->mHeight)
 	{

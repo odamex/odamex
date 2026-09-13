@@ -351,7 +351,7 @@ static void HU_InitCrosshair()
 	{
 		const OLumpName xhairname = fmt::format("XHAIR{}", xhairnum);
 
-		crosshair_res_id = Res_GetTextureResourceId(xhairname, GRAPHICS);
+		crosshair_res_id = Res_GetTextureResourceId(xhairname, GRAPHICS, false);
 		if (!Res_CheckResource(crosshair_res_id))
 			crosshair_res_id = Res_GetTextureResourceId("XHAIR1", GRAPHICS);
 	}

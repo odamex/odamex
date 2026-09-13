@@ -435,7 +435,13 @@ const void* ResourceManager::loadResourceData(const ResourceId res_id, zoneTag_e
 		if (!data)
 		{
 			// Read the data if it's not already in the cache
-			DPrintFmt("Resource cache miss for {}\n", OString(getResourcePath(res_id)).c_str());
+			if (!mLoadingResource)
+			{
+				mLoadingResource = true;
+				DPrintFmt("Resource cache miss for {}\n", OString(getResourcePath(res_id)).c_str());
+				mLoadingResource = false;
+			}
+
 			const ResourceRecord* res_rec = getResourceRecord(res_id);
 
 			I_BeginRead();			// indicate to the HUD to draw the loading icon (STDISK)

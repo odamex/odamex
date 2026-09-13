@@ -34,6 +34,7 @@
 #include "olumpname.h"
 
 #include "resources/res_container.h"
+#include "resources/res_main.h"
 
 class ResourceLoader;
 class ResourceManager;
@@ -205,7 +206,7 @@ inline OLumpName W_CheckWidescreenPatch(const OLumpName& lump_main)
 	static constexpr int max_lump_name_length = 8;
 	strncpy(&lump_wide[2], lump_main.data(), max_lump_name_length - 2);
 
-	if (!Res_GetTextureResourceId(OStringToUpper(lump_wide.c_str()), PATCH).empty())
+	if (Res_CheckResource(Res_GetTextureResourceId(OStringToUpper(lump_wide.c_str()), PATCH, false)))
 		return lump_wide;
 
 	return lump_main;
