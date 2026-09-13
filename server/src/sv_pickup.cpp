@@ -54,11 +54,11 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	}
 
 	// Track all eligible players.
-	std::vector<std::reference_wrapper<player_t>> eligible;
+	std::vector<player_t*> eligible;
 	for (auto& player : players) {
 		if (validplayer(player) && player.ingame() &&
 		    (!(player.spectator) || (player.spectator && player.ready))) {
-			eligible.emplace_back(player);
+			eligible.push_back(&player);
 		}
 	}
 
@@ -89,9 +89,9 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 
 	// Rip through our eligible vector, forcing players in the vector
 	// onto alternating teams.
-	for (size_t i = 0; i < eligible.size(); i ++) {
-		player_t &player = eligible[i];
-		team_t dest_team = team_order[i % teamCount];
+	for (size_t i = 0; i < eligible.size(); i++) {
+		player_t& player = *eligible[i];
+		const team_t dest_team = team_order[i % teamCount];
 
 		// Force-join the player if he's spectating.
 		SV_SetPlayerSpec(player, false, true);
