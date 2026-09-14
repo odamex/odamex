@@ -29,6 +29,8 @@
 #include <assert.h>
 #include <cmath>
 #include <algorithm>
+#include <map>
+#include <tuple>
 
 #include "i_sdl.h"
 #include "r_intrin.h"
@@ -48,6 +50,8 @@
 
 EXTERN_CVAR(r_forceenemycolor)
 EXTERN_CVAR(r_forceteamcolor)
+EXTERN_CVAR(r_enemycolor)
+EXTERN_CVAR(r_teamcolor)
 
 // status bar height at bottom of screen
 // [RH] status bar position at bottom of screen
@@ -486,6 +490,9 @@ void R_InitTranslationTables()
 	R_BuildFontTranslation(CR_PURPLE,	argb_t(0xCF, 0x00, 0xCF), argb_t(0x23, 0x00, 0x23));
 	R_BuildFontTranslation(CR_DARKGRAY,	argb_t(0x8B, 0x8B, 0x8B), argb_t(0x23, 0x23, 0x23));
 	R_BuildFontTranslation(CR_CYAN,		argb_t(0x00, 0xF0, 0xF0), argb_t(0x00, 0x1F, 0x1F));
+
+	R_ExpireTranslations(TRANSLIFE_WAD);
+	R_RebuildTranslations();
 }
 
 void R_FreeTranslationTables (void)
@@ -570,6 +577,89 @@ CVAR_FUNC_IMPL(cl_customcolor)
 	cl_color.ForceSet(var.cstring());
 }
 
+//
+// R_GetPlayerDrawColor
+//
+// The color a player is drawn in, once the game mode and the r_force*color
+// cvars have had their say.
+// isconsoleplayer is asked because playerids are recycled between the players
+// who hold them (depending on connect/disconnect during a game).
+argb_t R_GetPlayerDrawColor(argb_t user_color, team_t team, bool isconsoleplayer)
+{
+	argb_t base_color(255, user_color.getr(), user_color.getg(), user_color.getb());
+	const argb_t shade_color = base_color;
+
+	bool teammate = false;
+	if (G_IsCoopGame())
+		teammate = true;
+	if (G_IsFFAGame())
+		teammate = false;
+	if (G_IsTeamGame())
+	{
+		// P_AreTeammates, spelled out against a bare team rather than a player.
+		teammate = !isconsoleplayer && (G_IsCoopGame() || team == consoleplayer().userinfo.team);
+		base_color = GetTeamInfo(team)->Color;
+	}
+	if (!isconsoleplayer && !consoleplayer().spectator)
+	{
+		if (r_forceteamcolor && teammate)
+			base_color = V_GetColorFromString(r_teamcolor);
+		else if (r_forceenemycolor && !teammate)
+			base_color = V_GetColorFromString(r_enemycolor);
+	}
+
+	return V_ShadePlayerColor(base_color, shade_color);
+}
+
+// Recolor a palette range towards a given color range, writing the
+//		8bpp remap into table and the matching 32bpp colors into rgb, which is
+//		indexed starting from rgb_base rather than from zero.
+void R_BuildColorRamp(argb_t dest_color, palindex_t start, palindex_t end,
+                             palindex_t* table, argb_t* rgb, palindex_t rgb_base)
+{
+	const palette_t* pal = V_GetDefaultPalette();
+
+	constexpr float ramp_length = 16.0f;
+	constexpr float sat_offset = 0.23f;
+	constexpr float val_offset = 0.1f;
+	constexpr float sat_step = 0.014375f;
+	constexpr float val_step = -0.05882f;
+
+	const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
+	const float h = hsv_temp.geth();
+	float s = std::max(hsv_temp.gets() - sat_offset, 0.0f);
+	float v = std::min(hsv_temp.getv() + val_offset, 1.0f);
+
+	const float scale = ramp_length / static_cast<float>(end - start + 1);
+	float sdelta = sat_step * scale;
+	float vdelta = val_step * scale;
+
+	const int last = end;
+	for (int i = start; i <= last; i++)
+	{
+		argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
+		color.seta(255);
+
+		// Set up RGB values for 32bpp translation:
+		rgb[i - rgb_base] = color;
+		table[i] = V_BestColor(pal->basecolors, color);
+
+		s += sdelta;
+		if (s > 1.0f)
+		{
+			s = 1.0f;
+			sdelta = 0.0f;
+		}
+
+		v += vdelta;
+		if (v < 0.0f)
+		{
+			v = 0.0f;
+			vdelta = 0.0f;
+		}
+	}
+}
+
 // [RH] Create a player's translation table based on
 //		a given mid-range color.
 void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
@@ -578,48 +668,259 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
 	{
 		return R_BuildClassicPlayerTranslation(player, colorpreset);
 	}
-	else
+
+	R_BuildColorRamp(dest_color, PLAYER_COLOR_START, PLAYER_COLOR_END,
+	                 &translationtables[static_cast<ptrdiff_t>(player) * 256],
+	                 translationRGB[player], PLAYER_COLOR_START);
+}
+
+void R_ClearTranslation(translationtable_t& tlate)
+{
+	for (size_t i = 0; i < tlate.remap.size(); i++)
+		tlate.remap[i] = static_cast<palindex_t>(i);
+
+	tlate.rgb.fill(argb_t(0, 0, 0, 0));
+}
+
+void R_BuildTranslationRamp(translationtable_t& tlate, palindex_t start, palindex_t end,
+                            argb_t dest_color)
+{
+	R_BuildColorRamp(dest_color, start, end, tlate.remap.data(), tlate.rgb.data(), 0);
+}
+
+void R_BuildTranslationGradient(translationtable_t& tlate, const palindex_t* src, size_t count,
+                                argb_t start_color, argb_t end_color)
+{
+	if (count == 0)
+		return;
+
+	const palette_t* pal = V_GetDefaultPalette();
+
+	const int range = static_cast<int>(count);
+	const int r_diff = end_color.getr() - start_color.getr();
+	const int g_diff = end_color.getg() - start_color.getg();
+	const int b_diff = end_color.getb() - start_color.getb();
+
+	for (int step = 0; step < range; step++)
 	{
-		const palette_t* pal = V_GetDefaultPalette();
-		byte* table = &translationtables[player * 256];
+		const argb_t color(start_color.getr() + ((step * r_diff) / range),
+		                   start_color.getg() + ((step * g_diff) / range),
+		                   start_color.getb() + ((step * b_diff) / range));
 
-		const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
-		const float h = hsv_temp.geth();
-		float s = hsv_temp.gets(), v = hsv_temp.getv();
+		const palindex_t index = src[step];
+		tlate.rgb[index] = color;
+		tlate.remap[index] = V_BestColor(pal->basecolors, color);
+	}
+}
 
-		s -= 0.23f;
-		if (s < 0.0f)
-			s = 0.0f;
-		float sdelta = 0.014375f;
+void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, palindex_t end,
+                                argb_t start_color, argb_t end_color)
+{
+	std::array<palindex_t, 256> src{};
+	const size_t count = end - start + 1;
 
-		v += 0.1f;
-		if (v > 1.0f)
-			v = 1.0f;
-		float vdelta = -0.05882f;
+	for (size_t i = 0; i < count; i++)
+		src[i] = static_cast<palindex_t>(start + i);
 
-		for (int i = 0x70; i < 0x80; i++)
+	R_BuildTranslationGradient(tlate, src.data(), count, start_color, end_color);
+}
+
+//
+// R_SampleLuminosity
+//
+// Walks the pixels of patches and reports which palette indices it actually
+// uses, sorting by darkest first.
+//
+void R_SampleLuminosity(const patch_t* const* patches, size_t count, std::vector<palindex_t>& out)
+{
+	std::array<bool, 256> used{};
+
+	for (size_t i = 0; i < count; i++)
+	{
+		const patch_t* patch = patches[i];
+		if (patch == nullptr)
+			continue;
+
+		for (int col = 0; col < patch->width(); col++)
 		{
-			const argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
+			// A need to view this as a byte buffer with an offset.
+			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+			const auto* post = reinterpret_cast<const tallpost_t*>(
+			    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+			    reinterpret_cast<const byte*>(patch) + LELONG(patch->columnofs[col]));
 
-			// Set up RGB values for 32bpp translation:
-			translationRGB[player][i - 0x70] = color;
-			table[i] = V_BestColor(pal->basecolors, color);
-
-			s += sdelta;
-			if (s > 1.0f)
+			while (!post->end())
 			{
-				s = 1.0f;
-				sdelta = 0.0f;
-			}
+				const byte* data = post->data();
+				for (unsigned int pixel = 0; pixel < post->length; pixel++)
+					used[data[pixel]] = true;
 
-			v += vdelta;
-			if (v < 0.0f)
-			{
-				v = 0.0f;
-				vdelta = 0.0f;
+				post = post->next();
 			}
 		}
 	}
+
+	out.clear();
+	for (int i = 0; i < 256; i++)
+	{
+		if (used[i])
+			out.push_back(static_cast<palindex_t>(i));
+	}
+
+	const palette_t* pal = V_GetDefaultPalette();
+	std::ranges::stable_sort(out, [pal](palindex_t a, palindex_t b) {
+		return V_Luminance(pal->basecolors[a]) < V_Luminance(pal->basecolors[b]);
+	});
+}
+
+//
+// Shared translations
+//
+// Entries are keyed on the recipe that built them, which is also what lets them
+// be rebuilt in place when the palette changes.
+//
+// The map owns the tables that translationrefs point into, so it has to be a
+// container with stable references - a ref outlives any number of later insertions.
+//
+namespace
+{
+enum translationkind_t
+{
+	TRANSLATE_RAMP,
+	TRANSLATE_GRADIENT,
+	TRANSLATE_PLAYER,
+};
+
+struct translationrecipe_t
+{
+	translationkind_t kind;
+	palindex_t        start;
+	palindex_t        end;
+	uint32_t          color;
+	uint32_t          endcolor;
+	int               team;   // TRANSLATE_PLAYER: who they were, so that
+	bool              isself; // R_GetPlayerDrawColor can be redone on demand
+
+	bool operator<(const translationrecipe_t& other) const
+	{
+		return std::tie(kind, start, end, color, endcolor, team, isself) <
+		       std::tie(other.kind, other.start, other.end, other.color, other.endcolor,
+		                other.team, other.isself);
+	}
+};
+
+struct cachedtranslation_t
+{
+	translationtable_t table;
+	translationlife_t life = translationlife_t::TRANSLIFE_MAP;
+};
+
+using translationcache_t = std::map<translationrecipe_t, cachedtranslation_t>;
+
+// Built on first use rather than during static initialization, so that a throw
+// while constructing it is catchable.
+translationcache_t& CachedTranslations()
+{
+	static translationcache_t cachedtranslations;
+	return cachedtranslations;
+}
+
+void R_BuildRecipe(translationtable_t& tlate, const translationrecipe_t& recipe)
+{
+	R_ClearTranslation(tlate);
+
+	switch (recipe.kind)
+	{
+	case TRANSLATE_RAMP:
+		R_BuildTranslationRamp(tlate, recipe.start, recipe.end, recipe.color);
+		break;
+	case TRANSLATE_GRADIENT:
+		R_BuildTranslationGradient(tlate, recipe.start, recipe.end, recipe.color,
+		                           recipe.endcolor);
+		break;
+	case TRANSLATE_PLAYER:
+		R_BuildTranslationRamp(tlate, recipe.start, recipe.end,
+		                       R_GetPlayerDrawColor(recipe.color,
+		                                            static_cast<team_t>(recipe.team),
+		                                            recipe.isself));
+		break;
+	}
+}
+
+translationref_t R_GetTranslation(translationlife_t life, const translationrecipe_t& recipe)
+{
+	translationcache_t& cache = CachedTranslations();
+
+	auto it = cache.find(recipe);
+	if (it == cache.end())
+	{
+		it = cache.emplace(recipe, cachedtranslation_t()).first;
+		it->second.life = life;
+		R_BuildRecipe(it->second.table, recipe);
+	}
+	else if (it->second.life < life)
+	{
+		// Someone needs this to outlast whoever asked for it first.
+		it->second.life = life;
+	}
+
+	return it->second.table.ref();
+}
+} // namespace
+
+translationref_t R_GetRampTranslation(translationlife_t life, palindex_t start, palindex_t end,
+                                      argb_t color)
+{
+	return R_GetTranslation(life, {.kind = TRANSLATE_RAMP,
+	                               .start = start,
+	                               .end = end,
+	                               .color = color,
+	                               .endcolor = 0,
+	                               .team = TEAM_NONE,
+	                               .isself = false});
+}
+
+translationref_t R_GetPlayerTranslation(translationlife_t life, argb_t user_color, team_t team,
+                                        bool isconsoleplayer)
+{
+	return R_GetTranslation(life, {.kind = TRANSLATE_PLAYER,
+	                               .start = PLAYER_COLOR_START,
+	                               .end = PLAYER_COLOR_END,
+	                               .color = user_color,
+	                               .endcolor = 0,
+	                               .team = team,
+	                               .isself = isconsoleplayer});
+}
+
+translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t start,
+                                          palindex_t end, argb_t start_color, argb_t end_color)
+{
+	return R_GetTranslation(life, {.kind = TRANSLATE_GRADIENT,
+	                               .start = start,
+	                               .end = end,
+	                               .color = start_color,
+	                               .endcolor = end_color,
+	                               .team = TEAM_NONE,
+	                               .isself = false});
+}
+
+void R_ExpireTranslations(translationlife_t life)
+{
+	translationcache_t& cache = CachedTranslations();
+
+	for (auto it = cache.begin(); it != cache.end();)
+	{
+		if (it->second.life <= life)
+			it = cache.erase(it);
+		else
+			++it;
+	}
+}
+
+void R_RebuildTranslations()
+{
+	for (auto& [recipe, cached] : CachedTranslations())
+		R_BuildRecipe(cached.table, recipe);
 }
 
 

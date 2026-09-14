@@ -846,6 +846,15 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	mo->UpdateActorLists();
 
+	if (msg->has_corpse_color())
+	{
+		mo->corpse_color = msg->corpse_color();
+		mo->corpse_team = static_cast<team_t>(msg->corpse_team());
+
+		mo->translation =
+		    R_GetCorpseTranslation(mo->corpse_color, mo->corpse_team, mo->corpse_isself);
+	}
+
 	if (msg->spawn_flags() & SVC_SM_CORPSE)
 	{
 		int frame = msg->current().frame();
@@ -1023,6 +1032,7 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	::teleported_players.clear();
 
 	CL_ClearSectorSnapshots();
+	R_ExpireTranslations(TRANSLIFE_MAP);
 	for (auto& player : players)
 		player.snapshots.clearSnapshots();
 
