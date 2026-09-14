@@ -1666,7 +1666,9 @@ odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree)
 	return msg;
 }
 
-odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType)
+odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker,
+                                            const int level,
+                                            const SpreeBreakerType breakerType)
 {
 	odaproto::svc::SpreeBreaker msg;
 

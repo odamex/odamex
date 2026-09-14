@@ -526,6 +526,8 @@ void HU_Drawer()
 	{
 		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
 
+		hud::ResetMessageColumn();
+
 		hud::DrawToasts();
 
 		if ((viewactive && !R_StatusBarVisible()) || spechud)
