@@ -117,12 +117,8 @@ void DThinker::Orphan()
 	refCount = 0;
 }
 
-void DThinker::Destroy ()
+void DThinker::Unlink()
 {
-	// denis - allow this function to be safely called multiple times
-	if(destroyed)
-		return;
-
 	if (FirstThinker == this)
 		FirstThinker = m_Next;
 	if (LastThinker == this)
@@ -131,6 +127,50 @@ void DThinker::Destroy ()
 		m_Next->m_Prev = m_Prev;
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
+
+	m_Next = nullptr;
+	m_Prev = nullptr;
+}
+
+void DThinker::SpliceBefore(DThinker* io_node)
+{
+	if (io_node)
+	{
+		Unlink();
+
+		if (FirstThinker == io_node)
+		{
+			FirstThinker = this;
+		}
+		m_Next = io_node;
+		m_Prev = io_node->m_Prev;
+		io_node->m_Prev = this;
+	}
+}
+
+void DThinker::SpliceAfter(DThinker* io_node)
+{
+	if (io_node)
+	{
+		Unlink();
+
+		if (LastThinker == io_node)
+		{
+			LastThinker = this;
+		}
+		m_Next = io_node->m_Next;
+		m_Prev = io_node;
+		io_node->m_Next = this;
+	}
+}
+
+void DThinker::Destroy ()
+{
+	// denis - allow this function to be safely called multiple times
+	if(destroyed)
+		return;
+
+	Unlink();
 
 	if (m_optionalVectorIndex.has_value())
 	{

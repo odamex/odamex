@@ -81,6 +81,12 @@ public:
 	size_t refCount;
 
 	static const std::vector<DThinker*>& GetThinkerVectorRef() { return s_thinkers; }
+
+protected:
+	void Unlink();
+	void SpliceBefore(DThinker* io_node);
+	void SpliceAfter(DThinker* io_node);
+
 private:
 
 	static std::vector<DThinker*> s_thinkers;
