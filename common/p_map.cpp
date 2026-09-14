@@ -1399,7 +1399,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 	ceilingline = BlockingLine = NULL;
 
   // dont increment this when spawning, bc not using P_BlockLinesIterator
-  if (not isSpawnCheck || demoplayback)
+  if (not isSpawnCheck or demoplayback)
 	  validcount++;
 
 	spechit.clear();
@@ -1499,7 +1499,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 
 	// skip this during a spawn check (player is not moving)
 	// allows spawns that are touching blocking lines to work
-	if (not isSpawnCheck || demoplayback)
+	if (not isSpawnCheck or demoplayback)
 	{
 		// check lines
 		xl = (tmbbox[BOXLEFT] - blockmap.originx()) >> MAPBLOCKSHIFT;
@@ -1512,11 +1512,11 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y, bool isSpawnCheck)
 		// i think this is safe to enable always (except for demo playback of course)
 		// but if it turns out to cause issues with vanilla or boom maps,
 		// we should change it to rely on co_mbfphys
-		const bool tmunstuck = (thing->player != nullptr) && !P_IsVoodooDoll(thing) && !demoplayback;
+		const bool tmunstuck = (thing->player != nullptr) and not P_IsVoodooDoll(thing) and not demoplayback;
 
 		for (int bx = xl; bx <= xh; bx++)
 			for (int by = yl; by <= yh; by++)
-				if (!P_BlockLinesIterator(bx, by, PIT_CheckLine, tmunstuck))
+				if (not P_BlockLinesIterator(bx, by, PIT_CheckLine, tmunstuck))
 					return false;
 	}
 
