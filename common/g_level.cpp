@@ -39,6 +39,7 @@
 #include "i_system.h"
 #include "p_acs.h"
 #include "p_local.h"
+#include "p_localhistory.h"
 #include "p_saveg.h"
 #include "p_unlag.h"
 #include "r_data.h"
@@ -970,6 +971,7 @@ void G_InitLevelLocals()
 	::level.detected_gametype = GM_COOP;
 
 	movingsectors.clear();
+	LocalSectorHistory::getInstance().clear();
 }
 
 static void MapinfoHelp()
