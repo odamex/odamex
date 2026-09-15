@@ -62,6 +62,7 @@ END_DISABLE_WARNING_GNU
 #include "g_episode.h"
 #include "g_skill.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -392,7 +393,7 @@ void G_DoNewGame()
 		if(!(player.ingame()))
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(),
+		player.client.messenger->Reliable().Write (
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
 	}
 
@@ -682,7 +683,7 @@ void G_DoResetLevel(bool full_reset)
 			continue;
 
 		client_t* cl = &(player.client);
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), odaproto::svc::ResetMap());
+		cl->messenger->Reliable().Write (odaproto::svc::ResetMap());
 	}
 
 	// Unserialize saved snapshot
@@ -718,6 +719,9 @@ void G_DoResetLevel(bool full_reset)
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
 	itemrespawnque = {};
+
+	// A reset puts everyone back on a player start.
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Clear player information.
 	for (auto& player : players)
@@ -839,6 +843,9 @@ void G_DoLoadLevel (int position)
 	else
 		sky2texture = 0;
 
+	// Clear death spots as we're on a new map.
+	DeathSpotManager::getInstance().clearDeathSpots();
+
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->ingame() && (::g_resetinvonexit || it->playerstate == PST_DEAD))
@@ -858,7 +865,7 @@ void G_DoLoadLevel (int position)
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
 			{
-				MSG_WriteSVC(pit->client.messenger->ReliableBuf(),
+				pit->client.messenger->Reliable().Write (
 				             SVC_PlayerMembers(*it, SVC_PM_READY));
 			}
 		}

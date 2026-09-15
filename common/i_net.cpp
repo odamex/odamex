@@ -71,7 +71,7 @@ typedef int SOCKET;
 
 #include "i_system.h"
 #include "i_net.h"
-#include "msg_map.h"
+#include "msg_pack.h"
 #include "d_player.h"
 #include "m_alloc.h"
 
@@ -565,86 +565,6 @@ void MSG_WriteChunk (buf_t *b, const void *p, size_t l)
 	b->WriteChunk(static_cast<const char*>(p), l);
 }
 
-namespace
-{
-	void WriteMiniHeader(buf_t& b, msg_t messageId, const void* data, size_t length)
-	{
-		b.WriteUnVarint(messageId);
-		b.WriteUnVarint(length);
-		b.WriteChunk(data, length);
-	}
-}
-
-void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
-{
-	if (simulated_connection)
-		return;
-
-	static std::string buffer;
-	if (!msg.SerializeToString(&buffer))
-	{
-		PrintFmt(
-		    PRINT_WARNING,
-		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name());
-		return;
-	}
-
-	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
-	if (header == msg_noop)
-	{
-		PrintFmt(PRINT_WARNING,
-		         "WARNING: Could not find svc header for message \"{}\".  This is most "
-		         "likely a bug.\n",
-		         msg.GetDescriptor()->full_name());
-		return;
-	}
-
-#if 0
-	PrintFmt("{} ({})\n, {}\n",
-		::msg_info[header].getName(), msg.ByteSize(),
-		msg.ShortDebugString());
-#endif
-
-	WriteMiniHeader(*b, header, buffer.data(), buffer.size());
-}
-
-void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
-{
-	if (simulated_connection)
-		return;
-
-	std::string& buffer = io_queue.GetSerializationBufferRef();
-	if (!msg.SerializeToString(&buffer))
-	{
-		PrintFmt(
-		    PRINT_WARNING,
-		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name());
-		return;
-	}
-
-	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
-	if (header == msg_noop)
-	{
-		PrintFmt(PRINT_WARNING,
-		         "WARNING: Could not find svc header for message \"{}\".  This is most "
-		         "likely a bug.\n",
-		         msg.GetDescriptor()->full_name());
-		return;
-	}
-
-#if 0
-	PrintFmt("{} ({})\n, {}\n",
-		::msg_info[header].getName(), msg.ByteSize(),
-		msg.ShortDebugString());
-#endif
-
-	buf_t& b = io_queue.Obtain();
-
-	WriteMiniHeader(b, header, buffer.data(), buffer.size());
-}
-
 /**
  * @brief Broadcast message to all players.
  *
@@ -659,37 +579,22 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		return;
 
 	static std::string buffer;
-	if (!msg.SerializeToString(&buffer))
+
+	if (const auto messageId = MSG_Pack(buffer, msg))
 	{
-		PrintFmt(
-		    PRINT_WARNING,
-		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name());
-		return;
-	}
+		for (auto& player : players)
+		{
+			if (!player.ingame())
+				continue;
 
-	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
-	if (header == msg_noop)
-	{
-		PrintFmt(PRINT_WARNING,
-		         "WARNING: Could not find svc header for message \"{}\".  This is most "
-		         "likely a bug.\n",
-		         msg.GetDescriptor()->full_name());
-		return;
-	}
+			if (std::cmp_equal(player.id, skipPlayer))
+				continue;
 
-	for (auto& player : players)
-	{
-		if (!player.ingame())
-			continue;
+			// Select the correct queue.
+			MessageQueue& queue = buf == CLBUF_RELIABLE ? player.client.messenger->Reliable() : player.client.messenger->BestEffort();
 
-		if (static_cast<int>(player.id) == skipPlayer)
-			continue;
-
-		// Select the correct buffer.
-		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger->ReliableBuf().Obtain() : player.client.messenger->NetBuf().Obtain();
-
-		WriteMiniHeader(b, header, buffer.data(), buffer.size());
+			queue.Write(*messageId, buffer);
+		}
 	}
 }
 

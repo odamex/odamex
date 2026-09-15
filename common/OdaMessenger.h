@@ -173,7 +173,7 @@ class OdaMessenger
 				Sender(Sender&&)            = delete;
 				Sender& operator=(Sender&&) = delete;
 
-				/// Assembles the messages queued up via HighBuf() into packets and sends them.  If the tic budget is
+				/// Assembles the messages queued up via HighPriority() into packets and sends them.  If the tic budget is
 				/// exhausted, then the remaining HighPriority content remains enqueued for subsequent Send calls.
 				///
 				/// Returns the number of bytes sent.
@@ -190,9 +190,9 @@ class OdaMessenger
 				/// Returns the number of bytes sent as part of this retransmission cycle.
 				size_t SendRetransmissions() { return m_messengerRef.SendRetransmissions (m_currentTic, m_dest); }
 
-				/// Assembles the messages queued up via ReliableBuf and NetBuf into packets and sends them.  If the
+				/// Assembles the messages queued up via Reliable() and BestEffort() into packets and sends them.  If the
 				/// tic budget is exhausted, then the remaining Reliable content remains enqueued for subsequent Send
-				/// calls, but the NetBuf / best-effort messages are discarded.
+				/// calls, but the best-effort messages are discarded.
 				///
 				/// Return values:
 				///  ACCEPT - Normal result: Packet(s) were sent as needed without hitting a cap.
@@ -216,9 +216,9 @@ class OdaMessenger
 
 		/// Return the requested message queue.  Use these queues to Obtain new messages into which to pack
 		/// new outgoing data.
-		MessageQueue& ReliableBuf() { return m_outgoingReliableQueue; }
-		MessageQueue& NetBuf() { return m_outgoingNonReliableQueue; }
-		MessageQueue& HighBuf() { return m_outgoingHighNonReliableQueue; }
+		MessageQueue& Reliable() { return m_outgoingReliableQueue; }
+		MessageQueue& BestEffort() { return m_outgoingNonReliableQueue; }
+		MessageQueue& HighPriority() { return m_outgoingHighNonReliableQueue; }
 
 		/// Discard all outgoing data that has yet to be sent.
 		void Clear()

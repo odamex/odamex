@@ -811,8 +811,6 @@ void D_Shutdown()
 
 	HU_Shutdown();
 
-	C_ShutdownConCharsFont();
-
 	C_ShutdownConsoleBackground();
 
 	R_Shutdown();

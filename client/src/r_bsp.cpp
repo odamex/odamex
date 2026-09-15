@@ -236,8 +236,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 	// Gate r_fakingunderwater to only apply to heightsecs with
 	// possible deep water, since it applies to every heightsec in frame.
-	bool underwater = (r_fakingunderwater && s->floorheight > sec->floorheight) ||
-		(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));
+	const bool underwater = (r_fakingunderwater and P_FloorHeight(s) >P_FloorHeight(sec)) or
+		(heightsec and viewz <= P_FloorHeight(viewx, viewy, heightsec));
 	bool doorunderwater = false;
 	int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
 
@@ -305,7 +305,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	// sectors at the same time.
 
 	if (back && !r_fakingunderwater && curline->frontsector->heightsec == NULL &&
-		s->floorheight > sec->floorheight)
+		P_FloorHeight(s) > P_FloorHeight(sec))
 	{
 		fixed_t fcz1 = P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector);
 		fixed_t fcz2 = P_CeilingHeight(curline->v2->x, curline->v2->y, frontsector);
@@ -747,6 +747,7 @@ void R_Subsector (int num)
 
 	ceilingplane = P_CeilingHeight(viewx, viewy, frontsector) > viewz ||
 		R_IsSkyFlat(frontsector->ceilingpic) ||
+		R_IsStackBoundary(frontsector->SkyboxCeiling) ||
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		R_IsSkyFlat(frontsector->heightsec->floorpic)) ?
@@ -767,6 +768,7 @@ void R_Subsector (int num)
 	// killough 3/16/98: add floorlightlevel
 	// killough 10/98: add support for skies transferred from sidedefs
 	floorplane = P_FloorHeight(viewx, viewy, frontsector) < viewz || // killough 3/7/98
+		R_IsStackBoundary(frontsector->SkyboxFloor) ||
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		R_IsSkyFlat(frontsector->heightsec->ceilingpic)) ?

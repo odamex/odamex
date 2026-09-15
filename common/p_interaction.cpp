@@ -73,9 +73,6 @@ EXTERN_CVAR(g_lives)
 // sapientlion - experimental
 EXTERN_CVAR(sv_weapondrop)
 
-// TODO: does this need to be global?
-int MeansOfDeath;
-
 // a weapon is found with two clip loads,
 // a big item has five clip loads
 std::array<int, NUMAMMO> maxammo  {200, 50, 300, 50};
@@ -108,7 +105,7 @@ static void PersistPlayerDamage(const player_t& p)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		player.client.messenger->Reliable().Write(SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
 }
 
@@ -135,7 +132,7 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerMembers(p, flags));
+		player.client.messenger->Reliable().Write(SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -150,7 +147,7 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(player.client.messenger->NetBuf(), SVC_TeamMembers(team));
+		player.client.messenger->Reliable().Write( SVC_TeamMembers(team));
 	}
 }
 
@@ -621,6 +618,7 @@ ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power)
 
 #include "v_textcolors.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 #include "g_spree.h"
 
 	/*
@@ -669,7 +667,7 @@ static void P_ResurrectPlayerPowerUp(player_t& player)
 	                   player.userinfo.netname, pl->userinfo.netname);
 
 	// Send a res sound directly to this player.
-	MSG_WriteSVC(pl->client.messenger->ReliableBuf(), SVC_PlayerInfo(*pl));
+	pl->client.messenger->Reliable().Write(SVC_PlayerInfo(*pl));
 	S_PlayerSound(pl, NULL, CHAN_INTERFACE, "misc/plraise", ATTN_NONE);
 
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(*pl, SVC_PM_LIVES),
@@ -692,7 +690,7 @@ static void P_AwardExtraLifePowerUp(player_t& player)
 	                   player.userinfo.netname);
 
 	player.lives += 1;
-	MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_PlayerInfo(player));
+	player.client.messenger->Reliable().Write(SVC_PlayerInfo(player));
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(player, SVC_PM_LIVES),
 	                 player.id);
 }
@@ -1517,13 +1515,18 @@ void SexMessage (const char *from, char *to, gender_t gender, std::string_view v
 	} while (*from++);
 }
 
+namespace
+{
+
 //
 // [RH]
 // ClientObituary: Show a message when a player dies
 //
-static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker)
+void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker, int mod)
 {
-	char gendermessage[1024];
+	// sexmessage properly initializes it
+	// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+	std::array<char, 1024> gendermessage;
 
 	if (!self || !self->player)
 		return;
@@ -1536,17 +1539,16 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 
 	// Treat voodoo dolls as unknown deaths
 	if (inflictor && inflictor->player == self->player)
-		MeansOfDeath = MOD_UNKNOWN;
+		mod = MOD_UNKNOWN;
 
+	bool friendly = false;
 	if (G_IsCoopGame())
-		MeansOfDeath |= MOD_FRIENDLY_FIRE;
+		friendly = true;
 
 	if (G_IsTeamGame() && attacker && attacker->player &&
 	    self->player->userinfo.team == attacker->player->userinfo.team)
-		MeansOfDeath |= MOD_FRIENDLY_FIRE;
+		friendly = true;
 
-	bool friendly = MeansOfDeath & MOD_FRIENDLY_FIRE;
-	int mod = MeansOfDeath & ~MOD_FRIENDLY_FIRE;
 	const char* message = NULL;
 	OString messagename;
 
@@ -1708,9 +1710,10 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 
 	if (message)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
+		// TODO: don't use .data and add a proper bounds check to sexmessage
+		SexMessage(message, gendermessage.data(), gender, self->player->userinfo.netname,
 		           self->player->userinfo.netname, "");
-		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
+		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage.data());
 
 		toast_t toast;
 		toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
@@ -1784,9 +1787,9 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 
 	if (message && attacker && attacker->player)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
+		SexMessage(message, gendermessage.data(), gender, self->player->userinfo.netname,
 		           attacker->player->userinfo.netname, "");
-		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
+		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage.data());
 
 		toast_t toast;
 		toast.flags = toast_t::LEFT_PID | toast_t::ICON | toast_t::RIGHT_PID;
@@ -1803,9 +1806,9 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 		return;
 	}
 
-	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
+	SexMessage(GStrings(OB_DEFAULT), gendermessage.data(), gender,
 	           self->player->userinfo.netname, self->player->userinfo.netname, "");
-	SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
+	SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage.data());
 
 	toast_t toast;
 	toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
@@ -1814,12 +1817,14 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 	COM_PushToast(toast);
 }
 
+} // namespace
+
 //
 // P_KillMobj
 //
-void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool joinkill)
+void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool joinkill, int mod)
 {
-	SV_SendKillMobj(source, target, inflictor, joinkill);
+	SERVER_ONLY(SV_SendKillMobj(source, target, inflictor, joinkill));
 	AActor *mo;
 	player_t *splayer;
 	player_t *tplayer;
@@ -1990,6 +1995,21 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		tplayer->suicidedelay = SuicideDelay;
 		tplayer->death_time = level.time;
 
+		// Erase death spot if the player teleported into, spawned into,
+		// or was teleported into by an avatar.
+		// Rather than let the user spawn at their pre-avatar demise, make them
+		// go home.
+		if (P_IsVoodooDoll(target) or (source and source->type == MT_AVATAR))
+		{
+			DeathSpotManager::getInstance().eraseDeathSpot(tplayer->id);
+		}
+		else
+		{
+			DeathSpotManager::getInstance().setDeathSpot(tplayer->id, target->x,
+			                                             target->y, target->z,
+			                                             target->angle);
+		}
+
 		if (target == consoleplayer().camera)
 		{
 			// don't die in auto map, switch view prior to dying
@@ -2028,17 +2048,14 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 
 	target->tics -= P_Random(target) & 3;
 
-	if (target->tics < 1)
-	{
-		target->tics = 1;
-	}
+	target->tics = std::max(target->tics, 1);
 
 	// [RH] Death messages
 	// Nes - Server now broadcasts obituaries.
 	// [CG] Since this is a stub, no worries anymore.
 	if (target->player && ::level.time && !::clientside && !::demoplayback && !joinkill)
 	{
-		ClientObituary(target, inflictor, source);
+		ClientObituary(target, inflictor, source, mod);
 	}
 
 	// [AM] Save the "out of lives" message until after the obit.
@@ -2208,8 +2225,6 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			friendlyfireblocked = true;
 		}
 	}
-
-	MeansOfDeath = mod;
 
 	TeamInfo* teamInfo = NULL;
 	bool targethasflag = false;
@@ -2497,7 +2512,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			M_LogActorWDLEvent(WDL_EVENT_KILL, source, target, 0, 0, mod, 0);
 		}
 
-		P_KillMobj(source, target, inflictor, false);
+		P_KillMobj(source, target, inflictor, false, mod);
 
 		return;
 	}

@@ -86,14 +86,13 @@ extern int MaxDrawSegs;
 // Note: transformed values not buffered locally,
 //	like some DOOM-alikes ("wt", "WebView") did.
 //
-struct vertex_s
+struct vertex_t
 {
 	fixed_t x, y;
 };
-typedef vertex_s vertex_t;
 
 // Forward of LineDefs, for Sectors.
-struct line_s;
+struct line_t;
 struct sector_t;
 
 //
@@ -166,15 +165,13 @@ enum SideDefPropChanges
 // Plane
 //
 // Stores the coefficients for the variable that defines a plane (sloping sector)
-struct plane_s
+struct plane_t
 {
 	// Planes are defined by the equation ax + by + cz + d = 0
 	fixed_t		a, b, c, d;
 	fixed_t		invc;		// pre-calculated 1/c, used to solve for z value
-	fixed_t		texx, texy;
 	sector_t	*sector;
 };
-typedef plane_s plane_t;
 
 struct dyncolormap_t;
 
@@ -183,8 +180,11 @@ class DSectorEffect;
 struct sector_t
 {
 	// FIXME: set the real default values instead of 0 for everything. this was just to replace memsetting the struct for now
-	fixed_t 	floorheight = 0;
-	fixed_t 	ceilingheight = 0;
+	// these were previously the vanilla floorheight/ceilingheight
+	// now with slopes their primary purpose is for aligning textures
+	// with height instead obtained from P_FloorHeight/P_CeilingHeight
+	fixed_t 	floortexz = 0;
+	fixed_t 	ceilingtexz = 0;
 	short		floorpic = 0;
 	short		ceilingpic = 0;
 	short		lightlevel = 0;
@@ -262,8 +262,8 @@ struct sector_t
 	msecnode_t *touching_thinglist = nullptr;				// phares 3/14/98
 
 	int linecount = 0;
-	line_s **lines = nullptr;		// [linecount] size
-	std::span<line_s*> getLines() { return std::span(lines, linecount); }
+	line_t **lines = nullptr;		// [linecount] size
+	std::span<line_t*> getLines() { return std::span(lines, linecount); }
 
 	float gravity = 0.0f;		// [RH] Sector gravity (1.0 is normal)
 	int damageamount = 0;
@@ -296,7 +296,7 @@ struct sector_t
 //
 // The SideDef.
 //
-struct side_s
+struct side_t
 {
     // add this to the calculated texture column
     fixed_t	textureoffset;
@@ -319,23 +319,22 @@ struct side_s
 	short		tag;
 	int SidedefChanges;
 };
-typedef side_s side_t;
 
 
 //
 // Move clipping aid for LineDefs.
 //
-typedef enum
+enum slopetype_t
 {
 	ST_HORIZONTAL,
 	ST_VERTICAL,
 	ST_POSITIVE,
 	ST_NEGATIVE
-} slopetype_t;
+};
 
 #define R_NOSIDE (static_cast<unsigned short>(-1))
 
-struct line_s
+struct line_t
 {
     // Vertices, from v1 to v2.
     vertex_t*	v1;
@@ -379,7 +378,6 @@ struct line_s
 	bool PropertiesChanged;
 	bool SidedefChanged;
 };
-typedef line_s line_t;
 
 // phares 3/14/98
 //
@@ -434,7 +432,7 @@ struct seg_t
 };
 
 // ===== Polyobj data =====
-typedef struct FPolyObj
+struct polyobj_t
 {
 	int			numsegs;
 	seg_t		**segs;
@@ -449,14 +447,14 @@ typedef struct FPolyObj
 	int			seqType;
 	fixed_t		size;			// polyobj size (area of POLY_AREAUNIT == size of FRACUNIT)
 	DThinker	*specialdata;	// pointer to a thinker, if the poly is moving
-} polyobj_t;
+};
 
-typedef struct polyblock_s
+struct polyblock_t
 {
 	polyobj_t *polyobj;
-	polyblock_s *prev;
-	polyblock_s *next;
-} polyblock_t;
+	polyblock_t *prev;
+	polyblock_t *next;
+};
 
 //
 // A SubSector.
@@ -480,7 +478,7 @@ struct subsector_t
 // Indicate a leaf.
 #define NF_SUBSECTOR	0x80000000
 
-struct node_s
+struct node_t
 {
 	// Partition line.
 	fixed_t			x;
@@ -490,7 +488,6 @@ struct node_s
 	fixed_t			bbox[2][4];		// Bounding box for each child.
 	unsigned int	children[2];	// If NF_SUBSECTOR its a subsector.
 };
-typedef node_s node_t;
 
 
 
