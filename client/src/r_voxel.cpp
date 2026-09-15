@@ -43,6 +43,8 @@ constexpr fixed_t VX_MINZ = 1 * FRACUNIT;
 constexpr fixed_t VX_MAX_DIST = 2048 * FRACUNIT;
 constexpr fixed_t VX_NEAR_RADIUS = 512 * FRACUNIT;
 constexpr fixed_t VX_Z_OFFSET = -3 * FRACUNIT;
+constexpr angle_t VX_MAX_VIEWER_YAW = ANG45;
+constexpr fixed_t VX_MAX_VIEWER_PITCH_SLOPE = 78103; // tan(50 degrees)
 constexpr fixed_t VX_MAX_PITCH_SLOPE = FRACUNIT / 3;
 constexpr double VX_MIN_PITCH_DZ = double(FRACUNIT) / 8.0;
 constexpr double VX_NEAR_VERTICAL_HORIZ = double(FRACUNIT) / 4.0;
@@ -63,6 +65,10 @@ struct VoxelRenderOptions
 {
 	std::string voxelName;
 	angle_t angleOffset = 0;
+	int placedSpin = 0;
+	int droppedSpin = 0;
+	bool hasPlacedSpin = false;
+	bool hasDroppedSpin = false;
 	bool useActorPitch = false;
 	bool fromVoxelDef = false;
 };
@@ -139,6 +145,107 @@ fixed_t VX_ActorPitchSlope(const AActor* thing)
 	return thing->flags & MF_MISSILE ? VX_MomentumToSlope(thing) : 0;
 }
 
+enum class VoxelRotationMode
+{
+	ActorAngle,
+	FaceView,
+	Spin,
+};
+
+struct VoxelRotation
+{
+	VoxelRotationMode mode = VoxelRotationMode::ActorAngle;
+	int spin = 0;
+};
+
+bool VX_IsSphericalPowerup(const AActor* thing)
+{
+	switch (thing->sprite)
+	{
+	case SPR_PINS:
+	case SPR_PINV:
+	case SPR_SOUL:
+	case SPR_MEGA:
+		return true;
+	default:
+		return false;
+	}
+}
+
+VoxelRotation VX_RotationForThing(const AActor* thing, const VoxelRenderOptions* opts)
+{
+	const bool dropped = bool(thing->flags & MF_DROPPED);
+	if (opts)
+	{
+		const bool hasSpin = dropped ? opts->hasDroppedSpin : opts->hasPlacedSpin;
+		const int spin = dropped ? opts->droppedSpin : opts->placedSpin;
+		if (hasSpin)
+			return {spin == 0 ? VoxelRotationMode::ActorAngle : VoxelRotationMode::Spin, spin};
+	}
+
+	// These spherical pickups look distorted unless they point at the viewer's
+	// actual position instead of merely matching the camera's view angle.
+	if (VX_IsSphericalPowerup(thing))
+		return {VoxelRotationMode::FaceView, 0};
+
+	// Dropped items should retain sprite-like presentation. Check this before
+	// the weapon list so dropped weapons do not spin.
+	if (dropped)
+		return {VoxelRotationMode::FaceView, 0};
+
+	// Match Woof's rotating placed-weapon list.
+	switch (thing->sprite)
+	{
+	case SPR_SHOT:
+	case SPR_MGUN:
+	case SPR_LAUN:
+	case SPR_PLAS:
+	case SPR_BFUG:
+	case SPR_CSAW:
+	case SPR_SGN2:
+		return {VoxelRotationMode::Spin, 4};
+	default:
+		break;
+	}
+
+	if (thing->flags & MF_SPECIAL)
+		return {VoxelRotationMode::FaceView, 0};
+
+	return {VoxelRotationMode::ActorAngle, 0};
+}
+
+angle_t VX_ItemRotationAngle(const int degreesPerTic)
+{
+	// Interpolate the fraction of the current tic so spinning remains smooth at
+	// uncapped frame rates. Negative values rotate in the opposite direction.
+	const double time = static_cast<double>(level.time) +
+	                    static_cast<double>(render_lerp_amount) / FRACUNIT;
+	return VX_DegreesToAngle(time * degreesPerTic);
+}
+
+angle_t VX_ViewerFacingAngle(const fixed_t x, const fixed_t y)
+{
+	const angle_t viewFacing = viewangle + ANG180;
+	const angle_t viewerFacing = R_PointToAngle(x, y) + ANG180;
+	const int32_t delta = static_cast<int32_t>(viewerFacing - viewFacing);
+	const int32_t limit = static_cast<int32_t>(VX_MAX_VIEWER_YAW);
+	return viewFacing + angle_t(std::clamp(delta, -limit, limit));
+}
+
+fixed_t VX_ViewerPitchSlope(const fixed_t x, const fixed_t y, const fixed_t centerz)
+{
+	const double dx = static_cast<double>(viewx) - x;
+	const double dy = static_cast<double>(viewy) - y;
+	const double dz = static_cast<double>(viewz) - centerz;
+	const double distance = std::sqrt(dx * dx + dy * dy);
+	if (distance < 1.0)
+		return dz >= 0.0 ? VX_MAX_VIEWER_PITCH_SLOPE : -VX_MAX_VIEWER_PITCH_SLOPE;
+
+	const double slope = dz / distance * FRACUNIT;
+	return fixed_t(std::clamp(slope, -static_cast<double>(VX_MAX_VIEWER_PITCH_SLOPE),
+	                          static_cast<double>(VX_MAX_VIEWER_PITCH_SLOPE)));
+}
+
 int VX_FrameIndexForChar(char frameChar)
 {
 	const unsigned char raw = static_cast<unsigned char>(frameChar);
@@ -186,7 +293,8 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 			return;
 
 		const std::string token = os.getToken();
-		if (StdStringToLower(token) == "angleoffset")
+		const std::string option = StdStringToLower(token);
+		if (option == "angleoffset")
 		{
 			os.mustScan();
 			if (!os.compareToken("="))
@@ -199,12 +307,37 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 				opts.angleOffset = VX_DegreesToAngle(degrees);
 			continue;
 		}
-		if (StdStringToLower(token) == "useactorpitch")
+		if (option == "spin" || option == "placedspin" || option == "droppedspin")
+		{
+			os.mustScan();
+			if (!os.compareToken("="))
+			{
+				os.warning("Expected '=' after {}.", token);
+				continue;
+			}
+
+			double value = 0.0;
+			if (!VX_ReadNumber(os, value))
+				continue;
+			const int speed = static_cast<int>(value);
+			if (option == "spin" || option == "placedspin")
+			{
+				opts.placedSpin = speed;
+				opts.hasPlacedSpin = true;
+			}
+			if (option == "spin" || option == "droppedspin")
+			{
+				opts.droppedSpin = speed;
+				opts.hasDroppedSpin = true;
+			}
+			continue;
+		}
+		if (option == "useactorpitch")
 		{
 			opts.useActorPitch = true;
 			continue;
 		}
-		if (StdStringToLower(token) == "useactorroll")
+		if (option == "useactorroll")
 		{
 			// Parsed for compatibility but intentionally ignored for now.
 			continue;
@@ -975,8 +1108,18 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 		return false;
 
 	angle_t angle = thing->angle;
-	if (thing->flags & MF_SPECIAL && !(opts && opts->fromVoxelDef))
-		angle = viewangle + ANG180;
+	const VoxelRotation rotation = VX_RotationForThing(thing, opts);
+	switch (rotation.mode)
+	{
+	case VoxelRotationMode::FaceView:
+		angle = VX_ViewerFacingAngle(gx, gy);
+		break;
+	case VoxelRotationMode::Spin:
+		angle = VX_ItemRotationAngle(rotation.spin);
+		break;
+	case VoxelRotationMode::ActorAngle:
+		break;
+	}
 	if (opts)
 		angle += opts->angleOffset;
 
@@ -984,7 +1127,13 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	const fixed_t c = finecosine[ang2 >> ANGLETOFINESHIFT];
 	const fixed_t s = finesine[ang2 >> ANGLETOFINESHIFT];
 	fixed_t pitchSlope = 0;
-	if (opts && opts->useActorPitch)
+	if (VX_IsSphericalPowerup(thing))
+	{
+		const fixed_t centerz =
+		    gz + v->z_pivot - (fixed_t(v->z_size) << (FRACBITS - 1)) + VX_Z_OFFSET;
+		pitchSlope = VX_ViewerPitchSlope(gx, gy, centerz);
+	}
+	else if (opts && opts->useActorPitch)
 		pitchSlope = VX_ActorPitchSlope(thing);
 
 	const fixed_t TL_x = tx - FixedMul(v->x_pivot, c) - FixedMul(v->y_pivot, s);
