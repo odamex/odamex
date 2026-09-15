@@ -112,17 +112,13 @@ DThinker::~DThinker() = default;
 void DThinker::Orphan()
 {
 	m_optionalVectorIndex.reset();
-	m_Next = NULL;
-	m_Prev = NULL;
+	m_Next = nullptr;
+	m_Prev = nullptr;
 	refCount = 0;
 }
 
-void DThinker::Destroy ()
+void DThinker::Unlink()
 {
-	// denis - allow this function to be safely called multiple times
-	if(destroyed)
-		return;
-
 	if (FirstThinker == this)
 		FirstThinker = m_Next;
 	if (LastThinker == this)
@@ -131,6 +127,62 @@ void DThinker::Destroy ()
 		m_Next->m_Prev = m_Prev;
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
+
+	m_Next = nullptr;
+	m_Prev = nullptr;
+}
+
+bool DThinker::SpliceBefore(DThinker* io_node)
+{
+	if (io_node and io_node != this and not io_node->WasDestroyed())
+	{
+		Unlink();
+
+		if (FirstThinker == io_node)
+		{
+			FirstThinker = this;
+		}
+		m_Next = io_node;
+		m_Prev = io_node->m_Prev;
+		if (m_Prev)
+		{
+			m_Prev->m_Next = this;
+		}
+		io_node->m_Prev = this;
+		return true;
+	}
+	return false;
+}
+
+bool DThinker::SpliceAfter(DThinker* io_node)
+{
+	if (io_node and io_node != this and not io_node->WasDestroyed())
+	{
+		Unlink();
+
+		if (LastThinker == io_node)
+		{
+			LastThinker = this;
+		}
+		m_Next = io_node->m_Next;
+		if (m_Next)
+		{
+			m_Next->m_Prev = this;
+		}
+		m_Prev = io_node;
+		io_node->m_Next = this;
+		return true;
+	}
+	return false;
+}
+
+void DThinker::Destroy ()
+{
+	// denis - allow this function to be safely called multiple times
+	if(destroyed)
+		return;
+
+	Unlink();
 
 	if (m_optionalVectorIndex.has_value())
 	{
@@ -164,11 +216,6 @@ void DThinker::Destroy ()
 			delete obj;
 		}
 	}
-}
-
-bool DThinker::WasDestroyed ()
-{
-	return destroyed;
 }
 
 // Destroy every thinker
@@ -258,18 +305,19 @@ bool IndependentThinker(DThinker *thinker)
 
 void DThinker::RunThinkers ()
 {
-	DThinker *currentthinker;
+	DThinker* currentthinker;
 
 	BEGIN_STAT (ThinkCycles);
 	currentthinker = FirstThinker;
 	while (currentthinker)
 	{
+		DThinker* nextThinker = currentthinker->m_Next;
 		if (!IndependentThinker(currentthinker))
 		{
 			currentthinker->RunThink();
 			currentthinker->PostThink();
 		}
-		currentthinker = currentthinker->m_Next;
+		currentthinker = nextThinker;
 	}
 	END_STAT (ThinkCycles);
 	P_CheckMusicChange();
