@@ -48,6 +48,7 @@
 #include "p_mapformat.h"
 
 #include "m_alloc.h"
+#include "c_dispatch.h"
 #include "i_video.h"
 #include "v_video.h"
 
@@ -67,6 +68,43 @@ static constexpr float flatheight = 64.0f;
 static visplane_t		*visplanes[MAXVISPLANES + 1];	// killough
 static visplane_t		*freetail;					// killough
 static visplane_t		**freehead = &freetail;		// killough
+
+// Visplane headers come from dense blocks so that walking a hash chain or the
+// free list stays within a few pages. Their column spans are allocated
+// separately; those are only touched when a plane is actually drawn.
+static constexpr size_t VISPLANE_BLOCK = 64;
+
+static std::vector<visplane_t*>		visplane_blocks;
+static size_t						visplane_block_used = VISPLANE_BLOCK;
+static std::vector<unsigned int*>	visplane_spans;
+
+//
+// Visplane statistics
+//
+// The hash lookup and the per-frame clear both walk every live visplane, so
+// their cost is the number of headers visited rather than the number of planes
+// drawn. These counters record that, and the column count the full-width span
+// initialisation writes.
+//
+namespace
+{
+
+struct VisplaneStats
+{
+	uint64_t	frames;
+	uint64_t	lookups;		// R_FindPlane calls
+	uint64_t	chainsteps;		// headers visited by those lookups
+	uint64_t	created;		// visplanes taken into use
+	uint64_t	allocated;		// ... of those, ones needing a fresh allocation
+	uint64_t	splits;			// R_CheckPlane calls that started a new plane
+	uint64_t	spaninit;		// columns written by the span initialisers
+	uint32_t	peak_created;	// most taken into use in one frame
+};
+
+VisplaneStats	visplane_stats;
+uint32_t		visplane_frame_created;
+
+} // namespace
 
 // Depth of the portal view currently being rendered.
 // 0 = the main view.
@@ -346,6 +384,11 @@ void R_ClearPlanes(bool fullclear)
 
 	if (fullclear)
 	{
+		visplane_stats.frames++;
+		visplane_stats.peak_created =
+				std::max(visplane_stats.peak_created, visplane_frame_created);
+		visplane_frame_created = 0;
+
 		// opening / clipping determination
 		memcpy(floorclip.get(), floorclipinitial.get(), viewwidth * sizeof(floorclip[0]));
 		memcpy(ceilingclip.get(), ceilingclipinitial.get(), viewwidth * sizeof(ceilingclip[0]));
@@ -363,12 +406,33 @@ static visplane_t *new_visplane(unsigned hash)
 
 	if (!check)
 	{
-		check = static_cast<visplane_t*>(M_Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth()));
-		check->bottom = &check->top[I_GetSurfaceWidth() + 2];
+		if (visplane_block_used == VISPLANE_BLOCK)
+		{
+			visplane_blocks.push_back(
+					static_cast<visplane_t*>(M_Calloc(VISPLANE_BLOCK, sizeof(visplane_t))));
+			visplane_block_used = 0;
+		}
+		check = &visplane_blocks.back()[visplane_block_used++];
+
+		// one slot ahead of top for its [-1] entry, then top and bottom each
+		// spanning the surface width plus the sentinel column past maxx
+		const size_t width = I_GetSurfaceWidth();
+		unsigned int* spans =
+				static_cast<unsigned int*>(M_Calloc(2 * width + 4, sizeof(*spans)));
+		visplane_spans.push_back(spans);
+
+		check->top = spans + 1;
+		check->bottom = check->top + width + 2;
+
+		visplane_stats.allocated++;
 	}
 	else
 		if (!(freetail = freetail->next))
 			freehead = &freetail;
+
+	visplane_stats.created++;
+	visplane_frame_created++;
+
 	check->next = visplanes[hash];
 	visplanes[hash] = check;
 	return check;
@@ -410,8 +474,12 @@ visplane_t* R_FindPlane(
 	// New visplane algorithm uses hash table -- killough
 	hash = isskybox ? MAXVISPLANES : visplane_hash(res_id, lightlevel, secplane);
 
+	visplane_stats.lookups++;
+
 	for (check = visplanes[hash]; check; check = check->next) // killough
 	{
+		visplane_stats.chainsteps++;
+
 		if (isskybox)
 		{
 			if (skybox == check->skybox)
@@ -453,6 +521,7 @@ visplane_t* R_FindPlane(
 	check->maxx = -1;
 
 	memcpy(check->top, viewheightarray, viewwidth * sizeof(*check->top));
+	visplane_stats.spaninit += viewwidth;
 
 	return check;
 }
@@ -514,6 +583,8 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		{
 			hash = visplane_hash(pl->res_id, pl->lightlevel, pl->secplane);
 		}
+		visplane_stats.splits++;
+
 		visplane_t *new_pl = new_visplane (hash);
 
 		new_pl->secplane = pl->secplane;
@@ -531,6 +602,7 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		pl->minx = start;
 		pl->maxx = stop;
 		memcpy(pl->top, viewheightarray, viewwidth * sizeof(*pl->top));
+		visplane_stats.spaninit += viewwidth;
 	}
 	return pl;
 }
@@ -1097,31 +1169,65 @@ bool R_PlaneInitData(IWindowSurface* surface)
 	spanstart = std::make_unique<int[]>(surface_height);
 	yslope = std::make_unique<fixed_t[]>(surface_height);
 
-	// Free all visplanes and let them be re-allocated as needed.
-	visplane_t* pl = freetail;
+	// Free all visplanes and let them be re-allocated as needed. Headers are
+	// owned by their block and spans by their own allocation, so every chain
+	// is dropped wholesale rather than walked.
+	for (unsigned int* spans : visplane_spans)
+		M_Free(spans);
+	visplane_spans.clear();
 
-	while (pl)
-	{
-		visplane_t *next = pl->next;
-		M_Free(pl);
-		pl = next;
-	}
+	for (visplane_t* block : visplane_blocks)
+		M_Free(block);
+	visplane_blocks.clear();
+	visplane_block_used = VISPLANE_BLOCK;
+
 	freetail = NULL;
 	freehead = &freetail;
 
-	for (int i = 0; i < MAXVISPLANES; i++)
-	{
-		pl = visplanes[i];
+	// includes the portal bucket at MAXVISPLANES, whose planes would otherwise
+	// be left pointing at freed blocks
+	for (int i = 0; i <= MAXVISPLANES; i++)
 		visplanes[i] = NULL;
-		while (pl)
-		{
-			visplane_t *next = pl->next;
-			M_Free(pl);
-			pl = next;
-		}
-	}
 
 	return true;
 }
+
+
+//
+// visplanestats
+//
+// Reports the visplane bookkeeping's cost since the last call, then resets.
+//
+BEGIN_COMMAND(visplanestats)
+{
+	const VisplaneStats& s = visplane_stats;
+
+	if (s.frames == 0)
+	{
+		PrintFmt(PRINT_HIGH, "visplanestats: nothing rendered since the last reset\n");
+		return;
+	}
+
+	const double frames = static_cast<double>(s.frames);
+	const double steps = static_cast<double>(s.chainsteps) / frames;
+	const double chain = s.lookups ?
+			static_cast<double>(s.chainsteps) / static_cast<double>(s.lookups) : 0.0;
+
+	PrintFmt(PRINT_HIGH, "visplanestats over {} frames:\n", s.frames);
+	PrintFmt(PRINT_HIGH, "  planes/frame     avg {:.0f}   peak {}   ({} ever allocated)\n",
+			static_cast<double>(s.created) / frames, s.peak_created, s.allocated);
+	PrintFmt(PRINT_HIGH, "  of those, splits avg {:.0f}\n",
+			static_cast<double>(s.splits) / frames);
+	PrintFmt(PRINT_HIGH, "  hash lookups     avg {:.0f}/frame, {:.1f} headers visited each\n",
+			static_cast<double>(s.lookups) / frames, chain);
+	PrintFmt(PRINT_HIGH, "  chain walk       avg {:.0f} headers/frame\n", steps);
+	PrintFmt(PRINT_HIGH, "  span init        avg {:.0f} columns/frame ({:.2f} MB)\n",
+			static_cast<double>(s.spaninit) / frames,
+			static_cast<double>(s.spaninit) / frames * sizeof(unsigned int) / (1024.0 * 1024.0));
+
+	visplane_stats = VisplaneStats();
+	visplane_frame_created = 0;
+}
+END_COMMAND(visplanestats)
 
 VERSION_CONTROL (r_plane_cpp, "$Id$")

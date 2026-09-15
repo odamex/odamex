@@ -779,7 +779,10 @@ struct visplane_t
 	angle_t		angle;				// [RH] Support flat rotation
 	AActor*		skybox;
 
-	unsigned int *bottom;			// [RH] bottom and top arrays are dynamically
-	unsigned int pad;				//		allocated immediately after the
-	unsigned int top[3];			//		visplane.
+	// Per-column spans, allocated apart from the header. Holding them inline
+	// put a screen's worth of them between one header and the next, so every
+	// walk of a hash chain or the free list paid a TLB miss per step.
+	// top[-1] is addressable: R_DrawSingleFlatPlane writes it when minx is 0.
+	unsigned int* top;
+	unsigned int* bottom;
 };
