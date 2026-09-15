@@ -76,6 +76,7 @@ public:
 	static void DestroyMostThinkers ();
 	static void SerializeAll (FArchive &arc, bool keepPlayers);
 
+	[[ nodiscard ]]
 	bool WasDestroyed() const { return destroyed; }
 
 	size_t refCount;
