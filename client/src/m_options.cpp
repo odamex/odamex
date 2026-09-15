@@ -131,6 +131,8 @@ EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(hud_feedtime)
 EXTERN_CVAR(hud_extendedinfo)
+EXTERN_CVAR(cl_shotclock)
+EXTERN_CVAR(cl_shotclocksecondsleft)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
@@ -1155,7 +1157,7 @@ std::array<value_t, 5> ExtendedHudStyles = {{
 	{ .value = 3.0, .name = "Vertical 1" }, { .value = 4.0, .name = "Vertical 2" }
 }};
 
-std::array<menuitem_t, 34> HUDItems = {{
+std::array<menuitem_t, 36> HUDItems = {{
 	{ .type = yellowtext, .label = "Status Bar", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = discrete, .label = "Scale status bar", .a = {.cvar = &st_scale}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -1169,6 +1171,8 @@ std::array<menuitem_t, 34> HUDItems = {{
 	{ .type = discrete, .label = "Player target names", .a = {.cvar = &hud_targetnames}, .b = {.leftval = HideShow.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = HideShow.data()}},
 	// clang-format on
 	{ .type = discrete, .label = "Timer Type", .a = {.cvar = &hud_timer}, .b = {.leftval = TimerStyles.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = TimerStyles.data()}},
+	{ .type = discrete, .label = "Shot Clock", .a = {.cvar = &cl_shotclock}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = slider, .label = "Shot Clock Seconds", .a = {.cvar = &cl_shotclocksecondsleft}, .b = {.leftval = 0.0}, .c = {.rightval = 60.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
 	{ .type = discrete, .label = "Speedometer", .a = {.cvar = &hud_speedometer}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = slider, .label = "Feed Timeout", .a = {.cvar = &hud_feedtime}, .b = {.leftval = 1.0}, .c = {.rightval = 10.0}, .d = {.step = 0.25}, .e = {.values = nullptr}},
 	{ .type = discrete, .label = "Show Kills in Feed", .a = {.cvar = &hud_feedobits}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},

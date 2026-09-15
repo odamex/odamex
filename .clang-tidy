@@ -75,3 +75,6 @@ CheckOptions:
   # allow array members to be uninitialized
   - key: cppcoreguidelines-pro-type-member-init.IgnoreArrays
     value: true
+  # enforce consistent operator style
+  - key: readability-operators-representation.BinaryOperators
+    value: and;or;not;&;|;^;~;&=;|=;^=;!=

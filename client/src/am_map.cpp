@@ -898,7 +898,9 @@ bool AM_Responder(const event_t& ev)
 		{
 			// check for am_pan* and ignore in follow mode
 			const std::string defbind = AutomapBindings.Binds[ev.data1];
-			if (iequals(defbind, "+am_pan"))
+			// don't replace this with iequals, we're checking a prefix
+			static constexpr auto pan_prefix = "+am_pan"sv;
+			if (!strnicmp(defbind.c_str(), pan_prefix.data(), pan_prefix.size()))
 				return false;
 		}
 
@@ -1475,13 +1477,13 @@ void AM_drawWalls()
 					else
 						AM_drawMline(&l, gameinfo.currentAutomapColors.WallColor);
 				}
-				else if (line.backsector->floorheight !=
-				         line.frontsector->floorheight)
+				else if (P_FloorHeight(line.backsector) !=
+				         P_FloorHeight(line.frontsector))
 				{
 					AM_drawMline(&l, gameinfo.currentAutomapColors.FDWallColor); // floor level change
 				}
-				else if (line.backsector->ceilingheight !=
-				         line.frontsector->ceilingheight)
+				else if (P_CeilingHeight(line.backsector) !=
+				         P_CeilingHeight(line.frontsector))
 				{
 					AM_drawMline(&l, gameinfo.currentAutomapColors.CDWallColor); // ceiling level change
 				}
@@ -2043,6 +2045,10 @@ void AM_drawMarks()
 
 void AM_drawCrosshair(am_color_t color)
 {
+	// Don't draw on top of the player arrow
+	if (am_followplayer || minimapactive)
+		return;
+
 	// single point for now
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.index);
@@ -2499,8 +2505,7 @@ void AM_Drawer()
 	if (G_IsHordeMode() || G_GetCurrentSkill().easy_key || (am_cheating == 2))
 		AM_drawThings();
 
-	if (!(viewactive && am_overlay < 2))
-		AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
+	AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
 
 	AM_drawMarks();
 

@@ -605,9 +605,9 @@ static void ShoveChatStr (const std::string& str, byte visibility)
 	if (str.length() == 0)
 		return;
 
-    const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
+	const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Say(visiblePortion, visibility));
+	messenger.Reliable().Write(CLC_Say(visiblePortion, visibility));
 }
 
 static void ShovePrivMsg(byte pid, const std::string& str)
@@ -618,7 +618,7 @@ static void ShovePrivMsg(byte pid, const std::string& str)
 
 	const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_PrivMsg(pid, visiblePortion));
+	messenger.Reliable().Write(CLC_PrivMsg(pid, visiblePortion));
 }
 
 BEGIN_COMMAND (messagemode)

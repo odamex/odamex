@@ -3,8 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,22 +16,20 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Mission start screen wipe/melt, special effects.
+//  General utility for packing protocol messages to string or net buffer
 //
 //-----------------------------------------------------------------------------
 
-
 #pragma once
 
-//
-//						 SCREEN WIPE PACKAGE
-//
+#include <string>
 
-void Wipe_Stop();
-void Wipe_Start();
-bool Wipe_Ticker();
-void Wipe_Drawer();
+#include "i_net.h"
 
-extern int NoWipe;
+namespace google::protobuf
+{
+	class Message;
+}
 
-void Wipe_Suppress(int frames);
+std::optional<msg_t> MSG_Pack(std::string& serializationBuffer, const google::protobuf::Message& msg);
+void                 MSG_Pack(buf_t&       serializationBuffer, const google::protobuf::Message& msg);
