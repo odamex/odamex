@@ -76,7 +76,7 @@ public:
 	static void DestroyMostThinkers ();
 	static void SerializeAll (FArchive &arc, bool keepPlayers);
 
-	bool WasDestroyed();
+	bool WasDestroyed() const { return destroyed; }
 
 	size_t refCount;
 
@@ -84,8 +84,8 @@ public:
 
 protected:
 	void Unlink();
-	void SpliceBefore(DThinker* io_node);
-	void SpliceAfter(DThinker* io_node);
+	bool SpliceBefore(DThinker* io_node);
+	bool SpliceAfter(DThinker* io_node);
 
 private:
 

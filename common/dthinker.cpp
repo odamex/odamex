@@ -112,8 +112,8 @@ DThinker::~DThinker() = default;
 void DThinker::Orphan()
 {
 	m_optionalVectorIndex.reset();
-	m_Next = NULL;
-	m_Prev = NULL;
+	m_Next = nullptr;
+	m_Prev = nullptr;
 	refCount = 0;
 }
 
@@ -132,9 +132,9 @@ void DThinker::Unlink()
 	m_Prev = nullptr;
 }
 
-void DThinker::SpliceBefore(DThinker* io_node)
+bool DThinker::SpliceBefore(DThinker* io_node)
 {
-	if (io_node)
+	if (io_node and io_node != this and not io_node->WasDestroyed())
 	{
 		Unlink();
 
@@ -144,13 +144,19 @@ void DThinker::SpliceBefore(DThinker* io_node)
 		}
 		m_Next = io_node;
 		m_Prev = io_node->m_Prev;
+		if (m_Prev)
+		{
+			m_Prev->m_Next = this;
+		}
 		io_node->m_Prev = this;
+		return true;
 	}
+	return false;
 }
 
-void DThinker::SpliceAfter(DThinker* io_node)
+bool DThinker::SpliceAfter(DThinker* io_node)
 {
-	if (io_node)
+	if (io_node and io_node != this and not io_node->WasDestroyed())
 	{
 		Unlink();
 
@@ -159,9 +165,15 @@ void DThinker::SpliceAfter(DThinker* io_node)
 			LastThinker = this;
 		}
 		m_Next = io_node->m_Next;
+		if (m_Next)
+		{
+			m_Next->m_Prev = this;
+		}
 		m_Prev = io_node;
 		io_node->m_Next = this;
+		return true;
 	}
+	return false;
 }
 
 void DThinker::Destroy ()
@@ -204,11 +216,6 @@ void DThinker::Destroy ()
 			delete obj;
 		}
 	}
-}
-
-bool DThinker::WasDestroyed ()
-{
-	return destroyed;
 }
 
 // Destroy every thinker
