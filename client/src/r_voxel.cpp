@@ -381,9 +381,24 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 			opts.useActorPitch = true;
 			continue;
 		}
-		if (option == "useactorroll")
+		if (option == "scale")
 		{
-			// Parsed for compatibility but intentionally ignored for now.
+			os.mustScan();
+			if (!os.compareToken("="))
+			{
+				os.warning("Expected '=' after Scale.");
+				continue;
+			}
+
+			double value = 0.0;
+			if (VX_ReadNumber(os, value))
+				os.warning("VOXELDEF option '{}' is not supported and will be ignored.", token);
+			continue;
+		}
+		if (option == "pitchfrommomentum" || option == "useactorroll" ||
+		    option == "overridepalette")
+		{
+			os.warning("VOXELDEF option '{}' is not supported and will be ignored.", token);
 			continue;
 		}
 
