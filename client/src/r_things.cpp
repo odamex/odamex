@@ -468,7 +468,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->FakeFlat = fakeside;
 	vis->colormap = basecolormap;
 	vis->spectator = false;
-	vis->voxel = NULL;
+	vis->voxel = nullptr;
 
 	fixed_t iscale = FixedDiv(ty, FocalLengthX);
 	if (flip)
@@ -1157,7 +1157,7 @@ void R_DrawSprite (vissprite_t *spr)
 	// all clipping has been performed, so draw the sprite
 	mfloorclip = clipbot;
 	mceilingclip = cliptop;
-	if (spr->voxel != NULL)
+	if (spr->voxel != nullptr)
 		VX_DrawVoxel(spr);
 	else
 		R_DrawVisSprite (spr, spr->x1, spr->x2);

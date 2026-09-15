@@ -34,4 +34,4 @@ void VX_Init();
 void VX_ClearVoxels();
 void VX_NearbySprites();
 bool VX_ProjectVoxel(const AActor* thing, int frame, vissprite_t* vis);
-void VX_DrawVoxel(vissprite_t* vis);
+void VX_DrawVoxel(vissprite_t* spr);
