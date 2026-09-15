@@ -803,7 +803,7 @@ CVAR_RANGE(		r_drawplayersprites, "1", "Weapon Transparency",
 CVAR(			r_particles, "1", "Draw particles",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			r_voxels, "1", "Enable experimental software voxel renderer path",
+CVAR(			r_voxels, "1", "Enable software voxel rendering",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			r_voxeldir, "voxels", "Directory containing raw .kvx voxel files",

@@ -2141,7 +2141,7 @@
       {
          "default" : true,
          "flags" : [ "CLIENTARCHIVE" ],
-         "helptext" : "Enable experimental software voxel renderer path",
+         "helptext" : "Enable software voxel rendering",
          "name" : "r_voxels",
          "type" : "boolean"
       },
@@ -2423,7 +2423,7 @@
       {
          "default" : true,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
-         "helptext" : "Allow clients to load voxel models from r_voxeldir",
+         "helptext" : "Allow clients to load custom voxel models from external directory. Does not affect voxels contained within server loaded wads.",
          "name" : "sv_allowvoxels",
          "type" : "boolean"
       },

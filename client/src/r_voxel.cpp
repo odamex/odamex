@@ -1132,9 +1132,6 @@ void VX_SpritesInNode(unsigned int bspnum)
 
 void VX_Init()
 {
-#ifndef ODAMEX_EXPERIMENTAL_VOXELS
-	return;
-#else
 	g_voxels.clear();
 	g_voxelOptions.clear();
 	g_visibleVoxels.clear();
@@ -1153,32 +1150,21 @@ void VX_Init()
 	PrintFmt(PRINT_HIGH,
 	         "VX_Init: loaded {} voxel sprite frames ({} VOXELDEF mappings).\n",
 	         g_voxels.size(), g_voxelOptions.size());
-#endif
 }
 
 void VX_ClearVoxels()
 {
-#ifdef ODAMEX_EXPERIMENTAL_VOXELS
 	g_visibleVoxels.clear();
-#endif
 }
 
 void VX_NearbySprites()
 {
-#ifdef ODAMEX_EXPERIMENTAL_VOXELS
 	if (r_voxels && numnodes > 0)
 		VX_SpritesInNode(static_cast<unsigned int>(numnodes - 1));
-#endif
 }
 
 bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 {
-#ifndef ODAMEX_EXPERIMENTAL_VOXELS
-	(void)thing;
-	(void)frame;
-	(void)vis;
-	return false;
-#else
 	if (!r_voxels || !thing || !vis || !thing->subsector || !thing->subsector->sector)
 		return false;
 
@@ -1283,15 +1269,10 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	vis->gzt = gz + v->z_pivot + zOffset + VX_Z_OFFSET;
 
 	return true;
-#endif
 }
 
 void VX_DrawVoxel(vissprite_t* spr)
 {
-#ifndef ODAMEX_EXPERIMENTAL_VOXELS
-	(void)spr;
-	return;
-#else
 	if (!spr || !spr->voxel)
 		return;
 
@@ -1317,5 +1298,4 @@ void VX_DrawVoxel(vissprite_t* spr)
 	g_eye_y = v->y_pivot + FixedMul(delta_x, s) - FixedMul(delta_y, c);
 
 	VX_RecursiveDraw(spr, 0, 0, v->x_size, v->y_size);
-#endif
 }
