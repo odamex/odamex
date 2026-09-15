@@ -305,18 +305,19 @@ bool IndependentThinker(DThinker *thinker)
 
 void DThinker::RunThinkers ()
 {
-	DThinker *currentthinker;
+	DThinker* currentthinker;
 
 	BEGIN_STAT (ThinkCycles);
 	currentthinker = FirstThinker;
 	while (currentthinker)
 	{
+		DThinker* nextThinker = currentthinker->m_Next;
 		if (!IndependentThinker(currentthinker))
 		{
 			currentthinker->RunThink();
 			currentthinker->PostThink();
 		}
-		currentthinker = currentthinker->m_Next;
+		currentthinker = nextThinker;
 	}
 	END_STAT (ThinkCycles);
 	P_CheckMusicChange();
