@@ -17,8 +17,7 @@
 #include "doomtype.h"
 
 class AActor;
-struct vissprite_s;
-typedef vissprite_s vissprite_t;
+struct vissprite_t;
 
 struct r_voxelvis_s
 {
@@ -28,6 +27,7 @@ struct r_voxelvis_s
 	fixed_t TL_y;
 	fixed_t c;
 	fixed_t s;
+	fixed_t pitchSlope;
 };
 
 void VX_Init();

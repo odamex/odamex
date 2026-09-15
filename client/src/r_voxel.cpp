@@ -12,12 +12,12 @@
 
 #include "odamex.h"
 
+#include <algorithm>
 #include <array>
 #include <cctype>
 #include <cmath>
 #include <deque>
 #include <string>
-#include <unordered_set>
 #include <unordered_map>
 #include <vector>
 
@@ -43,6 +43,9 @@ constexpr fixed_t VX_MINZ = 1 * FRACUNIT;
 constexpr fixed_t VX_MAX_DIST = 2048 * FRACUNIT;
 constexpr fixed_t VX_NEAR_RADIUS = 512 * FRACUNIT;
 constexpr fixed_t VX_Z_OFFSET = -3 * FRACUNIT;
+constexpr fixed_t VX_MAX_PITCH_SLOPE = FRACUNIT / 3;
+constexpr double VX_MIN_PITCH_DZ = double(FRACUNIT) / 8.0;
+constexpr double VX_NEAR_VERTICAL_HORIZ = double(FRACUNIT) / 4.0;
 
 struct VoxelModel
 {
@@ -61,7 +64,6 @@ struct VoxelRenderOptions
 	std::string voxelName;
 	angle_t angleOffset = 0;
 	bool useActorPitch = false;
-	bool useActorRoll = false;
 	bool fromVoxelDef = false;
 };
 
@@ -78,7 +80,6 @@ enum VoxelFace
 std::unordered_map<uint64_t, VoxelModel> g_voxels;
 std::unordered_map<uint64_t, VoxelRenderOptions> g_voxelOptions;
 std::deque<r_voxelvis_s> g_visibleVoxels;
-std::unordered_set<uint64_t> g_warnedUnsupportedOptions;
 fixed_t g_eye_x = 0;
 fixed_t g_eye_y = 0;
 
@@ -94,10 +95,57 @@ angle_t VX_DegreesToAngle(double degrees)
 	return angle_t((uint64_t(wrapped * 4294967296.0 / 360.0)) & 0xFFFFFFFFu);
 }
 
+fixed_t VX_AngleToSlope(int angle)
+{
+	if (angle > int(ANG90))
+		return finetangent[0];
+	if (-angle > int(ANG90))
+		return finetangent[FINEANGLES / 2 - 1];
+	return finetangent[(ANG90 - angle_t(angle)) >> ANGLETOFINESHIFT];
+}
+
+fixed_t VX_MomentumToSlope(const AActor* thing)
+{
+	if (!thing)
+		return 0;
+
+	const double mx = static_cast<double>(thing->momx);
+	const double my = static_cast<double>(thing->momy);
+	const double mz = static_cast<double>(thing->momz);
+	if (std::abs(mz) < VX_MIN_PITCH_DZ)
+		return 0;
+
+	const double horiz = std::sqrt(mx * mx + my * my);
+	if (horiz < VX_NEAR_VERTICAL_HORIZ)
+		return mz > 0.0 ? VX_MAX_PITCH_SLOPE : -VX_MAX_PITCH_SLOPE;
+
+	const double slope = mz / std::max(horiz, 1.0);
+	const double fixedSlope = slope * static_cast<double>(FRACUNIT);
+	return fixed_t(std::clamp(fixedSlope, -static_cast<double>(VX_MAX_PITCH_SLOPE),
+	                     static_cast<double>(VX_MAX_PITCH_SLOPE)));
+}
+
+fixed_t VX_ActorPitchSlope(const AActor* thing)
+{
+	if (!thing)
+		return 0;
+	if (thing->pitch != 0)
+		return VX_AngleToSlope(int(thing->pitch));
+
+	// Inferring pitch from vertical displacement makes floating monsters and
+	// bobbing pickups snap and shears their voxel rows apart. Only missiles need
+	// trajectory-derived pitch; other actors remain rigid and let position
+	// interpolation provide smooth vertical motion.
+	return thing->flags & MF_MISSILE ? VX_MomentumToSlope(thing) : 0;
+}
+
 int VX_FrameIndexForChar(char frameChar)
 {
 	const unsigned char raw = static_cast<unsigned char>(frameChar);
 	const unsigned char up = static_cast<unsigned char>(std::toupper(raw));
+	// VOXELDEF uses '^' as a parser-safe alias for the frame after '[' ('\\').
+	if (up == '^')
+		return 27;
 	const int frame = int(up) - int('A');
 	if (frame < 0 || frame >= kMaxFrames)
 		return -1;
@@ -158,7 +206,7 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 		}
 		if (StdStringToLower(token) == "useactorroll")
 		{
-			opts.useActorRoll = true;
+			// Parsed for compatibility but intentionally ignored for now.
 			continue;
 		}
 
@@ -200,9 +248,21 @@ void VX_ParseVoxelDefLump(const int lump)
 		std::vector<std::pair<int32_t, int>> targets;
 		for (;;)
 		{
-			const std::string token = os.getToken();
+			std::string token = os.getToken();
 			if (token == "=")
 				break;
+
+			// OScanner separates bracket punctuation from identifiers. Recombine the
+			// final three Doom sprite-frame characters before treating a bare
+			// four-character sprite name as an all-frames mapping.
+			if (token.size() == 4 && os.scan())
+			{
+				const std::string suffix = os.getToken();
+				if (suffix == "[" || suffix == "^" || suffix == "]")
+					token += suffix;
+				else
+					os.unScan();
+			}
 
 			const std::string spriteRef = StdStringToUpper(token);
 			if (spriteRef.size() != 4 && spriteRef.size() != 5)
@@ -292,7 +352,7 @@ int VX_PaletteIndex(const byte* pal, int r, int g, int b)
 
 void VX_CreateRemapTable(const byte* src, std::array<byte, 256>& table)
 {
-	const byte* pal = static_cast<const byte*>(W_CacheLumpName("PLAYPAL", PU_CACHE));
+	const byte* pal = W_CacheLumpName<byte>("PLAYPAL", PU_CACHE);
 
 	for (int c = 0; c < 256; c++)
 	{
@@ -372,8 +432,8 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 			p += 2;
 			offset += xoffsets[x];
 			out.offsets[y * out.x_size + x] = offset;
-			min_offset = MIN(min_offset, offset);
-			max_offset = MAX(max_offset, offset);
+			min_offset = std::min(min_offset, offset);
+			max_offset = std::max(max_offset, offset);
 		}
 	}
 
@@ -421,7 +481,7 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 	while ((start = W_FindLump("VX_START", start)) != -1)
 	{
 		int end = -1;
-		for (int i = start + 1; i < int(numlumps); i++)
+		for (int i = start + 1; i < static_cast<int>(W_NumLumps()); i++)
 		{
 			if (W_CheckLumpName(i, "VX_END"))
 			{
@@ -463,13 +523,13 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 	if (!M_FileExists(filename))
 		return false;
 
-	BYTE* buffer = NULL;
-	const QWORD len = M_ReadFile(filename, &buffer);
+	byte* buffer = nullptr;
+	const size_t len = M_ReadFile(filename, &buffer);
 	if (!buffer || len == 0)
 		return false;
 
 	VoxelModel model;
-	const bool ok = VX_Decode(buffer, size_t(len), model);
+	const bool ok = VX_Decode(buffer, len, model);
 	Z_Free(buffer);
 
 	if (!ok)
@@ -608,9 +668,11 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 	const byte B_face = B_faces[quadrant];
 
 	const bool shadow =
-	    ((spr->mobjflags & MF_SHADOW) != 0) || ((spr->statusflags & SF_INVIS) != 0);
+	    bool(spr->mobjflags & MF_SHADOW) || bool(spr->statusflags & SF_INVIS);
+	const fixed_t local_y = (y << FRACBITS) - v->y_pivot;
+	const fixed_t columnTilt = FixedMul(local_y, vv->pitchSlope);
 
-	for (fixed_t ux = ((Ax - 1) | (FRACUNIT - 1)) + 1; ux < MAX(Bx, Cx); ux += FRACUNIT)
+	for (fixed_t ux = ((Ax - 1) | (FRACUNIT - 1)) + 1; ux < std::max(Bx, Cx); ux += FRACUNIT)
 	{
 		if (ux >= ((spr->x2 + 1) << FRACBITS))
 			break;
@@ -644,7 +706,7 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 			if (len == 0)
 				continue;
 
-			const fixed_t top_z = spr->gzt - viewz - (top << FRACBITS);
+			const fixed_t top_z = spr->gzt - viewz + columnTilt - (top << FRACBITS);
 			fixed_t uy1 = centeryfrac - FixedMul(top_z, scale);
 			fixed_t uy2 = uy1 + fixed_t(len) * scale;
 			const fixed_t uy0 = uy1;
@@ -849,7 +911,6 @@ void VX_Init()
 #else
 	g_voxels.clear();
 	g_voxelOptions.clear();
-	g_warnedUnsupportedOptions.clear();
 	g_visibleVoxels.clear();
 
 	VX_ParseVoxelDefs();
@@ -922,18 +983,9 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	const angle_t ang2 = ANG180 - viewangle + angle;
 	const fixed_t c = finecosine[ang2 >> ANGLETOFINESHIFT];
 	const fixed_t s = finesine[ang2 >> ANGLETOFINESHIFT];
-
-	if (opts && (opts->useActorPitch || opts->useActorRoll))
-	{
-		const uint64_t key = FrameKey(thing->sprite, frame);
-		if (g_warnedUnsupportedOptions.insert(key).second)
-		{
-			PrintFmt(
-			    PRINT_WARNING,
-			    "VX_ProjectVoxel: {}{} requests UseActorPitch/UseActorRoll, which is parsed but not rendered yet.\n",
-			    sprnames[thing->sprite], char('A' + frame));
-		}
-	}
+	fixed_t pitchSlope = 0;
+	if (opts && opts->useActorPitch)
+		pitchSlope = VX_ActorPitchSlope(thing);
 
 	const fixed_t TL_x = tx - FixedMul(v->x_pivot, c) - FixedMul(v->y_pivot, s);
 	const fixed_t TL_y = ty - FixedMul(v->x_pivot, s) + FixedMul(v->y_pivot, c);
@@ -961,16 +1013,16 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 		}
 
 		const int sx = R_ProjectPointX(cx, cy);
-		x1 = MIN(x1, sx);
-		x2 = MAX(x2, sx);
+		x1 = std::min(x1, sx);
+		x2 = std::max(x2, sx);
 	}
 
-	x1 = clamp(x1, 0, viewwidth - 1);
-	x2 = clamp(x2, 0, viewwidth - 1);
+	x1 = std::clamp(x1, 0, viewwidth - 1);
+	x2 = std::clamp(x2, 0, viewwidth - 1);
 	if (x1 > x2)
 		return false;
 
-	g_visibleVoxels.push_back({v, angle, TL_x, TL_y, c, s});
+	g_visibleVoxels.push_back({v, angle, TL_x, TL_y, c, s, pitchSlope});
 	vis->voxel = &g_visibleVoxels.back();
 	vis->x1 = x1;
 	vis->x2 = x2;
