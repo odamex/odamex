@@ -66,6 +66,9 @@ struct VoxelRenderOptions
 {
 	std::string voxelName;
 	angle_t angleOffset = 0;
+	fixed_t xOffset = 0;
+	fixed_t yOffset = 0;
+	fixed_t zOffset = 0;
 	int placedSpin = 0;
 	int droppedSpin = 0;
 	bool hasPlacedSpin = false;
@@ -307,6 +310,27 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 			double degrees = 0.0;
 			if (VX_ReadNumber(os, degrees))
 				opts.angleOffset = VX_DegreesToAngle(degrees);
+			continue;
+		}
+		if (option == "xoffset" || option == "yoffset" || option == "zoffset")
+		{
+			os.mustScan();
+			if (!os.compareToken("="))
+			{
+				os.warning("Expected '=' after {}.", token);
+				continue;
+			}
+
+			double value = 0.0;
+			if (!VX_ReadNumber(os, value))
+				continue;
+			const fixed_t offset = fixed_t(value * FRACUNIT);
+			if (option == "xoffset")
+				opts.xOffset = offset;
+			else if (option == "yoffset")
+				opts.yOffset = offset;
+			else
+				opts.zOffset = offset;
 			continue;
 		}
 		if (option == "spin" || option == "placedspin" || option == "droppedspin")
@@ -1163,18 +1187,23 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	const angle_t ang2 = ANG180 - viewangle + angle;
 	const fixed_t c = finecosine[ang2 >> ANGLETOFINESHIFT];
 	const fixed_t s = finesine[ang2 >> ANGLETOFINESHIFT];
+	const fixed_t xOffset = opts ? opts->xOffset : 0;
+	const fixed_t yOffset = opts ? opts->yOffset : 0;
+	const fixed_t zOffset = opts ? opts->zOffset : 0;
 	fixed_t pitchSlope = 0;
 	if (opts && opts->viewerPitchSlopeLimit > 0)
 	{
 		const fixed_t centerz =
-		    gz + v->z_pivot - (fixed_t(v->z_size) << (FRACBITS - 1)) + VX_Z_OFFSET;
+		    gz + v->z_pivot - (fixed_t(v->z_size) << (FRACBITS - 1)) + zOffset + VX_Z_OFFSET;
 		pitchSlope = VX_ViewerPitchSlope(gx, gy, centerz, opts->viewerPitchSlopeLimit);
 	}
 	else if (opts && opts->useActorPitch)
 		pitchSlope = VX_ActorPitchSlope(thing);
 
-	const fixed_t TL_x = tx - FixedMul(v->x_pivot, c) - FixedMul(v->y_pivot, s);
-	const fixed_t TL_y = ty - FixedMul(v->x_pivot, s) + FixedMul(v->y_pivot, c);
+	const fixed_t TL_x = tx - FixedMul(v->x_pivot - xOffset, c) -
+	                     FixedMul(v->y_pivot - yOffset, s);
+	const fixed_t TL_y = ty - FixedMul(v->x_pivot - xOffset, s) +
+	                     FixedMul(v->y_pivot - yOffset, c);
 
 	const fixed_t xs = v->x_size;
 	const fixed_t ys = v->y_size;
@@ -1214,8 +1243,8 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	vis->x2 = x2;
 	vis->gx = gx;
 	vis->gy = gy;
-	vis->gzb = gz + VX_Z_OFFSET;
-	vis->gzt = gz + v->z_pivot + VX_Z_OFFSET;
+	vis->gzb = gz + zOffset + VX_Z_OFFSET;
+	vis->gzt = gz + v->z_pivot + zOffset + VX_Z_OFFSET;
 
 	return true;
 #endif
