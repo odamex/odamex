@@ -66,9 +66,8 @@ struct client_t
 
 	constexpr static size_t DEFAULT_TICS_AHEAD_DEFERRED_PACKETS = 32;
 
-	using DeferredPacketTable = std::pmr::unordered_map<int, buf_t, std::identity>;
-	std::unique_ptr<DeferredPacketTable> deferredPackets { std::make_unique<DeferredPacketTable>(DEFAULT_TICS_AHEAD_DEFERRED_PACKETS,
-	                                                                                            std::pmr::polymorphic_allocator<DeferredPacketTable::value_type>(pool.get())) };
+	using DeferredPacketTable = std::pmr::map<int, buf_t>;
+	std::unique_ptr<DeferredPacketTable> deferredPackets { std::make_unique<DeferredPacketTable>(std::pmr::polymorphic_allocator<DeferredPacketTable::value_type>(pool.get())) };
 
 	netadr_t    address           { };
 	short       version           { 0 };    // protocol version supported by the client
