@@ -32,6 +32,7 @@
 
 EXTERN_CVAR(r_voxels)
 EXTERN_CVAR(r_voxeldir)
+EXTERN_CVAR(sv_allowvoxels)
 void R_AddSprites(sector_t* sec, int lightlevel, int fakeside);
 extern fixed_t FocalLengthX;
 extern fixed_t FocalLengthY;
@@ -44,7 +45,6 @@ constexpr fixed_t VX_MAX_DIST = 2048 * FRACUNIT;
 constexpr fixed_t VX_NEAR_RADIUS = 512 * FRACUNIT;
 constexpr fixed_t VX_Z_OFFSET = -3 * FRACUNIT;
 constexpr angle_t VX_MAX_VIEWER_YAW = ANG45;
-constexpr fixed_t VX_MAX_VIEWER_PITCH_SLOPE = 78103; // tan(50 degrees)
 constexpr fixed_t VX_MAX_PITCH_SLOPE = FRACUNIT / 3;
 constexpr double VX_MIN_PITCH_DZ = double(FRACUNIT) / 8.0;
 constexpr double VX_NEAR_VERTICAL_HORIZ = double(FRACUNIT) / 4.0;
@@ -57,6 +57,7 @@ struct VoxelModel
 	fixed_t x_pivot = 0;
 	fixed_t y_pivot = 0;
 	fixed_t z_pivot = 0;
+	bool fromLocalDirectory = false;
 	std::vector<int> offsets;
 	std::vector<byte> data;
 };
@@ -69,6 +70,7 @@ struct VoxelRenderOptions
 	int droppedSpin = 0;
 	bool hasPlacedSpin = false;
 	bool hasDroppedSpin = false;
+	fixed_t viewerPitchSlopeLimit = 0;
 	bool useActorPitch = false;
 	bool fromVoxelDef = false;
 };
@@ -232,18 +234,18 @@ angle_t VX_ViewerFacingAngle(const fixed_t x, const fixed_t y)
 	return viewFacing + angle_t(std::clamp(delta, -limit, limit));
 }
 
-fixed_t VX_ViewerPitchSlope(const fixed_t x, const fixed_t y, const fixed_t centerz)
+fixed_t VX_ViewerPitchSlope(const fixed_t x, const fixed_t y, const fixed_t centerz,
+                           const fixed_t limit)
 {
 	const double dx = static_cast<double>(viewx) - x;
 	const double dy = static_cast<double>(viewy) - y;
 	const double dz = static_cast<double>(viewz) - centerz;
 	const double distance = std::sqrt(dx * dx + dy * dy);
 	if (distance < 1.0)
-		return dz >= 0.0 ? VX_MAX_VIEWER_PITCH_SLOPE : -VX_MAX_VIEWER_PITCH_SLOPE;
+		return dz >= 0.0 ? limit : -limit;
 
 	const double slope = dz / distance * FRACUNIT;
-	return fixed_t(std::clamp(slope, -static_cast<double>(VX_MAX_VIEWER_PITCH_SLOPE),
-	                          static_cast<double>(VX_MAX_VIEWER_PITCH_SLOPE)));
+	return fixed_t(std::clamp(slope, -static_cast<double>(limit), static_cast<double>(limit)));
 }
 
 int VX_FrameIndexForChar(char frameChar)
@@ -329,6 +331,24 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 			{
 				opts.droppedSpin = speed;
 				opts.hasDroppedSpin = true;
+			}
+			continue;
+		}
+		if (option == "faceviewerpitch")
+		{
+			os.mustScan();
+			if (!os.compareToken("="))
+			{
+				os.warning("Expected '=' after FaceViewerPitch.");
+				continue;
+			}
+
+			double degrees = 0.0;
+			if (VX_ReadNumber(os, degrees))
+			{
+				degrees = std::clamp(std::abs(degrees), 0.0, 89.0);
+				opts.viewerPitchSlopeLimit =
+				    fixed_t(std::tan(degrees * 3.14159265358979323846 / 180.0) * FRACUNIT);
 			}
 			continue;
 		}
@@ -608,7 +628,13 @@ std::string VX_NamePath(const std::string& voxelName)
 bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& voxelName,
                    const VoxelRenderOptions& opts)
 {
-	const std::string lumpName = StdStringToUpper(voxelName);
+	std::string resolvedVoxelName = voxelName;
+	// VOXELDEF uses '^' as the printable alias for Doom's post-'[' '\\'
+	// frame. Apply the same alias to the referenced KVX name, whose lump uses
+	// the literal backslash character.
+	if (resolvedVoxelName.size() == 5 && resolvedVoxelName.back() == '^')
+		resolvedVoxelName.back() = '\\';
+	const std::string lumpName = StdStringToUpper(resolvedVoxelName);
 
 	int start = -1;
 	while ((start = W_FindLump("VX_START", start)) != -1)
@@ -652,7 +678,13 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 		start = end;
 	}
 
-	const std::string filename = VX_NamePath(voxelName);
+	// Server-provided WAD resources take precedence above and remain usable even
+	// when local voxel replacements are disabled.  This setting only controls
+	// loading raw .kvx files from the client's r_voxeldir.
+	if (!sv_allowvoxels)
+		return false;
+
+	const std::string filename = VX_NamePath(resolvedVoxelName);
 	if (!M_FileExists(filename))
 		return false;
 
@@ -671,6 +703,7 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 		return false;
 	}
 
+	model.fromLocalDirectory = true;
 	g_voxels[FrameKey(spritenum, frame)] = std::move(model);
 	g_voxelOptions[FrameKey(spritenum, frame)] = opts;
 	return true;
@@ -854,7 +887,11 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 			if (uy2 > clip_y2)
 				uy2 = clip_y2;
 
-			const bool has_side = (face & (ux > Bx ? B_face : A_face)) != 0 && uy1 < clip_y2 &&
+			// Some viewing angles have no second visible side.  In those cases,
+			// rounding can put the center screen column just past Bx; keep using
+			// the primary face instead of dropping that column and leaving a seam.
+			const byte visible_face = ux > Bx && B_face != 0 ? B_face : A_face;
+			const bool has_side = (face & visible_face) != 0 && uy1 < clip_y2 &&
 			                      uy2 > clip_y1;
 			if (shadow)
 			{
@@ -1089,7 +1126,7 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 		return false;
 
 	const VoxelModel* v = VX_GetModel(thing->sprite, frame);
-	if (!v)
+	if (!v || (!sv_allowvoxels && v->fromLocalDirectory))
 		return false;
 	const VoxelRenderOptions* opts = VX_GetOptions(thing->sprite, frame);
 
@@ -1127,11 +1164,11 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	const fixed_t c = finecosine[ang2 >> ANGLETOFINESHIFT];
 	const fixed_t s = finesine[ang2 >> ANGLETOFINESHIFT];
 	fixed_t pitchSlope = 0;
-	if (VX_IsSphericalPowerup(thing))
+	if (opts && opts->viewerPitchSlopeLimit > 0)
 	{
 		const fixed_t centerz =
 		    gz + v->z_pivot - (fixed_t(v->z_size) << (FRACBITS - 1)) + VX_Z_OFFSET;
-		pitchSlope = VX_ViewerPitchSlope(gx, gy, centerz);
+		pitchSlope = VX_ViewerPitchSlope(gx, gy, centerz, opts->viewerPitchSlopeLimit);
 	}
 	else if (opts && opts->useActorPitch)
 		pitchSlope = VX_ActorPitchSlope(thing);
