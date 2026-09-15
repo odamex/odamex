@@ -64,6 +64,12 @@ struct client_t
 	std::unique_ptr<std::pmr::unsynchronized_pool_resource> pool     { std::make_unique<std::pmr::unsynchronized_pool_resource>() };
 	std::unique_ptr<OdaMessenger>                           messenger{ std::make_unique<OdaMessenger>(pool) };
 
+	constexpr static size_t DEFAULT_TICS_AHEAD_DEFERRED_PACKETS = 32;
+
+	using DeferredPacketTable = std::pmr::unordered_map<int, buf_t, std::identity>;
+	std::unique_ptr<DeferredPacketTable> deferredPackets { std::make_unique<DeferredPacketTable>(DEFAULT_TICS_AHEAD_DEFERRED_PACKETS,
+	                                                                                            std::pmr::polymorphic_allocator<DeferredPacketTable::value_type>(pool.get())) };
+
 	netadr_t    address           { };
 	short       version           { 0 };    // protocol version supported by the client
 	int         packedversion     { 0 };
