@@ -3636,8 +3636,11 @@ const Protos& CL_GetTicProtos()
 
 namespace
 {
-    // multimap because c++11 and up guarantee that ordering between
-    // values that share a given key is the order of iteration.
+    // multimap because:
+    //  1.  Packets can technically arrive well out-of-order, and
+    //      we want ordered handling.
+    //  2.  c++11 and up guarantee that ordering between
+    //      values that share a given key is the order of iteration.
     //
     // ParseResultType contains a unique_ptr to a parsed message.
     //
@@ -3828,7 +3831,13 @@ namespace
         parseError_e processResult = result.code;
         if (result.code == PERR_OK)
         {
-            if (ThisMessageServerTic() <= currentExpectedNewestPacket)
+            // Any messages that exceed the expected newest packet are deferred.
+            //
+            // Special exception: clc_netdemocap.  It must always be handled immediately because the
+            //                    NetDemo class always delineates local tics with it, and it contains
+            //                    critical information for the next tic, particularly PlayerInputs.
+            if (ThisMessageServerTic() <= currentExpectedNewestPacket
+                or result.cmd == clc_netdemocap)
             {
                 // When echoing server gametic back to it, use the tic that comes from the High Priority packet.
                 // This is because the High Priority packet is always live and comes out every tic.  It's totally
