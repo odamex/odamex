@@ -556,7 +556,7 @@ void OInterpolation::interpolateView(player_t* player, fixed_t amount)
 	const bool use_localview = consolePlayer.id == displayplayer().id &&
 	                           consolePlayer.health > 0 &&
 	                           not consolePlayer.mo->reactiontime &&
-	                           not netdemo.isInPlayback() && not demoplayback;
+	                           not netdemo.isPlaying() && not demoplayback;
 
 	interpolateCamera(amount, use_localview, player->cheats & CF_CHASECAM);
 }

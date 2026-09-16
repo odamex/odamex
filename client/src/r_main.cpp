@@ -872,7 +872,7 @@ void R_SetupFrame (player_t *player)
 	const bool use_localview = consolePlayer.id == displayplayer().id &&
 	                           consolePlayer.health > 0 &&
 	                           not consolePlayer.mo->reactiontime &&
-	                           not netdemo.isInPlayback() && not demoplayback;
+	                           not netdemo.isPlaying() && not demoplayback;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
