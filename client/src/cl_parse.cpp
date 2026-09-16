@@ -3852,7 +3852,12 @@ namespace
             }
             else
             {
-                s_deferredMessages.emplace(ThisMessageServerTic(), std::move(result));
+                // Acks have already been handled by CL_ParseCommand and are processed without regard to tic.
+                // Don't bother deferring them.
+                if (result.cmd != msg_ack)
+                {
+                    s_deferredMessages.emplace(ThisMessageServerTic(), std::move(result));
+                }
                 return;
             }
         }
@@ -3934,8 +3939,9 @@ namespace
 //
 void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 {
-	const bool syncValuesAreSet = world_index != 0 and last_svgametic != 0;
-	const int currentExpectedNewestPacket = syncValuesAreSet ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
+	const bool syncValuesAreSet           = world_index != 0 and last_svgametic != 0;
+	const bool worldIsCycling             = gamestate == GS_LEVEL;
+	const int currentExpectedNewestPacket = syncValuesAreSet and worldIsCycling ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
 
     for (auto deferredMessageIter  = s_deferredMessages.begin();
               deferredMessageIter != s_deferredMessages.end();
