@@ -3920,7 +3920,8 @@ namespace
 //
 void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 {
-	const int currentExpectedNewestPacket = world_index + cl_interp;
+    const bool syncValuesAreSet = world_index != 0 and last_svgametic != 0;
+	const int currentExpectedNewestPacket = syncValuesAreSet ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
 
     for (auto deferredMessageIter  = s_deferredMessages.begin();
               deferredMessageIter != s_deferredMessages.end();
