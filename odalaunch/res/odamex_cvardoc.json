@@ -2102,6 +2102,13 @@
          "type" : "boolean"
       },
       {
+         "default" : true,
+         "flags" : [],
+         "helptext" : "Draw sprites in screen blocks rather than whole columns at a time",
+         "name" : "r_spritetiling",
+         "type" : "boolean"
+      },
+      {
          "default" : 2,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",

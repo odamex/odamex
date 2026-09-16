@@ -794,6 +794,9 @@ CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 CVAR(			r_clipmaskedspecial, "0", "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(			r_spritetiling, "1", "Draw sprites in screen blocks rather than whole columns at a time",
+				CVARTYPE_BOOL, CVAR_NULL)
+
 CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 

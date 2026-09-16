@@ -220,6 +220,140 @@ void SpriteColumnBlaster()
 	R_BlastSpriteColumn(colfunc);
 }
 
+
+// Per-column sprite geometry, filled by R_SetupSpriteColumn for the tiled path.
+static int		sprite_yl[MAXWIDTH];
+static int		sprite_yh[MAXWIDTH];
+static fixed_t	sprite_texfrac[MAXWIDTH];
+
+//
+// R_SetupSpriteColumn
+//
+// R_BlastSpriteColumn's arithmetic with the draw call replaced by a record of
+// the result.
+// Returns false for a column the sprite does not cover.
+//
+static bool R_SetupSpriteColumn(int x)
+{
+	const int64_t topscreen = sprtopscreen;
+	const int64_t bottomscreen = topscreen + FixedMul(spryscale, dcol.textureheight);
+
+	int64_t yl = (topscreen - 1) >> FRACBITS;
+	int64_t yh = (bottomscreen - 1) >> FRACBITS;
+
+	int64_t texturefrac = 0;
+	if (mceilingclip[x] + 1 > yl)
+		texturefrac = (mceilingclip[x] + 1 - yl) * dcol.iscale;
+
+	yl = std::max<int64_t>(yl, std::max(mceilingclip[x], 0));
+	yh = std::min<int64_t>(yh, mfloorclip[x] - 1);
+
+	if (yl > yh || texturefrac >= dcol.textureheight)
+		return false;
+
+	// clamp the texture coordinates so out-of-range rows are not drawn
+	const int64_t endfrac = texturefrac + (yh - yl) * dcol.iscale;
+	const int64_t maxfrac = dcol.textureheight;
+
+	if (endfrac >= maxfrac)
+	{
+		const int64_t cnt = (endfrac - maxfrac + dcol.iscale) / dcol.iscale;
+		yh -= cnt;
+	}
+
+	if (yl < 0 || yh >= viewheight || yl > yh)
+		return false;
+
+	sprite_yl[x] = static_cast<int>(yl);
+	sprite_yh[x] = static_cast<int>(yh);
+	sprite_texfrac[x] = static_cast<fixed_t>(texturefrac);
+	return true;
+}
+
+//
+// R_RenderSpriteColumnRange
+//
+// Draws a sprite in 64x64 screen blocks rather than a column at a time, so that
+// the destination cache lines a block touches stay resident until every pixel
+// in them has been written. A tall sprite drawn column-first touches a separate
+// line, and at wide resolutions a separate page, for every pixel of every
+// column.
+//
+// Order is free to change because a sprite writes each (x, y) at most once.
+//
+static void R_RenderSpriteColumnRange(int x1, int x2, const palindex_t** posts)
+{
+	#define SPRITEBLOCKBITS 6
+	#define SPRITEBLOCKSIZE (1 << SPRITEBLOCKBITS)
+	#define SPRITEBLOCKMASK (SPRITEBLOCKSIZE - 1)
+
+	if (x1 > x2)
+		return;
+
+	for (int x = x1; x <= x2; x++)
+	{
+		if (!R_SetupSpriteColumn(x))
+		{
+			// mark the column as covering no rows
+			sprite_yl[x] = 1;
+			sprite_yh[x] = 0;
+		}
+	}
+
+	for (int bx = x1; bx <= x2; bx = (bx & ~SPRITEBLOCKMASK) + SPRITEBLOCKSIZE)
+	{
+		const int blockx1 = bx;
+		const int blockx2 = std::min((bx & ~SPRITEBLOCKMASK) + SPRITEBLOCKSIZE - 1, x2);
+
+		// the rows this block of columns actually covers
+		int miny = viewheight, maxy = -1;
+		for (int x = blockx1; x <= blockx2; x++)
+		{
+			if (sprite_yl[x] > sprite_yh[x])
+				continue;
+			miny = std::min(miny, sprite_yl[x]);
+			maxy = std::max(maxy, sprite_yh[x]);
+		}
+
+		if (miny > maxy)
+			continue;
+
+		for (int by = miny; by <= maxy; by = (by & ~SPRITEBLOCKMASK) + SPRITEBLOCKSIZE)
+		{
+			const int blocky1 = by;
+			const int blocky2 = std::min((by & ~SPRITEBLOCKMASK) + SPRITEBLOCKSIZE - 1, maxy);
+
+			for (int x = blockx1; x <= blockx2; x++)
+			{
+				const int yl = std::max(sprite_yl[x], blocky1);
+				const int yh = std::min(sprite_yh[x], blocky2);
+
+				if (yl > yh)
+					continue;
+
+				// the drawer steps texturefrac by iscale per row, so starting
+				// partway down the column is the same value it would have
+				// accumulated by here
+				const int64_t frac = static_cast<int64_t>(sprite_texfrac[x]) +
+				                     static_cast<int64_t>(yl - sprite_yl[x]) * dcol.iscale;
+
+				dcol.x = x;
+				dcol.yl = yl;
+				dcol.yh = yh;
+				dcol.texturefrac = static_cast<fixed_t>(frac);
+				dcol.source = posts[x];
+				colfunc();
+			}
+		}
+	}
+
+	#undef SPRITEBLOCKBITS
+	#undef SPRITEBLOCKSIZE
+	#undef SPRITEBLOCKMASK
+}
+
+
+EXTERN_CVAR(r_spritetiling)
 EXTERN_CVAR(sv_showplayerpowerups)
 EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(cl_movebob)
@@ -357,7 +491,11 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 		colfrac += vis->xiscale;
 	}
 
-	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray, spriteposts, SpriteColumnBlaster, false, 0);
+	// The fuzz effect samples the framebuffer so we keep those untiled.
+	if (r_spritetiling && !fuzz_effect)
+		R_RenderSpriteColumnRange(vis->x1, vis->x2, spriteposts);
+	else
+		R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray, spriteposts, SpriteColumnBlaster, false, 0);
 
 	R_ResetDrawFuncs();
 }
