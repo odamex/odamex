@@ -22,22 +22,20 @@
 
 #pragma once
 
-#include <cstdint>
-
-#include "doomtype.h"
+#include "tables.h"
 
 class AActor;
 struct vissprite_t;
 
 struct r_voxelvis_s
 {
-	const void* model;
-	angle_t angle;
-	fixed_t TL_x;
-	fixed_t TL_y;
-	fixed_t c;
-	fixed_t s;
-	fixed_t pitchSlope;
+	const void* model{};
+	angle_t angle{};
+	fixed_t TL_x{};
+	fixed_t TL_y{};
+	fixed_t c{};
+	fixed_t s{};
+	fixed_t pitchSlope{};
 };
 
 void VX_Init();

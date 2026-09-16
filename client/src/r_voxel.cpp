@@ -33,6 +33,7 @@
 #include <numbers>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "cmdlib.h"
@@ -296,7 +297,7 @@ int VX_FrameIndexForChar(char frameChar)
 
 bool VX_ParseNumberToken(const std::string& token, double& out)
 {
-	char* end = nullptr;
+	char* end = nullptr; // NOLINT(misc-const-correctness): required by std::strtod
 	out = std::strtod(token.c_str(), &end);
 	return end != nullptr and * end == '\0';
 }
@@ -713,7 +714,7 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 	while ((start = W_FindLump("VX_START", start)) != -1)
 	{
 		int end = -1;
-		for (int i = start + 1; i < static_cast<int>(W_NumLumps()); i++)
+		for (int i = start + 1; std::cmp_less(i, W_NumLumps()); i++)
 		{
 			if (W_CheckLumpName(i, "VX_END"))
 			{
@@ -842,7 +843,7 @@ void VX_DrawSolidShadedColumn(vissprite_t* spr, const int screenX, const int yl,
 
 void VX_DrawColumn(vissprite_t* spr, int x, int y)
 {
-	r_voxelvis_s* vv = spr->voxel;
+	const r_voxelvis_s* vv = spr->voxel;
 	const auto* v = static_cast<const VoxelModel*>(vv->model);
 
 	const int ofs1 = v->offsets[(y * v->x_size) + x];
@@ -870,8 +871,8 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 
 	std::array<fixed_t, 4> tx{};
 	std::array<fixed_t, 4> ty{};
-	tx[0] = vv->TL_x + x * c + y * s;
-	ty[0] = vv->TL_y + x * s - y * c;
+	tx[0] = vv->TL_x + (x * c) + (y * s);
+	ty[0] = vv->TL_y + (x * s) - (y * c);
 	tx[1] = tx[0] + s;
 	ty[1] = ty[0] - c;
 	tx[2] = tx[1] + c;
@@ -1144,7 +1145,7 @@ void VX_SpritesInNode(unsigned int bspnum)
 	{
 		if (bspnum & NF_SUBSECTOR)
 		{
-			subsector_t* sub = &subsectors[bspnum & ~NF_SUBSECTOR];
+			const subsector_t* sub = &subsectors[bspnum & ~NF_SUBSECTOR];
 			R_AddSprites(sub->sector, sub->sector->lightlevel, FAKED_Center);
 			return;
 		}
