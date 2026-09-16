@@ -214,6 +214,11 @@ void CL_Header(const odaproto::Header* msg)
 	s_currentHeader.destinationTic  = msg->destination_tic();
 	s_currentHeader.reliableSize    = static_cast<uint16_t>(msg->reliable_size());
 	s_currentHeader.flags           = static_cast<uint16_t>(msg->flags());
+
+    if (ThisMessageIsHighPriority())
+    {
+        last_svgametic = s_currentHeader.originatorTic;
+    }
 }
 
 /**
@@ -3920,7 +3925,7 @@ namespace
 //
 void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 {
-    const bool syncValuesAreSet = world_index != 0 and last_svgametic != 0;
+    const bool syncValuesAreSet = false;//world_index != 0 and last_svgametic != 0;
 	const int currentExpectedNewestPacket = syncValuesAreSet ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
 
     for (auto deferredMessageIter  = s_deferredMessages.begin();
@@ -3938,6 +3943,10 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 	if (optionalHeader)
 	{
 		s_currentHeader = *optionalHeader;
+        if (ThisMessageIsHighPriority())
+        {
+            last_svgametic = s_currentHeader.originatorTic;
+        }
 
         if (s_currentHeader.originatorTic > currentExpectedNewestPacket)
         {
