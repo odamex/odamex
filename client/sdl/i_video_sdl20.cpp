@@ -327,16 +327,44 @@ void ISDL20TextureWindowSurfaceManager::startRefresh()
 //
 void ISDL20TextureWindowSurfaceManager::finishRefresh()
 {
+    IWindowSurface* source = mSurface;
     if (mSurface->getBitsPerPixel() == 8)
     {
         m8bppTo32BppSurface->blit(mSurface, 0, 0, mSurface->getWidth(), mSurface->getHeight(),
                 0, 0, m8bppTo32BppSurface->getWidth(), m8bppTo32BppSurface->getHeight());
-	    SDL_UpdateTexture(mSDLTexture, NULL, m8bppTo32BppSurface->getBuffer(), m8bppTo32BppSurface->getPitch());
-    }
-    else
-    {
-	   SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
-    }
+		source = m8bppTo32BppSurface;
+	}
+
+	// Copy the frame with SDL_LockTexture and the CRT's memcpy rather than
+	// SDL_UpdateTexture: the official SDL2 DLL is built without the CRT, so
+	// SDL_UpdateTexture copies through SDL's scalar 4-bytes-per-iteration
+	// SDL_memcpy, which is much slower for full-frame copies.
+	void* texture_pixels;
+	int texture_pitch;
+	if (SDL_LockTexture(mSDLTexture, NULL, &texture_pixels, &texture_pitch) == 0)
+	{
+		const uint8_t* source_row = static_cast<const uint8_t*>(source->getBuffer());
+		uint8_t* dest_row = static_cast<uint8_t*>(texture_pixels);
+		const int source_pitch = source->getPitch();
+		const size_t row_bytes =
+		    size_t(source->getWidth()) * source->getPixelFormat()->getBytesPerPixel();
+
+		if (source_pitch == texture_pitch && size_t(texture_pitch) == row_bytes)
+		{
+			memcpy(dest_row, source_row, row_bytes * source->getHeight());
+		}
+		else
+		{
+			for (int y = 0; y < source->getHeight(); y++)
+			{
+				memcpy(dest_row, source_row, row_bytes);
+				source_row += source_pitch;
+				dest_row += texture_pitch;
+			}
+		}
+
+		SDL_UnlockTexture(mSDLTexture);
+	}
 
 	SDL_RenderCopy(mSDLRenderer, mSDLTexture, nullptr, nullptr);
 
@@ -456,7 +484,7 @@ ISDL20Window::~ISDL20Window()
 void ISDL20Window::setRendererDriver()
 {
 	// Preferred ordering of drivers
-	const char* drivers[] = {"direct3d", "opengl", "opengles2", "opengles", "software", ""};
+	const char* drivers[] = {"direct3d11", "direct3d", "opengl", "opengles2", "opengles", "software", ""};
 
 	for (int i = 0; drivers[i][0] != '\0'; i++)
 	{
