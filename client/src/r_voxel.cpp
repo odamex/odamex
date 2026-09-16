@@ -29,6 +29,7 @@
 #include <cctype>
 #include <cmath>
 #include <deque>
+#include <limits>
 #include <numbers>
 #include <string>
 #include <unordered_map>
@@ -52,14 +53,24 @@ extern fixed_t FocalLengthY;
 namespace
 {
 constexpr int kMaxFrames = 29;
+constexpr int kBackslashFrame = 27;
+constexpr size_t kSpriteNameLength = 4;
+constexpr size_t kVoxelFrameNameLength = 5;
+constexpr size_t kKvxHeaderSize = 40;
+constexpr size_t kKvxPaletteSize = 768;
+constexpr size_t kKvxMaxXOffsets = 260;
+constexpr double kDegreesPerCircle = 360.0;
+constexpr double kDegreesPerHalfCircle = 180.0;
+constexpr double kMaxViewerPitchDegrees = 89.0;
+constexpr double kAngleUnitsPerCircle = 4294967296.0;
 constexpr fixed_t VX_MINZ = 1 * FRACUNIT;
 constexpr fixed_t VX_MAX_DIST = 2048 * FRACUNIT;
 constexpr fixed_t VX_NEAR_RADIUS = 512 * FRACUNIT;
 constexpr fixed_t VX_Z_OFFSET = -3 * FRACUNIT;
 constexpr angle_t VX_MAX_VIEWER_YAW = ANG45;
 constexpr fixed_t VX_MAX_PITCH_SLOPE = FRACUNIT / 3;
-constexpr double VX_MIN_PITCH_DZ = double(FRACUNIT) / 8.0;
-constexpr double VX_NEAR_VERTICAL_HORIZ = double(FRACUNIT) / 4.0;
+constexpr double VX_MIN_PITCH_DZ = static_cast<double>(FRACUNIT) / 8.0;
+constexpr double VX_NEAR_VERTICAL_HORIZ = static_cast<double>(FRACUNIT) / 4.0;
 
 struct VoxelModel
 {
@@ -108,14 +119,17 @@ fixed_t g_eye_y = 0;
 
 uint64_t FrameKey(const int32_t spritenum, const int frame)
 {
-	return (uint64_t(uint32_t(spritenum)) << 32) | uint64_t(uint8_t(frame));
+	return (static_cast<uint64_t>(static_cast<uint32_t>(spritenum)) << 32) |
+	       static_cast<uint64_t>(static_cast<uint8_t>(frame));
 }
 
 angle_t VX_DegreesToAngle(double degrees)
 {
-	const double unit = std::fmod(degrees, 360.0);
-	const double wrapped = unit < 0.0 ? (unit + 360.0) : unit;
-	return angle_t((uint64_t(wrapped * 4294967296.0 / 360.0)) & 0xFFFFFFFFu);
+	const double unit = std::fmod(degrees, kDegreesPerCircle);
+	const double wrapped = unit < 0.0 ? (unit + kDegreesPerCircle) : unit;
+	return static_cast<angle_t>(
+	    static_cast<uint64_t>(wrapped * kAngleUnitsPerCircle / kDegreesPerCircle) &
+	    std::numeric_limits<uint32_t>::max());
 }
 
 fixed_t VX_AngleToSlope(int angle)
@@ -123,37 +137,38 @@ fixed_t VX_AngleToSlope(int angle)
 	if (angle > ANG90)
 		return finetangent[0];
 	if (-angle > ANG90)
-		return finetangent[FINEANGLES / 2 - 1];
-	return finetangent[(ANG90 - angle_t(angle)) >> ANGLETOFINESHIFT];
+		return finetangent[(FINEANGLES / 2) - 1];
+	return finetangent[(ANG90 - static_cast<angle_t>(angle)) >> ANGLETOFINESHIFT];
 }
 
 fixed_t VX_MomentumToSlope(const AActor* thing)
 {
-	if (!thing)
+	if (not thing)
 		return 0;
 
-	const double mx = static_cast<double>(thing->momx);
-	const double my = static_cast<double>(thing->momy);
-	const double mz = static_cast<double>(thing->momz);
+	const auto mx = static_cast<double>(thing->momx);
+	const auto my = static_cast<double>(thing->momy);
+	const auto mz = static_cast<double>(thing->momz);
 	if (std::abs(mz) < VX_MIN_PITCH_DZ)
 		return 0;
 
-	const double horiz = std::sqrt(mx * mx + my * my);
+	const double horiz = std::sqrt((mx * mx) + (my * my));
 	if (horiz < VX_NEAR_VERTICAL_HORIZ)
 		return mz > 0.0 ? VX_MAX_PITCH_SLOPE : -VX_MAX_PITCH_SLOPE;
 
 	const double slope = mz / std::max(horiz, 1.0);
 	const double fixedSlope = slope * static_cast<double>(FRACUNIT);
-	return fixed_t(std::clamp(fixedSlope, -static_cast<double>(VX_MAX_PITCH_SLOPE),
-	                          static_cast<double>(VX_MAX_PITCH_SLOPE)));
+	return static_cast<fixed_t>(std::clamp(fixedSlope,
+	                                       -static_cast<double>(VX_MAX_PITCH_SLOPE),
+	                                       static_cast<double>(VX_MAX_PITCH_SLOPE)));
 }
 
 fixed_t VX_ActorPitchSlope(const AActor* thing)
 {
-	if (!thing)
+	if (not thing)
 		return 0;
 	if (thing->pitch != 0)
-		return VX_AngleToSlope(int(thing->pitch));
+		return VX_AngleToSlope(static_cast<int>(thing->pitch));
 
 	// Inferring pitch from vertical displacement makes floating monsters and
 	// bobbing pickups snap and shears their voxel rows apart. Only missiles need
@@ -197,19 +212,20 @@ VoxelRotation VX_RotationForThing(const AActor* thing, const VoxelRenderOptions*
 		const bool hasSpin = dropped ? opts->hasDroppedSpin : opts->hasPlacedSpin;
 		const int spin = dropped ? opts->droppedSpin : opts->placedSpin;
 		if (hasSpin)
-			return {spin == 0 ? VoxelRotationMode::ActorAngle : VoxelRotationMode::Spin,
-			        spin};
+			return {.mode = spin == 0 ? VoxelRotationMode::ActorAngle
+			                          : VoxelRotationMode::Spin,
+			        .spin = spin};
 	}
 
 	// These spherical pickups look distorted unless they point at the viewer's
 	// actual position instead of merely matching the camera's view angle.
 	if (VX_IsSphericalPowerup(thing))
-		return {VoxelRotationMode::FaceView, 0};
+		return {.mode = VoxelRotationMode::FaceView, .spin = 0};
 
 	// Dropped items should retain sprite-like presentation. Check this before
 	// the weapon list so dropped weapons do not spin.
 	if (dropped)
-		return {VoxelRotationMode::FaceView, 0};
+		return {.mode = VoxelRotationMode::FaceView, .spin = 0};
 
 	// Match Woof's rotating placed-weapon list.
 	switch (thing->sprite)
@@ -221,15 +237,15 @@ VoxelRotation VX_RotationForThing(const AActor* thing, const VoxelRenderOptions*
 	case SPR_BFUG:
 	case SPR_CSAW:
 	case SPR_SGN2:
-		return {VoxelRotationMode::Spin, 4};
+		return {.mode = VoxelRotationMode::Spin, .spin = 4};
 	default:
 		break;
 	}
 
 	if (thing->flags & MF_SPECIAL)
-		return {VoxelRotationMode::FaceView, 0};
+		return {.mode = VoxelRotationMode::FaceView, .spin = 0};
 
-	return {VoxelRotationMode::ActorAngle, 0};
+	return {.mode = VoxelRotationMode::ActorAngle, .spin = 0};
 }
 
 angle_t VX_ItemRotationAngle(const int degreesPerTic)
@@ -237,7 +253,7 @@ angle_t VX_ItemRotationAngle(const int degreesPerTic)
 	// Interpolate the fraction of the current tic so spinning remains smooth at
 	// uncapped frame rates. Negative values rotate in the opposite direction.
 	const double time = static_cast<double>(level.time) +
-	                    static_cast<double>(render_lerp_amount) / FRACUNIT;
+	                    (static_cast<double>(render_lerp_amount) / FRACUNIT);
 	return VX_DegreesToAngle(time * degreesPerTic);
 }
 
@@ -245,9 +261,9 @@ angle_t VX_ViewerFacingAngle(const fixed_t x, const fixed_t y)
 {
 	const angle_t viewFacing = viewangle + ANG180;
 	const angle_t viewerFacing = R_PointToAngle(x, y) + ANG180;
-	const int32_t delta = static_cast<int32_t>(viewerFacing - viewFacing);
-	const int32_t limit = static_cast<int32_t>(VX_MAX_VIEWER_YAW);
-	return viewFacing + angle_t(std::clamp(delta, -limit, limit));
+	const auto delta = static_cast<int32_t>(viewerFacing - viewFacing);
+	const auto limit = static_cast<int32_t>(VX_MAX_VIEWER_YAW);
+	return viewFacing + static_cast<angle_t>(std::clamp(delta, -limit, limit));
 }
 
 fixed_t VX_ViewerPitchSlope(const fixed_t x, const fixed_t y, const fixed_t centerz,
@@ -256,24 +272,24 @@ fixed_t VX_ViewerPitchSlope(const fixed_t x, const fixed_t y, const fixed_t cent
 	const double dx = static_cast<double>(viewx) - x;
 	const double dy = static_cast<double>(viewy) - y;
 	const double dz = static_cast<double>(viewz) - centerz;
-	const double distance = std::sqrt(dx * dx + dy * dy);
+	const double distance = std::sqrt((dx * dx) + (dy * dy));
 	if (distance < 1.0)
 		return dz >= 0.0 ? limit : -limit;
 
 	const double slope = dz / distance * FRACUNIT;
-	return fixed_t(
+	return static_cast<fixed_t>(
 	    std::clamp(slope, -static_cast<double>(limit), static_cast<double>(limit)));
 }
 
 int VX_FrameIndexForChar(char frameChar)
 {
-	const unsigned char raw = static_cast<unsigned char>(frameChar);
-	const unsigned char up = static_cast<unsigned char>(std::toupper(raw));
+	const auto raw = static_cast<unsigned char>(frameChar);
+	const auto up = static_cast<unsigned char>(std::toupper(raw));
 	// VOXELDEF uses '^' as a parser-safe alias for the frame after '[' ('\\').
 	if (up == '^')
-		return 27;
-	const int frame = int(up) - int('A');
-	if (frame < 0 || frame >= kMaxFrames)
+		return kBackslashFrame;
+	const int frame = static_cast<int>(up) - static_cast<int>('A');
+	if (frame < 0 or frame >= kMaxFrames)
 		return -1;
 	return frame;
 }
@@ -282,7 +298,7 @@ bool VX_ParseNumberToken(const std::string& token, double& out)
 {
 	char* end = nullptr;
 	out = std::strtod(token.c_str(), &end);
-	return end != nullptr && *end == '\0';
+	return end != nullptr and * end == '\0';
 }
 
 bool VX_ReadNumber(OScanner& os, double& out)
@@ -295,7 +311,7 @@ bool VX_ReadNumber(OScanner& os, double& out)
 		token = "-" + os.getToken();
 	}
 
-	if (!VX_ParseNumberToken(token, out))
+	if (not VX_ParseNumberToken(token, out))
 	{
 		os.warning("Expected numeric value, got '{}'.", token);
 		return false;
@@ -316,7 +332,7 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 		if (option == "angleoffset")
 		{
 			os.mustScan();
-			if (!os.compareToken("="))
+			if (not os.compareToken("="))
 			{
 				os.warning("Expected '=' after AngleOffset.");
 				continue;
@@ -326,19 +342,19 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 				opts.angleOffset = VX_DegreesToAngle(degrees);
 			continue;
 		}
-		if (option == "xoffset" || option == "yoffset" || option == "zoffset")
+		if (option == "xoffset" or option == "yoffset" or option == "zoffset")
 		{
 			os.mustScan();
-			if (!os.compareToken("="))
+			if (not os.compareToken("="))
 			{
 				os.warning("Expected '=' after {}.", token);
 				continue;
 			}
 
 			double value = 0.0;
-			if (!VX_ReadNumber(os, value))
+			if (not VX_ReadNumber(os, value))
 				continue;
-			const fixed_t offset = fixed_t(value * FRACUNIT);
+			const auto offset = static_cast<fixed_t>(value * FRACUNIT);
 			if (option == "xoffset")
 				opts.xOffset = offset;
 			else if (option == "yoffset")
@@ -347,25 +363,25 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 				opts.zOffset = offset;
 			continue;
 		}
-		if (option == "spin" || option == "placedspin" || option == "droppedspin")
+		if (option == "spin" or option == "placedspin" or option == "droppedspin")
 		{
 			os.mustScan();
-			if (!os.compareToken("="))
+			if (not os.compareToken("="))
 			{
 				os.warning("Expected '=' after {}.", token);
 				continue;
 			}
 
 			double value = 0.0;
-			if (!VX_ReadNumber(os, value))
+			if (not VX_ReadNumber(os, value))
 				continue;
 			const int speed = static_cast<int>(value);
-			if (option == "spin" || option == "placedspin")
+			if (option == "spin" or option == "placedspin")
 			{
 				opts.placedSpin = speed;
 				opts.hasPlacedSpin = true;
 			}
-			if (option == "spin" || option == "droppedspin")
+			if (option == "spin" or option == "droppedspin")
 			{
 				opts.droppedSpin = speed;
 				opts.hasDroppedSpin = true;
@@ -375,7 +391,7 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 		if (option == "faceviewerpitch")
 		{
 			os.mustScan();
-			if (!os.compareToken("="))
+			if (not os.compareToken("="))
 			{
 				os.warning("Expected '=' after FaceViewerPitch.");
 				continue;
@@ -384,9 +400,10 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 			double degrees = 0.0;
 			if (VX_ReadNumber(os, degrees))
 			{
-				degrees = std::clamp(std::abs(degrees), 0.0, 89.0);
-				opts.viewerPitchSlopeLimit =
-				    fixed_t(std::tan(degrees * std::numbers::pi / 180.0) * FRACUNIT);
+				degrees = std::clamp(std::abs(degrees), 0.0, kMaxViewerPitchDegrees);
+				opts.viewerPitchSlopeLimit = static_cast<fixed_t>(
+				    std::tan(degrees * std::numbers::pi / kDegreesPerHalfCircle) *
+				    FRACUNIT);
 			}
 			continue;
 		}
@@ -398,7 +415,7 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 		if (option == "scale")
 		{
 			os.mustScan();
-			if (!os.compareToken("="))
+			if (not os.compareToken("="))
 			{
 				os.warning("Expected '=' after Scale.");
 				continue;
@@ -410,7 +427,7 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 				           token);
 			continue;
 		}
-		if (option == "pitchfrommomentum" || option == "useactorroll" ||
+		if (option == "pitchfrommomentum" or option == "useactorroll" or
 		    option == "overridepalette")
 		{
 			os.warning("VOXELDEF option '{}' is not supported and will be ignored.",
@@ -421,7 +438,7 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 		os.warning("Unknown VOXELDEF option '{}'.", token);
 		if (os.scan())
 		{
-			if (!os.compareToken("}") && os.compareToken("="))
+			if (not os.compareToken("}") and os.compareToken("="))
 				os.mustScan();
 			else
 				os.unScan();
@@ -433,16 +450,16 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 
 void VX_ParseVoxelDefLump(const int lump)
 {
-	const char* data = static_cast<const char*>(W_CacheLumpNum(lump, PU_CACHE));
+	const char* data = W_CacheLumpNum<char>(lump, PU_CACHE);
 	const unsigned len = W_LumpLength(lump);
-	if (!data || len == 0)
+	if (not data or len == 0)
 		return;
 
 	const OScannerConfig config = {
-	    "VOXELDEF", // lumpName
-	    false,      // semiComments
-	    true,       // cComments
-	    false,      // hashComments
+	    .lumpName = "VOXELDEF", // lumpName
+	    .semiComments = false,  // semiComments
+	    .cComments = true,      // cComments
+	    .hashComments = false,  // hashComments
 	};
 	OScanner os = OScanner::openBuffer(config, data, data + len);
 
@@ -463,23 +480,24 @@ void VX_ParseVoxelDefLump(const int lump)
 			// OScanner separates bracket punctuation from identifiers. Recombine the
 			// final three Doom sprite-frame characters before treating a bare
 			// four-character sprite name as an all-frames mapping.
-			if (token.size() == 4 && os.scan())
+			if (token.size() == kSpriteNameLength and os.scan())
 			{
 				const std::string suffix = os.getToken();
-				if (suffix == "[" || suffix == "^" || suffix == "]")
+				if (suffix == "[" or suffix == "^" or suffix == "]")
 					token += suffix;
 				else
 					os.unScan();
 			}
 
 			const std::string spriteRef = StdStringToUpper(token);
-			if (spriteRef.size() != 4 && spriteRef.size() != 5)
+			if (spriteRef.size() != kSpriteNameLength and
+			    spriteRef.size() != kVoxelFrameNameLength)
 			{
 				os.warning("Invalid sprite token '{}' in VOXELDEF entry.", token);
 			}
 			else
 			{
-				const std::string spriteName = spriteRef.substr(0, 4);
+				const std::string spriteName = spriteRef.substr(0, kSpriteNameLength);
 				const auto sit = spriteByName.find(spriteName);
 				if (sit == spriteByName.end())
 				{
@@ -501,12 +519,12 @@ void VX_ParseVoxelDefLump(const int lump)
 				}
 			}
 
-			if (!os.scan())
+			if (not os.scan())
 				return;
 		}
 
 		os.mustScan();
-		if (!os.isQuotedString())
+		if (not os.isQuotedString())
 		{
 			os.warning("Expected quoted voxel name after '='.");
 			continue;
@@ -539,14 +557,14 @@ void VX_ParseVoxelDefs()
 int VX_PaletteIndex(const byte* pal, int r, int g, int b)
 {
 	int best = 0;
-	int best_dist = (1 << 30);
+	int best_dist = std::numeric_limits<int>::max();
 
 	for (int i = 0; i < 256; i++)
 	{
-		const int dr = r - int(*pal++);
-		const int dg = g - int(*pal++);
-		const int db = b - int(*pal++);
-		const int dist = dr * dr + dg * dg + db * db;
+		const int dr = r - static_cast<int>(*pal++);
+		const int dg = g - static_cast<int>(*pal++);
+		const int db = b - static_cast<int>(*pal++);
+		const int dist = (dr * dr) + (dg * dg) + (db * db);
 
 		if (dist < best_dist)
 		{
@@ -564,18 +582,18 @@ void VX_CreateRemapTable(const byte* src, std::array<byte, 256>& table)
 
 	for (int c = 0; c < 256; c++)
 	{
-		const int r = int(*src++) << 2;
-		const int g = int(*src++) << 2;
-		const int b = int(*src++) << 2;
-		table[c] = uint8_t(VX_PaletteIndex(pal, r, g, b));
+		const int r = static_cast<int>(*src++) << 2;
+		const int g = static_cast<int>(*src++) << 2;
+		const int b = static_cast<int>(*src++) << 2;
+		table[c] = static_cast<uint8_t>(VX_PaletteIndex(pal, r, g, b));
 	}
 }
 
 void VX_RemapSlabColors(VoxelModel& v, int x, int y, const std::array<byte, 256>& table)
 {
-	const int A = v.offsets[y * v.x_size + x];
-	const int B = v.offsets[(y + 1) * v.x_size + x];
-	if (!(A < B))
+	const int A = v.offsets[(y * v.x_size) + x];
+	const int B = v.offsets[((y + 1) * v.x_size) + x];
+	if (not(A < B))
 		return;
 
 	byte* slab = &v.data[A];
@@ -583,11 +601,9 @@ void VX_RemapSlabColors(VoxelModel& v, int x, int y, const std::array<byte, 256>
 
 	while (slab < end)
 	{
-		const byte top = *slab++;
+		slab++; // top
 		const byte len = *slab++;
-		const byte face = *slab++;
-		(void)top;
-		(void)face;
+		slab++; // face
 
 		for (byte i = 0; i < len; i++, slab++)
 			*slab = table[*slab];
@@ -596,21 +612,21 @@ void VX_RemapSlabColors(VoxelModel& v, int x, int y, const std::array<byte, 256>
 
 bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 {
-	if (length < 40 + 768)
+	if (length < kKvxHeaderSize + kKvxPaletteSize)
 		return false;
 
 	const byte* p = bytes;
 	p += 4; // num_bytes
 
-	out.x_size = int(p[0]);
+	out.x_size = static_cast<int>(p[0]);
 	p += 4;
-	out.y_size = int(p[0]);
+	out.y_size = static_cast<int>(p[0]);
 	p += 4;
-	out.z_size = int(p[0]);
+	out.z_size = static_cast<int>(p[0]);
 	p += 4;
-	if (out.x_size <= 0 || out.y_size <= 0 || out.z_size <= 0)
+	if (out.x_size <= 0 or out.y_size <= 0 or out.z_size <= 0)
 		return false;
-	if (out.x_size > 255 || out.y_size > 255)
+	if (out.x_size > 255 or out.y_size > 255)
 		return false;
 
 	out.x_pivot = (p[0] << 8) | (p[1] << 16);
@@ -620,26 +636,26 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	out.z_pivot = (p[0] << 8) | (p[1] << 16);
 	p += 4;
 
-	std::array<int, 260> xoffsets{};
+	std::array<int, kKvxMaxXOffsets> xoffsets{};
 	for (int x = 0; x <= out.x_size; x++)
 	{
-		xoffsets[x] = int(p[0]) | (p[1] << 8) | (p[2] << 16);
+		xoffsets[x] = static_cast<int>(p[0]) | (p[1] << 8) | (p[2] << 16);
 		p += 4;
 	}
 
 	const int num_offsets = out.x_size * (out.y_size + 1);
 	out.offsets.resize(num_offsets);
 
-	int min_offset = (1 << 30);
+	int min_offset = std::numeric_limits<int>::max();
 	int max_offset = 0;
 	for (int x = 0; x < out.x_size; x++)
 	{
 		for (int y = 0; y <= out.y_size; y++)
 		{
-			int offset = int(p[0]) | (p[1] << 8);
+			int offset = static_cast<int>(p[0]) | (p[1] << 8);
 			p += 2;
 			offset += xoffsets[x];
-			out.offsets[y * out.x_size + x] = offset;
+			out.offsets[(y * out.x_size) + x] = offset;
 			min_offset = std::min(min_offset, offset);
 			max_offset = std::max(max_offset, offset);
 		}
@@ -652,15 +668,16 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	for (int& offset : out.offsets)
 		offset -= min_offset;
 
-	const size_t data_start = (size_t(7) * 4) + size_t(min_offset);
-	if (data_start + size_t(data_size) > length)
+	const size_t data_start =
+	    (static_cast<size_t>(7) * 4) + static_cast<size_t>(min_offset);
+	if (data_start + static_cast<size_t>(data_size) > length)
 		return false;
 
 	out.data.resize(data_size);
 	memcpy(out.data.data(), bytes + data_start, data_size);
 
 	std::array<byte, 256> remap_table{};
-	VX_CreateRemapTable(bytes + (length - 768), remap_table);
+	VX_CreateRemapTable(bytes + (length - kKvxPaletteSize), remap_table);
 
 	for (int x = 0; x < out.x_size; x++)
 	{
@@ -687,7 +704,8 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 	// VOXELDEF uses '^' as the printable alias for Doom's post-'[' '\\'
 	// frame. Apply the same alias to the referenced KVX name, whose lump uses
 	// the literal backslash character.
-	if (resolvedVoxelName.size() == 5 && resolvedVoxelName.back() == '^')
+	if (resolvedVoxelName.size() == kVoxelFrameNameLength and
+	    resolvedVoxelName.back() == '^')
 		resolvedVoxelName.back() = '\\';
 	const std::string lumpName = StdStringToUpper(resolvedVoxelName);
 
@@ -708,7 +726,7 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 
 		for (int i = start + 1; i < end; i++)
 		{
-			if (!W_CheckLumpName(i, lumpName.c_str()))
+			if (not W_CheckLumpName(i, lumpName.c_str()))
 				continue;
 
 			const unsigned len = W_LumpLength(i);
@@ -719,7 +737,7 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 			W_ReadLump(i, bytes.data());
 
 			VoxelModel model;
-			if (!VX_Decode(bytes.data(), bytes.size(), model))
+			if (not VX_Decode(bytes.data(), bytes.size(), model))
 			{
 				PrintFmt(PRINT_WARNING, "VX_Load: failed to decode lump {}\n", lumpName);
 				return false;
@@ -736,23 +754,23 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 	// Server-provided WAD resources take precedence above and remain usable even
 	// when local voxel replacements are disabled.  This setting only controls
 	// loading raw .kvx files from the client's r_voxeldir.
-	if (!sv_allowvoxels)
+	if (not sv_allowvoxels)
 		return false;
 
 	const std::string filename = VX_NamePath(resolvedVoxelName);
-	if (!M_FileExists(filename))
+	if (not M_FileExists(filename))
 		return false;
 
 	byte* buffer = nullptr;
 	const size_t len = M_ReadFile(filename, &buffer);
-	if (!buffer || len == 0)
+	if (not buffer or len == 0)
 		return false;
 
 	VoxelModel model;
 	const bool ok = VX_Decode(buffer, len, model);
 	Z_Free(buffer);
 
-	if (!ok)
+	if (not ok)
 	{
 		PrintFmt(PRINT_WARNING, "VX_Load: failed to decode {}\n", filename);
 		return false;
@@ -768,7 +786,7 @@ bool VX_Load(const int32_t spritenum, const std::string& spriteName, const int f
 {
 	const uint64_t key = FrameKey(spritenum, frame);
 	const auto dit = g_voxelOptions.find(key);
-	if (dit != g_voxelOptions.end() && dit->second.fromVoxelDef)
+	if (dit != g_voxelOptions.end() and dit->second.fromVoxelDef)
 	{
 		if (VX_LoadByName(spritenum, frame, dit->second.voxelName, dit->second))
 			return true;
@@ -825,11 +843,11 @@ void VX_DrawSolidShadedColumn(vissprite_t* spr, const int screenX, const int yl,
 void VX_DrawColumn(vissprite_t* spr, int x, int y)
 {
 	r_voxelvis_s* vv = spr->voxel;
-	const VoxelModel* v = static_cast<const VoxelModel*>(vv->model);
+	const auto* v = static_cast<const VoxelModel*>(vv->model);
 
-	const int ofs1 = v->offsets[y * v->x_size + x];
-	const int ofs2 = v->offsets[(y + 1) * v->x_size + x];
-	if (!(ofs1 < ofs2))
+	const int ofs1 = v->offsets[(y * v->x_size) + x];
+	const int ofs2 = v->offsets[((y + 1) * v->x_size) + x];
+	if (not(ofs1 < ofs2))
 		return;
 
 	int qu_x = 2;
@@ -843,7 +861,7 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 		qu_y = 0;
 	else if (g_eye_y < ((y + 1) << FRACBITS))
 		qu_y = 1;
-	const int quadrant = qu_y * 3 + qu_x;
+	const int quadrant = (qu_y * 3) + qu_x;
 	if (quadrant == 4)
 		return;
 
@@ -876,7 +894,7 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 	const fixed_t Dx0 = tx[idx];
 	const fixed_t Dy = ty[idx];
 
-	if (By < VX_MINZ || Ay < VX_MINZ || Cy < VX_MINZ || Dy < VX_MINZ)
+	if (By < VX_MINZ or Ay < VX_MINZ or Cy < VX_MINZ or Dy < VX_MINZ)
 		return;
 
 	const fixed_t A_xscale = FixedDiv(FocalLengthX, Ay);
@@ -901,7 +919,7 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 	const byte B_face = B_faces[quadrant];
 
 	const bool shadow =
-	    bool(spr->mobjflags & MF_SHADOW) || bool(spr->statusflags & SF_INVIS);
+	    bool(spr->mobjflags & MF_SHADOW) or bool(spr->statusflags & SF_INVIS);
 	const fixed_t local_y = (y << FRACBITS) - v->y_pivot;
 	const fixed_t columnTilt = FixedMul(local_y, vv->pitchSlope);
 
@@ -942,7 +960,7 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 
 			const fixed_t top_z = spr->gzt - viewz + columnTilt - (top << FRACBITS);
 			fixed_t uy1 = centeryfrac - FixedMul(top_z, scale);
-			fixed_t uy2 = uy1 + fixed_t(len) * scale;
+			fixed_t uy2 = uy1 + (static_cast<fixed_t>(len) * scale);
 			const fixed_t uy0 = uy1;
 
 			uy1 = std::clamp(uy1, clip_y1, clip_y2);
@@ -951,9 +969,9 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 			// Some viewing angles have no second visible side.  In those cases,
 			// rounding can put the center screen column just past Bx; keep using
 			// the primary face instead of dropping that column and leaving a seam.
-			const byte visible_face = ux > Bx && B_face != 0 ? B_face : A_face;
+			const byte visible_face = ux > Bx and B_face != 0 ? B_face : A_face;
 			const bool has_side =
-			    (face & visible_face) != 0 && uy1 < clip_y2 && uy2 > clip_y1;
+			    (face & visible_face) != 0 and uy1 < clip_y2 and uy2 > clip_y1;
 			if (shadow)
 			{
 				if (has_side)
@@ -968,12 +986,12 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 				continue;
 			}
 
-			const bool has_top = (face & F_TOP) != 0 && top_z < 0;
+			const bool has_top = (face & F_TOP) != 0 and top_z < 0;
 			const bool has_bottom =
-			    (face & F_BOTTOM) != 0 && top_z > (int(len) << FRACBITS);
+			    (face & F_BOTTOM) != 0 and top_z > (static_cast<int>(len) << FRACBITS);
 
 			fixed_t wscale = 0;
-			if (has_top || has_bottom)
+			if (has_top or has_bottom)
 			{
 				if (ux > Cx)
 					wscale = C_yscale +
@@ -998,7 +1016,8 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 			else if (has_bottom)
 			{
 				fixed_t uy =
-				    centeryfrac - FixedMul(top_z - (int(len) << FRACBITS), wscale);
+				    centeryfrac -
+				    FixedMul(top_z - (static_cast<int>(len) << FRACBITS), wscale);
 				uy = std::min(uy, clip_y2);
 
 				VX_DrawSolidShadedColumn(spr, screenX, (uy2 + 1) >> FRACBITS,
@@ -1027,8 +1046,8 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 				}
 
 				const fixed_t endfrac =
-				    dcol.texturefrac + (local_yh - local_yl) * dcol.iscale;
-				const fixed_t maxfrac = fixed_t(len) << FRACBITS;
+				    dcol.texturefrac + ((local_yh - local_yl) * dcol.iscale);
+				const fixed_t maxfrac = static_cast<fixed_t>(len) << FRACBITS;
 				if (endfrac >= maxfrac)
 				{
 					const int cnt =
@@ -1046,13 +1065,15 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 					{
 						dcol.translation = spr->translation;
 						dcol.colormap = spr->colormap;
-						dcol.source = const_cast<byte*>(slab);
+						// The legacy column drawer does not modify its source data.
+						dcol.source = const_cast<byte*>(slab); // NOLINT
 						R_DrawTranslatedColumn();
 					}
 					else
 					{
 						dcol.colormap = spr->colormap;
-						dcol.source = const_cast<byte*>(slab);
+						// The legacy column drawer does not modify its source data.
+						dcol.source = const_cast<byte*>(slab); // NOLINT
 						R_DrawColumn();
 					}
 				}
@@ -1066,7 +1087,7 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 void VX_RecursiveDraw(vissprite_t* spr, int x, int y, int w, int h)
 {
 loop:
-	if (w == 1 && h == 1)
+	if (w == 1 and h == 1)
 	{
 		VX_DrawColumn(spr, x, y);
 		return;
@@ -1076,7 +1097,7 @@ loop:
 	{
 		if (g_eye_x < ((x * 2 + w) << (FRACBITS - 1)))
 		{
-			VX_RecursiveDraw(spr, x + w / 2, y, (w + 1) / 2, h);
+			VX_RecursiveDraw(spr, x + (w / 2), y, (w + 1) / 2, h);
 			w = w / 2;
 		}
 		else
@@ -1090,7 +1111,7 @@ loop:
 	{
 		if (g_eye_y < ((y * 2 + h) << (FRACBITS - 1)))
 		{
-			VX_RecursiveDraw(spr, x, y + h / 2, w, (h + 1) / 2);
+			VX_RecursiveDraw(spr, x, y + (h / 2), w, (h + 1) / 2);
 			h = h / 2;
 		}
 		else
@@ -1152,7 +1173,7 @@ void VX_Init()
 	{
 		for (int frame = 0; frame < kMaxFrames; frame++)
 		{
-			if (!VX_Load(spritenum, spriteName, frame))
+			if (not VX_Load(spritenum, spriteName, frame))
 				break;
 		}
 	}
@@ -1169,17 +1190,18 @@ void VX_ClearVoxels()
 
 void VX_NearbySprites()
 {
-	if (r_voxels && numnodes > 0)
+	if (r_voxels and numnodes > 0)
 		VX_SpritesInNode(static_cast<unsigned int>(numnodes - 1));
 }
 
 bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 {
-	if (!r_voxels || !thing || !vis || !thing->subsector || !thing->subsector->sector)
+	if (not r_voxels or not thing or not vis or not thing->subsector or
+	    not thing->subsector->sector)
 		return false;
 
 	const VoxelModel* v = VX_GetModel(thing->sprite, frame);
-	if (!v || (!sv_allowvoxels && v->fromLocalDirectory))
+	if (not v or (not sv_allowvoxels and v->fromLocalDirectory))
 		return false;
 	const VoxelRenderOptions* opts = VX_GetOptions(thing->sprite, frame);
 
@@ -1189,7 +1211,7 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 
 	const fixed_t tran_x = gx - viewx;
 	const fixed_t tran_y = gy - viewy;
-	if (abs(tran_x) > VX_MAX_DIST || abs(tran_y) > VX_MAX_DIST)
+	if (abs(tran_x) > VX_MAX_DIST or abs(tran_y) > VX_MAX_DIST)
 		return false;
 
 	fixed_t tx;
@@ -1221,13 +1243,14 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	const fixed_t yOffset = opts ? opts->yOffset : 0;
 	const fixed_t zOffset = opts ? opts->zOffset : 0;
 	fixed_t pitchSlope = 0;
-	if (opts && opts->viewerPitchSlopeLimit > 0)
+	if (opts and opts->viewerPitchSlopeLimit > 0)
 	{
-		const fixed_t centerz = gz + v->z_pivot - (fixed_t(v->z_size) << (FRACBITS - 1)) +
+		const fixed_t centerz = gz + v->z_pivot -
+		                        (static_cast<fixed_t>(v->z_size) << (FRACBITS - 1)) +
 		                        zOffset + VX_Z_OFFSET;
 		pitchSlope = VX_ViewerPitchSlope(gx, gy, centerz, opts->viewerPitchSlopeLimit);
 	}
-	else if (opts && opts->useActorPitch)
+	else if (opts and opts->useActorPitch)
 		pitchSlope = VX_ActorPitchSlope(thing);
 
 	const fixed_t TL_x =
@@ -1237,12 +1260,12 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 
 	const fixed_t xs = v->x_size;
 	const fixed_t ys = v->y_size;
-	const fixed_t BL_x = TL_x + ys * s;
-	const fixed_t BL_y = TL_y - ys * c;
-	const fixed_t TR_x = TL_x + xs * c;
-	const fixed_t TR_y = TL_y + xs * s;
-	const fixed_t BR_x = BL_x + xs * c;
-	const fixed_t BR_y = BL_y + xs * s;
+	const fixed_t BL_x = TL_x + (ys * s);
+	const fixed_t BL_y = TL_y - (ys * c);
+	const fixed_t TR_x = TL_x + (xs * c);
+	const fixed_t TR_y = TL_y + (xs * s);
+	const fixed_t BR_x = BL_x + (xs * c);
+	const fixed_t BR_y = BL_y + (xs * s);
 
 	int x1 = viewwidth - 1;
 	int x2 = 0;
@@ -1269,7 +1292,13 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	if (x1 > x2)
 		return false;
 
-	g_visibleVoxels.push_back({v, angle, TL_x, TL_y, c, s, pitchSlope});
+	g_visibleVoxels.push_back({.model = v,
+	                           .angle = angle,
+	                           .TL_x = TL_x,
+	                           .TL_y = TL_y,
+	                           .c = c,
+	                           .s = s,
+	                           .pitchSlope = pitchSlope});
 	vis->voxel = &g_visibleVoxels.back();
 	vis->x1 = x1;
 	vis->x2 = x2;
@@ -1283,16 +1312,16 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 
 void VX_DrawVoxel(vissprite_t* spr)
 {
-	if (!spr || !spr->voxel)
+	if (not spr or not spr->voxel)
 		return;
 
-	const VoxelModel* v = static_cast<const VoxelModel*>(spr->voxel->model);
-	if (!v)
+	const auto* v = static_cast<const VoxelModel*>(spr->voxel->model);
+	if (not v)
 		return;
 
-	while (spr->x1 <= spr->x2 && mfloorclip[spr->x1] - mceilingclip[spr->x1] < 2)
+	while (spr->x1 <= spr->x2 and mfloorclip[spr->x1] - mceilingclip[spr->x1] < 2)
 		spr->x1++;
-	while (spr->x2 >= spr->x1 && mfloorclip[spr->x2] - mceilingclip[spr->x2] < 2)
+	while (spr->x2 >= spr->x1 and mfloorclip[spr->x2] - mceilingclip[spr->x2] < 2)
 		spr->x2--;
 	if (spr->x1 > spr->x2)
 		return;
