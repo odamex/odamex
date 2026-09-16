@@ -73,6 +73,8 @@
 
 #include "PlayerItemDataType.h"
 
+#include "msg_message.h"
+
 // Extern data from other files.
 
 EXTERN_CVAR(cl_autorecord)
@@ -85,6 +87,7 @@ EXTERN_CVAR(cl_autorecord_horde)
 EXTERN_CVAR(cl_chatsounds)
 EXTERN_CVAR(cl_connectalert)
 EXTERN_CVAR(cl_disconnectalert)
+EXTERN_CVAR(cl_interp)
 EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
 EXTERN_CVAR(cl_team)
@@ -106,6 +109,7 @@ extern bool isReceivingFullUpdate;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
 extern NetGraph netgraph;
+extern int world_index;
 
 void CL_CheckDisplayPlayer(void);
 void CL_ClearPlayerJustTeleported(const player_t& player);
@@ -130,8 +134,9 @@ namespace
 
 PacketHeaderType s_currentHeader;
 
-int32_t ThisMessageClientTic() { return s_currentHeader.destinationTic; }
-int32_t ThisMessageServerTic() { return s_currentHeader.originatorTic; }
+int32_t ThisMessageClientTic()      { return s_currentHeader.destinationTic; }
+int32_t ThisMessageServerTic()      { return s_currentHeader.originatorTic; }
+bool    ThisMessageIsHighPriority() { return (s_currentHeader.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0; }
 
 /**
  * @brief Unpack a bitfield into an array of booleans.
@@ -1322,6 +1327,15 @@ void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 		}
 		mo->tics = msg->tics();
 	}
+
+    // Some background info:  every mobj has a mobjtic attribute, which indicates the server-side
+    // tic whose outputs for the mobj SHOULD match that the mobj's client-side current state, if
+    // we've predicted accurately.
+    //
+    // When a message comes in from the server, if timing is 
+    // It's been observed to happen that, thanks to latency jitter, a mobj update can
+    // appear to arrive from a 
+    // As a special resync check:
 
 	// Now apply the update mobj, on the off chance that a mode change caused
 	// us to mispredict the fine-grained position, momentum, angle, etc.
@@ -3615,15 +3629,28 @@ const Protos& CL_GetTicProtos()
 	return ::protos;
 }
 
+namespace
+{
+    // multimap because c++11 and up guarantee that ordering between
+    // values that share a given key is the order of iteration.
+    //
+    // ParseResultType contains a unique_ptr to a parsed message.
+    //
+    // The key is the server tic that the message originated on.
+    // It is expected that the first value for a given tic is the header.
+    std::multimap<int32_t, ParseResultType> s_deferredMessages;
+}
+
+
 /**
  * @brief Read a server message off the wire.
  */
-ParseResultType CL_ParseCommand()
+ParseResultType CL_ParseCommand(buf_t& buffer)
 {
 	ParseResultType result;
 
 	// What type of message we have.
-	result.cmd = static_cast<msg_t>(MSG_ReadUnVarint());
+	result.cmd = static_cast<msg_t>(buffer.ReadUnVarint());
 
 	if (result.cmd == msg_ack)
 	{
@@ -3635,7 +3662,7 @@ ParseResultType CL_ParseCommand()
 		// proper way of defering ack handling to ProcessCommand.  It's just a lot
 		// easier and less complication overall to say that acks get special handling,
 		// especially as something that has to operate as part of the protocol itself.
-		const int sequence = MSG_ReadLong();
+		const int sequence = buffer.ReadLong();
 		messenger.Acknowledge(sequence);
 		result.code = PERR_OK;
 		return result;
@@ -3643,8 +3670,21 @@ ParseResultType CL_ParseCommand()
 
 	// Turn the message into a protobuf.
 	google::protobuf::Message* msg = nullptr;
-	result.code = MSG_ParseMessage(msg, result.cmd);
+	result.code = MSG_ParseMessage(msg, result.cmd, buffer);
 	result.msg.reset(msg);                      // This does the right thing even if nullptr.
+
+    // Process headers immediately so that if, somehow, we have a netdemo with multiple
+    // tics worth of messages in a single step, including the headers, we have the current
+    // header state set immediately to know that we need to actually process the header
+    // again in the future IAW the logic that pushes any message into the future.
+    //
+    // Also, this is just more technically correct because the header's information applies
+    // to *itself* just as much as the messages that follow it.
+    //
+    if (result.code == PERR_OK and result.cmd == msg_header)
+    {
+        CL_Header(static_cast<const odaproto::Header*>(result.msg.get()));
+    }
 
 	// Because the result type contains a unique_ptr, which is uncopyable,
 	// we can be sure that either copy elision or a move happens here.
@@ -3775,42 +3815,35 @@ namespace
 		}
 		return svc;
 	}
-}
 
-//
-// CL_ParseCommands
-//
-void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
-{
-	if (optionalHeader)
+	void CL_ParseOne(buf_t& buffer, int currentExpectedNewestPacket)
 	{
-		s_currentHeader = *optionalHeader;
-	}
+		ParseResultType result = CL_ParseCommand(buffer);
 
-	while (connected)
-	{
-		if (::net_message.BytesLeftToRead() == 0)
-		{
-			break;
-		}
+        parseError_e processResult = result.code;
+        if (result.code == PERR_OK)
+        {
+            if (ThisMessageServerTic() <= currentExpectedNewestPacket)
+            {
+                // When echoing server gametic back to it, use the tic that comes from the High Priority packet.
+                // This is because the High Priority packet is always live and comes out every tic.  It's totally
+                // possible for the server to go without sending anything Reliable or Best-Effort if things are
+                // all-quiet.
+                if (ThisMessageIsHighPriority())
+                {
+                    messenger.SetDestinationTic(ThisMessageServerTic());
+                }
 
-		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
-		// This is because the High Priority packet is always live and comes out every tic.  It's totally
-		// possible for the server to go without sending anything Reliable or Best-Effort if things are
-		// all-quiet.
-		if (messenger.GetCurrentReceivedIsHighPriority())
-		{
-			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
-		}
+                processResult = CL_ProcessCommand(result);
+            }
+            else
+            {
+                s_deferredMessages.emplace(ThisMessageServerTic(), std::move(result));
+                return;
+            }
+        }
 
-		const size_t          byteStart = ::net_message.BytesRead();
-		const ParseResultType result    = CL_ParseCommand();
-
-		const parseError_e processResult = result.code == PERR_OK ?
-			CL_ProcessCommand(result) :
-			result.code;
-
-		if (processResult != PERR_OK or ::net_message.overflowed)
+		if (processResult != PERR_OK or buffer.overflowed)
 		{
 			const Protos& protos = CL_GetTicProtos();
 
@@ -3827,7 +3860,7 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 			{
 				err = "Could not decode message";
 			}
-			else if (::net_message.overflowed)
+			else if (buffer.overflowed)
 			{
 				err = "Message overflowed";
 			}
@@ -3857,14 +3890,65 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 
 			CL_QuitNetGame(NQ_PROTO);
 		}
-
-		// Measure length of each message, so we can keep track of bandwidth.
-		if (::net_message.BytesRead() < byteStart)
-		{
-			PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
-			         ::net_message.BytesRead(), byteStart);
-		}
 	}
+
+	void CL_ParseBuffer(buf_t& buffer, int currentExpectedNewestPacket)
+    {
+        while (connected)
+        {
+            if (buffer.BytesLeftToRead() == 0)
+            {
+                break;
+            }
+
+            const size_t byteStart = buffer.BytesRead();
+            CL_ParseOne(buffer, currentExpectedNewestPacket);
+
+            // Measure length of each message, so we can keep track of bandwidth.
+            if (buffer.BytesRead() < byteStart)
+            {
+                PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
+                        buffer.BytesRead(), byteStart);
+            }
+        }
+    }
+
+}
+
+//
+// CL_ParseCommands
+//
+void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
+{
+	const int currentExpectedNewestPacket = world_index + cl_interp;
+
+    for (auto deferredMessageIter  = s_deferredMessages.begin();
+              deferredMessageIter != s_deferredMessages.end();
+              deferredMessageIter  = s_deferredMessages.erase(deferredMessageIter)
+        )
+    {
+        if (deferredMessageIter->first > currentExpectedNewestPacket)
+        {
+            break;
+        }
+        CL_ProcessCommand(deferredMessageIter->second);
+    }
+
+	if (optionalHeader)
+	{
+		s_currentHeader = *optionalHeader;
+
+        if (s_currentHeader.originatorTic > currentExpectedNewestPacket)
+        {
+            auto headerProto = MSG_Header(s_currentHeader);
+            ParseResultType futureReception { .msg  = std::make_unique<decltype(headerProto)>(std::move(headerProto)),
+                                              .code = PERR_OK,
+                                              .cmd  = msg_header };
+            s_deferredMessages.emplace(int32_t(s_currentHeader.originatorTic), std::move(futureReception));
+        }
+	}
+
+    CL_ParseBuffer(::net_message, currentExpectedNewestPacket);
 }
 
 VERSION_CONTROL (cl_parse_cpp, "$Id$")
