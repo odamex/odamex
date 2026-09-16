@@ -113,6 +113,7 @@ extern float xfoc, yfoc;
 static const fixed_t* masked_midscales;
 
 EXTERN_CVAR(r_clipmaskedspecial)
+EXTERN_CVAR(r_maskedtiling)
 
 //
 // R_OrthogonalLightnumAdjustment
@@ -218,6 +219,181 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 		dcol.texturefrac = static_cast<fixed_t>(texturefrac);
 		drawfunc();
 	}
+}
+
+
+//
+// Per-column state for the tiled masked pass, so a column can be clipped to a
+// block without repeating its setup for every block it crosses.
+//
+namespace
+{
+int     masked_yl[MAXWIDTH];
+int     masked_yh[MAXWIDTH];
+fixed_t masked_iscale[MAXWIDTH];
+fixed_t masked_texfrac[MAXWIDTH];
+int     masked_colormapnum[MAXWIDTH];
+}
+
+
+//
+// R_SetupMaskedSegColumn
+//
+// Resolves one column of a masked midtexture to the screen rows it covers and
+// the texture coordinate it starts at.
+// Returns false if the column draws nothing.
+// This is R_BlastMaskedSegColumn's arithmetic with the draw call replaced by
+// a record of the result.
+//
+static bool R_SetupMaskedSegColumn(int x, const palindex_t* source)
+{
+	const fixed_t scale = masked_midscales[x];
+
+	if (source == NULL || scale <= 0)
+		return false;
+
+	const fixed_t iscale = 0xffffffffu / static_cast<unsigned>(scale);
+
+	const int64_t topscreen =
+	    static_cast<int64_t>(centeryfrac) - ((static_cast<int64_t>(dcol.texturemid) * scale) >> FRACBITS);
+	const int64_t bottomscreen =
+	    topscreen + ((static_cast<int64_t>(scale) * dcol.textureheight) >> FRACBITS);
+
+	int64_t yl = (topscreen - 1) >> FRACBITS;
+	int64_t yh = (bottomscreen - 1) >> FRACBITS;
+
+	int64_t texturefrac = 0;
+	if (mceilingclip[x] + 1 > yl)
+		texturefrac = (mceilingclip[x] + 1 - yl) * iscale;
+
+	yl = std::max<int64_t>(yl, std::max(mceilingclip[x], 0));
+	yh = std::min<int64_t>(yh, mfloorclip[x] - 1);
+
+	if (yl > yh || texturefrac >= dcol.textureheight)
+		return false;
+
+	// clamp the texture coordinates so out-of-range rows are not drawn
+	const int64_t endfrac = texturefrac + (yh - yl) * iscale;
+	const int64_t maxfrac = dcol.textureheight;
+
+	if (endfrac >= maxfrac)
+	{
+		const int64_t cnt = (endfrac - maxfrac + iscale) / iscale;
+		yh -= cnt;
+	}
+
+	if (yl < 0 || yh >= viewheight || yl > yh)
+		return false;
+
+	masked_yl[x] = static_cast<int>(yl);
+	masked_yh[x] = static_cast<int>(yh);
+	masked_iscale[x] = iscale;
+	masked_texfrac[x] = static_cast<fixed_t>(texturefrac);
+	return true;
+}
+
+
+//
+// R_RenderMaskedColumnRange
+//
+// Draws a seg's masked midtexture columns in 64x64 screen blocks.
+//
+static void R_RenderMaskedColumnRange(int x1, int x2, const palindex_t** posts)
+{
+	#define MASKEDBLOCKBITS 6
+	#define MASKEDBLOCKSIZE (1 << MASKEDBLOCKBITS)
+	#define MASKEDBLOCKMASK (MASKEDBLOCKSIZE - 1)
+
+	// lighting has to be resolved up front: rw_light advances per column, so
+	// it cannot be sampled again when a column is revisited for a later block
+	bool calc_light = true;
+
+	if (fixedlightlev)
+	{
+		dcol.colormap = basecolormap.with(fixedlightlev);
+		calc_light = false;
+	}
+	else if (fixedcolormap.isValid())
+	{
+		dcol.colormap = fixedcolormap;
+		calc_light = false;
+	}
+	else if (!walllights)
+	{
+		walllights = scalelight[0];
+	}
+
+	for (int x = x1; x <= x2; x++)
+	{
+		if (calc_light)
+		{
+			const int index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+			masked_colormapnum[x] = walllights[index];
+			rw_light += rw_lightstep;
+		}
+
+		if (!R_SetupMaskedSegColumn(x, posts[x]))
+		{
+			// mark the column as covering no rows
+			masked_yl[x] = 1;
+			masked_yh[x] = 0;
+		}
+	}
+
+	for (int bx = x1; bx <= x2; bx = (bx & ~MASKEDBLOCKMASK) + MASKEDBLOCKSIZE)
+	{
+		const int blockx1 = bx;
+		const int blockx2 = std::min((bx & ~MASKEDBLOCKMASK) + MASKEDBLOCKSIZE - 1, x2);
+
+		// the rows this block of columns actually covers
+		int miny = viewheight, maxy = -1;
+		for (int x = blockx1; x <= blockx2; x++)
+		{
+			if (masked_yl[x] > masked_yh[x])
+				continue;
+			miny = std::min(miny, masked_yl[x]);
+			maxy = std::max(maxy, masked_yh[x]);
+		}
+
+		if (miny > maxy)
+			continue;
+
+		for (int by = miny; by <= maxy; by = (by & ~MASKEDBLOCKMASK) + MASKEDBLOCKSIZE)
+		{
+			const int blocky1 = by;
+			const int blocky2 = std::min((by & ~MASKEDBLOCKMASK) + MASKEDBLOCKSIZE - 1, maxy);
+
+			for (int x = blockx1; x <= blockx2; x++)
+			{
+				const int yl = std::max(masked_yl[x], blocky1);
+				const int yh = std::min(masked_yh[x], blocky2);
+
+				if (yl > yh)
+					continue;
+
+				// the drawer steps texturefrac by iscale per row, so starting
+				// partway down the column is the same value it would have
+				// accumulated by here
+				const int64_t frac = static_cast<int64_t>(masked_texfrac[x]) +
+				                     static_cast<int64_t>(yl - masked_yl[x]) * masked_iscale[x];
+
+				if (calc_light)
+					dcol.colormap = basecolormap.with(masked_colormapnum[x]);
+
+				dcol.x = x;
+				dcol.yl = yl;
+				dcol.yh = yh;
+				dcol.iscale = masked_iscale[x];
+				dcol.texturefrac = static_cast<fixed_t>(frac);
+				dcol.source = posts[x];
+				colfunc();
+			}
+		}
+	}
+
+	#undef MASKEDBLOCKBITS
+	#undef MASKEDBLOCKSIZE
+	#undef MASKEDBLOCKMASK
 }
 
 
@@ -641,7 +817,10 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	}
 
 	// draw the columns
-	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts, MaskedColumnBlaster, true, 0);
+	if (r_maskedtiling)
+		R_RenderMaskedColumnRange(x1, x2, ds->midposts);
+	else
+		R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts, MaskedColumnBlaster, true, 0);
 
 	// Mark these columns as having been drawn by setting the midpost ptr to NULL for each column
 	memset(ds->midposts + x1, 0, (x2 - x1 + 1) * sizeof(ds->midposts));

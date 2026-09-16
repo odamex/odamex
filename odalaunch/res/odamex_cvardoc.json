@@ -2047,6 +2047,13 @@
          "type" : "boolean"
       },
       {
+         "default" : true,
+         "flags" : [],
+         "helptext" : "Draw masked midtextures in screen blocks rather than whole columns at a time",
+         "name" : "r_maskedtiling",
+         "type" : "boolean"
+      },
+      {
          "default" : "detect",
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Rendering optimizations",
