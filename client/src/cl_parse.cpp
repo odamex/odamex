@@ -138,6 +138,8 @@ int32_t ThisMessageClientTic()      { return s_currentHeader.destinationTic; }
 int32_t ThisMessageServerTic()      { return s_currentHeader.originatorTic; }
 bool    ThisMessageIsHighPriority() { return (s_currentHeader.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0; }
 
+LargeMessage s_receivedLargeMessage;
+
 /**
  * @brief Unpack a bitfield into an array of booleans.
  */
@@ -218,6 +220,34 @@ void CL_Header(const odaproto::Header* msg)
 	if (ThisMessageIsHighPriority())
 	{
 		last_svgametic = s_currentHeader.originatorTic;
+	}
+}
+
+void CL_LargeMessageStart(const odaproto::LargeMessageStart* msg)
+{
+	s_receivedLargeMessage.Restart(msg->size());
+}
+
+void CL_LargeMessageFragment(const odaproto::LargeMessageFragment* msg)
+{
+	s_receivedLargeMessage.Append(msg->payload().data(), msg->payload().length());
+}
+
+void CL_ParseBuffer(buf_t& buffer);
+
+void CL_LargeMessageEnd(const odaproto::LargeMessageEnd* )
+{
+	if (s_receivedLargeMessage.IsComplete() and not s_receivedLargeMessage.IsEmpty())
+	{
+		CL_ParseBuffer(s_receivedLargeMessage.GetBufferRef());
+		s_receivedLargeMessage.Restart(0);
+	}
+	else
+	{
+		PrintFmt(PRINT_WARNING,
+		        "Incomplete large message!  total: {}, current: {}\n",
+		        s_receivedLargeMessage.TotalSize(),
+		        s_receivedLargeMessage.CurrentSize());
 	}
 }
 
@@ -3710,6 +3740,10 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		/* clang-format off */
 		SV_MSG(msg_noop, CL_Noop, odaproto::Noop);
 		SV_MSG(msg_header, CL_Header, odaproto::Header);
+
+		SV_MSG(msg_largemessagestart,    CL_LargeMessageStart,    odaproto::LargeMessageStart);
+		SV_MSG(msg_largemessagefragment, CL_LargeMessageFragment, odaproto::LargeMessageFragment);
+		SV_MSG(msg_largemessageend,      CL_LargeMessageEnd,      odaproto::LargeMessageEnd);
 
 		SV_MSG(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
 		SV_MSG(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
