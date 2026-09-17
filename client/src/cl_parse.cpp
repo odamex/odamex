@@ -3173,6 +3173,45 @@ void CL_ThinkerUpdate(const odaproto::svc::ThinkerUpdate* msg)
 			new DGlow2(&::sectors[secnum], start, end, tics, oneShot);
 		break;
 	}
+	case odaproto::svc::ThinkerUpdate::kWaggle: {
+		const odaproto::svc::ThinkerUpdate_Waggle& wmsg = msg->waggle();
+		const int secnum = wmsg.sector();
+
+		if (::numsectors <= 0)
+			break;
+
+		if (secnum >= 0 and secnum < ::numsectors)
+		{
+			sector_t* sector = &::sectors[secnum];
+			const bool ceiling = wmsg.ceiling();
+
+			// A waggle owns its plane for as long as it runs, so don't stack a
+			// second one on a sector that already has a mover on that plane.
+			if (ceiling ? sector->ceilingdata != nullptr : sector->floordata != nullptr)
+				break;
+
+			auto* waggle =
+			    new DWaggle(sector, ceiling, wmsg.original_height(), wmsg.accumulator(),
+			                wmsg.acc_delta(), wmsg.target_scale(), wmsg.scale(),
+			                wmsg.scale_delta(), wmsg.ticker(), wmsg.state());
+
+			const int messageTic = ThisMessageServerTic();
+
+			if (::last_svgametic > 0 and messageTic > 0)
+			{
+				const int64_t staleTics =
+				    static_cast<int64_t>(::last_svgametic) - messageTic;
+
+				// Don't even bother to catch up the waggle if we're about to get timed out
+				if (staleTics > 0 and
+				    staleTics <= OdaMessenger::DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS)
+				{
+					waggle->CatchUp(static_cast<int>(staleTics));
+				}
+			}
+		}
+		break;
+	}
 	case odaproto::svc::ThinkerUpdate::kPhased: {
 		short secnum = msg->phased().sector();
 		int base = msg->phased().base_level();
