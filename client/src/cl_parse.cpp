@@ -3994,7 +3994,7 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 			ParseResultType futureReception { .msg  = std::make_unique<decltype(headerProto)>(std::move(headerProto)),
 			                                  .code = PERR_OK,
 			                                  .cmd  = msg_header };
-			s_deferredMessages.emplace(int32_t(s_currentHeader.originatorTic), std::move(futureReception));
+			s_deferredMessages.emplace(s_currentHeader.originatorTic, std::move(futureReception));
 		}
 	}
 
