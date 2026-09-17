@@ -233,13 +233,13 @@ void CL_LargeMessageFragment(const odaproto::LargeMessageFragment* msg)
 	s_receivedLargeMessage.Append(msg->payload().data(), msg->payload().length());
 }
 
-void CL_ParseBuffer(buf_t& buffer);
+void CL_ParseBuffer(buf_t& buffer, int currentExpectedNewestPacket);
 
 void CL_LargeMessageEnd(const odaproto::LargeMessageEnd* )
 {
 	if (s_receivedLargeMessage.IsComplete() and not s_receivedLargeMessage.IsEmpty())
 	{
-		CL_ParseBuffer(s_receivedLargeMessage.GetBufferRef());
+		CL_ParseBuffer(s_receivedLargeMessage.GetBufferRef(), ThisMessageServerTic());
 		s_receivedLargeMessage.Restart(0);
 	}
 	else
