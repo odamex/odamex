@@ -128,8 +128,9 @@ void DThinker::Unlink()
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
 
-	m_Next = nullptr;
-	m_Prev = nullptr;
+	// Please note that we do NOT set m_Next or m_Prev to nullptr because in the event that
+	// during a single RunThink(), multiple nodes could be Destroyed / Unlinked, we want to
+	// be able to advance through those harmlessly in RunThinkers by just following m_Next.
 }
 
 bool DThinker::SpliceBefore(DThinker* io_node)
@@ -311,13 +312,12 @@ void DThinker::RunThinkers ()
 	currentthinker = FirstThinker;
 	while (currentthinker)
 	{
-		DThinker* nextThinker = currentthinker->m_Next;
 		if (!IndependentThinker(currentthinker))
 		{
 			currentthinker->RunThink();
 			currentthinker->PostThink();
 		}
-		currentthinker = nextThinker;
+		currentthinker = currentthinker->m_Next;
 	}
 	END_STAT (ThinkCycles);
 	P_CheckMusicChange();
