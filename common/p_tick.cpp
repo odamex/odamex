@@ -107,16 +107,17 @@ void P_Ticker (void)
         // ... should we do this for ALL players, or just the local player?
         //
         const int            effectiveHistoricalTic = player.snapshots.getMostRecentTime();
-        const PlayerSnapshot currentSnapshot(player.tic, player);
+        const PlayerSnapshot currentSnapshot(gametic, player);
         const PlayerSnapshot historicalSnapshot = player.snapshots.getSnapshot(effectiveHistoricalTic);
 
         odaproto::clc::PlayerInput currentInput;
         CLC_PackPlayerInputMessageFromPlayer(currentInput, player, gametic, 0);
 
         historicalSnapshot.toPlayer(player);
-        CLC_UnpackPlayerInputMessageToPlayer(localcmds[player.tic], player);
+        CLC_UnpackPlayerInputMessageToPlayer(localcmds[(player.tic) % MAXSAVETICS], player);
 
         P_MovePlayer(player);
+        player.mo->RunThink();
         DThinker::RunThinkers ();
 
         currentSnapshot.toPlayer(player);
