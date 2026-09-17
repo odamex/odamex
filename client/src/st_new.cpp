@@ -488,6 +488,69 @@ void ST_voteDraw (int y) {
 
 namespace hud {
 
+//
+// The centered message column.
+//
+// The levelstate banner, the spree lines, the multikill line and the stack of
+// centered text above the bottom of the screen all share the middle of the
+// screen.
+// Each drawer claims the rows it uses so the ones that run after it stack
+// clear instead of drawing on top.
+// Claims last for a single frame and are made in draw order.
+//
+
+namespace
+{
+
+// First free row from the top, and one past the last free row from the bottom.
+int msgColumnTop;
+int msgColumnBottom;
+
+} // namespace
+
+// Rows of breathing room to leave between two blocks in the column.
+int MessageColumnPad()
+{
+	return 2 * ::CleanYfac;
+}
+
+int MessageColumnTop()
+{
+	return msgColumnTop;
+}
+
+int MessageColumnBottom()
+{
+	return msgColumnBottom;
+}
+
+void ClaimMessageColumnTop(const int bottom)
+{
+	msgColumnTop = std::max(msgColumnTop, bottom);
+}
+
+void ClaimMessageColumnBottom(const int top)
+{
+	msgColumnBottom = std::min(msgColumnBottom, top);
+}
+
+/**
+ * @brief Claim the centered stack that grows up from the bottom of the screen.
+ *
+ * @param iy Height the stack reached, in the unscaled units the HUD uses.
+ */
+void ClaimBottomStack(const int iy)
+{
+	const int yscale = std::max(1, int(::hud_scale * ::CleanYfac));
+	ClaimMessageColumnBottom(I_GetSurfaceHeight() - (iy * yscale));
+}
+
+void ResetMessageColumn()
+{
+	msgColumnTop = 0;
+	msgColumnBottom = I_GetSurfaceHeight();
+}
+
 /**
  * @brief This is the number of pixels of viewable space, taking into account
  *        the status bar.  We need to convert this into scaled pixels as
@@ -1087,6 +1150,8 @@ void OdamexHUD() {
 	               hud::Y_BOTTOM, 1, hud_targetcount);
 	iy += V_LineHeight() + 1;
 
+	ClaimBottomStack(iy);
+
 	// Draw stat lines.  Vertically aligned with the bottom of the armor
 	// number on the other side of the screen.
 	if (::hud_bigfont)
@@ -1420,19 +1485,6 @@ struct multiKillLines_t
 	float lucent = 1.0f;
 };
 
-struct bigSpreeLine_t
-{
-	std::string spreeText;
-	EColorRange color = CR_GRAY;
-	float lucent = 1.0f;
-};
-
-struct smallSpreeLine_t
-{
-	std::string spreeText;
-	float lucent = 1.0f;
-};
-
 static float lucentFade(int tics, const int start, const int end)
 {
 	// A negative tic count means the event hasn't happened yet - we rewound a netdemo
@@ -1518,93 +1570,121 @@ static void LevelStateHorde(levelStateLines_t& lines)
 namespace
 {
 
-void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
+// The small line - another player's spree, or a spree breaker - stacked above
+// the watched player's own big line.
+// Either half can be absent.
+struct spreeBlock_t
 {
-	smallSpreeLine_t line;
+	StringTokens smallLines;
+	float smallLucent = 0.0f;
+	std::string bigText;
+	EColorRange bigColor = CR_GRAY;
+	float bigLucent = 0.0f;
+};
 
-	line.spreeText = breaker.spreeEndedBroadcastText;
+/**
+ * @brief Break a spree line to fit the screen.
+ *        Breakers name two players and a spree title, so they outgrow the
+ *        screen readily.
+ *
+ * @param text Line to break, measured with the font that is currently set.
+ */
+StringTokens BreakSpreeLine(const std::string& text)
+{
+	StringTokens lines;
 
-	V_SetFont("SMALLFONT");
+	// Spree text is stretched by CleanYfac on both axes, so the width budget is
+	// the surface width in those units, less a small margin.
+	const int maxwidth = (I_GetSurfaceWidth() / std::max(1, ::CleanYfac)) - 8;
 
-	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
-	int h = 8 * CleanYfac;
-
-	line.lucent =
-	    lucentFade(::gametic - breaker.spreeEndedTic, SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
-
-	const float oldtrans = ::hud_transparency;
-	::hud_transparency = line.lucent;
-
-	if (::hud_transparency > 0.0f)
+	brokenlines_t* broken = V_BreakLines(maxwidth, text.c_str());
+	if (broken == nullptr)
 	{
-		int y = (surface_height / 4) - h / 2;
-		::screen->DrawTextStretchedLuc(CR_GRAY,
-		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
-		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+		lines.push_back(text);
+		return lines;
 	}
 
-	::hud_transparency.ForceSet(oldtrans);
+	for (int i = 0; broken[i].width != -1; i++)
+	{
+		lines.emplace_back(broken[i].string);
+	}
+
+	V_FreeBrokenLines(broken);
+
+	if (lines.empty())
+	{
+		lines.push_back(text);
+	}
+
+	return lines;
 }
 
-void DisplayBigSpree(const SpreeRecord_t& record)
+void DrawSpreeBlock(const spreeBlock_t& block)
 {
-	bigSpreeLine_t line;
+	const bool hasSmall = not block.smallLines.empty() and block.smallLucent > 0.0f;
+	const bool hasBig = not block.bigText.empty() and block.bigLucent > 0.0f;
 
-	line.spreeText = record.spree.spreeText;
-	line.color = record.spree.color;
-
-	V_SetFont("BIGFONT");
+	if (not hasSmall and not hasBig)
+	{
+		return;
+	}
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
-	int h = 12 * CleanYfac;
+	const int smallHeight = 8 * ::CleanYfac;
+	const int bigHeight = 12 * ::CleanYfac;
 
-	line.lucent =
-	    lucentFade(::gametic - record.spreeStartTic, SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
+	const int smallBlock =
+	    hasSmall ? (static_cast<int>(block.smallLines.size()) * smallHeight) +
+	                   (2 * ::CleanYfac)
+	             : 0;
+	const int height = smallBlock + (hasBig ? bigHeight : 0);
+	const int pad = MessageColumnPad();
+
+	// The big line keeps its old spot a quarter of the way down the screen, with
+	// the small lines stacked above it.
+	int top = (surface_height / 4) - (bigHeight / 2) - smallBlock;
+
+	// Stack below whatever claimed the column first, but don't push so far down
+	// that we meet the stack coming up from the bottom.
+	top = std::max(top, MessageColumnTop() + pad);
+	if (top + height > MessageColumnBottom() - pad)
+	{
+		top = std::max(MessageColumnTop() + pad, MessageColumnBottom() - pad - height);
+	}
 
 	const float oldtrans = ::hud_transparency;
-	::hud_transparency = line.lucent;
 
-	if (::hud_transparency > 0.0f)
+	if (hasSmall)
 	{
-		int y = (surface_height / 4) - h / 2;
-		::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
-		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+		V_SetFont("SMALLFONT");
+		::hud_transparency = block.smallLucent;
+
+		int y = top;
+		for (const std::string& line : block.smallLines)
+		{
+			const int w = V_StringWidth(line.c_str()) * ::CleanYfac;
+			::screen->DrawTextStretchedLuc(CR_GRAY, (surface_width / 2) - (w / 2), y,
+			                               line.c_str(), ::CleanYfac, ::CleanYfac);
+			y += smallHeight;
+		}
+	}
+
+	if (hasBig)
+	{
+		V_SetFont("BIGFONT");
+		::hud_transparency = block.bigLucent;
+
+		const int w = V_StringWidth(block.bigText.c_str()) * ::CleanYfac;
+		::screen->DrawTextStretchedLuc(block.bigColor, (surface_width / 2) - (w / 2),
+		                               top + smallBlock, block.bigText.c_str(),
+		                               ::CleanYfac, ::CleanYfac);
+
+		V_SetFont("SMALLFONT");
 	}
 
 	::hud_transparency.ForceSet(oldtrans);
 
-	V_SetFont("SMALLFONT");
-}
-
-void DisplaySmallSpree(const SpreeRecord_t& record)
-{
-	smallSpreeLine_t line;
-
-	line.spreeText = record.spree.spreeBroadcastText;
-
-	V_SetFont("SMALLFONT");
-
-	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
-	int h = 8 * CleanYfac;
-
-	line.lucent =
-	    lucentFade(::gametic - record.spreeStartTic, SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
-
-	const float oldtrans = ::hud_transparency;
-	::hud_transparency = line.lucent;
-
-	if (::hud_transparency > 0.0f)
-	{
-		int y = (surface_height / 4) - h / 2;
-		::screen->DrawTextStretchedLuc(CR_GRAY,
-		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
-		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
-	}
-
-	::hud_transparency.ForceSet(oldtrans);
+	ClaimMessageColumnTop(top + height);
 }
 
 } // namespace
@@ -1621,19 +1701,33 @@ void SpreeHud()
 
 	const SpreeHudLines_t lines = P_GetSpreeHudLines(displayplayer().id);
 
+	spreeBlock_t block;
+
 	if (lines.bigSpree)
 	{
-		DisplayBigSpree(*lines.bigSpree);
+		block.bigText = lines.bigSpree->spree.spreeText;
+		block.bigColor = lines.bigSpree->spree.color;
+		block.bigLucent = lucentFade(::gametic - lines.bigSpree->spreeStartTic,
+		                             SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
 	}
+
+	// Breaking measures with the font the small lines get drawn in.
+	V_SetFont("SMALLFONT");
 
 	if (lines.smallBreaker)
 	{
-		DisplaySmallSpreeBreaker(*lines.smallBreaker);
+		block.smallLines = BreakSpreeLine(lines.smallBreaker->spreeEndedBroadcastText);
+		block.smallLucent = lucentFade(::gametic - lines.smallBreaker->spreeEndedTic,
+		                               SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
 	}
 	else if (lines.smallSpree)
 	{
-		DisplaySmallSpree(*lines.smallSpree);
+		block.smallLines = BreakSpreeLine(lines.smallSpree->spree.spreeBroadcastText);
+		block.smallLucent = lucentFade(::gametic - lines.smallSpree->spreeStartTic,
+		                               SPREE_FADE_TICS, SPREE_DISPLAY_TICS);
 	}
+
+	DrawSpreeBlock(block);
 }
 
 void MultiKillHud()
@@ -1676,8 +1770,17 @@ void MultiKillHud()
 		if (::hud_transparency > 0.0f)
 		{
 			int y = surface_height - (surface_height / 4) - h / 2;
+
+			// Keep clear of the stack of centred text above the bottom of the
+			// screen - the timer, respawn text and the rest.
+			const int pad = MessageColumnPad();
+			y = std::min(y, MessageColumnBottom() - pad - h);
+			y = std::max(y, MessageColumnTop() + pad);
+
 			::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
 				line.multiKillText.c_str(), ::CleanYfac, ::CleanYfac);
+
+			ClaimMessageColumnBottom(y);
 		}
 
 		::hud_transparency.ForceSet(oldtrans);
@@ -1851,36 +1954,55 @@ void LevelStateHUD()
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	int w = V_StringWidth(lines.title.c_str()) * CleanYfac;
-	int h = 12 * CleanYfac;
+	const int h = 12 * CleanYfac;
+
+	// Subtitle slots are filled out of order, so the block ends at the last one
+	// that actually holds text.
+	int lastsub = -1;
+	for (size_t i = 0; i < lines.subtitle.size(); i++)
+	{
+		if (not lines.subtitle[i].empty())
+			lastsub = static_cast<int>(i);
+	}
+
+	const int top = std::max((surface_height / 4) - (h / 2),
+	                         MessageColumnTop() + MessageColumnPad());
 
 	const float oldtrans = ::hud_transparency;
 	::hud_transparency = lines.lucent;
 
 	if (::hud_transparency > 0.0f)
 	{
-		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
-		                               surface_height / 4 - h / 2, lines.title.c_str(),
-		                               ::CleanYfac, ::CleanYfac);
+		::screen->DrawTextStretchedLuc(CR_GREY, (surface_width / 2) - (w / 2), top,
+		                               lines.title.c_str(), ::CleanYfac, ::CleanYfac);
 	}
 
 	V_SetFont("SMALLFONT");
 	const int height = V_StringHeight("M") + 1;
 
+	// The title line plus the two rows the shorter small-font line height frees up.
+	const int subtop = top + (14 * ::CleanYfac);
+
 	for (size_t i = 0; i < lines.subtitle.size(); i++)
 	{
 		w = hud::StringWidthMono(lines.subtitle[i].c_str()) * ::CleanYfac;
-		h = 8 * ::CleanYfac;
 		if (::hud_transparency > 0.0f)
 		{
-			hud::DrawTextMonoAt(
-			    (surface_width / 2) - (w / 2),
-			    (surface_height / 4 - h / 2) + (12 * ::CleanYfac) +
-			        (i * height * ::CleanYfac),
-			    ::CleanYfac, ::CleanYfac, lines.subtitle[i].c_str(), CR_GREY);
+			hud::DrawTextMonoAt((surface_width / 2) - (w / 2),
+			                    subtop + (i * height * ::CleanYfac), ::CleanYfac,
+			                    ::CleanYfac, lines.subtitle[i].c_str(), CR_GREY);
 		}
 	}
 
 	::hud_transparency.ForceSet(oldtrans);
+
+	// Claim what we drew so the spree lines stack underneath it.
+	if (lines.lucent > 0.0f and (not lines.title.empty() or lastsub >= 0))
+	{
+		const int bottom = (lastsub >= 0) ? subtop + ((lastsub + 1) * height * ::CleanYfac)
+		                                  : top + h;
+		ClaimMessageColumnTop(bottom);
+	}
 }
 
 // [AM] Spectator HUD.
@@ -1911,6 +2033,9 @@ void SpectatorHUD()
 	// Draw targeted player names.
 	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	               hud::Y_BOTTOM, 1, 0);
+	iy += V_LineHeight() + 1;
+
+	ClaimBottomStack(iy);
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
@@ -1950,6 +2075,8 @@ void DoomHUD()
 	               hud::Y_BOTTOM, 1, hud_targetcount);
 	st_y += V_LineHeight() + 1;
 
+	ClaimBottomStack(st_y);
+
 	// Draw gametype scoreboard
 	hud::drawGametype();
 
@@ -1984,6 +2111,9 @@ void FreecamHUD()
 	// Draw targeted player names.
 	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	               hud::Y_BOTTOM, 1, 0);
+	iy += V_LineHeight() + 1;
+
+	ClaimBottomStack(iy);
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
