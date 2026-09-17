@@ -114,10 +114,13 @@ void P_Ticker (void)
         CLC_PackPlayerInputMessageFromPlayer(currentInput, player, gametic, 0);
 
         historicalSnapshot.toPlayer(player);
-        CLC_UnpackPlayerInputMessageToPlayer(localcmds[(player.tic) % MAXSAVETICS], player);
+        CLC_UnpackPlayerInputMessageToPlayer(localcmds[(player.tic+1) % MAXSAVETICS], player);
 
+        predicting = true;
         P_MovePlayer(player);
         player.mo->RunThink();
+        predicting = false;
+
         DThinker::RunThinkers ();
 
         currentSnapshot.toPlayer(player);
