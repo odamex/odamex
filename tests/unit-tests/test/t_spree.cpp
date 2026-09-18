@@ -38,6 +38,26 @@ namespace
 // The defaults give six spree levels, so anything past level 5 is a repeat.
 constexpr int TOP_SPREE_LEVEL = 5;
 
+// A starting tic well clear of zero, so tests can stamp events in the past
+// without the resulting tic going negative.
+constexpr int BASE_GAMETIC = 10000;
+
+// How far a rewound netdemo jumps back, leaving events stamped in the future.
+constexpr int REWIND_TICS = 100;
+
+// Relative ages, in tics, for the two events in a precedence test.
+constexpr int OLDER_TICS = 60;
+constexpr int NEWER_TICS = 20;
+
+// An arbitrary age used when a test only needs the spree placed in the past.
+constexpr int PAST_TICS = 70;
+
+// Kills the default SPREEDEF needs before a spree level is earned.
+constexpr int KILLS_PER_SPREE_LEVEL = 5;
+
+// A damage total large enough to clear any threshold under test.
+constexpr int DAMAGE_POINTS = 500;
+
 // Player IDs used throughout. WATCHED is the player the HUD is following.
 constexpr int WATCHED = 1;
 constexpr int OTHER = 2;
@@ -60,7 +80,7 @@ class SpreeTest : public ::testing::Test
 		AddPlayer(OTHER, "Other");
 		AddPlayer(THIRD, "Third");
 
-		::gametic = 10000;
+		::gametic = BASE_GAMETIC;
 
 		SpreeManager::getInstance().reset();
 		SpreeManager::getInstance().loadSpreeDefaults();
@@ -182,8 +202,8 @@ TEST_F(SpreeTest, BigAndSmallLinesCoexist)
 
 TEST_F(SpreeTest, SmallLineTakesTheLatestOfSeveralSprees)
 {
-	GiveSpree(OTHER, 1, 60);  // oldest
-	GiveSpree(THIRD, 1, 20);  // newest
+	GiveSpree(OTHER, 1, OLDER_TICS);  // oldest
+	GiveSpree(THIRD, 1, NEWER_TICS);  // newest
 
 	const SpreeHudLines_t lines = P_GetSpreeHudLines(WATCHED);
 
@@ -193,8 +213,8 @@ TEST_F(SpreeTest, SmallLineTakesTheLatestOfSeveralSprees)
 
 TEST_F(SpreeTest, NewerBreakerWinsTheSmallLineOverASpree)
 {
-	GiveSpree(OTHER, 1, 60);
-	BreakSpree(THIRD, OTHER, 1, 20);
+	GiveSpree(OTHER, 1, OLDER_TICS);
+	BreakSpree(THIRD, OTHER, 1, NEWER_TICS);
 
 	const SpreeHudLines_t lines = P_GetSpreeHudLines(WATCHED);
 
@@ -205,8 +225,8 @@ TEST_F(SpreeTest, NewerBreakerWinsTheSmallLineOverASpree)
 
 TEST_F(SpreeTest, NewerSpreeWinsTheSmallLineOverABreaker)
 {
-	BreakSpree(THIRD, OTHER, 1, 60);
-	GiveSpree(OTHER, 1, 20);
+	BreakSpree(THIRD, OTHER, 1, OLDER_TICS);
+	GiveSpree(OTHER, 1, NEWER_TICS);
 
 	const SpreeHudLines_t lines = P_GetSpreeHudLines(WATCHED);
 
@@ -217,8 +237,8 @@ TEST_F(SpreeTest, NewerSpreeWinsTheSmallLineOverABreaker)
 
 TEST_F(SpreeTest, NewerBreakerWinsOverOurOwnRepeat)
 {
-	GiveSpree(WATCHED, TOP_SPREE_LEVEL + 1, 60);
-	BreakSpree(THIRD, OTHER, 1, 20);
+	GiveSpree(WATCHED, TOP_SPREE_LEVEL + 1, OLDER_TICS);
+	BreakSpree(THIRD, OTHER, 1, NEWER_TICS);
 
 	const SpreeHudLines_t lines = P_GetSpreeHudLines(WATCHED);
 
@@ -229,8 +249,8 @@ TEST_F(SpreeTest, NewerBreakerWinsOverOurOwnRepeat)
 
 TEST_F(SpreeTest, OurOwnRepeatWinsOverAnOlderSpree)
 {
-	GiveSpree(OTHER, 1, 60);
-	GiveSpree(WATCHED, TOP_SPREE_LEVEL + 1, 20);
+	GiveSpree(OTHER, 1, OLDER_TICS);
+	GiveSpree(WATCHED, TOP_SPREE_LEVEL + 1, NEWER_TICS);
 
 	const SpreeHudLines_t lines = P_GetSpreeHudLines(WATCHED);
 
@@ -278,11 +298,11 @@ TEST_F(SpreeTest, StillDominatingIsDerivedWhenTheRecordIsUpgraded)
 
 TEST_F(SpreeTest, TicsAgoPlacesTheSpreeInThePast)
 {
-	GiveSpree(WATCHED, 1, 70);
+	GiveSpree(WATCHED, 1, PAST_TICS);
 
 	const SpreeRecord_t& record = SpreeManager::getInstance().getSpreeRecord(WATCHED);
 
-	EXPECT_EQ(record.spreeStartTic, ::gametic - 70);
+	EXPECT_EQ(record.spreeStartTic, ::gametic - PAST_TICS);
 }
 
 TEST_F(SpreeTest, LowerLevelsDoNotDowngradeARecord)
@@ -312,7 +332,7 @@ TEST_F(SpreeTest, SpreesFromTheFutureExpire)
 {
 	// A rewinded netdemo leaves records stamped ahead of the current tic.
 	GiveSpree(WATCHED, 1);
-	::gametic -= 100;
+	::gametic -= REWIND_TICS;
 
 	SpreeManager::getInstance().expireOldSprees();
 
@@ -322,7 +342,7 @@ TEST_F(SpreeTest, SpreesFromTheFutureExpire)
 TEST_F(SpreeTest, BreakersFromTheFutureExpire)
 {
 	BreakSpree(OTHER, THIRD, 1);
-	::gametic -= 100;
+	::gametic -= REWIND_TICS;
 
 	SpreeManager::getInstance().expireOldSprees();
 
@@ -368,7 +388,7 @@ class SpreeRoundTest : public ::testing::Test
 		AddPlayer(WATCHED, "Watched");
 		AddPlayer(OTHER, "Other");
 
-		::gametic = 10000;
+		::gametic = BASE_GAMETIC;
 
 		SpreeManager::getInstance().reset();
 		SpreeManager::getInstance().loadSpreeDefaults();
@@ -426,10 +446,10 @@ TEST_F(SpreeRoundTest, ClearingRoundStatsAlsoDropsPoints)
 {
 	const player_t& player = idplayer(static_cast<byte>(WATCHED));
 
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < KILLS_PER_SPREE_LEVEL; i++)
 		SpreeManager::getInstance().recordPlayerKill(&player);
 
-	ASSERT_EQ(SpreeManager::getInstance().getPoints(WATCHED), 5);
+	ASSERT_EQ(SpreeManager::getInstance().getPoints(WATCHED), KILLS_PER_SPREE_LEVEL);
 
 	G_ClearRoundKillStats();
 
@@ -449,7 +469,7 @@ class SpreeScoringTest : public ::testing::Test
 		AddPlayer(WATCHED, "Watched");
 		AddPlayer(OTHER, "Other");
 
-		::gametic = 10000;
+		::gametic = BASE_GAMETIC;
 
 		// sv_gametype is latched, and latched cvars are deferred while a level is in
 		// progress, which is what the default gamestate looks like here.
@@ -571,7 +591,7 @@ TEST_F(SpreeScoringTest, MonsterDamageCountsInCoop)
 	::sv_gametype.ForceSet(GM_COOP);
 	GiveBody(WATCHED);
 
-	P_ProcessSpreeDamage(&Player(WATCHED), Monster(false), 500);
+	P_ProcessSpreeDamage(&Player(WATCHED), Monster(false), DAMAGE_POINTS);
 
 	EXPECT_EQ(Points(WATCHED), 500);
 }
@@ -583,7 +603,7 @@ TEST_F(SpreeScoringTest, FriendlyMonsterDamageDoesNotCountInCoop)
 	::sv_gametype.ForceSet(GM_COOP);
 	GiveBody(WATCHED);
 
-	P_ProcessSpreeDamage(&Player(WATCHED), Monster(true), 500);
+	P_ProcessSpreeDamage(&Player(WATCHED), Monster(true), DAMAGE_POINTS);
 
 	EXPECT_EQ(Points(WATCHED), 0);
 }
@@ -627,7 +647,7 @@ TEST_F(SpreeScoringTest, DamageDoesNotCountOutsideCoop)
 {
 	GiveBody(WATCHED);
 
-	P_ProcessSpreeDamage(&Player(WATCHED), Monster(false), 500);
+	P_ProcessSpreeDamage(&Player(WATCHED), Monster(false), DAMAGE_POINTS);
 
 	EXPECT_EQ(Points(WATCHED), 0);
 }
@@ -649,7 +669,7 @@ class SpreeColorTest : public ::testing::Test
 		::players.front().userinfo.team = TEAM_BLUE;
 		::players.back().userinfo.team = TEAM_RED;
 
-		::gametic = 10000;
+		::gametic = BASE_GAMETIC;
 
 		// sv_gametype is latched, and latched cvars are deferred while a level is in
 		// progress, which is what the default gamestate looks like here.
@@ -693,7 +713,7 @@ class SpreeColorTest : public ::testing::Test
 	{
 		const player_t& player = idplayer(static_cast<byte>(playerId));
 
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < KILLS_PER_SPREE_LEVEL; i++)
 			SpreeManager::getInstance().recordPlayerKill(&player);
 	}
 

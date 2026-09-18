@@ -33,6 +33,10 @@ namespace
 // The defaults give six spree levels, so anything past level 5 is a repeat.
 constexpr int TOP_SPREE_LEVEL = 5;
 
+// A starting tic well clear of zero, so tests can stamp events in the past
+// without the resulting tic going negative.
+constexpr int BASE_GAMETIC = 10000;
+
 constexpr int WATCHED = 1;
 
 void AddPlayer(const int id, const std::string& name)
@@ -159,7 +163,7 @@ TEST_F(SpreeDefTest, ParsedLevelCountDrivesStillDominating)
 
 	::players.clear();
 	AddPlayer(WATCHED, "Watched");
-	::gametic = 10000;
+	::gametic = BASE_GAMETIC;
 
 	// Two levels means index 1 is the top, so index 2 is a repeat.
 	SpreeManager::getInstance().setRawSpree(WATCHED, 1, 0);

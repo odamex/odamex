@@ -33,6 +33,22 @@ namespace
 constexpr int FIRST_MULTI_LEVEL = 2;
 constexpr int TOP_MULTI_LEVEL = 11;
 
+// A starting tic well clear of zero, so tests can stamp events in the past
+// without the resulting tic going negative.
+constexpr int BASE_GAMETIC = 10000;
+
+// How far a rewound netdemo jumps back, leaving events stamped in the future.
+constexpr int REWIND_TICS = 100;
+
+// Tics allowed to elapse while a multi kill window runs down.
+constexpr int ELAPSED_TICS = 10;
+
+// An offset well past the top level, to prove levels clamp rather than wrap.
+constexpr int PAST_TOP_LEVELS = 50;
+
+// Seconds the multi kill window is configured with in the interval test.
+constexpr int INTERVAL_SECONDS = 3;
+
 constexpr int KILLER = 1;
 constexpr int VICTIM = 2;
 
@@ -53,7 +69,7 @@ class MultiKillTest : public ::testing::Test
 		AddPlayer(KILLER, "Killer");
 		AddPlayer(VICTIM, "Victim");
 
-		::gametic = 10000;
+		::gametic = BASE_GAMETIC;
 
 		m_oldGamestate = ::gamestate;
 		::gamestate = GS_STARTUP;
@@ -125,12 +141,12 @@ TEST_F(MultiKillTest, EachKillStampsTheCurrentTicAndRefillsTheTimer)
 	EXPECT_GT(firstWindow, 0);
 
 	// Let some of the window run down, then simulate another kill.
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < ELAPSED_TICS; i++)
 		MultiKillManager::getInstance().ticPlayerMultiKill(KILLER);
 
-	EXPECT_EQ(Status(KILLER).ticsRemaining, firstWindow - 10);
+	EXPECT_EQ(Status(KILLER).ticsRemaining, firstWindow - ELAPSED_TICS);
 
-	::gametic += 10;
+	::gametic += ELAPSED_TICS;
 	MultiKillManager::getInstance().addKill(KILLER);
 
 	EXPECT_EQ(Status(KILLER).ticsRemaining, firstWindow);
@@ -179,7 +195,7 @@ TEST_F(MultiKillTest, KillsFromTheFutureAreDropped)
 {
 	// A rewinded netdemo leaves kills stamped ahead of the current tic.
 	AddKills(KILLER, 2);
-	::gametic -= 100;
+	::gametic -= REWIND_TICS;
 
 	MultiKillManager::getInstance().ticPlayerMultiKill(KILLER);
 
@@ -221,7 +237,7 @@ TEST_F(MultiKillTest, LevelsAboveTheTopClampToTheTop)
 	const MultiKillLevel_s& top =
 	    MultiKillManager::getInstance().getMultiKillLevel(TOP_MULTI_LEVEL);
 	const MultiKillLevel_s& past =
-	    MultiKillManager::getInstance().getMultiKillLevel(TOP_MULTI_LEVEL + 50);
+	    MultiKillManager::getInstance().getMultiKillLevel(TOP_MULTI_LEVEL + PAST_TOP_LEVELS);
 
 	EXPECT_FALSE(top.multikilltext.empty());
 	EXPECT_EQ(top.multikilltext, past.multikilltext);
@@ -261,10 +277,11 @@ TEST_F(MultiKillTest, TheIntervalIsSetInSecondsAndKeptInTics)
 	levels.emplace_back();
 	levels.emplace_back("Double Kill!", "", CR_WHITE);
 
-	MultiKillManager::getInstance().setMultiKillLevels(levels, 3);
+	MultiKillManager::getInstance().setMultiKillLevels(levels, INTERVAL_SECONDS);
 	MultiKillManager::getInstance().addKill(KILLER);
 
-	EXPECT_EQ(Status(KILLER).ticsRemaining, 3 * TICRATE);
+	constexpr int expectedTics = INTERVAL_SECONDS * TICRATE;
+	EXPECT_EQ(Status(KILLER).ticsRemaining, expectedTics);
 }
 
 // ==========================================================
