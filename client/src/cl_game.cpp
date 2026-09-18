@@ -1206,7 +1206,7 @@ void G_Ticker (void)
 			// believe we get as a result of this.
 			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
 
-            bool thinkersHaveRun = false;
+			bool thinkersHaveRun = false;
 
 			if (isClientSideOnly)
 			{
