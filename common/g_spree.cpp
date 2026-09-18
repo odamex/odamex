@@ -743,7 +743,10 @@ void SpreeManager::serialize(FArchive& arc)
 			spreeRecord[record.playerId] = record;
 		}
 
-		int32_t endedTeam = 0, enderTeam = 0, endedColor = 0, endedType = 0;
+		int32_t endedTeam = 0;
+		int32_t enderTeam = 0;
+		int32_t endedColor = 0;
+		int32_t endedType = 0;
 		arc >> spreeBreaker.spreeEndedName >> spreeBreaker.spreeEndedPlayerId >>
 		    endedTeam >> spreeBreaker.spreeEnderName >>
 		    spreeBreaker.spreeEnderPlayerId >> enderTeam >>
