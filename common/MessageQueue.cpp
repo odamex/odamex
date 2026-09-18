@@ -44,7 +44,7 @@ buf_t& MessageQueue::Obtain()
 	}
 	else
 	{
-		m_queue.emplace_back(MAX_UDP_PACKET);
+		m_queue.emplace_back(m_maxMessageBufferSize);
 	}
 	return m_queue.back();
 }
