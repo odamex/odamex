@@ -273,12 +273,12 @@ static void CL_PredictSpectator()
 // CL_PredictLocalPlayer
 //
 //
-static void CL_PredictLocalPlayer(int predtic)
+static bool CL_PredictLocalPlayer(int predtic)
 {
 	player_t& player = consoleplayer();
 
 	if (!player.ingame() || !player.mo || player.tic >= predtic)
-		return;
+		return false;
 
 	// Restore the angle, viewheight, etc for the player
 	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
@@ -295,6 +295,7 @@ static void CL_PredictLocalPlayer(int predtic)
 		P_MovePlayer(player);
 
 	player.mo->RunThink();
+	return true;
 }
 
 //
@@ -302,21 +303,21 @@ static void CL_PredictLocalPlayer(int predtic)
 //
 // Main function for client-side prediction.
 //
-void CL_PredictWorld(void)
+bool CL_PredictWorld(void)
 {
 	if (gamestate != GS_LEVEL)
-		return;
+		return false;
 
 	if (netdemo.isPaused() && displayplayer().isFreecam)
 	{
 		CL_PredictFreecam();
-		return;
+		return false;
 	}
 
 	player_t& p = consoleplayer();
 
 	if (!validplayer(p) || !p.mo || noservermsgs || netdemo.isPaused())
-		return;
+		return false;
 
 	// tenatively tell the netgraph that our prediction was successful
 	netgraph.setMisprediction(false);
@@ -334,11 +335,11 @@ void CL_PredictWorld(void)
 	if (consoleplayer().spectator)
 	{
 		CL_PredictSpectator();
-		return;
+		return false;
 	}
 
 	if (p.tic <= 0)	// No verified position from the server
-		return;
+		return false;
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
@@ -353,11 +354,14 @@ void CL_PredictWorld(void)
 	PlayerSnapshot prevsnap(p.tic, p);
 	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
 
+	// Mobjs are already in the last position received from the server.
+	bool mobjsHaveBeenPredicted = false;
+
 	// Move sectors to the last position received from the server
 	if (cl_predictsectors)
 		CL_ResetSectors();
 
-	// Move the client to the last position received from the sever
+	// Move the client to the last position received from the server
 	int snaptime = p.snapshots.getMostRecentTime();
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
@@ -366,7 +370,14 @@ void CL_PredictWorld(void)
 	{
 		if (cl_predictsectors)
 			CL_PredictSectors(predtic);
-		CL_PredictLocalPlayer(predtic);
+		const bool playerWasPredicted = CL_PredictLocalPlayer(predtic);
+        if (playerWasPredicted and not mobjsHaveBeenPredicted)
+        {
+            mobjsHaveBeenPredicted = true;
+            predicting = false;
+            DThinker::RunThinkers();
+            predicting = true;
+        }
 	}
 
 	// If the player didn't just spawn or teleport, nudge the player from
@@ -398,6 +409,8 @@ void CL_PredictWorld(void)
 	if (cl_predictsectors)
 		CL_PredictSectors(gametic);
 	CL_PredictLocalPlayer(gametic);
+
+    return mobjsHaveBeenPredicted;
 }
 
 void CL_ResetWorldPrediction()

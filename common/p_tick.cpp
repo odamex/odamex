@@ -53,7 +53,7 @@ void P_MovePlayer (player_t& player);
 //
 // P_Ticker
 //
-void P_Ticker (void)
+void P_Ticker (bool runAllThinkers)
 {
 #ifdef CLIENT_APP
 	if (paused && displayplayer().isFreecam)
@@ -95,7 +95,7 @@ void P_Ticker (void)
 		P_AnimationTick(player.mo);
 	}
 
-#ifdef CLIENT_APP
+#if 0
     if (clientside and not serverside)
     {
         player_t& player = consoleplayer();
@@ -128,6 +128,7 @@ void P_Ticker (void)
     }
     else
 #endif
+    if (runAllThinkers)
     {
         DThinker::RunThinkers ();
     }
