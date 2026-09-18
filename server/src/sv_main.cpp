@@ -62,6 +62,8 @@
 #include "sv_maplist.h"
 #include "g_levelstate.h"
 #include "g_gametype.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "v_textcolors.h"
@@ -2007,6 +2009,12 @@ void SV_DisconnectClient(player_t &who)
 
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
+
+	// Player ids get recycled, so anything left behind here would be handed to whoever
+	// joins next under the same id.
+	SpreeManager::getInstance().removeSpree(who.id);
+	SpreeManager::getInstance().erasePoints(who.id);
+	MultiKillManager::getInstance().eraseMultiKills(who.id);
 
 	who.playerstate = PST_DISCONNECT;
 
