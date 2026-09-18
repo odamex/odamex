@@ -32,10 +32,6 @@
 #include "p_horde.h"
 #include "g_spree.h"
 
-#ifdef CLIENT_APP
-#   include "cl_main.h"
-#endif
-
 //
 // P_AtInterval
 //
@@ -48,7 +44,6 @@ bool P_AtInterval(int interval)
 }
 
 void P_AnimationTick(AActor *mo);
-void P_MovePlayer (player_t& player);
 
 //
 // P_Ticker
