@@ -49,7 +49,7 @@ void SV_SendReconnectSignal();
 void SV_ExitLevel();
 void SV_DrawScores();
 
-void SV_ServerSettingChange();
+void SV_ServerSettingChange(bool force);
 bool SV_IsPlayerAllowedToSee(const player_t &pl, const AActor *mobj);
 
 void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);

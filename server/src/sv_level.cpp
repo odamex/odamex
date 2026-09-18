@@ -59,6 +59,7 @@
 #include "g_episode.h"
 #include "g_skill.h"
 #include "g_spree.h"
+#include "sv_pickup.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -67,7 +68,6 @@ extern int nextupdate;
 
 EXTERN_CVAR (sv_endmapscript)
 EXTERN_CVAR (sv_startmapscript)
-EXTERN_CVAR (sv_curpwad)
 EXTERN_CVAR (sv_curmap)
 EXTERN_CVAR (sv_nextmap)
 EXTERN_CVAR (sv_intermissionlimit)
@@ -264,11 +264,7 @@ void G_ChangeMap()
 		}
 
 		// run script at the end of each map
-		// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-		// when onlcvars (addcommandstring's second param) is true.  Is there a
-		// reason why the mapscripts ahve to be safe mode?
-		if (strlen(sv_endmapscript.cstring()))
-			AddCommandString(sv_endmapscript.str());
+		C_RunCVarScriptHook(sv_endmapscript);
 	}
 }
 
@@ -288,11 +284,7 @@ void G_ChangeMap(size_t index) {
 	Maplist::instance().set_index(index);
 
 	// run script at the end of each map
-	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a
-	// reason why the mapscripts ahve to be safe mode?
-	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.str());
+	C_RunCVarScriptHook(sv_endmapscript);
 }
 
 // Determine first map to load on startup
@@ -332,11 +324,7 @@ void G_ChangeMapStartup()
 	}
 
 	// run script at the end of each map
-	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a
-	// reason why the mapscripts ahve to be safe mode?
-	if (!sv_endmapscript.str().empty())
-		AddCommandString(sv_endmapscript.str());
+	C_RunCVarScriptHook(sv_endmapscript);
 }
 
 // Restart the current map.
@@ -345,11 +333,7 @@ void G_RestartMap() {
 	G_DeferedInitNew(level.mapname);
 
 	// run script at the end of each map
-	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a
-	// reason why the mapscripts ahve to be safe mode?
-	if(!sv_endmapscript.str().empty())
-		AddCommandString(sv_endmapscript.str());
+	C_RunCVarScriptHook(sv_endmapscript);
 }
 
 BEGIN_COMMAND (nextmap) {
@@ -376,6 +360,22 @@ void SV_CheckTeam(player_t &pl);
 //
 void G_DoNewGame()
 {
+	sv_curmap.ForceSet(d_mapname.c_str());
+
+	// run script at the start of each map
+	C_RunCVarScriptHook(sv_startmapscript);
+
+	// We need to do this before telling clients to load the map
+	// because otherwise they use the old settings when starting the map
+	// and some cvars, e.g. sv_skill, affect map load
+	cvar_t::UnlatchCVars();
+	SV_ServerSettingChange(true);
+
+	// TODO: finish this up and test it more fully
+	EXTERN_CVAR(sv_shuffleteams)
+	if (sv_shuffleteams)
+		Pickup_DistributeAllPlayers();
+
 	for (auto& player : players)
 	{
 		if(!(player.ingame()))
@@ -384,26 +384,6 @@ void G_DoNewGame()
 		MSG_WriteSVC(&player.client.reliablebuf,
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
 	}
-
-	sv_curmap.ForceSet(d_mapname.c_str());
-
-	if (::wadfiles.size() < 3) // odamex.wad, iwad, pwad(s)
-	{
-		sv_curpwad.ForceSet("");
-	}
-	else
-	{
-		OResFiles::const_iterator it = ::wadfiles.begin();
-		std::advance(it, 2);
-		sv_curpwad.ForceSet(it->getBasename().c_str());
-	}
-
-	// run script at the start of each map
-	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
-	// when onlcvars (addcommandstring's second param) is true.  Is there a
-	// reason why the mapscripts ahve to be safe mode?
-	if (!sv_startmapscript.str().empty())
-		AddCommandString(sv_startmapscript.str());
 
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;
@@ -450,17 +430,10 @@ void G_InitNew(const char *mapname)
 
 	const int old_gametype = sv_gametype.asInt();
 
-	cvar_t::UnlatchCVars ();
-
 	SpreeManager::getInstance().clearSprees();
 
 	if (old_gametype != sv_gametype || sv_gametype != GM_COOP)
 		unnatural_level_progression = true;
-
-	// [SL] 2011-09-01 - Change gamestate here so SV_ServerSettingChange will
-	// send changed cvars
-	gamestate = GS_LEVEL;
-	SV_ServerSettingChange();
 
 	paused = false;
 
