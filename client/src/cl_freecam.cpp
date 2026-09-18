@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2026 by Jess W
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,13 +25,15 @@
 #include "g_gametype.h"
 #include "p_local.h"
 
+EXTERN_CVAR (cl_noclip_spectator)
+
 fixed_t cam_x = 0;
 fixed_t cam_y = 0;
 fixed_t cam_z = 0;
 angle_t cam_angle = 0;
 fixed_t cam_pitch = 0;
 
-std::string Freecam::prevmap = "";
+std::string Freecam::prevmap;
 
 void Freecam::addFreecamPlayer()
 {
@@ -42,7 +44,7 @@ void Freecam::addFreecamPlayer()
 		Freecam::buildCam(cam);
 	}
 
-	if (cam->id != freecamplayer_id && players.size() < MAXPLAYERS) // initial add
+	if (cam->id != freecamplayer_id and players.size() < MAXPLAYERS) // initial add
 	{
 		cam = &players.emplace_back();
 		cam->id = freecamplayer_id;
@@ -53,7 +55,10 @@ void Freecam::addFreecamPlayer()
 
 bool Freecam::wipedOnLevelChange(player_t* cam)
 {
-	return (cam->id == freecamplayer_id && cam->isFreecam && not cam->mo && not cam->camera);
+	return (cam->id == freecamplayer_id and
+		    cam->isFreecam and
+		    cam->mo == nullptr and
+	        cam->camera == nullptr);
 }
 
 void Freecam::buildCam(player_t* p_cam)
@@ -74,10 +79,14 @@ void Freecam::buildCam(player_t* p_cam)
 
 	// spec stuff
 	p_cam->cheats |= CF_FLY;
-	p_cam->cheats |= CF_NOCLIP;
 	p_cam->spectator = true;
 	p_cam->mo->oflags |= MFO_SPECTATOR;
 	p_cam->mo->flags &= ~MF_SOLID;
+
+	if (cl_noclip_spectator)
+	{
+		p_cam->cheats |= CF_NOCLIP;
+	}
 
 	// player.ingame() should always be false for the freecam
 	p_cam->playerstate = PST_FREECAM;  
@@ -93,11 +102,26 @@ void Freecam::setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
 	cam_angle = angle;
 }
 
+void Freecam::moveToPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
+{
+	player_t* cam = &idplayer(freecamplayer_id);
+
+	if (cam->id == freecamplayer_id and cam->isFreecam)
+	{
+		cam->mo->x = x;
+		cam->mo->y = y;
+		cam->mo->z = z;
+		cam->mo->angle = angle;
+		cam->mo->pitch = 0;
+		cam->viewheight = VIEWHEIGHT;
+	}
+}
+
 void Freecam::savePosition()
 {
 	player_t* cam = &idplayer(freecamplayer_id);
 
-	if (cam->id == freecamplayer_id && cam->isFreecam)
+	if (cam->id == freecamplayer_id and cam->isFreecam)
 	{
 		cam_x = cam->mo->x;
 		cam_y = cam->mo->y;
@@ -109,7 +133,7 @@ void Freecam::savePosition()
 
 bool Freecam::needPosition() 
 {
-	return (cam_x == 0 && cam_y == 0);
+	return (cam_x == 0 and cam_y == 0);
 }
 
 void Freecam::reset()
@@ -119,16 +143,15 @@ void Freecam::reset()
 
 bool Freecam::allowAdd()
 {
-	return (netdemo.isPlaying() || G_IsLivesGame());
+	return (netdemo.isPlaying() or (G_IsLivesGame() and not G_IsTeamGame()));
 }
 
 bool Freecam::allowSpy()
 {
-	return (netdemo.isPlaying() || 
-			netdemo.isPaused() ||
+	return (netdemo.isInPlayback() or
 			(consoleplayer().playerstate == PST_DEAD 
-				&& consoleplayer().lives < 1 
-				&& ::levelstate.getState() == LevelState::INGAME));
+				and consoleplayer().lives < 1 
+				and ::levelstate.getState() == LevelState::INGAME));
 }
     
 // a real 255th player connected (CL_UserInfo) and is taking the freecam spot
