@@ -301,7 +301,9 @@ static bool CL_PredictLocalPlayer(int predtic)
 //
 // CL_PredictWorld
 //
-// Main function for client-side prediction.
+// Main function for client-side prediction.  Returns true if the prediction included
+// actually stepping all the mobj thinkers for the current gametic, in which case, the
+// caller must take care to not step them again.
 //
 bool CL_PredictWorld(void)
 {
@@ -370,14 +372,21 @@ bool CL_PredictWorld(void)
 	{
 		if (cl_predictsectors)
 			CL_PredictSectors(predtic);
+
 		const bool playerWasPredicted = CL_PredictLocalPlayer(predtic);
-        if (playerWasPredicted and not mobjsHaveBeenPredicted)
-        {
-            mobjsHaveBeenPredicted = true;
-            predicting = false;
-            DThinker::RunThinkers();
-            predicting = true;
-        }
+		if (playerWasPredicted and not mobjsHaveBeenPredicted)
+		{
+			mobjsHaveBeenPredicted = true;
+
+			// We're doing our genuine thinker step now, and it should almost always
+			// be on the tic following the latest from the server.  This ensures that
+			// mobj actions that reference the player's position are working from the
+			// player state that the server almost certainly had when it ran the tic
+			// for real.
+			predicting = false;
+			DThinker::RunThinkers();
+			predicting = true;
+		}
 	}
 
 	// If the player didn't just spawn or teleport, nudge the player from
@@ -410,7 +419,7 @@ bool CL_PredictWorld(void)
 		CL_PredictSectors(gametic);
 	CL_PredictLocalPlayer(gametic);
 
-    return mobjsHaveBeenPredicted;
+	return mobjsHaveBeenPredicted;
 }
 
 void CL_ResetWorldPrediction()

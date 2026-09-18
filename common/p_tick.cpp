@@ -95,43 +95,10 @@ void P_Ticker (bool runAllThinkers)
 		P_AnimationTick(player.mo);
 	}
 
-#if 0
-    if (clientside and not serverside)
-    {
-        player_t& player = consoleplayer();
-
-        // Do a switcheroo of the player's absolute current state and the position that was
-        // current as of the time that the server updated its mobjs.  This lets the mobj
-        // thinkers run using the same target data they' would have had on the server.
-        //
-        // ... should we do this for ALL players, or just the local player?
-        //
-        const int            effectiveHistoricalTic = player.snapshots.getMostRecentTime();
-        const PlayerSnapshot currentSnapshot(gametic, player);
-        const PlayerSnapshot historicalSnapshot = player.snapshots.getSnapshot(effectiveHistoricalTic);
-
-        odaproto::clc::PlayerInput currentInput;
-        CLC_PackPlayerInputMessageFromPlayer(currentInput, player, gametic, 0);
-
-        historicalSnapshot.toPlayer(player);
-        CLC_UnpackPlayerInputMessageToPlayer(localcmds[(player.tic+1) % MAXSAVETICS], player);
-
-        predicting = true;
-        P_MovePlayer(player);
-        player.mo->RunThink();
-        predicting = false;
-
-        DThinker::RunThinkers ();
-
-        currentSnapshot.toPlayer(player);
-        CLC_UnpackPlayerInputMessageToPlayer(currentInput, player);
-    }
-    else
-#endif
-    if (runAllThinkers)
-    {
-        DThinker::RunThinkers ();
-    }
+	if (runAllThinkers)
+	{
+		DThinker::RunThinkers ();
+	}
 
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
