@@ -49,8 +49,7 @@ extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 namespace
 {
-
-PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
+std::array<PlayerSnapshot, MAXSAVETICS> cl_savedsnaps;
 
 //
 // CL_GetSnapshotManager
@@ -292,12 +291,12 @@ bool CL_PredictLocalPlayer(int predtic)
 //
 bool CL_SectorIsPredicting(sector_t *sector)
 {
-	if (!sector || !cl_predictsectors)
+	if (not sector or not cl_predictsectors)
 		return false;
 
-	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
-	if (itr != movingsectors.end() && sector == itr->sector)
-		return (itr->moving_ceiling || itr->moving_floor);
+	const auto itr = P_FindMovingSector(sector);
+	if (itr != movingsectors.end() and sector == itr->sector)
+		return (itr->moving_ceiling or itr->moving_floor);
 
 	// sector not found
 	return false;
