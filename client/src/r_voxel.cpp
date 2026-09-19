@@ -57,6 +57,7 @@ constexpr int kMaxFrames = 29;
 constexpr int kBackslashFrame = 27;
 constexpr size_t kSpriteNameLength = 4;
 constexpr size_t kVoxelFrameNameLength = 5;
+constexpr size_t kKvxHeaderPrefixSize = 28;
 constexpr size_t kKvxHeaderSize = 40;
 constexpr size_t kKvxPaletteSize = 768;
 constexpr size_t kKvxMaxXOffsets = 260;
@@ -137,7 +138,7 @@ fixed_t VX_AngleToSlope(int angle)
 {
 	if (angle > ANG90)
 		return finetangent[0];
-	if (-angle > ANG90)
+	if (angle <= -ANG90)
 		return finetangent[(FINEANGLES / 2) - 1];
 	return finetangent[(ANG90 - static_cast<angle_t>(angle)) >> ANGLETOFINESHIFT];
 }
@@ -542,6 +543,14 @@ void VX_ParseVoxelDefLump(const int lump)
 			else
 				os.unScan();
 		}
+		if (opts.voxelName.empty() or
+		    opts.voxelName.find_first_of("/\\:") != std::string::npos or
+		    opts.voxelName.find('\0') != std::string::npos or
+		    opts.voxelName.find("..") != std::string::npos)
+		{
+			os.warning("Invalid voxel name '{}' in VOXELDEF.", opts.voxelName);
+			continue;
+		}
 
 		for (const auto& [spritenum, frame] : targets)
 			g_voxelOptions[FrameKey(spritenum, frame)] = opts;
@@ -590,25 +599,29 @@ void VX_CreateRemapTable(const byte* src, std::array<byte, 256>& table)
 	}
 }
 
-void VX_RemapSlabColors(VoxelModel& v, int x, int y, const std::array<byte, 256>& table)
+bool VX_RemapSlabColors(VoxelModel& v, int x, int y, const std::array<byte, 256>& table)
 {
 	const int A = v.offsets[(y * v.x_size) + x];
 	const int B = v.offsets[((y + 1) * v.x_size) + x];
-	if (not(A < B))
-		return;
+	if (A < 0 or B < A or static_cast<size_t>(B) > v.data.size())
+		return false;
 
-	byte* slab = &v.data[A];
-	const byte* end = &v.data[B];
+	auto slab = static_cast<size_t>(A);
+	const auto end = static_cast<size_t>(B);
 
 	while (slab < end)
 	{
-		slab++; // top
-		const byte len = *slab++;
-		slab++; // face
+		if (end - slab < 3)
+			return false;
+		const byte len = v.data[slab + 1];
+		slab += 3; // top, length, face
+		if (static_cast<size_t>(len) > end - slab)
+			return false;
 
-		for (byte i = 0; i < len; i++, slab++)
-			*slab = table[*slab];
+		for (int i = 0; i < len; i++, slab++)
+			v.data[slab] = table[v.data[slab]];
 	}
+	return true;
 }
 
 bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
@@ -628,6 +641,11 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	if (out.x_size <= 0 or out.y_size <= 0 or out.z_size <= 0)
 		return false;
 	if (out.x_size > 255 or out.y_size > 255)
+		return false;
+	const size_t tableBytes =
+	    kKvxHeaderPrefixSize + ((static_cast<size_t>(out.x_size) + 1) * 4) +
+	    (static_cast<size_t>(out.x_size) * (static_cast<size_t>(out.y_size) + 1) * 2);
+	if (tableBytes > length - kKvxPaletteSize)
 		return false;
 
 	out.x_pivot = (p[0] << 8) | (p[1] << 16);
@@ -665,13 +683,15 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	const int data_size = max_offset - min_offset;
 	if (data_size <= 0)
 		return false;
+	if (min_offset < static_cast<int>(tableBytes - kKvxHeaderPrefixSize))
+		return false;
 
 	for (int& offset : out.offsets)
 		offset -= min_offset;
 
-	const size_t data_start =
-	    (static_cast<size_t>(7) * 4) + static_cast<size_t>(min_offset);
-	if (data_start + static_cast<size_t>(data_size) > length)
+	const size_t data_start = kKvxHeaderPrefixSize + static_cast<size_t>(min_offset);
+	if (data_start > length - kKvxPaletteSize or
+	    static_cast<size_t>(data_size) > length - kKvxPaletteSize - data_start)
 		return false;
 
 	out.data.resize(data_size);
@@ -683,7 +703,10 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	for (int x = 0; x < out.x_size; x++)
 	{
 		for (int y = 0; y < out.y_size; y++)
-			VX_RemapSlabColors(out, x, y, remap_table);
+		{
+			if (not VX_RemapSlabColors(out, x, y, remap_table))
+				return false;
+		}
 	}
 
 	return true;
@@ -1172,10 +1195,14 @@ void VX_Init()
 
 	for (const auto& [spritenum, spriteName] : sprnames)
 	{
+		bool contiguous = true;
 		for (int frame = 0; frame < kMaxFrames; frame++)
 		{
+			const auto* opts = VX_GetOptions(spritenum, frame);
+			if (not contiguous and (not opts or not opts->fromVoxelDef))
+				continue;
 			if (not VX_Load(spritenum, spriteName, frame))
-				break;
+				contiguous = false;
 		}
 	}
 
