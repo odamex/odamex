@@ -42,12 +42,15 @@ void P_MovePlayer (player_t& player);
 void P_CalcHeight (player_t& player);
 
 extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
-static PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
 
 bool predicting;
 
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
+namespace
+{
+
+PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
 
 //
 // CL_GetSnapshotManager
@@ -55,7 +58,7 @@ extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 // Returns the SectorSnapshotManager for the sector.
 // Returns NULL if a snapshots aren't currently stored for the sector.
 //
-static SectorSnapshotManager *CL_GetSectorSnapshotManager(sector_t *sector)
+SectorSnapshotManager *CL_GetSectorSnapshotManager(sector_t *sector)
 {
 	unsigned short sectornum = sector - sectors;
 	if (!sector || sectornum >= numsectors)
@@ -70,29 +73,11 @@ static SectorSnapshotManager *CL_GetSectorSnapshotManager(sector_t *sector)
 	return NULL;
 }
 
-static bool CL_SectorHasSnapshots(sector_t *sector)
+bool CL_SectorHasSnapshots(sector_t *sector)
 {
 	SectorSnapshotManager *mgr = CL_GetSectorSnapshotManager(sector);
 
 	return (mgr && !mgr->empty());
-}
-
-//
-// CL_SectorIsPredicting
-//
-// Returns true if the client is predicting sector
-//
-bool CL_SectorIsPredicting(sector_t *sector)
-{
-	if (!sector || !cl_predictsectors)
-		return false;
-
-	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
-	if (itr != movingsectors.end() && sector == itr->sector)
-		return (itr->moving_ceiling || itr->moving_floor);
-
-	// sector not found
-	return false;
 }
 
 //
@@ -102,7 +87,7 @@ bool CL_SectorIsPredicting(sector_t *sector)
 // server.  Also performs cleanup on the list of predicting sectors when
 // sectors have finished their movement.
 //
-static void CL_ResetSectors()
+void CL_ResetSectors()
 {
 	std::list<movingsector_t>::iterator itr;
 	itr = movingsectors.begin();
@@ -159,7 +144,7 @@ static void CL_ResetSectors()
 // CL_PredictSectors
 //
 //
-static void CL_PredictSectors(int predtic)
+void CL_PredictSectors(int predtic)
 {
 	for (const auto& movsector : movingsectors)
 	{
@@ -183,7 +168,7 @@ static void CL_PredictSectors(int predtic)
 //
 // Handles calling the thinker routines for the player being spied with spynext.
 //
-static void CL_PredictSpying()
+void CL_PredictSpying()
 {
 	player_t& player = displayplayer();
 	if (consoleplayer_id == displayplayer_id)
@@ -213,7 +198,7 @@ static void CL_PredictSpying()
 // CL_PredictRemotePlayers
 //
 //
-static void CL_PredictRemotePlayers()
+void CL_PredictRemotePlayers()
 {
 	for (auto& player : players)
 	{
@@ -231,7 +216,7 @@ static void CL_PredictRemotePlayers()
 // CL_PredictFreecam
 //
 //
-static void CL_PredictFreecam()
+void CL_PredictFreecam()
 {
 	player_t& player = displayplayer();
 	if (not player.isFreecam)
@@ -255,7 +240,7 @@ static void CL_PredictFreecam()
 // CL_PredictSpectator
 //
 //
-static void CL_PredictSpectator()
+void CL_PredictSpectator()
 {
 	player_t& player = consoleplayer();
 	if (!player.spectator)
@@ -273,7 +258,7 @@ static void CL_PredictSpectator()
 // CL_PredictLocalPlayer
 //
 //
-static bool CL_PredictLocalPlayer(int predtic)
+bool CL_PredictLocalPlayer(int predtic)
 {
 	player_t& player = consoleplayer();
 
@@ -298,6 +283,26 @@ static bool CL_PredictLocalPlayer(int predtic)
 	return true;
 }
 
+}   // anonymous namespace
+
+//
+// CL_SectorIsPredicting
+//
+// Returns true if the client is predicting sector
+//
+bool CL_SectorIsPredicting(sector_t *sector)
+{
+	if (!sector || !cl_predictsectors)
+		return false;
+
+	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
+	if (itr != movingsectors.end() && sector == itr->sector)
+		return (itr->moving_ceiling || itr->moving_floor);
+
+	// sector not found
+	return false;
+}
+
 //
 // CL_PredictWorld
 //
@@ -305,7 +310,7 @@ static bool CL_PredictLocalPlayer(int predtic)
 // actually stepping all the mobj thinkers for the current gametic, in which case, the
 // caller must take care to not step them again.
 //
-bool CL_PredictWorld(void)
+bool CL_PredictWorld()
 {
 	if (gamestate != GS_LEVEL)
 		return false;
