@@ -623,7 +623,7 @@ bool VX_RemapSlabColors(VoxelModel& v, int x, int y, const std::array<byte, 256>
 		if (static_cast<size_t>(len) > end - slab)
 			return false;
 
-		for (int i = 0; i < len; i++, slab++)
+		for (int i = 0; std::cmp_less(i , len); i++, slab++)
 			v.data[slab] = table[v.data[slab]];
 	}
 	return true;
@@ -688,7 +688,7 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	const int data_size = max_offset - min_offset;
 	if (data_size <= 0)
 		return false;
-	if (min_offset < static_cast<int>(tableBytes - kKvxHeaderPrefixSize))
+	if (std::cmp_less(min_offset ,tableBytes - kKvxHeaderPrefixSize)))
 		return false;
 
 	for (int& offset : out.offsets)
