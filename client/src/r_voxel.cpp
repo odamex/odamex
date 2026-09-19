@@ -688,7 +688,7 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	const int data_size = max_offset - min_offset;
 	if (data_size <= 0)
 		return false;
-	if (std::cmp_less(min_offset ,tableBytes - kKvxHeaderPrefixSize)))
+	if (std::cmp_less(min_offset ,tableBytes - kKvxHeaderPrefixSize))
 		return false;
 
 	for (int& offset : out.offsets)
