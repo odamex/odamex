@@ -1206,6 +1206,8 @@ void G_Ticker (void)
 			// believe we get as a result of this.
 			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
 
+			bool thinkersHaveRun = false;
+
 			if (isClientSideOnly)
 			{
 				if (!consoleplayer().mo)
@@ -1223,13 +1225,13 @@ void G_Ticker (void)
 				}
 
 				CL_SimulateWorld();
-				CL_PredictWorld();
+				thinkersHaveRun = CL_PredictWorld();
 
 				// Replay item pickups if the items arrived now.
 				ClientReplay::getInstance().itemReplay();
 			}
 			P_CheckInterpPause();
-			P_Ticker ();
+			P_Ticker (not thinkersHaveRun);
 			P_BobTicker();
 			ST_Ticker ();
 			AM_Ticker ();
