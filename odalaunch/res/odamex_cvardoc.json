@@ -2132,6 +2132,20 @@
          "type" : "string"
       },
       {
+         "default" : "voxels",
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Directory containing raw .kvx voxel files",
+         "name" : "r_voxeldir",
+         "type" : "string"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Enable software voxel rendering",
+         "name" : "r_voxels",
+         "type" : "boolean"
+      },
+      {
          "default" : 1,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "",
@@ -2404,6 +2418,13 @@
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
          "helptext" : "When set, names of players appear in the FOV",
          "name" : "sv_allowtargetnames",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to load custom voxel models from external directory. Does not affect voxels contained within server loaded wads.",
+         "name" : "sv_allowvoxels",
          "type" : "boolean"
       },
       {
