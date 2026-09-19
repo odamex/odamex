@@ -137,19 +137,22 @@ bool DThinker::SpliceBefore(DThinker* io_node)
 {
 	if (io_node and io_node != this and not (this->WasDestroyed() or io_node->WasDestroyed()))
 	{
-		Unlink();
+		if (not (this->m_Next == io_node and io_node->m_Prev == this))  // Are we not already linked in where we want to be?
+		{
+			Unlink();
 
-		if (FirstThinker == io_node)
-		{
-			FirstThinker = this;
+			if (FirstThinker == io_node)
+			{
+				FirstThinker = this;
+			}
+			m_Next = io_node;
+			m_Prev = io_node->m_Prev;
+			if (m_Prev)
+			{
+				m_Prev->m_Next = this;
+			}
+			io_node->m_Prev = this;
 		}
-		m_Next = io_node;
-		m_Prev = io_node->m_Prev;
-		if (m_Prev)
-		{
-			m_Prev->m_Next = this;
-		}
-		io_node->m_Prev = this;
 		return true;
 	}
 	return false;
@@ -159,19 +162,22 @@ bool DThinker::SpliceAfter(DThinker* io_node)
 {
 	if (io_node and io_node != this and not (this->WasDestroyed() or io_node->WasDestroyed()))
 	{
-		Unlink();
+		if (not (this->m_Prev == io_node and io_node->m_Next == this))  // Are we not already linked in where we want to be?
+		{
+			Unlink();
 
-		if (LastThinker == io_node)
-		{
-			LastThinker = this;
+			if (LastThinker == io_node)
+			{
+				LastThinker = this;
+			}
+			m_Next = io_node->m_Next;
+			if (m_Next)
+			{
+				m_Next->m_Prev = this;
+			}
+			m_Prev = io_node;
+			io_node->m_Next = this;
 		}
-		m_Next = io_node->m_Next;
-		if (m_Next)
-		{
-			m_Next->m_Prev = this;
-		}
-		m_Prev = io_node;
-		io_node->m_Next = this;
 		return true;
 	}
 	return false;
