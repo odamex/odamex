@@ -40,6 +40,7 @@
 #include "m_bbox.h"
 #include "m_fileio.h"
 #include "oscanner.h"
+#include "r_interp.h"
 #include "r_local.h"
 #include "r_voxel.h"
 #include "w_wad.h"
@@ -254,8 +255,12 @@ angle_t VX_ItemRotationAngle(const int degreesPerTic)
 {
 	// Interpolate the fraction of the current tic so spinning remains smooth at
 	// uncapped frame rates. Negative values rotate in the opposite direction.
+	// Keep the fraction fixed while gameplay is paused, including freecam.
+	const fixed_t amount = not paused and OInterpolation::getInstance().enabled()
+	                           ? render_lerp_amount
+	                           : FRACUNIT;
 	const double time = static_cast<double>(level.time) +
-	                    (static_cast<double>(render_lerp_amount) / FRACUNIT);
+	                    (static_cast<double>(amount) / FRACUNIT);
 	return VX_DegreesToAngle(time * degreesPerTic);
 }
 
