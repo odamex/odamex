@@ -135,7 +135,7 @@ void DThinker::Unlink()
 
 bool DThinker::SpliceBefore(DThinker* io_node)
 {
-	if (io_node and io_node != this and not io_node->WasDestroyed())
+	if (io_node and io_node != this and not (this->WasDestroyed() or io_node->WasDestroyed()))
 	{
 		Unlink();
 
@@ -157,7 +157,7 @@ bool DThinker::SpliceBefore(DThinker* io_node)
 
 bool DThinker::SpliceAfter(DThinker* io_node)
 {
-	if (io_node and io_node != this and not io_node->WasDestroyed())
+	if (io_node and io_node != this and not (this->WasDestroyed() or io_node->WasDestroyed()))
 	{
 		Unlink();
 
