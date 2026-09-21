@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <sstream>
 
 #include "c_dispatch.h"
@@ -38,6 +39,7 @@
 
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_teamsinplay)
+EXTERN_CVAR(sv_maxplayersperteam)
 
 // Distribute X number of players between teams.
 bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
@@ -51,6 +53,15 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	if (num_players > MAXPLAYERS) {
 		error = "Can't distribute that many players.";
 		return false;
+	}
+
+	// Also can't distribute if it would go over team size limits
+	const size_t team_count = sv_teamsinplay.asInt();
+	if (sv_maxplayersperteam) {
+		if (num_players > team_count * sv_maxplayersperteam.asInt()) {
+			error = "Can't distribute that many players.";
+			return false;
+		}
 	}
 
 	// Track all eligible players.
@@ -77,11 +88,10 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	std::shuffle(eligible.begin(), eligible.end(), rng);
 	eligible.resize(num_players);
 
-	const int teamCount = sv_teamsinplay.asInt();
 	std::vector<team_t> team_order;
-	team_order.reserve(teamCount);
+	team_order.reserve(team_count);
 
-	for (int i = 0; i < teamCount; i++)
+	for (size_t i = 0; i < team_count; i++)
 		team_order.push_back(static_cast<team_t>(i));
 
 	// and the teams too, to make sure which team gets an odd one out is random
@@ -91,7 +101,7 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 	// onto alternating teams.
 	for (size_t i = 0; i < eligible.size(); i++) {
 		player_t& player = *eligible[i];
-		const team_t dest_team = team_order[i % teamCount];
+		const team_t dest_team = team_order[i % team_count];
 
 		// Force-join the player if he's spectating.
 		SV_SetPlayerSpec(player, false, true);
@@ -181,11 +191,11 @@ nonstd::expected<void, std::string> Pickup_DistributeAllPlayers() {
 		return nonstd::make_unexpected("No eligible players for distribution.");
 	}
 
-	const int teamCount = sv_teamsinplay.asInt();
+	const int team_count = sv_teamsinplay.asInt();
 	std::vector<team_t> team_order;
-	team_order.reserve(teamCount);
+	team_order.reserve(team_count);
 
-	for (int i = 0; i < teamCount; i++) {
+	for (int i = 0; i < team_count; i++) {
 		team_order.push_back(static_cast<team_t>(i));
 	}
 
@@ -199,7 +209,7 @@ nonstd::expected<void, std::string> Pickup_DistributeAllPlayers() {
 	for (size_t i = 0; i < eligible.size(); i++) {
 		player_t& player = eligible[i];
 
-		SV_ForceSetTeam(player, team_order[i % teamCount]);
+		SV_ForceSetTeam(player, team_order[i % team_count]);
 		SV_CheckTeam(player);
 
 		for (auto& pit : players) {
