@@ -371,7 +371,6 @@ void G_DoNewGame()
 	cvar_t::UnlatchCVars();
 	SV_ServerSettingChange(true);
 
-	// TODO: finish this up and test it more fully
 	EXTERN_CVAR(sv_shuffleteams)
 	if (sv_shuffleteams)
 		Pickup_DistributeAllPlayers();
