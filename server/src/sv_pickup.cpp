@@ -161,7 +161,8 @@ BEGIN_COMMAND (randcaps) {
 	}
 } END_COMMAND (randcaps)
 
-// randomize all players' teams
+// randomize all ingame players' teams
+// does *not* kill or forcespec players
 nonstd::expected<void, std::string> Pickup_DistributeAllPlayers() {
 	// This function shouldn't do anything unless you're in a teamgame.
 	if (!G_IsTeamGame()) {
@@ -171,7 +172,7 @@ nonstd::expected<void, std::string> Pickup_DistributeAllPlayers() {
 	// Track all eligible players.
 	std::vector<std::reference_wrapper<player_t>> eligible;
 	for (auto& player : players) {
-		if (validplayer(player)) {
+		if (validplayer(player) and not player.spectator) {
 			eligible.emplace_back(player);
 		}
 	}
