@@ -1321,7 +1321,7 @@ static menuitem_t ModesItems[] = {
 #endif
 	{ discrete,	"Widescreen",			{&vid_widescreen},		{6.0}, {0.0},	{0.0}, {WidescreenMode} } ,
 	{ discrete,	"VSync",				{&vid_vsync},			{2.0}, {0.0},	{0.0}, {YesNo} },
-	{ discrete, "Framerate",			{&vid_maxfps},			{9.0}, {0.0},	{0.0}, {VidFPSCaps} },
+	{ discrete, "Framerate",			{&vid_maxfps},			{10.0}, {0.0},	{0.0}, {VidFPSCaps} },
 	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
 	{ redtext,	"",						{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
