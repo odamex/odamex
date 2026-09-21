@@ -3367,6 +3367,12 @@ void SV_JoinPlayer(player_t& player, bool silent)
 
 			if (minteam != TEAM_NONE)
 			{
+				// no need to check SV_GoodTeam, since we know that all other teams
+				// are also at max players if the one with the least players is
+				if (sv_maxplayersperteam &&
+				    P_NumPlayersOnTeam(minteam) >= static_cast<size_t>(sv_maxplayersperteam.asInt()))
+					return;
+
 				SV_ForceSetTeam(player, minteam);
 				SV_CheckTeam(player);
 			}
