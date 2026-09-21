@@ -544,7 +544,7 @@ BEGIN_COMMAND (if)
 	// that takes a string and use that here instead
 
 	// TODO: allow boolean cvars  to be checked directly without any comparison
-	if (var->m_Flags & CVARTYPE_BOOL)
+	if (var->type() == CVARTYPE_BOOL)
 	{
 		std::optional<bool> compval;
 
@@ -626,7 +626,7 @@ BEGIN_COMMAND (if)
 			return;
 		}
 	}
-	else if (var->m_Flags & CVARTYPE_FLOAT)
+	else if (var->type() == CVARTYPE_FLOAT)
 	{
 		// TODO: use ParseNum<float> when merging to protobreak
 		const auto compval = atof(argv[3]);
