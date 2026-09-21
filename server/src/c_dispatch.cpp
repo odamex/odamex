@@ -92,13 +92,13 @@ BEGIN_COMMAND (rand)
 			max = *maxopt;
 		}
 
-		if (max < min)
+		if (max <= min)
 		{
 			PrintFmt("Maximum must be greater than minimum");
 			return;
 		}
 
-    	const auto range = static_cast<uint32_t>(max - min);
+    	const auto range = static_cast<uint32_t>(max) - static_cast<uint32_t>(min);
     	result_int = min + static_cast<int32_t>(M_RandomInt(range));
 	}
 	else if (strcmp(argv[1], "float") == 0)
