@@ -1940,7 +1940,7 @@ struct state_t
 	int        frame     = 0;
 	int        tics      = -1;
 	actionf_p1 action    = nullptr;
-	statenum_t nextstate = static_cast<statenum_t>(-1);
+	statenum_t nextstate = S_NULL;
 	int        misc1     = 0;
 	int        misc2     = 0;
 
@@ -1956,7 +1956,6 @@ struct state_t
 
 extern state_t boomstates[];
 inline DoomObjectContainer<state_t> states(::NUMSTATES); // statenum_t
-extern state_t odastates[];
 
 inline FArchive &operator<< (FArchive &arc, const state_t *state)
 {
