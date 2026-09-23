@@ -584,6 +584,8 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 	}
 
 	connected = false;
+	::last_svgametic = 0;
+	world_index      = 0;
 
 	messenger = OdaMessenger{ pool };
 
