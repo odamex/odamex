@@ -500,6 +500,11 @@ public:
 
 	CredibilityState credibility;
 
+	// The following functions are for the client to adjust the thinker list so that the thinker order
+	// can be forced to follow the server's order, which conveniently correlates to netid.
+	bool SpliceAsThinkerBefore(AActor* io_node) { return SpliceBefore(io_node); }
+	bool SpliceAsThinkerAfter(AActor* io_node) { return SpliceAfter(io_node); }
+
 private:
 	static constexpr size_t TIDHashSize = 256;
 	static constexpr size_t TIDHashMask = TIDHashSize - 1;

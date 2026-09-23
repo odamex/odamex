@@ -2367,7 +2367,7 @@ void SV_ConnectClient()
 	{
 		google::protobuf::Message* userInfoMsg = nullptr;
 
-		if (MSG_ParseMessage(userInfoMsg, clc_userinfo) != PERR_OK)
+		if (MSG_ParseMessage(userInfoMsg, clc_userinfo, ::net_message) != PERR_OK)
 			return;
 
 		std::unique_ptr<google::protobuf::Message> msgPtr(userInfoMsg);
@@ -3639,7 +3639,10 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 	return partitions;
 }
 
-static void SV_SendMonitoredInventoryChanges(player_t& player)
+namespace
+{
+
+void SV_WriteMonitoredInventoryChanges(player_t& player)
 {
 	const bool pendingWeaponWasChanged = player.pendingweaponMonitor.EvaluateAsChanged();
 	const bool readyWeaponWasChanged   = player.readyweaponMonitor.EvaluateAsChanged();
@@ -3712,8 +3715,6 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		player.playerInfoIsRequested = false;
 		SV_SendPlayerInfo(player);
 	}
-	SV_SendMonitoredInventoryChanges(player);
-	SV_ArmInventoryMonitors(player);
 
 	// [SL] Send client info about player he is spying on
 	player_t& target = idplayer(player.spying);
@@ -3806,6 +3807,14 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
 
+	// Do any last minute broadcasting here, because any attempt to do so from the
+	// worker threads can and eventually will corrupt another player's messenger.
+	for (player_t& player : players)
+	{
+		SV_WriteMonitoredInventoryChanges(player);
+		SV_ArmInventoryMonitors(player);
+	}
+
 	// Palm off the job of writing the player messages onto the worker threads.
 	std::vector<std::future<void> > futures;
 
@@ -3829,6 +3838,7 @@ void SV_WriteCommands(void)
 	}
 }
 
+}
 
 void SV_PlayerTriedToCheat(player_t &player)
 {
@@ -4487,10 +4497,10 @@ void SV_SendRequestedMobjUpdate(player_t& player, const odaproto::clc::SendMobjU
 // SV_ParseCommands
 //
 
-parseError_e SV_ParseCommandSVC(const msg_t cmd, player_t& player)
+parseError_e SV_ParseCommandSVC(const msg_t cmd, player_t& player, buf_t& buffer)
 {
 	google::protobuf::Message* msgPtrRaw = nullptr;
-	const parseError_e result = MSG_ParseMessage(msgPtrRaw, cmd);
+	const parseError_e result = MSG_ParseMessage(msgPtrRaw, cmd, buffer);
 
 	std::unique_ptr<google::protobuf::Message> msgPtr(msgPtrRaw);
 
@@ -4618,10 +4628,9 @@ parseError_e SV_ParseCommandSVC(const msg_t cmd, player_t& player)
 	return result;
 }
 
-void SV_AcknowledgePacket(player_t &player)
+void SV_AcknowledgePacket(player_t &player, buf_t& buffer)
 {
-	int sequence = MSG_ReadLong();
-
+	const int sequence = buffer.ReadLong();
 	const bool isFresh = player.client.messenger->Acknowledge(sequence);
 
 	if (sequence == 0 and isFresh)
@@ -4651,13 +4660,13 @@ void SV_ParseCommands(player_t &player)
 				// Ack is a special case that's intentionally lower level and must be serviced before anything
 				// at the higher-level protocol layer.
 				case msg_ack:
-					SV_AcknowledgePacket(player);
+					SV_AcknowledgePacket(player, ::net_message);
 					break;
 
 				default:
 					// It's important to allow the clc_ enum to have priority
 					// over svc_ if we have both types of messages.
-					switch (SV_ParseCommandSVC(cmd, player))
+					switch (SV_ParseCommandSVC(cmd, player, ::net_message))
 					{
 						case PERR_OK:
 							continue;

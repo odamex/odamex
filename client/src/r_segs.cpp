@@ -660,9 +660,9 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	// find texture positioning
 	if (curline->linedef->flags & ML_DONTPEGBOTTOM)
-		dcol.texturemid = std::max(P_FloorHeight(frontsector), P_FloorHeight(backsector)) + R_TexInvScaleY(textureheight[texnum], texnum);
+		dcol.texturemid = std::max(frontsector->floortexz, backsector->floortexz) + R_TexInvScaleY(textureheight[texnum], texnum);
 	else
-		dcol.texturemid = std::min(P_CeilingHeight(frontsector), P_CeilingHeight(backsector));
+		dcol.texturemid = std::min(frontsector->ceilingtexz, backsector->ceilingtexz);
 
 	dcol.texturemid = R_TexScaleY(dcol.texturemid - viewz, texnum) + curline->sidedef->rowoffset;
 
@@ -895,12 +895,12 @@ void R_StoreWallRange(int start, int stop)
 		{
 			// bottom of texture at bottom
 			const fixed_t texheight = R_TexInvScaleY(textureheight[midtexture], midtexture);
-			rw_midtexturemid = P_FloorHeight(frontsector) - viewz + texheight;
+			rw_midtexturemid = frontsector->floortexz - viewz + texheight;
 		}
 		else
 		{
 			// top of texture at top
-			const fixed_t fc = P_CeilingHeight(frontsector);
+			const fixed_t fc = frontsector->ceilingtexz;
 			rw_midtexturemid = fc - viewz;
 		}
 
@@ -1019,14 +1019,14 @@ void R_StoreWallRange(int start, int stop)
 			if (linedef->flags & ML_DONTPEGTOP)
 			{
 				// top of texture at top
-				const fixed_t fc = P_CeilingHeight(frontsector);
+				const fixed_t fc = frontsector->ceilingtexz;
 				rw_toptexturemid = fc - viewz;
 			}
 			else
 			{
 				// bottom of texture
 				const fixed_t texheight = R_TexInvScaleY(textureheight[toptexture], toptexture);
-				rw_toptexturemid = P_CeilingHeight(backsector) - viewz + texheight;
+				rw_toptexturemid = backsector->ceilingtexz - viewz + texheight;
 			}
 		}
 
@@ -1038,13 +1038,13 @@ void R_StoreWallRange(int start, int stop)
 			if (linedef->flags & ML_DONTPEGBOTTOM)
 			{
 				// bottom of texture at bottom, top of texture at top
-				const fixed_t fc = P_CeilingHeight(frontsector);
+				const fixed_t fc = frontsector->ceilingtexz;
 				rw_bottomtexturemid = fc - viewz;
 			}
 			else
 			{
 				// top of texture at top
-				const fixed_t bf = P_FloorHeight(backsector);
+				const fixed_t bf = backsector->floortexz;
 				rw_bottomtexturemid = bf - viewz;
 			}
 		}

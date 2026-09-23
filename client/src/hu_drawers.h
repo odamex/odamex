@@ -52,6 +52,14 @@ void DrawText(int x, int y, const float scale,
               const x_align_t x_origin, const y_align_t y_origin,
               const char* str, const int color,
               const bool force_opaque = false);
+int StringWidthMono(const char* str);
+void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
+                    const char* str, const int color, const bool force_opaque = false);
+void DrawTextMono(int x, int y, const float scale,
+                  const x_align_t x_align, const y_align_t y_align,
+                  const x_align_t x_origin, const y_align_t y_origin,
+                  const char* str, const int color,
+                  const bool force_opaque = false);
 void DrawPatch(int x, int y, const float scale,
                const x_align_t x_align, const y_align_t y_align,
                const x_align_t x_origin, const y_align_t y_origin,
