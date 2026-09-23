@@ -73,6 +73,8 @@
 
 #include "PlayerItemDataType.h"
 
+#include "msg_message.h"
+
 // Extern data from other files.
 
 EXTERN_CVAR(cl_autorecord)
@@ -85,6 +87,7 @@ EXTERN_CVAR(cl_autorecord_horde)
 EXTERN_CVAR(cl_chatsounds)
 EXTERN_CVAR(cl_connectalert)
 EXTERN_CVAR(cl_disconnectalert)
+EXTERN_CVAR(cl_interp)
 EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
 EXTERN_CVAR(cl_team)
@@ -106,6 +109,7 @@ extern bool isReceivingFullUpdate;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
 extern NetGraph netgraph;
+extern int world_index;
 
 void CL_CheckDisplayPlayer(void);
 void CL_ClearPlayerJustTeleported(const player_t& player);
@@ -130,8 +134,9 @@ namespace
 
 PacketHeaderType s_currentHeader;
 
-int32_t ThisMessageClientTic() { return s_currentHeader.destinationTic; }
-int32_t ThisMessageServerTic() { return s_currentHeader.originatorTic; }
+int32_t ThisMessageClientTic()      { return s_currentHeader.destinationTic; }
+int32_t ThisMessageServerTic()      { return s_currentHeader.originatorTic; }
+bool    ThisMessageIsHighPriority() { return (s_currentHeader.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0; }
 
 LargeMessage s_receivedLargeMessage;
 
@@ -211,6 +216,11 @@ void CL_Header(const odaproto::Header* msg)
 	s_currentHeader.destinationTic  = msg->destination_tic();
 	s_currentHeader.reliableSize    = static_cast<uint16_t>(msg->reliable_size());
 	s_currentHeader.flags           = static_cast<uint16_t>(msg->flags());
+
+	if (ThisMessageIsHighPriority())
+	{
+		last_svgametic = s_currentHeader.originatorTic;
+	}
 }
 
 void CL_LargeMessageStart(const odaproto::LargeMessageStart* msg)
@@ -223,13 +233,13 @@ void CL_LargeMessageFragment(const odaproto::LargeMessageFragment* msg)
 	s_receivedLargeMessage.Append(msg->payload().data(), msg->payload().length());
 }
 
-void CL_ParseBuffer(buf_t& buffer);
+void CL_ParseBuffer(buf_t& buffer, int currentExpectedNewestPacket);
 
 void CL_LargeMessageEnd(const odaproto::LargeMessageEnd* )
 {
 	if (s_receivedLargeMessage.IsComplete() and not s_receivedLargeMessage.IsEmpty())
 	{
-		CL_ParseBuffer(s_receivedLargeMessage.GetBufferRef());
+		CL_ParseBuffer(s_receivedLargeMessage.GetBufferRef(), ThisMessageServerTic());
 		s_receivedLargeMessage.Restart(0);
 	}
 	else
@@ -3645,6 +3655,22 @@ const Protos& CL_GetTicProtos()
 	return ::protos;
 }
 
+namespace
+{
+	// multimap because:
+	//  1.  Packets can technically arrive well out-of-order, and
+	//      we want ordered handling.
+	//  2.  c++11 and up guarantee that ordering between
+	//      values that share a given key is the order of iteration.
+	//
+	// ParseResultType contains a unique_ptr to a parsed message.
+	//
+	// The key is the server tic that the message originated on.
+	// It is expected that the first value for a given tic is the header.
+	std::multimap<int32_t, ParseResultType> s_deferredMessages;
+}
+
+
 /**
  * @brief Read a server message off the wire.
  */
@@ -3675,6 +3701,19 @@ ParseResultType CL_ParseCommand(buf_t& buffer)
 	google::protobuf::Message* msg = nullptr;
 	result.code = MSG_ParseMessage(msg, result.cmd, buffer);
 	result.msg.reset(msg);                      // This does the right thing even if nullptr.
+
+	// Process headers immediately so that if, somehow, we have a netdemo with multiple
+	// tics worth of messages in a single step, including the headers, we have the current
+	// header state set immediately to know that we need to actually process the header
+	// again in the future IAW the logic that pushes any message into the future.
+	//
+	// Also, this is just more technically correct because the header's information applies
+	// to *itself* just as much as the messages that follow it.
+	//
+	if (result.code == PERR_OK and result.cmd == msg_header)
+	{
+		CL_Header(static_cast<const odaproto::Header*>(result.msg.get()));
+	}
 
 	// Because the result type contains a unique_ptr, which is uncopyable,
 	// we can be sure that either copy elision or a move happens here.
@@ -3810,13 +3849,43 @@ namespace
 		return svc;
 	}
 
-	void CL_ParseBuffer(buf_t& buffer)
+	void CL_ParseOne(buf_t& buffer, int currentExpectedNewestPacket)
 	{
-		const ParseResultType result = CL_ParseCommand(buffer);
+		ParseResultType result = CL_ParseCommand(buffer);
 
-		const parseError_e processResult = result.code == PERR_OK ?
-			CL_ProcessCommand(result) :
-			result.code;
+		parseError_e processResult = result.code;
+		if (result.code == PERR_OK)
+		{
+			// Any messages that exceed the expected newest packet are deferred.
+			//
+			// Special exception: clc_netdemocap.  It must always be handled immediately because the
+			//                    NetDemo class always delineates local tics with it, and it contains
+			//                    critical information for the next tic, particularly PlayerInputs.
+			if (ThisMessageServerTic() <= currentExpectedNewestPacket
+				or result.cmd == clc_netdemocap)
+			{
+				// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
+				// This is because the High Priority packet is always live and comes out every tic.  It's totally
+				// possible for the server to go without sending anything Reliable or Best-Effort if things are
+				// all-quiet.
+				if (ThisMessageIsHighPriority())
+				{
+					messenger.SetDestinationTic(ThisMessageServerTic());
+				}
+
+				processResult = CL_ProcessCommand(result);
+			}
+			else
+			{
+				// Acks have already been handled by CL_ParseCommand and are processed without regard to tic.
+				// Don't bother deferring them.
+				if (result.cmd != msg_ack)
+				{
+					s_deferredMessages.emplace(ThisMessageServerTic(), std::move(result));
+				}
+				return;
+			}
+		}
 
 		if (processResult != PERR_OK or buffer.overflowed)
 		{
@@ -3867,6 +3936,27 @@ namespace
 		}
 	}
 
+	void CL_ParseBuffer(buf_t& buffer, int currentExpectedNewestPacket)
+	{
+		while (connected)
+		{
+			if (buffer.BytesLeftToRead() == 0)
+			{
+				break;
+			}
+
+			const size_t byteStart = buffer.BytesRead();
+			CL_ParseOne(buffer, currentExpectedNewestPacket);
+
+			// Measure length of each message, so we can keep track of bandwidth.
+			if (buffer.BytesRead() < byteStart)
+			{
+				PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
+				        buffer.BytesRead(), byteStart);
+			}
+		}
+	}
+
 }
 
 //
@@ -3874,37 +3964,41 @@ namespace
 //
 void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 {
-	if (optionalHeader)
-	{
-		s_currentHeader = *optionalHeader;
-	}
+	const bool syncValuesAreSet           = world_index != 0 and last_svgametic != 0;
+	const bool worldIsCycling             = gamestate == GS_LEVEL;
+	const int currentExpectedNewestPacket = syncValuesAreSet and worldIsCycling ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
 
-	while (connected)
+	for (auto deferredMessageIter  = s_deferredMessages.begin();
+	          deferredMessageIter != s_deferredMessages.end();
+	          deferredMessageIter  = s_deferredMessages.erase(deferredMessageIter)
+	    )
 	{
-		if (::net_message.BytesLeftToRead() == 0)
+		if (deferredMessageIter->first > currentExpectedNewestPacket)
 		{
 			break;
 		}
+		CL_ProcessCommand(deferredMessageIter->second);
+	}
 
-		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
-		// This is because the High Priority packet is always live and comes out every tic.  It's totally
-		// possible for the server to go without sending anything Reliable or Best-Effort if things are
-		// all-quiet.
-		if (messenger.GetCurrentReceivedIsHighPriority())
+	if (optionalHeader)
+	{
+		s_currentHeader = *optionalHeader;
+		if (ThisMessageIsHighPriority())
 		{
-			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
+			last_svgametic = s_currentHeader.originatorTic;
 		}
 
-		const size_t byteStart = ::net_message.BytesRead();
-		CL_ParseBuffer(::net_message);
-
-		// Measure length of each message, so we can keep track of bandwidth.
-		if (::net_message.BytesRead() < byteStart)
+		if (s_currentHeader.originatorTic > currentExpectedNewestPacket)
 		{
-			PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
-			         ::net_message.BytesRead(), byteStart);
+			auto headerProto = MSG_Header(s_currentHeader);
+			ParseResultType futureReception { .msg  = std::make_unique<decltype(headerProto)>(std::move(headerProto)),
+			                                  .code = PERR_OK,
+			                                  .cmd  = msg_header };
+			s_deferredMessages.emplace(s_currentHeader.originatorTic, std::move(futureReception));
 		}
 	}
+
+	CL_ParseBuffer(::net_message, currentExpectedNewestPacket);
 }
 
 VERSION_CONTROL (cl_parse_cpp, "$Id$")
