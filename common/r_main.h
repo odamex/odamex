@@ -250,7 +250,7 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 	const argb_t* rgb = translation.getRGB();
 
 	// Not a player color translation:
-	if (pid == -1 && rgb == nullptr)
+	if (pid == -1 and rgb == nullptr)
 		return shade(translation.tlate(c));
 
 	// Special effect:
@@ -259,11 +259,11 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 
 	// A translation carrying its own colors says which indices it covers by
 	// leaving the rest at zero alpha:
-	if (rgb != nullptr && rgb[c].geta() == 0)
+	if (rgb != nullptr and rgb[c].geta() == 0)
 		return shade(translation.tlate(c));
 
 	// Is a player color translation, but not a player color index:
-	if (rgb == nullptr && (c < range_start || c > range_stop))
+	if (rgb == nullptr and (c < range_start or c > range_stop))
 		return shade(c);
 
 	// Default to white light:

@@ -597,14 +597,14 @@ argb_t R_GetPlayerDrawColor(argb_t user_color, team_t team, bool isconsoleplayer
 	if (G_IsTeamGame())
 	{
 		// P_AreTeammates, spelled out against a bare team rather than a player.
-		teammate = !isconsoleplayer && (G_IsCoopGame() || team == consoleplayer().userinfo.team);
+		teammate = not isconsoleplayer and (G_IsCoopGame() or team == consoleplayer().userinfo.team);
 		base_color = GetTeamInfo(team)->Color;
 	}
-	if (!isconsoleplayer && !consoleplayer().spectator)
+	if (not isconsoleplayer and not consoleplayer().spectator)
 	{
-		if (r_forceteamcolor && teammate)
+		if (r_forceteamcolor and teammate)
 			base_color = V_GetColorFromString(r_teamcolor);
-		else if (r_forceenemycolor && !teammate)
+		else if (r_forceenemycolor and not teammate)
 			base_color = V_GetColorFromString(r_enemycolor);
 	}
 
