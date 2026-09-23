@@ -39,98 +39,100 @@ void A_WeaponReady(AActor*);
 void A_Ambient(AActor*);
 
 // reserved odamex states
-state_t odastates[] = {
+constexpr std::array odastates = std::to_array<state_t>({
 	// ZDoom/Odamex stuff starts here
-	{S_GIB0, SPR_GIB0, 0, -1, NULL, S_NULL, 0, 0},                     // S_GIB0
-	{S_GIB1, SPR_GIB1, 0, -1, NULL, S_NULL, 0, 0},                     // S_GIB1
-	{S_GIB2, SPR_GIB2, 0, -1, NULL, S_NULL, 0, 0},                     // S_GIB2
-	{S_GIB3, SPR_GIB3, 0, -1, NULL, S_NULL, 0, 0},                     // S_GIB3
-	{S_GIB4, SPR_GIB4, 0, -1, NULL, S_NULL, 0, 0},                     // S_GIB4
-	{S_GIB5, SPR_GIB5, 0, -1, NULL, S_NULL, 0, 0},                     // S_GIB5
-	{S_GIB6, SPR_GIB6, 0, -1, NULL, S_NULL, 0, 0},                     // S_GIB6
-	{S_GIB7, SPR_GIB7, 0, -1, NULL, S_NULL, 0, 0},                     // S_GIB7
-	{S_AMBIENTSOUND, SPR_TROO, 0, 1, A_Ambient, S_AMBIENTSOUND, 0, 0}, // S_AMBIENTSOUND
-	{S_UNKNOWNTHING, SPR_UNKN, 0, -1, NULL, S_NULL, 0, 0},             // S_UNKNOWNTHING
+	{.statenum = S_GIB0,         .sprite = SPR_GIB0},
+	{.statenum = S_GIB1,         .sprite = SPR_GIB1},
+	{.statenum = S_GIB2,         .sprite = SPR_GIB2},
+	{.statenum = S_GIB3,         .sprite = SPR_GIB3},
+	{.statenum = S_GIB4,         .sprite = SPR_GIB4},
+	{.statenum = S_GIB5,         .sprite = SPR_GIB5},
+	{.statenum = S_GIB6,         .sprite = SPR_GIB6},
+	{.statenum = S_GIB7,         .sprite = SPR_GIB7},
+	{.statenum = S_AMBIENTSOUND, .sprite = SPR_TROO, .tics =  1, .action = A_Ambient, .nextstate = S_AMBIENTSOUND},
+	{.statenum = S_UNKNOWNTHING, .sprite = SPR_UNKN},
 
 	//	[Toke - CTF]
-	{S_BSOK, SPR_BSOK, 0, -1, NULL, S_NULL, 0, 0},      // Blue Socket
-	{S_RSOK, SPR_RSOK, 0, -1, NULL, S_NULL, 0, 0},      // Red Socket
-	{S_BFLG, SPR_BFLG, 32768, 4, NULL, S_BFLG2, 0, 0},  // BLUE Flag Animation; S_BFLG
-	{S_BFLG2, SPR_BFLG, 32769, 4, NULL, S_BFLG3, 0, 0}, // S_BFLG2
-	{S_BFLG3, SPR_BFLG, 32770, 4, NULL, S_BFLG4, 0, 0}, // S_BFLG3
-	{S_BFLG4, SPR_BFLG, 32771, 4, NULL, S_BFLG5, 0, 0}, // S_BFLG4
-	{S_BFLG5, SPR_BFLG, 32772, 4, NULL, S_BFLG6, 0, 0}, // S_BFLG5
-	{S_BFLG6, SPR_BFLG, 32773, 4, NULL, S_BFLG7, 0, 0}, // S_BFLG6
-	{S_BFLG7, SPR_BFLG, 32774, 4, NULL, S_BFLG8, 0, 0}, // S_BFLG7
-	{S_BFLG8, SPR_BFLG, 32775, 4, NULL, S_BFLG, 0, 0},  // S_BFLG8
-	{S_RFLG, SPR_RFLG, 32768, 4, NULL, S_RFLG2, 0, 0},  // RED Flag Animation; S_RFLG
-	{S_RFLG2, SPR_RFLG, 32769, 4, NULL, S_RFLG3, 0, 0}, // S_RFLG2
-	{S_RFLG3, SPR_RFLG, 32770, 4, NULL, S_RFLG4, 0, 0}, // S_RFLG3
-	{S_RFLG4, SPR_RFLG, 32771, 4, NULL, S_RFLG5, 0, 0}, // S_RFLG4
-	{S_RFLG5, SPR_RFLG, 32772, 4, NULL, S_RFLG6, 0, 0}, // S_RFLG5
-	{S_RFLG6, SPR_RFLG, 32773, 4, NULL, S_RFLG7, 0, 0}, // S_RFLG6
-	{S_RFLG7, SPR_RFLG, 32774, 4, NULL, S_RFLG8, 0, 0}, // S_RFLG7
-	{S_RFLG8, SPR_RFLG, 32775, 4, NULL, S_RFLG, 0, 0},  // S_RFLG8
-	{S_BDWN, SPR_BDWN, 0, -1, NULL, S_NULL, 0, 0},      // Blue Dropped Flag; S_BDWN
-	{S_RDWN, SPR_RDWN, 0, -1, NULL, S_NULL, 0, 0},      // Red Dropped Flag; S_RDWN
-	{S_BCAR, SPR_BCAR, 0, -1, NULL, S_NULL, 0, 0},      // Blue Dropped Flag; S_BCAR
-	{S_RCAR, SPR_RCAR, 0, -1, NULL, S_NULL, 0, 0},      // Red Dropped Flag; S_RCAR
+	{.statenum = S_BSOK,  .sprite = SPR_BSOK}, // Blue Socket
+	{.statenum = S_RSOK,  .sprite = SPR_RSOK}, // Red Socket
+	{.statenum = S_BFLG,  .sprite = SPR_BFLG, .frame = 32768, .tics = 4, .nextstate = S_BFLG2}, // BLUE Flag Animation; S_BFLG
+	{.statenum = S_BFLG2, .sprite = SPR_BFLG, .frame = 32769, .tics = 4, .nextstate = S_BFLG3}, // S_BFLG2
+	{.statenum = S_BFLG3, .sprite = SPR_BFLG, .frame = 32770, .tics = 4, .nextstate = S_BFLG4}, // S_BFLG3
+	{.statenum = S_BFLG4, .sprite = SPR_BFLG, .frame = 32771, .tics = 4, .nextstate = S_BFLG5}, // S_BFLG4
+	{.statenum = S_BFLG5, .sprite = SPR_BFLG, .frame = 32772, .tics = 4, .nextstate = S_BFLG6}, // S_BFLG5
+	{.statenum = S_BFLG6, .sprite = SPR_BFLG, .frame = 32773, .tics = 4, .nextstate = S_BFLG7}, // S_BFLG6
+	{.statenum = S_BFLG7, .sprite = SPR_BFLG, .frame = 32774, .tics = 4, .nextstate = S_BFLG8}, // S_BFLG7
+	{.statenum = S_BFLG8, .sprite = SPR_BFLG, .frame = 32775, .tics = 4, .nextstate = S_BFLG }, // S_BFLG8
+	{.statenum = S_RFLG,  .sprite = SPR_RFLG, .frame = 32768, .tics = 4, .nextstate = S_RFLG2}, // RED Flag Animation; S_RFLG
+	{.statenum = S_RFLG2, .sprite = SPR_RFLG, .frame = 32769, .tics = 4, .nextstate = S_RFLG3}, // S_RFLG2
+	{.statenum = S_RFLG3, .sprite = SPR_RFLG, .frame = 32770, .tics = 4, .nextstate = S_RFLG4}, // S_RFLG3
+	{.statenum = S_RFLG4, .sprite = SPR_RFLG, .frame = 32771, .tics = 4, .nextstate = S_RFLG5}, // S_RFLG4
+	{.statenum = S_RFLG5, .sprite = SPR_RFLG, .frame = 32772, .tics = 4, .nextstate = S_RFLG6}, // S_RFLG5
+	{.statenum = S_RFLG6, .sprite = SPR_RFLG, .frame = 32773, .tics = 4, .nextstate = S_RFLG7}, // S_RFLG6
+	{.statenum = S_RFLG7, .sprite = SPR_RFLG, .frame = 32774, .tics = 4, .nextstate = S_RFLG8}, // S_RFLG7
+	{.statenum = S_RFLG8, .sprite = SPR_RFLG, .frame = 32775, .tics = 4, .nextstate = S_RFLG }, // S_RFLG8
+	{.statenum = S_BDWN,  .sprite = SPR_BDWN}, // Blue Dropped Flag; S_BDWN
+	{.statenum = S_RDWN,  .sprite = SPR_RDWN}, // Red Dropped Flag; S_RDWN
+	{.statenum = S_BCAR,  .sprite = SPR_BCAR}, // Blue Carried Flag; S_BCAR
+	{.statenum = S_RCAR,  .sprite = SPR_RCAR}, // Red Carried Flag; S_RCAR
+	{.statenum = S_GSOK,  .sprite = SPR_GSOK}, // Green Socket,
+	{.statenum = S_GFLG,  .sprite = SPR_GFLG, .frame = 32768, .tics = 4, .nextstate = S_GFLG2}, // Green Flag Animation; S_GFLG
+	{.statenum = S_GFLG2, .sprite = SPR_GFLG, .frame = 32769, .tics = 4, .nextstate = S_GFLG3}, // S_GFLG2
+	{.statenum = S_GFLG3, .sprite = SPR_GFLG, .frame = 32770, .tics = 4, .nextstate = S_GFLG4}, // S_GFLG3
+	{.statenum = S_GFLG4, .sprite = SPR_GFLG, .frame = 32771, .tics = 4, .nextstate = S_GFLG5}, // S_GFLG4
+	{.statenum = S_GFLG5, .sprite = SPR_GFLG, .frame = 32772, .tics = 4, .nextstate = S_GFLG6}, // S_GFLG5
+	{.statenum = S_GFLG6, .sprite = SPR_GFLG, .frame = 32773, .tics = 4, .nextstate = S_GFLG7}, // S_GFLG6
+	{.statenum = S_GFLG7, .sprite = SPR_GFLG, .frame = 32774, .tics = 4, .nextstate = S_GFLG8}, // S_GFLG7
+	{.statenum = S_GFLG8, .sprite = SPR_GFLG, .frame = 32775, .tics = 4, .nextstate = S_GFLG }, // S_GFLG8
+	{.statenum = S_GDWN,  .sprite = SPR_GDWN}, // Green Dropped Flag; S_GDWN
+	{.statenum = S_GCAR,  .sprite = SPR_GCAR}, // Green Carried Flag; S_GCAR
 
-	{S_GSOK, SPR_GSOK, 0, -1, NULL, S_NULL, 0, 0},      // S_GSOK,
-	{S_GFLG, SPR_GFLG, 32768, 4, NULL, S_GFLG2, 0, 0},  // Green Flag Animation; S_GFLG
-	{S_GFLG2, SPR_GFLG, 32769, 4, NULL, S_GFLG3, 0, 0}, // S_GFLG2
-	{S_GFLG3, SPR_GFLG, 32770, 4, NULL, S_GFLG4, 0, 0}, // S_GFLG3
-	{S_GFLG4, SPR_GFLG, 32771, 4, NULL, S_GFLG5, 0, 0}, // S_GFLG4
-	{S_GFLG5, SPR_GFLG, 32772, 4, NULL, S_GFLG6, 0, 0}, // S_GFLG5
-	{S_GFLG6, SPR_GFLG, 32773, 4, NULL, S_GFLG7, 0, 0}, // S_GFLG6
-	{S_GFLG7, SPR_GFLG, 32774, 4, NULL, S_GFLG8, 0, 0}, // S_GFLG7
-	{S_GFLG8, SPR_GFLG, 32775, 4, NULL, S_GFLG, 0, 0},  // S_GFLG8
-	{S_GDWN, SPR_GDWN, 0, -1, NULL, S_NULL, 0, 0},      // S_GDWN,
-	{S_GCAR, SPR_GCAR, 0, -1, NULL, S_NULL, 0, 0},      // S_GCAR,
+	{.statenum = S_BRIDGE1, .sprite = SPR_TLGL, .frame = 32768, .tics = 4, .nextstate = S_BRIDGE2}, // S_BRIDGE1
+	{.statenum = S_BRIDGE2, .sprite = SPR_TLGL, .frame = 32769, .tics = 4, .nextstate = S_BRIDGE3}, // S_BRIDGE2
+	{.statenum = S_BRIDGE3, .sprite = SPR_TLGL, .frame = 32770, .tics = 4, .nextstate = S_BRIDGE4}, // S_BRIDGE3
+	{.statenum = S_BRIDGE4, .sprite = SPR_TLGL, .frame = 32771, .tics = 4, .nextstate = S_BRIDGE5}, // S_BRIDGE4
+	{.statenum = S_BRIDGE5, .sprite = SPR_TLGL, .frame = 32772, .tics = 4, .nextstate = S_BRIDGE1}, // S_BRIDGE5
 
-	{S_BRIDGE1, SPR_TLGL, 32768, 4, NULL, S_BRIDGE2, 0, 0}, // S_BRIDGE1
-	{S_BRIDGE2, SPR_TLGL, 32769, 4, NULL, S_BRIDGE3, 0, 0}, // S_BRIDGE2
-	{S_BRIDGE3, SPR_TLGL, 32770, 4, NULL, S_BRIDGE4, 0, 0}, // S_BRIDGE3
-	{S_BRIDGE4, SPR_TLGL, 32771, 4, NULL, S_BRIDGE5, 0, 0}, // S_BRIDGE4
-	{S_BRIDGE5, SPR_TLGL, 32772, 4, NULL, S_BRIDGE1, 0, 0}, // S_BRIDGE5
+	{.statenum = S_WPBF1, .sprite = SPR_WPBF, .frame = 0, .tics = 1, .nextstate = S_WPBF2}, // S_WPBF1 - Waypoint Blue Flag
+	{.statenum = S_WPBF2, .sprite = SPR_WPBF, .frame = 1, .tics = 1, .nextstate = S_WPBF1}, // S_WPBF2
+	{.statenum = S_WPRF1, .sprite = SPR_WPRF, .frame = 0, .tics = 1, .nextstate = S_WPRF2}, // S_WPRF1 - Waypoint Red Flag
+	{.statenum = S_WPRF2, .sprite = SPR_WPRF, .frame = 1, .tics = 1, .nextstate = S_WPRF1}, // S_WPRF2
+	{.statenum = S_WPGF1, .sprite = SPR_WPGF, .frame = 0, .tics = 1, .nextstate = S_WPGF2}, // S_WPGF1 - Waypoint Green Flag
+	{.statenum = S_WPGF2, .sprite = SPR_WPGF, .frame = 1, .tics = 1, .nextstate = S_WPGF1}, // S_WPGF2
 
-	{S_WPBF1, SPR_WPBF, 0, 1, NULL, S_WPBF2, 0, 0}, // S_WPBF1 - Waypoint Blue Flag
-	{S_WPBF2, SPR_WPBF, 1, 1, NULL, S_WPBF1, 0, 0}, // S_WPBF2
-	{S_WPRF1, SPR_WPRF, 0, 1, NULL, S_WPRF2, 0, 0}, // S_WPRF1 - Waypoint Red Flag
-	{S_WPRF2, SPR_WPRF, 1, 1, NULL, S_WPRF1, 0, 0}, // S_WPRF2
-	{S_WPGF1, SPR_WPGF, 0, 1, NULL, S_WPGF2, 0, 0}, // S_WPGF1 - Waypoint Green Flag
-	{S_WPGF2, SPR_WPGF, 1, 1, NULL, S_WPGF1, 0, 0}, // S_WPGF2
+	{.statenum = S_CARE,  .sprite = SPR_CARE}, // S_CARE - Horde Care Package
+	{.statenum = S_O1UP,  .sprite = SPR_O1UP, .frame = 32768, .tics = 4, .nextstate = S_O1UP2}, // S_O1UP - Horde Extra Life Powerup
+	{.statenum = S_O1UP2, .sprite = SPR_O1UP, .frame = 32769, .tics = 4, .nextstate = S_O1UP3},
+	{.statenum = S_O1UP3, .sprite = SPR_O1UP, .frame = 32770, .tics = 4, .nextstate = S_O1UP4},
+	{.statenum = S_O1UP4, .sprite = SPR_O1UP, .frame = 32771, .tics = 4, .nextstate = S_O1UP5},
+	{.statenum = S_O1UP5, .sprite = SPR_O1UP, .frame = 32770, .tics = 4, .nextstate = S_O1UP6},
+	{.statenum = S_O1UP6, .sprite = SPR_O1UP, .frame = 32769, .tics = 4, .nextstate = S_O1UP },
+	{.statenum = S_RES,   .sprite = SPR_RSTM, .frame = 32768, .tics = 5, .nextstate = S_RES2 }, // S_RES - Horde Resurrect Powerup
+	{.statenum = S_RES2,  .sprite = SPR_RSTM, .frame = 32769, .tics = 5, .nextstate = S_RES3 },
+	{.statenum = S_RES3,  .sprite = SPR_RSTM, .frame = 32770, .tics = 5, .nextstate = S_RES4 },
+	{.statenum = S_RES4,  .sprite = SPR_RSTM, .frame = 32771, .tics = 5, .nextstate = S_RES  },
 
-	{S_CARE, SPR_CARE, 0, -1, NULL, S_NULL, 0, 0},  // S_CARE - Horde Care Package
-	{S_O1UP,  SPR_O1UP, 32768, 4, NULL, S_O1UP2, 0, 0},  // S_O1UP - Horde Extra Life Powerup
-	{S_O1UP2, SPR_O1UP, 32769, 4, NULL, S_O1UP3, 0, 0},
-	{S_O1UP3, SPR_O1UP, 32770, 4, NULL, S_O1UP4, 0, 0},
-	{S_O1UP4, SPR_O1UP, 32771, 4, NULL, S_O1UP5, 0, 0},
-	{S_O1UP5, SPR_O1UP, 32770, 4, NULL, S_O1UP6, 0, 0},
-	{S_O1UP6, SPR_O1UP, 32769, 4, NULL, S_O1UP, 0, 0},
-	{S_RES,  SPR_RSTM, 32768, 5, NULL, S_RES2, 0, 0},   // S_RES - Horde Resurrect Powerup
-	{S_RES2, SPR_RSTM, 32769, 5, NULL, S_RES3, 0, 0},
-	{S_RES3, SPR_RSTM, 32770, 5, NULL, S_RES4, 0, 0},
-	{S_RES4, SPR_RSTM, 32771, 5, NULL, S_RES, 0, 0},
-
-	{S_NOWEAPONUP, SPR_TNT1, 0, 1, A_Raise, S_NOWEAPON, 0, 0},     // S_NOWEAPONUP
-	{S_NOWEAPONDOWN, SPR_TNT1, 0, 1, A_Lower, S_NOWEAPON, 0, 0},   // S_NOWEAPONDOWN
-	{S_NOWEAPON, SPR_TNT1, 0, 1, A_WeaponReady, S_NOWEAPON, 0, 0}, // S_NOWEAPON
-};
+	{.statenum = S_NOWEAPONUP,   .tics = 1, .action = A_Raise,       .nextstate = S_NOWEAPON}, // S_NOWEAPONUP
+	{.statenum = S_NOWEAPONDOWN, .tics = 1, .action = A_Lower,       .nextstate = S_NOWEAPON}, // S_NOWEAPONDOWN
+	{.statenum = S_NOWEAPON,     .tics = 1, .action = A_WeaponReady, .nextstate = S_NOWEAPON}, // S_NOWEAPON
+});
 
 // reserved odamex sprites
 // ::SPR_CARE - ::SPR_GIB0 + 2
-const char* odasprnames[] = {
+constexpr std::array odasprnames = std::to_array<const char*>({
 	"GIB0", "GIB1", "GIB2", "GIB3", "GIB4", "GIB5", "GIB6", "GIB7", "UNKN",
-	//	[Toke - CTF]
+	// [Toke - CTF]
 	"BSOK", "RSOK", "BFLG", "RFLG", "BDWN", "RDWN", "BCAR", "RCAR", "GSOK", "GFLG",
-	"GDWN", "GCAR", "TLGL", "WPBF", "WPRF", "WPGF", "CARE", "O1UP", "RSTM",};
+	"GDWN", "GCAR", "TLGL", "WPBF", "WPRF", "WPGF",
+	// Horde
+	"CARE", "O1UP", "RSTM",
+});
 
 // reserved odamex mobjinfo
 // ::MT_CAREPACK - ::MT_GIB0 + 1
 // this table *is* the constants for those numbers
 // NOLINTBEGIN(readability-magic-numbers)
-mobjinfo_t odamobjinfo[] = {
+constexpr std::array odamobjinfo = std::to_array<mobjinfo_t>({
 	// ------------ odamex things start ------------ //
 	{
 		//  MT_GIB0
@@ -1033,19 +1035,19 @@ mobjinfo_t odamobjinfo[] = {
 	},
 
 	// ----------- odamex mobjinfo end -----------
-};
+});
 // NOLINTEND(readability-magic-numbers)
 
-std::span<mobjinfo_t> getOdaMobjinfo() {
-	return { odamobjinfo, ARRAY_LENGTH(odamobjinfo) };
+std::span<const mobjinfo_t> getOdaMobjinfo() {
+	return odamobjinfo;
 }
 
-std::span<state_t> getOdaStates() {
-	return { odastates, ARRAY_LENGTH(odastates) };
+std::span<const state_t> getOdaStates() {
+	return odastates;
 }
 
-std::span<const char*> getOdaSprNames() {
-	return { odasprnames, ARRAY_LENGTH(odasprnames) };
+std::span<const char* const> getOdaSprNames() {
+	return odasprnames;
 }
 
 VERSION_CONTROL (odainfo_cpp, "$Id$")
