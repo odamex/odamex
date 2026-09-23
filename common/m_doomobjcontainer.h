@@ -177,7 +177,7 @@ public:
 
 	// TODO: add overload that takes a lambda to allow geting the index from the objects themselves instead of assuming a contiguous range
 	// or add some sort of traits type that can be specialized for such behaviors
-	void insert(std::span<ObjType> objs, IdxType start_idx)
+	void insert(std::span<const ObjType> objs, IdxType start_idx)
 	{
 		IdxType idx = start_idx;
 		reserve(m_lookuptable.size() + objs.size()); // reserve is not additive
@@ -185,7 +185,7 @@ public:
 			insert(obj, idx++);
 	}
 
-	void insert(std::span<const char*> objs, IdxType start_idx)
+	void insert(std::span<const char* const> objs, IdxType start_idx)
 	requires std::same_as<ObjType, std::string>
 	{
 		IdxType idx = start_idx;
