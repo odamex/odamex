@@ -217,6 +217,26 @@ inline fargb_t V_HSVtoRGB(const fahsv_t &color)
 }
 
 //
+// V_Luminance
+//
+// Perceived brightness of a color, 0 to 1.
+// Palette index order is not brightness order, so anything that needs colors
+// sorted dark to light has to go through this rather than comparing indices.
+//
+inline float V_Luminance(argb_t color)
+{
+	// Rec. 601 luma weights.
+	constexpr float red_weight = 0.299f;
+	constexpr float green_weight = 0.587f;
+	constexpr float blue_weight = 0.114f;
+
+	return ((red_weight * static_cast<float>(color.getr())) +
+	        (green_weight * static_cast<float>(color.getg())) +
+	        (blue_weight * static_cast<float>(color.getb()))) /
+	       255.0f;
+}
+
+//
 // V_ShadePlayerColor
 //
 // Shades base_color darker using the intensity of shade_color.

@@ -688,6 +688,91 @@ void R_BuildTranslationRamp(translationtable_t& tlate, palindex_t start, palinde
 	R_BuildColorRamp(dest_color, start, end, tlate.remap.data(), tlate.rgb.data(), 0);
 }
 
+void R_BuildTranslationGradient(translationtable_t& tlate, const palindex_t* src, size_t count,
+                                argb_t start_color, argb_t end_color)
+{
+	if (count == 0)
+		return;
+
+	const palette_t* pal = V_GetDefaultPalette();
+
+	const int range = static_cast<int>(count);
+	const int r_diff = end_color.getr() - start_color.getr();
+	const int g_diff = end_color.getg() - start_color.getg();
+	const int b_diff = end_color.getb() - start_color.getb();
+
+	for (int step = 0; step < range; step++)
+	{
+		const argb_t color(start_color.getr() + ((step * r_diff) / range),
+		                   start_color.getg() + ((step * g_diff) / range),
+		                   start_color.getb() + ((step * b_diff) / range));
+
+		const palindex_t index = src[step];
+		tlate.rgb[index] = color;
+		tlate.remap[index] = V_BestColor(pal->basecolors, color);
+	}
+}
+
+void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, palindex_t end,
+                                argb_t start_color, argb_t end_color)
+{
+	std::array<palindex_t, 256> src{};
+	const size_t count = end - start + 1;
+
+	for (size_t i = 0; i < count; i++)
+		src[i] = static_cast<palindex_t>(start + i);
+
+	R_BuildTranslationGradient(tlate, src.data(), count, start_color, end_color);
+}
+
+//
+// R_SampleLuminosity
+//
+// Walks the pixels of patches and reports which palette indices it actually
+// uses, sorting by darkest first.
+//
+void R_SampleLuminosity(const patch_t* const* patches, size_t count, std::vector<palindex_t>& out)
+{
+	std::array<bool, 256> used{};
+
+	for (size_t i = 0; i < count; i++)
+	{
+		const patch_t* patch = patches[i];
+		if (patch == nullptr)
+			continue;
+
+		for (int col = 0; col < patch->width(); col++)
+		{
+			// A need to view this as a byte buffer with an offset.
+			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+			const auto* post = reinterpret_cast<const tallpost_t*>(
+			    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+			    reinterpret_cast<const byte*>(patch) + LELONG(patch->columnofs[col]));
+
+			while (!post->end())
+			{
+				const byte* data = post->data();
+				for (unsigned int pixel = 0; pixel < post->length; pixel++)
+					used[data[pixel]] = true;
+
+				post = post->next();
+			}
+		}
+	}
+
+	out.clear();
+	for (int i = 0; i < 256; i++)
+	{
+		if (used[i])
+			out.push_back(static_cast<palindex_t>(i));
+	}
+
+	const palette_t* pal = V_GetDefaultPalette();
+	std::ranges::stable_sort(out, [pal](palindex_t a, palindex_t b) {
+		return V_Luminance(pal->basecolors[a]) < V_Luminance(pal->basecolors[b]);
+	});
+}
+
 //
 // Shared translations
 //
@@ -702,6 +787,7 @@ namespace
 enum translationkind_t
 {
 	TRANSLATE_RAMP,
+	TRANSLATE_GRADIENT,
 	TRANSLATE_PLAYER,
 };
 
@@ -711,14 +797,15 @@ struct translationrecipe_t
 	palindex_t        start;
 	palindex_t        end;
 	uint32_t          color;
+	uint32_t          endcolor;
 	int               team;   // TRANSLATE_PLAYER: who they were, so that
 	bool              isself; // R_GetPlayerDrawColor can be redone on demand
 
 	bool operator<(const translationrecipe_t& other) const
 	{
-		return std::tie(kind, start, end, color, team, isself) <
-		       std::tie(other.kind, other.start, other.end, other.color, other.team,
-		                other.isself);
+		return std::tie(kind, start, end, color, endcolor, team, isself) <
+		       std::tie(other.kind, other.start, other.end, other.color, other.endcolor,
+		                other.team, other.isself);
 	}
 };
 
@@ -746,6 +833,10 @@ void R_BuildRecipe(translationtable_t& tlate, const translationrecipe_t& recipe)
 	{
 	case TRANSLATE_RAMP:
 		R_BuildTranslationRamp(tlate, recipe.start, recipe.end, recipe.color);
+		break;
+	case TRANSLATE_GRADIENT:
+		R_BuildTranslationGradient(tlate, recipe.start, recipe.end, recipe.color,
+		                           recipe.endcolor);
 		break;
 	case TRANSLATE_PLAYER:
 		R_BuildTranslationRamp(tlate, recipe.start, recipe.end,
@@ -784,6 +875,7 @@ translationref_t R_GetRampTranslation(translationlife_t life, palindex_t start, 
 	                               .start = start,
 	                               .end = end,
 	                               .color = color,
+	                               .endcolor = 0,
 	                               .team = TEAM_NONE,
 	                               .isself = false});
 }
@@ -795,8 +887,21 @@ translationref_t R_GetPlayerTranslation(translationlife_t life, argb_t user_colo
 	                               .start = PLAYER_COLOR_START,
 	                               .end = PLAYER_COLOR_END,
 	                               .color = user_color,
+	                               .endcolor = 0,
 	                               .team = team,
 	                               .isself = isconsoleplayer});
+}
+
+translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t start,
+                                          palindex_t end, argb_t start_color, argb_t end_color)
+{
+	return R_GetTranslation(life, {.kind = TRANSLATE_GRADIENT,
+	                               .start = start,
+	                               .end = end,
+	                               .color = start_color,
+	                               .endcolor = end_color,
+	                               .team = TEAM_NONE,
+	                               .isself = false});
 }
 
 void R_ExpireTranslations(translationlife_t life)
