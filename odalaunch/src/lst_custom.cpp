@@ -58,7 +58,7 @@ static int ImageList_SortArrowDown = -1;
 #ifdef __WXMSW__
 constexpr int ICON_COLUMN_WIDTH = 6 + 16 + 6;
 #else
-constexpr int ICON_COLUMN_WIDTH = 12 + 16 + 12;
+constexpr int ICON_COLUMN_WIDTH = 12 + 16 + 12 - 1; // WX eats a pixel here for divider
 #endif
 
 void DrawSortArrowBitmap(wxBitmap& Bitmap, const wxColour& Mask, bool Up)
