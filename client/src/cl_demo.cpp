@@ -42,7 +42,6 @@
 #include "g_gametype.h"
 #include "g_game.h"
 #include "g_spree.h"
-#include "g_musinfo.h"
 
 #include "PacketHeaderType.h"
 #include "cl_freecam.h"
