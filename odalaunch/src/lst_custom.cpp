@@ -71,7 +71,14 @@ void DrawSortArrowBitmap(wxBitmap& Bitmap, const wxColour& Mask, bool Up)
 		wxPoint(3, 6), wxPoint(11, 6), wxPoint(7, 10)
 	};
 
-	const wxColour Color = wxSystemSettings::GetColour(wxSYS_COLOUR_3DSHADOW);
+	// Make button light for dark theme and vice versa
+	const wxColour Face = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+	const wxColour Text = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT);
+	const double Mix = 1.0 / 3.0;
+
+	const wxColour Color(wxColour::AlphaBlend(Text.Red(), Face.Red(), Mix),
+	                     wxColour::AlphaBlend(Text.Green(), Face.Green(), Mix),
+	                     wxColour::AlphaBlend(Text.Blue(), Face.Blue(), Mix));
 
 	wxMemoryDC dc(Bitmap);
 	dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxBRUSHSTYLE_SOLID));
