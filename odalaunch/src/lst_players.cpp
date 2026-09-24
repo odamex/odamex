@@ -173,7 +173,7 @@ void LstOdaPlayerList::SetupPlayerListColumns()
 
 	SetSortColumnAndOrder(PlayerListSortColumn, PlayerListSortOrder);
 
-	ImageList_Spectator = AddImageSmall(wxXmlResource::Get()->LoadBitmap("spectator").ConvertToImage());
+	ImageList_Spectator = AddIconColumnImage(wxXmlResource::Get()->LoadBitmap("spectator").ConvertToImage());
 	ImageList_BlueBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_blue").ConvertToImage());
 	ImageList_RedBullet = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_red").ConvertToImage());
 }

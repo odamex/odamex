@@ -198,7 +198,7 @@ void LstOdaServerList::SetupServerListColumns()
 	             WidthAddress);
 
 	// Passworded server icon
-	ImageList_Padlock = AddImageSmall(wxXmlResource::Get()->LoadBitmap("locked_server").ConvertToImage());
+	ImageList_Padlock = AddIconColumnImage(wxXmlResource::Get()->LoadBitmap("locked_server").ConvertToImage());
 	ImageList_PingGreen = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_green").ConvertToImage());
 	ImageList_PingOrange = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_orange").ConvertToImage());
 	ImageList_PingRed = AddImageSmall(wxXmlResource::Get()->LoadBitmap("bullet_red").ConvertToImage());
