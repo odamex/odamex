@@ -81,7 +81,8 @@
               "UNSETTABLE",
               "NOENABLEDISABLE",
               "SERVERARCHIVE",
-              "CLIENTARCHIVE"
+              "CLIENTARCHIVE",
+              "NOSEND"
             ]
           }
         }
