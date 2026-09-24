@@ -135,14 +135,12 @@ void LstOdaServerList::OnOpenContextMenu(wxContextMenuEvent& event)
 void LstOdaServerList::SetupServerListColumns()
 {
 	wxFileConfig ConfigInfo;
-	wxInt32 WidthAttr, WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap,
-	        WidthType, WidthIwad, WidthAddress;
+	wxInt32 WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap, WidthType,
+	        WidthIwad, WidthAddress;
 
 	DeleteAllColumns();
 
 	// Read in the column widths
-	//ConfigInfo.Read("ServerListWidthAttr"), &WidthAttr, 40);
-	WidthAttr = 24; // fixed column size
 	ConfigInfo.Read("ServerListWidthName", &WidthName, 150);
 	ConfigInfo.Read("ServerListWidthPing", &WidthPing, 60);
 	ConfigInfo.Read("ServerListWidthPlayers", &WidthPlayers, 80);
@@ -153,10 +151,7 @@ void LstOdaServerList::SetupServerListColumns()
 	ConfigInfo.Read("ServerListWidthAddress", &WidthAddress, 130);
 
 	// set up the list columns
-	InsertColumn(serverlist_field_attr,
-	             "",
-	             wxLIST_FORMAT_LEFT,
-	             WidthAttr);
+	InsertIconColumn(serverlist_field_attr);
 
 	// We sort by the numerical value of the item data field, so we can sort
 	// passworded servers

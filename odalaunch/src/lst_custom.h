@@ -90,6 +90,12 @@ public:
 
 	void Sort();
 
+	// Inserts the unlabelled column holding status icons. It has a fixed width
+	// that centers the sort arrow in its header and no alternating row shading.
+	void InsertIconColumn(long Column);
+
+	bool SetColumnWidth(int col, int width) override;
+
 	int AddImageSmall(wxImage Image);
 	void ClearImageList();
 	long ALCInsertItem(const wxString& Text = "");
@@ -101,6 +107,7 @@ public:
 private:
 	void OnCreateControl(wxWindowCreateEvent& event);
 	void OnHeaderColumnButtonClick(wxListEvent& event);
+	void OnHeaderColumnBeginResize(wxListEvent& event);
 
 	void ColourList();
 	void ColourListItem(wxListItem& info);
@@ -125,6 +132,7 @@ private:
 	wxColour BgColor;
 
 	wxInt32 m_SpecialColumn;
+	wxInt32 m_IconColumn;
 
 	bool m_HeaderUsable;
 
@@ -138,6 +146,10 @@ private:
 
 	friend int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData);
 protected:
+	#ifdef __WXMSW__
+	bool MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM* result) override;
+	#endif
+
 	DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
 	DECLARE_EVENT_TABLE()
 };
