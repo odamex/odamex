@@ -40,7 +40,7 @@
 #define MELEERANGE (64_fx)
 #endif
 
-enum spritenum_t: int32_t
+enum spritenum_t : int32_t
 {
     // ---------------odamex sprites------------------------ //
     // [RH] Gibs
@@ -308,7 +308,7 @@ inline auto format_as(spritenum_t eSpriteNum)
 	return fmt::underlying(eSpriteNum);
 }
 
-enum statenum_t: int32_t
+enum statenum_t : int32_t
 {
 	//------------ odamex states -----------
 
@@ -1977,7 +1977,8 @@ inline FArchive &operator>> (FArchive &arc, const state_t *&state)
 	return arc;
 }
 
-enum mobjtype_t: int32_t {
+enum mobjtype_t : int32_t
+{
 
     // -------------------- odamex things ----------------------------------- //
 
