@@ -7037,7 +7037,7 @@
                 <property name="resize">Resizable</property>
                 <property name="show">1</property>
                 <property name="size">-1,70</property>
-                <property name="style">wxTE_MULTILINE|wxTE_READONLY|wxTE_BESTWRAP|wxTE_CENTRE</property>
+                <property name="style">wxTE_MULTILINE|wxTE_READONLY|wxTE_CENTRE</property>
                 <property name="subclass"></property>
                 <property name="toolbar_pane">0</property>
                 <property name="tooltip"></property>

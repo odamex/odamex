@@ -1704,7 +1704,7 @@
             <border>3</border>
             <option>1</option>
             <object class="wxTextCtrl" name="Id_TxtMotd">
-              <style>wxTE_MULTILINE|wxTE_READONLY|wxTE_BESTWRAP|wxTE_CENTRE</style>
+              <style>wxTE_MULTILINE|wxTE_READONLY|wxTE_CENTRE</style>
               <size>-1,70</size>
             </object>
           </object>
