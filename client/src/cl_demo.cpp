@@ -42,6 +42,7 @@
 #include "g_gametype.h"
 #include "g_game.h"
 #include "g_spree.h"
+#include "g_musinfo.h"
 
 #include "PacketHeaderType.h"
 #include "cl_freecam.h"
@@ -1501,6 +1502,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	G_SerializeSnapshots(arc);
 
 	P_SerializeSprees(arc);
+	P_SerializeMusInfo(arc);
 
 	byte check = 0x1d;
 	arc << check;          // consistancy marker
@@ -1653,6 +1655,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	savegamerestore = false;
 
 	P_SerializeSprees(arc);
+	P_SerializeMusInfo(arc); // Must follow InitNew to ensure any post-music-changer tunes play instead of default.
 
 	// read consistancy marker
 	byte check;
