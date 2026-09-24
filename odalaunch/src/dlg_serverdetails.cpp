@@ -433,10 +433,10 @@ void dlgServerDetails::BuildMetadataGrid()
 	m_MdMap = AddRow(m_PnlMetadata, m_MetaGrid, "Map:");
 	m_MdIwad = AddRow(m_PnlMetadata, m_MetaGrid, "IWAD:");
 	m_MdPwad = AddRow(m_PnlMetadata, m_MetaGrid, "PWAD:", &m_MdPwadLabel);
-	// Wad Download URI: bold label + a vertical list of hyperlinks (one per
+	// Wad URL: bold label + a vertical list of hyperlinks (one per
 	// site), filled in on populate.
 	m_MdDownloadURILabel =
-	    new wxStaticText(m_PnlMetadata, wxID_ANY, "Wad Download URI:");
+	    new wxStaticText(m_PnlMetadata, wxID_ANY, "Wad URL:");
 	m_MdDownloadURILabel->SetFont(LabelFont);
 	m_MdDownloadSizer = new wxBoxSizer(wxVERTICAL);
 	m_MetaGrid->Add(m_MdDownloadURILabel, 0, wxALIGN_TOP);
