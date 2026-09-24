@@ -134,7 +134,6 @@ static bool mus_paused;
 static struct mus_playing_t
 {
 	std::string name;
-	int   handle;
 } mus_playing;
 
 EXTERN_CVAR (co_globalsound)
