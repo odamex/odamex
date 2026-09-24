@@ -132,7 +132,7 @@ constexpr std::array odasprnames = std::to_array<const char*>({
 // ::MT_CAREPACK - ::MT_GIB0 + 1
 // this table *is* the constants for those numbers
 // NOLINTBEGIN(readability-magic-numbers)
-constexpr std::array odamobjinfo = std::to_array<mobjinfo_t>({
+const std::array odamobjinfo = std::to_array<const mobjinfo_t>({
 	// ------------ odamex things start ------------ //
 	{
 		//  MT_GIB0

@@ -589,7 +589,7 @@ constexpr std::array id24states = std::to_array<state_t>({
 	{ .statenum = S_ID24_465, .sprite = -1 },
 });
 
-constexpr std::array id24mobjinfo = std::to_array<mobjinfo_t>({
+const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type         = MT_GHOUL,
 		.doomednum    = -28672,
