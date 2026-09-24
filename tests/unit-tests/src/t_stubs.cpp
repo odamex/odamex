@@ -160,6 +160,7 @@ void S_SetSfxVolume(float volume) {}
 void S_StartMusic(const char *m_id) {}
 void S_ChangeMusic(std::string musicname, bool looping, int order)  {}
 void S_StopMusic() {}
+void P_SerializeMusic(FArchive& arc) {}
 void A_Ambient(AActor *actor) {}
 void S_ActivateAmbient(AActor *origin, int ambient) {}
 
