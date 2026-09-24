@@ -40,6 +40,18 @@
 #define MELEERANGE (64_fx)
 #endif
 
+//
+// Frame flags:
+// handles maximum brightness (torches, muzzle flare, light sources)
+//
+inline constexpr int FF_FULLBRIGHT = 0x8000; // flag in thing->frame
+inline constexpr int FF_FRAMEMASK  = 0x7fff;
+
+consteval int operator""_bright(unsigned long long frame)
+{
+	return static_cast<int>(frame) | FF_FULLBRIGHT;
+}
+
 enum spritenum_t : int32_t
 {
     // ---------------odamex sprites------------------------ //
