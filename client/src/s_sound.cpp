@@ -1378,7 +1378,7 @@ END_COMMAND (snd_soundlist)
 BEGIN_COMMAND (snd_soundlinks)
 {
 	for (const auto& sfx : S_sfx)
-		if (sfx.link != static_cast<int>(sfxinfo_t::NO_LINK))
+		if (sfx.link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 			PrintFmt(PRINT_HIGH, "{} -> {}\n", sfx.name, S_sfx[sfx.link].name);
 }
 END_COMMAND (snd_soundlinks)

@@ -97,7 +97,7 @@ player_t &idplayer(byte id)
  * @param  netname Name of player to look for.
  * @return         Player reference of found player, or nullplayer.
  */
-player_t &nameplayer(const std::string &netname)
+player_t &nameplayer(std::string_view netname)
 {
 	for (auto& player : players)
 	{
@@ -1575,7 +1575,7 @@ player_s &player_s::operator =(const player_s &other)
 
 	doreborn = other.doreborn;
 	QueuePosition = other.QueuePosition;
-	
+
 	hazardcount = other.hazardcount;
 	hazardinterval = other.hazardinterval;
 
