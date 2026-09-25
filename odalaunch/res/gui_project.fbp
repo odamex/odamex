@@ -4331,7 +4331,7 @@
                                 <property name="resize">Resizable</property>
                                 <property name="show">1</property>
                                 <property name="size"></property>
-                                <property name="style">wxDIRP_DEFAULT_STYLE</property>
+                                <property name="style">wxDIRP_DEFAULT_STYLE|wxDIRP_USE_TEXTCTRL</property>
                                 <property name="subclass"></property>
                                 <property name="toolbar_pane">0</property>
                                 <property name="tooltip"></property>
