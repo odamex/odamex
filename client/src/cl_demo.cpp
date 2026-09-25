@@ -221,6 +221,22 @@ bool NetDemo::netdemo_header4_t::Read(std::fstream& io_stream)
 	return false;
 }
 
+bool NetDemo::content_description_t::Read(std::fstream& io_stream)
+{
+	if (io_stream.good())
+	{
+		byte       encodingByte = 0xFF;
+		const bool readIsGood = M_ReadLE    (io_stream, encodingByte)
+		                    and M_ReadString(io_stream, this->build);
+		if (readIsGood)
+		{
+			this->encoding = static_cast<encoding_e>(encodingByte);
+			return true;
+		}
+	}
+	return false;
+}
+
 //
 // readHeader()
 //
@@ -282,7 +298,10 @@ void NetDemo::populateMessageIndexes()
 	demofp.seekg(NetDemo::HEADER_SIZE, std::ios::beg);
 
 	netdemo_message_t type;
-	uint32_t len = 0, tic = 0, last_tic = 0;
+	uint32_t          len = 0;
+	uint32_t          tic = 0;
+	uint32_t          last_tic = 0;
+	bool              eofWasFound = false;
 
 	do
 	{
@@ -292,27 +311,44 @@ void NetDemo::populateMessageIndexes()
 			break;
 		}
 
-		const std::streampos offset = demofp.tellg() - NetDemo::MESSAGE_HEADER_SIZE;
+		const std::streampos currentPosition = demofp.tellg();
+		const std::streampos offset          = currentPosition - NetDemo::MESSAGE_HEADER_SIZE;
+		const std::streampos nextMsg         = currentPosition + std::streampos(len);
 
-		if (type == NetDemo::msg_snapshot)
+		switch (type)
 		{
-			netdemo_index_entry_t entry = {tic, offset};
-			snapshot_index.push_back(entry);
-		}
+			case NetDemo::msg_snapshot:
+				snapshot_index.emplace_back(tic, offset);
+				break;
 
-		else if (type == NetDemo::msg_map_change)
-		{
-			netdemo_index_entry_t entry = {tic, offset};
-			map_index.push_back(entry);
-			snapshot_index.push_back(entry);
-		}
+			case NetDemo::msg_map_change:
+				map_index.emplace_back(tic, offset);
+				snapshot_index.emplace_back(tic, offset);
+				break;
 
-		else if (type == NetDemo::msg_eof)
+			case NetDemo::msg_eof:
+				eofWasFound = true;
+				break;
+
+			case NetDemo::msg_content_description:
+				if (content_description.build.empty())
+				{
+					content_description.Read(demofp);
+				}
+				else
+				{
+					PrintFmt(PRINT_WARNING,
+					        "Additional netdemo content_description at {0:#x}!  Ignoring...\n",
+					        std::streamoff(currentPosition));
+				}
+				break;
+		}
+		if (eofWasFound)
 		{
 			break;
 		}
 
-		demofp.seekg(len, std::ios::cur);
+		demofp.seekg(nextMsg);
 	} while (demofp.good());
 
 	// fix for playing a demo that hard crashed and couldnt write ending_gametic

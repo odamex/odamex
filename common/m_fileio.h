@@ -81,6 +81,23 @@ bool M_ReadLE(std::istream& io_stream, ElementType (&o_dataArray)[N])
 	return true;
 }
 
+template <typename CharType>
+bool M_ReadString(std::istream& io_stream, std::basic_string<CharType>& o_string)
+{
+	uint32_t stringLength = 0;
+	if (M_ReadLE(io_stream, stringLength))
+	{
+		bool result = true;
+		o_string.resize(stringLength);
+		for (auto& o_character : o_string)
+		{
+			result = result and M_ReadLE(io_stream, o_character);
+		}
+		return result;
+	}
+	return false;
+}
+
 template <typename ElementType>
 bool M_WriteLE(std::ostream& io_stream, const ElementType& i_data)
 {
