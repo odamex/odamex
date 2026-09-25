@@ -412,13 +412,11 @@ void dlgServerDetails::SetDeltaRow(wxFlexGridSizer* Grid, wxStaticText* Label,
 // the link and makes its row taller.
 // The generic control draws just the text, so use it there,
 // in the theme's link color.
-static wxHyperlinkCtrlBase* CreateHyperlink(wxWindow* Parent,
-                                            const wxString& Label,
-                                            const wxString& URL)
+wxHyperlinkCtrlBase* CreateHyperlink(wxWindow* Parent, const wxString& Label,
+                                     const wxString& URL)
 {
 	#ifdef __WXGTK__
-	wxGenericHyperlinkCtrl* Link =
-	    new wxGenericHyperlinkCtrl(Parent, wxID_ANY, Label, URL);
+	auto* Link = new wxGenericHyperlinkCtrl(Parent, wxID_ANY, Label, URL);
 
 	const wxColour LinkColor = wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT);
 	Link->SetNormalColour(LinkColor);

@@ -101,30 +101,41 @@ void LstOdaPlayerList::SetupPlayerListColumns()
 	wxFileConfig ConfigInfo;
 	wxInt32 PlayerListSortOrder, PlayerListSortColumn;
 
-	// Read from the global configuration
-	wxInt32 WidthName, WidthPing, WidthFrags, WidthKDRCount, WidthKillCount,
-	        WidthDeathCount, WidthTime;
+	// Default column widths, until the user resizes them
+	constexpr wxInt32 DEFAULT_WIDTH_NAME = 150;
+	constexpr wxInt32 DEFAULT_WIDTH_PING = 60;
+	constexpr wxInt32 DEFAULT_WIDTH_FRAGS = 70;
+	constexpr wxInt32 DEFAULT_WIDTH_KDR = 85;
+	constexpr wxInt32 DEFAULT_WIDTH_KILLS = 85;
+	constexpr wxInt32 DEFAULT_WIDTH_DEATHS = 100;
+	constexpr wxInt32 DEFAULT_WIDTH_TIME = 150;
+	constexpr wxInt32 DEFAULT_WIDTH_TEAM = 65;
+	constexpr wxInt32 DEFAULT_WIDTH_TEAM_SCORE = 100;
 
-	// A saved width of 0 is treated as missing
-	auto ReadWidth = [&ConfigInfo](const wxString& Key, wxInt32& Width,
-	                               wxInt32 Default)
+	// Read from the global configuration. A saved width of 0 is treated as
+	// missing.
+	auto ReadWidth = [&ConfigInfo](const wxString& Key, wxInt32 Default)
 	{
+		wxInt32 Width = Default;
 		ConfigInfo.Read(Key, &Width, Default);
 
-		if(Width <= 0)
-			Width = Default;
+		return Width > 0 ? Width : Default;
 	};
 
-	//ConfigInfo.Read("PlayerListWidthName"), &WidthName, 150);
-	ReadWidth("PlayerListWidthName", WidthName, 150);
-	ReadWidth("PlayerListWidthPing", WidthPing, 60);
-	ReadWidth("PlayerListWidthFrags", WidthFrags, 70);
-	ReadWidth("PlayerListWidthKDRCount", WidthKDRCount, 85);
-	ReadWidth("PlayerListWidthKillCount", WidthKillCount, 85);
-	ReadWidth("PlayerListWidthDeathCount", WidthDeathCount, 100);
-	ReadWidth("PlayerListWidthTime", WidthTime, 150);
-	ReadWidth("PlayerListWidthTeam", WidthTeam, 65);
-	ReadWidth("PlayerListWidthTeamScore", WidthTeamScore, 100);
+	const wxInt32 WidthName = ReadWidth("PlayerListWidthName", DEFAULT_WIDTH_NAME);
+	const wxInt32 WidthPing = ReadWidth("PlayerListWidthPing", DEFAULT_WIDTH_PING);
+	const wxInt32 WidthFrags =
+	    ReadWidth("PlayerListWidthFrags", DEFAULT_WIDTH_FRAGS);
+	const wxInt32 WidthKDRCount =
+	    ReadWidth("PlayerListWidthKDRCount", DEFAULT_WIDTH_KDR);
+	const wxInt32 WidthKillCount =
+	    ReadWidth("PlayerListWidthKillCount", DEFAULT_WIDTH_KILLS);
+	const wxInt32 WidthDeathCount =
+	    ReadWidth("PlayerListWidthDeathCount", DEFAULT_WIDTH_DEATHS);
+	const wxInt32 WidthTime = ReadWidth("PlayerListWidthTime", DEFAULT_WIDTH_TIME);
+	WidthTeam = ReadWidth("PlayerListWidthTeam", DEFAULT_WIDTH_TEAM);
+	WidthTeamScore =
+	    ReadWidth("PlayerListWidthTeamScore", DEFAULT_WIDTH_TEAM_SCORE);
 
 	InsertIconColumn(playerlist_field_attr);
 
@@ -196,16 +207,13 @@ LstOdaPlayerList::~LstOdaPlayerList()
 	ConfigInfo.Write("PlayerListSortOrder", PlayerListSortOrder);
 	ConfigInfo.Write("PlayerListSortColumn", PlayerListSortColumn);
 
-	wxInt32 WidthName, WidthPing, WidthFrags, WidthKDRCount, WidthKillCount,
-	        WidthDeathCount, WidthTime;
-
-	WidthName = GetColumnWidth(playerlist_field_name);
-	WidthPing = GetColumnWidth(playerlist_field_ping);
-	WidthFrags = GetColumnWidth(playerlist_field_frags);
-	WidthKDRCount = GetColumnWidth(playerlist_field_kdrcount);
-	WidthKillCount = GetColumnWidth(playerlist_field_killcount);
-	WidthDeathCount = GetColumnWidth(playerlist_field_deathcount);
-	WidthTime = GetColumnWidth(playerlist_field_timeingame);
+	const wxInt32 WidthName = GetColumnWidth(playerlist_field_name);
+	const wxInt32 WidthPing = GetColumnWidth(playerlist_field_ping);
+	const wxInt32 WidthFrags = GetColumnWidth(playerlist_field_frags);
+	const wxInt32 WidthKDRCount = GetColumnWidth(playerlist_field_kdrcount);
+	const wxInt32 WidthKillCount = GetColumnWidth(playerlist_field_killcount);
+	const wxInt32 WidthDeathCount = GetColumnWidth(playerlist_field_deathcount);
+	const wxInt32 WidthTime = GetColumnWidth(playerlist_field_timeingame);
 
 	ConfigInfo.Write("PlayerListWidthName", WidthName);
 	ConfigInfo.Write("PlayerListWidthPing", WidthPing);

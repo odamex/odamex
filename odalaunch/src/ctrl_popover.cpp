@@ -45,23 +45,38 @@ constexpr double POPOVER_MIN_CONTRAST = 4.5;
 // WCAG relative luminance of an opaque color
 double RelativeLuminance(const wxColour& Color)
 {
+	// sRGB linearization and the luminance weight of each channel
+	constexpr double LINEAR_THRESHOLD = 0.03928;
+	constexpr double LINEAR_SCALE = 12.92;
+	constexpr double GAMMA_OFFSET = 0.055;
+	constexpr double GAMMA = 2.4;
+	constexpr double RED_WEIGHT = 0.2126;
+	constexpr double GREEN_WEIGHT = 0.7152;
+	constexpr double BLUE_WEIGHT = 0.0722;
+
 	auto Linear = [](unsigned char Channel)
 	{
 		const double c = Channel / 255.0;
-		return c <= 0.03928 ? c / 12.92 : std::pow((c + 0.055) / 1.055, 2.4);
+		return c <= LINEAR_THRESHOLD
+		           ? c / LINEAR_SCALE
+		           : std::pow((c + GAMMA_OFFSET) / (1.0 + GAMMA_OFFSET), GAMMA);
 	};
 
-	return 0.2126 * Linear(Color.Red()) + 0.7152 * Linear(Color.Green()) +
-	       0.0722 * Linear(Color.Blue());
+	return (RED_WEIGHT * Linear(Color.Red())) +
+	       (GREEN_WEIGHT * Linear(Color.Green())) +
+	       (BLUE_WEIGHT * Linear(Color.Blue()));
 }
 
 // WCAG contrast ratio between two opaque colors, from 1 (none) to 21
 double ContrastRatio(const wxColour& A, const wxColour& B)
 {
+	// Allowance for ambient light reflecting off the screen
+	constexpr double FLARE = 0.05;
+
 	const double La = RelativeLuminance(A);
 	const double Lb = RelativeLuminance(B);
 
-	return ((std::max)(La, Lb) + 0.05) / ((std::min)(La, Lb) + 0.05);
+	return ((std::max)(La, Lb) + FLARE) / ((std::min)(La, Lb) + FLARE);
 }
 
 // Composites a possibly translucent color onto an opaque backdrop.
@@ -69,9 +84,9 @@ wxColour Flatten(const wxColour& Color, const wxColour& Backdrop)
 {
 	const double Alpha = Color.Alpha() / 255.0;
 
-	return wxColour(wxColour::AlphaBlend(Color.Red(), Backdrop.Red(), Alpha),
-	                wxColour::AlphaBlend(Color.Green(), Backdrop.Green(), Alpha),
-	                wxColour::AlphaBlend(Color.Blue(), Backdrop.Blue(), Alpha));
+	return {wxColour::AlphaBlend(Color.Red(), Backdrop.Red(), Alpha),
+	        wxColour::AlphaBlend(Color.Green(), Backdrop.Green(), Alpha),
+	        wxColour::AlphaBlend(Color.Blue(), Backdrop.Blue(), Alpha)};
 }
 
 // Picks the popover's background and text colors.
@@ -98,10 +113,11 @@ void GetPopoverColors(wxColour& Bg, wxColour& Fg)
 // Creates the panel holding a popover's contents.
 wxPanel* CreateContentPanel(wxWindow* Parent)
 {
-	wxColour Bg, Fg;
+	wxColour Bg;
+	wxColour Fg;
 	GetPopoverColors(Bg, Fg);
 
-	wxPanel* Panel = new wxPanel(Parent);
+	auto* Panel = new wxPanel(Parent);
 	Panel->SetBackgroundColour(Bg);
 	Panel->SetForegroundColour(Fg);
 

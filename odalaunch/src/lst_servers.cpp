@@ -135,8 +135,14 @@ void LstOdaServerList::OnOpenContextMenu(wxContextMenuEvent& event)
 void LstOdaServerList::SetupServerListColumns()
 {
 	wxFileConfig ConfigInfo;
-	wxInt32 WidthName, WidthPing, WidthPlayers, WidthWads, WidthMap, WidthType,
-	        WidthIwad, WidthAddress;
+	wxInt32 WidthName;
+	wxInt32 WidthPing;
+	wxInt32 WidthPlayers;
+	wxInt32 WidthWads;
+	wxInt32 WidthMap;
+	wxInt32 WidthType;
+	wxInt32 WidthIwad;
+	wxInt32 WidthAddress;
 
 	DeleteAllColumns();
 

@@ -44,7 +44,7 @@ class wxAdvancedListCtrl : public wxListView
 {
 public:
 	wxAdvancedListCtrl();
-	virtual ~wxAdvancedListCtrl();
+	~wxAdvancedListCtrl() override;
 
 	void HeaderUsable(bool state)
 	{
@@ -93,7 +93,7 @@ public:
 
 	// Inserts the unlabelled column holding status icons. It has a fixed width
 	// that centers the sort arrow in its header and no alternating row shading.
-	void InsertIconColumn(long Column);
+	void InsertIconColumn(int Column);
 
 	bool SetColumnWidth(int col, int width) override;
 
@@ -124,10 +124,10 @@ private:
 
 	#ifndef __WXMSW__
 	// Draws an item's icon column image centered in its cell
-	void DrawIconColumnImage(wxDC& dc, long Item, const wxRect& Cell);
+	void DrawIconColumnImage(wxDC& dc, int Item, const wxRect& Cell) const;
 
 	// Draws the visible rows' icon column images over the painted list
-	void PaintIconColumn();
+	void PaintIconColumn() const;
 	friend class IconColumnPainter;
 	#endif
 
@@ -147,7 +147,7 @@ private:
 	wxColour BgColor;
 
 	wxInt32 m_SpecialColumn;
-	wxInt32 m_IconColumn;
+	wxInt32 m_IconColumn = -1;
 
 	bool m_HeaderUsable;
 
@@ -166,17 +166,18 @@ private:
 	std::map<int, wxBitmap> m_IconColumnImages;
 	#endif
 
-	wxEvtHandler* m_IconColumnPainter;
+	wxEvtHandler* m_IconColumnPainter = nullptr;
 	#endif
 
 	std::vector<std::vector<wxListItem> > BackupItems;
 
 	friend int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData);
-protected:
+public:
 	#ifdef __WXMSW__
 	bool MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM* result) override;
 	#endif
 
+protected:
 	DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
 	DECLARE_EVENT_TABLE()
 };

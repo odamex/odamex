@@ -25,6 +25,7 @@
 #include "lst_custom.h"
 
 #include <algorithm>
+#include <array>
 #include <sstream>
 
 #include <wx/dcclient.h>
@@ -66,10 +67,10 @@ constexpr int ICON_COLUMN_WIDTH = 12 + 16 + 12 - 1; // WX eats a pixel here for 
 void DrawSortArrowBitmap(wxBitmap& Bitmap, const wxColour& Mask, bool Up)
 {
 	// The same 8x4 arrow as wxRendererGeneric::DrawHeaderButtonContents().
-	const wxPoint UpArrow[3] = {
+	const std::array<wxPoint, 3> UpArrow = {
 		wxPoint(7, 6), wxPoint(11, 10), wxPoint(3, 10)
 	};
-	const wxPoint DownArrow[3] = {
+	const std::array<wxPoint, 3> DownArrow = {
 		wxPoint(3, 6), wxPoint(11, 6), wxPoint(7, 10)
 	};
 
@@ -88,7 +89,8 @@ void DrawSortArrowBitmap(wxBitmap& Bitmap, const wxColour& Mask, bool Up)
 
 	dc.SetPen(wxPen(Color));
 	dc.SetBrush(wxBrush(Color));
-	dc.DrawPolygon(3, Up ? UpArrow : DownArrow);
+	const std::array<wxPoint, 3>& Arrow = Up ? UpArrow : DownArrow;
+	dc.DrawPolygon(static_cast<int>(Arrow.size()), Arrow.data());
 }
 
 #ifndef __WXMSW__
@@ -97,19 +99,14 @@ void DrawSortArrowBitmap(wxBitmap& Bitmap, const wxColour& Mask, bool Up)
 class IconColumnPainter : public wxEvtHandler
 {
 public:
-	explicit IconColumnPainter(wxAdvancedListCtrl* List) : m_List(List)
+	explicit IconColumnPainter(const wxAdvancedListCtrl* List)
 	{
-		Bind(wxEVT_PAINT, &IconColumnPainter::OnPaint, this);
+		Bind(wxEVT_PAINT, [this, List](wxPaintEvent& event)
+		{
+			GetNextHandler()->ProcessEvent(event);
+			List->PaintIconColumn();
+		});
 	}
-
-private:
-	void OnPaint(wxPaintEvent& event)
-	{
-		GetNextHandler()->ProcessEvent(event);
-		m_List->PaintIconColumn();
-	}
-
-	wxAdvancedListCtrl* m_List;
 };
 #endif
 
@@ -119,11 +116,6 @@ wxAdvancedListCtrl::wxAdvancedListCtrl()
 	SortCol = 0;
 
 	m_SpecialColumn = -1;
-	m_IconColumn = -1;
-
-	#ifndef __WXMSW__
-	m_IconColumnPainter = nullptr;
-	#endif
 
 	m_HeaderUsable = true;
 
@@ -144,13 +136,13 @@ wxAdvancedListCtrl::~wxAdvancedListCtrl()
 	#endif
 }
 
-void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent& event)
+void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent& WXUNUSED(event))
 {
 	// Set up the image list.
 	AddImageSmall(wxNullImage);
 }
 
-void wxAdvancedListCtrl::InsertIconColumn(long Column)
+void wxAdvancedListCtrl::InsertIconColumn(int Column)
 {
 	InsertColumn(Column, "", wxLIST_FORMAT_LEFT, ICON_COLUMN_WIDTH);
 
@@ -200,8 +192,8 @@ int wxAdvancedListCtrl::AddIconColumnImage(const wxImage& Image)
 }
 
 #ifndef __WXMSW__
-void wxAdvancedListCtrl::DrawIconColumnImage(wxDC& dc, long Item,
-                                             const wxRect& Cell)
+void wxAdvancedListCtrl::DrawIconColumnImage(wxDC& dc, int Item,
+                                             const wxRect& Cell) const
 {
 	wxListItem Info;
 	Info.SetId(Item);
@@ -227,11 +219,11 @@ void wxAdvancedListCtrl::DrawIconColumnImage(wxDC& dc, long Item,
 	// Centered like the sort arrow, so leave out the header divider's pixel
 	const int Width = Cell.width - 1;
 
-	dc.DrawBitmap(Bitmap, Cell.x + (Width - Size.x) / 2,
-	              Cell.y + (Cell.height - Size.y) / 2, true);
+	dc.DrawBitmap(Bitmap, Cell.x + ((Width - Size.x) / 2),
+	              Cell.y + ((Cell.height - Size.y) / 2), true);
 }
 
-void wxAdvancedListCtrl::PaintIconColumn()
+void wxAdvancedListCtrl::PaintIconColumn() const
 {
 	if(m_IconColumn < 0 || m_IconColumn >= GetColumnCount())
 		return;
@@ -242,11 +234,10 @@ void wxAdvancedListCtrl::PaintIconColumn()
 	// Item rects are relative to the whole control, header included
 	const wxPoint Offset = Rows->GetPosition();
 
-	const long First = GetTopItem();
-	const long Last =
-	    std::min<long>(GetItemCount(), First + GetCountPerPage() + 1);
+	const int First = static_cast<int>(GetTopItem());
+	const int Last = std::min(GetItemCount(), First + GetCountPerPage() + 1);
 
-	for(long Item = First; Item < Last; ++Item)
+	for(int Item = First; Item < Last; ++Item)
 	{
 		wxRect Cell;
 
@@ -269,6 +260,7 @@ bool wxAdvancedListCtrl::SetColumnWidth(int col, int width)
 	return wxListView::SetColumnWidth(col, width);
 }
 
+// NOLINTNEXTLINE(readability-make-member-function-const) - event table handlers can't be const
 void wxAdvancedListCtrl::OnHeaderColumnBeginResize(wxListEvent& event)
 {
 	if(event.GetColumn() == m_IconColumn)
