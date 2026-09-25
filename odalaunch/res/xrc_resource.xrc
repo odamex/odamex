@@ -944,6 +944,7 @@
                               <style>wxDIRP_DEFAULT_STYLE|wxDIRP_USE_TEXTCTRL</style>
                               <value></value>
                               <message>Select your Odamex folder</message>
+                              <tooltip>Directory where Odamex client executable exists.</tooltip>
                             </object>
                           </object>
                         </object>
