@@ -62,6 +62,8 @@
 #include "sv_maplist.h"
 #include "g_levelstate.h"
 #include "g_gametype.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 #include "sv_banlist.h"
 #include "d_main.h"
 #include "v_textcolors.h"
@@ -218,7 +220,7 @@ CVAR_FUNC_IMPL (sv_maxplayersperteam)
 				if (normalcount > var)
 				{
 					SV_SetPlayerSpec(player, true);
-					SV_PlayerPrintFmt(player.id, PRINT_HIGH, "Active player limit reduced. You are now a spectator!\n");
+					SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Active player limit reduced. You are now a spectator!\n");
 				}
 			}
 		}
@@ -1599,9 +1601,9 @@ static void SendServerSettings(player_t& pl)
 //
 //	Sends server settings to clients when changed
 //
-void SV_ServerSettingChange()
+void SV_ServerSettingChange(bool force)
 {
-	if (gamestate != GS_LEVEL)
+	if (gamestate != GS_LEVEL && !force)
 	{
 		return;
 	}
@@ -2007,6 +2009,12 @@ void SV_DisconnectClient(player_t &who)
 
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
+
+	// Player ids get recycled, so anything left behind here would be handed to whoever
+	// joins next under the same id.
+	SpreeManager::getInstance().removeSpree(who.id);
+	SpreeManager::getInstance().erasePoints(who.id);
+	MultiKillManager::getInstance().eraseMultiKills(who.id);
 
 	who.playerstate = PST_DISCONNECT;
 
@@ -3332,20 +3340,60 @@ void SV_JoinPlayer(player_t& player, bool silent)
 	// Figure out which team the player should be assigned to.
 	if (G_IsTeamGame())
 	{
-		bool invalidteam = player.userinfo.team >= sv_teamsinplay;
-		bool toomanyplayers =
-		    sv_maxplayersperteam &&
-		    P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam;
-		if (invalidteam || toomanyplayers)
+		EXTERN_CVAR(sv_shuffleteams)
+		if (sv_shuffleteams)
 		{
-			// If this check fails, our "CanJoin" function didn't do a good-enough
-			// job of scoping out a potential team.
-			team_t newteam = SV_GoodTeam();
-			if (newteam == TEAM_NONE)
-				return;
+			// assign player to the team with the fewest players
+			// choose randomly if multiple teams are tied for minimum
+			size_t min = std::numeric_limits<size_t>::max();
+			team_t minteam = TEAM_NONE;
+			int mincount = 0;
+			for (int i = 0; i < sv_teamsinplay.asInt(); i++)
+			{
+				const size_t numplayers = P_NumPlayersOnTeam(static_cast<team_t>(i));
+				if (numplayers < min)
+				{
+					min = numplayers;
+					minteam = static_cast<team_t>(i);
+					mincount = 1;
+				}
+				else if (numplayers == min)
+				{
+					mincount++;
+					if (M_Random() % mincount == 0)
+						minteam = static_cast<team_t>(i);
+				}
+			}
 
-			SV_ForceSetTeam(player, newteam);
-			SV_CheckTeam(player);
+			if (minteam != TEAM_NONE)
+			{
+				// no need to check SV_GoodTeam, since we know that all other teams
+				// are also at max players if the one with the least players is
+				if (sv_maxplayersperteam &&
+				    P_NumPlayersOnTeam(minteam) >= static_cast<size_t>(sv_maxplayersperteam.asInt()))
+					return;
+
+				SV_ForceSetTeam(player, minteam);
+				SV_CheckTeam(player);
+			}
+		}
+		else
+		{
+			const bool invalidteam = player.userinfo.team >= sv_teamsinplay;
+			const bool toomanyplayers =
+			    sv_maxplayersperteam &&
+			    P_NumPlayersOnTeam(player.userinfo.team) >= sv_maxplayersperteam;
+			if (invalidteam || toomanyplayers)
+			{
+				// If this check fails, our "CanJoin" function didn't do a good-enough
+				// job of scoping out a potential team.
+				const team_t newteam = SV_GoodTeam();
+				if (newteam == TEAM_NONE)
+					return;
+
+				SV_ForceSetTeam(player, newteam);
+				SV_CheckTeam(player);
+			}
 		}
 	}
 
@@ -4143,6 +4191,8 @@ void SV_RunTics()
 		}
 		else
 		{
+			// Unlatch just in case there's any pending changes
+			cvar_t::UnlatchCVars();
 			// [AM] Make a copy of mapname for safety's sake.
 			OLumpName mapname = ::level.mapname;
 			G_InitNew(mapname);

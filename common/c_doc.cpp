@@ -178,21 +178,23 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 	}
 
 	if (cvar.flags() & CVAR_USERINFO)
-		info.push_back("Added to userinfo");
+		info.emplace_back("Added to userinfo");
 	if (cvar.flags() & CVAR_SERVERINFO)
-		info.push_back("Servers tell clients when changed");
+		info.emplace_back("Servers tell clients when changed");
 	if (cvar.flags() & CVAR_NOSET)
-		info.push_back("Can't be set");
+		info.emplace_back("Can't be set");
 	if (cvar.flags() & CVAR_LATCH)
-		info.push_back("Latched");
+		info.emplace_back("Latched");
 	if (cvar.flags() & CVAR_UNSETTABLE)
-		info.push_back("Can be unset");
+		info.emplace_back("Can be unset");
 	if (cvar.flags() & CVAR_NOENABLEDISABLE)
-		info.push_back("No Enable/Disable");
+		info.emplace_back("No Enable/Disable");
 	if (cvar.flags() & CVAR_SERVERARCHIVE)
-		info.push_back("Saved on the server");
+		info.emplace_back("Saved on the server");
 	if (cvar.flags() & CVAR_CLIENTARCHIVE)
-		info.push_back("Saved on the client");
+		info.emplace_back("Saved on the client");
+	if (cvar.flags() & CVAR_NOSEND)
+		info.emplace_back("Not sent to clients or launchers");
 
 	std::string flagstr = JoinStrings(info, ", ");
 
@@ -333,6 +335,8 @@ static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
 		flags.append("SERVERARCHIVE");
 	if (cvar.flags() & CVAR_CLIENTARCHIVE)
 		flags.append("CLIENTARCHIVE");
+	if (cvar.flags() & CVAR_NOSEND)
+		flags.append("NOSEND");
 	out["flags"] = flags;
 }
 

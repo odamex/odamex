@@ -82,7 +82,7 @@ typedef enum
 
     // [BC] Entered the game
 	PST_ENTER,
-	
+
 	// this player is the freecam
 	PST_FREECAM
 
@@ -437,7 +437,7 @@ player_t		&consoleplayer();
 player_t		&displayplayer();
 player_t		&listenplayer();
 player_t		&idplayer(byte id);
-player_t		&nameplayer(const std::string &netname);
+player_t		&nameplayer(std::string_view netname);
 bool			validplayer(const player_t &ref);
 
 // A helper spawn object.

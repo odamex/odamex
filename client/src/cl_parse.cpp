@@ -1187,7 +1187,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	SpreeManager::getInstance().erasePoints(p.id);
 	MultiKillManager::getInstance().eraseMultiKills(p.id);
-	
+
 	p.mo = p.camera = mobj->ptr();
 	p.fov = 90.0f;
 	p.playerstate = PST_LIVE;
@@ -2143,12 +2143,13 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 
 static void CL_ServerSettings(const odaproto::svc::ServerSettings* msg)
 {
-	cvar_t *var = NULL, *prev = NULL;
+	// NOLINTNEXTLINE(misc-const-correctness) - false positive
+	cvar_t* prev = nullptr;
 
-	std::string CvarKey = msg->key();
-	std::string CvarValue = msg->value();
+	const std::string& CvarKey = msg->key();
+	const std::string& CvarValue = msg->value();
 
-	var = cvar_t::FindCVar(CvarKey.c_str(), &prev);
+	cvar_t* var = cvar_t::FindCVar(CvarKey, &prev);
 
 	// GhostlyDeath <June 19, 2008> -- Read CVAR or dump it
 	if (var)
@@ -2364,6 +2365,8 @@ static void CL_LevelState(const odaproto::svc::LevelState* msg)
 static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
+
+	G_ClearRoundKillStats();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
@@ -2947,8 +2950,12 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 {
 	int playerId = msg->pid();
 	int spreeLevel = msg->spree_level();
+	// The server only ever broadcasts sprees as they happen, so this is always
+	// "now" as far as our own gametic is concerned.
+	constexpr int ticsAgo = 0;
 
-	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
+	const bool update =
+	    SpreeManager::getInstance().setRawSpree(playerId, spreeLevel, ticsAgo);
 
 	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
 	if (cl_showsprees && sv_showsprees && displayplayer_id == playerId && update)
@@ -2967,10 +2974,15 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 	breaker.spreeEnderPlayerId = msg->source_pid();
 	breaker.spreeEnderName = msg->source_name();
 	breaker.endedPoints = msg->spree_points();
-	SpreeBreakerType type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
-	int level = msg->spree_level();
+	const auto type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
+	const int level = msg->spree_level();
+	// The server only ever broadcasts sprees as they happen, so this is always
+	// "now" as far as our own gametic is concerned.
+	// MERGE ALERT
+	// Keep protobreak's changes
+	constexpr int ticsAgo = 0;
 
-	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type);
+	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type, ticsAgo);
 }
 
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)

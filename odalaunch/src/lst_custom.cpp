@@ -24,24 +24,91 @@
 
 #include "lst_custom.h"
 
+#include <algorithm>
+#include <array>
 #include <sstream>
 
+#include <wx/dcclient.h>
 #include <wx/dcmemory.h>
 #include <wx/settings.h>
 #include <wx/defs.h>
 #include <wx/regex.h>
-#include <wx/renderer.h>
+
+#ifdef __WXMSW__
+#include <wx/msw/wrapcctl.h>
+
+#ifndef LVCFMT_FIXED_WIDTH
+#define LVCFMT_FIXED_WIDTH 0x100
+#endif
+#endif
 
 IMPLEMENT_DYNAMIC_CLASS(wxAdvancedListCtrl, wxListView)
 
 BEGIN_EVENT_TABLE(wxAdvancedListCtrl, wxListView)
 	EVT_LIST_COL_CLICK(-1, wxAdvancedListCtrl::OnHeaderColumnButtonClick)
+	EVT_LIST_COL_BEGIN_DRAG(-1, wxAdvancedListCtrl::OnHeaderColumnBeginResize)
 	EVT_WINDOW_CREATE(wxAdvancedListCtrl::OnCreateControl)
 END_EVENT_TABLE()
 
 // Sort arrow
 static int ImageList_SortArrowUp = -1;
 static int ImageList_SortArrowDown = -1;
+
+// Width of the icon column, sized so the 16px sort arrow image is centred in
+// its header. An unlabelled column's header image is inset from the left edge:
+// by the native MSW header's 6px bitmap margin, or by 12px in the generic list
+// control (GTK, macOS).
+#ifdef __WXMSW__
+constexpr int ICON_COLUMN_WIDTH = 6 + 16 + 6;
+#else
+constexpr int ICON_COLUMN_WIDTH = 12 + 16 + 12 - 1; // WX eats a pixel here for divider
+#endif
+
+void DrawSortArrowBitmap(wxBitmap& Bitmap, const wxColour& Mask, bool Up)
+{
+	// The same 8x4 arrow as wxRendererGeneric::DrawHeaderButtonContents().
+	const std::array<wxPoint, 3> UpArrow = {
+		wxPoint(7, 6), wxPoint(11, 10), wxPoint(3, 10)
+	};
+	const std::array<wxPoint, 3> DownArrow = {
+		wxPoint(3, 6), wxPoint(11, 6), wxPoint(7, 10)
+	};
+
+	// Make button light for dark theme and vice versa
+	const wxColour Face = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+	const wxColour Text = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT);
+	const double Mix = 1.0 / 3.0;
+
+	const wxColour Color(wxColour::AlphaBlend(Text.Red(), Face.Red(), Mix),
+	                     wxColour::AlphaBlend(Text.Green(), Face.Green(), Mix),
+	                     wxColour::AlphaBlend(Text.Blue(), Face.Blue(), Mix));
+
+	wxMemoryDC dc(Bitmap);
+	dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxBRUSHSTYLE_SOLID));
+	dc.Clear();
+
+	dc.SetPen(wxPen(Color));
+	dc.SetBrush(wxBrush(Color));
+	const std::array<wxPoint, 3>& Arrow = Up ? UpArrow : DownArrow;
+	dc.DrawPolygon(static_cast<int>(Arrow.size()), Arrow.data());
+}
+
+#ifndef __WXMSW__
+// The generic list control has no custom draw, so this draws the icon column's
+// images after it paints.
+class IconColumnPainter : public wxEvtHandler
+{
+public:
+	explicit IconColumnPainter(const wxAdvancedListCtrl* List)
+	{
+		Bind(wxEVT_PAINT, [this, List](wxPaintEvent& event)
+		{
+			GetNextHandler()->ProcessEvent(event);
+			List->PaintIconColumn();
+		});
+	}
+};
+#endif
 
 wxAdvancedListCtrl::wxAdvancedListCtrl()
 {
@@ -51,16 +118,181 @@ wxAdvancedListCtrl::wxAdvancedListCtrl()
 	m_SpecialColumn = -1;
 
 	m_HeaderUsable = true;
-}
 
-void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent& event)
-{
+	// Set here rather than on creation, as on GTK the create event isn't sent
+	// until the control is first shown, which can be after it's been filled.
 	ItemShade = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
 	BgColor = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+}
 
+wxAdvancedListCtrl::~wxAdvancedListCtrl()
+{
+	#ifndef __WXMSW__
+	if(m_IconColumnPainter)
+	{
+		GetTargetWindow()->RemoveEventHandler(m_IconColumnPainter);
+		delete m_IconColumnPainter;
+	}
+	#endif
+}
+
+void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent& WXUNUSED(event))
+{
 	// Set up the image list.
 	AddImageSmall(wxNullImage);
 }
+
+void wxAdvancedListCtrl::InsertIconColumn(int Column)
+{
+	InsertColumn(Column, "", wxLIST_FORMAT_LEFT, ICON_COLUMN_WIDTH);
+
+	m_IconColumn = Column;
+
+	#ifdef __WXMSW__
+	// Fix it natively as well, so the header doesn't show a resize cursor
+	LVCOLUMN lvc = {};
+	lvc.mask = LVCF_FMT;
+
+	if(ListView_GetColumn(GetHwnd(), Column, &lvc))
+	{
+		lvc.fmt |= LVCFMT_FIXED_WIDTH;
+		ListView_SetColumn(GetHwnd(), Column, &lvc);
+	}
+	#else
+	if(!m_IconColumnPainter)
+	{
+		m_IconColumnPainter = new IconColumnPainter(this);
+		GetTargetWindow()->PushEventHandler(m_IconColumnPainter);
+	}
+	#endif
+}
+
+int wxAdvancedListCtrl::AddIconColumnImage(const wxImage& Image)
+{
+	#ifdef __WXMSW__
+	// The native control already draws it about centered in the column
+	return AddImageSmall(Image);
+	#else
+	// The generic control draws item images against the left edge of the
+	// column, so it gets a blank stand-in and DrawIconColumnImage() draws the
+	// real one. Rows still sort by the stand-in's index.
+	wxImage Blank(Image.GetSize());
+	Blank.SetMaskColour(0, 0, 0);
+
+	const int Index = AddImageSmall(Blank);
+
+	#if !ODALAUNCH_USE_LEGACY_IMAGELIST
+	m_IconColumnImages[Index] = wxBitmapBundle(Image);
+	#else
+	m_IconColumnImages[Index] = wxBitmap(Image);
+	#endif
+
+	return Index;
+	#endif
+}
+
+#ifndef __WXMSW__
+void wxAdvancedListCtrl::DrawIconColumnImage(wxDC& dc, int Item,
+                                             const wxRect& Cell) const
+{
+	wxListItem Info;
+	Info.SetId(Item);
+	Info.SetColumn(m_IconColumn);
+	Info.SetMask(wxLIST_MASK_IMAGE);
+
+	if(!GetItem(Info))
+		return;
+
+	const auto Image = m_IconColumnImages.find(Info.GetImage());
+
+	if(Image == m_IconColumnImages.end())
+		return;
+
+	#if !ODALAUNCH_USE_LEGACY_IMAGELIST
+	const wxBitmap Bitmap = Image->second.GetBitmapFor(this);
+	const wxSize Size = Bitmap.GetLogicalSize();
+	#else
+	const wxBitmap& Bitmap = Image->second;
+	const wxSize Size = Bitmap.GetSize();
+	#endif
+
+	// Centered like the sort arrow, so leave out the header divider's pixel
+	const int Width = Cell.width - 1;
+
+	dc.DrawBitmap(Bitmap, Cell.x + ((Width - Size.x) / 2),
+	              Cell.y + ((Cell.height - Size.y) / 2), true);
+}
+
+void wxAdvancedListCtrl::PaintIconColumn() const
+{
+	if(m_IconColumn < 0 || m_IconColumn >= GetColumnCount())
+		return;
+
+	wxWindow* Rows = GetTargetWindow();
+	wxPaintDC dc(Rows);
+
+	// Item rects are relative to the whole control, header included
+	const wxPoint Offset = Rows->GetPosition();
+
+	const int First = static_cast<int>(GetTopItem());
+	const int Last = std::min(GetItemCount(), First + GetCountPerPage() + 1);
+
+	for(int Item = First; Item < Last; ++Item)
+	{
+		wxRect Cell;
+
+		if(!GetSubItemRect(Item, m_IconColumn, Cell))
+			continue;
+
+		Cell.Offset(-Offset.x, -Offset.y);
+		DrawIconColumnImage(dc, Item, Cell);
+	}
+}
+#endif
+
+bool wxAdvancedListCtrl::SetColumnWidth(int col, int width)
+{
+	// Keeps the icon column's width fixed, including when the generic header
+	// autosizes a column on a double-click of its divider
+	if(col == m_IconColumn)
+		width = ICON_COLUMN_WIDTH;
+
+	return wxListView::SetColumnWidth(col, width);
+}
+
+// NOLINTNEXTLINE(readability-make-member-function-const) - event table handlers can't be const
+void wxAdvancedListCtrl::OnHeaderColumnBeginResize(wxListEvent& event)
+{
+	if(event.GetColumn() == m_IconColumn)
+		event.Veto();
+	else
+		event.Skip();
+}
+
+// Hack to set the background color of the icon column
+// to not have the alternating colors bleed in
+#ifdef __WXMSW__
+bool wxAdvancedListCtrl::MSWOnNotify(int idCtrl, WXLPARAM lParam,
+                                     WXLPARAM* result)
+{
+	const bool Processed = wxListView::MSWOnNotify(idCtrl, lParam, result);
+
+	const NMHDR* Header = reinterpret_cast<const NMHDR*>(lParam);
+
+	if(Header->hwndFrom == GetHwnd() && Header->code == NM_CUSTOMDRAW)
+	{
+		NMLVCUSTOMDRAW* Draw = reinterpret_cast<NMLVCUSTOMDRAW*>(lParam);
+
+		if(Draw->nmcd.dwDrawStage == (CDDS_SUBITEM | CDDS_ITEMPREPAINT) &&
+		   Draw->iSubItem == m_IconColumn)
+		{
+			Draw->clrTextBk = RGB(BgColor.Red(), BgColor.Green(), BgColor.Blue());
+		}
+	}
+
+	return Processed;
+}
+#endif
 
 // Add any additional bitmaps/icons to the internal image list
 int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
@@ -82,22 +314,8 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 			wxColour Mask = wxColour(255, 255, 255);
 		#endif
 
-		// Draw sort arrows using the native renderer
-		{
-			wxMemoryDC renderer_dc;
-
-			// sort arrow up
-			renderer_dc.SelectObject(sort_up);
-			renderer_dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxBRUSHSTYLE_SOLID));
-			renderer_dc.Clear();
-			wxRendererNative::Get().DrawHeaderButtonContents(this, renderer_dc, wxRect(0, 0, 16, 16), 0, wxHDR_SORT_ICON_UP);
-
-			// sort arrow down
-			renderer_dc.SelectObject(sort_down);
-			renderer_dc.SetBackground(*wxTheBrushList->FindOrCreateBrush(Mask, wxBRUSHSTYLE_SOLID));
-			renderer_dc.Clear();
-			wxRendererNative::Get().DrawHeaderButtonContents(this, renderer_dc, wxRect(0, 0, 16, 16), 0, wxHDR_SORT_ICON_DOWN);
-		}
+		DrawSortArrowBitmap(sort_up, Mask, true);
+		DrawSortArrowBitmap(sort_down, Mask, false);
 
 		// Add our sort icons to the image list
 		#if !ODALAUNCH_USE_LEGACY_IMAGELIST
@@ -132,6 +350,10 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 // created internally
 void wxAdvancedListCtrl::ClearImageList()
 {
+	#ifndef __WXMSW__
+	m_IconColumnImages.clear();
+	#endif
+
 	#if !ODALAUNCH_USE_LEGACY_IMAGELIST
 		if (!m_Images.empty())
 		{

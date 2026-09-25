@@ -52,6 +52,7 @@ inline auto format_as(maplist_status_t eStatus)
 struct maplist_lastmaps_t {
 	std::vector<std::pair<std::string, std::string>> entries;
 
+	[[nodiscard]]
 	bool empty() const {
 		return entries.empty();
 	}

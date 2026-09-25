@@ -941,9 +941,10 @@
                             <border>5</border>
                             <option>0</option>
                             <object class="wxDirPickerCtrl" name="Id_DirCtrlChooseOdamexPath">
-                              <style>wxDIRP_DEFAULT_STYLE</style>
+                              <style>wxDIRP_DEFAULT_STYLE|wxDIRP_USE_TEXTCTRL</style>
                               <value></value>
                               <message>Select your Odamex folder</message>
+                              <tooltip>Directory where Odamex client executable exists.</tooltip>
                             </object>
                           </object>
                         </object>
@@ -1704,7 +1705,7 @@
             <border>3</border>
             <option>1</option>
             <object class="wxTextCtrl" name="Id_TxtMotd">
-              <style>wxTE_MULTILINE|wxTE_READONLY|wxTE_BESTWRAP|wxTE_CENTRE</style>
+              <style>wxTE_MULTILINE|wxTE_READONLY|wxTE_CENTRE</style>
               <size>-1,70</size>
             </object>
           </object>

@@ -526,6 +526,8 @@ void HU_Drawer()
 	{
 		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
 
+		hud::ResetMessageColumn();
+
 		hud::DrawToasts();
 
 		if ((viewactive && !R_StatusBarVisible()) || spechud)
@@ -670,7 +672,7 @@ BEGIN_COMMAND (say_to)
 {
 	if (argc > 2)
 	{
-		player_t &player = nameplayer(argv[1]);
+		const player_t &player = nameplayer(argv[1]);
 		if (!validplayer(player))
 		{
 			PrintFmt(PRINT_HIGH, "{} isn't the name of anybody on the server.\n", argv[1]);

@@ -23,6 +23,7 @@
 #if wxUSE_POPUPWIN
 
 #include <algorithm>
+#include <cmath>
 
 #include <wx/sizer.h>
 #include <wx/wrapsizer.h>
@@ -38,6 +39,91 @@ using namespace odalpapi;
 static const int PLAYER_POPOVER_MAX_HEIGHT = 360;
 static const int PLAYER_POPOVER_WIDTH = 720;
 
+// Minimum text/background contrast ratio we accept (WCAG AA for normal text)
+constexpr double POPOVER_MIN_CONTRAST = 4.5;
+
+// WCAG relative luminance of an opaque color
+double RelativeLuminance(const wxColour& Color)
+{
+	// sRGB linearization and the luminance weight of each channel
+	constexpr double LINEAR_THRESHOLD = 0.03928;
+	constexpr double LINEAR_SCALE = 12.92;
+	constexpr double GAMMA_OFFSET = 0.055;
+	constexpr double GAMMA = 2.4;
+	constexpr double RED_WEIGHT = 0.2126;
+	constexpr double GREEN_WEIGHT = 0.7152;
+	constexpr double BLUE_WEIGHT = 0.0722;
+
+	auto Linear = [](unsigned char Channel)
+	{
+		const double c = Channel / 255.0;
+		return c <= LINEAR_THRESHOLD
+		           ? c / LINEAR_SCALE
+		           : std::pow((c + GAMMA_OFFSET) / (1.0 + GAMMA_OFFSET), GAMMA);
+	};
+
+	return (RED_WEIGHT * Linear(Color.Red())) +
+	       (GREEN_WEIGHT * Linear(Color.Green())) +
+	       (BLUE_WEIGHT * Linear(Color.Blue()));
+}
+
+// WCAG contrast ratio between two opaque colors, from 1 (none) to 21
+double ContrastRatio(const wxColour& A, const wxColour& B)
+{
+	// Allowance for ambient light reflecting off the screen
+	constexpr double FLARE = 0.05;
+
+	const double La = RelativeLuminance(A);
+	const double Lb = RelativeLuminance(B);
+
+	return ((std::max)(La, Lb) + FLARE) / ((std::min)(La, Lb) + FLARE);
+}
+
+// Composites a possibly translucent color onto an opaque backdrop.
+wxColour Flatten(const wxColour& Color, const wxColour& Backdrop)
+{
+	const double Alpha = Color.Alpha() / 255.0;
+
+	return {wxColour::AlphaBlend(Color.Red(), Backdrop.Red(), Alpha),
+	        wxColour::AlphaBlend(Color.Green(), Backdrop.Green(), Alpha),
+	        wxColour::AlphaBlend(Color.Blue(), Backdrop.Blue(), Alpha)};
+}
+
+// Picks the popover's background and text colors.
+void GetPopoverColors(wxColour& Bg, wxColour& Fg)
+{
+	const wxColour Backdrop = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+
+	Bg = Flatten(wxSystemSettings::GetColour(wxSYS_COLOUR_INFOBK), Backdrop);
+	Fg = Flatten(wxSystemSettings::GetColour(wxSYS_COLOUR_INFOTEXT), Bg);
+
+	if(ContrastRatio(Bg, Fg) >= POPOVER_MIN_CONTRAST)
+		return;
+
+	Bg = Flatten(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW), Backdrop);
+	Fg = Flatten(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT), Bg);
+
+	if(ContrastRatio(Bg, Fg) >= POPOVER_MIN_CONTRAST)
+		return;
+
+	Fg = ContrastRatio(Bg, *wxBLACK) >= ContrastRatio(Bg, *wxWHITE) ? *wxBLACK
+	                                                                : *wxWHITE;
+}
+
+// Creates the panel holding a popover's contents.
+wxPanel* CreateContentPanel(wxWindow* Parent)
+{
+	wxColour Bg;
+	wxColour Fg;
+	GetPopoverColors(Bg, Fg);
+
+	auto* Panel = new wxPanel(Parent);
+	Panel->SetBackgroundColour(Bg);
+	Panel->SetForegroundColour(Fg);
+
+	return Panel;
+}
+
 //
 // ServerInfoPopover
 //
@@ -45,21 +131,11 @@ static const int PLAYER_POPOVER_WIDTH = 720;
 ServerInfoPopover::ServerInfoPopover(wxWindow* parent)
 	: wxPopupWindow(parent, wxBORDER_SIMPLE)
 {
-	m_Address = new wxStaticText(this, wxID_ANY, "");
-	m_Name = new wxStaticText(this, wxID_ANY, "");
-	m_Skill = new wxStaticText(this, wxID_ANY, "");
-	m_Version = new wxStaticText(this, wxID_ANY, "");
-	m_AdminEmail = new wxStaticText(this, wxID_ANY, "");
-	m_DownloadURI = new wxStaticText(this, wxID_ANY, "");
-	m_Password = new wxStaticText(this, wxID_ANY, "");
-
 	// These labels are allowed to disappear if empty
 	m_AdminEmailLabel = nullptr;
 	m_DownloadURILabel = nullptr;
 
-	wxPanel* Panel = new wxPanel(this);
-	Panel->SetBackgroundColour(
-	    wxSystemSettings::GetColour(wxSYS_COLOUR_INFOBK));
+	wxPanel* Panel = CreateContentPanel(this);
 
 	wxFlexGridSizer* Grid = new wxFlexGridSizer(0, 2, 4, 12);
 
@@ -166,9 +242,7 @@ bool ServerInfoPopover::SetOptionalRow(wxStaticText* Label,
 PlayerListPopover::PlayerListPopover(wxWindow* parent)
 	: wxPopupWindow(parent, wxBORDER_SIMPLE)
 {
-	wxPanel* Panel = new wxPanel(this);
-	Panel->SetBackgroundColour(
-	    wxSystemSettings::GetColour(wxSYS_COLOUR_INFOBK));
+	wxPanel* Panel = CreateContentPanel(this);
 
 	const wxFont LabelFont =
 	    wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).Bold();
@@ -292,6 +366,10 @@ PlayerListPopover::PlayerListPopover(wxWindow* parent)
 	m_PlayerList->Create(Panel, wxID_ANY, wxDefaultPosition,
 	                     wxSize(PLAYER_POPOVER_WIDTH, PLAYER_POPOVER_MAX_HEIGHT),
 	                     wxLC_REPORT | wxLC_SINGLE_SEL);
+
+	// The table keeps its regular text color instead of inheriting the
+	// popover's, which may not be legible on the list's own background.
+	m_PlayerList->SetForegroundColour(m_PlayerList->GetDefaultAttributes().colFg);
 
 	wxBoxSizer* Inner = new wxBoxSizer(wxVERTICAL);
 	Inner->Add(m_HeaderSizer, 0, wxEXPAND | wxALL, 8);
