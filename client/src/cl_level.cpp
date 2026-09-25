@@ -695,7 +695,7 @@ void G_DoLoadLevel (int position)
 			{
 				Freecam::setStartPosition(INT2FIXED(start->x), INT2FIXED(start->y),
 				    level.flags & LEVEL_USEPLAYERSTARTZ ? INT2FIXED(start->z) : ONFLOORZ,
-				    ANG45 * (start->angle / 45));
+				    MapThingToAngle(start->angle));
 			}
 		}
 

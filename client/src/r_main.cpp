@@ -868,6 +868,11 @@ void R_SetupFrame (player_t *player)
 	if (!camera || !camera->subsector)
 		return;
 
+	// Both VS and clang-tidy think these are null pointer derefs
+	// So declare them up here to avoid it.
+	const fixed_t camera_pitch = camera->pitch;
+	const angle_t camera_prevpitch = camera->prevpitch;
+
 	player_t &consolePlayer = consoleplayer();
 	const bool use_localview = consolePlayer.id == displayplayer().id &&
 	                           consolePlayer.health > 0 &&
@@ -944,12 +949,12 @@ void R_SetupFrame (player_t *player)
 
 	if ((use_localview && !::localview.skippitch) || netdemo.isPaused())
 	{
-		R_ViewShear(std::clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
+		R_ViewShear(std::clamp(camera_pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}
 	else
 	{
 		// Only interpolate if we are spectating/freecam
-		fixed_t pitch = camera->prevpitch + FixedMul(render_lerp_amount, camera->pitch - camera->prevpitch);
+		const fixed_t pitch = camera_prevpitch + FixedMul(render_lerp_amount, camera_pitch - camera_prevpitch);
 		R_ViewShear(pitch);
 	}
 
