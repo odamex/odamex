@@ -31,6 +31,7 @@
 #include <wx/image.h>
 #include <wx/imaglist.h>
 
+#include <map>
 #include <vector>
 
 #if wxCHECK_VERSION(3, 3, 0)
@@ -43,7 +44,7 @@ class wxAdvancedListCtrl : public wxListView
 {
 public:
 	wxAdvancedListCtrl();
-	virtual ~wxAdvancedListCtrl() { };
+	~wxAdvancedListCtrl() override;
 
 	void HeaderUsable(bool state)
 	{
@@ -90,7 +91,18 @@ public:
 
 	void Sort();
 
+	// Inserts the unlabelled column holding status icons. It has a fixed width
+	// that centers the sort arrow in its header and no alternating row shading.
+	void InsertIconColumn(int Column);
+
+	bool SetColumnWidth(int col, int width) override;
+
 	int AddImageSmall(wxImage Image);
+
+	// Adds an image for use in the icon column, where it's drawn centered.
+	// Returns its index for SetItemColumnImage(), as with AddImageSmall().
+	int AddIconColumnImage(const wxImage& Image);
+
 	void ClearImageList();
 	long ALCInsertItem(const wxString& Text = "");
 
@@ -101,6 +113,7 @@ public:
 private:
 	void OnCreateControl(wxWindowCreateEvent& event);
 	void OnHeaderColumnButtonClick(wxListEvent& event);
+	void OnHeaderColumnBeginResize(wxListEvent& event);
 
 	void ColourList();
 	void ColourListItem(wxListItem& info);
@@ -108,6 +121,15 @@ private:
 
 	void ResetSortArrows(void);
 	void SetSortArrow(wxInt32 Column, wxInt32 ArrowState);
+
+	#ifndef __WXMSW__
+	// Draws an item's icon column image centered in its cell
+	void DrawIconColumnImage(wxDC& dc, int Item, const wxRect& Cell) const;
+
+	// Draws the visible rows' icon column images over the painted list
+	void PaintIconColumn() const;
+	friend class IconColumnPainter;
+	#endif
 
 	void FlipRow(long Row, long NextRow);
 	void Sort(wxInt32 Column, wxInt32 Order = 0, wxInt32 Lowest = 0, wxInt32 Highest = -1);
@@ -125,6 +147,7 @@ private:
 	wxColour BgColor;
 
 	wxInt32 m_SpecialColumn;
+	wxInt32 m_IconColumn = -1;
 
 	bool m_HeaderUsable;
 
@@ -134,9 +157,26 @@ private:
 	wxVector<wxBitmapBundle> m_Images;
 	#endif
 
+	#ifndef __WXMSW__
+	// The icon column images, by the index of their blank stand-in in the list's
+	// image list
+	#if !ODALAUNCH_USE_LEGACY_IMAGELIST
+	std::map<int, wxBitmapBundle> m_IconColumnImages;
+	#else
+	std::map<int, wxBitmap> m_IconColumnImages;
+	#endif
+
+	wxEvtHandler* m_IconColumnPainter = nullptr;
+	#endif
+
 	std::vector<std::vector<wxListItem> > BackupItems;
 
 	friend int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData);
+public:
+	#ifdef __WXMSW__
+	bool MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM* result) override;
+	#endif
+
 protected:
 	DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
 	DECLARE_EVENT_TABLE()

@@ -35,6 +35,9 @@
 #include <wx/button.h>
 #include <wx/tglbtn.h>
 #include <wx/hyperlink.h>
+#ifdef __WXGTK__
+#include <wx/generic/hyperlink.h>
+#endif
 #include <wx/gbsizer.h>
 #include <wx/collpane.h>
 #include <wx/settings.h>
@@ -405,6 +408,27 @@ void dlgServerDetails::SetDeltaRow(wxFlexGridSizer* Grid, wxStaticText* Label,
 	Grid->Show(Delta, Show, true);
 }
 
+// wxGTK's native hyperlink is a GtkLinkButton, and its button padding indents
+// the link and makes its row taller.
+// The generic control draws just the text, so use it there,
+// in the theme's link color.
+wxHyperlinkCtrlBase* CreateHyperlink(wxWindow* Parent, const wxString& Label,
+                                     const wxString& URL)
+{
+	#ifdef __WXGTK__
+	auto* Link = new wxGenericHyperlinkCtrl(Parent, wxID_ANY, Label, URL);
+
+	const wxColour LinkColor = wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT);
+	Link->SetNormalColour(LinkColor);
+	Link->SetHoverColour(LinkColor);
+	Link->SetVisitedColour(LinkColor);
+
+	return Link;
+	#else
+	return new wxHyperlinkCtrl(Parent, wxID_ANY, Label, URL);
+	#endif
+}
+
 void dlgServerDetails::BuildMetadataGrid()
 {
 	const wxFont LabelFont =
@@ -445,8 +469,7 @@ void dlgServerDetails::BuildMetadataGrid()
 	m_MdAdminEmailLabel =
 	    new wxStaticText(m_PnlMetadata, wxID_ANY, "Admin Email:");
 	m_MdAdminEmailLabel->SetFont(LabelFont);
-	m_MdAdminEmail = new wxHyperlinkCtrl(m_PnlMetadata, wxID_ANY,
-	                                     wxEmptyString, wxEmptyString);
+	m_MdAdminEmail = CreateHyperlink(m_PnlMetadata, wxEmptyString, wxEmptyString);
 	m_MetaGrid->Add(m_MdAdminEmailLabel, 0, wxALIGN_CENTER_VERTICAL);
 	m_MetaGrid->Add(m_MdAdminEmail, 0, wxALIGN_CENTER_VERTICAL);
 
@@ -624,9 +647,7 @@ void dlgServerDetails::PopulateMetadata()
 		if(Sites[i].IsEmpty())
 			continue;
 
-		wxHyperlinkCtrl* Link = new wxHyperlinkCtrl(
-		    m_PnlMetadata, wxID_ANY, Sites[i], Sites[i]);
-		m_MdDownloadSizer->Add(Link, 0);
+		m_MdDownloadSizer->Add(CreateHyperlink(m_PnlMetadata, Sites[i], Sites[i]), 0);
 	}
 
 	const bool ShowDownloads = m_MdDownloadSizer->GetItemCount() > 0;
@@ -640,6 +661,8 @@ void dlgServerDetails::PopulateMetadata()
 	{
 		m_MdAdminEmail->SetLabel(AdminEmail);
 		m_MdAdminEmail->SetURL("mailto:" + AdminEmail);
+		// The generic control doesn't repaint for a new label by itself
+		m_MdAdminEmail->Refresh();
 	}
 	m_MetaGrid->Show(m_MdAdminEmailLabel, ShowEmail);
 	m_MetaGrid->Show(m_MdAdminEmail, ShowEmail);
