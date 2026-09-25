@@ -56,9 +56,6 @@
 #include "r_sky.h"
 #include "p_compdb.h"
 
-#ifdef CLIENT_APP
-#include "cl_freecam.h"
-#endif
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
@@ -151,6 +148,33 @@ bool			rejectempty;
 std::vector<mapthing2_t> DeathMatchStarts;
 std::vector<mapthing2_t> playerstarts;
 std::vector<mapthing2_t> voodoostarts;
+
+//
+// P_GetFirstAvailableSpawn
+//
+// The first spawn the map offers that a player could be put on.
+//
+std::optional<mapthing2_t> P_GetFirstAvailableSpawn()
+{
+	// Sorted by player number, so this is player 1's start where there is one.
+	if (not ::playerstarts.empty())
+		return ::playerstarts.front();
+
+	if (not ::DeathMatchStarts.empty())
+		return ::DeathMatchStarts.front();
+
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+	{
+		const std::vector<mapthing2_t>& starts =
+		    GetTeamInfo(static_cast<team_t>(iTeam))->Starts;
+
+		if (not starts.empty())
+			return starts.front();
+	}
+
+	// A map with no starts of any kind.
+	return std::nullopt;
+}
 
 // Maintain list of helpers to spawn in a given map
 std::vector<HelperSpawns> helperspawns;
@@ -892,14 +916,6 @@ void P_LoadThings (int lump)
 		mt2.angle = LESHORT(mt->angle);
 		mt2.type = LESHORT(mt->type);
 
-		// clientside-only freecam start pos
-		#ifdef CLIENT_APP
-		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(mt2))
-		{
-			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, ANG45 * (mt2.angle / 45));
-		}
-		#endif
-
 		P_SpawnMapThing (mt2, 0);
 	}
 
@@ -948,14 +964,6 @@ void P_LoadThings2 (int lump, int position)
 		mt->angle = LESHORT(mt->angle);
 		mt->type = LESHORT(mt->type);
 		mt->flags = LESHORT(mt->flags);
-
-		// clientside-only freecam start pos
-		#ifdef CLIENT_APP
-		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsPlayerSpawnThing(*mt))
-		{
-			Freecam::setStartPosition(mt->x << FRACBITS, mt->y << FRACBITS, ONFLOORZ, ANG45 * (mt->angle / 45));
-		}
-		#endif
 
 		P_SpawnMapThing(*mt, position);
 	}

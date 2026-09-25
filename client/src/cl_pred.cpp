@@ -236,6 +236,13 @@ static void CL_PredictFreecam()
 	if (not player.isFreecam)
 		return;
 
+	if (player.mo)
+	{
+		player.mo->prevx = player.mo->x;
+		player.mo->prevy = player.mo->y;
+		player.mo->prevz = player.mo->z;
+	}
+
 	predicting = true;
 
 	P_PlayerThink(player);
