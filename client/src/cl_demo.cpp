@@ -232,6 +232,15 @@ bool NetDemo::content_description_t::Read(std::fstream& io_stream)
 	return false;
 }
 
+bool NetDemo::content_description_t::Write(std::fstream& io_stream) const
+{
+	if (io_stream.good())
+	{
+		return M_WriteString(io_stream, this->build);
+	}
+	return false;
+}
+
 //
 // readHeader()
 //
@@ -392,9 +401,15 @@ bool NetDemo::startRecording(const std::string &filename)
 
 	// Note: The header is not finalized at this point.  Write it anyway to
 	// reserve space in the output file for it and overwrite it later.
-	if (!writeHeader())
+	if (not writeHeader())
 	{
 		error("Unable to write netdemo header.");
+		return false;
+	}
+
+	if (not this_build_description.Write(demofp))
+	{
+		error("Unable to write netdemo content description.");
 		return false;
 	}
 

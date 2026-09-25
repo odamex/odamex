@@ -123,6 +123,22 @@ bool M_WriteLE(std::ostream& io_stream, const ElementType (&i_dataArray)[N])
 	return true;
 }
 
+template <typename CharType>
+bool M_WriteString(std::ostream& io_stream, const std::basic_string<CharType>& i_string)
+{
+	uint32_t stringLength = 0;
+	if (M_WriteLE(io_stream, static_cast<uint32_t>(i_string.length())))
+	{
+		bool result = true;
+		for (const auto& i_character : i_string)
+		{
+			result = result and M_WriteLE(io_stream, i_character);
+		}
+		return result;
+	}
+	return false;
+}
+
 uintmax_t M_FileLength (std::istream& f);
 bool M_FileExists(const std::string& filename);
 bool M_FileExistsExt(const std::string& filename, const char* ext);

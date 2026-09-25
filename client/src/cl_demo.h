@@ -206,6 +206,7 @@ private:
 		//       how to decode the application-layer message content.
 
 		bool Read(std::fstream& io_stream);
+		bool Write(std::fstream& io_stream) const;
 		void Clear()
 		{
 			build.clear();
