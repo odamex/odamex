@@ -11,14 +11,6 @@ struct PacketHeaderType;
 class NetDemo
 {
 public:
-	enum encoding_e
-	{
-		unknown_encoding,
-		protobuf,
-		reserved_01     // reserved for capnproto
-	};
-
-public:
 	NetDemo() = default;
 	~NetDemo();
 	NetDemo(const NetDemo &rhs)             = delete;
@@ -209,9 +201,15 @@ private:
 	struct content_description_t
 	{
 		std::string build;
-		encoding_e  encoding { encoding_e::unknown_encoding };
+
+		// TODO: information pertaining to encoding format so that external tooling can know
+		//       how to decode the application-layer message content.
 
 		bool Read(std::fstream& io_stream);
+		void Clear()
+		{
+			build.clear();
+		}
 	};
 
 	netdemo_state_t state   { st_stopped };
@@ -226,6 +224,8 @@ private:
 	SnapshotVector          snapshot_index;
 	SnapshotVector          map_index;
 	content_description_t   content_description;
+
+	static const content_description_t this_build_description;
 
 	buf_t               outputBuffer    { NETDEMO_STARTUP_PACKET_SIZE };
 	std::vector<byte>   snapbuf         { };

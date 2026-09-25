@@ -83,6 +83,8 @@ int LatestDemoVersion(const int version)
 	}
 }
 
+const NetDemo::content_description_t NetDemo::this_build_description { .build = std::string(NiceVersion()) + " - " +  GitHash()};
+
 NetDemo::~NetDemo()
 {
 	cleanUp();
@@ -225,14 +227,7 @@ bool NetDemo::content_description_t::Read(std::fstream& io_stream)
 {
 	if (io_stream.good())
 	{
-		byte       encodingByte = 0xFF;
-		const bool readIsGood = M_ReadLE    (io_stream, encodingByte)
-		                    and M_ReadString(io_stream, this->build);
-		if (readIsGood)
-		{
-			this->encoding = static_cast<encoding_e>(encodingByte);
-			return true;
-		}
+		return M_ReadString(io_stream, this->build);
 	}
 	return false;
 }
@@ -506,7 +501,19 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
+	content_description.Clear();
+
 	populateMessageIndexes();
+
+	if (content_description.build.empty())
+	{
+		PrintFmt(PRINT_WARNING, "This demo did not supply any content description!  Proceeding at risk...\n");
+	}
+	else if (content_description.build != this_build_description.build)
+	{
+		PrintFmt(PRINT_WARNING, "This demo was recorded with a different build: {}\n", content_description.build);
+	}
+	DPrintFmt("Netdemo recorded with build {}\n", content_description.build);
 
 	// get set up to read server cmds
 	demofp.seekg(NetDemo::HEADER_SIZE, std::ios::beg);
