@@ -11,6 +11,14 @@ struct PacketHeaderType;
 class NetDemo
 {
 public:
+	enum encoding_e
+	{
+		unknown_encoding,
+		protobuf,
+		reserved_01     // reserved for capnproto
+	};
+
+public:
 	NetDemo() = default;
 	~NetDemo();
 	NetDemo(const NetDemo &rhs)             = delete;
@@ -20,8 +28,14 @@ public:
 	NetDemo& operator=(NetDemo&&) = default;
 
 
-	bool startPlaying(const std::string &filename);
-	bool startRecording(const std::string &filename);
+	bool startPlaying(const std::string& filename);
+#if 0
+	bool startRecording(const std::string& filename,
+	                    const std::string& buildId,
+	                    encoding_e         messageEncoding);
+#else
+	bool startRecording(const std::string& filename);
+#endif
 	bool stopPlaying();
 	bool stopRecording();
 	bool pause();
@@ -75,7 +89,8 @@ private:
 		msg_packet      = 0xAA,
 		msg_snapshot,
 		msg_map_change,
-		msg_eof
+		msg_eof,
+		msg_content_description
 	};
 
 	struct message_header_t
@@ -169,7 +184,7 @@ private:
 		bool Read(std::fstream& io_stream);
 	};
 
-    // Now for the current netdemo version.
+	// Now for the current netdemo version.
 	struct netdemo_header4_t
 	{
 		netdemo_header_id_t id      {};             // version 4
@@ -190,6 +205,15 @@ private:
 		}
 	};
 
+	// The type declaration of msg_content_description
+	struct content_description_t
+	{
+		std::string build;
+		encoding_e  encoding { encoding_e::unknown_encoding };
+
+		bool Read(std::fstream& io_stream);
+	};
+
 	netdemo_state_t state   { st_stopped };
 	netdemo_state_t oldstate{ st_stopped };   // used when unpausing
 	std::string     filename{ };
@@ -198,9 +222,10 @@ private:
 	MessageQueue      captured {};
 	buf_t             workingBuffer {MAX_UDP_PACKET};
 
-	netdemo_header4_t   header        {};
-	SnapshotVector      snapshot_index{};
-	SnapshotVector      map_index     {};
+	netdemo_header4_t       header;
+	SnapshotVector          snapshot_index;
+	SnapshotVector          map_index;
+	content_description_t   content_description;
 
 	buf_t               outputBuffer    { NETDEMO_STARTUP_PACKET_SIZE };
 	std::vector<byte>   snapbuf         { };
