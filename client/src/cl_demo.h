@@ -90,6 +90,8 @@ private:
 		byte        type    { 0 };
 		uint32_t    length  { 0 };
 		uint32_t    gametic { 0 };
+
+		bool Write(std::fstream& io_stream) const;
 	};
 
 	struct netdemo_index_entry_t
@@ -121,6 +123,7 @@ private:
 	void writeChunk(const byte *data, size_t size, netdemo_message_t type);
 	bool writeHeader();
 	bool readHeader();
+	bool writeContentDescription(std::fstream& io_stream) const;
 
 	bool atSnapshotInterval();
 

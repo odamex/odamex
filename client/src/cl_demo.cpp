@@ -241,6 +241,37 @@ bool NetDemo::content_description_t::Write(std::fstream& io_stream) const
 	return false;
 }
 
+bool NetDemo::writeContentDescription(std::fstream& io_stream) const
+{
+	if (io_stream.good())
+	{
+		message_header_t msgheader;
+
+		msgheader.type    = static_cast<byte>(NetDemo::msg_content_description);
+		msgheader.length  = 0;
+		msgheader.gametic = gametic;
+
+		const std::streampos msgheaderPosition = io_stream.tellp();
+
+		if (msgheader.Write(io_stream))
+		{
+			const std::streampos payloadStart = io_stream.tellp();
+			if (this_build_description.Write(io_stream))
+			{
+				const std::streampos payloadEnd = io_stream.tellp();
+
+				msgheader.length = static_cast<uint32_t>(payloadEnd- payloadStart);
+
+				io_stream.seekp(msgheaderPosition);
+				msgheader.Write(io_stream);
+				io_stream.seekp(payloadEnd);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 //
 // readHeader()
 //
@@ -407,7 +438,7 @@ bool NetDemo::startRecording(const std::string &filename)
 		return false;
 	}
 
-	if (not this_build_description.Write(demofp))
+	if (not writeContentDescription(demofp))
 	{
 		error("Unable to write netdemo content description.");
 		return false;
@@ -643,6 +674,19 @@ bool NetDemo::stopPlaying()
 	return true;
 }
 
+bool NetDemo::message_header_t::Write(std::fstream& io_stream) const
+{
+	if (io_stream.good())
+	{
+		const auto startingPosition = io_stream.tellp();
+		return startingPosition >= 0
+		    and M_WriteLE(io_stream, this->type)
+		    and M_WriteLE(io_stream, this->length)
+		    and M_WriteLE(io_stream, this->gametic)
+		    and io_stream.tellp() - startingPosition == MESSAGE_HEADER_SIZE;
+	}
+	return false;
+}
 
 void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 {
@@ -652,14 +696,7 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 	msgheader.length    = size;
 	msgheader.gametic   = gametic;
 
-	const auto startingPosition = demofp.tellp();
-	const bool headerResult = startingPosition >= 0
-	                            and M_WriteLE(demofp, msgheader.type)
-	                            and M_WriteLE(demofp, msgheader.length)
-	                            and M_WriteLE(demofp, msgheader.gametic)
-	                            and demofp.tellp() - startingPosition == MESSAGE_HEADER_SIZE;
-
-	if (headerResult)
+	if (msgheader.Write(demofp))
 	{
 		const auto dataStartPosition = demofp.tellp();
 		demofp.write(reinterpret_cast<const char*>(data), size);
