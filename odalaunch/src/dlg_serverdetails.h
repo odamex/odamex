@@ -44,7 +44,7 @@ class wxScrolledWindow;
 class wxGauge;
 class wxButton;
 class wxToggleButton;
-class wxHyperlinkCtrl;
+class wxHyperlinkCtrlBase;
 class wxFlexGridSizer;
 class wxBoxSizer;
 class wxSizer;
@@ -166,7 +166,7 @@ private:
 	// one mailto-style hyperlink per URL.
 	wxBoxSizer* m_MdDownloadSizer;
 	wxStaticText* m_MdDownloadURILabel;
-	wxHyperlinkCtrl* m_MdAdminEmail;
+	wxHyperlinkCtrlBase* m_MdAdminEmail;
 	wxStaticText* m_MdAdminEmailLabel;
 	wxStaticBitmap* m_PasswordIcon;
 	wxStaticText* m_MdPassword;
