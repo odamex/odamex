@@ -139,7 +139,7 @@ ServerInfoPopover::ServerInfoPopover(wxWindow* parent)
 		{ "Address:",          &m_Address,     nullptr },
 		{ "Skill:",            &m_Skill,       nullptr },
 		{ "Wad URL:",          &m_DownloadURI, &m_DownloadURILabel },
-		{ "Admin Email:",      &m_AdminEmail,  &m_AdminEmailLabel },
+		{ "Email:",            &m_AdminEmail,  &m_AdminEmailLabel },
 		{ "Password:",         &m_Password,    nullptr },
 	};
 

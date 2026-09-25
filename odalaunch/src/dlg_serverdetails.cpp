@@ -443,7 +443,7 @@ void dlgServerDetails::BuildMetadataGrid()
 	m_MetaGrid->Add(m_MdDownloadSizer, 0, wxALIGN_TOP);
 
 	m_MdAdminEmailLabel =
-	    new wxStaticText(m_PnlMetadata, wxID_ANY, "Admin Email:");
+	    new wxStaticText(m_PnlMetadata, wxID_ANY, "Email:");
 	m_MdAdminEmailLabel->SetFont(LabelFont);
 	m_MdAdminEmail = new wxHyperlinkCtrl(m_PnlMetadata, wxID_ANY,
 	                                     wxEmptyString, wxEmptyString);
