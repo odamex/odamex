@@ -36,6 +36,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "m_fixed.h"
 
 #define PI				3.141592657
