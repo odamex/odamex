@@ -23,6 +23,13 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
+#include "hashtable.h"
+#include "info.h"
+#include "r_defs.h"
+
 extern int MaxVisSprites;
 
 extern vissprite_t *vissprites, *firstvissprite;
@@ -41,3 +48,5 @@ extern vissprite_t* lastvissprite;
 
 void R_CacheSprite(const spritedef_t *sprite);
 void R_InitSprites(std::vector<spriteinfo_t*>& sprites);
+
+std::string R_FindIncompleteSprite();
