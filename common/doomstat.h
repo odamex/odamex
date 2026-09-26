@@ -157,7 +157,9 @@ extern std::vector<mapthing2_t> DeathMatchStarts;
 // Player spawn spots.
 inline constexpr int MAXPLAYERSTARTS = 64;
 inline constexpr OUtil::inclusive_range<int16_t> VANILLA_COOP_PLAYER_STARTS{1, 4};
-inline constexpr OUtil::inclusive_range<int16_t> EXTRA_COOP_PLAYER_STARTS{4001, 4001 + MAXPLAYERSTARTS - 4};
+// MERGE ALERT
+// When merging stable into protobreak, keep protobreak's version.
+inline constexpr OUtil::exclusive_range<int16_t> EXTRA_COOP_PLAYER_STARTS{4001, 4001 + MAXPLAYERSTARTS - 4};
 extern std::vector<mapthing2_t> playerstarts;
 extern std::vector<mapthing2_t> voodoostarts;
 

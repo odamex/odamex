@@ -148,10 +148,15 @@ bool P_CheckMissileSpawn(AActor* th);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
 size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing);
+// MERGE ALERT
+// P_GetPlayerStart and P_AvatarBlocksSpot were backported from protobreak.
+// When merging stable into protobreak, keep protobreak's version.
+const mapthing2_t& P_GetPlayerStart(const size_t playernum);
 bool P_VisibleToPlayers(const AActor *mo);
 void P_SetMobjBaseline(AActor& mo);
 uint32_t P_GetMobjBaselineFlags(const AActor& mo);
 bool P_IsPlayerSpawnThing(const mapthing2_t& mt);
+bool P_AvatarBlocksSpot(fixed_t x, fixed_t y, fixed_t z);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);
