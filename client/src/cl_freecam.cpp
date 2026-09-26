@@ -62,6 +62,11 @@ void Freecam::buildCam(player_t* p_cam)
 	mobj->player = p_cam;
 	mobj->angle = cam_angle;
 	mobj->pitch = cam_pitch;
+	mobj->prevx = mobj->x;
+	mobj->prevy = mobj->y;
+	mobj->prevz = mobj->z;
+	mobj->prevangle = mobj->angle;
+	mobj->prevpitch = mobj->pitch;
 	p_cam->camera = p_cam->mo = mobj->ptr();
 	p_cam->prevviewz = 1;
 	p_cam->viewz = 1;
