@@ -229,7 +229,7 @@ CVAR_FUNC_IMPL (sv_maxplayersperteam)
 				if (normalcount > var)
 				{
 					SV_SetPlayerSpec(player, true);
-					SV_PlayerPrintFmt(player.id, PRINT_HIGH, "Active player limit reduced. You are now a spectator!\n");
+					SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Active player limit reduced. You are now a spectator!\n");
 				}
 			}
 		}
@@ -297,9 +297,6 @@ CVAR_FUNC_IMPL(sv_sharekeys)
 		}
 	}
 }
-
-client_c clients;
-
 
 #define CLIENT_TIMEOUT 65 // 65 seconds
 
@@ -1007,18 +1004,18 @@ void SV_MidPrint(const char* msg, player_t* p, int msgtime)
 	cl->messenger->Reliable().Write (SVC_MidPrint(msg, msgtime));
 }
 
-void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str)
+void SV_BasePrint(client_t* cl, const printlevel_t printlevel, const std::string& str)
 {
 	cl->messenger->Reliable().Write (SVC_Print(static_cast<printlevel_t>(printlevel), str));
 }
 
-void SV_BasePrintAllPlayers(const int printlevel, const std::string& str)
+void SV_BasePrintAllPlayers(const printlevel_t printlevel, const std::string& str)
 {
 	for (auto& player : players)
 		player.client.messenger->Reliable().Write (SVC_Print(static_cast<printlevel_t>(printlevel), str));
 }
 
-void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std::string& str)
+void SV_BasePrintButPlayer(const printlevel_t printlevel, const int player_id, const std::string& str)
 {
 	for (auto& player : players)
 	{
