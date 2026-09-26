@@ -119,9 +119,10 @@ TEST(CmdLib, TicsToShortTimeThreshold) {
     EXPECT_EQ("3", TicsToShortTime(3 * TICRATE, 0, false));
 
     // Counting down never rises as tics fall, and only bottoms out at zero.
+    const int threshold = 10 * TICRATE;
     std::string prev;
-    for (int t = 10 * TICRATE; t >= 0; t--) {
-        const std::string cur = TicsToShortTime(t, 10 * TICRATE, true);
+    for (int t = threshold; t >= 0; t--) {
+        const std::string cur = TicsToShortTime(t, threshold, true);
         if (not prev.empty())
             EXPECT_LE(std::stod(cur), std::stod(prev)) << "at tic " << t;
         if (t > 0)
@@ -189,9 +190,10 @@ TEST(CmdLib, TicsToClockTenthsNegative) {
 
 TEST(CmdLib, TicsToShortTimeWholeSecondDwell) {
     const int threshold = 10 * TICRATE;
+    const int past_threshold = 12 * TICRATE;
 
     int showing_ten = 0;
-    for (int t = 0; t <= 12 * TICRATE; t++) {
+    for (int t = 0; t <= past_threshold; t++) {
         if (TicsToShortTime(t, threshold, false) == "10")
             showing_ten++;
     }
@@ -203,7 +205,8 @@ TEST(CmdLib, TicsToShortTimeWholeSecondDwell) {
     EXPECT_EQ("9.9", TicsToShortTime(threshold - 1, threshold, false));
 
     // No tenths value should outlast a whole second's worth of tics either.
-    for (int v = 0; v < 100; v++) {
+    const int tenths_values = threshold * TENTHS_PER_SECOND / TICRATE;
+    for (int v = 0; v < tenths_values; v++) {
         const std::string want = std::to_string(v / 10) + "." + std::to_string(v % 10);
         int seen = 0;
         for (int t = 0; t < threshold; t++) {
