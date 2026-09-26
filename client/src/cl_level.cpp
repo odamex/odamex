@@ -709,7 +709,7 @@ void G_DoLoadLevel (int position)
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
 
-	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
+	// clientside only freecam, added after other players are added in G_UnSnapshotLevel
 	if (Freecam::allowAdd())
 	{
 		if (Freecam::needPosition())
@@ -727,7 +727,7 @@ void G_DoLoadLevel (int position)
 		Freecam::addFreecamPlayer();
 	}
 
-    P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
+	P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 
 	::levelstate.reset();
 
