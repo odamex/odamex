@@ -1364,6 +1364,21 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 				{
 					info->translucency = TRANSLUC66;
 				}
+
+				// [EB] make sure that dehacked monsters have the standard monster flags
+				// but don't mess with players or flags that were intentionally set
+				// TODO: MBF2y's ISMONSTER flag will need this as well
+				if (not vchanged[1] and thingNum != 1)
+				{
+					if (info->flags & MF_COUNTKILL)
+					{
+						info->flags2 |= MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL;
+					}
+					else
+					{
+						info->flags2 &= ~(MF2_MCROSS|MF2_PUSHWALL);
+					}
+				}
 			}
 			if (vchanged[1])
 			{
