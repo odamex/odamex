@@ -841,6 +841,8 @@ void D_UndoDehPatch()
 
 	D_BuildSpawnMap();
 
+	isFast = false;
+
 	std::copy(doomBackup.backupWeaponInfo, doomBackup.backupWeaponInfo + ::NUMWEAPONS,
 	          weaponinfo);
 	std::copy(doomBackup.backupClipAmmo, doomBackup.backupClipAmmo + ::NUMAMMO, clipammo);
