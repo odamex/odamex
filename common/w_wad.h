@@ -67,6 +67,11 @@ struct filelump_t
 //
 // WADFILE I/O related stuff.
 //
+
+// MERGE ALERT
+// The 'file' field was backported from protobreak. When merging stable
+// into protobreak, keep protobreak's version of lumpinfo_t.
+//
 typedef struct lumpinfo_s
 {
 	OLumpName	name;

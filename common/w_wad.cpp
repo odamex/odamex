@@ -258,7 +258,12 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 // Adds lumps from the array of filelump_t. If clientonly is true,
 // only certain lumps will be added.
 //
-void W_AddLumps(FILE* handle, const filelump_t* fileinfo, size_t newlumps, int filenum, bool clientonly)
+
+// MERGE ALERT
+// The lump file tracking here was backported from protobreak. When
+// merging stable into protobreak, keep protobreak's version.
+//
+void W_AddLumps(FILE* handle, const filelump_t* fileinfo, size_t newlumps, int filenum, bool /*clientonly*/)
 {
 	lumpinfo = (lumpinfo_t*) M_Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t));
 	if (!lumpinfo)
