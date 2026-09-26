@@ -247,6 +247,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	{
 		// Stop spying so you know you're back from the dead.
 		::displayplayer_id = ::consoleplayer_id;
+		CL_CheckDisplayPlayer();
 	}
 	p.lives = msg->player().lives();
 
@@ -1235,6 +1236,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		if (!netdemo.isPlaying())
 		{
 			::displayplayer_id = ::consoleplayer_id;
+			CL_CheckDisplayPlayer();
 		}
 	}
 

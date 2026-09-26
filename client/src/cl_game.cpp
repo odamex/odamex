@@ -868,6 +868,7 @@ void P_CheckInterpPause()
 }
 
 void CL_SimulateWorld();
+void CL_CheckDisplayPlayer();
 //
 // G_Ticker
 // Make ticcmd_ts for the players.
@@ -968,6 +969,20 @@ void G_Ticker (void)
 		C_AdjustBottom ();
 	}
 
+	// The freecam is only valid while dead and out of lives (or in a netdemo)
+	// Nothing checks the inverse, so check it here and reset the view when we hit it.
+	// MERGE ALERT
+	// When merging to protobreak, change:
+	// && not netdemo.isPlaying() && not netdemo.isPaused()
+	// to
+	// && not netdemo.isInPlayback()
+	if (displayplayer().isFreecam && not netdemo.isPlaying() && not netdemo.isPaused() &&
+	    not demoplayback && not Freecam::allowSpy())
+	{
+		displayplayer_id = consoleplayer_id;
+		CL_CheckDisplayPlayer();
+	}
+
 	buf = gametic % BACKUPTICS;
 
     // get commands
@@ -983,6 +998,9 @@ void G_Ticker (void)
 	else if (displayplayer().isFreecam)
 	{
 		memcpy(&displayplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
+
+		// Clear consoleplayer.cmd since they reapply every tic.
+		consoleplayer().cmd.clear();
 	}
 	else
 	{
