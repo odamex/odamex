@@ -29,6 +29,7 @@
 
 #include "odamex.h"
 
+#include <array>
 #include <cmath>
 
 #include "gstrings.h"
@@ -125,6 +126,8 @@ EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(hud_feedtime)
 EXTERN_CVAR(hud_extendedinfo)
+EXTERN_CVAR(cl_shotclock)
+EXTERN_CVAR(cl_shotclocksecondsleft)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
@@ -184,6 +187,7 @@ EXTERN_CVAR (snd_votesfx)
 // Joystick menu -- Hyper_Eye
 void JoystickSetup (void);
 EXTERN_CVAR (use_joystick)
+EXTERN_CVAR (joy_gamepadmode)
 EXTERN_CVAR (joy_active)
 EXTERN_CVAR (joy_forwardaxis)
 EXTERN_CVAR (joy_strafeaxis)
@@ -535,6 +539,17 @@ menu_t MouseMenu = {
  *
  *=======================================*/
 
+// MERGE ALERT
+// this conflicts when merging stable into protobreak - take protobreak's version
+// (the joystick menu there uses std::array).
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 3> GamepadModes = {{
+	{ 0.0, "Auto" },
+	{ 1.0, "Ignore Mouse" },
+	{ 2.0, "Always" }
+}};
+// NOLINTEND(readability-magic-numbers)
+
 static menuitem_t JoystickItems[] =
 {
 	{ discrete	,	"Use Joystick"							, {&use_joystick},		{2.0},		{0.0},		{0.0},		{OnOff}						},
@@ -543,6 +558,7 @@ static menuitem_t JoystickItems[] =
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
 	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
+	{ discrete	,	"Show Gamepad Buttons"					, {&joy_gamepadmode},	{GamepadModes.size()},	{0.0},		{0.0},		{GamepadModes.data()}		},
 	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
 	{ whitetext	,	"Sensitivity Settings"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
 	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
@@ -1008,6 +1024,9 @@ static value_t SecretOptions[] = {
     {3.0, "Own only"},
 };
 
+// MERGE ALERT
+// this conflicts when merging stable into protobreak - take protobreak's version
+// (the HUD menu there uses std::array).
 static value_t TimerStyles[] = {
     {0.0, "No Timer"}, {1.0, "Count Down"}, {2.0, "Count Up"}};
 
@@ -1034,6 +1053,10 @@ static menuitem_t HUDItems[] = {
     {discrete, "Player target names", {&hud_targetnames}, {2.0}, {0.0}, {0.0}, {HideShow}},
     // clang-format on
     {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
+    // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+    {discrete, "Shot Clock", {&cl_shotclock}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {slider, "Shot Clock Seconds", {&cl_shotclocksecondsleft}, {0.0}, {60.0}, {1.0}, {nullptr}},
+    // NOLINTEND(readability-magic-numbers)
     {discrete, "Speedometer", {&hud_speedometer}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {slider, "Feed Timeout", {&hud_feedtime}, {1.0}, {10.0}, {0.25}, {NULL}},
     {discrete, "Show Kills in Feed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
