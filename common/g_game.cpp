@@ -29,7 +29,6 @@
 
 void G_SetFast(const bool wantFast)
 {
-	static bool isFast = false;
 	if (wantFast != isFast)
 	{
 		for (auto&& [_, minfo] : mobjinfo)
