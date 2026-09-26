@@ -694,9 +694,12 @@ void AActor::RunThink ()
 		return;
 	}
 
-	prevx = x;
-	prevy = y;
-	prevz = z;
+	if (not player or not player->isFreecam)
+	{
+		prevx = x;
+		prevy = y;
+		prevz = z;
+	}
 
 	if (!player || P_IsVoodooDoll(this))
 	{
