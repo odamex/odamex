@@ -88,6 +88,8 @@ byte* R_GetTextureColumnData(int texnum, int colnum);
 void R_InitData (void);
 void R_PrecacheLevel (void);
 
+std::string R_FindTextureMissingPatch();
+
 
 // Retrieval.
 // Floor/ceiling opaque texture tiles,
