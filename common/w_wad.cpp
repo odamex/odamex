@@ -258,7 +258,12 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 // Adds lumps from the array of filelump_t. If clientonly is true,
 // only certain lumps will be added.
 //
-void W_AddLumps(FILE* handle, const filelump_t* fileinfo, size_t newlumps, bool clientonly)
+
+// MERGE ALERT
+// The lump file tracking here was backported from protobreak. When
+// merging stable into protobreak, keep protobreak's version.
+//
+void W_AddLumps(FILE* handle, const filelump_t* fileinfo, size_t newlumps, int filenum, bool /*clientonly*/)
 {
 	lumpinfo = (lumpinfo_t*) M_Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t));
 	if (!lumpinfo)
@@ -272,6 +277,7 @@ void W_AddLumps(FILE* handle, const filelump_t* fileinfo, size_t newlumps, bool 
 		lump->handle = handle;
 		lump->position = info->filepos;
 		lump->size = info->size;
+		lump->file = filenum;
 		lump->name = info->name;
 
 		lump++;
@@ -291,7 +297,7 @@ void W_AddLumps(FILE* handle, const filelump_t* fileinfo, size_t newlumps, bool 
 // Map reloads are supported through WAD reload so no need for vanilla tilde
 // reload hack here
 //
-void AddFile(const OResFile& file)
+void AddFile(const OResFile& file, int filenum)
 {
 	uqFile handle;
 	std::unique_ptr<filelump_t[]> fileinfo{};
@@ -364,7 +370,7 @@ void AddFile(const OResFile& file)
 		PrintFmt(PRINT_HIGH, " ({} lumps)\n", header.numlumps);
 	}
 
-	W_AddLumps(handle.release(), fileinfo.get(), newlumps, false);
+	W_AddLumps(handle.release(), fileinfo.get(), newlumps, filenum, false);
 }
 
 
@@ -434,6 +440,7 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 					newlumpinfos[0].handle = NULL;
 					newlumpinfos[0].position =
 						newlumpinfos[0].size = 0;
+					newlumpinfos[0].file = -1;
 					newlumpinfos[0].namespc = ns_global;
 				}
 			}
@@ -502,6 +509,7 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 		lumpinfo[numlumps].handle = NULL;
 		lumpinfo[numlumps].position =
 			lumpinfo[numlumps].size = 0;
+		lumpinfo[numlumps].file = -1;
 		lumpinfo[numlumps].namespc = ns_global;
 		numlumps++;
 	}
@@ -543,7 +551,7 @@ void W_InitMultipleFiles(const OResFiles& files)
 		if (std::find(loaded.begin(), loaded.end(), files.at(i).getMD5()) ==
 		    loaded.end())
 		{
-			AddFile(files.at(i));
+			AddFile(files.at(i), static_cast<int>(i));
 			loaded.push_back(files.at(i).getMD5());
 		}
 	}
@@ -965,6 +973,82 @@ int W_FindLump (const char *name, int lastlump)
 	}
 
 	return -1;
+}
+
+//
+// W_GetLumpFile
+//
+// Returns the index into wadfiles of the file a lump came from, or std::nullopt
+// if the engine generated the lump instead of reading it.
+//
+std::optional<size_t> W_GetLumpFile(unsigned lump)
+{
+	if (lump >= numlumps)
+		I_Error("{}: {} >= numlumps", __FUNCTION__, lump);
+
+	if (lumpinfo[lump].file < 0)
+		return std::nullopt;
+
+	return static_cast<size_t>(lumpinfo[lump].file);
+}
+
+//
+// W_LumpFileName
+//
+// Names the file a lump came from so error messages can point at it. Engine
+// lumps and out of range indices both come back as a placeholder, so callers
+// never have to guard the result.
+//
+std::string_view W_LumpFileName(unsigned lump)
+{
+	const std::optional<size_t> filenum = W_GetLumpFile(lump);
+
+	if (not filenum.has_value() or *filenum >= wadfiles.size())
+		return "an unknown file";
+
+	return wadfiles[*filenum].getBasename();
+}
+
+//
+// W_IsLumpFromPWAD
+//
+bool W_IsLumpFromPWAD(unsigned lump)
+{
+	const std::optional<size_t> filenum = W_GetLumpFile(lump);
+
+	return filenum.has_value() and *filenum >= WADFILE_FIRSTPWAD;
+}
+
+bool W_IsLumpFromPWAD(const char* name, namespace_t namespc)
+{
+	const int lump = W_CheckNumForName(name, namespc);
+
+	return lump >= 0 && W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+}
+
+//
+// W_IsLumpReplaced
+//
+// Returns true if an IWAD/Odamex lump was replaced by a PWAD.
+// 
+// If this lump didn't have an original to replace (meaning its
+// original to the PWAD) it will return false.
+//
+bool W_IsLumpReplaced(const char* name, namespace_t namespc)
+{
+	const int lump = W_CheckNumForName(name, namespc);
+
+	if (lump < 0 || !W_IsLumpFromPWAD(static_cast<unsigned>(lump)))
+		return false;
+
+	for (int i = lumpinfo[lump].next; i >= 0; i = lumpinfo[i].next)
+	{
+		if (!strnicmp(lumpinfo[i].name.c_str(), name, 8) &&
+		    lumpinfo[i].namespc == namespc)
+			return true;
+	}
+
+	return false;
 }
 
 //
