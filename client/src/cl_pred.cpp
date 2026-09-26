@@ -42,12 +42,14 @@ void P_MovePlayer (player_t& player);
 void P_CalcHeight (player_t& player);
 
 extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
-static PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
 
 bool predicting;
 
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
+namespace
+{
+std::array<PlayerSnapshot, MAXSAVETICS> cl_savedsnaps;
 
 //
 // CL_GetSnapshotManager
@@ -55,7 +57,7 @@ extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 // Returns the SectorSnapshotManager for the sector.
 // Returns NULL if a snapshots aren't currently stored for the sector.
 //
-static SectorSnapshotManager *CL_GetSectorSnapshotManager(sector_t *sector)
+SectorSnapshotManager *CL_GetSectorSnapshotManager(sector_t *sector)
 {
 	unsigned short sectornum = sector - sectors;
 	if (!sector || sectornum >= numsectors)
@@ -70,29 +72,11 @@ static SectorSnapshotManager *CL_GetSectorSnapshotManager(sector_t *sector)
 	return NULL;
 }
 
-static bool CL_SectorHasSnapshots(sector_t *sector)
+bool CL_SectorHasSnapshots(sector_t *sector)
 {
 	SectorSnapshotManager *mgr = CL_GetSectorSnapshotManager(sector);
 
 	return (mgr && !mgr->empty());
-}
-
-//
-// CL_SectorIsPredicting
-//
-// Returns true if the client is predicting sector
-//
-bool CL_SectorIsPredicting(sector_t *sector)
-{
-	if (!sector || !cl_predictsectors)
-		return false;
-
-	std::list<movingsector_t>::iterator itr = P_FindMovingSector(sector);
-	if (itr != movingsectors.end() && sector == itr->sector)
-		return (itr->moving_ceiling || itr->moving_floor);
-
-	// sector not found
-	return false;
 }
 
 //
@@ -102,7 +86,7 @@ bool CL_SectorIsPredicting(sector_t *sector)
 // server.  Also performs cleanup on the list of predicting sectors when
 // sectors have finished their movement.
 //
-static void CL_ResetSectors()
+void CL_ResetSectors()
 {
 	std::list<movingsector_t>::iterator itr;
 	itr = movingsectors.begin();
@@ -159,7 +143,7 @@ static void CL_ResetSectors()
 // CL_PredictSectors
 //
 //
-static void CL_PredictSectors(int predtic)
+void CL_PredictSectors(int predtic)
 {
 	for (const auto& movsector : movingsectors)
 	{
@@ -183,7 +167,7 @@ static void CL_PredictSectors(int predtic)
 //
 // Handles calling the thinker routines for the player being spied with spynext.
 //
-static void CL_PredictSpying()
+void CL_PredictSpying()
 {
 	player_t& player = displayplayer();
 	if (consoleplayer_id == displayplayer_id)
@@ -213,7 +197,7 @@ static void CL_PredictSpying()
 // CL_PredictRemotePlayers
 //
 //
-static void CL_PredictRemotePlayers()
+void CL_PredictRemotePlayers()
 {
 	for (auto& player : players)
 	{
@@ -231,7 +215,7 @@ static void CL_PredictRemotePlayers()
 // CL_PredictFreecam
 //
 //
-static void CL_PredictFreecam()
+void CL_PredictFreecam()
 {
 	player_t& player = displayplayer();
 	if (not player.isFreecam)
@@ -255,7 +239,7 @@ static void CL_PredictFreecam()
 // CL_PredictSpectator
 //
 //
-static void CL_PredictSpectator()
+void CL_PredictSpectator()
 {
 	player_t& player = consoleplayer();
 	if (!player.spectator)
@@ -273,12 +257,12 @@ static void CL_PredictSpectator()
 // CL_PredictLocalPlayer
 //
 //
-static void CL_PredictLocalPlayer(int predtic)
+bool CL_PredictLocalPlayer(int predtic)
 {
 	player_t& player = consoleplayer();
 
 	if (!player.ingame() || !player.mo || player.tic >= predtic)
-		return;
+		return false;
 
 	// Restore the angle, viewheight, etc for the player
 	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
@@ -295,28 +279,51 @@ static void CL_PredictLocalPlayer(int predtic)
 		P_MovePlayer(player);
 
 	player.mo->RunThink();
+	return true;
+}
+
+}   // anonymous namespace
+
+//
+// CL_SectorIsPredicting
+//
+// Returns true if the client is predicting sector
+//
+bool CL_SectorIsPredicting(sector_t *sector)
+{
+	if (not sector or not cl_predictsectors)
+		return false;
+
+	const auto itr = P_FindMovingSector(sector);
+	if (itr != movingsectors.end() and sector == itr->sector)
+		return (itr->moving_ceiling or itr->moving_floor);
+
+	// sector not found
+	return false;
 }
 
 //
 // CL_PredictWorld
 //
-// Main function for client-side prediction.
+// Main function for client-side prediction.  Returns true if the prediction included
+// actually stepping all the mobj thinkers for the current gametic, in which case, the
+// caller must take care to not step them again.
 //
-void CL_PredictWorld(void)
+bool CL_PredictWorld()
 {
 	if (gamestate != GS_LEVEL)
-		return;
+		return false;
 
 	if (netdemo.isPaused() && displayplayer().isFreecam)
 	{
 		CL_PredictFreecam();
-		return;
+		return false;
 	}
 
 	player_t& p = consoleplayer();
 
 	if (!validplayer(p) || !p.mo || noservermsgs || netdemo.isPaused())
-		return;
+		return false;
 
 	// tenatively tell the netgraph that our prediction was successful
 	netgraph.setMisprediction(false);
@@ -334,11 +341,11 @@ void CL_PredictWorld(void)
 	if (consoleplayer().spectator)
 	{
 		CL_PredictSpectator();
-		return;
+		return false;
 	}
 
 	if (p.tic <= 0)	// No verified position from the server
-		return;
+		return false;
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
@@ -353,11 +360,14 @@ void CL_PredictWorld(void)
 	PlayerSnapshot prevsnap(p.tic, p);
 	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
 
+	// Mobjs are already in the last position received from the server.
+	bool mobjsHaveBeenPredicted = false;
+
 	// Move sectors to the last position received from the server
 	if (cl_predictsectors)
 		CL_ResetSectors();
 
-	// Move the client to the last position received from the sever
+	// Move the client to the last position received from the server
 	int snaptime = p.snapshots.getMostRecentTime();
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
@@ -366,7 +376,21 @@ void CL_PredictWorld(void)
 	{
 		if (cl_predictsectors)
 			CL_PredictSectors(predtic);
-		CL_PredictLocalPlayer(predtic);
+
+		const bool playerWasPredicted = CL_PredictLocalPlayer(predtic);
+		if (playerWasPredicted and not mobjsHaveBeenPredicted)
+		{
+			mobjsHaveBeenPredicted = true;
+
+			// We're doing our genuine thinker step now, and it should almost always
+			// be on the tic following the latest from the server.  This ensures that
+			// mobj actions that reference the player's position are working from the
+			// player state that the server almost certainly had when it ran the tic
+			// for real.
+			predicting = false;
+			DThinker::RunThinkers();
+			predicting = true;
+		}
 	}
 
 	// If the player didn't just spawn or teleport, nudge the player from
@@ -398,6 +422,8 @@ void CL_PredictWorld(void)
 	if (cl_predictsectors)
 		CL_PredictSectors(gametic);
 	CL_PredictLocalPlayer(gametic);
+
+	return mobjsHaveBeenPredicted;
 }
 
 void CL_ResetWorldPrediction()
