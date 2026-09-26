@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -24,26 +24,23 @@
 
 #pragma once
 
-#include <string>
+#include <stdexcept>
 
-class CDoomError
+class CDoomError : public std::runtime_error
 {
 public:
-	CDoomError (std::string message) : m_Message(message) {}
-	std::string GetMsg (void) const { return m_Message;	}
-
-private:
-	std::string m_Message;
+	using std::runtime_error::runtime_error;
+	[[nodiscard]] const char* GetMsg() const noexcept { return what();	}
 };
 
 class CRecoverableError : public CDoomError
 {
 public:
-	CRecoverableError(std::string message) : CDoomError(message) {}
+	using CDoomError::CDoomError;
 };
 
 class CFatalError : public CDoomError
 {
 public:
-	CFatalError(std::string message) : CDoomError(message) {}
+	using CDoomError::CDoomError;
 };

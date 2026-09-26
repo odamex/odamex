@@ -1399,8 +1399,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	unsigned int lumpnum = (handle & ~PNG_HANDLE_MASK);
 	unsigned int lumplen = W_LumpLength(lumpnum);
 
-	char lumpname[9];
-	W_GetLumpName(lumpname, lumpnum);
+	const auto lumpname = W_GetOLumpName(lumpnum);
 
 	lumpdata = new byte[lumplen];
 	W_ReadLump(lumpnum, lumpdata);
