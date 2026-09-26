@@ -35,6 +35,7 @@
 #include "c_dispatch.h"
 #include "gi.h"
 #include "p_local.h"
+#include "p_mobj.h"
 #include "s_sound.h"
 #include "r_data.h"
 #include "g_game.h"
@@ -279,7 +280,10 @@ bool G_CheckSpot (player_t &player, const mapthing2_t& mthing)
 			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
 		}
-		return true;
+
+		// MERGE ALERT
+		// Keep protobreak's changes
+		return !P_AvatarBlocksSpot(x, y, z);
 	}
 
 	fixed_t oldz = player.mo->z;	// [RH] Need to save corpse's z-height
@@ -486,8 +490,14 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 	if (selections < 1)
 		I_Error("No appropriate team starts");
 
+	// MERGE ALERT
+	// Keep protobreak's changes
+	const mapthing2_t* spawnspot = spot;
+
 	if (!spot && !playerstarts.empty())
-		spot = &playerstarts[player.id%playerstarts.size()];
+	{
+		spawnspot = &P_GetPlayerStart(player.id - 1);
+	}
 	else
 	{
 		if (player.id < 4)
@@ -496,7 +506,7 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 			spot->type = player.id+4001-4;
 	}
 
-	P_SpawnPlayer(player, *spot);
+	P_SpawnPlayer(player, *spawnspot);
 }
 
 EXTERN_CVAR (sv_dmfarspawn)
@@ -527,10 +537,14 @@ void G_DeathMatchSpawnPlayer(player_t &player)
 	else
 		spot = SelectRandomDeathmatchSpot (player, selections);
 
+	// MERGE ALERT
+	// Keep protobreak's changes
+	const mapthing2_t* spawnspot = spot;
+
 	if (!spot && !playerstarts.empty())
 	{
 		// no good spot, so the player will probably get stuck
-		spot = &playerstarts[player.id%playerstarts.size()];
+		spawnspot = &P_GetPlayerStart(player.id - 1);
 	}
 	else
 	{
@@ -540,7 +554,7 @@ void G_DeathMatchSpawnPlayer(player_t &player)
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
 
-	P_SpawnPlayer (player, *spot);
+	P_SpawnPlayer (player, *spawnspot);
 }
 
 //
@@ -573,11 +587,13 @@ void G_DoReborn (player_t &player)
 	if(playerstarts.empty())
 		I_Error("No player starts");
 
-	unsigned int playernum = player.id - 1;
+	// MERGE ALERT
+	// Keep protobreak's changes
+	const mapthing2_t& start = P_GetPlayerStart(player.id - 1);
 
-	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, start) )
 	{
-		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, start);
 		return;
 	}
 
@@ -592,7 +608,7 @@ void G_DoReborn (player_t &player)
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, start);
 }
 
 VERSION_CONTROL (g_game_cpp, "$Id$")
