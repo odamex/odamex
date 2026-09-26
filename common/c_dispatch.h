@@ -162,6 +162,8 @@ struct ActionBits
 
 extern unsigned int MakeKey (const char *s);
 
+extern int GetActionBit(unsigned int key);
+
 // if non-empty, runs the contents of the cvar
 // with AddCommandString
 void C_RunCVarScriptHook(const cvar_t& var);
