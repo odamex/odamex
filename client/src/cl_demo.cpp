@@ -241,7 +241,7 @@ bool NetDemo::format_description_t::Write(std::fstream& io_stream) const
 	return false;
 }
 
-bool NetDemo::writeFormatDescription(std::fstream& io_stream) const
+bool NetDemo::writeFormatDescription(std::fstream& io_stream)
 {
 	if (io_stream.good())
 	{
@@ -352,6 +352,9 @@ void NetDemo::populateMessageIndexes()
 
 		switch (type)
 		{
+			case NetDemo::msg_packet:
+				break;
+
 			case NetDemo::msg_snapshot:
 				snapshot_index.emplace_back(tic, offset);
 				break;
@@ -377,6 +380,7 @@ void NetDemo::populateMessageIndexes()
 					        std::streamoff(currentPosition));
 				}
 				break;
+
 		}
 		if (eofWasFound)
 		{

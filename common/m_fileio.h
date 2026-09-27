@@ -49,21 +49,19 @@ bool M_ReadLE(std::istream& io_stream, ElementType& o_data)
 			                          little_endian_type());    // from
 			return true;
 		}
-		else
-		{
-			// We enter this condition if everything was good(), but we tried to read past the
-			// end-of-file.  In that case, both the eofbit and the failbit are set, either of
-			// which invalidate the .good() check.
-			//
-			// We want to be able to seek back from the EOF, and the seekg function clears
-			// the eofbit but not the failbit, preventing further reads from working.  Therefore
-			// we want to clear just the failbit here.  We're still safeguarded from past-EOF
-			// reads by the eofbit, so we're okay to do this.
-			//
-			// The end result is that the stream is left in the state as though the last read
-			// was successful (even though it really wasn't) and left us right at the EOF.
-			io_stream.clear(std::ios_base::eofbit);
-		}
+
+		// We enter this condition if everything was good(), but we tried to read past the
+		// end-of-file.  In that case, both the eofbit and the failbit are set, either of
+		// which invalidate the .good() check.
+		//
+		// We want to be able to seek back from the EOF, and the seekg function clears
+		// the eofbit but not the failbit, preventing further reads from working.  Therefore
+		// we want to clear just the failbit here.  We're still safeguarded from past-EOF
+		// reads by the eofbit, so we're okay to do this.
+		//
+		// The end result is that the stream is left in the state as though the last read
+		// was successful (even though it really wasn't) and left us right at the EOF.
+		io_stream.clear(std::ios_base::eofbit);
 	}
 	return false;
 }
@@ -87,13 +85,15 @@ bool M_ReadString(std::istream& io_stream, std::basic_string<CharType>& o_string
 	uint32_t stringLength = 0;
 	if (M_ReadLE(io_stream, stringLength))
 	{
-		bool result = true;
 		o_string.resize(stringLength);
 		for (auto& o_character : o_string)
 		{
-			result = result and M_ReadLE(io_stream, o_character);
+			if (not M_ReadLE(io_stream, o_character))
+			{
+				return false;
+			}
 		}
-		return result;
+		return true;
 	}
 	return false;
 }
@@ -126,15 +126,16 @@ bool M_WriteLE(std::ostream& io_stream, const ElementType (&i_dataArray)[N])
 template <typename CharType>
 bool M_WriteString(std::ostream& io_stream, const std::basic_string<CharType>& i_string)
 {
-	uint32_t stringLength = 0;
 	if (M_WriteLE(io_stream, static_cast<uint32_t>(i_string.length())))
 	{
-		bool result = true;
 		for (const auto& i_character : i_string)
 		{
-			result = result and M_WriteLE(io_stream, i_character);
+			if (not M_WriteLE(io_stream, i_character))
+			{
+				return false;
+			}
 		}
-		return result;
+		return true;
 	}
 	return false;
 }

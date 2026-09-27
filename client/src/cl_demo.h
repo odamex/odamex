@@ -122,7 +122,7 @@ private:
 	void writeChunk(const byte *data, size_t size, netdemo_message_t type);
 	bool writeHeader();
 	bool readHeader();
-	bool writeFormatDescription(std::fstream& io_stream) const;
+	static bool writeFormatDescription(std::fstream& io_stream);
 
 	bool atSnapshotInterval();
 
