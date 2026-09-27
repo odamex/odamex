@@ -3220,6 +3220,9 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	}
 }
 
+namespace
+{
+
 enum class TransportEnum
 {
 	AUTO,
@@ -3227,7 +3230,8 @@ enum class TransportEnum
 	RELIABLE
 };
 
-static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
+#if 0
+void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 {
 	// Don't use this function to update players.
 	if (mobj.player)
@@ -3263,23 +3267,123 @@ static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 		}
 	}
 }
+#else
+
+#endif
+
+class MobjUpdateQueues
+{
+    public:
+
+        void AddAuto(AActor* mobj)      { AddToQueue(m_onDemandMobjsAuto,       mobj); }
+        void AddBestEffort(AActor* mobj){ AddToQueue(m_onDemandMobjsBestEffort, mobj); }
+        void AddReliable(AActor* mobj)  { AddToQueue(m_onDemandMobjsReliable,   mobj); }
+
+        void Clear()
+        {
+            m_onDemandMobjsAuto.clear();
+            m_onDemandMobjsBestEffort.clear();
+            m_onDemandMobjsReliable.clear();
+        }
+
+        void UpdateToPlayer(player_t& player) const
+        {
+            if (not player.ingame())
+                return;
+
+            // One important detail about this function:
+            //
+            // This is specifically for mobjs that the application has determined need an on-demand /
+            // out-of-cycle update.  These are often because there's an important sequence of events.
+
+            // Start with Mobjs that the application code has determined REALLY need a reliable UpdateMobj.
+            UpdateQueueToPlayerQueues(m_onDemandMobjsReliable,
+                                      player.client.messenger->Reliable(),      // For full-awareness mobjs.
+                                      player.client.messenger->Reliable());     // For semi-awareness mobjs.
+
+            // Now for Mobjs that are handled normally / auto.  For on-demand Mobjs, prefer Reliable.
+            UpdateQueueToPlayerQueues(m_onDemandMobjsReliable,
+                                      player.client.messenger->Reliable(),      // For full-awareness mobjs.
+                                      player.client.messenger->BestEffort());   // For semi-awareness mobjs.
+            MessageQueue& fullAwareQueue = transport == TransportEnum::BEST_EFFORT ? player.client.messenger->BestEffort()
+                                                                                   : player.client.messenger->Reliable();
+            MessageQueue& semiAwareQueue = transport == TransportEnum::RELIABLE ? player.client.messenger->Reliable()
+                                                                                        : player.client.messenger->BestEffort();
+            // First, service things that were requested to be reliable, as such.
+        }
+
+    protected:
+
+        static void AddToQueue(std::vector<AActor::AActorPtr>& io_queue, AActor* mobj)
+        {
+            if (mobj and not mobj->player)
+            {
+                io_queue.emplace_back(mobj->ptr());
+            }
+        }
+
+        static void UpdateQueueToPlayerQueues(std::vector<AActor::AActorPtr>& io_queue,
+                                              MessageQueue&                   io_playerFullAwarenessQueue,
+                                              MessageQueue&                   io_playerSemiAwarenessQueue)
+        {
+            for (const auto& mobj : io_queue)
+            {
+                if (SV_IsPlayerAllowedToSee(player, mobj))
+                {
+                    switch (mobj.playersAware.Get(player.id))
+                    {
+                        case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
+                        case AwarenessEnum::BARELY_AWARE:
+                                                               break;
+
+                        case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
+                        case AwarenessEnum::FULLY_AWARE:
+                                                               mobj.updatedDuringLocalTic = gametic;
+                                                               fullAwareQueue.Write( message);
+                                                               break;
+
+                        case AwarenessEnum::SEMI_AWARE:
+                                                               mobj.updatedDuringLocalTic = gametic;
+                                                               semiAwareQueue.Write( message);
+                                                               break;
+                    }
+                }
+            }
+        }
+
+        std::vector<AActor::AActorPtr> m_onDemandMobjsAuto;
+        std::vector<AActor::AActorPtr> m_onDemandMobjsBestEffort;
+        std::vector<AActor::AActorPtr> m_onDemandMobjsReliable;
+};
+
+MobjUpdateQueues s_onDemandMobs;
+
+void ClearOnDemandMobjQueues()
+{
+    
+}
+
+}   // End of anonymous namespace.
 
 // Update the given actors data immediately, using standard Reliable and Best-effort transports as appropriate.
 void SV_UpdateMobj(AActor* mo)
 {
-	ImmediateUpdateMobj(*mo, TransportEnum::AUTO);
+	s_onDemandMobjsAuto.emplace_back(mo->ptr());
+	//ImmediateUpdateMobj(*mo, TransportEnum::AUTO);
 }
 
 // Update the given actors data immediately, ONLY using Best-effort transport.
 void SV_UpdateMobjBestEffort(AActor* mo)
 {
-	ImmediateUpdateMobj(*mo, TransportEnum::BEST_EFFORT);
+	s_onDemandMobjsBestEffort.emplace_back(mo->ptr());
+//	ImmediateUpdateMobj(*mo, TransportEnum::BEST_EFFORT);
 }
 
 // Update the given actors data immediately, ONLY using Reliable transport.
 void SV_UpdateMobjReliable(AActor* mo)
 {
-	ImmediateUpdateMobj(*mo, TransportEnum::RELIABLE);
+	s_onDemandMobjsReliable.emplace_back(mo->ptr());
+//	ImmediateUpdateMobj(*mo, TransportEnum::RELIABLE);
 }
 
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound)
