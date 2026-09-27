@@ -47,6 +47,7 @@
 #include "gi.h"
 #include "oscanner.h"
 #include "g_musinfo.h"
+#include "farchive.h"
 
 #define NORM_PITCH		128
 #define NORM_PRIORITY	64
@@ -126,16 +127,18 @@ CVAR_FUNC_IMPL (snd_channels)
 	S_Init (snd_sfxvolume, snd_musicvolume);
 }
 
-
-// whether songs are mus_paused
-static bool mus_paused;
-
-// music currently being played
-static struct mus_playing_t
+namespace
 {
-	std::string name;
-	int   handle;
-} mus_playing;
+	// whether songs are mus_paused
+	bool mus_paused;
+
+	// music currently being played
+	struct CurrentMusicType
+	{
+		std::string name;
+		bool        isLooping { false };
+	} mus_playing;
+}
 
 EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR (co_zdoomsound)
@@ -1252,7 +1255,8 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 		M_Free(data);
 	}
 
-	mus_playing.name = musicname;
+	mus_playing.name      = musicname;
+	mus_playing.isLooping = looping;
 }
 
 void S_StopMusic()
@@ -1262,6 +1266,30 @@ void S_StopMusic()
 	mus_playing.name.clear();
 }
 
+void P_SerializeMusic(FArchive& arc)
+{
+	if (arc.IsStoring())
+	{
+		arc << mus_playing.name;
+		arc << mus_playing.isLooping;
+	}
+	else
+	{
+		CurrentMusicType temp;
+		arc >> temp.name;
+		arc >> temp.isLooping;
+
+		// The following functions set mus_playing accordingly.
+		if (temp.name.empty())
+		{
+			S_StopMusic();
+		}
+		else
+		{
+			S_ChangeMusic(temp.name, temp.isLooping);
+		}
+	}
+}
 
 
 // [RH] ===============================

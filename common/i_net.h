@@ -214,6 +214,9 @@ enum msg_t
 	msg_noop,
 	msg_ack,
 	msg_header,
+	msg_largemessagestart,
+	msg_largemessagefragment,
+	msg_largemessageend,
 
 	clc_netdemocap,         // netdemos - NullPoint
 	clc_netdemostop,        // netdemos - NullPoint
@@ -620,7 +623,7 @@ public:
 			// Read part of the variant.
 			b = ReadByte();
 			if (overflowed)
-				return -1;
+				return 0;
 
 			// Shove the first seven bits into our output variable.
 			out |= static_cast<unsigned int>(b & 0x7F) << offset;
@@ -637,7 +640,7 @@ public:
 			{
 				// Our variant int is too big - overflow us.
 				overflowed = true;
-				return -1;
+				return 0;
 			}
 		}
 	}

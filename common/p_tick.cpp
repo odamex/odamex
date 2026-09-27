@@ -48,7 +48,7 @@ void P_AnimationTick(AActor *mo);
 //
 // P_Ticker
 //
-void P_Ticker (void)
+void P_Ticker (bool runAllThinkers)
 {
 #ifdef CLIENT_APP
 	if (paused && displayplayer().isFreecam)
@@ -90,7 +90,10 @@ void P_Ticker (void)
 		P_AnimationTick(player.mo);
 	}
 
-	DThinker::RunThinkers ();
+	if (runAllThinkers)
+	{
+		DThinker::RunThinkers ();
+	}
 
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();

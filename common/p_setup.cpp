@@ -2219,7 +2219,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	level.level_fingerprint.clear();
 	wminfo.partime = 180;
 
-	if (!savegamerestore)
+	if (not savegamerestore)
 	{
 		for (auto& player : players)
 		{
@@ -2231,7 +2231,17 @@ void P_SetupLevel (const char *lumpname, int position)
 	consoleplayer().viewz = 1;
 
 	// Make sure all sounds are stopped before Z_FreeTags.
-	S_Start ();
+	if (not savegamerestore)
+	{
+		S_Start ();
+	}
+	else
+	{
+		// When loading from a snapshot, we stop the sound effects but leave the music going.
+		// Once we get through level setup, we decide whether to stop, start, or continue the
+		// music based on the snapshot content.
+		S_StopAllChannels();
+	}
 
 	S_ClearMusInfo();
 

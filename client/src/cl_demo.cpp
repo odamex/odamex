@@ -1455,7 +1455,6 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	arc << level.mapname.c_str();
 	arc << static_cast<byte>(gamestate == GS_INTERMISSION);
 
-	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
 	P_SerializeACSDefereds(arc);
 	P_SerializeHorde(arc);
@@ -1496,6 +1495,10 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	}
 
 	arc << rollerState;
+
+	// Storing the level-snapshots at this location is critically important.  Please see corresponding
+	// comment in readSnapshotData.
+	G_SerializeSnapshots(arc);
 
 	P_SerializeSprees(arc);
 
@@ -1589,7 +1592,6 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	arc >> mapname;
 	arc >> intermission;
 
-	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
 	P_SerializeACSDefereds(arc);
 	P_SerializeHorde(arc);
@@ -1639,6 +1641,12 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	serverside = false;
 
 	G_LoadWad(newwadfiles, newpatchfiles);
+
+	// We read the level snapshots AFTER loading the wads because it's entirely possible that D_Shutdown
+	// was needed in order to make a Wad Reboot happen across an unnatural level progression.  If that
+	// happens, all level snapshots are wiped out unconditionally.  So by loading the level-snapshot
+	// after the Load Wad operation, we ensure that it'll be present for level initialization.
+	G_SerializeSnapshots(arc);
 
 	G_InitNew(mapname);
 	displayplayer_id = consoleplayer_id = 1;

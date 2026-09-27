@@ -28,6 +28,7 @@
 #define MAX_SNDNAME 63
 
 class AActor;
+class FArchive;
 class player_t;
 
 //
@@ -171,6 +172,8 @@ void S_StopMusic();
 // Stop and resume music, during game PAUSE.
 void S_PauseMusic();
 void S_ResumeMusic();
+
+void P_SerializeMusic(FArchive& arc);
 
 //
 // Updates music & sounds

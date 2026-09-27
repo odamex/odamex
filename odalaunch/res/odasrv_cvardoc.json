@@ -614,6 +614,13 @@
       {
          "default" : true,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to use crosshair",
+         "name" : "sv_allowcrosshair",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
          "helptext" : "Allow use of Exit switch/teleports in all game modes",
          "name" : "sv_allowexit",
          "type" : "boolean"

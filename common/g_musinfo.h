@@ -34,4 +34,3 @@ inline struct musinfo_t
 void G_ParseMusInfo();
 void P_CheckMusicChange();
 void S_ClearMusInfo();
-void P_SerializeMusInfo(FArchive &arc);
