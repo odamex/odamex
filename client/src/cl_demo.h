@@ -19,9 +19,8 @@ public:
 	NetDemo(NetDemo&&) = default;
 	NetDemo& operator=(NetDemo&&) = default;
 
-
-	bool startPlaying(const std::string &filename);
-	bool startRecording(const std::string &filename);
+	bool startPlaying(const std::string& filename);
+	bool startRecording(const std::string& filename);
 	bool stopPlaying();
 	bool stopRecording();
 	bool pause();
@@ -75,7 +74,8 @@ private:
 		msg_packet      = 0xAA,
 		msg_snapshot,
 		msg_map_change,
-		msg_eof
+		msg_eof,
+		msg_format_description
 	};
 
 	struct message_header_t
@@ -83,12 +83,20 @@ private:
 		byte        type    { 0 };
 		uint32_t    length  { 0 };
 		uint32_t    gametic { 0 };
+
+		bool Write(std::fstream& io_stream) const;
 	};
 
 	struct netdemo_index_entry_t
 	{
 		uint32_t        ticnum  { 0 };
 		std::streampos  offset  { 0 };  // offset in the demo file
+
+		netdemo_index_entry_t(uint32_t i_ticnum, std::streampos i_offset) :
+		    ticnum { i_ticnum },
+		    offset { i_offset }
+		{
+		}
 
 		auto operator<=>(const netdemo_index_entry_t& other) const
 		{
@@ -114,6 +122,7 @@ private:
 	void writeChunk(const byte *data, size_t size, netdemo_message_t type);
 	bool writeHeader();
 	bool readHeader();
+	static bool writeFormatDescription(std::fstream& io_stream);
 
 	bool atSnapshotInterval();
 
@@ -169,7 +178,7 @@ private:
 		bool Read(std::fstream& io_stream);
 	};
 
-    // Now for the current netdemo version.
+	// Now for the current netdemo version.
 	struct netdemo_header4_t
 	{
 		netdemo_header_id_t id      {};             // version 4
@@ -190,6 +199,22 @@ private:
 		}
 	};
 
+	// The type declaration of msg_format_description
+	struct format_description_t
+	{
+		std::string build;
+
+		// TODO: information pertaining to encoding format so that external tooling can know
+		//       how to decode the application-layer message content.
+
+		bool Read(std::fstream& io_stream);
+		bool Write(std::fstream& io_stream) const;
+		void Clear()
+		{
+			build.clear();
+		}
+	};
+
 	netdemo_state_t state   { st_stopped };
 	netdemo_state_t oldstate{ st_stopped };   // used when unpausing
 	std::string     filename{ };
@@ -198,9 +223,12 @@ private:
 	MessageQueue      captured {};
 	buf_t             workingBuffer {MAX_UDP_PACKET};
 
-	netdemo_header4_t   header        {};
-	SnapshotVector      snapshot_index{};
-	SnapshotVector      map_index     {};
+	netdemo_header4_t       header;
+	SnapshotVector          snapshot_index;
+	SnapshotVector          map_index;
+	format_description_t    format_description;
+
+	static const format_description_t this_build_description;
 
 	buf_t               outputBuffer    { NETDEMO_STARTUP_PACKET_SIZE };
 	std::vector<byte>   snapbuf         { };
