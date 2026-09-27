@@ -19,15 +19,8 @@ public:
 	NetDemo(NetDemo&&) = default;
 	NetDemo& operator=(NetDemo&&) = default;
 
-
 	bool startPlaying(const std::string& filename);
-#if 0
-	bool startRecording(const std::string& filename,
-	                    const std::string& buildId,
-	                    encoding_e         messageEncoding);
-#else
 	bool startRecording(const std::string& filename);
-#endif
 	bool stopPlaying();
 	bool stopRecording();
 	bool pause();
@@ -82,7 +75,7 @@ private:
 		msg_snapshot,
 		msg_map_change,
 		msg_eof,
-		msg_content_description
+		msg_format_description
 	};
 
 	struct message_header_t
@@ -123,7 +116,7 @@ private:
 	void writeChunk(const byte *data, size_t size, netdemo_message_t type);
 	bool writeHeader();
 	bool readHeader();
-	bool writeContentDescription(std::fstream& io_stream) const;
+	bool writeFormatDescription(std::fstream& io_stream) const;
 
 	bool atSnapshotInterval();
 
@@ -200,8 +193,8 @@ private:
 		}
 	};
 
-	// The type declaration of msg_content_description
-	struct content_description_t
+	// The type declaration of msg_format_description
+	struct format_description_t
 	{
 		std::string build;
 
@@ -227,9 +220,9 @@ private:
 	netdemo_header4_t       header;
 	SnapshotVector          snapshot_index;
 	SnapshotVector          map_index;
-	content_description_t   content_description;
+	format_description_t    format_description;
 
-	static const content_description_t this_build_description;
+	static const format_description_t this_build_description;
 
 	buf_t               outputBuffer    { NETDEMO_STARTUP_PACKET_SIZE };
 	std::vector<byte>   snapbuf         { };

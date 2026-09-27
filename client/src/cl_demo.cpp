@@ -83,7 +83,7 @@ int LatestDemoVersion(const int version)
 	}
 }
 
-const NetDemo::content_description_t NetDemo::this_build_description { .build = std::string(NiceVersion()) + " - " +  GitHash()};
+const NetDemo::format_description_t NetDemo::this_build_description { .build = std::string(NiceVersion()) + ":" +  GitHash()};
 
 NetDemo::~NetDemo()
 {
@@ -223,7 +223,7 @@ bool NetDemo::netdemo_header4_t::Read(std::fstream& io_stream)
 	return false;
 }
 
-bool NetDemo::content_description_t::Read(std::fstream& io_stream)
+bool NetDemo::format_description_t::Read(std::fstream& io_stream)
 {
 	if (io_stream.good())
 	{
@@ -232,7 +232,7 @@ bool NetDemo::content_description_t::Read(std::fstream& io_stream)
 	return false;
 }
 
-bool NetDemo::content_description_t::Write(std::fstream& io_stream) const
+bool NetDemo::format_description_t::Write(std::fstream& io_stream) const
 {
 	if (io_stream.good())
 	{
@@ -241,13 +241,13 @@ bool NetDemo::content_description_t::Write(std::fstream& io_stream) const
 	return false;
 }
 
-bool NetDemo::writeContentDescription(std::fstream& io_stream) const
+bool NetDemo::writeFormatDescription(std::fstream& io_stream) const
 {
 	if (io_stream.good())
 	{
 		message_header_t msgheader;
 
-		msgheader.type    = static_cast<byte>(NetDemo::msg_content_description);
+		msgheader.type    = static_cast<byte>(NetDemo::msg_format_description);
 		msgheader.length  = 0;
 		msgheader.gametic = gametic;
 
@@ -365,15 +365,15 @@ void NetDemo::populateMessageIndexes()
 				eofWasFound = true;
 				break;
 
-			case NetDemo::msg_content_description:
-				if (content_description.build.empty())
+			case NetDemo::msg_format_description:
+				if (format_description.build.empty())
 				{
-					content_description.Read(demofp);
+					format_description.Read(demofp);
 				}
 				else
 				{
 					PrintFmt(PRINT_WARNING,
-					        "Additional netdemo content_description at {0:#x}!  Ignoring...\n",
+					        "Additional netdemo format_description at {0:#x}!  Ignoring...\n",
 					        std::streamoff(currentPosition));
 				}
 				break;
@@ -438,9 +438,9 @@ bool NetDemo::startRecording(const std::string &filename)
 		return false;
 	}
 
-	if (not writeContentDescription(demofp))
+	if (not writeFormatDescription(demofp))
 	{
-		error("Unable to write netdemo content description.");
+		error("Unable to write netdemo format description.");
 		return false;
 	}
 
@@ -547,19 +547,19 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-	content_description.Clear();
+	format_description.Clear();
 
 	populateMessageIndexes();
 
-	if (content_description.build.empty())
+	if (format_description.build.empty())
 	{
-		PrintFmt(PRINT_WARNING, "This demo did not supply any content description!  Proceeding at risk...\n");
+		PrintFmt(PRINT_WARNING, "This demo did not supply any format description!  Proceeding at risk...\n");
 	}
-	else if (content_description.build != this_build_description.build)
+	else if (format_description.build != this_build_description.build)
 	{
-		PrintFmt(PRINT_WARNING, "This demo was recorded with a different build: {}\n", content_description.build);
+		PrintFmt(PRINT_WARNING, "This demo was recorded with a different build: {}\n", format_description.build);
 	}
-	DPrintFmt("Netdemo recorded with build {}\n", content_description.build);
+	DPrintFmt("Netdemo recorded with build {}\n", format_description.build);
 
 	// get set up to read server cmds
 	demofp.seekg(NetDemo::HEADER_SIZE, std::ios::beg);
