@@ -147,21 +147,12 @@
          "type" : "string"
       },
       {
-         "default" : 0.5,
-         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
-         "helptext" : "Scale height of overlay minimap",
-         "max" : 1.0,
-         "min" : 0.0,
-         "name" : "am_ovscaleheight",
-         "type" : "number"
-      },
-      {
          "default" : 0.25,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
-         "helptext" : "Scale width of overlay minimap",
+         "helptext" : "Scale size of overlay minimap",
          "max" : 1.0,
          "min" : 0.0,
-         "name" : "am_ovscalewidth",
+         "name" : "am_ovscalesize",
          "type" : "number"
       },
       {
