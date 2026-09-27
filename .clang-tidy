@@ -78,3 +78,6 @@ CheckOptions:
   # enforce consistent operator style
   - key: readability-operators-representation.BinaryOperators
     value: and;or;not;&;|;^;~;&=;|=;^=;!=
+  # use stdint type names instead of google type names
+  - key: google-runtime-int.TypeSuffix
+    value: _t
