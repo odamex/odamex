@@ -92,6 +92,12 @@ private:
 		uint32_t        ticnum  { 0 };
 		std::streampos  offset  { 0 };  // offset in the demo file
 
+		netdemo_index_entry_t(uint32_t i_ticnum, std::streampos i_offset) :
+		    ticnum { i_ticnum },
+		    offset { i_offset }
+		{
+		}
+
 		auto operator<=>(const netdemo_index_entry_t& other) const
 		{
 			return ticnum <=> other.ticnum;
