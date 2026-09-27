@@ -1365,12 +1365,6 @@ std::array<value_t, 6> MinimapLocations = {{
 	{ .value = 5.0, .name = "Right Bottom"},
 }};
 
-std::array<value_t, 3> MinimapScaleLock = {{
-	{.value = 0.0, .name = "None"},
-	{.value = 1.0, .name = "Width"},
-	{.value = 2.0, .name = "Height"},
-}};
-
 std::array<menuitem_t, 21> AutomapItems = {{
 	{ .type = discrete, .label = "Rotate automap",		.a = {.cvar = &am_rotate},		   	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
 	{ .type = discrete, .label = "Overlay automap",		.a = {.cvar = &am_overlay},			.b = {.leftval = Overlays.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Overlays.data()}},
