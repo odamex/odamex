@@ -998,9 +998,7 @@ EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR(hud_targetnames)
 EXTERN_CVAR(am_ovminimap)
 EXTERN_CVAR(am_ovlocation)
-EXTERN_CVAR(am_ovscalelock)
-EXTERN_CVAR(am_ovscalewidth)
-EXTERN_CVAR(am_ovscaleheight)
+EXTERN_CVAR(am_ovscalesize)
 
 namespace
 {
@@ -1373,7 +1371,7 @@ std::array<value_t, 3> MinimapScaleLock = {{
 	{.value = 2.0, .name = "Height"},
 }};
 
-std::array<menuitem_t, 23> AutomapItems = {{
+std::array<menuitem_t, 21> AutomapItems = {{
 	{ .type = discrete, .label = "Rotate automap",		.a = {.cvar = &am_rotate},		   	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
 	{ .type = discrete, .label = "Overlay automap",		.a = {.cvar = &am_overlay},			.b = {.leftval = Overlays.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Overlays.data()}},
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -1396,9 +1394,7 @@ std::array<menuitem_t, 23> AutomapItems = {{
 	{ .type = yellowtext, .label = "Overlay Minimap Options", .a = {.cvar = nullptr},			.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
 	{ .type = discrete, .label = "Enable Minimap",		.a = {.cvar = &am_ovminimap},		.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
 	{ .type = discrete, .label = "Location",				.a = {.cvar = &am_ovlocation},		.b = {.leftval = MinimapLocations.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = MinimapLocations.data()}},
-	{ .type = discrete, .label = "Scale Lock",				.a = {.cvar = &am_ovscalelock},		.b = {.leftval = MinimapScaleLock.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = MinimapScaleLock.data()}},
-	{ .type = slider,	.label = "Scale Width",			.a = {.cvar = &am_ovscalewidth},		.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
-	{ .type = slider,	.label = "Scale Height",			.a = {.cvar = &am_ovscaleheight},	.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Scale Size",			.a = {.cvar = &am_ovscalesize},		.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
 }};
 // NOLINTEND(readability-magic-numbers)
 

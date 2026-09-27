@@ -199,15 +199,9 @@ CVAR(					am_ovbackcolor, "00 00 00", "Overlay minimap background color",
 CVAR_RANGE(				am_ovbackalpha, "0.25", "Transparency of overlay minimap background",
 						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR_RANGE(				am_ovscalewidth, "0.25", "Scale width of overlay minimap",
-						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
-
-CVAR_RANGE(				am_ovscaleheight, "0.5", "Scale height of overlay minimap",
-						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
-
-CVAR_RANGE(				am_ovscalelock, "2", "Overlay minimap scale lock (0:None, 1:Width, 2:Height)",
+CVAR_RANGE(				am_ovscalesize, "0.25", "Scale size of overlay minimap",
 						// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
-						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR_RANGE(				am_ovlocation, "1", "Overlay minimap location (0:LeftTop, 1:LeftMid, 2:LeftBot, 3:RightTop, 4:RightMid, 5:RightBot)",
 						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
