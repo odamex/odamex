@@ -2319,7 +2319,7 @@ enum infighting_group_t
 {
 	IG_DEFAULT,
 	// IG_CENTAUR,	// UNUSED
-	IG_END
+	IG_END,
 };
 
 enum projectile_group_t
@@ -2327,13 +2327,16 @@ enum projectile_group_t
 	PG_GROUPLESS = -1,
 	PG_DEFAULT,
 	PG_BARON,
-	PG_END
+	PG_TYRANT,
+	PG_END,
 };
 
 enum splash_group_t
 {
 	SG_DEFAULT,
-	SG_END
+	SG_VASSAGO,
+	SG_TYRANT,
+	SG_END,
 };
 
 /// This enum describes the top-level mode of operation of the mobj based on transitions into the
