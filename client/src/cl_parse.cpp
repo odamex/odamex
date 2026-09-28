@@ -1356,12 +1356,13 @@ void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 			default:
 				break;
 		}
-		if (mo->state->statenum != msg->state())
-		{
-			P_SetMobjState(mo, msg->state());
-		}
-		mo->tics = msg->tics();
 	}
+
+	if (mo->state->statenum != msg->state())
+	{
+		P_SetMobjState(mo, msg->state());
+	}
+	mo->tics = msg->tics();
 
 	// Now apply the update mobj, on the off chance that a mode change caused
 	// us to mispredict the fine-grained position, momentum, angle, etc.
