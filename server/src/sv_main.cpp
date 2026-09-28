@@ -3221,6 +3221,8 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	}
 }
 
+// The following block is left here commented out for future generations.
+// This block shows how an immediate update mobj
 #if 0
 namespace
 {
@@ -3464,7 +3466,6 @@ void SV_UpdateAvatars(player_t& player)
 	{
 		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
 		{
-			voodooInfo.mobj->updatedDuringLocalTic = gametic;    // Avoid a potential duplicate send.
 			player.client.messenger->HighPriority().Write( SVC_UpdateMobj(*voodooInfo.mobj));
 		}
 	}
@@ -5337,13 +5338,11 @@ void SV_ExplodeMissile(AActor *mo)
 
 			case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
 			case AwarenessEnum::FULLY_AWARE:
-				mo->updatedDuringLocalTic = gametic;
 				player.client.messenger->Reliable().Write (SVC_UpdateMobj(*mo));
 				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
 
 			case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
-				mo->updatedDuringLocalTic = gametic;
 				player.client.messenger->BestEffort().Write( SVC_UpdateMobj(*mo));
 				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
