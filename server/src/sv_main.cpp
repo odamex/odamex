@@ -3349,20 +3349,20 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 		return;
 
 	// update monster position every 7 tics or if we have a specific request to update this mobj specifically.
-	if ((gametic+mo->netid) % 7 and not mo->updatedDuringLocalTic == gametic)
-		return;
-
-	if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
+	if (((gametic+mo->netid) % 7) == 0 or mo->updatedDuringLocalTic == gametic)
 	{
-		switch (mo->playersAware.Get(player.id))
+		if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
 		{
-			case AwarenessEnum::NOT_AWARE:             [[ fallthrough ]];
-			case AwarenessEnum::BARELY_AWARE:
-				break;
+			switch (mo->playersAware.Get(player.id))
+			{
+				case AwarenessEnum::NOT_AWARE:             [[ fallthrough ]];
+				case AwarenessEnum::BARELY_AWARE:
+					break;
 
-			default:
-				player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
-				break;
+				default:
+					player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
+					break;
+			}
 		}
 	}
 }
