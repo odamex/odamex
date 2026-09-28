@@ -1237,7 +1237,7 @@ void DPlaneWatcher::RunThink ()
 
 			if (P_JustTeleported(Activator))
 			{
-				SV_ArmMobj(Activator);
+				SV_UpdateMobj(Activator);
 				P_ClearJustTeleported();
 			}
 		}
@@ -1742,7 +1742,7 @@ void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activ
 		SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2, arg3, arg4);
 		if (P_JustTeleported(activator))
 		{
-			SV_ArmMobj(activator);
+			SV_UpdateMobj(activator);
 			P_ClearJustTeleported();
 		}
 	}
