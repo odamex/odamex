@@ -122,8 +122,7 @@ void SV_BroadcastNoiseAlert(const sector_t& sector);
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
-void SV_UpdateMobj(AActor* mo);
-void SV_UpdateMobjBestEffort(AActor* mo);
+void SV_ArmMobj(AActor* mo);
 void SV_UpdateMonsterRespawnCount();
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound);
 
@@ -2392,7 +2391,7 @@ void A_Tracer (AActor *actor)
 		//
 		// This specific call is required to make sure we get elevated-rate updates for
 		// non-MT_TRACER mobjs that use A_Tracer.
-		SV_UpdateMobjBestEffort(actor);
+		SV_ArmMobj(actor);
 	}
 }
 
@@ -2931,7 +2930,7 @@ void A_MonsterProjectile(AActor* actor)
 	// can be used to fire seeker missiles at will.
 	mo->tracer = actor->target;
 
-	SV_UpdateMobj(mo);
+	SV_ArmMobj(mo);
 }
 
 //
@@ -3159,7 +3158,7 @@ void A_SeekTracer(AActor* actor)
 	if (P_SeekerMissile(actor, actor->tracer, threshold, maxturnangle, true))
 	{
 		actor->flags2 |= MF2_SEEKERMISSILE;
-		SV_UpdateMobj(actor);
+		SV_ArmMobj(actor);
 	}
 	else
 	{
@@ -3198,7 +3197,7 @@ void A_FindTracer(AActor* actor)
 	actor->tracer = tracer->ptr();
 
 	actor->flags2 |= MF2_SEEKERMISSILE;
-	SV_UpdateMobj(actor);
+	SV_ArmMobj(actor);
 }
 
 //
@@ -3213,7 +3212,7 @@ void A_ClearTracer(AActor* actor)
 	actor->tracer = AActor::AActorPtr();
 
 	actor->flags2 &= ~MF2_SEEKERMISSILE;
-	SV_UpdateMobj(actor);
+	SV_ArmMobj(actor);
 }
 
 //

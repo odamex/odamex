@@ -59,9 +59,7 @@ void SV_SpawnHighPriorityMobj(AActor*) {}
 void SV_SpawnMobj(AActor *mobj) {}
 void SV_TouchSpecial(AActor& special, player_t& player) {}
 void SV_UpdateFrags(player_t &player) {}
-void SV_UpdateMobj(AActor* mo) {}
-void SV_UpdateMobjBestEffort(AActor* mo) {}
-void SV_UpdateMobjReliable(AActor* mo) {}
+void SV_ArmMobj(AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 void SV_UpdateMonsterRespawnCount() {}
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound) {};

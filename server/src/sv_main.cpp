@@ -3172,7 +3172,8 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	                                     mo->target != player.mo and        // Players are not hyperaware of their own missiles.
 	                                     awarenessLevel == AwarenessEnum::ALWAYS_AWARE and
 	                                     sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
-	if (isHyperAware)
+
+	if (isHyperAware or mo->updatedDuringLocalTic == gametic)
 	{
 		player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
 	}
@@ -3220,6 +3221,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	}
 }
 
+#if 0
 namespace
 {
 
@@ -3230,7 +3232,6 @@ enum class TransportEnum
 	RELIABLE
 };
 
-#if 0
 void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 {
 	// Don't use this function to update players.
@@ -3255,21 +3256,16 @@ void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 
 				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
 				case AwarenessEnum::FULLY_AWARE:
-					mobj.updatedDuringLocalTic = gametic;
 					fullAwareQueue.Write( message);
 					break;
 
 				case AwarenessEnum::SEMI_AWARE:
-					mobj.updatedDuringLocalTic = gametic;
 					semiAwareQueue.Write( message);
 					break;
 			}
 		}
 	}
 }
-#else
-
-#endif
 
 class MobjUpdateQueues
 {
@@ -3334,18 +3330,16 @@ class MobjUpdateQueues
                     {
                         case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
                         case AwarenessEnum::BARELY_AWARE:
-                                                               break;
+                            break;
 
                         case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
                         case AwarenessEnum::FULLY_AWARE:
-                                                               mobj.updatedDuringLocalTic = gametic;
-                                                               fullAwareQueue.Write( message);
-                                                               break;
+                            io_playerFullAwarenessQueue.Write(message);
+                            break;
 
                         case AwarenessEnum::SEMI_AWARE:
-                                                               mobj.updatedDuringLocalTic = gametic;
-                                                               semiAwareQueue.Write( message);
-                                                               break;
+                            io_playerSemiAwarenessQueue.Write(message);
+                            break;
                     }
                 }
             }
@@ -3358,13 +3352,15 @@ class MobjUpdateQueues
 
 MobjUpdateQueues s_onDemandMobs;
 
-void ClearOnDemandMobjQueues()
+}   // End of anonymous namespace.
+#endif
+
+void SV_ArmMobj(AActor* mobj)
 {
-    
+    mobj->updatedDuringLocalTic = gametic;
 }
 
-}   // End of anonymous namespace.
-
+#if 0
 // Update the given actors data immediately, using standard Reliable and Best-effort transports as appropriate.
 void SV_UpdateMobj(AActor* mo)
 {
@@ -3385,6 +3381,7 @@ void SV_UpdateMobjReliable(AActor* mo)
 	s_onDemandMobjsReliable.emplace_back(mo->ptr());
 //	ImmediateUpdateMobj(*mo, TransportEnum::RELIABLE);
 }
+#endif
 
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound)
 {
@@ -3434,7 +3431,6 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 	if (mo->flags & MF_CORPSE)
 		return;
 
-
 	const bool isAMonster = mo->oflags & MFO_MOVESLIKEAMONSTER
 	                        or mo->flags & MF_COUNTKILL
 	                        or mo->type == MT_SKULL;
@@ -3443,8 +3439,8 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 	if (not isAMonster)
 		return;
 
-	// update monster position every 7 tics
-	if ((gametic+mo->netid) % 7)
+	// update monster position every 7 tics or if we have a specific request to update this mobj specifically.
+	if ((gametic+mo->netid) % 7 and not mo->updatedDuringLocalTic == gametic)
 		return;
 
 	if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
