@@ -3183,25 +3183,10 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 		if (mo->type == MT_PLASMA)
 			return;
 
-		// Revenant tracers, seekers, and Mancubus fireballs need to be updated more often.
-		const bool needsMoreFrequentUpdates = (mo->type  == MT_TRACER
-		                                    or mo->type  == MT_FATSHOT
-		                                    or mo->flags2 & MF2_SEEKERMISSILE);
+		// Mancubus fireballs need to be updated more often.
+		const bool needsMoreFrequentUpdates = mo->type == MT_FATSHOT;
 
-		// There's special knowledge about Revenant tracers here.  We try hard to keep their
-		// server->client updates such that client-visible behavior is as vanilla-like as possible.
-		// Specifically we send out their updates immediately after the A_Tracer logic should have
-		// run and applied (if it's going to apply - see the funky timing logic there).  This means
-		// a rate divisor of 4 and the frame count being the mobjtic value that it had on this tic.
-		// In other words, we subtract 1 because the mobjtic was incremented after RunThink.
-
-		// On top of all that, we have to make this check anyway because if something's an MT_TRACER,
-		// but has been specially dehacked to use a thinker routine other than A_Tracer, we want to
-		// ensure that it still gets an appropriately-scheduled, elevated update cycle.  Please note
-		// that there's a counter-part check in A_Tracer that covers the opposite case.
-
-		const int updateTic = mo->type == MT_TRACER ? mo->mobjtic - 1       // rev shot?  update right away.
-		                                            : gametic + mo->netid;  // Anything else?  Be fair with the bandwidth.
+		const int updateTic = gametic + mo->netid;  // Be fair with the bandwidth.
 		const int divisor   = needsMoreFrequentUpdates ? 4 : 30;
 		const int phase     = updateTic % divisor;
 
