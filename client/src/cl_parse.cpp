@@ -1324,6 +1324,10 @@ void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 		return;
 	}
 
+	// Keep action-internal tic checks in sync, and +1 because mobjtic was already advanced on the server
+	// beyond gametic by the time the message was sent.
+	mo->mobjtic = ThisMessageServerTic() + 1;
+
 	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
 	if (mode != mo->mode)
 	{
