@@ -54,7 +54,7 @@
 #endif
 #include <p_boomfspec.h>
 
-void SV_ArmMobj(AActor* mo);
+void SV_UpdateMobj(AActor* mo);
 void SV_UpdateMobjState(const AActor* mo);
 
 #define WATER_SINK_FACTOR		3
@@ -1645,11 +1645,11 @@ SetMobStateResultEnum P_SetMobjState(AActor *mobj, int32_t state, bool cl_update
 	} while (!mobj->tics);
 
 #if defined(SERVER_APP)
-	// Now indicate that we want this mobj's final state to go out at the end of the tic,
-	// even if it's out-of-cycle with the 5 Hz periodic update.
+	// [AM] Now broadcast the final state of the mobj after all actions
+	//      have run.
 	if (cl_update)
 	{
-		SV_ArmMobj(mobj);
+		SV_UpdateMobj(mobj);
 		return SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
 	}
 #endif
