@@ -2296,40 +2296,20 @@ void A_Tracer (AActor *actor)
 	if (demogametic & 3)
 		return;
 
-	// FIXME: Remove the following once we REALLY understand the feasibility of a client-
-	//        side prediction of a tracer whose state depends on its target, which itself
-	//        may be a very-difficult-to-predict player mobj.  A precondition for this is
-	//        the gametic timestamping refactor, and it MAY require a more generic physical
-	//        rollback reconciliation approach and/or a fancy Kalman-style filter.
-	//
-	//        The main test case:  No Time 2 Freeze (NT2F.wad), map22.
-	//
-	//        The revenants spawn custom missile mobjs that are _not_ MT_TRACER, but still
-	//        go through A_Tracer as their main action function once every 2 tics, and
-	//        before the first RunThink.  Yet, as they are not MT_TRACER, they also get
-	//        less-frequent UpdateMobj messages if they randomly happen to not actually do
-	//        any tracing on the server, owing to ye olde revenant scheduling issue above.
-	//        In that case, if the client incorrectly predicts a turn, then the predicted
-	//        missile is allowed to stray pretty far afield before being corrected by
-	//        UpdateMobj.  When that happens, it is exceptionally jarring for any player
-	//        that sees it.  Whatever solution we arrive on must NOT be subject to that bug.
 	if (not serverside)
 		return;
 
-	if (serverside)
-	{
-		// spawn a puff of smoke behind the rocket
-		P_SpawnTracerPuff(actor->x, actor->y, actor->z);
+	// spawn a puff of smoke behind the rocket
+	P_SpawnTracerPuff(actor->x, actor->y, actor->z);
 
-		AActor* th = new AActor (actor->x - actor->momx,
-		                         actor->y - actor->momy,
-		                         actor->z, MT_SMOKE);
+	AActor* th = new AActor (actor->x - actor->momx,
+	                         actor->y - actor->momy,
+	                         actor->z, MT_SMOKE);
 
-		th->momz = FRACUNIT;
-		th->tics -= P_Random (th)&3;
-		if (th->tics < 1)
-			th->tics = 1;
-	}
+	th->momz = FRACUNIT;
+	th->tics -= P_Random (th)&3;
+	if (th->tics < 1)
+		th->tics = 1;
 
 	// adjust direction
 	AActor *dest = actor->tracer;
@@ -2379,20 +2359,7 @@ void A_Tracer (AActor *actor)
 	else
 		actor->momz += FRACUNIT/8;
 
-	if (serverside)
-	{
-		// Please note that it's very intentional that we do the best effort update here
-		// and still do the MT_TRACER check in the standard UpdateMobj missile checks on
-		// the server.  TLDR:  Just because something's an MT_TRACER doesn't necessarily
-		// mean it's going to run A_Tracer and vice versa.  We want to make sure that in
-		// all events, we send an appropriately-scheduled update, and in the worst case,
-		// we coincide this update with the check, which effectively skips the duplicate
-		// update.  One might think its a duplicated capability, but it's not really.
-		//
-		// This specific call is required to make sure we get elevated-rate updates for
-		// non-MT_TRACER mobjs that use A_Tracer.
-		SV_ArmMobj(actor);
-	}
+	SV_ArmMobj(actor);
 }
 
 
