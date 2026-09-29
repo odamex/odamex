@@ -120,7 +120,6 @@ void A_Fall (AActor *actor);
 
 void SV_BroadcastNoiseAlert(const sector_t& sector);
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
-void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
 void SV_ArmMobj(AActor* mo);
 void SV_UpdateMonsterRespawnCount();
@@ -2302,14 +2301,13 @@ void A_Tracer (AActor *actor)
 	// spawn a puff of smoke behind the rocket
 	P_SpawnTracerPuff(actor->x, actor->y, actor->z);
 
-	AActor* th = new AActor (actor->x - actor->momx,
-	                         actor->y - actor->momy,
-	                         actor->z, MT_SMOKE);
+	auto* th = new AActor (actor->x - actor->momx,
+	                       actor->y - actor->momy,
+	                       actor->z, MT_SMOKE);
 
 	th->momz = FRACUNIT;
 	th->tics -= P_Random (th)&3;
-	if (th->tics < 1)
-		th->tics = 1;
+	th->tics = std::max(1, th->tics);
 
 	// adjust direction
 	AActor *dest = actor->tracer;
@@ -3059,10 +3057,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 					// Force a client update because healstate might NOT be a "mode" for custom healers.
 					P_SetMobjState(actor, static_cast<statenum_t>(healstate), true);
 
-					if (!clientside)
-						SV_Sound(corpsehit, CHAN_BODY, SoundMap[healsound].c_str(), ATTN_IDLE);
-					else
-						S_Sound(corpsehit, CHAN_BODY, SoundMap[healsound].c_str(), 1, ATTN_IDLE);
+					S_NetSound(corpsehit, CHAN_BODY, SoundMap[healsound].c_str(), ATTN_IDLE);
 
 					info = corpsehit->info;
 

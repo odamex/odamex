@@ -3333,8 +3333,15 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 	if (not isAMonster)
 		return;
 
-	// update monster position every 7 tics or if we have a specific request to update this mobj specifically.
-	if (((gametic+mo->netid) % 7) == 0 or mo->updatedDuringLocalTic == gametic)
+	constexpr int MONSTER_UPDATE_RATE_HZ       =  5;
+	constexpr int MONSTER_UPDATE_INTERVAL_TICS = TICRATE / MONSTER_UPDATE_RATE_HZ;
+
+	const int  thisMonstersUpdateTic  = gametic + static_cast<int>(mo->netid);   // Add netid to try to spread the monster updates evenly.
+	const bool thisMonsterIsScheduled = (thisMonstersUpdateTic % MONSTER_UPDATE_INTERVAL_TICS) == 0;
+
+	// Update the monster to the player if it's the monster's tic, or
+	// if we have an on-demand request to update this mobj specifically.
+	if (thisMonsterIsScheduled or mo->updatedDuringLocalTic == gametic)
 	{
 		if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
 		{
