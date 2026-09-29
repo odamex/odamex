@@ -3172,7 +3172,8 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	                                     mo->target != player.mo and        // Players are not hyperaware of their own missiles.
 	                                     awarenessLevel == AwarenessEnum::ALWAYS_AWARE and
 	                                     sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
-	if (isHyperAware)
+
+	if (isHyperAware or mo->updatedDuringLocalTic == gametic)
 	{
 		player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
 	}
@@ -3182,25 +3183,10 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 		if (mo->type == MT_PLASMA)
 			return;
 
-		// Revenant tracers, seekers, and Mancubus fireballs need to be updated more often.
-		const bool needsMoreFrequentUpdates = (mo->type  == MT_TRACER
-		                                    or mo->type  == MT_FATSHOT
-		                                    or mo->flags2 & MF2_SEEKERMISSILE);
+		// Mancubus fireballs need to be updated more often.
+		const bool needsMoreFrequentUpdates = mo->type == MT_FATSHOT;
 
-		// There's special knowledge about Revenant tracers here.  We try hard to keep their
-		// server->client updates such that client-visible behavior is as vanilla-like as possible.
-		// Specifically we send out their updates immediately after the A_Tracer logic should have
-		// run and applied (if it's going to apply - see the funky timing logic there).  This means
-		// a rate divisor of 4 and the frame count being the mobjtic value that it had on this tic.
-		// In other words, we subtract 1 because the mobjtic was incremented after RunThink.
-
-		// On top of all that, we have to make this check anyway because if something's an MT_TRACER,
-		// but has been specially dehacked to use a thinker routine other than A_Tracer, we want to
-		// ensure that it still gets an appropriately-scheduled, elevated update cycle.  Please note
-		// that there's a counter-part check in A_Tracer that covers the opposite case.
-
-		const int updateTic = mo->type == MT_TRACER ? mo->mobjtic - 1       // rev shot?  update right away.
-		                                            : gametic + mo->netid;  // Anything else?  Be fair with the bandwidth.
+		const int updateTic = gametic + mo->netid;  // Be fair with the bandwidth.
 		const int divisor   = needsMoreFrequentUpdates ? 4 : 30;
 		const int phase     = updateTic % divisor;
 
@@ -3220,6 +3206,9 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	}
 }
 
+namespace
+{
+
 enum class TransportEnum
 {
 	AUTO,
@@ -3227,7 +3216,7 @@ enum class TransportEnum
 	RELIABLE
 };
 
-static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
+void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 {
 	// Don't use this function to update players.
 	if (mobj.player)
@@ -3251,18 +3240,24 @@ static void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 
 				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
 				case AwarenessEnum::FULLY_AWARE:
-					mobj.updatedDuringLocalTic = gametic;
 					fullAwareQueue.Write( message);
 					break;
 
 				case AwarenessEnum::SEMI_AWARE:
-					mobj.updatedDuringLocalTic = gametic;
 					semiAwareQueue.Write( message);
 					break;
 			}
 		}
 	}
 }
+
+}   // End of anonymous namespace.
+
+void SV_ArmMobj(AActor* mobj)
+{
+	mobj->updatedDuringLocalTic = gametic;
+}
+
 
 // Update the given actors data immediately, using standard Reliable and Best-effort transports as appropriate.
 void SV_UpdateMobj(AActor* mo)
@@ -3330,7 +3325,6 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 	if (mo->flags & MF_CORPSE)
 		return;
 
-
 	const bool isAMonster = mo->oflags & MFO_MOVESLIKEAMONSTER
 	                        or mo->flags & MF_COUNTKILL
 	                        or mo->type == MT_SKULL;
@@ -3339,21 +3333,28 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 	if (not isAMonster)
 		return;
 
-	// update monster position every 7 tics
-	if ((gametic+mo->netid) % 7)
-		return;
+	constexpr int MONSTER_UPDATE_RATE_HZ       =  5;
+	constexpr int MONSTER_UPDATE_INTERVAL_TICS = TICRATE / MONSTER_UPDATE_RATE_HZ;
 
-	if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
+	const int  thisMonstersUpdateTic  = gametic + static_cast<int>(mo->netid);   // Add netid to try to spread the monster updates evenly.
+	const bool thisMonsterIsScheduled = (thisMonstersUpdateTic % MONSTER_UPDATE_INTERVAL_TICS) == 0;
+
+	// Update the monster to the player if it's the monster's tic, or
+	// if we have an on-demand request to update this mobj specifically.
+	if (thisMonsterIsScheduled or mo->updatedDuringLocalTic == gametic)
 	{
-		switch (mo->playersAware.Get(player.id))
+		if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
 		{
-			case AwarenessEnum::NOT_AWARE:             [[ fallthrough ]];
-			case AwarenessEnum::BARELY_AWARE:
-				break;
+			switch (mo->playersAware.Get(player.id))
+			{
+				case AwarenessEnum::NOT_AWARE:             [[ fallthrough ]];
+				case AwarenessEnum::BARELY_AWARE:
+					break;
 
-			default:
-				player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
-				break;
+				default:
+					player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
+					break;
+			}
 		}
 	}
 }
@@ -3364,7 +3365,6 @@ void SV_UpdateAvatars(player_t& player)
 	{
 		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
 		{
-			voodooInfo.mobj->updatedDuringLocalTic = gametic;    // Avoid a potential duplicate send.
 			player.client.messenger->HighPriority().Write( SVC_UpdateMobj(*voodooInfo.mobj));
 		}
 	}
@@ -5237,13 +5237,11 @@ void SV_ExplodeMissile(AActor *mo)
 
 			case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
 			case AwarenessEnum::FULLY_AWARE:
-				mo->updatedDuringLocalTic = gametic;
 				player.client.messenger->Reliable().Write (SVC_UpdateMobj(*mo));
 				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
 
 			case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
-				mo->updatedDuringLocalTic = gametic;
 				player.client.messenger->BestEffort().Write( SVC_UpdateMobj(*mo));
 				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
