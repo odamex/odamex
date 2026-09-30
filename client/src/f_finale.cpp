@@ -635,13 +635,20 @@ void F_CastDrawer()
 	const spritedef_t* sprdef = &sprites[caststate->sprite];
 	const spriteframe_t* sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
 
-	int scaled_x = (finale_width - 320) / 2;
-
 	const Texture* sprite_patch = Res_CacheTexture(sprframe->resource[0]);
+
+	const int cast_height = cast_surface->getHeight();
+	const int dest_width = sprite_patch->mWidth * cast_height / 200;
+	const int dest_height = sprite_patch->mHeight * cast_height / 200;
+	const int sprite_x = cast_surface->getWidth() / 2;
+	const int sprite_y = 170 * cast_height / 200;
+
 	if (sprframe->flip[0])
-		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160 + scaled_x, 170);
+		cast_surface->getDefaultCanvas()->DrawPatchFlippedStretched(sprite_patch,
+				sprite_x, sprite_y, dest_width, dest_height);
 	else
-		cast_surface->getDefaultCanvas()->DrawPatch(sprite_patch, 160 + scaled_x, 170);
+		cast_surface->getDefaultCanvas()->DrawPatchStretched(sprite_patch,
+				sprite_x, sprite_y, dest_width, dest_height);
 
 	const int width = F_GetCWidth();
 	const int height = F_GetHeight();
@@ -708,13 +715,32 @@ void F_BunnyScroll()
 
 	float aspect_scale_ratio = static_cast<float>(surface_height) / static_cast<float>(bunnyheight);
 	int frame_width = aspect_scale_ratio * bunnywidth;
+	int frame_height = surface_height;
 
+	// The two patches are one panorama: p2 left, p1 right, overlapping by the
+	// widescreen extension so widescreen art does not repeat its extra columns.
 	int bunnyoverlap = bunnyextra * aspect_scale_ratio;
+	int panorama_width = frame_width * 2 - bunnyoverlap;
 
-	int initialp1x = surface_width - frame_width;
-	int initialp2x = surface_width - (frame_width * 2 - bunnyoverlap);
+	// At 32:9 a pair of aspect-correct frames does not span the screen, and then no
+	// scroll position covers it. Scale up until the panorama does, the same way
+	// R_InitializeScreenblocksCanvas handles a border that falls short.
+	if (panorama_width < surface_width)
+	{
+		const float cover_ratio =
+		    static_cast<float>(surface_width) / static_cast<float>(panorama_width);
+		frame_width = frame_width * cover_ratio;
+		frame_height = frame_height * cover_ratio;
+		bunnyoverlap = bunnyoverlap * cover_ratio;
+		panorama_width = frame_width * 2 - bunnyoverlap;
+	}
 
-	float scrollstep = static_cast<float>(abs(initialp2x)) / 320.0f;
+	const int bunny1_h = bunny1_surface->getHeight();
+	const int bunny2_h = bunny2_surface->getHeight();
+	const int src1_h = bunny1_h * surface_height / frame_height;
+	const int src2_h = bunny2_h * surface_height / frame_height;
+	const int src1_y = (bunny1_h - src1_h) / 2;
+	const int src2_y = (bunny2_h - src2_h) / 2;
 
 	// Does this actually do anything?
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
@@ -729,34 +755,19 @@ void F_BunnyScroll()
 	if (scrolled < 0)
 		scrolled = 0;
 
-	int p1x = initialp1x;
-	int p2x = initialp2x;
-
-	if (scrolled <= 0)
-	{
-		p2x = 0;
-		p1x = frame_width;
-	}
-	else if (scrolled >= 320)
-	{
-		p1x = initialp1x;
-		p2x = initialp2x;
-	}
-	else
-	{
-		// Progress both scrolls an equal amount
-		int progress = (320 * scrollstep) - (scrolled * scrollstep);
-		p1x = initialp1x + progress;
-		p2x = initialp2x + progress;
-	}
+	// One interpolation of the panorama's left edge, flush-right to flush-left,
+	// with no special-cased end states -- those disagreed with the formula leading
+	// into them, so the last frame teleported.
+	const int p2x = (surface_width - panorama_width) * scrolled / 320;
+	const int p1x = p2x + frame_width - bunnyoverlap;
 
 	bunny1_surface->lock();
 	bunny2_surface->lock();
-	primary_surface->blitcrop(bunny1_surface, 0, 0, bunny1_surface->getWidth(),
-	   bunny1_surface->getHeight(), p1x, 0, frame_width,
+	primary_surface->blitcrop(bunny1_surface, 0, src1_y, bunny1_surface->getWidth(),
+	   src1_h, p1x, 0, frame_width,
 	   surface_height);
-	primary_surface->blitcrop(bunny2_surface, 0, 0, bunny2_surface->getWidth(),
-	   bunny2_surface->getHeight(), p2x, 0, frame_width,
+	primary_surface->blitcrop(bunny2_surface, 0, src2_y, bunny2_surface->getWidth(),
+	   src2_h, p2x, 0, frame_width,
 	   surface_height);
 	bunny1_surface->unlock();
 	bunny2_surface->unlock();
