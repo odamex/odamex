@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "m_fixed.h"
 #include "dsectoreffect.h"
 #include "actorflags.h"
@@ -488,6 +490,165 @@ private:
 	int				mJumpTime;
 };
 
+template <typename SnapshotType>
+class SnapshotManager
+{
+    public:
+        void clearSnapshots()
+        {
+            for (auto& snapshot : m_snaps)
+            {
+                snapshot.setTime(-1);
+            }
+            m_mostRecentTime = 0;
+        }
+
+        int getMostRecentTime() const
+        {
+            return m_mostRecentTime;
+        }
+
+        void addSnapshot(const SnapshotType& snap)
+        {
+            if (not snap.isValid()
+                or m_mostRecentTime - snap.getTime() > NUM_SNAPSHOTS)
+            {
+                #ifdef _SNAPSHOT_DEBUG_
+                DPrintFmt("Snapshot {}: Not adding expired player snapshot\n", time);
+                #endif
+                return;
+            }
+
+            SnapshotType& dest = m_snaps[time % NUM_SNAPSHOTS];
+            if (dest.getTime() != time)
+            {
+                dest = snap;
+            }
+            else
+            {
+                dest.merge(snap);
+            }
+            m_mostRecentTime = std::max(m_mostRecentTime, time);
+        }
+
+        SnapshotType getSnapshot(int time) const
+        {
+            constexpr int MAX_EXTRAPOLATION = 4;
+
+            if (time <= 0 or m_mostRecentTime <= 0)
+            {
+                return SnapshotType();
+            }
+
+            if (SnapshotType* snap = GetExistingValidSnapshot(time))
+            {
+                return *snap;
+            }
+
+            if (time > m_mostRecentTime)
+            {
+                const int amount = std::min(time - m_mostRecentTime, MAX_EXTRAPOLATION);
+                return ExtrapolateSnapshot(m_mostRecentTime, amount + m_mostRecentTime);
+            }
+
+            const int pretime  = FindValidSnapshot(time, m_mostRecentTime - NUM_SNAPSHOTS);
+            const int posttime = FindValidSnapshot(time, m_mostRecentTime);
+
+            if (    pretime  > 0
+                and posttime > 0
+                and time < posttime
+                and time > pretime)
+            {
+                return InterpolateSnapshots(pretime, posttime, time);
+            }
+
+            if (    pretime <= 0
+                and posttime > 0)
+            {
+                return m_snaps[time % NUM_SNAPSHOTS];
+            }
+
+            return SnapshotType();
+        }
+
+    protected:
+
+        SnapshotType* GetExistingValidSnapshot(int time) const
+        {
+            const int index = time % NUM_SNAPSHOTS;
+
+            if (time <= m_mostRecentTime
+                and m_mostRecentTime - time <= NUM_SNAPSHOTS
+                and time > 0
+                and m_snaps[index].isValid()
+                and m_snaps[index].getTime() == time)
+            {
+                return & m_snaps[index];
+            }
+            return nullptr;
+
+        }
+
+        int FindValidSnapshot(int startTime, int endTime) const
+        {
+            if (   startTime < m_mostRecentTime - NUM_SNAPSHOTS
+                or endTime   < m_mostRecentTime - NUM_SNAPSHOTS
+                or startTime > m_mostRecentTime
+                or endTime   > m_mostRecentTime)
+            {
+                return -1;
+            }
+
+            if (endTime >= startTime)
+            {
+                for (int tic = startTime; tic <= endTime; ++tic)
+                {
+                    if (GetExistingValidSnapshot(tic))
+                    {
+                        return tic;
+                    }
+                }
+            }
+            else
+            {
+                for (int tic = startTime; tic >= endTime; --tic)
+                {
+                    if (GetExistingValidSnapshot(tic))
+                    {
+                        return tic;
+                    }
+                }
+            }
+            return -1;
+        }
+
+        SnapshotType InterpolateSnapshots(int fromTic, int toTic, int tic) const
+        {
+            // Assumes that range checking from and to has been performed by the caller
+            const auto& snapfrom = m_snaps[fromTic % NUM_SNAPSHOTS];
+            const auto& snapto   = m_snaps[toTic   % NUM_SNAPSHOTS];
+
+            if (toTic == fromTic or not snapto.isContinuous())
+            {
+                return snapto;
+            }
+
+            const float amount = float(tic - fromTic) / float(toTic - fromTic);
+
+            return P_LerpPosition(snapfrom, snapto, amount);
+        }
+
+        SnapshotType ExtrapolateSnapshot(int fromTic, int tic) const
+        {
+            const auto& snapfrom = m_snaps[fromTic % NUM_SNAPSHOTS];
+            const float amount = tic - fromTic;
+
+            return P_ExtrapolatePosition(snapfrom, amount);
+        }
+
+        std::array<SnapshotType, NUM_SNAPSHOTS> m_snaps {};
+        int m_mostRecentTime { 0 };
+};
 
 // ============================================================================
 //
@@ -743,6 +904,23 @@ ActorSnapshot P_ExtrapolateActorPosition(const ActorSnapshot &from, float amount
 
 PlayerSnapshot P_LerpPlayerPosition(const PlayerSnapshot &from, const PlayerSnapshot &to, float amount);
 PlayerSnapshot P_ExtrapolatePlayerPosition(const PlayerSnapshot &from, float amount);
+
+inline ActorSnapshot P_LerpPosition(const ActorSnapshot &from, const ActorSnapshot &to, float amount)
+{
+    return P_LerpActorPosition(from, to, amount);
+}
+inline PlayerSnapshot P_LerpPosition(const PlayerSnapshot &from, const PlayerSnapshot &to, float amount)
+{
+    return P_LerpPlayerPosition(from, to, amount);
+}
+inline ActorSnapshot P_ExtrapolatePosition(const ActorSnapshot &from, float amount)
+{
+    return P_ExtrapolateActorPosition(from, amount);
+}
+inline PlayerSnapshot P_ExtrapolatePosition(const PlayerSnapshot &from, float amount)
+{
+    return P_ExtrapolatePlayerPosition(from, amount);
+}
 
 bool P_CeilingSnapshotDone(SectorSnapshot *snap);
 bool P_FloorSnapshotDone(SectorSnapshot *snap);
