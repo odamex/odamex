@@ -295,7 +295,7 @@ void PlayerSnapshot::toPlayer(player_t& player) const
 // PlayerSnapshotManager implementation
 //
 // ============================================================================
-
+#if 0
 PlayerSnapshotManager::PlayerSnapshotManager() :
 	mMostRecent(0)
 {
@@ -499,7 +499,7 @@ PlayerSnapshot PlayerSnapshotManager::getSnapshot(int time) const
 	// Could not find a valid snapshot so return a blank (invalid) one
 	return PlayerSnapshot();
 }
-
+#endif
 
 // ============================================================================
 //

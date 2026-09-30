@@ -129,6 +129,8 @@ void P_SetPsprite(player_t& player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
 void P_SpawnAvatars();
 
+void CL_RegisterOutdatedMobjUpdate(int serverTic, AActor* mobj);
+
 namespace
 {
 
@@ -1326,7 +1328,15 @@ void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 
 	// Keep action-internal tic checks in sync, and +1 because mobjtic was already advanced on the server
 	// beyond gametic by the time the message was sent.
-	mo->mobjtic = ThisMessageServerTic() + 1;
+	const int newMobjTic = ThisMessageServerTic() + 1;
+
+	// If this update is older than what we're showing as current, make sure we track it in the prediction
+	// bookkeeping as needing special handling.
+	if (newMobjTic < mo->mobjtic)
+	{
+		CL_RegisterOutdatedMobjUpdate(ThisMessageServerTic(), mo);
+	}
+	mo->mobjtic = newMobjTic;
 
 	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
 	if (mode != mo->mode)

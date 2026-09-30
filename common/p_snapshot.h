@@ -36,8 +36,6 @@ class player_t;
 struct sector_t;
 struct line_t;
 
-class PlayerSnapshotManager;
-
 extern int gametic;
 
 #define NUM_SNAPSHOTS 32
@@ -510,6 +508,8 @@ class SnapshotManager
 
         void addSnapshot(const SnapshotType& snap)
         {
+            const int time = snap.getTime();
+
             if (not snap.isValid()
                 or m_mostRecentTime - snap.getTime() > NUM_SNAPSHOTS)
             {
@@ -540,7 +540,7 @@ class SnapshotManager
                 return SnapshotType();
             }
 
-            if (SnapshotType* snap = GetExistingValidSnapshot(time))
+            if (const SnapshotType* snap = GetExistingValidSnapshot(time))
             {
                 return *snap;
             }
@@ -573,7 +573,7 @@ class SnapshotManager
 
     protected:
 
-        SnapshotType* GetExistingValidSnapshot(int time) const
+        const SnapshotType* GetExistingValidSnapshot(int time) const
         {
             const int index = time % NUM_SNAPSHOTS;
 
@@ -656,6 +656,9 @@ class SnapshotManager
 //
 // ============================================================================
 
+using PlayerSnapshotManager = SnapshotManager<PlayerSnapshot>;
+
+#if 0
 class PlayerSnapshotManager
 {
 public:
@@ -677,7 +680,7 @@ private:
 	PlayerSnapshot	mSnaps[NUM_SNAPSHOTS];
 	int				mMostRecent;
 };
-
+#endif;
 
 // ============================================================================
 //
