@@ -2047,13 +2047,6 @@
          "type" : "boolean"
       },
       {
-         "default" : true,
-         "flags" : [],
-         "helptext" : "Draw masked midtextures in screen blocks rather than whole columns at a time",
-         "name" : "r_maskedtiling",
-         "type" : "boolean"
-      },
-      {
          "default" : "detect",
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Rendering optimizations",
@@ -2106,13 +2099,6 @@
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Change invuln to enable light goggles and invert the palette on the weapon sprite only.",
          "name" : "r_softinvulneffect",
-         "type" : "boolean"
-      },
-      {
-         "default" : true,
-         "flags" : [],
-         "helptext" : "Draw sprites in screen blocks rather than whole columns at a time",
-         "name" : "r_spritetiling",
          "type" : "boolean"
       },
       {

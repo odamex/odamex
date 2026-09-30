@@ -1396,22 +1396,25 @@ template<int xscale, typename PIXEL_T>
 static forceinline void R_RenderFire(int x, int y)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_pitch = surface->getPitchInPixels();
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
 
 	fire_surface->lock();
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
-		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surface_pitch + x;
-		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + b * fire_surface->getPitch();
+		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * rowstep + x * colstep;
+		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) +
+								b * fire_surface->getRowStepInPixels();
 		y += CleanYfac;
 
-		for (int a = 0; a < fire_surface_width; a++, to += xscale, from++)
+		for (int a = 0; a < fire_surface_width; a++, to += xscale * colstep,
+				from += fire_surface->getColStepInPixels())
 		{
 			for (int c = CleanYfac; c; c--)
 			{
 				for (int i = 0; i < xscale; ++i)
-					*(to + surface_pitch * c + i) = R_FirePixel<PIXEL_T>(*from);
+					*(to + rowstep * c + i * colstep) = R_FirePixel<PIXEL_T>(*from);
 			}
 		}
 	}
@@ -1423,22 +1426,25 @@ template<typename PIXEL_T>
 static forceinline void R_RenderFire(int x, int y)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_pitch = surface->getPitchInPixels();
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
 
 	fire_surface->lock();
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
-		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surface_pitch + x;
-		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + b * fire_surface->getPitch();
+		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * rowstep + x * colstep;
+		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) +
+								b * fire_surface->getRowStepInPixels();
 		y += CleanYfac;
 
-		for (int a = 0; a < fire_surface_width; a++, to += CleanXfac, from++)
+		for (int a = 0; a < fire_surface_width; a++, to += CleanXfac * colstep,
+				from += fire_surface->getColStepInPixels())
 		{
 			for (int c = CleanYfac; c; c--)
 			{
 				for (int i = 0; i < CleanXfac; ++i)
-					*(to + surface_pitch * c + i) = R_FirePixel<PIXEL_T>(*from);
+					*(to + rowstep * c + i * colstep) = R_FirePixel<PIXEL_T>(*from);
 			}
 		}
 	}
@@ -1486,11 +1492,16 @@ static void M_PlayerSetupDrawer()
 		else
 		{
 			fire_surface->lock();
-			const int pitch = fire_surface->getPitch();
 
-			palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + (fire_surface_height - 3) * pitch;
-			for (int a = 0; a < fire_surface_width; a++, from++)
-				*from = *(from + (pitch << 1)) = M_Random();
+			// Not the raw pitch: the surface stores columns, so the pitch is the
+			// horizontal stride, not the vertical one.
+			const int rowstep = fire_surface->getRowStepInPixels();
+			const int colstep = fire_surface->getColStepInPixels();
+
+			palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) +
+								(fire_surface_height - 3) * rowstep;
+			for (int a = 0; a < fire_surface_width; a++, from += colstep)
+				*from = *(from + (rowstep << 1)) = M_Random();
 
 			from = static_cast<palindex_t*>(fire_surface->getBuffer());
 			for (int b = 0; b < fire_surface_height - 4; b += 2)
@@ -1498,26 +1509,28 @@ static void M_PlayerSetupDrawer()
 				palindex_t* pixel = from;
 
 				// special case: first pixel on line
-				palindex_t* p = pixel + (pitch << 1);
+				palindex_t* p = pixel + (rowstep << 1);
 
-				unsigned int top = *p + *(p + fire_surface_width - 1) + *(p + 1);
-				unsigned int bottom = *(pixel + (pitch << 2));
+				// fire_surface_width - 1 columns right is the last pixel of the
+				// same line: the horizontal wrap, not a stride.
+				unsigned int top = *p + *(p + (fire_surface_width - 1) * colstep) + *(p + colstep);
+				unsigned int bottom = *(pixel + (rowstep << 2));
 				unsigned int c1 = (top + bottom) >> 2;
 				if (c1 > 1)
 					c1--;
 				*pixel = c1;
-				*(pixel + pitch) = (c1 + bottom) >> 1;
-				pixel++;
+				*(pixel + rowstep) = (c1 + bottom) >> 1;
+				pixel += colstep;
 
 				// main line loop
 				for (int a = 1; a < fire_surface_width - 1; a++)
 				{
 					// sum top pixels
-					p = pixel + (pitch << 1);
-					top = *p + *(p - 1) + *(p + 1);
+					p = pixel + (rowstep << 1);
+					top = *p + *(p - colstep) + *(p + colstep);
 
 					// bottom pixel
-					bottom = *(pixel + (pitch << 2));
+					bottom = *(pixel + (rowstep << 2));
 
 					// combine pixels
 					c1 = (top + bottom) >> 2;
@@ -1526,24 +1539,24 @@ static void M_PlayerSetupDrawer()
 
 					// store pixels
 					*pixel = c1;
-					*(pixel + pitch) = (c1 + bottom) >> 1;		// interpolate
+					*(pixel + rowstep) = (c1 + bottom) >> 1;	// interpolate
 
 					// next pixel
-					pixel++;
+					pixel += colstep;
 				}
 
 				// special case: last pixel on line
-				p = pixel + (pitch << 1);
-				top = *p + *(p - 1) + *(p - fire_surface_width + 1);
-				bottom = *(pixel + (pitch << 2));
+				p = pixel + (rowstep << 1);
+				top = *p + *(p - colstep) + *(p - (fire_surface_width - 1) * colstep);
+				bottom = *(pixel + (rowstep << 2));
 				c1 = (top + bottom) >> 2;
 				if (c1 > 1)
 					c1--;
 				*pixel = c1;
-				*(pixel + pitch) = (c1 + bottom) >> 1;
+				*(pixel + rowstep) = (c1 + bottom) >> 1;
 
 				// next line
-				from += pitch << 1;
+				from += rowstep << 1;
 			}
 
 			y--;

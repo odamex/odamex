@@ -270,7 +270,8 @@ public:
 
 	inline const uint8_t* getBuffer(uint16_t x, uint16_t y) const
 	{
-		return mSurfaceBuffer + static_cast<int>(y) * getPitch() + static_cast<int>(x) * getBytesPerPixel();
+		return mSurfaceBuffer + (static_cast<int>(y) + static_cast<int>(x) * mPitchInPixels)
+								* getBytesPerPixel();
 	}
 
 	inline uint8_t* getBuffer(uint16_t x, uint16_t y)
@@ -289,6 +290,18 @@ public:
 
 	inline uint16_t getPitchInPixels() const
 	{	return mPitchInPixels;	}
+
+	inline int getRowStepInPixels() const
+	{	return 1;	}
+
+	inline int getColStepInPixels() const
+	{	return mPitchInPixels;	}
+
+	inline int getRowStepInBytes() const
+	{	return getBytesPerPixel();	}
+
+	inline int getColStepInBytes() const
+	{	return mPitchInPixels * getBytesPerPixel();	}
 
 	inline uint8_t getBitsPerPixel() const
 	{	return mPixelFormat.getBitsPerPixel();	}
@@ -346,6 +359,9 @@ private:
 	uint16_t			mWidth;
 	uint16_t			mHeight;
 
+	// Bytes and pixels between the starts of two adjacent stored lines. A stored
+	// line is a screen COLUMN, so this is the distance from one column to the
+	// next -- getColStepInPixels().
 	uint16_t			mPitch;
 	uint16_t			mPitchInPixels;		// mPitch / mPixelFormat.getBytesPerPixel()
 

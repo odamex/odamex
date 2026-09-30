@@ -252,6 +252,7 @@ static v2int_t f;
 static int f_w;
 static int f_h;
 static int f_p; // [RH] # of bytes from start of a line to start of next
+static int f_cs; // # of bytes from one pixel to the next along a row
 
 static byte* fb; // pseudo-frame buffer
 static int amclock;
@@ -1085,23 +1086,27 @@ void AM_Ticker()
 //
 void AM_clearFB(am_color_t color)
 {
-	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	// A fill is a run of pixels repeated with a stride. The surface stores
+	// columns, so the contiguous run is a screen column and the stride between
+	// runs is the column step.
+	const int pixelsize = I_GetPrimarySurface()->getBytesPerPixel();
+
+	const int run = f_h;
+	const int count = f_w;
+	const int stride = f_cs;
+
+	if (pixelsize == 1)
 	{
-		if (f_w == f_p)
-			memset(fb, color.index, f_w * f_h);
-		else
-			for (int y = 0; y < f_h; y++)
-				memset(fb + y * f_p, color.index, f_w);
+		for (int i = 0; i < count; i++)
+			memset(fb + i * stride, color.index, run);
 	}
 	else
 	{
-		argb_t* line = reinterpret_cast<argb_t*>(fb);
-
-		for (int y = 0; y < f_h; y++)
+		for (int i = 0; i < count; i++)
 		{
-			for (int x = 0; x < f_w; x++)
-				line[x] = color.rgb;
-			line += f_p >> 2;
+			argb_t* line = reinterpret_cast<argb_t*>(fb + i * stride);
+			for (int j = 0; j < run; j++)
+				line[j] = color.rgb;
 		}
 	}
 }
@@ -1249,7 +1254,8 @@ static inline void PUTDOT_THICK(
 	PIXEL_T color,
 	void (*PUTDOT)(int, int, PIXEL_T),
 	PIXEL_T* fbuf,
-	int pitch)
+	int pitch,
+	int colstep)
 {
 	// Thin point fast path
 	if (am_thickness.asInt() == 1)
@@ -1275,7 +1281,7 @@ static inline void PUTDOT_THICK(
 		const int dx  = nx - x;
 		const int dx2 = dx * dx;
 
-		PIXEL_T* pix = fbuf + miny * pitch + nx;
+		PIXEL_T* pix = fbuf + miny * pitch + nx * colstep;
 
 		for (int ny = miny; ny <= maxy; ++ny, pix += pitch)
 		{
@@ -1288,12 +1294,12 @@ static inline void PUTDOT_THICK(
 
 static inline void PUTDOT_THICK(int x, int y, argb_t color)
 {
-	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *(reinterpret_cast<argb_t*>(fb + y * f_p + (x << 2))) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2);
+	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *(reinterpret_cast<argb_t*>(fb + y * f_p + x * f_cs)) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2, f_cs >> 2);
 }
 
 static inline void PUTDOT_THICK(int x, int y, byte color)
 {
-	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x] = color; }, fb, f_p);
+	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x * f_cs] = color; }, fb, f_p, f_cs);
 }
 
 //
@@ -2432,7 +2438,8 @@ void AM_Drawer()
 		f.x = f.y = 0;
 		f_w = surface_width;
 		f_h = ST_StatusBarY(surface_width, surface_height);
-		f_p = surface->getPitch();
+		f_p = surface->getRowStepInBytes();
+		f_cs = surface->getColStepInBytes();
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
 	}
@@ -2442,7 +2449,8 @@ void AM_Drawer()
 		f.y = R_ViewWindowY(surface_width, surface_height);
 		f_w = R_ViewWidth(surface_width, surface_height);
 		f_h = R_ViewHeight(surface_width, surface_height);
-		f_p = surface->getPitch();
+		f_p = surface->getRowStepInBytes();
+		f_cs = surface->getColStepInBytes();
 	}
 	else
 	{
@@ -2477,7 +2485,8 @@ void AM_Drawer()
 
 		f.x = R_ViewWindowX(surface_width, surface_height) + x_offset;
 		f.y = R_ViewWindowY(surface_width, surface_height) + y_offset;
-		f_p = surface->getPitch();
+		f_p = surface->getRowStepInBytes();
+		f_cs = surface->getColStepInBytes();
 
 		if (const DCanvas* canvas = surface->getDefaultCanvas())
 			canvas->Dim(f.x, f.y, f_w, f_h, am_ovbackcolor.cstring(), am_ovbackalpha);

@@ -60,8 +60,22 @@ static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
 
 void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	int surface_pitch_pixels = surface->getPitchInPixels();
-	int line_inc = surface_pitch_pixels - w;
+	// A screen column is the contiguous run, so the vectorized walk goes DOWN a
+	// column and the outer loop steps across them. The vector body below is
+	// unchanged: it only needs the run to be contiguous, not to be a screen row.
+	//
+	// A column starts at x * pitch + y1, and the pitch is a multiple of a cache
+	// line, so the alignment phase is a function of y1 alone -- the same for every
+	// column. The prologue below therefore does equal work per run rather than
+	// thrashing between aligned and unaligned columns.
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
+
+	const int run = h;
+	const int count = w;
+	const int stride = colstep;
+
+	const int line_inc = stride - run;
 
 	// ALTIVEC temporaries:
 	const vu8 vec_mask = { 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF };
@@ -75,19 +89,19 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 	const uint16_t invalpha = 256 - alpha;
 	const vu16 vec_invalpha = { invalpha, invalpha, invalpha, invalpha, invalpha, invalpha, invalpha, invalpha };
 
-	argb_t* dest = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * surface_pitch_pixels + x1;
+	argb_t* dest = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * rowstep + x1 * colstep;
 
-	for (int rowcount = h; rowcount > 0; --rowcount)
+	for (int rowcount = count; rowcount > 0; --rowcount)
 	{
-		// [SL] Calculate how many pixels of each row need to be drawn before dest is
+		// [SL] Calculate how many pixels of each run need to be drawn before dest is
 		// aligned to a 128-bit boundary.
 		int align = R_GetBytesUntilAligned(dest, 128/8) / sizeof(argb_t);
-		if (align > w)
-			align = w;
+		if (align > run)
+			align = run;
 
 		const int batch_size = 8;
-		int batches = (w - align) / batch_size;
-		int remainder = (w - align) & (batch_size - 1);
+		int batches = (run - align) / batch_size;
+		int remainder = (run - align) & (batch_size - 1);
 
 		// align the destination buffer to 128-bit boundary
 		while (align--)

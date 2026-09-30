@@ -132,16 +132,17 @@ static inline void Wipe_DrawMeltLoop(int x, int starty)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
 	int surface_height = surface->getHeight();
-	int surface_pitch_pixels = surface->getPitchInPixels();
+	const int rowstep = surface->getRowStepInPixels();
 
-	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + starty * surface_pitch_pixels + x;
+	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer())
+					+ starty * rowstep + x * surface->getColStepInPixels();
 	const PIXEL_T* from = reinterpret_cast<PIXEL_T*>(wipe_screen) + surface_height * x;
 
 	int y = surface_height - starty;
 	while (y--)
 	{
 		*to = *from;
-		to += surface_pitch_pixels;
+		to += rowstep;
 		from++;
 	}
 }
@@ -321,7 +322,8 @@ static inline void Wipe_DrawBurnGeneric()
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
-	int surface_pitch_pixels = surface->getPitchInPixels();
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
 
 	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer());
 	const PIXEL_T* from = reinterpret_cast<PIXEL_T*>(wipe_screen);
@@ -344,16 +346,16 @@ static inline void Wipe_DrawBurnGeneric()
 			if (fgdelta > 0 && fgdelta < 63)
 			{
 				int bglevel = 64 - fgdelta;
-				Wipe_Blend(&to[x], &from[x], fgdelta, bglevel);
+				Wipe_Blend(&to[x * colstep], &from[x], fgdelta, bglevel);
 			}
 			else if (fgdelta == 0)
 			{
-				to[x] = from[x];
+				to[x * colstep] = from[x];
 			}
 		}
 
 		from += surface_width;
-		to += surface_pitch_pixels;
+		to += rowstep;
 	}
 }
 
@@ -392,7 +394,8 @@ static inline void Wipe_DrawFadeGeneric()
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
-	int surface_pitch_pixels = surface->getPitchInPixels();
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
 
 	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer());
 	const PIXEL_T* from = reinterpret_cast<PIXEL_T*>(wipe_screen);
@@ -408,10 +411,10 @@ static inline void Wipe_DrawFadeGeneric()
 	for (int y = 0; y < surface_height; y++)
 	{
 		for (int x = 0; x < surface_width; x++)
-			Wipe_Blend(&to[x], &from[x], fadedelta, bglevel);
+			Wipe_Blend(&to[x * colstep], &from[x], fadedelta, bglevel);
 
 		from += surface_width;
-		to += surface_pitch_pixels;
+		to += rowstep;
 	}
 }
 

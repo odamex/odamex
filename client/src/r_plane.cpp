@@ -48,7 +48,6 @@
 #include "p_mapformat.h"
 
 #include "m_alloc.h"
-#include "c_dispatch.h"
 #include "i_video.h"
 #include "v_video.h"
 
@@ -78,31 +77,8 @@ static std::vector<visplane_t*>		visplane_blocks;
 static size_t						visplane_block_used = VISPLANE_BLOCK;
 static std::vector<unsigned int*>	visplane_spans;
 
-//
-// Visplane statistics
-//
-// The hash lookup and the per-frame clear both walk every live visplane, so
-// their cost is the number of headers visited rather than the number of planes
-// drawn. These counters record that, and the column count the full-width span
-// initialisation writes.
-//
 namespace
 {
-
-struct VisplaneStats
-{
-	uint64_t	frames;
-	uint64_t	lookups;		// R_FindPlane calls
-	uint64_t	chainsteps;		// headers visited by those lookups
-	uint64_t	created;		// visplanes taken into use
-	uint64_t	allocated;		// ... of those, ones needing a fresh allocation
-	uint64_t	splits;			// R_CheckPlane calls that started a new plane
-	uint64_t	spaninit;		// columns written by the span initialisers
-	uint32_t	peak_created;	// most taken into use in one frame
-};
-
-VisplaneStats	visplane_stats;
-uint32_t		visplane_frame_created;
 
 } // namespace
 
@@ -384,11 +360,6 @@ void R_ClearPlanes(bool fullclear)
 
 	if (fullclear)
 	{
-		visplane_stats.frames++;
-		visplane_stats.peak_created =
-				std::max(visplane_stats.peak_created, visplane_frame_created);
-		visplane_frame_created = 0;
-
 		// opening / clipping determination
 		memcpy(floorclip.get(), floorclipinitial.get(), viewwidth * sizeof(floorclip[0]));
 		memcpy(ceilingclip.get(), ceilingclipinitial.get(), viewwidth * sizeof(ceilingclip[0]));
@@ -423,19 +394,49 @@ static visplane_t *new_visplane(unsigned hash)
 
 		check->top = spans + 1;
 		check->bottom = check->top + width + 2;
-
-		visplane_stats.allocated++;
 	}
 	else
 		if (!(freetail = freetail->next))
 			freehead = &freetail;
 
-	visplane_stats.created++;
-	visplane_frame_created++;
-
 	check->next = visplanes[hash];
 	visplanes[hash] = check;
 	return check;
+}
+
+
+//
+// R_PlaneMatches
+//
+// The chain walk's acceptance test, factored out so callers share one predicate
+// rather than a second copy of it.
+//
+static forceinline bool R_PlaneMatches(
+		const visplane_t* check,
+		bool isskybox,
+		const plane_t& secplane,
+		ResourceId res_id,
+		uint32_t sky_transfer,
+		int lightlevel,
+		fixed_t xoffs, fixed_t yoffs,
+		fixed_t xscale, fixed_t yscale,
+		angle_t angle,
+		const AActor::AActorPtr& skybox)
+{
+	if (isskybox)
+		return skybox == check->skybox;
+
+	return P_IdenticalPlanes(&secplane, &check->secplane) &&
+		res_id == check->res_id &&
+		sky_transfer == check->sky_transfer &&
+		lightlevel == check->lightlevel &&
+		skybox == check->skybox &&	// boundary flats draw at their own alpha
+		xoffs == check->xoffs &&	// killough 2/28/98: Add offset checks
+		yoffs == check->yoffs &&
+		basecolormap == check->colormap &&	// [RH] Add colormap check
+		xscale == check->xscale &&
+		yscale == check->yscale &&
+		angle == check->angle;
 }
 
 
@@ -474,34 +475,11 @@ visplane_t* R_FindPlane(
 	// New visplane algorithm uses hash table -- killough
 	hash = isskybox ? MAXVISPLANES : visplane_hash(res_id, lightlevel, secplane);
 
-	visplane_stats.lookups++;
-
 	for (check = visplanes[hash]; check; check = check->next) // killough
 	{
-		visplane_stats.chainsteps++;
-
-		if (isskybox)
-		{
-			if (skybox == check->skybox)
-			{
-				return check;
-			}
-		}
-		else if (P_IdenticalPlanes(&secplane, &check->secplane) &&
-			res_id == check->res_id &&
-			sky_transfer == check->sky_transfer &&
-			lightlevel == check->lightlevel &&
-			skybox == check->skybox &&	// boundary flats draw at their own alpha
-			xoffs == check->xoffs &&	// killough 2/28/98: Add offset checks
-			yoffs == check->yoffs &&
-			basecolormap == check->colormap &&	// [RH] Add colormap check
-			xscale == check->xscale &&
-			yscale == check->yscale &&
-			angle == check->angle
-			)
-		{
+		if (R_PlaneMatches(check, isskybox, secplane, res_id, sky_transfer,
+				lightlevel, xoffs, yoffs, xscale, yscale, angle, skybox))
 			return check;
-		}
 	}
 
 	check = new_visplane (hash);		// killough
@@ -520,11 +498,32 @@ visplane_t* R_FindPlane(
 	check->minx = viewwidth;			// Was SCREENWIDTH -- killough 11/98
 	check->maxx = -1;
 
-	memcpy(check->top, viewheightarray, viewwidth * sizeof(*check->top));
-	visplane_stats.spaninit += viewwidth;
+	// Nothing to initialise: the range is empty, and R_CheckPlane marks
+	// columns free as it adds them.
 
 	return check;
 }
+
+//
+// R_MarkPlaneColumnsFree
+//
+// Marks [first, last] as covering no rows yet. R_CheckPlane's free test reads
+// top[x] == viewheight, so only columns being ADDED to a plane's range need it;
+// those already inside [minx, maxx] were marked when they were added.
+//
+// Replaces initialising the full surface width every time a plane is taken into
+// use -- a plane covers a small part of the screen and the rest was never read.
+// Measured at 5.52 MB/frame on a heavy scene.
+//
+static forceinline void R_MarkPlaneColumnsFree(visplane_t* pl, int first, int last)
+{
+	if (first > last)
+		return;
+
+	for (int x = first; x <= last; x++)
+		pl->top[x] = static_cast<unsigned int>(viewheight);
+}
+
 
 //
 // R_CheckPlane
@@ -564,7 +563,18 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 
 	if (x > intrh)
 	{
-		// use the same visplane
+		// use the same visplane, marking the columns the union adds
+		if (pl->maxx < pl->minx)
+		{
+			// empty plane -- the whole union is new
+			R_MarkPlaneColumnsFree(pl, unionl, unionh);
+		}
+		else
+		{
+			R_MarkPlaneColumnsFree(pl, unionl, pl->minx - 1);
+			R_MarkPlaneColumnsFree(pl, pl->maxx + 1, unionh);
+		}
+
 		pl->minx = unionl;
 		pl->maxx = unionh;
 	}
@@ -583,8 +593,6 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		{
 			hash = visplane_hash(pl->res_id, pl->lightlevel, pl->secplane);
 		}
-		visplane_stats.splits++;
-
 		visplane_t *new_pl = new_visplane (hash);
 
 		new_pl->secplane = pl->secplane;
@@ -599,10 +607,9 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		new_pl->colormap = pl->colormap;	// [RH] Copy colormap
 		new_pl->skybox = pl->skybox;
 		pl = new_pl;
+		R_MarkPlaneColumnsFree(pl, start, stop);
 		pl->minx = start;
 		pl->maxx = stop;
-		memcpy(pl->top, viewheightarray, viewwidth * sizeof(*pl->top));
-		visplane_stats.spaninit += viewwidth;
 	}
 	return pl;
 }
@@ -610,9 +617,20 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 //
 // R_MakeSpans
 //
-void R_MakeSpans(visplane_t *pl, void(*spanfunc)(int, int, int))
+// Classic Doom span emission over the plane's own columns. The sentinel at each
+// end is what opens every row at minx and flushes every row at maxx.
+//
+void R_MakeSpans(visplane_t* pl, void(*spanfunc)(int, int, int))
 {
-	for (int x = pl->minx; x <= pl->maxx + 1; x++)
+	const int minx = pl->minx;
+	const int maxx = pl->maxx;
+
+	const unsigned int savedleft = pl->top[minx-1];
+	const unsigned int savedright = pl->top[maxx+1];
+	pl->top[minx-1] = viewheight;
+	pl->top[maxx+1] = viewheight;
+
+	for (int x = minx; x <= maxx + 1; x++)
 	{
 		unsigned int t1 = pl->top[x-1];
 		unsigned int b1 = pl->bottom[x-1];
@@ -627,6 +645,387 @@ void R_MakeSpans(visplane_t *pl, void(*spanfunc)(int, int, int))
 			spanstart[t2++] = x;
 		while (b2 > b1 && b2 >= t2)
 			spanstart[b2--] = x;
+	}
+
+	pl->top[minx-1] = savedleft;
+	pl->top[maxx+1] = savedright;
+}
+
+
+// ============================================================================
+//
+// Column-major level planes
+//
+// A level plane drawn as spans writes one pixel per column, so each pixel lands
+// on its own cache line -- and under a column-sliced multithreaded renderer,
+// adjacent workers false-share a line at every slice boundary.
+//
+// The same surface can be walked a column at a time with no per-pixel divide.
+// R_MapLevelPlane computes
+//
+//   distance(y) = pl_planeheight * FIXED2DOUBLE(yslope[y])
+//   ustep       = pl_xstepscale * distance / xfoc
+//   ufrac(x,y)  = pl_viewxtrans + pl_viewcos*distance*pl_xscale + (x-centerx)*ustep
+//
+// and collecting that on distance for a fixed x leaves
+//
+//   u(y) = pl_viewxtrans + Eu(x) * yslope[y]
+//   Eu(x) = pl_planeheight * ( pl_viewcos*pl_xscale + (x-centerx)*pl_xstepscale/xfoc)
+//   Ev(x) = pl_planeheight * (-pl_viewsin*pl_yscale + (x-centerx)*pl_ystepscale/xfoc)
+//
+// which is the same value, factored the other way. Eu/Ev are affine in x, so
+// one multiply-add per column; the per-pixel work is one yslope[] load and two
+// multiply-adds, with no division.
+//
+// A visplane already stores the per-column extents this consumes, top[x] and
+// bottom[x]; R_MakeSpans only ever existed to turn those back into rows.
+//
+// ============================================================================
+
+namespace
+{
+
+// Per-y colormap offsets for the plane being drawn, as the relative planezlight
+// value already multiplied by 256. A level plane's colormap is a pure function
+// of screen y, so one table serves every column: cbase[lightoff[y] + c] is
+// exactly basecolormap.with(rel).index(c), given that the shaderef_t
+// constructor sets m_colormap = colors->colormap + 256 * mapnum.
+std::vector<uint16_t> plane_lightoff;
+
+// True when every row of the plane resolved to the same colormap, so the
+// drawers can drop the table lookup entirely.
+bool plane_constlight;
+
+} // namespace
+
+//
+// R_BuildPlaneLighting
+//
+// Fills plane_lightoff over [miny, maxy] by running the identical selection
+// R_MapLevelPlane runs, rather than exploiting its monotonicity -- so bit
+// identity rests on the same arithmetic, and the degenerate horizon row
+// reproduces today's output for free.
+//
+static shaderef_t R_BuildPlaneLighting(int miny, int maxy)
+{
+	if (plane_lightoff.size() < static_cast<size_t>(viewheight))
+		plane_lightoff.resize(viewheight);
+
+	// fixedlightlev is tested first because r_main.cpp sets both it and
+	// fixedcolormap when the player's fixedcolormap is in [1, NUMCOLORMAPS).
+	if (fixedlightlev)
+	{
+		plane_constlight = true;
+		return basecolormap.with(fixedlightlev);
+	}
+
+	if (fixedcolormap.isValid())
+	{
+		plane_constlight = true;
+		return fixedcolormap;
+	}
+
+	uint16_t first = 0;
+	bool uniform = true;
+
+	for (int y = miny; y <= maxy; y++)
+	{
+		const double distance = pl_planeheight * FIXED2DOUBLE(yslope[y]);
+
+		unsigned int index = MAXLIGHTZ - 1;
+		const double lightdist = distance * 65536.0;
+		if (lightdist >= 0.0 && lightdist < static_cast<double>(MAXLIGHTZ) * static_cast<double>(1 << LIGHTZSHIFT))
+			index = static_cast<unsigned int>(lightdist) >> LIGHTZSHIFT;
+
+		const uint16_t off = static_cast<uint16_t>(planezlight[index] << 8);
+		plane_lightoff[y] = off;
+
+		if (y == miny)
+			first = off;
+		else if (off != first)
+			uniform = false;
+	}
+
+	plane_constlight = uniform;
+
+	// When every row landed in one band the table is dead weight, so resolve
+	// it here and let the drawers take the constant-light template.
+	return uniform ? basecolormap.with(first >> 8) : basecolormap;
+}
+
+//
+// R_DrawLevelPlaneColumns
+//
+void R_DrawLevelPlaneColumns(visplane_t* pl)
+{
+	// The plane's own row range, so the lighting table costs O(rows covered)
+	// rather than O(viewheight) per plane.
+	int miny = viewheight, maxy = -1;
+
+	for (int x = pl->minx; x <= pl->maxx; x++)
+	{
+		// An untouched column has top[x] == viewheight against a stale bottom[x],
+		// and bottom is only ever written as min(..., viewheight-1), so yl > yh
+		// and it drops out. Same reason R_RenderColumnRange tolerates it.
+		const int yl = std::max<int>(pl->top[x], 0);
+		const int yh = std::min<int>(pl->bottom[x], viewheight - 1);
+		if (yl > yh)
+			continue;
+
+		miny = std::min(miny, yl);
+		maxy = std::max(maxy, yh);
+	}
+
+	if (maxy < miny)
+		return;
+
+	const shaderef_t light = R_BuildPlaneLighting(miny, maxy);
+
+	dpcol.lightoff = plane_constlight ? NULL : plane_lightoff.data();
+
+	dpcol.cbase = light.m_colormap;
+	dpcol.sbase = light.m_shademap;
+
+	// Already 16.16: FIXED2DOUBLE's 1/65536 and the fixed conversion's 65536
+	// cancel, so eu/ev multiply the raw yslope entry. The base is wrapped to keep
+	// the sum in range.
+	dpcol.ubase = (pl_viewxtrans - 65536.0 * floor(pl_viewxtrans / 65536.0)) * 65536.0;
+	dpcol.vbase = (pl_viewytrans - 65536.0 * floor(pl_viewytrans / 65536.0)) * 65536.0;
+
+	const double eu_base = pl_planeheight * pl_viewcos * pl_xscale;
+	const double ev_base = pl_planeheight * -pl_viewsin * pl_yscale;
+	const double eu_step = pl_planeheight * pl_xstepscale / xfoc;
+	const double ev_step = pl_planeheight * pl_ystepscale / xfoc;
+
+	for (int x = pl->minx; x <= pl->maxx; x++)
+	{
+		const int yl = std::max<int>(pl->top[x], 0);
+		const int yh = std::min<int>(pl->bottom[x], viewheight - 1);
+		if (yl > yh)
+			continue;
+
+		// From absolute x, not accumulated, so two visplane splits of one surface
+		// cannot drift apart.
+		const double dx = x - centerx;
+
+		dpcol.eu = eu_base + dx * eu_step;
+		dpcol.ev = ev_base + dx * ev_step;
+		dpcol.x = x;
+		dpcol.yl = yl;
+		dpcol.yh = yh;
+
+		levelcolfunc();
+	}
+}
+
+
+// Per-column range of four-row groups lying wholly inside the visplane, as
+// group indices (screen row y0 = g * 4). Sized to the view, reused across
+// planes; group_first > group_last means the column has no full group.
+std::vector<int> group_first;
+std::vector<int> group_last;
+
+// First column of the run currently open at each group, or -1 for none. Indexed
+// by group, so viewheight/4 entries.
+std::vector<int> group_runstart;
+
+//
+// R_DrawLevelPlaneGroups
+//
+// The same surface as R_DrawLevelPlaneColumns, drawn four screen rows at a time
+// marching in x instead of one column at a time marching in y. See
+// drawplanegroup_t in common/r_draw.h for why that is the form that vectorizes.
+//
+// Two passes. The first records, per column, which groups lie wholly inside the
+// plane, and hands the leftover rows at the top and bottom of each column to the
+// existing scalar drawer -- at most three each, since a group is four rows. The
+// second walks the groups, and within each one walks x emitting maximal runs of
+// columns that cover all four of its rows.
+//
+void R_DrawLevelPlaneGroups(visplane_t* pl)
+{
+	int miny = viewheight, maxy = -1;
+
+	for (int x = pl->minx; x <= pl->maxx; x++)
+	{
+		const int yl = std::max<int>(pl->top[x], 0);
+		const int yh = std::min<int>(pl->bottom[x], viewheight - 1);
+		if (yl > yh)
+			continue;
+
+		miny = std::min(miny, yl);
+		maxy = std::max(maxy, yh);
+	}
+
+	if (maxy < miny)
+		return;
+
+	const shaderef_t light = R_BuildPlaneLighting(miny, maxy);
+
+	dpcol.lightoff = plane_constlight ? NULL : plane_lightoff.data();
+	dpcol.cbase = light.m_colormap;
+	dpcol.sbase = light.m_shademap;
+
+	dpcol.ubase = (pl_viewxtrans - 65536.0 * floor(pl_viewxtrans / 65536.0)) * 65536.0;
+	dpcol.vbase = (pl_viewytrans - 65536.0 * floor(pl_viewytrans / 65536.0)) * 65536.0;
+
+	const double eu_base = pl_planeheight * pl_viewcos * pl_xscale;
+	const double ev_base = pl_planeheight * -pl_viewsin * pl_yscale;
+	const double eu_step = pl_planeheight * pl_xstepscale / xfoc;
+	const double ev_step = pl_planeheight * pl_ystepscale / xfoc;
+
+	// Everything the kernel needs that is per-plane rather than per-group.
+	dpgroup.source = dpcol.source;
+	dpgroup.destination = dpcol.destination;
+	dpgroup.colstep = dpcol.colstep;
+	dpgroup.umask = dpcol.umask;
+	dpgroup.vmask = dpcol.vmask;
+	dpgroup.ushift = dpcol.ushift;
+	dpgroup.vshift = dpcol.vshift;
+
+	if (group_first.size() < static_cast<size_t>(viewwidth))
+	{
+		group_first.resize(viewwidth);
+		group_last.resize(viewwidth);
+	}
+
+	int gmin = viewheight, gmax = -1;
+
+	// ---- pass 1: group bounds per column, and the fringe rows scalar
+	for (int x = pl->minx; x <= pl->maxx; x++)
+	{
+		const int yl = std::max<int>(pl->top[x], 0);
+		const int yh = std::min<int>(pl->bottom[x], viewheight - 1);
+		if (yl > yh)
+		{
+			// An empty interval, so the sweep below opens and closes nothing for
+			// this column. first > last is the only property it relies on.
+			group_first[x] = 0;
+			group_last[x] = -1;
+			continue;
+		}
+
+		const int g0 = (yl + 3) >> 2;			// first group wholly at or below yl
+		const int g1 = ((yh + 1) >> 2) - 1;		// last group wholly at or above yh
+		group_first[x] = g0;
+		group_last[x] = g1;
+
+		// From absolute x, not accumulated, matching R_DrawLevelPlaneColumns.
+		const double dx = x - centerx;
+		dpcol.eu = eu_base + dx * eu_step;
+		dpcol.ev = ev_base + dx * ev_step;
+		dpcol.x = x;
+
+		if (g1 >= g0)
+		{
+			gmin = std::min(gmin, g0);
+			gmax = std::max(gmax, g1);
+
+			if (yl < (g0 << 2))
+			{
+				dpcol.yl = yl;
+				dpcol.yh = (g0 << 2) - 1;
+				levelcolfunc();
+			}
+
+			if (((g1 + 1) << 2) <= yh)
+			{
+				dpcol.yl = (g1 + 1) << 2;
+				dpcol.yh = yh;
+				levelcolfunc();
+			}
+		}
+		else
+		{
+			// Shorter than a group straddling it, so all of it is fringe.
+			dpcol.yl = yl;
+			dpcol.yh = yh;
+			levelcolfunc();
+		}
+	}
+
+	if (gmax < gmin)
+		return;
+
+	// Fills dpgroup for one group's run and draws it. The per-lane constants are
+	// built here rather than hoisted per group -- at 386 runs a frame that is free,
+	// and it lets the sweep emit runs in x order instead of group order.
+	const auto emit = [&](int g, int xa, int xb)
+	{
+		const int y0 = g << 2;
+		dpgroup.y0 = y0;
+		dpgroup.xa = xa;
+		dpgroup.xb = xb;
+
+		// Anchored with the scalar drawer's own expression, so the first column of
+		// every run is bit-identical to it and the DDA cannot drift beyond one run.
+		// The step is R_MapLevelPlane's ustep, which in 16.16 is exactly
+		// eu_step * yslope[y]: per row, and independent of x. That is the trick.
+		const double eu = eu_base + (xa - centerx) * eu_step;
+		const double ev = ev_base + (xa - centerx) * ev_step;
+
+		for (int i = 0; i < 4; i++)
+		{
+			const double Y = static_cast<double>(yslope[y0 + i]);
+
+			dpgroup.ustep[i] = static_cast<dsfixed_t>(static_cast<int64_t>(eu_step * Y));
+			dpgroup.vstep[i] = static_cast<dsfixed_t>(static_cast<int64_t>(ev_step * Y));
+			dpgroup.ufrac[i] = static_cast<dsfixed_t>(static_cast<int64_t>(dpcol.ubase + eu * Y));
+			dpgroup.vfrac[i] = static_cast<dsfixed_t>(static_cast<int64_t>(dpcol.vbase + ev * Y));
+
+			// NULL whenever the plane resolved to one colormap, including
+			// fixedlightlev and fixedcolormap -- there R_BuildPlaneLighting returns
+			// early without filling the table and folds the offset into the
+			// shaderef_t. Adding it again would double-apply it and read past the
+			// shademap.
+			const unsigned int off = dpcol.lightoff ? dpcol.lightoff[y0 + i] : 0u;
+			dpgroup.shade[i] = dpcol.sbase + off;
+			dpgroup.cmap[i] = dpcol.cbase + off;
+		}
+
+		R_DrawLevelGroup();
+	};
+
+	// ---- pass 2: one sweep in x, emitting each group's run as it closes
+	//
+	// Replaces a rescan of [minx, maxx] per group, which cost O(width x groups) to
+	// emit O(covered pairs) of work -- measured at 0.47 scan steps per vectorized
+	// pixel. Group intervals are contiguous, so only the groups at an interval's
+	// ends can open or close between adjacent columns: the event count is bounded
+	// by the boundary's vertical variation, not by width x height. R_MakeSpans,
+	// rotated a quarter turn.
+	const size_t needed = static_cast<size_t>(viewheight / 4) + 1;
+	if (group_runstart.size() < needed)
+		group_runstart.resize(needed);
+
+	for (int g = gmin; g <= gmax; g++)
+		group_runstart[g] = -1;
+
+	// The previous column's interval, empty so the first column opens cleanly.
+	int pg0 = 0, pg1 = -1;
+
+	for (int x = pl->minx; x <= pl->maxx + 1; x++)
+	{
+		// One past the end is an empty column, so every open run closes.
+		const int g0 = (x <= pl->maxx) ? group_first[x] : 0;
+		const int g1 = (x <= pl->maxx) ? group_last[x] : -1;
+
+		// Groups leaving the interval. The two ranges cannot overlap: for a
+		// non-empty [g0, g1] we have g0 - 1 < g1 + 1, and for an empty one
+		// the first range is itself empty.
+		for (int g = pg0; g <= std::min(pg1, g0 - 1); g++)
+			emit(g, group_runstart[g], x - 1);
+		for (int g = std::max(pg0, g1 + 1); g <= pg1; g++)
+			emit(g, group_runstart[g], x - 1);
+
+		// Groups entering it, by the same decomposition.
+		for (int g = g0; g <= std::min(g1, pg0 - 1); g++)
+			group_runstart[g] = x;
+		for (int g = std::max(g0, pg1 + 1); g <= g1; g++)
+			group_runstart[g] = x;
+
+		pg0 = g0;
+		pg1 = g1;
 	}
 }
 
@@ -826,7 +1225,24 @@ void R_DrawLevelPlane(visplane_t *pl)
 	const int light = std::clamp((pl->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight), 0, LIGHTLEVELS - 1);
 	planezlight = zlight[light];
 
-	R_MakeSpans(pl, R_MapLevelPlane);
+	// A NULL levelcolfunc forces spans -- r_drawflat and nodrawers -- which also
+	// keeps R_StoreWallRange's `spanfunc == R_FillSpan` render-mode test correct.
+	//
+	// ARGB flats force spans too: no column drawer reads dpcol.argbsource, so such
+	// a texture would be sampled through the palette instead of in true colour.
+	// Those spans store one pixel per cache line, which makes a PNG flat on a
+	// full-screen floor the known weak spot of the column-major layout.
+	const bool columns = levelcolfunc != NULL && dpcol.argbsource == NULL;
+
+	// R_DrawLevelGroup is NULL on an 8bpp surface, and the group path draws
+	// opaque flats only -- a translucent portal boundary sets levelcolfunc to
+	// the translucent column drawer, which has no group form yet.
+	if (columns && R_DrawLevelGroup != NULL && levelcolfunc == R_DrawLevelColumn)
+		R_DrawLevelPlaneGroups(pl);
+	else if (columns)
+		R_DrawLevelPlaneColumns(pl);
+	else
+		R_MakeSpans(pl, R_MapLevelPlane);
 }
 
 
@@ -851,18 +1267,18 @@ static void R_DrawSingleFlatPlane(visplane_t* pl)
 	// put on a plane need not have, so sample a resized copy of those instead.
 	const Texture* texture = Res_PlaneTexture(res_id, cached);
 
-	dspan.source = texture->mData;
+	dspan.source = dpcol.source = texture->mData;
 	// the 32bpp drawers sample the native ARGB plane when the
 	// texture carries one (NULL otherwise)
-	dspan.argbsource = texture->mARGBData;
+	dspan.argbsource = dpcol.argbsource = texture->mARGBData;
 
 	// [SL] Note that the texture orientation differs from typical Doom span
 	// drawers since flats are stored in column major format now. The roles
 	// of ufrac and vfrac have been reversed to accomodate this.
-	dspan.umask = texture->mWidthMask << texture->mHeightBits;
-	dspan.vmask = texture->mHeightMask;
-	dspan.ushift = FRACBITS - texture->mHeightBits;
-	dspan.vshift = FRACBITS;
+	dspan.umask = dpcol.umask = texture->mWidthMask << texture->mHeightBits;
+	dspan.vmask = dpcol.vmask = texture->mHeightMask;
+	dspan.ushift = dpcol.ushift = FRACBITS - texture->mHeightBits;
+	dspan.vshift = dpcol.vshift = FRACBITS;
 
 	// Warped flats are now handled elsewhere
 
@@ -899,9 +1315,10 @@ static void R_DrawStackFlatBlend(visplane_t* pl)
 	    (pl->sky_transfer & PL_SKYFLAT))
 		return;
 
-	dspan.translevel = (alpha << FRACBITS) / 255;
+	dspan.translevel = dpcol.translevel = (alpha << FRACBITS) / 255;
 	spanfunc = R_DrawTranslucentSpan;
 	spanslopefunc = R_DrawTranslucentSlopeSpan;
+	levelcolfunc = R_DrawTranslucentLevelColumn;
 
 	R_DrawSingleFlatPlane(pl);
 
@@ -1191,43 +1608,5 @@ bool R_PlaneInitData(IWindowSurface* surface)
 
 	return true;
 }
-
-
-//
-// visplanestats
-//
-// Reports the visplane bookkeeping's cost since the last call, then resets.
-//
-BEGIN_COMMAND(visplanestats)
-{
-	const VisplaneStats& s = visplane_stats;
-
-	if (s.frames == 0)
-	{
-		PrintFmt(PRINT_HIGH, "visplanestats: nothing rendered since the last reset\n");
-		return;
-	}
-
-	const double frames = static_cast<double>(s.frames);
-	const double steps = static_cast<double>(s.chainsteps) / frames;
-	const double chain = s.lookups ?
-			static_cast<double>(s.chainsteps) / static_cast<double>(s.lookups) : 0.0;
-
-	PrintFmt(PRINT_HIGH, "visplanestats over {} frames:\n", s.frames);
-	PrintFmt(PRINT_HIGH, "  planes/frame     avg {:.0f}   peak {}   ({} ever allocated)\n",
-			static_cast<double>(s.created) / frames, s.peak_created, s.allocated);
-	PrintFmt(PRINT_HIGH, "  of those, splits avg {:.0f}\n",
-			static_cast<double>(s.splits) / frames);
-	PrintFmt(PRINT_HIGH, "  hash lookups     avg {:.0f}/frame, {:.1f} headers visited each\n",
-			static_cast<double>(s.lookups) / frames, chain);
-	PrintFmt(PRINT_HIGH, "  chain walk       avg {:.0f} headers/frame\n", steps);
-	PrintFmt(PRINT_HIGH, "  span init        avg {:.0f} columns/frame ({:.2f} MB)\n",
-			static_cast<double>(s.spaninit) / frames,
-			static_cast<double>(s.spaninit) / frames * sizeof(unsigned int) / (1024.0 * 1024.0));
-
-	visplane_stats = VisplaneStats();
-	visplane_frame_created = 0;
-}
-END_COMMAND(visplanestats)
 
 VERSION_CONTROL (r_plane_cpp, "$Id$")

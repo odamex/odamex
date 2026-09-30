@@ -761,7 +761,7 @@ void DCanvas::DrawGlyphBlended(const palindex_t* fill, const byte* coverage,
 
 	const int surface_width = mSurface->getWidth();
 	const int surface_height = mSurface->getHeight();
-	const int surface_pitch = mSurface->getPitch();
+	const int surface_pitch = mSurface->getRowStepInBytes();
 
 	// clip to the surface
 	const int x1 = std::max(x, 0);
@@ -780,7 +780,7 @@ void DCanvas::DrawGlyphBlended(const palindex_t* fill, const byte* coverage,
 	{
 		// the planes are column-major, matching the glyph's texture
 		const int plane_column = (col - x) * height;
-		byte* dest = buffer + y1 * surface_pitch + col * sizeof(argb_t);
+		byte* dest = buffer + y1 * surface_pitch + col * mSurface->getColStepInBytes();
 
 		for (int row = y1; row < y2; row++)
 		{
@@ -908,8 +908,8 @@ static int V_ARGBDrawLevel(const DCanvas::EWrapperCode drawer, const Texture* te
 void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, int y) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	int surface_pitch = mSurface->getPitch();
-	int colstep = mSurface->getBytesPerPixel();
+	int surface_pitch = mSurface->getRowStepInBytes();
+	int colstep = mSurface->getColStepInBytes();
 	vdrawfunc	drawfunc;
 
 	y -= texture->mOffsetY;
@@ -987,8 +987,8 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 	}
 
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	int surface_pitch = mSurface->getPitch();
-	int colstep = mSurface->getBytesPerPixel();
+	int surface_pitch = mSurface->getRowStepInBytes();
+	int colstep = mSurface->getColStepInBytes();
 	vdrawsfunc drawfunc;
 
 	// [AM] Adding 1 to the inc variables leads to fewer weird scaling
@@ -1108,31 +1108,54 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const Texture* texture, int x0
 
 
 //
+// DCanvas::DrawTextureFlipped
+//
+// Mirrored 1:1 draw in SURFACE coordinates -- the exact twin of DrawTexture, and
+// it must stay that way. This used to remap from a virtual 320x200 space while
+// DrawTexture did not, and callers pick between them per sprite frame, so
+// mirrored frames landed in a different coordinate space from unmirrored ones.
+//
 void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 {
-	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	int surface_pitch = mSurface->getPitch();
-	int colstep = mSurface->getBytesPerPixel();
+	if (!texture)
+		return;
 
-	vdrawsfunc	drawfunc;
-	int			destwidth, destheight;
+	DrawTextureFlippedStretched(texture, x0, y0, texture->mWidth, texture->mHeight);
+}
 
-	x0 = (surface_width * x0) / 320;
-	y0 = (surface_height * y0) / 200;
-	destwidth = (surface_width * texture->mWidth) / 320;
-	destheight = (surface_height * texture->mHeight) / 200;
-
+//
+// DCanvas::DrawTextureFlippedStretched
+//
+// Mirrored draw scaled to destwidth x destheight -- the twin of
+// DrawTextureStretched, sharing its inc rounding so a mirrored frame and an
+// unmirrored one of equal size come out the same size.
+//
+void DCanvas::DrawTextureFlippedStretched(const Texture* texture, int x0, int y0,
+		const int destwidth, const int destheight) const
+{
 	if (!texture || texture->mWidth <= 0 || texture->mHeight <= 0 || destwidth <= 0 || destheight <= 0)
 		return;
 
-	int xinc = (texture->mWidth << 16) / destwidth + 1;
-	int yinc = (texture->mHeight << 16) / destheight + 1;
-	int xmul = (destwidth << 16) / texture->mWidth;
-	int ymul = (destheight << 16) / texture->mHeight;
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getRowStepInBytes();
+	int colstep = mSurface->getColStepInBytes();
 
-	y0 -= (texture->mOffsetY * ymul) >> 16;
+	vdrawsfunc	drawfunc;
+
+	// Same rounding as DrawSWrapper: round the step up only when the scale is
+	// non-integral, so the two agree on the final size.
+	int xinc = (texture->mWidth << FRACBITS) / destwidth;
+	int yinc = (texture->mHeight << FRACBITS) / destheight;
+	if (xinc & (FRACUNIT - 1))
+		xinc++;
+	if (yinc & (FRACUNIT - 1))
+		yinc++;
+	int xmul = (destwidth << FRACBITS) / texture->mWidth;
+	int ymul = (destheight << FRACBITS) / texture->mHeight;
+
+	y0 -= (texture->mOffsetY * ymul) >> FRACBITS;
 	// flipped drawing measures the x offset from the right-hand edge
-	x0 -= ((texture->mWidth - texture->mOffsetX) * xmul) >> 16;
+	x0 -= ((texture->mWidth - texture->mOffsetX) * xmul) >> FRACBITS;
 
 #ifdef RANGECHECK
 	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
@@ -1153,6 +1176,9 @@ void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 
 	byte* desttop = mSurface->getBuffer()+ y0 * surface_pitch + x0 * colstep;
 
+	const int first_col = (destwidth - 1) * xinc;
+	const int max_col = texture->mWidth - 1;
+
 	// true-color (PNG) textures are drawn natively on 32bpp surfaces
 	// with per-pixel alpha blending, same as DrawWrapper/DrawSWrapper
 	const int argb_level = V_ARGBDrawLevel(EWrapper_Normal, texture, mSurface);
@@ -1160,48 +1186,21 @@ void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 	{
 		if (argb_level > 0)
 		{
-			for (int col = (destwidth - 1) * xinc; col >= 0 ; col -= xinc, desttop += colstep)
-				V_DrawARGBColumnS(texture->getARGBColumn(col >> FRACBITS), desttop,
-				                  (texture->mHeight * ymul) >> FRACBITS, surface_pitch, yinc, argb_level);
+			for (int col = first_col; col >= 0 ; col -= xinc, desttop += colstep)
+				V_DrawARGBColumnS(texture->getARGBColumn(std::min(col >> FRACBITS, max_col)),
+				                  desttop, (texture->mHeight * ymul) >> FRACBITS,
+				                  surface_pitch, yinc, argb_level);
 		}
 		return;
 	}
 
-	for (int col = (destwidth - 1) * xinc; col >= 0 ; col -= xinc, desttop += colstep)
+	for (int col = first_col; col >= 0 ; col -= xinc, desttop += colstep)
 	{
-		const palindex_t* col_data = texture->getColumn(col >> FRACBITS);
+		const palindex_t* col_data = texture->getColumn(std::min(col >> FRACBITS, max_col));
 		drawfunc(col_data, desttop, (texture->mHeight * ymul) >> FRACBITS, surface_pitch, yinc);
 	}
 }
 
-
-//
-// V_DrawBlock
-// Draw a linear block of pixels into the view buffer.
-//
-void DCanvas::DrawBlock(int x, int y, int width, int height, const byte *src) const
-{
-	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	int surface_pitch = mSurface->getPitch();
-	int colstep = mSurface->getBytesPerPixel();
-	int line_length = surface_width * colstep;
-
-#ifdef RANGECHECK
-	if (x < 0 || x + width > surface_width || y < 0 || y + height > surface_height)
-		I_Error("Bad DCanvas::DrawBlock");
-#endif
-
-	V_MarkRect(x, y, width, height);
-
-	byte* dest = mSurface->getBuffer() + y * surface_pitch + x * colstep;
-
-	while (height--)
-	{
-		memcpy(dest, src, line_length);
-		src += line_length;
-		dest += surface_pitch;
-	}
-}
 
 
 
@@ -1213,9 +1212,10 @@ void DCanvas::DrawBlock(int x, int y, int width, int height, const byte *src) co
 void DCanvas::GetBlock(int x, int y, int width, int height, byte *dest) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	int surface_pitch = mSurface->getPitch();
-	int colstep = mSurface->getBytesPerPixel();
-	int line_length = surface_width * colstep;
+	int surface_pitch = mSurface->getRowStepInBytes();
+	int colstep = mSurface->getColStepInBytes();
+	// the caller's packed linear block, so never the surface's column step
+	int line_length = surface_width * mSurface->getBytesPerPixel();
 
 #ifdef RANGECHECK
 	if (x < 0 || x + width > surface_width || y < 0 || y + height > surface_height)
@@ -1224,9 +1224,24 @@ void DCanvas::GetBlock(int x, int y, int width, int height, byte *dest) const
 
 	const byte* src = mSurface->getBuffer() + y * surface_pitch + x * colstep;
 
+	// A row of the block is strided, because the surface stores columns.
+	//
+	// The loop below walks surface_width, not the width parameter, and steps the
+	// packed buffer by line_length -- so it is correct only for a FULL-WIDTH
+	// block. Every caller (the wipes) passes one; assert it rather than leaving
+	// it for the first sub-block caller to discover.
+	assert(width == surface_width);
+	const int pixelsize = mSurface->getBytesPerPixel();
 	while (height--)
 	{
-		memcpy(dest, src, line_length);
+		const byte* srcpixel = src;
+		byte* destpixel = dest;
+		for (int col = 0; col < surface_width; col++)
+		{
+			memcpy(destpixel, srcpixel, pixelsize);
+			srcpixel += colstep;
+			destpixel += pixelsize;
+		}
 		src += surface_pitch;
 		dest += line_length;
 	}
@@ -1241,18 +1256,20 @@ void DCanvas::GetBlock(int x, int y, int width, int height, byte *dest) const
 
 template<typename PIXEL_T>
 static inline void V_GetTransposedBlockGeneric(byte* destbuffer, const byte* sourcebuffer,
-			int x, int y, int width, int height, int sourcepitchpixels)
+			int x, int y, int width, int height, int rowstep, int colstep)
 {
-	const PIXEL_T* source = reinterpret_cast<const PIXEL_T*>(sourcebuffer) + y * sourcepitchpixels + x;
+	const PIXEL_T* source = reinterpret_cast<const PIXEL_T*>(sourcebuffer) + y * rowstep + x * colstep;
 	PIXEL_T* dest = reinterpret_cast<PIXEL_T*>(destbuffer);
 
 	for (int col = x; col < x + width; col++)
 	{
-		const PIXEL_T* sourceptr = source++;
+		const PIXEL_T* sourceptr = source;
+		source += colstep;
+
 		for (int row = y; row < y + height; row++)
 		{
 			*dest++ = *sourceptr;
-			sourceptr += sourcepitchpixels;
+			sourceptr += rowstep;
 		}
 	}
 }
@@ -1268,10 +1285,12 @@ void DCanvas::GetTransposedBlock(int x, int y, int width, int height, byte* dest
 
 	if (mSurface->getBitsPerPixel() == 8)
 		V_GetTransposedBlockGeneric<palindex_t>(destbuffer, mSurface->getBuffer(),
-				x, y, width, height, mSurface->getPitchInPixels());
+				x, y, width, height,
+				mSurface->getRowStepInPixels(), mSurface->getColStepInPixels());
 	else
 		V_GetTransposedBlockGeneric<argb_t>(destbuffer, mSurface->getBuffer(),
-				x, y, width, height, mSurface->getPitchInPixels());
+				x, y, width, height,
+				mSurface->getRowStepInPixels(), mSurface->getColStepInPixels());
 }
 
 VERSION_CONTROL (v_draw_cpp, "$Id$")

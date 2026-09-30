@@ -124,21 +124,33 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 {
 	static constexpr uintptr_t alignment = 16;
 
+	// A surface stores columns, so the stored line is as long as the surface is
+	// tall and there are as many of them as it is wide.
+	const uint16_t line_length = mHeight;
+	const uint16_t line_count = mWidth;
+
 	// Not given a pitch? Just base pitch on the given width
 	if (pitch == 0)
 	{
 		// make the pitch a multiple of the alignment value
-		mPitch = (mWidth * mPixelFormat.getBytesPerPixel() + alignment - 1) & ~(alignment - 1);
+		mPitch = (line_length * mPixelFormat.getBytesPerPixel() + alignment - 1) & ~(alignment - 1);
 		// add a little to the pitch to prevent cache thrashing if it's 512 or 1024
 		if ((mPitch & 511) == 0)
 			mPitch += alignment;
+
+		// Make pitch align with cache lines.
+		static constexpr uint16_t cacheline = 64;
+
+		mPitch = (mPitch + cacheline - 1) & ~(cacheline - 1);
+		if (((mPitch / cacheline) & 1) == 0)
+			mPitch += cacheline;
 	}
 
 	mPitchInPixels = mPitch / mPixelFormat.getBytesPerPixel();
 
 	if (mOwnsSurfaceBuffer)
 	{
-		uint8_t* buffer = new uint8_t[mPitch * mHeight + alignment];
+		uint8_t* buffer = new uint8_t[mPitch * line_count + alignment];
 
 		// calculate the offset from buffer to the next aligned memory address
 		uintptr_t offset = (reinterpret_cast<uintptr_t>(buffer + alignment) & ~(alignment - 1)) - reinterpret_cast<uintptr_t>(buffer);
@@ -228,85 +240,59 @@ inline argb_t ConvertPixel(argb_t value, const argb_t* palette)
 
 template <typename SOURCE_PIXEL_T, typename DEST_PIXEL_T>
 static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
-					int destpitchpixels, int srcpitchpixels, int destw, int desth,
+					int destrowstep, int srcrowstep, int destcolstep, int srccolstep,
+					int destw, int desth,
 					fixed_t xstep, fixed_t ystep, const argb_t* palette)
 {
-	fixed_t yfrac = 0;
-	for (int y = 0; y < desth; y++)
+	for (int x = 0; x < destw; x++)
 	{
-		if (sizeof(DEST_PIXEL_T) == sizeof(SOURCE_PIXEL_T) && xstep == FRACUNIT)
-		{
-			memcpy(dest, source, destw * sizeof(SOURCE_PIXEL_T));
-		}
-		else
-		{
-			fixed_t xfrac = 0;
-			for (int x = 0; x < destw; x++)
-			{
-				dest[x] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
-				xfrac += xstep;
-			}
-		}
+		const SOURCE_PIXEL_T* s = source +
+				static_cast<int>((static_cast<int64_t>(x) * xstep) >> FRACBITS) * srccolstep;
+		DEST_PIXEL_T* d = dest + x * destcolstep;
 
-		dest += destpitchpixels;
-		yfrac += ystep;
+		fixed_t yf = 0;
+		for (int y = 0; y < desth; y++)
+		{
+			*d = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(*s, palette);
+			d += destrowstep;
 
-		source += srcpitchpixels * (yfrac >> FRACBITS);
-		yfrac &= (FRACUNIT - 1);
+			yf += ystep;
+			s += srcrowstep * (yf >> FRACBITS);
+			yf &= (FRACUNIT - 1);
+		}
 	}
 }
 
 template <typename SOURCE_PIXEL_T, typename DEST_PIXEL_T>
 static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
-					int destpitchpixels, int srcpitchpixels,
+					int destrowstep, int srcrowstep, int destcolstep, int srccolstep,
 					int destw, int desth,
 					int off_top, int off_bottom, int off_left, int off_right,
 					fixed_t xstep, fixed_t ystep, const argb_t* palette)
 {
-	fixed_t yfrac = 0;
+	const int firstcol = off_left;
+	const int lastcol = destw - off_right;		// exclusive
+	const int lastrow = desth - off_bottom;		// exclusive
 
-	int pixelcur = 0;
-	for (int y = 0; y < desth; y++)
+	for (int x = firstcol; x < lastcol; x++)
 	{
-		// Find if we're off the top or bottom of page
-		if (y - off_top >= 0 && y < desth - off_bottom)
+		const SOURCE_PIXEL_T* s = source +
+				static_cast<int>((static_cast<int64_t>(x) * xstep) >> FRACBITS) * srccolstep;
+		DEST_PIXEL_T* d = dest + (x - firstcol) * destcolstep;
+
+		fixed_t yf = 0;
+		for (int y = 0; y < lastrow; y++)
 		{
-			if (sizeof(DEST_PIXEL_T) == sizeof(SOURCE_PIXEL_T) && xstep == FRACUNIT)
+			if (y >= off_top)
 			{
-				for (int x = 0; x < destw; x++)
-				{
-					// Find if we're off the left or right of page
-					if (x - off_left >= 0 && x < destw - off_right)
-					{
-						dest[pixelcur] = source[x];
-						pixelcur++;
-					}
-				}
-				pixelcur = 0;
+				d[y * destrowstep] =
+						ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(*s, palette);
 			}
-			else
-			{
-				fixed_t xfrac = 0;
-				for (int x = 0; x < destw; x++)
-				{
-					// Find if we're off the left or right of page
-					if (x - off_left >= 0 && x < destw - off_right)
-					{
-						dest[pixelcur] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
-						pixelcur++;
-					}
 
-					xfrac += xstep;
-				}
-				pixelcur = 0;
-			}
+			yf += ystep;
+			s += srcrowstep * (yf >> FRACBITS);
+			yf &= (FRACUNIT - 1);
 		}
-
-		dest += destpitchpixels;
-		yfrac += ystep;
-
-		source += srcpitchpixels * (yfrac >> FRACBITS);
-		yfrac &= (FRACUNIT - 1);
 	}
 }
 
@@ -412,18 +398,20 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 
 	int srcbits = source_surface->getBitsPerPixel();
 	int destbits = getBitsPerPixel();
-	int srcpitchpixels = source_surface->getPitchInPixels();
-	int destpitchpixels = getPitchInPixels();
+	const int srcrowstep = source_surface->getRowStepInPixels();
+	const int destrowstep = getRowStepInPixels();
+	const int srccolstep = source_surface->getColStepInPixels();
+	const int destcolstep = getColStepInPixels();
 
 	const argb_t* palette = source_surface->getPalette();
 
 	if (srcbits == 8 && destbits == 8)
 	{
 		const palindex_t* source =
-		    static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
-		palindex_t* dest = static_cast<palindex_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
+		    static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcrowstep + srcx * srccolstep;
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer()) + buffery * destrowstep + bufferx * destcolstep;
 
-		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
+		BlitLoopCrop(dest, source, destrowstep, srcrowstep, destcolstep, srccolstep,
 			destw, desth,
 			off_top, off_bottom, off_left, off_right,
 			xstep, ystep, palette);
@@ -434,10 +422,10 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 			return;
 
 		const palindex_t* source =
-		    static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
-		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
+		    static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcrowstep + srcx * srccolstep;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + buffery * destrowstep + bufferx * destcolstep;
 
-		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
+		BlitLoopCrop(dest, source, destrowstep, srcrowstep, destcolstep, srccolstep,
 				destw, desth,
 				off_top, off_bottom, off_left, off_right,
 				xstep, ystep, palette);
@@ -450,16 +438,45 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 	else if (srcbits == 32 && destbits == 32)
 	{
 		const argb_t* source =
-		    reinterpret_cast<const argb_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
-		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
+		    reinterpret_cast<const argb_t*>(source_surface->getBuffer()) + srcy * srcrowstep + srcx * srccolstep;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + buffery * destrowstep + bufferx * destcolstep;
 
-		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
+		BlitLoopCrop(dest, source, destrowstep, srcrowstep, destcolstep, srccolstep,
 			destw, desth,
 			off_top, off_bottom, off_left, off_right,
 			xstep, ystep, palette);
 	}
 }
 
+
+//
+// BlitStoredLines
+//
+// A 1:1 blit between two surfaces of the same size. A stored line is contiguous
+// on both sides, so walk those rather than addressing by screen coordinate --
+// without it the 8bpp-to-32bpp presentation pass is strided on both sides.
+//
+template <typename SOURCE_PIXEL_T, typename DEST_PIXEL_T>
+static void BlitStoredLines(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
+					int destpitchpixels, int srcpitchpixels,
+					int line_length, int line_count, const argb_t* palette)
+{
+	for (int line = 0; line < line_count; line++)
+	{
+		if (sizeof(DEST_PIXEL_T) == sizeof(SOURCE_PIXEL_T))
+		{
+			memcpy(dest, source, line_length * sizeof(SOURCE_PIXEL_T));
+		}
+		else
+		{
+			for (int i = 0; i < line_length; i++)
+				dest[i] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[i], palette);
+		}
+
+		dest += destpitchpixels;
+		source += srcpitchpixels;
+	}
+}
 
 //
 // IWindowSurface::blit
@@ -470,6 +487,45 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth)
 {
+	// A whole-surface 1:1 blit needs no coordinate arithmetic at all.
+	if (srcx == 0 && srcy == 0 && destx == 0 && desty == 0 &&
+		srcw == destw && srch == desth &&
+		srcw == source_surface->getWidth() && srch == source_surface->getHeight() &&
+		destw == getWidth() && desth == getHeight())
+	{
+		const int line_length = getHeight();
+		const int line_count = getWidth();
+		const argb_t* palette = source_surface->getPalette();
+
+		const int srcbits = source_surface->getBitsPerPixel();
+		const int destbits = getBitsPerPixel();
+
+		if (srcbits == 8 && destbits == 8)
+		{
+			BlitStoredLines(static_cast<palindex_t*>(getBuffer()),
+					static_cast<const palindex_t*>(source_surface->getBuffer()),
+					getPitchInPixels(), source_surface->getPitchInPixels(),
+					line_length, line_count, palette);
+			return;
+		}
+		else if (srcbits == 8 && destbits == 32 && palette != NULL)
+		{
+			BlitStoredLines(reinterpret_cast<argb_t*>(getBuffer()),
+					static_cast<const palindex_t*>(source_surface->getBuffer()),
+					getPitchInPixels(), source_surface->getPitchInPixels(),
+					line_length, line_count, palette);
+			return;
+		}
+		else if (srcbits == 32 && destbits == 32)
+		{
+			BlitStoredLines(reinterpret_cast<argb_t*>(getBuffer()),
+					reinterpret_cast<const argb_t*>(source_surface->getBuffer()),
+					getPitchInPixels(), source_surface->getPitchInPixels(),
+					line_length, line_count, palette);
+			return;
+		}
+	}
+
 	// clamp to source surface edges
 	if (srcx < 0)
 	{
@@ -517,27 +573,31 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 
 	int srcbits = source_surface->getBitsPerPixel();
 	int destbits = getBitsPerPixel();
-	int srcpitchpixels = source_surface->getPitchInPixels();
-	int destpitchpixels = getPitchInPixels();
+	const int srcrowstep = source_surface->getRowStepInPixels();
+	const int destrowstep = getRowStepInPixels();
+	const int srccolstep = source_surface->getColStepInPixels();
+	const int destcolstep = getColStepInPixels();
 
 	const argb_t* palette = source_surface->getPalette();
 
 	if (srcbits == 8 && destbits == 8)
 	{
-		const palindex_t* source = static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
-		palindex_t* dest = static_cast<palindex_t*>(getBuffer()) + desty * destpitchpixels + destx;
+		const palindex_t* source = static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcrowstep + srcx * srccolstep;
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer()) + desty * destrowstep + destx * destcolstep;
 
-		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
+		BlitLoop(dest, source, destrowstep, srcrowstep, destcolstep, srccolstep,
+				destw, desth, xstep, ystep, palette);
 	}
 	else if (srcbits == 8 && destbits == 32)
 	{
 		if (palette == NULL)
 			return;
 
-		const palindex_t* source = static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
-		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + desty * destpitchpixels + destx;
+		const palindex_t* source = static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcrowstep + srcx * srccolstep;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + desty * destrowstep + destx * destcolstep;
 
-		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
+		BlitLoop(dest, source, destrowstep, srcrowstep, destcolstep, srccolstep,
+				destw, desth, xstep, ystep, palette);
 	}
 	else if (srcbits == 32 && destbits == 8)
 	{
@@ -546,10 +606,11 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	}
 	else if (srcbits == 32 && destbits == 32)
 	{
-		const argb_t* source = reinterpret_cast<const argb_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
-		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + desty * destpitchpixels + destx;
+		const argb_t* source = reinterpret_cast<const argb_t*>(source_surface->getBuffer()) + srcy * srcrowstep + srcx * srccolstep;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + desty * destrowstep + destx * destcolstep;
 
-		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
+		BlitLoop(dest, source, destrowstep, srcrowstep, destcolstep, srccolstep,
+				destw, desth, xstep, ystep, palette);
 	}
 }
 
@@ -565,15 +626,20 @@ void IWindowSurface::clear()
 
 	lock();
 
+	// The whole surface is cleared, so walk the stored lines -- columns -- rather
+	// than addressing by screen coordinate.
+	const int line_length = getHeight();
+	const int line_count = getWidth();
+
 	if (getBitsPerPixel() == 8)
 	{
 		const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 		palindex_t color_index = V_BestColor(palette_colors, color);
 		palindex_t* dest = static_cast<palindex_t*>(getBuffer());
 
-		for (int y = 0; y < getHeight(); y++)
+		for (int line = 0; line < line_count; line++)
 		{
-			memset(dest, color_index, getWidth());
+			memset(dest, color_index, line_length);
 			dest += getPitchInPixels();
 		}
 	}
@@ -581,10 +647,10 @@ void IWindowSurface::clear()
 	{
 		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer());
 
-		for (int y = 0; y < getHeight(); y++)
+		for (int line = 0; line < line_count; line++)
 		{
-			for (int x = 0; x < getWidth(); x++)
-				dest[x] = color;
+			for (int i = 0; i < line_length; i++)
+				dest[i] = color;
 
 			dest += getPitchInPixels();
 		}
@@ -785,7 +851,8 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	if (requested_mode.bpp != validated_mode.bpp)
 	{
 		const PixelFormat* format = requested_mode.bpp == 8 ? I_Get8bppPixelFormat() : I_Get32bppPixelFormat();
-		converted_surface = new IWindowSurface(surface_width, surface_height, format);
+		converted_surface = new IWindowSurface(surface_width, surface_height, format,
+											NULL, 0);
 		primary_surface = converted_surface;
 	}
 
@@ -860,14 +927,18 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	}
 
 	// Create emulated_surface for emulating low resolution modes.
+	// R_GetRenderingSurface() hands this to the view drawers in place of the
+	// primary surface while vid_320x200 or vid_640x400 is set.
 	if (vid_320x200)
 	{
-		emulated_surface = new IWindowSurface(320, 200, primary_surface->getPixelFormat());
+		emulated_surface = new IWindowSurface(320, 200, primary_surface->getPixelFormat(),
+											NULL, 0);
 		emulated_surface->clear();
 	}
 	else if (vid_640x400)
 	{
-		emulated_surface = new IWindowSurface(640, 400, primary_surface->getPixelFormat());
+		emulated_surface = new IWindowSurface(640, 400, primary_surface->getPixelFormat(),
+											NULL, 0);
 		emulated_surface->clear();
 	}
 

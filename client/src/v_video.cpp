@@ -778,17 +778,18 @@ template <typename PIXEL_T>
 static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
 {
 	const int dot_width = CleanXfac, dot_height = CleanYfac;
-	const int pitch_in_pixels = surface->getPitchInPixels();
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
 
 	PIXEL_T* dest = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) +
-			(surface->getHeight() - 1 - dot_height) * pitch_in_pixels +
-			2 * n * dot_width;
+			(surface->getHeight() - 1 - dot_height) * rowstep +
+			2 * n * dot_width * colstep;
 
 	for (int y = 0; y < dot_height; y++)
 	{
 		for (int x = 0; x < dot_width; x++)
-			dest[x] = color;
-		dest += pitch_in_pixels;
+			dest[x * colstep] = color;
+		dest += rowstep;
 	}
 }
 
@@ -888,36 +889,34 @@ void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int
 	palindex_t source[256 * 256];
 	V_TransposeTextureData(source, texture->mData, tex_width, tex_height, texture->mHeight);
 
-	int surface_advance = mSurface->getPitchInPixels() - right + left;
+	const int rowstep = mSurface->getRowStepInPixels();
+	const int colstep = mSurface->getColStepInPixels();
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
-		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + top * mSurface->getPitchInPixels() + left;
+		// A screen column is the contiguous run, so walk columns on the outside.
+		palindex_t* column =
+				static_cast<palindex_t*>(mSurface->getBuffer()) + top * rowstep + left * colstep;
 
-		for (int y = top; y < bottom; y++)
+		for (int x = left; x < right; x++, column += colstep)
 		{
-			for (int x = left; x < right; )
-			{
-				int amount = std::min(tex_width - (x & tex_width_mask), right - x);
-				memcpy(dest, source + ((y & tex_height_mask) << tex_width_bits) + (x & tex_width_mask), amount);
-				dest += amount;
-				x += amount;
-			}
-
-			dest += surface_advance;
+			const int u = x & tex_width_mask;
+			palindex_t* dest = column;
+			for (int y = top; y < bottom; y++, dest += rowstep)
+				*dest = source[((y & tex_height_mask) << tex_width_bits) + u];
 		}
 	}
 	else
 	{
-		argb_t* dest = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * mSurface->getPitchInPixels() + left;
+		argb_t* column =
+				reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * rowstep + left * colstep;
 
-		for (int y = top; y < bottom; y++)
+		for (int x = left; x < right; x++, column += colstep)
 		{
-			const palindex_t* src_line = source + ((y & tex_height_mask) << tex_width_bits);
-			for (int x = left; x < right; x++)
-				*dest++ = V_Palette.shade(src_line[x & tex_width_mask]);
-
-			dest += surface_advance;
+			const int u = x & tex_width_mask;
+			argb_t* dest = column;
+			for (int y = top; y < bottom; y++, dest += rowstep)
+				*dest = V_Palette.shade(source[((y & tex_height_mask) << tex_width_bits) + u]);
 		}
 	}
 }
@@ -968,30 +967,31 @@ void DCanvas::DrawTextureFullScreen(const Texture* texture, bool clear) const
 // [RH] Set an area to a specified color
 void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) const
 {
-	const int surface_pitch_pixels = mSurface->getPitchInPixels();
+	const int rowstep = mSurface->getRowStepInPixels();
+	const int colstep = mSurface->getColStepInPixels();
+
+	// A screen column is the contiguous run
+	const int run = bottom - top;
+	const int count = right - left;
+	const int stride = colstep;
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
 		const palindex_t color_index = V_BestColor(V_GetDefaultPalette()->basecolors, color);
-		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + top * surface_pitch_pixels + left;
+		palindex_t* line = static_cast<palindex_t*>(mSurface->getBuffer()) + top * rowstep + left * colstep;
 
-		const int line_length = (right - left) * sizeof(palindex_t);
-		for (int y = top; y < bottom; y++)
-		{
-			memset(dest, color_index, line_length);
-			dest += surface_pitch_pixels;
-		}
+		for (int i = 0; i < count; i++, line += stride)
+			memset(line, color_index, run * sizeof(palindex_t));
 	}
 	else
 	{
 		color = V_GammaCorrect(color);
-		argb_t* dest = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * surface_pitch_pixels + left;
+		argb_t* line = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * rowstep + left * colstep;
 
-		for (int y = top; y < bottom; y++)
+		for (int i = 0; i < count; i++, line += stride)
 		{
-			for (int x = 0; x < right - left; x++)
-				dest[x] = color;
-			dest += surface_pitch_pixels;
+			for (int j = 0; j < run; j++)
+				line[j] = color;
 		}
 	}
 }
@@ -1070,7 +1070,8 @@ EXTERN_CVAR (ui_dimcolor)
 void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float famount) const
 {
 	const int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	const int surface_pitch_pixels = mSurface->getPitchInPixels();
+	const int rowstep = mSurface->getRowStepInPixels();
+	const int colstep = mSurface->getColStepInPixels();
 
 	if (x1 < 0 || x1 + w > surface_width || y1 < 0 || y1 + h > surface_height)
 		return;
@@ -1092,41 +1093,21 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		const argb_t color = V_GetColorFromString(color_str);
 		const unsigned int fg = fg2rgb[V_BestOpaqueColor(V_GetDefaultPalette()->basecolors, color)];
 
-		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + y1 * surface_pitch_pixels + x1;
-		const int advance = surface_pitch_pixels - w;
+		// A screen column is the contiguous run
+		const int run = h;
+		const int count = w;
+		const int stride = colstep;
 
-		const int xcount = w / 4;
-		const int xcount_remainder = w % 4;
+		palindex_t* line = static_cast<palindex_t*>(mSurface->getBuffer()) + y1 * rowstep + x1 * colstep;
 
-		for (y = h; y > 0; y--)
+		for (y = count; y > 0; y--, line += stride)
 		{
-			for (x = xcount; x > 0; x--)
+			for (x = 0; x < run; x++)
 			{
-				// Unroll the loop for a speed improvement
-				bg = bg2rgb[*dest];
+				bg = bg2rgb[line[x]];
 				bg = (fg+bg) | 0x1f07c1f;
-				*dest++ = RGB32k[0][0][bg&(bg>>15)];
-
-				bg = bg2rgb[*dest];
-				bg = (fg+bg) | 0x1f07c1f;
-				*dest++ = RGB32k[0][0][bg&(bg>>15)];
-
-				bg = bg2rgb[*dest];
-				bg = (fg+bg) | 0x1f07c1f;
-				*dest++ = RGB32k[0][0][bg&(bg>>15)];
-
-				bg = bg2rgb[*dest];
-				bg = (fg+bg) | 0x1f07c1f;
-				*dest++ = RGB32k[0][0][bg&(bg>>15)];
+				line[x] = RGB32k[0][0][bg&(bg>>15)];
 			}
-			for (x = xcount_remainder; x > 0; x--)
-			{
-				// account for widths that aren't multiples of 4
-				bg = bg2rgb[*dest];
-				bg = (fg+bg) | 0x1f07c1f;
-				*dest++ = RGB32k[0][0][bg&(bg>>15)];
-			}
-			dest += advance;
 		}
 	}
 	else

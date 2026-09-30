@@ -79,7 +79,6 @@ public:
 	{	return mSurface;	}
 
 	// Draw a linear block of pixels into the view buffer.
-	void DrawBlock (int x, int y, int width, int height, const byte *src) const;
 
 	// Reads a linear block of pixels from the view buffer.
 	void GetBlock (int x, int y, int width, int height, byte *dest) const;
@@ -108,6 +107,8 @@ public:
 	void PrintStr(int x, int y, const char *s, int default_color = -1, bool use_color_codes = true, int scale = 1) const;
 
 	void DrawTextureFlipped(const Texture* texture, int x, int y) const;
+	void DrawTextureFlippedStretched(const Texture* texture, int x, int y,
+			int destwidth, int destheight) const;
 	void DrawFontTextCleanMove(const OFont* font, int normalcolor, int x, int y, const char *string) const;
 	void DrawFontText(const OFont* font, int normalcolor, int x, int y, const char *string, bool force_opaque = true) const;
 
@@ -165,6 +166,7 @@ public:
 	void DrawPatchCleanNoMove (const Texture* t, int x, int y) const { DrawTextureCleanNoMove(t, x, y); }
 	void DrawPatchFullScreen (const Texture* t, bool clear = true) const { DrawTextureFullScreen(t, clear); }
 	void DrawPatchFlipped (const Texture* t, int x, int y) const { DrawTextureFlipped(t, x, y); }
+	void DrawPatchFlippedStretched (const Texture* t, int x, int y, int dw, int dh) const { DrawTextureFlippedStretched(t, x, y, dw, dh); }
 	void DrawLucentPatch (const Texture* t, int x, int y) const { DrawLucentTexture(t, x, y); }
 	void DrawLucentPatchClean (const Texture* t, int x, int y) const { DrawLucentTextureClean(t, x, y); }
 	void DrawLucentPatchStretched (const Texture* t, int x, int y, int dw, int dh) const { DrawLucentTextureStretched(t, x, y, dw, dh); }
@@ -456,15 +458,24 @@ forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int to
 		fb + ((db * toa) >> 8));
 }
 
-// Alpha blend between two RGB colors with two alpha values
-// 0 <= froma <= 255
-// 0 <=   toa <= 255
+// Alpha blend between two RGB colors with two alpha values.
+//
+// Both weights must satisfy 0 <= w and froma + toa <= 256. This blends on the
+// PACKED word, two channels at a time, so a weight out of range does not saturate
+// one channel -- it carries into the next.
+// Make sure every caller of this function clamps.
 forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa)
 {
-	return argb_t(
-		(from.getr() * froma + to.getr() * toa) >> 8,
-		(from.getg() * froma + to.getg() * toa) >> 8,
-		(from.getb() * froma + to.getb() * toa) >> 8);
+	constexpr uint32_t LANE = 0x00FF00FFu;
+
+	assert(froma >= 0 && toa >= 0 && froma + toa <= 256);
+
+	const uint32_t f = from, t = to;
+
+	const uint32_t even = (((f & LANE) * froma + (t & LANE) * toa) >> 8) & LANE;
+	const uint32_t odd = ((((f >> 8) & LANE) * froma + ((t >> 8) & LANE) * toa) >> 8) & LANE;
+
+	return argb_t(even | (odd << 8) | argb_t::alphaMask());
 }
 
 void V_DrawFPSWidget();

@@ -122,6 +122,10 @@ extern int				lightscaleymul;
 //
 extern void 			(*colfunc) (void);
 extern void 			(*spanfunc) (void);
+
+// Draws one column of a level plane, or NULL when planes must go through the
+// span path.
+extern void 			(*levelcolfunc) (void);
 extern void				(*spanslopefunc) (void);
 
 

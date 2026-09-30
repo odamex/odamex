@@ -1021,11 +1021,14 @@ bool C_BlendConCharsSheet(const ResourceId res_id)
 	IWindowSurface* temp_surface = I_AllocateSurface(width, height, 8);
 	temp_surface->lock();
 
-	// the surface is 8bpp, so its pitch is both bytes and pixels per row
-	const ptrdiff_t pitch = temp_surface->getPitch();
+	// 8bpp, so a step in bytes is a step in pixels.
+	const ptrdiff_t rowstep = temp_surface->getRowStepInBytes();
+	const ptrdiff_t colstep = temp_surface->getColStepInBytes();
 
-	for (ptrdiff_t y = 0; y < height; y++)
-		memset(temp_surface->getBuffer() + (y * pitch), CONCHARS_TRANSCOLOR, width);
+	// Whole stored lines, padding included -- the padding is scratch. A stored line
+	// is a screen column, so there are as many as the surface is wide.
+	memset(temp_surface->getBuffer(), CONCHARS_TRANSCOLOR,
+			static_cast<size_t>(temp_surface->getPitch()) * width);
 
 	// paste the sheet into the linear byte buffer
 	DCanvas* canvas = temp_surface->getDefaultCanvas();
@@ -1035,14 +1038,14 @@ bool C_BlendConCharsSheet(const ResourceId res_id)
 	{
 		byte* dest = ConChars.data() + (i * CONCHARS_GLYPH_BYTES);
 		const byte* source = temp_surface->getBuffer() +
-		                     ((i / cols) * CONCHARS_GLYPH_DIM * pitch) +
-		                     ((i % cols) * CONCHARS_GLYPH_DIM);
+		                     ((i / cols) * CONCHARS_GLYPH_DIM * rowstep) +
+		                     ((i % cols) * CONCHARS_GLYPH_DIM * colstep);
 
 		for (int z = 0; z < CONCHARS_GLYPH_DIM; z++)
 		{
 			for (int a = 0; a < CONCHARS_GLYPH_DIM; a++)
 			{
-				const byte val = source[a];
+				const byte val = source[a * colstep];
 				if (val == CONCHARS_TRANSCOLOR)
 				{
 					dest[a] = 0x00;
@@ -1056,7 +1059,7 @@ bool C_BlendConCharsSheet(const ResourceId res_id)
 			}
 
 			dest += CONCHARS_ROW_BYTES;
-			source += pitch;
+			source += rowstep;
 		}
 	}
 

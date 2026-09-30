@@ -252,15 +252,18 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
     SDL_DisplayMode sdl_mode;
     SDL_GetWindowDisplayMode(mWindow->mSDLWindow, &sdl_mode);
 
+	// The surface stores screen columns, so its buffer is the image with both axes
+	// swapped.
 	mSDLTexture = SDL_CreateTexture(
 				mSDLRenderer,
 				sdl_mode.format,
 				texture_flags,
-				mWidth, mHeight);
+				mHeight, mWidth);
 
 	if (mSDLTexture == nullptr)
 		I_FatalError("I_InitVideo: unable to create SDL2 texture: {}\n", SDL_GetError());
 
+	// Column-major, like every surface in the program.
 	mSurface = new IWindowSurface(width, height, &mFormat);
     if (mSurface->getBitsPerPixel() == 8)
         m8bppTo32BppSurface = new IWindowSurface(width, height, mWindow->getPixelFormat());
@@ -325,6 +328,7 @@ void ISDL20TextureWindowSurfaceManager::startRefresh()
 //
 // ISDL20TextureWindowSurfaceManager::finishRefresh
 //
+
 void ISDL20TextureWindowSurfaceManager::finishRefresh()
 {
   if (mSurface->getBitsPerPixel() == 8)
@@ -338,7 +342,15 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
     SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
   }
 
-	SDL_RenderCopy(mSDLRenderer, mSDLTexture, nullptr, nullptr);
+	// Use GPU to rotate the texture 90 degrees and flip it vertically.
+	const SDL_Rect dest = {
+		(mWidth - mHeight) / 2,
+		(mHeight - mWidth) / 2,
+		mHeight,
+		mWidth };
+
+	SDL_RenderCopyEx(mSDLRenderer, mSDLTexture, nullptr, &dest,
+					90.0, nullptr, SDL_FLIP_VERTICAL);
 
 	SDL_RenderPresent(mSDLRenderer);
 }

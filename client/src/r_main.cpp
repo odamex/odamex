@@ -27,6 +27,8 @@
 #include "odamex.h"
 
 #include <algorithm>
+#include <chrono>
+#include <vector>
 
 #include <stdlib.h>
 #include <math.h>
@@ -45,6 +47,7 @@
 #include "m_vectors.h"
 #include "am_map.h"
 #include "cl_demo.h"
+#include "c_dispatch.h"
 
 extern NetDemo netdemo;
 
@@ -104,6 +107,7 @@ fargb_t blend_color(0.0f, 255.0f, 255.0f, 255.0f);
 
 void (*colfunc) (void);
 void (*spanfunc) (void);
+void (*levelcolfunc) (void);
 void (*spanslopefunc) (void);
 
 // [AM] Number of fineangles in a default 90 degree FOV at a 4:3 resolution.
@@ -592,7 +596,7 @@ bool R_CheckProjectionY(int &y1, int &y2)
 //
 static inline void R_DrawPixel(int x, int y, byte color)
 {
-	byte* dest = dcol.destination + y * dcol.pitch_in_pixels + x;
+	byte* dest = dcol.destination + y * dcol.pitch_in_pixels + x * dcol.colstep;
 	*dest = color;
 }
 
@@ -1001,6 +1005,7 @@ void R_SetFlatDrawFuncs()
 	colfunc = R_FillColumn;
 	spanfunc = R_FillSpan;
 	spanslopefunc = R_FillSpan;
+	levelcolfunc = NULL;
 }
 
 //
@@ -1013,6 +1018,7 @@ void R_SetBlankDrawFuncs()
 {
 	colfunc = R_BlankColumn;
 	spanfunc = spanslopefunc = R_BlankSpan;
+	levelcolfunc = NULL;
 }
 
 //
@@ -1033,6 +1039,7 @@ void R_ResetDrawFuncs()
 		colfunc = R_DrawColumn;
 		spanfunc = R_DrawSpan;
 		spanslopefunc = R_DrawSlopeSpan;
+		levelcolfunc = R_DrawLevelColumn;
 	}
 }
 
@@ -1051,6 +1058,7 @@ void R_SetFuzzDrawFuncs()
 		colfunc = R_DrawFuzzColumn;
 		spanfunc = R_DrawSpan;
 		spanslopefunc = R_DrawSlopeSpan;
+		levelcolfunc = R_DrawLevelColumn;
 	}
 }
 
@@ -1153,10 +1161,7 @@ void R_RenderPlayerView(player_t* player)
 	if (r_flashhom)
 	{
 		argb_t color = gametic & 8 ? argb_t(0, 0, 0) : argb_t(0, 0, 255);
-		int x1 = viewwindowx, y1 = viewwindowy;
-		int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1;
-
-		surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, color);
+		R_ClearViewBuffer(surface, color);
 	}
 
 	OInterpolation::getInstance().beginGameInterpolation(render_lerp_amount);
@@ -1377,8 +1382,7 @@ static void R_InitViewWindow()
 	R_PlaneInitData(surface);
 	R_InitSkyMap();
 
-	dcol.destination = dspan.destination = surface->getBuffer(viewwindowx, viewwindowy);
-	dcol.pitch_in_pixels = dspan.pitch_in_pixels = surface->getPitchInPixels();
+	R_BindViewBuffer(surface);
 
 	surface->unlock();
 
@@ -1440,5 +1444,190 @@ void R_ExitLevel()
 
 	r_underwater = false;
 }
+
+// ============================================================================
+//
+// r_benchmark
+//
+// Renders the current view repeatedly without ticking the game or presenting, and
+// reports the distribution of frame times.
+//
+// Hand-played A/Bs compare samples that saw different scenes -- that method once
+// reported one change as -49.4%, +3.5% and +176.7% across three runs of the same
+// build. Here the simulation does not advance, so the camera, the world and the
+// work are identical every iteration and between runs from the same spot.
+//
+// READ THE MINIMUM: it is the one figure the OS cannot inflate. The mean and p95
+// only say how much interference there was.
+//
+// Given a cvar and two values, the settings are INTERLEAVED frame by frame rather
+// than run back to back, which cancels thermal drift and background load.
+//
+//   r_benchmark [frames]
+//   r_benchmark <frames> <cvar> <valueA> <valueB>
+//
+// ============================================================================
+
+namespace
+{
+
+struct BenchSummary
+{
+	double min, median, mean, p95;
+};
+
+BenchSummary R_SummariseFrameTimes(std::vector<double>& ms)
+{
+	std::sort(ms.begin(), ms.end());
+
+	BenchSummary out;
+	out.min = ms.front();
+	out.median = ms[ms.size() / 2];
+	out.p95 = ms[std::min(ms.size() - 1, ms.size() * 95 / 100)];
+
+	double total = 0.0;
+	for (double v : ms)
+		total += v;
+	out.mean = total / static_cast<double>(ms.size());
+
+	return out;
+}
+
+double R_TimeOneView(player_t* player)
+{
+	const auto start = std::chrono::steady_clock::now();
+	R_RenderPlayerView(player);
+	const auto elapsed = std::chrono::steady_clock::now() - start;
+
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count() / 1.0e6;
+}
+
+void R_PrintBenchLine(const char* label, const BenchSummary& b)
+{
+	PrintFmt(PRINT_HIGH, "  {:<16} min {:7.3f}   median {:7.3f}   mean {:7.3f}   p95 {:7.3f} ms\n",
+			label, b.min, b.median, b.mean, b.p95);
+}
+
+} // namespace
+
+BEGIN_COMMAND(r_benchmark)
+{
+	if (!g_ValidLevel || !gametic || !viewactive)
+	{
+		PrintFmt(PRINT_HIGH, "r_benchmark: needs an active level view\n");
+		return;
+	}
+
+	int frames = 200;
+	if (argc > 1)
+		frames = std::clamp(atoi(argv[1]), 10, 20000);
+
+	cvar_t* swept = NULL;
+	std::string value_a, value_b, restore;
+
+	if (argc > 4)
+	{
+		cvar_t* prev = NULL;
+		swept = cvar_t::FindCVar(argv[2], &prev);
+
+		if (swept == NULL)
+		{
+			PrintFmt(PRINT_HIGH, "r_benchmark: no such cvar \"{}\"\n", argv[2]);
+			return;
+		}
+
+		value_a = argv[3];
+		value_b = argv[4];
+		restore = swept->cstring();
+
+		// A cvar can decline the write -- CVAR_NOSET refuses outright, CVAR_LATCH
+		// only latches while a level runs -- and then both arms measure the same
+		// code. Check the value that reads back.
+		swept->Set(value_a);
+		if (value_a != swept->cstring())
+		{
+			PrintFmt(PRINT_HIGH, "r_benchmark: {} refused the value \"{}\" (it read back as \"{}\")\n",
+					swept->name(), value_a, swept->cstring());
+			PrintFmt(PRINT_HIGH, "  A latched or read-only cvar cannot be swept.\n");
+			swept->Set(restore);
+			return;
+		}
+	}
+	else if (argc > 2)
+	{
+		PrintFmt(PRINT_HIGH, "r_benchmark: usage is \"r_benchmark <frames> <cvar> <a> <b>\"\n");
+		return;
+	}
+
+	player_t* player = &displayplayer();
+
+	// Enough to settle the caches, the branch predictors and the clock.
+	const int warmup = std::max(16, frames / 4);
+	for (int i = 0; i < warmup; i++)
+	{
+		if (swept)
+			swept->Set(value_a);
+		R_RenderPlayerView(player);
+
+		if (swept)
+		{
+			swept->Set(value_b);
+			R_RenderPlayerView(player);
+		}
+	}
+
+	std::vector<double> a, b;
+	a.reserve(frames);
+	b.reserve(frames);
+
+	for (int i = 0; i < frames; i++)
+	{
+		if (swept)
+			swept->Set(value_a);
+		a.push_back(R_TimeOneView(player));
+
+		if (swept)
+		{
+			swept->Set(value_b);
+			b.push_back(R_TimeOneView(player));
+		}
+	}
+
+	if (swept)
+		swept->Set(restore);
+
+	const int bpp = I_GetPrimarySurface()->getBitsPerPixel();
+
+	PrintFmt(PRINT_HIGH, "r_benchmark: {} frames{}, column-major view {}x{}, {}bpp\n",
+			frames, swept ? " per setting, interleaved" : "",
+			viewwidth, viewheight, bpp);
+
+	// What makes two runs comparable: same origin, angle and view size means the
+	// two samples rendered the same scene.
+	PrintFmt(PRINT_HIGH, "  from  {:.2f},{:.2f},{:.2f}  angle {:.2f}\n",
+			FIXED2FLOAT(viewx), FIXED2FLOAT(viewy), FIXED2FLOAT(viewz),
+			360.0 * static_cast<double>(viewangle) / 4294967296.0);
+
+	const BenchSummary sa = R_SummariseFrameTimes(a);
+
+	if (!swept)
+	{
+		R_PrintBenchLine("view render", sa);
+		return;
+	}
+
+	const BenchSummary sb = R_SummariseFrameTimes(b);
+
+	R_PrintBenchLine((std::string(swept->name()) + " " + value_a).c_str(), sa);
+	R_PrintBenchLine((std::string(swept->name()) + " " + value_b).c_str(), sb);
+
+	// Minimum against minimum -- the cleanest statement of the difference.
+	if (sb.min > 0.0 && sa.min > 0.0)
+	{
+		PrintFmt(PRINT_HIGH, "  min-to-min       {:.3f} -> {:.3f} ms   ({:+.1f}%, {:.2f}x)\n",
+				sa.min, sb.min, 100.0 * (sb.min - sa.min) / sa.min, sa.min / sb.min);
+	}
+}
+END_COMMAND(r_benchmark)
 
 VERSION_CONTROL (r_main_cpp, "$Id$")

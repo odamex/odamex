@@ -488,7 +488,8 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	translationref_t trans = translationref_t(Ranges + default_color * 256);
 
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	int surface_pitch = mSurface->getPitch();
+	const int surface_pitch = mSurface->getRowStepInBytes();
+	const int colstep = mSurface->getColStepInPixels();
 
 	if (y > (surface_height - char_size) || y < 0)
 		return;
@@ -504,7 +505,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	}
 
 	x = x / char_size * char_size;
-	byte* destline = mSurface->getBuffer() + y * mSurface->getPitch();
+	byte* destline = mSurface->getBuffer() + y * surface_pitch;
 
 	while (*str && x <= (surface_width - char_size))
 	{
@@ -534,7 +535,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		if (mSurface->getBitsPerPixel() == 8)
 		{
 			const byte* source = &ConChars[c * 128];
-			palindex_t* dest = static_cast<palindex_t*>(destline) + x;
+			palindex_t* dest = static_cast<palindex_t*>(destline) + x * colstep;
 			for (int z = 0; z < 8; z++)
 			{
 				// repeat each scanline based on scale
@@ -547,7 +548,10 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 
 						// repeat each pixel based on scale
 						for (int sx = 0; sx < scale; ++sx)
-							dest[a*scale + sx] = (dest[a*scale + sx] & mask) ^ color;
+						{
+							palindex_t* pixel = dest + (a*scale + sx) * colstep;
+							*pixel = (*pixel & mask) ^ color;
+						}
 					}
 					dest += surface_pitch;
 				}
@@ -557,7 +561,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		else
 		{
 			byte* source = &ConChars[c * 128];
-			argb_t* dest = reinterpret_cast<argb_t*>(destline) + x;
+			argb_t* dest = reinterpret_cast<argb_t*>(destline) + x * colstep;
 			for (int z = 0; z < 8; z++)
 			{
 				// repeat each scanline based on scale
@@ -571,7 +575,10 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 						argb_t color = V_Palette.shade(trans.tlate(source[a])) & ~mask;
 						// repeat each pixel based on scale
 						for (int sx = 0; sx < scale; ++sx)
-							dest[a*scale + sx] = (dest[a*scale + sx] & mask) ^ color;
+						{
+							argb_t* pixel = dest + (a*scale + sx) * colstep;
+							*pixel = (*pixel & mask) ^ color;
+						}
 					}
 					dest += surface_pitch >> 2;
 				}

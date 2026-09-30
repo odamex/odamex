@@ -292,39 +292,40 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	{
 		V_SetPNGPalette(png_ptr, info_ptr, surface->getPalette());
 
-		const palindex_t* source = surface->getBuffer();
-		const int pitch_remainder = surface->getPitchInPixels() - width;
+		const palindex_t* base = surface->getBuffer();
+		const int rowstep = surface->getRowStepInPixels();
+		const int colstep = surface->getColStepInPixels();
 
 		for (unsigned int y = 0; y < height; y++)
 		{
 			row = row_ptrs[y];
+			const palindex_t* source = base + y * rowstep;
 
-			for (unsigned int x = 0; x < width; x++)
+			for (unsigned int x = 0; x < width; x++, source += colstep)
 			{
 				// gather color index from current pixel of SDL surface,
 				// copy it to current pixel of PNG row
 				// note: this assumes that the PNG and SDL surface palettes match
-				palindex_t pixel = *source++;
-				*row++ = static_cast<png_byte>(pixel);
+				*row++ = static_cast<png_byte>(*source);
 			}
-
-			source += pitch_remainder;
 		}
 	}
 	else
 	{
-		const argb_t* source = reinterpret_cast<argb_t*>(surface->getBuffer());
-		const int pitch_remainder = surface->getPitchInPixels() - width;
+		const argb_t* base = reinterpret_cast<argb_t*>(surface->getBuffer());
+		const int rowstep = surface->getRowStepInPixels();
+		const int colstep = surface->getColStepInPixels();
 
 		for (unsigned int y = 0; y < height; y++)
 		{
 			row = row_ptrs[y];
+			const argb_t* source = base + y * rowstep;
 
-			for (unsigned int x = 0; x < width; x++)
+			for (unsigned int x = 0; x < width; x++, source += colstep)
 			{
 				// gather color components from current pixel of SDL surface
 				// note: SDL surface's alpha channel is ignored if present
-				argb_t pixel = *source++;
+				argb_t pixel = *source;
 
 				// write color components to current pixel of PNG row
 				// note: PNG is a big-endian file format
@@ -332,8 +333,6 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 				*row++ = pixel.getg();
 				*row++ = pixel.getb();
 			}
-
-			source += pitch_remainder;
 		}
 	}
 

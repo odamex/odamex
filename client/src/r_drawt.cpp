@@ -31,16 +31,21 @@
 
 void r_dimpatchD_c(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	const int surface_pitch_pixels = surface->getPitchInPixels();
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
 
-	argb_t* line = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * surface_pitch_pixels;
+	// A screen column is the contiguous run, so the columns are the outer walk
+	// and the rows the inner one. line[j] steps a row because rowstep is 1.
+	const int run = h;
+	const int count = w;
+	const int stride = colstep;
 
-	for (int y = y1; y < y1 + h; y++)
+	argb_t* line = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * rowstep + x1 * colstep;
+
+	for (int i = 0; i < count; i++, line += stride)
 	{
-		for (int x = x1; x < x1 + w; x++)
-			line[x] = alphablend1a(line[x], color, alpha);
-
-		line += surface_pitch_pixels;
+		for (int j = 0; j < run; j++)
+			line[j] = alphablend1a(line[j], color, alpha);
 	}
 }
 

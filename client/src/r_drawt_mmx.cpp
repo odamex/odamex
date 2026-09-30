@@ -56,27 +56,41 @@ static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
 
 void r_dimpatchD_MMX(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h)
 {
-	int surface_pitch_pixels = surface->getPitchInPixels();
-	int line_inc = surface_pitch_pixels - w;
+	// A screen column is the contiguous run, so the vectorized walk goes DOWN a
+	// column and the outer loop steps across them. The vector body below is
+	// unchanged: it only needs the run to be contiguous, not to be a screen row.
+	//
+	// A column starts at x * pitch + y1, and the pitch is a multiple of a cache
+	// line, so the alignment phase is a function of y1 alone -- the same for every
+	// column. The prologue below therefore does equal work per run rather than
+	// thrashing between aligned and unaligned columns.
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
 
-	argb_t* dest = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * surface_pitch_pixels + x1;
+	const int run = h;
+	const int count = w;
+	const int stride = colstep;
+
+	const int line_inc = stride - run;
 
 	// MMX temporaries:
 	const __m64 vec_color		= _mm_unpacklo_pi8(_mm_set1_pi32(color), _mm_setzero_si64());
 	const __m64 vec_alphacolor	= _mm_mullo_pi16(vec_color, _mm_set1_pi16(alpha));
 	const __m64 vec_invalpha	= _mm_set1_pi16(256 - alpha);
 
-	for (int rowcount = h; rowcount > 0; --rowcount)
+	argb_t* dest = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * rowstep + x1 * colstep;
+
+	for (int rowcount = count; rowcount > 0; --rowcount)
 	{
-		// [SL] Calculate how many pixels of each row need to be drawn before dest is
+		// [SL] Calculate how many pixels of each run need to be drawn before dest is
 		// aligned to a 64-bit boundary.
 		int align = R_GetBytesUntilAligned(dest, 64/8) / sizeof(argb_t);
-		if (align > w)
-			align = w;
+		if (align > run)
+			align = run;
 
 		const int batch_size = 4;
-		int batches = (w - align) / batch_size;
-		int remainder = (w - align) & (batch_size - 1);
+		int batches = (run - align) / batch_size;
+		int remainder = (run - align) & (batch_size - 1);
 
 		// align the destination buffer to 64-bit boundary
 		while (align--)

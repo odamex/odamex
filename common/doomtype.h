@@ -224,10 +224,20 @@ public:
 	{	channels[b_num] = n;	}
 
 	static void setChannels(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)
-	{	a_num = _a; r_num = _r; g_num = _g; b_num = _b;	}
+	{	a_num = _a; r_num = _r; g_num = _g; b_num = _b;
+		a_mask = static_cast<uint32_t>(0xFF) << (a_num << 3);	}
+
+	// The packed word with only the alpha byte set, wherever that byte lives.
+	// Blends working on the packed value -- see alphablend2a -- use it to force
+	// alpha to 255, as the three-argument constructor does. Kept in step with
+	// setChannels so it costs a load, not a shift chain, per pixel.
+	static uint32_t alphaMask() { return a_mask; }
 
 private:
-	static inline uint8_t a_num, r_num, g_num, b_num;
+	// Defaulted to the layout d_main sets at startup, so a colour constructed
+	// before the video backend reports its format still agrees with alphaMask().
+	static inline uint8_t a_num = 3, r_num = 2, g_num = 1, b_num = 0;
+	static inline uint32_t a_mask = 0xFF000000u;
 
 	union
 	{
