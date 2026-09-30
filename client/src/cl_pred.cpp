@@ -35,6 +35,7 @@
 
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictsectors)
+EXTERN_CVAR (co_boomphys)
 
 extern NetGraph netgraph;
 
@@ -201,8 +202,8 @@ void CL_PredictRemotePlayers()
 {
 	for (auto& player : players)
 	{
-		if (player.ingame() 
-			&& player.mo 
+		if (player.ingame()
+			&& player.mo
 			&& player.id != consoleplayer_id   // handled in CL_PredictWorld
 			&& player.id != displayplayer_id)  // handled in CL_PredictSpying
 		{
@@ -302,6 +303,9 @@ bool CL_SectorIsPredicting(sector_t *sector)
 	return false;
 }
 
+
+bool P_ThingHeightClip (AActor* thing);
+
 //
 // CL_PredictWorld
 //
@@ -392,6 +396,54 @@ bool CL_PredictWorld()
 			predicting = true;
 		}
 	}
+
+    if (not mobjsHaveBeenPredicted)
+    {
+        mobjsHaveBeenPredicted = true;
+		predicting = false;
+		DThinker::RunThinkers();
+		predicting = true;
+    }
+    else
+    {
+    // Now that we've for real updated the thinkers based on where the player and the sectors
+    // were as of the last update from the server, and we've predicted the player and sectors
+    // back to "last tic," let's do a predictive think on the mobjs as of then.  This ensures
+    // that things that are critical for interpolation, such as prev position and orientation
+    // reflect the visuals.
+	for (const auto& movsector : movingsectors)
+	{
+		sector_t *sector = movsector.sector;
+
+        if (co_boomphys)
+        {
+            msecnode_t* n;
+            for (n=sector->touching_thinglist; n; n=n->m_snext)
+                n->visited = false;
+
+            do
+            {
+                for (n = sector->touching_thinglist; n; n = n->m_snext)
+                    if (not n->visited)
+                    {
+                        n->visited = true;
+                        if (not n->m_thing->player)
+                        {
+                            predicting = true;
+                            n->m_thing->RunThink();
+                            predicting = false;
+                        }
+                        P_ThingHeightClip(n->m_thing);
+                        break;                                                  // exit and start over
+                    }
+            }
+            while (n);	// repeat from scratch until all things left are marked valid
+        }
+        else
+        {
+        }
+    }
+    }
 
 	// If the player didn't just spawn or teleport, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
