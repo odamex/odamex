@@ -37,6 +37,7 @@
 #include "p_local.h"
 #include "gi.h"
 #include "r_local.h"
+#include "r_context.h"
 #include "r_sky.h"
 #include "r_interp.h"
 #include "st_stuff.h"
@@ -1146,6 +1147,10 @@ void R_RenderPlayerView(player_t* player)
 
 	R_SetupFrame(player);
 
+	// TODO: Set slice sizes depending on thread count / viewwidth
+	rctx.slice_start = 0;
+	rctx.slice_stop = viewwidth - 1;
+
 	// Clear buffers.
 	R_ClearClipSegs();
 	R_ClearDrawSegs();
@@ -1192,6 +1197,9 @@ void R_RenderPlayerView(player_t* player)
 		r_dimpatchD(surface, V_GammaCorrect(blend_color), blend_alpha,
 						viewwindowx, viewwindowy, viewwidth, viewheight);
 	}
+
+	// mark the slice boundaries the partition would use
+	R_ShowContexts();
 
 	OInterpolation::getInstance().endGameInterpolation();
 }

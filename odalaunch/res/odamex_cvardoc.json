@@ -2079,6 +2079,13 @@
          "type" : "integer"
       },
       {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Draws a pink line at each render slice boundary",
+         "name" : "r_showcontexts",
+         "type" : "boolean"
+      },
+      {
          "default" : 0,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Display the ENDDOOM text after quitting",
@@ -2123,6 +2130,15 @@
          "helptext" : "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
          "name" : "r_thingsectorlight",
          "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Number of render threads",
+         "max" : 1,
+         "min" : 0,
+         "name" : "r_threads",
+         "type" : "integer"
       },
       {
          "default" : "0",
