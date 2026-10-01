@@ -387,8 +387,8 @@ bool CL_PredictWorld()
 		predtic = gametic - MAXSAVETICS;
 
 	// Save a snapshot of the player's state before prediction
-	PlayerSnapshot prevsnap(p.tic, p);
-	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
+	PlayerSnapshot currentSnap(p.tic, p);
+	cl_savedsnaps[gametic % MAXSAVETICS] = currentSnap;
 
 	// Mobjs are already in the last position received from the server.
 	bool mobjsHaveBeenPredicted = false;
@@ -436,12 +436,12 @@ bool CL_PredictWorld()
 	// view when there's a misprediction.
 	if (snap.isContinuous())
 	{
-		PlayerSnapshot correctedprevsnap(p.tic, p);
+		PlayerSnapshot correctedCurrentSnap(p.tic, p);
 
 		// Did we predict correctly?
-		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
-		               (correctedprevsnap.getY() == prevsnap.getY()) &&
-		               (correctedprevsnap.getZ() == prevsnap.getZ());
+		bool correct = (correctedCurrentSnap.getX() == currentSnap.getX()) &&
+		               (correctedCurrentSnap.getY() == currentSnap.getY()) &&
+		               (correctedCurrentSnap.getZ() == currentSnap.getZ());
 
 		if (!correct)
 		{
@@ -449,7 +449,7 @@ bool CL_PredictWorld()
 			netgraph.setMisprediction(true);
 
 			// Lerp from the our previous position to the correct position
-			PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);
+			PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(currentSnap, correctedCurrentSnap, cl_prednudge);
 			lerpedsnap.toPlayer(p);
 		}
 	}
