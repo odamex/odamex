@@ -423,13 +423,13 @@ bool CL_PredictWorld()
 		}
 	}
 
-    if (not mobjsHaveBeenPredicted)
-    {
-        mobjsHaveBeenPredicted = true;
+	if (not mobjsHaveBeenPredicted)
+	{
+		mobjsHaveBeenPredicted = true;
 		predicting = false;
 		DThinker::RunThinkers();
 		predicting = true;
-    }
+	}
 
 	// If the player didn't just spawn or teleport, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
@@ -440,8 +440,8 @@ bool CL_PredictWorld()
 
 		// Did we predict correctly?
 		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
-					   (correctedprevsnap.getY() == prevsnap.getY()) &&
-					   (correctedprevsnap.getZ() == prevsnap.getZ());
+		               (correctedprevsnap.getY() == prevsnap.getY()) &&
+		               (correctedprevsnap.getZ() == prevsnap.getZ());
 
 		if (!correct)
 		{
