@@ -402,14 +402,17 @@ bool CL_PredictWorld()
     const int previousSnapshotIndex = (currentSnapshotIndex ? currentSnapshotIndex : MAXSAVETICS) - 1;
     const PlayerSnapshot& previousSnap = cl_savedsnaps[previousSnapshotIndex];
 
-    int predictionTic = previousSnap.isValid() ? previousSnap.getTime() + 1 : playerPredictionStartTic;
+    const int expectedNextTic = previousSnap.isValid() ? previousSnap.getTime() + 1 : playerPredictionStartTic;
+    const int ticError = playerPredictionStartTic - expectedNextTic;
+
+    //int predictionTic = expectedNextTic; //previousSnap.isValid() ? std::min(previousSnap.getTime() + 1, playerPredictionStartTic) : playerPredictionStartTic;
+    int predictionTic = std::min(expectedNextTic, playerPredictionStartTic); //previousSnap.isValid() ? std::min(previousSnap.getTime() + 1, playerPredictionStartTic) : playerPredictionStartTic;
 
     predictionTic = std::max(gametic - MAXSAVETICS, predictionTic);
 
     // Say we have player tic go from 709 to 711 because the server consumed more than one input from the
     // player in that tic.  In that case, we want to load the snapshot from 709 and apply the inputs /
     // predict just the player from 709 to 
-    const int ticError = playerPredictionStartTic - predictionTic;
 
 	int snaptime = p.snapshots.getMostRecentTime();
 
