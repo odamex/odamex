@@ -2020,6 +2020,7 @@ bool P_ThingHeightClip (AActor* thing)
 			//      only unset this flag for players.
 			thing->oflags |= MFO_NOSNAPZ;
 		}
+		thing->prevz = thing->z;
 		thing->z = newz;
 
 		/* killough 11/98: Possibly upset balance of objects hanging off ledges */
@@ -2030,7 +2031,10 @@ bool P_ThingHeightClip (AActor* thing)
 	{
 		// don't adjust a floating monster unless forced to
 		if (thing->z + thing->height > thing->ceilingz)
+		{
+			thing->prevz = thing->z;
 			thing->z = thing->ceilingz - thing->height;
+		}
 	}
 
 	// thing won't fit

@@ -408,7 +408,6 @@ bool CL_PredictWorld()
 			CL_PredictSectors(predtic);
 
 		const bool playerWasPredicted = CL_PredictLocalPlayer(predtic);
-#if 1
 		if (playerWasPredicted and not mobjsHaveBeenPredicted)
 		{
 			mobjsHaveBeenPredicted = true;
@@ -422,7 +421,6 @@ bool CL_PredictWorld()
 			DThinker::RunThinkers();
 			predicting = true;
 		}
-#endif
 	}
 
     if (not mobjsHaveBeenPredicted)
@@ -431,46 +429,6 @@ bool CL_PredictWorld()
 		predicting = false;
 		DThinker::RunThinkers();
 		predicting = true;
-    }
-    else
-    {
-#if 1
-    // Now that we've for real updated the thinkers based on where the player and the sectors
-    // were as of the last update from the server, and we've predicted the player and sectors
-    // back to "last tic," let's set the prevz to current
-    // that things that are critical for interpolation, such as prev position and orientation
-    // reflect the visuals.
-	for (const auto& movsector : movingsectors)
-	{
-		sector_t *sector = movsector.sector;
-
-        if (co_boomphys)
-        {
-            msecnode_t* n;
-            for (n=sector->touching_thinglist; n; n=n->m_snext)
-                n->visited = false;
-
-            do
-            {
-                for (n = sector->touching_thinglist; n; n = n->m_snext)
-                    if (not n->visited)
-                    {
-                        n->visited = true;
-                        if (not n->m_thing->player or not n->m_thing->player->isFreecam)
-                        {
-                            n->m_thing->prevz = n->m_thing->z;
-                        }
-                        P_ThingHeightClip(n->m_thing);
-                        break;                                                  // exit and start over
-                    }
-            }
-            while (n);	// repeat from scratch until all things left are marked valid
-        }
-        else
-        {
-        }
-    }
-#endif
     }
 
 	// If the player didn't just spawn or teleport, nudge the player from
