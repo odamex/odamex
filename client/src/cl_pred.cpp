@@ -381,14 +381,42 @@ bool CL_PredictWorld()
 	predicting = true;
 
 	// Figure out where to start predicting from
-	int predtic = consoleplayer().tic > 0 ? consoleplayer().tic: 0;
+	int playerPredictionStartTic = consoleplayer().tic > 0 ? consoleplayer().tic: 0;
 	// Last position update from the server is too old!
-	if (predtic < gametic - MAXSAVETICS)
-		predtic = gametic - MAXSAVETICS;
+	if (playerPredictionStartTic < gametic - MAXSAVETICS)
+		playerPredictionStartTic = gametic - MAXSAVETICS;
 
 	// Save a snapshot of the player's state before prediction
 	PlayerSnapshot currentSnap(p.tic, p);
-	cl_savedsnaps[gametic % MAXSAVETICS] = currentSnap;
+
+    const int currentSnapshotIndex = gametic % MAXSAVETICS;
+	cl_savedsnaps[currentSnapshotIndex] = currentSnap;
+
+	// Select the starting point for the player.  Start with the tic following the previous one.  Ideally,
+    // this is the current one, but it's possible that the server consumed multiple input messages for one
+    // reason or another, and in those cases, we want to replicate that behavior here.
+
+    // The following assumes that playerPredictionStartTic corresponds to the most recent tic saved in the
+    // snapshot container.  Since they both come from the UpdateLocalPlayer message, it's a safe assumption.
+
+    const int previousSnapshotIndex = (currentSnapshotIndex ? currentSnapshotIndex : MAXSAVETICS) - 1;
+    const PlayerSnapshot& previousSnap = cl_savedsnaps[previousSnapshotIndex];
+
+    int predictionTic = previousSnap.isValid() ? previousSnap.getTime() + 1 : playerPredictionStartTic;
+
+    predictionTic = std::max(gametic - MAXSAVETICS, predictionTic);
+
+    // Say we have player tic go from 709 to 711 because the server consumed more than one input from the
+    // player in that tic.  In that case, we want to load the snapshot from 709 and apply the inputs /
+    // predict just the player from 709 to 
+    const int ticError = playerPredictionStartTic - predictionTic;
+
+	int snaptime = p.snapshots.getMostRecentTime();
+
+    if (ticError > 0)
+    {
+        snaptime -= ticError;
+    }
 
 	// Mobjs are already in the last position received from the server.
 	bool mobjsHaveBeenPredicted = false;
@@ -397,17 +425,17 @@ bool CL_PredictWorld()
 	if (cl_predictsectors)
 		CL_ResetSectors();
 
-	// Move the client to the last position received from the server
-	int snaptime = p.snapshots.getMostRecentTime();
+	// Move the client to the last position received from the server, or the
+    // position that the predicted tic input will apply to.
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
-	while (++predtic < gametic)
+	while (++predictionTic < gametic)
 	{
 		if (cl_predictsectors)
-			CL_PredictSectors(predtic);
+			CL_PredictSectors(predictionTic);
 
-		const bool playerWasPredicted = CL_PredictLocalPlayer(predtic);
+		const bool playerWasPredicted = CL_PredictLocalPlayer(predictionTic);
 		if (playerWasPredicted and not mobjsHaveBeenPredicted)
 		{
 			mobjsHaveBeenPredicted = true;
