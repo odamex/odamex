@@ -1867,7 +1867,7 @@ void SV_UpdateMovingSectors(player_t &player)
 //
 void SV_SendGametic(client_t& client)
 {
-	client.messenger->HighPriority().Write( SVC_ServerGametic(gametic,
+	client.messenger->HighPriority().Write( SVC_ServerGametic(client.messenger->GetCurrentReceivedRemoteTic(),
 	                                                          client.messenger->GetPendingAckCount(),
 	                                                          client.messenger->GetReliableOverloadCount()));
 }
