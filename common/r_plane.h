@@ -34,8 +34,6 @@ typedef void (*planefunction_t) (int top, int bottom);
 extern planefunction_t	floorfunc;
 extern planefunction_t	ceilingfunc_t;
 
-extern std::unique_ptr<int[]> floorclip;
-extern std::unique_ptr<int[]> ceilingclip;
 extern std::unique_ptr<int[]> floorclipinitial;
 extern std::unique_ptr<int[]> ceilingclipinitial;
 

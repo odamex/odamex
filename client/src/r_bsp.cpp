@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include <math.h>
 #include "m_alloc.h"
 #include "m_bbox.h"

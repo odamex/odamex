@@ -149,9 +149,6 @@ extern angle_t			clipangle;
 
 //extern fixed_t		finetangent[FINEANGLES/2];
 
-extern visplane_t*		floorplane;
-extern visplane_t*		ceilingplane;
-extern visplane_t*		skyplane;
 
 // [AM] 4:3 Field of View
 extern int				FieldOfView;

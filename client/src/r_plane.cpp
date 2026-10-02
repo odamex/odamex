@@ -44,6 +44,7 @@
 
 #include "p_local.h"
 #include "r_local.h"
+#include "r_context.h"
 #include "r_sky.h"
 #include "p_mapformat.h"
 
@@ -59,23 +60,21 @@ planefunction_t 		floorfunc;
 planefunction_t 		ceilingfunc;
 
 // Here comes the obnoxious "visplane".
-#define MAXVISPLANES 128    /* must be a power of 2 */
-
 static constexpr float flatwidth = 64.0f;
 static constexpr float flatheight = 64.0f;
-
-static visplane_t		*visplanes[MAXVISPLANES + 1];	// killough
-static visplane_t		*freetail;					// killough
-static visplane_t		**freehead = &freetail;		// killough
 
 // Visplane headers come from dense blocks so that walking a hash chain or the
 // free list stays within a few pages. Their column spans are allocated
 // separately; those are only touched when a plane is actually drawn.
-static constexpr size_t VISPLANE_BLOCK = 64;
+// Now, visplane state is kept within its render context instead of global.
+// ----------------------------------------------------------------------------
+static auto&	visplanes = ::rctx.plane.visplanes;
+static auto&	freetail = ::rctx.plane.freetail;
+static auto&	freehead = ::rctx.plane.freehead;
 
-static std::vector<visplane_t*>		visplane_blocks;
-static size_t						visplane_block_used = VISPLANE_BLOCK;
-static std::vector<unsigned int*>	visplane_spans;
+static auto&	visplane_blocks = ::rctx.plane.visplane_blocks;
+static auto&	visplane_block_used = ::rctx.plane.visplane_block_used;
+static auto&	visplane_spans = ::rctx.plane.visplane_spans;
 
 namespace
 {
@@ -138,9 +137,6 @@ bool R_IsStackPortal(const AActor* mo)
 	return R_IsStackBoundary(mo) && !R_IsStackPairActive(mo);
 }
 
-visplane_t 				*floorplane;
-visplane_t 				*ceilingplane;
-visplane_t				*skyplane;
 
 // killough -- hash function for visplanes
 // Empirically verified to be fairly uniform:
@@ -153,8 +149,6 @@ visplane_t				*skyplane;
 //	floorclip starts out SCREENHEIGHT-1
 //	ceilingclip starts out 0
 //
-std::unique_ptr<int[]> floorclip;
-std::unique_ptr<int[]> ceilingclip;
 std::unique_ptr<int[]> floorclipinitial;
 std::unique_ptr<int[]> ceilingclipinitial;
 
@@ -162,7 +156,7 @@ std::unique_ptr<int[]> ceilingclipinitial;
 // spanstart holds the start of a plane span
 // initialized to 0 at start
 //
-std::unique_ptr<int[]> spanstart;
+static auto& spanstart = ::rctx.plane.spanstart;
 
 //
 // texture mapping
@@ -172,16 +166,21 @@ extern float xfoc, yfoc;
 extern float focratio, ifocratio;
 extern Pool<int> sprclip_pool;
 
-int*					planezlight;
-float					plight, shade;
+static auto&      planezlight = ::rctx.plane.planezlight;
+static auto&      plight = ::rctx.plane.plight;
+static auto&      shade = ::rctx.plane.shade;
 
 std::unique_ptr<fixed_t[]> yslope;
 
-static double			pl_xscale, pl_yscale;
-static double			pl_viewsin, pl_viewcos;
-static double			pl_viewxtrans, pl_viewytrans;
-static double			pl_xstepscale, pl_ystepscale;
-static double			pl_planeheight;
+static auto&      pl_xscale = ::rctx.plane.pl_xscale;
+static auto&      pl_yscale = ::rctx.plane.pl_yscale;
+static auto&      pl_viewsin = ::rctx.plane.pl_viewsin;
+static auto&      pl_viewcos = ::rctx.plane.pl_viewcos;
+static auto&      pl_viewxtrans = ::rctx.plane.pl_viewxtrans;
+static auto&      pl_viewytrans = ::rctx.plane.pl_viewytrans;
+static auto&      pl_xstepscale = ::rctx.plane.pl_xstepscale;
+static auto&      pl_ystepscale = ::rctx.plane.pl_ystepscale;
+static auto&      pl_planeheight = ::rctx.plane.pl_planeheight;
 
 
 //
@@ -196,8 +195,12 @@ static inline dsfixed_t R_DoubleToDsFixed(double value)
 	return static_cast<dsfixed_t>(static_cast<int64_t>(value * 65536.0));
 }
 
-v3float_t				a, b, c;
-float					ixscale, iyscale;
+// Slope plane state now lives in a render context instead of global.
+static auto&      a = ::rctx.plane.slope_a;
+static auto&      b = ::rctx.plane.slope_b;
+static auto&      c = ::rctx.plane.slope_c;
+static auto&      ixscale = ::rctx.plane.ixscale;
+static auto&      iyscale = ::rctx.plane.iyscale;
 
 //
 // R_InitPlanes

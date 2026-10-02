@@ -31,6 +31,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include "m_fixed.h"
 #include "m_jsonlump.h"
 #include "m_random.h"
@@ -46,7 +48,6 @@
 
 extern fixed_t FocalLengthX;
 extern fixed_t freelookviewheight;
-extern visplane_t* skyplane;
 
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(cl_mouselook)
