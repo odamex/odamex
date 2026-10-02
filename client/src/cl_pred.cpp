@@ -118,18 +118,18 @@ void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_p
             // Double-check to make sure it's REALLY from the server and not extrapolated/etc.
             if (snap.isValid() and snap.isAuthoritative())
             {
-			bool ceilingdone = P_CeilingSnapshotDone(&snap);
-			bool floordone = P_FloorSnapshotDone(&snap);
+                bool ceilingdone = P_CeilingSnapshotDone(&snap);
+                bool floordone = P_FloorSnapshotDone(&snap);
 
-			if (ceilingdone && floordone)
-				snapfinished = true;
-			else
-			{
-				// snapshots have been received for this sector recently, so
-				// reset this sector to the most recent snapshot from the server
-				snap.toSector(sector);
-				io_predictingSectors.push_back(itr);
-			}
+                if (ceilingdone && floordone)
+                    snapfinished = true;
+                else
+                {
+                    // snapshots have been received for this sector recently, so
+                    // reset this sector to the most recent snapshot from the server
+                    snap.toSector(sector);
+                    io_predictingSectors.push_back(itr);
+                }
             }
 		}
 		else
