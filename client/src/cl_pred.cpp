@@ -458,6 +458,7 @@ bool CL_PredictWorld()
 
 	// Mobjs are already in the last position received from the server.
 	bool mobjsHaveBeenPredicted = false;
+	bool playerWasPredicted     = false;
 
 	s_predictingSectors.clear();
 
@@ -470,7 +471,10 @@ bool CL_PredictWorld()
 		if (cl_predictsectors)
 			CL_PredictSectors(s_predictingSectors);
 
-		const bool playerWasPredicted = CL_PredictLocalPlayer(predictionTic);
+		if (CL_PredictLocalPlayer(predictionTic))
+		{
+			playerWasPredicted = true;
+		}
 		if (playerWasPredicted and not mobjsHaveBeenPredicted)
 		{
 			mobjsHaveBeenPredicted = true;
@@ -497,7 +501,7 @@ bool CL_PredictWorld()
 	// If the player didn't just spawn or teleport, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
 	// view when there's a misprediction.
-	if (snap.isContinuous())
+	if (playerWasPredicted and snap.isContinuous())
 	{
 		PlayerSnapshot correctedCurrentSnap(p.tic, p);
 
@@ -505,6 +509,15 @@ bool CL_PredictWorld()
 		bool correct = (correctedCurrentSnap.getX() == currentSnap.getX()) &&
 		               (correctedCurrentSnap.getY() == currentSnap.getY()) &&
 		               (correctedCurrentSnap.getZ() == currentSnap.getZ());
+
+        if (not correct)
+        PrintFmt(PRINT_HIGH, "corr ({}, {}, {})..  curr ({}, {}, {})\n",
+                correctedCurrentSnap.getX(),
+                correctedCurrentSnap.getY(),
+                correctedCurrentSnap.getZ(),
+                currentSnap.getX(),
+                currentSnap.getY(),
+                currentSnap.getZ());
 
 		if (!correct)
 		{
