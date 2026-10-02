@@ -50,6 +50,8 @@ extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 namespace
 {
+
+std::array<int,            MAXSAVETICS> s_predictionBasisServerTic;
 std::array<PlayerSnapshot, MAXSAVETICS> cl_savedsnaps;
 
 //
@@ -388,32 +390,56 @@ bool CL_PredictWorld()
 	if (playerPredictionStartTic < gametic - MAXSAVETICS)
 		playerPredictionStartTic = gametic - MAXSAVETICS;
 
-	// Save a snapshot of the player's state before prediction
-	PlayerSnapshot currentSnap(p.tic, p);
-
-    const int currentSnapshotIndex = gametic % MAXSAVETICS;
+	const int currentSnapshotIndex = gametic % MAXSAVETICS;
 
 	// Select the starting point for the player.  Start with the tic following the previous one.  Ideally,
-    // this is the current one, but it's possible that the server consumed multiple input messages for one
-    // reason or another, and in those cases, we want to replicate that behavior here.
+	// this is the current one, but it's possible that the server consumed multiple input messages for one
+	// reason or another, so don't rely on the player.tic unless we're forced to.
 
-    // The following assumes that playerPredictionStartTic corresponds to the most recent tic saved in the
-    // snapshot container.  Since they both come from the UpdateLocalPlayer message, it's a safe assumption.
+	const int previousSnapshotIndex = (currentSnapshotIndex ? currentSnapshotIndex : MAXSAVETICS) - 1;
+	const PlayerSnapshot& previousSnap = cl_savedsnaps[previousSnapshotIndex];
 
-    const int previousSnapshotIndex = (currentSnapshotIndex ? currentSnapshotIndex : MAXSAVETICS) - 1;
-    const PlayerSnapshot& previousSnap = cl_savedsnaps[previousSnapshotIndex];
+	// Move the client to the last position received from the server
+	int snapBasisServerTic = p.snapshots.getMostRecentTime();
+	s_predictionBasisServerTic[currentSnapshotIndex] = snapBasisServerTic;
 
-    const int expectedNextTic = previousSnap.isValid() ? previousSnap.getTime() + 1 : playerPredictionStartTic;
-    const int ticError = playerPredictionStartTic - expectedNextTic;
+    int expectedNextTic;
+    if (previousSnap.isValid())
+    {
+        expectedNextTic = previousSnap.getTime();
 
-    int predictionTic = expectedNextTic; //previousSnap.isValid() ? std::min(previousSnap.getTime() + 1, playerPredictionStartTic) : playerPredictionStartTic;
-    //int predictionTic = std::min(expectedNextTic, playerPredictionStartTic); //previousSnap.isValid() ? std::min(previousSnap.getTime() + 1, playerPredictionStartTic) : playerPredictionStartTic;
-    predictionTic = std::max(gametic - MAXSAVETICS, predictionTic);
+        const int previousBasisServerTic = s_predictionBasisServerTic[previousSnapshotIndex];
+        if (snapBasisServerTic != previousBasisServerTic)
+        {
+            const int serverTicsAdvanced = snapBasisServerTic - previousBasisServerTic;
 
-    currentSnap.setTime(predictionTic);
+            const int clientTicsIncorporated = p.tic - previousSnap.getTime();
+
+            expectedNextTic += serverTicsAdvanced;
+        }
+    }
+    else
+    {
+        expectedNextTic = playerPredictionStartTic;
+    }
+	//const int expectedNextTic = previousSnap.isValid() ? previousSnap.getTime() + 1 : playerPredictionStartTic;
+
+	int predictionTic = std::max(gametic - MAXSAVETICS, expectedNextTic);
+
+	// Save a snapshot of the player's state before prediction
+	PlayerSnapshot currentSnap(predictionTic, p);
 	cl_savedsnaps[currentSnapshotIndex] = currentSnap;
 
-	int snaptime = p.snapshots.getMostRecentTime();
+
+	PlayerSnapshot snap = p.snapshots.getSnapshot(snapBasisServerTic);
+	snap.toPlayer(p);
+
+    DPrintFmt("Pred: gametic {}, player.tic {}, exp {}, pred {}, snaptime {}\n",
+            gametic,
+            p.tic,
+            expectedNextTic,
+            predictionTic,
+            snapBasisServerTic);
 
 	// Mobjs are already in the last position received from the server.
 	bool mobjsHaveBeenPredicted = false;
@@ -421,11 +447,6 @@ bool CL_PredictWorld()
 	// Move sectors to the last position received from the server
 	if (cl_predictsectors)
 		CL_ResetSectors();
-
-	// Move the client to the last position received from the server, or the
-    // position that the predicted tic input will apply to.
-	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
-	snap.toPlayer(p);
 
 	while (++predictionTic < gametic)
 	{
@@ -491,6 +512,7 @@ bool CL_PredictWorld()
 
 void CL_ResetWorldPrediction()
 {
+	s_predictionBasisServerTic.fill(0);
 	for (auto& savedPlayerSnapshot : cl_savedsnaps)
 	{
 		savedPlayerSnapshot = PlayerSnapshot{};
