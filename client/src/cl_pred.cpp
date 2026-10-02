@@ -51,8 +51,34 @@ extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 namespace
 {
 
+class Predictor
+{
+    public:
+
+        void Predict();
+
+    protected:
+        using ActivePredictingSectorsVector = std::vector<decltype(movingsectors)::iterator>;
+
+        // Collection of local history snapshots for replaying non-position data ultimately on top of
+        // server-supplied snapshots.  Used for covering the time between the server snapshot and the
+        // current local gametic.
+        std::array<PlayerSnapshot, MAXSAVETICS> m_savedLocalSnaps {};
+
+        ActivePredictingSectorsVector m_predictingSectors;
+        int m_predictionBasisServerTic { 0 };
+};
+
+
 std::array<int,            MAXSAVETICS> s_predictionBasisServerTic;
-std::array<PlayerSnapshot, MAXSAVETICS> cl_savedsnaps;
+std::array<PlayerSnapshot, MAXSAVETICS> s_savedLocalSnaps;
+
+int s_previousSnapBasisServerTic;
+int s_previousInputBasisLocalTic;
+int s_previousEchoedTic;
+
+int s_predictionInputTic;
+int s_predictionTic;
 
 using ActivePredictingSectorsVector = std::vector<decltype(movingsectors)::iterator>;
 
@@ -283,7 +309,7 @@ bool CL_PredictLocalPlayer(int predtic)
 		return false;
 
 	// Restore the angle, viewheight, etc for the player
-	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
+	P_SetPlayerSnapshotNoPosition(player, s_savedLocalSnaps[predtic % MAXSAVETICS]);
 
 	// Copy the player's previous input ticcmd for the tic 'predtic'
 	// to player.cmd so that P_MovePlayer can simulate their movement in
@@ -348,6 +374,7 @@ void CL_RegisterOutdatedMobjUpdate(int serverTic, AActor* mobj)
 }
 
 extern int world_index;
+extern int lastEchoedTic;
 
 //
 // CL_PredictWorld
@@ -399,24 +426,193 @@ bool CL_PredictWorld()
 	// Disable sounds, etc, during prediction
 	predicting = true;
 
+
+	// Mobjs are already in the last position received from the server.
+	bool mobjsHaveBeenPredicted = false;
+	bool playerWasPredicted     = false;
+
+	s_predictingSectors.clear();
+
+//	const int previousLocalSnapshotIndex = (currentLocalSnapshotIndex ? currentLocalSnapshotIndex : MAXSAVETICS) - 1;
+
+//	const PlayerSnapshot& previousLocalSnap = s_savedLocalSnaps[previousLocalSnapshotIndex];
+
+    // Save a snapshot of the player's state before prediction
+    const int currentLocalSnapshotIndex = gametic % MAXSAVETICS;
+
+    PlayerSnapshot currentSnap(p.tic, p);
+    s_savedLocalSnaps[currentLocalSnapshotIndex] = currentSnap;
+
+	int snapBasisServerTic = p.snapshots.getMostRecentTime();
+
+    if (snapBasisServerTic != 0)
+    {
+        if (s_previousSnapBasisServerTic == 0 and snapBasisServerTic)
+        {
+            // This is the first prediction-eligible tic.
+            // Whatever the server saw as our effective gametic is where we start predicting.
+            s_predictionTic      = lastEchoedTic + 1;
+            s_predictionInputTic = p.tic         + 1;
+
+            s_previousSnapBasisServerTic = snapBasisServerTic;
+        }
+
+        // New data from the server?
+        const int deltaPredictionTic = snapBasisServerTic - s_previousSnapBasisServerTic;
+        s_predictionTic   += deltaPredictionTic;
+
+        s_previousSnapBasisServerTic = snapBasisServerTic;
+
+        if (deltaPredictionTic)
+        {
+            //deltaClientTic = lastEchoedTic - s_previousEchoedTic;
+
+            s_predictionInputTic = p.tic + 1;
+        }
+
+        int         remainingInputsThisPass = gametic - s_predictionInputTic;
+        const int   remainingTicsThisPass   = gametic - s_predictionTic;
+
+        int inputTic = s_predictionInputTic;
+        int tic      = s_predictionTic;
+
+        if (remainingTicsThisPass > remainingInputsThisPass)
+        {
+            PrintFmt(PRINT_WARNING, "Out of inputs!!!!\n");
+        }
+
+        // Move sectors to the last position received from the server
+        if (cl_predictsectors)
+            CL_ResetSectors(snapBasisServerTic, s_predictingSectors);
+
+        PlayerSnapshot snap = p.snapshots.getSnapshot(snapBasisServerTic);
+        snap.toPlayer(p);
+
+        // Flatten the oldest relevant inputs into the player state before proceeding with the
+        // other tics.  We do that because we want the true most recent input to go in on the
+        // final gametic step.
+        while (remainingInputsThisPass > remainingTicsThisPass)
+        {
+            if (CL_PredictLocalPlayer (inputTic))
+            {
+                playerWasPredicted = true;
+            }
+            ++inputTic;
+            --remainingInputsThisPass;
+        }
+
+        for (; tic < gametic; ++tic)
+        {
+            if (cl_predictsectors)
+                CL_PredictSectors(s_predictingSectors);
+
+            if (CL_PredictLocalPlayer(tic))
+            {
+                playerWasPredicted = true;
+            }
+            if (playerWasPredicted and not mobjsHaveBeenPredicted)
+            {
+                mobjsHaveBeenPredicted = true;
+
+                // We're doing our genuine thinker step now, and it should almost always
+                // be on the tic following the latest from the server.  This ensures that
+                // mobj actions that reference the player's position are working from the
+                // player state that the server almost certainly had when it ran the tic
+                // for real.
+                predicting = false;
+                DThinker::RunThinkers();
+                predicting = true;
+            }
+        }
+
+        // If the player didn't just spawn or teleport, nudge the player from
+        // his position last tic to this new corrected position.  This smooths the
+        // view when there's a misprediction.
+        if (playerWasPredicted and snap.isContinuous())
+        {
+            PlayerSnapshot correctedCurrentSnap(p.tic, p);
+
+            // Did we predict correctly?
+            bool correct = (correctedCurrentSnap.getX() == currentSnap.getX()) &&
+                           (correctedCurrentSnap.getY() == currentSnap.getY()) &&
+                           (correctedCurrentSnap.getZ() == currentSnap.getZ());
+
+            if (not correct)
+                PrintFmt(PRINT_HIGH, "corr ({}, {}, {})..  curr ({}, {}, {})\n",
+                        correctedCurrentSnap.getX(),
+                        correctedCurrentSnap.getY(),
+                        correctedCurrentSnap.getZ(),
+                        currentSnap.getX(),
+                        currentSnap.getY(),
+                        currentSnap.getZ());
+
+            if (!correct)
+            {
+                // Update the netgraph concerning our prediction's error
+                netgraph.setMisprediction(true);
+
+                // Lerp from the our previous position to the correct position
+                PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(currentSnap, correctedCurrentSnap, cl_prednudge);
+                lerpedsnap.toPlayer(p);
+            }
+        }
+#if 0
+        deltaInputTic = p.tic - s_previousInputBasisLocalTic;
+
+        if (deltaInputTic > 1)
+        {
+        }
+
+        // Were new player inputs incorporated?
+        if (s_previousInputBasisLocalTic < p.tic)
+        {
+            //initialExtraInputsToIncorporate = (p.tic - s_previousInputBasisLocalTic) - 1;
+            startingInput = p.tic + 1;
+            s_previousInputBasisLocalTic = startingInput;
+        }
+        else
+        {
+            startingInput = s_previousInputBasisLocalTic + 1;
+        }
+
+        deltaClientTic = lastEchoedTic - s_previousEchoedTic;
+        // Did the server see a new packet from us?
+        //
+        // Please note that this is decoupled from the input check because there's a downstream input
+        // queue on the server side.
+        if (s_previousEchoedTic < lastEchoedTic)
+        {
+            //startingTic = lastEchoedTic + 1;
+            //initialExtraInputsToIncorporate -= 
+        }
+        else
+        {
+            //startingTic = s_previousEchoedTic + 1;
+        }
+#endif
+    }
+
+#if 0
+    const int predictionDuration = 
+
+	s_predictionBasisServerTic[currentLocalSnapshotIndex] = snapBasisServerTic;
+
+
+    expectedNextTic = lastEchoedTic
+
+
 	// Figure out where to start predicting from
 	int playerPredictionStartTic = consoleplayer().tic > 0 ? consoleplayer().tic: 0;
 	// Last position update from the server is too old!
 	if (playerPredictionStartTic < gametic - MAXSAVETICS)
 		playerPredictionStartTic = gametic - MAXSAVETICS;
 
-	const int currentSnapshotIndex = gametic % MAXSAVETICS;
-
 	// Select the starting point for the player.  Start with the tic following the previous one.  Ideally,
 	// this is the current one, but it's possible that the server consumed multiple input messages for one
 	// reason or another, so don't rely on the player.tic unless we're forced to.
 
-	const int previousSnapshotIndex = (currentSnapshotIndex ? currentSnapshotIndex : MAXSAVETICS) - 1;
-	const PlayerSnapshot& previousSnap = cl_savedsnaps[previousSnapshotIndex];
 
 	// Move the client to the last position received from the server
-	int snapBasisServerTic = p.snapshots.getMostRecentTime();
-	s_predictionBasisServerTic[currentSnapshotIndex] = snapBasisServerTic;
 
     int expectedNextTic;
     if (previousSnap.isValid())
@@ -443,7 +639,7 @@ bool CL_PredictWorld()
 
 	// Save a snapshot of the player's state before prediction
 	PlayerSnapshot currentSnap(p.tic, p);
-	cl_savedsnaps[currentSnapshotIndex] = currentSnap;
+	s_savedLocalSnaps[currentLocalSnapshotIndex] = currentSnap;
 
 
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snapBasisServerTic);
@@ -490,6 +686,10 @@ bool CL_PredictWorld()
 		}
 	}
 
+#endif
+
+    // Dead reckon gametic.
+
 	if (not mobjsHaveBeenPredicted)
 	{
 		mobjsHaveBeenPredicted = true;
@@ -498,6 +698,7 @@ bool CL_PredictWorld()
 		predicting = true;
 	}
 
+#if 0
 	// If the player didn't just spawn or teleport, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
 	// view when there's a misprediction.
@@ -529,6 +730,7 @@ bool CL_PredictWorld()
 			lerpedsnap.toPlayer(p);
 		}
 	}
+#endif
 
 	predicting = false;
 
@@ -543,10 +745,12 @@ bool CL_PredictWorld()
 void CL_ResetWorldPrediction()
 {
 	s_predictionBasisServerTic.fill(0);
-	for (auto& savedPlayerSnapshot : cl_savedsnaps)
-	{
-		savedPlayerSnapshot = PlayerSnapshot{};
-	}
+	s_savedLocalSnaps.fill(PlayerSnapshot{});
+    s_previousInputBasisLocalTic = 0;
+    s_previousSnapBasisServerTic = 0;
+    s_previousEchoedTic          = 0;
+    s_predictionInputTic         = 0;
+    s_predictionTic              = 0;
 }
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
