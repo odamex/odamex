@@ -330,6 +330,8 @@ void CL_RegisterOutdatedMobjUpdate(int serverTic, AActor* mobj)
     s_mobjsInOutdatedState.emplace(std::make_pair(serverTic, mobj->ptr()));
 }
 
+extern int world_index;
+
 //
 // CL_PredictWorld
 //
@@ -390,7 +392,6 @@ bool CL_PredictWorld()
 	PlayerSnapshot currentSnap(p.tic, p);
 
     const int currentSnapshotIndex = gametic % MAXSAVETICS;
-	cl_savedsnaps[currentSnapshotIndex] = currentSnap;
 
 	// Select the starting point for the player.  Start with the tic following the previous one.  Ideally,
     // this is the current one, but it's possible that the server consumed multiple input messages for one
@@ -405,21 +406,14 @@ bool CL_PredictWorld()
     const int expectedNextTic = previousSnap.isValid() ? previousSnap.getTime() + 1 : playerPredictionStartTic;
     const int ticError = playerPredictionStartTic - expectedNextTic;
 
-    //int predictionTic = expectedNextTic; //previousSnap.isValid() ? std::min(previousSnap.getTime() + 1, playerPredictionStartTic) : playerPredictionStartTic;
-    int predictionTic = std::min(expectedNextTic, playerPredictionStartTic); //previousSnap.isValid() ? std::min(previousSnap.getTime() + 1, playerPredictionStartTic) : playerPredictionStartTic;
-
+    int predictionTic = expectedNextTic; //previousSnap.isValid() ? std::min(previousSnap.getTime() + 1, playerPredictionStartTic) : playerPredictionStartTic;
+    //int predictionTic = std::min(expectedNextTic, playerPredictionStartTic); //previousSnap.isValid() ? std::min(previousSnap.getTime() + 1, playerPredictionStartTic) : playerPredictionStartTic;
     predictionTic = std::max(gametic - MAXSAVETICS, predictionTic);
 
-    // Say we have player tic go from 709 to 711 because the server consumed more than one input from the
-    // player in that tic.  In that case, we want to load the snapshot from 709 and apply the inputs /
-    // predict just the player from 709 to 
+    currentSnap.setTime(predictionTic);
+	cl_savedsnaps[currentSnapshotIndex] = currentSnap;
 
 	int snaptime = p.snapshots.getMostRecentTime();
-
-    if (ticError > 0)
-    {
-        snaptime -= ticError;
-    }
 
 	// Mobjs are already in the last position received from the server.
 	bool mobjsHaveBeenPredicted = false;
