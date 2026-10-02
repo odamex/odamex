@@ -129,6 +129,8 @@ void P_SetPsprite(player_t& player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
 void P_SpawnAvatars();
 
+int lastEchoedTic = 0;
+
 namespace
 {
 
@@ -2541,7 +2543,8 @@ void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 // [SL] 2011-05-11
 void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
-	::last_svgametic = msg->tic();
+	::last_svgametic = ThisMessageServerTic();
+    lastEchoedTic = msg->tic();
 
 	netgraph.addServerSideMetrics(msg->reliable_messages_in_flight(), msg->throttle());
 
