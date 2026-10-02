@@ -501,12 +501,12 @@ bool CL_PredictWorld()
             --remainingInputsThisPass;
         }
 
-        for (; tic < gametic; ++tic)
+        for (; tic < gametic; ++tic, ++inputTic)
         {
             if (cl_predictsectors)
                 CL_PredictSectors(s_predictingSectors);
 
-            if (CL_PredictLocalPlayer(tic))
+            if (CL_PredictLocalPlayer(inputTic))
             {
                 playerWasPredicted = true;
             }
