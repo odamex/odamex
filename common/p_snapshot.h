@@ -71,6 +71,8 @@ public:
 	int getTime() const { return mTime; }
 	void setTime(int time) { mTime = time; }
 
+	void invalidate() { mValid = false; }
+
 private:
 	int			mTime;
 	bool		mValid;
