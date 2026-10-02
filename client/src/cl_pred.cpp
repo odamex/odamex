@@ -442,7 +442,7 @@ bool CL_PredictWorld()
 	int predictionTic = std::max(gametic - MAXSAVETICS, expectedNextTic);
 
 	// Save a snapshot of the player's state before prediction
-	PlayerSnapshot currentSnap(predictionTic, p);
+	PlayerSnapshot currentSnap(p.tic, p);
 	cl_savedsnaps[currentSnapshotIndex] = currentSnap;
 
 
