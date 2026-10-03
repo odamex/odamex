@@ -744,6 +744,34 @@ AActor* P_FindThingById(uint32_t id)
 	return nullptr;
 }
 
+namespace
+{
+	void EnsureCorrectThinkerOrder(netid_map_t::iterator iter)
+	{
+		AActor* mobj = iter->second;
+		if (iter == actor_by_netid.begin())
+		{
+			for (++iter; iter != actor_by_netid.end(); ++iter)
+			{
+				if (mobj->SpliceAsThinkerBefore(iter->second))
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			for (--iter; iter != actor_by_netid.begin(); --iter)
+			{
+				if (mobj->SpliceAsThinkerAfter(iter->second))
+				{
+					break;
+				}
+			}
+		}
+	}
+}
+
 //
 // P_SetThingId
 //
@@ -752,7 +780,11 @@ void P_SetThingId(AActor *mo, uint32_t newnetid)
 	mo->netid = newnetid;
 	if (newnetid)
 	{
-		actor_by_netid[newnetid] = mo->ptr();
+		auto result = actor_by_netid.insert_or_assign(newnetid, mo->ptr());
+		if (actor_by_netid.size() > 1)
+		{
+			EnsureCorrectThinkerOrder(result.first);
+		}
 	}
 }
 

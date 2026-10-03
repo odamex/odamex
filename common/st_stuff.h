@@ -72,6 +72,9 @@ void ST_Shutdown();
 
 namespace hud {
 
+// Clear the centred message column's claims for a new frame.
+void ResetMessageColumn();
+
 void drawNetdemo();
 
 // [ML] New Odamex fullscreen HUD
