@@ -1732,7 +1732,8 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 
 	P_ChangeSector(sector, false);
 
-	const SectorSnapshot snap(ThisMessageServerTic(), sector);
+	SectorSnapshot snap(ThisMessageServerTic(), sector);
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1900,6 +1901,7 @@ void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1934,6 +1936,7 @@ void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1966,6 +1969,7 @@ void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1999,6 +2003,7 @@ void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2041,6 +2046,7 @@ void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2072,6 +2078,7 @@ void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
