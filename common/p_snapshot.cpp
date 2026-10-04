@@ -183,10 +183,13 @@ void ActorSnapshot::toActor(AActor *mo) const
 // ============================================================================
 
 PlayerSnapshot::PlayerSnapshot(int time, const player_t& player) :
-		Snapshot(time), mFields(0xFFFFFFFF),
-		mActorSnap(time, player.mo),
-		mViewHeight(player.viewheight), mDeltaViewHeight(player.deltaviewheight),
-		mJumpTime(player.jumpTics)
+		Snapshot        (time),
+		mFields         (0xFFFFFFFF),
+		mActorSnap      (time, player.mo),
+		mViewHeight     (player.viewheight),
+		mDeltaViewHeight(player.deltaviewheight),
+		mJumpTime       (player.jumpTics),
+		mTic            (player.tic)
 {
 }
 
@@ -200,6 +203,8 @@ void PlayerSnapshot::merge(const PlayerSnapshot& other)
 		setDeltaViewHeight(other.mDeltaViewHeight);
 	if (other.mFields & PLY_JUMPTIME)
 		setJumpTime(other.mJumpTime);
+	if (other.mFields & PLY_TIC)
+		setTic(other.mTic);
 }
 
 void PlayerSnapshot::toPlayer(player_t& player) const
@@ -215,6 +220,8 @@ void PlayerSnapshot::toPlayer(player_t& player) const
 		player.deltaviewheight = mDeltaViewHeight;
 	if (mFields & PLY_JUMPTIME)
 		player.jumpTics = mJumpTime;
+	if (mFields & PLY_TIC)
+		player.tic = mTic;
 }
 
 

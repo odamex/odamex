@@ -294,9 +294,10 @@ public:
 
 	void toPlayer(player_t& player) const;
 
-	[[nodiscard]] fixed_t getViewHeight()      const { return mViewHeight; }
-	[[nodiscard]] fixed_t getDeltaViewHeight() const { return mDeltaViewHeight; }
-	[[nodiscard]] int     getJumpTime()        const { return mJumpTime; }
+	[[nodiscard]] fixed_t   getViewHeight()     const { return mViewHeight; }
+	[[nodiscard]] fixed_t   getDeltaViewHeight()const { return mDeltaViewHeight; }
+	[[nodiscard]] int       getJumpTime()       const { return mJumpTime; }
+	[[nodiscard]] int       getTic()            const { return mTic; }
 
 	[[nodiscard]] fixed_t     getX()            const { return mActorSnap.getX(); }
 	[[nodiscard]] fixed_t     getY()            const { return mActorSnap.getY(); }
@@ -460,6 +461,12 @@ public:
 		mFields |= PLY_JUMPTIME;
 	}
 
+	void setTic(int val)
+	{
+		mTic = val;
+		mFields |= PLY_TIC;
+	}
+
 	friend PlayerSnapshot P_LerpPlayerPosition(const PlayerSnapshot&, const PlayerSnapshot&, float);
 	friend PlayerSnapshot P_ExtrapolatePlayerPosition(const PlayerSnapshot&, float);
 
@@ -485,7 +492,8 @@ private:
 		PLY_FRAME               =    0x10000,
 		PLY_VIEWHEIGHT          =    0x20000,
 		PLY_DELTAVIEWHEIGHT     =    0x40000,
-		PLY_JUMPTIME            =    0x80000
+		PLY_JUMPTIME            =    0x80000,
+		PLY_TIC                 =   0x100000,
 	};
 
 	unsigned int    mFields     { 0 };  // bitfield of data present in snapshot
@@ -494,6 +502,7 @@ private:
 	fixed_t         mViewHeight     { 0 };
 	fixed_t         mDeltaViewHeight{ 0 };
 	int             mJumpTime       { 0 };
+	int             mTic            { 0 };
 };
 
 
