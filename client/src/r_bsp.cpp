@@ -57,13 +57,8 @@ bool			doorclosed;
 bool			r_fakingunderwater;
 bool			r_underwater;
 
-// Floor and ceiling heights at the end points of a seg_t
-fixed_t			rw_backcz1, rw_backcz2;
-fixed_t			rw_backfz1, rw_backfz2;
-fixed_t			rw_frontcz1, rw_frontcz2;
-fixed_t			rw_frontfz1, rw_frontfz2;
-
-int rw_start, rw_stop;
+static auto& rw_start = ::rctx.seg.rw_start;
+static auto& rw_stop = ::rctx.seg.rw_stop;
 
 static byte		FakeSide;
 

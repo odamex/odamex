@@ -50,69 +50,62 @@
 #include "resources/res_texture.h"
 
 // a pool of bytes allocated for sprite clipping arrays
-Pool<const palindex_t*> masked_midposts_pool(4096);
-Pool<int> sprclip_pool(4096);
-Pool<fixed_t> midscales_pool(4096);
+static auto& masked_midposts_pool = ::rctx.seg.masked_midposts_pool;
+static auto& midscales_pool = ::rctx.seg.midscales_pool;
 
 // OPTIMIZE: closed two sided lines as single sided
 
 // killough 1/6/98: replaced globals with statics where appropriate
 
-static bool		segtextured;	// True if any of the segs textures might be visible.
-static bool		markfloor;		// False if the back side is the same plane.
-static bool		markceiling;
-static bool		didsolidcol;
+// read seg state from the render context
+static auto& segtextured = ::rctx.seg.segtextured;
+static auto& markfloor = ::rctx.seg.markfloor;
+static auto& markceiling = ::rctx.seg.markceiling;
+static auto& didsolidcol = ::rctx.seg.didsolidcol;
 
-
-static const Texture*	toptexture;
-static const Texture*	bottomtexture;
-static const Texture*	midtexture;
-static const Texture*	maskedtexture;
-
-int*			walllights;
+static auto& toptexture = ::rctx.seg.toptexture;
+static auto& bottomtexture = ::rctx.seg.bottomtexture;
+static auto& midtexture = ::rctx.seg.midtexture;
+static auto& maskedtexture = ::rctx.seg.maskedtexture;
 
 //
 // regular wall
 //
-fixed_t			rw_light;		// [RH] Use different scaling for lights
-fixed_t			rw_lightstep;
+static auto& rw_light = ::rctx.seg.rw_light;
+static auto& rw_lightstep = ::rctx.seg.rw_lightstep;
+static auto& rw_scale = ::rctx.seg.rw_scale;
+static auto& rw_scalestep = ::rctx.seg.rw_scalestep;
+static auto& rw_midtexturemid = ::rctx.seg.rw_midtexturemid;
+static auto& rw_toptexturemid = ::rctx.seg.rw_toptexturemid;
+static auto& rw_bottomtexturemid = ::rctx.seg.rw_bottomtexturemid;
 
-static fixed_t	rw_scale;
-static fixed_t	rw_scalestep;
-static fixed_t	rw_midtexturemid;
-static fixed_t	rw_toptexturemid;
-static fixed_t	rw_bottomtexturemid;
+static auto& rw_hashigh = ::rctx.seg.rw_hashigh;
+static auto& rw_haslow = ::rctx.seg.rw_haslow;
 
-extern fixed_t	rw_frontcz1, rw_frontcz2;
-extern fixed_t	rw_frontfz1, rw_frontfz2;
-extern fixed_t	rw_backcz1, rw_backcz2;
-extern fixed_t	rw_backfz1, rw_backfz2;
-static bool		rw_hashigh, rw_haslow;
+static auto& walltopf = ::rctx.seg.walltopf;
+static auto& walltopb = ::rctx.seg.walltopb;
+static auto& wallbottomf = ::rctx.seg.wallbottomf;
+static auto& wallbottomb = ::rctx.seg.wallbottomb;
 
-static int walltopf[MAXWIDTH];
-static int walltopb[MAXWIDTH];
-static int wallbottomf[MAXWIDTH];
-static int wallbottomb[MAXWIDTH];
+static auto& topposts = ::rctx.seg.topposts;
+static auto& midposts = ::rctx.seg.midposts;
+static auto& bottomposts = ::rctx.seg.bottomposts;
 
-static const palindex_t* topposts[MAXWIDTH];
-static const palindex_t* midposts[MAXWIDTH];
-static const palindex_t* bottomposts[MAXWIDTH];
-
-static const palindex_t** masked_midposts;
+static auto& masked_midposts = ::rctx.seg.masked_midposts;
 
 // y-scale of the texture tier currently being drawn by the solid column blaster
-static fixed_t wallscaley = FRACUNIT;
-static fixed_t wallscalex[MAXWIDTH];
-static int texoffs[MAXWIDTH];
+static auto& wallscaley = ::rctx.seg.wallscaley;
+static auto& wallscalex = ::rctx.seg.wallscalex;
+static auto& texoffs = ::rctx.seg.texoffs;
 
 // per-column scale and wall-parameter values computed by R_PrepWall
-static double wallscaled[MAXWIDTH];
-static double wallufrac[MAXWIDTH];
+static auto& wallscaled = ::rctx.seg.wallscaled;
+static auto& wallufrac = ::rctx.seg.wallufrac;
 
 extern fixed_t FocalLengthY;
 extern float xfoc, yfoc;
 
-static const fixed_t* masked_midscales;
+static auto& masked_midscales = ::rctx.seg.masked_midscales;
 
 EXTERN_CVAR(r_clipmaskedspecial)
 

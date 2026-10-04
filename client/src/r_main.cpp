@@ -59,8 +59,6 @@ int viewheightarray[MAXWIDTH];
 
 void R_SpanInitData ();
 
-extern int *walllights;
-
 // [RH] Defined in d_main.cpp
 extern dyncolormap_t NormalLight;
 extern bool r_fakingunderwater;

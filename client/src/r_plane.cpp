@@ -164,7 +164,6 @@ static auto& spanstart = ::rctx.plane.spanstart;
 extern fixed_t FocalLengthX, FocalLengthY;
 extern float xfoc, yfoc;
 extern float focratio, ifocratio;
-extern Pool<int> sprclip_pool;
 
 static auto&      planezlight = ::rctx.plane.planezlight;
 static auto&      plight = ::rctx.plane.plight;

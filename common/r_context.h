@@ -27,8 +27,11 @@
 #include <vector>
 
 #include "doomtype.h"
+#include "m_mempool.h"
 #include "m_vectors.h"
 #include "r_defs.h"
+
+class Texture;
 
 // TODO: This should be automatically determined using hardware checks.
 static constexpr int MAXRENDERSLICES = 64;
@@ -99,6 +102,79 @@ struct planecontext_t
 };
 
 //
+// segcontext_t
+//
+// Wall state for the segs currently being stored, and the per-column arrays,
+// one per context.
+//
+struct segcontext_t
+{
+	// pools for the clipping arrays hanging off drawsegs
+	// these are half a megabyte each, so be sure to use nslices
+	// to allocate them instead of MAXRENDERSLICES
+	Pool<const palindex_t*> masked_midposts_pool{4096};
+	Pool<int>               sprclip_pool{4096};
+	Pool<fixed_t>           midscales_pool{4096};
+
+	bool    segtextured;    // true if any of the seg's textures might be visible
+	bool    markfloor;      // false if the back side is the same plane
+	bool    markceiling;
+	bool    didsolidcol;
+
+	const Texture* toptexture;
+	const Texture* bottomtexture;
+	const Texture* midtexture;
+	const Texture* maskedtexture;
+
+	int*    walllights;
+
+	fixed_t rw_light;       // [RH] use different scaling for lights
+	fixed_t rw_lightstep;
+	fixed_t rw_scale;
+	fixed_t rw_scalestep;
+	fixed_t rw_midtexturemid;
+	fixed_t rw_toptexturemid;
+	fixed_t rw_bottomtexturemid;
+
+	// floor and ceiling heights at the end points of a seg_t,
+	// set by r_bsp and read by r_segs
+	fixed_t rw_backcz1;
+	fixed_t rw_backcz2;
+	fixed_t rw_backfz1;
+	fixed_t rw_backfz2;
+	fixed_t rw_frontcz1;
+	fixed_t rw_frontcz2;
+	fixed_t rw_frontfz1;
+	fixed_t rw_frontfz2;
+
+	int     rw_start;
+	int     rw_stop;
+	bool    rw_hashigh;
+	bool    rw_haslow;
+
+	int     walltopf[MAXWIDTH];
+	int     walltopb[MAXWIDTH];
+	int     wallbottomf[MAXWIDTH];
+	int     wallbottomb[MAXWIDTH];
+
+	const palindex_t* topposts[MAXWIDTH];
+	const palindex_t* midposts[MAXWIDTH];
+	const palindex_t* bottomposts[MAXWIDTH];
+
+	const palindex_t** masked_midposts;
+	const fixed_t*     masked_midscales;  // used to know where to draw masked post positions
+
+	// y-scale of the texture tier currently being drawn by the solid column blaster
+	fixed_t wallscaley = FRACUNIT;
+	fixed_t wallscalex[MAXWIDTH];
+	int     texoffs[MAXWIDTH];
+
+	// per-column scale and wall-parameter values
+	double  wallscaled[MAXWIDTH];
+	double  wallufrac[MAXWIDTH];
+};
+
+//
 // rendercontext_t
 //
 // One vertical slice of the view.
@@ -106,6 +182,7 @@ struct planecontext_t
 struct rendercontext_t
 {
 	planecontext_t plane;
+	segcontext_t   seg;
 
 	int	slice_start = 0;
 	int	slice_stop = MAXWIDTH - 1;
@@ -125,6 +202,18 @@ inline visplane_t*&	skyplane     = ::rctx.plane.skyplane;
 
 inline std::unique_ptr<int[]>& floorclip   = ::rctx.plane.floorclip;
 inline std::unique_ptr<int[]>& ceilingclip = ::rctx.plane.ceilingclip;
+
+inline int*& walllights        = ::rctx.seg.walllights;
+inline Pool<int>& sprclip_pool = ::rctx.seg.sprclip_pool;
+
+inline fixed_t& rw_backcz1  = ::rctx.seg.rw_backcz1;
+inline fixed_t& rw_backcz2  = ::rctx.seg.rw_backcz2;
+inline fixed_t& rw_backfz1  = ::rctx.seg.rw_backfz1;
+inline fixed_t& rw_backfz2  = ::rctx.seg.rw_backfz2;
+inline fixed_t& rw_frontcz1 = ::rctx.seg.rw_frontcz1;
+inline fixed_t& rw_frontcz2 = ::rctx.seg.rw_frontcz2;
+inline fixed_t& rw_frontfz1 = ::rctx.seg.rw_frontfz1;
+inline fixed_t& rw_frontfz2 = ::rctx.seg.rw_frontfz2;
 
 // How many slices the view is currently split into.
 int R_SliceCount();
