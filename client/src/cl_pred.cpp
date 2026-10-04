@@ -51,6 +51,10 @@ namespace
 {
 std::array<PlayerSnapshot, MAXSAVETICS> cl_savedsnaps;
 
+using ActivePredictingSectorsVector = std::vector<decltype(movingsectors)::iterator>;
+
+ActivePredictingSectorsVector s_predictingSectors;
+
 //
 // CL_GetSnapshotManager
 //
@@ -82,11 +86,11 @@ bool CL_SectorHasSnapshots(sector_t *sector)
 //
 // CL_ResetSectors
 //
-// Moves predicting sectors to their most recent snapshot received from the
-// server.  Also performs cleanup on the list of predicting sectors when
+// Moves predicting sectors to the given server snapshot tic.
+// Also performs cleanup on the list of predicting sectors when
 // sectors have finished their movement.
 //
-void CL_ResetSectors()
+void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_predictingSectors)
 {
 	std::list<movingsector_t>::iterator itr;
 	itr = movingsectors.begin();
@@ -106,19 +110,23 @@ void CL_ResetSectors()
 
 		if (mgr && !mgr->empty())
 		{
-			int mostrecent = mgr->getMostRecentTime();
-			SectorSnapshot snap = mgr->getSnapshot(mostrecent);
+			SectorSnapshot snap = mgr->getSnapshot(snapBasisServerTic);
 
-			bool ceilingdone = P_CeilingSnapshotDone(&snap);
-			bool floordone = P_FloorSnapshotDone(&snap);
+			// Double-check to make sure it's REALLY from the server and not extrapolated/etc.
+			if (snap.isValid() and snap.isAuthoritative())
+				{
+				bool ceilingdone = P_CeilingSnapshotDone(&snap);
+				bool floordone = P_FloorSnapshotDone(&snap);
 
-			if (ceilingdone && floordone)
-				snapfinished = true;
-			else
-			{
-				// snapshots have been received for this sector recently, so
-				// reset this sector to the most recent snapshot from the server
-				snap.toSector(sector);
+				if (ceilingdone && floordone)
+					snapfinished = true;
+				else
+				{
+					// snapshots have been received for this sector recently, so
+					// reset this sector to the most recent snapshot from the server
+					snap.toSector(sector);
+					io_predictingSectors.push_back(itr);
+				}
 			}
 		}
 		else
@@ -143,22 +151,29 @@ void CL_ResetSectors()
 // CL_PredictSectors
 //
 //
-void CL_PredictSectors(int predtic)
+void CL_PredictSector(const movingsector_t& movsector)
+{
+	sector_t *sector = movsector.sector;
+
+	if (sector && sector->ceilingdata && movsector.moving_ceiling)
+		sector->ceilingdata->RunThink();
+	if (sector && sector->floordata && movsector.moving_floor)
+		sector->floordata->RunThink();
+}
+
+void CL_PredictSectors(const ActivePredictingSectorsVector& io_predictingSectors)
+{
+	for (auto& iter : io_predictingSectors)
+	{
+		CL_PredictSector(*iter);
+	}
+}
+
+void CL_PredictAllSectors()
 {
 	for (const auto& movsector : movingsectors)
 	{
-		sector_t *sector = movsector.sector;
-
-		// If we haven't started receiving updates for this sector from the server,
-		// we only need to run the thinker for the current tic, not any past tics
-		// since the sector hasn't been reset to a previous update snapshot
-		if (predtic < gametic && !CL_SectorHasSnapshots(sector))
-			continue;
-
-		if (sector && sector->ceilingdata && movsector.moving_ceiling)
-			sector->ceilingdata->RunThink();
-		if (sector && sector->floordata && movsector.moving_floor)
-			sector->floordata->RunThink();
+		CL_PredictSector(movsector);
 	}
 }
 
@@ -302,6 +317,33 @@ bool CL_SectorIsPredicting(sector_t *sector)
 	return false;
 }
 
+
+namespace
+{
+    std::multimap<int, AActor::AActorPtr> s_mobjsInOutdatedState;
+
+    struct MobjRollbackGuard
+    {
+        std::multimap<int, AActor::AActorPtr>& collectionRef;
+
+        explicit MobjRollbackGuard(std::multimap<int, AActor::AActorPtr>& i_collectionRef) :
+            collectionRef { i_collectionRef }
+        {
+        }
+        ~MobjRollbackGuard()
+        {
+            collectionRef.clear();
+        }
+    };
+}
+
+void CL_RegisterOutdatedMobjUpdate(int serverTic, AActor* mobj)
+{
+    s_mobjsInOutdatedState.emplace(std::make_pair(serverTic, mobj->ptr()));
+}
+
+extern int world_index;
+
 //
 // CL_PredictWorld
 //
@@ -311,6 +353,8 @@ bool CL_SectorIsPredicting(sector_t *sector)
 //
 bool CL_PredictWorld()
 {
+	MobjRollbackGuard guard(s_mobjsInOutdatedState);
+
 	if (gamestate != GS_LEVEL)
 		return false;
 
@@ -363,19 +407,21 @@ bool CL_PredictWorld()
 	// Mobjs are already in the last position received from the server.
 	bool mobjsHaveBeenPredicted = false;
 
-	// Move sectors to the last position received from the server
-	if (cl_predictsectors)
-		CL_ResetSectors();
-
 	// Move the client to the last position received from the server
 	int snaptime = p.snapshots.getMostRecentTime();
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
+	s_predictingSectors.clear();
+
+	// Move sectors to the last position received from the server
+	if (cl_predictsectors)
+		CL_ResetSectors(snaptime, s_predictingSectors);
+
 	while (++predtic < gametic)
 	{
 		if (cl_predictsectors)
-			CL_PredictSectors(predtic);
+			CL_PredictSectors(s_predictingSectors);
 
 		const bool playerWasPredicted = CL_PredictLocalPlayer(predtic);
 		if (playerWasPredicted and not mobjsHaveBeenPredicted)
@@ -393,6 +439,14 @@ bool CL_PredictWorld()
 		}
 	}
 
+	if (not mobjsHaveBeenPredicted)
+	{
+		mobjsHaveBeenPredicted = true;
+		predicting = false;
+		DThinker::RunThinkers();
+		predicting = true;
+	}
+
 	// If the player didn't just spawn or teleport, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
 	// view when there's a misprediction.
@@ -402,8 +456,8 @@ bool CL_PredictWorld()
 
 		// Did we predict correctly?
 		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
-					   (correctedprevsnap.getY() == prevsnap.getY()) &&
-					   (correctedprevsnap.getZ() == prevsnap.getZ());
+		               (correctedprevsnap.getY() == prevsnap.getY()) &&
+		               (correctedprevsnap.getZ() == prevsnap.getZ());
 
 		if (!correct)
 		{
@@ -420,7 +474,7 @@ bool CL_PredictWorld()
 
 	// Run thinkers for current gametic
 	if (cl_predictsectors)
-		CL_PredictSectors(gametic);
+		CL_PredictAllSectors();
 	CL_PredictLocalPlayer(gametic);
 
 	return mobjsHaveBeenPredicted;
