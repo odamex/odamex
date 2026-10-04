@@ -44,41 +44,9 @@ extern bool predicting;
 
 // ============================================================================
 //
-// Snapshot implementation
-//
-// ============================================================================
-
-Snapshot::Snapshot(int time) :
-		mTime(time), mValid(time > 0),
-		mAuthoritative(false), mContinuous(true),
-		mInterpolated(false), mExtrapolated(false)
-{
-}
-
-bool Snapshot::operator==(const Snapshot &other) const
-{
-	return	mTime == other.mTime &&
-			mValid == other.mValid &&
-			mAuthoritative == other.mAuthoritative &&
-			mContinuous == other.mContinuous &&
-			mInterpolated == other.mInterpolated &&
-			mExtrapolated == other.mExtrapolated;
-}
-
-// ============================================================================
-//
 // ActorSnapshot implementation
 //
 // ============================================================================
-
-ActorSnapshot::ActorSnapshot(int time) :
-		Snapshot(time), mFields(0),
-		mX(0), mY(0), mZ(0),
-		mMomX(0), mMomY(0), mMomZ(0), mAngle(0), mPitch(0), mOnGround(true),
-		mCeilingZ(0), mFloorZ(0), mReactionTime(0), mWaterLevel(0),
-		mFrame(0)
-{
-}
 
 ActorSnapshot::ActorSnapshot(int time, const AActor *mo) :
 		Snapshot(time), mFields(0xFFFFFFFF),
@@ -89,29 +57,6 @@ ActorSnapshot::ActorSnapshot(int time, const AActor *mo) :
 		mReactionTime(mo->reactiontime), mWaterLevel(mo->waterlevel),
 		mFlags(mo->flags), mFlags2(mo->flags2), mFlags3(mo->flags3), mFrame(mo->frame)
 {
-}
-
-bool ActorSnapshot::operator==(const ActorSnapshot &other) const
-{
-	return	Snapshot::operator==(other) &&
-			mFields == other.mFields &&
-			mX == other.mX &&
-			mY == other.mY &&
-			mZ == other.mZ &&
-			mMomX == other.mMomX &&
-			mMomY == other.mMomY &&
-			mMomZ == other.mMomZ &&
-			mAngle == other.mAngle &&
-			mPitch == other.mPitch &&
-			mOnGround == other.mOnGround &&
-			mCeilingZ == other.mCeilingZ &&
-			mFloorZ == other.mFloorZ &&
-			mReactionTime == other.mReactionTime &&
-			mWaterLevel == other.mWaterLevel &&
-			mFlags == other.mFlags &&
-			mFlags2 == other.mFlags2 &&
-			mFlags3 == other.mFlags3 &&
-			mFrame == other.mFrame;
 }
 
 void ActorSnapshot::merge(const ActorSnapshot& other)
@@ -237,29 +182,12 @@ void ActorSnapshot::toActor(AActor *mo) const
 //
 // ============================================================================
 
-PlayerSnapshot::PlayerSnapshot(int time) :
-		Snapshot(time), mFields(0),
-		mActorSnap(time),
-		mViewHeight(0), mDeltaViewHeight(0), mJumpTime(0)
-{
-}
-
 PlayerSnapshot::PlayerSnapshot(int time, const player_t& player) :
 		Snapshot(time), mFields(0xFFFFFFFF),
 		mActorSnap(time, player.mo),
 		mViewHeight(player.viewheight), mDeltaViewHeight(player.deltaviewheight),
 		mJumpTime(player.jumpTics)
 {
-}
-
-bool PlayerSnapshot::operator==(const PlayerSnapshot &other) const
-{
-	return	Snapshot::operator==(other) &&
-			mFields == other.mFields &&
-			mActorSnap == other.mActorSnap &&
-			mViewHeight == other.mViewHeight &&
-			mDeltaViewHeight == other.mDeltaViewHeight &&
-			mJumpTime == other.mJumpTime;
 }
 
 void PlayerSnapshot::merge(const PlayerSnapshot& other)
@@ -677,22 +605,6 @@ void P_SetPlayerSnapshotNoPosition(player_t& player, const PlayerSnapshot &snap)
 //
 // ============================================================================
 
-
-SectorSnapshot::SectorSnapshot(int time) :
-	Snapshot(time),	mCeilingMoverType(SEC_INVALID), mFloorMoverType(SEC_INVALID),
-	mSector(NULL), mCeilingType(0), mFloorType(0), mCeilingTag(0), mFloorTag(0),
-	mCeilingLine(NULL), mFloorLine(NULL), mCeilingHeight(0), mFloorHeight(0),
-	mCeilingSpeed(0), mFloorSpeed(0), mCeilingDestination(0), mFloorDestination(0),
-	mCeilingDirection(0), mFloorDirection(0), mCeilingOldDirection(0), mFloorOldDirection(0),
-	mCeilingTexture(0), mFloorTexture(0),
-	mNewCeilingSpecial(0), mNewFloorSpecial(0), mCeilingLow(0), mCeilingHigh(0),
-	mFloorLow(0), mFloorHigh(0), mCeilingCrush(false), mFloorCrush(false), mSilent(false),
-	mCeilingWait(0), mFloorWait(0), mCeilingCounter(0), mFloorCounter(0), mResetCounter(0),
-	mCeilingStatus(0), mFloorStatus(0), mOldFloorStatus(0),
-	mCrusherSpeed1(0), mCrusherSpeed2(0), mStepTime(0), mPerStepTime(0), mPauseTime(0),
-	mOrgHeight(0), mDelay(0), mFloorLip(0), mFloorOffset(0), mCeilingChange(0), mFloorChange(0)
-{
-}
 
 SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 	Snapshot(time), mCeilingMoverType(SEC_INVALID), mFloorMoverType(SEC_INVALID),
