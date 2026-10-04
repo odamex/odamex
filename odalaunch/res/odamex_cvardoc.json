@@ -1947,6 +1947,13 @@
          "type" : "boolean"
       },
       {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Shade openings between sectors with different fog colors",
+         "name" : "r_fogboundary",
+         "type" : "boolean"
+      },
+      {
          "default" : false,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Changes the color of all enemies to the color specified by r_enemycolor",
