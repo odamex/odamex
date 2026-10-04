@@ -589,6 +589,7 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 
 	messenger = OdaMessenger{ pool };
 
+	CL_ResetWorldPrediction();
 	P_ClearAllNetIds();
 	s_canary.reset();
 	gameaction = ga_fullconsole;
