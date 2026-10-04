@@ -214,7 +214,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 
 	// sv_keepweapons - stash the loadout of a player who died in this
 	// level so it can be handed back after the spawn inventory is given out.
-	const bool keepweapons = p.dokeepweapons && ::sv_keepweapons && !p.spectator;
+	const bool keepweapons = p.dokeepweapons and ::sv_keepweapons and not p.spectator;
 	const std::array<bool, NUMWEAPONS> oldweaponowned = p.weaponowned;
 	const std::array<int, NUMAMMO> oldammo = p.ammo;
 	const std::array<int, NUMAMMO> oldmaxammo = p.maxammo;
@@ -256,7 +256,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	if (keepweapons)
 	{
 		for (i = 0; i < NUMWEAPONS; i++)
-			p.weaponowned[i] = p.weaponowned[i] || oldweaponowned[i];
+			p.weaponowned[i] = p.weaponowned[i] or oldweaponowned[i];
 
 		p.ammo = oldammo;
 
@@ -268,7 +268,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 			p.maxammo = oldmaxammo;
 		}
 
-		if (oldreadyweapon >= wp_fist && oldreadyweapon < wp_none &&
+		if (oldreadyweapon >= wp_fist and oldreadyweapon < wp_none and
 		    p.weaponowned[oldreadyweapon])
 		{
 			p.readyweapon = p.pendingweapon = oldreadyweapon;
