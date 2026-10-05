@@ -320,29 +320,8 @@ bool CL_SectorIsPredicting(sector_t *sector)
 
 namespace
 {
-    std::multimap<int, AActor::AActorPtr> s_mobjsInOutdatedState;
-
-    struct MobjRollbackGuard
-    {
-        std::multimap<int, AActor::AActorPtr>& collectionRef;
-
-        explicit MobjRollbackGuard(std::multimap<int, AActor::AActorPtr>& i_collectionRef) :
-            collectionRef { i_collectionRef }
-        {
-        }
-        ~MobjRollbackGuard()
-        {
-            collectionRef.clear();
-        }
-    };
-
 	std::array<int, NUM_SNAPSHOTS> s_previousPredictionTics;
 	int                            s_previousBasisServerTic;
-}
-
-void CL_RegisterOutdatedMobjUpdate(int serverTic, AActor* mobj)
-{
-    s_mobjsInOutdatedState.emplace(std::make_pair(serverTic, mobj->ptr()));
 }
 
 extern int world_index;
@@ -356,8 +335,6 @@ extern int world_index;
 //
 bool CL_PredictWorld()
 {
-	MobjRollbackGuard guard(s_mobjsInOutdatedState);
-
 	if (gamestate != GS_LEVEL)
 		return false;
 
