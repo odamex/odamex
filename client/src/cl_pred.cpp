@@ -335,6 +335,9 @@ namespace
             collectionRef.clear();
         }
     };
+
+	std::array<int, NUM_SNAPSHOTS> s_previousPredictionTics;
+	int                            s_previousBasisServerTic;
 }
 
 void CL_RegisterOutdatedMobjUpdate(int serverTic, AActor* mobj)
@@ -409,8 +412,28 @@ bool CL_PredictWorld()
 
 	// Move the client to the last position received from the server
 	int snaptime = p.snapshots.getMostRecentTime();
+
+	const int currentIndex  = gametic % NUM_SNAPSHOTS;
+	const int previousIndex = (currentIndex ? currentIndex : NUM_SNAPSHOTS) - 1;
+
+	const int previousPredtic = s_previousPredictionTics[previousIndex];
+
+	const int deltaServerTic = snaptime - s_previousBasisServerTic;
+	const int deltaPredTic   = predtic  - previousPredtic;
+
+	s_previousBasisServerTic = snaptime;
+	// No new server state?  Just keep using the player.tic.
+
+	// Check for the case where there's a mismatch in player.tic and servertic increment.
+	// This happens when the server consumes more than one PlayerInput message in a single
+	// tic.  This can happen naturally with client -> server jitter.
+	if (deltaServerTic > 0 and deltaPredTic > deltaServerTic)
+	{
+		predtic = previousPredtic + deltaServerTic;
+	}
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
+	s_previousPredictionTics[currentIndex] = predtic;
 
 	s_predictingSectors.clear();
 
@@ -422,7 +445,7 @@ bool CL_PredictWorld()
 	while (++predtic < gametic)
 	{
 		playerWasPredicted = CL_PredictLocalPlayer(predtic);
-		if (playerWasPredicted and not mobjsHaveBeenPredicted)
+		if (not mobjsHaveBeenPredicted)
 		{
 			mobjsHaveBeenPredicted = true;
 
@@ -470,9 +493,7 @@ bool CL_PredictWorld()
 	if (not mobjsHaveBeenPredicted)
 	{
 		mobjsHaveBeenPredicted = true;
-		//predicting = false;
 		DThinker::RunThinkers();
-		//predicting = true;
 	}
 
 	// Run thinkers for current gametic
@@ -484,6 +505,8 @@ bool CL_PredictWorld()
 
 void CL_ResetWorldPrediction()
 {
+	s_previousBasisServerTic = 0;
+	s_previousPredictionTics.fill(0);
 	for (auto& savedPlayerSnapshot : cl_savedsnaps)
 	{
 		savedPlayerSnapshot = PlayerSnapshot{};
