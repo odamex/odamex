@@ -420,9 +420,6 @@ bool CL_PredictWorld()
 
 	while (++predtic < gametic)
 	{
-		if (cl_predictsectors)
-			CL_PredictSectors(s_predictingSectors);
-
 		const bool playerWasPredicted = CL_PredictLocalPlayer(predtic);
 		if (playerWasPredicted and not mobjsHaveBeenPredicted)
 		{
@@ -437,14 +434,9 @@ bool CL_PredictWorld()
 			DThinker::RunThinkers();
 			predicting = true;
 		}
-	}
 
-	if (not mobjsHaveBeenPredicted)
-	{
-		mobjsHaveBeenPredicted = true;
-		predicting = false;
-		DThinker::RunThinkers();
-		predicting = true;
+		if (cl_predictsectors)
+			CL_PredictSectors(s_predictingSectors);
 	}
 
 	// If the player didn't just spawn or teleport, nudge the player from
@@ -472,10 +464,19 @@ bool CL_PredictWorld()
 
 	predicting = false;
 
+	CL_PredictLocalPlayer(gametic);
+
 	// Run thinkers for current gametic
 	if (cl_predictsectors)
 		CL_PredictAllSectors();
-	CL_PredictLocalPlayer(gametic);
+
+	if (not mobjsHaveBeenPredicted)
+	{
+		mobjsHaveBeenPredicted = true;
+		predicting = false;
+		DThinker::RunThinkers();
+		predicting = true;
+	}
 
 	return mobjsHaveBeenPredicted;
 }
