@@ -2773,6 +2773,32 @@ size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
+//
+// P_GetPlayerStart
+//
+// Returns the start belonging to a player number, or a shared one when the map
+// has no start of its own for them.
+//
+
+// MERGE ALERT
+// This was backported from protobreak. When merging stable into protobreak,
+// keep protobreak's version.
+//
+const mapthing2_t& P_GetPlayerStart(const size_t playernum)
+{
+	for (const mapthing2_t& start : ::playerstarts)
+	{
+		if (P_GetMapThingPlayerNumber(start) == playernum)
+			return start;
+	}
+
+	if (::playerstarts.empty())
+		I_Error("No player starts");
+
+	// Nothing here for this player number, so give one out.
+	return ::playerstarts[playernum % ::playerstarts.size()];
+}
+
 bool P_IsPickupableThing(int16_t type)
 {
 	return (type == 82 // SSG
@@ -3440,6 +3466,51 @@ void P_SpawnAvatars()
 	{
 		new AActor(thing.x << FRACBITS, thing.y << FRACBITS, ONFLOORZ, MT_AVATAR);
 	}
+}
+
+
+//
+// P_AvatarBlocksSpot
+//
+// Check if an avatar is blocking a spawn.
+// This tries to work around map errors where a player start
+// is misplaced and the player wants to spawn in a voodoo closet.
+// Instead, it will report this spawn is blocked and to try another.
+//
+
+// MERGE ALERT
+// This was backported from protobreak, but stable has no avatar pointers in
+// voodoostarts, so it walks the thinkers instead. When merging stable into
+// protobreak, keep protobreak's version.
+//
+bool P_AvatarBlocksSpot(const fixed_t x, const fixed_t y, const fixed_t z)
+{
+	AActor* avatar;
+	TThinkerIterator<AActor> iterator;
+	while ((avatar = iterator.Next()))
+	{
+		// Check for dead avatars.
+		if (avatar->type != MT_AVATAR || !(avatar->flags & MF_SHOOTABLE))
+			continue;
+
+		// Same overlap PIT_StompThing will measure when the spawn stomps.
+		const fixed_t blockdist = avatar->radius + mobjinfo[MT_PLAYER].radius;
+
+		if (abs(avatar->x - x) >= blockdist || abs(avatar->y - y) >= blockdist)
+			continue;
+
+		if (P_AllowPassover())
+		{
+			if (z > avatar->z + avatar->height)
+				continue;
+			if (z + mobjinfo[MT_PLAYER].height < avatar->z)
+				continue;
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 
