@@ -1984,6 +1984,9 @@ void P_ApplyTorque (AActor *mo)
 // the z will be set to the lowest value
 // and false will be returned.
 //
+
+extern bool predicting;
+
 bool P_ThingHeightClip (AActor* thing)
 {
 	if (!thing)
@@ -2020,7 +2023,10 @@ bool P_ThingHeightClip (AActor* thing)
 			//      only unset this flag for players.
 			thing->oflags |= MFO_NOSNAPZ;
 		}
-		thing->prevz = thing->z;
+		if (not predicting)
+		{
+			thing->prevz = thing->z;
+		}
 		thing->z = newz;
 
 		/* killough 11/98: Possibly upset balance of objects hanging off ledges */
@@ -2032,7 +2038,10 @@ bool P_ThingHeightClip (AActor* thing)
 		// don't adjust a floating monster unless forced to
 		if (thing->z + thing->height > thing->ceilingz)
 		{
-			thing->prevz = thing->z;
+			if (not predicting)
+			{
+				thing->prevz = thing->z;
+			}
 			thing->z = thing->ceilingz - thing->height;
 		}
 	}
