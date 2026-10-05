@@ -313,25 +313,26 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 }
 
 //
-// R_RotatePointSafe
+// R_Rotate64
 //
-// Rotates world space into camera space, but has special provisions to
-// keep the calculation 64-bit and to rescale the result if it is too large
-// to fit in a fixed_t.
+// Rotates (x, y) by the angle whose sine is s and cosine is c, with the
+// same operations as FixedMul but kept in 64 bits.
 //
-// R_RotatePoint takes 16.16 fixed point as input, but it can overflow if it
-// tries to rotate world space in a sightline longer than ~32767 fracunits.
+inline void R_Rotate64(int64_t x, int64_t y, fixed_t s, fixed_t c, int64_t& tx, int64_t& ty)
+{
+	tx = ((x * c) >> FRACBITS) - ((y * s) >> FRACBITS);
+	ty = ((x * s) >> FRACBITS) + ((y * c) >> FRACBITS);
+}
+
 //
+// R_FitRotated
+//
+// Narrows a 64-bit rotated point to fixed_t, rescaling it if it is too large
+// to fit.
 // Returns true if the result had to be rescaled.
 //
-bool R_RotatePointSafe(int64_t x, int64_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
+bool R_FitRotated(int64_t tx64, int64_t ty64, fixed_t& tx, fixed_t& ty)
 {
-	int index = ang >> ANGLETOFINESHIFT;
-
-	// same operations as FixedMul, kept in 64 bits
-	int64_t tx64 = ((x * finecosine[index]) >> FRACBITS) - ((y * finesine[index]) >> FRACBITS);
-	int64_t ty64 = ((x * finesine[index]) >> FRACBITS) + ((y * finecosine[index]) >> FRACBITS);
-
 	// Max distance for fixed_t (16.16 fixed point)
 	static constexpr int64_t limit = (int64_t(1) << 30) - 1;
 	const int64_t mag = MAX<int64_t>(tx64 < 0 ? -tx64 : tx64, ty64 < 0 ? -ty64 : ty64);
@@ -357,6 +358,47 @@ bool R_RotatePointSafe(int64_t x, int64_t y, angle_t ang, fixed_t &tx, fixed_t &
 		ty = static_cast<fixed_t>(ty64 * limit / mag);
 	}
 	return true;
+}
+
+//
+// R_RotatePointSafe
+//
+// Rotates world space into camera space, but has special provisions to
+// keep the calculation 64-bit and to rescale the result if it is too large
+// to fit in a fixed_t.
+//
+// R_RotatePoint takes 16.16 fixed point as input, but it can overflow if it
+// tries to rotate world space in a sightline longer than ~32767 fracunits.
+//
+// Returns true if the result had to be rescaled.
+//
+bool R_RotatePointSafe(int64_t x, int64_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
+{
+	const int index = ang >> ANGLETOFINESHIFT;
+	int64_t tx64 = 0;
+	int64_t ty64 = 0;
+	R_Rotate64(x, y, finesine[index], finecosine[index], tx64, ty64);
+	return R_FitRotated(tx64, ty64, tx, ty);
+}
+
+//
+// R_RotateToView64 / R_RotateToViewSafe
+//
+// Rotate a view-relative world offset into camera space (tx right, ty
+// forward) using viewsin/viewcos, the same fine-table entries the visplane
+// mapper uses.
+//
+void R_RotateToView64(int64_t x, int64_t y, int64_t& tx, int64_t& ty)
+{
+	R_Rotate64(x, y, viewcos, viewsin, tx, ty);
+}
+
+bool R_RotateToViewSafe(int64_t x, int64_t y, fixed_t& tx, fixed_t& ty)
+{
+	int64_t tx64 = 0;
+	int64_t ty64 = 0;
+	R_Rotate64(x, y, viewcos, viewsin, tx64, ty64);
+	return R_FitRotated(tx64, ty64, tx, ty);
 }
 
 //
@@ -413,20 +455,13 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 //
 // 64-bit camera-space clipping/projection.
 //
-// These mirror R_RotatePoint / R_ClipLine / R_ClipLineToFrustum /
-// R_ProjectPointX exactly, but keep the camera-space coordinates in 64 bits
+// These mirror R_ClipLine / R_ClipLineToFrustum / R_ProjectPointX exactly,
+// but keep the camera-space coordinates in 64 bits
 // instead of squeezing them into a fixed_t.
 //
 static inline int64_t R_iMul30(int64_t a, int64_t b) { return (a * b) >> 30; }
 static inline int64_t R_iDiv30(int64_t a, int64_t b) { return (a << 30) / b; }
 static inline int64_t R_iMulFrac(int64_t a, int64_t b) { return (a * b) >> FRACBITS; }
-
-void R_RotatePoint64(int64_t x, int64_t y, angle_t ang, int64_t& tx, int64_t& ty)
-{
-	const int index = ang >> ANGLETOFINESHIFT;
-	tx = ((x * finecosine[index]) >> FRACBITS) - ((y * finesine[index]) >> FRACBITS);
-	ty = ((x * finesine[index]) >> FRACBITS) + ((y * finecosine[index]) >> FRACBITS);
-}
 
 void R_ClipLine64(const v2fixed64_t& in1, const v2fixed64_t& in2,
                   int32_t lclip, int32_t rclip,
@@ -583,8 +618,8 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 {
 	// convert from world-space to camera-space
 	v3fixed_t pt1, pt2;
-	R_RotatePointSafe(int64_t(inpt1->x) - viewx, int64_t(inpt1->y) - viewy, ANG90 - viewangle, pt1.x, pt1.y);
-	R_RotatePointSafe(int64_t(inpt2->x) - viewx, int64_t(inpt2->y) - viewy, ANG90 - viewangle, pt2.x, pt2.y);
+	R_RotateToViewSafe(static_cast<int64_t>(inpt1->x) - viewx, static_cast<int64_t>(inpt1->y) - viewy, pt1.x, pt1.y);
+	R_RotateToViewSafe(static_cast<int64_t>(inpt2->x) - viewx, static_cast<int64_t>(inpt2->y) - viewy, pt2.x, pt2.y);
 	pt1.z = inpt1->z - viewz;
 	pt2.z = inpt2->z - viewz;
 

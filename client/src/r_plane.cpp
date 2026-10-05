@@ -273,17 +273,20 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 void R_MapLevelPlane(int y, int x1, int x2)
 {
 	fixed_t distance = FixedMul(planeheight, yslope[y]);
-	fixed_t slope = (fixed_t)(focratio * FixedDiv(planeheight, abs(centery - y) << FRACBITS));
+	const fixed_t slope = FixedDiv(distance, FocalLengthX);
 
-	dspan.xstep = FixedMul(pl_xstepscale, slope);
-	dspan.ystep = FixedMul(pl_ystepscale, slope);
+	const fixed_t xstep = FixedMul(pl_xstepscale, slope);
+	const fixed_t ystep = FixedMul(pl_ystepscale, slope);
+	dspan.xstep = xstep;
+	dspan.ystep = ystep;
 
+	// Sample at column centers (+ half a step)
 	dspan.xfrac = pl_viewxtrans +
 				FixedMul(FixedMul(pl_viewcos, distance), pl_xscale) +
-				(x1 - centerx) * dspan.xstep;
+				((x1 - centerx) * xstep) + (xstep >> 1);
 	dspan.yfrac = pl_viewytrans -
 				FixedMul(FixedMul(pl_viewsin, distance), pl_yscale) +
-				(x1 - centerx) * dspan.ystep;
+				((x1 - centerx) * ystep) + (ystep >> 1);
 
 	if (fixedlightlev)
 		dspan.colormap = basecolormap.with(fixedlightlev);

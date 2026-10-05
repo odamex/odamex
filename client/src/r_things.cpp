@@ -354,7 +354,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	// and store in t1 & t2
 	fixed_t tx, ty, t1xold;
 	// too far from the camera to draw anyway if its distance is greater than ~32767 fracunits.
-	if (R_RotatePointSafe(int64_t(x) - viewx, int64_t(y) - viewy, ANG90 - viewangle, tx, ty))
+	if (R_RotateToViewSafe(static_cast<int64_t>(x) - viewx, static_cast<int64_t>(y) - viewy, tx, ty))
 		return NULL;
 
 	v2fixed_t t1, t2;

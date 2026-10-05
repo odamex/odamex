@@ -176,7 +176,10 @@ static void R_FillWallHeightArray(
 	const float h2 = FIXED2FLOAT(val2 - viewz) * scale2;
 
 	const float step = (h2 - h1) / (stop - start + 1);
-	float frac = float(centery) - h1;
+
+	// Project from the fractional view center and round to the NEAREST row so
+	// a boundary row belongs to the tier its pixel center falls in.
+	float frac = FIXED2FLOAT(centeryfrac) - h1 + 0.5f;
 
 	for (int i = start; i <= stop; i++)
 	{
