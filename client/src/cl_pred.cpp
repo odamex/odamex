@@ -418,9 +418,10 @@ bool CL_PredictWorld()
 	if (cl_predictsectors)
 		CL_ResetSectors(snaptime, s_predictingSectors);
 
+	bool playerWasPredicted = false;
 	while (++predtic < gametic)
 	{
-		const bool playerWasPredicted = CL_PredictLocalPlayer(predtic);
+		playerWasPredicted = CL_PredictLocalPlayer(predtic);
 		if (playerWasPredicted and not mobjsHaveBeenPredicted)
 		{
 			mobjsHaveBeenPredicted = true;
@@ -442,7 +443,7 @@ bool CL_PredictWorld()
 	// If the player didn't just spawn or teleport, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
 	// view when there's a misprediction.
-	if (snap.isContinuous())
+	if (playerWasPredicted and snap.isContinuous())
 	{
 		PlayerSnapshot correctedprevsnap(p.tic, p);
 
@@ -466,17 +467,17 @@ bool CL_PredictWorld()
 
 	CL_PredictLocalPlayer(gametic);
 
-	// Run thinkers for current gametic
-	if (cl_predictsectors)
-		CL_PredictAllSectors();
-
 	if (not mobjsHaveBeenPredicted)
 	{
 		mobjsHaveBeenPredicted = true;
-		predicting = false;
+		//predicting = false;
 		DThinker::RunThinkers();
-		predicting = true;
+		//predicting = true;
 	}
+
+	// Run thinkers for current gametic
+	if (cl_predictsectors)
+		CL_PredictAllSectors();
 
 	return mobjsHaveBeenPredicted;
 }
