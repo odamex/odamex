@@ -114,7 +114,7 @@ void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_p
 
 			// Double-check to make sure it's REALLY from the server and not extrapolated/etc.
 			if (snap.isValid() and snap.isAuthoritative())
-				{
+			{
 				bool ceilingdone = P_CeilingSnapshotDone(&snap);
 				bool floordone = P_FloorSnapshotDone(&snap);
 
@@ -399,6 +399,7 @@ bool CL_PredictWorld()
 	const int deltaPredTic   = predtic  - previousPredtic;
 
 	s_previousBasisServerTic = snaptime;
+
 	// No new server state?  Just keep using the player.tic.
 
 	// Check for the case where there's a mismatch in player.tic and servertic increment.
