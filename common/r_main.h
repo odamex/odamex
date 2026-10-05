@@ -152,7 +152,8 @@ bool R_CheckProjectionY(int &y1, int &y2);
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
 bool R_RotatePointSafe(int64_t x, int64_t y, angle_t ang, fixed_t &tx, fixed_t &ty);
-void R_RotatePoint64(int64_t x, int64_t y, angle_t ang, int64_t& tx, int64_t& ty);
+void R_RotateToView64(int64_t x, int64_t y, int64_t& tx, int64_t& ty);
+bool R_RotateToViewSafe(int64_t x, int64_t y, fixed_t& tx, fixed_t& ty);
 bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip);
 bool R_ClipLineToFrustum64(const v2fixed64_t& v1, const v2fixed64_t& v2, int64_t clipdist,
 						   int32_t& lclip, int32_t& rclip);
