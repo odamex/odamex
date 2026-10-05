@@ -436,6 +436,11 @@ bool CL_PredictWorld()
 			DThinker::RunThinkers();
 			predicting = true;
 		}
+		else
+		{
+			// Subsequent thinker runs are just predictive.
+			DThinker::RunThinkers();
+		}
 
 		if (cl_predictsectors)
 			CL_PredictSectors(s_predictingSectors);
