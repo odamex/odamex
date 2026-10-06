@@ -157,6 +157,24 @@ TEST_F(MapInfoParse, InterPicSplitsLumpFromScript)
 	EXPECT_TRUE(info.exitpic.empty());
 }
 
+TEST_F(MapInfoParse, InterPicIsExitPicAlias)
+{
+	const level_pwad_info_t& info =
+	    parse(R"(map MAP01 "Test" { interpic = "WIMAP1" })");
+
+	EXPECT_EQ(info.exitpic, "WIMAP1");
+	EXPECT_TRUE(info.exitscript.empty());
+	EXPECT_TRUE(info.enterpic.empty());
+
+	reset();
+
+	const level_pwad_info_t& script =
+	    parse(R"(map MAP01 "Test" { interpic = "$SCRIPT" })");
+
+	EXPECT_EQ(script.exitscript, "SCRIPT");
+	EXPECT_TRUE(script.exitpic.empty());
+}
+
 TEST_F(MapInfoParse, Map07SpecialAddsBothBossActions)
 {
 	const level_pwad_info_t& info = parse("map MAP01 \"Test\" { map07special }");
