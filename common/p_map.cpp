@@ -2007,8 +2007,8 @@ bool P_ThingHeightClip (AActor& thing)
 		return false;
 
 	fixed_t newz = (onthing) ?
-					underthing->z + underthing->height :
-					thing.floorz;
+	                underthing->z + underthing->height :
+	                thing.floorz;
 
 	if (onfloor || onthing)
 	{
@@ -3778,32 +3778,38 @@ bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 	return true;
 }
 
-void P_HeightClipAllSectorThings(sector_t& sector)
+template <typename Callable>
+void P_VisitAllTouchingThings(sector_t& sector, Callable&& callable, auto&&... argValues)
 {
 	if (co_boomphys)
 	{
 		msecnode_t *n;
-		for (n=sector.touching_thinglist; n; n=n->m_snext)
+		for (n = sector.touching_thinglist; n; n = n->m_snext)
 			n->visited = false;
 
 		do
-			for (n=sector.touching_thinglist; n; n=n->m_snext)	// go through list
-				if (!n->visited)								// unprocessed thing found
+			for (n = sector.touching_thinglist; n; n = n->m_snext)
+				if (not n->visited)
 				{
-					n->visited	= true; 						// mark thing as processed
-					if (n->m_thing && !(n->m_thing->flags & MF_NOBLOCKMAP))	// [Blair] Add nullcheck here
-						P_ThingHeightClip(*n->m_thing); 						// for clients that aren't updated yet.
-					break;										// exit and start over
+					n->visited = true;
+					if (n->m_thing && !(n->m_thing->flags & MF_NOBLOCKMAP))
+						callable(*n->m_thing, std::forward<decltype(argValues)>(argValues)...);
+					break;
 				}
 		while (n);	// repeat from scratch until all things left are marked valid
 	}
 	else
 	{
-		// re-check heights for all things near the moving sector
 		for (int x=sector.blockbox[BOXLEFT] ; x<= sector.blockbox[BOXRIGHT] ; x++)
 			for (int y=sector.blockbox[BOXBOTTOM];y<= sector.blockbox[BOXTOP] ; y++)
-				P_BlockThingsIterator (x, y, P_ThingHeightClip, nullptr);
+				P_BlockThingsIterator (x, y, callable, nullptr, std::forward<decltype(argValues)>(argValues)...);
 	}
+}
+
+
+void P_HeightClipAllSectorThings(sector_t& sector)
+{
+	P_VisitAllTouchingThings(sector, P_ThingHeightClip);
 }
 
 //
@@ -3820,43 +3826,7 @@ bool P_ChangeSector (sector_t *sector, int crunch)
 
 	bool nofit = false;
 
-	// [ML] co_boomsectortouch now part of co_boomphys
-	if (co_boomphys)
-	{
-		msecnode_t *n;
-
-		// killough 4/4/98: scan list front-to-back until empty or exhausted,
-		// restarting from beginning after each thing is processed. Avoids
-		// crashes, and is sure to examine all things in the sector, and only
-		// the things which are in the sector, until a steady-state is reached.
-		// Things can arbitrarily be inserted and removed and it won't mess up.
-		//
-		// killough 4/7/98: simplified to avoid using complicated counter
-
-		// Mark all things invalid
-
-		for (n=sector->touching_thinglist; n; n=n->m_snext)
-			n->visited = false;
-
-		do
-			for (n=sector->touching_thinglist; n; n=n->m_snext)	// go through list
-				if (!n->visited)								// unprocessed thing found
-				{
-					n->visited	= true; 						// mark thing as processed
-					if (n->m_thing && !(n->m_thing->flags & MF_NOBLOCKMAP))	// [Blair] Add nullcheck here
-						PIT_ChangeSector(*n->m_thing, crunch, nofit); 						// for clients that aren't updated yet.
-					break;										// exit and start over
-				}
-		while (n);	// repeat from scratch until all things left are marked valid
-	}
-	else
-	{
-		// re-check heights for all things near the moving sector
-		for (int x=sector->blockbox[BOXLEFT] ; x<= sector->blockbox[BOXRIGHT] ; x++)
-			for (int y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
-				P_BlockThingsIterator (x, y, PIT_ChangeSector, nullptr, crunch, nofit);
-
-	}
+	P_VisitAllTouchingThings(*sector, PIT_ChangeSector, crunch, nofit);
 
 	return nofit;
 }
