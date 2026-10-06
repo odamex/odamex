@@ -116,10 +116,10 @@ void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_p
 			// Double-check to make sure it's REALLY from the server and not extrapolated/etc.
 			if (snap.isValid() and snap.isAuthoritative())
 			{
-				bool ceilingdone = P_CeilingSnapshotDone(&snap);
-				bool floordone = P_FloorSnapshotDone(&snap);
+				const bool ceilingdone = P_CeilingSnapshotDone(&snap);
+				const bool floordone   = P_FloorSnapshotDone(&snap);
 
-				if (ceilingdone && floordone)
+				if (ceilingdone and floordone)
 					snapfinished = true;
 				else
 				{
@@ -134,8 +134,9 @@ void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_p
 			snapfinished = true;
 
 
-		if (snapfinished && P_MovingCeilingCompleted(sector) &&
-			P_MovingFloorCompleted(sector))
+		if (    snapfinished
+		    and P_MovingCeilingCompleted(sector)
+		    and P_MovingFloorCompleted(sector))
 		{
 			// no valid snapshots in the container so remove this sector from the
 			// movingsectors list whenever prediction is done
@@ -160,9 +161,9 @@ void CL_PredictSector(const movingsector_t& movsector)
 	const fixed_t originalFloorHeight   = P_FloorHeight  (sector);
 	const fixed_t originalCeilingHeight = P_CeilingHeight(sector);
 
-	if (sector && sector->ceilingdata && movsector.moving_ceiling)
+	if (sector and sector->ceilingdata and movsector.moving_ceiling)
 		sector->ceilingdata->RunThink();
-	if (sector && sector->floordata && movsector.moving_floor)
+	if (sector and sector->floordata and movsector.moving_floor)
 		sector->floordata->RunThink();
 
 	// Because of the RunThinkers that takes place on a rolled-back state via ResetSectors, it's possible for
@@ -170,8 +171,9 @@ void CL_PredictSector(const movingsector_t& movsector)
 	// potentially more attributes) left at an earlier state, causing visible, temporary glitches.  We avoid
 	// this by detecting if a predicted sector is actually NOT in motion and then if so, re-clip its things.
 	// A sector that IS in motion makes its own P_ThingHeightClip call in P_ChangeSector.
-	if (    originalFloorHeight   == P_FloorHeight(sector)
-		and originalCeilingHeight == P_CeilingHeight(sector))
+	if (sector
+	    and originalFloorHeight   == P_FloorHeight(sector)
+	    and originalCeilingHeight == P_CeilingHeight(sector))
 	{
 		P_HeightClipAllSectorThings(*sector);
 	}
@@ -465,8 +467,8 @@ bool CL_PredictWorld()
 		PlayerSnapshot correctedprevsnap(p.tic, p);
 
 		// Did we predict correctly?
-		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
-		               (correctedprevsnap.getY() == prevsnap.getY()) &&
+		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) and
+		               (correctedprevsnap.getY() == prevsnap.getY()) and
 		               (correctedprevsnap.getZ() == prevsnap.getZ());
 
 		if (!correct)

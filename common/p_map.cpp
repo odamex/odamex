@@ -1989,10 +1989,10 @@ extern bool predicting;
 
 bool P_ThingHeightClip (AActor& thing)
 {
-	bool onfloor = (thing.z <= thing.floorz);
+	const bool onfloor = (thing.z <= thing.floorz);
 
 	AActor *underthing = P_CheckOnmobj(&thing);
-	bool onthing = P_AllowPassover() && underthing && underthing->z < thing.z;
+	const bool onthing = P_AllowPassover() and underthing and underthing->z < thing.z;
 
 	// calculate new floorz/ceilingz, etc
 	P_CheckPosition (&thing, thing.x, thing.y);
@@ -2003,16 +2003,16 @@ bool P_ThingHeightClip (AActor& thing)
 	thing.floorsector = tmfloorsector;
 
 	// standing on another actor - adjust the actor underneath first
-	if (onthing && !P_ThingHeightClip(*underthing))
+	if (onthing and not P_ThingHeightClip(*underthing))
 		return false;
 
 	fixed_t newz = (onthing) ?
 	                underthing->z + underthing->height :
 	                thing.floorz;
 
-	if (onfloor || onthing)
+	if (onfloor or onthing)
 	{
-		if (!serverside && thing.player && thing.z != newz)
+		if (not serverside and thing.player and thing.z != newz)
 		{
 			// [AM] The player's Z-axis was changed, do not try
 			//      and further correct it with snapshots.  Also,
@@ -2027,7 +2027,7 @@ bool P_ThingHeightClip (AActor& thing)
 		thing.z = newz;
 
 		/* killough 11/98: Possibly upset balance of objects hanging off ledges */
-		if (thing.oflags & MFO_FALLING && thing.gear >= MAXGEAR)
+		if (thing.oflags & MFO_FALLING and thing.gear >= MAXGEAR)
 			thing.gear = 0;
 	}
 	else
@@ -3778,11 +3778,18 @@ bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 	return true;
 }
 
-template <typename Callable>
-void P_VisitAllTouchingThings(sector_t& sector, Callable&& callable, auto&&... argValues)
+template <typename Callable, typename... ArgTypes>
+void P_VisitAllTouchingThings(sector_t& sector, Callable callable, ArgTypes&&... argValues)
 {
 	if (co_boomphys)
 	{
+		// Capture the args as lvalue references so that we avoid any rvalue forwards / moves.
+		// We use a lambda to do this.
+		auto callIt = [& callable, & argValues...] (AActor& thing)
+		{
+			callable(thing, std::forward<ArgTypes>(argValues)...);
+		};
+
 		msecnode_t *n;
 		for (n = sector.touching_thinglist; n; n = n->m_snext)
 			n->visited = false;
@@ -3792,17 +3799,24 @@ void P_VisitAllTouchingThings(sector_t& sector, Callable&& callable, auto&&... a
 				if (not n->visited)
 				{
 					n->visited = true;
-					if (n->m_thing && !(n->m_thing->flags & MF_NOBLOCKMAP))
-						callable(*n->m_thing, std::forward<decltype(argValues)>(argValues)...);
+					if (n->m_thing and not (n->m_thing->flags & MF_NOBLOCKMAP))
+						callIt(*n->m_thing);// callable(*n->m_thing, std::forward<decltype(argValues)>(argValues)...);
 					break;
 				}
 		while (n);	// repeat from scratch until all things left are marked valid
 	}
 	else
 	{
+		// Capture the args as lvalue references so that we avoid any rvalue forwards / moves.
+		// We use a lambda to do this.
+		auto callIt = [& callable, & argValues...] (int x, int y)
+		{
+			P_BlockThingsIterator (x, y, callable, nullptr, std::forward<ArgTypes>(argValues)...);
+		};
+
 		for (int x=sector.blockbox[BOXLEFT] ; x<= sector.blockbox[BOXRIGHT] ; x++)
 			for (int y=sector.blockbox[BOXBOTTOM];y<= sector.blockbox[BOXTOP] ; y++)
-				P_BlockThingsIterator (x, y, callable, nullptr, std::forward<decltype(argValues)>(argValues)...);
+				callIt(x, y);
 	}
 }
 
@@ -3821,7 +3835,7 @@ void P_HeightClipAllSectorThings(sector_t& sector)
 
 bool P_ChangeSector (sector_t *sector, int crunch)
 {
-	if (!sector)
+	if (not sector)
 		return true;
 
 	bool nofit = false;
