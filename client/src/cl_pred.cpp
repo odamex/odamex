@@ -445,11 +445,10 @@ bool CL_PredictWorld()
 		{
 			mobjsHaveBeenPredicted = true;
 
-			// We're doing our genuine thinker step now, and it should almost always
-			// be on the tic following the latest from the server.  This ensures that
-			// mobj actions that reference the player's position are working from the
-			// player state that the server almost certainly had when it ran the tic
-			// for real.
+			// We're doing our genuine thinker step now, and it must always be on the
+			// tic following the latest from the server.  This ensures that mobj actions
+			// that reference the player's position are working from the player state
+			// that the server almost certainly had when it ran the tic for real.
 			predicting = false;
 			DThinker::RunThinkers();
 			predicting = true;
@@ -467,11 +466,11 @@ bool CL_PredictWorld()
 		PlayerSnapshot correctedprevsnap(p.tic, p);
 
 		// Did we predict correctly?
-		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) and
-		               (correctedprevsnap.getY() == prevsnap.getY()) and
-		               (correctedprevsnap.getZ() == prevsnap.getZ());
+		const bool correct = (correctedprevsnap.getX() == prevsnap.getX()) and
+		                     (correctedprevsnap.getY() == prevsnap.getY()) and
+		                     (correctedprevsnap.getZ() == prevsnap.getZ());
 
-		if (!correct)
+		if (not correct)
 		{
 			// Update the netgraph concerning our prediction's error
 			netgraph.setMisprediction(true);
