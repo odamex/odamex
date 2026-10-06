@@ -410,6 +410,7 @@ bool CL_PredictWorld()
 	const int previousIndex = (currentIndex ? currentIndex : NUM_SNAPSHOTS) - 1;
 
 	const int previousPredtic = s_previousPredictionTics[previousIndex];
+	s_previousPredictionTics[currentIndex] = predtic;
 
 	const int deltaServerTic = snaptime - s_previousBasisServerTic;
 	const int deltaPredTic   = predtic  - previousPredtic;
@@ -427,7 +428,6 @@ bool CL_PredictWorld()
 	}
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
-	s_previousPredictionTics[currentIndex] = predtic;
 
 	s_predictingSectors.clear();
 
