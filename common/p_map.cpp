@@ -1987,67 +1987,64 @@ void P_ApplyTorque (AActor *mo)
 
 extern bool predicting;
 
-bool P_ThingHeightClip (AActor* thing)
+bool P_ThingHeightClip (AActor& thing)
 {
-	if (!thing)
-		return true;
+	bool onfloor = (thing.z <= thing.floorz);
 
-	bool onfloor = (thing->z <= thing->floorz);
-
-	AActor *underthing = P_CheckOnmobj(thing);
-	bool onthing = P_AllowPassover() && underthing && underthing->z < thing->z;
+	AActor *underthing = P_CheckOnmobj(&thing);
+	bool onthing = P_AllowPassover() && underthing && underthing->z < thing.z;
 
 	// calculate new floorz/ceilingz, etc
-	P_CheckPosition (thing, thing->x, thing->y);
+	P_CheckPosition (&thing, thing.x, thing.y);
 
-	thing->floorz = tmfloorz;
-	thing->ceilingz = tmceilingz;
-	thing->dropoffz = tmdropoffz;
-	thing->floorsector = tmfloorsector;
+	thing.floorz = tmfloorz;
+	thing.ceilingz = tmceilingz;
+	thing.dropoffz = tmdropoffz;
+	thing.floorsector = tmfloorsector;
 
 	// standing on another actor - adjust the actor underneath first
-	if (onthing && !P_ThingHeightClip(underthing))
+	if (onthing && !P_ThingHeightClip(*underthing))
 		return false;
 
 	fixed_t newz = (onthing) ?
 					underthing->z + underthing->height :
-					thing->floorz;
+					thing.floorz;
 
 	if (onfloor || onthing)
 	{
-		if (!serverside && thing->player && thing->z != newz)
+		if (!serverside && thing.player && thing.z != newz)
 		{
 			// [AM] The player's Z-axis was changed, do not try
 			//      and further correct it with snapshots.  Also,
 			//      do not remove the player check - we currently
 			//      only unset this flag for players.
-			thing->oflags |= MFO_NOSNAPZ;
+			thing.oflags |= MFO_NOSNAPZ;
 		}
 		if (not predicting)
 		{
-			thing->prevz = thing->z;
+			thing.prevz = thing.z;
 		}
-		thing->z = newz;
+		thing.z = newz;
 
 		/* killough 11/98: Possibly upset balance of objects hanging off ledges */
-		if (thing->oflags & MFO_FALLING && thing->gear >= MAXGEAR)
-			thing->gear = 0;
+		if (thing.oflags & MFO_FALLING && thing.gear >= MAXGEAR)
+			thing.gear = 0;
 	}
 	else
 	{
 		// don't adjust a floating monster unless forced to
-		if (thing->z + thing->height > thing->ceilingz)
+		if (thing.z + thing.height > thing.ceilingz)
 		{
 			if (not predicting)
 			{
-				thing->prevz = thing->z;
+				thing.prevz = thing.z;
 			}
-			thing->z = thing->ceilingz - thing->height;
+			thing.z = thing.ceilingz - thing.height;
 		}
 	}
 
 	// thing won't fit
-	if (thing->ceilingz - newz < thing->height)
+	if (thing.ceilingz - newz < thing.height)
 		return false;
 
 	return true;
@@ -3711,7 +3708,7 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 //
 bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 {
-	if (P_ThingHeightClip (&thing))
+	if (P_ThingHeightClip (thing))
 	{
 		// keep checking
 		return true;
@@ -3779,6 +3776,34 @@ bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 
 	// keep checking (crush other things)
 	return true;
+}
+
+void P_HeightClipAllSectorThings(sector_t& sector)
+{
+	if (co_boomphys)
+	{
+		msecnode_t *n;
+		for (n=sector.touching_thinglist; n; n=n->m_snext)
+			n->visited = false;
+
+		do
+			for (n=sector.touching_thinglist; n; n=n->m_snext)	// go through list
+				if (!n->visited)								// unprocessed thing found
+				{
+					n->visited	= true; 						// mark thing as processed
+					if (n->m_thing && !(n->m_thing->flags & MF_NOBLOCKMAP))	// [Blair] Add nullcheck here
+						P_ThingHeightClip(*n->m_thing); 						// for clients that aren't updated yet.
+					break;										// exit and start over
+				}
+		while (n);	// repeat from scratch until all things left are marked valid
+	}
+	else
+	{
+		// re-check heights for all things near the moving sector
+		for (int x=sector.blockbox[BOXLEFT] ; x<= sector.blockbox[BOXRIGHT] ; x++)
+			for (int y=sector.blockbox[BOXBOTTOM];y<= sector.blockbox[BOXTOP] ; y++)
+				P_BlockThingsIterator (x, y, P_ThingHeightClip, nullptr);
+	}
 }
 
 //

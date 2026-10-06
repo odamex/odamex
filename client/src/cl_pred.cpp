@@ -40,6 +40,7 @@ extern NetGraph netgraph;
 
 void P_MovePlayer (player_t& player);
 void P_CalcHeight (player_t& player);
+void P_HeightClipAllSectorThings(sector_t& sector);
 
 extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
 
@@ -151,14 +152,29 @@ void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_p
 // CL_PredictSectors
 //
 //
+
 void CL_PredictSector(const movingsector_t& movsector)
 {
 	sector_t *sector = movsector.sector;
+
+	const fixed_t originalFloorHeight   = P_FloorHeight  (sector);
+	const fixed_t originalCeilingHeight = P_CeilingHeight(sector);
 
 	if (sector && sector->ceilingdata && movsector.moving_ceiling)
 		sector->ceilingdata->RunThink();
 	if (sector && sector->floordata && movsector.moving_floor)
 		sector->floordata->RunThink();
+
+	// Because of the RunThinkers that takes place on a rolled-back state via ResetSectors, it's possible for
+	// a recently-stopped predicted sector to be motionless, but the things on it have their prevz (and
+	// potentially more attributes) left at an earlier state, causing visible, temporary glitches.  We avoid
+	// this by detecting if a predicted sector is actually NOT in motion and then if so, re-clip its things.
+	// A sector that IS in motion makes its own P_ThingHeightClip call in P_ChangeSector.
+	if (    originalFloorHeight   == P_FloorHeight(sector)
+		and originalCeilingHeight == P_CeilingHeight(sector))
+	{
+		P_HeightClipAllSectorThings(*sector);
+	}
 }
 
 void CL_PredictSectors(const ActivePredictingSectorsVector& io_predictingSectors)
@@ -435,11 +451,6 @@ bool CL_PredictWorld()
 			predicting = false;
 			DThinker::RunThinkers();
 			predicting = true;
-		}
-		else
-		{
-			// Subsequent thinker runs are just predictive.
-			DThinker::RunThinkers();
 		}
 
 		if (cl_predictsectors)
