@@ -76,6 +76,7 @@ END_DISABLE_WARNING_GNU
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"
+#include "r_voxel.h"
 #include "d_main.h"
 #include "d_dehacked.h"
 #include "cl_download.h"
@@ -767,6 +768,10 @@ void D_Init()
 	if (first_time)
 		PrintFmt(PRINT_HIGH, "ST_Init: Init status bar.\n");
 	ST_Init();
+
+	if (first_time)
+		PrintFmt(PRINT_HIGH, "VX_Init: scanning voxels directory.\n");
+	VX_Init();
 
 	first_time = false;
 }
