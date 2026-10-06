@@ -121,7 +121,7 @@ typedef enum
 
     // [BC] Entered the game
 	PST_ENTER,
-	
+
 	// this player is the freecam
 	PST_FREECAM
 
@@ -268,7 +268,7 @@ public:
 	                        PspriteEquals>      pspriteMonitors;
 
     // True if button down last tic.
-	int			attackdown, usedown;
+	bool		attackdown, usedown;
 
 	// Bit flags, for cheats and debug.
     // See cheat_t, above.
