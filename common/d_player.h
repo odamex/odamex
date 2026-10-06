@@ -268,7 +268,8 @@ public:
 	                        PspriteEquals>      pspriteMonitors;
 
     // True if button down last tic.
-	bool		attackdown, usedown;
+	bool attackdown = false;
+	bool usedown    = false;
 
 	// Bit flags, for cheats and debug.
     // See cheat_t, above.
