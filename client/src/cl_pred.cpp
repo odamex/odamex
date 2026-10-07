@@ -412,7 +412,6 @@ bool CL_PredictWorld()
 	const int previousIndex = (currentIndex ? currentIndex : NUM_SNAPSHOTS) - 1;
 
 	const int previousPredtic = s_previousPredictionTics[previousIndex];
-	s_previousPredictionTics[currentIndex] = predtic;
 
 	const int deltaServerTic = snaptime - s_previousBasisServerTic;
 	const int deltaPredTic   = predtic  - previousPredtic;
@@ -424,10 +423,11 @@ bool CL_PredictWorld()
 	// Check for the case where there's a mismatch in player.tic and servertic increment.
 	// This happens when the server consumes more than one PlayerInput message in a single
 	// tic.  This can happen naturally with client -> server jitter.
-	if (deltaServerTic > 0 and deltaPredTic > deltaServerTic)
+	if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
 	{
 		predtic = previousPredtic + deltaServerTic;
 	}
+	s_previousPredictionTics[currentIndex] = predtic;
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
