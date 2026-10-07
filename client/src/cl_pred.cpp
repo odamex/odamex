@@ -421,12 +421,14 @@ bool CL_PredictWorld()
 	// No new server state?  Just keep using the player.tic.
 
 	// Check for the case where there's a mismatch in player.tic and servertic increment.
-	// This happens when the server consumes more than one PlayerInput message in a single
-	// tic.  This can happen naturally with client -> server jitter.
+	// This happens when the server consumes more than one (or no) PlayerInput message in
+	// a single tic.  This can happen naturally with client -> server jitter, among other
+	// causes.
 	if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
 	{
 		predtic = previousPredtic + deltaServerTic;
 	}
+
 	s_previousPredictionTics[currentIndex] = predtic;
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
