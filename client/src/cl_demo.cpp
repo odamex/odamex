@@ -95,7 +95,7 @@ void NetDemo::reset()
 	cleanUp();
 
 	filename = "";
-	header = netdemo_header4_t{};
+	streamHeader = netdemo_header4_t{};
 	captured.Clear();
 }
 
@@ -152,41 +152,46 @@ void NetDemo::fatalError(const std::string &message)
 }
 
 //
-// writeHeader()
+// writeFileHeader()
 //
 //   Writes the header struct to the netdemo file in little-endian format
 //   Assumes that demofp has been opened correctly elsewhere.  Does not close
 //   the file.
 
-bool NetDemo::writeHeader()
+bool NetDemo::writeFileHeader()
 {
-	memcpy(header.id.identifier, "ODAD", 4);
-	header.id.version = NETDEMOVER;
-	header.compression = 0;
-	header.snapshot_spacing = NetDemo::SNAPSHOT_SPACING;
+	memcpy(fileHeader.identifier, "ODAD", 4);
+	fileHeader.version = NETDEMOVER;
+	streamHeader.compression = 0;
+	streamHeader.snapshot_spacing = NetDemo::SNAPSHOT_SPACING;
 
 	demofp.seekp(0, std::ios::beg);
 	const auto startingPosition = demofp.tellp();
 
 	const bool result = startingPosition >= 0
-	                    and M_WriteLE(demofp, header.id.identifier)
-	                    and M_WriteLE(demofp, header.id.version)
-	                    and M_WriteLE(demofp, header.compression)
-	                    and M_WriteLE(demofp, header.snapshot_spacing)
-	                    and M_WriteLE(demofp, header.starting_gametic)
-	                    and M_WriteLE(demofp, header.ending_gametic)
-	                    and M_WriteLE(demofp, header.reserved)
+	                    and fileHeader.Write(demofp)
+	                    and streamHeader.Write(demofp)
 	                    and demofp.tellp() - startingPosition == HEADER_SIZE;
 	return result;
 }
 
 
-bool NetDemo::netdemo_header_id_t::Read(std::fstream& io_stream)
+bool NetDemo::netdemo_file_header_t::Read(std::fstream& io_stream)
 {
 	if (io_stream.good())
 	{
 		return  M_ReadLE(io_stream, identifier)
 		    and M_ReadLE(io_stream, version);
+	}
+	return false;
+}
+
+bool NetDemo::netdemo_file_header_t::Write(std::fstream& io_stream)
+{
+	if (io_stream.good())
+	{
+		return  M_WriteLE(demofp, identifier)
+		    and M_WriteLE(demofp, version);
 	}
 	return false;
 }
@@ -214,6 +219,23 @@ bool NetDemo::netdemo_header4_t::Read(std::fstream& io_stream)
 	if (io_stream.good())
 	{
 		return  id.Read(io_stream)
+		    and M_ReadLE(io_stream, compression)
+		    and M_ReadLE(io_stream, snapshot_spacing)
+		    and M_ReadLE(io_stream, starting_gametic)
+		    and M_ReadLE(io_stream, ending_gametic)
+		    and M_ReadLE(io_stream, reserved);
+	}
+	return false;
+}
+
+bool NetDemo::netdemo_header4_t::Write(std::fstream& io_stream)
+{
+	if (io_stream.good())
+	{
+		return  M_WriteLE(demofp, compression)
+		    and M_WriteLE(demofp, snapshot_spacing)
+		    and M_WriteLE(demofp, starting_gametic)
+		    and M_WriteLE(demofp, ending_gametic);
 		    and M_ReadLE(io_stream, compression)
 		    and M_ReadLE(io_stream, snapshot_spacing)
 		    and M_ReadLE(io_stream, starting_gametic)
@@ -273,40 +295,37 @@ bool NetDemo::writeFormatDescription(std::fstream& io_stream)
 }
 
 //
-// readHeader()
+// readFileHeader()
 //
 //   Reads the header struct from the netdemo file, converting it from
 //   little-endian format to whatever the client's architecture uses.  Assumes
 //   that demofp has been opened correctly elsewhere.  Does not close the file.
 
-bool NetDemo::readHeader()
+bool NetDemo::readFileHeader()
 {
 	demofp.seekg(0, std::ios::beg);
 	const auto startingPosition = demofp.tellg();
 
-	netdemo_header_id_t headerId;
-	const bool headerIDOk = headerId.Read(demofp);
+	const bool headerOk = fileHeader.Read(demofp);
 
-	if (not (headerIDOk
-	         and headerId.identifier[0] == 'O'
-	         and headerId.identifier[1] == 'D'
-	         and headerId.identifier[2] == 'A'
-	         and headerId.identifier[3] == 'D'))
+	if (not (headerOk
+	         and fileHeader.identifier[0] == 'O'
+	         and fileHeader.identifier[1] == 'D'
+	         and fileHeader.identifier[2] == 'A'
+	         and fileHeader.identifier[3] == 'D'))
 	{
 		return false;
 	}
 
-	header.id = headerId;
-
-	if (header.id.version == NETDEMOVER)
+	if (fileHeader.version == NETDEMOVER)
 	{
 		demofp.seekg(startingPosition, std::ios::beg);
 
-		return header.Read(demofp)
+		return streamHeader.Read(demofp)
 		        and demofp.tellg() - startingPosition == HEADER_SIZE;
 	}
 
-	if (header.id.version == 3)
+	if (fileHeader.version == 3)
 	{
 		demofp.seekg(startingPosition, std::ios::beg);
 
@@ -316,7 +335,7 @@ bool NetDemo::readHeader()
 		        and demofp.tellg() - startingPosition == HEADER_SIZE)
 		{
 			// Translate from 3 to NETDEMOVER
-			header.Import(header3);
+			streamHeader.Import(header3);
 			return true;
 		}
 	}
@@ -391,9 +410,9 @@ void NetDemo::populateMessageIndexes()
 	} while (demofp.good());
 
 	// fix for playing a demo that hard crashed and couldnt write ending_gametic
-	if (header.ending_gametic == 0)
+	if (streamHeader.ending_gametic == 0)
 	{
-		header.ending_gametic = last_tic;
+		streamHeader.ending_gametic = last_tic;
 	}
 }
 
@@ -431,14 +450,14 @@ bool NetDemo::startRecording(const std::string &filename)
 		return false;
 	}
 
-	header = netdemo_header4_t{};
-	header.starting_gametic = gametic;
+	streamHeader = netdemo_header4_t{};
+	streamHeader.starting_gametic = gametic;
 
 	// Note: The header is not finalized at this point.  Write it anyway to
 	// reserve space in the output file for it and overwrite it later.
-	if (not writeHeader())
+	if (not writeFileHeader())
 	{
-		error("Unable to write netdemo header.");
+		error("Unable to write netdemo file header.");
 		return false;
 	}
 
@@ -517,20 +536,20 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-	if (!readHeader())
+	if (not readFileHeader())
 	{
-		error("Unable to read netdemo header.");
+		error("Unable to read netdemo file header.");
 		return false;
 	}
 
 	if constexpr (TRY_LOADING_OLD_NETDEMOS)
 	{
-		PrintFmt(PRINT_WARNING, "Attempting to load a version {} netdemo...\n", header.id.version);
+		PrintFmt(PRINT_WARNING, "Attempting to load a version {} netdemo...\n", fileHeader.version);
 	}
-	else if (header.id.version != NETDEMOVER)
+	else if (fileHeader.version != NETDEMOVER)
 	{
 		std::string buffer;
-		const int latestVersion = LatestDemoVersion(header.id.version);
+		const int latestVersion = LatestDemoVersion(fileHeader.version);
 		if (latestVersion)
 		{
 			int maj, min, patch;
@@ -616,7 +635,7 @@ bool NetDemo::resume()
 //
 // stopRecording()
 //
-//   Writes the netdemo index to file and rewrites the netdemo header before
+//   Writes the netdemo index to file and rewrites the netdemo file header before
 //   closing the netdemo file.
 
 bool NetDemo::stopRecording()
@@ -635,14 +654,14 @@ bool NetDemo::stopRecording()
 	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::msg_eof);
 
 	// write the number of the last gametic in the recording
-	header.ending_gametic = gametic;
+	streamHeader.ending_gametic = gametic;
 
 	demofp.flush();
 
 	// rewrite the header for ending_gametic
-	if (!writeHeader())
+	if (not writeFileHeader())
 	{
-		error("Unable to write updated netdemo header.");
+		error("Unable to write updated netdemo file header.");
 		return false;
 	}
 
@@ -725,7 +744,7 @@ bool NetDemo::atSnapshotInterval()
 	if (gametic == last_map_tic)
 		return false;
 
-	return ((gametic - last_map_tic) % header.snapshot_spacing == 0);
+	return ((gametic - last_map_tic) % streamHeader.snapshot_spacing == 0);
 }
 
 
@@ -920,7 +939,7 @@ void NetDemo::readMessages(buf_t* netbuffer)
 
 	// read from the input file and put the data into netbuffer
 	gametic     = tic;
-	netdemotic  = gametic - header.starting_gametic;
+	netdemotic  = gametic - streamHeader.starting_gametic;
 	readMessageBody(netbuffer, len);
 }
 
@@ -1110,14 +1129,14 @@ void NetDemo::writeConnectionSequence()
 	{
 		buf_t& headerBuffer = captured.Obtain();
 
-		PacketHeaderType header {0};
+		PacketHeaderType packetHeader {0};
 
-		header.originatorTic  = last_svgametic;
-		header.destinationTic = player.tic;
+		packetHeader.originatorTic  = last_svgametic;
+		packetHeader.destinationTic = player.tic;
 
 		// Please note that we pack the header in proper socket-style for the connection sequence
 		// because the netdemo connection playback actually uses the messenger via CL_Connect.
-		header.Pack(headerBuffer);
+		packetHeader.Pack(headerBuffer);
 	}
 
 	// Server sends our player id and digest
@@ -1150,8 +1169,8 @@ void NetDemo::writeConnectionSequence()
 
 NetDemo::SnapshotVector::const_iterator NetDemo::lookupSnapshot(const SnapshotVector& i_vector, uint32_t gameticnum) const
 {
-	if (gameticnum < header.starting_gametic or
-	    gameticnum > header.ending_gametic or
+	if (gameticnum < streamHeader.starting_gametic or
+	    gameticnum > streamHeader.ending_gametic or
 	    i_vector.empty())
 	{
 		return i_vector.end();
@@ -1183,7 +1202,7 @@ NetDemo::SnapshotVector::const_iterator NetDemo::lookupSnapshot(const SnapshotVe
 //
 NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForNetdemotic(uint32_t i_netdemoticnum) const
 {
-	return lookupSnapshot(snapshot_index, header.starting_gametic + i_netdemoticnum);
+	return lookupSnapshot(snapshot_index, streamHeader.starting_gametic + i_netdemoticnum);
 }
 
 // getSnapshotForGametic()
@@ -1373,7 +1392,7 @@ bool NetDemo::readSnapshot(SnapshotVector::const_iterator snap)
 	}
 
 	readSnapshotData(snapbuf);
-	netdemotic = snap->ticnum - header.starting_gametic;
+	netdemotic = snap->ticnum - streamHeader.starting_gametic;
 
 	Wipe_Suppress(2);
 
@@ -1391,7 +1410,7 @@ int NetDemo::calculateTotalTime() const
 	if (not isInPlayback())
 		return 0;
 
-	return ((header.ending_gametic - header.starting_gametic) / TICRATE);
+	return ((streamHeader.ending_gametic - streamHeader.starting_gametic) / TICRATE);
 }
 
 
@@ -1430,8 +1449,8 @@ const std::vector<int> NetDemo::getMapChangeTimes() const
 bool NetDemo::seekGametic(int requestedGametic)
 {
 	if (not isInPlayback()
-	    or requestedGametic < header.starting_gametic
-	    or requestedGametic > header.ending_gametic)
+	    or requestedGametic < streamHeader.starting_gametic
+	    or requestedGametic > streamHeader.ending_gametic)
 	{
 		return false;
 	}
@@ -1478,7 +1497,7 @@ bool NetDemo::seekGametic(int requestedGametic)
 			requestedGametic += 1;
 		}
 		timingdemo = true;
-		pause_netdemotic = requestedGametic - header.starting_gametic;
+		pause_netdemotic = requestedGametic - streamHeader.starting_gametic;
 
 		return true;
 	}
@@ -1488,7 +1507,7 @@ bool NetDemo::seekGametic(int requestedGametic)
 
 bool NetDemo::seekNetdemotic(int requestedNetdemotic)
 {
-	return seekGametic(requestedNetdemotic + header.starting_gametic);
+	return seekGametic(requestedNetdemotic + streamHeader.starting_gametic);
 }
 
 void NetDemo::writeMapChange()

@@ -71,11 +71,11 @@ private:
 
 	enum netdemo_message_t
 	{
-		msg_packet      = 0xAA,
-		msg_snapshot,
-		msg_map_change,
-		msg_eof,
-		msg_format_description
+		MSG_PACKET      = 0xAA,
+		MSG_SNAPSHOT,
+		MSG_MAP_CHANGE,
+		MSG_EOF,
+		MSG_HEADER,
 	};
 
 	struct message_header_t
@@ -120,8 +120,8 @@ private:
 	void writeSnapshotData(std::vector<byte>& buf);
 
 	void writeChunk(const byte *data, size_t size, netdemo_message_t type);
-	bool writeHeader();
-	bool readHeader();
+	bool writeFileHeader();
+	bool readFileHeader();
 	static bool writeFormatDescription(std::fstream& io_stream);
 
 	bool atSnapshotInterval();
@@ -149,12 +149,13 @@ private:
 
 	static constexpr uint16_t SNAPSHOT_SPACING = 20 * TICRATE;
 
-	struct netdemo_header_id_t
+	struct netdemo_file_header_id_t
 	{
 		char        identifier[4]   { 0, 0, 0, 0};  // "ODAD"
 		byte        version         { 0 };          // 4, 3, etc...
 
 		bool Read(std::fstream& io_stream);
+		bool Write(std::fstream& io_stream);
 	};
 
 	// The following exists only for a remote chance of compatibility with old netdemos.
@@ -164,7 +165,7 @@ private:
 	// message body formats.
 	struct netdemo_header3_t
 	{
-		netdemo_header_id_t id              {};     // version 3
+		//netdemo_header_id_t id              {};     // version 3
 		byte        compression             { 0 };  // type of compression used
 		uint16_t    snapshot_index_size     { 0 };  // number of snapshots in the index
 		uint32_t    snapshot_index_offset   { 0 };  // offset from start of the file for the index
@@ -179,15 +180,15 @@ private:
 	};
 
 	// Now for the current netdemo version.
-	struct netdemo_header4_t
+	struct netdemo_stream_header4_t
 	{
-		netdemo_header_id_t id      {};             // version 4
+		//netdemo_header_id_t id      {};             // version 4
 		byte        compression     { 0 };          // type of compression used
 		uint16_t    snapshot_spacing{ 0 };          // number of gametics between indices
 		uint32_t    starting_gametic{ 0 };          // the gametic the demo starts at
 		uint32_t    ending_gametic  { 0 };          // the last gametic of the demo
-		byte        reserved[48]    { 0 };          // for future use
 
+		bool Write(std::fstream& io_stream);
 		bool Read(std::fstream& io_stream);
 		void Import(const netdemo_header3_t& oldHeader)
 		{
@@ -199,7 +200,6 @@ private:
 		}
 	};
 
-	// The type declaration of msg_format_description
 	struct format_description_t
 	{
 		std::string build;
@@ -223,10 +223,11 @@ private:
 	MessageQueue      captured {};
 	buf_t             workingBuffer {MAX_UDP_PACKET};
 
-	netdemo_header4_t       header;
-	SnapshotVector          snapshot_index;
-	SnapshotVector          map_index;
-	format_description_t    format_description;
+	netdemo_file_header_t       fileHeader;
+	netdemo_stream_header4_t    streamHeader;
+	SnapshotVector              snapshot_index;
+	SnapshotVector              map_index;
+	format_description_t        format_description;
 
 	static const format_description_t this_build_description;
 
