@@ -61,7 +61,6 @@ void R_SpanInitData ();
 
 // [RH] Defined in d_main.cpp
 extern dyncolormap_t NormalLight;
-extern bool r_fakingunderwater;
 
 EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)

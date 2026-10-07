@@ -36,7 +36,6 @@
 #include "r_things.h"
 #include "r_sky.h"
 #include "p_local.h"
-#include "r_sky.h"
 #include "m_vectors.h"
 
 // State.
@@ -45,35 +44,13 @@
 
 EXTERN_CVAR (r_particles)
 
-const seg_t*	curline;
-side_t* 		sidedef;
-line_t* 		linedef;
-sector_t*		frontsector;
-sector_t*		backsector;
-
-// killough 4/7/98: indicates doors closed wrt automap bugfix:
-bool			doorclosed;
-
-bool			r_fakingunderwater;
-bool			r_underwater;
-
 static auto& rw_start = ::rctx.seg.rw_start;
 static auto& rw_stop = ::rctx.seg.rw_stop;
 
-static byte		FakeSide;
+static auto& FakeSide = ::rctx.bsp.fakeside;
+static auto& maxdrawsegs = ::rctx.bsp.maxdrawsegs;
 
 const fixed_t NEARCLIP = 2*FRACUNIT;
-
-drawseg_t*		ds_p;
-drawseg_t*		drawsegs;
-drawseg_t*		firstdrawseg;
-unsigned		maxdrawsegs;
-
-// CPhipps -
-// Instead of clipsegs, let's try using an array with one entry for each column,
-// indicating whether it's blocked by a solid wall yet or not.
-// e6y: resolution limitation is removed
-byte			solidcol[MAXWIDTH];
 
 //
 // R_ClearClipSegs

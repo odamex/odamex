@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include <algorithm>
 
 #include "m_alloc.h"

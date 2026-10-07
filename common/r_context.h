@@ -175,6 +175,39 @@ struct segcontext_t
 };
 
 //
+// bspcontext_t
+//
+// What the BSP traversal is currently looking at, the drawseg list it fills,
+// and the per-column "already solid" flags.
+//
+struct bspcontext_t
+{
+	const seg_t* curline;
+	side_t*      sidedef;
+	line_t*      linedef;
+	sector_t*    frontsector;
+	sector_t*    backsector;
+
+	// killough 4/7/98: indicates doors closed wrt automap bugfix
+	bool    doorclosed;
+
+	bool    r_fakingunderwater;  // TODO: This may need to be set per frame
+	bool    r_underwater;        // instead of per context
+
+	byte    fakeside;
+
+	drawseg_t* ds_p;
+	drawseg_t* drawsegs;
+	drawseg_t* firstdrawseg;
+	unsigned   maxdrawsegs;
+
+	// CPhipps - instead of clipsegs, one entry per column indicating whether
+	// it is blocked by a solid wall yet.
+	// e6y: resolution limitation removed
+	byte    solidcol[MAXWIDTH];
+};
+
+//
 // rendercontext_t
 //
 // One vertical slice of the view.
@@ -183,6 +216,7 @@ struct rendercontext_t
 {
 	planecontext_t plane;
 	segcontext_t   seg;
+	bspcontext_t   bsp;
 
 	int	slice_start = 0;
 	int	slice_stop = MAXWIDTH - 1;
@@ -214,6 +248,22 @@ inline fixed_t& rw_frontcz1 = ::rctx.seg.rw_frontcz1;
 inline fixed_t& rw_frontcz2 = ::rctx.seg.rw_frontcz2;
 inline fixed_t& rw_frontfz1 = ::rctx.seg.rw_frontfz1;
 inline fixed_t& rw_frontfz2 = ::rctx.seg.rw_frontfz2;
+
+inline const seg_t*& curline     = ::rctx.bsp.curline;
+inline side_t*&      sidedef     = ::rctx.bsp.sidedef;
+inline line_t*&      linedef     = ::rctx.bsp.linedef;
+inline sector_t*&    frontsector = ::rctx.bsp.frontsector;
+inline sector_t*&    backsector  = ::rctx.bsp.backsector;
+
+inline bool& doorclosed         = ::rctx.bsp.doorclosed;
+inline bool& r_fakingunderwater = ::rctx.bsp.r_fakingunderwater;
+inline bool& r_underwater       = ::rctx.bsp.r_underwater;
+
+inline drawseg_t*& ds_p         = ::rctx.bsp.ds_p;
+inline drawseg_t*& drawsegs     = ::rctx.bsp.drawsegs;
+inline drawseg_t*& firstdrawseg = ::rctx.bsp.firstdrawseg;
+
+inline byte (&solidcol)[MAXWIDTH] = ::rctx.bsp.solidcol;
 
 // How many slices the view is currently split into.
 int R_SliceCount();

@@ -868,7 +868,6 @@ void R_StoreWallRange(int start, int stop)
 		ds_p->sprtopclip = ds_p->sprbottomclip = NULL;
 		ds_p->silhouette = 0;
 
-		extern bool doorclosed;
 		if (doorclosed)
 		{
 			// clip all sprites behind this closed door (or otherwise solid line)

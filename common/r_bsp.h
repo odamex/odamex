@@ -25,19 +25,7 @@
 
 extern const fixed_t NEARCLIP;
 
-extern const seg_t*		curline;
-extern side_t*		sidedef;
-extern line_t*		linedef;
-extern sector_t*	frontsector;
-extern sector_t*	backsector;
-
 extern bool			skymap;
-
-extern drawseg_t	*drawsegs;
-extern drawseg_t	*firstdrawseg;
-extern drawseg_t*	ds_p;
-
-extern byte			solidcol[MAXWIDTH];
 
 typedef void (*drawfunc_t) (int start, int stop);
 
