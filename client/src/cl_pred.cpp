@@ -339,8 +339,8 @@ bool CL_SectorIsPredicting(sector_t *sector)
 namespace
 {
 	std::array<int, NUM_SNAPSHOTS> s_previousPredictionTics;
-	std::array<int, NUM_SNAPSHOTS> s_previousInputTics;
-	int                            s_previousBasisServerTic;
+	int s_previousInputTic;
+	int s_previousBasisServerTic;
 }
 
 extern int world_index;
@@ -407,8 +407,7 @@ bool CL_PredictWorld()
 	const int previousIndex = (currentIndex ? currentIndex : NUM_SNAPSHOTS) - 1;
 
 	const int previousPredtic  = s_previousPredictionTics[previousIndex];
-    const int previousInputTic = s_previousInputTics[previousIndex];
-
+   
     if (s_previousBasisServerTic == 0)
     {
         s_previousBasisServerTic = snaptime;
@@ -422,67 +421,70 @@ bool CL_PredictWorld()
     // Furthermore, due to conditions on the network, we might see the server tic advance,
     // as evidenced by the player snapshot's most recent time, which is simply the server tic.
     // Please note that this doesn't mean that player.tic has advanced!  At the very least,
-	int predtic = std::max(p.tic, previousPredtic);
-
-	// Last position update from the server is too old!
-	if (predtic < gametic - MAXSAVETICS)
-		predtic = gametic - MAXSAVETICS;
-
-	const int deltaServerTic = snaptime - s_previousBasisServerTic;
-	const int deltaPredTic   = predtic  - previousPredtic;
+	int predtic = std::max(std::max(p.tic, previousPredtic), gametic - MAXSAVETICS);
 
 	int inputTic = p.tic;
 
+	const int deltaServerTic = snaptime - s_previousBasisServerTic;
+	const int deltaPredTic   = predtic  - previousPredtic;
+	const int deltaInputTic  = inputTic - s_previousInputTic;
+
 	s_previousBasisServerTic = snaptime;
+	s_previousInputTic       = inputTic;
 
-
-	// Check for the case where there's a mismatch in player.tic and servertic increment.
-	// This happens when the server consumes more than one (or no) PlayerInput message in
-	// a single tic.  This can happen naturally with client -> server jitter, among other
-	// causes.
-    if (deltaServerTic <= 0)
+    if (deltaInputTic)
     {
-        PrintFmt("{} update: gt {}, predtic {}, snaptic {}, dst {}, dpt {}\n",
-                deltaServerTic ? "BACKWARDS" : "no",
-                gametic,
-                predtic,
-                snaptime,
-                deltaServerTic,
-                deltaPredTic
-                );
+        predtic = std::max(p.tic, gametic - MAXSAVETICS);
     }
-    if (deltaServerTic > 1)
+    else
     {
-        PrintFmt("{} update: gt {}, predtic {}, snaptic {}, dst {}, dpt {}\n",
-                deltaServerTic,
-                gametic,
-                predtic,
-                snaptime,
-                deltaServerTic,
-                deltaPredTic
-                );
+
+
+        // Check for the case where there's a mismatch in player.tic and servertic increment.
+        // This happens when the server consumes more than one (or no) PlayerInput message in
+        // a single tic.  This can happen naturally with client -> server jitter, among other
+        // causes.
+        if (deltaServerTic <= 0)
+        {
+            PrintFmt("{} update: gt {}, predtic {}, snaptic {}, dst {}, dpt {}\n",
+                    deltaServerTic ? "BACKWARDS" : "no",
+                    gametic,
+                    predtic,
+                    snaptime,
+                    deltaServerTic,
+                    deltaPredTic
+                    );
+        }
+        if (deltaServerTic > 1)
+        {
+            PrintFmt("{} update: gt {}, predtic {}, snaptic {}, dst {}, dpt {}\n",
+                    deltaServerTic,
+                    gametic,
+                    predtic,
+                    snaptime,
+                    deltaServerTic,
+                    deltaPredTic
+                    );
+        }
+
+        if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
+        {
+            PrintFmt("off: gt {}, predtic {}, snaptic {}\n",
+                    gametic, predtic, snaptime);
+            predtic  = previousPredtic + deltaServerTic;
+            //inputTic = std::min(s_previousInputTic + deltaPredTic, predtic);
+            PrintFmt("correction: predtic {}, inputtic {}, dst {}, dpt {}\n",
+                    predtic,
+                    inputTic,
+                    deltaServerTic,
+                    deltaPredTic);
+        }
+        //snaptime -= (predtic - inputTic);
     }
-
-    if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
-	{
-        PrintFmt("off: gt {}, predtic {}, snaptic {}\n",
-                gametic, predtic, snaptime);
-		predtic  = previousPredtic + deltaServerTic;
-		//inputTic = std::min(previousInputTic + deltaPredTic, predtic);
-        PrintFmt("correction: predtic {}, inputtic {}, dst {}, dpt {}\n",
-                predtic,
-                inputTic,
-                deltaServerTic,
-                deltaPredTic);
-	}
-
 	s_previousPredictionTics[currentIndex] = predtic;
-	s_previousInputTics     [currentIndex] = inputTic;
 
     // player.tic simply cannot get ahead of any tic from the server.  It can only match,
     // keep up, fall behind, or catch up to, but never exceed.  Thus the following is ok.
-
-    snaptime -= (predtic - inputTic);
 
 /*
     if (inputTic < predtic)
@@ -580,7 +582,7 @@ void CL_ResetWorldPrediction()
 {
 	s_previousBasisServerTic = 0;
 	s_previousPredictionTics.fill(0);
-	s_previousInputTics.fill(0);
+	s_previousInputTic = 0;
 	for (auto& savedPlayerSnapshot : cl_savedsnaps)
 	{
 		savedPlayerSnapshot = PlayerSnapshot{};
