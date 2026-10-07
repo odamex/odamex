@@ -339,6 +339,7 @@ bool CL_SectorIsPredicting(sector_t *sector)
 namespace
 {
 	std::array<int, NUM_SNAPSHOTS> s_previousPredictionTics;
+	std::array<int, NUM_SNAPSHOTS> s_previousInputTics;
 	int                            s_previousBasisServerTic;
 }
 
@@ -386,17 +387,11 @@ bool CL_PredictWorld()
 		return false;
 	}
 
-	if (p.tic <= 0)	// No verified position from the server
+	if (p.tic <= 0)     // No verified position from the server?
 		return false;
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
-
-	// Figure out where to start predicting from
-	int predtic = consoleplayer().tic > 0 ? consoleplayer().tic: 0;
-	// Last position update from the server is too old!
-	if (predtic < gametic - MAXSAVETICS)
-		predtic = gametic - MAXSAVETICS;
 
 	// Save a snapshot of the player's state before prediction
 	PlayerSnapshot prevsnap(p.tic, p);
@@ -411,26 +406,78 @@ bool CL_PredictWorld()
 	const int currentIndex  = gametic % NUM_SNAPSHOTS;
 	const int previousIndex = (currentIndex ? currentIndex : NUM_SNAPSHOTS) - 1;
 
-	const int previousPredtic = s_previousPredictionTics[previousIndex];
+	const int previousPredtic  = s_previousPredictionTics[previousIndex];
+    const int previousInputTic = s_previousInputTics[previousIndex];
+
+    if (s_previousBasisServerTic == 0)
+    {
+        s_previousBasisServerTic = snaptime;
+    }
+
+	// Figure out where to start predicting from.
+    //
+	// If we see the player.tic advance, we know that we have both updated sector and
+	// player snapshots because they come together in high priority packets.
+    //
+    // Furthermore, due to conditions on the network, we might see the server tic advance,
+    // as evidenced by the player snapshot's most recent time, which is simply the server tic.
+    // Please note that this doesn't mean that player.tic has advanced!  At the very least,
+	int predtic = std::max(p.tic, previousPredtic);
+
+	// Last position update from the server is too old!
+	if (predtic < gametic - MAXSAVETICS)
+		predtic = gametic - MAXSAVETICS;
 
 	const int deltaServerTic = snaptime - s_previousBasisServerTic;
 	const int deltaPredTic   = predtic  - previousPredtic;
 
+	int inputTic = p.tic;
+
 	s_previousBasisServerTic = snaptime;
 
-	int inputTic = predtic;
 
 	// Check for the case where there's a mismatch in player.tic and servertic increment.
 	// This happens when the server consumes more than one (or no) PlayerInput message in
 	// a single tic.  This can happen naturally with client -> server jitter, among other
 	// causes.
-	if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
+    if (deltaServerTic <= 0)
+    {
+        PrintFmt("{} update: gt {}, predtic {}, snaptic {}, dst {}, dpt {}\n",
+                deltaServerTic ? "BACKWARDS" : "no",
+                gametic,
+                predtic,
+                snaptime,
+                deltaServerTic,
+                deltaPredTic
+                );
+    }
+    if (deltaServerTic > 1)
+    {
+        PrintFmt("{} update: gt {}, predtic {}, snaptic {}, dst {}, dpt {}\n",
+                deltaServerTic,
+                gametic,
+                predtic,
+                snaptime,
+                deltaServerTic,
+                deltaPredTic
+                );
+    }
+
+    if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
 	{
+        PrintFmt("off: gt {}, predtic {}, snaptic {}\n",
+                gametic, predtic, snaptime);
 		predtic  = previousPredtic + deltaServerTic;
-		inputTic = previousPredtic + deltaPredTic;
+		//inputTic = std::min(previousInputTic + deltaPredTic, predtic);
+        PrintFmt("correction: predtic {}, inputtic {}, dst {}, dpt {}\n",
+                predtic,
+                inputTic,
+                deltaServerTic,
+                deltaPredTic);
 	}
 
 	s_previousPredictionTics[currentIndex] = predtic;
+	s_previousInputTics     [currentIndex] = inputTic;
 
     // player.tic simply cannot get ahead of any tic from the server.  It can only match,
     // keep up, fall behind, or catch up to, but never exceed.  Thus the following is ok.
@@ -533,6 +580,7 @@ void CL_ResetWorldPrediction()
 {
 	s_previousBasisServerTic = 0;
 	s_previousPredictionTics.fill(0);
+	s_previousInputTics.fill(0);
 	for (auto& savedPlayerSnapshot : cl_savedsnaps)
 	{
 		savedPlayerSnapshot = PlayerSnapshot{};
