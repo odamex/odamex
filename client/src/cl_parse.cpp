@@ -1462,6 +1462,8 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
 
+		CL_ResetWorldPrediction();
+
 		// Rollback history from time-of-respawn to now is full of the dead state.
 		// Instead of doing complex rollbacks, just wipe history and start fresh.
 		// Any intervening updates to important state will come in subsequent

@@ -311,7 +311,6 @@ void D_DoAdvanceDemo(void);
 void M_Ticker(void);
 
 size_t P_NumPlayersInGame();
-void G_PlayerReborn (player_t &player);
 void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill, int mod);
 void P_SetPsprite (player_t& player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
