@@ -418,7 +418,7 @@ bool CL_PredictWorld()
 
 	s_previousBasisServerTic = snaptime;
 
-	// No new server state?  Just keep using the player.tic.
+	int inputTic = predtic;
 
 	// Check for the case where there's a mismatch in player.tic and servertic increment.
 	// This happens when the server consumes more than one (or no) PlayerInput message in
@@ -426,10 +426,28 @@ bool CL_PredictWorld()
 	// causes.
 	if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
 	{
-		predtic = previousPredtic + deltaServerTic;
+		predtic  = previousPredtic + deltaServerTic;
+		inputTic = previousPredtic + deltaPredTic;
 	}
 
 	s_previousPredictionTics[currentIndex] = predtic;
+
+    // player.tic simply cannot get ahead of any tic from the server.  It can only match,
+    // keep up, fall behind, or catch up to, but never exceed.  Thus the following is ok.
+
+    snaptime -= (predtic - inputTic);
+
+/*
+    if (inputTic < predtic)
+    {
+        const int extraInputTics      = predtic  - inputTic;
+        const int extraInputServerTic = snaptime - extraInputTics;
+
+		PlayerSnapshot snap = p.snapshots.getSnapshot(extraInputServerTic);
+		snap.toPlayer(p);
+    }
+*/
+
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
@@ -440,6 +458,17 @@ bool CL_PredictWorld()
 		CL_ResetSectors(snaptime, s_predictingSectors);
 
 	bool playerWasPredicted = false;
+
+    for (;inputTic < predtic; ++inputTic)
+    {
+        // We exclude thinkers here because the latest integrated input is from BEFORE
+        // the latest server messages.
+
+		playerWasPredicted = CL_PredictLocalPlayer(inputTic);
+		if (cl_predictsectors)
+			CL_PredictSectors(s_predictingSectors);
+    }
+
 	while (++predtic < gametic)
 	{
 		playerWasPredicted = CL_PredictLocalPlayer(predtic);
