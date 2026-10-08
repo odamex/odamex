@@ -343,6 +343,7 @@ namespace
 	int s_previousBasisServerTic;
     int s_previousReceivedInputTic;
     int s_previousReceivedClientTic;
+    int s_persistentDiff;
 }
 
 extern int world_index;
@@ -436,8 +437,17 @@ bool CL_PredictWorld()
     // to get caught up.
     //
     // We start predicting from the lastEchoedTic.
-	const int idealPredictionTic   = std::max(lastEchoedTic + 1, gametic - MAXSAVETICS);
-	const int idealInputTic        = p.tic + 1;
+	int idealPredictionTic   = std::max(lastEchoedTic + 1, gametic - MAXSAVETICS);
+	int idealInputTic        = p.tic + 1;
+
+    if (s_previousReceivedClientTic == 0)
+    {
+        s_previousReceivedClientTic = idealPredictionTic;
+    }
+    if (s_previousReceivedInputTic == 0)
+    {
+        s_previousReceivedInputTic = idealInputTic;
+    }
 
 	const int deltaServerTic = snaptime       - s_previousBasisServerTic;
 	const int deltaPredTic   = idealPredictionTic  - s_previousReceivedClientTic;
@@ -460,9 +470,15 @@ bool CL_PredictWorld()
         //inputTic      += (deltaServerTic - deltaPredTic);
 
     }
+    s_persistentDiff += deltaServerTic - deltaPredTic;
+
+    predictionTic += s_persistentDiff;
+    inputTic      += s_persistentDiff;
+
+#if 0
     if (deltaServerTic > 1 and deltaServerTic != deltaPredTic)
     {
-        predictionTic += (deltaServerTic - deltaPredTic);
+        predictionTic += ();
         inputTic      += (deltaServerTic - deltaPredTic);
     }
     else if (deltaPredTic > 1 and deltaServerTic != deltaPredTic)
@@ -470,13 +486,14 @@ bool CL_PredictWorld()
         predictionTic += (deltaServerTic - deltaPredTic);
         inputTic      += (deltaServerTic - deltaPredTic);
     }
+#endif
 
 	s_previousPredictionTics[currentIndex] = predictionTic;
 	s_previousInputTic                     = inputTic;
 
     const sector_t& sector = sectors[1];
 
-    DPrintFmt("gt {}, snaptime {}, pred {}, input {}, initsecheight(off-one) {}, world_index {}, cor_pred {}, cor_input {}\n",
+    DPrintFmt("gt {}, snaptime {}, pred {}, input {}, initsecheight(off-one) {}, world_index {}, cor_pred {}, cor_input {}, persdiff {}\n",
             gametic,
             snaptime,
             idealPredictionTic,
@@ -484,7 +501,8 @@ bool CL_PredictWorld()
             P_FloorHeight(&sector),
             world_index,
             predictionTic,
-            inputTic
+            inputTic,
+            s_persistentDiff
             );
 
     // Did the server perceive client->server jitter?
@@ -661,6 +679,7 @@ void CL_ResetWorldPrediction()
 	s_previousInputTic = 0;
 	s_previousReceivedInputTic  = 0;
 	s_previousReceivedClientTic = 0;
+	s_persistentDiff = 0;
 	for (auto& savedPlayerSnapshot : cl_savedsnaps)
 	{
 		savedPlayerSnapshot = PlayerSnapshot{};
