@@ -341,6 +341,8 @@ namespace
 	std::array<int, NUM_SNAPSHOTS> s_previousPredictionTics;
 	int s_previousInputTic;
 	int s_previousBasisServerTic;
+    int s_previousReceivedInputTic;
+    int s_previousReceivedClientTic;
 }
 
 extern int world_index;
@@ -434,15 +436,67 @@ bool CL_PredictWorld()
     // to get caught up.
     //
     // We start predicting from the lastEchoedTic.
-	int predictionTic = std::max(lastEchoedTic + 1, gametic - MAXSAVETICS);
-
-	int inputTic = p.tic + 1;
+	const int idealPredictionTic   = std::max(lastEchoedTic + 1, gametic - MAXSAVETICS);
+	const int idealInputTic        = p.tic + 1;
 
 	const int deltaServerTic = snaptime       - s_previousBasisServerTic;
-	const int deltaPredTic   = predictionTic  - previousPredtic;
-	const int deltaInputTic  = inputTic       - s_previousInputTic;
+	const int deltaPredTic   = idealPredictionTic  - s_previousReceivedClientTic;
+	const int deltaInputTic  = idealInputTic       - s_previousReceivedInputTic;
 
-	s_previousBasisServerTic = snaptime;
+	s_previousBasisServerTic    = snaptime;
+	s_previousReceivedClientTic = idealPredictionTic;
+	s_previousReceivedInputTic  = idealInputTic;
+
+    int predictionTic = idealPredictionTic;
+    int inputTic      = idealInputTic;
+    // 0758 NOT the same thing as the sector jitter.
+    //if (deltaServerTic != 0 and deltaPredTic == 0)
+    //if (deltaServerTic > 1)
+    if (deltaServerTic != deltaPredTic)
+    {
+        //PrintFmt("BLIP son {}\n", gametic);
+        //snaptime -= (deltaServerTic - deltaPredTic);
+        //predictionTic += (deltaServerTic - deltaPredTic);
+        //inputTic      += (deltaServerTic - deltaPredTic);
+
+    }
+    if (deltaServerTic > 1 and deltaServerTic != deltaPredTic)
+    {
+        predictionTic += (deltaServerTic - deltaPredTic);
+        inputTic      += (deltaServerTic - deltaPredTic);
+    }
+
+    if (deltaPredTic > 1 and deltaServerTic != deltaPredTic)
+    {
+    }
+
+	s_previousPredictionTics[currentIndex] = predictionTic;
+	s_previousInputTic                     = inputTic;
+
+    const sector_t& sector = sectors[1];
+
+    DPrintFmt("gt {}, snaptime {}, pred {}, input {}, initsecheight(off-one) {}, world_index {}, cor_pred {}, cor_input {}\n",
+            gametic,
+            snaptime,
+            idealPredictionTic,
+            idealInputTic,
+            P_FloorHeight(&sector),
+            world_index,
+            predictionTic,
+            inputTic
+            );
+
+    // Did the server perceive client->server jitter?
+    // Use an older server tic so that we can predict through the extra delta.
+    //
+#if 0
+    if (deltaServerTic > deltaPredTic)
+    {
+        snaptime -= (deltaServerTic - deltaPredTic);
+        predictionTic -= (deltaServerTic - deltaPredTic);
+        inputTic -= (deltaServerTic - deltaPredTic);
+    }
+#endif
 
 	// If we see the player.tic advance, we know that we have both updated sector and
 	// player snapshots because they come together in high priority packets.
@@ -514,9 +568,6 @@ bool CL_PredictWorld()
 #endif
         //snaptime -= (predtic - inputTic);
     }
-
-	s_previousPredictionTics[currentIndex] = predictionTic;
-	s_previousInputTic                     = inputTic;
 
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
@@ -607,6 +658,8 @@ void CL_ResetWorldPrediction()
 	s_previousBasisServerTic = 0;
 	s_previousPredictionTics.fill(0);
 	s_previousInputTic = 0;
+	s_previousReceivedInputTic  = 0;
+	s_previousReceivedClientTic = 0;
 	for (auto& savedPlayerSnapshot : cl_savedsnaps)
 	{
 		savedPlayerSnapshot = PlayerSnapshot{};
