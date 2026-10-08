@@ -23,6 +23,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include "i_sdl.h"
 #include "r_intrin.h"
 

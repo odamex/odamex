@@ -26,6 +26,56 @@
 #include "r_intrin.h"
 #include "r_defs.h"
 
+// ----------------------------------------------------------------------------
+//
+// Fuzz Table
+//
+// Framebuffer postprocessing. Creates a fuzzy image by copying pixels from
+// adjacent ones to left and right. Used with an all black colormap, this could
+// create the SHADOW effect, i.e. spectres and invisible players.
+//
+// The cursor is mutated while a column draws, so each render context owns one;
+// the offset table itself is shared and read-only.
+//
+// ----------------------------------------------------------------------------
+
+class FuzzTable
+{
+public:
+	FuzzTable() : pos(0) { }
+
+	forceinline void incrementRow()
+	{
+		pos = (pos + 1) % FuzzTable::size;
+	}
+
+	forceinline void incrementColumn()
+	{
+		pos = (pos + 3) % FuzzTable::size;
+	}
+
+	forceinline int getValue(int pitch) const
+	{
+		// [SL] quickly convert the table value (-1 or 1) into (-pitch or pitch).
+		// [AM] Replaced with a multiply that returns accurate results.  Hopefully
+		//      we can find a way to improve upon an imul someday.
+		return pitch * table[pos];
+	}
+
+private:
+	static constexpr size_t size = 64;
+	static constexpr int table[FuzzTable::size] = {
+			1,-1, 1,-1, 1, 1,-1, 1,
+			1,-1, 1, 1, 1,-1, 1, 1,
+			1,-1,-1,-1,-1, 1,-1,-1,
+			1, 1, 1, 1,-1, 1,-1, 1,
+			1,-1,-1, 1, 1,-1,-1,-1,
+		   -1, 1, 1, 1, 1,-1, 1, 1,
+		   -1, 1, 1, 1,-1, 1, 1, 1,
+		   -1, 1, 1,-1, 1, 1,-1, 1 };
+	int pos;
+};
+
 typedef struct
 {
 	const palindex_t*	source;
@@ -63,8 +113,6 @@ typedef struct
 	palindex_t			color;				// for r_drawflat
 	bool				masked;
 } drawcolumn_t;
-
-extern "C" drawcolumn_t dcol;
 
 typedef struct
 {
@@ -108,8 +156,6 @@ typedef struct
 
 	palindex_t			color;
 } drawspan_t;
-
-extern "C" drawspan_t dspan;
 
 
 // ----------------------------------------------------------------------------
@@ -166,8 +212,6 @@ typedef struct
 	fixed_t				translevel;
 } drawplanecol_t;
 
-extern "C" drawplanecol_t dpcol;
-
 // ----------------------------------------------------------------------------
 //
 // Level planes, four rows at a time
@@ -219,8 +263,6 @@ typedef struct
 	const argb_t*		shade[4];		// 32bpp
 	const palindex_t*	cmap[4];		// 8bpp
 } drawplanegroup_t;
-
-extern "C" drawplanegroup_t dpgroup;
 
 
 

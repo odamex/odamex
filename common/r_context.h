@@ -30,6 +30,7 @@
 #include "m_mempool.h"
 #include "m_vectors.h"
 #include "r_defs.h"
+#include "r_draw.h"
 
 class Texture;
 
@@ -241,6 +242,34 @@ struct spritecontext_t
 };
 
 //
+// drawcontext_t
+//
+// What the drawers read: the four argument blocks, the colormap of whatever is
+// currently being drawn, the fuzz cursor, and drawer selection.
+//
+struct drawcontext_t
+{
+	drawcolumn_t     dcol;
+	drawspan_t       dspan;
+	drawplanecol_t   dpcol;
+	drawplanegroup_t dpgroup;
+
+	// [RH] colormap of the sector/wall/plane currently being drawn
+	shaderef_t  basecolormap;
+
+	FuzzTable   fuzztable;
+
+	// The selected drawers.
+	void (*colfunc)();
+	void (*spanfunc)();
+	void (*spanslopefunc)();
+
+	// Draws one column of a level plane, or NULL when planes must go through
+	// the span path.
+	void (*levelcolfunc)();
+};
+
+//
 // rendercontext_t
 //
 // One vertical slice of the view.
@@ -251,6 +280,7 @@ struct rendercontext_t
 	segcontext_t    seg;
 	bspcontext_t    bsp;
 	spritecontext_t sprite;
+	drawcontext_t   draw;
 
 	int	slice_start = 0;
 	int	slice_stop = MAXWIDTH - 1;
@@ -314,6 +344,18 @@ inline fixed_t&    spryscale    = ::rctx.sprite.spryscale;
 inline fixed_t&    sprtopscreen = ::rctx.sprite.sprtopscreen;
 
 inline vissprite_t*& closestNonCredibleVisSprite = ::rctx.sprite.closestNonCredibleVisSprite;
+
+inline drawcolumn_t&     dcol    = ::rctx.draw.dcol;
+inline drawspan_t&       dspan   = ::rctx.draw.dspan;
+inline drawplanecol_t&   dpcol   = ::rctx.draw.dpcol;
+inline drawplanegroup_t& dpgroup = ::rctx.draw.dpgroup;
+
+inline shaderef_t& basecolormap = ::rctx.draw.basecolormap;
+
+inline void (*&colfunc)()       = ::rctx.draw.colfunc;
+inline void (*&spanfunc)()      = ::rctx.draw.spanfunc;
+inline void (*&spanslopefunc)() = ::rctx.draw.spanslopefunc;
+inline void (*&levelcolfunc)()  = ::rctx.draw.levelcolfunc;
 
 // How many slices the view is currently split into.
 int R_SliceCount();

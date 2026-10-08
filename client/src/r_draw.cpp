@@ -26,6 +26,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include <assert.h>
 #include <cmath>
 #include <algorithm>
@@ -68,13 +70,6 @@ extern IWindowSurface* scaled_screenblocks_surface;
 //	and the total size == width*height*depth/8.,
 //
 
-extern "C" {
-drawcolumn_t dcol;
-drawspan_t dspan;
-drawplanecol_t dpcol;
-drawplanegroup_t dpgroup;
-}
-
 byte*			viewimage;
 
 extern "C" {
@@ -111,60 +106,8 @@ void (*R_DrawLevelGroup)(void);
 void (*R_DrawLevelGroupD)(void);
 void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
-// ============================================================================
-//
-// Fuzz Table
-//
-// Framebuffer postprocessing.
-// Creates a fuzzy image by copying pixels from adjacent ones to left and right.
-// Used with an all black colormap, this could create the SHADOW effect,
-// i.e. spectres and invisible players.
-//
-// ============================================================================
-
-class FuzzTable
-{
-public:
-	FuzzTable() : pos(0) { }
-
-	forceinline void incrementRow()
-	{
-		pos = (pos + 1) % FuzzTable::size;
-	}
-
-	forceinline void incrementColumn()
-	{
-		pos = (pos + 3) % FuzzTable::size;
-	}
-
-	forceinline int getValue() const
-	{
-		// [SL] quickly convert the table value (-1 or 1) into (-pitch or pitch).
-		// [AM] Replaced with a multiply that returns accurate results.  Hopefully
-		//      we can find a way to improve upon an imul someday.
-		const int pitch = dcol.pitch_in_pixels;
-		const int value = table[pos];
-		return pitch * value;
-	}
-
-private:
-	static constexpr size_t size = 64;
-	static const int table[FuzzTable::size];
-	int pos;
-};
-
-constexpr int FuzzTable::table[FuzzTable::size] = {
-		1,-1, 1,-1, 1, 1,-1, 1,
-		1,-1, 1, 1, 1,-1, 1, 1,
-		1,-1,-1,-1,-1, 1,-1,-1,
-		1, 1, 1, 1,-1, 1,-1, 1,
-		1,-1,-1, 1, 1,-1,-1,-1,
-	   -1, 1, 1, 1, 1,-1, 1, 1,
-	   -1, 1, 1, 1,-1, 1, 1, 1,
-	   -1, 1, 1,-1, 1, 1,-1, 1 };
-
-
-static FuzzTable fuzztable;
+// The fuzz cursor now lives in rctx.draw (the class is in r_draw.h).
+static auto& fuzztable = ::rctx.draw.fuzztable;
 
 // ============================================================================
 //
@@ -1537,7 +1480,7 @@ public:
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
-		*dest = colormap.index(dest[fuzztable.getValue()]);
+		*dest = colormap.index(dest[fuzztable.getValue(dcol.pitch_in_pixels)]);
 		fuzztable.incrementRow();
 	}
 
@@ -1922,7 +1865,7 @@ public:
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		const argb_t work = dest[fuzztable.getValue()];
+		const argb_t work = dest[fuzztable.getValue(dcol.pitch_in_pixels)];
 		*dest = work - ((work >> 2) & 0x3f3f3f);
 		fuzztable.incrementRow();
 	}

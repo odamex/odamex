@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include <sstream>
 #include <iomanip>
 

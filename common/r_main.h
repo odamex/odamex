@@ -57,8 +57,6 @@ inline fixed_t			centerxfrac;
 inline fixed_t			centeryfrac;
 inline fixed_t			yaspectmul;
 
-extern shaderef_t		basecolormap;	// [RH] Colormap for sector currently being drawn
-
 // increment every time a check is made
 inline int				validcount = 1;
 
@@ -113,17 +111,6 @@ extern int				lightscaleymul;
 // There a 0-31, i.e. 32 LUT in the COLORMAP lump.
 #define NUMCOLORMAPS			32
 
-
-//
-// Function pointers to switch refresh/drawing functions.
-//
-extern void 			(*colfunc) (void);
-extern void 			(*spanfunc) (void);
-
-// Draws one column of a level plane, or NULL when planes must go through the
-// span path.
-extern void 			(*levelcolfunc) (void);
-extern void				(*spanslopefunc) (void);
 
 
 //

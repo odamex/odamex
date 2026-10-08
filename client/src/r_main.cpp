@@ -76,8 +76,6 @@ fixed_t			fovtan;
 float			focratio;
 float			ifocratio;
 
-// [RH] colormap currently drawing with
-shaderef_t		basecolormap;
 int				fixedlightlev;
 shaderef_t		fixedcolormap;
 
@@ -102,11 +100,6 @@ static argb_t sector_blend_color(0, 255, 255, 255);
 
 // [SL] Current color blending values (including palette effects)
 fargb_t blend_color(0.0f, 255.0f, 255.0f, 255.0f);
-
-void (*colfunc) (void);
-void (*spanfunc) (void);
-void (*levelcolfunc) (void);
-void (*spanslopefunc) (void);
 
 // [AM] Number of fineangles in a default 90 degree FOV at a 4:3 resolution.
 int FieldOfView = 2048;
