@@ -300,14 +300,11 @@ bool CL_PredictLocalPlayer(int predtic, int inputTic)
 	// Restore the angle, viewheight, etc for the player
 	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
 
-    if (inputTic)
-    {
-        // Copy the player's previous input ticcmd for the tic 'predtic'
-        // to player.cmd so that P_MovePlayer can simulate their movement in
-        // that tic
-        odaproto::clc::PlayerInput& netcmd = localcmds[inputTic % MAXSAVETICS];
-        CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
-    }
+	// Note that we allow the caller to specify the input tic separately so
+	// that we can predict what happens when multiple inputs are applied to
+	// the same player snapshot, which sometimes happens on the server.
+	odaproto::clc::PlayerInput& netcmd = localcmds[inputTic % MAXSAVETICS];
+	CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
 
 	if (!predicting)
 		P_PlayerThink(player);
@@ -429,13 +426,21 @@ bool CL_PredictWorld()
     // Furthermore, due to conditions on the network, we might see the server tic advance,
     // as evidenced by the player snapshot's most recent time, which is simply the server tic.
     // Please note that this doesn't mean that player.tic has advanced!  At the very least,
-	int predtic = std::max(std::max(lastEchoedTic, previousPredtic), gametic - MAXSAVETICS);
+    //
+    // lastEchoedTic is the absolute latest local gametic that the server knows about.
+    // p.tic is the latest local gametic whose PlayerInput is integrated into the player state.
+    // p.tic can be the same as, or behind, the lastEchoedTic, but never ahead of it.
+    // If we see that p.tic is behind, we guess that the server is going to do two player tics
+    // to get caught up.
+    //
+    // We start predicting from the lastEchoedTic.
+	int predictionTic = std::max(lastEchoedTic + 1, gametic - MAXSAVETICS);
 
-	int inputTic = p.tic;
+	int inputTic = p.tic + 1;
 
-	const int deltaServerTic = snaptime - s_previousBasisServerTic;
-	const int deltaPredTic   = predtic  - previousPredtic;
-	const int deltaInputTic  = inputTic - s_previousInputTic;
+	const int deltaServerTic = snaptime       - s_previousBasisServerTic;
+	const int deltaPredTic   = predictionTic  - previousPredtic;
+	const int deltaInputTic  = inputTic       - s_previousInputTic;
 
 	s_previousBasisServerTic = snaptime;
 
@@ -447,7 +452,7 @@ bool CL_PredictWorld()
 //    }
 //    else
     {
-#define ODAMEX_PREDICTION_DEBUG
+//#define ODAMEX_PREDICTION_DEBUG
 #ifdef  ODAMEX_PREDICTION_DEBUG
         if (deltaServerTic != 1)
         {
@@ -465,15 +470,15 @@ bool CL_PredictWorld()
         // deltaServerTic > 0 means that sectors have moved.
 
 
-        if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
-        {
-            predtic  = previousPredtic + deltaServerTic;
+        //if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
+        //{
+            //predtic  = previousPredtic + deltaServerTic;
 
-            if (predtic < inputTic)
-            {
-                snaptime -= (inputTic - predtic);
-            }
-        }
+            //if (predtic < inputTic)
+            //{
+            //    snaptime -= (inputTic - predtic);
+            //???}
+        //}
         //inputTic = std::max(input
         /*
         if (deltaServerTic > 0 and deltaInputTic != deltaServerTic)
@@ -509,8 +514,9 @@ bool CL_PredictWorld()
 #endif
         //snaptime -= (predtic - inputTic);
     }
-	s_previousPredictionTics[currentIndex] = predtic;
-	s_previousInputTic       = inputTic;
+
+	s_previousPredictionTics[currentIndex] = predictionTic;
+	s_previousInputTic                     = inputTic;
 
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
@@ -523,28 +529,22 @@ bool CL_PredictWorld()
 
 	bool playerWasPredicted = false;
 
-    ++predtic;
-    ++inputTic;
-
-    for (;predtic < inputTic; ++predtic)
-    {
-		playerWasPredicted = CL_PredictLocalPlayer(predtic, 0);
-		if (cl_predictsectors)
-			CL_PredictSectors(s_predictingSectors);
-    }
-
-    for (;inputTic < predtic; ++inputTic)
+    for (;inputTic < predictionTic; ++inputTic)
     {
         // We exclude thinkers here because the latest integrated input is from BEFORE
         // the latest server messages.
-		playerWasPredicted = CL_PredictLocalPlayer(inputTic, inputTic);
-		if (cl_predictsectors)
-			CL_PredictSectors(s_predictingSectors);
+        if (CL_PredictLocalPlayer(predictionTic, inputTic))
+        {
+            playerWasPredicted = true;
+        }
     }
 
-    for (;predtic < gametic; ++predtic)
+    for (;predictionTic < gametic; ++predictionTic)
 	{
-		playerWasPredicted = CL_PredictLocalPlayer(predtic, predtic);
+        if (CL_PredictLocalPlayer(predictionTic, predictionTic))
+        {
+            playerWasPredicted = true;
+        }
 		if (not mobjsHaveBeenPredicted)
 		{
 			mobjsHaveBeenPredicted = true;
