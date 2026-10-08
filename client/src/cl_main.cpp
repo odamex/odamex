@@ -119,7 +119,7 @@ int       world_index = 0;
 float     world_index_accum = 0.0f;
 
 int       last_svgametic = 0;
-int       last_player_update = 0;
+int       lastEchoedClientTic = 0;
 
 bool      hasReceivedFullUpdate = false;
 bool      isReceivingFullUpdate = false;
@@ -582,9 +582,10 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 		CL_DrainSocket();
 	}
 
-	connected = false;
-	::last_svgametic = 0;
-	world_index      = 0;
+	connected             = false;
+	::lastEchoedClientTic = 0;
+	::last_svgametic      = 0;
+	world_index           = 0;
 
 	messenger = OdaMessenger{ pool };
 

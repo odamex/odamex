@@ -339,8 +339,8 @@ bool CL_SectorIsPredicting(sector_t *sector)
 namespace
 {
 	int s_previousBasisServerTic;
-    int s_previousReceivedClientTic;
-    int s_persistentDiff;
+	int s_previousReceivedClientTic;
+	int s_persistentDiff;
 }
 
 extern int world_index;
@@ -388,7 +388,7 @@ bool CL_PredictWorld()
 		return false;
 	}
 
-	if (p.tic <= 0 or world_index <= 0)     // No verified position from the server?
+	if (p.tic <= 0 or world_index <= 0 or lastEchoedClientTic <= 0)     // No verified position from the server?
 		return false;
 
 	// Disable sounds, etc, during prediction

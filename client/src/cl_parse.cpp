@@ -103,7 +103,7 @@ EXTERN_CVAR(sv_showsprees)
 extern std::string digest;
 extern bool forcenetdemosplit;
 extern int last_svgametic;
-extern int last_player_update;
+extern int lastEchoedClientTic;
 extern bool hasReceivedFullUpdate;
 extern bool isReceivingFullUpdate;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
@@ -128,8 +128,6 @@ void P_PlayerLeavesGame(player_t* player);
 void P_SetPsprite(player_t& player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
 void P_SpawnAvatars();
-
-int lastEchoedClientTic = 0;
 
 namespace
 {
@@ -419,7 +417,6 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 		return;
 
 	p.last_received = gametic;
-	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
 	const int snaptime = ThisMessageServerTic();
@@ -1071,6 +1068,7 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	// reset the world_index (force it to sync)
 	CL_ResyncWorldIndex();
 	::last_svgametic = 0;
+	::lastEchoedClientTic = 0;
 
 	CTF_CheckFlags(consoleplayer());
 
