@@ -474,6 +474,9 @@ bool CL_PredictWorld()
 	{
 		// We exclude thinkers and sectors here because the latest integrated input
 		// is from BEFORE the latest server-originated states (sectors, mobj state).
+		//
+		// Please note that we supply predictionTic as the basis tic so that we're
+		// simulating the server integrating multiple inputs onto its latest player state.
 		if (CL_PredictLocalPlayer(predictionTic, inputTic))
 		{
 			playerWasPredicted = true;
