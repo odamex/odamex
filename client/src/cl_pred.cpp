@@ -344,7 +344,7 @@ namespace
 }
 
 extern int world_index;
-extern int lastEchoedTic;
+extern int lastEchoedClientTic;
 
 //
 // CL_PredictWorld
@@ -403,17 +403,17 @@ bool CL_PredictWorld()
 
 	// Figure out where to start predicting from.
 	//
-	// lastEchoedTic is the absolute latest clientside gametic that the server knows about.
+	// lastEchoedClientTic is the absolute latest clientside gametic that the server knows about.
 	// p.tic is the latest local gametic whose PlayerInput is integrated into the player state.
-	// p.tic can be the same as, or behind, the lastEchoedTic, but never ahead of it.
+	// p.tic can be the same as, or behind, the lastEchoedClientTic, but never ahead of it.
 	// If we see that p.tic is behind, we guess that the server is going to do two player tics
 	// before advancing world state to get caught up.
 	//
-	// We start predicting from the lastEchoedTic.
+	// We start predicting from the lastEchoedClientTic.
 
 	const int snaptime           = p.snapshots.getMostRecentTime();
-	const int idealPredictionTic = std::max(lastEchoedTic + 1,  gametic - MAXSAVETICS);
-	const int idealInputTic      = std::max(p.tic + 1,          gametic - MAXSAVETICS);
+	const int idealPredictionTic = std::max(lastEchoedClientTic + 1, gametic - MAXSAVETICS);
+	const int idealInputTic      = std::max(p.tic + 1,               gametic - MAXSAVETICS);
 
 	if (s_previousBasisServerTic == 0)
 	{

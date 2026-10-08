@@ -546,10 +546,22 @@ message MidPrint
 
 // svc_servergametic
 //
-// The message's name says "gametic" but really it's an infrastructural sampling of real-time status.
+// This message indicates the server's completion of its gametic and advancement to another.
+//
+// Whereas "last_svgametic" used to be advanced by this message, as of Odamex 13, it is set
+// by the Originator Tic of any high-priority packet from the server, which is always intended
+// to be as current as possible under any condition.
+//
+// The embedded client_tic is to be treated as "lastEchoedClientTic."  Please note that this is
+// different from the "last player's tic," which is given in all server-originated message headers
+// as the Destination Tic.  The Destination Tic is useful for rollback of *player state.*  The
+// "lastEchoedClientTic" is useful for rollback of *server state.*
+//
+// The message's name says "gametic" but it really also contains an infrastructural sampling of
+// real-time status.
 message ServerGametic
 {
-	int32  tic                         = 1;
+	int32  client_tic                  = 1;
 	uint32 reliable_messages_in_flight = 2;
 	uint32 throttle                    = 3;
 }
