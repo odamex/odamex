@@ -113,6 +113,8 @@ void CTF_SpawnFlag(team_t f) {}
 
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation) {}
 
+void R_InitVisSprites() {}
+
 void R_ExitLevel() {}
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {}
