@@ -399,10 +399,6 @@ std::string R_FindIncompleteSprite()
 //
 // GAME FUNCTIONS
 //
-int				MaxVisSprites;
-vissprite_t 	*vissprites;
-vissprite_t		*firstvissprite;
-vissprite_t		*lastvissprite;
 
 
 
@@ -412,12 +408,7 @@ vissprite_t		*lastvissprite;
 //
 void R_InitSprites(std::vector<spriteinfo_t*>& sprites)
 {
-	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
-
-	M_Free(vissprites);
-
-	firstvissprite = vissprites = static_cast<vissprite_t*>(M_Malloc(MaxVisSprites * sizeof(vissprite_t)));
-	lastvissprite = &vissprites[MaxVisSprites];
+	R_InitVisSprites();
 
 	R_InitSpriteDefs (sprites);
 }

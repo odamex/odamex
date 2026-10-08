@@ -28,6 +28,7 @@
 #include "d_player.h"
 #include "v_palette.h"
 
+void R_InitVisSprites() {}
 void R_ExitLevel() {}
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {}

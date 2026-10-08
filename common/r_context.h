@@ -208,15 +208,49 @@ struct bspcontext_t
 };
 
 //
+// spritecontext_t
+//
+// The vissprite pool each slice fills, and the masked-column state the sprite
+// and masked-midtexture drawers read.
+//
+struct spritecontext_t
+{
+	// the vissprite pool, grown on demand by R_NewVisSprite
+	vissprite_t* vissprites;
+	vissprite_t* firstvissprite;
+	vissprite_t* lastvissprite;
+	vissprite_t* vissprite_p;
+	int          maxvissprites;
+	int          newvissprite;
+
+	int*         spritelights;
+
+	// weapon bob for the player sprite
+	fixed_t bobx;
+	fixed_t boby;
+
+	// vars for R_DrawMaskedColumn
+	const int* mfloorclip;
+	const int* mceilingclip;
+	fixed_t    spryscale;
+	fixed_t    sprtopscreen;
+
+	const palindex_t* spriteposts[MAXWIDTH];
+
+	vissprite_t* closestNonCredibleVisSprite; // This might need to be frame wide?
+};
+
+//
 // rendercontext_t
 //
 // One vertical slice of the view.
 //
 struct rendercontext_t
 {
-	planecontext_t plane;
-	segcontext_t   seg;
-	bspcontext_t   bsp;
+	planecontext_t  plane;
+	segcontext_t    seg;
+	bspcontext_t    bsp;
+	spritecontext_t sprite;
 
 	int	slice_start = 0;
 	int	slice_stop = MAXWIDTH - 1;
@@ -264,6 +298,22 @@ inline drawseg_t*& drawsegs     = ::rctx.bsp.drawsegs;
 inline drawseg_t*& firstdrawseg = ::rctx.bsp.firstdrawseg;
 
 inline byte (&solidcol)[MAXWIDTH] = ::rctx.bsp.solidcol;
+
+inline vissprite_t*& vissprites     = ::rctx.sprite.vissprites;
+inline vissprite_t*& firstvissprite = ::rctx.sprite.firstvissprite;
+inline vissprite_t*& lastvissprite  = ::rctx.sprite.lastvissprite;
+inline vissprite_t*& vissprite_p    = ::rctx.sprite.vissprite_p;
+inline int&          MaxVisSprites  = ::rctx.sprite.maxvissprites;
+
+inline fixed_t& bobx = ::rctx.sprite.bobx;
+inline fixed_t& boby = ::rctx.sprite.boby;
+
+inline const int*& mfloorclip   = ::rctx.sprite.mfloorclip;
+inline const int*& mceilingclip = ::rctx.sprite.mceilingclip;
+inline fixed_t&    spryscale    = ::rctx.sprite.spryscale;
+inline fixed_t&    sprtopscreen = ::rctx.sprite.sprtopscreen;
+
+inline vissprite_t*& closestNonCredibleVisSprite = ::rctx.sprite.closestNonCredibleVisSprite;
 
 // How many slices the view is currently split into.
 int R_SliceCount();

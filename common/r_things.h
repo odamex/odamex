@@ -67,18 +67,6 @@ void R_DrawParticle(vissprite_t*);
 void R_ProjectParticle (particle_t *, const sector_t* sector, int fakeside);
 void R_FindParticleSubsectors();
 
-extern int MaxVisSprites;
-
-extern vissprite_t		*vissprites;
-extern vissprite_t* 	vissprite_p;
-extern vissprite_t		vsprsortedhead;
-
-// vars for R_DrawMaskedColumn
-extern const int*	mfloorclip;
-extern const int*	mceilingclip;
-extern fixed_t		spryscale;
-extern fixed_t		sprtopscreen;
-
 extern fixed_t		pspritexscale;
 extern fixed_t		pspriteyscale;
 extern fixed_t		pspritexiscale;

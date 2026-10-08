@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include "gstrings.h"
 #include "d_player.h"
 #include "g_game.h"
@@ -2360,9 +2362,6 @@ void CL_SaveCmd(void)
 }
 
 extern int outrate;
-
-// TODO:  we have to stop doing this willy-nilly extern madness..
-extern vissprite_t* closestNonCredibleVisSprite;
 
 //
 // CL_SendCmd

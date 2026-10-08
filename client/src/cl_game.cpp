@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
 END_DISABLE_WARNING_GNU
@@ -127,8 +129,6 @@ bool 			noblit; 				// for comparative timing purposes
 
 int 			gametic;
 
-extern fixed_t bobx;
-extern fixed_t boby;
 extern NetGraph netgraph;
 
 enum demoversion_t

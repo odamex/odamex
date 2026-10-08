@@ -30,10 +30,6 @@
 #include "info.h"
 #include "r_defs.h"
 
-extern int MaxVisSprites;
-
-extern vissprite_t *vissprites, *firstvissprite;
-
 extern OHashTable<int32_t, spritedef_t> sprites;
 extern int numsprites;
 
@@ -44,7 +40,8 @@ extern int numsprites;
 extern spriteframe_t sprtemp[MAX_SPRITE_FRAMES];
 extern int maxframe;
 
-extern vissprite_t* lastvissprite;
+// The vissprite pool lives in rctx.sprite
+void R_InitVisSprites();
 
 void R_CacheSprite(const spritedef_t *sprite);
 void R_InitSprites(std::vector<spriteinfo_t*>& sprites);

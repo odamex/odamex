@@ -81,10 +81,7 @@ fixed_t			pspriteyscale;
 fixed_t 		pspritexiscale;
 //fixed_t		sky1scale;			// [RH] Sky 1 scale factor
 									// [ML] 5/11/06 - Removed sky2
-int*			spritelights;
-
-fixed_t bobx;
-fixed_t boby;
+static auto& spritelights = ::rctx.sprite.spritelights;
 
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	limits::MAXINT
@@ -101,7 +98,7 @@ EXTERN_CVAR (r_drawnetcredibility)
 // variables used to look up
 //	and range check thing_t sprites patches
 
-static const palindex_t* spriteposts[MAXWIDTH];
+static auto& spriteposts = ::rctx.sprite.spriteposts;
 
 // [RH] particle globals
 extern int				NumParticles;
@@ -116,10 +113,24 @@ std::vector<uint16_t>		ParticlesInSubsec;
 //
 // GAME FUNCTIONS
 //
-vissprite_t		*vissprite_p;
-int 			newvissprite;
+static auto& newvissprite = ::rctx.sprite.newvissprite;
 
 
+
+//
+// R_InitVisSprites
+//
+// Allocates the context's vissprite pool.
+//
+void R_InitVisSprites()
+{
+	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
+
+	M_Free(vissprites);
+
+	firstvissprite = vissprites = static_cast<vissprite_t*>(M_Malloc(MaxVisSprites * sizeof(vissprite_t)));
+	lastvissprite = &vissprites[MaxVisSprites];
+}
 
 //
 // R_ClearSprites
@@ -172,11 +183,6 @@ vissprite_t *R_NewVisSprite()
 // Masked means: partly transparent, i.e. stored
 //	in posts/runs of opaque pixels.
 //
-const int*		mfloorclip;
-const int*		mceilingclip;
-
-fixed_t 		spryscale;
-fixed_t 		sprtopscreen;
 
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
@@ -1233,7 +1239,7 @@ void R_DrawSprite (vissprite_t *spr)
 }
 
 
-vissprite_t* closestNonCredibleVisSprite;
+
 
 //
 // R_DrawMasked

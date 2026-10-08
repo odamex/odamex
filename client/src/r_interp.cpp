@@ -31,6 +31,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include "m_fixed.h"
 #include "cl_demo.h"
 #include "r_state.h"
@@ -44,8 +46,6 @@ EXTERN_CVAR(cl_movebob)
 extern NetDemo netdemo;
 extern int ConBottomStep;
 
-extern fixed_t bobx;
-extern fixed_t boby;
 
 void R_InterpolateSkyDefs(fixed_t amount);
 void R_TicSkyDefInterpolation();
