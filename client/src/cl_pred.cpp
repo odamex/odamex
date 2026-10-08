@@ -468,6 +468,11 @@ bool CL_PredictWorld()
         if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
         {
             predtic  = previousPredtic + deltaServerTic;
+
+            if (predtic < inputTic)
+            {
+                snaptime -= (inputTic - predtic);
+            }
         }
         //inputTic = std::max(input
         /*
@@ -518,11 +523,20 @@ bool CL_PredictWorld()
 
 	bool playerWasPredicted = false;
 
-    for (;++inputTic < predtic; inputTic)
+    ++predtic;
+    ++inputTic;
+
+    for (;predtic < inputTic; ++predtic)
+    {
+		playerWasPredicted = CL_PredictLocalPlayer(predtic, 0);
+		if (cl_predictsectors)
+			CL_PredictSectors(s_predictingSectors);
+    }
+
+    for (;inputTic < predtic; ++inputTic)
     {
         // We exclude thinkers here because the latest integrated input is from BEFORE
         // the latest server messages.
-
 		playerWasPredicted = CL_PredictLocalPlayer(inputTic, inputTic);
 		if (cl_predictsectors)
 			CL_PredictSectors(s_predictingSectors);
