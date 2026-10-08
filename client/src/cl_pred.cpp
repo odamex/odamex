@@ -338,10 +338,7 @@ bool CL_SectorIsPredicting(sector_t *sector)
 
 namespace
 {
-	std::array<int, NUM_SNAPSHOTS> s_previousPredictionTics;
-	int s_previousInputTic;
 	int s_previousBasisServerTic;
-    int s_previousReceivedInputTic;
     int s_previousReceivedClientTic;
     int s_persistentDiff;
 }
@@ -404,12 +401,6 @@ bool CL_PredictWorld()
 	// Mobjs are already in the last position received from the server.
 	bool mobjsHaveBeenPredicted = false;
 
-	// Move the client to the last position received from the server
-	int snaptime = p.snapshots.getMostRecentTime();
-
-	const int currentIndex  = gametic % NUM_SNAPSHOTS;
-	const int previousIndex = (currentIndex ? currentIndex : NUM_SNAPSHOTS) - 1;
-
 	// Figure out where to start predicting from.
 	//
 	// lastEchoedTic is the absolute latest clientside gametic that the server knows about.
@@ -420,8 +411,9 @@ bool CL_PredictWorld()
 	//
 	// We start predicting from the lastEchoedTic.
 
-	int idealPredictionTic   = std::max(lastEchoedTic + 1, gametic - MAXSAVETICS);
-	int idealInputTic        = p.tic + 1;
+	const int snaptime           = p.snapshots.getMostRecentTime();
+	const int idealPredictionTic = std::max(lastEchoedTic + 1,  gametic - MAXSAVETICS);
+	const int idealInputTic      = std::max(p.tic + 1,          gametic - MAXSAVETICS);
 
 	if (s_previousBasisServerTic == 0)
 	{
@@ -431,28 +423,17 @@ bool CL_PredictWorld()
 	{
 		s_previousReceivedClientTic = idealPredictionTic;
 	}
-	if (s_previousReceivedInputTic == 0)
-	{
-		s_previousReceivedInputTic = idealInputTic;
-	}
 
 	const int deltaServerTic = snaptime           - s_previousBasisServerTic;
 	const int deltaPredTic   = idealPredictionTic - s_previousReceivedClientTic;
-	const int deltaInputTic  = idealInputTic      - s_previousReceivedInputTic;
 
 	s_previousBasisServerTic    = snaptime;
 	s_previousReceivedClientTic = idealPredictionTic;
-	s_previousReceivedInputTic  = idealInputTic;
-
-	int predictionTic = idealPredictionTic;
-	int inputTic      = idealInputTic;
 
 	s_persistentDiff += deltaServerTic - deltaPredTic;
 
-	predictionTic += s_persistentDiff;
-
-	s_previousPredictionTics[currentIndex] = predictionTic;
-	s_previousInputTic                     = inputTic;
+	int predictionTic = idealPredictionTic + s_persistentDiff;
+	int inputTic      = idealInputTic;
 
 //#define ODAMEX_PREDICTION_DEBUG           // SUPER IMPORTANT NOTE WITH THIS BLOCK:
 #ifdef ODAMEX_PREDICTION_DEBUG              //  Sector 1 is checked because nuts.wad is such a great test case here,
@@ -471,12 +452,13 @@ bool CL_PredictWorld()
 	        );
 #endif
 
+	// Move the client to the last position received from the server.
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
 	s_predictingSectors.clear();
 
-	// Move sectors to the last position received from the server
+	// Move sectors to the last position received from the server.
 	if (cl_predictsectors)
 		CL_ResetSectors(snaptime, s_predictingSectors);
 
@@ -498,6 +480,8 @@ bool CL_PredictWorld()
 		}
 	}
 
+	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
+	// and the sectors up to (but NOT including) gametic.
 	for (;predictionTic < gametic; ++predictionTic)
 	{
 		if (CL_PredictLocalPlayer(predictionTic, predictionTic))
@@ -544,6 +528,8 @@ bool CL_PredictWorld()
 		}
 	}
 
+	// Now we're doing the big final canonical client side update of player state,
+	// all thinkers, and sectors.  Disable the predicting control and do the gametic.
 	predicting = false;
 
 	CL_PredictLocalPlayer(gametic, gametic);
@@ -554,7 +540,6 @@ bool CL_PredictWorld()
 		DThinker::RunThinkers();
 	}
 
-	// Run thinkers for current gametic
 	if (cl_predictsectors)
 		CL_PredictAllSectors();
 
@@ -564,9 +549,6 @@ bool CL_PredictWorld()
 void CL_ResetWorldPrediction()
 {
 	s_previousBasisServerTic = 0;
-	s_previousPredictionTics.fill(0);
-	s_previousInputTic = 0;
-	s_previousReceivedInputTic  = 0;
 	s_previousReceivedClientTic = 0;
 	s_persistentDiff = 0;
 	for (auto& savedPlayerSnapshot : cl_savedsnaps)
