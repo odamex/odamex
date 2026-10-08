@@ -473,7 +473,6 @@ bool CL_PredictWorld()
     s_persistentDiff += deltaServerTic - deltaPredTic;
 
     predictionTic += s_persistentDiff;
-    inputTic      += s_persistentDiff;
 
 #if 0
     if (deltaServerTic > 1 and deltaServerTic != deltaPredTic)
