@@ -401,12 +401,6 @@ bool CL_PredictWorld()
 	PlayerSnapshot prevsnap(p.tic, p);
 	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
 
-
-
-
-
-
-
 	// Mobjs are already in the last position received from the server.
 	bool mobjsHaveBeenPredicted = false;
 
@@ -416,176 +410,66 @@ bool CL_PredictWorld()
 	const int currentIndex  = gametic % NUM_SNAPSHOTS;
 	const int previousIndex = (currentIndex ? currentIndex : NUM_SNAPSHOTS) - 1;
 
-	const int previousPredtic  = s_previousPredictionTics[previousIndex];
-   
-    if (s_previousBasisServerTic == 0)
-    {
-        s_previousBasisServerTic = snaptime;
-    }
-
 	// Figure out where to start predicting from.
-    //
-    //
-    // Furthermore, due to conditions on the network, we might see the server tic advance,
-    // as evidenced by the player snapshot's most recent time, which is simply the server tic.
-    // Please note that this doesn't mean that player.tic has advanced!  At the very least,
-    //
-    // lastEchoedTic is the absolute latest local gametic that the server knows about.
-    // p.tic is the latest local gametic whose PlayerInput is integrated into the player state.
-    // p.tic can be the same as, or behind, the lastEchoedTic, but never ahead of it.
-    // If we see that p.tic is behind, we guess that the server is going to do two player tics
-    // to get caught up.
-    //
-    // We start predicting from the lastEchoedTic.
+	//
+	// lastEchoedTic is the absolute latest clientside gametic that the server knows about.
+	// p.tic is the latest local gametic whose PlayerInput is integrated into the player state.
+	// p.tic can be the same as, or behind, the lastEchoedTic, but never ahead of it.
+	// If we see that p.tic is behind, we guess that the server is going to do two player tics
+	// before advancing world state to get caught up.
+	//
+	// We start predicting from the lastEchoedTic.
+
 	int idealPredictionTic   = std::max(lastEchoedTic + 1, gametic - MAXSAVETICS);
 	int idealInputTic        = p.tic + 1;
 
-    if (s_previousReceivedClientTic == 0)
-    {
-        s_previousReceivedClientTic = idealPredictionTic;
-    }
-    if (s_previousReceivedInputTic == 0)
-    {
-        s_previousReceivedInputTic = idealInputTic;
-    }
+	if (s_previousBasisServerTic == 0)
+	{
+		s_previousBasisServerTic = snaptime;
+	}
+	if (s_previousReceivedClientTic == 0)
+	{
+		s_previousReceivedClientTic = idealPredictionTic;
+	}
+	if (s_previousReceivedInputTic == 0)
+	{
+		s_previousReceivedInputTic = idealInputTic;
+	}
 
-	const int deltaServerTic = snaptime       - s_previousBasisServerTic;
-	const int deltaPredTic   = idealPredictionTic  - s_previousReceivedClientTic;
-	const int deltaInputTic  = idealInputTic       - s_previousReceivedInputTic;
+	const int deltaServerTic = snaptime           - s_previousBasisServerTic;
+	const int deltaPredTic   = idealPredictionTic - s_previousReceivedClientTic;
+	const int deltaInputTic  = idealInputTic      - s_previousReceivedInputTic;
 
 	s_previousBasisServerTic    = snaptime;
 	s_previousReceivedClientTic = idealPredictionTic;
 	s_previousReceivedInputTic  = idealInputTic;
 
-    int predictionTic = idealPredictionTic;
-    int inputTic      = idealInputTic;
-    // 0758 NOT the same thing as the sector jitter.
-    //if (deltaServerTic != 0 and deltaPredTic == 0)
-    //if (deltaServerTic > 1)
-    if (deltaServerTic != deltaPredTic)
-    {
-        //PrintFmt("BLIP son {}\n", gametic);
-        //snaptime -= (deltaServerTic - deltaPredTic);
-        //predictionTic += (deltaServerTic - deltaPredTic);
-        //inputTic      += (deltaServerTic - deltaPredTic);
+	int predictionTic = idealPredictionTic;
+	int inputTic      = idealInputTic;
 
-    }
-    s_persistentDiff += deltaServerTic - deltaPredTic;
+	s_persistentDiff += deltaServerTic - deltaPredTic;
 
-    predictionTic += s_persistentDiff;
-
-#if 0
-    if (deltaServerTic > 1 and deltaServerTic != deltaPredTic)
-    {
-        predictionTic += ();
-        inputTic      += (deltaServerTic - deltaPredTic);
-    }
-    else if (deltaPredTic > 1 and deltaServerTic != deltaPredTic)
-    {
-        predictionTic += (deltaServerTic - deltaPredTic);
-        inputTic      += (deltaServerTic - deltaPredTic);
-    }
-#endif
+	predictionTic += s_persistentDiff;
 
 	s_previousPredictionTics[currentIndex] = predictionTic;
 	s_previousInputTic                     = inputTic;
 
-    const sector_t& sector = sectors[1];
-
-    DPrintFmt("gt {}, snaptime {}, pred {}, input {}, initsecheight(off-one) {}, world_index {}, cor_pred {}, cor_input {}, persdiff {}\n",
-            gametic,
-            snaptime,
-            idealPredictionTic,
-            idealInputTic,
-            P_FloorHeight(&sector),
-            world_index,
-            predictionTic,
-            inputTic,
-            s_persistentDiff
-            );
-
-    // Did the server perceive client->server jitter?
-    // Use an older server tic so that we can predict through the extra delta.
-    //
-#if 0
-    if (deltaServerTic > deltaPredTic)
-    {
-        snaptime -= (deltaServerTic - deltaPredTic);
-        predictionTic -= (deltaServerTic - deltaPredTic);
-        inputTic -= (deltaServerTic - deltaPredTic);
-    }
+//#define ODAMEX_PREDICTION_DEBUG           // SUPER IMPORTANT NOTE WITH THIS BLOCK:
+#ifdef ODAMEX_PREDICTION_DEBUG              //  Sector 1 is checked because nuts.wad is such a great test case here,
+	const sector_t& sector = sectors[1];    //  and sector 1 is the large Lift sector that the player spawns on and
+	                                        //  has a bunch of weapons and items.
+	DPrintFmt("gt {}, snaptime {}, pred {}, input {}, initsecheight(off-one) {}, world_index {}, cor_pred {}, cor_input {}, persdiff {}\n",
+	        gametic,
+	        snaptime,
+	        idealPredictionTic,
+	        idealInputTic,
+	        P_FloorHeight(&sector),
+	        world_index,
+	        predictionTic,
+	        inputTic,
+	        s_persistentDiff
+	        );
 #endif
-
-	// If we see the player.tic advance, we know that we have both updated sector and
-	// player snapshots because they come together in high priority packets.
-//    if (deltaInputTic)
-//    {
-//        predtic = std::max(p.tic, gametic - MAXSAVETICS);
-//    }
-//    else
-    {
-//#define ODAMEX_PREDICTION_DEBUG
-#ifdef  ODAMEX_PREDICTION_DEBUG
-        if (deltaServerTic != 1)
-        {
-            DPrintFmt("{} update: gt {}, predtic {}, snaptic {}, dst {}, dpt {}\n",
-                    deltaServerTic,
-                    gametic,
-                    predtic,
-                    snaptime,
-                    deltaServerTic,
-                    deltaPredTic
-                    );
-        }
-#endif
-
-        // deltaServerTic > 0 means that sectors have moved.
-
-
-        //if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
-        //{
-            //predtic  = previousPredtic + deltaServerTic;
-
-            //if (predtic < inputTic)
-            //{
-            //    snaptime -= (inputTic - predtic);
-            //???}
-        //}
-        //inputTic = std::max(input
-        /*
-        if (deltaServerTic > 0 and deltaInputTic != deltaServerTic)
-        {
-            inputTic = s_previousInputTic + deltaServerTic;
-        }
-        */
-        // Check for the case where there's a mismatch in player.tic and servertic increment.
-        // This happens when the server consumes more than one (or no) PlayerInput message in
-        // a single tic.  This can happen naturally with client -> server jitter, among other
-        // causes.
-#if 0
-        if (deltaServerTic > 0 and deltaPredTic != deltaServerTic)
-        {
-#ifdef ODAMEX_PREDICTION_DEBUG
-            DPrintFmt("off: gt {}, predtic {}, snaptic {}\n",
-                    gametic, predtic, snaptime);
-#endif
-
-            predtic  = previousPredtic + deltaServerTic;
-            //inputTic = s_previousInputTic + deltaServerTic;
-            //inputTic = std::min(s_previousInputTic + deltaPredTic, predtic);
-            //inputTic = std::min(p.tic + deltaPredTic, predtic);
-#ifdef ODAMEX_PREDICTION_DEBUG
-            DPrintFmt("correction: predtic {}, inputtic {}, dst {}, dit {}\n",
-                    predtic,
-                    inputTic,
-                    deltaServerTic,
-                    deltaInputTic);
-#endif
-        }
-        //snaptime -= (predtic - inputTic);
-#endif
-        //snaptime -= (predtic - inputTic);
-    }
 
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
@@ -598,22 +482,28 @@ bool CL_PredictWorld()
 
 	bool playerWasPredicted = false;
 
-    for (;inputTic < predictionTic; ++inputTic)
-    {
-        // We exclude thinkers here because the latest integrated input is from BEFORE
-        // the latest server messages.
-        if (CL_PredictLocalPlayer(predictionTic, inputTic))
-        {
-            playerWasPredicted = true;
-        }
-    }
+	// Because input tic can be behind or match, but never exceed, predictionTic,
+	// make sure we integrate any extra older inputs that we know the server hasn't
+	// integrated into the player state it has.
+	//
+	// This will predict the player state up to predictionTic.
 
-    for (;predictionTic < gametic; ++predictionTic)
+	for (;inputTic < predictionTic; ++inputTic)
 	{
-        if (CL_PredictLocalPlayer(predictionTic, predictionTic))
-        {
-            playerWasPredicted = true;
-        }
+		// We exclude thinkers and sectors here because the latest integrated input
+		// is from BEFORE the latest server-originated states (sectors, mobj state).
+		if (CL_PredictLocalPlayer(predictionTic, inputTic))
+		{
+			playerWasPredicted = true;
+		}
+	}
+
+	for (;predictionTic < gametic; ++predictionTic)
+	{
+		if (CL_PredictLocalPlayer(predictionTic, predictionTic))
+		{
+			playerWasPredicted = true;
+		}
 		if (not mobjsHaveBeenPredicted)
 		{
 			mobjsHaveBeenPredicted = true;
