@@ -465,9 +465,10 @@ bool CL_PredictWorld()
         predictionTic += (deltaServerTic - deltaPredTic);
         inputTic      += (deltaServerTic - deltaPredTic);
     }
-
-    if (deltaPredTic > 1 and deltaServerTic != deltaPredTic)
+    else if (deltaPredTic > 1 and deltaServerTic != deltaPredTic)
     {
+        predictionTic += (deltaServerTic - deltaPredTic);
+        inputTic      += (deltaServerTic - deltaPredTic);
     }
 
 	s_previousPredictionTics[currentIndex] = predictionTic;
