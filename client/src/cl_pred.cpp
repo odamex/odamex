@@ -303,7 +303,7 @@ bool CL_PredictLocalPlayer(int predtic, int inputTic)
 	// Note that we allow the caller to specify the input tic separately so
 	// that we can predict what happens when multiple inputs are applied to
 	// the same player snapshot, which sometimes happens on the server.
-	odaproto::clc::PlayerInput& netcmd = localcmds[inputTic % MAXSAVETICS];
+	const odaproto::clc::PlayerInput& netcmd = localcmds[inputTic % MAXSAVETICS];
 	CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
 
 	if (!predicting)
