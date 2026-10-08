@@ -58,6 +58,9 @@ extern std::string digest;
 extern OResFiles wadfiles;
 
 extern bool hasReceivedFullUpdate;
+extern int  last_svgametic;
+extern int  lastEchoedClientTic;
+extern int  world_index;
 
 /**
  * @brief Map demo versions to the latest Odamex version that can read them.
@@ -1631,6 +1634,9 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	players.clear();
 
 	CL_ResetWorldPrediction();
+	::lastEchoedClientTic = 0;
+	::last_svgametic      = 0;
+	world_index           = 0;
 
 	// Remove all actors
 	TThinkerIterator<AActor> iterator;
