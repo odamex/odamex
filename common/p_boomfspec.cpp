@@ -38,7 +38,7 @@ EXTERN_CVAR(co_avoidhazards)
 EXTERN_CVAR(co_monstersclimbsteep)
 EXTERN_CVAR(co_mbfphys)
 
-void SV_UpdateMobj(AActor* mo);
+void SV_ArmMobj(AActor* mo);
 
 //
 // P_CrossCompatibleSpecialLine - Walkover Trigger Dispatcher
@@ -3377,7 +3377,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
 			if (P_JustTeleported(thing))
 			{
-				SV_UpdateMobj(thing);
+				SV_ArmMobj(thing);
 				P_ClearJustTeleported();
 			}
 

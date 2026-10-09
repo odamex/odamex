@@ -54,7 +54,7 @@
 #endif
 #include <p_boomfspec.h>
 
-void SV_UpdateMobj(AActor* mo);
+void SV_ArmMobj(AActor* mo);
 void SV_UpdateMobjState(const AActor* mo);
 
 #define WATER_SINK_FACTOR		3
@@ -1649,7 +1649,7 @@ SetMobStateResultEnum P_SetMobjState(AActor *mobj, int32_t state, bool cl_update
 	//      have run.
 	if (cl_update)
 	{
-		SV_UpdateMobj(mobj);
+		SV_ArmMobj(mobj);
 		return SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
 	}
 #endif

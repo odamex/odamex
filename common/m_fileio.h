@@ -36,12 +36,12 @@ std::string M_FindUserFileName(const std::string& file, const char* ext);
 void M_FixPathSep(std::string& path);
 std::string M_GetCWD();
 
-template <typename ElementType>
-bool M_ReadLE(std::istream& io_stream, ElementType& o_data)
+template <typename CharType, typename ElementType>
+bool M_ReadLE(std::basic_istream<CharType>& io_stream, ElementType& o_data)
 {
 	if (io_stream.good())
 	{
-		io_stream.read(reinterpret_cast<char*>(&o_data), sizeof(o_data));
+		io_stream.read(reinterpret_cast<CharType*>(&o_data), sizeof(o_data));   // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 		if (io_stream.gcount() == sizeof(o_data))
 		{
 			using namespace nonstd::bit;
@@ -49,27 +49,25 @@ bool M_ReadLE(std::istream& io_stream, ElementType& o_data)
 			                          little_endian_type());    // from
 			return true;
 		}
-        else
-        {
-            // We enter this condition if everything was good(), but we tried to read past the
-            // end-of-file.  In that case, both the eofbit and the failbit are set, either of
-            // which invalidate the .good() check.
-            //
-            // We want to be able to seek back from the EOF, and the seekg function clears
-            // the eofbit but not the failbit, preventing further reads from working.  Therefore
-            // we want to clear just the failbit here.  We're still safeguarded from past-EOF
-            // reads by the eofbit, so we're okay to do this.
-            //
-            // The end result is that the stream is left in the state as though the last read
-            // was successful (even though it really wasn't) and left us right at the EOF.
-            io_stream.clear(std::ios_base::eofbit);
-        }
+
+		// We enter this condition if everything was good(), but we tried to read past the
+		// end-of-file.  In that case, both the eofbit and the failbit are set, either of
+		// which invalidate the .good() check.
+		//
+		// We want to be able to seek back from the EOF, and the seekg function clears
+		// the eofbit but not the failbit, preventing further reads from working.  Therefore
+		// we want to clear just the failbit here.  We're still safeguarded from past-EOF
+		// reads by the eofbit, so we're okay to do this.
+		//
+		// The end result is that the stream is left in the state as though the last read
+		// was successful (even though it really wasn't) and left us right at the EOF.
+		io_stream.clear(std::ios_base::eofbit);
 	}
 	return false;
 }
 
-template <typename ElementType, size_t N>
-bool M_ReadLE(std::istream& io_stream, ElementType (&o_dataArray)[N])
+template <typename CharType, typename ElementType, size_t N>
+bool M_ReadLE(std::basic_istream<CharType>& io_stream, ElementType (&o_dataArray)[N])   // NOLINT(modernize-avoid-c-arrays)
 {
 	for (size_t i = 0; i < N; ++i)
 	{
@@ -81,20 +79,52 @@ bool M_ReadLE(std::istream& io_stream, ElementType (&o_dataArray)[N])
 	return true;
 }
 
-template <typename ElementType>
-bool M_WriteLE(std::ostream& io_stream, const ElementType& i_data)
+template <typename CharType, typename ElementType, size_t N>
+bool M_ReadLE(std::basic_istream<CharType>& io_stream, std::array<ElementType, N>& o_dataArray)
 {
-	if (io_stream.good())
+	for (size_t i = 0; i < N; ++i)
 	{
-		ElementType temp = nonstd::bit::as_little_endian(i_data);
-		io_stream.write(reinterpret_cast<char*>(&temp), sizeof(temp));
+		if (not M_ReadLE(io_stream, o_dataArray[i]))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+template <typename StreamCharType, typename CharType>
+bool M_ReadString(std::basic_istream<StreamCharType>& io_stream, std::basic_string<CharType>& o_string)
+{
+	uint32_t stringLength = 0;
+	if (M_ReadLE(io_stream, stringLength))
+	{
+		o_string.resize(stringLength);
+		for (auto& o_character : o_string)
+		{
+			if (not M_ReadLE(io_stream, o_character))
+			{
+				return false;
+			}
+		}
 		return true;
 	}
 	return false;
 }
 
-template <typename ElementType, size_t N>
-bool M_WriteLE(std::ostream& io_stream, const ElementType (&i_dataArray)[N])
+template <typename CharType, typename ElementType>
+bool M_WriteLE(std::basic_ostream<CharType>& io_stream, const ElementType& i_data)
+{
+	if (io_stream.good())
+	{
+		ElementType temp = nonstd::bit::as_little_endian(i_data);
+		io_stream.write(reinterpret_cast<CharType*>(&temp), sizeof(temp));  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+		return true;
+	}
+	return false;
+}
+
+template <typename CharType, typename ElementType, size_t N>
+bool M_WriteLE(std::basic_ostream<CharType>& io_stream, const ElementType (&i_dataArray)[N])    // NOLINT(modernize-avoid-c-arrays)
 {
 	for (size_t i = 0; i < N; ++i)
 	{
@@ -104,6 +134,36 @@ bool M_WriteLE(std::ostream& io_stream, const ElementType (&i_dataArray)[N])
 		}
 	}
 	return true;
+}
+
+template <typename CharType, typename ElementType, size_t N>
+bool M_WriteLE(std::basic_ostream<CharType>& io_stream, const std::array<ElementType, N>& i_dataArray)
+{
+	for (size_t i = 0; i < N; ++i)
+	{
+		if (not M_WriteLE(io_stream, i_dataArray[i]))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+template <typename StreamCharType, typename CharType>
+bool M_WriteString(std::basic_ostream<StreamCharType>& io_stream, const std::basic_string<CharType>& i_string)
+{
+	if (M_WriteLE(io_stream, static_cast<uint32_t>(i_string.length())))
+	{
+		for (const auto& i_character : i_string)
+		{
+			if (not M_WriteLE(io_stream, i_character))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	return false;
 }
 
 uintmax_t M_FileLength (std::istream& f);
