@@ -1391,6 +1391,9 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		p.mo->health = 0;
 	}
 
+	// The server decides whether this spawn keeps the loadout.
+	p.dokeepweapons = msg->keepweapons();
+
 	G_PlayerReborn(p);
 
 	AActor* mobj = new AActor(x, y, z, MT_PLAYER);

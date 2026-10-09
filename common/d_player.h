@@ -323,6 +323,8 @@ public:
 
 	argb_t		blend_color;			// blend color for the sector the player is in
 	bool		doreborn;
+	bool		dokeepweapons;			// the next reborn is a respawn from death, so keep the loadout
+	bool		keptweapons;			// what the last reborn decided, replicated with the spawn
 
 	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
 

@@ -755,6 +755,8 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 		msg.set_cards(packedcards);
 	}
 
+	msg.set_keepweapons(player.keptweapons);
+
 	return msg;
 }
 

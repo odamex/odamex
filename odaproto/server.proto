@@ -175,6 +175,7 @@ message SpawnPlayer
 	int32  pid = 1;
 	Actor  actor = 2;
 	uint32 cards = 3;
+	bool   keepweapons = 4;
 }
 
 // svc_damageplayer

@@ -73,6 +73,7 @@ static player_t nullplayer;		// used to indicate 'player not found' when searchi
 EXTERN_CVAR (sv_allowmovebob)
 EXTERN_CVAR (sv_showplayerpowerups)
 EXTERN_CVAR (cl_movebob)
+EXTERN_CVAR (sv_keepweapons)
 
 player_t &idplayer(byte id)
 {
@@ -768,7 +769,11 @@ void P_DeathThink (player_t& player)
 				return;
 			}
 
+			// G_Ticker reborns every PST_REBORN player before it runs any
+			// gameaction, so this is consumed before a map change or a round
+			// reset can inherit it.
 			player.playerstate = PST_REBORN;
+			player.dokeepweapons = ::sv_keepweapons;
 		}
 	}
 }
@@ -1413,6 +1418,8 @@ player_t::player_t() :
 	prefcolor(argb_t(0, 0, 0, 0)),
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
+	dokeepweapons(false),
+	keptweapons(false),
 	QueuePosition(0),
 	requestedNetIdUpdate(0),
 	hazardcount(0),

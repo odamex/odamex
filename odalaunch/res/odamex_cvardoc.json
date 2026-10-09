@@ -2559,6 +2559,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Keep weapons and ammo when respawning after death.",
+         "name" : "sv_keepweapons",
+         "type" : "boolean"
+      },
+      {
          "default" : 0,
          "flags" : [ "SERVERINFO", "LATCH", "NOENABLEDISABLE" ],
          "helptext" : "maximum clients who can connect to server",
