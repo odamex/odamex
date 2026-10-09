@@ -768,6 +768,10 @@ CVAR_RANGE_FUNC_DECL(r_stretchsky, "2", "Stretch sky textures. (0 - always off, 
 CVAR(			r_linearsky, "0", "Render skies without horizonal stretching",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+// NOLINTNEXTLINE(bugprone-throwing-static-initialization) - every cvar is a static
+CVAR(			r_fogboundary, "1", "Shade openings between sectors with different fog colors",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			r_skypalette, "0", "Invulnerability sphere changes the palette of the sky",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 

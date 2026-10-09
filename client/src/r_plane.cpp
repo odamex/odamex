@@ -157,6 +157,15 @@ extern Pool<int> sprclip_pool;
 int*					planezlight;
 float					plight, shade;
 
+// ZDoom-style fog shading for planes in foggy sectors
+fixed_t R_FogLight2Shade(int lightlevel);
+namespace
+{
+bool            plane_foglight;
+fixed_t         plane_fogshade;
+fixed_t         plane_fogvis;   // ZDoom's GlobVis for the current plane
+} // namespace
+
 std::unique_ptr<fixed_t[]> yslope;
 static fixed_t			planeheight;
 
@@ -289,6 +298,14 @@ void R_MapLevelPlane(int y, int x1, int x2)
 		dspan.colormap = basecolormap.with(fixedlightlev);
 	else if (fixedcolormap.isValid())
 		dspan.colormap = fixedcolormap;
+	else if (plane_foglight)
+	{
+		// foggy sectors shade their planes with ZDoom's fog curve so
+		// the fog density matches the fog boundaries over the openings
+		const fixed_t vis = FixedMul(plane_fogvis, abs(centeryfrac - (y << FRACBITS)));
+		const int level = std::clamp((plane_fogshade - vis) >> FRACBITS, 0, NUMCOLORMAPS - 1);
+		dspan.colormap = basecolormap.with(level);
+	}
 	else
 	{
 		// Determine lighting based on the span's distance from the viewer.
@@ -682,6 +699,24 @@ void R_DrawLevelPlane(visplane_t *pl)
 
 	const int light = std::clamp((pl->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight), 0, LIGHTLEVELS - 1);
 	planezlight = zlight[light];
+
+	// planes with a fog fade use ZDoom's fog curve instead of zlight
+	plane_foglight = false;
+	const dyncolormap_t* dyncmap = pl->colormap.m_dyncolormap;
+	const argb_t fade = dyncmap ? dyncmap->fade
+	                            : argb_t(level.fadeto_color[0], level.fadeto_color[1],
+	                                     level.fadeto_color[2], level.fadeto_color[3]);
+	if ((fade.getr() | fade.getg() | fade.getb()) != 0 && planeheight > 0)
+	{
+		plane_foglight = true;
+		plane_fogshade = R_FogLight2Shade(pl->lightlevel);
+
+		// ZDoom's r_FloorVisibility with the default visibility of 8.0,
+		// divided by the plane's height above/below the view
+		const auto floorvis = static_cast<fixed_t>(
+			static_cast<int64_t>(160) * FRACUNIT * 8 * FRACUNIT / FocalLengthY);
+		plane_fogvis = FixedDiv(floorvis, planeheight);
+	}
 
 	R_MakeSpans(pl, R_MapLevelPlane);
 }
