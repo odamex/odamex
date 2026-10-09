@@ -1489,7 +1489,7 @@ static void R_RenderPortalView(visplane_t* pl)
 	validcount++; // Make sure we see all sprites
 
 	R_ClearPlanes(false);
-	R_ClearClipSegs();
+	R_ClearClipSegs(rctx);
 
 	// Set up ceiling/floor clip arrays for this visplane.
 	for (i = pl->minx; i <= pl->maxx; i++)
@@ -1507,7 +1507,7 @@ static void R_RenderPortalView(visplane_t* pl)
 	}
 
 	// Create a drawseg to clip sprites to the sky plane.
-	R_ReallocDrawSegs();
+	R_ReallocDrawSegs(rctx);
 	ds_p->x1 = 0;
 	ds_p->x2 = viewwidth - 1;
 	ds_p->silhouette = SIL_BOTH;
@@ -1529,7 +1529,7 @@ static void R_RenderPortalView(visplane_t* pl)
 	firstvissprite = vissprite_p;
 	firstdrawseg = ds_p++;
 
-	R_RenderBSPNode(numnodes - 1);
+	R_RenderBSPNode(rctx, numnodes - 1);
 	R_DrawPlanes();
 	R_DrawDiscoveredPortals();
 	R_DrawMasked();

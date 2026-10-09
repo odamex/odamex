@@ -97,8 +97,6 @@ extern int				zlight[LIGHTLEVELS][MAXLIGHTZ];
 
 // bumped light from gun blasts
 inline int				extralight;
-// [RH] ignore extralight and fullbright
-inline bool				foggy;
 
 extern int				fixedlightlev;
 extern shaderef_t		fixedcolormap;

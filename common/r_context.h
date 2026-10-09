@@ -195,6 +195,9 @@ struct bspcontext_t
 	bool    r_fakingunderwater;  // TODO: This may need to be set per frame
 	bool    r_underwater;        // instead of per context
 
+	// [RH] ignore extralight and fullbright.
+	bool    foggy;
+
 	byte    fakeside;
 
 	drawseg_t* ds_p;
@@ -322,6 +325,7 @@ inline sector_t*&    backsector  = ::rctx.bsp.backsector;
 inline bool& doorclosed         = ::rctx.bsp.doorclosed;
 inline bool& r_fakingunderwater = ::rctx.bsp.r_fakingunderwater;
 inline bool& r_underwater       = ::rctx.bsp.r_underwater;
+inline bool& foggy              = ::rctx.bsp.foggy;
 
 inline drawseg_t*& ds_p         = ::rctx.bsp.ds_p;
 inline drawseg_t*& drawsegs     = ::rctx.bsp.drawsegs;

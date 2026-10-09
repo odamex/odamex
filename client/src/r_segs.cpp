@@ -597,7 +597,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	basecolormap = frontsector->colormap->maps;	// [RH] Set basecolormap
 
 	// killough 4/13/98: get correct lightlevel for 2s normal textures
-	int lightnum = (R_FakeFlat(frontsector, &tempsec, NULL, NULL, false)->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+	int lightnum = (R_FakeFlat(rctx, frontsector, &tempsec, NULL, NULL, false)->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 	lightnum += R_OrthogonalLightnumAdjustment();
 
 	walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
@@ -808,7 +808,7 @@ void R_StoreWallRange(int start, int stop)
 	if (count <= 0)
 		return;
 
-	R_ReallocDrawSegs();	// don't overflow and crash
+	R_ReallocDrawSegs(rctx);	// don't overflow and crash
 
 	sidedef = curline->sidedef;
 	linedef = curline->linedef;

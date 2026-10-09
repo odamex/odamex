@@ -1142,8 +1142,8 @@ void R_RenderPlayerView(player_t* player)
 	rctx.slice_stop = viewwidth - 1;
 
 	// Clear buffers.
-	R_ClearClipSegs();
-	R_ClearDrawSegs();
+	R_ClearClipSegs(rctx);
+	R_ClearDrawSegs(rctx);
 	R_ClearOpenings();
 	R_ClearPlanes(true);
 	R_ClearSprites();
@@ -1170,11 +1170,11 @@ void R_RenderPlayerView(player_t* player)
 	{
 		const auto flags2_backup = camera->flags2;
 		camera->flags2 |= MF2_DONTDRAW;
-		R_RenderBSPNode(numnodes - 1);
+		R_RenderBSPNode(rctx, numnodes - 1);
 		camera->flags2 = flags2_backup;
 	}
 	else
-		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
+		R_RenderBSPNode(rctx, numnodes - 1);	// The head node is the last node output.
 
 	R_DrawPlanes();
 	R_DrawPortals();
