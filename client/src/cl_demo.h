@@ -148,7 +148,7 @@ private:
 	bool readMessagePayloadToWorkingBuffer(uint32_t len);
 	void readMessageBody(buf_t *netbuffer, uint32_t len);
 
-	static constexpr size_t         HEADER3_SIZE = 64;
+	static constexpr std::streamoff HEADER3_SIZE = 64;
 	static constexpr std::streamoff MESSAGE_HEADER_SIZE = 9;
 	static constexpr size_t         INDEX_ENTRY_SIZE = 8;
 
@@ -209,11 +209,11 @@ private:
 
 	netdemo_state_t state   { st_stopped };
 	netdemo_state_t oldstate{ st_stopped };   // used when unpausing
-	std::string     filename{ };
-	ByteFstream    demofp  { };
+	std::string     filename;
+	ByteFstream     demofp;
 
-	MessageQueue    captured        {};
-	buf_t           workingBuffer   { NETDEMO_STARTUP_PACKET_SIZE };
+	MessageQueue    captured;
+	buf_t           workingBuffer { NETDEMO_STARTUP_PACKET_SIZE };
 
 	netdemo_file_header_t       fileHeader;
 	netdemo_stream_header4_t    streamHeader;

@@ -1407,7 +1407,7 @@ const std::vector<int> NetDemo::getMapChangeTimes() const
 
 	for (const auto [ticnum, _] : map_index)
 	{
-		int start_time = (ticnum - streamHeader.starting_gametic) / TICRATE;
+		const int start_time = (ticnum - streamHeader.starting_gametic) / TICRATE;
 		times.push_back(start_time);
 	}
 
@@ -1417,8 +1417,8 @@ const std::vector<int> NetDemo::getMapChangeTimes() const
 bool NetDemo::seekGametic(int requestedGametic)
 {
 	if (not isInPlayback()
-	    or requestedGametic < streamHeader.starting_gametic
-	    or requestedGametic > streamHeader.ending_gametic)
+	    or std::cmp_less    (requestedGametic, streamHeader.starting_gametic)
+	    or std::cmp_greater (requestedGametic, streamHeader.ending_gametic)
 	{
 		return false;
 	}
