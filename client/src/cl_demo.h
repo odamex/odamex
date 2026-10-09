@@ -2,7 +2,6 @@
 
 #include <deque>
 #include <fstream>
-#include <locale>   // For a template implicitly used by basic_fstream on macos...
 
 #include "i_net.h"
 #include "MessageQueue.h"
@@ -63,8 +62,6 @@ public:
 
 private:
 
-    using ByteFstream = std::basic_fstream<byte>;
-
 	enum netdemo_state_t
 	{
 		st_stopped,
@@ -88,8 +85,8 @@ private:
 		uint32_t    length  { 0 };
 		uint32_t    gametic { 0 };
 
-		bool Read(ByteFstream& io_stream);
-		bool Write(ByteFstream& io_stream) const;
+		bool Read(std::fstream& io_stream);
+		bool Write(std::fstream& io_stream) const;
 	};
 
 	struct netdemo_index_entry_t
@@ -127,7 +124,7 @@ private:
 	void writeChunk(const byte *data, size_t size, netdemo_message_t type);
 	bool writeFileHeader();
 	bool readFileHeader();
-	static bool writeFormatDescription(ByteFstream& io_stream);
+	static bool writeFormatDescription(std::fstream& io_stream);
 
 	bool atSnapshotInterval();
 
@@ -160,8 +157,8 @@ private:
 		std::array<char, 4> identifier  { 0, 0, 0, 0};  // "ODAD"
 		byte                version     { 0 };          // 4, 3, etc...
 
-		bool Read(ByteFstream& io_stream);
-		bool Write(ByteFstream& demofp) const;
+		bool Read(std::fstream& io_stream);
+		bool Write(std::fstream& demofp) const;
 	};
 
 	// The following exists only for a remote chance of compatibility with old netdemos.
@@ -181,7 +178,7 @@ private:
 		uint32_t                ending_gametic          { 0 };  // the last gametic of the demo
 		std::array<byte, 36>    reserved                { 0 };  // NOLINT(readability-magic-numbers) - for future use
 
-		bool Read(ByteFstream& io_stream);
+		bool Read(std::fstream& io_stream);
 	};
 
 	// Now for the current netdemo version.
@@ -209,7 +206,7 @@ private:
 	netdemo_state_t state   { st_stopped };
 	netdemo_state_t oldstate{ st_stopped };   // used when unpausing
 	std::string     filename;
-	ByteFstream     demofp;
+	std::fstream    demofp;
 
 	MessageQueue    captured;
 	buf_t           workingBuffer { NETDEMO_STARTUP_PACKET_SIZE };
