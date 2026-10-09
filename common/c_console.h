@@ -46,7 +46,6 @@ void C_InitConsoleBackground();
 void C_ShutdownConsoleBackground();
 
 void C_InitConCharsFont();
-void C_ShutdownConCharsFont();
 
 void C_ClearCommand();
 

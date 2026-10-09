@@ -36,6 +36,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "m_fixed.h"
 
 #define PI				3.141592657
@@ -74,6 +76,19 @@ extern const fixed_t		finetangent[FINEANGLES/2];
 #define DBITS			(FRACBITS-SLOPEBITS)
 
 typedef uint32_t			angle_t;
+
+//
+// MapThingToAngle
+//
+// A mapthing stores whole degrees, which vanilla snaps to the 45-degree grid
+// as it spawns.
+//
+inline angle_t MapThingToAngle(const int degrees)
+{
+	constexpr int DEGREES_PER_OCTANT = 45;
+
+	return ANG45 * (degrees / DEGREES_PER_OCTANT);
+}
 
 
 // Effective size is 2049;
