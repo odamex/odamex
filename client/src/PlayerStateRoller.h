@@ -75,14 +75,14 @@ class PlayerStateRoller
 		/// The ammo roll is unique in that tic-to-tic deltas are preserved with the assumption
 		/// that the player can be locally firing the weapon, consuming ammo that should not
 		/// necessarily be replenished when a rollback happens.
-		bool ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player);
+		bool ResolveAmmo(int i_oldTic, const PlayerAmmoCounts& i_ammo, player_t& io_player);
 
 		/// Similar to ResolveAmmo, except it works on maxammo and does not roll deltas - changes
 		/// to this value are treated as absolute, coarse adjustments.
-		bool ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo, player_t& io_player);
+		bool ResolveMaxAmmo(int i_oldTic, const PlayerAmmoCounts& i_maxAmmo, player_t& io_player);
 
 		/// Similar to ResolveAmmoMax: absolute adjustment of weapon ownership state.
-		bool ResolveWeaponOwned(int i_oldTic, const std::array<bool, NUMWEAPONS>& i_weaponOwned, player_t& io_player);
+		bool ResolveWeaponOwned(int i_oldTic, const PlayerWeaponFlags& i_weaponOwned, player_t& io_player);
 
 		/// Similar to ResolveWeaponOwned: absolute adjustment of weapon selection state.
 		bool ResolveWeaponSelection(int i_oldTic, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon, player_t& io_player);
@@ -162,9 +162,9 @@ class PlayerStateRoller
 
 		std::optional<HistoryTableType::iterator> ObtainHistory(int i_oldTic, const player_t& i_player);
 
-		bool RollbackAmmo       (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_ammo);
-		bool RollbackMaxAmmo    (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_maxAmmo);
-		bool RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>&              i_weaponOwned, player_t& io_player);
+		bool RollbackAmmo       (HistoryTableType::iterator i_historyIter, const PlayerAmmoCounts&                  i_ammo);
+		bool RollbackMaxAmmo    (HistoryTableType::iterator i_historyIter, const PlayerAmmoCounts&                  i_maxAmmo);
+		bool RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const PlayerWeaponFlags&              i_weaponOwned, player_t& io_player);
 		bool RollbackPowers     (HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS>                 i_powers);
 		bool RollbackPsprites   (HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites);
 

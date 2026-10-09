@@ -135,6 +135,44 @@ namespace
 		}
 		return false;
 	}
+
+	// The same three operations over the weapon and ammo tables, which are
+	// addressed by slot rather than by a contiguous index.
+
+	template <PlayerTable DeltaTableType, PlayerTable TableType>
+	void FillDeltaArray(DeltaTableType&  o_delta,
+	                    const TableType& i_lhs,
+	                    const TableType& i_rhs)
+	{
+		static_assert(std::is_signed<typename DeltaTableType::value_type>() == true);
+
+		for (size_t i = 0; i < o_delta.size(); ++i)
+		{
+			o_delta.atSlot(i) = i_lhs.atSlot(i) - i_rhs.atSlot(i);
+		}
+	}
+
+	template <PlayerTable TableType>
+	void ApplyDeltaArray(TableType& io_table, const TableType& i_delta)
+	{
+		for (size_t i = 0; i < io_table.size(); ++i)
+		{
+			io_table.atSlot(i) = std::max(i_delta.atSlot(i) + io_table.atSlot(i), 0);
+		}
+	}
+
+	template <PlayerTable TableType>
+	bool RequiresCorrection(const TableType& i_deltaTable)
+	{
+		for (size_t i = 0; i < i_deltaTable.size(); ++i)
+		{
+			if (i_deltaTable.atSlot(i))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
 template <typename Callable>
@@ -179,9 +217,9 @@ std::optional<PlayerStateRoller::HistoryTableType::iterator> PlayerStateRoller::
 }
 
 
-bool PlayerStateRoller::RollbackAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_ammo)
+bool PlayerStateRoller::RollbackAmmo(HistoryTableType::iterator i_historyIter, const PlayerAmmoCounts& i_ammo)
 {
-	std::array<int, NUMAMMO> ammoDelta;
+	PlayerAmmoCounts ammoDelta;
 	FillDeltaArray(ammoDelta, i_ammo, i_historyIter->second.ammo);
 
 	if (RequiresCorrection(ammoDelta))
@@ -195,9 +233,9 @@ bool PlayerStateRoller::RollbackAmmo(HistoryTableType::iterator i_historyIter, c
 	return false;
 }
 
-bool PlayerStateRoller::RollbackMaxAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_maxAmmo)
+bool PlayerStateRoller::RollbackMaxAmmo(HistoryTableType::iterator i_historyIter, const PlayerAmmoCounts& i_maxAmmo)
 {
-	std::array<int, NUMAMMO> deltaMaxAmmo;
+	PlayerAmmoCounts deltaMaxAmmo;
 	FillDeltaArray(deltaMaxAmmo, i_maxAmmo, i_historyIter->second.maxammo);
 
 	if (RequiresCorrection(deltaMaxAmmo))
@@ -215,7 +253,7 @@ bool PlayerStateRoller::RollbackMaxAmmo(HistoryTableType::iterator i_historyIter
 	return false;
 }
 
-bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>& i_weaponOwned, player_t& io_player)
+bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const PlayerWeaponFlags& i_weaponOwned, player_t& io_player)
 {
 	if (i_historyIter->second.weaponowned != i_weaponOwned)
 	{
@@ -231,11 +269,11 @@ bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_history
 				// a weapon going from not-owned to owned, we want to NOT cancel the sound.
 				if (not weaponWasAdded)
 				{
-					for (size_t i = 0; i < NUMWEAPONS; ++i)
+					for (size_t i = 0; i < i_weaponOwned.size(); ++i)
 					{
 						// Are we removing a weapon pickup from history?
 						// Take note that we must cancel the sound playback on the item channel.
-						if (rollingState.weaponowned[i] and not i_weaponOwned[i])
+						if (rollingState.weaponowned.atSlot(i) and not i_weaponOwned.atSlot(i))
 						{
 							itemSoundMustBeCanceled = true;
 						}
@@ -243,7 +281,7 @@ bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_history
 						// In fact, if there was already a cancelation we prepared, cancel the cancelation.
 						// The *actual* pickup's cue is higher priority, so don't even bother checking
 						// for the remainder of the rollback operation.
-						else if (i_weaponOwned[i] and not rollingState.weaponowned[i])
+						else if (i_weaponOwned.atSlot(i) and not rollingState.weaponowned.atSlot(i))
 						{
 							weaponWasAdded = true;
 							itemSoundMustBeCanceled = false;
@@ -253,7 +291,8 @@ bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_history
 						// that we DON'T cancel its pickup sound.  The *actual* pickup cue is more imporant.
 						else if (previousIter != m_history.end())
 						{
-							if (rollingState.weaponowned[i] and not previousIter->second.weaponowned[i])
+							if (rollingState.weaponowned.atSlot(i) and
+							    not previousIter->second.weaponowned.atSlot(i))
 							{
 								weaponWasAdded = true;
 								itemSoundMustBeCanceled = false;
@@ -427,7 +466,7 @@ bool PlayerStateRoller::RollbackCheats(HistoryTableType::iterator i_historyIter,
 	return false;
 }
 
-bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
+bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const PlayerAmmoCounts& i_ammo, player_t& io_player)
 {
 	auto historyIter = ObtainHistory(i_oldTic, io_player);
 	if (historyIter and RollbackAmmo(*historyIter, i_ammo))
@@ -438,7 +477,7 @@ bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>
 	return false;
 }
 
-bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo, player_t& io_player)
+bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const PlayerAmmoCounts& i_maxAmmo, player_t& io_player)
 {
 	auto historyIter = ObtainHistory(i_oldTic, io_player);
 	if (historyIter and RollbackMaxAmmo(*historyIter, i_maxAmmo))
@@ -449,7 +488,7 @@ bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAM
 	return false;
 }
 
-bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const std::array<bool, NUMWEAPONS>& i_weaponOwned, player_t& io_player)
+bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const PlayerWeaponFlags& i_weaponOwned, player_t& io_player)
 {
 	auto historyIter = ObtainHistory(i_oldTic, io_player);
 	if (historyIter and RollbackWeaponOwned(*historyIter, i_weaponOwned, io_player))

@@ -1307,13 +1307,13 @@ void G_PlayerFinishLevel (player_t& player)
 void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 {
 	size_t i;
-	for (i = 0; i < NUMAMMO; i++)
+	for (i = 0; i < p.maxammo.size(); i++)
 	{
-		p.maxammo[i] = maxammo[i];
-		p.ammo[i] = 0;
+		const int32_t ammoidx = ::AmmoSlots.indexAtSlot(i);
+		p.maxammo[ammoidx] = ::ammoinfo[ammoidx].maxammo;
 	}
-	for (i = 0; i < NUMWEAPONS; i++)
-		p.weaponowned[i] = false;
+	p.ammo.fill(0);
+	p.weaponowned.fill(false);
 
 	if (!sv_keepkeys && !sv_sharekeys)
 		P_ClearPlayerCards(p);

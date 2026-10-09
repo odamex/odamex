@@ -789,9 +789,8 @@ struct DoomBackup_t
 	DoomObjectContainer<std::string, int32_t> backupSprnames; // doom_sprnames
 	DoomObjectContainer<std::string, int32_t> backupSoundMap; // doom_SoundMap
 
-	std::array<weaponinfo_t, NUMWEAPONS> backupWeaponInfo;
-	std::array<int,          NUMAMMO>    backupMaxAmmo;
-	std::array<int,          NUMAMMO>    backupClipAmmo;
+	DoomObjectContainer<weaponinfo_t, int32_t> backupWeaponInfo;
+	DoomObjectContainer<ammoinfo_t, int32_t>   backupAmmoInfo;
 
 	DehInfo backupDeh;
 
@@ -831,8 +830,7 @@ static void BackupData(void)
 	doomBackup.backupSoundMap = SoundMap;
 
 	doomBackup.backupWeaponInfo = weaponinfo;
-	doomBackup.backupClipAmmo   = clipammo;
-	doomBackup.backupMaxAmmo    = maxammo;
+	doomBackup.backupAmmoInfo   = ammoinfo;
 
 	doomBackup.backupDeh = deh;
 
@@ -854,8 +852,8 @@ void D_UndoDehPatch()
 	D_BuildSpawnMap();
 
 	weaponinfo = doomBackup.backupWeaponInfo;
-	clipammo   = doomBackup.backupClipAmmo;
-	maxammo    = doomBackup.backupMaxAmmo;
+	ammoinfo   = doomBackup.backupAmmoInfo;
+	D_RebuildWeaponAmmoSlots();
 
 	deh = doomBackup.backupDeh;
 
@@ -1670,23 +1668,23 @@ static void PatchSounds(DehScanner& scanner)
 
 static void PatchAmmo(int ammoNum, DehScanner& scanner)
 {
-	int* max;
-	int* per;
-	int dummy;
+	ammoinfo_t dummy;
+	ammoinfo_t* info;
 
-	if (ammoNum >= 0 && ammoNum < NUMAMMO)
+	if (ammoinfo.contains(ammoNum))
 	{
 #if defined ODAMEX_DEBUG
 		DPrintFmt("Ammo {}.\n", ammoNum);
 #endif
-		max = &maxammo[ammoNum];
-		per = &clipammo[ammoNum];
+		info = &ammoinfo[ammoNum];
 	}
 	else
 	{
 		DPrintFmt("Ammo {} out of range.\n", ammoNum);
-		max = per = &dummy;
+		info = &dummy;
 	}
+
+	bool changedquantity = false;
 
 	while (const auto line = scanner.getNextKeyValue())
 	{
@@ -1694,12 +1692,23 @@ static void PatchAmmo(int ammoNum, DehScanner& scanner)
 		const auto val = ParseNum<int32_t>(value).value_or(0);
 
 		if (iequals(key, "Max ammo"))
-			*max = val;
+		{
+			info->maxammo = val;
+			changedquantity = true;
+		}
 		else if (iequals(key, "Per ammo"))
-			*per = val;
+		{
+			info->clipammo = val;
+			changedquantity = true;
+		}
 		else
 			PrintUnknown(key, "Ammo", ammoNum);
 	}
+
+	// A block that touches only the vanilla quantities re-derives everything
+	// ID24 spells out separately, so patches written before ID24 keep working.
+	if (changedquantity)
+		info->deriveQuantities();
 }
 
 static void PatchWeapon(int weapNum, DehScanner& scanner)
@@ -1723,7 +1732,7 @@ static void PatchWeapon(int weapNum, DehScanner& scanner)
 
 	weaponinfo_t *info, dummy;
 
-	if (weapNum >= 0 && weapNum < NUMWEAPONS)
+	if (weaponinfo.contains(weapNum))
 	{
 		info = &weaponinfo[weapNum];
 #if defined ODAMEX_DEBUG

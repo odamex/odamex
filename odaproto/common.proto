@@ -86,9 +86,9 @@ message Player
 	bool            backpack        =  7;
 	int32           lives           =  8;
 	uint32          cheats          =  9;
-	int32           pendingweapon   = 10;
-	int32           readyweapon     = 11;
-	uint32          weaponowned     = 12;
+	sint32          pendingweapon   = 10;
+	sint32          readyweapon     = 11;
+	repeated bool   weaponowned     = 12;
 	repeated int32  ammo            = 13;
 	repeated int32  maxammo         = 14;
 

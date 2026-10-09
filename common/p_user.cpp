@@ -1265,10 +1265,7 @@ void player_t::Serialize (FArchive &arc)
 			arc << powers[i];
 		for (i = 0; i < NUMCARDS; i++)
 			arc << cards[i];
-		for (i = 0; i < NUMWEAPONS; i++)
-			arc << weaponowned[i];
-		for (i = 0; i < NUMAMMO; i++)
-			arc << ammo[i] << maxammo[i];
+		arc << weaponowned << ammo << maxammo;
 		for (i = 0; i < NUMPSPRITES; i++)
 			arc << psprites[i];
 		for (i = 0; i < 3; i++)
@@ -1319,10 +1316,7 @@ void player_t::Serialize (FArchive &arc)
 			arc >> powers[i];
 		for (i = 0; i < NUMCARDS; i++)
 			arc >> cards[i];
-		for (i = 0; i < NUMWEAPONS; i++)
-			arc >> weaponowned[i];
-		for (i = 0; i < NUMAMMO; i++)
-			arc >> ammo[i] >> maxammo[i];
+		arc >> weaponowned >> ammo >> maxammo;
 		for (i = 0; i < NUMPSPRITES; i++)
 			arc >> psprites[i];
 		for (i = 0; i < 3; i++)
@@ -1415,9 +1409,11 @@ player_t::player_t() :
 	powers.fill(0);
 	cards.fill(false);
 	flags.fill(false);
-	weaponowned.fill(false);
-	ammo.fill(false);
-	maxammo.fill(false);
+	// Sized to whatever the weapon and ammo tables look like right now, which is
+	// after DeHackEd has had its say for any player built during a game.
+	weaponowned.resetToTable();
+	ammo.resetToTable();
+	maxammo.resetToTable();
 
 	// Can't put this in initializer list?
 	attacker = AActor::AActorPtr();

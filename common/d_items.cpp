@@ -49,10 +49,11 @@
 // ammopershot
 // internal flags
 //
-std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
+static const std::array<weaponinfo_t, NUMWEAPONS + 1> doom_weaponinfo =
 {
 	weaponinfo_t{
 		// fist
+		.id            = wp_fist,
 		.ammotype      = am_noammo,
 		.upstate       = S_PUNCHUP,
 		.downstate     = S_PUNCHDOWN,
@@ -68,6 +69,7 @@ std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 	},
 	{
 		// pistol
+		.id            = wp_pistol,
 		.ammotype      = am_clip,
 		.upstate       = S_PISTOLUP,
 		.downstate     = S_PISTOLDOWN,
@@ -83,6 +85,7 @@ std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 	},
 	{
 		// shotgun
+		.id            = wp_shotgun,
 		.ammotype      = am_shell,
 		.upstate       = S_SGUNUP,
 		.downstate     = S_SGUNDOWN,
@@ -98,6 +101,7 @@ std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 	},
 	{
 		// chaingun
+		.id            = wp_chaingun,
 		.ammotype      = am_clip,
 		.upstate       = S_CHAINUP,
 		.downstate     = S_CHAINDOWN,
@@ -113,6 +117,7 @@ std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 	},
 	{
 		// missile launcher
+		.id            = wp_missile,
 		.ammotype      = am_misl,
 		.upstate       = S_MISSILEUP,
 		.downstate     = S_MISSILEDOWN,
@@ -128,6 +133,7 @@ std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 	},
 	{
 		// plasma rifle
+		.id            = wp_plasma,
 		.ammotype      = am_cell,
 		.upstate       = S_PLASMAUP,
 		.downstate     = S_PLASMADOWN,
@@ -143,6 +149,7 @@ std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 	},
 	{
 		// bfg 9000
+		.id            = wp_bfg,
 		.ammotype      = am_cell,
 		.upstate       = S_BFGUP,
 		.downstate     = S_BFGDOWN,
@@ -158,6 +165,7 @@ std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 	},
 	{
 		// chainsaw
+		.id            = wp_chainsaw,
 		.ammotype      = am_noammo,
 		.upstate       = S_SAWUP,
 		.downstate     = S_SAWDOWN,
@@ -173,6 +181,7 @@ std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 	},
 	{
 		// super shotgun
+		.id            = wp_supershotgun,
 		.ammotype      = am_shell,
 		.upstate       = S_DSGUNUP,
 		.downstate     = S_DSGUNDOWN,
@@ -188,6 +197,7 @@ std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 	},
 	{
 		// wp_none (player has no weapon including fist, ClearInventory)
+		.id            = wp_none,
 		.ammotype      = am_noammo,
 		.upstate       = S_NOWEAPONUP,
 		.downstate     = S_NOWEAPONDOWN,
@@ -202,6 +212,67 @@ std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 		.internalflags = WIF_NOFLAG
 	},
 };
+
+//
+// Ammo types.
+//
+// Vanilla stored only the per-clip and maximum amounts.
+// Every other quantity was derived at the point of pickup
+// by multiplying or dividing those.
+// 
+// Those derivations are now precomputed into the fields ID24 exposes, so both
+// vanilla and ID24 content read the same table.
+//
+static const std::array<ammoinfo_t, NUMAMMO> doom_ammoinfo =
+{
+	ammoinfo_t{.id = am_clip,  .clipammo = 10, .maxammo = 200},
+	           {.id = am_shell, .clipammo =  4, .maxammo =  50},
+	           {.id = am_cell,  .clipammo = 20, .maxammo = 300},
+	           {.id = am_misl,  .clipammo =  1, .maxammo =  50},
+};
+
+DoomObjectContainer<weaponinfo_t, int32_t> weaponinfo;
+DoomObjectContainer<ammoinfo_t, int32_t>   ammoinfo;
+
+DehSlotMap WeaponSlots;
+DehSlotMap AmmoSlots;
+
+void ammoinfo_t::deriveQuantities()
+{
+	maxupgradedammo      = maxammo * 2;
+	boxammo              = clipammo * 5;
+	backpackammo         = clipammo;
+	weaponammo           = clipammo * 2;
+	droppedclipammo      = clipammo / 2;
+	droppedboxammo       = boxammo / 2;
+	droppedbackpackammo  = backpackammo / 2;
+	droppedweaponammo    = weaponammo / 2;
+	deathmatchweaponammo = clipammo * 5;
+}
+
+void D_RebuildWeaponAmmoSlots()
+{
+	WeaponSlots.rebuild(weaponinfo);
+	AmmoSlots.rebuild(ammoinfo);
+}
+
+static const bool s_weaponammotablesready = (D_InitWeaponAmmoTables(), true);
+
+void D_InitWeaponAmmoTables()
+{
+	weaponinfo.clear();
+	ammoinfo.clear();
+
+	weaponinfo.reserve(doom_weaponinfo.size());
+	for (const weaponinfo_t& weapon : doom_weaponinfo)
+		weaponinfo.insert(weapon, weapon.id);
+
+	ammoinfo.reserve(doom_ammoinfo.size());
+	for (const ammoinfo_t& ammo : doom_ammoinfo)
+		ammoinfo.insert(ammo, ammo.id).deriveQuantities();
+
+	D_RebuildWeaponAmmoSlots();
+}
 
 int num_items;
 

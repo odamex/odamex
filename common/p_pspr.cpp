@@ -69,9 +69,25 @@ const char *weaponnames[NUMWEAPONS] =
 	"Plasma Gun",
 	"BFG9000",
 	"Chainsaw",
-	"Super Shotgun",
-	"No weapon"
+	"Super Shotgun"
 };
+
+//
+// P_WeaponName
+//
+// Display name for any weapon index, including the ones with no entry in the
+// classic name table.
+//
+const char* P_WeaponName(weapontype_t weapon)
+{
+	if (weapon == wp_none)
+		return "No weapon";
+
+	if (weapon >= 0 && weapon < NUMWEAPONS)
+		return weaponnames[weapon];
+
+	return "Unknown weapon";
+}
 
 void A_WeaponReady(AActor* mo);
 void A_Raise(AActor* mo);
@@ -267,6 +283,66 @@ void P_BringUpWeapon(player_t& player)
 }
 
 //
+// P_ResolveAmmoSlot
+//
+// denis - from Chocolate Doom
+// 
+// Doom does not check the bounds of the ammo array.
+// As a result, it is possible to use an ammo type > 4 that overflows
+// into the maxammo array and affects that instead.
+//
+// Through dehacked, for example, it is possible to make a weapon that
+// decreases the max number of ammo for another weapon.
+//
+// Resolves an ammo type to the array and index vanilla would have reached.
+// Returns false if the type names neither array.
+//
+static bool P_ResolveAmmoSlot(ammotype_t type, bool& o_ismaxammo, int32_t& o_index)
+{
+	o_ismaxammo = false;
+
+	if (type != am_noammo && ammoinfo.contains(type))
+	{
+		o_index = type;
+		return true;
+	}
+
+	// ID24 eliminates the overflow by giving "no ammo" an index that resolves
+	// to nothing, so only emulate it below that feature level.
+	// Vanilla numbered "no ammo" as one past its four ammo types.
+	if (deh.accumLevel >= DehFeatureLevel::ID24)
+		return false;
+
+	const int vanillanum = (type == am_noammo) ? NUMAMMO + 1 : int(type);
+	if (vanillanum >= NUMAMMO && vanillanum - NUMAMMO < NUMAMMO)
+	{
+		o_ismaxammo = true;
+		o_index = vanillanum - NUMAMMO;
+		return true;
+	}
+
+	return false;
+}
+
+//
+// P_ReadAmmo
+//
+// The count a weapon of this ammo type draws from, resolved the way vanilla's
+// unchecked indexing did.
+// Ammo types that name nothing read as empty.
+//
+static int P_ReadAmmo(const player_t& player, ammotype_t type)
+{
+	bool ismaxammo;
+	int32_t index;
+
+	if (!P_ResolveAmmoSlot(type, ismaxammo, index))
+		return 0;
+
+	return ismaxammo ? player.maxammo[index] : player.ammo[index];
+}
+
+//
 // P_EnoughAmmo
 //
 // Returns true if the player has enough ammo to switch to the specified
@@ -291,7 +367,7 @@ bool P_EnoughAmmo(const player_t& player, weapontype_t weapon, bool switching = 
 
 	// Some do not need ammunition anyway.
 	// Return if current ammunition sufficient.
-	if (ammotype == am_noammo || player.ammo[ammotype] >= count)
+	if (ammotype == am_noammo || P_ReadAmmo(player, ammotype) >= count)
 		return true;
 
 	return false;
@@ -387,8 +463,8 @@ weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 			continue;
 		if (!player->weaponowned[itemlist[index].offset])
 			continue;
-		if (weaponinfo[itemlist[index].offset].ammotype != am_noammo &&
-		    !player->ammo[weaponinfo[itemlist[index].offset].ammotype])
+		const ammotype_t itemammo = weaponinfo[itemlist[index].offset].ammotype;
+		if (itemammo != am_noammo && !P_ReadAmmo(*player, itemammo))
 			continue;
 		if (itemlist[index].offset == wp_plasma && gamemode == shareware)
 			continue;
@@ -479,13 +555,6 @@ bool P_CheckAmmoNoLower(player_t& player)
 	return false;
 }
 
-// denis - from Chocolate Doom
-// Doom does not check the bounds of the ammo array.  As a result,
-// it is possible to use an ammo type > 4 that overflows into the
-// maxammo array and affects that instead.  Through dehacked, for
-// example, it is possible to make a weapon that decreases the max
-// number of ammo for another weapon.  Emulate this.
-
 static void DecreaseAmmo(player_t& player, int amount = 1)
 {
 	// [SL] 2012-06-17 - Don't decrease ammo for players we are viewing
@@ -495,17 +564,21 @@ static void DecreaseAmmo(player_t& player, int amount = 1)
 
 	if (!sv_infiniteammo)
 	{
-		ammotype_t ammonum = weaponinfo[player.readyweapon].ammotype;
+		const ammotype_t ammonum = weaponinfo[player.readyweapon].ammotype;
 		if (co_zdoomammo || deh.ZDAmmo)
 			amount = weaponinfo[player.readyweapon].ammouse;
 		else if (weaponinfo[player.readyweapon].internalflags & WIF_ENABLEAPS)
 			amount = weaponinfo[player.readyweapon].ammopershot;
 
-
-		if (ammonum < NUMAMMO)
-			player.ammo[ammonum] -= amount;
-		else if (ammonum - NUMAMMO < NUMAMMO)
-			player.maxammo[ammonum - NUMAMMO] -= amount;
+		bool ismaxammo;
+		int32_t index;
+		if (P_ResolveAmmoSlot(ammonum, ismaxammo, index))
+		{
+			if (ismaxammo)
+				player.maxammo[index] -= amount;
+			else
+				player.ammo[index] -= amount;
+		}
 	}
 }
 
@@ -648,7 +721,7 @@ void A_Lower(AActor* mo)
 	}
 
 	// haleyjd 03/28/10: do not assume pendingweapon is valid
-	if (player.pendingweapon < NUMWEAPONS)
+	if (weaponinfo.contains(player.pendingweapon))
 		player.readyweapon = player.pendingweapon;
 
 	P_BringUpWeapon(player);

@@ -215,26 +215,26 @@ message RaiseMobj
 // svc_playerammo
 message PlayerAmmo
 {
-	repeated int32 ammo = 1;    // ammo[ammo_type] = ammo_quantity
+	repeated int32 ammo = 1;    // ammo[ammo_slot] = ammo_quantity
 }
 
 // svc_playermaxammo
 message PlayerMaxAmmo
 {
-	repeated int32 maxammo = 1;    // maxammo[ammo_type] = maximum allowed
+	repeated int32 maxammo = 1;    // maxammo[ammo_slot] = maximum allowed
 }
 
 // svc_playerweaponowned
 message PlayerWeaponOwned
 {
-	repeated bool weaponowned = 1;     // weaponowned[weapon_type] = is_owned
+	repeated bool weaponowned = 1;     // weaponowned[weapon_slot] = is_owned
 }
 
 // svc_playerweaponselection
 message PlayerWeaponSelection
 {
-	uint32 readyweapon   = 1;
-	uint32 pendingweapon = 2;
+	sint32 readyweapon   = 1;
+	sint32 pendingweapon = 2;
 }
 
 // svc_playerpowers

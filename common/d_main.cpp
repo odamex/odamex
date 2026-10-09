@@ -262,6 +262,8 @@ void D_InitializeDoomObjectTables()
 {
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
+	// Initialize weapons and ammo
+	D_InitWeaponAmmoTables();
 	// Initialize states
 	states.clear();
 	states.insert({boomstates, ::NUMSTATES}, S_NULL);

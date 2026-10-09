@@ -124,11 +124,25 @@ public:
 			return *this;
 
 		clear();
+
+		// Allocation order is part of the container's observable state (it drives
+		// network slot ordering and DeHackEd hashing), so copy the in-order table
+		// verbatim and rebuild the lookup against the copied objects.
+		m_inordertable.reserve(other.m_inordertable.size());
+		std::unordered_map<const ObjType*, ObjType*> remap;
+		remap.reserve(other.m_inordertable.size());
+		for (const auto& ptr : other.m_inordertable)
+		{
+			m_inordertable.push_back(std::make_unique<ObjType>(*ptr));
+			remap[ptr.get()] = m_inordertable.back().get();
+		}
+
+		m_lookuptable.reserve(other.m_lookuptable.size());
 		for (const auto& [idx, ptr] : other.m_lookuptable)
 		{
-			auto new_ptr = std::make_unique<ObjType>(*ptr);
-			m_lookuptable[idx] = new_ptr.get();
-			m_inordertable.push_back(std::move(new_ptr));
+			const auto it = remap.find(ptr);
+			if (it != remap.end())
+				m_lookuptable[idx] = it->second;
 		}
 
 		return *this;
@@ -198,6 +212,26 @@ public:
 	iterator find(IdxType idx) { return this->m_lookuptable.find(idx); }
 	const_iterator find(IdxType idx) const { return this->m_lookuptable.find(idx); }
 	bool contains(IdxType idx) const { return this->find(idx) != this->end(); }
+
+	// Allocation-order access. The in-order table holds every object ever
+	// allocated, in the order it was allocated, which is what the ID24
+	// specification calls the "in-order table".
+	ObjType& atSlot(size_t slot) { return *this->m_inordertable[slot]; }
+	const ObjType& atSlot(size_t slot) const { return *this->m_inordertable[slot]; }
+
+	template <typename Fn>
+	void forEachInOrder(Fn&& fn)
+	{
+		for (auto& ptr : this->m_inordertable)
+			fn(*ptr);
+	}
+
+	template <typename Fn>
+	void forEachInOrder(Fn&& fn) const
+	{
+		for (const auto& ptr : this->m_inordertable)
+			fn(*ptr);
+	}
 
 	// Iterators
 	iterator begin() { return this->m_lookuptable.begin(); }

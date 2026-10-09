@@ -327,9 +327,6 @@ extern AActor** 		blocklinks; 	// for thing chains
 //
 // P_INTER
 //
-extern std::array<int, NUMAMMO> maxammo;
-extern std::array<int, NUMAMMO> clipammo;
-
 [[ nodiscard("Please check for whether the mobj must be destroyed!!") ]]
 ItemEquipVal P_GiveSpecial(player_t& player, AActor& special);
 

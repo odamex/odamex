@@ -92,8 +92,13 @@ namespace
 		io_msg.set_readyweapon(player.readyweapon);
 		io_msg.set_pendingweapon(player.pendingweapon);
 
-		const uint32_t packedweapons = PackBoolArray(player.weaponowned);
-		io_msg.set_weaponowned(packedweapons);
+		// Sent per weapon slot rather than as a bitfield: the weapon table has no
+		// fixed size once ID24 patches can add to it.
+		io_msg.mutable_weaponowned()->Reserve(int(player.weaponowned.size()));
+		for (size_t slot = 0; slot < player.weaponowned.size(); slot++)
+		{
+			io_msg.add_weaponowned(player.weaponowned.atSlot(slot) != 0);
+		}
 
 		io_msg.mutable_ammo()->Add   (player.ammo.begin(),    player.ammo.end());
 		io_msg.mutable_maxammo()->Add(player.maxammo.begin(), player.maxammo.end());
@@ -173,8 +178,11 @@ odaproto::svc::PlayerWeaponOwned SVC_PlayerWeaponOwned(const player_t& player)
 {
 	odaproto::svc::PlayerWeaponOwned msg;
 
-	msg.mutable_weaponowned()->Add(player.weaponowned.begin(),
-	                               player.weaponowned.end());
+	msg.mutable_weaponowned()->Reserve(int(player.weaponowned.size()));
+	for (size_t slot = 0; slot < player.weaponowned.size(); slot++)
+	{
+		msg.add_weaponowned(player.weaponowned.atSlot(slot) != 0);
+	}
 
 	return msg;
 }

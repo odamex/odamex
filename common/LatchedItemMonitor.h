@@ -22,10 +22,12 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <functional>
 #include <iso646.h>
 #include <utility>
+#include <vector>
 
 /// Monitor for a single state variable.
 template <typename ItemType>
@@ -134,4 +136,48 @@ class LatchedItemArrayMonitor
 		EqualsFunctor                                   m_equalsFunctor;
 		bool                                            m_isArmed;
 
+};
+
+/// Same thing as LatchedItemArrayMonitor, but for a container whose size is only
+/// known at runtime. The container itself is referenced rather than its elements,
+/// so the monitor stays valid across a resize.
+template <typename ContainerType>
+class LatchedItemTableMonitor
+{
+	public:
+		explicit LatchedItemTableMonitor(ContainerType& i_ref) :
+			m_ref(i_ref),
+			m_latchedValues(),
+			m_isArmed(false)
+		{}
+
+		// Deleted because we're storing references.
+		LatchedItemTableMonitor(const LatchedItemTableMonitor&)  = delete;
+		LatchedItemTableMonitor(LatchedItemTableMonitor&&)       = delete;
+
+		LatchedItemTableMonitor& operator=(const LatchedItemTableMonitor&)  = delete;
+		LatchedItemTableMonitor& operator=(LatchedItemTableMonitor&&)       = delete;
+
+		void Arm()
+		{
+			m_isArmed = true;
+			m_latchedValues.assign(m_ref.begin(), m_ref.end());
+		}
+
+		bool EvaluateAsChanged()
+		{
+			if (m_isArmed)
+			{
+				m_isArmed = false;
+				return m_latchedValues.size() != m_ref.size() ||
+				       not std::equal(m_latchedValues.begin(), m_latchedValues.end(),
+				                      m_ref.begin());
+			}
+			return false;
+		}
+
+	protected:
+		ContainerType&                                     m_ref;
+		std::vector<typename ContainerType::value_type>    m_latchedValues;
+		bool                                               m_isArmed;
 };

@@ -96,9 +96,9 @@ void DoClearInv(player_t* player)
 	if (player->backpack)
 	{
 		player->backpack = false;
-		for (int i = 0; i < NUMAMMO; i++)
+		for (size_t slot = 0; slot < player->maxammo.size(); slot++)
 		{
-			player->maxammo[i] /= 2;
+			player->maxammo.atSlot(slot) /= 2;
 		}
 	}
 
@@ -138,9 +138,9 @@ void GiveBackpack(player_t& player)
 		}
 		player.backpack = true;
 	}
-	for (int i = 0; i < NUMAMMO; i++)
+	for (size_t slot = 0; slot < player.ammo.size(); slot++)
 	{
-		P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
+		P_GiveAmmo(player, ammotype_t(::AmmoSlots.indexAtSlot(slot)), 1);
 	}
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
@@ -237,9 +237,9 @@ void TakeWeapon(player_t& player, int weapon)
 		P_SwitchWeapon(player);
 
 		bool hasWeapon = false;
-		for (int i = 0; i < NUMWEAPONS; i++)
+		for (size_t slot = 0; slot < player.weaponowned.size(); slot++)
 		{
-			if (player.weaponowned[i])
+			if (player.weaponowned.atSlot(slot))
 			{
 				hasWeapon = true;
 				break;
@@ -311,10 +311,11 @@ void TakeBackpack(player_t& player)
 		return;
 
 	player.backpack = false;
-	for (int i = 0; i < NUMAMMO; ++i)
+	for (size_t slot = 0; slot < player.maxammo.size(); ++slot)
 	{
-		player.maxammo[i] /= 2;
-		player.ammo[i] = std::min(player.ammo[i], player.maxammo[i]);
+		player.maxammo.atSlot(slot) /= 2;
+		player.ammo.atSlot(slot) =
+		    std::min(player.ammo.atSlot(slot), player.maxammo.atSlot(slot));
 	}
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }

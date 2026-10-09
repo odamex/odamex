@@ -34,8 +34,8 @@
 /// This data type represents the states whose history we care to track and reconcile.
 struct PlayerItemDataType
 {
-	std::array<int,  NUMAMMO>       ammo;
-	std::array<int,  NUMAMMO>       maxammo;
+	PlayerAmmoCounts                ammo;
+	PlayerAmmoCounts                maxammo;
 	int                             health;
 	int                             armorpoints;
 	int                             armortype;      // 0 thru 2...
@@ -43,7 +43,7 @@ struct PlayerItemDataType
 	std::array<int,  NUMPOWERS>     powers;
 	weapontype_t                    readyweapon;
 	weapontype_t                    pendingweapon;
-	std::array<bool, NUMWEAPONS>    weaponowned;
+	PlayerWeaponFlags               weaponowned;
 	std::array<bool, NUMCARDS>      cards;
 	bool                            backpack;
 	uint32_t                        cheats;
@@ -62,10 +62,7 @@ struct PlayerItemDataType
 		backpack        (false),
 		cheats          (false)
 	{
-		ammo.fill(0);
-		maxammo.fill(0);
 		powers.fill(0);
-		weaponowned.fill(false);
 		cards.fill(false);
 	}
 

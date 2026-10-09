@@ -41,6 +41,7 @@
 // animation states (closely tied to the sprites
 // used to represent them, unfortunately).
 #include "d_items.h"
+#include "d_playertables.h"
 #include "p_pspr.h"
 
 // In addition, the player is just a special
@@ -229,9 +230,9 @@ public:
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
 
-	std::array<bool, NUMWEAPONS>      weaponowned;
-	std::array<int, NUMAMMO>          ammo;
-	std::array<int, NUMAMMO>          maxammo;
+	PlayerWeaponFlags                 weaponowned;
+	PlayerAmmoCounts                  ammo;
+	PlayerAmmoCounts                  maxammo;
 	int                               psprnum;
 	std::array<pspdef_t, NUMPSPRITES> psprites;     // Overlay view sprites (gun, etc).
 
@@ -249,9 +250,9 @@ public:
 
 	LatchedItemMonitor<weapontype_t>            pendingweaponMonitor;
 	LatchedItemMonitor<weapontype_t>            readyweaponMonitor;
-	LatchedItemArrayMonitor<bool, NUMWEAPONS>   weaponOwnedMonitors;
-	LatchedItemArrayMonitor<int, NUMAMMO>       ammoMonitors;
-	LatchedItemArrayMonitor<int, NUMAMMO>       maxAmmoMonitors;
+	LatchedItemTableMonitor<PlayerWeaponFlags>  weaponOwnedMonitors;
+	LatchedItemTableMonitor<PlayerAmmoCounts>   ammoMonitors;
+	LatchedItemTableMonitor<PlayerAmmoCounts>   maxAmmoMonitors;
 	LatchedItemArrayMonitor<int, NUMPOWERS>     powerMonitors;
 	LatchedItemArrayMonitor<pspdef_t,
 	                        NUMPSPRITES,

@@ -144,7 +144,6 @@ static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
 	&cl_weaponpref_bfg,
 	&cl_weaponpref_csw,
 	&cl_weaponpref_ssg,
-	nullptr,            // wp_none
 };
 
 //
@@ -160,20 +159,12 @@ void D_PrepareWeaponPreferenceUserInfo()
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
 		// sanitize the weapon preferences
-		if (weaponpref_cvar_map[i])
-		{
-			if (weaponpref_cvar_map[i]->asInt() < 0)
-				weaponpref_cvar_map[i]->ForceSet(0.0f);
-			if (weaponpref_cvar_map[i]->asInt() >= NUMWEAPONS)
-				weaponpref_cvar_map[i]->ForceSet(float(NUMWEAPONS - 1));
+		if (weaponpref_cvar_map[i]->asInt() < 0)
+			weaponpref_cvar_map[i]->ForceSet(0.0f);
+		if (weaponpref_cvar_map[i]->asInt() >= NUMWEAPONS)
+			weaponpref_cvar_map[i]->ForceSet(float(NUMWEAPONS - 1));
 
-			prefs[i] = weaponpref_cvar_map[i]->asInt();
-		}
-		else
-		{
-			// Bottom priority - Lower than the lowest value that can be set via the UI.
-			prefs[i] = -1;
-		}
+		prefs[i] = weaponpref_cvar_map[i]->asInt();
 	}
 }
 

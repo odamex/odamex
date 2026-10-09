@@ -405,12 +405,12 @@ void GiveTo(player_t& player, const char* name)
 	{
 		if (!player.backpack)
 		{
-			for (int i = 0; i < NUMAMMO; i++)
-				player.maxammo[i] *= 2;
+			for (size_t slot = 0; slot < player.maxammo.size(); slot++)
+				player.maxammo.atSlot(slot) *= 2;
 			player.backpack = true;
 		}
-		for (int i = 0; i < NUMAMMO; i++)
-			P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
+		for (size_t slot = 0; slot < player.ammo.size(); slot++)
+			P_GiveAmmo(player, ammotype_t(::AmmoSlots.indexAtSlot(slot)), 1);
 
 		if (!giveall)
 			return;
@@ -419,8 +419,12 @@ void GiveTo(player_t& player, const char* name)
 	if (giveall || stricmp(name, "weapons") == 0)
 	{
 		weapontype_t pendweap = player.pendingweapon;
-		for (int i = 0; i < NUMWEAPONS; i++)
-			P_GiveWeapon(player, static_cast<weapontype_t>(i), false);
+		for (size_t slot = 0; slot < player.weaponowned.size(); slot++)
+		{
+			const weapontype_t weapon = weapontype_t(::WeaponSlots.indexAtSlot(slot));
+			if (weapon != wp_none)
+				P_GiveWeapon(player, weapon, false);
+		}
 		player.pendingweapon = pendweap;
 
 		if (!giveall)
@@ -429,8 +433,8 @@ void GiveTo(player_t& player, const char* name)
 
 	if (giveall || stricmp(name, "ammo") == 0)
 	{
-		for (int i = 0; i < NUMAMMO; i++)
-			player.ammo[i] = player.maxammo[i];
+		for (size_t slot = 0; slot < player.ammo.size(); slot++)
+			player.ammo.atSlot(slot) = player.maxammo.atSlot(slot);
 
 		if (!giveall)
 			return;

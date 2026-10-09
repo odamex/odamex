@@ -351,7 +351,7 @@ static int st_fragscount;
 static int st_oldhealth = -1;
 
 // used for evil grin
-static bool oldweaponsowned[NUMWEAPONS];
+static std::vector<bool> oldweaponsowned;
 
 // count until face changes
 static int st_facecount = 0;
@@ -760,12 +760,13 @@ void ST_updateFaceWidget()
 			// picking up bonus
 			bool doevilgrin = false;
 
-			for (i = 0; i < NUMWEAPONS; i++)
+			for (size_t slot = 0; slot < oldweaponsowned.size(); slot++)
 			{
-				if (oldweaponsowned[i] != plyr->weaponowned[i])
+				const bool owned = plyr->weaponowned.atSlot(slot) != 0;
+				if (oldweaponsowned[slot] != owned)
 				{
 					doevilgrin = true;
-					oldweaponsowned[i] = plyr->weaponowned[i];
+					oldweaponsowned[slot] = owned;
 				}
 			}
 			if (doevilgrin)
@@ -899,10 +900,11 @@ void ST_updateWidgets()
 {
 	const player_t *plyr = &displayplayer();
 
-	if (weaponinfo[plyr->readyweapon].ammotype == am_noammo)
+	const ammotype_t readyammo = weaponinfo[plyr->readyweapon].ammotype;
+	if (!plyr->ammo.has(readyammo))
 		st_current_ammo = ST_DONT_DRAW_NUM;
 	else
-		st_current_ammo = plyr->ammo[weaponinfo[plyr->readyweapon].ammotype];
+		st_current_ammo = plyr->ammo[readyammo];
 
 	st_health = plyr->health;
 	st_armor = plyr->armorpoints;
@@ -1360,8 +1362,10 @@ void ST_Start()
 
 	st_oldhealth = -1;
 
-	for (int i = 0; i < NUMWEAPONS; i++)
-		oldweaponsowned[i] = displayplayer().weaponowned[i];
+	const player_t& display = displayplayer();
+	oldweaponsowned.resize(display.weaponowned.size());
+	for (size_t slot = 0; slot < oldweaponsowned.size(); slot++)
+		oldweaponsowned[slot] = display.weaponowned.atSlot(slot) != 0;
 
 	for (int i = 0; i < 3; i++)
 		keyboxes[i] = -1;

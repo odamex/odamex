@@ -34,6 +34,7 @@
 EXTERN_CVAR(g_spawninv);
 
 extern const char* weaponnames[];
+const char* P_WeaponName(weapontype_t weapon);
 
 /**
  * @brief Container for a spawn inventory.
@@ -45,8 +46,8 @@ struct spawnInventory_t
 	int armorpoints = 0;
 	int armortype = 0;
 	weapontype_t readyweapon = wp_none;
-	std::array<bool, NUMWEAPONS> weaponowned{};
-	std::array<int, NUMAMMO> ammo{};
+	PlayerWeaponFlags weaponowned{};
+	PlayerAmmoCounts ammo{};
 	bool berserk = false;
 	bool backpack = false;
 	int invul = 0;
@@ -153,12 +154,12 @@ static std::string InvWeaponsStr(const spawnInventory_t& inv)
 {
 	std::string rvo;
 	rvo.reserve(inv.weaponowned.size());
-	for (size_t i = 0; i < inv.weaponowned.size(); i++)
+	for (size_t slot = 0; slot < inv.weaponowned.size(); slot++)
 	{
-		if (!inv.weaponowned[i])
+		if (!inv.weaponowned.atSlot(slot))
 			continue;
 
-		rvo += WeaponTypeToChar(static_cast<weapontype_t>(i));
+		rvo += WeaponTypeToChar(weapontype_t(::WeaponSlots.indexAtSlot(slot)));
 	}
 	return rvo;
 }
@@ -242,20 +243,19 @@ static bool InvSetReadyWeapon(spawnInventory_t& inv, const std::string& value)
 static bool InvSetWeapons(spawnInventory_t& inv, const std::string& value)
 {
 	// Check our input string first.
-	bool newowned[NUMWEAPONS];
-	ArrayInit(newowned, false);
+	PlayerWeaponFlags newowned;
 
 	for (const auto c : value)
 	{
-		int owned = WeaponTypeFromChar(c);
+		const int owned = WeaponTypeFromChar(c);
 		if (owned == limits::MININT)
 			return false;
 
-		newowned[owned] = true;
+		newowned[weapontype_t(owned)] = true;
 	}
 
 	// Commit our new weapons.
-	ArrayCopy(inv.weaponowned, newowned);
+	inv.weaponowned = newowned;
 	inv.isdefault = false;
 
 	return true;
@@ -387,11 +387,11 @@ static void SetupDefaultInv()
 	::gDefaultInv.armorpoints = 0;
 	::gDefaultInv.armortype = 0;
 	::gDefaultInv.readyweapon = wp_pistol;
-	::gDefaultInv.weaponowned.fill(false);
+	::gDefaultInv.weaponowned.resetToTable();
 	::gDefaultInv.weaponowned[wp_fist] = true;
 	::gDefaultInv.weaponowned[wp_pistol] = true;
 	::gDefaultInv.weaponowned[wp_none] = true;
-	::gDefaultInv.ammo.fill(0);
+	::gDefaultInv.ammo.resetToTable();
 	::gDefaultInv.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 	::gDefaultInv.berserk = false;
 	::gDefaultInv.backpack = false;
@@ -735,16 +735,19 @@ BEGIN_COMMAND(spawninv)
 		else if (::gSpawnInv.armortype == 2)
 			PrintFmt("Blue Armor: {}\n", ::gSpawnInv.armorpoints);
 
-		if (::gSpawnInv.readyweapon < 0 || ::gSpawnInv.readyweapon == wp_none || ::gSpawnInv.readyweapon >= NUMWEAPONS)
+		if (::gSpawnInv.readyweapon == wp_none || !::weaponinfo.contains(::gSpawnInv.readyweapon))
 			PrintFmt("Ready Weapon: None\n");
 		else
-			PrintFmt("Ready Weapon: {}\n", ::weaponnames[::gSpawnInv.readyweapon]);
+			PrintFmt("Ready Weapon: {}\n", P_WeaponName(::gSpawnInv.readyweapon));
 
 		StringTokens weapons;
-		for (size_t i = 0; i < ::gSpawnInv.weaponowned.size(); i++)
+		for (size_t slot = 0; slot < ::gSpawnInv.weaponowned.size(); slot++)
 		{
-			if (::gSpawnInv.weaponowned[i])
-				weapons.push_back(::weaponnames[i]);
+			if (::gSpawnInv.weaponowned.atSlot(slot))
+			{
+				weapons.push_back(
+				    P_WeaponName(weapontype_t(::WeaponSlots.indexAtSlot(slot))));
+			}
 		}
 		if (!weapons.empty())
 			PrintFmt("Weapons: {}\n", JoinStrings(weapons, ", "));
@@ -812,8 +815,7 @@ void G_GiveSpawnInventory(player_t& player)
 	player.armorpoints = inv.armorpoints;
 	player.armortype = inv.armortype;
 	player.readyweapon = player.pendingweapon = inv.readyweapon;
-	for (size_t i = 0; i < inv.weaponowned.size(); i++)
-		player.weaponowned[i] = inv.weaponowned[i];
+	player.weaponowned = inv.weaponowned;
 	player.ammo = inv.ammo;
 
 	if (inv.berserk)
@@ -824,9 +826,9 @@ void G_GiveSpawnInventory(player_t& player)
 	if (inv.backpack)
 	{
 		player.backpack = true;
-		for (size_t i = 0; i < player.maxammo.size(); i++)
+		for (size_t slot = 0; slot < player.maxammo.size(); slot++)
 		{
-			player.maxammo[i] *= 2;
+			player.maxammo.atSlot(slot) *= 2;
 		}
 	}
 

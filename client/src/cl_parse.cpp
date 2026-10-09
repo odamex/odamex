@@ -133,6 +133,23 @@ int32_t ThisMessageClientTic() { return s_currentHeader.destinationTic; }
 int32_t ThisMessageServerTic() { return s_currentHeader.originatorTic; }
 
 /**
+ * @brief Copy a repeated field into a player inventory table, slot for slot.
+ *
+ * A server whose weapon or ammo table is a different size than ours means the
+ * two ends disagree about the loaded DeHackEd patches, so take what fits rather
+ * than running off the end.
+ */
+template <typename TableType, typename RepeatedType>
+void CopyIntoTable(TableType& o_table, const RepeatedType& i_field)
+{
+	const size_t count = std::min(o_table.size(), size_t(i_field.size()));
+	for (size_t slot = 0; slot < count; slot++)
+	{
+		o_table.atSlot(slot) = i_field.Get(int(slot));
+	}
+}
+
+/**
  * @brief Unpack a bitfield into an array of booleans.
  */
 void UnpackBoolArray(std::span<bool> bools, uint32_t in)
@@ -261,8 +278,14 @@ void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	playerState.readyweapon   = static_cast<weapontype_t>(playerInfo.readyweapon());
 	playerState.pendingweapon = static_cast<weapontype_t>(playerInfo.pendingweapon());
 
-	UnpackBoolArray(playerState.weaponowned, playerInfo.weaponowned());
-	UnpackBoolArray(playerState.cards,       playerInfo.cards());
+	const size_t weaponElementCount = std::min(
+	    playerState.weaponowned.size(), static_cast<size_t>(playerInfo.weaponowned_size()));
+	for (size_t slot = 0; slot < weaponElementCount; slot++)
+	{
+		playerState.weaponowned.atSlot(slot) = playerInfo.weaponowned(int(slot));
+	}
+
+	UnpackBoolArray(playerState.cards, playerInfo.cards());
 
 	playerState.backpack = playerInfo.backpack();
 	playerState.cheats   = playerInfo.cheats();
@@ -2526,18 +2549,8 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	byte cardByte = msg->player().cards();
 	std::bitset<6> cardBits(cardByte);
 
-	int ammo[NUMAMMO];
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		if (i < msg->player().ammo_size())
-		{
-			ammo[i] = msg->player().ammo().Get(i);
-		}
-		else
-		{
-			ammo[i] = 0;
-		}
-	}
+	PlayerAmmoCounts ammo;
+	CopyIntoTable(ammo, msg->player().ammo());
 
 	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
 	for (int i = 0; i < NUMPSPRITES; i++)
@@ -2583,11 +2596,10 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	for (int i = 0; i < NUMCARDS; i++)
 		player.cards[i] = cardBits[i];
 
-	if (!player.weaponowned[weap])
+	if (weaponinfo.contains(weap) && !player.weaponowned[weap])
 		P_GiveWeapon(player, weap, false);
 
-	for (int i = 0; i < NUMAMMO; i++)
-		player.ammo[i] = ammo[i];
+	player.ammo = ammo;
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(player, i, stnum[i]);
@@ -3311,10 +3323,8 @@ void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 
 void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
 {
-	std::array<int, NUMAMMO> ammo;
-	std::copy(msg->ammo().begin(),
-	          msg->ammo().end(),
-	          ammo.begin());
+	PlayerAmmoCounts ammo;
+	CopyIntoTable(ammo, msg->ammo());
 
 	if (rollerState.ResolveAmmo(ThisMessageClientTic(), ammo, consoleplayer()))
 	{
@@ -3325,10 +3335,8 @@ void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
 
 void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
 {
-	std::array<int, NUMAMMO> maxammo;
-	std::copy(msg->maxammo().begin(),
-	          msg->maxammo().end(),
-	          maxammo.begin());
+	PlayerAmmoCounts maxammo;
+	CopyIntoTable(maxammo, msg->maxammo());
 
 	if (rollerState.ResolveMaxAmmo(ThisMessageClientTic(),
 	                               maxammo,
@@ -3341,10 +3349,8 @@ void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
 
 void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
 {
-	std::array<bool, NUMWEAPONS> weaponowned;
-	std::copy(msg->weaponowned().begin(),
-	          msg->weaponowned().end(),
-	          weaponowned.begin());
+	PlayerWeaponFlags weaponowned;
+	CopyIntoTable(weaponowned, msg->weaponowned());
 
 	if (rollerState.ResolveWeaponOwned(ThisMessageClientTic(),
 	                                   weaponowned,

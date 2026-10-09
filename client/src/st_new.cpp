@@ -1016,8 +1016,9 @@ void OdamexHUD() {
 	}
 
 	// Draw Ammo
+	// TODO: Check and draw ID24 ammo if icon exists
 	const ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
-	if (ammotype < NUMAMMO) {
+	if (ammotype >= 0 && ammotype < NUMAMMO) {
 		const patch_t *ammopatch;
 		// Use big ammo if the player has a backpack.
 		if (plyr->backpack) {

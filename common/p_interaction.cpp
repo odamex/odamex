@@ -76,11 +76,6 @@ EXTERN_CVAR(sv_weapondrop)
 // TODO: does this need to be global?
 int MeansOfDeath;
 
-// a weapon is found with two clip loads,
-// a big item has five clip loads
-std::array<int, NUMAMMO> maxammo  {200, 50, 300, 50};
-std::array<int, NUMAMMO> clipammo { 10,  4,  20,  1};
-
 void AM_Stop();
 void SV_SpawnMobj(AActor *mobj);
 void SV_UpdateFrags(player_t &player);
@@ -322,7 +317,12 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammotype, 
             return IEV_EquipRemove;
         }
 
-		for (int i = NUMWEAPONS - 1; i > currentweapon; --i)
+		// wp_none sorted above every real weapon in vanilla's numbering, so
+		// holding it searches nothing.
+		const int searchfloor =
+		    (currentweapon == wp_none) ? NUMWEAPONS : int(currentweapon);
+
+		for (int i = NUMWEAPONS - 1; i > searchfloor; --i)
 		{
 			if (player.weaponowned[i] &&
 				not (weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
@@ -345,7 +345,7 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 		return IEV_NotEquipped;
     }
 
-	if (ammotype < 0 || ammotype > NUMAMMO)
+	if (!ammoinfo.contains(ammotype))
     {
 		I_Error("P_GiveAmmo: bad type {}", ammotype);
     }
@@ -355,13 +355,14 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 		return IEV_NotEquipped;
     }
 
+	const int clipammo = ammoinfo[ammotype].clipammo;
 	if (num)
     {
-		num *= clipammo[ammotype];
+		num *= clipammo;
     }
 	else
     {
-		num = clipammo[ammotype] / 2;
+		num = clipammo / 2;
     }
 
 	if (sv_doubleammo)
@@ -712,7 +713,7 @@ static void P_GiveCarePack(player_t& player)
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
 		const ammotype_t ammo = ::weaponinfo[i].ammotype;
-		if (ammo == am_noammo)
+		if (ammo < 0 || ammo >= NUMAMMO)
 		{
 			continue;
 		}
@@ -754,7 +755,7 @@ static void P_GiveCarePack(player_t& player)
 		const int lowLimit = ammomulti[ammo] * 2;
 		const float giveAmount = static_cast<float>(ammomulti[ammo] * 5);
 
-		if (player.ammo[ammo] < ::clipammo[ammo] * lowLimit)
+		if (player.ammo[ammo] < ::ammoinfo[ammo].clipammo * lowLimit)
 		{
 			P_GiveAmmo(player, ammo, giveAmount);
 			blocks -= 1;
@@ -1205,16 +1206,16 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 		case SPR_BPAK:
 			if (!player.backpack)
 			{
-				for (int i = 0; i < NUMAMMO; i++)
+				for (size_t slot = 0; slot < player.maxammo.size(); slot++)
 				{
-					player.maxammo[i] *= 2;
+					player.maxammo.atSlot(slot) *= 2;
 				}
 				player.backpack = true;
 				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BACKPACK, false);
 			}
-			for (int i = 0; i < NUMAMMO; i++)
+			for (size_t slot = 0; slot < player.ammo.size(); slot++)
 			{
-				P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
+				P_GiveAmmo(player, ammotype_t(::AmmoSlots.indexAtSlot(slot)), 1);
 			}
 			msg = &GOTBACKPACK;
 			break;

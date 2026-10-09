@@ -103,8 +103,7 @@ struct UserInfo
 		8, // wp_plasma
 		2, // wp_bfg
 		3, // wp_chainsaw
-		7, // wp_supershotgun
-		-1 // wp_none       -  Lower than the lowest value that can be set via the UI.
+		7  // wp_supershotgun
 	};
 
 	UserInfo() : team           (TEAM_NONE),

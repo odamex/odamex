@@ -464,7 +464,10 @@ enum ItemEquipVal
 // The defined weapons,
 //	including a marker indicating
 //	user has not changed weapon.
-enum weapontype_t : int8_t
+// Weapon and ammo indices follow the ID24 index ranges: 0x00000000-0x7FFFFFFF is
+// the freely usable range, 0x80000000-0x8FFFFFFF is reserved for source port
+// internals, and 0xFFFFFFFF (-1) is the invalid index.
+enum weapontype_t : int32_t
 {
 	wp_fist,
 	wp_pistol,
@@ -475,12 +478,17 @@ enum weapontype_t : int8_t
 	wp_bfg,
 	wp_chainsaw,
 	wp_supershotgun,
-	wp_none,
 
+	// Number of weapons defined by vanilla Doom.
+	// Only for demos, please use weapons.size() for the actual number of weapons.
 	NUMWEAPONS,
 
+	// Player has no weapon at all, not even fists (ACS ClearInventory).
+	// Port-internal, so it lives in the range ID24 reserves for that purpose.
+	wp_none = INT32_MIN,
+
 	// No pending weapon change.
-	wp_nochange
+	wp_nochange = -1
 };
 
 inline auto format_as(weapontype_t eWeaponType)
@@ -489,15 +497,19 @@ inline auto format_as(weapontype_t eWeaponType)
 }
 
 // Ammunition types defined.
-enum ammotype_t : int8_t
+enum ammotype_t : int32_t
 {
 	am_clip,	// Pistol / chaingun ammo.
 	am_shell,	// Shotgun / double barreled shotgun.
 	am_cell,	// Plasma rifle, BFG.
 	am_misl,	// Missile launcher.
-	NUMAMMO,
-	am_noammo	// Unlimited for chainsaw / fist.
 
+	// Number of ammo types defined by vanilla Doom.
+	// Only for demos, please use weapons.size() for the actual number of weapons.
+	NUMAMMO,
+
+	// Unlimited for chainsaw / fist.
+	am_noammo = -1
 };
 
 inline auto format_as(ammotype_t eAmmoType)
