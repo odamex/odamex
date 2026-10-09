@@ -1418,7 +1418,7 @@ bool NetDemo::seekGametic(int requestedGametic)
 {
 	if (not isInPlayback()
 	    or std::cmp_less    (requestedGametic, streamHeader.starting_gametic)
-	    or std::cmp_greater (requestedGametic, streamHeader.ending_gametic)
+	    or std::cmp_greater (requestedGametic, streamHeader.ending_gametic))
 	{
 		return false;
 	}
