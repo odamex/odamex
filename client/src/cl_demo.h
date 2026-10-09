@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <fstream>
+#include <locale>   // For a template implicitly used by basic_fstream on macos...
 
 #include "i_net.h"
 #include "MessageQueue.h"
