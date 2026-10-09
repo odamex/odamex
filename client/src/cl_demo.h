@@ -42,10 +42,10 @@ public:
 	[[nodiscard]] bool isPaused() const     { return (state == NetDemo::st_paused); }
 	[[nodiscard]] bool isInPlayback() const { return isPlaying() or isPaused(); }
 
-	[[nodiscard]] int getSpacing() const { return header.snapshot_spacing; }
+	[[nodiscard]] int getSpacing() const { return streamHeader.snapshot_spacing; }
 
 	[[nodiscard]] int getNetdemotic() const { return netdemotic; }
-	[[nodiscard]] int getGametic() const    { return netdemotic + header.starting_gametic; }
+	[[nodiscard]] int getGametic() const    { return netdemotic + streamHeader.starting_gametic; }
 
 	void nextTic();
 	void prevTic();
@@ -61,6 +61,9 @@ public:
 	[[nodiscard]] const std::string &getFileName() const { return filename; }
 
 private:
+
+    using ByteFstream = std::basic_fstream<byte>;
+
 	enum netdemo_state_t
 	{
 		st_stopped,
@@ -71,11 +74,11 @@ private:
 
 	enum netdemo_message_t
 	{
-		msg_packet      = 0xAA,
-		msg_snapshot,
-		msg_map_change,
-		msg_eof,
-		msg_format_description
+		MSG_PACKET      = 0xAA,
+		MSG_SNAPSHOT,
+		MSG_MAP_CHANGE,
+		MSG_EOF,
+		MSG_HEADER,
 	};
 
 	struct message_header_t
@@ -84,7 +87,8 @@ private:
 		uint32_t    length  { 0 };
 		uint32_t    gametic { 0 };
 
-		bool Write(std::fstream& io_stream) const;
+		bool Read(ByteFstream& io_stream);
+		bool Write(ByteFstream& io_stream) const;
 	};
 
 	struct netdemo_index_entry_t
@@ -120,9 +124,9 @@ private:
 	void writeSnapshotData(std::vector<byte>& buf);
 
 	void writeChunk(const byte *data, size_t size, netdemo_message_t type);
-	bool writeHeader();
-	bool readHeader();
-	static bool writeFormatDescription(std::fstream& io_stream);
+	bool writeFileHeader();
+	bool readFileHeader();
+	static bool writeFormatDescription(ByteFstream& io_stream);
 
 	bool atSnapshotInterval();
 
@@ -140,21 +144,23 @@ private:
 
 	bool readSnapshot(SnapshotVector::const_iterator snap);
 
-	bool readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t &tic);
+	bool readMessageHeader(netdemo_message_t& type, uint32_t& len, uint32_t& tic);
+	bool readMessagePayloadToWorkingBuffer(uint32_t len);
 	void readMessageBody(buf_t *netbuffer, uint32_t len);
 
-	static constexpr size_t         HEADER_SIZE = 64;
+	static constexpr std::streamoff HEADER3_SIZE = 64;
 	static constexpr std::streamoff MESSAGE_HEADER_SIZE = 9;
 	static constexpr size_t         INDEX_ENTRY_SIZE = 8;
 
 	static constexpr uint16_t SNAPSHOT_SPACING = 20 * TICRATE;
 
-	struct netdemo_header_id_t
+	struct netdemo_file_header_t
 	{
-		char        identifier[4]   { 0, 0, 0, 0};  // "ODAD"
-		byte        version         { 0 };          // 4, 3, etc...
+		std::array<char, 4> identifier  { 0, 0, 0, 0};  // "ODAD"
+		byte                version     { 0 };          // 4, 3, etc...
 
-		bool Read(std::fstream& io_stream);
+		bool Read(ByteFstream& io_stream);
+		bool Write(ByteFstream& demofp) const;
 	};
 
 	// The following exists only for a remote chance of compatibility with old netdemos.
@@ -164,31 +170,32 @@ private:
 	// message body formats.
 	struct netdemo_header3_t
 	{
-		netdemo_header_id_t id              {};     // version 3
-		byte        compression             { 0 };  // type of compression used
-		uint16_t    snapshot_index_size     { 0 };  // number of snapshots in the index
-		uint32_t    snapshot_index_offset   { 0 };  // offset from start of the file for the index
-		uint16_t    map_index_size          { 0 };  // number of maps in the mapindex
-		uint32_t    map_index_offset        { 0 };  // offset from start of the file for the mapindex
-		uint16_t    snapshot_spacing        { 0 };  // number of gametics between indices
-		uint32_t    starting_gametic        { 0 };  // the gametic the demo starts at
-		uint32_t    ending_gametic          { 0 };  // the last gametic of the demo
-		byte        reserved[36]            { 0 };  // for future use
+		//netdemo_header_id_t id              {};     // version 3
+		byte                    compression             { 0 };  // type of compression used
+		uint16_t                snapshot_index_size     { 0 };  // number of snapshots in the index
+		uint32_t                snapshot_index_offset   { 0 };  // offset from start of the file for the index
+		uint16_t                map_index_size          { 0 };  // number of maps in the mapindex
+		uint32_t                map_index_offset        { 0 };  // offset from start of the file for the mapindex
+		uint16_t                snapshot_spacing        { 0 };  // number of gametics between indices
+		uint32_t                starting_gametic        { 0 };  // the gametic the demo starts at
+		uint32_t                ending_gametic          { 0 };  // the last gametic of the demo
+		std::array<byte, 36>    reserved                { 0 };  // for future use
 
-		bool Read(std::fstream& io_stream);
+		bool Read(ByteFstream& io_stream);
 	};
 
-	// Now for the current netdemo version.
-	struct netdemo_header4_t
+	// Now for the current netdemo version.!q!H!q!H!q!H!q!I!q!I!q!I!n!H!i!J
+	struct netdemo_stream_header4_t
 	{
-		netdemo_header_id_t id      {};             // version 4
-		byte        compression     { 0 };          // type of compression used
-		uint16_t    snapshot_spacing{ 0 };          // number of gametics between indices
-		uint32_t    starting_gametic{ 0 };          // the gametic the demo starts at
-		uint32_t    ending_gametic  { 0 };          // the last gametic of the demo
-		byte        reserved[48]    { 0 };          // for future use
+		//netdemo_header_id_t id      {};             // version 4
+		byte        compression         { 0 };      // type of compression used
+		uint16_t    snapshot_spacing    { 0 };      // number of gametics between indices
+		uint32_t    starting_gametic    { 0 };      // the gametic the demo starts at
+		uint32_t    ending_gametic      { 0 };      // the last gametic of the demo
+		std::string format_description;
 
-		bool Read(std::fstream& io_stream);
+		bool Read(buf_t& io_buf);
+		bool Write(buf_t& io_buf) const;
 		void Import(const netdemo_header3_t& oldHeader)
 		{
 			// we deliberately skip 'id' and 'reserved'.
@@ -196,41 +203,25 @@ private:
 			snapshot_spacing = oldHeader.snapshot_spacing;
 			starting_gametic = oldHeader.starting_gametic;
 			ending_gametic   = oldHeader.ending_gametic;
-		}
-	};
-
-	// The type declaration of msg_format_description
-	struct format_description_t
-	{
-		std::string build;
-
-		// TODO: information pertaining to encoding format so that external tooling can know
-		//       how to decode the application-layer message content.
-
-		bool Read(std::fstream& io_stream);
-		bool Write(std::fstream& io_stream) const;
-		void Clear()
-		{
-			build.clear();
+			format_description.clear();
 		}
 	};
 
 	netdemo_state_t state   { st_stopped };
 	netdemo_state_t oldstate{ st_stopped };   // used when unpausing
-	std::string     filename{ };
-	std::fstream    demofp  { };
+	std::string     filename;
+	ByteFstream     demofp;
 
-	MessageQueue      captured {};
-	buf_t             workingBuffer {MAX_UDP_PACKET};
+	MessageQueue    captured;
+	buf_t           workingBuffer { NETDEMO_STARTUP_PACKET_SIZE };
 
-	netdemo_header4_t       header;
-	SnapshotVector          snapshot_index;
-	SnapshotVector          map_index;
-	format_description_t    format_description;
+	netdemo_file_header_t       fileHeader;
+	netdemo_stream_header4_t    streamHeader;
+	SnapshotVector              snapshot_index;
+	SnapshotVector              map_index;
 
-	static const format_description_t this_build_description;
+	static const std::string thisBuildDescription;
 
-	buf_t               outputBuffer    { NETDEMO_STARTUP_PACKET_SIZE };
 	std::vector<byte>   snapbuf         { };
 	int                 netdemotic      { 0 };
 	int                 pause_netdemotic{ 0 };
