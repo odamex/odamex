@@ -162,8 +162,9 @@ bool NetDemo::writeFileHeader()
 {
 	memcpy(fileHeader.identifier.data(), "ODAD", 4);
 	fileHeader.version = NETDEMOVER;
-	streamHeader.compression = 0;
-	streamHeader.snapshot_spacing = NetDemo::SNAPSHOT_SPACING;
+	streamHeader.compression        = 0;
+	streamHeader.snapshot_spacing   = NetDemo::SNAPSHOT_SPACING;
+	streamHeader.format_description = thisBuildDescription;
 
 	demofp.seekp(0, std::ios::beg);
 	const auto startingPosition = demofp.tellp();
@@ -239,56 +240,6 @@ bool NetDemo::netdemo_stream_header4_t::Write(buf_t& io_buf) const
 	return not io_buf.overflowed;
 }
 
-bool NetDemo::format_description_t::Read(ByteFstream& io_stream)
-{
-	if (io_stream.good())
-	{
-		return M_ReadString(io_stream, this->build);
-	}
-	return false;
-}
-
-bool NetDemo::format_description_t::Write(ByteFstream& io_stream) const
-{
-	if (io_stream.good())
-	{
-		return M_WriteString(io_stream, this->build);
-	}
-	return false;
-}
-
-/*
-bool NetDemo::writeFormatDescription(ByteFstream& io_stream)
-{
-	if (io_stream.good())
-	{
-		message_header_t msgheader;
-
-		msgheader.type    = static_cast<byte>(NetDemo::msg_format_description);
-		msgheader.length  = 0;
-		msgheader.gametic = gametic;
-
-		const std::streampos msgheaderPosition = io_stream.tellp();
-
-		if (msgheader.Write(io_stream))
-		{
-			const std::streampos payloadStart = io_stream.tellp();
-			if (this_build_description.Write(io_stream))
-			{
-				const std::streampos payloadEnd = io_stream.tellp();
-
-				msgheader.length = static_cast<uint32_t>(payloadEnd- payloadStart);
-
-				io_stream.seekp(msgheaderPosition);
-				msgheader.Write(io_stream);
-				io_stream.seekp(payloadEnd);
-				return true;
-			}
-		}
-	}
-	return false;
-}
-*/
 //
 // readFileHeader()
 //
@@ -566,19 +517,17 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-	format_description.Clear();
-
-	populateMessageIndexes();
-
-	if (format_description.build.empty())
+	if (streamHeader.format_description.empty())
 	{
 		PrintFmt(PRINT_WARNING, "This demo did not supply any format description!  Proceeding at risk...\n");
 	}
-	else if (format_description.build != thisBuildDescription)
+	else if (streamHeader.format_description != thisBuildDescription)
 	{
-		PrintFmt(PRINT_WARNING, "This demo was recorded with a different build: {}\n", format_description.build);
+		PrintFmt(PRINT_WARNING, "This demo was recorded with a different build: {}\n", streamHeader.format_description);
 	}
-	DPrintFmt("Netdemo recorded with build {}\n", format_description.build);
+	DPrintFmt("Netdemo recorded with build {}\n", streamHeader.format_description);
+
+	populateMessageIndexes();
 
 	// get set up to read server cmds
 	state = NetDemo::st_playing;

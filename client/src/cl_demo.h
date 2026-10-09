@@ -207,21 +207,6 @@ private:
 		}
 	};
 
-	struct format_description_t
-	{
-		std::string build;
-
-		// TODO: information pertaining to encoding format so that external tooling can know
-		//       how to decode the application-layer message content.
-
-		bool Read(ByteFstream& io_stream);
-		bool Write(ByteFstream& io_stream) const;
-		void Clear()
-		{
-			build.clear();
-		}
-	};
-
 	netdemo_state_t state   { st_stopped };
 	netdemo_state_t oldstate{ st_stopped };   // used when unpausing
 	std::string     filename{ };
@@ -234,8 +219,6 @@ private:
 	netdemo_stream_header4_t    streamHeader;
 	SnapshotVector              snapshot_index;
 	SnapshotVector              map_index;
-	format_description_t        format_description;
-//	std::streamoff              streamOffset        { 0 };
 
 	static const std::string thisBuildDescription;
 
