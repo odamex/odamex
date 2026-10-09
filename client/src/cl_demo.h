@@ -170,7 +170,6 @@ private:
 	// message body formats.
 	struct netdemo_header3_t
 	{
-		//netdemo_header_id_t id              {};     // version 3
 		byte                    compression             { 0 };  // type of compression used
 		uint16_t                snapshot_index_size     { 0 };  // number of snapshots in the index
 		uint32_t                snapshot_index_offset   { 0 };  // offset from start of the file for the index
@@ -179,15 +178,14 @@ private:
 		uint16_t                snapshot_spacing        { 0 };  // number of gametics between indices
 		uint32_t                starting_gametic        { 0 };  // the gametic the demo starts at
 		uint32_t                ending_gametic          { 0 };  // the last gametic of the demo
-		std::array<byte, 36>    reserved                { 0 };  // for future use
+		std::array<byte, 36>    reserved                { 0 };  // NOLINT(readability-magic-numbers) - for future use
 
 		bool Read(ByteFstream& io_stream);
 	};
 
-	// Now for the current netdemo version.!q!H!q!H!q!H!q!I!q!I!q!I!n!H!i!J
+	// Now for the current netdemo version.
 	struct netdemo_stream_header4_t
 	{
-		//netdemo_header_id_t id      {};             // version 4
 		byte        compression         { 0 };      // type of compression used
 		uint16_t    snapshot_spacing    { 0 };      // number of gametics between indices
 		uint32_t    starting_gametic    { 0 };      // the gametic the demo starts at
