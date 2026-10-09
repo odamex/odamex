@@ -16,18 +16,19 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Clientside function stubs
+//  Server-specific sound function declarations
 //
 //-----------------------------------------------------------------------------
 
 #pragma once
 
 #include "doomtype.h"
+#include "m_fixed.h"
 
 class AActor;
+class player_t;
 
-struct line_t;
-
-void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0, int arg1, int arg2, int arg3, int arg4);
-void SV_ArmMobj(AActor* mo);
-void SV_UpdateMobj(AActor* mo);
+void SV_Sound (const AActor *mo, byte channel, const char *name, byte attenuation);
+void SV_Sound(player_t& pl, const AActor* mo, const byte channel, const char* name, const byte attenuation);
+void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation);
+void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);

@@ -119,7 +119,7 @@ int       world_index = 0;
 float     world_index_accum = 0.0f;
 
 int       last_svgametic = 0;
-int       last_player_update = 0;
+int       lastEchoedClientTic = 0;
 
 bool      hasReceivedFullUpdate = false;
 bool      isReceivingFullUpdate = false;
@@ -311,7 +311,6 @@ void D_DoAdvanceDemo(void);
 void M_Ticker(void);
 
 size_t P_NumPlayersInGame();
-void G_PlayerReborn (player_t &player);
 void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill, int mod);
 void P_SetPsprite (player_t& player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
@@ -583,12 +582,14 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 		CL_DrainSocket();
 	}
 
-	connected = false;
-	::last_svgametic = 0;
-	world_index      = 0;
+	connected             = false;
+	::lastEchoedClientTic = 0;
+	::last_svgametic      = 0;
+	world_index           = 0;
 
 	messenger = OdaMessenger{ pool };
 
+	CL_ResetWorldPrediction();
 	P_ClearAllNetIds();
 	s_canary.reset();
 	gameaction = ga_fullconsole;

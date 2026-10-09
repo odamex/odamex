@@ -439,6 +439,41 @@ public:
 		lhs.swap(rhs);
 	}
 
+	template <typename ElementType>
+	    requires std::is_integral_v<ElementType>
+	void Write(const ElementType& i_data)
+	{
+		ElementType temp = nonstd::bit::as_little_endian(i_data);
+		WriteChunk(&temp, sizeof(temp));
+	}
+
+	template <typename ElementType, size_t N>
+	void Write(const std::array<ElementType, N>& i_data)
+	{
+		for (const auto& element : i_data)
+		{
+			if (overflowed)
+			{
+				break;
+			}
+			Write(element);
+		}
+	}
+
+	template <typename CharType>
+	void Write(const std::basic_string<CharType>& i_data)
+	{
+		Write(i_data.length());
+		for (const auto& element : i_data)
+		{
+			if (overflowed)
+			{
+				break;
+			}
+			Write(element);
+		}
+	}
+
 	void WriteByte(byte b)
 	{
 		byte *buf = SZ_GetSpace(sizeof(b));
@@ -563,6 +598,48 @@ public:
 			return -1;
 		}
 		return data[readpos];
+	}
+
+	template <typename ElementType>
+	    requires std::is_integral_v<ElementType>
+	void Read(ElementType& o_data)
+	{
+		if (const byte* dataAddress = ReadChunk(sizeof(o_data)))
+		{
+			using namespace nonstd::bit;
+			memcpy(&o_data, dataAddress, sizeof(o_data));
+			o_data = to_native_endian(o_data,
+			                          little_endian_type());    // from
+		}
+	}
+
+	template <typename ElementType, size_t N>
+	void Read(std::array<ElementType, N>& o_data)
+	{
+		for (auto& element : o_data)
+		{
+			if (overflowed)
+			{
+				break;
+			}
+			Read(element);
+		}
+	}
+
+	template <typename CharType>
+	void Read(std::basic_string<CharType>& o_data)
+	{
+		typename std::basic_string<CharType>::size_type length;
+		Read(length);
+		o_data.resize(length);
+		for (auto& element : o_data)
+		{
+			if (overflowed)
+			{
+				break;
+			}
+			Read(element);
+		}
 	}
 
 	byte *ReadChunk(size_t size)

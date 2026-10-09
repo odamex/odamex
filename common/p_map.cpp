@@ -1984,57 +1984,67 @@ void P_ApplyTorque (AActor *mo)
 // the z will be set to the lowest value
 // and false will be returned.
 //
-bool P_ThingHeightClip (AActor* thing)
+
+extern bool predicting;
+
+bool P_ThingHeightClip (AActor& thing)
 {
-	if (!thing)
-		return true;
+	const bool onfloor = (thing.z <= thing.floorz);
 
-	bool onfloor = (thing->z <= thing->floorz);
-
-	AActor *underthing = P_CheckOnmobj(thing);
-	bool onthing = P_AllowPassover() && underthing && underthing->z < thing->z;
+	AActor *underthing = P_CheckOnmobj(&thing);
+	const bool onthing = P_AllowPassover() and underthing and underthing->z < thing.z;
 
 	// calculate new floorz/ceilingz, etc
-	P_CheckPosition (thing, thing->x, thing->y);
+	P_CheckPosition (&thing, thing.x, thing.y);
 
-	thing->floorz = tmfloorz;
-	thing->ceilingz = tmceilingz;
-	thing->dropoffz = tmdropoffz;
-	thing->floorsector = tmfloorsector;
+	thing.floorz = tmfloorz;
+	thing.ceilingz = tmceilingz;
+	thing.dropoffz = tmdropoffz;
+	thing.floorsector = tmfloorsector;
 
 	// standing on another actor - adjust the actor underneath first
-	if (onthing && !P_ThingHeightClip(underthing))
+	if (onthing and not P_ThingHeightClip(*underthing))
 		return false;
 
 	fixed_t newz = (onthing) ?
-					underthing->z + underthing->height :
-					thing->floorz;
+	                underthing->z + underthing->height :
+	                thing.floorz;
 
-	if (onfloor || onthing)
+	if (onfloor or onthing)
 	{
-		if (!serverside && thing->player && thing->z != newz)
+		if (not serverside and thing.player and thing.z != newz)
 		{
 			// [AM] The player's Z-axis was changed, do not try
 			//      and further correct it with snapshots.  Also,
 			//      do not remove the player check - we currently
 			//      only unset this flag for players.
-			thing->oflags |= MFO_NOSNAPZ;
+			thing.oflags |= MFO_NOSNAPZ;
 		}
-		thing->z = newz;
+		if (not predicting)
+		{
+			thing.prevz = thing.z;
+		}
+		thing.z = newz;
 
 		/* killough 11/98: Possibly upset balance of objects hanging off ledges */
-		if (thing->oflags & MFO_FALLING && thing->gear >= MAXGEAR)
-			thing->gear = 0;
+		if (thing.oflags & MFO_FALLING and thing.gear >= MAXGEAR)
+			thing.gear = 0;
 	}
 	else
 	{
 		// don't adjust a floating monster unless forced to
-		if (thing->z + thing->height > thing->ceilingz)
-			thing->z = thing->ceilingz - thing->height;
+		if (thing.z + thing.height > thing.ceilingz)
+		{
+			if (not predicting)
+			{
+				thing.prevz = thing.z;
+			}
+			thing.z = thing.ceilingz - thing.height;
+		}
 	}
 
 	// thing won't fit
-	if (thing->ceilingz - newz < thing->height)
+	if (thing.ceilingz - newz < thing.height)
 		return false;
 
 	return true;
@@ -3698,7 +3708,7 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 //
 bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 {
-	if (P_ThingHeightClip (&thing))
+	if (P_ThingHeightClip (thing))
 	{
 		// keep checking
 		return true;
@@ -3768,6 +3778,54 @@ bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 	return true;
 }
 
+template <typename Callable, typename... ArgTypes>
+void P_VisitAllTouchingThings(sector_t& sector, Callable callable, ArgTypes&&... argValues)
+{
+	if (co_boomphys)
+	{
+		// Capture the args as lvalue references so that we avoid any rvalue forwards / moves.
+		// We use a lambda to do this.
+		auto callIt = [& callable, & argValues...] (AActor& thing)
+		{
+			callable(thing, std::forward<ArgTypes>(argValues)...);
+		};
+
+		msecnode_t *n;
+		for (n = sector.touching_thinglist; n; n = n->m_snext)
+			n->visited = false;
+
+		do
+			for (n = sector.touching_thinglist; n; n = n->m_snext)
+				if (not n->visited)
+				{
+					n->visited = true;
+					if (n->m_thing and not (n->m_thing->flags & MF_NOBLOCKMAP))
+						callIt(*n->m_thing);// callable(*n->m_thing, std::forward<decltype(argValues)>(argValues)...);
+					break;
+				}
+		while (n);	// repeat from scratch until all things left are marked valid
+	}
+	else
+	{
+		// Capture the args as lvalue references so that we avoid any rvalue forwards / moves.
+		// We use a lambda to do this.
+		auto callIt = [& callable, & argValues...] (int x, int y)
+		{
+			P_BlockThingsIterator (x, y, callable, nullptr, std::forward<ArgTypes>(argValues)...);
+		};
+
+		for (int x=sector.blockbox[BOXLEFT] ; x<= sector.blockbox[BOXRIGHT] ; x++)
+			for (int y=sector.blockbox[BOXBOTTOM];y<= sector.blockbox[BOXTOP] ; y++)
+				callIt(x, y);
+	}
+}
+
+
+void P_HeightClipAllSectorThings(sector_t& sector)
+{
+	P_VisitAllTouchingThings(sector, P_ThingHeightClip);
+}
+
 //
 // P_ChangeSector	[RH] Was P_CheckSector in BOOM
 // jff 3/19/98 added to just check monsters on the periphery
@@ -3777,48 +3835,12 @@ bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 
 bool P_ChangeSector (sector_t *sector, int crunch)
 {
-	if (!sector)
+	if (not sector)
 		return true;
 
 	bool nofit = false;
 
-	// [ML] co_boomsectortouch now part of co_boomphys
-	if (co_boomphys)
-	{
-		msecnode_t *n;
-
-		// killough 4/4/98: scan list front-to-back until empty or exhausted,
-		// restarting from beginning after each thing is processed. Avoids
-		// crashes, and is sure to examine all things in the sector, and only
-		// the things which are in the sector, until a steady-state is reached.
-		// Things can arbitrarily be inserted and removed and it won't mess up.
-		//
-		// killough 4/7/98: simplified to avoid using complicated counter
-
-		// Mark all things invalid
-
-		for (n=sector->touching_thinglist; n; n=n->m_snext)
-			n->visited = false;
-
-		do
-			for (n=sector->touching_thinglist; n; n=n->m_snext)	// go through list
-				if (!n->visited)								// unprocessed thing found
-				{
-					n->visited	= true; 						// mark thing as processed
-					if (n->m_thing && !(n->m_thing->flags & MF_NOBLOCKMAP))	// [Blair] Add nullcheck here
-						PIT_ChangeSector(*n->m_thing, crunch, nofit); 						// for clients that aren't updated yet.
-					break;										// exit and start over
-				}
-		while (n);	// repeat from scratch until all things left are marked valid
-	}
-	else
-	{
-		// re-check heights for all things near the moving sector
-		for (int x=sector->blockbox[BOXLEFT] ; x<= sector->blockbox[BOXRIGHT] ; x++)
-			for (int y=sector->blockbox[BOXBOTTOM];y<= sector->blockbox[BOXTOP] ; y++)
-				P_BlockThingsIterator (x, y, PIT_ChangeSector, nullptr, crunch, nofit);
-
-	}
+	P_VisitAllTouchingThings(*sector, PIT_ChangeSector, crunch, nofit);
 
 	return nofit;
 }
