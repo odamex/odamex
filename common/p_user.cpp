@@ -1383,8 +1383,6 @@ player_t::player_t() :
 	maxAmmoMonitors     { maxammo },
 	powerMonitors       { powers },
 	pspriteMonitors     { psprites },
-	attackdown(0),
-	usedown(0),
 	cheats(0),
 	refire(0),
 	damagecount(0),
