@@ -183,7 +183,7 @@ bool NetDemo::writeFileHeader()
 	return false;
 }
 
-bool NetDemo::netdemo_file_header_t::Read(ByteFstream& io_stream)
+bool NetDemo::netdemo_file_header_t::Read(std::fstream& io_stream)
 {
 	if (io_stream.good())
 	{
@@ -193,7 +193,7 @@ bool NetDemo::netdemo_file_header_t::Read(ByteFstream& io_stream)
 	return false;
 }
 
-bool NetDemo::netdemo_file_header_t::Write(ByteFstream& demofp) const
+bool NetDemo::netdemo_file_header_t::Write(std::fstream& demofp) const
 {
 	if (demofp.good())
 	{
@@ -203,7 +203,7 @@ bool NetDemo::netdemo_file_header_t::Write(ByteFstream& demofp) const
 	return false;
 }
 
-bool NetDemo::netdemo_header3_t::Read(ByteFstream& io_stream)
+bool NetDemo::netdemo_header3_t::Read(std::fstream& io_stream)
 {
 	if (io_stream.good())
 	{
@@ -344,7 +344,7 @@ void NetDemo::populateMessageIndexes()
 				snapshot_index.emplace_back(tic, offset);
 				break;
 
-			case NetDemo::MSG_EOF:
+			case NetDemo::MSG_END_OF_NETDEMO:
 				eofWasFound = true;
 				break;
 
@@ -395,7 +395,7 @@ bool NetDemo::startRecording(const std::string &filename)
 
 	demofp.close();
 
-	demofp = ByteFstream(filename,
+	demofp = std::fstream(filename,
 	                      std::ios::out |
 	                      std::ios::binary |
 	                      std::ios::trunc);
@@ -477,7 +477,7 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-	demofp = ByteFstream(filename,
+	demofp = std::fstream(filename,
 	                      std::ios::in |
 	                      std::ios::binary);
 	if (not demofp.good())
@@ -598,7 +598,7 @@ bool NetDemo::stopRecording()
 
 	// write the end-of-demo marker - header + size
 	byte stopdata[2] = {clc_netdemostop, 0};
-	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::MSG_EOF);
+	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::MSG_END_OF_NETDEMO);
 
 	// write the number of the last gametic in the recording
 	streamHeader.ending_gametic = gametic;
@@ -644,7 +644,7 @@ bool NetDemo::stopPlaying()
 	return true;
 }
 
-bool NetDemo::message_header_t::Write(ByteFstream& io_stream) const
+bool NetDemo::message_header_t::Write(std::fstream& io_stream) const
 {
 	if (io_stream.good())
 	{
@@ -658,7 +658,7 @@ bool NetDemo::message_header_t::Write(ByteFstream& io_stream) const
 	return false;
 }
 
-bool NetDemo::message_header_t::Read(ByteFstream& io_stream)
+bool NetDemo::message_header_t::Read(std::fstream& io_stream)
 {
 	if (io_stream.good())
 	{
@@ -680,7 +680,7 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 	if (msgheader.Write(demofp))
 	{
 		const auto dataStartPosition = demofp.tellp();
-		demofp.write(data, size);
+		demofp.write(reinterpret_cast<const char*>(data), size);    // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 		if (demofp.tellp() - dataStartPosition != size)
 		{
 			error("Unable to write netdemo message chunk\n");
@@ -803,7 +803,7 @@ bool NetDemo::readMessagePayloadToWorkingBuffer(uint32_t len)
 	}
 	workingBuffer.clear();
 
-	demofp.read(workingBuffer.ptr(), len);
+	demofp.read(reinterpret_cast<char*>(workingBuffer.ptr()), len);     // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 	workingBuffer.setcursize(demofp.gcount());
 
 	if (workingBuffer.size() < len)
@@ -897,7 +897,7 @@ void NetDemo::readMessages(buf_t* netbuffer)
 
     // Skip over any message (including snapshot) that isn't a payload packet or EOF sentinel.
 	while (not (   type == NetDemo::MSG_PACKET
-                or type == NetDemo::MSG_EOF))
+                or type == NetDemo::MSG_END_OF_NETDEMO))
 	{
 		// skip over snapshots and read the next message instead
 		demofp.seekg(len, std::ios::cur);
@@ -1355,7 +1355,7 @@ bool NetDemo::readSnapshot(SnapshotVector::const_iterator snap)
 	snapbuf.clear();
 	snapbuf.resize(len);
 
-	demofp.read(snapbuf.data(), len);
+	demofp.read(reinterpret_cast<char*>(snapbuf.data()), len);  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 	if (demofp.gcount() < len)
 	{
 		fatalError("Unable to read snapshot from data file");
