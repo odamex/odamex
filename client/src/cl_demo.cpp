@@ -314,8 +314,6 @@ bool NetDemo::readFileHeader()
 
 	if (fileHeader.version == NETDEMOVER)
 	{
-		demofp.seekg(startingPosition, std::ios::beg);
-
 		netdemo_message_t type;
 		uint32_t          len = 0;
 		uint32_t          tic = 0;
@@ -332,13 +330,12 @@ bool NetDemo::readFileHeader()
 				fatalError("Can not read netdemo stream header.");
 				return false;
 			}
+			return true;
 		}
 	}
 
 	if (fileHeader.version == 3)
 	{
-		demofp.seekg(startingPosition, std::ios::beg);
-
 		netdemo_header3_t header3;
 
 		if (header3.Read(demofp)
