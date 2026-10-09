@@ -593,7 +593,7 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	mo->updatedDuringLocalTic  = gametic;
 	mo->updatedDuringServerTic = ThisMessageServerTic();
 	mo->mobjtic                = ThisMessageServerTic() + 1;   // Because when the server sends the spawn message,
-                                                               // the mobjtic has already advanced.
+	                                                           // the mobjtic has already advanced.
 	P_SetThingId(mo, netid);
 
 	// Assign baseline/current data to spawned mobj
