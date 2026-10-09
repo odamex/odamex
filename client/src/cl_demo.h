@@ -77,7 +77,7 @@ private:
 		MSG_PACKET      = 0xAA,
 		MSG_SNAPSHOT,
 		MSG_MAP_CHANGE,
-		MSG_EOF,
+		MSG_END_OF_NETDEMO,
 		MSG_HEADER,
 	};
 

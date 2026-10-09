@@ -341,7 +341,7 @@ void NetDemo::populateMessageIndexes()
 				snapshot_index.emplace_back(tic, offset);
 				break;
 
-			case NetDemo::MSG_EOF:
+			case NetDemo::MSG_END_OF_NETDEMO:
 				eofWasFound = true;
 				break;
 
@@ -595,7 +595,7 @@ bool NetDemo::stopRecording()
 
 	// write the end-of-demo marker - header + size
 	byte stopdata[2] = {clc_netdemostop, 0};
-	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::MSG_EOF);
+	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::MSG_END_OF_NETDEMO);
 
 	// write the number of the last gametic in the recording
 	streamHeader.ending_gametic = gametic;
@@ -894,7 +894,7 @@ void NetDemo::readMessages(buf_t* netbuffer)
 
     // Skip over any message (including snapshot) that isn't a payload packet or EOF sentinel.
 	while (not (   type == NetDemo::MSG_PACKET
-                or type == NetDemo::MSG_EOF))
+                or type == NetDemo::MSG_END_OF_NETDEMO))
 	{
 		// skip over snapshots and read the next message instead
 		demofp.seekg(len, std::ios::cur);
