@@ -41,7 +41,7 @@ bool M_ReadLE(std::basic_istream<CharType>& io_stream, ElementType& o_data)
 {
 	if (io_stream.good())
 	{
-		io_stream.read(reinterpret_cast<CharType*>(&o_data), sizeof(o_data));
+		io_stream.read(reinterpret_cast<CharType*>(&o_data), sizeof(o_data));   // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 		if (io_stream.gcount() == sizeof(o_data))
 		{
 			using namespace nonstd::bit;
@@ -67,7 +67,7 @@ bool M_ReadLE(std::basic_istream<CharType>& io_stream, ElementType& o_data)
 }
 
 template <typename CharType, typename ElementType, size_t N>
-bool M_ReadLE(std::basic_istream<CharType>& io_stream, ElementType (&o_dataArray)[N])
+bool M_ReadLE(std::basic_istream<CharType>& io_stream, ElementType (&o_dataArray)[N])   // NOLINT(modernize-avoid-c-arrays)
 {
 	for (size_t i = 0; i < N; ++i)
 	{
@@ -117,14 +117,14 @@ bool M_WriteLE(std::basic_ostream<CharType>& io_stream, const ElementType& i_dat
 	if (io_stream.good())
 	{
 		ElementType temp = nonstd::bit::as_little_endian(i_data);
-		io_stream.write(reinterpret_cast<CharType*>(&temp), sizeof(temp));
+		io_stream.write(reinterpret_cast<CharType*>(&temp), sizeof(temp));  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 		return true;
 	}
 	return false;
 }
 
 template <typename CharType, typename ElementType, size_t N>
-bool M_WriteLE(std::basic_ostream<CharType>& io_stream, const ElementType (&i_dataArray)[N])
+bool M_WriteLE(std::basic_ostream<CharType>& io_stream, const ElementType (&i_dataArray)[N])    // NOLINT(modernize-avoid-c-arrays)
 {
 	for (size_t i = 0; i < N; ++i)
 	{
