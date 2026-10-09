@@ -1050,8 +1050,8 @@ void R_DrawSprite (vissprite_t *spr)
 		if (!(!ds->curline) && (segscale1 < spr->yscale ||
 			(segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline))))
 		{
-			// masked mid texture?
-			if (ds->midposts)
+			// masked mid texture or fog boundary?
+			if (ds->midposts || ds->fogboundary)
 				R_RenderMaskedSegRange(ds, r1, r2);
 			// seg is behind sprite
 			continue;
@@ -1107,7 +1107,7 @@ void R_DrawMasked (void)
 	//		for (ds=ds_p-1 ; ds >= drawsegs ; ds--)    old buggy code
 
 	for (ds=ds_p ; ds-- > firstdrawseg ; )	// new -- killough
-		if (ds->midposts)
+		if (ds->midposts || ds->fogboundary)
 			R_RenderMaskedSegRange(ds, ds->x1, ds->x2);
 
 	// draw the psprites on top of everything

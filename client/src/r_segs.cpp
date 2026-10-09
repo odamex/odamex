@@ -25,12 +25,15 @@
 #include "odamex.h"
 
 #include <math.h>
+#include <array>
+#include <nonstd/bit.hpp>
 
 #include "m_mempool.h"
 
 #include "i_system.h"
 
 
+#include "i_video.h"
 #include "p_local.h"
 #include "r_local.h"
 #include "r_sky.h"
@@ -95,11 +98,97 @@ static int texoffs[MAXWIDTH];
 
 extern fixed_t FocalLengthY;
 extern float yfoc;
+fixed_t R_FogLight2Shade(int lightlevel);
 
 static tallpost_t** masked_midposts;
 static const fixed_t* masked_midscales;
 
 EXTERN_CVAR(r_clipmaskedspecial)
+EXTERN_CVAR(r_fogboundary)
+
+namespace
+{
+
+//
+// R_IsFogBoundary
+//
+// Returns true if the seg between front and back is a boundary between
+// two different fogs, in which case the fog volume on the front side is
+// shaded over the view during the masked pass so it appears to fill the
+// open space.
+//
+// As in ZDoom, only segs whose front (viewer-side) sector is
+// foggy qualify -- a fog volume seen from clear air is covered by the far
+// faces of the volume, whose front sector is the fog.
+//
+bool R_IsFogBoundary(const sector_t* front, const sector_t* back)
+{
+	if (!r_fogboundary || !front->colormap || !back->colormap)
+		return false;
+
+	const argb_t frontfade = front->colormap->fade;
+	const argb_t backfade = back->colormap->fade;
+
+	// the front sector must actually have fog
+	if ((frontfade.getr() | frontfade.getg() | frontfade.getb()) == 0)
+		return false;
+
+	// fogs of identical color don't need a boundary
+	if (frontfade.getr() == backfade.getr() &&
+		frontfade.getg() == backfade.getg() &&
+		frontfade.getb() == backfade.getb())
+		return false;
+
+	// don't fog the boundary if one ceiling is sky
+	return !R_IsSkyFlat(front->ceilingpic) || !R_IsSkyFlat(back->ceilingpic);
+}
+
+fixed_t R_FogBoundaryVisMul();
+
+bool      wall_foglight;
+fixed_t   wall_fogshade;
+fixed_t   wall_fogvismul;  // converts rw_light into ZDoom vis units
+
+//
+// R_SetWallFogLight
+//
+// Enables ZDoom-style fog shading of wall tiers when the front sector has a
+// fog fade.
+//
+// Must be called wherever walllights is selected for wall drawing.
+//
+void R_SetWallFogLight(const sector_t* frontsec, int lightlevel)
+{
+	wall_foglight = false;
+
+	if (!frontsec || !frontsec->colormap)
+		return;
+
+	const argb_t fade = frontsec->colormap->fade;
+	if ((fade.getr() | fade.getg() | fade.getb()) == 0)
+		return;
+
+	wall_foglight = true;
+	wall_fogshade = R_FogLight2Shade(lightlevel);
+	wall_fogvismul = FixedDiv(R_FogBoundaryVisMul(), INT2FIXED(lightscalexmul));
+}
+
+//
+// R_WallColormapLevel
+//
+// Returns the colormap level for the current wall column's light.
+//
+inline int R_WallColormapLevel()
+{
+	if (wall_foglight)
+		return std::clamp((wall_fogshade - FixedMul(rw_light, wall_fogvismul)) >> FRACBITS,
+		             0, NUMCOLORMAPS - 1);
+
+	const int index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
+	return walllights[index];
+}
+
+} // namespace
 
 //
 // R_TexScaleX
@@ -335,8 +424,7 @@ inline void R_ColumnSetup(int x, int* top, int* bottom, tallpost_t** posts, bool
 {
 	if (calc_light)
 	{
-		const int index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
-		dcol.colormap = basecolormap.with(walllights[index]);
+		dcol.colormap = basecolormap.with(R_WallColormapLevel());
 	}
 
 	dcol.yl = MAX(top[x], 0);
@@ -428,8 +516,7 @@ void R_RenderColumnRange(int start, int stop, int* top, int* bottom,
 		{
 			for (int x = start; x <= stop; x++)
 			{
-				const int index = std::clamp(rw_light >> LIGHTSCALESHIFT, 0, MAXLIGHTSCALE - 1);
-				light_lookup[x] = walllights[index];
+				light_lookup[x] = R_WallColormapLevel();
 				rw_light += rw_lightstep;
 			}
 		}
@@ -622,12 +709,303 @@ void R_RenderSolidSegRange(int start, int stop)
 }
 
 
+// ============================================================================
 //
-// R_RenderMaskedSegRange
+// Fog boundary rendering
 //
-// Renders a masked seg
+// When two adjacent sectors have different fog colors, the fog in the
+// nearer sector needs to be drawn over the opening between them, or the fog
+// will appear to stop at untextured two-sided lines. This is done by
+// re-shading the framebuffer pixels inside the opening with the front
+// sector's fog colormap, using the same distance-based light the wall
+// tiers of this seg were drawn with.
 //
-void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
+// Adapted from ZDoom 1.23's R_DrawFogBoundary.
+//
+// ============================================================================
+
+namespace
+{
+
+std::array<int, MAXHEIGHT> fogboundary_spanend;
+// NOLINTNEXTLINE(bugprone-throwing-static-initialization) - default constructor cannot throw
+shaderef_t fogboundary_colormap;
+int fogboundary_level;
+
+// current fog parameters, from the front sector's dynamic colormap
+// NOLINTBEGIN(bugprone-throwing-static-initialization) - default constructor cannot throw
+argb_t fogboundary_fade;
+argb_t fogboundary_lightcolor;
+// NOLINTEND(bugprone-throwing-static-initialization)
+
+// precomputed 32bpp blend factors for the current colormap level
+int fogboundary_fogmul;
+int fogboundary_fogaddr, fogboundary_fogaddg, fogboundary_fogaddb;
+
+//
+// R_SetFogBoundaryColormap
+//
+// Selects the colormap level used to shade the fog boundary and precomputes
+// the blending constants for direct (32bpp) rendering.
+//
+void R_SetFogBoundaryColormap(int level)
+{
+	fogboundary_level = level;
+	fogboundary_colormap = basecolormap.with(level);
+
+	if (I_GetPrimarySurface()->getBitsPerPixel() != 8)
+	{
+		// mirror BuildColoredLights: lerp toward the fade color by
+		// level/NUMCOLORMAPS, then scale by the light color
+		const argb_t fade = V_GammaCorrect(fogboundary_fade);
+		fogboundary_fogmul = NUMCOLORMAPS - level;
+		fogboundary_fogaddr = (fade.getr() * level) + (NUMCOLORMAPS / 2);
+		fogboundary_fogaddg = (fade.getg() * level) + (NUMCOLORMAPS / 2);
+		fogboundary_fogaddb = (fade.getb() * level) + (NUMCOLORMAPS / 2);
+	}
+}
+
+//
+// R_FogBoundaryRow
+//
+// Re-shades the framebuffer pixels in the given row from x1 to x2 (inclusive)
+// with the current fog boundary colormap.
+//
+// the start of framebuffer row y, as pixels of type T
+template <typename T>
+T* R_FogBoundaryDest(int y)
+{
+	return nonstd::bit_cast<T*>(dcol.destination) +
+	       (static_cast<ptrdiff_t>(y) * dcol.pitch_in_pixels);
+}
+
+void R_FogBoundaryRow(int y, int x1, int x2)
+{
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	{
+		auto* dest = R_FogBoundaryDest<palindex_t>(y);
+		for (int x = x1; x <= x2; x++)
+			dest[x] = fogboundary_colormap.index(dest[x]);
+	}
+	else
+	{
+		auto* dest = R_FogBoundaryDest<argb_t>(y);
+		const int lr = fogboundary_lightcolor.getr();
+		const int lg = fogboundary_lightcolor.getg();
+		const int lb = fogboundary_lightcolor.getb();
+		const bool whitelight = (lr & lg & lb) == 255;
+
+		for (int x = x1; x <= x2; x++)
+		{
+			const argb_t c = dest[x];
+			int r = ((c.getr() * fogboundary_fogmul) + fogboundary_fogaddr) / NUMCOLORMAPS;
+			int g = ((c.getg() * fogboundary_fogmul) + fogboundary_fogaddg) / NUMCOLORMAPS;
+			int b = ((c.getb() * fogboundary_fogmul) + fogboundary_fogaddb) / NUMCOLORMAPS;
+
+			if (!whitelight)
+			{
+				r = r * lr / 255;
+				g = g * lg / 255;
+				b = b * lb / 255;
+			}
+
+			dest[x] = argb_t(255, r, g, b);
+		}
+	}
+}
+
+void R_DrawFogBoundarySection(int y, int y2, int x1)
+{
+	for (; y < y2; y++)
+		R_FogBoundaryRow(y, x1, fogboundary_spanend[y]);
+}
+
+// current shade for the fog boundary in ZDoom's light units, set by
+// R_RenderFogBoundary; colormap level = (shade - vis) >> FRACBITS
+fixed_t fogboundary_shade;
+
+} // namespace
+
+//
+// R_FogLight2Shade
+//
+// ZDoom's LIGHT2SHADE: converts a sector light level (0-255) into a
+// shade value that a distance-based visibility term is subtracted from.
+// Unlike the vanilla scalelight tables this is linear and uses the light
+// level at full resolution, which is what ZDoom shades its fog with.
+//
+fixed_t R_FogLight2Shade(int lightlevel)
+{
+	constexpr int LIGHT_BIAS = 12;		// ZDoom offsets the light level by this
+	constexpr int LIGHT_RANGE = 128;	// light levels per NUMCOLORMAPS shades
+	return (NUMCOLORMAPS * 2 * FRACUNIT) -
+	       ((lightlevel + LIGHT_BIAS) * (FRACUNIT * NUMCOLORMAPS / LIGHT_RANGE));
+}
+
+namespace
+{
+
+//
+// R_FogBoundaryVisMul
+//
+// The factor that converts a wall column's scale (as computed by
+// R_PrepWall) into ZDoom's per-column visibility.
+// 
+// This is ZDoom's r_WallVisibility (with the default vis of 8.0)
+// divided by InvZtoScale, since Odamex's wall scale already is
+// InvZtoScale / z.
+//
+fixed_t R_FogBoundaryVisMul()
+{
+	constexpr int64_t BASE_HEIGHT = 200;	// the 320x200 view the constants assume
+	const IWindowSurface* surface = I_GetPrimarySurface();
+	const int64_t sw = surface->getWidth();
+	const int64_t sh = surface->getHeight();
+
+	// the tangent of the 4:3 field of view
+	// because it's what zdoom does
+	const fixed_t basetan = finetangent[(FINEANGLES / 4) + (FieldOfView / 2)];
+	const fixed_t vis = FixedMul(8 << FRACBITS, basetan);
+	return static_cast<fixed_t>(vis * (sw * BASE_HEIGHT) / (viewwidth * sh));
+}
+
+inline int R_FogBoundaryLightLevel(fixed_t vis)
+{
+	if (fixedlightlev)
+		return fixedlightlev;
+
+	return std::clamp((fogboundary_shade - vis) >> FRACBITS, 0, NUMCOLORMAPS - 1);
+}
+
+//
+// R_DrawFogBoundary
+//
+// This is essentially the same as R_MapVisPlane but with an extra step
+// to create new horizontal spans whenever the light changes enough that
+// we need to use a new colormap.
+//
+void R_DrawFogBoundary(int x1, int x2, const int* uclip, const int* dclip)
+{
+	fixed_t light = rw_light + (rw_lightstep * (x2 - x1));
+	int x = x2;
+	int t2 = std::clamp(uclip[x], 0, viewheight);
+	int b2 = std::clamp(dclip[x], 0, viewheight);
+	int rcolormap = R_FogBoundaryLightLevel(light);
+	int lcolormap;
+
+	for (int y = t2; y < b2; y++)
+		fogboundary_spanend[y] = x;
+
+	R_SetFogBoundaryColormap(rcolormap);
+
+	for (--x; x >= x1; --x)
+	{
+		int t1 = std::clamp(uclip[x], 0, viewheight);
+		int b1 = std::clamp(dclip[x], 0, viewheight);
+		const int xr = x + 1;
+		int stop;
+
+		light -= rw_lightstep;
+		lcolormap = R_FogBoundaryLightLevel(light);
+		if (lcolormap != rcolormap)
+		{
+			if (t2 < b2 && rcolormap != 0)
+			{
+				// Colormap 0 is always the identity map, so rendering
+				// it is just a waste of time.
+				R_DrawFogBoundarySection(t2, b2, xr);
+			}
+			t2 = std::min(t2, t1);
+			b2 = std::max(b2, b1);
+			for (int y = t2; y < b2; y++)
+				fogboundary_spanend[y] = x;
+
+			rcolormap = lcolormap;
+			R_SetFogBoundaryColormap(rcolormap);
+		}
+		else
+		{
+			if (rcolormap != 0)
+			{
+				stop = MIN(t1, b2);
+				while (t2 < stop)
+				{
+					R_FogBoundaryRow(t2, xr, fogboundary_spanend[t2]);
+					t2++;
+				}
+				stop = MAX(b1, t2);
+				while (b2 > stop)
+				{
+					--b2;
+					R_FogBoundaryRow(b2, xr, fogboundary_spanend[b2]);
+				}
+			}
+			else
+			{
+				t2 = MAX(t2, MIN(t1, b2));
+				b2 = MIN(b2, MAX(b1, t2));
+			}
+
+			stop = MIN(t2, b1);
+			while (t1 < stop)
+				fogboundary_spanend[t1++] = x;
+			stop = MAX(b2, t2);
+			while (b1 > stop)
+				fogboundary_spanend[--b1] = x;
+		}
+
+		t2 = std::clamp(uclip[x], 0, viewheight);
+		b2 = std::clamp(dclip[x], 0, viewheight);
+	}
+
+	if (t2 < b2 && rcolormap != 0)
+		R_DrawFogBoundarySection(t2, b2, x1);
+}
+
+//
+// R_RenderFogBoundary
+//
+// Sets up lighting and shades the opening of a fog boundary drawseg.
+//
+// the clip array the fog was drawn against, poisoned by the caller after
+// the whole masked range (fog + midtexture) is finished
+int* fog_used_topclip;
+
+void R_RenderFogBoundary(drawseg_t* ds, int x1, int x2)
+{
+	// the fog would be re-shaded by a fixed colormap anyway (invulnerability),
+	// so don't bother drawing it
+	if (fixedcolormap.isValid())
+		return;
+
+	sector_t tempsec;	// killough 4/13/98
+
+	fogboundary_fade = frontsector->colormap->fade;
+	fogboundary_lightcolor = frontsector->colormap->color;
+	basecolormap = frontsector->colormap->maps;	// [RH] Set basecolormap
+
+	// The front sector is foggy by definition here, so don't apply
+	// gun flash extralight or the fake contrast for orthogonal lines
+	fogboundary_shade = R_FogLight2Shade(
+			R_FakeFlat(frontsector, &tempsec, nullptr, nullptr, false)->lightlevel);
+
+	// walk ZDoom's per-column visibility term instead of Odamex's
+	// scalelight index -- it is linear in the wall column scale
+	const fixed_t vismul = R_FogBoundaryVisMul();
+	rw_lightstep = FixedMul(ds->scalestep, vismul);
+	rw_light = FixedMul(ds->scale1, vismul) + ((x1 - ds->x1) * rw_lightstep);
+
+	fog_used_topclip = ds->sprtopclip;
+
+	R_DrawFogBoundary(x1, x2, ds->sprtopclip, ds->sprbottomclip);
+}
+
+//
+// R_RenderMaskedTextureRange
+//
+// Renders the masked midtexture of a seg
+//
+void R_RenderMaskedTextureRange(drawseg_t* ds, int x1, int x2)
 {
 	sector_t	tempsec;		// killough 4/13/98
 
@@ -682,13 +1060,18 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	basecolormap = frontsector->colormap->maps;	// [RH] Set basecolormap
 
 	// killough 4/13/98: get correct lightlevel for 2s normal textures
-	int lightnum = (R_FakeFlat(frontsector, &tempsec, NULL, NULL, false)
-	                ->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+	const int masked_lightlevel =
+		R_FakeFlat(frontsector, &tempsec, nullptr, nullptr, false)->lightlevel;
+
+	int lightnum = (masked_lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
 	lightnum += R_OrthogonalLightnumAdjustment();
 
 	walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
 		lightnum <  0 ? scalelight[0] : scalelight[lightnum];
+
+	// foggy sectors shade their masked textures with ZDoom's fog curve
+	R_SetWallFogLight(frontsector, masked_lightlevel);
 
 	masked_midposts = ds->midposts;
 	masked_midscales = ds->midscales;
@@ -705,6 +1088,43 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 	// TODO: change negonearray to the actual top/bottom
 	R_RenderColumnRange(x1, x2, negonearray, viewheightarray, ds->midposts,
 			MaskedColumnBlaster, true, 0);
+}
+
+} // namespace
+
+//
+// R_RenderMaskedSegRange
+//
+// Renders a masked seg: first any fog boundary the seg forms, then its
+// masked midtexture (either may be absent).
+//
+void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
+{
+	// the psprite pass expects basecolormap to still refer to the view's
+	// sector after the masked pass, so restore it when done
+	const shaderef_t saved_basecolormap = basecolormap;
+
+	curline = ds->curline;
+	frontsector = curline->frontsector;
+	backsector = curline->backsector;
+
+	// Draw fog partition
+	fog_used_topclip = nullptr;
+	if (ds->fogboundary)
+		R_RenderFogBoundary(ds, x1, x2);
+
+	if (ds->midposts)
+		R_RenderMaskedTextureRange(ds, x1, x2);
+
+	if (fog_used_topclip)
+	{
+		// mark these columns as done so the fog isn't blended in a
+		// second time when this drawseg is revisited
+		for (int x = x1; x <= x2; x++)
+			fog_used_topclip[x] = viewheight;
+	}
+
+	basecolormap = saved_basecolormap;
 }
 
 
@@ -882,6 +1302,7 @@ void R_StoreWallRange(int start, int stop)
 	midtexture = toptexture = bottomtexture = maskedtexture = 0;
 	ds_p->midposts = NULL;
 	ds_p->midscales = NULL;
+	ds_p->fogboundary = false;
 
 	if (!backsector)
 	{
@@ -1049,6 +1470,12 @@ void R_StoreWallRange(int start, int stop)
 			}
 		}
 
+		// mark segs between fogs of different density so the fog can
+		// be drawn over the opening during the masked pass (a closed door
+		// already draws its wall tiers with the front sector's fog)
+		if (!doorclosed)
+			ds_p->fogboundary = R_IsFogBoundary(frontsector, backsector);
+
 		// allocate space for masked texture tables
 		if (sidedef->midtexture)
 		{
@@ -1083,6 +1510,7 @@ void R_StoreWallRange(int start, int stop)
 	{
 		rw_scale = ds_p->scale1 = ds_p->scale2 = rw_scalestep = ds_p->light = rw_light = 0;
 		midtexture = toptexture = bottomtexture = maskedtexture = 0;
+		ds_p->fogboundary = false;
 
 		for (int n = start; n <= stop; n++)
 			walltopf[n] = wallbottomf[n] = centery;
@@ -1106,6 +1534,9 @@ void R_StoreWallRange(int start, int stop)
 			lightnum = std::clamp(lightnum, 0, LIGHTLEVELS - 1);
 			walllights = scalelight[lightnum];
 		}
+
+		// foggy sectors shade their walls with ZDoom's fog curve
+		R_SetWallFogLight(frontsector, frontsector->lightlevel);
 	}
 
 	// if a floor / ceiling plane is on the wrong side
@@ -1142,7 +1573,7 @@ void R_StoreWallRange(int start, int stop)
 
 	// [SL] save full clipping info for masked midtextures
 	// cph - if a column was made solid by this wall, we _must_ save full clipping info
-	if (maskedtexture || (backsector && didsolidcol))
+	if (maskedtexture || ds_p->fogboundary || (backsector && didsolidcol))
 		ds_p->silhouette = SIL_BOTH;
 
     // save sprite clipping info
