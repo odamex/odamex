@@ -1631,6 +1631,22 @@ bool W_IsIWAD(const OResFile& file)
 
 
 //
+// W_IsUnofficialIWAD
+//
+// Returns true if the given file only passes as an IWAD because of the lump
+// sniffing in isIWAD(), i.e. it' is's not an IWAD we actually know about and we
+// are guessing.
+//
+bool W_IsUnofficialIWAD(const OResFile& file)
+{
+	if (::identtab.isKnownIWAD(file.getMD5()))
+		return false;
+
+	return ::identtab.isIWAD(file);
+}
+
+
+//
 // W_IsFilenameCommercialWAD
 //
 // Checks to see whether a given filename is an WAD flagged as "commercial"
