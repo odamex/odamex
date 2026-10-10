@@ -780,8 +780,10 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 //
 // R_BlastSkyColumn
 //
-static inline void R_BlastSkyColumn(void (*drawfunc)(void))
+static inline void R_BlastSkyColumn(rendercontext_t& ctx, void (*drawfunc)())
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	if (dcol.yl <= dcol.yh)
 	{
 		dcol.texturefrac = dcol.texturemid +
@@ -790,14 +792,14 @@ static inline void R_BlastSkyColumn(void (*drawfunc)(void))
 	}
 }
 
-inline void SkyColumnBlaster()
+inline void SkyColumnBlaster(rendercontext_t& ctx)
 {
-	R_BlastSkyColumn(colfunc);
+	R_BlastSkyColumn(ctx, ctx.draw.colfunc);
 }
 
-inline void SkyForegroundColumnBlaster()
+inline void SkyForegroundColumnBlaster(rendercontext_t& ctx)
 {
-	R_BlastSkyColumn(R_DrawSkyForegroundColumn);
+	R_BlastSkyColumn(ctx, R_DrawSkyForegroundColumn);
 }
 
 void R_SetSkyScrollSpeed(int skynum, fixed_t speed)
@@ -984,7 +986,7 @@ void R_RenderSkyRange(visplane_t* pl)
 			skyposts[x] = backskytex->getColumn(colnum);
 		}
 
-		R_RenderColumnRange(pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
+		R_RenderColumnRange(rctx, pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
 				skyposts, SkyColumnBlaster, false, 2);
 	}
 
@@ -1005,7 +1007,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	// When compositing over a background layer, palette index 0 in the
 	// foreground texture is treated as transparent (ID24 convention).
-	R_RenderColumnRange(pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom), skyposts,
+	R_RenderColumnRange(rctx, pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom), skyposts,
 			backskytex ? SkyForegroundColumnBlaster : SkyColumnBlaster, false, 2);
 
 	R_ResetDrawFuncs();

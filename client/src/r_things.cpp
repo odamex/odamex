@@ -184,8 +184,14 @@ vissprite_t *R_NewVisSprite()
 //	in posts/runs of opaque pixels.
 //
 
-void R_BlastSpriteColumn(void (*drawfunc)())
+void R_BlastSpriteColumn(rendercontext_t& ctx, void (*drawfunc)())
 {
+	drawcolumn_t& dcol            = ctx.draw.dcol;
+	const fixed_t spryscale       = ctx.sprite.spryscale;
+	const fixed_t sprtopscreen    = ctx.sprite.sprtopscreen;
+	const int* const mfloorclip   = ctx.sprite.mfloorclip;
+	const int* const mceilingclip = ctx.sprite.mceilingclip;
+
 	// calculate unclipped screen coordinates for post
 	const int64_t topscreen = sprtopscreen;
 	const int64_t bottomscreen = topscreen + FixedMul(spryscale, dcol.textureheight);
@@ -223,9 +229,9 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 }
 
 
-void SpriteColumnBlaster()
+void SpriteColumnBlaster(rendercontext_t& ctx)
 {
-	R_BlastSpriteColumn(colfunc);
+	R_BlastSpriteColumn(ctx, ctx.draw.colfunc);
 }
 
 
@@ -366,7 +372,7 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 		colfrac += vis->xiscale;
 	}
 
-	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray, spriteposts, SpriteColumnBlaster, false, 0);
+	R_RenderColumnRange(rctx, vis->x1, vis->x2, negonearray, viewheightarray, spriteposts, SpriteColumnBlaster, false, 0);
 
 	R_ResetDrawFuncs();
 }
@@ -1209,7 +1215,7 @@ void R_DrawSprite (vissprite_t *spr)
 		{
 			// masked mid texture?
 			if (ds->midposts)
-				R_RenderMaskedSegRange(ds, r1, r2);
+				R_RenderMaskedSegRange(rctx, ds, r1, r2);
 			// seg is behind sprite
 			continue;
 		}
@@ -1287,7 +1293,7 @@ void R_DrawMasked (void)
 
 	for (ds=ds_p ; ds-- > firstdrawseg ; )	// new -- killough
 		if (ds->midposts)
-			R_RenderMaskedSegRange(ds, ds->x1, ds->x2);
+			R_RenderMaskedSegRange(rctx, ds, ds->x1, ds->x2);
 
 	// draw the psprites on top of everything
 	R_DrawPlayerSprites();

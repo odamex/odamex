@@ -27,8 +27,6 @@ extern const fixed_t NEARCLIP;
 
 extern bool			skymap;
 
-typedef void (*drawfunc_t) (int start, int stop);
-
 EXTERN_CVAR (r_drawflat)		// [RH] Don't texture segs?
 
 struct rendercontext_t;

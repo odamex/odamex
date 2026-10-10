@@ -121,7 +121,7 @@ static void R_ClipWallSegment(rendercontext_t& ctx, int first, int last, bool ma
 				to = p - ctx.bsp.solidcol - 1;
 
 			// set the range for this wall to the range of non-solid columns
-			R_StoreWallRange(first, to);
+			R_StoreWallRange(ctx, first, to);
 
 			// mark the  columns as solid
 			if (makesolid)
@@ -518,7 +518,7 @@ void R_AddLine (rendercontext_t& ctx, const seg_t *line)
 	static sector_t tempsec;
 	ctx.bsp.backsector = line->backsector ? R_FakeFlat(ctx, line->backsector, &tempsec, NULL, NULL, true) : NULL;
 
-	R_PrepWall(w1.x, w1.y, w2.x, w2.y, t1.x, t1.y, t2.x, t2.y, x1, x2);
+	R_PrepWall(ctx, w1.x, w1.y, w2.x, w2.y, t1.x, t1.y, t2.x, t2.y, x1, x2);
 
 	// [SL] Check for single-sided line, closed doors or other scenarios that
 	// would make this line seg solid.
