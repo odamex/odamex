@@ -717,7 +717,7 @@ void R_Subsector (rendercontext_t& ctx, int num)
 		(ctx.bsp.frontsector->heightsec &&
 		!(ctx.bsp.frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->heightsec->floor_res_id)) ?
-		R_FindPlane(ctx.bsp.frontsector->ceilingplane,		// killough 3/8/98
+		R_FindPlane(ctx, ctx.bsp.frontsector->ceilingplane,		// killough 3/8/98
 					ctx.bsp.frontsector->ceiling_res_id,
 					R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) &&  // killough 10/98
 						(ctx.bsp.frontsector->sky & PL_SKYFLAT) ? ctx.bsp.frontsector->sky : 0,
@@ -738,7 +738,7 @@ void R_Subsector (rendercontext_t& ctx, int num)
 		(ctx.bsp.frontsector->heightsec &&
 		!(ctx.bsp.frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->heightsec->ceiling_res_id)) ?
-		R_FindPlane(ctx.bsp.frontsector->floorplane,
+		R_FindPlane(ctx, ctx.bsp.frontsector->floorplane,
 					ctx.bsp.frontsector->floor_res_id,
 					R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->floor_res_id) &&  // killough 10/98
 						(ctx.bsp.frontsector->sky & PL_SKYFLAT) ? ctx.bsp.frontsector->sky : 0,

@@ -837,7 +837,7 @@ void R_SetSkyScrollSpeed(int skynum, fixed_t speed)
 // [BC] 7/5/24 - Brought back for real this time
 // [EB] SKYDEFS support: scrolling, scaling, fire and double skies
 //
-void R_RenderSkyRange(visplane_t* pl)
+void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl)
 {
 	if (pl->minx > pl->maxx)
 		return;
@@ -952,31 +952,31 @@ void R_RenderSkyRange(visplane_t* pl)
 	// set up the appropriate colormap for the sky
 	if (fixedlightlev)
 	{
-		dcol.colormap = shaderef_t(&pal->maps, fixedlightlev);
+		ctx.draw.dcol.colormap = shaderef_t(&pal->maps, fixedlightlev);
 	}
 	else if (fixedcolormap.isValid() && r_skypalette)
 	{
-		dcol.colormap = fixedcolormap;
+		ctx.draw.dcol.colormap = fixedcolormap;
 	}
 	else
 	{
 		// [SL] 2011-06-28 - Emulate vanilla Doom's handling of skies
 		// when the player has the invulnerability powerup
-		dcol.colormap = shaderef_t(&pal->maps, 0);
+		ctx.draw.dcol.colormap = shaderef_t(&pal->maps, 0);
 	}
 
-	skyplane = pl;
-	dcol.masked = false;
+	ctx.plane.skyplane = pl;
+	ctx.draw.dcol.masked = false;
 
 	// Background sky layer (only present when a foreground layer will be
 	// composited on top of it).
 	if (backskytex)
 	{
-		dcol.iscale = FixedMul(skyiscale, sky2scaley) >> skystretch;
-		dcol.texturemid = sky2mid + backrow_offset;
-		dcol.textureheight = backskytex->mHeight << FRACBITS;
-		dcol.texturedata = backskytex->mData;
-		dcol.argbtexturedata = backskytex->mARGBData;
+		ctx.draw.dcol.iscale = FixedMul(skyiscale, sky2scaley) >> skystretch;
+		ctx.draw.dcol.texturemid = sky2mid + backrow_offset;
+		ctx.draw.dcol.textureheight = backskytex->mHeight << FRACBITS;
+		ctx.draw.dcol.texturedata = backskytex->mData;
+		ctx.draw.dcol.argbtexturedata = backskytex->mARGBData;
 
 		for (int x = pl->minx; x <= pl->maxx; x++)
 		{
@@ -986,16 +986,16 @@ void R_RenderSkyRange(visplane_t* pl)
 			skyposts[x] = backskytex->getColumn(colnum);
 		}
 
-		R_RenderColumnRange(rctx, pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
+		R_RenderColumnRange(ctx, pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
 				skyposts, SkyColumnBlaster, false, 2);
 	}
 
 	// Foreground (or only) sky layer.
-	dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
-	dcol.texturemid = sky1mid + frontrow_offset;
-	dcol.textureheight = frontskytex->mHeight << FRACBITS;
-	dcol.texturedata = frontskytex->mData;
-	dcol.argbtexturedata = frontskytex->mARGBData;
+	ctx.draw.dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
+	ctx.draw.dcol.texturemid = sky1mid + frontrow_offset;
+	ctx.draw.dcol.textureheight = frontskytex->mHeight << FRACBITS;
+	ctx.draw.dcol.texturedata = frontskytex->mData;
+	ctx.draw.dcol.argbtexturedata = frontskytex->mARGBData;
 
 	for (int x = pl->minx; x <= pl->maxx; x++)
 	{
@@ -1007,7 +1007,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 	// When compositing over a background layer, palette index 0 in the
 	// foreground texture is treated as transparent (ID24 convention).
-	R_RenderColumnRange(rctx, pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom), skyposts,
+	R_RenderColumnRange(ctx, pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom), skyposts,
 			backskytex ? SkyForegroundColumnBlaster : SkyColumnBlaster, false, 2);
 
 	R_ResetDrawFuncs();

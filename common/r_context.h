@@ -92,8 +92,11 @@ struct planecontext_t
 	v3float_t   slope_a;
 	v3float_t   slope_b;
 	v3float_t   slope_c;
-	float       ixscale;
-	float       iyscale;
+
+	std::vector<uint16_t> plane_lightoff;
+	bool                  plane_constlight;
+
+	std::vector<int>      group_runstart;
 
 	// freehead points at freetail, so a copy would dangle.
 	// So let's make sure nobody tries to copy one.
@@ -296,13 +299,6 @@ struct rendercontext_t
 
 // The main thread's context.
 extern rendercontext_t rctx;
-
-inline visplane_t*&	floorplane   = ::rctx.plane.floorplane;
-inline visplane_t*&	ceilingplane = ::rctx.plane.ceilingplane;
-inline visplane_t*&	skyplane     = ::rctx.plane.skyplane;
-
-inline std::unique_ptr<int[]>& floorclip   = ::rctx.plane.floorclip;
-inline std::unique_ptr<int[]>& ceilingclip = ::rctx.plane.ceilingclip;
 
 inline int*& walllights        = ::rctx.seg.walllights;
 inline Pool<int>& sprclip_pool = ::rctx.seg.sprclip_pool;

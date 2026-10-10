@@ -62,7 +62,8 @@ void R_InterpolateSkyDefs(fixed_t amount);
 void R_TicSkyDefInterpolation();
 void R_RestoreSkyDefs();
 
-void R_RenderSkyRange(visplane_t* pl);
+struct rendercontext_t;
+void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl);
 
 bool R_ResourceIdIsSkyFlat(const ResourceId res_id);
 static inline bool R_IsSkyFlat(const ResourceId res_id) { return R_ResourceIdIsSkyFlat(res_id); }

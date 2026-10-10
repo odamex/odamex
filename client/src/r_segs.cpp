@@ -1011,12 +1011,12 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 
 	// render it
 	if (ctx.seg.markceiling && ctx.plane.ceilingplane)
-		ctx.plane.ceilingplane = R_CheckPlane(ctx.plane.ceilingplane, start, stop);
+		ctx.plane.ceilingplane = R_CheckPlane(ctx, ctx.plane.ceilingplane, start, stop);
 	else
 		ctx.seg.markceiling = false;
 
 	if (ctx.seg.markfloor && ctx.plane.floorplane)
-		ctx.plane.floorplane = R_CheckPlane(ctx.plane.floorplane, start, stop);
+		ctx.plane.floorplane = R_CheckPlane(ctx, ctx.plane.floorplane, start, stop);
 	else
 		ctx.seg.markfloor = false;
 

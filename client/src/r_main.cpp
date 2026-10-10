@@ -1145,7 +1145,7 @@ void R_RenderPlayerView(player_t* player)
 	R_ClearClipSegs(rctx);
 	R_ClearDrawSegs(rctx);
 	R_ClearOpenings(rctx);
-	R_ClearPlanes(true);
+	R_ClearPlanes(rctx, true);
 	R_ClearSprites();
 
 	R_ResetDrawFuncs();
@@ -1176,8 +1176,8 @@ void R_RenderPlayerView(player_t* player)
 	else
 		R_RenderBSPNode(rctx, numnodes - 1);	// The head node is the last node output.
 
-	R_DrawPlanes();
-	R_DrawPortals();
+	R_DrawPlanes(rctx);
+	R_DrawPortals(rctx);
 	R_DrawMasked();
 
 	// NOTE(jsd): Full-screen status color blending:
@@ -1377,7 +1377,7 @@ static void R_InitViewWindow()
 
 	R_InitLightTables(surface_width, surface_height);
 
-	R_PlaneInitData(surface);
+	R_PlaneInitData(rctx, surface);
 	R_InitSkyMap();
 
 	R_BindViewBuffer(surface);

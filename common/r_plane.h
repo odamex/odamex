@@ -26,13 +26,7 @@
 #include "r_data.h"
 #include "resources/res_resourceid.h"
 
-// Visplane related.
-extern	int*			lastopening;
-
-typedef void (*planefunction_t) (int top, int bottom);
-
-extern planefunction_t	floorfunc;
-extern planefunction_t	ceilingfunc_t;
+struct rendercontext_t;
 
 extern std::unique_ptr<int[]> floorclipinitial;
 extern std::unique_ptr<int[]> ceilingclipinitial;
@@ -40,28 +34,15 @@ extern std::unique_ptr<int[]> ceilingclipinitial;
 extern std::unique_ptr<fixed_t[]> yslope;
 
 void R_InitPlanes (void);
-void R_ClearPlanes (bool fullclear);
+void R_ClearPlanes (rendercontext_t& ctx, bool fullclear);
 
-void
-R_MapPlane
-( int		y,
-  int		x1,
-  int		x2 );
-
-void
-R_MakeSpans
-( int		x,
-  int		t1,
-  int		b1,
-  int		t2,
-  int		b2 );
-
-void R_DrawPlanes (void);
-void R_DrawPortals (void);
+void R_DrawPlanes (rendercontext_t& ctx);
+void R_DrawPortals (rendercontext_t& ctx);
 
 bool R_IsStackBoundary(const AActor* mo);
 
 visplane_t* R_FindPlane(
+	rendercontext_t& ctx,
 	const plane_t& secplane,
 	ResourceId res_id,
 	uint32_t sky_transfer,
@@ -73,7 +54,7 @@ visplane_t* R_FindPlane(
 	angle_t angle,
 	AActor::AActorPtr skybox);
 
-visplane_t *R_CheckPlane (visplane_t *pl, int start, int stop);
+visplane_t *R_CheckPlane (rendercontext_t& ctx, visplane_t *pl, int start, int stop);
 
 // [RH] Added for multires support
-bool R_PlaneInitData(IWindowSurface* surface);
+bool R_PlaneInitData(rendercontext_t& ctx, IWindowSurface* surface);
