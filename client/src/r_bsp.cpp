@@ -761,13 +761,13 @@ void R_Subsector (rendercontext_t& ctx, int num)
 	// lightlevels on floor & ceiling lightlevels in the surrounding area.
 	const int lightlevel = r_thingsectorlight ?
 		(floorlightlevel + ceilinglightlevel) / 2 : ctx.bsp.frontsector->lightlevel;
-	R_AddSprites(sub.sector, lightlevel, ctx.bsp.fakeside);
+	R_AddSprites(ctx, sub.sector, lightlevel, ctx.bsp.fakeside);
 
 	// [RH] Add particles
 	if (r_particles)
 	{
 		for (uint16_t i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
-			R_ProjectParticle(Particles + i, subsectors[num].sector, ctx.bsp.fakeside);
+			R_ProjectParticle(ctx, Particles + i, subsectors[num].sector, ctx.bsp.fakeside);
 	}
 
 	if (sub.poly)

@@ -1493,7 +1493,7 @@ static void R_RenderPortalView(rendercontext_t& ctx, visplane_t* pl)
 	R_RenderBSPNode(ctx, numnodes - 1);
 	R_DrawPlanes(ctx);
 	R_DrawDiscoveredPortals(ctx);
-	R_DrawMasked();
+	R_DrawMasked(ctx);
 
 	ctx.sprite.firstvissprite = ctx.sprite.vissprites + savedfirstvissprite;
 	ctx.sprite.vissprite_p = ctx.sprite.vissprites + savedvissprite_p;

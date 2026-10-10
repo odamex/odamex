@@ -61,19 +61,21 @@ inline particle_t *NewParticle()
 	}
 	return result;
 }
+struct rendercontext_t;
+
 void R_InitParticles ();
 void R_ClearParticles ();
-void R_DrawParticle(vissprite_t*);
-void R_ProjectParticle (particle_t *, const sector_t* sector, int fakeside);
+void R_DrawParticle(rendercontext_t& ctx, vissprite_t*);
+void R_ProjectParticle (rendercontext_t& ctx, particle_t *, const sector_t* sector, int fakeside);
 void R_FindParticleSubsectors();
 
 extern fixed_t		pspritexscale;
 extern fixed_t		pspriteyscale;
 extern fixed_t		pspritexiscale;
 
-void R_SortVisSprites();
-void R_AddSprites(sector_t *sec, int lightlevel, int fakeside);
-void R_ClearSprites();
-void R_DrawMasked();
+void R_SortVisSprites(rendercontext_t& ctx);
+void R_AddSprites(rendercontext_t& ctx, sector_t *sec, int lightlevel, int fakeside);
+void R_ClearSprites(rendercontext_t& ctx);
+void R_DrawMasked(rendercontext_t& ctx);
 fixed_t P_CalculateWeaponBobX(player_t& player, float scale_amount);
 fixed_t P_CalculateWeaponBobY(player_t& player, float scale_amount);

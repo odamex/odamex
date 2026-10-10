@@ -81,7 +81,6 @@ fixed_t			pspriteyscale;
 fixed_t 		pspritexiscale;
 //fixed_t		sky1scale;			// [RH] Sky 1 scale factor
 									// [ML] 5/11/06 - Removed sky2
-static auto& spritelights = ::rctx.sprite.spritelights;
 
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	limits::MAXINT
@@ -98,7 +97,6 @@ EXTERN_CVAR (r_drawnetcredibility)
 // variables used to look up
 //	and range check thing_t sprites patches
 
-static auto& spriteposts = ::rctx.sprite.spriteposts;
 
 // [RH] particle globals
 extern int				NumParticles;
@@ -113,7 +111,6 @@ std::vector<uint16_t>		ParticlesInSubsec;
 //
 // GAME FUNCTIONS
 //
-static auto& newvissprite = ::rctx.sprite.newvissprite;
 
 
 
@@ -124,12 +121,15 @@ static auto& newvissprite = ::rctx.sprite.newvissprite;
 //
 void R_InitVisSprites()
 {
-	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
+	spritecontext_t& sprite = ::rctx.sprite;
 
-	M_Free(vissprites);
+	sprite.maxvissprites = 128;	// [RH] This is the initial default value. It grows as needed.
 
-	firstvissprite = vissprites = static_cast<vissprite_t*>(M_Malloc(MaxVisSprites * sizeof(vissprite_t)));
-	lastvissprite = &vissprites[MaxVisSprites];
+	M_Free(sprite.vissprites);
+
+	sprite.firstvissprite = sprite.vissprites =
+		static_cast<vissprite_t*>(M_Malloc(sprite.maxvissprites * sizeof(vissprite_t)));
+	sprite.lastvissprite = &sprite.vissprites[sprite.maxvissprites];
 }
 
 //
@@ -145,9 +145,9 @@ static const spritedef_t* projsprdef;
 // singleton call per sprite
 static bool projlerp;
 
-void R_ClearSprites()
+void R_ClearSprites(rendercontext_t& ctx)
 {
-	vissprite_p = firstvissprite;
+	ctx.sprite.vissprite_p = ctx.sprite.firstvissprite;
 
 	projspritenum = -1;
 	projsprdef = NULL;
@@ -158,22 +158,22 @@ void R_ClearSprites()
 //
 // R_NewVisSprite
 //
-vissprite_t *R_NewVisSprite()
+vissprite_t *R_NewVisSprite(rendercontext_t& ctx)
 {
-	if (vissprite_p == lastvissprite) {
-		int firstvisspritenum = firstvissprite - vissprites;
-		int prevvisspritenum = vissprite_p - vissprites;
+	if (ctx.sprite.vissprite_p == ctx.sprite.lastvissprite) {
+		int firstvisspritenum = ctx.sprite.firstvissprite - ctx.sprite.vissprites;
+		int prevvisspritenum = ctx.sprite.vissprite_p - ctx.sprite.vissprites;
 
-		MaxVisSprites *= 2;
-		vissprites = static_cast<vissprite_t*>(M_Realloc(vissprites, MaxVisSprites * sizeof(vissprite_t)));
-		lastvissprite = &vissprites[MaxVisSprites];
-		firstvissprite = &vissprites[firstvisspritenum];
-		vissprite_p = &vissprites[prevvisspritenum];
-		DPrintFmt("MaxVisSprites increased to {}\n", MaxVisSprites);
+		ctx.sprite.maxvissprites *= 2;
+		ctx.sprite.vissprites = static_cast<vissprite_t*>(M_Realloc(ctx.sprite.vissprites, ctx.sprite.maxvissprites * sizeof(vissprite_t)));
+		ctx.sprite.lastvissprite = &ctx.sprite.vissprites[ctx.sprite.maxvissprites];
+		ctx.sprite.firstvissprite = &ctx.sprite.vissprites[firstvisspritenum];
+		ctx.sprite.vissprite_p = &ctx.sprite.vissprites[prevvisspritenum];
+		DPrintFmt("ctx.sprite.maxvissprites increased to {}\n", ctx.sprite.maxvissprites);
 	}
 
-	vissprite_p++;
-	return vissprite_p-1;
+	ctx.sprite.vissprite_p++;
+	return ctx.sprite.vissprite_p-1;
 }
 
 
@@ -193,37 +193,37 @@ void R_BlastSpriteColumn(rendercontext_t& ctx, void (*drawfunc)())
 	const int* const mceilingclip = ctx.sprite.mceilingclip;
 
 	// calculate unclipped screen coordinates for post
-	const int64_t topscreen = sprtopscreen;
-	const int64_t bottomscreen = topscreen + FixedMul(spryscale, dcol.textureheight);
+	const int64_t topscreen = ctx.sprite.sprtopscreen;
+	const int64_t bottomscreen = topscreen + FixedMul(ctx.sprite.spryscale, ctx.draw.dcol.textureheight);
 
 	int64_t yl = (topscreen - 1) >> FRACBITS;
 	int64_t yh = (bottomscreen - 1) >> FRACBITS;
 
 	int64_t texturefrac = 0;
-	if (mceilingclip[dcol.x] + 1 > yl)
-		texturefrac = (mceilingclip[dcol.x] + 1 - yl) * dcol.iscale;
+	if (ctx.sprite.mceilingclip[ctx.draw.dcol.x] + 1 > yl)
+		texturefrac = (ctx.sprite.mceilingclip[ctx.draw.dcol.x] + 1 - yl) * ctx.draw.dcol.iscale;
 
-	yl = std::max<int64_t>(yl, std::max(mceilingclip[dcol.x], 0));
-	yh = std::min<int64_t>(yh, mfloorclip[dcol.x] - 1);
+	yl = std::max<int64_t>(yl, std::max(ctx.sprite.mceilingclip[ctx.draw.dcol.x], 0));
+	yh = std::min<int64_t>(yh, ctx.sprite.mfloorclip[ctx.draw.dcol.x] - 1);
 
-	if (yl > yh || texturefrac >= dcol.textureheight)
+	if (yl > yh || texturefrac >= ctx.draw.dcol.textureheight)
 		return;
 
 	// clamp the texture coordinates so out-of-range rows are not drawn
-	const int64_t endfrac = texturefrac + (yh - yl) * dcol.iscale;
-	const int64_t maxfrac = dcol.textureheight;
+	const int64_t endfrac = texturefrac + (yh - yl) * ctx.draw.dcol.iscale;
+	const int64_t maxfrac = ctx.draw.dcol.textureheight;
 
 	if (endfrac >= maxfrac)
 	{
-		const int64_t cnt = (endfrac - maxfrac + dcol.iscale) / dcol.iscale;
+		const int64_t cnt = (endfrac - maxfrac + ctx.draw.dcol.iscale) / ctx.draw.dcol.iscale;
 		yh -= cnt;
 	}
 
 	if (yl >= 0 && yh < viewheight && yl <= yh)
 	{
-		dcol.yl = static_cast<int>(yl);
-		dcol.yh = static_cast<int>(yh);
-		dcol.texturefrac = static_cast<fixed_t>(texturefrac);
+		ctx.draw.dcol.yl = static_cast<int>(yl);
+		ctx.draw.dcol.yh = static_cast<int>(yh);
+		ctx.draw.dcol.texturefrac = static_cast<fixed_t>(texturefrac);
 		drawfunc();
 	}
 }
@@ -243,7 +243,7 @@ EXTERN_CVAR(cl_movebob)
 // R_DrawVisSprite
 //	mfloorclip and mceilingclip should also be set.
 //
-void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
+void R_DrawVisSprite(rendercontext_t& ctx, vissprite_t *vis, int x1, int x2)
 {
 	bool fuzz_effect = false;
 	bool translated = false;
@@ -257,7 +257,7 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 
 	if (vis->res_id == NO_PARTICLE)
 	{
-		R_DrawParticle(vis);
+		R_DrawParticle(ctx, vis);
 		return;
 	}
 
@@ -276,12 +276,12 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 		return;
 	}
 
-	dcol.colormap = vis->colormap;
+	ctx.draw.dcol.colormap = vis->colormap;
 
 	if (vis->translation)
 	{
 		translated = true;
-		dcol.translation = vis->translation;
+		ctx.draw.dcol.translation = vis->translation;
 	}
 	else if (vis->mobjflags & MF_TRANSLATION)
 	{
@@ -289,7 +289,7 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 		//		used it, but the prefered way to change a thing's colors
 		//		is now with the palette field.
 		translated = true;
-		dcol.translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
+		ctx.draw.dcol.translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
 			( (vis->mobjflags & mask(MF_TRANSLATION)).to_int() >> (MF_TRANSSHIFT-8) ));
 	}
 	int id = vis->mo && vis->mo->player ? vis->mo->player->id : 0;
@@ -308,7 +308,7 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 			// and don't include sector colored lighting because it creates strange
 			// colors.
 			const palette_t* pal = V_GetDefaultPalette();
-			dcol.colormap = shaderef_t(&pal->maps, INVERSECOLORMAP);
+			ctx.draw.dcol.colormap = shaderef_t(&pal->maps, INVERSECOLORMAP);
 		}
 		else if (vis->statusflags & SF_BERSERK)
 		{
@@ -316,13 +316,13 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 			// but only if the fist is out.
 			if (vis->mo && vis->mo->player && vis->mo->player->readyweapon == wp_fist)
 			{
-				dcol.translation = translationref_t(&::redtable[id][0]);
+				ctx.draw.dcol.translation = translationref_t(&::redtable[id][0]);
 			}
 		}
 		else if (vis->statusflags & SF_IRONFEET)
 		{
 			// draw a green palette on the vissprite
-			dcol.translation = translationref_t(&::greentable[id][0]);
+			ctx.draw.dcol.translation = translationref_t(&::greentable[id][0]);
 		}
 	}
 
@@ -337,7 +337,7 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 	else if (vis->translucency < FRACUNIT)
 	{	// [RH] draw translucent column
 		lucent = true;
-		dcol.translevel = vis->translucency;
+		ctx.draw.dcol.translevel = vis->translucency;
 	}
 
 	// [SL] Select the set of drawing functions to use
@@ -354,25 +354,25 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 
 
 	const Texture* texture = vis->texture;
-	dcol.textureheight = texture->mHeight << FRACBITS;
-	dcol.texturedata = texture->mData;
-	dcol.argbtexturedata = texture->mARGBData;
+	ctx.draw.dcol.textureheight = texture->mHeight << FRACBITS;
+	ctx.draw.dcol.texturedata = texture->mData;
+	ctx.draw.dcol.argbtexturedata = texture->mARGBData;
 
-	dcol.masked = true;
-	dcol.iscale = 0xffffffffu / static_cast<unsigned>(vis->yscale);
-	dcol.texturemid = vis->texturemid;
-	spryscale = vis->yscale;
-	sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
+	ctx.draw.dcol.masked = true;
+	ctx.draw.dcol.iscale = 0xffffffffu / static_cast<unsigned>(vis->yscale);
+	ctx.draw.dcol.texturemid = vis->texturemid;
+	ctx.sprite.spryscale = vis->yscale;
+	ctx.sprite.sprtopscreen = centeryfrac - FixedMul(ctx.draw.dcol.texturemid, ctx.sprite.spryscale);
 
 	// [SL] set up the array that indicates which patch column to use for each screen column
 	fixed_t colfrac = vis->startfrac;
 	for (int x = vis->x1; x <= vis->x2; x++)
 	{
-		spriteposts[x] = texture->getColumn(colfrac >> FRACBITS);
+		ctx.sprite.spriteposts[x] = texture->getColumn(colfrac >> FRACBITS);
 		colfrac += vis->xiscale;
 	}
 
-	R_RenderColumnRange(rctx, vis->x1, vis->x2, negonearray, viewheightarray, spriteposts, SpriteColumnBlaster, false, 0);
+	R_RenderColumnRange(ctx, vis->x1, vis->x2, negonearray, viewheightarray, ctx.sprite.spriteposts, SpriteColumnBlaster, false, 0);
 
 	R_ResetDrawFuncs();
 }
@@ -385,7 +385,7 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 // coordinates onto the screen. Returns NULL if the projection is completely
 // clipped off the screen.
 //
-static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
+static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* sector, int fakeside,
 		fixed_t x, fixed_t y, fixed_t z, fixed_t tx, fixed_t ty,
 		fixed_t height, fixed_t width,
 		fixed_t topoffs, fixed_t sideoffs, bool flip)
@@ -461,7 +461,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	}
 
 	// store information in a vissprite
-	vissprite_t *vis = R_NewVisSprite();
+	vissprite_t *vis = R_NewVisSprite(ctx);
 
 	// killough 3/27/98: save sector for special clipping later
 	vis->heightsec = heightsec;
@@ -484,7 +484,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->spectator = false;
 	vis->res_id = ResourceId::INVALID_ID;
 	vis->texture = NULL;
-	vis->colormap = basecolormap;
+	vis->colormap = ctx.draw.basecolormap;
 
 	if (flip)
 	{
@@ -495,7 +495,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	return vis;
 }
 
-void R_DrawHitBox(const AActor* thing)
+void R_DrawHitBox(rendercontext_t& ctx, const AActor* thing)
 {
 	v3fixed_t vertices[8];
 	static constexpr byte color = 0x80;
@@ -565,7 +565,7 @@ void R_DrawHitBox(const AActor* thing)
 // R_ProjectSprite
 // Generates a vissprite for a thing if it might be visible.
 //
-void R_ProjectSprite(AActor *thing, int fakeside)
+void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 {
 	if (!thing || !thing->subsector || !thing->subsector->sector)
 		return;
@@ -681,7 +681,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	fixed_t height = texture->mHeight << FRACBITS;
 	fixed_t width = texture->mWidth << FRACBITS;
 
-	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, camx, camy, height, width, topoffs, sideoffs, flip);
+	vissprite_t* vis = R_GenerateVisSprite(ctx, sector, fakeside, thingx, thingy, thingz, camx, camy, height, width, topoffs, sideoffs, flip);
 
 	if (vis == NULL)
 		return;
@@ -698,22 +698,22 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	// get light level
 	if (fixedlightlev)
 	{
-		vis->colormap = basecolormap.with(fixedlightlev);
+		vis->colormap = ctx.draw.basecolormap.with(fixedlightlev);
 	}
 	else if (fixedcolormap.isValid())
 	{
 		// fixed map
 		vis->colormap = fixedcolormap;
 	}
-	else if (!foggy && (thing->frame & FF_FULLBRIGHT))
+	else if (!ctx.bsp.foggy && (thing->frame & FF_FULLBRIGHT))
 	{
 		// full bright
-		vis->colormap = basecolormap;	// [RH] Use basecolormap
+		vis->colormap = ctx.draw.basecolormap;	// [RH] Use basecolormap
 	}
-	else if (!foggy && thing->oflags & MFO_FULLBRIGHT)
+	else if (!ctx.bsp.foggy && thing->oflags & MFO_FULLBRIGHT)
 	{
 		// full bright
-		vis->colormap = basecolormap;
+		vis->colormap = ctx.draw.basecolormap;
 	}
 	else
 	{
@@ -721,7 +721,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		int index = (vis->yscale*lightscalexmul)>>LIGHTSCALESHIFT;	// [RH]
 		index = std::clamp(index, 0, MAXLIGHTSCALE - 1);
 
-		vis->colormap = basecolormap.with(spritelights[index]);	// [RH] Use basecolormap
+		vis->colormap = ctx.draw.basecolormap.with(ctx.sprite.spritelights[index]);	// [RH] Use basecolormap
 	}
 
 	if (r_drawnetcredibility)
@@ -754,7 +754,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 				particle.color = 0;             // Pitch.
 				break;
 		}
-		R_ProjectParticle(&particle, sector, fakeside);
+		R_ProjectParticle(ctx, &particle, sector, fakeside);
 	}
 }
 
@@ -764,7 +764,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 // During BSP traversal, this adds sprites by sector.
 //
 // killough 9/18/98: add lightlevel as parameter, fixing underwater lighting
-void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
+void R_AddSprites (rendercontext_t& ctx, sector_t *sec, int lightlevel, int fakeside)
 {
 	// BSP is traversed by subsector.
 	// A sector might have been split into several
@@ -776,14 +776,14 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 	// Well, now it will be done.
 	sec->validcount = validcount;
 
-	int lightnum = (lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+	int lightnum = (lightlevel >> LIGHTSEGSHIFT) + (ctx.bsp.foggy ? 0 : extralight);
 
 	if (lightnum < 0)
-		spritelights = scalelight[0];
+		ctx.sprite.spritelights = scalelight[0];
 	else if (lightnum >= LIGHTLEVELS)
-		spritelights = scalelight[LIGHTLEVELS-1];
+		ctx.sprite.spritelights = scalelight[LIGHTLEVELS-1];
 	else
-		spritelights = scalelight[lightnum];
+		ctx.sprite.spritelights = scalelight[lightnum];
 
 	// Handle all things in sector.
 	for (AActor* thing = sec->thinglist; thing; thing = thing->snext)
@@ -795,7 +795,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 			R_PREFETCH(reinterpret_cast<const char*>(next) + 64);
 		}
 
-		R_ProjectSprite (thing, fakeside);
+		R_ProjectSprite (ctx, thing, fakeside);
 	}
 }
 
@@ -803,7 +803,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 //
 // R_DrawPSprite
 //
-void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
+void R_DrawPSprite(rendercontext_t& ctx, const pspdef_t& psp, ActorFlags1 flags)
 {
 	const state_t* st = psp.state();
 	if (!st)
@@ -834,8 +834,8 @@ void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
 	fixed_t width = texture->mWidth << FRACBITS;
 
 	// calculate the positional offset due to weapon bobbing
-	fixed_t sx = ::bobx;
-	fixed_t sy = ::boby;
+	fixed_t sx = ctx.sprite.bobx;
+	fixed_t sy = ctx.sprite.boby;
 
 	// calculate edges of the shape
 	fixed_t tx = sx - ((320 / 2) << FRACBITS) - sideoffs;
@@ -886,7 +886,7 @@ void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
 
 	if (fixedlightlev)
 	{
-		vis.colormap = basecolormap.with(fixedlightlev);
+		vis.colormap = ctx.draw.basecolormap.with(fixedlightlev);
 	}
 	else if (fixedcolormap.isValid())
 	{
@@ -896,12 +896,12 @@ void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
 	else if (st->frame & FF_FULLBRIGHT)
 	{
 		// full bright
-		vis.colormap = basecolormap;	// [RH] use basecolormap
+		vis.colormap = ctx.draw.basecolormap;	// [RH] use basecolormap
 	}
 	else
 	{
 		// local light
-		vis.colormap = basecolormap.with(spritelights[MAXLIGHTSCALE-1]);	// [RH] add basecolormap
+		vis.colormap = ctx.draw.basecolormap.with(ctx.sprite.spritelights[MAXLIGHTSCALE-1]);	// [RH] add basecolormap
 	}
 	if (vis.statusflags & SF_INVIS)
 	{
@@ -926,7 +926,7 @@ void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
 		displayplayer().isFreecam)
 		return;
 
-	R_DrawVisSprite(&vis, vis.x1, vis.x2);
+	R_DrawVisSprite(ctx, &vis, vis.x1, vis.x2);
 }
 
 EXTERN_CVAR(r_thingsectorlight)
@@ -934,7 +934,7 @@ EXTERN_CVAR(r_thingsectorlight)
 //
 // R_DrawPlayerSprites
 //
-void R_DrawPlayerSprites()
+void R_DrawPlayerSprites(rendercontext_t& ctx)
 {
 	pspdef_t*	psp;
 	static sector_t tempsec;
@@ -948,30 +948,30 @@ void R_DrawPlayerSprites()
 		(consoleplayer().cheats & CF_CHASECAM))
 		return;
 
-	const sector_t* sec = R_FakeFlat(rctx, viewsector, &tempsec, &floorlight,
+	const sector_t* sec = R_FakeFlat(ctx, viewsector, &tempsec, &floorlight,
 	                                 &ceilinglight, false);
 
 	// [RH] set foggy flag
-	foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3]
+	ctx.bsp.foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3]
 				|| sec->colormap->fade;
 
 	// [RH] set basecolormap
-	basecolormap = sec->colormap->maps;
+	ctx.draw.basecolormap = sec->colormap->maps;
 
 	// get light level
 	const int lightnum = ((r_thingsectorlight ? (floorlight + ceilinglight) / 2 : sec->lightlevel) >> LIGHTSEGSHIFT)
-	               + (foggy ? 0 : extralight);
+	               + (ctx.bsp.foggy ? 0 : extralight);
 
 	if (lightnum < 0)
-		spritelights = scalelight[0];
+		ctx.sprite.spritelights = scalelight[0];
 	else if (lightnum >= LIGHTLEVELS)
-		spritelights = scalelight[LIGHTLEVELS-1];
+		ctx.sprite.spritelights = scalelight[LIGHTLEVELS-1];
 	else
-		spritelights = scalelight[lightnum];
+		ctx.sprite.spritelights = scalelight[lightnum];
 
 	// clip to screen bounds
-	mfloorclip = viewheightarray;
-	mceilingclip = negonearray;
+	ctx.sprite.mfloorclip = viewheightarray;
+	ctx.sprite.mceilingclip = negonearray;
 
 	{
 		const int centerhack = centery;
@@ -983,7 +983,7 @@ void R_DrawPlayerSprites()
 		for (const auto& psp : camera->player->psprites)
 		{
 			if (psp.statenum != S_NULL)
-				R_DrawPSprite(psp, ActorFlags1::none_set());
+				R_DrawPSprite(ctx, psp, ActorFlags1::none_set());
 		}
 
 		centery = centerhack;
@@ -1007,9 +1007,9 @@ void R_DrawPlayerSprites()
 
 static std::vector<vissprite_t*> spritesorter;
 
-void R_SortVisSprites()
+void R_SortVisSprites(rendercontext_t& ctx)
 {
-	const int vsprcount = vissprite_p - firstvissprite;
+	const int vsprcount = ctx.sprite.vissprite_p - ctx.sprite.firstvissprite;
 
 	if (!vsprcount)
 	{
@@ -1017,10 +1017,10 @@ void R_SortVisSprites()
 		return;
 	}
 
-	spritesorter.reserve(MaxVisSprites);
+	spritesorter.reserve(ctx.sprite.maxvissprites);
 	spritesorter.resize(vsprcount);
 
-	vissprite_t* spr = firstvissprite;
+	vissprite_t* spr = ctx.sprite.firstvissprite;
 	for (int i = 0; i < vsprcount; i++, spr++)
 		spritesorter[i] = spr;
 
@@ -1084,16 +1084,16 @@ std::vector<drawseg_t*>   clipseg_drawsegs;
 // Collects the drawsegs that can clip a sprite, newest first so the scan
 // visits them in the same order a backwards walk of the drawseg array would.
 //
-void R_BuildClipSegs()
+void R_BuildClipSegs(rendercontext_t& ctx)
 {
 	clipseg_extents.clear();
 	clipseg_drawsegs.clear();
 
-	const size_t count = static_cast<size_t>(ds_p - firstdrawseg);
+	const size_t count = static_cast<size_t>(ctx.bsp.ds_p - ctx.bsp.firstdrawseg);
 	clipseg_extents.reserve(count);
 	clipseg_drawsegs.reserve(count);
 
-	for (drawseg_t* ds = ds_p ; ds-- > firstdrawseg ; )
+	for (drawseg_t* ds = ctx.bsp.ds_p ; ds-- > ctx.bsp.firstdrawseg ; )
 	{
 		// a drawseg with no silhouette and no masked midtexture can neither
 		// clip a sprite nor be drawn by one
@@ -1113,7 +1113,7 @@ void R_BuildClipSegs()
 //
 // R_DrawSprite
 //
-void R_DrawSprite (vissprite_t *spr)
+void R_DrawSprite (rendercontext_t& ctx, vissprite_t *spr)
 {
 	static int			cliptop[MAXWIDTH];
 	static int			clipbot[MAXWIDTH];
@@ -1215,7 +1215,7 @@ void R_DrawSprite (vissprite_t *spr)
 		{
 			// masked mid texture?
 			if (ds->midposts)
-				R_RenderMaskedSegRange(rctx, ds, r1, r2);
+				R_RenderMaskedSegRange(ctx, ds, r1, r2);
 			// seg is behind sprite
 			continue;
 		}
@@ -1233,14 +1233,14 @@ void R_DrawSprite (vissprite_t *spr)
 	}
 
 	// all clipping has been performed, so draw the sprite
-	mfloorclip = clipbot;
-	mceilingclip = cliptop;
-	R_DrawVisSprite (spr, spr->x1, spr->x2);
+	ctx.sprite.mfloorclip = clipbot;
+	ctx.sprite.mceilingclip = cliptop;
+	R_DrawVisSprite (ctx, spr, spr->x1, spr->x2);
 
 	#if 0
 	EXTERN_CVAR (r_drawhitboxes)
 	if (r_drawhitboxes && spr->mo)
-		R_DrawHitBox(spr->mo);
+		R_DrawHitBox(ctx, spr->mo);
 	#endif
 }
 
@@ -1250,15 +1250,15 @@ void R_DrawSprite (vissprite_t *spr)
 //
 // R_DrawMasked
 //
-void R_DrawMasked (void)
+void R_DrawMasked (rendercontext_t& ctx)
 {
 	drawseg_t		 *ds;
 
-	R_SortVisSprites ();
-	R_BuildClipSegs();
+	R_SortVisSprites (ctx);
+	R_BuildClipSegs(ctx);
 
 	{
-		const uint32_t segcount = static_cast<uint32_t>(ds_p - firstdrawseg);
+		const uint32_t segcount = static_cast<uint32_t>(ctx.bsp.ds_p - ctx.bsp.firstdrawseg);
 		const uint32_t clipcount = static_cast<uint32_t>(clipseg_extents.size());
 		const uint32_t sprcount = static_cast<uint32_t>(spritesorter.size());
 
@@ -1271,15 +1271,15 @@ void R_DrawMasked (void)
 		spriteclip_stats.peak_sprites = std::max(spriteclip_stats.peak_sprites, sprcount);
 	}
 
-	closestNonCredibleVisSprite = nullptr;
+	ctx.sprite.closestNonCredibleVisSprite = nullptr;
 
 	for (auto& vis : std::views::reverse(spritesorter))
 	{
-		R_DrawSprite(vis);
+		R_DrawSprite(ctx, vis);
 
         if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
         {
-            closestNonCredibleVisSprite = vis;
+            ctx.sprite.closestNonCredibleVisSprite = vis;
         }
 	}
 
@@ -1291,12 +1291,12 @@ void R_DrawMasked (void)
 
 	//		for (ds=ds_p-1 ; ds >= drawsegs ; ds--)    old buggy code
 
-	for (ds=ds_p ; ds-- > firstdrawseg ; )	// new -- killough
+	for (ds=ctx.bsp.ds_p ; ds-- > ctx.bsp.firstdrawseg ; )	// new -- killough
 		if (ds->midposts)
-			R_RenderMaskedSegRange(rctx, ds, ds->x1, ds->x2);
+			R_RenderMaskedSegRange(ctx, ds, ds->x1, ds->x2);
 
 	// draw the psprites on top of everything
-	R_DrawPlayerSprites();
+	R_DrawPlayerSprites(ctx);
 }
 
 
@@ -1321,7 +1321,7 @@ BEGIN_COMMAND(drawsegstats)
 	    100.0 * static_cast<double>(s.overlapped) / static_cast<double>(s.scanned) : 0.0;
 
 	PrintFmt(PRINT_HIGH, "drawsegstats over {} frames:\n", s.frames);
-	PrintFmt(PRINT_HIGH, "  drawsegs/frame   avg {:.0f}   peak {}\n",
+	PrintFmt(PRINT_HIGH, "  ctx.bsp.drawsegs/frame   avg {:.0f}   peak {}\n",
 	    static_cast<double>(s.drawsegs) / frames, s.peak_drawsegs);
 	PrintFmt(PRINT_HIGH, "  clipsegs/frame   avg {:.0f}   peak {}\n",
 	    static_cast<double>(s.clipsegs) / frames, s.peak_clipsegs);
@@ -1386,7 +1386,7 @@ void R_FindParticleSubsectors ()
 	}
 }
 
-void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakeside)
+void R_ProjectParticle (rendercontext_t& ctx, particle_t *particle, const sector_t *sector, int fakeside)
 {
 	if (sector == NULL)
 		return;
@@ -1413,7 +1413,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	if (R_RotatePointSafe(int64_t(x) - viewx, int64_t(y) - viewy, ANG90 - viewangle, tx, ty))
 		return;
 
-	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, tx, ty, height, width, topoffs, sideoffs, false);
+	vissprite_t* vis = R_GenerateVisSprite(ctx, sector, fakeside, x, y, z, tx, ty, height, width, topoffs, sideoffs, false);
 
 	if (vis == NULL)
 		return;
@@ -1461,7 +1461,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		else
 		{
 			int index = (vis->yscale*lightscalexmul)>>(LIGHTSCALESHIFT-1);
-			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT) + (ctx.bsp.foggy ? 0 : extralight);
 
 			index = std::clamp(index, 0, MAXLIGHTSCALE - 1);
 			lightnum = std::clamp(lightnum, 0, LIGHTLEVELS - 1);
@@ -1471,22 +1471,22 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	}
 }
 
-void R_DrawParticle(vissprite_t* vis)
+void R_DrawParticle(rendercontext_t& ctx, vissprite_t* vis)
 {
 	// Don't bother clipping each individual column
 	const int x1 = vis->x1;
 	const int x2 = vis->x2;
-	const int y1 = std::max({vis->y1, mceilingclip[x1], mceilingclip[x2]});
-	const int y2 = std::min({vis->y2, mfloorclip[x1] - 1, mfloorclip[x2] - 1});
+	const int y1 = std::max({vis->y1, ctx.sprite.mceilingclip[x1], ctx.sprite.mceilingclip[x2]});
+	const int y2 = std::min({vis->y2, ctx.sprite.mfloorclip[x1] - 1, ctx.sprite.mfloorclip[x2] - 1});
 
-	dspan.x1 = vis->x1;
-	dspan.x2 = vis->x2;
-	dspan.colormap = vis->colormap;
-	dspan.translevel = vis->translucency;
+	ctx.draw.dspan.x1 = vis->x1;
+	ctx.draw.dspan.x2 = vis->x2;
+	ctx.draw.dspan.colormap = vis->colormap;
+	ctx.draw.dspan.translevel = vis->translucency;
 	// vis->startfrac holds palette color index
-	dspan.color = vis->startfrac;
+	ctx.draw.dspan.color = vis->startfrac;
 
-	for (dspan.y = y1; dspan.y <= y2; dspan.y++)
+	for (ctx.draw.dspan.y = y1; ctx.draw.dspan.y <= y2; ctx.draw.dspan.y++)
 		R_FillTranslucentSpan();
 }
 

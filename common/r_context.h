@@ -329,19 +329,8 @@ inline drawseg_t*& firstdrawseg = ::rctx.bsp.firstdrawseg;
 
 inline byte (&solidcol)[MAXWIDTH] = ::rctx.bsp.solidcol;
 
-inline vissprite_t*& vissprites     = ::rctx.sprite.vissprites;
-inline vissprite_t*& firstvissprite = ::rctx.sprite.firstvissprite;
-inline vissprite_t*& lastvissprite  = ::rctx.sprite.lastvissprite;
-inline vissprite_t*& vissprite_p    = ::rctx.sprite.vissprite_p;
-inline int&          MaxVisSprites  = ::rctx.sprite.maxvissprites;
-
 inline fixed_t& bobx = ::rctx.sprite.bobx;
 inline fixed_t& boby = ::rctx.sprite.boby;
-
-inline const int*& mfloorclip   = ::rctx.sprite.mfloorclip;
-inline const int*& mceilingclip = ::rctx.sprite.mceilingclip;
-inline fixed_t&    spryscale    = ::rctx.sprite.spryscale;
-inline fixed_t&    sprtopscreen = ::rctx.sprite.sprtopscreen;
 
 inline vissprite_t*& closestNonCredibleVisSprite = ::rctx.sprite.closestNonCredibleVisSprite;
 

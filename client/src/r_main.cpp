@@ -1146,7 +1146,7 @@ void R_RenderPlayerView(player_t* player)
 	R_ClearDrawSegs(rctx);
 	R_ClearOpenings(rctx);
 	R_ClearPlanes(rctx, true);
-	R_ClearSprites();
+	R_ClearSprites(rctx);
 
 	R_ResetDrawFuncs();
 
@@ -1178,7 +1178,7 @@ void R_RenderPlayerView(player_t* player)
 
 	R_DrawPlanes(rctx);
 	R_DrawPortals(rctx);
-	R_DrawMasked();
+	R_DrawMasked(rctx);
 
 	// NOTE(jsd): Full-screen status color blending:
 	int blend_alpha = static_cast<int>(blend_color.geta() * 255.0f);
