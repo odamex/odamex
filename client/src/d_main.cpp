@@ -375,7 +375,7 @@ void D_DoomLoop()
 		{
 			D_RunTics(CL_RunTics, CL_DisplayTics);
 		}
-		catch (CRecoverableError &error)
+		catch (const CRecoverableError& error)
 		{
 			PrintFmt(PRINT_ERROR, "\nERROR: {}\n", error.GetMsg());
 

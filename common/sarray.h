@@ -130,6 +130,7 @@ public:
 		}
 
 		// allow implicit converstion from iterator to const_iterator
+		// NOLINTNEXTLINE(misc-explicit-constructor)
 		operator ConstThisClass() const noexcept
 		{
 			return ConstThisClass(mSArray, mSlot);

@@ -178,6 +178,7 @@ public:
 	}
 
 	// use as raw pointer
+	// NOLINTNEXTLINE(misc-explicit-constructor)
 	operator T*()
 	{
 		if(!naive)
@@ -187,6 +188,7 @@ public:
 	}
 
 	// use as raw pointer
+	// NOLINTNEXTLINE(misc-explicit-constructor)
 	operator const T*() const
 	{
 		if(!naive)
