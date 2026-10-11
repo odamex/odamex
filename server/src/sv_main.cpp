@@ -1599,7 +1599,7 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated, AwarenessEnum new
 	{
 		if (updated == 0)
 		{
-			while (!pl.mobjsToSpawn.empty())
+			while (not pl.mobjsToSpawn.empty())
 			{
 				mo = pl.mobjsToSpawn.front();
 
@@ -1615,7 +1615,7 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated, AwarenessEnum new
 					pl.mobjsToSpawn.pop();
 				}
 
-				if (mo && !mo->WasDestroyed())
+				if (mo and not mo->WasDestroyed())
 					updated += SV_AwarenessUpdate(pl, mo, AwarenessEnum::FULLY_AWARE);  // Start things off fully aware.  They will drop down as needed.
 
 				if (updated > MAX_HIDDEN_MOBJ_UPDATES)

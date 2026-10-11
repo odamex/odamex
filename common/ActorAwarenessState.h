@@ -30,9 +30,7 @@ enum class AwarenessEnum
 	ALWAYS_AWARE,       ///< Permanently fully aware.  Avatars and all players.  Key part of nth_element comparator.
 	FULLY_AWARE,        ///< All messages active, full fidelity.
 	SEMI_AWARE,         ///< Reduced reliable traffic.
-	BARELY_AWARE,       ///< On life support.
-
-	AWARENESS_LEVEL_COUNT
+	BARELY_AWARE        ///< On life support.
 };
 
 template <size_t MAX_PLAYER_COUNT>
