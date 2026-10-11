@@ -2555,7 +2555,11 @@ void A_VileAttack (AActor *actor)
 
 	S_Sound (actor, CHAN_WEAPON, "vile/stop", 1, ATTN_NORM);
 	P_DamageMobj(actor->target, actor, actor, 20, MOD_VILEFIRE);
-	actor->target->momz = 1000*FRACUNIT/actor->target->info->mass;
+
+	if (serverside)
+	{
+		actor->target->momz = 1000*FRACUNIT/actor->target->info->mass;
+	}
 
 	an = actor->angle >> ANGLETOFINESHIFT;
 
