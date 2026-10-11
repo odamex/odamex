@@ -46,7 +46,11 @@
 #include "p_unlag.h"
 
 #ifdef SERVER_APP
-#include "sv_main.h"
+#   include "sv_main.h"
+#elif defined CLIENT_APP
+#   include "cl_stubs.h"
+#elif defined TEST_APP
+#   include "t_stubs.h"
 #endif
 
 extern bool predicting;
@@ -88,7 +92,6 @@ void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
-void SV_ArmMobj(AActor* mo);
 void PickupMessage(const AActor *toucher, const char *message);
 void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 

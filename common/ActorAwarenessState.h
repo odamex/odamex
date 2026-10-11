@@ -33,7 +33,7 @@ enum class AwarenessEnum
 	BARELY_AWARE        ///< On life support.
 };
 
-template <size_t MAX_PLAYER_COUNT>
+template <std::size_t MAX_PLAYER_COUNT>
 class ActorAwarenessState
 {
 	public:
