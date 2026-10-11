@@ -2558,7 +2558,10 @@ void A_VileAttack (AActor *actor)
 
 	if (serverside)
 	{
-		actor->target->momz = 1000*FRACUNIT/actor->target->info->mass;
+		// Impulse aka transferred momentum:   (mass * velocity.  Also calculates as Force * time.)
+		const fixed_t ARCHVILE_BLAST_IMPULSE = 1000 * FRACUNIT;
+
+		actor->target->momz = ARCHVILE_BLAST_IMPULSE / actor->target->info->mass;   // Divide out mass to get velocity.
 	}
 
 	an = actor->angle >> ANGLETOFINESHIFT;
