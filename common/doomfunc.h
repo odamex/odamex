@@ -33,12 +33,12 @@
 
 struct client_t;
 
-void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
-void SV_BasePrintAllPlayers(const int printlevel, const std::string& str);
-void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std::string& str);
+void SV_BasePrint(client_t* cl, const printlevel_t printlevel, const std::string& str);
+void SV_BasePrintAllPlayers(const printlevel_t printlevel, const std::string& str);
+void SV_BasePrintButPlayer(const printlevel_t printlevel, const int player_id, const std::string& str);
 #endif
 
-size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str);
+size_t C_BasePrint(const printlevel_t printlevel, const char* color_code, const std::string& str);
 
 template <typename... ARGS>
 size_t PrintFmt(fmt::format_string<ARGS...> format, ARGS&&... args)
@@ -47,7 +47,7 @@ size_t PrintFmt(fmt::format_string<ARGS...> format, ARGS&&... args)
 }
 
 template <typename... ARGS>
-size_t PrintFmt(const int printlevel, fmt::format_string<ARGS...> format, ARGS&&... args)
+size_t PrintFmt(const printlevel_t printlevel, fmt::format_string<ARGS...> format, ARGS&&... args)
 {
 	return C_BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::format(format, std::forward<ARGS>(args)...));
 }
@@ -79,7 +79,7 @@ size_t DPrintFmt(fmt::format_string<ARGS...> format, ARGS&&... args)
  * @param args printf-style arguments.
  */
 template <typename... ARGS>
-void SV_BroadcastPrintFmt(int printlevel, fmt::format_string<ARGS...> format, ARGS&&... args)
+void SV_BroadcastPrintFmt(printlevel_t printlevel, fmt::format_string<ARGS...> format, ARGS&&... args)
 {
 	if (!serverside)
 		return;
@@ -112,7 +112,7 @@ void SV_BroadcastPrintFmt(fmt::format_string<ARGS...> format, ARGS&&... args)
 
 #ifdef SERVER_APP
 template <typename... ARGS>
-void SV_BroadcastPrintFmtButPlayer(int printlevel, int player_id, fmt::format_string<ARGS...> format, ARGS&&... args)
+void SV_BroadcastPrintFmtButPlayer(printlevel_t printlevel, int player_id, fmt::format_string<ARGS...> format, ARGS&&... args)
 {
 	std::string string = fmt::format(format, std::forward<ARGS>(args)...);
 	C_BasePrint(printlevel, TEXTCOLOR_NORMAL, string); // print to the console
@@ -126,7 +126,7 @@ void SV_BroadcastPrintFmtButPlayer(int printlevel, int player_id, fmt::format_st
 
 // Print directly to a specific client.
 template <typename... ARGS>
-void SV_ClientPrintFmt(client_t *cl, int level, fmt::format_string<ARGS...> format, ARGS&&... args)
+void SV_ClientPrintFmt(client_t *cl, printlevel_t level, fmt::format_string<ARGS...> format, ARGS&&... args)
 {
 	SV_BasePrint(cl, level, fmt::format(format, std::forward<ARGS>(args)...));
 }

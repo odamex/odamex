@@ -58,8 +58,6 @@ struct History
 
 static struct History *HistTail = NULL;
 
-#define PRINTLEVELS 5
-
 EXTERN_CVAR (log_fulltimestamps)
 
 char *TimeStamp()
@@ -101,7 +99,10 @@ char *TimeStamp()
 
 EXTERN_CVAR(log_color)
 
-static size_t PrintString(int printlevel, std::string str)
+namespace
+{
+
+size_t PrintString(printlevel_t printlevel, std::string str)
 {
 	StripColorCodes(str);
 
@@ -155,9 +156,11 @@ static size_t PrintString(int printlevel, std::string str)
 	return str.length();
 }
 
+} // namespace
+
 extern bool gameisdead;
 
-size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
+size_t C_BasePrint(const printlevel_t printlevel, const char* color_code, const std::string& str)
 {
 	(void)color_code;
 	if (gameisdead)

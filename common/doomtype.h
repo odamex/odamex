@@ -124,25 +124,30 @@ constexpr uint32_t BIT_MASK(uint32_t a, uint32_t b)
 }
 
 // game print flags
-enum printlevel_t {
-	PRINT_PICKUP,		// Pickup messages
-	PRINT_OBITUARY,		// Death messages
-	PRINT_HIGH,			// Regular messages
+enum class printlevel_t : uint8_t
+{
+	PRINT_PICKUP,     // Pickup messages
+	PRINT_OBITUARY,   // Death messages
+	PRINT_HIGH,       // Regular messages
 
-	PRINT_CHAT,			// Chat messages
-	PRINT_TEAMCHAT,		// Chat messages from a teammate
-	PRINT_SERVERCHAT,	// Chat messages from the server
+	PRINT_CHAT,       // Chat messages
+	PRINT_TEAMCHAT,   // Chat messages from a teammate
+	PRINT_SERVERCHAT, // Chat messages from the server
 
-	PRINT_WARNING,		// Warning messages
-	PRINT_ERROR,		// Fatal error messages
+	PRINT_WARNING,    // Warning messages
+	PRINT_ERROR,      // Fatal error messages
 
-	PRINT_NORCON,		// Do NOT send the message to any rcon client.
+	PRINT_NORCON,     // Do NOT send the message to any rcon client.
 
-	PRINT_FILTERCHAT,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
-	PRINT_FILTERHIGH,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
+	PRINT_FILTERCHAT, // Filter the message to not be displayed ingame, but only in the console (ugly hack)
+	PRINT_FILTERHIGH, // Filter the message to not be displayed ingame, but only in the console (ugly hack)
+
+	PRINT_SHOWALWAYS, // Same as PRINT_HIGH but always shown regardless of whether show_messages is enabled
 
 	PRINT_MAXPRINT
 };
+
+using enum printlevel_t;
 
 //
 // MIN
