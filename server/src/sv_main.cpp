@@ -1548,7 +1548,7 @@ static void SV_SpawnMobjPrepareForClients(AActor* mo, bool i_allowDirectSpawnQue
 		{
 			if (i_allowDirectSpawnQueue)
 			{
-				player.to_spawn.push(mo->ptr());
+				player.mobjsToSpawn.push(mo->ptr());
 			}
 		}
 	}
@@ -1599,9 +1599,9 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated, AwarenessEnum new
 	{
 		if (updated == 0)
 		{
-			while (!pl.to_spawn.empty())
+			while (!pl.mobjsToSpawn.empty())
 			{
-				mo = pl.to_spawn.front();
+				mo = pl.mobjsToSpawn.front();
 
 				// The following lock is needed to dodge a contention issue in the
 				// non-safe portion of the szp utility where it manipulates an
@@ -1612,7 +1612,7 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated, AwarenessEnum new
 				// do the locking in the one place that really needs it.
 				{
 					std::unique_lock lock {s_spawnSzpMutex};
-					pl.to_spawn.pop();
+					pl.mobjsToSpawn.pop();
 				}
 
 				if (mo && !mo->WasDestroyed())
@@ -3160,7 +3160,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 {
 	const AActor* mo = sortedMobjIter->actorPtr;
 
-	if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
+	if (not (mo->flags & MF_MISSILE) or mo->flags & MF_SKULLFLY or mo->updatedDuringLocalTic == gametic)
 		return;
 
 	// 64 units feels about right to prevent barely-dodged missiles from floating in front of the player's face
@@ -3173,7 +3173,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	                                     awarenessLevel == AwarenessEnum::ALWAYS_AWARE and
 	                                     sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
 
-	if (isHyperAware or mo->updatedDuringLocalTic == gametic)
+	if (isHyperAware)
 	{
 		player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
 	}
@@ -3216,37 +3216,42 @@ enum class TransportEnum
 	RELIABLE
 };
 
+void WriteMobjMessageToPlayer(const odaproto::svc::UpdateMobjWithMode& message, player_t& player, AwarenessEnum awareness, TransportEnum transport)
+{
+	MessageQueue& fullAwareQueue = transport == TransportEnum::BEST_EFFORT ? player.client.messenger->BestEffort()
+	                                                                       : player.client.messenger->Reliable();
+	MessageQueue& semiAwareQueue = transport == TransportEnum::RELIABLE ? player.client.messenger->Reliable()
+	                                                                    : player.client.messenger->BestEffort();
+	switch (awareness)
+	{
+		case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
+		case AwarenessEnum::BARELY_AWARE:
+			break;
+
+		case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
+		case AwarenessEnum::FULLY_AWARE:
+			fullAwareQueue.Write( message);
+			break;
+
+		case AwarenessEnum::SEMI_AWARE:
+			semiAwareQueue.Write( message);
+			break;
+	}
+}
+
 void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 {
 	// Don't use this function to update players.
 	if (mobj.player)
 		return;
 
-	auto message = SVC_UpdateMobj(mobj);
+	auto message = SVC_UpdateMobjWithMode(mobj);
 
 	for (auto& player : players)
 	{
 		if (player.ingame() and SV_IsPlayerAllowedToSee(player, &mobj))
 		{
-			MessageQueue& fullAwareQueue = transport == TransportEnum::BEST_EFFORT ? player.client.messenger->BestEffort()
-			                                                                       : player.client.messenger->Reliable();
-			MessageQueue& semiAwareQueue = transport == TransportEnum::RELIABLE ? player.client.messenger->Reliable()
-                                                                                : player.client.messenger->BestEffort();
-			switch (mobj.playersAware.Get(player.id))
-			{
-				case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
-				case AwarenessEnum::BARELY_AWARE:
-					break;
-
-				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
-				case AwarenessEnum::FULLY_AWARE:
-					fullAwareQueue.Write( message);
-					break;
-
-				case AwarenessEnum::SEMI_AWARE:
-					semiAwareQueue.Write( message);
-					break;
-			}
+			WriteMobjMessageToPlayer(message, player, mobj.playersAware.Get(player.id), transport);
 		}
 	}
 }
@@ -3255,9 +3260,20 @@ void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 
 void SV_ArmMobj(AActor* mobj)
 {
-	mobj->updatedDuringLocalTic = gametic;
-}
+	// Don't use this function to update players.
+	if (mobj->player)
+		return;
 
+	mobj->updatedDuringLocalTic = gametic;
+
+	for (auto& player : players)
+	{
+		if (player.ingame() and SV_IsPlayerAllowedToSee(player, mobj))
+		{
+			player.mobjsToUpdate.insert(mobj->ptr());
+		}
+	}
+}
 
 // Update the given actors data immediately, using standard Reliable and Best-effort transports as appropriate.
 void SV_UpdateMobj(AActor* mo)
@@ -3338,10 +3354,11 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 
 	const int  thisMonstersUpdateTic  = gametic + static_cast<int>(mo->netid);   // Add netid to try to spread the monster updates evenly.
 	const bool thisMonsterIsScheduled = (thisMonstersUpdateTic % MONSTER_UPDATE_INTERVAL_TICS) == 0;
+	const bool thisMonsterIsEligible  = mo->updatedDuringLocalTic != gametic;
 
 	// Update the monster to the player if it's the monster's tic, or
 	// if we have an on-demand request to update this mobj specifically.
-	if (thisMonsterIsScheduled or mo->updatedDuringLocalTic == gametic)
+	if (thisMonsterIsScheduled and thisMonsterIsEligible)
 	{
 		if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
 		{
@@ -3739,13 +3756,28 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	// Now that we've gotten through the basic "keep the game cycling" stuff, go through the
 	// additional mobj messages that can really blow out the bandwidth if we let them.
 
+	// Start with the mobjs that we already know the player is aware of and have on-demand equested
+	// updates due to things like state transitions, teleportations.
+	for (const auto& mobjPtr : player.mobjsToUpdate)
+	{
+		if (mobjPtr)    // Always double-check.  We otherwise don't know if it was somehow destroyed in the meantime.
+		{
+			auto message = SVC_UpdateMobjWithMode(*mobjPtr);
+			WriteMobjMessageToPlayer(message,
+			                         player,
+			                         mobjPtr->playersAware.Get(player.id),
+			                         TransportEnum::AUTO);
+		}
+	}
+	player.mobjsToUpdate.clear();
+
 	const bool throttleIsActive = player.client.messenger->GetReliableOverloadCount() > 1;
 
 	const size_t previousSortedMobjCount = player.sortedMobjs.size();
 	const auto sortedMobjPartitions = SV_SortMobjsForPlayer(player, player.client.messenger->GetReliableOverloadCount());
 
 	// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
-	// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
+	// Combined with the high-priority mobjsToSpawn queue being directly limited in SV_UpdateHiddenMobj,
 	// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
 	// get serviced under high-load situations.
 	const int temporaryGrowthBonus = std::min(std::max(0,
