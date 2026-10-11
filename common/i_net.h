@@ -130,6 +130,11 @@ enum clientBuf_e
 #define SVC_SM_FRIEND BIT(4)
 
 /**
+ * @brief svc_spawnmobj: How much ammo this pickup hands out.
+ */
+#define SVC_SM_PICKUPAMMO BIT(5)
+
+/**
  * @brief svc_updatemobj: Supply mobj position and random index.
  */
 #define SVC_UM_POS_RND BIT(0)

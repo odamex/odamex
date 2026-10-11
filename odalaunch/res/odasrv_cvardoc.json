@@ -1407,6 +1407,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Dropped weapons carry the ammo their owner had left.",
+         "name" : "sv_weapondropammo",
+         "type" : "boolean"
+      },
+      {
          "default" : true,
          "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
          "helptext" : "Weapons stay after pickup",

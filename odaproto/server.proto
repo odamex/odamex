@@ -84,6 +84,7 @@ message SpawnMobj
 	repeated int32  args            = 6;
 	uint32          timebase_tic    = 7;
 	bool            is_spawn_tic    = 8;    // Indicates that the client must perform a spawn animation tic immediately.
+	int32           pickup_ammo     = 9;
 }
 
 // svc_disconnectclient

@@ -244,6 +244,9 @@ class CredibilityState
 		int             m_predictedMotionTicCount { 0 };
 };
 
+// Value for AActor::pickupammo meaning "this pickup carries no ammo of its own".
+inline constexpr int PICKUP_AMMO_DEFAULT = -1;
+
 // Map Object definition.
 class AActor : public DThinker
 {
@@ -431,6 +434,11 @@ public:
 	AActorPtr           tracer;
 	byte                special = 0;    // special
 	std::array<byte, 5> args = {};       // special arguments
+
+	// Ammo this pickup carries, in rounds.
+	// Handed out in place of the amount its sprite would normally give,
+	// but never less than that sprite amount.
+	int             pickupammo = PICKUP_AMMO_DEFAULT;
 
 	AActor			*inext = nullptr, *iprev = nullptr;	// Links to other mobjs in same bucket
 

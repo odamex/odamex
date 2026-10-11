@@ -531,6 +531,13 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		cur->set_oflags(mo->oflags.to_int());
 	}
 
+	// Pickups that hand out something other than their usual amount of ammo.
+	if (mo->pickupammo != PICKUP_AMMO_DEFAULT)
+	{
+		spawnFlags |= SVC_SM_PICKUPAMMO;
+		msg.set_pickup_ammo(mo->pickupammo);
+	}
+
 	// animating corpses
 	if ((mo->flags & MF_CORPSE) && mo->state->statenum != S_GIBS)
 	{

@@ -553,4 +553,7 @@ CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 CVAR(				sv_weapondrop, "0", "Enable/disable weapon drop.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR(				sv_weapondropammo, "0", "Dropped weapons carry the ammo their owner had left.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 VERSION_CONTROL (c_cvarlist_cpp, "$Id$")

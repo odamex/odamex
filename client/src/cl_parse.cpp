@@ -884,6 +884,11 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->friend_teamid = static_cast<team_t>(msg->current().friend_teamid());
 	}
 
+	if (msg->spawn_flags() & SVC_SM_PICKUPAMMO)
+	{
+		mo->pickupammo = msg->pickup_ammo();
+	}
+
 	mo->UpdateActorLists();
 
 	if (msg->spawn_flags() & SVC_SM_CORPSE)
