@@ -48,7 +48,6 @@ argb_t CL_GetPlayerColor(const player_t&);
 
 extern NetDemo netdemo;
 extern fixed_t FocalLengthX;
-extern byte* Ranges;
 
 extern lumpHandle_t line_leftempty;
 extern lumpHandle_t line_leftfull;
@@ -58,6 +57,7 @@ extern lumpHandle_t line_centerright;
 extern lumpHandle_t line_centerfull;
 extern lumpHandle_t line_rightempty;
 extern lumpHandle_t line_rightfull;
+translationref_t ST_BarColor(int color);
 
 EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_gametype)
@@ -1219,10 +1219,11 @@ void EleBar(const int x, const int y, const int w, const float scale,
 		drawX = x;
 	}
 
+	const translationref_t barcolor = ST_BarColor(color);
 	for (const auto& patch : lineHandles)
 	{
 		hud::DrawTranslatedPatch(drawX, y, scale, x_align, y_align, x_origin, y_origin,
-		                         patch, ::Ranges + color * 256);
+		                         patch, barcolor);
 
 		if (x_align == hud::X_RIGHT)
 		{

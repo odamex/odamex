@@ -222,108 +222,64 @@ algorithm that uses RGB tables.
 // ============================================================================
 
 argb_t translationRGB[MAXPLAYERS+1][16];
-byte *Ranges;
 struct alignas(256) TranslationTables {
-	// 1 player setup menu + 255 players + 3 classic translations + 21 font translations
-    byte data[256 * (1 + MAXPLAYERS + 3 + 21)];
+	// 1 player setup menu + 255 players + 3 classic translations
+    std::array<byte, 256 * static_cast<size_t>(1 + MAXPLAYERS + 3)> data;
 };
 static std::unique_ptr<TranslationTables> translationtablesmem = nullptr;
 
-static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
+// The colors each text color runs between, brightest first.
+// Kept as bytes rather than argb_t because argb_t's channel
+// order is only settled at runtime.
+namespace
 {
-	static constexpr palindex_t chexstart_index = 0x70;
-	static constexpr palindex_t chexend_index = 0x7F;
-	static constexpr palindex_t hacxstart_index = 0xC3;
-	static constexpr palindex_t hacxmid1_index = 0xCF;
-	static constexpr palindex_t hacxmid2_index = 0xF0;
-	static constexpr palindex_t hacxend_index = 0xF2;
-	static constexpr palindex_t start_index = 0xB0;
-	static constexpr palindex_t end_index = 0xBF;
-	const int index_range = end_index - start_index + 1;
+struct fontcolor_t
+{
+	int                    color;
+	std::array<uint8_t, 3> bright;
+	std::array<uint8_t, 3> dark;
+};
 
-	palindex_t* dest = static_cast<palindex_t*>(Ranges) + color_num * 256;
+// NOLINTBEGIN(readability-magic-numbers)
+constexpr std::array<fontcolor_t, NUM_TEXT_COLORS - 1> fontcolors = {{
+	{.color = CR_BRICK,     .bright = {0xFF, 0xB8, 0xB8}, .dark = {0x47, 0x00, 0x00}},
+	{.color = CR_TAN,       .bright = {0xFF, 0xEB, 0xDF}, .dark = {0x33, 0x2B, 0x13}},
+	{.color = CR_GRAY,      .bright = {0xEF, 0xEF, 0xEF}, .dark = {0x27, 0x27, 0x27}},
+	{.color = CR_GREEN,     .bright = {0x77, 0xFF, 0x6F}, .dark = {0x0B, 0x17, 0x07}},
+	{.color = CR_BROWN,     .bright = {0xBF, 0xA7, 0x8F}, .dark = {0x53, 0x3F, 0x2F}},
+	{.color = CR_GOLD,      .bright = {0xFF, 0xFF, 0x73}, .dark = {0x73, 0x2B, 0x00}},
+	{.color = CR_RED,       .bright = {0xFF, 0x00, 0x00}, .dark = {0x3F, 0x00, 0x00}},
+	{.color = CR_BLUE,      .bright = {0x00, 0x00, 0xFF}, .dark = {0x00, 0x00, 0x27}},
+	{.color = CR_ORANGE,    .bright = {0xFF, 0x80, 0x00}, .dark = {0x20, 0x00, 0x00}},
+	{.color = CR_WHITE,     .bright = {0xFF, 0xFF, 0xFF}, .dark = {0x24, 0x24, 0x24}},
+	{.color = CR_YELLOW,    .bright = {0xFC, 0xD0, 0x43}, .dark = {0x27, 0x27, 0x27}},
+	{.color = CR_BLACK,     .bright = {0x50, 0x50, 0x50}, .dark = {0x13, 0x13, 0x13}},
+	{.color = CR_LIGHTBLUE, .bright = {0xB4, 0xB4, 0xFF}, .dark = {0x00, 0x00, 0x73}},
+	{.color = CR_CREAM,     .bright = {0xFF, 0xD7, 0xBB}, .dark = {0xCF, 0x83, 0x53}},
+	{.color = CR_OLIVE,     .bright = {0x7B, 0x7F, 0x50}, .dark = {0x2F, 0x37, 0x1F}},
+	{.color = CR_DARKGREEN, .bright = {0x43, 0x93, 0x37}, .dark = {0x0B, 0x17, 0x07}},
+	{.color = CR_DARKRED,   .bright = {0xAF, 0x2B, 0x2B}, .dark = {0x2B, 0x00, 0x00}},
+	{.color = CR_DARKBROWN, .bright = {0xA3, 0x6B, 0x3F}, .dark = {0x1F, 0x17, 0x0B}},
+	{.color = CR_PURPLE,    .bright = {0xCF, 0x00, 0xCF}, .dark = {0x23, 0x00, 0x23}},
+	{.color = CR_DARKGRAY,  .bright = {0x8B, 0x8B, 0x8B}, .dark = {0x23, 0x23, 0x23}},
+	{.color = CR_CYAN,      .bright = {0x00, 0xF0, 0xF0}, .dark = {0x00, 0x1F, 0x1F}},
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
 
-	if (IsChexMission(gamemission))
+bool R_GetFontColorRange(int color, argb_t& bright, argb_t& dark)
+{
+	for (const fontcolor_t& fc : fontcolors)
 	{
-		for (int index = 0; index < chexstart_index; index++)
-			dest[index] = index;
-		for (int index = chexend_index + 1; index < 256; index++)
-			dest[index] = index;
-	}
-	else if (gamemission == commercial_hacx)
-	{
-		for (int index = 0; index < hacxstart_index; index++)
-			dest[index] = index;
-		for (int index = hacxmid1_index + 1; index < hacxmid2_index; index++)
-			dest[index] = index;
-		for (int index = hacxend_index + 1; index < 256; index++)
-			dest[index] = index;
-	}
-	else
-	{
-		for (int index = 0; index < start_index; index++)
-			dest[index] = index;
-		for (int index = end_index + 1; index < 256; index++)
-			dest[index] = index;
+		if (fc.color != color)
+			continue;
+
+		bright = argb_t(fc.bright[0], fc.bright[1], fc.bright[2]);
+		dark = argb_t(fc.dark[0], fc.dark[1], fc.dark[2]);
+		return true;
 	}
 
-	int r_diff = end_color.getr() - start_color.getr();
-	int g_diff = end_color.getg() - start_color.getg();
-	int b_diff = end_color.getb() - start_color.getb();
-	int hacxtrack;
-
-	if (IsChexMission(gamemission))
-	{
-		for (palindex_t index = chexstart_index; index <= chexend_index; index++)
-		{
-			const int i = index - chexstart_index;
-
-			const int r = start_color.getr() + i * r_diff / index_range;
-			const int g = start_color.getg() + i * g_diff / index_range;
-			const int b = start_color.getb() + i * b_diff / index_range;
-
-			dest[index] = V_BestColor(V_GetDefaultPalette()->basecolors, r, g, b);
-		}
-
-		dest[0x2C] = dest[0x2D] = dest[0x2F] = dest[chexend_index];
-	}
-	else if (gamemission == commercial_hacx)
-	{
-		for (palindex_t index = hacxstart_index; index <= hacxend_index; index++)
-		{
-			if (index > hacxmid1_index && index < hacxmid2_index)
-				index = hacxmid2_index;
-
-			if (index <= hacxmid1_index)
-				hacxtrack = hacxstart_index;
-			else
-				hacxtrack = hacxmid2_index - (hacxmid1_index - hacxstart_index + 1);
-			int i = index - hacxtrack;
-
-			int r = start_color.getr() + i * r_diff / index_range;
-			int g = start_color.getg() + i * g_diff / index_range;
-			int b = start_color.getb() + i * b_diff / index_range;
-
-			dest[index] = V_BestColor(V_GetDefaultPalette()->basecolors, r, g, b);
-		}
-
-		dest[0x2C] = dest[0x2D] = dest[0x2F] = dest[hacxend_index];
-	}
-	else
-	{
-		for (palindex_t index = start_index; index <= end_index; index++)
-		{
-			int i = index - start_index;
-
-			int r = start_color.getr() + i * r_diff / index_range;
-			int g = start_color.getg() + i * g_diff / index_range;
-			int b = start_color.getb() + i * b_diff / index_range;
-
-			dest[index] = V_BestColor(V_GetDefaultPalette()->basecolors, r, g, b);
-		}
-
-		dest[0x2C] = dest[0x2D] = dest[0x2F] = dest[end_index];
-	}
+	return false;
 }
 
 /**
@@ -430,7 +386,7 @@ void R_InitTranslationTables()
 	// [Toke - fix13]
 	// denis - cleaned this up somewhat
 	// [EB] alignment now ensured by alignas on the type
-	translationtables = translationtablesmem->data;
+	translationtables = translationtablesmem->data.data();
 
 	// [RH] Each player now gets their own translation table
 	//		(soon to be palettes). These are set up during
@@ -466,30 +422,6 @@ void R_InitTranslationTables()
 		R_RebuildPlayerGreenTintTables(i);
 		R_RebuildPlayerRedTintTables(i);
 	}
-
-	Ranges = translationtables + (MAXPLAYERS+3)*256;
-
-	R_BuildFontTranslation(CR_BRICK,	argb_t(0xFF, 0xB8, 0xB8), argb_t(0x47, 0x00, 0x00));
-	R_BuildFontTranslation(CR_TAN,		argb_t(0xFF, 0xEB, 0xDF), argb_t(0x33, 0x2B, 0x13));
-	R_BuildFontTranslation(CR_GRAY,		argb_t(0xEF, 0xEF, 0xEF), argb_t(0x27, 0x27, 0x27));
-	R_BuildFontTranslation(CR_GREEN,	argb_t(0x77, 0xFF, 0x6F), argb_t(0x0B, 0x17, 0x07));
-	R_BuildFontTranslation(CR_BROWN,	argb_t(0xBF, 0xA7, 0x8F), argb_t(0x53, 0x3F, 0x2F));
-	R_BuildFontTranslation(CR_GOLD,		argb_t(0xFF, 0xFF, 0x73), argb_t(0x73, 0x2B, 0x00));
-	R_BuildFontTranslation(CR_RED,		argb_t(0xFF, 0x00, 0x00), argb_t(0x3F, 0x00, 0x00));
-	R_BuildFontTranslation(CR_BLUE,		argb_t(0x00, 0x00, 0xFF), argb_t(0x00, 0x00, 0x27));
-	R_BuildFontTranslation(CR_ORANGE,	argb_t(0xFF, 0x80, 0x00), argb_t(0x20, 0x00, 0x00));
-	R_BuildFontTranslation(CR_WHITE,	argb_t(0xFF, 0xFF, 0xFF), argb_t(0x24, 0x24, 0x24));
-	R_BuildFontTranslation(CR_YELLOW,	argb_t(0xFC, 0xD0, 0x43), argb_t(0x27, 0x27, 0x27));
-	R_BuildFontTranslation(CR_BLACK,	argb_t(0x50, 0x50, 0x50), argb_t(0x13, 0x13, 0x13));
-	R_BuildFontTranslation(CR_LIGHTBLUE,argb_t(0xB4, 0xB4, 0xFF), argb_t(0x00, 0x00, 0x73));
-	R_BuildFontTranslation(CR_CREAM,	argb_t(0xFF, 0xD7, 0xBB), argb_t(0xCF, 0x83, 0x53));
-	R_BuildFontTranslation(CR_OLIVE,	argb_t(0x7B, 0x7F, 0x50), argb_t(0x2F, 0x37, 0x1F));
-	R_BuildFontTranslation(CR_DARKGREEN,argb_t(0x43, 0x93, 0x37), argb_t(0x0B, 0x17, 0x07));
-	R_BuildFontTranslation(CR_DARKRED,	argb_t(0xAF, 0x2B, 0x2B), argb_t(0x2B, 0x00, 0x00));
-	R_BuildFontTranslation(CR_DARKBROWN,argb_t(0xA3, 0x6B, 0x3F), argb_t(0x1F, 0x17, 0x0B));
-	R_BuildFontTranslation(CR_PURPLE,	argb_t(0xCF, 0x00, 0xCF), argb_t(0x23, 0x00, 0x23));
-	R_BuildFontTranslation(CR_DARKGRAY,	argb_t(0x8B, 0x8B, 0x8B), argb_t(0x23, 0x23, 0x23));
-	R_BuildFontTranslation(CR_CYAN,		argb_t(0x00, 0xF0, 0xF0), argb_t(0x00, 0x1F, 0x1F));
 
 	R_ExpireTranslations(TRANSLIFE_WAD);
 	R_RebuildTranslations();
@@ -731,39 +663,41 @@ void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, pal
 // Walks the pixels of patches and reports which palette indices it actually
 // uses, sorting by darkest first.
 //
-void R_SampleLuminosity(const patch_t* const* patches, size_t count, std::vector<palindex_t>& out)
+void R_CountPatchColors(const patch_t* patch, colorcounts_t& counts)
 {
-	std::array<bool, 256> used{};
+	if (patch == nullptr)
+		return;
 
-	for (size_t i = 0; i < count; i++)
+	for (int col = 0; col < patch->width(); col++)
 	{
-		const patch_t* patch = patches[i];
-		if (patch == nullptr)
-			continue;
+		// A need to view this as a byte buffer with an offset.
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+		const auto* post = reinterpret_cast<const tallpost_t*>(
+		    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+		    reinterpret_cast<const byte*>(patch) + LELONG(patch->columnofs[col]));
 
-		for (int col = 0; col < patch->width(); col++)
+		while (not post->end())
 		{
-			// A need to view this as a byte buffer with an offset.
-			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-			const auto* post = reinterpret_cast<const tallpost_t*>(
-			    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-			    reinterpret_cast<const byte*>(patch) + LELONG(patch->columnofs[col]));
+			const byte* data = post->data();
+			for (unsigned int pixel = 0; pixel < post->length; pixel++)
+				counts[data[pixel]]++;
 
-			while (!post->end())
-			{
-				const byte* data = post->data();
-				for (unsigned int pixel = 0; pixel < post->length; pixel++)
-					used[data[pixel]] = true;
-
-				post = post->next();
-			}
+			post = post->next();
 		}
 	}
+}
+
+void R_SampleLuminosity(const patch_t* const* patches, size_t count, std::vector<palindex_t>& out)
+{
+	colorcounts_t counts{};
+
+	for (size_t i = 0; i < count; i++)
+		R_CountPatchColors(patches[i], counts);
 
 	out.clear();
 	for (int i = 0; i < 256; i++)
 	{
-		if (used[i])
+		if (counts[i] != 0)
 			out.push_back(static_cast<palindex_t>(i));
 	}
 
@@ -771,6 +705,48 @@ void R_SampleLuminosity(const patch_t* const* patches, size_t count, std::vector
 	std::ranges::stable_sort(out, [pal](palindex_t a, palindex_t b) {
 		return V_Luminance(pal->basecolors[a]) < V_Luminance(pal->basecolors[b]);
 	});
+}
+
+void R_BuildTranslationLuminance(translationtable_t& tlate, const colorcounts_t& counts,
+                                 argb_t bright, argb_t dark, bool stretch)
+{
+	const palette_t* pal = V_GetDefaultPalette();
+
+	float darkest = stretch ? 1.0f : 0.0f;
+	float brightest = 0.0f;
+	for (int i = 0; i < 256; i++)
+	{
+		if (counts[i] == 0)
+			continue;
+
+		const float lum = V_Luminance(pal->basecolors[i]);
+		if (stretch)
+			darkest = std::min(darkest, lum);
+		brightest = std::max(lum, brightest);
+	}
+
+	const float spread = brightest - darkest;
+
+	const auto blend = [](uint8_t from, uint8_t to, float t) {
+		return static_cast<uint8_t>(std::lround(from + ((to - from) * t)));
+	};
+
+	for (int i = 0; i < 256; i++)
+	{
+		if (counts[i] == 0)
+			continue;
+
+		// art in a single shade has nothing to place, so it takes the bright end
+		const float t =
+		    spread > 0.0f ? (V_Luminance(pal->basecolors[i]) - darkest) / spread : 1.0f;
+
+		const argb_t color(blend(dark.getr(), bright.getr(), t),
+		                   blend(dark.getg(), bright.getg(), t),
+		                   blend(dark.getb(), bright.getb(), t));
+
+		tlate.rgb[i] = color;
+		tlate.remap[i] = V_BestColor(pal->basecolors, color);
+	}
 }
 
 //
@@ -789,6 +765,7 @@ enum translationkind_t
 	TRANSLATE_RAMP,
 	TRANSLATE_GRADIENT,
 	TRANSLATE_PLAYER,
+	TRANSLATE_GRAPHIC,
 };
 
 struct translationrecipe_t
@@ -800,12 +777,13 @@ struct translationrecipe_t
 	uint32_t          endcolor;
 	int               team;   // TRANSLATE_PLAYER: who they were, so that
 	bool              isself; // R_GetPlayerDrawColor can be redone on demand
+	std::vector<int>  lumps;  // TRANSLATE_GRAPHIC: the art, color is a text color
 
 	bool operator<(const translationrecipe_t& other) const
 	{
-		return std::tie(kind, start, end, color, endcolor, team, isself) <
+		return std::tie(kind, start, end, color, endcolor, team, isself, lumps) <
 		       std::tie(other.kind, other.start, other.end, other.color, other.endcolor,
-		                other.team, other.isself);
+		                other.team, other.isself, other.lumps);
 	}
 };
 
@@ -823,6 +801,30 @@ translationcache_t& CachedTranslations()
 {
 	static translationcache_t cachedtranslations;
 	return cachedtranslations;
+}
+
+// Below this, a color is a neutral that frames or outlines a graphic.
+constexpr float graphic_min_saturation = 0.25f;
+
+// Drops a graphic's neutral colors from counts, unless it has nothing else.
+void R_KeepChromaticColors(colorcounts_t& counts)
+{
+	const palette_t* pal = V_GetDefaultPalette();
+
+	colorcounts_t chromatic{};
+	bool found = false;
+	for (size_t i = 0; i < counts.size(); i++)
+	{
+		if (counts[i] != 0 and
+		    V_RGBtoHSV(pal->basecolors[i]).gets() >= graphic_min_saturation)
+		{
+			chromatic[i] = counts[i];
+			found = true;
+		}
+	}
+
+	if (found)
+		counts = chromatic;
 }
 
 void R_BuildRecipe(translationtable_t& tlate, const translationrecipe_t& recipe)
@@ -844,6 +846,23 @@ void R_BuildRecipe(translationtable_t& tlate, const translationrecipe_t& recipe)
 		                                            static_cast<team_t>(recipe.team),
 		                                            recipe.isself));
 		break;
+	case TRANSLATE_GRAPHIC: {
+		argb_t bright;
+		argb_t dark;
+		if (not R_GetFontColorRange(static_cast<int>(recipe.color), bright, dark))
+			break;
+
+		colorcounts_t counts{};
+		for (const int lump : recipe.lumps)
+		{
+			if (lump != -1)
+				R_CountPatchColors(W_CachePatch(lump), counts);
+		}
+
+		R_KeepChromaticColors(counts);
+		R_BuildTranslationLuminance(tlate, counts, bright, dark, false);
+		break;
+	}
 	}
 }
 
@@ -877,7 +896,8 @@ translationref_t R_GetRampTranslation(translationlife_t life, palindex_t start, 
 	                               .color = color,
 	                               .endcolor = 0,
 	                               .team = TEAM_NONE,
-	                               .isself = false});
+	                               .isself = false,
+	                               .lumps = {}});
 }
 
 translationref_t R_GetPlayerTranslation(translationlife_t life, argb_t user_color, team_t team,
@@ -889,7 +909,8 @@ translationref_t R_GetPlayerTranslation(translationlife_t life, argb_t user_colo
 	                               .color = user_color,
 	                               .endcolor = 0,
 	                               .team = team,
-	                               .isself = isconsoleplayer});
+	                               .isself = isconsoleplayer,
+	                               .lumps = {}});
 }
 
 translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t start,
@@ -901,7 +922,20 @@ translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t sta
 	                               .color = start_color,
 	                               .endcolor = end_color,
 	                               .team = TEAM_NONE,
-	                               .isself = false});
+	                               .isself = false,
+	                               .lumps = {}});
+}
+
+translationref_t R_GetGraphicTranslation(const std::vector<int>& lumps, int color)
+{
+	return R_GetTranslation(TRANSLIFE_WAD, {.kind = TRANSLATE_GRAPHIC,
+	                                        .start = 0,
+	                                        .end = 0,
+	                                        .color = static_cast<uint32_t>(color),
+	                                        .endcolor = 0,
+	                                        .team = TEAM_NONE,
+	                                        .isself = false,
+	                                        .lumps = lumps});
 }
 
 void R_ExpireTranslations(translationlife_t life)

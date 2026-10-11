@@ -366,7 +366,7 @@ void DrawPatch(int x, int y, const float scale,
 void DrawTranslatedPatch(int x, int y, const float scale,
                          const x_align_t x_align, const y_align_t y_align,
                          const x_align_t x_origin, const y_align_t y_origin,
-                         const patch_t* patch, byte* translation,
+                         const patch_t* patch, const translationref_t& translation,
                          const bool force_opaque, const bool use_patch_offsets)
 {
 	if (patch == NULL)
@@ -387,7 +387,7 @@ void DrawTranslatedPatch(int x, int y, const float scale,
 		y += patch->topoffset() * y_scale;
 	}
 
-	V_ColorMap = translationref_t(translation);
+	V_ColorMap = translation;
 
 	if (force_opaque)
 		screen->DrawTranslatedPatchStretched(patch, x, y, w * x_scale, h * y_scale);

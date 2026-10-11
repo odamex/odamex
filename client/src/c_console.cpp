@@ -938,6 +938,9 @@ static constexpr int CONCHARS_GLYPH_BYTES = CONCHARS_GLYPH_DIM * CONCHARS_ROW_BY
 static constexpr size_t CONCHARS_BYTES = static_cast<size_t>(CONCHARS_COUNT) * CONCHARS_GLYPH_BYTES;
 static constexpr palindex_t CONCHARS_TRANSCOLOR = 0xF7;
 
+static constexpr int CONCHARS_TEXT_FIRST = '!';
+static constexpr int CONCHARS_TEXT_LAST = '~';
+
 //
 // C_BlendConCharsSheet
 //
@@ -980,8 +983,12 @@ bool C_BlendConCharsSheet(int lumpnum)
 	const DCanvas* canvas = temp_surface->getDefaultCanvas();
 	canvas->DrawPatch(patch, 0, 0);
 
+	colorcounts_t text_counts{};
+
 	for (ptrdiff_t i = 0; i < glyph_count; i++)
 	{
+		const bool is_text = i >= CONCHARS_TEXT_FIRST and i <= CONCHARS_TEXT_LAST;
+
 		byte* dest = ConChars.data() + (i * CONCHARS_GLYPH_BYTES);
 		const byte* source = temp_surface->getBuffer() +
 		                     ((i / cols) * CONCHARS_GLYPH_DIM * pitch) +
@@ -1001,6 +1008,9 @@ bool C_BlendConCharsSheet(int lumpnum)
 				{
 					dest[a] = val;
 					dest[a + CONCHARS_GLYPH_DIM] = 0x00;
+
+					if (is_text)
+						text_counts[val]++;
 				}
 			}
 
@@ -1011,6 +1021,12 @@ bool C_BlendConCharsSheet(int lumpnum)
 
 	temp_surface->unlock();
 	I_FreeSurface(temp_surface);
+
+	std::vector<size_t> glyphs(glyph_count);
+	for (size_t i = 0; i < glyphs.size(); i++)
+		glyphs[i] = i;
+
+	ConCharsColors.addSource(std::string(W_LumpFileName(lumpnum)), glyphs, text_counts);
 	return true;
 }
 
@@ -1024,6 +1040,7 @@ bool C_BlendConCharsSheet(int lumpnum)
 void C_InitConCharsFont()
 {
 	ConChars.resize(CONCHARS_BYTES);
+	ConCharsColors.reset(CONCHARS_COUNT);
 
 	// characters that no sheet supplies stay fully transparent
 	for (ptrdiff_t i = 0; i < CONCHARS_COUNT; i++)

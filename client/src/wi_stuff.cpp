@@ -46,7 +46,6 @@
 #include "v_textcolors.h"
 #include "wi_interlevel.h"
 
-extern byte* Ranges;
 
 void WI_unloadData(void);
 size_t P_NumPlayersInGame();
@@ -553,18 +552,18 @@ int WI_DrawName (const char *str, int x, int y)
 {
 	patch_t *p = NULL;
 
-	::V_ColorMap = translationref_t(::Ranges + CR_GREY * 256);
+	const OFontColors* colors = V_FontColors("BIGFONT");
+	int color = CR_GREY;
+
 	while (*str)
 	{
 		// Recolor on a color escape code instead of drawing it.
 		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			int new_color = V_GetTextColor(str);
-			if (new_color == -1)
-				new_color = CR_GREY;
+			color = V_GetTextColor(str);
+			if (color == -1)
+				color = CR_GREY;
 
-			::V_ColorMap =
-			    translationref_t(::Ranges + (static_cast<ptrdiff_t>(new_color) * 256));
 			str += 2;
 			continue;
 		}
@@ -573,6 +572,9 @@ int WI_DrawName (const char *str, int x, int y)
 
 		if (lump != -1)
 		{
+			// the same lumps as the big font, so take the colors it worked out
+			::V_ColorMap = colors->get(toupper(*str) - HU_FONTSTART, color);
+
 			p = W_CachePatch (lump);
 			screen->DrawTranslatedPatchClean(p, x, y);
 			x += p->width() - 1;

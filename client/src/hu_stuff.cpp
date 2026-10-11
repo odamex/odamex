@@ -66,7 +66,6 @@
 
 DCanvas *odacanvas = NULL;
 extern DCanvas *screen;
-extern byte *Ranges;
 
 EXTERN_CVAR(hud_scaletext)
 EXTERN_CVAR(sv_fraglimit)
@@ -114,6 +113,15 @@ void HU_Drawer();
 bool HU_Responder(const event_t& ev);
 
 lumpHandle_t sbline;
+
+namespace
+{
+// The scoreboard line in a text color.
+translationref_t SBLineColor(int color)
+{
+	return R_GetGraphicTranslation({W_HandleToLump(::sbline)}, color);
+}
+} // namespace
 
 void HU_DrawScores (player_t *plyr);
 void HU_ConsoleScores (player_t *plyr);
@@ -891,10 +899,11 @@ void drawHeader(player_t *player, int y)
 	}
 
 	// Line
+	const translationref_t linecolor = SBLineColor(CR_GREY);
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
 		hud::DrawTranslatedPatch(xi, y + yOffset + 8, hud_scalescoreboard, hud::X_CENTER,
 		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP,
-		                         W_ResolvePatchHandle(sbline), Ranges + CR_GREY * 256,
+		                         W_ResolvePatchHandle(sbline), linecolor,
 		                         true);
 	}
 }
@@ -1027,11 +1036,12 @@ void drawScores(player_t* player, int y, byte extra_rows)
 
 	// Line
 	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
+	const translationref_t linecolor = SBLineColor(CR_GREY);
 	for (short xi = -236 + 1; xi < 236; xi += 2)
 	{
 		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
 		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
-		                         Ranges + CR_GREY * 256, true);
+		                         linecolor, true);
 	}
 
 	// Ingame Players
@@ -1131,16 +1141,17 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			"PNG", CR_GREY, true);
 
 		color = V_GetTextColor(GetTeamInfo(static_cast<team_t>(i))->TextColor);
+		const translationref_t linecolor = SBLineColor(color);
 
 		patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 		for (short xi = xOffset; xi < xOffset + 232; xi += 2)
 		{
 			hud::DrawTranslatedPatch(xi, yOffset + y + 8, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE, hud::X_LEFT,
-			                         hud::Y_TOP, pSBLine, Ranges + color * 256, true);
+			                         hud::Y_TOP, pSBLine, linecolor, true);
 			hud::DrawTranslatedPatch(xi, yOffset + y + 19, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE, hud::X_LEFT,
-			                         hud::Y_TOP, pSBLine, Ranges + color * 256, true);
+			                         hud::Y_TOP, pSBLine, linecolor, true);
 		}
 
 		// Team Info
@@ -1270,10 +1281,11 @@ void drawSpectators(player_t *player, int y, byte extra_rows) {
 
 	// Line
 	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
+	const translationref_t linecolor = SBLineColor(CR_GREY);
 	for (short xi = -236 + 1;xi < 236;xi += 2) {
 		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP, pSBLine,
-		                         Ranges + CR_GREY * 256, true);
+		                         linecolor, true);
 	}
 
 	byte specs = hud::CountSpectators();
@@ -1437,10 +1449,11 @@ void drawLowHeader(player_t *player, int y) {
 
 	// Line
 	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
+	const translationref_t linecolor = SBLineColor(CR_GREY);
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
 		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
 		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
-		                         Ranges + CR_GREY * 256, true);
+		                         linecolor, true);
 	}
 }
 
@@ -1515,11 +1528,12 @@ void drawLowScores(player_t* player, int y, byte extra_rows)
 
 	// Line
 	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
+	const translationref_t linecolor = SBLineColor(CR_GREY);
 	for (short xi = -146 + 1; xi < 146; xi += 2)
 	{
 		hud::DrawTranslatedPatch(xi, y + 8, hud_scalescoreboard, hud::X_CENTER,
 		                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
-		                         Ranges + CR_GREY * 256, true);
+		                         linecolor, true);
 	}
 
 	// Ingame Players
@@ -1599,15 +1613,16 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
 		color = V_GetTextColor(GetTeamInfo(static_cast<team_t>(i))->TextColor);
+		const translationref_t linecolor = SBLineColor(color);
 
 		for (short xi = -146 + 1;xi < 146;xi += 2)
 		{
 			hud::DrawTranslatedPatch(xi, y + yOffset, hud_scalescoreboard, hud::X_CENTER,
 			                         hud::Y_MIDDLE, hud::X_CENTER, hud::Y_TOP, pSBLine,
-			                         Ranges + color * 256, true);
+			                         linecolor, true);
 			hud::DrawTranslatedPatch(xi, y + yOffset + 11, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE, hud::X_CENTER,
-			                         hud::Y_TOP, pSBLine, Ranges + color * 256, true);
+			                         hud::Y_TOP, pSBLine, linecolor, true);
 		}
 
 		// Team Info
@@ -1760,10 +1775,11 @@ void drawLowSpectators(player_t *player, int y, byte extra_rows) {
 
 	// Line
 	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
+	const translationref_t linecolor = SBLineColor(CR_GREY);
 	for (short xi = -146 + 1;xi < 146;xi += 2) {
 		hud::DrawTranslatedPatch(xi, y, hud_scalescoreboard, hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP, pSBLine,
-		                         Ranges + CR_GREY * 256, true);
+		                         linecolor, true);
 	}
 
 	byte specs = hud::CountSpectators();

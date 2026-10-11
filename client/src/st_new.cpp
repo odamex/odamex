@@ -100,7 +100,6 @@ extern lumpHandle_t tallnum[10];
 extern lumpHandle_t faces[];
 extern int st_faceindex;
 extern lumpHandle_t keys[NUMCARDS + NUMCARDS / 2];
-extern byte* Ranges;
 
 extern NetDemo netdemo;
 
@@ -211,6 +210,27 @@ void ST_initNew()
 	::ToastSpreeArrow = W_CachePatchHandle("DIG62", PU_STATIC);
 }
 
+// The bar in a text color.
+// Its pieces share one translation so that their shades line up.
+translationref_t ST_BarColor(int color)
+{
+	return R_GetGraphicTranslation(
+	    {W_HandleToLump(::line_leftempty), W_HandleToLump(::line_leftfull),
+	     W_HandleToLump(::line_centerempty), W_HandleToLump(::line_centerleft),
+	     W_HandleToLump(::line_centerright), W_HandleToLump(::line_centerfull),
+	     W_HandleToLump(::line_rightempty), W_HandleToLump(::line_rightfull)},
+	    color);
+}
+
+// The spree toast in a text color.
+translationref_t ST_SpreeColor(int color)
+{
+	return R_GetGraphicTranslation(
+	    {W_HandleToLump(::ToastSpreeArrow), W_HandleToLump(::ToastSpreeR),
+	     W_HandleToLump(::ToastSpreeM), W_HandleToLump(::ToastSpreeL)},
+	    color);
+}
+
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 {
 	char digits[11], *d;
@@ -316,7 +336,7 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 		}
 	}
 
-	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
+	V_ColorMap = ST_BarColor(normalcolor);
 	for (int i = 0;i < bar_width;i++) {
 		const patch_t* linepatch;
 		if (!reverse) {
@@ -1276,6 +1296,8 @@ void DrawToasts()
 			// Draw spree point badge if any
 		if (toast.active_spree && cl_showsprees && ((network_game && sv_showsprees) || (!network_game && cl_showofflinesprees)))
 		{
+			const translationref_t spreecolor = ST_SpreeColor(toast.spree_color);
+
 			// Draw the arrow
 			const patch_t* arrow = W_ResolvePatchHandle(ToastSpreeArrow);
 			const double ayoff = (static_cast<double>(TOAST_HEIGHT) -
@@ -1283,7 +1305,7 @@ void DrawToasts()
 			                     2.0;
 			hud::DrawTranslatedPatch(x, y + ceil(ayoff), hud_scale, hud::X_RIGHT,
 			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, arrow,
-			                         Ranges + toast.spree_color * 256, false, true);
+			                         spreecolor, false, true);
 
 			x += arrow->width();
 
@@ -1294,7 +1316,7 @@ void DrawToasts()
 			                     2.0;
 			hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
 			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, rpatch,
-			                         Ranges + toast.spree_color * 256, false, true);
+			                         spreecolor, false, true);
 
 			x += rpatch->width();
 			int pointStartX = x - 1;
@@ -1309,7 +1331,7 @@ void DrawToasts()
 			{
 				hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
 				                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, mpatch,
-				                         Ranges + toast.spree_color * 256, false, true);
+				                         spreecolor, false, true);
 				x += mpatch->width();
 			}
 
@@ -1317,7 +1339,7 @@ void DrawToasts()
 			const patch_t* lpatch = W_ResolvePatchHandle(ToastSpreeL);
 			hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
 			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, lpatch,
-			                         Ranges + toast.spree_color * 256, false, true);
+			                         spreecolor, false, true);
 
 			x += lpatch->width() + 1;
 

@@ -27,6 +27,8 @@
 #include <ctype.h>
 
 #include <algorithm>
+#include <array>
+#include <map>
 
 #include "v_text.h"
 
@@ -59,8 +61,98 @@ static int hu_bigfont_height;
 static int hu_smallfont_height;
 static int hu_digfont_height;
 
+namespace
+{
+OFontColors hu_bigfont_colors;
+OFontColors hu_smallfont_colors;
+OFontColors hu_digfont_colors;
+} // namespace
+
 std::vector<byte> ConChars;
-extern byte *Ranges;
+OFontColors ConCharsColors;
+
+void OFontColors::reset(size_t glyphs)
+{
+	m_glyph_source.assign(glyphs, -1);
+	m_sources.clear();
+	m_sets.clear();
+}
+
+void OFontColors::addSource(const std::string& name, const std::vector<size_t>& glyphs,
+                            const colorcounts_t& counts)
+{
+	colorset_t& colors = m_sets.emplace_back();
+	for (int color = 0; color < NUM_TEXT_COLORS; color++)
+	{
+		R_ClearTranslation(colors[color]);
+
+		argb_t bright;
+		argb_t dark;
+		if (R_GetFontColorRange(color, bright, dark))
+			R_BuildTranslationLuminance(colors[color], counts, bright, dark);
+	}
+
+	const int source = static_cast<int>(m_sources.size());
+	m_sources.push_back(
+	    {.name = name,
+	     .glyphs = glyphs.size(),
+	     .colors = static_cast<size_t>(
+	         std::ranges::count_if(counts, [](uint32_t n) { return n != 0; }))});
+
+	for (const size_t glyph : glyphs)
+	{
+		if (glyph < m_glyph_source.size())
+			m_glyph_source[glyph] = source;
+	}
+}
+
+translationref_t OFontColors::get(size_t glyph, int color) const
+{
+	if (color < 0 or color >= NUM_TEXT_COLORS)
+		color = CR_UNTRANSLATED;
+
+	const int source = glyph < m_glyph_source.size() ? m_glyph_source[glyph] : -1;
+
+	// a stand-in for a glyph no resource supplied has no art to color
+	if (source == -1)
+	{
+		static const translationtable_t untranslated = [] {
+			translationtable_t tlate;
+			R_ClearTranslation(tlate);
+			return tlate;
+		}();
+		return untranslated.ref();
+	}
+
+	return m_sets[source][color].ref();
+}
+
+//
+// V_BuildFontColors
+//
+// Groups a font's glyphs by the resource file each came from, since a PWAD
+// often replaces only some of them, and works out how each group takes color.
+//
+void V_BuildFontColors(OFontColors& colors, const std::array<int, HU_FONTSIZE>& lumps)
+{
+	colors.reset(HU_FONTSIZE);
+
+	std::map<int, std::vector<size_t>> by_file;
+	for (size_t i = 0; i < lumps.size(); i++)
+	{
+		if (lumps[i] != -1)
+			by_file[::lumpinfo[lumps[i]].file].push_back(i);
+	}
+
+	for (const auto& [file, glyphs] : by_file)
+	{
+		colorcounts_t counts{};
+		for (const size_t glyph : glyphs)
+			R_CountPatchColors(W_CachePatch(lumps[glyph]), counts);
+
+		colors.addSource(std::string(W_LumpFileName(lumps[glyphs.front()])), glyphs, counts);
+	}
+}
 
 /**
  * @brief Initialize fonts.
@@ -73,6 +165,11 @@ void V_TextInit()
 	const char *bigfont = "FONTB%02d";
 	const char *smallfont = "STCFN%.3d";
 
+	// The lump each glyph came from, -1 where a stand-in fills a gap.
+	std::array<int, HU_FONTSIZE> bigfont_lumps{};
+	std::array<int, HU_FONTSIZE> smallfont_lumps{};
+	std::array<int, HU_FONTSIZE> digfont_lumps{};
+
 	// Level name font, used between levels, starts at index 1.
 	j = 1;
 	sub = 0;
@@ -82,6 +179,7 @@ void V_TextInit()
 
 		// Some letters of this font are missing.
 		int num = W_CheckNumForName(buffer.c_str());
+		bigfont_lumps[i] = num;
 		if (num != -1)
 			::hu_bigfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
 		else
@@ -95,6 +193,7 @@ void V_TextInit()
 	{
 		buffer = fmt::sprintf(smallfont, j++ - sub);
 		::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		smallfont_lumps[i] = W_CheckNumForName(buffer.c_str());
 	}
 
 	const char* digfont = "DIG%02d";
@@ -116,6 +215,7 @@ void V_TextInit()
 
 		// Some letters of this font might be missing.
 		int num = W_CheckNumForName(buffer.c_str());
+		digfont_lumps[i] = num;
 		if (num != -1)
 		{
 			::hu_digfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
@@ -133,6 +233,10 @@ void V_TextInit()
 	    W_ResolvePatchHandle(::hu_smallfont['M' - HU_FONTSTART])->height();
 	::hu_digfont_height =
 	    W_ResolvePatchHandle(::hu_digfont['M' - HU_FONTSTART])->height();
+
+	V_BuildFontColors(::hu_bigfont_colors, bigfont_lumps);
+	V_BuildFontColors(::hu_smallfont_colors, smallfont_lumps);
+	V_BuildFontColors(::hu_digfont_colors, digfont_lumps);
 
 	// Default font is SMALLFONT.
 	V_SetFont("SMALLFONT");
@@ -159,11 +263,25 @@ void V_TextShutdown()
 void V_SetFont(const char* fontname)
 {
 	if (!stricmp(fontname, "BIGFONT"))
-		::hu_font.setFont(::hu_bigfont, ::hu_bigfont_height);
+		::hu_font.setFont(::hu_bigfont, ::hu_bigfont_height, &::hu_bigfont_colors);
 	else if (!stricmp(fontname, "SMALLFONT"))
-		::hu_font.setFont(::hu_smallfont, ::hu_smallfont_height);
+		::hu_font.setFont(::hu_smallfont, ::hu_smallfont_height, &::hu_smallfont_colors);
 	else if (!stricmp(fontname, "DIGFONT"))
-		::hu_font.setFont(::hu_digfont, ::hu_digfont_height);
+		::hu_font.setFont(::hu_digfont, ::hu_digfont_height, &::hu_digfont_colors);
+}
+
+const OFontColors* V_FontColors(const char* fontname)
+{
+	if (not stricmp(fontname, "BIGFONT"))
+		return &::hu_bigfont_colors;
+	if (not stricmp(fontname, "SMALLFONT"))
+		return &::hu_smallfont_colors;
+	if (not stricmp(fontname, "DIGFONT"))
+		return &::hu_digfont_colors;
+	if (not stricmp(fontname, "CONCHARS"))
+		return &::ConCharsColors;
+
+	return nullptr;
 }
 
 int V_TextScaleXAmount()
@@ -264,7 +382,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	if (default_color < 0)
 		default_color = CR_GRAY;
 
-	translationref_t trans = translationref_t(Ranges + default_color * 256);
+	int color = default_color;
 
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
@@ -298,17 +416,18 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		// [SL] parse color escape codes (\cX)
 		if (use_color_codes && str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			int new_color = V_GetTextColor(str);
-			if (new_color == -1)
-				new_color = default_color;
-
-			trans = translationref_t(Ranges + new_color * 256);
+			color = V_GetTextColor(str);
+			if (color == -1)
+				color = default_color;
 
 			str += 2;
 			continue;
 		}
 
 		int c = static_cast<byte>(*str);
+
+		// each glyph can come from a different sheet, with colors of its own
+		const translationref_t trans = ::ConCharsColors.get(c, color);
 
 		if (mSurface->getBitsPerPixel() == 8)
 		{
@@ -388,7 +507,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
 		normalcolor = CR_RED;
 
-	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
+	int color = normalcolor;
 
 	int cx = x;
 	int cy = y;
@@ -402,8 +521,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 
 		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			int new_color = V_GetTextColor(str);
-			V_ColorMap = translationref_t(Ranges + new_color * 256);
+			color = V_GetTextColor(str);
 			str += 2;
 			continue;
 		}
@@ -430,6 +548,9 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		int w = ch->width() * scalex;
 		if (cx + w > I_GetSurfaceWidth())
 			break;
+
+		// each glyph can come from a different file, with colors of its own
+		V_ColorMap = ::hu_font.colors().get(c, color);
 
         DrawSWrapper(drawer, ch, cx, cy, ch->width() * scalex, ch->height() * scaley);
 
@@ -660,40 +781,46 @@ const lumpHandle_t* V_FontByName(const char* fontname)
 //
 // Reports which palette indices a font's glyphs actually uses.
 //
-// Recoloring a font means translating those indices, so this is
-// how you find out whether a font sits on one of the ramps
-// R_BuildFontTranslation hardcodes:
-// 
-// 0xb0-0xbf for Doom, Doom 2, Final Doom, and Freedoom
-// 0x70-0x7f for Chex Quest
-// 0xc3-0xcf and 0xf0-0xf2 for HacX
+// Recoloring a font means translating those indices, which are
+// placed between the dark and bright ends of each text color by
+// their luminance, as UZDoom does.
 //
-// Using this it should be easy to get the index range, sorted by
-// luminance, and then pick a ramp to translate it to.
-//
-// UZDoom does something similar to recolor font glyphs outside
-// the normal ramps.
+// Each source the font was pieced together from is listed with the number of
+// colors its art uses, which its text color translations are built from.
 //
 BEGIN_COMMAND(dumpfontcolors)
 {
 	const lumpHandle_t* font = ::hu_font.data();
+	const OFontColors* colors = font != nullptr ? &::hu_font.colors() : nullptr;
 	const char* fontname = "current";
 
 	if (argc > 1)
 	{
 		font = V_FontByName(argv[1]);
+		colors = V_FontColors(argv[1]);
 		fontname = argv[1];
 
-		if (font == nullptr)
+		if (colors == nullptr)
 		{
-			PrintFmt(PRINT_HIGH, "dumpfontcolors [BIGFONT|SMALLFONT|DIGFONT]\n");
+			PrintFmt(PRINT_HIGH, "dumpfontcolors [BIGFONT|SMALLFONT|DIGFONT|CONCHARS]\n");
 			return;
 		}
 	}
 
+	if (colors != nullptr)
+	{
+		for (const OFontColors::source_t& source : colors->sources())
+		{
+			PrintFmt(PRINT_HIGH, "{} font from {}: {} glyphs in {} colors\n", fontname,
+			         source.name, source.glyphs, source.colors);
+		}
+	}
+
+	// the console font is not made of patches, so there is nothing more to sample
 	if (font == nullptr)
 	{
-		PrintFmt(PRINT_HIGH, "No font loaded.\n");
+		if (colors == nullptr)
+			PrintFmt(PRINT_HIGH, "No font loaded.\n");
 		return;
 	}
 

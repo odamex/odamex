@@ -313,6 +313,21 @@ void R_BuildTranslationGradient(translationtable_t& tlate, palindex_t start, pal
 void R_SampleLuminosity(const patch_t* const* patches, size_t count,
                         std::vector<palindex_t>& out);
 
+// How many pixels of each palette index a patch uses, added on to counts.
+using colorcounts_t = std::array<uint32_t, 256>;
+void R_CountPatchColors(const patch_t* patch, colorcounts_t& counts);
+
+// Recolors every index counts uses, placing each between dark and bright by its
+// own luminance, so the brightest color in the art lands on bright. Stretched,
+// the darkest lands on dark -- otherwise shades keep their luminance relative to
+// the brightest, for art drawn in only part of a ramp.
+void R_BuildTranslationLuminance(translationtable_t& tlate, const colorcounts_t& counts,
+                                 argb_t bright, argb_t dark, bool stretch = true);
+
+// The colors a text color runs between.  False for CR_UNTRANSLATED and anything
+// that is not a text color.
+bool R_GetFontColorRange(int color, argb_t& bright, argb_t& dark);
+
 //
 // Shared translation lifetime
 //
@@ -334,6 +349,13 @@ translationref_t R_GetRampTranslation(translationlife_t life, palindex_t start, 
                                       argb_t color);
 translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t start,
                                           palindex_t end, argb_t start_color, argb_t end_color);
+
+// Graphics drawn in a text color, recolored by the luminance of the colors their
+// own art uses. Neutral colors frame or outline a graphic and are left as drawn,
+// unless the art has no other colors. Pieces of one graphic should share a
+// translation so their shades line up. Lumps of -1 are skipped. Lasts until the
+// resource set changes.
+translationref_t R_GetGraphicTranslation(const std::vector<int>& lumps, int color);
 
 // Drops every shared translation that does not outlive the specified lifetime.
 void R_ExpireTranslations(translationlife_t life);
