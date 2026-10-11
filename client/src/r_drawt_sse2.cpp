@@ -277,26 +277,30 @@ static forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t
 // The entry points. dest is computed as FB_COLDEST_D does in r_draw.cpp: the
 // column step times x, plus the first row.
 //
-static forceinline argb_t* R_QuadColumnDest()
+static forceinline argb_t* R_QuadColumnDest(const drawcolumn_t& dcol)
 {
 	return reinterpret_cast<argb_t*>(dcol.destination) +
 			ptrdiff_t(dcol.x) * dcol.colstep + dcol.yl;
 }
 
-void R_DrawColumnD_SSE2()
+void R_DrawColumnD_SSE2(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	if (dcol.masked)
-		R_DrawColumnQuadGeneric<QuadColormapFunc, true, true>(R_QuadColumnDest(), dcol);
+		R_DrawColumnQuadGeneric<QuadColormapFunc, true, true>(R_QuadColumnDest(dcol), dcol);
 	else
-		R_DrawColumnQuadGeneric<QuadColormapFunc, false, false>(R_QuadColumnDest(), dcol);
+		R_DrawColumnQuadGeneric<QuadColormapFunc, false, false>(R_QuadColumnDest(dcol), dcol);
 }
 
-void R_DrawTranslucentColumnD_SSE2()
+void R_DrawTranslucentColumnD_SSE2(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	if (dcol.masked)
-		R_DrawColumnQuadGeneric<QuadTranslucentFunc, true, true>(R_QuadColumnDest(), dcol);
+		R_DrawColumnQuadGeneric<QuadTranslucentFunc, true, true>(R_QuadColumnDest(dcol), dcol);
 	else
-		R_DrawColumnQuadGeneric<QuadTranslucentFunc, false, false>(R_QuadColumnDest(), dcol);
+		R_DrawColumnQuadGeneric<QuadTranslucentFunc, false, false>(R_QuadColumnDest(dcol), dcol);
 }
 
 
@@ -312,8 +316,10 @@ void R_DrawTranslucentColumnD_SSE2()
 // aligned at 32bpp for an arbitrary y. The pitch is a multiple of 64, so the phase
 // is constant down a run -- all-or-nothing, never fixable by a prologue.
 //
-void R_DrawLevelGroupD_SSE2()
+void R_DrawLevelGroupD_SSE2(rendercontext_t& ctx)
 {
+	drawplanegroup_t& dpgroup = ctx.draw.dpgroup;
+
 	const drawplanegroup_t& g = dpgroup;
 
 	const palindex_t* const source = g.source;

@@ -249,7 +249,7 @@ void R_MapSlopedPlane(rendercontext_t& ctx, int y, int x1, int x2)
 	ctx.draw.dspan.x1 = x1;
 	ctx.draw.dspan.x2 = x2;
 
-	ctx.draw.spanslopefunc();
+	ctx.draw.spanslopefunc(ctx);
 }
 
 
@@ -311,7 +311,7 @@ void R_MapLevelPlane(rendercontext_t& ctx, int y, int x1, int x2)
 	ctx.draw.dspan.x1 = x1;
 	ctx.draw.dspan.x2 = x2;
 
-	ctx.draw.spanfunc();
+	ctx.draw.spanfunc(ctx);
 }
 
 //
@@ -781,7 +781,7 @@ void R_DrawLevelPlaneColumns(rendercontext_t& ctx, visplane_t* pl)
 		ctx.draw.dpcol.yl = yl;
 		ctx.draw.dpcol.yh = yh;
 
-		ctx.draw.levelcolfunc();
+		ctx.draw.levelcolfunc(ctx);
 	}
 }
 
@@ -888,14 +888,14 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 			{
 				ctx.draw.dpcol.yl = yl;
 				ctx.draw.dpcol.yh = (g0 << 2) - 1;
-				ctx.draw.levelcolfunc();
+				ctx.draw.levelcolfunc(ctx);
 			}
 
 			if (((g1 + 1) << 2) <= yh)
 			{
 				ctx.draw.dpcol.yl = (g1 + 1) << 2;
 				ctx.draw.dpcol.yh = yh;
-				ctx.draw.levelcolfunc();
+				ctx.draw.levelcolfunc(ctx);
 			}
 		}
 		else
@@ -903,7 +903,7 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 			// Shorter than a group straddling it, so all of it is fringe.
 			ctx.draw.dpcol.yl = yl;
 			ctx.draw.dpcol.yh = yh;
-			ctx.draw.levelcolfunc();
+			ctx.draw.levelcolfunc(ctx);
 		}
 	}
 
@@ -946,7 +946,7 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 			ctx.draw.dpgroup.cmap[i] = ctx.draw.dpcol.cbase + off;
 		}
 
-		R_DrawLevelGroup();
+		R_DrawLevelGroup(ctx);
 	};
 
 	// ---- pass 2: one sweep in x, emitting each group's run as it closes

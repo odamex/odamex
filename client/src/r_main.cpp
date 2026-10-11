@@ -1380,7 +1380,7 @@ static void R_InitViewWindow()
 	R_PlaneInitData(rctx, surface);
 	R_InitSkyMap();
 
-	R_BindViewBuffer(surface);
+	R_BindViewBuffer(rctx, surface);
 
 	surface->unlock();
 

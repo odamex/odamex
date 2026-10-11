@@ -84,30 +84,28 @@ int 			viewwindowy;
 // [RH] Pointers to the different column drawers.
 //		These get changed depending on the current
 //		screen depth.
-void (*R_DrawColumn)(void);
-void (*R_DrawFuzzColumn)(void);
-void (*R_DrawTranslucentColumn)(void);
-void (*R_DrawTranslatedColumn)(void);
-void (*R_DrawTlatedLucentColumn)(void);
-void (*R_DrawSkyForegroundColumn)(void);
-void (*R_DrawSpan)(void);
-void (*R_DrawTranslucentSpan)(void);
-void (*R_DrawSlopeSpan)(void);
-void (*R_DrawTranslucentSlopeSpan)(void);
-void (*R_FillColumn)(void);
-void (*R_FillSpan)(void);
-void (*R_FillTranslucentSpan)(void);
+void (*R_DrawColumn)(rendercontext_t&);
+void (*R_DrawFuzzColumn)(rendercontext_t&);
+void (*R_DrawTranslucentColumn)(rendercontext_t&);
+void (*R_DrawTranslatedColumn)(rendercontext_t&);
+void (*R_DrawTlatedLucentColumn)(rendercontext_t&);
+void (*R_DrawSkyForegroundColumn)(rendercontext_t&);
+void (*R_DrawSpan)(rendercontext_t&);
+void (*R_DrawTranslucentSpan)(rendercontext_t&);
+void (*R_DrawSlopeSpan)(rendercontext_t&);
+void (*R_DrawTranslucentSlopeSpan)(rendercontext_t&);
+void (*R_FillColumn)(rendercontext_t&);
+void (*R_FillSpan)(rendercontext_t&);
+void (*R_FillTranslucentSpan)(rendercontext_t&);
 
 // Possibly vectorized functions:
-void (*R_DrawLevelColumn)(void);
-void (*R_DrawTranslucentLevelColumn)(void);
-void (*R_DrawLevelGroup)(void);
+void (*R_DrawLevelColumn)(rendercontext_t&);
+void (*R_DrawTranslucentLevelColumn)(rendercontext_t&);
+void (*R_DrawLevelGroup)(rendercontext_t&);
 
-void (*R_DrawLevelGroupD)(void);
+void (*R_DrawLevelGroupD)(rendercontext_t&);
 void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
-// The fuzz cursor now lives in rctx.draw (the class is in r_draw.h).
-static auto& fuzztable = ::rctx.draw.fuzztable;
 
 // ============================================================================
 //
@@ -605,7 +603,7 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
 // [SL] - Does nothing (obviously). Used when a column drawing function
 // pointer should not draw anything.
 //
-void R_BlankColumn()
+void R_BlankColumn(rendercontext_t& ctx)
 {
 }
 
@@ -615,7 +613,7 @@ void R_BlankColumn()
 // [SL] - Does nothing (obviously). Used when a span drawing function
 // pointer should not draw anything.
 //
-void R_BlankSpan()
+void R_BlankSpan(rendercontext_t& ctx)
 {
 }
 
@@ -1141,10 +1139,10 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& 
 	// See openQuestions.
 	const int step = drawspan.colstep;
 	
-	dsfixed_t ufrac = dspan.ufrac, vfrac = dspan.vfrac;
-	dsfixed_t ustep = dspan.ustep, vstep = dspan.vstep;
-	const int umask = dspan.umask, vmask = dspan.vmask;
-	const int ushift = dspan.ushift, vshift = dspan.vshift;
+	dsfixed_t ufrac = drawspan.ufrac, vfrac = drawspan.vfrac;
+	dsfixed_t ustep = drawspan.ustep, vstep = drawspan.vstep;
+	const int umask = drawspan.umask, vmask = drawspan.vmask;
+	const int ushift = drawspan.ushift, vshift = drawspan.vshift;
 
 	COLORFUNC colorfunc(drawspan);
 
@@ -1201,8 +1199,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 	shaderef_t colormap;
 	COLORFUNC colorfunc(drawspan);
 
-	const int umask = dspan.umask, vmask = dspan.vmask;
-	const int ushift = dspan.ushift, vshift = dspan.vshift;
+	const int umask = drawspan.umask, vmask = drawspan.vmask;
+	const int ushift = drawspan.ushift, vshift = drawspan.vshift;
 
 	while (count >= SPANJUMP)
 	{
@@ -1305,10 +1303,10 @@ static forceinline void R_DrawLevelSpanGenericARGB(argb_t* dest, const drawspan_
 	// floor pays it. See openQuestions.
 	const int step = drawspan.colstep;
 
-	dsfixed_t ufrac = dspan.ufrac, vfrac = dspan.vfrac;
-	dsfixed_t ustep = dspan.ustep, vstep = dspan.vstep;
-	const int umask = dspan.umask, vmask = dspan.vmask;
-	const int ushift = dspan.ushift, vshift = dspan.vshift;
+	dsfixed_t ufrac = drawspan.ufrac, vfrac = drawspan.vfrac;
+	dsfixed_t ustep = drawspan.ustep, vstep = drawspan.vstep;
+	const int umask = drawspan.umask, vmask = drawspan.vmask;
+	const int ushift = drawspan.ushift, vshift = drawspan.vshift;
 
 	COLORFUNC colorfunc(drawspan);
 
@@ -1353,8 +1351,8 @@ static forceinline void R_DrawSlopedSpanGenericARGB(argb_t* dest, const drawspan
 
 	COLORFUNC colorfunc(drawspan);
 
-	const int umask = dspan.umask, vmask = dspan.vmask;
-	const int ushift = dspan.ushift, vshift = dspan.vshift;
+	const int umask = drawspan.umask, vmask = drawspan.vmask;
+	const int ushift = drawspan.ushift, vshift = drawspan.vshift;
 
 	while (count >= SPANJUMP)
 	{
@@ -1475,17 +1473,20 @@ private:
 class PaletteFuzzyFunc
 {
 public:
-	PaletteFuzzyFunc(const drawcolumn_t& drawcolum) :
-			colormap(&V_GetDefaultPalette()->maps, 6) { }
+	PaletteFuzzyFunc(const drawcolumn_t& drawcolumn) :
+			colormap(&V_GetDefaultPalette()->maps, 6),
+			fuzz(drawcolumn.fuzz), pitch(drawcolumn.pitch_in_pixels) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
-		*dest = colormap.index(dest[fuzztable.getValue(dcol.pitch_in_pixels)]);
-		fuzztable.incrementRow();
+		*dest = colormap.index(dest[fuzz->getValue(pitch)]);
+		fuzz->incrementRow();
 	}
 
 private:
-	shaderef_t colormap;
+	shaderef_t  colormap;
+	FuzzTable*  fuzz;
+	int         pitch;
 };
 
 class PaletteTranslucentColormapFunc
@@ -1621,12 +1622,12 @@ private:
 // is column-major: x carries the column stride and y is the offset inside the
 // column.
 //
-static forceinline ptrdiff_t R_ColumnOffset()
+static forceinline ptrdiff_t R_ColumnOffset(const drawcolumn_t& dcol)
 {
 	return ptrdiff_t(dcol.x) * dcol.colstep + dcol.yl;
 }
 
-static forceinline ptrdiff_t R_SpanOffset()
+static forceinline ptrdiff_t R_SpanOffset(const drawspan_t& dspan)
 {
 	return ptrdiff_t(dspan.x1) * dspan.colstep + dspan.y;
 }
@@ -1637,7 +1638,7 @@ static forceinline ptrdiff_t R_SpanOffset()
 //
 // ----------------------------------------------------------------------------
 
-#define FB_COLDEST_P (static_cast<palindex_t*>(dcol.destination) + R_ColumnOffset())
+#define FB_COLDEST_P (static_cast<palindex_t*>(dcol.destination) + R_ColumnOffset(dcol))
 
 //
 // R_FillColumnP
@@ -1645,8 +1646,10 @@ static forceinline ptrdiff_t R_SpanOffset()
 // Fills a column in the 8bpp palettized screen buffer with a solid color,
 // determined by dcol.color. Performs no shading.
 //
-void R_FillColumnP()
+void R_FillColumnP(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	R_FillColumnGeneric<palindex_t, PaletteFunc>(FB_COLDEST_P, dcol);
 }
 
@@ -1656,8 +1659,10 @@ void R_FillColumnP()
 // Renders a column to the 8bpp palettized screen buffer from the source buffer
 // dcol.source and scaled by dcol.iscale. Shading is performed using dcol.colormap.
 //
-void R_DrawColumnP()
+void R_DrawColumnP(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	R_DrawColumnGeneric<palindex_t, PaletteColormapFunc>(FB_COLDEST_P, dcol);
 }
 
@@ -1668,8 +1673,10 @@ void R_DrawColumnP()
 // invisibility effect, which shades the column and rearranges the ordering
 // the pixels to create distortion. Shading is performed using colormap 6.
 //
-void R_DrawFuzzColumnP()
+void R_DrawFuzzColumnP(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	// adjust the borders (prevent buffer over/under-reads)
 	if (dcol.yl <= 0)
 		dcol.yl = 1;
@@ -1677,7 +1684,7 @@ void R_DrawFuzzColumnP()
 		dcol.yh = viewheight - 2;
 
 	R_FillColumnGeneric<palindex_t, PaletteFuzzyFunc>(FB_COLDEST_P, dcol);
-	fuzztable.incrementColumn();
+	ctx.draw.fuzztable.incrementColumn();
 }
 
 //
@@ -1688,8 +1695,10 @@ void R_DrawFuzzColumnP()
 // translucency is controlled by dcol.translevel. Shading is performed using
 // dcol.colormap.
 //
-void R_DrawTranslucentColumnP()
+void R_DrawTranslucentColumnP(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	R_DrawColumnGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_COLDEST_P, dcol);
 }
 
@@ -1700,8 +1709,10 @@ void R_DrawTranslucentColumnP()
 // from the source buffer dcol.source and scaled by dcol.iscale. The translation
 // table is supplied by dcol.translation. Shading is performed using dcol.colormap.
 //
-void R_DrawTranslatedColumnP()
+void R_DrawTranslatedColumnP(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	R_DrawColumnGeneric<palindex_t, PaletteTranslatedColormapFunc>(FB_COLDEST_P, dcol);
 }
 
@@ -1714,8 +1725,10 @@ void R_DrawTranslatedColumnP()
 // translucency is controlled by dcol.translevel. Shading is performed using
 // dcol.colormap.
 //
-void R_DrawTlatedLucentColumnP()
+void R_DrawTlatedLucentColumnP(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	R_DrawColumnGeneric<palindex_t, PaletteTranslatedTranslucentColormapFunc>(FB_COLDEST_P, dcol);
 }
 
@@ -1727,8 +1740,10 @@ void R_DrawTlatedLucentColumnP()
 // Palette index 0 is treated as transparent.
 // This is because we can't use SKYTRAN.
 //
-void R_DrawSkyForegroundColumnP()
+void R_DrawSkyForegroundColumnP(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	R_DrawColumnGeneric<palindex_t, PaletteSkyForegroundColormapFunc>(FB_COLDEST_P, dcol);
 }
 
@@ -1738,7 +1753,7 @@ void R_DrawSkyForegroundColumnP()
 //
 // ----------------------------------------------------------------------------
 
-#define FB_SPANDEST_P (dspan.destination + R_SpanOffset())
+#define FB_SPANDEST_P (dspan.destination + R_SpanOffset(dspan))
 
 //
 // R_FillSpanP
@@ -1746,8 +1761,10 @@ void R_DrawSkyForegroundColumnP()
 // Fills a span in the 8bpp palettized screen buffer with a solid color,
 // determined by dspan.color. Performs no shading.
 //
-void R_FillSpanP()
+void R_FillSpanP(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	R_FillSpanGeneric<palindex_t, PaletteFunc>(FB_SPANDEST_P, dspan);
 }
 
@@ -1758,8 +1775,10 @@ void R_FillSpanP()
 // determined by dspan.color using translucency. Shading is performed
 // using dspan.colormap.
 //
-void R_FillTranslucentSpanP()
+void R_FillTranslucentSpanP(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	R_FillSpanGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
 }
 
@@ -1769,8 +1788,10 @@ void R_FillTranslucentSpanP()
 // Renders a span for a level plane to the 8bpp palettized screen buffer from
 // the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
-void R_DrawSpanP()
+void R_DrawSpanP(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	R_DrawLevelSpanGeneric<palindex_t, PaletteColormapFunc>(FB_SPANDEST_P, dspan);
 }
 
@@ -1781,8 +1802,10 @@ void R_DrawSpanP()
 // the source buffer dspan.source, blended with the framebuffer by
 // dspan.translevel. Shading is performed using dspan.colormap.
 //
-void R_DrawTranslucentSpanP()
+void R_DrawTranslucentSpanP(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	R_DrawLevelSpanGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
 }
 
@@ -1792,8 +1815,10 @@ void R_DrawTranslucentSpanP()
 // Renders a span for a sloped plane to the 8bpp palettized screen buffer from
 // the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
-void R_DrawSlopeSpanP()
+void R_DrawSlopeSpanP(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeColormapFunc>(FB_SPANDEST_P, dspan);
 }
 
@@ -1804,8 +1829,10 @@ void R_DrawSlopeSpanP()
 // the source buffer dspan.source, blended with the framebuffer by
 // dspan.translevel. Shading is performed using dspan.slopelighting.
 //
-void R_DrawTranslucentSlopeSpanP()
+void R_DrawTranslucentSlopeSpanP(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
 }
 
@@ -1832,13 +1859,16 @@ void R_DrawTranslucentSlopeSpanP()
 class DirectFunc
 {
 public:
-	DirectFunc(const drawcolumn_t& drawcolumn) { }
-	DirectFunc(const drawspan_t& drawspan) { }
+	DirectFunc(const drawcolumn_t& drawcolumn) : basecolormap(drawcolumn.basecolormap) { }
+	DirectFunc(const drawspan_t& drawspan) : basecolormap(drawspan.basecolormap) { }
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		*dest = basecolormap.shade(c);
+		*dest = basecolormap->shade(c);
 	}
+
+private:
+	const shaderef_t* basecolormap;
 };
 
 class DirectColormapFunc
@@ -1861,14 +1891,19 @@ private:
 class DirectFuzzyFunc
 {
 public:
-	DirectFuzzyFunc(const drawcolumn_t& drawcolumn) { }
+	DirectFuzzyFunc(const drawcolumn_t& drawcolumn) :
+			fuzz(drawcolumn.fuzz), pitch(drawcolumn.pitch_in_pixels) { }
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		const argb_t work = dest[fuzztable.getValue(dcol.pitch_in_pixels)];
+		const argb_t work = dest[fuzz->getValue(pitch)];
 		*dest = work - ((work >> 2) & 0x3f3f3f);
-		fuzztable.incrementRow();
+		fuzz->incrementRow();
 	}
+
+private:
+	FuzzTable*  fuzz;
+	int         pitch;
 };
 
 class DirectTranslucentColormapFunc
@@ -2198,7 +2233,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-#define FB_COLDEST_D (reinterpret_cast<argb_t*>(dcol.destination) + R_ColumnOffset())
+#define FB_COLDEST_D (reinterpret_cast<argb_t*>(dcol.destination) + R_ColumnOffset(dcol))
 
 //
 // R_ColumnHasNativeARGB
@@ -2208,7 +2243,7 @@ private:
 // (e.g. invulnerability) have no RGB equivalent so those columns stay on
 // the palettized path.
 //
-static forceinline bool R_ColumnHasNativeARGB()
+static forceinline bool R_ColumnHasNativeARGB(const drawcolumn_t& dcol)
 {
 	return dcol.argbtexturedata != NULL && dcol.source != NULL &&
 	       dcol.colormap.mapnum() < NUMCOLORMAPS;
@@ -2233,7 +2268,7 @@ constexpr int R_QUAD_MIN_COLUMN = 16;
 // the right tiling only when the height really is a power of two; otherwise
 // R_DrawColumnGeneric takes its own modulo arm and the quad drawer must not.
 //
-static forceinline bool R_ColumnWantsQuad()
+static forceinline bool R_ColumnWantsQuad(const drawcolumn_t& dcol)
 {
 	return have_quad_columns &&
 			dcol.yh - dcol.yl + 1 >= R_QUAD_MIN_COLUMN &&
@@ -2247,8 +2282,10 @@ static forceinline bool R_ColumnWantsQuad()
 // Fills a column in the 32bpp ARGB8888 screen buffer with a solid color,
 // determined by dcol.color. Performs no shading.
 //
-void R_FillColumnD()
+void R_FillColumnD(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	R_FillColumnGeneric<argb_t, DirectFunc>(FB_COLDEST_D, dcol);
 }
 
@@ -2258,9 +2295,11 @@ void R_FillColumnD()
 // Renders a column to the 32bpp ARGB8888 screen buffer from the source buffer
 // dcol.source and scaled by dcol.iscale. Shading is performed using dcol.colormap.
 //
-void R_DrawColumnD()
+void R_DrawColumnD(rendercontext_t& ctx)
 {
-	if (R_ColumnHasNativeARGB())
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
+	if (R_ColumnHasNativeARGB(dcol))
 		R_DrawColumnGenericARGB<DirectARGBColormapFunc>(FB_COLDEST_D, dcol);
 #ifdef __SSE2__
 	// Worth having despite costing slightly MORE instructions than the scalar
@@ -2268,10 +2307,9 @@ void R_DrawColumnD()
 	// one store per pixel and SSE2 cannot vectorize a gather, so the arithmetic
 	// says this should be a wash. It is not: the quad form issues ONE 16-byte
 	// store where the scalar issues four, and this loop is limited by store-port
-	// throughput rather than by issue rate. Measured at 2% of the whole view
-	// render in an ordinary scene, consistently across four runs.
-	else if (R_ColumnWantsQuad())
-		R_DrawColumnD_SSE2();
+	// throughput rather than by issue rate.
+	else if (R_ColumnWantsQuad(dcol))
+		R_DrawColumnD_SSE2(ctx);
 #endif
 	else
 		R_DrawColumnGeneric<argb_t, DirectColormapFunc>(FB_COLDEST_D, dcol);
@@ -2284,8 +2322,10 @@ void R_DrawColumnD()
 // invisibility effect, which shades the column and rearranges the ordering
 // the pixels to create distortion. Shading is performed using colormap 6.
 //
-void R_DrawFuzzColumnD()
+void R_DrawFuzzColumnD(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	// adjust the borders (prevent buffer over/under-reads)
 	if (dcol.yl <= 0)
 		dcol.yl = 1;
@@ -2293,7 +2333,7 @@ void R_DrawFuzzColumnD()
 		dcol.yh = viewheight - 2;
 
 	R_FillColumnGeneric<argb_t, DirectFuzzyFunc>(FB_COLDEST_D, dcol);
-	fuzztable.incrementColumn();
+	ctx.draw.fuzztable.incrementColumn();
 }
 
 //
@@ -2304,13 +2344,15 @@ void R_DrawFuzzColumnD()
 // translucency is controlled by dcol.translevel. Shading is performed using
 // dcol.colormap.
 //
-void R_DrawTranslucentColumnD()
+void R_DrawTranslucentColumnD(rendercontext_t& ctx)
 {
-	if (R_ColumnHasNativeARGB())
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
+	if (R_ColumnHasNativeARGB(dcol))
 		R_DrawColumnGenericARGB<DirectARGBTranslucentColormapFunc>(FB_COLDEST_D, dcol);
 #ifdef __SSE2__
-	else if (R_ColumnWantsQuad())
-		R_DrawTranslucentColumnD_SSE2();
+	else if (R_ColumnWantsQuad(dcol))
+		R_DrawTranslucentColumnD_SSE2(ctx);
 #endif
 	else
 		R_DrawColumnGeneric<argb_t, DirectTranslucentColormapFunc>(FB_COLDEST_D, dcol);
@@ -2323,8 +2365,10 @@ void R_DrawTranslucentColumnD()
 // from the source buffer dcol.source and scaled by dcol.iscale. The translation
 // table is supplied by dcol.translation. Shading is performed using dcol.colormap.
 //
-void R_DrawTranslatedColumnD()
+void R_DrawTranslatedColumnD(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	R_DrawColumnGeneric<argb_t, DirectTranslatedColormapFunc>(FB_COLDEST_D, dcol);
 }
 
@@ -2337,8 +2381,10 @@ void R_DrawTranslatedColumnD()
 // translucency is controlled by dcol.translevel. Shading is performed using
 // dcol.colormap.
 //
-void R_DrawTlatedLucentColumnD()
+void R_DrawTlatedLucentColumnD(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	R_DrawColumnGeneric<argb_t, DirectTranslatedTranslucentColormapFunc>(FB_COLDEST_D, dcol);
 }
 
@@ -2350,8 +2396,10 @@ void R_DrawTlatedLucentColumnD()
 // Palette index 0 is treated as transparent.
 // This is because we can't use SKYTRAN.
 //
-void R_DrawSkyForegroundColumnD()
+void R_DrawSkyForegroundColumnD(rendercontext_t& ctx)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	R_DrawColumnGeneric<argb_t, DirectSkyForegroundColormapFunc>(FB_COLDEST_D, dcol);
 }
 
@@ -2361,7 +2409,7 @@ void R_DrawSkyForegroundColumnD()
 //
 // ----------------------------------------------------------------------------
 
-#define FB_SPANDEST_D (reinterpret_cast<argb_t*>(dspan.destination) + R_SpanOffset())
+#define FB_SPANDEST_D (reinterpret_cast<argb_t*>(dspan.destination) + R_SpanOffset(dspan))
 
 //
 // R_FillSpanD
@@ -2369,8 +2417,10 @@ void R_DrawSkyForegroundColumnD()
 // Fills a span in the 32bpp ARGB8888 screen buffer with a solid color,
 // determined by dspan.color. Performs no shading.
 //
-void R_FillSpanD()
+void R_FillSpanD(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	R_FillSpanGeneric<argb_t, DirectFunc>(FB_SPANDEST_D, dspan);
 }
 
@@ -2381,8 +2431,10 @@ void R_FillSpanD()
 // determined by dspan.color using translucency. Shading is performed
 // using dspan.colormap.
 //
-void R_FillTranslucentSpanD()
+void R_FillTranslucentSpanD(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	R_FillSpanGeneric<argb_t, DirectTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
 }
 
@@ -2392,8 +2444,10 @@ void R_FillTranslucentSpanD()
 // Renders a span for a level plane to the 32bpp ARGB8888 screen buffer from
 // the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
-void R_DrawSpanD()
+void R_DrawSpanD(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	if (dspan.argbsource != NULL && dspan.colormap.mapnum() < NUMCOLORMAPS)
 		R_DrawLevelSpanGenericARGB<DirectARGBColormapFunc>(FB_SPANDEST_D, dspan);
 	else
@@ -2407,8 +2461,10 @@ void R_DrawSpanD()
 // the source buffer dspan.source, blended with the framebuffer by
 // dspan.translevel. Shading is performed using dspan.colormap.
 //
-void R_DrawTranslucentSpanD()
+void R_DrawTranslucentSpanD(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	R_DrawLevelSpanGeneric<argb_t, DirectTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
 }
 
@@ -2419,8 +2475,10 @@ void R_DrawTranslucentSpanD()
 // the source buffer dspan.source, blended with the framebuffer by
 // dspan.translevel. Shading is performed using dspan.slopelighting.
 //
-void R_DrawTranslucentSlopeSpanD()
+void R_DrawTranslucentSlopeSpanD(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
 }
 
@@ -2430,8 +2488,10 @@ void R_DrawTranslucentSlopeSpanD()
 // Renders a span for a sloped plane to the 32bpp ARGB8888 screen buffer from
 // the source buffer dspan.source. Shading is performed using dspan.colormap.
 //
-void R_DrawSlopeSpanD()
+void R_DrawSlopeSpanD(rendercontext_t& ctx)
 {
+	drawspan_t& dspan = ctx.draw.dspan;
+
 	if (dspan.argbsource != NULL && dspan.slopelighting[0].mapnum() < NUMCOLORMAPS)
 		R_DrawSlopedSpanGenericARGB<DirectARGBSlopeColormapFunc>(FB_SPANDEST_D, dspan);
 	else
@@ -2779,8 +2839,12 @@ void R_InitVectorizedDrawers()
 // Points dcol/dspan/dpcol at the view rect of the surface. Called from
 // R_InitViewWindow.
 //
-void R_BindViewBuffer(IWindowSurface* surface)
+void R_BindViewBuffer(rendercontext_t& ctx, IWindowSurface* surface)
 {
+	drawcolumn_t&   dcol  = ctx.draw.dcol;
+	drawspan_t&     dspan = ctx.draw.dspan;
+	drawplanecol_t& dpcol = ctx.draw.dpcol;
+
 	dcol.destination = dspan.destination = dpcol.destination =
 			surface->getBuffer(viewwindowx, viewwindowy);
 	dcol.pitch_in_pixels = dspan.pitch_in_pixels = dpcol.pitch_in_pixels =
@@ -2811,40 +2875,48 @@ void R_ClearViewBuffer(IWindowSurface* surface, argb_t color)
 // plane resolves to one colormap for every row: fixedlightlev, an active
 // fixedcolormap, or a plane shallow enough to land in one light band.
 //
-#define FB_LEVELDEST_P (static_cast<palindex_t*>(dpcol.destination) + R_LevelColumnOffset())
-#define FB_LEVELDEST_D (reinterpret_cast<argb_t*>(dpcol.destination) + R_LevelColumnOffset())
+#define FB_LEVELDEST_P (static_cast<palindex_t*>(dpcol.destination) + R_LevelColumnOffset(dpcol))
+#define FB_LEVELDEST_D (reinterpret_cast<argb_t*>(dpcol.destination) + R_LevelColumnOffset(dpcol))
 
-static forceinline ptrdiff_t R_LevelColumnOffset()
+static forceinline ptrdiff_t R_LevelColumnOffset(const drawplanecol_t& dpcol)
 {
 	return ptrdiff_t(dpcol.x) * dpcol.colstep + dpcol.yl;
 }
 
-void R_DrawLevelColumnP()
+void R_DrawLevelColumnP(rendercontext_t& ctx)
 {
+	drawplanecol_t& dpcol = ctx.draw.dpcol;
+
 	if (dpcol.lightoff == NULL)
 		R_DrawLevelColumnGeneric<true, palindex_t, PaletteLevelFunc>(FB_LEVELDEST_P, dpcol);
 	else
 		R_DrawLevelColumnGeneric<false, palindex_t, PaletteLevelFunc>(FB_LEVELDEST_P, dpcol);
 }
 
-void R_DrawTranslucentLevelColumnP()
+void R_DrawTranslucentLevelColumnP(rendercontext_t& ctx)
 {
+	drawplanecol_t& dpcol = ctx.draw.dpcol;
+
 	if (dpcol.lightoff == NULL)
 		R_DrawLevelColumnGeneric<true, palindex_t, PaletteTranslucentLevelFunc>(FB_LEVELDEST_P, dpcol);
 	else
 		R_DrawLevelColumnGeneric<false, palindex_t, PaletteTranslucentLevelFunc>(FB_LEVELDEST_P, dpcol);
 }
 
-void R_DrawLevelColumnD()
+void R_DrawLevelColumnD(rendercontext_t& ctx)
 {
+	drawplanecol_t& dpcol = ctx.draw.dpcol;
+
 	if (dpcol.lightoff == NULL)
 		R_DrawLevelColumnGeneric<true, argb_t, DirectLevelFunc>(FB_LEVELDEST_D, dpcol);
 	else
 		R_DrawLevelColumnGeneric<false, argb_t, DirectLevelFunc>(FB_LEVELDEST_D, dpcol);
 }
 
-void R_DrawTranslucentLevelColumnD()
+void R_DrawTranslucentLevelColumnD(rendercontext_t& ctx)
 {
+	drawplanecol_t& dpcol = ctx.draw.dpcol;
+
 	if (dpcol.lightoff == NULL)
 		R_DrawLevelColumnGeneric<true, argb_t, DirectTranslucentLevelFunc>(FB_LEVELDEST_D, dpcol);
 	else
@@ -2859,8 +2931,10 @@ void R_DrawTranslucentLevelColumnD()
 // double multiplies and the per-y colormap load out of the inner loop, which is
 // most of the scalar column drawer's cost.
 //
-void R_DrawLevelGroupD_c()
+void R_DrawLevelGroupD_c(rendercontext_t& ctx)
 {
+	drawplanegroup_t& dpgroup = ctx.draw.dpgroup;
+
 	const drawplanegroup_t& g = dpgroup;
 
 	const palindex_t* const source = g.source;

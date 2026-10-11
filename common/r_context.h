@@ -247,6 +247,8 @@ struct spritecontext_t
 	vissprite_t* closestNonCredibleVisSprite; // This might need to be frame wide?
 };
 
+struct rendercontext_t;
+
 //
 // drawcontext_t
 //
@@ -266,13 +268,25 @@ struct drawcontext_t
 	FuzzTable   fuzztable;
 
 	// The selected drawers.
-	void (*colfunc)();
-	void (*spanfunc)();
-	void (*spanslopefunc)();
+	void (*colfunc)(rendercontext_t&);
+	void (*spanfunc)(rendercontext_t&);
+	void (*spanslopefunc)(rendercontext_t&);
 
 	// Draws one column of a level plane, or NULL when planes must go through
 	// the span path.
-	void (*levelcolfunc)();
+	void (*levelcolfunc)(rendercontext_t&);
+
+	// dcol and dspan carry pointers back into this struct, so a copy would
+	// point at the wrong context
+	drawcontext_t()
+	{
+		dcol.fuzz = &fuzztable;
+		dcol.basecolormap = &basecolormap;
+		dspan.basecolormap = &basecolormap;
+	}
+
+	drawcontext_t(const drawcontext_t&) = delete;
+	drawcontext_t& operator=(const drawcontext_t&) = delete;
 };
 
 //
@@ -341,10 +355,10 @@ inline drawplanegroup_t& dpgroup = ::rctx.draw.dpgroup;
 
 inline shaderef_t& basecolormap = ::rctx.draw.basecolormap;
 
-inline void (*&colfunc)()       = ::rctx.draw.colfunc;
-inline void (*&spanfunc)()      = ::rctx.draw.spanfunc;
-inline void (*&spanslopefunc)() = ::rctx.draw.spanslopefunc;
-inline void (*&levelcolfunc)()  = ::rctx.draw.levelcolfunc;
+inline void (*&colfunc)(rendercontext_t&)       = ::rctx.draw.colfunc;
+inline void (*&spanfunc)(rendercontext_t&)      = ::rctx.draw.spanfunc;
+inline void (*&spanslopefunc)(rendercontext_t&) = ::rctx.draw.spanslopefunc;
+inline void (*&levelcolfunc)(rendercontext_t&)  = ::rctx.draw.levelcolfunc;
 
 // How many slices the view is currently split into.
 int R_SliceCount();

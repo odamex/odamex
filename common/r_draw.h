@@ -26,6 +26,8 @@
 #include "r_intrin.h"
 #include "r_defs.h"
 
+struct rendercontext_t;
+
 // ----------------------------------------------------------------------------
 //
 // Fuzz Table
@@ -112,6 +114,9 @@ typedef struct
 
 	palindex_t			color;				// for r_drawflat
 	bool				masked;
+
+	FuzzTable*			fuzz;
+	const shaderef_t*	basecolormap;
 } drawcolumn_t;
 
 typedef struct
@@ -155,6 +160,8 @@ typedef struct
 	shaderef_t			slopelighting[MAXWIDTH];
 
 	palindex_t			color;
+
+	const shaderef_t*	basecolormap;
 } drawspan_t;
 
 
@@ -294,46 +301,46 @@ void R_RenderColumnRange(rendercontext_t& ctx, int start, int stop, const int* t
 
 // The span blitting interface.
 // Hook in assembler or system specific BLT here.
-extern void (*R_DrawColumn)(void);
+extern void (*R_DrawColumn)(rendercontext_t&);
 
 // The Spectre/Invisibility effect.
-extern void (*R_DrawFuzzColumn)(void);
+extern void (*R_DrawFuzzColumn)(rendercontext_t&);
 
 // [RH] Draw translucent column;
-extern void (*R_DrawTranslucentColumn)(void);
+extern void (*R_DrawTranslucentColumn)(rendercontext_t&);
 
 // Draw with color translation tables,
 //	for player sprite rendering,
 //	Green/Red/Blue/Indigo shirts.
-extern void (*R_DrawTranslatedColumn)(void);
+extern void (*R_DrawTranslatedColumn)(rendercontext_t&);
 
-extern void (*R_DrawTlatedLucentColumn)(void);
+extern void (*R_DrawTlatedLucentColumn)(rendercontext_t&);
 
 // [EB] Draw sky foreground with palette 0 transparency
-extern void (*R_DrawSkyForegroundColumn)(void);
+extern void (*R_DrawSkyForegroundColumn)(rendercontext_t&);
 
 // Span blitting for rows, floor/ceiling.
 // No Sepctre effect needed.
-extern void (*R_DrawSpan)(void);
+extern void (*R_DrawSpan)(rendercontext_t&);
 
 // Textured spans blended over the framebuffer by dspan.translevel
 // (stacked-sector portal boundary flats).
-extern void (*R_DrawTranslucentSpan)(void);
-extern void (*R_DrawTranslucentSlopeSpan)(void);
+extern void (*R_DrawTranslucentSpan)(rendercontext_t&);
+extern void (*R_DrawTranslucentSlopeSpan)(rendercontext_t&);
 
-extern void (*R_DrawSlopeSpan)(void);
+extern void (*R_DrawSlopeSpan)(rendercontext_t&);
 
 // Draws one column of a level plane. NULL whenever planes must go through the
 // span path (r_drawflat and nodrawers)
-extern void (*R_DrawLevelColumn)(void);
+extern void (*R_DrawLevelColumn)(rendercontext_t&);
 
 // Draws one four-row group of a level plane across [xa, xb].
-extern void (*R_DrawLevelGroup)(void);
-extern void (*R_DrawTranslucentLevelColumn)(void);
+extern void (*R_DrawLevelGroup)(rendercontext_t&);
+extern void (*R_DrawTranslucentLevelColumn)(rendercontext_t&);
 
-extern void (*R_FillColumn)(void);
-extern void (*R_FillSpan)(void);
-extern void (*R_FillTranslucentSpan)(void);
+extern void (*R_FillColumn)(rendercontext_t&);
+extern void (*R_FillSpan)(rendercontext_t&);
+extern void (*R_FillTranslucentSpan)(rendercontext_t&);
 
 // [RH] Initialize the above function pointers
 void R_InitColumnDrawers ();
@@ -341,10 +348,10 @@ void R_InitColumnDrawers ();
 void R_InitVectorizedDrawers();
 
 
-void	R_BlankColumn (void);
-void	R_BlankSpan (void);
+void	R_BlankColumn (rendercontext_t& ctx);
+void	R_BlankSpan (rendercontext_t& ctx);
 
-void R_DrawLevelGroupD_c(void);
+void R_DrawLevelGroupD_c(rendercontext_t& ctx);
 
 void R_UpdateARGBShadeLUT(void);
 
@@ -371,8 +378,8 @@ void r_dimpatchD_c(IWindowSurface* surface, argb_t color, int alpha, int x1, int
 //
 // ----------------------------------------------------------------------------
 
-// Points dcol/dspan/dpcol at the view rect of the surface.
-void R_BindViewBuffer(IWindowSurface* surface);
+// Points ctx.draw's dcol/dspan/dpcol at the view rect of the surface.
+void R_BindViewBuffer(rendercontext_t& ctx, IWindowSurface* surface);
 
 // Fills the view with a solid colour (r_flashhom).
 void R_ClearViewBuffer(IWindowSurface* surface, argb_t color);
@@ -380,9 +387,9 @@ void R_ClearViewBuffer(IWindowSurface* surface, argb_t color);
 #ifdef __SSE2__
 // Four vertically adjacent pixels per iteration -- see R_DrawColumnQuadGeneric.
 // Both read dcol, and both require a 32bpp column-major destination.
-void R_DrawColumnD_SSE2(void);
-void R_DrawTranslucentColumnD_SSE2(void);
-void R_DrawLevelGroupD_SSE2(void);
+void R_DrawColumnD_SSE2(rendercontext_t& ctx);
+void R_DrawTranslucentColumnD_SSE2(rendercontext_t& ctx);
+void R_DrawLevelGroupD_SSE2(rendercontext_t& ctx);
 void r_dimpatchD_SSE2(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
@@ -395,7 +402,7 @@ void r_dimpatchD_ALTIVEC(IWindowSurface*, argb_t color, int alpha, int x1, int y
 #endif
 
 // Vectorizable function pointers:
-extern void (*R_DrawLevelGroupD)(void);
+extern void (*R_DrawLevelGroupD)(rendercontext_t&);
 extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 inline byte bosstable[256];

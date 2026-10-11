@@ -107,7 +107,7 @@ static void R_FillWallHeightArray(
 //
 // R_BlastMaskedSegColumn
 //
-static inline void R_BlastMaskedSegColumn(rendercontext_t& ctx, void (*drawfunc)())
+static inline void R_BlastMaskedSegColumn(rendercontext_t& ctx, void (*drawfunc)(rendercontext_t&))
 {
 	// R_PrepWall uses floats to calculate scale1 and scale2, which left
 	// the scalestep values vulnerable to floating-point rounding errors.
@@ -161,7 +161,7 @@ static inline void R_BlastMaskedSegColumn(rendercontext_t& ctx, void (*drawfunc)
 		ctx.draw.dcol.yl = static_cast<int>(yl);
 		ctx.draw.dcol.yh = static_cast<int>(yh);
 		ctx.draw.dcol.texturefrac = static_cast<fixed_t>(texturefrac);
-		drawfunc();
+		drawfunc(ctx);
 	}
 }
 
@@ -169,7 +169,7 @@ static inline void R_BlastMaskedSegColumn(rendercontext_t& ctx, void (*drawfunc)
 //
 // R_BlastSolidSegColumn
 //
-static inline void R_BlastSolidSegColumn(rendercontext_t& ctx, void (*drawfunc)())
+static inline void R_BlastSolidSegColumn(rendercontext_t& ctx, void (*drawfunc)(rendercontext_t&))
 {
 	fixed_t scale = ctx.seg.wallscalex[ctx.draw.dcol.x];
 	if (scale <= 0)
@@ -181,7 +181,7 @@ static inline void R_BlastSolidSegColumn(rendercontext_t& ctx, void (*drawfunc)(
 	                   FixedMul(((ctx.draw.dcol.yl + 1) << FRACBITS) - centeryfrac, ctx.draw.dcol.iscale);
 
 	if (ctx.draw.dcol.yl <= ctx.draw.dcol.yh)
-		drawfunc();
+		drawfunc(ctx);
 }
 
 inline void SolidColumnBlaster(rendercontext_t& ctx)

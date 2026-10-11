@@ -780,7 +780,7 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 //
 // R_BlastSkyColumn
 //
-static inline void R_BlastSkyColumn(rendercontext_t& ctx, void (*drawfunc)())
+static inline void R_BlastSkyColumn(rendercontext_t& ctx, void (*drawfunc)(rendercontext_t&))
 {
 	drawcolumn_t& dcol = ctx.draw.dcol;
 
@@ -788,7 +788,7 @@ static inline void R_BlastSkyColumn(rendercontext_t& ctx, void (*drawfunc)())
 	{
 		dcol.texturefrac = dcol.texturemid +
 		                   FixedMul(((dcol.yl + 1) << FRACBITS) - centeryfrac, dcol.iscale);
-		drawfunc();
+		drawfunc(ctx);
 	}
 }
 

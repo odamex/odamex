@@ -184,7 +184,7 @@ vissprite_t *R_NewVisSprite(rendercontext_t& ctx)
 //	in posts/runs of opaque pixels.
 //
 
-void R_BlastSpriteColumn(rendercontext_t& ctx, void (*drawfunc)())
+void R_BlastSpriteColumn(rendercontext_t& ctx, void (*drawfunc)(rendercontext_t&))
 {
 	drawcolumn_t& dcol            = ctx.draw.dcol;
 	const fixed_t spryscale       = ctx.sprite.spryscale;
@@ -224,7 +224,7 @@ void R_BlastSpriteColumn(rendercontext_t& ctx, void (*drawfunc)())
 		ctx.draw.dcol.yl = static_cast<int>(yl);
 		ctx.draw.dcol.yh = static_cast<int>(yh);
 		ctx.draw.dcol.texturefrac = static_cast<fixed_t>(texturefrac);
-		drawfunc();
+		drawfunc(ctx);
 	}
 }
 
@@ -1487,7 +1487,7 @@ void R_DrawParticle(rendercontext_t& ctx, vissprite_t* vis)
 	ctx.draw.dspan.color = vis->startfrac;
 
 	for (ctx.draw.dspan.y = y1; ctx.draw.dspan.y <= y2; ctx.draw.dspan.y++)
-		R_FillTranslucentSpan();
+		R_FillTranslucentSpan(ctx);
 }
 
 VERSION_CONTROL (r_things_cpp, "$Id$")
