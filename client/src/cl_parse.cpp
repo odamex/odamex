@@ -3996,6 +3996,10 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 			last_svgametic = s_currentHeader.originatorTic;
 		}
 
+		// If this packet is "from the future," we'll put its decoded messages into the deferredMessages container
+		// in ParseOne via ParseBuffer, but we need to make sure that we put the corresponding header in, too.  We
+		// do that here, right away, so that when we eventually process the future tic's deferred messages, we handle
+		// the header first.
 		if (s_currentHeader.originatorTic > currentExpectedNewestPacket)
 		{
 			auto headerProto = MSG_Header(s_currentHeader);
