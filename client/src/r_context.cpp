@@ -24,6 +24,8 @@
 #include "odamex.h"
 
 #include <algorithm>
+#include <memory>
+#include <vector>
 
 #include "r_context.h"
 
@@ -31,12 +33,57 @@
 #include "doomstat.h"
 #include "i_video.h"
 #include "r_main.h"
+#include "r_things.h"
 #include "v_video.h"
 
 EXTERN_CVAR(r_threads)
 EXTERN_CVAR(r_showcontexts)
 
 rendercontext_t rctx;
+
+// Slices 1..n-1.
+// Slice 0 is rctx (main thread), so the one slice case allocates nothing.
+static std::vector<std::unique_ptr<rendercontext_t>> extra_contexts;
+
+static int activeslices = 1;
+
+//
+// R_ActiveSlices
+//
+int R_ActiveSlices()
+{
+	return activeslices;
+}
+
+//
+// R_SliceContext
+//
+rendercontext_t& R_SliceContext(int i)
+{
+	return i == 0 ? rctx : *extra_contexts[i - 1];
+}
+
+//
+// R_SyncRenderContexts
+//
+// Grows the context set to match r_threads.
+// Contexts are never released in order to only allocate once.
+//
+bool R_SyncRenderContexts()
+{
+	const int want = R_SliceCount();
+
+	bool grew = false;
+	while (extra_contexts.size() + 1 < static_cast<size_t>(want))
+	{
+		extra_contexts.push_back(std::make_unique<rendercontext_t>());
+		R_InitVisSprites(*extra_contexts.back());
+		grew = true;
+	}
+
+	activeslices = want;
+	return grew;
+}
 
 //
 // R_SliceCount
@@ -86,7 +133,7 @@ void R_ShowContexts()
 	const int y1 = viewwindowy;
 	const int y2 = viewwindowy + viewheight;
 
-	const int nslices = R_SliceCount();
+	const int nslices = R_ActiveSlices();
 
 	for (int i = 0; i < nslices; i++)
 	{

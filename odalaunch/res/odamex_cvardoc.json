@@ -2133,10 +2133,10 @@
       },
       {
          "default" : 1,
-         "flags" : [ "CLIENTARCHIVE" ],
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Number of render threads",
-         "max" : 1,
-         "min" : 0,
+         "max" : 64,
+         "min" : 1,
          "name" : "r_threads",
          "type" : "integer"
       },

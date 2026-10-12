@@ -73,6 +73,9 @@ extern fixed_t		pspritexscale;
 extern fixed_t		pspriteyscale;
 extern fixed_t		pspritexiscale;
 
+extern vissprite_t* closestNonCredibleVisSprite;
+
+void R_DrawPlayerSprites(rendercontext_t& ctx);
 void R_SortVisSprites(rendercontext_t& ctx);
 void R_AddSprites(rendercontext_t& ctx, sector_t *sec, int lightlevel, int fakeside);
 void R_ClearSprites(rendercontext_t& ctx);

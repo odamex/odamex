@@ -41,7 +41,10 @@ extern spriteframe_t sprtemp[MAX_SPRITE_FRAMES];
 extern int maxframe;
 
 // The vissprite pool lives in rctx.sprite
+struct rendercontext_t;
+
 void R_InitVisSprites();
+void R_InitVisSprites(rendercontext_t& ctx);
 
 void R_CacheSprite(const spritedef_t *sprite);
 void R_InitSprites(std::vector<spriteinfo_t*>& sprites);

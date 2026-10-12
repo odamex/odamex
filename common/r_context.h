@@ -243,8 +243,6 @@ struct spritecontext_t
 	fixed_t    sprtopscreen;
 
 	const palindex_t* spriteposts[MAXWIDTH];
-
-	vissprite_t* closestNonCredibleVisSprite; // This might need to be frame wide?
 };
 
 struct rendercontext_t;
@@ -311,8 +309,18 @@ struct rendercontext_t
 	}
 };
 
-// The main thread's context.
+// The main thread's (slice 0) context.
 extern rendercontext_t rctx;
+
+// Brings the context set in line with r_threads.
+// Returns true when contexts were added.
+bool R_SyncRenderContexts();
+
+// How many slices the frame is being rendered as.
+int R_ActiveSlices();
+
+// Slice i's context. Slice 0 is rctx (main thread).
+rendercontext_t& R_SliceContext(int i);
 
 // How many slices the view is currently split into.
 int R_SliceCount();

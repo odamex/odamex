@@ -1124,6 +1124,10 @@ void R_SetSkyForegroundDrawFuncs(rendercontext_t& ctx)
 //
 void R_RenderPlayerView(player_t* player)
 {
+	// r_threads changed? Add/remove contexts.
+	if (R_SyncRenderContexts())
+		setsizeneeded = true;
+
 	// Recalculate the viewing window dimensions, if needed.
 	if (setsizeneeded)
 	{
@@ -1138,19 +1142,6 @@ void R_RenderPlayerView(player_t* player)
 		return;
 
 	R_SetupFrame(rctx, player);
-
-	// TODO: Set slice sizes depending on thread count / viewwidth
-	rctx.slice_start = 0;
-	rctx.slice_stop = viewwidth - 1;
-
-	// Clear buffers.
-	R_ClearClipSegs(rctx);
-	R_ClearDrawSegs(rctx);
-	R_ClearOpenings(rctx);
-	R_ClearPlanes(rctx, true);
-	R_ClearSprites(rctx);
-
-	R_ResetDrawFuncs(rctx);
 
 	IWindowSurface* surface = R_GetRenderingSurface();
 
@@ -1168,19 +1159,56 @@ void R_RenderPlayerView(player_t* player)
 
     // [Russell] - From zdoom 1.22 source, added camera pointer check
 	// Never draw the player unless in chasecam mode
-	if (camera && camera->player && !(player->cheats & CF_CHASECAM))
+	const bool hideplayer = camera && camera->player && !(player->cheats & CF_CHASECAM);
+	ActorFlags2 flags2_backup = ActorFlags2::none_set();
+	if (hideplayer)
 	{
-		const auto flags2_backup = camera->flags2;
+		flags2_backup = camera->flags2;
 		camera->flags2 |= MF2_DONTDRAW;
-		R_RenderBSPNode(rctx, numnodes - 1);
-		camera->flags2 = flags2_backup;
 	}
-	else
-		R_RenderBSPNode(rctx, numnodes - 1);	// The head node is the last node output.
 
-	R_DrawPlanes(rctx);
-	R_DrawPortals(rctx);
-	R_DrawMasked(rctx);
+	// Read walllights before it gets mutated.
+	int* const frame_walllights = rctx.seg.walllights;
+
+	closestNonCredibleVisSprite = nullptr;
+
+	// Render the view as vertical slices, one context each.
+	const int nslices = R_ActiveSlices();
+
+	for (int i = 0; i < nslices; i++)
+	{
+		rendercontext_t& ctx = R_SliceContext(i);
+		R_SliceBounds(i, nslices, ctx.slice_start, ctx.slice_stop);
+
+		ctx.seg.walllights = frame_walllights;
+		ctx.bsp.r_fakingunderwater = false;
+
+		// Each slice traverses the world on its own, so every sector has to be
+		// visitable again.
+		validcount++;
+
+		// Clear buffers.
+		R_ClearClipSegs(ctx);
+		R_ClearDrawSegs(ctx);
+		R_ClearOpenings(ctx);
+		R_ClearPlanes(ctx, true);
+		R_ClearSprites(ctx);
+
+		R_ResetDrawFuncs(ctx);
+
+		R_RenderBSPNode(ctx, numnodes - 1);
+
+		R_DrawPlanes(ctx);
+		R_DrawPortals(ctx);
+		R_DrawMasked(ctx);
+	}
+
+	if (hideplayer)
+		camera->flags2 = flags2_backup;
+
+	// The weapon sprite spans the whole view, so it is drawn once rather than
+	// per slice.
+	R_DrawPlayerSprites(rctx);
 
 	// NOTE(jsd): Full-screen status color blending:
 	int blend_alpha = static_cast<int>(blend_color.geta() * 255.0f);
@@ -1379,10 +1407,13 @@ static void R_InitViewWindow()
 
 	R_InitLightTables(surface_width, surface_height);
 
-	R_PlaneInitData(rctx, surface);
+	for (int i = 0; i < R_ActiveSlices(); i++)
+		R_PlaneInitData(R_SliceContext(i), surface);
+
 	R_InitSkyMap();
 
-	R_BindViewBuffer(rctx, surface);
+	for (int i = 0; i < R_ActiveSlices(); i++)
+		R_BindViewBuffer(R_SliceContext(i), surface);
 
 	surface->unlock();
 

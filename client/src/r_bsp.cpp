@@ -52,6 +52,12 @@ const fixed_t NEARCLIP = 2*FRACUNIT;
 void R_ClearClipSegs (rendercontext_t& ctx)
 {
 	memset(ctx.bsp.solidcol, 0, viewwidth);
+
+	// Seed the columns outside this slice as solid.
+	if (ctx.slice_start > 0)
+		memset(ctx.bsp.solidcol, 1, ctx.slice_start);
+	if (ctx.slice_stop < viewwidth - 1)
+		memset(ctx.bsp.solidcol + ctx.slice_stop + 1, 1, viewwidth - ctx.slice_stop - 1);
 }
 
 //

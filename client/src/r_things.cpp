@@ -119,9 +119,11 @@ std::vector<uint16_t>		ParticlesInSubsec;
 //
 // Allocates the context's vissprite pool.
 //
-void R_InitVisSprites()
+vissprite_t* closestNonCredibleVisSprite;
+
+void R_InitVisSprites(rendercontext_t& ctx)
 {
-	spritecontext_t& sprite = ::rctx.sprite;
+	spritecontext_t& sprite = ctx.sprite;
 
 	sprite.maxvissprites = 128;	// [RH] This is the initial default value. It grows as needed.
 
@@ -130,6 +132,14 @@ void R_InitVisSprites()
 	sprite.firstvissprite = sprite.vissprites =
 		static_cast<vissprite_t*>(M_Malloc(sprite.maxvissprites * sizeof(vissprite_t)));
 	sprite.lastvissprite = &sprite.vissprites[sprite.maxvissprites];
+}
+
+//
+// R_InitVisSprites
+//
+void R_InitVisSprites()
+{
+	R_InitVisSprites(::rctx);
 }
 
 //
@@ -1121,6 +1131,16 @@ void R_DrawSprite (rendercontext_t& ctx, vissprite_t *spr)
 	int topclip = 0;
 	int botclip = viewheight;
 
+	// Clip sprites against the slice boundaries, since the drawsegs
+	// to clip against it don't exist in this context.
+	if (spr->x1 < ctx.slice_start)
+	{
+		if (spr->res_id != NO_PARTICLE)
+			spr->startfrac += spr->xiscale * (ctx.slice_start - spr->x1);
+		spr->x1 = ctx.slice_start;
+	}
+	spr->x2 = std::min(spr->x2, ctx.slice_stop);
+
 	// [RH] Quickly reject sprites with bad x ranges.
 	if (spr->x1 > spr->x2)
 		return;
@@ -1271,15 +1291,13 @@ void R_DrawMasked (rendercontext_t& ctx)
 		spriteclip_stats.peak_sprites = std::max(spriteclip_stats.peak_sprites, sprcount);
 	}
 
-	ctx.sprite.closestNonCredibleVisSprite = nullptr;
-
 	for (auto& vis : std::views::reverse(spritesorter))
 	{
 		R_DrawSprite(ctx, vis);
 
         if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
         {
-            ctx.sprite.closestNonCredibleVisSprite = vis;
+            closestNonCredibleVisSprite = vis;
         }
 	}
 
@@ -1294,9 +1312,6 @@ void R_DrawMasked (rendercontext_t& ctx)
 	for (ds=ctx.bsp.ds_p ; ds-- > ctx.bsp.firstdrawseg ; )	// new -- killough
 		if (ds->midposts)
 			R_RenderMaskedSegRange(ctx, ds, ds->x1, ds->x2);
-
-	// draw the psprites on top of everything
-	R_DrawPlayerSprites(ctx);
 }
 
 

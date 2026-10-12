@@ -789,7 +789,7 @@ CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 				CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR_RANGE(		r_threads, "1", "Number of render threads",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE, 1.0f, 64.0f)
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 64.0f)
 
 CVAR(			r_showcontexts, "0", "Draws a pink line at each render slice boundary",
 				CVARTYPE_BOOL, CVAR_NULL)
