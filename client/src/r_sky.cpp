@@ -945,7 +945,7 @@ void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl)
 	if (!frontskytex)
 		return;
 
-	R_ResetDrawFuncs();
+	R_ResetDrawFuncs(ctx);
 
 	const palette_t* pal = V_GetDefaultPalette();
 
@@ -1010,7 +1010,7 @@ void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl)
 	R_RenderColumnRange(ctx, pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom), skyposts,
 			backskytex ? SkyForegroundColumnBlaster : SkyColumnBlaster, false, 2);
 
-	R_ResetDrawFuncs();
+	R_ResetDrawFuncs(ctx);
 }
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")

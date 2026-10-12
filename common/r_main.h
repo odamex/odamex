@@ -211,12 +211,15 @@ void R_SetViewAngle(angle_t ang);
 
 void R_ForceViewWindowResize();
 
-void R_ResetDrawFuncs();
-void R_SetFuzzDrawFuncs();
-void R_SetLucentDrawFuncs();
-void R_SetTranslatedDrawFuncs();
-void R_SetTranslatedLucentDrawFuncs();
-void R_SetSkyForegroundDrawFuncs();
+struct rendercontext_t;
+
+// Each of these selects the drawers for one context.
+void R_ResetDrawFuncs(rendercontext_t& ctx);
+void R_SetFuzzDrawFuncs(rendercontext_t& ctx);
+void R_SetLucentDrawFuncs(rendercontext_t& ctx);
+void R_SetTranslatedDrawFuncs(rendercontext_t& ctx);
+void R_SetTranslatedLucentDrawFuncs(rendercontext_t& ctx);
+void R_SetSkyForegroundDrawFuncs(rendercontext_t& ctx);
 
 inline byte shaderef_t::ramp() const
 {
@@ -313,4 +316,4 @@ inline argb_t shaderef_t::shadeargb(const argb_t c) const
 // than what finesine/finecosine can give us.
 static constexpr double ANGLE_TO_RAD = 6.28318530717958647692 / 4294967296.0;
 
-void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color);
+void R_DrawLine(rendercontext_t& ctx, const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color);

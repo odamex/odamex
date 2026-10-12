@@ -2384,7 +2384,10 @@ void CL_SendCmd(void)
 			messenger.BestEffort().Write (CLC_SpectateUpdate(player));
 		}
 
-		if (closestNonCredibleVisSprite)
+		// set by the sprite pass on the main thread's context
+	vissprite_t*& closestNonCredibleVisSprite = ::rctx.sprite.closestNonCredibleVisSprite;
+
+	if (closestNonCredibleVisSprite)
 		{
 			closestNonCredibleVisSprite->mo->credibility.Challenge();
 

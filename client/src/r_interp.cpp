@@ -218,8 +218,8 @@ void OInterpolation::ticGameInterpolation()
 		prev_sky2offset = sky2columnoffset;
 
 		// Update bob - this happens once per gametic
-		prev_bobx = bobx;
-		prev_boby = boby;
+		prev_bobx = ::rctx.sprite.bobx;
+		prev_boby = ::rctx.sprite.boby;
 
 		// Update chasecam
 		prev_camerax = CameraX;
@@ -330,6 +330,10 @@ void OInterpolation::interpolateSkies(fixed_t amount)
 
 void OInterpolation::interpolateBob(fixed_t amount)
 {
+	// the weapon sprite is drawn on the main thread, in its context
+	fixed_t& bobx = ::rctx.sprite.bobx;
+	fixed_t& boby = ::rctx.sprite.boby;
+
 	// Perform interp on weapons bob
 	fixed_t newbobx = prev_bobx + FixedMul(amount, bobx - prev_bobx);
 	fixed_t newboby = prev_boby + FixedMul(amount, boby - prev_boby);
@@ -438,8 +442,8 @@ void OInterpolation::restoreSkies(void)
 void OInterpolation::restoreBob(void)
 {
 	// Restore weapon bob
-	bobx = saved_bobx;
-	boby = saved_boby;
+	::rctx.sprite.bobx = saved_bobx;
+	::rctx.sprite.boby = saved_boby;
 }
 
 //

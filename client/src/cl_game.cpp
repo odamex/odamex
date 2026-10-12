@@ -865,6 +865,11 @@ END_COMMAND(netstat)
 
 void P_BobTicker()
 {
+	// weapon bob belongs to the context the weapon sprite is drawn in, which
+	// is always the main thread's
+	fixed_t& bobx = ::rctx.sprite.bobx;
+	fixed_t& boby = ::rctx.sprite.boby;
+
 	bobx = P_TickWeaponBobX();
 	boby = P_TickWeaponBobY();
 }

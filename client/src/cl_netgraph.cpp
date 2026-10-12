@@ -138,6 +138,10 @@ static void NetGraphDrawBar(int startx, int starty, int width, int height, int c
 	if (starty + height >= viewheight)
 		height = viewheight - starty - 1;
 
+	// the netgraph is HUD drawing on the main thread, so it borrows that
+	// context's span block
+	drawspan_t& dspan = ::rctx.draw.dspan;
+
 	dspan.color = color;
 	dspan.x1 = startx;
 	dspan.x2 = startx + width - 1;

@@ -341,16 +341,16 @@ void R_DrawVisSprite(rendercontext_t& ctx, vissprite_t *vis, int x1, int x2)
 	}
 
 	// [SL] Select the set of drawing functions to use
-	R_ResetDrawFuncs();
+	R_ResetDrawFuncs(ctx);
 
 	if (fuzz_effect)
-		R_SetFuzzDrawFuncs();
+		R_SetFuzzDrawFuncs(ctx);
 	else if (lucent && translated)
-		R_SetTranslatedLucentDrawFuncs();
+		R_SetTranslatedLucentDrawFuncs(ctx);
 	else if (lucent)
-		R_SetLucentDrawFuncs();
+		R_SetLucentDrawFuncs(ctx);
 	else if (translated)
-		R_SetTranslatedDrawFuncs();
+		R_SetTranslatedDrawFuncs(ctx);
 
 
 	const Texture* texture = vis->texture;
@@ -374,7 +374,7 @@ void R_DrawVisSprite(rendercontext_t& ctx, vissprite_t *vis, int x1, int x2)
 
 	R_RenderColumnRange(ctx, vis->x1, vis->x2, negonearray, viewheightarray, ctx.sprite.spriteposts, SpriteColumnBlaster, false, 0);
 
-	R_ResetDrawFuncs();
+	R_ResetDrawFuncs(ctx);
 }
 
 
@@ -541,22 +541,22 @@ void R_DrawHitBox(rendercontext_t& ctx, const AActor* thing)
 	vertices[7].z = thing->z + thing->height;
 
 	// draw bottom square
-	R_DrawLine(&vertices[0], &vertices[1], color);
-	R_DrawLine(&vertices[0], &vertices[2], color);
-	R_DrawLine(&vertices[2], &vertices[3], color);
-	R_DrawLine(&vertices[1], &vertices[3], color);
+	R_DrawLine(ctx, &vertices[0], &vertices[1], color);
+	R_DrawLine(ctx, &vertices[0], &vertices[2], color);
+	R_DrawLine(ctx, &vertices[2], &vertices[3], color);
+	R_DrawLine(ctx, &vertices[1], &vertices[3], color);
 
 	// draw top square
-	R_DrawLine(&vertices[4], &vertices[5], color);
-	R_DrawLine(&vertices[4], &vertices[6], color);
-	R_DrawLine(&vertices[6], &vertices[7], color);
-	R_DrawLine(&vertices[5], &vertices[7], color);
+	R_DrawLine(ctx, &vertices[4], &vertices[5], color);
+	R_DrawLine(ctx, &vertices[4], &vertices[6], color);
+	R_DrawLine(ctx, &vertices[6], &vertices[7], color);
+	R_DrawLine(ctx, &vertices[5], &vertices[7], color);
 
 	// connect the top and bottom squares
-	R_DrawLine(&vertices[0], &vertices[4], color);
-	R_DrawLine(&vertices[1], &vertices[5], color);
-	R_DrawLine(&vertices[2], &vertices[6], color);
-	R_DrawLine(&vertices[3], &vertices[7], color);
+	R_DrawLine(ctx, &vertices[0], &vertices[4], color);
+	R_DrawLine(ctx, &vertices[1], &vertices[5], color);
+	R_DrawLine(ctx, &vertices[2], &vertices[6], color);
+	R_DrawLine(ctx, &vertices[3], &vertices[7], color);
 }
 
 

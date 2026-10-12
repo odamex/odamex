@@ -492,12 +492,12 @@ void R_RenderMaskedSegRange(rendercontext_t& ctx, drawseg_t* ds, int x1, int x2)
 	//		translucency maps
 	if (ctx.bsp.curline->linedef->lucency < 240)
 	{
-		R_SetLucentDrawFuncs();
+		R_SetLucentDrawFuncs(ctx);
 		ctx.draw.dcol.translevel = ctx.bsp.curline->linedef->lucency << 8;
 	}
 	else
 	{
-		R_ResetDrawFuncs();
+		R_ResetDrawFuncs(ctx);
 	}
 
 	ctx.bsp.frontsector = ctx.bsp.curline->frontsector;

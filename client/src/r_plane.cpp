@@ -1285,7 +1285,7 @@ static void R_DrawStackFlatBlend(rendercontext_t& ctx, visplane_t* pl)
 
 	R_DrawSingleFlatPlane(ctx, pl);
 
-	R_ResetDrawFuncs();
+	R_ResetDrawFuncs(ctx);
 }
 
 //
@@ -1295,7 +1295,7 @@ static void R_DrawStackFlatBlend(rendercontext_t& ctx, visplane_t* pl)
 //
 void R_DrawPlanes(rendercontext_t& ctx)
 {
-	R_ResetDrawFuncs();
+	R_ResetDrawFuncs(ctx);
 	ctx.draw.dspan.color = 3;
 	
 	for (int i = 0; i < MAXVISPLANES; i++)

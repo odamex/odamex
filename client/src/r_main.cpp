@@ -585,8 +585,10 @@ bool R_CheckProjectionY(int &y1, int &y2)
 //
 // R_DrawPixel
 //
-static inline void R_DrawPixel(int x, int y, byte color)
+static inline void R_DrawPixel(rendercontext_t& ctx, int x, int y, byte color)
 {
+	const drawcolumn_t& dcol = ctx.draw.dcol;
+
 	byte* dest = dcol.destination + y * dcol.pitch_in_pixels + x * dcol.colstep;
 	*dest = color;
 }
@@ -597,7 +599,7 @@ static inline void R_DrawPixel(int x, int y, byte color)
 //
 // Draws a colored line between the two endpoints given in world coordinates.
 //
-void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
+void R_DrawLine(rendercontext_t& ctx, const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 {
 	// convert from world-space to camera-space
 	v3fixed_t pt1, pt2;
@@ -646,7 +648,7 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 
 		while (1)
 		{
-			R_DrawPixel(x, y, color);
+			R_DrawPixel(ctx, x, y, color);
 			if (x == x2)
 				return;
 
@@ -664,7 +666,7 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 		d = ax - ay/2;
 		while (1)
 		{
-			R_DrawPixel(x, y, color);
+			R_DrawPixel(ctx, x, y, color);
 			if (y == y2)
 				return;
 
@@ -886,7 +888,7 @@ argb_t R_GetSectorBlend()
 // R_SetupFrame
 //
 //
-void R_SetupFrame (player_t *player)
+void R_SetupFrame (rendercontext_t& ctx, player_t *player)
 {
 	camera = player->camera;	// [RH] Use camera instead of viewplayer
 
@@ -962,7 +964,7 @@ void R_SetupFrame (player_t *player)
 			fixedcolormap = shaderef_t(&pal->maps, player->fixedcolormap);
 		}
 
-		walllights = scalelightfixed;
+		ctx.seg.walllights = scalelightfixed;
 
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
@@ -979,7 +981,7 @@ void R_SetupFrame (player_t *player)
 	}
 
 	// [RH] Hack to make windows into underwater areas possible
-	r_fakingunderwater = false;
+	ctx.bsp.r_fakingunderwater = false;
 
 	framecount++;
 	validcount++;
@@ -991,12 +993,12 @@ void R_SetupFrame (player_t *player)
 // Sets the drawing function pointers to functions that floodfill with
 // flat colors instead of texture mapping.
 //
-void R_SetFlatDrawFuncs()
+void R_SetFlatDrawFuncs(rendercontext_t& ctx)
 {
-	colfunc = R_FillColumn;
-	spanfunc = R_FillSpan;
-	spanslopefunc = R_FillSpan;
-	levelcolfunc = NULL;
+	ctx.draw.colfunc = R_FillColumn;
+	ctx.draw.spanfunc = R_FillSpan;
+	ctx.draw.spanslopefunc = R_FillSpan;
+	ctx.draw.levelcolfunc = NULL;
 }
 
 //
@@ -1005,115 +1007,115 @@ void R_SetFlatDrawFuncs()
 // Sets the drawing function pointers to functions that draw nothing.
 // These can be used instead of the flat color functions for lucent midtex.
 //
-void R_SetBlankDrawFuncs()
+void R_SetBlankDrawFuncs(rendercontext_t& ctx)
 {
-	colfunc = R_BlankColumn;
-	spanfunc = spanslopefunc = R_BlankSpan;
-	levelcolfunc = NULL;
+	ctx.draw.colfunc = R_BlankColumn;
+	ctx.draw.spanfunc = ctx.draw.spanslopefunc = R_BlankSpan;
+	ctx.draw.levelcolfunc = NULL;
 }
 
 //
 // R_ResetDrawFuncs
 //
-void R_ResetDrawFuncs()
+void R_ResetDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawColumn;
-		spanfunc = R_DrawSpan;
-		spanslopefunc = R_DrawSlopeSpan;
-		levelcolfunc = R_DrawLevelColumn;
+		ctx.draw.colfunc = R_DrawColumn;
+		ctx.draw.spanfunc = R_DrawSpan;
+		ctx.draw.spanslopefunc = R_DrawSlopeSpan;
+		ctx.draw.levelcolfunc = R_DrawLevelColumn;
 	}
 }
 
-void R_SetFuzzDrawFuncs()
+void R_SetFuzzDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawFuzzColumn;
-		spanfunc = R_DrawSpan;
-		spanslopefunc = R_DrawSlopeSpan;
-		levelcolfunc = R_DrawLevelColumn;
+		ctx.draw.colfunc = R_DrawFuzzColumn;
+		ctx.draw.spanfunc = R_DrawSpan;
+		ctx.draw.spanslopefunc = R_DrawSlopeSpan;
+		ctx.draw.levelcolfunc = R_DrawLevelColumn;
 	}
 }
 
-void R_SetLucentDrawFuncs()
+void R_SetLucentDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawTranslucentColumn;
+		ctx.draw.colfunc = R_DrawTranslucentColumn;
 	}
 }
 
-void R_SetTranslatedDrawFuncs()
+void R_SetTranslatedDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawTranslatedColumn;
+		ctx.draw.colfunc = R_DrawTranslatedColumn;
 	}
 }
 
-void R_SetTranslatedLucentDrawFuncs()
+void R_SetTranslatedLucentDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawTlatedLucentColumn;
+		ctx.draw.colfunc = R_DrawTlatedLucentColumn;
 	}
 }
 
-void R_SetSkyForegroundDrawFuncs()
+void R_SetSkyForegroundDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawSkyForegroundColumn;
+		ctx.draw.colfunc = R_DrawSkyForegroundColumn;
 	}
 }
 
@@ -1135,7 +1137,7 @@ void R_RenderPlayerView(player_t* player)
 	if (!viewactive)
 		return;
 
-	R_SetupFrame(player);
+	R_SetupFrame(rctx, player);
 
 	// TODO: Set slice sizes depending on thread count / viewwidth
 	rctx.slice_start = 0;
@@ -1148,7 +1150,7 @@ void R_RenderPlayerView(player_t* player)
 	R_ClearPlanes(rctx, true);
 	R_ClearSprites(rctx);
 
-	R_ResetDrawFuncs();
+	R_ResetDrawFuncs(rctx);
 
 	IWindowSurface* surface = R_GetRenderingSurface();
 
@@ -1440,7 +1442,7 @@ void R_ExitLevel()
 	blend_color = fargb_t(0.0f, 255.0f, 255.0f, 255.0f);
 	V_ForceBlend(blend_color);
 
-	r_underwater = false;
+	::rctx.bsp.r_underwater = false;
 }
 
 // ============================================================================
@@ -1450,9 +1452,8 @@ void R_ExitLevel()
 // Renders the current view repeatedly without ticking the game or presenting, and
 // reports the distribution of frame times.
 //
-// Hand-played A/Bs compare samples that saw different scenes -- that method once
-// reported one change as -49.4%, +3.5% and +176.7% across three runs of the same
-// build. Here the simulation does not advance, so the camera, the world and the
+// Hand-played A/Bs compare samples that saw different scenes.
+// Here the simulation does not advance, so the camera, the world and the
 // work are identical every iteration and between runs from the same spot.
 //
 // READ THE MINIMUM: it is the one figure the OS cannot inflate. The mean and p95

@@ -314,52 +314,6 @@ struct rendercontext_t
 // The main thread's context.
 extern rendercontext_t rctx;
 
-inline int*& walllights        = ::rctx.seg.walllights;
-inline Pool<int>& sprclip_pool = ::rctx.seg.sprclip_pool;
-
-inline fixed_t& rw_backcz1  = ::rctx.seg.rw_backcz1;
-inline fixed_t& rw_backcz2  = ::rctx.seg.rw_backcz2;
-inline fixed_t& rw_backfz1  = ::rctx.seg.rw_backfz1;
-inline fixed_t& rw_backfz2  = ::rctx.seg.rw_backfz2;
-inline fixed_t& rw_frontcz1 = ::rctx.seg.rw_frontcz1;
-inline fixed_t& rw_frontcz2 = ::rctx.seg.rw_frontcz2;
-inline fixed_t& rw_frontfz1 = ::rctx.seg.rw_frontfz1;
-inline fixed_t& rw_frontfz2 = ::rctx.seg.rw_frontfz2;
-
-inline const seg_t*& curline     = ::rctx.bsp.curline;
-inline side_t*&      sidedef     = ::rctx.bsp.sidedef;
-inline line_t*&      linedef     = ::rctx.bsp.linedef;
-inline sector_t*&    frontsector = ::rctx.bsp.frontsector;
-inline sector_t*&    backsector  = ::rctx.bsp.backsector;
-
-inline bool& doorclosed         = ::rctx.bsp.doorclosed;
-inline bool& r_fakingunderwater = ::rctx.bsp.r_fakingunderwater;
-inline bool& r_underwater       = ::rctx.bsp.r_underwater;
-inline bool& foggy              = ::rctx.bsp.foggy;
-
-inline drawseg_t*& ds_p         = ::rctx.bsp.ds_p;
-inline drawseg_t*& drawsegs     = ::rctx.bsp.drawsegs;
-inline drawseg_t*& firstdrawseg = ::rctx.bsp.firstdrawseg;
-
-inline byte (&solidcol)[MAXWIDTH] = ::rctx.bsp.solidcol;
-
-inline fixed_t& bobx = ::rctx.sprite.bobx;
-inline fixed_t& boby = ::rctx.sprite.boby;
-
-inline vissprite_t*& closestNonCredibleVisSprite = ::rctx.sprite.closestNonCredibleVisSprite;
-
-inline drawcolumn_t&     dcol    = ::rctx.draw.dcol;
-inline drawspan_t&       dspan   = ::rctx.draw.dspan;
-inline drawplanecol_t&   dpcol   = ::rctx.draw.dpcol;
-inline drawplanegroup_t& dpgroup = ::rctx.draw.dpgroup;
-
-inline shaderef_t& basecolormap = ::rctx.draw.basecolormap;
-
-inline void (*&colfunc)(rendercontext_t&)       = ::rctx.draw.colfunc;
-inline void (*&spanfunc)(rendercontext_t&)      = ::rctx.draw.spanfunc;
-inline void (*&spanslopefunc)(rendercontext_t&) = ::rctx.draw.spanslopefunc;
-inline void (*&levelcolfunc)(rendercontext_t&)  = ::rctx.draw.levelcolfunc;
-
 // How many slices the view is currently split into.
 int R_SliceCount();
 
