@@ -454,6 +454,12 @@ public:
 
 	team_t friend_teamid = TEAM_NONE; // team of the player who spawned this actor
 
+	uint32_t corpse_color = 0;
+
+	team_t   corpse_team = TEAM_NONE;
+
+	bool corpse_isself = false;
+
 	// killough 9/9/98: How long a monster pursues a target.
 	int16_t pursuecount = 0;
 
