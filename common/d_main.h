@@ -86,6 +86,7 @@ void D_RunTics(void (*sim_func)(), void(*display_func)());
 
 void D_AddWadCommandLineFiles(OWantFiles& out);
 void D_AddDehCommandLineFiles(OWantFiles& out);
+void D_AddStartupWadFiles(OWantFiles& outwadfiles, OWantFiles& outpatchfiles);
 
 void D_CheckInfoDumps();
 

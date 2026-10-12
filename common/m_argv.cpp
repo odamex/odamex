@@ -74,6 +74,12 @@ void DArgs::SetArgs (unsigned argc, char **argv)
 	CopyArgs(argc, argv);
 }
 
+void DArgs::SetArg (unsigned int argnum, const char *arg)
+{
+	if (argnum < args.size())
+		args[argnum] = arg;
+}
+
 void DArgs::CopyArgs (unsigned argc, char **argv)
 {
 	args.clear();
@@ -178,34 +184,6 @@ static bool IsParam(const std::vector<std::string>& args, size_t i)
 }
 
 //
-// FindNextParamArg
-//
-// Returns the next argument number for a command line parameter starting
-// from argument number i.
-//
-static size_t FindNextParamArg(const char* param, const std::vector<std::string>& args, size_t i)
-{
-	while (i < args.size())
-	{
-		if (!IsParam(args, i))
-			return i;
-
-		// matches param, return first argument for this param
-		if (stricmp(param, args[i].c_str()) == 0)
-		{
-			i++;
-			continue;
-		}
-
-		// skip over any params that don't match and their arguments
-		for (i++; i < args.size() && !IsParam(args, i); i++)
-			;
-	}
-
-	return args.size();
-}
-
-//
 // DArgs::GatherFiles
 //
 // Collects all of the arguments entered after param.
@@ -214,6 +192,10 @@ static size_t FindNextParamArg(const char* param, const std::vector<std::string>
 //      types higher up the stack we don't need to filter by extension
 //      anymore.
 //
+//      Only arguments that actually follow param are collected.
+//      Files passed on their own belong to no param at all -- use
+//      GatherBareFiles for those.
+//
 DArgs DArgs::GatherFiles(const char* param) const
 {
 	DArgs out;
@@ -221,13 +203,38 @@ DArgs DArgs::GatherFiles(const char* param) const
 	if (param[0] != '-' && param[0] != '+')
 		return out;
 
+	bool inparam = false;
 	for (size_t i = 1; i < args.size(); i++)
 	{
-		i = FindNextParamArg(param, args, i);
-		if (i < args.size())
+		if (IsParam(args, i))
 		{
-			out.AppendArg(args[i].c_str());
+			inparam = (stricmp(param, args[i].c_str()) == 0);
+			continue;
 		}
+
+		if (inparam)
+			out.AppendArg(args[i].c_str());
+	}
+
+	return out;
+}
+
+//
+// DArgs::GatherBareFiles
+//
+// Collects leading arguments that belong to no parameter, as happens when
+// files are dropped onto the executable.
+//
+DArgs DArgs::GatherBareFiles() const
+{
+	DArgs out;
+
+	for (size_t i = 1; i < args.size(); i++)
+	{
+		if (IsParam(args, i))
+			break;
+
+		out.AppendArg(args[i].c_str());
 	}
 
 	return out;

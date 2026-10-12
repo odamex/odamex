@@ -752,6 +752,22 @@
       {
          "default" : false,
          "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show tenths of a second on all HUD timers, starting when the timer reaches cl_shotclocksecondsleft.",
+         "name" : "cl_shotclock",
+         "type" : "boolean"
+      },
+      {
+         "default" : 10,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Seconds left before a HUD timer starts displaying tenths of a second, if cl_shotclock is enabled",
+         "max" : 60,
+         "min" : 0,
+         "name" : "cl_shotclocksecondsleft",
+         "type" : "integer"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Show an indicator on friendly monsters.",
          "name" : "cl_showfriends",
          "type" : "boolean"
@@ -1647,6 +1663,15 @@
          "type" : "boolean"
       },
       {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Sets the behavior of on-screen prompts of when to name gamepad buttons instead of keyboard keys.\n// 0 - Follow whichever device was used last\n// 1 - Mouse input does not switch away from the gamepad\n// 2 - Always show gamepad keys",
+         "max" : 2,
+         "min" : 0,
+         "name" : "joy_gamepadmode",
+         "type" : "integer"
+      },
+      {
          "default" : 0.0,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "",
@@ -1998,10 +2023,10 @@
          "type" : "boolean"
       },
       {
-         "default" : 16,
+         "default" : 4,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
-         "max" : 64,
+         "max" : 16,
          "min" : 0,
          "name" : "r_portalrecursions",
          "type" : "integer"
