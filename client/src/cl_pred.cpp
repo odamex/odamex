@@ -344,6 +344,7 @@ namespace
 }
 
 extern int world_index;
+extern int last_svgametic;
 extern int lastEchoedClientTic;
 
 //
@@ -414,23 +415,6 @@ bool CL_PredictWorld()
 	const int snaptime           = p.snapshots.getMostRecentTime();
 	const int idealPredictionTic = std::max(lastEchoedClientTic + 1, gametic - MAXSAVETICS);
 	const int idealInputTic      = std::max(p.tic + 1,               gametic - MAXSAVETICS);
-
-	if (s_previousBasisServerTic == 0)
-	{
-		s_previousBasisServerTic = snaptime;
-	}
-	if (s_previousReceivedClientTic == 0)
-	{
-		s_previousReceivedClientTic = idealPredictionTic;
-	}
-
-	const int deltaServerTic = snaptime           - s_previousBasisServerTic;
-	const int deltaPredTic   = idealPredictionTic - s_previousReceivedClientTic;
-
-	s_previousBasisServerTic    = snaptime;
-	s_previousReceivedClientTic = idealPredictionTic;
-
-	s_persistentDiff += deltaServerTic - deltaPredTic;
 
 	int predictionTic = idealPredictionTic + s_persistentDiff;
 	int inputTic      = idealInputTic;
@@ -551,13 +535,62 @@ bool CL_PredictWorld()
 
 void CL_ResetWorldPrediction()
 {
-	s_previousBasisServerTic = 0;
-	s_previousReceivedClientTic = 0;
-	s_persistentDiff = 0;
 	for (auto& savedPlayerSnapshot : cl_savedsnaps)
 	{
 		savedPlayerSnapshot = PlayerSnapshot{};
 	}
 }
+
+void CL_ResetTicSync()
+{
+	s_previousBasisServerTic = 0;
+	s_previousReceivedClientTic = 0;
+	s_persistentDiff = 0;
+}
+
+void CL_UpdateTicErrors()
+{
+	player_t& p = consoleplayer();
+
+	if (not validplayer(p))
+	{
+		return;
+	}
+
+	const int snaptime           = p.snapshots.getMostRecentTime();
+	const int idealPredictionTic = lastEchoedClientTic + 1;
+
+	if (snaptime <= 0 or lastEchoedClientTic <= 0)
+	{
+		return;
+	}
+
+	if (s_previousBasisServerTic == 0)
+	{
+		s_previousBasisServerTic = snaptime;
+	}
+	if (s_previousReceivedClientTic == 0)
+	{
+		s_previousReceivedClientTic = idealPredictionTic;
+	}
+
+	const int deltaServerTic = snaptime           - s_previousBasisServerTic;
+	const int deltaPredTic   = idealPredictionTic - s_previousReceivedClientTic;
+
+	s_previousBasisServerTic    = snaptime;
+	s_previousReceivedClientTic = idealPredictionTic;
+
+	const int temp = s_persistentDiff;
+	s_persistentDiff += deltaServerTic - deltaPredTic;
+
+//#define ODAMEX_PREDICTION_DEBUG
+#ifdef ODAMEX_PREDICTION_DEBUG
+	if (s_persistentDiff != temp)
+	{
+		PrintFmt("gt {}, persistent diff {}, dst {}, dpt {}\n", gametic, s_persistentDiff, deltaServerTic, deltaPredTic);
+	}
+#endif
+}
+
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")

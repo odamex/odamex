@@ -1126,6 +1126,8 @@ void G_Ticker (void)
 		}
 	}
 
+	CL_UpdateTicErrors();
+
 	if (netdemo.isRecording())
 		netdemo.writeMessages();
 

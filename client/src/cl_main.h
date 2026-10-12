@@ -76,6 +76,8 @@ void CL_SaveCmd();
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 bool CL_PredictWorld();
 void CL_ResetWorldPrediction();
+void CL_ResetTicSync();
+void CL_UpdateTicErrors();
 void CL_SendUserInfo(buf_t& netBuf);
 bool CL_Connect();
 
