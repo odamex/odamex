@@ -276,8 +276,8 @@ void D_InitializeDoomObjectTables()
 	sprnames.insert(getOdaSprNames(), SPR_GIB0);
 	// Initialize soundmap
 	SoundMap.clear();
-	SoundMap.insert({doom_SoundMap, ARRAY_LENGTH(doom_SoundMap)}, 0);
-	SoundMap.insert({odamex_SoundMap, ARRAY_LENGTH(odamex_SoundMap)}, 0x80000000);
+	SoundMap.insert(doom_SoundMap, 0);
+	SoundMap.insert(odamex_SoundMap, 0x80000000);
 	// Initialize spawn map
 	D_BuildSpawnMap();
 
@@ -1154,7 +1154,7 @@ static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option
 //
 // Adds files passed without a parameter, as happens when they are dropped onto
 // the executable.
-// 
+//
 // Sorted by extension so a dropped patch is not also loaded as a WAD.
 //
 // No extension is assumed to be a WAD.
