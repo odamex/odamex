@@ -648,7 +648,6 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 		.flags2       = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
 		.name         = "MT_GHOUL",
 		.display_name = "$ID24_CC_GHOUL",
-		.flags4       = MF4_ISMONSTER,
 	},
 	{
 		.type         = MT_BANSHEE,
@@ -673,7 +672,6 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 		.flags2       = MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL,
 		.name         = "MT_BANSHEE",
 		.display_name = "$ID24_CC_BANSHEE",
-		.flags4       = MF4_ISMONSTER,
 	},
 	{
 		.type         = MT_MINDWEAVER,
@@ -700,7 +698,6 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 		.raisestate   = S_ID24_134,
 		.name         = "MT_MINDWEAVER",
 		.display_name = "$ID24_CC_MINDWEAVER",
-		.flags4       = MF4_ISMONSTER,
 	},
 	{
 		.type         = MT_SHOCKTROOPER,
@@ -727,7 +724,6 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 		.raisestate   = S_ID24_176,
 		.name         = "MT_SHOCKTROOPER",
 		.display_name = "$ID24_CC_SHOCKTROOPER",
-		.flags4       = MF4_ISMONSTER,
 	},
 	{
 		.type         = MT_VASSAGO,
@@ -756,7 +752,6 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 		.name         = "MT_VASSAGO",
 		.splash_group = SG_VASSAGO,
 		.display_name = "$ID24_CC_VASSAGO",
-		.flags4       = MF4_ISMONSTER,
 	},
 	{
 		.type             = MT_TYRANT,

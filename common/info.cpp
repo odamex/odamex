@@ -1350,7 +1350,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.meleerange       = 64_fx,
 	.droppeditem      = MT_CLIP,
 	.display_name     = "$FN_ZOMBIE",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_SHOTGUY
@@ -1381,7 +1380,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_SHOTGUY",
 	.droppeditem      = MT_SHOTGUN,
 	.display_name     = "$FN_SHOTGUN",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_VILE
@@ -1409,7 +1407,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_VILE",
 	.flags3           = MF3_SHORTMRANGE | MF3_DMGIGNORED | MF3_NOTHRESHOLD,
 	.display_name     = "$FN_ARCH",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_FIRE
@@ -1453,7 +1450,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_UNDEAD",
 	.flags3           = MF3_LONGMELEE | MF3_RANGEHALF,
 	.display_name     = "$FN_REVEN",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_TRACER
@@ -1514,7 +1510,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_FATSO",
 	.flags3           = MF3_MAP07BOSS1,
 	.display_name     = "$FN_MANCU",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_FATSHOT
@@ -1564,7 +1559,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_CHAINGUY",
 	.droppeditem      = MT_CHAINGUN,
 	.display_name     = "$FN_HEAVY",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_TROOP
@@ -1595,7 +1589,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_TROO_RAISE1,
 	.name             = "MT_TROOP",
 	.display_name     = "$FN_IMP",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_SERGEANT
@@ -1624,7 +1617,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_SARG_RAISE1,
 	.name             = "MT_SERGEANT",
 	.display_name     = "$FN_DEMON",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_SHADOWS
@@ -1653,7 +1645,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_SARG_RAISE1,
 	.name             = "MT_SHADOWS",
 	.display_name     = "$FN_SPECTRE",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_HEAD
@@ -1681,7 +1672,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_HEAD_RAISE1,
 	.name             = "MT_HEAD",
 	.display_name     = "$FN_CACO",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_BRUISER
@@ -1712,7 +1702,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.projectile_group = PG_BARON,
 	.flags3           = MF3_E1M8BOSS,
 	.display_name     = "$FN_BARON",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_BRUISERSHOT
@@ -1762,7 +1751,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_KNIGHT",
 	.projectile_group = PG_BARON,
 	.display_name     = "$FN_HELL",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_SKULL
@@ -1820,7 +1808,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_SPIDER",
 	.flags3           = MF3_NORADIUSDMG | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E3M8BOSS | MF3_E4M8BOSS,
 	.display_name     = "$FN_SPIDER",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_BABY
@@ -1849,7 +1836,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_BABY",
 	.flags3           = MF3_MAP07BOSS2,
 	.display_name     = "$FN_ARACH",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_CYBORG
@@ -1877,7 +1863,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_CYBORG",
 	.flags3           = MF3_NORADIUSDMG | MF3_HIGHERMPROB | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E2M8BOSS | MF3_E4M6BOSS,
 	.display_name     = "$FN_CYBER",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_PAIN
@@ -1905,7 +1890,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.raisestate       = S_PAIN_RAISE1,
 	.name             = "MT_PAIN",
 	.display_name     = "$FN_PAIN",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_WOLFSS
@@ -1936,7 +1920,6 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	.name             = "MT_WOLFSS",
 	.droppeditem      = MT_CLIP,
 	.display_name     = "$FN_WOLFSS",
-	.flags4           = MF4_ISMONSTER,
 	},
 
 	{ // MT_KEEN
