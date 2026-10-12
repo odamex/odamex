@@ -562,7 +562,7 @@ void CL_ResetTicSync()
 
 void CL_UpdateTicErrors()
 {
-	player_t& p = consoleplayer();
+	const player_t& p = consoleplayer();
 
 	if (not validplayer(p))
 	{
@@ -592,10 +592,13 @@ void CL_UpdateTicErrors()
 	s_previousBasisServerTic    = snaptime;
 	s_previousReceivedClientTic = idealPredictionTic;
 
+//#define ODAMEX_PREDICTION_DEBUG
+#ifdef ODAMEX_PREDICTION_DEBUG
 	const int temp = s_persistentDiff;
+#endif
+
 	s_persistentDiff += deltaServerTic - deltaPredTic;
 
-//#define ODAMEX_PREDICTION_DEBUG
 #ifdef ODAMEX_PREDICTION_DEBUG
 	if (s_persistentDiff != temp)
 	{
