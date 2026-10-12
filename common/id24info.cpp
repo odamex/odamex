@@ -1440,7 +1440,7 @@ std::span<const state_t> getID24States() {
 	return id24states;
 }
 
-std::span<const char* const> getI24SprNames() {
+std::span<const char* const> getID24SprNames() {
 	return id24sprnames;
 }
 
