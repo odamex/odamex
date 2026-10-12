@@ -177,6 +177,15 @@ using enum mobjflag3_t;
 constexpr mobjflag3_t enable_bitflag_operators(mobjflag3_t) { return MF3_SPECSTAYSDM; }
 using ActorFlags3 = OFlags<mobjflag3_t>;
 
+enum class mobjflag4_t : uint32_t
+{
+	MF4_ISMONSTER = BIT(0),
+};
+
+using enum mobjflag4_t;
+constexpr mobjflag4_t enable_bitflag_operators(mobjflag4_t) { return MF4_ISMONSTER; }
+using ActorFlags4 = OFlags<mobjflag4_t>;
+
 enum class mobjoflag_t : uint32_t
 {
 	// --- mobj.oflags ---

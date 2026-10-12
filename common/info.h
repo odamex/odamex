@@ -2445,9 +2445,13 @@ struct mobjinfo_t
 	// OLumpName translation   = "";
 	fixed_t selfdamage      = FRACUNIT;
 
+	// MBF2y stuff
+	ActorFlags4 flags4      = ActorFlags4::none_set();
+
 	[[nodiscard]] std::string getDisplayName() const;
 	[[nodiscard]] bool isID24Pickup() const;
 	[[nodiscard]] bool hasWeaponPickup() const;
+	[[nodiscard]] bool isMonster() const;
 };
 
 inline auto format_as(const mobjinfo_t& info)

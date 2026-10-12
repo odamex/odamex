@@ -378,7 +378,7 @@ bool P_IsVisible(const AActor& actor, const AActor& mo, const bool allaround)
 
 bool PIT_FindTarget(AActor& mo, AActor& actor, bool allaround)
 {
-	if (!(mo.health > 0 && (mo.flags & MF_COUNTKILL || mo.type == MT_SKULL)))
+	if (!(mo.health > 0 && (mo.IsMonster())))
 		return true;
 
 	// If the monster is already engaged in a one-on-one attack
@@ -3750,8 +3750,7 @@ int P_Massacre()
 	TThinkerIterator<AActor> it;
 	while ( (actor = it.Next()) )
 	{
-		if ((actor->flags & MF_SHOOTABLE) && (actor->flags & MF_COUNTKILL ||
-		    (actor->type == MT_SKULL)))
+		if ((actor->flags & MF_SHOOTABLE) && (actor->IsMonster()))
 		{
 			if (actor->health > 0)
 			{

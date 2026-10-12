@@ -208,7 +208,7 @@ bool P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, s
 	if (kind == 0)
 		return false;
 
-	if ((mobjinfo[kind].flags & MF_COUNTKILL) && sv_nomonsters == 1)
+	if (mobjinfo[kind].isMonster() and sv_nomonsters == 1)
 		return false;
 
 	AActor* spot = nullptr;
@@ -260,7 +260,7 @@ bool P_Thing_Projectile (int tid, int type, angle_t angle,
 	if (kind == 0)
 		return false;
 
-	if ((mobjinfo[kind].flags & MF_COUNTKILL) && sv_nomonsters)
+	if (mobjinfo[kind].isMonster() and sv_nomonsters)
 		return false;
 
 	bool rtn = false;
@@ -279,7 +279,7 @@ bool P_Thing_Projectile (int tid, int type, angle_t angle,
 			if (gravity)
 			{
 				mobj->flags &= ~MF_NOGRAVITY;
-				if (!(mobj->flags & MF_COUNTKILL))
+				if (!(mobj->flags & MF_COUNTKILL)) // should this be countkill or ismonster?
 					mobj->flags2 |= MF2_LOGRAV;
 			}
 			else
@@ -303,7 +303,7 @@ bool P_Thing_Projectile (int tid, int type, angle_t angle,
 
 bool P_ActivateMobj (AActor *mobj, AActor *activator)
 {
-	if (mobj->flags & MF_COUNTKILL)
+	if (mobj->IsMonster())
 	{
 		mobj->flags2 &= ~(MF2_DORMANT | MF2_INVULNERABLE);
 		return true;
@@ -356,7 +356,7 @@ bool P_ActivateMobj (AActor *mobj, AActor *activator)
 
 bool P_DeactivateMobj (AActor *mobj)
 {
-	if (mobj->flags & MF_COUNTKILL)
+	if (mobj->IsMonster())
 	{
 		mobj->flags2 |= MF2_DORMANT | MF2_INVULNERABLE;
 		return true;

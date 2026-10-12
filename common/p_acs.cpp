@@ -1918,7 +1918,7 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, an
 
 	int spawncount = 0;
 
-	if (info != MT_NULL && !((mobjinfo[info].flags & MF_COUNTKILL) && sv_nomonsters))
+	if (info != MT_NULL && !(mobjinfo[info].isMonster() && sv_nomonsters))
 	{
 		auto* actor = new AActor (x, y, z, info);
 
@@ -1981,7 +1981,7 @@ void DLevelScript::DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t s
 			return;
 	}
 
-	if ((mobjinfo[info].flags & MF_COUNTKILL) && sv_nomonsters)
+	if (mobjinfo[info].isMonster() && sv_nomonsters)
 		return;
 
 	AActor* spot = nullptr;
@@ -2000,7 +2000,7 @@ void DLevelScript::DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t s
 			if (gravity)
 			{
 				mobj->flags &= ~MF_NOGRAVITY;
-				if (!(mobj->flags & MF_COUNTKILL))
+				if (!(mobj->flags & MF_COUNTKILL)) // why does countkill affect this?
 					mobj->flags2 |= MF2_LOGRAV;
 			}
 			else

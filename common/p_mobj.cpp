@@ -670,7 +670,7 @@ void AActor::UpdateActorLists()
 		return;
 
 	// MBF Rules
-	if (flags & MF_COUNTKILL || type == MT_SKULL)
+	if (IsMonster())
 	{
 		if (IsFriendly())
 			s_friendlies.Append(this);
@@ -1208,10 +1208,10 @@ void AActor::RunThink ()
 	}
 	else
 	{
-		const bool respawnmonsters = (G_GetCurrentSkill().respawn_counter || sv_monstersrespawn);
+		const bool respawnmonsters = (G_GetCurrentSkill().respawn_counter != 0 or sv_monstersrespawn);
 
 		// check for nightmare respawn
-		if (!(flags & MF_COUNTKILL) || !respawnmonsters || this->info->flags3 & MF3_NORESPAWN)
+		if (not IsMonster() or not respawnmonsters or this->info->flags3 & MF3_NORESPAWN)
 			return;
 
 		// Ch0wW - Let the server handle it alone.
@@ -3824,9 +3824,9 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// [csDoom] don't spawn any monsters
-	if (sv_nomonsters || !serverside)
+	if (sv_nomonsters or not serverside)
 	{
-		if (type == MT_SKULL || (info->flags & MF_COUNTKILL) )
+		if (info->isMonster())
 		{
 			return;
 		}
@@ -3896,7 +3896,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// [AM] Adjust monster health based on server setting
-	if ((type == MT_SKULL || (info->flags & MF_COUNTKILL)) && sv_monstershealth != 1.0f)
+	if (info->isMonster() and sv_monstershealth != 1.0f)
 		mobj->health *= sv_monstershealth;
 
 	if (mobj->tics > 0)

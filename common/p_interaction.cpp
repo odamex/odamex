@@ -2153,8 +2153,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 				PersistTeamScore(splayer->userinfo.team);
 		}
 		// [deathz0r] Stats for co-op scoreboard
-		if (G_IsCoopGame() &&
-		    ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
+		if (G_IsCoopGame() and target->IsMonster())
 		{
 			if (P_GiveKills(*splayer, 1))
 				PersistPlayerScore(*splayer, sendLives, sendScore);

@@ -3330,10 +3330,8 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 	if (mo->flags & MF_CORPSE)
 		return;
 
-
 	const bool isAMonster = mo->oflags & MFO_MOVESLIKEAMONSTER
-	                        or mo->flags & MF_COUNTKILL
-	                        or mo->type == MT_SKULL;
+	                        or mo->IsMonster();
 
 	// We don't handle updating non-monsters here.
 	if (not isAMonster)
