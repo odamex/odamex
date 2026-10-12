@@ -389,8 +389,37 @@ bool CL_PredictWorld()
 		return false;
 	}
 
+
 	if (p.tic <= 0 or world_index <= 0 or lastEchoedClientTic <= 0)     // No verified position from the server?
 		return false;
+
+	// Figure out where to start predicting from.
+	//
+	// lastEchoedClientTic is the absolute latest clientside gametic that the server knows about.
+	// p.tic is the latest local gametic whose PlayerInput is integrated into the player state.
+	// p.tic can be the same as, or behind, the lastEchoedClientTic, but never ahead of it.
+	// If we see that p.tic is behind, we guess that the server is going to do two player tics
+	// before advancing world state to get caught up.
+	//
+	// We start predicting from the lastEchoedClientTic.  We also add one because we want to
+	// start predicting from the tic following the last one that the server knows about.
+
+	const int snaptime           = p.snapshots.getMostRecentTime();
+	const int idealPredictionTic = lastEchoedClientTic + 1;
+	const int idealInputTic      = std::max(p.tic + 1, gametic - MAXSAVETICS);
+
+	// Add in the jitter compensation diff.
+	int predictionTic = idealPredictionTic + s_persistentDiff;
+	int inputTic      = idealInputTic;
+
+	// The value clamping here and the prediction iterations below are designed to ensure that
+	// if we get an invalid predictionTic due to extreme jitter, we don't rollback - we just
+	// proceed with the next tic.
+	if (gametic - MAXSAVETICS > predictionTic or predictionTic > gametic)
+	{
+		predictionTic = gametic;
+		inputTic      = gametic;
+	}
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
@@ -401,23 +430,6 @@ bool CL_PredictWorld()
 
 	// Mobjs are already in the last position received from the server.
 	bool mobjsHaveBeenPredicted = false;
-
-	// Figure out where to start predicting from.
-	//
-	// lastEchoedClientTic is the absolute latest clientside gametic that the server knows about.
-	// p.tic is the latest local gametic whose PlayerInput is integrated into the player state.
-	// p.tic can be the same as, or behind, the lastEchoedClientTic, but never ahead of it.
-	// If we see that p.tic is behind, we guess that the server is going to do two player tics
-	// before advancing world state to get caught up.
-	//
-	// We start predicting from the lastEchoedClientTic.
-
-	const int snaptime           = p.snapshots.getMostRecentTime();
-	const int idealPredictionTic = std::max(lastEchoedClientTic + 1, gametic - MAXSAVETICS);
-	const int idealInputTic      = std::max(p.tic + 1,               gametic - MAXSAVETICS);
-
-	int predictionTic = idealPredictionTic + s_persistentDiff;
-	int inputTic      = idealInputTic;
 
 //#define ODAMEX_PREDICTION_DEBUG           // SUPER IMPORTANT NOTE WITH THIS BLOCK:
 #ifdef ODAMEX_PREDICTION_DEBUG              //  Sector 1 is checked because nuts.wad is such a great test case here,
