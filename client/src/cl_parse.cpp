@@ -895,6 +895,9 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		    R_GetCorpseTranslation(mo->corpse_color, mo->corpse_team, mo->corpse_isself);
 	}
 
+	if (msg->has_blood_color() and msg->blood_color() < NUM_BLOODCOLORS)
+		P_SetBloodColor(mo, static_cast<bloodcolor_t>(msg->blood_color()));
+
 	if (msg->spawn_flags() & SVC_SM_CORPSE)
 	{
 		int frame = msg->current().frame();

@@ -1758,6 +1758,21 @@ enum class MobjModeEnum
 	RAISE,
 };
 
+// Eternity's blood colors, numbered as its DeHackEd "Blood color" takes them.
+enum bloodcolor_t
+{
+	BLOODCOLOR_RED, // the blood as drawn
+	BLOODCOLOR_GREY,
+	BLOODCOLOR_GREEN,
+	BLOODCOLOR_BLUE,
+	BLOODCOLOR_YELLOW,
+	BLOODCOLOR_BLACK,
+	BLOODCOLOR_PURPLE,
+	BLOODCOLOR_WHITE,
+	BLOODCOLOR_ORANGE,
+	NUM_BLOODCOLORS
+};
+
 struct mobjinfo_t
 {
 	int32_t type            = MT_NULL;
@@ -1799,6 +1814,9 @@ struct mobjinfo_t
 	ActorFlags3 flags3      = ActorFlags3::none_set();
 	const char* ripsound    = nullptr;
 	int32_t droppeditem     = MT_NULL;
+
+	// Eternity
+	bloodcolor_t bloodcolor = BLOODCOLOR_RED;
 
 	std::string display_name = "";
 	// indicates it was explicitly overriden from the default by dehacked

@@ -777,7 +777,7 @@ struct translationrecipe_t
 	uint32_t          endcolor;
 	int               team;   // TRANSLATE_PLAYER: who they were, so that
 	bool              isself; // R_GetPlayerDrawColor can be redone on demand
-	std::vector<int>  lumps;  // TRANSLATE_GRAPHIC: the art, color is a text color
+	std::vector<int>  lumps;  // TRANSLATE_GRAPHIC: the art
 
 	bool operator<(const translationrecipe_t& other) const
 	{
@@ -847,11 +847,6 @@ void R_BuildRecipe(translationtable_t& tlate, const translationrecipe_t& recipe)
 		                                            recipe.isself));
 		break;
 	case TRANSLATE_GRAPHIC: {
-		argb_t bright;
-		argb_t dark;
-		if (not R_GetFontColorRange(static_cast<int>(recipe.color), bright, dark))
-			break;
-
 		colorcounts_t counts{};
 		for (const int lump : recipe.lumps)
 		{
@@ -860,7 +855,7 @@ void R_BuildRecipe(translationtable_t& tlate, const translationrecipe_t& recipe)
 		}
 
 		R_KeepChromaticColors(counts);
-		R_BuildTranslationLuminance(tlate, counts, bright, dark, false);
+		R_BuildTranslationLuminance(tlate, counts, recipe.color, recipe.endcolor, false);
 		break;
 	}
 	}
@@ -928,14 +923,79 @@ translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t sta
 
 translationref_t R_GetGraphicTranslation(const std::vector<int>& lumps, int color)
 {
+	argb_t bright;
+	argb_t dark;
+	if (not R_GetFontColorRange(color, bright, dark))
+	{
+		static const translationtable_t untranslated = [] {
+			translationtable_t tlate;
+			R_ClearTranslation(tlate);
+			return tlate;
+		}();
+		return untranslated.ref();
+	}
+
+	return R_GetGraphicTranslation(lumps, bright, dark);
+}
+
+translationref_t R_GetGraphicTranslation(const std::vector<int>& lumps, argb_t bright,
+                                         argb_t dark)
+{
 	return R_GetTranslation(TRANSLIFE_WAD, {.kind = TRANSLATE_GRAPHIC,
 	                                        .start = 0,
 	                                        .end = 0,
-	                                        .color = static_cast<uint32_t>(color),
-	                                        .endcolor = 0,
+	                                        .color = bright,
+	                                        .endcolor = dark,
 	                                        .team = TEAM_NONE,
 	                                        .isself = false,
 	                                        .lumps = lumps});
+}
+
+// The color each blood takes in place of the brightest red in the art.
+// After Eternity's particle blood, taking the brighter of each pair it sprays.
+// 
+// NOLINTBEGIN(readability-magic-numbers)
+constexpr std::array<std::array<uint8_t, 3>, NUM_BLOODCOLORS> bloodcolors = {{
+	{0xFF, 0x00, 0x00}, // red
+	{0x80, 0x80, 0x80}, // grey
+	{0x00, 0xC8, 0x00}, // green
+	{0x00, 0x00, 0xFF}, // blue
+	{0xFF, 0xFF, 0x00}, // yellow
+	{0x32, 0x32, 0x32}, // black
+	{0xC8, 0x1E, 0xFF}, // purple
+	{0xFF, 0xFF, 0xFF}, // white
+	{0xFF, 0x78, 0x00}, // orange
+}};
+// NOLINTEND(readability-magic-numbers)
+
+translationref_t R_GetBloodTranslation(bloodcolor_t color, int32_t sprite)
+{
+	// red is the blood as drawn
+	if (color <= BLOODCOLOR_RED or color >= NUM_BLOODCOLORS)
+		return {};
+
+	const auto it = ::sprites.find(sprite);
+	if (it == ::sprites.end())
+		return {};
+
+	// every frame, so the blood holds its color as it animates
+	std::vector<int> lumps;
+	const spritedef_t& def = it->second;
+	for (int frame = 0; frame < def.numframes; frame++)
+	{
+		for (const int lump : def.spriteframes[frame].lump)
+		{
+			if (lump != -1)
+				lumps.push_back(lump);
+		}
+	}
+
+	std::ranges::sort(lumps);
+	const auto [first, last] = std::ranges::unique(lumps);
+	lumps.erase(first, last);
+
+	const std::array<uint8_t, 3>& rgb = bloodcolors[color];
+	return R_GetGraphicTranslation(lumps, argb_t(rgb[0], rgb[1], rgb[2]), argb_t(0, 0, 0));
 }
 
 void R_ExpireTranslations(translationlife_t life)

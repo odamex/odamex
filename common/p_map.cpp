@@ -1120,7 +1120,7 @@ bool PIT_CheckThing (AActor& thing)
 			const bool canhurt = !P_IsFriendlyFireBlocked(tmthing->target, &thing);
 
 			if (canhurt && !(thing.flags & MF_NOBLOOD) && !(thing.flags2 & MF2_DORMANT))
-				P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage);
+				P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage, thing.info->bloodcolor);
 			if (canhurt && tmthing->info->ripsound)
 				S_Sound(tmthing, CHAN_VOICE, tmthing->info->ripsound, 1, ATTN_NORM);
 
@@ -2769,7 +2769,7 @@ bool PTR_ShootTraverse(const intercept_t& in)
 		spawnblood = false;
 
 	if (spawnblood)
-		P_SpawnBlood(x, y, z, la_damage);
+		P_SpawnBlood(x, y, z, la_damage, th->info->bloodcolor);
 	else
 		P_SpawnPuff(x, y, z);
 
@@ -3145,7 +3145,8 @@ void P_RailAttack(AActor *source, int damage, int offset)
 			if (RailHit.hitthing->flags & MF_NOBLOOD)
 				P_SpawnPuff(RailHit.x, RailHit.y, RailHit.z);
 			else
-				P_SpawnBlood(RailHit.x, RailHit.y, RailHit.z, damage);
+				P_SpawnBlood(RailHit.x, RailHit.y, RailHit.z, damage,
+				             RailHit.hitthing->info->bloodcolor);
 			P_DamageMobj (RailHit.hitthing, source, source, damage, MOD_RAILGUN);
 		}
 	}
@@ -3761,6 +3762,7 @@ bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 
 			mo->momx = P_RandomDiff (mo) << 12;
 			mo->momy = P_RandomDiff (mo) << 12;
+			P_SetBloodColor(mo, thing.info->bloodcolor);
 		}
 	}
 

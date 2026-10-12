@@ -356,6 +356,12 @@ translationref_t R_GetGradientTranslation(translationlife_t life, palindex_t sta
 // translation so their shades line up. Lumps of -1 are skipped. Lasts until the
 // resource set changes.
 translationref_t R_GetGraphicTranslation(const std::vector<int>& lumps, int color);
+translationref_t R_GetGraphicTranslation(const std::vector<int>& lumps, argb_t bright,
+                                         argb_t dark);
+
+// Blood bled by a thing with an Eternity blood color, drawn with sprite
+// Red is the art as drawn, so it, like any unknown color, gets no translation.
+translationref_t R_GetBloodTranslation(bloodcolor_t color, int32_t sprite);
 
 // Drops every shared translation that does not outlive the specified lifetime.
 void R_ExpireTranslations(translationlife_t life);

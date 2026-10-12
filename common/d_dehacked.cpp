@@ -1255,6 +1255,13 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 		{
 			info->meleerange = val;
 		}
+		else if (iequals(key, "Blood color"))
+		{
+			// Eternity reads anything it does not know as red
+			info->bloodcolor = val >= 0 and val < NUM_BLOODCOLORS
+			                       ? static_cast<bloodcolor_t>(val)
+			                       : BLOODCOLOR_RED;
+		}
 		else if (iequals(key, "Hit points"))
 		{
 			info->spawnhealth = val;

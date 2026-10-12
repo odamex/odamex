@@ -127,7 +127,8 @@ enum class SetMobStateResultEnum
 
 SetMobStateResultEnum P_SetMobjState (AActor* mobj, int32_t state, bool cl_update = false);
 
-void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
+void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage, bloodcolor_t color);
+void	P_SetBloodColor(AActor* blood, bloodcolor_t color);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
 void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle,

@@ -546,6 +546,9 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		msg.set_corpse_team(mo->corpse_team);
 	}
 
+	if (mo->bloodcolor != BLOODCOLOR_RED)
+		msg.set_blood_color(mo->bloodcolor);
+
 	msg.set_spawn_flags(spawnFlags);
 
 	return msg;

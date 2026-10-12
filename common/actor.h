@@ -460,6 +460,8 @@ public:
 
 	bool corpse_isself = false;
 
+	bloodcolor_t bloodcolor = BLOODCOLOR_RED; // blood: the color of whoever bled it
+
 	// killough 9/9/98: How long a monster pursues a target.
 	int16_t pursuecount = 0;
 

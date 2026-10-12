@@ -86,6 +86,7 @@ message SpawnMobj
 	bool            is_spawn_tic    = 8;    // Indicates that the client must perform a spawn animation tic immediately.
 	optional uint32 corpse_color    = 9;
 	optional int32  corpse_team     = 10;
+	optional uint32 blood_color     = 11;
 }
 
 // svc_disconnectclient

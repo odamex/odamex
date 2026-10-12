@@ -431,7 +431,7 @@ AActor::AActor(const AActor& other)
 	  deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
 	  friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
 	  corpse_color(other.corpse_color), corpse_team(other.corpse_team),
-	  corpse_isself(other.corpse_isself),
+	  corpse_isself(other.corpse_isself), bloodcolor(other.bloodcolor),
 	  pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
 	  mode(other.mode), updatedDuringLocalTic(other.updatedDuringLocalTic),
 	  updatedDuringServerTic(other.updatedDuringServerTic), spawnTic(other.spawnTic),
@@ -512,6 +512,7 @@ AActor &AActor::operator= (const AActor &other)
     corpse_color = other.corpse_color;
     corpse_team = other.corpse_team;
     corpse_isself = other.corpse_isself;
+    bloodcolor = other.bloodcolor;
     pursuecount = other.pursuecount;
     strafecount = other.strafecount;
     netid = other.netid;
@@ -2788,9 +2789,20 @@ void P_SpawnTracerPuff(fixed_t x, fixed_t y, fixed_t z)
 }
 
 //
+// P_SetBloodColor
+//
+void P_SetBloodColor(AActor* blood, bloodcolor_t color)
+{
+	blood->bloodcolor = color;
+#ifdef CLIENT_APP
+	blood->translation = R_GetBloodTranslation(color, blood->sprite);
+#endif
+}
+
+//
 // P_SpawnBlood
 //
-void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage)
+void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage, bloodcolor_t color)
 {
 	// denis - not clientside
 	if(!serverside)
@@ -2810,6 +2822,9 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage)
 		P_SetMobjState (th, S_BLOOD2);
 	else if (damage < 9)
 		P_SetMobjState (th, S_BLOOD3);
+
+	P_SetBloodColor(th, color);
+
     if (serverside)
         SV_SpawnMobj(th);
 }
