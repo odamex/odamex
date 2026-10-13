@@ -102,7 +102,7 @@ enum class mobjflag2_t : uint32_t
 	MF2_FLY               = BIT(4), // fly mode is active
 	MF2_FLOORCLIP         = BIT(5), // if feet are allowed to be clipped
 	MF2_SPAWNFLOAT        = BIT(6), // spawn random float z
-	MF2_NOTELEPORT        = BIT(7), // does not teleport
+	MF2_NOTELEPORT        = BIT(7), // does not teleport -- TODO: unimplemented
 	MF2_RIP               = BIT(8), // missile rips through solid
 	                                 // targets
 	MF2_PUSHABLE          = BIT(9),  // can be pushed by other moving
@@ -116,12 +116,12 @@ enum class mobjflag2_t : uint32_t
 	MF2_CANNOTPUSH        = BIT(13), // cannot push other pushable mobjs
 	MF2_THRUGHOST         = BIT(14), // missile will pass through ghosts [RH] was 8
 	MF2_BOSS              = BIT(15), // mobj is a major boss
-	MF2_FIREDAMAGE        = BIT(16), // does fire damage
+	MF2_FIREDAMAGE        = BIT(16), // does fire damage -- TODO: unimplemented
 	MF2_NODMGTHRUST       = BIT(17), // does not thrust target when damaging
 	MF2_TELESTOMP         = BIT(18), // mobj can stomp another
 	MF2_FLOATBOB          = BIT(19), // use float bobbing z movement
 	MF2_DONTDRAW          = BIT(20), // don't generate a vissprite
-	MF2_IMPACT            = BIT(21), // an MF_MISSILE mobj can activate SPAC_IMPACT
+	MF2_IMPACT            = BIT(21), // an MF_MISSILE mobj can activate SPAC_IMPACT -- TODO: unimplemented
 	MF2_PUSHWALL          = BIT(22), // mobj can push walls
 	MF2_MCROSS            = BIT(23), // can activate monster cross lines
 	MF2_PCROSS            = BIT(24), // can activate projectile cross lines
@@ -130,7 +130,7 @@ enum class mobjflag2_t : uint32_t
 	                                 // but still considered solid
 	MF2_INVULNERABLE      = BIT(27), // mobj is invulnerable
 	MF2_DORMANT           = BIT(28), // thing is dormant
-	MF2_ICEDAMAGE         = BIT(29), // does ice damage
+	MF2_ICEDAMAGE         = BIT(29), // does ice damage -- TODO: unimplemented
 	MF2_SEEKERMISSILE     = BIT(30), // is a seeker (for reflection)
 	MF2_REFLECTIVE        = BIT(31), // reflects missiles
 	// if modifying this enum (which almost certainly shouldn't happen), make sure to update the
@@ -180,6 +180,8 @@ using ActorFlags3 = OFlags<mobjflag3_t>;
 enum class mobjflag4_t : uint32_t
 {
 	MF4_ISMONSTER = BIT(0),
+	// if modifying this enum, make sure to update the
+	// enable_bitflag_operators below to return the highest bit variant
 };
 
 using enum mobjflag4_t;
