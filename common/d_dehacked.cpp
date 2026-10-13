@@ -1359,6 +1359,7 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 			}
 			if (vchanged[0])
 			{
+				const auto oldflags = info->flags;
 				info->flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(value[0]));
 				if (info->flags & MF_TRANSLUCENT)
 				{
@@ -1367,16 +1368,29 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 
 				// [EB] make sure that dehacked monsters have the standard monster flags
 				// but don't mess with players or flags that were intentionally set
-				// TODO: MBF2y's ISMONSTER flag will need this as well
 				if (not vchanged[1] and thingNum != 1)
 				{
-					if (info->flags & MF_COUNTKILL)
+					if (info->isMonster())
 					{
 						info->flags2 |= MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL;
 					}
 					else
 					{
 						info->flags2 &= ~(MF2_MCROSS|MF2_PUSHWALL);
+					}
+
+					// if we added MF_MISSILE, we need to make sure it behaves like one
+					if (info->flags & MF_MISSILE)
+					{
+						info->flags2 |= MF2_PCROSS|MF2_IMPACT|MF2_NOTELEPORT;
+					}
+					// if we remove MF_MISSILE, we need to make sure teleporting is re-enabled
+					// this affects the Doom II projectiles
+					// TODO: should we also remove PCROSS and IMPACT? uzdoom does not
+					// they're only relevant to hexen format maps, so no effect on demos either way
+					else if (oldflags & MF_MISSILE)
+					{
+						info->flags2 &= ~MF2_NOTELEPORT;
 					}
 				}
 			}
