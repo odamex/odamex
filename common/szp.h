@@ -38,6 +38,7 @@
 
 #pragma once
 
+#include <functional>       // for std::hash.
 #include <utility>
 
 #include "m_stacktrace.h"
@@ -101,6 +102,8 @@ public:
 		unlink();
 	}
 
+	friend std::hash<szp<T>>;
+
 	friend void swap(szp& lhs, szp& rhs) noexcept
 	{
 		using std::swap;
@@ -150,6 +153,12 @@ public:
 		prev = next = this;
 	}
 
+	const static bool IS_8_BIT_ALIGNED     = __STDCPP_DEFAULT_NEW_ALIGNMENT__ ==  1;
+	const static bool IS_16_BIT_ALIGNED    = __STDCPP_DEFAULT_NEW_ALIGNMENT__ ==  2;
+	const static bool IS_32_BIT_ALIGNED    = __STDCPP_DEFAULT_NEW_ALIGNMENT__ ==  4;
+	const static bool IS_64_BIT_ALIGNED    = __STDCPP_DEFAULT_NEW_ALIGNMENT__ ==  8;
+	const static bool IS_128_BIT_ALIGNED   = __STDCPP_DEFAULT_NEW_ALIGNMENT__ == 16;
+
 	// this function can update or zero all related pointers
 	void update_all(T *target)
 	{
@@ -195,3 +204,66 @@ public:
 		return *naive;
 	}
 };
+
+// The specializations of std::hash for szp shift off the known-zero LSBs of the naive pointer
+// because we want to make sure that modulus-based bucket selection for unordered_set and the
+// like don't accidentally pile everything up in a single bucket.
+
+// NOLINTBEGIN(bugprone-std-namespace-modification)
+namespace std
+{
+	template <typename T>
+		requires szp<T>::IS_8_BIT_ALIGNED
+	struct hash<szp<T>>
+	{
+		size_t operator()(const szp<T>& objPtr) const noexcept
+		{
+			return size_t(objPtr.naive);
+		}
+	};
+
+	template <typename T>
+		requires szp<T>::IS_16_BIT_ALIGNED
+	struct hash<szp<T>>
+	{
+		size_t operator()(const szp<T>& objPtr) const noexcept
+		{
+			return size_t(objPtr.naive) >> 1;
+		}
+	};
+
+	template <typename T>
+		requires szp<T>::IS_32_BIT_ALIGNED
+	struct hash<szp<T>>
+	{
+		size_t operator()(const szp<T>& objPtr) const noexcept
+		{
+			return size_t(objPtr.naive) >> 2;
+		}
+	};
+
+	template <typename T>
+		requires szp<T>::IS_64_BIT_ALIGNED
+	struct hash<szp<T>>
+	{
+		size_t operator()(const szp<T>& objPtr) const noexcept
+		{
+			return size_t(objPtr.naive) >> 3;
+		}
+	};
+
+	template <typename T>
+		requires szp<T>::IS_128_BIT_ALIGNED
+	struct hash<szp<T>>
+	{
+		size_t operator()(const szp<T>& objPtr) const noexcept
+		{
+			// Uncomment the following to prove that this overload of std::hash
+			// is actually being used in the code automatically.
+			//
+			//static_assert(alignof(T) == 2);
+			return size_t(objPtr.naive) >> 4;
+		}
+	};
+}
+// NOLINTEND(bugprone-std-namespace-modification)

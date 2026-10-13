@@ -1416,7 +1416,6 @@ player_t::player_t() :
 	hazardcount(0),
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
-	to_spawn(std::queue<AActor::AActorPtr>()),
 	playerInfoIsRequested(false),
 	inventoryCheckRequestsAreEnabled(false),
 	client{}
