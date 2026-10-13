@@ -52,6 +52,7 @@
 
 #include <list>
 #include <algorithm>
+#include <mutex>
 
 #ifdef __SWITCH__
 #include "nx_io.h"
@@ -1484,6 +1485,9 @@ void C_LogString(const std::string& str)
 
 size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
+	static std::recursive_mutex* print_mutex = new std::recursive_mutex;
+	std::lock_guard<std::recursive_mutex> lock(*print_mutex);
+
 	extern bool gameisdead;
 	if (gameisdead)
 		return 0;

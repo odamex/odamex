@@ -26,6 +26,7 @@
 #include "odamex.h"
 
 #include <limits>
+#include <thread>
 #include <string>
 
 #include "nonstd/scope.hpp"
@@ -137,9 +138,11 @@ size_t I_BytesToMegabytes (size_t Bytes)
     return (Bytes/1024/1024);
 }
 
+static const std::thread::id main_thread_id = std::this_thread::get_id();
+
 void I_BeginRead()
 {
-	if (r_loadicon)
+	if (r_loadicon && std::this_thread::get_id() == main_thread_id)
 		I_DrawLoadingIcon();
 }
 
