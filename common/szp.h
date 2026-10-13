@@ -33,6 +33,18 @@
 //  And, as a bonus, on every pointer access, a NULL check can throw a
 //  specific exception. Naturally, you should always be careful with pointers.
 //
+//  electricbrass - the new and improved thread-safe szp
+//
+//  szp now uses std::shared_ptr internally, which replaces the linked list
+//  with an atomic reference count for thread-safe copying.
+//
+//  All copies of an szp can also be nulled safely in a multi-threaded
+//  environment, as the raw pointer shared by the copies is atomic.
+//
+//  Note that only szp operations are thread-safe. Just like std::shared_ptr,
+//  the pointed-to object will need to bring its own thread-safety mechanism
+//  if it will be mutated while shared across threads.
+//
 //-----------------------------------------------------------------------------
 
 
@@ -51,7 +63,7 @@ template <typename T>
 class szp
 {
 private:
-	// pointer to a common raw pointer
+	// pointer to an atomic raw pointer
 	std::shared_ptr<std::atomic<T*>> m_pointer;
 
 public:
