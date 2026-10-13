@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -321,6 +322,11 @@ int R_ActiveSlices();
 
 // Slice i's context. Slice 0 is rctx (main thread).
 rendercontext_t& R_SliceContext(int i);
+
+// Runs the same job for every slice at once
+// slice 0 on the calling thread, the rest on render workers.
+// Returns when all have finished, and rethrows the first exception any slice raised.
+void R_RunSlices(int nslices, const std::function<void(int)>& job);
 
 // How many slices the view is currently split into.
 int R_SliceCount();

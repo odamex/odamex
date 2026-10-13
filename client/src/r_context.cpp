@@ -24,7 +24,11 @@
 #include "odamex.h"
 
 #include <algorithm>
+#include <condition_variable>
+#include <exception>
 #include <memory>
+#include <mutex>
+#include <thread>
 #include <vector>
 
 #include "r_context.h"
@@ -72,17 +76,175 @@ rendercontext_t& R_SliceContext(int i)
 bool R_SyncRenderContexts()
 {
 	const int want = R_SliceCount();
-
-	bool grew = false;
+	const bool grew = want > activeslices;
 	while (extra_contexts.size() + 1 < static_cast<size_t>(want))
 	{
 		extra_contexts.push_back(std::make_unique<rendercontext_t>());
 		R_InitVisSprites(*extra_contexts.back());
-		grew = true;
 	}
 
 	activeslices = want;
 	return grew;
+}
+
+//
+// RenderWorkers
+//
+// One thread per slice.
+// 
+// slice 0 is always the main thread.
+// 
+// The frame hands them a pass at a time and waits for every slice to finish,
+// so within a pass all slices run together and between passes none do.
+//
+// The main thread does its serial work in the meantime:
+// 
+// Portals
+// Weapon psprite
+// Diagnostic overlays (vid_displayfps, etc)
+//
+// This is a mishmash of R&R's screen slice MT renderer mixed with
+// Doom 3 BFG's MT renderer.
+//
+// Jury still out as to whether or not this needs a thread to manage HID input
+//
+class RenderWorkers
+{
+public:
+	~RenderWorkers()
+	{
+		resize(0);
+	}
+
+	void run(int nslices, const std::function<void(int)>& job)
+	{
+		resize(nslices - 1);
+
+		if (nslices > 1)
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			m_job = &job;
+			m_pending = nslices - 1;
+			m_error = nullptr;
+			m_generation++;
+		}
+		m_wake.notify_all();
+
+		// slice 0 runs here, alongside the workers
+		std::exception_ptr error;
+		try
+		{
+			job(0);
+		}
+		catch (...)
+		{
+			error = std::current_exception();
+		}
+
+		// Wait even if slice 0 threw an error
+		// The workers are still using the job, and the contexts behind it.
+		if (nslices > 1)
+		{
+			std::unique_lock<std::mutex> lock(m_mutex);
+			m_done.wait(lock, [this] { return m_pending == 0; });
+			m_job = nullptr;
+			if (!error)
+				error = m_error;
+		}
+
+		// An I_Error on a worker has to reach the main thread's handler
+		// If we threw immediately it would just exit before Odamex
+		// could dump or show the error.
+		if (error)
+			std::rethrow_exception(error);
+	}
+
+private:
+	void resize(int nworkers)
+	{
+		if (static_cast<int>(m_threads.size()) == nworkers)
+			return;
+
+		// Shrinking stops everyone and starts over
+		if (static_cast<int>(m_threads.size()) > nworkers)
+		{
+			{
+				std::lock_guard<std::mutex> lock(m_mutex);
+				m_stop = true;
+			}
+			m_wake.notify_all();
+			for (std::thread& thread : m_threads)
+				thread.join();
+			m_threads.clear();
+			m_stop = false;
+		}
+
+		// A new worker must not mistake the current generation for a job.
+		uint64_t generation;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			generation = m_generation;
+		}
+
+		while (static_cast<int>(m_threads.size()) < nworkers)
+		{
+			const int slice = static_cast<int>(m_threads.size()) + 1;
+			m_threads.emplace_back([this, slice, generation] { work(slice, generation); });
+		}
+	}
+
+	void work(int slice, uint64_t seen)
+	{
+		for (;;)
+		{
+			const std::function<void(int)>* job;
+			{
+				std::unique_lock<std::mutex> lock(m_mutex);
+				m_wake.wait(lock, [&] { return m_stop || m_generation != seen; });
+				if (m_stop)
+					return;
+				seen = m_generation;
+				job = m_job;
+			}
+
+			std::exception_ptr error;
+			try
+			{
+				(*job)(slice);
+			}
+			catch (...)
+			{
+				error = std::current_exception();
+			}
+
+			std::lock_guard<std::mutex> lock(m_mutex);
+			if (error && !m_error)
+				m_error = error;
+			if (--m_pending == 0)
+				m_done.notify_one();
+		}
+	}
+
+	std::vector<std::thread>      m_threads;
+	std::mutex                    m_mutex;
+	std::condition_variable       m_wake;
+	std::condition_variable       m_done;
+	const std::function<void(int)>*  m_job = nullptr;
+	uint64_t            m_generation = 0;
+	int                 m_pending = 0;
+	bool                m_stop = false;
+	std::exception_ptr            m_error;
+};
+
+// Destroyed on exit, which joins the idle workers.
+static RenderWorkers renderworkers;
+
+//
+// R_RunSlices
+//
+void R_RunSlices(int nslices, const std::function<void(int)>& job)
+{
+	renderworkers.run(nslices, job);
 }
 
 //
