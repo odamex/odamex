@@ -134,6 +134,16 @@ public:
 		return *this;
 	}
 
+	// Points at other's target without joining its list.
+	// Disallows copies, read only.
+	// Useful for reading the target of a szp without leaving
+	// the list on destroy -- like in a threaded context.
+	void borrow(const szp& other)
+	{
+		naive = other.naive;
+		prev = next = nullptr;
+	}
+
 	// creates the first (original) pointer
 	void init(T *target)
 	{
