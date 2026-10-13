@@ -38,232 +38,115 @@
 
 #pragma once
 
+#include <atomic>
+#include <bit>
 #include <functional>       // for std::hash.
+#include <memory>
 #include <utility>
 
+#include "errors.h"
 #include "m_stacktrace.h"
 
 template <typename T>
 class szp
 {
+private:
 	// pointer to a common raw pointer
-	T** naive { nullptr };
-
-	// circular linked list
-	szp* prev { nullptr };
-	szp* next { nullptr };
-
-	// utility function to remove oneself from the linked list
-	void unlink()
-	{
-		if(!next)
-			return;
-
-		next->prev = prev;
-		prev->next = next;
-
-		if(!naive)
-			return;
-
-		// last in ring?
-		if(this == next)
-			delete naive;
-
-		naive = nullptr;
-	}
+	std::shared_ptr<std::atomic<T*>> m_pointer;
 
 public:
 
 	szp() = default;
+	explicit szp(T* target) : m_pointer{std::make_shared<std::atomic<T*>>(target)} {}
 
 	// this should never be used
 	// spawn from other pointers, or use init()
-	szp &operator=(T *other) = delete;
+	szp& operator=(T* other) = delete;
 
-	// copy constructor
-	szp(const szp &other)
-	{
-		if(!other.prev || !other.next || !other.naive)
-		{
-			prev = next = this;
-			return;
-		}
+	szp(const szp&) = default;
+	szp(szp&&) noexcept = default;
 
-		// link
-		naive = other.naive;
-		prev = other.next->prev;
-		next = other.next;
-		prev->next = next->prev = this;
-	}
-
-	// unlink from circular list on destruction
-	~szp()
-	{
-		unlink();
-	}
+	szp& operator=(const szp&) = default;
+	szp& operator=(szp&&) noexcept = default;
 
 	friend std::hash<szp<T>>;
 
 	friend void swap(szp& lhs, szp& rhs) noexcept
 	{
 		using std::swap;
-
-		swap(lhs.naive, rhs.naive);
-		swap(lhs.prev,  rhs.prev);
-		swap(lhs.next,  rhs.next);
-	}
-
-	// copy a pointer and add self to the "i have this pointer" list
-	szp &operator =(const szp& other)
-	{
-		// itself?
-		if(&other == this || other.naive == naive)
-			return *this;
-
-		unlink();
-
-		if(!other.prev || !other.next || !other.naive)
-		{
-			next = prev = this;
-			return *this;
-		}
-
-		// link
-		naive = other.naive;
-		prev = other.next->prev;
-		next = other.next;
-		prev->next = next->prev = this;
-
-		return *this;
+		swap(lhs.m_pointer,  rhs.m_pointer);
 	}
 
 	// creates the first (original) pointer
 	void init(T *target)
 	{
-		unlink();
-
-		// Please note that by using a naive call to `new`, and the fact that we're
-		// in C++17 and up, __STDCPP_DEFAULT_NEW_ALIGNMENT__ applies and can be relied
-		// on to know how many least-significant bits of our address will be zero.
-		// This will be important for our specialization of std::hash.
-		//
-		naive = new T*(target);
-
-		// first link
-		prev = next = this;
+		m_pointer = std::make_shared<std::atomic<T*>>(target);
 	}
-
-	const static bool IS_8_BIT_ALIGNED     = __STDCPP_DEFAULT_NEW_ALIGNMENT__ ==  1;
-	const static bool IS_16_BIT_ALIGNED    = __STDCPP_DEFAULT_NEW_ALIGNMENT__ ==  2;
-	const static bool IS_32_BIT_ALIGNED    = __STDCPP_DEFAULT_NEW_ALIGNMENT__ ==  4;
-	const static bool IS_64_BIT_ALIGNED    = __STDCPP_DEFAULT_NEW_ALIGNMENT__ ==  8;
-	const static bool IS_128_BIT_ALIGNED   = __STDCPP_DEFAULT_NEW_ALIGNMENT__ == 16;
 
 	// this function can update or zero all related pointers
 	void update_all(T *target)
 	{
-		if(!naive)
+		if (not m_pointer)
 			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL on update_all:"));
 
 		// all copies already have naive, so their pointers will update too
-		*naive = target;
+		m_pointer->store(target, std::memory_order_relaxed);
 	}
+
+	// use this instead of std::atomic's operator T because we want relaxed memory order
+	T* get() const noexcept
+    {
+        if (not m_pointer)
+            return nullptr;
+
+        return m_pointer->load(std::memory_order_relaxed);
+    }
 
 	// use as pointer, checking validity
-	T* operator ->()
+	T* operator->()
 	{
-		if(!naive || !*naive)
+		T* ptr = get();
+		if (not ptr)
 			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL:"));
 
-		return *naive;
+		return ptr;
 	}
 
-	const T* operator ->() const
+	const T* operator->() const
 	{
-		if(!naive || !*naive)
+		const T* ptr = get();
+		if (not ptr)
 			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL:"));
 
-		return *naive;
+		return ptr;
 	}
 
 	// use as raw pointer
-	operator T*()
+	operator T*() noexcept
 	{
-		if(!naive)
-			return nullptr;
-
-		return *naive;
+		return get();
 	}
 
 	// use as raw pointer
-	operator const T*() const
+	operator const T*() const noexcept
 	{
-		if(!naive)
-			return nullptr;
-
-		return *naive;
+		return get();
 	}
+
+	static constexpr auto POINTER_ALIGNMENT = alignof(std::atomic<T*>);
+	static constexpr auto POINTER_ALIGNMENT_BITS = std::countr_zero(POINTER_ALIGNMENT);
 };
 
 // The specializations of std::hash for szp shift off the known-zero LSBs of the naive pointer
 // because we want to make sure that modulus-based bucket selection for unordered_set and the
 // like don't accidentally pile everything up in a single bucket.
 
-// NOLINTBEGIN(bugprone-std-namespace-modification)
-namespace std
+template <typename T>
+struct std::hash<szp<T>>
 {
-	template <typename T>
-		requires szp<T>::IS_8_BIT_ALIGNED
-	struct hash<szp<T>>
+	size_t operator()(const szp<T>& objPtr) const noexcept
 	{
-		size_t operator()(const szp<T>& objPtr) const noexcept
-		{
-			return size_t(objPtr.naive);
-		}
-	};
-
-	template <typename T>
-		requires szp<T>::IS_16_BIT_ALIGNED
-	struct hash<szp<T>>
-	{
-		size_t operator()(const szp<T>& objPtr) const noexcept
-		{
-			return size_t(objPtr.naive) >> 1;
-		}
-	};
-
-	template <typename T>
-		requires szp<T>::IS_32_BIT_ALIGNED
-	struct hash<szp<T>>
-	{
-		size_t operator()(const szp<T>& objPtr) const noexcept
-		{
-			return size_t(objPtr.naive) >> 2;
-		}
-	};
-
-	template <typename T>
-		requires szp<T>::IS_64_BIT_ALIGNED
-	struct hash<szp<T>>
-	{
-		size_t operator()(const szp<T>& objPtr) const noexcept
-		{
-			return size_t(objPtr.naive) >> 3;
-		}
-	};
-
-	template <typename T>
-		requires szp<T>::IS_128_BIT_ALIGNED
-	struct hash<szp<T>>
-	{
-		size_t operator()(const szp<T>& objPtr) const noexcept
-		{
-			// Uncomment the following to prove that this overload of std::hash
-			// is actually being used in the code automatically.
-			//
-			//static_assert(alignof(T) == 2);
-			return size_t(objPtr.naive) >> 4;
-		}
-	};
-}
-// NOLINTEND(bugprone-std-namespace-modification)
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+		return reinterpret_cast<std::uintptr_t>(objPtr.m_pointer.get()) >> szp<T>::POINTER_ALIGNMENT_BITS;
+	}
+};
