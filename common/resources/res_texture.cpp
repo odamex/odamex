@@ -1181,6 +1181,8 @@ const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag)
 	// Texture, substitute the placeholder instead.
 	if (!Res_IsTextureResource(res_id))
 	{
+		std::lock_guard<std::recursive_mutex> lock(Res_LoadMutex());
+
 		DPrintFmt("Res_CacheTexture: {} is not a texture resource\n",
 		          Res_GetResourceName(res_id).c_str());
 		res_id = Res_GetResourceId("-MISSING-", NS_GLOBAL);

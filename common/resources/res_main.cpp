@@ -431,6 +431,13 @@ const void* ResourceManager::loadResourceData(const ResourceId res_id, zoneTag_e
 	const void* data = NULL;
 	if (validateResourceId(res_id))
 	{
+		// cache hit, which render workers take concurrently without locking
+		if ((data = mCache->getPublishedData(res_id)) != NULL)
+			return data;
+
+		// A cache miss: load under the lock.
+		std::lock_guard<std::recursive_mutex> lock(Res_LoadMutex());
+
 		data = mCache->getData(res_id);
 		if (!data)
 		{
@@ -467,6 +474,9 @@ const void* ResourceManager::loadResourceData(const ResourceId res_id, zoneTag_e
 
 			data = mCache->getData(res_id);
 		}
+
+		if (data)
+			mCache->publishData(res_id);
 	}
 	return data;
 }
@@ -785,6 +795,16 @@ const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& m
 	return ResourceId::INVALID_ID;
 }
 
+//
+// Res_LoadMutex
+//
+// Never destroyed, so loads during static destruction still find it.
+//
+std::recursive_mutex& Res_LoadMutex()
+{
+	static std::recursive_mutex* mutex = new std::recursive_mutex;
+	return *mutex;
+}
 
 //
 // Res_LoadResource

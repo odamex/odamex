@@ -23,6 +23,9 @@
 
 #pragma once
 
+#include <atomic>
+#include <memory>
+
 #include "z_zone.h"
 
 class ResourceCache
@@ -30,10 +33,15 @@ class ResourceCache
 public:
 	ResourceCache(size_t count) :
 		mResourceCount(count),
-		mData(NULL)
+		mData(NULL),
+	  // I don't like this const void* but changing it requires
+		// making the resource data typed and I don't feel like doing that yet.
+		mPublished(new std::atomic<const void*>[count])
 	{
 		mData = new void*[mResourceCount];
 		memset(reinterpret_cast<unsigned char*>(mData), 0, sizeof(*mData) * mResourceCount);
+		for (size_t i = 0; i < mResourceCount; i++)
+			mPublished[i].store(NULL, std::memory_order_relaxed);
 	}
 
 	~ResourceCache()
@@ -62,9 +70,33 @@ public:
 		return mData[res_id];
 	}
 
+	//
+	// getPublishedData
+	//
+	// The lock-free read -- a resource whose load has finished, or NULL.
+	//
+	const void* getPublishedData(const ResourceId res_id) const
+	{
+		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
+		const void* data = mPublished[res_id].load(std::memory_order_acquire);
+		return data != NULL && data == mData[res_id] ? data : NULL;
+	}
+
+	//
+	// publishData
+	//
+	// Makes a fully loaded slot visible to getPublishedData.
+	//
+	void publishData(const ResourceId res_id)
+	{
+		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
+		mPublished[res_id].store(mData[res_id], std::memory_order_release);
+	}
+
 	void releaseData(const ResourceId res_id)
 	{
 		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
+		mPublished[res_id].store(NULL, std::memory_order_release);
 		freeMemory(mData[res_id]);
 		mData[res_id] = NULL;
 	}
@@ -72,6 +104,7 @@ public:
 private:
 	size_t				mResourceCount;
 	void**				mData;
+	std::unique_ptr<std::atomic<const void*>[]> mPublished;
 
 	void* allocMemory(size_t size, zoneTag_e tag, void** owner)
 	{

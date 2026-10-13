@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <mutex>
 #include <optional>
 
 #include <vector>
@@ -379,6 +380,9 @@ static inline uint32_t Res_GetResourceSize(const OString& name, const ResourcePa
 // ----------------------------------------------------------------------------
 
 const void* Res_LoadResource(const ResourceId res_id, zoneTag_e tag = PU_CACHE);
+
+// Handles the serialization of resource loading.
+std::recursive_mutex& Res_LoadMutex();
 
 static inline const void* Res_LoadResource(const OString& name, zoneTag_e tag = PU_CACHE)
 {
