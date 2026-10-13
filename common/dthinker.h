@@ -76,11 +76,18 @@ public:
 	static void DestroyMostThinkers ();
 	static void SerializeAll (FArchive &arc, bool keepPlayers);
 
-	bool WasDestroyed();
+	[[ nodiscard ]]
+	bool WasDestroyed() const { return destroyed; }
 
 	size_t refCount;
 
 	static const std::vector<DThinker*>& GetThinkerVectorRef() { return s_thinkers; }
+
+protected:
+	void Unlink();
+	bool SpliceBefore(DThinker* io_node);
+	bool SpliceAfter(DThinker* io_node);
+
 private:
 
 	static std::vector<DThinker*> s_thinkers;

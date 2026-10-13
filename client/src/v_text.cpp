@@ -54,7 +54,7 @@ static int hu_bigfont_height;
 static int hu_smallfont_height;
 static int hu_digfont_height;
 
-byte *ConChars;
+std::vector<byte> ConChars;
 extern byte *Ranges;
 
 /**
@@ -251,7 +251,7 @@ int V_GetTextColor(std::string_view str)
 void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes, int scale) const
 {
 	// Don't try and print a string without conchars loaded.
-	if (::ConChars == NULL)
+	if (::ConChars.empty())
 		return;
 
 	const int char_size = 8 * scale;

@@ -485,6 +485,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Players respawn on the spot where they died instead of at a player start.",
+         "name" : "g_spawnatdeathspot",
+         "type" : "boolean"
+      },
+      {
          "default" : "default",
          "flags" : [ "SERVERINFO", "NOENABLEDISABLE", "SERVERARCHIVE" ],
          "helptext" : "The default inventory a player should spawn with.  See the \"spawninv\" console command.",
@@ -602,6 +609,13 @@
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
          "helptext" : "Allow usage of cheats in all game modes",
          "name" : "sv_allowcheats",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to use crosshair",
+         "name" : "sv_allowcrosshair",
          "type" : "boolean"
       },
       {

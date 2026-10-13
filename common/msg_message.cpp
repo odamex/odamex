@@ -36,3 +36,21 @@ odaproto::Header MSG_Header(const PacketHeaderType& i_header)
 
 	return msg;
 }
+
+odaproto::LargeMessageStart MSG_LargeMessageStart(size_t i_size)
+{
+	odaproto::LargeMessageStart msg;
+
+	msg.set_size(i_size);
+
+	return msg;
+}
+
+odaproto::LargeMessageFragment MSG_LargeMessageFragment(const void* i_data, size_t i_size)
+{
+	odaproto::LargeMessageFragment msg;
+
+	msg.set_payload(i_data, i_size);
+
+	return msg;
+}

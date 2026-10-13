@@ -45,6 +45,7 @@
 
 #include "p_mapformat.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 
 #include <span>
 
@@ -753,6 +754,20 @@ void P_DeathThink (player_t& player)
 		    ((player.cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
 		    ((g_lives && player.lives > 0) || !g_lives))
 		{
+			// Run (shift) + Use (space) erases your death spot so you spawn
+			// at the beginning.
+			if ((player.cmd.buttons & BT_USE) and (player.cmd.modifiers & MOD_RUN))
+				DeathSpotManager::getInstance().eraseDeathSpot(player.id);
+
+			// Something is standing where we would come back, so there is
+			// nowhere to go yet. Stay dead until it moves.
+			// A forced respawn gives up on the spot and instead uses a normal start.
+			if (multiplayer and not force_respawn and
+			    G_IsDeathSpotBlocked(G_CheckDeathSpot(player)))
+			{
+				return;
+			}
+
 			player.playerstate = PST_REBORN;
 		}
 	}
@@ -1368,8 +1383,6 @@ player_t::player_t() :
 	maxAmmoMonitors     { maxammo },
 	powerMonitors       { powers },
 	pspriteMonitors     { psprites },
-	attackdown(0),
-	usedown(0),
 	cheats(0),
 	refire(0),
 	damagecount(0),
@@ -1403,7 +1416,6 @@ player_t::player_t() :
 	hazardcount(0),
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
-	to_spawn(std::queue<AActor::AActorPtr>()),
 	playerInfoIsRequested(false),
 	inventoryCheckRequestsAreEnabled(false),
 	client{}

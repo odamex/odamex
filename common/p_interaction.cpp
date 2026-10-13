@@ -46,7 +46,11 @@
 #include "p_unlag.h"
 
 #ifdef SERVER_APP
-#include "sv_main.h"
+#   include "sv_main.h"
+#elif defined CLIENT_APP
+#   include "cl_stubs.h"
+#elif defined TEST_APP
+#   include "t_stubs.h"
 #endif
 
 extern bool predicting;
@@ -88,8 +92,6 @@ void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
-void SV_UpdateMobj(AActor* mo);
-void SV_UpdateMobjReliable(AActor* mo);
 void PickupMessage(const AActor *toucher, const char *message);
 void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
@@ -602,6 +604,7 @@ ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power)
 
 #include "v_textcolors.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 #include "g_spree.h"
 
 namespace
@@ -2201,6 +2204,21 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		tplayer->suicidedelay = SuicideDelay;
 		tplayer->death_time = level.time;
 
+		// Erase death spot if the player teleported into, spawned into,
+		// or was teleported into by an avatar.
+		// Rather than let the user spawn at their pre-avatar demise, make them
+		// go home.
+		if (P_IsVoodooDoll(target) or (source and source->type == MT_AVATAR))
+		{
+			DeathSpotManager::getInstance().eraseDeathSpot(tplayer->id);
+		}
+		else
+		{
+			DeathSpotManager::getInstance().setDeathSpot(tplayer->id, target->x,
+			                                             target->y, target->z,
+			                                             target->angle);
+		}
+
 		if (target == consoleplayer().camera)
 		{
 			// don't die in auto map, switch view prior to dying
@@ -2792,12 +2810,12 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		}
 		if (clientsNeedUpdate and not clientsWereUpdated)
 		{
-			SV_UpdateMobj(target);
+			SV_ArmMobj(target);
 		}
 	}
 	else
 	{
-		SV_UpdateMobj(target);
+		SV_ArmMobj(target);
 	}
 }
 

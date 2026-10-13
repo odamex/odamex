@@ -199,10 +199,8 @@ CVAR(					am_ovbackcolor, "00 00 00", "Overlay minimap background color",
 CVAR_RANGE(				am_ovbackalpha, "0.25", "Transparency of overlay minimap background",
 						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR_RANGE(				am_ovscalewidth, "0.25", "Scale width of overlay minimap",
-						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
-
-CVAR_RANGE(				am_ovscaleheight, "0.5", "Scale height of overlay minimap",
+CVAR_RANGE(				am_ovscalesize, "0.25", "Scale size of overlay minimap",
+						// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
 						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR_RANGE(				am_ovlocation, "1", "Overlay minimap location (0:LeftTop, 1:LeftMid, 2:LeftBot, 3:RightTop, 4:RightMid, 5:RightBot)",
@@ -628,6 +626,14 @@ CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down T
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(hud_speedometer, "0", "Show the HUD speedometer", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			cl_shotclock, "0", "Show tenths of a second on all HUD timers, starting when the timer reaches cl_shotclocksecondsleft.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE(		cl_shotclocksecondsleft, "10", "Seconds left before a HUD timer starts displaying " \
+				"tenths of a second, if cl_shotclock is enabled",
+				// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
 
 CVAR_RANGE(		hud_transparency, "1.0", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)

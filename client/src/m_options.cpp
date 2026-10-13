@@ -131,6 +131,8 @@ EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(hud_feedtime)
 EXTERN_CVAR(hud_extendedinfo)
+EXTERN_CVAR(cl_shotclock)
+EXTERN_CVAR(cl_shotclocksecondsleft)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
@@ -996,8 +998,7 @@ EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR(hud_targetnames)
 EXTERN_CVAR(am_ovminimap)
 EXTERN_CVAR(am_ovlocation)
-EXTERN_CVAR(am_ovscalewidth)
-EXTERN_CVAR(am_ovscaleheight)
+EXTERN_CVAR(am_ovscalesize)
 
 namespace
 {
@@ -1155,7 +1156,7 @@ std::array<value_t, 5> ExtendedHudStyles = {{
 	{ .value = 3.0, .name = "Vertical 1" }, { .value = 4.0, .name = "Vertical 2" }
 }};
 
-std::array<menuitem_t, 34> HUDItems = {{
+std::array<menuitem_t, 36> HUDItems = {{
 	{ .type = yellowtext, .label = "Status Bar", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
 	{ .type = discrete, .label = "Scale status bar", .a = {.cvar = &st_scale}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = redtext, .label = " ", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -1169,6 +1170,8 @@ std::array<menuitem_t, 34> HUDItems = {{
 	{ .type = discrete, .label = "Player target names", .a = {.cvar = &hud_targetnames}, .b = {.leftval = HideShow.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = HideShow.data()}},
 	// clang-format on
 	{ .type = discrete, .label = "Timer Type", .a = {.cvar = &hud_timer}, .b = {.leftval = TimerStyles.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = TimerStyles.data()}},
+	{ .type = discrete, .label = "Shot Clock", .a = {.cvar = &cl_shotclock}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
+	{ .type = slider, .label = "Shot Clock Seconds", .a = {.cvar = &cl_shotclocksecondsleft}, .b = {.leftval = 0.0}, .c = {.rightval = 60.0}, .d = {.step = 1.0}, .e = {.values = nullptr}},
 	{ .type = discrete, .label = "Speedometer", .a = {.cvar = &hud_speedometer}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
 	{ .type = slider, .label = "Feed Timeout", .a = {.cvar = &hud_feedtime}, .b = {.leftval = 1.0}, .c = {.rightval = 10.0}, .d = {.step = 0.25}, .e = {.values = nullptr}},
 	{ .type = discrete, .label = "Show Kills in Feed", .a = {.cvar = &hud_feedobits}, .b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.values = OnOff.data()}},
@@ -1362,7 +1365,7 @@ std::array<value_t, 6> MinimapLocations = {{
 	{ .value = 5.0, .name = "Right Bottom"},
 }};
 
-std::array<menuitem_t, 22> AutomapItems = {{
+std::array<menuitem_t, 21> AutomapItems = {{
 	{ .type = discrete, .label = "Rotate automap",		.a = {.cvar = &am_rotate},		   	.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
 	{ .type = discrete, .label = "Overlay automap",		.a = {.cvar = &am_overlay},			.b = {.leftval = Overlays.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = Overlays.data()}},
 	{ .type = redtext,	.label = " ",					.a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = nullptr}},
@@ -1385,8 +1388,7 @@ std::array<menuitem_t, 22> AutomapItems = {{
 	{ .type = yellowtext, .label = "Overlay Minimap Options", .a = {.cvar = nullptr},			.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
 	{ .type = discrete, .label = "Enable Minimap",		.a = {.cvar = &am_ovminimap},		.b = {.leftval = OnOff.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = OnOff.data()}},
 	{ .type = discrete, .label = "Location",				.a = {.cvar = &am_ovlocation},		.b = {.leftval = MinimapLocations.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = MinimapLocations.data()}},
-	{ .type = slider,	.label = "Scale Width",			.a = {.cvar = &am_ovscalewidth},		.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
-	{ .type = slider,	.label = "Scale Height",			.a = {.cvar = &am_ovscaleheight},	.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
+	{ .type = slider,	.label = "Scale Size",			.a = {.cvar = &am_ovscalesize},		.b = {.leftval = 0.0}, .c = {.rightval = 1.0},	.d = {.step = 0.05}, .e = {.values = nullptr}},
 }};
 // NOLINTEND(readability-magic-numbers)
 

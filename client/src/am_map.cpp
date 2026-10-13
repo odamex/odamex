@@ -144,8 +144,7 @@ EXTERN_CVAR(am_ovteleportcolor)
 EXTERN_CVAR(am_ovminimap)
 EXTERN_CVAR(am_ovbackcolor)
 EXTERN_CVAR(am_ovbackalpha)
-EXTERN_CVAR(am_ovscalewidth)
-EXTERN_CVAR(am_ovscaleheight)
+EXTERN_CVAR(am_ovscalesize)
 EXTERN_CVAR(am_ovlocation)
 
 EXTERN_CVAR(netdebug_automap)
@@ -1477,13 +1476,13 @@ void AM_drawWalls()
 					else
 						AM_drawMline(&l, gameinfo.currentAutomapColors.WallColor);
 				}
-				else if (line.backsector->floorheight !=
-				         line.frontsector->floorheight)
+				else if (P_FloorHeight(line.backsector) !=
+				         P_FloorHeight(line.frontsector))
 				{
 					AM_drawMline(&l, gameinfo.currentAutomapColors.FDWallColor); // floor level change
 				}
-				else if (line.backsector->ceilingheight !=
-				         line.frontsector->ceilingheight)
+				else if (P_CeilingHeight(line.backsector) !=
+				         P_CeilingHeight(line.frontsector))
 				{
 					AM_drawMline(&l, gameinfo.currentAutomapColors.CDWallColor); // ceiling level change
 				}
@@ -2439,8 +2438,8 @@ void AM_Drawer()
 		int x_offset = 0;
 		int y_offset = 0;
 
-		f_w = v_width * am_ovscalewidth;
-		f_h = v_height * am_ovscaleheight;
+		f_w = v_width * am_ovscalesize;
+		f_h = std::min(f_w, v_height);
 
 		switch (loc)
 		{
