@@ -1282,7 +1282,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type       = MT_OFFICE_CHAIR,
-		.doomednum  = -26830,
+		.doomednum  = -28630,
 		.spawnstate = S_ID24_30,
 		.radius     = 12_fx,
 		.height     = 16_fx,
@@ -1292,7 +1292,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type        = MT_OFFICE_LAMP_BREAKABLE,
-		.doomednum   = -26829,
+		.doomednum   = -28629,
 		.spawnstate  = S_ID24_31,
 		.spawnhealth = 20,
 		.deathstate  = S_ID24_32,
@@ -1306,7 +1306,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type       = MT_CEILING_LAMP,
-		.doomednum  = -26828,
+		.doomednum  = -28628,
 		.spawnstate = S_ID24_36,
 		.radius     = 12_fx,
 		.height     = 32_fx,
@@ -1316,7 +1316,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type       = MT_CANDELABRA_SHORT,
-		.doomednum  = -26827,
+		.doomednum  = -28627,
 		.spawnstate = S_ID24_37,
 		.radius     = 16_fx,
 		.height     = 16_fx,
@@ -1326,7 +1326,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type       = MT_AMBIENT_KLAXON,
-		.doomednum  = -26826,
+		.doomednum  = -28626,
 		.spawnstate = S_ID24_38,
 		.seestate   = S_ID24_39,
 		.radius     = 8_fx,
@@ -1336,7 +1336,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type       = MT_AMBIENT_PORTAL_OPEN,
-		.doomednum  = -26825,
+		.doomednum  = -28625,
 		.spawnstate = S_ID24_38,
 		.seestate   = S_ID24_40,
 		.radius     = 8_fx,
@@ -1346,7 +1346,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type       = MT_AMBIENT_PORTAL_LOOP,
-		.doomednum  = -26824,
+		.doomednum  = -28624,
 		.spawnstate = S_ID24_38,
 		.seestate   = S_ID24_41,
 		.radius     = 8_fx,
@@ -1356,7 +1356,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type       = MT_AMBIENT_PORTAL_CLOSE,
-		.doomednum  = -26823,
+		.doomednum  = -28623,
 		.spawnstate = S_ID24_38,
 		.seestate   = S_ID24_42,
 		.radius     = 8_fx,
@@ -1366,7 +1366,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type               = MT_FUEL_CAN,
-		.doomednum          = -26822,
+		.doomednum          = -28622,
 		.spawnstate         = S_ID24_464,
 		.spawnhealth        = 1000,
 		.reactiontime       = 8,
@@ -1382,7 +1382,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type               = MT_FUEL_TANK,
-		.doomednum          = -26821,
+		.doomednum          = -28621,
 		.spawnstate         = S_ID24_465,
 		.spawnhealth        = 1000,
 		.reactiontime       = 8,
@@ -1398,7 +1398,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type         = MT_CALAMITY_BLADE,
-		.doomednum    = -26820,
+		.doomednum    = -28620,
 		.spawnstate   = S_ID24_463,
 		.spawnhealth  = 1000,
 		.reactiontime = 8,
@@ -1414,7 +1414,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	},
 	{
 		.type         = MT_INCINERATOR,
-		.doomednum    = -26819,
+		.doomednum    = -28619,
 		.spawnstate   = S_ID24_351,
 		.spawnhealth  = 1000,
 		.reactiontime = 8,
