@@ -1228,7 +1228,7 @@ void G_Ticker (void)
 
 				CL_SimulateWorld();
 				thinkersHaveRun = CL_PredictWorld();
-				if (not thinkersHaveRun)
+				if (not thinkersHaveRun and not netdemo.isPaused())
 				{
 					CL_SimulatePlayers();
 				}
