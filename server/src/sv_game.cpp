@@ -55,6 +55,7 @@ void	G_DoWorldDone (void);
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_keepkeys)
+EXTERN_CVAR (sv_keepweapons)
 EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (sv_fastmonsters)
@@ -210,6 +211,18 @@ void SV_SendPlayerInfo(player_t& player);
 void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 {
 	size_t i;
+
+	// sv_keepweapons - stash the loadout of a player who died in this
+	// level so it can be handed back after the spawn inventory is given out.
+	const bool keepweapons = p.dokeepweapons and ::sv_keepweapons and not p.spectator;
+	const std::array<bool, NUMWEAPONS> oldweaponowned = p.weaponowned;
+	const std::array<int, NUMAMMO> oldammo = p.ammo;
+	const std::array<int, NUMAMMO> oldmaxammo = p.maxammo;
+	const bool oldbackpack = p.backpack;
+	const weapontype_t oldreadyweapon = p.readyweapon;
+	p.dokeepweapons = false;
+	p.keptweapons = keepweapons;
+
 	for (i = 0; i < NUMAMMO; i++)
 	{
 		p.maxammo[i] = maxammo[i];
@@ -237,6 +250,30 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.backpack = false;
 
 	G_GiveSpawnInventory(p);
+
+	// sv_keepweapons - hand the old loadout back on top of the spawn inventory.
+	// Weapons are unioned so the spawn weapons are never lost.
+	if (keepweapons)
+	{
+		for (i = 0; i < NUMWEAPONS; i++)
+			p.weaponowned[i] = p.weaponowned[i] or oldweaponowned[i];
+
+		p.ammo = oldammo;
+
+		// Only take the old maxammo if it is the one carrying the backpack
+		// doubling, otherwise the spawn inventory's backpack would be undone.
+		if (oldbackpack)
+		{
+			p.backpack = true;
+			p.maxammo = oldmaxammo;
+		}
+
+		if (oldreadyweapon >= wp_fist and oldreadyweapon < wp_none and
+		    p.weaponowned[oldreadyweapon])
+		{
+			p.readyweapon = p.pendingweapon = oldreadyweapon;
+		}
+	}
 
 	p.usedown = p.attackdown = true;	// don't do anything immediately
 	p.playerstate = PST_LIVE;
