@@ -74,6 +74,7 @@ MessageResultEnum CL_ProcessCurrentAvailableMessages();
 void CL_SendCmd();
 void CL_SaveCmd();
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
+void CL_SimulatePlayers();
 bool CL_PredictWorld();
 void CL_ResetWorldPrediction();
 void CL_ResetTicSync();

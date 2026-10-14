@@ -2764,7 +2764,6 @@ void CL_SimulateWorld()
 	netgraph.setWorldIndexSync(world_index - (last_svgametic - cl_interp));
 
 	CL_SimulateSectors();
-	CL_SimulatePlayers();
 
 	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
 	// slowing down or speeding up world_index

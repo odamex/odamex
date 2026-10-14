@@ -492,20 +492,14 @@ bool CL_PredictWorld()
 		{
 			mobjsHaveBeenPredicted = true;
 
+            CL_SimulatePlayers();
+
 			// We're doing our genuine thinker step now, and it must always be on the
 			// tic following the latest from the server.  This ensures that mobj actions
 			// that reference the player's position are working from the player state
 			// that the server almost certainly had when it ran the tic for real.
 			predicting = false;
 			DThinker::RunThinkers();
-            for (auto& player : players)
-            {
-                if (player.id != consoleplayer_id and player.mo)
-                {
-                    P_MovePlayer(player);
-                    player.mo->RunThink();
-                }
-            }
 			predicting = true;
 		}
 
@@ -545,15 +539,8 @@ bool CL_PredictWorld()
 	if (not mobjsHaveBeenPredicted)
 	{
 		mobjsHaveBeenPredicted = true;
+            CL_SimulatePlayers();
 		DThinker::RunThinkers();
-            for (auto& player : players)
-            {
-                if (player.id != consoleplayer_id and player.mo)
-                {
-                    P_MovePlayer(player);
-                    player.mo->RunThink();
-                }
-            }
 	}
 
 	if (cl_predictsectors)
