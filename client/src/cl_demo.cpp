@@ -85,6 +85,8 @@ int LatestDemoVersion(const int version)
 	}
 }
 
+const std::string NetDemo::thisBuildDescription { std::string(NiceVersion()) + ":" +  GitHash() };
+
 NetDemo::~NetDemo()
 {
 	cleanUp();
@@ -95,7 +97,7 @@ void NetDemo::reset()
 	cleanUp();
 
 	filename = "";
-	header = netdemo_header4_t{};
+	streamHeader = netdemo_stream_header4_t{};
 	captured.Clear();
 }
 
@@ -152,36 +154,35 @@ void NetDemo::fatalError(const std::string &message)
 }
 
 //
-// writeHeader()
+// writeFileHeader()
 //
 //   Writes the header struct to the netdemo file in little-endian format
 //   Assumes that demofp has been opened correctly elsewhere.  Does not close
 //   the file.
 
-bool NetDemo::writeHeader()
+bool NetDemo::writeFileHeader()
 {
-	memcpy(header.id.identifier, "ODAD", 4);
-	header.id.version = NETDEMOVER;
-	header.compression = 0;
-	header.snapshot_spacing = NetDemo::SNAPSHOT_SPACING;
+	memcpy(fileHeader.identifier.data(), "ODAD", 4);
+	fileHeader.version = NETDEMOVER;
+	streamHeader.compression        = 0;
+	streamHeader.snapshot_spacing   = NetDemo::SNAPSHOT_SPACING;
+	streamHeader.format_description = thisBuildDescription;
 
 	demofp.seekp(0, std::ios::beg);
 	const auto startingPosition = demofp.tellp();
 
-	const bool result = startingPosition >= 0
-	                    and M_WriteLE(demofp, header.id.identifier)
-	                    and M_WriteLE(demofp, header.id.version)
-	                    and M_WriteLE(demofp, header.compression)
-	                    and M_WriteLE(demofp, header.snapshot_spacing)
-	                    and M_WriteLE(demofp, header.starting_gametic)
-	                    and M_WriteLE(demofp, header.ending_gametic)
-	                    and M_WriteLE(demofp, header.reserved)
-	                    and demofp.tellp() - startingPosition == HEADER_SIZE;
-	return result;
+	workingBuffer.clear();
+
+	if (    fileHeader.Write(demofp)
+	    and streamHeader.Write(workingBuffer))
+	{
+		writeChunk(workingBuffer.ptr(), workingBuffer.size(), NetDemo::MSG_HEADER);
+		return true;
+	}
+	return false;
 }
 
-
-bool NetDemo::netdemo_header_id_t::Read(std::fstream& io_stream)
+bool NetDemo::netdemo_file_header_t::Read(std::fstream& io_stream)
 {
 	if (io_stream.good())
 	{
@@ -191,12 +192,21 @@ bool NetDemo::netdemo_header_id_t::Read(std::fstream& io_stream)
 	return false;
 }
 
+bool NetDemo::netdemo_file_header_t::Write(std::fstream& demofp) const
+{
+	if (demofp.good())
+	{
+		return  M_WriteLE(demofp, identifier)
+		    and M_WriteLE(demofp, version);
+	}
+	return false;
+}
+
 bool NetDemo::netdemo_header3_t::Read(std::fstream& io_stream)
 {
 	if (io_stream.good())
 	{
-		return  id.Read(io_stream)
-		    and M_ReadLE(io_stream, compression)
+		return  M_ReadLE(io_stream, compression)
 		    and M_ReadLE(io_stream, snapshot_index_size)
 		    and M_ReadLE(io_stream, snapshot_index_offset)
 		    and M_ReadLE(io_stream, map_index_size)
@@ -209,65 +219,83 @@ bool NetDemo::netdemo_header3_t::Read(std::fstream& io_stream)
 	return false;
 }
 
-bool NetDemo::netdemo_header4_t::Read(std::fstream& io_stream)
+
+bool NetDemo::netdemo_stream_header4_t::Read(buf_t& io_buf)
 {
-	if (io_stream.good())
-	{
-		return  id.Read(io_stream)
-		    and M_ReadLE(io_stream, compression)
-		    and M_ReadLE(io_stream, snapshot_spacing)
-		    and M_ReadLE(io_stream, starting_gametic)
-		    and M_ReadLE(io_stream, ending_gametic)
-		    and M_ReadLE(io_stream, reserved);
-	}
-	return false;
+	io_buf.Read(compression);
+	io_buf.Read(snapshot_spacing);
+	io_buf.Read(starting_gametic);
+	io_buf.Read(ending_gametic);
+	io_buf.Read(format_description);
+
+	return not io_buf.overflowed;
+}
+
+bool NetDemo::netdemo_stream_header4_t::Write(buf_t& io_buf) const
+{
+	io_buf.Write(compression);
+	io_buf.Write(snapshot_spacing);
+	io_buf.Write(starting_gametic);
+	io_buf.Write(ending_gametic);
+	io_buf.Write(format_description);
+
+	return not io_buf.overflowed;
 }
 
 //
-// readHeader()
+// readFileHeader()
 //
 //   Reads the header struct from the netdemo file, converting it from
 //   little-endian format to whatever the client's architecture uses.  Assumes
 //   that demofp has been opened correctly elsewhere.  Does not close the file.
 
-bool NetDemo::readHeader()
+bool NetDemo::readFileHeader()
 {
 	demofp.seekg(0, std::ios::beg);
 	const auto startingPosition = demofp.tellg();
 
-	netdemo_header_id_t headerId;
-	const bool headerIDOk = headerId.Read(demofp);
+	const bool headerOk = fileHeader.Read(demofp);
 
-	if (not (headerIDOk
-	         and headerId.identifier[0] == 'O'
-	         and headerId.identifier[1] == 'D'
-	         and headerId.identifier[2] == 'A'
-	         and headerId.identifier[3] == 'D'))
+	if (not (headerOk
+	         and fileHeader.identifier[0] == 'O'
+	         and fileHeader.identifier[1] == 'D'
+	         and fileHeader.identifier[2] == 'A'
+	         and fileHeader.identifier[3] == 'D'))
 	{
 		return false;
 	}
 
-	header.id = headerId;
-
-	if (header.id.version == NETDEMOVER)
+	if (fileHeader.version == NETDEMOVER)
 	{
-		demofp.seekg(startingPosition, std::ios::beg);
+		netdemo_message_t type;
+		uint32_t          len = 0;
+		uint32_t          tic = 0;
 
-		return header.Read(demofp)
-		        and demofp.tellg() - startingPosition == HEADER_SIZE;
+		if (readMessageHeader(type, len, tic) and type == MSG_HEADER and len != 0)
+		{
+			if (not readMessagePayloadToWorkingBuffer(len))
+			{
+				fatalError("Can not read netdemo stream header payload.");
+				return false;
+			}
+			if (not streamHeader.Read(workingBuffer))
+			{
+				fatalError("Can not read netdemo stream header.");
+				return false;
+			}
+			return true;
+		}
 	}
 
-	if (header.id.version == 3)
+	if (fileHeader.version == 3)
 	{
-		demofp.seekg(startingPosition, std::ios::beg);
-
 		netdemo_header3_t header3;
 
 		if (header3.Read(demofp)
-		        and demofp.tellg() - startingPosition == HEADER_SIZE)
+		        and demofp.tellg() - startingPosition == HEADER3_SIZE)
 		{
 			// Translate from 3 to NETDEMOVER
-			header.Import(header3);
+			streamHeader.Import(header3);
 			return true;
 		}
 	}
@@ -281,10 +309,13 @@ bool NetDemo::readHeader()
 //   map_index and snapshot_index vecs
 void NetDemo::populateMessageIndexes()
 {
-	demofp.seekg(NetDemo::HEADER_SIZE, std::ios::beg);
+	const auto streamOffset = demofp.tellg();
 
 	netdemo_message_t type;
-	uint32_t len = 0, tic = 0, last_tic = 0;
+	uint32_t          len = 0;
+	uint32_t          tic = 0;
+	uint32_t          last_tic = 0;
+	bool              eofWasFound = false;
 
 	do
 	{
@@ -294,34 +325,50 @@ void NetDemo::populateMessageIndexes()
 			break;
 		}
 
-		const std::streampos offset = demofp.tellg() - NetDemo::MESSAGE_HEADER_SIZE;
+		const std::streampos currentPosition = demofp.tellg();
+		const std::streampos offset          = currentPosition - NetDemo::MESSAGE_HEADER_SIZE;
+		const std::streampos nextMsg         = currentPosition + std::streampos(len);
 
-		if (type == NetDemo::msg_snapshot)
+		switch (type)
 		{
-			netdemo_index_entry_t entry = {tic, offset};
-			snapshot_index.push_back(entry);
-		}
+			case NetDemo::MSG_PACKET:
+				break;
 
-		else if (type == NetDemo::msg_map_change)
-		{
-			netdemo_index_entry_t entry = {tic, offset};
-			map_index.push_back(entry);
-			snapshot_index.push_back(entry);
-		}
+			case NetDemo::MSG_SNAPSHOT:
+				snapshot_index.emplace_back(tic, offset);
+				break;
 
-		else if (type == NetDemo::msg_eof)
+			case NetDemo::MSG_MAP_CHANGE:
+				map_index.emplace_back(tic, offset);
+				snapshot_index.emplace_back(tic, offset);
+				break;
+
+			case NetDemo::MSG_END_OF_NETDEMO:
+				eofWasFound = true;
+				break;
+
+			case NetDemo::MSG_HEADER:
+				PrintFmt(PRINT_WARNING,
+				        "Additional netdemo stream header at {0:#x}!  Ignoring...\n",
+				        std::streamoff(currentPosition));
+				break;
+
+		}
+		if (eofWasFound)
 		{
 			break;
 		}
 
-		demofp.seekg(len, std::ios::cur);
+		demofp.seekg(nextMsg);
 	} while (demofp.good());
 
 	// fix for playing a demo that hard crashed and couldnt write ending_gametic
-	if (header.ending_gametic == 0)
+	if (streamHeader.ending_gametic == 0)
 	{
-		header.ending_gametic = last_tic;
+		streamHeader.ending_gametic = last_tic;
 	}
+
+	demofp.seekg(streamOffset, std::ios::beg);
 }
 
 //
@@ -358,14 +405,14 @@ bool NetDemo::startRecording(const std::string &filename)
 		return false;
 	}
 
-	header = netdemo_header4_t{};
-	header.starting_gametic = gametic;
+	streamHeader = netdemo_stream_header4_t{};
+	streamHeader.starting_gametic = gametic;
 
 	// Note: The header is not finalized at this point.  Write it anyway to
 	// reserve space in the output file for it and overwrite it later.
-	if (!writeHeader())
+	if (not writeFileHeader())
 	{
-		error("Unable to write netdemo header.");
+		error("Unable to write netdemo file header.");
 		return false;
 	}
 
@@ -438,20 +485,20 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-	if (!readHeader())
+	if (not readFileHeader())
 	{
-		error("Unable to read netdemo header.");
+		error("Unable to read netdemo file header.");
 		return false;
 	}
 
 	if constexpr (TRY_LOADING_OLD_NETDEMOS)
 	{
-		PrintFmt(PRINT_WARNING, "Attempting to load a version {} netdemo...\n", header.id.version);
+		PrintFmt(PRINT_WARNING, "Attempting to load a version {} netdemo...\n", fileHeader.version);
 	}
-	else if (header.id.version != NETDEMOVER)
+	else if (fileHeader.version != NETDEMOVER)
 	{
 		std::string buffer;
-		const int latestVersion = LatestDemoVersion(header.id.version);
+		const int latestVersion = LatestDemoVersion(fileHeader.version);
 		if (latestVersion)
 		{
 			int maj, min, patch;
@@ -472,10 +519,19 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
+	if (streamHeader.format_description.empty())
+	{
+		PrintFmt(PRINT_WARNING, "This demo did not supply any format description!  Proceeding at risk...\n");
+	}
+	else if (streamHeader.format_description != thisBuildDescription)
+	{
+		PrintFmt(PRINT_WARNING, "This demo was recorded with a different build: {}\n", streamHeader.format_description);
+	}
+	DPrintFmt("Netdemo recorded with build {}\n", streamHeader.format_description);
+
 	populateMessageIndexes();
 
 	// get set up to read server cmds
-	demofp.seekg(NetDemo::HEADER_SIZE, std::ios::beg);
 	state = NetDemo::st_playing;
 
 	PrintFmt(PRINT_HIGH, "Playing netdemo {}.\n", filename);
@@ -525,7 +581,7 @@ bool NetDemo::resume()
 //
 // stopRecording()
 //
-//   Writes the netdemo index to file and rewrites the netdemo header before
+//   Writes the netdemo index to file and rewrites the netdemo file header before
 //   closing the netdemo file.
 
 bool NetDemo::stopRecording()
@@ -541,17 +597,17 @@ bool NetDemo::stopRecording()
 
 	// write the end-of-demo marker - header + size
 	byte stopdata[2] = {clc_netdemostop, 0};
-	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::msg_eof);
+	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::MSG_END_OF_NETDEMO);
 
 	// write the number of the last gametic in the recording
-	header.ending_gametic = gametic;
+	streamHeader.ending_gametic = gametic;
 
 	demofp.flush();
 
 	// rewrite the header for ending_gametic
-	if (!writeHeader())
+	if (not writeFileHeader())
 	{
-		error("Unable to write updated netdemo header.");
+		error("Unable to write updated netdemo file header.");
 		return false;
 	}
 
@@ -587,6 +643,30 @@ bool NetDemo::stopPlaying()
 	return true;
 }
 
+bool NetDemo::message_header_t::Write(std::fstream& io_stream) const
+{
+	if (io_stream.good())
+	{
+		const auto startingPosition = io_stream.tellp();
+		return startingPosition >= 0
+		    and M_WriteLE(io_stream, this->type)
+		    and M_WriteLE(io_stream, this->length)
+		    and M_WriteLE(io_stream, this->gametic)
+		    and io_stream.tellp() - startingPosition == MESSAGE_HEADER_SIZE;
+	}
+	return false;
+}
+
+bool NetDemo::message_header_t::Read(std::fstream& io_stream)
+{
+	if (io_stream.good())
+	{
+		return  M_ReadLE(io_stream, this->type)
+		    and M_ReadLE(io_stream, this->length)
+		    and M_ReadLE(io_stream, this->gametic);
+	}
+	return false;
+}
 
 void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 {
@@ -596,17 +676,10 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 	msgheader.length    = size;
 	msgheader.gametic   = gametic;
 
-	const auto startingPosition = demofp.tellp();
-	const bool headerResult = startingPosition >= 0
-	                            and M_WriteLE(demofp, msgheader.type)
-	                            and M_WriteLE(demofp, msgheader.length)
-	                            and M_WriteLE(demofp, msgheader.gametic)
-	                            and demofp.tellp() - startingPosition == MESSAGE_HEADER_SIZE;
-
-	if (headerResult)
+	if (msgheader.Write(demofp))
 	{
 		const auto dataStartPosition = demofp.tellp();
-		demofp.write(reinterpret_cast<const char*>(data), size);
+		demofp.write(reinterpret_cast<const char*>(data), size);    // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 		if (demofp.tellp() - dataStartPosition != size)
 		{
 			error("Unable to write netdemo message chunk\n");
@@ -628,7 +701,7 @@ bool NetDemo::atSnapshotInterval()
 	if (gametic == last_map_tic)
 		return false;
 
-	return ((gametic - last_map_tic) % header.snapshot_spacing == 0);
+	return ((gametic - last_map_tic) % streamHeader.snapshot_spacing == 0);
 }
 
 
@@ -665,7 +738,7 @@ void NetDemo::writeMessages()
 	if (atSnapshotInterval())
 	{
 		writeSnapshotData(snapbuf);
-		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
+		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::MSG_SNAPSHOT);
 	}
 
 	if (connected)
@@ -678,21 +751,21 @@ void NetDemo::writeMessages()
 		}
 	}
 
-	outputBuffer.clear();
+	workingBuffer.clear();
 
-	if (outputBuffer.maxsize() < captured.SizeInBytes())
+	if (workingBuffer.maxsize() < captured.SizeInBytes())
 	{
-		outputBuffer.resize(captured.SizeInBytes());
+		workingBuffer.resize(captured.SizeInBytes());
 	}
 
 	while (captured.SizeInMessages() > 0)
 	{
-		outputBuffer.WriteChunk(captured.Front().ptr(),
+		workingBuffer.WriteChunk(captured.Front().ptr(),
 		                        captured.Front().size());
 		captured.Pop();
 	}
 
-	writeChunk(outputBuffer.ptr(), outputBuffer.size(), NetDemo::msg_packet);
+	writeChunk(workingBuffer.ptr(), workingBuffer.size(), NetDemo::MSG_PACKET);
 }
 
 
@@ -703,28 +776,41 @@ void NetDemo::writeMessages()
 //   len and tic parameters.
 //   Returns false upon file read error.
 
-bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t &tic)
+bool NetDemo::readMessageHeader(netdemo_message_t& o_type, uint32_t& o_len, uint32_t& o_tic)
 {
-	len = tic = 0;
+	o_len = 0;
+	o_tic = 0;
 
-	message_header_t msgheader;
+	message_header_t msgHeader;
 
-	const bool headerIsGood =   M_ReadLE(demofp, msgheader.type)
-	                        and M_ReadLE(demofp, msgheader.length)
-	                        and M_ReadLE(demofp, msgheader.gametic);
-	if (not headerIsGood)
+	if (msgHeader.Read(demofp))
+	{
+		o_len = msgHeader.length;
+		o_tic = msgHeader.gametic;
+		o_type = static_cast<netdemo_message_t>(msgHeader.type);
+
+		return true;
+	}
+	return false;
+}
+
+bool NetDemo::readMessagePayloadToWorkingBuffer(uint32_t len)
+{
+	if (workingBuffer.maxsize() < len)
+	{
+		workingBuffer.resize(len + 1);
+	}
+	workingBuffer.clear();
+
+	demofp.read(reinterpret_cast<char*>(workingBuffer.ptr()), len);     // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+	workingBuffer.setcursize(demofp.gcount());
+
+	if (workingBuffer.size() < len)
 	{
 		return false;
 	}
-
-	// convert the values to native byte order
-	len = msgheader.length;
-	tic = msgheader.gametic;
-	type = static_cast<netdemo_message_t>(msgheader.type);
-
 	return true;
 }
-
 
 //
 // readMessageBody()
@@ -735,10 +821,7 @@ bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t
 
 void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 {
-	auto msgdata = std::make_unique<char[]>(len);
-
-	demofp.read(msgdata.get(), len);
-	if (demofp.gcount() < len)
+	if (not readMessagePayloadToWorkingBuffer(len))
 	{
 		fatalError("Can not read netdemo message.");
 		return;
@@ -750,7 +833,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		netbuffer->resize(len + netbuffer->size() + 1, false);
 	}
 
-	netbuffer->WriteChunk(msgdata.get(), len);
+	netbuffer->WriteChunk(workingBuffer.ptr(), len);
 
 	if (!connected)
 	{
@@ -801,20 +884,23 @@ void NetDemo::readMessages(buf_t* netbuffer)
 	}
 
 	netdemo_message_t type;
-	uint32_t len = 0, tic = 0;
+	uint32_t          len = 0;
+	uint32_t          tic = 0;
 
 	// get the values for type, len and tic
-	if (!readMessageHeader(type, len, tic))
+	if (not readMessageHeader(type, len, tic))
 	{
 		fatalError("Failed to read netdemo message header.");
 		return;
 	}
 
-	while (type == NetDemo::msg_snapshot || type == NetDemo::msg_map_change)
+    // Skip over any message (including snapshot) that isn't a payload packet or EOF sentinel.
+	while (not (   type == NetDemo::MSG_PACKET
+                or type == NetDemo::MSG_END_OF_NETDEMO))
 	{
 		// skip over snapshots and read the next message instead
 		demofp.seekg(len, std::ios::cur);
-		if (!readMessageHeader(type, len, tic))
+		if (not readMessageHeader(type, len, tic))
 		{
 			fatalError("Failed to read netdemo message header.");
 			return;
@@ -823,7 +909,7 @@ void NetDemo::readMessages(buf_t* netbuffer)
 
 	// read from the input file and put the data into netbuffer
 	gametic     = tic;
-	netdemotic  = gametic - header.starting_gametic;
+	netdemotic  = gametic - streamHeader.starting_gametic;
 	readMessageBody(netbuffer, len);
 }
 
@@ -1015,14 +1101,14 @@ void NetDemo::writeConnectionSequence()
 	{
 		buf_t& headerBuffer = captured.Obtain();
 
-		PacketHeaderType header {0};
+		PacketHeaderType packetHeader {0};
 
-		header.originatorTic  = last_svgametic;
-		header.destinationTic = player.tic;
+		packetHeader.originatorTic  = last_svgametic;
+		packetHeader.destinationTic = player.tic;
 
 		// Please note that we pack the header in proper socket-style for the connection sequence
 		// because the netdemo connection playback actually uses the messenger via CL_Connect.
-		header.Pack(headerBuffer);
+		packetHeader.Pack(headerBuffer);
 	}
 
 	// Server sends our player id and digest
@@ -1055,8 +1141,8 @@ void NetDemo::writeConnectionSequence()
 
 NetDemo::SnapshotVector::const_iterator NetDemo::lookupSnapshot(const SnapshotVector& i_vector, uint32_t gameticnum) const
 {
-	if (gameticnum < header.starting_gametic or
-	    gameticnum > header.ending_gametic or
+	if (gameticnum < streamHeader.starting_gametic or
+	    gameticnum > streamHeader.ending_gametic or
 	    i_vector.empty())
 	{
 		return i_vector.end();
@@ -1088,7 +1174,7 @@ NetDemo::SnapshotVector::const_iterator NetDemo::lookupSnapshot(const SnapshotVe
 //
 NetDemo::SnapshotVector::const_iterator NetDemo::getSnapshotForNetdemotic(uint32_t i_netdemoticnum) const
 {
-	return lookupSnapshot(snapshot_index, header.starting_gametic + i_netdemoticnum);
+	return lookupSnapshot(snapshot_index, streamHeader.starting_gametic + i_netdemoticnum);
 }
 
 // getSnapshotForGametic()
@@ -1270,7 +1356,7 @@ bool NetDemo::readSnapshot(SnapshotVector::const_iterator snap)
 	snapbuf.clear();
 	snapbuf.resize(len);
 
-	demofp.read(reinterpret_cast<char*>(snapbuf.data()), len);
+	demofp.read(reinterpret_cast<char*>(snapbuf.data()), len);  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 	if (demofp.gcount() < len)
 	{
 		fatalError("Unable to read snapshot from data file");
@@ -1278,7 +1364,7 @@ bool NetDemo::readSnapshot(SnapshotVector::const_iterator snap)
 	}
 
 	readSnapshotData(snapbuf);
-	netdemotic = snap->ticnum - header.starting_gametic;
+	netdemotic = snap->ticnum - streamHeader.starting_gametic;
 
 	Wipe_Suppress(2);
 
@@ -1296,7 +1382,7 @@ int NetDemo::calculateTotalTime() const
 	if (not isInPlayback())
 		return 0;
 
-	return ((header.ending_gametic - header.starting_gametic) / TICRATE);
+	return ((streamHeader.ending_gametic - streamHeader.starting_gametic) / TICRATE);
 }
 
 
@@ -1325,7 +1411,7 @@ const std::vector<int> NetDemo::getMapChangeTimes() const
 
 	for (const auto [ticnum, _] : map_index)
 	{
-		int start_time = (ticnum - header.starting_gametic) / TICRATE;
+		const int start_time = (ticnum - streamHeader.starting_gametic) / TICRATE;
 		times.push_back(start_time);
 	}
 
@@ -1335,8 +1421,8 @@ const std::vector<int> NetDemo::getMapChangeTimes() const
 bool NetDemo::seekGametic(int requestedGametic)
 {
 	if (not isInPlayback()
-	    or requestedGametic < header.starting_gametic
-	    or requestedGametic > header.ending_gametic)
+	    or std::cmp_less    (requestedGametic, streamHeader.starting_gametic)
+	    or std::cmp_greater (requestedGametic, streamHeader.ending_gametic))
 	{
 		return false;
 	}
@@ -1383,7 +1469,7 @@ bool NetDemo::seekGametic(int requestedGametic)
 			requestedGametic += 1;
 		}
 		timingdemo = true;
-		pause_netdemotic = requestedGametic - header.starting_gametic;
+		pause_netdemotic = requestedGametic - streamHeader.starting_gametic;
 
 		return true;
 	}
@@ -1393,7 +1479,7 @@ bool NetDemo::seekGametic(int requestedGametic)
 
 bool NetDemo::seekNetdemotic(int requestedNetdemotic)
 {
-	return seekGametic(requestedNetdemotic + header.starting_gametic);
+	return seekGametic(requestedNetdemotic + streamHeader.starting_gametic);
 }
 
 void NetDemo::writeMapChange()
@@ -1401,7 +1487,7 @@ void NetDemo::writeMapChange()
 	if (connected && gamestate == GS_LEVEL)
 	{
 		writeSnapshotData(snapbuf);
-		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_map_change);
+		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::MSG_MAP_CHANGE);
 		last_map_tic = gametic;
 	}
 }
@@ -1411,7 +1497,7 @@ void NetDemo::writeIntermission()
 	if (connected && gamestate == GS_INTERMISSION)
 	{
 		writeSnapshotData(snapbuf);
-		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
+		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::MSG_SNAPSHOT);
 	}
 }
 
@@ -1459,7 +1545,6 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	arc << level.mapname.c_str();
 	arc << static_cast<byte>(gamestate == GS_INTERMISSION);
 
-	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
 	P_SerializeACSDefereds(arc);
 	P_SerializeHorde(arc);
@@ -1500,6 +1585,10 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	}
 
 	arc << rollerState;
+
+	// Storing the level-snapshots at this location is critically important.  Please see corresponding
+	// comment in readSnapshotData.
+	G_SerializeSnapshots(arc);
 
 	P_SerializeSprees(arc);
 
@@ -1593,7 +1682,6 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	arc >> mapname;
 	arc >> intermission;
 
-	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
 	P_SerializeACSDefereds(arc);
 	P_SerializeHorde(arc);
@@ -1644,6 +1732,12 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 
 	// load the resource files
 	G_LoadWad(newwadfiles, newpatchfiles);
+
+	// We read the level snapshots AFTER loading the wads because it's entirely possible that D_Shutdown
+	// was needed in order to make a Wad Reboot happen across an unnatural level progression.  If that
+	// happens, all level snapshots are wiped out unconditionally.  So by loading the level-snapshot
+	// after the Load Wad operation, we ensure that it'll be present for level initialization.
+	G_SerializeSnapshots(arc);
 
 	G_InitNew(mapname);
 	displayplayer_id = consoleplayer_id = 1;

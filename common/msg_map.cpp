@@ -61,6 +61,10 @@ static void InitMap()
 	MapProto(msg_noop,   odaproto::Noop::descriptor());
 	MapProto(msg_header, odaproto::Header::descriptor());
 
+	MapProto(msg_largemessagestart,    odaproto::LargeMessageStart::descriptor());
+	MapProto(msg_largemessagefragment, odaproto::LargeMessageFragment::descriptor());
+	MapProto(msg_largemessageend,      odaproto::LargeMessageEnd::descriptor());
+
 	MapProto(svc_disconnect, odaproto::svc::Disconnect::descriptor());
 	MapProto(svc_playerinfo, odaproto::svc::PlayerInfo::descriptor());
 	MapProto(svc_moveplayer, odaproto::svc::MovePlayer::descriptor());

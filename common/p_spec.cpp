@@ -1666,7 +1666,7 @@ bool P_CheckKeys (player_t *p, card_t lock, bool remote)
 void OnChangedSwitchTexture (line_t *line, int useAgain);
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction);
-void SV_UpdateMobj(AActor* mo);
+void SV_ArmMobj(AActor* mo);
 
 //
 // EVENTS
@@ -1729,7 +1729,7 @@ void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
 		if (P_JustTeleported(thing))
 		{
-			SV_UpdateMobj(thing);
+			SV_ArmMobj(thing);
 			P_ClearJustTeleported();
 		}
 
@@ -1802,7 +1802,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
 		if (P_JustTeleported(thing))
 		{
-			SV_UpdateMobj(thing);
+			SV_ArmMobj(thing);
 			P_ClearJustTeleported();
 		}
 
@@ -1877,7 +1877,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
 		if (P_JustTeleported(thing))
 		{
-			SV_UpdateMobj(thing);
+			SV_ArmMobj(thing);
 			P_ClearJustTeleported();
 		}
 
@@ -1957,7 +1957,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
 		if (P_JustTeleported(thing))
 		{
-			SV_UpdateMobj(thing);
+			SV_ArmMobj(thing);
 			P_ClearJustTeleported();
 		}
 

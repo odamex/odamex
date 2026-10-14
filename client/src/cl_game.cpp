@@ -1211,6 +1211,8 @@ void G_Ticker (void)
 			// believe we get as a result of this.
 			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
 
+			bool thinkersHaveRun = false;
+
 			if (isClientSideOnly)
 			{
 				if (!consoleplayer().mo)
@@ -1228,13 +1230,13 @@ void G_Ticker (void)
 				}
 
 				CL_SimulateWorld();
-				CL_PredictWorld();
+				thinkersHaveRun = CL_PredictWorld();
 
 				// Replay item pickups if the items arrived now.
 				ClientReplay::getInstance().itemReplay();
 			}
 			P_CheckInterpPause();
-			P_Ticker ();
+			P_Ticker (not thinkersHaveRun);
 			P_BobTicker();
 			ST_Ticker ();
 			AM_Ticker ();
@@ -1739,8 +1741,6 @@ void G_DoLoadGame (void)
 
 	arc >> level.time;
 
-	P_SerializeMusInfo(arc);
-
 	for (i = 0; i < NUM_WORLDVARS; i++)
 	{
 		arc >> ACS_WorldVars[i];
@@ -1842,7 +1842,6 @@ void G_DoSaveGame()
 	P_SerializeHorde(arc);
 
 	arc << level.time;
-	P_SerializeMusInfo(arc);
 
 	for (int i = 0; i < NUM_WORLDVARS; i++)
 	{

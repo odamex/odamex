@@ -81,6 +81,7 @@ EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(idmypos)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(sv_allowcrosshair)
 
 
 static ResourceId crosshair_res_id = ResourceId::INVALID_ID;
@@ -386,6 +387,10 @@ static void HU_DrawCrosshair()
 	if (camera->player && camera->player->spectator)
 		return;
 
+	// servers can disallow
+	if (connected and not netdemo.isInPlayback() and not sv_allowcrosshair)
+		return;
+
 	if (hud_crosshair && Res_CheckResource(crosshair_res_id))
 	{
 		static constexpr byte crosshair_color = 0xB0;
@@ -526,6 +531,8 @@ void HU_Drawer()
 	if (gamestate == GS_LEVEL)
 	{
 		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
+
+		hud::ResetMessageColumn();
 
 		hud::DrawToasts();
 

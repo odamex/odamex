@@ -101,9 +101,8 @@ void SV_SpawnHighPriorityMobj(AActor *mo) {}
 void SV_SpawnMobj(AActor *mobj) {}
 void SV_TouchSpecial(AActor& special, player_t& player) {}
 void SV_UpdateFrags(player_t &player) {}
+void SV_ArmMobj(AActor* mo) {}
 void SV_UpdateMobj(AActor* mo) {}
-void SV_UpdateMobjBestEffort(AActor* mo) {}
-void SV_UpdateMobjReliable(AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 void SV_UpdateMonsterRespawnCount() {}
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound) {};
@@ -163,6 +162,7 @@ void S_SetSfxVolume(float volume) {}
 void S_StartMusic(const char *m_id) {}
 void S_ChangeMusic(std::string musicname, bool looping, int order)  {}
 void S_StopMusic() {}
+void P_SerializeMusic(FArchive& arc) {}
 void A_Ambient(AActor *actor) {}
 void S_ActivateAmbient(AActor *origin, int ambient) {}
 

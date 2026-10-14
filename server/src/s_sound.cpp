@@ -216,6 +216,9 @@ void S_StopMusic()
 {
 }
 
+void P_SerializeMusic(FArchive& arc)
+{
+}
 
 // [RH] ===============================
 //

@@ -30,6 +30,7 @@
 #define MAX_SNDNAME			63
 
 class AActor;
+class FArchive;
 class player_t;
 
 //
@@ -175,6 +176,8 @@ void S_StopMusic();
 void S_PauseMusic();
 void S_ResumeMusic();
 
+void P_SerializeMusic(FArchive& arc);
+
 //
 // Updates music & sounds
 //
@@ -208,7 +211,7 @@ void S_NoiseDebug();
 // The following functions work seamlessly on local clients and networked games.
 
 #if SERVER_APP
-#include "sv_main.h"
+#include "sv_sound.h"
 #endif
 
 inline static void S_NetSound(const AActor* mo, byte channel, const char* name, const byte attenuation)
