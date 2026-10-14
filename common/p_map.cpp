@@ -3778,6 +3778,13 @@ bool PIT_ChangeSector (AActor& thing, const int crushchange, bool& nofit)
 	return true;
 }
 
+/// Invoke the given callable on all things touching the given sector.
+///
+/// The callable must accept a reference to an actor as its first argument.
+/// Any additional arguments to provide to the callable may be given, and
+/// they will be forwarded to the callable as lvalue references.
+/// (Unfortunately rvalue references cannot be forwarded as such due to the
+/// iterative nature of this operation.)
 template <typename Callable, typename... ArgTypes>
 void P_VisitAllTouchingThings(sector_t& sector, Callable callable, ArgTypes&&... argValues)
 {
@@ -3785,7 +3792,7 @@ void P_VisitAllTouchingThings(sector_t& sector, Callable callable, ArgTypes&&...
 	{
 		// Capture the args as lvalue references so that we avoid any rvalue forwards / moves.
 		// We use a lambda to do this.
-		auto callIt = [& callable, & argValues...] (AActor& thing)
+		auto callTheCallable = [& callable, & argValues...] (AActor& thing)
 		{
 			callable(thing, std::forward<ArgTypes>(argValues)...);
 		};
@@ -3800,7 +3807,7 @@ void P_VisitAllTouchingThings(sector_t& sector, Callable callable, ArgTypes&&...
 				{
 					n->visited = true;
 					if (n->m_thing and not (n->m_thing->flags & MF_NOBLOCKMAP))
-						callIt(*n->m_thing);// callable(*n->m_thing, std::forward<decltype(argValues)>(argValues)...);
+						callTheCallable(*n->m_thing);
 					break;
 				}
 		while (n);	// repeat from scratch until all things left are marked valid
@@ -3809,14 +3816,14 @@ void P_VisitAllTouchingThings(sector_t& sector, Callable callable, ArgTypes&&...
 	{
 		// Capture the args as lvalue references so that we avoid any rvalue forwards / moves.
 		// We use a lambda to do this.
-		auto callIt = [& callable, & argValues...] (int x, int y)
+		auto callTheCallable = [& callable, & argValues...] (int x, int y)
 		{
 			P_BlockThingsIterator (x, y, callable, nullptr, std::forward<ArgTypes>(argValues)...);
 		};
 
 		for (int x=sector.blockbox[BOXLEFT] ; x<= sector.blockbox[BOXRIGHT] ; x++)
 			for (int y=sector.blockbox[BOXBOTTOM];y<= sector.blockbox[BOXTOP] ; y++)
-				callIt(x, y);
+				callTheCallable(x, y);
 	}
 }
 
