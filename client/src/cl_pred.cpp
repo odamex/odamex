@@ -306,12 +306,13 @@ bool CL_PredictLocalPlayer(int predtic, int inputTic)
 	const odaproto::clc::PlayerInput& netcmd = localcmds[inputTic % MAXSAVETICS];
 	CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
 
-	if (!predicting)
+	if (not predicting)
 		P_PlayerThink(player);
 	else
 		P_MovePlayer(player);
 
 	player.mo->RunThink();
+
 	return true;
 }
 
@@ -497,6 +498,14 @@ bool CL_PredictWorld()
 			// that the server almost certainly had when it ran the tic for real.
 			predicting = false;
 			DThinker::RunThinkers();
+            for (auto& player : players)
+            {
+                if (player.id != consoleplayer_id and player.mo)
+                {
+                    P_MovePlayer(player);
+                    player.mo->RunThink();
+                }
+            }
 			predicting = true;
 		}
 
@@ -537,6 +546,14 @@ bool CL_PredictWorld()
 	{
 		mobjsHaveBeenPredicted = true;
 		DThinker::RunThinkers();
+            for (auto& player : players)
+            {
+                if (player.id != consoleplayer_id and player.mo)
+                {
+                    P_MovePlayer(player);
+                    player.mo->RunThink();
+                }
+            }
 	}
 
 	if (cl_predictsectors)
