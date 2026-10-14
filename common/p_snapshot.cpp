@@ -1188,6 +1188,8 @@ SectorSnapshot SectorSnapshotManager::getSnapshot(int time) const
 			// restore sector movement sounds
 			predicting = oldpredicting;
 
+			newsnap.setAuthoritative(false);
+
 			return newsnap;
 		}
 	}
