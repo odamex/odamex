@@ -1228,6 +1228,10 @@ void G_Ticker (void)
 
 				CL_SimulateWorld();
 				thinkersHaveRun = CL_PredictWorld();
+				if (not thinkersHaveRun)
+				{
+					CL_SimulatePlayers();
+				}
 
 				// Replay item pickups if the items arrived now.
 				ClientReplay::getInstance().itemReplay();
