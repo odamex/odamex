@@ -2227,6 +2227,64 @@ void P_ValidateMap(const OString& mapname)
 
 } // namespace
 
+
+//
+// P_FitNodeBox
+//
+// Widens box to cover every seg vertex under child, fitting the boxes of the
+// nodes beneath it on the way.
+//
+void P_FitNodeBox(unsigned int child, fixed_t* box)
+{
+	if (child & NF_SUBSECTOR)
+	{
+		const subsector_t& sub = subsectors[child == static_cast<unsigned int>(-1) ? 0 : child & ~NF_SUBSECTOR];
+		for (unsigned int i = 0; i < sub.numlines; i++)
+		{
+			const seg_t& seg = segs[sub.firstline + i];
+			for (const vertex_t* v : { seg.v1, seg.v2 })
+			{
+				box[BOXLEFT] = std::min(box[BOXLEFT], v->x);
+				box[BOXRIGHT] = std::max(box[BOXRIGHT], v->x);
+				box[BOXBOTTOM] = std::min(box[BOXBOTTOM], v->y);
+				box[BOXTOP] = std::max(box[BOXTOP], v->y);
+			}
+		}
+		return;
+	}
+
+	node_t& node = nodes[child];
+	for (int side = 0; side < 2; side++)
+	{
+		P_FitNodeBox(node.children[side], node.bbox[side]);
+
+		box[BOXLEFT] = std::min(box[BOXLEFT], node.bbox[side][BOXLEFT]);
+		box[BOXRIGHT] = std::max(box[BOXRIGHT], node.bbox[side][BOXRIGHT]);
+		box[BOXBOTTOM] = std::min(box[BOXBOTTOM], node.bbox[side][BOXBOTTOM]);
+		box[BOXTOP] = std::max(box[BOXTOP], node.bbox[side][BOXTOP]);
+	}
+}
+
+//
+// P_FitNodeBoundingBoxes
+//
+// Widens every node's child bounding boxes to contain the seg vertices beneath
+// them.
+//
+void P_FitNodeBoundingBoxes()
+{
+	if (numnodes <= 0)
+		return;
+
+	fixed_t root[4];
+	root[BOXTOP] = std::numeric_limits<fixed_t>::min();
+	root[BOXBOTTOM] = std::numeric_limits<fixed_t>::max();
+	root[BOXLEFT] = std::numeric_limits<fixed_t>::max();
+	root[BOXRIGHT] = std::numeric_limits<fixed_t>::min();
+
+	P_FitNodeBox(numnodes - 1, root);
+}
+
 //
 // P_SetupLevel
 //
@@ -2354,10 +2412,15 @@ void P_SetupLevel (const OString& lumpname, int position)
 	                            P_CheckNodeType(nodes_res_id) :
 	                            P_CheckNodeType(ssectors_res_id);
 
+	// Extended and GL nodes store their split vertices in fixed point, already on
+	// their linedefs, where vanilla nodes round them to whole map units.
+	bool extendednodes = false;
+
 	switch (nodetype) {
 		case nodetype_t::XNOD:
 		case nodetype_t::ZNOD:
 			P_LoadExtendedNodes(nodes_res_id, nodetype);
+			extendednodes = true;
 			break;
 
 		case nodetype_t::XGLN:
@@ -2367,6 +2430,7 @@ void P_SetupLevel (const OString& lumpname, int position)
 		case nodetype_t::XGL3:
 		case nodetype_t::ZGL3:
 			P_LoadExtendedNodes(ssectors_res_id, nodetype);
+			extendednodes = true;
 			break;
 
 		case nodetype_t::DEEP:
@@ -2383,9 +2447,14 @@ void P_SetupLevel (const OString& lumpname, int position)
 
 	P_LoadReject(reject_res_id, P_GroupLines());
 
-	// [SL] don't move seg vertices if compatibility is cruical
-	if (!demoplayback)
+	// [SL] don't move seg vertices if compatibility is cruical. Extended nodes
+	// have no slime trails to remove: their split vertices were never rounded off
+	// their linedefs.
+	if (!demoplayback && !extendednodes)
 		P_RemoveSlimeTrails();
+
+	// After the slime trail fix, which moves seg vertices.
+	P_FitNodeBoundingBoxes();
 
 	P_SetupLineSlopes();
 
