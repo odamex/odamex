@@ -1126,6 +1126,8 @@ void G_Ticker (void)
 		}
 	}
 
+	CL_UpdateTicErrors();
+
 	if (netdemo.isRecording())
 		netdemo.writeMessages();
 
@@ -1226,6 +1228,10 @@ void G_Ticker (void)
 
 				CL_SimulateWorld();
 				thinkersHaveRun = CL_PredictWorld();
+				if (not thinkersHaveRun and not netdemo.isPaused())
+				{
+					CL_SimulatePlayers();
+				}
 
 				// Replay item pickups if the items arrived now.
 				ClientReplay::getInstance().itemReplay();

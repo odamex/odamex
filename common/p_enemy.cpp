@@ -2555,7 +2555,14 @@ void A_VileAttack (AActor *actor)
 
 	S_Sound (actor, CHAN_WEAPON, "vile/stop", 1, ATTN_NORM);
 	P_DamageMobj(actor->target, actor, actor, 20, MOD_VILEFIRE);
-	actor->target->momz = 1000*FRACUNIT/actor->target->info->mass;
+
+	if (serverside)
+	{
+		// Impulse aka transferred momentum:   (mass * velocity.  Also calculates as Force * time.)
+		const fixed_t ARCHVILE_BLAST_IMPULSE = 1000 * FRACUNIT;
+
+		actor->target->momz = ARCHVILE_BLAST_IMPULSE / actor->target->info->mass;   // Divide out mass to get velocity.
+	}
 
 	an = actor->angle >> ANGLETOFINESHIFT;
 

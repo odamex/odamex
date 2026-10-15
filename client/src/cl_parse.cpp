@@ -103,7 +103,7 @@ EXTERN_CVAR(sv_showsprees)
 extern std::string digest;
 extern bool forcenetdemosplit;
 extern int last_svgametic;
-extern int last_player_update;
+extern int lastEchoedClientTic;
 extern bool hasReceivedFullUpdate;
 extern bool isReceivingFullUpdate;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
@@ -417,7 +417,6 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 		return;
 
 	p.last_received = gametic;
-	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
 	const int snaptime = ThisMessageServerTic();
@@ -1069,6 +1068,7 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	// reset the world_index (force it to sync)
 	CL_ResyncWorldIndex();
 	::last_svgametic = 0;
+	::lastEchoedClientTic = 0;
 
 	CTF_CheckFlags(consoleplayer());
 
@@ -1462,6 +1462,8 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
 
+		CL_ResetWorldPrediction();
+
 		// Rollback history from time-of-respawn to now is full of the dead state.
 		// Instead of doing complex rollbacks, just wipe history and start fresh.
 		// Any intervening updates to important state will come in subsequent
@@ -1732,7 +1734,8 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 
 	P_ChangeSector(sector, false);
 
-	const SectorSnapshot snap(ThisMessageServerTic(), sector);
+	SectorSnapshot snap(ThisMessageServerTic(), sector);
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1900,6 +1903,7 @@ void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1934,6 +1938,7 @@ void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1966,6 +1971,7 @@ void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1999,6 +2005,7 @@ void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2041,6 +2048,7 @@ void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2072,6 +2080,7 @@ void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2524,21 +2533,15 @@ void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 }
 
 //
-// CL_SaveSvGametic
+// CL_ServerGametic
+// Announces that the server has advanced its gametic.  Please see the schema / protocol
+// file for detailed notes.
 //
-// Receives the server's gametic at the time the packet was sent.  It will be
-// sent back to the server with the next cmd.
-//
-// [SL] 2011-05-11
 void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
-	::last_svgametic = msg->tic();
+	::lastEchoedClientTic = msg->client_tic();
 
 	netgraph.addServerSideMetrics(msg->reliable_messages_in_flight(), msg->throttle());
-
-#ifdef _WORLD_INDEX_DEBUG_
-	PrintFmt(PRINT_HIGH, "Gametic {}, received world index {}\n", gametic, last_svgametic);
-#endif // _WORLD_INDEX_DEBUG_
 }
 
 //
