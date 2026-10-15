@@ -216,6 +216,9 @@ class OdaMessenger
 		/// Returns true if this is the first acknowledgement of the given sequence.  False otherwise.
 		bool Acknowledge(int sequence);
 
+		void SetCriticalSequenceTimeout (int i_timeoutInTics){ m_criticalSequenceTimeoutInTics = i_timeoutInTics; }
+		bool CheckForCriticalTimeout(int i_currentTic);
+
 		/// Return the requested message queue.  Use these queues to Obtain new messages into which to pack
 		/// new outgoing data.
 		MessageQueue&      Reliable() { return m_outgoingReliableQueue; }
@@ -252,7 +255,6 @@ class OdaMessenger
 		}
 		void SetPacketsPerRetransmit    (int i_maxPackets)   { m_maxPacketsPerRetransmission = i_maxPackets; }
 		void SetRetransmitDelay         (int i_delayInTics)  { m_retransmitDelayInTics = i_delayInTics; }
-		void SetCriticalSequenceTimeout (int i_timeoutInTics){ m_criticalSequenceTimeoutInTics = i_timeoutInTics; }
 
 		int GetLastReliableSendSize() const           { return static_cast<int>(m_bytesSentWithReliability); }
 		int GetLastSendSize() const                   { return m_lastSendSize; }
