@@ -1365,6 +1365,7 @@ ItemEquipVal P_GiveSpecialID24(player_t& player, AActor& special)
 			case IEV_EquipStay:
 				return val == IEV_EquipRemove ? val : new_val;
 		}
+		OUtil::unreachable();
 	};
 
 	// TODO: should we be doing the individual WDLStats stuff like this or should we combine it
