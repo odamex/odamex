@@ -283,7 +283,7 @@ void StringTable::prepareIndexes()
 		if (not _stringHash.contains(name))
 		{
 			TableEntry entry = {.string = std::make_pair(false, ""_os), .pass = 0xFF, .index = static_cast<int>(i)};
-			_stringHash.emplace(name, entry);
+			_stringHash.emplace(name, std::move(entry));
 		}
 	}
 }

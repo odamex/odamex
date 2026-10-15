@@ -24,7 +24,9 @@
 
 #pragma once
 
+#include "info.h"
 #include "m_resfile.h"
+#include "m_doomobjcontainer.h"
 
 // Sound equivalences. When a patch tries to change a sound,
 // use these sound names.

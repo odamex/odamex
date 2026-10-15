@@ -405,7 +405,7 @@ void GiveTo(player_t& player, const char* name)
 
 	if (giveall || stricmp(name, "backpack") == 0)
 	{
-		if (!player.backpack)
+		if (not player.backpack)
 		{
 			for (int i = 0; i < NUMAMMO; i++)
 				player.maxammo[i] *= 2;

@@ -1476,7 +1476,7 @@ bool mobjinfo_t::hasWeaponPickup() const
 
 bool mobjinfo_t::isMonster() const
 {
-	return flags & MF_COUNTKILL || flags4 & MF4_ISMONSTER;
+	return flags & MF_COUNTKILL or flags4 & MF4_ISMONSTER;
 }
 
 // [Blair] Since Odamex has more out-of-the-box states,

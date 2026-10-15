@@ -585,7 +585,7 @@ public:
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
 	void ResetFlagsToDefault();
 
-	[[nodiscard]] OUtil::SafeBool IsMonster() const { return flags & MF_COUNTKILL || flags4 & MF4_ISMONSTER; }
+	[[nodiscard]] OUtil::SafeBool IsMonster() const { return flags & MF_COUNTKILL or flags4 & MF4_ISMONSTER; }
 	[[nodiscard]] OUtil::SafeBool IsFriendly() const { return flags & MF_FRIEND; }
 	void SetFriendly(OUtil::SafeBool isFriendly, const AActor* owner);
 	void UpdateActorLists();

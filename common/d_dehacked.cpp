@@ -1305,7 +1305,7 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 						}
 					}
 
-					if (!found)
+					if (not found)
 					{
 						DPrintFmt("Unknown bit mnemonic {}\n", strval);
 					}
@@ -1508,7 +1508,7 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 						}
 					}
 
-					if (!found)
+					if (not found)
 					{
 						DPrintFmt("Unknown bit mnemonic {}\n", strval);
 					}

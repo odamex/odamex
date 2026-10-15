@@ -3730,9 +3730,9 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	// Filter mapthings based on the gamemode
 	MapThingFlags spawn_mask;
-	if (!multiplayer)
+	if (not multiplayer)
 	{
-		if (g_thingfilter == -1 || G_GetCurrentSkill().spawn_multi_coop_only)
+		if (g_thingfilter == -1 or G_GetCurrentSkill().spawn_multi_coop_only)
 			spawn_mask = MTF_COOPERATIVE;
 		else if (G_GetCurrentSkill().spawn_multi)
 			spawn_mask = MTF_SINGLE | MTF_COOPERATIVE;

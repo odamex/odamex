@@ -29,6 +29,8 @@
 #include <io.h>
 #endif
 
+#include "fmt/format.h"
+
 #include "d_ticcmd.h"
 #include "d_event.h"
 

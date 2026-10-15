@@ -36,6 +36,7 @@
 #include "i_system.h"
 #include "m_stacktrace.h"
 
+#include <algorithm>
 #include <memory>
 #include <span>
 #include <functional>
@@ -212,13 +213,13 @@ public:
 	{
 		std::vector<ObjType*> temp{};
 		temp.reserve(m_inordertable.size());
-		std::transform(m_inordertable.begin(), m_inordertable.end(), std::back_inserter(temp), [](const auto& p) { return p.get(); });
-		std::sort(temp.begin(), temp.end(), [&](const ObjType* lhs, const ObjType* rhs){ return sorter(*lhs, *rhs); });
+		std::ranges::transform(m_inordertable, std::back_inserter(temp), [](const auto& p) { return p.get(); });
+		std::ranges::sort(temp, [&](const ObjType* lhs, const ObjType* rhs){ return sorter(*lhs, *rhs); });
 		m_lookuptable.clear();
 		for (ObjType* p : temp)
 		{
 			const IdxType index = indexgetter(*p);
-			if constexpr (std::is_same_v<ObjType, mobjinfo_t> || std::is_same_v<ObjType, mobjinfo_t*>)
+			if constexpr (std::is_same_v<ObjType, mobjinfo_t> or std::is_same_v<ObjType, mobjinfo_t*>)
 			{
 				if (m_lookuptable.find(index) == m_lookuptable.end())
 					m_lookuptable[index] = p;

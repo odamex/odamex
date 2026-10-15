@@ -279,7 +279,7 @@ bool P_Thing_Projectile (int tid, int type, angle_t angle,
 			if (gravity)
 			{
 				mobj->flags &= ~MF_NOGRAVITY;
-				if (!(mobj->flags & MF_COUNTKILL)) // should this be countkill or ismonster?
+				if (not (mobj->flags & MF_COUNTKILL)) // should this be countkill or ismonster?
 					mobj->flags2 |= MF2_LOGRAV;
 			}
 			else

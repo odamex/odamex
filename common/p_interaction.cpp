@@ -843,7 +843,7 @@ void P_GiveCarePack(player_t& player)
 	{
 		player.armorpoints += 10;
 		player.armorpoints = std::min(player.armorpoints, ::deh.MaxArmor);
-		if (!player.armortype)
+		if (not player.armortype)
 		{
 			player.armortype = ::deh.GreenAC;
 		}
@@ -928,7 +928,7 @@ ItemEquipVal P_GiveSpecialClassic(player_t& player, AActor& special)
 		case SPR_BON2:
 			player.armorpoints += static_cast<int>(G_GetCurrentSkill().armor_factor); // can go over 100%
 			player.armorpoints = std::min(player.armorpoints, deh.MaxArmor);
-			if (!player.armortype)
+			if (not player.armortype)
 			{
 				player.armortype = deh.GreenAC;
 			}
@@ -1163,7 +1163,7 @@ ItemEquipVal P_GiveSpecialClassic(player_t& player, AActor& special)
 			break;
 
 		case SPR_BPAK:
-			if (!player.backpack)
+			if (not player.backpack)
 			{
 				for (int i = 0; i < NUMAMMO; i++)
 				{
@@ -1457,7 +1457,7 @@ ItemEquipVal P_GiveSpecialID24(player_t& player, AActor& special)
 			break;
 		case Backpack:
 			val = updateVal(IEV_EquipRemove);
-			if (!player.backpack)
+			if (not player.backpack)
 			{
 				for (int i = 0; i < NUMAMMO; i++)
 				{
@@ -1498,7 +1498,7 @@ ItemEquipVal P_GiveSpecialID24(player_t& player, AActor& special)
 			val = updateVal(IEV_EquipRemove);
 			player.armorpoints += static_cast<int>(G_GetCurrentSkill().armor_factor); // can go over 100%
 			player.armorpoints = std::min(player.armorpoints, deh.MaxArmor);
-			if (!player.armortype)
+			if (not player.armortype)
 			{
 				player.armortype = deh.GreenAC;
 			}
@@ -1550,7 +1550,7 @@ ItemEquipVal P_GiveSpecialID24(player_t& player, AActor& special)
 
 ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 {
-	if (!player.mo)
+	if (not player.mo)
 		return IEV_NotEquipped;
 
 	ItemEquipVal val;
@@ -1572,7 +1572,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 	// if (val == IEV_EquipRemove and (sv_weaponstay == 2 or not (multiplayer and special.info->hasWeaponPick())))
 	if (val == IEV_EquipRemove and not (multiplayer and special.info->hasWeaponPickup()))
 	{
-		if ((!multiplayer and (special.flags3 & MF3_SPECSTAYSSINGLE)) or
+		if ((not multiplayer and (special.flags3 & MF3_SPECSTAYSSINGLE)) or
 			(multiplayer and G_IsCoopGame() and (special.flags3 & MF3_SPECSTAYSCOOP)) or
 			(multiplayer and G_IsPvPGame() and (special.flags3 & MF3_SPECSTAYSDM)))
 		{
