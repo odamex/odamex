@@ -129,18 +129,18 @@ constexpr std::array id24states = std::to_array<state_t>({
 	{ .statenum = S_HUMAN_BBQ2A, .sprite = SPR_HBB2, .frame = 1_bright, .tics = 5, .nextstate = S_HUMAN_BBQ2B },
 	{ .statenum = S_HUMAN_BBQ2B, .sprite = SPR_HBB2, .frame = 2_bright, .tics = 5, .nextstate = S_HUMAN_BBQ2  },
 	// hanging bodies
-	{ .statenum = S_ID24_8,   .sprite = SPR_GOR6 },
-	{ .statenum = S_ID24_9,   .sprite = SPR_GOR7 },
-	{ .statenum = S_ID24_10,  .sprite = SPR_GOR8 },
-	{ .statenum = S_ID24_11,  .sprite = SPR_GORA },
-	{ .statenum = S_ID24_12,  .sprite = SPR_HDB7 },
-	{ .statenum = S_ID24_13,  .sprite = SPR_HDB8 },
+	{ .statenum = S_HANGING_VICTIM_BOTH_LEGS,  .sprite = SPR_GOR6 },
+	{ .statenum = S_HANGING_VICTIM_CRUCIFIED,  .sprite = SPR_GOR7 },
+	{ .statenum = S_HANGING_VICTIM_ARMS_BOUND, .sprite = SPR_GOR8 },
+	{ .statenum = S_HANGING_BARON_OF_HELL,     .sprite = SPR_GORA },
+	{ .statenum = S_HANGING_VICTIM_CHAINED,    .sprite = SPR_HDB7 },
+	{ .statenum = S_HANGING_TORSO_CHAINED,     .sprite = SPR_HDB8 },
 	// skewered heads
-	{ .statenum = S_ID24_14,  .sprite = SPR_POLA },
+	{ .statenum = S_SKULL_POLE_TRIO, .sprite = SPR_POLA },
 	// viscera puddle
-	{ .statenum = S_ID24_15,  .sprite = SPR_POB6 },
+	{ .statenum = S_SKULL_GIBS, .sprite = SPR_POB6 },
 	// gray stalagmite
-	{ .statenum = S_STALAG2,  .sprite = SPR_SMT2 },
+	{ .statenum = S_STALAG2, .sprite = SPR_SMT2 },
 	// bush 1
 	{ .statenum = S_BUSH_SHORT,          .sprite = SPR_BSH1, .frame = 0 },
 	{ .statenum = S_BUSH_SHORT_BURNED_1, .sprite = SPR_BSH1, .frame = 1 },
@@ -980,7 +980,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_VICTIM_BOTH_LEGS,
 		.doomednum  = -28660,
-		.spawnstate = S_ID24_8,
+		.spawnstate = S_HANGING_VICTIM_BOTH_LEGS,
 		.radius     = 16_fx,
 		.height     = 80_fx,
 		.cdheight   = 80_fx,
@@ -990,7 +990,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_VICTIM_BOTH_LEGS_BLOCKING,
 		.doomednum  = -28659,
-		.spawnstate = S_ID24_8,
+		.spawnstate = S_HANGING_VICTIM_BOTH_LEGS,
 		.radius     = 16_fx,
 		.height     = 80_fx,
 		.cdheight   = 80_fx,
@@ -1000,7 +1000,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_VICTIM_CRUCIFIED,
 		.doomednum  = -28658,
-		.spawnstate = S_ID24_9,
+		.spawnstate = S_HANGING_VICTIM_CRUCIFIED,
 		.radius     = 16_fx,
 		.height     = 64_fx,
 		.cdheight   = 64_fx,
@@ -1010,7 +1010,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_VICTIM_CRUCIFIED_BLOCKING,
 		.doomednum  = -28657,
-		.spawnstate = S_ID24_9,
+		.spawnstate = S_HANGING_VICTIM_CRUCIFIED,
 		.radius     = 16_fx,
 		.height     = 64_fx,
 		.cdheight   = 64_fx,
@@ -1020,7 +1020,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_VICTIM_ARMS_BOUND,
 		.doomednum  = -28656,
-		.spawnstate = S_ID24_10,
+		.spawnstate = S_HANGING_VICTIM_ARMS_BOUND,
 		.radius     = 16_fx,
 		.height     = 72_fx,
 		.cdheight   = 72_fx,
@@ -1030,7 +1030,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_VICTIM_ARMS_BOUND_BLOCKING,
 		.doomednum  = -28655,
-		.spawnstate = S_ID24_10,
+		.spawnstate = S_HANGING_VICTIM_ARMS_BOUND,
 		.radius     = 16_fx,
 		.height     = 72_fx,
 		.cdheight   = 72_fx,
@@ -1040,7 +1040,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_BARON_OF_HELL,
 		.doomednum  = -28654,
-		.spawnstate = S_ID24_11,
+		.spawnstate = S_HANGING_BARON_OF_HELL,
 		.radius     = 16_fx,
 		.height     = 80_fx,
 		.cdheight   = 80_fx,
@@ -1050,7 +1050,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_BARON_OF_HELL_BLOCKING,
 		.doomednum  = -28653,
-		.spawnstate = S_ID24_11,
+		.spawnstate = S_HANGING_BARON_OF_HELL,
 		.radius     = 16_fx,
 		.height     = 80_fx,
 		.cdheight   = 80_fx,
@@ -1060,7 +1060,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_VICTIM_CHAINED,
 		.doomednum  = -28652,
-		.spawnstate = S_ID24_12,
+		.spawnstate = S_HANGING_VICTIM_CHAINED,
 		.radius     = 16_fx,
 		.height     = 84_fx,
 		.cdheight   = 84_fx,
@@ -1070,7 +1070,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_VICTIM_CHAINED_BLOCKING,
 		.doomednum  = -28651,
-		.spawnstate = S_ID24_12,
+		.spawnstate = S_HANGING_VICTIM_CHAINED,
 		.radius     = 16_fx,
 		.height     = 84_fx,
 		.cdheight   = 84_fx,
@@ -1080,7 +1080,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_TORSO_CHAINED,
 		.doomednum  = -28650,
-		.spawnstate = S_ID24_13,
+		.spawnstate = S_HANGING_TORSO_CHAINED,
 		.radius     = 16_fx,
 		.height     = 52_fx,
 		.cdheight   = 52_fx,
@@ -1090,7 +1090,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_HANGING_TORSO_CHAINED_BLOCKING,
 		.doomednum  = -28649,
-		.spawnstate = S_ID24_13,
+		.spawnstate = S_HANGING_TORSO_CHAINED,
 		.radius     = 16_fx,
 		.height     = 52_fx,
 		.cdheight   = 52_fx,
@@ -1100,7 +1100,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_SKULL_POLE_TRIO,
 		.doomednum  = -28648,
-		.spawnstate = S_ID24_14,
+		.spawnstate = S_SKULL_POLE_TRIO,
 		.radius     = 16_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1110,7 +1110,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_SKULL_GIBS,
 		.doomednum  = -28647,
-		.spawnstate = S_ID24_15,
+		.spawnstate = S_SKULL_GIBS,
 		.radius     = 16_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
