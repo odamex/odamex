@@ -44,6 +44,7 @@
 #include "i_icon.h"
 
 #include "c_dispatch.h"
+#include "r_context.h"
 
 // [Russell] - Just for windows, display the icon in the system menu and alt-tab display
 #include "win32inc.h"
@@ -211,7 +212,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 		mWindow(window),
 		mSDLRenderer(nullptr), mSDLTexture(nullptr),
 		mSurface(nullptr), m8bppTo32BppSurface(nullptr),
-        mWidth(width), mHeight(height)
+        mWidth(width), mHeight(height), mVsync(vsync)
 {
 	assert(mWindow != nullptr);
     assert(mWindow->mSDLWindow != nullptr);
@@ -239,6 +240,11 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 	mSDLRenderer = createRenderer(vsync);
 	if (mSDLRenderer == nullptr)
 		I_FatalError("I_InitVideo: unable to create SDL2 renderer: {}\n", SDL_GetError());
+
+	// Trust what the renderer reports, not what was asked for.
+	SDL_RendererInfo renderer_info;
+	if (SDL_GetRendererInfo(mSDLRenderer, &renderer_info) == 0)
+		mVsync = (renderer_info.flags & SDL_RENDERER_PRESENTVSYNC) != 0;
 
 	SDL_RenderSetLogicalSize(mSDLRenderer, mWidth, mHeight);
 
@@ -326,12 +332,77 @@ void ISDL20TextureWindowSurfaceManager::startRefresh()
 
 
 //
+// ISDL20TextureWindowSurfaceManager::presentDue
+//
+// This function throttles GPU frame uploads to only what the display can
+// actually handle. This way, we don't max out the PCIe bus and stall the GPU
+// for frames we can't actually display.
+// 
+// Without vsync, SDL presents a frame with DXGI_PRESENT_DO_NOT_WAIT and tearing
+// is disallowed.
+//
+// The display takes at most one frame per refresh -- every other
+// present fails with DXGI_ERROR_WAS_STILL_DRAWING and SDL drops the frame
+// without a word.
+//
+// Its texture upload and draw have already been queued, though, so an uncapped
+// framerate makes the GPU upload hundreds of frames a second that are never seen
+// -- each frame takes about 11 MB of PCIe traffic each at 1080p, enough to fill
+// a PCIe 3.0 x16 link. That starves everything else using the GPU, and present
+// stalls for tens of milliseconds when the queue backs up, causing framerate issues
+// as well as issues with other background windows that use the GPU.
+//
+// So frames are handed over only as fast as the display can use them. A few
+// per refresh keep the newest frame close to the vblank; the rest are rendered
+// but never uploaded.
+//
+// How this interacts with the mouse, which gets input every display frame,
+// is unknown and needs more testing with all types of maps, slow and fast.
+//
+// TODO: When we implement SDL3, create the swap chain with DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING
+// and present with DXGI_PRESENT_ALLOW_TEARING when vsync is off. Every present then
+// reaches the screen, so none are wasted, and this throttle can be removed.
+//
+bool ISDL20TextureWindowSurfaceManager::presentDue()
+{
+	static constexpr int PRESENTS_PER_REFRESH = 2;
+
+	if (mVsync)
+		return true;
+
+	int refresh = 0;
+	SDL_DisplayMode mode;
+	const int display = SDL_GetWindowDisplayIndex(mWindow->mSDLWindow);
+	if (display >= 0 && SDL_GetCurrentDisplayMode(display, &mode) == 0)
+		refresh = mode.refresh_rate;
+	if (refresh <= 0)
+		refresh = 60;
+
+	const auto interval = std::chrono::nanoseconds(1000000000LL / (refresh * PRESENTS_PER_REFRESH));
+	const auto now = std::chrono::steady_clock::now();
+
+	if (now < mNextPresent)
+		return false;
+
+	// Keep the cadence through slightly late frames, but start over after a stall
+	// rather than catching up with a burst.
+	mNextPresent += interval;
+	if (mNextPresent < now)
+		mNextPresent = now + interval;
+
+	return true;
+}
+
+
+//
 // ISDL20TextureWindowSurfaceManager::finishRefresh
 //
 
 void ISDL20TextureWindowSurfaceManager::finishRefresh()
 {
-  if (mSurface->getBitsPerPixel() == 8)
+	if (!presentDue())
+		return;
+
 	// Write the frame straight into the texture, converting 8bpp on the way.
 	// One thread can only fill the mapped texture at a fraction of memory
 	// bandwidth, so the render workers -- idle until the next frame -- split it
@@ -365,15 +436,15 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 		SDL_UnlockTexture(mSDLTexture);
 	}
 	else if (mSurface->getBitsPerPixel() == 8)
-  {
-    m8bppTo32BppSurface->blit(mSurface, 0, 0, mSurface->getWidth(), mSurface->getHeight(),
-            0, 0, m8bppTo32BppSurface->getWidth(), m8bppTo32BppSurface->getHeight());
-    SDL_UpdateTexture(mSDLTexture, NULL, m8bppTo32BppSurface->getBuffer(), m8bppTo32BppSurface->getPitch());
-  }
-  else
-  {
-    SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
-  }
+	{
+		m8bppTo32BppSurface->blit(mSurface, 0, 0, mSurface->getWidth(), mSurface->getHeight(),
+				0, 0, m8bppTo32BppSurface->getWidth(), m8bppTo32BppSurface->getHeight());
+		SDL_UpdateTexture(mSDLTexture, NULL, m8bppTo32BppSurface->getBuffer(), m8bppTo32BppSurface->getPitch());
+	}
+	else
+	{
+		SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
+	}
 
 	// Use GPU to rotate the texture 90 degrees and flip it vertically.
 	const SDL_Rect dest = {

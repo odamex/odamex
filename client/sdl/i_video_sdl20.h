@@ -26,6 +26,8 @@
 #include "i_sdl.h"
 #include "i_video.h"
 
+#include <chrono>
+
 #ifdef SDL20
 
 class ISDL20Window;
@@ -113,7 +115,11 @@ private:
 
 	PixelFormat				mFormat;
 
+	bool					mVsync;
+	std::chrono::steady_clock::time_point mNextPresent;
+
 	SDL_Renderer* createRenderer(bool vsync) const;
+	bool presentDue();
 };
 
 
