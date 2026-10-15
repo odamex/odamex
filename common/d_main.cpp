@@ -267,7 +267,7 @@ void D_InitializeDoomObjectTables()
 	states.clear();
 	states.insert(getStates(), S_NULL);
 	states.insert(getOdaStates(), S_GIB0);
-	states.insert(getID24States(), S_ID24_1);
+	states.insert(getID24States(), S_CORPSE_PILE);
 	// Initialize mobjinfo
 	mobjinfo.clear();
 	mobjinfo.insert(getMobjinfo(), MT_PLAYER);
