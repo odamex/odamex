@@ -265,17 +265,17 @@ void D_InitializeDoomObjectTables()
 	InitItems();
 	// Initialize states
 	states.clear();
-	states.insert({boomstates, ::NUMSTATES}, S_NULL);
+	states.insert(getStates(), S_NULL);
 	states.insert(getOdaStates(), S_GIB0);
 	states.insert(getID24States(), S_ID24_1);
 	// Initialize mobjinfo
 	mobjinfo.clear();
-	mobjinfo.insert({doom_mobjinfo, ::NUMMOBJTYPES}, MT_PLAYER);
+	mobjinfo.insert(getMobjinfo(), MT_PLAYER);
 	mobjinfo.insert(getOdaMobjinfo(), MT_GIB0);
 	mobjinfo.insert(getID24Mobjinfo(), MT_GHOUL);
 	// Initialize sprnames
 	sprnames.clear();
-	sprnames.insert({doom_sprnames, ::NUMSPRITES}, SPR_TROO);
+	sprnames.insert(getSprNames(), SPR_TROO);
 	sprnames.insert(getOdaSprNames(), SPR_GIB0);
 	sprnames.insert(getID24SprNames(), SPR_BSH1);
 	// Initialize soundmap

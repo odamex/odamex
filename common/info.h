@@ -312,7 +312,7 @@ struct spriteinfo_t
 	const char*			sprite;
 };
 
-extern const char* doom_sprnames[];
+std::span<const char* const> getSprNames();
 inline DoomObjectContainer<std::string> sprnames(::NUMSPRITES); // spritenum_t
 
 inline auto format_as(spritenum_t eSpriteNum)
@@ -1966,7 +1966,7 @@ struct state_t
 	*/
 };
 
-extern state_t boomstates[];
+std::span<const state_t> getStates();
 inline DoomObjectContainer<state_t> states(::NUMSTATES); // statenum_t
 
 inline FArchive &operator<< (FArchive &arc, const state_t *state)
@@ -2481,8 +2481,8 @@ inline auto format_as(const mobjinfo_t& info)
 	);
 }
 
+std::span<const mobjinfo_t> getMobjinfo();
 // [CMB] new types and function to allocate mobjinfo for dsdhacked
-extern mobjinfo_t doom_mobjinfo[];
 inline DoomObjectContainer<mobjinfo_t> mobjinfo(::NUMMOBJTYPES); // mobjtype_t
 // [CMB] spawn map per id24 - the pointer is to the mobjinfo table
 inline DoomObjectContainer<mobjinfo_t*> spawn_map; // int
