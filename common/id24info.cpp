@@ -780,7 +780,6 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 		.splash_group     = SG_TYRANT,
 		.flags3           = MF3_NORADIUSDMG|MF3_HIGHERMPROB|MF3_RANGEHALF|MF3_FULLVOLSOUNDS|MF3_E2M8BOSS|MF3_E4M6BOSS,
 		.display_name     = "$ID24_CC_TYRANT",
-		.flags4           = MF4_ISMONSTER,
 	},
 	{
 		.type             = MT_TYRANT_BOSS_1,
@@ -811,7 +810,6 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 		.display_name     = "$ID24_CC_TYRANT",
 		.minrespawntics   = 60 * TICRATE,
 		.respawndice      = 64,
-		.flags4           = MF4_ISMONSTER,
 	},
 	{
 		.type             = MT_TYRANT_BOSS_2,
@@ -842,7 +840,6 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 		.display_name     = "$ID24_CC_TYRANT",
 		.minrespawntics   = 60 * TICRATE,
 		.respawndice      = 64,
-		.flags4           = MF4_ISMONSTER,
 	},
 	{
 		.type       = MT_INCINERATOR_FLAME,
