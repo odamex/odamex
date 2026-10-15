@@ -160,7 +160,7 @@ void A_BetaSkullAttack(AActor*); // killough 10/98: beta lost souls attacked dif
 void A_Ambient(AActor*);		// [RH] Play ambient sound
 void A_Gibify(AActor*); // denis - squash thing
 
-const std::array<state_t, ::NUMSTATES> boomstates = {
+const std::array<state_t, ::NUMSTATES> boomstates = {{
 	{ .statenum = S_NULL,        .sprite = SPR_TROO },
 	{ .statenum = S_LIGHTDONE,   .sprite = SPR_SHTG, .frame = 4, .tics = 0, .action = A_Light0 },
 	// fist
@@ -1435,7 +1435,7 @@ const std::array<state_t, ::NUMSTATES> boomstates = {
 
 	// killough 10/98: mushroom effect
 	{ .statenum = S_MUSHROOM, .sprite = SPR_MISL, .frame = 1_bright, .tics = 8, .action = A_Mushroom, .nextstate = S_EXPLODE2 },
-};
+}};
 
 std::string mobjinfo_t::getDisplayName() const
 {
@@ -1485,7 +1485,7 @@ bool mobjinfo_t::isMonster() const
 // [CMB] odamex objects are now handled separately
 // this table *is* the constants for those numbers
 // NOLINTBEGIN(readability-magic-numbers)
-const std::array<mobjinfo_t, ::NUMMOBJTYPES> doom_mobjinfo = {
+const std::array<mobjinfo_t, ::NUMMOBJTYPES> doom_mobjinfo = {{
 
 	{ // MT_PLAYER
 	.type             = MT_PLAYER,
@@ -4034,7 +4034,7 @@ const std::array<mobjinfo_t, ::NUMMOBJTYPES> doom_mobjinfo = {
 	{.type = MT_EXTRA97, .spawnstate = S_TNT1, .name = "MT_EXTRA97"},
 	{.type = MT_EXTRA98, .spawnstate = S_TNT1, .name = "MT_EXTRA98"},
 	{.type = MT_EXTRA99, .spawnstate = S_TNT1, .name = "MT_EXTRA99"},
-};
+}};
 // NOLINTEND(readability-magic-numbers)
 
 std::span<const mobjinfo_t> getMobjinfo() {
