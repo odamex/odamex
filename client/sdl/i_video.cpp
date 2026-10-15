@@ -44,6 +44,7 @@
 #include "i_input.h"
 #include "m_fileio.h"
 
+#include "r_intrin.h"
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 #include "cmdlib.h"
@@ -477,6 +478,93 @@ static void BlitStoredLines(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 		source += srcpitchpixels;
 	}
 }
+
+#ifdef __SSE2__
+
+//
+// StreamStoredLines
+//
+// An SSE2-optimized version of BlitStoredLines that uses
+// streaming stores to write to a 16-byte aligned destination buffer.
+//
+template <typename SOURCE_PIXEL_T>
+void StreamStoredLines(argb_t* dest, const SOURCE_PIXEL_T* source,
+          int destpitchpixels, int srcpitchpixels,
+          int line_length, int line_count, const argb_t* palette)
+{
+	for (int line = 0; line < line_count; line++)
+	{
+		__m128i* out = reinterpret_cast<__m128i*>(dest);
+		int i = 0;
+
+		if constexpr (sizeof(SOURCE_PIXEL_T) == sizeof(argb_t))
+		{
+			for (; i + 4 <= line_length; i += 4)
+				_mm_stream_si128(out++, _mm_loadu_si128(reinterpret_cast<const __m128i*>(source + i)));
+		}
+		else
+		{
+			for (; i + 4 <= line_length; i += 4)
+				_mm_stream_si128(out++, _mm_setr_epi32(palette[source[i]], palette[source[i + 1]],
+				                                       palette[source[i + 2]], palette[source[i + 3]]));
+		}
+
+		for (; i < line_length; i++)
+			dest[i] = ConvertPixel<SOURCE_PIXEL_T, argb_t>(source[i], palette);
+
+		dest += destpitchpixels;
+		source += srcpitchpixels;
+	}
+
+	// Drain the stores after we finish, very important for multithreaded contexts
+	// as the GPU may upload stale data without it.
+	_mm_sfence();
+}
+
+#endif
+
+
+//
+// IWindowSurface::copyLinesTo32
+//
+// Copies stored lines first to first + count - 1 to 32bpp memory outside any
+// surface, converting through the palette if this surface is 8bpp.
+//
+void IWindowSurface::copyLinesTo32(void* dest, int destpitch, int first, int count) const
+{
+	argb_t* const out = reinterpret_cast<argb_t*>(dest);
+	const int destpitchpixels = destpitch / static_cast<int>(sizeof(argb_t));
+	const int line_length = getHeight();
+
+#ifdef __SSE2__
+	if ((reinterpret_cast<uintptr_t>(dest) & 15) == 0 && (destpitch & 15) == 0)
+	{
+		if (getBitsPerPixel() == 8)
+		{
+			const palindex_t* source = static_cast<const palindex_t*>(getBuffer()) + first * getPitchInPixels();
+			StreamStoredLines(out, source, destpitchpixels, getPitchInPixels(), line_length, count, getPalette());
+		}
+		else
+		{
+			const argb_t* source = reinterpret_cast<const argb_t*>(getBuffer()) + first * getPitchInPixels();
+			StreamStoredLines(out, source, destpitchpixels, getPitchInPixels(), line_length, count, getPalette());
+		}
+		return;
+	}
+#endif
+
+	if (getBitsPerPixel() == 8)
+	{
+		const palindex_t* source = static_cast<const palindex_t*>(getBuffer()) + first * getPitchInPixels();
+		BlitStoredLines(out, source, destpitchpixels, getPitchInPixels(), line_length, count, getPalette());
+	}
+	else
+	{
+		const argb_t* source = reinterpret_cast<const argb_t*>(getBuffer()) + first * getPitchInPixels();
+		BlitStoredLines(out, source, destpitchpixels, getPitchInPixels(), line_length, count, getPalette());
+	}
+}
+
 
 //
 // IWindowSurface::blit

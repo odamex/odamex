@@ -332,6 +332,39 @@ void ISDL20TextureWindowSurfaceManager::startRefresh()
 void ISDL20TextureWindowSurfaceManager::finishRefresh()
 {
   if (mSurface->getBitsPerPixel() == 8)
+	// Write the frame straight into the texture, converting 8bpp on the way.
+	// One thread can only fill the mapped texture at a fraction of memory
+	// bandwidth, so the render workers -- idle until the next frame -- split it
+	// a range of stored lines each.
+	//
+	// Only a few of them, though: the copy saturates memory bandwidth at four
+	// to six threads (at least on this machine), and more just stall on it.
+	// Every slice is still handed the job, as running fewer would shrink the
+	// pool and regrow it next frame.
+	static constexpr int MAX_COPY_THREADS = 6;
+
+	void* pixels;
+	int pitch;
+	if (SDL_LockTexture(mSDLTexture, NULL, &pixels, &pitch) == 0)
+	{
+		const int lines = mSurface->getWidth();
+		const int nslices = R_ActiveSlices();
+		const int ncopy = std::min(nslices, MAX_COPY_THREADS);
+
+		R_RunSlices(nslices, [&](int i)
+		{
+			if (i >= ncopy)
+				return;
+
+			const int first = lines * i / ncopy;
+			const int last = lines * (i + 1) / ncopy;
+			mSurface->copyLinesTo32(static_cast<uint8_t*>(pixels) + static_cast<size_t>(first) * pitch,
+			                        pitch, first, last - first);
+		});
+
+		SDL_UnlockTexture(mSDLTexture);
+	}
+	else if (mSurface->getBitsPerPixel() == 8)
   {
     m8bppTo32BppSurface->blit(mSurface, 0, 0, mSurface->getWidth(), mSurface->getHeight(),
             0, 0, m8bppTo32BppSurface->getWidth(), m8bppTo32BppSurface->getHeight());

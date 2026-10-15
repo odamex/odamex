@@ -324,6 +324,8 @@ public:
 	void blitcrop(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth);
 
+	void copyLinesTo32(void* dest, int destpitch, int first, int count) const;
+
 	void clear();
 
 	inline void lock()
