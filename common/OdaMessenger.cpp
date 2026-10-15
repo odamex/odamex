@@ -307,7 +307,7 @@ bool OdaMessenger::CheckForCriticalTimeout(int i_currentTic)
 {
 	if (m_criticalSequenceTimeoutInTics > 0)
 	{
-		if (SequenceQueueEntryType* oldestOutgoingUnackedEntry = m_sender.IterateUnackedPackets().Next())
+		if (const SequenceQueueEntryType* oldestOutgoingUnackedEntry = m_sender.IterateUnackedPackets().Next())
 		{
 			if (i_currentTic > oldestOutgoingUnackedEntry->header.originatorTic + m_criticalSequenceTimeoutInTics)
 			{

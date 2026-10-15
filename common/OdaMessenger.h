@@ -45,10 +45,14 @@ class OdaMessenger
 
 	public:
 
-		// With theoretical defaults:
+		// With theoretical defaults for standard real-time gameplay:
 		//      800 KBps * 5 sec = 4000 KB backed-up retransmits max
 		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
 		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
+
+		// Extended timeout for messenger flushing.  Ideal for lengthy operations that call for
+		// flushing the messenger, such as map loading.
+		constexpr static int FLUSH_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  65 * TICRATE;   // about a minute.
 
 		explicit OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>& i_poolPtr)
 			: m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}

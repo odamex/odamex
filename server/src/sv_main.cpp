@@ -3876,8 +3876,8 @@ void SV_WriteCommands(void)
 		{
 			if (player.client.messenger->GetPendingAckCount())
 			{
-				// Flushing clients get about a minute to drain down.
-				player.client.messenger->SetCriticalSequenceTimeout(65 * TICRATE);
+				// Flushing clients get a longer period of time before they timeout.
+				player.client.messenger->SetCriticalSequenceTimeout(OdaMessenger::FLUSH_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS);
 				if (player.client.messenger->CheckForCriticalTimeout(gametic))
 				{
 					PrintFmt(PRINT_WARNING, "Client at {} timed out during sync\n", NET_AdrToString(player.client.address));
