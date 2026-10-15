@@ -142,25 +142,25 @@ constexpr std::array id24states = std::to_array<state_t>({
 	// gray stalagmite
 	{ .statenum = S_STALAG2,  .sprite = SPR_SMT2 },
 	// bush 1
-	{ .statenum = S_ID24_17,  .sprite = SPR_BSH1, .frame = 0 },
-	{ .statenum = S_ID24_18,  .sprite = SPR_BSH1, .frame = 1 },
-	{ .statenum = S_ID24_19,  .sprite = SPR_BSH1, .frame = 2 },
+	{ .statenum = S_BUSH_SHORT,          .sprite = SPR_BSH1, .frame = 0 },
+	{ .statenum = S_BUSH_SHORT_BURNED_1, .sprite = SPR_BSH1, .frame = 1 },
+	{ .statenum = S_BUSH_SHORT_BURNED_2, .sprite = SPR_BSH1, .frame = 2 },
 	// bush 2
-	{ .statenum = S_ID24_20,  .sprite = SPR_BSH2, .frame = 0 },
-	{ .statenum = S_ID24_21,  .sprite = SPR_BSH2, .frame = 1 },
-	{ .statenum = S_ID24_22,  .sprite = SPR_BSH2, .frame = 2 },
+	{ .statenum = S_BUSH_TALL,          .sprite = SPR_BSH2, .frame = 0 },
+	{ .statenum = S_BUSH_TALL_BURNED_1, .sprite = SPR_BSH2, .frame = 1 },
+	{ .statenum = S_BUSH_TALL_BURNED_2, .sprite = SPR_BSH2, .frame = 2 },
 	// rock column
-	{ .statenum = S_ID24_23,  .sprite = SPR_STMI },
+	{ .statenum = S_ROCK_COLUMN, .sprite = SPR_STMI },
 	// stalagmite
-	{ .statenum = S_ID24_24,  .sprite = SPR_STG1 },
-	{ .statenum = S_ID24_25,  .sprite = SPR_STG2 },
-	{ .statenum = S_ID24_26,  .sprite = SPR_STG3 },
+	{ .statenum = S_STALAGMITE_LARGE,  .sprite = SPR_STG1 },
+	{ .statenum = S_STALAGMITE_MEDIUM, .sprite = SPR_STG2 },
+	{ .statenum = S_STALAGMITE_SMALL,  .sprite = SPR_STG3 },
 	// stalactite
-	{ .statenum = S_ID24_27,  .sprite = SPR_STC1 },
-	{ .statenum = S_ID24_28,  .sprite = SPR_STC2 },
-	{ .statenum = S_ID24_29,  .sprite = SPR_STC3 },
+	{ .statenum = S_STALACTITE_LARGE,  .sprite = SPR_STC1 },
+	{ .statenum = S_STALACTITE_MEDIUM, .sprite = SPR_STC2 },
+	{ .statenum = S_STALACTITE_SMALL,  .sprite = SPR_STC3 },
 	// chair
-	{ .statenum = S_CHAIR,  .sprite = SPR_CHR1 },
+	{ .statenum = S_CHAIR, .sprite = SPR_CHR1 },
 	// lamp
 	{ .statenum = S_LAMP_STND, .sprite = SPR_LAMP, .frame = 0_bright },
 	{ .statenum = S_LAMP_DIE1, .sprite = SPR_LAMP, .frame = 1_bright, .tics = 3, .action = A_Scream, .nextstate = S_LAMP_DIE2 },
@@ -500,7 +500,7 @@ constexpr std::array id24states = std::to_array<state_t>({
 	{ .statenum = S_ID24_349, .sprite = SPR_IFLM, .frame = 14_bright, .tics = 2,                           .nextstate = S_ID24_350 },
 	{ .statenum = S_ID24_350, .sprite = SPR_IFLM, .frame = 15_bright, .tics = 2 },
 	// incinerator pickup
-	{ .statenum = S_ID24_351, .sprite = SPR_INCN },
+	{ .statenum = S_INCINERATOR, .sprite = SPR_INCN },
 	// calamity blade
 	{ .statenum = S_ID24_352, .sprite = SPR_HETG, .frame =  0,        .tics =  1, .action = A_WeaponReady,      .nextstate = S_ID24_352 },
 	{ .statenum = S_ID24_353, .sprite = SPR_HETG, .frame =  0,        .tics =  1, .action = A_Lower,            .nextstate = S_ID24_353 },
@@ -616,7 +616,7 @@ constexpr std::array id24states = std::to_array<state_t>({
 	{ .statenum = S_ID24_461, .sprite = SPR_HETB, .frame = 7_bright, .tics = 3, .nextstate = S_ID24_462 },
 	{ .statenum = S_ID24_462, .sprite = SPR_HETB, .frame = 8_bright, .tics = 3 },
 	// calamity blade pickup
-	{ .statenum = S_ID24_463, .sprite = SPR_CBLD },
+	{ .statenum = S_CALAMITY_BLADE, .sprite = SPR_CBLD },
 	// fuel can
 	{ .statenum = S_FUEL_CAN, .sprite = SPR_FCPU },
 	// fuel tank
@@ -1120,7 +1120,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_BUSH_SHORT,
 		.doomednum  = -28646,
-		.spawnstate = S_ID24_17,
+		.spawnstate = S_BUSH_SHORT,
 		.radius     = 12_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1130,7 +1130,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_BUSH_SHORT_BURNED_1,
 		.doomednum  = -28645,
-		.spawnstate = S_ID24_18,
+		.spawnstate = S_BUSH_SHORT_BURNED_1,
 		.radius     = 12_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1140,7 +1140,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_BUSH_SHORT_BURNED_2,
 		.doomednum  = -28644,
-		.spawnstate = S_ID24_19,
+		.spawnstate = S_BUSH_SHORT_BURNED_2,
 		.radius     = 12_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1150,7 +1150,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_BUSH_TALL,
 		.doomednum  = -28643,
-		.spawnstate = S_ID24_20,
+		.spawnstate = S_BUSH_TALL,
 		.radius     = 12_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1160,7 +1160,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_BUSH_TALL_BURNED_1,
 		.doomednum  = -28642,
-		.spawnstate = S_ID24_21,
+		.spawnstate = S_BUSH_TALL_BURNED_1,
 		.radius     = 12_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1170,7 +1170,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_BUSH_TALL_BURNED_2,
 		.doomednum  = -28641,
-		.spawnstate = S_ID24_22,
+		.spawnstate = S_BUSH_TALL_BURNED_2,
 		.radius     = 12_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1180,7 +1180,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_CAVE_ROCK_COLUMN,
 		.doomednum  = -28640,
-		.spawnstate = S_ID24_23,
+		.spawnstate = S_ROCK_COLUMN,
 		.radius     = 24_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1190,7 +1190,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_CAVE_STALAGMITE_LARGE,
 		.doomednum  = -28639,
-		.spawnstate = S_ID24_24,
+		.spawnstate = S_STALAGMITE_LARGE,
 		.radius     = 16_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1200,7 +1200,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_CAVE_STALAGMITE_MEDIUM,
 		.doomednum  = -28638,
-		.spawnstate = S_ID24_25,
+		.spawnstate = S_STALAGMITE_MEDIUM,
 		.radius     = 12_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1210,7 +1210,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_CAVE_STALAGMITE_SMALL,
 		.doomednum  = -28637,
-		.spawnstate = S_ID24_26,
+		.spawnstate = S_STALAGMITE_SMALL,
 		.radius     = 8_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,
@@ -1220,7 +1220,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_CAVE_STALACTITE_LARGE,
 		.doomednum  = -28636,
-		.spawnstate = S_ID24_27,
+		.spawnstate = S_STALACTITE_LARGE,
 		.radius     = 16_fx,
 		.height     = 112_fx,
 		.cdheight   = 112_fx,
@@ -1230,7 +1230,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_CAVE_STALACTITE_LARGE_BLOCKING,
 		.doomednum  = -28635,
-		.spawnstate = S_ID24_27,
+		.spawnstate = S_STALACTITE_LARGE,
 		.radius     = 16_fx,
 		.height     = 112_fx,
 		.cdheight   = 112_fx,
@@ -1240,7 +1240,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_CAVE_STALACTITE_MEDIUM,
 		.doomednum  = -28634,
-		.spawnstate = S_ID24_28,
+		.spawnstate = S_STALACTITE_MEDIUM,
 		.radius     = 12_fx,
 		.height     = 64_fx,
 		.cdheight   = 64_fx,
@@ -1250,7 +1250,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_CAVE_STALACTITE_MEDIUM_BLOCKING,
 		.doomednum  = -28633,
-		.spawnstate = S_ID24_28,
+		.spawnstate = S_STALACTITE_MEDIUM,
 		.radius     = 12_fx,
 		.height     = 64_fx,
 		.cdheight   = 64_fx,
@@ -1260,7 +1260,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_CAVE_STALACTITE_SMALL,
 		.doomednum  = -28632,
-		.spawnstate = S_ID24_29,
+		.spawnstate = S_STALACTITE_SMALL,
 		.radius     = 8_fx,
 		.height     = 32_fx,
 		.cdheight   = 32_fx,
@@ -1270,7 +1270,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_CAVE_STALACTITE_SMALL_BLOCKING,
 		.doomednum  = -28631,
-		.spawnstate = S_ID24_29,
+		.spawnstate = S_STALACTITE_SMALL,
 		.radius     = 8_fx,
 		.height     = 32_fx,
 		.cdheight   = 32_fx,
@@ -1396,7 +1396,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type         = MT_CALAMITY_BLADE,
 		.doomednum    = -28620,
-		.spawnstate   = S_ID24_463,
+		.spawnstate   = S_CALAMITY_BLADE,
 		.spawnhealth  = 1000,
 		.reactiontime = 8,
 		.radius       = 20_fx,
@@ -1412,7 +1412,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type         = MT_INCINERATOR,
 		.doomednum    = -28619,
-		.spawnstate   = S_ID24_351,
+		.spawnstate   = S_INCINERATOR,
 		.spawnhealth  = 1000,
 		.reactiontime = 8,
 		.radius       = 20_fx,
