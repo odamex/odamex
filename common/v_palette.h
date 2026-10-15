@@ -47,11 +47,14 @@ struct palette_t
 	static const palindex_t mask_color = 0;
 };
 
+struct argbshadelut_t;
+
 struct dyncolormap_t {
 	shaderef_t		maps;
 	argb_t			color;
 	argb_t			fade;
 	dyncolormap_t *next;
+	argbshadelut_t* argblut;
 };
 
 extern fargb_t baseblend;

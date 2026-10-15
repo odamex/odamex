@@ -2081,39 +2081,35 @@ void R_UpdateARGBShadeLUT()
 //
 // ARGBShader
 //
-// Shades native ARGB texels for a fixed colormap. The common case
-// (no dynamic colormap) is three lookups in the per-frame shade tables.
-// Colormaps with a dynamic colormap precompute the light diminishing
-// constants once and shade when needed.
+// Shades native ARGB texels for one colormap: its dynamic colormap's tables at
+// its light level.
 //
 class ARGBShader
 {
 public:
-	ARGBShader(const shaderef_t& colormap)
+	ARGBShader() = default;
 	{
 		const int mapnum =
 		    colormap.mapnum() < NUMCOLORMAPS ? colormap.mapnum() : NUMCOLORMAPS;
 
-		if (colormap.m_dyncolormap == NULL)
+	ARGBShader(const shaderef_t& colormap) :
+			ARGBShader(colormap.m_dyncolormap, colormap.mapnum()) { }
+
+	// colormap.with(n) changes only the light level, so the plane drawers build a
+	// band's shader from the base colormap's dynamic colormap and n directly.
+	ARGBShader(const dyncolormap_t* dyncolormap, int mapnum)
 		{
-			lut_r = argb_shade_lut_r[mapnum];
-			lut_g = argb_shade_lut_g[mapnum];
-			lut_b = argb_shade_lut_b[mapnum];
-		}
-		else
-		{
-			lut_r = lut_g = lut_b = NULL;
+		mapnum = mapnum < NUMCOLORMAPS ? mapnum : NUMCOLORMAPS;
 
-			const argb_t lightcolor = colormap.m_dyncolormap->color;
-			const argb_t fadecolor = colormap.m_dyncolormap->fade;
+		// Every dynamic colormap gets its tables where it is made (GetSpecialLights,
+		// V_RefreshColormaps), so the default is only reached without one.
+		const argbshadelut_t* lut = &argb_default_lut;
+		if (dyncolormap != NULL && dyncolormap->argblut != NULL)
+			lut = dyncolormap->argblut;
 
-			scale_r = lightcolor.getr() * (NUMCOLORMAPS - mapnum);
-			scale_g = lightcolor.getg() * (NUMCOLORMAPS - mapnum);
-			scale_b = lightcolor.getb() * (NUMCOLORMAPS - mapnum);
-
-			add_r = fadecolor.getr() * mapnum + NUMCOLORMAPS / 2;
-			add_g = fadecolor.getg() * mapnum + NUMCOLORMAPS / 2;
-			add_b = fadecolor.getb() * mapnum + NUMCOLORMAPS / 2;
+		lut_r = lut->r[mapnum];
+		lut_g = lut->g[mapnum];
+		lut_b = lut->b[mapnum];
 		}
 	}
 

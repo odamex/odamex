@@ -840,7 +840,9 @@ void V_RefreshColormaps()
 
 	// The native ARGB shade tables derive from the same fade color and gamma
 	// table as the palette colormaps, so rebuild them here too.
+	// NormalLight is white light under the level fade, which is default.
 	R_UpdateARGBShadeLUT();
+	NormalLight.argblut = R_DefaultARGBShadeLUT();
 }
 
 
@@ -1085,11 +1087,13 @@ static void V_RefreshSpecialLights()
 {
 	for (dyncolormap_t* colormap = NormalLight.next; colormap; colormap = colormap->next)
 	{
-		// Gamma changes only affect the 32-bit shademap.
+		// Gamma changes only affect the 32-bit shademap -- and the ARGB shade
+		// tables, which run through the same gamma table.
 		BuildColoredLights(const_cast<shademap_t*>(colormap->maps.map()),
 				colormap->color.getr(), colormap->color.getg(), colormap->color.getb(),
 				colormap->fade.getr(), colormap->fade.getg(), colormap->fade.getb(),
 				false);
+		R_BuildARGBShadeLUT(colormap->argblut, colormap->color, colormap->fade);
 	}
 }
 
@@ -1124,6 +1128,7 @@ dyncolormap_t* GetSpecialLights(int lr, int lg, int lb, int fr, int fg, int fb)
 	colormap->color = color;
 	colormap->fade = fade;
 	colormap->next = NormalLight.next;
+	colormap->argblut = R_NewARGBShadeLUT(color, fade);
 	NormalLight.next = colormap;
 
 	BuildColoredLights(maps, lr, lg, lb, fr, fg, fb);
