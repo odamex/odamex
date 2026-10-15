@@ -37,5 +37,8 @@ void R_ReallocDrawSegs(rendercontext_t& ctx);
 void R_ClearDrawSegs (rendercontext_t& ctx);
 void R_RenderBSPNode (rendercontext_t& ctx, int bspnum);
 
+// A sector that fades to a color ignores extralight.
+bool R_SectorIsFoggy(const sector_t* sector);
+
 // killough 4/13/98: fake floors/ceilings for deep water / fake ceilings:
 sector_t *R_FakeFlat(rendercontext_t& ctx, sector_t *, sector_t *, int *, int *, bool);

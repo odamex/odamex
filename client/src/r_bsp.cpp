@@ -169,6 +169,16 @@ bool CopyPlaneIfValid (plane_t *dest, const plane_t *source, const plane_t *opp)
 }
 
 //
+// R_SectorIsFoggy
+//
+bool R_SectorIsFoggy(const sector_t* sector)
+{
+	return level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] ||
+	       level.fadeto_color[3] || sector->colormap->fade.getr() ||
+	       sector->colormap->fade.getg() || sector->colormap->fade.getb();
+}
+
+//
 // killough 3/7/98: Hack floor/ceiling heights for deep water etc.
 //
 // If player's view height is underneath fake floor, lower the
@@ -716,6 +726,10 @@ void R_Subsector (rendercontext_t& ctx, int num)
 						   &ceilinglightlevel, false);	// killough 4/11/98
 
 	ctx.draw.basecolormap = ctx.bsp.frontsector->colormap->maps;
+
+	// Set foggy flag
+	// Before the planes are found, which keep it for when they are drawn.
+	ctx.bsp.foggy = R_SectorIsFoggy(ctx.bsp.frontsector);
 
 	ctx.plane.ceilingplane = P_CeilingHeight(viewx, viewy, ctx.bsp.frontsector) > viewz ||
 		R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) ||

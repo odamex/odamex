@@ -502,6 +502,7 @@ void R_RenderMaskedSegRange(rendercontext_t& ctx, drawseg_t* ds, int x1, int x2)
 
 	ctx.bsp.frontsector = ctx.bsp.curline->frontsector;
 	ctx.bsp.backsector = ctx.bsp.curline->backsector;
+	ctx.bsp.foggy = R_SectorIsFoggy(ctx.bsp.frontsector);
 
 	const Texture* texture = Res_CacheTexture(Res_GetAnimatedTextureResourceId(ctx.bsp.curline->sidedef->midtexture));
 	fixed_t texheight = FixedMul(texture->mHeight << FRACBITS, texture->mScaleY);

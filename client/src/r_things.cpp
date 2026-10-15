@@ -963,9 +963,8 @@ void R_DrawPlayerSprites(rendercontext_t& ctx)
 	const sector_t* sec = R_FakeFlat(ctx, viewsector, &tempsec, &floorlight,
 	                                 &ceilinglight, false);
 
-	// [RH] set foggy flag
-	ctx.bsp.foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3]
-				|| sec->colormap->fade;
+	// Set foggy flag
+	ctx.bsp.foggy = R_SectorIsFoggy(sec);
 
 	// [RH] set basecolormap
 	ctx.draw.basecolormap = sec->colormap->maps;
