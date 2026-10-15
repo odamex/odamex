@@ -470,7 +470,7 @@ static void R_CheckClippedSegForFakeFlat(rendercontext_t& ctx, const seg_t* line
 
 	// let R_FakeFlat run the deep water window checks, considering the
 	// entire width of the view since the rejected seg has no column range
-	static sector_t tempsec;
+	static thread_local sector_t tempsec;
 	ctx.seg.rw_start = 0;
 	ctx.seg.rw_stop = viewwidth - 1;
 	R_FakeFlat(ctx, line->backsector, &tempsec, NULL, NULL, true);
