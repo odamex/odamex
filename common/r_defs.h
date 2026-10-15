@@ -778,6 +778,7 @@ struct visplane_t
 	fixed_t		xscale, yscale;		// [RH] Support flat scaling
 	angle_t		angle;				// [RH] Support flat rotation
 	AActor*		skybox;
+	bool		foggy;				// sector fades, so extralight is not applied
 
 	// Per-column spans, allocated apart from the header. Holding them inline
 	// put a screen's worth of them between one header and the next, so every
