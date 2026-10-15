@@ -309,9 +309,9 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 	// caused tons of jittering textures and linedefs,
 	// especially with mouselook on in high-resolution modes.
 
-	// This will be the same all frame, so cache the sucker.
-	static angle_t cached_ang;
-	static double cached_sin, cached_cos = 1.0;
+	// This will be the same all frame, so cache the sucker per thread.
+	static thread_local angle_t cached_ang;
+	static thread_local double cached_sin, cached_cos = 1.0;
 
 	if (ang != cached_ang)
 	{

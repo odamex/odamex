@@ -789,8 +789,8 @@ void R_DrawLevelPlaneColumns(rendercontext_t& ctx, visplane_t* pl)
 // Per-column range of four-row groups lying wholly inside the visplane, as
 // group indices (screen row y0 = g * 4). Sized to the view, reused across
 // planes; group_first > group_last means the column has no full group.
-std::vector<int> group_first;
-std::vector<int> group_last;
+static thread_local std::vector<int> group_first;
+static thread_local std::vector<int> group_last;
 
 //
 // R_DrawLevelPlaneGroups
@@ -845,6 +845,8 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 	ctx.draw.dpgroup.vmask = ctx.draw.dpcol.vmask;
 	ctx.draw.dpgroup.ushift = ctx.draw.dpcol.ushift;
 	ctx.draw.dpgroup.vshift = ctx.draw.dpcol.vshift;
+	ctx.draw.dpgroup.argbsource = argb ? ctx.draw.dpcol.argbsource : nullptr;
+	ctx.draw.dpgroup.argbshade = ctx.draw.dpcol.argbshade;
 
 	if (group_first.size() < static_cast<size_t>(viewwidth))
 	{

@@ -27,6 +27,8 @@
 #include "r_context.h"
 
 #include <algorithm>
+#include <atomic>
+#include <functional>
 
 #include "m_alloc.h"
 
@@ -148,12 +150,12 @@ void R_InitVisSprites()
 //
 
 // last sprite def looked up by R_ProjectSprite
-static int32_t projspritenum;
-static const spritedef_t* projsprdef;
+static thread_local int32_t projspritenum;
+static thread_local const spritedef_t* projsprdef;
 
 // frame-constant interpolation flag, so R_ProjectSprite doesn't make a
 // singleton call per sprite
-static bool projlerp;
+static thread_local bool projlerp;
 
 void R_ClearSprites(rendercontext_t& ctx)
 {
@@ -1066,7 +1068,8 @@ struct SpriteClipStats
 	uint32_t	peak_sprites;
 };
 
-SpriteClipStats spriteclip_stats;
+// per thread: the stats command reports the main thread's slice
+thread_local SpriteClipStats spriteclip_stats;
 
 
 //
@@ -1084,8 +1087,8 @@ struct clipextent_t
 
 static_assert(MAXWIDTH <= 32767, "clipextent_t holds screen columns in int16_t");
 
-std::vector<clipextent_t> clipseg_extents;
-std::vector<drawseg_t*>   clipseg_drawsegs;
+thread_local std::vector<clipextent_t> clipseg_extents;
+thread_local std::vector<drawseg_t*>   clipseg_drawsegs;
 
 
 //
