@@ -33,8 +33,8 @@
 #define MOUSE_DOOM 0
 #define MOUSE_ZDOOM_DI 1
 
-bool I_InitInput (void);
-void I_ShutdownInput ();
+bool I_InitInput();
+void I_ShutdownInput();
 void I_ForceUpdateGrab();
 void I_FlushInput();
 
@@ -65,6 +65,8 @@ keydevice_t I_GetLastInputDevice();
 
 void I_GetEvents(bool mouseOnly);
 
+void I_EnableTextEntry();
+void I_DisableTextEntry();
 
 bool I_GetUIMousePosition(int& x, int& y);
 bool I_IsUIMouseButtonDown(int button);
@@ -80,7 +82,7 @@ class IInputDevice
 public:
 	virtual ~IInputDevice() { }
 
-	virtual bool active() const = 0;
+	[[nodiscard]] virtual bool active() const = 0;
 	virtual void pause() = 0;
 	virtual void resume() = 0;
 	virtual void reset() = 0;
@@ -89,7 +91,7 @@ public:
 	{	resume();	}
 
 	virtual void gatherEvents() = 0;
-	virtual bool hasEvent() const = 0;
+	[[nodiscard]] virtual bool hasEvent() const = 0;
 	virtual void getEvent(event_t* ev) = 0;
 
 	virtual void flushEvents()
@@ -141,7 +143,7 @@ public:
 	virtual void grabInputForUI()
 	{	releaseInput();	}
 
-	virtual bool isInputGrabbed() const
+	[[nodiscard]] virtual bool isInputGrabbed() const
 	{	return false;	}
 
 	virtual void enableKeyRepeat();
@@ -157,22 +159,22 @@ public:
 			getEvent(&dummy_event);
 	}
 
-	virtual bool hasEvent() const
+	[[nodiscard]] virtual bool hasEvent() const
 	{	return mEvents.empty() == false;	}
 
 	virtual void gatherEvents();
 	virtual void gatherMouseEvents();
 	virtual void getEvent(event_t* ev);
 
-	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const = 0;
+	[[nodiscard]] virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const = 0;
 	virtual void initKeyboard(int id) = 0;
 	virtual void shutdownKeyboard(int id) = 0;
 
-	virtual std::vector<IInputDeviceInfo> getMouseDevices() const = 0;
+	[[nodiscard]] virtual std::vector<IInputDeviceInfo> getMouseDevices() const = 0;
 	virtual void initMouse(int id) = 0;
 	virtual void shutdownMouse(int id) = 0;
 
-	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const = 0;
+	[[nodiscard]] virtual std::vector<IInputDeviceInfo> getJoystickDevices() const = 0;
 	virtual void initJoystick(int id) = 0;
 	virtual void shutdownJoystick(int id) = 0;
 
@@ -228,22 +230,23 @@ private:
 	// the EventRepeaterTable hashtable typedef uses
 	// event_t::data1 as its key as there should only be
 	// a single instance with that value in the table.
-	typedef OHashTable<int, EventRepeater> EventRepeaterTable;
+	using EventRepeaterTable = OHashTable<int, EventRepeater>;
 	EventRepeaterTable	mEventRepeaters;
 
 	bool				mRepeating;
 
-	typedef std::queue<event_t> EventQueue;
+	using EventQueue = std::queue<event_t>;
 	EventQueue			mEvents;
 
 	// Input device management
-	typedef std::list<IInputDevice*> InputDeviceList;
+	using InputDeviceList = std::list<IInputDevice*>;
 	InputDeviceList		mInputDevices;
 
+	// TODO: do the types here need to be the base class?
 	IInputDevice*		mKeyboardInputDevice;
 	IInputDevice*		mMouseInputDevice;
 	IInputDevice*		mJoystickInputDevice;
 };
 
-typedef OHashTable<int, std::string> KeyNameTable;
+using KeyNameTable = OHashTable<int, std::string>;
 extern KeyNameTable key_names;
