@@ -543,7 +543,16 @@ void R_AddLine (rendercontext_t& ctx, const seg_t *line)
 	static thread_local sector_t tempsec;
 	ctx.bsp.backsector = line->backsector ? R_FakeFlat(ctx, line->backsector, &tempsec, NULL, NULL, true) : NULL;
 
-	R_PrepWall(ctx, w1.x, w1.y, w2.x, w2.y, t1.x, t1.y, t2.x, t2.y, x1, x2);
+	// Only the columns still open can be drawn.
+	int first = x1, last = x2;
+	while (first <= last && ctx.bsp.solidcol[first])
+		first++;
+	while (last >= first && ctx.bsp.solidcol[last])
+		last--;
+	if (first > last)
+		return;
+
+	R_PrepWall(ctx, w1.x, w1.y, w2.x, w2.y, t1.x, t1.y, t2.x, t2.y, x1, x2, first, last);
 
 	// [SL] Check for single-sided line, closed doors or other scenarios that
 	// would make this line seg solid.
@@ -570,7 +579,7 @@ void R_AddLine (rendercontext_t& ctx, const seg_t *line)
 		 !R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id))))
 	{
 		ctx.bsp.doorclosed = true;
-		R_ClipWallSegment(ctx, x1, x2, true);
+		R_ClipWallSegment(ctx, first, last, true);
 		return;
 	}
 
@@ -612,7 +621,7 @@ void R_AddLine (rendercontext_t& ctx, const seg_t *line)
 	}
 
 	ctx.bsp.doorclosed = false;
-	R_ClipWallSegment(ctx, x1, x2, false);
+	R_ClipWallSegment(ctx, first, last, false);
 }
 
 
@@ -790,10 +799,6 @@ void R_Subsector (rendercontext_t& ctx, int num)
 					ctx.bsp.frontsector->SkyboxFloor
 					) : NULL;
 
-	// [RH] set foggy flag
-	ctx.bsp.foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] ||
-	        level.fadeto_color[3] || ctx.bsp.frontsector->colormap->fade.getr() ||
-	        ctx.bsp.frontsector->colormap->fade.getg() || ctx.bsp.frontsector->colormap->fade.getb();
 
 	// killough 9/18/98: Fix underwater slowdown, by passing real sector
 	// instead of fake one. Improve sprite lighting by basing sprite
