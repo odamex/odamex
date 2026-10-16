@@ -344,6 +344,31 @@ void TextureManager::addResources(ResourceManager* manager)
 
 
 //
+// Res_CreateTexturesDirectoryLoader
+//
+// Creates the loader for a non-PNG resource in the textures directory: a lump
+// between TX_START and TX_END, or a file in textures/ in an archive.
+//
+static ResourceLoader* Res_CreateTexturesDirectoryLoader(const RawResourceAccessor* accessor,
+                                                         const ResourceId res_id,
+                                                         const ResourcePath& path)
+{
+	const uint32_t size = accessor->getResourceSize(res_id);
+	std::vector<uint8_t> data(size);
+	if (size > 0)
+		accessor->loadResource(res_id, data.data(), size);
+
+	if (Res_ValidatePatchData(data.data(), size))
+		return new PatchTextureLoader(accessor, res_id);
+	if (Res_ValidateFlatData(data.data(), size))
+		return new FlatTextureLoader(accessor, res_id);
+
+	PrintFmt(PRINT_HIGH, "Unsupported image format for {}.\n", path.c_str());
+	return NULL;
+}
+
+
+//
 // TextureManager::addResourceToManagerByDir
 //
 // Iterates over a list of resource names in a given resource directory
@@ -384,28 +409,9 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 		else if (dir == graphics_directory_name)
 			loader = new PatchTextureLoader(accessor, raw_res_id);
 		else if (dir == textures_directory_name)
-		{
-			const uint32_t size = accessor->getResourceSize(raw_res_id);
-			std::vector<uint8_t> data(size);
-			if (size > 0)
-				accessor->loadResource(raw_res_id, data.data(), size);
-
-			if (Res_ValidatePatchData(data.data(), size))
-				loader = new PatchTextureLoader(accessor, raw_res_id);
-			else if (Res_ValidateFlatData(data.data(), size))
-				loader = new FlatTextureLoader(accessor, raw_res_id);
-			else
-				PrintFmt(PRINT_HIGH, "Unsupported image format for {}.\n",
-				         path.c_str());
-		}
-		else if (has_header)
-		{
-			if (dir == flats_directory_name)
-				loader = new FlatTextureLoader(accessor, raw_res_id);
-			else
-				PrintFmt(PRINT_HIGH, "Unsupported image format for {}.\n",
-				         path.c_str());
-		}
+			loader = Res_CreateTexturesDirectoryLoader(accessor, raw_res_id, path);
+		else if (dir == flats_directory_name && has_header)
+			loader = new FlatTextureLoader(accessor, raw_res_id);
 
 		if (loader != NULL)
 		{
