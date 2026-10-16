@@ -352,7 +352,6 @@ void R_DrawLevelGroupD_SSE2(rendercontext_t& ctx)
 				_mm_and_si128(_mm_srl_epi32(mu, cu), mumask),
 				_mm_and_si128(_mm_srl_epi32(mv, cv), mvmask));
 
-		// Same idiom as the span drawer above, which MSVC keeps in registers.
 		const auto spots = std::bit_cast<std::array<uint32_t, 4>>(mspots);
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), _mm_setr_epi32(

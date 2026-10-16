@@ -34,6 +34,7 @@
 
 #include "i_sdl.h"
 #include "r_intrin.h"
+#include "r_drawt_sse2.h"
 
 #include "c_dispatch.h"
 #include "m_alloc.h"
@@ -90,10 +91,6 @@ void (*R_DrawTranslucentColumn)(rendercontext_t&);
 void (*R_DrawTranslatedColumn)(rendercontext_t&);
 void (*R_DrawTlatedLucentColumn)(rendercontext_t&);
 void (*R_DrawSkyForegroundColumn)(rendercontext_t&);
-void (*R_DrawSpan)(rendercontext_t&);
-void (*R_DrawTranslucentSpan)(rendercontext_t&);
-void (*R_DrawSlopeSpan)(rendercontext_t&);
-void (*R_DrawTranslucentSlopeSpan)(rendercontext_t&);
 void (*R_FillColumn)(rendercontext_t&);
 void (*R_FillSpan)(rendercontext_t&);
 void (*R_FillTranslucentSpan)(rendercontext_t&);
@@ -104,6 +101,8 @@ void (*R_DrawTranslucentLevelColumn)(rendercontext_t&);
 void (*R_DrawLevelGroup)(rendercontext_t&);
 
 void (*R_DrawLevelGroupD)(rendercontext_t&);
+void (*R_DrawSlopeColumn)(rendercontext_t&);
+void (*R_DrawTranslucentSlopeColumn)(rendercontext_t&);
 void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 
@@ -1019,9 +1018,9 @@ private:
 //
 // R_DrawLevelColumnGeneric
 //
-// Texture maps one screen column of a level plane. This is R_MapLevelPlane's
-// own arithmetic collected on distance instead of on x, so it needs no divide:
-// the entire dependence on y is one yslope[] load.
+// Texture maps one screen column of a level plane. This is Doom's span mapping
+// collected on distance instead of on x, so it needs no divide: the entire dependence on y is one
+// yslope[] load.
 //
 // NOTE: ushift/vshift stay inside the loop deliberately. Folding them into
 // ubase/eu would save two ALU ops per pixel but move the double-to-fixed
@@ -1030,7 +1029,24 @@ private:
 // a discontinuity where one crosses zero. Fold them only together with a
 // per-plane positivity bias that is an exact multiple of the texture period.
 //
-template<bool CONSTLIGHT, typename PIXEL_T, typename COLORFUNC>
+// The texel plane a plane column samples: palette indices, or the native ARGB
+// plane of a true-colour flat. The color functor takes whichever this is.
+template<typename SOURCE_T>
+static forceinline const SOURCE_T* R_PlaneColumnSource(const drawplanecol_t& d);
+
+template<>
+forceinline const palindex_t* R_PlaneColumnSource<palindex_t>(const drawplanecol_t& d)
+{
+	return d.source;
+}
+
+template<>
+forceinline const argb_t* R_PlaneColumnSource<argb_t>(const drawplanecol_t& d)
+{
+	return d.argbsource;
+}
+
+template<bool CONSTLIGHT, typename PIXEL_T, typename COLORFUNC, typename SOURCE_T = palindex_t>
 static forceinline void R_DrawLevelColumnGeneric(PIXEL_T* dest, const drawplanecol_t& d)
 {
 #ifdef RANGECHECK
@@ -1047,7 +1063,7 @@ static forceinline void R_DrawLevelColumnGeneric(PIXEL_T* dest, const drawplanec
 
 	const int step = 1;		// the contiguous store this path exists for
 
-	const palindex_t* const source = d.source;
+	const SOURCE_T* const source = R_PlaneColumnSource<SOURCE_T>(d);
 
 	// Both streamed linearly down the column, so the prefetcher has them.
 	const fixed_t* ys = yslope.get() + d.yl;
@@ -1062,7 +1078,7 @@ static forceinline void R_DrawLevelColumnGeneric(PIXEL_T* dest, const drawplanec
 
 	do {
 		// int64_t is what keeps an out-of-range double from being undefined,
-		// the same reason R_DoubleToDsFixed casts through it.
+		// while keeping the low-32-bit wrap of the fixed-point pipeline.
 		const double Y = static_cast<double>(*ys++);
 		const dsfixed_t ufrac = static_cast<dsfixed_t>(static_cast<int64_t>(ubase + eu * Y));
 		const dsfixed_t vfrac = static_cast<dsfixed_t>(static_cast<int64_t>(vbase + ev * Y));
@@ -1074,6 +1090,101 @@ static forceinline void R_DrawLevelColumnGeneric(PIXEL_T* dest, const drawplanec
 			off++;
 		dest += step;
 	} while (--count);
+}
+
+//
+// R_DrawSlopeColumnGeneric
+//
+// Texture maps one screen column of a sloped plane with an exact perspective
+// divide at every pixel. iu/iv/id are affine in screen y as they are in x, so
+// each pixel's are the column's top values plus a multiple of a per-row step.
+//
+// Set by R_InitVectorizedDrawers when r_optimize selects SSE2.
+static bool have_sse2_slopes = false;
+
+template<bool SLOPELIGHT, typename PIXEL_T, typename COLORFUNC, typename SOURCE_T = palindex_t>
+static forceinline void R_DrawSlopeColumnGeneric(PIXEL_T* dest, const drawplanecol_t& d)
+{
+#ifdef RANGECHECK
+	if (d.x < 0 || d.x >= viewwidth || d.yl < 0 || d.yh >= viewheight)
+	{
+		PrintFmt(PRINT_HIGH, "R_DrawSlopeColumn: {} to {} at {}\n", d.yl, d.yh, d.x);
+		return;
+	}
+#endif
+
+	const int count = d.yh - d.yl + 1;
+	if (count <= 0)
+		return;
+
+	const SOURCE_T* const source = R_PlaneColumnSource<SOURCE_T>(d);
+
+	COLORFUNC colorfunc(d);
+
+#ifdef __SSE2__
+	if (have_sse2_slopes)
+	{
+		SlopeColumnSSE2<SLOPELIGHT> quad(d);
+		alignas(16) uint32_t spots[4];
+		alignas(16) uint32_t lights[4];
+
+		for (int i = 0; i < count; i += 4)
+		{
+			quad.next(spots, lights);
+
+			const int n = count - i < 4 ? count - i : 4;
+			for (int k = 0; k < n; k++)
+				colorfunc(source[spots[k]], SLOPELIGHT ? lights[k] : 0u, dest++);
+		}
+
+		return;
+	}
+#endif
+
+	const float iu = d.iu, iv = d.iv, id = d.id;
+	const float ius = d.iustep, ivs = d.ivstep, ids = d.idstep;
+
+	const int umask = d.umask, vmask = d.vmask;
+	const int ushift = d.ushift, vshift = d.vshift;
+
+	// Wrapping, as the integer add down the column would.
+	uint32_t lmap = static_cast<uint32_t>(d.lmap);
+	const uint32_t lstep = static_cast<uint32_t>(d.lmapstep);
+
+	static constexpr int RUN = 16;
+	unsigned int spots[RUN];
+	unsigned int lights[RUN];
+
+	for (int i0 = 0; i0 < count; i0 += RUN)
+	{
+		const int n = count - i0 < RUN ? count - i0 : RUN;
+
+		for (int k = 0; k < n; k++)
+		{
+			// From the column's top rather than accumulated, so a long column
+			// cannot drift.
+			const float fi = static_cast<float>(i0 + k);
+			const float mul = 65536.0f / (id + ids * fi);
+			const fixed_t ufrac = static_cast<fixed_t>((iu + ius * fi) * mul);
+			const fixed_t vfrac = static_cast<fixed_t>((iv + ivs * fi) * mul);
+			spots[k] = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask);
+		}
+
+		// The colormap selection, stepping down the column: +1 and extralight
+		// are in lbias, and a negative index means the base colormap.
+		if (SLOPELIGHT)
+		{
+			for (int k = 0; k < n; k++)
+			{
+				const int index = std::clamp((static_cast<fixed_t>(lmap) >> FRACBITS) + d.lbias, 0, NUMCOLORMAPS - 1);
+				lights[k] = static_cast<unsigned int>(index) << 8;
+				lmap += lstep;
+			}
+		}
+
+		for (int k = 0; k < n; k++)
+			colorfunc(source[spots[k]], SLOPELIGHT ? lights[k] : 0u, dest++);
+	}
 }
 
 //
@@ -1108,317 +1219,6 @@ static forceinline void R_FillSpanGeneric(PIXEL_T* dest, const drawspan_t& draws
 		colorfunc(color, dest);
 		dest += step;
 	} while (--count);
-}
-
-
-//
-// R_DrawLevelSpanGeneric
-//
-// Templated version of a function to fill a horizontal span with a texture map.
-// The data type of the destination pixels and a color-remapping functor
-// are passed as template parameters.
-//
-template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& drawspan)
-{
-#ifdef RANGECHECK
-	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
-		drawspan.y >= viewheight || drawspan.y < 0)
-	{
-		PrintFmt(PRINT_HIGH, "R_DrawLevelSpan: {} to {} at {}", drawspan.x1, drawspan.x2, drawspan.y);
-		return;
-	}
-#endif
-
-	const palindex_t* source = drawspan.source;
-	int count = drawspan.x2 - drawspan.x1 + 1;
-	if (count <= 0)
-		return;
-
-	// Consecutive x are a column apart, so at least one cache line each.
-	// See openQuestions.
-	const int step = drawspan.colstep;
-	
-	dsfixed_t ufrac = drawspan.ufrac, vfrac = drawspan.vfrac;
-	dsfixed_t ustep = drawspan.ustep, vstep = drawspan.vstep;
-	const int umask = drawspan.umask, vmask = drawspan.vmask;
-	const int ushift = drawspan.ushift, vshift = drawspan.vshift;
-
-	COLORFUNC colorfunc(drawspan);
-
-	do {
-		const unsigned int spot = ((vfrac >> vshift) & vmask) | ((ufrac >> ushift) & umask); 
-		colorfunc(source[spot], dest);
-		dest += step;
-		ufrac += ustep;
-		vfrac += vstep;
-	} while (--count);
-}
-
-
-//
-// R_DrawSlopedSpanGeneric
-//
-// Texture maps a sloped surface using affine texturemapping for each row of
-// the span.  Not as pretty as a perfect texturemapping but should be much
-// faster.
-//
-// Based on R_DrawSlope_8_64 from Eternity Engine, written by SoM/Quasar
-//
-// The data type of the destination pixels and a color-remapping functor
-// are passed as template parameters.
-//
-template<typename PIXEL_T, typename COLORFUNC>
-static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t& drawspan)
-{
-#ifdef RANGECHECK
-	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
-		drawspan.y >= viewheight || drawspan.y < 0)
-	{
-		PrintFmt(PRINT_HIGH, "R_DrawSlopedSpan: {} to {} at {}", drawspan.x1, drawspan.x2, drawspan.y);
-		return;
-	}
-#endif
-
-	const palindex_t* source = drawspan.source;
-	int count = drawspan.x2 - drawspan.x1 + 1;
-	if (count <= 0)
-		return;
-
-	// The renderer's worst store pattern: one pixel per cache line. Wants a
-	// four-rows-in-four-lanes kernel like R_DrawLevelGroupD_SSE2's.
-	// See openQuestions.
-	const int step = drawspan.colstep;
-
-	float iu = drawspan.iu, iv = drawspan.iv;
-	const float ius = drawspan.iustep, ivs = drawspan.ivstep;
-	float id = drawspan.id, ids = drawspan.idstep;
-
-	int ltindex = 0;
-
-	shaderef_t colormap;
-	COLORFUNC colorfunc(drawspan);
-
-	const int umask = drawspan.umask, vmask = drawspan.vmask;
-	const int ushift = drawspan.ushift, vshift = drawspan.vshift;
-
-	while (count >= SPANJUMP)
-	{
-		const float mulstart = 65536.0f / id;
-		id += ids * SPANJUMP;
-		const float mulend = 65536.0f / id;
-
-		const float ustart = iu * mulstart;
-		const float vstart = iv * mulstart;
-
-		fixed_t ufrac = static_cast<fixed_t>(ustart);
-		fixed_t vfrac = static_cast<fixed_t>(vstart);
-
-		iu += ius * SPANJUMP;
-		iv += ivs * SPANJUMP;
-
-		const float uend = iu * mulend;
-		const float vend = iv * mulend;
-
-		const fixed_t ustep = static_cast<fixed_t>((uend - ustart) * INTERPSTEP);
-		const fixed_t vstep = static_cast<fixed_t>((vend - vstart) * INTERPSTEP);
-
-		int incount = SPANJUMP;
-		while (incount--)
-		{
-			colormap = drawspan.slopelighting[ltindex++];
-
-			const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
-			colorfunc(source[spot], dest);
-			dest += step;
-			ufrac += ustep;
-			vfrac += vstep;
-		}
-
-		count -= SPANJUMP;
-	}
-
-	if (count > 0)
-	{
-		const float mulstart = 65536.0f / id;
-		id += ids * count;
-		const float mulend = 65536.0f / id;
-
-		const float ustart = iu * mulstart;
-		const float vstart = iv * mulstart;
-
-		fixed_t ufrac = static_cast<fixed_t>(ustart);
-		fixed_t vfrac = static_cast<fixed_t>(vstart);
-
-		iu += ius * count;
-		iv += ivs * count;
-
-		const float uend = iu * mulend;
-		const float vend = iv * mulend;
-
-		const fixed_t ustep = static_cast<fixed_t>((uend - ustart) / count);
-		const fixed_t vstep = static_cast<fixed_t>((vend - vstart) / count);
-
-		int incount = count;
-		while (incount--)
-		{
-			colormap = drawspan.slopelighting[ltindex++];
-
-			const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask);
-			colorfunc(source[spot], dest);
-			dest += step;
-			ufrac += ustep;
-			vfrac += vstep;
-		}
-	}
-}
-
-
-//
-// R_DrawLevelSpanGenericARGB
-//
-// Version of R_DrawLevelSpanGeneric that samples the source texture's
-// native ARGB plane (drawspan.argbsource), which is parallel to the
-// palettized plane.
-//
-template<typename COLORFUNC>
-static forceinline void R_DrawLevelSpanGenericARGB(argb_t* dest, const drawspan_t& drawspan)
-{
-#ifdef RANGECHECK
-	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
-		drawspan.y >= viewheight || drawspan.y < 0)
-	{
-		PrintFmt(PRINT_HIGH, "R_DrawLevelSpan: {} to {} at {}", drawspan.x1, drawspan.x2, drawspan.y);
-		return;
-	}
-#endif
-
-	const argb_t* source = drawspan.argbsource;
-	int count = drawspan.x2 - drawspan.x1 + 1;
-	if (count <= 0)
-		return;
-
-	// One pixel per cache line, and the path a level plane with a PNG flat takes
-	// (argbsource fails R_DrawLevelPlane's column gate), so a full-screen ARGB
-	// floor pays it. See openQuestions.
-	const int step = drawspan.colstep;
-
-	dsfixed_t ufrac = drawspan.ufrac, vfrac = drawspan.vfrac;
-	dsfixed_t ustep = drawspan.ustep, vstep = drawspan.vstep;
-	const int umask = drawspan.umask, vmask = drawspan.vmask;
-	const int ushift = drawspan.ushift, vshift = drawspan.vshift;
-
-	COLORFUNC colorfunc(drawspan);
-
-	do {
-		const unsigned int spot = ((vfrac >> vshift) & vmask) | ((ufrac >> ushift) & umask);
-		colorfunc(source[spot], dest);
-		dest += step;
-		ufrac += ustep;
-		vfrac += vstep;
-	} while (--count);
-}
-
-
-//
-// R_DrawSlopedSpanGenericARGB
-//
-// Version of R_DrawSlopedSpanGeneric that samples the source texture's
-// native ARGB plane (drawspan.argbsource).
-//
-template<typename COLORFUNC>
-static forceinline void R_DrawSlopedSpanGenericARGB(argb_t* dest, const drawspan_t& drawspan)
-{
-#ifdef RANGECHECK
-	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
-		drawspan.y >= viewheight || drawspan.y < 0)
-	{
-		PrintFmt(PRINT_HIGH, "R_DrawSlopedSpan: {} to {} at {}", drawspan.x1, drawspan.x2, drawspan.y);
-		return;
-	}
-#endif
-
-	const argb_t* source = drawspan.argbsource;
-	int count = drawspan.x2 - drawspan.x1 + 1;
-	if (count <= 0)
-		return;
-
-	const int step = drawspan.colstep;		// see R_DrawSlopedSpanGeneric
-
-	float iu = drawspan.iu, iv = drawspan.iv;
-	const float ius = drawspan.iustep, ivs = drawspan.ivstep;
-	float id = drawspan.id, ids = drawspan.idstep;
-
-	COLORFUNC colorfunc(drawspan);
-
-	const int umask = drawspan.umask, vmask = drawspan.vmask;
-	const int ushift = drawspan.ushift, vshift = drawspan.vshift;
-
-	while (count >= SPANJUMP)
-	{
-		const float mulstart = 65536.0f / id;
-		id += ids * SPANJUMP;
-		const float mulend = 65536.0f / id;
-
-		const float ustart = iu * mulstart;
-		const float vstart = iv * mulstart;
-
-		fixed_t ufrac = static_cast<fixed_t>(ustart);
-		fixed_t vfrac = static_cast<fixed_t>(vstart);
-
-		iu += ius * SPANJUMP;
-		iv += ivs * SPANJUMP;
-
-		const float uend = iu * mulend;
-		const float vend = iv * mulend;
-
-		const fixed_t ustep = static_cast<fixed_t>((uend - ustart) * INTERPSTEP);
-		const fixed_t vstep = static_cast<fixed_t>((vend - vstart) * INTERPSTEP);
-
-		int incount = SPANJUMP;
-		while (incount--)
-		{
-			const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask);
-			colorfunc(source[spot], dest);
-			dest += step;
-			ufrac += ustep;
-			vfrac += vstep;
-		}
-
-		count -= SPANJUMP;
-	}
-
-	if (count > 0)
-	{
-		const float mulstart = 65536.0f / id;
-		id += ids * count;
-		const float mulend = 65536.0f / id;
-
-		const float ustart = iu * mulstart;
-		const float vstart = iv * mulstart;
-
-		fixed_t ufrac = static_cast<fixed_t>(ustart);
-		fixed_t vfrac = static_cast<fixed_t>(vstart);
-
-		iu += ius * count;
-		iv += ivs * count;
-
-		const float uend = iu * mulend;
-		const float vend = iv * mulend;
-
-		const fixed_t ustep = static_cast<fixed_t>((uend - ustart) / count);
-		const fixed_t vstep = static_cast<fixed_t>((vend - vstart) / count);
-
-		int incount = count;
-		while (incount--)
-		{
-			const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask);
-			colorfunc(source[spot], dest);
-			dest += step;
-			ufrac += ustep;
-			vfrac += vstep;
-		}
-	}
 }
 
 
@@ -1458,8 +1258,6 @@ class PaletteColormapFunc
 public:
 	PaletteColormapFunc(const drawcolumn_t& drawcolumn) :
 			colormap(drawcolumn.colormap) { }
-	PaletteColormapFunc(const drawspan_t& drawspan) :
-			colormap(drawspan.colormap) { }
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
@@ -1555,56 +1353,10 @@ private:
 	const translationref_t& translation;
 };
 
-class PaletteSlopeColormapFunc
-{
-public:
-	PaletteSlopeColormapFunc(const drawspan_t& drawspan) :
-			colormap(drawspan.slopelighting) { }
-
-	forceinline void operator()(byte c, palindex_t* dest)
-	{
-		*dest = colormap->index(c);
-		colormap++;
-	}
-
-private:
-	const shaderef_t* colormap;
-};
-
-class PaletteSlopeTranslucentColormapFunc
-{
-public:
-	PaletteSlopeTranslucentColormapFunc(const drawspan_t& drawspan) :
-			colormap(drawspan.slopelighting)
-	{
-		calculate_alpha(drawspan.translevel);
-	}
-
-	forceinline void operator()(byte c, palindex_t* dest)
-	{
-		const palindex_t fg = colormap->index(c);
-		const palindex_t bg = *dest;
-		*dest = rt_blend2<palindex_t>(bg, bga, fg, fga);
-		colormap++;
-	}
-
-private:
-	void calculate_alpha(fixed_t translevel)
-	{
-		fga = std::clamp(static_cast<int>((translevel & ~0x03FF) >> 8), 0, 255);
-		bga = 255 - fga;
-	}
-
-	const shaderef_t* colormap;
-	int fga, bga;
-};
-
 class PaletteSkyForegroundColormapFunc
 {
 public:
 	PaletteSkyForegroundColormapFunc(const drawcolumn_t& drawcolumn) : colormap(drawcolumn.colormap) {}
-
-	PaletteSkyForegroundColormapFunc(const drawspan_t& drawspan) : colormap(drawspan.colormap) {}
 
 	forceinline void operator()(byte c, palindex_t* dest) const
 	{
@@ -1782,60 +1534,6 @@ void R_FillTranslucentSpanP(rendercontext_t& ctx)
 	R_FillSpanGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
 }
 
-//
-// R_DrawSpanP
-//
-// Renders a span for a level plane to the 8bpp palettized screen buffer from
-// the source buffer dspan.source. Shading is performed using dspan.colormap.
-//
-void R_DrawSpanP(rendercontext_t& ctx)
-{
-	drawspan_t& dspan = ctx.draw.dspan;
-
-	R_DrawLevelSpanGeneric<palindex_t, PaletteColormapFunc>(FB_SPANDEST_P, dspan);
-}
-
-//
-// R_DrawTranslucentSpanP
-//
-// Renders a span for a level plane to the 8bpp palettized screen buffer from
-// the source buffer dspan.source, blended with the framebuffer by
-// dspan.translevel. Shading is performed using dspan.colormap.
-//
-void R_DrawTranslucentSpanP(rendercontext_t& ctx)
-{
-	drawspan_t& dspan = ctx.draw.dspan;
-
-	R_DrawLevelSpanGeneric<palindex_t, PaletteTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
-}
-
-//
-// R_DrawSlopeSpanP
-//
-// Renders a span for a sloped plane to the 8bpp palettized screen buffer from
-// the source buffer dspan.source. Shading is performed using dspan.colormap.
-//
-void R_DrawSlopeSpanP(rendercontext_t& ctx)
-{
-	drawspan_t& dspan = ctx.draw.dspan;
-
-	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeColormapFunc>(FB_SPANDEST_P, dspan);
-}
-
-//
-// R_DrawTranslucentSlopeSpanP
-//
-// Renders a span for a sloped plane to the 8bpp palettized screen buffer from
-// the source buffer dspan.source, blended with the framebuffer by
-// dspan.translevel. Shading is performed using dspan.slopelighting.
-//
-void R_DrawTranslucentSlopeSpanP(rendercontext_t& ctx)
-{
-	drawspan_t& dspan = ctx.draw.dspan;
-
-	R_DrawSlopedSpanGeneric<palindex_t, PaletteSlopeTranslucentColormapFunc>(FB_SPANDEST_P, dspan);
-}
-
 
 /****************************************/
 /*										*/
@@ -1876,8 +1574,6 @@ class DirectColormapFunc
 public:
 	DirectColormapFunc(const drawcolumn_t& drawcolumn) :
 			colormap(drawcolumn.colormap) { }
-	DirectColormapFunc(const drawspan_t& drawspan) :
-			colormap(drawspan.colormap) { }
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
@@ -1971,56 +1667,10 @@ private:
 	const translationref_t& translation;
 };
 
-class DirectSlopeColormapFunc
-{
-public:
-	DirectSlopeColormapFunc(const drawspan_t& drawspan) :
-			colormap(drawspan.slopelighting) { }
-
-	forceinline void operator()(byte c, argb_t* dest)
-	{
-		*dest = colormap->shade(c);
-		colormap++;
-	}
-
-private:
-	const shaderef_t* colormap;
-};
-
-class DirectSlopeTranslucentColormapFunc
-{
-public:
-	DirectSlopeTranslucentColormapFunc(const drawspan_t& drawspan) :
-			colormap(drawspan.slopelighting)
-	{
-		calculate_alpha(drawspan.translevel);
-	}
-
-	forceinline void operator()(byte c, argb_t* dest)
-	{
-		const argb_t fg = colormap->shade(c);
-		const argb_t bg = *dest;
-		*dest = alphablend2a(bg, bga, fg, fga);
-		colormap++;
-	}
-
-private:
-	void calculate_alpha(fixed_t translevel)
-	{
-		fga = std::clamp(static_cast<int>((translevel & ~0x03FF) >> 8), 0, 255);
-		bga = 255 - fga;
-	}
-
-	const shaderef_t* colormap;
-	int fga, bga;
-};
-
 class DirectSkyForegroundColormapFunc
 {
 public:
 	DirectSkyForegroundColormapFunc(const drawcolumn_t& drawcolumn) : colormap(drawcolumn.colormap) {}
-
-	DirectSkyForegroundColormapFunc(const drawspan_t& drawspan) : colormap(drawspan.colormap) {}
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
@@ -2048,34 +1698,68 @@ private:
 //
 // ARGB shade lookup tables
 //
-// Gives the native ARGB drawers a shademap-like lookup - for each light
-// diminishing level, three 256-entry tables map a channel value to its
-// diminished, faded and gamma-corrected result. Colormaps carrying a
-// dynamic colormap (sector colormaps) are shaded separately.
+// For each light diminishing level, three 256-entry tables map a channel value
+// to its diminished, faded and gamma-corrected result -- the shademap's math
+// applied to a true color. Every dynamic colormap owns a set built from its
+// light and fade color, so a texel costs three lookups whatever lights it.
+// Before, only white light under the level fade had tables, and a sector
+// colormap -- NormalLight included, which lights every uncolored sector --
+// paid two multiplies and two divisions per channel per pixel.
 //
-static byte argb_shade_lut_r[NUMCOLORMAPS + 1][256];
-static byte argb_shade_lut_g[NUMCOLORMAPS + 1][256];
-static byte argb_shade_lut_b[NUMCOLORMAPS + 1][256];
+// Row NUMCOLORMAPS is full fade, where a special colormap's index is clamped.
+//
+struct argbshadelut_t
+{
+	byte r[NUMCOLORMAPS + 1][256];
+	byte g[NUMCOLORMAPS + 1][256];
+	byte b[NUMCOLORMAPS + 1][256];
+};
 
-// Rebuild shade LUT table (new map or gamma bump).
+void R_BuildARGBShadeLUT(argbshadelut_t* lut, const argb_t color, const argb_t fade)
+{
+	for (int m = 0; m <= NUMCOLORMAPS; m++)
+	{
+		// The expression shaderef_t::shadeargb evaluates per texel.
+		const int scale_r = color.getr() * (NUMCOLORMAPS - m);
+		const int scale_g = color.getg() * (NUMCOLORMAPS - m);
+		const int scale_b = color.getb() * (NUMCOLORMAPS - m);
+
+		const int add_r = fade.getr() * m + NUMCOLORMAPS / 2;
+		const int add_g = fade.getg() * m + NUMCOLORMAPS / 2;
+		const int add_b = fade.getb() * m + NUMCOLORMAPS / 2;
+
+		for (int c = 0; c < 256; c++)
+		{
+			lut->r[m][c] = gammatable[(c * scale_r / 255 + add_r) / NUMCOLORMAPS];
+			lut->g[m][c] = gammatable[(c * scale_g / 255 + add_g) / NUMCOLORMAPS];
+			lut->b[m][c] = gammatable[(c * scale_b / 255 + add_b) / NUMCOLORMAPS];
+		}
+	}
+}
+
+argbshadelut_t* R_NewARGBShadeLUT(const argb_t color, const argb_t fade)
+{
+	argbshadelut_t* lut = Z_Malloc<argbshadelut_t>(PU_LEVEL);
+	R_BuildARGBShadeLUT(lut, color, fade);
+	return lut;
+}
+
+// White light under the level fade, which shades the default palette's maps
+// (no dynamic colormap) and NormalLight.
+static argbshadelut_t argb_default_lut;
+
+argbshadelut_t* R_DefaultARGBShadeLUT()
+{
+	return &argb_default_lut;
+}
+
+// Rebuild the default tables (new map or gamma bump).
 void R_UpdateARGBShadeLUT()
 {
 	const argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1],
 	                       level.fadeto_color[2], level.fadeto_color[3]);
 
-	for (int m = 0; m <= NUMCOLORMAPS; m++)
-	{
-		const int fade_r = fadecolor.getr() * m + NUMCOLORMAPS / 2;
-		const int fade_g = fadecolor.getg() * m + NUMCOLORMAPS / 2;
-		const int fade_b = fadecolor.getb() * m + NUMCOLORMAPS / 2;
-
-		for (int c = 0; c < 256; c++)
-		{
-			argb_shade_lut_r[m][c] = gammatable[(c * (NUMCOLORMAPS - m) + fade_r) / NUMCOLORMAPS];
-			argb_shade_lut_g[m][c] = gammatable[(c * (NUMCOLORMAPS - m) + fade_g) / NUMCOLORMAPS];
-			argb_shade_lut_b[m][c] = gammatable[(c * (NUMCOLORMAPS - m) + fade_b) / NUMCOLORMAPS];
-		}
-	}
+	R_BuildARGBShadeLUT(&argb_default_lut, argb_t(255, 255, 255, 255), fadecolor);
 }
 
 //
@@ -2088,9 +1772,6 @@ class ARGBShader
 {
 public:
 	ARGBShader() = default;
-	{
-		const int mapnum =
-		    colormap.mapnum() < NUMCOLORMAPS ? colormap.mapnum() : NUMCOLORMAPS;
 
 	ARGBShader(const shaderef_t& colormap) :
 			ARGBShader(colormap.m_dyncolormap, colormap.mapnum()) { }
@@ -2098,7 +1779,7 @@ public:
 	// colormap.with(n) changes only the light level, so the plane drawers build a
 	// band's shader from the base colormap's dynamic colormap and n directly.
 	ARGBShader(const dyncolormap_t* dyncolormap, int mapnum)
-		{
+	{
 		mapnum = mapnum < NUMCOLORMAPS ? mapnum : NUMCOLORMAPS;
 
 		// Every dynamic colormap gets its tables where it is made (GetSpecialLights,
@@ -2110,26 +1791,17 @@ public:
 		lut_r = lut->r[mapnum];
 		lut_g = lut->g[mapnum];
 		lut_b = lut->b[mapnum];
-		}
 	}
 
 	forceinline argb_t shade(const argb_t c) const
 	{
-		if (lut_r != NULL)
-			return argb_t(c.geta(), lut_r[c.getr()], lut_g[c.getg()], lut_b[c.getb()]);
-
-		return argb_t(c.geta(),
-		              gammatable[(c.getr() * scale_r / 255 + add_r) / NUMCOLORMAPS],
-		              gammatable[(c.getg() * scale_g / 255 + add_g) / NUMCOLORMAPS],
-		              gammatable[(c.getb() * scale_b / 255 + add_b) / NUMCOLORMAPS]);
+		return argb_t(c.geta(), lut_r[c.getr()], lut_g[c.getg()], lut_b[c.getb()]);
 	}
 
 private:
 	const byte* lut_r;
 	const byte* lut_g;
 	const byte* lut_b;
-	int scale_r, scale_g, scale_b;
-	int add_r, add_g, add_b;
 };
 
 class DirectARGBColormapFunc
@@ -2137,8 +1809,6 @@ class DirectARGBColormapFunc
 public:
 	DirectARGBColormapFunc(const drawcolumn_t& drawcolumn) :
 			shader(drawcolumn.colormap), blend_to_dest(drawcolumn.masked) { }
-	DirectARGBColormapFunc(const drawspan_t& drawspan) :
-			shader(drawspan.colormap), blend_to_dest(false) { }
 
 	forceinline void operator()(argb_t c, argb_t* dest) const
 	{
@@ -2172,12 +1842,6 @@ public:
 		calculate_alpha(drawcolumn.translevel);
 	}
 
-	DirectARGBTranslucentColormapFunc(const drawspan_t& drawspan) :
-			shader(drawspan.colormap)
-	{
-		calculate_alpha(drawspan.translevel);
-	}
-
 	forceinline void operator()(argb_t c, argb_t* dest) const
 	{
 		// combine the surface's translucency with the texel's alpha
@@ -2198,28 +1862,74 @@ private:
 	int fga;
 };
 
-class DirectARGBSlopeColormapFunc
+//
+// True color plane columns
+//
+// A plane column crosses light bands, so instead of one shader per span it
+// carries a table of them, one per band, indexed by the same relative offset the
+// palettized columns add to cbase.
+//
+// R_PrepareARGBPlaneShading fills it once per plane, and only for planes with an
+// ARGB flat, so ordinary planes never pay the full cost.
+//
+static bool argb_plane_drawers = false;
+
+static thread_local ARGBShader argb_plane_shaders[NUMCOLORMAPS];
+
+bool R_PrepareARGBPlaneShading(rendercontext_t& ctx, const shaderef_t& light)
+{
+	drawplanecol_t& dpcol = ctx.draw.dpcol;
+
+	// The span drawers' test: a special colormap (invulnerability) has no RGB
+	// equivalent and stays palettized.
+	if (!argb_plane_drawers || dpcol.argbsource == NULL || light.mapnum() >= NUMCOLORMAPS)
+	{
+		dpcol.argbshade = NULL;
+		return false;
+	}
+
+	for (int rel = 0; rel < NUMCOLORMAPS; rel++)
+		argb_plane_shaders[rel] = ARGBShader(light.m_dyncolormap, light.mapnum() + rel);
+
+	dpcol.argbshade = argb_plane_shaders;
+	return true;
+}
+
+//
+// R_ShadeOpaqueARGB
+//
+// One texel of an opaque true-color surface: a plane has no backdrop, so a
+// translucent texel composites onto black, as DirectARGBColormapFunc does for
+// spans.
+//
+static forceinline argb_t R_ShadeOpaqueARGB(const ARGBShader& shader, const argb_t c)
+{
+	const int a = c.geta();
+	if (a == 255)
+		return shader.shade(c);
+	if (a > 0)
+		return alphablend2a(argb_t(255, 0, 0, 0), 255 - a, shader.shade(c), a);
+	return argb_t(255, 0, 0, 0);
+}
+
+//
+// DirectARGBLevelFunc
+//
+// DirectARGBColormapFunc for a plane column: the shader comes from the band
+// table, and a plane has no backdrop, so translucent texels composite onto black.
+//
+class DirectARGBLevelFunc
 {
 public:
-	DirectARGBSlopeColormapFunc(const drawspan_t& drawspan) :
-			colormap(drawspan.slopelighting) { }
+	DirectARGBLevelFunc(const drawplanecol_t& d) : shaders(d.argbshade) { }
 
-	forceinline void operator()(argb_t c, argb_t* dest)
+	forceinline void operator()(argb_t c, unsigned int lightoff, argb_t* dest) const
 	{
-		const ARGBShader shader(*colormap);
-		colormap++;
-
-		const int a = c.geta();
-		if (a == 255)
-			*dest = shader.shade(c);
-		else if (a > 0)
-			*dest = alphablend2a(argb_t(255, 0, 0, 0), 255 - a, shader.shade(c), a);
-		else
-			*dest = argb_t(255, 0, 0, 0);
+		*dest = R_ShadeOpaqueARGB(shaders[lightoff >> 8], c);
 	}
 
 private:
-	const shaderef_t* colormap;
+	const ARGBShader* shaders;
 };
 
 
@@ -2432,66 +2142,6 @@ void R_FillTranslucentSpanD(rendercontext_t& ctx)
 	drawspan_t& dspan = ctx.draw.dspan;
 
 	R_FillSpanGeneric<argb_t, DirectTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
-}
-
-//
-// R_DrawSpanD
-//
-// Renders a span for a level plane to the 32bpp ARGB8888 screen buffer from
-// the source buffer dspan.source. Shading is performed using dspan.colormap.
-//
-void R_DrawSpanD(rendercontext_t& ctx)
-{
-	drawspan_t& dspan = ctx.draw.dspan;
-
-	if (dspan.argbsource != NULL && dspan.colormap.mapnum() < NUMCOLORMAPS)
-		R_DrawLevelSpanGenericARGB<DirectARGBColormapFunc>(FB_SPANDEST_D, dspan);
-	else
-		R_DrawLevelSpanGeneric<argb_t, DirectColormapFunc>(FB_SPANDEST_D, dspan);
-}
-
-//
-// R_DrawTranslucentSpanD
-//
-// Renders a span for a level plane to the 32bpp ARGB8888 screen buffer from
-// the source buffer dspan.source, blended with the framebuffer by
-// dspan.translevel. Shading is performed using dspan.colormap.
-//
-void R_DrawTranslucentSpanD(rendercontext_t& ctx)
-{
-	drawspan_t& dspan = ctx.draw.dspan;
-
-	R_DrawLevelSpanGeneric<argb_t, DirectTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
-}
-
-//
-// R_DrawTranslucentSlopeSpanD
-//
-// Renders a span for a sloped plane to the 32bpp ARGB8888 screen buffer from
-// the source buffer dspan.source, blended with the framebuffer by
-// dspan.translevel. Shading is performed using dspan.slopelighting.
-//
-void R_DrawTranslucentSlopeSpanD(rendercontext_t& ctx)
-{
-	drawspan_t& dspan = ctx.draw.dspan;
-
-	R_DrawSlopedSpanGeneric<argb_t, DirectSlopeTranslucentColormapFunc>(FB_SPANDEST_D, dspan);
-}
-
-//
-// R_DrawSlopeSpanD
-//
-// Renders a span for a sloped plane to the 32bpp ARGB8888 screen buffer from
-// the source buffer dspan.source. Shading is performed using dspan.colormap.
-//
-void R_DrawSlopeSpanD(rendercontext_t& ctx)
-{
-	drawspan_t& dspan = ctx.draw.dspan;
-
-	if (dspan.argbsource != NULL && dspan.slopelighting[0].mapnum() < NUMCOLORMAPS)
-		R_DrawSlopedSpanGenericARGB<DirectARGBSlopeColormapFunc>(FB_SPANDEST_D, dspan);
-	else
-		R_DrawSlopedSpanGeneric<argb_t, DirectSlopeColormapFunc>(FB_SPANDEST_D, dspan);
 }
 
 
@@ -2778,12 +2428,14 @@ void R_InitVectorizedDrawers()
 {
 	// [SL] defaults are the non-vectorized drawers
 	R_DrawLevelGroupD		= R_DrawLevelGroupD_c;
+	have_sse2_slopes		= false;
 	r_dimpatchD             = r_dimpatchD_c;
 
 	#ifdef __SSE2__
 	if (optimize_kind == OPTIMIZE_SSE2)
 	{
 		R_DrawLevelGroupD		= R_DrawLevelGroupD_SSE2;
+		have_sse2_slopes		= true;
 		r_dimpatchD             = r_dimpatchD_SSE2;
 		have_quad_columns		= true;
 	}
@@ -2803,10 +2455,7 @@ void R_InitVectorizedDrawers()
 
 	// Independent ifs, not an else-if chain: optimize_kind already makes them
 	// exclusive, and chaining would leave a dangling else on any build without
-	// __SSE2__ -- which is every Altivec build.
-	//
-	// Only SSE2 has a group kernel. MMX and Altivec supply the dim-patch drawer
-	// alone and keep R_DrawLevelGroupD_c.
+	// __SSE2__
 
 	// Check that all pointers are definitely assigned!
 	assert(R_DrawLevelGroupD != NULL);
@@ -2903,7 +2552,14 @@ void R_DrawLevelColumnD(rendercontext_t& ctx)
 {
 	drawplanecol_t& dpcol = ctx.draw.dpcol;
 
-	if (dpcol.lightoff == NULL)
+	if (dpcol.argbshade != NULL)
+	{
+		if (dpcol.lightoff == NULL)
+			R_DrawLevelColumnGeneric<true, argb_t, DirectARGBLevelFunc, argb_t>(FB_LEVELDEST_D, dpcol);
+		else
+			R_DrawLevelColumnGeneric<false, argb_t, DirectARGBLevelFunc, argb_t>(FB_LEVELDEST_D, dpcol);
+	}
+	else if (dpcol.lightoff == NULL)
 		R_DrawLevelColumnGeneric<true, argb_t, DirectLevelFunc>(FB_LEVELDEST_D, dpcol);
 	else
 		R_DrawLevelColumnGeneric<false, argb_t, DirectLevelFunc>(FB_LEVELDEST_D, dpcol);
@@ -2917,6 +2573,59 @@ void R_DrawTranslucentLevelColumnD(rendercontext_t& ctx)
 		R_DrawLevelColumnGeneric<true, argb_t, DirectTranslucentLevelFunc>(FB_LEVELDEST_D, dpcol);
 	else
 		R_DrawLevelColumnGeneric<false, argb_t, DirectTranslucentLevelFunc>(FB_LEVELDEST_D, dpcol);
+}
+
+//
+// Sloped plane column drawing wrappers
+//
+// slopelight is false when the plane resolves to one colormap -- fixedlightlev
+// or an active fixedcolormap -- and cbase/sbase already point at it.
+//
+void R_DrawSlopeColumnP(rendercontext_t& ctx)
+{
+	drawplanecol_t& dpcol = ctx.draw.dpcol;
+
+	if (dpcol.slopelight)
+		R_DrawSlopeColumnGeneric<true, palindex_t, PaletteLevelFunc>(FB_LEVELDEST_P, dpcol);
+	else
+		R_DrawSlopeColumnGeneric<false, palindex_t, PaletteLevelFunc>(FB_LEVELDEST_P, dpcol);
+}
+
+void R_DrawTranslucentSlopeColumnP(rendercontext_t& ctx)
+{
+	drawplanecol_t& dpcol = ctx.draw.dpcol;
+
+	if (dpcol.slopelight)
+		R_DrawSlopeColumnGeneric<true, palindex_t, PaletteTranslucentLevelFunc>(FB_LEVELDEST_P, dpcol);
+	else
+		R_DrawSlopeColumnGeneric<false, palindex_t, PaletteTranslucentLevelFunc>(FB_LEVELDEST_P, dpcol);
+}
+
+void R_DrawSlopeColumnD(rendercontext_t& ctx)
+{
+	drawplanecol_t& dpcol = ctx.draw.dpcol;
+
+	if (dpcol.argbshade != NULL)
+	{
+		if (dpcol.slopelight)
+			R_DrawSlopeColumnGeneric<true, argb_t, DirectARGBLevelFunc, argb_t>(FB_LEVELDEST_D, dpcol);
+		else
+			R_DrawSlopeColumnGeneric<false, argb_t, DirectARGBLevelFunc, argb_t>(FB_LEVELDEST_D, dpcol);
+	}
+	else if (dpcol.slopelight)
+		R_DrawSlopeColumnGeneric<true, argb_t, DirectLevelFunc>(FB_LEVELDEST_D, dpcol);
+	else
+		R_DrawSlopeColumnGeneric<false, argb_t, DirectLevelFunc>(FB_LEVELDEST_D, dpcol);
+}
+
+void R_DrawTranslucentSlopeColumnD(rendercontext_t& ctx)
+{
+	drawplanecol_t& dpcol = ctx.draw.dpcol;
+
+	if (dpcol.slopelight)
+		R_DrawSlopeColumnGeneric<true, argb_t, DirectTranslucentLevelFunc>(FB_LEVELDEST_D, dpcol);
+	else
+		R_DrawSlopeColumnGeneric<false, argb_t, DirectTranslucentLevelFunc>(FB_LEVELDEST_D, dpcol);
 }
 
 //
@@ -2962,6 +2671,49 @@ void R_DrawLevelGroupD_c(rendercontext_t& ctx)
 	}
 }
 
+//
+// R_DrawLevelGroupARGBD_c
+//
+// R_DrawLevelGroupD_c for a true-color flat: the same four-row DDA, sampling the
+// ARGB plane and shading each lane with its band's shader, which is as
+// loop-invariant as shade[i] is there.
+//
+void R_DrawLevelGroupARGBD_c(rendercontext_t& ctx)
+{
+	const drawplanegroup_t& g = ctx.draw.dpgroup;
+
+	const argb_t* const source = g.argbsource;
+
+	// By value, like the span functor's shader: through a pointer, every pixel
+	// would reload its tables from memory.
+	const ARGBShader s0 = g.argbshade[g.argbband[0]];
+	const ARGBShader s1 = g.argbshade[g.argbband[1]];
+	const ARGBShader s2 = g.argbshade[g.argbband[2]];
+	const ARGBShader s3 = g.argbshade[g.argbband[3]];
+
+	const int umask = g.umask, vmask = g.vmask;
+	const int ushift = g.ushift, vshift = g.vshift;
+
+	dsfixed_t u0 = g.ufrac[0], u1 = g.ufrac[1], u2 = g.ufrac[2], u3 = g.ufrac[3];
+	dsfixed_t v0 = g.vfrac[0], v1 = g.vfrac[1], v2 = g.vfrac[2], v3 = g.vfrac[3];
+
+	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
+			ptrdiff_t(g.xa) * g.colstep + g.y0;
+
+	for (int n = g.xb - g.xa + 1; n; --n)
+	{
+		dest[0] = R_ShadeOpaqueARGB(s0, source[((v0 >> vshift) & vmask) | ((u0 >> ushift) & umask)]);
+		dest[1] = R_ShadeOpaqueARGB(s1, source[((v1 >> vshift) & vmask) | ((u1 >> ushift) & umask)]);
+		dest[2] = R_ShadeOpaqueARGB(s2, source[((v2 >> vshift) & vmask) | ((u2 >> ushift) & umask)]);
+		dest[3] = R_ShadeOpaqueARGB(s3, source[((v3 >> vshift) & vmask) | ((u3 >> ushift) & umask)]);
+
+		u0 += g.ustep[0]; u1 += g.ustep[1]; u2 += g.ustep[2]; u3 += g.ustep[3];
+		v0 += g.vstep[0]; v1 += g.vstep[1]; v2 += g.vstep[2]; v3 += g.vstep[3];
+
+		dest += g.colstep;
+	}
+}
+
 
 //
 // R_SelectDrawers
@@ -2978,15 +2730,14 @@ static void R_SelectDrawers()
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnP;
 		R_DrawTlatedLucentColumn = R_DrawTlatedLucentColumnP;
 		R_DrawSkyForegroundColumn= R_DrawSkyForegroundColumnP;
-		R_DrawSlopeSpan			= R_DrawSlopeSpanP;
-		R_DrawTranslucentSlopeSpan = R_DrawTranslucentSlopeSpanP;
-		R_DrawSpan				= R_DrawSpanP;
-		R_DrawTranslucentSpan	= R_DrawTranslucentSpanP;
 		R_FillColumn			= R_FillColumnP;
 		R_FillSpan				= R_FillSpanP;
 		R_FillTranslucentSpan	= R_FillTranslucentSpanP;
 		R_DrawLevelColumn		= R_DrawLevelColumnP;
 		R_DrawTranslucentLevelColumn = R_DrawTranslucentLevelColumnP;
+		R_DrawSlopeColumn		= R_DrawSlopeColumnP;
+		R_DrawTranslucentSlopeColumn = R_DrawTranslucentSlopeColumnP;
+		argb_plane_drawers		= false;
 
 		// No 8bpp group kernel: sixteen lanes would need sixteen colormap bases
 		// and SSE2 has no pinsrb to assemble them. 8bpp level planes go through
@@ -3002,20 +2753,14 @@ static void R_SelectDrawers()
 		R_DrawTranslatedColumn	= R_DrawTranslatedColumnD;
 		R_DrawTlatedLucentColumn = R_DrawTlatedLucentColumnD;
 		R_DrawSkyForegroundColumn= R_DrawSkyForegroundColumnD;
-		R_DrawTranslucentSlopeSpan = R_DrawTranslucentSlopeSpanD;
-		R_DrawTranslucentSpan	= R_DrawTranslucentSpanD;
 		R_FillColumn			= R_FillColumnD;
 		R_FillSpan				= R_FillSpanD;
 		R_FillTranslucentSpan	= R_FillTranslucentSpanD;
 		R_DrawLevelColumn		= R_DrawLevelColumnD;
 		R_DrawTranslucentLevelColumn = R_DrawTranslucentLevelColumnD;
-
-		// Scalar. The SSE2 span drawers wrote contiguous 4-pixel chunks, which is
-		// no use against a column-major buffer, so sloped planes and ARGB-flat
-		// level planes store one pixel per cache line. The fix is a column-major
-		// sloped rasterizer on R_DrawLevelGroupD_SSE2's plan.
-		R_DrawSlopeSpan			= R_DrawSlopeSpanD;
-		R_DrawSpan				= R_DrawSpanD;
+		R_DrawSlopeColumn		= R_DrawSlopeColumnD;
+		R_DrawTranslucentSlopeColumn = R_DrawTranslucentSlopeColumnD;
+		argb_plane_drawers		= true;
 
 		// The group kernel's premise: four rows of one column are 16 contiguous
 		// bytes.

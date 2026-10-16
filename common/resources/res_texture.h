@@ -458,6 +458,12 @@ public:
 	// True for a texture whose pixels this manager rewrites in place every tic.
 	bool isWarped(const ResourceId res_id) const;
 
+	// Moves on every tic that rewrites warped pixels.
+	uint32_t warpGeneration() const
+	{
+		return mWarpGeneration;
+	}
+
 private:
 	void clear();
 	void loadAnimationsFromAnimatedLump();
@@ -494,4 +500,5 @@ private:
 	};
 
 	std::vector<AnimatedTextureManager::warp_t> mWarpedTextures;
+	uint32_t mWarpGeneration = 1;
 };

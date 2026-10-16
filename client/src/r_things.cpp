@@ -770,23 +770,68 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 	}
 }
 
+//
+// Sector sprite claims
+//
+// Each slice traverses the world on its own, so several can reach the same
+// sector. Its sprites have to be projected exactly once per view -- the masked
+// pass then has every slice draw the union of all slices' sprites, clamped to
+// its own columns -- so the first slice to reach a sector claims it.
+//
+// A claim is the current stamp: bumping the stamp releases every claim at once.
+// This replaces the sector_t::validcount guard, which would have had the
+// renderer writing level data from several threads.
+//
+static std::unique_ptr<std::atomic<uint32_t>[]> sectorclaims;
+static size_t sectorclaimcount;
+static uint32_t sectorclaimstamp;
+
+void R_BeginSpriteClaims()
+{
+	if (sectorclaimcount < static_cast<size_t>(numsectors))
+	{
+		sectorclaimcount = numsectors;
+		sectorclaims.reset(new std::atomic<uint32_t>[sectorclaimcount]);
+		for (size_t i = 0; i < sectorclaimcount; i++)
+			sectorclaims[i].store(0, std::memory_order_relaxed);
+	}
+
+	// on wrapping, clear every claim so no stale one can match
+	if (++sectorclaimstamp == 0)
+	{
+		for (size_t i = 0; i < sectorclaimcount; i++)
+			sectorclaims[i].store(0, std::memory_order_relaxed);
+		sectorclaimstamp = 1;
+	}
+}
+
+static bool R_ClaimSectorSprites(const sector_t* sec)
+{
+	std::atomic<uint32_t>& claim = sectorclaims[sec - sectors];
+
+	uint32_t seen = claim.load(std::memory_order_relaxed);
+	if (seen == sectorclaimstamp)
+		return false;
+
+	// only one slice wins the exchange
+	return claim.compare_exchange_strong(seen, sectorclaimstamp, std::memory_order_relaxed);
+}
 
 //
 // R_AddSprites
 // During BSP traversal, this adds sprites by sector.
 //
 // killough 9/18/98: add lightlevel as parameter, fixing underwater lighting
+//
 void R_AddSprites (rendercontext_t& ctx, sector_t *sec, int lightlevel, int fakeside)
 {
 	// BSP is traversed by subsector.
 	// A sector might have been split into several
-	//	subsectors during BSP building.
-	// Thus we check whether it was already added.
-	if (sec->validcount == validcount)
+	// subsectors during BSP building -- and with slices, reached by several
+	// of them.
+	// Only the first to get here projects its sprites.
+	if (!R_ClaimSectorSprites(sec))
 		return;
-
-	// Well, now it will be done.
-	sec->validcount = validcount;
 
 	int lightnum = (lightlevel >> LIGHTSEGSHIFT) + (ctx.bsp.foggy ? 0 : extralight);
 
@@ -1016,29 +1061,47 @@ void R_DrawPlayerSprites(rendercontext_t& ctx)
 // [EB] Now uses std::sort, hopefully slightly faster, but definitely easier to read
 //
 
-static std::vector<vissprite_t*> spritesorter;
+static thread_local std::vector<vissprite_t*> spritesorter;
 
-void R_SortVisSprites(rendercontext_t& ctx)
+void R_SortVisSprites(rendercontext_t& ctx, std::span<rendercontext_t* const> gather)
 {
-	const int vsprcount = ctx.sprite.vissprite_p - ctx.sprite.firstvissprite;
+	spritesorter.clear();
 
-	if (!vsprcount)
+	const auto gatherpool = [](const rendercontext_t& from)
 	{
-		spritesorter.clear();
-		return;
+		for (vissprite_t* spr = from.sprite.firstvissprite; spr < from.sprite.vissprite_p; spr++)
+			spritesorter.push_back(spr);
+	};
+
+	// A sprite overhanging into a slice that never reached its sector still
+	// has to draw there, so a view's pass takes every rendering slice's sprites.
+	if (!gather.empty())
+	{
+		for (const rendercontext_t* from : gather)
+			gatherpool(*from);
+	}
+	else
+	{
+		gatherpool(ctx);
 	}
 
-	spritesorter.reserve(ctx.sprite.maxvissprites);
-	spritesorter.resize(vsprcount);
+	if (spritesorter.empty())
+		return;
 
-	vissprite_t* spr = ctx.sprite.firstvissprite;
-	for (int i = 0; i < vsprcount; i++, spr++)
-		spritesorter[i] = spr;
-
+	// Exact ties fall back to identity, so the order cannot depend on which
+	// slice happened to project a sprite -- with threads that varies by timing,
+	// and two sprites at one spot would trade places frame to frame.
 	const auto comparator = [](const vissprite_t* v1, const vissprite_t* v2) -> bool
 	{
-		const bool samedepth = v1->depth == v2->depth;
-		return samedepth ? v1->gzt > v2->gzt : v1->depth < v2->depth;
+		if (v1->depth != v2->depth)
+			return v1->depth < v2->depth;
+		if (v1->gzt != v2->gzt)
+			return v1->gzt > v2->gzt;
+		if (v1->mo != v2->mo)
+			return std::less<const AActor*>()(v1->mo, v2->mo);
+		if (v1->x1 != v2->x1)
+			return v1->x1 < v2->x1;
+		return v1->startfrac < v2->startfrac;
 	};
 
 	std::sort(spritesorter.begin(), spritesorter.end(), comparator);
@@ -1125,13 +1188,19 @@ void R_BuildClipSegs(rendercontext_t& ctx)
 //
 // R_DrawSprite
 //
-void R_DrawSprite (rendercontext_t& ctx, vissprite_t *spr)
+void R_DrawSprite (rendercontext_t& ctx, vissprite_t *shared)
 {
 	static int			cliptop[MAXWIDTH];
 	static int			clipbot[MAXWIDTH];
 
 	int topclip = 0;
 	int botclip = viewheight;
+
+	// Every slice draws every sprite, and each clamps it differently, so the
+	// clamp works on a private copy -- the sprite may sit in another slice's
+	// pool.
+	vissprite_t local = *shared;
+	vissprite_t* const spr = &local;
 
 	// Clip sprites against the slice boundaries, since the drawsegs
 	// to clip against it don't exist in this context.
@@ -1272,11 +1341,11 @@ void R_DrawSprite (rendercontext_t& ctx, vissprite_t *spr)
 //
 // R_DrawMasked
 //
-void R_DrawMasked (rendercontext_t& ctx)
+void R_DrawMasked (rendercontext_t& ctx, std::span<rendercontext_t* const> gather, bool mainview)
 {
 	drawseg_t		 *ds;
 
-	R_SortVisSprites (ctx);
+	R_SortVisSprites (ctx, gather);
 	R_BuildClipSegs(ctx);
 
 	{
@@ -1293,11 +1362,15 @@ void R_DrawMasked (rendercontext_t& ctx)
 		spriteclip_stats.peak_sprites = std::max(spriteclip_stats.peak_sprites, sprcount);
 	}
 
+	const bool probe = mainview && &ctx == &rctx;
+	if (probe)
+		closestNonCredibleVisSprite = nullptr;
+
 	for (auto& vis : std::views::reverse(spritesorter))
 	{
 		R_DrawSprite(ctx, vis);
 
-        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
+        if (probe and vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
         {
             closestNonCredibleVisSprite = vis;
         }

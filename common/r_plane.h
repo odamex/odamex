@@ -37,7 +37,8 @@ void R_InitPlanes (void);
 void R_ClearPlanes (rendercontext_t& ctx, bool fullclear);
 
 void R_DrawPlanes (rendercontext_t& ctx);
-void R_DrawPortals (rendercontext_t& ctx);
+// The main view's portal pass, every slice at once.
+void R_DrawPortals(int nslices);
 
 bool R_IsStackBoundary(const AActor* mo);
 
@@ -52,7 +53,7 @@ visplane_t* R_FindPlane(
 	fixed_t xscale,
 	fixed_t yscale,
 	angle_t angle,
-	AActor::AActorPtr skybox);
+	AActor* skybox);
 
 visplane_t *R_CheckPlane (rendercontext_t& ctx, visplane_t *pl, int start, int stop);
 

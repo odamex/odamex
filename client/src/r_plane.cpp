@@ -127,6 +127,20 @@ bool R_IsStackPortal(const AActor* mo)
 	return R_IsStackBoundary(mo) && !R_IsStackPairActive(mo);
 }
 
+// Skybox viewpoints of the portal passes being rendered, innermost last.
+static std::vector<const AActor*> r_ActiveSkyboxes;
+
+//
+// R_IsSkyboxPortal
+//
+// Does a sky plane open a portal pass into its skybox?
+//
+static bool R_IsSkyboxPortal(const ResourceId res_id, const AActor* skybox)
+{
+	return R_ResourceIdIsSkyFlat(res_id) && skybox != NULL &&
+	       std::ranges::find(r_ActiveSkyboxes, skybox) == r_ActiveSkyboxes.end();
+}
+
 
 // killough -- hash function for visplanes
 // Empirically verified to be fairly uniform:
@@ -154,164 +168,12 @@ std::unique_ptr<fixed_t[]> yslope;
 
 
 //
-// R_DoubleToDsFixed
-//
-// Converts a double to 16.16 fixed point with the same low-32-bit wrapping
-// the fixed-point pipeline had, avoiding the undefined behavior of casting
-// an out-of-range double directly to a 32-bit integer.
-//
-static inline dsfixed_t R_DoubleToDsFixed(double value)
-{
-	return static_cast<dsfixed_t>(static_cast<int64_t>(value * 65536.0));
-}
-
-//
 // R_InitPlanes
 // Only at game startup.
 //
 void R_InitPlanes (void)
 {
 	// Doh!
-}
-
-//
-// R_MapSlopedPlane
-//
-// Calculates the vectors a, b, & c, which are used to texture map a sloped
-// plane.
-//
-// Based in part on R_MapSlope() and R_SlopeLights() from Eternity Engine,
-// written by SoM/Quasar
-//
-void R_MapSlopedPlane(rendercontext_t& ctx, int y, int x1, int x2)
-{
-	int len = x2 - x1 + 1;
-	if (len <= 0)
-		return;
-
-	// center of the view plane
-	// use the sub-pixel view center (centeryfrac) so the mapping tracks
-	// the exact y-shear from mouselook instead of snapping to whole pixels
-	v3float_t s;
-	s.x = x1 - centerx;
-	s.y = static_cast<float>(y + 1 - FIXED2DOUBLE(centeryfrac));
-	s.z = xfoc;
-
-	ctx.draw.dspan.iu = M_DotProductVec3f(&s, &ctx.plane.slope_a) * flatwidth;
-	ctx.draw.dspan.iv = M_DotProductVec3f(&s, &ctx.plane.slope_b) * flatheight;
-	ctx.draw.dspan.id = M_DotProductVec3f(&s, &ctx.plane.slope_c);
-
-	ctx.draw.dspan.iustep = ctx.plane.slope_a.x * flatwidth;
-	ctx.draw.dspan.ivstep = ctx.plane.slope_b.x * flatheight;
-	ctx.draw.dspan.idstep = ctx.plane.slope_c.x;
-
-	// From R_SlopeLights, Eternity Engine
-	float id = ctx.draw.dspan.id + ctx.draw.dspan.idstep * (x2 - x1);
-	float map1 = 256.0f - (ctx.plane.shade - ctx.plane.plight * ctx.draw.dspan.id);
-	float map2 = 256.0f - (ctx.plane.shade - ctx.plane.plight * id);
-
-	if (fixedlightlev)
-	{
-		for (int i = 0; i < len; i++)
-			ctx.draw.dspan.slopelighting[i] = ctx.draw.basecolormap.with(fixedlightlev);
-	}
-	else if (fixedcolormap.isValid())
-	{
-		for (int i = 0; i < len; i++)
-			ctx.draw.dspan.slopelighting[i] = fixedcolormap;
-	}
-	else
-	{
-		fixed_t mapstart = FLOAT2FIXED((256.0f - map1) / 256.0f * NUMCOLORMAPS);
-		fixed_t mapend = FLOAT2FIXED((256.0f - map2) / 256.0f * NUMCOLORMAPS);
-		fixed_t map = mapstart;
-		fixed_t step = 0;
-
-		step = (mapend - mapstart) / len;
-
-		for (int i = 0; i < len; i++)
-		{
-			int index = static_cast<int>(map >> FRACBITS) + 1;
-			index -= (ctx.bsp.foggy ? 0 : extralight << 2);
-
-			if (index < 0)
-				ctx.draw.dspan.slopelighting[i] = ctx.draw.basecolormap;
-			else if (index >= NUMCOLORMAPS)
-				ctx.draw.dspan.slopelighting[i] = ctx.draw.basecolormap.with((NUMCOLORMAPS - 1));
-			else
-				ctx.draw.dspan.slopelighting[i] = ctx.draw.basecolormap.with(index);
-
-			map += step;
-		}
-	}
-
-   	ctx.draw.dspan.y = y;
-	ctx.draw.dspan.x1 = x1;
-	ctx.draw.dspan.x2 = x2;
-
-	ctx.draw.spanslopefunc(ctx);
-}
-
-
-//
-// R_MapLevelPlane
-//
-// [SL] 2012-11-09 - Based loosely on R_MapPlane() from PrBoom+ to increase
-// the accuracy of texture-mapping visplanes with the same textures.
-//
-// e6y
-//
-// [RH]Instead of using the xtoviewangle array, I calculated the fractional values
-// at the middle of the screen, then used the calculated ds_xstep and ds_ystep
-// to step from those to the proper texture coordinate to start drawing at.
-// That way, the texture coordinate is always calculated by its position
-// on the screen and not by its position relative to the edge of the visplane.
-//
-// Visplanes with the same texture now match up far better than before.
-//
-void R_MapLevelPlane(rendercontext_t& ctx, int y, int x1, int x2)
-{
-	const double distance = ctx.plane.pl_planeheight * FIXED2DOUBLE(yslope[y]);
-
-	const double slope = distance / xfoc;
-
-	const double ustep = ctx.plane.pl_xstepscale * slope;
-	const double vstep = ctx.plane.pl_ystepscale * slope;
-
-	double ufrac = ctx.plane.pl_viewxtrans + ctx.plane.pl_viewcos * distance * ctx.plane.pl_xscale +
-				(x1 - centerx) * ustep;
-	double vfrac = ctx.plane.pl_viewytrans - ctx.plane.pl_viewsin * distance * ctx.plane.pl_yscale +
-				(x1 - centerx) * vstep;
-
-	// Wrap up into a FRACUNIT at most before converting back to fixed point.
-	ufrac -= 65536.0 * floor(ufrac / 65536.0);
-	vfrac -= 65536.0 * floor(vfrac / 65536.0);
-
-	ctx.draw.dspan.ustep = R_DoubleToDsFixed(ustep);
-	ctx.draw.dspan.vstep = R_DoubleToDsFixed(vstep);
-	ctx.draw.dspan.ufrac = R_DoubleToDsFixed(ufrac);
-	ctx.draw.dspan.vfrac = R_DoubleToDsFixed(vfrac);
-
-	if (fixedlightlev)
-		ctx.draw.dspan.colormap = ctx.draw.basecolormap.with(fixedlightlev);
-	else if (fixedcolormap.isValid())
-		ctx.draw.dspan.colormap = fixedcolormap;
-	else
-	{
-		// Determine lighting based on the span's distance from the viewer.
-		unsigned int index = MAXLIGHTZ - 1;
-		const double lightdist = distance * 65536.0;
-		if (lightdist >= 0.0 && lightdist < static_cast<double>(MAXLIGHTZ) * static_cast<double>(1 << LIGHTZSHIFT))
-			index = static_cast<unsigned int>(lightdist) >> LIGHTZSHIFT;
-
-		ctx.draw.dspan.colormap = ctx.draw.basecolormap.with(ctx.plane.planezlight[index]);
-	}
-
-	ctx.draw.dspan.y = y;
-	ctx.draw.dspan.x1 = x1;
-	ctx.draw.dspan.x2 = x2;
-
-	ctx.draw.spanfunc(ctx);
 }
 
 //
@@ -388,7 +250,7 @@ static forceinline bool R_PlaneMatches(
 		fixed_t xoffs, fixed_t yoffs,
 		fixed_t xscale, fixed_t yscale,
 		angle_t angle,
-		const AActor::AActorPtr& skybox)
+		AActor* skybox)
 {
 	if (isskybox)
 		return skybox == check->skybox;
@@ -421,7 +283,7 @@ visplane_t* R_FindPlane(
 		fixed_t xoffs, fixed_t yoffs,
 		fixed_t xscale, fixed_t yscale,
 		angle_t angle,
-		AActor::AActorPtr skybox)
+		AActor* skybox)
 {
 	visplane_t *check;
 	unsigned hash;						// killough
@@ -431,7 +293,7 @@ visplane_t* R_FindPlane(
 	if (R_ResourceIdIsSkyFlat(res_id) || (sky_transfer & PL_SKYFLAT))  // killough 10/98
 	{
 		lightlevel = 0;		// most skies map together
-		isskybox = R_ResourceIdIsSkyFlat(res_id) && (skybox != NULL) &&
+		isskybox = R_IsSkyboxPortal(res_id, skybox) &&
 		           r_PortalDepth < r_portalrecursions.asInt();
 	}
 	else
@@ -463,6 +325,7 @@ visplane_t* R_FindPlane(
 	check->angle = angle;
 	check->colormap = ctx.draw.basecolormap;		// [RH] Save colormap
 	check->skybox = skybox;
+	check->foggy = ctx.bsp.foggy;
 	check->minx = viewwidth;			// Was SCREENWIDTH -- killough 11/98
 	check->maxx = -1;
 
@@ -551,7 +414,7 @@ visplane_t* R_CheckPlane(rendercontext_t& ctx, visplane_t* pl, int start, int st
 		// make a new visplane
 		unsigned hash;
 
-		if (((R_ResourceIdIsSkyFlat(pl->res_id) && pl->skybox != NULL) ||
+		if ((R_IsSkyboxPortal(pl->res_id, pl->skybox) ||
 		     R_IsStackPortal(pl->skybox)) &&
 		    r_PortalDepth < r_portalrecursions.asInt())
 		{
@@ -574,6 +437,7 @@ visplane_t* R_CheckPlane(rendercontext_t& ctx, visplane_t* pl, int start, int st
 		new_pl->angle = pl->angle;
 		new_pl->colormap = pl->colormap;	// [RH] Copy colormap
 		new_pl->skybox = pl->skybox;
+		new_pl->foggy = pl->foggy;
 		pl = new_pl;
 		R_MarkPlaneColumnsFree(pl, start, stop);
 		pl->minx = start;
@@ -583,13 +447,27 @@ visplane_t* R_CheckPlane(rendercontext_t& ctx, visplane_t* pl, int start, int st
 }
 
 //
+// R_MapSpan
+//
+// One row of a plane for spanfunc. Only ever a solid fill or a blank, so the row
+// is all the drawer needs.
+//
+static void R_MapSpan(rendercontext_t& ctx, int y, int x1, int x2)
+{
+	ctx.draw.dspan.y = y;
+	ctx.draw.dspan.x1 = x1;
+	ctx.draw.dspan.x2 = x2;
+
+	ctx.draw.spanfunc(ctx);
+}
+
+//
 // R_MakeSpans
 //
-// Classic Doom span emission over the plane's own columns. The sentinel at each
-// end is what opens every row at minx and flushes every row at maxx.
+// Classic Doom span emission over the plane's own columns. The sentinel at
+// each end is what opens every row at minx and flushes every row at maxx.
 //
-void R_MakeSpans(rendercontext_t& ctx, visplane_t* pl,
-                 void(*mapfunc)(rendercontext_t&, int, int, int))
+static void R_MakeSpans(rendercontext_t& ctx, visplane_t* pl)
 {
 	const int minx = pl->minx;
 	const int maxx = pl->maxx;
@@ -607,9 +485,9 @@ void R_MakeSpans(rendercontext_t& ctx, visplane_t* pl,
 		unsigned int b2 = pl->bottom[x];
 
 		for (; t1 < t2 && t1 <= b1; t1++)
-			mapfunc(ctx, t1, ctx.plane.spanstart[t1], x-1);
+			R_MapSpan(ctx, t1, ctx.plane.spanstart[t1], x-1);
 		for (; b1 > b2 && b1 >= t1; b1--)
-			mapfunc(ctx, b1, ctx.plane.spanstart[b1], x-1);
+			R_MapSpan(ctx, b1, ctx.plane.spanstart[b1], x-1);
 		while (t2 < t1 && t2 <= b2)
 			ctx.plane.spanstart[t2++] = x;
 		while (b2 > b1 && b2 >= t2)
@@ -630,7 +508,7 @@ void R_MakeSpans(rendercontext_t& ctx, visplane_t* pl,
 // adjacent workers false-share a line at every slice boundary.
 //
 // The same surface can be walked a column at a time with no per-pixel divide.
-// R_MapLevelPlane computes
+// Doom's span mapper computes, per row:
 //
 //   distance(y) = pl_planeheight * FIXED2DOUBLE(yslope[y])
 //   ustep       = pl_xstepscale * distance / xfoc
@@ -666,12 +544,25 @@ namespace
 } // namespace
 
 //
+// R_SelectPlaneARGBShading
+//
+// Decides whether a plane column samples its flat's ARGB plane.
+//
+static bool R_SelectPlaneARGBShading(rendercontext_t& ctx, const shaderef_t& light, bool opaque)
+{
+	if (!opaque)
+	{
+		ctx.draw.dpcol.argbshade = NULL;
+		return false;
+	}
+
+	return R_PrepareARGBPlaneShading(ctx, light);
+}
+
+//
 // R_BuildPlaneLighting
 //
-// Fills plane_lightoff over [miny, maxy] by running the identical selection
-// R_MapLevelPlane runs, rather than exploiting its monotonicity -- so bit
-// identity rests on the same arithmetic, and the degenerate horizon row
-// reproduces today's output for free.
+// Fills plane_lightoff over [miny, maxy] with Doom's per-row selection.
 //
 static shaderef_t R_BuildPlaneLighting(rendercontext_t& ctx, int miny, int maxy)
 {
@@ -753,6 +644,8 @@ void R_DrawLevelPlaneColumns(rendercontext_t& ctx, visplane_t* pl)
 	ctx.draw.dpcol.cbase = light.m_colormap;
 	ctx.draw.dpcol.sbase = light.m_shademap;
 
+	R_SelectPlaneARGBShading(ctx, light, ctx.draw.levelcolfunc == R_DrawLevelColumn);
+
 	// Already 16.16: FIXED2DOUBLE's 1/65536 and the fixed conversion's 65536
 	// cancel, so eu/ev multiply the raw yslope entry. The base is wrapped to keep
 	// the sum in range.
@@ -828,6 +721,10 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 	ctx.draw.dpcol.lightoff = ctx.plane.plane_constlight ? NULL : ctx.plane.plane_lightoff.data();
 	ctx.draw.dpcol.cbase = light.m_colormap;
 	ctx.draw.dpcol.sbase = light.m_shademap;
+
+	// Only the opaque drawer reaches here, and the fringe rows below go through
+	// it, so they pick up the same choice.
+	const bool argb = R_SelectPlaneARGBShading(ctx, light, true);
 
 	ctx.draw.dpcol.ubase = (ctx.plane.pl_viewxtrans - 65536.0 * floor(ctx.plane.pl_viewxtrans / 65536.0)) * 65536.0;
 	ctx.draw.dpcol.vbase = (ctx.plane.pl_viewytrans - 65536.0 * floor(ctx.plane.pl_viewytrans / 65536.0)) * 65536.0;
@@ -924,7 +821,7 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 
 		// Anchored with the scalar drawer's own expression, so the first column of
 		// every run is bit-identical to it and the DDA cannot drift beyond one run.
-		// The step is R_MapLevelPlane's ustep, which in 16.16 is exactly
+		// The step is the span mapper's ustep, which in 16.16 is exactly
 		// eu_step * yslope[y]: per row, and independent of x. That is the trick.
 		const double eu = eu_base + (xa - centerx) * eu_step;
 		const double ev = ev_base + (xa - centerx) * ev_step;
@@ -946,9 +843,13 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 			const unsigned int off = ctx.draw.dpcol.lightoff ? ctx.draw.dpcol.lightoff[y0 + i] : 0u;
 			ctx.draw.dpgroup.shade[i] = ctx.draw.dpcol.sbase + off;
 			ctx.draw.dpgroup.cmap[i] = ctx.draw.dpcol.cbase + off;
+			ctx.draw.dpgroup.argbband[i] = static_cast<int>(off >> 8);
 		}
 
-		R_DrawLevelGroup(ctx);
+		if (argb)
+			R_DrawLevelGroupARGBD_c(ctx);
+		else
+			R_DrawLevelGroup(ctx);
 	};
 
 	// ---- pass 2: one sweep in x, emitting each group's run as it closes
@@ -995,6 +896,80 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 }
 
 //
+// R_DrawSlopedPlaneColumns
+//
+// Walks a sloped plane a column at a time. The texture mapping of screen pixel
+// (x, y) is
+//
+//   s(x, y) = (x - centerx, y + 1 - centery, xfoc)
+//   iu = s.a * flatwidth,  iv = s.b * flatheight,  id = s.c
+//   u = iu / id,  v = iv / id
+//
+// with a, b and c from R_DrawSlopedPlane. s is affine in y, so a column starts
+// from the dot products at its top and steps by the y components. Its light is
+// Eternity's R_SlopeLights, a linear function of id, so it steps linearly too:
+//
+//   lmap(y) = (shade - plight * id(y)) * NUMCOLORMAPS / 256
+//
+// with the colormap index (lmap >> FRACBITS) + 1, less extralight, clamped.
+//
+static void R_DrawSlopedPlaneColumns(rendercontext_t& ctx, visplane_t* pl)
+{
+	drawplanecol_t& d = ctx.draw.dpcol;
+
+	// The three lighting cases
+	shaderef_t light;
+	if (fixedlightlev)
+		light = ctx.draw.basecolormap.with(fixedlightlev);
+	else if (fixedcolormap.isValid())
+		light = fixedcolormap;
+	else
+		light = ctx.draw.basecolormap;
+
+	d.slopelight = !fixedlightlev && !fixedcolormap.isValid();
+	d.cbase = light.m_colormap;
+	d.sbase = light.m_shademap;
+	d.lbias = 1 - (ctx.bsp.foggy ? 0 : extralight << 2);
+
+	R_SelectPlaneARGBShading(ctx, light, ctx.draw.slopecolfunc == R_DrawSlopeColumn);
+
+	d.iustep = ctx.plane.slope_a.y * flatwidth;
+	d.ivstep = ctx.plane.slope_b.y * flatheight;
+	d.idstep = ctx.plane.slope_c.y;
+
+	const double lscale = static_cast<double>(NUMCOLORMAPS) / 256.0 * FRACUNIT;
+	d.lmapstep = static_cast<fixed_t>(-ctx.plane.plight * d.idstep * lscale);
+
+	const float viewcy = static_cast<float>(FIXED2DOUBLE(centeryfrac));
+
+	for (int x = pl->minx; x <= pl->maxx; x++)
+	{
+		const int yl = std::max<int>(pl->top[x], 0);
+		const int yh = std::min<int>(pl->bottom[x], viewheight - 1);
+		if (yl > yh)
+			continue;
+
+		// The span drawer's starting point, at the top of this column.
+		v3float_t s;
+		s.x = static_cast<float>(x - centerx);
+		s.y = static_cast<float>(yl + 1) - viewcy;
+		s.z = xfoc;
+
+		d.iu = M_DotProductVec3f(&s, &ctx.plane.slope_a) * flatwidth;
+		d.iv = M_DotProductVec3f(&s, &ctx.plane.slope_b) * flatheight;
+		d.id = M_DotProductVec3f(&s, &ctx.plane.slope_c);
+
+		d.lmap = static_cast<fixed_t>((ctx.plane.shade - ctx.plane.plight * d.id) * lscale);
+
+		d.x = x;
+		d.yl = yl;
+		d.yh = yh;
+
+		ctx.draw.slopecolfunc(ctx);
+	}
+}
+
+//
 // R_DrawSlopedPlane
 //
 // Calculates the vectors a, b, & c, which are used to texture map a sloped
@@ -1004,6 +979,13 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 //
 void R_DrawSlopedPlane(rendercontext_t& ctx, visplane_t *pl)
 {
+	if (ctx.draw.slopecolfunc == NULL)
+	{
+		ctx.draw.basecolormap = pl->colormap;
+		R_MakeSpans(ctx, pl);
+		return;
+	}
+
 	const double xoffs = FIXED2DOUBLE(pl->xoffs);
 	const double yoffs = FIXED2DOUBLE(pl->yoffs);
 
@@ -1126,7 +1108,7 @@ void R_DrawSlopedPlane(rendercontext_t& ctx, visplane_t *pl)
 
 	ctx.draw.basecolormap = pl->colormap;	// [RH] set basecolormap
 
-	R_MakeSpans(ctx, pl, R_MapSlopedPlane);
+	R_DrawSlopedPlaneColumns(ctx, pl);
 }
 
 
@@ -1135,6 +1117,13 @@ void R_DrawSlopedPlane(rendercontext_t& ctx, visplane_t *pl)
 //
 void R_DrawLevelPlane(rendercontext_t& ctx, visplane_t *pl)
 {
+	if (ctx.draw.levelcolfunc == NULL)
+	{
+		ctx.draw.basecolormap = pl->colormap;
+		R_MakeSpans(ctx, pl);
+		return;
+	}
+
 	// viewx/viewy rotated by the texture rotation angle
 	double pl_viewx, pl_viewy;
 
@@ -1173,11 +1162,9 @@ void R_DrawLevelPlane(rendercontext_t& ctx, visplane_t *pl)
 		}
 	}
 
-	// cache a calculation used by R_MapLevelPlane
+	// per-plane constants of the column mapping
 	ctx.plane.pl_xstepscale = ctx.plane.pl_viewsin * ctx.plane.pl_xscale;
 	ctx.plane.pl_ystepscale = ctx.plane.pl_viewcos * ctx.plane.pl_yscale;
-
-	// cache a calculation used by R_MapLevelPlane
 	ctx.plane.pl_viewxtrans = pl_viewx * ctx.plane.pl_xscale;
 	ctx.plane.pl_viewytrans = pl_viewy * ctx.plane.pl_yscale;
 
@@ -1190,24 +1177,13 @@ void R_DrawLevelPlane(rendercontext_t& ctx, visplane_t *pl)
 	const int light = std::clamp((pl->lightlevel >> LIGHTSEGSHIFT) + (ctx.bsp.foggy ? 0 : extralight), 0, LIGHTLEVELS - 1);
 	ctx.plane.planezlight = zlight[light];
 
-	// A NULL levelcolfunc forces spans -- r_drawflat and nodrawers -- which also
-	// keeps R_StoreWallRange's `spanfunc == R_FillSpan` render-mode test correct.
-	//
-	// ARGB flats force spans too: no column drawer reads dpcol.argbsource, so such
-	// a texture would be sampled through the palette instead of in true colour.
-	// Those spans store one pixel per cache line, which makes a PNG flat on a
-	// full-screen floor the known weak spot of the column-major layout.
-	const bool columns = ctx.draw.levelcolfunc != NULL && ctx.draw.dpcol.argbsource == NULL;
-
 	// R_DrawLevelGroup is NULL on an 8bpp surface, and the group path draws
 	// opaque flats only -- a translucent portal boundary sets levelcolfunc to
 	// the translucent column drawer, which has no group form yet.
-	if (columns && R_DrawLevelGroup != NULL && ctx.draw.levelcolfunc == R_DrawLevelColumn)
+	if (R_DrawLevelGroup != NULL && ctx.draw.levelcolfunc == R_DrawLevelColumn)
 		R_DrawLevelPlaneGroups(ctx, pl);
-	else if (columns)
-		R_DrawLevelPlaneColumns(ctx, pl);
 	else
-		R_MakeSpans(ctx, pl, R_MapLevelPlane);
+		R_DrawLevelPlaneColumns(ctx, pl);
 }
 
 
@@ -1223,27 +1199,31 @@ static void R_DrawSingleFlatPlane(rendercontext_t& ctx, visplane_t* pl)
 	// regular flat
 	ctx.draw.dspan.color += 4;	// [RH] color if r_drawflat is 1
 
+	// The plane's own sector's, not whichever subsector the traversal ended in:
+	// that differs between slices, so extralight would come and go by slice.
+	ctx.bsp.foggy = pl->foggy;
+
 	const ResourceId res_id = Res_GetAnimatedTextureResourceId(pl->res_id);
 	const Texture* cached = Res_CacheTexture(res_id, PU_STATIC);
 	if (cached == NULL)
 		return;
 
-	// The span drawers below tile with power-of-two masks, which a wall texture
-	// put on a plane need not have, so sample a resized copy of those instead.
+	// The plane drawers tile with power-of-two masks, which a wall texture put
+	// on a plane need not have, so sample a resized copy of those instead.
 	const Texture* texture = Res_PlaneTexture(res_id, cached);
 
-	ctx.draw.dspan.source = ctx.draw.dpcol.source = texture->mData;
+	ctx.draw.dpcol.source = texture->mData;
 	// the 32bpp drawers sample the native ARGB plane when the
 	// texture carries one (NULL otherwise)
-	ctx.draw.dspan.argbsource = ctx.draw.dpcol.argbsource = texture->mARGBData;
+	ctx.draw.dpcol.argbsource = texture->mARGBData;
 
 	// [SL] Note that the texture orientation differs from typical Doom span
 	// drawers since flats are stored in column major format now. The roles
 	// of ufrac and vfrac have been reversed to accomodate this.
-	ctx.draw.dspan.umask = ctx.draw.dpcol.umask = texture->mWidthMask << texture->mHeightBits;
-	ctx.draw.dspan.vmask = ctx.draw.dpcol.vmask = texture->mHeightMask;
-	ctx.draw.dspan.ushift = ctx.draw.dpcol.ushift = FRACBITS - texture->mHeightBits;
-	ctx.draw.dspan.vshift = ctx.draw.dpcol.vshift = FRACBITS;
+	ctx.draw.dpcol.umask = texture->mWidthMask << texture->mHeightBits;
+	ctx.draw.dpcol.vmask = texture->mHeightMask;
+	ctx.draw.dpcol.ushift = FRACBITS - texture->mHeightBits;
+	ctx.draw.dpcol.vshift = FRACBITS;
 
 	// Warped flats are now handled elsewhere
 
@@ -1280,10 +1260,9 @@ static void R_DrawStackFlatBlend(rendercontext_t& ctx, visplane_t* pl)
 	    (pl->sky_transfer & PL_SKYFLAT))
 		return;
 
-	ctx.draw.dspan.translevel = ctx.draw.dpcol.translevel = (alpha << FRACBITS) / 255;
-	ctx.draw.spanfunc = R_DrawTranslucentSpan;
-	ctx.draw.spanslopefunc = R_DrawTranslucentSlopeSpan;
+	ctx.draw.dpcol.translevel = (alpha << FRACBITS) / 255;
 	ctx.draw.levelcolfunc = R_DrawTranslucentLevelColumn;
+	ctx.draw.slopecolfunc = R_DrawTranslucentSlopeColumn;
 
 	R_DrawSingleFlatPlane(ctx, pl);
 
@@ -1351,95 +1330,73 @@ void R_DrawPlanes(rendercontext_t& ctx)
 //
 //==========================================================================
 
-static void R_RenderPortalView(rendercontext_t& ctx, visplane_t* pl);
+//
+// Portal passes, every slice in step
+//
+// A portal view is the same for every slice: a skybox's depends on its actor
+// alone, a stacked sector's on its actor and the view it is seen from. So the
+// main thread sets the global view once per portal, and every slice with a
+// window onto it renders that window at once -- the same three-pass shape as
+// the main view, one portal at a time:
+//
+//   serial    enter the portal's view; begin its sprite claims
+//   parallel  each slice: open its window, walk the BSP, draw its planes
+//   (recurse) portals those walks discovered, the same way
+//   parallel  each slice: the portal's sprites and masked midtextures, from
+//             every taking-part slice's pool, clipped to its own window
+//   serial    restore each slice's sprite and drawseg ranges, and the view
+//   parallel  each slice: the stacked-sector boundary blend over its window
+//
+// A slice with several windows onto one portal (a plane split by R_CheckPlane,
+// or a floor and a ceiling) takes them in successive steps.
+//
 
-//
-// R_DrawDiscoveredPortals
-//
-// Renders every portal plane queued in visplanes[MAXVISPLANES] by the pass
-// (or main view) currently being rendered, then frees them.
-//
-static void R_DrawDiscoveredPortals(rendercontext_t& ctx)
+// One slice's share of a portal step: the window it renders, and the context
+// state to restore once it has.
+struct portalslice_t
 {
-	if (ctx.plane.visplanes[MAXVISPLANES] == NULL)
-		return;
+	visplane_t*	pl;
+	ptrdiff_t	vissprite_p;
+	ptrdiff_t	firstvissprite;
+	ptrdiff_t	ds_p;
+	ptrdiff_t	firstdrawseg;
+};
 
-	// Detach the queue, passes below accumulate their own portal discoveries.
-	visplane_t* queue = ctx.plane.visplanes[MAXVISPLANES];
-	ctx.plane.visplanes[MAXVISPLANES] = NULL;
-
-	visplane_t* pl;
-
-	r_PortalDepth++;
-
-	if (r_PortalDepth <= r_portalrecursions.asInt())
-	{
-		for (pl = queue; pl != NULL; pl = pl->next)
-		{
-			R_RenderPortalView(ctx, pl);
-
-			// The discovering view is restored now, overlay the boundary
-			// flat translucently if the stack thing asks for it.
-			R_DrawStackFlatBlend(ctx, pl);
-		}
-	}
-	else
-	{
-		// Shouldn't be reachable (creation is suppressed at the limit), but
-		// never leave portal planes undrawn: render them as regular sky.
-		for (pl = queue; pl != NULL; pl = pl->next)
-		{
-			if (pl->maxx >= pl->minx)
-				R_RenderSkyRange(ctx, pl);
-		}
-	}
-
-	r_PortalDepth--;
-
-	// Free the processed planes.
-	for (*ctx.plane.freehead = queue; *ctx.plane.freehead;)
-		ctx.plane.freehead = &(*ctx.plane.freehead)->next;
-}
-
-//
-// R_RenderPortalView
-//
-// Renders a single portal pass into the window described by the visplane,
-// saving and restoring the view state around it so passes can nest.
-//
-static void R_RenderPortalView(rendercontext_t& ctx, visplane_t* pl)
+// The view a portal step replaced.
+struct portalview_t
 {
-	if (pl->maxx < pl->minx)
-		return;
+	fixed_t		x, y, z;
+	angle_t		angle;
+	AActor*		camera;
+	bool		stackportal;
+};
 
-	fixed_t savedx = viewx;
-	fixed_t savedy = viewy;
-	fixed_t savedz = viewz;
-	angle_t savedangle = viewangle;
-	ptrdiff_t savedvissprite_p = ctx.sprite.vissprite_p - ctx.sprite.vissprites;
-	ptrdiff_t savedfirstvissprite = ctx.sprite.firstvissprite - ctx.sprite.vissprites;
-	ptrdiff_t savedds_p = ctx.bsp.ds_p - ctx.bsp.drawsegs;
-	ptrdiff_t savedfirstdrawseg = ctx.bsp.firstdrawseg - ctx.bsp.drawsegs;
-	AActor* savedcamera = camera;
-	bool pushedstackportal = false;
+//
+// R_EnterPortalView
+//
+// Moves the global view into a portal, and marks it entered so its own planes
+// draw plain. False if a stack portal lost its mate at runtime: no pass then.
+//
+static bool R_EnterPortalView(AActor* sky, portalview_t& saved)
+{
+	saved.x = viewx;
+	saved.y = viewy;
+	saved.z = viewz;
+	saved.angle = viewangle;
+	saved.camera = camera;
+	saved.stackportal = R_IsStackPoint(sky);
 
-	int i;
-
-	AActor* sky = pl->skybox;
-
-	if (R_IsStackPoint(sky))
+	if (saved.stackportal)
 	{
-		AActor* mate = sky->tracer;
-
+		const AActor* mate = sky->tracer;
 		if (mate == NULL)
-			return; // mate was destroyed at runtime, skip the pass
+			return false;
 
-		viewx = savedx + sky->x - mate->x;
-		viewy = savedy + sky->y - mate->y;
-		viewz = savedz;
+		viewx = saved.x + sky->x - mate->x;
+		viewy = saved.y + sky->y - mate->y;
+		viewz = saved.z;
 		camera = sky;
 		r_ActiveStackPortals.push_back(sky);
-		pushedstackportal = true;
 	}
 	else
 	{
@@ -1447,15 +1404,49 @@ static void R_RenderPortalView(rendercontext_t& ctx, visplane_t* pl)
 		viewy = sky->y;
 		viewz = sky->z;
 		camera = sky;
-		R_SetViewAngle(savedangle + sky->angle);
+		R_SetViewAngle(saved.angle + sky->angle);
+		r_ActiveSkyboxes.push_back(sky);
 	}
-	validcount++; // Make sure we see all sprites
+
+	R_BeginSpriteClaims(); // a new view: every sector is unclaimed
+	return true;
+}
+
+static void R_LeavePortalView(const portalview_t& saved)
+{
+	camera = saved.camera;
+
+	if (saved.stackportal)
+		r_ActiveStackPortals.pop_back();
+	else
+		r_ActiveSkyboxes.pop_back();
+
+	viewx = saved.x;
+	viewy = saved.y;
+	viewz = saved.z;
+	R_SetViewAngle(saved.angle);
+}
+
+//
+// R_OpenPortalWindow
+//
+// Renders a slice's window onto the current portal view: its geometry and
+// planes. The context state it moves is saved in step.
+//
+static void R_OpenPortalWindow(rendercontext_t& ctx, portalslice_t& step)
+{
+	visplane_t* const pl = step.pl;
+
+	step.vissprite_p = ctx.sprite.vissprite_p - ctx.sprite.vissprites;
+	step.firstvissprite = ctx.sprite.firstvissprite - ctx.sprite.vissprites;
+	step.ds_p = ctx.bsp.ds_p - ctx.bsp.drawsegs;
+	step.firstdrawseg = ctx.bsp.firstdrawseg - ctx.bsp.drawsegs;
 
 	R_ClearPlanes(ctx, false);
 	R_ClearClipSegs(ctx);
 
 	// Set up ceiling/floor clip arrays for this visplane.
-	for (i = pl->minx; i <= pl->maxx; i++)
+	for (int i = pl->minx; i <= pl->maxx; i++)
 	{
 		if (std::cmp_equal(pl->top[i], viewheight))
 		{
@@ -1469,6 +1460,12 @@ static void R_RenderPortalView(rendercontext_t& ctx, visplane_t* pl)
 		}
 	}
 
+	for (int i = ctx.slice_start; i <= ctx.slice_stop; i++)
+	{
+		if (i < pl->minx || i > pl->maxx || std::cmp_equal(pl->top[i], viewheight))
+			ctx.bsp.solidcol[i] = 1;
+	}
+
 	// Create a drawseg to clip sprites to the sky plane.
 	R_ReallocDrawSegs(ctx);
 	ctx.bsp.ds_p->x1 = 0;
@@ -1478,53 +1475,189 @@ static void R_RenderPortalView(rendercontext_t& ctx, visplane_t* pl)
 	ctx.bsp.ds_p->midscales = NULL;
 	ctx.bsp.ds_p->curline = NULL;
 
-		// [RK] Allocate full width clip arrays.
-		int* bottomclip = ctx.seg.sprclip_pool.alloc(viewwidth);
-		int* topclip = ctx.seg.sprclip_pool.alloc(viewwidth);
-
-		// [RK] Copy visplane clip values into the arrays.
-		memcpy(bottomclip, ctx.plane.floorclip.get(), viewwidth * sizeof(*bottomclip));
-		memcpy(topclip, ctx.plane.ceilingclip.get(), viewwidth * sizeof(*topclip));
-
-		ctx.bsp.ds_p->sprbottomclip = bottomclip;
-		ctx.bsp.ds_p->sprtopclip = topclip;
+	// [RK] Full width clip arrays, from the visplane's clip values.
+	int* bottomclip = ctx.seg.sprclip_pool.alloc(viewwidth);
+	int* topclip = ctx.seg.sprclip_pool.alloc(viewwidth);
+	memcpy(bottomclip, ctx.plane.floorclip.get(), viewwidth * sizeof(*bottomclip));
+	memcpy(topclip, ctx.plane.ceilingclip.get(), viewwidth * sizeof(*topclip));
+	ctx.bsp.ds_p->sprbottomclip = bottomclip;
+	ctx.bsp.ds_p->sprtopclip = topclip;
 
 	ctx.sprite.firstvissprite = ctx.sprite.vissprite_p;
 	ctx.bsp.firstdrawseg = ctx.bsp.ds_p++;
 
 	R_RenderBSPNode(ctx, numnodes - 1);
 	R_DrawPlanes(ctx);
-	R_DrawDiscoveredPortals(ctx);
-	R_DrawMasked(ctx);
-
-	ctx.sprite.firstvissprite = ctx.sprite.vissprites + savedfirstvissprite;
-	ctx.sprite.vissprite_p = ctx.sprite.vissprites + savedvissprite_p;
-	ctx.bsp.firstdrawseg = ctx.bsp.drawsegs + savedfirstdrawseg;
-	ctx.bsp.ds_p = ctx.bsp.drawsegs + savedds_p;
-
-	camera = savedcamera;
-
-	if (pushedstackportal)
-		r_ActiveStackPortals.pop_back();
-	viewx = savedx;
-	viewy = savedy;
-	viewz = savedz;
-	R_SetViewAngle(savedangle);
 }
 
-void R_DrawPortals(rendercontext_t& ctx)
+//
+// R_ClosePortalWindow
+//
+// Restores the context state R_OpenPortalWindow moved.
+//
+static void R_ClosePortalWindow(rendercontext_t& ctx, const portalslice_t& step)
 {
-	if (ctx.plane.visplanes[MAXVISPLANES] == NULL)
+	ctx.sprite.firstvissprite = ctx.sprite.vissprites + step.firstvissprite;
+	ctx.sprite.vissprite_p = ctx.sprite.vissprites + step.vissprite_p;
+	ctx.bsp.firstdrawseg = ctx.bsp.drawsegs + step.firstdrawseg;
+	ctx.bsp.ds_p = ctx.bsp.drawsegs + step.ds_p;
+}
+
+//
+// R_DrawPortalLevel
+//
+// Renders every portal plane the slices' last walks queued in
+// visplanes[MAXVISPLANES], then frees them.
+//
+static void R_DrawPortalLevel(const int nslices)
+{
+	// Detach the queues: the walks below queue their own discoveries.
+	std::vector<std::vector<visplane_t*>> queues(nslices);
+	std::vector<visplane_t*> heads(nslices);
+	bool any = false;
+
+	for (int i = 0; i < nslices; i++)
+	{
+		rendercontext_t& ctx = R_SliceContext(i);
+		heads[i] = ctx.plane.visplanes[MAXVISPLANES];
+		ctx.plane.visplanes[MAXVISPLANES] = NULL;
+
+		for (visplane_t* pl = heads[i]; pl != NULL; pl = pl->next)
+			queues[i].push_back(pl);
+
+		any |= heads[i] != NULL;
+	}
+
+	if (!any)
 		return;
 
+	r_PortalDepth++;
+
+	if (r_PortalDepth <= r_portalrecursions.asInt())
+	{
+		// The distinct portals, in slice order so the sequence cannot depend on
+		// thread timing.
+		std::vector<AActor*> portals;
+		for (int i = 0; i < nslices; i++)
+			for (visplane_t* pl : queues[i])
+				if (std::ranges::find(portals, pl->skybox) == portals.end())
+					portals.push_back(pl->skybox);
+
+		std::vector<portalslice_t> steps(nslices);
+		std::vector<rendercontext_t*> gather;
+		gather.reserve(nslices);
+
+		const auto open = [&](int i)
+		{
+			return steps[i].pl != NULL && steps[i].pl->maxx >= steps[i].pl->minx;
+		};
+
+		for (AActor* sky : portals)
+		{
+			for (size_t j = 0; ; j++)
+			{
+				// Each slice's j-th window onto this portal.
+				bool more = false;
+				gather.clear();
+
+				for (int i = 0; i < nslices; i++)
+				{
+					steps[i].pl = NULL;
+					size_t seen = 0;
+					for (visplane_t* pl : queues[i])
+					{
+						if (pl->skybox == sky && seen++ == j)
+						{
+							steps[i].pl = pl;
+							break;
+						}
+					}
+
+					more |= steps[i].pl != NULL;
+					if (open(i))
+						gather.push_back(&R_SliceContext(i));
+				}
+
+				if (!more)
+					break;
+
+				portalview_t saved;
+				if (!gather.empty() && R_EnterPortalView(sky, saved))
+				{
+					R_RunSlices(nslices, [&](int i)
+					{
+						if (open(i))
+							R_OpenPortalWindow(R_SliceContext(i), steps[i]);
+					});
+
+					R_DrawPortalLevel(nslices);
+
+					// The window's sprites and masked midtextures, the sprites from
+					// every taking-part slice's pool so that one overhanging a
+					// slice line is not cut there.
+					R_RunSlices(nslices, [&](int i)
+					{
+						if (open(i))
+							R_DrawMasked(R_SliceContext(i), gather);
+					});
+
+					for (int i = 0; i < nslices; i++)
+					{
+						if (open(i))
+							R_ClosePortalWindow(R_SliceContext(i), steps[i]);
+					}
+
+					R_LeavePortalView(saved);
+				}
+
+				// The discovering view is restored now
+				R_RunSlices(nslices, [&](int i)
+				{
+					if (steps[i].pl != NULL)
+						R_DrawStackFlatBlend(R_SliceContext(i), steps[i].pl);
+				});
+			}
+		}
+	}
+	else
+	{
+		// Shouldn't be reachable (creation is suppressed at the limit), but
+		// never leave portal planes undrawn: render them as regular sky.
+		R_RunSlices(nslices, [&](int i)
+		{
+			for (visplane_t* pl : queues[i])
+				if (pl->maxx >= pl->minx)
+					R_RenderSkyRange(R_SliceContext(i), pl);
+		});
+	}
+
+	r_PortalDepth--;
+
+	// Free the processed planes.
+	for (int i = 0; i < nslices; i++)
+	{
+		rendercontext_t& ctx = R_SliceContext(i);
+		for (*ctx.plane.freehead = heads[i]; *ctx.plane.freehead;)
+			ctx.plane.freehead = &(*ctx.plane.freehead)->next;
+	}
+}
+
+//
+// R_DrawPortals
+//
+// The main view's portal pass, for all nslices slices at once.
+//
+void R_DrawPortals(const int nslices)
+{
 	// A render aborted mid-pass can leave entries behind.
 	r_ActiveStackPortals.clear();
+	r_ActiveSkyboxes.clear();
 
 	// Don't let gun flashes brighten portal views
-	int savedextralight = extralight;
+	const int savedextralight = extralight;
 	extralight = 0;
 
-	R_DrawDiscoveredPortals(ctx);
+	R_DrawPortalLevel(nslices);
 
 	extralight = savedextralight;
 }

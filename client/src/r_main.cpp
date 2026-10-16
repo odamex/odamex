@@ -997,8 +997,8 @@ void R_SetFlatDrawFuncs(rendercontext_t& ctx)
 {
 	ctx.draw.colfunc = R_FillColumn;
 	ctx.draw.spanfunc = R_FillSpan;
-	ctx.draw.spanslopefunc = R_FillSpan;
 	ctx.draw.levelcolfunc = NULL;
+	ctx.draw.slopecolfunc = NULL;
 }
 
 //
@@ -1010,8 +1010,9 @@ void R_SetFlatDrawFuncs(rendercontext_t& ctx)
 void R_SetBlankDrawFuncs(rendercontext_t& ctx)
 {
 	ctx.draw.colfunc = R_BlankColumn;
-	ctx.draw.spanfunc = ctx.draw.spanslopefunc = R_BlankSpan;
+	ctx.draw.spanfunc = R_BlankSpan;
 	ctx.draw.levelcolfunc = NULL;
+	ctx.draw.slopecolfunc = NULL;
 }
 
 //
@@ -1030,9 +1031,9 @@ void R_ResetDrawFuncs(rendercontext_t& ctx)
 	else
 	{
 		ctx.draw.colfunc = R_DrawColumn;
-		ctx.draw.spanfunc = R_DrawSpan;
-		ctx.draw.spanslopefunc = R_DrawSlopeSpan;
+		ctx.draw.spanfunc = NULL;
 		ctx.draw.levelcolfunc = R_DrawLevelColumn;
+		ctx.draw.slopecolfunc = R_DrawSlopeColumn;
 	}
 }
 
@@ -1049,9 +1050,9 @@ void R_SetFuzzDrawFuncs(rendercontext_t& ctx)
 	else
 	{
 		ctx.draw.colfunc = R_DrawFuzzColumn;
-		ctx.draw.spanfunc = R_DrawSpan;
-		ctx.draw.spanslopefunc = R_DrawSlopeSpan;
+		ctx.draw.spanfunc = NULL;
 		ctx.draw.levelcolfunc = R_DrawLevelColumn;
+		ctx.draw.slopecolfunc = R_DrawSlopeColumn;
 	}
 }
 
@@ -1170,38 +1171,59 @@ void R_RenderPlayerView(player_t* player)
 	// Read walllights before it gets mutated.
 	int* const frame_walllights = rctx.seg.walllights;
 
-	closestNonCredibleVisSprite = nullptr;
-
 	// Render the view as vertical slices, one context each.
 	const int nslices = R_ActiveSlices();
 
-	for (int i = 0; i < nslices; i++)
+	// Pass 1: traversal and planes.
+	const auto pass1 = [&](bool fakingunderwater)
 	{
-		rendercontext_t& ctx = R_SliceContext(i);
-		R_SliceBounds(i, nslices, ctx.slice_start, ctx.slice_stop);
+		R_BeginSpriteClaims();
 
-		ctx.seg.walllights = frame_walllights;
-		ctx.bsp.r_fakingunderwater = false;
+		R_RunSlices(nslices, [&](int i)
+		{
+			rendercontext_t& ctx = R_SliceContext(i);
+			R_SliceBounds(i, nslices, ctx.slice_start, ctx.slice_stop);
 
-		// Each slice traverses the world on its own, so every sector has to be
-		// visitable again.
-		validcount++;
+			ctx.seg.walllights = frame_walllights;
+			ctx.bsp.r_fakingunderwater = fakingunderwater;
 
-		// Clear buffers.
-		R_ClearClipSegs(ctx);
-		R_ClearDrawSegs(ctx);
-		R_ClearOpenings(ctx);
-		R_ClearPlanes(ctx, true);
-		R_ClearSprites(ctx);
+			// Clear buffers.
+			R_ClearClipSegs(ctx);
+			R_ClearDrawSegs(ctx);
+			R_ClearOpenings(ctx);
+			R_ClearPlanes(ctx, true);
+			R_ClearSprites(ctx);
 
-		R_ResetDrawFuncs(ctx);
+			R_ResetDrawFuncs(ctx);
 
-		R_RenderBSPNode(ctx, numnodes - 1);
+			R_RenderBSPNode(ctx, numnodes - 1);
 
-		R_DrawPlanes(ctx);
-		R_DrawPortals(ctx);
-		R_DrawMasked(ctx);
+			R_DrawPlanes(ctx);
+		});
+	};
+
+	pass1(false);
+
+	// If one slice encounters deep water, change it for all of them.
+	if (nslices > 1)
+	{
+		int faking = 0;
+		for (int i = 0; i < nslices; i++)
+			faking += R_SliceContext(i).bsp.r_fakingunderwater;
+
+		if (faking > 0 && faking < nslices)
+			pass1(true);
 	}
+
+	// Pass 2: portals and skyboxes.
+	R_DrawPortals(nslices);
+
+	// Pass 3: sprites and masked midtextures.
+	static std::vector<rendercontext_t*> allslices;
+	allslices.clear();
+	for (int i = 0; i < nslices; i++)
+		allslices.push_back(&R_SliceContext(i));
+	R_RunSlices(nslices, [](int i) { R_DrawMasked(R_SliceContext(i), allslices, true); });
 
 	if (hideplayer)
 		camera->flags2 = flags2_backup;
@@ -1378,6 +1400,8 @@ static void R_InitViewWindow()
 
 	focratio = yfoc / xfoc;
 	ifocratio = xfoc / yfoc;
+
+	R_InitWallRays();
 
 	// psprite scales
 	// [AM] Using centerxfrac will make our sprite too fat, so we

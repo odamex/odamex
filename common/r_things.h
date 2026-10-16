@@ -26,6 +26,8 @@
 
 #include "r_sprites.h"
 
+#include <span>
+
 // [RH] Particle details
 // Expanded to be able to use patches/textures for particle effects
 struct particle_t {
@@ -75,10 +77,13 @@ extern fixed_t		pspritexiscale;
 
 extern vissprite_t* closestNonCredibleVisSprite;
 
+void R_BeginSpriteClaims();
+
 void R_DrawPlayerSprites(rendercontext_t& ctx);
-void R_SortVisSprites(rendercontext_t& ctx);
+void R_SortVisSprites(rendercontext_t& ctx, std::span<rendercontext_t* const> gather = {});
 void R_AddSprites(rendercontext_t& ctx, sector_t *sec, int lightlevel, int fakeside);
 void R_ClearSprites(rendercontext_t& ctx);
-void R_DrawMasked(rendercontext_t& ctx);
+void R_DrawMasked(rendercontext_t& ctx, std::span<rendercontext_t* const> gather = {},
+                  bool mainview = false);
 fixed_t P_CalculateWeaponBobX(player_t& player, float scale_amount);
 fixed_t P_CalculateWeaponBobY(player_t& player, float scale_amount);

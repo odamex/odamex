@@ -27,6 +27,7 @@
 #include "r_context.h"
 
 #include <algorithm>
+#include <atomic>
 
 #include <math.h>
 
@@ -587,6 +588,22 @@ static constexpr fixed_t R_LineLength(fixed_t px1, fixed_t py1, fixed_t px2, fix
 
 
 //
+// R_InitWallRays
+//
+// The view ray through the center of each screen column, as its x-slope
+// against depth. It depends only on the view size and field of view, so it is
+// built when those change, and every slice reads it.
+//
+static double wallraydx[MAXWIDTH];
+
+void R_InitWallRays()
+{
+	for (int i = 0; i < viewwidth; i++)
+		wallraydx[i] = (i + 0.5 - centerx) / xfoc;
+}
+
+
+//
 // R_PrepWall
 //
 // Prepares a lineseg for rendering. It fills the walltopf, wallbottomf,
@@ -598,10 +615,11 @@ static constexpr fixed_t R_LineLength(fixed_t px1, fixed_t py1, fixed_t px2, fix
 // respectively.
 //
 void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
-                fixed_t tx1, fixed_t ty1, fixed_t tx2, fixed_t ty2, int start, int stop)
+                int64_t tx1, int64_t ty1, int64_t tx2, int64_t ty2, int start, int stop,
+                int first, int last)
 {
 	const int width = stop - start + 1;
-	if (width <= 0)
+	if (width <= 0 || first > last)
 		return;
 
 	// Calculate distance from lineseg start to start of clipped lineseg
@@ -613,8 +631,8 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 	fixed_t segoffs = R_LineLength(v1->x, v1->y, px1, py1) + ctx.bsp.curline->sidedef->textureoffset;
 
 	// clipped lineseg endpoints in camera space
-	const double cx1 = FIXED2DOUBLE(tx1), cy1 = FIXED2DOUBLE(ty1);
-	const double cx2 = FIXED2DOUBLE(tx2), cy2 = FIXED2DOUBLE(ty2);
+	const double cx1 = static_cast<double>(tx1) / FRACUNIT, cy1 = static_cast<double>(ty1) / FRACUNIT;
+	const double cx2 = static_cast<double>(tx2) / FRACUNIT, cy2 = static_cast<double>(ty2) / FRACUNIT;
 	const double wdx = cx2 - cx1, wdy = cy2 - cy1;
 
 	// camera space is a rigid rotation of world space, so this is also the
@@ -628,13 +646,19 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 	const double mindepth = FIXED2DOUBLE(NEARCLIP);
 	const double maxdepth = 16384.0;
 
-	for (int i = start; i <= stop; i++)
+	// how deep the view ray through the center of screen column i meets the
+	// wall
+	const auto walldepth = [&](int i)
 	{
-		// view ray through the center of screen column i
-		const double raydx = (i + 0.5 - centerx) / xfoc;
-		const double den = raydx * wdy - wdx;
-		double depth = den != 0.0 ? wallconst / den : maxdepth;
-		depth = std::clamp(depth, mindepth, maxdepth);
+		const double den = wallraydx[i] * wdy - wdx;
+		const double depth = den != 0.0 ? wallconst / den : maxdepth;
+		return std::clamp(depth, mindepth, maxdepth);
+	};
+
+	for (int i = first; i <= last; i++)
+	{
+		const double raydx = wallraydx[i];
+		const double depth = walldepth(i);
 
 		const double scale = yfoc / depth;
 		ctx.seg.wallscaled[i] = scale;
@@ -646,7 +670,10 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 		             static_cast<fixed_t>(static_cast<int64_t>(uunits * 65536.0));
 	}
 
-	ctx.seg.rw_scalestep = FLOAT2FIXED((ctx.seg.wallscaled[stop] - ctx.seg.wallscaled[start]) / width);
+	// the step spans the whole seg, whichever part of it was filled
+	const double startscale = yfoc / walldepth(start);
+	const double stopscale = yfoc / walldepth(stop);
+	ctx.seg.rw_scalestep = FLOAT2FIXED((stopscale - startscale) / width);
 
 	// get the z coordinates of the line's vertices on each side of the line
 	ctx.seg.rw_frontcz1 = P_CeilingHeight(px1, py1, ctx.bsp.frontsector);
@@ -655,8 +682,8 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 	ctx.seg.rw_frontfz2 = P_FloorHeight(px2, py2, ctx.bsp.frontsector);
 
 	// calculate the upper and lower heights of the walls in the front
-	R_FillWallHeightArray(ctx, ctx.seg.walltopf, start, stop, ctx.seg.rw_frontcz1, ctx.seg.rw_frontcz2);
-	R_FillWallHeightArray(ctx, ctx.seg.wallbottomf, start, stop, ctx.seg.rw_frontfz1, ctx.seg.rw_frontfz2);
+	R_FillWallHeightArray(ctx, ctx.seg.walltopf, first, last, ctx.seg.rw_frontcz1, ctx.seg.rw_frontcz2);
+	R_FillWallHeightArray(ctx, ctx.seg.wallbottomf, first, last, ctx.seg.rw_frontfz1, ctx.seg.rw_frontfz2);
 
 	ctx.seg.rw_hashigh = ctx.seg.rw_haslow = false;
 
@@ -668,8 +695,8 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 		ctx.seg.rw_backfz2 = P_FloorHeight(px2, py2, ctx.bsp.backsector);
 
 		// calculate the upper and lower heights of the walls in the back
-		R_FillWallHeightArray(ctx, ctx.seg.walltopb, start, stop, ctx.seg.rw_backcz1, ctx.seg.rw_backcz2);
-		R_FillWallHeightArray(ctx, ctx.seg.wallbottomb, start, stop, ctx.seg.rw_backfz1, ctx.seg.rw_backfz2);
+		R_FillWallHeightArray(ctx, ctx.seg.walltopb, first, last, ctx.seg.rw_backcz1, ctx.seg.rw_backcz2);
+		R_FillWallHeightArray(ctx, ctx.seg.wallbottomb, first, last, ctx.seg.rw_backfz1, ctx.seg.rw_backfz2);
 
 		static constexpr fixed_t tolerance = FRACUNIT / 2;
 
@@ -689,7 +716,7 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 		// copy back ceiling height array to front ceiling height array
 		if (R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) &&
 			R_ResourceIdIsSkyFlat(ctx.bsp.backsector->ceiling_res_id))
-			memcpy(ctx.seg.walltopf+start, ctx.seg.walltopb+start, width*sizeof(*ctx.seg.walltopb));
+			memcpy(ctx.seg.walltopf+first, ctx.seg.walltopb+first, (last-first+1)*sizeof(*ctx.seg.walltopb));
 	}
 
 	// Cache the wall textures
@@ -706,7 +733,7 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 
 	// determine which texture posts will be used for each screen
 	// column in this range.
-	for (int i = start; i <= stop; i++)
+	for (int i = first; i <= last; i++)
 	{
 		const fixed_t colfrac = ctx.seg.texoffs[i];
 
@@ -751,7 +778,7 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	ctx.bsp.linedef = ctx.bsp.curline->linedef;
 
 	// mark the segment as visible for auto map
-	ctx.bsp.linedef->flags |= ML_MAPPED;
+	std::atomic_ref<unsigned int>(ctx.bsp.linedef->flags).fetch_or(ML_MAPPED, std::memory_order_relaxed);
 
 	ctx.bsp.ds_p->x1 = start;
 	ctx.bsp.ds_p->x2 = stop;

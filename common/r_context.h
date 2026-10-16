@@ -268,12 +268,16 @@ struct drawcontext_t
 
 	// The selected drawers.
 	void (*colfunc)(rendercontext_t&);
+	// Fills or blanks one row of a plane under r_drawflat or nodrawers
 	void (*spanfunc)(rendercontext_t&);
-	void (*spanslopefunc)(rendercontext_t&);
 
 	// Draws one column of a level plane, or NULL when planes must go through
 	// the span path.
 	void (*levelcolfunc)(rendercontext_t&);
+
+	// Draws one column of a sloped plane, or NULL when sloped planes must go
+	// through the span path.
+	void (*slopecolfunc)(rendercontext_t&);
 
 	// dcol and dspan carry pointers back into this struct, so a copy would
 	// point at the wrong context

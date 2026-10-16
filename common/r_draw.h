@@ -119,13 +119,11 @@ typedef struct
 	const shaderef_t*	basecolormap;
 } drawcolumn_t;
 
+// A solid-color row: planes under r_drawflat and nodrawers, particles, and the
+// netgraph.
+// Textured planes are drawn a column at a time (drawplanecol_t).
 typedef struct
 {
-	const palindex_t*	source;
-
-	// null if no argb data
-	const argb_t*		argbsource;
-
 	uint8_t*			destination;
 
 	// See drawcolumn_t: row step then column step.
@@ -138,32 +136,16 @@ typedef struct
 	int					x1;
 	int					x2;
 
-	dsfixed_t			ufrac;
-	dsfixed_t			vfrac;
-	dsfixed_t			ustep;
-	dsfixed_t			vstep;
-
-	int					umask;
-	int					vmask;
-	int					ushift;
-	int					vshift;
-
-	float				iu;
-	float				iv;
-	float				id;
-	float				iustep;
-	float				ivstep;
-	float				idstep;
-
 	fixed_t				translevel;
-
-	shaderef_t			slopelighting[MAXWIDTH];
 
 	palindex_t			color;
 
 	const shaderef_t*	basecolormap;
 } drawspan_t;
 
+
+// Shades native ARGB texels for one colormap.
+class ARGBShader;
 
 // ----------------------------------------------------------------------------
 //
@@ -173,7 +155,7 @@ typedef struct
 // constant depth -- but against a column-major framebuffer every pixel of a span
 // is a separate cache line.
 //
-// Columns need no divide either. Collecting R_MapLevelPlane's arithmetic on
+// Columns need no divide either. Collecting the span mapping's arithmetic on
 // distance rather than on x gives, for a fixed column,
 //
 //     u(y) = ubase + eu * yslope[y]
@@ -208,13 +190,23 @@ typedef struct
 	int					ushift, vshift;
 
 	// Lighting. A level plane's colormap is a pure function of screen y -- x
-	// appears nowhere in R_MapLevelPlane's selection -- so one table serves the
-	// whole plane. Entries are the relative colormap index pre-multiplied by 256,
-	// so cbase[lightoff[y] + c] is basecolormap.with(rel).index(c).
+	// appears nowhere in Doom's selection, which goes by a row's distance -- so
+	// one table serves the whole plane. Entries are the relative colormap index
+	// pre-multiplied by 256, so cbase[lightoff[y] + c] is
+	// basecolormap.with(rel).index(c).
 	const uint16_t*		lightoff;		// indexed by view-relative y, as yl/yh are;
 									// NULL when the plane is one flat colormap
 	const palindex_t*	cbase;			// basecolormap.m_colormap
 	const argb_t*		sbase;			// basecolormap.m_shademap
+
+	const ARGBShader*	argbshade;
+
+	// Sloped planes.
+	float				iu, iv, id;
+	float				iustep, ivstep, idstep;
+	fixed_t				lmap, lmapstep;	// colormap index in 16.16, before lbias
+	int					lbias;			// +1 rounding, less extralight
+	bool				slopelight;		// false when the light is one colormap
 
 	fixed_t				translevel;
 } drawplanecol_t;
@@ -225,15 +217,14 @@ typedef struct
 //
 // Walking DOWN a column makes yslope[y] vary per pixel -- a reciprocal ramp, not
 // linear in y -- so there is no DDA and every pixel pays two double multiplies
-// and two cvttsd2si. That is why the scalar column drawer costs 28 instructions
-// per pixel against the SIMD span drawer's 8.75.
+// and two cvttsd2si.
 //
 // But a 16-byte store only needs its four pixels VERTICALLY ADJACENT; it does not
 // need the loop to walk down a column. So put four consecutive screen rows in the
 // four lanes and march in x instead:
 //
-//   * yslope[y] becomes a per-LANE CONSTANT, so the mapping is R_MapLevelPlane's
-//     own 16.16 integer DDA again -- one paddd. Exactly: the 16.16 step is
+//   * yslope[y] becomes a per-LANE CONSTANT, so the mapping is the span
+//     mapping's own 16.16 integer DDA again -- one paddd. Exactly: the 16.16 step is
 //     eu_step * yslope[y], a per-row constant independent of x.
 //
 //   * lightoff is a pure function of y, and y is now the lane index, so per-y
@@ -258,7 +249,7 @@ typedef struct
 
 	// Lane i carries screen row y0 + i. ufrac/vfrac are anchored at column xa
 	// with the same expression the scalar column drawer uses, so the anchor is
-	// bit-identical to it; the steps are R_MapLevelPlane's.
+	// bit-identical to it; the steps are the span mapping's.
 	dsfixed_t			ufrac[4], vfrac[4];
 	dsfixed_t			ustep[4], vstep[4];
 
@@ -269,6 +260,11 @@ typedef struct
 	// raw texel. NULL lightoff folds to four copies of the same base.
 	const argb_t*		shade[4];		// 32bpp
 	const palindex_t*	cmap[4];		// 8bpp
+
+	// True-colour flats
+	const argb_t*		argbsource;
+	const ARGBShader*	argbshade;
+	int					argbband[4];
 } drawplanegroup_t;
 
 
@@ -319,17 +315,6 @@ extern void (*R_DrawTlatedLucentColumn)(rendercontext_t&);
 // [EB] Draw sky foreground with palette 0 transparency
 extern void (*R_DrawSkyForegroundColumn)(rendercontext_t&);
 
-// Span blitting for rows, floor/ceiling.
-// No Sepctre effect needed.
-extern void (*R_DrawSpan)(rendercontext_t&);
-
-// Textured spans blended over the framebuffer by dspan.translevel
-// (stacked-sector portal boundary flats).
-extern void (*R_DrawTranslucentSpan)(rendercontext_t&);
-extern void (*R_DrawTranslucentSlopeSpan)(rendercontext_t&);
-
-extern void (*R_DrawSlopeSpan)(rendercontext_t&);
-
 // Draws one column of a level plane. NULL whenever planes must go through the
 // span path (r_drawflat and nodrawers)
 extern void (*R_DrawLevelColumn)(rendercontext_t&);
@@ -337,6 +322,18 @@ extern void (*R_DrawLevelColumn)(rendercontext_t&);
 // Draws one four-row group of a level plane across [xa, xb].
 extern void (*R_DrawLevelGroup)(rendercontext_t&);
 extern void (*R_DrawTranslucentLevelColumn)(rendercontext_t&);
+
+// Draws one column of a sloped plane from dpcol.
+extern void (*R_DrawSlopeColumn)(rendercontext_t&);
+extern void (*R_DrawTranslucentSlopeColumn)(rendercontext_t&);
+
+// Fills dpcol.argbshade for a plane lit from `light` (its m_colormap is cbase),
+// or sets it NULL when the plane must stay palettized.
+// Returns whether it is set.
+bool R_PrepareARGBPlaneShading(rendercontext_t& ctx, const shaderef_t& light);
+
+// The four-row group drawer for a true-color flat.
+void R_DrawLevelGroupARGBD_c(rendercontext_t& ctx);
 
 extern void (*R_FillColumn)(rendercontext_t&);
 extern void (*R_FillSpan)(rendercontext_t&);
@@ -355,8 +352,19 @@ void R_DrawLevelGroupD_c(rendercontext_t& ctx);
 
 void R_UpdateARGBShadeLUT(void);
 
-#define SPANJUMP 16
-#define INTERPSTEP (0.0625f)
+// Shade tables for the true color drawers
+struct argbshadelut_t;
+
+// Allocates (PU_LEVEL, freed with the level's dynamic colormaps) and fills one.
+argbshadelut_t* R_NewARGBShadeLUT(argb_t color, argb_t fade);
+
+// Refills one, for a gamma change.
+void R_BuildARGBShadeLUT(argbshadelut_t* lut, argb_t color, argb_t fade);
+
+// White light under the level fade: NormalLight's tables, rebuilt by
+// R_UpdateARGBShadeLUT.
+argbshadelut_t* R_DefaultARGBShadeLUT();
+
 
 class IWindowSurface;
 
