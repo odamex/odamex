@@ -2676,6 +2676,12 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
+		// S_LIGHTDONE wont be sent by server bc it has length of 0 tics, so reset like this
+		if (i == ps_flash and pspupdates[ps_flash].statenum == S_NULL and player.psprites[ps_flash].statenum != S_NULL)
+		{
+			player.extralight = 0;
+		}
+
 		P_SetPsprite(player, i, pspupdates[i].statenum);
 
 		if (pspupdates[i].positioned && player.psprites[i].statenum != S_NULL)
