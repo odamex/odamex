@@ -108,10 +108,10 @@ void Freecam::moveToPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
 
 	if (cam->id == freecamplayer_id and cam->isFreecam and cam->mo)
 	{
-    cam->mo->angle = angle;
+		cam->mo->angle = angle;
 		cam->mo->pitch = 0;
 		cam->viewheight = VIEWHEIGHT;
-    cam->mo->SetOrigin(x, y, z);
+		cam->mo->SetOrigin(x, y, z);
 	}
 }
 
@@ -137,10 +137,10 @@ bool Freecam::needPosition()
 void Freecam::reset()
 {
 	cam_x = 0;
-  cam_y = 0;
-  cam_z = 0;
-  cam_pitch = 0;
-  cam_angle = 0;
+	cam_y = 0;
+	cam_z = 0;
+	cam_pitch = 0;
+	cam_angle = 0;
 }
 
 bool Freecam::allowAdd()
@@ -150,8 +150,8 @@ bool Freecam::allowAdd()
 
 bool Freecam::isActive()
 {
-	player_t* p = &idplayer(freecamplayer_id);
-	return (p->id == freecamplayer_id && p->isFreecam);
+	const player_t* p = &idplayer(freecamplayer_id);
+	return (p->id == freecamplayer_id and p->isFreecam);
 }
 
 bool Freecam::allowSpy()
