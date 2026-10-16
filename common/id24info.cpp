@@ -119,7 +119,7 @@ constexpr std::array id24sprnames = std::to_array({
 constexpr std::array id24states = std::to_array<state_t>({
 	// --------------------- decorations ---------------------
 	// pile of bodies
-	{ .statenum = S_CORPSE_PILE, .sprite = SPR_POL7 },
+	{ .statenum = S_LARGE_CORPSE_PILE, .sprite = SPR_POL7 },
 	// human barbecue 1
 	{ .statenum = S_HUMAN_BBQ1,  .sprite = SPR_HBBQ, .frame = 0_bright, .tics = 5, .nextstate = S_HUMAN_BBQ1A },
 	{ .statenum = S_HUMAN_BBQ1A, .sprite = SPR_HBBQ, .frame = 1_bright, .tics = 5, .nextstate = S_HUMAN_BBQ1B },
@@ -474,7 +474,7 @@ constexpr std::array id24states = std::to_array<state_t>({
 	{ .statenum = S_INCIN_FLAME7,      .sprite = SPR_IFLM, .frame =  5_bright, .tics = 2,                           .nextstate = S_INCIN_FLAME8   },
 	{ .statenum = S_INCIN_FLAME8,      .sprite = SPR_IFLM, .frame =  6_bright, .tics = 2,                           .nextstate = S_INCIN_FLAME9   },
 	{ .statenum = S_INCIN_FLAME9,      .sprite = SPR_IFLM, .frame =  7_bright, .tics = 2 },
-	{ .statenum = S_INCIN_FLAMEBURN1,  .sprite = SPR_IFLM, .frame =  0_bright, .tics = 0, .action = A_RandomJump,   .nextstate = S_INCIN_FLAMEBURN2, .misc1 = S_INCIN_FLAMEX3, .misc2 = 128 },
+	{ .statenum = S_INCIN_FLAMEBURN1,  .sprite = SPR_IFLM, .frame =  0_bright, .tics = 0, .action = A_RandomJump,   .nextstate = S_INCIN_FLAMEBURN2, .misc1 = S_INCIN_FLAMEBURN3, .misc2 = 128 },
 	{ .statenum = S_INCIN_FLAMEBURN2,  .sprite = SPR_IFLM, .frame =  0_bright, .tics = 0, .action = A_PlaySound,    .nextstate = S_INCIN_FLAMEBURN4, .misc1 = -1879048171 /* weapons/incinerator/hot1 */, .misc2 = 0 },
 	{ .statenum = S_INCIN_FLAMEBURN3,  .sprite = SPR_IFLM, .frame =  0_bright, .tics = 0, .action = A_PlaySound,    .nextstate = S_INCIN_FLAMEBURN4, .misc1 = -1879048170 /* weapons/incinerator/hot2 */, .misc2 = 0 },
 	{ .statenum = S_INCIN_FLAMEBURN4,  .sprite = SPR_IFLM, .frame =  8_bright, .tics = 2, .action = A_RadiusDamage, .nextstate = S_INCIN_FLAMEBURN5, .args = { 5, 64, 0, 0, 0, 0, 0, 0 } },
@@ -844,7 +844,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_INCINERATOR_FLAME,
 		.spawnstate = S_INCIN_FLAME1,
-		.deathstate = S_INCIN_FLAMEX1,
+		.deathstate = S_INCIN_FLAMEBURN1,
 		.speed      = 40_fx,
 		.radius     = 13_fx,
 		.height     = 8_fx,
@@ -950,7 +950,7 @@ const std::array id24mobjinfo = std::to_array<const mobjinfo_t>({
 	{
 		.type       = MT_LARGE_CORPSE_PILE,
 		.doomednum  = -28663,
-		.spawnstate = S_CORPSE_PILE,
+		.spawnstate = S_LARGE_CORPSE_PILE,
 		.radius     = 40_fx,
 		.height     = 16_fx,
 		.cdheight   = 16_fx,

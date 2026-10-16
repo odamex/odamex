@@ -416,7 +416,7 @@ enum statenum_t : int32_t
 
 	//------------ id24 states -----------
 
-	S_CORPSE_PILE = -1879048192,
+	S_LARGE_CORPSE_PILE = -1879048192,
 	S_HUMAN_BBQ1,
 	S_HUMAN_BBQ1A,
 	S_HUMAN_BBQ1B,
