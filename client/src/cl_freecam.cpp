@@ -106,14 +106,12 @@ void Freecam::moveToPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
 {
 	player_t* cam = &idplayer(freecamplayer_id);
 
-	if (cam->id == freecamplayer_id and cam->isFreecam)
+	if (cam->id == freecamplayer_id and cam->isFreecam and cam->mo)
 	{
-		cam->mo->x = x;
-		cam->mo->y = y;
-		cam->mo->z = z;
-		cam->mo->angle = angle;
+    cam->mo->angle = angle;
 		cam->mo->pitch = 0;
 		cam->viewheight = VIEWHEIGHT;
+    cam->mo->SetOrigin(x, y, z);
 	}
 }
 
@@ -138,12 +136,21 @@ bool Freecam::needPosition()
 
 void Freecam::reset()
 {
-	cam_x = cam_y = cam_z = cam_angle = cam_pitch = 0;
+	cam_x = 0;
+  cam_y = 0;
+  cam_z = 0;
+  cam_pitch = 0;
+  cam_angle = 0;
 }
 
 bool Freecam::allowAdd()
 {
 	return (netdemo.isPlaying() or (G_IsLivesGame() and not G_IsTeamGame()));
+}
+
+bool Freecam::isActive()
+{
+	return (idplayer(freecamplayer_id).id == freecamplayer_id);
 }
 
 bool Freecam::allowSpy()

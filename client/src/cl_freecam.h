@@ -34,10 +34,11 @@ namespace Freecam
 	void addFreecamPlayer();
 	void savePosition();
 	void reset();
-    void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
-    void moveToPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
+  void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
+  void moveToPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
 	bool needPosition();
 	bool allowAdd();
+  bool isActive();
 	bool allowSpy();
 	void retireFor255thPlayer(player_t* cam);	
 	bool wipedOnLevelChange(player_t* cam);
