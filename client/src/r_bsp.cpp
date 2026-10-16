@@ -46,6 +46,15 @@ EXTERN_CVAR (r_particles)
 
 const fixed_t NEARCLIP = 2*FRACUNIT;
 
+#if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
+	#include <xmmintrin.h>
+	#define R_Prefetch(p) _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_T0)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define R_Prefetch(p) __builtin_prefetch(p)
+#else
+	#define R_Prefetch(p) ((void)0)
+#endif
+
 //
 // R_ClearClipSegs
 //
@@ -531,7 +540,7 @@ void R_AddLine (rendercontext_t& ctx, const seg_t *line)
 	R_ClipLine(line->v1, line->v2, lclip, rclip, &w1, &w2);
 
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
-	static sector_t tempsec;
+	static thread_local sector_t tempsec;
 	ctx.bsp.backsector = line->backsector ? R_FakeFlat(ctx, line->backsector, &tempsec, NULL, NULL, true) : NULL;
 
 	R_PrepWall(ctx, w1.x, w1.y, w2.x, w2.y, t1.x, t1.y, t2.x, t2.y, x1, x2);
@@ -720,6 +729,16 @@ void R_Subsector (rendercontext_t& ctx, int num)
 	ctx.bsp.frontsector = sub.sector;
 	int count = sub.numlines;
 	const seg_t* line = &R_GetSegs()[sub.firstline];
+
+	// This helps a tiny bit with cache locality,
+	// but it can't prevent memory stalling forever.
+	for (int i = 0; i < count; i++)
+	{
+		R_Prefetch(line[i].v1);
+		R_Prefetch(line[i].v2);
+		R_Prefetch(&line[i].linedef->sidenum[0]);
+		R_Prefetch(line[i].sidedef);
+	}
 
 	// killough 3/8/98, 4/4/98: Deep water / fake ceiling effect
 	ctx.bsp.frontsector = R_FakeFlat(ctx, ctx.bsp.frontsector, &tempsec, &floorlightlevel,
