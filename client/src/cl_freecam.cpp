@@ -150,7 +150,8 @@ bool Freecam::allowAdd()
 
 bool Freecam::isActive()
 {
-	return (idplayer(freecamplayer_id).id == freecamplayer_id);
+	player_t* p = &idplayer(freecamplayer_id);
+	return (p->id == freecamplayer_id && p->isFreecam);
 }
 
 bool Freecam::allowSpy()
