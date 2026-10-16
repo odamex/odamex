@@ -29,6 +29,6 @@
 struct mobjinfo_t;
 struct state_t;
 
-std::span<mobjinfo_t> getOdaMobjinfo();
-std::span<state_t> getOdaStates();
-std::span<const char*> getOdaSprNames();
+std::span<const mobjinfo_t> getOdaMobjinfo();
+std::span<const state_t> getOdaStates();
+std::span<const char* const> getOdaSprNames();
