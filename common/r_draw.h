@@ -402,10 +402,15 @@ void r_dimpatchD_SSE2(IWindowSurface*, argb_t color, int alpha, int x1, int y1, 
 #endif
 
 #ifdef __MMX__
+void R_DrawColumnD_MMX(rendercontext_t& ctx);
+void R_DrawTranslucentColumnD_MMX(rendercontext_t& ctx);
+void R_DrawLevelGroupD_MMX(rendercontext_t& ctx);
 void r_dimpatchD_MMX(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
 #ifdef __ALTIVEC__
+void R_DrawTranslucentColumnD_ALTIVEC(rendercontext_t& ctx);
+void R_DrawLevelGroupD_ALTIVEC(rendercontext_t& ctx);
 void r_dimpatchD_ALTIVEC(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 

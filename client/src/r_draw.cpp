@@ -35,6 +35,7 @@
 #include "i_sdl.h"
 #include "r_intrin.h"
 #include "r_drawt_sse2.h"
+#include "r_drawt_altivec.h"
 
 #include "c_dispatch.h"
 #include "m_alloc.h"
@@ -1099,8 +1100,16 @@ static forceinline void R_DrawLevelColumnGeneric(PIXEL_T* dest, const drawplanec
 // divide at every pixel. iu/iv/id are affine in screen y as they are in x, so
 // each pixel's are the column's top values plus a multiple of a per-row step.
 //
-// Set by R_InitVectorizedDrawers when r_optimize selects SSE2.
-static bool have_sse2_slopes = false;
+// Set by R_InitVectorizedDrawers when r_optimize selects a vector stepper.
+static bool have_vector_slopes = false;
+
+#if defined(__SSE2__)
+template<bool SLOPELIGHT> using SlopeColumnVector = SlopeColumnSSE2<SLOPELIGHT>;
+#define R_HAVE_SLOPE_COLUMN_VECTOR
+#elif defined(__ALTIVEC__)
+template<bool SLOPELIGHT> using SlopeColumnVector = SlopeColumnAltivec<SLOPELIGHT>;
+#define R_HAVE_SLOPE_COLUMN_VECTOR
+#endif
 
 template<bool SLOPELIGHT, typename PIXEL_T, typename COLORFUNC, typename SOURCE_T = palindex_t>
 static forceinline void R_DrawSlopeColumnGeneric(PIXEL_T* dest, const drawplanecol_t& d)
@@ -1121,10 +1130,10 @@ static forceinline void R_DrawSlopeColumnGeneric(PIXEL_T* dest, const drawplanec
 
 	COLORFUNC colorfunc(d);
 
-#ifdef __SSE2__
-	if (have_sse2_slopes)
+#ifdef R_HAVE_SLOPE_COLUMN_VECTOR
+	if (have_vector_slopes)
 	{
-		SlopeColumnSSE2<SLOPELIGHT> quad(d);
+		SlopeColumnVector<SLOPELIGHT> quad(d);
 		alignas(16) uint32_t spots[4];
 		alignas(16) uint32_t lights[4];
 
@@ -1955,8 +1964,10 @@ static forceinline bool R_ColumnHasNativeARGB(const drawcolumn_t& dcol)
 	       dcol.colormap.mapnum() < NUMCOLORMAPS;
 }
 
+// The four-pixel column drawers r_optimize selected, or NULL where it has none.
 // Set by R_InitVectorizedDrawers, which runs long before any column is drawn.
-static bool have_quad_columns = false;
+static void (*R_DrawColumnQuadD)(rendercontext_t&) = NULL;
+static void (*R_DrawTranslucentColumnQuadD)(rendercontext_t&) = NULL;
 
 // The shortest column worth handing to the four-pixel drawers.
 //
@@ -1974,9 +1985,10 @@ constexpr int R_QUAD_MIN_COLUMN = 16;
 // the right tiling only when the height really is a power of two; otherwise
 // R_DrawColumnGeneric takes its own modulo arm and the quad drawer must not.
 //
-static forceinline bool R_ColumnWantsQuad(const drawcolumn_t& dcol)
+static forceinline bool R_ColumnWantsQuad(void (*drawer)(rendercontext_t&),
+                                          const drawcolumn_t& dcol)
 {
-	return have_quad_columns &&
+	return drawer != NULL &&
 			dcol.yh - dcol.yl + 1 >= R_QUAD_MIN_COLUMN &&
 			(dcol.masked ||
 				(dcol.textureheight & (dcol.textureheight - 1)) == 0);
@@ -2007,16 +2019,15 @@ void R_DrawColumnD(rendercontext_t& ctx)
 
 	if (R_ColumnHasNativeARGB(dcol))
 		R_DrawColumnGenericARGB<DirectARGBColormapFunc>(FB_COLDEST_D, dcol);
-#ifdef __SSE2__
 	// Worth having despite costing slightly MORE instructions than the scalar
-	// drawer -- 12.25 per pixel against 12. An opaque column is one gather and
-	// one store per pixel and SSE2 cannot vectorize a gather, so the arithmetic
-	// says this should be a wash. It is not: the quad form issues ONE 16-byte
-	// store where the scalar issues four, and this loop is limited by store-port
-	// throughput rather than by issue rate.
-	else if (R_ColumnWantsQuad(dcol))
-		R_DrawColumnD_SSE2(ctx);
-#endif
+	// drawer -- 12.25 per pixel against 12 for SSE2. An opaque column is one
+	// gather and one store per pixel and SSE2 cannot vectorize a gather, so the
+	// arithmetic says this should be a wash.
+	//
+	// It is not: the quad form issues ONE 16-byte store where the scalar issues four,
+	// and this loop is limited by store-port throughput rather than by issue rate.
+	else if (R_ColumnWantsQuad(R_DrawColumnQuadD, dcol))
+		R_DrawColumnQuadD(ctx);
 	else
 		R_DrawColumnGeneric<argb_t, DirectColormapFunc>(FB_COLDEST_D, dcol);
 }
@@ -2056,10 +2067,8 @@ void R_DrawTranslucentColumnD(rendercontext_t& ctx)
 
 	if (R_ColumnHasNativeARGB(dcol))
 		R_DrawColumnGenericARGB<DirectARGBTranslucentColormapFunc>(FB_COLDEST_D, dcol);
-#ifdef __SSE2__
-	else if (R_ColumnWantsQuad(dcol))
-		R_DrawTranslucentColumnD_SSE2(ctx);
-#endif
+	else if (R_ColumnWantsQuad(R_DrawTranslucentColumnQuadD, dcol))
+		R_DrawTranslucentColumnQuadD(ctx);
 	else
 		R_DrawColumnGeneric<argb_t, DirectTranslucentColormapFunc>(FB_COLDEST_D, dcol);
 }
@@ -2427,28 +2436,37 @@ CVAR_FUNC_IMPL(r_optimize)
 void R_InitVectorizedDrawers()
 {
 	// [SL] defaults are the non-vectorized drawers
-	R_DrawLevelGroupD		= R_DrawLevelGroupD_c;
-	have_sse2_slopes		= false;
+	R_DrawLevelGroupD       = R_DrawLevelGroupD_c;
+	R_DrawColumnQuadD       = NULL;
+	R_DrawTranslucentColumnQuadD = NULL;
+	have_vector_slopes      = false;
 	r_dimpatchD             = r_dimpatchD_c;
 
 	#ifdef __SSE2__
 	if (optimize_kind == OPTIMIZE_SSE2)
 	{
-		R_DrawLevelGroupD		= R_DrawLevelGroupD_SSE2;
-		have_sse2_slopes		= true;
+		R_DrawLevelGroupD       = R_DrawLevelGroupD_SSE2;
+		R_DrawColumnQuadD       = R_DrawColumnD_SSE2;
+		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_SSE2;
+		have_vector_slopes      = true;
 		r_dimpatchD             = r_dimpatchD_SSE2;
-		have_quad_columns		= true;
 	}
 	#endif
 	#ifdef __MMX__
 	if (optimize_kind == OPTIMIZE_MMX)
 	{
+		R_DrawLevelGroupD       = R_DrawLevelGroupD_MMX;
+		R_DrawColumnQuadD       = R_DrawColumnD_MMX;
+		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_MMX;
 		r_dimpatchD             = r_dimpatchD_MMX;
 	}
 	#endif
 	#ifdef __ALTIVEC__
 	if (optimize_kind == OPTIMIZE_ALTIVEC)
 	{
+		R_DrawLevelGroupD       = R_DrawLevelGroupD_ALTIVEC;
+		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_ALTIVEC;
+		have_vector_slopes      = true;
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
 	}
 	#endif
