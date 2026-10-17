@@ -1800,17 +1800,53 @@ public:
 		lut_r = lut->r[mapnum];
 		lut_g = lut->g[mapnum];
 		lut_b = lut->b[mapnum];
+
+		amask = argb_t::alphaMask();
+		ashift = argb_t::alphaShift();
+		rshift = argb_t::redShift();
+		gshift = argb_t::greenShift();
+		bshift = argb_t::blueShift();
+
+		standard = ashift == 24 && rshift == 16 && gshift == 8 && bshift == 0;
 	}
 
+	// All this just to make the rgb shader LUT be one lookup per channel.
 	forceinline argb_t shade(const argb_t c) const
 	{
-		return argb_t(c.geta(), lut_r[c.getr()], lut_g[c.getg()], lut_b[c.getb()]);
+		const uint32_t v = c;
+		if (standard)
+			return argb_t((v & 0xFF000000u) |
+			              (uint32_t(lut_r[(v >> 16) & 0xFF]) << 16) |
+			              (uint32_t(lut_g[(v >> 8) & 0xFF]) << 8) |
+			              uint32_t(lut_b[v & 0xFF]));
+
+		return argb_t((v & amask) |
+		              (uint32_t(lut_r[(v >> rshift) & 0xFF]) << rshift) |
+		              (uint32_t(lut_g[(v >> gshift) & 0xFF]) << gshift) |
+		              (uint32_t(lut_b[(v >> bshift) & 0xFF]) << bshift));
+	}
+
+	forceinline int alpha(const argb_t c) const
+	{
+		if (standard)
+			return uint32_t(c) >> 24;
+		return (uint32_t(c) >> ashift) & 0xFF;
+	}
+
+	// Opaque black, what a translucent pixel composites onto without a backdrop.
+	forceinline argb_t black() const
+	{
+		return argb_t(amask);
 	}
 
 private:
 	const byte* lut_r;
 	const byte* lut_g;
 	const byte* lut_b;
+
+	uint32_t amask;
+	int ashift, rshift, gshift, bshift;
+	bool standard;		// alpha, red, green, blue from the top byte down
 };
 
 class DirectARGBColormapFunc
@@ -1821,19 +1857,19 @@ public:
 
 	forceinline void operator()(argb_t c, argb_t* dest) const
 	{
-		const int a = c.geta();
+		const int a = shader.alpha(c);
 		if (a == 255)
 		{
 			*dest = shader.shade(c);
 		}
 		else if (a > 0)
 		{
-			const argb_t bg = blend_to_dest ? *dest : argb_t(255, 0, 0, 0);
+			const argb_t bg = blend_to_dest ? *dest : shader.black();
 			*dest = alphablend2a(bg, 255 - a, shader.shade(c), a);
 		}
 		else if (!blend_to_dest)
 		{
-			*dest = argb_t(255, 0, 0, 0);
+			*dest = shader.black();
 		}
 	}
 
@@ -1854,7 +1890,7 @@ public:
 	forceinline void operator()(argb_t c, argb_t* dest) const
 	{
 		// combine the surface's translucency with the texel's alpha
-		const int a = c.geta() * fga / 255;
+		const int a = shader.alpha(c) * fga / 255;
 		if (a == 0)
 			return;
 
@@ -1913,12 +1949,12 @@ bool R_PrepareARGBPlaneShading(rendercontext_t& ctx, const shaderef_t& light)
 //
 static forceinline argb_t R_ShadeOpaqueARGB(const ARGBShader& shader, const argb_t c)
 {
-	const int a = c.geta();
+	const int a = shader.alpha(c);
 	if (a == 255)
 		return shader.shade(c);
 	if (a > 0)
-		return alphablend2a(argb_t(255, 0, 0, 0), 255 - a, shader.shade(c), a);
-	return argb_t(255, 0, 0, 0);
+		return alphablend2a(shader.black(), 255 - a, shader.shade(c), a);
+	return shader.black();
 }
 
 //

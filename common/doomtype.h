@@ -233,6 +233,13 @@ public:
 	// setChannels so it costs a load, not a shift chain, per pixel.
 	static uint32_t alphaMask() { return a_mask; }
 
+	// The bit position of each channel in the packed word, by the same layout
+	// alphaMask assumes, for code that shades the packed value directly.
+	static int alphaShift() { return a_num << 3; }
+	static int redShift() { return r_num << 3; }
+	static int greenShift() { return g_num << 3; }
+	static int blueShift() { return b_num << 3; }
+
 private:
 	// Defaulted to the layout d_main sets at startup, so a colour constructed
 	// before the video backend reports its format still agrees with alphaMask().
