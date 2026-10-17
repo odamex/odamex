@@ -318,11 +318,11 @@ void PlayerSnapshotManager::clearSnapshots()
 }
 
 //
-// PlayerSnapshotManager::mValidSnapshot()
+// PlayerSnapshotManager::ValidSnapshotExists()
 //
 // Returns true if a snapshot at the given time is present in the container
 //
-bool PlayerSnapshotManager::mValidSnapshot(int time) const
+bool PlayerSnapshotManager::ValidSnapshotExists(int time) const
 {
 
 	return ((time <= mMostRecent) && (mMostRecent - time <= NUM_SNAPSHOTS) &&
@@ -423,13 +423,13 @@ int PlayerSnapshotManager::mFindValidSnapshot(int starttime, int endtime) const
 	if (endtime >= starttime)
 	{
 		for (int t = starttime; t <= endtime; t++)
-			if (mValidSnapshot(t))
+			if (ValidSnapshotExists(t))
 				return t;
 	}
 	else
 	{
 		for (int t = starttime; t >= endtime; t--)
-			if (mValidSnapshot(t))
+			if (ValidSnapshotExists(t))
 				return t;
 	}
 
@@ -450,7 +450,7 @@ PlayerSnapshot PlayerSnapshotManager::getSnapshot(int time) const
 		return PlayerSnapshot();
 
 	// Return the requested snapshot if availible
-	if (mValidSnapshot(time))
+	if (ValidSnapshotExists(time))
 		return mSnaps[time % NUM_SNAPSHOTS];
 
 	// Should we extrapolate?

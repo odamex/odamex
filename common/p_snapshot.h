@@ -507,8 +507,9 @@ public:
 	void addSnapshot(const PlayerSnapshot &snap);
 	PlayerSnapshot getSnapshot(int time) const;
 
+	bool ValidSnapshotExists(int time) const;
+
 private:
-	bool mValidSnapshot(int time) const;
 	int mFindValidSnapshot(int starttime, int endtime) const;
 	PlayerSnapshot mInterpolateSnapshots(int from, int to, int time) const;
 	PlayerSnapshot mExtrapolateSnapshot(int from, int time) const;
