@@ -344,6 +344,9 @@ namespace
 	int s_previousReceivedClientTic;
 	int s_previousReceivedInputTic;
 
+    int s_previousServerTicStartVelocity;
+    int s_previousInputTicStartVelocity;
+
     int s_previousSnapStart;
     int s_previousThinkerTic;
 
@@ -443,19 +446,27 @@ bool CL_PredictWorld()
 
     if (s_previousBasisServerTic == 0)
     {
-        s_previousBasisServerTic = snaptime;
+        s_previousBasisServerTic         = snaptime;
+        s_previousServerTicStartVelocity = 0;
     }
 
     if (s_previousReceivedInputTic == 0)
     {
-        s_previousReceivedInputTic = idealInputTic;
+        s_previousReceivedInputTic      = idealInputTic;
+        s_previousInputTicStartVelocity = 0;
     }
 
-    const int serverTicStartIncrement = snaptime      - s_previousBasisServerTic;
-    const int inputTicStartIncrement  = idealInputTic - s_previousReceivedInputTic;
+    const int serverTicStartVelocity = snaptime      - s_previousBasisServerTic;
+    const int inputTicStartVelocity  = idealInputTic - s_previousReceivedInputTic;
+
+    const int serverTicStartAccel = serverTicStartVelocity - s_previousServerTicStartVelocity;
+    const int inputTicStartAccel  = inputTicStartVelocity  - s_previousInputTicStartVelocity;
 
     s_previousBasisServerTic    = snaptime;
     s_previousReceivedInputTic  = idealInputTic;
+
+    s_previousServerTicStartVelocity = serverTicStartVelocity;
+    s_previousInputTicStartVelocity  = inputTicStartVelocity;
 
     /*
     int snaptime;
@@ -554,7 +565,7 @@ bool CL_PredictWorld()
 
     // We only know if the inputTic has changed if we received it from the server, and
     // if that happens, then it's because the server tic has increased.  Therefore if
-    // serverTicStartIncrement is ever less than inputTicStartIncrement, it's because
+    // serverTicStartVelocity is ever less than inputTicStartVelocity, it's because
     // the server processed multiple inputs.  Therefore we know that if we load the
     // sector positions and other world state that is owned by the server from the
     // corresponding server snapshots, we can't just start from the inputTic.  We have
@@ -562,11 +573,17 @@ bool CL_PredictWorld()
     // state.
 
     int serverTic = snaptime + 1;
-    if (serverTicStartIncrement < inputTicStartIncrement)
+    if (serverTicStartVelocity < inputTicStartVelocity)
     {
-        PrintFmt("gt {}:  Doin' it {}\n", gametic, inputTicStartIncrement - serverTicStartIncrement);
+        PrintFmt("gt {}:  Doin' it {} ({} - {}):  accel serv {}, input {}\n",
+                 gametic,
+                 inputTicStartVelocity - serverTicStartVelocity,
+                 inputTicStartVelocity,
+                 serverTicStartVelocity,
+                 serverTicStartAccel,
+                 inputTicStartAccel);
         // Move the start tic a little further into the past.
-        predictionTic -= (inputTicStartIncrement - serverTicStartIncrement);
+        predictionTic -= (inputTicStartVelocity - serverTicStartVelocity);
     }
     //predictionTic = inputTic;       //!!!!!!
     for (; predictionTic < gametic; ++predictionTic, ++serverTic)
@@ -685,6 +702,8 @@ void CL_ResetTicSync()
 	s_previousBasisServerTic = 0;
 	s_previousReceivedClientTic = 0;
 	s_previousReceivedInputTic = 0;
+	s_previousInputTicStartVelocity = 0;
+	s_previousServerTicStartVelocity = 0;
 	s_previousSnapStart = 0;
 	s_previousThinkerTic = 0;
 	s_persistentDiff = 0;
