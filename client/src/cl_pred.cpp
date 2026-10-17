@@ -480,7 +480,7 @@ bool CL_PredictWorld()
 	predicting = true;
 
 	// Save a snapshot of the player's state before prediction
-	PlayerSnapshot prevsnap(p.tic, p);
+	PlayerSnapshot prevsnap(p.tic, p, ::lastEchoedClientTic);
 	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
 
 	// Mobjs are already in the last position received from the server.
@@ -586,7 +586,7 @@ bool CL_PredictWorld()
 	// view when there's a misprediction.
 	if (playerWasPredicted and snap.isContinuous())
 	{
-		PlayerSnapshot correctedprevsnap(p.tic, p);
+		PlayerSnapshot correctedprevsnap(p.tic, p, ::lastEchoedClientTic);
 
 		// Did we predict correctly?
 		const bool correct = (correctedprevsnap.getX() == prevsnap.getX()) and

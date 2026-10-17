@@ -182,14 +182,15 @@ void ActorSnapshot::toActor(AActor *mo) const
 //
 // ============================================================================
 
-PlayerSnapshot::PlayerSnapshot(int time, const player_t& player) :
+PlayerSnapshot::PlayerSnapshot(int time, const player_t& player, int echoedClientTic) :
 		Snapshot        (time),
 		mFields         (0xFFFFFFFF),
 		mActorSnap      (time, player.mo),
 		mViewHeight     (player.viewheight),
 		mDeltaViewHeight(player.deltaviewheight),
 		mJumpTime       (player.jumpTics),
-		mPlayerTic      (player.tic)
+		mPlayerTic      (player.tic),
+		mClientTic      (echoedClientTic)
 {
 }
 
@@ -205,6 +206,8 @@ void PlayerSnapshot::merge(const PlayerSnapshot& other)
 		setJumpTime(other.mJumpTime);
 	if (other.mFields & PLY_TIC)
 		setPlayerTic(other.mPlayerTic);
+	if (other.mFields & PLY_CLIENT_TIC)
+		setClientTic(other.mClientTic);
 }
 
 void PlayerSnapshot::toPlayer(player_t& player) const
@@ -222,6 +225,9 @@ void PlayerSnapshot::toPlayer(player_t& player) const
 		player.jumpTics = mJumpTime;
 	if (mFields & PLY_TIC)
 		player.tic = mPlayerTic;
+
+    // Do not set the lastEchoedClientTic!  Users are expected to getClientTic() in the
+    // very specific cases that they need it.
 }
 
 

@@ -75,6 +75,8 @@ public:
 	int getTime() const { return mTime; }
 	void setTime(int time) { mTime = time; }
 
+	// TODO / Question:  Do we want to add the echoed client tic to the base snapshot?
+
 private:
 	int     mTime   { -1 };
 	bool    mValid  { false };
@@ -285,7 +287,7 @@ class PlayerSnapshot : public Snapshot
 public:
 	PlayerSnapshot() = default;
 	explicit PlayerSnapshot(int time) : Snapshot { time }, mActorSnap { time } {}
-	PlayerSnapshot(int time, const player_t& player);
+	PlayerSnapshot(int time, const player_t& player, int echoedClientTic);
 	~PlayerSnapshot() override {};
 
 	[[nodiscard]] bool operator==(const PlayerSnapshot &other) const = default;
@@ -298,6 +300,7 @@ public:
 	[[nodiscard]] fixed_t   getDeltaViewHeight()const { return mDeltaViewHeight; }
 	[[nodiscard]] int       getJumpTime()       const { return mJumpTime; }
 	[[nodiscard]] int       getPlayerTic()      const { return mPlayerTic; }
+	[[nodiscard]] int       getClientTic()      const { return mClientTic; }
 
 	[[nodiscard]] fixed_t     getX()            const { return mActorSnap.getX(); }
 	[[nodiscard]] fixed_t     getY()            const { return mActorSnap.getY(); }
@@ -467,6 +470,12 @@ public:
 		mFields |= PLY_TIC;
 	}
 
+	void setClientTic(int val)
+	{
+		mClientTic = val;
+		mFields |= PLY_CLIENT_TIC;
+	}
+
 	friend PlayerSnapshot P_LerpPlayerPosition(const PlayerSnapshot&, const PlayerSnapshot&, float);
 	friend PlayerSnapshot P_ExtrapolatePlayerPosition(const PlayerSnapshot&, float);
 
@@ -494,6 +503,7 @@ private:
 		PLY_DELTAVIEWHEIGHT     =    0x40000,
 		PLY_JUMPTIME            =    0x80000,
 		PLY_TIC                 =   0x100000,
+		PLY_CLIENT_TIC          =   0x200000,
 	};
 
 	unsigned int    mFields     { 0 };  // bitfield of data present in snapshot
@@ -503,6 +513,7 @@ private:
 	fixed_t         mDeltaViewHeight{ 0 };
 	int             mJumpTime       { 0 };
 	int             mPlayerTic      { 0 };
+	int             mClientTic      { 0 };
 };
 
 

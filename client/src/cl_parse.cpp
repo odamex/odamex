@@ -423,6 +423,8 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
 
+	newsnap.setClientTic(::lastEchoedClientTic);
+
 	newsnap.setX(x);
 	newsnap.setY(y);
 	newsnap.setZ(z);
@@ -463,6 +465,7 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 	PlayerSnapshot newsnapshot(snaptime);
 	newsnapshot.setAuthoritative(true);
 	newsnapshot.setPlayerTic(p.tic);
+	newsnapshot.setClientTic(::lastEchoedClientTic);
 	newsnapshot.setX(x);
 	newsnapshot.setY(y);
 	newsnapshot.setZ(z);
@@ -1270,6 +1273,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
+		newsnap.setClientTic(::lastEchoedClientTic);
 		newsnap.setX(update.pos.x);
 		newsnap.setY(update.pos.y);
 		newsnap.setZ(update.pos.z);
@@ -1499,7 +1503,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	}
 
 	const int snaptime = ThisMessageServerTic();
-	PlayerSnapshot newsnap(snaptime, p);
+	PlayerSnapshot newsnap(snaptime, p, ::lastEchoedClientTic);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);
 	p.snapshots.clearSnapshots();
@@ -1599,6 +1603,9 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		const int snaptime = ThisMessageServerTic();
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
+
+		newsnap.setPlayerTic(target->player->tic);
+		newsnap.setClientTic(::lastEchoedClientTic);
 
 		newsnap.setX(msg->target_pos().x());
 		newsnap.setY(msg->target_pos().y());
