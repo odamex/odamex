@@ -260,6 +260,13 @@ public:
 	void init(int width, int height);
 	static uint32_t calculateSize(int width, int height);
 
+	// A native ARGB plane, where a texture has one, follows the palettized
+	// plane inside the same allocation, aligned to the pixel size. The
+	// allocation adds calculateARGBPlaneSize; placeARGBPlane points mARGBData
+	// at the plane.
+	static uint32_t calculateARGBPlaneSize(int width, int height);
+	void placeARGBPlane();
+
 	[[nodiscard]] fixed_t getScaledHeight() const
 	{
 		return FixedMul(mHeight << FRACBITS, mScaleY);

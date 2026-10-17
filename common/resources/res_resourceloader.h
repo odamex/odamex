@@ -212,6 +212,8 @@ public:
 	void load(void* data) const override;
 
 protected:
+	[[nodiscard]] bool hasPngPatch() const;
+
 	const CompositeTextureDefinition	mTexDef;
 };
 

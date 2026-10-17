@@ -74,6 +74,7 @@ static void Res_TransposeImage(palindex_t* dest, const palindex_t* source, int w
 // Res_DrawPatchIntoTexture
 //
 // Draws a lump in patch_t format into a Texture at the given offset.
+// A texture with an ARGB plane gets the patch's palette colors there too.
 //
 static void Res_DrawPatchIntoTexture(
 		Texture* texture,
@@ -83,7 +84,8 @@ static void Res_DrawPatchIntoTexture(
 	if (lump_length < 8)		// long enough for header data?
 		return;
 
-	const palindex_t* translation = V_GetDefaultPalette()->mask_translation;
+	const palette_t* palette = V_GetDefaultPalette();
+	const palindex_t* translation = palette->mask_translation;
 
 	int texwidth = texture->mWidth;
 	int texheight = texture->mHeight;
@@ -143,6 +145,13 @@ static void Res_DrawPatchIntoTexture(
 				else
 				{
 					memcpy(dest, source, y2 - y1 + 1);
+				}
+
+				if (texture->mARGBData)
+				{
+					argb_t* argb_dest = texture->mARGBData + texheight * x + y1;
+					for (int i = 0; i < y2 - y1 + 1; i++)
+						argb_dest[i] = argb_t(uint32_t(palette->basecolors[dest[i]]) | argb_t::alphaMask());
 				}
 			}
 			
@@ -342,11 +351,98 @@ void PatchTextureLoader::load(void* data) const
 
 
 //
+// Res_DrawPngIntoTexture
+//
+// Draws a PNG patch into a composite Texture at the given offset.
+//
+#if CLIENT_APP
+void Res_DrawPngIntoTexture(
+    Texture* texture, const RawResourceAccessor* accessor,
+    const ResourceId res_id, int xoffs, int yoffs)
+{
+#ifdef USE_PNG
+	const PngTextureLoader loader(accessor, res_id);
+
+	std::unique_ptr<uint8_t[]> buffer(new uint8_t[loader.size()]);
+	loader.load(buffer.get());
+	const Texture* patch = reinterpret_cast<const Texture*>(buffer.get());
+
+	const palindex_t mask_color = V_GetDefaultPalette()->mask_color;
+
+	const int x1 = std::max(xoffs, 0);
+	const int x2 = std::min(xoffs + patch->mWidth - 1, texture->mWidth - 1);
+	const int y1 = std::max(yoffs, 0);
+	const int y2 = std::min(yoffs + patch->mHeight - 1, texture->mHeight - 1);
+
+	for (int x = x1; x <= x2; x++)
+	{
+		const palindex_t* source = patch->mData + patch->mHeight * (x - xoffs) + (y1 - yoffs);
+		palindex_t* dest = texture->mData + texture->mHeight * x + y1;
+
+		for (int y = y1; y <= y2; y++, source++, dest++)
+		{
+			if (*source != mask_color)
+				*dest = *source;
+		}
+
+		if (texture->mARGBData && patch->mARGBData)
+		{
+			const argb_t* argb_source = patch->mARGBData + patch->mHeight * (x - xoffs) + (y1 - yoffs);
+			argb_t* argb_dest = texture->mARGBData + texture->mHeight * x + y1;
+
+			for (int y = y1; y <= y2; y++, argb_source++, argb_dest++)
+			{
+				const int a = argb_source->geta();
+				if (a == 255 || (a > 0 && argb_dest->geta() == 0))
+					*argb_dest = *argb_source;
+				else if (a > 0)
+					*argb_dest = alphablend2a(*argb_dest, 255 - a, *argb_source, a);
+			}
+		}
+	}
+#endif
+}
+#endif
+
+
+//
+// CompositeTextureLoader::hasPngPatch
+//
+// True when one of the patches is a PNG, which gives the composite an ARGB
+// plane for its true colors.
+// A composite of Doom patches alone keeps none, and with it the colormap path.
+// Reads only each patch's header.
+//
+bool CompositeTextureLoader::hasPngPatch() const
+{
+#if defined(USE_PNG) && defined(CLIENT_APP)
+	for (const CompositeTextureDefinition::PatchDef& patch_def : mTexDef.mPatchDefs)
+	{
+		if (!Res_CheckResource(patch_def.mResId))
+			continue;
+
+		uint8_t header[16];
+		if (mRawResourceAccessor->getResourceSize(patch_def.mResId) < sizeof(header))
+			continue;
+
+		mRawResourceAccessor->loadResource(patch_def.mResId, header, sizeof(header));
+		if (Res_ValidatePngData(header, sizeof(header)))
+			return true;
+	}
+#endif
+	return false;
+}
+
+
+//
 // CompositeTextureLoader::size
 //
 uint32_t CompositeTextureLoader::size() const
 {
-	return calculateTextureSize(mTexDef.mWidth, mTexDef.mHeight);
+	uint32_t total = calculateTextureSize(mTexDef.mWidth, mTexDef.mHeight);
+	if (hasPngPatch())
+		total += Texture::calculateARGBPlaneSize(mTexDef.mWidth, mTexDef.mHeight);
+	return total;
 }
 
 
@@ -366,6 +462,14 @@ void CompositeTextureLoader::load(void* data) const
 		texture->mScaleY = mTexDef.mScaleY << (FRACBITS - 3);
 
 	#if CLIENT_APP
+	// Transparent until a patch covers it, as the palettized plane is mask
+	// color until drawn on.
+	if (hasPngPatch())
+	{
+		texture->placeARGBPlane();
+		std::fill_n(texture->mARGBData, size_t(mTexDef.mWidth) * mTexDef.mHeight, argb_t(0u));
+	}
+
 	for (CompositeTextureDefinition::PatchDefList::const_iterator it = mTexDef.mPatchDefs.begin(); it != mTexDef.mPatchDefs.end(); ++it)
 	{
 		const CompositeTextureDefinition::PatchDef& patch_def = *it;
@@ -380,6 +484,11 @@ void CompositeTextureLoader::load(void* data) const
 			if (Res_ValidatePatchData(patch_data, patch_size))
 			{
 				Res_DrawPatchIntoTexture(texture, patch_data, patch_size, patch_def.mOriginX, patch_def.mOriginY);
+			}
+			else if (Res_ValidatePngData(patch_data, patch_size))
+			{
+				Res_DrawPngIntoTexture(texture, mRawResourceAccessor, patch_def.mResId,
+				                       patch_def.mOriginX, patch_def.mOriginY);
 			}
 
 			delete [] patch_data;
@@ -527,7 +636,7 @@ uint32_t PngTextureLoader::size() const
 	// Every PNG carries its image natively in an additional ARGB plane
 	// (aligned to the pixel size) for the 32bpp renderer, the palettized
 	// plane holds the 8bpp renderer's down-converted approximation.
-	total += (sizeof(argb_t) - 1) + sizeof(argb_t) * mWidth * mHeight;
+	total += Texture::calculateARGBPlaneSize(mWidth, mHeight);
 	#endif
 
 	return total;
@@ -682,11 +791,8 @@ void PngTextureLoader::load(void* data) const
 
 	// The native ARGB plane follows the palettized image plane
 	// inside this texture's allocation, aligned to the pixel size.
-	uintptr_t plane_addr = reinterpret_cast<uintptr_t>(
-	    texture->mData + sizeof(palindex_t) * mWidth * mHeight);
-	plane_addr = (plane_addr + sizeof(argb_t) - 1) & ~static_cast<uintptr_t>(sizeof(argb_t) - 1);
-	argb_t* argb_plane = reinterpret_cast<argb_t*>(plane_addr);
-	texture->mARGBData = argb_plane;
+	texture->placeARGBPlane();
+	argb_t* argb_plane = texture->mARGBData;
 
 	if (palettized)
 	{

@@ -111,34 +111,6 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 }
 
 
-//
-// Res_ARGBPlaneSize
-//
-// The bytes a native ARGB plane adds to a texture's allocation, alignment
-// slack included.
-//
-static uint32_t Res_ARGBPlaneSize(int width, int height)
-{
-	return (sizeof(argb_t) - 1) + sizeof(argb_t) * width * height;
-}
-
-
-//
-// Res_PlaceARGBPlane
-//
-// Points a texture's mARGBData at the native ARGB plane that follows its
-// palettized one inside the allocation, aligned to the pixel size, laid out
-// as the loaders lay it out. The allocation must include Res_ARGBPlaneSize.
-//
-static void Res_PlaceARGBPlane(Texture* texture)
-{
-	uintptr_t plane_addr = reinterpret_cast<uintptr_t>(
-	    texture->mData + sizeof(palindex_t) * texture->mWidth * texture->mHeight);
-	plane_addr = (plane_addr + sizeof(argb_t) - 1) & ~static_cast<uintptr_t>(sizeof(argb_t) - 1);
-	texture->mARGBData = reinterpret_cast<argb_t*>(plane_addr);
-}
-
-
 // ============================================================================
 //
 // Texture
@@ -171,6 +143,31 @@ void Texture::init(int width, int height)
 	mData = reinterpret_cast<uint8_t*>(this) + calculateHeaderSize(width, height);
 	memset(mData, mMaskColor, calculateDataSize(width, height));
 	#endif
+}
+
+
+//
+// Texture::calculateARGBPlaneSize
+//
+// The bytes a native ARGB plane adds to a texture's allocation, alignment
+// slack included.
+//
+uint32_t Texture::calculateARGBPlaneSize(int width, int height)
+{
+	return (sizeof(argb_t) - 1) + sizeof(argb_t) * width * height;
+}
+
+
+//
+// Texture::placeARGBPlane
+//
+// Points mARGBData at the native ARGB plane following the palettized one.
+//
+void Texture::placeARGBPlane()
+{
+	uintptr_t plane_addr = reinterpret_cast<uintptr_t>(mData + sizeof(palindex_t) * mWidth * mHeight);
+	plane_addr = (plane_addr + sizeof(argb_t) - 1) & ~static_cast<uintptr_t>(sizeof(argb_t) - 1);
+	mARGBData = reinterpret_cast<argb_t*>(plane_addr);
 }
 
 
@@ -712,7 +709,7 @@ void AnimatedTextureManager::copyTexture(Texture* destination_texture, const Tex
 	// The ARGB plane too, where there is one: the allocation must have room.
 	if (source_texture->mARGBData)
 	{
-		Res_PlaceARGBPlane(destination_texture);
+		destination_texture->placeARGBPlane();
 		memcpy(destination_texture->mARGBData, source_texture->mARGBData,
 		       sizeof(argb_t) * width * height);
 	}
@@ -1046,7 +1043,7 @@ void AnimatedTextureManager::addWarpedTexture(const ResourceId res_id)
 	warp.working_texture = const_cast<Texture*>(Res_CacheTexture(res_id, PU_STATIC));
 	size_t size = Texture::calculateSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
 	if (warp.working_texture->mARGBData)
-		size += Res_ARGBPlaneSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
+		size += Texture::calculateARGBPlaneSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
 	warp.original_texture = reinterpret_cast<Texture*>(new uint8_t[size]);
 	copyTexture(warp.original_texture, warp.working_texture);
 	mWarpedTextures.push_back(warp);
@@ -1365,7 +1362,7 @@ static Texture* Res_AllocatePlaneTexture(const Texture* source)
 
 	uint32_t size = Texture::calculateSize(width, height);
 	if (source->mARGBData)
-		size += Res_ARGBPlaneSize(width, height);
+		size += Texture::calculateARGBPlaneSize(width, height);
 
 	Texture* dest = reinterpret_cast<Texture*>(new uint8_t[size]);
 	dest->init(width, height);
@@ -1374,7 +1371,7 @@ static Texture* Res_AllocatePlaneTexture(const Texture* source)
 	dest->mMaskColor = source->mMaskColor;
 
 	if (source->mARGBData)
-		Res_PlaceARGBPlane(dest);
+		dest->placeARGBPlane();
 
 	return dest;
 }
