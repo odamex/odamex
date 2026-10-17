@@ -318,7 +318,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	}
 	else if (iz == ONCEILINGZ)
 	{
-		z = ceilingz - height;
+		z = ceilingz - P_CeilingHangHeight(this);
 	}
 	else if (flags2 & MF2_FLOATBOB)
 	{
@@ -1713,7 +1713,7 @@ static bool P_ClipMovementToFloor(AActor* mo)
 //
 static bool P_ClipMovementToCeiling(AActor* mo)
 {
-	if (mo->z + mo->height > mo->ceilingz)
+	if (mo->z + P_CeilingHangHeight(mo) > mo->ceilingz)
 	{
 		// [AM] If there is a actor special for hitting the floor, activate it.
 		if (mo->subsector->sector->SecActTarget &&
@@ -1723,7 +1723,7 @@ static bool P_ClipMovementToCeiling(AActor* mo)
 		if (mo->momz > 0)
 			mo->momz = 0;
 
-		mo->z = mo->ceilingz - mo->height;
+		mo->z = mo->ceilingz - P_CeilingHangHeight(mo);
 
 		// Lost Soul hit the ceiling
 		if (mo->flags & MF_SKULLFLY)
