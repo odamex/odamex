@@ -432,7 +432,12 @@ bool CL_PredictWorld()
     }
     */
 
-    const int snaptime = p.snapshots.ValidSnapshotExists(world_index) ? world_index : s_previousBasisServerTic;
+    if (s_previousBasisServerTic == 0)
+    {
+        s_previousBasisServerTic = p.snapshots.getMostRecentTime();
+    }
+
+    const int snaptime = p.snapshots.ValidSnapshotExists(world_index-1) ? world_index-1 : s_previousBasisServerTic;
 
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 
@@ -521,7 +526,7 @@ bool CL_PredictWorld()
 	//
 	// This will predict the player state up to predictionTic.
 
-
+/*
 	for (;inputTic < predictionTic; ++inputTic)
 	{
 		// We exclude thinkers and sectors here because the latest integrated input
@@ -534,12 +539,12 @@ bool CL_PredictWorld()
 			playerWasPredicted = true;
 		}
 	}
-
+*/
 	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
 	// and the sectors up to (but NOT including) gametic.
     int serverTic = snaptime + 1;
-    //predictionTic = inputTic;       //!!!!!!
-    for (; predictionTic < gametic; ++predictionTic, ++serverTic, ++inputTic)
+    predictionTic = inputTic;       //!!!!!!
+    for (; inputTic < gametic; ++predictionTic, ++serverTic, ++inputTic)
 	{
         if (inputTic < predictionTic)
         {
@@ -550,8 +555,8 @@ bool CL_PredictWorld()
                 {
                     playerWasPredicted = true;
                 }
-                ++inputTic;
             }
+            ++inputTic;
         }
 
 		if (CL_PredictLocalPlayer(predictionTic, inputTic))
@@ -617,7 +622,6 @@ bool CL_PredictWorld()
                 ++inputTic;
             }
         }
-
 	CL_PredictLocalPlayer(gametic, inputTic);
 
 	if (not mobjsHaveBeenPredicted)
