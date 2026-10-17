@@ -409,9 +409,19 @@ bool CL_PredictWorld()
 	const int idealPredictionTic = lastEchoedClientTic + 1;
 	const int idealInputTic      = std::max(p.tic + 1, gametic - MAXSAVETICS);
 
+    if (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
+    {
+        //CL_ResetTicSync();
+    }
+
 	// Add in the jitter compensation diff.
-	int predictionTic = idealPredictionTic + s_persistentDiff;
-	int inputTic      = idealInputTic;
+	int predictionTic = idealPredictionTic;// + s_persistentDiff;
+	int inputTic      = idealInputTic     ;// + s_persistentDiff;
+
+    if (s_persistentDiff)
+    {
+        //PrintFmt("gt {}, persistentDiff {}, predictionTic {}\n", gametic, s_persistentDiff, predictionTic);
+    }
 
 	// The value clamping here and the prediction iterations below are designed to ensure that
 	// if we get an invalid predictionTic due to extreme jitter, we don't rollback - we just
@@ -421,6 +431,8 @@ bool CL_PredictWorld()
 		predictionTic = gametic;
 		inputTic      = gametic;
 	}
+
+//            PrintFmt("snaptime {}, gt {}, inputTic {} (ideal {}), predTic {} (ideal {})\n", snaptime, gametic, inputTic, idealInputTic, predictionTic, idealPredictionTic);
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
@@ -467,6 +479,7 @@ bool CL_PredictWorld()
 	//
 	// This will predict the player state up to predictionTic.
 
+/*
 	for (;inputTic < predictionTic; ++inputTic)
 	{
 		// We exclude thinkers and sectors here because the latest integrated input
@@ -479,12 +492,26 @@ bool CL_PredictWorld()
 			playerWasPredicted = true;
 		}
 	}
-
+*/
 	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
 	// and the sectors up to (but NOT including) gametic.
-	for (;predictionTic < gametic; ++predictionTic)
+    int serverTic = snaptime + 1;
+    for (; predictionTic < gametic; ++predictionTic, ++serverTic, ++inputTic)
 	{
-		if (CL_PredictLocalPlayer(predictionTic, predictionTic))
+        if (inputTic < predictionTic)
+        {
+            if (   (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
+                or serverTic % 2*TICRATE == p.id % 2*TICRATE)
+            {
+                if (CL_PredictLocalPlayer(predictionTic, inputTic))
+                {
+                    playerWasPredicted = true;
+                }
+                ++inputTic;
+            }
+        }
+
+		if (CL_PredictLocalPlayer(predictionTic, inputTic))
 		{
 			playerWasPredicted = true;
 		}
@@ -536,7 +563,17 @@ bool CL_PredictWorld()
 	// all thinkers, and sectors.  Disable the predicting control and do the gametic.
 	predicting = false;
 
-	CL_PredictLocalPlayer(gametic, gametic);
+        if (inputTic < gametic)
+        {
+            if (   (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
+                or serverTic % 2*TICRATE == p.id % 2*TICRATE)
+            {
+                CL_PredictLocalPlayer(gametic, inputTic);
+                ++inputTic;
+            }
+        }
+
+	CL_PredictLocalPlayer(gametic, inputTic);
 
 	if (not mobjsHaveBeenPredicted)
 	{
