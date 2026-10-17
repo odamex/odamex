@@ -297,7 +297,7 @@ public:
 	[[nodiscard]] fixed_t   getViewHeight()     const { return mViewHeight; }
 	[[nodiscard]] fixed_t   getDeltaViewHeight()const { return mDeltaViewHeight; }
 	[[nodiscard]] int       getJumpTime()       const { return mJumpTime; }
-	[[nodiscard]] int       getTic()            const { return mTic; }
+	[[nodiscard]] int       getPlayerTic()      const { return mPlayerTic; }
 
 	[[nodiscard]] fixed_t     getX()            const { return mActorSnap.getX(); }
 	[[nodiscard]] fixed_t     getY()            const { return mActorSnap.getY(); }
@@ -461,9 +461,9 @@ public:
 		mFields |= PLY_JUMPTIME;
 	}
 
-	void setTic(int val)
+	void setPlayerTic(int val)
 	{
-		mTic = val;
+		mPlayerTic = val;
 		mFields |= PLY_TIC;
 	}
 
@@ -502,7 +502,7 @@ private:
 	fixed_t         mViewHeight     { 0 };
 	fixed_t         mDeltaViewHeight{ 0 };
 	int             mJumpTime       { 0 };
-	int             mTic            { 0 };
+	int             mPlayerTic      { 0 };
 };
 
 

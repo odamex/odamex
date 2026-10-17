@@ -189,7 +189,7 @@ PlayerSnapshot::PlayerSnapshot(int time, const player_t& player) :
 		mViewHeight     (player.viewheight),
 		mDeltaViewHeight(player.deltaviewheight),
 		mJumpTime       (player.jumpTics),
-		mTic            (player.tic)
+		mPlayerTic      (player.tic)
 {
 }
 
@@ -204,7 +204,7 @@ void PlayerSnapshot::merge(const PlayerSnapshot& other)
 	if (other.mFields & PLY_JUMPTIME)
 		setJumpTime(other.mJumpTime);
 	if (other.mFields & PLY_TIC)
-		setTic(other.mTic);
+		setPlayerTic(other.mPlayerTic);
 }
 
 void PlayerSnapshot::toPlayer(player_t& player) const
@@ -221,7 +221,7 @@ void PlayerSnapshot::toPlayer(player_t& player) const
 	if (mFields & PLY_JUMPTIME)
 		player.jumpTics = mJumpTime;
 	if (mFields & PLY_TIC)
-		player.tic = mTic;
+		player.tic = mPlayerTic;
 }
 
 

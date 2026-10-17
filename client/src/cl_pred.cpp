@@ -33,6 +33,7 @@
 
 #include "p_snapshot.h"
 
+EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictsectors)
 
@@ -341,6 +342,11 @@ namespace
 {
 	int s_previousBasisServerTic;
 	int s_previousReceivedClientTic;
+	int s_previousReceivedInputTic;
+
+    int s_previousSnapStart;
+    int s_previousThinkerTic;
+
 	int s_persistentDiff;
 }
 
@@ -394,6 +400,9 @@ bool CL_PredictWorld()
 	if (p.tic <= 0 or world_index <= 0 or lastEchoedClientTic <= 0)     // No verified position from the server?
 		return false;
 
+
+
+
 	// Figure out where to start predicting from.
 	//
 	// lastEchoedClientTic is the absolute latest clientside gametic that the server knows about.
@@ -405,16 +414,49 @@ bool CL_PredictWorld()
 	// We start predicting from the lastEchoedClientTic.  We also add one because we want to
 	// start predicting from the tic following the last one that the server knows about.
 
-	const int snaptime           = p.snapshots.getMostRecentTime();
+/*
 	const int idealPredictionTic = lastEchoedClientTic + 1;
 	const int idealInputTic      = std::max(p.tic + 1, gametic - MAXSAVETICS);
+*/
 
-    if (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
+/*
+	if (s_previousReceivedClientTic == 0)
+	{
+		s_previousReceivedClientTic = idealPredictionTic;
+	}
+    */
+    /*
+    if (s_previousReceivedInputTic == 0)
     {
-        //CL_ResetTicSync();
+        s_previousReceivedInputTic = idealInputTic;
     }
+    */
 
-	// Add in the jitter compensation diff.
+    const int snaptime = p.snapshots.ValidSnapshotExists(world_index) ? world_index : s_previousBasisServerTic;
+
+	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
+
+    const int idealPredictionTic = snap.getPlayerTic();     // JUST UNTIL WE ADD CLIENTTIC
+    const int idealInputTic      = snap.getPlayerTic();
+
+    s_previousBasisServerTic = snaptime;
+
+    /*
+    int snaptime;
+    if (s_previousReceivedInputTic != idealInputTic)
+    {
+        snaptime = p.snapshots.getMostRecentTime();
+		s_previousBasisServerTic = snaptime;
+    }
+    else
+    {
+
+        snaptime = s_previousBasisServerTic;
+    }
+    */
+
+    s_previousReceivedInputTic = idealInputTic;
+
 	int predictionTic = idealPredictionTic;// + s_persistentDiff;
 	int inputTic      = idealInputTic     ;// + s_persistentDiff;
 
@@ -462,7 +504,7 @@ bool CL_PredictWorld()
 #endif
 
 	// Move the client to the last position received from the server.
-	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
+	//PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
 	s_predictingSectors.clear();
@@ -496,6 +538,7 @@ bool CL_PredictWorld()
 	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
 	// and the sectors up to (but NOT including) gametic.
     int serverTic = snaptime + 1;
+    //predictionTic = inputTic;       //!!!!!!
     for (; predictionTic < gametic; ++predictionTic, ++serverTic, ++inputTic)
 	{
         if (inputTic < predictionTic)
@@ -515,8 +558,10 @@ bool CL_PredictWorld()
 		{
 			playerWasPredicted = true;
 		}
-		if (not mobjsHaveBeenPredicted)
+
+		if (serverTic > s_previousThinkerTic and not mobjsHaveBeenPredicted)
 		{
+            s_previousThinkerTic = serverTic;
 			mobjsHaveBeenPredicted = true;
 
 			predicting = false;
@@ -578,7 +623,7 @@ bool CL_PredictWorld()
 	if (not mobjsHaveBeenPredicted)
 	{
 		mobjsHaveBeenPredicted = true;
-
+        s_previousThinkerTic = serverTic;
 		CL_SimulatePlayers();
 		DThinker::RunThinkers();
 	}
@@ -601,11 +646,15 @@ void CL_ResetTicSync()
 {
 	s_previousBasisServerTic = 0;
 	s_previousReceivedClientTic = 0;
+	s_previousReceivedInputTic = 0;
+	s_previousSnapStart = 0;
+	s_previousThinkerTic = 0;
 	s_persistentDiff = 0;
 }
 
 void CL_UpdateTicErrors()
 {
+    /*
 	const player_t& p = consoleplayer();
 
 	if (not validplayer(p))
@@ -649,6 +698,7 @@ void CL_UpdateTicErrors()
 		PrintFmt("gt {}, persistent diff {}, dst {}, dpt {}\n", gametic, s_persistentDiff, deltaServerTic, deltaPredTic);
 	}
 #endif
+*/
 }
 
 

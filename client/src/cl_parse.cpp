@@ -462,6 +462,7 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnapshot(snaptime);
 	newsnapshot.setAuthoritative(true);
+	newsnapshot.setPlayerTic(p.tic);
 	newsnapshot.setX(x);
 	newsnapshot.setY(y);
 	newsnapshot.setZ(z);
