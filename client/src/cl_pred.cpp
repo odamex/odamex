@@ -437,7 +437,9 @@ bool CL_PredictWorld()
         s_previousBasisServerTic = p.snapshots.getMostRecentTime();
     }
 
-    const int snaptime = p.snapshots.ValidSnapshotExists(world_index-1) ? world_index-1 : s_previousBasisServerTic;
+    const bool hasExactSnapshot = p.snapshots.ValidSnapshotExists(world_index);
+
+    const int snaptime = hasExactSnapshot ? world_index : s_previousBasisServerTic;
 
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 
@@ -460,10 +462,10 @@ bool CL_PredictWorld()
     }
     */
 
-    s_previousReceivedInputTic = idealInputTic;
+    //s_previousReceivedInputTic = idealInputTic;
 
-	int predictionTic = idealPredictionTic;// + s_persistentDiff;
-	int inputTic      = idealInputTic     ;// + s_persistentDiff;
+	int predictionTic = idealPredictionTic + 1;// + s_persistentDiff;
+	int inputTic      = idealInputTic      + 1;// + s_persistentDiff;
 
     if (s_persistentDiff)
     {
@@ -479,7 +481,7 @@ bool CL_PredictWorld()
 		inputTic      = gametic;
 	}
 
-//            PrintFmt("snaptime {}, gt {}, inputTic {} (ideal {}), predTic {} (ideal {})\n", snaptime, gametic, inputTic, idealInputTic, predictionTic, idealPredictionTic);
+    PrintFmt("snaptime {} (exact? {}), gt {}, inputTic {} (ideal {}), predTic {} (ideal {})\n", snaptime, hasExactSnapshot, gametic, inputTic, idealInputTic, predictionTic, idealPredictionTic);
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
@@ -543,14 +545,16 @@ bool CL_PredictWorld()
 	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
 	// and the sectors up to (but NOT including) gametic.
     int serverTic = snaptime + 1;
-    predictionTic = inputTic;       //!!!!!!
-    for (; inputTic < gametic; ++predictionTic, ++serverTic, ++inputTic)
+    //predictionTic = inputTic;       //!!!!!!
+    for (; predictionTic < gametic; ++predictionTic, ++serverTic, ++inputTic)
 	{
         if (inputTic < predictionTic)
         {
-            if (   (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
-                or serverTic % 2*TICRATE == p.id % 2*TICRATE)
+            //if (   (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
+                //or serverTic % 2*TICRATE == p.id % 2*TICRATE
+            //    )
             {
+                PrintFmt("DONING THE THING {}, input {}, pred {}\n", gametic, inputTic, predictionTic);
                 if (CL_PredictLocalPlayer(predictionTic, inputTic))
                 {
                     playerWasPredicted = true;
@@ -615,8 +619,9 @@ bool CL_PredictWorld()
 
         if (inputTic < gametic)
         {
-            if (   (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
-                or serverTic % 2*TICRATE == p.id % 2*TICRATE)
+            //if (   (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
+                //or serverTic % 2*TICRATE == p.id % 2*TICRATE
+            //    )
             {
                 CL_PredictLocalPlayer(gametic, inputTic);
                 ++inputTic;

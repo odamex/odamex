@@ -2547,7 +2547,7 @@ void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 //
 void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
-	::lastEchoedClientTic = msg->client_tic();
+	::lastEchoedClientTic = ThisMessageClientTic(); // msg->client_tic();
 
 	netgraph.addServerSideMetrics(msg->reliable_messages_in_flight(), msg->throttle());
 }

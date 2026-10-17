@@ -3895,13 +3895,16 @@ int SV_CalculateNumTiccmds(player_t &player)
 	if (!sv_ticbuffer || player.spectator || player.playerstate == PST_DEAD)
 	{
 		// Process all queued ticcmds.
+//        PrintFmt ("Process all {}\n", gametic);
 		return maximum_queue_size;
 	}
 	if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
 	{
+//        PrintFmt ("Stand still {}\n", gametic);
 		// Player is not moving
 		return 2;
 	}
+/*
 	if (player.cmdqueue.size() > 2 && gametic % 2*TICRATE == player.id % 2*TICRATE)
 	{
 		// Process an extra ticcmd once every 2 seconds to reduce the
@@ -3909,8 +3912,10 @@ int SV_CalculateNumTiccmds(player_t &player)
 		// from running an extra ticcmd at the same time.
 		return 2;
 	}
+*/
 	if (player.cmdqueue.size() > maximum_queue_size)
 	{
+//        PrintFmt ("Overgrowth {}\n", gametic);
 		// The player experienced a large latency spike so try to catch up by
 		// processing more than one ticcmd at the expense of appearing perfectly
 		//  smooth
