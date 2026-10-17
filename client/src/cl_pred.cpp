@@ -436,7 +436,7 @@ bool CL_PredictWorld()
 
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 
-    const int idealPredictionTic = snap.getPlayerTic();     // JUST UNTIL WE ADD CLIENTTIC
+    const int idealPredictionTic = snap.getClientTic();
     const int idealInputTic      = snap.getPlayerTic();
 
     s_previousBasisServerTic = snaptime;
@@ -521,7 +521,7 @@ bool CL_PredictWorld()
 	//
 	// This will predict the player state up to predictionTic.
 
-/*
+
 	for (;inputTic < predictionTic; ++inputTic)
 	{
 		// We exclude thinkers and sectors here because the latest integrated input
@@ -534,7 +534,7 @@ bool CL_PredictWorld()
 			playerWasPredicted = true;
 		}
 	}
-*/
+
 	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
 	// and the sectors up to (but NOT including) gametic.
     int serverTic = snaptime + 1;
