@@ -1025,6 +1025,20 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
        mi->cdheight : mi->height);
 }
 
+//
+// P_CeilingHangHeight
+//
+// An actor's height gets changed if co_realactorheight is 1, which messes
+// up the calculation for ceiling hang height.
+// 
+// This function will return the correct value for ceiling hang height
+// in all instances.
+//
+fixed_t P_CeilingHangHeight(const AActor* mo)
+{
+	return (mo->flags & MF_SPAWNCEILING) ? mo->info->height : mo->height;
+}
+
 // Use a heuristic approach to detect infinite state cycles: Count the number
 // of times the loop in P_SetMobjState() executes and exit with an error once
 // an arbitrary very large limit is reached.
