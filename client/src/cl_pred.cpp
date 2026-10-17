@@ -432,21 +432,30 @@ bool CL_PredictWorld()
     }
     */
 
-    if (s_previousBasisServerTic == 0)
-    {
-        s_previousBasisServerTic = p.snapshots.getMostRecentTime();
-    }
-
     const bool hasExactSnapshot = p.snapshots.ValidSnapshotExists(world_index);
 
-    const int snaptime = hasExactSnapshot ? world_index : s_previousBasisServerTic;
+    const int snaptime = p.snapshots.getMostRecentTime();//hasExactSnapshot ? world_index : s_previousBasisServerTic;
 
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 
     const int idealPredictionTic = snap.getClientTic();
     const int idealInputTic      = snap.getPlayerTic();
 
-    s_previousBasisServerTic = snaptime;
+    if (s_previousBasisServerTic == 0)
+    {
+        s_previousBasisServerTic = snaptime;
+    }
+
+    if (s_previousReceivedInputTic == 0)
+    {
+        s_previousReceivedInputTic = idealInputTic;
+    }
+
+    const int serverTicStartIncrement = snaptime      - s_previousBasisServerTic;
+    const int inputTicStartIncrement  = idealInputTic - s_previousReceivedInputTic;
+
+    s_previousBasisServerTic    = snaptime;
+    s_previousReceivedInputTic  = idealInputTic;
 
     /*
     int snaptime;
@@ -461,8 +470,6 @@ bool CL_PredictWorld()
         snaptime = s_previousBasisServerTic;
     }
     */
-
-    //s_previousReceivedInputTic = idealInputTic;
 
 	int predictionTic = idealPredictionTic + 1;// + s_persistentDiff;
 	int inputTic      = idealInputTic      + 1;// + s_persistentDiff;
@@ -481,7 +488,7 @@ bool CL_PredictWorld()
 		inputTic      = gametic;
 	}
 
-    PrintFmt("snaptime {} (exact? {}), gt {}, inputTic {} (ideal {}), predTic {} (ideal {})\n", snaptime, hasExactSnapshot, gametic, inputTic, idealInputTic, predictionTic, idealPredictionTic);
+    //PrintFmt("snaptime {} (exact? {}), gt {}, inputTic {} (ideal {}), predTic {} (ideal {})\n", snaptime, hasExactSnapshot, gametic, inputTic, idealInputTic, predictionTic, idealPredictionTic);
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
@@ -544,10 +551,27 @@ bool CL_PredictWorld()
 */
 	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
 	// and the sectors up to (but NOT including) gametic.
+
+    // We only know if the inputTic has changed if we received it from the server, and
+    // if that happens, then it's because the server tic has increased.  Therefore if
+    // serverTicStartIncrement is ever less than inputTicStartIncrement, it's because
+    // the server processed multiple inputs.  Therefore we know that if we load the
+    // sector positions and other world state that is owned by the server from the
+    // corresponding server snapshots, we can't just start from the inputTic.  We have
+    // to do some extra tic'ing so that we can get from the snapshot state to the gametic
+    // state.
+
     int serverTic = snaptime + 1;
+    if (serverTicStartIncrement < inputTicStartIncrement)
+    {
+        PrintFmt("gt {}:  Doin' it {}\n", gametic, inputTicStartIncrement - serverTicStartIncrement);
+        // Move the start tic a little further into the past.
+        predictionTic -= (inputTicStartIncrement - serverTicStartIncrement);
+    }
     //predictionTic = inputTic;       //!!!!!!
-    for (; predictionTic < gametic; ++predictionTic, ++serverTic, ++inputTic)
+    for (; predictionTic < gametic; ++predictionTic, ++serverTic)
 	{
+        /*
         if (inputTic < predictionTic)
         {
             //if (   (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
@@ -562,11 +586,15 @@ bool CL_PredictWorld()
             }
             ++inputTic;
         }
-
-		if (CL_PredictLocalPlayer(predictionTic, inputTic))
-		{
-			playerWasPredicted = true;
-		}
+        */
+        if (predictionTic == inputTic)
+        {
+            if (CL_PredictLocalPlayer(predictionTic, inputTic))
+            {
+                playerWasPredicted = true;
+            }
+            ++inputTic;
+        }
 
 		if (serverTic > s_previousThinkerTic and not mobjsHaveBeenPredicted)
 		{
@@ -616,7 +644,7 @@ bool CL_PredictWorld()
 	// Now we're doing the big final canonical client side update of player state,
 	// all thinkers, and sectors.  Disable the predicting control and do the gametic.
 	predicting = false;
-
+/*
         if (inputTic < gametic)
         {
             //if (   (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
@@ -627,7 +655,8 @@ bool CL_PredictWorld()
                 ++inputTic;
             }
         }
-	CL_PredictLocalPlayer(gametic, inputTic);
+        */
+	CL_PredictLocalPlayer(gametic, gametic);//inputTic);
 
 	if (not mobjsHaveBeenPredicted)
 	{
