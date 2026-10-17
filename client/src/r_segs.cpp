@@ -757,6 +757,23 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 
 
 //
+// R_MarkLineMapped
+//
+// Sets ML_MAPPED for the automap.
+//
+// Apple Clang libc++ doesn't have std::atomic_ref yet for some reason.
+//
+static inline void R_MarkLineMapped(line_t* line)
+{
+#if defined(__cpp_lib_atomic_ref)
+	std::atomic_ref<unsigned int>(line->flags).fetch_or(ML_MAPPED, std::memory_order_relaxed);
+#else
+	__atomic_fetch_or(&line->flags, ML_MAPPED, __ATOMIC_RELAXED);
+#endif
+}
+
+
+//
 // R_StoreWallRange
 // A wall segment will be drawn
 //	between start and stop pixels (inclusive).
@@ -778,7 +795,7 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	ctx.bsp.linedef = ctx.bsp.curline->linedef;
 
 	// mark the segment as visible for auto map
-	std::atomic_ref<unsigned int>(ctx.bsp.linedef->flags).fetch_or(ML_MAPPED, std::memory_order_relaxed);
+	R_MarkLineMapped(ctx.bsp.linedef);
 
 	ctx.bsp.ds_p->x1 = start;
 	ctx.bsp.ds_p->x2 = stop;
