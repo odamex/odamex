@@ -23,6 +23,10 @@
 
 #pragma once
 
+#include "c_cvars.h"
+#include "m_fixed.h"
+
+struct drawseg_t;
 
 void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 				fixed_t dist1, fixed_t dist2, double fsx1, double fsx2, int start, int stop);

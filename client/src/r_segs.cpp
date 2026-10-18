@@ -771,14 +771,14 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 		ta = (start + 0.5 - fsx1) / delta;
 		tb = ((stop + 1) + 0.5 - fsx1) / delta;
 	}
-	const float scale1 = static_cast<float>(yfoc * (invz1 + ((invz2 - invz1) * ta)));
-	const float scale2 = static_cast<float>(yfoc * (invz1 + ((invz2 - invz1) * tb)));
+	const auto scale1 = static_cast<float>(yfoc * (invz1 + ((invz2 - invz1) * ta)));
+	const auto scale2 = static_cast<float>(yfoc * (invz1 + ((invz2 - invz1) * tb)));
 
 	// u/Z (in the same units as scale) is 0 at fsx1 and seglen * yfoc / dist2 at fsx2
 	const double uinvzend = FIXED2DOUBLE(seglen) * yfoc * invz2;
 
 	const float scalestep = (scale2 - scale1) / width;
-	const float uinvzstep = static_cast<float>(((tb - ta) * uinvzend) / width);
+	const auto uinvzstep = static_cast<float>(((tb - ta) * uinvzend) / width);
 
 	// determine which texture posts will be used for each screen
 	// column in this range and calculate the scaling factor for
@@ -786,7 +786,7 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 
 	fixed_t textureoffset = curline->sidedef->textureoffset;
 
-	float uinvz = static_cast<float>(ta * uinvzend);
+	auto uinvz = static_cast<float>(ta * uinvzend);
 	float curscale = scale1;
 	for (int i = start; i <= stop; i++)
 	{
