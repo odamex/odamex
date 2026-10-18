@@ -456,17 +456,22 @@ bool CL_PredictWorld()
         s_previousInputTicStartVelocity = 0;
     }
 
+    const bool isUsingNewSnapshot = s_previousBasisServerTic != snaptime;
+
+    if (s_previousBasisServerTic != snaptime)
+    {
     const int serverTicStartVelocity = snaptime      - s_previousBasisServerTic;
     const int inputTicStartVelocity  = idealInputTic - s_previousReceivedInputTic;
 
     const int serverTicStartAccel = serverTicStartVelocity - s_previousServerTicStartVelocity;
     const int inputTicStartAccel  = inputTicStartVelocity  - s_previousInputTicStartVelocity;
 
-    s_previousBasisServerTic    = snaptime;
-    s_previousReceivedInputTic  = idealInputTic;
+        s_previousBasisServerTic    = snaptime;
+        s_previousReceivedInputTic  = idealInputTic;
 
-    s_previousServerTicStartVelocity = serverTicStartVelocity;
-    s_previousInputTicStartVelocity  = inputTicStartVelocity;
+        s_previousServerTicStartVelocity = serverTicStartVelocity;
+        s_previousInputTicStartVelocity  = inputTicStartVelocity;
+    }
 
     /*
     int snaptime;
@@ -573,8 +578,9 @@ bool CL_PredictWorld()
     // state.
 
     int serverTic = snaptime + 1;
-    if (serverTicStartVelocity < inputTicStartVelocity)
+    if (s_previousServerTicStartVelocity < s_previousInputTicStartVelocity)
     {
+        /*
         PrintFmt("gt {}:  Doin' it {} ({} - {}):  accel serv {}, input {}\n",
                  gametic,
                  inputTicStartVelocity - serverTicStartVelocity,
@@ -582,8 +588,14 @@ bool CL_PredictWorld()
                  serverTicStartVelocity,
                  serverTicStartAccel,
                  inputTicStartAccel);
+        */
+        PrintFmt("gt {}:  Doin' it {} ({} - {})\n",
+                 gametic,
+                 s_previousInputTicStartVelocity - s_previousServerTicStartVelocity,
+                 s_previousInputTicStartVelocity,
+                 s_previousServerTicStartVelocity);
         // Move the start tic a little further into the past.
-        predictionTic -= (inputTicStartVelocity - serverTicStartVelocity);
+        predictionTic -= (s_previousInputTicStartVelocity - s_previousServerTicStartVelocity);
     }
     //predictionTic = inputTic;       //!!!!!!
     for (; predictionTic < gametic; ++predictionTic, ++serverTic)
