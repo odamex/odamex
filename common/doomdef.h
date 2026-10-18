@@ -425,6 +425,8 @@ enum skill_t
 //
 // Key cards.
 //
+// TODO: clean up this weird duplication
+// have to be very careful though, the difference in ordering between them is actually important
 enum card_t : uint8_t
 {
 	it_bluecard,
@@ -453,19 +455,22 @@ enum card_t : uint8_t
         CardIsSkull = 128
 };
 
-enum ItemEquipVal
+enum class ItemEquipVal
 {
 	IEV_NotEquipped, //was not equipped, item should stay
 	IEV_EquipStay, //equipped, item should stay
 	IEV_EquipRemove //equipped, item should be removed
 };
 
+using enum ItemEquipVal;
 
 // The defined weapons,
 //	including a marker indicating
 //	user has not changed weapon.
-enum weapontype_t : int8_t
+enum weapontype_t : int32_t
 {
+	// No pending weapon change.
+	wp_nochange = -1,
 	wp_fist,
 	wp_pistol,
 	wp_shotgun,
@@ -475,12 +480,14 @@ enum weapontype_t : int8_t
 	wp_bfg,
 	wp_chainsaw,
 	wp_supershotgun,
+
+	// TODO: instead of being an actual weapon number,
+	// we'll want to represent this with something like
+	// a std::optional, since after id24, everything
+	// except -1 becomes a valid weapon number
 	wp_none,
 
 	NUMWEAPONS,
-
-	// No pending weapon change.
-	wp_nochange
 };
 
 inline auto format_as(weapontype_t eWeaponType)
@@ -489,16 +496,18 @@ inline auto format_as(weapontype_t eWeaponType)
 }
 
 // Ammunition types defined.
-enum ammotype_t : int8_t
+enum ammotype_t : int32_t
 {
+	am_noammo = -1, // Unlimited for chainsaw / fist.
 	am_clip,	// Pistol / chaingun ammo.
 	am_shell,	// Shotgun / double barreled shotgun.
 	am_cell,	// Plasma rifle, BFG.
 	am_misl,	// Missile launcher.
 	NUMAMMO,
-	am_noammo	// Unlimited for chainsaw / fist.
-
+	am_reserved,// 5 is an invalid value that should always be mapped back to -1
 };
+
+static constexpr int32_t am_noammo_old = 5;
 
 inline auto format_as(ammotype_t eAmmoType)
 {

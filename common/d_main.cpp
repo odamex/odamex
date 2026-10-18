@@ -66,6 +66,7 @@
 #include "w_ident.h"
 #include "m_resfile.h"
 #include "odainfo.h"
+#include "id24info.h"
 #include "infomap.h"
 
 #ifdef CLIENT_APP
@@ -264,20 +265,24 @@ void D_InitializeDoomObjectTables()
 	InitItems();
 	// Initialize states
 	states.clear();
-	states.insert({boomstates, ::NUMSTATES}, S_NULL);
+	states.insert(getStates(), S_NULL);
 	states.insert(getOdaStates(), S_GIB0);
+	states.insert(getID24States(), S_LARGE_CORPSE_PILE);
 	// Initialize mobjinfo
 	mobjinfo.clear();
-	mobjinfo.insert({doom_mobjinfo, ::NUMMOBJTYPES}, MT_PLAYER);
+	mobjinfo.insert(getMobjinfo(), MT_PLAYER);
 	mobjinfo.insert(getOdaMobjinfo(), MT_GIB0);
+	mobjinfo.insert(getID24Mobjinfo(), MT_GHOUL);
 	// Initialize sprnames
 	sprnames.clear();
-	sprnames.insert({doom_sprnames, ::NUMSPRITES}, SPR_TROO);
+	sprnames.insert(getSprNames(), SPR_TROO);
 	sprnames.insert(getOdaSprNames(), SPR_GIB0);
+	sprnames.insert(getID24SprNames(), SPR_BSH1);
 	// Initialize soundmap
 	SoundMap.clear();
-	SoundMap.insert({doom_SoundMap, ARRAY_LENGTH(doom_SoundMap)}, 0);
-	SoundMap.insert({odamex_SoundMap, ARRAY_LENGTH(odamex_SoundMap)}, 0x80000000);
+	SoundMap.insert(doom_SoundMap, 0);
+	SoundMap.insert(odamex_SoundMap, 0x80000000);
+	SoundMap.insert(id24_SoundMap, 0x90000000);
 	// Initialize spawn map
 	D_BuildSpawnMap();
 
@@ -1154,7 +1159,7 @@ static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option
 //
 // Adds files passed without a parameter, as happens when they are dropped onto
 // the executable.
-// 
+//
 // Sorted by extension so a dropped patch is not also loaded as a WAD.
 //
 // No extension is assumed to be a WAD.

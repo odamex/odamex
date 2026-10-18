@@ -1186,6 +1186,9 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 			else if (starts_with(key, "Rip"))
 			{
 				scanner.m_state.soundMapIndices.emplace_back(&info->ripsound, val);
+			} else if (starts_with(key, "Pickup"))
+			{
+				scanner.m_state.soundMapIndices.emplace_back(&info->pickupsound, val);
 			}
 		}
 		else if (iequals(key, "Projectile group"))
@@ -1302,7 +1305,7 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 						}
 					}
 
-					if (!found)
+					if (not found)
 					{
 						DPrintFmt("Unknown bit mnemonic {}\n", strval);
 					}
@@ -1356,10 +1359,39 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 			}
 			if (vchanged[0])
 			{
+				const auto oldflags = info->flags;
 				info->flags = ActorFlags1::unsafe_from_int(static_cast<uint32_t>(value[0]));
 				if (info->flags & MF_TRANSLUCENT)
 				{
 					info->translucency = TRANSLUC66;
+				}
+
+				// [EB] make sure that dehacked monsters have the standard monster flags
+				// but don't mess with players or flags that were intentionally set
+				if (not vchanged[1] and thingNum != 1)
+				{
+					if (info->isMonster())
+					{
+						info->flags2 |= MF2_MCROSS|MF2_PASSMOBJ|MF2_PUSHWALL;
+					}
+					else
+					{
+						info->flags2 &= ~(MF2_MCROSS|MF2_PUSHWALL);
+					}
+
+					// if we added MF_MISSILE, we need to make sure it behaves like one
+					if (info->flags & MF_MISSILE)
+					{
+						info->flags2 |= MF2_PCROSS|MF2_IMPACT|MF2_NOTELEPORT;
+					}
+					// if we remove MF_MISSILE, we need to make sure teleporting is re-enabled
+					// this affects the Doom II projectiles
+					// TODO: should we also remove PCROSS and IMPACT? uzdoom does not
+					// they're only relevant to hexen format maps, so no effect on demos either way
+					else if (oldflags & MF_MISSILE)
+					{
+						info->flags2 &= ~MF2_NOTELEPORT;
+					}
 				}
 			}
 			if (vchanged[1])
@@ -1397,6 +1429,91 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 		{
 			info->display_name = value;
 			info->display_name_set = true;
+		}
+		else if (iequals(key, "Min respawn tics"))
+		{
+			info->minrespawntics = val;
+		}
+		else if (iequals(key, "Respawn dice"))
+		{
+			info->respawndice = val;
+		}
+		else if (iequals(key, "Self damage factor"))
+		{
+			info->selfdamage = val;
+		}
+		else if (iequals(key, "Pickup ammo type"))
+		{
+			// id24: remap old am_noammo value to new one
+			info->pickupammo = val == am_noammo_old ?  am_noammo : static_cast<ammotype_t>(val);
+		}
+		else if (iequals(key, "Pickup ammo category"))
+		{
+			info->pickupammocategory = val;
+		}
+		else if (iequals(key, "Pickup weapon type"))
+		{
+			info->pickupweapon = val;
+		}
+		else if (iequals(key, "Pickup item type"))
+		{
+			info->pickupitem = static_cast<id24pickup_t>(val);
+		}
+		else if (iequals(key, "Pickup bonus count"))
+		{
+			info->pickupbonuscount = val;
+		}
+		else if (iequals(key, "Pickup message"))
+		{
+			info->pickupmsg = OString{value};
+		}
+		else if (iequals(key, "ID24 Bits"))
+		{
+			// TODO: except for the translation table and the clearing, this is identical to mbf21 bits section
+			// probably should factor out into a function
+			// might try to make it flexible enough to handle the mnemonic-only bits from the classic Bits field
+
+			info->flags3 &= ~(MF3_NORESPAWN | MF3_SPECSTAYSSINGLE | MF3_SPECSTAYSCOOP | MF3_SPECSTAYSDM);
+
+			static constexpr std::array<flag_mapper_t, 4> id24flagtranslation
+			{{
+				{ .name = "NORESPAWN",          .dehBit = BIT(0), .setter = [](mobjinfo_t& info){ info.flags3 |= MF3_NORESPAWN; }       },
+				{ .name = "SPECIALSTAYSSINGLE", .dehBit = BIT(1), .setter = [](mobjinfo_t& info){ info.flags3 |= MF3_SPECSTAYSSINGLE; } },
+				{ .name = "SPECIALSTAYSCOOP",   .dehBit = BIT(2), .setter = [](mobjinfo_t& info){ info.flags3 |= MF3_SPECSTAYSCOOP; }   },
+				{ .name = "SPECIALSTAYSDM",     .dehBit = BIT(3), .setter = [](mobjinfo_t& info){ info.flags3 |= MF3_SPECSTAYSDM; }     },
+			}};
+
+			for (const auto strval : SplitBexBits(value, ",+| \t\f\r"))
+			{
+				if (IsNum(strval))
+				{
+					// TODO: maybe give a warning for out of range bits
+					const int32_t tempval = ParseNum<int32_t>(strval).value_or(0);
+
+					for (const auto& [_, dehflag, setter] : id24flagtranslation)
+					{
+						if (tempval & dehflag)
+							setter(*info);
+					}
+				}
+				else
+				{
+					bool found = false;
+					for (const auto& [name, _, setter] : id24flagtranslation)
+					{
+						if (iequals(strval, name))
+						{
+							setter(*info);
+							found = true;
+						}
+					}
+
+					if (not found)
+					{
+						DPrintFmt("Unknown bit mnemonic {}\n", strval);
+					}
+				}
+			}
 		}
 		else
 		{
@@ -1674,6 +1791,9 @@ static void PatchAmmo(int ammoNum, DehScanner& scanner)
 	int* per;
 	int dummy;
 
+	// TODO: when id24 ammo expands the valid index range,
+	// we have to remap 5 to -1 before doing anything else
+
 	if (ammoNum >= 0 && ammoNum < NUMAMMO)
 	{
 #if defined ODAMEX_DEBUG
@@ -1705,7 +1825,6 @@ static void PatchAmmo(int ammoNum, DehScanner& scanner)
 static void PatchWeapon(int weapNum, DehScanner& scanner)
 {
 	static constexpr Key keys[] = {
-	    {"Ammo type", offsetof(weaponinfo_t, ammotype)},
 	    {"Deselect frame", offsetof(weaponinfo_t, upstate)},
 	    {"Select frame", offsetof(weaponinfo_t, downstate)},
 	    {"Bobbing frame", offsetof(weaponinfo_t, readystate)},
@@ -1797,6 +1916,11 @@ static void PatchWeapon(int weapNum, DehScanner& scanner)
 			{
 				info->minammo = val;
 				deh.ZDAmmo = true;
+			}
+			else if (iequals(key, "Ammo type"))
+			{
+				// id24: remap old am_noammo value to new one
+				info->ammotype = (val == am_noammo_old) ? am_noammo : static_cast<ammotype_t>(val);
 			}
 			else
 			{
@@ -1930,7 +2054,7 @@ static void PatchMisc(DehScanner& scanner)
 
 		// [SL] manually check if BFG Cells/Shot is being changed and
 		// update weaponinfo accordingly. BFGCells should be considered depricated.
-		if (iequals(key, "BFG Cells/Shot") == 0)
+		if (iequals(key, "BFG Cells/Shot"))
 		{
 			weaponinfo[wp_bfg].ammouse = deh.BFGCells;
 			weaponinfo[wp_bfg].minammo = deh.BFGCells;
