@@ -36,6 +36,7 @@
 #include "resources/res_identifier.h"
 
 #include "v_palette.h"
+#include "v_video.h"
 
 #ifdef USE_PNG
 	#define PNG_SKIP_SETJMP_CHECK

@@ -421,25 +421,6 @@ void V_MarkRect (int x, int y, int width, int height);
 // as defined in the X11R6RGB lump.
 argb_t V_GetColorFromString(const std::string& str);
 
-template<>
-forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
-{
-	// Crazy 8bpp alpha-blending using lookup tables and bit twiddling magic
-	argb_t bgARGB = Col2RGB8[bga >> 2][bg];
-	argb_t fgARGB = Col2RGB8[fga >> 2][fg];
-
-	argb_t mix = (fgARGB + bgARGB) | 0x1f07c1f;
-	return RGB32k[0][0][mix & (mix >> 15)];
-}
-
-template<>
-forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, const int fga)
-{
-	return alphablend2a(bg, bga, fg, fga);
-}
-
-bool V_UseWidescreen();
-
 // Alpha blend between two RGB colors with only dest alpha value
 // 0 <=   toa <= 255
 forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int toa)
@@ -477,6 +458,25 @@ forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t
 
 	return argb_t(even | (odd << 8) | argb_t::alphaMask());
 }
+
+template<>
+forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
+{
+	// Crazy 8bpp alpha-blending using lookup tables and bit twiddling magic
+	argb_t bgARGB = Col2RGB8[bga >> 2][bg];
+	argb_t fgARGB = Col2RGB8[fga >> 2][fg];
+
+	argb_t mix = (fgARGB + bgARGB) | 0x1f07c1f;
+	return RGB32k[0][0][mix & (mix >> 15)];
+}
+
+template<>
+forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, const int fga)
+{
+	return alphablend2a(bg, bga, fg, fga);
+}
+
+bool V_UseWidescreen();
 
 void V_DrawFPSWidget();
 void V_DrawFPSTicker();
