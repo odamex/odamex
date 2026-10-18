@@ -1867,7 +1867,7 @@ void SV_UpdateMovingSectors(player_t &player)
 //
 void SV_SendGametic(client_t& client)
 {
-	client.messenger->HighPriority().Write( SVC_ServerGametic(gametic,
+	client.messenger->HighPriority().Write( SVC_ServerGametic(client.messenger->GetCurrentReceivedRemoteTic(),
 	                                                          client.messenger->GetPendingAckCount(),
 	                                                          client.messenger->GetReliableOverloadCount()));
 }
@@ -2088,8 +2088,6 @@ void SV_UpdateSecret(sector_t& sector, player_t &player)
 //
 //  Sends server setting info
 //
-
-void SV_SendPackets(void);
 
 static void SendServerSettings(player_t& pl)
 {
@@ -3517,7 +3515,8 @@ void SV_SendPackets()
 	for (auto& player : players)
 	{
 		// Disconnecting players' messengers send their packets via the dead-end messenger collection.
-		if (player.playerstate != PST_DISCONNECT)
+		// Clients that are flushing get handled separately.
+		if (not (player.playerstate == PST_DISCONNECT or player.client.isFlushing))
 		{
 			player.client.messenger->SetCriticalSequenceTimeout(criticalTimeoutInTics);
 
@@ -3843,17 +3842,21 @@ void SV_WriteCommands(void)
 	// worker threads can and eventually will corrupt another player's messenger.
 	for (player_t& player : players)
 	{
-		SV_WriteMonitoredInventoryChanges(player);
-		SV_ArmInventoryMonitors(player);
+		if (not (player.playerstate == PST_DISCONNECT or player.client.isFlushing))
+		{
+			SV_WriteMonitoredInventoryChanges(player);
+			SV_ArmInventoryMonitors(player);
+		}
 	}
 
 	// Palm off the job of writing the player messages onto the worker threads.
 	std::vector<std::future<void> > futures;
 
-	for (player_t& player : players)
+	for (auto& player : players)
 	{
 		// Players that are on their way out are serviced elsewhere.
-		if (player.playerstate != PST_DISCONNECT)
+		// Players that are flushing their messages just don't get any new messages.  We flush them below.
+		if (not (player.playerstate == PST_DISCONNECT or player.client.isFlushing))
 		{
 			std::packaged_task<void ()> task { [&player]()
 				{
@@ -3861,6 +3864,39 @@ void SV_WriteCommands(void)
 				} };
 			futures.emplace_back(task.get_future());
 			s_workers.MoveCommand(std::move(task));
+		}
+	}
+
+	// Now while the workers deal with writing messages to active clients, let's drive down the flushing
+	// clients to 0 unacked packets.
+
+	for (auto& player : players)
+	{
+		if (player.client.isFlushing and player.playerstate != PST_DISCONNECT)
+		{
+			if (player.client.messenger->GetPendingAckCount())
+			{
+				// Flushing clients get a longer period of time before they timeout.
+				player.client.messenger->SetCriticalSequenceTimeout(OdaMessenger::FLUSH_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS);
+				if (player.client.messenger->CheckForCriticalTimeout(gametic))
+				{
+					PrintFmt(PRINT_WARNING, "Client at {} timed out during sync\n", NET_AdrToString(player.client.address));
+					SV_DropClientUngracefully(player, "timed out");
+				}
+				else
+				{
+					// Only send retransmissions until the unacked packet count goes down to 0.
+					OdaMessenger::Sender guard(*player.client.messenger, gametic, player.client.address);
+					guard.SendRetransmissions();
+				}
+			}
+			else
+			{
+				// We're back!  Send a full update to the client because who knows what they missed.
+				// The critical timeout will get reset in the packet-send phase.
+				player.client.isFlushing = false;
+				SV_ClientFullUpdate(player);
+			}
 		}
 	}
 

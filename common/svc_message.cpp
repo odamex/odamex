@@ -1308,11 +1308,11 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 	return msg;
 }
 
-odaproto::svc::ServerGametic SVC_ServerGametic(const int tic, const int unackedCount, const int throttle)
+odaproto::svc::ServerGametic SVC_ServerGametic(const int clientTic, const int unackedCount, const int throttle)
 {
 	odaproto::svc::ServerGametic msg;
 
-	msg.set_tic(tic);
+	msg.set_client_tic(clientTic);
 	msg.set_reliable_messages_in_flight(unackedCount);
 	msg.set_throttle(throttle);
 
