@@ -78,7 +78,6 @@ void CL_SimulatePlayers();
 bool CL_PredictWorld();
 void CL_ResetWorldPrediction();
 void CL_ResetTicSync();
-void CL_UpdateTicErrors();
 void CL_SendUserInfo(buf_t& netBuf);
 bool CL_Connect();
 

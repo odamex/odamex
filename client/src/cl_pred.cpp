@@ -406,29 +406,27 @@ bool CL_PredictWorld()
 	// We start predicting from the lastEchoedClientTic.  We also add one because we want to
 	// start predicting from the tic following the last one that the server knows about.
 
-    const int snaptime = p.snapshots.getMostRecentTime();
+	const int snaptime = p.snapshots.getMostRecentTime();
 
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 
-    const int idealPredictionTic = snap.getClientTic();
-    const int idealInputTic      = snap.getPlayerTic();
+	const int idealPredictionTic = snap.getClientTic();
+	const int idealInputTic      = snap.getPlayerTic();
 
-    if (s_previousBasisServerTic == 0)
-    {
-        s_previousBasisServerTic = snaptime;
-        s_worldPredictionTic     = idealPredictionTic;
-    }
+	if (s_previousBasisServerTic == 0)
+	{
+		s_previousBasisServerTic = snaptime;
+		s_worldPredictionTic     = idealPredictionTic;
+	}
 
-    const bool isUsingNewSnapshot = s_previousBasisServerTic != snaptime;
+	if (s_previousBasisServerTic != snaptime)
+	{
+		const int serverTicStartVelocity = snaptime - s_previousBasisServerTic;
 
-    if (s_previousBasisServerTic != snaptime)
-    {
-        const int serverTicStartVelocity = snaptime - s_previousBasisServerTic;
+		s_worldPredictionTic += serverTicStartVelocity;
 
-        s_worldPredictionTic += serverTicStartVelocity;
-
-        s_previousBasisServerTic = snaptime;
-    }
+		s_previousBasisServerTic = snaptime;
+	}
 
 	int predictionTic = s_worldPredictionTic + 1;
 	int inputTic      = idealInputTic        + 1;
@@ -503,17 +501,17 @@ bool CL_PredictWorld()
 	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
 	// and the sectors up to (but NOT including) gametic.
 
-    int serverTic = snaptime + 1;
-    for (; predictionTic < gametic; ++predictionTic, ++serverTic)
+	int serverTic = snaptime + 1;
+	for (; predictionTic < gametic; ++predictionTic, ++serverTic)
 	{
-        if (CL_PredictLocalPlayer(predictionTic, predictionTic))
-        {
-            playerWasPredicted = true;
-        }
+		if (CL_PredictLocalPlayer(predictionTic, predictionTic))
+		{
+			playerWasPredicted = true;
+		}
 
 		if (serverTic > s_previousThinkerTic and not mobjsHaveBeenPredicted)
 		{
-            s_previousThinkerTic = serverTic;
+			s_previousThinkerTic = serverTic;
 			mobjsHaveBeenPredicted = true;
 
 			predicting = false;
@@ -589,10 +587,5 @@ void CL_ResetTicSync()
 	s_previousThinkerTic = 0;
 	s_worldPredictionTic = 0;
 }
-
-void CL_UpdateTicErrors()
-{
-}
-
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
