@@ -898,6 +898,7 @@ void CL_CheckDisplayPlayer();
 //
 extern DCanvas *page;
 extern int connecttimeout;
+extern int world_index;
 
 void G_Ticker (void)
 {
@@ -1228,7 +1229,7 @@ void G_Ticker (void)
 				thinkersHaveRun = CL_PredictWorld();
 				if (not thinkersHaveRun and not netdemo.isPaused())
 				{
-					CL_SimulatePlayers();
+					CL_SimulatePlayers(world_index);
 				}
 
 				// Replay item pickups if the items arrived now.
