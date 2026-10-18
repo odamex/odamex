@@ -350,6 +350,8 @@ namespace
     int s_previousSnapStart;
     int s_previousThinkerTic;
 
+    int s_worldPredictionTic;
+
 	int s_persistentDiff;
 }
 
@@ -448,6 +450,7 @@ bool CL_PredictWorld()
     {
         s_previousBasisServerTic         = snaptime;
         s_previousServerTicStartVelocity = 0;
+        s_worldPredictionTic = idealPredictionTic;
     }
 
     if (s_previousReceivedInputTic == 0)
@@ -465,6 +468,8 @@ bool CL_PredictWorld()
 
     const int serverTicStartAccel = serverTicStartVelocity - s_previousServerTicStartVelocity;
     const int inputTicStartAccel  = inputTicStartVelocity  - s_previousInputTicStartVelocity;
+
+        s_worldPredictionTic += serverTicStartVelocity;
 
         s_previousBasisServerTic    = snaptime;
         s_previousReceivedInputTic  = idealInputTic;
@@ -487,7 +492,7 @@ bool CL_PredictWorld()
     }
     */
 
-	int predictionTic = idealPredictionTic + 1;// + s_persistentDiff;
+	int predictionTic = s_worldPredictionTic + 1;// + s_persistentDiff;
 	int inputTic      = idealInputTic      + 1;// + s_persistentDiff;
 
     if (s_persistentDiff)
@@ -551,7 +556,7 @@ bool CL_PredictWorld()
 	//
 	// This will predict the player state up to predictionTic.
 
-/*
+
 	for (;inputTic < predictionTic; ++inputTic)
 	{
 		// We exclude thinkers and sectors here because the latest integrated input
@@ -564,7 +569,7 @@ bool CL_PredictWorld()
 			playerWasPredicted = true;
 		}
 	}
-*/
+
 	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
 	// and the sectors up to (but NOT including) gametic.
 
@@ -578,6 +583,7 @@ bool CL_PredictWorld()
     // state.
 
     int serverTic = snaptime + 1;
+#if 0
     if (s_previousServerTicStartVelocity < s_previousInputTicStartVelocity)
     {
         /*
@@ -597,6 +603,7 @@ bool CL_PredictWorld()
         // Move the start tic a little further into the past.
         predictionTic -= (s_previousInputTicStartVelocity - s_previousServerTicStartVelocity);
     }
+#endif
     //predictionTic = inputTic;       //!!!!!!
     for (; predictionTic < gametic; ++predictionTic, ++serverTic)
 	{
@@ -618,7 +625,7 @@ bool CL_PredictWorld()
         */
         if (predictionTic == inputTic)
         {
-            if (CL_PredictLocalPlayer(predictionTic, inputTic))
+            if (CL_PredictLocalPlayer(predictionTic, predictionTic))
             {
                 playerWasPredicted = true;
             }
@@ -719,6 +726,7 @@ void CL_ResetTicSync()
 	s_previousSnapStart = 0;
 	s_previousThinkerTic = 0;
 	s_persistentDiff = 0;
+    s_worldPredictionTic = 0;
 }
 
 void CL_UpdateTicErrors()
