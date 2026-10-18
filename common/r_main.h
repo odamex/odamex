@@ -146,6 +146,7 @@ R_PointToDist
 
 int R_ProjectPointX(fixed_t x, fixed_t y);
 int R_ProjectPointX64(int64_t x, int64_t y);
+double R_ProjectPointXFrac(int64_t x, int64_t y);
 int R_ProjectPointY(fixed_t z, fixed_t y);
 bool R_CheckProjectionX(int &x1, int &x2);
 bool R_CheckProjectionY(int &y1, int &y2);

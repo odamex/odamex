@@ -545,6 +545,19 @@ int R_ProjectPointX64(int64_t x, int64_t y)
 		return centerx;
 }
 
+//
+// R_ProjectPointXFrac
+//
+// The unrounded screen x (in pixels) that R_ProjectPointX64 rounds to a
+// column, for callers that need to know where in the column a point is.
+//
+double R_ProjectPointXFrac(int64_t x, int64_t y)
+{
+	if (y > 0)
+		return FIXED2DOUBLE(centerxfrac) + ((FIXED2DOUBLE(FocalLengthX) * static_cast<double>(x)) / static_cast<double>(y));
+	return centerx;
+}
+
 
 //
 // R_ProjectPointX

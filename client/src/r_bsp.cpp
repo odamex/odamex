@@ -25,7 +25,6 @@
 #include "odamex.h"
 
 #include <math.h>
-#include <array>
 #include "m_alloc.h"
 #include "m_bbox.h"
 #include "i_system.h"
@@ -66,8 +65,6 @@ int rw_start, rw_stop;
 static byte		FakeSide;
 
 const fixed_t NEARCLIP = 2*FRACUNIT;
-
-extern fixed_t FocalLengthX;
 
 drawseg_t*		ds_p;
 drawseg_t*		drawsegs;
@@ -495,65 +492,6 @@ static void R_CheckClippedSegForFakeFlat(const seg_t* line)
 }
 
 //
-// R_SnapLineToColumnCenters
-//
-// Once a line seg's projection has been rounded to whole columns, move its
-// clipped endpoints to where the rays through the pixel centers of column x1
-// and of the column after x2 cross the seg. R_PrepWall interpolates depth,
-// height and texture from endpoint 1 at column x1 to endpoint 2 one column
-// past x2, so this makes each column's values those at its own center instead
-// of up to a column off. A nearly edge-on seg otherwise puts a flat boundary
-// tens of rows away from where the visplane mapper samples it, which shows as
-// dark seams between non-tiling flats.
-//
-namespace
-{
-void R_SnapLineToColumnCenters(v2fixed64_t& t1, v2fixed64_t& t2,
-                               v2fixed_t& w1, v2fixed_t& w2, int x1, int x2)
-{
-	// a seg this close to parallel with a pixel-centre ray has no usable crossing
-	static constexpr double parallel_den = 1e-6;
-
-	const double tx = static_cast<double>(t1.x) / FRACUNIT;
-	const double ty = static_cast<double>(t1.y) / FRACUNIT;
-	const double tdx = (static_cast<double>(t2.x) / FRACUNIT) - tx;
-	const double tdy = (static_cast<double>(t2.y) / FRACUNIT) - ty;
-	const double focal = FIXED2DOUBLE(FocalLengthX);
-	const double cx = FIXED2DOUBLE(centerxfrac);
-	const double mindepth = FIXED2DOUBLE(NEARCLIP);
-
-	// seg parameter where the ray through screen x = column + 0.5 crosses it
-	const std::array<int, 2> columns = {x1, x2 + 1};
-	std::array<double, 2> a{};
-	for (size_t i = 0; i < a.size(); i++)
-	{
-		const double k = columns[i] + 0.5 - cx;
-		const double den = (focal * tdx) - (k * tdy);
-		if (fabs(den) < parallel_den)
-			return;
-		a[i] = ((k * ty) - (focal * tx)) / den;
-		if (ty + (a[i] * tdy) < mindepth)
-			return;
-	}
-
-	const v2fixed64_t ot1 = t1;
-	const v2fixed_t ow1 = w1;
-	const int64_t otdx = t2.x - ot1.x;
-	const int64_t otdy = t2.y - ot1.y;
-	const fixed_t owdx = w2.x - ow1.x;
-	const fixed_t owdy = w2.y - ow1.y;
-	t1.x = ot1.x + static_cast<int64_t>(a[0] * otdx);
-	t1.y = ot1.y + static_cast<int64_t>(a[0] * otdy);
-	t2.x = ot1.x + static_cast<int64_t>(a[1] * otdx);
-	t2.y = ot1.y + static_cast<int64_t>(a[1] * otdy);
-	w1.x = ow1.x + static_cast<fixed_t>(a[0] * owdx);
-	w1.y = ow1.y + static_cast<fixed_t>(a[0] * owdy);
-	w2.x = ow1.x + static_cast<fixed_t>(a[1] * owdx);
-	w2.y = ow1.y + static_cast<fixed_t>(a[1] * owdy);
-}
-} // namespace
-
-//
 // R_AddLine
 // Clips the given segment
 // and adds any visible pieces to the line list.
@@ -607,8 +545,6 @@ void R_AddLine (const seg_t *line)
 	v2fixed_t w1, w2;
 	R_ClipLine(line->v1, line->v2, lclip, rclip, &w1, &w2);
 
-	R_SnapLineToColumnCenters(t1, t2, w1, w2, x1, x2);
-
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
 	static sector_t tempsec;
 	backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
@@ -617,7 +553,12 @@ void R_AddLine (const seg_t *line)
 	static constexpr int64_t maxwalldist = int64_t(16384) * FRACUNIT;
 	const fixed_t d1 = static_cast<fixed_t>(t1.y > maxwalldist ? maxwalldist : t1.y);
 	const fixed_t d2 = static_cast<fixed_t>(t2.y > maxwalldist ? maxwalldist : t2.y);
-	R_PrepWall(w1.x, w1.y, w2.x, w2.y, d1, d2, x1, x2);
+
+	// within columns x1 and x2 + 1, find the clipped endpoints
+	// R_PrepWall re-anchors its per column interpolation at the column centers
+	const double fsx1 = R_ProjectPointXFrac(t1.x, t1.y);
+	const double fsx2 = R_ProjectPointXFrac(t2.x, t2.y);
+	R_PrepWall(w1.x, w1.y, w2.x, w2.y, d1, d2, fsx1, fsx2, x1, x2);
 
 	// [SL] Check for single-sided line, closed doors or other scenarios that
 	// would make this line seg solid.
