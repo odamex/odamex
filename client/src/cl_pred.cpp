@@ -341,18 +341,8 @@ bool CL_SectorIsPredicting(sector_t *sector)
 namespace
 {
 	int s_previousBasisServerTic;
-	int s_previousReceivedClientTic;
-	int s_previousReceivedInputTic;
-
-    int s_previousServerTicStartVelocity;
-    int s_previousInputTicStartVelocity;
-
-    int s_previousSnapStart;
-    int s_previousThinkerTic;
-
-    int s_worldPredictionTic;
-
-	int s_persistentDiff;
+	int s_previousThinkerTic;
+	int s_worldPredictionTic;
 }
 
 extern int world_index;
@@ -405,9 +395,6 @@ bool CL_PredictWorld()
 	if (p.tic <= 0 or world_index <= 0 or lastEchoedClientTic <= 0)     // No verified position from the server?
 		return false;
 
-
-
-
 	// Figure out where to start predicting from.
 	//
 	// lastEchoedClientTic is the absolute latest clientside gametic that the server knows about.
@@ -419,27 +406,7 @@ bool CL_PredictWorld()
 	// We start predicting from the lastEchoedClientTic.  We also add one because we want to
 	// start predicting from the tic following the last one that the server knows about.
 
-/*
-	const int idealPredictionTic = lastEchoedClientTic + 1;
-	const int idealInputTic      = std::max(p.tic + 1, gametic - MAXSAVETICS);
-*/
-
-/*
-	if (s_previousReceivedClientTic == 0)
-	{
-		s_previousReceivedClientTic = idealPredictionTic;
-	}
-    */
-    /*
-    if (s_previousReceivedInputTic == 0)
-    {
-        s_previousReceivedInputTic = idealInputTic;
-    }
-    */
-
-    const bool hasExactSnapshot = p.snapshots.ValidSnapshotExists(world_index);
-
-    const int snaptime = p.snapshots.getMostRecentTime();//hasExactSnapshot ? world_index : s_previousBasisServerTic;
+    const int snaptime = p.snapshots.getMostRecentTime();
 
 	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 
@@ -448,57 +415,23 @@ bool CL_PredictWorld()
 
     if (s_previousBasisServerTic == 0)
     {
-        s_previousBasisServerTic         = snaptime;
-        s_previousServerTicStartVelocity = 0;
-        s_worldPredictionTic = idealPredictionTic;
-    }
-
-    if (s_previousReceivedInputTic == 0)
-    {
-        s_previousReceivedInputTic      = idealInputTic;
-        s_previousInputTicStartVelocity = 0;
+        s_previousBasisServerTic = snaptime;
+        s_worldPredictionTic     = idealPredictionTic;
     }
 
     const bool isUsingNewSnapshot = s_previousBasisServerTic != snaptime;
 
     if (s_previousBasisServerTic != snaptime)
     {
-    const int serverTicStartVelocity = snaptime      - s_previousBasisServerTic;
-    const int inputTicStartVelocity  = idealInputTic - s_previousReceivedInputTic;
-
-    const int serverTicStartAccel = serverTicStartVelocity - s_previousServerTicStartVelocity;
-    const int inputTicStartAccel  = inputTicStartVelocity  - s_previousInputTicStartVelocity;
+        const int serverTicStartVelocity = snaptime - s_previousBasisServerTic;
 
         s_worldPredictionTic += serverTicStartVelocity;
 
-        s_previousBasisServerTic    = snaptime;
-        s_previousReceivedInputTic  = idealInputTic;
-
-        s_previousServerTicStartVelocity = serverTicStartVelocity;
-        s_previousInputTicStartVelocity  = inputTicStartVelocity;
+        s_previousBasisServerTic = snaptime;
     }
 
-    /*
-    int snaptime;
-    if (s_previousReceivedInputTic != idealInputTic)
-    {
-        snaptime = p.snapshots.getMostRecentTime();
-		s_previousBasisServerTic = snaptime;
-    }
-    else
-    {
-
-        snaptime = s_previousBasisServerTic;
-    }
-    */
-
-	int predictionTic = s_worldPredictionTic + 1;// + s_persistentDiff;
-	int inputTic      = idealInputTic      + 1;// + s_persistentDiff;
-
-    if (s_persistentDiff)
-    {
-        //PrintFmt("gt {}, persistentDiff {}, predictionTic {}\n", gametic, s_persistentDiff, predictionTic);
-    }
+	int predictionTic = s_worldPredictionTic + 1;
+	int inputTic      = idealInputTic        + 1;
 
 	// The value clamping here and the prediction iterations below are designed to ensure that
 	// if we get an invalid predictionTic due to extreme jitter, we don't rollback - we just
@@ -508,8 +441,6 @@ bool CL_PredictWorld()
 		predictionTic = gametic;
 		inputTic      = gametic;
 	}
-
-    //PrintFmt("snaptime {} (exact? {}), gt {}, inputTic {} (ideal {}), predTic {} (ideal {})\n", snaptime, hasExactSnapshot, gametic, inputTic, idealInputTic, predictionTic, idealPredictionTic);
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
@@ -525,7 +456,7 @@ bool CL_PredictWorld()
 #ifdef ODAMEX_PREDICTION_DEBUG              //  Sector 1 is checked because nuts.wad is such a great test case here,
 	const sector_t& sector = sectors[1];    //  and sector 1 is the large Lift sector that the player spawns on and
 	                                        //  has a bunch of weapons and items.
-	DPrintFmt("gt {}, snaptime {}, pred {}, input {}, initsecheight(off-one) {}, world_index {}, cor_pred {}, cor_input {}, persdiff {}\n",
+	DPrintFmt("gt {}, snaptime {}, pred {}, input {}, initsecheight(off-one) {}, world_index {}, cor_pred {}, cor_input {}\n",
 	        gametic,
 	        snaptime,
 	        idealPredictionTic,
@@ -533,8 +464,7 @@ bool CL_PredictWorld()
 	        P_FloorHeight(&sector),
 	        world_index,
 	        predictionTic,
-	        inputTic,
-	        s_persistentDiff
+	        inputTic
 	        );
 #endif
 
@@ -573,63 +503,12 @@ bool CL_PredictWorld()
 	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
 	// and the sectors up to (but NOT including) gametic.
 
-    // We only know if the inputTic has changed if we received it from the server, and
-    // if that happens, then it's because the server tic has increased.  Therefore if
-    // serverTicStartVelocity is ever less than inputTicStartVelocity, it's because
-    // the server processed multiple inputs.  Therefore we know that if we load the
-    // sector positions and other world state that is owned by the server from the
-    // corresponding server snapshots, we can't just start from the inputTic.  We have
-    // to do some extra tic'ing so that we can get from the snapshot state to the gametic
-    // state.
-
     int serverTic = snaptime + 1;
-#if 0
-    if (s_previousServerTicStartVelocity < s_previousInputTicStartVelocity)
-    {
-        /*
-        PrintFmt("gt {}:  Doin' it {} ({} - {}):  accel serv {}, input {}\n",
-                 gametic,
-                 inputTicStartVelocity - serverTicStartVelocity,
-                 inputTicStartVelocity,
-                 serverTicStartVelocity,
-                 serverTicStartAccel,
-                 inputTicStartAccel);
-        */
-        PrintFmt("gt {}:  Doin' it {} ({} - {})\n",
-                 gametic,
-                 s_previousInputTicStartVelocity - s_previousServerTicStartVelocity,
-                 s_previousInputTicStartVelocity,
-                 s_previousServerTicStartVelocity);
-        // Move the start tic a little further into the past.
-        predictionTic -= (s_previousInputTicStartVelocity - s_previousServerTicStartVelocity);
-    }
-#endif
-    //predictionTic = inputTic;       //!!!!!!
     for (; predictionTic < gametic; ++predictionTic, ++serverTic)
 	{
-        /*
-        if (inputTic < predictionTic)
+        if (CL_PredictLocalPlayer(predictionTic, predictionTic))
         {
-            //if (   (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
-                //or serverTic % 2*TICRATE == p.id % 2*TICRATE
-            //    )
-            {
-                PrintFmt("DONING THE THING {}, input {}, pred {}\n", gametic, inputTic, predictionTic);
-                if (CL_PredictLocalPlayer(predictionTic, inputTic))
-                {
-                    playerWasPredicted = true;
-                }
-            }
-            ++inputTic;
-        }
-        */
-        if (predictionTic == inputTic)
-        {
-            if (CL_PredictLocalPlayer(predictionTic, predictionTic))
-            {
-                playerWasPredicted = true;
-            }
-            ++inputTic;
+            playerWasPredicted = true;
         }
 
 		if (serverTic > s_previousThinkerTic and not mobjsHaveBeenPredicted)
@@ -680,19 +559,7 @@ bool CL_PredictWorld()
 	// Now we're doing the big final canonical client side update of player state,
 	// all thinkers, and sectors.  Disable the predicting control and do the gametic.
 	predicting = false;
-/*
-        if (inputTic < gametic)
-        {
-            //if (   (p.mo->momx == 0 and p.mo->momy == 0 and p.mo->momz == 0)
-                //or serverTic % 2*TICRATE == p.id % 2*TICRATE
-            //    )
-            {
-                CL_PredictLocalPlayer(gametic, inputTic);
-                ++inputTic;
-            }
-        }
-        */
-	CL_PredictLocalPlayer(gametic, gametic);//inputTic);
+	CL_PredictLocalPlayer(gametic, gametic);
 
 	if (not mobjsHaveBeenPredicted)
 	{
@@ -719,63 +586,12 @@ void CL_ResetWorldPrediction()
 void CL_ResetTicSync()
 {
 	s_previousBasisServerTic = 0;
-	s_previousReceivedClientTic = 0;
-	s_previousReceivedInputTic = 0;
-	s_previousInputTicStartVelocity = 0;
-	s_previousServerTicStartVelocity = 0;
-	s_previousSnapStart = 0;
 	s_previousThinkerTic = 0;
-	s_persistentDiff = 0;
-    s_worldPredictionTic = 0;
+	s_worldPredictionTic = 0;
 }
 
 void CL_UpdateTicErrors()
 {
-    /*
-	const player_t& p = consoleplayer();
-
-	if (not validplayer(p))
-	{
-		return;
-	}
-
-	const int snaptime           = p.snapshots.getMostRecentTime();
-	const int idealPredictionTic = lastEchoedClientTic + 1;
-
-	if (snaptime <= 0 or lastEchoedClientTic <= 0)
-	{
-		return;
-	}
-
-	if (s_previousBasisServerTic == 0)
-	{
-		s_previousBasisServerTic = snaptime;
-	}
-	if (s_previousReceivedClientTic == 0)
-	{
-		s_previousReceivedClientTic = idealPredictionTic;
-	}
-
-	const int deltaServerTic = snaptime           - s_previousBasisServerTic;
-	const int deltaPredTic   = idealPredictionTic - s_previousReceivedClientTic;
-
-	s_previousBasisServerTic    = snaptime;
-	s_previousReceivedClientTic = idealPredictionTic;
-
-//#define ODAMEX_PREDICTION_DEBUG
-#ifdef ODAMEX_PREDICTION_DEBUG
-	const int temp = s_persistentDiff;
-#endif
-
-	s_persistentDiff += deltaServerTic - deltaPredTic;
-
-#ifdef ODAMEX_PREDICTION_DEBUG
-	if (s_persistentDiff != temp)
-	{
-		PrintFmt("gt {}, persistent diff {}, dst {}, dpt {}\n", gametic, s_persistentDiff, deltaServerTic, deltaPredTic);
-	}
-#endif
-*/
 }
 
 
