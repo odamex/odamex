@@ -66,9 +66,20 @@ static const char* TTF_LUMP_NAME = "FONT_SM";
 // during early startup -- and the console prints long before then.
 static bool fonts_ready = false;
 
+// Don't signal font ready until all font build calls have returned.
+static int font_build_depth = 0;
+
+struct FontBuildScope
+{
+	FontBuildScope() { font_build_depth++; }
+	~FontBuildScope() { font_build_depth--; }
+	FontBuildScope(const FontBuildScope&) = delete;
+	FontBuildScope& operator=(const FontBuildScope&) = delete;
+};
+
 bool V_FontsReady()
 {
-	return fonts_ready;
+	return fonts_ready && font_build_depth == 0;
 }
 
 //
@@ -80,6 +91,8 @@ bool V_FontsReady()
 //
 static OFont* V_CreateFont(unsigned int stylemask, OFont::ScaleFunc scale_func, bool bitmap)
 {
+	const FontBuildScope building;
+
 	if (!bitmap)
 	{
 		OFont* font = new TrueTypeFont(TTF_LUMP_NAME, 8, stylemask, scale_func);
@@ -115,6 +128,8 @@ static bool V_FontLumpExists(const char* lumpname)
 //
 static OFont* V_CreateFontAtSize(unsigned int stylemask, int size, const char* lumpname)
 {
+	const FontBuildScope building;
+
 	if (!V_FontLumpExists(lumpname))
 		lumpname = TTF_LUMP_NAME;
 
@@ -172,6 +187,8 @@ OFont* V_GetBitmapFont(const char* lumpname, int pixel_size)
 	FontCache::iterator it = cache.find(key);
 	if (it != cache.end())
 		return it->second;
+
+	const FontBuildScope building;
 
 	OFont* font;
 	if (!strnicmp(lumpname, "FONT_BIG", 8))
@@ -241,6 +258,8 @@ OFont* V_GetGradientFont(const char* lumpname, int pixel_size, argb_t top, argb_
 	if (it != cache.end())
 		return it->second;
 
+	const FontBuildScope building;
+
 	const char* lump = V_FontLumpExists(lumpname) ? lumpname : TTF_LUMP_NAME;
 	OFont* font = new TrueTypeFont(lump, pixel_size, TrueTypeFont::TTF_GRADIENT, top, bottom);
 	if (!font->isUsable())
@@ -273,6 +292,8 @@ OFont* V_GetVariableFont(const char* lumpname, int pixel_size, unsigned int styl
 	FontCache::iterator it = cache.find(key);
 	if (it != cache.end())
 		return it->second;
+
+	const FontBuildScope building;
 
 	const char* lump = V_FontLumpExists(lumpname) ? lumpname : TTF_LUMP_NAME;
 	OFont* font = new TrueTypeFont(lump, pixel_size, stylemask, variations);

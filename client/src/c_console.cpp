@@ -114,6 +114,9 @@ static int C_CharWidth(char c)
 //
 static const OFont* C_MessageFont()
 {
+	if (!V_FontsReady())
+		return nullptr;
+
 	const int size = 8 * std::max(1, V_TextScaleXAmount());
 	if (ui_font_messages.asInt() == FONT_BITMAP)
 		return V_GetBitmapFont("FONT_SM", size);
@@ -1639,6 +1642,10 @@ static void C_DrawNotifyText()
 	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || menuactive)
 		return;
 
+	const OFont* font = C_MessageFont();
+	if (!font)
+		return;
+
 	int ypos = 0;
 	for (const auto& notify : NotifyStrings)
 	{
@@ -1653,9 +1660,9 @@ static void C_DrawNotifyText()
 			else
 				color = PrintColors[notify.printlevel];
 
-			screen->DrawFontText(C_MessageFont(), color, 0, ypos,
+			screen->DrawFontText(font, color, 0, ypos,
 			                     reinterpret_cast<const char*>(notify.text));
-			ypos += C_MessageFont()->getHeight();
+			ypos += font->getHeight();
 		}
 	}
 }
@@ -2539,6 +2546,8 @@ void C_DrawMid()
 
 
 		const OFont* font = C_MessageFont();
+		if (!font)
+			return;
 		const int line_height = font->getHeight();
 
 		const int bottom = R_StatusBarVisible()
@@ -2622,6 +2631,8 @@ void C_DrawGMid()
 
 
 		const OFont* font = C_MessageFont();
+		if (!font)
+			return;
 		const int line_height = font->getHeight();
 
 		const int bottom = R_StatusBarVisible()
