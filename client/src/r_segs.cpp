@@ -206,10 +206,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 	if (post != NULL && spryscale > 0)
 	{
-		// R_FillWallHeightArray uses centery and so should we.
-		// Otherwise we can have textures drawing at different
-		// heights when mouselook is on.
-		sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
+		sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
 		dcol.iscale = 0xffffffffu / (unsigned)spryscale;
 
 		while (!post->end())
@@ -224,7 +221,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 			dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
 			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
-				+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale);
+				+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - (FRACUNIT / 2), dcol.iscale);
 
 			if (dcol.texturefrac < 0)
 			{
