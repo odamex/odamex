@@ -368,6 +368,8 @@ void CL_ResyncWorldIndex()
 {
 	world_index = CL_CalculateWorldIndexSync();
 	world_index_accum = 0.0f;
+
+	CL_ResetWorldPrediction();
 }
 
 void Host_EndGame(const char *msg)
@@ -590,7 +592,6 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 	messenger = OdaMessenger{ pool };
 
 	CL_ResetWorldPrediction();
-	CL_ResetTicSync();
 	P_ClearAllNetIds();
 	s_canary.reset();
 	gameaction = ga_fullconsole;

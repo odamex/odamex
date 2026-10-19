@@ -51,7 +51,7 @@ extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 namespace
 {
-std::array<PlayerSnapshot, MAXSAVETICS> cl_savedsnaps;
+std::array<PlayerSnapshot, MAXSAVETICS> s_savedLocalPlayerSnaps;
 
 using ActivePredictingSectorsVector = std::vector<decltype(movingsectors)::iterator>;
 
@@ -299,7 +299,7 @@ bool CL_PredictLocalPlayer(int predtic, int inputTic)
 		return false;
 
 	// Restore the angle, viewheight, etc for the player
-	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
+	P_SetPlayerSnapshotNoPosition(player, s_savedLocalPlayerSnaps[predtic % MAXSAVETICS]);
 
 	// Note that we allow the caller to specify the input tic separately so
 	// that we can predict what happens when multiple inputs are applied to
@@ -450,7 +450,7 @@ bool CL_PredictWorld()
 
 	// Save a snapshot of the player's state before prediction
 	const PlayerSnapshot prevsnap(p.tic, p, ::lastEchoedClientTic);
-	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
+	s_savedLocalPlayerSnaps[gametic % MAXSAVETICS] = prevsnap;
 
 //#define ODAMEX_PREDICTION_DEBUG           // SUPER IMPORTANT NOTE WITH THIS BLOCK:
 #ifdef ODAMEX_PREDICTION_DEBUG              //  Sector 1 is checked because nuts.wad is such a great test case here,
@@ -581,17 +581,11 @@ bool CL_PredictWorld()
 
 void CL_ResetWorldPrediction()
 {
-	for (auto& savedPlayerSnapshot : cl_savedsnaps)
-	{
-		savedPlayerSnapshot = PlayerSnapshot{};
-	}
-}
-
-void CL_ResetTicSync()
-{
 	s_previousBasisServerTic = 0;
 	s_previousThinkerTic = 0;
 	s_worldPredictionTic = 0;
+
+	s_savedLocalPlayerSnaps.fill(PlayerSnapshot{});
 }
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
