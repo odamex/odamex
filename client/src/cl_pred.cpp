@@ -446,9 +446,9 @@ bool CL_PredictWorld()
 	int serverTic     = snaptime             + 1;
 
 	// The value clamping here and the prediction iterations below are designed to ensure that
-	// if we get an invalid predictionTic due to extreme jitter, we don't rollback - we just
-	// proceed with the next tic.
-	if (gametic - MAXSAVETICS > predictionTic or predictionTic > gametic)
+	// if we get an invalid predictionTic due to extreme jitter or very recent prediction reset,
+	// we don't rollback - we just proceed with the next tic.
+	if (predictionTic < gametic - MAXSAVETICS or gametic < predictionTic)
 	{
 		predictionTic = gametic;
 		inputTic      = gametic;
