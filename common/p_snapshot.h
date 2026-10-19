@@ -546,8 +546,8 @@ private:
 	PlayerSnapshot mInterpolateSnapshots(int from, int to, int time) const;
 	PlayerSnapshot mExtrapolateSnapshot(int from, int time) const;
 
-	PlayerSnapshot  mSnaps[NUM_SNAPSHOTS];
-	int             mMostRecent;
+	std::array<PlayerSnapshot, NUM_SNAPSHOTS> mSnaps;
+	int                                       mMostRecent;
 };
 
 
@@ -759,8 +759,8 @@ public:
 private:
 	bool mValidSnapshot(int time) const;
 
-	SectorSnapshot	mSnaps[NUM_SNAPSHOTS];
-	int				mMostRecent;
+	std::array<SectorSnapshot, NUM_SNAPSHOTS> mSnaps;
+	int                                       mMostRecent;
 };
 
 
