@@ -1938,7 +1938,7 @@ static void PatchMisc(DehScanner& scanner)
 
 		// [SL] manually check if BFG Cells/Shot is being changed and
 		// update weaponinfo accordingly. BFGCells should be considered depricated.
-		if (iequals(key, "BFG Cells/Shot") == 0)
+		if (iequals(key, "BFG Cells/Shot"))
 		{
 			weaponinfo[wp_bfg].ammouse = deh.BFGCells;
 			weaponinfo[wp_bfg].minammo = deh.BFGCells;
@@ -2379,6 +2379,16 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool
 		if (read < filelen)
 		{
 			DPrintFmt("Could not read file\n");
+			return false;
+		}
+
+		// Check to see if this file is really a WAD, and if so, don't parse it as a
+		// DEH file.
+		if (buffer.size() >= 4 &&
+		    (!memcmp(buffer.data(), "IWAD", 4) || !memcmp(buffer.data(), "PWAD", 4)))
+		{
+			PrintFmt(PRINT_WARNING, "\"{}\" is a WAD file, not a DeHackEd patch.\n",
+			         patchfile->getBasename());
 			return false;
 		}
 	}
