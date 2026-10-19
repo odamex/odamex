@@ -343,6 +343,7 @@ namespace
 	int s_previousBasisServerTic;
 	int s_previousThinkerTic;
 	int s_worldPredictionTic;
+	int s_resetCutoffLocalTic;
 }
 
 extern int world_index;
@@ -354,13 +355,14 @@ void CL_ResetWorldPrediction()
 	s_previousBasisServerTic = 0;
 	s_previousThinkerTic = 0;
 	s_worldPredictionTic = 0;
+	s_resetCutoffLocalTic = gametic;
 
 	s_savedLocalPlayerSnaps.fill(PlayerSnapshot{});
 }
 
 void CL_AdvanceWorldPredictionTic(int serverTic)
 {
-	if (s_worldPredictionTic != 0 and s_previousBasisServerTic != serverTic)
+	if (s_worldPredictionTic != 0 and s_previousBasisServerTic < serverTic)
 	{
 		const int serverTicStartVelocity = serverTic - s_previousBasisServerTic;
 
@@ -411,8 +413,7 @@ bool CL_PredictWorld()
 		return false;
 	}
 
-
-	if (p.tic <= 0 or world_index <= 0 or lastEchoedClientTic <= 0)     // No verified position from the server?
+	if (world_index <= 0 or lastEchoedClientTic <= 0)     // No verified position from the server?
 		return false;
 
 	// Figure out where to start predicting from.
@@ -432,7 +433,7 @@ bool CL_PredictWorld()
 	const int            idealInputTic      = snap.getPlayerTic();
 
 	// Do we need to restart prediction following a reset?
-	if (s_worldPredictionTic == 0)
+	if (s_worldPredictionTic == 0 and p.tic > s_resetCutoffLocalTic)
 	{
 		s_previousBasisServerTic = snaptime;
 		s_worldPredictionTic     = idealPredictionTic;
