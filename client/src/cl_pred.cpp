@@ -411,23 +411,27 @@ bool CL_PredictWorld()
 	const int            idealPredictionTic = snap.getClientTic();
 	const int            idealInputTic      = snap.getPlayerTic();
 
+	// Do we need to freshly re-initialize prediction?
 	if (s_previousBasisServerTic == 0)
 	{
 		s_previousBasisServerTic = snaptime;
 		s_worldPredictionTic     = idealPredictionTic;
 	}
 
+	// Advance the world prediction tic.
 	if (s_previousBasisServerTic != snaptime)
 	{
 		const int serverTicStartVelocity = snaptime - s_previousBasisServerTic;
 
-		s_worldPredictionTic += serverTicStartVelocity;
-
-		s_previousBasisServerTic = snaptime;
+		s_worldPredictionTic     += serverTicStartVelocity;
+		s_previousBasisServerTic  = snaptime;
 	}
 
+	// Plus one because the values from the server are the latest canonical tics, and the first
+	// tics we actually predict are the ones following those.
 	int predictionTic = s_worldPredictionTic + 1;
 	int inputTic      = idealInputTic        + 1;
+	int serverTic     = snaptime             + 1;
 
 	// The value clamping here and the prediction iterations below are designed to ensure that
 	// if we get an invalid predictionTic due to extreme jitter, we don't rollback - we just
@@ -436,6 +440,9 @@ bool CL_PredictWorld()
 	{
 		predictionTic = gametic;
 		inputTic      = gametic;
+
+		// Leave serverTic as is.
+		// It's still making an accurate statement of the tic we're predicting.
 	}
 
 	// Disable sounds, etc, during prediction
@@ -444,9 +451,6 @@ bool CL_PredictWorld()
 	// Save a snapshot of the player's state before prediction
 	const PlayerSnapshot prevsnap(p.tic, p, ::lastEchoedClientTic);
 	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
-
-	// Mobjs are already in the last position received from the server.
-	bool mobjsHaveBeenPredicted = false;
 
 //#define ODAMEX_PREDICTION_DEBUG           // SUPER IMPORTANT NOTE WITH THIS BLOCK:
 #ifdef ODAMEX_PREDICTION_DEBUG              //  Sector 1 is checked because nuts.wad is such a great test case here,
@@ -482,7 +486,6 @@ bool CL_PredictWorld()
 	//
 	// This will predict the player state up to predictionTic.
 
-
 	for (;inputTic < predictionTic; ++inputTic)
 	{
 		// We exclude thinkers and sectors here because the latest integrated input
@@ -498,8 +501,13 @@ bool CL_PredictWorld()
 
 	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
 	// and the sectors up to (but NOT including) gametic.
+	//
+	// Mobjs are (supposed to be...) already in the last position received from the
+	// server, and we only want to run their thinkers once for the whole prediction,
+	// so we setup a latch for it.  We also return this value so that the caller of
+	// this function can know whether or not it needs to advance the mobjs itself.
+	bool mobjsHaveBeenPredicted = false;
 
-	int serverTic = snaptime + 1;
 	for (; predictionTic < gametic; ++predictionTic, ++serverTic)
 	{
 		if (CL_PredictLocalPlayer(predictionTic, predictionTic))
@@ -512,15 +520,15 @@ bool CL_PredictWorld()
 			s_previousThinkerTic = serverTic;
 			mobjsHaveBeenPredicted = true;
 
+			// We're doing our genuine thinker step now, and it must always be on the
+			// tic following the latest from the server.  This ensures that mobj actions
+			// that reference the player's position are working from the player state
+			// that the server almost certainly had when it ran the tic for real.
 			predicting = false;
 
 			// On the server, players are updated before the other thinkers.
 			CL_SimulatePlayers(snaptime);
 
-			// We're doing our genuine thinker step now, and it must always be on the
-			// tic following the latest from the server.  This ensures that mobj actions
-			// that reference the player's position are working from the player state
-			// that the server almost certainly had when it ran the tic for real.
 			DThinker::RunThinkers();
 			predicting = true;
 		}
