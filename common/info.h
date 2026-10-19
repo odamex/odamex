@@ -1806,6 +1806,9 @@ struct mobjinfo_t
 	bool display_name_set    = false;
 	std::string deh_name     = "";
 
+	// ZDoom
+	fixed_t scale = FRACUNIT; // render scale for the thing's sprites
+
 	// ID24 stuff
 	// int minrespawntics      = 420;
 	// int respawndice         = 4;
