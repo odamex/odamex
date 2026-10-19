@@ -396,22 +396,20 @@ bool CL_PredictWorld()
 		return false;
 
 	// Figure out where to start predicting from.
+	// Please note that there are two starting points: The rollback start point for the player
+	// motion and inputs, and the start point for server-owned states such as sectors, mobjs,
+	// and remote players.
 	//
-	// lastEchoedClientTic is the absolute latest clientside gametic that the server knows about.
-	// p.tic is the latest local gametic whose PlayerInput is integrated into the player state.
-	// p.tic can be the same as, or behind, the lastEchoedClientTic, but never ahead of it.
-	// If we see that p.tic is behind, we guess that the server is going to do two player tics
-	// before advancing world state to get caught up.
-	//
-	// We start predicting from the lastEchoedClientTic.  We also add one because we want to
-	// start predicting from the tic following the last one that the server knows about.
+	// The player input rollback tic is allowed to be (slightly) further in the past than the
+	// world prediction tic.  This is because from the server's perspective, the player inputs
+	// can be uneven due to client->server network lag + jitter and the queueing the server
+	// does internally.  So as server tics progress, the local player state and inputs may not
+	// progress evenly.  In the meantime, the world-owned states are monotonic with server tics.
 
-	const int snaptime = p.snapshots.getMostRecentTime();
-
-	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
-
-	const int idealPredictionTic = snap.getClientTic();
-	const int idealInputTic      = snap.getPlayerTic();
+	const int            snaptime           = p.snapshots.getMostRecentTime();
+	const PlayerSnapshot snap               = p.snapshots.getSnapshot(snaptime);
+	const int            idealPredictionTic = snap.getClientTic();
+	const int            idealInputTic      = snap.getPlayerTic();
 
 	if (s_previousBasisServerTic == 0)
 	{
@@ -444,7 +442,7 @@ bool CL_PredictWorld()
 	predicting = true;
 
 	// Save a snapshot of the player's state before prediction
-	PlayerSnapshot prevsnap(p.tic, p, ::lastEchoedClientTic);
+	const PlayerSnapshot prevsnap(p.tic, p, ::lastEchoedClientTic);
 	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
 
 	// Mobjs are already in the last position received from the server.
@@ -536,7 +534,7 @@ bool CL_PredictWorld()
 	// view when there's a misprediction.
 	if (playerWasPredicted and snap.isContinuous())
 	{
-		PlayerSnapshot correctedprevsnap(p.tic, p, ::lastEchoedClientTic);
+		const PlayerSnapshot correctedprevsnap(p.tic, p, ::lastEchoedClientTic);
 
 		// Did we predict correctly?
 		const bool correct = (correctedprevsnap.getX() == prevsnap.getX()) and
@@ -549,7 +547,7 @@ bool CL_PredictWorld()
 			netgraph.setMisprediction(true);
 
 			// Lerp from the our previous position to the correct position
-			PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);
+			const PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);
 			lerpedsnap.toPlayer(p);
 		}
 	}
@@ -562,7 +560,7 @@ bool CL_PredictWorld()
 	if (not mobjsHaveBeenPredicted)
 	{
 		mobjsHaveBeenPredicted = true;
-        s_previousThinkerTic = serverTic;
+		s_previousThinkerTic = serverTic;
 		CL_SimulatePlayers(snaptime);
 		DThinker::RunThinkers();
 	}

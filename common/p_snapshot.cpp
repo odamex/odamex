@@ -49,13 +49,25 @@ extern bool predicting;
 // ============================================================================
 
 ActorSnapshot::ActorSnapshot(int time, const AActor *mo) :
-		Snapshot(time), mFields(0xFFFFFFFF),
-		mX(mo->x), mY(mo->y), mZ(mo->z),
-		mMomX(mo->momx), mMomY(mo->momy), mMomZ(mo->momz),
-		mAngle(mo->angle), mPitch(mo->pitch), mOnGround(mo->onground),
-		mCeilingZ(mo->ceilingz), mFloorZ(mo->floorz),
-		mReactionTime(mo->reactiontime), mWaterLevel(mo->waterlevel),
-		mFlags(mo->flags), mFlags2(mo->flags2), mFlags3(mo->flags3), mFrame(mo->frame)
+		Snapshot        (time),
+		mFields         (ACT_ALL_FIELDS),
+		mX              (mo->x),
+		mY              (mo->y),
+		mZ              (mo->z),
+		mMomX           (mo->momx),
+		mMomY           (mo->momy),
+		mMomZ           (mo->momz),
+		mAngle          (mo->angle),
+		mPitch          (mo->pitch),
+		mOnGround       (mo->onground),
+		mCeilingZ       (mo->ceilingz),
+		mFloorZ         (mo->floorz),
+		mReactionTime   (mo->reactiontime),
+		mWaterLevel     (mo->waterlevel),
+		mFlags          (mo->flags),
+		mFlags2         (mo->flags2),
+		mFlags3         (mo->flags3),
+		mFrame          (mo->frame)
 {
 }
 
@@ -184,7 +196,7 @@ void ActorSnapshot::toActor(AActor *mo) const
 
 PlayerSnapshot::PlayerSnapshot(int time, const player_t& player, int echoedClientTic) :
 		Snapshot        (time),
-		mFields         (0xFFFFFFFF),
+		mFields         (PLY_ALL_FIELDS),
 		mActorSnap      (time, player.mo),
 		mViewHeight     (player.viewheight),
 		mDeltaViewHeight(player.deltaviewheight),

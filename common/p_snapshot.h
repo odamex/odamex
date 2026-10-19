@@ -232,26 +232,28 @@ public:
 private:
 	enum ActorFields
 	{
-		ACT_POSITIONX           = BIT(0),
-		ACT_POSITIONY           = BIT(1),
-		ACT_POSITIONZ           = BIT(2),
-		ACT_MOMENTUMX           = BIT(3),
-		ACT_MOMENTUMY           = BIT(4),
-		ACT_MOMENTUMZ           = BIT(5),
-		ACT_ANGLE               = BIT(6),
-		ACT_PITCH               = BIT(7),
-		ACT_CEILINGZ            = BIT(8),
-		ACT_FLOORZ              = BIT(9),
-		ACT_ONGROUND            = BIT(10),
-		ACT_FLAGS               = BIT(11),
-		ACT_FLAGS2              = BIT(12),
-		ACT_FLAGS3              = BIT(13),
-		ACT_REACTIONTIME        = BIT(14),
-		ACT_WATERLEVEL          = BIT(15),
-		ACT_FRAME               = BIT(16)
+		ACT_POSITIONX       =        0x1,
+		ACT_POSITIONY       =        0x2,
+		ACT_POSITIONZ       =        0x4,
+		ACT_MOMENTUMX       =        0x8,
+		ACT_MOMENTUMY       =       0x10,
+		ACT_MOMENTUMZ       =       0x20,
+		ACT_ANGLE           =       0x40,
+		ACT_PITCH           =       0x80,
+		ACT_CEILINGZ        =      0x100,
+		ACT_FLOORZ          =      0x200,
+		ACT_ONGROUND        =      0x400,
+		ACT_FLAGS           =      0x800,
+		ACT_FLAGS2          =     0x1000,
+		ACT_FLAGS3          =     0x2000,
+		ACT_REACTIONTIME    =     0x4000,
+		ACT_WATERLEVEL      =     0x8000,
+		ACT_FRAME           =    0x10000,
+
+		ACT_ALL_FIELDS      = 0xFFFFFFFF
 	};
 
-	unsigned int    mFields { 0 };
+	unsigned int mFields { 0 };
 
 	fixed_t mX      { 0 };
 	fixed_t mY      { 0 };
@@ -269,9 +271,9 @@ private:
 	int mReactionTime   { 0 };
 	int mWaterLevel     { 0 };
 
-	ActorFlags1 mFlags;
-	ActorFlags2 mFlags2;
-	ActorFlags3 mFlags3;
+	ActorFlags1 mFlags  { OUtil::noflag };
+	ActorFlags2 mFlags2 { OUtil::noflag };
+	ActorFlags3 mFlags3 { OUtil::noflag };
 	int         mFrame  { 0 };
 };
 
@@ -504,6 +506,8 @@ private:
 		PLY_JUMPTIME            =    0x80000,
 		PLY_TIC                 =   0x100000,
 		PLY_CLIENT_TIC          =   0x200000,
+
+		PLY_ALL_FIELDS          = 0xFFFFFFFF
 	};
 
 	unsigned int    mFields     { 0 };  // bitfield of data present in snapshot
@@ -535,15 +539,15 @@ public:
 	void addSnapshot(const PlayerSnapshot &snap);
 	PlayerSnapshot getSnapshot(int time) const;
 
-	bool ValidSnapshotExists(int time) const;
+	[[ nodiscard ]] bool ValidSnapshotExists(int time) const;
 
 private:
 	int mFindValidSnapshot(int starttime, int endtime) const;
 	PlayerSnapshot mInterpolateSnapshots(int from, int to, int time) const;
 	PlayerSnapshot mExtrapolateSnapshot(int from, int time) const;
 
-	PlayerSnapshot	mSnaps[NUM_SNAPSHOTS];
-	int				mMostRecent;
+	PlayerSnapshot  mSnaps[NUM_SNAPSHOTS];
+	int             mMostRecent;
 };
 
 
@@ -583,10 +587,10 @@ public:
 	void setFloorDirection(int val)         { mFloorDirection = val; }
 	void setCeilingOldDirection(int val)    { mCeilingOldDirection = val; }
 	void setFloorOldDirection(int val)      { mFloorOldDirection = val; }
-	void setCeilingTexture(short val)       { mCeilingTexture = val; }
-	void setFloorTexture(short val)         { mFloorTexture = val; }
-	void setCeilingSpecial(short val)       { mNewCeilingSpecial = val; }
-	void setFloorSpecial(short val)         { mNewFloorSpecial = val; }
+	void setCeilingTexture(int16_t val)     { mCeilingTexture = val; }
+	void setFloorTexture(int16_t val)       { mFloorTexture = val; }
+	void setCeilingSpecial(int16_t val)     { mNewCeilingSpecial = val; }
+	void setFloorSpecial(int16_t val)       { mNewFloorSpecial = val; }
 	void setCeilingLow(fixed_t val)         { mCeilingLow = val; }
 	void setCeilingHigh(fixed_t val)        { mCeilingHigh = val; }
 	void setFloorLow(fixed_t val)           { mFloorLow = val; }
@@ -614,55 +618,55 @@ public:
 	void setCeilingChange(int val)          { mCeilingChange = val; }
 	void setFloorChange(int val)            { mFloorChange = val; }
 
-	movertype_t getCeilingMoverType() const { return mCeilingMoverType; }
-	movertype_t getFloorMoverType() const   { return mFloorMoverType; }
-	sector_t* getSector() const             { return mSector; }
-	int     getCeilingType() const          { return mCeilingType; }
-	int     getFloorType() const            { return mFloorType; }
-	int     getCeilingTag() const           { return mCeilingTag; }
-	int     getFloorTag() const             { return mFloorTag; }
-	line_t* getCeilingLine() const          { return mCeilingLine; }
-	const line_t*   getFloorLine() const    { return mFloorLine; }
-	fixed_t getCeilingHeight() const        { return mCeilingHeight; }
-	fixed_t getFloorHeight() const          { return mFloorHeight; }
-	fixed_t getCeilingSpeed() const         { return mCeilingSpeed; }
-	fixed_t getFloorSpeed() const           { return mFloorSpeed; }
-	fixed_t getCeilingDestination() const   { return mCeilingDestination; }
-	fixed_t getFloorDestination() const     { return mFloorDestination; }
-	int     getCeilingDirection() const     { return mCeilingDirection; }
-	int     getFloorDirection() const       { return mFloorDirection; }
-	int     getCeilingOldDirection() const  { return mCeilingOldDirection; }
-	int     getFloorOldDirection() const    { return mFloorOldDirection; }
-	short   getCeilingTexture() const       { return mCeilingTexture; }
-	short   getFloorTexture() const         { return mFloorTexture; }
-	short   getCeilingSpecial() const       { return mNewCeilingSpecial; }
-	short   getFloorSpecial() const         { return mNewFloorSpecial; }
-	fixed_t getCeilingLow() const           { return mCeilingLow; }
-	fixed_t getCeilingHigh() const          { return mCeilingHigh; }
-	fixed_t getFloorLow() const             { return mFloorLow; }
-	fixed_t getFloorHigh() const            { return mFloorHigh; }
-	bool    getCeilingCrush() const         { return mCeilingCrush; }
-	bool    getFloorCrush() const           { return mFloorCrush; }
-	bool    getSilent() const               { return mSilent; }
-	int     getCeilingWait() const          { return mCeilingWait; }
-	int     getFloorWait() const            { return mFloorWait; }
-	int     getCeilingCounter() const       { return mCeilingCounter; }
-	int     getFloorCounter() const         { return mFloorCounter; }
-	int     getResetCounter() const         { return mResetCounter; }
-	int     getCeilingStatus() const        { return mCeilingStatus; }
-	int     getFloorStatus() const          { return mFloorStatus; }
-	int     getOldFloorStatus() const       { return mOldFloorStatus; }
-	fixed_t getCrusherSpeed1() const        { return mCrusherSpeed1; }
-	fixed_t getCrusherSpeed2() const        { return mCrusherSpeed1; }
-	int     getStepTime() const             { return mStepTime; }
-	int     getPerStepTime() const          { return mPerStepTime; }
-	int     getPauseTime() const            { return mPauseTime; }
-	int     getOrgHeight() const            { return mOrgHeight; }
-	int     getDelay() const                { return mDelay; }
-	fixed_t getFloorLip() const             { return mFloorLip; }
-	fixed_t getFloorOffset() const          { return mFloorOffset; }
-	int     getCeilingChange() const        { return mCeilingChange; }
-	int     getFloorChange() const          { return mFloorChange; }
+	[[nodiscard]] movertype_t getCeilingMoverType() const { return mCeilingMoverType; }
+	[[nodiscard]] movertype_t getFloorMoverType() const   { return mFloorMoverType; }
+	[[nodiscard]] sector_t* getSector() const             { return mSector; }
+	[[nodiscard]] int     getCeilingType() const          { return mCeilingType; }
+	[[nodiscard]] int     getFloorType() const            { return mFloorType; }
+	[[nodiscard]] int     getCeilingTag() const           { return mCeilingTag; }
+	[[nodiscard]] int     getFloorTag() const             { return mFloorTag; }
+	[[nodiscard]] line_t* getCeilingLine() const          { return mCeilingLine; }
+	[[nodiscard]] const line_t*   getFloorLine() const    { return mFloorLine; }
+	[[nodiscard]] fixed_t getCeilingHeight() const        { return mCeilingHeight; }
+	[[nodiscard]] fixed_t getFloorHeight() const          { return mFloorHeight; }
+	[[nodiscard]] fixed_t getCeilingSpeed() const         { return mCeilingSpeed; }
+	[[nodiscard]] fixed_t getFloorSpeed() const           { return mFloorSpeed; }
+	[[nodiscard]] fixed_t getCeilingDestination() const   { return mCeilingDestination; }
+	[[nodiscard]] fixed_t getFloorDestination() const     { return mFloorDestination; }
+	[[nodiscard]] int     getCeilingDirection() const     { return mCeilingDirection; }
+	[[nodiscard]] int     getFloorDirection() const       { return mFloorDirection; }
+	[[nodiscard]] int     getCeilingOldDirection() const  { return mCeilingOldDirection; }
+	[[nodiscard]] int     getFloorOldDirection() const    { return mFloorOldDirection; }
+	[[nodiscard]] int16_t getCeilingTexture() const       { return mCeilingTexture; }
+	[[nodiscard]] int16_t getFloorTexture() const         { return mFloorTexture; }
+	[[nodiscard]] int16_t getCeilingSpecial() const       { return mNewCeilingSpecial; }
+	[[nodiscard]] int16_t getFloorSpecial() const         { return mNewFloorSpecial; }
+	[[nodiscard]] fixed_t getCeilingLow() const           { return mCeilingLow; }
+	[[nodiscard]] fixed_t getCeilingHigh() const          { return mCeilingHigh; }
+	[[nodiscard]] fixed_t getFloorLow() const             { return mFloorLow; }
+	[[nodiscard]] fixed_t getFloorHigh() const            { return mFloorHigh; }
+	[[nodiscard]] bool    getCeilingCrush() const         { return mCeilingCrush; }
+	[[nodiscard]] bool    getFloorCrush() const           { return mFloorCrush; }
+	[[nodiscard]] bool    getSilent() const               { return mSilent; }
+	[[nodiscard]] int     getCeilingWait() const          { return mCeilingWait; }
+	[[nodiscard]] int     getFloorWait() const            { return mFloorWait; }
+	[[nodiscard]] int     getCeilingCounter() const       { return mCeilingCounter; }
+	[[nodiscard]] int     getFloorCounter() const         { return mFloorCounter; }
+	[[nodiscard]] int     getResetCounter() const         { return mResetCounter; }
+	[[nodiscard]] int     getCeilingStatus() const        { return mCeilingStatus; }
+	[[nodiscard]] int     getFloorStatus() const          { return mFloorStatus; }
+	[[nodiscard]] int     getOldFloorStatus() const       { return mOldFloorStatus; }
+	[[nodiscard]] fixed_t getCrusherSpeed1() const        { return mCrusherSpeed1; }
+	[[nodiscard]] fixed_t getCrusherSpeed2() const        { return mCrusherSpeed1; }
+	[[nodiscard]] int     getStepTime() const             { return mStepTime; }
+	[[nodiscard]] int     getPerStepTime() const          { return mPerStepTime; }
+	[[nodiscard]] int     getPauseTime() const            { return mPauseTime; }
+	[[nodiscard]] int     getOrgHeight() const            { return mOrgHeight; }
+	[[nodiscard]] int     getDelay() const                { return mDelay; }
+	[[nodiscard]] fixed_t getFloorLip() const             { return mFloorLip; }
+	[[nodiscard]] fixed_t getFloorOffset() const          { return mFloorOffset; }
+	[[nodiscard]] int     getCeilingChange() const        { return mCeilingChange; }
+	[[nodiscard]] int     getFloorChange() const          { return mFloorChange; }
 
 private:
 	movertype_t     mCeilingMoverType   { SEC_INVALID };
@@ -692,11 +696,11 @@ private:
 	int             mCeilingOldDirection{ 0 };
 	int             mFloorOldDirection  { 0 };
 
-	short           mCeilingTexture { 0 };
-	short           mFloorTexture   { 0 };
+	int16_t         mCeilingTexture { 0 };
+	int16_t         mFloorTexture   { 0 };
 
-	short           mNewCeilingSpecial  { 0 };
-	short           mNewFloorSpecial    { 0 };
+	int16_t         mNewCeilingSpecial  { 0 };
+	int16_t         mNewFloorSpecial    { 0 };
 
 	fixed_t         mCeilingLow { 0 };
 	fixed_t         mCeilingHigh{ 0 };
