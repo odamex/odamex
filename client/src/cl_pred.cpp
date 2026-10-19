@@ -349,6 +349,26 @@ extern int world_index;
 extern int last_svgametic;
 extern int lastEchoedClientTic;
 
+void CL_ResetWorldPrediction()
+{
+	s_previousBasisServerTic = 0;
+	s_previousThinkerTic = 0;
+	s_worldPredictionTic = 0;
+
+	s_savedLocalPlayerSnaps.fill(PlayerSnapshot{});
+}
+
+void CL_AdvanceWorldPredictionTic(int serverTic)
+{
+	if (s_worldPredictionTic != 0 and s_previousBasisServerTic != serverTic)
+	{
+		const int serverTicStartVelocity = serverTic - s_previousBasisServerTic;
+
+		s_worldPredictionTic     += serverTicStartVelocity;
+		s_previousBasisServerTic  = serverTic;
+	}
+}
+
 //
 // CL_PredictWorld
 //
@@ -411,20 +431,11 @@ bool CL_PredictWorld()
 	const int            idealPredictionTic = snap.getClientTic();
 	const int            idealInputTic      = snap.getPlayerTic();
 
-	// Do we need to freshly re-initialize prediction?
-	if (s_previousBasisServerTic == 0)
+	// Do we need to restart prediction following a reset?
+	if (s_worldPredictionTic == 0)
 	{
 		s_previousBasisServerTic = snaptime;
 		s_worldPredictionTic     = idealPredictionTic;
-	}
-
-	// Advance the world prediction tic.
-	if (s_previousBasisServerTic != snaptime)
-	{
-		const int serverTicStartVelocity = snaptime - s_previousBasisServerTic;
-
-		s_worldPredictionTic     += serverTicStartVelocity;
-		s_previousBasisServerTic  = snaptime;
 	}
 
 	// Plus one because the values from the server are the latest canonical tics, and the first
@@ -577,15 +588,6 @@ bool CL_PredictWorld()
 		CL_PredictAllSectors();
 
 	return mobjsHaveBeenPredicted;
-}
-
-void CL_ResetWorldPrediction()
-{
-	s_previousBasisServerTic = 0;
-	s_previousThinkerTic = 0;
-	s_worldPredictionTic = 0;
-
-	s_savedLocalPlayerSnaps.fill(PlayerSnapshot{});
 }
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")

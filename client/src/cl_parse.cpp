@@ -2549,6 +2549,8 @@ void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
 	::lastEchoedClientTic = msg->client_tic();
 
+	CL_AdvanceWorldPredictionTic(ThisMessageServerTic());
+
 	netgraph.addServerSideMetrics(msg->reliable_messages_in_flight(), msg->throttle());
 }
 

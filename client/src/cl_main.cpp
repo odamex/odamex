@@ -2770,6 +2770,11 @@ void CL_SimulateWorld()
 	// slowing down or speeding up world_index
 	int drift_correction = CL_CalculateWorldIndexDriftCorrection();
 
+	if (drift_correction)
+	{
+		CL_ResetWorldPrediction();
+	}
+
 	#ifdef _WORLD_INDEX_DEBUG_
 	if (drift_correction != 0)
 		PrintFmt(PRINT_HIGH, "Gametic {}, increasing world index by {}.\n",
