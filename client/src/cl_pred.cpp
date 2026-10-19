@@ -341,7 +341,6 @@ bool CL_SectorIsPredicting(sector_t *sector)
 namespace
 {
 	int s_previousBasisServerTic;
-	int s_previousThinkerTic;
 	int s_worldPredictionTic;
 	int s_resetCutoffLocalTic;
 }
@@ -353,7 +352,6 @@ extern int lastEchoedClientTic;
 void CL_ResetWorldPrediction()
 {
 	s_previousBasisServerTic = 0;
-	s_previousThinkerTic = 0;
 	s_worldPredictionTic = 0;
 	s_resetCutoffLocalTic = gametic;
 
@@ -527,9 +525,8 @@ bool CL_PredictWorld()
 			playerWasPredicted = true;
 		}
 
-		if (serverTic > s_previousThinkerTic and not mobjsHaveBeenPredicted)
+		if (not mobjsHaveBeenPredicted)
 		{
-			s_previousThinkerTic = serverTic;
 			mobjsHaveBeenPredicted = true;
 
 			// We're doing our genuine thinker step now, and it must always be on the
@@ -580,7 +577,6 @@ bool CL_PredictWorld()
 	if (not mobjsHaveBeenPredicted)
 	{
 		mobjsHaveBeenPredicted = true;
-		s_previousThinkerTic = serverTic;
 		CL_SimulatePlayers(snaptime);
 		DThinker::RunThinkers();
 	}
