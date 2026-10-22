@@ -605,6 +605,7 @@ void P_SetPlayerSnapshotNoPosition(player_t& player, const PlayerSnapshot &snap)
 	fixed_t z = player.mo->z;
 	fixed_t ceilingz = player.mo->ceilingz;
 	fixed_t floorz = player.mo->floorz;
+	fixed_t dropoffz = player.mo->dropoffz;
 	fixed_t momx = player.mo->momx;
 	fixed_t momy = player.mo->momy;
 	fixed_t momz = player.mo->momz;
@@ -617,6 +618,7 @@ void P_SetPlayerSnapshotNoPosition(player_t& player, const PlayerSnapshot &snap)
 	player.mo->z = z;
 	player.mo->ceilingz = ceilingz;
 	player.mo->floorz = floorz;
+	player.mo->dropoffz = dropoffz;
 	player.mo->momx = momx;
 	player.mo->momy = momy;
 	player.mo->momz = momz;
