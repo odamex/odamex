@@ -296,10 +296,7 @@ bool CL_PredictLocalPlayer(int predtic, int inputTic)
 	player_t& player = consoleplayer();
 
 	if (!player.ingame() || !player.mo || player.tic >= predtic)
-    {
-        //PrintFmt("gt{}, rejecting ptic {} on predictionTic {}\n", gametic, player.tic, predtic);
 		return false;
-    }
 
 	// Restore the angle, viewheight, etc for the player
 	P_SetPlayerSnapshotNoPosition(player, s_savedLocalPlayerSnaps[predtic % MAXSAVETICS]);
@@ -356,12 +353,11 @@ extern int lastEchoedClientTic;
 
 void CL_ResetWorldPrediction()
 {
-	s_basisServerTic = 0;
-    s_previousServerTic = 0;
-
-    s_basisWorldPredictionTic = 0;
-	s_worldPredictionTic = 0;
-	s_resetCutoffLocalTic = gametic;
+	s_basisServerTic          = 0;
+	s_previousServerTic       = 0;
+	s_basisWorldPredictionTic = 0;
+	s_worldPredictionTic      = 0;
+	s_resetCutoffLocalTic     = gametic;
 
 	s_savedLocalPlayerSnaps.fill(PlayerSnapshot{});
 }
@@ -541,63 +537,6 @@ bool CL_PredictWorld()
 
 	}
 
-#if 0
-	// Because input tic can be behind or match, but never exceed, predictionTic,
-	// make sure we integrate any extra older inputs that we know the server hasn't
-	// integrated into the player state it has.
-	//
-	// This will predict the player state up to predictionTic.
-
-	for (;inputTic < predictionTic; ++inputTic)
-	{
-		// We exclude thinkers and sectors here because the latest integrated input
-		// is from BEFORE the latest server-originated states (sectors, mobj state).
-		//
-		// Please note that we supply predictionTic as the basis tic so that we're
-		// simulating the server integrating multiple inputs onto its latest player state.
-		if (CL_PredictLocalPlayer(predictionTic, inputTic))
-		{
-			playerWasPredicted = true;
-		}
-	}
-
-	// Now we're on the predictionTic.  We advance the player, the thinkers/mobjs,
-	// and the sectors up to (but NOT including) gametic.
-	//
-	// Mobjs are (supposed to be...) already in the last position received from the
-	// server, and we only want to run their thinkers once for the whole prediction,
-	// so we setup a latch for it.  We also return this value so that the caller of
-	// this function can know whether or not it needs to advance the mobjs itself.
-	bool mobjsHaveBeenPredicted = false;
-
-	for (; predictionTic < gametic; ++predictionTic, ++serverTic)
-	{
-		if (CL_PredictLocalPlayer(predictionTic, predictionTic))
-		{
-			playerWasPredicted = true;
-		}
-
-		if (not mobjsHaveBeenPredicted)
-		{
-			mobjsHaveBeenPredicted = true;
-
-			// We're doing our genuine thinker step now, and it must always be on the
-			// tic following the latest from the server.  This ensures that mobj actions
-			// that reference the player's position are working from the player state
-			// that the server almost certainly had when it ran the tic for real.
-			predicting = false;
-
-			// On the server, players are updated before the other thinkers.
-			CL_SimulatePlayers(snaptime);
-
-			DThinker::RunThinkers();
-			predicting = true;
-		}
-
-		if (cl_predictsectors)
-			CL_PredictSectors(s_predictingSectors);
-	}
-#endif
 	// If the player didn't just spawn or teleport, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
 	// view when there's a misprediction.
