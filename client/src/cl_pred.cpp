@@ -457,10 +457,15 @@ bool CL_PredictWorld()
 	// The value clamping here and the prediction iterations below are designed to ensure that
 	// if we get an invalid predictionTic due to extreme jitter or very recent prediction reset,
 	// we don't rollback - we just proceed with the next tic.
-	if (predictionTic < gametic - MAXSAVETICS or gametic < predictionTic)
+
+	int startingLocalTic = std::min({ predictionTic, inputTic, worldPredictionTic });
+
+	if (startingLocalTic < gametic - MAXSAVETICS or gametic < startingLocalTic)
 	{
-		predictionTic = gametic;
-		inputTic      = gametic;
+		predictionTic      = gametic;
+		inputTic           = gametic;
+		worldPredictionTic = gametic;
+		startingLocalTic   = gametic;
 
 		// Leave serverTic as is.
 		// It's still making an accurate statement of the tic we're predicting.
@@ -477,15 +482,14 @@ bool CL_PredictWorld()
 #ifdef ODAMEX_PREDICTION_DEBUG              //  Sector 1 is checked because nuts.wad is such a great test case here,
 	const sector_t& sector = sectors[1];    //  and sector 1 is the large Lift sector that the player spawns on and
 	                                        //  has a bunch of weapons and items.
-	DPrintFmt("gt {}, snaptime {}, pred {}, input {}, initsecheight(off-one) {}, world_index {}, cor_pred {}, cor_input {}\n",
+	DPrintFmt("gt {}, snaptime {}, pred {}, input {}, world {}, initsecheight(off-one) {}, world_index {}\n",
 	        gametic,
 	        snaptime,
-	        idealPredictionTic,
-	        idealInputTic,
-	        P_FloorHeight(&sector),
-	        world_index,
 	        predictionTic,
-	        inputTic
+	        inputTic,
+	        worldPredictionTic,
+	        P_FloorHeight(&sector),
+	        world_index
 	        );
 #endif
 
@@ -502,43 +506,40 @@ bool CL_PredictWorld()
 	bool playerWasPredicted = false;
 	bool mobjsHaveBeenPredicted = false;
 
-    const int startingLocalTic = std::min({ predictionTic, inputTic, worldPredictionTic });
+	for (int i = startingLocalTic; i < gametic; ++i)
+	{
+		if (i >= inputTic)
+		{
+			if (CL_PredictLocalPlayer(std::max(i, predictionTic), i))   // std::max because inputTic *can* be behind predictionTic.
+			{
+				playerWasPredicted = true;
+			}
+		}
 
-    for (int i = startingLocalTic; i < gametic; ++i)
-    {
-        if (i >= inputTic)
-        {
-            if (CL_PredictLocalPlayer(std::max(i, predictionTic), i))
-            {
-                playerWasPredicted = true;
-            }
-        }
+		if (i >= worldPredictionTic)
+		{
+			if (not mobjsHaveBeenPredicted)
+			{
+				mobjsHaveBeenPredicted = true;
 
-        if (i >= worldPredictionTic)
-        {
-            if (not mobjsHaveBeenPredicted)
-            {
-                mobjsHaveBeenPredicted = true;
+				// We're doing our genuine thinker step now, and it must always be on the
+				// tic following the latest from the server.  This ensures that mobj actions
+				// that reference the player's position are working from the player state
+				// that the server almost certainly had when it ran the tic for real.
+				predicting = false;
 
-                // We're doing our genuine thinker step now, and it must always be on the
-                // tic following the latest from the server.  This ensures that mobj actions
-                // that reference the player's position are working from the player state
-                // that the server almost certainly had when it ran the tic for real.
-                predicting = false;
+				// On the server, players are updated before the other thinkers.
+				CL_SimulatePlayers(snaptime);
 
-                // On the server, players are updated before the other thinkers.
-                CL_SimulatePlayers(snaptime);
+				DThinker::RunThinkers();
+				predicting = true;
+			}
 
-                DThinker::RunThinkers();
-                predicting = true;
-            }
+			if (cl_predictsectors)
+				CL_PredictSectors(s_predictingSectors);
+		}
 
-            if (cl_predictsectors)
-                CL_PredictSectors(s_predictingSectors);
-        }
-
-    }
-
+	}
 
 #if 0
 	// Because input tic can be behind or match, but never exceed, predictionTic,
@@ -600,7 +601,7 @@ bool CL_PredictWorld()
 	// If the player didn't just spawn or teleport, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
 	// view when there's a misprediction.
-	if (/*playerWasPredicted and */snap.isContinuous())
+	if (snap.isContinuous())
 	{
 		const PlayerSnapshot correctedprevsnap(p.tic, p, ::lastEchoedClientTic);
 
