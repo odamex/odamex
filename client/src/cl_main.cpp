@@ -2764,8 +2764,6 @@ void CL_SimulateWorld()
 	// [SL] 2012-03-29 - Add sync information to the netgraph
 	netgraph.setWorldIndexSync(world_index - (last_svgametic - cl_interp));
 
-	CL_SimulateSectors();
-
 	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
 	// slowing down or speeding up world_index
 	int drift_correction = CL_CalculateWorldIndexDriftCorrection();

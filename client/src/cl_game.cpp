@@ -890,6 +890,7 @@ void P_CheckInterpPause()
 	}
 }
 
+void CL_SimulateSectors();
 void CL_SimulateWorld();
 void CL_CheckDisplayPlayer();
 //
@@ -1225,12 +1226,15 @@ void G_Ticker (void)
 					DPrintFmt("Did not receive spawn for consoleplayer.\n");
 				}
 
-				CL_SimulateWorld();
+				CL_SimulateSectors();
+
 				thinkersHaveRun = CL_PredictWorld();
 				if (not thinkersHaveRun and not netdemo.isPaused())
 				{
 					CL_SimulatePlayers(world_index);
 				}
+
+				CL_SimulateWorld();
 
 				// Replay item pickups if the items arrived now.
 				ClientReplay::getInstance().itemReplay();
