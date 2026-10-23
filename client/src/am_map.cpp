@@ -144,8 +144,7 @@ EXTERN_CVAR(am_ovteleportcolor)
 EXTERN_CVAR(am_ovminimap)
 EXTERN_CVAR(am_ovbackcolor)
 EXTERN_CVAR(am_ovbackalpha)
-EXTERN_CVAR(am_ovscalewidth)
-EXTERN_CVAR(am_ovscaleheight)
+EXTERN_CVAR(am_ovscalesize)
 EXTERN_CVAR(am_ovlocation)
 
 EXTERN_CVAR(netdebug_automap)
@@ -2439,8 +2438,8 @@ void AM_Drawer()
 		int x_offset = 0;
 		int y_offset = 0;
 
-		f_w = v_width * am_ovscalewidth;
-		f_h = v_height * am_ovscaleheight;
+		f_w = v_width * am_ovscalesize;
+		f_h = std::min(f_w, v_height);
 
 		switch (loc)
 		{

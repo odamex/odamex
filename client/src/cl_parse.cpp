@@ -593,8 +593,8 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	mo->baseline               = base;
 	mo->updatedDuringLocalTic  = gametic;
 	mo->updatedDuringServerTic = ThisMessageServerTic();
-	mo->mobjtic                = msg->timebase_tic();
-
+	mo->mobjtic                = ThisMessageServerTic() + 1;   // Because when the server sends the spawn message,
+	                                                           // the mobjtic has already advanced.
 	P_SetThingId(mo, netid);
 
 	// Assign baseline/current data to spawned mobj
@@ -1324,6 +1324,10 @@ void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 		return;
 	}
 
+	// Keep action-internal tic checks in sync, and +1 because mobjtic was already advanced on the server
+	// beyond gametic by the time the message was sent.
+	mo->mobjtic = ThisMessageServerTic() + 1;
+
 	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
 	if (mode != mo->mode)
 	{
@@ -1356,12 +1360,13 @@ void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 			default:
 				break;
 		}
-		if (mo->state->statenum != msg->state())
-		{
-			P_SetMobjState(mo, msg->state());
-		}
-		mo->tics = msg->tics();
 	}
+
+	if (mo->state->statenum != msg->state())
+	{
+		P_SetMobjState(mo, msg->state());
+	}
+	mo->tics = msg->tics();
 
 	// Now apply the update mobj, on the off chance that a mode change caused
 	// us to mispredict the fine-grained position, momentum, angle, etc.
@@ -3994,6 +3999,10 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 			last_svgametic = s_currentHeader.originatorTic;
 		}
 
+		// If this packet is "from the future," we'll put its decoded messages into the deferredMessages container
+		// in ParseOne via ParseBuffer, but we need to make sure that we put the corresponding header in, too.  We
+		// do that here, right away, so that when we eventually process the future tic's deferred messages, we handle
+		// the header first.
 		if (s_currentHeader.originatorTic > currentExpectedNewestPacket)
 		{
 			auto headerProto = MSG_Header(s_currentHeader);
