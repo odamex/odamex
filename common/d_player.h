@@ -340,8 +340,9 @@ public:
 		std::string	Message;
 	} LastMessage;
 
-	// denis - things that are pending to be sent to this player
-	std::queue<AActor::AActorPtr> to_spawn;
+	// Server-side structures for required mobj actions this tic.
+	std::queue<AActor::AActorPtr>           mobjsToSpawn;   // std::queue because we may not pop everything off this tic.
+	std::unordered_set<AActor::AActorPtr>   mobjsToUpdate;
 
 	// For prioritization of mobj updates from server to client.
 	struct ActorDistanceType

@@ -131,14 +131,10 @@ void SV_CheckTeam(player_t &player);
 void SV_SendUserInfo(const player_t &player, client_t* cl);
 void SV_Suicide(player_t &player);
 void SV_SpawnMobj(AActor *mo);
+void SV_ArmMobj(AActor* mo);
 void SV_UpdateMobj(AActor* mo);
 void SV_SpawnHighPriorityMobj(AActor *mo);
 void SV_TouchSpecial(AActor& special, player_t& player);
-
-void SV_Sound (const AActor *mo, byte channel, const char *name, byte attenuation);
-void SV_Sound(player_t& pl, const AActor* mo, const byte channel, const char* name, const byte attenuation);
-void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation);
-void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
 
 void SV_MidPrint (const char *msg, player_t *p, int msgtime=0);
 
