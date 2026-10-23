@@ -33,6 +33,7 @@
 #include "r_state.h"
 #include "m_random.h"
 #include "v_palette.h"
+#include "s_sound.h"
 
 //
 // P_ArchivePlayers
@@ -288,7 +289,7 @@ void P_SerializeThinkers (FArchive &arc, bool hubLoad)
 //
 void P_SerializeSounds (FArchive &arc)
 {
-	// denis - todo
+	P_SerializeMusic(arc);
 }
 
 //

@@ -42,8 +42,8 @@ struct Proto
 struct ParseResultType
 {
 	std::unique_ptr<google::protobuf::Message> msg;
-	parseError_e                               code = PERR_OK;
-	msg_t                                      cmd  = msg_noop;
+	parseError_e                               code { PERR_OK };
+	msg_t                                      cmd  { msg_noop };
 };
 
 typedef std::vector<Proto> Protos;
