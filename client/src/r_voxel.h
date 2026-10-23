@@ -3,7 +3,11 @@
 //
 // $Id$
 //
+// Copyright (C) 2023 by Andrew Apted.
 // Copyright (C) 2026 by The Odamex Team.
+//
+// Software voxel rendering based on the original work by Andrew Apted,
+// https://gitlab.com/andwj/voxel-rend
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
