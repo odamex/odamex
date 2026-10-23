@@ -1367,7 +1367,7 @@ void VX_DrawVoxel(vissprite_t* spr)
 	if (not spr or not spr->voxel)
 		return;
 
-	const auto* v = static_cast<const VoxelModel*>(spr->voxel->model);
+	const auto* v = spr->voxel->model;
 	if (not v)
 		return;
 
