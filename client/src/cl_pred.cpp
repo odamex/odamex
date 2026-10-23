@@ -470,9 +470,8 @@ bool CL_PredictWorld()
 	// tics we actually predict are the ones following those.
 	int predictionTic = idealPredictionTic + 1;
 	int inputTic      = idealInputTic      + 1;
-	int serverTic     = snaptime           + 1;
 
-	int worldPredictionTic = s_worldPredictionTic ? s_worldPredictionTic + 1 : serverTic;
+	int worldPredictionTic = s_worldPredictionTic ? s_worldPredictionTic + 1 : predictionTic;
 
 	// The value clamping here and the prediction iterations below are designed to ensure that
 	// if we get an invalid predictionTic due to extreme jitter or very recent prediction reset,
@@ -486,9 +485,6 @@ bool CL_PredictWorld()
 		inputTic           = gametic;
 		worldPredictionTic = gametic;
 		startingLocalTic   = gametic;
-
-		// Leave serverTic as is.
-		// It's still making an accurate statement of the tic we're predicting.
 	}
 
 	// Disable sounds, etc, during prediction
