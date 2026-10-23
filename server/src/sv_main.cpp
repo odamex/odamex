@@ -3904,15 +3904,10 @@ int SV_CalculateNumTiccmds(player_t &player)
 		// Player is not moving
 		return 2;
 	}
-/*
-	if (player.cmdqueue.size() > 2 && gametic % 2*TICRATE == player.id % 2*TICRATE)
-	{
-		// Process an extra ticcmd once every 2 seconds to reduce the
-		// queue size. Use player id to stagger the timing to prevent everyone
-		// from running an extra ticcmd at the same time.
-		return 2;
-	}
-*/
+
+	// FIXME / IDEA:  Don't drain more than one command.  Instead, combine inputs as
+	//                long as doing so wouldn't affect player momentum or position.
+
 	if (player.cmdqueue.size() > maximum_queue_size)
 	{
 //        PrintFmt ("Overgrowth {}\n", gametic);
