@@ -600,28 +600,28 @@ void P_SetPlayerSnapshotNoPosition(player_t& player, const PlayerSnapshot &snap)
 	if (!player.mo)
 		return;
 
-	fixed_t x = player.mo->x;
-	fixed_t y = player.mo->y;
-	fixed_t z = player.mo->z;
-	fixed_t ceilingz = player.mo->ceilingz;
-	fixed_t floorz = player.mo->floorz;
-	fixed_t dropoffz = player.mo->dropoffz;
-	fixed_t momx = player.mo->momx;
-	fixed_t momy = player.mo->momy;
-	fixed_t momz = player.mo->momz;
+	const fixed_t x         = player.mo->x;
+	const fixed_t y         = player.mo->y;
+	const fixed_t z         = player.mo->z;
+	const fixed_t ceilingz  = player.mo->ceilingz;
+	const fixed_t floorz    = player.mo->floorz;
+	const fixed_t dropoffz  = player.mo->dropoffz;
+	const fixed_t momx      = player.mo->momx;
+	const fixed_t momy      = player.mo->momy;
+	const fixed_t momz      = player.mo->momz;
 
 	snap.toPlayer(player);
 
 	player.mo->UnlinkFromWorld();
-	player.mo->x = x;
-	player.mo->y = y;
-	player.mo->z = z;
+	player.mo->x        = x;
+	player.mo->y        = y;
+	player.mo->z        = z;
 	player.mo->ceilingz = ceilingz;
-	player.mo->floorz = floorz;
+	player.mo->floorz   = floorz;
 	player.mo->dropoffz = dropoffz;
-	player.mo->momx = momx;
-	player.mo->momy = momy;
-	player.mo->momz = momz;
+	player.mo->momx     = momx;
+	player.mo->momy     = momy;
+	player.mo->momz     = momz;
 	player.mo->LinkToWorld();
 }
 

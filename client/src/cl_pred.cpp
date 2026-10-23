@@ -519,17 +519,13 @@ bool CL_PredictWorld()
 	if (cl_predictsectors)
 		CL_ResetSectors(snaptime, s_predictingSectors);
 
-	bool playerWasPredicted = false;
 	bool mobjsHaveBeenPredicted = false;
 
 	for (int i = startingLocalTic; i < gametic; ++i)
 	{
 		if (i >= inputTic)
 		{
-			if (CL_PredictLocalPlayer(std::max(i, predictionTic), i))   // std::max because inputTic *can* be behind predictionTic.
-			{
-				playerWasPredicted = true;
-			}
+			CL_PredictLocalPlayer(std::max(i, predictionTic), i);   // std::max because inputTic *can* be behind predictionTic.
 		}
 
 		if (i >= worldPredictionTic)
