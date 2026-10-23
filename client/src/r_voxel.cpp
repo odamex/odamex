@@ -89,7 +89,24 @@ struct VoxelModel
 	std::vector<int> offsets;
 	std::vector<byte> data;
 };
+} // namespace
 
+// A projected voxel model for the current view.
+struct voxelvis_t
+{
+	const VoxelModel* model = nullptr;
+	angle_t angle = 0;
+	// View-space position of the model's top-left (x = 0, y = 0) corner.
+	fixed_t topLeftX = 0;
+	fixed_t topLeftY = 0;
+	// Model rotation relative to the view direction.
+	fixed_t cosine = 0;
+	fixed_t sine = 0;
+	fixed_t pitchSlope = 0;
+};
+
+namespace
+{
 struct VoxelRenderOptions
 {
 	std::string voxelName;
@@ -118,7 +135,7 @@ enum VoxelFace
 
 std::unordered_map<uint64_t, VoxelModel> g_voxels;
 std::unordered_map<uint64_t, VoxelRenderOptions> g_voxelOptions;
-std::deque<r_voxelvis_s> g_visibleVoxels;
+std::deque<voxelvis_t> g_visibleVoxels;
 fixed_t g_eye_x = 0;
 fixed_t g_eye_y = 0;
 
@@ -873,7 +890,7 @@ void VX_DrawSolidShadedColumn(vissprite_t* spr, const int screenX, const int yl,
 
 void VX_DrawColumn(vissprite_t* spr, int x, int y)
 {
-	const r_voxelvis_s* vv = spr->voxel;
+	const voxelvis_t* vv = spr->voxel;
 	const auto* v = static_cast<const VoxelModel*>(vv->model);
 
 	const int ofs1 = v->offsets[(y * v->x_size) + x];
@@ -896,13 +913,13 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 	if (quadrant == 4)
 		return;
 
-	const fixed_t c = vv->c;
-	const fixed_t s = vv->s;
+	const fixed_t c = vv->cosine;
+	const fixed_t s = vv->sine;
 
 	std::array<fixed_t, 4> tx{};
 	std::array<fixed_t, 4> ty{};
-	tx[0] = vv->TL_x + (x * c) + (y * s);
-	ty[0] = vv->TL_y + (x * s) - (y * c);
+	tx[0] = vv->topLeftX + (x * c) + (y * s);
+	ty[0] = vv->topLeftY + (x * s) - (y * c);
 	tx[1] = tx[0] + s;
 	ty[1] = ty[0] - c;
 	tx[2] = tx[1] + c;
@@ -1329,10 +1346,10 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 
 	g_visibleVoxels.push_back({.model = v,
 	                           .angle = angle,
-	                           .TL_x = TL_x,
-	                           .TL_y = TL_y,
-	                           .c = c,
-	                           .s = s,
+	                           .topLeftX = TL_x,
+	                           .topLeftY = TL_y,
+	                           .cosine = c,
+	                           .sine = s,
 	                           .pitchSlope = pitchSlope});
 	vis->voxel = &g_visibleVoxels.back();
 	vis->x1 = x1;
