@@ -344,11 +344,18 @@ namespace
 	int s_previousServerTic;
 	int s_basisWorldPredictionTic;
 	int s_worldPredictionTic;
-	int s_resetCutoffLocalTic;
+	int s_previousWorldIndex;
+
+	// Use a nice power-of-two so the compiler can optimize easily.
+	// This also happens to be servertic vs world_index difference threshold
+	// which triggers a Resync in SimulateWorld.
+	constexpr int WORLD_INDEX_HISTORY_SIZE = 16;
+
+	std::array<int, WORLD_INDEX_HISTORY_SIZE> s_worldIndexDeltaHistory;
+	int64_t                                   s_worldIndexDeltaSum;
 }
 
 extern int world_index;
-extern int last_svgametic;
 extern int lastEchoedClientTic;
 
 void CL_ResetWorldPrediction()
@@ -357,9 +364,11 @@ void CL_ResetWorldPrediction()
 	s_previousServerTic       = 0;
 	s_basisWorldPredictionTic = 0;
 	s_worldPredictionTic      = 0;
-	s_resetCutoffLocalTic     = gametic;
+	s_previousWorldIndex      = world_index;
 
 	s_savedLocalPlayerSnaps.fill(PlayerSnapshot{});
+	s_worldIndexDeltaHistory.fill(0);
+	s_worldIndexDeltaSum = 0;
 }
 
 void CL_AdvanceWorldPredictionTic(int serverTic)
@@ -434,12 +443,27 @@ bool CL_PredictWorld()
 	const int            idealPredictionTic = snap.getClientTic();
 	const int            idealInputTic      = snap.getPlayerTic();
 
-	// Do we need to restart prediction following a reset?
-	if (s_worldPredictionTic == 0 and p.tic > s_resetCutoffLocalTic)
+	// Maintain a running average of world index deltas to determine when comms are stable enough
+	// to begin prediction.
+	const int deltaWorldIndex = world_index - s_previousWorldIndex;
+	s_previousWorldIndex = world_index;
+
+	int& historyEntryRef = s_worldIndexDeltaHistory[gametic % s_worldIndexDeltaHistory.size()];
+
+	s_worldIndexDeltaSum -= historyEntryRef;
+	s_worldIndexDeltaSum += deltaWorldIndex;
+	historyEntryRef       = deltaWorldIndex;
+
+	// Do we need to restart prediction following a reset?  Hold off until world_index stabilizes.
+	if (s_worldPredictionTic == 0)
 	{
-		s_basisServerTic            = snaptime;
-		s_basisWorldPredictionTic   = idealPredictionTic;
-		s_worldPredictionTic        = idealPredictionTic;
+		const fixed_t fixedWorldIndexSum = (s_worldIndexDeltaSum << FRACBITS) / s_worldIndexDeltaHistory.size();
+		if (fixedWorldIndexSum == FRACUNIT)
+		{
+			s_basisServerTic            = snaptime;
+			s_basisWorldPredictionTic   = idealPredictionTic;
+			s_worldPredictionTic        = idealPredictionTic;
+		}
 	}
 
 	// Plus one because the values from the server are the latest canonical tics, and the first
@@ -448,7 +472,7 @@ bool CL_PredictWorld()
 	int inputTic      = idealInputTic      + 1;
 	int serverTic     = snaptime           + 1;
 
-	int worldPredictionTic = s_worldPredictionTic + 1;
+	int worldPredictionTic = s_worldPredictionTic ? s_worldPredictionTic + 1 : serverTic;
 
 	// The value clamping here and the prediction iterations below are designed to ensure that
 	// if we get an invalid predictionTic due to extreme jitter or very recent prediction reset,
@@ -534,7 +558,6 @@ bool CL_PredictWorld()
 			if (cl_predictsectors)
 				CL_PredictSectors(s_predictingSectors);
 		}
-
 	}
 
 	// If the player didn't just spawn or teleport, nudge the player from
