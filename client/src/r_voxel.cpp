@@ -56,18 +56,18 @@ extern fixed_t FocalLengthY;
 
 namespace
 {
-constexpr int kMaxFrames = 29;
-constexpr int kBackslashFrame = 27;
-constexpr size_t kSpriteNameLength = 4;
-constexpr size_t kVoxelFrameNameLength = 5;
-constexpr size_t kKvxHeaderPrefixSize = 28;
-constexpr size_t kKvxHeaderSize = 40;
-constexpr size_t kKvxPaletteSize = 768;
-constexpr size_t kKvxMaxXOffsets = 260;
-constexpr double kDegreesPerCircle = 360.0;
-constexpr double kDegreesPerHalfCircle = 180.0;
-constexpr double kMaxViewerPitchDegrees = 89.0;
-constexpr double kAngleUnitsPerCircle = 4294967296.0;
+constexpr int VX_MAX_FRAMES = 29;
+constexpr int VX_BACKSLASH_FRAME = 27;
+constexpr size_t VX_SPRITE_NAME_LENGTH = 4;
+constexpr size_t VX_FRAME_NAME_LENGTH = 5;
+constexpr size_t KVX_HEADER_PREFIX_SIZE = 28;
+constexpr size_t KVX_HEADER_SIZE = 40;
+constexpr size_t KVX_PALETTE_SIZE = 768;
+constexpr size_t KVX_MAX_X_OFFSETS = 260;
+constexpr double VX_DEGREES_PER_CIRCLE = 360.0;
+constexpr double VX_DEGREES_PER_HALF_CIRCLE = 180.0;
+constexpr double VX_MAX_VIEWER_PITCH_DEGREES = 89.0;
+constexpr double VX_ANGLE_UNITS_PER_CIRCLE = 4294967296.0;
 constexpr fixed_t VX_MINZ = 1 * FRACUNIT;
 constexpr fixed_t VX_MAX_DIST = 2048 * FRACUNIT;
 constexpr fixed_t VX_NEAR_RADIUS = 512 * FRACUNIT;
@@ -147,10 +147,10 @@ uint64_t FrameKey(const int32_t spritenum, const int frame)
 
 angle_t VX_DegreesToAngle(double degrees)
 {
-	const double unit = std::fmod(degrees, kDegreesPerCircle);
-	const double wrapped = unit < 0.0 ? (unit + kDegreesPerCircle) : unit;
+	const double unit = std::fmod(degrees, VX_DEGREES_PER_CIRCLE);
+	const double wrapped = unit < 0.0 ? (unit + VX_DEGREES_PER_CIRCLE) : unit;
 	return static_cast<angle_t>(
-	    static_cast<uint64_t>(wrapped * kAngleUnitsPerCircle / kDegreesPerCircle) &
+	    static_cast<uint64_t>(wrapped * VX_ANGLE_UNITS_PER_CIRCLE / VX_DEGREES_PER_CIRCLE) &
 	    std::numeric_limits<uint32_t>::max());
 }
 
@@ -313,9 +313,9 @@ int VX_FrameIndexForChar(char frameChar)
 	const auto up = static_cast<unsigned char>(std::toupper(raw));
 	// VOXELDEF uses '^' as a parser-safe alias for the frame after '[' ('\\').
 	if (up == '^')
-		return kBackslashFrame;
+		return VX_BACKSLASH_FRAME;
 	const int frame = static_cast<int>(up) - static_cast<int>('A');
-	if (frame < 0 or frame >= kMaxFrames)
+	if (frame < 0 or frame >= VX_MAX_FRAMES)
 		return -1;
 	return frame;
 }
@@ -426,9 +426,9 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 			double degrees = 0.0;
 			if (VX_ReadNumber(os, degrees))
 			{
-				degrees = std::clamp(std::abs(degrees), 0.0, kMaxViewerPitchDegrees);
+				degrees = std::clamp(std::abs(degrees), 0.0, VX_MAX_VIEWER_PITCH_DEGREES);
 				opts.viewerPitchSlopeLimit = static_cast<fixed_t>(
-				    std::tan(degrees * std::numbers::pi / kDegreesPerHalfCircle) *
+				    std::tan(degrees * std::numbers::pi / VX_DEGREES_PER_HALF_CIRCLE) *
 				    FRACUNIT);
 			}
 			continue;
@@ -506,7 +506,7 @@ void VX_ParseVoxelDefLump(const int lump)
 			// OScanner separates bracket punctuation from identifiers. Recombine the
 			// final three Doom sprite-frame characters before treating a bare
 			// four-character sprite name as an all-frames mapping.
-			if (token.size() == kSpriteNameLength and os.scan())
+			if (token.size() == VX_SPRITE_NAME_LENGTH and os.scan())
 			{
 				const std::string suffix = os.getToken();
 				if (suffix == "[" or suffix == "^" or suffix == "]")
@@ -516,14 +516,14 @@ void VX_ParseVoxelDefLump(const int lump)
 			}
 
 			const std::string spriteRef = StdStringToUpper(token);
-			if (spriteRef.size() != kSpriteNameLength and
-			    spriteRef.size() != kVoxelFrameNameLength)
+			if (spriteRef.size() != VX_SPRITE_NAME_LENGTH and
+			    spriteRef.size() != VX_FRAME_NAME_LENGTH)
 			{
 				os.warning("Invalid sprite token '{}' in VOXELDEF entry.", token);
 			}
 			else
 			{
-				const std::string spriteName = spriteRef.substr(0, kSpriteNameLength);
+				const std::string spriteName = spriteRef.substr(0, VX_SPRITE_NAME_LENGTH);
 				const auto sit = spriteByName.find(spriteName);
 				if (sit == spriteByName.end())
 				{
@@ -531,7 +531,7 @@ void VX_ParseVoxelDefLump(const int lump)
 				}
 				else if (spriteRef.size() == 4)
 				{
-					for (int frame = 0; frame < kMaxFrames; frame++)
+					for (int frame = 0; frame < VX_MAX_FRAMES; frame++)
 						targets.emplace_back(sit->second, frame);
 				}
 				else
@@ -650,7 +650,7 @@ bool VX_RemapSlabColors(VoxelModel& v, int x, int y, const std::array<byte, 256>
 
 bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 {
-	if (length < kKvxHeaderSize + kKvxPaletteSize)
+	if (length < KVX_HEADER_SIZE + KVX_PALETTE_SIZE)
 		return false;
 
 	const byte* p = bytes;
@@ -667,9 +667,9 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	if (out.x_size > 255 or out.y_size > 255)
 		return false;
 	const size_t tableBytes =
-	    kKvxHeaderPrefixSize + ((static_cast<size_t>(out.x_size) + 1) * 4) +
+	    KVX_HEADER_PREFIX_SIZE + ((static_cast<size_t>(out.x_size) + 1) * 4) +
 	    (static_cast<size_t>(out.x_size) * (static_cast<size_t>(out.y_size) + 1) * 2);
-	if (tableBytes > length - kKvxPaletteSize)
+	if (tableBytes > length - KVX_PALETTE_SIZE)
 		return false;
 
 	out.x_pivot = (p[0] << 8) | (p[1] << 16);
@@ -679,7 +679,7 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	out.z_pivot = (p[0] << 8) | (p[1] << 16);
 	p += 4;
 
-	std::array<int, kKvxMaxXOffsets> xoffsets{};
+	std::array<int, KVX_MAX_X_OFFSETS> xoffsets{};
 	for (int x = 0; x <= out.x_size; x++)
 	{
 		xoffsets[x] = static_cast<int>(p[0]) | (p[1] << 8) | (p[2] << 16);
@@ -707,22 +707,22 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	const int data_size = max_offset - min_offset;
 	if (data_size <= 0)
 		return false;
-	if (std::cmp_less(min_offset ,tableBytes - kKvxHeaderPrefixSize))
+	if (std::cmp_less(min_offset ,tableBytes - KVX_HEADER_PREFIX_SIZE))
 		return false;
 
 	for (int& offset : out.offsets)
 		offset -= min_offset;
 
-	const size_t data_start = kKvxHeaderPrefixSize + static_cast<size_t>(min_offset);
-	if (data_start > length - kKvxPaletteSize or
-	    static_cast<size_t>(data_size) > length - kKvxPaletteSize - data_start)
+	const size_t data_start = KVX_HEADER_PREFIX_SIZE + static_cast<size_t>(min_offset);
+	if (data_start > length - KVX_PALETTE_SIZE or
+	    static_cast<size_t>(data_size) > length - KVX_PALETTE_SIZE - data_start)
 		return false;
 
 	out.data.resize(data_size);
 	memcpy(out.data.data(), bytes + data_start, data_size);
 
 	std::array<byte, 256> remap_table{};
-	VX_CreateRemapTable(bytes + (length - kKvxPaletteSize), remap_table);
+	VX_CreateRemapTable(bytes + (length - KVX_PALETTE_SIZE), remap_table);
 
 	for (int x = 0; x < out.x_size; x++)
 	{
@@ -752,7 +752,7 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 	// VOXELDEF uses '^' as the printable alias for Doom's post-'[' '\\'
 	// frame. Apply the same alias to the referenced KVX name, whose lump uses
 	// the literal backslash character.
-	if (resolvedVoxelName.size() == kVoxelFrameNameLength and
+	if (resolvedVoxelName.size() == VX_FRAME_NAME_LENGTH and
 	    resolvedVoxelName.back() == '^')
 		resolvedVoxelName.back() = '\\';
 	const std::string lumpName = StdStringToUpper(resolvedVoxelName);
@@ -1220,7 +1220,7 @@ void VX_Init()
 	for (const auto& [spritenum, spriteName] : sprnames)
 	{
 		bool contiguous = true;
-		for (int frame = 0; frame < kMaxFrames; frame++)
+		for (int frame = 0; frame < VX_MAX_FRAMES; frame++)
 		{
 			const auto* opts = VX_GetOptions(spritenum, frame);
 			if (not contiguous and (not opts or not opts->fromVoxelDef))
