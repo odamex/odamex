@@ -1243,7 +1243,6 @@ void VX_SpritesInNode(unsigned int bspnum)
 bool g_voxelsInitialized = false;
 } // namespace
 
-[[maybe_unused]]
 CVAR_FUNC_IMPL(r_voxeldir)
 {
 	// Check for prior initialization since this callback runs when config is loaded.
