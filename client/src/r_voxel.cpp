@@ -712,7 +712,7 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	{
 		xoffsets[x] = VX_ReadLong(p);
 		p += 4;
-		if (xoffsets[x] < 0 or static_cast<size_t>(xoffsets[x]) > length)
+		if (xoffsets[x] < 0 or std::cmp_greater(xoffsets[x], length))
 			return false;
 	}
 
