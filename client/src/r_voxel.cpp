@@ -830,11 +830,7 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 	}
 
 	// Server-provided WAD resources take precedence above and remain usable even
-	// when local voxel replacements are disabled.  This setting only controls
-	// loading raw .kvx files from the client's r_voxeldir.
-	if (not sv_allowvoxels)
-		return false;
-
+	// when local voxel replacements are disabled.
 	const std::string filename = VX_NamePath(resolvedVoxelName);
 	if (not M_FileExists(filename))
 		return false;
