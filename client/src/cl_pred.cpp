@@ -85,17 +85,12 @@ bool CL_SectorHasSnapshots(sector_t *sector)
 	return (mgr && !mgr->empty());
 }
 
-//
-// CL_ResetSectors
-//
-// Moves predicting sectors to the given server snapshot tic.
-// Also performs cleanup on the list of predicting sectors when
-// sectors have finished their movement.
-//
-void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_predictingSectors)
+bool CL_PrepareSectorSnapshots(int snapBasisServerTic, const player_t& player, ActivePredictingSectorsVector& io_predictingSectors)
 {
 	std::list<movingsector_t>::iterator itr;
 	itr = movingsectors.begin();
+
+    bool sectorRollbackIsGoodToGo = true;
 
 	// Iterate through all predicted sectors
 	while (itr != movingsectors.end())
@@ -109,13 +104,16 @@ void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_p
 		SectorSnapshotManager *mgr = CL_GetSectorSnapshotManager(sector);
 
 		bool snapfinished = false;
+        bool sectorHasGoodSnapshot = false;
 
-		if (mgr && !mgr->empty())
+        const bool sectorHasAnySnapshots = mgr and not mgr->empty();
+		if (sectorHasAnySnapshots)
 		{
 			SectorSnapshot snap = mgr->getSnapshot(snapBasisServerTic);
 
 			// Double-check to make sure it's REALLY from the server and not extrapolated/etc.
-			if (snap.isValid() and snap.isAuthoritative())
+            sectorHasGoodSnapshot = snap.isValid() and snap.isAuthoritative();
+			if (sectorHasGoodSnapshot)
 			{
 				const bool ceilingdone = P_CeilingSnapshotDone(&snap);
 				const bool floordone   = P_FloorSnapshotDone(&snap);
@@ -124,15 +122,35 @@ void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_p
 					snapfinished = true;
 				else
 				{
-					// snapshots have been received for this sector recently, so
-					// reset this sector to the most recent snapshot from the server
-					snap.toSector(sector);
+					// Snapshots have been received for this sector recently, so
+					// record it as ready for rollback-based prediction.
 					io_predictingSectors.push_back(itr);
 				}
 			}
 		}
 		else
+		{
 			snapfinished = true;
+        }
+
+        if ((sectorHasAnySnapshots and not sectorHasGoodSnapshot) or not sectorHasAnySnapshots)
+        {
+            // Since we're trying to prepare for a rollback-based prediction, if the player is on
+            // a moving sector that has not yet received snapshots, we have to bail out of the
+            // rollback and just dead reckon until the snapshots show up.  If we don't do this, we
+            // get players that rollback successfully, but the moving sector stays stationary.
+            const AActor* mobj = player.mo;
+            if (mobj and mobj->subsector)
+            {
+                for (const msecnode_t* sectorListNode = mobj->touching_sectorlist; sectorListNode; sectorListNode = sectorListNode->m_tnext)
+                {
+                    if (sectorListNode->m_sector == sector)
+                    {
+                        sectorRollbackIsGoodToGo = false;
+                    }
+                }
+            }
+		}
 
 
 		if (    snapfinished
@@ -147,6 +165,27 @@ void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_p
 		{
 			++itr;
 		}
+	}
+	return sectorRollbackIsGoodToGo;
+}
+
+//
+// CL_ResetSectors
+//
+// Moves predicting sectors to the given server snapshot tic.
+// Also performs cleanup on the list of predicting sectors when
+// sectors have finished their movement.
+//
+// Returns true if sector prediction is ready to proceed;  false if not, in which case,
+// rollback cannot be performed and we must proceed with dead reckoning.
+void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_predictingSectors)
+{
+	for (auto& iter : io_predictingSectors)
+	{
+        // We've already vetted the manager and snapshot in the preparation phase.
+        SectorSnapshotManager*  manager = CL_GetSectorSnapshotManager(iter->sector);
+        SectorSnapshot          snap    = manager->getSnapshot(snapBasisServerTic);
+        snap.toSector(iter->sector);
 	}
 }
 
@@ -470,8 +509,17 @@ bool CL_PredictWorld()
 	// tics we actually predict are the ones following those.
 	int predictionTic = idealPredictionTic + 1;
 	int inputTic      = idealInputTic      + 1;
-
 	int worldPredictionTic = s_worldPredictionTic ? s_worldPredictionTic + 1 : predictionTic;
+
+	// Now start preparing the snapshots.  Disable sounds, etc, during prediction
+	predicting = true;
+
+	// Save a snapshot of the player's state before prediction
+	const PlayerSnapshot prevsnap(p.tic, p, ::lastEchoedClientTic);
+	s_savedLocalPlayerSnaps[gametic % MAXSAVETICS] = prevsnap;
+
+	s_predictingSectors.clear();
+    const bool sectorsAreReady = cl_predictsectors ? CL_PrepareSectorSnapshots(snaptime, p, s_predictingSectors) : true;
 
 	// The value clamping here and the prediction iterations below are designed to ensure that
 	// if we get an invalid predictionTic due to extreme jitter or very recent prediction reset,
@@ -479,20 +527,24 @@ bool CL_PredictWorld()
 
 	int startingLocalTic = std::min({ predictionTic, inputTic, worldPredictionTic });
 
-	if (startingLocalTic < gametic - MAXSAVETICS or gametic < startingLocalTic)
+    const bool startingLocalTicIsInRange = gametic - MAXSAVETICS <= startingLocalTic and startingLocalTic < gametic;
+
+    const bool isReadyToRollback = sectorsAreReady and startingLocalTicIsInRange;
+
+    if (isReadyToRollback)
+    {
+        // Move the client to the last position received from the server.
+        snap.toPlayer(p);
+    }
+    else
 	{
+        // Not ready for rollback-based prediction+reconciliation.
+        // Set tic values that force us to just simply dead reckon into gametic.
 		predictionTic      = gametic;
 		inputTic           = gametic;
 		worldPredictionTic = gametic;
 		startingLocalTic   = gametic;
 	}
-
-	// Disable sounds, etc, during prediction
-	predicting = true;
-
-	// Save a snapshot of the player's state before prediction
-	const PlayerSnapshot prevsnap(p.tic, p, ::lastEchoedClientTic);
-	s_savedLocalPlayerSnaps[gametic % MAXSAVETICS] = prevsnap;
 
 //#define ODAMEX_PREDICTION_DEBUG           // SUPER IMPORTANT NOTE WITH THIS BLOCK:
 #ifdef ODAMEX_PREDICTION_DEBUG              //  Sector 1 is checked because nuts.wad is such a great test case here,
@@ -508,12 +560,6 @@ bool CL_PredictWorld()
 	        world_index
 	        );
 #endif
-
-	// Move the client to the last position received from the server.
-	//PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
-	snap.toPlayer(p);
-
-	s_predictingSectors.clear();
 
 	// Move sectors to the last position received from the server.
 	if (cl_predictsectors)
