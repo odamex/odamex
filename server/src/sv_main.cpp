@@ -1867,7 +1867,7 @@ void SV_UpdateMovingSectors(player_t &player)
 //
 void SV_SendGametic(client_t& client)
 {
-	client.messenger->HighPriority().Write( SVC_ServerGametic(gametic,
+	client.messenger->HighPriority().Write( SVC_ServerGametic(client.messenger->GetCurrentReceivedRemoteTic(),
 	                                                          client.messenger->GetPendingAckCount(),
 	                                                          client.messenger->GetReliableOverloadCount()));
 }
@@ -3905,22 +3905,22 @@ int SV_CalculateNumTiccmds(player_t &player)
 	if (!sv_ticbuffer || player.spectator || player.playerstate == PST_DEAD)
 	{
 		// Process all queued ticcmds.
+//        PrintFmt ("Process all {}\n", gametic);
 		return maximum_queue_size;
 	}
 	if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
 	{
+//        PrintFmt ("Stand still {}\n", gametic);
 		// Player is not moving
 		return 2;
 	}
-	if (player.cmdqueue.size() > 2 && gametic % 2*TICRATE == player.id % 2*TICRATE)
-	{
-		// Process an extra ticcmd once every 2 seconds to reduce the
-		// queue size. Use player id to stagger the timing to prevent everyone
-		// from running an extra ticcmd at the same time.
-		return 2;
-	}
+
+	// FIXME / IDEA:  Don't drain more than one command.  Instead, combine inputs as
+	//                long as doing so wouldn't affect player momentum or position.
+
 	if (player.cmdqueue.size() > maximum_queue_size)
 	{
+//        PrintFmt ("Overgrowth {}\n", gametic);
 		// The player experienced a large latency spike so try to catch up by
 		// processing more than one ticcmd at the expense of appearing perfectly
 		//  smooth

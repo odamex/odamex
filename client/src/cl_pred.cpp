@@ -33,6 +33,7 @@
 
 #include "p_snapshot.h"
 
+EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictsectors)
 
@@ -40,6 +41,7 @@ extern NetGraph netgraph;
 
 void P_MovePlayer (player_t& player);
 void P_CalcHeight (player_t& player);
+void P_HeightClipAllSectorThings(sector_t& sector);
 
 extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
 
@@ -49,7 +51,11 @@ extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 
 namespace
 {
-std::array<PlayerSnapshot, MAXSAVETICS> cl_savedsnaps;
+std::array<PlayerSnapshot, MAXSAVETICS> s_savedLocalPlayerSnaps;
+
+using ActivePredictingSectorsVector = std::vector<decltype(movingsectors)::iterator>;
+
+ActivePredictingSectorsVector s_predictingSectors;
 
 //
 // CL_GetSnapshotManager
@@ -82,11 +88,11 @@ bool CL_SectorHasSnapshots(sector_t *sector)
 //
 // CL_ResetSectors
 //
-// Moves predicting sectors to their most recent snapshot received from the
-// server.  Also performs cleanup on the list of predicting sectors when
+// Moves predicting sectors to the given server snapshot tic.
+// Also performs cleanup on the list of predicting sectors when
 // sectors have finished their movement.
 //
-void CL_ResetSectors()
+void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_predictingSectors)
 {
 	std::list<movingsector_t>::iterator itr;
 	itr = movingsectors.begin();
@@ -106,27 +112,32 @@ void CL_ResetSectors()
 
 		if (mgr && !mgr->empty())
 		{
-			int mostrecent = mgr->getMostRecentTime();
-			SectorSnapshot snap = mgr->getSnapshot(mostrecent);
+			SectorSnapshot snap = mgr->getSnapshot(snapBasisServerTic);
 
-			bool ceilingdone = P_CeilingSnapshotDone(&snap);
-			bool floordone = P_FloorSnapshotDone(&snap);
-
-			if (ceilingdone && floordone)
-				snapfinished = true;
-			else
+			// Double-check to make sure it's REALLY from the server and not extrapolated/etc.
+			if (snap.isValid() and snap.isAuthoritative())
 			{
-				// snapshots have been received for this sector recently, so
-				// reset this sector to the most recent snapshot from the server
-				snap.toSector(sector);
+				const bool ceilingdone = P_CeilingSnapshotDone(&snap);
+				const bool floordone   = P_FloorSnapshotDone(&snap);
+
+				if (ceilingdone and floordone)
+					snapfinished = true;
+				else
+				{
+					// snapshots have been received for this sector recently, so
+					// reset this sector to the most recent snapshot from the server
+					snap.toSector(sector);
+					io_predictingSectors.push_back(itr);
+				}
 			}
 		}
 		else
 			snapfinished = true;
 
 
-		if (snapfinished && P_MovingCeilingCompleted(sector) &&
-			P_MovingFloorCompleted(sector))
+		if (    snapfinished
+		    and P_MovingCeilingCompleted(sector)
+		    and P_MovingFloorCompleted(sector))
 		{
 			// no valid snapshots in the container so remove this sector from the
 			// movingsectors list whenever prediction is done
@@ -143,22 +154,45 @@ void CL_ResetSectors()
 // CL_PredictSectors
 //
 //
-void CL_PredictSectors(int predtic)
+
+void CL_PredictSector(const movingsector_t& movsector)
+{
+	sector_t *sector = movsector.sector;
+
+	const fixed_t originalFloorHeight   = P_FloorHeight  (sector);
+	const fixed_t originalCeilingHeight = P_CeilingHeight(sector);
+
+	if (sector and sector->ceilingdata and movsector.moving_ceiling)
+		sector->ceilingdata->RunThink();
+	if (sector and sector->floordata and movsector.moving_floor)
+		sector->floordata->RunThink();
+
+	// Because of the RunThinkers that takes place on a rolled-back state via ResetSectors, it's possible for
+	// a recently-stopped predicted sector to be motionless, but the things on it have their prevz (and
+	// potentially more attributes) left at an earlier state, causing visible, temporary glitches.  We avoid
+	// this by detecting if a predicted sector is actually NOT in motion and then if so, re-clip its things.
+	// A sector that IS in motion makes its own P_ThingHeightClip call in P_ChangeSector.
+	if (sector
+	    and originalFloorHeight   == P_FloorHeight(sector)
+	    and originalCeilingHeight == P_CeilingHeight(sector))
+	{
+		P_HeightClipAllSectorThings(*sector);
+	}
+}
+
+void CL_PredictSectors(const ActivePredictingSectorsVector& io_predictingSectors)
+{
+	for (auto& iter : io_predictingSectors)
+	{
+		CL_PredictSector(*iter);
+	}
+}
+
+void CL_PredictAllSectors()
 {
 	for (const auto& movsector : movingsectors)
 	{
-		sector_t *sector = movsector.sector;
-
-		// If we haven't started receiving updates for this sector from the server,
-		// we only need to run the thinker for the current tic, not any past tics
-		// since the sector hasn't been reset to a previous update snapshot
-		if (predtic < gametic && !CL_SectorHasSnapshots(sector))
-			continue;
-
-		if (sector && sector->ceilingdata && movsector.moving_ceiling)
-			sector->ceilingdata->RunThink();
-		if (sector && sector->floordata && movsector.moving_floor)
-			sector->floordata->RunThink();
+		CL_PredictSector(movsector);
 	}
 }
 
@@ -257,7 +291,7 @@ void CL_PredictSpectator()
 // CL_PredictLocalPlayer
 //
 //
-bool CL_PredictLocalPlayer(int predtic)
+bool CL_PredictLocalPlayer(int predtic, int inputTic)
 {
 	player_t& player = consoleplayer();
 
@@ -265,20 +299,21 @@ bool CL_PredictLocalPlayer(int predtic)
 		return false;
 
 	// Restore the angle, viewheight, etc for the player
-	P_SetPlayerSnapshotNoPosition(player, cl_savedsnaps[predtic % MAXSAVETICS]);
+	P_SetPlayerSnapshotNoPosition(player, s_savedLocalPlayerSnaps[predtic % MAXSAVETICS]);
 
-	// Copy the player's previous input ticcmd for the tic 'predtic'
-	// to player.cmd so that P_MovePlayer can simulate their movement in
-	// that tic
-	odaproto::clc::PlayerInput& netcmd = localcmds[predtic % MAXSAVETICS];
+	// Note that we allow the caller to specify the input tic separately so
+	// that we can predict what happens when multiple inputs are applied to
+	// the same player snapshot, which sometimes happens on the server.
+	const odaproto::clc::PlayerInput& netcmd = localcmds[inputTic % MAXSAVETICS];
 	CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
 
-	if (!predicting)
+	if (not predicting)
 		P_PlayerThink(player);
 	else
 		P_MovePlayer(player);
 
 	player.mo->RunThink();
+
 	return true;
 }
 
@@ -300,6 +335,51 @@ bool CL_SectorIsPredicting(sector_t *sector)
 
 	// sector not found
 	return false;
+}
+
+
+namespace
+{
+	int s_basisServerTic;
+	int s_previousServerTic;
+	int s_basisWorldPredictionTic;
+	int s_worldPredictionTic;
+	int s_previousWorldIndex;
+
+	// Use a nice power-of-two so the compiler can optimize easily.
+	// This also happens to be servertic vs world_index difference threshold
+	// which triggers a Resync in SimulateWorld.
+	constexpr int WORLD_INDEX_HISTORY_SIZE = 16;
+
+	std::array<int, WORLD_INDEX_HISTORY_SIZE> s_worldIndexDeltaHistory;
+	int64_t                                   s_worldIndexDeltaSum;
+}
+
+extern int world_index;
+extern int lastEchoedClientTic;
+
+void CL_ResetWorldPrediction()
+{
+	s_basisServerTic          = 0;
+	s_previousServerTic       = 0;
+	s_basisWorldPredictionTic = 0;
+	s_worldPredictionTic      = 0;
+	s_previousWorldIndex      = world_index;
+
+	s_savedLocalPlayerSnaps.fill(PlayerSnapshot{});
+	s_worldIndexDeltaHistory.fill(0);
+	s_worldIndexDeltaSum = 0;
+}
+
+void CL_AdvanceWorldPredictionTic(int serverTic)
+{
+	if (s_basisWorldPredictionTic != 0 and s_previousServerTic < serverTic)
+	{
+		const int serverTicDeltaFromBasis = serverTic - s_basisServerTic;
+
+		s_worldPredictionTic = s_basisWorldPredictionTic + serverTicDeltaFromBasis;
+		s_previousServerTic  = serverTic;
+	}
 }
 
 //
@@ -344,52 +424,131 @@ bool CL_PredictWorld()
 		return false;
 	}
 
-	if (p.tic <= 0)	// No verified position from the server
+	if (world_index <= 0 or lastEchoedClientTic <= 0)     // No verified position from the server?
 		return false;
+
+	// Figure out where to start predicting from.
+	// Please note that there are two starting points: The rollback start point for the player
+	// motion and inputs, and the start point for server-owned states such as sectors, mobjs,
+	// and remote players.
+	//
+	// The player input rollback tic is allowed to be (slightly) further in the past than the
+	// world prediction tic.  This is because from the server's perspective, the player inputs
+	// can be uneven due to client->server network lag + jitter and the queueing the server
+	// does internally.  So as server tics progress, the local player state and inputs may not
+	// progress evenly.  In the meantime, the world-owned states are monotonic with server tics.
+
+	const int            snaptime           = p.snapshots.getMostRecentTime();
+	const PlayerSnapshot snap               = p.snapshots.getSnapshot(snaptime);
+	const int            idealPredictionTic = snap.getClientTic();
+	const int            idealInputTic      = snap.getPlayerTic();
+
+	// Maintain a running average of world index deltas to determine when comms are stable enough
+	// to begin prediction.
+	const int deltaWorldIndex = world_index - s_previousWorldIndex;
+	s_previousWorldIndex = world_index;
+
+	int& historyEntryRef = s_worldIndexDeltaHistory[gametic % s_worldIndexDeltaHistory.size()];
+
+	s_worldIndexDeltaSum -= historyEntryRef;
+	s_worldIndexDeltaSum += deltaWorldIndex;
+	historyEntryRef       = deltaWorldIndex;
+
+	// Do we need to restart prediction following a reset?  Hold off until world_index stabilizes.
+	if (s_worldPredictionTic == 0)
+	{
+		const fixed_t fixedWorldIndexSum = (s_worldIndexDeltaSum << FRACBITS) / s_worldIndexDeltaHistory.size();
+		if (fixedWorldIndexSum == FRACUNIT)
+		{
+			s_basisServerTic            = snaptime;
+			s_basisWorldPredictionTic   = idealPredictionTic;
+			s_worldPredictionTic        = idealPredictionTic;
+		}
+	}
+
+	// Plus one because the values from the server are the latest canonical tics, and the first
+	// tics we actually predict are the ones following those.
+	int predictionTic = idealPredictionTic + 1;
+	int inputTic      = idealInputTic      + 1;
+
+	int worldPredictionTic = s_worldPredictionTic ? s_worldPredictionTic + 1 : predictionTic;
+
+	// The value clamping here and the prediction iterations below are designed to ensure that
+	// if we get an invalid predictionTic due to extreme jitter or very recent prediction reset,
+	// we don't rollback - we just proceed with the next tic.
+
+	int startingLocalTic = std::min({ predictionTic, inputTic, worldPredictionTic });
+
+	if (startingLocalTic < gametic - MAXSAVETICS or gametic < startingLocalTic)
+	{
+		predictionTic      = gametic;
+		inputTic           = gametic;
+		worldPredictionTic = gametic;
+		startingLocalTic   = gametic;
+	}
 
 	// Disable sounds, etc, during prediction
 	predicting = true;
 
-	// Figure out where to start predicting from
-	int predtic = consoleplayer().tic > 0 ? consoleplayer().tic: 0;
-	// Last position update from the server is too old!
-	if (predtic < gametic - MAXSAVETICS)
-		predtic = gametic - MAXSAVETICS;
-
 	// Save a snapshot of the player's state before prediction
-	PlayerSnapshot prevsnap(p.tic, p);
-	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
+	const PlayerSnapshot prevsnap(p.tic, p, ::lastEchoedClientTic);
+	s_savedLocalPlayerSnaps[gametic % MAXSAVETICS] = prevsnap;
 
-	// Mobjs are already in the last position received from the server.
-	bool mobjsHaveBeenPredicted = false;
+//#define ODAMEX_PREDICTION_DEBUG           // SUPER IMPORTANT NOTE WITH THIS BLOCK:
+#ifdef ODAMEX_PREDICTION_DEBUG              //  Sector 1 is checked because nuts.wad is such a great test case here,
+	const sector_t& sector = sectors[1];    //  and sector 1 is the large Lift sector that the player spawns on and
+	                                        //  has a bunch of weapons and items.
+	DPrintFmt("gt {}, snaptime {}, pred {}, input {}, world {}, initsecheight(off-one) {}, world_index {}\n",
+	        gametic,
+	        snaptime,
+	        predictionTic,
+	        inputTic,
+	        worldPredictionTic,
+	        P_FloorHeight(&sector),
+	        world_index
+	        );
+#endif
 
-	// Move sectors to the last position received from the server
-	if (cl_predictsectors)
-		CL_ResetSectors();
-
-	// Move the client to the last position received from the server
-	int snaptime = p.snapshots.getMostRecentTime();
-	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
+	// Move the client to the last position received from the server.
+	//PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
-	while (++predtic < gametic)
+	s_predictingSectors.clear();
+
+	// Move sectors to the last position received from the server.
+	if (cl_predictsectors)
+		CL_ResetSectors(snaptime, s_predictingSectors);
+
+	bool mobjsHaveBeenPredicted = false;
+
+	for (int i = startingLocalTic; i < gametic; ++i)
 	{
-		if (cl_predictsectors)
-			CL_PredictSectors(predtic);
-
-		const bool playerWasPredicted = CL_PredictLocalPlayer(predtic);
-		if (playerWasPredicted and not mobjsHaveBeenPredicted)
+		if (i >= inputTic)
 		{
-			mobjsHaveBeenPredicted = true;
+			CL_PredictLocalPlayer(std::max(i, predictionTic), i);   // std::max because inputTic *can* be behind predictionTic.
+		}
 
-			// We're doing our genuine thinker step now, and it should almost always
-			// be on the tic following the latest from the server.  This ensures that
-			// mobj actions that reference the player's position are working from the
-			// player state that the server almost certainly had when it ran the tic
-			// for real.
-			predicting = false;
-			DThinker::RunThinkers();
-			predicting = true;
+		if (i >= worldPredictionTic)
+		{
+			if (not mobjsHaveBeenPredicted)
+			{
+				mobjsHaveBeenPredicted = true;
+
+				// We're doing our genuine thinker step now, and it must always be on the
+				// tic following the latest from the server.  This ensures that mobj actions
+				// that reference the player's position are working from the player state
+				// that the server almost certainly had when it ran the tic for real.
+				predicting = false;
+
+				// On the server, players are updated before the other thinkers.
+				CL_SimulatePlayers(snaptime);
+
+				DThinker::RunThinkers();
+				predicting = true;
+			}
+
+			if (cl_predictsectors)
+				CL_PredictSectors(s_predictingSectors);
 		}
 	}
 
@@ -398,40 +557,40 @@ bool CL_PredictWorld()
 	// view when there's a misprediction.
 	if (snap.isContinuous())
 	{
-		PlayerSnapshot correctedprevsnap(p.tic, p);
+		const PlayerSnapshot correctedprevsnap(p.tic, p, ::lastEchoedClientTic);
 
 		// Did we predict correctly?
-		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&
-					   (correctedprevsnap.getY() == prevsnap.getY()) &&
-					   (correctedprevsnap.getZ() == prevsnap.getZ());
+		const bool correct = (correctedprevsnap.getX() == prevsnap.getX()) and
+		                     (correctedprevsnap.getY() == prevsnap.getY()) and
+		                     (correctedprevsnap.getZ() == prevsnap.getZ());
 
-		if (!correct)
+		if (not correct)
 		{
 			// Update the netgraph concerning our prediction's error
 			netgraph.setMisprediction(true);
 
 			// Lerp from the our previous position to the correct position
-			PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);
+			const PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);
 			lerpedsnap.toPlayer(p);
 		}
 	}
 
+	// Now we're doing the big final canonical client side update of player state,
+	// all thinkers, and sectors.  Disable the predicting control and do the gametic.
 	predicting = false;
+	CL_PredictLocalPlayer(gametic, gametic);
 
-	// Run thinkers for current gametic
+	if (not mobjsHaveBeenPredicted)
+	{
+		mobjsHaveBeenPredicted = true;
+		CL_SimulatePlayers(snaptime);
+		DThinker::RunThinkers();
+	}
+
 	if (cl_predictsectors)
-		CL_PredictSectors(gametic);
-	CL_PredictLocalPlayer(gametic);
+		CL_PredictAllSectors();
 
 	return mobjsHaveBeenPredicted;
-}
-
-void CL_ResetWorldPrediction()
-{
-	for (auto& savedPlayerSnapshot : cl_savedsnaps)
-	{
-		savedPlayerSnapshot = PlayerSnapshot{};
-	}
 }
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
