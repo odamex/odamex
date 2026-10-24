@@ -804,7 +804,7 @@ CVAR(			r_particles, "1", "Draw particles",
 CVAR(			r_voxels, "1", "Enable software voxel rendering",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			r_voxeldir, "voxels", "Directory containing raw .kvx voxel files",
+CVAR_FUNC_DECL(	r_voxeldir, "voxels", "Directory containing raw .kvx voxel files. Relative paths are resolved against the user directory.",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE_FUNC_DECL(r_stretchsky, "2", "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",

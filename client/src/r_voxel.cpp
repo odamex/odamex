@@ -136,6 +136,7 @@ enum VoxelFace
 std::unordered_map<uint64_t, VoxelModel> g_voxels;
 std::unordered_map<uint64_t, VoxelRenderOptions> g_voxelOptions;
 std::deque<voxelvis_t> g_visibleVoxels;
+std::string g_voxelDir;
 fixed_t g_eye_x = 0;
 fixed_t g_eye_y = 0;
 
@@ -766,13 +767,21 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	return true;
 }
 
+// Resolve r_voxeldir the same way as other user files: absolute paths and
+// paths starting with ./ or ../ are used as-is, anything else is relative to
+// the user's write directory rather than the current working directory.
+std::string VX_ResolveVoxelDir()
+{
+	std::string dir = r_voxeldir.str();
+	if (dir.empty())
+		dir = "voxels";
+
+	return M_CleanPath(M_GetUserFileName(dir));
+}
+
 std::string VX_NamePath(const std::string& voxelName)
 {
-	std::string base = r_voxeldir.str();
-	if (base.empty())
-		base = "voxels";
-
-	return fmt::format("{}/{}.kvx", base, StdStringToLower(voxelName));
+	return fmt::format("{}" PATHSEP "{}.kvx", g_voxelDir, StdStringToLower(voxelName));
 }
 
 bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& voxelName,
@@ -1167,34 +1176,34 @@ void VX_RecursiveDraw(vissprite_t* spr, int x, int y, int w, int h)
 {
 	while (w > 1 or h > 1)
 	{
-	if (w >= h)
-	{
-		if (g_eye_x < ((x * 2 + w) << (FRACBITS - 1)))
+		if (w >= h)
 		{
-			VX_RecursiveDraw(spr, x + (w / 2), y, (w + 1) / 2, h);
-			w = w / 2;
+			if (g_eye_x < ((x * 2 + w) << (FRACBITS - 1)))
+			{
+				VX_RecursiveDraw(spr, x + (w / 2), y, (w + 1) / 2, h);
+				w = w / 2;
+			}
+			else
+			{
+				VX_RecursiveDraw(spr, x, y, w / 2, h);
+				x += w / 2;
+				w = (w + 1) / 2;
+			}
 		}
 		else
 		{
-			VX_RecursiveDraw(spr, x, y, w / 2, h);
-			x += w / 2;
-			w = (w + 1) / 2;
+			if (g_eye_y < ((y * 2 + h) << (FRACBITS - 1)))
+			{
+				VX_RecursiveDraw(spr, x, y + (h / 2), w, (h + 1) / 2);
+				h = h / 2;
+			}
+			else
+			{
+				VX_RecursiveDraw(spr, x, y, w, h / 2);
+				y += h / 2;
+				h = (h + 1) / 2;
+			}
 		}
-	}
-	else
-	{
-		if (g_eye_y < ((y * 2 + h) << (FRACBITS - 1)))
-		{
-			VX_RecursiveDraw(spr, x, y + (h / 2), w, (h + 1) / 2);
-			h = h / 2;
-		}
-		else
-		{
-			VX_RecursiveDraw(spr, x, y, w, h / 2);
-			y += h / 2;
-			h = (h + 1) / 2;
-		}
-	}
 	}
 
 	VX_DrawColumn(spr, x, y);
@@ -1224,19 +1233,33 @@ void VX_SpritesInNode(unsigned int bspnum)
 		if (not VX_CheckBBox(bsp->bbox[1]))
 			return;
 
-			bspnum = bsp->children[1];
+		bspnum = bsp->children[1];
 	}
 
 	const subsector_t* sub = &subsectors[bspnum & ~NF_SUBSECTOR];
 	R_AddSprites(sub->sector, sub->sector->lightlevel, FAKED_Center);
 }
+
+bool g_voxelsInitialized = false;
 } // namespace
+
+CVAR_FUNC_IMPL(r_voxeldir)
+{
+	// Check for prior initialization since this callback runs when config is loaded.
+	if (not g_voxelsInitialized)
+		return;
+
+	if (VX_ResolveVoxelDir() != g_voxelDir)
+		VX_Init();
+}
 
 void VX_Init()
 {
 	g_voxels.clear();
 	g_voxelOptions.clear();
 	g_visibleVoxels.clear();
+	g_voxelDir = VX_ResolveVoxelDir();
+	g_voxelsInitialized = true;
 
 	VX_ParseVoxelDefs();
 
