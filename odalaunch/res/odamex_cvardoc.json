@@ -2124,7 +2124,7 @@
       },
       {
          "default" : "voxels",
-         "flags" : [ "CLIENTARCHIVE" ],
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Directory containing raw .kvx voxel files. Relative paths are resolved against the user directory.",
          "name" : "r_voxeldir",
          "type" : "string"
