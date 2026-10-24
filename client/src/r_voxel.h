@@ -26,24 +26,65 @@
 
 #pragma once
 
-#include "tables.h"
-
 class AActor;
 struct vissprite_t;
 
-struct r_voxelvis_s
-{
-	const void* model{};
-	angle_t angle{};
-	fixed_t TL_x{};
-	fixed_t TL_y{};
-	fixed_t c{};
-	fixed_t s{};
-	fixed_t pitchSlope{};
-};
-
+/**
+ * @brief  Parse VOXELDEF lumps and load every voxel model for the currently
+ *         loaded sprites, discarding any previously loaded models.
+ *
+ * @detail Called from D_Init whenever the resource set changes. Voxels in
+ *         VX_START/VX_END markers of loaded WADs take priority over .kvx files
+ *         found in r_voxeldir.
+ */
 void VX_Init();
+
+/**
+ * @brief  Discard the per frame voxel projections.
+ *
+ * @detail Must be called once at the start of each rendered view, since
+           every voxel from the previous frame points into memory released
+           by this function.
+ */
 void VX_ClearVoxels();
+
+/**
+ * @brief  Project the sprites of sectors near the viewer that the BSP walk
+ *         culled.
+ *
+ * @detail A sprite is a flat billboard, so R_RenderBSPNode only needs to add
+ *         sprites from subsectors it decides are visible. A voxel has depth:
+ *         an actor standing just behind the viewer, or in a subsector hidden
+ *         by a one-sided line, can still have most of its model in view.
+ *         This walks the BSP a second time without view culling and calls
+ *         R_AddSprites for every sector within VX_NEAR_RADIUS of the viewer.
+ *         Sectors that the main walk already handled are skipped by
+ *         R_AddSprites' validcount check, so nothing is added twice.
+ *
+ *         Must be called after R_RenderBSPNode, so the sectors it added are
+ *         already marked, and before R_DrawMasked sorts the vissprites.
+ */
 void VX_NearbySprites();
+
+/**
+ * @brief  Replace a projected sprite with its voxel model, if one exists.
+ *
+ * @detail Called from R_ProjectSprite after the vissprite has been filled in
+ *         for the flat sprite. On success, vis->voxel is set and the
+ *         vissprite's screen extent and heights are replaced with the voxel's,
+ *         otherwise vis is left untouched and the sprite is drawn as usual.
+ *
+ * @param thing Actor being projected.
+ * @param frame Sprite frame index, without FF_FULLBRIGHT.
+ * @param vis Vissprite generated for thing.
+ * @return true if vis will be drawn as a voxel.
+ */
 bool VX_ProjectVoxel(const AActor* thing, int frame, vissprite_t* vis);
+
+/**
+ * @brief  Draw a vissprite whose voxel field was set by VX_ProjectVoxel.
+ *
+ * @detail Called from R_DrawSprite in place of R_DrawVisSprite, once
+ *         mfloorclip and mceilingclip have been set up for the sprite.
+ */
 void VX_DrawVoxel(vissprite_t* spr);
