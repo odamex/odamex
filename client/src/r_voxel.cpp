@@ -31,6 +31,7 @@
 #include <cctype>
 #include <cmath>
 #include <deque>
+#include <filesystem>
 #include <limits>
 #include <numbers>
 #include <string>
@@ -137,6 +138,7 @@ std::unordered_map<uint64_t, VoxelModel> g_voxels;
 std::unordered_map<uint64_t, VoxelRenderOptions> g_voxelOptions;
 std::deque<voxelvis_t> g_visibleVoxels;
 std::string g_voxelDir;
+std::unordered_map<std::string, std::string> g_voxelFiles;
 fixed_t g_eye_x = 0;
 fixed_t g_eye_y = 0;
 
@@ -779,9 +781,49 @@ std::string VX_ResolveVoxelDir()
 	return M_CleanPath(M_GetUserFileName(dir));
 }
 
-std::string VX_NamePath(const std::string& voxelName)
+// Scan the voxel dir for files and cache them by their uppercased filename.
+// This exhibits the same behavior as looking for WAD filenames on linux
+// and windows.
+// Only runs once per load (wad change, etc) because listing directories is expensive.
+void VX_ScanVoxelDir()
 {
-	return fmt::format("{}" PATHSEP "{}.kvx", g_voxelDir, StdStringToLower(voxelName));
+	g_voxelFiles.clear();
+	if (not M_DirectoryExists(g_voxelDir))
+		return;
+
+	try
+	{
+		for (const auto& entry : std::filesystem::directory_iterator(g_voxelDir))
+		{
+			if (entry.is_directory())
+				continue;
+
+			const std::string filename = entry.path().filename().string();
+			g_voxelFiles.emplace(StdStringToUpper(filename), filename);
+		}
+	}
+	catch (const std::filesystem::filesystem_error& e)
+	{
+		PrintFmt(PRINT_WARNING, "VX_Init: could not read {}: {}\n", g_voxelDir,
+		         e.what());
+	}
+}
+
+// Return the path of the .kvx file for voxelName, or an empty string.
+// Never touches disk, because hammering the filesystem once per
+// needed sprite frame is expensive.
+std::string VX_FindVoxelFile(std::string voxelName)
+{
+	// Doom's frame after '[' is a backslash, which is a path separator on
+	// Windows, so file names use VOXELDEF's '^' alias for it instead.
+	if (voxelName.size() == VX_FRAME_NAME_LENGTH and voxelName.back() == '\\')
+		voxelName.back() = '^';
+
+	const auto it = g_voxelFiles.find(StdStringToUpper(voxelName + ".kvx"));
+	if (it == g_voxelFiles.end())
+		return "";
+
+	return M_JoinPath(g_voxelDir, it->second);
 }
 
 bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& voxelName,
@@ -840,8 +882,8 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 
 	// Server-provided WAD resources take precedence above and remain usable even
 	// when local voxel replacements are disabled.
-	const std::string filename = VX_NamePath(resolvedVoxelName);
-	if (not M_FileExists(filename))
+	const std::string filename = VX_FindVoxelFile(resolvedVoxelName);
+	if (filename.empty())
 		return false;
 
 	byte* buffer = nullptr;
@@ -1259,6 +1301,7 @@ void VX_Init()
 	g_voxelOptions.clear();
 	g_visibleVoxels.clear();
 	g_voxelDir = VX_ResolveVoxelDir();
+	VX_ScanVoxelDir();
 	g_voxelsInitialized = true;
 
 	VX_ParseVoxelDefs();
