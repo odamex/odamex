@@ -648,6 +648,29 @@ bool VX_RemapSlabColors(VoxelModel& v, int x, int y, const std::array<byte, 256>
 	return true;
 }
 
+// Read little-endian integers from a KVX buffer.
+//
+// The value is copied out with memcpy rather than read through a cast
+// because reading a byte buffer through a pointer to a different type
+// breaks strict aliasing, and p is not guaranteed to be aligned for the
+// integer type.
+//
+// Both are undefined behavior, and misaligned loads can fault
+// on some platforms, so it's done this way to be portable.
+int32_t VX_ReadLong(const byte* p)
+{
+	int32_t value = 0;
+	memcpy(&value, p, sizeof(value));
+	return LELONG(value);
+}
+
+uint16_t VX_ReadShort(const byte* p)
+{
+	uint16_t value = 0;
+	memcpy(&value, p, sizeof(value));
+	return LESHORT(value);
+}
+
 bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 {
 	if (length < KVX_HEADER_SIZE + KVX_PALETTE_SIZE)
@@ -656,11 +679,11 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	const byte* p = bytes;
 	p += 4; // num_bytes
 
-	out.x_size = static_cast<int>(p[0]);
+	out.x_size = VX_ReadLong(p);
 	p += 4;
-	out.y_size = static_cast<int>(p[0]);
+	out.y_size = VX_ReadLong(p);
 	p += 4;
-	out.z_size = static_cast<int>(p[0]);
+	out.z_size = VX_ReadLong(p);
 	p += 4;
 	if (out.x_size <= 0 or out.y_size <= 0 or out.z_size <= 0)
 		return false;
@@ -672,17 +695,22 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	if (tableBytes > length - KVX_PALETTE_SIZE)
 		return false;
 
-	out.x_pivot = (p[0] << 8) | (p[1] << 16);
+	// Pivots are stored as 24.8 fixed point.
+	// To get to the 16.16 precision that fixed_t is, we must
+	// get all 4 bytes and then left shift by 8 bits.
+	// We cast to uint32_t first to avoid left shifting
+	// negative signs, which is UB.
+	out.x_pivot = static_cast<fixed_t>(static_cast<uint32_t>(VX_ReadLong(p)) << 8);
 	p += 4;
-	out.y_pivot = (p[0] << 8) | (p[1] << 16);
+	out.y_pivot = static_cast<fixed_t>(static_cast<uint32_t>(VX_ReadLong(p)) << 8);
 	p += 4;
-	out.z_pivot = (p[0] << 8) | (p[1] << 16);
+	out.z_pivot = static_cast<fixed_t>(static_cast<uint32_t>(VX_ReadLong(p)) << 8);
 	p += 4;
 
 	std::array<int, KVX_MAX_X_OFFSETS> xoffsets{};
 	for (int x = 0; x <= out.x_size; x++)
 	{
-		xoffsets[x] = static_cast<int>(p[0]) | (p[1] << 8) | (p[2] << 16);
+		xoffsets[x] = VX_ReadLong(p);
 		p += 4;
 	}
 
@@ -695,7 +723,7 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	{
 		for (int y = 0; y <= out.y_size; y++)
 		{
-			int offset = static_cast<int>(p[0]) | (p[1] << 8);
+			int offset = VX_ReadShort(p);
 			p += 2;
 			offset += xoffsets[x];
 			out.offsets[(y * out.x_size) + x] = offset;
