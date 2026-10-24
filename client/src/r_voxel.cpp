@@ -687,7 +687,7 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	p += 4;
 	if (out.x_size <= 0 or out.y_size <= 0 or out.z_size <= 0)
 		return false;
-	if (out.x_size > 255 or out.y_size > 255)
+	if (out.x_size > 255 or out.y_size > 255 or out.z_size > 255)
 		return false;
 	const size_t tableBytes =
 	    KVX_HEADER_PREFIX_SIZE + ((static_cast<size_t>(out.x_size) + 1) * 4) +
@@ -712,6 +712,8 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	{
 		xoffsets[x] = VX_ReadLong(p);
 		p += 4;
+		if (xoffsets[x] < 0 or static_cast<size_t>(xoffsets[x]) > length)
+			return false;
 	}
 
 	const int num_offsets = out.x_size * (out.y_size + 1);
