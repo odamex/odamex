@@ -1215,24 +1215,20 @@ bool VX_CheckBBox(const fixed_t* bspcoord)
 
 void VX_SpritesInNode(unsigned int bspnum)
 {
-	for (;;)
+	while (not(bspnum & NF_SUBSECTOR))
 	{
-		if (bspnum & NF_SUBSECTOR)
-		{
-			const subsector_t* sub = &subsectors[bspnum & ~NF_SUBSECTOR];
-			R_AddSprites(sub->sector, sub->sector->lightlevel, FAKED_Center);
-			return;
-		}
-
-		node_t* bsp = &nodes[bspnum];
+		const node_t* bsp = &nodes[bspnum];
 		if (VX_CheckBBox(bsp->bbox[0]))
 			VX_SpritesInNode(bsp->children[0]);
 
-		if (VX_CheckBBox(bsp->bbox[1]))
+		if (not VX_CheckBBox(bsp->bbox[1]))
+			return;
+
 			bspnum = bsp->children[1];
-		else
-			break;
 	}
+
+	const subsector_t* sub = &subsectors[bspnum & ~NF_SUBSECTOR];
+	R_AddSprites(sub->sector, sub->sector->lightlevel, FAKED_Center);
 }
 } // namespace
 
