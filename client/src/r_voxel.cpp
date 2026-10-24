@@ -1158,15 +1158,15 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 	}
 }
 
+// Draw the width x height block of columns starting at (x, y) back to front
+// relative to the eye.
+// 
+// The block is split in half along its longer axis -- the far half is drawn
+// recursively and the loop continues with the near half.
 void VX_RecursiveDraw(vissprite_t* spr, int x, int y, int w, int h)
 {
-loop:
-	if (w == 1 and h == 1)
+	while (w > 1 or h > 1)
 	{
-		VX_DrawColumn(spr, x, y);
-		return;
-	}
-
 	if (w >= h)
 	{
 		if (g_eye_x < ((x * 2 + w) << (FRACBITS - 1)))
@@ -1195,8 +1195,9 @@ loop:
 			h = (h + 1) / 2;
 		}
 	}
+	}
 
-	goto loop;
+	VX_DrawColumn(spr, x, y);
 }
 
 bool VX_CheckBBox(const fixed_t* bspcoord)
