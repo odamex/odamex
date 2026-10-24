@@ -918,8 +918,8 @@ void VX_DrawSolidShadedColumn(vissprite_t* spr, const int screenX, const int yl,
 
 void VX_DrawColumn(vissprite_t* spr, int x, int y)
 {
-	const voxelvis_t* vv = spr->voxel;
-	const auto* v = static_cast<const VoxelModel*>(vv->model);
+	const auto* vv = spr->voxel;
+	const auto* v = vv->model;
 
 	const int ofs1 = v->offsets[(y * v->x_size) + x];
 	const int ofs2 = v->offsets[((y + 1) * v->x_size) + x];
