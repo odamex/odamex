@@ -1254,9 +1254,9 @@ void P_FakeZMovement(AActor *mo)
 		mo->z = mo->floorz;
 	}
 
-	if (mo->z + mo->height > mo->ceilingz)
+	if (mo->z + P_CeilingHangHeight(mo) > mo->ceilingz)
 	{ // hit the ceiling
-		mo->z = mo->ceilingz - mo->height;
+		mo->z = mo->ceilingz - P_CeilingHangHeight(mo);
 	}
 }
 
@@ -1675,8 +1675,8 @@ bool P_ThingHeightClip (AActor* thing)
 	else
 	{
 		// don't adjust a floating monster unless forced to
-		if (thing->z + thing->height > thing->ceilingz)
-			thing->z = thing->ceilingz - thing->height;
+		if (thing->z + P_CeilingHangHeight(thing) > thing->ceilingz)
+			thing->z = thing->ceilingz - P_CeilingHangHeight(thing);
 	}
 
 	// thing won't fit
