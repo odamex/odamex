@@ -382,6 +382,7 @@ namespace
 	int s_basisServerTic;
 	int s_previousServerTic;
 	int s_basisWorldPredictionTic;
+	int s_worldPredictionVarianceCorrection;
 	int s_worldPredictionTic;
 	int s_previousWorldIndex;
 
@@ -399,11 +400,12 @@ extern int lastEchoedClientTic;
 
 void CL_ResetWorldPrediction()
 {
-	s_basisServerTic          = 0;
-	s_previousServerTic       = 0;
-	s_basisWorldPredictionTic = 0;
-	s_worldPredictionTic      = 0;
-	s_previousWorldIndex      = world_index;
+	s_basisServerTic                    = 0;
+	s_previousServerTic                 = 0;
+	s_basisWorldPredictionTic           = 0;
+	s_worldPredictionVarianceCorrection = 0;
+	s_worldPredictionTic                = 0;
+	s_previousWorldIndex                = world_index;
 
 	s_savedLocalPlayerSnaps.fill(PlayerSnapshot{});
 	s_worldIndexDeltaHistory.fill(0);
@@ -504,12 +506,26 @@ bool CL_PredictWorld()
 			s_worldPredictionTic        = idealPredictionTic;
 		}
 	}
+	else
+	{
+		// World prediction is running.
+		//
+		// Keep an eye out for variance in world_index pacing.  If we see any, we need to
+		// adjust our world prediction basis accordingly.
+
+		const int deltaWorldIndexPaceVariance = deltaWorldIndex - 1;        // We expect a happy, consistent pace of 1.
+
+		if (deltaWorldIndexPaceVariance)
+		{
+			s_worldPredictionVarianceCorrection += deltaWorldIndexPaceVariance;
+		}
+	}
 
 	// Plus one because the values from the server are the latest canonical tics, and the first
 	// tics we actually predict are the ones following those.
 	int predictionTic = idealPredictionTic + 1;
 	int inputTic      = idealInputTic      + 1;
-	int worldPredictionTic = s_worldPredictionTic ? s_worldPredictionTic + 1 : predictionTic;
+	int worldPredictionTic = s_worldPredictionTic ? s_worldPredictionTic + s_worldPredictionVarianceCorrection + 1 : predictionTic;
 
 	// Now start preparing the snapshots.  Disable sounds, etc, during prediction
 	predicting = true;
