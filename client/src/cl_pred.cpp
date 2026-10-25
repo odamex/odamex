@@ -582,12 +582,16 @@ bool CL_PredictWorld()
 		CL_ResetSectors(snaptime, s_predictingSectors);
 
 	bool mobjsHaveBeenPredicted = false;
+	bool playerHasBeenPredicted = false;
 
 	for (int i = startingLocalTic; i < gametic; ++i)
 	{
 		if (i >= inputTic)
 		{
-			CL_PredictLocalPlayer(std::max(i, predictionTic), i);   // std::max because inputTic *can* be behind predictionTic.
+			if (CL_PredictLocalPlayer(std::max(i, predictionTic), i))   // std::max because inputTic *can* be behind predictionTic.
+			{
+				playerHasBeenPredicted = true;
+			}
 		}
 
 		if (i >= worldPredictionTic)
@@ -617,7 +621,7 @@ bool CL_PredictWorld()
 	// If the player didn't just spawn or teleport, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
 	// view when there's a misprediction.
-	if (snap.isContinuous())
+	if (snap.isContinuous() and playerHasBeenPredicted)
 	{
 		const PlayerSnapshot correctedprevsnap(p.tic, p, ::lastEchoedClientTic);
 
