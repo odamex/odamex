@@ -339,7 +339,7 @@ uint32_t SingleLumpResourceContainer::getResourceSize(const ResourceId res_id) c
 //
 // SingleLumpResourceContainer::loadResource
 //
-uint32_t SingleLumpResourceContainer::loadResource(void* data, const ResourceId res_id, uint32_t size) const
+uint32_t SingleLumpResourceContainer::loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const
 {
 	size = std::min(size, getResourceSize(res_id));
 	if (size > 0)
@@ -643,7 +643,7 @@ uint32_t WadResourceContainer::getResourceSize(const ResourceId res_id) const
 //
 // WadResourceContainer::loadResource
 //
-uint32_t WadResourceContainer::loadResource(void* data, const ResourceId res_id, uint32_t size) const
+uint32_t WadResourceContainer::loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const
 {
 	LumpId lump_id = getLumpId(res_id);
 	if (mDirectory.validate(lump_id))
@@ -917,7 +917,7 @@ uint32_t DirectoryResourceContainer::getResourceSize(const ResourceId res_id) co
 //
 // DirectoryResourceContainer::loadResource
 //
-uint32_t DirectoryResourceContainer::loadResource(void* data, const ResourceId res_id, uint32_t size) const
+uint32_t DirectoryResourceContainer::loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const
 {
 	LumpId lump_id = getLumpId(res_id);
 	if (mDirectory.validate(lump_id))
@@ -1441,7 +1441,7 @@ uint32_t ZipResourceContainer::getResourceSize(const ResourceId res_id) const
 //
 // ZipResourceContainer::loadResource
 //
-uint32_t ZipResourceContainer::loadResource(void* data, const ResourceId res_id, uint32_t size) const
+uint32_t ZipResourceContainer::loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const
 {
 	LumpId lump_id = getLumpId(res_id);
 	if (mDirectory.validate(lump_id))
@@ -1458,7 +1458,7 @@ uint32_t ZipResourceContainer::loadResource(void* data, const ResourceId res_id,
 //
 // ZipResourceContainer::loadEntryData
 //
-uint32_t ZipResourceContainer::loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const
+uint32_t ZipResourceContainer::loadEntryData(const ZipDirectoryEntry* entry, uint8_t* data, uint32_t size) const
 {
 	uint32_t offset = calculateEntryOffset(entry);
 	if (mFile->seek(offset))

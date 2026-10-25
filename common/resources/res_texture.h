@@ -406,7 +406,7 @@ public:
 	void addResources(ResourceManager* manager);
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
-	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
+	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const;
 
 	// Returns true if the given ResourceId is one of the texture resources
 	// registered by this TextureManager (as opposed to a raw file/lump

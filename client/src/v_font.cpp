@@ -853,7 +853,7 @@ void TrueTypeFont::buildGlyphs()
 	// FreeType reads from this buffer for the lifetime of the face, so keep
 	// our own copy rather than relying on the resource cache holding it.
 	const uint32_t lumplen = Res_GetResourceSize(res_id);
-	const void* lumpdata = Res_LoadResource(res_id, PU_STATIC);
+	const uint8_t* lumpdata = Res_LoadResource(res_id, PU_STATIC);
 	if (lumplen == 0 || lumpdata == nullptr)
 	{
 		PrintFmt(PRINT_HIGH, "Unable to read TrueType font {}!\n", lumpname);

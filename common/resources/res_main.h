@@ -89,7 +89,7 @@ public:
 
 	uint32_t getResourceSize(const ResourceId res_id) const;
 
-	void loadResource(const ResourceId res_id, void* data, uint32_t size) const;
+	void loadResource(const ResourceId res_id, uint8_t* data, uint32_t size) const;
 
 private:
 	const ResourceManager*		mResourceManager;
@@ -174,9 +174,11 @@ public:
 
 	uint32_t getResourceSize(const ResourceId res_id) const;
 
-	const void* loadResourceData(const ResourceId res_id, zoneTag_e tag = PU_CACHE);
+	const uint8_t* loadResourceData(const ResourceId res_id, zoneTag_e tag = PU_CACHE);
 
 	void releaseResourceData(const ResourceId res_id);
+
+	void releaseLevelResourceData();
 
 	void dump() const;
 
@@ -297,6 +299,9 @@ private:
 
 	bool							mLoadingResource = false;
 
+	// Resources being loaded on the loading thread, innermost last.
+	std::vector<ResourceId>			mLoadsInProgress;
+
 };
 
 
@@ -379,17 +384,17 @@ static inline uint32_t Res_GetResourceSize(const OString& name, const ResourcePa
 // Res_LoadResource
 // ----------------------------------------------------------------------------
 
-const void* Res_LoadResource(const ResourceId res_id, zoneTag_e tag = PU_CACHE);
+const uint8_t* Res_LoadResource(const ResourceId res_id, zoneTag_e tag = PU_CACHE);
 
 // Handles the serialization of resource loading.
 std::recursive_mutex& Res_LoadMutex();
 
-static inline const void* Res_LoadResource(const OString& name, zoneTag_e tag = PU_CACHE)
+static inline const uint8_t* Res_LoadResource(const OString& name, zoneTag_e tag = PU_CACHE)
 {
 	return Res_LoadResource(Res_GetResourceId(name, global_directory_name), tag);
 }
 
-static inline const void* Res_LoadResource(const char* name, zoneTag_e tag = PU_CACHE)
+static inline const uint8_t* Res_LoadResource(const char* name, zoneTag_e tag = PU_CACHE)
 {
 	return Res_LoadResource(OString(name), tag);
 }
@@ -405,7 +410,7 @@ template <typename T>
 requires std::is_object_v<T>
 const T* Res_LoadResource(const ResourceId res_id, zoneTag_e tag = PU_CACHE)
 {
-	return static_cast<const T*>(Res_LoadResource(res_id, tag));
+	return reinterpret_cast<const T*>(Res_LoadResource(res_id, tag));
 }
 
 template <typename T>
@@ -433,6 +438,8 @@ static inline void Res_ReleaseResource(const OString& name)
 {
 	Res_ReleaseResource(Res_GetResourceId(name, global_directory_name));
 }
+
+void Res_ReleaseLevelResources();
 
 
 // ----------------------------------------------------------------------------

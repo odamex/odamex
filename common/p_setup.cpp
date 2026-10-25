@@ -68,10 +68,7 @@ void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
 
 //
-// Local helpers that map the old lump API onto the resource manager,
-// keeping the loader code close to upstream.  Resource data is allocated
-// through the zone with cache ownership, so Z_Free()/Z_ChangeTag() on the
-// returned pointers behaves the same way it did with the old lump cache.
+// Local helpers that map the old lump API onto the resource manager.
 //
 static uint32_t P_MapLumpLength(const ResourceId res_id)
 {
@@ -276,7 +273,7 @@ void P_LoadVertexes (const ResourceId lump)
 	}
 
 	// Free buffer memory.
-	Z_Free (data);
+	Res_ReleaseResource(lump);
 }
 
 bool P_UseHorizonEffect(const seg_t& seg, bool segs_have_angles = false)
@@ -383,7 +380,7 @@ void P_LoadSegs(const ResourceId lump)
 		P_LoadSegsHelper(LESHORT(ml.side), LESHORT(ml.angle), LESHORT(ml.linedef), li);
 	}
 
-	Z_Free(data);
+	Res_ReleaseResource(lump);
 }
 
 //
@@ -408,7 +405,7 @@ void P_LoadSubsectors(const ResourceId lump)
 		subsectors[i].firstline = LESWAP(data[i].firstseg);
 	}
 
-	Z_Free(data);
+	Res_ReleaseResource(lump);
 }
 
 
@@ -506,7 +503,7 @@ void P_LoadSectors (const ResourceId lump)
 		ss->movefactor = ORIG_FRICTION_FACTOR;
 	}
 
-	Z_Free (data);
+	Res_ReleaseResource(lump);
 }
 
 enum class nodetype_t {
@@ -524,7 +521,6 @@ enum class nodetype_t {
 
 nodetype_t P_CheckNodeType(const ResourceId lump) {
 	byte *data = P_CacheMapLump<byte>(lump, PU_STATIC);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
 
 	static constexpr struct {
         std::string_view bytes;
@@ -602,7 +598,7 @@ void P_LoadNodes(const ResourceId lump)
 		}
 	}
 
-	Z_Free(data);
+	Res_ReleaseResource(lump);
 }
 
 byte* P_DecompressNodes(byte* data, size_t len) {
@@ -812,7 +808,7 @@ void P_LoadExtendedNodes(const ResourceId lump, nodetype_t nodetype)
 	byte* data_decompressed = nullptr;
 
 	const auto guard = nonstd::make_scope_exit([&]{
-		Z_Free(data);
+		Res_ReleaseResource(lump);
 		Z_Free(data_decompressed);
 	});
 
@@ -926,7 +922,7 @@ void P_LoadExtendedNodes(const ResourceId lump, nodetype_t nodetype)
 void P_LoadThings (const ResourceId lump)
 {
 	mapthing_t* data = P_CacheMapLump<mapthing_t>(lump, PU_STATIC);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	const auto guard = nonstd::make_scope_exit([&]{ Res_ReleaseResource(lump); });
 	size_t count = P_MapLumpLength(lump) / sizeof(mapthing_t);
 
 	P_HordeClearSpawns();
@@ -1003,7 +999,7 @@ void P_LoadThings (const ResourceId lump)
 void P_LoadThings2 (const ResourceId lump, int position)
 {
 	mapthing2_t* data = P_CacheMapLump<mapthing2_t>(lump, PU_STATIC);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	const auto guard = nonstd::make_scope_exit([&]{ Res_ReleaseResource(lump); });
 	size_t count = P_MapLumpLength(lump) / sizeof(mapthing2_t);
 	auto things = std::span{data, count};
 
@@ -1223,7 +1219,7 @@ void P_LoadLineDefs(const ResourceId lump)
 	numlines = P_MapLumpLength(lump) / sizeof(maplinedef_t);
 	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
 	maplinedef_t* data = P_CacheMapLump<maplinedef_t>(lump, PU_STATIC);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	const auto guard = nonstd::make_scope_exit([&]{ Res_ReleaseResource(lump); });
 
 	const bool reservedLine = P_GetLevelCompData(::level.level_fingerprint).reservedLineFlag;
 
@@ -1313,7 +1309,7 @@ void P_LoadLineDefs2 (const ResourceId lump)
 		P_AdjustLine (ld);
 	}
 
-	Z_Free (data);
+	Res_ReleaseResource(lump);
 }
 
 //
@@ -1374,7 +1370,7 @@ void P_LoadSideDefs2 (const ResourceId lump)
 
 		map_format.post_process_sidedef_special(sd, msd, sec, i);
 	}
-	Z_Free (data);
+	Res_ReleaseResource(lump);
 }
 
 //
@@ -1425,7 +1421,7 @@ void P_GenerateUniqueMapFingerPrint(const OString& mapname)
 		levellumps.insert(levellumps.end(), size, *bytes);
 		length += size;
 
-		Z_Free(const_cast<byte*>(bytes));
+		Res_ReleaseResource(res_id);
 	}
 
 	fhfprint_t fingerprint = W_FarmHash128(levellumps.data(), length);
@@ -2173,7 +2169,7 @@ void P_LoadReject(const ResourceId lumpnum, int totallines)
 		rejectmatrix = Z_Malloc<byte>(correctsize, PU_LEVEL);
 		byte* rejectdata = P_CacheMapLump<byte>(lumpnum, PU_STATIC);
 		memcpy(rejectmatrix, rejectdata, lumpsize);
-		Z_Free(rejectdata);
+		Res_ReleaseResource(lumpnum);
 		memset(rejectmatrix + lumpsize, 0, correctsize - lumpsize);
 		// vanilla doom just reads pass the edge of the reject table if its too small
 		// so we replace the start of the padding with what would likely have been in memory
@@ -2338,6 +2334,7 @@ void P_SetupLevel (const OString& lumpname, int position)
 	shootthing = NULL;
 
 	DThinker::DestroyAllThinkers ();
+	Res_ReleaseLevelResources();
 	Z_FreeTags (PU_LEVEL, PU_LEVELMAX);
 	g_ValidLevel = false;		// [AM] False until the level is loaded.
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps

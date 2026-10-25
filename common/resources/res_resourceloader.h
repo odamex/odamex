@@ -58,7 +58,7 @@ public:
 	}
 
 	[[nodiscard]] virtual uint32_t size() const = 0;
-	virtual void load(void* data) const = 0;
+	virtual void load(uint8_t* data) const = 0;
 
 protected:
 	const RawResourceAccessor*		mRawResourceAccessor;
@@ -82,7 +82,7 @@ public:
 
 	~GenericResourceLoader() override = default;
 	[[nodiscard]] uint32_t size() const override;
-	void load(void* data) const override;
+	void load(uint8_t* data) const override;
 
 protected:
 	const ResourceId			mResId;
@@ -101,7 +101,7 @@ public:
 
 protected:
 	uint32_t calculateTextureSize(uint16_t width, uint16_t height) const;
-	Texture* createTexture(void* data, uint16_t width, uint16_t height) const;
+	Texture* createTexture(uint8_t* data, uint16_t width, uint16_t height) const;
 };
 
 
@@ -121,7 +121,7 @@ public:
 
 	~RowMajorTextureLoader() override = default;
 	[[nodiscard]] uint32_t size() const override;
-	void load(void* data) const override;
+	void load(uint8_t* data) const override;
 
 protected:
 	[[nodiscard]] virtual uint16_t getWidth() const = 0;
@@ -187,7 +187,7 @@ public:
 
 	~PatchTextureLoader() override = default;
 	[[nodiscard]] uint32_t size() const override;
-	void load(void* data) const override;
+	void load(uint8_t* data) const override;
 
 protected:
 	const ResourceId	mResId;
@@ -209,7 +209,7 @@ public:
 	~CompositeTextureLoader() override = default;
 
 	[[nodiscard]] uint32_t size() const override;
-	void load(void* data) const override;
+	void load(uint8_t* data) const override;
 
 protected:
 	[[nodiscard]] bool hasPngPatch() const;
@@ -237,7 +237,7 @@ public:
 	~InMemoryTextureLoader() override = default;
 
 	[[nodiscard]] uint32_t size() const override;
-	void load(void* data) const override;
+	void load(uint8_t* data) const override;
 
 protected:
 	std::unique_ptr<palindex_t[]>	mSourceData;
@@ -263,7 +263,7 @@ public:
 
 	~PngTextureLoader() override = default;
 	[[nodiscard]] uint32_t size() const override;
-	void load(void* data) const override;
+	void load(uint8_t* data) const override;
 
 protected:
 	void readHeader();

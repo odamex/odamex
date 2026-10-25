@@ -451,7 +451,7 @@ uint32_t TextureManager::getResourceSize(const ResourceId res_id) const
 //
 // Loads the specified Texture resource.
 //
-uint32_t TextureManager::loadResource(void* data, const ResourceId res_id, uint32_t size) const
+uint32_t TextureManager::loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const
 {
 	const ResourceLoader* loader = getResourceLoader(res_id);
 	assert(loader != NULL);

@@ -171,9 +171,9 @@ uint32_t BaseTextureLoader::calculateTextureSize(uint16_t width, uint16_t height
 }
 
 
-Texture* BaseTextureLoader::createTexture(void* data, uint16_t width, uint16_t height) const
+Texture* BaseTextureLoader::createTexture(uint8_t* data, uint16_t width, uint16_t height) const
 {
-	Texture* texture = static_cast<Texture*>(data);
+	Texture* texture = reinterpret_cast<Texture*>(data);
 	texture->init(width, height);
 	return texture;
 }
@@ -194,7 +194,7 @@ uint32_t RowMajorTextureLoader::size() const
 // Loads a raw image resource in row-major format and transposes it to
 // column-major format.
 //
-void RowMajorTextureLoader::load(void* data) const
+void RowMajorTextureLoader::load(uint8_t* data) const
 {
 	uint16_t width = getWidth();
 	uint16_t height = getHeight();
@@ -321,7 +321,7 @@ uint32_t PatchTextureLoader::size() const
 //
 // PatchTextureLoader::load
 //
-void PatchTextureLoader::load(void* data) const
+void PatchTextureLoader::load(uint8_t* data) const
 {
 	uint32_t patch_size = mRawResourceAccessor->getResourceSize(mResId);
 	uint8_t* patch_data = new uint8_t[patch_size];
@@ -452,7 +452,7 @@ uint32_t CompositeTextureLoader::size() const
 //
 // Composes a texture from one or more patch image resources.
 //
-void CompositeTextureLoader::load(void* data) const
+void CompositeTextureLoader::load(uint8_t* data) const
 {
 	Texture* texture = createTexture(data, mTexDef.mWidth, mTexDef.mHeight);
 
@@ -511,7 +511,7 @@ uint32_t InMemoryTextureLoader::size() const
 //
 // InMemoryTextureLoader::load
 //
-void InMemoryTextureLoader::load(void* data) const
+void InMemoryTextureLoader::load(uint8_t* data) const
 {
 	Texture* texture = createTexture(data, mWidth, mHeight);
 	#if CLIENT_APP
@@ -677,7 +677,7 @@ static forceinline int Res_DitherAlphaThreshold(int x, int y)
 // 32bpp renderer, alongside an 8bpp approximation (converted using the
 // default game palette) for the 8bpp renderer.
 //
-void PngTextureLoader::load(void* data) const
+void PngTextureLoader::load(uint8_t* data) const
 {
 #if defined(USE_PNG) && defined(CLIENT_APP)
 	Texture* texture = createTexture(data, mWidth, mHeight);

@@ -1234,8 +1234,6 @@ static void R_DrawSingleFlatPlane(rendercontext_t& ctx, visplane_t* pl)
 		R_DrawLevelPlane(ctx, pl);
 	else
 		R_DrawSlopedPlane(ctx, pl);
-
-	Z_ChangeTag(cached, PU_CACHE);
 }
 
 //

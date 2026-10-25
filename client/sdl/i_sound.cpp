@@ -269,7 +269,6 @@ void getsfx(sfxinfo_t *sfx)
 		return;
 
 	Uint8* data = const_cast<Uint8*>(Res_LoadResource<Uint8>(sfx->res_id, PU_STATIC));
-	auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
 
     // [Russell] - ICKY QUICKY HACKY SPACKY *I HATE THIS SOUND MANAGEMENT SYSTEM!*
     // get the lump size, shouldn't this be filled in elsewhere?
@@ -294,8 +293,6 @@ void getsfx(sfxinfo_t *sfx)
         chunk->volume = MIX_MAX_VOLUME;
 
         sfx->data = chunk;
-
-        Z_ChangeTag(data, PU_CACHE);
 
         return;
     }

@@ -139,7 +139,7 @@ uint32_t RawResourceAccessor::getResourceSize(const ResourceId res_id) const
 	return container->getResourceSize(res_id);
 }
 
-void RawResourceAccessor::loadResource(const ResourceId res_id, void* data, uint32_t size) const
+void RawResourceAccessor::loadResource(const ResourceId res_id, uint8_t* data, uint32_t size) const
 {
 	const ResourceContainer* container = mResourceManager->getResourceContainer(res_id);
 	container->loadResource(data, res_id, size);
@@ -426,59 +426,55 @@ uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 // container and then post-processed. Then the post-processed resource data
 // is cached for re-use.
 //
-const void* ResourceManager::loadResourceData(const ResourceId res_id, zoneTag_e tag)
+const uint8_t* ResourceManager::loadResourceData(const ResourceId res_id, zoneTag_e tag)
 {
-	const void* data = NULL;
-	if (validateResourceId(res_id))
+	if (!validateResourceId(res_id))
+		return NULL;
+
+	// cache hit, which render workers take concurrently without locking
+	if (const uint8_t* data = mCache->getData(res_id))
+		return data;
+
+	// A cache miss: load under the lock.
+	std::lock_guard<std::recursive_mutex> lock(Res_LoadMutex());
+
+	// Another thread may have loaded it while this one waited.
+	if (const uint8_t* data = mCache->getData(res_id))
+		return data;
+
+	// A slot is published only once its load finishes, so a loader that asked
+	// for its own resource would start loading it again, without end.
+	if (std::find(mLoadsInProgress.begin(), mLoadsInProgress.end(), res_id) != mLoadsInProgress.end())
+		I_Error("Resource {} requested while it is being loaded", OString(getResourcePath(res_id)).c_str());
+
+	if (!mLoadingResource)
 	{
-		// cache hit, which render workers take concurrently without locking
-		if ((data = mCache->getPublishedData(res_id)) != NULL)
-			return data;
-
-		// A cache miss: load under the lock.
-		std::lock_guard<std::recursive_mutex> lock(Res_LoadMutex());
-
-		data = mCache->getData(res_id);
-		if (!data)
-		{
-			// Read the data if it's not already in the cache
-			if (!mLoadingResource)
-			{
-				mLoadingResource = true;
-				DPrintFmt("Resource cache miss for {}\n", OString(getResourcePath(res_id)).c_str());
-				mLoadingResource = false;
-			}
-
-			const ResourceRecord* res_rec = getResourceRecord(res_id);
-
-			I_BeginRead();			// indicate to the HUD to draw the loading icon (STDISK)
-
-			void* dest = NULL;		// memory location allocated by the cache where the data should be copied to when loaded
-			if (res_rec->mResourceLoader)
-			{
-				// Special loading strategy
-				uint32_t size = res_rec->mResourceLoader->size();
-				mCache->cacheData(res_id, &dest, size, tag);
-				res_rec->mResourceLoader->load(dest);
-			}
-			else
-			{
-				// Default loading strategy
-				const ResourceContainer* container = res_rec->mResourceContainer;
-				uint32_t size = container->getResourceSize(res_id);
-				mCache->cacheData(res_id, &dest, size, tag);
-				container->loadResource(dest, res_id, size);
-			}
-
-			I_EndRead();			// indicate to the HUD to stop drawing the loading icon (STDISK)
-
-			data = mCache->getData(res_id);
-		}
-
-		if (data)
-			mCache->publishData(res_id);
+		mLoadingResource = true;
+		DPrintFmt("Resource cache miss for {}\n", OString(getResourcePath(res_id)).c_str());
+		mLoadingResource = false;
 	}
-	return data;
+
+	const ResourceRecord* res_rec = getResourceRecord(res_id);
+	const uint32_t size = res_rec->mResourceLoader ? res_rec->mResourceLoader->size()
+	                                               : res_rec->mResourceContainer->getResourceSize(res_id);
+
+	// Nothing is cached for an empty resource, it reads as NULL.
+	if (size == 0)
+		return NULL;
+
+	I_BeginRead();			// indicate to the HUD to draw the loading icon (STDISK)
+	mLoadsInProgress.push_back(res_id);
+
+	std::unique_ptr<ResourceBlock> block = std::make_unique<ResourceBlock>(size);
+	if (res_rec->mResourceLoader)
+		res_rec->mResourceLoader->load(block->data());		// special loading strategy
+	else
+		res_rec->mResourceContainer->loadResource(block->data(), res_id, size);
+
+	mLoadsInProgress.pop_back();
+	I_EndRead();			// indicate to the HUD to stop drawing the loading icon (STDISK)
+
+	return mCache->cacheData(res_id, std::move(block), tag);
 }
 
 
@@ -489,6 +485,16 @@ void ResourceManager::releaseResourceData(const ResourceId res_id)
 {
 	if (validateResourceId(res_id))
 		mCache->releaseData(res_id);
+}
+
+
+//
+// ResourceManager::releaseLevelResourceData
+//
+void ResourceManager::releaseLevelResourceData()
+{
+	if (mCache)
+		mCache->releaseLevelData();
 }
 
 
@@ -809,15 +815,15 @@ std::recursive_mutex& Res_LoadMutex()
 //
 // Res_LoadResource
 //
-// Allocates space on the zone heap for the resource lump that matches res_id
-// and reads it into the newly allocated memory. An entry in the resource
-// cache table is added so that the next time this resource is read, it can
-// be fetched from the cache table instead of from the resource file.
+// Loads the resource that matches res_id into the resource cache, which owns
+// the memory, and returns it. Later requests are served from the cache until
+// the resource is released with Res_ReleaseResource.
 //
-// The tag parameter is used to specify the allocation tag type to pass
-// to Z_Malloc.
+// A level tag (PU_LEVEL to PU_LEVELMAX) has the resource released by
+// Res_ReleaseLevelResources with the level's memory,  any other tag
+// keeps it until it is released explicitly.
 //
-const void* Res_LoadResource(const ResourceId res_id, zoneTag_e tag)
+const uint8_t* Res_LoadResource(const ResourceId res_id, zoneTag_e tag)
 {
 	return resource_manager.loadResourceData(res_id, tag);
 }
@@ -831,6 +837,15 @@ const void* Res_LoadResource(const ResourceId res_id, zoneTag_e tag)
 void Res_ReleaseResource(const ResourceId res_id)
 {
 	resource_manager.releaseResourceData(res_id);
+}
+
+
+//
+// Res_ReleaseLevelResources
+//
+void Res_ReleaseLevelResources()
+{
+	resource_manager.releaseLevelResourceData();
 }
 
 

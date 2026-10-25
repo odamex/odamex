@@ -204,7 +204,7 @@ public:
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const = 0;
 
-	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const = 0;
+	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const = 0;
 
 	virtual OMD5Hash getContentDigest() const
 	{
@@ -234,7 +234,7 @@ public:
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 
-	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
+	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const;
 
 private:
 	void init(FileAccessor* file);
@@ -273,7 +273,7 @@ public:
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 		
-	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
+	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const;
 
 private:
 	void init(FileAccessor* file);
@@ -385,7 +385,7 @@ public:
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 
-	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
+	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const;
 
 	virtual OMD5Hash getContentDigest() const;
 
@@ -446,7 +446,7 @@ public:
 
 	virtual uint32_t getResourceSize(const ResourceId res_id) const;
 
-	virtual uint32_t loadResource(void* data, const ResourceId res_id, uint32_t size) const;
+	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const;
 
 	virtual OMD5Hash getContentDigest() const;
 
@@ -493,6 +493,6 @@ private:
 	bool isEmbeddedWadFile(const ZipDirectoryEntry& entry) const;
 	bool isEmbeddedSingleMapWadFile(const ZipDirectoryEntry& entry) const;
 
-	uint32_t loadEntryData(const ZipDirectoryEntry* entry, void* data, uint32_t size) const;
+	uint32_t loadEntryData(const ZipDirectoryEntry* entry, uint8_t* data, uint32_t size) const;
     uint32_t calculateEntryOffset(const ZipDirectoryEntry* entry) const;
 };

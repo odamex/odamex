@@ -28,6 +28,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <cstdint>
+#include <type_traits>
+
 #include "m_ostring.h"
 #include "m_fileio.h"
 
@@ -58,36 +61,13 @@ public:
 
 	virtual bool eof() const = 0;
 
-	virtual size_t read(void* data, size_t length) const = 0;
+	virtual size_t read(uint8_t* data, size_t length) const = 0;
 
-	virtual bool read(uint8_t* value) const
+	template <typename T>
+	requires std::is_integral_v<T>
+	bool read(T* value) const
 	{
-		return read(value, sizeof(*value)) == sizeof(*value);
-	}
-
-	virtual bool read(int8_t* value) const
-	{
-		return read(value, sizeof(*value)) == sizeof(*value);
-	}
-
-	virtual bool read(uint16_t* value) const
-	{
-		return read(value, sizeof(*value)) == sizeof(*value);
-	}
-
-	virtual bool read(int16_t* value) const
-	{
-		return read(value, sizeof(*value)) == sizeof(*value);
-	}
-
-	virtual bool read(uint32_t* value) const
-	{
-		return read(value, sizeof(*value)) == sizeof(*value);
-	}
-
-	virtual bool read(int32_t* value) const
-	{
-		return read(value, sizeof(*value)) == sizeof(*value);
+		return read(reinterpret_cast<uint8_t*>(value), sizeof(*value)) == sizeof(*value);
 	}
 };
 
@@ -152,7 +132,7 @@ public:
 		return feof(mFileHandle);
 	}
 
-	virtual size_t read(void* data, size_t length) const
+	virtual size_t read(uint8_t* data, size_t length) const
 	{
 		if (mFileHandle)
 			return fread(data, 1, length, mFileHandle);
@@ -178,7 +158,7 @@ private:
 class MemoryFileAccessor : public FileAccessor
 {
 public:
-	MemoryFileAccessor(const OString& filename, const void* buffer, size_t length) :
+	MemoryFileAccessor(const OString& filename, const uint8_t* buffer, size_t length) :
 		mBuffer(static_cast<const uint8_t*>(buffer)),
 		mLength(length), mSeekPos(0), mFileName(filename)
 	{ }
@@ -218,7 +198,7 @@ public:
 		return mSeekPos >= mLength;
 	}
 
-	virtual size_t read(void* data, size_t length) const
+	virtual size_t read(uint8_t* data, size_t length) const
 	{
 		if (mBuffer && !eof())
 		{
