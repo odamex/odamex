@@ -209,7 +209,12 @@ public:
 	const_iterator cend() const { return this->m_lookuptable.end(); }
 
 	// Sort vector and rebuild map
-	void rebuildMap(std::function<bool(const ObjType&, const ObjType&)> sorter, std::function<IdxType(const ObjType&)> indexgetter)
+	template <typename Getter>
+	requires std::is_invocable_r_v<IdxType, Getter, const ObjType&>
+	// we want to invoke them as lvalues
+	// but using const& would force const lambdas and & wouldn't allow temporaries
+	// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+	void rebuildMap(std::predicate<const ObjType&, const ObjType&> auto&& sorter, Getter&& indexgetter)
 	{
 		std::vector<ObjType*> temp{};
 		temp.reserve(m_inordertable.size());
