@@ -561,7 +561,7 @@ bool CL_PredictWorld()
 
 	int startingLocalTic = std::min({ predictionTic, inputTic, worldPredictionTic });
 
-	const bool startingLocalTicIsInRange = gametic - MAXSAVETICS <= startingLocalTic and startingLocalTic < gametic;
+	const bool startingLocalTicIsInRange = gametic - MAXSAVETICS <= startingLocalTic and startingLocalTic <= gametic;
 
 	const bool isReadyToRollback = sectorsAreReady and startingLocalTicIsInRange;
 
