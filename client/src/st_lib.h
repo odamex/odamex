@@ -44,7 +44,7 @@ class StatusBarWidget_Base
 	int m_y;
 
 	void clearRect(int x, int y, int w, int h);
-	void drawPatch(int x, int y, const Texture* p);
+	void drawPatch(int x, int y, const Texture* t);
 
   public:
 	[[nodiscard]] int getX() const { return m_x; }

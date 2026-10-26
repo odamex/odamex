@@ -226,15 +226,15 @@ public:
 
 	SingleLumpResourceContainer(const OString& path);
 
-	virtual ~SingleLumpResourceContainer();
+	~SingleLumpResourceContainer() override;
 
-	virtual uint32_t getResourceCount() const;
+	uint32_t getResourceCount() const override;
 
-	virtual void addResources(ResourceManager* manager);
+	void addResources(ResourceManager* manager) override;
 
-	virtual uint32_t getResourceSize(const ResourceId res_id) const;
+	uint32_t getResourceSize(const ResourceId res_id) const override;
 
-	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const;
+	uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const override;
 
 private:
 	void init(FileAccessor* file);
@@ -265,15 +265,15 @@ public:
 
 	WadResourceContainer(const OString& path);
 	
-	virtual ~WadResourceContainer();
+	~WadResourceContainer() override;
 
-	virtual uint32_t getResourceCount() const;
+	uint32_t getResourceCount() const override;
 
-	virtual void addResources(ResourceManager* manager);
+	void addResources(ResourceManager* manager) override;
 
-	virtual uint32_t getResourceSize(const ResourceId res_id) const;
+	uint32_t getResourceSize(const ResourceId res_id) const override;
 		
-	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const;
+	uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const override;
 
 private:
 	void init(FileAccessor* file);
@@ -355,7 +355,7 @@ public:
 
 	SingleMapWadResourceContainer(const OString& path);
 
-	void addResources(ResourceManager* manager);
+	void addResources(ResourceManager* manager) override;
 };
 
 
@@ -377,17 +377,17 @@ class DirectoryResourceContainer : public ResourceContainer
 public:
 	DirectoryResourceContainer(const OString& path);
 	
-	virtual ~DirectoryResourceContainer();
+	~DirectoryResourceContainer() override;
 
-	virtual uint32_t getResourceCount() const;
+	uint32_t getResourceCount() const override;
 
-	virtual void addResources(ResourceManager* manager);
+	void addResources(ResourceManager* manager) override;
 
-	virtual uint32_t getResourceSize(const ResourceId res_id) const;
+	uint32_t getResourceSize(const ResourceId res_id) const override;
 
-	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const;
+	uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const override;
 
-	virtual OMD5Hash getContentDigest() const;
+	OMD5Hash getContentDigest() const override;
 
 private:
 	void cleanup();
@@ -438,17 +438,17 @@ public:
 
     ZipResourceContainer(const OString& path);
 	
-    virtual ~ZipResourceContainer();
+    ~ZipResourceContainer() override;
 
-	virtual uint32_t getResourceCount() const;
+	uint32_t getResourceCount() const override;
 
-	virtual void addResources(ResourceManager* manager);
+	void addResources(ResourceManager* manager) override;
 
-	virtual uint32_t getResourceSize(const ResourceId res_id) const;
+	uint32_t getResourceSize(const ResourceId res_id) const override;
 
-	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const;
+	uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const override;
 
-	virtual OMD5Hash getContentDigest() const;
+	OMD5Hash getContentDigest() const override;
 
 private:
 	void init(FileAccessor* file);

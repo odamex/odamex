@@ -396,17 +396,17 @@ class TextureManager : public ResourceContainer
 public:
 	TextureManager(ResourceManager* manager);
 
-	~TextureManager();
+	~TextureManager() override;
 
-	virtual uint32_t getResourceCount() const
+	uint32_t getResourceCount() const override
 	{
 		return mResourceLoaderLookup.size();
 	}
 
-	void addResources(ResourceManager* manager);
+	void addResources(ResourceManager* manager) override;
 
-	virtual uint32_t getResourceSize(const ResourceId res_id) const;
-	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const;
+	uint32_t getResourceSize(const ResourceId res_id) const override;
+	uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const override;
 
 	// Returns true if the given ResourceId is one of the texture resources
 	// registered by this TextureManager (as opposed to a raw file/lump

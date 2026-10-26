@@ -36,7 +36,7 @@ struct line_t;
 // [RH] The only parameter used is mapname, so I removed playermask and skill.
 //		On September 1, 1998, I added the position to indicate which set
 //		of single-player start spots should be spawned in the level.
-void P_SetupLevel (const OString& mapname, int position);
+void P_SetupLevel (const OString& lumpname, int position);
 void P_TranslateLineDef(line_t* ld, maplinedef_t* mld);
 std::optional<mapthing2_t> P_GetFirstAvailableSpawn();
 
@@ -44,4 +44,4 @@ std::optional<mapthing2_t> P_GetFirstAvailableSpawn();
 void P_Init();
 
 void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
-void P_SetTextureNoErr(ResourceId* res_id_ptr, unsigned int *color, const OString& texture_name);
+void P_SetTextureNoErr(ResourceId* texture, unsigned int *color, const OString& name);

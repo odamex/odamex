@@ -530,8 +530,7 @@ void ResourceManager::dump() const
 		const ResourcePath& path = res_rec.mPath;
 		assert(!OString(path).empty());
 
-		const ResourceContainer* container = res_rec.mResourceContainer;
-		assert(container);
+		assert(res_rec.mResourceContainer != nullptr);
 
 		bool cached = mCache->getData(res_id) != NULL;
 		bool visible = mNameTranslator.checkNameVisibility(path, res_id);

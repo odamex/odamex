@@ -1129,14 +1129,7 @@ void EleBar(const int x, const int y, const int w, const float scale,
             const x_align_t x_align, const y_align_t y_align, const x_align_t x_origin,
             const y_align_t y_origin, const float pct, const EColorRange color)
 {
-	const Texture*  leftempty = W_ResolvePatchHandle(::line_leftempty);
-	const Texture*  leftfull = W_ResolvePatchHandle(::line_leftfull);
-	const Texture*  centerempty = W_ResolvePatchHandle(::line_centerempty);
-	const Texture*  centerleft = W_ResolvePatchHandle(::line_centerleft);
-	//const Texture*  centerright = W_ResolvePatchHandle(::line_centerright); // unused
 	const Texture*  centerfull = W_ResolvePatchHandle(::line_centerfull);
-	const Texture*  rightempty = W_ResolvePatchHandle(::line_rightempty);
-	const Texture*  rightfull = W_ResolvePatchHandle(::line_rightfull);
 
 	// We assume that all parts of the bar are identical width.
 	const int UNIT_WIDTH = centerfull->mWidth;

@@ -199,10 +199,6 @@ vissprite_t *R_NewVisSprite(rendercontext_t& ctx)
 void R_BlastSpriteColumn(rendercontext_t& ctx, void (*drawfunc)(rendercontext_t&))
 {
 	drawcolumn_t& dcol            = ctx.draw.dcol;
-	const fixed_t spryscale       = ctx.sprite.spryscale;
-	const fixed_t sprtopscreen    = ctx.sprite.sprtopscreen;
-	const int* const mfloorclip   = ctx.sprite.mfloorclip;
-	const int* const mceilingclip = ctx.sprite.mceilingclip;
 
 	// calculate unclipped screen coordinates for post
 	const int64_t topscreen = ctx.sprite.sprtopscreen;

@@ -232,5 +232,5 @@ inline DoomObjectContainer<std::string> SoundMap(ARRAY_LENGTH(doom_SoundMap) + A
 
 void D_UndoDehPatch();
 void D_PostProcessDeh();
-bool D_DoDehPatch(const OResFile* patchfile, const ResourceId res_id, bool textonly, bool notext = false);
+bool D_DoDehPatch(const OResFile* patchfile, const ResourceId lump, bool textonly, bool notext = false);
 bool CheckIfDehActorDefined(const mobjtype_t mobjtype);

@@ -219,13 +219,13 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	{
 		if (hud_scale)
 		{
-			scrn->DrawLucentTextureCleanNoMove(W_ResolvePatchHandle(negminus), x, y);
-			x += CleanXfac * W_ResolvePatchHandle(negminus)->mWidth;
+			scrn->DrawLucentTextureCleanNoMove(minus, x, y);
+			x += CleanXfac * minus->mWidth;
 		}
 		else
 		{
-			scrn->DrawLucentTexture(W_ResolvePatchHandle(negminus), x, y);
-			x += W_ResolvePatchHandle(negminus)->mWidth;
+			scrn->DrawLucentTexture(minus, x, y);
+			x += minus->mWidth;
 		}
 		num = -num;
 	}
@@ -240,13 +240,13 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 			const Texture* numpatch = W_ResolvePatchHandle(tallnum[*d - '0']);
 			if (hud_scale)
 			{
-				scrn->DrawLucentTextureCleanNoMove(W_ResolvePatchHandle(tallnum[*d - '0']), x, y);
-				x += CleanXfac * W_ResolvePatchHandle(tallnum[*d - '0'])->mWidth;
+				scrn->DrawLucentTextureCleanNoMove(numpatch, x, y);
+				x += CleanXfac * numpatch->mWidth;
 			}
 			else
 			{
-				scrn->DrawLucentTexture(W_ResolvePatchHandle(tallnum[*d - '0']), x, y);
-				x += W_ResolvePatchHandle(tallnum[*d - '0'])->mWidth;
+				scrn->DrawLucentTexture(numpatch, x, y);
+				x += numpatch->mWidth;
 			}
 		}
 		d++;
@@ -1999,7 +1999,6 @@ void SpectatorHUD()
 {
 	int iy = 4;
 
-	const Texture* curr_powerup = W_ResolvePatchHandle(medi[0]);
 	int xPos = 20;
 	int yPos = 2;
 

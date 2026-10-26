@@ -1141,7 +1141,8 @@ bool ZipResourceContainer::readCentralDirectory()
     if (central_dir_end == 0)
 		return false; 
 
-	uint8_t* buffer = new uint8_t[ZIP_END_OF_DIR_SIZE];
+	std::vector<uint8_t> storage(ZIP_END_OF_DIR_SIZE);
+	uint8_t* const buffer = storage.data();
 
     // Read the central directory contents
 	if (!mFile->seek(central_dir_end) || mFile->read(buffer, ZIP_END_OF_DIR_SIZE) != ZIP_END_OF_DIR_SIZE)
@@ -1153,8 +1154,6 @@ bool ZipResourceContainer::readCentralDirectory()
 	uint16_t num_entries_total = LESHORT(*reinterpret_cast<uint16_t*>(buffer + 10));
 	uint32_t dir_size = LELONG(*reinterpret_cast<uint32_t*>(buffer + 12));
 	uint32_t dir_offset = LELONG(*reinterpret_cast<uint32_t*>(buffer + 16));
-
-	delete [] buffer;
 
     // Basic sanity checks
     // Multi-disk zips aren't supported
@@ -1180,7 +1179,8 @@ void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length,
 	tmp_entries.reserve(num_entries);
 	mDirectory.reserve(num_entries);
 
-    uint8_t* buffer = new uint8_t[length];
+	std::vector<uint8_t> storage(length);
+	uint8_t* const buffer = storage.data();
 	if (!mFile->seek(offset) || mFile->read(buffer, length) != length)
 		return;
 
@@ -1245,7 +1245,6 @@ void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length,
 
 		tmp_entries.push_back(entry);
 	}
-    delete [] buffer;
 
 	// sort the central directory entries by filename
 	std::sort(tmp_entries.begin(), tmp_entries.end(), compare_zip_directory_entries);

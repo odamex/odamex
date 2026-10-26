@@ -198,7 +198,7 @@ void RowMajorTextureLoader::load(uint8_t* data) const
 {
 	uint16_t width = getWidth();
 	uint16_t height = getHeight();
-	Texture* texture = createTexture(data, width, height);
+	[[maybe_unused]] Texture* texture = createTexture(data, width, height);	// read by clients only
 
 	#if CLIENT_APP
 	if (width > 0 && height > 0)
@@ -513,7 +513,7 @@ uint32_t InMemoryTextureLoader::size() const
 //
 void InMemoryTextureLoader::load(uint8_t* data) const
 {
-	Texture* texture = createTexture(data, mWidth, mHeight);
+	[[maybe_unused]] Texture* texture = createTexture(data, mWidth, mHeight);	// read by clients only
 	#if CLIENT_APP
 	memcpy(texture->mData, mSourceData.get(), mWidth * mHeight * sizeof(palindex_t));
 	#endif

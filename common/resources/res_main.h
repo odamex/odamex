@@ -282,7 +282,7 @@ private:
 		return NULL;
 	}
 
-	void openResourceFile(const OString& filename);
+	void openResourceFile(const OString& path);
 
 	std::vector<std::string>			mResourceFileNames;
 	mutable std::vector<OMD5Hash>	mResourceFileHashes;

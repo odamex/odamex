@@ -92,47 +92,47 @@ public:
 			mFileSize = M_FileLength(mFileHandle);
 	}
 
-	virtual ~DiskFileAccessor()
+	~DiskFileAccessor() override
 	{
 		if (mFileHandle)
 			fclose(mFileHandle);
 	}
 
-	virtual bool valid() const
+	bool valid() const override
 	{
 		return mFileHandle != NULL;
 	}
 
-	virtual const OString& getFileName() const
+	const OString& getFileName() const override
 	{
 		return mFileName;
 	}
 
-	virtual size_t size() const
+	size_t size() const override
 	{
 		return mFileSize;
 	}
 
-	virtual bool seek(size_t pos)
+	bool seek(size_t pos) override
 	{
 		if (mFileHandle)
 			return fseek(mFileHandle, pos, SEEK_SET) == 0;
 		return false;
 	}
 
-	virtual size_t getSeekPosition() const
+	size_t getSeekPosition() const override
 	{
 		if (mFileHandle)
 			return ftell(mFileHandle);
 		return -1;
 	}
 
-	virtual bool eof() const
+	bool eof() const override
 	{
 		return feof(mFileHandle);
 	}
 
-	virtual size_t read(uint8_t* data, size_t length) const
+	size_t read(uint8_t* data, size_t length) const override
 	{
 		if (mFileHandle)
 			return fread(data, 1, length, mFileHandle);
@@ -163,42 +163,42 @@ public:
 		mLength(length), mSeekPos(0), mFileName(filename)
 	{ }
 
-	virtual ~MemoryFileAccessor() {}
+	~MemoryFileAccessor() override {}
 
-	virtual bool valid() const
+	bool valid() const override
 	{
 		return mBuffer != NULL; 
 	}
 
-	virtual const OString& getFileName() const
+	const OString& getFileName() const override
 	{
 		return mFileName;
 	}
 
-	virtual size_t size() const
+	size_t size() const override
 	{
 		return mLength;
 	}
 
-	virtual bool seek(size_t pos)
+	bool seek(size_t pos) override
 	{
 		mSeekPos = pos;
 		return mSeekPos < mLength;
 	}
 
-	virtual size_t getSeekPosition() const
+	size_t getSeekPosition() const override
 	{
 		if (!eof())
 			return mSeekPos;
 		return -1;
 	}
 
-	virtual bool eof() const
+	bool eof() const override
 	{
 		return mSeekPos >= mLength;
 	}
 
-	virtual size_t read(uint8_t* data, size_t length) const
+	size_t read(uint8_t* data, size_t length) const override
 	{
 		if (mBuffer && !eof())
 		{

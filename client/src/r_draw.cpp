@@ -1068,7 +1068,7 @@ static forceinline void R_DrawLevelColumnGeneric(PIXEL_T* dest, const drawplanec
 
 	// Both streamed linearly down the column, so the prefetcher has them.
 	const fixed_t* ys = yslope.get() + d.yl;
-	const uint16_t* off = d.lightoff + d.yl;
+	const uint16_t* off = CONSTLIGHT ? nullptr : d.lightoff + d.yl;	// lightoff is NULL for CONSTLIGHT
 
 	const double ubase = d.ubase, vbase = d.vbase;
 	const double eu = d.eu, ev = d.ev;

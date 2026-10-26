@@ -190,11 +190,11 @@ public:
 	ConCharsFont(fixed_t scale);
 	ConCharsFont(ScaleFunc scale_func);
 
-	virtual int getHeight() const
+	int getHeight() const override
 	{	return mHeight;	}
 
 protected:
-	virtual void buildGlyphs();
+	void buildGlyphs() override;
 
 private:
 	static const int charwidth = 8;
@@ -210,11 +210,11 @@ public:
 	SmallDoomFont(fixed_t scale);
 	SmallDoomFont(ScaleFunc scale_func);
 
-	virtual int getHeight() const
+	int getHeight() const override
 	{	return mHeight;	}
 
 protected:
-	virtual void buildGlyphs();
+	void buildGlyphs() override;
 
 private:
 	int				mHeight;
@@ -227,11 +227,11 @@ public:
 	LargeDoomFont(fixed_t scale);
 	LargeDoomFont(ScaleFunc scale_func);
 
-	virtual int getHeight() const
+	int getHeight() const override
 	{	return mHeight;	}
 
 protected:
-	virtual void buildGlyphs();
+	void buildGlyphs() override;
 
 private:
 	int				mHeight;
@@ -258,18 +258,18 @@ public:
 	             argb_t grad_top, argb_t grad_bottom,
 	             const std::vector<OFontVariation>& variations = std::vector<OFontVariation>());
 
-	virtual int getHeight() const
+	int getHeight() const override
 	{	return mHeight;	}
 
-	virtual int getAdvanceX(char c) const;
-	virtual int getAdvanceY(char c) const;
+	int getAdvanceX(char c) const override;
+	int getAdvanceY(char c) const override;
 
-	virtual int getAscent() const
+	int getAscent() const override
 	{	return mAscent;	}
 
 	// Every line of an outline font occupies the face's line height,
 	// regardless of which characters are on it.
-	virtual int getTextHeight(char c) const
+	int getTextHeight(char c) const override
 	{	return mHeight;	}
 
 	// Sets the variable-font axis coordinates (weight, width, optical size,
@@ -278,8 +278,8 @@ public:
 	void setVariations(const std::vector<OFontVariation>& variations);
 
 protected:
-	virtual void buildGlyphs();
-	virtual int getGlyphAdvance(char c) const;
+	void buildGlyphs() override;
+	int getGlyphAdvance(char c) const override;
 
 private:
 	std::string		mLumpName;

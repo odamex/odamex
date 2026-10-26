@@ -44,7 +44,6 @@
 #include "gi.h"
 #include "c_console.h"
 #include "g_gametype.h"
-#include "m_cheat.h"
 
 #include "resources/res_texture.h"
 #include "p_ctf.h"

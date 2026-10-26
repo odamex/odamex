@@ -60,7 +60,6 @@ END_DISABLE_WARNING_GNU
 #include "g_gametype.h"
 #include "p_hordespawn.h"
 #include "g_episode.h"
-#include "d_main.h"
 #include "resources/res_filelib.h"
 
 // FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()

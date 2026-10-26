@@ -47,7 +47,6 @@
 
 #include "p_lnspec.h"
 
-#include "r_sky.h"
 #include "resources/res_texture.h"
 
 // OPTIMIZE: closed two sided lines as single sided
