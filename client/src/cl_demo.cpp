@@ -1621,7 +1621,6 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	players.clear();
 
 	CL_ResetWorldPrediction();
-	CL_ResetTicSync();
 	::lastEchoedClientTic = 0;
 	::last_svgametic      = 0;
 	world_index           = 0;

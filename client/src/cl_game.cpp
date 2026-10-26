@@ -898,6 +898,7 @@ void CL_CheckDisplayPlayer();
 //
 extern DCanvas *page;
 extern int connecttimeout;
+extern int world_index;
 
 void G_Ticker (void)
 {
@@ -1044,7 +1045,10 @@ void G_Ticker (void)
 		{
 			// denis - don't accept candy from strangers
 			if (not NET_CompareAdr(serveraddr, net_from))
+			{
+				net_message.clear();
 				break;
+			}
 
 			realrate += packet_size;
 			last_received = gametic;
@@ -1125,8 +1129,6 @@ void G_Ticker (void)
 			}
 		}
 	}
-
-	CL_UpdateTicErrors();
 
 	if (netdemo.isRecording())
 		netdemo.writeMessages();
@@ -1230,7 +1232,7 @@ void G_Ticker (void)
 				thinkersHaveRun = CL_PredictWorld();
 				if (not thinkersHaveRun and not netdemo.isPaused())
 				{
-					CL_SimulatePlayers();
+					CL_SimulatePlayers(world_index);
 				}
 
 				// Replay item pickups if the items arrived now.

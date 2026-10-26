@@ -423,6 +423,8 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
 
+	newsnap.setClientTic(::lastEchoedClientTic);
+
 	newsnap.setX(x);
 	newsnap.setY(y);
 	newsnap.setZ(z);
@@ -462,6 +464,8 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnapshot(snaptime);
 	newsnapshot.setAuthoritative(true);
+	newsnapshot.setPlayerTic(p.tic);
+	newsnapshot.setClientTic(::lastEchoedClientTic);
 	newsnapshot.setX(x);
 	newsnapshot.setY(y);
 	newsnapshot.setZ(z);
@@ -1269,6 +1273,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
+		newsnap.setClientTic(::lastEchoedClientTic);
 		newsnap.setX(update.pos.x);
 		newsnap.setY(update.pos.y);
 		newsnap.setZ(update.pos.z);
@@ -1498,7 +1503,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	}
 
 	const int snaptime = ThisMessageServerTic();
-	PlayerSnapshot newsnap(snaptime, p);
+	PlayerSnapshot newsnap(snaptime, p, ::lastEchoedClientTic);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);
 	p.snapshots.clearSnapshots();
@@ -1598,6 +1603,9 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		const int snaptime = ThisMessageServerTic();
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
+
+		newsnap.setPlayerTic(target->player->tic);
+		newsnap.setClientTic(::lastEchoedClientTic);
 
 		newsnap.setX(msg->target_pos().x());
 		newsnap.setY(msg->target_pos().y());
@@ -2541,6 +2549,8 @@ void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
 	::lastEchoedClientTic = msg->client_tic();
 
+	CL_AdvanceWorldPredictionTic(ThisMessageServerTic());
+
 	netgraph.addServerSideMetrics(msg->reliable_messages_in_flight(), msg->throttle());
 }
 
@@ -2679,6 +2689,12 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
+		// S_LIGHTDONE wont be sent by server bc it has length of 0 tics, so reset like this
+		if (i == ps_flash and pspupdates[ps_flash].statenum == S_NULL and player.psprites[ps_flash].statenum != S_NULL)
+		{
+			player.extralight = 0;
+		}
+
 		P_SetPsprite(player, i, pspupdates[i].statenum);
 
 		if (pspupdates[i].positioned && player.psprites[i].statenum != S_NULL)
@@ -3965,6 +3981,31 @@ namespace
 		}
 	}
 
+	int CL_HandleCurrentDeferredMessages()
+	{
+		const bool syncValuesAreSet           = world_index != 0 and last_svgametic != 0;
+		const bool worldIsCycling             = gamestate == GS_LEVEL;
+		const int currentExpectedNewestPacket = syncValuesAreSet and worldIsCycling ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
+
+		for (auto deferredMessageIter  = s_deferredMessages.begin();
+		          deferredMessageIter != s_deferredMessages.end();
+		          deferredMessageIter  = s_deferredMessages.erase(deferredMessageIter)
+		    )
+		{
+			if (deferredMessageIter->first > currentExpectedNewestPacket)
+			{
+				break;
+			}
+			CL_ProcessCommand(deferredMessageIter->second);
+		}
+		return currentExpectedNewestPacket;
+	}
+}
+
+
+void CL_ProcessDeferredCommands()
+{
+	CL_HandleCurrentDeferredMessages();
 }
 
 //
@@ -3972,21 +4013,9 @@ namespace
 //
 void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 {
-	const bool syncValuesAreSet           = world_index != 0 and last_svgametic != 0;
-	const bool worldIsCycling             = gamestate == GS_LEVEL;
-	const int currentExpectedNewestPacket = syncValuesAreSet and worldIsCycling ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
-
-	for (auto deferredMessageIter  = s_deferredMessages.begin();
-	          deferredMessageIter != s_deferredMessages.end();
-	          deferredMessageIter  = s_deferredMessages.erase(deferredMessageIter)
-	    )
-	{
-		if (deferredMessageIter->first > currentExpectedNewestPacket)
-		{
-			break;
-		}
-		CL_ProcessCommand(deferredMessageIter->second);
-	}
+	// Before we move onto anything new in the net_message buffer, deal with any
+	// previously-received deferred messages that have become current.
+	const int currentExpectedNewestPacket = CL_HandleCurrentDeferredMessages();
 
 	if (optionalHeader)
 	{

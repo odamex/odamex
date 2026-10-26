@@ -3583,13 +3583,23 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 	static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
 	player.sortedMobjs.clear();
 
-	AActor* playerViewPosition = player.camera;
+	const AActor* playerViewPosition = player.camera;
+
+	if (player.spying)
+	{
+		const player_t& targetPlayer = idplayer(player.spying);
+		if (targetPlayer.mo)
+		{
+			playerViewPosition = targetPlayer.mo;
+		}
+	}
+
 	if (not playerViewPosition)
 	{
 		playerViewPosition = player.mo;
 		if (not playerViewPosition)
 		{
-			// This operation only makes sense if the player has a position.
+			// This entire function only makes sense if there's a position from which to prioritize things.
 			return SortedMobjPartitionsType{ player.sortedMobjs.end(), player.sortedMobjs.end() };
 		}
 	}
@@ -3931,22 +3941,22 @@ int SV_CalculateNumTiccmds(player_t &player)
 	if (!sv_ticbuffer || player.spectator || player.playerstate == PST_DEAD)
 	{
 		// Process all queued ticcmds.
+//        PrintFmt ("Process all {}\n", gametic);
 		return maximum_queue_size;
 	}
 	if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
 	{
+//        PrintFmt ("Stand still {}\n", gametic);
 		// Player is not moving
 		return 2;
 	}
-	if (player.cmdqueue.size() > 2 && gametic % 2*TICRATE == player.id % 2*TICRATE)
-	{
-		// Process an extra ticcmd once every 2 seconds to reduce the
-		// queue size. Use player id to stagger the timing to prevent everyone
-		// from running an extra ticcmd at the same time.
-		return 2;
-	}
+
+	// FIXME / IDEA:  Don't drain more than one command.  Instead, combine inputs as
+	//                long as doing so wouldn't affect player momentum or position.
+
 	if (player.cmdqueue.size() > maximum_queue_size)
 	{
+//        PrintFmt ("Overgrowth {}\n", gametic);
 		// The player experienced a large latency spike so try to catch up by
 		// processing more than one ticcmd at the expense of appearing perfectly
 		//  smooth
