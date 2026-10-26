@@ -60,6 +60,8 @@
 #define ODA_UICSHIGHTLIGHTSERVERS 1
 // Highlight colour
 #define ODA_UICSHSHIGHLIGHTCOLOUR "#0094FF"
+// Program Theme 
+#define ODA_PRGTHEME 0
 
 /* Auto server list refresh timer */
 // Enables/disables the timer
@@ -146,6 +148,7 @@ inline constexpr const char* def_masterlist[] =
 #define ARTNEWLISTINTERVAL  "AutoRefreshTimerNewListInterval"
 #define QRYTHREADMULTIPLIER "QryThreadMultiplier"
 #define QRYTHREADMAXIMUM    "QryThreadMaximum"
+#define PRGTHEME			"ProgramTheme"
 
 // Master server ids, eg:
 // MasterServer1 "127.0.0.1:15000"

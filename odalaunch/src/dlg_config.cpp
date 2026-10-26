@@ -88,6 +88,9 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_SPINCTRL(XRCID("Id_SpnRefreshInterval"), dlgConfig::OnSpinValChange)
 
 	EVT_LISTBOX_DCLICK(XRCID("Id_LstCtrlWadDirectories"), dlgConfig::OnReplaceDir)
+
+	EVT_RADIOBOX(XRCID("Id_RbTheme"), dlgConfig::OnRadioBoxChange)
+
 END_EVENT_TABLE()
 
 // Window constructor
@@ -144,6 +147,8 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
 	m_StcBmpPQPlayable->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_orange"));
 	m_StcBmpPQLaggy->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_red"));
 	m_StcBmpPQBad->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_gray"));
+
+	m_RbTheme = XRCCTRL(*this, "Id_RbTheme", wxRadioBox);
 }
 
 // Window destructor
@@ -178,6 +183,11 @@ void dlgConfig::OnFileDirChange(wxFileDirPickerEvent& event)
 }
 
 void dlgConfig::OnClrPickerChange(wxColourPickerEvent& event)
+{
+	UserChangedSetting = true;
+}
+
+void dlgConfig::OnRadioBoxChange(wxCommandEvent& event)
 {
 	UserChangedSetting = true;
 }
@@ -454,6 +464,8 @@ void dlgConfig::LoadSettings()
 	wxString SoundFile, HighlightColour, CustomServerColour;
 	wxInt32 PQGood, PQPlayable, PQLaggy;
 
+	wxInt32 ProgramTheme;
+
 	ConfigInfo.Read(USEBROADCAST, &UseBroadcast, ODA_QRYUSEBROADCAST);
 	ConfigInfo.Read(GETLISTONSTART, &GetListOnStart, ODA_UIGETLISTONSTART);
 	ConfigInfo.Read(SHOWBLOCKEDSERVERS, &ShowBlockedServers,
@@ -483,6 +495,7 @@ void dlgConfig::LoadSettings()
     ConfigInfo.Read(QRYTHREADMAXIMUM, &ThreadMax, ODA_THRMAXVAL);
 	ConfigInfo.Read(CSHLSERVERS, &CustomServersHighlight, ODA_UICSHIGHTLIGHTSERVERS);
 	ConfigInfo.Read(CSHLCOLOUR, &CustomServerColour, ODA_UICSHSHIGHLIGHTCOLOUR);
+	ConfigInfo.Read(PRGTHEME, &ProgramTheme, ODA_PRGTHEME);
 
 	m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
 	m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
@@ -533,6 +546,7 @@ void dlgConfig::LoadSettings()
 	m_SpnCtrlPQPlayable->SetValue(PQPlayable);
 	m_SpnCtrlPQLaggy->SetValue(PQLaggy);
 
+	m_RbTheme->SetSelection(ProgramTheme);
 }
 
 // Save settings to configuration file
@@ -573,6 +587,7 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(QRYTHREADMAXIMUM,  m_SpnCtrlThreadMax->GetValue());
 	ConfigInfo.Write(CSHLSERVERS, m_ChkCtrlHighlightCustomServers->GetValue());
 	ConfigInfo.Write(CSHLCOLOUR, m_ClrPickCustomServerHighlight->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
+	ConfigInfo.Write(PRGTHEME, m_RbTheme->GetSelection());
 
 	ConfigInfo.Flush();
 }

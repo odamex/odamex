@@ -42,6 +42,7 @@
 #include <wx/statbmp.h>
 #include <wx/clrpicker.h>
 #include <wx/notebook.h>
+#include <wx/radiobox.h>
 
 // a more dynamic way of adding environment variables, even if they are
 // hardcoded.
@@ -83,6 +84,8 @@ protected:
 
 	void OnNotebookPageChanged(wxBookCtrlEvent& event);
 
+	void OnRadioBoxChange(wxCommandEvent& event);
+
 	wxCheckBox* m_ChkCtrlGetListOnStart;
 	wxCheckBox* m_ChkCtrlShowBlockedServers;
 	wxCheckBox* m_ChkCtrlCheckForUpdates;
@@ -121,6 +124,8 @@ protected:
 	wxStaticBitmap* m_StcBmpPQPlayable;
 	wxStaticBitmap* m_StcBmpPQLaggy;
 	wxStaticBitmap* m_StcBmpPQBad;
+
+	wxRadioBox* m_RbTheme;
 
 	bool UserChangedSetting;
 
