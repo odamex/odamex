@@ -3981,6 +3981,31 @@ namespace
 		}
 	}
 
+	int CL_HandleCurrentDeferredMessages()
+	{
+		const bool syncValuesAreSet           = world_index != 0 and last_svgametic != 0;
+		const bool worldIsCycling             = gamestate == GS_LEVEL;
+		const int currentExpectedNewestPacket = syncValuesAreSet and worldIsCycling ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
+
+		for (auto deferredMessageIter  = s_deferredMessages.begin();
+		          deferredMessageIter != s_deferredMessages.end();
+		          deferredMessageIter  = s_deferredMessages.erase(deferredMessageIter)
+		    )
+		{
+			if (deferredMessageIter->first > currentExpectedNewestPacket)
+			{
+				break;
+			}
+			CL_ProcessCommand(deferredMessageIter->second);
+		}
+		return currentExpectedNewestPacket;
+	}
+}
+
+
+void CL_ProcessDeferredCommands()
+{
+	CL_HandleCurrentDeferredMessages();
 }
 
 //
@@ -3988,21 +4013,9 @@ namespace
 //
 void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 {
-	const bool syncValuesAreSet           = world_index != 0 and last_svgametic != 0;
-	const bool worldIsCycling             = gamestate == GS_LEVEL;
-	const int currentExpectedNewestPacket = syncValuesAreSet and worldIsCycling ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
-
-	for (auto deferredMessageIter  = s_deferredMessages.begin();
-	          deferredMessageIter != s_deferredMessages.end();
-	          deferredMessageIter  = s_deferredMessages.erase(deferredMessageIter)
-	    )
-	{
-		if (deferredMessageIter->first > currentExpectedNewestPacket)
-		{
-			break;
-		}
-		CL_ProcessCommand(deferredMessageIter->second);
-	}
+	// Before we move onto anything new in the net_message buffer, deal with any
+	// previously-received deferred messages that have become current.
+	const int currentExpectedNewestPacket = CL_HandleCurrentDeferredMessages();
 
 	if (optionalHeader)
 	{

@@ -1045,7 +1045,10 @@ void G_Ticker (void)
 		{
 			// denis - don't accept candy from strangers
 			if (not NET_CompareAdr(serveraddr, net_from))
+			{
+				net_message.clear();
 				break;
+			}
 
 			realrate += packet_size;
 			last_received = gametic;
