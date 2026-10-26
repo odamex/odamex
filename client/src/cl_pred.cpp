@@ -653,16 +653,19 @@ bool CL_PredictWorld()
 	// a sector starting prediction due to remote activation, nudge the player from
 	// his position last tic to this new corrected position.  This smooths the
 	// view when there's a misprediction.
-	if (snap.isContinuous() and playerHasBeenPredicted and not playerHasBeenAcceleratedByNewlyPredictedSector)
+	bool wasMispredicted = false;
+	if (snap.isContinuous() and playerHasBeenPredicted)
 	{
 		const PlayerSnapshot correctedprevsnap(p.tic, p, ::lastEchoedClientTic);
 
 		// Did we predict correctly?
-		const bool correct = (correctedprevsnap.getX() == prevsnap.getX()) and
-		                     (correctedprevsnap.getY() == prevsnap.getY()) and
-		                     (correctedprevsnap.getZ() == prevsnap.getZ());
+		wasMispredicted = (correctedprevsnap.getX() != prevsnap.getX()) or
+		                  (correctedprevsnap.getY() != prevsnap.getY()) or
+		                  (correctedprevsnap.getZ() != prevsnap.getZ());
 
-		if (not correct)
+		// Nudge the player unless the player was moved suddenly by a sector.  In that case, we'll
+		// make a different adjustment after performing the final player think below.
+		if (wasMispredicted and not playerHasBeenAcceleratedByNewlyPredictedSector)
 		{
 			// Update the netgraph concerning our prediction's error
 			netgraph.setMisprediction(true);
@@ -693,7 +696,7 @@ bool CL_PredictWorld()
 	//                kill vertical view interpolation.  It's much less jarring to just
 	//                "remain in place" on a sector that suddenly moved more than expected,
 	//                than it is to visibly accelerate, move, and decelerate between 2 tics.
-	if (playerHasBeenPredicted and playerHasBeenAcceleratedByNewlyPredictedSector)
+	if (playerHasBeenPredicted and playerHasBeenAcceleratedByNewlyPredictedSector and wasMispredicted)
 	{
 		p.prevviewz = p.viewz;
 	}
