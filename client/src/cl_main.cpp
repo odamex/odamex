@@ -2287,7 +2287,7 @@ MessageResultEnum CL_AcceptNetMessage()
 	// In this case, there is no new packet, but it's possible that the client has
 	// deferred messages on its own entirely in a previous tic.  We want to handle
 	// those even if there's no actual new packet off the network, so try to do so.
-	CL_ParseCommands();
+	CL_ProcessDeferredCommands();
 
 	return MessageResultEnum::DEFER;
 }

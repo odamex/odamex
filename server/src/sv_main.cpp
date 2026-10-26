@@ -3584,13 +3584,23 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 	static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
 	player.sortedMobjs.clear();
 
-	AActor* playerViewPosition = player.camera;
+	const AActor* playerViewPosition = player.camera;
+
+	if (player.spying)
+	{
+		const player_t& targetPlayer = idplayer(player.spying);
+		if (targetPlayer.mo)
+		{
+			playerViewPosition = targetPlayer.mo;
+		}
+	}
+
 	if (not playerViewPosition)
 	{
 		playerViewPosition = player.mo;
 		if (not playerViewPosition)
 		{
-			// This operation only makes sense if the player has a position.
+			// This entire function only makes sense if there's a position from which to prioritize things.
 			return SortedMobjPartitionsType{ player.sortedMobjs.end(), player.sortedMobjs.end() };
 		}
 	}
