@@ -28,54 +28,54 @@
 // --------------
 
 // Get a list of servers when the program is first loaded
-#define ODA_UIGETLISTONSTART 1
+inline constexpr int ODA_UIGETLISTONSTART = 1;
 
 // Show servers that cannot be contacted because of a firewall or bad connection
-#define ODA_UISHOWBLOCKEDSERVERS 0
+inline constexpr int ODA_UISHOWBLOCKEDSERVERS = 0;
 
 // Load chat client when the launcher is run
-#define ODA_UILOADCHATCLIENTONLS 0
+inline constexpr int ODA_UILOADCHATCLIENTONLS = 0;
 
 // Automatically checks for updates against the launchers version when run
-#define ODA_UIAUTOCHECKFORUPDATES 1
+inline constexpr int ODA_UIAUTOCHECKFORUPDATES = 1;
 
 // Integer ranges for ping quality, these are displayed as icons in the settings
 // dialog
-#define ODA_UIPINGQUALITYGOOD 150
-#define ODA_UIPINGQUALITYPLAYABLE 300
-#define ODA_UIPINGQUALITYLAGGY 350
+inline constexpr int ODA_UIPINGQUALITYGOOD = 150;
+inline constexpr int ODA_UIPINGQUALITYPLAYABLE = 300;
+inline constexpr int ODA_UIPINGQUALITYLAGGY = 350;
 
 /* User notification of when players are online */
 // Flashes the taskbar if one is available
-#define ODA_UIPOLFLASHTASKBAR 1
+inline constexpr int ODA_UIPOLFLASHTASKBAR = 1;
 // Plays the system bell
-#define ODA_UIPOLPLAYSYSTEMBELL 1
+inline constexpr int ODA_UIPOLPLAYSYSTEMBELL = 1;
 // Plays a sound (wav) file through the sound card
-#define ODA_UIPOLPLAYSOUND 0
+inline constexpr int ODA_UIPOLPLAYSOUND = 0;
 // Highlight the server that has players in it
-#define ODA_UIPOLHIGHLIGHTSERVERS 1
+inline constexpr int ODA_UIPOLHIGHLIGHTSERVERS = 1;
 // Highlight colour
-#define ODA_UIPOLHSHIGHLIGHTCOLOUR "#00C000"
+inline constexpr const char* ODA_UIPOLHSHIGHLIGHTCOLOUR = "#00C000";
 // Highlight the server that has players in it
-#define ODA_UICSHIGHTLIGHTSERVERS 1
+inline constexpr int ODA_UICSHIGHTLIGHTSERVERS = 1;
 // Highlight colour
-#define ODA_UICSHSHIGHLIGHTCOLOUR "#0094FF"
+inline constexpr const char* ODA_UICSHSHIGHLIGHTCOLOUR = "#0094FF";
 // Program Theme 
-#define ODA_PRGTHEME 0
+inline constexpr int ODA_PRGTHEME = 0;
 
 /* Auto server list refresh timer */
 // Enables/disables the timer
-#define ODA_UIARTENABLE 1
+inline constexpr int ODA_UIARTENABLE = 1;
 // Server list refresh interval (in ms, def 3m)
-#define ODA_UIARTREFINTERVAL 180000
+inline constexpr int ODA_UIARTREFINTERVAL = 180000;
 // Server list refresh interval max (in ms, def 45m)
-#define ODA_UIARTREFMAX 2700000
+inline constexpr int ODA_UIARTREFMAX = 2700000;
 // New list interval (in ms, def 1h)
-#define ODA_UIARTLISTINTERVAL 3600000
+inline constexpr int ODA_UIARTLISTINTERVAL = 3600000;
 // New list interval max (in ms, def 6h)
-#define ODA_UIARTLISTMAX 21600000
+inline constexpr int ODA_UIARTLISTMAX = 21600000;
 // New list interval reduction value (in ms, def 5m)
-#define ODA_UIARTLISTRED 300000
+inline constexpr int ODA_UIARTLISTRED = 300000;
 
 // Querying system
 // ---------------
@@ -90,71 +90,71 @@ inline constexpr const char* def_masterlist[] =
 };
 
 // Master server timeout
-#define ODA_QRYMASTERTIMEOUT 500
+inline constexpr int ODA_QRYMASTERTIMEOUT = 500;
 
 // Game server timeout
-#define ODA_QRYSERVERTIMEOUT 1000
+inline constexpr int ODA_QRYSERVERTIMEOUT = 1000;
 
 // Number of retries to query the game server
-#define ODA_QRYGSRETRYCOUNT 2
+inline constexpr int ODA_QRYGSRETRYCOUNT = 2;
 
 // Broadcast across all networks for servers
-#define ODA_QRYUSEBROADCAST 0
+inline constexpr int ODA_QRYUSEBROADCAST = 0;
 
 // Thread multiplier value (this value * number of cores) for querying
-#define ODA_THRMULVAL 12
+inline constexpr int ODA_THRMULVAL = 12;
 
 // Maximum number of threads
-#define ODA_THRMAXVAL 48
+inline constexpr int ODA_THRMAXVAL = 48;
 
 // Message for unresponsive servers
-#define ODA_QRYNORESPONSE " << NO RESPONSE >> "
+inline constexpr const char* ODA_QRYNORESPONSE = " << NO RESPONSE >> ";
 
 // Network subsystem
 // -----------------
 
 // The default port number of a server if none was specified
-#define ODA_NETDEFSERVERPORT 10666
+inline constexpr int ODA_NETDEFSERVERPORT = 10666;
 
 // File system
 // -----------
 
 // Configuration file key names
 // Do not modify unless breaking our users config files is necessary
-#define GETLISTONSTART      "GetListOnStart"
-#define SHOWBLOCKEDSERVERS  "ShowBlockedServers"
-#define CHECKFORUPDATES     "CheckForUpdates"
-#define DELIMWADPATHS       "DelimWadPaths"
-#define ODAMEX_DIRECTORY    "OdamexDirectory"
-#define EXTRACMDLINEARGS    "ExtraCommandLineArguments"
-#define MASTERTIMEOUT       "MasterTimeout"
-#define SERVERTIMEOUT       "ServerTimeout"
-#define USEBROADCAST        "UseBroadcast"
-#define RETRYCOUNT          "RetryCount"
-#define ICONPINGQGOOD       "IconPingQualityGood"
-#define ICONPINGQPLAYABLE   "IconPingQualityPlayable"
-#define ICONPINGQLAGGY      "IconPingQualityLaggy"
-#define LOADCHATONLS        "LoadChatOnLauncherStart"
-#define POLFLASHTBAR        "POLFlashTaskBar"
-#define POLPLAYSYSTEMBELL   "POLPlaySystemBell"
-#define POLPLAYSOUND        "POLPlaySound"
-#define POLPSWAVFILE        "POLPSWavFile"
-#define POLHLSERVERS        "POLHighlightServers"
-#define POLHLSCOLOUR        "POLHighlightColour"
-#define CSHLSERVERS         "CSHighlightServers"
-#define CSHLCOLOUR          "CSHighlightColour"
-#define ARTENABLE           "UseAutoRefreshTimer"
-#define ARTREFINTERVAL      "AutoRefreshTimerRefreshInterval"
-#define ARTNEWLISTINTERVAL  "AutoRefreshTimerNewListInterval"
-#define QRYTHREADMULTIPLIER "QryThreadMultiplier"
-#define QRYTHREADMAXIMUM    "QryThreadMaximum"
-#define PRGTHEME			"ProgramTheme"
+inline constexpr const char* GETLISTONSTART = "GetListOnStart";
+inline constexpr const char* SHOWBLOCKEDSERVERS = "ShowBlockedServers";
+inline constexpr const char* CHECKFORUPDATES = "CheckForUpdates";
+inline constexpr const char* DELIMWADPATHS = "DelimWadPaths";
+inline constexpr const char* ODAMEX_DIRECTORY = "OdamexDirectory";
+inline constexpr const char* EXTRACMDLINEARGS = "ExtraCommandLineArguments";
+inline constexpr const char* MASTERTIMEOUT = "MasterTimeout";
+inline constexpr const char* SERVERTIMEOUT = "ServerTimeout";
+inline constexpr const char* USEBROADCAST = "UseBroadcast";
+inline constexpr const char* RETRYCOUNT = "RetryCount";
+inline constexpr const char* ICONPINGQGOOD = "IconPingQualityGood";
+inline constexpr const char* ICONPINGQPLAYABLE = "IconPingQualityPlayable";
+inline constexpr const char* ICONPINGQLAGGY = "IconPingQualityLaggy";
+inline constexpr const char* LOADCHATONLS = "LoadChatOnLauncherStart";
+inline constexpr const char* POLFLASHTBAR = "POLFlashTaskBar";
+inline constexpr const char* POLPLAYSYSTEMBELL = "POLPlaySystemBell";
+inline constexpr const char* POLPLAYSOUND = "POLPlaySound";
+inline constexpr const char* POLPSWAVFILE = "POLPSWavFile";
+inline constexpr const char* POLHLSERVERS = "POLHighlightServers";
+inline constexpr const char* POLHLSCOLOUR = "POLHighlightColour";
+inline constexpr const char* CSHLSERVERS = "CSHighlightServers";
+inline constexpr const char* CSHLCOLOUR = "CSHighlightColour";
+inline constexpr const char* ARTENABLE = "UseAutoRefreshTimer";
+inline constexpr const char* ARTREFINTERVAL = "AutoRefreshTimerRefreshInterval";
+inline constexpr const char* ARTNEWLISTINTERVAL = "AutoRefreshTimerNewListInterval";
+inline constexpr const char* QRYTHREADMULTIPLIER = "QryThreadMultiplier";
+inline constexpr const char* QRYTHREADMAXIMUM = "QryThreadMaximum";
+inline constexpr const char* PRGTHEME = "ProgramTheme";
 
 // Master server ids, eg:
 // MasterServer1 "127.0.0.1:15000"
 // MasterServer2 "192.168.1.1:15000"
 // etc..
-#define MASTERSERVER_ID     "MasterServer"
+inline constexpr const char* MASTERSERVER_ID = "MasterServer";
 
 // Path separator
 #ifdef __WXMSW__

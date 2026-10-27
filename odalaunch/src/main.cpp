@@ -65,7 +65,7 @@ bool Application::OnInit()
 
 	// We must set the theme before any dialogs are created
 	{
-		wxFileConfig ConfigInfo;
+		wxFileConfig const ConfigInfo;
 
 		wxInt32 ProgramTheme;
 
@@ -73,11 +73,6 @@ bool Application::OnInit()
 
 		switch (ProgramTheme)
 		{
-		case 0: {
-			wxApp::SetAppearance(Appearance::System);
-		}
-		break;
-
 		case 1: {
 			wxApp::SetAppearance(Appearance::Dark);
 		}

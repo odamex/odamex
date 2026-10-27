@@ -172,28 +172,28 @@ void dlgConfig::Show()
 	ShowModal();
 }
 
-void dlgConfig::OnCheckedBox(wxCommandEvent& event)
+void dlgConfig::OnCheckedBox(wxCommandEvent& /*event*/)
 {
 	UserChangedSetting = true;
 }
 
-void dlgConfig::OnFileDirChange(wxFileDirPickerEvent& event)
+void dlgConfig::OnFileDirChange(wxFileDirPickerEvent& /*event*/)
 {
 	UserChangedSetting = true;
 }
 
-void dlgConfig::OnClrPickerChange(wxColourPickerEvent& event)
+void dlgConfig::OnClrPickerChange(wxColourPickerEvent& /*event*/)
 {
 	UserChangedSetting = true;
 }
 
-void dlgConfig::OnRadioBoxChange(wxCommandEvent& event)
+void dlgConfig::OnRadioBoxChange(wxCommandEvent& /*event*/)
 {
 	UserChangedSetting = true;
 }
 
 // Ping quality spin control changes
-void dlgConfig::OnSpinValChange(wxSpinEvent& event)
+void dlgConfig::OnSpinValChange(wxSpinEvent& /*event*/)
 {
 	wxInt32 PQGood, PQPlayable, PQLaggy;
 
@@ -219,7 +219,7 @@ void dlgConfig::OnSpinValChange(wxSpinEvent& event)
 }
 
 // User pressed ok button
-void dlgConfig::OnOK(wxCommandEvent& event)
+void dlgConfig::OnOK(wxCommandEvent& /*event*/)
 {
 	wxMessageDialog msgdlg(this, "Save settings?", "Save settings?",
 	                       wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
@@ -246,7 +246,7 @@ void dlgConfig::OnOK(wxCommandEvent& event)
 	Close();
 }
 
-void dlgConfig::OnTextChange(wxCommandEvent& event)
+void dlgConfig::OnTextChange(wxCommandEvent& /*event*/)
 {
 	UserChangedSetting = true;
 }
@@ -256,7 +256,7 @@ void dlgConfig::OnTextChange(wxCommandEvent& event)
 */
 
 // Add a directory to the listbox
-void dlgConfig::OnAddDir(wxCommandEvent& event)
+void dlgConfig::OnAddDir(wxCommandEvent& /*event*/)
 {
 	wxString WadDirectory;
 
@@ -285,7 +285,7 @@ void dlgConfig::OnAddDir(wxCommandEvent& event)
 }
 
 // Replace a directory in the listbox
-void dlgConfig::OnReplaceDir(wxCommandEvent& event)
+void dlgConfig::OnReplaceDir(wxCommandEvent& /*event*/)
 {
 	wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
 
@@ -323,7 +323,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent& event)
 }
 
 // Delete a directory from the listbox
-void dlgConfig::OnDeleteDir(wxCommandEvent& event)
+void dlgConfig::OnDeleteDir(wxCommandEvent& /*event*/)
 {
 	// Get the selected item and delete it, if
 	// it is selected.
@@ -340,7 +340,7 @@ void dlgConfig::OnDeleteDir(wxCommandEvent& event)
 }
 
 // Move directory in list up 1 item
-void dlgConfig::OnUpClick(wxCommandEvent& event)
+void dlgConfig::OnUpClick(wxCommandEvent& /*event*/)
 {
 	// Get the selected item
 	wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
@@ -360,7 +360,7 @@ void dlgConfig::OnUpClick(wxCommandEvent& event)
 }
 
 // Move directory in list down 1 item
-void dlgConfig::OnDownClick(wxCommandEvent& event)
+void dlgConfig::OnDownClick(wxCommandEvent& /*event*/)
 {
 	// Get the selected item
 	wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
@@ -380,7 +380,7 @@ void dlgConfig::OnDownClick(wxCommandEvent& event)
 }
 
 // Get the environment variables
-void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
+void dlgConfig::OnGetEnvClick(wxCommandEvent& /*event*/)
 {
 	wxString doomwaddir = "";
 	wxString env_paths[NUM_ENVVARS];
