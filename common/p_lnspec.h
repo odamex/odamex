@@ -799,10 +799,10 @@ typedef struct
 	short args[5];
 } xlat_t;
 
-struct line_s;
+struct line_t;
 class AActor;
 
-typedef bool (*lnSpecFunc)(struct line_s	*line,
+typedef bool (*lnSpecFunc)(struct line_t	*line,
 						   class AActor		*activator,
 						   int				arg1,
 						   int				arg2,

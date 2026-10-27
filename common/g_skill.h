@@ -24,6 +24,7 @@
 #pragma once
 
 #include "c_cvars.h"
+#include "doomdata.h"
 #include "doomtype.h"
 #include "flags.h"
 #include "olumpname.h"
@@ -71,7 +72,7 @@ struct SkillInfo
 	int respawn_counter           = 0;
 	int respawn_limit             = 0;		// not implemented
 	float aggressiveness          = 1.0f;	// not implemented
-	int spawn_filter              = 0;
+	MapThingFlags spawn_filter    = MapThingFlags::none_set();
 	bool spawn_multi              = false;
 	bool instant_reaction         = false;
 	int ACS_return                = limits::MAXINT;

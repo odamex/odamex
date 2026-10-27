@@ -199,10 +199,8 @@ CVAR(					am_ovbackcolor, "00 00 00", "Overlay minimap background color",
 CVAR_RANGE(				am_ovbackalpha, "0.25", "Transparency of overlay minimap background",
 						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR_RANGE(				am_ovscalewidth, "0.25", "Scale width of overlay minimap",
-						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
-
-CVAR_RANGE(				am_ovscaleheight, "0.5", "Scale height of overlay minimap",
+CVAR_RANGE(				am_ovscalesize, "0.25", "Scale size of overlay minimap",
+						// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
 						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR_RANGE(				am_ovlocation, "1", "Overlay minimap location (0:LeftTop, 1:LeftMid, 2:LeftBot, 3:RightTop, 4:RightMid, 5:RightBot)",
@@ -805,6 +803,12 @@ CVAR_RANGE(		r_drawplayersprites, "1", "Weapon Transparency",
 
 CVAR(			r_particles, "1", "Draw particles",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			r_voxels, "1", "Enable software voxel rendering",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_FUNC_DECL(	r_voxeldir, "voxels", "Directory containing raw .kvx voxel files. Relative paths are resolved against the user directory.",
+				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_RANGE_FUNC_DECL(r_stretchsky, "2", "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)

@@ -33,6 +33,11 @@ class MessageQueue
 {
 	public:
 
+		explicit MessageQueue(size_t i_maxMessageBufferSize = MAX_UDP_PACKET) :
+			m_maxMessageBufferSize { i_maxMessageBufferSize }
+		{
+		}
+
 		size_t SizeInBytes()    const { return not m_queue.empty() ? m_totalEnqueuedBytesSansMostRecent + m_queue.back().size() : m_totalEnqueuedBytesSansMostRecent; }
 		size_t SizeInMessages() const { return m_queue.size(); }
 
@@ -44,6 +49,7 @@ class MessageQueue
 
 		// Using messages.
 		const buf_t& Front() const { return m_queue.front(); }
+		buf_t& Front()             { return m_queue.front(); }
 
 		// Popping messages.
 		bool Pop();
@@ -87,4 +93,5 @@ class MessageQueue
 		// "finalized" until the next slot is created.
 		//
 		size_t m_totalEnqueuedBytesSansMostRecent { 0 };
+		size_t m_maxMessageBufferSize { MAX_UDP_PACKET };
 };

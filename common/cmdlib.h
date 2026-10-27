@@ -72,7 +72,11 @@ std::optional<T> ParseNum(std::string_view str, int base = 10)
     T out;
 	while (!str.empty() && std::isspace(static_cast<unsigned char>(str.front())))
 		str.remove_prefix(1);
-	if (str[0] == '$')
+	if (str.empty())
+	{
+		return std::nullopt;
+	}
+	else if (str[0] == '$')
 	{
 		str.remove_prefix(1);
 		base = 16;

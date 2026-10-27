@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -27,8 +27,7 @@
 
 #include "doomdata.h"
 
-struct line_s;
-using line_t = line_s;
+struct line_t;
 
 // NOT called by W_Ticker. Fixme.
 //

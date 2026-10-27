@@ -54,7 +54,7 @@
 #endif
 #include <p_boomfspec.h>
 
-void SV_UpdateMobj(AActor* mo);
+void SV_ArmMobj(AActor* mo);
 void SV_UpdateMobjState(const AActor* mo);
 
 #define WATER_SINK_FACTOR		3
@@ -744,6 +744,34 @@ AActor* P_FindThingById(uint32_t id)
 	return nullptr;
 }
 
+namespace
+{
+	void EnsureCorrectThinkerOrder(netid_map_t::iterator iter)
+	{
+		AActor* mobj = iter->second;
+		if (iter == actor_by_netid.begin())
+		{
+			for (++iter; iter != actor_by_netid.end(); ++iter)
+			{
+				if (mobj->SpliceAsThinkerBefore(iter->second))
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			for (--iter; iter != actor_by_netid.begin(); --iter)
+			{
+				if (mobj->SpliceAsThinkerAfter(iter->second))
+				{
+					break;
+				}
+			}
+		}
+	}
+}
+
 //
 // P_SetThingId
 //
@@ -752,7 +780,11 @@ void P_SetThingId(AActor *mo, uint32_t newnetid)
 	mo->netid = newnetid;
 	if (newnetid)
 	{
-		actor_by_netid[newnetid] = mo->ptr();
+		auto result = actor_by_netid.insert_or_assign(newnetid, mo->ptr());
+		if (actor_by_netid.size() > 1)
+		{
+			EnsureCorrectThinkerOrder(result.first);
+		}
 	}
 }
 
@@ -1039,7 +1071,7 @@ void P_MoveActor(AActor *mo)
 		sector_t *hsec = mo->subsector->sector->heightsec;
 		if (hsec && hsec->waterzone && !mo->subsector->sector->waterzone)
 		{
-			if (mo->z < hsec->floorheight)
+			if (mo->z < P_FloorHeight(hsec))
 			{
 				fixed_t floorheight = P_FloorHeight(mo->x, mo->y, hsec);
 				if (mo->z < floorheight)
@@ -1057,7 +1089,7 @@ void P_MoveActor(AActor *mo)
 					mo->waterlevel = 3;
 				}
 			}
-			else if (mo->z + mo->height > hsec->ceilingheight)
+			else if (mo->z + mo->height > P_CeilingHeight(hsec))
 			{
 				mo->waterlevel = 3;
 			}
@@ -1617,7 +1649,7 @@ SetMobStateResultEnum P_SetMobjState(AActor *mobj, int32_t state, bool cl_update
 	//      have run.
 	if (cl_update)
 	{
-		SV_UpdateMobj(mobj);
+		SV_ArmMobj(mobj);
 		return SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
 	}
 #endif
@@ -1847,7 +1879,7 @@ static void P_ApplyXYFriction(AActor* mo)
 	     mo->oflags & MFO_FALLING) &&
 	    (mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 || mo->momy > FRACUNIT / 4 ||
 	     mo->momy < -FRACUNIT / 4) &&
-	    mo->floorz != mo->subsector->sector->floorheight)
+	    mo->floorz != P_FloorHeight(mo->subsector->sector))
 		return; // do not stop sliding if halfway off a step with some momentum
 
 	// keep corpses sliding if halfway off a step with some momentum
@@ -2367,7 +2399,7 @@ static void P_ApplyBouncyPhysics(AActor *mo)
 		{
 			if (ceilingline && ceilingline->backsector &&
 			    R_IsSkyFlat(ceilingline->backsector->ceilingpic) &&
-			    mo->z > ceilingline->backsector->ceilingheight)
+			    mo->z > P_CeilingHeight(ceilingline->backsector))
 				mo->Destroy();
 			else
 				P_ExplodeMissile(mo);
@@ -3640,7 +3672,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mthing.type == PO_SPAWN_TYPE ||
 		mthing.type == PO_SPAWNCRUSH_TYPE))
 	{
-		polyspawns_t *polyspawn = new polyspawns_t;
+		auto* polyspawn = new polyspawns_t;
 		polyspawn->next = polyspawns;
 		polyspawn->x = mthing.x << FRACBITS;
 		polyspawn->y = mthing.y << FRACBITS;
@@ -3713,8 +3745,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 
 	// check for appropriate skill level
-	// TODO: change type of spawn_filter to MapThingFlags after merging with type-safe mapinfo PR
-	if (!(mthing.flags & combo(MapThingFlags::unsafe_from_int(static_cast<int16_t>(G_GetCurrentSkill().spawn_filter)))))
+	if (not (mthing.flags & combo(G_GetCurrentSkill().spawn_filter)))
 		return;
 
 	if (isSpringPad)
@@ -3883,7 +3914,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	AActor* mobj = new AActor(x, y, z, info->type);
+	auto* mobj = new AActor(x, y, z, info->type);
 
 	if (type == MT_HORDESPAWN)
 	{
@@ -3909,7 +3940,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	// [RH] Set the thing's special
 	mobj->special = mthing.special;
-	std::copy(std::begin(mthing.args), std::end(mthing.args), mobj->args.begin());
+	std::ranges::copy(mthing.args, mobj->args.begin());
 
 	// [RH] If it's an ambient sound, activate it
 	if (type == MT_AMBIENT)

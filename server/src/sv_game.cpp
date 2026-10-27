@@ -147,7 +147,7 @@ void G_Ticker (void)
 	switch (gamestate)
 	{
 	case GS_LEVEL:
-		P_Ticker ();
+		P_Ticker (true);
 		break;
 
 	case GS_INTERMISSION:

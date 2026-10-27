@@ -33,6 +33,7 @@
 #include "r_state.h"
 #include "m_random.h"
 #include "v_palette.h"
+#include "s_sound.h"
 
 //
 // P_ArchivePlayers
@@ -77,8 +78,8 @@ void P_SerializeWorld (FArchive &arc)
 		// do sectors
 		for (sector_t& sec : R_GetSectors())
 		{
-			arc << sec.floorheight
-				<< sec.ceilingheight
+			arc << sec.floortexz
+				<< sec.ceilingtexz
 				<< sec.floorplane.a
 				<< sec.floorplane.b
 				<< sec.floorplane.c
@@ -173,8 +174,8 @@ void P_SerializeWorld (FArchive &arc)
 			AActor* SkyboxCeiling;
 			AActor* SkyboxFloor;
 
-			arc >> sec.floorheight
-				>> sec.ceilingheight
+			arc >> sec.floortexz
+				>> sec.ceilingtexz
 				>> sec.floorplane.a
 				>> sec.floorplane.b
 				>> sec.floorplane.c
@@ -288,7 +289,7 @@ void P_SerializeThinkers (FArchive &arc, bool hubLoad)
 //
 void P_SerializeSounds (FArchive &arc)
 {
-	// denis - todo
+	P_SerializeMusic(arc);
 }
 
 //

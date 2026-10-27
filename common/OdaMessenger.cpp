@@ -22,6 +22,8 @@
 #include "OdaMessenger.h"
 
 #include "i_net.h"
+#include "msg_message.h"
+#include "msg_pack.h"
 
 EXTERN_CVAR (log_packetdebug)
 
@@ -205,7 +207,6 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 #endif
 
 	}
-
 	return MessageResultEnum::DEFER;
 }
 
@@ -376,7 +377,22 @@ MessageResultEnum OdaMessenger::SendStandard(int i_currentTic, const netadr_t& i
 		m_byteBudget               -= static_cast<int>(sendSize);
 	}
 
-	// Okay, done with the "really important" stuff.  Now onto purely best-effort unreliable packets.
+	// Okay, done with the "really important" stuff.  Divide up the remaining budget between best effort
+	// and large message fragments.
+	while (m_outgoingLargeMessageQueue.GetMessageSize() > 0 and m_byteBudget > 0)
+	{
+		SendFragments();
+
+		// Now fill out the remaining space with best effort messages.
+		m_outgoingNonReliableQueue.Pack([this](const buf_t& messageBuf) { return PackAsUnreliable(m_packet, messageBuf); });
+
+		const size_t sendSize = m_packet.Send(i_currentTic, m_destinationTic, m_sender, i_dest);
+		m_bytesSentWithReliability += sendSize;
+		m_byteBudget               -= static_cast<int>(sendSize);
+	}
+
+	// We're out of large message fragments or didn't have any to begin with.
+	// Now onto purely best-effort unreliable packets.
 	while (m_outgoingNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
 		if (static_cast<int>(m_packet.Size() + m_outgoingNonReliableQueue.Front().size()) > m_byteBudget)
@@ -445,6 +461,72 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	guard.SendHighPriority();
 	guard.SendRetransmissions();
 	return guard.SendStandard();
+}
+
+size_t OdaMessenger::SendFragments()
+{
+    // 1 KB because there's enough safety margin at the end for us to not have to be concerned about returning
+    // fragments back to the large message queue on account of the Packet class rejecting a large fragment.
+    const size_t fragmentSize = 1024;
+
+    size_t writtenFragmentPortionSize = 0;
+
+    while (writtenFragmentPortionSize < fragmentSize and m_outgoingLargeMessageQueue.GetMessageSize() > 0)
+    {
+        const size_t requestedSize = fragmentSize - writtenFragmentPortionSize;
+        const auto fragmentInfo    = m_outgoingLargeMessageQueue.NextFragment(requestedSize,
+                                                                              m_outgoingLargeMessageFragment.ptr());
+        m_outgoingLargeMessageFragment.setcursize(fragmentInfo.size);
+
+        // Please note that we deliberately don't add these reliable messages to the reliable queue because
+        // we don't want to inadvertently wind up in a situation where the fragments are elevated in priority
+        // in a subsequent tic.
+        switch (fragmentInfo.state)
+        {
+            case FragmentationStateEnum::NONE:
+                PrintFmt(PRINT_WARNING, "No fragment!  requested: {} given: {};  Clearing...\n", requestedSize, fragmentInfo.size);
+                m_outgoingLargeMessageQueue.Clear();
+                break;
+            case FragmentationStateEnum::INVALID_FRAGMENT_SIZE:
+                PrintFmt(PRINT_WARNING, "Invalid fragment size!  requested: {} given: {};  Clearing...\n", requestedSize, fragmentInfo.size);
+                m_outgoingLargeMessageQueue.Clear();
+                break;
+            case FragmentationStateEnum::MESSAGE_OVERFLOW:
+                PrintFmt(PRINT_WARNING, "Fragment message overflow!  requested: {} given: {};  Clearing...\n", requestedSize, fragmentInfo.size);
+                m_outgoingLargeMessageQueue.Clear();
+                break;
+
+            case FragmentationStateEnum::FIRST_FRAGMENT:
+                m_scratchpadBuffer.clear();
+                MSG_Pack(m_scratchpadBuffer, MSG_LargeMessageStart   (m_outgoingLargeMessageQueue.GetMessageSize()));
+                MSG_Pack(m_scratchpadBuffer, MSG_LargeMessageFragment(m_outgoingLargeMessageFragment.ptr(),
+                                                                      m_outgoingLargeMessageFragment.size()));
+                writtenFragmentPortionSize += PackAsReliable(m_packet, m_scratchpadBuffer);
+                break;
+
+            case FragmentationStateEnum::CONTINUATION_FRAGMENT:
+                m_scratchpadBuffer.clear();
+                MSG_Pack(m_scratchpadBuffer, MSG_LargeMessageFragment(m_outgoingLargeMessageFragment.ptr(),
+                                                                      m_outgoingLargeMessageFragment.size()));
+                writtenFragmentPortionSize += PackAsReliable(m_packet, m_scratchpadBuffer);
+                break;
+
+            case FragmentationStateEnum::LAST_FRAGMENT:
+                m_scratchpadBuffer.clear();
+                MSG_Pack(m_scratchpadBuffer, MSG_LargeMessageFragment(m_outgoingLargeMessageFragment.ptr(),
+                                                                      m_outgoingLargeMessageFragment.size()));
+                MSG_Pack(m_scratchpadBuffer, odaproto::LargeMessageEnd());
+                writtenFragmentPortionSize += PackAsReliable(m_packet, m_scratchpadBuffer);
+                break;
+
+            case FragmentationStateEnum::ONE_SHOT:
+                // This odd case fires if someone puts a small message into the large message queue.
+                // The fragment itself is a whole message, just put it into the packet.
+                writtenFragmentPortionSize += PackAsReliable(m_packet, m_outgoingLargeMessageFragment);
+                break;
+            }
+        }
+    return writtenFragmentPortionSize;
 }
 
 size_t OdaMessenger::SendRetransmissions(int i_currentTic, const netadr_t& i_dest)

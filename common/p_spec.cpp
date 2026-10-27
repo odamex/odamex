@@ -1941,7 +1941,7 @@ bool P_CheckKeys (player_t *p, card_t lock, bool remote)
 void OnChangedSwitchTexture (line_t *line, int useAgain);
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction);
-void SV_UpdateMobj(AActor* mo);
+void SV_ArmMobj(AActor* mo);
 
 //
 // EVENTS
@@ -2004,7 +2004,7 @@ void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
 		if (P_JustTeleported(thing))
 		{
-			SV_UpdateMobj(thing);
+			SV_ArmMobj(thing);
 			P_ClearJustTeleported();
 		}
 
@@ -2077,7 +2077,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
 		if (P_JustTeleported(thing))
 		{
-			SV_UpdateMobj(thing);
+			SV_ArmMobj(thing);
 			P_ClearJustTeleported();
 		}
 
@@ -2152,7 +2152,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
 		if (P_JustTeleported(thing))
 		{
-			SV_UpdateMobj(thing);
+			SV_ArmMobj(thing);
 			P_ClearJustTeleported();
 		}
 
@@ -2232,7 +2232,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
 		if (P_JustTeleported(thing))
 		{
-			SV_UpdateMobj(thing);
+			SV_ArmMobj(thing);
 			P_ClearJustTeleported();
 		}
 
@@ -2605,7 +2605,7 @@ void DScroller::RunThink ()
 	if (m_Control != -1)
 	{	// compute scroll amounts based on a sector's height changes
 		sector_t *sector = &sectors[m_Control];
-		fixed_t height = sector->ceilingheight + sector->floorheight;
+		const fixed_t height = P_CeilingHeight(sector) + P_FloorHeight(sector);
 
 		fixed_t delta = height - m_LastHeight;
 		m_LastHeight = height;
@@ -2694,20 +2694,15 @@ void DScroller::RunThink ()
 // accel: non-zero if this is an accelerative effect
 //
 
-DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
-					  int control, int affectee, int accel)
+DScroller::DScroller(EScrollType type, fixed_t dx, fixed_t dy,
+                     int control, int affectee, int accel)
+	: m_Type{type}, m_dx{dx}, m_dy{dy}, m_Control{control}, m_Accel{accel}
 {
-	s_scrollers.push_back(this);
-	m_Type = type;
-	m_dx = dx;
-	m_dy = dy;
-        m_vdx = 0;
-        m_vdy = 0;
-        m_Accel = accel;
-	if ((m_Control = control) != -1)
+	s_scrollers.push_back(this); // FIXME: incomplete object escapes constructor
+	if (control != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t height = sector->ceilingheight + sector->floorheight;
+		const fixed_t height = P_CeilingHeight(sector) + P_FloorHeight(sector);
 
 		m_LastHeight = height;
 	}
@@ -2722,28 +2717,29 @@ DScroller::DScroller (EScrollType type, fixed_t dx, fixed_t dy,
 //
 // killough 5/25/98: cleaned up arithmetic to avoid drift due to roundoff
 
-DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
-					 int control, int accel)
+DScroller::DScroller(fixed_t dx, fixed_t dy, const line_t *l,
+                     int control, int accel)
+	: m_Control{control}, m_Accel{accel}
 {
-	s_scrollers.push_back(this);
-	fixed_t x = abs(l->dx), y = abs(l->dy), d;
+	s_scrollers.push_back(this); // FIXME: incomplete object escapes contructors
+	fixed_t x = abs(l->dx);
+	fixed_t y = abs(l->dy);
 	if (y > x)
-		d = x, x = y, y = d;
-	d = FixedDiv (x, finesine[(tantoangle[FixedDiv(y,x) >> DBITS] + ANG90)
-						  >> ANGLETOFINESHIFT]);
+	{
+		std::swap(x, y);
+	}
+	const fixed_t d = FixedDiv (x, finesine[(tantoangle[FixedDiv(y,x) >> DBITS] + ANG90)
+	                                    >> ANGLETOFINESHIFT]);
 	x = -FixedDiv (FixedMul(dy, l->dy) + FixedMul(dx, l->dx), d);
 	y = -FixedDiv (FixedMul(dx, l->dy) - FixedMul(dy, l->dx), d);
 
-	m_Type = sc_side;
 	m_dx = x;
 	m_dy = y;
-	m_vdx = m_vdy = 0;
-	m_Accel = accel;
 
-	if ((m_Control = control) != -1)
+	if (control != -1)
 	{
 		sector_t *sector = &sectors[control];
-		fixed_t height = sector->ceilingheight + sector->floorheight;
+		const fixed_t height = P_CeilingHeight(sector) + P_FloorHeight(sector);
 
 		m_LastHeight = height;
 	}
