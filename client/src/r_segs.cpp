@@ -728,7 +728,7 @@ static constexpr fixed_t R_LineLength(fixed_t px1, fixed_t py1, fixed_t px2, fix
 // respectively.
 //
 void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist1, fixed_t dist2,
-                double fsx1, double fsx2, int start, int stop)
+                double fracscreenx1, double fracscreenx2, int start, int stop)
 {
 	const int width = stop - start + 1;
 	if (width <= 0)
@@ -754,7 +754,7 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	// We also can not linearly interpolate Z, but we can linearly interpolate 1/Z (scale), so we linearly
 	// interpolate the texture coordinates u / Z and then divide by 1/Z to get the correct u for each column.
 
-	// The clipped endpoints project to screen x fsx1 and fsx2, which lie up to
+	// The clipped endpoints project to screen x fracscreenx1 and fracscreenx2, which lie up to
 	// half a column away from the centers of columns start and stop + 1 that
 	// the stepping below anchors them to.
 	//
@@ -763,22 +763,33 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 	// (the wall heights follow, being proportional to 1/Z).
 	const double invz1 = 1.0 / FIXED2DOUBLE(dist1);
 	const double invz2 = 1.0 / FIXED2DOUBLE(dist2);
-	const double delta = fsx2 - fsx1;
-	double ta = 0.0;
-	double tb = 1.0;
+
+	// The following determines the anchors at the column centers so
+	// scale1 and scale2 are the 1/Z values at the centers of columns
+	// start and stop + 1.
+	//
+	// fracscreenx1/fracscreenx2 are the screen x coordinates of the
+	// clipped endpoints x1 and x2, which may be up to half a column
+	// away from the column centers.
+	const double delta = fracscreenx2 - fracscreenx1;
+	double anchorstart = 0.0;
+	double anchorend = 1.0;
+
+	// Restore the anchors at column centers so scale1 and scale2
+	// are the 1/Z values at the centers of columns start and stop + 1.
 	if (delta > 0.0)
 	{
-		ta = (start + 0.5 - fsx1) / delta;
-		tb = ((stop + 1) + 0.5 - fsx1) / delta;
+		anchorstart = (start + 0.5 - fracscreenx1) / delta;
+		anchorend = ((stop + 1) + 0.5 - fracscreenx1) / delta;
 	}
-	const auto scale1 = static_cast<float>(yfoc * (invz1 + ((invz2 - invz1) * ta)));
-	const auto scale2 = static_cast<float>(yfoc * (invz1 + ((invz2 - invz1) * tb)));
+	const auto scale1 = static_cast<float>(yfoc * (invz1 + ((invz2 - invz1) * anchorstart)));
+	const auto scale2 = static_cast<float>(yfoc * (invz1 + ((invz2 - invz1) * anchorend)));
 
-	// u/Z (in the same units as scale) is 0 at fsx1 and seglen * yfoc / dist2 at fsx2
+	// u/Z (in the same units as scale) is 0 at fracscreenx1 and seglen * yfoc / dist2 at fracscreenx2
 	const double uinvzend = FIXED2DOUBLE(seglen) * yfoc * invz2;
 
 	const float scalestep = (scale2 - scale1) / width;
-	const auto uinvzstep = static_cast<float>(((tb - ta) * uinvzend) / width);
+	const auto uinvzstep = static_cast<float>(((anchorend - anchorstart) * uinvzend) / width);
 
 	// determine which texture posts will be used for each screen
 	// column in this range and calculate the scaling factor for
@@ -786,7 +797,7 @@ void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, fixed_t dist
 
 	fixed_t textureoffset = curline->sidedef->textureoffset;
 
-	auto uinvz = static_cast<float>(ta * uinvzend);
+	auto uinvz = static_cast<float>(anchorstart * uinvzend);
 	float curscale = scale1;
 	for (int i = start; i <= stop; i++)
 	{

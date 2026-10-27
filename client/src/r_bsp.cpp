@@ -556,9 +556,9 @@ void R_AddLine (const seg_t *line)
 
 	// within columns x1 and x2 + 1, find the clipped endpoints
 	// R_PrepWall re-anchors its per column interpolation at the column centers
-	const double fsx1 = R_ProjectPointXFrac(t1.x, t1.y);
-	const double fsx2 = R_ProjectPointXFrac(t2.x, t2.y);
-	R_PrepWall(w1.x, w1.y, w2.x, w2.y, d1, d2, fsx1, fsx2, x1, x2);
+	const double fracscreenx1 = R_ProjectPointXFrac(t1.x, t1.y);
+	const double fracscreenx2 = R_ProjectPointXFrac(t2.x, t2.y);
+	R_PrepWall(w1.x, w1.y, w2.x, w2.y, d1, d2, fracscreenx1, fracscreenx2, x1, x2);
 
 	// [SL] Check for single-sided line, closed doors or other scenarios that
 	// would make this line seg solid.
