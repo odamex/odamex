@@ -15,6 +15,12 @@ endif()
 # Enable default SIMD settings for standard builds.
 option(USE_DEFAULT_SIMD "Use default SIMD optimization settings" ON)
 
+# NEON is optional on 32-bit ARM, so a 32-bit build only gets the NEON drawers
+# on request. The client then requires NEON: it will not run on ARMv6 (e.g. the
+# Raspberry Pi 1 and Zero) or on ARMv7 chips without it.
+# AArch64 always has NEON and ignores this option.
+option(ODAMEX_ARM_NEON "Build the 32-bit ARM client with NEON (requires a NEON-capable CPU)" OFF)
+
 # Always build with PNG support
 add_definitions(-DUSE_PNG)
 
@@ -173,6 +179,33 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
   else()
     message(STATUS "Default SIMD flags not used on user request")
+  endif()
+
+  if(ODAMEX_ARM_NEON)
+    if(ODAMEX_TARGET_ARCH MATCHES "^arm" AND CMAKE_SIZEOF_VOID_P EQUAL 4 AND NOT MSVC)
+      # Check the toolchain really defines __ARM_NEON with -mfpu=neon, rather
+      # than building a client without the drawers
+      include(CheckCXXSourceCompiles)
+      set(CMAKE_REQUIRED_FLAGS "-mfpu=neon")
+      check_cxx_source_compiles("
+        #include <arm_neon.h>
+        #ifndef __ARM_NEON
+        #error NEON not enabled
+        #endif
+        int main() { return vgetq_lane_u32(vdupq_n_u32(0), 0); }" ODAMEX_ARM_NEON_WORKS)
+      unset(CMAKE_REQUIRED_FLAGS)
+
+      if(NOT ODAMEX_ARM_NEON_WORKS)
+        message(FATAL_ERROR "ODAMEX_ARM_NEON: the compiler cannot build NEON code with -mfpu=neon. "
+                            "NEON needs a hard or softfp float ABI (not -mfloat-abi=soft). "
+                            "The CMake configure log has the failed check.")
+      endif()
+
+      target_compile_options(odamex PRIVATE -mfpu=neon)
+      message(STATUS "ARM NEON enabled for the client (-mfpu=neon)")
+    else()
+      message(STATUS "ODAMEX_ARM_NEON ignored: only 32-bit ARM GCC/Clang builds use it")
+    endif()
   endif()
 
   if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")

@@ -28,12 +28,20 @@
 /* Visual Studio 2005 has a bug where intrin.h conflicts with winnt.h */
 #if defined(_MSC_VER) && (_MSC_VER >= 1500) && !defined(_WIN32_WCE)
 	#include <intrin.h>
-	#ifndef _WIN64
-		#define __MMX__
-		#define __3dNOW__
+	#if defined(_M_IX86) || defined(_M_X64)
+		#ifndef _WIN64
+			#define __MMX__
+			#define __3dNOW__
+		#endif
+		#define __SSE__
+		#define __SSE2__
+	#elif defined(_M_ARM64)
+		// MSVC targets AArch64 with NEON but does not define the ACLE macro.
+		#ifndef __ARM_NEON
+			#define __ARM_NEON 1
+		#endif
+		#include <arm_neon.h>
 	#endif
-	#define __SSE__
-	#define __SSE2__
 #elif defined(__MINGW64_VERSION_MAJOR)
 	#include <intrin.h>
 #else
@@ -54,5 +62,13 @@
 	#endif
 	#ifdef __SSE2__
 		#include <emmintrin.h>
+	#endif
+	// AArch64 always has NEON
+	// 32-bit ARM has it when the build enables it
+	// for rare cases of 32-bit ARM having access
+	// to NEON, like raspberry pi 32-bit OS on
+	// a raspberry pi 3 or 4
+	#ifdef __ARM_NEON
+		#include <arm_neon.h>
 	#endif
 #endif
