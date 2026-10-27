@@ -82,14 +82,14 @@ SectorSnapshotManager *CL_GetSectorSnapshotManager(sector_t *sector)
 	return NULL;
 }
 
-bool CL_SectorHasSnapshots(sector_t *sector)
-{
-	SectorSnapshotManager *mgr = CL_GetSectorSnapshotManager(sector);
-
-	return (mgr && !mgr->empty());
-}
-
-bool CL_PrepareSectorSnapshots(int snapBasisServerTic, const player_t& player, ActivePredictingSectorsVector& io_predictingSectors)
+// Identifies which of the moving sectors are ready to predict based on previously-received snapshots
+// and updates the given o_predictingSectors out-parameter accordingly.
+//
+// Also performs cleanup on the master list of moving sectors when sectors have finished their movement.
+//
+// Returns true if sector prediction is ready to proceed;  false if not, in which case,
+// rollback cannot be performed and we must proceed with dead reckoning.
+bool CL_PrepareSectorSnapshots(int snapBasisServerTic, const player_t& player, ActivePredictingSectorsVector& o_predictingSectors)
 {
 	std::list<movingsector_t>::iterator itr;
 	itr = movingsectors.begin();
@@ -128,7 +128,7 @@ bool CL_PrepareSectorSnapshots(int snapBasisServerTic, const player_t& player, A
 				{
 					// Snapshots have been received for this sector recently, so
 					// record it as ready for rollback-based prediction.
-					io_predictingSectors.push_back(itr);
+					o_predictingSectors.push_back(itr);
 					s_currentPredictingSectorNumbers.insert(sectornum);
 				}
 			}
@@ -176,28 +176,23 @@ bool CL_PrepareSectorSnapshots(int snapBasisServerTic, const player_t& player, A
 //
 // CL_ResetSectors
 //
-// Moves predicting sectors to the given server snapshot tic.
-// Also performs cleanup on the list of predicting sectors when
-// sectors have finished their movement.
-//
-// Returns true if sector prediction is ready to proceed;  false if not, in which case,
-// rollback cannot be performed and we must proceed with dead reckoning.
+// Moves the given predicting sectors to the given server snapshot tic.
+// Assumes that there was a previous, successful call to CL_PrepareSectorSnapshots.
 void CL_ResetSectors(int snapBasisServerTic, ActivePredictingSectorsVector& io_predictingSectors)
 {
 	for (auto& iter : io_predictingSectors)
 	{
 		// We've already vetted the manager and snapshot in the preparation phase.
-		SectorSnapshotManager*  manager = CL_GetSectorSnapshotManager(iter->sector);
-		SectorSnapshot          snap    = manager->getSnapshot(snapBasisServerTic);
+		const SectorSnapshotManager*  manager = CL_GetSectorSnapshotManager(iter->sector);
+		const SectorSnapshot          snap    = manager->getSnapshot(snapBasisServerTic);
 		snap.toSector(iter->sector);
 	}
 }
 
+// Runs the given sector's floor and/or ceiling thinker, advancing its state by one tic.
+// If the player was moved by the sector, the sector's number is recorded as having influenced
+// the player's position.
 //
-// CL_PredictSectors
-//
-//
-
 void CL_PredictSector(const player_t& player, const movingsector_t& movsector)
 {
 	sector_t *sector = movsector.sector;
@@ -229,6 +224,9 @@ void CL_PredictSector(const player_t& player, const movingsector_t& movsector)
 	}
 }
 
+// Runs prediction for the sectors included in the given predicting-sectors vector.
+// This is intended for advancing snapshot-based rollback prediction/reconciliation
+// sectors that can do so.
 void CL_PredictSectors(const player_t& player, const ActivePredictingSectorsVector& io_predictingSectors)
 {
 	for (auto& iter : io_predictingSectors)
@@ -237,6 +235,9 @@ void CL_PredictSectors(const player_t& player, const ActivePredictingSectorsVect
 	}
 }
 
+// Runs prediction for all sectors, regardless of whether or not they have snapshots.
+// This is intended for the canonical, final predictive and/or dead-reckoning step of sectors in the current tic,
+// where the result of this operation is what will ultimately be fed to the renderer and subsequent tics.
 void CL_PredictAllSectors(const player_t& player)
 {
 	for (const auto& movsector : movingsectors)
