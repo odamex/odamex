@@ -361,28 +361,7 @@ bool R_FitRotated(int64_t tx64, int64_t ty64, fixed_t& tx, fixed_t& ty)
 }
 
 //
-// R_RotatePointSafe
-//
-// Rotates world space into camera space, but has special provisions to
-// keep the calculation 64-bit and to rescale the result if it is too large
-// to fit in a fixed_t.
-//
-// R_RotatePoint takes 16.16 fixed point as input, but it can overflow if it
-// tries to rotate world space in a sightline longer than ~32767 fracunits.
-//
-// Returns true if the result had to be rescaled.
-//
-bool R_RotatePointSafe(int64_t x, int64_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
-{
-	const int index = ang >> ANGLETOFINESHIFT;
-	int64_t tx64 = 0;
-	int64_t ty64 = 0;
-	R_Rotate64(x, y, finesine[index], finecosine[index], tx64, ty64);
-	return R_FitRotated(tx64, ty64, tx, ty);
-}
-
-//
-// R_RotateToView64 / R_RotateToViewSafe
+// R_RotateToView64
 //
 // Rotate a view-relative world offset into camera space (tx right, ty
 // forward) using viewsin/viewcos, the same fine-table entries the visplane
@@ -393,6 +372,18 @@ void R_RotateToView64(int64_t x, int64_t y, int64_t& tx, int64_t& ty)
 	R_Rotate64(x, y, viewcos, viewsin, tx, ty);
 }
 
+//
+// R_RotateToViewSafe
+//
+// Rotates world space into camera space, but has special provisions to
+// keep the calculation 64-bit and to rescale the result if it is too large
+// to fit in a fixed_t.
+//
+// R_RotateToViewSafe takes 16.16 fixed point as input, but it can overflow if it
+// tries to rotate world space in a sightline longer than ~32767 fracunits.
+//
+// Returns true if the result had to be rescaled.
+//
 bool R_RotateToViewSafe(int64_t x, int64_t y, fixed_t& tx, fixed_t& ty)
 {
 	int64_t tx64 = 0;
