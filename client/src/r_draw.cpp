@@ -36,6 +36,7 @@
 #include "r_intrin.h"
 #include "r_drawt_sse2.h"
 #include "r_drawt_altivec.h"
+#include "r_drawt_neon.h"
 
 #include "c_dispatch.h"
 #include "m_alloc.h"
@@ -1108,6 +1109,9 @@ template<bool SLOPELIGHT> using SlopeColumnVector = SlopeColumnSSE2<SLOPELIGHT>;
 #define R_HAVE_SLOPE_COLUMN_VECTOR
 #elif defined(__ALTIVEC__)
 template<bool SLOPELIGHT> using SlopeColumnVector = SlopeColumnAltivec<SLOPELIGHT>;
+#define R_HAVE_SLOPE_COLUMN_VECTOR
+#elif defined(R_HAVE_NEON_SLOPES)
+template<bool SLOPELIGHT> using SlopeColumnVector = SlopeColumnNEON<SLOPELIGHT>;
 #define R_HAVE_SLOPE_COLUMN_VECTOR
 #endif
 
@@ -2337,7 +2341,8 @@ enum r_optimize_kind {
 	OPTIMIZE_NONE,
 	OPTIMIZE_SSE2,
 	OPTIMIZE_MMX,
-	OPTIMIZE_ALTIVEC
+	OPTIMIZE_ALTIVEC,
+	OPTIMIZE_NEON
 };
 
 static r_optimize_kind optimize_kind = OPTIMIZE_NONE;
@@ -2350,6 +2355,7 @@ static const char *get_optimization_name(r_optimize_kind kind)
 		case OPTIMIZE_SSE2:    return "sse2";
 		case OPTIMIZE_MMX:     return "mmx";
 		case OPTIMIZE_ALTIVEC: return "altivec";
+		case OPTIMIZE_NEON:    return "neon";
 		case OPTIMIZE_NONE:
 		default:
 			return "none";
@@ -2400,6 +2406,10 @@ static bool detect_optimizations()
 	if (SDL_HasAltiVec())
 		optimizations_available.push_back(OPTIMIZE_ALTIVEC);
 	#endif
+	#ifdef __ARM_NEON
+	if (SDL_HasNEON())
+		optimizations_available.push_back(OPTIMIZE_NEON);
+	#endif
 
 	return true;
 }
@@ -2434,6 +2444,8 @@ CVAR_FUNC_IMPL(r_optimize)
 		optimize_kind = OPTIMIZE_MMX;
 	else if (stricmp(val, "altivec") == 0 && R_IsOptimizationAvailable(OPTIMIZE_ALTIVEC))
 		optimize_kind = OPTIMIZE_ALTIVEC;
+	else if (stricmp(val, "neon") == 0 && R_IsOptimizationAvailable(OPTIMIZE_NEON))
+		optimize_kind = OPTIMIZE_NEON;
 	else if (stricmp(val, "detect") == 0)
 		// Default to the most preferred:
 		optimize_kind = optimizations_available.back();
@@ -2504,6 +2516,18 @@ void R_InitVectorizedDrawers()
 		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_ALTIVEC;
 		have_vector_slopes      = true;
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
+	}
+	#endif
+	#ifdef __ARM_NEON
+	if (optimize_kind == OPTIMIZE_NEON)
+	{
+		R_DrawLevelGroupD       = R_DrawLevelGroupD_NEON;
+		R_DrawColumnQuadD       = R_DrawColumnD_NEON;
+		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_NEON;
+		#ifdef R_HAVE_NEON_SLOPES
+		have_vector_slopes      = true;
+		#endif
+		r_dimpatchD             = r_dimpatchD_NEON;
 	}
 	#endif
 

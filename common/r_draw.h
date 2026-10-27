@@ -414,6 +414,13 @@ void R_DrawLevelGroupD_ALTIVEC(rendercontext_t& ctx);
 void r_dimpatchD_ALTIVEC(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 
+#ifdef __ARM_NEON
+void R_DrawColumnD_NEON(rendercontext_t& ctx);
+void R_DrawTranslucentColumnD_NEON(rendercontext_t& ctx);
+void R_DrawLevelGroupD_NEON(rendercontext_t& ctx);
+void r_dimpatchD_NEON(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
+#endif
+
 // Vectorizable function pointers:
 extern void (*R_DrawLevelGroupD)(rendercontext_t&);
 extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);

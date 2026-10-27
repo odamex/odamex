@@ -901,7 +901,7 @@ CVAR_FUNC_DECL(	vid_filter, "", "Set render scale quality setting for SDL 2.0, o
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Optimize rendering functions based on CPU vectorization support
-// Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.
+// Can be of "detect" or "none" or "mmx","sse2","altivec","neon" depending on availability; case-insensitive.
 CVAR_FUNC_DECL(	r_optimize, "detect", "Rendering optimizations",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
