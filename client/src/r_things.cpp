@@ -160,7 +160,7 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
 		dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
-			+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale);
+			+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - (FRACUNIT / 2), dcol.iscale);
 
 		if (dcol.texturefrac < 0)
 		{
@@ -313,7 +313,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	dcol.iscale = 0xffffffffu / (unsigned)vis->yscale;
 	dcol.texturemid = vis->texturemid;
 	spryscale = vis->yscale;
-	sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
+	sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
 
 	// [SL] set up the array that indicates which patch column to use for each screen column
 	fixed_t colfrac = vis->startfrac;
@@ -354,7 +354,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	// and store in t1 & t2
 	fixed_t tx, ty, t1xold;
 	// too far from the camera to draw anyway if its distance is greater than ~32767 fracunits.
-	if (R_RotatePointSafe(int64_t(x) - viewx, int64_t(y) - viewy, ANG90 - viewangle, tx, ty))
+	if (R_RotateToViewSafe(static_cast<int64_t>(x) - viewx, static_cast<int64_t>(y) - viewy, tx, ty))
 		return NULL;
 
 	v2fixed_t t1, t2;
@@ -890,7 +890,8 @@ void R_DrawPlayerSprites()
 	{
 		int i;
 		pspdef_t* psp;
-		int centerhack = centery;
+		const int centerhack = centery;
+		const fixed_t centerfrachack = centeryfrac;
 
 		centery = (viewheight >> 1) + 1;	// Ch0wW : Fix for the weapon sprite's offset.
 		centeryfrac = centery << FRACBITS;
@@ -905,7 +906,7 @@ void R_DrawPlayerSprites()
 		}
 
 		centery = centerhack;
-		centeryfrac = centerhack << FRACBITS;
+		centeryfrac = centerfrachack;
 	}
 }
 

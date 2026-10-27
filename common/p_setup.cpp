@@ -55,6 +55,8 @@
 #include "g_musinfo.h"
 #include "r_sky.h"
 #include "p_compdb.h"
+#include "c_dispatch.h"
+#include "d_player.h"
 
 
 void SV_PreservePlayer(player_t &player);
@@ -148,6 +150,62 @@ bool			rejectempty;
 std::vector<mapthing2_t> DeathMatchStarts;
 std::vector<mapthing2_t> playerstarts;
 std::vector<mapthing2_t> voodoostarts;
+
+//
+// dumpspawns
+//
+// Prints the player starts and voodoo starts.
+//
+// Runs on server and client, which should have the same logic.
+// Any disagreements is a bug.
+//
+
+// MERGE ALERT
+// Keep protobreak's changes.
+//
+BEGIN_COMMAND(dumpspawns)
+{
+	PrintFmt(PRINT_HIGH, "playerstarts ({} entries, sorted by player number)\n",
+	         ::playerstarts.size());
+
+	for (size_t i = 0; i < ::playerstarts.size(); i++)
+	{
+		const mapthing2_t& mt = ::playerstarts[i];
+
+		PrintFmt(PRINT_HIGH, "  [{}] player {} - type {} at {},{} angle {}\n", i,
+		         P_GetMapThingPlayerNumber(mt) + 1, mt.type, mt.x, mt.y, mt.angle);
+	}
+
+	PrintFmt(PRINT_HIGH, "voodoostarts ({} entries, in lump order)\n",
+	         ::voodoostarts.size());
+
+	for (size_t i = 0; i < ::voodoostarts.size(); i++)
+	{
+		const mapthing2_t& mt = ::voodoostarts[i];
+
+		PrintFmt(PRINT_HIGH, "  [{}] player {} - type {} at {},{}\n", i,
+		         P_GetMapThingPlayerNumber(mt) + 1, mt.type, mt.x, mt.y);
+	}
+
+	if (!::playerstarts.empty())
+	{
+		PrintFmt(PRINT_HIGH, "who gets what\n");
+
+		for (const player_t& pl : ::players)
+		{
+			if (!pl.ingame())
+				continue;
+
+			const mapthing2_t& start = P_GetPlayerStart(pl.id - 1);
+			const size_t index = &start - ::playerstarts.data();
+
+			PrintFmt(PRINT_HIGH, "  {} (id {}) -> playerstarts[{}], the player {} start\n",
+			         pl.userinfo.netname, pl.id, index,
+			         P_GetMapThingPlayerNumber(start) + 1);
+		}
+	}
+}
+END_COMMAND(dumpspawns)
 
 //
 // P_GetFirstAvailableSpawn
