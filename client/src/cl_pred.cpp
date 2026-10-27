@@ -608,7 +608,7 @@ bool CL_PredictWorld()
 	{
 		if (i >= inputTic)
 		{
-			if (CL_PredictLocalPlayer(std::max(i, predictionTic), i))   // std::max because inputTic *can* be behind predictionTic.
+			if (CL_PredictLocalPlayer(i, i))
 			{
 				playerHasBeenPredicted = true;
 			}
