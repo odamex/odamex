@@ -154,7 +154,7 @@ jobs:
     needs: pre_job
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08
       options: --privileged
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
@@ -190,7 +190,7 @@ jobs:
     needs: pre_job
     runs-on: ubuntu-24.04-arm
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08
       options: --privileged
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
