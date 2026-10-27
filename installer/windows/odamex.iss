@@ -94,12 +94,12 @@ Source: {#SourcePath}\OutX64\odamex.exe; DestDir: {app}; Flags: ignoreversion; C
 Source: {#SourcePath}\OutX64\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxbase332u_net_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxbase332u_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxbase332u_xml_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxmsw332u_core_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxmsw332u_html_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxmsw332u_xrc_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxbase334u_net_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxbase334u_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxbase334u_xml_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxmsw334u_core_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxmsw334u_html_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
+Source: {#SourcePath}\OutX64\wxmsw334u_xrc_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\redist\VC_redist.x64.exe; DestDir: {tmp}; Flags: dontcopy
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -138,6 +138,12 @@ Type: files; Name: "{app}\wxbase315u_xml_vc14x.dll"
 Type: files; Name: "{app}\wxmsw315u_core_vc14x.dll"
 Type: files; Name: "{app}\wxmsw315u_html_vc14x.dll"
 Type: files; Name: "{app}\wxmsw315u_xrc_vc14x.dll"
+Type: files; Name: "{app}\wxbase332u_net_vc14x_x64.dll"
+Type: files; Name: "{app}\wxbase332u_vc14x_x64.dll"
+Type: files; Name: "{app}\wxbase332u_xml_vc14x_x64.dll"
+Type: files; Name: "{app}\wxmsw332u_core_vc14x_x64.dll"
+Type: files; Name: "{app}\wxmsw332u_html_vc14x_x64.dll"
+Type: files; Name: "{app}\wxmsw332u_xrc_vc14x_x64.dll"
 
 [Icons]
 Name: {group}\Odamex Client; Filename: {app}\odamex.exe; WorkingDir: {app}
