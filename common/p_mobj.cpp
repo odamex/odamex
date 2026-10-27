@@ -670,7 +670,7 @@ void AActor::UpdateActorLists()
 		return;
 
 	// MBF Rules
-	if (flags & MF_COUNTKILL || type == MT_SKULL)
+	if (IsMonster())
 	{
 		if (IsFriendly())
 			s_friendlies.Append(this);
@@ -1243,14 +1243,15 @@ void AActor::RunThink ()
 	}
 	else
 	{
-		const bool respawnmonsters = (G_GetCurrentSkill().respawn_counter || sv_monstersrespawn);
+		const bool respawnmonsters = (G_GetCurrentSkill().respawn_counter != 0 or sv_monstersrespawn);
 
 		// check for nightmare respawn
-		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
+		if (not IsMonster() or not respawnmonsters or this->info->flags3 & MF3_NORESPAWN)
 			return;
 
 		// Ch0wW - Let the server handle it alone.
 		// (CHECKME: Does that interfere with vanilla demos?)
+		// should this just be !serverside?
 		if ((multiplayer && clientside && !serverside))
 			return;
 
@@ -1258,21 +1259,21 @@ void AActor::RunThink ()
 
 		int respawntimer = 0;
 
-		if (G_GetCurrentSkill().respawn_counter < 0)
+		if (G_GetCurrentSkill().respawn_counter != 0)
 			respawntimer = G_GetCurrentSkill().respawn_counter;
 		else
-			respawntimer = 12 * TICRATE;
+			respawntimer = this->info->minrespawntics;
 
 		if (movecount < respawntimer)
-		return;
+			return;
 
 		if (level.time & 31)
 			return;
 
-		if (P_Random (this) > 4)
+		if (P_Random(this) > this->info->respawndice)
 			return;
 
-		P_NightmareRespawn (this);
+		P_NightmareRespawn(this);
 	}
 }
 
@@ -1669,20 +1670,23 @@ static void P_WindThrustActor(AActor* mo)
 	{
 		static constexpr int windTab[3] = {2048*5, 2048*10, 2048*25};
 		const int special = mo->subsector->sector->special;
-		switch (special)
+		if (map_format.getZDoom())
 		{
-			case 40: case 41: case 42: // Wind_East
-				P_ThrustMobj (mo, 0, windTab[special - 40]);
-				break;
-			case 43: case 44: case 45: // Wind_North
-				P_ThrustMobj (mo, ANG90, windTab[special - 43]);
-				break;
-			case 46: case 47: case 48: // Wind_South
-				P_ThrustMobj (mo, ANG270, windTab[special - 46]);
-				break;
-			case 49: case 50: case 51: // Wind_West
-				P_ThrustMobj (mo, ANG180, windTab[special - 49]);
-				break;
+			switch (special)
+			{
+				case 40: case 41: case 42: // Wind_East
+					P_ThrustMobj (mo, 0, windTab[special - 40]);
+					break;
+				case 43: case 44: case 45: // Wind_North
+					P_ThrustMobj (mo, ANG90, windTab[special - 43]);
+					break;
+				case 46: case 47: case 48: // Wind_South
+					P_ThrustMobj (mo, ANG270, windTab[special - 46]);
+					break;
+				case 49: case 50: case 51: // Wind_West
+					P_ThrustMobj (mo, ANG180, windTab[special - 49]);
+					break;
+			}
 		}
 	}
 }
@@ -3725,21 +3729,28 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// Filter mapthings based on the gamemode
-	if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
+	MapThingFlags spawn_mask;
+	if (not multiplayer)
 	{
-		if (!(mthing.flags & MTF_SINGLE))
-			return;
+		if (g_thingfilter == -1 or G_GetCurrentSkill().spawn_multi_coop_only)
+			spawn_mask = MTF_COOPERATIVE;
+		else if (G_GetCurrentSkill().spawn_multi)
+			spawn_mask = MTF_SINGLE | MTF_COOPERATIVE;
+		else
+			spawn_mask = MTF_SINGLE;
 	}
+	// should this also include CTF?
 	else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
 	{
-		if (!(mthing.flags & MTF_DEATHMATCH))
-			return;
+		spawn_mask = MTF_DEATHMATCH;
 	}
 	else if (G_IsCoopGame())
 	{
-		if (!(mthing.flags & MTF_COOPERATIVE))
-			return;
+		spawn_mask = MTF_COOPERATIVE;
 	}
+
+	if (not (mthing.flags & combo(spawn_mask)))
+		return;
 
 	if (g_thingfilter == 3 && P_IsPickupableThing(mthing.type))
 		return;
@@ -3859,36 +3870,18 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (!G_IsCoopGame() && info->flags & MF_NOTDMATCH)
 		return;
 
-	// don't spawn deathmatch weapons in offline single player mode
+	// filter out extra weapons in coop
+	if (g_thingfilter == 1 and info->hasWeaponPickup())
 	{
-		switch (type)
-		{
-		case MT_CHAINGUN:
-		case MT_SHOTGUN:
-		case MT_SUPERSHOTGUN:
-		case MT_MISC25: // BFG
-		case MT_MISC26: // chainsaw
-		case MT_MISC27: // rocket launcher
-		case MT_MISC28: // plasma gun
-			if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
-			{
-				if ((mthing.flags & MTF_DEATHMATCH) && !(mthing.flags & MTF_SINGLE))
-					return;
-			}
-			else
-			{
-				if ((mthing.flags & MTF_FILTER_COOPWPN))
-					return;
-			}
-			break;
-		default:
-			break;
-		}
+		// nested just for slightly more readability than a big long condition
+		if (multiplayer and G_IsCoopGame() and not (mthing.flags & MTF_SINGLE))
+			return;
 	}
+
 	// [csDoom] don't spawn any monsters
-	if (sv_nomonsters || !serverside)
+	if (sv_nomonsters or not serverside)
 	{
-		if (type == MT_SKULL || (info->flags & MF_COUNTKILL) )
+		if (info->isMonster())
 		{
 			return;
 		}
@@ -3958,7 +3951,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// [AM] Adjust monster health based on server setting
-	if ((type == MT_SKULL || (info->flags & MF_COUNTKILL)) && sv_monstershealth != 1.0f)
+	if (info->isMonster() and sv_monstershealth != 1.0f)
 		mobj->health *= sv_monstershealth;
 
 	if (mobj->tics > 0)

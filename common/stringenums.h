@@ -712,9 +712,21 @@ inline const OString OMULTI8 = "OMULTI8"_os;
 inline const OString OMULTI9 = "OMULTI9"_os;
 inline const OString OMULTI10 = "OMULTI10"_os;
 inline const OString OMULTI11 = "OMULTI11"_os;
+inline const OString ID24_GOTINCINERATOR = "ID24_GOTINCINERATOR"_os;
+inline const OString ID24_GOTCALAMITYBLADE = "ID24_GOTCALAMITYBLADE"_os;
+inline const OString ID24_GOTFUELCAN = "ID24_GOTFUELCAN"_os;
+inline const OString ID24_GOTFUELTANK = "ID24_GOTFUELTANK"_os;
+inline const OString ID24_COLOR_GREEN = "ID24_COLOR_GREEN"_os;
+inline const OString ID24_COLOR_INDIGO = "ID24_COLOR_INDIGO"_os;
+inline const OString ID24_COLOR_BROWN = "ID24_COLOR_BROWN"_os;
+inline const OString ID24_COLOR_RED = "ID24_COLOR_RED"_os;
+inline const OString ID24_COLOR_YELLOW = "ID24_COLOR_YELLOW"_os;
+inline const OString ID24_COLOR_BLUE = "ID24_COLOR_BLUE"_os;
+inline const OString ID24_COLOR_NAVY = "ID24_COLOR_NAVY"_os;
+inline const OString ID24_COLOR_MAGENTA = "ID24_COLOR_MAGENTA"_os;
 
 // Contains every original string in its proper order.
-inline const OString* const stringIndexes[] = {
+inline std::array stringIndexes = std::to_array<const OString* const>({
     &D_DEVSTR,
     &D_CDROM,
     &PRESSKEY,
@@ -1401,4 +1413,16 @@ inline const OString* const stringIndexes[] = {
     &OMULTI9,
     &OMULTI10,
     &OMULTI11,
-};
+    &ID24_GOTINCINERATOR,
+    &ID24_GOTCALAMITYBLADE,
+    &ID24_GOTFUELCAN,
+    &ID24_GOTFUELTANK,
+    &ID24_COLOR_GREEN,
+    &ID24_COLOR_INDIGO,
+    &ID24_COLOR_BROWN,
+    &ID24_COLOR_RED,
+    &ID24_COLOR_YELLOW,
+    &ID24_COLOR_BLUE,
+    &ID24_COLOR_NAVY,
+    &ID24_COLOR_MAGENTA,
+});

@@ -903,7 +903,7 @@ void P_AddHealthPool(AActor* mo)
 		return;
 
 	// Counts as a monster?
-	if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
+	if (not mo->IsMonster())
 		return;
 
 	// Mark as part of the health pool for cleanup later
@@ -939,7 +939,7 @@ void P_AddDamagePool(AActor* mo, const int damage)
 		return;
 
 	// Counts as a monster?
-	if (not (mo->flags & MF_COUNTKILL or mo->type == MT_SKULL))
+	if (not mo->IsMonster())
 		return;
 
 	::g_HordeDirector.addBossDamage(damage);

@@ -376,21 +376,21 @@ bool P_IsVisible(const AActor& actor, const AActor& mo, const bool allaround)
 
 bool PIT_FindTarget(AActor& mo, AActor& actor, bool allaround)
 {
-	if (!(mo.health > 0 && (mo.flags & MF_COUNTKILL || mo.type == MT_SKULL)))
+	if (not (mo.health > 0 and mo.IsMonster()))
 		return true;
 
 	// If the monster is already engaged in a one-on-one attack
 	// with a healthy friend, don't attack around 60% the time
 	const AActor* targ = mo.target;
-	if (targ && targ->target == &mo && P_Random() > 100 &&
-		!P_IsFriendlyThing(targ, &mo) &&
+	if (targ and targ->target == &mo and P_Random() > 100 and
+		not P_IsFriendlyThing(targ, &mo) and
 		targ->health * 2 >= targ->info->spawnhealth)
 			return true;
 
 	if (P_IsFriendlyThing(&mo, &actor))
 		return true;
 
-	if (!P_IsVisible(actor, mo, allaround))
+	if (not P_IsVisible(actor, mo, allaround))
 		return true;
 
 	actor.lastenemy = actor.target; // Remember previous target
@@ -3711,8 +3711,7 @@ int P_Massacre()
 	TThinkerIterator<AActor> it;
 	while ( (actor = it.Next()) )
 	{
-		if ((actor->flags & MF_SHOOTABLE) && (actor->flags & MF_COUNTKILL ||
-		    (actor->type == MT_SKULL)))
+		if ((actor->flags & MF_SHOOTABLE) and actor->IsMonster())
 		{
 			if (actor->health > 0)
 			{

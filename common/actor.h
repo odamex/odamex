@@ -366,7 +366,8 @@ public:
 	// due to locality.
 	ActorFlags1		flags  = ActorFlags1::none_set();
 	ActorFlags2		flags2 = ActorFlags2::none_set(); // Heretic flags
-	ActorFlags3		flags3 = ActorFlags3::none_set(); // MBF21 flags
+	ActorFlags3		flags3 = ActorFlags3::none_set(); // MBF21 and ID24 flags
+	ActorFlags4		flags4 = ActorFlags4::none_set(); // MBF2y flags
 	ActorOFlags		oflags = ActorOFlags::none_set(); // Odamex flags
 	int				statusflags = 0; // Flags indicating a players status to other players
 	int 			health = 0;
@@ -584,6 +585,7 @@ public:
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
 	void ResetFlagsToDefault();
 
+	[[nodiscard]] OUtil::SafeBool IsMonster() const { return flags & MF_COUNTKILL or flags4 & MF4_ISMONSTER; }
 	[[nodiscard]] OUtil::SafeBool IsFriendly() const { return flags & MF_FRIEND; }
 	void SetFriendly(OUtil::SafeBool isFriendly, const AActor* owner);
 	void UpdateActorLists();

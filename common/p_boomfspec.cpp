@@ -82,6 +82,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		case MT_TROOPSHOT:
 		case MT_HEADSHOT:
 		case MT_BRUISERSHOT:
+		case MT_PLASMA1: // killough 8/28/98: exclude beta fireballs
+		case MT_PLASMA2:
 			return false;
 			break;
 

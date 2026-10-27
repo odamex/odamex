@@ -35,12 +35,13 @@
 
 #include "i_system.h"
 #include "m_stacktrace.h"
+
+#include <algorithm>
+#include <memory>
 #include <span>
 #include <functional>
 #include <unordered_map>
 #include <vector>
-#include <typeinfo>
-#include <optional>
 #include <iterator>
 
 // Forward declarations:
@@ -177,7 +178,7 @@ public:
 
 	// TODO: add overload that takes a lambda to allow geting the index from the objects themselves instead of assuming a contiguous range
 	// or add some sort of traits type that can be specialized for such behaviors
-	void insert(std::span<ObjType> objs, IdxType start_idx)
+	void insert(std::span<const ObjType> objs, IdxType start_idx)
 	{
 		IdxType idx = start_idx;
 		reserve(m_lookuptable.size() + objs.size()); // reserve is not additive
@@ -185,7 +186,7 @@ public:
 			insert(obj, idx++);
 	}
 
-	void insert(std::span<const char*> objs, IdxType start_idx)
+	void insert(std::span<const char* const> objs, IdxType start_idx)
 	requires std::same_as<ObjType, std::string>
 	{
 		IdxType idx = start_idx;
@@ -208,17 +209,22 @@ public:
 	const_iterator cend() const { return this->m_lookuptable.end(); }
 
 	// Sort vector and rebuild map
-	void rebuildMap(std::function<bool(const ObjType&, const ObjType&)> sorter, std::function<IdxType(const ObjType&)> indexgetter)
+	template <typename Getter>
+	requires std::is_invocable_r_v<IdxType, Getter, const ObjType&>
+	// we want to invoke them as lvalues
+	// but using const& would force const lambdas and & wouldn't allow temporaries
+	// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+	void rebuildMap(std::predicate<const ObjType&, const ObjType&> auto&& sorter, Getter&& indexgetter)
 	{
 		std::vector<ObjType*> temp{};
 		temp.reserve(m_inordertable.size());
-		std::transform(m_inordertable.begin(), m_inordertable.end(), std::back_inserter(temp), [](const auto& p) { return p.get(); });
-		std::sort(temp.begin(), temp.end(), [&](const ObjType* lhs, const ObjType* rhs){ return sorter(*lhs, *rhs); });
+		std::ranges::transform(m_inordertable, std::back_inserter(temp), [](const auto& p) { return p.get(); });
+		std::ranges::sort(temp, [&](const ObjType* lhs, const ObjType* rhs){ return sorter(*lhs, *rhs); });
 		m_lookuptable.clear();
 		for (ObjType* p : temp)
 		{
 			const IdxType index = indexgetter(*p);
-			if constexpr (std::is_same_v<ObjType, mobjinfo_t> || std::is_same_v<ObjType, mobjinfo_t*>)
+			if constexpr (std::is_same_v<ObjType, mobjinfo_t> or std::is_same_v<ObjType, mobjinfo_t*>)
 			{
 				if (m_lookuptable.find(index) == m_lookuptable.end())
 					m_lookuptable[index] = p;
