@@ -341,20 +341,20 @@ void CL_PredictSpectator()
 // CL_PredictLocalPlayer
 //
 //
-bool CL_PredictLocalPlayer(int predtic, int inputTic)
+bool CL_PredictLocalPlayer(int predictionTic)
 {
 	player_t& player = consoleplayer();
 
-	if (!player.ingame() || !player.mo || player.tic >= predtic)
+	if (!player.ingame() || !player.mo || player.tic >= predictionTic)
 		return false;
 
 	// Restore the angle, viewheight, etc for the player
-	P_SetPlayerSnapshotNoPosition(player, s_savedLocalPlayerSnaps[predtic % MAXSAVETICS]);
+	P_SetPlayerSnapshotNoPosition(player, s_savedLocalPlayerSnaps[predictionTic % MAXSAVETICS]);
 
 	// Note that we allow the caller to specify the input tic separately so
 	// that we can predict what happens when multiple inputs are applied to
 	// the same player snapshot, which sometimes happens on the server.
-	const odaproto::clc::PlayerInput& netcmd = localcmds[inputTic % MAXSAVETICS];
+	const odaproto::clc::PlayerInput& netcmd = localcmds[predictionTic % MAXSAVETICS];
 	CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
 
 	if (not predicting)
@@ -608,7 +608,7 @@ bool CL_PredictWorld()
 	{
 		if (i >= inputTic)
 		{
-			if (CL_PredictLocalPlayer(i, i))
+			if (CL_PredictLocalPlayer(i))
 			{
 				playerHasBeenPredicted = true;
 			}
@@ -680,7 +680,7 @@ bool CL_PredictWorld()
 	// Now we're doing the big final canonical client side update of player state,
 	// all thinkers, and sectors.  Disable the predicting control and do the gametic.
 	predicting = false;
-	CL_PredictLocalPlayer(gametic, gametic);
+	CL_PredictLocalPlayer(gametic);
 
 	if (not mobjsHaveBeenPredicted)
 	{
