@@ -462,8 +462,8 @@ static void R_CheckClippedSegForFakeFlat(const seg_t* line)
 
 	// segs entirely behind the view plane cannot occupy the view
 	v2fixed64_t t1, t2;
-	R_RotatePoint64(int64_t(line->v1->x) - viewx, int64_t(line->v1->y) - viewy, ANG90 - viewangle, t1.x, t1.y);
-	R_RotatePoint64(int64_t(line->v2->x) - viewx, int64_t(line->v2->y) - viewy, ANG90 - viewangle, t2.x, t2.y);
+	R_RotateToView64(static_cast<int64_t>(line->v1->x) - viewx, static_cast<int64_t>(line->v1->y) - viewy, t1.x, t1.y);
+	R_RotateToView64(static_cast<int64_t>(line->v2->x) - viewx, static_cast<int64_t>(line->v2->y) - viewy, t2.x, t2.y);
 	if (t1.y < 0 && t2.y < 0)
 		return;
 
@@ -514,8 +514,8 @@ void R_AddLine (const seg_t *line)
 	// keeping full 64-bit precision (t1, t2) so distant walls on huge maps
 	// (Planisphere 2) do not lose precision.
 	v2fixed64_t t1, t2;
-	R_RotatePoint64(int64_t(line->v1->x) - viewx, int64_t(line->v1->y) - viewy, ANG90 - viewangle, t1.x, t1.y);
-	R_RotatePoint64(int64_t(line->v2->x) - viewx, int64_t(line->v2->y) - viewy, ANG90 - viewangle, t2.x, t2.y);
+	R_RotateToView64(static_cast<int64_t>(line->v1->x) - viewx, static_cast<int64_t>(line->v1->y) - viewy, t1.x, t1.y);
+	R_RotateToView64(static_cast<int64_t>(line->v2->x) - viewx, static_cast<int64_t>(line->v2->y) - viewy, t2.x, t2.y);
 
 	// Clip the line seg to the viewing window
 	int32_t lclip, rclip;
@@ -553,7 +553,12 @@ void R_AddLine (const seg_t *line)
 	static constexpr int64_t maxwalldist = int64_t(16384) * FRACUNIT;
 	const fixed_t d1 = static_cast<fixed_t>(t1.y > maxwalldist ? maxwalldist : t1.y);
 	const fixed_t d2 = static_cast<fixed_t>(t2.y > maxwalldist ? maxwalldist : t2.y);
-	R_PrepWall(w1.x, w1.y, w2.x, w2.y, d1, d2, x1, x2);
+
+	// within columns x1 and x2 + 1, find the clipped endpoints
+	// R_PrepWall re-anchors its per column interpolation at the column centers
+	const double fracscreenx1 = R_ProjectPointXFrac(t1.x, t1.y);
+	const double fracscreenx2 = R_ProjectPointXFrac(t2.x, t2.y);
+	R_PrepWall(w1.x, w1.y, w2.x, w2.y, d1, d2, fracscreenx1, fracscreenx2, x1, x2);
 
 	// [SL] Check for single-sided line, closed doors or other scenarios that
 	// would make this line seg solid.
@@ -671,8 +676,8 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	// translate the bounding box vertices from world-space to camera-space
 	// and store in (t1.x, t1.y) and (t2.x, t2.y)
 	// if we scale it down here, don't let it cull any bsp subtrees
-	if (R_RotatePointSafe(int64_t(xl) - viewx, int64_t(yl) - viewy, ANG90 - viewangle, t1.x, t1.y) ||
-	    R_RotatePointSafe(int64_t(xh) - viewx, int64_t(yh) - viewy, ANG90 - viewangle, t2.x, t2.y))
+	if (R_RotateToViewSafe(static_cast<int64_t>(xl) - viewx, static_cast<int64_t>(yl) - viewy, t1.x, t1.y) ||
+	    R_RotateToViewSafe(static_cast<int64_t>(xh) - viewx, static_cast<int64_t>(yh) - viewy, t2.x, t2.y))
 		return true;
 
 	v2fixed_t box_pts[4][2];
