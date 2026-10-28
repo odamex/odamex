@@ -345,7 +345,7 @@ bool CL_PredictLocalPlayer(int predictionTic)
 {
 	player_t& player = consoleplayer();
 
-	if (!player.ingame() || !player.mo || player.tic >= predictionTic)
+	if (not player.ingame() or not player.mo or player.tic >= predictionTic)
 		return false;
 
 	// Restore the angle, viewheight, etc for the player
@@ -575,7 +575,7 @@ bool CL_PredictWorld()
 	{
 		// Not ready for rollback-based prediction+reconciliation.
 		// Set tic values that force us to just simply dead reckon into gametic.
-		predictionTic      = gametic;
+		predictionTic      = gametic;       // NOLINT (clang-analyzer-deadcode.DeadStores): it *is* used if we enable ODAMEX_PREDICTION_DEBUG
 		inputTic           = gametic;
 		worldPredictionTic = gametic;
 		startingLocalTic   = gametic;
