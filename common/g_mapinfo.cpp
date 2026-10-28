@@ -1297,6 +1297,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "sucktime", MIType_EatNext },
 			{ "enterpic", MIType_InterLumpName, ref.enterpic, ref.enterscript },
 			{ "exitpic", MIType_InterLumpName, ref.exitpic, ref.exitscript },
+			{ "interpic", MIType_InterLumpName, ref.exitpic, ref.exitscript }, // zdoom alias for exitpic
 			{ "enteranim", MIType_LumpName, ref.enteranim },
 			{ "exitanim", MIType_LumpName, ref.exitanim },
 			{ "translator", MIType_EatNext },

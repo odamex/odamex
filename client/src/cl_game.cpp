@@ -197,6 +197,27 @@ CVAR_FUNC_IMPL(joy_freelook)
 	R_InitSkyMap();
 }
 
+CVAR_FUNC_IMPL(cl_noclip_spectator)
+{
+	player_t& c = consoleplayer();
+	player_t& d = displayplayer();
+
+	if (c.spectator and not netdemo.isInPlayback())
+	{
+		if (var.asInt())
+			c.cheats |= CF_NOCLIP;
+		else
+			c.cheats &= ~CF_NOCLIP;
+	}
+	if (d.isFreecam)
+	{
+		if (var.asInt())
+			d.cheats |= CF_NOCLIP;
+		else
+			d.cheats &= ~CF_NOCLIP;
+	}
+}
+
 char			demoname[256];
 
 extern bool		simulated_connection;
@@ -1736,8 +1757,6 @@ void G_DoLoadGame (void)
 
 	arc >> level.time;
 
-	P_SerializeMusInfo(arc);
-
 	for (i = 0; i < NUM_WORLDVARS; i++)
 	{
 		arc >> ACS_WorldVars[i];
@@ -1839,7 +1858,6 @@ void G_DoSaveGame()
 	P_SerializeHorde(arc);
 
 	arc << level.time;
-	P_SerializeMusInfo(arc);
 
 	for (int i = 0; i < NUM_WORLDVARS; i++)
 	{

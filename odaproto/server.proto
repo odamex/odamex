@@ -82,10 +82,9 @@ message SpawnMobj
 	uint32          spawn_flags     = 4;
 	uint32          target_netid    = 5;
 	repeated int32  args            = 6;
-	uint32          timebase_tic    = 7;
-	bool            is_spawn_tic    = 8;    // Indicates that the client must perform a spawn animation tic immediately.
-	optional uint32 corpse_color    = 9;
-	optional int32  corpse_team     = 10;
+	bool            is_spawn_tic    = 7;    // Indicates that the client must perform a spawn animation tic immediately.
+	optional uint32 corpse_color    = 8;
+	optional int32  corpse_team     = 9;
 }
 
 // svc_disconnectclient
@@ -167,7 +166,7 @@ message UpdateMobjWithMode
 {
 	UpdateMobj   update = 1;
 	MobjModeEnum mode   = 2;
-	uint32       state  = 3;
+	int32        state  = 3;
 	uint32       tics   = 4;
 }
 
