@@ -119,7 +119,7 @@ int       world_index = 0;
 float     world_index_accum = 0.0f;
 
 int       last_svgametic = 0;
-int       last_player_update = 0;
+int       lastEchoedClientTic = 0;
 
 bool      hasReceivedFullUpdate = false;
 bool      isReceivingFullUpdate = false;
@@ -312,7 +312,6 @@ void D_DoAdvanceDemo(void);
 void M_Ticker(void);
 
 size_t P_NumPlayersInGame();
-void G_PlayerReborn (player_t &player);
 void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill, int mod);
 void P_SetPsprite (player_t& player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
@@ -370,6 +369,8 @@ void CL_ResyncWorldIndex()
 {
 	world_index = CL_CalculateWorldIndexSync();
 	world_index_accum = 0.0f;
+
+	CL_ResetWorldPrediction();
 }
 
 void Host_EndGame(const char *msg)
@@ -584,12 +585,14 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 		CL_DrainSocket();
 	}
 
-	connected = false;
-	::last_svgametic = 0;
-	world_index      = 0;
+	connected             = false;
+	::lastEchoedClientTic = 0;
+	::last_svgametic      = 0;
+	world_index           = 0;
 
 	messenger = OdaMessenger{ pool };
 
+	CL_ResetWorldPrediction();
 	P_ClearAllNetIds();
 	s_canary.reset();
 	gameaction = ga_fullconsole;
@@ -2285,6 +2288,12 @@ MessageResultEnum CL_AcceptNetMessage()
 		}
 		return MessageResultEnum::ACCEPT;
 	}
+
+	// In this case, there is no new packet, but it's possible that the client has
+	// deferred messages on its own entirely in a previous tic.  We want to handle
+	// those even if there's no actual new packet off the network, so try to do so.
+	CL_ProcessDeferredCommands();
+
 	return MessageResultEnum::DEFER;
 }
 
@@ -2583,11 +2592,11 @@ static v3fixed_t CurrentDeltaFromSnapshot(const player_t& player, const PlayerSn
 //
 // CL_SimulatePlayers()
 //
-// Iterates through the players vector and loads the world_index snapshot
+// Iterates through the players vector and loads the given world_index snapshot
 // for all players except consoleplayer, as this is handled by the prediction
 // functions.
 //
-void CL_SimulatePlayers()
+void CL_SimulatePlayers(int serverTic)
 {
 	for (auto& player : players)
 	{
@@ -2598,11 +2607,11 @@ void CL_SimulatePlayers()
 		if (player.id == consoleplayer_id)
 			continue;
 
-		PlayerSnapshot snap = player.snapshots.getSnapshot(world_index);
+		PlayerSnapshot snap = player.snapshots.getSnapshot(serverTic);
 		if (snap.isValid())
 		{
 			// Examine the old position.  If it doesn't match the snapshot for the
-			// previous world_index, then old position was probably extrapolated
+			// previous serverTic, then old position was probably extrapolated
 			// and should be smoothly moved towards the corrected position instead
 			// of snapping to it.
 
@@ -2617,7 +2626,7 @@ void CL_SimulatePlayers()
 				player.mo->prevpitch = player.mo->pitch;
 
 				v3fixed_t offset = CurrentDeltaFromSnapshot(player,
-				                                            player.snapshots.getSnapshot(world_index - 1));
+				                                            player.snapshots.getSnapshot(serverTic - 1));
 
 				// The following block is there to "jailbreak" a remote player whose predicted mobj
 				// movement resulted in a substantial disagreement with the server for a relatively
@@ -2648,7 +2657,7 @@ void CL_SimulatePlayers()
 					int ticsAgo = 2;
 					while (ticsAgo <= EXCESSIVE_TIME)
 					{
-						const PlayerSnapshot historicalSnap = player.snapshots.getSnapshot(world_index - ticsAgo);
+						const PlayerSnapshot historicalSnap = player.snapshots.getSnapshot(serverTic - ticsAgo);
 
 							if (not (    historicalSnap.isValid()
 							     and historicalSnap.isContinuous()
@@ -2669,7 +2678,7 @@ void CL_SimulatePlayers()
 				{
 					#ifdef _SNAPSHOT_DEBUG_
 					PrintFmt(PRINT_HIGH, "Snapshot {}, Correcting extrapolation error of {}\n",
-					         world_index, dist >> FRACBITS);
+					         serverTic, dist >> FRACBITS);
 					#endif  // _SNAPSHOT_DEBUG_
 
 					static constexpr fixed_t correction_amount = FRACUNIT * 0.80f;
@@ -2767,7 +2776,6 @@ void CL_SimulateWorld()
 	netgraph.setWorldIndexSync(world_index - (last_svgametic - cl_interp));
 
 	CL_SimulateSectors();
-	CL_SimulatePlayers();
 
 	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
 	// slowing down or speeding up world_index
