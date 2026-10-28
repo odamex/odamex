@@ -445,6 +445,72 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 	}
 }
 
+// ============================================================================
+//
+// The texture upload
+//
+// ============================================================================
+
+//
+// R_StreamStoredLines8_SSE2
+//
+// Converts 8bpp stored lines through the palette into a 16-byte aligned
+// destination, four pixels at a time. Streaming stores don't read the
+// destination's lines in first.
+//
+void R_StreamStoredLines8_SSE2(argb_t* dest, const palindex_t* source, int destpitchpixels,
+                               int srcpitchpixels, int line_length, int line_count, const argb_t* palette)
+{
+	for (int line = 0; line < line_count; line++)
+	{
+		__m128i* out = reinterpret_cast<__m128i*>(dest);
+		int i = 0;
+
+		for (; i + 4 <= line_length; i += 4)
+			_mm_stream_si128(out++, _mm_setr_epi32(palette[source[i]], palette[source[i + 1]],
+			                                       palette[source[i + 2]], palette[source[i + 3]]));
+
+		for (; i < line_length; i++)
+			dest[i] = palette[source[i]];
+
+		dest += destpitchpixels;
+		source += srcpitchpixels;
+	}
+
+	// Drain the stores after we finish, very important for multithreaded contexts
+	// as the GPU may upload stale data without it.
+	_mm_sfence();
+}
+
+//
+// R_StreamStoredLines32_SSE2
+//
+// Copies 32bpp stored lines into a 16-byte aligned destination with streaming
+// stores, four pixels at a time.
+//
+void R_StreamStoredLines32_SSE2(argb_t* dest, const argb_t* source, int destpitchpixels,
+                                int srcpitchpixels, int line_length, int line_count)
+{
+	for (int line = 0; line < line_count; line++)
+	{
+		__m128i* out = reinterpret_cast<__m128i*>(dest);
+		int i = 0;
+
+		for (; i + 4 <= line_length; i += 4)
+			_mm_stream_si128(out++, _mm_loadu_si128(reinterpret_cast<const __m128i*>(source + i)));
+
+		for (; i < line_length; i++)
+			dest[i] = source[i];
+
+		dest += destpitchpixels;
+		source += srcpitchpixels;
+	}
+
+	// Drain the stores after we finish, very important for multithreaded contexts
+	// as the GPU may upload stale data without it.
+	_mm_sfence();
+}
+
 
 VERSION_CONTROL (r_drawt_sse2_cpp, "$Id$")
 

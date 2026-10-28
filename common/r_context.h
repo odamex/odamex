@@ -35,7 +35,7 @@
 
 class Texture;
 
-// TODO: This should be automatically determined using hardware checks.
+// A reasonable maximum for render slices
 static constexpr int MAXRENDERSLICES = 64;
 
 // must be a power of 2: visplane hash slot count -- killough

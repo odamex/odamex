@@ -399,6 +399,10 @@ void R_DrawColumnD_SSE2(rendercontext_t& ctx);
 void R_DrawTranslucentColumnD_SSE2(rendercontext_t& ctx);
 void R_DrawLevelGroupD_SSE2(rendercontext_t& ctx);
 void r_dimpatchD_SSE2(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
+void R_StreamStoredLines8_SSE2(argb_t* dest, const palindex_t* source, int destpitchpixels,
+                               int srcpitchpixels, int line_length, int line_count, const argb_t* palette);
+void R_StreamStoredLines32_SSE2(argb_t* dest, const argb_t* source, int destpitchpixels,
+                                int srcpitchpixels, int line_length, int line_count);
 #endif
 
 #ifdef __MMX__
@@ -412,6 +416,8 @@ void r_dimpatchD_MMX(IWindowSurface*, argb_t color, int alpha, int x1, int y1, i
 void R_DrawTranslucentColumnD_ALTIVEC(rendercontext_t& ctx);
 void R_DrawLevelGroupD_ALTIVEC(rendercontext_t& ctx);
 void r_dimpatchD_ALTIVEC(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
+void R_StreamStoredLines32_ALTIVEC(argb_t* dest, const argb_t* source, int destpitchpixels,
+                                   int srcpitchpixels, int line_length, int line_count);
 #endif
 
 #ifdef __ARM_NEON
@@ -419,11 +425,25 @@ void R_DrawColumnD_NEON(rendercontext_t& ctx);
 void R_DrawTranslucentColumnD_NEON(rendercontext_t& ctx);
 void R_DrawLevelGroupD_NEON(rendercontext_t& ctx);
 void r_dimpatchD_NEON(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
+void R_StreamStoredLines8_NEON(argb_t* dest, const palindex_t* source, int destpitchpixels,
+                               int srcpitchpixels, int line_length, int line_count, const argb_t* palette);
+void R_StreamStoredLines32_NEON(argb_t* dest, const argb_t* source, int destpitchpixels,
+                                int srcpitchpixels, int line_length, int line_count);
 #endif
 
 // Vectorizable function pointers:
 extern void (*R_DrawLevelGroupD)(rendercontext_t&);
 extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
+
+// The texture upload: copies line_count stored lines of line_length pixels to a
+// destination whose address and pitch are 16-byte aligned, converting 8bpp
+// through the palette.
+// NULL where the selected optimization is not available, and
+// IWindowSurface::copyLinesTo32 then copies using the C drawers.
+extern void (*R_StreamStoredLines8)(argb_t* dest, const palindex_t* source, int destpitchpixels,
+                                    int srcpitchpixels, int line_length, int line_count, const argb_t* palette);
+extern void (*R_StreamStoredLines32)(argb_t* dest, const argb_t* source, int destpitchpixels,
+                                     int srcpitchpixels, int line_length, int line_count);
 
 inline byte bosstable[256];
 inline byte friendtable[256];

@@ -380,6 +380,46 @@ void R_DrawLevelGroupD_ALTIVEC(rendercontext_t& ctx)
 	}
 }
 
+// ============================================================================
+//
+// The texture upload
+//
+// ============================================================================
+
+//
+// R_StreamStoredLines32_ALTIVEC
+//
+// Copies 32bpp stored lines into a 16-byte aligned destination, four pixels at
+// a time. stvxl is AltiVec's closest thing to a streaming store: it marks the
+// line least recently used, so it is the first to be evicted.
+//
+// There is no 8bpp version. AltiVec can't move a general register into a lane,
+// so four palette lookups would have to go through memory as words and come
+// back as a vector, defeating the purpose as it creates a stall.
+//
+void R_StreamStoredLines32_ALTIVEC(argb_t* dest, const argb_t* source, int destpitchpixels,
+                                   int srcpitchpixels, int line_length, int line_count)
+{
+	for (int line = 0; line < line_count; line++)
+	{
+		const unsigned int* const in = reinterpret_cast<const unsigned int*>(source);
+		const vu8 merge = vec_lvsl(0, in);
+		int i = 0;
+
+		for (; i + 4 <= line_length; i += 4)
+		{
+			const vu32 v = vec_perm(vec_ld(0, in + i), vec_ld(15, in + i), merge);
+			vec_stl(v, 0, reinterpret_cast<unsigned int*>(dest + i));
+		}
+
+		for (; i < line_length; i++)
+			dest[i] = source[i];
+
+		dest += destpitchpixels;
+		source += srcpitchpixels;
+	}
+}
+
 
 VERSION_CONTROL (r_drawt_altivec_cpp, "$Id$")
 

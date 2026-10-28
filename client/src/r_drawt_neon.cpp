@@ -359,6 +359,93 @@ void r_dimpatchD_NEON(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 	}
 }
 
+// ============================================================================
+//
+// The texture upload
+//
+// ============================================================================
+
+//
+// R_NeonStream
+//
+// Stores eight pixels to a 16-byte aligned dest with a non-temporal hint, as
+// one STNP of two q registers.
+//
+// That needs inline asm: clang's __builtin_nontemporal_store splits each vector
+// into a d register pair.
+// 
+// ARMv7 has no such store and MSVC has no intrinsic for it, so those get plain
+// stores.
+//
+// Unlike SSE2 there is no fence at the end: the non-temporal stores are
+// ordered like any other, so R_RunSlices handing the finished job back to the
+// main thread publishes them.
+//
+static forceinline void R_NeonStream(argb_t* dest, uint32x4_t lo, uint32x4_t hi)
+{
+	uint32_t* const out = reinterpret_cast<uint32_t*>(dest);
+
+#if defined(__aarch64__) && defined(__GNUC__)
+	asm("stnp %q1, %q2, %0" : "=Q"(*reinterpret_cast<uint32x4x2_t*>(out)) : "w"(lo), "w"(hi));
+#else
+	vst1q_u32(out, lo);
+	vst1q_u32(out + 4, hi);
+#endif
+}
+
+//
+// R_StreamStoredLines8_NEON
+//
+// Converts 8bpp stored lines through the palette into a 16-byte aligned
+// destination, eight pixels at a time.
+//
+void R_StreamStoredLines8_NEON(argb_t* dest, const palindex_t* source, int destpitchpixels,
+                               int srcpitchpixels, int line_length, int line_count, const argb_t* palette)
+{
+	for (int line = 0; line < line_count; line++)
+	{
+		int i = 0;
+
+		for (; i + 8 <= line_length; i += 8)
+		{
+			const palindex_t* const s = source + i;
+			R_NeonStream(dest + i, R_NeonGather(palette, s[0], s[1], s[2], s[3]),
+			                       R_NeonGather(palette, s[4], s[5], s[6], s[7]));
+		}
+
+		for (; i < line_length; i++)
+			dest[i] = palette[source[i]];
+
+		dest += destpitchpixels;
+		source += srcpitchpixels;
+	}
+}
+
+//
+// R_StreamStoredLines32_NEON
+//
+// Copies 32bpp stored lines into a 16-byte aligned destination, eight pixels at
+// a time.
+//
+void R_StreamStoredLines32_NEON(argb_t* dest, const argb_t* source, int destpitchpixels,
+                                int srcpitchpixels, int line_length, int line_count)
+{
+	for (int line = 0; line < line_count; line++)
+	{
+		const uint32_t* const in = reinterpret_cast<const uint32_t*>(source);
+		int i = 0;
+
+		for (; i + 8 <= line_length; i += 8)
+			R_NeonStream(dest + i, vld1q_u32(in + i), vld1q_u32(in + i + 4));
+
+		for (; i < line_length; i++)
+			dest[i] = source[i];
+
+		dest += destpitchpixels;
+		source += srcpitchpixels;
+	}
+}
+
 VERSION_CONTROL (r_drawt_neon_cpp, "$Id$")
 
 #endif

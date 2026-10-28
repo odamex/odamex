@@ -106,6 +106,8 @@ void (*R_DrawLevelGroupD)(rendercontext_t&);
 void (*R_DrawSlopeColumn)(rendercontext_t&);
 void (*R_DrawTranslucentSlopeColumn)(rendercontext_t&);
 void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
+void (*R_StreamStoredLines8)(argb_t*, const palindex_t*, int, int, int, int, const argb_t*) = NULL;
+void (*R_StreamStoredLines32)(argb_t*, const argb_t*, int, int, int, int) = NULL;
 
 
 // ============================================================================
@@ -2489,6 +2491,8 @@ void R_InitVectorizedDrawers()
 	R_DrawTranslucentColumnQuadD = NULL;
 	have_vector_slopes      = false;
 	r_dimpatchD             = r_dimpatchD_c;
+	R_StreamStoredLines8    = NULL;
+	R_StreamStoredLines32   = NULL;
 
 	#ifdef __SSE2__
 	if (optimize_kind == OPTIMIZE_SSE2)
@@ -2498,6 +2502,8 @@ void R_InitVectorizedDrawers()
 		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_SSE2;
 		have_vector_slopes      = true;
 		r_dimpatchD             = r_dimpatchD_SSE2;
+		R_StreamStoredLines8    = R_StreamStoredLines8_SSE2;
+		R_StreamStoredLines32   = R_StreamStoredLines32_SSE2;
 	}
 	#endif
 	#ifdef __MMX__
@@ -2516,6 +2522,7 @@ void R_InitVectorizedDrawers()
 		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_ALTIVEC;
 		have_vector_slopes      = true;
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
+		R_StreamStoredLines32   = R_StreamStoredLines32_ALTIVEC;
 	}
 	#endif
 	#ifdef __ARM_NEON
@@ -2528,6 +2535,8 @@ void R_InitVectorizedDrawers()
 		have_vector_slopes      = true;
 		#endif
 		r_dimpatchD             = r_dimpatchD_NEON;
+		R_StreamStoredLines8    = R_StreamStoredLines8_NEON;
+		R_StreamStoredLines32   = R_StreamStoredLines32_NEON;
 	}
 	#endif
 
