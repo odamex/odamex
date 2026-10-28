@@ -672,7 +672,7 @@ bool CL_PredictWorld()
 			netgraph.setMisprediction(true);
 
 			// Lerp from our previous-previous position to the corrected-previous position
-			PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);
+			const PlayerSnapshot lerpedsnap = P_LerpPlayerPosition(prevsnap, correctedprevsnap, cl_prednudge);
 			lerpedsnap.toPlayer(p);
 		}
 	}
