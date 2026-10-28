@@ -41,6 +41,7 @@
 // State.
 #include "r_state.h"
 #include "v_palette.h"
+#include "r_intrin.h"
 
 EXTERN_CVAR (r_particles)
 
@@ -743,10 +744,10 @@ void R_Subsector (rendercontext_t& ctx, int num)
 	// but it can't prevent memory stalling forever.
 	for (int i = 0; i < count; i++)
 	{
-		R_Prefetch(line[i].v1);
-		R_Prefetch(line[i].v2);
-		R_Prefetch(&line[i].linedef->sidenum[0]);
-		R_Prefetch(line[i].sidedef);
+		R_PREFETCH(line[i].v1);
+		R_PREFETCH(line[i].v2);
+		R_PREFETCH(&line[i].linedef->sidenum[0]);
+		R_PREFETCH(line[i].sidedef);
 	}
 
 	// killough 3/8/98, 4/4/98: Deep water / fake ceiling effect

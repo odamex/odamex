@@ -72,3 +72,15 @@
 		#include <arm_neon.h>
 	#endif
 #endif
+
+// Prefetch hint: bring the line at p into L1, expecting it to be reused.
+// _MM_HINT_T0 on x86 and PLDL1KEEP on AArch64; MSVC's come from intrin.h above.
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+	#define R_PREFETCH(p) _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_T0)
+#elif defined(_MSC_VER) && defined(_M_ARM64)
+	#define R_PREFETCH(p) __prefetch(p)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define R_PREFETCH(p) __builtin_prefetch(p)
+#else
+	#define R_PREFETCH(p) ((void)0)
+#endif
