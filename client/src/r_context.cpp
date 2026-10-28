@@ -43,6 +43,29 @@
 EXTERN_CVAR(r_threads)
 EXTERN_CVAR(r_showcontexts)
 
+//
+// R_RenderThreadCount
+//
+// When r_threads is 0, it resolves to one thread per hardware thread. The main
+// thread counts as one, since it renders slice 0.
+//
+int R_RenderThreadCount()
+{
+	const int threads = r_threads.asInt();
+	if (threads > 0)
+		return threads;
+
+	// hardware_concurrency may not know and return a 0.
+	return std::clamp(static_cast<int>(std::thread::hardware_concurrency()), 1, MAXRENDERSLICES);
+}
+
+CVAR_FUNC_IMPL(r_threads)
+{
+	if (var.asInt() == 0)
+		PrintFmt(PRINT_HIGH, "Automatic Render Worker Count: rendering with {} threads\n",
+		         R_RenderThreadCount());
+}
+
 rendercontext_t rctx;
 
 // Slices 1..n-1.
@@ -254,7 +277,7 @@ void R_RunSlices(int nslices, const std::function<void(int)>& job)
 //
 int R_SliceCount()
 {
-	int nslices = std::clamp(r_threads.asInt(), 1, MAXRENDERSLICES);
+	int nslices = std::clamp(R_RenderThreadCount(), 1, MAXRENDERSLICES);
 
 	while (nslices > 1 && (viewwidth >> 4) / nslices < 4)
 		nslices--;

@@ -786,8 +786,8 @@ CVAR_RANGE_FUNC_DECL(hud_crosshair, "0", "Type of crosshair, 0 means no crosshai
 CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 				CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR_RANGE(		r_threads, "1", "Number of render threads",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 64.0f)
+CVAR_RANGE_FUNC_DECL(r_threads, "1", "Number of render threads -- specify 0 to automatically determine the optimal thread count.",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
 
 CVAR(			r_showcontexts, "0", "Draws a pink line at each render slice boundary",
 				CVARTYPE_BOOL, CVAR_NULL)
