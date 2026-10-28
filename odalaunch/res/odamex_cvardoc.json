@@ -690,6 +690,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Allows the spectator/freecam to move through walls",
+         "name" : "cl_noclip_spectator",
+         "type" : "boolean"
+      },
+      {
          "default" : true,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Predict weapon pickups",
@@ -2123,6 +2130,20 @@
          "type" : "string"
       },
       {
+         "default" : "voxels",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Directory containing raw .kvx voxel files. Relative paths are resolved against the user directory.",
+         "name" : "r_voxeldir",
+         "type" : "string"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Enable software voxel rendering",
+         "name" : "r_voxels",
+         "type" : "boolean"
+      },
+      {
          "default" : 1,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "",
@@ -2395,6 +2416,13 @@
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
          "helptext" : "When set, names of players appear in the FOV",
          "name" : "sv_allowtargetnames",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to load custom voxel models from external directory. Does not affect voxels contained within server loaded wads.",
+         "name" : "sv_allowvoxels",
          "type" : "boolean"
       },
       {
