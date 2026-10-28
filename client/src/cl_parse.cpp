@@ -1647,6 +1647,14 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		target->player->lives = lives;
 
 	P_KillMobj(source, target, inflictor, joinkill, MOD_NONE);
+
+	if (not netdemo.isInPlayback() and Freecam::isActive() and
+	    target->player == &consoleplayer() and
+	    DeathSpotManager::getInstance().hasDeathSpot(consoleplayer_id))
+	{
+		const DeathSpot_s spot = DeathSpotManager::getInstance().getDeathSpot(consoleplayer_id);
+		Freecam::moveToPosition(spot.x, spot.y, spot.z, spot.angle);
+	}
 }
 
 //
