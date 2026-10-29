@@ -786,7 +786,7 @@ static bool SV_HandleDepartingMessengerPacket(int currentTic, const netadr_t& ad
 
 /// This function handles the case where a client needs to be dropped and we're not counting on it
 /// to acknowledge anything - we know it's going to be unresponsive.
-static void SV_DropClientUngracefully(player_t& playerRef, const char* disconnectPrintVerb)
+void SV_DropClientUngracefully(player_t& playerRef, const char* disconnectPrintVerb)
 {
 	if (validplayer(playerRef) and playerRef.playerstate != PST_DISCONNECT)
 	{

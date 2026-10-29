@@ -406,7 +406,8 @@ void G_DoNewGame()
 
 		if (sendResult == MessageResultEnum::ABORT)
 		{
-			PrintFmt(PRINT_WARNING, "Client at {} failed to send LoadMap - expect it to drop\n", NET_AdrToString(player.client.address));
+			PrintFmt(PRINT_WARNING, "Client at {} critically errored just prior to map change - dropping...\n", NET_AdrToString(player.client.address));
+			SV_DropClientUngracefully(player, "timed out");
 		}
 	}
 
