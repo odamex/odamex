@@ -95,6 +95,8 @@ function(odamex_target_settings)
         -fsanitize=undefined -fno-sanitize=shift -O1)
       target_link_options("${arg_TARGET}" PRIVATE -fsanitize=undefined -fno-sanitize=shift)
     endif()
+
+    target_compile_options("${arg_TARGET}" PRIVATE -fmacro-prefix-map="${CMAKE_SOURCE_DIR}"= -fmacro-prefix-map="${CMAKE_BINARY_DIR}"=)
   endif()
 
   # Add checked compile options - mostly taken from:
