@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <numeric>
 #include <vector>
 
 #include <stdlib.h>
@@ -1175,12 +1176,25 @@ void R_RenderPlayerView(player_t* player)
 	const int nslices = R_ActiveSlices();
 
 	// Pass 1: traversal and planes.
+	//
+	// The slices are handed out slowest first, by how long each took in the
+	// last pass 1, so the threads that wake first take the heaviest and a late
+	// one is left a light slice.
+	int pass1order[MAXRENDERSLICES];
+
 	const auto pass1 = [&](bool fakingunderwater)
 	{
+		std::iota(pass1order, pass1order + nslices, 0);
+		std::stable_sort(pass1order, pass1order + nslices, [](int a, int b) {
+			return R_SliceContext(a).pass1time > R_SliceContext(b).pass1time;
+		});
+
 		R_BeginSpriteClaims();
 
 		R_RunSlices(nslices, [&](int i)
 		{
+			const auto slicestart = std::chrono::steady_clock::now();
+
 			rendercontext_t& ctx = R_SliceContext(i);
 			R_SliceBounds(i, nslices, ctx.slice_start, ctx.slice_stop);
 
@@ -1199,7 +1213,10 @@ void R_RenderPlayerView(player_t* player)
 			R_RenderBSPNode(ctx, numnodes - 1);
 
 			R_DrawPlanes(ctx);
-		});
+
+			ctx.pass1time = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+			    std::chrono::steady_clock::now() - slicestart).count());
+		}, pass1order);
 	};
 
 	pass1(false);
