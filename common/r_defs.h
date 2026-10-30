@@ -597,6 +597,12 @@ struct drawseg_t
 	fixed_t   scale1;
 	fixed_t   scale2;
 
+	// The scales R_DrawSprite decides by: scale1 and scale2, except that an
+	// end cut only by the slice boundary takes the wall's scale where it leaves
+	// the view (see R_StoreWallRange).
+	fixed_t   sortscale1;
+	fixed_t   sortscale2;
+
 	// 0=none, 1=bottom, 2=top, 3=both
 	int       silhouette;
 

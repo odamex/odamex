@@ -1472,6 +1472,7 @@ static void R_OpenPortalWindow(rendercontext_t& ctx, portalslice_t& step)
 	ctx.bsp.ds_p->midposts = NULL;
 	ctx.bsp.ds_p->midscales = NULL;
 	ctx.bsp.ds_p->curline = NULL;
+	ctx.bsp.ds_p->sortscale1 = ctx.bsp.ds_p->sortscale2 = 0;
 
 	// [RK] Full width clip arrays, from the visplane's clip values.
 	int* bottomclip = ctx.seg.sprclip_pool.alloc(viewwidth);

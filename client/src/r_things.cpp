@@ -1277,8 +1277,8 @@ void R_DrawSprite (rendercontext_t& ctx, vissprite_t *shared)
 		const int r1 = std::max<int>(ds->x1, spr->x1);
 		const int r2 = std::min<int>(ds->x2, spr->x2);
 
-		const fixed_t segscale1 = std::max<fixed_t>(ds->scale1, ds->scale2);
-		const fixed_t segscale2 = std::min<fixed_t>(ds->scale1, ds->scale2);
+		const fixed_t segscale1 = std::max<fixed_t>(ds->sortscale1, ds->sortscale2);
+		const fixed_t segscale2 = std::min<fixed_t>(ds->sortscale1, ds->sortscale2);
 
 		// check if the seg is in front of the sprite
 		if (!(!ds->curline) && (segscale1 < spr->yscale ||

@@ -673,6 +673,8 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 	const double startscale = yfoc / walldepth(start);
 	const double stopscale = yfoc / walldepth(stop);
 	ctx.seg.rw_scalestep = FLOAT2FIXED((stopscale - startscale) / width);
+	ctx.seg.rw_startscale = DOUBLE2FIXED(startscale);
+	ctx.seg.rw_stopscale = DOUBLE2FIXED(stopscale);
 
 	// get the z coordinates of the line's vertices on each side of the line
 	ctx.seg.rw_frontcz1 = P_CeilingHeight(px1, py1, ctx.bsp.frontsector);
@@ -803,6 +805,16 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	// calculate scale at both ends and step
 	ctx.bsp.ds_p->scale1 = ctx.seg.rw_scale = ctx.seg.wallscalex[start];
 	ctx.bsp.ds_p->scale2 = ctx.seg.wallscalex[stop];
+
+	// Determine sprite sort scale so we don't cut off sprites too early
+	// its ends. An end cut only by the slice boundary, with the wall carrying
+	// on past it, takes the wall's scale where it leaves the view instead -- so
+	// the decision is the one a single slice would make, and a slice line
+	// doesn't change which sprites the wall hides. A single slice is never cut.
+	ctx.bsp.ds_p->sortscale1 = (start == ctx.slice_start && ctx.seg.rw_start < start)
+	                               ? ctx.seg.rw_startscale : ctx.bsp.ds_p->scale1;
+	ctx.bsp.ds_p->sortscale2 = (stop == ctx.slice_stop && ctx.seg.rw_stop > stop)
+	                               ? ctx.seg.rw_stopscale : ctx.bsp.ds_p->scale2;
 	ctx.bsp.ds_p->scalestep = ctx.seg.rw_scalestep;
 
 	ctx.bsp.ds_p->light = ctx.seg.rw_light = ctx.seg.rw_scale * lightscalexmul;
@@ -1010,6 +1022,7 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	if (ctx.bsp.curline->is_horizon)
 	{
 		ctx.seg.rw_scale = ctx.bsp.ds_p->scale1 = ctx.bsp.ds_p->scale2 = ctx.seg.rw_scalestep = ctx.bsp.ds_p->light = ctx.seg.rw_light = 0;
+		ctx.bsp.ds_p->sortscale1 = ctx.bsp.ds_p->sortscale2 = 0;
 		ctx.seg.midtexture = ctx.seg.toptexture = ctx.seg.bottomtexture = ctx.seg.maskedtexture = NULL;
 
 		for (int n = start; n <= stop; n++)

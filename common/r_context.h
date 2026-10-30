@@ -137,6 +137,10 @@ struct segcontext_t
 	fixed_t rw_lightstep;
 	fixed_t rw_scale;
 	fixed_t rw_scalestep;
+
+	// The wall's scale at both ends of its projection.
+	fixed_t rw_startscale;
+	fixed_t rw_stopscale;
 	fixed_t rw_midtexturemid;
 	fixed_t rw_toptexturemid;
 	fixed_t rw_bottomtexturemid;
