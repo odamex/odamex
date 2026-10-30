@@ -96,7 +96,21 @@ function(odamex_target_settings)
       target_link_options("${arg_TARGET}" PRIVATE -fsanitize=undefined -fno-sanitize=shift)
     endif()
 
-    target_compile_options("${arg_TARGET}" PRIVATE -fmacro-prefix-map="${CMAKE_SOURCE_DIR}"= -fmacro-prefix-map="${CMAKE_BINARY_DIR}"=)
+    # not using cmake_path append or normalize because macro-prefix-map
+    # relies on string matching, so we don't want to modify anything else
+    # except for making sure we have a trailing slash
+    set(SOURCE_ROOT "${CMAKE_SOURCE_DIR}")
+    set(BUILD_ROOT "${CMAKE_BINARY_DIR}")
+
+    if (NOT SOURCE_ROOT MATCHES "/$")
+      set(SOURCE_ROOT "${SOURCE_ROOT}/")
+    endif()
+
+    if (NOT BUILD_ROOT MATCHES "/$")
+      set (BUILD_ROOT "${BUILD_ROOT}/")
+    endif()
+
+    target_compile_options("${arg_TARGET}" PRIVATE -fmacro-prefix-map="${SOURCE_ROOT}"= -fmacro-prefix-map="${BUILD_ROOT}"=)
   endif()
 
   # Add checked compile options - mostly taken from:
