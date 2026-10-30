@@ -1177,9 +1177,11 @@ void R_RenderPlayerView(player_t* player)
 
 	// Pass 1: traversal and planes.
 	//
-	// The slices are handed out slowest first, by how long each took in the
-	// last pass 1, so the threads that wake first take the heaviest and a late
-	// one is left a light slice.
+	// The slices are sized by how long each took in the last pass 1, and
+	// handed out slowest first by those times, so the threads that wake first
+	// take the heaviest and a late one is left a light slice.
+	R_BalanceSlices(nslices);
+
 	int pass1order[MAXRENDERSLICES];
 
 	const auto pass1 = [&](bool fakingunderwater)
@@ -1196,7 +1198,6 @@ void R_RenderPlayerView(player_t* player)
 			const auto slicestart = std::chrono::steady_clock::now();
 
 			rendercontext_t& ctx = R_SliceContext(i);
-			R_SliceBounds(i, nslices, ctx.slice_start, ctx.slice_stop);
 
 			ctx.seg.walllights = frame_walllights;
 			ctx.bsp.r_fakingunderwater = fakingunderwater;

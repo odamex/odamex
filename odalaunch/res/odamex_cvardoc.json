@@ -1966,6 +1966,13 @@
          "type" : "boolean"
       },
       {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Sizes the render slices by how long each takes, so they finish together",
+         "name" : "r_balanceslices",
+         "type" : "boolean"
+      },
+      {
          "default" : false,
          "flags" : [],
          "helptext" : "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",

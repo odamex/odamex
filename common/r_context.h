@@ -347,5 +347,9 @@ int R_SliceCount();
 // The inclusive column range of slice i of nslices.
 void R_SliceBounds(int i, int nslices, int& start, int& stop);
 
+// Sets every slice's columns for the frame: sized by their last pass 1 times
+// if r_balanceslices is 1, or by R_SliceBounds if 0.
+void R_BalanceSlices(int nslices);
+
 // marks the first and last column of every slice, for r_showcontexts.
 void R_ShowContexts();

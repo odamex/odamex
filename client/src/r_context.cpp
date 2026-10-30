@@ -42,6 +42,7 @@
 
 EXTERN_CVAR(r_threads)
 EXTERN_CVAR(r_showcontexts)
+EXTERN_CVAR(r_balanceslices)
 
 //
 // R_RenderThreadCount
@@ -304,6 +305,102 @@ void R_SliceBounds(int i, int nslices, int& start, int& stop)
 }
 
 //
+// R_BalanceSlices
+//
+// Sets every slice's columns for the frame, in 16-pixel column groups.
+//
+// If r_balanceslices is 1, the render slice widths follow how long each
+// slice's previous pass 1 took.
+//
+// Each group's time is recorded, smoothed over frames, and the boundaries move
+// if the over the threshold of the ideal boundary.
+//
+// The ideal boundary is the total time of all groups times the fraction of
+// slices before the boundary.
+//
+// A slice that ran long gets narrower, and a slice that ran short gets wider.
+//
+// When r_balanceslices is 0, the groups are split evenly by R_SliceBounds.
+//
+void R_BalanceSlices(int nslices)
+{
+	// how fast the group costs follow new times, and how far off a boundary
+	// has to be before it moves, in groups
+	static constexpr float COST_SMOOTHING = 0.1f;
+	static constexpr float MOVE_THRESHOLD = 0.9f;
+
+	// first group of each slice, then the group count
+	static int bounds[MAXRENDERSLICES + 1];
+	static std::vector<float> groupcost;
+	static int boundslices = 0;
+	static int boundgroups = 0;
+	static bool learned = false;
+
+	// The number of 16-pixel column groups in the view.
+	const int ngroups = viewwidth >> 4;
+
+	if (!r_balanceslices || nslices != boundslices || ngroups != boundgroups)
+	{
+		// Start from an even split, and forget costs measured on other bounds.
+		for (int i = 0; i <= nslices; i++)
+			bounds[i] = ngroups * i / nslices;
+		groupcost.assign(ngroups, 0.0f);
+		boundslices = nslices;
+		boundgroups = ngroups;
+		learned = false;
+	}
+	else if (nslices > 1)
+	{
+		// Learn from the last frame's pass 1 time took on these bounds.
+		for (int i = 0; i < nslices; i++)
+		{
+			const float pergroup = static_cast<float>(R_SliceContext(i).pass1time) /
+			                       static_cast<float>(bounds[i + 1] - bounds[i]);
+			for (int g = bounds[i]; g < bounds[i + 1]; g++)
+				groupcost[g] = learned ? groupcost[g] + (pergroup - groupcost[g]) * COST_SMOOTHING
+				                       : pergroup;
+		}
+		learned = true;
+
+		float total = 0.0f;
+		for (int g = 0; g < ngroups; g++)
+			total += groupcost[g];
+
+		// Get a reasonable minimum group count by dividing the total groups by the number of slices and halving it.
+		const int mingroups = std::max(1, ngroups / nslices / 2);
+
+		// Place each boundary at its share.
+		int g = 0;
+		float before = 0.0f;	// cost of the groups before g
+		for (int i = 1; i < nslices && total > 0.0f; i++)
+		{
+			const float share = total * static_cast<float>(i) / static_cast<float>(nslices);
+			while (g < ngroups - 1 && before + groupcost[g] < share)
+				before += groupcost[g++];
+
+			const float ideal = static_cast<float>(g) +
+			    (groupcost[g] > 0.0f ? (share - before) / groupcost[g] : 0.0f);
+
+			int bound = bounds[i];
+			if (ideal > static_cast<float>(bound) + MOVE_THRESHOLD)
+				bound++;
+			else if (ideal < static_cast<float>(bound) - MOVE_THRESHOLD)
+				bound--;
+
+			bounds[i] = std::clamp(bound, bounds[i - 1] + mingroups,
+			                       ngroups - (nslices - i) * mingroups);
+		}
+	}
+
+	for (int i = 0; i < nslices; i++)
+	{
+		rendercontext_t& ctx = R_SliceContext(i);
+		ctx.slice_start = bounds[i] << 4;
+		ctx.slice_stop = (i == nslices - 1) ? viewwidth - 1 : (bounds[i + 1] << 4) - 1;
+	}
+}
+
+//
 // R_ShowContexts
 //
 // Marks the first and last column of every slice.
@@ -325,11 +422,9 @@ void R_ShowContexts()
 
 	for (int i = 0; i < nslices; i++)
 	{
-		int start, stop;
-		R_SliceBounds(i, nslices, start, stop);
-
-		start += viewwindowx;
-		stop += viewwindowx;
+		const rendercontext_t& ctx = R_SliceContext(i);
+		const int start = ctx.slice_start + viewwindowx;
+		const int stop = ctx.slice_stop + viewwindowx;
 
 		canvas->Clear(start, y1, start + 1, y2, slicecolor);
 		canvas->Clear(stop, y1, stop + 1, y2, slicecolor);
