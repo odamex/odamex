@@ -395,6 +395,20 @@ void G_DoNewGame()
 
 		player.client.messenger->Reliable().Write (
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
+
+		// We're going to disable the write-and-send of any new messages to the clients
+		// until after they acknowledge everything.  We do this because we don't want to
+		// clog up the send queues while the client goes silent as it loads the map.
+		//
+		// So, commit the LoadMap as the last message before we flush.
+		const MessageResultEnum sendResult = player.client.messenger->SendAll(gametic, player.client.address);
+		player.client.isFlushing = true;
+
+		if (sendResult == MessageResultEnum::ABORT)
+		{
+			PrintFmt(PRINT_WARNING, "Client at {} critically errored just prior to map change - dropping...\n", NET_AdrToString(player.client.address));
+			SV_DropClientUngracefully(player, "timed out");
+		}
 	}
 
 	sv_curmap.ForceSet(d_mapname.c_str());
@@ -429,8 +443,6 @@ void G_DoNewGame()
 			SV_CheckTeam(player);
 		else
 			player.userinfo.color = player.prefcolor;
-
-		SV_ClientFullUpdate(player);
 	}
 }
 
