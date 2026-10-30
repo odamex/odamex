@@ -47,7 +47,7 @@ EXTERN_CVAR(r_showcontexts)
 // R_RenderThreadCount
 //
 // When r_threads is 0, it resolves to one thread per hardware thread. The main
-// thread counts as one, since it renders slice 0.
+// thread counts as one, since it renders slices too.
 //
 int R_RenderThreadCount()
 {
@@ -113,12 +113,18 @@ bool R_SyncRenderContexts()
 //
 // RenderWorkers
 //
-// One thread per slice.
-// 
-// slice 0 is always the main thread.
-// 
+// One worker thread per slice past the first, since the calling thread
+// renders too.
+//
 // The frame hands them a pass at a time and waits for every slice to finish,
 // so within a pass all slices run together and between passes none do.
+//
+// No slice belongs to a thread. Each thread, the caller included, claims the
+// next slice in the pass's order until none are left, so whichever threads
+// wake first take the slices at the front of the order, and a thread that
+// finishes early takes another.
+//
+// The slices themselves are fixed, so which thread runs one never changes the image.
 //
 // The main thread does its serial work in the meantime:
 // 
@@ -139,41 +145,35 @@ public:
 		resize(0);
 	}
 
-	void run(int nslices, const std::function<void(int)>& job)
+	void run(int nslices, const std::function<void(int)>& job, const int* order)
 	{
 		resize(nslices - 1);
 
+		std::unique_lock<std::mutex> lock(m_mutex);
+		m_job = &job;
+		m_order = order;
+		m_count = nslices;
+		m_next = 0;
+		m_finished = 0;
+		m_error = nullptr;
+
 		if (nslices > 1)
-		{
-			std::lock_guard<std::mutex> lock(m_mutex);
-			m_job = &job;
-			m_pending = nslices - 1;
-			m_error = nullptr;
-			m_generation++;
-		}
-		m_wake.notify_all();
+			m_wake.notify_all();
 
-		// slice 0 runs here, alongside the workers
-		std::exception_ptr error;
-		try
-		{
-			job(0);
-		}
-		catch (...)
-		{
-			error = std::current_exception();
-		}
+		// The calling thread claims slices alongside the workers.
+		claim(lock);
 
-		// Wait even if slice 0 threw an error
+		// Wait even if a slice threw an error
 		// The workers are still using the job, and the contexts behind it.
-		if (nslices > 1)
-		{
-			std::unique_lock<std::mutex> lock(m_mutex);
-			m_done.wait(lock, [this] { return m_pending == 0; });
-			m_job = nullptr;
-			if (!error)
-				error = m_error;
-		}
+		m_done.wait(lock, [this] { return m_finished == m_count; });
+
+		std::exception_ptr error = m_error;
+		m_job = nullptr;
+		m_order = nullptr;
+		m_count = 0;
+		m_next = 0;
+		m_error = nullptr;
+		lock.unlock();
 
 		// An I_Error on a worker has to reach the main thread's handler
 		// If we threw immediately it would just exit before Odamex
@@ -202,61 +202,64 @@ private:
 			m_stop = false;
 		}
 
-		// A new worker must not mistake the current generation for a job.
-		uint64_t generation;
-		{
-			std::lock_guard<std::mutex> lock(m_mutex);
-			generation = m_generation;
-		}
-
 		while (static_cast<int>(m_threads.size()) < nworkers)
-		{
-			const int slice = static_cast<int>(m_threads.size()) + 1;
-			m_threads.emplace_back([this, slice, generation] { work(slice, generation); });
-		}
+			m_threads.emplace_back([this] { work(); });
 	}
 
-	void work(int slice, uint64_t seen)
+	// Runs slices until the pass has none left to claim.
+	// Called with the mutex held, and returns with it held.
+	void claim(std::unique_lock<std::mutex>& lock)
 	{
-		for (;;)
+		while (m_next < m_count)
 		{
-			const std::function<void(int)>* job;
-			{
-				std::unique_lock<std::mutex> lock(m_mutex);
-				m_wake.wait(lock, [&] { return m_stop || m_generation != seen; });
-				if (m_stop)
-					return;
-				seen = m_generation;
-				job = m_job;
-			}
+			const int n = m_next++;
+			const int slice = m_order ? m_order[n] : n;
+			const std::function<void(int)>& job = *m_job;
+			lock.unlock();
 
 			std::exception_ptr error;
 			try
 			{
-				(*job)(slice);
+				job(slice);
 			}
 			catch (...)
 			{
 				error = std::current_exception();
 			}
 
-			std::lock_guard<std::mutex> lock(m_mutex);
+			lock.lock();
 			if (error && !m_error)
 				m_error = error;
-			if (--m_pending == 0)
+			if (++m_finished == m_count)
 				m_done.notify_one();
 		}
 	}
 
-	std::vector<std::thread>      m_threads;
-	std::mutex                    m_mutex;
-	std::condition_variable       m_wake;
-	std::condition_variable       m_done;
+	void work()
+	{
+		std::unique_lock<std::mutex> lock(m_mutex);
+		for (;;)
+		{
+			// Unclaimed slices only exist while a pass is running, so a
+			// worker that wakes after its pass ended just goes back to sleep.
+			m_wake.wait(lock, [this] { return m_stop || m_next < m_count; });
+			if (m_stop)
+				return;
+			claim(lock);
+		}
+	}
+
+	std::vector<std::thread>         m_threads;
+	std::mutex                       m_mutex;
+	std::condition_variable          m_wake;
+	std::condition_variable          m_done;
 	const std::function<void(int)>*  m_job = nullptr;
-	uint64_t            m_generation = 0;
-	int                 m_pending = 0;
-	bool                m_stop = false;
-	std::exception_ptr            m_error;
+	const int*                       m_order = nullptr;
+	int                              m_count = 0;		// slices in the pass
+	int                              m_next = 0;		// next index into the order to claim
+	int                              m_finished = 0;
+	bool                             m_stop = false;
+	std::exception_ptr               m_error;
 };
 
 // Destroyed on exit, which joins the idle workers.
@@ -265,9 +268,9 @@ static RenderWorkers renderworkers;
 //
 // R_RunSlices
 //
-void R_RunSlices(int nslices, const std::function<void(int)>& job)
+void R_RunSlices(int nslices, const std::function<void(int)>& job, const int* order)
 {
-	renderworkers.run(nslices, job);
+	renderworkers.run(nslices, job, order);
 }
 
 //

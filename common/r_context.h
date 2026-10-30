@@ -243,6 +243,10 @@ struct spritecontext_t
 	fixed_t    spryscale;
 	fixed_t    sprtopscreen;
 
+	int32_t            projspritenum = -1;
+	const spritedef_t* projsprdef = NULL;
+	bool               projlerp = false;
+
 	const palindex_t* spriteposts[MAXWIDTH];
 };
 
@@ -324,13 +328,14 @@ bool R_SyncRenderContexts();
 // How many slices the frame is being rendered as.
 int R_ActiveSlices();
 
-// Slice i's context. Slice 0 is rctx (main thread).
+// Slice i's context. Slice 0 is rctx.
 rendercontext_t& R_SliceContext(int i);
 
-// Runs the same job for every slice at once
-// slice 0 on the calling thread, the rest on render workers.
+// Runs the same job for every slice at once.
+// The calling thread and the render workers claim slices until none are left,
+// in the order given (slice indices), or 0..nslices-1 when order is NULL.
 // Returns when all have finished, and rethrows the first exception any slice raised.
-void R_RunSlices(int nslices, const std::function<void(int)>& job);
+void R_RunSlices(int nslices, const std::function<void(int)>& job, const int* order = NULL);
 
 // How many slices the view is currently split into.
 int R_SliceCount();

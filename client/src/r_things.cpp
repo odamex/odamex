@@ -138,22 +138,13 @@ void R_InitVisSprites()
 // R_ClearSprites
 // Called at frame start.
 //
-
-// last sprite def looked up by R_ProjectSprite
-static thread_local int32_t projspritenum;
-static thread_local const spritedef_t* projsprdef;
-
-// frame-constant interpolation flag, so R_ProjectSprite doesn't make a
-// singleton call per sprite
-static thread_local bool projlerp;
-
 void R_ClearSprites(rendercontext_t& ctx)
 {
 	ctx.sprite.vissprite_p = ctx.sprite.firstvissprite;
 
-	projspritenum = -1;
-	projsprdef = NULL;
-	projlerp = OInterpolation::getInstance().enabled();
+	ctx.sprite.projspritenum = -1;
+	ctx.sprite.projsprdef = NULL;
+	ctx.sprite.projlerp = OInterpolation::getInstance().enabled();
 }
 
 
@@ -576,7 +567,7 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
   // except if paused and using freecam
 	fixed_t thingx, thingy, thingz;
 
-	if (projlerp &&
+	if (ctx.sprite.projlerp &&
 	    P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
 	    not (paused && displayplayer().isFreecam))
 	{
@@ -611,7 +602,7 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 
 	// Cache the last sprite def lookup - crowds of identical monsters hit
 	// this constantly.
-	if (thing->sprite != projspritenum || projsprdef == NULL)
+	if (thing->sprite != ctx.sprite.projspritenum || ctx.sprite.projsprdef == NULL)
 	{
 		auto it = sprites.find(thing->sprite);
 
@@ -623,11 +614,11 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 		}
 #endif
 
-		projsprdef = &it->second;
-		projspritenum = thing->sprite;
+		ctx.sprite.projsprdef = &it->second;
+		ctx.sprite.projspritenum = thing->sprite;
 	}
 
-	const spritedef_t* sprdef = projsprdef;
+	const spritedef_t* sprdef = ctx.sprite.projsprdef;
 
 #ifdef RANGECHECK
 	if ((thing->frame & FF_FRAMEMASK) >= sprdef->numframes)
