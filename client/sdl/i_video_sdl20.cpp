@@ -410,8 +410,7 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 	//
 	// Only a few of them, though: the copy saturates memory bandwidth at four
 	// to six threads (at least on this machine), and more just stall on it.
-	// Every slice is still handed the job, as running fewer would shrink the
-	// pool and regrow it next frame.
+	// The copy is cut into one range per thread used, not per slice.
 	static constexpr int MAX_COPY_THREADS = 6;
 
 	void* pixels;
@@ -419,14 +418,10 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 	if (SDL_LockTexture(mSDLTexture, NULL, &pixels, &pitch) == 0)
 	{
 		const int lines = mSurface->getWidth();
-		const int nslices = R_ActiveSlices();
-		const int ncopy = std::min(nslices, MAX_COPY_THREADS);
+		const int ncopy = std::min(R_ActiveThreads(), MAX_COPY_THREADS);
 
-		R_RunSlices(nslices, [&](int i)
+		R_RunSlices(ncopy, [&](int i)
 		{
-			if (i >= ncopy)
-				return;
-
 			const int first = lines * i / ncopy;
 			const int last = lines * (i + 1) / ncopy;
 			mSurface->copyLinesTo32(static_cast<uint8_t*>(pixels) + static_cast<size_t>(first) * pitch,

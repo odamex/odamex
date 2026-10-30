@@ -43,6 +43,7 @@
 EXTERN_CVAR(r_threads)
 EXTERN_CVAR(r_showcontexts)
 EXTERN_CVAR(r_balanceslices)
+EXTERN_CVAR(r_slicesperthread)
 
 //
 // R_RenderThreadCount
@@ -74,6 +75,7 @@ rendercontext_t rctx;
 static std::vector<std::unique_ptr<rendercontext_t>> extra_contexts;
 
 static int activeslices = 1;
+static int activethreads = 1;
 
 //
 // R_ActiveSlices
@@ -81,6 +83,14 @@ static int activeslices = 1;
 int R_ActiveSlices()
 {
 	return activeslices;
+}
+
+//
+// R_ActiveThreads
+//
+int R_ActiveThreads()
+{
+	return activethreads;
 }
 
 //
@@ -94,7 +104,7 @@ rendercontext_t& R_SliceContext(int i)
 //
 // R_SyncRenderContexts
 //
-// Grows the context set to match r_threads.
+// Grows the context set to match r_threads and r_slicesperthread.
 // Contexts are never released in order to only allocate once.
 //
 bool R_SyncRenderContexts()
@@ -108,14 +118,17 @@ bool R_SyncRenderContexts()
 	}
 
 	activeslices = want;
+
+	// A thread with no slice to claim would only be woken for nothing.
+	activethreads = std::min(R_RenderThreadCount(), want);
 	return grew;
 }
 
 //
 // RenderWorkers
 //
-// One worker thread per slice past the first, since the calling thread
-// renders too.
+// One worker per render thread past the first, since the calling thread
+// renders too. There can be more slices than threads (r_slicesperthread).
 //
 // The frame hands them a pass at a time and waits for every slice to finish,
 // so within a pass all slices run together and between passes none do.
@@ -146,9 +159,9 @@ public:
 		resize(0);
 	}
 
-	void run(int nslices, const std::function<void(int)>& job, const int* order)
+	void run(int nthreads, int nslices, const std::function<void(int)>& job, const int* order)
 	{
-		resize(nslices - 1);
+		resize(nthreads - 1);
 
 		std::unique_lock<std::mutex> lock(m_mutex);
 		m_job = &job;
@@ -271,17 +284,18 @@ static RenderWorkers renderworkers;
 //
 void R_RunSlices(int nslices, const std::function<void(int)>& job, const int* order)
 {
-	renderworkers.run(nslices, job, order);
+	renderworkers.run(activethreads, nslices, job, order);
 }
 
 //
 // R_SliceCount
 //
-// One slice per render thread, limited to >4 columns.
+// r_slicesperthread slices per render thread, limited to at least 4 column
+// groups each.
 //
 int R_SliceCount()
 {
-	int nslices = std::clamp(R_RenderThreadCount(), 1, MAXRENDERSLICES);
+	int nslices = std::clamp(R_RenderThreadCount() * r_slicesperthread.asInt(), 1, MAXRENDERSLICES);
 
 	while (nslices > 1 && (viewwidth >> 4) / nslices < 4)
 		nslices--;

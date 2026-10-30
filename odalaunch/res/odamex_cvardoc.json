@@ -2100,6 +2100,15 @@
          "type" : "boolean"
       },
       {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Render slices per render thread -- more lets threads that start late or run fast take up each other's slack",
+         "max" : 4,
+         "min" : 1,
+         "name" : "r_slicesperthread",
+         "type" : "integer"
+      },
+      {
          "default" : true,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Change invuln to enable light goggles and invert the palette on the weapon sprite only.",

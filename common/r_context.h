@@ -332,6 +332,9 @@ bool R_SyncRenderContexts();
 // How many slices the frame is being rendered as.
 int R_ActiveSlices();
 
+// How many threads render the slices, the main thread included.
+int R_ActiveThreads();
+
 // Slice i's context. Slice 0 is rctx.
 rendercontext_t& R_SliceContext(int i);
 
