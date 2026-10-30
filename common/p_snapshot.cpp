@@ -44,74 +44,31 @@ extern bool predicting;
 
 // ============================================================================
 //
-// Snapshot implementation
-//
-// ============================================================================
-
-Snapshot::Snapshot(int time) :
-		mTime(time), mValid(time > 0),
-		mAuthoritative(false), mContinuous(true),
-		mInterpolated(false), mExtrapolated(false)
-{
-}
-
-bool Snapshot::operator==(const Snapshot &other) const
-{
-	return	mTime == other.mTime &&
-			mValid == other.mValid &&
-			mAuthoritative == other.mAuthoritative &&
-			mContinuous == other.mContinuous &&
-			mInterpolated == other.mInterpolated &&
-			mExtrapolated == other.mExtrapolated;
-}
-
-// ============================================================================
-//
 // ActorSnapshot implementation
 //
 // ============================================================================
 
-ActorSnapshot::ActorSnapshot(int time) :
-		Snapshot(time), mFields(0),
-		mX(0), mY(0), mZ(0),
-		mMomX(0), mMomY(0), mMomZ(0), mAngle(0), mPitch(0), mOnGround(true),
-		mCeilingZ(0), mFloorZ(0), mReactionTime(0), mWaterLevel(0),
-		mFrame(0)
-{
-}
-
 ActorSnapshot::ActorSnapshot(int time, const AActor *mo) :
-		Snapshot(time), mFields(0xFFFFFFFF),
-		mX(mo->x), mY(mo->y), mZ(mo->z),
-		mMomX(mo->momx), mMomY(mo->momy), mMomZ(mo->momz),
-		mAngle(mo->angle), mPitch(mo->pitch), mOnGround(mo->onground),
-		mCeilingZ(mo->ceilingz), mFloorZ(mo->floorz),
-		mReactionTime(mo->reactiontime), mWaterLevel(mo->waterlevel),
-		mFlags(mo->flags), mFlags2(mo->flags2), mFlags3(mo->flags3), mFrame(mo->frame)
+		Snapshot        (time),
+		mFields         (ACT_ALL_FIELDS),
+		mX              (mo->x),
+		mY              (mo->y),
+		mZ              (mo->z),
+		mMomX           (mo->momx),
+		mMomY           (mo->momy),
+		mMomZ           (mo->momz),
+		mAngle          (mo->angle),
+		mPitch          (mo->pitch),
+		mOnGround       (mo->onground),
+		mCeilingZ       (mo->ceilingz),
+		mFloorZ         (mo->floorz),
+		mReactionTime   (mo->reactiontime),
+		mWaterLevel     (mo->waterlevel),
+		mFlags          (mo->flags),
+		mFlags2         (mo->flags2),
+		mFlags3         (mo->flags3),
+		mFrame          (mo->frame)
 {
-}
-
-bool ActorSnapshot::operator==(const ActorSnapshot &other) const
-{
-	return	Snapshot::operator==(other) &&
-			mFields == other.mFields &&
-			mX == other.mX &&
-			mY == other.mY &&
-			mZ == other.mZ &&
-			mMomX == other.mMomX &&
-			mMomY == other.mMomY &&
-			mMomZ == other.mMomZ &&
-			mAngle == other.mAngle &&
-			mPitch == other.mPitch &&
-			mOnGround == other.mOnGround &&
-			mCeilingZ == other.mCeilingZ &&
-			mFloorZ == other.mFloorZ &&
-			mReactionTime == other.mReactionTime &&
-			mWaterLevel == other.mWaterLevel &&
-			mFlags == other.mFlags &&
-			mFlags2 == other.mFlags2 &&
-			mFlags3 == other.mFlags3 &&
-			mFrame == other.mFrame;
 }
 
 void ActorSnapshot::merge(const ActorSnapshot& other)
@@ -237,29 +194,16 @@ void ActorSnapshot::toActor(AActor *mo) const
 //
 // ============================================================================
 
-PlayerSnapshot::PlayerSnapshot(int time) :
-		Snapshot(time), mFields(0),
-		mActorSnap(time),
-		mViewHeight(0), mDeltaViewHeight(0), mJumpTime(0)
+PlayerSnapshot::PlayerSnapshot(int time, const player_t& player, int echoedClientTic) :
+		Snapshot        (time),
+		mFields         (PLY_ALL_FIELDS),
+		mActorSnap      (time, player.mo),
+		mViewHeight     (player.viewheight),
+		mDeltaViewHeight(player.deltaviewheight),
+		mJumpTime       (player.jumpTics),
+		mPlayerTic      (player.tic),
+		mClientTic      (echoedClientTic)
 {
-}
-
-PlayerSnapshot::PlayerSnapshot(int time, const player_t& player) :
-		Snapshot(time), mFields(0xFFFFFFFF),
-		mActorSnap(time, player.mo),
-		mViewHeight(player.viewheight), mDeltaViewHeight(player.deltaviewheight),
-		mJumpTime(player.jumpTics)
-{
-}
-
-bool PlayerSnapshot::operator==(const PlayerSnapshot &other) const
-{
-	return	Snapshot::operator==(other) &&
-			mFields == other.mFields &&
-			mActorSnap == other.mActorSnap &&
-			mViewHeight == other.mViewHeight &&
-			mDeltaViewHeight == other.mDeltaViewHeight &&
-			mJumpTime == other.mJumpTime;
 }
 
 void PlayerSnapshot::merge(const PlayerSnapshot& other)
@@ -272,6 +216,10 @@ void PlayerSnapshot::merge(const PlayerSnapshot& other)
 		setDeltaViewHeight(other.mDeltaViewHeight);
 	if (other.mFields & PLY_JUMPTIME)
 		setJumpTime(other.mJumpTime);
+	if (other.mFields & PLY_TIC)
+		setPlayerTic(other.mPlayerTic);
+	if (other.mFields & PLY_CLIENT_TIC)
+		setClientTic(other.mClientTic);
 }
 
 void PlayerSnapshot::toPlayer(player_t& player) const
@@ -287,6 +235,11 @@ void PlayerSnapshot::toPlayer(player_t& player) const
 		player.deltaviewheight = mDeltaViewHeight;
 	if (mFields & PLY_JUMPTIME)
 		player.jumpTics = mJumpTime;
+	if (mFields & PLY_TIC)
+		player.tic = mPlayerTic;
+
+    // Do not set the lastEchoedClientTic!  Users are expected to getClientTic() in the
+    // very specific cases that they need it.
 }
 
 
@@ -318,11 +271,11 @@ void PlayerSnapshotManager::clearSnapshots()
 }
 
 //
-// PlayerSnapshotManager::mValidSnapshot()
+// PlayerSnapshotManager::ValidSnapshotExists()
 //
 // Returns true if a snapshot at the given time is present in the container
 //
-bool PlayerSnapshotManager::mValidSnapshot(int time) const
+bool PlayerSnapshotManager::ValidSnapshotExists(int time) const
 {
 
 	return ((time <= mMostRecent) && (mMostRecent - time <= NUM_SNAPSHOTS) &&
@@ -423,13 +376,13 @@ int PlayerSnapshotManager::mFindValidSnapshot(int starttime, int endtime) const
 	if (endtime >= starttime)
 	{
 		for (int t = starttime; t <= endtime; t++)
-			if (mValidSnapshot(t))
+			if (ValidSnapshotExists(t))
 				return t;
 	}
 	else
 	{
 		for (int t = starttime; t >= endtime; t--)
-			if (mValidSnapshot(t))
+			if (ValidSnapshotExists(t))
 				return t;
 	}
 
@@ -450,7 +403,7 @@ PlayerSnapshot PlayerSnapshotManager::getSnapshot(int time) const
 		return PlayerSnapshot();
 
 	// Return the requested snapshot if availible
-	if (mValidSnapshot(time))
+	if (ValidSnapshotExists(time))
 		return mSnaps[time % NUM_SNAPSHOTS];
 
 	// Should we extrapolate?
@@ -647,26 +600,28 @@ void P_SetPlayerSnapshotNoPosition(player_t& player, const PlayerSnapshot &snap)
 	if (!player.mo)
 		return;
 
-	fixed_t x = player.mo->x;
-	fixed_t y = player.mo->y;
-	fixed_t z = player.mo->z;
-	fixed_t ceilingz = player.mo->ceilingz;
-	fixed_t floorz = player.mo->floorz;
-	fixed_t momx = player.mo->momx;
-	fixed_t momy = player.mo->momy;
-	fixed_t momz = player.mo->momz;
+	const fixed_t x         = player.mo->x;
+	const fixed_t y         = player.mo->y;
+	const fixed_t z         = player.mo->z;
+	const fixed_t ceilingz  = player.mo->ceilingz;
+	const fixed_t floorz    = player.mo->floorz;
+	const fixed_t dropoffz  = player.mo->dropoffz;
+	const fixed_t momx      = player.mo->momx;
+	const fixed_t momy      = player.mo->momy;
+	const fixed_t momz      = player.mo->momz;
 
 	snap.toPlayer(player);
 
 	player.mo->UnlinkFromWorld();
-	player.mo->x = x;
-	player.mo->y = y;
-	player.mo->z = z;
+	player.mo->x        = x;
+	player.mo->y        = y;
+	player.mo->z        = z;
 	player.mo->ceilingz = ceilingz;
-	player.mo->floorz = floorz;
-	player.mo->momx = momx;
-	player.mo->momy = momy;
-	player.mo->momz = momz;
+	player.mo->floorz   = floorz;
+	player.mo->dropoffz = dropoffz;
+	player.mo->momx     = momx;
+	player.mo->momy     = momy;
+	player.mo->momz     = momz;
 	player.mo->LinkToWorld();
 }
 
@@ -677,22 +632,6 @@ void P_SetPlayerSnapshotNoPosition(player_t& player, const PlayerSnapshot &snap)
 //
 // ============================================================================
 
-
-SectorSnapshot::SectorSnapshot(int time) :
-	Snapshot(time),	mCeilingMoverType(SEC_INVALID), mFloorMoverType(SEC_INVALID),
-	mSector(NULL), mCeilingType(0), mFloorType(0), mCeilingTag(0), mFloorTag(0),
-	mCeilingLine(NULL), mFloorLine(NULL), mCeilingHeight(0), mFloorHeight(0),
-	mCeilingSpeed(0), mFloorSpeed(0), mCeilingDestination(0), mFloorDestination(0),
-	mCeilingDirection(0), mFloorDirection(0), mCeilingOldDirection(0), mFloorOldDirection(0),
-	mCeilingTexture(0), mFloorTexture(0),
-	mNewCeilingSpecial(0), mNewFloorSpecial(0), mCeilingLow(0), mCeilingHigh(0),
-	mFloorLow(0), mFloorHigh(0), mCeilingCrush(false), mFloorCrush(false), mSilent(false),
-	mCeilingWait(0), mFloorWait(0), mCeilingCounter(0), mFloorCounter(0), mResetCounter(0),
-	mCeilingStatus(0), mFloorStatus(0), mOldFloorStatus(0),
-	mCrusherSpeed1(0), mCrusherSpeed2(0), mStepTime(0), mPerStepTime(0), mPauseTime(0),
-	mOrgHeight(0), mDelay(0), mFloorLip(0), mFloorOffset(0), mCeilingChange(0), mFloorChange(0)
-{
-}
 
 SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 	Snapshot(time), mCeilingMoverType(SEC_INVALID), mFloorMoverType(SEC_INVALID),
@@ -1187,6 +1126,8 @@ SectorSnapshot SectorSnapshotManager::getSnapshot(int time) const
 
 			// restore sector movement sounds
 			predicting = oldpredicting;
+
+			newsnap.setAuthoritative(false);
 
 			return newsnap;
 		}

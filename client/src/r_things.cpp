@@ -44,6 +44,7 @@
 
 #include "r_local.h"
 #include "r_interp.h"
+#include "r_voxel.h"
 #include "p_local.h"
 
 #include "c_console.h"
@@ -474,6 +475,7 @@ static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* se
 	vis->res_id = ResourceId::INVALID_ID;
 	vis->texture = NULL;
 	vis->colormap = ctx.draw.basecolormap;
+	vis->voxel = nullptr;
 
 	if (flip)
 	{
@@ -683,6 +685,7 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 	vis->res_id = res_id;
 	vis->texture = texture;
 	vis->mo = thing;
+	VX_ProjectVoxel(ctx, thing, thing->frame & FF_FRAMEMASK, vis);
 
 	// get light level
 	if (fixedlightlev)
@@ -1303,7 +1306,10 @@ void R_DrawSprite (rendercontext_t& ctx, vissprite_t *shared)
 	// all clipping has been performed, so draw the sprite
 	ctx.sprite.mfloorclip = clipbot;
 	ctx.sprite.mceilingclip = cliptop;
-	R_DrawVisSprite (ctx, spr, spr->x1, spr->x2);
+	if (spr->voxel != nullptr)
+		VX_DrawVoxel(ctx, spr);
+	else
+		R_DrawVisSprite (ctx, spr, spr->x1, spr->x2);
 
 	#if 0
 	EXTERN_CVAR (r_drawhitboxes)

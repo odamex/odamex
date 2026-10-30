@@ -312,6 +312,9 @@ struct rendercontext_t
 	int	slice_start = 0;
 	int	slice_stop = MAXWIDTH - 1;
 
+	// Which slice this is: R_SliceContext(index) is this context.
+	int	index = 0;
+
 	// How long this slice's last pass 1 took, in nanoseconds.
 	// The next pass 1 hands out the slices slowest first by it.
 	uint64_t pass1time = 0;

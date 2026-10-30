@@ -114,6 +114,7 @@ bool R_SyncRenderContexts()
 	while (extra_contexts.size() + 1 < static_cast<size_t>(want))
 	{
 		extra_contexts.push_back(std::make_unique<rendercontext_t>());
+		extra_contexts.back()->index = static_cast<int>(extra_contexts.size());
 		R_InitVisSprites(*extra_contexts.back());
 	}
 

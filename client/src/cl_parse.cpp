@@ -104,7 +104,7 @@ EXTERN_CVAR(sv_showsprees)
 extern std::string digest;
 extern bool forcenetdemosplit;
 extern int last_svgametic;
-extern int last_player_update;
+extern int lastEchoedClientTic;
 extern bool hasReceivedFullUpdate;
 extern bool isReceivingFullUpdate;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
@@ -418,12 +418,13 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 		return;
 
 	p.last_received = gametic;
-	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
 	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
+
+	newsnap.setClientTic(::lastEchoedClientTic);
 
 	newsnap.setX(x);
 	newsnap.setY(y);
@@ -464,6 +465,8 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnapshot(snaptime);
 	newsnapshot.setAuthoritative(true);
+	newsnapshot.setPlayerTic(p.tic);
+	newsnapshot.setClientTic(::lastEchoedClientTic);
 	newsnapshot.setX(x);
 	newsnapshot.setY(y);
 	newsnapshot.setZ(z);
@@ -1091,6 +1094,7 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	// reset the world_index (force it to sync)
 	CL_ResyncWorldIndex();
 	::last_svgametic = 0;
+	::lastEchoedClientTic = 0;
 
 	CTF_CheckFlags(consoleplayer());
 
@@ -1291,6 +1295,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
+		newsnap.setClientTic(::lastEchoedClientTic);
 		newsnap.setX(update.pos.x);
 		newsnap.setY(update.pos.y);
 		newsnap.setZ(update.pos.z);
@@ -1484,6 +1489,8 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
 
+		CL_ResetWorldPrediction();
+
 		// Rollback history from time-of-respawn to now is full of the dead state.
 		// Instead of doing complex rollbacks, just wipe history and start fresh.
 		// Any intervening updates to important state will come in subsequent
@@ -1518,7 +1525,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	}
 
 	const int snaptime = ThisMessageServerTic();
-	PlayerSnapshot newsnap(snaptime, p);
+	PlayerSnapshot newsnap(snaptime, p, ::lastEchoedClientTic);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);
 	p.snapshots.clearSnapshots();
@@ -1619,6 +1626,9 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
+		newsnap.setPlayerTic(target->player->tic);
+		newsnap.setClientTic(::lastEchoedClientTic);
+
 		newsnap.setX(msg->target_pos().x());
 		newsnap.setY(msg->target_pos().y());
 		newsnap.setZ(msg->target_pos().z());
@@ -1659,6 +1669,14 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		target->player->lives = lives;
 
 	P_KillMobj(source, target, inflictor, joinkill, MOD_NONE);
+
+	if (not netdemo.isInPlayback() and Freecam::isActive() and
+	    target->player == &consoleplayer() and
+	    DeathSpotManager::getInstance().hasDeathSpot(consoleplayer_id))
+	{
+		const DeathSpot_s spot = DeathSpotManager::getInstance().getDeathSpot(consoleplayer_id);
+		Freecam::moveToPosition(spot.x, spot.y, spot.z, spot.angle);
+	}
 }
 
 //
@@ -1747,7 +1765,8 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 
 	P_ChangeSector(sector, false);
 
-	const SectorSnapshot snap(ThisMessageServerTic(), sector);
+	SectorSnapshot snap(ThisMessageServerTic(), sector);
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1915,6 +1934,7 @@ void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1949,6 +1969,7 @@ void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1981,6 +2002,7 @@ void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2014,6 +2036,7 @@ void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2056,6 +2079,7 @@ void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2087,6 +2111,7 @@ void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2539,21 +2564,17 @@ void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 }
 
 //
-// CL_SaveSvGametic
+// CL_ServerGametic
+// Announces that the server has advanced its gametic.  Please see the schema / protocol
+// file for detailed notes.
 //
-// Receives the server's gametic at the time the packet was sent.  It will be
-// sent back to the server with the next cmd.
-//
-// [SL] 2011-05-11
 void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
-	::last_svgametic = msg->tic();
+	::lastEchoedClientTic = msg->client_tic();
+
+	CL_AdvanceWorldPredictionTic(ThisMessageServerTic());
 
 	netgraph.addServerSideMetrics(msg->reliable_messages_in_flight(), msg->throttle());
-
-#ifdef _WORLD_INDEX_DEBUG_
-	PrintFmt(PRINT_HIGH, "Gametic {}, received world index {}\n", gametic, last_svgametic);
-#endif // _WORLD_INDEX_DEBUG_
 }
 
 //
@@ -2691,6 +2712,12 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
+		// S_LIGHTDONE wont be sent by server bc it has length of 0 tics, so reset like this
+		if (i == ps_flash and pspupdates[ps_flash].statenum == S_NULL and player.psprites[ps_flash].statenum != S_NULL)
+		{
+			player.extralight = 0;
+		}
+
 		P_SetPsprite(player, i, pspupdates[i].statenum);
 
 		if (pspupdates[i].positioned && player.psprites[i].statenum != S_NULL)
@@ -3979,6 +4006,31 @@ namespace
 		}
 	}
 
+	int CL_HandleCurrentDeferredMessages()
+	{
+		const bool syncValuesAreSet           = world_index != 0 and last_svgametic != 0;
+		const bool worldIsCycling             = gamestate == GS_LEVEL;
+		const int currentExpectedNewestPacket = syncValuesAreSet and worldIsCycling ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
+
+		for (auto deferredMessageIter  = s_deferredMessages.begin();
+		          deferredMessageIter != s_deferredMessages.end();
+		          deferredMessageIter  = s_deferredMessages.erase(deferredMessageIter)
+		    )
+		{
+			if (deferredMessageIter->first > currentExpectedNewestPacket)
+			{
+				break;
+			}
+			CL_ProcessCommand(deferredMessageIter->second);
+		}
+		return currentExpectedNewestPacket;
+	}
+}
+
+
+void CL_ProcessDeferredCommands()
+{
+	CL_HandleCurrentDeferredMessages();
 }
 
 //
@@ -3986,21 +4038,9 @@ namespace
 //
 void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 {
-	const bool syncValuesAreSet           = world_index != 0 and last_svgametic != 0;
-	const bool worldIsCycling             = gamestate == GS_LEVEL;
-	const int currentExpectedNewestPacket = syncValuesAreSet and worldIsCycling ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
-
-	for (auto deferredMessageIter  = s_deferredMessages.begin();
-	          deferredMessageIter != s_deferredMessages.end();
-	          deferredMessageIter  = s_deferredMessages.erase(deferredMessageIter)
-	    )
-	{
-		if (deferredMessageIter->first > currentExpectedNewestPacket)
-		{
-			break;
-		}
-		CL_ProcessCommand(deferredMessageIter->second);
-	}
+	// Before we move onto anything new in the net_message buffer, deal with any
+	// previously-received deferred messages that have become current.
+	const int currentExpectedNewestPacket = CL_HandleCurrentDeferredMessages();
 
 	if (optionalHeader)
 	{

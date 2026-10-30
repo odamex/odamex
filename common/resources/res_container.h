@@ -310,7 +310,8 @@ protected:
 				lump_name == "P_END" || lump_name == "PP_END" ||
 				lump_name == "C_START" || lump_name == "C_END" ||
 				lump_name == "TX_START" || lump_name == "TX_END" ||
-				lump_name == "HI_START" || lump_name == "HI_END";
+				lump_name == "HI_START" || lump_name == "HI_END" ||
+				lump_name == "VX_START" || lump_name == "VX_END";
 	}
 
     OString getMarkerPrefix(const OString& lump_name) const

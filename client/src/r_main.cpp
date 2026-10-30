@@ -41,6 +41,7 @@
 #include "r_context.h"
 #include "r_sky.h"
 #include "r_interp.h"
+#include "r_voxel.h"
 #include "st_stuff.h"
 #include "v_video.h"
 #include "stats.h"
@@ -1208,6 +1209,7 @@ void R_RenderPlayerView(player_t* player)
 			R_ClearOpenings(ctx);
 			R_ClearPlanes(ctx, true);
 			R_ClearSprites(ctx);
+			VX_ClearVoxels(ctx);
 
 			R_ResetDrawFuncs(ctx);
 
@@ -1234,6 +1236,11 @@ void R_RenderPlayerView(player_t* player)
 		if (faking > 0 && faking < nslices)
 			pass1(true);
 	}
+
+	// A voxel has depth, so one standing just outside the walked subsectors
+	// can still reach into the view. Slice 0's context projects them, after
+	// every slice's walk has claimed its sectors.
+	VX_NearbySprites(rctx);
 
 	// Pass 2: portals and skyboxes.
 	R_DrawPortals(nslices);

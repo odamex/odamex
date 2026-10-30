@@ -530,6 +530,8 @@ const ResourcePath& WadResourceContainer::assignPathBasedOnMarkers(LumpId lump_i
 				return textures_directory_name;
 			if (prefix == "HI")
 				return hires_directory_name;
+			if (prefix == "VX")
+				return voxels_directory_name;
 		}
 	}
 	return global_directory_name;
