@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -391,5 +389,3 @@ bool R_IsSkyFlat(int flatnum)
 {
 	return false;
 }
-
-VERSION_CONTROL (test_stubs_cpp, "$Id$")

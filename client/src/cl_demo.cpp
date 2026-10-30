@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -1784,5 +1782,3 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	// Especially important for rollback replication.
 	::hasReceivedFullUpdate = true;
 }
-
-VERSION_CONTROL (cl_demo_cpp, "$Id$")

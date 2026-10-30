@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -64,6 +62,4 @@ bool R_AlignFlat (int linenum, int side, int fc)
 	return true;
 }
 
-
-VERSION_CONTROL (r_plane_cpp, "$Id$")
 

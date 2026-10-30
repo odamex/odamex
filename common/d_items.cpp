@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -626,6 +624,4 @@ void InitItems (void)
 	num_items = sizeof(itemlist)/sizeof(itemlist[0]) - 1;
 }
 
-
-VERSION_CONTROL (d_items_cpp, "$Id$")
 

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -256,5 +254,3 @@ FArchive &operator>> (FArchive &arc, UserInfo &info)
 
 	return arc;
 }
-
-VERSION_CONTROL (d_netinfo_cpp, "$Id$")

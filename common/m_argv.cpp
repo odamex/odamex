@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -513,5 +511,3 @@ int M_GetParmValue(const char* name)
 		return atoi(valuestr);
 	return 0;
 }
-
-VERSION_CONTROL (m_argv_cpp, "$Id$")

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -4049,5 +4047,3 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 
 	CL_ParseBuffer(::net_message, currentExpectedNewestPacket);
 }
-
-VERSION_CONTROL (cl_parse_cpp, "$Id$")

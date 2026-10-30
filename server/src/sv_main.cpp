@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -5633,5 +5631,3 @@ void SV_ShareKeys(card_t card, const player_t &player)
 		SV_UpdateShareKeys(*it);
 	}
 }
-
-VERSION_CONTROL (sv_main_cpp, "$Id$")
