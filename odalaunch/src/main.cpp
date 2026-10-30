@@ -73,20 +73,17 @@ bool Application::OnInit()
 
 		switch (ProgramTheme)
 		{
-		case 1: {
+		case 1:
 			wxApp::SetAppearance(Appearance::Dark);
-		}
-		break;
+			break;
 
-		case 2: {
+		case 2:
 			wxApp::SetAppearance(Appearance::Light);
-		}
-		break;
+			break;
 
-		default: {
+		default:
 			wxApp::SetAppearance(Appearance::System);
-		}
-		break;
+			break;
 		}
 	}
 
