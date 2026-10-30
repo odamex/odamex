@@ -27,6 +27,7 @@
 #include "r_context.h"
 
 #include <math.h>
+#include <vector>
 #include "m_alloc.h"
 #include "m_bbox.h"
 #include "i_system.h"
@@ -642,17 +643,27 @@ static constexpr int checkcoord[12][4] = // killough -- static const
 };
 
 //
-// R_CheckBBox
+// R_BBoxView
 //
 // Checks BSP node/subtree bounding box.
-// Returns true if some part of the bbox might be visible.
+// 
+// We now check hether some part of it might be visible in the slice, and if not,
+// whether it projects onto closed columns (which include every column outside
+// the slice), or nowhere in the view.
 //
 // killough 1/28/98: static
 // CPhipps - const parameter, reformatted
 // [SL] Rewritten to use R_ClipLineToFrustum to determine if any part of the
 //      bbox's two diagonals would be drawn in a non-solid screen column.
 //
-static bool R_CheckBBox(rendercontext_t& ctx, const fixed_t *bspcoord)
+enum class bboxview_t
+{
+	open,		// some column it projects to is still open in the slice
+	closed,		// it projects into the view, but only onto closed columns
+	offscreen	// it projects nowhere in the view
+};
+
+static bboxview_t R_BBoxView(rendercontext_t& ctx, const fixed_t *bspcoord)
 {
 	const fixed_t clipdist = 0;
 	v2fixed_t t1, t2;
@@ -662,7 +673,7 @@ static bool R_CheckBBox(rendercontext_t& ctx, const fixed_t *bspcoord)
 				(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
 
 	if (boxpos == 5)
-		return true;
+		return bboxview_t::open;
 
 	fixed_t xl = bspcoord[checkcoord[boxpos][0]];
 	fixed_t yl = bspcoord[checkcoord[boxpos][1]];
@@ -674,7 +685,7 @@ static bool R_CheckBBox(rendercontext_t& ctx, const fixed_t *bspcoord)
 	// if we scale it down here, don't let it cull any bsp subtrees
 	if (R_RotatePointSafe(int64_t(xl) - viewx, int64_t(yl) - viewy, ANG90 - viewangle, t1.x, t1.y) ||
 	    R_RotatePointSafe(int64_t(xh) - viewx, int64_t(yh) - viewy, ANG90 - viewangle, t2.x, t2.y))
-		return true;
+		return bboxview_t::open;
 
 	v2fixed_t box_pts[4][2];
 	// top line of box
@@ -689,13 +700,14 @@ static bool R_CheckBBox(rendercontext_t& ctx, const fixed_t *bspcoord)
 	// Check each of the four sides of the bounding box to see if
 	// any part is visible. Find the maximum range of columns the bounding box
 	// will project onto the screen.
+	bool projected = false;
 	for (int i = 0; i < 4; i++)
 	{
 		v2fixed_t p1 = box_pts[i][0];
 		v2fixed_t p2 = box_pts[i][1];
 
 		if (R_PointOnLine(0, 0, p1.x, p1.y, p2.x, p2.y))
-			return true;
+			return bboxview_t::open;
 
 		int32_t lclip, rclip;
 		if (R_ClipLineToFrustum(&p1, &p2, clipdist, lclip, rclip))
@@ -705,13 +717,25 @@ static bool R_CheckBBox(rendercontext_t& ctx, const fixed_t *bspcoord)
 			int x2 = R_ProjectPointX(p2.x, p2.y) - 1;
 			if (R_CheckProjectionX(x1, x2))
 			{
+				projected = true;
 				if (memchr(ctx.bsp.solidcol + x1, 0, x2 - x1 + 1) != NULL)
-					return true;
+					return bboxview_t::open;
 			}
 		}
 	}
 
-	return false;
+	return projected ? bboxview_t::closed : bboxview_t::offscreen;
+}
+
+//
+// R_CheckBBox
+//
+// Checks BSP node/subtree bounding box.
+// Returns true if some part of the bbox might be visible in the slice.
+//
+bool R_CheckBBox(rendercontext_t& ctx, const fixed_t *bspcoord)
+{
+	return R_BBoxView(ctx, bspcoord) == bboxview_t::open;
 }
 
 EXTERN_CVAR(r_thingsectorlight)
@@ -829,6 +853,43 @@ void R_Subsector (rendercontext_t& ctx, int num)
 
 
 //
+// Subsectors under each node
+//
+// R_RenderBSPNode tests a front subtree only when it holds at least
+// FRONT_CULL_MIN subsectors -- below that, the test costs about as much as the
+// walk it would save.
+//
+static constexpr uint32_t FRONT_CULL_MIN = 4;
+
+static std::vector<uint32_t> nodesubsectors;
+static const node_t* nodesubsectorsfor = NULL;
+
+uint32_t R_CountSubsectors(unsigned int child)
+{
+	if (child & NF_SUBSECTOR)
+		return 1;
+
+	uint32_t& count = nodesubsectors[child];
+	if (count == 0)
+		count = R_CountSubsectors(nodes[child].children[0]) + R_CountSubsectors(nodes[child].children[1]);
+	return count;
+}
+
+//
+// R_PrepareBSPNodes
+//
+void R_PrepareBSPNodes()
+{
+	if (nodesubsectorsfor == nodes && nodesubsectors.size() == static_cast<size_t>(numnodes))
+		return;
+
+	nodesubsectors.assign(numnodes, 0);
+	for (int i = 0; i < numnodes; i++)
+		R_CountSubsectors(i);
+	nodesubsectorsfor = nodes;
+}
+
+//
 // RenderBSPNode
 //
 // Renders all subsectors below a given node, traversing subtree recursively.
@@ -845,8 +906,25 @@ void R_RenderBSPNode (rendercontext_t& ctx, int bspnum)
 		int frontside = R_PointOnSide(viewx, viewy, bsp);
 		int backside = frontside ^ 1;
 
-		// Recursively divide front space.
-		R_RenderBSPNode(ctx, bsp->children[frontside]);
+		// Recursively divide front space, unless it can't show in this slice.
+		//
+		// Vanilla enters the front side unconditionally, and with slices that
+		// had every slice walking front subtrees that belong to other slices.
+		// One that projects only onto this slice's closed columns (which
+		// include every column outside it) is hidden in the whole view, so
+		// it is skipped.
+		//
+		// One that projects nowhere in the view is still entered, by every
+		// slice: walking it can switch on deep water (R_FakeFlat via
+		// R_CheckClippedSegForFakeFlat).
+		//
+		// A subtree of fewer than FRONT_CULL_MIN subsectors is walked
+		// without a closed test.
+		const unsigned int front = bsp->children[frontside];
+		const uint32_t frontsize = (front & NF_SUBSECTOR) ? 1 : nodesubsectors[front];
+
+		if (frontsize < FRONT_CULL_MIN || R_BBoxView(ctx, bsp->bbox[frontside]) != bboxview_t::closed)
+			R_RenderBSPNode(ctx, front);
 
 		// Possibly divide back space.
 		if (!R_CheckBBox(ctx, bsp->bbox[backside]))

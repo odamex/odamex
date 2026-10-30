@@ -1220,6 +1220,8 @@ void R_RenderPlayerView(player_t* player)
 		}, pass1order);
 	};
 
+	R_PrepareBSPNodes();
+
 	pass1(false);
 
 	// If one slice encounters deep water, change it for all of them.

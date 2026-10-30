@@ -37,6 +37,9 @@ void R_ReallocDrawSegs(rendercontext_t& ctx);
 void R_ClearDrawSegs (rendercontext_t& ctx);
 void R_RenderBSPNode (rendercontext_t& ctx, int bspnum);
 
+// Counts the subsectors under each node, when the level's nodes change.
+void R_PrepareBSPNodes();
+
 // A sector that fades to a color ignores extralight.
 bool R_SectorIsFoggy(const sector_t* sector);
 
