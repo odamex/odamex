@@ -2146,7 +2146,7 @@
          "type" : "boolean"
       },
       {
-         "default" : 1,
+         "default" : 0,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Number of render threads -- specify 0 to automatically determine the optimal thread count.",
          "max" : 64,
