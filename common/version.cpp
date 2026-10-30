@@ -143,28 +143,6 @@ std::string VersionMessage(const int server, const int client, const char* email
 	return rvo;
 }
 
-using source_files_t = std::unordered_map<std::string, std::string>;
-
-source_files_t& get_source_files()
-{
-	static auto source_files = std::make_unique<source_files_t>();
-	return *source_files.get();
-}
-
-file_version::file_version(const char *uid, const char *id, const char *pp, int l, const char *t, const char *d)
-{
-	std::stringstream rs(id), ss;
-	std::string p = pp;
-
-	size_t e = p.find_last_of("/\\");
-	std::string file = p.substr(e == std::string::npos ? 0 : e + 1);
-
-	ss << id << " " << l << " " << t << " " << d << " "
-	   << p.substr(e == std::string::npos ? 0 : e + 1);
-
-	get_source_files()[file] = ss.str();
-}
-
 /**
  * @brief Return true we have the bare minimum git information
  */
@@ -319,32 +297,6 @@ const char* NiceVersion()
 
 BEGIN_COMMAND(version)
 {
-	if (argc == 1)
-	{
-		// distribution
-		PrintFmt("Odamex v{} - {}\n", NiceVersion(), COPYRIGHTSTR);
-	}
-	else
-	{
-		// specific file version
-		const auto it = get_source_files().find(argv[1]);
-		if (it == get_source_files().end())
-		{
-			PrintFmt(PRINT_WARNING, "no such file: {}", argv[1]);
-		}
-		else
-		{
-			PrintFmt("{}", it->second);
-		}
-	}
+	PrintFmt("Odamex v{} - {}\n", NiceVersion(), COPYRIGHTSTR);
 }
 END_COMMAND(version)
-
-BEGIN_COMMAND(listsourcefiles)
-{
-	for (const auto& file : get_source_files())
-	{
-		PrintFmt(PRINT_HIGH, "{} {}\n", file.first, file.second);
-	}
-}
-END_COMMAND(listsourcefiles)
