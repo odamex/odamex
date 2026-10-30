@@ -48,15 +48,6 @@ EXTERN_CVAR (r_particles)
 
 const fixed_t NEARCLIP = 2*FRACUNIT;
 
-#if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
-	#include <xmmintrin.h>
-	#define R_Prefetch(p) _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_T0)
-#elif defined(__GNUC__) || defined(__clang__)
-	#define R_Prefetch(p) __builtin_prefetch(p)
-#else
-	#define R_Prefetch(p) ((void)0)
-#endif
-
 //
 // R_ClearClipSegs
 //
