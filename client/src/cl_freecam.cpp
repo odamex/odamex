@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jess W
 //
 // This program is free software; you can redistribute it and/or
@@ -89,7 +87,7 @@ void Freecam::buildCam(player_t* p_cam)
 	}
 
 	// player.ingame() should always be false for the freecam
-	p_cam->playerstate = PST_FREECAM;  
+	p_cam->playerstate = PST_FREECAM;
 
 	p_cam->isFreecam = true;
 }
@@ -129,7 +127,7 @@ void Freecam::savePosition()
 	}
 }
 
-bool Freecam::needPosition() 
+bool Freecam::needPosition()
 {
 	return (cam_x == 0 and cam_y == 0);
 }
@@ -157,11 +155,11 @@ bool Freecam::isActive()
 bool Freecam::allowSpy()
 {
 	return (netdemo.isInPlayback() or
-			(consoleplayer().playerstate == PST_DEAD 
-				and consoleplayer().lives < 1 
+			(consoleplayer().playerstate == PST_DEAD
+				and consoleplayer().lives < 1
 				and ::levelstate.getState() == LevelState::INGAME));
 }
-    
+
 // a real 255th player connected (CL_UserInfo) and is taking the freecam spot
 void Freecam::retireFor255thPlayer(player_t* cam)
 {

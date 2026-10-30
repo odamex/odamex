@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -419,5 +417,3 @@ BEGIN_COMMAND(dumpheap)
 	Z_DumpHeap(static_cast<zoneTag_e>(lo), static_cast<zoneTag_e>(hi));
 }
 END_COMMAND(dumpheap)
-
-VERSION_CONTROL (z_zone_cpp, "$Id$")

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -306,6 +304,4 @@ int P_RandomHitscanSlope(fixed_t spread)
 	else
 		return finetangent[(ANG90 - angle) >> ANGLETOFINESHIFT];
 }
-
-VERSION_CONTROL (m_random_cpp, "$Id$")
 

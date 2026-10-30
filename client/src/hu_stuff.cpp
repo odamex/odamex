@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -2186,5 +2184,3 @@ BEGIN_COMMAND (displayscores)
 		PrintFmt(PRINT_HIGH, "This command is only used for multiplayer games.");
 }
 END_COMMAND (displayscores)
-
-VERSION_CONTROL (hu_stuff_cpp, "$Id$")

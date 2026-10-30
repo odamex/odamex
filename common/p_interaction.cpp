@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -2677,5 +2675,3 @@ void P_HealMobj(AActor* mo, int num)
 			mo->health = max;
 	}
 }
-
-VERSION_CONTROL (p_interaction_cpp, "$Id$")

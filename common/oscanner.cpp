@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -511,5 +509,3 @@ bool OScanner::compareTokenNoCase(std::string_view string) const
 {
 	return iequals(m_token, string);
 }
-
-VERSION_CONTROL(oscanner_cpp, "$Id$")

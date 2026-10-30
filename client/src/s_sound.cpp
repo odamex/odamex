@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1458,5 +1456,3 @@ void UV_SoundAvoidPlayer(const AActor *mo, byte channel, const char *name, byte 
 {
 	S_Sound(mo, channel, name, 1, attenuation);
 }
-
-VERSION_CONTROL (s_sound_cpp, "$Id$")

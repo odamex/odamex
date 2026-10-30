@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -95,7 +93,7 @@ extern "C" drawspan_t dspan;
 //
 // ceil(num / den) in whole pixels, for raw fixed-point numbers where
 // num >= 0 and den > 0.
-// 
+//
 // For when you need to ceiling divide 16.16 floating point numbers and NOT
 // discard remainders after a certain quotient.
 //
