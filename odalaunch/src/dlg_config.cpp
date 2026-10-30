@@ -88,6 +88,9 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	EVT_SPINCTRL(XRCID("Id_SpnRefreshInterval"), dlgConfig::OnSpinValChange)
 
 	EVT_LISTBOX_DCLICK(XRCID("Id_LstCtrlWadDirectories"), dlgConfig::OnReplaceDir)
+
+	EVT_RADIOBOX(XRCID("Id_RbTheme"), dlgConfig::OnRadioBoxChange)
+
 END_EVENT_TABLE()
 
 // Window constructor
@@ -144,6 +147,8 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
 	m_StcBmpPQPlayable->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_orange"));
 	m_StcBmpPQLaggy->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_red"));
 	m_StcBmpPQBad->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_gray"));
+
+	m_RbTheme = XRCCTRL(*this, "Id_RbTheme", wxRadioBox);
 }
 
 // Window destructor
@@ -167,23 +172,28 @@ void dlgConfig::Show()
 	ShowModal();
 }
 
-void dlgConfig::OnCheckedBox(wxCommandEvent& event)
+void dlgConfig::OnCheckedBox(wxCommandEvent& /*event*/)
 {
 	UserChangedSetting = true;
 }
 
-void dlgConfig::OnFileDirChange(wxFileDirPickerEvent& event)
+void dlgConfig::OnFileDirChange(wxFileDirPickerEvent& /*event*/)
 {
 	UserChangedSetting = true;
 }
 
-void dlgConfig::OnClrPickerChange(wxColourPickerEvent& event)
+void dlgConfig::OnClrPickerChange(wxColourPickerEvent& /*event*/)
+{
+	UserChangedSetting = true;
+}
+
+void dlgConfig::OnRadioBoxChange(wxCommandEvent& /*event*/)
 {
 	UserChangedSetting = true;
 }
 
 // Ping quality spin control changes
-void dlgConfig::OnSpinValChange(wxSpinEvent& event)
+void dlgConfig::OnSpinValChange(wxSpinEvent& /*event*/)
 {
 	wxInt32 PQGood, PQPlayable, PQLaggy;
 
@@ -209,7 +219,7 @@ void dlgConfig::OnSpinValChange(wxSpinEvent& event)
 }
 
 // User pressed ok button
-void dlgConfig::OnOK(wxCommandEvent& event)
+void dlgConfig::OnOK(wxCommandEvent& /*event*/)
 {
 	wxMessageDialog msgdlg(this, "Save settings?", "Save settings?",
 	                       wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
@@ -236,7 +246,7 @@ void dlgConfig::OnOK(wxCommandEvent& event)
 	Close();
 }
 
-void dlgConfig::OnTextChange(wxCommandEvent& event)
+void dlgConfig::OnTextChange(wxCommandEvent& /*event*/)
 {
 	UserChangedSetting = true;
 }
@@ -246,7 +256,7 @@ void dlgConfig::OnTextChange(wxCommandEvent& event)
 */
 
 // Add a directory to the listbox
-void dlgConfig::OnAddDir(wxCommandEvent& event)
+void dlgConfig::OnAddDir(wxCommandEvent& /*event*/)
 {
 	wxString WadDirectory;
 
@@ -275,7 +285,7 @@ void dlgConfig::OnAddDir(wxCommandEvent& event)
 }
 
 // Replace a directory in the listbox
-void dlgConfig::OnReplaceDir(wxCommandEvent& event)
+void dlgConfig::OnReplaceDir(wxCommandEvent& /*event*/)
 {
 	wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
 
@@ -313,7 +323,7 @@ void dlgConfig::OnReplaceDir(wxCommandEvent& event)
 }
 
 // Delete a directory from the listbox
-void dlgConfig::OnDeleteDir(wxCommandEvent& event)
+void dlgConfig::OnDeleteDir(wxCommandEvent& /*event*/)
 {
 	// Get the selected item and delete it, if
 	// it is selected.
@@ -330,7 +340,7 @@ void dlgConfig::OnDeleteDir(wxCommandEvent& event)
 }
 
 // Move directory in list up 1 item
-void dlgConfig::OnUpClick(wxCommandEvent& event)
+void dlgConfig::OnUpClick(wxCommandEvent& /*event*/)
 {
 	// Get the selected item
 	wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
@@ -350,7 +360,7 @@ void dlgConfig::OnUpClick(wxCommandEvent& event)
 }
 
 // Move directory in list down 1 item
-void dlgConfig::OnDownClick(wxCommandEvent& event)
+void dlgConfig::OnDownClick(wxCommandEvent& /*event*/)
 {
 	// Get the selected item
 	wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
@@ -370,7 +380,7 @@ void dlgConfig::OnDownClick(wxCommandEvent& event)
 }
 
 // Get the environment variables
-void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
+void dlgConfig::OnGetEnvClick(wxCommandEvent& /*event*/)
 {
 	wxString doomwaddir = "";
 	wxString env_paths[NUM_ENVVARS];
@@ -454,6 +464,8 @@ void dlgConfig::LoadSettings()
 	wxString SoundFile, HighlightColour, CustomServerColour;
 	wxInt32 PQGood, PQPlayable, PQLaggy;
 
+	wxInt32 ProgramTheme;
+
 	ConfigInfo.Read(USEBROADCAST, &UseBroadcast, ODA_QRYUSEBROADCAST);
 	ConfigInfo.Read(GETLISTONSTART, &GetListOnStart, ODA_UIGETLISTONSTART);
 	ConfigInfo.Read(SHOWBLOCKEDSERVERS, &ShowBlockedServers,
@@ -483,6 +495,7 @@ void dlgConfig::LoadSettings()
     ConfigInfo.Read(QRYTHREADMAXIMUM, &ThreadMax, ODA_THRMAXVAL);
 	ConfigInfo.Read(CSHLSERVERS, &CustomServersHighlight, ODA_UICSHIGHTLIGHTSERVERS);
 	ConfigInfo.Read(CSHLCOLOUR, &CustomServerColour, ODA_UICSHSHIGHLIGHTCOLOUR);
+	ConfigInfo.Read(PRGTHEME, &ProgramTheme, ODA_PRGTHEME);
 
 	m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
 	m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
@@ -533,6 +546,7 @@ void dlgConfig::LoadSettings()
 	m_SpnCtrlPQPlayable->SetValue(PQPlayable);
 	m_SpnCtrlPQLaggy->SetValue(PQLaggy);
 
+	m_RbTheme->SetSelection(ProgramTheme);
 }
 
 // Save settings to configuration file
@@ -573,6 +587,7 @@ void dlgConfig::SaveSettings()
     ConfigInfo.Write(QRYTHREADMAXIMUM,  m_SpnCtrlThreadMax->GetValue());
 	ConfigInfo.Write(CSHLSERVERS, m_ChkCtrlHighlightCustomServers->GetValue());
 	ConfigInfo.Write(CSHLCOLOUR, m_ClrPickCustomServerHighlight->GetColour().GetAsString(wxC2S_HTML_SYNTAX));
+	ConfigInfo.Write(PRGTHEME, m_RbTheme->GetSelection());
 
 	ConfigInfo.Flush();
 }

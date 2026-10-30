@@ -32,6 +32,7 @@
 
 #include "net_io.h"
 #include "cvardoc_db.h"
+#include "oda_defs.h"
 
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
@@ -61,6 +62,30 @@ bool Application::OnInit()
 	// fine without it). The client and server docs are compiled in and merged
 	// into the deduplicated union of every cvar Odamex knows about.
 	GetCvarDb().LoadEmbedded();
+
+	// We must set the theme before any dialogs are created
+	{
+		wxFileConfig const ConfigInfo;
+
+		wxInt32 ProgramTheme;
+
+		ConfigInfo.Read(PRGTHEME, &ProgramTheme, ODA_PRGTHEME);
+
+		switch (ProgramTheme)
+		{
+		case 1:
+			wxApp::SetAppearance(Appearance::Dark);
+			break;
+
+		case 2:
+			wxApp::SetAppearance(Appearance::Light);
+			break;
+
+		default:
+			wxApp::SetAppearance(Appearance::System);
+			break;
+		}
+	}
 
 	// create main window, get size dimensions and show it
 	MAIN_DIALOG = new dlgMain(nullptr);

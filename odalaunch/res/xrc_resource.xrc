@@ -570,6 +570,31 @@
                         <object class="wxBoxSizer" name="bSizer332">
                           <orient>wxVERTICAL</orient>
                           <object class="sizeritem">
+                            <flag>wxEXPAND</flag>
+                            <border>5</border>
+                            <option>1</option>
+                            <object class="wxBoxSizer" name="bSizer45">
+                              <orient>wxVERTICAL</orient>
+                              <object class="sizeritem">
+                                <flag>wxALL|wxEXPAND</flag>
+                                <border>5</border>
+                                <option>1</option>
+                                <object class="wxRadioBox" name="Id_RbTheme">
+                                  <style>wxRA_SPECIFY_COLS</style>
+                                  <tooltip>Sets the appearance, requires launcher restart</tooltip>
+                                  <label>Theme</label>
+                                  <selection>0</selection>
+                                  <content>
+                                    <item>System</item>
+                                    <item>Dark</item>
+                                    <item>Light</item>
+                                  </content>
+                                  <dimension>1</dimension>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <object class="sizeritem">
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
                             <option>0</option>
