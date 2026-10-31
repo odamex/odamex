@@ -46,21 +46,21 @@ void freecam_t::build(mapthing2_t spawn, bool setSpawnPos, bool noclip)
 	}
 
 	auto* mobj = new AActor(persist.x, persist.y, persist.z, MT_FREECAM);
-	
-  mobj->angle = persist.angle;
+
+	mobj->angle = persist.angle;
 	mobj->pitch = persist.pitch;
 	mobj->prevx = mobj->x;
 	mobj->prevy = mobj->y;
 	mobj->prevangle = mobj->angle;
 	mobj->prevpitch = mobj->pitch;
 
-  if (setSpawnPos)
-  {
-    persist.z = mobj->floorz + VIEWHEIGHT;
-  }
+	if (setSpawnPos)
+	{
+		persist.z = mobj->floorz + VIEWHEIGHT;
+	}
 
-  mobj->z = persist.z;
-  mobj->prevz = persist.z;
+	mobj->z = persist.z;
+	mobj->prevz = persist.z;
 
 	this->camera = this->mo = mobj->ptr();
 
