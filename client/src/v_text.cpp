@@ -472,9 +472,9 @@ int V_GetTextColor(std::string_view str)
         return t;
     }();
 
-	if (str[0] == TEXTCOLOR_ESCAPE && str[1] < 128)
+	if (str.size() >= 2 && str[0] == TEXTCOLOR_ESCAPE && static_cast<unsigned char>(str[1]) < 128)
 	{
-		switch (int c = str[1])
+		switch (int c = static_cast<unsigned char>(str[1]))
 		{
 			case '-':
 				return msg2color; // use print color

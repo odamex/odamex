@@ -239,8 +239,8 @@ bool PIT_AddThingIntercepts (AActor& thing)
 // for all lines.
 //
 template <typename F, typename... ARGS>
-requires std::predicate<F, intercept_t&, ARGS...>
-bool P_TraverseIntercepts(F&& func, fixed_t maxfrac, ARGS&&... args)
+requires std::predicate<F&, intercept_t&, ARGS&...>
+bool P_TraverseIntercepts(F& func, fixed_t maxfrac, ARGS&... args)
 {
 	size_t 				count = intercepts.size();
 	fixed_t 			dist;
@@ -262,7 +262,7 @@ bool P_TraverseIntercepts(F&& func, fixed_t maxfrac, ARGS&&... args)
 			return true;		// checked everything in range
 
 
-		if (!std::invoke(std::forward<F>(func), *in, std::forward<ARGS>(args)...))
+		if (!std::invoke(func, *in, args...))
 			return false;		// don't bother going farther
 
 		in->frac = limits::MAXFIXED;
@@ -279,8 +279,8 @@ bool P_TraverseIntercepts(F&& func, fixed_t maxfrac, ARGS&&... args)
 // for all lines.
 //
 template <typename F, typename... ARGS>
-requires std::predicate<F, intercept_t&, ARGS...>
-bool P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, F&& trav, ARGS&&... args)
+requires std::predicate<F&, intercept_t&, ARGS&...>
+bool P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, F& trav, ARGS&... args)
 {
 	fixed_t 	xstep;
 	fixed_t 	ystep;
@@ -397,7 +397,7 @@ bool P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, F
 
 	}
 	// go through the sorted list
-	return P_TraverseIntercepts(std::forward<F>(trav), FRACUNIT, std::forward<ARGS>(args)...);
+	return P_TraverseIntercepts(trav, FRACUNIT, args...);
 }
 
 } // namespace

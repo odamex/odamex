@@ -769,6 +769,7 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 				particle.color = 228;           // Weathering yellow-beige.
 				break;
 			case CredibilityEnum::CHALLENGED_CREDIBILITY:
+			case CredibilityEnum::CREDIBILITY_LEVEL_COUNT:  // a count, not a level
 				particle.color = 0;             // Pitch.
 				break;
 		}
