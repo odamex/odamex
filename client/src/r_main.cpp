@@ -439,7 +439,6 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 //
 static inline int64_t R_iMul30(int64_t a, int64_t b) { return (a * b) >> 30; }
 static inline int64_t R_iDiv30(int64_t a, int64_t b) { return (a << 30) / b; }
-static inline int64_t R_iMulFrac(int64_t a, int64_t b) { return (a * b) >> FRACBITS; }
 
 void R_RotatePoint64(int64_t x, int64_t y, angle_t ang, int64_t& tx, int64_t& ty)
 {
@@ -489,8 +488,8 @@ bool R_ClipLineToFrustum64(const v2fixed64_t& v1, const v2fixed64_t& v2, int64_t
 	// apply the clipping against the 'y = clipdist' plane to p1 & p2
 	R_ClipLine64(v1, v2, lclip, rclip, p1, p2);
 
-	const int64_t yc1 = R_iMulFrac(fovtan, p1.y);
-	const int64_t yc2 = R_iMulFrac(fovtan, p2.y);
+	const int64_t yc1 = FixedMulWide(fovtan, p1.y);
+	const int64_t yc2 = FixedMulWide(fovtan, p2.y);
 
 	// is the entire line off the left side or the right side of the screen?
 	if ((p1.x < -yc1 && p2.x < -yc2) || (p1.x > yc1 && p2.x > yc2))

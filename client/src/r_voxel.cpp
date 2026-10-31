@@ -930,6 +930,16 @@ const VoxelRenderOptions* VX_GetOptions(const int32_t spritenum, const int frame
 	return it == g_voxelOptions.end() ? nullptr : &it->second;
 }
 
+// The fixed-point scale between s0 at screen x x0 and s1 at x1, at x.
+fixed_t VX_LerpScale(const fixed_t s0, const fixed_t s1, const int64_t x0, const int64_t x1,
+                     const int64_t x)
+{
+	if (x1 == x0)
+		return s0;
+	const int64_t t = ((x - x0) << FRACBITS) / (x1 - x0);
+	return static_cast<fixed_t>(s0 + FixedMulWide(static_cast<int64_t>(s1) - s0, t));
+}
+
 void VX_DrawSolidShadedColumn(rendercontext_t& ctx, vissprite_t* spr, const int screenX,
                               const int yl, const int yh, const byte color)
 {
@@ -1026,10 +1036,10 @@ void VX_DrawColumn(rendercontext_t& ctx, vissprite_t* spr, const VoxelEye& eye, 
 	const fixed_t C_yscale = FixedDiv(FocalLengthY, Cy);
 	const fixed_t D_yscale = FixedDiv(FocalLengthY, Dy);
 
-	const fixed_t Ax = centerxfrac + FixedMul(Ax0, A_xscale);
-	const fixed_t Bx = centerxfrac + FixedMul(Bx0, B_xscale);
-	const fixed_t Cx = centerxfrac + FixedMul(Cx0, C_xscale);
-	const fixed_t Dx = centerxfrac + FixedMul(Dx0, D_xscale);
+	const int64_t Ax = centerxfrac + FixedMulWide(Ax0, A_xscale);
+	const int64_t Bx = centerxfrac + FixedMulWide(Bx0, B_xscale);
+	const int64_t Cx = centerxfrac + FixedMulWide(Cx0, C_xscale);
+	const int64_t Dx = centerxfrac + FixedMulWide(Dx0, D_xscale);
 
 	static const std::array<byte, 9> A_faces = {F_BACK,  F_BACK, F_RIGHT, F_LEFT, 0,
 	                                            F_RIGHT, F_LEFT, F_FRONT, F_FRONT};
@@ -1043,25 +1053,23 @@ void VX_DrawColumn(rendercontext_t& ctx, vissprite_t* spr, const VoxelEye& eye, 
 	const fixed_t local_y = (y << FRACBITS) - v->y_pivot;
 	const fixed_t columnTilt = FixedMul(local_y, vv->pitchSlope);
 
-	for (fixed_t ux = ((Ax - 1) | (FRACUNIT - 1)) + 1; ux < std::max(Bx, Cx);
-	     ux += FRACUNIT)
-	{
-		if (ux >= ((spr->x2 + 1) << FRACBITS))
-			break;
-		if (ux < (spr->x1 << FRACBITS))
-			continue;
+	// Only the sprite's own columns: a corner close to the camera can project
+	// a long way off the screen.
+	const int64_t ux_start = std::max<int64_t>(((Ax - 1) | (FRACUNIT - 1)) + 1,
+	                                           static_cast<int64_t>(spr->x1) << FRACBITS);
+	const int64_t ux_stop = std::min<int64_t>(std::max(Bx, Cx),
+	                                          static_cast<int64_t>(spr->x2 + 1) << FRACBITS);
 
-		const int screenX = ux >> FRACBITS;
+	for (int64_t ux = ux_start; ux < ux_stop; ux += FRACUNIT)
+	{
+		const int screenX = static_cast<int>(ux >> FRACBITS);
 		const fixed_t clip_y1 = (ctx.sprite.mceilingclip[screenX] + 1) << FRACBITS;
 		const fixed_t clip_y2 = (ctx.sprite.mfloorclip[screenX] << FRACBITS) - 1;
 		if (clip_y2 <= clip_y1)
 			continue;
 
-		fixed_t scale = 0;
-		if (ux > Bx)
-			scale = B_yscale + FixedMul(C_yscale - B_yscale, FixedDiv(ux - Bx, Cx - Bx));
-		else
-			scale = A_yscale + FixedMul(B_yscale - A_yscale, FixedDiv(ux - Ax, Bx - Ax));
+		const fixed_t scale = ux > Bx ? VX_LerpScale(B_yscale, C_yscale, Bx, Cx, ux)
+		                              : VX_LerpScale(A_yscale, B_yscale, Ax, Bx, ux);
 		if (scale <= 0)
 			continue;
 
@@ -1079,12 +1087,10 @@ void VX_DrawColumn(rendercontext_t& ctx, vissprite_t* spr, const VoxelEye& eye, 
 				continue;
 
 			const fixed_t top_z = spr->gzt - viewz + columnTilt - (top << FRACBITS);
-			fixed_t uy1 = centeryfrac - FixedMul(top_z, scale);
-			fixed_t uy2 = uy1 + (static_cast<fixed_t>(len) * scale);
-			const fixed_t uy0 = uy1;
-
-			uy1 = std::clamp(uy1, clip_y1, clip_y2);
-			uy2 = std::clamp(uy2, clip_y1, clip_y2);
+			const int64_t uy0 = centeryfrac - FixedMulWide(top_z, scale);
+			const fixed_t uy1 = static_cast<fixed_t>(std::clamp<int64_t>(uy0, clip_y1, clip_y2));
+			const fixed_t uy2 = static_cast<fixed_t>(std::clamp<int64_t>(
+			    uy0 + (static_cast<int64_t>(len) * scale), clip_y1, clip_y2));
 
 			// Some viewing angles have no second visible side.  In those cases,
 			// rounding can put the center screen column just past Bx; keep using
@@ -1114,34 +1120,30 @@ void VX_DrawColumn(rendercontext_t& ctx, vissprite_t* spr, const VoxelEye& eye, 
 			if (has_top or has_bottom)
 			{
 				if (ux > Cx)
-					wscale = C_yscale +
-					         FixedMul(B_yscale - C_yscale, FixedDiv(ux - Cx, Bx - Cx));
+					wscale = VX_LerpScale(C_yscale, B_yscale, Cx, Bx, ux);
 				else if (ux > Dx)
-					wscale = D_yscale +
-					         FixedMul(C_yscale - D_yscale, FixedDiv(ux - Dx, Cx - Dx));
+					wscale = VX_LerpScale(D_yscale, C_yscale, Dx, Cx, ux);
 				else
-					wscale = A_yscale +
-					         FixedMul(D_yscale - A_yscale, FixedDiv(ux - Ax, Dx - Ax));
+					wscale = VX_LerpScale(A_yscale, D_yscale, Ax, Dx, ux);
 			}
 
 			if (has_top)
 			{
-				fixed_t uy = centeryfrac - FixedMul(top_z, wscale);
+				int64_t uy = centeryfrac - FixedMulWide(top_z, wscale);
 				uy = ((uy - 1) | (FRACUNIT - 1)) + 1;
-				uy = std::max(uy, clip_y1);
+				uy = std::clamp<int64_t>(uy, clip_y1, clip_y2);
 
-				VX_DrawSolidShadedColumn(ctx, spr, screenX, uy >> FRACBITS,
+				VX_DrawSolidShadedColumn(ctx, spr, screenX, static_cast<int>(uy >> FRACBITS),
 				                         (uy1 - 1) >> FRACBITS, slab[0]);
 			}
 			else if (has_bottom)
 			{
-				fixed_t uy =
-				    centeryfrac -
-				    FixedMul(top_z - (static_cast<int>(len) << FRACBITS), wscale);
-				uy = std::min(uy, clip_y2);
+				int64_t uy = centeryfrac -
+				             FixedMulWide(top_z - (static_cast<int>(len) << FRACBITS), wscale);
+				uy = std::clamp<int64_t>(uy, clip_y1, clip_y2);
 
 				VX_DrawSolidShadedColumn(ctx, spr, screenX, (uy2 + 1) >> FRACBITS,
-				                         uy >> FRACBITS, slab[len - 1]);
+				                         static_cast<int>(uy >> FRACBITS), slab[len - 1]);
 			}
 
 			if (has_side)
@@ -1151,23 +1153,32 @@ void VX_DrawColumn(rendercontext_t& ctx, vissprite_t* spr, const VoxelEye& eye, 
 				dcol.yh = uy2 >> FRACBITS;
 
 				dcol.iscale = iscale;
-				dcol.texturefrac = FixedMul(
-				    (((dcol.yl << FRACBITS) - uy0) >> FRACBITS) << FRACBITS, iscale);
+
+				// the slab's texel at the first drawn row
+				// uy0 can be far above the screen, so this is 64-bit
+				// until it is known to be in range
+				const int64_t rows = ((static_cast<int64_t>(dcol.yl) << FRACBITS) - uy0) >> FRACBITS;
+				int64_t texturefrac = rows * iscale;
+				const fixed_t maxfrac = static_cast<fixed_t>(len) << FRACBITS;
+				if (texturefrac >= maxfrac)
+				{
+					slab += len;
+					continue;
+				}
 
 				int local_yl = dcol.yl;
 				int local_yh = dcol.yh;
-				if (dcol.texturefrac < 0)
+				if (texturefrac < 0)
 				{
-					const int cnt =
-					    (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >>
-					    FRACBITS;
-					local_yl += cnt;
-					dcol.texturefrac += cnt * dcol.iscale;
+					const int64_t cnt = (((-texturefrac) << FRACBITS) / dcol.iscale + FRACUNIT - 1) >>
+					                    FRACBITS;
+					local_yl = static_cast<int>(std::min<int64_t>(local_yl + cnt, local_yh + 1));
+					texturefrac += cnt * dcol.iscale;
 				}
+				dcol.texturefrac = static_cast<fixed_t>(texturefrac);
 
 				const fixed_t endfrac =
 				    dcol.texturefrac + ((local_yh - local_yl) * dcol.iscale);
-				const fixed_t maxfrac = static_cast<fixed_t>(len) << FRACBITS;
 				if (endfrac >= maxfrac)
 				{
 					const int cnt =

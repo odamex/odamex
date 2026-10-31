@@ -141,6 +141,16 @@ inline constexpr fixed_t FixedMul(fixed_t a, fixed_t b)
 }
 
 //
+// Fixed Point Multiplication for 16.16 precision, keeping the 64-bit result
+// for values that can outgrow a fixed_t (e.g. projections far off the screen)
+//
+[[nodiscard]]
+inline constexpr int64_t FixedMulWide(int64_t a, int64_t b)
+{
+	return (a * b) >> FRACBITS;
+}
+
+//
 // Fixed Point Multiplication for 44.20 precision
 //
 [[nodiscard]]
