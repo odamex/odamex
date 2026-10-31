@@ -208,17 +208,17 @@ class CredibilityState
 
 		void Update(const AActor& mobj);
 
-        [[nodiscard]]
-        bool IsEligibleForChallenge() const
-        {
-            if (IsCredible())
-                return false;
+		[[nodiscard]]
+		bool IsEligibleForChallenge() const
+		{
+			if (IsCredible())
+				return false;
 
-            if (m_credibility == CredibilityEnum::CHALLENGED_CREDIBILITY and m_challengeInterval > 0)
-                return false;
+			if (m_credibility == CredibilityEnum::CHALLENGED_CREDIBILITY and m_challengeInterval > 0)
+				return false;
 
-            return true;
-        }
+			return true;
+		}
 
 		bool Challenge(int i_timeout)
 		{

@@ -340,66 +340,66 @@ void MapThing::Serialize (FArchive &arc)
 
 inline void CredibilityState::Update(const AActor& mobj)
 {
-    // On the server, just leave the FULLY_CREDIBLE default in place forever and make this
-    // an empty function so that the compiler has the opportunity to no-op any calls to it.
-    //
+	// On the server, just leave the FULLY_CREDIBLE default in place forever and make this
+	// an empty function so that the compiler has the opportunity to no-op any calls to it.
+	//
 #ifdef CLIENT_APP
-    if (not serverside)     // But we still need to check in case we're in single-player.
-    {
-        if (mobj.updatedDuringLocalTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
-        {
-            const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringLocalTic;
+	if (not serverside)     // But we still need to check in case we're in single-player.
+	{
+		if (mobj.updatedDuringLocalTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
+		{
+			const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringLocalTic;
 
-            if (ticsSinceAuthoritativeUpdate == 0)
-            {
-                m_crediblePosition.x = mobj.x;
-                m_crediblePosition.y = mobj.y;
-                m_crediblePosition.z = mobj.z;
+			if (ticsSinceAuthoritativeUpdate == 0)
+			{
+				m_crediblePosition.x = mobj.x;
+				m_crediblePosition.y = mobj.y;
+				m_crediblePosition.z = mobj.z;
 
-                m_credibility             = CredibilityEnum::FULLY_CREDIBLE;
-                m_predictedMotionTicCount = 0;
-                m_challengeInterval       = 0;
-            }
-            // In sv_main, we nominally update mobjs every 7 tics.
-            // Allow up to 10 before we stop fully believing it, to allow for jitter plus
-            // some "real world slop" margin.
-            else if (ticsSinceAuthoritativeUpdate < 10)
-            {
-                m_credibility = CredibilityEnum::FULLY_CREDIBLE;
-            }
-            else
-            {
-                if (   m_predictedMotionTicCount > 0
-                    or m_crediblePosition.x != mobj.x
-                    or m_crediblePosition.y != mobj.y
-                    or m_crediblePosition.z != mobj.z)
-                {
-                    ++m_predictedMotionTicCount;
-                }
+				m_credibility             = CredibilityEnum::FULLY_CREDIBLE;
+				m_predictedMotionTicCount = 0;
+				m_challengeInterval       = 0;
+			}
+			// In sv_main, we nominally update mobjs every 7 tics.
+			// Allow up to 10 before we stop fully believing it, to allow for jitter plus
+			// some "real world slop" margin.
+			else if (ticsSinceAuthoritativeUpdate < 10)
+			{
+				m_credibility = CredibilityEnum::FULLY_CREDIBLE;
+			}
+			else
+			{
+				if (   m_predictedMotionTicCount > 0
+				    or m_crediblePosition.x != mobj.x
+				    or m_crediblePosition.y != mobj.y
+				    or m_crediblePosition.z != mobj.z)
+				{
+					++m_predictedMotionTicCount;
+				}
 
-                // Possible weakness to this algorithm:  Suppose the client predicts that
-                // the mobj is dead-still but the server says it's in motion yet it's SEMI_AWARE
-                // or just a lower-priority SEMI_AWARE?  We just have to hope that the server
-                // decides to naturally send an UpdateMobj for it at some point.
+				// Possible weakness to this algorithm:  Suppose the client predicts that
+				// the mobj is dead-still but the server says it's in motion yet it's SEMI_AWARE
+				// or just a lower-priority SEMI_AWARE?  We just have to hope that the server
+				// decides to naturally send an UpdateMobj for it at some point.
 
-                if (m_credibility == CredibilityEnum::CHALLENGED_CREDIBILITY)
-                {
-                    m_challengeInterval = std::max(0, m_challengeInterval - 1);
-                }
-                else if (m_predictedMotionTicCount < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
-                {
-                    // In this mode, the client is letting the mobj wander about via dead reckoning.
-                    // We guess that the mobj hasn't wandered TOO far from where the server says it
-                    // should be.
-                    m_credibility = CredibilityEnum::SEMI_CREDIBLE;
-                }
-                else
-                {
-                    m_credibility = CredibilityEnum::NOT_CREDIBLE;
-                }
-            }
-        }
-    }
+				if (m_credibility == CredibilityEnum::CHALLENGED_CREDIBILITY)
+				{
+					m_challengeInterval = std::max(0, m_challengeInterval - 1);
+				}
+				else if (m_predictedMotionTicCount < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
+				{
+					// In this mode, the client is letting the mobj wander about via dead reckoning.
+					// We guess that the mobj hasn't wandered TOO far from where the server says it
+					// should be.
+					m_credibility = CredibilityEnum::SEMI_CREDIBLE;
+				}
+				else
+				{
+					m_credibility = CredibilityEnum::NOT_CREDIBLE;
+				}
+			}
+		}
+	}
 #endif
 }
 
@@ -1229,13 +1229,13 @@ void AActor::RunThink ()
 		credibility.Update(*this);
 
 #ifdef CLIENT_APP
-        if (    IsMonster()
-            and not (flags & MF_CORPSE)
-            and credibility.IsEligibleForChallenge()
-            and credibility.GetMotionAge() > 0)
-        {
-            consoleplayer().sortedMobjs.emplace_back(this, 0);
-        }
+		if (    IsMonster()
+		    and not (flags & MF_CORPSE)
+		    and credibility.IsEligibleForChallenge()
+		    and credibility.GetMotionAge() > 0)
+		{
+			consoleplayer().sortedMobjs.emplace_back(this, 0);
+		}
 #endif
 	}
 
