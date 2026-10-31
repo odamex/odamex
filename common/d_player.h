@@ -350,9 +350,9 @@ public:
 	struct ActorDistanceType
 	{
 		AActor* actorPtr;
-		int     distanceSquared;
+		int64_t distanceSquared;
 
-		ActorDistanceType(AActor* i_actorPtr, int i_distanceSquared) : actorPtr(i_actorPtr), distanceSquared(i_distanceSquared) {}
+		ActorDistanceType(AActor* i_actorPtr, int64_t i_distanceSquared) : actorPtr(i_actorPtr), distanceSquared(i_distanceSquared) {}
 	};
 	std::vector<ActorDistanceType> sortedMobjs;
 
