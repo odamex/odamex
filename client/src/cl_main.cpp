@@ -461,7 +461,7 @@ void CL_Reconnect(void)
 
 		P_ClearAllNetIds();
 	}
-	else if (lastconaddr.ip[0])
+	else if (!NET_IsNullAdr(lastconaddr))
 	{
 		serveraddr = lastconaddr;
 	}
@@ -1449,7 +1449,7 @@ int connecttimeout = 0;
 //
 void CL_RequestConnectInfo(void)
 {
-	if (!serveraddr.ip[0])
+	if (NET_IsNullAdr(serveraddr))
 		return;
 
 	gamestate = GS_CONNECTING;
@@ -1852,7 +1852,7 @@ void CL_InitNetwork (void)
 
 void CL_TryToConnect(uint32_t server_token)
 {
-	if (!serveraddr.ip[0])
+	if (NET_IsNullAdr(serveraddr))
 		return;
 
 	if (!connecttimeout)

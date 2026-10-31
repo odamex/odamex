@@ -31,11 +31,16 @@
 #include "d_player.h"
 #include "i_net.h"
 
+// An IPv4 address with optional "*" octet wildcards (e.g. 1.2.*.*), or an
+// IPv6 address with an optional CIDR prefix length (e.g. 2001:db8::/32).
 class IPRange
 {
 private:
+	bool v6;
 	byte ip[4];
 	bool mask[4];
+	byte ip6[16];
+	byte prefixlen; // IPv6 only, 0-128
 public:
 	IPRange(void);
 	[[nodiscard]] bool check(const netadr_t &address) const;

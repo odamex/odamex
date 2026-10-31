@@ -70,6 +70,7 @@ typedef int SOCKET;
 
 #include "i_system.h"
 #include "i_net.h"
+#include "m_argv.h"
 #include "svc_map.h"
 #include "d_player.h"
 #include "m_alloc.h"
@@ -83,6 +84,7 @@ typedef int SOCKET;
 #endif
 
 unsigned int	inet_socket;
+static int	inet_family = AF_INET; // AF_INET6 if we got a dual-stack socket
 int         	localport;
 netadr_t    	net_from;   // address of who sent the packet
 
@@ -264,14 +266,44 @@ void upnp_rem_redir (int port)
 //
 // UDPsocket
 //
+// Prefers a dual-stack IPv6 socket (IPV6_V6ONLY off) so that IPv4 and IPv6
+// peers can both talk to us on a single port.  IPv4 peers show up as
+// v4-mapped addresses and are converted back to plain IPv4 netadr_t's, so the
+// rest of the engine doesn't need to care.  Falls back to a plain IPv4 socket
+// if IPv6 is unavailable or "-ipv4only" is passed.
+//
 SOCKET UDPsocket (void)
 {
-	SOCKET s;
+	SOCKET s = INVALID_SOCKET;
 
-	// allocate a socket
-	s = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (!Args.CheckParm("-ipv4only"))
+	{
+		s = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+		if (s != INVALID_SOCKET)
+		{
+			int v6only = 0;
+			if (setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, SETSOCKOPTCAST(&v6only),
+			               (int)sizeof(v6only)) == SOCKET_ERROR)
+			{
+				// Can't do dual-stack on this system, use plain IPv4 instead.
+				closesocket(s);
+				s = INVALID_SOCKET;
+			}
+			else
+			{
+				inet_family = AF_INET6;
+			}
+		}
+	}
+
 	if (s == INVALID_SOCKET)
-     	I_FatalError ("can't create socket");
+	{
+		inet_family = AF_INET;
+		s = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	}
+
+	if (s == INVALID_SOCKET)
+		I_FatalError ("can't create socket");
 
 	return s;
 }
@@ -283,18 +315,30 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 {
 	int v;
 	struct sockaddr_in address;
+	struct sockaddr_in6 address6;
 
 	memset (&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
+
+	memset (&address6, 0, sizeof(address6));
+	address6.sin6_family = AF_INET6;
+	address6.sin6_addr = in6addr_any;
 	u_short next = wanted;
 
 	// denis - try several ports
 	do
 	{
-		address.sin_port = htons(next++);
-
-		v = bind (s, (sockaddr *)&address, sizeof(address));
+		if (inet_family == AF_INET6)
+		{
+			address6.sin6_port = htons(next++);
+			v = bind (s, (sockaddr *)&address6, sizeof(address6));
+		}
+		else
+		{
+			address.sin_port = htons(next++);
+			v = bind (s, (sockaddr *)&address, sizeof(address));
+		}
 
 		if(next > wanted + 32)
 		{
@@ -346,70 +390,205 @@ void CloseNetwork (void)
 
 // this is from Quake source code :)
 
-void SockadrToNetadr (struct sockaddr_in *s, netadr_t *a)
+static void SockadrToNetadr(const struct sockaddr_storage* s, netadr_t* a)
 {
-	 memcpy(&(a->ip), &(s->sin_addr), sizeof(struct in_addr));
-     a->port = s->sin_port;
-}
+	memset(a, 0, sizeof(*a));
 
-void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s)
-{
-     memset (s, 0, sizeof(*s));
-     s->sin_family = AF_INET;
+	if (s->ss_family == AF_INET6)
+	{
+		const struct sockaddr_in6* s6 = (const struct sockaddr_in6*)s;
 
-	 memcpy(&(s->sin_addr), &(a->ip), sizeof(struct in_addr));
-     s->sin_port = a->port;
-}
-
-char *NET_AdrToString (netadr_t a)
-{
-     static  char    s[64];
-
-     snprintf (s, 64, "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
-
-     return s;
-}
-
-bool NET_StringToAdr (const char *s, netadr_t *a)
-{
-	 struct hostent  *h;
-	 struct sockaddr_in sadr;
-	 char	*colon;
-	 char	copy[256];
-
-
-	 memset (&sadr, 0, sizeof(sadr));
-	 sadr.sin_family = AF_INET;
-
-	 sadr.sin_port = 0;
-
-	 strncpy (copy, s, sizeof(copy) - 1);
-	 copy[sizeof(copy) - 1] = 0;
-
-	 // strip off a trailing :port if present
-	 for (colon = copy ; *colon ; colon++)
-		if (*colon == ':')
+		if (IN6_IS_ADDR_V4MAPPED(&s6->sin6_addr))
 		{
-			*colon = 0;
-			sadr.sin_port = htons(atoi(colon+1));
+			// Peer is IPv4, we only see it as ::ffff:a.b.c.d because our
+			// socket is dual-stack.  Hand back a normal IPv4 address.
+			memcpy(a->ip, &s6->sin6_addr.s6_addr[12], 4);
+			a->family = NA_IPV4;
+		}
+		else
+		{
+			memcpy(a->ip6, &s6->sin6_addr, sizeof(a->ip6));
+			a->scope_id = s6->sin6_scope_id;
+			a->family = NA_IPV6;
+		}
+		a->port = s6->sin6_port;
+	}
+	else
+	{
+		const struct sockaddr_in* s4 = (const struct sockaddr_in*)s;
+
+		memcpy(a->ip, &s4->sin_addr, sizeof(a->ip));
+		a->port = s4->sin_port;
+		a->family = NA_IPV4;
+	}
+}
+
+// Returns false if the address can't be reached with our socket (an IPv6
+// address while we only have an IPv4 socket).
+static bool NetadrToSockadr(const netadr_t* a, struct sockaddr_storage* s,
+                            socklen_t* len)
+{
+	memset(s, 0, sizeof(*s));
+
+	if (inet_family == AF_INET6)
+	{
+		struct sockaddr_in6* s6 = (struct sockaddr_in6*)s;
+
+		s6->sin6_family = AF_INET6;
+		s6->sin6_port = a->port;
+
+		if (a->family == NA_IPV6)
+		{
+			memcpy(&s6->sin6_addr, a->ip6, sizeof(a->ip6));
+			s6->sin6_scope_id = a->scope_id;
+		}
+		else
+		{
+			// Send to IPv4 hosts as v4-mapped addresses.
+			s6->sin6_addr.s6_addr[10] = 0xFF;
+			s6->sin6_addr.s6_addr[11] = 0xFF;
+			memcpy(&s6->sin6_addr.s6_addr[12], a->ip, sizeof(a->ip));
 		}
 
-	if (! (h = gethostbyname(copy)) )
-		return 0;
+		*len = sizeof(*s6);
+		return true;
+	}
 
-	*(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
+	if (a->family == NA_IPV6)
+		return false;
 
-	SockadrToNetadr (&sadr, a);
+	struct sockaddr_in* s4 = (struct sockaddr_in*)s;
 
+	s4->sin_family = AF_INET;
+	memcpy(&s4->sin_addr, a->ip, sizeof(a->ip));
+	s4->sin_port = a->port;
+
+	*len = sizeof(*s4);
 	return true;
+}
+
+bool NET_IsNullAdr(const netadr_t& a)
+{
+	if (a.family == NA_IPV6)
+	{
+		for (size_t i = 0; i < sizeof(a.ip6); i++)
+			if (a.ip6[i])
+				return false;
+		return true;
+	}
+
+	return !(a.ip[0] || a.ip[1] || a.ip[2] || a.ip[3]);
+}
+
+// Address without port, e.g. "1.2.3.4" or "2001:db8::1".
+std::string NET_AdrToStringNoPort(const netadr_t& a)
+{
+	char buf[INET6_ADDRSTRLEN + 1] = "";
+
+	if (a.family == NA_IPV6)
+		inet_ntop(AF_INET6, a.ip6, buf, sizeof(buf));
+	else
+		inet_ntop(AF_INET, a.ip, buf, sizeof(buf));
+
+	return buf;
+}
+
+// "1.2.3.4:10666" or "[2001:db8::1]:10666"
+char *NET_AdrToString (netadr_t a)
+{
+	static char s[64];
+
+	const std::string ip = NET_AdrToStringNoPort(a);
+
+	if (a.family == NA_IPV6)
+		snprintf(s, sizeof(s), "[%s]:%i", ip.c_str(), ntohs(a.port));
+	else
+		snprintf(s, sizeof(s), "%s:%i", ip.c_str(), ntohs(a.port));
+
+	return s;
+}
+
+//
+// NET_StringToAdr
+//
+// Accepts "host", "host:port", "1.2.3.4[:port]", "[2001:db8::1][:port]" and
+// bare IPv6 literals ("2001:db8::1", no port possible without brackets).
+// Host names are resolved with getaddrinfo.  If ipv4Only is set, only IPv4
+// results are considered (used for the master servers, whose protocol can't
+// carry IPv6 addresses).
+//
+bool NET_StringToAdr (const char *s, netadr_t *a, bool ipv4Only)
+{
+	std::string host, portstr;
+	const char* colon = strchr(s, ':');
+
+	if (s[0] == '[')
+	{
+		const char* end = strchr(s, ']');
+		if (!end)
+			return false;
+
+		host.assign(s + 1, end - s - 1);
+
+		if (end[1] == ':')
+			portstr = end + 2;
+		else if (end[1] != '\0')
+			return false;
+	}
+	else if (colon && strchr(colon + 1, ':') == NULL)
+	{
+		// exactly one colon, so host:port
+		host.assign(s, colon - s);
+		portstr = colon + 1;
+	}
+	else
+	{
+		// no colon (name or IPv4), or an unbracketed IPv6 literal
+		host = s;
+	}
+
+	if (host.empty() || host.size() >= 256)
+		return false;
+
+	struct addrinfo hints;
+	struct addrinfo* res = NULL;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = (ipv4Only || inet_family != AF_INET6) ? AF_INET : AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+
+	if (getaddrinfo(host.c_str(), NULL, &hints, &res) != 0 || !res)
+		return false;
+
+	bool found = false;
+	for (struct addrinfo* ai = res; ai; ai = ai->ai_next)
+	{
+		if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
+			continue;
+
+		struct sockaddr_storage ss;
+		memset(&ss, 0, sizeof(ss));
+		memcpy(&ss, ai->ai_addr, ai->ai_addrlen < sizeof(ss) ? ai->ai_addrlen : sizeof(ss));
+
+		SockadrToNetadr(&ss, a);
+		a->port = htons(atoi(portstr.c_str()));
+		found = true;
+		break;
+	}
+
+	freeaddrinfo(res);
+	return found;
 }
 
 bool NET_CompareAdr (netadr_t a, netadr_t b)
 {
-	if (a.ip[0] == b.ip[0] && a.ip[1] == b.ip[1] && a.ip[2] == b.ip[2] && a.ip[3] == b.ip[3] && a.port == b.port)
-		return true;
+	if (a.family != b.family || a.port != b.port)
+		return false;
 
-	return false;
+	if (a.family == NA_IPV6)
+		return memcmp(a.ip6, b.ip6, sizeof(a.ip6)) == 0;
+
+	return memcmp(a.ip, b.ip, sizeof(a.ip)) == 0;
 }
 
 #ifdef _WIN32
@@ -419,7 +598,7 @@ typedef int socklen_t;
 int NET_GetPacket (void)
 {
 	int				  ret;
-	struct sockaddr_in   from;
+	struct sockaddr_storage from;
 	socklen_t			fromlen;
 
 	fromlen = sizeof(from);
@@ -465,7 +644,8 @@ int NET_GetPacket (void)
 int NET_SendPacket (buf_t &buf, netadr_t &to)
 {
 	int				   ret;
-	struct sockaddr_in	addr;
+	struct sockaddr_storage addr;
+	socklen_t		   addrlen = 0;
 
 	// [SL] 2011-07-06 - Don't try to send a packet if we're not really connected
 	// (eg, a netdemo is being played back)
@@ -475,9 +655,14 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 		return 0;
 	}
 
-	NetadrToSockadr (&to, &addr);
+	if (!NetadrToSockadr (&to, &addr, &addrlen))
+	{
+		// IPv6 destination but we only have an IPv4 socket.
+		buf.clear();
+		return 0;
+	}
 
-	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, addrlen);
 
 	buf.clear();
 

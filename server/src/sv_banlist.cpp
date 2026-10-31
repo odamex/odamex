@@ -29,6 +29,15 @@
 
 #include "win32inc.h"
 
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#endif
+
 #include "i_system.h"
 #include "i_time.h"
 
@@ -47,11 +56,54 @@ EXTERN_CVAR(sv_banfile_reload)
 
 Banlist banlist;
 
+// Do the first "bits" bits of two IPv6 addresses match?
+static bool prefix_match(const byte* a, const byte* b, byte bits)
+{
+	const byte full = bits / 8;
+	const byte rem = bits % 8;
+
+	if (memcmp(a, b, full) != 0)
+	{
+		return false;
+	}
+
+	if (rem)
+	{
+		const byte m = (byte)(0xFF << (8 - rem));
+		if ((a[full] & m) != (b[full] & m))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+// Zero everything after the first "bits" bits of an IPv6 address.
+static void mask_prefix(byte* a, byte bits)
+{
+	const byte full = bits / 8;
+	const byte rem = bits % 8;
+	byte i = full;
+
+	if (rem)
+	{
+		a[i] &= (byte)(0xFF << (8 - rem));
+		i++;
+	}
+
+	for (; i < 16; i++)
+	{
+		a[i] = 0;
+	}
+}
+
 //// IPRange ////
 
 // Constructor
-IPRange::IPRange()
+IPRange::IPRange() : v6(false), prefixlen(128)
 {
+	memset(this->ip6, 0, sizeof(this->ip6));
 	for (byte i = 0; i < 4; i++)
 	{
 		this->ip[i] = (byte)0;
@@ -62,6 +114,16 @@ IPRange::IPRange()
 // Check a given address against the ip + range in the object.
 bool IPRange::check(const netadr_t &address) const
 {
+	if (this->v6 != (address.family == NA_IPV6))
+	{
+		return false;
+	}
+
+	if (this->v6)
+	{
+		return prefix_match(this->ip6, address.ip6, this->prefixlen);
+	}
+
 	for (byte i = 0; i < 4; i++)
 	{
 		if (!(this->ip[i] == address.ip[i] || this->mask[i] == true))
@@ -76,6 +138,23 @@ bool IPRange::check(const netadr_t &address) const
 // Check a given string address against the ip + range in the object.
 bool IPRange::check(const std::string &address) const
 {
+	if (address.find(':') != std::string::npos)
+	{
+		// IPv6 address or range, compare it as a range.
+		IPRange other;
+		if (!this->v6 || !other.set(address))
+		{
+			return false;
+		}
+
+		return prefix_match(this->ip6, other.ip6, this->prefixlen);
+	}
+
+	if (this->v6)
+	{
+		return false;
+	}
+
 	StringTokens tokens = TokenizeString(address, ".");
 
 	// An IP address contains 4 octets
@@ -113,6 +192,19 @@ bool IPRange::check(const std::string &address) const
 // Set the object's range to a specific address.
 void IPRange::set(const netadr_t &address)
 {
+	if (address.family == NA_IPV6)
+	{
+		// Clients can trivially rotate through addresses of their /64 (and
+		// privacy extensions do it automatically), so a ban of a specific IPv6
+		// client covers its whole /64.
+		this->v6 = true;
+		this->prefixlen = 64;
+		memcpy(this->ip6, address.ip6, sizeof(this->ip6));
+		mask_prefix(this->ip6, this->prefixlen);
+		return;
+	}
+
+	this->v6 = false;
 	for (byte i = 0; i < 4; i++)
 	{
 		this->ip[i] = address.ip[i];
@@ -123,6 +215,46 @@ void IPRange::set(const netadr_t &address)
 // Set the object's range against the given address in string form.
 bool IPRange::set(const std::string &input)
 {
+	if (input.find(':') != std::string::npos)
+	{
+		// IPv6: "address" or "address/prefixlen"
+		std::string addr = input;
+		int prefix = 128;
+
+		const size_t slash = input.find('/');
+		if (slash != std::string::npos)
+		{
+			addr = input.substr(0, slash);
+
+			const std::string prefixstr = input.substr(slash + 1);
+			if (prefixstr.empty() ||
+			    prefixstr.find_first_not_of("0123456789") != std::string::npos ||
+			    prefixstr.size() > 3)
+			{
+				return false;
+			}
+
+			prefix = atoi(prefixstr.c_str());
+			if (prefix > 128)
+			{
+				return false;
+			}
+		}
+
+		byte buf[16];
+		if (inet_pton(AF_INET6, addr.c_str(), buf) != 1)
+		{
+			return false;
+		}
+
+		this->v6 = true;
+		this->prefixlen = (byte)prefix;
+		memcpy(this->ip6, buf, sizeof(this->ip6));
+		mask_prefix(this->ip6, this->prefixlen);
+		return true;
+	}
+
+	this->v6 = false;
 	StringTokens tokens = TokenizeString(input, ".");
 
 	// An IP address contains 4 octets
@@ -159,6 +291,19 @@ bool IPRange::set(const std::string &input)
 // Return the range as a string, with stars representing masked octets.
 std::string IPRange::string() const
 {
+	if (this->v6)
+	{
+		char buf[INET6_ADDRSTRLEN] = "";
+		inet_ntop(AF_INET6, this->ip6, buf, sizeof(buf));
+
+		std::string out = buf;
+		if (this->prefixlen < 128)
+		{
+			out += '/' + std::to_string(this->prefixlen);
+		}
+		return out;
+	}
+
 	std::ostringstream buffer;
 
 	for (byte i = 0; i < 4; i++)
@@ -607,7 +752,7 @@ BEGIN_COMMAND(addban)
 	// We need at least one argument.
 	if (arguments.size() < 1)
 	{
-		PrintFmt(PRINT_HIGH, "Usage: addban <ip address or ip range> [ban length] [player name] [reason]\n");
+		PrintFmt(PRINT_HIGH, "Usage: addban <ip address or ip range (e.g. 1.2.*.* or 2001:db8::/32)> [ban length] [player name] [reason]\n");
 		return;
 	}
 
