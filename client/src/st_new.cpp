@@ -1623,7 +1623,7 @@ void DrawSpreeBlock(const spreeBlock_t& block)
 
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	const OFont* small_font = SpreeSmallFont();
-	const OFont* big_font = V_GetFont("FONT_SPR", 12 * ::CleanYfac);
+	const OFont* big_font = V_GetShadowFont("FONT_SPR", 12 * ::CleanYfac);
 	const int smallHeight = small_font->getHeight();
 	const int bigHeight = big_font->getHeight();
 
@@ -1745,7 +1745,7 @@ void MultiKillHud()
 
 		const int surface_width = I_GetSurfaceWidth(),
 			      surface_height = I_GetSurfaceHeight();
-		const OFont* banner_font = V_GetFont("FONT_MK", 12 * ::CleanYfac);
+		const OFont* banner_font = V_GetShadowFont("FONT_MK", 12 * ::CleanYfac);
 		int w = banner_font->getTextWidth(line.multiKillText.c_str());
 		int h = banner_font->getHeight();
 

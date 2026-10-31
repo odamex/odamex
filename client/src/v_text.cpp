@@ -169,7 +169,7 @@ OFont* V_GetFont(const char* lumpname, int pixel_size)
 //
 OFont* V_GetHudFontSized(int pixel_size)
 {
-	return V_GetFont(TTF_LUMP_NAME, pixel_size);
+	return V_GetShadowFont(TTF_LUMP_NAME, pixel_size);
 }
 
 
@@ -235,6 +235,16 @@ OFont* V_GetStyledFont(const char* lumpname, int pixel_size, unsigned int stylem
 	OFont* font = V_CreateFontAtSize(stylemask, pixel_size, lumpname);
 	cache[key] = font;
 	return font;
+}
+
+
+//
+// V_GetShadowFont
+//
+OFont* V_GetShadowFont(const char* lumpname, int pixel_size)
+{
+	return V_GetStyledFont(lumpname, pixel_size,
+	                       TrueTypeFont::TTF_TEXTURE | TrueTypeFont::TTF_SHADOW);
 }
 
 
@@ -337,7 +347,7 @@ OFont* V_GetFaceFont(fontface_t face, int pixel_scale)
 	const int size = def.base_size * pixel_scale;
 	if (ui_font_hud.asInt() == FONT_BITMAP)
 		return V_GetBitmapFont(def.lumpname, size);
-	return V_GetFont(def.lumpname, size);
+	return V_GetShadowFont(def.lumpname, size);
 }
 
 
@@ -743,9 +753,6 @@ void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 		const Texture* glyph = font->getGlyph(c);
 		if (glyph and glyph->mWidth > 0 and glyph->mHeight > 0)
 		{
-			if (x + glyph->mWidth > I_GetSurfaceWidth())
-				break;
-
 			// glyph bearings are relative to the baseline, which sits
 			// getAscent() below the top of the line
 			const int glyph_x = x - glyph->mOffsetX;
@@ -756,12 +763,20 @@ void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 
 			if (blend and coverage and fill)
 			{
+				// clips to the surface, so a drop shadow or outline that
+				// overhangs the edge is trimmed rather than dropping the glyph
 				DrawGlyphBlended(fill, coverage, glyph->mWidth, glyph->mHeight,
 				                 glyph_x, glyph_y, blend_level);
 			}
 			else
 			{
-				DrawWrapper(drawer, glyph, x, y + ascent);
+				// DrawWrapper does not clip, so the glyph has to fit whole
+				if (glyph_x + glyph->mWidth > mSurface->getWidth())
+					break;
+
+				if (glyph_x >= 0 and glyph_y >= 0 and
+				    glyph_y + glyph->mHeight <= mSurface->getHeight())
+					DrawWrapper(drawer, glyph, x, y + ascent);
 			}
 		}
 

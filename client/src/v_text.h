@@ -102,6 +102,16 @@ OFont* V_GetHudFont(int pixel_scale);
 OFont* V_GetHudFontSized(int pixel_size);
 
 //
+// V_GetShadowFont
+//
+// The same as V_GetFont, but with a drop shadow baked into the glyphs, for
+// HUD text drawn straight over the game view where any background can be
+// behind it.
+// The shadow does not change the font's advances or line height.
+//
+OFont* V_GetShadowFont(const char* lumpname, int pixel_size);
+
+//
 // V_GetFont
 //
 // Returns a font built from a specific face at a specific pixel size,
