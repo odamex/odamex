@@ -1417,7 +1417,7 @@ player_t::player_t() :
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	playerInfoIsRequested(false),
-	inventoryCheckRequestsAreEnabled(false),
+	serverRefreshRequestsAreEnabled(false),
 	client{}
 {
 	cmd.clear();

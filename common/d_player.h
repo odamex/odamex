@@ -345,7 +345,8 @@ public:
 	std::queue<AActor::AActorPtr>           mobjsToSpawn;   // std::queue because we may not pop everything off this tic.
 	std::unordered_set<AActor::AActorPtr>   mobjsToUpdate;
 
-	// For prioritization of mobj updates from server to client.
+	// Server:  For prioritization of mobj updates from server to client.
+	// Client:  For prioritization of mobj "ghostbuster" requests to the server.
 	struct ActorDistanceType
 	{
 		AActor* actorPtr;
@@ -360,9 +361,12 @@ public:
 	// Server:  If set true, send a reliable PlayerInfo message back to the client.  Cleared when
 	//          the PlayerInfo is packed.
 	bool playerInfoIsRequested;
-	bool inventoryCheckRequestsAreEnabled;
+	void RequestInventoryCheckFromServer() { playerInfoIsRequested = serverRefreshRequestsAreEnabled; }
 
-	void RequestInventoryCheckFromServer() { playerInfoIsRequested = inventoryCheckRequestsAreEnabled; }
+	// Client:  Indicates that the netcode should generate requests to the server for on-demand refreshes
+	//          for the sake of prediction rollbacks and on-demand mobj updates.
+	// Server:  N/A
+	bool serverRefreshRequestsAreEnabled;
 
 	hordeInfo_t hordeInfo;
 

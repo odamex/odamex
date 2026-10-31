@@ -1222,20 +1222,24 @@ void G_Ticker (void)
 	{
 	case GS_LEVEL:
 		{
+			player_t& player = consoleplayer();
+
 			const bool isClientSideOnly    = clientside and not serverside;
 			const bool isActuallyConnected = connected  and not simulated_connection;
 
 			// We're about to locally tick the client-side sim - aka predict.
 			//
-			// Make sure that the server gives us a canonical inventory statement about any pickups we
-			// believe we get as a result of this.
-			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+			// Enable the generation of inventory and mobj refresh requests to the server if
+			// we're actually connected to a live server.  This is required for player inventory
+			// rollbacks and forcing suspected-ghost mobjs to be updated.
+
+			player.serverRefreshRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
 
 			bool thinkersHaveRun = false;
 
 			if (isClientSideOnly)
 			{
-				if (!consoleplayer().mo)
+				if (not player.mo)
 				{
 					// [SL] 2011-12-14 - Spawn message from server has not arrived
 					// yet.  Fake it and hope it arrives soon.
@@ -1243,9 +1247,9 @@ void G_Ticker (void)
 					mobj->flags &= ~MF_SOLID;
 					mobj->flags2 |= MF2_DONTDRAW;
 					mobj->oflags |= MFO_ISAWAITINGSPAWN;
-					consoleplayer().mo = consoleplayer().camera = mobj->ptr();
-					consoleplayer().mo->player = &consoleplayer();
-					G_PlayerReborn(consoleplayer());
+					player.mo = player.camera = mobj->ptr();
+					player.mo->player = & player;
+					G_PlayerReborn(player);
 					DPrintFmt("Did not receive spawn for consoleplayer.\n");
 				}
 
@@ -1265,11 +1269,11 @@ void G_Ticker (void)
 			ST_Ticker ();
 			AM_Ticker ();
 
-			consoleplayer().inventoryCheckRequestsAreEnabled = false;
+			player.serverRefreshRequestsAreEnabled = false;
 
 			if (not netdemo.isPaused())
 			{
-				const RollerRecordResultEnum recordResult = rollerState.Record(gametic, consoleplayer());
+				const RollerRecordResultEnum recordResult = rollerState.Record(gametic, player);
 				switch (recordResult)
 				{
 					case RollerRecordResultEnum::CURRENT_REPLACED:
