@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2023 by Andrew Apted.
 // Copyright (C) 2026 by The Odamex Team.
 //

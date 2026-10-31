@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -53,5 +51,3 @@ CVAR_FUNC_IMPL (language)
 
 // Set if homebrew PWAD stuff has been added.
 bool			modifiedgame;
-
-VERSION_CONTROL (doomstat_cpp, "$Id$")
