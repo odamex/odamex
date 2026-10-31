@@ -1347,6 +1347,15 @@ void VX_NearbySprites(rendercontext_t& ctx)
 		VX_SpritesInNode(ctx, static_cast<unsigned int>(numnodes - 1));
 }
 
+bool VX_HasVoxel(const AActor* thing, const int frame)
+{
+	if (not r_voxels or not thing)
+		return false;
+
+	const VoxelModel* v = VX_GetModel(thing->sprite, frame);
+	return v and (sv_allowvoxels or not v->fromLocalDirectory);
+}
+
 bool VX_ProjectVoxel(rendercontext_t& ctx, const AActor* thing, const int frame, vissprite_t* vis)
 {
 	if (not r_voxels or not thing or not vis or not thing->subsector or

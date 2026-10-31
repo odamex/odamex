@@ -69,6 +69,18 @@ void VX_ClearVoxels(rendercontext_t& ctx);
 void VX_NearbySprites(rendercontext_t& ctx);
 
 /**
+ * @brief  Whether a thing in this frame would be drawn as a voxel.
+ *
+ * @detail A voxel can reach the screen when its flat sprite does not (a
+ *         corpse is far longer than its sprite), so we need to account
+ *         for that when deciding to draw a voxel or not.
+ *
+ * @param thing Actor being projected.
+ * @param frame Sprite frame index, without FF_FULLBRIGHT.
+ */
+bool VX_HasVoxel(const AActor* thing, int frame);
+
+/**
  * @brief  Replace a projected sprite with its voxel model, if one exists.
  *
  * @detail Called from R_ProjectSprite after the vissprite has been filled in

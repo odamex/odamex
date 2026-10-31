@@ -373,12 +373,15 @@ void R_DrawVisSprite(rendercontext_t& ctx, vissprite_t *vis, int x1, int x2)
 //
 // Helper function that creates a vissprite_t and projects the given world
 // coordinates onto the screen. Returns NULL if the projection is completely
-// clipped off the screen.
+// clipped off the screen -- unless keepoffscreen, for a thing that may be drawn
+// as a voxel, whose model can reach the screen when the flat sprite does not.
+// Then onscreen says whether the flat sprite does.
 //
 static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* sector, int fakeside,
 		fixed_t x, fixed_t y, fixed_t z, fixed_t tx, fixed_t ty,
 		fixed_t height, fixed_t width,
-		fixed_t topoffs, fixed_t sideoffs, bool flip)
+		fixed_t topoffs, fixed_t sideoffs, bool flip,
+		bool keepoffscreen = false, bool* onscreen = nullptr)
 {
 	// translate the sprite edges from world-space to camera-space
 	// and store in t1 & t2
@@ -394,11 +397,13 @@ static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* se
 
 	// clip the sprite to the left & right screen edges
 	int32_t lclip, rclip;
-	if (!R_ClipLineToFrustum(&t1, &t2, NEARCLIP, lclip, rclip))
+	bool visible = R_ClipLineToFrustum(&t1, &t2, NEARCLIP, lclip, rclip);
+	if (!visible && !keepoffscreen)
 		return NULL;
 
 	// calculate how much of the sprite was clipped from the left side
-	R_ClipLine(&t1, &t2, lclip, rclip, &t1, &t2);
+	if (visible)
+		R_ClipLine(&t1, &t2, lclip, rclip, &t1, &t2);
 	fixed_t clipped_offset = t1.x - t1xold;
 
 	fixed_t gzt = z + topoffs;
@@ -411,7 +416,11 @@ static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* se
 	int x1 = FIXED2INT(centerxfrac + FixedMul(t1.x, xscale));
 	int x2 = FIXED2INT(centerxfrac + FixedMul(t2.x, xscale)) - 1;
 	if (!R_CheckProjectionX(x1, x2))
-		return NULL;
+	{
+		visible = false;
+		if (!keepoffscreen)
+			return NULL;
+	}
 
 	fixed_t yscale = FixedDiv(FocalLengthY, ty);
 
@@ -419,7 +428,14 @@ static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* se
 	int y1 = FIXED2INT(centeryfrac - FixedMul(gzt - viewz, yscale));
 	int y2 = FIXED2INT(centeryfrac - FixedMul(gzb - viewz, yscale)) - 1;
 	if (!R_CheckProjectionY(y1, y2))
-		return NULL;
+	{
+		visible = false;
+		if (!keepoffscreen)
+			return NULL;
+	}
+
+	if (onscreen)
+		*onscreen = visible;
 
 	// killough 3/27/98: exclude things totally separated
 	// from the viewer, by either water or fake ceilings
@@ -672,7 +688,11 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 	fixed_t height = texture->mHeight << FRACBITS;
 	fixed_t width = texture->mWidth << FRACBITS;
 
-	vissprite_t* vis = R_GenerateVisSprite(ctx, sector, fakeside, thingx, thingy, thingz, camx, camy, height, width, topoffs, sideoffs, flip);
+	const int frame = thing->frame & FF_FRAMEMASK;
+	const bool hasvoxel = VX_HasVoxel(thing, frame);
+	bool onscreen = true;
+	vissprite_t* vis = R_GenerateVisSprite(ctx, sector, fakeside, thingx, thingy, thingz, camx, camy,
+	                                       height, width, topoffs, sideoffs, flip, hasvoxel, &onscreen);
 
 	if (vis == NULL)
 		return;
@@ -685,7 +705,13 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 	vis->res_id = res_id;
 	vis->texture = texture;
 	vis->mo = thing;
-	VX_ProjectVoxel(ctx, thing, thing->frame & FF_FRAMEMASK, vis);
+	if (!VX_ProjectVoxel(ctx, thing, frame, vis) && !onscreen)
+	{
+		// neither the voxel nor the flat sprite reaches the screen, so give the
+		// vissprite back
+		ctx.sprite.vissprite_p--;
+		return;
+	}
 
 	// get light level
 	if (fixedlightlev)
