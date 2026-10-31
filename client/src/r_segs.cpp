@@ -807,10 +807,6 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	ctx.bsp.ds_p->scale2 = ctx.seg.wallscalex[stop];
 
 	// Determine sprite sort scale so we don't cut off sprites too early
-	// its ends. An end cut only by the slice boundary, with the wall carrying
-	// on past it, takes the wall's scale where it leaves the view instead -- so
-	// the decision is the one a single slice would make, and a slice line
-	// doesn't change which sprites the wall hides. A single slice is never cut.
 	ctx.bsp.ds_p->sortscale1 = (start == ctx.slice_start && ctx.seg.rw_start < start)
 	                               ? ctx.seg.rw_startscale : ctx.bsp.ds_p->scale1;
 	ctx.bsp.ds_p->sortscale2 = (stop == ctx.slice_stop && ctx.seg.rw_stop > stop)

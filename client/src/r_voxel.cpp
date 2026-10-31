@@ -603,10 +603,11 @@ void VX_ParseVoxelDefs()
 
 int VX_PaletteIndex(const byte* pal, int r, int g, int b)
 {
-	int best = 0;
+	int best = 1;
 	int best_dist = std::numeric_limits<int>::max();
 
-	for (int i = 0; i < 256; i++)
+	pal += 3;
+	for (int i = 1; i < 256; i++)
 	{
 		const int dr = r - static_cast<int>(*pal++);
 		const int dg = g - static_cast<int>(*pal++);
