@@ -337,7 +337,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
       COMPONENT client)
     install(FILES ${CMAKE_SOURCE_DIR}/media/icon_odademo_512.png
       DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/mimetypes
-      RENAME net.odamex.Odamex-application-odamex-demo.png
+      RENAME net.odamex.Odamex-application-vnd-odamex-netdemo.png
       COMPONENT client)
     install(FILES ${CMAKE_SOURCE_DIR}/packaging/linux/net.odamex.Odamex-mime.xml
       DESTINATION ${CMAKE_INSTALL_DATADIR}/mime/packages
