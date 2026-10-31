@@ -358,6 +358,7 @@ inline void CredibilityState::Update(const AActor& mobj)
 
                 m_credibility             = CredibilityEnum::FULLY_CREDIBLE;
                 m_predictedMotionTicCount = 0;
+                m_challengeInterval       = 0;
             }
             // In sv_main, we nominally update mobjs every 7 tics.
             // Allow up to 10 before we stop fully believing it, to allow for jitter plus
@@ -368,10 +369,10 @@ inline void CredibilityState::Update(const AActor& mobj)
             }
             else
             {
-                if (m_predictedMotionTicCount > 0 or
-                       m_crediblePosition.x != mobj.x ||
-                            m_crediblePosition.y != mobj.y ||
-                            m_crediblePosition.z != mobj.z)
+                if (   m_predictedMotionTicCount > 0
+                    or m_crediblePosition.x != mobj.x
+                    or m_crediblePosition.y != mobj.y
+                    or m_crediblePosition.z != mobj.z)
                 {
                     ++m_predictedMotionTicCount;
                 }
@@ -381,7 +382,11 @@ inline void CredibilityState::Update(const AActor& mobj)
                 // or just a lower-priority SEMI_AWARE?  We just have to hope that the server
                 // decides to naturally send an UpdateMobj for it at some point.
 
-                if (m_predictedMotionTicCount < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
+                if (m_credibility == CredibilityEnum::CHALLENGED_CREDIBILITY)
+                {
+                    m_challengeInterval = std::max(0, m_challengeInterval - 1);
+                }
+                else if (m_predictedMotionTicCount < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
                 {
                     // In this mode, the client is letting the mobj wander about via dead reckoning.
                     // We guess that the mobj hasn't wandered TOO far from where the server says it
@@ -390,10 +395,7 @@ inline void CredibilityState::Update(const AActor& mobj)
                 }
                 else
                 {
-                    if (m_credibility != CredibilityEnum::CHALLENGED_CREDIBILITY)
-                    {
-                        m_credibility = CredibilityEnum::NOT_CREDIBLE;
-                    }
+                    m_credibility = CredibilityEnum::NOT_CREDIBLE;
                 }
             }
         }
@@ -1223,8 +1225,15 @@ void AActor::RunThink ()
 	else
 #endif
 	{
-		credibility.Update(*this);
 		P_MoveActor(this);
+		credibility.Update(*this);
+
+#ifdef CLIENT_APP
+        if (IsMonster() and credibility.IsEligibleForChallenge())
+        {
+            consoleplayer().sortedMobjs.emplace_back(this, 0);
+        }
+#endif
 	}
 
 	if(predicting)

@@ -200,11 +200,35 @@ class CredibilityState
 			    or m_credibility == CredibilityEnum::ALWAYS_CREDIBLE;
 		}
 
+		[[nodiscard]]
+		int GetMotionAge() const
+		{
+			return m_predictedMotionTicCount;
+		}
+
 		void Update(const AActor& mobj);
 
-		void Challenge()
+        [[nodiscard]]
+        bool IsEligibleForChallenge() const
+        {
+            if (IsCredible())
+                return false;
+
+            if (m_credibility == CredibilityEnum::CHALLENGED_CREDIBILITY and m_challengeInterval > 0)
+                return false;
+
+            return true;
+        }
+
+		bool Challenge(int i_timeout)
 		{
-			m_credibility = CredibilityEnum::CHALLENGED_CREDIBILITY;
+			if (not m_challengeInterval)
+			{
+				m_credibility       = CredibilityEnum::CHALLENGED_CREDIBILITY;
+				m_challengeInterval = i_timeout;
+				return true;
+			}
+			return false;
 		}
 
 		void Lionize()
@@ -242,6 +266,7 @@ class CredibilityState
 		CredibilityEnum m_credibility { CredibilityEnum::FULLY_CREDIBLE };
 		v3fixed_t       m_crediblePosition { 0, 0, 0 };
 		int             m_predictedMotionTicCount { 0 };
+		int             m_challengeInterval       { 0 };
 };
 
 // Map Object definition.

@@ -1269,6 +1269,14 @@ void G_Ticker (void)
 			ST_Ticker ();
 			AM_Ticker ();
 
+            if (not player.sortedMobjs.empty())
+            {
+                if (player.serverRefreshRequestsAreEnabled)
+                {
+                }
+                player.sortedMobjs.clear();
+            }
+
 			player.serverRefreshRequestsAreEnabled = false;
 
 			if (not netdemo.isPaused())
