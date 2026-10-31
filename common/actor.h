@@ -499,6 +499,14 @@ public:
 	bool SpliceAsThinkerBefore(AActor* io_node) { return SpliceBefore(io_node); }
 	bool SpliceAsThinkerAfter(AActor* io_node) { return SpliceAfter(io_node); }
 
+	[[nodiscard]]
+	bool IsMonster() const
+	{
+	    return this->oflags & MFO_MOVESLIKEAMONSTER
+	        or this->flags & MF_COUNTKILL
+	        or this->type == MT_SKULL;
+	}
+
 private:
 	static constexpr size_t TIDHashSize = 256;
 	static constexpr size_t TIDHashMask = TIDHashSize - 1;
