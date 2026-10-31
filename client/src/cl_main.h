@@ -51,6 +51,13 @@ extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
 
 extern bool predicting;
 
+enum activeMobj_e
+{
+	PLAYER,
+	FREECAM,
+	UNKNOWN
+};
+
 enum netQuitReason_e
 {
 	NQ_SILENT,          // Don't print a message.

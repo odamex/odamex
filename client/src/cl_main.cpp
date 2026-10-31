@@ -591,6 +591,8 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 	::lastEchoedClientTic = 0;
 	::last_svgametic      = 0;
 	world_index           = 0;
+	freecam_id            = nullcam_id;
+	displayplayer_id      = consoleplayer_id;
 
 	messenger = OdaMessenger{ pool };
 
@@ -808,6 +810,18 @@ void CL_SpyCycleFreecams(bool forward)
 	}
 }
 
+static activeMobj_e CL_GetActiveMobj()
+{
+	if (playerIsActive())
+		return activeMobj_e::PLAYER;
+	if (freecamIsActive())
+		return activeMobj_e::FREECAM;
+
+	// otherwise displayplayer_id and freecam_id are both set, or both are the null id (0)
+	// this should never happen
+	return activeMobj_e::UNKNOWN;
+}
+
 void D_ProcessEvents();
 void G_BuildTiccmd (ticcmd_t& cmd);
 
@@ -819,7 +833,23 @@ void NetUpdate (void)
 {
 	I_StartTic ();
 	D_ProcessEvents ();
-	G_BuildTiccmd (consoleplayer().netcmds[gametic % BACKUPTICS]);
+
+	switch (CL_GetActiveMobj())
+	{
+		case activeMobj_e::PLAYER:
+			G_BuildTiccmd(consoleplayer().netcmds[gametic % BACKUPTICS]);
+		    break;
+	    case activeMobj_e::FREECAM:
+		    G_BuildTiccmd(freecam_t::getfreecam(freecam_id)->cmd);
+		    break;
+	    case activeMobj_e::UNKNOWN:
+		    PrintFmt("Warning - invalid active mobj state, resetting to consoleplayer\n");
+		    freecam_id = nullcam_id;
+		    displayplayer_id = consoleplayer_id;
+		    CL_CheckDisplayPlayer();
+		    G_BuildTiccmd(consoleplayer().netcmds[gametic % BACKUPTICS]);
+		    break;
+	}		
 }
 
 extern bool advancedemo;

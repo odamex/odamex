@@ -629,6 +629,11 @@ inline byte displayplayer_id = 1; // view being displayed
 inline constexpr byte nullplayer_id = 0; // invalid player
 inline constexpr byte menuplayer_id = 0; // fake player id used by translations for the player setup menu
 
+inline bool playerIsActive()
+{
+	return (displayplayer_id != nullplayer_id and freecam_id == nullcam_id);
+}
+
 inline bool freecamIsActive()
 {
   return (displayplayer_id == nullplayer_id and freecam_id != nullcam_id);

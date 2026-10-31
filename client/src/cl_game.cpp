@@ -500,7 +500,7 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if ((joy_freelook && sv_freelook) || player.spectator)
+	if ((joy_freelook and sv_freelook) or player.spectator or freecamIsActive())
 	{
 		if (joy_invert)
 			look += joy_to_int(joylook, lookspeed[speed]);
@@ -547,7 +547,7 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 
 	// [SL] 2012-03-31 - Let the server know when the client is predicting a
 	// weapon change due to a weapon pickup
-	if (not serverside and cl_predictpickup)
+	if (not serverside and cl_predictpickup and not freecamIsActive())
 	{
 		if (not (cmd.impulse
 		        or (cmd.buttons & BT_CHANGE)
@@ -1034,14 +1034,6 @@ void G_Ticker (void)
 		{
 			memcpy(&player.cmd, &player.netcmds[buf], sizeof(ticcmd_t));
 		}
-	}
-	// Rude - allow controlling freecam
-	else if (freecamIsActive() and freecam)
-	{
-		memcpy(&freecam->cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
-
-		// Clear consoleplayer.cmd since they reapply every tic.
-		consoleplayer().cmd.clear();
 	}
 	else
 	{
