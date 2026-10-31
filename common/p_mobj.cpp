@@ -1229,7 +1229,10 @@ void AActor::RunThink ()
 		credibility.Update(*this);
 
 #ifdef CLIENT_APP
-        if (IsMonster() and credibility.IsEligibleForChallenge())
+        if (    IsMonster()
+            and not (flags & MF_CORPSE)
+            and credibility.IsEligibleForChallenge()
+            and credibility.GetMotionAge() > 0)
         {
             consoleplayer().sortedMobjs.emplace_back(this, 0);
         }
