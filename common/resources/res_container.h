@@ -145,7 +145,7 @@ public:
 
 	LumpId getLumpId(const T* entry) const
 	{
-		if (!mEntries.empty() && static_cast<LumpId>(entry - &mEntries.front()) < mEntries.size())
+		if (not mEntries.empty() and static_cast<LumpId>(entry - &mEntries.front()) < mEntries.size())
 			return static_cast<LumpId>(entry - &mEntries.front());
 		return INVALID_LUMP_ID;
 	}
@@ -171,7 +171,7 @@ public:
 
 	const T* getEntry(const LumpId lump_id) const
 	{
-		if (lump_id != INVALID_LUMP_ID && lump_id < mEntries.size())
+		if (lump_id != INVALID_LUMP_ID and lump_id < mEntries.size())
 			return &mEntries[lump_id];
 		return NULL;
 	}
@@ -302,16 +302,16 @@ protected:
 
 	bool isMarker(const OString& lump_name) const
 	{
-		return lump_name == "F_START" || lump_name == "FF_START" ||
-				lump_name == "F_END" || lump_name == "FF_END" ||
-				lump_name == "S_START" || lump_name == "SS_START" ||
-				lump_name == "S_END" || lump_name == "SS_END" ||
-				lump_name == "P_START" || lump_name == "PP_START" ||
-				lump_name == "P_END" || lump_name == "PP_END" ||
-				lump_name == "C_START" || lump_name == "C_END" ||
-				lump_name == "TX_START" || lump_name == "TX_END" ||
-				lump_name == "HI_START" || lump_name == "HI_END" ||
-				lump_name == "VX_START" || lump_name == "VX_END";
+		return lump_name == "F_START" or lump_name == "FF_START" or
+				lump_name == "F_END" or lump_name == "FF_END" or
+				lump_name == "S_START" or lump_name == "SS_START" or
+				lump_name == "S_END" or lump_name == "SS_END" or
+				lump_name == "P_START" or lump_name == "PP_START" or
+				lump_name == "P_END" or lump_name == "PP_END" or
+				lump_name == "C_START" or lump_name == "C_END" or
+				lump_name == "TX_START" or lump_name == "TX_END" or
+				lump_name == "HI_START" or lump_name == "HI_END" or
+				lump_name == "VX_START" or lump_name == "VX_END";
 	}
 
     OString getMarkerPrefix(const OString& lump_name) const

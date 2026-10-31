@@ -619,7 +619,7 @@ void MSG_WriteResourceId(buf_t* b, const ResourceId res_id)
 {
 	if (simulated_connection)
 		return;
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 		b->WriteShort(0xFFFF);
 	else
 		b->WriteShort(static_cast<uint32_t>(res_id) & 0xFFFF);

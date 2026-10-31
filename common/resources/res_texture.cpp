@@ -81,7 +81,7 @@ static void Res_WarpPixels(PIXEL* dest, const PIXEL* source, const int width, co
 static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture)
 {
 	const int width = source_texture->mWidth, height = source_texture->mHeight;
-	if (width <= 0 || height <= 0)
+	if (width <= 0 or height <= 0)
 		return;
 
 	// The shift for each row, and for each column, wrapped into [0, size).
@@ -103,7 +103,7 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 
 	Res_WarpPixels(dest_texture->mData, source_texture->mData, width, height, rowshift, colshift);
 
-	if (dest_texture->mARGBData && source_texture->mARGBData)
+	if (dest_texture->mARGBData and source_texture->mARGBData)
 	{
 		Res_WarpPixels(dest_texture->mARGBData, source_texture->mARGBData, width, height,
 		               rowshift, colshift);
@@ -191,7 +191,7 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 		int dx1, int dy1, int dx2, int dy2,
 		int sx1, int sy1, int sx2, int sy2)
 {
-	if (!dest_texture || !source_texture || !dest_texture->mData || !source_texture->mData)
+	if (not dest_texture or not source_texture or not dest_texture->mData or not source_texture->mData)
 		return;
 
 	const int destwidth = dx2 - dx1 + 1;
@@ -200,7 +200,7 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 	const int sourcewidth = sx2 - sx1 + 1;
 	const int sourceheight = sy2 - sy1 + 1;
 
-	if (destwidth <= 0 || destheight <= 0 || sourcewidth <= 0 || sourceheight <= 0)
+	if (destwidth <= 0 or destheight <= 0 or sourcewidth <= 0 or sourceheight <= 0)
 		return;
 
 	const fixed_t xstep = FixedDiv(sourcewidth << FRACBITS, destwidth << FRACBITS) + 1;
@@ -407,7 +407,7 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 			loader = new PatchTextureLoader(accessor, raw_res_id);
 		else if (dir == textures_directory_name)
 			loader = Res_CreateTexturesDirectoryLoader(accessor, raw_res_id, path);
-		else if (dir == flats_directory_name && has_header)
+		else if (dir == flats_directory_name and has_header)
 			loader = new FlatTextureLoader(accessor, raw_res_id);
 
 		if (loader != NULL)
@@ -482,7 +482,7 @@ const ResourceLoader* TextureManager::getResourceLoader(const ResourceId res_id)
 void TextureManager::addCompositeTextureResources(ResourceManager* manager, const ResourceIdList& pnames_lookup, const OString& lump_name)
 {
 	const ResourceId res_id = Res_GetResourceId(lump_name, NS_GLOBAL);
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 	{
 		if (lump_name == "TEXTURE1")
 			I_Error("Res_InitTextures: TEXTURE1 lump not found");
@@ -529,7 +529,7 @@ void TextureManager::addCompositeTextureResources(ResourceManager* manager, cons
 		{
 			for (const auto& patch_def : tex_def.mPatchDefs)
 			{
-				if (!Res_CheckResource(patch_def.mResId))
+				if (not Res_CheckResource(patch_def.mResId))
 				{
 					missing_patch_texture = texture_lump_name.c_str();
 					break;
@@ -593,7 +593,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 	// Read the PNAMES lump and store the ResourceId of each patch
 	// listed in the lump in the pnames_lookup array.
 	const ResourceId pnames_res_id = Res_GetResourceId(lump_name, NS_GLOBAL);
-	if (!Res_CheckResource(pnames_res_id))
+	if (not Res_CheckResource(pnames_res_id))
 		I_Error("Res_InitTextures: PNAMES lump not found");
 
 	uint32_t pnames_size = Res_GetResourceSize(pnames_res_id);
@@ -626,7 +626,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 		// appear first in a wad. This is a kludgy solution to the wad
 		// lump namespace problem.
 
-		if (!Res_CheckResource(res_id))
+		if (not Res_CheckResource(res_id))
 			res_id = Res_GetResourceId(lump_name, NS_SPRITES);
 
 		pnames_lookup.push_back(res_id);
@@ -758,7 +758,7 @@ static bool Res_AnimationFramesAreConsecutive(const ResourceId start_res_id, con
 	for (uint32_t value = start_res_id; value <= static_cast<uint32_t>(end_res_id); value++)
 	{
 		const ResourceId res_id(value);
-		if (!Res_CheckResource(res_id))
+		if (not Res_CheckResource(res_id))
 			return false;
 		// each frame must still be the visible (most recently loaded) resource
 		// for its name in this namespace
@@ -798,7 +798,7 @@ static bool Res_AnimationFramesAreConsecutive(const ResourceId start_res_id, con
 void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 {
 	const ResourceId res_id = Res_GetResourceId("ANIMATED", NS_GLOBAL);
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 		return;
 
 	uint32_t lumplen = Res_GetResourceSize(res_id);
@@ -818,15 +818,15 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 		const ResourceId end_res_id = Res_GetTextureResourceId(end_name, search_ordering, false);
 
 		uint32_t numframes = end_res_id - start_res_id + 1;
-		if (!Res_CheckResource(start_res_id) || !Res_CheckResource(end_res_id))
+		if (not Res_CheckResource(start_res_id) or not Res_CheckResource(end_res_id))
 		{
 			DPrintFmt("Missing texture for cycle from {} to {} in ANIMATED lump\n", start_name.c_str(), end_name.c_str());
 		} 
-		else if (numframes < 2 || numframes > AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
+		else if (numframes < 2 or numframes > AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
 		{
 			PrintFmt(PRINT_HIGH, "Bad cycle from {} to {} in ANIMATED lump\n", start_name.c_str(), end_name.c_str());
 		}
-		else if (!Res_AnimationFramesAreConsecutive(start_res_id, end_res_id, search_ordering))
+		else if (not Res_AnimationFramesAreConsecutive(start_res_id, end_res_id, search_ordering))
 		{
 			DPrintFmt("Skipping cycle from {} to {} in ANIMATED lump: frames are not contiguous in the loaded resource files\n", start_name.c_str(), end_name.c_str());
 		}
@@ -886,7 +886,7 @@ void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering searc
 			if (mAnimDefs[i].basepic == base_res_id)
 				anim = &mAnimDefs[i];
 		}
-		if (!anim)
+		if (not anim)
 		{
 			mAnimDefs.push_back(AnimatedTextureManager::anim_t());
 			anim = &mAnimDefs.back();
@@ -904,7 +904,7 @@ void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering searc
 
 	while (os.scan())
 	{
-		if (!os.compareTokenNoCase("pic"))
+		if (not os.compareTokenNoCase("pic"))
 		{
 			os.unScan();
 			break;
@@ -954,7 +954,7 @@ void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering searc
 		for (int i = 0; i < anim->numframes; i++)
 		{
 			const ResourceId frame_res_id = anim->framepic[i];
-			if (!Res_CheckResource(frame_res_id) ||
+			if (not Res_CheckResource(frame_res_id) or
 			    Res_GetTextureResourceId(Res_GetResourceName(frame_res_id), search_ordering, false) != frame_res_id)
 			{
 				PrintFmt(PRINT_HIGH, "Disabling animation for {}: frames are not contiguous in the loaded resource files\n", texture_name.c_str());
@@ -1011,7 +1011,7 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 					TextureSearchOrdering search_ordering = FLOOR;
 					if (os.compareTokenNoCase("texture"))
 						search_ordering = WALL;
-					else if (!os.compareTokenNoCase("flat"))
+					else if (not os.compareTokenNoCase("flat"))
 						os.error("Unknown error reading in ANIMDEFS");
 
 					os.mustScan();
@@ -1035,7 +1035,7 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 //
 void AnimatedTextureManager::addWarpedTexture(const ResourceId res_id)
 {
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 		return;
 
 	AnimatedTextureManager::warp_t warp;
@@ -1058,7 +1058,7 @@ void AnimatedTextureManager::addWarpedTexture(const ResourceId res_id)
 //
 void AnimatedTextureManager::updateAnimatedTextures()
 {
-	if (!clientside)
+	if (not clientside)
 		return;
 
 	// cycle the animdef textures
@@ -1102,7 +1102,7 @@ void AnimatedTextureManager::updateAnimatedTextures()
 
 	// Copies taken of the old pixels are stale now. Never 0, which marks a
 	// copy of a texture that is not warped.
-	if (!mWarpedTextures.empty() && ++mWarpGeneration == 0)
+	if (not mWarpedTextures.empty() and ++mWarpGeneration == 0)
 		mWarpGeneration = 1;
 }
 
@@ -1134,7 +1134,7 @@ static uint32_t Res_GetTextureCandidateRecency(const ResourceId res_id)
 
 	uint32_t newest = res_id;
 	for (size_t i = 0; i < res_ids.size(); i++)
-		if (res_ids[i] != res_id && (newest == static_cast<uint32_t>(res_id) || static_cast<uint32_t>(res_ids[i]) > newest))
+		if (res_ids[i] != res_id and (newest == static_cast<uint32_t>(res_id) or static_cast<uint32_t>(res_ids[i]) > newest))
 			newest = res_ids[i];
 	return newest;
 }
@@ -1145,7 +1145,7 @@ static uint32_t Res_GetTextureCandidateRecency(const ResourceId res_id)
 //
 bool Res_IsTextureResource(const ResourceId res_id)
 {
-	return texture_manager_instance != NULL && texture_manager_instance->ownsResource(res_id);
+	return texture_manager_instance != NULL and texture_manager_instance->ownsResource(res_id);
 }
 
 
@@ -1160,7 +1160,7 @@ bool Res_IsTextureResource(const ResourceId res_id)
 //
 static const ResourceId Res_TextureLookupCandidate(const ResourceId res_id)
 {
-	if (Res_CheckResource(res_id) && !Res_IsTextureResource(res_id))
+	if (Res_CheckResource(res_id) and not Res_IsTextureResource(res_id))
 		return ResourceId::INVALID_ID;
 	return res_id;
 }
@@ -1180,7 +1180,7 @@ static const ResourceId Res_TextureLookupCandidate(const ResourceId res_id)
 //
 const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering, bool use_placeholder)
 {
-	if (name.empty() || (ordering == WALL && name.size() == 1 && name.c_str()[0] == '-'))
+	if (name.empty() or (ordering == WALL and name.size() == 1 and name.c_str()[0] == '-'))
 		return ResourceId::INVALID_ID;
 
 	ResourceNamespace ns = NS_GLOBAL;
@@ -1202,26 +1202,26 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 	// to patches) when the name isn't found in its natural namespace, matching
 	// ZDoom. The ordering only breaks ties when the same name exists in
 	// several namespaces.
-	if (!Res_CheckResource(res_id) && (ordering == WALL || ordering == FLOOR))
+	if (not Res_CheckResource(res_id) and (ordering == WALL or ordering == FLOOR))
 	{
 		const ResourceNamespace fallbacks[] =
 			{ ordering == WALL ? NS_FLATS : NS_NEWTEXTURES, NS_PATCHES };
-		for (size_t i = 0; i < ARRAY_LENGTH(fallbacks) && !Res_CheckResource(res_id); i++)
+		for (size_t i = 0; i < ARRAY_LENGTH(fallbacks) and not Res_CheckResource(res_id); i++)
 			res_id = Res_TextureLookupCandidate(Res_GetResourceId(name, fallbacks[i], true));
 	}
 
 	// Preserve the translator's loose name-only fallback as a last resort.
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 		res_id = Res_TextureLookupCandidate(Res_GetResourceId(name, ns));
 
 	// Use DOOM wad patching rules for graphics (last one wins) depending on
 	// the load ordering.
-	if (ordering == PATCH || ordering == GRAPHICS)
+	if (ordering == PATCH or ordering == GRAPHICS)
 	{
 		const ResourceId patch_res_id = Res_TextureLookupCandidate(Res_GetResourceId(name, NS_PATCHES, true));
 		const ResourceId graphics_res_id = Res_TextureLookupCandidate(Res_GetResourceId(name, NS_GRAPHICS, true));
 
-		if (Res_CheckResource(patch_res_id) && Res_CheckResource(graphics_res_id))
+		if (Res_CheckResource(patch_res_id) and Res_CheckResource(graphics_res_id))
 			res_id = Res_GetTextureCandidateRecency(patch_res_id) > Res_GetTextureCandidateRecency(graphics_res_id)
 					? patch_res_id : graphics_res_id;
 		else if (Res_CheckResource(patch_res_id))
@@ -1230,7 +1230,7 @@ const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrde
 			res_id = graphics_res_id;
 	}
 
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 	{
 		DPrintFmt("Missing texture {}\n", name.c_str());
 		if (use_placeholder)
@@ -1274,19 +1274,19 @@ const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id)
 //
 const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag)
 {
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 		return static_cast<const Texture*>(NULL);
 
 	// Never reinterpret a raw (non-texture) resource's data as a
 	// Texture, substitute the placeholder instead.
-	if (!Res_IsTextureResource(res_id))
+	if (not Res_IsTextureResource(res_id))
 	{
 		std::lock_guard<std::recursive_mutex> lock(Res_LoadMutex());
 
 		DPrintFmt("Res_CacheTexture: {} is not a texture resource\n",
 		          Res_GetResourceName(res_id).c_str());
 		res_id = Res_GetResourceId("-MISSING-", NS_GLOBAL);
-		if (!Res_CheckResource(res_id))
+		if (not Res_CheckResource(res_id))
 			return static_cast<const Texture*>(NULL);
 	}
 
@@ -1317,7 +1317,7 @@ const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering 
 //
 static bool Res_IsPlaneSafeTexture(const Texture* texture)
 {
-	return texture->mWidthMask + 1 == texture->mWidth &&
+	return texture->mWidthMask + 1 == texture->mWidth and
 	       texture->mHeightMask + 1 == texture->mHeight;
 }
 
@@ -1437,7 +1437,7 @@ static void Res_ClearPlaneTextures()
 //
 const Texture* Res_PlaneTexture(const ResourceId res_id, const Texture* source)
 {
-	if (source == NULL || Res_IsPlaneSafeTexture(source))
+	if (source == NULL or Res_IsPlaneSafeTexture(source))
 		return source;
 
 	// A warped texture's pixels are rewritten in place every tic, so its copy
@@ -1451,7 +1451,7 @@ const Texture* Res_PlaneTexture(const ResourceId res_id, const Texture* source)
 	{
 		std::shared_lock lock(plane_textures_mutex);
 		const PlaneTextureTable::iterator it = plane_textures.find(res_id);
-		if (it != plane_textures.end() && it->second.warpgeneration == generation)
+		if (it != plane_textures.end() and it->second.warpgeneration == generation)
 			return it->second.texture;
 	}
 

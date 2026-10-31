@@ -493,12 +493,12 @@ void IWindowSurface::copyLinesTo32(void* dest, int destpitch, int first, int cou
 	const int line_length = getHeight();
 
 	// The vectorized copies need 16-byte aligned stores, and r_optimize picks them.
-	const bool aligned = (reinterpret_cast<uintptr_t>(dest) & 15) == 0 && (destpitch & 15) == 0;
+	const bool aligned = (reinterpret_cast<uintptr_t>(dest) & 15) == 0 and (destpitch & 15) == 0;
 
 	if (getBitsPerPixel() == 8)
 	{
 		const palindex_t* source = static_cast<const palindex_t*>(getBuffer()) + first * getPitchInPixels();
-		if (aligned && R_StreamStoredLines8)
+		if (aligned and R_StreamStoredLines8)
 			R_StreamStoredLines8(out, source, destpitchpixels, getPitchInPixels(), line_length, count, getPalette());
 		else
 			BlitStoredLines(out, source, destpitchpixels, getPitchInPixels(), line_length, count, getPalette());
@@ -506,7 +506,7 @@ void IWindowSurface::copyLinesTo32(void* dest, int destpitch, int first, int cou
 	else
 	{
 		const argb_t* source = reinterpret_cast<const argb_t*>(getBuffer()) + first * getPitchInPixels();
-		if (aligned && R_StreamStoredLines32)
+		if (aligned and R_StreamStoredLines32)
 			R_StreamStoredLines32(out, source, destpitchpixels, getPitchInPixels(), line_length, count);
 		else
 			BlitStoredLines(out, source, destpitchpixels, getPitchInPixels(), line_length, count, getPalette());
@@ -524,10 +524,10 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 			int destx, int desty, int destw, int desth)
 {
 	// A whole-surface 1:1 blit needs no coordinate arithmetic at all.
-	if (srcx == 0 && srcy == 0 && destx == 0 && desty == 0 &&
-		srcw == destw && srch == desth &&
-		srcw == source_surface->getWidth() && srch == source_surface->getHeight() &&
-		destw == getWidth() && desth == getHeight())
+	if (srcx == 0 and srcy == 0 and destx == 0 and desty == 0 and
+		srcw == destw and srch == desth and
+		srcw == source_surface->getWidth() and srch == source_surface->getHeight() and
+		destw == getWidth() and desth == getHeight())
 	{
 		const int line_length = getHeight();
 		const int line_count = getWidth();
@@ -536,7 +536,7 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 		const int srcbits = source_surface->getBitsPerPixel();
 		const int destbits = getBitsPerPixel();
 
-		if (srcbits == 8 && destbits == 8)
+		if (srcbits == 8 and destbits == 8)
 		{
 			BlitStoredLines(static_cast<palindex_t*>(getBuffer()),
 					static_cast<const palindex_t*>(source_surface->getBuffer()),
@@ -544,7 +544,7 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 					line_length, line_count, palette);
 			return;
 		}
-		else if (srcbits == 8 && destbits == 32 && palette != NULL)
+		else if (srcbits == 8 and destbits == 32 and palette != NULL)
 		{
 			BlitStoredLines(reinterpret_cast<argb_t*>(getBuffer()),
 					static_cast<const palindex_t*>(source_surface->getBuffer()),
@@ -552,7 +552,7 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 					line_length, line_count, palette);
 			return;
 		}
-		else if (srcbits == 32 && destbits == 32)
+		else if (srcbits == 32 and destbits == 32)
 		{
 			BlitStoredLines(reinterpret_cast<argb_t*>(getBuffer()),
 					reinterpret_cast<const argb_t*>(source_surface->getBuffer()),

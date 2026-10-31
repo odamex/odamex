@@ -241,7 +241,7 @@ void G_InitNew(const char* mapname)
 		consoleplayer().cheats &= ~CF_CHASECAM;
 
 	// [RH] If this map doesn't exist, bomb out
-	if (!Res_CheckMap(OString(StdStringToUpper(mapname))))
+	if (not Res_CheckMap(OString(StdStringToUpper(mapname))))
 		I_Error("Could not find map {}\n", mapname);
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
@@ -342,7 +342,7 @@ void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	
-	if ((gameinfo.flags & GI_MAPxx) && !Res_CheckMap(OString("MAP31")))
+	if ((gameinfo.flags & GI_MAPxx) and not Res_CheckMap(OString("MAP31")))
 		secretexit = false;
 	else
 		secretexit = true;
@@ -736,7 +736,7 @@ void G_WorldDone()
 
 	if (!level.interbackdrop.empty())
 	{
-		if (!Res_CheckResource(Res_GetResourceId(level.interbackdrop.c_str(), NS_FLATS)))
+		if (not Res_CheckResource(Res_GetResourceId(level.interbackdrop.c_str(), NS_FLATS)))
 			options.pic = level.interbackdrop;
 		else
 			options.flat = level.interbackdrop;

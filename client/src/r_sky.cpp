@@ -316,7 +316,7 @@ void R_InitSkyMap()
 	// Prefer the SKYDEFS sky attached to the default sky flat, if one exists.
 	const Texture* defaultskytex = sky1texture;
 	auto it = skyflatlookup.find(sky_flat_resource_id);
-	if (it != skyflatlookup.end() && it->second)
+	if (it != skyflatlookup.end() and it->second)
 		defaultskytex = R_SkyTexTexture(&it->second->background);
 
 	fixed_t fskyheight = defaultskytex ? defaultskytex->getScaledHeight() : 0;
@@ -349,9 +349,9 @@ void R_InitSkyMap()
 	// The Heretic sky map is 256*200*4 maps.
 	sky1shift = 22+skystretch-16;
 	sky2shift = 22+skystretch-16;
-	if (defaultskytex && defaultskytex->mWidthBits >= 7)
+	if (defaultskytex and defaultskytex->mWidthBits >= 7)
 		sky1shift -= skystretch;
-	if (sky2texture && sky2texture->mWidthBits >= 7)
+	if (sky2texture and sky2texture->mWidthBits >= 7)
 		sky2shift -= skystretch;
 
 	R_InitXToViewAngle();
@@ -365,7 +365,7 @@ void R_InitSkyMap()
 static sky_t* R_GetSky(const OLumpName& name, bool create)
 {
 	const ResourceId tex_res_id = Res_GetTextureResourceId(OStringToUpper(name.c_str()), WALL);
-	if (!Res_CheckResource(tex_res_id))
+	if (not Res_CheckResource(tex_res_id))
 		return nullptr;
 
 	auto found = skylookup.find(tex_res_id);
@@ -452,7 +452,7 @@ void R_InitSkyDefs()
 
 			OLumpName skytexname = skytex.asString();
 			const ResourceId tex_res_id = Res_GetTextureResourceId(OStringToUpper(skytexname.c_str()), WALL);
-			if (!Res_CheckResource(tex_res_id)) return jsonlumpresult_t::PARSEERROR;
+			if (not Res_CheckResource(tex_res_id)) return jsonlumpresult_t::PARSEERROR;
 
 			if (!mid.isNumeric()
 			   || !scrollx.isNumeric()
@@ -507,7 +507,7 @@ void R_InitSkyDefs()
 
 				OLumpName foreskytexname = foreskytex.asString();
 				const ResourceId foretex_res_id = Res_GetTextureResourceId(OStringToUpper(foreskytexname.c_str()), WALL);
-				if (!Res_CheckResource(foretex_res_id)) return jsonlumpresult_t::PARSEERROR;
+				if (not Res_CheckResource(foretex_res_id)) return jsonlumpresult_t::PARSEERROR;
 
 				if (!foremid.isNumeric()
 				   || !forescrollx.isNumeric()
@@ -540,7 +540,7 @@ void R_InitSkyDefs()
 
 			OLumpName flatname = flatelem.asString();
 			const ResourceId flat_res_id = Res_GetTextureResourceId(OStringToUpper(flatname.c_str()), FLOOR);
-			if (!Res_CheckResource(flat_res_id)) return jsonlumpresult_t::PARSEERROR;
+			if (not Res_CheckResource(flat_res_id)) return jsonlumpresult_t::PARSEERROR;
 
 			OLumpName skyname = skyelem.asString();
 			sky_t* sky = R_GetSky(skyname, true);
@@ -581,7 +581,7 @@ static void R_UpdateFireSky(sky_t* sky, bool init = false)
 {
 	if (gametic % sky->fireticrate != 0 && !init) return;
 	const Texture* tex = R_SkyTexTexture(&sky->background);
-	if (!tex) return;
+	if (not tex) return;
 	const int width = tex->mWidth;
 	const int height = tex->mHeight;
 	for (int x = 0 ; x < width; x++)
@@ -606,7 +606,7 @@ static void R_UpdateFireSky(sky_t* sky, bool init = false)
 static void R_InitFireSky(sky_t* sky)
 {
 	const Texture* tex = R_SkyTexTexture(&sky->background);
-	if (!tex) return;
+	if (not tex) return;
 	const int width = tex->mWidth;
 	const int height = tex->mHeight;
 	sky->firetexturedata = Z_Malloc<byte>(width * height, PU_LEVEL);
@@ -676,13 +676,13 @@ void R_ActivateSkies()
 {
 	for (auto& [flat_res_id, sky] : skyflatlookup)
 	{
-		if (!sky)
+		if (not sky)
 			continue;
 
 		bool used = false;
-		for (int i = 0; i < numsectors && !used; i++)
+		for (int i = 0; i < numsectors and not used; i++)
 		{
-			used = sectors[i].floor_res_id == flat_res_id ||
+			used = sectors[i].floor_res_id == flat_res_id or
 			       sectors[i].ceiling_res_id == flat_res_id;
 		}
 
@@ -714,7 +714,7 @@ void R_InitSkiesForLevel()
 void R_SetDefaultSky(const OLumpName& sky)
 {
 	sky_t* skydef = R_GetSky(sky, true);
-	if (!skydef)
+	if (not skydef)
 		return;
 
 	// make sure that if mapinfo sets a scroll speed we use that
@@ -754,13 +754,13 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 	sky1texture = Res_CacheTexture(OStringToUpper(sky1_name), WALL);
 	sky2texture = Res_CacheTexture(OStringToUpper(sky2_name), WALL);
 
-	if (!sky1texture)
+	if (not sky1texture)
 	{
 		PrintFmt(PRINT_WARNING, "Unnamed sky1 texture not found\n");
 		sky1texture = Res_CacheTexture("-MISSING-", WALL);
 	}
 
-	if (sky2texture && sky1texture->mHeight != sky2texture->mHeight)
+	if (sky2texture and sky1texture->mHeight != sky2texture->mHeight)
 	{
 		PrintFmt(PRINT_HIGH,"Both sky textures must be the same height.\n");
 		sky2texture = sky1texture;
@@ -808,7 +808,7 @@ void R_SetSkyScrollSpeed(int skynum, fixed_t speed)
 		return;
 
 	sky_t* sky = skyflatlookup[Res_GetTextureResourceId(SKYFLATNAME.c_str(), FLOOR)];
-	if (!sky)
+	if (not sky)
 		return;
 
 	if (level.flags & LEVEL_DOUBLESKY)
@@ -897,7 +897,7 @@ void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl)
 		// allow old sky textures to be used.
 		skyflip = line->args[2] ? 0u : ~0u;
 	}
-	else if (skyflat != skyflatlookup.end() && skyflat->second)
+	else if (skyflat != skyflatlookup.end() and skyflat->second)
 	{
 		const sky_t* sky = skyflat->second;
 		if (sky->type == skytype_t::DOUBLESKY)
@@ -942,7 +942,7 @@ void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl)
 		back_offset = sky2columnoffset;
 	}
 
-	if (!frontskytex)
+	if (not frontskytex)
 		return;
 
 	R_ResetDrawFuncs(ctx);

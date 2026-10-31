@@ -353,7 +353,7 @@ static void HU_InitCrosshair()
 		const OLumpName xhairname = fmt::format("XHAIR{}", xhairnum);
 
 		crosshair_res_id = Res_GetTextureResourceId(xhairname, GRAPHICS, false);
-		if (!Res_CheckResource(crosshair_res_id))
+		if (not Res_CheckResource(crosshair_res_id))
 			crosshair_res_id = Res_GetTextureResourceId("XHAIR1", GRAPHICS);
 	}
 
@@ -391,7 +391,7 @@ static void HU_DrawCrosshair()
 	if (connected and not netdemo.isInPlayback() and not sv_allowcrosshair)
 		return;
 
-	if (hud_crosshair && Res_CheckResource(crosshair_res_id))
+	if (hud_crosshair and Res_CheckResource(crosshair_res_id))
 	{
 		static constexpr byte crosshair_color = 0xB0;
 
@@ -455,7 +455,7 @@ static void HU_DrawCrosshair()
 static void HU_DrawChatPrompt()
 {
 	// Don't draw the chat prompt without a valid font.
-	if (!V_FontsReady())
+	if (not V_FontsReady())
 		return;
 
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
@@ -502,7 +502,7 @@ static void HU_DrawChatPrompt()
 	// figure out if the text is wider than the screen.
 	// if so, only draw the right-most portion of it.
 	int i;
-	for (i = static_cast<int>(input_text.length()) - 1; i >= 0 && x < surface_width; i--)
+	for (i = static_cast<int>(input_text.length()) - 1; i >= 0 and x < surface_width; i--)
 	{
 		x += font->getTextWidth(input_text[i]);
 	}

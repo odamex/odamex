@@ -740,7 +740,7 @@ bool M_IsDirectory(const std::string& path)
 	#endif
 
 	struct stat sb;
-	return (stat(path.c_str(), &sb) == 0) && S_ISDIR(sb.st_mode);
+	return (stat(path.c_str(), &sb) == 0) and S_ISDIR(sb.st_mode);
 }
 
 
@@ -754,7 +754,7 @@ bool M_IsFile(const std::string& path)
 	#endif
 
 	struct stat sb;
-	return (stat(path.c_str(), &sb) == 0) && S_ISREG(sb.st_mode);
+	return (stat(path.c_str(), &sb) == 0) and S_ISREG(sb.st_mode);
 }
 
 
@@ -778,7 +778,7 @@ std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, s
 		{
 			std::string name(find_data.cFileName);
 			std::string path = base_path + PATHSEPCHAR + name;
-			if (M_IsDirectory(path) && name != "." && name != "..")
+			if (M_IsDirectory(path) and name != "." and name != "..")
 			{
 				std::vector<std::string> child_files = M_ListDirectoryContents(path, max_depth - 1);
 				files.insert(files.end(), child_files.begin(), child_files.end());
@@ -800,7 +800,7 @@ std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, s
 			{
 				std::string name(ent->d_name);
 				std::string path = base_path + PATHSEPCHAR + name;
-				if (M_IsDirectory(path) && name != "." && name != "..")
+				if (M_IsDirectory(path) and name != "." and name != "..")
 				{
 					std::vector<std::string> child_files = M_ListDirectoryContents(path, max_depth - 1);
 					files.insert(files.end(), child_files.begin(), child_files.end());

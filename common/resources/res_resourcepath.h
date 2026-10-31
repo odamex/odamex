@@ -84,7 +84,7 @@ public:
 	{
 		if (other.mAbsolute)
 			return operator=(other);
-		for (size_t i = 0; i < other.mItemCount && mItemCount < ResourcePath::MAX_ITEMS; i++)
+		for (size_t i = 0; i < other.mItemCount and mItemCount < ResourcePath::MAX_ITEMS; i++)
 			addItem(other.mItems[i]);
 		mAsString = toString();
 		return *this;
@@ -107,7 +107,7 @@ public:
 		std::string output;
 		for (size_t i = 0; i < mItemCount; i++)
 		{
-			if (i > 0 || mAbsolute)
+			if (i > 0 or mAbsolute)
 				output += ResourcePath::DELIMINATOR;
 			output += std::string(mItems[i]);
 		}
@@ -183,12 +183,12 @@ private:
 	{
 		if (token.compare("..") == 0)
 		{
-			if (mItemCount > 0 && mItems[mItemCount - 1].compare("..") != 0)
+			if (mItemCount > 0 and mItems[mItemCount - 1].compare("..") != 0)
 				mItemCount--;
-			else if (!mAbsolute)
+			else if (not mAbsolute)
 				mItems[mItemCount++] = OStringToUpper(token);
 		}
-		else if (!token.empty() && token.compare(".") != 0)
+		else if (not token.empty() and token.compare(".") != 0)
 		{
 			mItems[mItemCount++] = OStringToUpper(token);
 		}
@@ -202,12 +202,12 @@ private:
 	void parseString(const std::string& path)
 	{
 		mItemCount = 0;
-		mAbsolute = !path.empty() && path[0] == ResourcePath::DELIMINATOR;
+		mAbsolute = not path.empty() and path[0] == ResourcePath::DELIMINATOR;
 
 		// split on the deliminator without the overhead of std::stringstream
 		// this is constructed once for every lump at load time
 		size_t start = 0;
-		while (start <= path.size() && mItemCount < ResourcePath::MAX_ITEMS)
+		while (start <= path.size() and mItemCount < ResourcePath::MAX_ITEMS)
 		{
 			size_t end = path.find(ResourcePath::DELIMINATOR, start);
 			if (end == std::string::npos)

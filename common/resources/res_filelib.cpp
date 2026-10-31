@@ -49,7 +49,7 @@ OMD5Hash Res_MD5(const std::string& filename)
 	const int file_chunk_size = 8192;
 	auto fp = uqFile(fopen(filename.c_str(), "rb"));
 
-	if (!fp)
+	if (not fp)
 		return rvo;
 
 	md5_state_t state;
@@ -86,7 +86,7 @@ OCRC32Sum Res_CRC32(const std::string& filename)
 	const int file_chunk_size = 8192;
 	auto fp = uqFile(fopen(filename.c_str(), "rb"));
 
-	if (!fp)
+	if (not fp)
 		return rvo;
 
 	size_t n = 0;
@@ -141,10 +141,10 @@ static void Res_AddOneSearchDir(std::vector<std::string>& search_dirs, std::stri
 	M_ExpandHomeDir(dir);
 	dir = M_CleanPath(dir);
 
-	if (!M_DirectoryExists(dir))
+	if (not M_DirectoryExists(dir))
 	{
-		if (policy == missing_dir_policy_t::WARN ||
-		    (policy == missing_dir_policy_t::DEV_WARN && (::developer || ::devparm)))
+		if (policy == missing_dir_policy_t::WARN or
+		    (policy == missing_dir_policy_t::DEV_WARN and (::developer or ::devparm)))
 		{
 			PrintFmt(PRINT_WARNING, "{}: search directory \"{}\" not found\n",
 			         __FUNCTION__, dir);
@@ -165,7 +165,7 @@ static void Res_AddOneSearchDir(std::vector<std::string>& search_dirs, std::stri
 void Res_AddSearchDir(std::vector<std::string>& search_dirs, const char* dir,
                       missing_dir_policy_t policy)
 {
-	if (!dir)
+	if (not dir)
 		return;
 
 	Res_AddOneSearchDir(search_dirs, std::string(dir), policy);
@@ -185,7 +185,7 @@ void Res_AddSearchDir(std::vector<std::string>& search_dirs, std::string dir,
 void Res_AddSearchDirList(std::vector<std::string>& search_dirs, const char* dirs,
                           missing_dir_policy_t policy)
 {
-	if (!dirs)
+	if (not dirs)
 		return;
 
 	Res_AddSearchDirList(search_dirs, std::string(dirs), policy);
@@ -200,7 +200,7 @@ void Res_AddSearchDirList(std::vector<std::string>& search_dirs, std::string dir
 	std::stringstream ss(dirs);
 	std::string segment;
 
-	while (!ss.eof())
+	while (not ss.eof())
 	{
 		std::getline(ss, segment, SEARCHPATHSEPCHAR);
 		Res_AddOneSearchDir(search_dirs, segment, policy);
@@ -351,7 +351,7 @@ static char* GetRegistryString(registry_value_t *reg_val)
 		return NULL;
 
 	// Find the type and length of the string, and only accept strings.
-	if (RegQueryValueEx(key, reg_val->value, NULL, &valtype, NULL, &len) == ERROR_SUCCESS && valtype == REG_SZ)
+	if (RegQueryValueEx(key, reg_val->value, NULL, &valtype, NULL, &len) == ERROR_SUCCESS and valtype == REG_SZ)
 	{
 		// Allocate a buffer for the value and read the value
 		result = static_cast<char*>(malloc(len));

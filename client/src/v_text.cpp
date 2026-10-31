@@ -79,7 +79,7 @@ struct FontBuildScope
 
 bool V_FontsReady()
 {
-	return fonts_ready && font_build_depth == 0;
+	return fonts_ready and font_build_depth == 0;
 }
 
 //
@@ -93,7 +93,7 @@ static OFont* V_CreateFont(unsigned int stylemask, OFont::ScaleFunc scale_func, 
 {
 	const FontBuildScope building;
 
-	if (!bitmap)
+	if (not bitmap)
 	{
 		OFont* font = new TrueTypeFont(TTF_LUMP_NAME, 8, stylemask, scale_func);
 		if (font->isUsable())
@@ -130,7 +130,7 @@ static OFont* V_CreateFontAtSize(unsigned int stylemask, int size, const char* l
 {
 	const FontBuildScope building;
 
-	if (!V_FontLumpExists(lumpname))
+	if (not V_FontLumpExists(lumpname))
 		lumpname = TTF_LUMP_NAME;
 
 	OFont* font = new TrueTypeFont(lumpname, size, stylemask);
@@ -191,13 +191,13 @@ OFont* V_GetBitmapFont(const char* lumpname, int pixel_size)
 	const FontBuildScope building;
 
 	OFont* font;
-	if (!strnicmp(lumpname, "FONT_BIG", 8))
+	if (not strnicmp(lumpname, "FONT_BIG", 8))
 	{
 		// The large red font's glyphs are roughly twice the small font's height.
 		const fixed_t scale = std::max(1, pixel_size / 16) * FRACUNIT;
 		font = new LargeDoomFont(scale);
 	}
-	else if (!strnicmp(lumpname, "FONT_CON", 8))
+	else if (not strnicmp(lumpname, "FONT_CON", 8))
 	{
 		const fixed_t scale = std::max(1, pixel_size / 8) * FRACUNIT;
 		font = new ConCharsFont(scale);
@@ -262,7 +262,7 @@ OFont* V_GetGradientFont(const char* lumpname, int pixel_size, argb_t top, argb_
 
 	const char* lump = V_FontLumpExists(lumpname) ? lumpname : TTF_LUMP_NAME;
 	OFont* font = new TrueTypeFont(lump, pixel_size, TrueTypeFont::TTF_GRADIENT, top, bottom);
-	if (!font->isUsable())
+	if (not font->isUsable())
 	{
 		delete font;
 		font = new SmallDoomFont(std::max(1, pixel_size / 8) * FRACUNIT);
@@ -297,7 +297,7 @@ OFont* V_GetVariableFont(const char* lumpname, int pixel_size, unsigned int styl
 
 	const char* lump = V_FontLumpExists(lumpname) ? lumpname : TTF_LUMP_NAME;
 	OFont* font = new TrueTypeFont(lump, pixel_size, stylemask, variations);
-	if (!font->isUsable())
+	if (not font->isUsable())
 	{
 		delete font;
 		font = new SmallDoomFont(std::max(1, pixel_size / 8) * FRACUNIT);
@@ -374,7 +374,7 @@ static void V_BuildGlobalFonts()
 //
 void V_FontApplyPreferences()
 {
-	if (!V_FontsReady())
+	if (not V_FontsReady())
 		return;
 
 	V_BuildGlobalFonts();
@@ -472,7 +472,7 @@ int V_GetTextColor(std::string_view str)
         return t;
     }();
 
-	if (str.size() >= 2 && str[0] == TEXTCOLOR_ESCAPE && static_cast<unsigned char>(str[1]) < 128)
+	if (str.size() >= 2 and str[0] == TEXTCOLOR_ESCAPE and static_cast<unsigned char>(str[1]) < 128)
 	{
 		switch (int c = static_cast<unsigned char>(str[1]))
 		{
@@ -628,7 +628,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 static bool V_DrawRuleChar(const DCanvas* canvas, byte c, int x, int y,
 		int advance, int line_height)
 {
-	if (c < RULE_CHAR_FIRST || c > RULE_CHAR_LAST || ::ConChars.empty() || advance <= 0)
+	if (c < RULE_CHAR_FIRST or c > RULE_CHAR_LAST or ::ConChars.empty() or advance <= 0)
 		return false;
 
 	// Each CONCHARS glyph is 8 rows of 8 colour bytes followed by 8 mask
@@ -675,7 +675,7 @@ static bool V_DrawRuleChar(const DCanvas* canvas, byte c, int x, int y,
 	right = std::min(right, static_cast<int>(surface->getWidth()));
 	bottom = std::min(bottom, static_cast<int>(surface->getHeight()));
 
-	if (left < right && top < bottom)
+	if (left < right and top < bottom)
 	{
 		canvas->Clear(left, top, right, bottom,
 		              V_GetDefaultPalette()->basecolors[color_index]);
@@ -694,7 +694,7 @@ static bool V_DrawRuleChar(const DCanvas* canvas, byte c, int x, int y,
 void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 		int normalcolor, int x, int y, const char* string) const
 {
-	if (!font || !string)
+	if (not font or not string)
 		return;
 
 	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
@@ -708,7 +708,7 @@ void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 	const bool blend = (mSurface->getBitsPerPixel() == 32);
 	int blend_level = 255;
 
-	if (drawer == EWrapper_Lucent || drawer == EWrapper_TlatedLucent)
+	if (drawer == EWrapper_Lucent or drawer == EWrapper_TlatedLucent)
 		blend_level = std::clamp(static_cast<int>(hud_transparency * 255), 0, 255);
 
 	for (const char* str = string; str[0] != '\0'; )
@@ -741,7 +741,7 @@ void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 		}
 
 		const Texture* glyph = font->getGlyph(c);
-		if (glyph && glyph->mWidth > 0 && glyph->mHeight > 0)
+		if (glyph and glyph->mWidth > 0 and glyph->mHeight > 0)
 		{
 			if (x + glyph->mWidth > I_GetSurfaceWidth())
 				break;
@@ -754,7 +754,7 @@ void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 			const byte* coverage = font->getGlyphCoverage(c);
 			const palindex_t* fill = font->getGlyphFill(c);
 
-			if (blend && coverage && fill)
+			if (blend and coverage and fill)
 			{
 				DrawGlyphBlended(fill, coverage, glyph->mWidth, glyph->mHeight,
 				                 glyph_x, glyph_y, blend_level);
@@ -804,7 +804,7 @@ void DCanvas::DrawFontText(const OFont* font, int normalcolor, int x, int y,
 //
 int V_FontStringWidthClean(const OFont* font, const char* str)
 {
-	if (!font || !str)
+	if (not font or not str)
 		return 0;
 
 	return font->getTextWidth(str) / std::max(1, CleanXfac);
@@ -815,7 +815,7 @@ int V_FontStringWidthClean(const OFont* font, const char* str)
 //
 int V_FontLineHeightClean(const OFont* font)
 {
-	if (!font)
+	if (not font)
 		return 0;
 
 	return font->getHeight() / std::max(1, CleanYfac);
@@ -867,7 +867,7 @@ brokenlines_t* V_BreakLinesFont(const OFont* font, int maxwidth, const byte* str
 //
 brokenlines_t* V_BreakLinesFontPixels(const OFont* font, int maxwidth_px, const byte* str)
 {
-	if (!font || !str)
+	if (not font or not str)
 		return NULL;
 
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
@@ -907,7 +907,7 @@ brokenlines_t* V_BreakLinesFontPixels(const OFont* font, int maxwidth_px, const 
 
 		nw = font->getTextWidth(static_cast<char>(c));
 
-		if (w + nw > maxwidth_px || c == '\n')
+		if (w + nw > maxwidth_px or c == '\n')
 		{
 			// Time to break the line
 			if (!space)
@@ -944,7 +944,7 @@ brokenlines_t* V_BreakLinesFontPixels(const OFont* font, int maxwidth_px, const 
 
 		while (s < str)
 		{
-			if (!isspace(*s++))
+			if (not isspace(*s++))
 			{
 				breakitFont(font, &lines[i++], start, str, color_code_str);
 				break;

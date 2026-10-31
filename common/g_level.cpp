@@ -166,7 +166,7 @@ level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
 	for (auto& info : m_infos)
 	{
-		if (info.levelnum == levelnum && Res_CheckMap(OString(info.mapname.c_str())))
+		if (info.levelnum == levelnum and Res_CheckMap(OString(info.mapname.c_str())))
 		{
 			return info;
 		}
@@ -499,7 +499,7 @@ BEGIN_COMMAND (map)
 		// [Dash|RD] -- We can make a safe assumption that the user might not specify
 		//              the whole lumpname for the level, and might opt for just the
 		//              number. This makes sense, so why isn't there any code for it?
-		if (!Res_CheckMap(OString(StdStringToUpper(argv[1]))) && isdigit(argv[1][0]))
+		if (not Res_CheckMap(OString(StdStringToUpper(argv[1]))) and isdigit(argv[1][0]))
 		{ // The map name isn't valid, so lets try to make some assumptions for the user.
 
 			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
@@ -513,7 +513,7 @@ BEGIN_COMMAND (map)
 
 			}
 
-			if (!Res_CheckMap(OString(mapname.c_str())))
+			if (not Res_CheckMap(OString(mapname.c_str())))
 			{ // Still no luck, oh well.
 				PrintFmt(PRINT_WARNING, "Map {} not found.\n", argv[1]);
 			}
@@ -527,7 +527,7 @@ BEGIN_COMMAND (map)
 		else
 		{
 			// Ch0wW - Map was still not found, so don't bother trying loading the map.
-			if (!Res_CheckMap(OString(StdStringToUpper(argv[1]))))
+			if (not Res_CheckMap(OString(StdStringToUpper(argv[1]))))
 			{
 				PrintFmt(PRINT_WARNING, "Map {} not found.\n", argv[1]);
 			}

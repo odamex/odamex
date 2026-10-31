@@ -104,7 +104,7 @@ void P_InitSwitchList(void)
 				const ResourceId texture1 = Res_GetTextureResourceId(reinterpret_cast<const char*>(list_p) + 0, WALL, false);
 				const ResourceId texture2 = Res_GetTextureResourceId(reinterpret_cast<const char*>(list_p) + 9, WALL, false);
 
-				if (Res_CheckResource(texture1) && Res_CheckResource(texture2))
+				if (Res_CheckResource(texture1) and Res_CheckResource(texture2))
 				{
 					switchlist[i++] = texture1;
 					switchlist[i++] = texture2;
@@ -204,7 +204,7 @@ void P_SetButtonTexture(line_t* line, const ResourceId new_res_id)
 		ResourceId alt_res_id;
 		ResourceId* res_id_ptr = P_GetButtonTexturePtr(line, &alt_res_id, twhere);
 
-		if (res_id_ptr != NULL && Res_CheckResource(*res_id_ptr))
+		if (res_id_ptr != NULL and Res_CheckResource(*res_id_ptr))
 			*res_id_ptr = new_res_id;
 	}
 }

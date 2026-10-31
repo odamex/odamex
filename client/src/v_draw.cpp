@@ -412,7 +412,7 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 
 void DCanvas::DrawColorLucentPatchSP(const byte *source, byte *dest, int count, int pitch, int yinc)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0 or not hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
@@ -707,7 +707,7 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 
 void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, int pitch, int yinc)
 {
-	if (count <= 0 || !hud_transparency)
+	if (count <= 0 or not hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
@@ -756,7 +756,7 @@ void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, 
 void DCanvas::DrawGlyphBlended(const palindex_t* fill, const byte* coverage,
 		int width, int height, int x, int y, int level) const
 {
-	if (!fill || !coverage || level <= 0)
+	if (not fill or not coverage or level <= 0)
 		return;
 
 	const int surface_width = mSurface->getWidth();
@@ -769,7 +769,7 @@ void DCanvas::DrawGlyphBlended(const palindex_t* fill, const byte* coverage,
 	const int x2 = std::min(x + width, surface_width);
 	const int y2 = std::min(y + height, surface_height);
 
-	if (x1 >= x2 || y1 >= y2)
+	if (x1 >= x2 or y1 >= y2)
 		return;
 
 	V_MarkRect(x1, y1, x2 - x1, y2 - y1);
@@ -878,7 +878,7 @@ static void V_DrawARGBColumnS(const argb_t* source, byte* dest, int count, int p
 static int V_ARGBDrawLevel(const DCanvas::EWrapperCode drawer, const Texture* texture,
                            const IWindowSurface* surface)
 {
-	if (!texture->mARGBData || surface->getBitsPerPixel() != 32)
+	if (not texture->mARGBData or surface->getBitsPerPixel() != 32)
 		return -1;
 
 	if (drawer == DCanvas::EWrapper_Normal)
@@ -917,11 +917,11 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, in
 
 	// [FG] automatically center wide patches without horizontal offset
 	// (taken from dsda but inverted since we center above this)
-	if (texture->mWidth > 320 && texture->mOffsetX != 0)
+	if (texture->mWidth > 320 and texture->mOffsetX != 0)
 		x += (texture->mWidth - 320) / 2;
 
 #ifdef RANGECHECK
-	if (x < 0 ||x + texture->mWidth > surface_width || y < 0 || y + texture->mHeight > surface_height)
+	if (x < 0 or x + texture->mWidth > surface_width or y < 0 or y + texture->mHeight > surface_height)
 	{
 	  // Printf (PRINT_HIGH, "Patch at %d,%d exceeds LFB\n", x,y );
 	  // No I_Error abort - what is up with TNT.WAD?
@@ -976,10 +976,10 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, in
 void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, int y0,
                            const int destwidth, const int destheight) const
 {
-	if (!texture || texture->mWidth <= 0 || texture->mHeight <= 0 || destwidth <= 0 || destheight <= 0)
+	if (not texture or texture->mWidth <= 0 or texture->mHeight <= 0 or destwidth <= 0 or destheight <= 0)
 		return;
 
-	if (destwidth == texture->mWidth && destheight == texture->mHeight)
+	if (destwidth == texture->mWidth and destheight == texture->mHeight)
 	{
 		// Perfect 1:1 mapping, so we use the unscaled draw wrapper.
 		DrawWrapper(drawer, texture, x0, y0);
@@ -1117,7 +1117,7 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const Texture* texture, int x0
 //
 void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 {
-	if (!texture)
+	if (not texture)
 		return;
 
 	DrawTextureFlippedStretched(texture, x0, y0, texture->mWidth, texture->mHeight);
@@ -1133,7 +1133,7 @@ void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 void DCanvas::DrawTextureFlippedStretched(const Texture* texture, int x0, int y0,
 		const int destwidth, const int destheight) const
 {
-	if (!texture || texture->mWidth <= 0 || texture->mHeight <= 0 || destwidth <= 0 || destheight <= 0)
+	if (not texture or texture->mWidth <= 0 or texture->mHeight <= 0 or destwidth <= 0 or destheight <= 0)
 		return;
 
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();

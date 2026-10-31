@@ -869,7 +869,7 @@ void CL_RunTics()
 		CL_RequestConnectInfo();
 
 	// Re-send resource digests until the server acknowledges receipt.
-	if (::resource_digests_unacked && ::connected && !::simulated_connection &&
+	if (::resource_digests_unacked and ::connected and not ::simulated_connection and
 	    ::gametic - ::resource_digests_sent_tic > 5 * TICRATE)
 	{
 		CL_SendResourceDigests();
@@ -1673,7 +1673,7 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendResourceDigests()
 {
-	if (!::connected || ::simulated_connection)
+	if (not ::connected or ::simulated_connection)
 		return;
 
 	::messenger.Reliable().Write(CLC_ResourceDigests(::wadfiles, ::patchfiles));
@@ -2072,7 +2072,7 @@ bool CL_PrepareConnect()
 		PrintFmt("> {}\n", file.getBasename());
 	}
 
-	if (MSG_BytesLeft() >= 4 && MSG_ReadLong() == 0x01020306)
+	if (MSG_BytesLeft() >= 4 and MSG_ReadLong() == 0x01020306)
 	{
 		for (byte i = 0; i < server_wads; i++)
 		{

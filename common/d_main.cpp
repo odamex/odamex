@@ -633,7 +633,7 @@ static bool WantMatchesLoaded(const OWantFile& want, const OResFile& loaded)
 	// contents of an archive or directory regardless of container form, and
 	// catches added, missing, or modified files inside it.
 	const OMD5Hash& want_digest = want.getWantedContentDigest();
-	if (!want_digest.empty())
+	if (not want_digest.empty())
 	{
 		return want_digest == loaded.getContentDigest();
 	}
@@ -679,7 +679,7 @@ static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
 	     ++it)
 	{
 		size_t idx = it - newwadfiles.begin();
-		if (!WantMatchesLoaded(*it, ::wadfiles.at(idx + 1)))
+		if (not WantMatchesLoaded(*it, ::wadfiles.at(idx + 1)))
 		{
 			return false;
 		}

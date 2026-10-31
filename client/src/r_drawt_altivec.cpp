@@ -217,7 +217,7 @@ public:
 		const vu16 packed = vec_or(vec_and(even, R_SplatU16(0xFF00)), vec_sr(odd, vec_splat_u16(8)));
 		const vu32 res = vec_or((vu32)packed, mamask);
 
-		if (!MASKED)
+		if (not MASKED)
 		{
 			vec_st(res, 0, d);
 			return;
@@ -271,7 +271,7 @@ static inline void R_DrawColumnQuadGenericAltivec(argb_t* dest, const drawcolumn
 	const auto single = [&]() {
 		const palindex_t pixel = MASKED ? source[frac >> FRACBITS]
 									: source[(frac >> FRACBITS) & mask];
-		if (!MASKED || pixel != 0)
+		if (not MASKED or pixel != 0)
 			f(pixel, dest);
 		dest++;
 		frac += fracstep;
@@ -297,9 +297,9 @@ static inline void R_DrawColumnQuadGenericAltivec(argb_t* dest, const drawcolumn
 		const uint32_t i2 = source[o2];
 		const uint32_t i3 = source[o3];
 
-		if (!MASKED)
+		if (not MASKED)
 			f.template quad<false>(i0, i1, i2, i3, dest);
-		else if (!EARLYOUT || (i0 | i1 | i2 | i3))
+		else if (not EARLYOUT or (i0 | i1 | i2 | i3))
 			f.template quad<true>(i0, i1, i2, i3, dest);
 
 		dest += 4;

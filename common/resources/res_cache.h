@@ -112,7 +112,7 @@ public:
 	//
 	const uint8_t* getData(const ResourceId res_id) const
 	{
-		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
+		assert(res_id != ResourceId::INVALID_ID and res_id < mResourceCount);
 		const ResourceBlock* block = mSlots[res_id].load(std::memory_order_acquire);
 		return block != nullptr ? block->data() : nullptr;
 	}
@@ -126,11 +126,11 @@ public:
 	//
 	const uint8_t* cacheData(const ResourceId res_id, std::unique_ptr<ResourceBlock> block, zoneTag_e tag)
 	{
-		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
+		assert(res_id != ResourceId::INVALID_ID and res_id < mResourceCount);
 		assert(block != nullptr);
 		assert(mSlots[res_id].load(std::memory_order_relaxed) == nullptr);
 
-		if (tag >= PU_LEVEL && tag <= PU_LEVELMAX)
+		if (tag >= PU_LEVEL and tag <= PU_LEVELMAX)
 		{
 			mLevelTagged[res_id] = true;
 			mLevelData.push_back(res_id);
@@ -143,7 +143,7 @@ public:
 
 	void releaseData(const ResourceId res_id)
 	{
-		assert(res_id != ResourceId::INVALID_ID && res_id < mResourceCount);
+		assert(res_id != ResourceId::INVALID_ID and res_id < mResourceCount);
 		mLevelTagged[res_id] = false;
 		delete mSlots[res_id].exchange(nullptr, std::memory_order_acq_rel);
 	}

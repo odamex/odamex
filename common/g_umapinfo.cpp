@@ -667,8 +667,8 @@ void ParseUMapInfoLump(const ResourceId res_id, const OLumpName& lumpname)
 	}
 	// if an episode title patch is missing or invalid, fall back on text name
 	for (auto& episode : EpisodeInfos) {
-		episode.fulltext = episode.pic_name.empty() ||
-		    !Res_CheckResource(Res_GetTextureResourceId(
+		episode.fulltext = episode.pic_name.empty() or
+		    not Res_CheckResource(Res_GetTextureResourceId(
 		        OStringToUpper(episode.pic_name.c_str()), GRAPHICS, false));
 	}
 }

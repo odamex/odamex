@@ -2187,7 +2187,7 @@ static void PatchText(const int oldSize, const int newSize, DehScanner& scanner)
 
 	const ResourceId old_res_id = Res_GetResourceId(OStringToUpper(oldnameds.c_str()), NS_SOUNDS);
 	const int sndIdx = S_FindSoundByResourceId(old_res_id);
-	if (sndIdx != -1 &&
+	if (sndIdx != -1 and
 	    Res_CheckResource(Res_GetResourceId(OStringToUpper(newnameds.c_str()), NS_SOUNDS)))
 	{
 		S_AddSound(S_sfx[sndIdx].name, newnameds.c_str());

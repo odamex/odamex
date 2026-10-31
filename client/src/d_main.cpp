@@ -489,7 +489,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
-	if (gamemode != retail_chex && Res_CheckResource(Res_GetResourceId("DEMO4", NS_GLOBAL)))
+	if (gamemode != retail_chex and Res_CheckResource(Res_GetResourceId("DEMO4", NS_GLOBAL)))
         demosequence = (demosequence+1)%8;
     else
         demosequence = (demosequence+1)%6;
@@ -638,7 +638,7 @@ EXTERN_CVAR(co_archvilefirefix)
 void G_ReadCOMPLVL()
 {
 	const ResourceId res_id = Res_GetResourceId("COMPLVL", NS_GLOBAL);
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 		return;
 
 	const uint32_t complvl_size = Res_GetResourceSize(res_id);

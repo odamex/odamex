@@ -625,7 +625,7 @@ void V_InitPalette(const char* lumpname)
 {
 	const OString palette_lumpname(lumpname, 8);
 	palette_res_id = Res_GetResourceId(palette_lumpname, NS_GLOBAL);
-	if (!Res_CheckResource(palette_res_id))
+	if (not Res_CheckResource(palette_res_id))
 		I_FatalError("Could not initialize %s palette", palette_lumpname.c_str());
 
 	current_palette_num = -1;

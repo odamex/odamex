@@ -92,19 +92,19 @@ bool OResFile::make(OResFile& out, const std::string& file)
  */
 bool OResFile::makeDirectory(OResFile& out, const std::string& dir)
 {
-	if (!M_IsDirectory(dir))
+	if (not M_IsDirectory(dir))
 	{
 		return false;
 	}
 
 	std::string fullpath;
-	if (!M_GetAbsPath(dir, fullpath))
+	if (not M_GetAbsPath(dir, fullpath))
 	{
 		return false;
 	}
 
 	// Trim any trailing path separator so the basename resolves properly.
-	while (!fullpath.empty() && M_IsPathSep(fullpath.back()))
+	while (not fullpath.empty() and M_IsPathSep(fullpath.back()))
 		fullpath.pop_back();
 
 	std::string basename = M_ExtractFileName(fullpath);
@@ -317,7 +317,7 @@ std::vector<std::string> M_FileSearchDirs()
  */
 static bool IsArchiveExt(const std::string& ext)
 {
-	return iequals(ext, ".ZIP") || iequals(ext, ".PK3");
+	return iequals(ext, ".ZIP") or iequals(ext, ".PK3");
 }
 
 /**
@@ -354,7 +354,7 @@ OMD5Hash M_DirectoryMarkerHash(const std::string& basename)
  */
 bool M_IsDirectoryMarkerHash(const OMD5Hash& hash, const std::string& basename)
 {
-	return !hash.empty() && hash == M_DirectoryMarkerHash(basename);
+	return not hash.empty() and hash == M_DirectoryMarkerHash(basename);
 }
 
 bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
@@ -365,7 +365,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	// want carries a content digest, the directory's contents must match it.
 	if (M_IsDirectory(wanted.getWantedPath()))
 	{
-		if (want_digest.empty() || Res_ContentDigest(wanted.getWantedPath()) == want_digest)
+		if (want_digest.empty() or Res_ContentDigest(wanted.getWantedPath()) == want_digest)
 		{
 			return OResFile::makeDirectory(out, wanted.getWantedPath());
 		}
@@ -377,7 +377,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	// correctly, believe them.
 	if (M_FileExists(wanted.getWantedPath()))
 	{
-		if (wanted.getWantedMD5().empty() && want_digest.empty())
+		if (wanted.getWantedMD5().empty() and want_digest.empty())
 		{
 			// No hash preference.
 			return OResFile::make(out, wanted.getWantedPath());
@@ -390,7 +390,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 			return OResFile::makeWithHash(out, wanted.getWantedPath(), hash);
 		}
 
-		if (!want_digest.empty() &&
+		if (not want_digest.empty() and
 		    Res_ContentDigest(wanted.getWantedPath()) == want_digest)
 		{
 			// Not the same bytes, but the same logical contents.
@@ -407,7 +407,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	M_ExtractFileBase(path, basename);
 	if (M_ExtractFileExtension(path, strext))
 	{
-		if (!strext.empty() && strext[0] != '.')
+		if (not strext.empty() and strext[0] != '.')
 			strext = "." + strext;
 		exts.push_back(StdStringToUpper(strext));
 
@@ -434,7 +434,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 
 		// Extension-less WAD wants may also resolve to the archive
 		// forms of the resource.
-		if (wanted.getWantedType() == OFILE_WAD || wanted.getWantedType() == OFILE_UNKNOWN)
+		if (wanted.getWantedType() == OFILE_WAD or wanted.getWantedType() == OFILE_UNKNOWN)
 		{
 			exts.push_back(".ZIP");
 			exts.push_back(".PK3");
@@ -467,7 +467,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	// The want carries a content digest: accept any same-named archive or
 	// directory whose logical contents match it, regardless of container
 	// form or how the archive was compressed.
-	if (!want_digest.empty())
+	if (not want_digest.empty())
 	{
 		static const std::vector<std::string> archive_exts = {".ZIP", ".PK3"};
 		for (const auto& dir : dirs)
@@ -475,7 +475,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 			const std::string searchpath = M_JoinPath(dir, subdir);
 			const std::string result =
 			    M_BaseFileSearchDir(searchpath, basename, archive_exts, OMD5Hash());
-			if (!result.empty())
+			if (not result.empty())
 			{
 				const std::string fullpath = M_JoinPath(searchpath, result);
 				if (Res_ContentDigest(fullpath) == want_digest)
@@ -485,7 +485,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 			}
 
 			const std::string dirpath = M_JoinPath(searchpath, basename);
-			if (M_IsDirectory(dirpath) && Res_ContentDigest(dirpath) == want_digest)
+			if (M_IsDirectory(dirpath) and Res_ContentDigest(dirpath) == want_digest)
 			{
 				return OResFile::makeDirectory(out, dirpath);
 			}
@@ -503,7 +503,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 			{
 				// A known content digest must match; a same-named directory
 				// with different contents is not the wanted resource.
-				if (!want_digest.empty() && Res_ContentDigest(dirpath) != want_digest)
+				if (not want_digest.empty() and Res_ContentDigest(dirpath) != want_digest)
 				{
 					continue;
 				}
@@ -663,7 +663,7 @@ BEGIN_COMMAND(loaded)
 		PrintFmt("{}\n", file.getBasename());
 		PrintFmt("  PATH: {}\n", file.getFullpath());
 		PrintFmt("  MD5:  {}\n", file.getMD5().getHexStr());
-		if (!file.getContentDigest().empty())
+		if (not file.getContentDigest().empty())
 			PrintFmt("  DIGEST: {}\n", file.getContentDigest().getHexStr());
 	}
 

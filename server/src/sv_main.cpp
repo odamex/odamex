@@ -909,7 +909,7 @@ void SV_CheckTimeouts()
 		{
 			SV_DropClientUngracefully(player, "timed out");
 		}
-		else if (player.client.digest_deadline != 0 &&
+		else if (player.client.digest_deadline != 0 and
 		         gametic > player.client.digest_deadline)
 		{
 			player.client.digest_deadline = 0;
@@ -2288,7 +2288,7 @@ static bool SV_CheckResourceFiles(const odaproto::clc::ResourceDigests& msg,
 	// The client omits odamex.wad from its list, as does the server's
 	// announced resource list.
 	const size_t expected_wads = ::wadfiles.size() - 1;
-	if (static_cast<size_t>(msg.wads_size()) != expected_wads ||
+	if (static_cast<size_t>(msg.wads_size()) != expected_wads or
 	    static_cast<size_t>(msg.patches_size()) != ::patchfiles.size())
 	{
 		offender = "resource file count";
@@ -2301,7 +2301,7 @@ static bool SV_CheckResourceFiles(const odaproto::clc::ResourceDigests& msg,
 		const odaproto::clc::ResourceDigests_Resource& clientfile = msg.wads(i);
 
 		const OMD5Hash& digest = serverfile.getContentDigest();
-		if (!digest.empty())
+		if (not digest.empty())
 		{
 			if (clientfile.content_digest() != digest.getHexStr())
 			{
@@ -2469,7 +2469,7 @@ void SV_ConnectClient()
 		std::unique_ptr<google::protobuf::Message> msgPtr(digestsMsg);
 
 		std::string offender;
-		if (!SV_CheckResourceFiles(
+		if (not SV_CheckResourceFiles(
 		        *static_cast<odaproto::clc::ResourceDigests*>(digestsMsg), offender))
 		{
 			PrintFmt("{} disconnected (resource file mismatch: {}).\n",

@@ -299,7 +299,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 
 	const ResourceId script_res_id =
 	    Res_GetResourceId(OStringToUpper(lumpname.c_str()), NS_GLOBAL);
-	if (!Res_CheckResource(script_res_id))
+	if (not Res_CheckResource(script_res_id))
 		return nullptr;
 
 	std::unique_ptr<interlevel_t> output = std::make_unique<interlevel_t>();

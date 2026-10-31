@@ -123,10 +123,10 @@ static bool Res_IsMapLumpName(const OString& name)
 
 	const OString uname = OStringToUpper(name);
 
-	return uname == things_lump_name || uname == linedefs_lump_name || uname == sidedefs_lump_name ||
-		uname == vertexes_lump_name || uname == segs_lump_name || uname == ssectors_lump_name ||
-		uname == nodes_lump_name || uname == sectors_lump_name || uname == reject_lump_name ||
-		uname == blockmap_lump_name || uname == behavior_lump_name;
+	return uname == things_lump_name or uname == linedefs_lump_name or uname == sidedefs_lump_name or
+		uname == vertexes_lump_name or uname == segs_lump_name or uname == ssectors_lump_name or
+		uname == nodes_lump_name or uname == sectors_lump_name or uname == reject_lump_name or
+		uname == blockmap_lump_name or uname == behavior_lump_name;
 }
 
 
@@ -146,7 +146,7 @@ static std::string Res_TransformResourcePath(const std::string& path,
 
 	// Replace native filesystem path separator with the in-game path separator
 	for (size_t i = 0; i < new_path.length(); i++)
-		if (new_path[i] == '/' || new_path[i] == '\\')
+		if (new_path[i] == '/' or new_path[i] == '\\')
 			new_path[i] = ResourcePath::DELIMINATOR;
 
 	// Add leading '/'
@@ -212,10 +212,10 @@ static ResourcePath Res_LongResourcePath(const std::string& path)
 	std::string new_path(path);
 
 	for (size_t i = 0; i < new_path.length(); i++)
-		if (new_path[i] == '/' || new_path[i] == '\\')
+		if (new_path[i] == '/' or new_path[i] == '\\')
 			new_path[i] = ResourcePath::DELIMINATOR;
 
-	if (new_path.empty() || new_path[0] != ResourcePath::DELIMINATOR)
+	if (new_path.empty() or new_path[0] != ResourcePath::DELIMINATOR)
 		new_path = ResourcePath::DELIMINATOR + new_path;
 
 	return ResourcePath(StdStringToUpper(new_path));
@@ -400,7 +400,7 @@ void WadResourceContainer::init(FileAccessor* file)
 {
 	mFile = file;
 
-	if (!readWadDirectory())
+	if (not readWadDirectory())
 		mDirectory.clear();
 
 	buildMarkerRecords();
@@ -432,7 +432,7 @@ bool WadResourceContainer::readWadDirectory()
 	if (mFile->read(header, wad_header_length) != wad_header_length)
 		return false;
 
-	if (!Res_ValidateWadData(header, 4))
+	if (not Res_ValidateWadData(header, 4))
 		return false;
 
 	int32_t wad_lump_count = LELONG(*reinterpret_cast<int32_t*>(header + 4));
@@ -441,7 +441,7 @@ bool WadResourceContainer::readWadDirectory()
 		return false;
 
 	int32_t wad_table_offset = LELONG(*reinterpret_cast<int32_t*>(header + 8));
-	if (wad_table_offset < static_cast<int32_t>(wad_header_length) || wad_table_length + wad_table_offset > mFile->size())
+	if (wad_table_offset < static_cast<int32_t>(wad_header_length) or wad_table_length + wad_table_offset > mFile->size())
 		return false;
 
 	// read the WAD lump directory
@@ -515,14 +515,14 @@ const ResourcePath& WadResourceContainer::assignPathBasedOnMarkers(LumpId lump_i
 	for (MarkerRangeLookupTable::const_iterator it = mMarkers.begin(); it != mMarkers.end(); ++it)
 	{
 		const MarkerRange& range = it->second;
-		if (lump_id > range.start && lump_id < range.end)
+		if (lump_id > range.start and lump_id < range.end)
 		{
 			const OString& prefix = it->first;
-			if (prefix == "F" || prefix == "FF")
+			if (prefix == "F" or prefix == "FF")
 				return flats_directory_name;
-			if (prefix == "S" || prefix == "SS")
+			if (prefix == "S" or prefix == "SS")
 				return sprites_directory_name;
-			if (prefix == "P" || prefix == "PP")
+			if (prefix == "P" or prefix == "PP")
 				return patches_directory_name;
 			if (prefix == "C")
 				return colormaps_directory_name;
@@ -599,11 +599,11 @@ void WadResourceContainer::addResources(ResourceManager* manager)
 
 			if (is_map_marker)
 				map_name = entry.path;
-			else if (!is_map_lump)
+			else if (not is_map_lump)
 				map_name.clear();
 
 			// add the lump to the appropriate namespace
-			if (!map_name.empty())
+			if (not map_name.empty())
 				base_path = Res_MakeResourcePath(map_name, maps_directory_name);
 			else
 				base_path = assignPathBasedOnMarkers(lump_id);
@@ -711,7 +711,7 @@ void SingleMapWadResourceContainer::addResources(ResourceManager* manager)
 
 		if (lump_id == 0)
 		{
-			if (!isLumpMapMarker(lump_id))
+			if (not isLumpMapMarker(lump_id))
 				return;
 			const ResourcePath full_path = base_path + base_path.last();
 			const ResourceId res_id = manager->addResource(full_path, this);
@@ -719,7 +719,7 @@ void SingleMapWadResourceContainer::addResources(ResourceManager* manager)
 		}
 		else
 		{
-			if (!Res_IsMapLumpName(entry.path))
+			if (not Res_IsMapLumpName(entry.path))
 				return;
 			const ResourcePath full_path = base_path + entry.path;
 			const ResourceId res_id = manager->addResource(full_path, this);
@@ -751,7 +751,7 @@ DirectoryResourceContainer::DirectoryResourceContainer(const OString& path) :
 {
 	// trim trailing path separators from the path
 	size_t len = path.length();
-	while (len != 0 && path[len - 1] == PATHSEPCHAR)
+	while (len != 0 and path[len - 1] == PATHSEPCHAR)
 		--len;
 	mPath = path.substr(0, len);
 
@@ -805,7 +805,7 @@ void DirectoryResourceContainer::addResources(ResourceManager* manager)
 			ResourceContainer* container = new SingleMapWadResourceContainer(diskfile);
 			manager->addResourceContainer(container, this, global_directory_name, entry.path);
 		}
-		else if (!Res_PathHasShortLumpName(std::string(entry.path)))
+		else if (not Res_PathHasShortLumpName(std::string(entry.path)))
 		{
 			// The file name does not fit in a classic 8-character lump name.
 			// Following ZDoom-family behavior, such files get no truncated
@@ -826,7 +826,7 @@ void DirectoryResourceContainer::addResources(ResourceManager* manager)
 
 			// Use patch rules for global level resources
 			// aka last one wins
-			if (resource_path.first() == "GLOBAL" && resource_path.size() == 2 && entry.length > 0)
+			if (resource_path.first() == "GLOBAL" and resource_path.size() == 2 and entry.length > 0)
 			{
 				std::string full_path = std::string(mPath) + std::string(entry.path);
 				const OString full_path_os(full_path);
@@ -836,7 +836,7 @@ void DirectoryResourceContainer::addResources(ResourceManager* manager)
 				{
 					WadResourceIdentifier identifier;
 					const ResourcePath& identified_path = identifier.identifyByContents(resource_path, data, entry.length);
-					if (!(identified_path == global_directory_name))
+					if (not (identified_path == global_directory_name))
 						resource_path = identified_path + resource_path.last();
 				}
 				delete [] data;
@@ -869,7 +869,7 @@ bool DirectoryResourceContainer::isEmbeddedWadFile(const FileSystemDirectoryEntr
 
 		// only allow embedded WAD files in the root directory
 		size_t last_path_separator = entry.path.find_last_of(ResourcePath::DELIMINATOR);
-		if (last_path_separator != 0 && last_path_separator != std::string::npos)
+		if (last_path_separator != 0 and last_path_separator != std::string::npos)
 			return false;
 
 		return true;
@@ -897,7 +897,7 @@ bool DirectoryResourceContainer::isEmbeddedSingleMapWadFile(const FileSystemDire
 			return false;
 
 		const ResourcePath path = Res_TransformResourcePath(entry.path);
-		return path.first() == "MAPS" && path.size() == 2;
+		return path.first() == "MAPS" and path.size() == 2;
 	}
 
 	return false;
@@ -972,7 +972,7 @@ void DirectoryResourceContainer::addEntries()
 //
 OMD5Hash DirectoryResourceContainer::getContentDigest() const
 {
-	if (mContentDigest.empty() && mDirectory.size() > 0)
+	if (mContentDigest.empty() and mDirectory.size() > 0)
 	{
 		std::vector<ContentManifestEntry> manifest;
 		manifest.reserve(mDirectory.size());
@@ -1107,7 +1107,7 @@ size_t ZipResourceContainer::findEndOfCentralDirectory() const
 		size_t read_position = file_size - back_read;
 		size_t read_size = std::min<size_t>(BUFREADCOMMENT + 4, file_size - read_position);
 
-		if (!mFile->seek(read_position))
+		if (not mFile->seek(read_position))
 			break;
 
 		if (mFile->read(buf, read_size) != read_size)
@@ -1147,7 +1147,7 @@ bool ZipResourceContainer::readCentralDirectory()
 	uint8_t* const buffer = storage.data();
 
     // Read the central directory contents
-	if (!mFile->seek(central_dir_end) || mFile->read(buffer, ZIP_END_OF_DIR_SIZE) != ZIP_END_OF_DIR_SIZE)
+	if (not mFile->seek(central_dir_end) or mFile->read(buffer, ZIP_END_OF_DIR_SIZE) != ZIP_END_OF_DIR_SIZE)
 		return false;
 
 	uint16_t disk_num = LESHORT(*reinterpret_cast<uint16_t*>(buffer + 4));
@@ -1159,7 +1159,7 @@ bool ZipResourceContainer::readCentralDirectory()
 
     // Basic sanity checks
     // Multi-disk zips aren't supported
-	if (num_entries_on_disk != num_entries_total || disk_num != 0 || central_directory_disk_num != 0)
+	if (num_entries_on_disk != num_entries_total or disk_num != 0 or central_directory_disk_num != 0)
         return false;
 
 	addDirectoryEntries(dir_offset, dir_size, num_entries_total);
@@ -1183,7 +1183,7 @@ void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length,
 
 	std::vector<uint8_t> storage(length);
 	uint8_t* const buffer = storage.data();
-	if (!mFile->seek(offset) || mFile->read(buffer, length) != length)
+	if (not mFile->seek(offset) or mFile->read(buffer, length) != length)
 		return;
 
 	const uint8_t* ptr = buffer;
@@ -1213,13 +1213,13 @@ void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length,
 
 		// Convert path separators to '/'
 		for (size_t j = 0; j < name.length(); j++)
-			if (name[j] == '\\' || name[j] == '/')
+			if (name[j] == '\\' or name[j] == '/')
 				name[j] = ResourcePath::DELIMINATOR;
 
 		ptr += ZIP_CENTRAL_DIR_SIZE + name_length + extra_length + comment_length;
 
 		// skip directories
-		if (name[name_length - 1] == ResourcePath::DELIMINATOR && uncompressed_length == 0)
+		if (name[name_length - 1] == ResourcePath::DELIMINATOR and uncompressed_length == 0)
 			continue;
 
 		// Record every file entry in the content manifest, even ones the
@@ -1231,7 +1231,7 @@ void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length,
 		mManifest.push_back(manifest_entry);
 
 		// skip unsupported compression methods
-		if (method != METHOD_DEFLATE && method != METHOD_STORED)
+		if (method != METHOD_DEFLATE and method != METHOD_STORED)
 			continue;
 
 		// skip encrypted entries
@@ -1265,7 +1265,7 @@ void ZipResourceContainer::addDirectoryEntries(uint32_t offset, uint32_t length,
 //
 OMD5Hash ZipResourceContainer::getContentDigest() const
 {
-	if (mContentDigest.empty() && !mManifest.empty())
+	if (mContentDigest.empty() and not mManifest.empty())
 	{
 		std::vector<ContentManifestEntry> manifest(mManifest);
 		mContentDigest = Res_ContentManifestDigest(manifest);
@@ -1285,7 +1285,7 @@ uint32_t ZipResourceContainer::calculateEntryOffset(const ZipDirectoryEntry* ent
     uint32_t offset = INVALID_OFFSET;
     uint8_t* buffer = new uint8_t[ZIP_LOCAL_FILE_SIZE];
 
-    if (mFile->seek(entry->local_offset) && mFile->read(buffer, ZIP_LOCAL_FILE_SIZE) == ZIP_LOCAL_FILE_SIZE)
+    if (mFile->seek(entry->local_offset) and mFile->read(buffer, ZIP_LOCAL_FILE_SIZE) == ZIP_LOCAL_FILE_SIZE)
     {
 		if (memcmp(buffer + 0, "PK\x03\x04", 4) == 0)
         {
@@ -1331,7 +1331,7 @@ void ZipResourceContainer::addResources(ResourceManager* manager)
 			ResourceContainer* container = new SingleMapWadResourceContainer(memfile);
 			manager->addResourceContainer(container, this, global_directory_name, entry.path);
 		}
-		else if (!Res_PathHasShortLumpName(std::string(entry.path)))
+		else if (not Res_PathHasShortLumpName(std::string(entry.path)))
 		{
 			// The file name does not fit in a classic 8-character lump name.
 			// Following ZDoom-family behavior, such files get no truncated
@@ -1349,14 +1349,14 @@ void ZipResourceContainer::addResources(ResourceManager* manager)
 		{
 			ResourcePath resource_path = Res_TransformResourcePath(entry.path);
 
-			if (resource_path.first() == "GLOBAL" && resource_path.size() == 2 && entry.length > 0)
+			if (resource_path.first() == "GLOBAL" and resource_path.size() == 2 and entry.length > 0)
 			{
 				uint8_t* data = new uint8_t[entry.length];
 				if (loadEntryData(&entry, data, entry.length) == entry.length)
 				{
 					WadResourceIdentifier identifier;
 					const ResourcePath& identified_path = identifier.identifyByContents(resource_path, data, entry.length);
-					if (!(identified_path == global_directory_name))
+					if (not (identified_path == global_directory_name))
 						resource_path = identified_path + resource_path.last();
 				}
 				delete [] data;
@@ -1389,7 +1389,7 @@ bool ZipResourceContainer::isEmbeddedWadFile(const ZipDirectoryEntry& entry) con
 
 		// only allow embedded WAD files in the root directory
 		size_t last_path_separator = entry.path.find_last_of(ResourcePath::DELIMINATOR);
-		if (last_path_separator != 0 && last_path_separator != std::string::npos)
+		if (last_path_separator != 0 and last_path_separator != std::string::npos)
 			return false;
 
 		return true;
@@ -1411,7 +1411,7 @@ bool ZipResourceContainer::isEmbeddedSingleMapWadFile(const ZipDirectoryEntry& e
 			return false;
 
 		const ResourcePath path = Res_TransformResourcePath(entry.path);
-		return path.first() == "MAPS" && path.size() == 2;
+		return path.first() == "MAPS" and path.size() == 2;
 	}
 
 	return false;
@@ -1485,13 +1485,13 @@ uint32_t ZipResourceContainer::loadEntryData(const ZipDirectoryEntry* entry, uin
 			const size_t BUFF_SIZE = 4096;
 			uint8_t buf[BUFF_SIZE];
 
-			while (mStream.avail_out && !mFile->eof())
+			while (mStream.avail_out and not mFile->eof())
 			{
 				size_t bytes_read = mFile->read(buf, BUFF_SIZE);
 				mStream.next_in  = buf;
 				mStream.avail_in = bytes_read;
 				status_code = inflate(&mStream, Z_SYNC_FLUSH);
-				if (status_code != Z_OK && status_code != Z_STREAM_END)
+				if (status_code != Z_OK and status_code != Z_STREAM_END)
 					I_Error("ZIPDeflateReader::read: invalid deflate stream");
 				total_bytes_read += bytes_read;
 			}

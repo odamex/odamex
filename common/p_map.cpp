@@ -262,7 +262,7 @@ bool P_TraverseIntercepts(F& func, fixed_t maxfrac, ARGS&... args)
 			return true;		// checked everything in range
 
 
-		if (!std::invoke(func, *in, args...))
+		if (not std::invoke(func, *in, args...))
 			return false;		// don't bother going farther
 
 		in->frac = limits::MAXFIXED;
@@ -2669,7 +2669,7 @@ bool P_ShootLine(line_t& li, const fixed_t frac)
 	// definitely hit the solid part of the line
 
 	const bool skyceiling1 = R_ResourceIdIsSkyFlat(sec1->ceiling_res_id);
-	const bool skyceiling2 = sec2 != nullptr && R_ResourceIdIsSkyFlat(sec2->ceiling_res_id);
+	const bool skyceiling2 = sec2 != nullptr and R_ResourceIdIsSkyFlat(sec2->ceiling_res_id);
 
 	// sky wall hack
 	if (skyceiling1 && skyceiling2)
@@ -2684,7 +2684,7 @@ bool P_ShootLine(line_t& li, const fixed_t frac)
 
 	// check for shooting sky floors
 	bool skyfloor1 = R_ResourceIdIsSkyFlat(sec1->floor_res_id);
-	if (precise && skyfloor1 && z < floorheight1)
+	if (precise and skyfloor1 and z < floorheight1)
 		return false;
 
 	v3fixed_t lineorg, linedir, puffpos;

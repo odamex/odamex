@@ -1161,7 +1161,7 @@ void R_RenderPlayerView(player_t* player)
 
     // [Russell] - From zdoom 1.22 source, added camera pointer check
 	// Never draw the player unless in chasecam mode
-	const bool hideplayer = camera && camera->player && !(player->cheats & CF_CHASECAM);
+	const bool hideplayer = camera and camera->player and not (player->cheats & CF_CHASECAM);
 	ActorFlags2 flags2_backup = ActorFlags2::none_set();
 	if (hideplayer)
 	{
@@ -1232,7 +1232,7 @@ void R_RenderPlayerView(player_t* player)
 		for (int i = 0; i < nslices; i++)
 			faking += R_SliceContext(i).bsp.r_fakingunderwater;
 
-		if (faking > 0 && faking < nslices)
+		if (faking > 0 and faking < nslices)
 			pass1(true);
 	}
 
@@ -1592,7 +1592,7 @@ void R_PrintBenchLine(const char* label, const BenchSummary& b)
 
 BEGIN_COMMAND(r_benchmark)
 {
-	if (!g_ValidLevel || !gametic || !viewactive)
+	if (not g_ValidLevel or not gametic or not viewactive)
 	{
 		PrintFmt(PRINT_HIGH, "r_benchmark: needs an active level view\n");
 		return;
@@ -1690,7 +1690,7 @@ BEGIN_COMMAND(r_benchmark)
 
 	const BenchSummary sa = R_SummariseFrameTimes(a);
 
-	if (!swept)
+	if (not swept)
 	{
 		R_PrintBenchLine("view render", sa);
 		return;
@@ -1702,7 +1702,7 @@ BEGIN_COMMAND(r_benchmark)
 	R_PrintBenchLine((std::string(swept->name()) + " " + value_b).c_str(), sb);
 
 	// Minimum against minimum -- the cleanest statement of the difference.
-	if (sb.min > 0.0 && sa.min > 0.0)
+	if (sb.min > 0.0 and sa.min > 0.0)
 	{
 		PrintFmt(PRINT_HIGH, "  min-to-min       {:.3f} -> {:.3f} ms   ({:+.1f}%, {:.2f}x)\n",
 				sa.min, sb.min, 100.0 * (sb.min - sa.min) / sa.min, sa.min / sb.min);

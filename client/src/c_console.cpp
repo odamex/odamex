@@ -86,7 +86,7 @@ EXTERN_CVAR(ui_font_messages)
 //
 static const OFont* C_Font()
 {
-	if (!V_FontsReady())
+	if (not V_FontsReady())
 		return nullptr;
 
 	const int size = 8 * std::max(1u, ConScale);
@@ -114,7 +114,7 @@ static int C_CharWidth(char c)
 //
 static const OFont* C_MessageFont()
 {
-	if (!V_FontsReady())
+	if (not V_FontsReady())
 		return nullptr;
 
 	const int size = 8 * std::max(1, V_TextScaleXAmount());
@@ -380,7 +380,7 @@ void ConsoleCommandLine::doScrolling()
 		n = 0;
 
 	// walk the start forward until everything up to the cursor fits
-	while (n < static_cast<int>(cursor_position) &&
+	while (n < static_cast<int>(cursor_position) and
 	       font->getTextWidth(text.substr(n, cursor_position - n).c_str()) > avail)
 	{
 		n++;
@@ -1643,7 +1643,7 @@ static void C_DrawNotifyText()
 		return;
 
 	const OFont* font = C_MessageFont();
-	if (!font)
+	if (not font)
 		return;
 
 	int ypos = 0;
@@ -2040,7 +2040,7 @@ void C_DrawConsole()
 
 	// Everything below draws with the console font, which does not exist
 	// until the font system is up.
-	if (!C_Font())
+	if (not C_Font())
 		return;
 
 	if (lines > 0)
@@ -2145,10 +2145,10 @@ void C_DrawConsole()
 			const int avail = std::max(1, static_cast<int>(ConWrapWidth) - (text_x - left));
 
 			std::string visible = CmdLine.text.substr(scrolled);
-			while (!visible.empty() && font->getTextWidth(visible.c_str()) > avail)
+			while (not visible.empty() and font->getTextWidth(visible.c_str()) > avail)
 				visible.erase(visible.size() - 1);
 
-			if (!visible.empty())
+			if (not visible.empty())
 				screen->DrawFontText(font, CR_GRAY, text_x, prompt_y, visible.c_str());
 
 			if (cursoron)
@@ -2546,7 +2546,7 @@ void C_DrawMid()
 
 
 		const OFont* font = C_MessageFont();
-		if (!font)
+		if (not font)
 			return;
 		const int line_height = font->getHeight();
 
@@ -2631,7 +2631,7 @@ void C_DrawGMid()
 
 
 		const OFont* font = C_MessageFont();
-		if (!font)
+		if (not font)
 			return;
 		const int line_height = font->getHeight();
 

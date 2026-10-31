@@ -189,7 +189,7 @@ public:
 
 	bool checkForSameContainer(const ResourceId res_id1, const ResourceId res_id2) const
 	{
-		return validateResourceId(res_id1) && validateResourceId(res_id2) &&
+		return validateResourceId(res_id1) and validateResourceId(res_id2) and
 				getResourceContainer(res_id1) == getResourceContainer(res_id2);
 	}
 

@@ -310,7 +310,7 @@ void F_Ticker()
 
 void F_TextWrite ()
 {
-	if (!V_FontsReady() || !::menu_font)
+	if (not V_FontsReady() or not ::menu_font)
 		return;
 
 	// erase the entire screen to a tiled background
@@ -659,7 +659,7 @@ void F_CastDrawer()
 
 	cast_surface->unlock();
 
-	if (V_FontsReady() && ::menu_font)
+	if (V_FontsReady() and ::menu_font)
 	{
 		screen->DrawFontText(::menu_font, CR_RED,
 			x + (width - ::menu_font->getTextWidth(castorder[castnum].name)) / 2,

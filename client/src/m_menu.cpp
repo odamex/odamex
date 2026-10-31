@@ -692,7 +692,7 @@ void M_ReadSaveStrings()
 //
 static void M_DrawMenuTitleText(const char* text, int y)
 {
-	if (!V_FontsReady())
+	if (not V_FontsReady())
 		return;
 
 	OFont* font = M_GetHeaderFont();
@@ -959,7 +959,7 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 
 	// Vertically center the box on the field text.
 	const int cleany = std::max(1, CleanYfac);
-	const int font_h = (V_FontsReady() && ::menu_font) ? ::menu_font->getHeight() / cleany : 8;
+	const int font_h = (V_FontsReady() and ::menu_font) ? ::menu_font->getHeight() / cleany : 8;
 	const int box_y = y + font_h / 2 - center_texture->mHeight / 2 + center_texture->mOffsetY;
 
 	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, box_y);
@@ -2607,10 +2607,10 @@ void M_StartControlPanel()
 //
 void M_Drawer()
 {
-	if (!V_FontsReady())
+	if (not V_FontsReady())
 		return;
 
-	if (messageToPrint && ::menu_font)
+	if (messageToPrint and ::menu_font)
 	{
 		// Horiz. & Vertically center string and print it.
 		brokenlines_t *lines = V_BreakLinesFont(::menu_font, 320, messageString);

@@ -64,7 +64,7 @@ EXTERN_CVAR(r_clipmaskedspecial)
 int R_OrthogonalLightnumAdjustment(rendercontext_t& ctx)
 {
 	// [RH] Only do it if not foggy and allowed
-    if (!ctx.bsp.foggy && !(level.flags & LEVEL_EVENLIGHTING))
+    if (not ctx.bsp.foggy and not (level.flags & LEVEL_EVENLIGHTING))
 	{
 		if (ctx.bsp.curline->linedef->slopetype == ST_HORIZONTAL)
 			return -1;
@@ -116,7 +116,7 @@ static inline void R_BlastMaskedSegColumn(rendercontext_t& ctx, void (*drawfunc)
 	// Your midtex gap! :)
 	ctx.sprite.spryscale = ctx.seg.masked_midscales[ctx.draw.dcol.x];
 
-	if (ctx.draw.dcol.source == NULL || ctx.sprite.spryscale <= 0)
+	if (ctx.draw.dcol.source == NULL or ctx.sprite.spryscale <= 0)
 		return;
 
 	ctx.draw.dcol.iscale = 0xffffffffu / static_cast<unsigned>(ctx.sprite.spryscale);
@@ -143,7 +143,7 @@ static inline void R_BlastMaskedSegColumn(rendercontext_t& ctx, void (*drawfunc)
 	yl = std::max<int64_t>(yl, std::max(ctx.sprite.mceilingclip[ctx.draw.dcol.x], 0));
 	yh = std::min<int64_t>(yh, ctx.sprite.mfloorclip[ctx.draw.dcol.x] - 1);
 
-	if (yl > yh || texturefrac >= ctx.draw.dcol.textureheight)
+	if (yl > yh or texturefrac >= ctx.draw.dcol.textureheight)
 		return;
 
 	// clamp the texture coordinates so out-of-range rows are not drawn
@@ -156,7 +156,7 @@ static inline void R_BlastMaskedSegColumn(rendercontext_t& ctx, void (*drawfunc)
 		yh -= cnt;
 	}
 
-	if (yl >= 0 && yh < viewheight && yl <= yh)
+	if (yl >= 0 and yh < viewheight and yl <= yh)
 	{
 		ctx.draw.dcol.yl = static_cast<int>(yl);
 		ctx.draw.dcol.yh = static_cast<int>(yh);
@@ -237,7 +237,7 @@ void R_RenderColumnRange(rendercontext_t& ctx, int start, int stop, const int* t
 		}
 		else
 		{
-			if (!ctx.seg.walllights)
+			if (not ctx.seg.walllights)
 				ctx.seg.walllights = scalelight[0];
 		}
 	}
@@ -460,7 +460,7 @@ void R_RenderSolidSegRange(rendercontext_t& ctx, int start, int stop)
 	{
 		// cph - if we completely blocked further sight through this column,
 		// add this info to the solid columns array
-		if ((ctx.seg.markceiling || ctx.seg.markfloor) && (ctx.plane.floorclip[x] <= ctx.plane.ceilingclip[x]))
+		if ((ctx.seg.markceiling or ctx.seg.markfloor) and (ctx.plane.floorclip[x] <= ctx.plane.ceilingclip[x]))
 		{
 			ctx.bsp.solidcol[x] = 1;
 			ctx.seg.didsolidcol = true;
@@ -522,12 +522,12 @@ void R_RenderMaskedSegRange(rendercontext_t& ctx, drawseg_t* ds, int x1, int x2)
 	int64_t botscreenclip = static_cast<int64_t>(centeryfrac - (viewheight << FRACBITS)) << FRACBITS;
  
 	// top of texture entirely below screen?
-	if (static_cast<int64_t>(ctx.draw.dcol.texturemid) * ds->scale1 <= botscreenclip &&
+	if (static_cast<int64_t>(ctx.draw.dcol.texturemid) * ds->scale1 <= botscreenclip and
 		static_cast<int64_t>(ctx.draw.dcol.texturemid) * ds->scale2 <= botscreenclip)
 		return;
 
 	// bottom of texture entirely above screen?
-	if (static_cast<int64_t>(ctx.draw.dcol.texturemid - texheight) * ds->scale1 > topscreenclip &&
+	if (static_cast<int64_t>(ctx.draw.dcol.texturemid - texheight) * ds->scale1 > topscreenclip and
 		static_cast<int64_t>(ctx.draw.dcol.texturemid - texheight) * ds->scale2 > topscreenclip)
 		return;
 
@@ -618,7 +618,7 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
                 int first, int last)
 {
 	const int width = stop - start + 1;
-	if (width <= 0 || first > last)
+	if (width <= 0 or first > last)
 		return;
 
 	// Calculate distance from lineseg start to start of clipped lineseg
@@ -703,19 +703,19 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 
 		// determine if an upper texture is showing
 		ctx.seg.rw_hashigh	= (P_CeilingHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, ctx.bsp.frontsector) - tolerance >
-					   P_CeilingHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, ctx.bsp.backsector)) ||
+					   P_CeilingHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, ctx.bsp.backsector)) or
 					  (P_CeilingHeight(ctx.bsp.curline->v2->x, ctx.bsp.curline->v2->y, ctx.bsp.frontsector) - tolerance>
 					   P_CeilingHeight(ctx.bsp.curline->v2->x, ctx.bsp.curline->v2->y, ctx.bsp.backsector));
 
 		// determine if a lower texture is showing
 		ctx.seg.rw_haslow	= (P_FloorHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, ctx.bsp.frontsector) + tolerance <
-					   P_FloorHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, ctx.bsp.backsector)) ||
+					   P_FloorHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, ctx.bsp.backsector)) or
 					  (P_FloorHeight(ctx.bsp.curline->v2->x, ctx.bsp.curline->v2->y, ctx.bsp.frontsector) + tolerance <
 					   P_FloorHeight(ctx.bsp.curline->v2->x, ctx.bsp.curline->v2->y, ctx.bsp.backsector));
 
 		// hack to allow height changes in outdoor areas (sky hack)
 		// copy back ceiling height array to front ceiling height array
-		if (R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) &&
+		if (R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) and
 			R_ResourceIdIsSkyFlat(ctx.bsp.backsector->ceiling_res_id))
 			memcpy(ctx.seg.walltopf+first, ctx.seg.walltopb+first, (last-first+1)*sizeof(*ctx.seg.walltopb));
 	}
@@ -723,7 +723,7 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 	// Cache the wall textures
 	ctx.seg.toptexture = ctx.seg.midtexture = ctx.seg.bottomtexture = ctx.seg.maskedtexture = NULL;
 
-	if (!ctx.bsp.backsector)
+	if (not ctx.bsp.backsector)
 		ctx.seg.midtexture = Res_CacheTexture(Res_GetAnimatedTextureResourceId(ctx.bsp.curline->sidedef->midtexture));
 
 	if (ctx.seg.rw_hashigh)
@@ -807,9 +807,9 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	ctx.bsp.ds_p->scale2 = ctx.seg.wallscalex[stop];
 
 	// Determine sprite sort scale so we don't cut off sprites too early
-	ctx.bsp.ds_p->sortscale1 = (start == ctx.slice_start && ctx.seg.rw_start < start)
+	ctx.bsp.ds_p->sortscale1 = (start == ctx.slice_start and ctx.seg.rw_start < start)
 	                               ? ctx.seg.rw_startscale : ctx.bsp.ds_p->scale1;
-	ctx.bsp.ds_p->sortscale2 = (stop == ctx.slice_stop && ctx.seg.rw_stop > stop)
+	ctx.bsp.ds_p->sortscale2 = (stop == ctx.slice_stop and ctx.seg.rw_stop > stop)
 	                               ? ctx.seg.rw_stopscale : ctx.bsp.ds_p->scale2;
 	ctx.bsp.ds_p->scalestep = ctx.seg.rw_scalestep;
 
@@ -822,7 +822,7 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	ctx.bsp.ds_p->midposts = NULL;
 	ctx.bsp.ds_p->midscales = NULL;
 
-	if (!ctx.bsp.backsector)
+	if (not ctx.bsp.backsector)
 	{
 		// single sided line
 
@@ -866,14 +866,14 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 		else
 		{
 			// determine sprite clipping for non-solid line segs
-			if (ctx.seg.rw_frontfz1 > ctx.seg.rw_backfz1 || ctx.seg.rw_frontfz2 > ctx.seg.rw_backfz2 ||
-				ctx.seg.rw_backfz1 > viewz || ctx.seg.rw_backfz2 > viewz ||
-				!P_IsPlaneLevel(&ctx.bsp.backsector->floorplane))	// backside sloping?
+			if (ctx.seg.rw_frontfz1 > ctx.seg.rw_backfz1 or ctx.seg.rw_frontfz2 > ctx.seg.rw_backfz2 or
+				ctx.seg.rw_backfz1 > viewz or ctx.seg.rw_backfz2 > viewz or
+				not P_IsPlaneLevel(&ctx.bsp.backsector->floorplane))	// backside sloping?
 				ctx.bsp.ds_p->silhouette |= SIL_BOTTOM;
 
-			if (ctx.seg.rw_frontcz1 < ctx.seg.rw_backcz1 || ctx.seg.rw_frontcz2 < ctx.seg.rw_backcz2 ||
-				ctx.seg.rw_backcz1 < viewz || ctx.seg.rw_backcz2 < viewz ||
-				!P_IsPlaneLevel(&ctx.bsp.backsector->ceilingplane))	// backside sloping?
+			if (ctx.seg.rw_frontcz1 < ctx.seg.rw_backcz1 or ctx.seg.rw_frontcz2 < ctx.seg.rw_backcz2 or
+				ctx.seg.rw_backcz1 < viewz or ctx.seg.rw_backcz2 < viewz or
+				not P_IsPlaneLevel(&ctx.bsp.backsector->ceilingplane))	// backside sloping?
 				ctx.bsp.ds_p->silhouette |= SIL_TOP;
 		}
 
@@ -888,32 +888,32 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 		else
 		{
 			ctx.seg.markfloor =
-				  !P_IdenticalPlanes(&ctx.bsp.backsector->floorplane, &ctx.bsp.frontsector->floorplane)
-				|| ctx.bsp.backsector->lightlevel != ctx.bsp.frontsector->lightlevel
-				|| ctx.bsp.backsector->floor_res_id != ctx.bsp.frontsector->floor_res_id
+				  not P_IdenticalPlanes(&ctx.bsp.backsector->floorplane, &ctx.bsp.frontsector->floorplane)
+				or ctx.bsp.backsector->lightlevel != ctx.bsp.frontsector->lightlevel
+				or ctx.bsp.backsector->floor_res_id != ctx.bsp.frontsector->floor_res_id
 
 				// killough 3/7/98: Add checks for (x,y) offsets
-				|| ctx.bsp.backsector->floor_xoffs != ctx.bsp.frontsector->floor_xoffs
-				|| (ctx.bsp.backsector->floor_yoffs + ctx.bsp.backsector->base_floor_yoffs) !=
+				or ctx.bsp.backsector->floor_xoffs != ctx.bsp.frontsector->floor_xoffs
+				or (ctx.bsp.backsector->floor_yoffs + ctx.bsp.backsector->base_floor_yoffs) !=
 				   (ctx.bsp.frontsector->floor_yoffs + ctx.bsp.frontsector->base_floor_yoffs)
 
 				// killough 4/15/98: prevent 2s normals
 				// from bleeding through deep water
-				|| ctx.bsp.frontsector->heightsec
+				or ctx.bsp.frontsector->heightsec
 
 				// killough 4/17/98: draw floors if different light levels
-				|| ctx.bsp.backsector->floorlightsec != ctx.bsp.frontsector->floorlightsec
+				or ctx.bsp.backsector->floorlightsec != ctx.bsp.frontsector->floorlightsec
 
 				// [EB] check for special too for DSDA-compatibility on MBF21
-				|| (r_clipmaskedspecial && ctx.bsp.backsector->special != ctx.bsp.frontsector->special)
+				or (r_clipmaskedspecial and ctx.bsp.backsector->special != ctx.bsp.frontsector->special)
 
 				// [RH] Add checks for colormaps
-				|| ctx.bsp.backsector->colormap != ctx.bsp.frontsector->colormap
+				or ctx.bsp.backsector->colormap != ctx.bsp.frontsector->colormap
 
-				|| ctx.bsp.backsector->floor_xscale != ctx.bsp.frontsector->floor_xscale
-				|| ctx.bsp.backsector->floor_yscale != ctx.bsp.frontsector->floor_yscale
+				or ctx.bsp.backsector->floor_xscale != ctx.bsp.frontsector->floor_xscale
+				or ctx.bsp.backsector->floor_yscale != ctx.bsp.frontsector->floor_yscale
 
-				|| (ctx.bsp.backsector->floor_angle + ctx.bsp.backsector->base_floor_angle) !=
+				or (ctx.bsp.backsector->floor_angle + ctx.bsp.backsector->base_floor_angle) !=
 				   (ctx.bsp.frontsector->floor_angle + ctx.bsp.frontsector->base_floor_angle)
 				;
 
@@ -921,33 +921,33 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 			// MBF sky transfers split the visplane in 2, so in order for sky
 			// transfer skyhack to work, we need to identify both sectors' sky
 			const bool ceilingskyhack =
-				!R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) || !R_ResourceIdIsSkyFlat(ctx.bsp.backsector->ceiling_res_id);
+				not R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) or not R_ResourceIdIsSkyFlat(ctx.bsp.backsector->ceiling_res_id);
 
 			ctx.seg.markceiling =
 				  (ceilingskyhack &&
-				   !P_IdenticalPlanes(&ctx.bsp.backsector->ceilingplane, &ctx.bsp.frontsector->ceilingplane))
-				|| ctx.bsp.backsector->lightlevel != ctx.bsp.frontsector->lightlevel
-				|| ctx.bsp.backsector->ceiling_res_id != ctx.bsp.frontsector->ceiling_res_id
+				   not P_IdenticalPlanes(&ctx.bsp.backsector->ceilingplane, &ctx.bsp.frontsector->ceilingplane))
+				or ctx.bsp.backsector->lightlevel != ctx.bsp.frontsector->lightlevel
+				or ctx.bsp.backsector->ceiling_res_id != ctx.bsp.frontsector->ceiling_res_id
 
 				// killough 3/7/98: Add checks for (x,y) offsets
-				|| ctx.bsp.backsector->ceiling_xoffs != ctx.bsp.frontsector->ceiling_xoffs
-				|| (ctx.bsp.backsector->ceiling_yoffs + ctx.bsp.backsector->base_ceiling_yoffs) !=
+				or ctx.bsp.backsector->ceiling_xoffs != ctx.bsp.frontsector->ceiling_xoffs
+				or (ctx.bsp.backsector->ceiling_yoffs + ctx.bsp.backsector->base_ceiling_yoffs) !=
 				   (ctx.bsp.frontsector->ceiling_yoffs + ctx.bsp.frontsector->base_ceiling_yoffs)
 
 				// killough 4/15/98: prevent 2s normals
 				// from bleeding through fake ceilings
-				|| (ctx.bsp.frontsector->heightsec && !R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id))
+				or (ctx.bsp.frontsector->heightsec and not R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id))
 
 				// killough 4/17/98: draw ceilings if different light levels
-				|| ctx.bsp.backsector->ceilinglightsec != ctx.bsp.frontsector->ceilinglightsec
+				or ctx.bsp.backsector->ceilinglightsec != ctx.bsp.frontsector->ceilinglightsec
 
 				// [RH] Add check for colormaps
-				|| ctx.bsp.backsector->colormap != ctx.bsp.frontsector->colormap
+				or ctx.bsp.backsector->colormap != ctx.bsp.frontsector->colormap
 
-				|| ctx.bsp.backsector->ceiling_xscale != ctx.bsp.frontsector->ceiling_xscale
-				|| ctx.bsp.backsector->ceiling_yscale != ctx.bsp.frontsector->ceiling_yscale
+				or ctx.bsp.backsector->ceiling_xscale != ctx.bsp.frontsector->ceiling_xscale
+				or ctx.bsp.backsector->ceiling_yscale != ctx.bsp.frontsector->ceiling_yscale
 
-				|| (ctx.bsp.backsector->ceiling_angle + ctx.bsp.backsector->base_ceiling_angle) !=
+				or (ctx.bsp.backsector->ceiling_angle + ctx.bsp.backsector->base_ceiling_angle) !=
 				   (ctx.bsp.frontsector->ceiling_angle + ctx.bsp.frontsector->base_ceiling_angle)
 				;
 		}
@@ -1008,7 +1008,7 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 		}
 
 		// [SL] additional fix for sky hack
-		if (R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) && R_ResourceIdIsSkyFlat(ctx.bsp.backsector->ceiling_res_id))
+		if (R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) and R_ResourceIdIsSkyFlat(ctx.bsp.backsector->ceiling_res_id))
 			ctx.seg.toptexture = NULL;
 	}
 
@@ -1051,24 +1051,24 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	//	and doesn't need to be marked.
 
 	// killough 3/7/98: add deep water check
-	if (ctx.bsp.frontsector->heightsec == NULL ||
+	if (ctx.bsp.frontsector->heightsec == NULL or
 		(ctx.bsp.frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
 		// above view plane?
 		if (P_FloorHeight(viewx, viewy, ctx.bsp.frontsector) >= viewz)
 			ctx.seg.markfloor = false;
 		// below view plane?
-		if (P_CeilingHeight(viewx, viewy, ctx.bsp.frontsector) <= viewz && !R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id))
+		if (P_CeilingHeight(viewx, viewy, ctx.bsp.frontsector) <= viewz and not R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id))
 			ctx.seg.markceiling = false;	
 	}
 
 	// render it
-	if (ctx.seg.markceiling && ctx.plane.ceilingplane)
+	if (ctx.seg.markceiling and ctx.plane.ceilingplane)
 		ctx.plane.ceilingplane = R_CheckPlane(ctx, ctx.plane.ceilingplane, start, stop);
 	else
 		ctx.seg.markceiling = false;
 
-	if (ctx.seg.markfloor && ctx.plane.floorplane)
+	if (ctx.seg.markfloor and ctx.plane.floorplane)
 		ctx.plane.floorplane = R_CheckPlane(ctx, ctx.plane.floorplane, start, stop);
 	else
 		ctx.seg.markfloor = false;
@@ -1079,18 +1079,18 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 
 	// [SL] save full clipping info for masked midtextures
 	// cph - if a column was made solid by this wall, we _must_ save full clipping info
-	if (ctx.seg.maskedtexture || (ctx.bsp.backsector && ctx.seg.didsolidcol))
+	if (ctx.seg.maskedtexture or (ctx.bsp.backsector and ctx.seg.didsolidcol))
 		ctx.bsp.ds_p->silhouette = SIL_BOTH;
 
     // save sprite clipping info
-	if ((ctx.bsp.ds_p->silhouette & SIL_TOP) && ctx.bsp.ds_p->sprtopclip == NULL)
+	if ((ctx.bsp.ds_p->silhouette & SIL_TOP) and ctx.bsp.ds_p->sprtopclip == NULL)
 	{
 		int* topclip = ctx.seg.sprclip_pool.alloc(count) - start;
 		memcpy(topclip + start, ctx.plane.ceilingclip.get() + start, count * sizeof(*topclip));
 		ctx.bsp.ds_p->sprtopclip = topclip;
 	}
 
-	if ((ctx.bsp.ds_p->silhouette & SIL_BOTTOM) && ctx.bsp.ds_p->sprbottomclip == NULL)
+	if ((ctx.bsp.ds_p->silhouette & SIL_BOTTOM) and ctx.bsp.ds_p->sprbottomclip == NULL)
 	{
 		int* bottomclip = ctx.seg.sprclip_pool.alloc(count) - start;
 		memcpy(bottomclip + start, ctx.plane.floorclip.get() + start, count * sizeof(*bottomclip));

@@ -265,7 +265,7 @@ void getsfx(sfxinfo_t *sfx)
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
 
-	if (!Res_CheckResource(sfx->res_id))
+	if (not Res_CheckResource(sfx->res_id))
 		return;
 
 	Uint8* data = const_cast<Uint8*>(Res_LoadResource<Uint8>(sfx->res_id, PU_STATIC));

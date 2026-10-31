@@ -554,8 +554,8 @@ sector_t *P_NextSpecialSector (sector_t *sec, int type, sector_t *nogood)
 	{
 		line_t *ln = sec->lines[i];
 
-		if (!(ln->flags & ML_TWOSIDED) ||
-			!(tsec = ln->frontsector))
+		if (not (ln->flags & ML_TWOSIDED) or
+			not (tsec = ln->frontsector))
 			continue;
 
 		if (sec == tsec)
@@ -592,7 +592,7 @@ fixed_t P_FindLowestFloorSurrounding (sector_t* sec)
 		check = sec->lines[i];
 		other = getNextSector (check,sec);
 
-		if (!other)
+		if (not other)
 			continue;
 
 		fixed_t v1height =
@@ -991,7 +991,7 @@ fixed_t P_FindShortestTextureAround(sector_t *sec)
 	side_t *side;
 	// [EB] Boom excludes untextured tiers from the shortest-texture search
 	// unless vanilla shorttex compatibility is requested
-	const bool skipmissing = co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX);
+	const bool skipmissing = co_boomphys and not (level.flags & LEVEL_COMPAT_SHORTTEX);
 
 	for (int i = 0; i < sec->linecount; i++)
 	{
@@ -1003,7 +1003,7 @@ fixed_t P_FindShortestTextureAround(sector_t *sec)
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
 				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
-			else if (!skipmissing)
+			else if (not skipmissing)
 			{
 				minsize = std::min<int>(minsize, default_texture_height);
 			}
@@ -1013,7 +1013,7 @@ fixed_t P_FindShortestTextureAround(sector_t *sec)
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
 				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
-			else if (!skipmissing)
+			else if (not skipmissing)
 			{
 				minsize = std::min<int>(minsize, default_texture_height);
 			}
@@ -1041,7 +1041,7 @@ fixed_t P_FindShortestUpperAround(sector_t *sec)
 	side_t *side;
 	// [EB] Boom excludes untextured tiers from the shortest-texture search
 	// unless vanilla shorttex compatibility is requested
-	const bool skipmissing = co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX);
+	const bool skipmissing = co_boomphys and not (level.flags & LEVEL_COMPAT_SHORTTEX);
 
 	for (int i = 0; i < sec->linecount; i++)
 	{
@@ -1053,7 +1053,7 @@ fixed_t P_FindShortestUpperAround(sector_t *sec)
 				const Texture* texture = Res_CacheTexture(side->toptexture);
 				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
-			else if (!skipmissing)
+			else if (not skipmissing)
 			{
 				minsize = std::min<int>(minsize, default_texture_height);
 			}
@@ -1063,7 +1063,7 @@ fixed_t P_FindShortestUpperAround(sector_t *sec)
 				const Texture* texture = Res_CacheTexture(side->toptexture);
 				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
-			else if (!skipmissing)
+			else if (not skipmissing)
 			{
 				minsize = std::min<int>(minsize, default_texture_height);
 			}

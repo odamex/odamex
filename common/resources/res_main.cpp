@@ -73,7 +73,7 @@ static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const uint
 		length = static_cast<size_t>(file_size);
 
 	std::ifstream ifs(path, std::ios::in | std::ios::binary);
-	if (!ifs.good())
+	if (not ifs.good())
 		return false;
 
 	std::vector<uint8_t> data(length);
@@ -231,7 +231,7 @@ void ResourceManager::openResourceFile(const OString& path)
 		container = new DirectoryResourceContainer(path);
 	}
 
-	if (!container)
+	if (not container)
 		return;
 
 	addResourceContainer(container, NULL, global_directory_name, path);
@@ -379,7 +379,7 @@ const std::string& ResourceManager::getResourceContainerFileName(const ResourceI
 std::optional<size_t> ResourceManager::getResourceContainerIndex(const ResourceId res_id) const
 {
 	const ResourceContainer* container = getResourceContainer(res_id);
-	if (!container)
+	if (not container)
 		return std::nullopt;
 
 	for (size_t i = 0; i < mResourceContainers.size(); i++)
@@ -428,7 +428,7 @@ uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 //
 const uint8_t* ResourceManager::loadResourceData(const ResourceId res_id, zoneTag_e tag)
 {
-	if (!validateResourceId(res_id))
+	if (not validateResourceId(res_id))
 		return NULL;
 
 	// cache hit, which render workers take concurrently without locking
@@ -447,7 +447,7 @@ const uint8_t* ResourceManager::loadResourceData(const ResourceId res_id, zoneTa
 	if (std::find(mLoadsInProgress.begin(), mLoadsInProgress.end(), res_id) != mLoadsInProgress.end())
 		I_Error("Resource {} requested while it is being loaded", OString(getResourcePath(res_id)).c_str());
 
-	if (!mLoadingResource)
+	if (not mLoadingResource)
 	{
 		mLoadingResource = true;
 		DPrintFmt("Resource cache miss for {}\n", OString(getResourcePath(res_id)).c_str());
@@ -528,7 +528,7 @@ void ResourceManager::dump() const
 		const ResourceId res_id = getResourceId(&res_rec);
 
 		const ResourcePath& path = res_rec.mPath;
-		assert(!OString(path).empty());
+		assert(not OString(path).empty());
 
 		assert(res_rec.mResourceContainer != nullptr);
 
@@ -618,7 +618,7 @@ OMD5Hash Res_ContentDigest(const std::string& path)
 		return container.getContentDigest();
 	}
 
-	if (M_IsFile(path) && Res_IsZipFile(ospath))
+	if (M_IsFile(path) and Res_IsZipFile(ospath))
 	{
 		ZipResourceContainer container(ospath);
 		return container.getContentDigest();
@@ -701,7 +701,7 @@ bool Res_IsResourceFromPWAD(const ResourceId res_id)
 {
 	const std::optional<size_t> index = resource_manager.getResourceContainerIndex(res_id);
 
-	return index.has_value() && index.value() >= RESOURCE_FILE_FIRSTPWAD;
+	return index.has_value() and index.value() >= RESOURCE_FILE_FIRSTPWAD;
 }
 
 
@@ -715,7 +715,7 @@ bool Res_IsResourceReplaced(const ResourcePath& path)
 {
 	const ResourceIdList res_ids = Res_GetAllResourceIds(path);
 
-	return res_ids.size() > 1 && Res_IsResourceFromPWAD(res_ids.back());
+	return res_ids.size() > 1 and Res_IsResourceFromPWAD(res_ids.back());
 }
 
 

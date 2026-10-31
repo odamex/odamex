@@ -70,7 +70,7 @@ void R_InitSkyDefs()
 			OLumpName flatname = flatelem.asString();
 			const ResourceId flat_res_id =
 			    Res_GetTextureResourceId(OStringToUpper(flatname.c_str()), FLOOR);
-			if (!Res_CheckResource(flat_res_id)) return jsonlumpresult_t::PARSEERROR;
+			if (not Res_CheckResource(flat_res_id)) return jsonlumpresult_t::PARSEERROR;
 
 			skyflatlookup.insert(static_cast<uint32_t>(flat_res_id));
 		}
@@ -109,7 +109,7 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 		return;
 
 	const ResourceId res_id = Res_GetTextureResourceId(OStringToUpper(sky1_name), WALL);
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 		I_Error("Invalid sky1 texture \"{}\"", OStringToUpper(sky1_name));
 
 	if (HexenHack)

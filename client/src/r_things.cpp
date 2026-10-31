@@ -196,7 +196,7 @@ void R_BlastSpriteColumn(rendercontext_t& ctx, void (*drawfunc)(rendercontext_t&
 	yl = std::max<int64_t>(yl, std::max(ctx.sprite.mceilingclip[ctx.draw.dcol.x], 0));
 	yh = std::min<int64_t>(yh, ctx.sprite.mfloorclip[ctx.draw.dcol.x] - 1);
 
-	if (yl > yh || texturefrac >= ctx.draw.dcol.textureheight)
+	if (yl > yh or texturefrac >= ctx.draw.dcol.textureheight)
 		return;
 
 	// clamp the texture coordinates so out-of-range rows are not drawn
@@ -209,7 +209,7 @@ void R_BlastSpriteColumn(rendercontext_t& ctx, void (*drawfunc)(rendercontext_t&
 		yh -= cnt;
 	}
 
-	if (yl >= 0 && yh < viewheight && yl <= yh)
+	if (yl >= 0 and yh < viewheight and yl <= yh)
 	{
 		ctx.draw.dcol.yl = static_cast<int>(yl);
 		ctx.draw.dcol.yh = static_cast<int>(yh);
@@ -398,7 +398,7 @@ static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* se
 	// clip the sprite to the left & right screen edges
 	int32_t lclip, rclip;
 	bool visible = R_ClipLineToFrustum(&t1, &t2, NEARCLIP, lclip, rclip);
-	if (!visible && !keepoffscreen)
+	if (not visible and not keepoffscreen)
 		return NULL;
 
 	// calculate how much of the sprite was clipped from the left side
@@ -418,7 +418,7 @@ static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* se
 	if (!R_CheckProjectionX(x1, x2))
 	{
 		visible = false;
-		if (!keepoffscreen)
+		if (not keepoffscreen)
 			return NULL;
 	}
 
@@ -430,7 +430,7 @@ static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* se
 	if (!R_CheckProjectionY(y1, y2))
 	{
 		visible = false;
-		if (!keepoffscreen)
+		if (not keepoffscreen)
 			return NULL;
 	}
 
@@ -574,7 +574,7 @@ void R_DrawHitBox(rendercontext_t& ctx, const AActor* thing)
 //
 void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 {
-	if (!thing || !thing->subsector || !thing->subsector->sector)
+	if (not thing or not thing->subsector or not thing->subsector->sector)
 		return;
 
 	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0 ||
@@ -585,7 +585,7 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
   // except if paused and using freecam
 	fixed_t thingx, thingy, thingz;
 
-	if (ctx.sprite.projlerp &&
+	if (ctx.sprite.projlerp and
 	    P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
 	    not (paused && displayplayer().isFreecam))
 	{
@@ -620,7 +620,7 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 
 	// Cache the last sprite def lookup - crowds of identical monsters hit
 	// this constantly.
-	if (thing->sprite != ctx.sprite.projspritenum || ctx.sprite.projsprdef == NULL)
+	if (thing->sprite != ctx.sprite.projspritenum or ctx.sprite.projsprdef == NULL)
 	{
 		auto it = sprites.find(thing->sprite);
 
@@ -705,7 +705,7 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 	vis->res_id = res_id;
 	vis->texture = texture;
 	vis->mo = thing;
-	if (!VX_ProjectVoxel(ctx, thing, frame, vis) && !onscreen)
+	if (not VX_ProjectVoxel(ctx, thing, frame, vis) and not onscreen)
 	{
 		// neither the voxel nor the flat sprite reaches the screen, so give the
 		// vissprite back
@@ -723,12 +723,12 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 		// fixed map
 		vis->colormap = fixedcolormap;
 	}
-	else if (!ctx.bsp.foggy && (thing->frame & FF_FULLBRIGHT))
+	else if (not ctx.bsp.foggy and (thing->frame & FF_FULLBRIGHT))
 	{
 		// full bright
 		vis->colormap = ctx.draw.basecolormap;	// [RH] Use basecolormap
 	}
-	else if (!ctx.bsp.foggy && thing->oflags & MFO_FULLBRIGHT)
+	else if (not ctx.bsp.foggy and thing->oflags & MFO_FULLBRIGHT)
 	{
 		// full bright
 		vis->colormap = ctx.draw.basecolormap;
@@ -837,7 +837,7 @@ void R_AddSprites (rendercontext_t& ctx, sector_t *sec, int lightlevel, int fake
 	// subsectors during BSP building -- and with slices, reached by several
 	// of them.
 	// Only the first to get here projects its sprites.
-	if (!R_ClaimSectorSprites(sec))
+	if (not R_ClaimSectorSprites(sec))
 		return;
 
 	int lightnum = (lightlevel >> LIGHTSEGSHIFT) + (ctx.bsp.foggy ? 0 : extralight);
@@ -919,7 +919,7 @@ void R_DrawPSprite(rendercontext_t& ctx, const pspdef_t& psp, ActorFlags1 flags)
 	vis.res_id = res_id;
 	vis.texture = texture;
 	vis.mobjflags = flags;
-	vis.statusflags = camera->player && camera->player->mo ? camera->player->mo->statusflags : 0;
+	vis.statusflags = camera->player and camera->player->mo ? camera->player->mo->statusflags : 0;
 
 	// [RH] +0x6000 helps it meet the screen bottom
 	//		at higher resolutions while still being in
@@ -1082,7 +1082,7 @@ void R_SortVisSprites(rendercontext_t& ctx, std::span<rendercontext_t* const> ga
 
 	// A sprite overhanging into a slice that never reached its sector still
 	// has to draw there, so a view's pass takes every rendering slice's sprites.
-	if (!gather.empty())
+	if (not gather.empty())
 	{
 		for (const rendercontext_t* from : gather)
 			gatherpool(*from);
@@ -1179,7 +1179,7 @@ void R_BuildClipSegs(rendercontext_t& ctx)
 	{
 		// a drawseg with no silhouette and no masked midtexture can neither
 		// clip a sprite nor be drawn by one
-		if (!(ds->silhouette & SIL_BOTH) && !ds->midposts)
+		if (not (ds->silhouette & SIL_BOTH) and not ds->midposts)
 			continue;
 
 		const clipextent_t extent = { static_cast<int16_t>(ds->x1),
@@ -1294,7 +1294,7 @@ void R_DrawSprite (rendercontext_t& ctx, vissprite_t *shared)
 	for (size_t seg = 0; seg < clipsegcount; seg++)
 	{
 		// determine if the drawseg obscures the sprite
-		if (extents[seg].x1 > sprx2 || extents[seg].x2 < sprx1)
+		if (extents[seg].x1 > sprx2 or extents[seg].x2 < sprx1)
 			continue; // does not cover sprite
 
 		spriteclip_stats.overlapped++;
@@ -1372,7 +1372,7 @@ void R_DrawMasked (rendercontext_t& ctx, std::span<rendercontext_t* const> gathe
 		spriteclip_stats.peak_sprites = std::max(spriteclip_stats.peak_sprites, sprcount);
 	}
 
-	const bool probe = mainview && &ctx == &rctx;
+	const bool probe = mainview and &ctx == &rctx;
 	if (probe)
 		closestNonCredibleVisSprite = nullptr;
 

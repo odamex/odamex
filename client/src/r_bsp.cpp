@@ -175,9 +175,9 @@ bool CopyPlaneIfValid (plane_t *dest, const plane_t *source, const plane_t *opp)
 //
 bool R_SectorIsFoggy(const sector_t* sector)
 {
-	return level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] ||
-	       level.fadeto_color[3] || sector->colormap->fade.getr() ||
-	       sector->colormap->fade.getg() || sector->colormap->fade.getb();
+	return level.fadeto_color[0] or level.fadeto_color[1] or level.fadeto_color[2] or
+	       level.fadeto_color[3] or sector->colormap->fade.getr() or
+	       sector->colormap->fade.getg() or sector->colormap->fade.getb();
 }
 
 //
@@ -291,13 +291,13 @@ sector_t *R_FakeFlat(rendercontext_t& ctx, sector_t *sec, sector_t *tempsec,
 	// Only works if you cannot see the top surface of any deep water
 	// sectors at the same time.
 
-	if (back && !ctx.bsp.r_fakingunderwater && ctx.bsp.curline->frontsector->heightsec == NULL &&
+	if (back and not ctx.bsp.r_fakingunderwater and ctx.bsp.curline->frontsector->heightsec == NULL and
 		P_FloorHeight(s) > P_FloorHeight(sec))
 	{
 		fixed_t fcz1 = P_CeilingHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, ctx.bsp.frontsector);
 		fixed_t fcz2 = P_CeilingHeight(ctx.bsp.curline->v2->x, ctx.bsp.curline->v2->y, ctx.bsp.frontsector);
 
-		if (fcz1 <= P_FloorHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, s) &&
+		if (fcz1 <= P_FloorHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, s) and
 			fcz2 <= P_FloorHeight(ctx.bsp.curline->v2->x, ctx.bsp.curline->v2->y, s))
 		{
 			// will any columns of this window be visible or will they be blocked
@@ -398,7 +398,7 @@ sector_t *R_FakeFlat(rendercontext_t& ctx, sector_t *sec, sector_t *tempsec,
 		tempsec->base_floor_angle	= tempsec->base_ceiling_angle	= s->base_ceiling_angle;
 		tempsec->base_floor_yoffs	= tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
 
-		if (!R_ResourceIdIsSkyFlat(s->floor_res_id))
+		if (not R_ResourceIdIsSkyFlat(s->floor_res_id))
 		{
 			tempsec->ceilingplane	= sec->ceilingplane;
 			tempsec->floor_res_id	= s->floor_res_id;
@@ -444,7 +444,7 @@ sector_t *R_FakeFlat(rendercontext_t& ctx, sector_t *sec, sector_t *tempsec,
 //
 static void R_CheckClippedSegForFakeFlat(rendercontext_t& ctx, const seg_t* line)
 {
-	if (ctx.bsp.r_fakingunderwater || !line->backsector || !line->backsector->heightsec)
+	if (ctx.bsp.r_fakingunderwater or not line->backsector or not line->backsector->heightsec)
 		return;
 
 	// segs entirely behind the view plane cannot occupy the view
@@ -538,9 +538,9 @@ void R_AddLine (rendercontext_t& ctx, const seg_t *line)
 
 	// Only the columns still open can be drawn.
 	int first = x1, last = x2;
-	while (first <= last && ctx.bsp.solidcol[first])
+	while (first <= last and ctx.bsp.solidcol[first])
 		first++;
-	while (last >= first && ctx.bsp.solidcol[last])
+	while (last >= first and ctx.bsp.solidcol[last])
 		last--;
 	if (first > last)
 		return;
@@ -553,23 +553,23 @@ void R_AddLine (rendercontext_t& ctx, const seg_t *line)
 	// This fixes the automap floor height bug -- killough 1/18/98:
 	// killough 4/7/98: optimize: save result in doorclosed for use in r_segs.c
 
-	if (!ctx.bsp.backsector || !(line->linedef->flags & ML_TWOSIDED) ||
-		(ctx.seg.rw_backcz1 <= ctx.seg.rw_frontfz1 && ctx.seg.rw_backcz2 <= ctx.seg.rw_frontfz2) ||
-		(ctx.seg.rw_backfz1 >= ctx.seg.rw_frontcz1 && ctx.seg.rw_backfz2 >= ctx.seg.rw_frontcz2) ||
+	if (not ctx.bsp.backsector or not (line->linedef->flags & ML_TWOSIDED) or
+		(ctx.seg.rw_backcz1 <= ctx.seg.rw_frontfz1 and ctx.seg.rw_backcz2 <= ctx.seg.rw_frontfz2) or
+		(ctx.seg.rw_backfz1 >= ctx.seg.rw_frontcz1 and ctx.seg.rw_backfz2 >= ctx.seg.rw_frontcz2) or
 
 		// if door is closed because back is shut:
-		((ctx.seg.rw_backcz1 <= ctx.seg.rw_backfz1 && ctx.seg.rw_backcz2 <= ctx.seg.rw_backfz2) &&
+		((ctx.seg.rw_backcz1 <= ctx.seg.rw_backfz1 and ctx.seg.rw_backcz2 <= ctx.seg.rw_backfz2) and
 
 		// preserve a kind of transparent door/lift special effect:
-		((ctx.seg.rw_backcz1 >= ctx.seg.rw_frontcz1 && ctx.seg.rw_backcz2 >= ctx.seg.rw_frontcz2) ||
-		 !line->sidedef->toptexture.empty()) &&
+		((ctx.seg.rw_backcz1 >= ctx.seg.rw_frontcz1 and ctx.seg.rw_backcz2 >= ctx.seg.rw_frontcz2) or
+		 not line->sidedef->toptexture.empty()) and
 
-		((ctx.seg.rw_backfz1 <= ctx.seg.rw_frontfz1 && ctx.seg.rw_backfz2 <= ctx.seg.rw_frontfz2) ||
-		 !line->sidedef->bottomtexture.empty()) &&
+		((ctx.seg.rw_backfz1 <= ctx.seg.rw_frontfz1 and ctx.seg.rw_backfz2 <= ctx.seg.rw_frontfz2) or
+		 not line->sidedef->bottomtexture.empty()) and
 
 		// properly render skies (consider door "open" if both ceilings are sky):
-		(!R_ResourceIdIsSkyFlat(ctx.bsp.backsector->ceiling_res_id) || 
-		 !R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id))))
+		(not R_ResourceIdIsSkyFlat(ctx.bsp.backsector->ceiling_res_id) or 
+		 not R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id))))
 	{
 		ctx.bsp.doorclosed = true;
 		R_ClipWallSegment(ctx, first, last, true);
@@ -580,34 +580,34 @@ void R_AddLine (rendercontext_t& ctx, const seg_t *line)
 	// Identical floor and ceiling on both sides,
 	// identical light levels on both sides, and no middle texture.
 	if (P_IdenticalPlanes(&ctx.bsp.frontsector->ceilingplane, &ctx.bsp.backsector->ceilingplane)
-		&& P_IdenticalPlanes(&ctx.bsp.frontsector->floorplane, &ctx.bsp.backsector->floorplane)
-		&& ctx.bsp.backsector->lightlevel == ctx.bsp.frontsector->lightlevel
-		&& ctx.bsp.backsector->floor_res_id == ctx.bsp.frontsector->floor_res_id
-		&& ctx.bsp.backsector->ceiling_res_id == ctx.bsp.frontsector->ceiling_res_id
-		&& ctx.bsp.curline->sidedef->midtexture.empty()
+		and P_IdenticalPlanes(&ctx.bsp.frontsector->floorplane, &ctx.bsp.backsector->floorplane)
+		and ctx.bsp.backsector->lightlevel == ctx.bsp.frontsector->lightlevel
+		and ctx.bsp.backsector->floor_res_id == ctx.bsp.frontsector->floor_res_id
+		and ctx.bsp.backsector->ceiling_res_id == ctx.bsp.frontsector->ceiling_res_id
+		and ctx.bsp.curline->sidedef->midtexture.empty()
 
 		// killough 3/7/98: Take flats offsets into account:
-		&& ctx.bsp.backsector->floor_xoffs == ctx.bsp.frontsector->floor_xoffs
-		&& (ctx.bsp.backsector->floor_yoffs + ctx.bsp.backsector->base_floor_yoffs) == (ctx.bsp.frontsector->floor_yoffs + ctx.bsp.frontsector->base_floor_yoffs)
-		&& ctx.bsp.backsector->ceiling_xoffs == ctx.bsp.frontsector->ceiling_xoffs
-		&& (ctx.bsp.backsector->ceiling_yoffs + ctx.bsp.backsector->base_ceiling_yoffs) == (ctx.bsp.frontsector->ceiling_yoffs + ctx.bsp.frontsector->base_ceiling_yoffs)
+		and ctx.bsp.backsector->floor_xoffs == ctx.bsp.frontsector->floor_xoffs
+		and (ctx.bsp.backsector->floor_yoffs + ctx.bsp.backsector->base_floor_yoffs) == (ctx.bsp.frontsector->floor_yoffs + ctx.bsp.frontsector->base_floor_yoffs)
+		and ctx.bsp.backsector->ceiling_xoffs == ctx.bsp.frontsector->ceiling_xoffs
+		and (ctx.bsp.backsector->ceiling_yoffs + ctx.bsp.backsector->base_ceiling_yoffs) == (ctx.bsp.frontsector->ceiling_yoffs + ctx.bsp.frontsector->base_ceiling_yoffs)
 
 		// killough 4/16/98: consider altered lighting
-		&& ctx.bsp.backsector->floorlightsec == ctx.bsp.frontsector->floorlightsec
-		&& ctx.bsp.backsector->ceilinglightsec == ctx.bsp.frontsector->ceilinglightsec
+		and ctx.bsp.backsector->floorlightsec == ctx.bsp.frontsector->floorlightsec
+		and ctx.bsp.backsector->ceilinglightsec == ctx.bsp.frontsector->ceilinglightsec
 
 		// [RH] Also consider colormaps
-		&& ctx.bsp.backsector->colormap == ctx.bsp.frontsector->colormap
+		and ctx.bsp.backsector->colormap == ctx.bsp.frontsector->colormap
 
 		// [RH] and scaling
-		&& ctx.bsp.backsector->floor_xscale == ctx.bsp.frontsector->floor_xscale
-		&& ctx.bsp.backsector->floor_yscale == ctx.bsp.frontsector->floor_yscale
-		&& ctx.bsp.backsector->ceiling_xscale == ctx.bsp.frontsector->ceiling_xscale
-		&& ctx.bsp.backsector->ceiling_yscale == ctx.bsp.frontsector->ceiling_yscale
+		and ctx.bsp.backsector->floor_xscale == ctx.bsp.frontsector->floor_xscale
+		and ctx.bsp.backsector->floor_yscale == ctx.bsp.frontsector->floor_yscale
+		and ctx.bsp.backsector->ceiling_xscale == ctx.bsp.frontsector->ceiling_xscale
+		and ctx.bsp.backsector->ceiling_yscale == ctx.bsp.frontsector->ceiling_yscale
 
 		// [RH] and rotation
-		&& (ctx.bsp.backsector->floor_angle + ctx.bsp.backsector->base_floor_angle) == (ctx.bsp.frontsector->floor_angle + ctx.bsp.frontsector->base_floor_angle)
-		&& (ctx.bsp.backsector->ceiling_angle + ctx.bsp.backsector->base_ceiling_angle) == (ctx.bsp.frontsector->ceiling_angle + ctx.bsp.frontsector->base_ceiling_angle)
+		and (ctx.bsp.backsector->floor_angle + ctx.bsp.backsector->base_floor_angle) == (ctx.bsp.frontsector->floor_angle + ctx.bsp.frontsector->base_floor_angle)
+		and (ctx.bsp.backsector->ceiling_angle + ctx.bsp.backsector->base_ceiling_angle) == (ctx.bsp.frontsector->ceiling_angle + ctx.bsp.frontsector->base_ceiling_angle)
 		)
 	{
 		return;
@@ -775,15 +775,15 @@ void R_Subsector (rendercontext_t& ctx, int num)
 	// Before the planes are found, which keep it for when they are drawn.
 	ctx.bsp.foggy = R_SectorIsFoggy(ctx.bsp.frontsector);
 
-	ctx.plane.ceilingplane = P_CeilingHeight(viewx, viewy, ctx.bsp.frontsector) > viewz ||
-		R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) ||
-		R_IsStackBoundary(ctx.bsp.frontsector->SkyboxCeiling) ||
-		(ctx.bsp.frontsector->heightsec &&
-		!(ctx.bsp.frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
+	ctx.plane.ceilingplane = P_CeilingHeight(viewx, viewy, ctx.bsp.frontsector) > viewz or
+		R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) or
+		R_IsStackBoundary(ctx.bsp.frontsector->SkyboxCeiling) or
+		(ctx.bsp.frontsector->heightsec and
+		not (ctx.bsp.frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) and
 		R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->heightsec->floor_res_id)) ?
 		R_FindPlane(ctx, ctx.bsp.frontsector->ceilingplane,		// killough 3/8/98
 					ctx.bsp.frontsector->ceiling_res_id,
-					R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) &&  // killough 10/98
+					R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) and  // killough 10/98
 						(ctx.bsp.frontsector->sky & PL_SKYFLAT) ? ctx.bsp.frontsector->sky : 0,
 					ceilinglightlevel,				// killough 4/11/98
 					ctx.bsp.frontsector->ceiling_xoffs,		// killough 3/7/98
@@ -797,14 +797,14 @@ void R_Subsector (rendercontext_t& ctx, int num)
 	// killough 3/7/98: Add (x,y) offsets to flats, add deep water check
 	// killough 3/16/98: add floorlightlevel
 	// killough 10/98: add support for skies transferred from sidedefs
-	ctx.plane.floorplane = P_FloorHeight(viewx, viewy, ctx.bsp.frontsector) < viewz || // killough 3/7/98
-		R_IsStackBoundary(ctx.bsp.frontsector->SkyboxFloor) ||
-		(ctx.bsp.frontsector->heightsec &&
-		!(ctx.bsp.frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
+	ctx.plane.floorplane = P_FloorHeight(viewx, viewy, ctx.bsp.frontsector) < viewz or // killough 3/7/98
+		R_IsStackBoundary(ctx.bsp.frontsector->SkyboxFloor) or
+		(ctx.bsp.frontsector->heightsec and
+		not (ctx.bsp.frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) and
 		R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->heightsec->ceiling_res_id)) ?
 		R_FindPlane(ctx, ctx.bsp.frontsector->floorplane,
 					ctx.bsp.frontsector->floor_res_id,
-					R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->floor_res_id) &&  // killough 10/98
+					R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->floor_res_id) and  // killough 10/98
 						(ctx.bsp.frontsector->sky & PL_SKYFLAT) ? ctx.bsp.frontsector->sky : 0,
 					floorlightlevel,				// killough 3/16/98
 					ctx.bsp.frontsector->floor_xoffs,		// killough 3/7/98
@@ -871,7 +871,7 @@ uint32_t R_CountSubsectors(unsigned int child)
 //
 void R_PrepareBSPNodes()
 {
-	if (nodesubsectorsfor == nodes && nodesubsectors.size() == static_cast<size_t>(numnodes))
+	if (nodesubsectorsfor == nodes and nodesubsectors.size() == static_cast<size_t>(numnodes))
 		return;
 
 	nodesubsectors.assign(numnodes, 0);
@@ -914,11 +914,11 @@ void R_RenderBSPNode (rendercontext_t& ctx, int bspnum)
 		const unsigned int front = bsp->children[frontside];
 		const uint32_t frontsize = (front & NF_SUBSECTOR) ? 1 : nodesubsectors[front];
 
-		if (frontsize < FRONT_CULL_MIN || R_BBoxView(ctx, bsp->bbox[frontside]) != bboxview_t::closed)
+		if (frontsize < FRONT_CULL_MIN or R_BBoxView(ctx, bsp->bbox[frontside]) != bboxview_t::closed)
 			R_RenderBSPNode(ctx, front);
 
 		// Possibly divide back space.
-		if (!R_CheckBBox(ctx, bsp->bbox[backside]))
+		if (not R_CheckBBox(ctx, bsp->bbox[backside]))
 			return;
 
 		bspnum = bsp->children[backside];

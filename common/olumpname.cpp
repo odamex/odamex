@@ -47,7 +47,7 @@ void OLumpName::assign(const char* str, size_t max_len)
 
 	if (str)
 	{
-		for (size_t i = 0; i < max_len && str[i] != '\0'; i++)
+		for (size_t i = 0; i < max_len and str[i] != '\0'; i++)
 			m_data += static_cast<char>(toupper(str[i]));
 	}
 
@@ -199,62 +199,62 @@ const char* OLumpName::data() const
 
 int OLumpName::compare(const OLumpName& other) const
 {
-	return !stricmp(m_data.c_str(), other.m_data.c_str());
+	return not stricmp(m_data.c_str(), other.m_data.c_str());
 }
 
 int OLumpName::compare(const char* other) const
 {
-	return !stricmp(m_data.c_str(), other);
+	return not stricmp(m_data.c_str(), other);
 }
 
 int OLumpName::compare(const std::string& other) const
 {
-	return !stricmp(m_data.c_str(), other.data());
+	return not stricmp(m_data.c_str(), other.data());
 }
 
 int OLumpName::compare(std::string_view other) const
 {
-	return size() == other.length() &&
-	       !strnicmp(m_data.c_str(), other.data(), other.length());
+	return size() == other.length() and
+	       not strnicmp(m_data.c_str(), other.data(), other.length());
 }
 
 bool operator==(const OLumpName& lhs, const OLumpName& rhs)
 {
-	return !stricmp(lhs.m_data.c_str(), rhs.m_data.c_str());
+	return not stricmp(lhs.m_data.c_str(), rhs.m_data.c_str());
 }
 
 bool operator==(const OLumpName& lhs, const char* rhs)
 {
-	return !stricmp(lhs.m_data.c_str(), rhs);
+	return not stricmp(lhs.m_data.c_str(), rhs);
 }
 
 bool operator==(const OLumpName& lhs, const std::string& rhs)
 {
-	return !stricmp(lhs.m_data.c_str(), rhs.data());
+	return not stricmp(lhs.m_data.c_str(), rhs.data());
 }
 
 bool operator==(const OLumpName& lhs, std::string_view rhs)
 {
-	return lhs.size() == rhs.length() &&
-	       !strnicmp(lhs.m_data.c_str(), rhs.data(), rhs.length());
+	return lhs.size() == rhs.length() and
+	       not strnicmp(lhs.m_data.c_str(), rhs.data(), rhs.length());
 }
 
 bool operator!=(const OLumpName& lhs, const OLumpName& rhs)
 {
-	return !(lhs == rhs);
+	return not (lhs == rhs);
 }
 
 bool operator!=(const OLumpName& lhs, const char* rhs)
 {
-	return !(lhs == rhs);
+	return not (lhs == rhs);
 }
 
 bool operator!=(const OLumpName& lhs, const std::string& rhs)
 {
-	return !(lhs == rhs);
+	return not (lhs == rhs);
 }
 
 bool operator!=(const OLumpName& lhs, std::string_view rhs)
 {
-	return !(lhs == rhs);
+	return not (lhs == rhs);
 }

@@ -247,7 +247,7 @@ void AdlMidiMusicSystem::_RegisterSong(byte* data, size_t length)
 {
 	const std::lock_guard<std::mutex> lock(m_mutex);
 	m_isPlaying = false;
-	if (Res_MusicIsMus(data, length) || Res_MusicIsMidi(data, length))
+	if (Res_MusicIsMus(data, length) or Res_MusicIsMidi(data, length))
 	{
 		adl_reset(m_midiPlayer);
 		if (adl_openData(m_midiPlayer, data, length) < 0)

@@ -1212,7 +1212,7 @@ bool EV_DoGenStairs(line_t& line)
 				tsec = secline->backsector;
 				newsecnum = tsec - sectors;
 
-				if (!Igno && tsec->floor_res_id != texture)
+				if (not Igno and tsec->floor_res_id != texture)
 					continue;
 
 				/* jff 6/19/98 prevent double stepsize */
@@ -1392,7 +1392,7 @@ bool EV_BuildStairs(const int tag, const DFloor::EStair type, const line_t *line
 					tsec = secline->backsector;
 					newsecnum = tsec - sectors;
 
-					if (!igntxt && tsec->floor_res_id != texture)
+					if (not igntxt and tsec->floor_res_id != texture)
 						continue;
 
 					height += floor->m_Direction * stairsize;

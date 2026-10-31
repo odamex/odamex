@@ -1098,7 +1098,7 @@ public:
 				header.identification = LELONG(header.identification);
 				header.infotableofs = LELONG(header.infotableofs);
 
-				if (header.identification == IWAD_ID || header.identification == PWAD_ID)
+				if (header.identification == IWAD_ID or header.identification == PWAD_ID)
 				{
 					if (fseek(fp.get(), header.infotableofs, SEEK_SET) == 0)
 					{
@@ -1177,12 +1177,12 @@ public:
 		file->mIsDeprecated = deprecated;
 		file->weight = weight;
 
-		if (!crc32Hash.empty())
+		if (not crc32Hash.empty())
 		{
 			mCRC32SumLookup.emplace(file->mCRC32Sum, id);
 		}
 
-		if (!md5Hash.empty())
+		if (not md5Hash.empty())
 		{
 			mMd5SumLookup.emplace(file->mMd5Sum, id);
 		}
@@ -1205,7 +1205,7 @@ public:
 		OString upper = OStringToUpper(filename);
 		for (const auto& id : mIdentifiers)
 		{
-			if (id.mIsCommercial && id.mFilename == upper)
+			if (id.mIsCommercial and id.mFilename == upper)
 				return true;
 		}
 		return false;
@@ -1216,7 +1216,7 @@ public:
 		OString upper = OStringToUpper(filename);
 		for (const auto& id : mIdentifiers)
 		{
-			if (id.mIsIWAD && id.mFilename == upper)
+			if (id.mIsIWAD and id.mFilename == upper)
 				return true;
 		}
 		return false;
@@ -1225,27 +1225,27 @@ public:
 	bool isCommercial(const OMD5Hash& hash) const
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
-		return file && file->mIsCommercial;
+		return file and file->mIsCommercial;
 	}
 
 	bool isKnownIWAD(const OMD5Hash& hash) const
 	{
 		const FileIdentifier* file = lookupByMd5Sum(hash);
-		return file && file->mIsIWAD;
+		return file and file->mIsIWAD;
 	}
 
 	bool isDeprecated(const std::string& filename) const
 	{
 		const OMD5Hash hash = Res_MD5(filename);
 		const FileIdentifier* file = lookupByMd5Sum(hash);
-		return file && file->mIsDeprecated;
+		return file and file->mIsDeprecated;
 	}
 
 		bool isDeprecated(const OResFile& possible_iwad_resfile) const
 	{
 		const OMD5Hash hash(possible_iwad_resfile.getMD5());
 		const FileIdentifier* file = lookupByMd5Sum(hash);
-		return file && file->mIsDeprecated;
+		return file and file->mIsDeprecated;
 	}
 
 	// [SL] not an offical IWAD.
@@ -1270,7 +1270,7 @@ public:
 
 		WadFileLumpFinder lumps(filename);
 		for (int i = 0; i < NUM_CHECKLUMPS; i++)
-			if (!lumps.exists(std::string(checklumps[i], 8)))
+			if (not lumps.exists(std::string(checklumps[i], 8)))
 				return false;
 		return true;
 	}
@@ -1285,7 +1285,7 @@ public:
 
 		WadFileLumpFinder lumps(file.getFullpath());
 		for (int i = 0; i < NUM_CHECKLUMPS; i++)
-			if (!lumps.exists(std::string(checklumps[i], 8)))
+			if (not lumps.exists(std::string(checklumps[i], 8)))
 				return false;
 		return true;
 	}
@@ -1295,7 +1295,7 @@ public:
 		const FileIdentifier* file1 = lookupByMd5Sum(hash1);
 		const FileIdentifier* file2 = lookupByMd5Sum(hash2);
 
-		if (!file1 || !file2)
+		if (not file1 or not file2)
 			return false;
 
 		return file1->mGroupName == file2->mGroupName;

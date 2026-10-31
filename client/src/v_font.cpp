@@ -77,7 +77,7 @@ static palindex_t V_FindDecorationColor()
 
 	for (int i = 1; i < 256; i++)
 	{
-		if (i >= TRANSLATION_RANGE_START && i <= TRANSLATION_RANGE_END)
+		if (i >= TRANSLATION_RANGE_START and i <= TRANSLATION_RANGE_END)
 			continue;
 
 		const argb_t color = palette->basecolors[i];
@@ -110,7 +110,7 @@ static void V_TranslateFontChar(Texture* texture)
 
 	for (int i = 0; i < count; i++)
 	{
-		if (data[i] >= DOOM_FONT_RANGE_START && data[i] <= DOOM_FONT_RANGE_END)
+		if (data[i] >= DOOM_FONT_RANGE_START and data[i] <= DOOM_FONT_RANGE_END)
 			data[i] += (TRANSLATION_RANGE_START - DOOM_FONT_RANGE_START);
 	}
 }
@@ -124,7 +124,7 @@ static void V_TranslateFontChar(Texture* texture)
 //
 static void V_FillTexture(Texture* dest_texture, const Texture* source_texture)
 {
-	if (!source_texture || source_texture->mWidth == 0 || source_texture->mHeight == 0)
+	if (not source_texture or source_texture->mWidth == 0 or source_texture->mHeight == 0)
 		return;
 
 	int bgx = M_Random() % source_texture->mWidth;
@@ -289,7 +289,7 @@ bool OFont::isUsable() const
 {
 	// a font with no letterforms is one whose source resource was missing
 	const Texture* texture = mCharacters[static_cast<byte>('T')];
-	return texture != nullptr && texture->mWidth > 0 && texture->mHeight > 0;
+	return texture != nullptr and texture->mWidth > 0 and texture->mHeight > 0;
 }
 
 void OFont::load()
@@ -371,11 +371,11 @@ CVAR_FUNC_IMPL(hud_scaletext)
 const Texture* OFont::cacheSourceTexture(const char* name)
 {
 	const ResourceId res_id = Res_GetTextureResourceId(name, GRAPHICS);
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 		return nullptr;
 
 	const Texture* texture = Res_CacheTexture(res_id, PU_STATIC);
-	if (!texture || texture->mWidth == 0 || texture->mHeight == 0)
+	if (not texture or texture->mWidth == 0 or texture->mHeight == 0)
 	{
 		Res_ReleaseResource(res_id);
 		return nullptr;
@@ -388,7 +388,7 @@ const Texture* OFont::cacheSourceTexture(const char* name)
 Texture* OFont::createGlyph(int width, int height,
 		byte** coverage_plane, palindex_t** fill_plane)
 {
-	const bool with_planes = (coverage_plane != nullptr && fill_plane != nullptr);
+	const bool with_planes = (coverage_plane != nullptr and fill_plane != nullptr);
 	const uint32_t pixels = width * height;
 	const uint32_t base_size = Texture::calculateSize(width, height);
 	const uint32_t size = base_size + (with_planes ? 2 * pixels : 0);
@@ -422,11 +422,11 @@ int OFont::getAdvanceY(char c) const
 
 void OFont::printCharacter(const DCanvas* canvas, int& x, int& y, char c) const
 {
-	if (c == ' ' || c == '\t')
+	if (c == ' ' or c == '\t')
 	{
 		x += getTextWidth(c);
 	}
-	else if (c == '\r' || c == '\n')
+	else if (c == '\r' or c == '\n')
 	{
 		return;
 	}
@@ -466,11 +466,11 @@ int OFont::getTextWidth(char c) const
 	if (c == '\t')
 		return 4 * getTextWidth(' ');
 
-	if (c >= RULE_CHAR_FIRST && c <= RULE_CHAR_LAST)
+	if (c >= RULE_CHAR_FIRST and c <= RULE_CHAR_LAST)
 		return getHeight();
 
 	const Texture* texture = mCharacters[static_cast<byte>(c)];
-	if (!texture)
+	if (not texture)
 	{
 		// a character the font has no glyph for: draw nothing, but leave a
 		// gap so words do not run together
@@ -494,7 +494,7 @@ int OFont::getTextWidth(const char* str) const
 
 	while (*str)
 	{
-		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
+		if (str[0] == TEXTCOLOR_ESCAPE and str[1] != '\0')
 		{
 			str += 2;
 			continue;
@@ -514,7 +514,7 @@ int OFont::getTextHeight(char c) const
 	if (c == '\t')
 		return 4 * getTextHeight(' ');
 
-	if (c == ' ' && (!texture || texture->mHeight == 0))
+	if (c == ' ' and (not texture or texture->mHeight == 0))
 		return getTextHeight('T');
 
 	if (texture)
@@ -562,7 +562,7 @@ void ConCharsFont::buildGlyphs()
 	const fixed_t scale = getScale();
 	static const char lumpname[] = "CONCHARS";
 	const Texture* conchars_texture = cacheSourceTexture(lumpname);
-	if (!conchars_texture)
+	if (not conchars_texture)
 		I_Error("Unable to load {} lump.", lumpname);
 
 	const int numcolumns = conchars_texture->mWidth / charwidth;
@@ -632,7 +632,7 @@ void SmallDoomFont::buildGlyphs()
 		snprintf(name, sizeof(name), "STCFN%.3d", charnum);
 
 		const Texture* source_texture = cacheSourceTexture(name);
-		if (!source_texture)
+		if (not source_texture)
 			continue;
 
 		const int dest_charwidth = (source_texture->mWidth * scale) >> FRACBITS;
@@ -695,7 +695,7 @@ void LargeDoomFont::buildGlyphs()
 		snprintf(name, sizeof(name), "FONTB%02u", charnum - 32);
 
 		const Texture* source_texture = cacheSourceTexture(name);
-		if (!source_texture)
+		if (not source_texture)
 			continue;
 
 		const int dest_charwidth = (source_texture->mWidth * scale) >> FRACBITS;
@@ -775,7 +775,7 @@ void TrueTypeFont::setVariations(const std::vector<OFontVariation>& variations)
 uint32_t V_FontAxisTag(const char* tag)
 {
 	byte c[4] = { ' ', ' ', ' ', ' ' };
-	for (int i = 0; i < 4 && tag && tag[i]; i++)
+	for (int i = 0; i < 4 and tag and tag[i]; i++)
 		c[i] = static_cast<byte>(tag[i]);
 	return (static_cast<uint32_t>(c[0]) << 24) | (static_cast<uint32_t>(c[1]) << 16) |
 	       (static_cast<uint32_t>(c[2]) << 8)  |  static_cast<uint32_t>(c[3]);
@@ -791,11 +791,11 @@ uint32_t V_FontAxisTag(const char* tag)
 static void V_ApplyFontVariations(FT_Library library, FT_Face face,
 		const char* lumpname, const std::vector<OFontVariation>& variations)
 {
-	if (!(face->face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS))
+	if (not (face->face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS))
 		return;
 
 	FT_MM_Var* mmvar = nullptr;
-	if (FT_Get_MM_Var(face, &mmvar) != 0 || mmvar == nullptr)
+	if (FT_Get_MM_Var(face, &mmvar) != 0 or mmvar == nullptr)
 		return;
 
 	std::vector<FT_Fixed> coords(mmvar->num_axis);
@@ -844,7 +844,7 @@ void TrueTypeFont::buildGlyphs()
 
 	// read the TTF out of the engine resource file
 	const ResourceId res_id = Res_GetResourceId(lumpname, global_directory_name);
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 	{
 		PrintFmt(PRINT_HIGH, "Unable to locate TrueType font {}!\n", lumpname);
 		return;
@@ -854,7 +854,7 @@ void TrueTypeFont::buildGlyphs()
 	// our own copy rather than relying on the resource cache holding it.
 	const uint32_t lumplen = Res_GetResourceSize(res_id);
 	const uint8_t* lumpdata = Res_LoadResource(res_id, PU_STATIC);
-	if (lumplen == 0 || lumpdata == nullptr)
+	if (lumplen == 0 or lumpdata == nullptr)
 	{
 		PrintFmt(PRINT_HIGH, "Unable to read TrueType font {}!\n", lumpname);
 		return;
@@ -913,7 +913,7 @@ void TrueTypeFont::buildGlyphs()
 	const int pad_right = std::max(outline_size, shadow_size);
 	const int pad_bottom = std::max(outline_size, shadow_size);
 
-	const bool decorated = (outline_size > 0 || shadow_size > 0);
+	const bool decorated = (outline_size > 0 or shadow_size > 0);
 	const palindex_t decoration_color = decorated ? V_FindDecorationColor() : 0;
 
 	// coverage masks, reused across glyphs to avoid churning allocations
@@ -937,7 +937,7 @@ void TrueTypeFont::buildGlyphs()
 			continue;
 		}
 
-		if (embolden > 0 && face->glyph->format == FT_GLYPH_FORMAT_OUTLINE)
+		if (embolden > 0 and face->glyph->format == FT_GLYPH_FORMAT_OUTLINE)
 			FT_Outline_Embolden(&face->glyph->outline, embolden);
 
 		error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
@@ -965,7 +965,7 @@ void TrueTypeFont::buildGlyphs()
 		mCharacterCoverage[charnum] = coverage_plane;
 		mCharacterFill[charnum] = fill_plane;
 
-		if (tex_width == 0 || tex_height == 0)
+		if (tex_width == 0 or tex_height == 0)
 			continue;
 
 		if (background_texture)
@@ -973,7 +973,7 @@ void TrueTypeFont::buildGlyphs()
 			// tile a texture behind the glyph
 			V_FillTexture(texture, background_texture);
 		}
-		else if ((stylemask & TTF_GRADIENT) && mHasGradientColors)
+		else if ((stylemask & TTF_GRADIENT) and mHasGradientColors)
 		{
 			// gradient between two fixed colors (baked as literal palette
 			// indices, so the draw-time color does not recolor it)
@@ -1043,7 +1043,7 @@ void TrueTypeFont::buildGlyphs()
 			{
 				for (int y = 0; y < tex_height; y++)
 				{
-					if (!body[x * tex_height + y])
+					if (not body[x * tex_height + y])
 						continue;
 
 					// drop shadow: the body offset down and to the right
@@ -1051,7 +1051,7 @@ void TrueTypeFont::buildGlyphs()
 					{
 						const int sx = x + shadow_size;
 						const int sy = y + shadow_size;
-						if (sx < tex_width && sy < tex_height)
+						if (sx < tex_width and sy < tex_height)
 							deco[sx * tex_height + sy] = 1;
 					}
 
@@ -1064,7 +1064,7 @@ void TrueTypeFont::buildGlyphs()
 							{
 								const int nx = x + ox;
 								const int ny = y + oy;
-								if (nx >= 0 && nx < tex_width && ny >= 0 && ny < tex_height)
+								if (nx >= 0 and nx < tex_width and ny >= 0 and ny < tex_height)
 									deco[nx * tex_height + ny] = 1;
 							}
 						}
@@ -1086,7 +1086,7 @@ void TrueTypeFont::buildGlyphs()
 					if (*dest == TRANSPARENT_INDEX)
 						*dest = opaque_fill_fallback;
 				}
-				else if (decorated && deco[index])
+				else if (decorated and deco[index])
 				{
 					*dest = decoration_color;
 				}
@@ -1104,7 +1104,7 @@ void TrueTypeFont::buildGlyphs()
 						if (fill_plane[index] == TRANSPARENT_INDEX)
 							fill_plane[index] = opaque_fill_fallback;
 					}
-					else if (decorated && deco[index])
+					else if (decorated and deco[index])
 					{
 						coverage_plane[index] = 0xFF;
 						fill_plane[index] = decoration_color;

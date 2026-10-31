@@ -40,7 +40,7 @@ static std::regex VersionMatchRegex = std::regex(VersionMatchRegexString);
 
 jsonlumpresult_t M_ParseJSONLump(const ResourceId res_id, const char* lumptype, const JSONLumpVersion& maxversion, const JSONLumpFunc& parsefunc)
 {
-	if(!Res_CheckResource(res_id) || Res_GetResourceSize(res_id) == 0)
+	if(not Res_CheckResource(res_id) or Res_GetResourceSize(res_id) == 0)
 	{
 		return jsonlumpresult_t::NOTFOUND;
 	}
@@ -53,7 +53,7 @@ jsonlumpresult_t M_ParseJSONLump(const ResourceId res_id, const char* lumptype, 
     Json::Value root;
     std::string errs;
 
-    if(!reader->parse(jsondata, jsondata + Res_GetResourceSize(res_id), &root, &errs))
+    if(not reader->parse(jsondata, jsondata + Res_GetResourceSize(res_id), &root, &errs))
     {
         I_Error("M_ParseJSONLump: JSON parsing error in lump {}:\n{}", Res_GetResourceName(res_id), errs);
         return jsonlumpresult_t::PARSEERROR;

@@ -646,7 +646,7 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 
 	COLORFUNC colorfunc(drawcolumn);
 
-	if (drawcolumn.masked && drawcolumn.source != NULL)
+	if (drawcolumn.masked and drawcolumn.source != NULL)
 	{
 		// preserve the silhouette of the masked texture
 		const palindex_t* source = drawcolumn.source;
@@ -809,7 +809,7 @@ template<typename COLORFUNC>
 static forceinline void R_DrawColumnGenericARGB(argb_t* dest, const drawcolumn_t& drawcolumn)
 {
 #ifdef RANGECHECK
-	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
+	if (drawcolumn.x < 0 or drawcolumn.x >= viewwidth or drawcolumn.yl < 0 or drawcolumn.yh >= viewheight)
 	{
 		PrintFmt(PRINT_HIGH, "R_DrawColumn: {} to {} at {}\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
@@ -1054,7 +1054,7 @@ template<bool CONSTLIGHT, typename PIXEL_T, typename COLORFUNC, typename SOURCE_
 static forceinline void R_DrawLevelColumnGeneric(PIXEL_T* dest, const drawplanecol_t& d)
 {
 #ifdef RANGECHECK
-	if (d.x < 0 || d.x >= viewwidth || d.yl < 0 || d.yh >= viewheight)
+	if (d.x < 0 or d.x >= viewwidth or d.yl < 0 or d.yh >= viewheight)
 	{
 		PrintFmt(PRINT_HIGH, "R_DrawLevelColumn: {} to {} at {}\n", d.yl, d.yh, d.x);
 		return;
@@ -1090,7 +1090,7 @@ static forceinline void R_DrawLevelColumnGeneric(PIXEL_T* dest, const drawplanec
 		const unsigned int spot = ((vfrac >> vshift) & vmask) | ((ufrac >> ushift) & umask);
 
 		colorfunc(source[spot], CONSTLIGHT ? 0u : *off, dest);
-		if (!CONSTLIGHT)
+		if (not CONSTLIGHT)
 			off++;
 		dest += step;
 	} while (--count);
@@ -1121,7 +1121,7 @@ template<bool SLOPELIGHT, typename PIXEL_T, typename COLORFUNC, typename SOURCE_
 static forceinline void R_DrawSlopeColumnGeneric(PIXEL_T* dest, const drawplanecol_t& d)
 {
 #ifdef RANGECHECK
-	if (d.x < 0 || d.x >= viewwidth || d.yl < 0 || d.yh >= viewheight)
+	if (d.x < 0 or d.x >= viewwidth or d.yl < 0 or d.yh >= viewheight)
 	{
 		PrintFmt(PRINT_HIGH, "R_DrawSlopeColumn: {} to {} at {}\n", d.yl, d.yh, d.x);
 		return;
@@ -1213,8 +1213,8 @@ template<typename PIXEL_T, typename COLORFUNC>
 static forceinline void R_FillSpanGeneric(PIXEL_T* dest, const drawspan_t& drawspan)
 {
 #ifdef RANGECHECK
-	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
-		drawspan.y >= viewheight || drawspan.y < 0)
+	if (drawspan.x2 < drawspan.x1 or drawspan.x1 < 0 or drawspan.x2 >= viewwidth or
+		drawspan.y >= viewheight or drawspan.y < 0)
 	{
 		PrintFmt(PRINT_HIGH, "R_FillSpan: {} to {} at {}", drawspan.x1, drawspan.x2, drawspan.y);
 		return;
@@ -1800,7 +1800,7 @@ public:
 		// Every dynamic colormap gets its tables where it is made (GetSpecialLights,
 		// V_RefreshColormaps), so the default is only reached without one.
 		const argbshadelut_t* lut = &argb_default_lut;
-		if (dyncolormap != NULL && dyncolormap->argblut != NULL)
+		if (dyncolormap != NULL and dyncolormap->argblut != NULL)
 			lut = dyncolormap->argblut;
 
 		lut_r = lut->r[mapnum];
@@ -1813,7 +1813,7 @@ public:
 		gshift = argb_t::greenShift();
 		bshift = argb_t::blueShift();
 
-		standard = ashift == 24 && rshift == 16 && gshift == 8 && bshift == 0;
+		standard = ashift == 24 and rshift == 16 and gshift == 8 and bshift == 0;
 	}
 
 	// All this just to make the rgb shader LUT be one lookup per channel.
@@ -1873,7 +1873,7 @@ public:
 			const argb_t bg = blend_to_dest ? *dest : shader.black();
 			*dest = alphablend2a(bg, 255 - a, shader.shade(c), a);
 		}
-		else if (!blend_to_dest)
+		else if (not blend_to_dest)
 		{
 			*dest = shader.black();
 		}
@@ -1933,7 +1933,7 @@ bool R_PrepareARGBPlaneShading(rendercontext_t& ctx, const shaderef_t& light)
 
 	// The span drawers' test: a special colormap (invulnerability) has no RGB
 	// equivalent and stays palettized.
-	if (!argb_plane_drawers || dpcol.argbsource == NULL || light.mapnum() >= NUMCOLORMAPS)
+	if (not argb_plane_drawers or dpcol.argbsource == NULL or light.mapnum() >= NUMCOLORMAPS)
 	{
 		dpcol.argbshade = NULL;
 		return false;
@@ -2002,7 +2002,7 @@ private:
 //
 static forceinline bool R_ColumnHasNativeARGB(const drawcolumn_t& dcol)
 {
-	return dcol.argbtexturedata != NULL && dcol.source != NULL &&
+	return dcol.argbtexturedata != NULL and dcol.source != NULL and
 	       dcol.colormap.mapnum() < NUMCOLORMAPS;
 }
 
@@ -2030,9 +2030,9 @@ constexpr int R_QUAD_MIN_COLUMN = 16;
 static forceinline bool R_ColumnWantsQuad(void (*drawer)(rendercontext_t&),
                                           const drawcolumn_t& dcol)
 {
-	return drawer != NULL &&
-			dcol.yh - dcol.yl + 1 >= R_QUAD_MIN_COLUMN &&
-			(dcol.masked ||
+	return drawer != NULL and
+			dcol.yh - dcol.yl + 1 >= R_QUAD_MIN_COLUMN and
+			(dcol.masked or
 				(dcol.textureheight & (dcol.textureheight - 1)) == 0);
 }
 
@@ -2446,7 +2446,7 @@ CVAR_FUNC_IMPL(r_optimize)
 		optimize_kind = OPTIMIZE_MMX;
 	else if (stricmp(val, "altivec") == 0 && R_IsOptimizationAvailable(OPTIMIZE_ALTIVEC))
 		optimize_kind = OPTIMIZE_ALTIVEC;
-	else if (stricmp(val, "neon") == 0 && R_IsOptimizationAvailable(OPTIMIZE_NEON))
+	else if (stricmp(val, "neon") == 0 and R_IsOptimizationAvailable(OPTIMIZE_NEON))
 		optimize_kind = OPTIMIZE_NEON;
 	else if (stricmp(val, "detect") == 0)
 		// Default to the most preferred:
@@ -2858,7 +2858,7 @@ static void R_SelectDrawers()
 // [RH] Initialize the column drawer pointers
 void R_InitColumnDrawers ()
 {
-	if (!I_VideoInitialized())
+	if (not I_VideoInitialized())
 		return;
 
 	R_SelectDrawers();

@@ -98,7 +98,7 @@ public:
 		const __m128i fg = _mm_setr_epi32(shademap[i0], shademap[i1],
 										shademap[i2], shademap[i3]);
 
-		if (!MASKED)
+		if (not MASKED)
 		{
 			_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), fg);
 			return;
@@ -167,7 +167,7 @@ public:
 		// alpha the framebuffer held; only blended lanes get 255.
 		const __m128i res = _mm_or_si128(_mm_packus_epi16(lo, hi), mamask);
 
-		if (!MASKED)
+		if (not MASKED)
 		{
 			_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), res);
 			return;
@@ -239,11 +239,11 @@ static forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t
 		const uint32_t i2 = source[o2];
 		const uint32_t i3 = source[o3];
 
-		if (!MASKED)
+		if (not MASKED)
 		{
 			f.template quad<false>(i0, i1, i2, i3, dest, _mm_setzero_si128());
 		}
-		else if (!EARLYOUT || (i0 | i1 | i2 | i3))
+		else if (not EARLYOUT or (i0 | i1 | i2 | i3))
 		{
 			// All ones in the lanes the scalar drawer would not have written.
 			const __m128i keep = _mm_cmpeq_epi32(
@@ -265,7 +265,7 @@ static forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t
 	{
 		const palindex_t pixel = MASKED ? source[frac >> FRACBITS]
 									: source[(frac >> FRACBITS) & mask];
-		if (!MASKED || pixel != 0)
+		if (not MASKED or pixel != 0)
 			f(pixel, dest);
 		dest++;
 		frac += fracstep;

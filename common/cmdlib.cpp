@@ -73,7 +73,7 @@ void FixPathSeparator(std::string& path)
 {
 	// Use the platform appropriate path separator
 	for (size_t i = 0; i < path.length(); i++)
-		if (path[i] == '\\' || path[i] == '/')
+		if (path[i] == '\\' or path[i] == '/')
 			path[i] = PATHSEPCHAR;
 }
 

@@ -59,7 +59,7 @@ struct NamespacedResourceName
 	ResourceNamespace	ns;
 
 	bool operator!=(const NamespacedResourceName& other) const
-	{	return name != other.name || ns != other.ns;	}
+	{	return name != other.name or ns != other.ns;	}
 };
 
 

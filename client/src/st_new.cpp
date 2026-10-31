@@ -380,7 +380,7 @@ void ST_voteDraw (int y) {
 		return;
 	}
 
-	if (!V_FontsReady())
+	if (not V_FontsReady())
 		return;
 
 	int xscale = hud_scale ? CleanXfac : 1;
@@ -796,7 +796,7 @@ static int ProtoRowHeight(const char* str, float scale)
 	int lines = 1;
 	for (const char* p = str; *p != '\0'; ++p)
 	{
-		if (*p == TEXTCOLOR_ESCAPE && *(p + 1) != '\0')
+		if (*p == TEXTCOLOR_ESCAPE and *(p + 1) != '\0')
 		{
 			++p;
 			continue;
@@ -1094,7 +1094,7 @@ void OdamexHUD() {
 		// TODO: This "scale only if bigger than bounding box" can
 		//       probably be commonized, along with "scale only if
 		//       smaller than bounding box".
-		if (ammopatch->mWidth > 16 || ammopatch->mHeight > 16) {
+		if (ammopatch->mWidth > 16 or ammopatch->mHeight > 16) {
 			hud::DrawTextureScaled(patch_ax + 12, 12, 16, 16, hud_scale,
 			                     hud::X_RIGHT, hud::Y_BOTTOM,
 			                     hud::X_CENTER, hud::Y_MIDDLE,

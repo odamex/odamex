@@ -147,7 +147,7 @@ static MidiSong* I_RegisterMidiSong(byte* data, size_t length)
 			reglength = 0;
 		}
 	}
-	else if (!Res_MusicIsMidi(data, length))
+	else if (not Res_MusicIsMidi(data, length))
 	{
 		PrintFmt(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported "
 		                        "with the selected music system.\n");

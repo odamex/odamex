@@ -183,7 +183,7 @@ void Dim(int x, int y,
 // Width of a string in HUD units, matching what DrawText will produce.
 int GetTextWidth(const char* str, const float scale, const fontface_t face)
 {
-	if (!str)
+	if (not str)
 		return 0;
 
 	const int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
@@ -222,13 +222,13 @@ static int charCellWidth(const OFont* font, const char c, const int cell)
 {
 	const int width = font->getTextWidth(c);
 
-	return (c >= '0' && c <= '9') ? std::max(width, cell) : width;
+	return (c >= '0' and c <= '9') ? std::max(width, cell) : width;
 }
 
 // Width of a string laid out on the fixed digit pitch, in real pixels.
 int StringWidthMono(const OFont* font, const char* str)
 {
-	if (!str)
+	if (not str)
 		return 0;
 
 	const int cell = digitCellWidth(font);
@@ -236,7 +236,7 @@ int StringWidthMono(const OFont* font, const char* str)
 
 	for (const char* p = str; *p;)
 	{
-		if (p[0] == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		if (p[0] == TEXTCOLOR_ESCAPE and p[1] != '\0')
 		{
 			p += 2;
 			continue;
@@ -259,7 +259,7 @@ int StringWidthMono(const char* str, const int pixel_scale, const fontface_t fac
 void DrawTextMonoAt(const OFont* font, int x, int y,
                     const char* str, const int color, const bool force_opaque)
 {
-	if (!str)
+	if (not str)
 		return;
 
 	const int cell = digitCellWidth(font);
@@ -271,7 +271,7 @@ void DrawTextMonoAt(const OFont* font, int x, int y,
 
 	for (const char* p = str; *p;)
 	{
-		if (p[0] == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		if (p[0] == TEXTCOLOR_ESCAPE and p[1] != '\0')
 		{
 			escape[0] = p[0];
 			escape[1] = p[1];
@@ -317,7 +317,7 @@ void DrawTextMono(int x, int y, const float scale,
                   const char* str, const int color,
                   const bool force_opaque, const fontface_t face)
 {
-	if (!str)
+	if (not str)
 		return;
 
 	// Turn our scaled coordinates into real coordinates.

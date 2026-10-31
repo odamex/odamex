@@ -178,7 +178,7 @@ public:
 		__m64* const d = reinterpret_cast<__m64*>(dest);
 		const __m64 fg = _mm_setr_pi32(shademap[i0], shademap[i1]);
 
-		if (!MASKED)
+		if (not MASKED)
 		{
 			*d = fg;
 			return;
@@ -236,7 +236,7 @@ public:
 		// Alpha before the select, as in QuadTranslucentFunc.
 		const __m64 res = _mm_or_si64(_mm_packs_pu16(lo, hi), mamask);
 
-		if (!MASKED)
+		if (not MASKED)
 		{
 			*d = res;
 			return;
@@ -295,12 +295,12 @@ static forceinline void R_DrawColumnQuadGenericMMX(argb_t* dest, const drawcolum
 		const uint32_t i2 = source[o2];
 		const uint32_t i3 = source[o3];
 
-		if (!MASKED)
+		if (not MASKED)
 		{
 			f.template half<false>(i0, i1, dest, _mm_setzero_si64());
 			f.template half<false>(i2, i3, dest + 2, _mm_setzero_si64());
 		}
-		else if (!EARLYOUT || (i0 | i1 | i2 | i3))
+		else if (not EARLYOUT or (i0 | i1 | i2 | i3))
 		{
 			// All ones in the lanes the scalar drawer would not have written.
 			const __m64 zero = _mm_setzero_si64();
@@ -320,7 +320,7 @@ static forceinline void R_DrawColumnQuadGenericMMX(argb_t* dest, const drawcolum
 	{
 		const palindex_t pixel = MASKED ? source[frac >> FRACBITS]
 									: source[(frac >> FRACBITS) & mask];
-		if (!MASKED || pixel != 0)
+		if (not MASKED or pixel != 0)
 			f(pixel, dest);
 		dest++;
 		frac += fracstep;

@@ -75,7 +75,7 @@ constexpr int SP_TIMEY = 168;
 // NET GAME STUFF
 constexpr int NG_STATSY = 50;
 
-#define NG_STATSX				(32 + star->mWidth / 2 + 32*!dofrags)
+#define NG_STATSX				(32 + star->mWidth / 2 + 32*not dofrags)
 
 constexpr int NG_SPACINGX = 64;
 
@@ -682,7 +682,7 @@ int WI_DrawAuthorName(const char* author, int y, int nameheight)
 //Draws "<Levelname> Finished!"
 void WI_drawLF()
 {
-	if (!lnames[0] && !lnamewidths[0])
+	if (not lnames[0] and not lnamewidths[0])
 		return;
 
 	int y = WI_TITLEY;
@@ -716,7 +716,7 @@ void WI_drawLF()
 // Draws "Entering <LevelName>"
 void WI_drawEL()
 {
-	if (!lnames[1] && !lnamewidths[1])
+	if (not lnames[1] and not lnamewidths[1])
 		return;
 
 	int y = WI_TITLEY;
@@ -833,7 +833,7 @@ void WI_drawTime (int t, int x, int y)
 	    div *= 60;
 
 	    // draw
-	    if (div==60 || t / div)
+	    if (div==60 or t / div)
 		screen->DrawTextureClean(colon, x, y);
 
 		} while (t / div);
@@ -1578,7 +1578,7 @@ void WI_loadData()
 		// Determine if we should display the map author.
 		// MAPINFO can just straight up ask for it to be disabled.
 		const bool patchshowsauthor =
-		    lnames[i] != NULL && (linfo.flags2 & LEVEL2_HIDEAUTHORNAME);
+		    lnames[i] != NULL and (linfo.flags2 & LEVEL2_HIDEAUTHORNAME);
 
 		// A UMAPINFO map that brings its own title graphic has drawn that graphic
 		// to suit itself, so an author line under it is not wanted.

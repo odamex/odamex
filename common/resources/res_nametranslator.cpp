@@ -58,7 +58,7 @@ const ResourceId ResourceNameTranslator::translate(const ResourcePath& path) con
 	if (it != mResourceIdByPathLookup.end())
 	{
 		const ResourceIdList& res_id_list = it->second;
-		assert(!res_id_list.empty());
+		assert(not res_id_list.empty());
 		const ResourceId res_id = res_id_list.back();
 		assert(res_id != ResourceId::INVALID_ID);
 		return res_id;
@@ -87,7 +87,7 @@ const ResourceId ResourceNameTranslator::translate(const OString& resource_name,
 		return res_id;
 	}
 
-	if (!exact_ns_match)
+	if (not exact_ns_match)
 	{
 		// Fallback to the most recently added match for the resource name
 		auto it = mResourceIdLookup.find(resource_name);
@@ -115,7 +115,7 @@ const ResourceIdList ResourceNameTranslator::getAllTranslations(const ResourcePa
 	if (it != mResourceIdByPathLookup.end())
 	{
 		const ResourceIdList& res_id_list = it->second;
-		assert(!res_id_list.empty());
+		assert(not res_id_list.empty());
 		return res_id_list;
 	}
 	return ResourceIdList();

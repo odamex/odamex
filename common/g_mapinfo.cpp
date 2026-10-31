@@ -556,7 +556,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 		// Music lumps in the stringtable do not begin
 		// with a D_, so we must add it.
 		OLumpName lumpname = fmt::format("D_{}", s);
-		if (Res_CheckResource(Res_GetResourceId(OStringToUpper(lumpname.c_str()), NS_MUSIC)) ||
+		if (Res_CheckResource(Res_GetResourceId(OStringToUpper(lumpname.c_str()), NS_MUSIC)) or
 		    Res_CheckResource(Res_GetResourceId(OStringToUpper(lumpname.c_str()), NS_GLOBAL)))
 		{
 			out = lumpname;
@@ -566,7 +566,7 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 	const ResourceId res_id = Res_GetResourceId(musicname, NS_MUSIC);
 	if (res_id != ResourceId::INVALID_ID)
 	{
-		if (Res_CheckResource(Res_GetResourceId(OStringToUpper(musicname.c_str()), NS_MUSIC)) ||
+		if (Res_CheckResource(Res_GetResourceId(OStringToUpper(musicname.c_str()), NS_MUSIC)) or
 		    Res_CheckResource(Res_GetResourceId(OStringToUpper(musicname.c_str()), NS_GLOBAL)))
 		{
 			out = musicname;
@@ -1108,7 +1108,7 @@ void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo)
 bool ScanAndCompareString(OScanner& os, std::string cmp)
 {
 	os.scan();
-	if (!os.compareToken(cmp.c_str()))
+	if (not os.compareToken(cmp.c_str()))
 	{
 		os.warning("Expected \"%s\", got \"%s\". Aborting parsing", cmp.c_str(), os.getToken().c_str());
 		return false;
@@ -1122,7 +1122,7 @@ template <typename FixedType>
 bool ScanAndSetRealNum(OScanner& os, FixedType& num)
 {
 	os.scan();
-	if (!IsRealNum(os.getToken().c_str()))
+	if (not IsRealNum(os.getToken().c_str()))
 	{
 		os.warning("Expected number, got \"%s\". Aborting parsing", os.getToken().c_str());
 		return false;
@@ -1154,17 +1154,17 @@ bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
 			os.unScan();
 			mline_t ml;
 			
-			if (!ScanAndCompareString(os, "(")) break;
-			if (!ScanAndSetRealNum(os, ml.a.x)) break;
-			if (!ScanAndCompareString(os, ",")) break;
-			if (!ScanAndSetRealNum(os, ml.a.y)) break;
-			if (!ScanAndCompareString(os, ")")) break;
-			if (!ScanAndCompareString(os, ",")) break;
-			if (!ScanAndCompareString(os, "(")) break;
-			if (!ScanAndSetRealNum(os, ml.b.x)) break;
-			if (!ScanAndCompareString(os, ",")) break;
-			if (!ScanAndSetRealNum(os, ml.b.y)) break;
-			if (!ScanAndCompareString(os, ")")) break;
+			if (not ScanAndCompareString(os, "(")) break;
+			if (not ScanAndSetRealNum(os, ml.a.x)) break;
+			if (not ScanAndCompareString(os, ",")) break;
+			if (not ScanAndSetRealNum(os, ml.a.y)) break;
+			if (not ScanAndCompareString(os, ")")) break;
+			if (not ScanAndCompareString(os, ",")) break;
+			if (not ScanAndCompareString(os, "(")) break;
+			if (not ScanAndSetRealNum(os, ml.b.x)) break;
+			if (not ScanAndCompareString(os, ",")) break;
+			if (not ScanAndSetRealNum(os, ml.b.y)) break;
+			if (not ScanAndCompareString(os, ")")) break;
 
 			lines.push_back(ml);
 		}
@@ -1653,7 +1653,7 @@ void ParseEpisodeInfo(OScanner& os)
 
 	bool map_res_id_not_found = Res_GetResourceId(map.c_str(), NS_GLOBAL) == ResourceId::INVALID_ID;
 	bool extended_res_id_not_found = Res_GetResourceId("EXTENDED", NS_GLOBAL) == ResourceId::INVALID_ID;
-	if (remove || (optional && map_res_id_not_found) || (extended && extended_res_id_not_found))
+	if (remove or (optional and map_res_id_not_found) or (extended and extended_res_id_not_found))
 	{
 		// If the remove property is given for an episode, remove it.
 		if (i < episodenum)

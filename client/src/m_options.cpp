@@ -1992,8 +1992,8 @@ void M_SwitchMenu(menu_t* menu)
 	for (const menuitem_t& item : menu->items)
 	{
 		// Centered headers and list rows don't right-align a label to the divider.
-		if (item.type != whitetext && item.type != redtext &&
-		    item.type != yellowtext && item.type != orangetext &&
+		if (item.type != whitetext and item.type != redtext and
+		    item.type != yellowtext and item.type != orangetext and
 		    item.type != listelement)
 		{
 			const int lw = V_FontStringWidthClean(::menu_font, item.label);
@@ -2033,7 +2033,7 @@ bool M_StartOptionsMenu()
 //
 static int M_OptTextVOffset()
 {
-	if (!V_FontsReady() || !::menu_font)
+	if (not V_FontsReady() or not ::menu_font)
 		return 0;
 
 	const int cleany = std::max(1, CleanYfac);
@@ -2065,7 +2065,7 @@ static void M_DrawOptCursor(const Texture* texture, int vx, int y)
 {
 	const int cleanx = std::max(1, CleanXfac);
 	const int cleany = std::max(1, CleanYfac);
-	const int font_height = (V_FontsReady() && ::menu_font) ? ::menu_font->getHeight() : 8 * cleany;
+	const int font_height = (V_FontsReady() and ::menu_font) ? ::menu_font->getHeight() : 8 * cleany;
 
 	// the text's em box top in real pixels is where DrawFontTextCleanMove(ty)
 	// starts drawing; its center is half the font height below that
@@ -2167,7 +2167,7 @@ void M_OptDrawer()
 	OdamexEffect(x1,y1,x2,y2);
 
 	int y;
-	if (CurrentMenu->titletext && CurrentMenu->titletext[0] && V_FontsReady())
+	if (CurrentMenu->titletext and CurrentMenu->titletext[0] and V_FontsReady())
 	{
 		// TTF title text, centered, in place of the title patch
 		const int cleany = std::max(1, CleanYfac);

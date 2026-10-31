@@ -198,7 +198,7 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 	// unpacked archive) loaded as a resource.  Only the archive form can be
 	// downloaded, so request the ZIP spelling of the resource.
 	std::string dlext;
-	if (!M_ExtractFileExtension(::dlstate.filename, dlext))
+	if (not M_ExtractFileExtension(::dlstate.filename, dlext))
 	{
 		::dlstate.filename += ".zip";
 	}

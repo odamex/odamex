@@ -1996,7 +1996,7 @@ void AM_drawCheatThing(const AActor* t)
 		AM_drawLineCharacter(thinrectangle_guy, radius, rotate_angle, color, p.x, p.y);
 	}
 
-	if (netdebug_automap && V_FontsReady())
+	if (netdebug_automap and V_FontsReady())
 	{
 		const OFont* font = V_GetHudFontSized(16);
 		screen->DrawFontText(font,
@@ -2533,7 +2533,7 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2) && V_FontsReady())
+	if (not (viewactive and am_overlay < 2) and V_FontsReady())
 	{
 		std::string line;
 		const int time = level.time / TICRATE;

@@ -141,10 +141,13 @@ bool R_SyncRenderContexts()
 //
 // The slices themselves are fixed, so which thread runs one never changes the image.
 //
-// The main thread does its serial work in the meantime:
-// 
-// Portals
-// Weapon psprite
+// The calling thread is busy rendering slices until the pass ends, so the
+// serial work happens between passes and after the last one, while the
+// workers sleep:
+//
+// Nearby voxels (after pass 1)
+// Portal setup (each portal view then runs its own passes)
+// Weapon psprite (after the masked pass)
 // Diagnostic overlays (vid_displayfps, etc)
 //
 // This is a mishmash of R&R's screen slice MT renderer mixed with
@@ -243,7 +246,7 @@ private:
 			}
 
 			lock.lock();
-			if (error && !m_error)
+			if (error and not m_error)
 				m_error = error;
 			if (++m_finished == m_count)
 				m_done.notify_one();
@@ -257,7 +260,7 @@ private:
 		{
 			// Unclaimed slices only exist while a pass is running, so a
 			// worker that wakes after its pass ended just goes back to sleep.
-			m_wake.wait(lock, [this] { return m_stop || m_next < m_count; });
+			m_wake.wait(lock, [this] { return m_stop or m_next < m_count; });
 			if (m_stop)
 				return;
 			claim(lock);
@@ -298,7 +301,7 @@ int R_SliceCount()
 {
 	int nslices = std::clamp(R_RenderThreadCount() * r_slicesperthread.asInt(), 1, MAXRENDERSLICES);
 
-	while (nslices > 1 && (viewwidth >> 4) / nslices < 4)
+	while (nslices > 1 and (viewwidth >> 4) / nslices < 4)
 		nslices--;
 
 	return nslices;
@@ -354,7 +357,7 @@ void R_BalanceSlices(int nslices)
 	// The number of 16-pixel column groups in the view.
 	const int ngroups = viewwidth >> 4;
 
-	if (!r_balanceslices || nslices != boundslices || ngroups != boundgroups)
+	if (not r_balanceslices or nslices != boundslices or ngroups != boundgroups)
 	{
 		// Start from an even split, and forget costs measured on other bounds.
 		for (int i = 0; i <= nslices; i++)
@@ -387,10 +390,10 @@ void R_BalanceSlices(int nslices)
 		// Place each boundary at its share.
 		int g = 0;
 		float before = 0.0f;	// cost of the groups before g
-		for (int i = 1; i < nslices && total > 0.0f; i++)
+		for (int i = 1; i < nslices and total > 0.0f; i++)
 		{
 			const float share = total * static_cast<float>(i) / static_cast<float>(nslices);
-			while (g < ngroups - 1 && before + groupcost[g] < share)
+			while (g < ngroups - 1 and before + groupcost[g] < share)
 				before += groupcost[g++];
 
 			const float ideal = static_cast<float>(g) +
@@ -423,7 +426,7 @@ void R_BalanceSlices(int nslices)
 //
 void R_ShowContexts()
 {
-	if (!r_showcontexts)
+	if (not r_showcontexts)
 		return;
 
 	IWindowSurface* surface = R_GetRenderingSurface();

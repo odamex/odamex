@@ -370,7 +370,7 @@ void NetGraph::draw()
 	static constexpr int textcolor = CR_GREY;
 	static constexpr int fontheight = 8;
 
-	if (!V_FontsReady())
+	if (not V_FontsReady())
 		return;
 
 	OFont* font = V_GetHudFontSized(8);

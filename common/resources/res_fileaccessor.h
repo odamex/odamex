@@ -188,7 +188,7 @@ public:
 
 	size_t getSeekPosition() const override
 	{
-		if (!eof())
+		if (not eof())
 			return mSeekPos;
 		return -1;
 	}
@@ -200,7 +200,7 @@ public:
 
 	size_t read(uint8_t* data, size_t length) const override
 	{
-		if (mBuffer && !eof())
+		if (mBuffer and not eof())
 		{
 			size_t read_cnt = std::min(mSeekPos + length, mLength) - mSeekPos;
 			memcpy(data, mBuffer + mSeekPos, read_cnt);

@@ -212,7 +212,7 @@ OLumpName G_NextMap()
 		// [ML] 1/25/10: OR if next is empty
 		next = level.mapname;
 	}
-	else if (secretexit && Res_CheckMap(OString(level.secretmap.c_str())))
+	else if (secretexit and Res_CheckMap(OString(level.secretmap.c_str())))
 	{
 		// if we hit a secret exit switch, go there instead.
 		next = level.secretmap;
@@ -292,7 +292,7 @@ void G_ChangeMap()
 void G_ChangeMap(size_t index)
 {
 	maplist_entry_t maplist_entry;
-	if (!Maplist::instance().get_map_by_index(index, maplist_entry))
+	if (not Maplist::instance().get_map_by_index(index, maplist_entry))
 	{
 		// That maplist index doesn't actually exist
 		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
@@ -486,7 +486,7 @@ void G_InitNew(const char *mapname)
 	paused = false;
 
 	// [RH] If this map doesn't exist, bomb out
-	if (!Res_CheckMap(OString(StdStringToUpper(mapname))))
+	if (not Res_CheckMap(OString(StdStringToUpper(mapname))))
 		I_Error("Could not find map {}\n", mapname);
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
@@ -606,7 +606,7 @@ void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if (gameinfo.flags & GI_MAPxx && !Res_CheckMap(OString("MAP31")))
+	if (gameinfo.flags & GI_MAPxx and not Res_CheckMap(OString("MAP31")))
 		secretexit = false;
 	else
 		secretexit = true;

@@ -152,7 +152,7 @@ size_t numChannels;
 //
 void S_NoiseDebug()
 {
-	if (!V_FontsReady())
+	if (not V_FontsReady())
 		return;
 
 	OFont* font = V_GetHudFontSized(8);
@@ -711,7 +711,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 	}
 
   	// check for bogus sound lump
-	if (!Res_CheckResource(sfxinfo->res_id))
+	if (not Res_CheckResource(sfxinfo->res_id))
 	{
 		DPrintFmt("Bad sfx lump #: {}\n", static_cast <uint32_t>(sfxinfo->res_id));
 		return;
@@ -1241,7 +1241,7 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 	if (not f.good())
 	{
 		const ResourceId res_id = Res_GetResourceId(musicname, NS_MUSIC);
-		if (!Res_CheckResource(res_id))
+		if (not Res_CheckResource(res_id))
 		{
 			PrintFmt(PRINT_HIGH, "Music lump \"{}\" not found\n", musicname);
 			return;

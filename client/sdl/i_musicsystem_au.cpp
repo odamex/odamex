@@ -343,7 +343,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 			reglength = 0;
 		}
 	}
-	else if (!Res_MusicIsMidi(data, length))
+	else if (not Res_MusicIsMidi(data, length))
 	{
 		PrintFmt(PRINT_HIGH, "I_PlaySong: AudioUnit does not support this music format\n");
 		return;

@@ -474,7 +474,7 @@ FBehavior::FBehavior (byte* object, int len)
 {
 
 	Format = ACS_Unknown;
-	if (len < 4 || object[0] != 'A' || object[1] != 'C' || object[2] != 'S')
+	if (len < 4 or object[0] != 'A' or object[1] != 'C' or object[2] != 'S')
 		return;
 
 	switch (object[3])

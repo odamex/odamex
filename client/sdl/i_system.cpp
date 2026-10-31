@@ -142,7 +142,7 @@ static const std::thread::id main_thread_id = std::this_thread::get_id();
 
 void I_BeginRead()
 {
-	if (r_loadicon && std::this_thread::get_id() == main_thread_id)
+	if (r_loadicon and std::this_thread::get_id() == main_thread_id)
 		I_DrawLoadingIcon();
 }
 
@@ -257,7 +257,7 @@ void I_Endoom()
 	                          ResourcePath(OStringToUpper(gameinfo.endoom.c_str())))
 	        .size();
 
-	if (r_showendoom == 2 && count <= 1)
+	if (r_showendoom == 2 and count <= 1)
 		return;
 
 	// Hack to stop crash with disk icon

@@ -137,7 +137,7 @@ static std::vector<const AActor*> r_ActiveSkyboxes;
 //
 static bool R_IsSkyboxPortal(const ResourceId res_id, const AActor* skybox)
 {
-	return R_ResourceIdIsSkyFlat(res_id) && skybox != NULL &&
+	return R_ResourceIdIsSkyFlat(res_id) and skybox != NULL and
 	       std::ranges::find(r_ActiveSkyboxes, skybox) == r_ActiveSkyboxes.end();
 }
 
@@ -224,7 +224,7 @@ static visplane_t *new_visplane(rendercontext_t& ctx, unsigned hash)
 		check->bottom = check->top + width + 2;
 	}
 	else
-		if (!(ctx.plane.freetail = ctx.plane.freetail->next))
+		if (not (ctx.plane.freetail = ctx.plane.freetail->next))
 			ctx.plane.freehead = &ctx.plane.freetail;
 
 	check->next = ctx.plane.visplanes[hash];
@@ -255,16 +255,16 @@ static forceinline bool R_PlaneMatches(
 	if (isskybox)
 		return skybox == check->skybox;
 
-	return P_IdenticalPlanes(&secplane, &check->secplane) &&
-		res_id == check->res_id &&
-		sky_transfer == check->sky_transfer &&
-		lightlevel == check->lightlevel &&
-		skybox == check->skybox &&	// boundary flats draw at their own alpha
-		xoffs == check->xoffs &&	// killough 2/28/98: Add offset checks
-		yoffs == check->yoffs &&
-		ctx.draw.basecolormap == check->colormap &&	// [RH] Add colormap check
-		xscale == check->xscale &&
-		yscale == check->yscale &&
+	return P_IdenticalPlanes(&secplane, &check->secplane) and
+		res_id == check->res_id and
+		sky_transfer == check->sky_transfer and
+		lightlevel == check->lightlevel and
+		skybox == check->skybox and	// boundary flats draw at their own alpha
+		xoffs == check->xoffs and	// killough 2/28/98: Add offset checks
+		yoffs == check->yoffs and
+		ctx.draw.basecolormap == check->colormap and	// [RH] Add colormap check
+		xscale == check->xscale and
+		yscale == check->yscale and
 		angle == check->angle;
 }
 
@@ -290,15 +290,15 @@ visplane_t* R_FindPlane(
 	bool isskybox;
 
 
-	if (R_ResourceIdIsSkyFlat(res_id) || (sky_transfer & PL_SKYFLAT))  // killough 10/98
+	if (R_ResourceIdIsSkyFlat(res_id) or (sky_transfer & PL_SKYFLAT))  // killough 10/98
 	{
 		lightlevel = 0;		// most skies map together
-		isskybox = R_IsSkyboxPortal(res_id, skybox) &&
+		isskybox = R_IsSkyboxPortal(res_id, skybox) and
 		           r_PortalDepth < r_portalrecursions.asInt();
 	}
 	else
 	{
-		isskybox = R_IsStackPortal(skybox) &&
+		isskybox = R_IsStackPortal(skybox) and
 		           r_PortalDepth < r_portalrecursions.asInt();
 	}
 
@@ -414,7 +414,7 @@ visplane_t* R_CheckPlane(rendercontext_t& ctx, visplane_t* pl, int start, int st
 		// make a new visplane
 		unsigned hash;
 
-		if ((R_IsSkyboxPortal(pl->res_id, pl->skybox) ||
+		if ((R_IsSkyboxPortal(pl->res_id, pl->skybox) or
 		     R_IsStackPortal(pl->skybox)) &&
 		    r_PortalDepth < r_portalrecursions.asInt())
 		{
@@ -550,7 +550,7 @@ namespace
 //
 static bool R_SelectPlaneARGBShading(rendercontext_t& ctx, const shaderef_t& light, bool opaque)
 {
-	if (!opaque)
+	if (not opaque)
 	{
 		ctx.draw.dpcol.argbshade = NULL;
 		return false;
@@ -592,7 +592,7 @@ static shaderef_t R_BuildPlaneLighting(rendercontext_t& ctx, int miny, int maxy)
 
 		unsigned int index = MAXLIGHTZ - 1;
 		const double lightdist = distance * 65536.0;
-		if (lightdist >= 0.0 && lightdist < static_cast<double>(MAXLIGHTZ) * static_cast<double>(1 << LIGHTZSHIFT))
+		if (lightdist >= 0.0 and lightdist < static_cast<double>(MAXLIGHTZ) * static_cast<double>(1 << LIGHTZSHIFT))
 			index = static_cast<unsigned int>(lightdist) >> LIGHTZSHIFT;
 
 		const uint16_t off = static_cast<uint16_t>(ctx.plane.planezlight[index] << 8);
@@ -926,7 +926,7 @@ static void R_DrawSlopedPlaneColumns(rendercontext_t& ctx, visplane_t* pl)
 	else
 		light = ctx.draw.basecolormap;
 
-	d.slopelight = !fixedlightlev && !fixedcolormap.isValid();
+	d.slopelight = not fixedlightlev and not fixedcolormap.isValid();
 	d.cbase = light.m_colormap;
 	d.sbase = light.m_shademap;
 	d.lbias = 1 - (ctx.bsp.foggy ? 0 : extralight << 2);
@@ -1180,7 +1180,7 @@ void R_DrawLevelPlane(rendercontext_t& ctx, visplane_t *pl)
 	// R_DrawLevelGroup is NULL on an 8bpp surface, and the group path draws
 	// opaque flats only -- a translucent portal boundary sets levelcolfunc to
 	// the translucent column drawer, which has no group form yet.
-	if (R_DrawLevelGroup != NULL && ctx.draw.levelcolfunc == R_DrawLevelColumn)
+	if (R_DrawLevelGroup != NULL and ctx.draw.levelcolfunc == R_DrawLevelColumn)
 		R_DrawLevelPlaneGroups(ctx, pl);
 	else
 		R_DrawLevelPlaneColumns(ctx, pl);
@@ -1254,7 +1254,7 @@ static void R_DrawStackFlatBlend(rendercontext_t& ctx, visplane_t* pl)
 		return;
 
 	// A sky-pic'd portal plane has no flat to blend.
-	if (R_ResourceIdIsSkyFlat(Res_GetAnimatedTextureResourceId(pl->res_id)) ||
+	if (R_ResourceIdIsSkyFlat(Res_GetAnimatedTextureResourceId(pl->res_id)) or
 	    (pl->sky_transfer & PL_SKYFLAT))
 		return;
 
@@ -1285,7 +1285,7 @@ void R_DrawPlanes(rendercontext_t& ctx)
 				continue;
 
 			const ResourceId res_id = Res_GetAnimatedTextureResourceId(pl->res_id);
-			if (R_ResourceIdIsSkyFlat(res_id) || (pl->sky_transfer & PL_SKYFLAT))
+			if (R_ResourceIdIsSkyFlat(res_id) or (pl->sky_transfer & PL_SKYFLAT))
 			{
 				R_RenderSkyRange(ctx, pl);
 			}
@@ -1460,7 +1460,7 @@ static void R_OpenPortalWindow(rendercontext_t& ctx, portalslice_t& step)
 
 	for (int i = ctx.slice_start; i <= ctx.slice_stop; i++)
 	{
-		if (i < pl->minx || i > pl->maxx || std::cmp_equal(pl->top[i], viewheight))
+		if (i < pl->minx or i > pl->maxx or std::cmp_equal(pl->top[i], viewheight))
 			ctx.bsp.solidcol[i] = 1;
 	}
 
@@ -1527,7 +1527,7 @@ static void R_DrawPortalLevel(const int nslices)
 		any |= heads[i] != NULL;
 	}
 
-	if (!any)
+	if (not any)
 		return;
 
 	r_PortalDepth++;
@@ -1548,7 +1548,7 @@ static void R_DrawPortalLevel(const int nslices)
 
 		const auto open = [&](int i)
 		{
-			return steps[i].pl != NULL && steps[i].pl->maxx >= steps[i].pl->minx;
+			return steps[i].pl != NULL and steps[i].pl->maxx >= steps[i].pl->minx;
 		};
 
 		for (AActor* sky : portals)
@@ -1565,7 +1565,7 @@ static void R_DrawPortalLevel(const int nslices)
 					size_t seen = 0;
 					for (visplane_t* pl : queues[i])
 					{
-						if (pl->skybox == sky && seen++ == j)
+						if (pl->skybox == sky and seen++ == j)
 						{
 							steps[i].pl = pl;
 							break;
@@ -1577,11 +1577,11 @@ static void R_DrawPortalLevel(const int nslices)
 						gather.push_back(&R_SliceContext(i));
 				}
 
-				if (!more)
+				if (not more)
 					break;
 
 				portalview_t saved;
-				if (!gather.empty() && R_EnterPortalView(sky, saved))
+				if (not gather.empty() and R_EnterPortalView(sky, saved))
 				{
 					R_RunSlices(nslices, [&](int i)
 					{

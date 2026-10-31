@@ -373,7 +373,7 @@ bool ISDL20TextureWindowSurfaceManager::presentDue()
 	int refresh = 0;
 	SDL_DisplayMode mode;
 	const int display = SDL_GetWindowDisplayIndex(mWindow->mSDLWindow);
-	if (display >= 0 && SDL_GetCurrentDisplayMode(display, &mode) == 0)
+	if (display >= 0 and SDL_GetCurrentDisplayMode(display, &mode) == 0)
 		refresh = mode.refresh_rate;
 	if (refresh <= 0)
 		refresh = 60;
@@ -400,7 +400,7 @@ bool ISDL20TextureWindowSurfaceManager::presentDue()
 
 void ISDL20TextureWindowSurfaceManager::finishRefresh()
 {
-	if (!presentDue())
+	if (not presentDue())
 		return;
 
 	// Write the frame straight into the texture, converting 8bpp on the way.

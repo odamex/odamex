@@ -207,7 +207,7 @@ static MusicSystemType I_SelectMusicSystem(byte *data, size_t length)
 	if (snd_musicsystem == MS_NONE)
 		return MS_NONE;
 
-	bool ismidi = (Res_MusicIsMus(data, length) || Res_MusicIsMidi(data, length));
+	bool ismidi = (Res_MusicIsMus(data, length) or Res_MusicIsMidi(data, length));
 
 	if (ismidi)
 		return I_ResolveMusicSystem(snd_musicsystem.asInt());

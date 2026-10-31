@@ -369,7 +369,7 @@ void StringTable::loadStringsLump(const uint32_t language_res_id, const bool eng
 	// by a string in an earlier pass from another lump.
 	int pass = 1;
 
-	if (!engOnly)
+	if (not engOnly)
 	{
 		// Load language-specific strings.
 		for (size_t i = 0; i < ARRAY_LENGTH(::LanguageIDs); i++)

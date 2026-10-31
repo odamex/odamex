@@ -59,7 +59,7 @@ static bool ScanAndSetRealNum(OScanner& os, fixed64_t& num)
 nonstd::expected<std::vector<mline_t>, am_lump_parse_error_t> AM_ParseVectorLump(const OLumpName& name)
 {
 	const ResourceId res_id = Res_GetResourceId(OStringToUpper(name.c_str(), 8), NS_GLOBAL);
-	if (!Res_CheckResource(res_id))
+	if (not Res_CheckResource(res_id))
 		return nonstd::make_unexpected(am_lump_parse_error_t::LUMP_NOT_FOUND);
 
 

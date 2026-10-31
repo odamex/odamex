@@ -394,7 +394,7 @@ blockmap_t blockmap_t::load(const ResourceId lump)
 
 	const uint8_t* data = Res_LoadResource(lump, PU_CACHE);
 	const auto guard = nonstd::make_scope_exit([&]{ Res_ReleaseResource(lump); });
-	if (data != nullptr && lump_size >= 8 && memcmp(data, "XBM1\0\0\0\0", 8) == 0)
+	if (data != nullptr and lump_size >= 8 and memcmp(data, "XBM1\0\0\0\0", 8) == 0)
 		format = XBM1;
 
 	if (data == nullptr)

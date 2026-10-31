@@ -98,7 +98,7 @@ public:
 		uint32_t* const d = reinterpret_cast<uint32_t*>(dest);
 		const uint32x4_t fg = R_NeonGather(shademap, i0, i1, i2, i3);
 
-		if (!MASKED)
+		if (not MASKED)
 		{
 			vst1q_u32(d, fg);
 			return;
@@ -153,7 +153,7 @@ public:
 		const uint32x4_t res = vorrq_u32(
 				vreinterpretq_u32_u8(vcombine_u8(vshrn_n_u16(lo, 8), vshrn_n_u16(hi, 8))), mamask);
 
-		if (!MASKED)
+		if (not MASKED)
 		{
 			vst1q_u32(d, res);
 			return;
@@ -214,11 +214,11 @@ forceinline void R_DrawColumnQuadGenericNEON(argb_t* dest, const drawcolumn_t& d
 		const uint32_t i2 = source[o2];
 		const uint32_t i3 = source[o3];
 
-		if (!MASKED)
+		if (not MASKED)
 		{
 			f.template quad<false>(i0, i1, i2, i3, dest, vdupq_n_u32(0));
 		}
-		else if (!EARLYOUT || (i0 | i1 | i2 | i3))
+		else if (not EARLYOUT or (i0 | i1 | i2 | i3))
 		{
 			// All ones in the lanes the scalar drawer would not have written.
 			f.template quad<true>(i0, i1, i2, i3, dest, vceqq_u32(R_NeonLanes(i0, i1, i2, i3), vdupq_n_u32(0)));
@@ -233,7 +233,7 @@ forceinline void R_DrawColumnQuadGenericNEON(argb_t* dest, const drawcolumn_t& d
 	{
 		const palindex_t pixel = MASKED ? source[frac >> FRACBITS]
 		              : source[(frac >> FRACBITS) & mask];
-		if (!MASKED || pixel != 0)
+		if (not MASKED or pixel != 0)
 			f(pixel, dest);
 		dest++;
 		frac += fracstep;

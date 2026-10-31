@@ -349,7 +349,7 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 template <typename MapSegType>
 void P_LoadSegs(const ResourceId lump)
 {
-	if (!P_MapLumpLength(lump))
+	if (not P_MapLumpLength(lump))
 	{
 		I_Error(
 		    "P_LoadSegs: SEGS lump is empty - levels without nodes are not supported.");
@@ -389,7 +389,7 @@ void P_LoadSegs(const ResourceId lump)
 template <typename MapSubsectorType>
 void P_LoadSubsectors(const ResourceId lump)
 {
-	if (!P_MapLumpLength(lump))
+	if (not P_MapLumpLength(lump))
 	{
 		I_Error(
 		    "P_LoadSubsectors: SSECTORS lump is empty - levels without nodes are not supported.");
@@ -490,7 +490,7 @@ void P_LoadSectors (const ResourceId lump)
 		bool fog = level.outsidefog_color[0] != 0xFF || level.outsidefog_color[1] != 0 ||
 					level.outsidefog_color[2] != 0 || level.outsidefog_color[3] != 0;
 
-		if (fog && R_ResourceIdIsSkyFlat(ss->ceiling_res_id))
+		if (fog and R_ResourceIdIsSkyFlat(ss->ceiling_res_id))
 			ss->colormap = GetSpecialLights(255, 255, 255,
 									level.outsidefog_color[1], level.outsidefog_color[2], level.outsidefog_color[3]);
 		else
@@ -556,7 +556,7 @@ nodetype_t P_CheckNodeType(const ResourceId lump) {
 template <typename MapNodeType>
 void P_LoadNodes(const ResourceId lump)
 {
-	if (!P_MapLumpLength(lump))
+	if (not P_MapLumpLength(lump))
 	{
 		I_Error(
 		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
@@ -1409,7 +1409,7 @@ void P_GenerateUniqueMapFingerPrint(const OString& mapname)
 	for (const char* lumpname : fingerprint_lumps)
 	{
 		const ResourceId res_id = Res_GetMapResourceId(lumpname, mapname);
-		if (!Res_CheckResource(res_id))
+		if (not Res_CheckResource(res_id))
 			continue;
 
 		const uint32_t size = Res_GetResourceSize(res_id);
@@ -2205,7 +2205,7 @@ void P_ValidateMap(const OString& mapname)
 	// TODO: this will need to be updated for UDMF and/or an internal nodebuilder
 	// UDMF has a different set of lumps, and a nodebuilder could create some of the missing lumps
 	auto checkMapLump = [&mapname](const char* name) {
-		if (!Res_CheckResource(Res_GetMapResourceId(name, mapname)))
+		if (not Res_CheckResource(Res_GetMapResourceId(name, mapname)))
 			I_Error("{} lump is missing for map {}\n", name, level.mapname);
 	};
 
@@ -2447,7 +2447,7 @@ void P_SetupLevel (const OString& lumpname, int position)
 	// [SL] don't move seg vertices if compatibility is cruical. Extended nodes
 	// have no slime trails to remove: their split vertices were never rounded off
 	// their linedefs.
-	if (!demoplayback && !extendednodes)
+	if (not demoplayback and not extendednodes)
 		P_RemoveSlimeTrails();
 
 	// After the slime trail fix, which moves seg vertices.
@@ -2600,7 +2600,7 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 		else
 		{
 			*res_id_ptr = Res_GetTextureResourceId(texture_name, WALL, false);
-			if (!Res_CheckResource(*res_id_ptr))
+			if (not Res_CheckResource(*res_id_ptr))
 			{
 				if (strnicmp(texture_name.c_str(), "WATERMAP", 8) == 0)
 					*blend_color = argb_t(0x80, 0, 0x4F, 0xA5);
@@ -2616,14 +2616,14 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 void P_SetTextureNoErr(ResourceId* texture, unsigned int *color, const OString& name)
 {
 	*texture = Res_GetTextureResourceId(name, WALL, false);
-	if (!Res_CheckResource(*texture))
+	if (not Res_CheckResource(*texture))
 	{
 		*texture = ResourceId::INVALID_ID;
 
 		// Res_GetTextureResourceId treats "-" as no texture,
 		// and parsing it as hex would turn blank tiers on Static_Init
 		// lines into a black light color (0 brightness sectors).
-		if (name.size() == 1 && name.c_str()[0] == '-')
+		if (name.size() == 1 and name.c_str()[0] == '-')
 			return;
 
 		char name2[9];

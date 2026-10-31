@@ -449,7 +449,7 @@ forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t
 {
 	constexpr uint32_t LANE = 0x00FF00FFu;
 
-	assert(froma >= 0 && toa >= 0 && froma + toa <= 256);
+	assert(froma >= 0 and toa >= 0 and froma + toa <= 256);
 
 	const uint32_t f = from, t = to;
 

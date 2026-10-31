@@ -1787,7 +1787,7 @@ static bool P_ExplodeMissileAgainstWall(AActor* mo)
 			}
 
 			bool skyceiling1 = R_ResourceIdIsSkyFlat(sec1->ceiling_res_id);
-			bool skyceiling2 = sec2 && R_ResourceIdIsSkyFlat(sec2->ceiling_res_id);
+			bool skyceiling2 = sec2 and R_ResourceIdIsSkyFlat(sec2->ceiling_res_id);
 
 			if (skyceiling2)
 			{
@@ -2258,7 +2258,7 @@ static bool P_ClipMovementToFloor(AActor* mo)
 		// Explode missiles
 		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
 		{
-			if (co_fixweaponimpacts && R_ResourceIdIsSkyFlat(mo->subsector->sector->floor_res_id))
+			if (co_fixweaponimpacts and R_ResourceIdIsSkyFlat(mo->subsector->sector->floor_res_id))
 				mo->Destroy();
 			else if (serverside)
 				P_ExplodeMissile(mo);
@@ -2296,7 +2296,7 @@ static bool P_ClipMovementToCeiling(AActor* mo)
 		// Explode missiles
 		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
 		{
-			if (co_fixweaponimpacts && R_ResourceIdIsSkyFlat(mo->subsector->sector->ceiling_res_id))
+			if (co_fixweaponimpacts and R_ResourceIdIsSkyFlat(mo->subsector->sector->ceiling_res_id))
 				mo->Destroy();
 			else if (serverside)
 				P_ExplodeMissile(mo);
@@ -2378,7 +2378,7 @@ static void P_ApplyBouncyPhysics(AActor *mo)
 			mo->z = mo->ceilingz - mo->height;
 			if (mo->momz > 0)
 			{
-				if (!R_ResourceIdIsSkyFlat(mo->subsector->sector->ceiling_res_id))
+				if (not R_ResourceIdIsSkyFlat(mo->subsector->sector->ceiling_res_id))
 					mo->momz = -mo->momz; // always bounce off non-sky ceiling
 				else if (mo->flags & MF_MISSILE)
 					mo->Destroy(); // missiles don't bounce off skies
@@ -2401,7 +2401,7 @@ static void P_ApplyBouncyPhysics(AActor *mo)
 		if (mo->flags & MF_MISSILE)
 		{
 			if (ceilingline && ceilingline->backsector &&
-			    R_ResourceIdIsSkyFlat(ceilingline->backsector->ceiling_res_id) &&
+			    R_ResourceIdIsSkyFlat(ceilingline->backsector->ceiling_res_id) and
 			    mo->z > P_CeilingHeight(ceilingline->backsector))
 				mo->Destroy();
 			else

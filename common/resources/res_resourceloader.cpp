@@ -95,7 +95,7 @@ static void Res_DrawPatchIntoTexture(
 
 	const int32_t* colofs = reinterpret_cast<const int32_t*>(lump_data + 8);
 
-	if (patchwidth <= 0 || patchheight <= 0 ||
+	if (patchwidth <= 0 or patchheight <= 0 or
 		lump_length < 8 + patchwidth * sizeof(*colofs))		// long enough for column offset table?
 		return;
 
@@ -107,7 +107,7 @@ static void Res_DrawPatchIntoTexture(
 		int abstopdelta = 0;
 
 		int32_t offset = LELONG(colofs[x - xoffs]);
-		if (offset < 0 || lump_length < static_cast<uint32_t>(offset) + 1)		// long enough for this post's topdelta? 
+		if (offset < 0 or lump_length < static_cast<uint32_t>(offset) + 1)		// long enough for this post's topdelta? 
 			return;
 
 		const uint8_t* post = lump_data + offset; 
@@ -119,7 +119,7 @@ static void Res_DrawPatchIntoTexture(
 			int posttopdelta = *(post + 0);
 			int postlength = *(post + 1);
 
-			if (postlength < 0 || lump_length < static_cast<uint32_t>((post - lump_data)) + 4 + postlength)
+			if (postlength < 0 or lump_length < static_cast<uint32_t>((post - lump_data)) + 4 + postlength)
 				return;
 
 			// [SL] Handle DeePsea tall patches: topdelta is treated as a relative
@@ -201,7 +201,7 @@ void RowMajorTextureLoader::load(uint8_t* data) const
 	[[maybe_unused]] Texture* texture = createTexture(data, width, height);	// read by clients only
 
 	#if CLIENT_APP
-	if (width > 0 && height > 0)
+	if (width > 0 and height > 0)
 	{
 		uint32_t raw_size = mRawResourceAccessor->getResourceSize(mResId);
 		uint8_t* raw_data = new uint8_t[raw_size];
@@ -311,7 +311,7 @@ uint32_t PatchTextureLoader::size() const
 
 	// nonsense dimensions mean load() will reject the patch data and create
 	// an empty texture, so don't let them inflate the allocation either
-	if (width < 0 || height < 0)
+	if (width < 0 or height < 0)
 		return calculateTextureSize(0, 0);
 
 	return calculateTextureSize(width, height);
@@ -341,7 +341,7 @@ void PatchTextureLoader::load(uint8_t* data) const
 	texture->mOffsetY = offsety;
 
 	#if CLIENT_APP
-	if (width > 0 && height > 0)
+	if (width > 0 and height > 0)
 	{
 		Res_DrawPatchIntoTexture(texture, patch_data, patch_size, 0, 0);
 	}
@@ -386,7 +386,7 @@ void Res_DrawPngIntoTexture(
 				*dest = *source;
 		}
 
-		if (texture->mARGBData && patch->mARGBData)
+		if (texture->mARGBData and patch->mARGBData)
 		{
 			const argb_t* argb_source = patch->mARGBData + patch->mHeight * (x - xoffs) + (y1 - yoffs);
 			argb_t* argb_dest = texture->mARGBData + texture->mHeight * x + y1;
@@ -394,7 +394,7 @@ void Res_DrawPngIntoTexture(
 			for (int y = y1; y <= y2; y++, argb_source++, argb_dest++)
 			{
 				const int a = argb_source->geta();
-				if (a == 255 || (a > 0 && argb_dest->geta() == 0))
+				if (a == 255 or (a > 0 and argb_dest->geta() == 0))
 					*argb_dest = *argb_source;
 				else if (a > 0)
 					*argb_dest = alphablend2a(*argb_dest, 255 - a, *argb_source, a);
@@ -419,7 +419,7 @@ bool CompositeTextureLoader::hasPngPatch() const
 #if defined(USE_PNG) && defined(CLIENT_APP)
 	for (const CompositeTextureDefinition::PatchDef& patch_def : mTexDef.mPatchDefs)
 	{
-		if (!Res_CheckResource(patch_def.mResId))
+		if (not Res_CheckResource(patch_def.mResId))
 			continue;
 
 		uint8_t header[16];
@@ -585,10 +585,10 @@ static bool Res_ReadPNGGrabChunk(const uint8_t* data, uint32_t size, int16_t& xo
 		const uint32_t length = BELONG(*reinterpret_cast<const uint32_t*>(data + pos));
 		const uint8_t* chunk_type = data + pos + 4;
 
-		if (memcmp(chunk_type, "IDAT", 4) == 0 || memcmp(chunk_type, "IEND", 4) == 0)
+		if (memcmp(chunk_type, "IDAT", 4) == 0 or memcmp(chunk_type, "IEND", 4) == 0)
 			break;
 
-		if (memcmp(chunk_type, "grAb", 4) == 0 && length == 8 && pos + 16 <= size)
+		if (memcmp(chunk_type, "grAb", 4) == 0 and length == 8 and pos + 16 <= size)
 		{
 			xoffs = static_cast<int16_t>(static_cast<int32_t>(BELONG(*reinterpret_cast<const uint32_t*>(data + pos + 8))));
 			yoffs = static_cast<int16_t>(static_cast<int32_t>(BELONG(*reinterpret_cast<const uint32_t*>(data + pos + 12))));
@@ -709,7 +709,7 @@ void PngTextureLoader::load(uint8_t* data) const
 	}
 
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (!png_ptr)
+	if (not png_ptr)
 	{
 		PrintFmt(PRINT_HIGH, "PNG out of memory reading {}.\n", resource_name);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
@@ -717,7 +717,7 @@ void PngTextureLoader::load(uint8_t* data) const
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
-	if (!info_ptr)
+	if (not info_ptr)
 	{
 		PrintFmt(PRINT_HIGH, "PNG out of memory reading {}.\n", resource_name);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
@@ -762,13 +762,13 @@ void PngTextureLoader::load(uint8_t* data) const
 			png_set_tRNS_to_alpha(png_ptr);
 
 		// convert grayscale, if needed.
-		if (colortype == PNG_COLOR_TYPE_GRAY && bitsperpixel < 8)
+		if (colortype == PNG_COLOR_TYPE_GRAY and bitsperpixel < 8)
 			png_set_expand_gray_1_2_4_to_8(png_ptr);
-		if (colortype == PNG_COLOR_TYPE_GRAY || colortype == PNG_COLOR_TYPE_GRAY_ALPHA)
+		if (colortype == PNG_COLOR_TYPE_GRAY or colortype == PNG_COLOR_TYPE_GRAY_ALPHA)
 			png_set_gray_to_rgb(png_ptr);
 
 		// convert from RGB to ARGB
-		if (colortype == PNG_COLOR_TYPE_RGB || colortype == PNG_COLOR_TYPE_GRAY)
+		if (colortype == PNG_COLOR_TYPE_RGB or colortype == PNG_COLOR_TYPE_GRAY)
 			png_set_add_alpha(png_ptr, 0xFF, PNG_FILLER_AFTER);
 	}
 
@@ -776,7 +776,7 @@ void PngTextureLoader::load(uint8_t* data) const
 	png_read_update_info(png_ptr, info_ptr);
 
 	const png_byte final_colortype = png_get_color_type(png_ptr, info_ptr);
-	if (final_colortype != PNG_COLOR_TYPE_RGBA && final_colortype != PNG_COLOR_TYPE_PALETTE)
+	if (final_colortype != PNG_COLOR_TYPE_RGBA and final_colortype != PNG_COLOR_TYPE_PALETTE)
 	{
 		PrintFmt(PRINT_HIGH, "Invalid PNG color type in {}.\n", resource_name);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &raw_data, &mfp);
@@ -814,7 +814,7 @@ void PngTextureLoader::load(uint8_t* data) const
 		argb_t argb_lut[256];
 		for (int i = 0; i < 256; i++)
 		{
-			const int alpha = (i < num_trans && trans_alpha) ? trans_alpha[i] : 255;
+			const int alpha = (i < num_trans and trans_alpha) ? trans_alpha[i] : 255;
 
 			if (i < num_palette)
 			{
