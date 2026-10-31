@@ -1273,6 +1273,47 @@ void G_Ticker (void)
             {
                 if (player.serverRefreshRequestsAreEnabled)
                 {
+                    const player_t& viewingPlayer = displayplayer();
+                    const AActor*   camera        = viewingPlayer.camera ? viewingPlayer.camera : viewingPlayer.mo;
+                    if (camera)
+                    {
+                        constexpr size_t MAX_ELEMENTS_TO_REQUEST = 10;
+                        const size_t elementsToRequest = std::min(player.sortedMobjs.size(), MAX_ELEMENTS_TO_REQUEST);
+                        if (player.sortedMobjs.size() > MAX_ELEMENTS_TO_REQUEST)
+                        {
+                            const int mostSignificantX = FIXED2INT(camera->x);
+                            const int mostSignificantY = FIXED2INT(camera->y);
+
+                            for (auto& mobjInfo : player.sortedMobjs)
+                            {
+                                const int dx = mostSignificantX - FIXED2INT(mobjInfo.actorPtr->x);
+                                const int dy = mostSignificantY - FIXED2INT(mobjInfo.actorPtr->y);
+
+                                mobjInfo.distanceSquared = dx*dx + dy*dy;
+
+                                if (const int age = mobjInfo.actorPtr->credibility.GetMotionAge())
+                                {
+                                    mobjInfo.distanceSquared /= age;
+                                }
+                            }
+
+                            auto priorityCompare = [](const auto& mobj1, const auto& mobj2)
+                            {
+                                return mobj1.distanceSquared < mobj2.distanceSquared;
+                            };
+
+                            std::partial_sort(player.sortedMobjs.begin(),
+                                              player.sortedMobjs.begin() + elementsToRequest,
+                                              player.sortedMobjs.end(),
+                                              priorityCompare);
+                        }
+                        for (auto iter = player.sortedMobjs.begin();
+                                  iter < player.sortedMobjs.begin() + elementsToRequest;
+                                  ++iter)
+                        {
+                            iter->actorPtr->credibility.Challenge(7);
+                        }
+                    }
                 }
                 player.sortedMobjs.clear();
             }
