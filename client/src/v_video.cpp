@@ -782,8 +782,8 @@ static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
 	const int colstep = surface->getColStepInPixels();
 
 	PIXEL_T* dest = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) +
-			(surface->getHeight() - 1 - dot_height) * rowstep +
-			2 * n * dot_width * colstep;
+			((surface->getHeight() - 1 - dot_height) * rowstep) +
+			(2 * n * dot_width * colstep);
 
 	for (int y = 0; y < dot_height; y++)
 	{
@@ -896,7 +896,7 @@ void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int
 	{
 		// A screen column is the contiguous run, so walk columns on the outside.
 		palindex_t* column =
-				static_cast<palindex_t*>(mSurface->getBuffer()) + top * rowstep + left * colstep;
+				static_cast<palindex_t*>(mSurface->getBuffer()) + (top * rowstep) + (left * colstep);
 
 		for (int x = left; x < right; x++, column += colstep)
 		{
@@ -909,7 +909,7 @@ void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int
 	else
 	{
 		argb_t* column =
-				reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * rowstep + left * colstep;
+				reinterpret_cast<argb_t*>(mSurface->getBuffer()) + (top * rowstep) + (left * colstep);
 
 		for (int x = left; x < right; x++, column += colstep)
 		{
@@ -978,7 +978,7 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
 	if (mSurface->getBitsPerPixel() == 8)
 	{
 		const palindex_t color_index = V_BestColor(V_GetDefaultPalette()->basecolors, color);
-		palindex_t* line = static_cast<palindex_t*>(mSurface->getBuffer()) + top * rowstep + left * colstep;
+		palindex_t* line = static_cast<palindex_t*>(mSurface->getBuffer()) + (top * rowstep) + (left * colstep);
 
 		for (int i = 0; i < count; i++, line += stride)
 			memset(line, color_index, run * sizeof(palindex_t));
@@ -986,7 +986,7 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
 	else
 	{
 		color = V_GammaCorrect(color);
-		argb_t* line = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * rowstep + left * colstep;
+		argb_t* line = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + (top * rowstep) + (left * colstep);
 
 		for (int i = 0; i < count; i++, line += stride)
 		{
@@ -1098,7 +1098,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		const int count = w;
 		const int stride = colstep;
 
-		palindex_t* line = static_cast<palindex_t*>(mSurface->getBuffer()) + y1 * rowstep + x1 * colstep;
+		palindex_t* line = static_cast<palindex_t*>(mSurface->getBuffer()) + (y1 * rowstep) + (x1 * colstep);
 
 		for (y = count; y > 0; y--, line += stride)
 		{

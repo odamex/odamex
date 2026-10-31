@@ -1215,7 +1215,7 @@ void EleBar(const int x, const int y, const int w, const float scale,
 	for (const auto& handle : lineHandles)
 	{
 		hud::DrawTranslatedPatch(drawX, y, scale, x_align, y_align, x_origin, y_origin,
-		                         W_ResolvePatchHandle(handle), ::Ranges + color * 256);
+		                         W_ResolvePatchHandle(handle), ::Ranges + (color * 256));
 
 		if (x_align == hud::X_RIGHT)
 		{

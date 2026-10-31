@@ -1472,8 +1472,8 @@ uint32_t ZipResourceContainer::loadEntryData(const ZipDirectoryEntry* entry, uin
 			size_t total_bytes_read = 0;
 			int status_code;
 			z_stream mStream;
-			mStream.zalloc = NULL;
-			mStream.zfree  = NULL;
+			mStream.zalloc = nullptr;
+			mStream.zfree  = nullptr;
 
 			status_code = inflateInit2(&mStream, -MAX_WBITS);
 			if (status_code != Z_OK)

@@ -229,10 +229,10 @@ static forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t
 							: int((frac                   >> FRACBITS) & mask);
 		const int o1 = MASKED ? int((frac + fracstep)       >> FRACBITS)
 							: int(((frac + fracstep)       >> FRACBITS) & mask);
-		const int o2 = MASKED ? int((frac + fracstep * 2)   >> FRACBITS)
-							: int(((frac + fracstep * 2)   >> FRACBITS) & mask);
-		const int o3 = MASKED ? int((frac + fracstep * 3)   >> FRACBITS)
-							: int(((frac + fracstep * 3)   >> FRACBITS) & mask);
+		const int o2 = MASKED ? int((frac + (fracstep * 2))   >> FRACBITS)
+							: int(((frac + (fracstep * 2))   >> FRACBITS) & mask);
+		const int o3 = MASKED ? int((frac + (fracstep * 3))   >> FRACBITS)
+							: int(((frac + (fracstep * 3))   >> FRACBITS) & mask);
 
 		const uint32_t i0 = source[o0];
 		const uint32_t i1 = source[o1];
@@ -280,7 +280,7 @@ static forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t
 static forceinline argb_t* R_QuadColumnDest(const drawcolumn_t& dcol)
 {
 	return reinterpret_cast<argb_t*>(dcol.destination) +
-			ptrdiff_t(dcol.x) * dcol.colstep + dcol.yl;
+			(ptrdiff_t(dcol.x) * dcol.colstep) + dcol.yl;
 }
 
 void R_DrawColumnD_SSE2(rendercontext_t& ctx)
@@ -343,7 +343,7 @@ void R_DrawLevelGroupD_SSE2(rendercontext_t& ctx)
 	const __m128i cv = _mm_cvtsi32_si128(g.vshift);
 
 	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
-			ptrdiff_t(g.xa) * g.colstep + g.y0;
+			(ptrdiff_t(g.xa) * g.colstep) + g.y0;
 	const int colstep = g.colstep;
 
 	for (int n = g.xb - g.xa + 1; n; --n)
@@ -384,7 +384,7 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 	const __m128i vec_alphacolor	= _mm_mullo_epi16(vec_color, _mm_set1_epi16(alpha));
 	const __m128i vec_invalpha		= _mm_set1_epi16(256 - alpha);
 
-	argb_t* dest = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * rowstep + x1 * colstep;
+	argb_t* dest = reinterpret_cast<argb_t*>(surface->getBuffer()) + (y1 * rowstep) + (x1 * colstep);
 
 	for (int rowcount = count; rowcount > 0; --rowcount)
 	{

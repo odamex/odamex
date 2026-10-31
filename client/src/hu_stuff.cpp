@@ -212,7 +212,7 @@ void HU_Shutdown()
 {
 	ResourceId res_id = Res_GetTextureResourceId("SBLINE", GRAPHICS);
 	Res_ReleaseResource(res_id);
-	sbline = NULL;
+	sbline = nullptr;
 
 	V_TextShutdown();
 }
@@ -497,7 +497,7 @@ static void HU_DrawChatPrompt()
 		prompt = "Say: ";
 
 	int promptwidth = font->getTextWidth(prompt);
-	int x = font->getTextWidth('_') * 2 + promptwidth;
+	int x = (font->getTextWidth('_') * 2) + promptwidth;
 
 	// figure out if the text is wider than the screen.
 	// if so, only draw the right-most portion of it.
@@ -894,7 +894,7 @@ void drawHeader(player_t *player, int y)
 		hud::DrawTranslatedTexture(xi, y + 24, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
-		                         sbline, Ranges + CR_GREY * 256, true);
+		                         sbline, Ranges + (CR_GREY * 256), true);
 	}
 }
 
@@ -1033,7 +1033,7 @@ void drawScores(player_t* player, int y, byte extra_rows)
 		hud::DrawTranslatedTexture(xi, lineY, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
-		                         ::sbline, Ranges + CR_GREY * 256, true);
+		                         ::sbline, Ranges + (CR_GREY * 256), true);
 	}
 
 	// Ingame Players
@@ -1139,11 +1139,11 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			hud::DrawTranslatedTexture(xi, y + 8, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_LEFT, hud::Y_TOP,
-				sbline, Ranges + color * 256, true);
+				sbline, Ranges + (color * 256), true);
 			hud::DrawTranslatedTexture(xi, y + 19, hud_scalescoreboard,
 				hud::X_CENTER, hud::Y_MIDDLE,
 				hud::X_LEFT, hud::Y_TOP,
-				sbline, Ranges + color * 256, true);
+				sbline, Ranges + (color * 256), true);
 		}
 
 		// Team Info
@@ -1275,7 +1275,7 @@ void drawSpectators(player_t *player, int y, byte extra_rows) {
 		hud::DrawTranslatedTexture(xi, y, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
-		                         sbline, Ranges + CR_GREY * 256, true);
+		                         sbline, Ranges + (CR_GREY * 256), true);
 	}
 
 	byte specs = hud::CountSpectators();
@@ -1441,7 +1441,7 @@ void drawLowHeader(player_t *player, int y) {
 		hud::DrawTranslatedTexture(xi, y + 11, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
-		                         sbline, Ranges + CR_GREY * 256, true);
+		                         sbline, Ranges + (CR_GREY * 256), true);
 	}
 }
 
@@ -1522,7 +1522,7 @@ void drawLowScores(player_t* player, int y, byte extra_rows)
 		hud::DrawTranslatedTexture(xi, lineY, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
-		                         ::sbline, Ranges + CR_GREY * 256, true);
+		                         ::sbline, Ranges + (CR_GREY * 256), true);
 	}
 
 	// Ingame Players
@@ -1606,11 +1606,11 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 			hud::DrawTranslatedTexture(xi, y + yOffset, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE,
 			                         hud::X_CENTER, hud::Y_TOP,
-			                         sbline, Ranges + color * 256, true);
+			                         sbline, Ranges + (color * 256), true);
 			hud::DrawTranslatedTexture(xi, y + yOffset + 11, hud_scalescoreboard,
 			                         hud::X_CENTER, hud::Y_MIDDLE,
 			                         hud::X_CENTER, hud::Y_TOP,
-			                         sbline, Ranges + color * 256, true);
+			                         sbline, Ranges + (color * 256), true);
 		}
 
 		// Team Info
@@ -1765,7 +1765,7 @@ void drawLowSpectators(player_t *player, int y, byte extra_rows) {
 		hud::DrawTranslatedTexture(xi, y, hud_scalescoreboard,
 		                         hud::X_CENTER, hud::Y_MIDDLE,
 		                         hud::X_CENTER, hud::Y_TOP,
-		                         sbline, Ranges + CR_GREY * 256, true);
+		                         sbline, Ranges + (CR_GREY * 256), true);
 	}
 
 	byte specs = hud::CountSpectators();

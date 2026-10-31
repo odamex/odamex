@@ -780,7 +780,7 @@ void DCanvas::DrawGlyphBlended(const palindex_t* fill, const byte* coverage,
 	{
 		// the planes are column-major, matching the glyph's texture
 		const int plane_column = (col - x) * height;
-		byte* dest = buffer + y1 * surface_pitch + col * mSurface->getColStepInBytes();
+		byte* dest = buffer + (y1 * surface_pitch) + (col * mSurface->getColStepInBytes());
 
 		for (int row = y1; row < y2; row++)
 		{
@@ -1258,7 +1258,7 @@ template<typename PIXEL_T>
 static inline void V_GetTransposedBlockGeneric(byte* destbuffer, const byte* sourcebuffer,
 			int x, int y, int width, int height, int rowstep, int colstep)
 {
-	const PIXEL_T* source = reinterpret_cast<const PIXEL_T*>(sourcebuffer) + y * rowstep + x * colstep;
+	const PIXEL_T* source = reinterpret_cast<const PIXEL_T*>(sourcebuffer) + (y * rowstep) + (x * colstep);
 	PIXEL_T* dest = reinterpret_cast<PIXEL_T*>(destbuffer);
 
 	for (int col = x; col < x + width; col++)

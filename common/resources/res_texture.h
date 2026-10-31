@@ -286,7 +286,7 @@ public:
 
 	[[nodiscard]] const palindex_t* getColumn(int col) const
 	{
-		return mData + mHeight * col;
+		return mData + (mHeight * col);
 	}
 
 	// Wraps a column index into the texture's width. mWidthMask only tiles
@@ -303,7 +303,7 @@ public:
 	// True color ARGB color plane.
 	[[nodiscard]] const argb_t* getARGBColumn(int col) const
 	{
-		return mARGBData ? mARGBData + mHeight * col : nullptr;
+		return mARGBData ? mARGBData + (mHeight * col) : nullptr;
 	}
 
 	fixed_t				mScaleX;

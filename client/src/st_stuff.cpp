@@ -292,7 +292,7 @@ const Texture*			tallpercent;
 static const Texture* 		shortnum[10];
 
 // 3 key-cards, 3 skulls, [RH] 3 combined
-const Texture* 			keys[NUMCARDS+NUMCARDS/2];
+const Texture* 			keys[NUMCARDS+(NUMCARDS/2)];
 
 // face status patches [RH] no longer static
 const Texture* 				faces[ST_NUMFACES];
@@ -1249,40 +1249,40 @@ static void ST_unloadGraphics()
 	// unload the numbers, tall and short
 	for (int i = 0; i < 10; i++)
 	{
-		::tallnum[i] = NULL;
-		::shortnum[i] = NULL;
+		::tallnum[i] = nullptr;
+		::shortnum[i] = nullptr;
 	}
 
 	// unload tall percent
-	::tallpercent = NULL;
+	::tallpercent = nullptr;
 
 	// unload arms background
-	::armsbg = NULL;
+	::armsbg = nullptr;
 
 	// unload flags background
-	::flagsbg = NULL;
+	::flagsbg = nullptr;
 
 	// unload gray #'s
 	for (int i = 0; i < 6; i++)
 	{
-		::arms[i][0] = NULL;
+		::arms[i][0] = nullptr;
 	}
 
 	// unload the key cards
 	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
-		::keys[i] = NULL;
+		::keys[i] = nullptr;
 	}
 
-	::sbar = NULL;
-	::faceback = NULL;
+	::sbar = nullptr;
+	::faceback = nullptr;
 
 	for (int i = 0; i < ST_NUMFACES; i++)
 	{
-		::faces[i] = NULL;
+		::faces[i] = nullptr;
 	}
 
-	::negminus = NULL;
+	::negminus = nullptr;
 }
 
 static void ST_unloadData()

@@ -1209,7 +1209,7 @@ static void C_SetConsoleDimensions(int width, int height)
 	{
 		ConCols = width / ConCharSize - 2;
 
-		ConWrapWidth = width - 2 * ConCharSize;
+		ConWrapWidth = width - (2 * ConCharSize);
 
 		// ConCols has changed so any lines of text that are currently wrapped
 		// need to be adjusted.
@@ -2091,7 +2091,7 @@ void C_DrawConsole()
 			// backwards "N".
 			for (size_t l = 0; l < cLines; l++)
 			{
-				const int row_y = offset + (lines + l + 1) * ConCharSize;
+				const int row_y = offset + ((lines + l + 1) * ConCharSize);
 
 				for (size_t col = 0; col < cColumns; col++)
 				{
@@ -2100,7 +2100,7 @@ void C_DrawConsole()
 						break;
 
 					screen->DrawFontText(cfont, CR_YELLOW,
-					                     left + static_cast<int>(col) * cColWidth, row_y,
+					                     left + (static_cast<int>(col) * cColWidth), row_y,
 					                     ::CmdCompletions.at(index).c_str());
 				}
 			}
@@ -2112,7 +2112,7 @@ void C_DrawConsole()
 				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %zu more...",
 				         ::CmdCompletions.size() - (cLines * cColumns));
 				screen->DrawFontText(cfont, CR_YELLOW, left,
-				                     offset + (lines + cLines + 1) * ConCharSize, rowstring);
+				                     offset + ((lines + cLines + 1) * ConCharSize), rowstring);
 			}
 		}
 
@@ -2127,7 +2127,7 @@ void C_DrawConsole()
 			const char* str = current_line_it->text.c_str();
 			std::string_view color_code = current_line_it->color_code;
 			int color = color_code[0] != '\0' ? V_GetTextColor(color_code) : CR_GRAY;
-			screen->DrawFontText(C_Font(), color, left, offset + lines * ConCharSize, str);
+			screen->DrawFontText(C_Font(), color, left, offset + (lines * ConCharSize), str);
 		}
 
 		if (ConBottom >= CONPX(20))
@@ -2167,7 +2167,7 @@ void C_DrawConsole()
 				// and if we can scroll no further (12)
 				const char scrolled_up_str[] = "\012";		// 10 = \012 octal
 				const char no_scroll_str[] = "\014";		// 12 = \014 octal
-				const char* str = (RowAdjust + ConBottom/ConCharSize < ConRows) ? scrolled_up_str : no_scroll_str;
+				const char* str = (RowAdjust + (ConBottom/ConCharSize) < ConRows) ? scrolled_up_str : no_scroll_str;
 				// CONCHARS arrow glyphs, again not present in a TrueType face
 				screen->PrintStr(0, ConBottom - CONPX(28), str, -1, true, ConScale);
 			}

@@ -394,7 +394,7 @@ void NetGraph::draw()
 	drawPackets         (mX, mY + 128 + fontheight * 6);
 	drawServerThrottle  (mX, mY + 128 + fontheight * 20);
 
-	screen->DrawFontText(font, textcolor, mX, mY + 128 + fontheight * 19, ("Server Throttle: " + BlankIfNegative(mThrottle[nowIndex])).c_str());
+	screen->DrawFontText(font, textcolor, mX, mY + 128 + (fontheight * 19), ("Server Throttle: " + BlankIfNegative(mThrottle[nowIndex])).c_str());
 
 }
 

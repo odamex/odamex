@@ -135,7 +135,7 @@ static inline void Wipe_DrawMeltLoop(int x, int starty)
 	const int rowstep = surface->getRowStepInPixels();
 
 	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer())
-					+ starty * rowstep + x * surface->getColStepInPixels();
+					+ (starty * rowstep) + (x * surface->getColStepInPixels());
 	const PIXEL_T* from = reinterpret_cast<PIXEL_T*>(wipe_screen) + surface_height * x;
 
 	int y = surface_height - starty;

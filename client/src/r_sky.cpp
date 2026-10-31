@@ -588,7 +588,7 @@ static void R_UpdateFireSky(sky_t* sky, bool init = false)
 	{
 		for (int y = 1; y < height; y++)
 		{
-			spreadFire(y * width + x, sky->firetexturedata, width);
+			spreadFire((y * width) + x, sky->firetexturedata, width);
 		}
 	}
 	for (int x = 0; x < width; x++)
@@ -598,7 +598,7 @@ static void R_UpdateFireSky(sky_t* sky, bool init = false)
 		palindex_t* coldata = const_cast<palindex_t*>(tex->getColumn(x));
 		for (int y = 0; y < height; y++)
 		{
-			coldata[y] = sky->firepalette[sky->firetexturedata[y * width + x]];
+			coldata[y] = sky->firepalette[sky->firetexturedata[(y * width) + x]];
 		}
 	}
 }
@@ -616,7 +616,7 @@ static void R_InitFireSky(sky_t* sky)
 	}
 	for (int i = 0 ; i < width; i++)
 	{
-		sky->firetexturedata[(height - 1) * width + i] = sky->numfireentries - 1;
+		sky->firetexturedata[((height - 1) * width) + i] = sky->numfireentries - 1;
 	}
 	for (int i = 0; i < 64; i++) {
 		R_UpdateFireSky(sky, true);
@@ -842,8 +842,8 @@ void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl)
 	if (pl->minx > pl->maxx)
 		return;
 
-	const Texture* frontskytex = NULL;
-	const Texture* backskytex = NULL;
+	const Texture* frontskytex = nullptr;
+	const Texture* backskytex = nullptr;
 
 	fixed_t front_offset = 0;
 	fixed_t back_offset = 0;
@@ -888,7 +888,7 @@ void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl)
 		front_offset = (-side->textureoffset) >> 6;
 
 		// Vertical offset allows careful sky positioning.
-		sky1mid = side->rowoffset - 28*FRACUNIT;
+		sky1mid = side->rowoffset - (28*FRACUNIT);
 
 		// We sometimes flip the picture horizontally.
 		//
@@ -921,7 +921,7 @@ void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl)
 		else
 		{
 			frontskytex = R_SkyTexTexture(&sky->background);
-			backskytex = NULL;
+			backskytex = nullptr;
 			front_offset = sky->background.currx;
 			frontrow_offset = sky->background.curry;
 			sky1scalex = sky->background.scalex;

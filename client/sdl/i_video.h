@@ -270,8 +270,8 @@ public:
 
 	inline const uint8_t* getBuffer(uint16_t x, uint16_t y) const
 	{
-		return mSurfaceBuffer + (static_cast<int>(y) + static_cast<int>(x) * mPitchInPixels)
-								* getBytesPerPixel();
+		return mSurfaceBuffer + ((static_cast<int>(y) + (static_cast<int>(x) * mPitchInPixels))
+								* getBytesPerPixel());
 	}
 
 	inline uint8_t* getBuffer(uint16_t x, uint16_t y)

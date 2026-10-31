@@ -397,7 +397,7 @@ void StringTable::loadStringsLump(const uint32_t language_res_id, const bool eng
 	loadLanguage("**", true, pass++, language_data, len);
 
 	Res_ReleaseResource(language_res_id);
-	language_data = NULL;
+	language_data = nullptr;
 }
 
 void StringTable::loadStrings(const bool engOnly)

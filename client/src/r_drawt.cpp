@@ -40,7 +40,7 @@ void r_dimpatchD_c(IWindowSurface* surface, argb_t color, int alpha, int x1, int
 	const int count = w;
 	const int stride = colstep;
 
-	argb_t* line = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * rowstep + x1 * colstep;
+	argb_t* line = reinterpret_cast<argb_t*>(surface->getBuffer()) + (y1 * rowstep) + (x1 * colstep);
 
 	for (int i = 0; i < count; i++, line += stride)
 	{

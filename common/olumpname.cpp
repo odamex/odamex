@@ -59,7 +59,7 @@ void OLumpName::assign(const char* str, size_t max_len)
 
 OLumpName::OLumpName()
 {
-	assign(NULL, 0);
+	assign(nullptr, 0);
 }
 
 OLumpName::OLumpName(const OLumpName& other) :
@@ -120,7 +120,7 @@ size_t OLumpName::length() const
 
 void OLumpName::clear()
 {
-	assign(NULL, 0);
+	assign(nullptr, 0);
 }
 
 bool OLumpName::empty() const

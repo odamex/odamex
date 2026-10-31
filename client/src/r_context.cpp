@@ -375,7 +375,7 @@ void R_BalanceSlices(int nslices)
 			const float pergroup = static_cast<float>(R_SliceContext(i).pass1time) /
 			                       static_cast<float>(bounds[i + 1] - bounds[i]);
 			for (int g = bounds[i]; g < bounds[i + 1]; g++)
-				groupcost[g] = learned ? groupcost[g] + (pergroup - groupcost[g]) * COST_SMOOTHING
+				groupcost[g] = learned ? groupcost[g] + ((pergroup - groupcost[g]) * COST_SMOOTHING)
 				                       : pergroup;
 		}
 		learned = true;
@@ -406,7 +406,7 @@ void R_BalanceSlices(int nslices)
 				bound--;
 
 			bounds[i] = std::clamp(bound, bounds[i - 1] + mingroups,
-			                       ngroups - (nslices - i) * mingroups);
+			                       ngroups - ((nslices - i) * mingroups));
 		}
 	}
 

@@ -2530,7 +2530,7 @@ void SV_ConnectClient()
 void SV_ExpectResourceDigests(client_t& cl)
 {
 	cl.digests_expected++;
-	cl.digest_deadline = gametic + 60 * TICRATE;
+	cl.digest_deadline = gametic + (60 * TICRATE);
 	cl.digest_allowance = 8;
 }
 

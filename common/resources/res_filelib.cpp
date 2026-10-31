@@ -341,25 +341,25 @@ static registry_value_t gog_final_doom =
 
 static char* GetRegistryString(registry_value_t *reg_val)
 {
-	char* result = NULL;
-	HKEY key = 0;
+	char* result = nullptr;
+	HKEY key = nullptr;
 	DWORD len = 0;
 	DWORD valtype = 0;
 
 	// Open the key (directory where the value is stored)
 	if (RegOpenKeyEx(reg_val->root, reg_val->path, 0, KEY_READ, &key) != ERROR_SUCCESS)
-		return NULL;
+		return nullptr;
 
 	// Find the type and length of the string, and only accept strings.
-	if (RegQueryValueEx(key, reg_val->value, NULL, &valtype, NULL, &len) == ERROR_SUCCESS and valtype == REG_SZ)
+	if (RegQueryValueEx(key, reg_val->value, nullptr, &valtype, nullptr, &len) == ERROR_SUCCESS and valtype == REG_SZ)
 	{
 		// Allocate a buffer for the value and read the value
 		result = static_cast<char*>(malloc(len));
 
-		if (RegQueryValueEx(key, reg_val->value, NULL, &valtype, reinterpret_cast<unsigned char*>(result), &len) != ERROR_SUCCESS)
+		if (RegQueryValueEx(key, reg_val->value, nullptr, &valtype, reinterpret_cast<unsigned char*>(result), &len) != ERROR_SUCCESS)
 		{
 			free(result);
-			result = NULL;
+			result = nullptr;
 		}
 	}
 
@@ -385,11 +385,11 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 		for (unsigned int i = 0; i < arrlen(uninstall_values); ++i)
 		{
 			char* val = GetRegistryString(&uninstall_values[i]);
-			if (val == NULL)
+			if (val == nullptr)
 				continue;
 
 			char* unstr = strstr(val, uninstaller_string);
-			if (unstr == NULL)
+			if (unstr == nullptr)
 			{
 				free(val);
 			}
@@ -404,7 +404,7 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 	// Doom Collectors Edition
 	{
 		char* install_path = GetRegistryString(&collectors_edition_value);
-		if (install_path != NULL)
+		if (install_path != nullptr)
 		{
 			for (unsigned int i = 0; i < arrlen(collectors_edition_subdirs); ++i)
 			{
@@ -423,7 +423,7 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 	// Doom on Steam
 	{
 		char* install_path = GetRegistryString(&steam_install_location);
-		if (install_path != NULL)
+		if (install_path != nullptr)
 		{
 			for (size_t i = 0; i < arrlen(steam_install_subdirs); ++i)
 			{
@@ -442,7 +442,7 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 	{
 		char* doom_plus_doom2_path = GetRegistryString(&gog_doom_plus_doom2);
 
-		if (doom_plus_doom2_path != NULL)
+		if (doom_plus_doom2_path != nullptr)
 		{
 			Res_AddSearchDir(search_dirs, doom_plus_doom2_path);
 			free(doom_plus_doom2_path);
@@ -450,7 +450,7 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 
 		char* doom_path = GetRegistryString(&gog_doom);
 
-		if (doom_path != NULL)
+		if (doom_path != nullptr)
 		{
 			Res_AddSearchDir(search_dirs, doom_path);
 			free(doom_path);
@@ -458,7 +458,7 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 
 		char* doom2_path = GetRegistryString(&gog_doom2);
 
-		if (doom2_path != NULL)
+		if (doom2_path != nullptr)
 		{
 			Res_AddSearchDir(search_dirs, fmt::format("{}\\{}", doom2_path, "doom2"));
 			Res_AddSearchDir(search_dirs, fmt::format("{}\\{}", doom2_path, "master\\wads"));
@@ -467,7 +467,7 @@ void Res_AddPlatformSearchDirs(std::vector<std::string>& search_dirs)
 
 		char* final_doom_path = GetRegistryString(&gog_final_doom);
 
-		if (final_doom_path != NULL)
+		if (final_doom_path != nullptr)
 		{
 			Res_AddSearchDir(search_dirs, fmt::format("{}\\{}", final_doom_path, "Plutonia"));
 			Res_AddSearchDir(search_dirs, fmt::format("{}\\{}", final_doom_path, "TNT"));

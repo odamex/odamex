@@ -173,7 +173,7 @@ public:
 	{
 		if (lump_id != INVALID_LUMP_ID and lump_id < mEntries.size())
 			return &mEntries[lump_id];
-		return NULL;
+		return nullptr;
 	}
 
 private:

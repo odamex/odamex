@@ -106,8 +106,8 @@ void (*R_DrawLevelGroupD)(rendercontext_t&);
 void (*R_DrawSlopeColumn)(rendercontext_t&);
 void (*R_DrawTranslucentSlopeColumn)(rendercontext_t&);
 void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
-void (*R_StreamStoredLines8)(argb_t*, const palindex_t*, int, int, int, int, const argb_t*) = NULL;
-void (*R_StreamStoredLines32)(argb_t*, const argb_t*, int, int, int, int) = NULL;
+void (*R_StreamStoredLines8)(argb_t*, const palindex_t*, int, int, int, int, const argb_t*) = nullptr;
+void (*R_StreamStoredLines32)(argb_t*, const argb_t*, int, int, int, int) = nullptr;
 
 
 // ============================================================================
@@ -646,7 +646,7 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 
 	COLORFUNC colorfunc(drawcolumn);
 
-	if (drawcolumn.masked and drawcolumn.source != NULL)
+	if (drawcolumn.masked and drawcolumn.source != nullptr)
 	{
 		// preserve the silhouette of the masked texture
 		const palindex_t* source = drawcolumn.source;
@@ -1084,8 +1084,8 @@ static forceinline void R_DrawLevelColumnGeneric(PIXEL_T* dest, const drawplanec
 		// int64_t is what keeps an out-of-range double from being undefined,
 		// while keeping the low-32-bit wrap of the fixed-point pipeline.
 		const double Y = static_cast<double>(*ys++);
-		const dsfixed_t ufrac = static_cast<dsfixed_t>(static_cast<int64_t>(ubase + eu * Y));
-		const dsfixed_t vfrac = static_cast<dsfixed_t>(static_cast<int64_t>(vbase + ev * Y));
+		const dsfixed_t ufrac = static_cast<dsfixed_t>(static_cast<int64_t>(ubase + (eu * Y)));
+		const dsfixed_t vfrac = static_cast<dsfixed_t>(static_cast<int64_t>(vbase + (ev * Y)));
 
 		const unsigned int spot = ((vfrac >> vshift) & vmask) | ((ufrac >> ushift) & umask);
 
@@ -1179,9 +1179,9 @@ static forceinline void R_DrawSlopeColumnGeneric(PIXEL_T* dest, const drawplanec
 			// From the column's top rather than accumulated, so a long column
 			// cannot drift.
 			const float fi = static_cast<float>(i0 + k);
-			const float mul = 65536.0f / (id + ids * fi);
-			const fixed_t ufrac = static_cast<fixed_t>((iu + ius * fi) * mul);
-			const fixed_t vfrac = static_cast<fixed_t>((iv + ivs * fi) * mul);
+			const float mul = 65536.0f / (id + (ids * fi));
+			const fixed_t ufrac = static_cast<fixed_t>((iu + (ius * fi)) * mul);
+			const fixed_t vfrac = static_cast<fixed_t>((iv + (ivs * fi)) * mul);
 			spots[k] = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask);
 		}
 
@@ -1391,12 +1391,12 @@ private:
 //
 static forceinline ptrdiff_t R_ColumnOffset(const drawcolumn_t& dcol)
 {
-	return ptrdiff_t(dcol.x) * dcol.colstep + dcol.yl;
+	return (ptrdiff_t(dcol.x) * dcol.colstep) + dcol.yl;
 }
 
 static forceinline ptrdiff_t R_SpanOffset(const drawspan_t& dspan)
 {
-	return ptrdiff_t(dspan.x1) * dspan.colstep + dspan.y;
+	return (ptrdiff_t(dspan.x1) * dspan.colstep) + dspan.y;
 }
 
 // ----------------------------------------------------------------------------
@@ -1739,15 +1739,15 @@ void R_BuildARGBShadeLUT(argbshadelut_t* lut, const argb_t color, const argb_t f
 		const int scale_g = color.getg() * (NUMCOLORMAPS - m);
 		const int scale_b = color.getb() * (NUMCOLORMAPS - m);
 
-		const int add_r = fade.getr() * m + NUMCOLORMAPS / 2;
-		const int add_g = fade.getg() * m + NUMCOLORMAPS / 2;
-		const int add_b = fade.getb() * m + NUMCOLORMAPS / 2;
+		const int add_r = (fade.getr() * m) + (NUMCOLORMAPS / 2);
+		const int add_g = (fade.getg() * m) + (NUMCOLORMAPS / 2);
+		const int add_b = (fade.getb() * m) + (NUMCOLORMAPS / 2);
 
 		for (int c = 0; c < 256; c++)
 		{
-			lut->r[m][c] = gammatable[(c * scale_r / 255 + add_r) / NUMCOLORMAPS];
-			lut->g[m][c] = gammatable[(c * scale_g / 255 + add_g) / NUMCOLORMAPS];
-			lut->b[m][c] = gammatable[(c * scale_b / 255 + add_b) / NUMCOLORMAPS];
+			lut->r[m][c] = gammatable[((c * scale_r / 255) + add_r) / NUMCOLORMAPS];
+			lut->g[m][c] = gammatable[((c * scale_g / 255) + add_g) / NUMCOLORMAPS];
+			lut->b[m][c] = gammatable[((c * scale_b / 255) + add_b) / NUMCOLORMAPS];
 		}
 	}
 }
@@ -1800,7 +1800,7 @@ public:
 		// Every dynamic colormap gets its tables where it is made (GetSpecialLights,
 		// V_RefreshColormaps), so the default is only reached without one.
 		const argbshadelut_t* lut = &argb_default_lut;
-		if (dyncolormap != NULL and dyncolormap->argblut != NULL)
+		if (dyncolormap != nullptr and dyncolormap->argblut != nullptr)
 			lut = dyncolormap->argblut;
 
 		lut_r = lut->r[mapnum];
@@ -1933,9 +1933,9 @@ bool R_PrepareARGBPlaneShading(rendercontext_t& ctx, const shaderef_t& light)
 
 	// The span drawers' test: a special colormap (invulnerability) has no RGB
 	// equivalent and stays palettized.
-	if (not argb_plane_drawers or dpcol.argbsource == NULL or light.mapnum() >= NUMCOLORMAPS)
+	if (not argb_plane_drawers or dpcol.argbsource == nullptr or light.mapnum() >= NUMCOLORMAPS)
 	{
-		dpcol.argbshade = NULL;
+		dpcol.argbshade = nullptr;
 		return false;
 	}
 
@@ -2002,14 +2002,14 @@ private:
 //
 static forceinline bool R_ColumnHasNativeARGB(const drawcolumn_t& dcol)
 {
-	return dcol.argbtexturedata != NULL and dcol.source != NULL and
+	return dcol.argbtexturedata != nullptr and dcol.source != nullptr and
 	       dcol.colormap.mapnum() < NUMCOLORMAPS;
 }
 
 // The four-pixel column drawers r_optimize selected, or NULL where it has none.
 // Set by R_InitVectorizedDrawers, which runs long before any column is drawn.
-static void (*R_DrawColumnQuadD)(rendercontext_t&) = NULL;
-static void (*R_DrawTranslucentColumnQuadD)(rendercontext_t&) = NULL;
+static void (*R_DrawColumnQuadD)(rendercontext_t&) = nullptr;
+static void (*R_DrawTranslucentColumnQuadD)(rendercontext_t&) = nullptr;
 
 // The shortest column worth handing to the four-pixel drawers.
 //
@@ -2030,7 +2030,7 @@ constexpr int R_QUAD_MIN_COLUMN = 16;
 static forceinline bool R_ColumnWantsQuad(void (*drawer)(rendercontext_t&),
                                           const drawcolumn_t& dcol)
 {
-	return drawer != NULL and
+	return drawer != nullptr and
 			dcol.yh - dcol.yl + 1 >= R_QUAD_MIN_COLUMN and
 			(dcol.masked or
 				(dcol.textureheight & (dcol.textureheight - 1)) == 0);
@@ -2487,12 +2487,12 @@ void R_InitVectorizedDrawers()
 {
 	// [SL] defaults are the non-vectorized drawers
 	R_DrawLevelGroupD       = R_DrawLevelGroupD_c;
-	R_DrawColumnQuadD       = NULL;
-	R_DrawTranslucentColumnQuadD = NULL;
+	R_DrawColumnQuadD       = nullptr;
+	R_DrawTranslucentColumnQuadD = nullptr;
 	have_vector_slopes      = false;
 	r_dimpatchD             = r_dimpatchD_c;
-	R_StreamStoredLines8    = NULL;
-	R_StreamStoredLines32   = NULL;
+	R_StreamStoredLines8    = nullptr;
+	R_StreamStoredLines32   = nullptr;
 
 	#ifdef __SSE2__
 	if (optimize_kind == OPTIMIZE_SSE2)
@@ -2612,14 +2612,14 @@ void R_ClearViewBuffer(IWindowSurface* surface, argb_t color)
 
 static forceinline ptrdiff_t R_LevelColumnOffset(const drawplanecol_t& dpcol)
 {
-	return ptrdiff_t(dpcol.x) * dpcol.colstep + dpcol.yl;
+	return (ptrdiff_t(dpcol.x) * dpcol.colstep) + dpcol.yl;
 }
 
 void R_DrawLevelColumnP(rendercontext_t& ctx)
 {
 	drawplanecol_t& dpcol = ctx.draw.dpcol;
 
-	if (dpcol.lightoff == NULL)
+	if (dpcol.lightoff == nullptr)
 		R_DrawLevelColumnGeneric<true, palindex_t, PaletteLevelFunc>(FB_LEVELDEST_P, dpcol);
 	else
 		R_DrawLevelColumnGeneric<false, palindex_t, PaletteLevelFunc>(FB_LEVELDEST_P, dpcol);
@@ -2629,7 +2629,7 @@ void R_DrawTranslucentLevelColumnP(rendercontext_t& ctx)
 {
 	drawplanecol_t& dpcol = ctx.draw.dpcol;
 
-	if (dpcol.lightoff == NULL)
+	if (dpcol.lightoff == nullptr)
 		R_DrawLevelColumnGeneric<true, palindex_t, PaletteTranslucentLevelFunc>(FB_LEVELDEST_P, dpcol);
 	else
 		R_DrawLevelColumnGeneric<false, palindex_t, PaletteTranslucentLevelFunc>(FB_LEVELDEST_P, dpcol);
@@ -2639,14 +2639,14 @@ void R_DrawLevelColumnD(rendercontext_t& ctx)
 {
 	drawplanecol_t& dpcol = ctx.draw.dpcol;
 
-	if (dpcol.argbshade != NULL)
+	if (dpcol.argbshade != nullptr)
 	{
-		if (dpcol.lightoff == NULL)
+		if (dpcol.lightoff == nullptr)
 			R_DrawLevelColumnGeneric<true, argb_t, DirectARGBLevelFunc, argb_t>(FB_LEVELDEST_D, dpcol);
 		else
 			R_DrawLevelColumnGeneric<false, argb_t, DirectARGBLevelFunc, argb_t>(FB_LEVELDEST_D, dpcol);
 	}
-	else if (dpcol.lightoff == NULL)
+	else if (dpcol.lightoff == nullptr)
 		R_DrawLevelColumnGeneric<true, argb_t, DirectLevelFunc>(FB_LEVELDEST_D, dpcol);
 	else
 		R_DrawLevelColumnGeneric<false, argb_t, DirectLevelFunc>(FB_LEVELDEST_D, dpcol);
@@ -2656,7 +2656,7 @@ void R_DrawTranslucentLevelColumnD(rendercontext_t& ctx)
 {
 	drawplanecol_t& dpcol = ctx.draw.dpcol;
 
-	if (dpcol.lightoff == NULL)
+	if (dpcol.lightoff == nullptr)
 		R_DrawLevelColumnGeneric<true, argb_t, DirectTranslucentLevelFunc>(FB_LEVELDEST_D, dpcol);
 	else
 		R_DrawLevelColumnGeneric<false, argb_t, DirectTranslucentLevelFunc>(FB_LEVELDEST_D, dpcol);
@@ -2692,7 +2692,7 @@ void R_DrawSlopeColumnD(rendercontext_t& ctx)
 {
 	drawplanecol_t& dpcol = ctx.draw.dpcol;
 
-	if (dpcol.argbshade != NULL)
+	if (dpcol.argbshade != nullptr)
 	{
 		if (dpcol.slopelight)
 			R_DrawSlopeColumnGeneric<true, argb_t, DirectARGBLevelFunc, argb_t>(FB_LEVELDEST_D, dpcol);
@@ -2742,7 +2742,7 @@ void R_DrawLevelGroupD_c(rendercontext_t& ctx)
 	dsfixed_t v0 = g.vfrac[0], v1 = g.vfrac[1], v2 = g.vfrac[2], v3 = g.vfrac[3];
 
 	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
-			ptrdiff_t(g.xa) * g.colstep + g.y0;
+			(ptrdiff_t(g.xa) * g.colstep) + g.y0;
 
 	for (int n = g.xb - g.xa + 1; n; --n)
 	{
@@ -2785,7 +2785,7 @@ void R_DrawLevelGroupARGBD_c(rendercontext_t& ctx)
 	dsfixed_t v0 = g.vfrac[0], v1 = g.vfrac[1], v2 = g.vfrac[2], v3 = g.vfrac[3];
 
 	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
-			ptrdiff_t(g.xa) * g.colstep + g.y0;
+			(ptrdiff_t(g.xa) * g.colstep) + g.y0;
 
 	for (int n = g.xb - g.xa + 1; n; --n)
 	{
@@ -2829,7 +2829,7 @@ static void R_SelectDrawers()
 		// No 8bpp group kernel: sixteen lanes would need sixteen colormap bases
 		// and SSE2 has no pinsrb to assemble them. 8bpp level planes go through
 		// R_DrawLevelPlaneColumns instead.
-		R_DrawLevelGroup		= NULL;
+		R_DrawLevelGroup		= nullptr;
 	}
 	else
 	{

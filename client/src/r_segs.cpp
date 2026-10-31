@@ -97,8 +97,8 @@ static void R_FillWallHeightArray(
 
 	for (int i = start; i <= stop; i++)
 	{
-		const double z = z1 + (z2 - z1) * ctx.seg.wallufrac[i];
-		const double frac = horizon - z * ctx.seg.wallscaled[i];
+		const double z = z1 + ((z2 - z1) * ctx.seg.wallufrac[i]);
+		const double frac = horizon - (z * ctx.seg.wallscaled[i]);
 		array[i] = std::clamp(static_cast<int>(frac), ceilingclipinitial[0], floorclipinitial[0]);
 	}
 }
@@ -116,7 +116,7 @@ static inline void R_BlastMaskedSegColumn(rendercontext_t& ctx, void (*drawfunc)
 	// Your midtex gap! :)
 	ctx.sprite.spryscale = ctx.seg.masked_midscales[ctx.draw.dcol.x];
 
-	if (ctx.draw.dcol.source == NULL or ctx.sprite.spryscale <= 0)
+	if (ctx.draw.dcol.source == nullptr or ctx.sprite.spryscale <= 0)
 		return;
 
 	ctx.draw.dcol.iscale = 0xffffffffu / static_cast<unsigned>(ctx.sprite.spryscale);
@@ -147,7 +147,7 @@ static inline void R_BlastMaskedSegColumn(rendercontext_t& ctx, void (*drawfunc)
 		return;
 
 	// clamp the texture coordinates so out-of-range rows are not drawn
-	const int64_t endfrac = texturefrac + (yh - yl) * ctx.draw.dcol.iscale;
+	const int64_t endfrac = texturefrac + ((yh - yl) * ctx.draw.dcol.iscale);
 	const int64_t maxfrac = ctx.draw.dcol.textureheight;
 
 	if (endfrac >= maxfrac)
@@ -534,7 +534,7 @@ void R_RenderMaskedSegRange(rendercontext_t& ctx, drawseg_t* ds, int x1, int x2)
 	ctx.draw.basecolormap = ctx.bsp.frontsector->colormap->maps;	// [RH] Set basecolormap
 
 	// killough 4/13/98: get correct lightlevel for 2s normal textures
-	int lightnum = (R_FakeFlat(ctx, ctx.bsp.frontsector, &tempsec, NULL, NULL, false)->lightlevel >> LIGHTSEGSHIFT) + (ctx.bsp.foggy ? 0 : extralight);
+	int lightnum = (R_FakeFlat(ctx, ctx.bsp.frontsector, &tempsec, nullptr, nullptr, false)->lightlevel >> LIGHTSEGSHIFT) + (ctx.bsp.foggy ? 0 : extralight);
 	lightnum += R_OrthogonalLightnumAdjustment(ctx);
 
 	ctx.seg.walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
@@ -544,7 +544,7 @@ void R_RenderMaskedSegRange(rendercontext_t& ctx, drawseg_t* ds, int x1, int x2)
 	ctx.seg.masked_midscales = ds->midscales;
 
 	ctx.seg.rw_lightstep = ds->lightstep;
-	ctx.seg.rw_light = ds->light + (x1 - ds->x1) * ctx.seg.rw_lightstep;
+	ctx.seg.rw_light = ds->light + ((x1 - ds->x1) * ctx.seg.rw_lightstep);
 
 	ctx.sprite.mfloorclip = ds->sprbottomclip;
 	ctx.sprite.mceilingclip = ds->sprtopclip;
@@ -561,7 +561,7 @@ void R_RenderMaskedSegRange(rendercontext_t& ctx, drawseg_t* ds, int x1, int x2)
 	else
 	{
 		ctx.seg.rw_scalestep = FixedDiv(ds->scalestep, texture->mScaleY);
-		fixed_t scale = FixedDiv(ds->scale1, texture->mScaleY) + (x1 - ds->x1) * ctx.seg.rw_scalestep;
+		fixed_t scale = FixedDiv(ds->scale1, texture->mScaleY) + ((x1 - ds->x1) * ctx.seg.rw_scalestep);
 		for (int x = x1; x <= x2; x++)
 		{
 			ctx.seg.wallscalex[x] = scale;
@@ -636,11 +636,11 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 
 	// camera space is a rigid rotation of world space, so this is also the
 	// world-space length of the clipped seg
-	const double seglen = sqrt(wdx * wdx + wdy * wdy);
+	const double seglen = sqrt((wdx * wdx) + (wdy * wdy));
 	const double invseglen = seglen > 0.0 ? 1.0 / seglen : 0.0;
 
 	// constant of the wall's line equation: cross(P, W) = cross(P1, W)
-	const double wallconst = cx1 * wdy - cy1 * wdx;
+	const double wallconst = (cx1 * wdy) - (cy1 * wdx);
 
 	const double mindepth = FIXED2DOUBLE(NEARCLIP);
 	const double maxdepth = 16384.0;
@@ -649,7 +649,7 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 	// wall
 	const auto walldepth = [&](int i)
 	{
-		const double den = wallraydx[i] * wdy - wdx;
+		const double den = (wallraydx[i] * wdy) - wdx;
 		const double depth = den != 0.0 ? wallconst / den : maxdepth;
 		return std::clamp(depth, mindepth, maxdepth);
 	};
@@ -663,7 +663,7 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 		ctx.seg.wallscaled[i] = scale;
 		ctx.seg.wallscalex[i] = DOUBLE2FIXED(scale);
 
-		const double uunits = ((depth * raydx - cx1) * wdx + (depth - cy1) * wdy) * invseglen;
+		const double uunits = ((((depth * raydx) - cx1) * wdx) + ((depth - cy1) * wdy)) * invseglen;
 		ctx.seg.wallufrac[i] = uunits * invseglen;
 		ctx.seg.texoffs[i] = segoffs +
 		             static_cast<fixed_t>(static_cast<int64_t>(uunits * 65536.0));
@@ -721,7 +721,7 @@ void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fix
 	}
 
 	// Cache the wall textures
-	ctx.seg.toptexture = ctx.seg.midtexture = ctx.seg.bottomtexture = ctx.seg.maskedtexture = NULL;
+	ctx.seg.toptexture = ctx.seg.midtexture = ctx.seg.bottomtexture = ctx.seg.maskedtexture = nullptr;
 
 	if (not ctx.bsp.backsector)
 		ctx.seg.midtexture = Res_CacheTexture(Res_GetAnimatedTextureResourceId(ctx.bsp.curline->sidedef->midtexture));
@@ -818,9 +818,9 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 
 	// calculate texture boundaries
 	//	and decide if floor / ceiling marks are needed
-	ctx.seg.maskedtexture = NULL;
-	ctx.bsp.ds_p->midposts = NULL;
-	ctx.bsp.ds_p->midscales = NULL;
+	ctx.seg.maskedtexture = nullptr;
+	ctx.bsp.ds_p->midposts = nullptr;
+	ctx.bsp.ds_p->midscales = nullptr;
 
 	if (not ctx.bsp.backsector)
 	{
@@ -853,7 +853,7 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	else
 	{
 		// two sided line
-		ctx.bsp.ds_p->sprtopclip = ctx.bsp.ds_p->sprbottomclip = NULL;
+		ctx.bsp.ds_p->sprtopclip = ctx.bsp.ds_p->sprbottomclip = nullptr;
 		ctx.bsp.ds_p->silhouette = 0;
 
 		if (ctx.bsp.doorclosed)
@@ -1009,7 +1009,7 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 
 		// [SL] additional fix for sky hack
 		if (R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) and R_ResourceIdIsSkyFlat(ctx.bsp.backsector->ceiling_res_id))
-			ctx.seg.toptexture = NULL;
+			ctx.seg.toptexture = nullptr;
 	}
 
 	// [SL] 2012-01-24 - Horizon line extends to infinity by scaling the wall
@@ -1019,7 +1019,7 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	{
 		ctx.seg.rw_scale = ctx.bsp.ds_p->scale1 = ctx.bsp.ds_p->scale2 = ctx.seg.rw_scalestep = ctx.bsp.ds_p->light = ctx.seg.rw_light = 0;
 		ctx.bsp.ds_p->sortscale1 = ctx.bsp.ds_p->sortscale2 = 0;
-		ctx.seg.midtexture = ctx.seg.toptexture = ctx.seg.bottomtexture = ctx.seg.maskedtexture = NULL;
+		ctx.seg.midtexture = ctx.seg.toptexture = ctx.seg.bottomtexture = ctx.seg.maskedtexture = nullptr;
 
 		for (int n = start; n <= stop; n++)
 			ctx.seg.walltopf[n] = ctx.seg.wallbottomf[n] = FIXED2FLOAT(centeryfrac);
@@ -1051,7 +1051,7 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	//	and doesn't need to be marked.
 
 	// killough 3/7/98: add deep water check
-	if (ctx.bsp.frontsector->heightsec == NULL or
+	if (ctx.bsp.frontsector->heightsec == nullptr or
 		(ctx.bsp.frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
 		// above view plane?
@@ -1083,14 +1083,14 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 		ctx.bsp.ds_p->silhouette = SIL_BOTH;
 
     // save sprite clipping info
-	if ((ctx.bsp.ds_p->silhouette & SIL_TOP) and ctx.bsp.ds_p->sprtopclip == NULL)
+	if ((ctx.bsp.ds_p->silhouette & SIL_TOP) and ctx.bsp.ds_p->sprtopclip == nullptr)
 	{
 		int* topclip = ctx.seg.sprclip_pool.alloc(count) - start;
 		memcpy(topclip + start, ctx.plane.ceilingclip.get() + start, count * sizeof(*topclip));
 		ctx.bsp.ds_p->sprtopclip = topclip;
 	}
 
-	if ((ctx.bsp.ds_p->silhouette & SIL_BOTTOM) and ctx.bsp.ds_p->sprbottomclip == NULL)
+	if ((ctx.bsp.ds_p->silhouette & SIL_BOTTOM) and ctx.bsp.ds_p->sprbottomclip == nullptr)
 	{
 		int* bottomclip = ctx.seg.sprclip_pool.alloc(count) - start;
 		memcpy(bottomclip + start, ctx.plane.floorclip.get() + start, count * sizeof(*bottomclip));

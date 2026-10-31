@@ -509,7 +509,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 	const ResourceId res_id = Res_GetResourceId("X11R6RGB", NS_GLOBAL);
 	const char* rgbNames = Res_LoadResource<char>(res_id, PU_CACHE);
 
-	if (rgbNames == NULL)
+	if (rgbNames == nullptr)
 	{
 		PrintFmt(PRINT_HIGH, "X11R6RGB lump not found\n");
 		return "";
@@ -746,11 +746,11 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 		{
 			const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
 
-			unsigned int r = (base.getr() * (NUMCOLORMAPS - i) + fadecolor.getr() * i
+			unsigned int r = ((base.getr() * (NUMCOLORMAPS - i)) + (fadecolor.getr() * i)
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int g = (base.getg() * (NUMCOLORMAPS - i) + fadecolor.getg() * i
+			unsigned int g = ((base.getg() * (NUMCOLORMAPS - i)) + (fadecolor.getg() * i)
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int b = (base.getb() * (NUMCOLORMAPS - i) + fadecolor.getb() * i
+			unsigned int b = ((base.getb() * (NUMCOLORMAPS - i)) + (fadecolor.getb() * i)
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
 			argb_t color(255, r, g, b);
@@ -765,9 +765,9 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 		const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
 
 		const int grayint = static_cast<int>(255.0f * std::clamp(1.0f -
-						(base.getr() * 0.00116796875f +
-						 base.getg() * 0.00229296875f +
-			 			 base.getb() * 0.0005625f), 0.0f, 1.0f));
+						((base.getr() * 0.00116796875f) +
+						 (base.getg() * 0.00229296875f) +
+			 			 (base.getb() * 0.0005625f)), 0.0f, 1.0f));
 
 		argb_t color(255, grayint, grayint, grayint);
 		colormap[c] = V_BestOpaqueColor(palette, color);
@@ -793,11 +793,11 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 		{
 			const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
 
-			unsigned int r = (base.getr() * (NUMCOLORMAPS - i) + fadecolor.getr() * i
+			unsigned int r = ((base.getr() * (NUMCOLORMAPS - i)) + (fadecolor.getr() * i)
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int g = (base.getg() * (NUMCOLORMAPS - i) + fadecolor.getg() * i
+			unsigned int g = ((base.getg() * (NUMCOLORMAPS - i)) + (fadecolor.getg() * i)
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
-			unsigned int b = (base.getb() * (NUMCOLORMAPS - i) + fadecolor.getb() * i
+			unsigned int b = ((base.getb() * (NUMCOLORMAPS - i)) + (fadecolor.getb() * i)
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
 			argb_t color(255, r, g, b);
@@ -811,9 +811,9 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 		const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
 
 		const int grayint = static_cast<int>(255.0f * std::clamp(1.0f -
-						(base.getr() * 0.00116796875f +
-						 base.getg() * 0.00229296875f +
-			 			 base.getb() * 0.0005625f), 0.0f, 1.0f));
+						((base.getr() * 0.00116796875f) +
+						 (base.getg() * 0.00229296875f) +
+			 			 (base.getb() * 0.0005625f)), 0.0f, 1.0f));
 
 		argb_t color(255, grayint, grayint, grayint);
 		shademap[c] = V_GammaCorrect(color);
@@ -1212,7 +1212,7 @@ void V_DoPaletteEffects()
 		{
 			// [SL] Load palette_num from disk and setup game_palette
 			current_palette_num = palette_num;
-			const byte* data = Res_LoadResource<byte>(palette_res_id, PU_CACHE) + palette_num * 768;
+			const byte* data = Res_LoadResource<byte>(palette_res_id, PU_CACHE) + (palette_num * 768);
 
 			for (int i = 0; i < 256; i++, data += 3)
 			{

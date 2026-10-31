@@ -779,7 +779,7 @@ void AM_loadPics()
 void AM_unloadPics()
 {
 	for (auto& marknum : marknums)
-		marknum = NULL;
+		marknum = nullptr;
 }
 
 void AM_clearMarks()
@@ -1097,13 +1097,13 @@ void AM_clearFB(am_color_t color)
 	if (pixelsize == 1)
 	{
 		for (int i = 0; i < count; i++)
-			memset(fb + i * stride, color.index, run);
+			memset(fb + (i * stride), color.index, run);
 	}
 	else
 	{
 		for (int i = 0; i < count; i++)
 		{
-			argb_t* line = reinterpret_cast<argb_t*>(fb + i * stride);
+			argb_t* line = reinterpret_cast<argb_t*>(fb + (i * stride));
 			for (int j = 0; j < run; j++)
 				line[j] = color.rgb;
 		}
@@ -1280,7 +1280,7 @@ static inline void PUTDOT_THICK(
 		const int dx  = nx - x;
 		const int dx2 = dx * dx;
 
-		PIXEL_T* pix = fbuf + miny * pitch + nx * colstep;
+		PIXEL_T* pix = fbuf + (miny * pitch) + (nx * colstep);
 
 		for (int ny = miny; ny <= maxy; ++ny, pix += pitch)
 		{
@@ -1293,12 +1293,12 @@ static inline void PUTDOT_THICK(
 
 static inline void PUTDOT_THICK(int x, int y, argb_t color)
 {
-	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *(reinterpret_cast<argb_t*>(fb + y * f_p + x * f_cs)) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2, f_cs >> 2);
+	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *(reinterpret_cast<argb_t*>(fb + (y * f_p) + (x * f_cs))) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2, f_cs >> 2);
 }
 
 static inline void PUTDOT_THICK(int x, int y, byte color)
 {
-	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x * f_cs] = color; }, fb, f_p, f_cs);
+	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[(y * f_p) + (x * f_cs)] = color; }, fb, f_p, f_cs);
 }
 
 //

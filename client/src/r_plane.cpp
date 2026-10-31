@@ -137,7 +137,7 @@ static std::vector<const AActor*> r_ActiveSkyboxes;
 //
 static bool R_IsSkyboxPortal(const ResourceId res_id, const AActor* skybox)
 {
-	return R_ResourceIdIsSkyFlat(res_id) and skybox != NULL and
+	return R_ResourceIdIsSkyFlat(res_id) and skybox != nullptr and
 	       std::ranges::find(r_ActiveSkyboxes, skybox) == r_ActiveSkyboxes.end();
 }
 
@@ -183,7 +183,7 @@ void R_InitPlanes (void)
 void R_ClearPlanes(rendercontext_t& ctx, bool fullclear)
 {
 	for (int i = 0; i < MAXVISPLANES; i++)	// new code -- killough
-		for (*ctx.plane.freehead = ctx.plane.visplanes[i], ctx.plane.visplanes[i] = NULL; *ctx.plane.freehead; )
+		for (*ctx.plane.freehead = ctx.plane.visplanes[i], ctx.plane.visplanes[i] = nullptr; *ctx.plane.freehead; )
 			ctx.plane.freehead = &(*ctx.plane.freehead)->next;
 
 	if (fullclear)
@@ -217,7 +217,7 @@ static visplane_t *new_visplane(rendercontext_t& ctx, unsigned hash)
 		// spanning the surface width plus the sentinel column past maxx
 		const size_t width = I_GetSurfaceWidth();
 		unsigned int* spans =
-				static_cast<unsigned int*>(M_Calloc(2 * width + 4, sizeof(*spans)));
+				static_cast<unsigned int*>(M_Calloc((2 * width) + 4, sizeof(*spans)));
 		ctx.plane.visplane_spans.push_back(spans);
 
 		check->top = spans + 1;
@@ -552,7 +552,7 @@ static bool R_SelectPlaneARGBShading(rendercontext_t& ctx, const shaderef_t& lig
 {
 	if (not opaque)
 	{
-		ctx.draw.dpcol.argbshade = NULL;
+		ctx.draw.dpcol.argbshade = nullptr;
 		return false;
 	}
 
@@ -639,7 +639,7 @@ void R_DrawLevelPlaneColumns(rendercontext_t& ctx, visplane_t* pl)
 
 	const shaderef_t light = R_BuildPlaneLighting(ctx, miny, maxy);
 
-	ctx.draw.dpcol.lightoff = ctx.plane.plane_constlight ? NULL : ctx.plane.plane_lightoff.data();
+	ctx.draw.dpcol.lightoff = ctx.plane.plane_constlight ? nullptr : ctx.plane.plane_lightoff.data();
 
 	ctx.draw.dpcol.cbase = light.m_colormap;
 	ctx.draw.dpcol.sbase = light.m_shademap;
@@ -649,8 +649,8 @@ void R_DrawLevelPlaneColumns(rendercontext_t& ctx, visplane_t* pl)
 	// Already 16.16: FIXED2DOUBLE's 1/65536 and the fixed conversion's 65536
 	// cancel, so eu/ev multiply the raw yslope entry. The base is wrapped to keep
 	// the sum in range.
-	ctx.draw.dpcol.ubase = (ctx.plane.pl_viewxtrans - 65536.0 * floor(ctx.plane.pl_viewxtrans / 65536.0)) * 65536.0;
-	ctx.draw.dpcol.vbase = (ctx.plane.pl_viewytrans - 65536.0 * floor(ctx.plane.pl_viewytrans / 65536.0)) * 65536.0;
+	ctx.draw.dpcol.ubase = (ctx.plane.pl_viewxtrans - (65536.0 * floor(ctx.plane.pl_viewxtrans / 65536.0))) * 65536.0;
+	ctx.draw.dpcol.vbase = (ctx.plane.pl_viewytrans - (65536.0 * floor(ctx.plane.pl_viewytrans / 65536.0))) * 65536.0;
 
 	const double eu_base = ctx.plane.pl_planeheight * ctx.plane.pl_viewcos * ctx.plane.pl_xscale;
 	const double ev_base = ctx.plane.pl_planeheight * -ctx.plane.pl_viewsin * ctx.plane.pl_yscale;
@@ -668,8 +668,8 @@ void R_DrawLevelPlaneColumns(rendercontext_t& ctx, visplane_t* pl)
 		// cannot drift apart.
 		const double dx = x - centerx;
 
-		ctx.draw.dpcol.eu = eu_base + dx * eu_step;
-		ctx.draw.dpcol.ev = ev_base + dx * ev_step;
+		ctx.draw.dpcol.eu = eu_base + (dx * eu_step);
+		ctx.draw.dpcol.ev = ev_base + (dx * ev_step);
 		ctx.draw.dpcol.x = x;
 		ctx.draw.dpcol.yl = yl;
 		ctx.draw.dpcol.yh = yh;
@@ -718,7 +718,7 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 
 	const shaderef_t light = R_BuildPlaneLighting(ctx, miny, maxy);
 
-	ctx.draw.dpcol.lightoff = ctx.plane.plane_constlight ? NULL : ctx.plane.plane_lightoff.data();
+	ctx.draw.dpcol.lightoff = ctx.plane.plane_constlight ? nullptr : ctx.plane.plane_lightoff.data();
 	ctx.draw.dpcol.cbase = light.m_colormap;
 	ctx.draw.dpcol.sbase = light.m_shademap;
 
@@ -726,8 +726,8 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 	// it, so they pick up the same choice.
 	const bool argb = R_SelectPlaneARGBShading(ctx, light, true);
 
-	ctx.draw.dpcol.ubase = (ctx.plane.pl_viewxtrans - 65536.0 * floor(ctx.plane.pl_viewxtrans / 65536.0)) * 65536.0;
-	ctx.draw.dpcol.vbase = (ctx.plane.pl_viewytrans - 65536.0 * floor(ctx.plane.pl_viewytrans / 65536.0)) * 65536.0;
+	ctx.draw.dpcol.ubase = (ctx.plane.pl_viewxtrans - (65536.0 * floor(ctx.plane.pl_viewxtrans / 65536.0))) * 65536.0;
+	ctx.draw.dpcol.vbase = (ctx.plane.pl_viewytrans - (65536.0 * floor(ctx.plane.pl_viewytrans / 65536.0))) * 65536.0;
 
 	const double eu_base = ctx.plane.pl_planeheight * ctx.plane.pl_viewcos * ctx.plane.pl_xscale;
 	const double ev_base = ctx.plane.pl_planeheight * -ctx.plane.pl_viewsin * ctx.plane.pl_yscale;
@@ -774,8 +774,8 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 
 		// From absolute x, not accumulated, matching R_DrawLevelPlaneColumns.
 		const double dx = x - centerx;
-		ctx.draw.dpcol.eu = eu_base + dx * eu_step;
-		ctx.draw.dpcol.ev = ev_base + dx * ev_step;
+		ctx.draw.dpcol.eu = eu_base + (dx * eu_step);
+		ctx.draw.dpcol.ev = ev_base + (dx * ev_step);
 		ctx.draw.dpcol.x = x;
 
 		if (g1 >= g0)
@@ -823,8 +823,8 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 		// every run is bit-identical to it and the DDA cannot drift beyond one run.
 		// The step is the span mapper's ustep, which in 16.16 is exactly
 		// eu_step * yslope[y]: per row, and independent of x. That is the trick.
-		const double eu = eu_base + (xa - centerx) * eu_step;
-		const double ev = ev_base + (xa - centerx) * ev_step;
+		const double eu = eu_base + ((xa - centerx) * eu_step);
+		const double ev = ev_base + ((xa - centerx) * ev_step);
 
 		for (int i = 0; i < 4; i++)
 		{
@@ -832,8 +832,8 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 
 			ctx.draw.dpgroup.ustep[i] = static_cast<dsfixed_t>(static_cast<int64_t>(eu_step * Y));
 			ctx.draw.dpgroup.vstep[i] = static_cast<dsfixed_t>(static_cast<int64_t>(ev_step * Y));
-			ctx.draw.dpgroup.ufrac[i] = static_cast<dsfixed_t>(static_cast<int64_t>(ctx.draw.dpcol.ubase + eu * Y));
-			ctx.draw.dpgroup.vfrac[i] = static_cast<dsfixed_t>(static_cast<int64_t>(ctx.draw.dpcol.vbase + ev * Y));
+			ctx.draw.dpgroup.ufrac[i] = static_cast<dsfixed_t>(static_cast<int64_t>(ctx.draw.dpcol.ubase + (eu * Y)));
+			ctx.draw.dpgroup.vfrac[i] = static_cast<dsfixed_t>(static_cast<int64_t>(ctx.draw.dpcol.vbase + (ev * Y)));
 
 			// NULL whenever the plane resolved to one colormap, including
 			// fixedlightlev and fixedcolormap -- there R_BuildPlaneLighting returns
@@ -959,7 +959,7 @@ static void R_DrawSlopedPlaneColumns(rendercontext_t& ctx, visplane_t* pl)
 		d.iv = M_DotProductVec3f(&s, &ctx.plane.slope_b) * flatheight;
 		d.id = M_DotProductVec3f(&s, &ctx.plane.slope_c);
 
-		d.lmap = static_cast<fixed_t>((ctx.plane.shade - ctx.plane.plight * d.id) * lscale);
+		d.lmap = static_cast<fixed_t>((ctx.plane.shade - (ctx.plane.plight * d.id)) * lscale);
 
 		d.x = x;
 		d.yl = yl;
@@ -979,7 +979,7 @@ static void R_DrawSlopedPlaneColumns(rendercontext_t& ctx, visplane_t* pl)
 //
 void R_DrawSlopedPlane(rendercontext_t& ctx, visplane_t *pl)
 {
-	if (ctx.draw.slopecolfunc == NULL)
+	if (ctx.draw.slopecolfunc == nullptr)
 	{
 		ctx.draw.basecolormap = pl->colormap;
 		R_MakeSpans(ctx, pl);
@@ -1026,8 +1026,8 @@ void R_DrawSlopedPlane(rendercontext_t& ctx, visplane_t *pl)
 
 		if (map_format.getZDoom())
 		{
-			px = yoffs * cosang - xoffs * sinang;
-			pz = xoffs * cosang + yoffs * sinang;
+			px = (yoffs * cosang) - (xoffs * sinang);
+			pz = (xoffs * cosang) + (yoffs * sinang);
 		}
 		else
 		{
@@ -1038,14 +1038,14 @@ void R_DrawSlopedPlane(rendercontext_t& ctx, visplane_t *pl)
 
 		// Point t is the point along the plane (texwidth, 0, planez(texwidth, 0)) with texture
 		// offset and rotation applied
-		tx = px - scaledflatwidth * sinang;
-		tz = pz + scaledflatwidth * cosang;
+		tx = px - (scaledflatwidth * sinang);
+		tz = pz + (scaledflatwidth * cosang);
 		ty = P_PlaneZ(tx, tz, &pl->secplane);
 
 		// Point s is the point along the plane (0, texheight, planez(0, texheight)) with texture
 		// offset and rotation applied
-		sx = px + scaledflatheight * cosang;
-		sz = pz + scaledflatheight * sinang;
+		sx = px + (scaledflatheight * cosang);
+		sz = pz + (scaledflatheight * sinang);
 		sy = P_PlaneZ(sx, sz, &pl->secplane);
 	}
 
@@ -1065,8 +1065,8 @@ void R_DrawSlopedPlane(rendercontext_t& ctx, visplane_t *pl)
 		const double dy = viewzd - y;
 		const double dz = z - viewyd;
 
-		x = dx * rcos - dz * rsin;
-		z = dz * rcos + dx * rsin;
+		x = (dx * rcos) - (dz * rsin);
+		z = (dz * rcos) + (dx * rsin);
 		y = dy;
 	};
 
@@ -1080,17 +1080,17 @@ void R_DrawSlopedPlane(rendercontext_t& ctx, visplane_t *pl)
 
 	// a = p cross s, b = t cross p, c = t cross s, each scaled by half and
 	// with the y component corrected for the aspect ratio of the view
-	ctx.plane.slope_a.x = static_cast<float>(0.5 * (py * sz - pz * sy));
-	ctx.plane.slope_a.y = static_cast<float>(0.5 * (pz * sx - px * sz) * ifocratio);
-	ctx.plane.slope_a.z = static_cast<float>(0.5 * (px * sy - py * sx));
+	ctx.plane.slope_a.x = static_cast<float>(0.5 * ((py * sz) - (pz * sy)));
+	ctx.plane.slope_a.y = static_cast<float>(0.5 * ((pz * sx) - (px * sz)) * ifocratio);
+	ctx.plane.slope_a.z = static_cast<float>(0.5 * ((px * sy) - (py * sx)));
 
-	ctx.plane.slope_b.x = static_cast<float>(0.5 * (ty * pz - tz * py));
-	ctx.plane.slope_b.y = static_cast<float>(0.5 * (tz * px - tx * pz) * ifocratio);
-	ctx.plane.slope_b.z = static_cast<float>(0.5 * (tx * py - ty * px));
+	ctx.plane.slope_b.x = static_cast<float>(0.5 * ((ty * pz) - (tz * py)));
+	ctx.plane.slope_b.y = static_cast<float>(0.5 * ((tz * px) - (tx * pz)) * ifocratio);
+	ctx.plane.slope_b.z = static_cast<float>(0.5 * ((tx * py) - (ty * px)));
 
-	ctx.plane.slope_c.x = static_cast<float>(0.5 * (ty * sz - tz * sy));
-	ctx.plane.slope_c.y = static_cast<float>(0.5 * (tz * sx - tx * sz) * ifocratio);
-	ctx.plane.slope_c.z = static_cast<float>(0.5 * (tx * sy - ty * sx));
+	ctx.plane.slope_c.x = static_cast<float>(0.5 * ((ty * sz) - (tz * sy)));
+	ctx.plane.slope_c.y = static_cast<float>(0.5 * ((tz * sx) - (tx * sz)) * ifocratio);
+	ctx.plane.slope_c.z = static_cast<float>(0.5 * ((tx * sy) - (ty * sx)));
 
 	// (SoM) More help from randy. I was totally lost on this...
 	float scalenumer = FIXED2FLOAT(finetangent[FINEANGLES/4+CorrectFieldOfView/2]);
@@ -1104,7 +1104,7 @@ void R_DrawSlopedPlane(rendercontext_t& ctx, visplane_t *pl)
 	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / static_cast<float>(I_GetSurfaceWidth());
 
 	ctx.plane.plight = (slopevis * ixscale * iyscale) / (zat - viewzd);
-	ctx.plane.shade = 256.0 * 2.0 - (pl->lightlevel + 16.0) * 256.0 / 128.0;
+	ctx.plane.shade = (256.0 * 2.0) - ((pl->lightlevel + 16.0) * 256.0 / 128.0);
 
 	ctx.draw.basecolormap = pl->colormap;	// [RH] set basecolormap
 
@@ -1117,7 +1117,7 @@ void R_DrawSlopedPlane(rendercontext_t& ctx, visplane_t *pl)
 //
 void R_DrawLevelPlane(rendercontext_t& ctx, visplane_t *pl)
 {
-	if (ctx.draw.levelcolfunc == NULL)
+	if (ctx.draw.levelcolfunc == nullptr)
 	{
 		ctx.draw.basecolormap = pl->colormap;
 		R_MakeSpans(ctx, pl);
@@ -1152,13 +1152,13 @@ void R_DrawLevelPlane(rendercontext_t& ctx, visplane_t *pl)
 
 		if (map_format.getZDoom())
 		{
-			pl_viewx = xoffs + viewx_d * pl_cos - viewy_d * pl_sin;
-			pl_viewy = yoffs - (viewx_d * pl_sin + viewy_d * pl_cos);
+			pl_viewx = xoffs + (viewx_d * pl_cos) - (viewy_d * pl_sin);
+			pl_viewy = yoffs - ((viewx_d * pl_sin) + (viewy_d * pl_cos));
 		}
 		else
 		{
-			pl_viewx = (viewx_d + xoffs) * pl_cos - (viewy_d - yoffs) * pl_sin;
-			pl_viewy = -((viewx_d + xoffs) * pl_sin + (viewy_d - yoffs) * pl_cos);
+			pl_viewx = ((viewx_d + xoffs) * pl_cos) - ((viewy_d - yoffs) * pl_sin);
+			pl_viewy = -(((viewx_d + xoffs) * pl_sin) + ((viewy_d - yoffs) * pl_cos));
 		}
 	}
 
@@ -1180,7 +1180,7 @@ void R_DrawLevelPlane(rendercontext_t& ctx, visplane_t *pl)
 	// R_DrawLevelGroup is NULL on an 8bpp surface, and the group path draws
 	// opaque flats only -- a translucent portal boundary sets levelcolfunc to
 	// the translucent column drawer, which has no group form yet.
-	if (R_DrawLevelGroup != NULL and ctx.draw.levelcolfunc == R_DrawLevelColumn)
+	if (R_DrawLevelGroup != nullptr and ctx.draw.levelcolfunc == R_DrawLevelColumn)
 		R_DrawLevelPlaneGroups(ctx, pl);
 	else
 		R_DrawLevelPlaneColumns(ctx, pl);
@@ -1205,7 +1205,7 @@ static void R_DrawSingleFlatPlane(rendercontext_t& ctx, visplane_t* pl)
 
 	const ResourceId res_id = Res_GetAnimatedTextureResourceId(pl->res_id);
 	const Texture* cached = Res_CacheTexture(res_id, PU_STATIC);
-	if (cached == NULL)
+	if (cached == nullptr)
 		return;
 
 	// The plane drawers tile with power-of-two masks, which a wall texture put
@@ -1387,7 +1387,7 @@ static bool R_EnterPortalView(AActor* sky, portalview_t& saved)
 	if (saved.stackportal)
 	{
 		const AActor* mate = sky->tracer;
-		if (mate == NULL)
+		if (mate == nullptr)
 			return false;
 
 		viewx = saved.x + sky->x - mate->x;
@@ -1469,9 +1469,9 @@ static void R_OpenPortalWindow(rendercontext_t& ctx, portalslice_t& step)
 	ctx.bsp.ds_p->x1 = 0;
 	ctx.bsp.ds_p->x2 = viewwidth - 1;
 	ctx.bsp.ds_p->silhouette = SIL_BOTH;
-	ctx.bsp.ds_p->midposts = NULL;
-	ctx.bsp.ds_p->midscales = NULL;
-	ctx.bsp.ds_p->curline = NULL;
+	ctx.bsp.ds_p->midposts = nullptr;
+	ctx.bsp.ds_p->midscales = nullptr;
+	ctx.bsp.ds_p->curline = nullptr;
 	ctx.bsp.ds_p->sortscale1 = ctx.bsp.ds_p->sortscale2 = 0;
 
 	// [RK] Full width clip arrays, from the visplane's clip values.
@@ -1519,9 +1519,9 @@ static void R_DrawPortalLevel(const int nslices)
 	{
 		rendercontext_t& ctx = R_SliceContext(i);
 		heads[i] = ctx.plane.visplanes[MAXVISPLANES];
-		ctx.plane.visplanes[MAXVISPLANES] = NULL;
+		ctx.plane.visplanes[MAXVISPLANES] = nullptr;
 
-		for (visplane_t* pl = heads[i]; pl != NULL; pl = pl->next)
+		for (visplane_t* pl = heads[i]; pl != nullptr; pl = pl->next)
 			queues[i].push_back(pl);
 
 		any |= heads[i] != NULL;
@@ -1548,7 +1548,7 @@ static void R_DrawPortalLevel(const int nslices)
 
 		const auto open = [&](int i)
 		{
-			return steps[i].pl != NULL and steps[i].pl->maxx >= steps[i].pl->minx;
+			return steps[i].pl != nullptr and steps[i].pl->maxx >= steps[i].pl->minx;
 		};
 
 		for (AActor* sky : portals)
@@ -1561,7 +1561,7 @@ static void R_DrawPortalLevel(const int nslices)
 
 				for (int i = 0; i < nslices; i++)
 				{
-					steps[i].pl = NULL;
+					steps[i].pl = nullptr;
 					size_t seen = 0;
 					for (visplane_t* pl : queues[i])
 					{
@@ -1572,7 +1572,7 @@ static void R_DrawPortalLevel(const int nslices)
 						}
 					}
 
-					more |= steps[i].pl != NULL;
+					more |= steps[i].pl != nullptr;
 					if (open(i))
 						gather.push_back(&R_SliceContext(i));
 				}
@@ -1612,7 +1612,7 @@ static void R_DrawPortalLevel(const int nslices)
 				// The discovering view is restored now
 				R_RunSlices(nslices, [&](int i)
 				{
-					if (steps[i].pl != NULL)
+					if (steps[i].pl != nullptr)
 						R_DrawStackFlatBlend(R_SliceContext(i), steps[i].pl);
 				});
 			}
@@ -1695,13 +1695,13 @@ bool R_PlaneInitData(rendercontext_t& ctx, IWindowSurface* surface)
 	ctx.plane.visplane_blocks.clear();
 	ctx.plane.visplane_block_used = VISPLANE_BLOCK;
 
-	ctx.plane.freetail = NULL;
+	ctx.plane.freetail = nullptr;
 	ctx.plane.freehead = &ctx.plane.freetail;
 
 	// includes the portal bucket at MAXVISPLANES, whose planes would otherwise
 	// be left pointing at freed blocks
 	for (int i = 0; i <= MAXVISPLANES; i++)
-		ctx.plane.visplanes[i] = NULL;
+		ctx.plane.visplanes[i] = nullptr;
 
 	return true;
 }

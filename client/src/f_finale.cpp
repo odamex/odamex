@@ -662,7 +662,7 @@ void F_CastDrawer()
 	if (V_FontsReady() and ::menu_font)
 	{
 		screen->DrawFontText(::menu_font, CR_RED,
-			x + (width - ::menu_font->getTextWidth(castorder[castnum].name)) / 2,
+			x + ((width - ::menu_font->getTextWidth(castorder[castnum].name)) / 2),
 			y + (height * 180 / 200),
 			castorder[castnum].name);
 	}
@@ -720,7 +720,7 @@ void F_BunnyScroll()
 	// The two patches are one panorama: p2 left, p1 right, overlapping by the
 	// widescreen extension so widescreen art does not repeat its extra columns.
 	int bunnyoverlap = bunnyextra * aspect_scale_ratio;
-	int panorama_width = frame_width * 2 - bunnyoverlap;
+	int panorama_width = (frame_width * 2) - bunnyoverlap;
 
 	// At 32:9 a pair of aspect-correct frames does not span the screen, and then no
 	// scroll position covers it. Scale up until the panorama does, the same way
@@ -732,7 +732,7 @@ void F_BunnyScroll()
 		frame_width = frame_width * cover_ratio;
 		frame_height = frame_height * cover_ratio;
 		bunnyoverlap = bunnyoverlap * cover_ratio;
-		panorama_width = frame_width * 2 - bunnyoverlap;
+		panorama_width = (frame_width * 2) - bunnyoverlap;
 	}
 
 	const int bunny1_h = bunny1_surface->getHeight();
@@ -779,7 +779,7 @@ void F_BunnyScroll()
 	if (finalecount < 1180)
 	{
 		const Texture* end_texture = Res_CacheTexture("END0", PATCH);
-		screen->DrawTextureIndirect(end_texture, (320-13*8)/2, (200-8*8)/2);
+		screen->DrawTextureIndirect(end_texture, (320-(13*8))/2, (200-(8*8))/2);
 		laststage = 0;
 		return;
 	}

@@ -2006,7 +2006,7 @@ void M_SwitchMenu(menu_t* menu)
 			rightExtent = rw;
 	}
 
-	int indent = 160 - (rightExtent - leftExtent) / 2;
+	int indent = 160 - ((rightExtent - leftExtent) / 2);
 
 	// Keep the block on-screen when it fits: labels off the left edge, values
 	// off the right. If it is wider than the screen, leave it centered.
@@ -2037,7 +2037,7 @@ static int M_OptTextVOffset()
 		return 0;
 
 	const int cleany = std::max(1, CleanYfac);
-	return (8 * cleany - ::menu_font->getHeight()) / (2 * cleany);
+	return ((8 * cleany) - ::menu_font->getHeight()) / (2 * cleany);
 }
 
 //
@@ -2069,10 +2069,10 @@ static void M_DrawOptCursor(const Texture* texture, int vx, int y)
 
 	// the text's em box top in real pixels is where DrawFontTextCleanMove(ty)
 	// starts drawing; its center is half the font height below that
-	const int text_center = screen->getCleanY(y + M_OptTextVOffset()) + font_height / 2;
+	const int text_center = screen->getCleanY(y + M_OptTextVOffset()) + (font_height / 2);
 	const int cursor_height = texture->mHeight * cleany;
 
-	screen->DrawTextureStretched(texture, screen->getCleanX(vx), text_center - cursor_height / 2,
+	screen->DrawTextureStretched(texture, screen->getCleanX(vx), text_center - (cursor_height / 2),
 	                             texture->mWidth * cleanx, cursor_height);
 }
 
@@ -2092,7 +2092,7 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 	
 	screen->DrawTextureClean(l_texture, x, y);
 	for (int i = 1; i < 11; i++)
-		screen->DrawTextureClean(m_texture, x + i*8, y);
+		screen->DrawTextureClean(m_texture, x + (i*8), y);
 	screen->DrawTextureClean(r_texture, x + 88, y);
 
 	screen->DrawTextureClean(c_texture, x + 5 + static_cast<int>(dist * 78.0), y);
@@ -2127,7 +2127,7 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 	screen->DrawTextureClean(l_texture, x, y);
 
 	for (int i = 1; i < 11; i++)
-		screen->DrawTextureClean(m_texture, x + i*8, y);
+		screen->DrawTextureClean(m_texture, x + (i*8), y);
 
 	screen->DrawTextureClean(r_texture, x + 88, y);
 
@@ -2176,7 +2176,7 @@ void M_OptDrawer()
 		screen->DrawFontText(hfont, CR_RED, (I_GetSurfaceWidth() - tw) / 2,
 		                     screen->getCleanY(MENU_TITLE_Y), CurrentMenu->titletext, true);
 
-		y = MENU_TITLE_Y + hfont->getHeight() / cleany + 5;
+		y = MENU_TITLE_Y + (hfont->getHeight() / cleany) + 5;
 	}
 	else
 	{

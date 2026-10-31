@@ -415,7 +415,7 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 
 	void* pixels;
 	int pitch;
-	if (SDL_LockTexture(mSDLTexture, NULL, &pixels, &pitch) == 0)
+	if (SDL_LockTexture(mSDLTexture, nullptr, &pixels, &pitch) == 0)
 	{
 		const int lines = mSurface->getWidth();
 		const int ncopy = std::min(R_ActiveThreads(), MAX_COPY_THREADS);
@@ -424,7 +424,7 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 		{
 			const int first = lines * i / ncopy;
 			const int last = lines * (i + 1) / ncopy;
-			mSurface->copyLinesTo32(static_cast<uint8_t*>(pixels) + static_cast<size_t>(first) * pitch,
+			mSurface->copyLinesTo32(static_cast<uint8_t*>(pixels) + (static_cast<size_t>(first) * pitch),
 			                        pitch, first, last - first);
 		});
 
@@ -434,11 +434,11 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 	{
 		m8bppTo32BppSurface->blit(mSurface, 0, 0, mSurface->getWidth(), mSurface->getHeight(),
 				0, 0, m8bppTo32BppSurface->getWidth(), m8bppTo32BppSurface->getHeight());
-		SDL_UpdateTexture(mSDLTexture, NULL, m8bppTo32BppSurface->getBuffer(), m8bppTo32BppSurface->getPitch());
+		SDL_UpdateTexture(mSDLTexture, nullptr, m8bppTo32BppSurface->getBuffer(), m8bppTo32BppSurface->getPitch());
 	}
 	else
 	{
-		SDL_UpdateTexture(mSDLTexture, NULL, mSurface->getBuffer(), mSurface->getPitch());
+		SDL_UpdateTexture(mSDLTexture, nullptr, mSurface->getBuffer(), mSurface->getPitch());
 	}
 
 	// Use GPU to rotate the texture 90 degrees and flip it vertically.

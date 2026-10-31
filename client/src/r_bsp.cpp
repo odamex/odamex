@@ -86,7 +86,7 @@ void R_ReallocDrawSegs(rendercontext_t& ctx)
 //
 void R_ClearDrawSegs(rendercontext_t& ctx)
 {
-	if (ctx.bsp.drawsegs == NULL)
+	if (ctx.bsp.drawsegs == nullptr)
 	{
 		ctx.bsp.maxdrawsegs = 256;
 		ctx.bsp.firstdrawseg = ctx.bsp.drawsegs = static_cast<drawseg_t*>(M_Malloc(ctx.bsp.maxdrawsegs * sizeof(drawseg_t)));
@@ -291,7 +291,7 @@ sector_t *R_FakeFlat(rendercontext_t& ctx, sector_t *sec, sector_t *tempsec,
 	// Only works if you cannot see the top surface of any deep water
 	// sectors at the same time.
 
-	if (back and not ctx.bsp.r_fakingunderwater and ctx.bsp.curline->frontsector->heightsec == NULL and
+	if (back and not ctx.bsp.r_fakingunderwater and ctx.bsp.curline->frontsector->heightsec == nullptr and
 		P_FloorHeight(s) > P_FloorHeight(sec))
 	{
 		fixed_t fcz1 = P_CeilingHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, ctx.bsp.frontsector);
@@ -302,7 +302,7 @@ sector_t *R_FakeFlat(rendercontext_t& ctx, sector_t *sec, sector_t *tempsec,
 		{
 			// will any columns of this window be visible or will they be blocked
 			// by 1s lines and closed doors?
-			if (memchr(ctx.bsp.solidcol + ctx.seg.rw_start, 0, ctx.seg.rw_stop - ctx.seg.rw_start + 1) != NULL)
+			if (memchr(ctx.bsp.solidcol + ctx.seg.rw_start, 0, ctx.seg.rw_stop - ctx.seg.rw_start + 1) != nullptr)
 			{
 				doorunderwater = true;
 				ctx.bsp.r_fakingunderwater = true;
@@ -475,7 +475,7 @@ static void R_CheckClippedSegForFakeFlat(rendercontext_t& ctx, const seg_t* line
 	static thread_local sector_t tempsec;
 	ctx.seg.rw_start = 0;
 	ctx.seg.rw_stop = viewwidth - 1;
-	R_FakeFlat(ctx, line->backsector, &tempsec, NULL, NULL, true);
+	R_FakeFlat(ctx, line->backsector, &tempsec, nullptr, nullptr, true);
 }
 
 //
@@ -534,7 +534,7 @@ void R_AddLine (rendercontext_t& ctx, const seg_t *line)
 
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
 	static thread_local sector_t tempsec;
-	ctx.bsp.backsector = line->backsector ? R_FakeFlat(ctx, line->backsector, &tempsec, NULL, NULL, true) : NULL;
+	ctx.bsp.backsector = line->backsector ? R_FakeFlat(ctx, line->backsector, &tempsec, nullptr, nullptr, true) : nullptr;
 
 	// Only the columns still open can be drawn.
 	int first = x1, last = x2;
@@ -709,7 +709,7 @@ static bboxview_t R_BBoxView(rendercontext_t& ctx, const fixed_t *bspcoord)
 			if (R_CheckProjectionX(x1, x2))
 			{
 				projected = true;
-				if (memchr(ctx.bsp.solidcol + x1, 0, x2 - x1 + 1) != NULL)
+				if (memchr(ctx.bsp.solidcol + x1, 0, x2 - x1 + 1) != nullptr)
 					return bboxview_t::open;
 			}
 		}
@@ -853,7 +853,7 @@ void R_Subsector (rendercontext_t& ctx, int num)
 static constexpr uint32_t FRONT_CULL_MIN = 4;
 
 static std::vector<uint32_t> nodesubsectors;
-static const node_t* nodesubsectorsfor = NULL;
+static const node_t* nodesubsectorsfor = nullptr;
 
 uint32_t R_CountSubsectors(unsigned int child)
 {

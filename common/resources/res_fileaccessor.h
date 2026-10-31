@@ -100,7 +100,7 @@ public:
 
 	bool valid() const override
 	{
-		return mFileHandle != NULL;
+		return mFileHandle != nullptr;
 	}
 
 	const OString& getFileName() const override
@@ -167,7 +167,7 @@ public:
 
 	bool valid() const override
 	{
-		return mBuffer != NULL; 
+		return mBuffer != nullptr; 
 	}
 
 	const OString& getFileName() const override

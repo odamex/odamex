@@ -73,7 +73,7 @@ static palindex_t V_FindDecorationColor()
 	const palette_t* palette = V_GetDefaultPalette();
 
 	int best_index = 1;
-	int best_distance = 256 * 256 * 3 + 1;
+	int best_distance = (256 * 256 * 3) + 1;
 
 	for (int i = 1; i < 256; i++)
 	{
@@ -81,9 +81,9 @@ static palindex_t V_FindDecorationColor()
 			continue;
 
 		const argb_t color = palette->basecolors[i];
-		const int distance = color.getr() * color.getr() +
-		                     color.getg() * color.getg() +
-		                     color.getb() * color.getb();
+		const int distance = (color.getr() * color.getr()) +
+		                     (color.getg() * color.getg()) +
+		                     (color.getb() * color.getb());
 
 		if (distance < best_distance)
 		{
@@ -203,9 +203,9 @@ static void V_FillGradientRGB(Texture* dest_texture, argb_t top, argb_t bottom, 
 	for (int y = 0; y < h; y++)
 	{
 		const int t = std::min(y, span);
-		const int r = top.getr() + (bottom.getr() - top.getr()) * t / span;
-		const int g = top.getg() + (bottom.getg() - top.getg()) * t / span;
-		const int b = top.getb() + (bottom.getb() - top.getb()) * t / span;
+		const int r = top.getr() + ((bottom.getr() - top.getr()) * t / span);
+		const int g = top.getg() + ((bottom.getg() - top.getg()) * t / span);
+		const int b = top.getb() + ((bottom.getb() - top.getb()) * t / span);
 		rowcolor[y] = V_BestColor(palette, r, g, b);
 	}
 
@@ -445,7 +445,7 @@ void OFont::printCharacter(const DCanvas* canvas, int& x, int& y, char c) const
 
 void OFont::printText(const DCanvas* canvas, int x, int y, int color, const char* str) const
 {
-	V_ColorMap = translationref_t(Ranges + color * 256);
+	V_ColorMap = translationref_t(Ranges + (color * 256));
 
 	while (*str)
 	{
@@ -576,7 +576,7 @@ void ConCharsFont::buildGlyphs()
 	{
 		for (int column = 0; column < numcolumns; column++)
 		{
-			const int charnum = row * numcolumns + column;
+			const int charnum = (row * numcolumns) + column;
 			if (charnum >= 256)
 				continue;
 
@@ -1026,8 +1026,8 @@ void TrueTypeFont::buildGlyphs()
 		{
 			for (int gy = 0; gy < height; gy++)
 			{
-				const byte pixel = *(source + pitch * gy + gx);
-				const int index = (gx + pad_left) * tex_height + (gy + pad_top);
+				const byte pixel = *(source + (pitch * gy) + gx);
+				const int index = ((gx + pad_left) * tex_height) + (gy + pad_top);
 
 				coverage[index] = pixel;
 				if (pixel > 127)
@@ -1043,7 +1043,7 @@ void TrueTypeFont::buildGlyphs()
 			{
 				for (int y = 0; y < tex_height; y++)
 				{
-					if (not body[x * tex_height + y])
+					if (not body[(x * tex_height) + y])
 						continue;
 
 					// drop shadow: the body offset down and to the right
@@ -1052,7 +1052,7 @@ void TrueTypeFont::buildGlyphs()
 						const int sx = x + shadow_size;
 						const int sy = y + shadow_size;
 						if (sx < tex_width and sy < tex_height)
-							deco[sx * tex_height + sy] = 1;
+							deco[(sx * tex_height) + sy] = 1;
 					}
 
 					// outline: the body dilated in every direction
@@ -1065,7 +1065,7 @@ void TrueTypeFont::buildGlyphs()
 								const int nx = x + ox;
 								const int ny = y + oy;
 								if (nx >= 0 and nx < tex_width and ny >= 0 and ny < tex_height)
-									deco[nx * tex_height + ny] = 1;
+									deco[(nx * tex_height) + ny] = 1;
 							}
 						}
 					}
@@ -1079,7 +1079,7 @@ void TrueTypeFont::buildGlyphs()
 		{
 			for (int y = 0; y < tex_height; y++)
 			{
-				const int index = x * tex_height + y;
+				const int index = (x * tex_height) + y;
 
 				if (body[index])
 				{

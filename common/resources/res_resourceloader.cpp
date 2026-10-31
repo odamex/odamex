@@ -96,7 +96,7 @@ static void Res_DrawPatchIntoTexture(
 	const int32_t* colofs = reinterpret_cast<const int32_t*>(lump_data + 8);
 
 	if (patchwidth <= 0 or patchheight <= 0 or
-		lump_length < 8 + patchwidth * sizeof(*colofs))		// long enough for column offset table?
+		lump_length < 8 + (patchwidth * sizeof(*colofs)))		// long enough for column offset table?
 		return;
 
 	int x1 = std::max(xoffs, 0);
@@ -136,7 +136,7 @@ static void Res_DrawPatchIntoTexture(
 
 			if (y1 <= y2)
 			{
-				palindex_t* dest = texture->mData + texheight * x + y1;
+				palindex_t* dest = texture->mData + (texheight * x) + y1;
 				const palindex_t* source = post + 3;
 				if (translation)
 				{
@@ -150,7 +150,7 @@ static void Res_DrawPatchIntoTexture(
 
 				if (texture->mARGBData)
 				{
-					argb_t* argb_dest = texture->mARGBData + texheight * x + y1;
+					argb_t* argb_dest = texture->mARGBData + (texheight * x) + y1;
 					for (int i = 0; i < y2 - y1 + 1; i++)
 						argb_dest[i] = argb_t(uint32_t(palette->basecolors[dest[i]]) | argb_t::alphaMask());
 				}
@@ -377,8 +377,8 @@ void Res_DrawPngIntoTexture(
 
 	for (int x = x1; x <= x2; x++)
 	{
-		const palindex_t* source = patch->mData + patch->mHeight * (x - xoffs) + (y1 - yoffs);
-		palindex_t* dest = texture->mData + texture->mHeight * x + y1;
+		const palindex_t* source = patch->mData + (patch->mHeight * (x - xoffs)) + (y1 - yoffs);
+		palindex_t* dest = texture->mData + (texture->mHeight * x) + y1;
 
 		for (int y = y1; y <= y2; y++, source++, dest++)
 		{
@@ -388,8 +388,8 @@ void Res_DrawPngIntoTexture(
 
 		if (texture->mARGBData and patch->mARGBData)
 		{
-			const argb_t* argb_source = patch->mARGBData + patch->mHeight * (x - xoffs) + (y1 - yoffs);
-			argb_t* argb_dest = texture->mARGBData + texture->mHeight * x + y1;
+			const argb_t* argb_source = patch->mARGBData + (patch->mHeight * (x - xoffs)) + (y1 - yoffs);
+			argb_t* argb_dest = texture->mARGBData + (texture->mHeight * x) + y1;
 
 			for (int y = y1; y <= y2; y++, argb_source++, argb_dest++)
 			{
@@ -553,16 +553,16 @@ static void Res_ReadPNGCallback(png_struct* png_ptr, png_byte* dest, png_size_t 
 #ifdef USE_PNG
 static void Res_PNGCleanup(png_struct** png_ptr, png_info** info_ptr, byte** lump_data, MEMFILE** mfp)
 {
-	png_destroy_read_struct(png_ptr, info_ptr, NULL);
-	*png_ptr = NULL;
-	*info_ptr = NULL;
+	png_destroy_read_struct(png_ptr, info_ptr, nullptr);
+	*png_ptr = nullptr;
+	*info_ptr = nullptr;
 
 	delete [] *lump_data;
-	*lump_data = NULL;
+	*lump_data = nullptr;
 
 	if (*mfp)
 		mem_fclose(*mfp);
-	*mfp = NULL;
+	*mfp = nullptr;
 }
 #endif
 
@@ -665,7 +665,7 @@ static forceinline int Res_DitherAlphaThreshold(int x, int y)
 
 	// spread the 16 dither levels across 8..248 so alpha 0 is always
 	// transparent and alpha 255 is always opaque
-	return bayer4x4[y & 3][x & 3] * 16 + 8;
+	return (bayer4x4[y & 3][x & 3] * 16) + 8;
 }
 
 
@@ -689,9 +689,9 @@ void PngTextureLoader::load(uint8_t* data) const
 
 	mRawResourceAccessor->loadResource(mResId, raw_data, raw_size);
 
-	png_struct* png_ptr = NULL;
-	png_info* info_ptr = NULL;
-	MEMFILE* mfp = NULL;
+	png_struct* png_ptr = nullptr;
+	png_info* info_ptr = nullptr;
+	MEMFILE* mfp = nullptr;
 
 	if (png_sig_cmp(raw_data, 0, 8) != 0)
 	{
@@ -708,7 +708,7 @@ void PngTextureLoader::load(uint8_t* data) const
 		texture->mOffsetY = grab_yoffs;
 	}
 
-	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 	if (not png_ptr)
 	{
 		PrintFmt(PRINT_HIGH, "PNG out of memory reading {}.\n", resource_name);
@@ -733,7 +733,7 @@ void PngTextureLoader::load(uint8_t* data) const
 	// read the png header
 	png_uint_32 width = 0, height = 0;
 	int bitsperpixel = 0, colortype = -1;
-	png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, NULL, NULL, NULL);
+	png_uint_32 ret = png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitsperpixel, &colortype, nullptr, nullptr, nullptr);
 
 	if (ret != 1)
 	{
@@ -802,13 +802,13 @@ void PngTextureLoader::load(uint8_t* data) const
 		// partial tRNS alpha are dithered between their matched color and
 		// the mask color in the 8bpp plane, while the ARGB plane keeps their
 		// true alpha.
-		png_color* png_palette = NULL;
+		png_color* png_palette = nullptr;
 		int num_palette = 0;
 		png_get_PLTE(png_ptr, info_ptr, &png_palette, &num_palette);
 
-		png_byte* trans_alpha = NULL;
+		png_byte* trans_alpha = nullptr;
 		int num_trans = 0;
-		png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &num_trans, NULL);
+		png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &num_trans, nullptr);
 
 		palindex_t lut[256];
 		argb_t argb_lut[256];
@@ -843,7 +843,7 @@ void PngTextureLoader::load(uint8_t* data) const
 				else
 					*dest = lut[row[x]];
 				dest += mHeight;
-				argb_plane[mHeight * x + y] = color;
+				argb_plane[(mHeight * x) + y] = color;
 			}
 		}
 	}
@@ -866,7 +866,7 @@ void PngTextureLoader::load(uint8_t* data) const
 					*dest = V_BestColor(palette->basecolors, color);
 				dest += mHeight;
 
-				argb_plane[mHeight * x + y] = color;
+				argb_plane[(mHeight * x) + y] = color;
 			}
 		}
 	}

@@ -453,8 +453,8 @@ forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t
 
 	const uint32_t f = from, t = to;
 
-	const uint32_t even = (((f & LANE) * froma + (t & LANE) * toa) >> 8) & LANE;
-	const uint32_t odd = ((((f >> 8) & LANE) * froma + ((t >> 8) & LANE) * toa) >> 8) & LANE;
+	const uint32_t even = ((((f & LANE) * froma) + ((t & LANE) * toa)) >> 8) & LANE;
+	const uint32_t odd = (((((f >> 8) & LANE) * froma) + (((t >> 8) & LANE) * toa)) >> 8) & LANE;
 
 	return argb_t(even | (odd << 8) | argb_t::alphaMask());
 }

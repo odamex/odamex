@@ -573,7 +573,7 @@ sector_t *P_NextSpecialSector (sector_t *sec, int type, sector_t *nogood)
 			return tsec;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 //

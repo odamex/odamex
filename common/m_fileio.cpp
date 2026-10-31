@@ -186,7 +186,7 @@ int32_t M_FileLength (FILE* f)
 int32_t M_FileLength(const std::string& filename)
 {
 	FILE *f = fopen(filename.c_str(), "rb");
-	if (f == NULL)
+	if (f == nullptr)
 		return -1;
 	int32_t length = M_FileLength(f);
 	fclose(f);

@@ -1171,7 +1171,7 @@ void VX_DrawColumn(rendercontext_t& ctx, vissprite_t* spr, const VoxelEye& eye, 
 				int local_yh = dcol.yh;
 				if (texturefrac < 0)
 				{
-					const int64_t cnt = (((-texturefrac) << FRACBITS) / dcol.iscale + FRACUNIT - 1) >>
+					const int64_t cnt = ((((-texturefrac) << FRACBITS) / dcol.iscale) + FRACUNIT - 1) >>
 					                    FRACBITS;
 					local_yl = static_cast<int>(std::min<int64_t>(local_yl + cnt, local_yh + 1));
 					texturefrac += cnt * dcol.iscale;
@@ -1228,7 +1228,7 @@ void VX_RecursiveDraw(rendercontext_t& ctx, vissprite_t* spr, const VoxelEye& ey
 	{
 		if (w >= h)
 		{
-			if (eye.x < ((x * 2 + w) << (FRACBITS - 1)))
+			if (eye.x < (((x * 2) + w) << (FRACBITS - 1)))
 			{
 				VX_RecursiveDraw(ctx, spr, eye, x + (w / 2), y, (w + 1) / 2, h);
 				w = w / 2;
@@ -1242,7 +1242,7 @@ void VX_RecursiveDraw(rendercontext_t& ctx, vissprite_t* spr, const VoxelEye& ey
 		}
 		else
 		{
-			if (eye.y < ((y * 2 + h) << (FRACBITS - 1)))
+			if (eye.y < (((y * 2) + h) << (FRACBITS - 1)))
 			{
 				VX_RecursiveDraw(ctx, spr, eye, x, y + (h / 2), w, (h + 1) / 2);
 				h = h / 2;
@@ -1506,8 +1506,8 @@ void VX_DrawVoxel(rendercontext_t& ctx, vissprite_t* spr)
 	// true-colour plane.
 	drawcolumn_t& dcol = ctx.draw.dcol;
 	dcol.masked = true;
-	dcol.texturedata = NULL;
-	dcol.argbtexturedata = NULL;
+	dcol.texturedata = nullptr;
+	dcol.argbtexturedata = nullptr;
 
 	VX_RecursiveDraw(ctx, spr, eye, 0, 0, v->x_size, v->y_size);
 }

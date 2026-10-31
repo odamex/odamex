@@ -159,7 +159,7 @@ void RawResourceAccessor::loadResource(const ResourceId res_id, uint8_t* data, u
 //
 ResourceManager::ResourceManager() :
 	mRawResourceAccessor(this),
-	mCache(NULL)
+	mCache(nullptr)
 { }
 
 
@@ -212,7 +212,7 @@ void ResourceManager::addResourceContainer(
 //
 void ResourceManager::openResourceFile(const OString& path)
 {
-	ResourceContainer* container = NULL;
+	ResourceContainer* container = nullptr;
 
 	if (M_IsFile(path))
 	{
@@ -234,7 +234,7 @@ void ResourceManager::openResourceFile(const OString& path)
 	if (not container)
 		return;
 
-	addResourceContainer(container, NULL, global_directory_name, path);
+	addResourceContainer(container, nullptr, global_directory_name, path);
 
 	mResourceContainerFileNames.insert(std::make_pair(reinterpret_cast<size_t>(container), path));
 	mResourceFileNames.push_back(path);
@@ -257,7 +257,7 @@ void ResourceManager::openResourceFiles(const std::vector<std::string>& filename
 		openResourceFile(OString(name));
 
 	ResourceContainer* container = new TextureManager(this);
-	addResourceContainer(container, NULL, global_directory_name, "Unified Texture System");
+	addResourceContainer(container, nullptr, global_directory_name, "Unified Texture System");
 
 	mCache = new ResourceCache(mResources.size());
 }
@@ -285,7 +285,7 @@ void ResourceManager::closeAllResourceContainers()
 	mResourceFileHashes.clear();
 
 	delete mCache;
-	mCache = NULL;
+	mCache = nullptr;
 
 	mNameTranslator.clear();
 }
@@ -429,7 +429,7 @@ uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
 const uint8_t* ResourceManager::loadResourceData(const ResourceId res_id, zoneTag_e tag)
 {
 	if (not validateResourceId(res_id))
-		return NULL;
+		return nullptr;
 
 	// cache hit, which render workers take concurrently without locking
 	if (const uint8_t* data = mCache->getData(res_id))
@@ -460,7 +460,7 @@ const uint8_t* ResourceManager::loadResourceData(const ResourceId res_id, zoneTa
 
 	// Nothing is cached for an empty resource, it reads as NULL.
 	if (size == 0)
-		return NULL;
+		return nullptr;
 
 	I_BeginRead();			// indicate to the HUD to draw the loading icon (STDISK)
 	mLoadsInProgress.push_back(res_id);
@@ -532,7 +532,7 @@ void ResourceManager::dump() const
 
 		assert(res_rec.mResourceContainer != nullptr);
 
-		bool cached = mCache->getData(res_id) != NULL;
+		bool cached = mCache->getData(res_id) != nullptr;
 		bool visible = mNameTranslator.checkNameVisibility(path, res_id);
 
 		PrintFmt(PRINT_HIGH,"0x{:08X} {} {} [{}] [{}]\n",

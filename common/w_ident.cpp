@@ -1306,7 +1306,7 @@ public:
 		const OMD5Hash md5sum = Res_MD5(filename);
 		const FileIdentifier* fileid = lookupByMd5Sum(md5sum);
 
-		if (fileid != NULL)
+		if (fileid != nullptr)
 			return fileid->mIdName;
 
 		// Not a registered file.
@@ -1413,7 +1413,7 @@ public:
 		CRC32SumLookupTable::const_iterator it = mCRC32SumLookup.find(crc32sum);
 		if (it != mCRC32SumLookup.end())
 			return &mIdentifiers.get(it->second);
-		return NULL;
+		return nullptr;
 	}
 
 	const FileIdentifier* lookupByMd5Sum(const OMD5Hash& md5sum) const
@@ -1421,7 +1421,7 @@ public:
 		Md5SumLookupTable::const_iterator it = mMd5SumLookup.find(md5sum);
 		if (it != mMd5SumLookup.end())
 			return &mIdentifiers.get(it->second);
-		return NULL;
+		return nullptr;
 	}
 
   private:

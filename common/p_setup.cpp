@@ -2566,7 +2566,7 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 	// for each of the texture tiers (bottom, middle, and top)
 	for (int i = 0; i < 3; i++)
 	{
-		ResourceId* res_id_ptr = NULL;
+		ResourceId* res_id_ptr = nullptr;
 		argb_t* blend_color;
 		OString texture_name;
 

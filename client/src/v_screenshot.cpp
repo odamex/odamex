@@ -299,7 +299,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 		for (unsigned int y = 0; y < height; y++)
 		{
 			row = row_ptrs[y];
-			const palindex_t* source = base + y * rowstep;
+			const palindex_t* source = base + (y * rowstep);
 
 			for (unsigned int x = 0; x < width; x++, source += colstep)
 			{
@@ -319,7 +319,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 		for (unsigned int y = 0; y < height; y++)
 		{
 			row = row_ptrs[y];
-			const argb_t* source = base + y * rowstep;
+			const argb_t* source = base + (y * rowstep);
 
 			for (unsigned int x = 0; x < width; x++, source += colstep)
 			{

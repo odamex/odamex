@@ -93,7 +93,7 @@ void P_InitSwitchList(void)
 	}
 	else
 	{
-		switchlist = Z_Malloc<ResourceId>(i * 2 + 1, PU_STATIC);
+		switchlist = Z_Malloc<ResourceId>((i * 2) + 1, PU_STATIC);
 
 		for (i = 0, list_p = alphSwitchList; list_p[18] || list_p[19]; list_p += 20)
 		{
@@ -191,7 +191,7 @@ const ResourceId P_GetButtonTexture(const line_t* line)
 	DActiveButton::EWhere twhere;
 	ResourceId alt_res_id;
 	const ResourceId* res_id_ptr = P_GetButtonTexturePtr(line, &alt_res_id, twhere);
-	if (res_id_ptr != NULL)
+	if (res_id_ptr != nullptr)
 		return *res_id_ptr;
 	return ResourceId::INVALID_ID;
 }
@@ -204,7 +204,7 @@ void P_SetButtonTexture(line_t* line, const ResourceId new_res_id)
 		ResourceId alt_res_id;
 		ResourceId* res_id_ptr = P_GetButtonTexturePtr(line, &alt_res_id, twhere);
 
-		if (res_id_ptr != NULL and Res_CheckResource(*res_id_ptr))
+		if (res_id_ptr != nullptr and Res_CheckResource(*res_id_ptr))
 			*res_id_ptr = new_res_id;
 	}
 }
@@ -306,7 +306,7 @@ void P_ChangeSwitchTexture(line_t* line, int useAgain, bool playsound)
 	ResourceId alt_res_id = ResourceId::INVALID_ID;
 	ResourceId* res_id_ptr = P_GetButtonTexturePtr(line, &alt_res_id, twhere);
 
-	if (res_id_ptr != NULL)
+	if (res_id_ptr != nullptr)
 	{
 		// [RH] The original code played the sound at buttonlist->soundorg,
 		//		which wasn't necessarily anywhere near the switch if

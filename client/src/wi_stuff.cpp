@@ -1125,13 +1125,13 @@ void WI_drawNetgameStats()
 	// draw stat titles (top line)
 	screen->DrawTextureClean(::kills, NG_STATSX+NG_SPACINGX-::kills->mWidth, NG_STATSY);
 
-	screen->DrawTextureClean(::items, NG_STATSX+2*NG_SPACINGX-::items->mWidth, NG_STATSY);
+	screen->DrawTextureClean(::items, NG_STATSX+(2*NG_SPACINGX)-::items->mWidth, NG_STATSY);
 
-	screen->DrawTextureClean(::scrt, NG_STATSX+3*NG_SPACINGX-::scrt->mWidth, NG_STATSY);
+	screen->DrawTextureClean(::scrt, NG_STATSX+(3*NG_SPACINGX)-::scrt->mWidth, NG_STATSY);
 
 	if (::dofrags)
 	{
-		screen->DrawTextureClean(::frags, NG_STATSX + 4 * NG_SPACINGX - ::frags->mWidth, NG_STATSY);
+		screen->DrawTextureClean(::frags, NG_STATSX + (4 * NG_SPACINGX) - ::frags->mWidth, NG_STATSY);
 	}
 
 	// draw stats
@@ -1358,8 +1358,8 @@ void WI_drawStats()
     screen->DrawTextureClean(items, SP_STATSX, SP_STATSY+lh);
     WI_drawPercent(cnt_items, 320 - SP_STATSX, SP_STATSY+lh);
 
-    screen->DrawTextureClean(secret, SP_STATSX, SP_STATSY+2*lh);
-    WI_drawPercent(cnt_secret, 320 - SP_STATSX, SP_STATSY+2*lh);
+    screen->DrawTextureClean(secret, SP_STATSX, SP_STATSY+(2*lh));
+    WI_drawPercent(cnt_secret, 320 - SP_STATSX, SP_STATSY+(2*lh));
 
 	screen->DrawTextureClean(timepatch, SP_TIMEX, SP_TIMEY);
 	WI_drawTime(cnt_time, WI_CENTERX - SP_TIMEX, SP_TIMEY);
@@ -1687,20 +1687,20 @@ void WI_unloadData()
 	for (int i = 0; i < 10; i++)
 		num[i] = NULL;
 
-	wiminus = NULL;
-	percent = NULL;
-	colon = NULL;
-	kills = NULL;
-	secret = NULL;
-	frags = NULL;
-	items = NULL;
-	finished = NULL;
-	entering = NULL;
-	timepatch = NULL;
-	sucks = NULL;
-	par = NULL;
-	total = NULL;
-	p = NULL;
+	wiminus = nullptr;
+	percent = nullptr;
+	colon = nullptr;
+	kills = nullptr;
+	secret = nullptr;
+	frags = nullptr;
+	items = nullptr;
+	finished = nullptr;
+	entering = nullptr;
+	timepatch = nullptr;
+	sucks = nullptr;
+	par = nullptr;
+	total = nullptr;
+	p = nullptr;
 
 	for (int i = 0; i < 4; i++)
 		faceclassic[i] = NULL;

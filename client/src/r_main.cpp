@@ -328,8 +328,8 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 	const double yd = FIXED2DOUBLE(y);
 
 
-	tx = static_cast<fixed_t>(static_cast<int64_t>((xd * cached_cos - yd * cached_sin) * static_cast<double>(FRACUNIT)));
-	ty = static_cast<fixed_t>(static_cast<int64_t>((xd * cached_sin + yd * cached_cos) * static_cast<double>(FRACUNIT)));
+	tx = static_cast<fixed_t>(static_cast<int64_t>(((xd * cached_cos) - (yd * cached_sin)) * static_cast<double>(FRACUNIT)));
+	ty = static_cast<fixed_t>(static_cast<int64_t>(((xd * cached_sin) + (yd * cached_cos)) * static_cast<double>(FRACUNIT)));
 }
 
 //
@@ -538,7 +538,7 @@ int R_ProjectPointX64(int64_t x, int64_t y)
 int R_ProjectPointX(fixed_t x, fixed_t y)
 {
 	if (y > 0)
-		return FIXED2INT(centerxfrac + static_cast<int64_t>(FocalLengthX) * static_cast<int64_t>(x) / static_cast<int64_t>(y));
+		return FIXED2INT(centerxfrac + (static_cast<int64_t>(FocalLengthX) * static_cast<int64_t>(x) / static_cast<int64_t>(y)));
 	else
 		return centerx;
 }
@@ -551,7 +551,7 @@ int R_ProjectPointX(fixed_t x, fixed_t y)
 int R_ProjectPointY(fixed_t z, fixed_t y)
 {
 	if (y > 0)
-		return FIXED2INT(centeryfrac - static_cast<int64_t>(FocalLengthY) * static_cast<int64_t>(z) / static_cast<int64_t>(y));
+		return FIXED2INT(centeryfrac - (static_cast<int64_t>(FocalLengthY) * static_cast<int64_t>(z) / static_cast<int64_t>(y)));
 	else
 		return centery;
 }
@@ -590,7 +590,7 @@ static inline void R_DrawPixel(rendercontext_t& ctx, int x, int y, byte color)
 {
 	const drawcolumn_t& dcol = ctx.draw.dcol;
 
-	byte* dest = dcol.destination + y * dcol.pitch_in_pixels + x * dcol.colstep;
+	byte* dest = dcol.destination + (y * dcol.pitch_in_pixels) + (x * dcol.colstep);
 	*dest = color;
 }
 
@@ -998,8 +998,8 @@ void R_SetFlatDrawFuncs(rendercontext_t& ctx)
 {
 	ctx.draw.colfunc = R_FillColumn;
 	ctx.draw.spanfunc = R_FillSpan;
-	ctx.draw.levelcolfunc = NULL;
-	ctx.draw.slopecolfunc = NULL;
+	ctx.draw.levelcolfunc = nullptr;
+	ctx.draw.slopecolfunc = nullptr;
 }
 
 //
@@ -1012,8 +1012,8 @@ void R_SetBlankDrawFuncs(rendercontext_t& ctx)
 {
 	ctx.draw.colfunc = R_BlankColumn;
 	ctx.draw.spanfunc = R_BlankSpan;
-	ctx.draw.levelcolfunc = NULL;
-	ctx.draw.slopecolfunc = NULL;
+	ctx.draw.levelcolfunc = nullptr;
+	ctx.draw.slopecolfunc = nullptr;
 }
 
 //
@@ -1032,7 +1032,7 @@ void R_ResetDrawFuncs(rendercontext_t& ctx)
 	else
 	{
 		ctx.draw.colfunc = R_DrawColumn;
-		ctx.draw.spanfunc = NULL;
+		ctx.draw.spanfunc = nullptr;
 		ctx.draw.levelcolfunc = R_DrawLevelColumn;
 		ctx.draw.slopecolfunc = R_DrawSlopeColumn;
 	}
@@ -1051,7 +1051,7 @@ void R_SetFuzzDrawFuncs(rendercontext_t& ctx)
 	else
 	{
 		ctx.draw.colfunc = R_DrawFuzzColumn;
-		ctx.draw.spanfunc = NULL;
+		ctx.draw.spanfunc = nullptr;
 		ctx.draw.levelcolfunc = R_DrawLevelColumn;
 		ctx.draw.slopecolfunc = R_DrawSlopeColumn;
 	}
@@ -1602,15 +1602,15 @@ BEGIN_COMMAND(r_benchmark)
 	if (argc > 1)
 		frames = std::clamp(atoi(argv[1]), 10, 20000);
 
-	cvar_t* swept = NULL;
+	cvar_t* swept = nullptr;
 	std::string value_a, value_b, restore;
 
 	if (argc > 4)
 	{
-		cvar_t* prev = NULL;
+		cvar_t* prev = nullptr;
 		swept = cvar_t::FindCVar(argv[2], &prev);
 
-		if (swept == NULL)
+		if (swept == nullptr)
 		{
 			PrintFmt(PRINT_HIGH, "r_benchmark: no such cvar \"{}\"\n", argv[2]);
 			return;

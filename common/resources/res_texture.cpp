@@ -55,14 +55,14 @@ static void Res_WarpPixels(PIXEL* dest, const PIXEL* source, const int width, co
 {
 	for (int x = 0; x < width; x++)
 	{
-		PIXEL* const dest_column = dest + height * x;
+		PIXEL* const dest_column = dest + (height * x);
 		int y = colshift[x];
 		for (int yt = 0; yt < height; yt++)
 		{
 			int sx = x + rowshift[y];
 			if (sx >= width)
 				sx -= width;
-			dest_column[yt] = source[height * sx + y];
+			dest_column[yt] = source[(height * sx) + y];
 
 			if (++y == height)
 				y = 0;
@@ -154,7 +154,7 @@ void Texture::init(int width, int height)
 //
 uint32_t Texture::calculateARGBPlaneSize(int width, int height)
 {
-	return (sizeof(argb_t) - 1) + sizeof(argb_t) * width * height;
+	return (sizeof(argb_t) - 1) + (sizeof(argb_t) * width * height);
 }
 
 
@@ -165,7 +165,7 @@ uint32_t Texture::calculateARGBPlaneSize(int width, int height)
 //
 void Texture::placeARGBPlane()
 {
-	uintptr_t plane_addr = reinterpret_cast<uintptr_t>(mData + sizeof(palindex_t) * mWidth * mHeight);
+	uintptr_t plane_addr = reinterpret_cast<uintptr_t>(mData + (sizeof(palindex_t) * mWidth * mHeight));
 	plane_addr = (plane_addr + sizeof(argb_t) - 1) & ~static_cast<uintptr_t>(sizeof(argb_t) - 1);
 	mARGBData = reinterpret_cast<argb_t*>(plane_addr);
 }
@@ -206,13 +206,13 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 	const fixed_t xstep = FixedDiv(sourcewidth << FRACBITS, destwidth << FRACBITS) + 1;
 	const fixed_t ystep = FixedDiv(sourceheight << FRACBITS, destheight << FRACBITS) + 1;
 
-	palindex_t* dest = dest_texture->mData + dx1 * dest_texture->mHeight + dy1;
+	palindex_t* dest = dest_texture->mData + (dx1 * dest_texture->mHeight) + dy1;
 
 	fixed_t xfrac = 0;
 	for (int xcount = destwidth; xcount > 0; xcount--)
 	{
 		const palindex_t* source = source_texture->mData +
-				(sx1 + (xfrac >> FRACBITS)) * source_texture->mHeight + sy1;
+				((sx1 + (xfrac >> FRACBITS)) * source_texture->mHeight) + sy1;
 
 		fixed_t yfrac = 0;
 		for (int ycount = destheight; ycount > 0; ycount--)
@@ -238,7 +238,7 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 // ============================================================================
 
 // TextureManager singleton.
-static TextureManager* texture_manager_instance = NULL;
+static TextureManager* texture_manager_instance = nullptr;
 
 TextureManager::TextureManager(ResourceManager* manager) :
 	mResourceLoaderLookup(1024)
@@ -257,7 +257,7 @@ TextureManager::TextureManager(ResourceManager* manager) :
 TextureManager::~TextureManager()
 {
 	if (texture_manager_instance == this)
-		texture_manager_instance = NULL;
+		texture_manager_instance = nullptr;
 	clear();
 }
 
@@ -361,7 +361,7 @@ static ResourceLoader* Res_CreateTexturesDirectoryLoader(const RawResourceAccess
 		return new FlatTextureLoader(accessor, res_id);
 
 	PrintFmt(PRINT_HIGH, "Unsupported image format for {}.\n", path.c_str());
-	return NULL;
+	return nullptr;
 }
 
 
@@ -385,7 +385,7 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 		if (mResourceLoaderLookup.find(raw_res_id) != mResourceLoaderLookup.end())
 			continue;
 
-		ResourceLoader* loader = NULL;
+		ResourceLoader* loader = nullptr;
 
 		bool is_png = false;
 		const uint32_t header_data_size = 32;
@@ -410,7 +410,7 @@ void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const R
 		else if (dir == flats_directory_name and has_header)
 			loader = new FlatTextureLoader(accessor, raw_res_id);
 
-		if (loader != NULL)
+		if (loader != nullptr)
 		{
 			const ResourceId res_id = manager->addResource(path, this, loader);
 
@@ -468,7 +468,7 @@ const ResourceLoader* TextureManager::getResourceLoader(const ResourceId res_id)
 	ResourceLoaderLookupTable::const_iterator it = mResourceLoaderLookup.find(res_id);
 	if (it != mResourceLoaderLookup.end())
 		return it->second;
-	return NULL;
+	return nullptr;
 }
 
 
@@ -500,7 +500,7 @@ void TextureManager::addCompositeTextureResources(ResourceManager* manager, cons
 	int32_t definition_count = LELONG(*(reinterpret_cast<int32_t*>(raw_def_data + 0)));
 	for (int32_t i = 0; i < definition_count; i++)
 	{
-		int32_t def_offset = 4 * i + 4;
+		int32_t def_offset = (4 * i) + 4;
 		if (res_size < static_cast<uint32_t>(def_offset))
 			break;
 
@@ -564,7 +564,7 @@ CompositeTextureDefinition TextureManager::buildCompositeTextureDefinition(const
 	int16_t patch_count = LESHORT(*reinterpret_cast<const int16_t*>(data + 20));
 	for (int16_t j = 0; j < patch_count; j++)
 	{
-		const uint8_t* patch_data = data + 22 + 10 * j;
+		const uint8_t* patch_data = data + 22 + (10 * j);
 
 		tex_def.mPatchDefs.push_back(CompositeTextureDefinition::PatchDef());
 		CompositeTextureDefinition::PatchDef& patch_def = tex_def.mPatchDefs.back();
@@ -605,7 +605,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 	accessor->loadResource(pnames_res_id, pnames_raw_data, pnames_size);
 
 	int32_t pnames_count = LELONG(*(reinterpret_cast<int32_t*>(pnames_raw_data + 0)));
-	if (static_cast<uint32_t>(pnames_count) * 8 + 4 != pnames_size)
+	if ((static_cast<uint32_t>(pnames_count) * 8) + 4 != pnames_size)
 		I_Error("Res_InitTextures: invalid PNAMES lump");
 
 	ResourceIdList pnames_lookup;
@@ -613,7 +613,7 @@ const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager,
 
 	for (int32_t i = 0; i < pnames_count; i++)
 	{
-		const char* str = reinterpret_cast<const char*>(pnames_raw_data + 4 + 8 * i);
+		const char* str = reinterpret_cast<const char*>(pnames_raw_data + 4 + (8 * i));
 		const OString lump_name = OStringToUpper(str, 8);
 
 		ResourceId res_id = Res_GetResourceId(lump_name, NS_PATCHES);
@@ -869,7 +869,7 @@ void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering searc
 	ResourceId base_res_id = Res_GetTextureResourceId(texture_name, search_ordering, false);
 
 	AnimatedTextureManager::anim_t sink_anim;
-	AnimatedTextureManager::anim_t* anim = NULL;
+	AnimatedTextureManager::anim_t* anim = nullptr;
 
 	if (base_res_id == ResourceId::INVALID_ID)
 	{
@@ -1076,7 +1076,7 @@ void AnimatedTextureManager::updateAnimatedTextures()
 			if (anim->speedmin[speedframe] == anim->speedmax[speedframe])
 				anim->countdown = anim->speedmin[speedframe];
 			else
-				anim->countdown = M_Random() % (anim->speedmax[speedframe] - anim->speedmin[speedframe]) + anim->speedmin[speedframe];
+				anim->countdown = (M_Random() % (anim->speedmax[speedframe] - anim->speedmin[speedframe])) + anim->speedmin[speedframe];
 		}
 
 		if (anim->uniqueframes)
@@ -1089,7 +1089,7 @@ void AnimatedTextureManager::updateAnimatedTextures()
 		{
 			for (uint32_t j = static_cast<uint32_t>(anim->basepic); j < static_cast<uint32_t>(anim->basepic) + anim->numframes; j++)
 			{
-				mTextureTranslation[j] = static_cast<ResourceId>((anim->basepic + (anim->curframe + j) % anim->numframes));
+				mTextureTranslation[j] = static_cast<ResourceId>((anim->basepic + ((anim->curframe + j) % anim->numframes)));
 			}
 		}
 	}
@@ -1145,7 +1145,7 @@ static uint32_t Res_GetTextureCandidateRecency(const ResourceId res_id)
 //
 bool Res_IsTextureResource(const ResourceId res_id)
 {
-	return texture_manager_instance != NULL and texture_manager_instance->ownsResource(res_id);
+	return texture_manager_instance != nullptr and texture_manager_instance->ownsResource(res_id);
 }
 
 
@@ -1275,7 +1275,7 @@ const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id)
 const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag)
 {
 	if (not Res_CheckResource(res_id))
-		return static_cast<const Texture*>(NULL);
+		return static_cast<const Texture*>(nullptr);
 
 	// Never reinterpret a raw (non-texture) resource's data as a
 	// Texture, substitute the placeholder instead.
@@ -1287,7 +1287,7 @@ const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag)
 		          Res_GetResourceName(res_id).c_str());
 		res_id = Res_GetResourceId("-MISSING-", NS_GLOBAL);
 		if (not Res_CheckResource(res_id))
-			return static_cast<const Texture*>(NULL);
+			return static_cast<const Texture*>(nullptr);
 	}
 
 	return Res_LoadResource<Texture>(res_id, tag);
@@ -1399,12 +1399,12 @@ static void Res_FillPlaneTexture(Texture* dest, const Texture* source)
 	{
 		const int sx = std::min<int>(xfrac >> FRACBITS, source->mWidth - 1);
 
-		const palindex_t* source_column = source->mData + source->mHeight * sx;
-		palindex_t* dest_column = dest->mData + height * x;
+		const palindex_t* source_column = source->mData + (source->mHeight * sx);
+		palindex_t* dest_column = dest->mData + (height * x);
 
 		const argb_t* source_argb_column =
-		    dest_argb ? source->mARGBData + source->mHeight * sx : NULL;
-		argb_t* dest_argb_column = dest_argb ? dest_argb + height * x : NULL;
+		    dest_argb ? source->mARGBData + (source->mHeight * sx) : nullptr;
+		argb_t* dest_argb_column = dest_argb ? dest_argb + (height * x) : nullptr;
 
 		fixed_t yfrac = 0;
 		for (int y = 0; y < height; y++, yfrac += ystep)
@@ -1437,7 +1437,7 @@ static void Res_ClearPlaneTextures()
 //
 const Texture* Res_PlaneTexture(const ResourceId res_id, const Texture* source)
 {
-	if (source == NULL or Res_IsPlaneSafeTexture(source))
+	if (source == nullptr or Res_IsPlaneSafeTexture(source))
 		return source;
 
 	// A warped texture's pixels are rewritten in place every tic, so its copy

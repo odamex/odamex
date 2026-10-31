@@ -98,7 +98,7 @@ static lumpHandle_t ToastSpreeArrow;
 extern const Texture*	tallnum[10];
 extern const Texture*	faces[];
 extern int		st_faceindex;
-extern const Texture*	keys[NUMCARDS+NUMCARDS/2];
+extern const Texture*	keys[NUMCARDS+(NUMCARDS/2)];
 extern byte		*Ranges;
 
 extern NetDemo netdemo;
@@ -317,7 +317,7 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 
 	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
 	for (int i = 0;i < bar_width;i++) {
-		const Texture* texture = NULL;
+		const Texture* texture = nullptr;
 		if (!reverse) {
 			if (i == 0 && !cutleft) {
 				if (bar_filled == 0) {
@@ -1765,7 +1765,7 @@ void MultiKillHud()
 			y = std::min(y, MessageColumnBottom() - pad - h);
 			y = std::max(y, MessageColumnTop() + pad);
 
-			::screen->DrawFontText(banner_font, line.color, surface_width / 2 - w / 2, y,
+			::screen->DrawFontText(banner_font, line.color, (surface_width / 2) - (w / 2), y,
 				line.multiKillText.c_str(), false);
 
 			ClaimMessageColumnBottom(y);
@@ -1960,7 +1960,7 @@ void LevelStateHUD()
 
 	if (::hud_transparency > 0.0f)
 	{
-		::screen->DrawFontText(banner_font, CR_GREY, surface_width / 2 - w / 2, top,
+		::screen->DrawFontText(banner_font, CR_GREY, (surface_width / 2) - (w / 2), top,
 		                       lines.title.c_str(), false);
 	}
 
@@ -1978,7 +1978,7 @@ void LevelStateHUD()
 		w = hud::StringWidthMono(subtitle_font, lines.subtitle[i].c_str());
 		if (::hud_transparency > 0.0f)
 		{
-			hud::DrawTextMonoAt(subtitle_font, surface_width / 2 - w / 2,
+			hud::DrawTextMonoAt(subtitle_font, (surface_width / 2) - (w / 2),
 			    subtop + (i * line_spacing), lines.subtitle[i].c_str(), CR_GREY);
 		}
 	}

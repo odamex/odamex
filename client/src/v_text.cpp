@@ -57,8 +57,8 @@ EXTERN_CVAR(ui_font_hud)
 std::vector<byte> ConChars;
 extern byte *Ranges;
 
-OFont* menu_font = NULL;
-OFont* hud_font = NULL;
+OFont* menu_font = nullptr;
+OFont* hud_font = nullptr;
 
 static const char* TTF_LUMP_NAME = "FONT_SM";
 
@@ -526,7 +526,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	}
 
 	x = x / char_size * char_size;
-	byte* destline = mSurface->getBuffer() + y * surface_pitch;
+	byte* destline = mSurface->getBuffer() + (y * surface_pitch);
 
 	while (*str && x <= (surface_width - char_size))
 	{
@@ -556,7 +556,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		if (mSurface->getBitsPerPixel() == 8)
 		{
 			const byte* source = &ConChars[c * 128];
-			palindex_t* dest = static_cast<palindex_t*>(destline) + x * colstep;
+			palindex_t* dest = static_cast<palindex_t*>(destline) + (x * colstep);
 			for (int z = 0; z < 8; z++)
 			{
 				// repeat each scanline based on scale
@@ -570,7 +570,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 						// repeat each pixel based on scale
 						for (int sx = 0; sx < scale; ++sx)
 						{
-							palindex_t* pixel = dest + (a*scale + sx) * colstep;
+							palindex_t* pixel = dest + (((a*scale) + sx) * colstep);
 							*pixel = (*pixel & mask) ^ color;
 						}
 					}
@@ -582,7 +582,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		else
 		{
 			byte* source = &ConChars[c * 128];
-			argb_t* dest = reinterpret_cast<argb_t*>(destline) + x * colstep;
+			argb_t* dest = reinterpret_cast<argb_t*>(destline) + (x * colstep);
 			for (int z = 0; z < 8; z++)
 			{
 				// repeat each scanline based on scale
@@ -597,7 +597,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 						// repeat each pixel based on scale
 						for (int sx = 0; sx < scale; ++sx)
 						{
-							argb_t* pixel = dest + (a*scale + sx) * colstep;
+							argb_t* pixel = dest + (((a*scale) + sx) * colstep);
 							*pixel = (*pixel & mask) ^ color;
 						}
 					}
@@ -633,14 +633,14 @@ static bool V_DrawRuleChar(const DCanvas* canvas, byte c, int x, int y,
 
 	// Each CONCHARS glyph is 8 rows of 8 colour bytes followed by 8 mask
 	// bytes, where a mask byte of 0 means the pixel is drawn.
-	const byte* glyph = ::ConChars.data() + static_cast<int>(c) * 128;
+	const byte* glyph = ::ConChars.data() + (static_cast<int>(c) * 128);
 
 	int first_row = -1, last_row = -1;
 	palindex_t color_index = 0;
 
 	for (int row = 0; row < 8; row++)
 	{
-		const byte* colors = glyph + row * 16;
+		const byte* colors = glyph + (row * 16);
 		const byte* mask = colors + 8;
 
 		for (int col = 0; col < 8; col++)
@@ -664,8 +664,8 @@ static bool V_DrawRuleChar(const DCanvas* canvas, byte c, int x, int y,
 	// scale the bar's rows up to the line the text is being drawn on
 	int left = x;
 	int right = x + advance;
-	int top = y + (first_row * line_height) / 8;
-	int bottom = std::max(y + ((last_row + 1) * line_height) / 8, top + 1);
+	int top = y + ((first_row * line_height) / 8);
+	int bottom = std::max(y + (((last_row + 1) * line_height) / 8), top + 1);
 
 	// Clear does no bounds checking, so clip the bar to the surface before
 	// handing it over -- console text can be positioned partly off-screen.
@@ -956,7 +956,7 @@ brokenlines_t* V_BreakLinesFontPixels(const OFont* font, int maxwidth_px, const 
 	brokenlines_t* broken = new brokenlines_t[i + 1];
 
 	memcpy(broken, lines, sizeof(brokenlines_t) * i);
-	broken[i].string = NULL;
+	broken[i].string = nullptr;
 	broken[i].width = -1;
 
 	return broken;

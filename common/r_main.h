@@ -295,18 +295,18 @@ inline argb_t shaderef_t::shadeargb(const argb_t c) const
 	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
 
 	// Use the dynamic lighting's light color if we have one:
-	if (m_dyncolormap != NULL)
+	if (m_dyncolormap != nullptr)
 	{
 		lightcolor = m_dyncolormap->color;
 		fadecolor = m_dyncolormap->fade;
 	}
 
-	unsigned int r = (c.getr() * lightcolor.getr() * (NUMCOLORMAPS - mapnum) / 255
-					+ fadecolor.getr() * mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
-	unsigned int g = (c.getg() * lightcolor.getg() * (NUMCOLORMAPS - mapnum) / 255
-					+ fadecolor.getg() * mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
-	unsigned int b = (c.getb() * lightcolor.getb() * (NUMCOLORMAPS - mapnum) / 255
-					+ fadecolor.getb() * mapnum + NUMCOLORMAPS / 2) / NUMCOLORMAPS;
+	unsigned int r = ((c.getr() * lightcolor.getr() * (NUMCOLORMAPS - mapnum) / 255)
+					+ (fadecolor.getr() * mapnum) + (NUMCOLORMAPS / 2)) / NUMCOLORMAPS;
+	unsigned int g = ((c.getg() * lightcolor.getg() * (NUMCOLORMAPS - mapnum) / 255)
+					+ (fadecolor.getg() * mapnum) + (NUMCOLORMAPS / 2)) / NUMCOLORMAPS;
+	unsigned int b = ((c.getb() * lightcolor.getb() * (NUMCOLORMAPS - mapnum) / 255)
+					+ (fadecolor.getb() * mapnum) + (NUMCOLORMAPS / 2)) / NUMCOLORMAPS;
 
 	return argb_t(c.geta(), gammatable[r], gammatable[g], gammatable[b]);
 }

@@ -144,7 +144,7 @@ void R_ClearSprites(rendercontext_t& ctx)
 	ctx.sprite.vissprite_p = ctx.sprite.firstvissprite;
 
 	ctx.sprite.projspritenum = -1;
-	ctx.sprite.projsprdef = NULL;
+	ctx.sprite.projsprdef = nullptr;
 	ctx.sprite.projlerp = OInterpolation::getInstance().enabled();
 }
 
@@ -200,7 +200,7 @@ void R_BlastSpriteColumn(rendercontext_t& ctx, void (*drawfunc)(rendercontext_t&
 		return;
 
 	// clamp the texture coordinates so out-of-range rows are not drawn
-	const int64_t endfrac = texturefrac + (yh - yl) * ctx.draw.dcol.iscale;
+	const int64_t endfrac = texturefrac + ((yh - yl) * ctx.draw.dcol.iscale);
 	const int64_t maxfrac = ctx.draw.dcol.textureheight;
 
 	if (endfrac >= maxfrac)
@@ -279,7 +279,7 @@ void R_DrawVisSprite(rendercontext_t& ctx, vissprite_t *vis, int x1, int x2)
 		//		used it, but the prefered way to change a thing's colors
 		//		is now with the palette field.
 		translated = true;
-		ctx.draw.dcol.translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
+		ctx.draw.dcol.translation = translationref_t(translationtables + ((MAXPLAYERS-1)*256) +
 			( (vis->mobjflags & mask(MF_TRANSLATION)).to_int() >> (MF_TRANSSHIFT-8) ));
 	}
 	int id = vis->mo && vis->mo->player ? vis->mo->player->id : 0;
@@ -419,7 +419,7 @@ static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* se
 	{
 		visible = false;
 		if (not keepoffscreen)
-			return NULL;
+			return nullptr;
 	}
 
 	fixed_t yscale = FixedDiv(FocalLengthY, ty);
@@ -431,7 +431,7 @@ static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* se
 	{
 		visible = false;
 		if (not keepoffscreen)
-			return NULL;
+			return nullptr;
 	}
 
 	if (onscreen)
@@ -489,7 +489,7 @@ static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* se
 	vis->FakeFlat = fakeside;
 	vis->spectator = false;
 	vis->res_id = ResourceId::INVALID_ID;
-	vis->texture = NULL;
+	vis->texture = nullptr;
 	vis->colormap = ctx.draw.basecolormap;
 	vis->voxel = nullptr;
 
@@ -620,7 +620,7 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 
 	// Cache the last sprite def lookup - crowds of identical monsters hit
 	// this constantly.
-	if (thing->sprite != ctx.sprite.projspritenum or ctx.sprite.projsprdef == NULL)
+	if (thing->sprite != ctx.sprite.projspritenum or ctx.sprite.projsprdef == nullptr)
 	{
 		auto it = sprites.find(thing->sprite);
 
@@ -661,7 +661,7 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 		}
 		else
 		{
-			rot = (ang - thing->angle + static_cast<angle_t>(ANG45 / 2) * 9 -
+			rot = (ang - thing->angle + (static_cast<angle_t>(ANG45 / 2) * 9) -
 			       static_cast<angle_t>(ANG180 / 16)) >> 28;
 		}
 	}
@@ -927,7 +927,7 @@ void R_DrawPSprite(rendercontext_t& ctx, const pspdef_t& psp, ActorFlags1 flags)
 	// denis - bump to 0x9000
 	static constexpr fixed_t WEAPONTWEAK = 0x9000;
 
-	vis.texturemid = (BASEYCENTER << FRACBITS) + FRACUNIT / 2 - (sy + WEAPONTWEAK - topoffs);
+	vis.texturemid = (BASEYCENTER << FRACBITS) + (FRACUNIT / 2) - (sy + WEAPONTWEAK - topoffs);
 	vis.x1 = x1 < 0 ? 0 : x1;
 	vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;
 	vis.xscale = pspritexscale;
@@ -936,7 +936,7 @@ void R_DrawPSprite(rendercontext_t& ctx, const pspdef_t& psp, ActorFlags1 flags)
 	vis.startfrac = 0;
 	vis.translation = translationref_t();		// [RH] Use default colors
 	vis.translucency = r_drawplayersprites * FRACUNIT;
-	vis.mo = NULL;
+	vis.mo = nullptr;
 	vis.spectator = false;
 
 	if (flip)
@@ -1529,7 +1529,7 @@ void R_ProjectParticle (rendercontext_t& ctx, particle_t *particle, const sector
 	{
 		vis->startfrac = particle->color;
 		vis->res_id = NO_PARTICLE;
-		vis->texture = NULL;
+		vis->texture = nullptr;
 		vis->translucency = 65535;
 	}
 	else

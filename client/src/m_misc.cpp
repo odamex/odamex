@@ -262,7 +262,7 @@ std::string M_ExpandTokens(const std::string &str)
 			case 'd':
 			{
 				// Date
-			    time_t now = time(NULL);
+			    time_t now = time(nullptr);
 				char date[11] = {0};
 				strftime(date, sizeof(date), "%Y%m%d", localtime(&now));
 				buffer << date;
@@ -271,7 +271,7 @@ std::string M_ExpandTokens(const std::string &str)
 			case 't':
 			{
 				// Time
-			    time_t now = time(NULL);
+			    time_t now = time(nullptr);
 				char date[9] = {0};
 				strftime(date, sizeof(date), "%H%M%S", localtime(&now));
 				buffer << date;

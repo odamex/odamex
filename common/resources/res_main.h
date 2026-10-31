@@ -129,7 +129,7 @@ public:
 
 	void closeAllResourceContainers();
 
-	const ResourceId addResource(const ResourcePath& path, const ResourceContainer* container, const ResourceLoader* loader=NULL);
+	const ResourceId addResource(const ResourcePath& path, const ResourceContainer* container, const ResourceLoader* loader=nullptr);
 
 	void addResourceAlias(const ResourcePath& path, const ResourceId res_id);
 
@@ -230,7 +230,7 @@ private:
 			assert(res_rec->mResourceContainer != NULL);
 			return res_rec;
 		}
-		return NULL;
+		return nullptr;
 	}
 
 	ResourceRecord* getResourceRecord(const ResourceId res_id)
@@ -248,7 +248,7 @@ private:
 		const ResourceRecord* res_rec = getResourceRecord(res_id);
 		if (res_rec)
 			return res_rec->mResourceContainer;
-		return NULL;
+		return nullptr;
 	}
 
 	struct ResourceContainerRecord
@@ -279,7 +279,7 @@ private:
 		for (auto& rescontainer: mResourceContainers)
 			if (rescontainer.mResourceContainer == container)
 				return &rescontainer;
-		return NULL;
+		return nullptr;
 	}
 
 	void openResourceFile(const OString& path);

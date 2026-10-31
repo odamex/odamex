@@ -151,8 +151,8 @@ void R_InitColormaps()
 			if (Res_GetResourceSize(res_id) >= (NUMCOLORMAPS+1)*256)
 			{
 				const uint8_t* map = Res_LoadResource<uint8_t>(res_id, PU_CACHE);
-				byte* colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*i;
-				argb_t* shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*i;
+				byte* colormap = realcolormaps.colormap+((NUMCOLORMAPS+1)*256*i);
+				argb_t* shademap = realcolormaps.shademap+((NUMCOLORMAPS+1)*256*i);
 
 				// Copy colormap data:
 				memcpy(colormap, map, (NUMCOLORMAPS+1)*256);

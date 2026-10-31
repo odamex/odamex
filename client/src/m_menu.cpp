@@ -709,8 +709,8 @@ void M_DrawLoad ()
 	M_DrawMenuTitleText("Load Game", 20);
 	for (int i = 0; i < load_end; i++)
 	{
-		M_DrawSaveLoadBorder(LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
-		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		M_DrawSaveLoadBorder(LoadDef.x, LoadDef.y+(LINEHEIGHT*i), 24);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x, LoadDef.y+(LINEHEIGHT*i), savegamestrings[i]);
 	}
 }
 
@@ -755,13 +755,13 @@ void M_DrawSave()
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
-		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x, LoadDef.y+(LINEHEIGHT*i), savegamestrings[i]);
 	}
 
 	if (genStringEnter != oldmenustring_t::NONE)
 	{
 		i = V_FontStringWidthClean(::menu_font, savegamestrings[saveSlot]);
-		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x + i, LoadDef.y+LINEHEIGHT*saveSlot, "_");
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x + i, LoadDef.y+(LINEHEIGHT*saveSlot), "_");
 	}
 }
 
@@ -960,7 +960,7 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 	// Vertically center the box on the field text.
 	const int cleany = std::max(1, CleanYfac);
 	const int font_h = (V_FontsReady() and ::menu_font) ? ::menu_font->getHeight() / cleany : 8;
-	const int box_y = y + font_h / 2 - center_texture->mHeight / 2 + center_texture->mOffsetY;
+	const int box_y = y + (font_h / 2) - (center_texture->mHeight / 2) + center_texture->mOffsetY;
 
 	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, box_y);
 
@@ -1403,9 +1403,9 @@ static forceinline void R_RenderFire(int x, int y)
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
-		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * rowstep + x * colstep;
+		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + (y * rowstep) + (x * colstep);
 		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) +
-								b * fire_surface->getRowStepInPixels();
+								(b * fire_surface->getRowStepInPixels());
 		y += CleanYfac;
 
 		for (int a = 0; a < fire_surface_width; a++, to += xscale * colstep,
@@ -1414,7 +1414,7 @@ static forceinline void R_RenderFire(int x, int y)
 			for (int c = CleanYfac; c; c--)
 			{
 				for (int i = 0; i < xscale; ++i)
-					*(to + rowstep * c + i * colstep) = R_FirePixel<PIXEL_T>(*from);
+					*(to + (rowstep * c) + (i * colstep)) = R_FirePixel<PIXEL_T>(*from);
 			}
 		}
 	}
@@ -1433,9 +1433,9 @@ static forceinline void R_RenderFire(int x, int y)
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
-		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * rowstep + x * colstep;
+		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + (y * rowstep) + (x * colstep);
 		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) +
-								b * fire_surface->getRowStepInPixels();
+								(b * fire_surface->getRowStepInPixels());
 		y += CleanYfac;
 
 		for (int a = 0; a < fire_surface_width; a++, to += CleanXfac * colstep,
@@ -1444,7 +1444,7 @@ static forceinline void R_RenderFire(int x, int y)
 			for (int c = CleanYfac; c; c--)
 			{
 				for (int i = 0; i < CleanXfac; ++i)
-					*(to + rowstep * c + i * colstep) = R_FirePixel<PIXEL_T>(*from);
+					*(to + (rowstep * c) + (i * colstep)) = R_FirePixel<PIXEL_T>(*from);
 			}
 		}
 	}
@@ -1499,7 +1499,7 @@ static void M_PlayerSetupDrawer()
 			const int colstep = fire_surface->getColStepInPixels();
 
 			palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) +
-								(fire_surface_height - 3) * rowstep;
+								((fire_surface_height - 3) * rowstep);
 			for (int a = 0; a < fire_surface_width; a++, from += colstep)
 				*from = *(from + (rowstep << 1)) = M_Random();
 
@@ -1513,7 +1513,7 @@ static void M_PlayerSetupDrawer()
 
 				// fire_surface_width - 1 columns right is the last pixel of the
 				// same line: the horizontal wrap, not a stride.
-				unsigned int top = *p + *(p + (fire_surface_width - 1) * colstep) + *(p + colstep);
+				unsigned int top = *p + *(p + ((fire_surface_width - 1) * colstep)) + *(p + colstep);
 				unsigned int bottom = *(pixel + (rowstep << 2));
 				unsigned int c1 = (top + bottom) >> 2;
 				if (c1 > 1)
@@ -1547,7 +1547,7 @@ static void M_PlayerSetupDrawer()
 
 				// special case: last pixel on line
 				p = pixel + (rowstep << 1);
-				top = *p + *(p - colstep) + *(p - (fire_surface_width - 1) * colstep);
+				top = *p + *(p - colstep) + *(p - ((fire_surface_width - 1) * colstep));
 				bottom = *(pixel + (rowstep << 2));
 				c1 = (top + bottom) >> 2;
 				if (c1 > 1)
@@ -1613,13 +1613,13 @@ static void M_PlayerSetupDrawer()
 		V_ColorMap = translationref_t(translationtables, menuplayer_id);
 
 		const Texture* texture = Res_CacheTexture(sprframe->resource[0]);
-		screen->DrawTranslatedTextureClean(texture, 320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
+		screen->DrawTranslatedTextureClean(texture, 320 - 52 - 32, PSetupDef.y + (LINEHEIGHT*3) + 46);
 	}
 
 	{
 		// Draw box surrounding fire and player:
 		const Texture* texture = Res_CacheTexture("M_PBOX", GRAPHICS);
-		screen->DrawTextureClean(texture, 320 - 88 - 32 + 36, PSetupDef.y + LINEHEIGHT*3 + 22);
+		screen->DrawTextureClean(texture, 320 - 88 - 32 + 36, PSetupDef.y + (LINEHEIGHT*3) + 22);
 	}
 
 	// Draw team setting
@@ -1634,8 +1634,8 @@ static void M_PlayerSetupDrawer()
 	{
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
 		const int x = V_FontStringWidthClean(::menu_font, "Gender") + 8 + PSetupDef.x;
-		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Gender");
-		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + LINEHEIGHT*2, genders[gender]);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*2), "Gender");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + (LINEHEIGHT*2), genders[gender]);
 	}
 
 	// Draw autoaim setting
@@ -1643,8 +1643,8 @@ static void M_PlayerSetupDrawer()
 		const int x = V_FontStringWidthClean(::menu_font, "Autoaim") + 8 + PSetupDef.x;
 		const float aim = cl_autoaim;
 
-		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Autoaim");
-		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + LINEHEIGHT*3,
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*3), "Autoaim");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + (LINEHEIGHT*3),
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
@@ -1656,8 +1656,8 @@ static void M_PlayerSetupDrawer()
 	// Draw color setting
 	{
 		const int x = V_FontStringWidthClean(::menu_font, "Color") + 8 + PSetupDef.x;
-		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Color");
-		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + LINEHEIGHT*4, colorpresets[colorpreset]);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*4), "Color");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + (LINEHEIGHT*4), colorpresets[colorpreset]);
 	}
 
 	int PSetupSize = sizeof(PlayerSetupMenu) / sizeof(PlayerSetupMenu[0]);
@@ -1671,9 +1671,9 @@ static void M_PlayerSetupDrawer()
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Red");
-		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Green");
-		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Blue");
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*5), "Red");
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*6), "Green");
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*7), "Blue");
 
 		{
 			const int x = V_FontStringWidthClean(::menu_font, "Green") + 8 + PSetupDef.x;
@@ -1890,13 +1890,13 @@ static void M_SlidePlayerBlue (int choice)
 void M_DrawEmptyCell(oldmenu_t *menu, int item)
 {
 	const Texture* texture = Res_CacheTexture("M_CELL1", GRAPHICS);
-	screen->DrawTextureClean(texture, menu->x - 10, menu->y+item*LINEHEIGHT - 1);
+	screen->DrawTextureClean(texture, menu->x - 10, menu->y+(item*LINEHEIGHT) - 1);
 }
 
 void M_DrawSelCell(oldmenu_t *menu, int item)
 {
 	const Texture* texture = Res_CacheTexture("M_CELL2", GRAPHICS);
-	screen->DrawTextureClean(texture, menu->x - 10, menu->y+item*LINEHEIGHT - 1);
+	screen->DrawTextureClean(texture, menu->x - 10, menu->y+(item*LINEHEIGHT) - 1);
 }
 
 
@@ -2052,12 +2052,12 @@ static void M_DrawMessageButtons(int y)
 			const int cleanx = std::max(1, CleanXfac);
 			const int cleany = std::max(1, CleanYfac);
 			const int font_height = ::menu_font->getHeight();
-			const int text_center = screen->getCleanY(by) + font_height / 2;
+			const int text_center = screen->getCleanY(by) + (font_height / 2);
 			const int cursor_height = cursor->mHeight * cleany;
 
 			screen->DrawTextureStretched(cursor,
 			                             screen->getCleanX(bx + w + cursor_gap),
-			                             text_center - cursor_height / 2,
+			                             text_center - (cursor_height / 2),
 			                             cursor->mWidth * cleanx, cursor_height);
 		}
 	}
@@ -2622,7 +2622,7 @@ void M_Drawer()
 
 		for (int i = 0; lines[i].width != -1; i++)
 		{
-			screen->DrawFontTextCleanMove(::menu_font, CR_RED, 160 - lines[i].width/2, y,
+			screen->DrawFontTextCleanMove(::menu_font, CR_RED, 160 - (lines[i].width/2), y,
 			                              lines[i].string);
 			y += lineheight;
 		}
@@ -2665,7 +2665,7 @@ void M_Drawer()
 			if (drawSkull)
 			{
 				const Texture* texture = Res_CacheTexture(skullName[whichSkull], GRAPHICS);
-				screen->DrawTextureClean(texture, x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
+				screen->DrawTextureClean(texture, x + SKULLXOFF, currentMenu->y - 5 + (itemOn*LINEHEIGHT));
 			}
 		}
 	}

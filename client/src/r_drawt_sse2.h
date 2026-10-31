@@ -54,7 +54,7 @@ public:
 		{
 			const uint32_t l = static_cast<uint32_t>(d.lmap), s = static_cast<uint32_t>(d.lmapstep);
 			lmap = _mm_setr_epi32(static_cast<int32_t>(l), static_cast<int32_t>(l + s),
-					static_cast<int32_t>(l + 2 * s), static_cast<int32_t>(l + 3 * s));
+					static_cast<int32_t>(l + (2 * s)), static_cast<int32_t>(l + (3 * s)));
 			lstep4 = _mm_set1_epi32(static_cast<int32_t>(4 * s));
 			lbias = _mm_set1_epi32(d.lbias);
 		}

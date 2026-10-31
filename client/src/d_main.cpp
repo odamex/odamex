@@ -347,7 +347,7 @@ void D_Display()
 
 		// todo: properly center "PAUSED" graphic for Heretic
 		const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
-		screen->DrawTextureCleanNoMove(texture, (I_GetSurfaceWidth() - texture->mWidth * CleanXfac) / 2, y);
+		screen->DrawTextureCleanNoMove(texture, (I_GetSurfaceWidth() - (texture->mWidth * CleanXfac)) / 2, y);
 	}
 
 	// [RH] Draw icon, if any
@@ -359,7 +359,7 @@ void D_Display()
 		if (Res_CheckResource(icon_res_id))
 		{
 			const Texture* texture = Res_CacheTexture(icon_res_id);
-			screen->DrawTextureIndirect(texture, 160 - texture->mWidth / 2, 100 - texture->mHeight / 2);
+			screen->DrawTextureIndirect(texture, 160 - (texture->mWidth / 2), 100 - (texture->mHeight / 2));
 		}
 		NoWipe = 10;
 	}
