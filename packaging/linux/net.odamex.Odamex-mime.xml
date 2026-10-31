@@ -1,8 +1,11 @@
 <?xml version="1.0"?>
 <mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>
-  <mime-type type="application/odamex-demo">
-    <comment>Odamex netdemo files</comment>
+  <mime-type type="application/vnd.odamex.netdemo">
+    <comment>Odamex netdemo file</comment>
     <glob pattern="*.odd"/>
-    <generic-icon name="net.odamex.Odamex-application-odamex-demo"/>
+    <magic>
+      <match type="string" value="ODAD" offset="0"/>
+    </magic>
+    <generic-icon name="net.odamex.Odamex-application-vnd-odamex-netdemo"/>
   </mime-type>
 </mime-info>

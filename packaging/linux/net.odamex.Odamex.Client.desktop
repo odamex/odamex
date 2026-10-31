@@ -10,6 +10,6 @@ Keywords=doom;shooter;multiplayer;iwad;pwad;
 
 Icon=net.odamex.Odamex.Client
 Exec=odamex %u
-MimeType=x-scheme-handler/odamex;application/odamex-demo;application/x-doom-wad
+MimeType=x-scheme-handler/odamex;application/vnd.odamex.netdemo;application/x-doom-wad
 Terminal=false
 StartupWMClass=net.odamex.Odamex.Client
