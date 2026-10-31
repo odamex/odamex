@@ -2347,9 +2347,9 @@ void CL_SendCmd(void)
 
 		if (closestNonCredibleVisSprite)
 		{
-			closestNonCredibleVisSprite->mo->credibility.Challenge(7);  // 5Hz.
+			//closestNonCredibleVisSprite->mo->credibility.Challenge(7);  // 5Hz.
 
-			messenger.Reliable().Write(CLC_SendMobjUpdate(closestNonCredibleVisSprite->mo->netid));
+			//messenger.Reliable().Write(CLC_SendMobjUpdate(closestNonCredibleVisSprite->mo->netid));
 			closestNonCredibleVisSprite = nullptr;
 		}
 
