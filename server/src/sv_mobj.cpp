@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -184,5 +182,3 @@ void P_SpawnPlayer(player_t& player, const fixed_t x, const fixed_t y,
  * Stub
  */
 void P_ShowSpawns(const mapthing2_t& mthing) { }
-
-VERSION_CONTROL (sv_mobj_cpp, "$Id$")

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -312,6 +310,4 @@ DMover::EResult DMover::MovePlane (fixed_t speed, fixed_t dest, int crush,
 	}
 	return ok;
 }
-
-VERSION_CONTROL (dsectoreffect_cpp, "$Id$")
 

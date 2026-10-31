@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -383,5 +381,3 @@ void NetGraph::draw()
 	screen->DrawText(textcolor, mX, mY + 128 + fontheight * 19, ("Server Throttle: " + BlankIfNegative(mThrottle[nowIndex])).c_str());
 
 }
-
-VERSION_CONTROL (cl_netgraph_cpp, "$Id$")

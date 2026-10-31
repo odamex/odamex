@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -17,9 +15,9 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	V_TEXTCOLOR : Defines all colored codes that both 
+//	V_TEXTCOLOR : Defines all colored codes that both
 //	the server and client will use to format their messages.
-//	
+//
 //	... Obviously, you won't see any results on the server yet.
 //
 //-----------------------------------------------------------------------------

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2023 by Andrew Apted.
 // Copyright (C) 2026 by The Odamex Team.
 //
@@ -1211,7 +1209,7 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 
 // Draw the width x height block of columns starting at (x, y) back to front
 // relative to the eye.
-// 
+//
 // The block is split in half along its longer axis -- the far half is drawn
 // recursively and the loop continues with the near half.
 void VX_RecursiveDraw(vissprite_t* spr, int x, int y, int w, int h)

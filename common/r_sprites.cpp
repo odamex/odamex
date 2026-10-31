@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -342,7 +340,7 @@ void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 // R_FindIncompleteSprite
 //
 // Checks every sprite the game knows about against the lumps currently loaded,
-// looking for frames that are missing patches or rotations. 
+// looking for frames that are missing patches or rotations.
 //
 // Never fatal, so its safe to call when judging whether a WAD will run
 // standalone (aka a standalone IWAD).
@@ -399,6 +397,4 @@ void R_InitSprites(std::vector<spriteinfo_t*>& sprites)
 
 	R_InitSpriteDefs (sprites);
 }
-
-VERSION_CONTROL (r_sprites_cpp, "$Id$")
 

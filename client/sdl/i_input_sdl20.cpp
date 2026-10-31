@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -1106,5 +1104,3 @@ void ISDL20InputSubsystem::grabInputForUI()
 }
 
 #endif	// SDL20
-
-VERSION_CONTROL(i_input_sdl20_cpp, "$Id$")

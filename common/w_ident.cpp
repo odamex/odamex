@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1695,5 +1693,3 @@ std::vector<OString> W_GetIWADFilenames()
 {
 	return identtab.getFilenames();
 }
-
-VERSION_CONTROL (w_ident_cpp, "$Id$")

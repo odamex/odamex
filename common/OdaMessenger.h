@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
