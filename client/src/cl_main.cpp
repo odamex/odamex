@@ -2349,10 +2349,11 @@ void CL_SendCmd(void)
 			for (const auto& mobjInfo : player.sortedMobjs)
 			{
 				mobjInfo.actorPtr->credibility.Challenge(7);
-
 				onDemandMobjsMsg.add_netid(mobjInfo.actorPtr->netid);
 			}
 			messenger.Reliable().Write(onDemandMobjsMsg);
+
+			player.sortedMobjs.clear();
 		}
 
 		odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
