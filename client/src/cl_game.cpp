@@ -1234,6 +1234,7 @@ void G_Ticker (void)
 			// rollbacks and forcing suspected-ghost mobjs to be updated.
 
 			player.serverRefreshRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+			player.sortedMobjs.clear();
 
 			bool thinkersHaveRun = false;
 
@@ -1271,51 +1272,72 @@ void G_Ticker (void)
 
 			if (not player.sortedMobjs.empty())
 			{
-				if (player.serverRefreshRequestsAreEnabled)
+				if (not player.serverRefreshRequestsAreEnabled)
+				{
+					player.sortedMobjs.clear();
+				}
+				else
 				{
 					const player_t& viewingPlayer = displayplayer();
 					const AActor*   camera        = viewingPlayer.camera ? viewingPlayer.camera : viewingPlayer.mo;
 					if (camera)
 					{
 						constexpr size_t MAX_ELEMENTS_TO_REQUEST = 10;
-						const size_t elementsToRequest = std::min(player.sortedMobjs.size(), MAX_ELEMENTS_TO_REQUEST);
 						if (player.sortedMobjs.size() > MAX_ELEMENTS_TO_REQUEST)
 						{
 							const int mostSignificantX = FIXED2INT(camera->x);
 							const int mostSignificantY = FIXED2INT(camera->y);
 
-							for (auto& mobjInfo : player.sortedMobjs)
+							for (auto mobjInfoIter  = player.sortedMobjs.begin();
+							          mobjInfoIter != player.sortedMobjs.end();
+							        )
 							{
-								const int dx = mostSignificantX - FIXED2INT(mobjInfo.actorPtr->x);
-								const int dy = mostSignificantY - FIXED2INT(mobjInfo.actorPtr->y);
-
-								mobjInfo.distanceSquared = dx*dx + dy*dy;
-
-								if (const int age = mobjInfo.actorPtr->credibility.GetMotionAge())
+								// Make sure that any mobjs that will go away at the end of this tic are excluded.
+								if (mobjInfoIter->actorPtr->WasDestroyed())
 								{
-									mobjInfo.distanceSquared /= age;
+									using std::swap;
+									swap(*mobjInfoIter, player.sortedMobjs.back());
+									player.sortedMobjs.pop_back();
+
+									// Note that we leave the iterator in place because it already points to an
+									// unprocessed element.
+								}
+								else
+								{
+									const int dx = mostSignificantX - FIXED2INT(mobjInfoIter->actorPtr->x);
+									const int dy = mostSignificantY - FIXED2INT(mobjInfoIter->actorPtr->y);
+
+									mobjInfoIter->distanceSquared = dx*dx + dy*dy;
+
+									if (const int age = mobjInfoIter->actorPtr->credibility.GetMotionAge())
+									{
+										mobjInfoIter->distanceSquared /= age;
+									}
+									++mobjInfoIter;
 								}
 							}
 
-							auto priorityCompare = [](const auto& mobj1, const auto& mobj2)
+							// If we happened to drop below the max elements due to destroyed mobjs, don't bother sorting.
+							if (player.sortedMobjs.size() > MAX_ELEMENTS_TO_REQUEST)
 							{
-								return mobj1.distanceSquared < mobj2.distanceSquared;
-							};
+								auto priorityCompare = [](const auto& mobj1, const auto& mobj2)
+								{
+									return mobj1.distanceSquared < mobj2.distanceSquared;
+								};
 
-							std::partial_sort(player.sortedMobjs.begin(),
-							                  player.sortedMobjs.begin() + elementsToRequest,
-							                  player.sortedMobjs.end(),
-							                  priorityCompare);
-						}
-						for (auto iter = player.sortedMobjs.begin();
-						          iter < player.sortedMobjs.begin() + elementsToRequest;
-						          ++iter)
-						{
-							iter->actorPtr->credibility.Challenge(7);
+								// Partial_sort because it's optimized for selecting a small number of sorted
+								// elements from a much, much larger set.
+								std::partial_sort(player.sortedMobjs.begin(),
+								                  player.sortedMobjs.begin() + MAX_ELEMENTS_TO_REQUEST,
+								                  player.sortedMobjs.end(),
+								                  priorityCompare);
+
+								player.sortedMobjs.erase(player.sortedMobjs.begin() + MAX_ELEMENTS_TO_REQUEST,
+								                         player.sortedMobjs.end());
+							}
 						}
 					}
 				}
-				player.sortedMobjs.clear();
 			}
 
 			player.serverRefreshRequestsAreEnabled = false;

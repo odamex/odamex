@@ -196,5 +196,5 @@ message PrivMsg
 // clc_sendmobjupdate
 message SendMobjUpdate
 {
-    uint32 netid = 1;
+    repeated uint32 netid = 1;
 }

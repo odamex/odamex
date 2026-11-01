@@ -2345,6 +2345,18 @@ void CL_SendCmd(void)
 			messenger.BestEffort().Write (CLC_SpectateUpdate(player));
 		}
 
+		if (not player.sortedMobjs.empty())
+		{
+			odaproto::clc::SendMobjUpdate onDemandMobjsMsg;
+
+			for (const auto& mobjInfo : player.sortedMobjs)
+			{
+				mobjInfo.actorPtr->credibility.Challenge(7);
+
+				onDemandMobjsMsg.add_netid(mobjInfo.actorPtr->netid);
+			}
+			messenger.Reliable().Write(onDemandMobjsMsg);
+		}
 		if (closestNonCredibleVisSprite)
 		{
 			//closestNonCredibleVisSprite->mo->credibility.Challenge(7);  // 5Hz.

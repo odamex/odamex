@@ -3606,9 +3606,18 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 	{
 		if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
 		{
-			player.sortedMobjs.emplace_back(static_cast<AActor*>(thinker), 0);
+			AActor* actor = static_cast<AActor*>(thinker);
+			if (player.requestedNetIdUpdates.contains(actor->netid))
+			{
+				player.onDemandMobjs.push_back(actor);
+			}
+			else
+			{
+				player.sortedMobjs.emplace_back(actor, 0);
+			}
 		}
 	}
+	player.requestedNetIdUpdates.clear();
 
 	// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
 	// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
@@ -3781,6 +3790,19 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	const size_t previousSortedMobjCount = player.sortedMobjs.size();
 	const auto sortedMobjPartitions = SV_SortMobjsForPlayer(player, player.client.messenger->GetReliableOverloadCount());
 
+	// Start off with the mobjs that the player specifically requested.
+	for (auto& actor : player.onDemandMobjs)
+	{
+		// No need to check the actor pointer.  We add it to onDemandMobjs directly
+		// from the current thinker list.
+		auto message = SVC_UpdateMobjWithMode(*actor);
+		WriteMobjMessageToPlayer(message,
+		                         player,
+		                         actor->playersAware.Get(player.id),
+		                         TransportEnum::BEST_EFFORT);
+	}
+	player.onDemandMobjs.clear();
+
 	// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
 	// Combined with the high-priority mobjsToSpawn queue being directly limited in SV_UpdateHiddenMobj,
 	// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
@@ -3814,22 +3836,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		{
 			// We're overbudget.  We don't even update awareness beyond this point so as to not load things on the queue
 			// that will be out-of-date by next tic anyway.
-			//
-			// The only thing we consider doing at this point is putting a specific mobj's update in the high-priority
-			// data on client demand, if there is such a demand.  Otherwise, we're done for this go-around.
-			if (player.requestedNetIdUpdate == 0)
-			{
-				break;
-			}
-		}
-
-		if (player.requestedNetIdUpdate == sortedMobjIter->actorPtr->netid)
-		{
-			// Now in this case we're okay with *potentially* going overbudget or behind-by-one tic,
-			// because the player has a mobj that's multiple seconds out of date.  Being a even little
-			// late is better than that.
-			player.client.messenger->Reliable().Write (SVC_UpdateMobjWithMode(*sortedMobjIter->actorPtr));
-			player.requestedNetIdUpdate = 0;
+			break;
 		}
 	}
 }
@@ -4566,7 +4573,10 @@ void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
 
 void SV_SendRequestedMobjUpdate(player_t& player, const odaproto::clc::SendMobjUpdate& msg)
 {
-    player.requestedNetIdUpdate = msg.netid();
+	for (uint32_t id : msg.netid())
+	{
+		player.requestedNetIdUpdates.insert(id);
+	}
 }
 
 //

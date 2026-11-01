@@ -328,7 +328,7 @@ public:
 
 	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
 
-	uint32_t    requestedNetIdUpdate;   // ID of a mobj for which this player is requesting an update.
+	std::unordered_set<uint32_t> requestedNetIdUpdates;   // IDs of mobjs for which this player is requesting an update.
 
 	// zdoom
 	int hazardcount;
@@ -355,6 +355,7 @@ public:
 		ActorDistanceType(AActor* i_actorPtr, int64_t i_distanceSquared) : actorPtr(i_actorPtr), distanceSquared(i_distanceSquared) {}
 	};
 	std::vector<ActorDistanceType> sortedMobjs;
+	std::vector<AActor*>           onDemandMobjs;
 
 	// Client:  Indicate that we want the server to send us a PlayerInfo for inventory validation.
 	//          Cleared when the command is packed.
