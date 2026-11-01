@@ -1803,6 +1803,49 @@ void AM_drawPlayers()
 	}
 }
 
+void AM_drawFreecams()
+{
+	OInterpolation& oi = OInterpolation::getInstance();
+	const argb_t* palette = V_GetDefaultPalette()->colors;
+	const am_color_t fcam_color = AM_GetColorFromString(palette, "FF FF FF");
+
+	for (auto& f : freecams)
+	{
+		mpoint_t pt;
+
+		angle_t angle;
+		fixed_t cangle = 0;
+		fixed_t moangle;
+		fixed_t mox;
+		fixed_t moy;
+
+		if (oi.enabled())
+		{
+			moangle = f.mo->prevangle + FixedMul(f.mo->angle - f.mo->prevangle, render_lerp_amount);
+			mox = f.mo->prevx + FixedMul(f.mo->x - f.mo->prevx, render_lerp_amount);
+			moy = f.mo->prevy + FixedMul(f.mo->y - f.mo->prevy, render_lerp_amount);
+		}
+		else
+		{
+			moangle = f.mo->angle;
+			mox = f.mo->x;
+			moy = f.mo->y;
+		}
+
+		M_SetVec2Fixed64(&pt, FIXED2FIXED64(mox), FIXED2FIXED64(moy));
+
+		angle = moangle;
+
+		if (am_rotate)
+		{
+			AM_rotatePoint(pt);
+			angle -= cangle - ANG90;
+		}
+
+		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED64(8), angle, fcam_color, pt.x, pt.y);
+	}
+}
+
 bool AM_actorIsKey(const AActor* t)
 {
 	if (t->sprite == SPR_BKEY || t->sprite == SPR_YKEY || t->sprite == SPR_RKEY ||
@@ -2501,7 +2544,8 @@ void AM_Drawer()
 
 	AM_drawWalls();
 	AM_drawPlayers();
-  //AM_drawFreecams();   todo
+	AM_drawFreecams();
+
 	if (G_IsHordeMode() || G_GetCurrentSkill().easy_key || (am_cheating == 2))
 		AM_drawThings();
 
