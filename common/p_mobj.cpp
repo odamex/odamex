@@ -3592,7 +3592,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 {
 	int32_t type = -1;
 
-	if (mthing.type == 0 || mthing.type == -1)
+	// note MT_FREECAM is an internal mobj only, cant be spawned from a map
+	if (mthing.type == MT_PLAYER or mthing.type == MT_NULL or mthing.type == MT_FREECAM)
 		return;
 
 	const bool inSpawnMap = spawn_map.contains(mthing.type);
