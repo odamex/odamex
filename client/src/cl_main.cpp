@@ -638,8 +638,8 @@ void CL_CheckDisplayPlayer(void)
 	static byte previd = consoleplayer_id;
 	byte newid = 0;
 
-  if (freecamIsActive())
-    return;
+	if (freecamIsActive())
+		return;
 
 	// [jsd]: try to spy on player by name when connected if spyplayername is set:
 	if (spyplayername.length() > 0) {
@@ -748,7 +748,7 @@ void CL_SpyCycle(Iterator begin, Iterator end, bool forward)
 		}
 
 		if (CL_SpyPlayerIfAble(*it))
-      return;
+			return;
 
 	} while (it != sentinal);
 }
@@ -756,7 +756,7 @@ void CL_SpyCycle(Iterator begin, Iterator end, bool forward)
 bool CL_SpyPlayerIfAble(player_t& player)
 {
 	// spectators only cycle between active players
-	if (P_CanSpy(consoleplayer(), player, demoplayback || netdemo.isInPlayback()))
+	if (P_CanSpy(consoleplayer(), player, demoplayback or netdemo.isInPlayback()))
 	{
 		displayplayer_id = player.id;
 		CL_CheckDisplayPlayer();
@@ -843,7 +843,7 @@ void NetUpdate (void)
 		    G_BuildTiccmd(freecam_t::getfreecam(freecam_id)->cmd);
 		    break;
 	    case activeMobj_e::UNKNOWN:
-		    PrintFmt("Warning - invalid active mobj state, resetting to consoleplayer\n");
+		    PrintFmt("Warning - unknown active mobj, resetting to consoleplayer\n");
 		    freecam_id = nullcam_id;
 		    displayplayer_id = consoleplayer_id;
 		    CL_CheckDisplayPlayer();
@@ -2165,7 +2165,7 @@ bool CL_PrepareConnect()
 bool CL_Connect()
 {
 	players.clear();
-  freecams.clear();
+	freecams.clear();
 
 	connected = true;
 	multiplayer = true;
@@ -2550,9 +2550,9 @@ bool CL_FreecamAllowedOnLevel()
 bool CL_FreecamAllowSpy()
 {
 	return (netdemo.isInPlayback() or
-	        (consoleplayer().playerstate == PST_DEAD and
-           consoleplayer().lives < 1 and
-	         ::levelstate.getState() == LevelState::INGAME));
+		   (consoleplayer().playerstate == PST_DEAD and
+			consoleplayer().lives < 1 and
+			::levelstate.getState() == LevelState::INGAME));
 }
 
 void PickupMessage (const AActor *toucher, const char *message)

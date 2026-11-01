@@ -492,11 +492,11 @@ CVAR_FUNC_IMPL (sv_aircontrol)
 }
 
 //
-// P_MovePlayer
+// P_MoveFreecam
 //
 void P_MoveFreecam (freecam_t& freecam)
 {
-	if (!freecam.mo)
+	if (not freecam.mo)
 		return;
 
 	AActor *mo = freecam.mo;
@@ -556,7 +556,7 @@ void P_MoveFreecam (freecam_t& freecam)
 			{
 				angle_t pitch = static_cast<angle_t>(mo->pitch) >> ANGLETOFINESHIFT;
 				fixed_t zpush = FixedMul(forwardmove, finesine[pitch]);
-				if (mo->waterlevel && mo->waterlevel < 2 && zpush < 0)
+				if (mo->waterlevel and mo->waterlevel < 2 and zpush < 0)
 					zpush = 0;
 
 				mo->momz -= zpush;
@@ -708,8 +708,8 @@ void P_MovePlayer (player_t& player)
 			const bool springpad = player.mo->floorsector->flags & SECF_SPRINGPAD;
 			player.mo->momz += springpad ? 4*FRACUNIT : 8*FRACUNIT;
 
-			//			[SL] No jumping sound...
-			//			if(!player.spectator)
+//			[SL] No jumping sound...
+//			if(!player.spectator)
 //				UV_SoundAvoidPlayer(player.mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
 			player.mo->flags2 &= ~MF2_ONMOBJ;
@@ -1035,6 +1035,7 @@ void P_FreecamThink(freecam_t& freecam)
 	
 	P_MoveFreecam(freecam);
 
+	// calc height
 	freecam.camera->z = freecam.mo->z;
 
 	if (freecam.camera->z > freecam.mo->ceilingz-4*FRACUNIT)
@@ -1045,12 +1046,6 @@ void P_FreecamThink(freecam_t& freecam)
 	// A special event has no other buttons.
 	if (freecam.cmd.buttons & BT_SPECIAL)
 		freecam.cmd.buttons = 0;
-
-	// check for use
-	if (freecam.cmd.buttons & BT_USE)
-	{
-		// send movie_setpos if recording movie demo
-	}
 }
 
 

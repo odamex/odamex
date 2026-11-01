@@ -205,7 +205,7 @@ void CL_PredictAllSectors()
 void CL_PredictSpying()
 {
 	player_t& player = displayplayer();
-	if (consoleplayer_id == displayplayer_id || freecamIsActive())
+	if (consoleplayer_id == displayplayer_id or freecamIsActive())
 		return;
 
 	// Save and restore the prevangle and prevpitch so that the client viewangle interpolation
@@ -254,7 +254,7 @@ void CL_PredictFreecam()
 {
 	freecam_t* freecam = freecam_t::getfreecam(freecam_id);
 
-	if (not freecam || not freecamIsActive())
+	if (not freecam or not freecamIsActive())
 		return;
 
 	if (freecam->mo)
@@ -262,8 +262,8 @@ void CL_PredictFreecam()
 		freecam->mo->prevx = freecam->mo->x;
 		freecam->mo->prevy = freecam->mo->y;
 		freecam->mo->prevz = freecam->mo->z;
-    freecam->mo->prevangle = freecam->mo->angle;
-	  freecam->mo->prevpitch = freecam->mo->pitch;
+		freecam->mo->prevangle = freecam->mo->angle;
+		freecam->mo->prevpitch = freecam->mo->pitch;
 	}
 
 	P_FreecamThink(*freecam);
@@ -395,7 +395,7 @@ bool CL_PredictWorld()
 	if (gamestate != GS_LEVEL)
 		return false;
 
-	if (netdemo.isPaused() && freecamIsActive())
+	if (netdemo.isPaused() and freecamIsActive())
 	{
 		CL_PredictFreecam();
 		return false;

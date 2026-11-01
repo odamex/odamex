@@ -882,8 +882,8 @@ void R_SetupFrame (AActor::AActorPtr *cam)
 		viewy += ((M_Random() % (intensity << 2)) - (intensity << 1)) << FRACBITS;
 	}
 
-  if (camera->player)
-	  extralight = camera == camera->player->mo ? camera->player->extralight : 0;
+	if (camera->player)
+		extralight = camera == camera->player->mo ? camera->player->extralight : 0;
 
 	viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
 	viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
@@ -927,25 +927,25 @@ void R_SetupFrame (AActor::AActorPtr *cam)
 	fixedlightlev = 0;
 	const palette_t* pal = V_GetDefaultPalette();
 
-  if (camera->player)
-  {
-    if (camera == camera->player->mo && camera->player->fixedcolormap)
-    {
-      if (camera->player->fixedcolormap < NUMCOLORMAPS)
-      {
-        fixedlightlev = camera->player->fixedcolormap;
-        fixedcolormap = shaderef_t(&pal->maps, 0);
-      }
-      else
-      {
-        fixedcolormap = shaderef_t(&pal->maps, camera->player->fixedcolormap);
-      }
+	if (camera->player)
+	{
+		if (camera == camera->player->mo && camera->player->fixedcolormap)
+		{
+			if (camera->player->fixedcolormap < NUMCOLORMAPS)
+			{
+				fixedlightlev = camera->player->fixedcolormap;
+				fixedcolormap = shaderef_t(&pal->maps, 0);
+			}
+			else
+			{
+				fixedcolormap = shaderef_t(&pal->maps, camera->player->fixedcolormap);
+			}
 
-      walllights = scalelightfixed;
+			walllights = scalelightfixed;
 
-      memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
-    }
-  }
+			memset(scalelightfixed, 0, MAXLIGHTSCALE * sizeof(*scalelightfixed));
+		}
+	}
 	
 
 	if ((use_localview && !::localview.skippitch) || netdemo.isPaused())
@@ -1108,7 +1108,7 @@ void R_RenderView(AActor::AActorPtr *cam)
 		setsizeneeded = false;
 	}
 
-  OInterpolation::getInstance().interpolateView(cam, render_lerp_amount);
+	OInterpolation::getInstance().interpolateView(cam, render_lerp_amount);
 
 	if (!viewactive)
 		return;
@@ -1144,7 +1144,7 @@ void R_RenderView(AActor::AActorPtr *cam)
 
     // [Russell] - From zdoom 1.22 source, added camera pointer check
 	// Never draw the player unless in chasecam mode
-	if (camera && camera->player && !(camera->player->cheats & CF_CHASECAM))
+	if (camera and camera->player and not (camera->player->cheats & CF_CHASECAM))
 	{
 		const auto flags2_backup = camera->flags2;
 		camera->flags2 |= MF2_DONTDRAW;

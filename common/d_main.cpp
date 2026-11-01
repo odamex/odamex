@@ -1067,9 +1067,9 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	std::string failmsg;
 
 	for (auto& freecam : freecams)
-  {
-    freecam.reset();
-  }
+	{
+		freecam.reset();
+	}
 
 	try
 	{

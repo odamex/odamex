@@ -1611,9 +1611,9 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	byte cid = consoleplayer_id;
 	byte did = displayplayer_id;
 
-  for (auto& freecam : freecams)
+	for (auto& freecam : freecams)
 	{
-    freecam.persistPosition();
+		freecam.persistPosition();
 	}
 
 	P_ClearAllNetIds();

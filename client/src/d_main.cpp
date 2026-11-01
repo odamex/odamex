@@ -217,8 +217,8 @@ void D_ProcessEvents (void)
 //
 void D_PostEvent(const event_t& ev)
 {
-	if (ev.type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
-		(!paused || freecamIsActive()) && ConsoleState != c_down && ConsoleState != c_falling)
+	if (ev.type == ev_mouse and not menuactive and gamestate == GS_LEVEL and
+		(not paused or freecamIsActive()) and ConsoleState != c_down and ConsoleState != c_falling)
 	{
 		G_Responder(ev);
 		return;
@@ -294,10 +294,10 @@ void D_Display()
 			V_DoPaletteEffects();
 
 			// Drawn to R_GetRenderingSurface()
-      if (not freecamIsActive())
-			  R_RenderView(&displayplayer().camera);
-      else
-        R_RenderView(&freecam_t::getfreecam(freecam_id)->camera);
+			if (not freecamIsActive())
+				R_RenderView(&displayplayer().camera);
+			else
+				R_RenderView(&freecam_t::getfreecam(freecam_id)->camera);
 
 			R_DrawViewBorder();
 			ST_Drawer();
@@ -395,7 +395,7 @@ void D_DoomLoop()
 			DThinker::DestroyAllThinkers();
 
 			::players.clear();
-      ::freecams.clear();
+			::freecams.clear();
 
 			::gameaction = ga_fullconsole;
 			::gamestate = GS_FULLCONSOLE;
@@ -1158,7 +1158,7 @@ void D_DoomMain()
 		sv_allowredscreen = 1;
 
 		players.clear();
-    freecams.clear();
+		freecams.clear();
 		players.emplace_back();
 		players.back().playerstate = PST_REBORN;
 		consoleplayer_id = displayplayer_id = players.back().id = 1;

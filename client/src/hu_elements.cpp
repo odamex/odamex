@@ -2006,7 +2006,7 @@ void EATargets(int x, int y, const float scale,
 			break;
 		}
 
-		if (target.PlayPtr == &(consoleplayer()) && not freecamIsActive())
+		if (target.PlayPtr == &(consoleplayer()) and not freecamIsActive())
 		{
 			// You're looking at yourself.
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin, "You",

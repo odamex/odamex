@@ -737,8 +737,8 @@ void G_AddViewPitch(int pitch)
 	if (invertmouse)
 		pitch = -pitch;
 
-	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) ||
-	    consoleplayer().spectator || freecamIsActive())
+	if ((Actions[ACTION_MLOOK]) or (cl_mouselook and sv_freelook) or
+	    consoleplayer().spectator or freecamIsActive())
 	{
 		localview.pitch += pitch << 16;
 		localview.setpitch = true;
@@ -747,7 +747,7 @@ void G_AddViewPitch(int pitch)
 
 bool G_ShouldIgnoreMouseInput()
 {
-	if ((consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD) &&
+	if ((consoleplayer().id != displayplayer().id or consoleplayer().playerstate == PST_DEAD) and
 		not freecamIsActive())
 		return true;
 
@@ -893,8 +893,9 @@ void P_CheckInterpPause()
 {
 	// Game pauses when in the menu and not online/demo
 	OInterpolation &oi = OInterpolation::getInstance();
-	if ((paused && not freecamIsActive()) || (!multiplayer && !demoplayback &&
-		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)))
+
+	if ((paused and not freecamIsActive()) or (not multiplayer and not demoplayback and
+		(menuactive or ConsoleState == c_down or ConsoleState == c_falling)))
 	{
 		if (oi.enabled())
 		{

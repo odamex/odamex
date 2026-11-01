@@ -52,7 +52,7 @@ void P_AnimationTick(AActor *mo);
 void P_Ticker (bool runAllThinkers)
 {
 #ifdef CLIENT_APP
-	if (paused && freecamIsActive())
+	if (paused and freecamIsActive())
 	{
 		freecam_t::getfreecam(freecam_id)->mo->RunThink();
 	}
