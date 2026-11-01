@@ -75,6 +75,7 @@ struct client_t
 	int         digest_allowance  { 0 };        // clc_resourcedigests messages accepted before the client is considered to be flooding
 	bool        allow_rcon        { false };    // allow remote admin
 	bool        displaydisconnect { true  };    // display disconnect message when disconnecting
+	bool        isFlushing        { false };    // TODO: fold this into the protocol state machine.  Indicates that we're driving down to 0 unacked messages.
 
 	struct download_t
 	{

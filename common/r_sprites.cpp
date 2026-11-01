@@ -114,6 +114,9 @@ bool R_InstallSpriteLump(const ResourceId res_id, unsigned frame, unsigned rot,
 	else
 		rotation = (rot >= 17) ? rot - 7 : 17;
 
+	if (frame == '^' - 'A')
+		frame = '\\' - 'A';
+
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 16)
 	{
 		if (!tolerant)
@@ -365,7 +368,7 @@ void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 // R_FindIncompleteSprite
 //
 // Checks every sprite the game knows about against the lumps currently loaded,
-// looking for frames that are missing patches or rotations. 
+// looking for frames that are missing patches or rotations.
 //
 // Never fatal, so its safe to call when judging whether a WAD will run
 // standalone (aka a standalone IWAD).
