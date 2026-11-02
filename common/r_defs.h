@@ -608,6 +608,10 @@ struct drawseg_t
 	// space; saved from wallscalex so the masked pass draws with the same
 	// scales R_PrepWall gave the wall tiers
 	fixed_t*		midscales;
+
+	// this seg separates fogs of different density
+	// the masked pass shades the opening through it with the front sector's fog colormap
+	bool			fogboundary;
 };
 
 
