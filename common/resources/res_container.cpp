@@ -227,8 +227,8 @@ static ResourcePath Res_LongResourcePath(const std::string& path)
 //
 // Returns true if the file name portion of the path fits in a classic
 // 8-character lump name once the extension is stripped. Files with longer
-// names have no short lump name - matching ZDoom-family behavior - and are
-// only addressable by their full path.
+// names are recorded under their full path, with their full and truncated
+// lump names as aliases.
 //
 static bool Res_PathHasShortLumpName(const std::string& path)
 {
@@ -808,14 +808,16 @@ void DirectoryResourceContainer::addResources(ResourceManager* manager)
 		else if (not Res_PathHasShortLumpName(std::string(entry.path)))
 		{
 			// The file name does not fit in a classic 8-character lump name.
-			// Following ZDoom-family behavior, such files get no truncated
-			// short name -- they are addressable by their full path or by
-			// their untruncated lump name.
+			// It is addressable by its full path, by its untruncated lump
+			// name, and -- as in the ZDoom family, where a map's 8-character
+			// sidedef names reach files like textures/longname.png -- by its
+			// lump name truncated to 8 characters.
 			const ResourceId res_id =
 			    manager->addResource(Res_LongResourcePath(std::string(entry.path)), this);
 			const LumpId lump_id = mDirectory.getLumpId(entry.path);
 			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
 
+			manager->addResourceAlias(Res_TransformResourcePath(std::string(entry.path)), res_id);
 			manager->addResourceAlias(
 			    Res_TransformResourcePath(std::string(entry.path), false), res_id);
 		}
@@ -1334,14 +1336,16 @@ void ZipResourceContainer::addResources(ResourceManager* manager)
 		else if (not Res_PathHasShortLumpName(std::string(entry.path)))
 		{
 			// The file name does not fit in a classic 8-character lump name.
-			// Following ZDoom-family behavior, such files get no truncated
-			// short name -- they are addressable by their full path or by
-			// their untruncated lump name.
+			// It is addressable by its full path, by its untruncated lump
+			// name, and -- as in the ZDoom family, where a map's 8-character
+			// sidedef names reach files like textures/longname.png -- by its
+			// lump name truncated to 8 characters.
 			const ResourceId res_id =
 			    manager->addResource(Res_LongResourcePath(std::string(entry.path)), this);
 			const LumpId lump_id = mDirectory.getLumpId(entry.path);
 			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
 
+			manager->addResourceAlias(Res_TransformResourcePath(std::string(entry.path)), res_id);
 			manager->addResourceAlias(
 			    Res_TransformResourcePath(std::string(entry.path), false), res_id);
 		}
