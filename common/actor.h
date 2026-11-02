@@ -183,9 +183,14 @@ enum class CredibilityEnum
 
 class AActor;
 
+/// This class captures the notion of client-side per-mobj Credibility that serves to estimate
+/// how much the client is supposed to believe the mobj is in synch with its server-side counterpart.
 class CredibilityState
 {
 	public:
+
+		/// Periodic function - call this every tic.
+		void Update(const AActor& mobj);
 
 		[[nodiscard]]
 		CredibilityEnum Get() const
@@ -200,26 +205,32 @@ class CredibilityState
 			    or m_credibility == CredibilityEnum::ALWAYS_CREDIBLE;
 		}
 
+		/// @returns the number of tics elapsed since the mobj began moving under client-side prediction,
+		/// including the tic on which the motion started.
 		[[nodiscard]]
 		int GetMotionAge() const
 		{
 			return m_predictedMotionTicCount;
 		}
 
-		void Update(const AActor& mobj);
-
+		/// @returns whether or not the credibility is such that it can be challenged.
 		[[nodiscard]]
 		bool IsEligibleForChallenge() const
 		{
 			if (IsCredible())
 				return false;
 
+			// Make sure that we don't spam challenges for the same mobj.
 			if (m_credibility == CredibilityEnum::CHALLENGED_CREDIBILITY and m_challengeInterval > 0)
 				return false;
 
 			return true;
 		}
 
+		/// Marks the credibility as challenged, meaning that the client intends to request that the
+		/// server provide an on-demand update to the corresponding mobj.  The given timeout parameter
+		/// describes how many tics we want to allow for the server to respond with an update before
+		/// we request this mobj again, in the event that the response is lost due to being Best Effort.
 		bool Challenge(int i_timeout)
 		{
 			if (not m_challengeInterval)
@@ -231,6 +242,7 @@ class CredibilityState
 			return false;
 		}
 
+		/// Marks the credibility as permanently good.  Intended for players and avatars.
 		void Lionize()
 		{
 			m_credibility = CredibilityEnum::ALWAYS_CREDIBLE;
@@ -263,8 +275,8 @@ class CredibilityState
 		// Start off fully-credible so that triggers and other things can fire immediately if needed on the client
 		// and so that the server doesn't have to do anything with this - everything on the server is credible.
 		//
-		CredibilityEnum m_credibility { CredibilityEnum::FULLY_CREDIBLE };
-		v3fixed_t       m_crediblePosition { 0, 0, 0 };
+		CredibilityEnum m_credibility             { CredibilityEnum::FULLY_CREDIBLE };
+		v3fixed_t       m_crediblePosition        { 0, 0, 0 };
 		int             m_predictedMotionTicCount { 0 };
 		int             m_challengeInterval       { 0 };
 };
