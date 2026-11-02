@@ -294,10 +294,7 @@ void D_Display()
 			V_DoPaletteEffects();
 
 			// Drawn to R_GetRenderingSurface()
-			if (not freecamIsActive())
-				R_RenderView(&displayplayer().camera);
-			else
-				R_RenderView(&freecam_t::getfreecam(freecam_id)->camera);
+			R_RenderView(&CL_GetActiveMobjCamera());
 
 			R_DrawViewBorder();
 			ST_Drawer();

@@ -810,7 +810,17 @@ void CL_SpyCycleFreecams(bool forward)
 	}
 }
 
-static activeMobj_e CL_GetActiveMobj()
+AActor::AActorPtr& CL_GetActiveMobjCamera()
+{
+	if (playerIsActive())
+		return displayplayer().camera;
+	if (freecamIsActive())
+		return freecam_t::getfreecam(freecam_id)->camera;
+
+	return displayplayer().camera;
+}
+
+activeMobj_e CL_GetActiveMobj()
 {
 	if (playerIsActive())
 		return activeMobj_e::PLAYER;

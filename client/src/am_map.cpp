@@ -57,6 +57,7 @@
 #include "g_skill.h"
 #include "p_mapformat.h"
 
+AActor::AActorPtr& CL_GetActiveMobjCamera();
 argb_t CL_GetPlayerColor(const player_t&);
 
 EXTERN_CVAR(am_followplayer)
@@ -1610,7 +1611,7 @@ void AM_rotate(mpoint_t& pt, angle_t a)
 
 void AM_rotatePoint(mpoint_t& pt)
 {
-	player_t* player = &displayplayer();
+	AActor* camera = CL_GetActiveMobjCamera();
 
 	OInterpolation& oi = OInterpolation::getInstance();
 
@@ -1621,21 +1622,21 @@ void AM_rotatePoint(mpoint_t& pt)
 	if (oi.enabled())
 	{
 		x = FIXED2FIXED64(
-			player->camera->prevx +
-			FixedMul(player->camera->x - player->camera->prevx, render_lerp_amount));
+			camera->prevx +
+			FixedMul(camera->x - camera->prevx, render_lerp_amount));
 
 		y = FIXED2FIXED64(
-			player->camera->prevy +
-			FixedMul(player->camera->y - player->camera->prevy, render_lerp_amount));
+			camera->prevy +
+			FixedMul(camera->y - camera->prevy, render_lerp_amount));
 
-		pangle = player->camera->prevangle +
-			FixedMul(player->camera->angle - player->camera->prevangle, render_lerp_amount);
+		pangle = camera->prevangle +
+			FixedMul(camera->angle - camera->prevangle, render_lerp_amount);
 	}
 	else
 	{
-		x = FIXED2FIXED64(player->camera->x);
-		y = FIXED2FIXED64(player->camera->y);
-		pangle = player->camera->angle;
+		x = FIXED2FIXED64(camera->x);
+		y = FIXED2FIXED64(camera->y);
+		pangle = camera->angle;
 	}
 
 	pt.x -= x;
@@ -1680,7 +1681,7 @@ void AM_drawLineCharacter(std::span<const mline_t> lineguy, fixed64_t scale,
 void AM_drawPlayers()
 {
 	angle_t angle;
-	player_t& conplayer = displayplayer();
+	AActor* camera = CL_GetActiveMobjCamera();
 
 	OInterpolation& oi = OInterpolation::getInstance();
 
@@ -1688,24 +1689,24 @@ void AM_drawPlayers()
 	fixed64_t y;
 	fixed_t cangle;
 
-	if (oi.enabled() and validplayer(conplayer))
+	if (oi.enabled())
 	{
 		x = FIXED2FIXED64(
-			conplayer.camera->prevx +
-			FixedMul(conplayer.camera->x - conplayer.camera->prevx, render_lerp_amount));
+			camera->prevx +
+			FixedMul(camera->x - camera->prevx, render_lerp_amount));
 
 		y = FIXED2FIXED64(
-			conplayer.camera->prevy +
-			FixedMul(conplayer.camera->y - conplayer.camera->prevy, render_lerp_amount));
+			camera->prevy +
+			FixedMul(camera->y - camera->prevy, render_lerp_amount));
 
-		cangle = conplayer.camera->prevangle +
-			FixedMul(conplayer.camera->angle - conplayer.camera->prevangle, render_lerp_amount);
+		cangle = camera->prevangle +
+			FixedMul(camera->angle - camera->prevangle, render_lerp_amount);
 	}
-	else if (validplayer(conplayer))
+	else
 	{
-		x = FIXED2FIXED64(conplayer.camera->x);
-		y = FIXED2FIXED64(conplayer.camera->y);
-		cangle = conplayer.camera->angle;
+		x = FIXED2FIXED64(camera->x);
+		y = FIXED2FIXED64(camera->y);
+		cangle = camera->angle;
 	}
 
 	if (!multiplayer)
@@ -1728,12 +1729,18 @@ void AM_drawPlayers()
 	{
 		am_color_t color;
 
-		if (!(p.ingame()) || !p.mo ||
-		    (((G_IsFFAGame() && &p != &conplayer) ||
-		      (G_IsTeamGame() && p.userinfo.team != conplayer.userinfo.team)) &&
-		     !netdemo.isInPlayback() && !demoplayback &&
-		     !(conplayer.spectator)) ||
-		    p.spectator)
+		if (not(p.ingame()) or not p.mo or p.spectator)
+			continue;
+
+		if (camera->player and
+			not netdemo.isInPlayback() and
+			not demoplayback and
+			not camera->player->spectator and
+			(
+				(G_IsFFAGame() and &p != camera->player) or
+				(G_IsTeamGame() and p.userinfo.team != camera->player->userinfo.team)
+			)
+		)
 		{
 			continue;
 		}

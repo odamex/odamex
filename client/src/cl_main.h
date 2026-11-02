@@ -95,6 +95,8 @@ void CL_SendSummonFriendCheat(const char* summon);
 
 bool CL_FreecamAllowedOnLevel();
 bool CL_FreecamAllowSpy();
+AActor::AActorPtr& CL_GetActiveMobjCamera();
+activeMobj_e CL_GetActiveMobj();
 
 void CL_DisplayTics();
 void CL_RunTics();
