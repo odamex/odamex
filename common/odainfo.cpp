@@ -1033,7 +1033,7 @@ mobjinfo_t odamobjinfo[] = {
 	},
     {                // MT_FREECAM
 		.type             = MT_FREECAM,
-        .spawnstate       = S_RES,
+        .spawnstate       = S_TNT1,
         .spawnhealth      = 1000,
         .reactiontime     = 8,
         .radius           = 8_fx,
