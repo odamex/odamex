@@ -1223,12 +1223,21 @@ void AActor::RunThink ()
 		HU_AddPlayerSpeed(start, end);
 	}
 	else
-#endif
 	{
 		P_MoveActor(this);
+	}
+#else
+	P_MoveActor(this);
+#endif
+
+	if (predicting)
+		return;
+
+	// Do we think this mobj is at risk of being a ghost?
+	if (not serverside)
+	{
 		credibility.Update(*this);
 
-#ifdef CLIENT_APP
 		if (    IsMonster()
 		    and not (flags & MF_CORPSE)
 		    and credibility.IsEligibleForChallenge()
@@ -1236,11 +1245,7 @@ void AActor::RunThink ()
 		{
 			consoleplayer().sortedMobjs.emplace_back(this, 0);
 		}
-#endif
 	}
-
-	if(predicting)
-		return;
 
 	if (flags2 & MF2_DORMANT)
 		return;
