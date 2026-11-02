@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2026 by Jess W
+// Copyright (C) 2026 Jess W
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,6 +54,7 @@ void freecam_t::build(mapthing2_t spawn, bool setSpawnPos, bool noclip)
 	mobj->prevangle = mobj->angle;
 	mobj->prevpitch = mobj->pitch;
 
+	// recalc the correct z once we have floorz
 	if (setSpawnPos)
 	{
 		persist.z = mobj->floorz + VIEWHEIGHT;
