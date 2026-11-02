@@ -78,6 +78,7 @@ void CL_SimulatePlayers(int serverTic);
 bool CL_PredictWorld();
 void CL_ResetWorldPrediction();
 void CL_AdvanceWorldPredictionTic(int serverTic);
+void CL_SelectPotentialDesynchedMobjs(player_t& player);
 void CL_SendUserInfo(buf_t& netBuf);
 bool CL_Connect();
 

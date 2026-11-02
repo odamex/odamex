@@ -2793,6 +2793,79 @@ void CL_SimulateWorld()
 	world_index = world_index + 1 + drift_correction;
 }
 
+void CL_SelectPotentialDesynchedMobjs(player_t& player)
+{
+	if (not player.sortedMobjs.empty())
+	{
+		if (not player.serverRefreshRequestsAreEnabled)
+		{
+			player.sortedMobjs.clear();
+		}
+		else
+		{
+			const player_t& viewingPlayer = displayplayer();
+			const AActor*   camera        = viewingPlayer.camera ? viewingPlayer.camera : viewingPlayer.mo;
+			if (camera)
+			{
+				constexpr size_t MAX_ELEMENTS_TO_REQUEST = 10;
+				if (player.sortedMobjs.size() > MAX_ELEMENTS_TO_REQUEST)
+				{
+					const int mostSignificantX = FIXED2INT(camera->x);
+					const int mostSignificantY = FIXED2INT(camera->y);
+
+					for (auto mobjInfoIter  = player.sortedMobjs.begin();
+					          mobjInfoIter != player.sortedMobjs.end();
+					        )
+					{
+						// Make sure that any mobjs that will go away at the end of this tic are excluded.
+						if (mobjInfoIter->actorPtr->WasDestroyed())
+						{
+							using std::swap;
+							swap(*mobjInfoIter, player.sortedMobjs.back());
+							player.sortedMobjs.pop_back();
+
+							// Note that we leave the iterator in place because it already points to an
+							// unprocessed element.
+						}
+						else
+						{
+							const int dx = mostSignificantX - FIXED2INT(mobjInfoIter->actorPtr->x);
+							const int dy = mostSignificantY - FIXED2INT(mobjInfoIter->actorPtr->y);
+
+							mobjInfoIter->distanceSquared = dx*dx + dy*dy;
+
+							if (const int age = mobjInfoIter->actorPtr->credibility.GetMotionAge())
+							{
+								mobjInfoIter->distanceSquared /= age;
+							}
+							++mobjInfoIter;
+						}
+					}
+
+					// If we happened to drop below the max elements due to destroyed mobjs, don't bother sorting.
+					if (player.sortedMobjs.size() > MAX_ELEMENTS_TO_REQUEST)
+					{
+						auto priorityCompare = [](const auto& mobj1, const auto& mobj2)
+						{
+							return mobj1.distanceSquared < mobj2.distanceSquared;
+						};
+
+						// Partial_sort because it's optimized for selecting a small number of sorted
+						// elements from a much, much larger set.
+						std::partial_sort(player.sortedMobjs.begin(),
+						                  player.sortedMobjs.begin() + MAX_ELEMENTS_TO_REQUEST,
+						                  player.sortedMobjs.end(),
+						                  priorityCompare);
+
+						player.sortedMobjs.erase(player.sortedMobjs.begin() + MAX_ELEMENTS_TO_REQUEST,
+						                         player.sortedMobjs.end());
+					}
+				}
+			}
+		}
+	}
+}
+
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction)
