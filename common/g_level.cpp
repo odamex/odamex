@@ -585,7 +585,7 @@ void G_SerializeLevel(FArchive &arc, bool hubLoad)
 {
 	if (arc.IsStoring ())
 	{
-		unsigned int playernum = players.size();
+		const unsigned int playernum = players.size();
 		arc << level.flags
 			<< level.flags2
 			<< level.metadataflags

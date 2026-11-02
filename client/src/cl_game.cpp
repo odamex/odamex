@@ -1014,8 +1014,6 @@ void G_Ticker (void)
 		C_AdjustBottom ();
 	}
 
-	freecam_t* freecam = freecam_t::getfreecam(freecam_id);
-
 	// The freecam is only valid while dead and out of lives (or in a netdemo)
 	// Nothing checks the inverse, so check it here and reset the view when we hit it.
 	if (freecamIsActive() and not netdemo.isInPlayback() and not demoplayback and not CL_FreecamAllowSpy())

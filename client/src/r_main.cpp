@@ -929,7 +929,7 @@ void R_SetupFrame (AActor::AActorPtr *cam)
 
 	if (camera->player)
 	{
-		if (camera == camera->player->mo && camera->player->fixedcolormap)
+		if (camera == camera->player->mo and camera->player->fixedcolormap)
 		{
 			if (camera->player->fixedcolormap < NUMCOLORMAPS)
 			{

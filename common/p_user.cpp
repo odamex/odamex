@@ -543,18 +543,18 @@ void P_MoveFreecam (freecam_t& freecam)
 	if (freecam.cmd.forwardmove | freecam.cmd.sidemove)
 	{
 		int friction;
-		int movefactor = P_GetMoveFactor (mo, &friction);
+		const int movefactor = P_GetMoveFactor (mo, &friction);
 		
 		fixed_t forwardmove = (freecam.cmd.forwardmove * movefactor) >> 8;
 		const fixed_t sidemove = (freecam.cmd.sidemove * movefactor) >> 8;
 
 		if (forwardmove)
 		{
-			angle_t ang = mo->angle >> ANGLETOFINESHIFT;
+			const angle_t ang = mo->angle >> ANGLETOFINESHIFT;
 
 			if (mo->pitch != 0)
 			{
-				angle_t pitch = static_cast<angle_t>(mo->pitch) >> ANGLETOFINESHIFT;
+				const angle_t pitch = static_cast<angle_t>(mo->pitch) >> ANGLETOFINESHIFT;
 				fixed_t zpush = FixedMul(forwardmove, finesine[pitch]);
 				if (mo->waterlevel and mo->waterlevel < 2 and zpush < 0)
 					zpush = 0;
@@ -567,7 +567,7 @@ void P_MoveFreecam (freecam_t& freecam)
 		}
 		if (sidemove)
 		{
-			fixed_t ang = (mo->angle - ANG90) >> ANGLETOFINESHIFT;
+			const fixed_t ang = (mo->angle - ANG90) >> ANGLETOFINESHIFT;
 
 			freecam.mo->momx += FixedMul(sidemove, finecosine[ang]);
 			freecam.mo->momy += FixedMul(sidemove, finesine[ang]);
@@ -1038,10 +1038,10 @@ void P_FreecamThink(freecam_t& freecam)
 	// calc height
 	freecam.camera->z = freecam.mo->z;
 
-	if (freecam.camera->z > freecam.mo->ceilingz-4*FRACUNIT)
-		freecam.camera->z = freecam.mo->ceilingz-4*FRACUNIT;
-	if (freecam.camera->z < freecam.mo->floorz + 4*FRACUNIT)
-		freecam.camera->z = freecam.mo->floorz + 4*FRACUNIT;
+	if (freecam.camera->z > freecam.mo->ceilingz-(4*FRACUNIT))
+		freecam.camera->z = freecam.mo->ceilingz-(4*FRACUNIT);
+	if (freecam.camera->z < freecam.mo->floorz + (4*FRACUNIT))
+		freecam.camera->z = freecam.mo->floorz + (4*FRACUNIT);
 
 	// A special event has no other buttons.
 	if (freecam.cmd.buttons & BT_SPECIAL)
