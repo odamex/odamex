@@ -2348,7 +2348,10 @@ void CL_SendCmd(void)
 
 			for (const auto& mobjInfo : player.sortedMobjs)
 			{
-				mobjInfo.actorPtr->credibility.Challenge(7);
+				constexpr int MAX_CHALLENGE_RATE_HZ       = 5;
+				constexpr int MAX_CHALLENGE_INTERVAL_TICS = TICRATE / MAX_CHALLENGE_RATE_HZ;
+
+				mobjInfo.actorPtr->credibility.Challenge(MAX_CHALLENGE_INTERVAL_TICS);
 				onDemandMobjsMsg.add_netid(mobjInfo.actorPtr->netid);
 			}
 			messenger.Reliable().Write(onDemandMobjsMsg);
