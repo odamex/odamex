@@ -3606,7 +3606,7 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 	{
 		if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
 		{
-			AActor* actor = static_cast<AActor*>(thinker);
+			auto* actor = static_cast<AActor*>(thinker);            // NOLINT (misc-const-correctness) - sortedMobjs and its subsequent uses demand it be non-const.
 			if (player.requestedNetIdUpdates.contains(actor->netid))
 			{
 				player.onDemandMobjs.push_back(actor);
@@ -3791,7 +3791,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	const auto sortedMobjPartitions = SV_SortMobjsForPlayer(player, player.client.messenger->GetReliableOverloadCount());
 
 	// Start off with the mobjs that the player specifically requested.
-	for (auto& actor : player.onDemandMobjs)
+	for (const auto& actor : player.onDemandMobjs)
 	{
 		// No need to check the actor pointer.  We add it to onDemandMobjs directly
 		// from the current thinker list.
@@ -4573,7 +4573,7 @@ void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
 
 void SV_SendRequestedMobjUpdate(player_t& player, const odaproto::clc::SendMobjUpdate& msg)
 {
-	for (uint32_t id : msg.netid())
+	for (const uint32_t id : msg.netid())
 	{
 		player.requestedNetIdUpdates.insert(id);
 	}

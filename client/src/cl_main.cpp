@@ -2865,7 +2865,7 @@ void CL_SelectPotentialDesynchedMobjs(player_t& player)
 					// motion.  This provides a decent balance between closest mobjs and mobjs that
 					// are distant but have been wandering long enough to cause credible monsters
 					// to become ghosts themselves.
-					mobjInfoIter->distanceSquared = dx*dx + dy*dy;
+					mobjInfoIter->distanceSquared = (dx * dx) + (dy * dy);
 
 					if (const int age = mobjInfoIter->actorPtr->credibility.GetMotionAge())
 					{

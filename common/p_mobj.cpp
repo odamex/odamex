@@ -348,6 +348,10 @@ inline void CredibilityState::Update(const AActor& mobj)
 	{
 		if (mobj.updatedDuringLocalTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
 		{
+			// Wild-ass guess.  10 seconds...?
+			constexpr int NON_CREDIBILITY_THRESHOLD_SEC  = 10;
+			constexpr int NON_CREDIBILITY_THRESHOLD_TICS = NON_CREDIBILITY_THRESHOLD_SEC * TICRATE;
+
 			// In sv_main, we nominally update mobjs every 7 tics.
 			// Allow up to 10 before we stop fully believing it, to allow for jitter plus
 			// some "real world slop" margin.
@@ -386,7 +390,7 @@ inline void CredibilityState::Update(const AActor& mobj)
 				{
 					m_challengeInterval = std::max(0, m_challengeInterval - 1);
 				}
-				else if (m_predictedMotionTicCount < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
+				else if (m_predictedMotionTicCount < NON_CREDIBILITY_THRESHOLD_TICS)
 				{
 					// In this mode, the client is letting the mobj wander about via dead reckoning.
 					// We guess that the mobj hasn't wandered TOO far from where the server says it

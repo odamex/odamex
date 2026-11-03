@@ -355,7 +355,7 @@ public:
 		ActorDistanceType(AActor* i_actorPtr, int64_t i_distanceSquared) : actorPtr(i_actorPtr), distanceSquared(i_distanceSquared) {}
 	};
 	std::vector<ActorDistanceType> sortedMobjs;
-	std::vector<AActor*>           onDemandMobjs;
+	std::vector<const AActor*>     onDemandMobjs;
 
 	// Client:  Indicate that we want the server to send us a PlayerInfo for inventory validation.
 	//          Cleared when the command is packed.
