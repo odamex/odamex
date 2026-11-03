@@ -397,7 +397,7 @@ void AM_restoreScaleAndLoc()
 	}
 	else
 	{
-		M_SetVec2Fixed64(&m_ll, FIXED2FIXED64(camera->x) - m_wh.x / 2, FIXED2FIXED64(camera->y) - m_wh.y / 2);
+		M_SetVec2Fixed64(&m_ll, FIXED2FIXED64(camera->x) - (m_wh.x / 2), FIXED2FIXED64(camera->y) - (m_wh.y / 2));
 	}
 	M_AddVec2Fixed64(&m_ur, &m_ll, &m_wh);
 
@@ -554,8 +554,8 @@ void AM_initVariables()
 	if (not camera)
 		return;
 
-	m_ll.x = FIXED2FIXED64(camera->x) - m_wh.x / 2;
-	m_ll.y = FIXED2FIXED64(camera->y) - m_wh.y / 2;
+	m_ll.x = FIXED2FIXED64(camera->x) - (m_wh.x / 2);
+	m_ll.y = FIXED2FIXED64(camera->y) - (m_wh.y / 2);
 	AM_changeWindowLoc();
 
 	AM_saveScaleAndLoc();

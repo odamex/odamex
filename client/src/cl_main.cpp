@@ -2853,7 +2853,7 @@ void CL_SimulateWorld()
 	int upper_sync_limit = CL_CalculateWorldIndexSync() + MAX_AHEAD;
 
 	// Was the displayplayer just teleported?
-	bool continuous = displayplayer().snapshots.getSnapshot(world_index).isContinuous();
+	bool continuous = playerIsActive() and displayplayer().snapshots.getSnapshot(world_index).isContinuous();
 
 	// Reset the synchronization with the server if needed
 	if (world_index <= 0 || !continuous ||

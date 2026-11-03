@@ -212,7 +212,7 @@ void CTF_DrawHud (void)
 	team_t yourFlag = NUMTEAMS;
 	team_t enemyFlag = NUMTEAMS;
 
-	if(sv_gametype != GM_CTF)
+	if (sv_gametype != GM_CTF or freecamIsActive())
 		return;
 
 	player_t &player = displayplayer();

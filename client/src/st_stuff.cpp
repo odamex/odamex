@@ -984,6 +984,10 @@ void ST_Ticker()
 {
 	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
 		return;
+
+	if (freecamIsActive())
+		return;
+
 	st_randomnumber = M_Random();
 	ST_updateWidgets();
 	st_oldhealth = displayplayer().health;
