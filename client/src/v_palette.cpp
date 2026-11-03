@@ -1125,6 +1125,7 @@ dyncolormap_t* GetSpecialLights(int lr, int lg, int lb, int fr, int fg, int fb)
 	maps->shademap = Z_Malloc<argb_t>(NUMCOLORMAPS * 256, PU_LEVEL);
 
 	colormap->maps = shaderef_t(maps, 0);
+	colormap->maps.m_dyncolormap = colormap;
 	colormap->color = color;
 	colormap->fade = fade;
 	colormap->next = NormalLight.next;
