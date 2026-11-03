@@ -190,7 +190,7 @@ bool IPRange::check(const std::string &address) const
 }
 
 // Set the object's range to a specific address.
-void IPRange::set(const netadr_t &address)
+void IPRange::set(const netadr_t &address, byte v6prefix)
 {
 	if (address.family == NA_IPV6)
 	{
@@ -198,7 +198,7 @@ void IPRange::set(const netadr_t &address)
 		// privacy extensions do it automatically), so a ban of a specific IPv6
 		// client covers its whole /64.
 		this->v6 = true;
-		this->prefixlen = 64;
+		this->prefixlen = v6prefix;
 		memcpy(this->ip6, address.ip6, sizeof(this->ip6));
 		mask_prefix(this->ip6, this->prefixlen);
 		return;
@@ -408,7 +408,8 @@ bool Banlist::add_exception(player_t &player)
 	// Fill in exception info
 	Exception exception;
 	exception.name = player.userinfo.netname;
-	exception.range.set(player.client.address);
+	// An exception only covers this exact address, not its whole /64.
+	exception.range.set(player.client.address, 128);
 
 	// Add the exception to the banlist.
 	this->exceptionlist.push_back(exception);

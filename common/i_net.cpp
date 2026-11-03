@@ -51,6 +51,10 @@
 	#include <sys/time.h>
 #endif // WIN32
 
+#ifdef _WIN32
+typedef int socklen_t;
+#endif
+
 #ifndef _WIN32
 typedef int SOCKET;
 #define SOCKET_ERROR -1
@@ -557,7 +561,20 @@ bool NET_StringToAdr (const char *s, netadr_t *a, bool ipv4Only)
 	hints.ai_family = (ipv4Only || inet_family != AF_INET6) ? AF_INET : AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 
-	if (getaddrinfo(host.c_str(), NULL, &hints, &res) != 0 || !res)
+	// Try address literals first: AI_ADDRCONFIG would reject "::1" on hosts
+	// without a non-loopback IPv6 address.
+	hints.ai_flags = AI_NUMERICHOST;
+	if (getaddrinfo(host.c_str(), NULL, &hints, &res) != 0)
+	{
+		// A host name.  Don't hand out AAAA records if this machine has no
+		// IPv6 connectivity (and vice versa for A records).
+		hints.ai_flags = AI_ADDRCONFIG;
+		res = NULL;
+		if (getaddrinfo(host.c_str(), NULL, &hints, &res) != 0)
+			return false;
+	}
+
+	if (!res)
 		return false;
 
 	bool found = false;
@@ -590,10 +607,6 @@ bool NET_CompareAdr (netadr_t a, netadr_t b)
 
 	return memcmp(a.ip, b.ip, sizeof(a.ip)) == 0;
 }
-
-#ifdef _WIN32
-typedef int socklen_t;
-#endif
 
 int NET_GetPacket (void)
 {

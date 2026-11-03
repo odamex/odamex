@@ -45,7 +45,7 @@ public:
 	IPRange(void);
 	[[nodiscard]] bool check(const netadr_t &address) const;
 	[[nodiscard]] bool check(const std::string &input) const;
-	void set(const netadr_t &address);
+	void set(const netadr_t &address, byte v6prefix = 64);
 	bool set(const std::string &input);
 	std::string string() const;
 };
