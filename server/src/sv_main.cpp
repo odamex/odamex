@@ -3798,7 +3798,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		auto message = SVC_UpdateMobjWithMode(*actor);
 		WriteMobjMessageToPlayer(message,
 		                         player,
-		                         actor->playersAware.Get(player.id),
+		                         AwarenessEnum::FULLY_AWARE,    // A single blip of awareness for this on-demand mobj!
 		                         TransportEnum::BEST_EFFORT);
 	}
 	player.onDemandMobjs.clear();
