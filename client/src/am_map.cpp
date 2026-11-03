@@ -388,6 +388,8 @@ void AM_saveScaleAndLoc()
 //
 void AM_restoreScaleAndLoc()
 {
+	const AActor* camera = CL_GetActiveMobjCamera();
+
 	m_wh = old_m_wh;
 	if (!am_followplayer)
 	{
@@ -395,8 +397,7 @@ void AM_restoreScaleAndLoc()
 	}
 	else
 	{
-		M_SetVec2Fixed64(&m_ll, FIXED2FIXED64(displayplayer().camera->x) - m_wh.x / 2,
-			                  FIXED2FIXED64(displayplayer().camera->y) - m_wh.y / 2);
+		M_SetVec2Fixed64(&m_ll, FIXED2FIXED64(camera->x) - m_wh.x / 2, FIXED2FIXED64(camera->y) - m_wh.y / 2);
 	}
 	M_AddVec2Fixed64(&m_ur, &m_ll, &m_wh);
 
@@ -1611,7 +1612,7 @@ void AM_rotate(mpoint_t& pt, angle_t a)
 
 void AM_rotatePoint(mpoint_t& pt)
 {
-	AActor* camera = CL_GetActiveMobjCamera();
+	const AActor* camera = CL_GetActiveMobjCamera();
 
 	OInterpolation& oi = OInterpolation::getInstance();
 
@@ -1680,11 +1681,10 @@ void AM_drawLineCharacter(std::span<const mline_t> lineguy, fixed64_t scale,
 
 void AM_drawPlayers()
 {
-	angle_t angle;
-	AActor* camera = CL_GetActiveMobjCamera();
-
+	const AActor* camera = CL_GetActiveMobjCamera();
 	OInterpolation& oi = OInterpolation::getInstance();
 
+	angle_t angle;
 	fixed64_t x;
 	fixed64_t y;
 	fixed_t cangle;
@@ -1812,6 +1812,7 @@ void AM_drawPlayers()
 
 void AM_drawFreecams()
 {
+	const AActor* camera = CL_GetActiveMobjCamera();
 	OInterpolation& oi = OInterpolation::getInstance();
 	const argb_t* palette = V_GetDefaultPalette()->colors;
 	const am_color_t fcam_color = AM_GetColorFromString(palette, "FF FF FF");
@@ -1821,7 +1822,7 @@ void AM_drawFreecams()
 		mpoint_t pt;
 
 		angle_t angle;
-		fixed_t cangle = 0;
+		fixed_t cangle;
 		fixed_t moangle;
 		fixed_t mox;
 		fixed_t moy;
@@ -1831,12 +1832,15 @@ void AM_drawFreecams()
 			moangle = f.mo->prevangle + FixedMul(f.mo->angle - f.mo->prevangle, render_lerp_amount);
 			mox = f.mo->prevx + FixedMul(f.mo->x - f.mo->prevx, render_lerp_amount);
 			moy = f.mo->prevy + FixedMul(f.mo->y - f.mo->prevy, render_lerp_amount);
+			cangle = camera->prevangle +
+			         FixedMul(camera->angle - camera->prevangle, render_lerp_amount);
 		}
 		else
 		{
 			moangle = f.mo->angle;
 			mox = f.mo->x;
 			moy = f.mo->y;
+			cangle = camera->angle;
 		}
 
 		M_SetVec2Fixed64(&pt, FIXED2FIXED64(mox), FIXED2FIXED64(moy));

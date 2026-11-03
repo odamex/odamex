@@ -279,6 +279,7 @@ player_t		&consoleplayer()
 	return idplayer(consoleplayer_id);
 }
 
+// careful - this could return the nullplayer!
 player_t		&displayplayer()
 {
 	return idplayer(displayplayer_id);
