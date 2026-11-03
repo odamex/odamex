@@ -382,8 +382,8 @@ inline Players players;
 
 // Player taking events, and displaying.
 player_t		&consoleplayer();
+// Player displaying. Warning - this returns the nullplayer when freecam is active
 player_t		&displayplayer();
-player_t		&listenplayer();
 player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
 bool			validplayer(const player_t &ref);

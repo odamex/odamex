@@ -548,11 +548,14 @@ void AM_initVariables()
 		}
 	}
 
-	if (!pl->camera)
+	// prioritize active freecam
+	const AActor* camera = freecamIsActive() ? CL_GetActiveMobjCamera() : pl->camera;
+
+	if (not camera)
 		return;
 
-	m_ll.x = FIXED2FIXED64(pl->camera->x) - m_wh.x / 2;
-	m_ll.y = FIXED2FIXED64(pl->camera->y) - m_wh.y / 2;
+	m_ll.x = FIXED2FIXED64(camera->x) - m_wh.x / 2;
+	m_ll.y = FIXED2FIXED64(camera->y) - m_wh.y / 2;
 	AM_changeWindowLoc();
 
 	AM_saveScaleAndLoc();
@@ -1981,19 +1984,17 @@ void AM_drawCheatThing(const AActor* t)
 	if (am_rotate)
 	{
 		AM_rotatePoint(p);
+		const AActor* camera = CL_GetActiveMobjCamera();
 
 		fixed_t conangle;
 
 		if (oi.enabled())
 		{
-			conangle = displayplayer().camera->prevangle +
-				FixedMul(displayplayer().camera->angle -
-				displayplayer().camera->prevangle,
-				render_lerp_amount);
+			conangle = camera->prevangle + FixedMul(camera->angle - camera->prevangle, render_lerp_amount);
 		}
 		else
 		{
-			conangle = displayplayer().camera->angle;
+			conangle = camera->angle;
 		}
 
 		rotate_angle = ANG90 - conangle;

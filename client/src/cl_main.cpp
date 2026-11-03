@@ -957,8 +957,7 @@ void CL_RunTics()
 	if (!connected)
 		CL_RequestConnectInfo();
 
-	// [RH] Use the consoleplayer's camera to update sounds
-	S_UpdateSounds(listenplayer().camera);	// move positional sounds
+	S_UpdateSounds(CL_GetActiveMobjCamera());	// move positional sounds
 	S_UpdateMusic();	// play another chunk of music
 
 	D_DisplayTicker();

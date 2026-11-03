@@ -279,15 +279,10 @@ player_t		&consoleplayer()
 	return idplayer(consoleplayer_id);
 }
 
-// careful - this could return the nullplayer!
+// Player displaying. Warning - this returns the nullplayer when freecam is active
 player_t		&displayplayer()
 {
 	return idplayer(displayplayer_id);
-}
-
-player_t		&listenplayer()
-{
-	return displayplayer();
 }
 
 // [RH] Name of screenshot file to generate (usually NULL)

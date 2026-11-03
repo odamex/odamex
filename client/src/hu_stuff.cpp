@@ -577,11 +577,14 @@ void HU_Drawer()
 		mousegraph.draw(hud_mousegraph);
 
 	if (idmypos && gamestate == GS_LEVEL)
+	{
+		const AActor* camera = CL_GetActiveMobjCamera();
 		PrintFmt(PRINT_HIGH, "ang={};x,y,z=({},{},{})\n",
-			     displayplayer().camera->angle/FRACUNIT,
-			     displayplayer().camera->x/FRACUNIT,
-			     displayplayer().camera->y/FRACUNIT,
-			     displayplayer().camera->z/FRACUNIT);
+			     camera->angle/FRACUNIT,
+			     camera->x/FRACUNIT,
+			     camera->y/FRACUNIT,
+			     camera->z/FRACUNIT);
+	}
 
 	// Draw Netdemo info
 	hud::drawNetdemo();
