@@ -1038,10 +1038,8 @@ void P_FreecamThink(freecam_t& freecam)
 	// calc height
 	freecam.camera->z = freecam.mo->z;
 
-	if (freecam.camera->z > freecam.mo->ceilingz-(4*FRACUNIT))
-		freecam.camera->z = freecam.mo->ceilingz-(4*FRACUNIT);
-	if (freecam.camera->z < freecam.mo->floorz + (4*FRACUNIT))
-		freecam.camera->z = freecam.mo->floorz + (4*FRACUNIT);
+	freecam.camera->z = std::min(freecam.camera->z, freecam.mo->ceilingz-(4*FRACUNIT));
+	freecam.camera->z = std::max(freecam.camera->z, freecam.mo->floorz + (4*FRACUNIT));
 
 	// A special event has no other buttons.
 	if (freecam.cmd.buttons & BT_SPECIAL)

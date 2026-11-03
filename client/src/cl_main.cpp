@@ -696,7 +696,7 @@ void CL_CheckDisplayPlayer(void)
 // are made to ensure only spectators can view enemy players.
 //
 template<class Iterator>
-void CL_SpyCycle(Iterator begin, Iterator end, bool forward)
+void CL_SpyCycle(const Iterator& begin, const Iterator& end, bool forward)
 {
 	// Make sure we have players to iterate over
 	if (players.empty())
