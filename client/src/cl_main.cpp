@@ -1636,9 +1636,26 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 	if (mobj->x == x && mobj->y == y && mobj->z == z)
 		return;
 
-	P_CheckPosition(mobj, x, y);
-	mobj->UnlinkFromWorld ();
+	if (not P_CheckPosition(mobj, x, y))
+	{
+		// In the event that the server puts the mobj into a place where it's overlapping
+		// another mobj, the movement code is going to deadlock these mobjs, preventing
+		// motion prediction and certainly ghosting out them out.  They essentially have
+		// mispredicted NON-motion, so downgrade their credibility.
+		if (BlockingMobj)
+		{
+			if (BlockingMobj->IsMonster())
+			{
+				BlockingMobj->credibility.MarkMispredicted();
+			}
+			if (mobj->IsMonster())
+			{
+				mobj->credibility.MarkMispredicted();
+			}
+		}
+	}
 
+	mobj->UnlinkFromWorld ();
 	mobj->x = x;
 	mobj->y = y;
 	mobj->z = z;

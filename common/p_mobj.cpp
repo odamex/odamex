@@ -348,39 +348,39 @@ inline void CredibilityState::Update(const AActor& mobj)
 	{
 		if (mobj.updatedDuringLocalTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
 		{
-			const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringLocalTic;
+			// In sv_main, we nominally update mobjs every 7 tics.
+			// Allow up to 10 before we stop fully believing it, to allow for jitter plus
+			// some "real world slop" margin.
+			constexpr int OVERDUE_UPDATE_THRESHOLD_TICS = 10;
+
+			const int  ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringLocalTic;
+			const bool updateIsOverdue              = ticsSinceAuthoritativeUpdate >= OVERDUE_UPDATE_THRESHOLD_TICS;
 
 			if (ticsSinceAuthoritativeUpdate == 0)
 			{
 				m_crediblePosition.x = mobj.x;
 				m_crediblePosition.y = mobj.y;
 				m_crediblePosition.z = mobj.z;
+				m_credibility        = m_hasKnownMisprediction ? CredibilityEnum::SEMI_CREDIBLE
+				                                               : CredibilityEnum::FULLY_CREDIBLE;
 
-				m_credibility             = CredibilityEnum::FULLY_CREDIBLE;
-				m_predictedMotionTicCount = 0;
+				m_predictedMotionTicCount = m_hasKnownMisprediction ? 1 : 0;
 				m_challengeInterval       = 0;
+				m_hasKnownMisprediction   = false;
 			}
-			// In sv_main, we nominally update mobjs every 7 tics.
-			// Allow up to 10 before we stop fully believing it, to allow for jitter plus
-			// some "real world slop" margin.
-			else if (ticsSinceAuthoritativeUpdate < 10)
-			{
-				m_credibility = CredibilityEnum::FULLY_CREDIBLE;
-			}
-			else
+			// Note that we still check m_hasKnownMisprediction because it could still have been
+			// set on a mobj after its authoritative update but before it naturally goes semi-credible.
+			else if (updateIsOverdue or m_hasKnownMisprediction)
 			{
 				if (   m_predictedMotionTicCount > 0
 				    or m_crediblePosition.x != mobj.x
 				    or m_crediblePosition.y != mobj.y
-				    or m_crediblePosition.z != mobj.z)
+				    or m_crediblePosition.z != mobj.z
+				    or m_hasKnownMisprediction)
 				{
+					m_hasKnownMisprediction = not updateIsOverdue;  // Keep the short-circuit active until we naturally go overdue.
 					++m_predictedMotionTicCount;
 				}
-
-				// Possible weakness to this algorithm:  Suppose the client predicts that
-				// the mobj is dead-still but the server says it's in motion yet it's SEMI_AWARE
-				// or just a lower-priority SEMI_AWARE?  We just have to hope that the server
-				// decides to naturally send an UpdateMobj for it at some point.
 
 				if (m_credibility == CredibilityEnum::CHALLENGED_CREDIBILITY)
 				{

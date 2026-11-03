@@ -227,6 +227,15 @@ class CredibilityState
 			return true;
 		}
 
+		/// Marks the mobj as having had a misprediction.  This is intended for use when we see a mobj
+		/// move per server command but it winds up overlapping another mobj.  We know a misprediction
+		/// has happened, and we can't necessarily rely on the motion detection to begin the process of
+		/// downgrading the credibility.
+		void MarkMispredicted()
+		{
+			m_hasKnownMisprediction = true;
+		}
+
 		/// Marks the credibility as challenged, meaning that the client intends to request that the
 		/// server provide an on-demand update to the corresponding mobj.  The given timeout parameter
 		/// describes how many tics we want to allow for the server to respond with an update before
@@ -279,6 +288,7 @@ class CredibilityState
 		v3fixed_t       m_crediblePosition        { 0, 0, 0 };
 		int             m_predictedMotionTicCount { 0 };
 		int             m_challengeInterval       { 0 };
+		bool            m_hasKnownMisprediction   { false };
 };
 
 // Map Object definition.
