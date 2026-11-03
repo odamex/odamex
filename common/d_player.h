@@ -328,7 +328,7 @@ public:
 
 	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
 
-	uint32_t    requestedNetIdUpdate;   // ID of a mobj for which this player is requesting an update.
+	std::unordered_set<uint32_t> requestedNetIdUpdates;   // IDs of mobjs for which this player is requesting an update.
 
 	// zdoom
 	int hazardcount;
@@ -345,24 +345,29 @@ public:
 	std::queue<AActor::AActorPtr>           mobjsToSpawn;   // std::queue because we may not pop everything off this tic.
 	std::unordered_set<AActor::AActorPtr>   mobjsToUpdate;
 
-	// For prioritization of mobj updates from server to client.
+	// Server:  For prioritization of mobj updates from server to client.
+	// Client:  For prioritization of mobj "ghostbuster" requests to the server.
 	struct ActorDistanceType
 	{
 		AActor* actorPtr;
-		int     distanceSquared;
+		int64_t distanceSquared;
 
-		ActorDistanceType(AActor* i_actorPtr, int i_distanceSquared) : actorPtr(i_actorPtr), distanceSquared(i_distanceSquared) {}
+		ActorDistanceType(AActor* i_actorPtr, int64_t i_distanceSquared) : actorPtr(i_actorPtr), distanceSquared(i_distanceSquared) {}
 	};
 	std::vector<ActorDistanceType> sortedMobjs;
+	std::vector<const AActor*>     onDemandMobjs;
 
 	// Client:  Indicate that we want the server to send us a PlayerInfo for inventory validation.
 	//          Cleared when the command is packed.
 	// Server:  If set true, send a reliable PlayerInfo message back to the client.  Cleared when
 	//          the PlayerInfo is packed.
 	bool playerInfoIsRequested;
-	bool inventoryCheckRequestsAreEnabled;
+	void RequestInventoryCheckFromServer() { playerInfoIsRequested = serverRefreshRequestsAreEnabled; }
 
-	void RequestInventoryCheckFromServer() { playerInfoIsRequested = inventoryCheckRequestsAreEnabled; }
+	// Client:  Indicates that the netcode should generate requests to the server for on-demand refreshes
+	//          for the sake of prediction rollbacks and on-demand mobj updates.
+	// Server:  N/A
+	bool serverRefreshRequestsAreEnabled;
 
 	hordeInfo_t hordeInfo;
 

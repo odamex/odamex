@@ -1636,9 +1636,26 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 	if (mobj->x == x && mobj->y == y && mobj->z == z)
 		return;
 
-	P_CheckPosition(mobj, x, y);
-	mobj->UnlinkFromWorld ();
+	if (not P_CheckPosition(mobj, x, y))
+	{
+		// In the event that the server puts the mobj into a place where it's overlapping
+		// another mobj, the movement code is going to deadlock these mobjs, preventing
+		// motion prediction and certainly ghosting out them out.  They essentially have
+		// mispredicted NON-motion, so downgrade their credibility.
+		if (BlockingMobj)
+		{
+			if (BlockingMobj->IsMonster())
+			{
+				BlockingMobj->credibility.MarkMispredicted();
+			}
+			if (mobj->IsMonster())
+			{
+				mobj->credibility.MarkMispredicted();
+			}
+		}
+	}
 
+	mobj->UnlinkFromWorld ();
 	mobj->x = x;
 	mobj->y = y;
 	mobj->z = z;
@@ -2321,9 +2338,6 @@ void CL_SaveCmd(void)
 
 extern int outrate;
 
-// TODO:  we have to stop doing this willy-nilly extern madness..
-extern vissprite_t* closestNonCredibleVisSprite;
-
 //
 // CL_SendCmd
 //
@@ -2345,12 +2359,21 @@ void CL_SendCmd(void)
 			messenger.BestEffort().Write (CLC_SpectateUpdate(player));
 		}
 
-		if (closestNonCredibleVisSprite)
+		if (not player.sortedMobjs.empty())
 		{
-			closestNonCredibleVisSprite->mo->credibility.Challenge();
+			odaproto::clc::SendMobjUpdate onDemandMobjsMsg;
 
-			messenger.Reliable().Write(CLC_SendMobjUpdate(closestNonCredibleVisSprite->mo->netid));
-			closestNonCredibleVisSprite = nullptr;
+			for (const auto& mobjInfo : player.sortedMobjs)
+			{
+				constexpr int MAX_CHALLENGE_RATE_HZ       = 5;
+				constexpr int MAX_CHALLENGE_INTERVAL_TICS = TICRATE / MAX_CHALLENGE_RATE_HZ;
+
+				mobjInfo.actorPtr->credibility.Challenge(MAX_CHALLENGE_INTERVAL_TICS);
+				onDemandMobjsMsg.add_netid(mobjInfo.actorPtr->netid);
+			}
+			messenger.Reliable().Write(onDemandMobjsMsg);
+
+			player.sortedMobjs.clear();
 		}
 
 		odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
@@ -2788,6 +2811,90 @@ void CL_SimulateWorld()
 	#endif // _WORLD_INDEX_DEBUG_
 
 	world_index = world_index + 1 + drift_correction;
+}
+
+/// This function updates the given player's sortedMobjs to contain only the small subset
+/// that are highest-priority for immediate on-demand updates from the server.  The intended
+/// use is to bust ghosts that are nearby and/or are likely to create other ghosts.
+///
+/// It assumes that the player's sortedMobjs have been pre-loaded with mobjs that are believed
+/// likely candidates to be ghosts.
+void CL_SelectPotentialDesynchedMobjs(player_t& player)
+{
+	if (player.sortedMobjs.empty())
+		return;
+
+	if (not player.serverRefreshRequestsAreEnabled)
+	{
+		player.sortedMobjs.clear();
+		return;
+	}
+
+	// Though we are updating the player given to this function, we want to sort from wherever
+	// the camera is, which may or may not be the same player.
+	const player_t& viewingPlayer = displayplayer();
+	const AActor*   camera        = viewingPlayer.camera ? viewingPlayer.camera : viewingPlayer.mo;
+	if (camera)
+	{
+		constexpr size_t MAX_ELEMENTS_TO_REQUEST = 10;
+		if (player.sortedMobjs.size() > MAX_ELEMENTS_TO_REQUEST)
+		{
+			const int mostSignificantX = FIXED2INT(camera->x);
+			const int mostSignificantY = FIXED2INT(camera->y);
+
+			for (auto mobjInfoIter  = player.sortedMobjs.begin();
+			          mobjInfoIter != player.sortedMobjs.end();
+			        )
+			{
+				// Make sure that any mobjs that will go away at the end of this tic are excluded.
+				if (mobjInfoIter->actorPtr->WasDestroyed())
+				{
+					using std::swap;
+					swap(*mobjInfoIter, player.sortedMobjs.back());
+					player.sortedMobjs.pop_back();
+
+					// Note that we leave the iterator in place because it already points to an
+					// unprocessed element.
+				}
+				else
+				{
+					const int dx = mostSignificantX - FIXED2INT(mobjInfoIter->actorPtr->x);
+					const int dy = mostSignificantY - FIXED2INT(mobjInfoIter->actorPtr->y);
+
+					// The sort key is distance squared divided by time since start of predicted
+					// motion.  This provides a decent balance between closest mobjs and mobjs that
+					// are distant but have been wandering long enough to cause credible monsters
+					// to become ghosts themselves.
+					mobjInfoIter->distanceSquared = (dx * dx) + (dy * dy);
+
+					if (const int age = mobjInfoIter->actorPtr->credibility.GetMotionAge())
+					{
+						mobjInfoIter->distanceSquared /= age;
+					}
+					++mobjInfoIter;
+				}
+			}
+
+			// If we happened to drop below the max elements due to destroyed mobjs, don't bother sorting.
+			if (player.sortedMobjs.size() > MAX_ELEMENTS_TO_REQUEST)
+			{
+				auto priorityCompare = [](const auto& mobj1, const auto& mobj2)
+				{
+					return mobj1.distanceSquared < mobj2.distanceSquared;
+				};
+
+				// Partial_sort because it's optimized for selecting a small number of sorted
+				// elements from a much, much larger set.
+				std::partial_sort(player.sortedMobjs.begin(),
+				                  player.sortedMobjs.begin() + MAX_ELEMENTS_TO_REQUEST,
+				                  player.sortedMobjs.end(),
+				                  priorityCompare);
+
+				player.sortedMobjs.erase(player.sortedMobjs.begin() + MAX_ELEMENTS_TO_REQUEST,
+				                         player.sortedMobjs.end());
+			}
+		}
+	}
 }
 
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
