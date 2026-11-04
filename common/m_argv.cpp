@@ -234,7 +234,11 @@ DArgs DArgs::GatherBareFiles() const
 		if (IsParam(args, i))
 			break;
 
-		out.AppendArg(args[i].c_str());
+		static constexpr std::string_view file_uri = "file://";
+		if (args[i].starts_with(file_uri))
+			out.AppendArg(args[i].substr(file_uri.length()).c_str());
+		else
+			out.AppendArg(args[i].c_str());
 	}
 
 	return out;
