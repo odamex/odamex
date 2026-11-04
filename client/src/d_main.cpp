@@ -294,7 +294,7 @@ void D_Display()
 			V_DoPaletteEffects();
 
 			// Drawn to R_GetRenderingSurface()
-			R_RenderView(&CL_GetActiveMobjCamera());
+			R_RenderView(&CL_GetDisplayCamera());
 
 			R_DrawViewBorder();
 			ST_Drawer();

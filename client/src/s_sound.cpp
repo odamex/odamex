@@ -151,7 +151,7 @@ size_t numChannels;
 //
 void S_NoiseDebug()
 {
-	const AActor *camera = CL_GetActiveMobjCamera();
+	const AActor *camera = CL_GetDisplayCamera();
 	fixed_t ox, oy;
 
 	int y = 32 * CleanYfac;
@@ -583,7 +583,7 @@ int S_CalculateSoundPriority(const fixed_t* pt, int channel, int attenuation)
 	else if (attenuation == ATTN_IDLE || attenuation == ATTN_STATIC)
 		priority -= 50;
 
-	const AActor* camera = CL_GetActiveMobjCamera();
+	const AActor* camera = CL_GetDisplayCamera();
 
 	// Give extra priority to sounds made by the player we're viewing
 	if (camera and pt == &camera->x)
@@ -672,7 +672,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 	                     int sfx_id, float volume, int attenuation, bool looping,
 	                     float dist_scale = 0.0f)
 {
-	const AActor* camera = CL_GetActiveMobjCamera();
+	const AActor* camera = CL_GetDisplayCamera();
 
 	if (volume <= 0.0f)
 		return;
@@ -912,7 +912,7 @@ void S_Sound(int channel, const char *name, float volume, int attenuation)
 
 void S_Sound(const AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	if(not co_globalsound and channel == CHAN_ITEM and ent != CL_GetActiveMobjCamera())
+	if(not co_globalsound and channel == CHAN_ITEM and ent != CL_GetDisplayCamera())
 		return;
 
 	S_StartNamedSound(sound_origin_t(ent), channel, name, volume, attenuation, false);

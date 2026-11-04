@@ -45,6 +45,7 @@
 
 size_t P_NumPlayersInGame(void);
 argb_t CL_GetPlayerColor(const player_t&);
+AActor::AActorPtr& CL_GetDisplayMobj();
 
 extern NetDemo netdemo;
 extern fixed_t FocalLengthX;
@@ -1927,8 +1928,11 @@ void EATargets(int x, int y, const float scale,
 		return;
 	}
 
-	if(!displayplayer().mo) {
-		// For some reason, the displayed player doesn't have a mobj, so
+	const AActor* displaymobj = CL_GetDisplayMobj();
+
+	if (not displaymobj)
+	{
+		// For some reason, the displayed object doesn't have a mobj, so
 		// if we let this function run we're going to crash.
 		return;
 	}
@@ -1948,15 +1952,18 @@ void EATargets(int x, int y, const float scale,
 			continue;
 
 		// We don't care about the player whose eyes we are looking through.
-		if (&player == &(displayplayer()))
+		if (player.id == displayplayer_id)
 			continue;
 
-		if (!P_ActorInFOV(displayplayer().mo, player.mo, 45.0f, 512 * FRACUNIT))
+		if (not P_ActorInFOV(displaymobj, player.mo, 45.0f, 512 * FRACUNIT))
 			continue;
 
 		// The server doesn't want us to see enemy target names.
-		if (!netdemoplaying && !::sv_allowtargetnames && !consoleplayer().spectator &&
-		    !P_AreTeammates(displayplayer(), player))
+		if (playerIsDisplayed()
+			and not netdemoplaying
+			and not ::sv_allowtargetnames
+			and not consoleplayer().spectator
+			and not P_AreTeammates(displayplayer(), player))
 		{
 			continue;
 		}
@@ -1973,7 +1980,7 @@ void EATargets(int x, int y, const float scale,
 		// Ok, make the temporary player info then add it
 		TargetInfo_t temp = {
 			&player,
-			P_AproxDistance2(displayplayer().mo, player.mo) >> FRACBITS,
+			P_AproxDistance2(displaymobj, player.mo) >> FRACBITS,
 			color
 		};
 		Targets.push_back(temp);

@@ -810,9 +810,15 @@ void CL_SpyCycleFreecams(bool forward)
 	}
 }
 
-AActor::AActorPtr& CL_GetActiveMobjCamera()
+//
+// CL_GetDisplayCamera
+//
+// Returns the camera of the object currently being displayed on screen
+// Does not have to be a player!
+//
+AActor::AActorPtr& CL_GetDisplayCamera()
 {
-	if (playerIsActive())
+	if (playerIsDisplayed())
 		return displayplayer().camera;
 	if (freecamIsActive())
 		return freecam_t::getfreecam(freecam_id)->camera;
@@ -820,16 +826,31 @@ AActor::AActorPtr& CL_GetActiveMobjCamera()
 	return displayplayer().camera;
 }
 
-activeMobj_e CL_GetActiveMobj()
+// CL_GetDisplayMobj
+//
+// Returns the mobj of the object currently being displayed on screen
+// Does not have to be a player!
+//
+AActor::AActorPtr& CL_GetDisplayMobj()
 {
-	if (playerIsActive())
-		return activeMobj_e::PLAYER;
+	if (playerIsDisplayed())
+		return displayplayer().mo;
 	if (freecamIsActive())
-		return activeMobj_e::FREECAM;
+		return freecam_t::getfreecam(freecam_id)->mo;
+
+	return displayplayer().mo;
+}
+
+commandingMobj_e CL_ActiveCommandingMobj()
+{
+	if (playerIsDisplayed())
+		return commandingMobj_e::PLAYER;
+	if (freecamIsActive())
+		return commandingMobj_e::FREECAM;
 
 	// otherwise displayplayer_id and freecam_id are both set, or both are the null id (0)
 	// this should never happen
-	return activeMobj_e::UNKNOWN;
+	return commandingMobj_e::UNKNOWN;
 }
 
 void D_ProcessEvents();
@@ -844,15 +865,15 @@ void NetUpdate (void)
 	I_StartTic ();
 	D_ProcessEvents ();
 
-	switch (CL_GetActiveMobj())
+	switch (CL_ActiveCommandingMobj())
 	{
-		case activeMobj_e::PLAYER:
+		case commandingMobj_e::PLAYER:
 			G_BuildTiccmd(consoleplayer().netcmds[gametic % BACKUPTICS]);
 		    break;
-	    case activeMobj_e::FREECAM:
+	    case commandingMobj_e::FREECAM:
 		    G_BuildTiccmd(freecam_t::getfreecam(freecam_id)->cmd);
 		    break;
-	    case activeMobj_e::UNKNOWN:
+	    case commandingMobj_e::UNKNOWN:
 		    PrintFmt("Warning - unknown active mobj, resetting to consoleplayer\n");
 		    freecam_id = nullcam_id;
 		    displayplayer_id = consoleplayer_id;
@@ -957,7 +978,7 @@ void CL_RunTics()
 	if (!connected)
 		CL_RequestConnectInfo();
 
-	S_UpdateSounds(CL_GetActiveMobjCamera());	// move positional sounds
+	S_UpdateSounds(CL_GetDisplayCamera());	// move positional sounds
 	S_UpdateMusic();	// play another chunk of music
 
 	D_DisplayTicker();
@@ -2853,7 +2874,7 @@ void CL_SimulateWorld()
 	int upper_sync_limit = CL_CalculateWorldIndexSync() + MAX_AHEAD;
 
 	// Was the displayplayer just teleported?
-	bool continuous = playerIsActive() and displayplayer().snapshots.getSnapshot(world_index).isContinuous();
+	const bool continuous = playerIsDisplayed() and displayplayer().snapshots.getSnapshot(world_index).isContinuous();
 
 	// Reset the synchronization with the server if needed
 	if (world_index <= 0 || !continuous ||

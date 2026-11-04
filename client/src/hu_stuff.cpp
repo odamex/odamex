@@ -578,7 +578,7 @@ void HU_Drawer()
 
 	if (idmypos && gamestate == GS_LEVEL)
 	{
-		const AActor* camera = CL_GetActiveMobjCamera();
+		const AActor* camera = CL_GetDisplayCamera();
 		PrintFmt(PRINT_HIGH, "ang={};x,y,z=({},{},{})\n",
 			     camera->angle/FRACUNIT,
 			     camera->x/FRACUNIT,

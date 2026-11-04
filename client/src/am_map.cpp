@@ -57,7 +57,7 @@
 #include "g_skill.h"
 #include "p_mapformat.h"
 
-AActor::AActorPtr& CL_GetActiveMobjCamera();
+AActor::AActorPtr& CL_GetDisplayCamera();
 argb_t CL_GetPlayerColor(const player_t&);
 
 EXTERN_CVAR(am_followplayer)
@@ -388,7 +388,7 @@ void AM_saveScaleAndLoc()
 //
 void AM_restoreScaleAndLoc()
 {
-	const AActor* camera = CL_GetActiveMobjCamera();
+	const AActor* camera = CL_GetDisplayCamera();
 
 	m_wh = old_m_wh;
 	if (!am_followplayer)
@@ -549,7 +549,7 @@ void AM_initVariables()
 	}
 
 	// prioritize active freecam
-	const AActor* camera = freecamIsActive() ? CL_GetActiveMobjCamera() : pl->camera;
+	const AActor* camera = freecamIsActive() ? CL_GetDisplayCamera() : pl->camera;
 
 	if (not camera)
 		return;
@@ -1615,7 +1615,7 @@ void AM_rotate(mpoint_t& pt, angle_t a)
 
 void AM_rotatePoint(mpoint_t& pt)
 {
-	const AActor* camera = CL_GetActiveMobjCamera();
+	const AActor* camera = CL_GetDisplayCamera();
 
 	OInterpolation& oi = OInterpolation::getInstance();
 
@@ -1684,7 +1684,7 @@ void AM_drawLineCharacter(std::span<const mline_t> lineguy, fixed64_t scale,
 
 void AM_drawPlayers()
 {
-	const AActor* camera = CL_GetActiveMobjCamera();
+	const AActor* camera = CL_GetDisplayCamera();
 	OInterpolation& oi = OInterpolation::getInstance();
 
 	angle_t angle;
@@ -1815,7 +1815,7 @@ void AM_drawPlayers()
 
 void AM_drawFreecams()
 {
-	const AActor* camera = CL_GetActiveMobjCamera();
+	const AActor* camera = CL_GetDisplayCamera();
 	OInterpolation& oi = OInterpolation::getInstance();
 	const argb_t* palette = V_GetDefaultPalette()->colors;
 	const am_color_t fcam_color = AM_GetColorFromString(palette, "FF FF FF");
@@ -1984,7 +1984,7 @@ void AM_drawCheatThing(const AActor* t)
 	if (am_rotate)
 	{
 		AM_rotatePoint(p);
-		const AActor* camera = CL_GetActiveMobjCamera();
+		const AActor* camera = CL_GetDisplayCamera();
 
 		fixed_t conangle;
 
