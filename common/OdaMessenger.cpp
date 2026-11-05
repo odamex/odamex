@@ -303,6 +303,22 @@ size_t OdaMessenger::PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf
 	return io_packet.AddUnreliableMessage(messageBuf);
 }
 
+bool OdaMessenger::CheckForCriticalTimeout(int i_currentTic)
+{
+	if (m_criticalSequenceTimeoutInTics > 0)
+	{
+		if (const SequenceQueueEntryType* oldestOutgoingUnackedEntry = m_sender.IterateUnackedPackets().Next())
+		{
+			if (i_currentTic > oldestOutgoingUnackedEntry->header.originatorTic + m_criticalSequenceTimeoutInTics)
+			{
+				m_sender.SetMode(SequenceSender::CRITICAL_FAILURE);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void OdaMessenger::StartTicSend(int i_currentTic)
 {
 	// Once a second, recalculate the budget to incorporate any changes made to maxRate.
@@ -351,16 +367,9 @@ MessageResultEnum OdaMessenger::SendStandard(int i_currentTic, const netadr_t& i
 
 	// Before doing anything, judge whether or not the client has become dangerously
 	// non-responsive, and abort if so.
-	if (m_criticalSequenceTimeoutInTics > 0)
+	if (CheckForCriticalTimeout(i_currentTic))
 	{
-		if (SequenceQueueEntryType* oldestOutgoingUnackedEntry = m_sender.IterateUnackedPackets().Next())
-		{
-			if (i_currentTic > oldestOutgoingUnackedEntry->header.originatorTic + m_criticalSequenceTimeoutInTics)
-			{
-				m_sender.SetMode(SequenceSender::CRITICAL_FAILURE);
-				return MessageResultEnum::ABORT;
-			}
-		}
+		return MessageResultEnum::ABORT;
 	}
 
 	// Now send reliables, padded out to MAX_UDP_SIZE-ish with non-reliable best-effort messages.

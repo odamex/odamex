@@ -125,6 +125,7 @@ void SV_ParseCommands(player_t &player);
 void SV_UpdateFrags (const player_t &player);
 void SV_RemoveCorpses (void);
 void SV_DropClient(player_t& who);
+void SV_DropClientUngracefully(player_t& playerRef, const char* disconnectPrintVerb);
 void SV_PlayerTriedToCheat(player_t &player);
 void SV_ForceSetTeam(player_t &who, team_t team);
 void SV_CheckTeam(player_t &player);
