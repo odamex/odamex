@@ -104,6 +104,7 @@ void (*R_DrawTranslucentLevelColumn)(rendercontext_t&);
 void (*R_DrawLevelGroup)(rendercontext_t&);
 
 void (*R_DrawLevelGroupD)(rendercontext_t&);
+void (*R_DrawLevelGroupARGBD)(rendercontext_t&);
 void (*R_DrawSlopeColumn)(rendercontext_t&);
 void (*R_DrawTranslucentSlopeColumn)(rendercontext_t&);
 void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
@@ -2308,6 +2309,7 @@ void R_InitVectorizedDrawers()
 	R_DrawLevelGroupD       = R_DrawLevelGroupD_c;
 	R_DrawColumnQuadD       = nullptr;
 	R_DrawTranslucentColumnQuadD = nullptr;
+	R_DrawLevelGroupARGBD   = R_DrawLevelGroupARGBD_c;
 	have_vector_slopes      = false;
 	r_dimpatchD             = r_dimpatchD_c;
 	R_StreamStoredLines8    = nullptr;
@@ -2366,6 +2368,7 @@ void R_InitVectorizedDrawers()
 	// Check that all pointers are definitely assigned!
 	assert(R_DrawLevelGroupD != NULL);
 	assert(r_dimpatchD != NULL);
+	assert(R_DrawLevelGroupARGBD != NULL);
 }
 
 // ============================================================================

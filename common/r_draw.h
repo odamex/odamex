@@ -333,6 +333,7 @@ extern void (*R_DrawTranslucentSlopeColumn)(rendercontext_t&);
 bool R_PrepareARGBPlaneShading(rendercontext_t& ctx, const shaderef_t& light);
 
 // The four-row group drawer for a true-color flat.
+extern void (*R_DrawLevelGroupARGBD)(rendercontext_t&);
 void R_DrawLevelGroupARGBD_c(rendercontext_t& ctx);
 
 extern void (*R_FillColumn)(rendercontext_t&);

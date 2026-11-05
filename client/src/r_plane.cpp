@@ -847,7 +847,7 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 		}
 
 		if (argb)
-			R_DrawLevelGroupARGBD_c(ctx);
+			R_DrawLevelGroupARGBD(ctx);
 		else
 			R_DrawLevelGroup(ctx);
 	};
