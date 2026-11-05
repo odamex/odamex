@@ -870,7 +870,7 @@ void R_SetupFrame (AActor::AActorPtr *cam)
 		return;
 
 	player_t &consolePlayer = consoleplayer();
-	const bool use_localview = consolePlayer.id == displayplayer().id &&
+	const bool use_localview = consolePlayer.id == displayplayer_id &&
 	                           consolePlayer.health > 0 &&
 	                           not consolePlayer.mo->reactiontime &&
 	                           not netdemo.isInPlayback() && not demoplayback;

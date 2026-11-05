@@ -1944,6 +1944,8 @@ void EATargets(int x, int y, const float scale,
 
 	const bool netdemoplaying = ::netdemo.isInPlayback();
 	std::vector<TargetInfo_t> Targets;
+	float fov = 45.0f;
+	fixed_t distance = 512 * FRACUNIT;
 
 	// What players should be drawn?
 	for (auto& player : players)
@@ -1955,7 +1957,7 @@ void EATargets(int x, int y, const float scale,
 		if (player.id == displayplayer_id)
 			continue;
 
-		if (not P_ActorInFOV(displaymobj, player.mo, 45.0f, 512 * FRACUNIT))
+		if (not P_ActorInFOV(displaymobj, player.mo, fov, distance))
 			continue;
 
 		// The server doesn't want us to see enemy target names.

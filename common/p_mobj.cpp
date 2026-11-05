@@ -1146,9 +1146,11 @@ void AActor::RunThink ()
 	// MUSINFO
 	if (type == MT_MUSICSOURCE && clientside)
 	{
-		if (musinfo.mapthing != this
-		    && displayplayer().mo->subsector
-		    && subsector->sector == displayplayer().mo->subsector->sector)
+		if (playerIsDisplayed()
+			and musinfo.mapthing != this
+			and displayplayer().mo
+			and displayplayer().mo->subsector
+			and subsector->sector == displayplayer().mo->subsector->sector)
 		{
 			musinfo.lastmapthing = musinfo.mapthing;
 			musinfo.mapthing = this->ptr();
