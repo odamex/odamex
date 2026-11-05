@@ -8,7 +8,7 @@ if(BUILD_CLIENT)
     if(WIN32)
       if(MSVC)
         file(DOWNLOAD
-          "https://www.libsdl.org/release/SDL2-devel-2.32.10-VC.zip"
+          "https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-devel-2.32.10-VC.zip"
           "${CMAKE_CURRENT_BINARY_DIR}/SDL2-VC.zip"
           EXPECTED_HASH SHA256=af347939395a58b365846aaea27391e69f9ec9d4dd650d6ac40802159b418a6e)
         execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
@@ -26,7 +26,7 @@ if(BUILD_CLIENT)
         endif()
       else()
         file(DOWNLOAD
-          "https://www.libsdl.org/release/SDL2-devel-2.32.10-mingw.tar.gz"
+          "https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-devel-2.32.10-mingw.tar.gz"
           "${CMAKE_CURRENT_BINARY_DIR}/SDL2-mingw.tar.gz"
           EXPECTED_HASH SHA256=83a5d74012311edc3c0d40ea6faecbe57ad692aa033fa5dc273cc937e3938ff2)
         execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
@@ -85,7 +85,7 @@ if(BUILD_CLIENT)
     if(WIN32)
       if(MSVC)
         file(DOWNLOAD
-          "https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-2.8.2-VC.zip"
+          "https://github.com/libsdl-org/SDL_mixer/releases/download/release-2.8.2/SDL2_mixer-devel-2.8.2-VC.zip"
           "${CMAKE_CURRENT_BINARY_DIR}/SDL2_mixer-VC.zip"
           EXPECTED_HASH SHA256=13d7def40e7e3400c930c0d45df5b14e70c5ca75817232812f24b6e85577b37b)
         execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
@@ -101,7 +101,7 @@ if(BUILD_CLIENT)
         endif()
       else()
         file(DOWNLOAD
-          "https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-2.8.2-mingw.tar.gz"
+          "https://github.com/libsdl-org/SDL_mixer/releases/download/release-2.8.2/SDL2_mixer-devel-2.8.2-mingw.tar.gz"
           "${CMAKE_CURRENT_BINARY_DIR}/SDL2_mixer-mingw.tar.gz"
           EXPECTED_HASH SHA256=6872029bcca09b12985750d38de8865c66fbef5567715f0e4d89533ccaf3a0f2)
         execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
