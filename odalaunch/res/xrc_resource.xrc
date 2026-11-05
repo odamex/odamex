@@ -598,6 +598,64 @@
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
                             <option>0</option>
+                            <object class="wxStaticBoxSizer" name="sbSizer19">
+                              <orient>wxVERTICAL</orient>
+                              <label>Notifications</label>
+                              <object class="sizeritem">
+                                <flag>wxALL</flag>
+                                <border>5</border>
+                                <option>0</option>
+                                <object class="wxCheckBox" name="Id_ChkFlashTaskbar">
+                                  <tooltip>Flashes the taskbar when player is online</tooltip>
+                                  <label>Flash the taskbar</label>
+                                  <checked>0</checked>
+                                </object>
+                              </object>
+                              <object class="sizeritem">
+                                <flag>wxALL</flag>
+                                <border>5</border>
+                                <option>0</option>
+                                <object class="wxCheckBox" name="Id_ChkSystemBeep">
+                                  <tooltip>Plays a system beep when a player is online</tooltip>
+                                  <label>System beep</label>
+                                  <checked>0</checked>
+                                </object>
+                              </object>
+                              <object class="sizeritem">
+                                <flag>wxEXPAND</flag>
+                                <border>0</border>
+                                <option>0</option>
+                                <object class="wxBoxSizer" name="bSizer36">
+                                  <orient>wxHORIZONTAL</orient>
+                                  <object class="sizeritem">
+                                    <flag>wxALL</flag>
+                                    <border>5</border>
+                                    <option>0</option>
+                                    <object class="wxCheckBox" name="Id_ChkPlaySound">
+                                      <tooltip>Plays a (WAV) sound file when a player is online</tooltip>
+                                      <label>Play sound</label>
+                                      <checked>0</checked>
+                                    </object>
+                                  </object>
+                                  <object class="sizeritem">
+                                    <flag></flag>
+                                    <border>5</border>
+                                    <option>1</option>
+                                    <object class="wxFilePickerCtrl" name="Id_FilePickSoundFile">
+                                      <style>wxFLP_DEFAULT_STYLE</style>
+                                      <value></value>
+                                      <message>Select a WAV file</message>
+                                      <wildcard>*.wav</wildcard>
+                                    </object>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                          <object class="sizeritem">
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <option>0</option>
                             <object class="wxStaticBoxSizer" name="1">
                               <orient>wxVERTICAL</orient>
                               <label>Server List</label>
@@ -708,64 +766,6 @@
                                           <value>#ffffff</value>
                                         </object>
                                       </object>
-                                    </object>
-                                  </object>
-                                </object>
-                              </object>
-                            </object>
-                          </object>
-                          <object class="sizeritem">
-                            <flag>wxALL|wxEXPAND</flag>
-                            <border>5</border>
-                            <option>0</option>
-                            <object class="wxStaticBoxSizer" name="sbSizer19">
-                              <orient>wxVERTICAL</orient>
-                              <label>Notifications</label>
-                              <object class="sizeritem">
-                                <flag>wxALL</flag>
-                                <border>5</border>
-                                <option>0</option>
-                                <object class="wxCheckBox" name="Id_ChkFlashTaskbar">
-                                  <tooltip>Flashes the taskbar when player is online</tooltip>
-                                  <label>Flash the taskbar</label>
-                                  <checked>0</checked>
-                                </object>
-                              </object>
-                              <object class="sizeritem">
-                                <flag>wxALL</flag>
-                                <border>5</border>
-                                <option>0</option>
-                                <object class="wxCheckBox" name="Id_ChkSystemBeep">
-                                  <tooltip>Plays a system beep when a player is online</tooltip>
-                                  <label>System beep</label>
-                                  <checked>0</checked>
-                                </object>
-                              </object>
-                              <object class="sizeritem">
-                                <flag>wxEXPAND</flag>
-                                <border>0</border>
-                                <option>0</option>
-                                <object class="wxBoxSizer" name="bSizer36">
-                                  <orient>wxHORIZONTAL</orient>
-                                  <object class="sizeritem">
-                                    <flag>wxALL</flag>
-                                    <border>5</border>
-                                    <option>0</option>
-                                    <object class="wxCheckBox" name="Id_ChkPlaySound">
-                                      <tooltip>Plays a (WAV) sound file when a player is online</tooltip>
-                                      <label>Play sound</label>
-                                      <checked>0</checked>
-                                    </object>
-                                  </object>
-                                  <object class="sizeritem">
-                                    <flag></flag>
-                                    <border>5</border>
-                                    <option>1</option>
-                                    <object class="wxFilePickerCtrl" name="Id_FilePickSoundFile">
-                                      <style>wxFLP_DEFAULT_STYLE</style>
-                                      <value></value>
-                                      <message>Select a WAV file</message>
-                                      <wildcard>*.wav</wildcard>
                                     </object>
                                   </object>
                                 </object>
@@ -1330,6 +1330,7 @@
                               <style>wxTE_MULTILINE</style>
                               <tooltip>Extra arguments to pass to the Odamex client when it is run</tooltip>
                               <value></value>
+                              <maxlength>0</maxlength>
                             </object>
                           </object>
                         </object>

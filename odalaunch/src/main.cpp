@@ -71,6 +71,7 @@ bool Application::OnInit()
 
 		ConfigInfo.Read(PRGTHEME, &ProgramTheme, ODA_PRGTHEME);
 
+		// NOLINTBEGIN(bugprone-branch-clone)
 		switch (ProgramTheme)
 		{
 		case 1:
@@ -85,6 +86,7 @@ bool Application::OnInit()
 			wxApp::SetAppearance(Appearance::System);
 			break;
 		}
+		// NOLINTEND(bugprone-branch-clone)
 	}
 
 	// create main window, get size dimensions and show it
