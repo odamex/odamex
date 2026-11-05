@@ -52,5 +52,6 @@ const Protos& CL_GetTicProtos();
 ParseResultType CL_ParseCommand(buf_t& buffer);
 parseError_e    CL_ProcessCommand(const ParseResultType& parsedCommand);
 void            CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader = std::nullopt);
+void            CL_ProcessDeferredCommands();
 
 void CL_SetCurrentHeaderForParse(const PacketHeaderType& packetHeader);

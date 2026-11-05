@@ -85,6 +85,9 @@ CVAR(				sv_freelook, "0", "Allow Looking up and down",
 CVAR(				sv_allowtargetnames, "0", "When set, names of players appear in the FOV",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR(				sv_allowvoxels, "1", "Allow clients to load custom voxel models from external directory. Does not affect voxels contained within server loaded wads.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 CVAR_RANGE(			sv_fraglimit,     "0", "Sets the amount of frags a player can accumulate before the game ends",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 65536.0f)
 

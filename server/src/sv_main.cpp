@@ -786,7 +786,7 @@ static bool SV_HandleDepartingMessengerPacket(int currentTic, const netadr_t& ad
 
 /// This function handles the case where a client needs to be dropped and we're not counting on it
 /// to acknowledge anything - we know it's going to be unresponsive.
-static void SV_DropClientUngracefully(player_t& playerRef, const char* disconnectPrintVerb)
+void SV_DropClientUngracefully(player_t& playerRef, const char* disconnectPrintVerb)
 {
 	if (validplayer(playerRef) and playerRef.playerstate != PST_DISCONNECT)
 	{
@@ -1867,7 +1867,7 @@ void SV_UpdateMovingSectors(player_t &player)
 //
 void SV_SendGametic(client_t& client)
 {
-	client.messenger->HighPriority().Write( SVC_ServerGametic(gametic,
+	client.messenger->HighPriority().Write( SVC_ServerGametic(client.messenger->GetCurrentReceivedRemoteTic(),
 	                                                          client.messenger->GetPendingAckCount(),
 	                                                          client.messenger->GetReliableOverloadCount()));
 }
@@ -2088,8 +2088,6 @@ void SV_UpdateSecret(sector_t& sector, player_t &player)
 //
 //  Sends server setting info
 //
-
-void SV_SendPackets(void);
 
 static void SendServerSettings(player_t& pl)
 {
@@ -3517,7 +3515,8 @@ void SV_SendPackets()
 	for (auto& player : players)
 	{
 		// Disconnecting players' messengers send their packets via the dead-end messenger collection.
-		if (player.playerstate != PST_DISCONNECT)
+		// Clients that are flushing get handled separately.
+		if (not (player.playerstate == PST_DISCONNECT or player.client.isFlushing))
 		{
 			player.client.messenger->SetCriticalSequenceTimeout(criticalTimeoutInTics);
 
@@ -3853,17 +3852,21 @@ void SV_WriteCommands(void)
 	// worker threads can and eventually will corrupt another player's messenger.
 	for (player_t& player : players)
 	{
-		SV_WriteMonitoredInventoryChanges(player);
-		SV_ArmInventoryMonitors(player);
+		if (not (player.playerstate == PST_DISCONNECT or player.client.isFlushing))
+		{
+			SV_WriteMonitoredInventoryChanges(player);
+			SV_ArmInventoryMonitors(player);
+		}
 	}
 
 	// Palm off the job of writing the player messages onto the worker threads.
 	std::vector<std::future<void> > futures;
 
-	for (player_t& player : players)
+	for (auto& player : players)
 	{
 		// Players that are on their way out are serviced elsewhere.
-		if (player.playerstate != PST_DISCONNECT)
+		// Players that are flushing their messages just don't get any new messages.  We flush them below.
+		if (not (player.playerstate == PST_DISCONNECT or player.client.isFlushing))
 		{
 			std::packaged_task<void ()> task { [&player]()
 				{
@@ -3871,6 +3874,39 @@ void SV_WriteCommands(void)
 				} };
 			futures.emplace_back(task.get_future());
 			s_workers.MoveCommand(std::move(task));
+		}
+	}
+
+	// Now while the workers deal with writing messages to active clients, let's drive down the flushing
+	// clients to 0 unacked packets.
+
+	for (auto& player : players)
+	{
+		if (player.client.isFlushing and player.playerstate != PST_DISCONNECT)
+		{
+			if (player.client.messenger->GetPendingAckCount())
+			{
+				// Flushing clients get a longer period of time before they timeout.
+				player.client.messenger->SetCriticalSequenceTimeout(OdaMessenger::FLUSH_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS);
+				if (player.client.messenger->CheckForCriticalTimeout(gametic))
+				{
+					PrintFmt(PRINT_WARNING, "Client at {} timed out during sync\n", NET_AdrToString(player.client.address));
+					SV_DropClientUngracefully(player, "timed out");
+				}
+				else
+				{
+					// Only send retransmissions until the unacked packet count goes down to 0.
+					OdaMessenger::Sender guard(*player.client.messenger, gametic, player.client.address);
+					guard.SendRetransmissions();
+				}
+			}
+			else
+			{
+				// We're back!  Send a full update to the client because who knows what they missed.
+				// The critical timeout will get reset in the packet-send phase.
+				player.client.isFlushing = false;
+				SV_ClientFullUpdate(player);
+			}
 		}
 	}
 
@@ -3897,28 +3933,30 @@ void SV_PlayerTriedToCheat(player_t &player)
 //
 int SV_CalculateNumTiccmds(player_t &player)
 {
-	if (!player.mo || player.cmdqueue.empty())
+	if (not player.mo or player.cmdqueue.empty())
 		return 0;
 
 	static const size_t maximum_queue_size = TICRATE / 4;
 
-	if (!sv_ticbuffer || player.spectator || player.playerstate == PST_DEAD)
+	if (not sv_ticbuffer or player.spectator or player.playerstate == PST_DEAD)
 	{
 		// Process all queued ticcmds.
 		return maximum_queue_size;
 	}
-	if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
+	if (player.mo->momx == 0 and player.mo->momy == 0 and player.mo->momz == 0)
 	{
 		// Player is not moving
 		return 2;
 	}
-	if (player.cmdqueue.size() > 2 && gametic % 2*TICRATE == player.id % 2*TICRATE)
+
+	if (player.cmdqueue.size() > 2 and gametic % (2*TICRATE) == player.id % (2*TICRATE))
 	{
 		// Process an extra ticcmd once every 2 seconds to reduce the
 		// queue size. Use player id to stagger the timing to prevent everyone
 		// from running an extra ticcmd at the same time.
 		return 2;
 	}
+
 	if (player.cmdqueue.size() > maximum_queue_size)
 	{
 		// The player experienced a large latency spike so try to catch up by
