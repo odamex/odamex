@@ -156,17 +156,13 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
 
 	// Queue notebook page changed event
 	m_Notebook = XRCCTRL(*this, "Id_Notebook", wxNotebook);
-	wxBookCtrlEvent* event =
-	    new wxBookCtrlEvent(wxEVT_NOTEBOOK_PAGE_CHANGED, m_Notebook->GetId());
+	auto* event = new wxBookCtrlEvent(wxEVT_NOTEBOOK_PAGE_CHANGED, m_Notebook->GetId());
 	event->SetSelection(m_Notebook->GetSelection());
 	QueueEvent(event);
 }
 
 // Window destructor
-dlgConfig::~dlgConfig()
-{
-
-}
+dlgConfig::~dlgConfig() = default;
 
 void dlgConfig::OnCheckedBox(wxCommandEvent& /*event*/)
 {
