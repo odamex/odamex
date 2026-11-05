@@ -46,9 +46,9 @@ class OdaMessenger
 	public:
 
 		// With theoretical defaults for standard real-time gameplay:
-		//      800 KBps * 5 sec = 4000 KB backed-up retransmits max
-		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
-		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
+		//      800 KBps * 10 sec = 8000 KB backed-up retransmits max
+		//      8000 KB * 256 players = 2048000 KB total = ~2 GB in memory at absolute worst
+		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS = 10 * TICRATE;
 
 		// Extended timeout for messenger flushing.  Ideal for lengthy operations that call for
 		// flushing the messenger, such as map loading.
