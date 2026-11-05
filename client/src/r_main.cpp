@@ -870,10 +870,10 @@ void R_SetupFrame (AActor::AActorPtr *cam)
 		return;
 
 	player_t &consolePlayer = consoleplayer();
-	const bool use_localview = consolePlayer.id == displayplayer_id &&
-	                           consolePlayer.health > 0 &&
-	                           not consolePlayer.mo->reactiontime &&
-	                           not netdemo.isInPlayback() && not demoplayback;
+	const bool use_localview = consolePlayer.id == displayplayer_id and
+	                           consolePlayer.health > 0 and
+	                           not consolePlayer.mo->reactiontime and
+	                           not netdemo.isInPlayback() and not demoplayback;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{

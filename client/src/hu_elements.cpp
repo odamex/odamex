@@ -1944,8 +1944,8 @@ void EATargets(int x, int y, const float scale,
 
 	const bool netdemoplaying = ::netdemo.isInPlayback();
 	std::vector<TargetInfo_t> Targets;
-	float fov = 45.0f;
-	fixed_t distance = 512 * FRACUNIT;
+	const float fov = 45.0f;
+	const fixed_t distance = 512 * FRACUNIT;
 
 	// What players should be drawn?
 	for (auto& player : players)
