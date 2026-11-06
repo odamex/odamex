@@ -42,15 +42,16 @@ struct Proto
 struct ParseResultType
 {
 	std::unique_ptr<google::protobuf::Message> msg;
-	parseError_e                               code = PERR_OK;
-	msg_t                                      cmd  = msg_noop;
+	parseError_e                               code { PERR_OK };
+	msg_t                                      cmd  { msg_noop };
 };
 
 typedef std::vector<Proto> Protos;
 
 const Protos& CL_GetTicProtos();
-ParseResultType CL_ParseCommand();
+ParseResultType CL_ParseCommand(buf_t& buffer);
 parseError_e    CL_ProcessCommand(const ParseResultType& parsedCommand);
 void            CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader = std::nullopt);
+void            CL_ProcessDeferredCommands();
 
 void CL_SetCurrentHeaderForParse(const PacketHeaderType& packetHeader);

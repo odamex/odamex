@@ -85,6 +85,9 @@ CVAR(				sv_freelook, "0", "Allow Looking up and down",
 CVAR(				sv_allowtargetnames, "0", "When set, names of players appear in the FOV",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR(				sv_allowvoxels, "1", "Allow clients to load custom voxel models from external directory. Does not affect voxels contained within server loaded wads.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 CVAR_RANGE(			sv_fraglimit,     "0", "Sets the amount of frags a player can accumulate before the game ends",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 65536.0f)
 
@@ -155,6 +158,9 @@ CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
 
 CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maximum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR(				sv_allowcrosshair, "1", "Allow clients to use crosshair",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR(				sv_allowmovebob, "1", "Allow weapon & view bob changing",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)

@@ -33,6 +33,7 @@
 #include "r_state.h"
 #include "m_random.h"
 #include "v_palette.h"
+#include "s_sound.h"
 
 //
 // P_ArchivePlayers
@@ -83,10 +84,12 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec.floorplane.b
 				<< sec.floorplane.c
 				<< sec.floorplane.d
+				<< sec.floorplane.invc
 				<< sec.ceilingplane.a
 				<< sec.ceilingplane.b
 				<< sec.ceilingplane.c
 				<< sec.ceilingplane.d
+				<< sec.ceilingplane.invc
 				<< sec.floorpic
 				<< sec.ceilingpic
 				<< sec.lightlevel
@@ -179,10 +182,12 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec.floorplane.b
 				>> sec.floorplane.c
 				>> sec.floorplane.d
+				>> sec.floorplane.invc
 				>> sec.ceilingplane.a
 				>> sec.ceilingplane.b
 				>> sec.ceilingplane.c
 				>> sec.ceilingplane.d
+				>> sec.ceilingplane.invc
 				>> sec.floorpic
 				>> sec.ceilingpic
 				>> sec.lightlevel
@@ -240,9 +245,7 @@ void P_SerializeWorld (FArchive &arc)
 				>> SkyboxFloor
 				>> sec.MoreFlags;
 
-			sec.floorplane.invc = FixedDiv(FRACUNIT, sec.floorplane.c);
 			sec.floorplane.sector = &sec;
-			sec.ceilingplane.invc = FixedDiv(FRACUNIT, sec.ceilingplane.c);
 			sec.ceilingplane.sector = &sec;
 			sec.SecActTarget.init(SecActTarget);
 			sec.SkyboxCeiling.init(SkyboxCeiling);
@@ -288,7 +291,7 @@ void P_SerializeThinkers (FArchive &arc, bool hubLoad)
 //
 void P_SerializeSounds (FArchive &arc)
 {
-	// denis - todo
+	P_SerializeMusic(arc);
 }
 
 //

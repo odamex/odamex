@@ -555,10 +555,7 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	maplist_qrows_t maplist;
 	Maplist::instance().query(maplist);
 
-	odaproto::svc::MaplistUpdate update = SVC_MaplistUpdate(MAPLIST_OUTDATED, &maplist);
-
-	// FIXME:  Does this need to be fragmented?  Could this be too large??
-	cl->messenger->Reliable().Write (update);
+	cl->messenger->LargeMessage().Write (SVC_MaplistUpdate(MAPLIST_OUTDATED, &maplist));
 
 	// Update the timeout to ensure the player doesn't abuse the server
 	Maplist::instance().set_timeout(player.id);

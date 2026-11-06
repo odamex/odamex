@@ -614,6 +614,13 @@
       {
          "default" : true,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to use crosshair",
+         "name" : "sv_allowcrosshair",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
          "helptext" : "Allow use of Exit switch/teleports in all game modes",
          "name" : "sv_allowexit",
          "type" : "boolean"
@@ -665,6 +672,13 @@
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
          "helptext" : "When set, names of players appear in the FOV",
          "name" : "sv_allowtargetnames",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to load custom voxel models from external directory. Does not affect voxels contained within server loaded wads.",
+         "name" : "sv_allowvoxels",
          "type" : "boolean"
       },
       {

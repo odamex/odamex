@@ -1383,8 +1383,6 @@ player_t::player_t() :
 	maxAmmoMonitors     { maxammo },
 	powerMonitors       { powers },
 	pspriteMonitors     { psprites },
-	attackdown(0),
-	usedown(0),
 	cheats(0),
 	refire(0),
 	damagecount(0),
@@ -1418,7 +1416,6 @@ player_t::player_t() :
 	hazardcount(0),
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
-	to_spawn(std::queue<AActor::AActorPtr>()),
 	playerInfoIsRequested(false),
 	inventoryCheckRequestsAreEnabled(false),
 	client{}

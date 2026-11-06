@@ -10,25 +10,25 @@ if(BUILD_LAUNCHER)
         # Visual Studio 2015/2017/2019
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
           file(DOWNLOAD
-            "https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.2/wxWidgets-3.3.2-headers.7z"
-            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.3.2-headers.7z"
-            EXPECTED_HASH SHA256=6d0c866b4a4612f6a667194d1574049639181181f29dd6abceb50c5e5b2baa29)
+            "https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.4/wxWidgets-3.3.4-headers.7z"
+            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.3.4-headers.7z"
+            EXPECTED_HASH SHA256=8fd1cf657c3e8999a2e305604383bccb43bd8b766c86c379b411d2174b1402ef)
           execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
-            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.3.2-headers.7z"
+            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.3.4-headers.7z"
             WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
           file(DOWNLOAD
-            "https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.2/wxMSW-3.3.2_vc14x_x64_Dev.7z"
-            "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.2_vc14x_x64_Dev.7z"
-            EXPECTED_HASH SHA256=6ef8686e8c0a9f466a6940dd0a52e09ead25bd3ee38733af6085762632d06c5d)
+            "https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.4/wxMSW-3.3.4_vc14x_x64_Dev.7z"
+            "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.4_vc14x_x64_Dev.7z"
+            EXPECTED_HASH SHA256=11cf9e49ec867063ab9011239d76be2c4c736124e61171c5ce4c983aaa0b549e)
           execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
-            "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.2_vc14x_x64_Dev.7z"
+            "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.4_vc14x_x64_Dev.7z"
             WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
           file(DOWNLOAD
-            "https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.2/wxMSW-3.3.2_vc14x_x64_ReleaseDLL.7z"
-            "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.2_vc14x_x64_ReleaseDLL.7z"
-            EXPECTED_HASH SHA256=7e7efa327e0f9dcb95b90069b7aa9fe7a6a764210bfb58f71b06e6c26255437b)
+            "https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.4/wxMSW-3.3.4_vc14x_x64_ReleaseDLL.7z"
+            "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.4_vc14x_x64_ReleaseDLL.7z"
+            EXPECTED_HASH SHA256=d9bf482cded63f2f5b02603cfe5218cff413e1ff36876c1e9ea5a94286439936)
           execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
-            "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.2_vc14x_x64_ReleaseDLL.7z"
+            "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.4_vc14x_x64_ReleaseDLL.7z"
             WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
 
           set(wxWidgets_wxrc_EXECUTABLE

@@ -197,6 +197,27 @@ CVAR_FUNC_IMPL(joy_freelook)
 	R_InitSkyMap();
 }
 
+CVAR_FUNC_IMPL(cl_noclip_spectator)
+{
+	player_t& c = consoleplayer();
+	player_t& d = displayplayer();
+
+	if (c.spectator and not netdemo.isInPlayback())
+	{
+		if (var.asInt())
+			c.cheats |= CF_NOCLIP;
+		else
+			c.cheats &= ~CF_NOCLIP;
+	}
+	if (d.isFreecam)
+	{
+		if (var.asInt())
+			d.cheats |= CF_NOCLIP;
+		else
+			d.cheats &= ~CF_NOCLIP;
+	}
+}
+
 char			demoname[256];
 
 extern bool		simulated_connection;
@@ -900,6 +921,7 @@ void CL_CheckDisplayPlayer();
 //
 extern DCanvas *page;
 extern int connecttimeout;
+extern int world_index;
 
 void G_Ticker (void)
 {
@@ -1046,7 +1068,10 @@ void G_Ticker (void)
 		{
 			// denis - don't accept candy from strangers
 			if (not NET_CompareAdr(serveraddr, net_from))
+			{
+				net_message.clear();
 				break;
+			}
 
 			realrate += packet_size;
 			last_received = gametic;
@@ -1208,6 +1233,8 @@ void G_Ticker (void)
 			// believe we get as a result of this.
 			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
 
+			bool thinkersHaveRun = false;
+
 			if (isClientSideOnly)
 			{
 				if (!consoleplayer().mo)
@@ -1225,13 +1252,17 @@ void G_Ticker (void)
 				}
 
 				CL_SimulateWorld();
-				CL_PredictWorld();
+				thinkersHaveRun = CL_PredictWorld();
+				if (not thinkersHaveRun and not netdemo.isPaused())
+				{
+					CL_SimulatePlayers(world_index);
+				}
 
 				// Replay item pickups if the items arrived now.
 				ClientReplay::getInstance().itemReplay();
 			}
 			P_CheckInterpPause();
-			P_Ticker ();
+			P_Ticker (not thinkersHaveRun);
 			P_BobTicker();
 			ST_Ticker ();
 			AM_Ticker ();
@@ -1736,8 +1767,6 @@ void G_DoLoadGame (void)
 
 	arc >> level.time;
 
-	P_SerializeMusInfo(arc);
-
 	for (i = 0; i < NUM_WORLDVARS; i++)
 	{
 		arc >> ACS_WorldVars[i];
@@ -1839,7 +1868,6 @@ void G_DoSaveGame()
 	P_SerializeHorde(arc);
 
 	arc << level.time;
-	P_SerializeMusInfo(arc);
 
 	for (int i = 0; i < NUM_WORLDVARS; i++)
 	{

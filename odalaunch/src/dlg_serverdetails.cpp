@@ -103,7 +103,7 @@ static const CvarCategories& GetCvarCategories()
 	     "g_spawninv", "g_thingfilter"});
 	Add("Optional Gameplay Functionality",
 	    {"sv_allowcheats", "sv_allowjump", "sv_allowfov", "sv_allowmovebob",
-	     "sv_allowpwo", "sv_allowredscreen", "sv_allowshowspawns",
+	     "sv_allowcrosshair", "sv_allowpwo", "sv_allowredscreen", "sv_allowshowspawns",
 	     "sv_allowtargetnames", "sv_allowwidescreen", "sv_freelook",
 	     "sv_maxunlagtime", "sv_playerbeacons", "sv_respawnbarrels",
 	     "sv_respawnsuper", "sv_sharekeys", "sv_unblockfriendly",

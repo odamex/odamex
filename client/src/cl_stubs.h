@@ -22,5 +22,12 @@
 
 #pragma once
 
+#include "doomtype.h"
+
+class AActor;
+
+struct line_t;
+
 void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0, int arg1, int arg2, int arg3, int arg4);
+void SV_ArmMobj(AActor* mo);
 void SV_UpdateMobj(AActor* mo);

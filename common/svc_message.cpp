@@ -442,13 +442,6 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	cur->set_netid   (mo->netid);
 	cur->set_statenum(mo->state->statenum);
 
-	// Please note that we send the current gametic as the client's initial timebase for mobj-
-	// internal timing.  This ensures that any timed events for this mobj from this point
-	// forward are using the same timebase as the server.  Example:  whether or not A_Tracer
-	// does any actual tracing logic.
-	//
-	msg.set_timebase_tic(gametic);
-
 	// Animation state rics can never be left at 0, because 0 means to proceed to the next state
 	// immediately before returning control back out of the state-advance code.  Therefore we
 	// co-opt the zero / default state to mean -1, which is the "do not animate" value.
@@ -1315,11 +1308,11 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 	return msg;
 }
 
-odaproto::svc::ServerGametic SVC_ServerGametic(const int tic, const int unackedCount, const int throttle)
+odaproto::svc::ServerGametic SVC_ServerGametic(const int clientTic, const int unackedCount, const int throttle)
 {
 	odaproto::svc::ServerGametic msg;
 
-	msg.set_tic(tic);
+	msg.set_client_tic(clientTic);
 	msg.set_reliable_messages_in_flight(unackedCount);
 	msg.set_throttle(throttle);
 
