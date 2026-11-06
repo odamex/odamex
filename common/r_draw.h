@@ -423,6 +423,9 @@ void r_dimpatchD_MMX(IWindowSurface*, argb_t color, int alpha, int x1, int y1, i
 #ifdef __ALTIVEC__
 void R_DrawTranslucentColumnD_ALTIVEC(rendercontext_t& ctx);
 void R_DrawLevelGroupD_ALTIVEC(rendercontext_t& ctx);
+void R_DrawARGBColumnD_ALTIVEC(rendercontext_t& ctx);
+void R_DrawARGBTranslucentColumnD_ALTIVEC(rendercontext_t& ctx);
+void R_DrawLevelGroupARGBD_ALTIVEC(rendercontext_t& ctx);
 void r_dimpatchD_ALTIVEC(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 void R_StreamStoredLines32_ALTIVEC(argb_t* dest, const argb_t* source, int destpitchpixels,
                                    int srcpitchpixels, int line_length, int line_count);

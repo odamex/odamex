@@ -2361,6 +2361,9 @@ void R_InitVectorizedDrawers()
 	{
 		R_DrawLevelGroupD       = R_DrawLevelGroupD_ALTIVEC;
 		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_ALTIVEC;
+		R_DrawLevelGroupARGBD   = R_DrawLevelGroupARGBD_ALTIVEC;
+		R_DrawARGBColumnQuadD   = R_DrawARGBColumnD_ALTIVEC;
+		R_DrawARGBTranslucentColumnQuadD = R_DrawARGBTranslucentColumnD_ALTIVEC;
 		have_vector_slopes      = true;
 		r_dimpatchD             = r_dimpatchD_ALTIVEC;
 		R_StreamStoredLines32   = R_StreamStoredLines32_ALTIVEC;

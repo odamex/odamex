@@ -37,6 +37,7 @@
 #include "i_system.h"
 #include "r_defs.h"
 #include "r_draw.h"
+#include "r_draw_argb.h"
 #include "r_main.h"
 #include "i_video.h"
 
@@ -372,6 +373,286 @@ void R_DrawLevelGroupD_ALTIVEC(rendercontext_t& ctx)
 		dest[1] = s1[source[spots[1]]];
 		dest[2] = s2[source[spots[2]]];
 		dest[3] = s3[source[spots[3]]];
+
+		mu = vec_add(mu, mus);
+		mv = vec_add(mv, mvs);
+
+		dest += colstep;
+	}
+}
+
+// ============================================================================
+//
+// Native ARGB textures
+//
+// The SSE2 ARGB drawers, whose comments explain why each step matches the scalar
+// functors bit for bit.
+//
+//   - The shaded texels reach a vector through an aligned array, as AltiVec
+//     cannot move a general register into a lane. Four opaque texels skip the
+//     vector entirely: four word stores are all the opaque case is.
+//   - The blend is QuadTranslucentFuncAltivec's, with a weight per byte: each
+//     lane's alpha spread to its four bytes by two shifts and ors, and 255 -
+//     alpha as its complement.
+//
+// ============================================================================
+
+//
+// R_ARGBQuadAlphaAltivec
+//
+// Each lane's alpha, 0 to 255.
+//
+inline vu32 R_ARGBQuadAlphaAltivec(const vu32 px, const vu32 ashift)
+{
+	return vec_and(vec_sr(px, ashift), R_SplatU32(0xFF));
+}
+
+//
+// R_ARGBQuadBlendAltivec
+//
+// alphablend2a(bg, 255 - a, fg, a) in each lane, with a per lane.
+//
+inline vu32 R_ARGBQuadBlendAltivec(const vu32 bg, const vu32 fg, const vu32 a, const vu32 amask)
+{
+	const vu32 a2 = vec_or(a, vec_sl(a, R_SplatU32(8)));
+	const vu8 w = (vu8)vec_or(a2, vec_sl(a2, R_SplatU32(16)));
+	const vu8 iw = vec_nor(w, w);
+
+	const vu16 even = vec_add(vec_mule((vu8)bg, iw), vec_mule((vu8)fg, w));
+	const vu16 odd = vec_add(vec_mulo((vu8)bg, iw), vec_mulo((vu8)fg, w));
+
+	const vu16 packed = vec_or(vec_and(even, R_SplatU16(0xFF00)), vec_sr(odd, vec_splat_u16(8)));
+	return vec_or((vu32)packed, amask);
+}
+
+//
+// R_ShadeOpaqueARGBQuadAltivec
+//
+// R_ShadeOpaqueARGBQuad: alpha 255 is the texel, partial alpha blends over bg,
+// and alpha 0 is bg when BLEND_TO_DEST or black (from a zero bg) when not.
+//
+template<bool BLEND_TO_DEST>
+inline vu32 R_ShadeOpaqueARGBQuadAltivec(const vu32 fg, const vu32 bg, const vu32 ashift,
+		const vu32 amask)
+{
+	const vu32 a = R_ARGBQuadAlphaAltivec(fg, ashift);
+
+	// vec_sel takes its second operand where the mask is set.
+	vu32 res = vec_sel(R_ARGBQuadBlendAltivec(bg, fg, a, amask), fg, vec_cmpeq(a, R_SplatU32(255)));
+
+	if (BLEND_TO_DEST)
+		res = vec_sel(res, bg, vec_cmpeq(a, vec_splat_u32(0)));
+
+	return res;
+}
+
+//
+// QuadARGBColormapFuncAltivec
+//
+// DirectARGBColormapFunc four texels at a time. dest must be 16-byte aligned.
+//
+template<bool MASKED>
+class QuadARGBColormapFuncAltivec
+{
+public:
+	QuadARGBColormapFuncAltivec(const drawcolumn_t& d) :
+			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+			amask(R_SplatU32(argb_t::alphaMask())),
+			ashift(R_SplatU32(static_cast<uint32_t>(argb_t::alphaShift()))) { }
+
+	inline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
+	{
+		if (MASKED and not R_ARGBAnyAlpha(t0, t1, t2, t3, amaskbits))
+			return;
+
+		const argb_t s0 = shader.shade(t0), s1 = shader.shade(t1);
+		const argb_t s2 = shader.shade(t2), s3 = shader.shade(t3);
+
+		if (R_ARGBAllOpaque(t0, t1, t2, t3, amaskbits))
+		{
+			dest[0] = s0;
+			dest[1] = s1;
+			dest[2] = s2;
+			dest[3] = s3;
+			return;
+		}
+
+		ALTIVEC_ALIGNED(uint32_t fgs[4]) = { R_ARGBBits(s0), R_ARGBBits(s1), R_ARGBBits(s2), R_ARGBBits(s3) };
+
+		uint32_t* const d = reinterpret_cast<uint32_t*>(dest);
+		const vu32 fg = vec_ld(0, fgs);
+		const vu32 bg = MASKED ? vec_ld(0, d) : vec_splat_u32(0);
+
+		vec_st(R_ShadeOpaqueARGBQuadAltivec<MASKED>(fg, bg, ashift, amask), 0, d);
+	}
+
+	inline void operator()(argb_t c, argb_t* dest) const
+	{
+		scalar(c, dest);
+	}
+
+private:
+	const ARGBShader             shader;
+	const DirectARGBColormapFunc scalar;
+	const uint32_t               amaskbits;
+	const vu32                   amask;
+	const vu32                   ashift;
+};
+
+//
+// QuadARGBTranslucentFuncAltivec
+//
+// DirectARGBTranslucentColormapFunc four texels at a time. dest must be 16-byte
+// aligned.
+//
+class QuadARGBTranslucentFuncAltivec
+{
+public:
+	QuadARGBTranslucentFuncAltivec(const drawcolumn_t& d) :
+			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+			amask(R_SplatU32(argb_t::alphaMask())),
+			ashift(R_SplatU32(static_cast<uint32_t>(argb_t::alphaShift()))),
+			fga(R_SplatU16(static_cast<uint16_t>(scalar.surfaceAlpha()))) { }
+
+	inline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
+	{
+		if (not R_ARGBAnyAlpha(t0, t1, t2, t3, amaskbits))
+			return;
+
+		ALTIVEC_ALIGNED(uint32_t fgs[4]) = {
+			R_ARGBBits(shader.shade(t0)), R_ARGBBits(shader.shade(t1)),
+			R_ARGBBits(shader.shade(t2)), R_ARGBBits(shader.shade(t3)) };
+
+		uint32_t* const d = reinterpret_cast<uint32_t*>(dest);
+		const vu32 fg = vec_ld(0, fgs);
+		const vu32 bg = vec_ld(0, d);
+
+		const vu16 eight = vec_splat_u16(8);
+		const vu16 x = vec_mladd((vu16)R_ARGBQuadAlphaAltivec(fg, ashift), fga, vec_splat_u16(0));
+		const vu32 a = (vu32)vec_sr(vec_add(vec_add(x, vec_splat_u16(1)), vec_sr(x, eight)), eight);
+
+		vec_st(vec_sel(R_ARGBQuadBlendAltivec(bg, fg, a, amask), bg, vec_cmpeq(a, vec_splat_u32(0))), 0, d);
+	}
+
+	inline void operator()(argb_t c, argb_t* dest) const
+	{
+		scalar(c, dest);
+	}
+
+private:
+	const ARGBShader                        shader;
+	const DirectARGBTranslucentColormapFunc scalar;
+	const uint32_t                          amaskbits;
+	const vu32                              amask;
+	const vu32                              ashift;
+	const vu16                              fga;
+};
+
+inline argb_t* R_QuadColumnDestAltivec(const drawcolumn_t& dcol)
+{
+	return reinterpret_cast<argb_t*>(dcol.destination) +
+			(static_cast<ptrdiff_t>(dcol.x) * dcol.colstep) + dcol.yl;
+}
+
+void R_DrawARGBColumnD_ALTIVEC(rendercontext_t& ctx)
+{
+	const drawcolumn_t& dcol = ctx.draw.dcol;
+
+	if (dcol.masked)
+		R_DrawARGBColumnQuadGeneric<QuadARGBColormapFuncAltivec<true>, true, 16>(R_QuadColumnDestAltivec(dcol), dcol);
+	else
+		R_DrawARGBColumnQuadGeneric<QuadARGBColormapFuncAltivec<false>, false, 16>(R_QuadColumnDestAltivec(dcol), dcol);
+}
+
+void R_DrawARGBTranslucentColumnD_ALTIVEC(rendercontext_t& ctx)
+{
+	const drawcolumn_t& dcol = ctx.draw.dcol;
+
+	if (dcol.masked)
+		R_DrawARGBColumnQuadGeneric<QuadARGBTranslucentFuncAltivec, true, 16>(R_QuadColumnDestAltivec(dcol), dcol);
+	else
+		R_DrawARGBColumnQuadGeneric<QuadARGBTranslucentFuncAltivec, false, 16>(R_QuadColumnDestAltivec(dcol), dcol);
+}
+
+//
+// R_DrawLevelGroupARGBD_ALTIVEC
+//
+// R_DrawLevelGroupD_ALTIVEC for a true-color flat, ported from the SSE2 drawer.
+// One row down is one pixel, so dest is 16-byte aligned for a whole run or for
+// none of it; a run that is not stores its composites a word at a time.
+//
+void R_DrawLevelGroupARGBD_ALTIVEC(rendercontext_t& ctx)
+{
+	const drawplanegroup_t& g = ctx.draw.dpgroup;
+
+	const argb_t* const source = g.argbsource;
+
+	// By value, as in R_DrawLevelGroupARGBD_c.
+	const ARGBShader s0 = g.argbshade[g.argbband[0]];
+	const ARGBShader s1 = g.argbshade[g.argbband[1]];
+	const ARGBShader s2 = g.argbshade[g.argbband[2]];
+	const ARGBShader s3 = g.argbshade[g.argbband[3]];
+
+	const uint32_t amaskbits = argb_t::alphaMask();
+	const vu32 amask = R_SplatU32(amaskbits);
+	const vu32 ashift = R_SplatU32(static_cast<uint32_t>(argb_t::alphaShift()));
+
+	// The struct's arrays carry no alignment, so through an aligned copy.
+	ALTIVEC_ALIGNED(uint32_t lanes[4][4]);
+	memcpy(lanes[0], g.ufrac, sizeof(lanes[0]));
+	memcpy(lanes[1], g.vfrac, sizeof(lanes[1]));
+	memcpy(lanes[2], g.ustep, sizeof(lanes[2]));
+	memcpy(lanes[3], g.vstep, sizeof(lanes[3]));
+
+	vu32 mu = vec_ld(0, lanes[0]);
+	vu32 mv = vec_ld(0, lanes[1]);
+	const vu32 mus = vec_ld(0, lanes[2]);
+	const vu32 mvs = vec_ld(0, lanes[3]);
+
+	const vu32 mumask = R_SplatU32(static_cast<uint32_t>(g.umask));
+	const vu32 mvmask = R_SplatU32(static_cast<uint32_t>(g.vmask));
+	const vu32 cu = R_SplatU32(static_cast<uint32_t>(g.ushift));
+	const vu32 cv = R_SplatU32(static_cast<uint32_t>(g.vshift));
+
+	ALTIVEC_ALIGNED(uint32_t spots[4]);
+	ALTIVEC_ALIGNED(uint32_t px[4]);
+
+	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
+			(static_cast<ptrdiff_t>(g.xa) * g.colstep) + g.y0;
+	const int colstep = g.colstep;
+
+	const bool aligned = ((reinterpret_cast<uintptr_t>(dest) |
+			(static_cast<uintptr_t>(colstep) * sizeof(argb_t))) & 15) == 0;
+
+	for (int n = g.xb - g.xa + 1; n; --n)
+	{
+		vec_st(vec_or(vec_and(vec_sr(mu, cu), mumask), vec_and(vec_sr(mv, cv), mvmask)), 0, spots);
+
+		const argb_t t0 = source[spots[0]];
+		const argb_t t1 = source[spots[1]];
+		const argb_t t2 = source[spots[2]];
+		const argb_t t3 = source[spots[3]];
+
+		px[0] = R_ARGBBits(s0.shade(t0));
+		px[1] = R_ARGBBits(s1.shade(t1));
+		px[2] = R_ARGBBits(s2.shade(t2));
+		px[3] = R_ARGBBits(s3.shade(t3));
+
+		bool stored = false;
+		if (not R_ARGBAllOpaque(t0, t1, t2, t3, amaskbits))
+		{
+			const vu32 res = R_ShadeOpaqueARGBQuadAltivec<false>(vec_ld(0, px), vec_splat_u32(0), ashift, amask);
+			stored = aligned;
+			vec_st(res, 0, aligned ? reinterpret_cast<uint32_t*>(dest) : px);
+		}
+
+		if (not stored)
+		{
+			dest[0] = px[0];
+			dest[1] = px[1];
+			dest[2] = px[2];
+			dest[3] = px[3];
+		}
 
 		mu = vec_add(mu, mus);
 		mv = vec_add(mv, mvs);

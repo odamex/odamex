@@ -270,7 +270,10 @@ static forceinline bool R_ARGBAllOpaque(const argb_t t0, const argb_t t1, const 
 // MASKED picks the raw texel index of the masked arm over the power-of-two mask,
 // transparency is the functor's business, by alpha.
 //
-template<typename QUADFUNC, bool MASKED>
+// ALIGN is the byte alignment the quads need, reached by drawing single pixels
+// first. Only AltiVec asks for one, as it loads and stores aligned or not at all.
+//
+template<typename QUADFUNC, bool MASKED, uintptr_t ALIGN = alignof(argb_t)>
 static forceinline void R_DrawARGBColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 {
 	int count = d.yh - d.yl + 1;
@@ -295,6 +298,12 @@ static forceinline void R_DrawARGBColumnQuadGeneric(argb_t* dest, const drawcolu
 		dest++;
 		frac += fracstep;
 	};
+
+	if constexpr (ALIGN > alignof(argb_t))
+	{
+		for (; count > 0 and (reinterpret_cast<uintptr_t>(dest) & (ALIGN - 1)) != 0; count--)
+			single();
+	}
 
 	// `count >= 4` is the same correctness bound as in R_DrawColumnQuadGeneric.
 	while (count >= 4)
