@@ -81,6 +81,7 @@ void CL_AdvanceWorldPredictionTic(int serverTic);
 void CL_SendUserInfo(buf_t& netBuf);
 void CL_SendResourceDigests();
 void CL_AckResourceDigests();
+void CL_SetResourceDigestsWanted(bool wanted);
 bool CL_Connect();
 bool CL_LoadResourceFiles(const std::vector<std::string>& resource_filenames,
                           const std::vector<std::string>& resource_filehashes);

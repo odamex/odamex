@@ -128,6 +128,7 @@ bool      hasReceivedFullUpdate = false;
 
 static bool resource_digests_unacked = false;
 static int  resource_digests_sent_tic = 0;
+static bool resource_digests_wanted = false;
 bool      isReceivingFullUpdate = false;
 
 std::string connectpasshash = "";
@@ -435,6 +436,7 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 
 	hasReceivedFullUpdate = false;
 	resource_digests_unacked = false;
+	resource_digests_wanted = false;
 
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
@@ -1669,11 +1671,13 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 // Sends hashes and content digests of our loaded resource files so the
 // server can verify they match its own. Called after each successful
 // resource load, and re-sent periodically until the server acknowledges
-// with svc_resourcedigestsack.
+// with svc_resourcedigestsack. Only a server that asked for them in
+// svc_loadmap gets them, since an older server drops a client that sends
+// a message it doesn't know.
 //
 void CL_SendResourceDigests()
 {
-	if (not ::connected or ::simulated_connection)
+	if (not ::connected or ::simulated_connection or not ::resource_digests_wanted)
 		return;
 
 	::messenger.Reliable().Write(CLC_ResourceDigests(::wadfiles, ::patchfiles));
@@ -1690,6 +1694,16 @@ void CL_SendResourceDigests()
 void CL_AckResourceDigests()
 {
 	::resource_digests_unacked = false;
+}
+
+//
+// CL_SetResourceDigestsWanted
+//
+// Records whether the server wants our resource digests after each load.
+//
+void CL_SetResourceDigestsWanted(const bool wanted)
+{
+	::resource_digests_wanted = wanted;
 }
 
 //
@@ -2272,9 +2286,10 @@ void CL_TryToConnect(uint32_t server_token)
 
 		CL_SendUserInfo(netBuf); // send userinfo
 
-		MSG_Pack(netBuf, CLC_ResourceDigests(::wadfiles, ::patchfiles));
-
 		MSG_WriteString(&netBuf, connectpasshash.c_str());
+
+		// After the password, where a protobreak server stops reading.
+		MSG_Pack(netBuf, CLC_ResourceDigests(::wadfiles, ::patchfiles));
 
 		NET_SendPacket(netBuf, serveraddr);
 	}

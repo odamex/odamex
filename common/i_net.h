@@ -305,7 +305,6 @@ enum msg_t
 	svc_playerpsprites,
 	svc_configureavatar,
 	svc_wakeupmobj,
-	svc_resourcedigestsack,
 
 	// Client-originated messages
 	//
@@ -335,7 +334,14 @@ enum msg_t
 	clc_spy,
 	clc_privmsg,
 	clc_sendmobjupdate,
+
+	// Messages added since protobreak go at the end, in either direction, so
+	// every number above stays the same and older peers can still connect.
+	//
+	// Remove this when this is current protobreak, and put these messages back.
+
 	clc_resourcedigests,
+	svc_resourcedigestsack,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };

@@ -105,6 +105,7 @@ message LoadMap
 	repeated Resource patchnames = 2;
 	string mapname = 3;
 	int32 time = 4;
+	bool verify_digests = 5;   // The server wants clc_resourcedigests after loading
 }
 
 // svc_consoleplayer

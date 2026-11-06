@@ -2449,8 +2449,40 @@ void SV_ConnectClient()
 			return;
 	}
 
+	// [SL] Ignore deprecated client rate. Clients now always use sv_maxrate.
+	cl->messenger->SetMaxRate(static_cast<int>(sv_maxrate));
+
+	// Check if the IP is banned from our list or not.
+	if (SV_BanCheck(cl))
+	{
+		cl->displaydisconnect = false;
+		SV_DropClient(*player);
+		return;
+	}
+
+	// Check if the user entered a good password (if any)
+	std::string passhash = MSG_ReadString();
+	if (strlen(join_password.cstring()) && MD5SUM(join_password.cstring()) != passhash)
+	{
+		PrintFmt("{} disconnected (password failed).\n", NET_AdrToString(net_from));
+
+		cl->messenger->Reliable().Write (
+		    SVC_Print(PRINT_HIGH,
+		              "Server is passworded, no password specified or bad password.\n"));
+
+		SV_SendPacket(*player);
+		SV_DropClient(*player);
+		return;
+	}
+
 	// Get the resource file digests from the client and verify that their
 	// loaded files match ours.
+	//
+	// They come after the password, so that a
+	// protobreak server, which stops reading at the password, can still
+	// accept this client.
+	//
+	// Remove this comment after this is current protobreak.
 	msg_t digestsType = static_cast<msg_t>(MSG_ReadUnVarint());
 	if (digestsType != clc_resourcedigests)
 	{
@@ -2483,32 +2515,6 @@ void SV_ConnectClient()
 			SV_DropClient(*player);
 			return;
 		}
-	}
-
-	// [SL] Ignore deprecated client rate. Clients now always use sv_maxrate.
-	cl->messenger->SetMaxRate(static_cast<int>(sv_maxrate));
-
-	// Check if the IP is banned from our list or not.
-	if (SV_BanCheck(cl))
-	{
-		cl->displaydisconnect = false;
-		SV_DropClient(*player);
-		return;
-	}
-
-	// Check if the user entered a good password (if any)
-	std::string passhash = MSG_ReadString();
-	if (strlen(join_password.cstring()) && MD5SUM(join_password.cstring()) != passhash)
-	{
-		PrintFmt("{} disconnected (password failed).\n", NET_AdrToString(net_from));
-
-		cl->messenger->Reliable().Write (
-		    SVC_Print(PRINT_HIGH,
-		              "Server is passworded, no password specified or bad password.\n"));
-
-		SV_SendPacket(*player);
-		SV_DropClient(*player);
-		return;
 	}
 
 	// send consoleplayer number

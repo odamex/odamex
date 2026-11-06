@@ -578,6 +578,7 @@ odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& p
 
 	msg.set_mapname(mapname);
 	msg.set_time(time);
+	msg.set_verify_digests(true);
 
 	return msg;
 }

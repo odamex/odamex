@@ -996,6 +996,9 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	if (splitnetdemo)
 		netdemo.stopRecording();
 
+	// A protobreak server doesn't set this, and doesn't know clc_resourcedigests.
+	CL_SetResourceDigestsWanted(msg->verify_digests());
+
 	size_t wadcount = msg->wadnames_size();
 	OWantFiles newwadfiles;
 	newwadfiles.reserve(wadcount);
