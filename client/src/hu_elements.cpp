@@ -517,7 +517,8 @@ int DrawRespawnText(int y)
 std::string SpyPlayerName()
 {
 	const player_t& plyr = displayplayer();
-	if (plyr.id == consoleplayer().id)
+
+	if (plyr.id == consoleplayer_id or freecamIsActive())
 	{
 		return "";
 	}

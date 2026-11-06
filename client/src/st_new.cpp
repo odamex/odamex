@@ -2067,6 +2067,14 @@ void DoomHUD()
 	// Draw other player name, if spying
 	hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
+
+	// when using automap
+	if (freecamIsActive())
+	{
+		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, "Freecam", CR_WHITE);
+	}
+
 	st_y += V_LineHeight() + 1;
 
 	// Draw targeted player names.

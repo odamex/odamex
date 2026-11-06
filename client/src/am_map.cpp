@@ -1732,13 +1732,14 @@ void AM_drawPlayers()
 	{
 		am_color_t color;
 
-		if (not(p.ingame()) or not p.mo or p.spectator)
+		if (not p.ingame() or not p.mo or p.spectator)
 			continue;
 
-		if (camera->player and
-			not netdemo.isInPlayback() and
-			not demoplayback and
-			not camera->player->spectator and
+		if (camera->player
+			and not netdemo.isInPlayback()
+			and not demoplayback
+			and not camera->player->spectator
+			and
 			(
 				(G_IsFFAGame() and &p != camera->player) or
 				(G_IsTeamGame() and p.userinfo.team != camera->player->userinfo.team)
