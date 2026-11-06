@@ -382,17 +382,31 @@ std::optional<size_t> ResourceManager::getResourceContainerIndex(const ResourceI
 	if (not container)
 		return std::nullopt;
 
-	for (size_t i = 0; i < mResourceContainers.size(); i++)
+	// A WAD embedded in a zip, such as maps/MAP01.wad, is a container of its own,
+	// registered while the zip is being added.
+	// It belongs to the file holding it.
+	const ResourceContainerRecord* record = getResourceContainerRecord(container);
+	while (record and record->mParent)
+		record = getResourceContainerRecord(record->mParent);
+	if (not record)
+		return std::nullopt;
+
+	// The containers without a parent are the files, in the order they were
+	// opened, followed by the unified texture system, which is no file on disk.
+	size_t index = 0;
+	for (const ResourceContainerRecord& file : mResourceContainers)
 	{
-		if (mResourceContainers[i].mResourceContainer != container)
+		if (file.mParent)
 			continue;
 
-		// The unified texture system is appended after the real files, so an
-		// index past them belongs to no file on disk.
-		if (i >= mResourceFileNames.size())
-			return std::nullopt;
+		if (file.mResourceContainer == record->mResourceContainer)
+		{
+			if (index >= mResourceFileNames.size())
+				return std::nullopt;
+			return index;
+		}
 
-		return i;
+		index++;
 	}
 
 	return std::nullopt;
