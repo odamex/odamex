@@ -113,6 +113,9 @@ bool R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool flipped,
 	else
 		rotation = (rot >= 17) ? rot - 7 : 17;
 
+	if (frame == '^' - 'A')
+		frame = '\\' - 'A';
+
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 16)
 	{
 		if (!tolerant)

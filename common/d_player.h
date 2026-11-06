@@ -72,6 +72,7 @@ struct client_t
 	std::string digest            { };          // randomly generated string that the client must use for any hashes it sends back
 	bool        allow_rcon        { false };    // allow remote admin
 	bool        displaydisconnect { true  };    // display disconnect message when disconnecting
+	bool        isFlushing        { false };    // TODO: fold this into the protocol state machine.  Indicates that we're driving down to 0 unacked messages.
 
 	struct download_t
 	{
