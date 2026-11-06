@@ -1658,40 +1658,49 @@ SetMobStateResultEnum P_SetMobjState(AActor *mobj, int32_t state, bool cl_update
 	return SetMobStateResultEnum::SUCCESSFUL;
 }
 
+namespace
+{
 
 //
 // P_WindThrustActor
 //
-static void P_WindThrustActor(AActor* mo)
+void P_WindThrustActor(AActor* mo)
 {
-	if (   mo
-	    && mo->subsector
-	    && (mo->flags2 & MF2_WINDTHRUST))
+	if (not map_format.getZDoom())
+		return;
+
+	if (mo and mo->subsector and (mo->flags2 & MF2_WINDTHRUST))
 	{
-		static constexpr int windTab[3] = {2048*5, 2048*10, 2048*25};
+		static constexpr std::array windTab = {2048*5, 2048*10, 2048*25};
 		const int special = mo->subsector->sector->special;
-		if (map_format.getZDoom())
+		// NOLINTNEXTLINE(bugprone-switch-missing-default-case) -- supposed to do nothing in default case
+		switch (special)
 		{
-			switch (special)
-			{
-				case 40: case 41: case 42: // Wind_East
-					P_ThrustMobj (mo, 0, windTab[special - 40]);
-					break;
-				case 43: case 44: case 45: // Wind_North
-					P_ThrustMobj (mo, ANG90, windTab[special - 43]);
-					break;
-				case 46: case 47: case 48: // Wind_South
-					P_ThrustMobj (mo, ANG270, windTab[special - 46]);
-					break;
-				case 49: case 50: case 51: // Wind_West
-					P_ThrustMobj (mo, ANG180, windTab[special - 49]);
-					break;
-			}
+			case Wind_East_weak:
+			case Wind_East_medium:
+			case Wind_East_strong:
+				P_ThrustMobj (mo, 0, windTab[special - Wind_East_weak]);
+				break;
+			case Wind_North_weak:
+			case Wind_North_medium:
+			case Wind_North_strong:
+				P_ThrustMobj (mo, ANG90, windTab[special - Wind_North_weak]);
+				break;
+			case Wind_South_weak:
+			case Wind_South_medium:
+			case Wind_South_strong:
+				P_ThrustMobj (mo, ANG270, windTab[special - Wind_South_weak]);
+				break;
+			case Wind_West_weak:
+			case Wind_West_medium:
+			case Wind_West_strong:
+				P_ThrustMobj (mo, ANG180, windTab[special - Wind_West_weak]);
+				break;
 		}
 	}
 }
 
-static void P_WallBouncy(AActor* mo)
+void P_WallBouncy(AActor* mo)
 {
 	if (mo->flags & MF_BOUNCES ||
 	    (!mo->player && BlockingLine &&
@@ -1737,7 +1746,7 @@ static void P_WallBouncy(AActor* mo)
 //
 // Resets the Lost Soul to its spawn state after it collides with something.
 //
-static void P_LostSoulReset(AActor* mo)
+void P_LostSoulReset(AActor* mo)
 {
 	if (!mo->momx && !mo->momy && (mo->flags & MF_SKULLFLY))
 	{
@@ -1754,7 +1763,7 @@ static void P_LostSoulReset(AActor* mo)
 // Checks if lines that the missile collided with are ordinary walls or
 // are skywall-hacks/Line_Horizons. Returns false if the actor is destroyed.
 //
-static bool P_ExplodeMissileAgainstWall(AActor* mo)
+bool P_ExplodeMissileAgainstWall(AActor* mo)
 {
 	if (mo->flags & MF_MISSILE)
 	{
@@ -1812,7 +1821,7 @@ static bool P_ExplodeMissileAgainstWall(AActor* mo)
 //
 // P_ActorSlideAgainstWall
 //
-static void P_ActorSlideAgainstWall(AActor* mo)
+void P_ActorSlideAgainstWall(AActor* mo)
 {
 	if (BlockingLine != NULL &&
 		mo->player && mo->waterlevel && mo->waterlevel < 3 &&
@@ -1829,7 +1838,7 @@ static void P_ActorSlideAgainstWall(AActor* mo)
 //
 // P_ActorSlideAgainstActor
 //
-static void P_ActorSlideAgainstActor(AActor* mo, fixed_t ptryx, fixed_t ptryy)
+void P_ActorSlideAgainstActor(AActor* mo, fixed_t ptryx, fixed_t ptryy)
 {
 	// try sliding in the x direction
 	fixed_t tx = 0, ty = ptryy - mo->y;
@@ -1859,7 +1868,7 @@ static void P_ActorSlideAgainstActor(AActor* mo, fixed_t ptryx, fixed_t ptryy)
 // First, airfriction is applied to players who are in the air. Then sector
 // friction is applied.
 //
-static void P_ApplyXYFriction(AActor* mo)
+void P_ApplyXYFriction(AActor* mo)
 {
 	// No friction for missiles ever
 	if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
@@ -1939,6 +1948,8 @@ static void P_ApplyXYFriction(AActor* mo)
 		mo->momy = FixedMul(mo->momy, friction);
 	}
 }
+
+} // namespace
 
 
 //

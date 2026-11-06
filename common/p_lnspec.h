@@ -679,15 +679,17 @@ constexpr auto lineSpecialValue(const DoomFormatLineSpecial auto special)
 	return OUtil::to_underlying(special);
 }
 
-typedef enum {
+enum staticinit_t
+{
 	Init_Gravity = 0,
 	Init_Color = 1,
 	Init_Damage = 2,
 	NUM_STATIC_INITS,
 	Init_TransferSky = 255
-} staticinit_t;
+};
 
-typedef enum {
+enum sectorspecial_t
+{
 	Light_Phased = 1,
 	LightSequenceStart = 2,
 	LightSequenceSpecial1 = 3,
@@ -695,6 +697,19 @@ typedef enum {
 
 	Stairs_Special1 = 26,
 	Stairs_Special2 = 27,
+
+	Wind_East_weak    = 40,
+	Wind_East_medium  = 41,
+	Wind_East_strong  = 42,
+	Wind_North_weak   = 43,
+	Wind_North_medium = 44,
+	Wind_North_strong = 45,
+	Wind_South_weak   = 46,
+	Wind_South_medium = 47,
+	Wind_South_strong = 48,
+	Wind_West_weak    = 49,
+	Wind_West_medium  = 50,
+	Wind_West_strong  = 51,
 
 	// [RH] Equivalents for DOOM's sector specials
 	dLight_Flicker = 65,
@@ -775,11 +790,11 @@ typedef enum {
 	Scroll_Carry_West25 = 242,
 	Scroll_Carry_West30 = 243,
 	Scroll_Carry_West35 = 244
-} sectorspecial_t;
+};
 
 // define names for the TriggerType field of the general linedefs
 
-typedef enum
+enum triggertype_e
 {
 	WalkOnce,
 	WalkMany,
@@ -789,15 +804,15 @@ typedef enum
 	GunMany,
 	PushOnce,
 	PushMany
-} triggertype_e;
+};
 
 // Line special translation structure
-typedef struct
+struct xlat_t
 {
 	unsigned int flags;
 	short newspecial;
 	short args[5];
-} xlat_t;
+};
 
 struct line_t;
 class AActor;

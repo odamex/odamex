@@ -1363,11 +1363,15 @@ const std::array<state_t, ::NUMSTATES> boomstates = {{
 	// killough 7/11/98: beta BFG begins here
 	// S_OLDBFG1
 
+// not really any other good solution here other than macros
+// and the macros don't leak out to any other part of the codebase
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #define BFGDELAY 1
-#define OLDBFG_1FRAMES(x) { .statenum = static_cast<statenum_t>((x)+S_OLDBFG1+1), .sprite = SPR_BFGG, .frame = 1, .tics = BFGDELAY, .action = A_FireOldBFG, .nextstate = static_cast<statenum_t>(x + S_OLDBFG1 + 2) },
+#define OLDBFG_1FRAMES(x) { .statenum = static_cast<statenum_t>((x)+S_OLDBFG1+1), .sprite = SPR_BFGG, .frame = 1, .tics = BFGDELAY, .action = A_FireOldBFG, .nextstate = static_cast<statenum_t>((x) + S_OLDBFG1 + 2) },
 #define OLDBFG_2FRAMES(x) OLDBFG_1FRAMES((x)) OLDBFG_1FRAMES((x)+1)
 #define OLDBFG_4FRAMES(x) OLDBFG_2FRAMES((x)) OLDBFG_2FRAMES((x)+2)
 #define OLDBFG_8FRAMES(x) OLDBFG_4FRAMES((x)) OLDBFG_4FRAMES((x)+4)
+// NOLINTEND(cppcoreguidelines-macro-usage)
 	{ .statenum = S_OLDBFG1, .sprite = SPR_BFGG, .frame = 0, .tics = 10, .action = A_BFGsound, .nextstate = static_cast<statenum_t>(S_OLDBFG1 + 1) },
 
 	OLDBFG_8FRAMES(0)
@@ -1379,6 +1383,11 @@ const std::array<state_t, ::NUMSTATES> boomstates = {{
 	{ .statenum = S_OLDBFG42,  .sprite = SPR_BFGG, .frame = 1, .tics =  0, .action = A_Light0, .nextstate = S_OLDBFG43 },
 	{ .statenum = S_OLDBFG43,  .sprite = SPR_BFGG, .frame = 1, .tics = 20, .action = A_ReFire, .nextstate = S_BFG      },
 
+#undef BFGDELAY
+#undef OLDBFG_1FRAMES
+#undef OLDBFG_2FRAMES
+#undef OLDBFG_4FRAMES
+#undef OLDBFG_8FRAMES
 	// killough 7/11/98: end of beta BFG
 
 	// killough 7/19/98: First plasma fireball in the beta:

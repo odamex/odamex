@@ -45,6 +45,7 @@
 #define PACKEDATTR
 #endif
 
+#include "fmt/format.h"
 
 #include "farchive.h"
 #include "m_fixed.h"
