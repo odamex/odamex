@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -977,7 +975,7 @@ bool W_IsLumpFromPWAD(const char* name, namespace_t namespc)
 // W_IsLumpReplaced
 //
 // Returns true if an IWAD/Odamex lump was replaced by a PWAD.
-// 
+//
 // If this lump didn't have an original to replace (meaning its
 // original to the PWAD) it will return false.
 //
@@ -1018,5 +1016,3 @@ void W_Close ()
 		::handleGen += 1;
 	}
 }
-
-VERSION_CONTROL (w_wad_cpp, "$Id$")

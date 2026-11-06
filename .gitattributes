@@ -1,5 +1,1 @@
 * text=auto eol=lf
-*.cpp ident
-*.h ident
-*.rc ident
-libraries/** -ident

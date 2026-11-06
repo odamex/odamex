@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jess W
 //
 // This program is free software; you can redistribute it and/or
@@ -40,7 +38,7 @@ namespace Freecam
 	bool allowAdd();
   bool isActive();
 	bool allowSpy();
-	void retireFor255thPlayer(player_t* cam);	
+	void retireFor255thPlayer(player_t* cam);
 	bool wipedOnLevelChange(player_t* cam);
 	void buildCam(player_t* p_cam);
 };

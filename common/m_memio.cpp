@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2005 by Simon Howard
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -218,5 +216,3 @@ char *mem_fgetbuf(MEMFILE *stream) // [Russell] - return stream buffer
 {
     return reinterpret_cast<char*>(stream->buf);
 }
-
-VERSION_CONTROL (memio_cpp, "$Id$")
