@@ -843,11 +843,7 @@ static bool R_ClaimSectorSprites(const sector_t* sec)
 //
 // R_AddParticles
 //
-// Projects the particles in subsector num, once per view like R_AddSprites. A
-// particle projected by every slice that reaches its subsector would be drawn
-// once per such slice, since the masked pass draws every slice's vissprites,
-// and blending it over itself changes it a little -- by how many slices
-// happened to reach it.
+// Projects the particles in subsector num, once per view like R_AddSprites.
 //
 void R_AddParticles(rendercontext_t& ctx, int num, int fakeside)
 {

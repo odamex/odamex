@@ -813,8 +813,12 @@ void R_StoreWallRange(rendercontext_t& ctx, int start, int stop)
 	                               ? ctx.seg.rw_stopscale : ctx.bsp.ds_p->scale2;
 	ctx.bsp.ds_p->scalestep = ctx.seg.rw_scalestep;
 
-	ctx.bsp.ds_p->light = ctx.seg.rw_light = ctx.seg.rw_scale * lightscalexmul;
- 	ctx.bsp.ds_p->lightstep = ctx.seg.rw_lightstep = ctx.seg.rw_scalestep * lightscalexmul;
+	// The light is stepped from the seg's own first column, not from start: start
+	// is wherever the seg first shows in this slice, so it moves with the slice
+	// bounds, and the stepped light would land on a different colormap.
+	ctx.bsp.ds_p->lightstep = ctx.seg.rw_lightstep = ctx.seg.rw_scalestep * lightscalexmul;
+	ctx.bsp.ds_p->light = ctx.seg.rw_light = (ctx.seg.rw_startscale * lightscalexmul) +
+	                                          ((start - ctx.seg.rw_start) * ctx.seg.rw_lightstep);
 
 	// calculate texture boundaries
 	//	and decide if floor / ceiling marks are needed
