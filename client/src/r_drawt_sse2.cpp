@@ -792,8 +792,6 @@ void R_StreamStoredLines32_SSE2(argb_t* dest, const argb_t* source, int destpitc
 	_mm_sfence();
 }
 
-#endif
-
 VERSION_CONTROL (r_drawt_sse2_cpp, "$Id$")
 
 #endif

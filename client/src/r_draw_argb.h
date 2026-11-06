@@ -272,7 +272,6 @@ static forceinline bool R_ARGBAllOpaque(const argb_t t0, const argb_t t1, const 
 //
 template<typename QUADFUNC, bool MASKED>
 static forceinline void R_DrawARGBColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
-forceinline void R_DrawARGBColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 {
 	int count = d.yh - d.yl + 1;
 	if (count <= 0)
