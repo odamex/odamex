@@ -140,7 +140,9 @@ bool SV_AddMaster(std::string_view masterip)
 	masterserver m;
 	m.masterip = masterip;
 
-	NET_StringToAdr (m.masterip.c_str(), &m.masteraddr);
+	// The master server protocol can only carry IPv4 addresses, so only
+	// resolve masters to IPv4.
+	NET_StringToAdr (m.masterip.c_str(), &m.masteraddr, true);
 
 	if(!m.masteraddr.port)
 		I_SetPort(m.masteraddr, MASTERPORT);
@@ -154,7 +156,7 @@ bool SV_AddMaster(std::string_view masterip)
 		}
 	}
 
-	if(m.masteraddr.ip[0] == 0 && m.masteraddr.ip[1] == 0 && m.masteraddr.ip[2] == 0 && m.masteraddr.ip[3] == 0)
+	if(NET_IsNullAdr(m.masteraddr))
 	{
 		PrintFmt("Failed to resolve master server: {}, not added", m.masterip);
 		return false;
@@ -250,7 +252,7 @@ void SV_UpdateMaster(void)
 	{
 		for (size_t index = 0; index < masters.size(); index++)
 		{
-			NET_StringToAdr(masters[index].masterip.c_str(), &masters[index].masteraddr);
+			NET_StringToAdr(masters[index].masterip.c_str(), &masters[index].masteraddr, true);
 			I_SetPort(masters[index].masteraddr, MASTERPORT);
 		}
 
