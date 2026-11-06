@@ -82,6 +82,7 @@ void R_BeginSpriteClaims();
 void R_DrawPlayerSprites(rendercontext_t& ctx);
 void R_SortVisSprites(rendercontext_t& ctx, std::span<rendercontext_t* const> gather = {});
 void R_AddSprites(rendercontext_t& ctx, sector_t *sec, int lightlevel, int fakeside);
+void R_AddParticles(rendercontext_t& ctx, int num, int fakeside);
 void R_ClearSprites(rendercontext_t& ctx);
 void R_DrawMasked(rendercontext_t& ctx, std::span<rendercontext_t* const> gather = {},
                   bool mainview = false);

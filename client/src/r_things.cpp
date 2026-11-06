@@ -789,39 +789,76 @@ void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 // This replaces the sector_t::validcount guard, which would have had the
 // renderer writing level data from several threads.
 //
+// Particles are listed by subsector rather than sector, so they are claimed
+// by subsector, with the same stamp.
+//
 static std::unique_ptr<std::atomic<uint32_t>[]> sectorclaims;
 static size_t sectorclaimcount;
+static std::unique_ptr<std::atomic<uint32_t>[]> subsectorclaims;
+static size_t subsectorclaimcount;
 static uint32_t sectorclaimstamp;
+
+static void R_GrowClaims(std::unique_ptr<std::atomic<uint32_t>[]>& claims, size_t& count, size_t want)
+{
+	if (count >= want)
+		return;
+
+	count = want;
+	claims.reset(new std::atomic<uint32_t>[count]);
+	for (size_t i = 0; i < count; i++)
+		claims[i].store(0, std::memory_order_relaxed);
+}
 
 void R_BeginSpriteClaims()
 {
-	if (sectorclaimcount < static_cast<size_t>(numsectors))
-	{
-		sectorclaimcount = numsectors;
-		sectorclaims.reset(new std::atomic<uint32_t>[sectorclaimcount]);
-		for (size_t i = 0; i < sectorclaimcount; i++)
-			sectorclaims[i].store(0, std::memory_order_relaxed);
-	}
+	R_GrowClaims(sectorclaims, sectorclaimcount, static_cast<size_t>(numsectors));
+	R_GrowClaims(subsectorclaims, subsectorclaimcount, static_cast<size_t>(numsubsectors));
 
 	// on wrapping, clear every claim so no stale one can match
 	if (++sectorclaimstamp == 0)
 	{
 		for (size_t i = 0; i < sectorclaimcount; i++)
 			sectorclaims[i].store(0, std::memory_order_relaxed);
+		for (size_t i = 0; i < subsectorclaimcount; i++)
+			subsectorclaims[i].store(0, std::memory_order_relaxed);
 		sectorclaimstamp = 1;
 	}
 }
 
-static bool R_ClaimSectorSprites(const sector_t* sec)
+static bool R_Claim(std::atomic<uint32_t>& claim)
 {
-	std::atomic<uint32_t>& claim = sectorclaims[sec - sectors];
-
 	uint32_t seen = claim.load(std::memory_order_relaxed);
 	if (seen == sectorclaimstamp)
 		return false;
 
 	// only one slice wins the exchange
 	return claim.compare_exchange_strong(seen, sectorclaimstamp, std::memory_order_relaxed);
+}
+
+static bool R_ClaimSectorSprites(const sector_t* sec)
+{
+	return R_Claim(sectorclaims[sec - sectors]);
+}
+
+//
+// R_AddParticles
+//
+// Projects the particles in subsector num, once per view like R_AddSprites. A
+// particle projected by every slice that reaches its subsector would be drawn
+// once per such slice, since the masked pass draws every slice's vissprites,
+// and blending it over itself changes it a little -- by how many slices
+// happened to reach it.
+//
+void R_AddParticles(rendercontext_t& ctx, int num, int fakeside)
+{
+	if (ParticlesInSubsec[num] == NO_PARTICLE)
+		return;
+
+	if (not R_Claim(subsectorclaims[num]))
+		return;
+
+	for (uint16_t i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
+		R_ProjectParticle(ctx, Particles + i, subsectors[num].sector, fakeside);
 }
 
 //

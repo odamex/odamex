@@ -825,10 +825,7 @@ void R_Subsector (rendercontext_t& ctx, int num)
 
 	// [RH] Add particles
 	if (r_particles)
-	{
-		for (uint16_t i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
-			R_ProjectParticle(ctx, Particles + i, subsectors[num].sector, ctx.bsp.fakeside);
-	}
+		R_AddParticles(ctx, num, ctx.bsp.fakeside);
 
 	if (sub.poly)
 	{ // Render the polyobj in the subsector first
