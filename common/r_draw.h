@@ -399,6 +399,10 @@ void R_ClearViewBuffer(IWindowSurface* surface, argb_t color);
 void R_DrawColumnD_SSE2(rendercontext_t& ctx);
 void R_DrawTranslucentColumnD_SSE2(rendercontext_t& ctx);
 void R_DrawLevelGroupD_SSE2(rendercontext_t& ctx);
+// The same for columns and flats that sample a texture's native ARGB plane.
+void R_DrawARGBColumnD_SSE2(rendercontext_t& ctx);
+void R_DrawARGBTranslucentColumnD_SSE2(rendercontext_t& ctx);
+void R_DrawLevelGroupARGBD_SSE2(rendercontext_t& ctx);
 void r_dimpatchD_SSE2(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 void R_StreamStoredLines8_SSE2(argb_t* dest, const palindex_t* source, int destpitchpixels,
                                int srcpitchpixels, int line_length, int line_count, const argb_t* palette);

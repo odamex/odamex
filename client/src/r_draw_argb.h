@@ -16,8 +16,8 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Shading for textures with a native ARGB plane, shared by the drawers
-//	that sample it
+//	Shading for textures with a native ARGB plane, shared by the scalar
+//	drawers and the vectorized ones that must agree with them bit for bit.
 //
 //-----------------------------------------------------------------------------
 
@@ -234,4 +234,80 @@ static forceinline argb_t R_ShadeOpaqueARGB(const ARGBShader& shader, const argb
 static forceinline const argb_t* R_ARGBColumnSource(const drawcolumn_t& dcol)
 {
 	return dcol.argbtexturedata + (dcol.source - dcol.texturedata);
+}
+
+// ----------------------------------------------------------------------------
+//
+// Shared by the vectorized drawers
+//
+// ----------------------------------------------------------------------------
+
+static forceinline uint32_t R_ARGBBits(const argb_t c)
+{
+	return static_cast<uint32_t>(c);
+}
+
+// Whether any of four texels has alpha, and whether all four are opaque.
+static forceinline bool R_ARGBAnyAlpha(const argb_t t0, const argb_t t1, const argb_t t2,
+		const argb_t t3, const uint32_t amask)
+{
+	return ((R_ARGBBits(t0) | R_ARGBBits(t1) | R_ARGBBits(t2) | R_ARGBBits(t3)) & amask) != 0;
+}
+
+static forceinline bool R_ARGBAllOpaque(const argb_t t0, const argb_t t1, const argb_t t2,
+		const argb_t t3, const uint32_t amask)
+{
+	return (R_ARGBBits(t0) & R_ARGBBits(t1) & R_ARGBBits(t2) & R_ARGBBits(t3) & amask) == amask;
+}
+
+//
+// R_DrawARGBColumnQuadGeneric
+//
+// R_DrawColumnQuadGeneric over the native ARGB plane, for every instruction set:
+// QUADFUNC::quad(t0, t1, t2, t3, dest) draws four pixels, and its operator()
+// draws one exactly as the scalar functor does.
+//
+// MASKED picks the raw texel index of the masked arm over the power-of-two mask,
+// transparency is the functor's business, by alpha.
+//
+template<typename QUADFUNC, bool MASKED>
+static forceinline void R_DrawARGBColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
+forceinline void R_DrawARGBColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
+{
+	int count = d.yh - d.yl + 1;
+	if (count <= 0)
+		return;
+
+	const argb_t* const source = R_ARGBColumnSource(d);
+	const fixed_t fracstep = d.iscale;
+	fixed_t frac = d.texturefrac;
+
+	const int mask = (d.textureheight >> FRACBITS) - 1;
+
+	const QUADFUNC f(d);
+
+	const auto texel = [source, mask](const fixed_t at) {
+		return MASKED ? source[at >> FRACBITS] : source[(at >> FRACBITS) & mask];
+	};
+
+	// One pixel through the scalar functor itself.
+	const auto single = [&]() {
+		f(texel(frac), dest);
+		dest++;
+		frac += fracstep;
+	};
+
+	// `count >= 4` is the same correctness bound as in R_DrawColumnQuadGeneric.
+	while (count >= 4)
+	{
+		f.quad(texel(frac), texel(frac + fracstep),
+		       texel(frac + (fracstep * 2)), texel(frac + (fracstep * 3)), dest);
+
+		dest += 4;
+		frac += fracstep * 4;
+		count -= 4;
+	}
+
+	for (; count > 0; count--)
+		single();
 }

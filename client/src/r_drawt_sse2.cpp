@@ -43,6 +43,7 @@
 #include "i_system.h"
 #include "r_defs.h"
 #include "r_draw.h"
+#include "r_draw_argb.h"
 #include "r_main.h"
 #include "i_video.h"
 
@@ -202,7 +203,7 @@ private:
 // costs a few percent on a column with no holes at all.
 //
 template<typename QUADFUNC, bool MASKED, bool EARLYOUT>
-static forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
+forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 {
 	int count = d.yh - d.yl + 1;
 	if (count <= 0)
@@ -277,7 +278,7 @@ static forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t
 // The entry points. dest is computed as FB_COLDEST_D does in r_draw.cpp: the
 // column step times x, plus the first row.
 //
-static forceinline argb_t* R_QuadColumnDest(const drawcolumn_t& dcol)
+forceinline argb_t* R_QuadColumnDest(const drawcolumn_t& dcol)
 {
 	return reinterpret_cast<argb_t*>(dcol.destination) +
 			(ptrdiff_t(dcol.x) * dcol.colstep) + dcol.yl;
@@ -357,6 +358,286 @@ void R_DrawLevelGroupD_SSE2(rendercontext_t& ctx)
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), _mm_setr_epi32(
 				s0[source[spots[0]]], s1[source[spots[1]]],
 				s2[source[spots[2]]], s3[source[spots[3]]]));
+
+		mu = _mm_add_epi32(mu, mus);
+		mv = _mm_add_epi32(mv, mvs);
+
+		dest += colstep;
+	}
+}
+
+
+// ============================================================================
+//
+// Native ARGB textures
+//
+// The shade itself stays scalar -- three byte table lookups per texel, and SSE2
+// has no gather -- so the vector part is everything around it: the alpha test,
+// which the scalar functors branch on three ways per pixel, the per-texel blend,
+// and the store.
+//
+// Every result matches the scalar functors in r_draw_argb.h bit for bit:
+//
+//   - The blend is alphablend2a channel by channel.
+//   - Alpha 255 must SELECT the shaded texel rather than blend it, because a full
+//     blend gives 255 * c >> 8, one short of c.
+//   - The shader keeps the texel's alpha bits, so the alpha is read from the
+//     shaded value rather than reloaded.
+//
+// ============================================================================
+
+//
+// R_ARGBQuadAlpha
+//
+// Each lane's alpha, 0 to 255, in the low byte of its 32 bits.
+//
+forceinline __m128i R_ARGBQuadAlpha(const __m128i px, const __m128i ashift)
+{
+	return _mm_and_si128(_mm_srl_epi32(px, ashift), _mm_set1_epi32(0xFF));
+}
+
+//
+// R_ARGBQuadBlend
+//
+// alphablend2a(bg, 255 - a, fg, a) in each lane, with a per lane.
+//
+forceinline __m128i R_ARGBQuadBlend(const __m128i bg, const __m128i fg,
+		const __m128i a, const __m128i amask)
+{
+	const __m128i zero = _mm_setzero_si128();
+	const __m128i c255 = _mm_set1_epi16(255);
+
+	// Each lane's alpha into all four 16-bit channels of its unpacked pixel.
+	const __m128i a2 = _mm_or_si128(a, _mm_slli_epi32(a, 16));
+	const __m128i alo = _mm_unpacklo_epi32(a2, a2);
+	const __m128i ahi = _mm_unpackhi_epi32(a2, a2);
+
+	const __m128i lo = _mm_srli_epi16(_mm_add_epi16(
+			_mm_mullo_epi16(_mm_unpacklo_epi8(bg, zero), _mm_sub_epi16(c255, alo)),
+			_mm_mullo_epi16(_mm_unpacklo_epi8(fg, zero), alo)), 8);
+	const __m128i hi = _mm_srli_epi16(_mm_add_epi16(
+			_mm_mullo_epi16(_mm_unpackhi_epi8(bg, zero), _mm_sub_epi16(c255, ahi)),
+			_mm_mullo_epi16(_mm_unpackhi_epi8(fg, zero), ahi)), 8);
+
+	return _mm_or_si128(_mm_packus_epi16(lo, hi), amask);
+}
+
+forceinline __m128i R_SelectQuad(const __m128i take, const __m128i a, const __m128i b)
+{
+	return _mm_or_si128(_mm_and_si128(take, a), _mm_andnot_si128(take, b));
+}
+
+forceinline __m128i R_ARGBQuad(const argb_t p0, const argb_t p1, const argb_t p2, const argb_t p3)
+{
+	return _mm_setr_epi32(static_cast<int32_t>(R_ARGBBits(p0)), static_cast<int32_t>(R_ARGBBits(p1)),
+	                      static_cast<int32_t>(R_ARGBBits(p2)), static_cast<int32_t>(R_ARGBBits(p3)));
+}
+
+//
+// R_ShadeOpaqueARGBQuad
+//
+// DirectARGBColormapFunc on four shaded texels: alpha 255 is the texel, partial
+// alpha blends over bg, and alpha 0 is bg when BLEND_TO_DEST:
+// if true, the scalar functor writes nothing, if false, it colors the texels black.
+//
+// Without a backdrop bg is zero, not black: the blend never carries between
+// channels and ORs the alpha in afterwards, so the alpha bits black has cannot
+// matter, and an alpha 0 lane blends to black by itself.
+//
+template<bool BLEND_TO_DEST>
+forceinline __m128i R_ShadeOpaqueARGBQuad(const __m128i fg, const __m128i bg,
+		const __m128i ashift, const __m128i amask)
+{
+	const __m128i a = R_ARGBQuadAlpha(fg, ashift);
+
+	__m128i res = R_SelectQuad(_mm_cmpeq_epi32(a, _mm_set1_epi32(255)), fg,
+			R_ARGBQuadBlend(bg, fg, a, amask));
+
+	if (BLEND_TO_DEST)
+		res = R_SelectQuad(_mm_cmpeq_epi32(a, _mm_setzero_si128()), bg, res);
+
+	return res;
+}
+
+//
+// QuadARGBColormapFunc
+//
+// DirectARGBColormapFunc four texels at a time. MASKED is drawcolumn.masked, which
+// for a true-color column means the translucent texels blend with the scene
+// behind rather than with black.
+//
+template<bool MASKED>
+class QuadARGBColormapFunc
+{
+public:
+	QuadARGBColormapFunc(const drawcolumn_t& d) :
+			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+			amask(_mm_set1_epi32(static_cast<int32_t>(argb_t::alphaMask()))),
+			ashift(_mm_cvtsi32_si128(argb_t::alphaShift())) { }
+
+	forceinline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
+	{
+		// All four transparent over a backdrop: the scalar functor writes nothing,
+		// so skip the shading and the framebuffer read too.
+		// The edges of a masked column are mostly this.
+		if (MASKED and not R_ARGBAnyAlpha(t0, t1, t2, t3, amaskbits))
+			return;
+
+		const __m128i fg = R_ARGBQuad(shader.shade(t0), shader.shade(t1),
+		                              shader.shade(t2), shader.shade(t3));
+
+		// All four opaque, the common case for most of a texture: a plain store.
+		if (R_ARGBAllOpaque(t0, t1, t2, t3, amaskbits))
+		{
+			_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), fg);
+			return;
+		}
+
+		const __m128i bg = MASKED ? _mm_loadu_si128(reinterpret_cast<const __m128i*>(dest))
+		                          : _mm_setzero_si128();
+
+		_mm_storeu_si128(reinterpret_cast<__m128i*>(dest),
+				R_ShadeOpaqueARGBQuad<MASKED>(fg, bg, ashift, amask));
+	}
+
+	forceinline void operator()(argb_t c, argb_t* dest) const
+	{
+		scalar(c, dest);
+	}
+
+private:
+	const ARGBShader              shader;
+	const DirectARGBColormapFunc  scalar;
+	const uint32_t                amaskbits;
+	const __m128i                 amask;
+	const __m128i                 ashift;
+};
+
+//
+// QuadARGBTranslucentFunc
+//
+// DirectARGBTranslucentColormapFunc four texels at a time: the surface's
+// translucency scales each texel's alpha, and an alpha that comes out 0 leaves
+// the framebuffer alone.
+//
+class QuadARGBTranslucentFunc
+{
+public:
+	QuadARGBTranslucentFunc(const drawcolumn_t& d) :
+			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+			amask(_mm_set1_epi32(static_cast<int32_t>(argb_t::alphaMask()))),
+			ashift(_mm_cvtsi32_si128(argb_t::alphaShift())),
+			fga(_mm_set1_epi32(scalar.surfaceAlpha())) { }
+
+	forceinline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
+	{
+		if (not R_ARGBAnyAlpha(t0, t1, t2, t3, amaskbits))
+			return;
+
+		const __m128i fg = R_ARGBQuad(shader.shade(t0), shader.shade(t1),
+		                              shader.shade(t2), shader.shade(t3));
+		const __m128i bg = _mm_loadu_si128(reinterpret_cast<const __m128i*>(dest));
+
+		// alpha * fga / 255.
+		const __m128i prod = _mm_mullo_epi16(R_ARGBQuadAlpha(fg, ashift), fga);
+		const __m128i a = _mm_srli_epi16(_mm_mulhi_epu16(prod, _mm_set1_epi16(static_cast<int16_t>(0x8081))), 7);
+
+		_mm_storeu_si128(reinterpret_cast<__m128i*>(dest),
+				R_SelectQuad(_mm_cmpeq_epi32(a, _mm_setzero_si128()), bg,
+						R_ARGBQuadBlend(bg, fg, a, amask)));
+	}
+
+	forceinline void operator()(argb_t c, argb_t* dest) const
+	{
+		scalar(c, dest);
+	}
+
+private:
+	const ARGBShader              shader;
+	const DirectARGBTranslucentColormapFunc  scalar;
+	const uint32_t                amaskbits;
+	const __m128i                 amask;
+	const __m128i                 ashift;
+	const __m128i                 fga;
+};
+
+void R_DrawARGBColumnD_SSE2(rendercontext_t& ctx)
+{
+	const drawcolumn_t& dcol = ctx.draw.dcol;
+
+	if (dcol.masked)
+		R_DrawARGBColumnQuadGeneric<QuadARGBColormapFunc<true>, true>(R_QuadColumnDest(dcol), dcol);
+	else
+		R_DrawARGBColumnQuadGeneric<QuadARGBColormapFunc<false>, false>(R_QuadColumnDest(dcol), dcol);
+}
+
+void R_DrawARGBTranslucentColumnD_SSE2(rendercontext_t& ctx)
+{
+	const drawcolumn_t& dcol = ctx.draw.dcol;
+
+	if (dcol.masked)
+		R_DrawARGBColumnQuadGeneric<QuadARGBTranslucentFunc, true>(R_QuadColumnDest(dcol), dcol);
+	else
+		R_DrawARGBColumnQuadGeneric<QuadARGBTranslucentFunc, false>(R_QuadColumnDest(dcol), dcol);
+}
+
+//
+// R_DrawLevelGroupARGBD_SSE2
+//
+// R_DrawLevelGroupD_SSE2 for a true-color flat: the same DDA, four texels from
+// the ARGB plane shaded by their rows' band shaders, and R_ShadeOpaqueARGB's
+// composite onto black done four lanes at once.
+//
+void R_DrawLevelGroupARGBD_SSE2(rendercontext_t& ctx)
+{
+	const drawplanegroup_t& g = ctx.draw.dpgroup;
+
+	const argb_t* const source = g.argbsource;
+
+	const ARGBShader s0 = g.argbshade[g.argbband[0]];
+	const ARGBShader s1 = g.argbshade[g.argbband[1]];
+	const ARGBShader s2 = g.argbshade[g.argbband[2]];
+	const ARGBShader s3 = g.argbshade[g.argbband[3]];
+
+	const uint32_t amaskbits = argb_t::alphaMask();
+	const __m128i amask = _mm_set1_epi32(static_cast<int32_t>(amaskbits));
+	const __m128i ashift = _mm_cvtsi32_si128(argb_t::alphaShift());
+
+	__m128i mu = _mm_loadu_si128(reinterpret_cast<const __m128i*>(g.ufrac));
+	__m128i mv = _mm_loadu_si128(reinterpret_cast<const __m128i*>(g.vfrac));
+	const __m128i mus = _mm_loadu_si128(reinterpret_cast<const __m128i*>(g.ustep));
+	const __m128i mvs = _mm_loadu_si128(reinterpret_cast<const __m128i*>(g.vstep));
+
+	const __m128i mumask = _mm_set1_epi32(g.umask);
+	const __m128i mvmask = _mm_set1_epi32(g.vmask);
+
+	const __m128i cu = _mm_cvtsi32_si128(g.ushift);
+	const __m128i cv = _mm_cvtsi32_si128(g.vshift);
+
+	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
+			(static_cast<ptrdiff_t>(g.xa) * g.colstep) + g.y0;
+	const int colstep = g.colstep;
+
+	for (int n = g.xb - g.xa + 1; n; --n)
+	{
+		const __m128i mspots = _mm_or_si128(
+				_mm_and_si128(_mm_srl_epi32(mu, cu), mumask),
+				_mm_and_si128(_mm_srl_epi32(mv, cv), mvmask));
+
+		const auto spots = std::bit_cast<std::array<uint32_t, 4>>(mspots);
+
+		const argb_t t0 = source[spots[0]];
+		const argb_t t1 = source[spots[1]];
+		const argb_t t2 = source[spots[2]];
+		const argb_t t3 = source[spots[3]];
+
+		const __m128i fg = R_ARGBQuad(s0.shade(t0), s1.shade(t1), s2.shade(t2), s3.shade(t3));
+
+		if (R_ARGBAllOpaque(t0, t1, t2, t3, amaskbits))
+			_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), fg);
+		else
+			_mm_storeu_si128(reinterpret_cast<__m128i*>(dest),
+					R_ShadeOpaqueARGBQuad<false>(fg, _mm_setzero_si128(), ashift, amask));
 
 		mu = _mm_add_epi32(mu, mus);
 		mv = _mm_add_epi32(mv, mvs);
@@ -511,6 +792,7 @@ void R_StreamStoredLines32_SSE2(argb_t* dest, const argb_t* source, int destpitc
 	_mm_sfence();
 }
 
+#endif
 
 VERSION_CONTROL (r_drawt_sse2_cpp, "$Id$")
 

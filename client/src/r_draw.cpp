@@ -1830,6 +1830,8 @@ static forceinline bool R_ColumnHasNativeARGB(const drawcolumn_t& dcol)
 // Set by R_InitVectorizedDrawers, which runs long before any column is drawn.
 static void (*R_DrawColumnQuadD)(rendercontext_t&) = nullptr;
 static void (*R_DrawTranslucentColumnQuadD)(rendercontext_t&) = nullptr;
+static void (*R_DrawARGBColumnQuadD)(rendercontext_t&) = nullptr;
+static void (*R_DrawARGBTranslucentColumnQuadD)(rendercontext_t&) = nullptr;
 
 // The shortest column worth handing to the four-pixel drawers.
 //
@@ -1880,7 +1882,12 @@ void R_DrawColumnD(rendercontext_t& ctx)
 	drawcolumn_t& dcol = ctx.draw.dcol;
 
 	if (R_ColumnHasNativeARGB(dcol))
-		R_DrawColumnGenericARGB<DirectARGBColormapFunc>(FB_COLDEST_D, dcol);
+	{
+		if (R_ColumnWantsQuad(R_DrawARGBColumnQuadD, dcol))
+			R_DrawARGBColumnQuadD(ctx);
+		else
+			R_DrawColumnGenericARGB<DirectARGBColormapFunc>(FB_COLDEST_D, dcol);
+	}
 	// Worth having despite costing slightly MORE instructions than the scalar
 	// drawer -- 12.25 per pixel against 12 for SSE2. An opaque column is one
 	// gather and one store per pixel and SSE2 cannot vectorize a gather, so the
@@ -1928,7 +1935,12 @@ void R_DrawTranslucentColumnD(rendercontext_t& ctx)
 	drawcolumn_t& dcol = ctx.draw.dcol;
 
 	if (R_ColumnHasNativeARGB(dcol))
-		R_DrawColumnGenericARGB<DirectARGBTranslucentColormapFunc>(FB_COLDEST_D, dcol);
+	{
+		if (R_ColumnWantsQuad(R_DrawARGBTranslucentColumnQuadD, dcol))
+			R_DrawARGBTranslucentColumnQuadD(ctx);
+		else
+			R_DrawColumnGenericARGB<DirectARGBTranslucentColormapFunc>(FB_COLDEST_D, dcol);
+	}
 	else if (R_ColumnWantsQuad(R_DrawTranslucentColumnQuadD, dcol))
 		R_DrawTranslucentColumnQuadD(ctx);
 	else
@@ -2310,6 +2322,8 @@ void R_InitVectorizedDrawers()
 	R_DrawColumnQuadD       = nullptr;
 	R_DrawTranslucentColumnQuadD = nullptr;
 	R_DrawLevelGroupARGBD   = R_DrawLevelGroupARGBD_c;
+	R_DrawARGBColumnQuadD   = nullptr;
+	R_DrawARGBTranslucentColumnQuadD = nullptr;
 	have_vector_slopes      = false;
 	r_dimpatchD             = r_dimpatchD_c;
 	R_StreamStoredLines8    = nullptr;
@@ -2321,6 +2335,9 @@ void R_InitVectorizedDrawers()
 		R_DrawLevelGroupD       = R_DrawLevelGroupD_SSE2;
 		R_DrawColumnQuadD       = R_DrawColumnD_SSE2;
 		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_SSE2;
+		R_DrawLevelGroupARGBD   = R_DrawLevelGroupARGBD_SSE2;
+		R_DrawARGBColumnQuadD   = R_DrawARGBColumnD_SSE2;
+		R_DrawARGBTranslucentColumnQuadD = R_DrawARGBTranslucentColumnD_SSE2;
 		have_vector_slopes      = true;
 		r_dimpatchD             = r_dimpatchD_SSE2;
 		R_StreamStoredLines8    = R_StreamStoredLines8_SSE2;
