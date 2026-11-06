@@ -257,7 +257,7 @@ private:
 	__m64         mbga;
 	__m64         mamask;
 	int           fga;
-	iint          bga;
+	int           bga;
 };
 
 

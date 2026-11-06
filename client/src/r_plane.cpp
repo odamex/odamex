@@ -819,21 +819,23 @@ void R_DrawLevelPlaneGroups(rendercontext_t& ctx, visplane_t* pl)
 		ctx.draw.dpgroup.xa = xa;
 		ctx.draw.dpgroup.xb = xb;
 
-		// Anchored with the scalar drawer's own expression, so the first column of
-		// every run is bit-identical to it and the DDA cannot drift beyond one run.
 		// The step is the span mapper's ustep, which in 16.16 is exactly
 		// eu_step * yslope[y]: per row, and independent of x. That is the trick.
-		const double eu = eu_base + ((xa - centerx) * eu_step);
-		const double ev = ev_base + ((xa - centerx) * ev_step);
+		const dsfixed_t dxa = static_cast<dsfixed_t>(xa - centerx);
 
 		for (int i = 0; i < 4; i++)
 		{
 			const double Y = static_cast<double>(yslope[y0 + i]);
 
-			ctx.draw.dpgroup.ustep[i] = static_cast<dsfixed_t>(static_cast<int64_t>(eu_step * Y));
-			ctx.draw.dpgroup.vstep[i] = static_cast<dsfixed_t>(static_cast<int64_t>(ev_step * Y));
-			ctx.draw.dpgroup.ufrac[i] = static_cast<dsfixed_t>(static_cast<int64_t>(ctx.draw.dpcol.ubase + (eu * Y)));
-			ctx.draw.dpgroup.vfrac[i] = static_cast<dsfixed_t>(static_cast<int64_t>(ctx.draw.dpcol.vbase + (ev * Y)));
+			const dsfixed_t ustep = static_cast<dsfixed_t>(static_cast<int64_t>(eu_step * Y));
+			const dsfixed_t vstep = static_cast<dsfixed_t>(static_cast<int64_t>(ev_step * Y));
+			const dsfixed_t ucenter = static_cast<dsfixed_t>(static_cast<int64_t>(ctx.draw.dpcol.ubase + (eu_base * Y)));
+			const dsfixed_t vcenter = static_cast<dsfixed_t>(static_cast<int64_t>(ctx.draw.dpcol.vbase + (ev_base * Y)));
+
+			ctx.draw.dpgroup.ustep[i] = ustep;
+			ctx.draw.dpgroup.vstep[i] = vstep;
+			ctx.draw.dpgroup.ufrac[i] = ucenter + (dxa * ustep);
+			ctx.draw.dpgroup.vfrac[i] = vcenter + (dxa * vstep);
 
 			// NULL whenever the plane resolved to one colormap, including
 			// fixedlightlev and fixedcolormap -- there R_BuildPlaneLighting returns
