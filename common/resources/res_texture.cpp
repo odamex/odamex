@@ -993,39 +993,48 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 
 			while (os.scan())
 			{
-				if (os.compareTokenNoCase("flat"))
+				// A bad definition is reported and skipped, rather than
+				// silently ending the lump and every definition after it.
+				try
 				{
-					parseAnim(os, FLOOR);
-				}
-				else if (os.compareTokenNoCase("texture"))
-				{
-					parseAnim(os, WALL);
-				}
-				else if (os.compareTokenNoCase("switch"))
-				{
-					// Don't support switchdef yet...
-				}
-				else if (os.compareTokenNoCase("warp"))
-				{
-					os.mustScan();
-					TextureSearchOrdering search_ordering = FLOOR;
-					if (os.compareTokenNoCase("texture"))
-						search_ordering = WALL;
-					else if (not os.compareTokenNoCase("flat"))
-						os.error("Unknown error reading in ANIMDEFS");
+					if (os.compareTokenNoCase("flat"))
+					{
+						parseAnim(os, FLOOR);
+					}
+					else if (os.compareTokenNoCase("texture"))
+					{
+						parseAnim(os, WALL);
+					}
+					else if (os.compareTokenNoCase("switch"))
+					{
+						// Don't support switchdef yet...
+					}
+					else if (os.compareTokenNoCase("warp"))
+					{
+						os.mustScan();
+						TextureSearchOrdering search_ordering = FLOOR;
+						if (os.compareTokenNoCase("texture"))
+							search_ordering = WALL;
+						else if (not os.compareTokenNoCase("flat"))
+							os.error("Unknown error reading in ANIMDEFS");
 
-					os.mustScan();
-					const OString texture_name = OStringToUpper(os.getToken());
-					addWarpedTexture(Res_GetTextureResourceId(texture_name, search_ordering, false));
+						os.mustScan();
+						const OString texture_name = OStringToUpper(os.getToken());
+						addWarpedTexture(Res_GetTextureResourceId(texture_name, search_ordering, false));
+					}
+				}
+				catch (CRecoverableError& error)
+				{
+					PrintFmt(PRINT_WARNING, "{}\n", error.GetMsg());
 				}
 			}
 
 			Res_ReleaseResource(res_ids[i]);
 		}
 	}
-	catch (CRecoverableError&)
+	catch (CRecoverableError& error)
 	{
-
+		PrintFmt(PRINT_WARNING, "{}\n", error.GetMsg());
 	}
 }
 
