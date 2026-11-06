@@ -47,11 +47,10 @@
 #include "g_multikill.h"
 #include "g_deathspot.h"
 
+#include "freecam.h"
+
 #include <span>
 
-#ifdef CLIENT_APP
-#include "cl_freecam.h"
-#endif
 //
 // Movement.
 //
@@ -407,7 +406,7 @@ void P_CalcHeight (player_t& player)
 		bob = 0;
 
 	// move viewheight
-	if (player.playerstate == PST_LIVE || player.playerstate == PST_FREECAM)
+	if (player.playerstate == PST_LIVE)
 	{
 		player.viewheight += player.deltaviewheight;
 
@@ -491,6 +490,91 @@ CVAR_FUNC_IMPL (sv_aircontrol)
 	level.aircontrol = static_cast<fixed_t>(static_cast<float>(var) * 65536.f);
 	G_AirControlChanged();
 }
+
+//
+// P_MoveFreecam
+//
+void P_MoveFreecam (freecam_t& freecam)
+{
+	if (not freecam.mo)
+		return;
+
+	AActor *mo = freecam.mo;
+
+	// Reactiontime is used to prevent movement
+	//	for a bit after a teleport.
+	if (freecam.mo->reactiontime)
+	{
+		freecam.mo->reactiontime--;
+		return;
+	}
+
+	if (freecam.cmd.upmove != 0)
+	{
+		freecam.mo->momz = freecam.cmd.upmove << 9;
+	}
+
+	// Look left/right
+	mo->angle += freecam.cmd.yaw << 16;
+
+	// Look up/down stuff
+	const int look = freecam.cmd.pitch << 16;
+
+	if (look)
+	{
+		if (look == INT_MIN)
+		{ // center view
+			freecam.mo->pitch = 0;
+		}
+		else if (look > 0)
+		{ // look up
+			freecam.mo->pitch -= look;
+			if (freecam.mo->pitch < -ANG(32))
+				freecam.mo->pitch = -ANG(32);
+		}
+		else
+		{ // look down
+			freecam.mo->pitch -= look;
+			if (freecam.mo->pitch > ANG(56))
+				freecam.mo->pitch = ANG(56);
+		}
+	}
+
+	if (freecam.cmd.forwardmove | freecam.cmd.sidemove)
+	{
+		int friction;
+		const int movefactor = P_GetMoveFactor (mo, &friction);
+		
+		fixed_t forwardmove = (freecam.cmd.forwardmove * movefactor) >> 8;
+		const fixed_t sidemove = (freecam.cmd.sidemove * movefactor) >> 8;
+
+		if (forwardmove)
+		{
+			const angle_t ang = mo->angle >> ANGLETOFINESHIFT;
+
+			if (mo->pitch != 0)
+			{
+				const angle_t pitch = static_cast<angle_t>(mo->pitch) >> ANGLETOFINESHIFT;
+				fixed_t zpush = FixedMul(forwardmove, finesine[pitch]);
+				if (mo->waterlevel and mo->waterlevel < 2 and zpush < 0)
+					zpush = 0;
+
+				mo->momz -= zpush;
+				forwardmove = FixedMul(forwardmove, finecosine[pitch]);
+			}
+			mo->momx += FixedMul(forwardmove, finecosine[ang]);
+			mo->momy += FixedMul(forwardmove, finesine[ang]);
+		}
+		if (sidemove)
+		{
+			const fixed_t ang = (mo->angle - ANG90) >> ANGLETOFINESHIFT;
+
+			freecam.mo->momx += FixedMul(sidemove, finecosine[ang]);
+			freecam.mo->momy += FixedMul(sidemove, finesine[ang]);
+		}
+	}
+}
+
 
 //
 // P_MovePlayer
@@ -580,7 +664,7 @@ void P_MovePlayer (player_t& player)
 
 		// [ML] Check for these conditions unless advanced physics is on
 		if(co_zdoomphys ||
-			(!co_zdoomphys && (mo->onground || (mo->flags2 & MF2_FLY) || mo->waterlevel)))
+		    (!co_zdoomphys && (mo->onground || (mo->flags2 & MF2_FLY) || mo->waterlevel)))
 		{
 			if (forwardmove)
 			{
@@ -628,8 +712,8 @@ void P_MovePlayer (player_t& player)
 //			if(!player.spectator)
 //				UV_SoundAvoidPlayer(player.mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
-            player.mo->flags2 &= ~MF2_ONMOBJ;
-            player.jumpTics = springpad ? 0 : 18;
+			player.mo->flags2 &= ~MF2_ONMOBJ;
+			player.jumpTics = springpad ? 0 : 18;
 		}
 	}
 }
@@ -786,12 +870,6 @@ bool P_AreTeammates(const player_t &a, const player_t &b)
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 {
-	// server doesnt know or care about the freecam
-	#ifdef CLIENT_APP
-	if (other.isFreecam && Freecam::allowSpy())
-		return true;
-	#endif
-
 	// skip if out of lives in survival
 	if (G_IsLivesGame() && other.lives < 1)
 		return false;
@@ -948,6 +1026,26 @@ void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS
 
 	P_SetPlayerInvulnBleed(player, powers);
 }
+
+//
+// P_FreecamThink
+//
+void P_FreecamThink(freecam_t& freecam)
+{
+	
+	P_MoveFreecam(freecam);
+
+	// calc height
+	freecam.camera->z = freecam.mo->z;
+
+	freecam.camera->z = std::min(freecam.camera->z, freecam.mo->ceilingz-(4*FRACUNIT));
+	freecam.camera->z = std::max(freecam.camera->z, freecam.mo->floorz + (4*FRACUNIT));
+
+	// A special event has no other buttons.
+	if (freecam.cmd.buttons & BT_SPECIAL)
+		freecam.cmd.buttons = 0;
+}
+
 
 //
 // P_PlayerThink

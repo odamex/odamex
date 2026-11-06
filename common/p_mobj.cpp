@@ -1146,9 +1146,11 @@ void AActor::RunThink ()
 	// MUSINFO
 	if (type == MT_MUSICSOURCE && clientside)
 	{
-		if (musinfo.mapthing != this
-		    && displayplayer().mo->subsector
-		    && subsector->sector == displayplayer().mo->subsector->sector)
+		if (playerIsDisplayed()
+			and musinfo.mapthing != this
+			and displayplayer().mo
+			and displayplayer().mo->subsector
+			and subsector->sector == displayplayer().mo->subsector->sector)
 		{
 			musinfo.lastmapthing = musinfo.mapthing;
 			musinfo.mapthing = this->ptr();
@@ -1157,15 +1159,16 @@ void AActor::RunThink ()
 		return;
 	}
 
-	if (not player or not player->isFreecam)
+	if (not (this->type == MT_FREECAM))
 	{
 		prevx = x;
 		prevy = y;
 		prevz = z;
 	}
-
-	if (!player || P_IsVoodooDoll(this))    // True voodoo dolls have non-null player pointers, but we still want
-	{                                       // to update the dolls' previous angles, so check for that.
+  // True voodoo dolls have non-null player pointers, but we still want
+  // to update the dolls' previous angles, so check for that.
+	if ((not player or P_IsVoodooDoll(this)) and not (this->type == MT_FREECAM))
+	{
 		prevangle = angle;
 		prevpitch = pitch;
 	}
@@ -2454,6 +2457,9 @@ void P_ZMovement(AActor *mo)
 	if (mo->player)
 		P_PlayerFlyBob(mo);
 
+	if (mo->type == MT_FREECAM)
+		mo->momz = FixedMul(mo->momz, FRICTION_FLY);
+
 	// apply friction in the z-direction in water
 	if (mo->waterlevel && !(mo->flags & MF_NOGRAVITY))
 		mo->momz = FixedMul(mo->momz, mo->subsector->sector->friction);
@@ -3588,7 +3594,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 {
 	int32_t type = -1;
 
-	if (mthing.type == 0 || mthing.type == -1)
+	if (mthing.type == MT_PLAYER or mthing.type == MT_NULL)
 		return;
 
 	const bool inSpawnMap = spawn_map.contains(mthing.type);

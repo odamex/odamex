@@ -65,7 +65,8 @@ END_DISABLE_WARNING_GNU
 #include "g_spree.h"
 #include "g_deathspot.h"
 #include "g_gametype.h"
-#include "cl_freecam.h"
+#include "freecam.h"
+
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -79,6 +80,7 @@ EXTERN_CVAR(sv_monstersrespawn)
 EXTERN_CVAR(sv_gravity)
 EXTERN_CVAR(sv_aircontrol)
 EXTERN_CVAR(g_resetinvonexit)
+EXTERN_CVAR(cl_noclip_spectator)
 
 // Start time for timing demos
 dtime_t starttime;
@@ -217,10 +219,13 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
-	if (Freecam::allowAdd() && Freecam::prevmap != mapname)
+	if (CL_FreecamAllowedOnLevel() and freecam_t::prevmap != mapname)
 	{
-		Freecam::reset();
-		Freecam::prevmap = mapname;
+		for (auto& freecam : freecams)
+		{
+			freecam.reset();
+		}
+		freecam_t::prevmap = mapname;
 	}
 
 	cvar_t::UnlatchCVars ();
@@ -520,6 +525,8 @@ void G_DoCompleted (void)
 	WI_Start (&wminfo);
 }
 
+
+
 //
 // G_DoLoadLevel
 //
@@ -676,7 +683,7 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	if (not displayplayer().isFreecam)
+	if (not freecamIsActive())
 	{
 		// view the guy you are playing..
 		// unless level load is from a netdemo snapshot and display is freecam
@@ -709,23 +716,23 @@ void G_DoLoadLevel (int position)
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
 
-	// clientside only freecam, added after other players are added in G_UnSnapshotLevel
-	if (Freecam::allowAdd())
+	// clientside freecam
+	if (CL_FreecamAllowedOnLevel())
 	{
-		if (Freecam::needPosition())
-		{
-			const std::optional<mapthing2_t> start = P_GetFirstAvailableSpawn();
+		freecam_t* freecam = freecam_t::getfreecam(firstcam_id);
+		const std::optional<mapthing2_t> start = P_GetFirstAvailableSpawn();
 
-			if (start.has_value())
-			{
-				Freecam::setStartPosition(INT2FIXED(start->x), INT2FIXED(start->y),
-				    level.flags & LEVEL_USEPLAYERSTARTZ ? INT2FIXED(start->z) : ONFLOORZ,
-				    MapThingToAngle(start->angle));
-			}
+		if (freecam and start.has_value() and freecam->wipedOnLevelChange())
+		{
+			freecam->build(start.value(), freecam->needsPosition(), cl_noclip_spectator != 0.0f);
 		}
 
-		Freecam::addFreecamPlayer();
-	}
+		if (not freecam and start.has_value())
+		{
+			auto* f = new freecam_t(firstcam_id, start.value(), cl_noclip_spectator != 0.0f);
+			freecams.push_back(*f);
+		}
+	}	
 
 	P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 

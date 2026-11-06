@@ -58,6 +58,7 @@
 #include "PspriteStateType.h"
 
 #include "p_horde.h"
+#include "freecam.h"
 
 struct client_t
 {
@@ -121,10 +122,7 @@ typedef enum
 	PST_DISCONNECT,
 
     // [BC] Entered the game
-	PST_ENTER,
-
-	// this player is the freecam
-	PST_FREECAM
+	PST_ENTER
 
 } playerstate_t;
 
@@ -179,9 +177,6 @@ public:
 
 	// [RH] who is this?
 	UserInfo	userinfo;
-
-	// is this the clientside-only freecam player?
-	bool isFreecam = false;
 
 	// FOV in degrees
 	float		fov;
@@ -388,8 +383,8 @@ inline Players players;
 
 // Player taking events, and displaying.
 player_t		&consoleplayer();
+// Player displaying. Warning - this returns the nullplayer when freecam is active
 player_t		&displayplayer();
-player_t		&listenplayer();
 player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
 bool			validplayer(const player_t &ref);
@@ -634,6 +629,16 @@ inline byte consoleplayer_id = 1; // player taking events and displaying
 inline byte displayplayer_id = 1; // view being displayed
 inline constexpr byte nullplayer_id = 0; // invalid player
 inline constexpr byte menuplayer_id = 0; // fake player id used by translations for the player setup menu
+
+inline bool playerIsDisplayed()
+{
+	return (displayplayer_id != nullplayer_id and freecam_id == nullcam_id);
+}
+
+inline bool freecamIsActive()
+{
+  return (displayplayer_id == nullplayer_id and freecam_id != nullcam_id);
+}
 
 //
 

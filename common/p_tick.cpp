@@ -31,6 +31,7 @@
 #include "p_unlag.h"
 #include "p_horde.h"
 #include "g_spree.h"
+#include "freecam.h"
 
 //
 // P_AtInterval
@@ -51,9 +52,9 @@ void P_AnimationTick(AActor *mo);
 void P_Ticker (bool runAllThinkers)
 {
 #ifdef CLIENT_APP
-	if (paused && displayplayer().isFreecam)
+	if (paused and freecamIsActive())
 	{
-		displayplayer().mo->RunThink();
+		freecam_t::getfreecam(freecam_id)->mo->RunThink();
 	}
 
 	// Game pauses when in the menu and not online/demo

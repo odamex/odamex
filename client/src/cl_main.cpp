@@ -70,7 +70,7 @@
 #include "g_gametype.h"
 #include "cl_parse.h"
 #include "cl_replay.h"
-#include "cl_freecam.h"
+#include "freecam.h"
 
 #include "m_consolecommandstream.h"
 
@@ -427,6 +427,8 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 		players.clear();
 	}
 
+	freecams.clear();
+
 	hasReceivedFullUpdate = false;
 
 	if (netdemo.isRecording())
@@ -589,6 +591,8 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 	::lastEchoedClientTic = 0;
 	::last_svgametic      = 0;
 	world_index           = 0;
+	freecam_id            = nullcam_id;
+	displayplayer_id      = consoleplayer_id;
 
 	messenger = OdaMessenger{ pool };
 
@@ -634,6 +638,9 @@ void CL_CheckDisplayPlayer(void)
 	static byte previd = consoleplayer_id;
 	byte newid = 0;
 
+	if (freecamIsActive())
+		return;
+
 	// [jsd]: try to spy on player by name when connected if spyplayername is set:
 	if (spyplayername.length() > 0) {
 		player_t &spyplayer = nameplayer(spyplayername);
@@ -651,18 +658,14 @@ void CL_CheckDisplayPlayer(void)
 	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isInPlayback()))
 		newid = consoleplayer_id;
 
-	if (displayplayer().spectator && not displayplayer().isFreecam)
+	if (displayplayer().spectator)
 		newid = consoleplayer_id;
 
 	if (newid)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		// server doesnt know about clientside freecam, dont tell it
-		if (not displayplayer().isFreecam && newid != freecamplayer_id)
-		{
-			messenger.Reliable().Write(CLC_Spy(newid));
-		}
+		messenger.Reliable().Write(CLC_Spy(newid));
 		displayplayer_id = newid;
 
 		// We have no idea where the new view target's weapon is sitting until the
@@ -693,7 +696,7 @@ void CL_CheckDisplayPlayer(void)
 // are made to ensure only spectators can view enemy players.
 //
 template<class Iterator>
-void CL_SpyCycle(Iterator begin, Iterator end)
+void CL_SpyCycle(const Iterator& begin, const Iterator& end, bool forward)
 {
 	// Make sure we have players to iterate over
 	if (players.empty())
@@ -728,28 +731,126 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 		// Increment iterator and wrap around if we hit end.
 		// The sentinal will stop the lop.
 		if (++it == end)
-			it = begin;
-
-		player_t& self = consoleplayer();
-		player_t& player = *it;
-
-		// spectators only cycle between active players
-		if (P_CanSpy(self, player, demoplayback || netdemo.isInPlayback()))
 		{
-			displayplayer_id = player.id;
-			CL_CheckDisplayPlayer();
-
-			if (demoplayback)
+			if (freecams.empty() or not CL_FreecamAllowSpy())
 			{
-				consoleplayer_id = player.id;
+				it = begin;
+			}
+			else // freecams available
+			{
+				displayplayer_id = nullplayer_id;
+				freecam_id = forward ? freecams.front().id : freecams.back().id;
+				R_ForceViewWindowResize();
 				ST_ForceRefresh();
+				return;
 			}
 
-			P_FriendlyEffects(); // Mark any new friendly monsters with an effect
-
-			return;
 		}
+
+		if (CL_SpyPlayerIfAble(*it))
+			return;
+
 	} while (it != sentinal);
+}
+
+bool CL_SpyPlayerIfAble(player_t& player)
+{
+	// spectators only cycle between active players
+	if (P_CanSpy(consoleplayer(), player, demoplayback or netdemo.isInPlayback()))
+	{
+		displayplayer_id = player.id;
+		CL_CheckDisplayPlayer();
+
+		if (demoplayback)
+		{
+			consoleplayer_id = player.id;
+			ST_ForceRefresh();
+		}
+
+		P_FriendlyEffects(); // Mark any new friendly monsters with an effect
+
+		return true;
+	}
+	return false;
+}
+
+void CL_SpyCycleFreecams(bool forward)
+{
+	if (players.empty() and freecams.empty())
+		return;
+
+	const freecam_t* nextcam = freecam_t::getfreecam(forward ? freecam_id + 1 : freecam_id - 1);
+
+	if (nextcam)
+	{
+		freecam_id = nextcam->id;
+	}
+	else // back to players
+	{
+		freecam_id = nullcam_id;
+
+		if (forward)
+		{
+			for (auto& player : players)
+			{
+				if (CL_SpyPlayerIfAble(player))
+					break;
+			}
+		}
+		else
+		{
+			for (auto& player : std::ranges::reverse_view(players))
+			{
+				if (CL_SpyPlayerIfAble(player))
+					break;
+			}
+		}
+		R_ForceViewWindowResize();
+		ST_ForceRefresh();
+	}
+}
+
+//
+// CL_GetDisplayCamera
+//
+// Returns the camera of the object currently being displayed on screen
+// Does not have to be a player!
+//
+AActor::AActorPtr& CL_GetDisplayCamera()
+{
+	if (playerIsDisplayed())
+		return displayplayer().camera;
+	if (freecamIsActive())
+		return freecam_t::getfreecam(freecam_id)->camera;
+
+	return displayplayer().camera;
+}
+
+// CL_GetDisplayMobj
+//
+// Returns the mobj of the object currently being displayed on screen
+// Does not have to be a player!
+//
+AActor::AActorPtr& CL_GetDisplayMobj()
+{
+	if (playerIsDisplayed())
+		return displayplayer().mo;
+	if (freecamIsActive())
+		return freecam_t::getfreecam(freecam_id)->mo;
+
+	return displayplayer().mo;
+}
+
+commandingMobj_e CL_ActiveCommandingMobj()
+{
+	if (playerIsDisplayed())
+		return commandingMobj_e::PLAYER;
+	if (freecamIsActive())
+		return commandingMobj_e::FREECAM;
+
+	// otherwise displayplayer_id and freecam_id are both set, or both are the null id (0)
+	// this should never happen
+	return commandingMobj_e::UNKNOWN;
 }
 
 void D_ProcessEvents();
@@ -763,7 +864,23 @@ void NetUpdate (void)
 {
 	I_StartTic ();
 	D_ProcessEvents ();
-	G_BuildTiccmd (consoleplayer().netcmds[gametic % BACKUPTICS]);
+
+	switch (CL_ActiveCommandingMobj())
+	{
+		case commandingMobj_e::PLAYER:
+			G_BuildTiccmd(consoleplayer().netcmds[gametic % BACKUPTICS]);
+		    break;
+	    case commandingMobj_e::FREECAM:
+		    G_BuildTiccmd(freecam_t::getfreecam(freecam_id)->cmd);
+		    break;
+	    case commandingMobj_e::UNKNOWN:
+		    PrintFmt("Warning - unknown active mobj, resetting to consoleplayer\n");
+		    freecam_id = nullcam_id;
+		    displayplayer_id = consoleplayer_id;
+		    CL_CheckDisplayPlayer();
+		    G_BuildTiccmd(consoleplayer().netcmds[gametic % BACKUPTICS]);
+		    break;
+	}		
 }
 
 extern bool advancedemo;
@@ -861,8 +978,7 @@ void CL_RunTics()
 	if (!connected)
 		CL_RequestConnectInfo();
 
-	// [RH] Use the consoleplayer's camera to update sounds
-	S_UpdateSounds(listenplayer().camera);	// move positional sounds
+	S_UpdateSounds(CL_GetDisplayCamera());	// move positional sounds
 	S_UpdateMusic();	// play another chunk of music
 
 	D_DisplayTicker();
@@ -1205,13 +1321,19 @@ END_COMMAND (flagnext)
 
 BEGIN_COMMAND (spynext)
 {
-	CL_SpyCycle(players.begin(), players.end());
+	if (freecamIsActive())
+		CL_SpyCycleFreecams(true);
+	else
+		CL_SpyCycle(players.begin(), players.end(), true);
 }
 END_COMMAND (spynext)
 
 BEGIN_COMMAND (spyprev)
 {
-	CL_SpyCycle(players.rbegin(), players.rend());
+	if (freecamIsActive())
+		CL_SpyCycleFreecams(false);
+	else
+		CL_SpyCycle(players.rbegin(), players.rend(), false);
 }
 END_COMMAND (spyprev)
 
@@ -1734,7 +1856,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		}
 		else
 		{
-			if (!netdemo.isPlaying())
+			if (not netdemo.isInPlayback())
 			{
 				displayplayer_id = consoleplayer_id; // get out of spynext
 			}
@@ -2073,6 +2195,7 @@ bool CL_PrepareConnect()
 bool CL_Connect()
 {
 	players.clear();
+	freecams.clear();
 
 	connected = true;
 	multiplayer = true;
@@ -2449,6 +2572,18 @@ void CL_SendSummonFriendCheat(const char* summon)
 	messenger.Reliable().Write(CLC_CheatSummonFriend(summon));
 }
 
+bool CL_FreecamAllowedOnLevel()
+{
+	return (netdemo.isInPlayback() or (G_IsLivesGame() and not G_IsTeamGame()));
+}
+
+bool CL_FreecamAllowSpy()
+{
+	return (netdemo.isInPlayback() or
+		   (consoleplayer().playerstate == PST_DEAD and
+			consoleplayer().lives < 1 and
+			::levelstate.getState() == LevelState::INGAME));
+}
 
 void PickupMessage (const AActor *toucher, const char *message)
 {
@@ -2739,7 +2874,7 @@ void CL_SimulateWorld()
 	int upper_sync_limit = CL_CalculateWorldIndexSync() + MAX_AHEAD;
 
 	// Was the displayplayer just teleported?
-	bool continuous = displayplayer().snapshots.getSnapshot(world_index).isContinuous();
+	const bool continuous = playerIsDisplayed() and displayplayer().snapshots.getSnapshot(world_index).isContinuous();
 
 	// Reset the synchronization with the server if needed
 	if (world_index <= 0 || !continuous ||

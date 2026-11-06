@@ -57,6 +57,12 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 		thinker = FirstThinker;
 		while (thinker)
 		{
+			if (P_ThinkerIsFreecamType(thinker))
+			{
+				thinker = thinker->m_Next;
+				continue;
+			}
+
 			if (!(arc.IsReset() && P_ThinkerIsPlayerType(thinker)))
 			{
 				arc << 1_u8;
@@ -343,11 +349,18 @@ void DThinker::operator delete (void *mem)
 
 bool P_ThinkerIsPlayerType(DThinker* thinker)
 {
-	if (thinker == NULL)
+	if (thinker == nullptr)
 		return false;
 
-	return thinker->IsKindOf(RUNTIME_CLASS(AActor)) &&
-	       static_cast<AActor*>(thinker)->type == MT_PLAYER;
+	return thinker->IsKindOf(RUNTIME_CLASS(AActor)) and static_cast<AActor*>(thinker)->type == MT_PLAYER;
+}
+
+bool P_ThinkerIsFreecamType(DThinker* thinker)
+{
+	if (thinker == nullptr)
+		return false;
+
+	return thinker->IsKindOf(RUNTIME_CLASS(AActor)) and static_cast<AActor*>(thinker)->type == MT_FREECAM;
 }
 
 VERSION_CONTROL (dthinker_cpp, "$Id$")

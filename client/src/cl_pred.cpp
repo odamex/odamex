@@ -32,6 +32,7 @@
 #include "clc_message.h"
 
 #include "p_snapshot.h"
+#include "freecam.h"
 
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_prednudge)
@@ -254,7 +255,7 @@ void CL_PredictAllSectors(const player_t& player)
 void CL_PredictSpying()
 {
 	player_t& player = displayplayer();
-	if (consoleplayer_id == displayplayer_id)
+	if (consoleplayer_id == displayplayer_id or freecamIsActive())
 		return;
 
 	// Save and restore the prevangle and prevpitch so that the client viewangle interpolation
@@ -301,22 +302,22 @@ void CL_PredictRemotePlayers()
 //
 void CL_PredictFreecam()
 {
-	player_t& player = displayplayer();
-	if (not player.isFreecam)
+	freecam_t* freecam = freecam_t::getfreecam(freecam_id);
+
+	if (not freecam or not freecamIsActive())
 		return;
 
-	if (player.mo)
+	if (freecam->mo)
 	{
-		player.mo->prevx = player.mo->x;
-		player.mo->prevy = player.mo->y;
-		player.mo->prevz = player.mo->z;
+		freecam->mo->prevx = freecam->mo->x;
+		freecam->mo->prevy = freecam->mo->y;
+		freecam->mo->prevz = freecam->mo->z;
+		freecam->mo->prevangle = freecam->mo->angle;
+		freecam->mo->prevpitch = freecam->mo->pitch;
 	}
 
-	predicting = true;
+	P_FreecamThink(*freecam);
 
-	P_PlayerThink(player);
-
-	predicting = false;
 }
 
 //
@@ -450,7 +451,7 @@ bool CL_PredictWorld()
 	if (gamestate != GS_LEVEL)
 		return false;
 
-	if (netdemo.isPaused() && displayplayer().isFreecam)
+	if (netdemo.isPaused() and freecamIsActive())
 	{
 		CL_PredictFreecam();
 		return false;
@@ -464,10 +465,10 @@ bool CL_PredictWorld()
 	// tenatively tell the netgraph that our prediction was successful
 	netgraph.setMisprediction(false);
 
-	if (consoleplayer_id != displayplayer_id && displayplayer().isFreecam)
+	if (freecamIsActive())
 		CL_PredictFreecam();
 
-	if (consoleplayer_id != displayplayer_id && not displayplayer().isFreecam)
+	if (not freecamIsActive() and consoleplayer_id != displayplayer_id)
 		CL_PredictSpying();
 
 	CL_PredictRemotePlayers();

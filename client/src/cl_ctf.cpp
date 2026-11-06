@@ -212,7 +212,7 @@ void CTF_DrawHud (void)
 	team_t yourFlag = NUMTEAMS;
 	team_t enemyFlag = NUMTEAMS;
 
-	if(sv_gametype != GM_CTF)
+	if (sv_gametype != GM_CTF or freecamIsActive())
 		return;
 
 	player_t &player = displayplayer();
@@ -388,7 +388,7 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 	{
 	case 2:
 		// Possessive (yours/theirs)
-		if (not consoleplayer().spectator && not displayplayer().isFreecam)
+		if (not consoleplayer().spectator and not freecamIsActive())
 		{
 			team_t playerTeam = consoleplayer().userinfo.team;
 			PossessiveType sound = Theirs;
@@ -446,7 +446,7 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 	{
 	case 2:
 		// Possessive (yours/theirs)
-		if (not consoleplayer().spectator && not displayplayer().isFreecam)
+		if (not consoleplayer().spectator and not freecamIsActive())
 		{
 			PossessiveType msg = Theirs;
 			color = CR_BRICK;

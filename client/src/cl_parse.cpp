@@ -69,7 +69,7 @@
 #include "g_spree.h"
 #include "g_deathspot.h"
 #include "g_multikill.h"
-#include "cl_freecam.h"
+#include "freecam.h"
 
 #include "PlayerItemDataType.h"
 
@@ -1163,12 +1163,6 @@ void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 {
 	player_t* p = &CL_FindPlayer(msg->pid());
 
-	// 255th player just connected and is replacing the freecam, need to retire freecam
-	if (p->id == freecamplayer_id && p->isFreecam)
-	{
-		Freecam::retireFor255thPlayer(p);
-	}
-
 	p->userinfo.netname = msg->netname();
 
 	p->userinfo.team = static_cast<team_t>(msg->team());
@@ -1648,12 +1642,15 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 
 	P_KillMobj(source, target, inflictor, joinkill, MOD_NONE);
 
-	if (not netdemo.isInPlayback() and Freecam::isActive() and
+	freecam_t* freecam = freecam_t::getfreecam(firstcam_id);
+
+	if (freecam and
+		not netdemo.isInPlayback() and
 	    target->player == &consoleplayer() and
 	    DeathSpotManager::getInstance().hasDeathSpot(consoleplayer_id))
 	{
 		const DeathSpot_s spot = DeathSpotManager::getInstance().getDeathSpot(consoleplayer_id);
-		Freecam::moveToPosition(spot.x, spot.y, spot.z, spot.angle);
+		freecam->moveToPosition(spot.x, spot.y, spot.z, spot.angle);
 	}
 }
 

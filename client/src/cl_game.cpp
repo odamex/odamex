@@ -73,7 +73,7 @@ END_DISABLE_WARNING_GNU
 #include "g_spree.h"
 #include "g_multikill.h"
 #include "g_deathspot.h"
-#include "cl_freecam.h"
+#include "freecam.h"
 
 #include <math.h> // for pow()
 
@@ -200,7 +200,6 @@ CVAR_FUNC_IMPL(joy_freelook)
 CVAR_FUNC_IMPL(cl_noclip_spectator)
 {
 	player_t& c = consoleplayer();
-	player_t& d = displayplayer();
 
 	if (c.spectator and not netdemo.isInPlayback())
 	{
@@ -209,12 +208,12 @@ CVAR_FUNC_IMPL(cl_noclip_spectator)
 		else
 			c.cheats &= ~CF_NOCLIP;
 	}
-	if (d.isFreecam)
+	for (auto& freecam : freecams)
 	{
 		if (var.asInt())
-			d.cheats |= CF_NOCLIP;
+			freecam.mo->flags |= MF_NOCLIP;
 		else
-			d.cheats &= ~CF_NOCLIP;
+			freecam.mo->flags &= ~MF_NOCLIP;
 	}
 }
 
@@ -280,14 +279,10 @@ player_t		&consoleplayer()
 	return idplayer(consoleplayer_id);
 }
 
+// Player displaying. Warning - this returns the nullplayer when freecam is active
 player_t		&displayplayer()
 {
 	return idplayer(displayplayer_id);
-}
-
-player_t		&listenplayer()
-{
-	return displayplayer();
 }
 
 // [RH] Name of screenshot file to generate (usually NULL)
@@ -501,7 +496,7 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 	}
 
 	// Joystick analog look -- Hyper_Eye
-	if ((joy_freelook && sv_freelook) || player.spectator)
+	if ((joy_freelook and sv_freelook) or player.spectator or freecamIsActive())
 	{
 		if (joy_invert)
 			look += joy_to_int(joylook, lookspeed[speed]);
@@ -548,7 +543,7 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 
 	// [SL] 2012-03-31 - Let the server know when the client is predicting a
 	// weapon change due to a weapon pickup
-	if (not serverside and cl_predictpickup)
+	if (not serverside and cl_predictpickup and not freecamIsActive())
 	{
 		if (not (cmd.impulse
 		        or (cmd.buttons & BT_CHANGE)
@@ -738,8 +733,8 @@ void G_AddViewPitch(int pitch)
 	if (invertmouse)
 		pitch = -pitch;
 
-	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) ||
-	    consoleplayer().spectator || displayplayer().isFreecam)
+	if ((Actions[ACTION_MLOOK]) or (cl_mouselook and sv_freelook) or
+	    consoleplayer().spectator or freecamIsActive())
 	{
 		localview.pitch += pitch << 16;
 		localview.setpitch = true;
@@ -748,8 +743,8 @@ void G_AddViewPitch(int pitch)
 
 bool G_ShouldIgnoreMouseInput()
 {
-	if ((consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD) &&
-		not displayplayer().isFreecam)
+	if ((consoleplayer().id != displayplayer().id or consoleplayer().playerstate == PST_DEAD) and
+		not freecamIsActive())
 		return true;
 
 	return false;
@@ -894,8 +889,9 @@ void P_CheckInterpPause()
 {
 	// Game pauses when in the menu and not online/demo
 	OInterpolation &oi = OInterpolation::getInstance();
-	if ((paused && not displayplayer().isFreecam) || (!multiplayer && !demoplayback &&
-		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)))
+
+	if ((paused and not freecamIsActive()) or (not multiplayer and not demoplayback and
+		(menuactive or ConsoleState == c_down or ConsoleState == c_falling)))
 	{
 		if (oi.enabled())
 		{
@@ -1016,9 +1012,9 @@ void G_Ticker (void)
 
 	// The freecam is only valid while dead and out of lives (or in a netdemo)
 	// Nothing checks the inverse, so check it here and reset the view when we hit it.
-	if (displayplayer().isFreecam && not netdemo.isInPlayback() && not demoplayback &&
-	    not Freecam::allowSpy())
+	if (freecamIsActive() and not netdemo.isInPlayback() and not demoplayback and not CL_FreecamAllowSpy())
 	{
+		freecam_id = nullcam_id;
 		displayplayer_id = consoleplayer_id;
 		CL_CheckDisplayPlayer();
 	}
@@ -1033,14 +1029,6 @@ void G_Ticker (void)
 		{
 			memcpy(&player.cmd, &player.netcmds[buf], sizeof(ticcmd_t));
 		}
-	}
-	// Rude - allow controlling displayplayer if freecam
-	else if (displayplayer().isFreecam)
-	{
-		memcpy(&displayplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
-
-		// Clear consoleplayer.cmd since they reapply every tic.
-		consoleplayer().cmd.clear();
 	}
 	else
 	{

@@ -51,7 +51,7 @@ public:
 	void beginConsoleInterpolation(fixed_t amount);
 	fixed_t getInterpolatedConsoleBottom(fixed_t amount);
 	// View interpolation
-	void interpolateView(player_t* player, fixed_t amount);
+	void interpolateView(AActor::AActorPtr* cam, fixed_t amount);
 	// State
 	void disable(); // enable gamesim interpolation
 	void enable();  // disable gamesim interpolation
