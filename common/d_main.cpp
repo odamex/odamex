@@ -261,18 +261,21 @@ static char *GetRegistryString(const registry_value_t *reg_val)
 //
 void D_InitializeDoomObjectTables()
 {
+	const auto getMobjinfoIndex = [](const mobjinfo_t& m){ return m.type; };
+	const auto getStateIndex = [](const state_t& s){ return s.statenum; };
+
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
 	// Initialize states
 	states.clear();
-	states.insert(getStates(), S_NULL);
-	states.insert(getOdaStates(), S_GIB0);
-	states.insert(getID24States(), S_LARGE_CORPSE_PILE);
+	states.insert(getStates(), getStateIndex);
+	states.insert(getOdaStates(), getStateIndex);
+	states.insert(getID24States(), getStateIndex);
 	// Initialize mobjinfo
 	mobjinfo.clear();
-	mobjinfo.insert(getMobjinfo(), MT_PLAYER);
-	mobjinfo.insert(getOdaMobjinfo(), MT_GIB0);
-	mobjinfo.insert(getID24Mobjinfo(), MT_GHOUL);
+	mobjinfo.insert(getMobjinfo(), getMobjinfoIndex);
+	mobjinfo.insert(getOdaMobjinfo(), getMobjinfoIndex);
+	mobjinfo.insert(getID24Mobjinfo(), getMobjinfoIndex);
 	// Initialize sprnames
 	sprnames.clear();
 	sprnames.insert(getSprNames(), SPR_TROO);
@@ -288,13 +291,13 @@ void D_InitializeDoomObjectTables()
 
 	states.rebuildMap(
 		[](const state_t& lhs, const state_t& rhs){ return lhs.statenum < rhs.statenum; },
-		[](const state_t& s){ return s.statenum; }
+		getStateIndex
 	);
 	mobjinfo.rebuildMap(
 		[](const mobjinfo_t& lhs, const mobjinfo_t& rhs){
 			return lhs.type < rhs.type || (lhs.type == rhs.type && lhs.doomednum < rhs.doomednum);
 		},
-		[](const mobjinfo_t& m){ return m.type; }
+		getMobjinfoIndex
 	);
 }
 
