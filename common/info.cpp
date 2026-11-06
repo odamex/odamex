@@ -160,6 +160,8 @@ void A_BetaSkullAttack(AActor*); // killough 10/98: beta lost souls attacked dif
 void A_Ambient(AActor*);		// [RH] Play ambient sound
 void A_Gibify(AActor*); // denis - squash thing
 
+using namespace info::literals;
+
 const std::array<state_t, ::NUMSTATES> boomstates = {{
 	{ .statenum = S_NULL,        .sprite = SPR_TROO },
 	{ .statenum = S_LIGHTDONE,   .sprite = SPR_SHTG, .frame = 4, .tics = 0, .action = A_Light0 },

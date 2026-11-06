@@ -186,6 +186,7 @@ public:
 
 	template <typename IdxGetter>
 	requires std::is_invocable_r_v<IdxType, IdxGetter, const ObjType&>
+	// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
 	void insert(std::span<const ObjType> objs, IdxGetter&& indexgetter)
 	{
 		reserve(m_lookuptable.size() + objs.size()); // reserve is not additive

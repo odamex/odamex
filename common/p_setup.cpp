@@ -2404,8 +2404,11 @@ void P_SetupLevel (const char *lumpname, int position)
 	g_ValidLevel = true;
 }
 
+namespace {
+
+// TODO: get rid of this function by properly sorting sprnames itself with rebuildMap
 // c++11 semantics moves vector on return
-static std::vector<spriteinfo_t> P_GetSpriteInfos()
+std::vector<spriteinfo_t> P_GetSpriteInfos()
 {
 	std::vector<spriteinfo_t> infos;
 	for(const auto& [spritenum, spritename] : sprnames)
@@ -2419,6 +2422,8 @@ static std::vector<spriteinfo_t> P_GetSpriteInfos()
 	});
 	return infos;
 }
+
+} // namespace
 
 //
 // P_Init

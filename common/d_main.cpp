@@ -283,9 +283,9 @@ void D_InitializeDoomObjectTables()
 	sprnames.insert(getID24SprNames(), SPR_BSH1);
 	// Initialize soundmap
 	SoundMap.clear();
-	SoundMap.insert(doom_SoundMap, 0);
-	SoundMap.insert(odamex_SoundMap, 0x80000000);
-	SoundMap.insert(id24_SoundMap, 0x90000000);
+	SoundMap.insert(doom_SoundMap, info::IndexRanges<int32_t>::original);
+	SoundMap.insert(odamex_SoundMap, info::IndexRanges<int32_t>::odamex);
+	SoundMap.insert(id24_SoundMap, info::IndexRanges<int32_t>::id24);
 	// Initialize spawn map
 	D_BuildSpawnMap();
 
@@ -295,7 +295,7 @@ void D_InitializeDoomObjectTables()
 	);
 	mobjinfo.rebuildMap(
 		[](const mobjinfo_t& lhs, const mobjinfo_t& rhs){
-			return lhs.type < rhs.type || (lhs.type == rhs.type && lhs.doomednum < rhs.doomednum);
+			return lhs.type < rhs.type or (lhs.type == rhs.type and lhs.doomednum < rhs.doomednum);
 		},
 		getMobjinfoIndex
 	);

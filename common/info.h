@@ -35,7 +35,7 @@
 #include "m_fixed.h"
 #include "m_ostring.h"
 
-#define NO_ALTSPEED -1
+inline constexpr int NO_ALTSPEED = -1;
 #ifndef MELEERANGE // TODO: only have a single spot this is defined
 #define MELEERANGE (64_fx)
 #endif
@@ -47,10 +47,45 @@
 inline constexpr int FF_FULLBRIGHT = 0x8000; // flag in thing->frame
 inline constexpr int FF_FRAMEMASK  = 0x7fff;
 
-consteval int operator""_bright(unsigned long long frame)
+namespace info
+{
+
+namespace literals
+{
+
+consteval int operator""_bright(unsigned long long frame) noexcept
 {
 	return static_cast<int>(frame) | FF_FULLBRIGHT;
 }
+
+} // namespace literals
+
+template <std::integral T>
+struct IndexRanges {};
+
+template <>
+struct IndexRanges<int32_t>
+{
+	static constexpr int32_t original  = 0;
+	static constexpr int32_t odamex    = static_cast<int32_t>(0x80000000);
+	static constexpr int32_t idsoft    = static_cast<int32_t>(0x90000000);
+	static constexpr int32_t community = static_cast<int32_t>(0xC0000000);
+	static constexpr int32_t invalid   = static_cast<int32_t>(0xFFFFFFFF);
+	static constexpr int32_t id24      = idsoft;
+};
+
+template <>
+struct IndexRanges<int16_t>
+{
+	static constexpr int16_t original  = 0;
+	static constexpr int16_t odamex    = static_cast<int16_t>(0x8000);
+	static constexpr int16_t idsoft    = static_cast<int16_t>(0x9000);
+	static constexpr int16_t community = static_cast<int16_t>(0xC000);
+	static constexpr int16_t invalid   = static_cast<int16_t>(0xFFFF);
+	static constexpr int16_t id24      = idsoft;
+};
+
+} // namespace info
 
 enum spritenum_t : int32_t
 {
@@ -2423,10 +2458,10 @@ struct mobjinfo_t
 	const char* ripsound    = nullptr;
 	int32_t droppeditem     = MT_NULL;
 
-	std::string display_name = "";
+	std::string display_name;
 	// indicates it was explicitly overriden from the default by dehacked
 	bool display_name_set    = false;
-	std::string deh_name     = "";
+	std::string deh_name;
 
 	// ID24 stuff
 	// couple of these have named constants that aren't

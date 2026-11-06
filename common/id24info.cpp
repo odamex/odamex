@@ -116,6 +116,8 @@ constexpr std::array id24sprnames = std::to_array({
 	"FTNK",
 });
 
+using namespace info::literals;
+
 constexpr std::array id24states = std::to_array<state_t>({
 	// --------------------- decorations ---------------------
 	// pile of bodies
