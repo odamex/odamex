@@ -929,9 +929,11 @@ void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering searc
 		else if (os.compareTokenNoCase("rand"))
 		{
 			os.mustScanInt();
-			duration_min = std::max(os.getTokenInt(), 0);
+			duration_min = std::clamp(os.getTokenInt(), 0, 255);
 			os.mustScanInt();
-			duration_max = std::min(os.getTokenInt(), 255);
+			duration_max = std::clamp(os.getTokenInt(), 0, 255);
+			if (duration_min > duration_max)
+				std::swap(duration_min, duration_max);
 		}
 		else
 		{
@@ -1085,7 +1087,7 @@ void AnimatedTextureManager::updateAnimatedTextures()
 			if (anim->speedmin[speedframe] == anim->speedmax[speedframe])
 				anim->countdown = anim->speedmin[speedframe];
 			else
-				anim->countdown = (M_Random() % (anim->speedmax[speedframe] - anim->speedmin[speedframe])) + anim->speedmin[speedframe];
+				anim->countdown = (M_Random() % (anim->speedmax[speedframe] - anim->speedmin[speedframe] + 1)) + anim->speedmin[speedframe];
 		}
 
 		if (anim->uniqueframes)
