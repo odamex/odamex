@@ -486,10 +486,22 @@ private:
 	// animated textures
 	struct anim_t
 	{
-		static constexpr unsigned int MAX_ANIM_FRAMES = 32;
+		static constexpr unsigned int MAX_ANIM_FRAMES = 256;
+
+		// The order the frames play in. Oscillating animations turn around
+		// at either end, and random ones pick any frame but the current one.
+		enum anim_type_t : uint8_t
+		{
+			ANIM_FORWARD,
+			ANIM_OSCILLATE_UP,
+			ANIM_OSCILLATE_DOWN,
+			ANIM_RANDOM
+		};
+
 		ResourceId basepic;
 		short numframes;
 		bool uniqueframes;
+		anim_type_t type = ANIM_FORWARD;
 		byte countdown;
 		byte curframe;
 		byte speedmin[MAX_ANIM_FRAMES];

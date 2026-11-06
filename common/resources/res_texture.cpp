@@ -851,6 +851,35 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 
 
 //
+// Res_ParseAnimDuration
+//
+// Reads an ANIMDEFS frame duration: "tics N" or "rand MIN MAX".
+//
+static void Res_ParseAnimDuration(OScanner& os, byte& duration_min, byte& duration_max)
+{
+	os.mustScan();
+	if (os.compareTokenNoCase("tics"))
+	{
+		os.mustScanInt();
+		duration_min = duration_max = std::clamp(os.getTokenInt(), 0, 255);
+	}
+	else if (os.compareTokenNoCase("rand"))
+	{
+		os.mustScanInt();
+		duration_min = std::clamp(os.getTokenInt(), 0, 255);
+		os.mustScanInt();
+		duration_max = std::clamp(os.getTokenInt(), 0, 255);
+		if (duration_min > duration_max)
+			std::swap(duration_min, duration_max);
+	}
+	else
+	{
+		os.error("Must specify a duration for animation frame");
+	}
+}
+
+
+//
 // AnimatedTextureManager::parseAnim
 //
 //
@@ -864,109 +893,140 @@ void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering searc
 		missing_texture_warning = false;
 		os.mustScan();
 	}
-	
+
 	const OString texture_name = OStringToUpper(os.getToken());
-	ResourceId base_res_id = Res_GetTextureResourceId(texture_name, search_ordering, false);
+	const ResourceId base_res_id = Res_GetTextureResourceId(texture_name, search_ordering, false);
 
-	AnimatedTextureManager::anim_t sink_anim;
-	AnimatedTextureManager::anim_t* anim = nullptr;
+	AnimatedTextureManager::anim_t anim;
+	anim.basepic = base_res_id;
+	anim.curframe = 0;
+	anim.numframes = 0;
+	anim.uniqueframes = true;
+	memset(anim.speedmin, 1,
+	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmin));
+	memset(anim.speedmax, 1,
+	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmax));
 
-	if (base_res_id == ResourceId::INVALID_ID)
-	{
-		// The base resource isn't present.
-		// Still parse the definition but ignore it since we can't use it 
-		anim = &sink_anim;
-		if (missing_texture_warning)
-			PrintFmt(PRINT_HIGH, "Missing texture {} required by ANIMDEFS definition\n", texture_name.c_str());
-	}
-	else
-	{
-		for (size_t i = 0; i < mAnimDefs.size(); i++)
-		{
-			if (mAnimDefs[i].basepic == base_res_id)
-				anim = &mAnimDefs[i];
-		}
-		if (not anim)
-		{
-			mAnimDefs.push_back(AnimatedTextureManager::anim_t());
-			anim = &mAnimDefs.back();
-		}
-	}
-
-	anim->basepic = base_res_id;
-	anim->curframe = 0;
-	anim->numframes = 0;
-	anim->uniqueframes = true;
-	memset(anim->speedmin, 1,
-	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim->speedmin));
-	memset(anim->speedmax, 1,
-	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim->speedmax));
+	bool is_range = false;
+	OString range_end_name;
 
 	while (os.scan())
 	{
-		if (not os.compareTokenNoCase("pic"))
+		// These are accepted anywhere in a definition in ZDoom
+		if (os.compareTokenNoCase("allowdecals"))
+		{
+			// Decals don't exist here.
+			continue;
+		}
+		else if (os.compareTokenNoCase("oscillate"))
+		{
+			if (anim.type == AnimatedTextureManager::anim_t::ANIM_RANDOM)
+				os.error("An animation can't be both random and oscillate");
+			anim.type = AnimatedTextureManager::anim_t::ANIM_OSCILLATE_UP;
+		}
+		else if (os.compareTokenNoCase("random"))
+		{
+			if (anim.type == AnimatedTextureManager::anim_t::ANIM_OSCILLATE_UP)
+				os.error("An animation can't be both random and oscillate");
+			anim.type = AnimatedTextureManager::anim_t::ANIM_RANDOM;
+		}
+		else if (os.compareTokenNoCase("range"))
+		{
+			if (is_range or anim.numframes > 0)
+				os.error("An animation takes either one range or a list of pics");
+
+			is_range = true;
+			os.mustScan();
+			range_end_name = OStringToUpper(os.getToken());
+			Res_ParseAnimDuration(os, anim.speedmin[0], anim.speedmax[0]);
+		}
+		else if (os.compareTokenNoCase("pic"))
+		{
+			if (is_range)
+				os.error("An animation takes either one range or a list of pics");
+
+			if (anim.numframes == AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
+			{
+				os.error("Animation has too many frames");
+			}
+
+			os.mustScan();
+			ResourceId frame_res_id;
+			if (IsNum(os.getToken()))
+				frame_res_id = base_res_id + (os.getTokenInt() - 1);
+			else
+				frame_res_id = Res_GetTextureResourceId(OStringToUpper(os.getToken()), search_ordering, false);
+
+			Res_ParseAnimDuration(os, anim.speedmin[anim.numframes], anim.speedmax[anim.numframes]);
+			anim.framepic[anim.numframes] = frame_res_id;
+			anim.numframes++;
+		}
+		else
 		{
 			os.unScan();
 			break;
 		}
-
-		if (anim->numframes == AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
-		{
-			os.error("Animation has too many frames");
-		}
-
-		byte duration_min = 1;
-		byte duration_max = 1;
-
-		os.mustScanInt();
-		const int res_id_offset = os.getTokenInt() - 1;
-		os.mustScan();
-		if (os.compareTokenNoCase("tics"))
-		{
-			os.mustScanInt();
-			duration_min = duration_max = std::clamp(os.getTokenInt(), 0, 255);
-		}
-		else if (os.compareTokenNoCase("rand"))
-		{
-			os.mustScanInt();
-			duration_min = std::clamp(os.getTokenInt(), 0, 255);
-			os.mustScanInt();
-			duration_max = std::clamp(os.getTokenInt(), 0, 255);
-			if (duration_min > duration_max)
-				std::swap(duration_min, duration_max);
-		}
-		else
-		{
-			os.error("Must specify a duration for animation frame");
-		}
-
-		anim->speedmin[anim->numframes] = duration_min;
-		anim->speedmax[anim->numframes] = duration_max;
-		anim->framepic[anim->numframes] = anim->basepic + res_id_offset;
-		anim->numframes++;
 	}
 
-	if (anim->numframes < 2)
+	if (not is_range and anim.numframes < 2)
 	{
 		os.error("Animation needs at least 2 frames");
 	}
 
-	if (anim != &sink_anim)
+	if (base_res_id == ResourceId::INVALID_ID)
 	{
-		for (int i = 0; i < anim->numframes; i++)
+		// The base resource isn't present, so the definition was parsed only
+		// to get past it.
+		if (missing_texture_warning)
+			PrintFmt(PRINT_HIGH, "Missing texture {} required by ANIMDEFS definition\n", texture_name.c_str());
+		return;
+	}
+
+	if (is_range)
+	{
+		const ResourceId end_res_id = Res_GetTextureResourceId(range_end_name, search_ordering, false);
+		const uint32_t numframes = end_res_id - base_res_id + 1;
+		if (not Res_CheckResource(end_res_id) or end_res_id <= base_res_id or
+		    numframes > AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
 		{
-			const ResourceId frame_res_id = anim->framepic[i];
+			PrintFmt(PRINT_HIGH, "Bad range from {} to {} in ANIMDEFS\n", texture_name.c_str(), range_end_name.c_str());
+			return;
+		}
+		if (not Res_AnimationFramesAreConsecutive(base_res_id, end_res_id, search_ordering))
+		{
+			PrintFmt(PRINT_HIGH, "Disabling animation for {}: frames are not contiguous in the loaded resource files\n", texture_name.c_str());
+			return;
+		}
+
+		// Like an ANIMATED lump cycle, every frame of the range animates.
+		anim.uniqueframes = false;
+		anim.numframes = static_cast<short>(numframes);
+	}
+	else
+	{
+		for (int i = 0; i < anim.numframes; i++)
+		{
+			const ResourceId frame_res_id = anim.framepic[i];
 			if (not Res_CheckResource(frame_res_id) or
 			    Res_GetTextureResourceId(Res_GetResourceName(frame_res_id), search_ordering, false) != frame_res_id)
 			{
-				PrintFmt(PRINT_HIGH, "Disabling animation for {}: frames are not contiguous in the loaded resource files\n", texture_name.c_str());
-				anim->numframes = 0;
-				break;
+				PrintFmt(PRINT_HIGH, "Disabling animation for {}: frames are missing or not contiguous in the loaded resource files\n", texture_name.c_str());
+				return;
 			}
 		}
 	}
 
-	anim->countdown = anim->speedmin[0];
+	anim.countdown = anim.speedmin[0];
+
+	for (size_t i = 0; i < mAnimDefs.size(); i++)
+	{
+		if (mAnimDefs[i].basepic == base_res_id)
+		{
+			mAnimDefs[i] = anim;
+			return;
+		}
+	}
+	mAnimDefs.push_back(anim);
 }
 
 
@@ -1081,7 +1141,33 @@ void AnimatedTextureManager::updateAnimatedTextures()
 
 		if (--anim->countdown == 0)
 		{
-			anim->curframe = (anim->numframes) ? (anim->curframe + 1) % anim->numframes : 0;
+			switch (anim->type)
+			{
+			case anim_t::ANIM_OSCILLATE_UP:
+				if (++anim->curframe >= anim->numframes - 1)
+					anim->type = anim_t::ANIM_OSCILLATE_DOWN;
+				break;
+
+			case anim_t::ANIM_OSCILLATE_DOWN:
+				if (--anim->curframe == 0)
+					anim->type = anim_t::ANIM_OSCILLATE_UP;
+				break;
+
+			case anim_t::ANIM_RANDOM:
+			{
+				// Any frame but the current one.
+				int frame = M_Random() % (anim->numframes - 1);
+				if (frame >= anim->curframe)
+					frame++;
+				anim->curframe = static_cast<byte>(frame);
+				break;
+			}
+
+			default:
+				anim->curframe = (anim->curframe + 1) % anim->numframes;
+				break;
+			}
+
 			int speedframe = (anim->uniqueframes) ? anim->curframe : 0;
 
 			if (anim->speedmin[speedframe] == anim->speedmax[speedframe])
