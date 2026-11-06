@@ -429,6 +429,9 @@ void R_StreamStoredLines32_ALTIVEC(argb_t* dest, const argb_t* source, int destp
 void R_DrawColumnD_NEON(rendercontext_t& ctx);
 void R_DrawTranslucentColumnD_NEON(rendercontext_t& ctx);
 void R_DrawLevelGroupD_NEON(rendercontext_t& ctx);
+void R_DrawARGBColumnD_NEON(rendercontext_t& ctx);
+void R_DrawARGBTranslucentColumnD_NEON(rendercontext_t& ctx);
+void R_DrawLevelGroupARGBD_NEON(rendercontext_t& ctx);
 void r_dimpatchD_NEON(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 void R_StreamStoredLines8_NEON(argb_t* dest, const palindex_t* source, int destpitchpixels,
                                int srcpitchpixels, int line_length, int line_count, const argb_t* palette);

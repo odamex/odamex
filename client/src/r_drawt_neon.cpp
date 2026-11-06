@@ -36,6 +36,7 @@
 #include <arm_neon.h>
 
 #include "r_draw.h"
+#include "r_draw_argb.h"
 #include "r_main.h"
 #include "i_video.h"
 
@@ -313,6 +314,254 @@ void R_DrawLevelGroupD_NEON(rendercontext_t& ctx)
 		texels = vld1q_lane_u32(s2 + source[vgetq_lane_u32(spots, 2)], texels, 2);
 		texels = vld1q_lane_u32(s3 + source[vgetq_lane_u32(spots, 3)], texels, 3);
 		vst1q_u32(reinterpret_cast<uint32_t*>(dest), texels);
+
+		mu = vaddq_u32(mu, mus);
+		mv = vaddq_u32(mv, mvs);
+
+		dest += colstep;
+	}
+}
+
+
+// ============================================================================
+//
+// Native ARGB textures
+//
+// The SSE2 ARGB drawers of SSE2, whose comments explain why each
+// step matches the scalar functors bit for bit. NEON differs in two places:
+//
+//   - The blend widens bytes with vmull_u8 against a weight per byte, so each
+//     lane's alpha is spread to its four bytes by one multiply by 0x01010101,
+//     and 255 - alpha is its complement.
+//   - alpha * fga / 255 is one 32-bit multiply, by fga * 0x8081, and a shift by
+//     23: the product peaks at 255 * 255 * 0x8081 which should never overflow.
+//
+// ============================================================================
+
+forceinline uint32x4_t R_ARGBQuadNEON(const argb_t p0, const argb_t p1, const argb_t p2,
+		const argb_t p3)
+{
+	return R_NeonLanes(R_ARGBBits(p0), R_ARGBBits(p1), R_ARGBBits(p2), R_ARGBBits(p3));
+}
+
+//
+// R_ARGBQuadAlphaNEON
+//
+// Each lane's alpha, 0 to 255. ashift is negated, which vshlq takes as a right
+// shift.
+//
+forceinline uint32x4_t R_ARGBQuadAlphaNEON(const uint32x4_t px, const int32x4_t ashift)
+{
+	return vandq_u32(vshlq_u32(px, ashift), vdupq_n_u32(0xFF));
+}
+
+//
+// R_ARGBQuadBlendNEON
+//
+// alphablend2a(bg, 255 - a, fg, a) in each lane, with a per lane.
+//
+forceinline uint32x4_t R_ARGBQuadBlendNEON(const uint32x4_t bg, const uint32x4_t fg,
+		const uint32x4_t a, const uint32x4_t amask)
+{
+	const uint8x16_t w = vreinterpretq_u8_u32(vmulq_n_u32(a, 0x01010101u));
+	const uint8x16_t iw = vmvnq_u8(w);
+
+	const uint8x16_t bg8 = vreinterpretq_u8_u32(bg);
+	const uint8x16_t fg8 = vreinterpretq_u8_u32(fg);
+
+	const uint16x8_t lo = vmlal_u8(vmull_u8(vget_low_u8(bg8), vget_low_u8(iw)),
+	                               vget_low_u8(fg8), vget_low_u8(w));
+	const uint16x8_t hi = vmlal_u8(vmull_u8(vget_high_u8(bg8), vget_high_u8(iw)),
+	                               vget_high_u8(fg8), vget_high_u8(w));
+
+	return vorrq_u32(vreinterpretq_u32_u8(vcombine_u8(vshrn_n_u16(lo, 8), vshrn_n_u16(hi, 8))), amask);
+}
+
+//
+// R_ShadeOpaqueARGBQuadNEON
+//
+// R_ShadeOpaqueARGBQuad: alpha 255 is the texel, partial alpha blends over bg,
+// and alpha 0 is bg when BLEND_TO_DEST or black (when bg is 0) when not.
+//
+template<bool BLEND_TO_DEST>
+forceinline uint32x4_t R_ShadeOpaqueARGBQuadNEON(const uint32x4_t fg, const uint32x4_t bg,
+		const int32x4_t ashift, const uint32x4_t amask)
+{
+	const uint32x4_t a = R_ARGBQuadAlphaNEON(fg, ashift);
+
+	uint32x4_t res = vbslq_u32(vceqq_u32(a, vdupq_n_u32(255)), fg,
+			R_ARGBQuadBlendNEON(bg, fg, a, amask));
+
+	if (BLEND_TO_DEST)
+		res = vbslq_u32(vceqq_u32(a, vdupq_n_u32(0)), bg, res);
+
+	return res;
+}
+
+//
+// QuadARGBColormapFuncNEON
+//
+// DirectARGBColormapFunc four texels at a time.
+//
+template<bool MASKED>
+class QuadARGBColormapFuncNEON
+{
+public:
+	QuadARGBColormapFuncNEON(const drawcolumn_t& d) :
+			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+			amask(vdupq_n_u32(argb_t::alphaMask())),
+			ashift(vdupq_n_s32(-argb_t::alphaShift())) { }
+
+	forceinline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
+	{
+		if (MASKED and not R_ARGBAnyAlpha(t0, t1, t2, t3, amaskbits))
+			return;
+
+		uint32_t* const d = reinterpret_cast<uint32_t*>(dest);
+		const uint32x4_t fg = R_ARGBQuadNEON(shader.shade(t0), shader.shade(t1),
+		                                     shader.shade(t2), shader.shade(t3));
+
+		if (R_ARGBAllOpaque(t0, t1, t2, t3, amaskbits))
+		{
+			vst1q_u32(d, fg);
+			return;
+		}
+
+		const uint32x4_t bg = MASKED ? vld1q_u32(d) : vdupq_n_u32(0);
+		vst1q_u32(d, R_ShadeOpaqueARGBQuadNEON<MASKED>(fg, bg, ashift, amask));
+	}
+
+	forceinline void operator()(argb_t c, argb_t* dest) const
+	{
+		scalar(c, dest);
+	}
+
+private:
+	const ARGBShader             shader;
+	const DirectARGBColormapFunc scalar;
+	const uint32_t               amaskbits;
+	const uint32x4_t             amask;
+	const int32x4_t              ashift;
+};
+
+//
+// QuadARGBTranslucentFuncNEON
+//
+// DirectARGBTranslucentColormapFunc four texels at a time.
+//
+class QuadARGBTranslucentFuncNEON
+{
+public:
+	QuadARGBTranslucentFuncNEON(const drawcolumn_t& d) :
+			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+			amask(vdupq_n_u32(argb_t::alphaMask())),
+			ashift(vdupq_n_s32(-argb_t::alphaShift())),
+			fga(static_cast<uint32_t>(scalar.surfaceAlpha()) * 0x8081u) { }
+
+	forceinline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
+	{
+		if (not R_ARGBAnyAlpha(t0, t1, t2, t3, amaskbits))
+			return;
+
+		uint32_t* const d = reinterpret_cast<uint32_t*>(dest);
+		const uint32x4_t fg = R_ARGBQuadNEON(shader.shade(t0), shader.shade(t1),
+		                                     shader.shade(t2), shader.shade(t3));
+		const uint32x4_t bg = vld1q_u32(d);
+
+		const uint32x4_t a = vshrq_n_u32(vmulq_n_u32(R_ARGBQuadAlphaNEON(fg, ashift), fga), 23);
+
+		vst1q_u32(d, vbslq_u32(vceqq_u32(a, vdupq_n_u32(0)), bg,
+				R_ARGBQuadBlendNEON(bg, fg, a, amask)));
+	}
+
+	forceinline void operator()(argb_t c, argb_t* dest) const
+	{
+		scalar(c, dest);
+	}
+
+private:
+	const ARGBShader                        shader;
+	const DirectARGBTranslucentColormapFunc scalar;
+	const uint32_t                          amaskbits;
+	const uint32x4_t                        amask;
+	const int32x4_t                         ashift;
+	const uint32_t                          fga; // the surface's alpha times 0x8081
+};
+
+void R_DrawARGBColumnD_NEON(rendercontext_t& ctx)
+{
+	const drawcolumn_t& dcol = ctx.draw.dcol;
+
+	if (dcol.masked)
+		R_DrawARGBColumnQuadGeneric<QuadARGBColormapFuncNEON<true>, true>(R_QuadColumnDestNEON(dcol), dcol);
+	else
+		R_DrawARGBColumnQuadGeneric<QuadARGBColormapFuncNEON<false>, false>(R_QuadColumnDestNEON(dcol), dcol);
+}
+
+void R_DrawARGBTranslucentColumnD_NEON(rendercontext_t& ctx)
+{
+	const drawcolumn_t& dcol = ctx.draw.dcol;
+
+	if (dcol.masked)
+		R_DrawARGBColumnQuadGeneric<QuadARGBTranslucentFuncNEON, true>(R_QuadColumnDestNEON(dcol), dcol);
+	else
+		R_DrawARGBColumnQuadGeneric<QuadARGBTranslucentFuncNEON, false>(R_QuadColumnDestNEON(dcol), dcol);
+}
+
+//
+// R_DrawLevelGroupARGBD_NEON
+//
+// R_DrawLevelGroupD_NEON for a true-color flat, as R_DrawLevelGroupARGBD_SSE2.
+//
+void R_DrawLevelGroupARGBD_NEON(rendercontext_t& ctx)
+{
+	const drawplanegroup_t& g = ctx.draw.dpgroup;
+
+	const argb_t* const source = g.argbsource;
+
+	// By value, as in R_DrawLevelGroupARGBD_c.
+	const ARGBShader s0 = g.argbshade[g.argbband[0]];
+	const ARGBShader s1 = g.argbshade[g.argbband[1]];
+	const ARGBShader s2 = g.argbshade[g.argbband[2]];
+	const ARGBShader s3 = g.argbshade[g.argbband[3]];
+
+	const uint32_t amaskbits = argb_t::alphaMask();
+	const uint32x4_t amask = vdupq_n_u32(amaskbits);
+	const int32x4_t ashift = vdupq_n_s32(-argb_t::alphaShift());
+
+	uint32x4_t mu = vld1q_u32(g.ufrac);
+	uint32x4_t mv = vld1q_u32(g.vfrac);
+	const uint32x4_t mus = vld1q_u32(g.ustep);
+	const uint32x4_t mvs = vld1q_u32(g.vstep);
+
+	const uint32x4_t mumask = vdupq_n_u32(static_cast<uint32_t>(g.umask));
+	const uint32x4_t mvmask = vdupq_n_u32(static_cast<uint32_t>(g.vmask));
+
+	const int32x4_t cu = vdupq_n_s32(-g.ushift);
+	const int32x4_t cv = vdupq_n_s32(-g.vshift);
+
+	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
+			(static_cast<ptrdiff_t>(g.xa) * g.colstep) + g.y0;
+	const int colstep = g.colstep;
+
+	for (int n = g.xb - g.xa + 1; n; --n)
+	{
+		const uint32x4_t spots = vorrq_u32(
+		    vandq_u32(vshlq_u32(mu, cu), mumask),
+		    vandq_u32(vshlq_u32(mv, cv), mvmask));
+
+		const argb_t t0 = source[vgetq_lane_u32(spots, 0)];
+		const argb_t t1 = source[vgetq_lane_u32(spots, 1)];
+		const argb_t t2 = source[vgetq_lane_u32(spots, 2)];
+		const argb_t t3 = source[vgetq_lane_u32(spots, 3)];
+
+		uint32_t* const d = reinterpret_cast<uint32_t*>(dest);
+		const uint32x4_t fg = R_ARGBQuadNEON(s0.shade(t0), s1.shade(t1), s2.shade(t2), s3.shade(t3));
+
+		if (R_ARGBAllOpaque(t0, t1, t2, t3, amaskbits))
+			vst1q_u32(d, fg);
+		else
+			vst1q_u32(d, R_ShadeOpaqueARGBQuadNEON<false>(fg, vdupq_n_u32(0), ashift, amask));
 
 		mu = vaddq_u32(mu, mus);
 		mv = vaddq_u32(mv, mvs);

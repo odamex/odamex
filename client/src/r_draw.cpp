@@ -2369,6 +2369,9 @@ void R_InitVectorizedDrawers()
 		R_DrawLevelGroupD       = R_DrawLevelGroupD_NEON;
 		R_DrawColumnQuadD       = R_DrawColumnD_NEON;
 		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_NEON;
+		R_DrawLevelGroupARGBD   = R_DrawLevelGroupARGBD_NEON;
+		R_DrawARGBColumnQuadD   = R_DrawARGBColumnD_NEON;
+		R_DrawARGBTranslucentColumnQuadD = R_DrawARGBTranslucentColumnD_NEON;
 		#ifdef R_HAVE_NEON_SLOPES
 		have_vector_slopes      = true;
 		#endif
