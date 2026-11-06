@@ -414,6 +414,9 @@ void R_StreamStoredLines32_SSE2(argb_t* dest, const argb_t* source, int destpitc
 void R_DrawColumnD_MMX(rendercontext_t& ctx);
 void R_DrawTranslucentColumnD_MMX(rendercontext_t& ctx);
 void R_DrawLevelGroupD_MMX(rendercontext_t& ctx);
+void R_DrawARGBColumnD_MMX(rendercontext_t& ctx);
+void R_DrawARGBTranslucentColumnD_MMX(rendercontext_t& ctx);
+void R_DrawLevelGroupARGBD_MMX(rendercontext_t& ctx);
 void r_dimpatchD_MMX(IWindowSurface*, argb_t color, int alpha, int x1, int y1, int w, int h);
 #endif
 

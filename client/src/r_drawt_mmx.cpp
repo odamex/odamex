@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "r_draw.h"
+#include "r_draw_argb.h"
 #include "r_main.h"
 #include "i_video.h"
 
@@ -420,6 +421,295 @@ void R_DrawLevelGroupD_MMX(rendercontext_t& ctx)
 		__m64* const d = reinterpret_cast<__m64*>(dest);
 		d[0] = _mm_setr_pi32(s0[source[spot0]], s1[source[spot1]]);
 		d[1] = _mm_setr_pi32(s2[source[spot2]], s3[source[spot3]]);
+
+		mu01 = _mm_add_pi32(mu01, mus01);
+		mu23 = _mm_add_pi32(mu23, mus23);
+		mv01 = _mm_add_pi32(mv01, mvs01);
+		mv23 = _mm_add_pi32(mv23, mvs23);
+
+		dest += colstep;
+	}
+
+	_mm_empty();
+}
+
+
+// ============================================================================
+//
+// Native ARGB textures
+//
+// The SSE2 ARGB drawers, whose comments explain why each step matches the scalar
+// functors bit for bit, with each quad as two halves of two pixels.
+// 
+// MMX has no unsigned pmulhuw, so alpha * fga / 255 is
+// (x + 1 + (x >> 8)) >> 8 instead, exact for every x up to 65535 -- 
+// so it still fits into its 16-bit lane.
+//
+// ============================================================================
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4799)
+#endif
+
+forceinline __m64 R_ARGBHalfMMX(const argb_t p0, const argb_t p1)
+{
+	return _mm_setr_pi32(static_cast<int>(R_ARGBBits(p0)), static_cast<int>(R_ARGBBits(p1)));
+}
+
+forceinline __m64 R_SelectHalfMMX(const __m64 take, const __m64 a, const __m64 b)
+{
+	return _mm_or_si64(_mm_and_si64(take, a), _mm_andnot_si64(take, b));
+}
+
+// Each lane's alpha, 0 to 255.
+forceinline __m64 R_ARGBHalfAlphaMMX(const __m64 px, const __m64 ashift)
+{
+	return _mm_and_si64(_mm_srl_pi32(px, ashift), _mm_set1_pi32(0xFF));
+}
+
+//
+// R_ARGBHalfBlendMMX
+//
+// alphablend2a(bg, 255 - a, fg, a) in each lane, with a per lane.
+//
+forceinline __m64 R_ARGBHalfBlendMMX(const __m64 bg, const __m64 fg, const __m64 a,
+		const __m64 amask)
+{
+	const __m64 zero = _mm_setzero_si64();
+	const __m64 c255 = _mm_set1_pi16(255);
+
+	// Each lane's alpha into all four 16-bit channels of its unpacked pixel.
+	const __m64 a2 = _mm_or_si64(a, _mm_slli_pi32(a, 16));
+	const __m64 alo = _mm_unpacklo_pi32(a2, a2);
+	const __m64 ahi = _mm_unpackhi_pi32(a2, a2);
+
+	const __m64 lo = _mm_srli_pi16(_mm_add_pi16(
+			_mm_mullo_pi16(_mm_unpacklo_pi8(bg, zero), _mm_sub_pi16(c255, alo)),
+			_mm_mullo_pi16(_mm_unpacklo_pi8(fg, zero), alo)), 8);
+	const __m64 hi = _mm_srli_pi16(_mm_add_pi16(
+			_mm_mullo_pi16(_mm_unpackhi_pi8(bg, zero), _mm_sub_pi16(c255, ahi)),
+			_mm_mullo_pi16(_mm_unpackhi_pi8(fg, zero), ahi)), 8);
+
+	return _mm_or_si64(_mm_packs_pu16(lo, hi), amask);
+}
+
+//
+// R_ShadeOpaqueARGBHalfMMX
+//
+// R_ShadeOpaqueARGBQuad on two lanes.
+//
+template<bool BLEND_TO_DEST>
+forceinline __m64 R_ShadeOpaqueARGBHalfMMX(const __m64 fg, const __m64 bg,
+		const __m64 ashift, const __m64 amask)
+{
+	const __m64 a = R_ARGBHalfAlphaMMX(fg, ashift);
+
+	__m64 res = R_SelectHalfMMX(_mm_cmpeq_pi32(a, _mm_set1_pi32(255)), fg,
+			R_ARGBHalfBlendMMX(bg, fg, a, amask));
+
+	if (BLEND_TO_DEST)
+		res = R_SelectHalfMMX(_mm_cmpeq_pi32(a, _mm_setzero_si64()), bg, res);
+
+	return res;
+}
+
+//
+// QuadARGBColormapFuncMMX
+//
+// DirectARGBColormapFunc four texels at a time.
+//
+template<bool MASKED>
+class QuadARGBColormapFuncMMX
+{
+public:
+	QuadARGBColormapFuncMMX(const drawcolumn_t& d) :
+			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+			amask(_mm_set1_pi32(static_cast<int>(argb_t::alphaMask()))),
+			ashift(_mm_cvtsi32_si64(argb_t::alphaShift())) { }
+
+	forceinline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
+	{
+		if (MASKED and not R_ARGBAnyAlpha(t0, t1, t2, t3, amaskbits))
+			return;
+
+		auto* const d = reinterpret_cast<__m64*>(dest);
+		const __m64 fg01 = R_ARGBHalfMMX(shader.shade(t0), shader.shade(t1));
+		const __m64 fg23 = R_ARGBHalfMMX(shader.shade(t2), shader.shade(t3));
+
+		if (R_ARGBAllOpaque(t0, t1, t2, t3, amaskbits))
+		{
+			d[0] = fg01;
+			d[1] = fg23;
+			return;
+		}
+
+		const __m64 bg01 = MASKED ? d[0] : _mm_setzero_si64();
+		const __m64 bg23 = MASKED ? d[1] : _mm_setzero_si64();
+
+		d[0] = R_ShadeOpaqueARGBHalfMMX<MASKED>(fg01, bg01, ashift, amask);
+		d[1] = R_ShadeOpaqueARGBHalfMMX<MASKED>(fg23, bg23, ashift, amask);
+	}
+
+	forceinline void operator()(argb_t c, argb_t* dest) const
+	{
+		scalar(c, dest);
+	}
+
+private:
+	const ARGBShader             shader;
+	const DirectARGBColormapFunc scalar;
+	const uint32_t               amaskbits;
+	const __m64                  amask;
+	const __m64                  ashift;
+};
+
+//
+// QuadARGBTranslucentFuncMMX
+//
+// DirectARGBTranslucentColormapFunc four texels at a time.
+//
+class QuadARGBTranslucentFuncMMX
+{
+public:
+	QuadARGBTranslucentFuncMMX(const drawcolumn_t& d) :
+			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+			amask(_mm_set1_pi32(static_cast<int>(argb_t::alphaMask()))),
+			ashift(_mm_cvtsi32_si64(argb_t::alphaShift())),
+			fga(_mm_set1_pi32(scalar.surfaceAlpha())) { }
+
+	forceinline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
+	{
+		if (not R_ARGBAnyAlpha(t0, t1, t2, t3, amaskbits))
+			return;
+
+		auto* const d = reinterpret_cast<__m64*>(dest);
+		d[0] = half(R_ARGBHalfMMX(shader.shade(t0), shader.shade(t1)), d[0]);
+		d[1] = half(R_ARGBHalfMMX(shader.shade(t2), shader.shade(t3)), d[1]);
+	}
+
+	forceinline void operator()(argb_t c, argb_t* dest) const
+	{
+		scalar(c, dest);
+	}
+
+private:
+	[[nodiscard]] forceinline __m64 half(const __m64 fg, const __m64 bg) const
+	{
+		// alpha * fga fits the low 16 bits of each lane; the high halves stay 0 * 0
+		// and divide to 0.
+		const __m64 x = _mm_mullo_pi16(R_ARGBHalfAlphaMMX(fg, ashift), fga);
+		const __m64 a = _mm_srli_pi16(_mm_add_pi16(_mm_add_pi16(x, _mm_set1_pi16(1)),
+				_mm_srli_pi16(x, 8)), 8);
+
+		return R_SelectHalfMMX(_mm_cmpeq_pi32(a, _mm_setzero_si64()), bg,
+				R_ARGBHalfBlendMMX(bg, fg, a, amask));
+	}
+
+	const ARGBShader                        shader;
+	const DirectARGBTranslucentColormapFunc scalar;
+	const uint32_t                          amaskbits;
+	const __m64                             amask;
+	const __m64                             ashift;
+	const __m64                             fga;
+};
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
+void R_DrawARGBColumnD_MMX(rendercontext_t& ctx)
+{
+	const drawcolumn_t& dcol = ctx.draw.dcol;
+
+	if (dcol.masked)
+		R_DrawARGBColumnQuadGeneric<QuadARGBColormapFuncMMX<true>, true>(R_QuadColumnDestMMX(dcol), dcol);
+	else
+		R_DrawARGBColumnQuadGeneric<QuadARGBColormapFuncMMX<false>, false>(R_QuadColumnDestMMX(dcol), dcol);
+
+	_mm_empty();
+}
+
+void R_DrawARGBTranslucentColumnD_MMX(rendercontext_t& ctx)
+{
+	const drawcolumn_t& dcol = ctx.draw.dcol;
+
+	if (dcol.masked)
+		R_DrawARGBColumnQuadGeneric<QuadARGBTranslucentFuncMMX, true>(R_QuadColumnDestMMX(dcol), dcol);
+	else
+		R_DrawARGBColumnQuadGeneric<QuadARGBTranslucentFuncMMX, false>(R_QuadColumnDestMMX(dcol), dcol);
+
+	_mm_empty();
+}
+
+//
+// R_DrawLevelGroupARGBD_MMX
+//
+// R_DrawLevelGroupD_MMX for a true-color flat, ported from R_DrawLevelGroupARGBD_SSE2.
+//
+void R_DrawLevelGroupARGBD_MMX(rendercontext_t& ctx)
+{
+	const drawplanegroup_t& g = ctx.draw.dpgroup;
+
+	const argb_t* const source = g.argbsource;
+
+	// By value, as in R_DrawLevelGroupARGBD_c.
+	const ARGBShader s0 = g.argbshade[g.argbband[0]];
+	const ARGBShader s1 = g.argbshade[g.argbband[1]];
+	const ARGBShader s2 = g.argbshade[g.argbband[2]];
+	const ARGBShader s3 = g.argbshade[g.argbband[3]];
+
+	const uint32_t amaskbits = argb_t::alphaMask();
+	const __m64 amask = _mm_set1_pi32(static_cast<int>(amaskbits));
+	const __m64 ashift = _mm_cvtsi32_si64(argb_t::alphaShift());
+
+	__m64 mu01 = _mm_setr_pi32(static_cast<int>(g.ufrac[0]), static_cast<int>(g.ufrac[1]));
+	__m64 mu23 = _mm_setr_pi32(static_cast<int>(g.ufrac[2]), static_cast<int>(g.ufrac[3]));
+	__m64 mv01 = _mm_setr_pi32(static_cast<int>(g.vfrac[0]), static_cast<int>(g.vfrac[1]));
+	__m64 mv23 = _mm_setr_pi32(static_cast<int>(g.vfrac[2]), static_cast<int>(g.vfrac[3]));
+	const __m64 mus01 = _mm_setr_pi32(static_cast<int>(g.ustep[0]), static_cast<int>(g.ustep[1]));
+	const __m64 mus23 = _mm_setr_pi32(static_cast<int>(g.ustep[2]), static_cast<int>(g.ustep[3]));
+	const __m64 mvs01 = _mm_setr_pi32(static_cast<int>(g.vstep[0]), static_cast<int>(g.vstep[1]));
+	const __m64 mvs23 = _mm_setr_pi32(static_cast<int>(g.vstep[2]), static_cast<int>(g.vstep[3]));
+
+	const __m64 mumask = _mm_set1_pi32(g.umask);
+	const __m64 mvmask = _mm_set1_pi32(g.vmask);
+
+	const __m64 cu = _mm_cvtsi32_si64(g.ushift);
+	const __m64 cv = _mm_cvtsi32_si64(g.vshift);
+
+	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
+			(static_cast<ptrdiff_t>(g.xa) * g.colstep) + g.y0;
+	const int colstep = g.colstep;
+
+	for (int n = g.xb - g.xa + 1; n; --n)
+	{
+		const __m64 spots01 = _mm_or_si64(
+				_mm_and_si64(_mm_srl_pi32(mu01, cu), mumask),
+				_mm_and_si64(_mm_srl_pi32(mv01, cv), mvmask));
+		const __m64 spots23 = _mm_or_si64(
+				_mm_and_si64(_mm_srl_pi32(mu23, cu), mumask),
+				_mm_and_si64(_mm_srl_pi32(mv23, cv), mvmask));
+
+		const argb_t t0 = source[static_cast<uint32_t>(_mm_cvtsi64_si32(spots01))];
+		const argb_t t1 = source[static_cast<uint32_t>(_mm_cvtsi64_si32(_mm_srli_si64(spots01, 32)))];
+		const argb_t t2 = source[static_cast<uint32_t>(_mm_cvtsi64_si32(spots23))];
+		const argb_t t3 = source[static_cast<uint32_t>(_mm_cvtsi64_si32(_mm_srli_si64(spots23, 32)))];
+
+		auto* const d = reinterpret_cast<__m64*>(dest);
+		const __m64 fg01 = R_ARGBHalfMMX(s0.shade(t0), s1.shade(t1));
+		const __m64 fg23 = R_ARGBHalfMMX(s2.shade(t2), s3.shade(t3));
+
+		if (R_ARGBAllOpaque(t0, t1, t2, t3, amaskbits))
+		{
+			d[0] = fg01;
+			d[1] = fg23;
+		}
+		else
+		{
+			d[0] = R_ShadeOpaqueARGBHalfMMX<false>(fg01, _mm_setzero_si64(), ashift, amask);
+			d[1] = R_ShadeOpaqueARGBHalfMMX<false>(fg23, _mm_setzero_si64(), ashift, amask);
+		}
 
 		mu01 = _mm_add_pi32(mu01, mus01);
 		mu23 = _mm_add_pi32(mu23, mus23);

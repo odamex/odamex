@@ -2350,6 +2350,9 @@ void R_InitVectorizedDrawers()
 		R_DrawLevelGroupD       = R_DrawLevelGroupD_MMX;
 		R_DrawColumnQuadD       = R_DrawColumnD_MMX;
 		R_DrawTranslucentColumnQuadD = R_DrawTranslucentColumnD_MMX;
+		R_DrawLevelGroupARGBD   = R_DrawLevelGroupARGBD_MMX;
+		R_DrawARGBColumnQuadD   = R_DrawARGBColumnD_MMX;
+		R_DrawARGBTranslucentColumnQuadD = R_DrawARGBTranslucentColumnD_MMX;
 		r_dimpatchD             = r_dimpatchD_MMX;
 	}
 	#endif
