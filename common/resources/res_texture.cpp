@@ -1071,8 +1071,9 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 					{
 						// Don't support switchdef yet...
 					}
-					else if (os.compareTokenNoCase("warp"))
+					else if (os.compareTokenNoCase("warp") or os.compareTokenNoCase("warp2"))
 					{
+						// warp2's different wave isn't implemented, so it warps like warp.
 						os.mustScan();
 						TextureSearchOrdering search_ordering = FLOOR;
 						if (os.compareTokenNoCase("texture"))
