@@ -2458,10 +2458,14 @@ struct mobjinfo_t
 	const char* ripsound    = nullptr;
 	int32_t droppeditem     = MT_NULL;
 
-	std::string display_name;
+	// leaving out these will result in warnings about no default value
+	// when using designated initializers
+	// NOLINTBEGIN(readability-redundant-string-init)
+	std::string display_name = "";
 	// indicates it was explicitly overriden from the default by dehacked
 	bool display_name_set    = false;
-	std::string deh_name;
+	std::string deh_name     = "";
+	// NOLINTEND(readability-redundant-string-init)
 
 	// ID24 stuff
 	// couple of these have named constants that aren't
