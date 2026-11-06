@@ -687,9 +687,9 @@ ResourceId TextureManager::addMissingTexturePlaceholder(ResourceManager* manager
 
 void AnimatedTextureManager::clear()
 {
-	#if CLIENT_APP
 	mTextureTranslation.clear();
 	mAnimDefs.clear();
+	#if CLIENT_APP
 	for (size_t i = 0; i < mWarpedTextures.size(); i++)
 		delete [] reinterpret_cast<uint8_t*>(mWarpedTextures[i].original_texture);
 	mWarpedTextures.clear();
@@ -721,11 +721,12 @@ void AnimatedTextureManager::copyTexture(Texture* destination_texture, const Tex
 //
 void AnimatedTextureManager::readAnimationDefinitions()
 {
-	#if CLIENT_APP
 	clear();
+	#if CLIENT_APP
 	loadAnimationsFromAnimatedLump();		// Boom ANIMATED lump
-	loadAnimationsFromAnimDefLump();		// Hexen/ZDoom ANIMDEFS lump
 	#endif
+	// The server reads ANIMDEFS too, for its switch definitions.
+	loadAnimationsFromAnimDefLump();		// Hexen/ZDoom ANIMDEFS lump
 }
 
 
@@ -849,6 +850,9 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 }
 
 
+
+// p_switch.cpp
+void P_ProcessSwitchDef(OScanner& os);
 
 //
 // Res_ParseAnimDuration
@@ -1069,7 +1073,7 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 					}
 					else if (os.compareTokenNoCase("switch"))
 					{
-						// Don't support switchdef yet...
+						P_ProcessSwitchDef(os);
 					}
 					else if (os.compareTokenNoCase("warp") or os.compareTokenNoCase("warp2"))
 					{
@@ -1082,8 +1086,10 @@ void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
 							os.error("Unknown error reading in ANIMDEFS");
 
 						os.mustScan();
+						#if CLIENT_APP
 						const OString texture_name = OStringToUpper(os.getToken());
 						addWarpedTexture(Res_GetTextureResourceId(texture_name, search_ordering, false));
+						#endif
 					}
 				}
 				catch (CRecoverableError& error)

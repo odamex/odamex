@@ -607,7 +607,8 @@ void	P_ChangeSwitchTexture (line_t *line, int useAgain, bool playsound);
 
 void	P_InitSwitchList ();
 
-void	P_ProcessSwitchDef ();
+class OScanner;
+void	P_ProcessSwitchDef (OScanner& os);
 
 const ResourceId P_GetButtonTexture(const line_t* line);
 bool	P_GetButtonInfo (const line_t *line, unsigned &state, unsigned &time);

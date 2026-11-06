@@ -24,6 +24,7 @@
 
 #include "odamex.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "p_local.h"
@@ -36,6 +37,8 @@
 #include "p_mapformat.h"
 #include "m_ostring.h"
 #include "m_random.h"
+#include "cmdlib.h"
+#include "oscanner.h"
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
 
@@ -82,7 +85,7 @@ private:
 // What pressing a switch showing its pre-switched texture does.
 //
 // The frames play in order and the switch stays on the last one.
-//
+// 
 // The pair is the definition for that last texture, which plays
 // when a reusable switch returns.
 //
@@ -206,6 +209,163 @@ void P_InitSwitchList(void)
 	Res_ReleaseResource(res_id);
 }
 
+//
+// P_ParseSwitchState
+//
+// Reads the on or off state of an ANIMDEFS switch definition:
+//   [sound NAME] pic NAME tics N | range MIN MAX [pic ...]
+// Returns false if a frame's texture is missing.
+//
+bool P_ParseSwitchState(OScanner& os, switchdef_t& def)
+{
+	bool frames_exist = true;
+
+	while (os.scan())
+	{
+		if (os.compareTokenNoCase("sound"))
+		{
+			if (not def.sound.empty())
+				os.error("Switch state already has a sound");
+			os.mustScan();
+			def.sound = os.getToken();
+		}
+		else if (os.compareTokenNoCase("pic"))
+		{
+			switchframe_t frame;
+			os.mustScan();
+			frame.texture = Res_GetTextureResourceId(OStringToUpper(os.getToken()), WALL, false);
+			if (not Res_CheckResource(frame.texture))
+				frames_exist = false;
+
+			os.mustScan();
+			if (os.compareTokenNoCase("tics"))
+			{
+				os.mustScanInt();
+				frame.time_min = std::clamp(os.getTokenInt(), 0, 65535);
+				frame.time_rnd = 0;
+			}
+			else if (os.compareTokenNoCase("range") or os.compareTokenNoCase("rand"))
+			{
+				os.mustScanInt();
+				int time_min = std::clamp(os.getTokenInt(), 0, 65535);
+				os.mustScanInt();
+				int time_max = std::clamp(os.getTokenInt(), 0, 65535);
+				if (time_min > time_max)
+					std::swap(time_min, time_max);
+				frame.time_min = time_min;
+				frame.time_rnd = time_max - time_min + 1;
+			}
+			else
+			{
+				os.error("Must specify a duration for switch frame");
+			}
+			def.frames.push_back(frame);
+		}
+		else
+		{
+			os.unScan();
+			break;
+		}
+	}
+
+	if (def.frames.empty())
+		os.error("Switch state needs at least one frame");
+
+	return frames_exist;
+}
+
+//
+// P_ProcessSwitchDef
+//
+// Reads an ANIMDEFS switch definition, following the "switch" keyword:
+//   switch [doom [N]|heretic|hexen|strife|any] NAME [quest] on STATE [off STATE]
+// The on state plays when a switch showing NAME is pressed and must end on a
+// different texture.
+// The off state plays when a reusable switch returns, and without one the switch
+// goes straight back to NAME.
+//
+void P_ProcessSwitchDef(OScanner& os)
+{
+	bool this_game = true;
+
+	os.mustScan();
+	if (os.compareTokenNoCase("doom"))
+	{
+		// The episode number that may follow is deprecated.
+		os.mustScan();
+		if (not IsNum(os.getToken()))
+			os.unScan();
+	}
+	else if (os.compareTokenNoCase("heretic") or os.compareTokenNoCase("hexen") or
+	         os.compareTokenNoCase("strife"))
+	{
+		this_game = false;
+	}
+	else if (not os.compareTokenNoCase("any"))
+	{
+		os.unScan();
+	}
+
+	os.mustScan();
+	const OString name = OStringToUpper(os.getToken());
+	const ResourceId pretexture = Res_GetTextureResourceId(name, WALL, false);
+
+	switchdef_t on, off;
+	on.pretexture = pretexture;
+	bool has_on = false, has_off = false, frames_exist = true;
+
+	while (os.scan())
+	{
+		if (os.compareTokenNoCase("quest"))
+		{
+			// Strife's quest panels don't exist here.
+			continue;
+		}
+		else if (os.compareTokenNoCase("on"))
+		{
+			if (has_on)
+				os.error("Switch already has an on state");
+			has_on = true;
+			if (not P_ParseSwitchState(os, on))
+				frames_exist = false;
+		}
+		else if (os.compareTokenNoCase("off"))
+		{
+			if (has_off)
+				os.error("Switch already has an off state");
+			has_off = true;
+			if (not P_ParseSwitchState(os, off))
+				frames_exist = false;
+		}
+		else
+		{
+			os.unScan();
+			break;
+		}
+	}
+
+	if (not this_game or not has_on or not Res_CheckResource(pretexture))
+		return;
+
+	if (not frames_exist)
+	{
+		PrintFmt(PRINT_HIGH, "Missing texture for switch {} in ANIMDEFS\n", name.c_str());
+		return;
+	}
+
+	if (not has_off)
+	{
+		off.frames.push_back({pretexture, 0, 0});
+		off.sound = on.sound;
+	}
+	off.pretexture = on.frames.back().texture;
+
+	if (off.pretexture == pretexture)
+		os.error("The on state for switch {} must end with a texture other than {}", name.c_str(), name.c_str());
+
+	P_AddSwitchPair(on, off, true);
+}
+
 void P_DestroyButtonThinkers()
 {
 	DActiveButton *button;
@@ -220,7 +380,7 @@ void P_DestroyButtonThinkers()
 // [RH] Rewritten to remove MAXBUTTONS limit and use temporary soundorgs.
 //
 void P_StartButton (line_t *line, DActiveButton::EWhere w, int32_t switch_def,
-						   ResourceId res_id, bool flippable, fixed_t x, fixed_t y)
+    ResourceId res_id, bool flippable, fixed_t x, fixed_t y)
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;
@@ -261,7 +421,7 @@ bool P_SwitchDefShows(const switchdef_t& def, const ResourceId res_id, bool any_
 // With it, a texture can be switched partway through an animation.
 //
 ResourceId* P_GetButtonTexturePtr(line_t* line, DActiveButton::EWhere& where,
-                                         bool any_frame, int32_t* switch_def)
+                                     bool any_frame, int32_t* switch_def)
 {
 	where = static_cast<DActiveButton::EWhere>(0);
 
