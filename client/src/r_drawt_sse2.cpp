@@ -52,7 +52,7 @@
 //
 // R_GetBytesUntilAligned
 //
-static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
+inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
 {
 	uintptr_t mask = alignment - 1;
 	return (alignment - (reinterpret_cast<uintptr_t>(data) & mask)) & mask;
@@ -94,10 +94,10 @@ public:
 
 	template<bool MASKED>
 	forceinline void quad(uint32_t i0, uint32_t i1, uint32_t i2, uint32_t i3,
-			argb_t* dest, const __m128i keep) const
+	    argb_t* dest, const __m128i keep) const
 	{
 		const __m128i fg = _mm_setr_epi32(shademap[i0], shademap[i1],
-										shademap[i2], shademap[i3]);
+		              shademap[i2], shademap[i3]);
 
 		if (not MASKED)
 		{
@@ -108,7 +108,7 @@ public:
 		const __m128i bg = _mm_loadu_si128(reinterpret_cast<const __m128i*>(dest));
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(dest),
-				_mm_or_si128(_mm_and_si128(keep, bg), _mm_andnot_si128(keep, fg)));
+		    _mm_or_si128(_mm_and_si128(keep, bg), _mm_andnot_si128(keep, fg)));
 	}
 
 	forceinline void operator()(palindex_t c, argb_t* dest) const
@@ -157,11 +157,11 @@ public:
 		// parameters TRUNCATE. The constructor's clamp is what keeps the two
 		// paths agreeing.
 		const __m128i lo = _mm_srli_epi16(_mm_add_epi16(
-				_mm_mullo_epi16(_mm_unpacklo_epi8(bg, zero), mbga),
-				_mm_mullo_epi16(_mm_unpacklo_epi8(fg, zero), mfga)), 8);
+		    _mm_mullo_epi16(_mm_unpacklo_epi8(bg, zero), mbga),
+		    _mm_mullo_epi16(_mm_unpacklo_epi8(fg, zero), mfga)), 8);
 		const __m128i hi = _mm_srli_epi16(_mm_add_epi16(
-				_mm_mullo_epi16(_mm_unpackhi_epi8(bg, zero), mbga),
-				_mm_mullo_epi16(_mm_unpackhi_epi8(fg, zero), mfga)), 8);
+		    _mm_mullo_epi16(_mm_unpackhi_epi8(bg, zero), mbga),
+		    _mm_mullo_epi16(_mm_unpackhi_epi8(fg, zero), mfga)), 8);
 
 		// Alpha is forced BEFORE the select, not after. The scalar drawer never
 		// writes a transparent pixel at all, so those lanes must keep whatever
@@ -175,7 +175,7 @@ public:
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(dest),
-				_mm_or_si128(_mm_and_si128(keep, bg), _mm_andnot_si128(keep, res)));
+		    _mm_or_si128(_mm_and_si128(keep, bg), _mm_andnot_si128(keep, res)));
 	}
 
 	forceinline void operator()(palindex_t c, argb_t* dest) const
@@ -185,8 +185,11 @@ public:
 
 private:
 	const argb_t*	shademap;
-	__m128i			mfga, mbga, mamask;
-	int				fga, bga;
+	__m128i       mfga;
+	__m128i       mbga;
+	__m128i       mamask;
+	int           fga;
+	int           bga;
 };
 
 
@@ -227,13 +230,13 @@ forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 		// and test the palette value, never the offset -- conflating the two
 		// samples the wrong colour and tests the wrong thing against zero.
 		const int o0 = MASKED ? int( frac                   >> FRACBITS)
-							: int((frac                   >> FRACBITS) & mask);
+		          : int((frac                   >> FRACBITS) & mask);
 		const int o1 = MASKED ? int((frac + fracstep)       >> FRACBITS)
-							: int(((frac + fracstep)       >> FRACBITS) & mask);
+		          : int(((frac + fracstep)       >> FRACBITS) & mask);
 		const int o2 = MASKED ? int((frac + (fracstep * 2))   >> FRACBITS)
-							: int(((frac + (fracstep * 2))   >> FRACBITS) & mask);
+		          : int(((frac + (fracstep * 2))   >> FRACBITS) & mask);
 		const int o3 = MASKED ? int((frac + (fracstep * 3))   >> FRACBITS)
-							: int(((frac + (fracstep * 3))   >> FRACBITS) & mask);
+		          : int(((frac + (fracstep * 3))   >> FRACBITS) & mask);
 
 		const uint32_t i0 = source[o0];
 		const uint32_t i1 = source[o1];
@@ -248,8 +251,8 @@ forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 		{
 			// All ones in the lanes the scalar drawer would not have written.
 			const __m128i keep = _mm_cmpeq_epi32(
-					_mm_setr_epi32(int(i0), int(i1), int(i2), int(i3)),
-					_mm_setzero_si128());
+			    _mm_setr_epi32(int(i0), int(i1), int(i2), int(i3)),
+			    _mm_setzero_si128());
 
 			f.template quad<true>(i0, i1, i2, i3, dest, keep);
 		}
@@ -265,7 +268,7 @@ forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 	while (count--)
 	{
 		const palindex_t pixel = MASKED ? source[frac >> FRACBITS]
-									: source[(frac >> FRACBITS) & mask];
+		               : source[(frac >> FRACBITS) & mask];
 		if (not MASKED or pixel != 0)
 			f(pixel, dest);
 		dest++;
@@ -344,20 +347,20 @@ void R_DrawLevelGroupD_SSE2(rendercontext_t& ctx)
 	const __m128i cv = _mm_cvtsi32_si128(g.vshift);
 
 	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
-			(ptrdiff_t(g.xa) * g.colstep) + g.y0;
+	    (ptrdiff_t(g.xa) * g.colstep) + g.y0;
 	const int colstep = g.colstep;
 
 	for (int n = g.xb - g.xa + 1; n; --n)
 	{
 		const __m128i mspots = _mm_or_si128(
-				_mm_and_si128(_mm_srl_epi32(mu, cu), mumask),
-				_mm_and_si128(_mm_srl_epi32(mv, cv), mvmask));
+		    _mm_and_si128(_mm_srl_epi32(mu, cu), mumask),
+		    _mm_and_si128(_mm_srl_epi32(mv, cv), mvmask));
 
 		const auto spots = std::bit_cast<std::array<uint32_t, 4>>(mspots);
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), _mm_setr_epi32(
-				s0[source[spots[0]]], s1[source[spots[1]]],
-				s2[source[spots[2]]], s3[source[spots[3]]]));
+		    s0[source[spots[0]]], s1[source[spots[1]]],
+		    s2[source[spots[2]]], s3[source[spots[3]]]));
 
 		mu = _mm_add_epi32(mu, mus);
 		mv = _mm_add_epi32(mv, mvs);
@@ -497,7 +500,7 @@ public:
 		                          : _mm_setzero_si128();
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(dest),
-				R_ShadeOpaqueARGBQuad<MASKED>(fg, bg, ashift, amask));
+		    R_ShadeOpaqueARGBQuad<MASKED>(fg, bg, ashift, amask));
 	}
 
 	forceinline void operator()(argb_t c, argb_t* dest) const
@@ -543,8 +546,8 @@ public:
 		const __m128i a = _mm_srli_epi16(_mm_mulhi_epu16(prod, _mm_set1_epi16(static_cast<int16_t>(0x8081))), 7);
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(dest),
-				R_SelectQuad(_mm_cmpeq_epi32(a, _mm_setzero_si128()), bg,
-						R_ARGBQuadBlend(bg, fg, a, amask)));
+		    R_SelectQuad(_mm_cmpeq_epi32(a, _mm_setzero_si128()), bg,
+		        R_ARGBQuadBlend(bg, fg, a, amask)));
 	}
 
 	forceinline void operator()(argb_t c, argb_t* dest) const
@@ -615,14 +618,14 @@ void R_DrawLevelGroupARGBD_SSE2(rendercontext_t& ctx)
 	const __m128i cv = _mm_cvtsi32_si128(g.vshift);
 
 	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
-			(static_cast<ptrdiff_t>(g.xa) * g.colstep) + g.y0;
+	    (static_cast<ptrdiff_t>(g.xa) * g.colstep) + g.y0;
 	const int colstep = g.colstep;
 
 	for (int n = g.xb - g.xa + 1; n; --n)
 	{
 		const __m128i mspots = _mm_or_si128(
-				_mm_and_si128(_mm_srl_epi32(mu, cu), mumask),
-				_mm_and_si128(_mm_srl_epi32(mv, cv), mvmask));
+		    _mm_and_si128(_mm_srl_epi32(mu, cu), mumask),
+		    _mm_and_si128(_mm_srl_epi32(mv, cv), mvmask));
 
 		const auto spots = std::bit_cast<std::array<uint32_t, 4>>(mspots);
 
@@ -637,7 +640,7 @@ void R_DrawLevelGroupARGBD_SSE2(rendercontext_t& ctx)
 			_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), fg);
 		else
 			_mm_storeu_si128(reinterpret_cast<__m128i*>(dest),
-					R_ShadeOpaqueARGBQuad<false>(fg, _mm_setzero_si128(), ashift, amask));
+			    R_ShadeOpaqueARGBQuad<false>(fg, _mm_setzero_si128(), ashift, amask));
 
 		mu = _mm_add_epi32(mu, mus);
 		mv = _mm_add_epi32(mv, mvs);
@@ -792,6 +795,6 @@ void R_StreamStoredLines32_SSE2(argb_t* dest, const argb_t* source, int destpitc
 	_mm_sfence();
 }
 
-VERSION_CONTROL (r_drawt_sse2_cpp, "$Id$")
-
 #endif
+
+VERSION_CONTROL(r_drawt_sse2_cpp, "$Id$")

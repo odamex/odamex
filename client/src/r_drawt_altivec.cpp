@@ -54,7 +54,7 @@ typedef vector unsigned int vu32;
 //
 // R_GetBytesUntilAligned
 //
-static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
+inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
 {
 	uintptr_t mask = alignment - 1;
 	return (alignment - ((uintptr_t)data & mask)) & mask;
@@ -82,7 +82,7 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 
 	const int line_inc = stride - run;
 
-	// ALTIVEC temporaries:
+	// ALTIVEC temps:
 	const vu8 vec_mask = { 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF };
 	const vu16 vec_eight = vec_splat_u16(8);
 
@@ -165,17 +165,17 @@ void r_dimpatchD_ALTIVEC(IWindowSurface* surface, argb_t color, int alpha, int x
 //
 // ============================================================================
 
-static inline vu8 R_SplatU8(uint8_t x)
+inline vu8 R_SplatU8(uint8_t x)
 {
 	return (vu8){ x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x };
 }
 
-static inline vu16 R_SplatU16(uint16_t x)
+inline vu16 R_SplatU16(uint16_t x)
 {
 	return (vu16){ x, x, x, x, x, x, x, x };
 }
 
-static inline vu32 R_SplatU32(uint32_t x)
+inline vu32 R_SplatU32(uint32_t x)
 {
 	return (vu32){ x, x, x, x };
 }
@@ -235,10 +235,12 @@ public:
 	}
 
 private:
-	const argb_t*	shademap;
-	vu8				mfga, mbga;
-	vu32			mamask;
-	int				fga, bga;
+	const argb_t* shademap;
+	vu8          mfga;
+	vu8          mbga;
+	vu32         mamask;
+	int          fga;
+	int          bga;
 };
 
 
@@ -246,7 +248,7 @@ private:
 // R_DrawColumnQuadGenericAltivec
 //
 template<typename QUADFUNC, bool MASKED, bool EARLYOUT>
-static inline void R_DrawColumnQuadGenericAltivec(argb_t* dest, const drawcolumn_t& d)
+inline void R_DrawColumnQuadGenericAltivec(argb_t* dest, const drawcolumn_t& d)
 {
 	int count = d.yh - d.yl + 1;
 	if (count <= 0)
@@ -271,7 +273,7 @@ static inline void R_DrawColumnQuadGenericAltivec(argb_t* dest, const drawcolumn
 	// Scalar pixels before the first quad and after the last.
 	const auto single = [&]() {
 		const palindex_t pixel = MASKED ? source[frac >> FRACBITS]
-									: source[(frac >> FRACBITS) & mask];
+		               : source[(frac >> FRACBITS) & mask];
 		if (not MASKED or pixel != 0)
 			f(pixel, dest);
 		dest++;
@@ -285,13 +287,13 @@ static inline void R_DrawColumnQuadGenericAltivec(argb_t* dest, const drawcolumn
 	{
 		// Texel offsets, then the palette indices they name.
 		const int o0 = MASKED ? int( frac                   >> FRACBITS)
-							: int((frac                   >> FRACBITS) & mask);
+		          : int((frac                   >> FRACBITS) & mask);
 		const int o1 = MASKED ? int((frac + fracstep)       >> FRACBITS)
-							: int(((frac + fracstep)       >> FRACBITS) & mask);
+		          : int(((frac + fracstep)       >> FRACBITS) & mask);
 		const int o2 = MASKED ? int((frac + fracstep * 2)   >> FRACBITS)
-							: int(((frac + fracstep * 2)   >> FRACBITS) & mask);
+		          : int(((frac + fracstep * 2)   >> FRACBITS) & mask);
 		const int o3 = MASKED ? int((frac + fracstep * 3)   >> FRACBITS)
-							: int(((frac + fracstep * 3)   >> FRACBITS) & mask);
+		          : int(((frac + fracstep * 3)   >> FRACBITS) & mask);
 
 		const uint32_t i0 = source[o0];
 		const uint32_t i1 = source[o1];
@@ -320,7 +322,7 @@ void R_DrawTranslucentColumnD_ALTIVEC(rendercontext_t& ctx)
 	drawcolumn_t& dcol = ctx.draw.dcol;
 
 	argb_t* const dest = reinterpret_cast<argb_t*>(dcol.destination) +
-			ptrdiff_t(dcol.x) * dcol.colstep + dcol.yl;
+	    ptrdiff_t(dcol.x) * dcol.colstep + dcol.yl;
 
 	if (dcol.masked)
 		R_DrawColumnQuadGenericAltivec<QuadTranslucentFuncAltivec, true, true>(dest, dcol);
@@ -362,7 +364,7 @@ void R_DrawLevelGroupD_ALTIVEC(rendercontext_t& ctx)
 	ALTIVEC_ALIGNED(uint32_t spots[4]);
 
 	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
-			ptrdiff_t(g.xa) * g.colstep + g.y0;
+	    ptrdiff_t(g.xa) * g.colstep + g.y0;
 	const int colstep = g.colstep;
 
 	for (int n = g.xb - g.xa + 1; n; --n)
@@ -433,7 +435,7 @@ inline vu32 R_ARGBQuadBlendAltivec(const vu32 bg, const vu32 fg, const vu32 a, c
 //
 template<bool BLEND_TO_DEST>
 inline vu32 R_ShadeOpaqueARGBQuadAltivec(const vu32 fg, const vu32 bg, const vu32 ashift,
-		const vu32 amask)
+    const vu32 amask)
 {
 	const vu32 a = R_ARGBQuadAlphaAltivec(fg, ashift);
 
@@ -456,9 +458,9 @@ class QuadARGBColormapFuncAltivec
 {
 public:
 	QuadARGBColormapFuncAltivec(const drawcolumn_t& d) :
-			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
-			amask(R_SplatU32(argb_t::alphaMask())),
-			ashift(R_SplatU32(static_cast<uint32_t>(argb_t::alphaShift()))) { }
+	    shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+	    amask(R_SplatU32(argb_t::alphaMask())),
+	    ashift(R_SplatU32(static_cast<uint32_t>(argb_t::alphaShift()))) { }
 
 	inline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
 	{
@@ -509,10 +511,10 @@ class QuadARGBTranslucentFuncAltivec
 {
 public:
 	QuadARGBTranslucentFuncAltivec(const drawcolumn_t& d) :
-			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
-			amask(R_SplatU32(argb_t::alphaMask())),
-			ashift(R_SplatU32(static_cast<uint32_t>(argb_t::alphaShift()))),
-			fga(R_SplatU16(static_cast<uint16_t>(scalar.surfaceAlpha()))) { }
+	    shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+	    amask(R_SplatU32(argb_t::alphaMask())),
+	    ashift(R_SplatU32(static_cast<uint32_t>(argb_t::alphaShift()))),
+	    fga(R_SplatU16(static_cast<uint16_t>(scalar.surfaceAlpha()))) { }
 
 	inline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
 	{
@@ -520,8 +522,8 @@ public:
 			return;
 
 		ALTIVEC_ALIGNED(uint32_t fgs[4]) = {
-			R_ARGBBits(shader.shade(t0)), R_ARGBBits(shader.shade(t1)),
-			R_ARGBBits(shader.shade(t2)), R_ARGBBits(shader.shade(t3)) };
+		  R_ARGBBits(shader.shade(t0)), R_ARGBBits(shader.shade(t1)),
+		  R_ARGBBits(shader.shade(t2)), R_ARGBBits(shader.shade(t3)) };
 
 		uint32_t* const d = reinterpret_cast<uint32_t*>(dest);
 		const vu32 fg = vec_ld(0, fgs);
@@ -618,11 +620,11 @@ void R_DrawLevelGroupARGBD_ALTIVEC(rendercontext_t& ctx)
 	ALTIVEC_ALIGNED(uint32_t px[4]);
 
 	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
-			(static_cast<ptrdiff_t>(g.xa) * g.colstep) + g.y0;
+	    (static_cast<ptrdiff_t>(g.xa) * g.colstep) + g.y0;
 	const int colstep = g.colstep;
 
 	const bool aligned = ((reinterpret_cast<uintptr_t>(dest) |
-			(static_cast<uintptr_t>(colstep) * sizeof(argb_t))) & 15) == 0;
+	    (static_cast<uintptr_t>(colstep) * sizeof(argb_t))) & 15) == 0;
 
 	for (int n = g.xb - g.xa + 1; n; --n)
 	{

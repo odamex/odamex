@@ -339,7 +339,7 @@ void R_DrawLevelGroupD_NEON(rendercontext_t& ctx)
 // ============================================================================
 
 forceinline uint32x4_t R_ARGBQuadNEON(const argb_t p0, const argb_t p1, const argb_t p2,
-		const argb_t p3)
+    const argb_t p3)
 {
 	return R_NeonLanes(R_ARGBBits(p0), R_ARGBBits(p1), R_ARGBBits(p2), R_ARGBBits(p3));
 }
@@ -361,7 +361,7 @@ forceinline uint32x4_t R_ARGBQuadAlphaNEON(const uint32x4_t px, const int32x4_t 
 // alphablend2a(bg, 255 - a, fg, a) in each lane, with a per lane.
 //
 forceinline uint32x4_t R_ARGBQuadBlendNEON(const uint32x4_t bg, const uint32x4_t fg,
-		const uint32x4_t a, const uint32x4_t amask)
+    const uint32x4_t a, const uint32x4_t amask)
 {
 	const uint8x16_t w = vreinterpretq_u8_u32(vmulq_n_u32(a, 0x01010101u));
 	const uint8x16_t iw = vmvnq_u8(w);
@@ -385,12 +385,12 @@ forceinline uint32x4_t R_ARGBQuadBlendNEON(const uint32x4_t bg, const uint32x4_t
 //
 template<bool BLEND_TO_DEST>
 forceinline uint32x4_t R_ShadeOpaqueARGBQuadNEON(const uint32x4_t fg, const uint32x4_t bg,
-		const int32x4_t ashift, const uint32x4_t amask)
+    const int32x4_t ashift, const uint32x4_t amask)
 {
 	const uint32x4_t a = R_ARGBQuadAlphaNEON(fg, ashift);
 
 	uint32x4_t res = vbslq_u32(vceqq_u32(a, vdupq_n_u32(255)), fg,
-			R_ARGBQuadBlendNEON(bg, fg, a, amask));
+	    R_ARGBQuadBlendNEON(bg, fg, a, amask));
 
 	if (BLEND_TO_DEST)
 		res = vbslq_u32(vceqq_u32(a, vdupq_n_u32(0)), bg, res);
@@ -408,9 +408,9 @@ class QuadARGBColormapFuncNEON
 {
 public:
 	QuadARGBColormapFuncNEON(const drawcolumn_t& d) :
-			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
-			amask(vdupq_n_u32(argb_t::alphaMask())),
-			ashift(vdupq_n_s32(-argb_t::alphaShift())) { }
+	    shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+	    amask(vdupq_n_u32(argb_t::alphaMask())),
+	    ashift(vdupq_n_s32(-argb_t::alphaShift())) { }
 
 	forceinline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
 	{
@@ -453,10 +453,10 @@ class QuadARGBTranslucentFuncNEON
 {
 public:
 	QuadARGBTranslucentFuncNEON(const drawcolumn_t& d) :
-			shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
-			amask(vdupq_n_u32(argb_t::alphaMask())),
-			ashift(vdupq_n_s32(-argb_t::alphaShift())),
-			fga(static_cast<uint32_t>(scalar.surfaceAlpha()) * 0x8081u) { }
+	    shader(d.colormap), scalar(d), amaskbits(argb_t::alphaMask()),
+	    amask(vdupq_n_u32(argb_t::alphaMask())),
+	    ashift(vdupq_n_s32(-argb_t::alphaShift())),
+	    fga(static_cast<uint32_t>(scalar.surfaceAlpha()) * 0x8081u) { }
 
 	forceinline void quad(argb_t t0, argb_t t1, argb_t t2, argb_t t3, argb_t* dest) const
 	{
@@ -471,7 +471,7 @@ public:
 		const uint32x4_t a = vshrq_n_u32(vmulq_n_u32(R_ARGBQuadAlphaNEON(fg, ashift), fga), 23);
 
 		vst1q_u32(d, vbslq_u32(vceqq_u32(a, vdupq_n_u32(0)), bg,
-				R_ARGBQuadBlendNEON(bg, fg, a, amask)));
+		    R_ARGBQuadBlendNEON(bg, fg, a, amask)));
 	}
 
 	forceinline void operator()(argb_t c, argb_t* dest) const
@@ -541,7 +541,7 @@ void R_DrawLevelGroupARGBD_NEON(rendercontext_t& ctx)
 	const int32x4_t cv = vdupq_n_s32(-g.vshift);
 
 	argb_t* dest = reinterpret_cast<argb_t*>(g.destination) +
-			(static_cast<ptrdiff_t>(g.xa) * g.colstep) + g.y0;
+	    (static_cast<ptrdiff_t>(g.xa) * g.colstep) + g.y0;
 	const int colstep = g.colstep;
 
 	for (int n = g.xb - g.xa + 1; n; --n)

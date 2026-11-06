@@ -79,7 +79,7 @@ public:
 	ARGBShader() = default;
 
 	ARGBShader(const shaderef_t& colormap) :
-			ARGBShader(colormap.m_dyncolormap, colormap.mapnum()) { }
+	    ARGBShader(colormap.m_dyncolormap, colormap.mapnum()) { }
 
 	// colormap.with(n) changes only the light level, so the plane drawers build a
 	// band's shader from the base colormap's dynamic colormap and n directly.
@@ -141,15 +141,18 @@ private:
 	const byte* lut_b;
 
 	uint32_t amask;
-	int ashift, rshift, gshift, bshift;
-	bool standard;		// alpha, red, green, blue from the top byte down
+	int      ashift;
+	int      rshift;
+	int      gshift;
+	int      bshift;
+	bool     standard; // alpha, red, green, blue from the top byte down
 };
 
 class DirectARGBColormapFunc
 {
 public:
 	DirectARGBColormapFunc(const drawcolumn_t& drawcolumn) :
-			shader(drawcolumn.colormap), blend_to_dest(drawcolumn.masked) { }
+	    shader(drawcolumn.colormap), blend_to_dest(drawcolumn.masked) { }
 
 	forceinline void operator()(argb_t c, argb_t* dest) const
 	{
@@ -171,14 +174,14 @@ public:
 
 private:
 	const ARGBShader shader;
-	const bool blend_to_dest;
+	const bool       blend_to_dest;
 };
 
 class DirectARGBTranslucentColormapFunc
 {
 public:
 	DirectARGBTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
-			shader(drawcolumn.colormap)
+	    shader(drawcolumn.colormap)
 	{
 		calculate_alpha(drawcolumn.translevel);
 	}
@@ -206,7 +209,7 @@ private:
 	}
 
 	const ARGBShader shader;
-	int fga;
+	int              fga;
 };
 
 //
@@ -215,7 +218,7 @@ private:
 // One texel of an opaque true-color surface: a plane has no backdrop, so a
 // translucent texel composites onto black.
 //
-static forceinline argb_t R_ShadeOpaqueARGB(const ARGBShader& shader, const argb_t c)
+forceinline argb_t R_ShadeOpaqueARGB(const ARGBShader& shader, const argb_t c)
 {
 	const int a = shader.alpha(c);
 	if (a == 255)
@@ -231,7 +234,7 @@ static forceinline argb_t R_ShadeOpaqueARGB(const ARGBShader& shader, const argb
 // The column's texels in its texture's native ARGB plane, which parallels the
 // palettized plane dcol.source points into.
 //
-static forceinline const argb_t* R_ARGBColumnSource(const drawcolumn_t& dcol)
+forceinline const argb_t* R_ARGBColumnSource(const drawcolumn_t& dcol)
 {
 	return dcol.argbtexturedata + (dcol.source - dcol.texturedata);
 }
@@ -242,19 +245,19 @@ static forceinline const argb_t* R_ARGBColumnSource(const drawcolumn_t& dcol)
 //
 // ----------------------------------------------------------------------------
 
-static forceinline uint32_t R_ARGBBits(const argb_t c)
+forceinline uint32_t R_ARGBBits(const argb_t c)
 {
 	return static_cast<uint32_t>(c);
 }
 
 // Whether any of four texels has alpha, and whether all four are opaque.
-static forceinline bool R_ARGBAnyAlpha(const argb_t t0, const argb_t t1, const argb_t t2,
+forceinline bool R_ARGBAnyAlpha(const argb_t t0, const argb_t t1, const argb_t t2,
 		const argb_t t3, const uint32_t amask)
 {
 	return ((R_ARGBBits(t0) | R_ARGBBits(t1) | R_ARGBBits(t2) | R_ARGBBits(t3)) & amask) != 0;
 }
 
-static forceinline bool R_ARGBAllOpaque(const argb_t t0, const argb_t t1, const argb_t t2,
+forceinline bool R_ARGBAllOpaque(const argb_t t0, const argb_t t1, const argb_t t2,
 		const argb_t t3, const uint32_t amask)
 {
 	return (R_ARGBBits(t0) & R_ARGBBits(t1) & R_ARGBBits(t2) & R_ARGBBits(t3) & amask) == amask;
@@ -274,7 +277,7 @@ static forceinline bool R_ARGBAllOpaque(const argb_t t0, const argb_t t1, const 
 // first. Only AltiVec asks for one, as it loads and stores aligned or not at all.
 //
 template<typename QUADFUNC, bool MASKED, uintptr_t ALIGN = alignof(argb_t)>
-static forceinline void R_DrawARGBColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
+forceinline void R_DrawARGBColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 {
 	int count = d.yh - d.yl + 1;
 	if (count <= 0)

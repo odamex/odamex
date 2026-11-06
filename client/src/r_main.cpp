@@ -1262,12 +1262,7 @@ void R_RenderPlayerView(player_t* player)
 	const int blend_alpha = static_cast<int>(blend_color.geta() * 255.0f);
 	if (surface->getBitsPerPixel() == 32 and blend_alpha > 0)
 	{
-		// Each slice tints its own columns, after the weapon sprite so it is tinted
-		// too. On the main thread alone this was one more full pass over the view
-		// after every worker had finished, for every frame of a pickup flash or a
-		// damage tint: 0.72 ms on a 1.05 ms threaded 1080p frame, against 0.19 ms
-		// split across the slices. r_dimpatchD treats each column on its own, so
-		// the split changes no pixel.
+		// Distribute damage/item flash across render slices
 		const argb_t blend_argb = V_GammaCorrect(blend_color);
 		R_RunSlices(nslices, [&](int i) {
 			const rendercontext_t& ctx = R_SliceContext(i);
