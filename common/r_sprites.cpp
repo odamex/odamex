@@ -325,7 +325,7 @@ bool R_ScanSpriteLumps(const char* sprite, int first, int last, bool tolerant)
 //	letter/number appended.
 // The rotation character can be 0 to signify no rotations.
 //
-void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
+void R_InitSpriteDefs(std::span<const spriteinfo_t> namelist)
 {
 	numsprites = namelist.size();
 
@@ -334,8 +334,8 @@ void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 	// Just compare 4 characters as ints
 	for (int i = 0; i < numsprites; i++)
 	{
-		R_ScanSpriteLumps(namelist[i]->sprite, firstspritelump, lastspritelump, false);
-		R_InstallSprite(namelist[i]->sprite, namelist[i]->spritenum);
+		R_ScanSpriteLumps(namelist[i].sprite, firstspritelump, lastspritelump, false);
+		R_InstallSprite(namelist[i].sprite, namelist[i].spritenum);
 	}
 }
 
@@ -391,7 +391,7 @@ vissprite_t		*lastvissprite;
 // R_InitSprites
 // Called at program start.
 //
-void R_InitSprites(std::vector<spriteinfo_t*>& sprites)
+void R_InitSprites(std::span<const spriteinfo_t> sprites)
 {
 	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
 
@@ -400,7 +400,7 @@ void R_InitSprites(std::vector<spriteinfo_t*>& sprites)
 	firstvissprite = vissprites = static_cast<vissprite_t*>(M_Malloc(MaxVisSprites * sizeof(vissprite_t)));
 	lastvissprite = &vissprites[MaxVisSprites];
 
-	R_InitSpriteDefs (sprites);
+	R_InitSpriteDefs(sprites);
 }
 
 VERSION_CONTROL (r_sprites_cpp, "$Id$")

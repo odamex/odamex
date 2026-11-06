@@ -49,75 +49,6 @@ enum triggertype
 	PushMany
 };
 
-// Migrate some non-hexen data to hexen format, and other misc flags.
-void P_MigrateActorInfo(void)
-{
-	static bool migrated = false;
-
-	// Set MF2_PASSMOBJ on dehacked monsters
-	// because we don't expose ZDoom's Bits2 BEX extension (yet...)
-	// which is the normal way MF2_PASSMOBJ gets set.
-	for (auto&& [_, m] : mobjinfo)
-	{
-		if (m.flags & MF_COUNTKILL)
-		{
-			if (P_AllowPassover())
-			{
-				if (m.flags & MF_COUNTKILL)
-					m.flags2 |= MF2_PASSMOBJ;
-			}
-			else
-			{
-				if (m.flags & MF_COUNTKILL)
-					m.flags2 &= ~MF2_PASSMOBJ;
-			}
-		}
-	}
-
-	// Don't forget about lost souls!
-	if (P_AllowPassover())
-	{
-		mobjinfo[MT_SKULL].flags2 |= MF2_PASSMOBJ;
-	}
-	else
-	{
-		mobjinfo[MT_SKULL].flags2 &= ~MF2_PASSMOBJ;
-	}
-
-	if (map_format.getZDoom() && !migrated)
-	{
-		migrated = true;
-
-		for (auto&& [_, m] : mobjinfo)
-		{
-			if (m.flags & MF_COUNTKILL)
-				m.flags2 |= MF2_MCROSS | MF2_PUSHWALL;
-
-			if (m.flags & MF_MISSILE)
-				m.flags2 |= MF2_PCROSS | MF2_IMPACT;
-		}
-
-		mobjinfo[MT_SKULL].flags2 |= MF2_MCROSS | MF2_PUSHWALL;
-		mobjinfo[MT_PLAYER].flags2 |= MF2_WINDTHRUST | MF2_PUSHWALL;
-	}
-	else if (!map_format.getZDoom() && migrated)
-	{
-		migrated = false;
-
-		for (auto&& [idx, m] : mobjinfo)
-		{
-			if (m.flags & MF_COUNTKILL)
-				m.flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
-
-			if (m.flags & MF_MISSILE)
-				m.flags2 &= ~(MF2_PCROSS | MF2_IMPACT);
-		}
-
-		mobjinfo[MT_SKULL].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
-		mobjinfo[MT_PLAYER].flags2 &= ~(MF2_WINDTHRUST | MF2_PUSHWALL);
-	}
-}
-
 void MapFormat::init_sector_special(sector_t* sector)
 {
 	if (map_format.zdoom)
@@ -205,8 +136,6 @@ void MapFormat::P_ApplyZDoomMapFormat(void)
 	map_format.zdoom = true;
 	map_format.hexen = true;
 	map_format.generalized_mask = ~0xff;
-
-	P_MigrateActorInfo();
 }
 
 void MapFormat::P_ApplyDefaultMapFormat(void)
@@ -214,8 +143,6 @@ void MapFormat::P_ApplyDefaultMapFormat(void)
 	map_format.zdoom = false;
 	map_format.hexen = false;
 	map_format.generalized_mask = ~31;
-
-	P_MigrateActorInfo();
 }
 
 bool MapFormat::getZDoom(void)

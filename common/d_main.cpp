@@ -66,6 +66,7 @@
 #include "w_ident.h"
 #include "m_resfile.h"
 #include "odainfo.h"
+#include "id24info.h"
 #include "infomap.h"
 
 #ifdef CLIENT_APP
@@ -260,36 +261,43 @@ static char *GetRegistryString(const registry_value_t *reg_val)
 //
 void D_InitializeDoomObjectTables()
 {
+	const auto getMobjinfoIndex = [](const mobjinfo_t& m){ return m.type; };
+	const auto getStateIndex = [](const state_t& s){ return s.statenum; };
+
 	// [RH] Initialize items. Still only used for the give command. :-(
 	InitItems();
 	// Initialize states
 	states.clear();
-	states.insert({boomstates, ::NUMSTATES}, S_NULL);
-	states.insert(getOdaStates(), S_GIB0);
+	states.insert(getStates(), getStateIndex);
+	states.insert(getOdaStates(), getStateIndex);
+	states.insert(getID24States(), getStateIndex);
 	// Initialize mobjinfo
 	mobjinfo.clear();
-	mobjinfo.insert({doom_mobjinfo, ::NUMMOBJTYPES}, MT_PLAYER);
-	mobjinfo.insert(getOdaMobjinfo(), MT_GIB0);
+	mobjinfo.insert(getMobjinfo(), getMobjinfoIndex);
+	mobjinfo.insert(getOdaMobjinfo(), getMobjinfoIndex);
+	mobjinfo.insert(getID24Mobjinfo(), getMobjinfoIndex);
 	// Initialize sprnames
 	sprnames.clear();
-	sprnames.insert({doom_sprnames, ::NUMSPRITES}, SPR_TROO);
+	sprnames.insert(getSprNames(), SPR_TROO);
 	sprnames.insert(getOdaSprNames(), SPR_GIB0);
+	sprnames.insert(getID24SprNames(), SPR_BSH1);
 	// Initialize soundmap
 	SoundMap.clear();
-	SoundMap.insert({doom_SoundMap, ARRAY_LENGTH(doom_SoundMap)}, 0);
-	SoundMap.insert({odamex_SoundMap, ARRAY_LENGTH(odamex_SoundMap)}, 0x80000000);
+	SoundMap.insert(doom_SoundMap, info::IndexRanges<int32_t>::original);
+	SoundMap.insert(odamex_SoundMap, info::IndexRanges<int32_t>::odamex);
+	SoundMap.insert(id24_SoundMap, info::IndexRanges<int32_t>::id24);
 	// Initialize spawn map
 	D_BuildSpawnMap();
 
 	states.rebuildMap(
 		[](const state_t& lhs, const state_t& rhs){ return lhs.statenum < rhs.statenum; },
-		[](const state_t& s){ return s.statenum; }
+		getStateIndex
 	);
 	mobjinfo.rebuildMap(
 		[](const mobjinfo_t& lhs, const mobjinfo_t& rhs){
-			return lhs.type < rhs.type || (lhs.type == rhs.type && lhs.doomednum < rhs.doomednum);
+			return lhs.type < rhs.type or (lhs.type == rhs.type and lhs.doomednum < rhs.doomednum);
 		},
-		[](const mobjinfo_t& m){ return m.type; }
+		getMobjinfoIndex
 	);
 }
 
@@ -1154,7 +1162,7 @@ static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option
 //
 // Adds files passed without a parameter, as happens when they are dropped onto
 // the executable.
-// 
+//
 // Sorted by extension so a dropped patch is not also loaded as a WAD.
 //
 // No extension is assumed to be a WAD.

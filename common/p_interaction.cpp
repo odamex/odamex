@@ -376,11 +376,7 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 
 	const int oldammotype = player.ammo[ammotype];
 	player.ammo[ammotype] += static_cast<int>(num);
-
-	if (player.ammo[ammotype] > player.maxammo[ammotype])
-	{
-		player.ammo[ammotype] = player.maxammo[ammotype];
-	}
+	player.ammo[ammotype] = std::min(player.ammo[ammotype], player.maxammo[ammotype]);
 
 	// If non zero ammo,
 	// don't change up weapons,
@@ -447,7 +443,7 @@ ItemEquipVal PickupStandardWeapon(player_t& player, weapontype_t weapon, OUtil::
 		// give one clip with a dropped weapon,
 		// two clips with a found weapon
 		const float clipCount = wasDropped ? 1.0f : 2.0f;
-		if ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, clipCount)) != 0)
+		if ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, clipCount)) != IEV_NotEquipped)
 		{
 			result = IEV_EquipRemove;
 		}
@@ -513,10 +509,7 @@ ItemEquipVal P_GiveBody(player_t& player, int num)
 	}
 
 	player.health += static_cast<int>(static_cast<float>(num) * G_GetCurrentSkill().health_factor);
-	if (player.health > MAXHEALTH)
-	{
-		player.health = MAXHEALTH;
-	}
+	player.health = std::min(player.health, MAXHEALTH);
 	player.mo->health = player.health;
 
 	return IEV_EquipRemove;
@@ -539,8 +532,7 @@ ItemEquipVal P_GiveArmor(player_t& player, int armortype)
 
 	player.armortype = armortype;
 	player.armorpoints += hits_real;
-	if (player.armorpoints > hits)
-		player.armorpoints = hits;
+	player.armorpoints = std::min(player.armorpoints, hits);
 
 	return IEV_EquipRemove;
 }
@@ -558,16 +550,8 @@ ItemEquipVal P_GiveCard(player_t& player, card_t card)
 	player.bonuscount = BONUSADD;
 	player.cards[card] = true;
 
-	if (multiplayer)
-	{
-#ifdef SERVER_APP
-		// Register the key
-		SV_ShareKeys(card, player);
-#endif
-
-
-		return IEV_EquipStay;
-	}
+	// Register the key
+	SERVER_ONLY(SV_ShareKeys(card, player));
 
 	return IEV_EquipRemove;
 }
@@ -623,10 +607,13 @@ ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power)
 #include "g_deathspot.h"
 #include "g_spree.h"
 
+namespace
+{
+
 	/*
  * @brief Player grabbed a resurrect player powerup
  */
-static void P_ResurrectPlayerPowerUp(player_t& player)
+void P_ResurrectPlayerPowerUp(player_t& player)
 {
 	if (!::serverside)
 		return;
@@ -679,7 +666,7 @@ static void P_ResurrectPlayerPowerUp(player_t& player)
 /*
  * @brief Player grabbed an extra life powerup
  */
-static void P_AwardExtraLifePowerUp(player_t& player)
+void P_AwardExtraLifePowerUp(player_t& player)
 {
 	if (!::serverside)
 		return;
@@ -703,7 +690,7 @@ static void P_AwardExtraLifePowerUp(player_t& player)
  * @detail A care package gives you a small collection of items based on what
  *         you're already holding.  TODO: These messages should be LANGUAGE'ed.
  */
-static void P_GiveCarePack(player_t& player)
+void P_GiveCarePack(player_t& player)
 {
 	constexpr int ammomulti[NUMAMMO] = {2, 1, 1, 2};
 
@@ -855,11 +842,8 @@ static void P_GiveCarePack(player_t& player)
 	if (blocks >= 1 && player.armorpoints + 10 < 95)
 	{
 		player.armorpoints += 10;
-		if (player.armorpoints > ::deh.MaxArmor)
-		{
-			player.armorpoints = ::deh.MaxArmor;
-		}
-		if (!player.armortype)
+		player.armorpoints = std::min(player.armorpoints, ::deh.MaxArmor);
+		if (not player.armortype)
 		{
 			player.armortype = ::deh.GreenAC;
 		}
@@ -870,24 +854,23 @@ static void P_GiveCarePack(player_t& player)
 	if (message.empty())
 		message = "Picked up a supply cache full of health and ammo!";
 
-	PrintFmt(PRINT_PICKUP, "{}\n", message.c_str());
+	PrintFmt(PRINT_PICKUP, "{}\n", message);
 	if (!midmessage.empty())
 	{
 		std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-		C_MidPrint(buf.c_str(), NULL, 0);
+		C_MidPrint(buf.c_str(), nullptr, 0);
 	}
 }
 
+} // namespace
+
 bool P_SpecialIsWeapon(const AActor& special)
 {
-	return (special.type == MT_CHAINGUN ||
-			special.type == MT_SHOTGUN  ||
-			special.type == MT_SUPERSHOTGUN ||
-			special.type == MT_MISC25 ||
-			special.type == MT_MISC26 ||
-			special.type == MT_MISC27 ||
-			special.type == MT_MISC28);
+	return special.info->hasWeaponPickup();
 }
+
+namespace
+{
 
 void P_PickupSound(const AActor *ent, int channel, const char *name)
 {
@@ -897,11 +880,8 @@ void P_PickupSound(const AActor *ent, int channel, const char *name)
 		S_Sound(ent, channel, name, 1, ATTN_NONE);
 }
 
-ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
+ItemEquipVal P_GiveSpecialClassic(player_t& player, AActor& special)
 {
-	if (!player.mo)
-		return IEV_NotEquipped;
-
 	AActor *toucher = player.mo;
 	enum class SpecialSound
 	{
@@ -910,9 +890,9 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 		Weapon,
 		PowerUp,
 	} sound = SpecialSound::Item;
-	const OString* msg = NULL;
+	const OString* msg = nullptr;
 	ItemEquipVal val = IEV_EquipRemove;
-	bool dropped = false;
+	const auto dropped = special.flags & MF_DROPPED;
 
 	// Identify by sprite.
 	switch (special.sprite)
@@ -923,7 +903,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			msg = &GOTARMOR;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_GREENARMOR, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_GREENARMOR, dropped);
 			}
 			break;
 
@@ -932,46 +912,37 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			msg = &GOTMEGA;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUEARMOR, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUEARMOR, dropped);
 			}
 			break;
 
 		// bonus items
 		case SPR_BON1:
 			player.health += static_cast<int>(G_GetCurrentSkill().health_factor); // can go over 100%
-			if (player.health > deh.MaxSoulsphere)
-			{
-				player.health = deh.MaxSoulsphere;
-			}
+			player.health = std::min(player.health, deh.MaxSoulsphere);
 			player.mo->health = player.health;
 			msg = &GOTHTHBONUS;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_HEALTHBONUS, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_HEALTHBONUS, dropped);
 			break;
 
 		case SPR_BON2:
 			player.armorpoints += static_cast<int>(G_GetCurrentSkill().armor_factor); // can go over 100%
-			if (player.armorpoints > deh.MaxArmor)
-			{
-				player.armorpoints = deh.MaxArmor;
-			}
-			if (!player.armortype)
+			player.armorpoints = std::min(player.armorpoints, deh.MaxArmor);
+			if (not player.armortype)
 			{
 				player.armortype = deh.GreenAC;
 			}
 			msg = &GOTARMBONUS;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ARMORBONUS, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ARMORBONUS, dropped);
 			break;
 
 		case SPR_SOUL:
 			player.health += static_cast<int>(static_cast<float>(deh.SoulsphereHealth) * G_GetCurrentSkill().health_factor);
-			if (player.health > deh.MaxSoulsphere)
-			{
-			    player.health = deh.MaxSoulsphere;
-			}
+			player.health = std::min(player.health, deh.MaxSoulsphere);
 			player.mo->health = player.health;
 			msg = &GOTSUPER;
 			sound = SpecialSound::PowerUp;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SOULSPHERE, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SOULSPHERE, dropped);
 			break;
 
 		case SPR_MEGA:
@@ -980,7 +951,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			P_GiveArmor(player,deh.BlueAC);
 			msg = &GOTMSPHERE;
 			sound = SpecialSound::PowerUp;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_MEGASPHERE, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_MEGASPHERE, dropped);
 			break;
 
 		// cards
@@ -990,7 +961,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			sound = SpecialSound::Item;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUEKEY, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUEKEY, dropped);
 			}
 			break;
 
@@ -1000,7 +971,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			sound = SpecialSound::Item;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_YELLOWKEY, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_YELLOWKEY, dropped);
 			}
 			break;
 
@@ -1010,7 +981,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			sound = SpecialSound::Item;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_REDKEY, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_REDKEY, dropped);
 			}
 			break;
 
@@ -1020,7 +991,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			sound = SpecialSound::Item;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUESKULL, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUESKULL, dropped);
 			}
 			break;
 
@@ -1030,7 +1001,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			sound = SpecialSound::Item;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_YELLOWSKULL, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_YELLOWSKULL, dropped);
 			}
 			break;
 
@@ -1040,7 +1011,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			sound = SpecialSound::Item;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_REDSKULL, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_REDSKULL, dropped);
 			}
 			break;
 
@@ -1050,7 +1021,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			msg = &GOTSTIM;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_STIMPACK, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_STIMPACK, dropped);
 			}
 			break;
 
@@ -1066,7 +1037,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			val = P_GiveBody(player, 25);
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_MEDKIT, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_MEDKIT, dropped);
 			}
 			break;
 
@@ -1075,59 +1046,52 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			val = P_GivePower(player, pw_invulnerability);
 			msg = &GOTINVUL;
 			sound = SpecialSound::PowerUp;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_INVULNSPHERE, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_INVULNSPHERE, dropped);
 			break;
 
 		case SPR_PSTR:
 			val = P_GivePower(player, pw_strength);
 			msg = &GOTBERSERK;
+			// should this skip readying if the player already had berserk?
 			if (player.readyweapon != wp_fist)
 			{
 				player.pendingweapon = wp_fist;
 			}
 			sound = SpecialSound::PowerUp;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BERSERK, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BERSERK, dropped);
 			break;
 
 		case SPR_PINS:
 			val = P_GivePower(player, pw_invisibility);
 			msg = &GOTINVIS;
 			sound = SpecialSound::PowerUp;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_INVISSPHERE, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_INVISSPHERE, dropped);
 			break;
 
 		case SPR_SUIT:
 			val = P_GivePower(player, pw_ironfeet);
 			msg = &GOTSUIT;
 			sound = SpecialSound::PowerUp;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_RADSUIT, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_RADSUIT, dropped);
 			break;
 
 		case SPR_PMAP:
 			val = P_GivePower(player, pw_allmap);
 			msg = &GOTMAP;
 			sound = SpecialSound::PowerUp;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_COMPUTERMAP, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_COMPUTERMAP, dropped);
 			break;
 
 		case SPR_PVIS:
 			val = P_GivePower(player, pw_infrared);
 			msg = &GOTVISOR;
 			sound = SpecialSound::PowerUp;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_GOGGLES, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_GOGGLES, dropped);
 			break;
 
 		// ammo
 		case SPR_CLIP:
-			if (special.flags & MF_DROPPED)
-			{
-				val = P_GiveAmmo(player, am_clip, 0);
-				dropped = true;
-			}
-			else
-			{
-				val = P_GiveAmmo(player, am_clip, 1);
-			}
+			val = P_GiveAmmo(player, am_clip, dropped ? 0 : 1);
 			msg = &GOTCLIP;
 			if (val == IEV_EquipRemove)
 			{
@@ -1140,7 +1104,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			msg = &GOTCLIPBOX;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_AMMOBOX, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_AMMOBOX, dropped);
 			}
 			break;
 
@@ -1149,7 +1113,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			msg = &GOTROCKET;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ROCKET, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ROCKET, dropped);
 			}
 			break;
 
@@ -1158,7 +1122,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			msg = &GOTROCKBOX;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ROCKETBOX, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ROCKETBOX, dropped);
 			}
 			break;
 
@@ -1167,7 +1131,7 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			msg = &GOTCELL;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CELL, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CELL, dropped);
 			}
 			break;
 
@@ -1176,15 +1140,11 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			msg = &GOTCELLBOX;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CELLPACK, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CELLPACK, dropped);
 			}
 			break;
 
 		case SPR_SHEL:
-			if (special.flags & MF_DROPPED)
-			{
-				dropped = true;
-			}
 			val = P_GiveAmmo(player, am_shell, 1);
 			msg = &GOTSHELLS;
 			if (val == IEV_EquipRemove)
@@ -1198,19 +1158,19 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			msg = &GOTSHELLBOX;
 			if (val == IEV_EquipRemove)
 			{
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SHELLBOX, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SHELLBOX, dropped);
 			}
 			break;
 
 		case SPR_BPAK:
-			if (!player.backpack)
+			if (not player.backpack)
 			{
 				for (int i = 0; i < NUMAMMO; i++)
 				{
 					player.maxammo[i] *= 2;
 				}
 				player.backpack = true;
-				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BACKPACK, false);
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BACKPACK, dropped);
 			}
 			for (int i = 0; i < NUMAMMO; i++)
 			{
@@ -1220,100 +1180,100 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 			break;
 
 		case SPR_CARE:
-			// Care package.  What does it contian?
+			// Care package.  What does it contain?
 			P_GiveCarePack(player);
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CAREPACKAGE, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CAREPACKAGE, dropped);
 			break;
 
 		case SPR_O1UP:
 			// Award an extra life to the player who collects this
 			P_AwardExtraLifePowerUp(player);
 			sound = SpecialSound::PowerUp;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_EXTRALIFE, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_EXTRALIFE, dropped);
 			break;
 
 		case SPR_RSTM:
 			// Resurrect a player with this power up
 			P_ResurrectPlayerPowerUp(player);
 			sound = SpecialSound::PowerUp;
-			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_RESTEAMMATE, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_RESTEAMMATE, dropped);
 			break;
 
 		// weapons
 		case SPR_BFUG:
-			val = P_GiveWeapon(player, wp_bfg, special.flags & MF_DROPPED);
+			val = P_GiveWeapon(player, wp_bfg, dropped);
 			msg = &GOTBFG9000;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
 			{
 				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BFG,
-				                    special.flags & MF_DROPPED);
+				                    dropped);
 			}
 			break;
 
 		case SPR_MGUN:
-			val = P_GiveWeapon(player, wp_chaingun, special.flags & MF_DROPPED);
+			val = P_GiveWeapon(player, wp_chaingun, dropped);
 			msg = &GOTCHAINGUN;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
 			{
 				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CHAINGUN,
-				                    special.flags & MF_DROPPED);
+				                    dropped);
 			}
 			break;
 
 		case SPR_CSAW:
-			val = P_GiveWeapon(player, wp_chainsaw, special.flags & MF_DROPPED);
+			val = P_GiveWeapon(player, wp_chainsaw, dropped);
 			msg = &GOTCHAINSAW;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
 			{
 				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CHAINSAW,
-				                    special.flags & MF_DROPPED);
+				                    dropped);
 			}
 			break;
 
 		case SPR_LAUN:
-			val = P_GiveWeapon(player, wp_missile, special.flags & MF_DROPPED);
+			val = P_GiveWeapon(player, wp_missile, dropped);
 			msg = &GOTLAUNCHER;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
 			{
 				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ROCKETLAUNCHER,
-				                    special.flags & MF_DROPPED);
+				                    dropped);
 			}
 			break;
 
 		case SPR_PLAS:
-			val = P_GiveWeapon(player, wp_plasma, special.flags & MF_DROPPED);
+			val = P_GiveWeapon(player, wp_plasma, dropped);
 			msg = &GOTPLASMA;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
 			{
 				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_PLASMAGUN,
-				                    special.flags & MF_DROPPED);
+				                    dropped);
 			}
 			break;
 
 		case SPR_SHOT:
-			val = P_GiveWeapon(player, wp_shotgun, special.flags & MF_DROPPED);
+			val = P_GiveWeapon(player, wp_shotgun, dropped);
 			msg = &GOTSHOTGUN;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
 			{
 				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SHOTGUN,
-				                    special.flags & MF_DROPPED);
+				                    dropped);
 			}
 			break;
 
 		case SPR_SGN2:
-			val = P_GiveWeapon(player, wp_supershotgun, special.flags & MF_DROPPED);
+			val = P_GiveWeapon(player, wp_supershotgun, dropped);
 			msg = &GOTSHOTGUN2;
 			sound = SpecialSound::Weapon;
 			if (val == IEV_EquipStay || val == IEV_EquipRemove)
 			{
 				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SUPERSHOTGUN,
-				                    special.flags & MF_DROPPED);
+				                    dropped);
 			}
 			break;
 
@@ -1347,20 +1307,13 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 		}
 	}
 
-	if (special.flags & MF_COUNTITEM)
-	{
-		player.itemcount++;
-		level.found_items++;
-	}
-
 	if (val == IEV_NotEquipped)
 		return val;
 
-	//the player equipped/picked up an item
-	player.bonuscount = BONUSADD;
-	SV_TouchSpecial(special, player);
+	if (special.info->pickupmsg)
+		msg = &special.info->pickupmsg.value();
 
-	if (msg != NULL)
+	if (msg != nullptr)
 		PickupMessage(toucher, GStrings(*msg));
 
 	const AActor *ent = player.mo;
@@ -1383,6 +1336,262 @@ ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 	return val;
 }
 
+ItemEquipVal P_GiveSpecialID24(player_t& player, AActor& special)
+{
+	const auto& info = *special.info;
+	const OString* msg = info.pickupmsg ? &info.pickupmsg.value() : nullptr;
+	ItemEquipVal val = IEV_NotEquipped;
+	if (info.pickupammo == am_noammo and info.pickupweapon == wp_nochange and
+	    (info.pickupitem == id24pickup_t::None or info.pickupitem == id24pickup_t::MsgOnly))
+	{
+		val = IEV_EquipRemove;
+	}
+
+	const auto dropped = special.flags & MF_DROPPED;
+
+	// reference implementation just uses a boolean with |= used below
+	// try to emulate that with ItemEquipVal
+	// equipremove takes precedence because in the reference implementation
+	// true is equivalent to our iev_equipremove and false is used for both of the
+	// other cases
+	const auto updateVal = [&val](ItemEquipVal new_val)
+	{
+		switch (new_val)
+		{
+			case IEV_NotEquipped:
+				return val;
+			case IEV_EquipRemove:
+				return new_val;
+			case IEV_EquipStay:
+				return val == IEV_EquipRemove ? val : new_val;
+		}
+		OUtil::unreachable();
+	};
+
+	// TODO: should we be doing the individual WDLStats stuff like this or should we combine it
+	//       all into a single id24 pickup event that contains properties of the pickup?
+
+	// TODO: create ammo_t for defining properties of ammo
+	if (info.pickupammo != am_noammo)
+	{
+		PrintFmt(PRINT_WARNING,"ID24 ammo is not yet implemented, could not give ammo type {}.\n", info.pickupammo);
+	// 	val = updateVal(P_GiveAmmo(player, ))
+	}
+
+	if (info.pickupweapon != wp_nochange)
+	{
+		// TODO:
+		// we're doing this here instead of during loading dehacked because
+		// this will be more obvious to anyone testing in gameplay
+		// dehacked warnings tend to get missed
+		// after we implement full id24 weapons this should be removed
+		// and a step should be added to dehacked post-processing
+		// errors out on using unknown ammo or weapon types
+		// we also need to make WDL stats be able to handle extra weapon and ammo slots
+		switch (info.pickupweapon)
+		{
+			case wp_fist:
+			case wp_pistol:
+			case wp_shotgun:
+			case wp_chaingun:
+			case wp_missile:
+			case wp_plasma:
+			case wp_bfg:
+			case wp_chainsaw:
+			case wp_supershotgun:
+				val = updateVal(P_GiveWeapon(
+					player,
+					static_cast<weapontype_t>(info.pickupweapon),
+					dropped)
+				);
+				// for now lets just mark this unknown
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_UNKNOWN, dropped);
+				break;
+			default:
+				PrintFmt(PRINT_WARNING,"ID24 weapons are not yet implemented, could not give weapon type {}.\n", info.pickupweapon);
+		}
+	}
+
+	ItemEquipVal tempval;
+	switch (info.pickupitem)
+	{
+		using enum id24pickup_t;
+		case None: // yes, None does still the message
+		case MsgOnly:
+			break;
+		case BlueKey:
+			tempval = P_GiveCard(player, it_bluecard);
+			val = updateVal(tempval);
+			if (tempval == IEV_EquipRemove)
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUEKEY, dropped);
+			break;
+		case YellowKey:
+			tempval = P_GiveCard(player, it_yellowcard);
+			val = updateVal(tempval);
+			if (val == IEV_EquipRemove)
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_YELLOWKEY, dropped);
+			break;
+		case RedKey:
+			tempval = P_GiveCard(player, it_redcard);
+			val = updateVal(tempval);
+			if (val == IEV_EquipRemove)
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_REDKEY, dropped);
+			break;
+		case BlueSkull:
+			tempval = P_GiveCard(player, it_blueskull);
+			val = updateVal(tempval);
+			if (val == IEV_EquipRemove)
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUESKULL, dropped);
+			break;
+		case YellowSkull:
+			tempval = P_GiveCard(player, it_yellowskull);
+			val = updateVal(tempval);
+			if (val == IEV_EquipRemove)
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_YELLOWSKULL, dropped);
+			break;
+		case RedSkull:
+			tempval = P_GiveCard(player, it_redskull);
+			val = updateVal(tempval);
+			if (val == IEV_EquipRemove)
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_REDSKULL, dropped);
+			break;
+		case Backpack:
+			val = updateVal(IEV_EquipRemove);
+			if (not player.backpack)
+			{
+				for (int i = 0; i < NUMAMMO; i++)
+				{
+					player.maxammo[i] *= 2;
+				}
+				player.backpack = true;
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BACKPACK, dropped);
+			}
+			for (int i = 0; i < NUMAMMO; i++)
+			{
+				P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
+			}
+			break;
+		case HealthBonus:
+			val = updateVal(IEV_EquipRemove);
+			player.health += static_cast<int>(G_GetCurrentSkill().health_factor); // can go over 100%
+			player.health = std::min(player.health, deh.MaxSoulsphere);
+			player.mo->health = player.health;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_HEALTHBONUS, dropped);
+			break;
+		case Stimpack:
+			tempval = P_GiveBody(player, 10);
+			val = updateVal(tempval);
+			if (val == IEV_EquipRemove)
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_STIMPACK, dropped);
+			break;
+		case Medikit:
+			if (player.health < 25)
+				msg = &GOTMEDINEED;
+			tempval = P_GiveBody(player, 25);
+			val = updateVal(tempval);
+			if (val == IEV_EquipRemove)
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_MEDKIT, dropped);
+			break;
+		case Soulsphere:
+		case Megasphere:
+		case ArmorBonus:
+			val = updateVal(IEV_EquipRemove);
+			player.armorpoints += static_cast<int>(G_GetCurrentSkill().armor_factor); // can go over 100%
+			player.armorpoints = std::min(player.armorpoints, deh.MaxArmor);
+			if (not player.armortype)
+			{
+				player.armortype = deh.GreenAC;
+			}
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ARMORBONUS, dropped);
+			break;
+		case GreenArmor:
+		case BlueArmor:
+		case ComputerMap:
+			val = updateVal(P_GivePower(player, pw_allmap));
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_COMPUTERMAP, dropped);
+			break;
+		case LightGoggles:
+			val = updateVal(P_GivePower(player, pw_infrared));
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_GOGGLES, dropped);
+			break;
+		case Berserk:
+			val = updateVal(P_GivePower(player, pw_strength));
+			if (player.readyweapon != wp_fist)
+				player.pendingweapon = wp_fist;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BERSERK, dropped);
+			break;
+		case PartialInvis:
+			val = updateVal(P_GivePower(player, pw_invisibility));
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_INVISSPHERE, dropped);
+			break;
+		case RadSuit:
+			val = updateVal(P_GivePower(player, pw_ironfeet));
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_RADSUIT, dropped);
+			break;
+		case Invuln:
+			val = updateVal(P_GivePower(player, pw_invulnerability));
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_INVULNSPHERE, dropped);
+			break;
+	}
+
+	if (val == IEV_NotEquipped)
+		return val;
+
+	if (msg)
+		PickupMessage(player.mo, GStrings(*msg));
+
+	if (info.pickupsound)
+		P_PickupSound(player.mo, CHAN_ITEM, info.pickupsound);
+
+	return val;
+}
+
+} // namespace
+
+ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
+{
+	if (not player.mo)
+		return IEV_NotEquipped;
+
+	ItemEquipVal val;
+
+	if (special.info->isID24Pickup())
+		val = P_GiveSpecialID24(player, special);
+	else
+		val = P_GiveSpecialClassic(player, special);
+
+	if (val == IEV_NotEquipped)
+		return val;
+
+	// FIXME: slight deviation from spec, sv_weaponstay controls this elsewhere for weapons
+	// we might want to add a 3rd mode that fully respects the id24 flags
+	// switch this if statement to the commented out one and go figure out how to handle
+	// the sv_weaponstay check in P_GiveWeapon and whether it needs changes
+	// we also ignore the weapon check in singleplayer, where likely sv_weaponstay is not
+	// being messed with
+	// if (val == IEV_EquipRemove and (sv_weaponstay == 2 or not (multiplayer and special.info->hasWeaponPick())))
+	if (val == IEV_EquipRemove and not (multiplayer and special.info->hasWeaponPickup()))
+	{
+		if ((not multiplayer and (special.flags3 & MF3_SPECSTAYSSINGLE)) or
+			(multiplayer and G_IsCoopGame() and (special.flags3 & MF3_SPECSTAYSCOOP)) or
+			(multiplayer and G_IsPvPGame() and (special.flags3 & MF3_SPECSTAYSDM)))
+		{
+			val = IEV_EquipStay;
+		}
+	}
+
+	if (special.flags & MF_COUNTITEM)
+	{
+		player.itemcount++;
+		level.found_items++;
+	}
+
+	//the player equipped/picked up an item
+	player.bonuscount = special.info->pickupbonuscount;
+	SV_TouchSpecial(special, player);
+
+	return val;
+}
 
 //
 // P_TouchSpecialThing
@@ -1948,8 +2157,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 				PersistTeamScore(splayer->userinfo.team);
 		}
 		// [deathz0r] Stats for co-op scoreboard
-		if (G_IsCoopGame() &&
-		    ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
+		if (G_IsCoopGame() and target->IsMonster())
 		{
 			if (P_GiveKills(*splayer, 1))
 				PersistPlayerScore(*splayer, sendLives, sendScore);
@@ -2028,10 +2236,8 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		P_ProcessSpreeKill(source, target->player);
 	}
 
-	if (target->health > 0) // denis - when this function is used standalone
-	{
-		target->health = 0;
-	}
+	 // denis - when this function is used standalone
+	target->health = std::min(target->health, 0);
 
 	target->UpdateActorLists();
 
@@ -2255,6 +2461,14 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		target->momx = target->momy = target->momz = 0;
 	}
 
+  	if (target == source or target == inflictor)
+	{
+		if (source != nullptr)
+			damage = FixedMul(damage, source->info->selfdamage);
+		else if (inflictor != nullptr)
+			damage = FixedMul(damage, inflictor->info->selfdamage);
+	}
+
 	if (player)
     {
 		damage = static_cast<int>(static_cast<float>(damage) * G_GetCurrentSkill().damage_factor);
@@ -2439,8 +2653,8 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		player->attacker = source ? source->ptr() : AActor::AActorPtr();
 		player->damagecount += damage; // add damage after armor / invuln
 
-		if (player->damagecount > 100)
-			player->damagecount = 100; // teleport stomp does 10k points...
+		 // teleport stomp does 10k points...
+		player->damagecount = std::min(player->damagecount, 100);
 
 		SV_SendDamagePlayer(player, inflictor, damage, armorDamage);
 	}
@@ -2670,11 +2884,8 @@ void P_HealMobj(AActor* mo, int num)
 	}
 	else
 	{
-		const int max = mobjinfo[mo->type].spawnhealth;
-
 		mo->health += num;
-		if (mo->health > max)
-			mo->health = max;
+		mo->health = std::min(mo->health, mobjinfo[mo->type].spawnhealth);
 	}
 }
 

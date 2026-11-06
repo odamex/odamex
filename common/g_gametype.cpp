@@ -315,6 +315,14 @@ bool G_IsCoopGame()
 }
 
 /**
+ * @brief Check if the gametype is purely player versus player.
+ */
+bool G_IsPvPGame()
+{
+	return not G_IsCoopGame();
+}
+
+/**
  * @brief Check if the gametype typically has a single winner.
  */
 bool G_IsFFAGame()

@@ -225,7 +225,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 
 		while ((actor = iterator.Next()))
 		{
-			if (actor->flags & MF_COUNTKILL || actor->type == MT_SKULL)
+			if (actor->IsMonster())
 			{
 				// killough 3/6/98: kill even if PE is dead
 				if (actor->health > 0)
@@ -405,7 +405,7 @@ void GiveTo(player_t& player, const char* name)
 
 	if (giveall || stricmp(name, "backpack") == 0)
 	{
-		if (!player.backpack)
+		if (not player.backpack)
 		{
 			for (int i = 0; i < NUMAMMO; i++)
 				player.maxammo[i] *= 2;

@@ -24,11 +24,13 @@
 
 #pragma once
 
+#include "info.h"
 #include "m_resfile.h"
+#include "m_doomobjcontainer.h"
 
 // Sound equivalences. When a patch tries to change a sound,
 // use these sound names.
-static const char* doom_SoundMap[] = {nullptr,
+inline constexpr std::array doom_SoundMap = std::to_array<const char*>({nullptr,
                             "weapons/pistol",
                             "weapons/shotgf",
                             "weapons/shotgr",
@@ -219,15 +221,56 @@ static const char* doom_SoundMap[] = {nullptr,
                             "dehextra/sound188", "dehextra/sound189", "dehextra/sound190", "dehextra/sound191",
                             "dehextra/sound192", "dehextra/sound193", "dehextra/sound194", "dehextra/sound195",
                             "dehextra/sound196", "dehextra/sound197", "dehextra/sound198", "dehextra/sound199",
-                            };
+                            });
 
-static const char* odamex_SoundMap[] =
+inline constexpr std::array odamex_SoundMap = std::to_array<const char*>(
 {
     // Odamex/ZDoom sounds
     "misc/teamchat"
-};
+});
 
-inline DoomObjectContainer<std::string> SoundMap(ARRAY_LENGTH(doom_SoundMap) + ARRAY_LENGTH(odamex_SoundMap));
+inline constexpr std::array id24_SoundMap = std::to_array<const char*>(
+{
+    "monsters/banshee/active",
+    "monsters/banshee/death",
+    "monsters/banshee/pain",
+    "world/officelamp",
+    "monsters/mindweaver/active",
+    "monsters/mindweaver/death",
+    "monsters/mindweaver/sight",
+    "monsters/mindweaver/walk",
+    "ambient/portalclose",
+    "ambient/portalloop",
+    "ambient/portalopen",
+    "monsters/ghoul/active",
+    "monsters/ghoul/death",
+    "monsters/ghoul/pain",
+    "monsters/ghoul/sight",
+    "weapons/calamityblade/charge",
+    "weapons/calamityblade/shoot",
+    "weapons/calamityblade/explode",
+    "weapons/incinerator/burn",
+    "weapons/incinerator/fire1",
+    "weapons/incinerator/fire2",
+    "weapons/incinerator/hot1",
+    "weapons/incinerator/hot2",
+    "weapons/incinerator/hot3",
+    "ambient/klaxon",
+    "monsters/plasmaguy/active",
+    "monsters/plasmaguy/death",
+    "monsters/plasmaguy/head",
+    "monsters/plasmaguy/pain",
+    "monsters/tyrant/death",
+    "monsters/tyrant/sight",
+    "monsters/tyrant/walk",
+    "monsters/vassago/active",
+    "monsters/vassago/attack",
+    "monsters/vassago/death",
+    "monsters/vassago/pain",
+    "monsters/vassago/sight",
+});
+
+inline DoomObjectContainer<std::string> SoundMap(doom_SoundMap.size() + odamex_SoundMap.size() + id24_SoundMap.size());
 
 void D_UndoDehPatch();
 bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool notext = false);
