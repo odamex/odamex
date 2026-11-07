@@ -42,6 +42,31 @@ using socklen_t = int;
 
 #include "odamex.h"
 
+namespace
+{
+	void EnableSocketKeepAlive(CANARY_SOCKET_INT socketNumber)
+	{
+		int enable = 1;
+		int interval = 10;
+		if (setsockopt(socketNumber, SOL_SOCKET, SO_KEEPALIVE, SETSOCKOPTCAST(&enable), static_cast<socklen_t>(sizeof(enable))))
+		{
+			PrintFmt("Failed to enable SO_KEEPALIVE on the canary: {}\n", strerror(errno));
+		}
+#ifdef OSX
+		else if (setsockopt(socketNumber, IPPROTO_TCP, TCP_KEEPALIVE, SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
+#else
+		else if (setsockopt(socketNumber, IPPROTO_TCP, TCP_KEEPIDLE,  SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
+#endif
+		{
+			PrintFmt("Failed to set TCP_KEEPIDLE on the canary: {}\n", strerror(errno));
+		}
+		else if (setsockopt(socketNumber, IPPROTO_TCP, TCP_KEEPINTVL, SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
+		{
+			PrintFmt("Failed to set TCP_KEEPINTVL on the canary: {}\n", strerror(errno));
+		}
+	}
+}
+
 CanarySocketServer::CanarySocketServer(int i_tcpPort) :
 	m_serverSocket(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))
 {
@@ -110,24 +135,7 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
 			socklen_t   addressLength = sizeof(address);
 			const CANARY_SOCKET_INT clientSocket = accept(m_serverSocket, reinterpret_cast<sockaddr*>(&address), &addressLength);
 
-			int enable = 1;
-			int interval = 10;
-			if (setsockopt(clientSocket, SOL_SOCKET, SO_KEEPALIVE, SETSOCKOPTCAST(&enable), static_cast<socklen_t>(sizeof(enable))))
-			{
-				PrintFmt("Failed to enable SO_KEEPALIVE on the canary: {}\n", strerror(errno));
-			}
-#ifdef OSX
-			else if (setsockopt(clientSocket, IPPROTO_TCP, TCP_KEEPALIVE, SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
-#else
-			else if (setsockopt(clientSocket, IPPROTO_TCP, TCP_KEEPIDLE,  SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
-#endif
-			{
-				PrintFmt("Failed to set TCP_KEEPIDLE on the canary: {}\n", strerror(errno));
-			}
-			else if (setsockopt(clientSocket, IPPROTO_TCP, TCP_KEEPINTVL, SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
-			{
-				PrintFmt("Failed to set TCP_KEEPINTVL on the canary: {}\n", strerror(errno));
-			}
+			EnableSocketKeepAlive(clientSocket);
 
 			dataAddress = address;
 
@@ -190,6 +198,9 @@ bool CanarySocketClient::Connect(const sockaddr_in& i_toAddress, const sockaddr_
 			{
 				PrintFmt("Failed to set SO_SNDTIMEO on the canary: {}\n", strerror(errno));
 			}
+
+			EnableSocketKeepAlive(m_socket);
+
 			if (connect(m_socket, reinterpret_cast<const sockaddr*>(&i_toAddress), sizeof(i_toAddress)) == 0)
 			{
 				// sin_port is already in network byte order.
@@ -211,3 +222,27 @@ bool CanarySocketClient::Connect(const sockaddr_in& i_toAddress, const sockaddr_
 	}
 	return false;
 }
+
+bool CanarySocketClient::IsAlive() const
+{
+	if (IsConnected())
+	{
+		fd_set sockets;
+		FD_ZERO(&sockets);
+		FD_SET(m_socket, &sockets);
+
+		timeval noWait     = {0, 0};
+		int     numSockets = select(m_socket + 1, &sockets, nullptr, nullptr, &noWait);
+
+		// For now, we only consider the case that the readfds get set when the connection has been reset/closed/terminated.
+		// TODO:  Check to see if there's *actual data* to read.
+		if (numSockets > 0 and FD_ISSET(m_socket, &sockets))
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
+};

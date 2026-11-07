@@ -91,6 +91,12 @@ class CanarySocketClient
 		/// Returns true if a new connection was successfully established, false otherwise.
 		bool Connect(const sockaddr_in& i_toAddress, const sockaddr_in& i_dataAddress);
 
+		/// Returns true if the socket was successfully connected, false otherwise.
+		bool IsConnected() const { return m_socket != CANARY_BAD_SOCKET; }
+
+		/// Returns true if the socket is connected and fully alive - both client and server are healthy.  False otherwise.
+		bool IsAlive() const;
+
 	protected:
 		CANARY_SOCKET_INT m_socket { CANARY_BAD_SOCKET };
 };

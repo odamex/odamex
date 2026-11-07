@@ -458,6 +458,9 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	case NQ_SERVER_DROP:
 		PrintFmt("Dropped by server\n");
 		break;
+	case NQ_SERVER_ABORT:
+		PrintFmt("Server terminated unexpectedly\n");
+		break;
 	}
 
 	if (::debug_disconnect)
@@ -2299,6 +2302,14 @@ MessageResultEnum CL_AcceptNetMessage()
 
 MessageResultEnum CL_ProcessCurrentAvailableMessages()
 {
+	if (        s_canary
+	    and     s_canary->IsConnected()
+	    and not s_canary->IsAlive())
+	{
+		CL_QuitNetGame(NQ_SERVER_ABORT);
+		return MessageResultEnum::ABORT;
+	}
+
 	auto result = CL_AcceptNetMessage();
 	while (result == MessageResultEnum::ACCEPT)
 	{

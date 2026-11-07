@@ -1060,7 +1060,7 @@ void G_Ticker (void)
 
 	netgraph.start(I_GetTime());
 
-	if (connected && !simulated_connection)
+	if (connected and not simulated_connection)
 	{
 		while ((packet_size = NET_GetPacket()) )
 		{
