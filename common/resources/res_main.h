@@ -63,6 +63,12 @@ static const ResourcePath scripts_directory_name("/SCRIPTS/");
 static const ResourcePath voices_directory_name("/VOICES/");
 static const ResourcePath voxels_directory_name("/VOXELS/");
 
+// UDMF maps can't be loaded yet. Their lumps are kept here, away from the
+// maps directory, so that a map command can say why the map is unavailable.
+
+// TODO: When we support UDMF maps, move them to the maps directory and remove this.
+static const ResourcePath udmf_maps_directory_name("/UDMFMAPS/");
+
 bool Res_IsWadFile(const OString& filename);
 bool Res_IsDehackedFile(const OString& filename);
 
@@ -462,6 +468,7 @@ bool Res_IsResourceReplaced(const ResourcePath& path);
 
 
 bool Res_CheckMap(const OString& mapname);
+bool Res_IsUDMFMap(const OString& mapname);
 bool Res_IsMapFromPWAD(const OString& mapname);
 const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
 

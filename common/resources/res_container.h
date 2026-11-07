@@ -297,6 +297,7 @@ protected:
 	bool readWadDirectory();
 
 	bool isLumpMapMarker(LumpId lump_id) const;
+	bool isLumpUDMFMapMarker(LumpId lump_id) const;
 
     typedef enum {START_MARKER, END_MARKER} MarkerType;
 

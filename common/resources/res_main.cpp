@@ -783,6 +783,20 @@ bool Res_CheckMap(const OString& mapname)
 
 
 //
+// Res_IsUDMFMap
+//
+// True when a resource file holds a UDMF map of this name. Those can't be
+// loaded yet, so Res_CheckMap doesn't count them.
+//
+bool Res_IsUDMFMap(const OString& mapname)
+{
+	ResourcePath directory = Res_MakeResourcePath(mapname, udmf_maps_directory_name);
+	const ResourceId res_id = Res_GetResourceId(mapname, directory);
+	return resource_manager.validateResourceId(res_id);
+}
+
+
+//
 // Res_IsMapFromPWAD
 //
 // True when the map marker the game resolves for this name came from a PWAD.

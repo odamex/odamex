@@ -102,6 +102,10 @@ static OMD5Hash Res_ContentManifestDigest(std::vector<ContentManifestEntry>& man
 }
 
 
+static const OString udmf_textmap_lump_name("TEXTMAP");
+static const OString udmf_endmap_lump_name("ENDMAP");
+
+
 //
 // Res_IsMapLumpName
 //
@@ -563,6 +567,22 @@ bool WadResourceContainer::isLumpMapMarker(LumpId lump_id) const
 
 
 //
+// WadResourceContainer::isLumpUDMFMapMarker
+//
+// Returns true if the given lump is the marker of a UDMF map, which is
+// followed by a TEXTMAP lump. Its lumps run up to an ENDMAP lump.
+//
+bool WadResourceContainer::isLumpUDMFMapMarker(LumpId lump_id) const
+{
+	const LumpId next_lump_id = lump_id + 1;
+	if (mDirectory.validate(lump_id) and mDirectory.validate(next_lump_id))
+		return OStringToUpper(mDirectory.getEntry(next_lump_id)->path) == udmf_textmap_lump_name;
+
+	return false;
+}
+
+
+//
 // WadResourceContainer::getResourceCount
 //
 // Returns the number of lumps in the WAD file or returns 0 if
@@ -580,6 +600,7 @@ uint32_t WadResourceContainer::getResourceCount() const
 void WadResourceContainer::addResources(ResourceManager* manager)
 {
 	OString map_name;
+	OString udmf_map_name;
 
 	for (ContainerDirectory<WadDirectoryEntry>::const_iterator it = mDirectory.begin(); it != mDirectory.end(); ++it)
 	{
@@ -591,22 +612,39 @@ void WadResourceContainer::addResources(ResourceManager* manager)
 		// check that the lump doesn't extend past the end of the file
 		if (entry.offset + entry.length <= mFile->size())
 		{
-			// [SL] Determine if this is a map marker (by checking if a map-related lump such as
-			// SEGS follows this one). If so, move all of the subsequent map lumps into
-			// this map's directory
-			bool is_map_marker = isLumpMapMarker(lump_id);
-			bool is_map_lump = Res_IsMapLumpName(entry.path);
-
-			if (is_map_marker)
-				map_name = entry.path;
-			else if (not is_map_lump)
+			// A UDMF map's lumps, from its marker to ENDMAP, go into its own
+			// directory away from the maps that can be loaded.
+			if (udmf_map_name.empty() and isLumpUDMFMapMarker(lump_id))
+			{
+				udmf_map_name = entry.path;
 				map_name.clear();
+			}
 
-			// add the lump to the appropriate namespace
-			if (not map_name.empty())
-				base_path = Res_MakeResourcePath(map_name, maps_directory_name);
+			if (not udmf_map_name.empty())
+			{
+				base_path = Res_MakeResourcePath(udmf_map_name, udmf_maps_directory_name);
+				if (OStringToUpper(entry.path) == udmf_endmap_lump_name)
+					udmf_map_name.clear();
+			}
 			else
-				base_path = assignPathBasedOnMarkers(lump_id);
+			{
+				// [SL] Determine if this is a map marker (by checking if a map-related lump such as
+				// SEGS follows this one). If so, move all of the subsequent map lumps into
+				// this map's directory
+				bool is_map_marker = isLumpMapMarker(lump_id);
+				bool is_map_lump = Res_IsMapLumpName(entry.path);
+
+				if (is_map_marker)
+					map_name = entry.path;
+				else if (not is_map_lump)
+					map_name.clear();
+
+				// add the lump to the appropriate namespace
+				if (not map_name.empty())
+					base_path = Res_MakeResourcePath(map_name, maps_directory_name);
+				else
+					base_path = assignPathBasedOnMarkers(lump_id);
+			}
 
 			if (base_path == global_directory_name)
 			{
@@ -703,6 +741,28 @@ SingleMapWadResourceContainer::SingleMapWadResourceContainer(FileAccessor* file)
 void SingleMapWadResourceContainer::addResources(ResourceManager* manager)
 {
 	ResourcePath base_path = Res_TransformResourcePath(mFile->getFileName());
+
+	// A UDMF map can't be loaded yet, so its lumps are kept apart from the
+	// maps directory, up to and including ENDMAP.
+	if (isLumpUDMFMapMarker(0))
+	{
+		const OString map_name = base_path.last();
+		const ResourcePath udmf_path = Res_MakeResourcePath(map_name, udmf_maps_directory_name);
+
+		for (ContainerDirectory<WadDirectoryEntry>::const_iterator it = mDirectory.begin(); it != mDirectory.end(); ++it)
+		{
+			const WadDirectoryEntry& entry = *it;
+			const LumpId lump_id = mDirectory.getLumpId(it);
+
+			const ResourcePath full_path = udmf_path + (lump_id == 0 ? map_name : entry.path);
+			const ResourceId res_id = manager->addResource(full_path, this);
+			mLumpIdLookup.insert(std::make_pair(res_id, lump_id));
+
+			if (OStringToUpper(entry.path) == udmf_endmap_lump_name)
+				return;
+		}
+		return;
+	}
 
 	for (ContainerDirectory<WadDirectoryEntry>::const_iterator it = mDirectory.begin(); it != mDirectory.end(); ++it)
 	{

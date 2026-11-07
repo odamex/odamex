@@ -399,7 +399,7 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 		}
         else
         {
-            PrintFmt_Bold("map {} not found, loading start map instead", mapname);
+            PrintFmt_Bold("{} Loading the start map instead.", G_MissingMapMessage(mapname));
 			G_DeferedInitNew(startmap);
         }
 	}
@@ -478,6 +478,19 @@ void G_ParseWadString(const std::string& str, OWantFiles& newwadfiles,
 // Takes a string of random wads and patches, which is sorted through and
 // trampolined to the implementation of G_LoadWad.
 //
+//
+// G_MissingMapMessage
+//
+// Says why a map that Res_CheckMap doesn't find can't be played.
+//
+std::string G_MissingMapMessage(const std::string& mapname)
+{
+	if (Res_IsUDMFMap(OString(StdStringToUpper(mapname))))
+		return fmt::format("Map {} is a UDMF map, which Odamex can't load yet.", mapname);
+	return fmt::format("Map {} not found.", mapname);
+}
+
+
 bool G_LoadWadString(const std::string& str, const std::string& mapname, const maplist_lastmaps_t& lastmaps)
 {
 	OWantFiles newwadfiles;
@@ -515,7 +528,7 @@ BEGIN_COMMAND (map)
 
 			if (not Res_CheckMap(OString(mapname.c_str())))
 			{ // Still no luck, oh well.
-				PrintFmt(PRINT_WARNING, "Map {} not found.\n", argv[1]);
+				PrintFmt(PRINT_WARNING, "{}\n", G_MissingMapMessage(mapname.c_str()));
 			}
 			else
 			{ // Success
@@ -529,7 +542,7 @@ BEGIN_COMMAND (map)
 			// Ch0wW - Map was still not found, so don't bother trying loading the map.
 			if (not Res_CheckMap(OString(StdStringToUpper(argv[1]))))
 			{
-				PrintFmt(PRINT_WARNING, "Map {} not found.\n", argv[1]);
+				PrintFmt(PRINT_WARNING, "{}\n", G_MissingMapMessage(argv[1]));
 			}
 			else
 			{
