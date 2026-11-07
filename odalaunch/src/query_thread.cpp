@@ -31,8 +31,6 @@
 #include "plat_utils.h"
 #include "oda_defs.h"
 
-int NUM_THREADS;
-
 QueryThread::QueryThread(wxEvtHandler* EventHandler) : wxThread(wxTHREAD_JOINABLE), m_EventHandler(EventHandler)
 {
 	if(Create() != wxTHREAD_NO_ERROR)

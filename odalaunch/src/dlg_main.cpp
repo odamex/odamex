@@ -79,8 +79,6 @@
 
 using namespace odalpapi;
 
-extern int NUM_THREADS;
-
 // Control ID assignments for events
 // application icon
 
@@ -158,6 +156,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	wxString Version;
 	wxIcon MainIcon;
 	bool GetListOnStart, LoadChatOnLS, CheckForUpdates;
+	int ThreadCount;
 
 	// Loads the frame from the xml resource file
 	wxXmlResource::Get()->LoadFrame(this, parent, "dlgMain");
@@ -241,9 +240,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	QServer.reset();
 
-	NUM_THREADS = QueryThread::GetIdealThreadCount();
+	ThreadCount = QueryThread::GetIdealThreadCount();
 
-	for(size_t i = 0; i < NUM_THREADS; ++i)
+	for (size_t i = 0; i < ThreadCount; ++i)
 	{
 		threadVector.emplace_back(new QueryThread(this));
 	}
