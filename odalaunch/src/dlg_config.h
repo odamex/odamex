@@ -56,7 +56,6 @@ public:
 
 	void LoadSettings();
 	void SaveSettings();
-	void Show();
 
 protected:
 	void OnOK(wxCommandEvent& event);

@@ -144,27 +144,23 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
 	m_StcBmpPQPlayable->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_orange"));
 	m_StcBmpPQLaggy->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_red"));
 	m_StcBmpPQBad->SetBitmap(wxXmlResource::Get()->LoadBitmap("bullet_gray"));
-}
 
-// Window destructor
-dlgConfig::~dlgConfig()
-{
-
-}
-
-void dlgConfig::Show()
-{
 	LoadSettings();
 
 	UserChangedSetting = false;
 
 	// Queue notebook page changed event
 	m_Notebook = XRCCTRL(*this, "Id_Notebook", wxNotebook);
-	wxBookCtrlEvent* event = new wxBookCtrlEvent(wxEVT_NOTEBOOK_PAGE_CHANGED, m_Notebook->GetId());
+	wxBookCtrlEvent* event =
+	    new wxBookCtrlEvent(wxEVT_NOTEBOOK_PAGE_CHANGED, m_Notebook->GetId());
 	event->SetSelection(m_Notebook->GetSelection());
 	QueueEvent(event);
+}
 
-	ShowModal();
+// Window destructor
+dlgConfig::~dlgConfig()
+{
+
 }
 
 void dlgConfig::OnCheckedBox(wxCommandEvent& event)
@@ -214,26 +210,25 @@ void dlgConfig::OnOK(wxCommandEvent& event)
 	wxMessageDialog msgdlg(this, "Save settings?", "Save settings?",
 	                       wxYES_NO | wxICON_QUESTION | wxSTAY_ON_TOP);
 
+	int msgdlg_result; 
+
 	if(UserChangedSetting == false)
 	{
-		Close();
+		EndModal(wxID_CANCEL);
 
 		return;
 	}
 
-	if(msgdlg.ShowModal() == wxID_YES)
-	{
-		// reset 'dirty' flag
-		UserChangedSetting = false;
+	msgdlg_result = msgdlg.ShowModal();
 
-		// Save settings to configuration file
+	// reset 'dirty' flag
+	UserChangedSetting = false;
+
+	// Save settings to configuration file
+	if (msgdlg_result == wxID_YES)
 		SaveSettings();
-	}
-	else
-		UserChangedSetting = false;
 
-	// Close window
-	Close();
+	EndModal(msgdlg_result);
 }
 
 void dlgConfig::OnTextChange(wxCommandEvent& event)

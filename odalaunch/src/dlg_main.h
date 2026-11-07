@@ -168,10 +168,6 @@ protected:
 	int  m_HoverColumn;
 	#endif
 
-	dlgConfig* config_dlg;
-	dlgServers* server_dlg;
-	dlgAbout* AboutDialog;
-
 	// Reused across opens so the heavy one-time build is paid only once.
 	dlgServerDetails* m_ServerDetailsDlg = nullptr;
 

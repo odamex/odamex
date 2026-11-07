@@ -231,11 +231,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	wxStandardPaths::Get().SetFileLayout(wxStandardPaths::FileLayout_XDG);
 	#endif
 
-	/* Init sub dialogs and load settings */
-	config_dlg = new dlgConfig(this);
-	server_dlg = new dlgServers(&MServer, this);
-	AboutDialog = new dlgAbout(this);
-
 	// Init timers
 	m_TimerRefresh = new wxTimer(this, TIMER_ID_REFRESH);
 	m_TimerNewList = new wxTimer(this, TIMER_ID_NEWLIST);
@@ -430,12 +425,6 @@ void dlgMain::OnClose(wxCloseEvent& event)
 
 	delete InfoBar;
 	InfoBar = nullptr;
-
-    if(config_dlg != nullptr)
-		config_dlg->Destroy();
-
-	if(server_dlg != nullptr)
-		server_dlg->Destroy();
 
 	Destroy();
 }
@@ -1245,15 +1234,17 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 // Custom Servers menu item
 void dlgMain::OnMenuServers(wxCommandEvent& event)
 {
-	if(server_dlg)
-		server_dlg->Show();
+	dlgServers dlgServersInstance(&MServer, this);
+
+	dlgServersInstance.Show();
 }
 
 
 void dlgMain::OnOpenSettingsDialog(wxCommandEvent& event)
 {
-	if(config_dlg)
-		config_dlg->Show();
+	dlgConfig dlgConfigInstance(this);
+
+	dlgConfigInstance.ShowModal();
 
 	// Restart the ART
 	{
@@ -1869,8 +1860,9 @@ wxInt32 dlgMain::GetSelectedServerArrayIndex()
 // About information
 void dlgMain::OnAbout(wxCommandEvent& event)
 {
-	if(AboutDialog)
-		AboutDialog->Show();
+	dlgAbout dlgAboutInstance(this);
+
+	dlgAboutInstance.ShowModal();
 }
 
 void dlgMain::OnOpenWebsite(wxCommandEvent& event)
