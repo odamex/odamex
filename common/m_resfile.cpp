@@ -580,7 +580,8 @@ std::vector<scannedPWAD_t> M_ScanPWADs()
 		for (const auto& filename : files)
 		{
 			// [AM] Don't include odamex.wad or IWADs.
-			if (iequals(filename, "odamex.wad") or iequals(filename, "odamex.pk3"))
+			if (iequals(filename, "odamex.wad") or iequals(filename, "odamex.pk3") or
+			    iequals(filename, "odamex.zip"))
 				continue;
 
 			OWantFile file;
