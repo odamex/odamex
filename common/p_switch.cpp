@@ -657,20 +657,13 @@ void DActiveButton::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
-		int32_t texture =
-		    static_cast<int32_t>((static_cast<uint32_t>(m_ResId) & 0xFFFF));
-		arc << m_Line << m_Where << texture << m_Timer << m_X << m_Y
+		arc << m_Line << m_Where << m_ResId << m_Timer << m_X << m_Y
 		    << m_SwitchDef << m_Frame << m_Flippable << m_Returning;
 	}
 	else
 	{
-		int32_t texture;
-		arc >> m_Line >> m_Where >> texture >> m_Timer >> m_X >> m_Y
+		arc >> m_Line >> m_Where >> m_ResId >> m_Timer >> m_X >> m_Y
 		    >> m_SwitchDef >> m_Frame >> m_Flippable >> m_Returning;
-		if (texture == 0xFFFF)
-			m_ResId = ResourceId::INVALID_ID;
-		else
-			m_ResId = texture;
 	}
 }
 
