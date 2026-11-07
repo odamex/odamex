@@ -37,6 +37,7 @@
 #include "z_zone.h"
 #include "m_random.h"
 #include "w_wad.h"
+#include "resources/res_main.h"
 #include "p_local.h"
 #include "cmdlib.h"
 #include "i_video.h"
@@ -92,7 +93,7 @@ public:
 	}
 };
 
-int sfx_empty;
+ResourceId sfx_empty;
 
 // joek - hack for silent bfg
 int sfx_noway, sfx_oof;
@@ -104,7 +105,7 @@ cvar_t noisedebug ("noise", "0", "", CVARTYPE_BOOL, 0);
 static channel_t *Channel;
 
 // For ZDoom sound curve
-static byte		*SoundCurve;
+static const byte	*SoundCurve;
 
 // Maximum volume of a sound effect.
 CVAR_FUNC_IMPL(snd_sfxvolume)
@@ -151,20 +152,25 @@ size_t numChannels;
 //
 void S_NoiseDebug()
 {
+	if (not V_FontsReady())
+		return;
+
+	OFont* font = V_GetHudFontSized(8);
+
 	fixed_t ox, oy;
 
 	int y = 32 * CleanYfac;
 	if (gametic & 16)
-		screen->DrawText (CR_TAN, 0, y, "*** SOUND DEBUG INFO ***");
+		screen->DrawFontText (font, CR_TAN, 0, y, "*** SOUND DEBUG INFO ***");
 	y += 8;
 
-	screen->DrawText (CR_GREY, 0, y, "name");
-	screen->DrawText (CR_GREY, 70, y, "x");
-	screen->DrawText (CR_GREY, 120, y, "y");
-	screen->DrawText (CR_GREY, 170, y, "vol");
-	screen->DrawText (CR_GREY, 200, y, "pri");
-	screen->DrawText (CR_GREY, 240, y, "dist");
-	screen->DrawText (CR_GREY, 280, y, "chan");
+	screen->DrawFontText (font, CR_GREY, 0, y, "name");
+	screen->DrawFontText (font, CR_GREY, 70, y, "x");
+	screen->DrawFontText (font, CR_GREY, 120, y, "y");
+	screen->DrawFontText (font, CR_GREY, 170, y, "vol");
+	screen->DrawFontText (font, CR_GREY, 200, y, "pri");
+	screen->DrawFontText (font, CR_GREY, 240, y, "dist");
+	screen->DrawFontText (font, CR_GREY, 280, y, "chan");
 	y += 8;
 
 	for (unsigned int i = 0; ((i < numChannels) && (y < I_GetVideoHeight() - 16)); i++, y += 8)
@@ -189,25 +195,29 @@ void S_NoiseDebug()
 				ox = Channel[i].x;
 				oy = Channel[i].y;
 			}
+
 			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
-			M_StringCopy(temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name.c_str(), 9);
-			screen->DrawText (color, 0, y, temp);
-			snprintf (temp, 16, "%d", ox / FRACUNIT);
-			screen->DrawText (color, 70, y, temp);
+
+			const OString& lump_name(Res_GetResourcePath(Channel[i].sfxinfo->res_id).last());
+			strcpy(temp, lump_name.c_str());
+			screen->DrawFontText (font, color, 0, y, temp);
+
+			snprintf(temp, 16, "%d", ox / FRACUNIT);
+			screen->DrawFontText (font, color, 70, y, temp);
 			snprintf(temp, 16, "%d", oy / FRACUNIT);
-			screen->DrawText (color, 120, y, temp);
+			screen->DrawFontText (font, color, 120, y, temp);
 			snprintf(temp, 16, "%.2f", Channel[i].volume);
-			screen->DrawText (color, 170, y, temp);
+			screen->DrawFontText (font, color, 170, y, temp);
 			snprintf(temp, 16, "%d", Channel[i].priority);
-			screen->DrawText (color, 200, y, temp);
+			screen->DrawFontText (font, color, 200, y, temp);
 			snprintf(temp, 16, "%d", P_AproxDistance2 (listenplayer().camera, ox, oy) / FRACUNIT);
-			screen->DrawText (color, 240, y, temp);
+			screen->DrawFontText (font, color, 240, y, temp);
 			snprintf(temp, 16, "%d", Channel[i].entchannel);
-			screen->DrawText (color, 280, y, temp);
+			screen->DrawFontText (font, color, 280, y, temp);
 		}
 		else
 		{
-			screen->DrawText (CR_GREY, 0, y, "------");
+			screen->DrawFontText (font, CR_GREY, 0, y, "------");
 		}
 	}
 }
@@ -253,7 +263,7 @@ static void S_StopChannel(size_t cnum);
 //
 void S_Init(float sfxVolume, float musicVolume)
 {
-	SoundCurve = W_CacheLumpName<byte>("SNDCURVE", PU_STATIC);
+	SoundCurve = Res_LoadResource<byte>("SNDCURVE", PU_STATIC);
 
 	// [RH] Read in sound sequences
 	NumSequences = 0;
@@ -701,15 +711,15 @@ static void S_StartSound(sound_origin_t origin, int channel,
 	}
 
   	// check for bogus sound lump
-	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > static_cast<int>(W_NumLumps()))
+	if (not Res_CheckResource(sfxinfo->res_id))
 	{
-		DPrintFmt("Bad sfx lump #: {}\n", sfxinfo->lumpnum);
+		DPrintFmt("Bad sfx lump #: {}\n", static_cast <uint32_t>(sfxinfo->res_id));
 		return;
 	}
 
 	const auto& [pt, x, y] = origin.get_point();
 
-	if (sfxinfo->lumpnum == sfx_empty)
+	if (sfxinfo->res_id == sfx_empty)
 		return;
 
 	volume = std::min(volume, 1.0f);
@@ -1230,16 +1240,16 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 
 	if (not f.good())
 	{
-		int lumpnum;
-		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
+		const ResourceId res_id = Res_GetResourceId(musicname, NS_MUSIC);
+		if (not Res_CheckResource(res_id))
 		{
 			PrintFmt(PRINT_HIGH, "Music lump \"{}\" not found\n", musicname);
 			return;
 		}
 
-		data = W_CacheLumpNum<byte>(lumpnum, PU_CACHE);
-		length = W_LumpLength(lumpnum);
-		I_PlaySong({data, length}, looping, order);
+		data = const_cast<byte*>(Res_LoadResource<byte>(res_id, PU_CACHE));
+		length = Res_GetResourceSize(res_id);
+		I_PlaySong({data, static_cast<size_t>(length)}, looping, order);
 	}
 	else
 	{
@@ -1397,14 +1407,16 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 BEGIN_COMMAND (snd_soundlist)
 {
 	for (unsigned i = 0; i < S_sfx.size(); i++)
-		if (S_sfx[i].lumpnum != -1)
+	{
+		if (Res_CheckResource(S_sfx[i].res_id))
 		{
-			const OLumpName lumpname = lumpinfo[S_sfx[i].lumpnum].name;
-			PrintFmt(PRINT_HIGH, "{:>3d}. {} ({})\n", i+1, S_sfx[i].name, lumpname);
+			const OString lump_name(Res_GetResourcePath(S_sfx[i].res_id).last());
+			PrintFmt(PRINT_HIGH, "{:>3d}. {} ({})\n", i+1, S_sfx[i].name, lump_name);
 		}
 		// todo: check if sounds are multiple lumps rather than just one (i.e. random sounds)
 		else
-			PrintFmt(PRINT_HIGH, "{:>3d}. {} **not present**\n", i+1, S_sfx[i].name);
+			PrintFmt(PRINT_HIGH, "{:>3}. {} **not present**\n", i+1, S_sfx[i].name);
+	}
 }
 END_COMMAND (snd_soundlist)
 

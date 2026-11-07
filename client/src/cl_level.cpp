@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include <set>
 
 #include "am_map.h"
@@ -58,10 +60,11 @@ END_DISABLE_WARNING_GNU
 #include "s_sndseq.h"
 #include "st_stuff.h"
 #include "v_video.h"
-#include "w_wad.h"
 #include "wi_stuff.h"
 #include "z_zone.h"
 #include "m_wdlstats.h"
+#include "resources/res_filelib.h"
+#include "resources/res_main.h"
 #include "g_spree.h"
 #include "g_deathspot.h"
 #include "g_gametype.h"
@@ -86,7 +89,6 @@ dtime_t starttime;
 // [AM] Stores the reset snapshot
 FLZOMemFile	*reset_snapshot = NULL;
 
-extern bool r_underwater;
 
 extern int mousex, mousey, joyforward, joystrafe, joyturn, joylook, Impulse;
 extern bool sendpause, sendsave, sendcenterview;
@@ -144,6 +146,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	}
 
 	C_HideConsole();
+	CL_QuitNetGame(NQ_SILENT);
 
 	G_LoadWadString(wadstr);
 
@@ -191,10 +194,10 @@ void G_DoNewGame (void)
 	gameaction = ga_nothing;
 }
 
-void G_InitNew (const char *mapname)
+void G_InitNew(const char* mapname)
 {
 	// [RH] Remove all particles
-	R_ClearParticles ();
+	R_ClearParticles();
 
 	for (auto& player : players)
 	{
@@ -204,7 +207,7 @@ void G_InitNew (const char *mapname)
 	}
 
 	if (!savegamerestore)
-		G_ClearSnapshots ();
+		G_ClearSnapshots();
 
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
@@ -234,16 +237,13 @@ void G_InitNew (const char *mapname)
 	}
 
 	// If were in chasecam mode, clear out // [Toke - fix]
-	if ((consoleplayer().cheats & CF_CHASECAM))
-	{
+	if (consoleplayer().cheats & CF_CHASECAM)
 		consoleplayer().cheats &= ~CF_CHASECAM;
-	}
 
 	// [RH] If this map doesn't exist, bomb out
-	if (W_CheckNumForName (mapname) == -1)
-	{
-		I_Error("Could not find map {}\n", mapname);
-	}
+	if (not Res_CheckMap(OString(StdStringToUpper(mapname))))
+		I_Error("{}\n", G_MissingMapMessage(mapname));
+	G_WarnHiddenUDMFMap(mapname);
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
 	G_SetFast(wantFast);
@@ -342,8 +342,8 @@ void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 	}
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if ( (gameinfo.flags & GI_MAPxx)
-		 && (W_CheckNumForName("map31")<0))
+	
+	if ((gameinfo.flags & GI_MAPxx) and not Res_CheckMap(OString("MAP31")))
 		secretexit = false;
 	else
 		secretexit = true;
@@ -414,7 +414,8 @@ void G_DoCompleted (void)
 		}
 		if (secretexit)
 		{
-			if (W_CheckNumForName (level.secretmap) != -1)
+			OString o(StdStringToUpper(level.secretmap.c_str()));
+			if (Res_CheckMap(o))
 			{
 				wminfo.next = level.secretmap;
 				wminfo.lname1 = getLevelInfos().findByName(level.secretmap).pname;
@@ -571,12 +572,6 @@ void G_DoLoadLevel (int position)
 	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Set the sky map.
-	// First thing, we have a dummy sky texture name,
-	//	a flat. The data is in the WAD only because
-	//	we look for an actual index, instead of simply
-	//	setting one.
-	skyflatnum = R_FlatNumForName(SKYFLATNAME);
-
 	R_SetDefaultSky(level.skypic);
 
 	R_InitSkiesForLevel();
@@ -586,23 +581,8 @@ void G_DoLoadLevel (int position)
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	// [EB] 9/6/2024 - remove sky1 (now using SKYDEFS), sky2 left for hexen style non doublesky sky2
-	// MIA TODO: remove this except for sky2 stuff (for non doublesky use of sky2)
-	sky1texture = R_TextureNumForName(level.skypic);
-	if (!level.skypic2.empty() && !(level.flags & LEVEL_DOUBLESKY))
-	{
-		sky2texture = R_TextureNumForName(level.skypic2);
-		sky2scrollxdelta = level.sky2ScrollDelta;
-	}
-	else
-	{
-		sky2texture = 0;
-		sky2scrollxdelta = 0;
-	}
-	sky2columnoffset = 0;
-
 	// [RH] Set up details about sky rendering
-	R_InitSkyMap();
+	R_SetSkyTextures(level.skypic.c_str(), level.skypic2.c_str());
 
 	for (auto& player : players)
 	{
@@ -642,7 +622,7 @@ void G_DoLoadLevel (int position)
 	}
 
  	SN_StopAllSequences (); // denis - todo - equivalent?
-	P_SetupLevel (level.mapname.c_str(), position);
+	P_SetupLevel (OString(level.mapname.c_str()), position);
 
 	// [AM] Prevent holding onto stale snapshots.
 	CL_ClearSectorSnapshots();
@@ -757,7 +737,7 @@ void G_WorldDone()
 
 	if (!level.interbackdrop.empty())
 	{
-		if (W_CheckNumForName(level.interbackdrop, ns_flats) == -1)
+		if (not Res_CheckResource(Res_GetResourceId(level.interbackdrop.c_str(), NS_FLATS)))
 			options.pic = level.interbackdrop;
 		else
 			options.flat = level.interbackdrop;
@@ -785,7 +765,8 @@ void G_WorldDone()
 		AM_Stop();
 		if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 		{
-			options.text = W_CacheLumpName<const char>(thiscluster.exittext, PU_STATIC);
+			options.text = Res_LoadResource<char>(
+			    OStringToUpper(thiscluster.exittext.c_str()), PU_STATIC);
 		}
 		F_StartFinale(options);
 	}
@@ -821,7 +802,8 @@ void G_WorldDone()
 				AM_Stop();
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
-					options.text = W_CacheLumpName<const char>(thiscluster.exittext, PU_STATIC);
+					options.text = Res_LoadResource<char>(
+					    OStringToUpper(thiscluster.exittext.c_str()), PU_STATIC);
 				}
 				F_StartFinale(options);
 			}

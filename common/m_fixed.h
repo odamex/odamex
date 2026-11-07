@@ -50,25 +50,25 @@ using dsfixed_t = uint32_t;	// fixedpt used by span drawer
 [[nodiscard]]
 inline constexpr float FIXED2FLOAT(fixed_t x)
 {
-	return x * (1.0f / float(FRACUNIT));
+	return x * (1.0f / static_cast<float>(FRACUNIT));
 }
 
 [[nodiscard]]
 inline constexpr double FIXED2DOUBLE(fixed_t x)
 {
-	return x * (1.0 / double(FRACUNIT));
+	return x * (1.0 / static_cast<double>(FRACUNIT));
 }
 
 [[nodiscard]]
 inline constexpr fixed_t FLOAT2FIXED(float x)
 {
-	return fixed_t(x * float(FRACUNIT));
+	return static_cast<fixed_t>(x * static_cast<float>(FRACUNIT));
 }
 
 [[nodiscard]]
 inline constexpr fixed_t DOUBLE2FIXED(double x)
 {
-	return fixed_t(x * double(FRACUNIT));
+	return static_cast<fixed_t>(x * static_cast<double>(FRACUNIT));
 }
 
 [[nodiscard]]
@@ -86,25 +86,25 @@ inline constexpr fixed_t INT2FIXED(int x)
 [[nodiscard]]
 inline constexpr float FIXED642FLOAT(fixed64_t x)
 {
-	return x * (1.0f / float(FRACUNIT64));
+	return x * (1.0f / static_cast<float>(FRACUNIT64));
 }
 
 [[nodiscard]]
 inline constexpr double FIXED642DOUBLE(fixed64_t x)
 {
-	return x * (1.0f / double(FRACUNIT64));
+	return x * (1.0f / static_cast<double>(FRACUNIT64));
 }
 
 [[nodiscard]]
 inline constexpr fixed64_t FLOAT2FIXED64(float x)
 {
-	return fixed64_t(x * float(FRACUNIT64));
+	return static_cast<fixed64_t>(x * static_cast<float>(FRACUNIT64));
 }
 
 [[nodiscard]]
 inline constexpr fixed64_t DOUBLE2FIXED64(double x)
 {
-	return fixed64_t(x * double(FRACUNIT64));
+	return static_cast<fixed64_t>(x * static_cast<double>(FRACUNIT64));
 }
 
 [[nodiscard]]
@@ -138,6 +138,16 @@ inline constexpr fixed64_t FIXED2FIXED64(fixed_t x)
 inline constexpr fixed_t FixedMul(fixed_t a, fixed_t b)
 {
 	return static_cast<fixed_t>((static_cast<int64_t>(a) * b) >> FRACBITS);
+}
+
+//
+// Fixed Point Multiplication for 16.16 precision, keeping the 64-bit result
+// for values that can outgrow a fixed_t (e.g. projections far off the screen)
+//
+[[nodiscard]]
+inline constexpr int64_t FixedMulWide(int64_t a, int64_t b)
+{
+	return (a * b) >> FRACBITS;
 }
 
 //

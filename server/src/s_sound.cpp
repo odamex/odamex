@@ -31,6 +31,7 @@
 #include "z_zone.h"
 #include "m_random.h"
 #include "w_wad.h"
+#include "resources/res_main.h"
 #include "cmdlib.h"
 #include "oscanner.h"
 #include "v_video.h"

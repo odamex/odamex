@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <assert.h>
 #include <cmath>
 
@@ -44,12 +46,13 @@
 
 #include "v_video.h"
 #include "v_text.h"
+#include "v_font.h"
 
-#include "w_wad.h"
 #include "z_zone.h"
 
 #include "c_dispatch.h"
 #include "cmdlib.h"
+#include "resources/res_texture.h"
 
 #include "f_wipe.h"
 
@@ -65,7 +68,7 @@ DCanvas *screen;
 static DBoundingBox dirtybox;
 
 static bool V_DoSetResolution();
-static void BuildTransTable(const argb_t* palette_colors);
+static void BuildTransTable(const palette_t* pal);
 
 // flag to indicate that V_AdjustVideoMode should try to change the video mode
 static bool setmodeneeded = false;
@@ -106,6 +109,10 @@ void V_AdjustVideoMode()
 
 		// Refresh the console.
 		C_NewModeAdjust();
+
+		// Fonts bake their scale into their glyphs, so any that follow the
+		// video mode have to be rebuilt at the new one.
+		V_FontRebuild();
 
 		// Recalculate various view parameters.
 		R_ForceViewWindowResize();
@@ -522,7 +529,7 @@ void V_Init()
 	// notify the console of changes in the screen resolution
 	C_NewModeAdjust();
 
-	BuildTransTable(V_GetDefaultPalette()->basecolors);
+	BuildTransTable(V_GetDefaultPalette());
 
 	vid_widescreen_old = vid_widescreen.asInt();
 }
@@ -649,7 +656,7 @@ void V_DrawFPSWidget()
 	{
 		static std::string buffer;
 		static double last_fps = 0.0;
-		const double delta_time_ms = 1000.0 * double(delta_time) / ONE_SECOND;
+		const double delta_time_ms = 1000.0 * static_cast<double>(delta_time) / ONE_SECOND;
 
 		::g_GraphData.push(delta_time_ms);
 
@@ -724,7 +731,7 @@ void V_DrawFPSWidget()
 		// calculate last_fps every 1000ms
 		if (time_accum > ONE_SECOND)
 		{
-			last_fps = double(ONE_SECOND * frame_count) / time_accum;
+			last_fps = static_cast<double>(ONE_SECOND * frame_count) / time_accum;
 			time_accum = 0;
 			frame_count = 0;
 
@@ -747,7 +754,7 @@ void V_DrawFPSWidget()
 		// calculate last_fps every 1000ms
 		if (time_accum > ONE_SECOND)
 		{
-			last_fps = double(ONE_SECOND * frame_count) / time_accum;
+			last_fps = static_cast<double>(ONE_SECOND * frame_count) / time_accum;
 			time_accum = 0;
 			frame_count = 0;
 		}
@@ -758,7 +765,6 @@ void V_DrawFPSWidget()
 		screen->PrintStr(botleft.x, botleft.y + 1, buffer.c_str());
 	}
 }
-
 
 
 //
@@ -772,17 +778,18 @@ template <typename PIXEL_T>
 static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
 {
 	const int dot_width = CleanXfac, dot_height = CleanYfac;
-	const int pitch_in_pixels = surface->getPitchInPixels();
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
 
 	PIXEL_T* dest = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) +
-			(surface->getHeight() - 1 - dot_height) * pitch_in_pixels +
-			2 * n * dot_width;
+			((surface->getHeight() - 1 - dot_height) * rowstep) +
+			(2 * n * dot_width * colstep);
 
 	for (int y = 0; y < dot_height; y++)
 	{
 		for (int x = 0; x < dot_width; x++)
-			dest[x] = color;
-		dest += pitch_in_pixels;
+			dest[x * colstep] = color;
+		dest += rowstep;
 	}
 }
 
@@ -792,7 +799,7 @@ static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
 //
 void V_DrawFPSTicker()
 {
-	const int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
+	const int current_tic = static_cast<int>(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
 	static int last_tic = current_tic;
 
 	const int tics = std::clamp(current_tic - last_tic, 0, 20);
@@ -824,65 +831,25 @@ void V_DrawFPSTicker()
 
 
 //
-// V_FindTransformedFlatPixel
+// V_TransposeTextureData
 //
-// Determines the flat pixel to use
-// when given an x/y coordinate.
-// Doesn't take scaling into account. (Good todo)
+// Transposes column-major data to row-major and vice-versa
 //
-// A flat is a 4096 byte chunk of data
-// Representing a 64x64 square
-//
-// Each pixel is 1 byte.
-//
-// So we square root the lump size to get dimensions
-// and put it in "flatlength"
-//
-// There's no posts or columns in flats; the entire
-// thing is one big chunk of data assumed to be 64x64
-//
-// Even if the width is dynamic, a flat pixel
-// will always be 1 byte, and a flat length
-// will always sqrt to its height and width
-// (the same number)
-
-const byte* V_FindTransformedFlatPixel(int x, int y, unsigned int width, const byte* src)
+static void V_TransposeTextureData(byte* dest, const byte* source, int width, int height, int pitch)
 {
-	float pixelcountx = x / static_cast<float>(width);
-	float pixelcounty = y / static_cast<float>(width);
-
-	float wholex, wholey = 0;
-
-	float flatxfrac = modff(pixelcountx, &wholex);
-	float flatyfrac = modff(pixelcounty, &wholey);
-
-	int flatx = 0;
-	int flaty = 0;
-
-	if (flatxfrac > 0)
+	for (int x = 0; x < width; x++)
 	{
-		flatx = width * flatxfrac;
+		const byte* ptr = source + x;
+		
+		for (int y = 0; y < height; y++)
+		{
+			*dest = *ptr;
+			ptr += pitch;
+			dest++;
+		}
 	}
-	else
-	{
-		flatx = 0;
-	}
-
-	if (flatyfrac > 0)
-	{
-		flaty = width * flatyfrac;
-	}
-	else
-	{
-		flaty = 0;
-	}
-
-	// Now turn these coordinates into a pixel pointer
-	// Remember that flats are long unbroken buckets of data
-	// So we need to transform flat x/y into a
-	// lump length sized pointer array coordinate
-	return src + (flatx + (flaty * width));
 }
+
 
 //
 // DCanvas::getCleanX
@@ -906,44 +873,50 @@ int DCanvas::getCleanY(int y) const
 }
 
 
-// [RH] Fill an area with an dynamic dimensions flat
-// right and bottom are one pixel *past* the boundaries they describe.
-//
-// Rewritten to handle high resolution flats
-void DCanvas::FlatFill(int left, int top, int right, int bottom, unsigned int flatlength, const byte* src) const
+// [RH] Fill an area with a 64x64 flat texture
+//		right and bottom are one pixel *past* the boundaries they describe.
+void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int bottom) const
 {
-	const int surface_advance = mSurface->getPitchInPixels() - right + left;
+	int tex_width_bits = std::min<int>(texture->mWidthBits, 8);
+	int tex_height_bits = std::min<int>(texture->mHeightBits, 8);
+	int tex_width = 1 << tex_width_bits;
+	int tex_height = 1 << tex_height_bits;
+	int tex_width_mask = tex_width - 1;
+	int tex_height_mask = tex_height - 1;
 
-	int width = std::sqrt(flatlength);
+	// [SL] Now that flats are stored column major instead of row-major,
+	// transpose the texture so that we can use row-major blitting (faster)
+	palindex_t source[256 * 256];
+	V_TransposeTextureData(source, texture->mData, tex_width, tex_height, texture->mHeight);
+
+	const int rowstep = mSurface->getRowStepInPixels();
+	const int colstep = mSurface->getColStepInPixels();
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
-		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + top * mSurface->getPitchInPixels() + left;
+		// A screen column is the contiguous run, so walk columns on the outside.
+		palindex_t* column =
+				static_cast<palindex_t*>(mSurface->getBuffer()) + (top * rowstep) + (left * colstep);
 
-		for (int y = top; y < bottom; y++)
+		for (int x = left; x < right; x++, column += colstep)
 		{
-			for (int x = left; x < right; x++)
-			{
-				const byte* pixel = V_FindTransformedFlatPixel(x, y, width, src);
-				*dest++ = *pixel;
-			}
-
-			dest += surface_advance;
+			const int u = x & tex_width_mask;
+			palindex_t* dest = column;
+			for (int y = top; y < bottom; y++, dest += rowstep)
+				*dest = source[((y & tex_height_mask) << tex_width_bits) + u];
 		}
 	}
 	else
 	{
-		argb_t* dest = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * mSurface->getPitchInPixels() + left;
+		argb_t* column =
+				reinterpret_cast<argb_t*>(mSurface->getBuffer()) + (top * rowstep) + (left * colstep);
 
-		for (int y = top; y < bottom; y++)
+		for (int x = left; x < right; x++, column += colstep)
 		{
-			for (int x = left; x < right; x++)
-			{
-				const byte* pixel = V_FindTransformedFlatPixel(x, y, width, src);
-				*dest++ = V_Palette.shade(*pixel);
-			}
-
-			dest += surface_advance;
+			const int u = x & tex_width_mask;
+			argb_t* dest = column;
+			for (int y = top; y < bottom; y++, dest += rowstep)
+				*dest = V_Palette.shade(source[((y & tex_height_mask) << tex_width_bits) + u]);
 		}
 	}
 }
@@ -951,7 +924,7 @@ void DCanvas::FlatFill(int left, int top, int right, int bottom, unsigned int fl
 
 // [SL] Stretches a patch to fill the full-screen while maintaining a 4:3
 // aspect ratio. Pillarboxing is used in widescreen resolutions.
-void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
+void DCanvas::DrawTextureFullScreen(const Texture* texture, bool clear) const
 {
 	if (clear)
 		mSurface->clear();
@@ -976,7 +949,7 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 		desth = surface_width * 3 / 4;
 	}
 
-	const int width = patch->width();
+	const int width = texture->mWidth;
 
 	if (width > 320)
 		destw = surface_width;
@@ -987,37 +960,38 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 	// Dim everything before drawing the patch.
 	mSurface->getDefaultCanvas()->Dim(0, 0, I_GetVideoWidth(), I_GetVideoHeight());
 
-	DrawPatchStretched(patch, x, y, destw, desth);
+	DrawTextureStretched(texture, x, y, destw, desth);
 }
 
 
 // [RH] Set an area to a specified color
 void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) const
 {
-	const int surface_pitch_pixels = mSurface->getPitchInPixels();
+	const int rowstep = mSurface->getRowStepInPixels();
+	const int colstep = mSurface->getColStepInPixels();
+
+	// A screen column is the contiguous run
+	const int run = bottom - top;
+	const int count = right - left;
+	const int stride = colstep;
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
 		const palindex_t color_index = V_BestColor(V_GetDefaultPalette()->basecolors, color);
-		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + top * surface_pitch_pixels + left;
+		palindex_t* line = static_cast<palindex_t*>(mSurface->getBuffer()) + (top * rowstep) + (left * colstep);
 
-		const int line_length = (right - left) * sizeof(palindex_t);
-		for (int y = top; y < bottom; y++)
-		{
-			memset(dest, color_index, line_length);
-			dest += surface_pitch_pixels;
-		}
+		for (int i = 0; i < count; i++, line += stride)
+			memset(line, color_index, run * sizeof(palindex_t));
 	}
 	else
 	{
 		color = V_GammaCorrect(color);
-		argb_t* dest = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * surface_pitch_pixels + left;
+		argb_t* line = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + (top * rowstep) + (left * colstep);
 
-		for (int y = top; y < bottom; y++)
+		for (int i = 0; i < count; i++, line += stride)
 		{
-			for (int x = 0; x < right - left; x++)
-				dest[x] = color;
-			dest += surface_pitch_pixels;
+			for (int j = 0; j < run; j++)
+				line[j] = color;
 		}
 	}
 }
@@ -1096,7 +1070,8 @@ EXTERN_CVAR (ui_dimcolor)
 void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float famount) const
 {
 	const int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	const int surface_pitch_pixels = mSurface->getPitchInPixels();
+	const int rowstep = mSurface->getRowStepInPixels();
+	const int colstep = mSurface->getColStepInPixels();
 
 	if (x1 < 0 || x1 + w > surface_width || y1 < 0 || y1 + h > surface_height)
 		return;
@@ -1116,43 +1091,23 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		const argb_t *bg2rgb = Col2RGB8[64-amount];
 
 		const argb_t color = V_GetColorFromString(color_str);
-		const unsigned int fg = fg2rgb[V_BestColor(V_GetDefaultPalette()->basecolors, color)];
+		const unsigned int fg = fg2rgb[V_BestOpaqueColor(V_GetDefaultPalette()->basecolors, color)];
 
-		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + y1 * surface_pitch_pixels + x1;
-		const int advance = surface_pitch_pixels - w;
+		// A screen column is the contiguous run
+		const int run = h;
+		const int count = w;
+		const int stride = colstep;
 
-		const int xcount = w / 4;
-		const int xcount_remainder = w % 4;
+		palindex_t* line = static_cast<palindex_t*>(mSurface->getBuffer()) + (y1 * rowstep) + (x1 * colstep);
 
-		for (y = h; y > 0; y--)
+		for (y = count; y > 0; y--, line += stride)
 		{
-			for (x = xcount; x > 0; x--)
+			for (x = 0; x < run; x++)
 			{
-				// Unroll the loop for a speed improvement
-				bg = bg2rgb[*dest];
+				bg = bg2rgb[line[x]];
 				bg = (fg+bg) | 0x1f07c1f;
-				*dest++ = RGB32k[0][0][bg&(bg>>15)];
-
-				bg = bg2rgb[*dest];
-				bg = (fg+bg) | 0x1f07c1f;
-				*dest++ = RGB32k[0][0][bg&(bg>>15)];
-
-				bg = bg2rgb[*dest];
-				bg = (fg+bg) | 0x1f07c1f;
-				*dest++ = RGB32k[0][0][bg&(bg>>15)];
-
-				bg = bg2rgb[*dest];
-				bg = (fg+bg) | 0x1f07c1f;
-				*dest++ = RGB32k[0][0][bg&(bg>>15)];
+				line[x] = RGB32k[0][0][bg&(bg>>15)];
 			}
-			for (x = xcount_remainder; x > 0; x--)
-			{
-				// account for widths that aren't multiples of 4
-				bg = bg2rgb[*dest];
-				bg = (fg+bg) | 0x1f07c1f;
-				*dest++ = RGB32k[0][0][bg&(bg>>15)];
-			}
-			dest += advance;
 		}
 	}
 	else
@@ -1177,19 +1132,30 @@ void DCanvas::Dim(int x1, int y1, int w, int h) const
 }
 
 // Build the tables necessary for translucency
-static void BuildTransTable(const argb_t* palette_colors)
+static void BuildTransTable(const palette_t* pal)
 {
+	const argb_t* palette_colors = pal->basecolors;
+
 	// create the small RGB table
 	for (int r = 0; r < 32; r++)
 		for (int g = 0; g < 32; g++)
 			for (int b = 0; b < 32; b++)
-				RGB32k[r][g][b] = V_BestColor(palette_colors, (r<<3)|(r>>2), (g<<3)|(g>>2), (b<<3)|(b>>2));
+				RGB32k[r][g][b] = V_BestOpaqueColor(palette_colors,
+					argb_t((r<<3)|(r>>2), (g<<3)|(g>>2), (b<<3)|(b>>2)));
 
 	for (int x = 0; x < 65; x++)
+	{
 		for (int y = 0; y < 256; y++)
-			Col2RGB8[x][y] = (((palette_colors[y].getr() * x) >> 4) << 20)  |
-							  ((palette_colors[y].getg() * x )>> 4) |
-							 (((palette_colors[y].getb() * x) >> 4) << 10);
+		{
+			const argb_t color = (y == pal->mask_color)
+				? palette_colors[pal->mask_translation[y]]
+				: palette_colors[y];
+
+			Col2RGB8[x][y] = (((color.getr() * x) >> 4) << 20)  |
+							  ((color.getg() * x )>> 4) |
+							 (((color.getb() * x) >> 4) << 10);
+		}
+	}
 }
 
 

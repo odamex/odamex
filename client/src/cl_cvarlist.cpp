@@ -284,6 +284,18 @@ CVAR_RANGE_FUNC_DECL(ui_transblue, "0", "",
 
 CVAR(				ui_mouse, "1", "Navigate the menus and console with the mouse",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE_FUNC_DECL(ui_font_menu, "1", "Font used for menus (0 = bitmap, 1 = TrueType).",
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE_FUNC_DECL(ui_font_hud, "1", "Font used for the HUD (0 = bitmap, 1 = TrueType).",
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(			ui_font_messages, "1", "Font used for in-game messages (0 = bitmap, 1 = TrueType).",
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(			ui_font_console, "1", "Font used for the console (0 = bitmap, 1 = TrueType).",
+					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 // Init settings
 // -------------
 
@@ -610,7 +622,7 @@ CVAR(			hud_scale, "1", "HUD scaling",
 CVAR(			hud_scalescoreboard, "0", "Scoreboard scaling",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(		hud_scaletext, "2", "Scaling multiplier for chat and midprint (0 = auto).",
+CVAR_RANGE_FUNC_DECL(	hud_scaletext, "2", "Scaling multiplier for chat and midprint (0 = auto).",
                 CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
 CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
@@ -777,6 +789,18 @@ CVAR_RANGE_FUNC_DECL(hud_crosshair, "0", "Type of crosshair, 0 means no crosshai
 CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 				CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR_RANGE_FUNC_DECL(r_threads, "0", "Number of render threads -- specify 0 to automatically determine the optimal thread count.",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
+
+CVAR_RANGE(		r_slicesperthread, "1", "Render slices per render thread -- more lets threads that start late or run fast take up each other's slack",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 4.0f)
+
+CVAR(			r_balanceslices, "1", "Sizes the render slices by how long each takes, so they finish together",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			r_showcontexts, "0", "Draws a pink line at each render slice boundary",
+				CVARTYPE_BOOL, CVAR_NULL)
+
 CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 				CVARTYPE_BOOL, CVAR_NULL)
 
@@ -892,7 +916,7 @@ CVAR_FUNC_DECL(	vid_filter, "", "Set render scale quality setting for SDL 2.0, o
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 // Optimize rendering functions based on CPU vectorization support
-// Can be of "detect" or "none" or "mmx","sse2","altivec" depending on availability; case-insensitive.
+// Can be of "detect" or "none" or "mmx","sse2","altivec","neon" depending on availability; case-insensitive.
 CVAR_FUNC_DECL(	r_optimize, "detect", "Rendering optimizations",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 

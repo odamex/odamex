@@ -34,11 +34,13 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
-#include "w_wad.h"
+#include "v_font.h"
 #include "s_sound.h"
 #include "gstrings.h"
 #include "r_state.h"
 #include "hu_stuff.h"
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 #include "gi.h"
 
@@ -308,8 +310,7 @@ void F_Ticker()
 
 void F_TextWrite ()
 {
-	// Don't draw text without a working font.
-	if (::hu_font[0].empty())
+	if (not V_FontsReady() or not ::menu_font)
 		return;
 
 	// erase the entire screen to a tiled background
@@ -328,31 +329,31 @@ void F_TextWrite ()
 	const int x = (primary_surface->getWidth() - screenblockWidth) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
-	int lump;
 	switch (finalelumptype)
 	{
 	case FINALE_GRAPHIC:
-		lump = W_CheckNumForName(W_CheckWidescreenPatch(finalelump), ns_global);
-		if (lump >= 0)
+	{
+		const ResourceId res_id = Res_GetTextureResourceId(
+		    OStringToUpper(W_CheckWidescreenPatch(finalelump).c_str()), GRAPHICS, false);
+		if (Res_CheckResource(res_id))
 		{
-			screen->DrawPatchFullScreen(W_CachePatch(lump, PU_CACHE), true);
+			screen->DrawTextureFullScreen(Res_CacheTexture(res_id, PU_CACHE), true);
 		}
 		break;
+	}
 	case FINALE_FLAT:
-		lump = W_CheckNumForName(finalelump, ns_flats);
-		if (lump >= 0)
+	{
+		const ResourceId res_id =
+		    Res_GetTextureResourceId(OStringToUpper(finalelump.c_str()), FLOOR, false);
+		if (Res_CheckResource(res_id))
 		{
-			// Support high resolution flats
-			unsigned int length = W_LumpLength(lump);
-
 			I_FreeSurface(finale_surface);
 			finale_surface = I_AllocateSurface(320, 200, 8);
 
 			finale_surface->lock();
 
 			finale_surface->getDefaultCanvas()->FlatFill(
-			    0, 0, 320, 200, length,
-			    W_CacheLumpNum<byte>(lump, PU_CACHE));
+			    Res_CacheTexture(res_id, PU_CACHE), 0, 0, 320, 200);
 
 			primary_surface->blitcrop(finale_surface, 0, 0, 320, 200,
 			    x, y, screenblockWidth, screenblockHeight);
@@ -360,6 +361,7 @@ void F_TextWrite ()
 			finale_surface->unlock();
 		}
 		break;
+	}
 	default:
 		break;
 	}
@@ -367,40 +369,24 @@ void F_TextWrite ()
 	V_MarkRect(x, y, width, height);
 
 	// draw some of the text onto the screen
-	int cx = gameinfo.textScreenX, cy = gameinfo.textScreenY;
+	const int cx = gameinfo.textScreenX, cy = gameinfo.textScreenY;
 	const char* ch = finaletext.c_str();
 
 	if (finalecount < gameinfo.textScreenY + 1)
 		return;
 
 	int count = (finalecount - 10) / TEXTSPEED;
+
+	std::string visible;
 	for ( ; count; count-- )
 	{
-		int c = *ch++;
+		const int c = *ch++;
 		if (!c)
 			break;
-		if (c == '\n')
-		{
-			cx = gameinfo.textScreenX;
-			cy += 11; // (gamemission == heretic) ? 10 : 11;
-			continue;
-		}
-
-		c = toupper(c) - HU_FONTSTART;
-		if (c < 0 || c > HU_FONTSIZE)
-		{
-			cx += 4;
-			continue;
-		}
-
-		const patch_t* chr = W_ResolvePatchHandle(hu_font[c]);
-
-		const int w = chr->width();
-		if (cx + w > width)
-			break;
-		screen->DrawPatchClean(chr, cx, cy);
-		cx += w;
+		visible += static_cast<char>(c);
 	}
+
+	screen->DrawFontTextCleanMove(::menu_font, CR_RED, cx, cy, visible.c_str());
 }
 
 //
@@ -630,30 +616,39 @@ void F_CastDrawer()
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear();		// ensure black background in matted modes
 
-	const patch_t* background_patch = W_CachePatch(W_CheckWidescreenPatch("BOSSBACK"));
+	const Texture* background_texture =
+	    Res_CacheTexture(W_CheckWidescreenPatch("BOSSBACK"), PATCH);
 
-	finale_width = background_patch->width();
-	finale_height = background_patch->height() + (background_patch->height() / 5);
+	finale_width = background_texture->width();
+	finale_height = background_texture->height() + (background_texture->height() / 5);
 
 	I_FreeSurface(cast_surface);
-	cast_surface = I_AllocateSurface(background_patch->width(), background_patch->height(), 8);
+	cast_surface =
+	    I_AllocateSurface(background_texture->width(), background_texture->height(), 8);
 
 	// draw the background to the surface
 	cast_surface->lock();
 
-	cast_surface->getDefaultCanvas()->DrawPatch(background_patch, 0, 0);
+	cast_surface->getDefaultCanvas()->DrawTexture(background_texture, 0, 0);
 
 	// draw the current frame in the middle of the screen
 	const spritedef_t* sprdef = &sprites[caststate->sprite];
 	const spriteframe_t* sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
 
-	int scaled_x = (finale_width - 320) / 2;
+	const Texture* sprite_patch = Res_CacheTexture(sprframe->resource[0]);
 
-	const patch_t* sprite_patch = W_CachePatch(sprframe->lump[0]);
+	const int cast_height = cast_surface->getHeight();
+	const int dest_width = sprite_patch->mWidth * cast_height / 200;
+	const int dest_height = sprite_patch->mHeight * cast_height / 200;
+	const int sprite_x = cast_surface->getWidth() / 2;
+	const int sprite_y = 170 * cast_height / 200;
+
 	if (sprframe->flip[0])
-		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160 + scaled_x, 170);
+		cast_surface->getDefaultCanvas()->DrawPatchFlippedStretched(sprite_patch,
+				sprite_x, sprite_y, dest_width, dest_height);
 	else
-		cast_surface->getDefaultCanvas()->DrawPatch(sprite_patch, 160 + scaled_x, 170);
+		cast_surface->getDefaultCanvas()->DrawPatchStretched(sprite_patch,
+				sprite_x, sprite_y, dest_width, dest_height);
 
 	const int width = F_GetCWidth();
 	const int height = F_GetHeight();
@@ -664,10 +659,13 @@ void F_CastDrawer()
 
 	cast_surface->unlock();
 
-	screen->DrawTextClean(CR_RED,
-		x + (width - CleanXfac * V_StringWidth(castorder[castnum].name)) / 2,
-		y + (height * 180 / 200),
-		castorder[castnum].name);
+	if (V_FontsReady() and ::menu_font)
+	{
+		screen->DrawFontText(::menu_font, CR_RED,
+			x + ((width - ::menu_font->getTextWidth(castorder[castnum].name)) / 2),
+			y + (height * 180 / 200),
+			castorder[castnum].name);
+	}
 }
 
 
@@ -680,8 +678,8 @@ void F_BunnyScroll()
 {
 	static int	laststage;
 
-	const patch_t* p1 = W_CachePatch(W_CheckWidescreenPatch("PFUB1"));
-	const patch_t* p2 = W_CachePatch(W_CheckWidescreenPatch("PFUB2"));
+	const Texture* p1 = W_CachePatch(W_CheckWidescreenPatch("PFUB1"));
+	const Texture* p2 = W_CachePatch(W_CheckWidescreenPatch("PFUB2"));
 
 	I_FreeSurface(bunny1_surface);
 	I_FreeSurface(bunny2_surface);
@@ -717,13 +715,32 @@ void F_BunnyScroll()
 
 	float aspect_scale_ratio = static_cast<float>(surface_height) / static_cast<float>(bunnyheight);
 	int frame_width = aspect_scale_ratio * bunnywidth;
+	int frame_height = surface_height;
 
+	// The two patches are one panorama: p2 left, p1 right, overlapping by the
+	// widescreen extension so widescreen art does not repeat its extra columns.
 	int bunnyoverlap = bunnyextra * aspect_scale_ratio;
+	int panorama_width = (frame_width * 2) - bunnyoverlap;
 
-	int initialp1x = surface_width - frame_width;
-	int initialp2x = surface_width - (frame_width * 2 - bunnyoverlap);
+	// At 32:9 a pair of aspect-correct frames does not span the screen, and then no
+	// scroll position covers it. Scale up until the panorama does, the same way
+	// R_InitializeScreenblocksCanvas handles a border that falls short.
+	if (panorama_width < surface_width)
+	{
+		const float cover_ratio =
+		    static_cast<float>(surface_width) / static_cast<float>(panorama_width);
+		frame_width = frame_width * cover_ratio;
+		frame_height = frame_height * cover_ratio;
+		bunnyoverlap = bunnyoverlap * cover_ratio;
+		panorama_width = (frame_width * 2) - bunnyoverlap;
+	}
 
-	float scrollstep = static_cast<float>(abs(initialp2x)) / 320.0f;
+	const int bunny1_h = bunny1_surface->getHeight();
+	const int bunny2_h = bunny2_surface->getHeight();
+	const int src1_h = bunny1_h * surface_height / frame_height;
+	const int src2_h = bunny2_h * surface_height / frame_height;
+	const int src1_y = (bunny1_h - src1_h) / 2;
+	const int src2_y = (bunny2_h - src2_h) / 2;
 
 	// Does this actually do anything?
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
@@ -738,34 +755,19 @@ void F_BunnyScroll()
 	if (scrolled < 0)
 		scrolled = 0;
 
-	int p1x = initialp1x;
-	int p2x = initialp2x;
-
-	if (scrolled <= 0)
-	{
-		p2x = 0;
-		p1x = frame_width;
-	}
-	else if (scrolled >= 320)
-	{
-		p1x = initialp1x;
-		p2x = initialp2x;
-	}
-	else
-	{
-		// Progress both scrolls an equal amount
-		int progress = (320 * scrollstep) - (scrolled * scrollstep);
-		p1x = initialp1x + progress;
-		p2x = initialp2x + progress;
-	}
+	// One interpolation of the panorama's left edge, flush-right to flush-left,
+	// with no special-cased end states -- those disagreed with the formula leading
+	// into them, so the last frame teleported.
+	const int p2x = (surface_width - panorama_width) * scrolled / 320;
+	const int p1x = p2x + frame_width - bunnyoverlap;
 
 	bunny1_surface->lock();
 	bunny2_surface->lock();
-	primary_surface->blitcrop(bunny1_surface, 0, 0, bunny1_surface->getWidth(),
-	   bunny1_surface->getHeight(), p1x, 0, frame_width,
+	primary_surface->blitcrop(bunny1_surface, 0, src1_y, bunny1_surface->getWidth(),
+	   src1_h, p1x, 0, frame_width,
 	   surface_height);
-	primary_surface->blitcrop(bunny2_surface, 0, 0, bunny2_surface->getWidth(),
-	   bunny2_surface->getHeight(), p2x, 0, frame_width,
+	primary_surface->blitcrop(bunny2_surface, 0, src2_y, bunny2_surface->getWidth(),
+	   src2_h, p2x, 0, frame_width,
 	   surface_height);
 	bunny1_surface->unlock();
 	bunny2_surface->unlock();
@@ -776,7 +778,8 @@ void F_BunnyScroll()
 	}
 	if (finalecount < 1180)
 	{
-		screen->DrawPatchIndirect(W_CachePatch("END0"), (320-13*8)/2, (200-8*8)/2);
+		const Texture* end_texture = Res_CacheTexture("END0", PATCH);
+		screen->DrawTextureIndirect(end_texture, (320-(13*8))/2, (200-(8*8))/2);
 		laststage = 0;
 		return;
 	}
@@ -786,7 +789,7 @@ void F_BunnyScroll()
 		stage = 6;
 	if (stage > laststage)
 	{
-		S_Sound (CHAN_WEAPON, "weapons/pistol", 1, ATTN_NONE);
+		S_Sound(CHAN_WEAPON, "weapons/pistol", 1, ATTN_NONE);
 		laststage = stage;
 	}
 
@@ -811,7 +814,7 @@ void F_DrawEndPic(const OLumpName& page)
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear(); // ensure black background in matted modes
 
-	const patch_t* background_patch = W_CachePatch(W_CheckWidescreenPatch(page));
+	const Texture* background_patch = W_CachePatch(W_CheckWidescreenPatch(page));
 
 	finale_width = background_patch->width();
 	finale_height = background_patch->height() + (background_patch->height() / 5);
@@ -860,14 +863,20 @@ void F_Drawer (void)
 					break;
 				}
 				case '2':
-			        F_DrawEndPic(gameinfo.finalePage[1]);
+				{
+					F_DrawEndPic(gameinfo.finalePage[1]);
 					break;
+				}
 				case '3':
+				{
 					F_BunnyScroll ();
 					break;
+				}
 				case '4':
-			        F_DrawEndPic(gameinfo.finalePage[2]);
+				{
+					F_DrawEndPic(gameinfo.finalePage[2]);
 					break;
+				}
 			}
 			break;
 

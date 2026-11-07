@@ -23,6 +23,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include "g_levelstate.h"
 
 #include <cmath>

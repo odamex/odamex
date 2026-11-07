@@ -90,8 +90,8 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec.ceilingplane.c
 				<< sec.ceilingplane.d
 				<< sec.ceilingplane.invc
-				<< sec.floorpic
-				<< sec.ceilingpic
+				<< sec.floor_res_id
+				<< sec.ceiling_res_id
 				<< sec.lightlevel
 				<< sec.special
 				<< sec.flags
@@ -108,7 +108,7 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec.prevsec
 				<< sec.nextsec
 				<< sec.floor_xoffs << sec.floor_yoffs
-				<< sec.ceiling_xoffs << sec.ceiling_xoffs
+				<< sec.ceiling_xoffs << sec.ceiling_yoffs
 				<< sec.floor_xscale << sec.floor_yscale
 				<< sec.ceiling_xscale << sec.ceiling_yscale
 				<< sec.floor_angle << sec.ceiling_angle
@@ -188,8 +188,8 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec.ceilingplane.c
 				>> sec.ceilingplane.d
 				>> sec.ceilingplane.invc
-				>> sec.floorpic
-				>> sec.ceilingpic
+				>> sec.floor_res_id
+				>> sec.ceiling_res_id
 				>> sec.lightlevel
 				>> sec.special
 				>> sec.flags
@@ -206,7 +206,7 @@ void P_SerializeWorld (FArchive &arc)
 				>> sec.prevsec
 				>> sec.nextsec
 				>> sec.floor_xoffs >> sec.floor_yoffs
-				>> sec.ceiling_xoffs >> sec.ceiling_xoffs
+				>> sec.ceiling_xoffs >> sec.ceiling_yoffs
 				>> sec.floor_xscale >> sec.floor_yscale
 				>> sec.ceiling_xscale >> sec.ceiling_yscale
 				>> sec.floor_angle >> sec.ceiling_angle

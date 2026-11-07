@@ -27,7 +27,7 @@
 #include "m_ostring.h"
 #include "m_resfile.h"
 
-struct fileIdentifier_t
+struct FileIdentifier
 {
 	OString mIdName;
 	std::string mNiceName;
@@ -41,10 +41,37 @@ struct fileIdentifier_t
 	int weight;
 };
 
-void W_SetupFileIdentifiers();
-const fileIdentifier_t* W_GameInfo(const OCRC32Sum& crc32);
-const fileIdentifier_t* W_GameInfo(const OMD5Hash& md5);
-void W_ConfigureGameInfo(const OResFile& iwad);
+// [RH] Compare wad header as ints instead of chars
+#define IWAD_ID (('I')|('W'<<8)|('A'<<16)|('D'<<24))
+#define PWAD_ID (('P')|('W'<<8)|('A'<<16)|('D'<<24))
+
+//
+// WADFILE I/O related stuff.
+//
+typedef struct
+{
+    // Should be "IWAD" or "PWAD".
+    unsigned    identification;
+    int         numlumps;
+    int         infotableofs;
+} wadinfo_t;
+
+
+typedef struct
+{
+    int         filepos;
+    int         size;
+    char        name[8]; // denis - todo - string
+} filelump_t;
+
+
+void W_ConfigureGameInfo(const std::string& iwad_filename);
+bool W_IsIWAD(const std::string& filename);
+bool W_IsIWADDeprecated(const std::string& filename);
+bool W_IsIWADShareware(const std::string& filename);
+
+const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32);
+const FileIdentifier* W_GameInfo(const OMD5Hash& md5);
 bool W_IsKnownIWAD(const OWantFile& file);
 bool W_IsIWAD(const OResFile& file);
 bool W_IsUnofficialIWAD(const OResFile& file);

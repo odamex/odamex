@@ -46,6 +46,7 @@ extern void SetLanguageIDs ();
 
 void I_BeginRead (void);
 void I_EndRead (void);
+std::string I_GetUserFileName(const char* file);
 
 // Called by DoomMain.
 void I_Init (void);
@@ -72,6 +73,7 @@ void I_StartTic (void);
 // This ticcmd will then be modified by the gameloop
 // for normal input.
 ticcmd_t *I_BaseTiccmd (void);
+std::string I_GetBinaryDir();
 
 
 // Called by M_Responder when quit is selected.

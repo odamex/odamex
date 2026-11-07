@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <ctime>
 
 #include "gstrings.h"
@@ -36,7 +38,6 @@
 #include "i_video.h"
 #include "z_zone.h"
 #include "v_video.h"
-#include "w_wad.h"
 #include "r_local.h"
 #include "hu_stuff.h"
 #include "g_episode.h"
@@ -45,12 +46,17 @@
 #include "s_sound.h"
 #include "m_menu.h"
 #include "v_text.h"
+#include "v_font.h"
 #include "st_stuff.h"
 #include "p_ctf.h"
 #include "r_sky.h"
 #include "cl_main.h"
 #include "c_bind.h"
 #include "cl_responderkeys.h"
+#include "g_level.h"
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
+#include "resources/res_filelib.h"
 
 #include "gi.h"
 #include "g_skill.h"
@@ -170,7 +176,6 @@ void M_DrawSaveLoadBorder(int x,int y, int len);
 void M_SetupNextMenu(oldmenu_t *menudef);
 void M_DrawEmptyCell(oldmenu_t *menu,int item);
 void M_DrawSelCell(oldmenu_t *menu,int item);
-int  M_StringHeight(char *string);
 void M_StartControlPanel();
 void M_StartMessage(const char *string,void (*routine)(int),bool input);
 void M_StopMessage();
@@ -324,7 +329,7 @@ oldmenu_t EpiDef =
 	0	 				// lastOn
 };
 
-int epi;
+int epi = 0;
 
 //
 // EXPANSION SELECT (DOOM2 BFG)
@@ -681,15 +686,31 @@ void M_ReadSaveStrings()
 
 
 //
+// M_DrawMenuTitleText
+//
+// Draws a menu title as centered TTF header text.
+//
+static void M_DrawMenuTitleText(const char* text, int y)
+{
+	if (not V_FontsReady())
+		return;
+
+	OFont* font = M_GetHeaderFont();
+	const int tw = font->getTextWidth(text);
+	screen->DrawFontText(font, CR_RED, (I_GetSurfaceWidth() - tw) / 2,
+	                     screen->getCleanY(y), text, true);
+}
+
+//
 // M_LoadGame & Cie.
 //
 void M_DrawLoad ()
 {
-	screen->DrawPatchClean(W_CachePatch("M_LOADG"), 72, 28);
+	M_DrawMenuTitleText("Load Game", 20);
 	for (int i = 0; i < load_end; i++)
 	{
-		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		M_DrawSaveLoadBorder(LoadDef.x, LoadDef.y+(LINEHEIGHT*i), 24);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x, LoadDef.y+(LINEHEIGHT*i), savegamestrings[i]);
 	}
 }
 
@@ -730,17 +751,17 @@ void M_DrawSave()
 {
 	int i;
 
-	screen->DrawPatchClean(W_CachePatch("M_SAVEG"), 72, 28);
+	M_DrawMenuTitleText("Save Game", 20);
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x, LoadDef.y+(LINEHEIGHT*i), savegamestrings[i]);
 	}
 
 	if (genStringEnter != oldmenustring_t::NONE)
 	{
-		i = V_StringWidth(savegamestrings[saveSlot]);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x + i, LoadDef.y+LINEHEIGHT*saveSlot, "_");
+		i = V_FontStringWidthClean(::menu_font, savegamestrings[saveSlot]);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, LoadDef.x + i, LoadDef.y+(LINEHEIGHT*saveSlot), "_");
 	}
 }
 
@@ -934,15 +955,23 @@ void M_FinishReadThis(int)
 //
 void M_DrawSaveLoadBorder (int x, int y, int len)
 {
-	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
+	const Texture* center_texture = Res_CacheTexture("M_LSCNTR", GRAPHICS);
+
+	// Vertically center the box on the field text.
+	const int cleany = std::max(1, CleanYfac);
+	const int font_h = (V_FontsReady() and ::menu_font) ? ::menu_font->getHeight() / cleany : 8;
+	const int box_y = y + (font_h / 2) - (center_texture->mHeight / 2) + center_texture->mOffsetY;
+
+	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, box_y);
 
 	for (int i = 0; i < len; i++)
 	{
-		screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
+		screen->DrawTextureClean(center_texture, x, box_y);
 		x += 8;
 	}
 
-	screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
+	const Texture* right_texture = Res_CacheTexture("M_LSRGHT", GRAPHICS);
+	screen->DrawTextureClean(right_texture, x, box_y);
 }
 
 //
@@ -963,8 +992,8 @@ void M_DrawNewGame()
 	const char* pslabel = "Pistol Start Each Level ";
 	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
 
-	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
-	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
+	screen->DrawFontTextCleanMove(::menu_font, CR_RED, NewDef.x, psy, pslabel);
+	screen->DrawFontTextCleanMove(::menu_font, CR_GREY, NewDef.x + V_FontStringWidthClean(::menu_font, pslabel), psy,
 	                          g_resetinvonexit ? "ON" : "OFF");
 }
 
@@ -1080,10 +1109,20 @@ void M_VerifyNightmare(int ch)
 	M_StartGame(skillchoice);
 }
 
+
+static const std::string nerve_filename("NERVE.WAD");
+
+static bool IsResourceFilenameForNoRestForTheLiving(const std::string& filename)
+{
+	return Res_CleanseFilename(filename) == nerve_filename;
+}
+
+
 void M_StartGame(int choice)
 {
 	sv_skill.Set (static_cast<float>(choice + 1));
 	sv_gametype = GM_COOP;
+	std::string map_name(EpisodeMaps[epi].c_str());
 
     if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
     {
@@ -1114,7 +1153,8 @@ void M_StartGame(int choice)
         G_DeferedInitNew (EpisodeMaps[epi]);
     }
 
-    M_ClearMenus ();
+	G_DeferedInitNew(map_name.c_str());
+	M_ClearMenus();
 }
 
 void M_ChooseSkill(int choice)
@@ -1163,6 +1203,7 @@ void M_Episode(int choice)
 void M_Expansion(int choice)
 {
 	epi = choice;
+	NewDef.numitems = skillnum + 1;
 	SetupSkillList();
 	M_SetupNextMenu(&NewDef);
 }
@@ -1173,7 +1214,7 @@ void M_Expansion(int choice)
 //
 void M_DrawReadThis1()
 {
-	const patch_t *p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[0]));
+	const Texture* p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[0]));
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1182,7 +1223,7 @@ void M_DrawReadThis1()
 //
 void M_DrawReadThis2()
 {
-	const patch_t *p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[1]));
+	const Texture* p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[1]));
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1191,7 +1232,7 @@ void M_DrawReadThis2()
 //
 void M_DrawReadThis3()
 {
-	const patch_t *p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[2]));
+	const Texture* p = W_CachePatch(W_CheckWidescreenPatch(gameinfo.infoPage[2]));
 	screen->DrawPatchFullScreen(p, false);
 }
 
@@ -1200,7 +1241,8 @@ void M_DrawReadThis3()
 //
 void M_DrawOptions()
 {
-	screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
+	const Texture* texture = Res_CacheTexture("M_OPTTL", GRAPHICS);
+	screen->DrawTextureClean(texture, 108, 15);
 }
 
 void M_Options(int choice)
@@ -1354,22 +1396,25 @@ template<int xscale, typename PIXEL_T>
 static forceinline void R_RenderFire(int x, int y)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_pitch = surface->getPitchInPixels();
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
 
 	fire_surface->lock();
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
-		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surface_pitch + x;
-		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + b * fire_surface->getPitch();
+		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + (y * rowstep) + (x * colstep);
+		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) +
+								(b * fire_surface->getRowStepInPixels());
 		y += CleanYfac;
 
-		for (int a = 0; a < fire_surface_width; a++, to += xscale, from++)
+		for (int a = 0; a < fire_surface_width; a++, to += xscale * colstep,
+				from += fire_surface->getColStepInPixels())
 		{
 			for (int c = CleanYfac; c; c--)
 			{
 				for (int i = 0; i < xscale; ++i)
-					*(to + surface_pitch * c + i) = R_FirePixel<PIXEL_T>(*from);
+					*(to + (rowstep * c) + (i * colstep)) = R_FirePixel<PIXEL_T>(*from);
 			}
 		}
 	}
@@ -1381,22 +1426,25 @@ template<typename PIXEL_T>
 static forceinline void R_RenderFire(int x, int y)
 {
 	IWindowSurface* surface = I_GetPrimarySurface();
-	int surface_pitch = surface->getPitchInPixels();
+	const int rowstep = surface->getRowStepInPixels();
+	const int colstep = surface->getColStepInPixels();
 
 	fire_surface->lock();
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
-		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surface_pitch + x;
-		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + b * fire_surface->getPitch();
+		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + (y * rowstep) + (x * colstep);
+		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) +
+								(b * fire_surface->getRowStepInPixels());
 		y += CleanYfac;
 
-		for (int a = 0; a < fire_surface_width; a++, to += CleanXfac, from++)
+		for (int a = 0; a < fire_surface_width; a++, to += CleanXfac * colstep,
+				from += fire_surface->getColStepInPixels())
 		{
 			for (int c = CleanYfac; c; c--)
 			{
 				for (int i = 0; i < CleanXfac; ++i)
-					*(to + surface_pitch * c + i) = R_FirePixel<PIXEL_T>(*from);
+					*(to + (rowstep * c) + (i * colstep)) = R_FirePixel<PIXEL_T>(*from);
 			}
 		}
 	}
@@ -1418,23 +1466,16 @@ static void M_PlayerSetupDrawer()
 	OdamexEffect(x1,y1,x2,y2);
 
 	// Draw title
-	{
-		const patch_t *patch = W_CachePatch ("M_PSTTL");
-        screen->DrawPatchClean (patch, 160-patch->width()/2, 10);
-
-		/*screen->DrawPatchClean (patch,
-			160 - (patch->width() >> 1),
-			PSetupDef.y - (patch->height() * 3));*/
-	}
+	M_DrawMenuTitleText("Player Setup", 10);
 
 	// Draw player name box
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y, "Name");
+	screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y, "Name");
 	M_DrawSaveLoadBorder (PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME+1);
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
+	screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
 
 	// Draw cursor for either of the above
 	if (genStringEnter != oldmenustring_t::NONE)
-		screen->DrawTextCleanMove(CR_RED, PSetupDef.x + V_StringWidth(savegamestrings[saveSlot]) + 56,
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x + V_FontStringWidthClean(::menu_font, savegamestrings[saveSlot]) + 56,
 							PSetupDef.y + ((saveSlot == 0) ? 0 : LINEHEIGHT), "_");
 
 	// Draw player character
@@ -1451,11 +1492,16 @@ static void M_PlayerSetupDrawer()
 		else
 		{
 			fire_surface->lock();
-			const int pitch = fire_surface->getPitch();
 
-			palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + (fire_surface_height - 3) * pitch;
-			for (int a = 0; a < fire_surface_width; a++, from++)
-				*from = *(from + (pitch << 1)) = M_Random();
+			// Not the raw pitch: the surface stores columns, so the pitch is the
+			// horizontal stride, not the vertical one.
+			const int rowstep = fire_surface->getRowStepInPixels();
+			const int colstep = fire_surface->getColStepInPixels();
+
+			palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) +
+								((fire_surface_height - 3) * rowstep);
+			for (int a = 0; a < fire_surface_width; a++, from += colstep)
+				*from = *(from + (rowstep << 1)) = M_Random();
 
 			from = static_cast<palindex_t*>(fire_surface->getBuffer());
 			for (int b = 0; b < fire_surface_height - 4; b += 2)
@@ -1463,26 +1509,28 @@ static void M_PlayerSetupDrawer()
 				palindex_t* pixel = from;
 
 				// special case: first pixel on line
-				palindex_t* p = pixel + (pitch << 1);
+				palindex_t* p = pixel + (rowstep << 1);
 
-				unsigned int top = *p + *(p + fire_surface_width - 1) + *(p + 1);
-				unsigned int bottom = *(pixel + (pitch << 2));
+				// fire_surface_width - 1 columns right is the last pixel of the
+				// same line: the horizontal wrap, not a stride.
+				unsigned int top = *p + *(p + ((fire_surface_width - 1) * colstep)) + *(p + colstep);
+				unsigned int bottom = *(pixel + (rowstep << 2));
 				unsigned int c1 = (top + bottom) >> 2;
 				if (c1 > 1)
 					c1--;
 				*pixel = c1;
-				*(pixel + pitch) = (c1 + bottom) >> 1;
-				pixel++;
+				*(pixel + rowstep) = (c1 + bottom) >> 1;
+				pixel += colstep;
 
 				// main line loop
 				for (int a = 1; a < fire_surface_width - 1; a++)
 				{
 					// sum top pixels
-					p = pixel + (pitch << 1);
-					top = *p + *(p - 1) + *(p + 1);
+					p = pixel + (rowstep << 1);
+					top = *p + *(p - colstep) + *(p + colstep);
 
 					// bottom pixel
-					bottom = *(pixel + (pitch << 2));
+					bottom = *(pixel + (rowstep << 2));
 
 					// combine pixels
 					c1 = (top + bottom) >> 2;
@@ -1491,24 +1539,24 @@ static void M_PlayerSetupDrawer()
 
 					// store pixels
 					*pixel = c1;
-					*(pixel + pitch) = (c1 + bottom) >> 1;		// interpolate
+					*(pixel + rowstep) = (c1 + bottom) >> 1;	// interpolate
 
 					// next pixel
-					pixel++;
+					pixel += colstep;
 				}
 
 				// special case: last pixel on line
-				p = pixel + (pitch << 1);
-				top = *p + *(p - 1) + *(p - fire_surface_width + 1);
-				bottom = *(pixel + (pitch << 2));
+				p = pixel + (rowstep << 1);
+				top = *p + *(p - colstep) + *(p - ((fire_surface_width - 1) * colstep));
+				bottom = *(pixel + (rowstep << 2));
 				c1 = (top + bottom) >> 2;
 				if (c1 > 1)
 					c1--;
 				*pixel = c1;
-				*(pixel + pitch) = (c1 + bottom) >> 1;
+				*(pixel + rowstep) = (c1 + bottom) >> 1;
 
 				// next line
-				from += pitch << 1;
+				from += rowstep << 1;
 			}
 
 			y--;
@@ -1564,37 +1612,39 @@ static void M_PlayerSetupDrawer()
 		R_BuildPlayerTranslation(menuplayer_id, player_color, colorpreset);
 		V_ColorMap = translationref_t(translationtables, menuplayer_id);
 
-		// Draw box surrounding fire and player:
-		screen->DrawPatchClean(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
-			PSetupDef.y + LINEHEIGHT * 3 + 22);
+		const Texture* texture = Res_CacheTexture(sprframe->resource[0]);
+		screen->DrawTranslatedTextureClean(texture, 320 - 52 - 32, PSetupDef.y + (LINEHEIGHT*3) + 46);
+	}
 
-		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
-			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
+	{
+		// Draw box surrounding fire and player:
+		const Texture* texture = Res_CacheTexture("M_PBOX", GRAPHICS);
+		screen->DrawTextureClean(texture, 320 - 88 - 32 + 36, PSetupDef.y + (LINEHEIGHT*3) + 22);
 	}
 
 	// Draw team setting
 	{
 		const team_t team = D_TeamByName(cl_team.cstring());
-		const int x = V_StringWidth ("Preferred Team") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Preferred Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
+		const int x = V_FontStringWidthClean(::menu_font, "Preferred Team") + 8 + PSetupDef.x;
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Preferred Team");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
 	{
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
-		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Gender");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*2, genders[gender]);
+		const int x = V_FontStringWidthClean(::menu_font, "Gender") + 8 + PSetupDef.x;
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*2), "Gender");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + (LINEHEIGHT*2), genders[gender]);
 	}
 
 	// Draw autoaim setting
 	{
-		const int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
+		const int x = V_FontStringWidthClean(::menu_font, "Autoaim") + 8 + PSetupDef.x;
 		const float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*3,
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*3), "Autoaim");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + (LINEHEIGHT*3),
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
@@ -1605,9 +1655,9 @@ static void M_PlayerSetupDrawer()
 
 	// Draw color setting
 	{
-		const int x = V_StringWidth ("Color") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Color");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*4, colorpresets[colorpreset]);
+		const int x = V_FontStringWidthClean(::menu_font, "Color") + 8 + PSetupDef.x;
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*4), "Color");
+		screen->DrawFontTextCleanMove(::menu_font, CR_GREY, x, PSetupDef.y + (LINEHEIGHT*4), colorpresets[colorpreset]);
 	}
 
 	int PSetupSize = sizeof(PlayerSetupMenu) / sizeof(PlayerSetupMenu[0]);
@@ -1621,12 +1671,12 @@ static void M_PlayerSetupDrawer()
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Red");
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Green");
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Blue");
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*5), "Red");
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*6), "Green");
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, PSetupDef.x, PSetupDef.y + (LINEHEIGHT*7), "Blue");
 
 		{
-			const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
+			const int x = V_FontStringWidthClean(::menu_font, "Green") + 8 + PSetupDef.x;
 			const argb_t playercolor = V_GetColorFromString(cl_color);
 
 			PSetupSliderX1 = screen->getCleanX(x + SLIDER_TRACK_X);
@@ -1800,9 +1850,9 @@ static void M_SlidePlayerRed(int choice)
 	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-		color.setr(std::max(0, int(color.getr()) - 1 - accel));
+		color.setr(std::max(0, static_cast<int>(color.getr()) - 1 - accel));
 	else
-		color.setr(std::min(255, int(color.getr()) + 1 + accel));
+		color.setr(std::min(255, static_cast<int>(color.getr()) + 1 + accel));
 
 	SendNewColor(color.getr(), color.getg(), color.getb());
 }
@@ -1813,9 +1863,9 @@ static void M_SlidePlayerGreen (int choice)
 	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-		color.setg(std::max(0, int(color.getg()) - 1 - accel));
+		color.setg(std::max(0, static_cast<int>(color.getg()) - 1 - accel));
 	else
-		color.setg(std::min(255, int(color.getg()) + 1 + accel));
+		color.setg(std::min(255, static_cast<int>(color.getg()) + 1 + accel));
 
 	SendNewColor(color.getr(), color.getg(), color.getb());
 }
@@ -1826,9 +1876,9 @@ static void M_SlidePlayerBlue (int choice)
 	const int accel = repeatCount < 10 ? 0 : 5;
 
 	if (choice == 0)
-		color.setb(std::max(0, int(color.getb()) - 1 - accel));
+		color.setb(std::max(0, static_cast<int>(color.getb()) - 1 - accel));
 	else
-		color.setb(std::min(255, int(color.getb()) + 1 + accel));
+		color.setb(std::min(255, static_cast<int>(color.getb()) + 1 + accel));
 
 	SendNewColor(color.getr(), color.getg(), color.getb());
 }
@@ -1837,20 +1887,20 @@ static void M_SlidePlayerBlue (int choice)
 //
 //		Menu Functions
 //
-void M_DrawEmptyCell (oldmenu_t *menu, int item)
+void M_DrawEmptyCell(oldmenu_t *menu, int item)
 {
-	screen->DrawPatchClean (W_CachePatch("M_CELL1"),
-		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
+	const Texture* texture = Res_CacheTexture("M_CELL1", GRAPHICS);
+	screen->DrawTextureClean(texture, menu->x - 10, menu->y+(item*LINEHEIGHT) - 1);
 }
 
-void M_DrawSelCell (oldmenu_t *menu, int item)
+void M_DrawSelCell(oldmenu_t *menu, int item)
 {
-	screen->DrawPatchClean (W_CachePatch("M_CELL2"),
-		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
+	const Texture* texture = Res_CacheTexture("M_CELL2", GRAPHICS);
+	screen->DrawTextureClean(texture, menu->x - 10, menu->y+(item*LINEHEIGHT) - 1);
 }
 
 
-void M_StartMessage (const char *string, void (*routine)(int), bool input)
+void M_StartMessage(const char *string, void (*routine)(int), bool input)
 {
 	messageLastMenuActive = menuactive;
 	messageToPrint = 1;
@@ -1868,27 +1918,6 @@ void M_StopMessage()
 	menuactive = messageLastMenuActive;
 	messageToPrint = 0;
 }
-
-
-//
-//		Find string height from hu_font chars
-//
-int M_StringHeight(char* string)
-{
-	// Default height without a working font is 8.
-	if (::hu_font[0].empty())
-		return 8;
-
-	const int height = W_ResolvePatchHandle(hu_font[0])->height();
-
-	int h = height;
-	while (*string)
-		if ((*string++) == '\n')
-			h += height;
-
-	return h;
-}
-
 
 
 //
@@ -1928,9 +1957,7 @@ static int M_GetMouseItem()
 		}
 		else if (item.textname[0])
 		{
-			V_SetFont("BIGFONT");
-			width = V_StringWidth(item.textname);
-			V_SetFont("SMALLFONT");
+			width = V_FontStringWidthClean(::menu_font, item.textname);
 		}
 		else
 		{
@@ -2001,19 +2028,19 @@ static void M_DrawMessageButtons(int y)
 	// Draw order
 	static const int order[2] = {MSGBUTTON_YES, MSGBUTTON_NO};
 
-	const int height = W_ResolvePatchHandle(hu_font[0])->height();
-	const patch_t* cursor = W_CachePatch("LITLCURS");
+	const int height = V_FontLineHeightClean(::menu_font);
+	const Texture* cursor = W_CachePatch("LITLCURS");
 	const int cursor_gap = 4;
 	const int line_step = height + 2;
 
 	for (int row = 0; row < 2; row++)
 	{
 		const int button = order[row];
-		const int w = V_StringWidth(labels[button]);
+		const int w = V_FontStringWidthClean(::menu_font, labels[button]);
 		const int bx = 160 - w / 2;			// each label centered
 		const int by = y + row * line_step;
 
-		screen->DrawTextCleanMove(CR_RED, bx, by, labels[button]);
+		screen->DrawFontTextCleanMove(::menu_font, CR_RED, bx, by, labels[button]);
 
 		MessageButtonX1[button] = screen->getCleanX(bx);
 		MessageButtonX2[button] = screen->getCleanX(bx + w);
@@ -2021,7 +2048,18 @@ static void M_DrawMessageButtons(int y)
 		MessageButtonY2[button] = screen->getCleanY(by + height);
 
 		if (button == messageSelection && skullAnimCounter < 6)
-			screen->DrawPatchClean(cursor, bx + w + cursor_gap, by);
+		{
+			const int cleanx = std::max(1, CleanXfac);
+			const int cleany = std::max(1, CleanYfac);
+			const int font_height = ::menu_font->getHeight();
+			const int text_center = screen->getCleanY(by) + (font_height / 2);
+			const int cursor_height = cursor->mHeight * cleany;
+
+			screen->DrawTextureStretched(cursor,
+			                             screen->getCleanX(bx + w + cursor_gap),
+			                             text_center - (cursor_height / 2),
+			                             cursor->mWidth * cleanx, cursor_height);
+		}
 	}
 }
 
@@ -2303,7 +2341,7 @@ bool M_Responder(const event_t& ev)
 			ch = ev.data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
-				V_StringWidth(savegamestrings[saveSlot]) <
+				V_FontStringWidthClean(::menu_font, savegamestrings[saveSlot]) <
 				(genStringLen - 1) * 8)
 			{
 				savegamestrings[saveSlot][saveCharIndex++] = ch;
@@ -2569,27 +2607,30 @@ void M_StartControlPanel()
 //
 void M_Drawer()
 {
-	if (messageToPrint && !::hu_font[0].empty())
+	if (not V_FontsReady())
+		return;
+
+	if (messageToPrint and ::menu_font)
 	{
 		// Horiz. & Vertically center string and print it.
-		brokenlines_t *lines = V_BreakLines (320, messageString);
+		brokenlines_t *lines = V_BreakLinesFont(::menu_font, 320, messageString);
+		const int lineheight = V_FontLineHeightClean(::menu_font);
 		int y = 100;
 
-		const patch_t* ch = W_ResolvePatchHandle(hu_font[0]);
-
 		for (int i = 0; lines[i].width != -1; i++)
-			y -= ch->height() / 2;
+			y -= lineheight / 2;
 
 		for (int i = 0; lines[i].width != -1; i++)
 		{
-			screen->DrawTextCleanMove(CR_RED, 160 - lines[i].width/2, y, lines[i].string);
-			y += ch->height();
+			screen->DrawFontTextCleanMove(::menu_font, CR_RED, 160 - (lines[i].width/2), y,
+			                              lines[i].string);
+			y += lineheight;
 		}
 
 		V_FreeBrokenLines (lines);
 
 		if (messageNeedsInput && ui_mouse.asBool())
-			M_DrawMessageButtons(y + ch->height());
+			M_DrawMessageButtons(y + V_FontLineHeightClean(::menu_font));
 	}
 	else if (menuactive)
 	{
@@ -2606,7 +2647,6 @@ void M_Drawer()
 			const int x = currentMenu->x;
 			int y = currentMenu->y;
 			const int max = currentMenu->numitems;
-			V_SetFont("BIGFONT");
 			for (int i = 0; i < max; i++)
 			{
 				if (currentMenu->menuitems[i].name[0])
@@ -2615,18 +2655,17 @@ void M_Drawer()
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
-					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
+					screen->DrawFontTextCleanMove(::menu_font, CR_RED, x, y,
+					                              currentMenu->menuitems[i].textname);
 				}
 				y += LINEHEIGHT;
 			}
-			V_SetFont("SMALLFONT");
-
 
 			// DRAW SKULL
 			if (drawSkull)
 			{
-				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
-					x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
+				const Texture* texture = Res_CacheTexture(skullName[whichSkull], GRAPHICS);
+				screen->DrawTextureClean(texture, x + SKULLXOFF, currentMenu->y - 5 + (itemOn*LINEHEIGHT));
 			}
 		}
 	}

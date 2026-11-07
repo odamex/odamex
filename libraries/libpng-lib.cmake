@@ -15,6 +15,10 @@ if(BUILD_CLIENT)
         "${CMAKE_CURRENT_BINARY_DIR}/local/lib/libpng16_static${libsuffix}")
     endif()
 
+    # A ;-separated prefix path would otherwise be split into stray
+    # positional arguments by execute_process.
+    string(REPLACE ";" "\\;" _LIBPNG_PREFIX_PATH "${CMAKE_PREFIX_PATH}")
+
     # Generate the build.
     set(_LIBPNG_GEN_ARGS
       -S "${CMAKE_CURRENT_SOURCE_DIR}/libpng"
@@ -22,7 +26,7 @@ if(BUILD_CLIENT)
       -G "${CMAKE_GENERATOR}"
       "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
       "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-      "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+      "-DCMAKE_PREFIX_PATH=${_LIBPNG_PREFIX_PATH}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
       "-DPNG_SHARED=OFF"
       "-DPNG_TESTS=OFF")

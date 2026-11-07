@@ -94,13 +94,13 @@ using dtime_t = uint64_t;
 #ifdef _WIN32
 	#define PATHSEP "\\"
 	#define PATHSEPCHAR '\\'
-	#define PATHLISTSEP ";"
-	#define PATHLISTSEPCHAR ';'
+	#define SEARCHPATHSEP ";"
+	#define SEARCHPATHSEPCHAR ';'
 #else
 	#define PATHSEP "/"
 	#define PATHSEPCHAR '/'
-	#define PATHLISTSEP ":"
-	#define PATHLISTSEPCHAR ':'
+	#define SEARCHPATHSEP ":"
+	#define SEARCHPATHSEPCHAR ':'
 #endif
 
 /**
@@ -224,10 +224,27 @@ public:
 	{	channels[b_num] = n;	}
 
 	static void setChannels(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)
-	{	a_num = _a; r_num = _r; g_num = _g; b_num = _b;	}
+	{	a_num = _a; r_num = _r; g_num = _g; b_num = _b;
+		a_mask = static_cast<uint32_t>(0xFF) << (a_num << 3);	}
+
+	// The packed word with only the alpha byte set, wherever that byte lives.
+	// Blends working on the packed value -- see alphablend2a -- use it to force
+	// alpha to 255, as the three-argument constructor does. Kept in step with
+	// setChannels so it costs a load, not a shift chain, per pixel.
+	static uint32_t alphaMask() { return a_mask; }
+
+	// The bit position of each channel in the packed word, by the same layout
+	// alphaMask assumes, for code that shades the packed value directly.
+	static int alphaShift() { return a_num << 3; }
+	static int redShift() { return r_num << 3; }
+	static int greenShift() { return g_num << 3; }
+	static int blueShift() { return b_num << 3; }
 
 private:
-	static inline uint8_t a_num, r_num, g_num, b_num;
+	// Defaulted to the layout d_main sets at startup, so a colour constructed
+	// before the video backend reports its format still agrees with alphaMask().
+	static inline uint8_t a_num = 3, r_num = 2, g_num = 1, b_num = 0;
+	static inline uint32_t a_mask = 0xFF000000u;
 
 	union
 	{
@@ -429,6 +446,11 @@ public:
 	byte ramp() const;
 
 	argb_t tlate(const translationref_t &translation, const byte c) const;
+
+	// Applies this colormap's light diminishing and fade to a native ARGB
+	// color, preserving the source alpha. Callers must keep special
+	// colormaps on the palettized path since they have no RGB equivalent.
+	argb_t shadeargb(const argb_t c) const;
 
 	[[nodiscard]] bool operator==(const shaderef_t &other) const;
 };

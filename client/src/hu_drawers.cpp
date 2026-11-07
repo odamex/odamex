@@ -23,10 +23,14 @@
 
 #include "odamex.h"
 
+#include <array>
+
 #include "hu_drawers.h"
 #include "i_video.h"
 #include "v_video.h"
 #include "v_text.h"
+#include "v_font.h"
+#include "resources/res_texture.h"
 
 namespace hud {
 
@@ -39,14 +43,14 @@ short roundToShort(float f)
 // Return the number of scaled available horizontal pixels to draw on.
 int XSize(const float scale)
 {
-	int x_scale = std::max(1, int(scale * CleanXfac));
+	int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
 	return I_GetSurfaceWidth() / x_scale;
 }
 
 // Return the number of scaled available vertical pixels to draw on.
 int YSize(const float scale)
 {
-	int y_scale = std::max(1, int(scale * CleanYfac));
+	int y_scale = std::max(1, static_cast<int>(scale * CleanYfac));
 	return I_GetSurfaceHeight() / y_scale;
 }
 
@@ -70,8 +74,8 @@ void calculateOrigin(int& x, int& y,
 
 	// Since Doom's assets are so low-resolution, scaling is done by simple
 	// doubling/tripling/etc. of the pixels with no alising.
-	x_scale = std::max(1, int(scale * CleanXfac));
-	y_scale = std::max(1, int(scale * CleanYfac));
+	x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
+	y_scale = std::max(1, static_cast<int>(scale * CleanYfac));
 
 	// "Alignment" is the side of the screen that the passed x and y values
 	// are relative to.  Note that for X_RIGHT and Y_BOTTOM, the coordinate
@@ -142,11 +146,14 @@ void Clear(int x, int y,
            const float scale,
            const x_align_t x_align, const y_align_t y_align,
            const x_align_t x_origin, const y_align_t y_origin,
-           const argb_t color)
+           const argb_t color,
+           const int y_pixel_nudge)
 {
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+
+	y += y_pixel_nudge;
 
 	int maxHeight = I_GetSurfaceHeight();
 	int maxWidth = I_GetSurfaceWidth();
@@ -173,46 +180,58 @@ void Dim(int x, int y,
 }
 
 
+// Width of a string in HUD units, matching what DrawText will produce.
+int GetTextWidth(const char* str, const float scale, const fontface_t face)
+{
+	if (not str)
+		return 0;
+
+	const int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
+	return V_GetFaceFont(face, x_scale)->getTextWidth(str) / x_scale;
+}
+
+brokenlines_t* BreakLines(const char* str, const int maxwidth, const float scale,
+                          const fontface_t face)
+{
+	const int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
+	return V_BreakLinesFontPixels(V_GetFaceFont(face, x_scale), maxwidth * x_scale,
+	                              reinterpret_cast<const byte*>(str));
+}
+
+// Height of a line of text in HUD units, matching what DrawText will produce.
+int GetLineHeight(const float scale, const fontface_t face)
+{
+	const int y_scale = std::max(1, static_cast<int>(scale * CleanYfac));
+	return V_GetFaceFont(face, y_scale)->getHeight() / y_scale;
+}
+
+
 // Width of the widest digit, so that a clock's digits can be given equal cells.
-int digitCellWidth()
+static int digitCellWidth(const OFont* font)
 {
 	int cell = 0;
 
 	for (char c = '0'; c <= '9'; c++)
-	{
-		const int i = c - HU_FONTSTART;
-
-		if (i < 0 or i >= HU_FONTSIZE or ::hu_font[i].empty())
-			continue;
-
-		cell = std::max<int>(cell, W_ResolvePatchHandle(::hu_font[i])->width());
-	}
+		cell = std::max(cell, font->getTextWidth(c));
 
 	return cell;
 }
 
 // Width of one character's cell - digits are padded out to a common width.
-int charCellWidth(const char c, const int cell)
+static int charCellWidth(const OFont* font, const char c, const int cell)
 {
-	// Masked like V_StringWidth, so a high byte cannot reach toupper.
-	const int i = toupper(c & 0x7f) - HU_FONTSTART;
-
-	if (i < 0 or i >= HU_FONTSIZE or ::hu_font[i].empty())
-		return 4;
-
-	const int width = W_ResolvePatchHandle(::hu_font[i])->width();
+	const int width = font->getTextWidth(c);
 
 	return (c >= '0' and c <= '9') ? std::max(width, cell) : width;
 }
 
-// Width of a string laid out on the fixed digit pitch.
-int StringWidthMono(const char* str)
+// Width of a string laid out on the fixed digit pitch, in real pixels.
+int StringWidthMono(const OFont* font, const char* str)
 {
 	if (not str)
 		return 0;
 
-	const int cell = digitCellWidth();
-
+	const int cell = digitCellWidth(font);
 	int w = 0;
 
 	for (const char* p = str; *p;)
@@ -223,22 +242,27 @@ int StringWidthMono(const char* str)
 			continue;
 		}
 
-		w += charCellWidth(*p, cell);
+		w += charCellWidth(font, *p, cell);
 		p++;
 	}
 
 	return w;
 }
 
-// Draw hu_font text on the fixed digit pitch at an absolute position, for
-// callers that do their own placing and scaling.
-void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
+int StringWidthMono(const char* str, const int pixel_scale, const fontface_t face)
+{
+	return StringWidthMono(V_GetFaceFont(face, std::max(1, pixel_scale)), str);
+}
+
+// Draw text on the fixed digit pitch at an absolute position, for callers that
+// do their own placing and scaling.
+void DrawTextMonoAt(const OFont* font, int x, int y,
                     const char* str, const int color, const bool force_opaque)
 {
 	if (not str)
 		return;
 
-	const int cell = digitCellWidth();
+	const int cell = digitCellWidth(font);
 
 	// Each glyph is drawn on its own, so the active color has to be carried
 	// forward by hand - one call cannot see the escape from the last.
@@ -267,83 +291,107 @@ void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
 		buf[n++] = *p;
 		buf[n] = '\0';
 
-		const char* glyph = buf.data();
-
 		// Center the glyph in its cell so a narrow digit doesn't sit left.
-		const int cellw = charCellWidth(*p, cell);
-		const int gx = cx + (((cellw - V_StringWidth(glyph)) / 2) * x_scale);
+		const int cellw = charCellWidth(font, *p, cell);
+		const int gx = cx + ((cellw - font->getTextWidth(*p)) / 2);
 
-		if (force_opaque)
-			screen->DrawTextStretched(color, gx, y, glyph, x_scale, y_scale);
-		else
-			screen->DrawTextStretchedLuc(color, gx, y, glyph, x_scale, y_scale);
+		screen->DrawFontText(font, color, gx, y, buf.data(), force_opaque);
 
-		cx += cellw * x_scale;
+		cx += cellw;
 		p++;
 	}
 }
 
-// Draw hu_font text with every digit in a cell of the same width.
+void DrawTextMonoAt(int x, int y, const int pixel_scale,
+                    const char* str, const int color, const bool force_opaque,
+                    const fontface_t face)
+{
+	DrawTextMonoAt(V_GetFaceFont(face, std::max(1, pixel_scale)), x, y, str, color,
+	               force_opaque);
+}
+
+// Draw text with every digit in a cell of the same width.
 void DrawTextMono(int x, int y, const float scale,
                   const x_align_t x_align, const y_align_t y_align,
                   const x_align_t x_origin, const y_align_t y_origin,
                   const char* str, const int color,
-                  const bool force_opaque)
+                  const bool force_opaque, const fontface_t face)
 {
 	if (not str)
 		return;
 
-	// NOLINTBEGIN(google-runtime-int) - matches the other hud:: draw calls
-	const unsigned short w = StringWidthMono(str);
-	const unsigned short h = V_LineHeight();
-	// NOLINTEND(google-runtime-int)
+	// Turn our scaled coordinates into real coordinates.
+	int x_scale = 1, y_scale = 1;
+	calculateOrigin(x, y, 0, 0, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
 
-	int x_scale;
-	int y_scale;
-	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+	const OFont* font = V_GetFaceFont(face, x_scale);
+	const int w = StringWidthMono(font, str);
+	const int h = font->getHeight();
 
-	DrawTextMonoAt(x, y, x_scale, y_scale, str, color, force_opaque);
+	// apply the origin offset ourselves, in real pixels
+	if (x_origin == X_CENTER)
+		x -= w >> 1;
+	else if (x_origin == X_RIGHT)
+		x -= w;
+
+	if (y_origin == Y_MIDDLE)
+		y -= h >> 1;
+	else if (y_origin == Y_BOTTOM)
+		y -= h;
+
+	DrawTextMonoAt(font, x, y, str, color, force_opaque);
 }
 
-// Draw hu_font text.
+
+// Draw text with the HUD font.
 void DrawText(int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,
               const x_align_t x_origin, const y_align_t y_origin,
               const char* str, const int color,
-              const bool force_opaque)
+              const bool force_opaque,
+              const fontface_t face,
+              const int y_pixel_nudge)
 {
 	// No string?  Don't bother with this function.
 	if (!str)
 		return;
 
-	// Calculate width and height of string
-	unsigned short w = V_StringWidth(str);
-	unsigned short h = V_LineHeight();
-
 	// Turn our scaled coordinates into real coordinates.
-	int x_scale, y_scale;
-	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+	int x_scale = 1, y_scale = 1;
+	calculateOrigin(x, y, 0, 0, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
 
-	if (force_opaque)
-		screen->DrawTextStretched(color, x, y, str, x_scale, y_scale);
-	else
-		screen->DrawTextStretchedLuc(color, x, y, str, x_scale, y_scale);
+	// Calculate width and height of string
+	const OFont* font = V_GetFaceFont(face, x_scale);
+	const int w = font->getTextWidth(str);
+	const int h = font->getHeight();
+
+	// apply the origin offset ourselves, in real pixels
+	if (x_origin == X_CENTER)
+		x -= w >> 1;
+	else if (x_origin == X_RIGHT)
+		x -= w;
+
+	if (y_origin == Y_MIDDLE)
+		y -= h >> 1;
+	else if (y_origin == Y_BOTTOM)
+		y -= h;
+
+	y += y_pixel_nudge;
+
+	screen->DrawFontText(font, color, x, y, str, force_opaque);
 }
 
 
 // Draw a patch.
-void DrawPatch(int x, int y, const float scale,
+void DrawTexture(int x, int y, const float scale,
                const x_align_t x_align, const y_align_t y_align,
                const x_align_t x_origin, const y_align_t y_origin,
-               const patch_t* patch, const bool force_opaque,
+               const Texture* texture, const bool force_opaque,
                const bool use_patch_offsets)
 {
-	if (patch == NULL)
-		return;
-
 	// Calculate width and height of patch
-	unsigned short w = patch->width();
-	unsigned short h = patch->height();
+	unsigned short w = texture->mWidth;
+	unsigned short h = texture->mHeight;
 
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
@@ -352,29 +400,27 @@ void DrawPatch(int x, int y, const float scale,
 	if (!use_patch_offsets)
 	{
 		// Negate scaled patch offsets.
-		x += patch->leftoffset() * x_scale;
-		y += patch->topoffset() * y_scale;
+		x += texture->mOffsetX * x_scale;
+		y += texture->mOffsetY * y_scale;
 	}
 
 	if (force_opaque)
-		screen->DrawPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 	else
-		screen->DrawLucentPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawLucentTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 }
 
 // Draw a color-translated patch.
-void DrawTranslatedPatch(int x, int y, const float scale,
+void DrawTranslatedTexture(int x, int y, const float scale,
                          const x_align_t x_align, const y_align_t y_align,
                          const x_align_t x_origin, const y_align_t y_origin,
-                         const patch_t* patch, byte* translation,
-                         const bool force_opaque, const bool use_patch_offsets)
+                         const Texture* texture, byte* translation,
+                         const bool force_opaque, const bool use_patch_offsets,
+                         const int y_pixel_nudge)
 {
-	if (patch == NULL)
-		return;
-
 	// Calculate width and height of patch
-	unsigned short w = patch->width();
-	unsigned short h = patch->height();
+	unsigned short w = texture->mWidth;
+	unsigned short h = texture->mHeight;
 
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
@@ -383,31 +429,30 @@ void DrawTranslatedPatch(int x, int y, const float scale,
 	if (!use_patch_offsets)
 	{
 		// Negate scaled patch offsets.
-		x += patch->leftoffset() * x_scale;
-		y += patch->topoffset() * y_scale;
+		x += texture->mOffsetX * x_scale;
+		y += texture->mOffsetY * y_scale;
 	}
+
+	y += y_pixel_nudge;
 
 	V_ColorMap = translationref_t(translation);
 
 	if (force_opaque)
-		screen->DrawTranslatedPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawTranslatedTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 	else
-		screen->DrawTranslatedLucentPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawTranslatedLucentTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 }
 
 
 // Draw a patch stretched to a specific width and height.
-void DrawPatchStretched(int x, int y,
+void DrawTextureStretched(int x, int y,
                         const unsigned short w, const unsigned short h,
                         const float scale,
                         const x_align_t x_align, const y_align_t y_align,
                         const x_align_t x_origin, const y_align_t y_origin,
-                        const patch_t* patch, const bool force_opaque,
+                        const Texture* texture, const bool force_opaque,
                         const bool use_patch_offsets)
 {
-	if (patch == NULL)
-		return;
-
 	// Turn our scaled coordinates into real coordinates.
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
@@ -415,43 +460,40 @@ void DrawPatchStretched(int x, int y,
 	if (!use_patch_offsets)
 	{
 		// Negate scaled patch offsets.
-		x += (roundToShort(patch->leftoffset() * (static_cast<float>(w) / patch->width()))) * x_scale;
-		y += (roundToShort(patch->topoffset() * (static_cast<float>(h) / patch->height()))) * y_scale;
+		x += (roundToShort(texture->leftoffset() * (static_cast<float>(w) / texture->width()))) * x_scale;
+		y += (roundToShort(texture->topoffset() * (static_cast<float>(h) / texture->height()))) * y_scale;
 	}
 
 	if (force_opaque)
-		screen->DrawPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 	else
-		screen->DrawLucentPatchStretched(patch, x, y, w * x_scale, h * y_scale);
+		screen->DrawLucentTextureStretched(texture, x, y, w * x_scale, h * y_scale);
 }
 
 // Draw a patch scaled to a specific width and height, preserving aspect ratio.
-void DrawPatchScaled(const int x, const int y,
+void DrawTextureScaled(const int x, const int y,
                      unsigned short w, unsigned short h,
                      const float scale,
                      const x_align_t x_align, const y_align_t y_align,
                      const x_align_t x_origin, const y_align_t y_origin,
-                     const patch_t* patch, const bool force_opaque,
+                     const Texture* texture, const bool force_opaque,
                      const bool use_patch_offsets)
 {
-	if (patch == NULL)
-		return;
-
 	// Calculate aspect ratios of patch and destination.
-	float patch_aspect = patch->width() / static_cast<float>(patch->height());
+	float patch_aspect = texture->width() / static_cast<float>(texture->height());
 	float dest_aspect = w / static_cast<float>(h);
 
 	if (patch_aspect < dest_aspect) {
 		// Destination is wider than patch.  Keep height, calculate width.
-		w = (patch->width() * h) / patch->height();
+		w = (texture->mWidth * h) / texture->mHeight;
 	} else if (patch_aspect > dest_aspect) {
 		// Destination is taller than patch.  Keep width, calculate height.
-		h = (patch->height() * w) / patch->width();
+		h = (texture->mHeight * w) / texture->mWidth;
 	}
 
 	// Call the 'stretched' drawer with our new dest. width and height.
-	DrawPatchStretched(x, y, w, h, scale, x_align, y_align, x_origin, y_origin,
-	                   patch, force_opaque, use_patch_offsets);
+	DrawTextureStretched(x, y, w, h, scale, x_align, y_align, x_origin, y_origin,
+	                   texture, force_opaque, use_patch_offsets);
 }
 
 

@@ -31,6 +31,9 @@
 #include "md5.h"
 #include "p_ctf.h"
 #include "g_gametype.h"
+#include "version.h"
+#include "resources/res_main.h"
+#include "resources/res_filelib.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
@@ -190,23 +193,36 @@ next:
 		}
 	}
 
-	// Patch files
-	MSG_WriteByte(&ml_message, patchfiles.size());
+	// TODO: When real dynamic teams are implemented
+	//byte TeamCount = (byte)sv_teamsinplay;
+	//MSG_WriteByte(&ml_message, TeamCount);
 
-	for(size_t i = 0; i < patchfiles.size(); ++i)
+	//for (byte i = 0; i < TeamCount; ++i)
+	//{
+	// TODO - Figure out where the info resides
+	//MSG_WriteString(&ml_message, "");
+	//MSG_WriteLong(&ml_message, 0);
+	//MSG_WriteShort(&ml_message, TEAMpoints[i]);
+	//}
+
+	// Patch files
+	MSG_WriteByte(&ml_message, ::patchfiles.size());
+
+	for (size_t i = 0; i < ::patchfiles.size(); ++i)
 	{
 		MSG_WriteString(&ml_message,
 		                D_CleanseFileName(::patchfiles[i].getBasename()).c_str());
 	}
 
-	// Wad files
-	MSG_WriteByte(&ml_message, wadfiles.size());
+	// resource files
+	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
-	for(size_t i = 0; i < wadfiles.size(); ++i)
+	MSG_WriteByte(&ml_message, resource_file_names.size());
+	for(size_t i = 0; i < resource_file_names.size(); i++)
 	{
-		MSG_WriteString(&ml_message,
-		                D_CleanseFileName(::wadfiles[i].getBasename(), "wad").c_str());
-		MSG_WriteHexString(&ml_message, ::wadfiles[i].getMD5().getHexCStr());
+		MSG_WriteString(&ml_message, Res_CleanseFilename(resource_file_names[i]).c_str());
+		MSG_WriteHexString(&ml_message, resource_file_hashes[i].getHexCStr());
 	}
 
 	MSG_WriteByte(&ml_message, players.size());

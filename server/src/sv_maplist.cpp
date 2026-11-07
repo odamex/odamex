@@ -38,6 +38,8 @@
 #include "sv_main.h"
 #include "svc_message.h"
 #include "w_wad.h"
+#include "resources/res_main.h"
+#include "resources/res_filelib.h"
 
 //////// MAPLIST METHODS ////////
 
@@ -102,8 +104,8 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 		return false;
 	}
 
-	// If we have not been passed custom WAD files, we need to fill them in
-	// on our own.
+	// If we have not been passed custom WAD files,
+	// we need to fill them in on our own.
 	if (maplist_entry.wads.empty())
 	{
 		if (position == 0)
@@ -127,11 +129,10 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 		}
 		else
 		{
-			// We have a spot above us we can yoink from.
-			maplist_entry.wads.resize(this->maplist.at(position - 1).wads.size());
-			std::copy(this->maplist.at(position - 1).wads.begin(),
-			          this->maplist.at(position - 1).wads.end(),
-			          maplist_entry.wads.begin());
+			maplist_entry.wads.resize(this->maplist[position - 1].wads.size());
+			std::copy(this->maplist[position - 1].wads.begin(),
+					  this->maplist[position - 1].wads.end(),
+					  maplist_entry.wads.begin());
 		}
 	}
 

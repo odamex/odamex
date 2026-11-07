@@ -482,6 +482,8 @@ inline bool savegamerestore;
 
 void G_InitNew(const char *mapname);
 inline void G_InitNew(const OLumpName& mapname) { G_InitNew(mapname.c_str()); }
+std::string G_MissingMapMessage(const std::string& mapname);
+void G_WarnHiddenUDMFMap(const std::string& mapname);
 void G_ChangeMap();
 void G_ChangeMap(size_t index);
 void G_RestartMap();

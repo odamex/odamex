@@ -24,6 +24,8 @@
 #pragma once
 
 #include "d_player.h"
+
+#include <algorithm>
 #include "r_data.h"
 #include "v_palette.h"
 #include "m_vectors.h"
@@ -48,17 +50,12 @@ extern int				viewheight;
 extern int				viewwindowx;
 extern int				viewwindowy;
 
-extern bool				r_fakingunderwater;
-extern bool				r_underwater;
-
 inline int				centerx;
 inline int				centery;
 
 inline fixed_t			centerxfrac;
 inline fixed_t			centeryfrac;
 inline fixed_t			yaspectmul;
-
-extern shaderef_t		basecolormap;	// [RH] Colormap for sector currently being drawn
 
 // increment every time a check is made
 inline int				validcount = 1;
@@ -100,8 +97,6 @@ extern int				zlight[LIGHTLEVELS][MAXLIGHTZ];
 
 // bumped light from gun blasts
 inline int				extralight;
-// [RH] ignore extralight and fullbright
-inline bool				foggy;
 
 extern int				fixedlightlev;
 extern shaderef_t		fixedcolormap;
@@ -114,13 +109,6 @@ extern int				lightscaleymul;
 // There a 0-31, i.e. 32 LUT in the COLORMAP lump.
 #define NUMCOLORMAPS			32
 
-
-//
-// Function pointers to switch refresh/drawing functions.
-//
-extern void 			(*colfunc) (void);
-extern void 			(*spanfunc) (void);
-extern void				(*spanslopefunc) (void);
 
 
 //
@@ -223,12 +211,15 @@ void R_SetViewAngle(angle_t ang);
 
 void R_ForceViewWindowResize();
 
-void R_ResetDrawFuncs();
-void R_SetFuzzDrawFuncs();
-void R_SetLucentDrawFuncs();
-void R_SetTranslatedDrawFuncs();
-void R_SetTranslatedLucentDrawFuncs();
-void R_SetSkyForegroundDrawFuncs();
+struct rendercontext_t;
+
+// Each of these selects the drawers for one context.
+void R_ResetDrawFuncs(rendercontext_t& ctx);
+void R_SetFuzzDrawFuncs(rendercontext_t& ctx);
+void R_SetLucentDrawFuncs(rendercontext_t& ctx);
+void R_SetTranslatedDrawFuncs(rendercontext_t& ctx);
+void R_SetTranslatedLucentDrawFuncs(rendercontext_t& ctx);
+void R_SetSkyForegroundDrawFuncs(rendercontext_t& ctx);
 
 inline byte shaderef_t::ramp() const
 {
@@ -285,4 +276,44 @@ inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte 
 }
 
 
-void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color);
+//
+// shaderef_t::shadeargb
+//
+// Applies this colormap's light diminishing and fade to a native ARGB
+// color, mirroring the math used to build the shademaps (see tlate above
+// for the player-color equivalent). The source alpha is preserved so the
+// drawers can blend translucent texels.
+//
+inline argb_t shaderef_t::shadeargb(const argb_t c) const
+{
+	// Defensive clamp; special colormaps (m_mapnum >= NUMCOLORMAPS) have no
+	// RGB equivalent and belong on the palettized path.
+	const int mapnum = m_mapnum < NUMCOLORMAPS ? m_mapnum : NUMCOLORMAPS;
+
+	// Default to white light:
+	argb_t lightcolor = argb_t(255, 255, 255);
+	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
+
+	// Use the dynamic lighting's light color if we have one:
+	if (m_dyncolormap != nullptr)
+	{
+		lightcolor = m_dyncolormap->color;
+		fadecolor = m_dyncolormap->fade;
+	}
+
+	unsigned int r = ((c.getr() * lightcolor.getr() * (NUMCOLORMAPS - mapnum) / 255)
+					+ (fadecolor.getr() * mapnum) + (NUMCOLORMAPS / 2)) / NUMCOLORMAPS;
+	unsigned int g = ((c.getg() * lightcolor.getg() * (NUMCOLORMAPS - mapnum) / 255)
+					+ (fadecolor.getg() * mapnum) + (NUMCOLORMAPS / 2)) / NUMCOLORMAPS;
+	unsigned int b = ((c.getb() * lightcolor.getb() * (NUMCOLORMAPS - mapnum) / 255)
+					+ (fadecolor.getb() * mapnum) + (NUMCOLORMAPS / 2)) / NUMCOLORMAPS;
+
+	return argb_t(c.geta(), gammatable[r], gammatable[g], gammatable[b]);
+}
+
+// angle_t to radians (tau / 2^32)
+// kind of overboard but we need more
+// than what finesine/finecosine can give us.
+static constexpr double ANGLE_TO_RAD = 6.28318530717958647692 / 4294967296.0;
+
+void R_DrawLine(rendercontext_t& ctx, const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color);

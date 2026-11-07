@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 
+#include "v_text.h"
+
 namespace hud {
 
 std::string HelpText();
@@ -35,7 +37,7 @@ std::string SpyPlayerName();
 std::string IntermissionTimer();
 std::string Timer();
 bool TimerIsShotClock();
-void DrawTimerText(int y, int color);
+void DrawTimerText(int y, int color, fontface_t face = FACE_SMALL);
 std::string PersonalSpread();
 std::string PersonalScore();
 std::string PersonalMatchDuelPlacement();

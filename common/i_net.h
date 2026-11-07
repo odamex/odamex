@@ -23,6 +23,10 @@
 
 #pragma once
 
+#include "doomtype.h"
+#include "resources/res_resourceid.h"
+
+
 // Default buffer size for a UDP packet.
 // This constant seems to be used as a default buffer size and should
 // probably not be considered a reasonable MTU.
@@ -330,6 +334,14 @@ enum msg_t
 	clc_spy,
 	clc_privmsg,
 	clc_sendmobjupdate,
+
+	// Messages added since protobreak go at the end, in either direction, so
+	// every number above stays the same and older peers can still connect.
+	//
+	// Remove this when this is current protobreak, and put these messages back.
+
+	clc_resourcedigests,
+	svc_resourcedigestsack,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
@@ -921,6 +933,7 @@ void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);
 void MSG_WriteUnVarint(buf_t* b, unsigned int uv);
 void MSG_WriteVarint(buf_t* b, int v);
+void MSG_WriteResourceId(buf_t *b, const ResourceId res_id);
 void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
@@ -938,6 +951,7 @@ int MSG_ReadShort (void);
 int MSG_ReadLong (void);
 unsigned int MSG_ReadUnVarint();
 int MSG_ReadVarint();
+const ResourceId MSG_ReadResourceId();
 bool MSG_ReadBool(void);
 float MSG_ReadFloat(void);
 const char *MSG_ReadString (void);

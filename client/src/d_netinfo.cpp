@@ -165,7 +165,7 @@ void D_PrepareWeaponPreferenceUserInfo()
 			if (weaponpref_cvar_map[i]->asInt() < 0)
 				weaponpref_cvar_map[i]->ForceSet(0.0f);
 			if (weaponpref_cvar_map[i]->asInt() >= NUMWEAPONS)
-				weaponpref_cvar_map[i]->ForceSet(float(NUMWEAPONS - 1));
+				weaponpref_cvar_map[i]->ForceSet(static_cast<float>(NUMWEAPONS - 1));
 
 			prefs[i] = weaponpref_cvar_map[i]->asInt();
 		}

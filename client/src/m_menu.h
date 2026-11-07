@@ -31,6 +31,10 @@
 #include "olumpname.h"
 #include "c_cvars.h"
 
+class OFont;
+
+OFont* M_GetHeaderFont();
+
 // Some defines...
 #define LINEHEIGHT	16
 #define SKULLXOFF	-32
@@ -170,6 +174,7 @@ struct menu_t {
 	int                   scrolltop;
 	int                   scrollpos;
 	void                  (*refreshfunc)(); // Callback func for M_OptResponder
+	const char*           titletext;        // If set, drawn as TTF text in place of the title patch
 };
 
 struct oldmenuitem_t

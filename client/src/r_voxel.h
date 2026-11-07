@@ -27,6 +27,7 @@
 #pragma once
 
 class AActor;
+struct rendercontext_t;
 struct vissprite_t;
 
 /**
@@ -40,13 +41,14 @@ struct vissprite_t;
 void VX_Init();
 
 /**
- * @brief  Discard the per frame voxel projections.
+ * @brief  Discard a slice's per frame voxel projections.
  *
- * @detail Must be called once at the start of each rendered view, since
-           every voxel from the previous frame points into memory released
-           by this function.
+ * @detail Must be called for each slice at the start of each rendered view,
+ *         with its vissprites, since every voxel from the previous frame
+ *         points into memory released by this function. Each slice keeps its
+ *         own projections, so the slices can project at the same time.
  */
-void VX_ClearVoxels();
+void VX_ClearVoxels(rendercontext_t& ctx);
 
 /**
  * @brief  Project the sprites of sectors near the viewer that the BSP walk
@@ -64,7 +66,19 @@ void VX_ClearVoxels();
  *         Must be called after R_RenderBSPNode, so the sectors it added are
  *         already marked, and before R_DrawMasked sorts the vissprites.
  */
-void VX_NearbySprites();
+void VX_NearbySprites(rendercontext_t& ctx);
+
+/**
+ * @brief  Whether a thing in this frame would be drawn as a voxel.
+ *
+ * @detail A voxel can reach the screen when its flat sprite does not (a
+ *         corpse is far longer than its sprite), so we need to account
+ *         for that when deciding to draw a voxel or not.
+ *
+ * @param thing Actor being projected.
+ * @param frame Sprite frame index, without FF_FULLBRIGHT.
+ */
+bool VX_HasVoxel(const AActor* thing, int frame);
 
 /**
  * @brief  Replace a projected sprite with its voxel model, if one exists.
@@ -79,12 +93,14 @@ void VX_NearbySprites();
  * @param vis Vissprite generated for thing.
  * @return true if vis will be drawn as a voxel.
  */
-bool VX_ProjectVoxel(const AActor* thing, int frame, vissprite_t* vis);
+bool VX_ProjectVoxel(rendercontext_t& ctx, const AActor* thing, int frame, vissprite_t* vis);
 
 /**
  * @brief  Draw a vissprite whose voxel field was set by VX_ProjectVoxel.
  *
- * @detail Called from R_DrawSprite in place of R_DrawVisSprite, once
- *         mfloorclip and mceilingclip have been set up for the sprite.
+ * @detail Called from R_DrawSprite in place of R_DrawVisSprite, once the
+ *         context's mfloorclip and mceilingclip have been set up for the
+ *         sprite. Draws only within spr's x1..x2, which R_DrawSprite has
+ *         clamped to the slice.
  */
-void VX_DrawVoxel(vissprite_t* spr);
+void VX_DrawVoxel(rendercontext_t& ctx, vissprite_t* spr);

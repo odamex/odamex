@@ -1,0 +1,1586 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2015 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//
+// Manager for texture resource loading and converting.
+//
+//-----------------------------------------------------------------------------
+
+#include "odamex.h"
+
+#include <algorithm>
+#include <mutex>
+#include <shared_mutex>
+#include "m_fixed.h"
+
+#include "tables.h"
+#include "g_level.h"
+#include "m_random.h"
+#include "m_ostring.h"
+#include "cmdlib.h"
+
+#include "resources/res_texture.h"
+#include "resources/res_main.h"
+#include "resources/res_resourceloader.h"
+#include "resources/res_identifier.h"
+
+#include "i_system.h"
+
+
+//
+// Res_WarpPixels
+//
+// Writes one plane of a warped image: each column of dest, from the source's
+// columns, as the two passes of the warp would leave it (see Res_WarpTexture).
+//
+template<typename PIXEL>
+static void Res_WarpPixels(PIXEL* dest, const PIXEL* source, const int width, const int height,
+                           const int* rowshift, const int* colshift)
+{
+	for (int x = 0; x < width; x++)
+	{
+		PIXEL* const dest_column = dest + (height * x);
+		int y = colshift[x];
+		for (int yt = 0; yt < height; yt++)
+		{
+			int sx = x + rowshift[y];
+			if (sx >= width)
+				sx -= width;
+			dest_column[yt] = source[(height * sx) + y];
+
+			if (++y == height)
+				y = 0;
+		}
+	}
+}
+
+
+//
+// Res_WarpTexture
+//
+// Alters the image in source_texture with a warping effect and saves the
+// result in dest_texture: the palettized pixels and, where the texture has
+// them, the native ARGB pixels that 32-bit mode draws.
+//
+static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture)
+{
+	const int width = source_texture->mWidth, height = source_texture->mHeight;
+	if (width <= 0 or height <= 0)
+		return;
+
+	// The shift for each row, and for each column, wrapped into [0, size).
+	const auto wrap = [](const int shift, const int size) {
+		const int wrapped = shift % size;
+		return wrapped < 0 ? wrapped + size : wrapped;
+	};
+
+	int rowshift[Texture::MAX_TEXTURE_HEIGHT];
+	int colshift[Texture::MAX_TEXTURE_WIDTH];
+
+	const int rowtimebase = level.time * 23;
+	for (int y = 0; y < height; y++)
+		rowshift[y] = wrap(finesine[(rowtimebase + ((y + 17) << 7)) & FINEMASK] >> 13, width);
+
+	const int coltimebase = level.time * 32;
+	for (int x = 0; x < width; x++)
+		colshift[x] = wrap(finesine[(coltimebase + (x << 7)) & FINEMASK] >> 13, height);
+
+	Res_WarpPixels(dest_texture->mData, source_texture->mData, width, height, rowshift, colshift);
+
+	if (dest_texture->mARGBData and source_texture->mARGBData)
+	{
+		Res_WarpPixels(dest_texture->mARGBData, source_texture->mARGBData, width, height,
+		               rowshift, colshift);
+	}
+}
+
+
+// ============================================================================
+//
+// Texture
+//
+// ============================================================================
+
+//
+// Texture::init
+//
+// Sets up the member variable of Texture based on a supplied width and height.
+//
+void Texture::init(int width, int height)
+{
+	mWidth = width;
+	mHeight = height;
+	mWidthBits = Log2(width);
+	mHeightBits = Log2(height);
+	mWidthMask = (1 << mWidthBits) - 1;
+	mHeightMask = (1 << mHeightBits) - 1;
+	mOffsetX = 0;
+	mOffsetY = 0;
+	mScaleX = FRACUNIT;
+	mScaleY = FRACUNIT;
+	mMaskColor = 0;
+	mData = nullptr;
+	mARGBData = nullptr;
+
+	#if CLIENT_APP
+	// mData follows the header in memory
+	mData = reinterpret_cast<uint8_t*>(this) + calculateHeaderSize(width, height);
+	memset(mData, mMaskColor, calculateDataSize(width, height));
+	#endif
+}
+
+
+//
+// Texture::calculateARGBPlaneSize
+//
+// The bytes a native ARGB plane adds to a texture's allocation, alignment
+// slack included.
+//
+uint32_t Texture::calculateARGBPlaneSize(int width, int height)
+{
+	return (sizeof(argb_t) - 1) + (sizeof(argb_t) * width * height);
+}
+
+
+//
+// Texture::placeARGBPlane
+//
+// Points mARGBData at the native ARGB plane following the palettized one.
+//
+void Texture::placeARGBPlane()
+{
+	uintptr_t plane_addr = reinterpret_cast<uintptr_t>(mData + (sizeof(palindex_t) * mWidth * mHeight));
+	plane_addr = (plane_addr + sizeof(argb_t) - 1) & ~static_cast<uintptr_t>(sizeof(argb_t) - 1);
+	mARGBData = reinterpret_cast<argb_t*>(plane_addr);
+}
+
+
+//
+// Texture::calculateSize
+//
+uint32_t Texture::calculateSize(int width, int height)
+{
+	uint32_t size = calculateHeaderSize(width, height);
+	#if CLIENT_APP
+	size += calculateDataSize(width, height);
+	#endif
+	return size;
+}
+
+
+//
+// Res_CopySubimage
+//
+void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
+		int dx1, int dy1, int dx2, int dy2,
+		int sx1, int sy1, int sx2, int sy2)
+{
+	if (not dest_texture or not source_texture or not dest_texture->mData or not source_texture->mData)
+		return;
+
+	const int destwidth = dx2 - dx1 + 1;
+	const int destheight = dy2 - dy1 + 1;
+
+	const int sourcewidth = sx2 - sx1 + 1;
+	const int sourceheight = sy2 - sy1 + 1;
+
+	if (destwidth <= 0 or destheight <= 0 or sourcewidth <= 0 or sourceheight <= 0)
+		return;
+
+	const fixed_t xstep = FixedDiv(sourcewidth << FRACBITS, destwidth << FRACBITS) + 1;
+	const fixed_t ystep = FixedDiv(sourceheight << FRACBITS, destheight << FRACBITS) + 1;
+
+	palindex_t* dest = dest_texture->mData + (dx1 * dest_texture->mHeight) + dy1;
+
+	fixed_t xfrac = 0;
+	for (int xcount = destwidth; xcount > 0; xcount--)
+	{
+		const palindex_t* source = source_texture->mData +
+				((sx1 + (xfrac >> FRACBITS)) * source_texture->mHeight) + sy1;
+
+		fixed_t yfrac = 0;
+		for (int ycount = destheight; ycount > 0; ycount--)
+		{
+			*dest++ = source[yfrac >> FRACBITS];
+			yfrac += ystep;
+		}
+
+		dest += dest_texture->mHeight - destheight;
+		xfrac += xstep;
+	}
+
+	// copy the source texture's offset info, scaled to match
+	dest_texture->mOffsetX = FixedDiv(source_texture->mOffsetX << FRACBITS, xstep) >> FRACBITS;
+	dest_texture->mOffsetY = FixedDiv(source_texture->mOffsetY << FRACBITS, ystep) >> FRACBITS;
+}
+
+
+// ============================================================================
+//
+// TextureManager
+//
+// ============================================================================
+
+// TextureManager singleton.
+static TextureManager* texture_manager_instance = nullptr;
+
+TextureManager::TextureManager(ResourceManager* manager) :
+	mResourceLoaderLookup(1024)
+{
+	texture_manager_instance = this;
+
+	const ResourceIdList pnames_lookup = buildPNamesLookup(manager, OString("PNAMES"));
+	addCompositeTextureResources(manager, pnames_lookup, OString("TEXTURE1"));
+	addCompositeTextureResources(manager, pnames_lookup, OString("TEXTURE2"));
+}
+
+
+//
+// TextureManager::~TextureManager
+//
+TextureManager::~TextureManager()
+{
+	if (texture_manager_instance == this)
+		texture_manager_instance = nullptr;
+	clear();
+}
+
+
+// The first composite texture found to reference a patch that does not
+// resolve, recorded while TEXTURE1/TEXTURE2 are parsed. A missing patch is
+// non-fatal (the patch simply draws as blank), so this only exists so that
+// D_DoomWadReboot can judge whether a WAD stands on its own as an IWAD.
+//
+static std::string missing_patch_texture;
+
+
+// Power-of-two copies of textures whose own dimensions are not, built on demand
+// for the plane drawers and keyed by the ResourceId they were made from. Owned
+// here, and thrown away when the resource files close.
+//
+// Every render thread asks for them, so the table is guarded: shared to look a
+// copy up, unique to build or refresh one.
+//
+// A warped texture's copy records the warp generation it was taken at.
+// The first thread to see it stale refreshes it in place, and the rest
+// of the frame shares the result.
+//
+struct planetexture_t
+{
+	Texture* texture;
+	uint32_t warpgeneration;
+};
+
+using PlaneTextureTable = OHashTable<ResourceId, planetexture_t>;
+static PlaneTextureTable plane_textures;
+static std::shared_mutex plane_textures_mutex;
+
+static void Res_ClearPlaneTextures();
+
+
+//
+// TextureManager::clear
+//
+// Frees all memory used by TextureManager, freeing all Texture objects
+// and the supporting lookup structures.
+//
+void TextureManager::clear()
+{
+	for (ResourceLoaderLookupTable::iterator it = mResourceLoaderLookup.begin(); it != mResourceLoaderLookup.end(); ++it)
+		delete it->second;
+	mResourceLoaderLookup.clear();
+
+	missing_patch_texture.clear();
+
+	Res_ClearPlaneTextures();
+}
+
+
+//
+// Res_FindTextureMissingPatch
+//
+// Returns the name of the first composite texture that references a patch
+// which could not be resolved, or an empty string when every texture resolves.
+//
+std::string Res_FindTextureMissingPatch()
+{
+	return missing_patch_texture;
+}
+
+
+//
+// TextureManager::addResources
+//
+// Discovers all raw texture resources and notifies ResourceManager
+// 
+void TextureManager::addResources(ResourceManager* manager)
+{
+	addMissingTexturePlaceholder(manager);
+	addResourceToManagerByDir(manager, flats_directory_name);
+	addResourceToManagerByDir(manager, patches_directory_name);
+	addResourceToManagerByDir(manager, sprites_directory_name);
+	addResourceToManagerByDir(manager, textures_directory_name);
+	addResourceToManagerByDir(manager, graphics_directory_name);
+}
+
+
+//
+// Res_CreateTexturesDirectoryLoader
+//
+// Creates the loader for a non-PNG resource in the textures directory: a lump
+// between TX_START and TX_END, or a file in textures/ in an archive.
+//
+static ResourceLoader* Res_CreateTexturesDirectoryLoader(const RawResourceAccessor* accessor,
+                                                         const ResourceId res_id,
+                                                         const ResourcePath& path)
+{
+	const uint32_t size = accessor->getResourceSize(res_id);
+	std::vector<uint8_t> data(size);
+	if (size > 0)
+		accessor->loadResource(res_id, data.data(), size);
+
+	if (Res_ValidatePatchData(data.data(), size))
+		return new PatchTextureLoader(accessor, res_id);
+	if (Res_ValidateFlatData(data.data(), size))
+		return new FlatTextureLoader(accessor, res_id);
+
+	PrintFmt(PRINT_HIGH, "Unsupported image format for {}.\n", path.c_str());
+	return nullptr;
+}
+
+
+//
+// TextureManager::addResourceToManagerByDir
+//
+// Iterates over a list of resource names in a given resource directory
+// and creates a TextureLoader instance to handle loading the resource.
+//
+void TextureManager::addResourceToManagerByDir(ResourceManager* manager, const ResourcePath& dir)
+{
+	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
+	const ResourcePathList paths = manager->listResourceDirectory(dir);
+
+	for (ResourcePathList::const_iterator it = paths.begin(); it != paths.end(); ++it)
+	{
+		const ResourcePath& path = *it;
+		const ResourceId raw_res_id = manager->getResourceId(path);
+
+		// skip if we're adding a duplicate
+		if (mResourceLoaderLookup.find(raw_res_id) != mResourceLoaderLookup.end())
+			continue;
+
+		ResourceLoader* loader = nullptr;
+
+		bool is_png = false;
+		const uint32_t header_data_size = 32;
+		uint8_t header_data[header_data_size];
+		const bool has_header = accessor->getResourceSize(raw_res_id) >= header_data_size;
+		if (has_header)
+		{
+			accessor->loadResource(raw_res_id, header_data, header_data_size);
+			is_png = Res_ValidatePngData(header_data, header_data_size);
+		}
+
+		if (is_png)
+			loader = new PngTextureLoader(accessor, raw_res_id);
+		else if (dir == patches_directory_name)
+			loader = new PatchTextureLoader(accessor, raw_res_id);
+		else if (dir == sprites_directory_name)
+			loader = new PatchTextureLoader(accessor, raw_res_id);
+		else if (dir == graphics_directory_name)
+			loader = new PatchTextureLoader(accessor, raw_res_id);
+		else if (dir == textures_directory_name)
+			loader = Res_CreateTexturesDirectoryLoader(accessor, raw_res_id, path);
+		else if (dir == flats_directory_name and has_header)
+			loader = new FlatTextureLoader(accessor, raw_res_id);
+
+		if (loader != nullptr)
+		{
+			const ResourceId res_id = manager->addResource(path, this, loader);
+
+			// Long-named resources are recorded under their full path with
+			// extension; refresh their untruncated and 8-character lump-name
+			// aliases so that name lookups resolve to the texture version,
+			// just as re-adding the path does for classic 8-character names.
+			const std::string record_name(path.last());
+			const size_t dot = record_name.find('.');
+			const OString stem(record_name.substr(0, dot));
+			if (dot != std::string::npos)
+				manager->addResourceAlias(dir + stem, res_id);
+			if (stem.size() > 8)
+				manager->addResourceAlias(dir + stem.substr(0, 8), res_id);
+
+			// save the ResourceLoader pointers so they can be freed later
+			mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
+		}
+	}
+}
+
+
+//
+// TextureManager::getResourceSize
+//
+// Returns the size of the specified Texture resource.
+//
+uint32_t TextureManager::getResourceSize(const ResourceId res_id) const
+{
+	const ResourceLoader* loader = getResourceLoader(res_id);
+	assert(loader != NULL);
+	return loader->size();
+}
+
+
+//
+// TextureManager::getResourceSize
+//
+// Loads the specified Texture resource.
+//
+uint32_t TextureManager::loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const
+{
+	const ResourceLoader* loader = getResourceLoader(res_id);
+	assert(loader != NULL);
+	loader->load(data);
+	return size;
+}
+
+
+//
+// TextureManager::getResourceLoader
+//
+const ResourceLoader* TextureManager::getResourceLoader(const ResourceId res_id) const
+{
+	ResourceLoaderLookupTable::const_iterator it = mResourceLoaderLookup.find(res_id);
+	if (it != mResourceLoaderLookup.end())
+		return it->second;
+	return nullptr;
+}
+
+
+//
+//
+// TextureManager::addCompositeTextureResources
+//
+// Parses the TEXTURE1 & TEXTURE2 lumps and adds the composite textures
+// to ResourceManager as stand-alone resources.
+//
+void TextureManager::addCompositeTextureResources(ResourceManager* manager, const ResourceIdList& pnames_lookup, const OString& lump_name)
+{
+	const ResourceId res_id = Res_GetResourceId(lump_name, NS_GLOBAL);
+	if (not Res_CheckResource(res_id))
+	{
+		if (lump_name == "TEXTURE1")
+			I_Error("Res_InitTextures: TEXTURE1 lump not found");
+		return;
+	}
+
+	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
+	uint32_t res_size = accessor->getResourceSize(res_id);
+	uint8_t* raw_def_data = new uint8_t[res_size];
+	accessor->loadResource(res_id, raw_def_data, res_size);
+
+	if (res_size < 4)		// not long enough to store definition_count
+		return;
+
+	int32_t definition_count = LELONG(*(reinterpret_cast<int32_t*>(raw_def_data + 0)));
+	for (int32_t i = 0; i < definition_count; i++)
+	{
+		int32_t def_offset = (4 * i) + 4;
+		if (res_size < static_cast<uint32_t>(def_offset))
+			break;
+
+		// Read a texture definition, create a CompositeTextureDefinition,
+		// and add a new CompositeTextureLoader to the list.
+		int32_t tex_offset = LELONG(*(reinterpret_cast<int32_t*>(raw_def_data + def_offset)));
+		if (res_size < static_cast<uint32_t>(tex_offset) + 22)
+			break;
+
+		const char* str = reinterpret_cast<const char*>((raw_def_data + tex_offset + 0));
+		const OString texture_lump_name = OStringToUpper(str, 8);
+
+		// From ChocolateDoom r_data.c:
+		// Vanilla Doom does a linear search of the texures array
+		// and stops at the first entry it finds.  If there are two
+		// entries with the same name, the first one in the array
+		// wins.
+		// [SL] Only add the first instance of a texture name
+		const ResourceId existing_res_id = manager->getResourceId(texture_lump_name, NS_NEWTEXTURES, true);
+		if (Res_CheckResource(existing_res_id))
+			continue;
+
+		CompositeTextureDefinition tex_def = buildCompositeTextureDefinition(raw_def_data + tex_offset, pnames_lookup);
+
+		if (missing_patch_texture.empty())
+		{
+			for (const auto& patch_def : tex_def.mPatchDefs)
+			{
+				if (not Res_CheckResource(patch_def.mResId))
+				{
+					missing_patch_texture = texture_lump_name.c_str();
+					break;
+				}
+			}
+		}
+
+		ResourceLoader* loader = new CompositeTextureLoader(manager->getRawResourceAccessor(), tex_def);
+		ResourcePath path = textures_directory_name + texture_lump_name;
+		const ResourceId res_id = manager->addResource(path, this, loader);
+
+		// save the ResourceLoader pointers so they can be freed later
+		mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
+	}
+
+	delete [] raw_def_data;
+}
+
+
+//
+// TextureManager::buildCompositeTextureDefinition
+//
+CompositeTextureDefinition TextureManager::buildCompositeTextureDefinition(const uint8_t* data, const ResourceIdList& pnames_lookup) const
+{
+	CompositeTextureDefinition tex_def;
+
+	tex_def.mScaleX = *const_cast<uint8_t*>(data + 10);
+	tex_def.mScaleY = *const_cast<uint8_t*>(data + 11);
+	tex_def.mWidth = LESHORT(*reinterpret_cast<const int16_t*>(data + 12));
+	tex_def.mHeight = LESHORT(*reinterpret_cast<const int16_t*>(data + 14));
+
+	int16_t patch_count = LESHORT(*reinterpret_cast<const int16_t*>(data + 20));
+	for (int16_t j = 0; j < patch_count; j++)
+	{
+		const uint8_t* patch_data = data + 22 + (10 * j);
+
+		tex_def.mPatchDefs.push_back(CompositeTextureDefinition::PatchDef());
+		CompositeTextureDefinition::PatchDef& patch_def = tex_def.mPatchDefs.back();
+
+		patch_def.mOriginX = LESHORT(*reinterpret_cast<const int16_t*>(patch_data + 0));
+		patch_def.mOriginY = LESHORT(*reinterpret_cast<const int16_t*>(patch_data + 2));
+
+		// TODO: handle invalid pnames indices
+		int16_t patch_num = LESHORT(*reinterpret_cast<const int16_t*>(patch_data + 4));
+		if (static_cast<size_t>(patch_num) < pnames_lookup.size())
+			patch_def.mResId = pnames_lookup[patch_num];
+	}
+
+	return tex_def;
+}
+
+
+//
+// TextureManager::buildPNamesLookup
+//
+// Parses the PNAMES resource and creates a lookup table mapping entries in
+// the PNAMES resource lump to ResourceIds.
+//
+const ResourceIdList TextureManager::buildPNamesLookup(ResourceManager* manager, const OString& lump_name) const
+{
+	// Read the PNAMES lump and store the ResourceId of each patch
+	// listed in the lump in the pnames_lookup array.
+	const ResourceId pnames_res_id = Res_GetResourceId(lump_name, NS_GLOBAL);
+	if (not Res_CheckResource(pnames_res_id))
+		I_Error("Res_InitTextures: PNAMES lump not found");
+
+	uint32_t pnames_size = Res_GetResourceSize(pnames_res_id);
+	if (pnames_size < 4)			// not long enough to store pnames_count
+		I_Error("Res_InitTextures: invalid PNAMES lump");
+
+	const RawResourceAccessor* accessor = manager->getRawResourceAccessor();
+	uint8_t* pnames_raw_data = new uint8_t[pnames_size];
+	accessor->loadResource(pnames_res_id, pnames_raw_data, pnames_size);
+
+	int32_t pnames_count = LELONG(*(reinterpret_cast<int32_t*>(pnames_raw_data + 0)));
+	if ((static_cast<uint32_t>(pnames_count) * 8) + 4 != pnames_size)
+		I_Error("Res_InitTextures: invalid PNAMES lump");
+
+	ResourceIdList pnames_lookup;
+	pnames_lookup.reserve(pnames_count);
+
+	for (int32_t i = 0; i < pnames_count; i++)
+	{
+		const char* str = reinterpret_cast<const char*>(pnames_raw_data + 4 + (8 * i));
+		const OString lump_name = OStringToUpper(str, 8);
+
+		ResourceId res_id = Res_GetResourceId(lump_name, NS_PATCHES);
+
+		// killough 4/17/98:
+		// Some wads use sprites as wall patches, so repeat check and
+		// look for sprites this time, but only if there were no wall
+		// patches found. This is the same as allowing for both, except
+		// that wall patches always win over sprites, even when they
+		// appear first in a wad. This is a kludgy solution to the wad
+		// lump namespace problem.
+
+		if (not Res_CheckResource(res_id))
+			res_id = Res_GetResourceId(lump_name, NS_SPRITES);
+
+		pnames_lookup.push_back(res_id);
+	}
+
+	delete [] pnames_raw_data;
+
+	return pnames_lookup;
+}
+
+
+//
+// TextureManager::addMissingTexturePlaceholder
+//
+// Creates a dummy texture that can be will be used when an
+// expected texture is missing.
+//
+ResourceId TextureManager::addMissingTexturePlaceholder(ResourceManager* manager)
+{
+	const uint16_t width = 64;
+	const uint16_t height = 64;
+	const palindex_t color1 = 200;
+	const palindex_t color2 = 231;
+
+	palindex_t data[width * height];
+	palindex_t* ptr = data;
+	const uintptr_t checker_width = width / 2;
+	
+	for (int y = 0; y < height / 2; y++)
+	{
+		memset(ptr, color1, checker_width);
+		ptr += checker_width;
+		memset(ptr, color2, checker_width);
+		ptr += checker_width;
+	}
+	for (int y = height / 2; y < height; y++)
+	{
+		memset(ptr, color2, checker_width);
+		ptr += checker_width;
+		memset(ptr, color1, checker_width);
+		ptr += checker_width;
+	}
+
+	ResourceLoader* loader = new InMemoryTextureLoader(data, width, height);
+	ResourcePath path = textures_directory_name + "-MISSING-";
+	const ResourceId res_id = manager->addResource(path, this, loader);
+
+	mResourceLoaderLookup.insert(std::make_pair(res_id, loader));
+
+	return res_id;
+}
+
+// ============================================================================
+//
+// AnimatedTextureManager
+//
+// ============================================================================
+
+void AnimatedTextureManager::clear()
+{
+	mTextureTranslation.clear();
+	mAnimDefs.clear();
+	#if CLIENT_APP
+	for (size_t i = 0; i < mWarpedTextures.size(); i++)
+		delete [] reinterpret_cast<uint8_t*>(mWarpedTextures[i].original_texture);
+	mWarpedTextures.clear();
+	#endif
+}
+
+
+//
+// AnimatedTextureManager::copyTexture
+//
+void AnimatedTextureManager::copyTexture(Texture* destination_texture, const Texture* source_texture) const
+{
+	uint16_t width = source_texture->mWidth, height = source_texture->mHeight;
+	destination_texture->init(width, height);
+	memcpy(destination_texture->mData, source_texture->mData, sizeof(palindex_t) * width * height);
+
+	// The ARGB plane too, where there is one: the allocation must have room.
+	if (source_texture->mARGBData)
+	{
+		destination_texture->placeARGBPlane();
+		memcpy(destination_texture->mARGBData, source_texture->mARGBData,
+		       sizeof(argb_t) * width * height);
+	}
+}
+
+
+//
+// AnimatedTextureManager::readAnimatedDefinitions
+//
+void AnimatedTextureManager::readAnimationDefinitions()
+{
+	clear();
+	#if CLIENT_APP
+	loadAnimationsFromAnimatedLump();		// Boom ANIMATED lump
+	#endif
+	// The server reads ANIMDEFS too, for its switch definitions.
+	loadAnimationsFromAnimDefLump();		// Hexen/ZDoom ANIMDEFS lump
+}
+
+
+//
+// AnimatedTextureManager::getResourceId
+//
+// Returns a resource ID for the current animation frame
+//
+const ResourceId AnimatedTextureManager::getResourceId(const ResourceId res_id) const
+{
+	ResourceIdMap::const_iterator it = mTextureTranslation.find(res_id);
+	if (it != mTextureTranslation.end())
+		return it->second;
+	return res_id;
+}
+
+
+//
+// Res_AnimationFramesAreConsecutive
+//
+// The ANIMATED lump describes a cycle only by its first and last frame and
+// assumes the frames in between occupy consecutive ResourceIds (vanilla
+// behavior). That only holds when every frame in the range
+// comes from the same resource file and none of them is shadowed by a later
+// file. Otherwise the id range covers unrelated resources, which would be
+// erroneously swapped into the animation.
+//
+static bool Res_AnimationFramesAreConsecutive(const ResourceId start_res_id, const ResourceId end_res_id, TextureSearchOrdering search_ordering)
+{
+	for (uint32_t value = start_res_id; value <= static_cast<uint32_t>(end_res_id); value++)
+	{
+		const ResourceId res_id(value);
+		if (not Res_CheckResource(res_id))
+			return false;
+		// each frame must still be the visible (most recently loaded) resource
+		// for its name in this namespace
+		if (Res_GetTextureResourceId(Res_GetResourceName(res_id), search_ordering, false) != res_id)
+			return false;
+	}
+	return true;
+}
+
+
+//
+// AnimatedTextureManager::loadAnimationsFromAnimatedLump
+//
+// Reads animation definitions from the ANIMATED lump.
+//
+// Load the table of animation definitions, checking for existence of
+// the start and end of each frame. If the start doesn't exist the sequence
+// is skipped, if the last doesn't exist, BOOM exits.
+//
+// Wall/Flat animation sequences, defined by name of first and last frame,
+// The full animation sequence is given using all lumps between the start
+// and end entry, in the order found in the WAD file.
+//
+// This routine modified to read its data from a predefined lump or
+// PWAD lump called ANIMATED rather than a static table in this module to
+// allow wad designers to insert or modify animation sequences.
+//
+// Lump format is an array of byte packed animdef_t structures, terminated
+// by a structure with istexture == -1. The lump can be generated from a
+// text source file using SWANTBLS.EXE, distributed with the BOOM utils.
+// The standard list of switches and animations is contained in the example
+// source text file DEFSWANI.DAT also in the BOOM util distribution.
+//
+// [RH] Rewritten to support BOOM ANIMATED lump but also make absolutely
+// no assumptions about how the compiler packs the animdefs array.
+//
+void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
+{
+	const ResourceId res_id = Res_GetResourceId("ANIMATED", NS_GLOBAL);
+	if (not Res_CheckResource(res_id))
+		return;
+
+	uint32_t lumplen = Res_GetResourceSize(res_id);
+	if (lumplen == 0)
+		return;
+
+	const uint8_t* data = Res_LoadResource<uint8_t>(res_id, PU_STATIC);
+
+	for (const uint8_t* ptr = data; *ptr != 255; ptr += 23)
+	{
+		bool is_wall = *ptr & 1;
+		const OString start_name = OStringToUpper(reinterpret_cast<const char*>(ptr + 10), 8);
+		const OString end_name = OStringToUpper(reinterpret_cast<const char*>(ptr + 1), 8);
+		TextureSearchOrdering search_ordering = is_wall ? WALL : FLOOR;
+
+		const ResourceId start_res_id = Res_GetTextureResourceId(start_name, search_ordering, false);
+		const ResourceId end_res_id = Res_GetTextureResourceId(end_name, search_ordering, false);
+
+		uint32_t numframes = end_res_id - start_res_id + 1;
+		if (not Res_CheckResource(start_res_id) or not Res_CheckResource(end_res_id))
+		{
+			DPrintFmt("Missing texture for cycle from {} to {} in ANIMATED lump\n", start_name.c_str(), end_name.c_str());
+		} 
+		else if (numframes < 2 or numframes > AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
+		{
+			PrintFmt(PRINT_HIGH, "Bad cycle from {} to {} in ANIMATED lump\n", start_name.c_str(), end_name.c_str());
+		}
+		else if (not Res_AnimationFramesAreConsecutive(start_res_id, end_res_id, search_ordering))
+		{
+			DPrintFmt("Skipping cycle from {} to {} in ANIMATED lump: frames are not contiguous in the loaded resource files\n", start_name.c_str(), end_name.c_str());
+		}
+		else
+		{
+			anim_t anim;
+			anim.basepic = start_res_id;
+			anim.numframes = numframes; 
+			anim.uniqueframes = false;
+			anim.curframe = 0;
+			int speed = LELONG(*reinterpret_cast<const int*>(ptr + 19));
+			anim.speedmin[0] = anim.speedmax[0] = speed;
+			anim.countdown = speed - 1;
+
+			mAnimDefs.push_back(anim);
+		}
+	}
+
+	Res_ReleaseResource(res_id);
+}
+
+
+
+// p_switch.cpp
+void P_ProcessSwitchDef(OScanner& os);
+
+//
+// Res_ParseAnimDuration
+//
+// Reads an ANIMDEFS frame duration: "tics N" or "rand MIN MAX".
+//
+static void Res_ParseAnimDuration(OScanner& os, byte& duration_min, byte& duration_max)
+{
+	os.mustScan();
+	if (os.compareTokenNoCase("tics"))
+	{
+		os.mustScanInt();
+		duration_min = duration_max = std::clamp(os.getTokenInt(), 0, 255);
+	}
+	else if (os.compareTokenNoCase("rand"))
+	{
+		os.mustScanInt();
+		duration_min = std::clamp(os.getTokenInt(), 0, 255);
+		os.mustScanInt();
+		duration_max = std::clamp(os.getTokenInt(), 0, 255);
+		if (duration_min > duration_max)
+			std::swap(duration_min, duration_max);
+	}
+	else
+	{
+		os.error("Must specify a duration for animation frame");
+	}
+}
+
+
+//
+// AnimatedTextureManager::parseAnim
+//
+//
+void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering search_ordering)
+{
+	bool missing_texture_warning = true;
+
+	os.mustScan();
+	if (os.compareTokenNoCase("optional"))
+	{
+		missing_texture_warning = false;
+		os.mustScan();
+	}
+
+	const OString texture_name = OStringToUpper(os.getToken());
+	const ResourceId base_res_id = Res_GetTextureResourceId(texture_name, search_ordering, false);
+
+	AnimatedTextureManager::anim_t anim;
+	anim.basepic = base_res_id;
+	anim.curframe = 0;
+	anim.numframes = 0;
+	anim.uniqueframes = true;
+	memset(anim.speedmin, 1,
+	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmin));
+	memset(anim.speedmax, 1,
+	       AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES * sizeof(*anim.speedmax));
+
+	bool is_range = false;
+	OString range_end_name;
+
+	while (os.scan())
+	{
+		// These are accepted anywhere in a definition in ZDoom
+		if (os.compareTokenNoCase("allowdecals"))
+		{
+			// Decals don't exist here.
+			continue;
+		}
+		else if (os.compareTokenNoCase("oscillate"))
+		{
+			if (anim.type == AnimatedTextureManager::anim_t::ANIM_RANDOM)
+				os.error("An animation can't be both random and oscillate");
+			anim.type = AnimatedTextureManager::anim_t::ANIM_OSCILLATE_UP;
+		}
+		else if (os.compareTokenNoCase("random"))
+		{
+			if (anim.type == AnimatedTextureManager::anim_t::ANIM_OSCILLATE_UP)
+				os.error("An animation can't be both random and oscillate");
+			anim.type = AnimatedTextureManager::anim_t::ANIM_RANDOM;
+		}
+		else if (os.compareTokenNoCase("range"))
+		{
+			if (is_range or anim.numframes > 0)
+				os.error("An animation takes either one range or a list of pics");
+
+			is_range = true;
+			os.mustScan();
+			range_end_name = OStringToUpper(os.getToken());
+			Res_ParseAnimDuration(os, anim.speedmin[0], anim.speedmax[0]);
+		}
+		else if (os.compareTokenNoCase("pic"))
+		{
+			if (is_range)
+				os.error("An animation takes either one range or a list of pics");
+
+			if (anim.numframes == AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
+			{
+				os.error("Animation has too many frames");
+			}
+
+			os.mustScan();
+			ResourceId frame_res_id;
+			if (IsNum(os.getToken()))
+				frame_res_id = base_res_id + (os.getTokenInt() - 1);
+			else
+				frame_res_id = Res_GetTextureResourceId(OStringToUpper(os.getToken()), search_ordering, false);
+
+			Res_ParseAnimDuration(os, anim.speedmin[anim.numframes], anim.speedmax[anim.numframes]);
+			anim.framepic[anim.numframes] = frame_res_id;
+			anim.numframes++;
+		}
+		else
+		{
+			os.unScan();
+			break;
+		}
+	}
+
+	if (not is_range and anim.numframes < 2)
+	{
+		os.error("Animation needs at least 2 frames");
+	}
+
+	if (base_res_id == ResourceId::INVALID_ID)
+	{
+		// The base resource isn't present, so the definition was parsed only
+		// to get past it.
+		if (missing_texture_warning)
+			PrintFmt(PRINT_HIGH, "Missing texture {} required by ANIMDEFS definition\n", texture_name.c_str());
+		return;
+	}
+
+	if (is_range)
+	{
+		const ResourceId end_res_id = Res_GetTextureResourceId(range_end_name, search_ordering, false);
+		const uint32_t numframes = end_res_id - base_res_id + 1;
+		if (not Res_CheckResource(end_res_id) or end_res_id <= base_res_id or
+		    numframes > AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
+		{
+			PrintFmt(PRINT_HIGH, "Bad range from {} to {} in ANIMDEFS\n", texture_name.c_str(), range_end_name.c_str());
+			return;
+		}
+		if (not Res_AnimationFramesAreConsecutive(base_res_id, end_res_id, search_ordering))
+		{
+			PrintFmt(PRINT_HIGH, "Disabling animation for {}: frames are not contiguous in the loaded resource files\n", texture_name.c_str());
+			return;
+		}
+
+		// Like an ANIMATED lump cycle, every frame of the range animates.
+		anim.uniqueframes = false;
+		anim.numframes = static_cast<short>(numframes);
+	}
+	else
+	{
+		for (int i = 0; i < anim.numframes; i++)
+		{
+			const ResourceId frame_res_id = anim.framepic[i];
+			if (not Res_CheckResource(frame_res_id) or
+			    Res_GetTextureResourceId(Res_GetResourceName(frame_res_id), search_ordering, false) != frame_res_id)
+			{
+				PrintFmt(PRINT_HIGH, "Disabling animation for {}: frames are missing or not contiguous in the loaded resource files\n", texture_name.c_str());
+				return;
+			}
+		}
+	}
+
+	anim.countdown = anim.speedmin[0];
+
+	for (size_t i = 0; i < mAnimDefs.size(); i++)
+	{
+		if (mAnimDefs[i].basepic == base_res_id)
+		{
+			mAnimDefs[i] = anim;
+			return;
+		}
+	}
+	mAnimDefs.push_back(anim);
+}
+
+
+//
+// AnimatedTextureManager::loadAnimationsFromAnimDefLump
+//
+// [RH] This uses a Hexen ANIMDEFS lump to define the animation sequences.
+//
+void AnimatedTextureManager::loadAnimationsFromAnimDefLump()
+{
+	try
+	{
+		const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/ANIMDEFS"));
+
+		for (size_t i = 0; i < res_ids.size(); i++)
+		{
+			const char* name = Res_GetResourceName(res_ids[i]).c_str();
+			const char* buffer = Res_LoadResource<char>(res_ids[i], PU_STATIC);
+
+			OScannerConfig config = {
+			    name,  // lumpName
+			    false, // semiComments
+			    true,  // cComments
+			};
+			OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_ids[i]));
+
+			while (os.scan())
+			{
+				// A bad definition is reported and skipped, rather than
+				// silently ending the lump and every definition after it.
+				try
+				{
+					if (os.compareTokenNoCase("flat"))
+					{
+						parseAnim(os, FLOOR);
+					}
+					else if (os.compareTokenNoCase("texture"))
+					{
+						parseAnim(os, WALL);
+					}
+					else if (os.compareTokenNoCase("switch"))
+					{
+						P_ProcessSwitchDef(os);
+					}
+					else if (os.compareTokenNoCase("warp") or os.compareTokenNoCase("warp2"))
+					{
+						// warp2's different wave isn't implemented, so it warps like warp.
+						os.mustScan();
+						TextureSearchOrdering search_ordering = FLOOR;
+						if (os.compareTokenNoCase("texture"))
+							search_ordering = WALL;
+						else if (not os.compareTokenNoCase("flat"))
+							os.error("Unknown error reading in ANIMDEFS");
+
+						os.mustScan();
+						#if CLIENT_APP
+						const OString texture_name = OStringToUpper(os.getToken());
+						addWarpedTexture(Res_GetTextureResourceId(texture_name, search_ordering, false));
+						#endif
+					}
+				}
+				catch (CRecoverableError& error)
+				{
+					PrintFmt(PRINT_WARNING, "{}\n", error.GetMsg());
+				}
+			}
+
+			Res_ReleaseResource(res_ids[i]);
+		}
+	}
+	catch (CRecoverableError& error)
+	{
+		PrintFmt(PRINT_WARNING, "{}\n", error.GetMsg());
+	}
+}
+
+
+//
+// AnimatedTextureManager::addWarpedTexture
+//
+void AnimatedTextureManager::addWarpedTexture(const ResourceId res_id)
+{
+	if (not Res_CheckResource(res_id))
+		return;
+
+	AnimatedTextureManager::warp_t warp;
+	warp.res_id = res_id;
+	warp.working_texture = const_cast<Texture*>(Res_CacheTexture(res_id, PU_STATIC));
+	size_t size = Texture::calculateSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
+	if (warp.working_texture->mARGBData)
+		size += Texture::calculateARGBPlaneSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
+	warp.original_texture = reinterpret_cast<Texture*>(new uint8_t[size]);
+	copyTexture(warp.original_texture, warp.working_texture);
+	mWarpedTextures.push_back(warp);
+}
+
+
+//
+// AnimatedTextureManager::updateAnimatedTextures
+//
+// TextureIds ticking the animated textures and cyles the Textures within an
+// animation definition.
+//
+void AnimatedTextureManager::updateAnimatedTextures()
+{
+	if (not clientside)
+		return;
+
+	// cycle the animdef textures
+	for (size_t i = 0; i < mAnimDefs.size(); i++)
+	{
+		anim_t* anim = &mAnimDefs[i];
+		if (anim->numframes < 2)
+			continue;
+
+		if (--anim->countdown == 0)
+		{
+			switch (anim->type)
+			{
+			case anim_t::ANIM_OSCILLATE_UP:
+				if (++anim->curframe >= anim->numframes - 1)
+					anim->type = anim_t::ANIM_OSCILLATE_DOWN;
+				break;
+
+			case anim_t::ANIM_OSCILLATE_DOWN:
+				if (--anim->curframe == 0)
+					anim->type = anim_t::ANIM_OSCILLATE_UP;
+				break;
+
+			case anim_t::ANIM_RANDOM:
+			{
+				// Any frame but the current one.
+				int frame = M_Random() % (anim->numframes - 1);
+				if (frame >= anim->curframe)
+					frame++;
+				anim->curframe = static_cast<byte>(frame);
+				break;
+			}
+
+			default:
+				anim->curframe = (anim->curframe + 1) % anim->numframes;
+				break;
+			}
+
+			int speedframe = (anim->uniqueframes) ? anim->curframe : 0;
+
+			if (anim->speedmin[speedframe] == anim->speedmax[speedframe])
+				anim->countdown = anim->speedmin[speedframe];
+			else
+				anim->countdown = (M_Random() % (anim->speedmax[speedframe] - anim->speedmin[speedframe] + 1)) + anim->speedmin[speedframe];
+		}
+
+		if (anim->uniqueframes)
+		{
+			const ResourceId res_id = anim->framepic[anim->curframe];
+			for (int j = 0; j < anim->numframes; j++)
+				mTextureTranslation[anim->framepic[j]] = res_id;
+		}
+		else
+		{
+			for (uint32_t j = static_cast<uint32_t>(anim->basepic); j < static_cast<uint32_t>(anim->basepic) + anim->numframes; j++)
+			{
+				mTextureTranslation[j] = static_cast<ResourceId>((anim->basepic + ((anim->curframe + j) % anim->numframes)));
+			}
+		}
+	}
+
+	// warp textures
+	for (size_t i = 0; i < mWarpedTextures.size(); i++)
+	{
+		Res_WarpTexture(mWarpedTextures[i].working_texture, mWarpedTextures[i].original_texture);
+	}
+
+	// Copies taken of the old pixels are stale now. Never 0, which marks a
+	// copy of a texture that is not warped.
+	if (not mWarpedTextures.empty() and ++mWarpGeneration == 0)
+		mWarpGeneration = 1;
+}
+
+
+//
+// AnimatedTextureManager::isWarped
+//
+bool AnimatedTextureManager::isWarped(const ResourceId res_id) const
+{
+	for (size_t i = 0; i < mWarpedTextures.size(); i++)
+		if (mWarpedTextures[i].res_id == res_id)
+			return true;
+	return false;
+}
+
+
+//
+// Res_GetTextureCandidateRecency
+//
+// Ranks a texture lookup candidate by how recently the resource file that
+// provides it was loaded. The candidate is usually the TextureManager's
+// wrapper (always registered last, after all resource files), so recency is
+// judged by the newest other resource sharing the candidate's path — the
+// raw file/lump the wrapper reads from.
+//
+static uint32_t Res_GetTextureCandidateRecency(const ResourceId res_id)
+{
+	const ResourceIdList res_ids = Res_GetAllResourceIds(Res_GetResourcePath(res_id));
+
+	uint32_t newest = res_id;
+	for (size_t i = 0; i < res_ids.size(); i++)
+		if (res_ids[i] != res_id and (newest == static_cast<uint32_t>(res_id) or static_cast<uint32_t>(res_ids[i]) > newest))
+			newest = res_ids[i];
+	return newest;
+}
+
+
+//
+// Res_IsTextureResource
+//
+bool Res_IsTextureResource(const ResourceId res_id)
+{
+	return texture_manager_instance != nullptr and texture_manager_instance->ownsResource(res_id);
+}
+
+
+//
+// Res_TextureLookupCandidate
+//
+// A texture name can also resolve to a raw file resource that no
+// TextureLoader claimed, such as an unsupported image format (like a JPEG
+// under /TEXTURES/). Caching such a resource would reinterpret raw file
+// bytes as a Texture, so reject any candidate the TextureManager does not
+// own.
+//
+static const ResourceId Res_TextureLookupCandidate(const ResourceId res_id)
+{
+	if (Res_CheckResource(res_id) and not Res_IsTextureResource(res_id))
+		return ResourceId::INVALID_ID;
+	return res_id;
+}
+
+
+//
+// Res_GetTextureResourceId
+//
+// Returns the ResourceId for the texture that matches the supplied name.
+//
+// NOTE: Vanilla Doom considered any sidedef whose texture starts with "-"
+// (such as "-FLAT-") to imply no texture. ZDoom changes this behavior to 
+// allow texture names that start with "-" if they contain more than 1 character.
+//
+// If use_placeholder is true, this will return the resource ID of a placeholder texture
+// if the requested texture cannot be found.
+//
+const ResourceId Res_GetTextureResourceId(const OString& name, TextureSearchOrdering ordering, bool use_placeholder)
+{
+	if (name.empty() or (ordering == WALL and name.size() == 1 and name.c_str()[0] == '-'))
+		return ResourceId::INVALID_ID;
+
+	ResourceNamespace ns = NS_GLOBAL;
+	if (ordering == WALL)
+		ns = NS_NEWTEXTURES;
+	else if (ordering == FLOOR)
+		ns = NS_FLATS;
+	else if (ordering == PATCH)
+		ns = NS_PATCHES;
+	else if (ordering == SPRITE)
+		ns = NS_SPRITES;
+	else if (ordering == GRAPHICS)
+		ns = NS_GRAPHICS;
+
+	ResourceId res_id = Res_TextureLookupCandidate(Res_GetResourceId(name, ns, true));
+
+	// With the unified texture system any graphic can be drawn on any surface,
+	// so wall and floor lookups fall back to each other's namespace (and then
+	// to patches) when the name isn't found in its natural namespace, matching
+	// ZDoom. The ordering only breaks ties when the same name exists in
+	// several namespaces.
+	if (not Res_CheckResource(res_id) and (ordering == WALL or ordering == FLOOR))
+	{
+		const ResourceNamespace fallbacks[] =
+			{ ordering == WALL ? NS_FLATS : NS_NEWTEXTURES, NS_PATCHES };
+		for (size_t i = 0; i < ARRAY_LENGTH(fallbacks) and not Res_CheckResource(res_id); i++)
+			res_id = Res_TextureLookupCandidate(Res_GetResourceId(name, fallbacks[i], true));
+	}
+
+	// Preserve the translator's loose name-only fallback as a last resort.
+	if (not Res_CheckResource(res_id))
+		res_id = Res_TextureLookupCandidate(Res_GetResourceId(name, ns));
+
+	// Use DOOM wad patching rules for graphics (last one wins) depending on
+	// the load ordering.
+	if (ordering == PATCH or ordering == GRAPHICS)
+	{
+		const ResourceId patch_res_id = Res_TextureLookupCandidate(Res_GetResourceId(name, NS_PATCHES, true));
+		const ResourceId graphics_res_id = Res_TextureLookupCandidate(Res_GetResourceId(name, NS_GRAPHICS, true));
+
+		if (Res_CheckResource(patch_res_id) and Res_CheckResource(graphics_res_id))
+			res_id = Res_GetTextureCandidateRecency(patch_res_id) > Res_GetTextureCandidateRecency(graphics_res_id)
+					? patch_res_id : graphics_res_id;
+		else if (Res_CheckResource(patch_res_id))
+			res_id = patch_res_id;
+		else if (Res_CheckResource(graphics_res_id))
+			res_id = graphics_res_id;
+	}
+
+	if (not Res_CheckResource(res_id))
+	{
+		DPrintFmt("Missing texture {}\n", name.c_str());
+		if (use_placeholder)
+			res_id = Res_GetResourceId("-MISSING-", NS_GLOBAL);
+	}
+	return res_id;
+}
+
+
+static AnimatedTextureManager animated_texture_manager;
+
+//
+// Res_ReadAnimationDefinition
+//
+void Res_ReadAnimationDefinitions()
+{
+	animated_texture_manager.readAnimationDefinitions();
+}
+
+
+//
+// Res_UpdateTextureAnimations
+//
+void Res_UpdateTextureAnimations()
+{
+	animated_texture_manager.updateAnimatedTextures();
+}
+
+
+//
+// Res_GetAnimatedTextureResourceId
+//
+const ResourceId Res_GetAnimatedTextureResourceId(const ResourceId res_id)
+{
+	return animated_texture_manager.getResourceId(res_id);
+}
+
+
+//
+// Res_CacheTexture
+//
+const Texture* Res_CacheTexture(ResourceId res_id, zoneTag_e tag)
+{
+	if (not Res_CheckResource(res_id))
+		return static_cast<const Texture*>(nullptr);
+
+	// Never reinterpret a raw (non-texture) resource's data as a
+	// Texture, substitute the placeholder instead.
+	if (not Res_IsTextureResource(res_id))
+	{
+		std::lock_guard<std::recursive_mutex> lock(Res_LoadMutex());
+
+		DPrintFmt("Res_CacheTexture: {} is not a texture resource\n",
+		          Res_GetResourceName(res_id).c_str());
+		res_id = Res_GetResourceId("-MISSING-", NS_GLOBAL);
+		if (not Res_CheckResource(res_id))
+			return static_cast<const Texture*>(nullptr);
+	}
+
+	return Res_LoadResource<Texture>(res_id, tag);
+}
+
+
+//
+// Res_CacheTexture
+//
+const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering ordering, zoneTag_e tag)
+{
+	return Res_CacheTexture(Res_GetTextureResourceId(lump_name, ordering), tag);
+}
+
+
+// ============================================================================
+//
+// Power-of-two plane textures
+//
+// ============================================================================
+
+//
+// Res_IsPlaneSafeTexture
+//
+// True when a texture's dimensions match the power-of-two masks the plane
+// drawers tile with, so they can sample it directly.
+//
+static bool Res_IsPlaneSafeTexture(const Texture* texture)
+{
+	return texture->mWidthMask + 1 == texture->mWidth and
+	       texture->mHeightMask + 1 == texture->mHeight;
+}
+
+
+//
+// Res_NearestPowerOfTwo
+//
+// Rounds to the nearest power of two, rounding up on a tie, so that resizing
+// distorts the image as little as it can. Capped at the largest power of two a
+// texture dimension can hold.
+//
+static uint16_t Res_NearestPowerOfTwo(const uint16_t value)
+{
+	static constexpr uint32_t max_dimension = 1 << 15;
+
+	if (value <= 1)
+		return 1;
+
+	const uint32_t lower = 1u << Log2(value);
+	if (lower == value)
+		return static_cast<uint16_t>(lower);
+
+	const uint32_t upper = lower << 1;
+	if (upper >= max_dimension)
+		return static_cast<uint16_t>(std::min(max_dimension, lower));
+
+	return static_cast<uint16_t>(value - lower < upper - value ? lower : upper);
+}
+
+
+//
+// Res_AllocatePlaneTexture
+//
+// Allocates a power-of-two texture for the plane drawers, sized from a texture
+// whose own dimensions are not, with a native ARGB plane where the source has
+// one. Res_FillPlaneTexture supplies the pixels.
+//
+static Texture* Res_AllocatePlaneTexture(const Texture* source)
+{
+	const uint16_t width = Res_NearestPowerOfTwo(source->mWidth);
+	const uint16_t height = Res_NearestPowerOfTwo(source->mHeight);
+
+	uint32_t size = Texture::calculateSize(width, height);
+	if (source->mARGBData)
+		size += Texture::calculateARGBPlaneSize(width, height);
+
+	Texture* dest = reinterpret_cast<Texture*>(new uint8_t[size]);
+	dest->init(width, height);
+	dest->mScaleX = source->mScaleX;
+	dest->mScaleY = source->mScaleY;
+	dest->mMaskColor = source->mMaskColor;
+
+	if (source->mARGBData)
+		dest->placeARGBPlane();
+
+	return dest;
+}
+
+
+//
+// Res_FillPlaneTexture
+//
+// Scales a texture's pixels into a copy Res_AllocatePlaneTexture made from it,
+// both the palettized plane and, where there is one, the ARGB plane.
+//
+static void Res_FillPlaneTexture(Texture* dest, const Texture* source)
+{
+	const int width = dest->mWidth;
+	const int height = dest->mHeight;
+	argb_t* const dest_argb = dest->mARGBData;
+
+	// Nearest-neighbour sample, stepping both planes together so they cannot
+	// disagree about which source texel a destination texel came from.
+	const fixed_t xstep = FixedDiv(source->mWidth << FRACBITS, width << FRACBITS);
+	const fixed_t ystep = FixedDiv(source->mHeight << FRACBITS, height << FRACBITS);
+
+	fixed_t xfrac = 0;
+	for (int x = 0; x < width; x++, xfrac += xstep)
+	{
+		const int sx = std::min<int>(xfrac >> FRACBITS, source->mWidth - 1);
+
+		const palindex_t* source_column = source->mData + (source->mHeight * sx);
+		palindex_t* dest_column = dest->mData + (height * x);
+
+		const argb_t* source_argb_column =
+		    dest_argb ? source->mARGBData + (source->mHeight * sx) : nullptr;
+		argb_t* dest_argb_column = dest_argb ? dest_argb + (height * x) : nullptr;
+
+		fixed_t yfrac = 0;
+		for (int y = 0; y < height; y++, yfrac += ystep)
+		{
+			const int sy = std::min<int>(yfrac >> FRACBITS, source->mHeight - 1);
+
+			dest_column[y] = source_column[sy];
+			if (dest_argb_column)
+				dest_argb_column[y] = source_argb_column[sy];
+		}
+	}
+}
+
+
+//
+// Res_ClearPlaneTextures
+//
+static void Res_ClearPlaneTextures()
+{
+	std::unique_lock lock(plane_textures_mutex);
+
+	for (PlaneTextureTable::iterator it = plane_textures.begin(); it != plane_textures.end(); ++it)
+		delete[] reinterpret_cast<uint8_t*>(it->second.texture);
+	plane_textures.clear();
+}
+
+
+//
+// Res_PlaneTexture
+//
+const Texture* Res_PlaneTexture(const ResourceId res_id, const Texture* source)
+{
+	if (source == nullptr or Res_IsPlaneSafeTexture(source))
+		return source;
+
+	// A warped texture's pixels are rewritten in place every tic, so its copy
+	// is refreshed whenever the warp generation moves on. That only happens on
+	// the game thread between frames, so every render thread in a frame agrees
+	// on it, and a copy refreshed this frame is not written again until the next.
+	const uint32_t generation = animated_texture_manager.isWarped(res_id)
+	                                ? animated_texture_manager.warpGeneration()
+	                                : 0;
+
+	{
+		std::shared_lock lock(plane_textures_mutex);
+		const PlaneTextureTable::iterator it = plane_textures.find(res_id);
+		if (it != plane_textures.end() and it->second.warpgeneration == generation)
+			return it->second.texture;
+	}
+
+	std::unique_lock lock(plane_textures_mutex);
+
+	// Another thread may have built or refreshed it while this one waited.
+	const PlaneTextureTable::iterator it = plane_textures.find(res_id);
+	if (it != plane_textures.end())
+	{
+		if (it->second.warpgeneration != generation)
+		{
+			// The source keeps its dimensions, so the copy keeps its storage.
+			Res_FillPlaneTexture(it->second.texture, source);
+			it->second.warpgeneration = generation;
+		}
+		return it->second.texture;
+	}
+
+	Texture* resized = Res_AllocatePlaneTexture(source);
+	Res_FillPlaneTexture(resized, source);
+	plane_textures.insert(std::make_pair(res_id, planetexture_t{resized, generation}));
+
+	DPrintFmt("Res_PlaneTexture: resized {} from {}x{} to {}x{} for plane rendering\n",
+	          Res_GetResourceName(res_id).c_str(),
+	          source->mWidth, source->mHeight, resized->mWidth, resized->mHeight);
+
+	return resized;
+}

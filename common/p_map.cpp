@@ -36,6 +36,7 @@
 #include "c_effect.h"
 #include "p_mobj.h"
 #include "svc_message.h"
+#include "r_sky.h"
 
 #include "s_sound.h"
 
@@ -45,12 +46,10 @@
 #include "p_mapformat.h"
 // State.
 #include "r_state.h"
-#include "r_sky.h"
 
 #include "z_zone.h"
 #include "p_unlag.h"
 #include "m_vectors.h"
-#include "p_mapformat.h"
 #include <math.h>
 #include <algorithm>
 #include <set>
@@ -240,8 +239,8 @@ bool PIT_AddThingIntercepts (AActor& thing)
 // for all lines.
 //
 template <typename F, typename... ARGS>
-requires std::predicate<F, intercept_t&, ARGS...>
-bool P_TraverseIntercepts(F&& func, fixed_t maxfrac, ARGS&&... args)
+requires std::predicate<F&, intercept_t&, ARGS&...>
+bool P_TraverseIntercepts(F& func, fixed_t maxfrac, ARGS&... args)
 {
 	size_t 				count = intercepts.size();
 	fixed_t 			dist;
@@ -263,7 +262,7 @@ bool P_TraverseIntercepts(F&& func, fixed_t maxfrac, ARGS&&... args)
 			return true;		// checked everything in range
 
 
-		if (!std::invoke(std::forward<F>(func), *in, std::forward<ARGS>(args)...))
+		if (not std::invoke(func, *in, args...))
 			return false;		// don't bother going farther
 
 		in->frac = limits::MAXFIXED;
@@ -280,8 +279,8 @@ bool P_TraverseIntercepts(F&& func, fixed_t maxfrac, ARGS&&... args)
 // for all lines.
 //
 template <typename F, typename... ARGS>
-requires std::predicate<F, intercept_t&, ARGS...>
-bool P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, F&& trav, ARGS&&... args)
+requires std::predicate<F&, intercept_t&, ARGS&...>
+bool P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, F& trav, ARGS&... args)
 {
 	fixed_t 	xstep;
 	fixed_t 	ystep;
@@ -398,7 +397,7 @@ bool P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, F
 
 	}
 	// go through the sorted list
-	return P_TraverseIntercepts(std::forward<F>(trav), FRACUNIT, std::forward<ARGS>(args)...);
+	return P_TraverseIntercepts(trav, FRACUNIT, args...);
 }
 
 } // namespace
@@ -2669,8 +2668,8 @@ bool P_ShootLine(line_t& li, const fixed_t frac)
 
 	// definitely hit the solid part of the line
 
-	const bool skyceiling1 = R_IsSkyFlat(sec1->ceilingpic);
-	const bool skyceiling2 = sec2 != nullptr && R_IsSkyFlat(sec2->ceilingpic);
+	const bool skyceiling1 = R_ResourceIdIsSkyFlat(sec1->ceiling_res_id);
+	const bool skyceiling2 = sec2 != nullptr and R_ResourceIdIsSkyFlat(sec2->ceiling_res_id);
 
 	// sky wall hack
 	if (skyceiling1 && skyceiling2)
@@ -2684,7 +2683,8 @@ bool P_ShootLine(line_t& li, const fixed_t frac)
 		return false;
 
 	// check for shooting sky floors
-	if (precise && R_IsSkyFlat(sec1->floorpic) && z < floorheight1)
+	bool skyfloor1 = R_ResourceIdIsSkyFlat(sec1->floor_res_id);
+	if (precise and skyfloor1 and z < floorheight1)
 		return false;
 
 	v3fixed_t lineorg, linedir, puffpos;
@@ -2968,7 +2968,7 @@ void P_LineAttack(AActor *t1, angle_t angle, fixed_t distance,
 			y2 = t1->y + FixedMul (y2 - t1->y, frac);
 			updown = 1;
 			if ( (subsector = P_PointInSubsector (x2, y2)) ) {
-				if (subsector->sector->ceilingpic == skyflatnum)
+				if (R_ResourceIdIsSkyFlat(subsector->sector->ceiling_res_id))
 					return;	// disappeared in the clouds
 			} else
 				return;	// outside map
@@ -3554,17 +3554,17 @@ bool PIT_ZDoomRadiusAttack(AActor& thing,
 	// height of the thing and not the height of the map.
 	const fixed_t dx = abs(thing.x - bombspot->x);
 	const fixed_t dy = abs(thing.y - bombspot->y);
-	auto len = float(std::max(dx, dy));
-	const auto boxradius = float(thing.radius);
+	auto len = static_cast<float>(std::max(dx, dy));
+	const auto boxradius = static_cast<float>(thing.radius);
 
 	if (bombspot->z < thing.z || bombspot->z >= thing.z + thing.height)
 	{
 		float dz;
 
 		if (bombspot->z > thing.z)
-			dz = float(thing.z + thing.height - bombspot->z);
+			dz = static_cast<float>(thing.z + thing.height - bombspot->z);
 		else
-			dz = float(thing.z - bombspot->z);
+			dz = static_cast<float>(thing.z - bombspot->z);
 
 		if (len <= boxradius)
 			len = dz;
@@ -4160,7 +4160,7 @@ double P_PlaneZ(double x, double y, const plane_t *plane)
 
 	// Is the plane level?  (Z value is constant for entire plane)
 	if (P_IsPlaneLevel(plane))
-		return -double(plane->c) * plane->d * m;
+		return -static_cast<double>(plane->c) * plane->d * m;
 
 	return -(plane->a * x + plane->b * y + plane->d) / plane->c;
 }
@@ -4473,10 +4473,10 @@ void P_CopySector(sector_t *dest, sector_t *src)
 	if (!dest || !src)
 		return;
 
-	dest->floortexz			= src->floortexz;
+	dest->floortexz				= src->floortexz;
 	dest->ceilingtexz			= src->ceilingtexz;
-	dest->floorpic				= src->floorpic;
-	dest->ceilingpic			= src->ceilingpic;
+	dest->floor_res_id			= src->floor_res_id;
+	dest->ceiling_res_id		= src->ceiling_res_id;
 	dest->lightlevel			= src->lightlevel;
 	dest->special				= src->special;
 	dest->tag					= src->tag;

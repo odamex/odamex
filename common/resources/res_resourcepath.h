@@ -1,0 +1,266 @@
+// Emacs style mode select   -*- C++ -*- 
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 2006-2015 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//
+//
+//-----------------------------------------------------------------------------
+
+#pragma once
+
+#include <stdlib.h>
+#include "m_ostring.h"
+#include <vector>
+#include <string>
+#include <sstream>
+
+// ============================================================================
+//
+// ResourcePath class interface
+//
+// ============================================================================
+
+class ResourcePath
+{
+public:
+	static const size_t MAX_ITEMS = 8;
+	static const char DELIMINATOR = '/';
+
+	ResourcePath() :
+		mItemCount(0), mAbsolute(false)
+	{ }
+
+	ResourcePath(const OString& path)
+	{
+		parseString(path);
+	}
+
+	ResourcePath(const std::string& path)
+	{
+		parseString(path);
+	}
+
+	ResourcePath(const char* path)
+	{
+		parseString(path);
+	}
+
+	ResourcePath(const ResourcePath& other)
+	{
+		operator=(other);
+	}
+
+	static ResourcePath& getEmptyResourcePath()
+	{
+		static ResourcePath empty_path;
+		return empty_path;
+	}
+
+	ResourcePath& operator=(const ResourcePath& other)
+	{
+		mAbsolute = other.mAbsolute;
+		mItemCount = other.mItemCount;
+		for (size_t i = 0; i < other.mItemCount; i++)
+			mItems[i] = other.mItems[i];
+		mAsString = other.mAsString;
+		return *this;
+	}
+
+	ResourcePath& operator+=(const ResourcePath& other)
+	{
+		if (other.mAbsolute)
+			return operator=(other);
+		for (size_t i = 0; i < other.mItemCount and mItemCount < ResourcePath::MAX_ITEMS; i++)
+			addItem(other.mItems[i]);
+		mAsString = toString();
+		return *this;
+	}
+
+	ResourcePath operator+(const ResourcePath& other) const
+	{
+		ResourcePath result(*this);
+		result.operator+=(other);
+		return result;
+	}
+
+	void append(const ResourcePath& other)
+	{
+		operator+=(other);
+	}
+
+	OString toString() const
+	{
+		std::string output;
+		for (size_t i = 0; i < mItemCount; i++)
+		{
+			if (i > 0 or mAbsolute)
+				output += ResourcePath::DELIMINATOR;
+			output += std::string(mItems[i]);
+		}
+		return OString(output);
+	}
+
+	operator OString() const
+	{
+		return toString();
+	}
+
+	const char* c_str() const
+	{
+		return mAsString.c_str();
+	}
+
+	bool operator==(const ResourcePath& other) const
+	{
+		if (mItemCount == other.mItemCount)
+		{
+			for (size_t i = 0; i < mItemCount; i++)
+				if (mItems[i] != other.mItems[i])
+					return false;
+			return true;
+		}
+		return false;
+	}
+
+	size_t size() const
+	{
+		return mItemCount;
+	}
+
+	bool empty() const
+	{
+		return size() == 0;
+	}
+
+	const OString& first() const
+	{
+		if (mItemCount > 0)
+			return mItems[0];
+		static const OString empty_string;
+		return empty_string;
+	}
+
+	const OString& last() const
+	{
+		if (mItemCount > 0)
+			return mItems[mItemCount - 1];
+		static const OString empty_string;
+		return empty_string;
+	}
+
+	OString& operator[](size_t index)
+	{
+		return mItems[index];
+	}
+
+	const OString& operator[](size_t index) const
+	{
+		return mItems[index];
+	}
+
+private:
+	//
+	// ResourcePath::addItem
+	//
+	// Adds the token to the end of the item list. It also handles special
+	// item names "." and "..".
+	//
+	void addItem(const std::string& token)
+	{
+		if (token.compare("..") == 0)
+		{
+			if (mItemCount > 0 and mItems[mItemCount - 1].compare("..") != 0)
+				mItemCount--;
+			else if (not mAbsolute)
+				mItems[mItemCount++] = OStringToUpper(token);
+		}
+		else if (not token.empty() and token.compare(".") != 0)
+		{
+			mItems[mItemCount++] = OStringToUpper(token);
+		}
+	}
+
+	//
+	// ResourcePath::parseString
+	//
+	// Splits the given path string into tokens and adds them to the item list.
+	//
+	void parseString(const std::string& path)
+	{
+		mItemCount = 0;
+		mAbsolute = not path.empty() and path[0] == ResourcePath::DELIMINATOR;
+
+		// split on the deliminator without the overhead of std::stringstream
+		// this is constructed once for every lump at load time
+		size_t start = 0;
+		while (start <= path.size() and mItemCount < ResourcePath::MAX_ITEMS)
+		{
+			size_t end = path.find(ResourcePath::DELIMINATOR, start);
+			if (end == std::string::npos)
+				end = path.size();
+			addItem(path.substr(start, end - start));
+			start = end + 1;
+		}
+
+		mAsString = toString();
+	}
+
+	OString mItems[MAX_ITEMS];
+	unsigned char mItemCount;
+	bool mAbsolute;
+	OString mAsString;
+
+	// ------------------------------------------------------------------------
+	// non-member friend functions
+	// ------------------------------------------------------------------------
+
+	friend struct std::hash<ResourcePath>;
+};
+
+typedef std::vector<ResourcePath> ResourcePathList;
+
+// ----------------------------------------------------------------------------
+// hash function for OHashTable class
+// ----------------------------------------------------------------------------
+
+template <> struct std::hash<ResourcePath>
+{	size_t operator()(const ResourcePath& path) const { return __hash_cstring(path.c_str()); } };
+
+
+
+//
+// Res_MakeResourcePath
+//
+// Appends a directory name to a lump name to compose a resource path.
+//
+static inline ResourcePath Res_MakeResourcePath(const OString& name, const OString& directory)
+{
+	return ResourcePath(directory) + ResourcePath(name);
+}
+
+//
+// Res_DoesPathStartWithBase
+//
+static inline bool Res_DoesPathStartWithBase(const ResourcePath& base, const ResourcePath& path)
+{
+	if (path.size() < base.size())
+		return false;
+	for (size_t i = 0; i < base.size(); i++)
+		if (path[i] != base[i])
+			return false;
+	return true;
+}

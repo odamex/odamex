@@ -37,6 +37,7 @@
 #include "cl_main.h"
 #include "cl_maplist.h"
 #include "cl_vote.h"
+#include "clc_message.h"
 #include "cmdlib.h"
 #include "d_main.h"
 #include "d_player.h"
@@ -126,7 +127,7 @@ void P_DestroyButtonThinkers();
 void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_t* player);
 void P_SetPsprite(player_t& player, int position, int32_t stnum);
-void P_SetButtonTexture(line_t* line, short texture);
+void P_SetButtonTexture(line_t* line, const ResourceId new_res_id);
 void P_SpawnAvatars();
 
 namespace
@@ -968,6 +969,16 @@ void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 }
 
 //
+// CL_ResourceDigestsAck
+//
+// The server accepted our resource digests; stop re-sending them.
+//
+static void CL_ResourceDigestsAck(const odaproto::svc::ResourceDigestsAck* msg)
+{
+	CL_AckResourceDigests();
+}
+
+//
 // LoadMap
 //
 // Read wad & deh filenames and map name from the server and loads
@@ -984,6 +995,9 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 
 	if (splitnetdemo)
 		netdemo.stopRecording();
+
+	// A protobreak server doesn't set this, and doesn't know clc_resourcedigests.
+	CL_SetResourceDigestsWanted(msg->verify_digests());
 
 	size_t wadcount = msg->wadnames_size();
 	OWantFiles newwadfiles;
@@ -1005,6 +1019,11 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 			CL_QuitNetGame(NQ_DISCONNECT);
 			return;
 		}
+
+		OMD5Hash digest;
+		OMD5Hash::makeFromHexStr(digest, msg->wadnames().Get(i).content_digest());
+		file.setWantedContentDigest(digest);
+
 		newwadfiles.push_back(file);
 	}
 
@@ -1051,6 +1070,12 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		CL_QuitAndTryDownload(missing_file);
 		return;
 	}
+
+	// The resource files loaded successfully, present their hashes and
+	// content digests so the server can verify they match its own set.
+	// They are re-sent until the server acknowledges receipt, and the
+	// server enforces a deadline for them after changing resources.
+	CL_SendResourceDigests();
 
 	// [SL] 2012-12-02 - Force the music to stop when the new map uses
 	// the same music lump name that is currently playing. Otherwise,
@@ -1736,15 +1761,8 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 	P_SetCeilingHeight(sector, ceilingheight);
 	P_SetFloorHeight(sector, floorheight);
 
-	if (floorpic >= ::numflats)
-		floorpic = ::numflats;
-
-	sector->floorpic = floorpic;
-
-	if (ceilingpic >= ::numflats)
-		ceilingpic = ::numflats;
-
-	sector->ceilingpic = ceilingpic;
+	sector->floor_res_id = ResourceId(floorpic);
+	sector->ceiling_res_id = ResourceId(ceilingpic);
 	sector->special = special;
 	sector->moveable = true;
 
@@ -2222,7 +2240,7 @@ void CL_Switch(const odaproto::svc::Switch* msg)
 	byte switchactive = msg->switch_active();
 	unsigned int special = msg->special();
 	unsigned int state = msg->state(); // DActiveButton::EWhere
-	short texture = msg->button_texture();
+	ResourceId texture = msg->button_texture();
 	unsigned int time = msg->timer();
 
 	if (!::lines || l < 0 || l >= ::numlines || state >= 3)
@@ -2868,8 +2886,8 @@ void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 		switch (prop)
 		{
 		case SPC_FlatPic:
-			sector->floorpic = msg->sector().floorpic();
-			sector->ceilingpic = msg->sector().ceilingpic();
+			sector->floor_res_id = msg->sector().floorpic();
+			sector->ceiling_res_id = msg->sector().ceilingpic();
 			break;
 		case SPC_LightLevel:
 			sector->lightlevel = msg->sector().lightlevel();
@@ -3572,7 +3590,7 @@ void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 		        avatarMapthing.angle,
 		        avatarMapthing.type,
 		        avatarMapthing.flags.to_int(),
-		        int(avatarMapthing.special));
+		        static_cast<int>(avatarMapthing.special));
 		return;
 	}
 
@@ -3787,6 +3805,8 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
 		SV_MSG(svc_disconnectclient, CL_DisconnectClient, odaproto::svc::DisconnectClient);
 		SV_MSG(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);
+		SV_MSG(svc_resourcedigestsack, CL_ResourceDigestsAck,
+		       odaproto::svc::ResourceDigestsAck);
 		SV_MSG(svc_consoleplayer, CL_ConsolePlayer, odaproto::svc::ConsolePlayer);
 		SV_MSG(svc_explodemissile, CL_ExplodeMissile, odaproto::svc::ExplodeMissile);
 		SV_MSG(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);

@@ -75,14 +75,9 @@ void M_SaveDefaults(std::string filename)
 
 	std::string configfile;
 	if (!filename.empty())
-	{
-		M_AppendExtension(filename, ".cfg", true);
-		configfile = filename;
-	}
+		configfile = M_AppendExtension(filename, ".cfg", true);
 	else
-	{
 		configfile = M_GetConfigPath();
-	}
 
 	// Make sure the user hasn't changed configver
 	configver.Set(CONFIGVERSIONSTR);

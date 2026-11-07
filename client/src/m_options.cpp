@@ -53,7 +53,7 @@ END_DISABLE_WARNING_GNU
 #include "z_zone.h"
 #include "v_video.h"
 #include "v_text.h"
-#include "w_wad.h"
+#include "v_font.h"
 
 #include "hu_stuff.h"
 
@@ -67,6 +67,8 @@ END_DISABLE_WARNING_GNU
 #include "m_misc.h"
 #include "cl_demo.h"
 
+#include "resources/res_texture.h"
+
 // Data.
 #include "m_menu.h"
 
@@ -79,6 +81,8 @@ END_DISABLE_WARNING_GNU
 //
 // [ML] 09/4/06: Show secret revealed message, 0 = off, 1 = on
 EXTERN_CVAR (hud_revealsecrets)
+
+EXTERN_CVAR (ui_font_menu)
 
 // Show messages has default, 0 = off, 1 = on
 EXTERN_CVAR (show_messages)
@@ -400,7 +404,8 @@ menu_t OptionMenu = {
 	.items       = OptionItems,
 	.scrolltop   = 0,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Options"
 };
 
 namespace
@@ -528,7 +533,8 @@ menu_t ControlsMenu = {
 	.items       = {ControlsItems, ARRAY_LENGTH(ControlsItems)},
 	.scrolltop   = 2,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Customize Controls"
 };
 
 // -------------------------------------------------------
@@ -580,7 +586,8 @@ menu_t MouseMenu = {
 	.items       = MouseItems,
 	.scrolltop   = 0,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Mouse Options"
 };
 
 namespace
@@ -624,7 +631,8 @@ menu_t JoystickMenu = {
 	.items       = JoystickItems,
 	.scrolltop   = 0,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Joystick Setup"
 };
 
 namespace
@@ -767,7 +775,8 @@ menu_t AdvMidiMenu = {
 	.items       = {AdvMidiItems, ARRAY_LENGTH(AdvMidiItems)},
 	.scrolltop   = 0,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Advanced MIDI Options"
 };
 
 menu_t LibAdlMidiMenu = {
@@ -777,7 +786,8 @@ menu_t LibAdlMidiMenu = {
 	.items       = LibAdlMidiItems,
 	.scrolltop   = 0,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "libADLMIDI Options"
 };
 
 menu_t SoundMenu = {
@@ -787,7 +797,8 @@ menu_t SoundMenu = {
 	.items       = SoundItems,
 	.scrolltop   = 0,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Sound Options"
 };
 
 namespace
@@ -844,6 +855,7 @@ menu_t CompatMenu = {
 	.scrolltop   = 0,
 	.scrollpos   = 0,
 	.refreshfunc = nullptr,
+	.titletext   = "Compatibility Options"
 };
 
 namespace
@@ -887,7 +899,8 @@ menu_t NetworkMenu = {
 	.items       = NetworkItems,
 	.scrolltop   = 1,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Network Options"
 };
 
 namespace
@@ -948,7 +961,8 @@ menu_t WeaponMenu = {
 	.items       = WeaponItems,
 	.scrolltop   = 0,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Weapon Preferences"
 };
 namespace
 {
@@ -963,6 +977,7 @@ namespace
 void StartHUDMenu();
 void StartMessagesMenu();
 void StartAutomapMenu();
+void StartFontMenu();
 } // namespace
 
 void ResetCustomColors();
@@ -1050,10 +1065,11 @@ namespace
 // NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
 std::array<value_t, 3> Endoom = {{{.value = 0.0, .name = "Off"}, {.value = 1.0, .name = "On"}, {.value = 2.0, .name = "PWAD Only"}}};
 
-std::array<menuitem_t, 41> VideoItems = {{
+std::array<menuitem_t, 42> VideoItems = {{
 	{ .type = more, .label = "Heads-up display", .a = {.cvar = nullptr}, .b = {.leftval = 0.0}, .c = {.rightval = 0.0}, .d = {.step = 0.0}, .e = {.mfunc = StartHUDMenu}},
 	{ .type = more,		.label = "Messages",				    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.mfunc = StartMessagesMenu}},
 	{ .type = more,		.label = "Automap",				    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.mfunc = StartAutomapMenu}},
+	{ .type = more,		.label = "Fonts",				    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.mfunc = StartFontMenu}},
 	{ .type = redtext,	.label = " ",					    .a = {.cvar = nullptr},					.b = {.leftval = 0.0}, .c = {.rightval = 0.0},	.d = {.step = 0.0},  .e = {.values = nullptr}},
 	{ .type = slider,	.label = "Screen size",			    .a = {.cvar = &screenblocks},	   	.b = {.leftval = 3.0}, .c = {.rightval = 12.0},	.d = {.step = 1.0},  .e = {.values = nullptr}},
 	{ .type = slider,	.label = "Brightness",			    .a = {.cvar = &gammalevel},			.b = {.leftval = 1.0}, .c = {.rightval = 8.0},	.d = {.step = 1.0},  .e = {.values = nullptr}},
@@ -1117,7 +1133,8 @@ menu_t VideoMenu = {
 	.items       = VideoItems,
 	.scrolltop   = 4,
 	.scrollpos   = 0,
-	.refreshfunc = &M_UpdateDisplayOptions
+	.refreshfunc = &M_UpdateDisplayOptions,
+	.titletext   = "Display Options"
 };
 
 namespace
@@ -1214,6 +1231,7 @@ menu_t HUDMenu = {
 	.scrolltop   = 0,
 	.scrollpos   = 0,
 	.refreshfunc = nullptr,
+	.titletext   = "HUD Options",          // titletext
 };
 
 /*=======================================
@@ -1319,7 +1337,46 @@ menu_t MessagesMenu = {
 	.items       = {MessagesItems, ARRAY_LENGTH(MessagesItems)},
 	.scrolltop   = 0,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Messages"
+};
+
+/*=======================================
+ *
+ * Fonts Menu
+ *
+ *=======================================*/
+EXTERN_CVAR (ui_font_hud)
+EXTERN_CVAR (ui_font_messages)
+EXTERN_CVAR (ui_font_console)
+
+namespace
+{
+
+// NOLINTBEGIN(readability-magic-numbers) - the numbers are the data
+std::array<value_t, 2> FontTypes = {{
+	{ .value = FONT_BITMAP, .name = "Bitmap" },
+	{ .value = FONT_TTF,    .name = "TrueType" }
+}};
+
+std::array<menuitem_t, 4> FontItems = {{
+	{ .type = discrete,	.label = "Menu font",		.a = {.cvar = &ui_font_menu},		.b = {.leftval = FontTypes.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = FontTypes.data()} },
+	{ .type = discrete,	.label = "Message font",	.a = {.cvar = &ui_font_messages},	.b = {.leftval = FontTypes.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = FontTypes.data()} },
+	{ .type = discrete,	.label = "HUD font",		.a = {.cvar = &ui_font_hud},		.b = {.leftval = FontTypes.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = FontTypes.data()} },
+	{ .type = discrete,	.label = "Console font",	.a = {.cvar = &ui_font_console},	.b = {.leftval = FontTypes.size()}, .c = {.rightval = 0.0},	.d = {.step = 0.0}, .e = {.values = FontTypes.data()} },
+}};
+// NOLINTEND(readability-magic-numbers)
+} // namespace
+
+menu_t FontMenu = {
+	.title       = "M_FONTS",
+	.lastOn      = 0,
+	.indent      = 0,
+	.items       = FontItems,
+	.scrolltop   = 0,
+	.scrollpos   = 0,
+	.refreshfunc = nullptr,
+	.titletext   = "Fonts"
 };
 
 namespace
@@ -1402,7 +1459,8 @@ menu_t AutomapMenu = {
 	.items       = AutomapItems,
 	.scrolltop   = 0,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Automap Options"
 };
 
 
@@ -1545,7 +1603,8 @@ menu_t ModesMenu = {
 	.items       = {ModesItems, ARRAY_LENGTH(ModesItems)},
 	.scrolltop   = 0,
 	.scrollpos   = 0,
-	.refreshfunc = nullptr
+	.refreshfunc = nullptr,
+	.titletext   = "Set Video Mode"
 };
 
 namespace
@@ -1833,6 +1892,79 @@ void M_BuildKeyList(std::span<menuitem_t> items)
 	}
 }
 
+//
+// M_OptValueExtent
+//
+// Returns how far an item's value/control column reaches to the right of the
+// divider (aka 'indent').
+//
+static int M_OptValueExtent(const menuitem_t* item)
+{
+	switch (item->type)
+	{
+	case discrete:
+	case cdiscrete:
+	case svdiscrete:
+	{
+		int vals = static_cast<int>(item->b.leftval);
+		int w = V_FontStringWidthClean(::menu_font, "Unknown");
+		for (int v = 0; v < vals; v++)
+		{
+			int tw = V_FontStringWidthClean(::menu_font, item->e.values[v].name);
+			if (tw > w)
+				w = tw;
+		}
+		return 14 + w;
+	}
+
+	case nochoice:
+		return 14 + V_FontStringWidthClean(::menu_font,
+		            item->e.values[static_cast<int>(item->b.leftval)].name);
+
+	case bitflag:
+		return 14 + std::max(V_FontStringWidthClean(::menu_font, "Yes"),
+		                V_FontStringWidthClean(::menu_font, "No"));
+
+	case slider:
+	{
+		// slider graphic is 96 units wide (drawn at indent+8) with the value
+		// text drawn just past it -- measure the widest formatted endpoint
+		int w = 0;
+		if (item->d.step != 0.0f)
+		{
+			const char* f = (item->d.step >= 1.0f) ? "%.0f"
+			              : (item->d.step >= 0.1f) ? "%.1f" : "%.2f";
+			std::string lo = fmt::sprintf(f, item->b.leftval);
+			std::string hi = fmt::sprintf(f, item->c.rightval);
+			w = std::max(V_FontStringWidthClean(::menu_font, lo.c_str()),
+			        V_FontStringWidthClean(::menu_font, hi.c_str()));
+		}
+		return 8 + 96 + w;
+	}
+
+	case redslider:
+	case greenslider:
+	case blueslider:
+		return 8 + 96;
+
+	case control:
+		return 14 + V_FontStringWidthClean(::menu_font,
+		            Bindings.GetNameKeys(item->b.key1, item->c.key2).c_str());
+	case mapcontrol:
+		return 14 + V_FontStringWidthClean(::menu_font,
+		            AutomapBindings.GetNameKeys(item->b.key1, item->c.key2).c_str());
+	case netdemocontrol:
+		return 14 + V_FontStringWidthClean(::menu_font,
+		            NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2).c_str());
+
+	case listelement:
+		return 14 + V_FontStringWidthClean(::menu_font, item->label);
+
+	default:
+		return 0;
+	}
+}
+
 void M_SwitchMenu(menu_t* menu)
 {
 	MenuStack[MenuStackDepth].menu.newmenu = menu;
@@ -1845,19 +1977,45 @@ void M_SwitchMenu(menu_t* menu)
 	CurrentMenu = menu;
 	CurrentItem = menu->lastOn;
 
-	if (!menu->indent)
+	// Position the label/value divider so the whole block is centered on the
+	// screen midline. Labels are right-aligned to end at `indent`; values begin
+	// at `indent + 14` (sliders at `indent + 8`). We measure how far the widest
+	// label reaches left of the divider and how far the widest value reaches
+	// right of it, then set the divider so the block straddles x=160.
+	//
+	// This is recomputed on every switch rather than cached: it depends on the
+	// active font's metrics, which change with resolution and with TTF/bitmap
+	// font swaps. (The old hardcoded indents were tuned for the bitmap font and
+	// leave the narrower TTF text shoved to one side.)
+	int leftExtent = 0;   // widest right-aligned label, measured left from indent
+	int rightExtent = 0;  // widest value/control, measured right from indent
+	for (const menuitem_t& item : menu->items)
 	{
-		int widest = 0;
-		for (auto& item : menu->items)
+		// Centered headers and list rows don't right-align a label to the divider.
+		if (item.type != whitetext and item.type != redtext and
+		    item.type != yellowtext and item.type != orangetext and
+		    item.type != listelement)
 		{
-			if (item.type != whitetext && item.type != redtext && item.type != orangetext)
-			{
-				const int thiswidth = V_StringWidth(item.label);
-				widest = std::max(thiswidth, widest);
-			}
+			const int lw = V_FontStringWidthClean(::menu_font, item.label);
+			if (lw > leftExtent)
+				leftExtent = lw;
 		}
-		menu->indent = widest + 6;
+
+		const int rw = M_OptValueExtent(&item);
+		if (rw > rightExtent)
+			rightExtent = rw;
 	}
+
+	int indent = 160 - ((rightExtent - leftExtent) / 2);
+
+	// Keep the block on-screen when it fits: labels off the left edge, values
+	// off the right. If it is wider than the screen, leave it centered.
+	const int margin = 4;
+	const int lo = leftExtent + margin;
+	const int hi = 320 - margin - rightExtent;
+	if (lo <= hi)
+		indent = std::clamp(indent, lo, hi);
+	menu->indent = indent;
 
 	flagsvar = nullptr;
 }
@@ -1866,6 +2024,56 @@ bool M_StartOptionsMenu()
 {
 	M_SwitchMenu (&OptionMenu);
 	return true;
+}
+
+//
+// M_OptTextVOffset
+//
+// Gets the proper vertical offset of a row's text.
+//
+static int M_OptTextVOffset()
+{
+	if (not V_FontsReady() or not ::menu_font)
+		return 0;
+
+	const int cleany = std::max(1, CleanYfac);
+	return ((8 * cleany) - ::menu_font->getHeight()) / (2 * cleany);
+}
+
+//
+// M_GetHeaderFont
+//
+// The font used for a menu's TTF title text (when the menu supplies titletext
+// instead of a title patch).
+//
+OFont* M_GetHeaderFont()
+{
+	const int header_base = 16;		// virtual pixels tall at 1x clean scale
+	const int size = header_base * std::max(1, CleanYfac);
+	if (ui_font_menu.asInt() == FONT_BITMAP)
+		return V_GetBitmapFont("FONT_BIG", size);
+	return V_GetFont("FONT_BIG", size);
+}
+
+//
+// M_DrawOptCursor
+//
+// Draws a row marker, but positioned in real pixels so it is vertically
+// centered on the row's text rather than on the row box.
+//
+static void M_DrawOptCursor(const Texture* texture, int vx, int y)
+{
+	const int cleanx = std::max(1, CleanXfac);
+	const int cleany = std::max(1, CleanYfac);
+	const int font_height = (V_FontsReady() and ::menu_font) ? ::menu_font->getHeight() : 8 * cleany;
+
+	// the text's em box top in real pixels is where DrawFontTextCleanMove(ty)
+	// starts drawing; its center is half the font height below that
+	const int text_center = screen->getCleanY(y + M_OptTextVOffset()) + (font_height / 2);
+	const int cursor_height = texture->mHeight * cleany;
+
+	screen->DrawTextureStretched(texture, screen->getCleanX(vx), text_center - (cursor_height / 2),
+	                             texture->mWidth * cleanx, cursor_height);
 }
 
 void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float step)
@@ -1877,12 +2085,17 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 
 	const float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
+	const Texture* l_texture = Res_CacheTexture("LSLIDE", GRAPHICS);
+	const Texture* m_texture = Res_CacheTexture("MSLIDE", GRAPHICS);
+	const Texture* r_texture = Res_CacheTexture("RSLIDE", GRAPHICS);
+	const Texture* c_texture = Res_CacheTexture("CSLIDE", GRAPHICS);
+	
+	screen->DrawTextureClean(l_texture, x, y);
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + (i*8), y);
-	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
+		screen->DrawTextureClean(m_texture, x + (i*8), y);
+	screen->DrawTextureClean(r_texture, x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + static_cast<int>(dist * 78.0), y);
+	screen->DrawTextureClean(c_texture, x + 5 + static_cast<int>(dist * 78.0), y);
 
 	std::string buf;
 	if (step == 0.0f)
@@ -1893,7 +2106,7 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 		buf = fmt::sprintf("%.1f", cur);
 	else
 		buf = fmt::sprintf("%.2f", cur);
-	screen->DrawTextCleanMove(CR_GREEN, x + 96, y, buf.c_str());
+	screen->DrawFontTextCleanMove(::menu_font, CR_GREEN, x + 96, y + M_OptTextVOffset(), buf.c_str());
 }
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
@@ -1905,18 +2118,24 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	const float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchClean(W_CachePatch ("LSLIDE"), x, y);
+	const Texture* l_texture = Res_CacheTexture("LSLIDE", GRAPHICS);
+	const Texture* m_texture = Res_CacheTexture("MSLIDE", GRAPHICS);
+	const Texture* r_texture = Res_CacheTexture("RSLIDE", GRAPHICS);
+	const Texture* g_texture = Res_CacheTexture("GSLIDE", GRAPHICS);
+	const Texture* o_texture = Res_CacheTexture("OSLIDE", GRAPHICS);
+
+	screen->DrawTextureClean(l_texture, x, y);
 
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + (i*8), y);
+		screen->DrawTextureClean(m_texture, x + (i*8), y);
 
-	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
+	screen->DrawTextureClean(r_texture, x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + static_cast<int>(dist * 78.0), y);
+	screen->DrawTextureClean(g_texture, x + 5 + static_cast<int>(dist * 78.0), y);
 
-	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+	V_ColorFill = V_BestOpaqueColor(V_GetDefaultPalette()->basecolors, color);
 
-	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + static_cast<int>(dist * 78.0), y);
+	screen->DrawColoredTextureClean(o_texture, x + 5 + static_cast<int>(dist * 78.0), y);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
@@ -1947,10 +2166,26 @@ void M_OptDrawer()
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
 
-	const patch_t* title = W_CachePatch(CurrentMenu->title);
-	screen->DrawPatchClean(title, MENU_CENTER_X - (title->width() / 2), MENU_TITLE_Y);
+	int y;
+	if (CurrentMenu->titletext and CurrentMenu->titletext[0] and V_FontsReady())
+	{
+		// TTF title text, centered, in place of the title patch
+		const int cleany = std::max(1, CleanYfac);
+		OFont* hfont = M_GetHeaderFont();
+		const int tw = hfont->getTextWidth(CurrentMenu->titletext);
+		screen->DrawFontText(hfont, CR_RED, (I_GetSurfaceWidth() - tw) / 2,
+		                     screen->getCleanY(MENU_TITLE_Y), CurrentMenu->titletext, true);
 
-	int y = 15 + title->height();
+		y = MENU_TITLE_Y + (hfont->getHeight() / cleany) + 5;
+	}
+	else
+	{
+		const Texture* title_texture = Res_CacheTexture(CurrentMenu->title, GRAPHICS);
+		screen->DrawTextureClean(title_texture,
+		                         MENU_CENTER_X - (title_texture->mWidth / 2), MENU_TITLE_Y);
+
+		y = 15 + title_texture->mHeight;
+	}
 	const int ytop = y + (CurrentMenu->scrolltop * 8);
 
 	OptMouseRowCount = 0;
@@ -1970,6 +2205,8 @@ void M_OptDrawer()
 			row.y1 = screen->getCleanY(y);
 			row.y2 = screen->getCleanY(y + 8);
 		}
+
+		const int ty = y + M_OptTextVOffset();
 
 		if (item->type == screenres)
 		{
@@ -1996,18 +2233,21 @@ void M_OptDrawer()
 					else
 						color = CR_RED;
 
-					screen->DrawTextCleanMove (color, (RESCOLUMN_WIDTH * x) + RESCOLUMN_TEXT_X, y, str);
+					screen->DrawFontTextCleanMove(::menu_font, color, (RESCOLUMN_WIDTH * x) + RESCOLUMN_TEXT_X, ty, str);
 				}
 			}
 
 			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"),
-				                        (item->a.selmode * RESCOLUMN_WIDTH) + RESCOLUMN_CURSOR_X, y);
+			{
+				const Texture* texture = Res_CacheTexture("LITLCURS", GRAPHICS);
+				M_DrawOptCursor(texture,
+				                (item->a.selmode * RESCOLUMN_WIDTH) + RESCOLUMN_CURSOR_X, y);
+			}
 		}
 		else
 		{
-			width = V_StringWidth (item->label);
+			width = V_FontStringWidthClean(::menu_font, item->label);
 			switch (item->type)
 			{
 			case more:
@@ -2045,7 +2285,7 @@ void M_OptDrawer()
 				color = CR_RED;
 				break;
 			}
-			screen->DrawTextCleanMove (color, x, y, item->label);
+			screen->DrawFontTextCleanMove(::menu_font, color, x, ty, item->label);
 
 			switch (item->type)
 			{
@@ -2058,7 +2298,7 @@ void M_OptDrawer()
 
 				if (v == vals)
 				{
-					screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
+					screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, "Unknown");
 				}
 				else
 				{
@@ -2066,14 +2306,14 @@ void M_OptDrawer()
 					if (item->type == cdiscrete)
 						color_num = item->a.cvar->asInt();
 
-					screen->DrawTextCleanMove(color_num, CurrentMenu->indent + 14, y, item->e.values[v].name);
+					screen->DrawFontTextCleanMove(::menu_font, color_num, CurrentMenu->indent + 14, ty, item->e.values[v].name);
 				}
 
 			}
 			break;
 
 			case nochoice:
-				screen->DrawTextCleanMove (CR_GOLD, CurrentMenu->indent + 14, y,
+				screen->DrawFontTextCleanMove(::menu_font, CR_GOLD, CurrentMenu->indent + 14, ty,
 										   (item->e.values[static_cast<int>(item->b.leftval)]).name);
 				break;
 
@@ -2103,21 +2343,21 @@ void M_OptDrawer()
 			case control:
 			{
 				const std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, desc.c_str());
 			}
 			break;
 
 			case mapcontrol:
 			{
 				const std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, desc.c_str());
 			}
 			break;
 
 			case netdemocontrol:
 			{
 				const std::string desc = NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, desc.c_str());
 			}
 			break;
 
@@ -2136,7 +2376,7 @@ void M_OptDrawer()
 				else
 					str = value[0].name;
 
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, str);
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, str);
 			}
 			break;
 
@@ -2157,13 +2397,13 @@ void M_OptDrawer()
 					joyname += ": " + I_GetJoystickNameFromIndex(item->a.cvar->asInt());
 				}
 
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, joyname.c_str());
 			}
 			break;
 
 			case joyaxis:
 			{
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, item->a.cvar->cstring());
+				screen->DrawFontTextCleanMove(::menu_font, CR_GREY, CurrentMenu->indent + 14, ty, item->a.cvar->cstring());
 			}
 			break;
 
@@ -2173,7 +2413,8 @@ void M_OptDrawer()
 
 			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
+				const Texture* texture = Res_CacheTexture("LITLCURS", GRAPHICS);
+				M_DrawOptCursor(texture, CurrentMenu->indent + 3, y);
 			}
 		}
 	}
@@ -2183,10 +2424,16 @@ void M_OptDrawer()
 	CanScrollDown = std::cmp_less(i, CurrentMenu->items.size());
 
 	if (CanScrollUp)
-		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
+	{
+		const Texture* texture = Res_CacheTexture("LITLUP", GRAPHICS);
+		screen->DrawTextureClean(texture, 3, ytop);
+	}
 
 	if (CanScrollDown)
-		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
+	{
+		const Texture* texture = Res_CacheTexture("LITLDN", GRAPHICS);
+		screen->DrawTextureClean(texture, 3, 190);
+	}
 }
 namespace
 {
@@ -3148,8 +3395,12 @@ void StartAutomapMenu()
 {
 	M_SwitchMenu (&AutomapMenu);
 }
-} // namespace
 
+void StartFontMenu()
+{
+	M_SwitchMenu (&FontMenu);
+}
+} // namespace
 
 void ResetCustomColors()
 {

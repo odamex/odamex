@@ -40,7 +40,6 @@
 #include "z_zone.h"
 #include "m_random.h"
 #include "m_bbox.h"
-#include "w_wad.h"
 
 #include "r_local.h"
 #include "p_local.h"
@@ -62,6 +61,7 @@
 // [RH] Needed for sky scrolling
 #include "r_sky.h"
 #include <g_gametype.h>
+#include "resources/res_texture.h"
 
 // [Blair] Map format
 #include "p_mapformat.h"
@@ -530,33 +530,7 @@ void DPusher::Serialize (FArchive &arc)
 	}
 }
 
-//
-// Animating textures and planes
-//
-// [RH] Expanded to work with a Hexen ANIMDEFS lump
-//
-#define MAX_ANIM_FRAMES	32
 
-typedef struct
-{
-	short 	basepic;
-	short	numframes;
-	byte 	istexture;
-	byte	uniqueframes;
-	byte	countdown;
-	byte	curframe;
-	byte 	speedmin[MAX_ANIM_FRAMES];
-	byte	speedmax[MAX_ANIM_FRAMES];
-	short	framepic[MAX_ANIM_FRAMES];
-} anim_t;
-
-
-
-#define MAXANIMS	32		// Really just a starting point
-
-static anim_t*  lastanim;
-static anim_t*  anims;
-static size_t	maxanims;
 
 // killough 3/7/98: Initialize generalized scrolling
 static void P_SpawnScrollers();
@@ -565,193 +539,73 @@ static void P_SpawnFriction();		// phares 3/16/98
 static void P_SpawnPushers();		// phares 3/20/98
 static void P_SpawnExtra();
 
-static void ParseAnim(OScanner &os, byte istex);
 
+// [RH]
+// P_NextSpecialSector()
 //
-//		Animating line specials
-//
-//#define MAXLINEANIMS			64
-
-//extern	short	numlinespecials;
-//extern	line_t* linespeciallist[MAXLINEANIMS];
-
-//
-// [RH] P_InitAnimDefs
-//
-// This uses a Hexen ANIMDEFS lump to define the animation sequences
-//
-static void P_InitAnimDefs ()
+// Returns the next special sector attached to this sector
+// with a certain special.
+sector_t *P_NextSpecialSector (sector_t *sec, int type, sector_t *nogood)
 {
-	// [DE] this hacky try/catch is here so WADs with ZDoom ANIMDEFS extensions
-	// don't crash for now. Once TextureManager is fully implemented I'll just
-	// implement the extensions properly there
-	try
+	sector_t *tsec;
+	int i;
+
+	for (i = 0; i < sec->linecount; i++)
 	{
-		int lump = -1;
+		line_t *ln = sec->lines[i];
 
-		while ((lump = W_FindLump("ANIMDEFS", lump)) != -1)
+		if (not (ln->flags & ML_TWOSIDED) or
+			not (tsec = ln->frontsector))
+			continue;
+
+		if (sec == tsec)
 		{
-			const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
+			tsec = ln->backsector;
+			if (sec == tsec)
+				continue;
+		}
 
-			OScannerConfig config = {
-			    "ANIMDEFS", // lumpName
-			    false,      // semiComments
-			    true,       // cComments
-			};
-			OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+		if (tsec == nogood)
+			continue;
 
-			while (os.scan())
-			{
-				if (os.compareTokenNoCase("flat"))
-				{
-					ParseAnim(os, false);
-				}
-				else if (os.compareTokenNoCase("texture"))
-				{
-					ParseAnim(os, true);
-				}
-				else if (os.compareTokenNoCase(
-				             "switch")) // Don't support switchdef yet...
-				{
-					// P_ProcessSwitchDef();
-					// os.error("switchdef not supported.");
-				}
-				else if (os.compareTokenNoCase("warp"))
-				{
-					os.mustScan();
-					if (os.compareTokenNoCase("flat"))
-					{
-						os.mustScan();
-						flatwarp[R_FlatNumForName(os.getToken().c_str())] = true;
-					}
-					else if (os.compareTokenNoCase("texture"))
-					{
-						// TODO: Make texture warping work with wall textures
-						os.mustScan();
-						R_TextureNumForName(os.getToken().c_str());
-					}
-					else
-					{
-						os.error("Unknown error reading in ANIMDEFS");
-					}
-				}
-			}
+		if ((tsec->special & 0x00ff) == type)
+		{
+			return tsec;
 		}
 	}
-    catch (CRecoverableError &)
-    {
-
-    }
+	return nullptr;
 }
 
-static void ParseAnim(OScanner &os, byte istex)
+//
+// P_FindLowestFloorSurrounding()
+// FIND LOWEST FLOOR HEIGHT IN SURROUNDING SECTORS
+//
+fixed_t P_FindLowestFloorSurrounding (sector_t* sec)
 {
-	anim_t sink;
-	anim_t *place;
+	int i;
+	line_t *check;
+	sector_t *other;
+	fixed_t height = P_FloorHeight(sec);
 
-	os.mustScan();
-	const short picnum = istex
-		                     ? R_CheckTextureNumForName(os.getToken().c_str())
-		                     : W_CheckNumForName(os.getToken().c_str(), ns_flats) - firstflat;
-
-	if (picnum == -1)
-	{ // Base pic is not present, so skip this definition
-		place = &sink;
-	}
-	else
+	for (i = 0; i < sec->linecount; i++)
 	{
-		for (place = anims; place < lastanim; place++)
-		{
-			if (place->basepic == picnum && place->istexture == istex)
-			{
-				break;
-			}
-		}
-		if (place == lastanim)
-		{
-			lastanim++;
-			if (lastanim > anims + maxanims)
-			{
-				const size_t newmax = maxanims ? maxanims * 2 : MAXANIMS;
-				anims = static_cast<anim_t*>(M_Realloc(anims, newmax * sizeof(*anims)));
-				place = anims + maxanims;
-				lastanim = place + 1;
-				maxanims = newmax;
-			}
-		}
-		// no decals on animating textures by default
-		//if (istex)
-		//{
-		//	texturenodecals[picnum] = 1;
-		//}
-	}
+		check = sec->lines[i];
+		other = getNextSector (check,sec);
 
-	place->uniqueframes = true;
-	place->curframe = 0;
-	place->numframes = 0;
-	place->basepic = picnum;
-	place->istexture = istex;
-	memset (place->speedmin, 1, MAX_ANIM_FRAMES * sizeof(*place->speedmin));
-	memset (place->speedmax, 1, MAX_ANIM_FRAMES * sizeof(*place->speedmax));
-
-	while (os.scan())
-	{
-		/*if (os.compareTokenNoCase("allowdecals"))
-		{
-			if (istex && picnum >= 0)
-			{
-				texturenodecals[picnum] = 0;
-			}
+		if (not other)
 			continue;
-		}
-		else*/ if (!os.compareTokenNoCase("pic"))
-		{
-			os.unScan();
-			break;
-		}
 
-		if (place->numframes == MAX_ANIM_FRAMES)
-		{
-			os.error("Animation has too many frames");
-		}
+		fixed_t v1height =
+			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		fixed_t v2height =
+			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
 
-		byte min = 1;
-		byte max = 1;
-
-		os.mustScanInt();
-		const int frame = os.getTokenInt();
-		os.mustScan();
-		if (os.compareToken("tics"))
-		{
-			os.mustScanInt();
-			min = max = std::clamp(os.getTokenInt(), 0, 255);
-		}
-		else if (os.compareToken("rand"))
-		{
-			os.mustScanInt();
-			int num = os.getTokenInt();
-			min = num >= 0 ? num : 0;
-			os.mustScanInt();
-			num = os.getTokenInt();
-			max = num <= 255 ? num : 255;
-		}
-		else
-		{
-			os.error("Must specify a duration for animation frame");
-		}
-
-		place->speedmin[place->numframes] = min;
-		place->speedmax[place->numframes] = max;
-		place->framepic[place->numframes] = frame + picnum - 1;
-		place->numframes++;
+		if (v1height < height)
+			height = v1height;
+		if (v2height < height)
+			height = v2height;
 	}
-
-	if (place->numframes < 2)
-	{
-		os.error("Animation needs at least 2 frames");
-	}
-
-	place->countdown = place->speedmin[0];
+	return height;
 }
 
 //
@@ -849,187 +703,6 @@ bool P_CheckTag(line_t* line)
 	}
 	return false; // zero tag not allowed
 }
-
-/*
- *P_InitPicAnims
- *
- *Load the table of animation definitions, checking for existence of
- *the start and end of each frame. If the start doesn't exist the sequence
- *is skipped, if the last doesn't exist, BOOM exits.
- *
- *Wall/Flat animation sequences, defined by name of first and last frame,
- *The full animation sequence is given using all lumps between the start
- *and end entry, in the order found in the WAD file.
- *
- *This routine modified to read its data from a predefined lump or
- *PWAD lump called ANIMATED rather than a static table in this module to
- *allow wad designers to insert or modify animation sequences.
- *
- *Lump format is an array of byte packed animdef_t structures, terminated
- *by a structure with istexture == -1. The lump can be generated from a
- *text source file using SWANTBLS.EXE, distributed with the BOOM utils.
- *The standard list of switches and animations is contained in the example
- *source text file DEFSWANI.DAT also in the BOOM util distribution.
- *
- *[RH] Rewritten to support BOOM ANIMATED lump but also make absolutely
- *no assumptions about how the compiler packs the animdefs array.
- *
- */
-void P_InitPicAnims (void)
-{
-	byte *animdefs, *anim_p;
-
-	// denis - allow reinitialisation
-	if(anims)
-	{
-		M_Free(anims);
-		lastanim = nullptr;
-		maxanims = 0;
-	}
-
-	// [RH] Load an ANIMDEFS lump first
-	P_InitAnimDefs ();
-
-	if (W_CheckNumForName ("ANIMATED") == -1)
-		return;
-
-	animdefs = W_CacheLumpName<byte>("ANIMATED", PU_STATIC);
-
-	// Init animation
-
-		for (anim_p = animdefs; *anim_p != 255; anim_p += 23)
-		{
-			// 1/11/98 killough -- removed limit by array-doubling
-			if (lastanim >= anims + maxanims)
-			{
-				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-				anims = static_cast<anim_t*>(M_Realloc(anims, newmax*sizeof(*anims)));   // killough
-				lastanim = anims + maxanims;
-				maxanims = newmax;
-			}
-
-			if (*anim_p /* .istexture */ & 1)
-			{
-				// different episode ?
-				if (R_CheckTextureNumForName (anim_p + 10 /* .startname */) == -1 ||
-					R_CheckTextureNumForName (anim_p + 1 /* .endname */) == -1)
-					continue;
-
-				lastanim->basepic = R_TextureNumForName (anim_p + 10 /* .startname */);
-				lastanim->numframes = R_TextureNumForName (anim_p + 1 /* .endname */)
-									  - lastanim->basepic + 1;
-				/*if (*anim_p & 2)
-				{ // [RH] Bit 1 set means allow decals on walls with this texture
-					texturenodecals[lastanim->basepic] = 0;
-				}
-				else
-				{
-					texturenodecals[lastanim->basepic] = 1;
-				}*/
-			}
-			else
-			{
-				if (W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 10 /* .startname */, ns_flats) == -1 ||
-					W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 1 /* .startname */, ns_flats) == -1)
-					continue;
-
-				lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
-				lastanim->numframes = R_FlatNumForName (anim_p + 1 /* .endname */)
-									  - lastanim->basepic + 1;
-			}
-
-			lastanim->istexture = *anim_p /* .istexture */;
-			lastanim->uniqueframes = false;
-			lastanim->curframe = 0;
-
-			if (lastanim->numframes < 2)
-				PrintFmt(PRINT_WARNING, "P_InitPicAnims: bad cycle from {} to {}",
-						 fmt::ptr(anim_p + 10) /* .startname */,
-						 fmt::ptr(anim_p + 1) /* .endname */);
-
-			lastanim->speedmin[0] = lastanim->speedmax[0] = lastanim->countdown =
-						/* .speed */
-						(anim_p[19] << 0) |
-						(anim_p[20] << 8) |
-						(anim_p[21] << 16) |
-						(anim_p[22] << 24);
-
-			lastanim++;
-		}
-	Z_Free (animdefs);
-}
-
-
-//
-// UTILITIES
-//
-
-
-
-// [RH]
-// P_NextSpecialSector()
-//
-// Returns the next special sector attached to this sector
-// with a certain special.
-sector_t *P_NextSpecialSector (sector_t *sec, int type, sector_t *nogood)
-{
-	sector_t *tsec;
-	int i;
-
-	for (i = 0; i < sec->linecount; i++)
-	{
-		line_t *ln = sec->lines[i];
-
-		if (!(ln->flags & ML_TWOSIDED) ||
-			!(tsec = ln->frontsector))
-			continue;
-
-		if (sec == tsec)
-		{
-			tsec = ln->backsector;
-			if (sec == tsec)
-				continue;
-		}
-
-		if (tsec == nogood)
-			continue;
-
-		if ((tsec->special & 0x00ff) == type)
-		{
-			return tsec;
-		}
-	}
-	return NULL;
-}
-
-//
-// P_FindLowestFloorSurrounding()
-// FIND LOWEST FLOOR HEIGHT IN SURROUNDING SECTORS
-//
-fixed_t P_FindLowestFloorSurrounding (sector_t* sec)
-{
-	int i;
-	line_t *check;
-	sector_t *other;
-	fixed_t height = P_FloorHeight(sec);
-
-	for (i = 0; i < sec->linecount; i++)
-	{
-		check = sec->lines[i];
-		other = getNextSector (check,sec);
-
-		if (!other)
-			continue;
-
-		const fixed_t v1height = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		const fixed_t v2height = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
-
-		height = std::min({ height, v1height, v2height });
-	}
-	return height;
-}
-
-
 
 //
 // P_FindHighestFloorSurrounding()
@@ -1281,6 +954,28 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 }
 
 
+
+static fixed_t P_GetDefaultTextureHeight()
+{
+	// [SL] This emulates the behavior of vanilla Doom where if a texture
+	// is not supplied for a wall tier, texture 0 (AASTINKY/AASHITTY) is used.
+	// This is not the fastest code in the world but hopefully it's a rarely used function...
+	//
+	// See https://doomwiki.org/wiki/AASTINKY
+	//
+	const ResourcePathList paths = Res_ListResourceDirectory(textures_directory_name);
+	if (paths.empty())
+		return limits::MAXINT;
+
+	const OString& texture_name = paths[0].last();
+	const Texture* texture = Res_CacheTexture(texture_name, WALL);
+	if (texture)
+		return texture->mHeight << FRACBITS;
+	else
+		return limits::MAXINT;
+}
+
+
 //
 // P_FindShortestTextureAround()
 //
@@ -1289,24 +984,39 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 // jff 02/03/98 Add routine to find shortest lower texture
 //
-fixed_t P_FindShortestTextureAround (sector_t *sec)
+fixed_t P_FindShortestTextureAround(sector_t *sec)
 {
 	int minsize = limits::MAXINT;
+	fixed_t default_texture_height = P_GetDefaultTextureHeight();
 	side_t *side;
-	int i;
-	int mintex = (co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX)) ? 1 : 0;
+	// [EB] Boom excludes untextured tiers from the shortest-texture search
+	// unless vanilla shorttex compatibility is requested
+	const bool skipmissing = co_boomphys and not (level.flags & LEVEL_COMPAT_SHORTTEX);
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
 		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
 			side = &sides[(sec->lines[i])->sidenum[0]];
-			if (side->bottomtexture >= mintex && textureheight[side->bottomtexture] < minsize)
-				minsize = textureheight[side->bottomtexture];
-
+			if (Res_CheckResource(side->bottomtexture))
+			{
+				const Texture* texture = Res_CacheTexture(side->bottomtexture);
+				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
+			}
+			else if (not skipmissing)
+			{
+				minsize = std::min<int>(minsize, default_texture_height);
+			}
 			side = &sides[(sec->lines[i])->sidenum[1]];
-			if (side->bottomtexture >= mintex && textureheight[side->bottomtexture] < minsize)
-				minsize = textureheight[side->bottomtexture];
+			if (Res_CheckResource(side->bottomtexture))
+			{
+				const Texture* texture = Res_CacheTexture(side->bottomtexture);
+				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
+			}
+			else if (not skipmissing)
+			{
+				minsize = std::min<int>(minsize, default_texture_height);
+			}
 		}
 	}
 	return minsize;
@@ -1324,24 +1034,39 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 //
 // jff 03/20/98 Add routine to find shortest upper texture
 //
-fixed_t P_FindShortestUpperAround (sector_t *sec)
+fixed_t P_FindShortestUpperAround(sector_t *sec)
 {
 	int minsize = limits::MAXINT;
+	fixed_t default_texture_height = P_GetDefaultTextureHeight();
 	side_t *side;
-	int i;
-	int mintex = (co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX)) ? 1 : 0;
+	// [EB] Boom excludes untextured tiers from the shortest-texture search
+	// unless vanilla shorttex compatibility is requested
+	const bool skipmissing = co_boomphys and not (level.flags & LEVEL_COMPAT_SHORTTEX);
 
-	for (i = 0; i < sec->linecount; i++)
+	for (int i = 0; i < sec->linecount; i++)
 	{
 		if (sec->lines[i]->flags & ML_TWOSIDED)
 		{
 			side = &sides[(sec->lines[i])->sidenum[0]];
-			if (side->toptexture >= mintex && textureheight[side->toptexture] < minsize)
-				minsize = textureheight[side->toptexture];
-
+			if (Res_CheckResource(side->toptexture))
+			{
+				const Texture* texture = Res_CacheTexture(side->toptexture);
+				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
+			}
+			else if (not skipmissing)
+			{
+				minsize = std::min<int>(minsize, default_texture_height);
+			}
 			side = &sides[(sec->lines[i])->sidenum[1]];
-			if (side->toptexture >= mintex && textureheight[side->toptexture] < minsize)
-				minsize = textureheight[side->toptexture];
+			if (Res_CheckResource(side->toptexture))
+			{
+				const Texture* texture = Res_CacheTexture(side->toptexture);
+				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
+			}
+			else if (not skipmissing)
+			{
+				minsize = std::min<int>(minsize, default_texture_height);
+			}
 		}
 	}
 	return minsize;
@@ -2316,58 +2041,11 @@ void P_CollectSecretVanilla(sector_t& sector, player_t& player)
 // Animate planes, scroll walls, etc.
 //
 
-void P_UpdateSpecials (void)
+void P_UpdateSpecials()
 {
-	anim_t *anim;
-	int i;
+	Res_UpdateTextureAnimations();
 
-	// ANIMATE FLATS AND TEXTURES GLOBALLY
-	// [RH] Changed significantly to work with ANIMDEFS lumps
-	for (anim = anims; anim < lastanim; anim++)
-	{
-		if (--anim->countdown == 0)
-		{
-			int speedframe;
-
-			anim->curframe = (anim->numframes) ?
-					(anim->curframe + 1) % anim->numframes : 0;
-
-			speedframe = (anim->uniqueframes) ? anim->curframe : 0;
-
-			if (anim->speedmin[speedframe] == anim->speedmax[speedframe])
-				anim->countdown = anim->speedmin[speedframe];
-			else
-				anim->countdown = M_Random() %
-					(anim->speedmax[speedframe] - anim->speedmin[speedframe]) +
-					anim->speedmin[speedframe];
-		}
-
-		if (anim->uniqueframes)
-		{
-			int pic = anim->framepic[anim->curframe];
-
-			if (anim->istexture)
-				for (i = 0; i < anim->numframes; i++)
-					texturetranslation[anim->framepic[i]] = pic;
-			else
-				for (i = 0; i < anim->numframes; i++)
-					flattranslation[anim->framepic[i]] = pic;
-		}
-		else
-		{
-			for (i = anim->basepic; i < anim->basepic + anim->numframes; i++)
-			{
-				int pic = anim->basepic + (anim->curframe + i) % anim->numframes;
-
-				if (anim->istexture)
-					texturetranslation[i] = pic;
-				else
-					flattranslation[i] = pic;
-			}
-		}
-	}
-
-	sky2columnoffset += sky2scrollxdelta & 0xffffff;
+	sky2columnoffset += sky2scrolldelta & 0xffffff;
 
 	#ifdef CLIENT_APP
 	R_UpdateSkies();

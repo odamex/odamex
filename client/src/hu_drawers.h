@@ -23,6 +23,10 @@
 #pragma once
 
 #include "r_defs.h"
+#include "v_text.h"
+
+class Texture;
+struct brokenlines_t;
 
 namespace hud {
 
@@ -41,48 +45,104 @@ void Clear(int x, int y,
            const float scale,
            const x_align_t x_align, const y_align_t y_align,
            const x_align_t x_origin, const y_align_t y_origin,
-           const argb_t color);
+           const argb_t color,
+           const int y_pixel_nudge = 0);
 void Dim(int x, int y,
          const unsigned short w, const unsigned short h,
          const float scale,
          const x_align_t x_align, const y_align_t y_align,
          const x_align_t x_origin, const y_align_t y_origin);
+int GetTextWidth(const char* str, const float scale, const fontface_t face = FACE_SMALL);
+brokenlines_t* BreakLines(const char* str, const int maxwidth, const float scale,
+                          const fontface_t face = FACE_SMALL);
+int GetLineHeight(const float scale, const fontface_t face = FACE_SMALL);
 void DrawText(int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,
               const x_align_t x_origin, const y_align_t y_origin,
               const char* str, const int color,
-              const bool force_opaque = false);
-int StringWidthMono(const char* str);
-void DrawTextMonoAt(int x, int y, const int x_scale, const int y_scale,
+              const bool force_opaque = false,
+              const fontface_t face = FACE_SMALL,
+              const int y_pixel_nudge = 0);
+int StringWidthMono(const OFont* font, const char* str);
+int StringWidthMono(const char* str, const int pixel_scale = 1,
+                    const fontface_t face = FACE_SMALL);
+void DrawTextMonoAt(const OFont* font, int x, int y,
                     const char* str, const int color, const bool force_opaque = false);
+void DrawTextMonoAt(int x, int y, const int pixel_scale,
+                    const char* str, const int color, const bool force_opaque = false,
+                    const fontface_t face = FACE_SMALL);
 void DrawTextMono(int x, int y, const float scale,
                   const x_align_t x_align, const y_align_t y_align,
                   const x_align_t x_origin, const y_align_t y_origin,
                   const char* str, const int color,
-                  const bool force_opaque = false);
-void DrawPatch(int x, int y, const float scale,
+                  const bool force_opaque = false,
+                  const fontface_t face = FACE_SMALL);
+void DrawTexture(int x, int y, const float scale,
                const x_align_t x_align, const y_align_t y_align,
                const x_align_t x_origin, const y_align_t y_origin,
-               const patch_t* patch, const bool force_opaque = false,
+               const Texture* texture, const bool force_opaque = false,
                const bool use_patch_offsets = false);
-void DrawTranslatedPatch(int x, int y, const float scale,
+void DrawTranslatedTexture(int x, int y, const float scale,
                          const x_align_t x_align, const y_align_t y_align,
                          const x_align_t x_origin, const y_align_t y_origin,
-                         const patch_t* patch, byte* translation,
+                         const Texture* texture, byte* translation,
                          const bool force_opaque = false,
-                         const bool use_patch_offsets = false);
-void DrawPatchStretched(int x, int y,
+                         const bool use_patch_offsets = false,
+                         const int y_pixel_nudge = 0);
+void DrawTextureStretched(int x, int y,
                         const unsigned short w, const unsigned short h,
                         const float scale,
                         const x_align_t x_align, const y_align_t y_align,
                         const x_align_t x_origin, const y_align_t y_origin,
-                        const patch_t* patch, const bool force_opaque = false,
+                        const Texture* texture, const bool force_opaque = false,
                         const bool use_patch_offsets = false);
-void DrawPatchScaled(const int x, const int y,
+void DrawTextureScaled(const int x, const int y,
                      unsigned short w, unsigned short h,
                      const float scale,
                      const x_align_t x_align, const y_align_t y_align,
                      const x_align_t x_origin, const y_align_t y_origin,
-                     const patch_t* patch, const bool force_opaque = false,
+                     const Texture* texture, const bool force_opaque = false,
                      const bool use_patch_offsets = false);
+
+inline void DrawPatch(int x, int y, const float scale,
+                      const x_align_t xa, const y_align_t ya,
+                      const x_align_t xo, const y_align_t yo,
+                      const Texture* texture, const bool force_opaque = false,
+                      const bool use_patch_offsets = false)
+{
+	DrawTexture(x, y, scale, xa, ya, xo, yo, texture, force_opaque, use_patch_offsets);
+}
+
+inline void DrawTranslatedPatch(int x, int y, const float scale,
+                                const x_align_t xa, const y_align_t ya,
+                                const x_align_t xo, const y_align_t yo,
+                                const Texture* texture, byte* translation,
+                                const bool force_opaque = false,
+                                const bool use_patch_offsets = false)
+{
+	DrawTranslatedTexture(x, y, scale, xa, ya, xo, yo, texture, translation, force_opaque, use_patch_offsets);
+}
+
+inline void DrawPatchStretched(int x, int y,
+                               const unsigned short w, const unsigned short h,
+                               const float scale,
+                               const x_align_t xa, const y_align_t ya,
+                               const x_align_t xo, const y_align_t yo,
+                               const Texture* texture, const bool force_opaque = false,
+                               const bool use_patch_offsets = false)
+{
+	DrawTextureStretched(x, y, w, h, scale, xa, ya, xo, yo, texture, force_opaque, use_patch_offsets);
+}
+
+inline void DrawPatchScaled(const int x, const int y,
+                            unsigned short w, unsigned short h,
+                            const float scale,
+                            const x_align_t xa, const y_align_t ya,
+                            const x_align_t xo, const y_align_t yo,
+                            const Texture* texture, const bool force_opaque = false,
+                            const bool use_patch_offsets = false)
+{
+	DrawTextureScaled(x, y, w, h, scale, xa, ya, xo, yo, texture, force_opaque, use_patch_offsets);
+}
+
 }

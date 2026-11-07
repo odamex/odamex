@@ -30,11 +30,13 @@
 
 #include "i_system.h"
 #include "z_zone.h"
-#include "w_wad.h"
 
 #include "v_video.h"
 
 #include "s_sound.h"
+
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 #define SPRITE_NEEDS_INFO	limits::MAXINT
 
@@ -59,14 +61,16 @@ void R_CacheSprite(const spritedef_t *sprite)
 		{
 			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
 			{
-				if (sprite->spriteframes[i].lump[r] == -1)
-					I_Error("Sprite {}, rotation {} has no lump", i, r);
+				if (not Res_CheckResource(sprite->spriteframes[i].resource[r]))
+					I_Error("Sprite {}, rotation {} has no resource", i, r);
 
-				patch_t* patch = W_CachePatch(sprite->spriteframes[i].lump[r]);
-				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
-				sprite->spriteframes[i].height[r] = patch->height()<<FRACBITS;
-				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
-				sprite->spriteframes[i].topoffset[r] = patch->topoffset()<<FRACBITS;
+				const ResourceId res_id = sprite->spriteframes[i].resource[r];
+				const Texture* texture = Res_CacheTexture(res_id, PU_CACHE);
+
+				sprite->spriteframes[i].height[r] = texture->mHeight << FRACBITS;
+				sprite->spriteframes[i].width[r] = texture->mWidth << FRACBITS;
+				sprite->spriteframes[i].offset[r] = texture->mOffsetX << FRACBITS;
+				sprite->spriteframes[i].topoffset[r] = texture->mOffsetY << FRACBITS;
 			}
 		}
 	}
@@ -100,11 +104,8 @@ int NameToInt(const char* name)
 // [RH] Removed checks for coexistance of rotation 0 with other
 //		rotations and made it look more like BOOM's version.
 //
-// Returns false if the lump name does not decode to a usable frame and
-// rotation. Only tolerant callers see that, it is otherwise fatal.
-//
-bool R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool flipped,
-                         bool tolerant)
+bool R_InstallSpriteLump(const ResourceId res_id, unsigned frame, unsigned rot,
+                         bool flipped, bool tolerant)
 {
 	unsigned rotation;
 
@@ -119,7 +120,8 @@ bool R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool flipped,
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 16)
 	{
 		if (!tolerant)
-			I_FatalError("R_InstallSpriteLump: Bad frame characters in lump {}: {}", lump, W_GetOLumpName(lump));
+			I_FatalError("R_InstallSpriteLump: Bad frame characters in resource {}",
+			             Res_GetResourceName(res_id));
 
 		return false;
 	}
@@ -129,14 +131,14 @@ bool R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool flipped,
 
 	if (rotation == 0)
 	{
-		// the lump should be used for all rotations
+		// the resource should be used for all rotations
         // false=0, true=1, but array initialised to -1
         // allows doom to have a "no value set yet" boolean value!
 		for (int r = 14; r >= 0; r -= 2)
 		{
-			if (sprtemp[frame].lump[r] == -1)
+			if (not Res_CheckResource(sprtemp[frame].resource[r]))
 			{
-				sprtemp[frame].lump[r] = lump;
+				sprtemp[frame].resource[r] = res_id;
 				sprtemp[frame].flip[r] = flipped;
 				sprtemp[frame].rotate = false;
 				sprtemp[frame].width[r] = SPRITE_NEEDS_INFO;
@@ -148,10 +150,10 @@ bool R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool flipped,
 
 	rotation = (rotation <= 8 ? (rotation - 1) * 2 : (rotation - 9) * 2 + 1);
 
-	if (sprtemp[frame].lump[rotation] == -1)
+	if (not Res_CheckResource(sprtemp[frame].resource[rotation]))
 	{
-		// the lump is only used for one rotation
-		sprtemp[frame].lump[rotation] = lump;
+		// the resource is only used for one rotation
+		sprtemp[frame].resource[rotation] = res_id;
 		sprtemp[frame].flip[rotation] = flipped;
 		sprtemp[frame].rotate = true;
 		sprtemp[frame].width[rotation] = SPRITE_NEEDS_INFO;
@@ -191,7 +193,7 @@ spritecheck_t R_CheckSpriteFrames(int numframes, bool strict, int& badframe)
 		if (!sprtemp[frame].rotate)
 		{
 			// only the first rotation is needed
-			if (strict && sprtemp[frame].lump[0] == -1)
+			if (strict and not Res_CheckResource(sprtemp[frame].resource[0]))
 				return SPRITE_NO_PATCHES;
 
 			continue;
@@ -200,24 +202,24 @@ spritecheck_t R_CheckSpriteFrames(int numframes, bool strict, int& badframe)
 		// must have all 16 frames
 		for (int rotation = 0; rotation < 16; rotation += 2)
 		{
-			if (sprtemp[frame].lump[rotation + 1] == -1)
+			if (not Res_CheckResource(sprtemp[frame].resource[rotation + 1]))
 			{
-				sprtemp[frame].lump[rotation + 1] = sprtemp[frame].lump[rotation];
+				sprtemp[frame].resource[rotation + 1] = sprtemp[frame].resource[rotation];
 				sprtemp[frame].flip[rotation + 1] = sprtemp[frame].flip[rotation];
 				sprtemp[frame].width[rotation + 1] = SPRITE_NEEDS_INFO;
 			}
 
-			if (sprtemp[frame].lump[rotation] == -1)
+			if (not Res_CheckResource(sprtemp[frame].resource[rotation]))
 			{
-				sprtemp[frame].lump[rotation] = sprtemp[frame].lump[rotation + 1];
+				sprtemp[frame].resource[rotation] = sprtemp[frame].resource[rotation + 1];
 				sprtemp[frame].flip[rotation] = sprtemp[frame].flip[rotation + 1];
 				sprtemp[frame].width[rotation] = SPRITE_NEEDS_INFO;
 			}
 		}
 
-		for (const int rotationlump : sprtemp[frame].lump)
+		for (const ResourceId rotation_res_id : sprtemp[frame].resource)
 		{
-			if (rotationlump == -1)
+			if (not Res_CheckResource(rotation_res_id))
 				return SPRITE_MISSING_ROTATIONS;
 		}
 	}
@@ -269,41 +271,60 @@ void R_InstallSprite(const char *name, int32_t num)
 //
 // R_ScanSpriteLumps
 //
-// Resets sprtemp/maxframe and fills them in from every lump between first and
-// last whose name matches the given four character sprite name.
+// Resets sprtemp/maxframe and fills them in from every sprite resource whose
+// name matches the given four character sprite name.
 //
 // Returns false if a matching lump had a name that does not decode to a frame
 // and rotation, which only tolerant callers see.
 //
-bool R_ScanSpriteLumps(const char* sprite, int first, int last, bool tolerant)
+bool R_ScanSpriteLumps(const ResourcePathList& sprite_paths, const char* sprite,
+                       bool tolerant)
 {
-	memset (sprtemp, -1, sizeof(sprtemp));
-
-	for (spriteframe_t& frame : sprtemp)
-		frame.rotate = false;
+	for (int f = 0; f < MAX_SPRITE_FRAMES; f++)
+	{
+		sprtemp[f].rotate = false;
+		for (int r = 0; r < 16; r++)
+		{
+			sprtemp[f].resource[r] = ResourceId::INVALID_ID;
+			sprtemp[f].width[r] = -1;
+		}
+	}
 
 	maxframe = -1;
-	const int intname = NameToInt(sprite);
+	const int intname = *reinterpret_cast<const int*>(sprite);
 	bool wellformed = true;
 
-	// scan the lumps,
+	// scan the sprite resources,
 	//	filling in the frames for whatever is found
-	for (int l = last; l >= first; l--)
+	for (int l = sprite_paths.size() - 1; l >= 0; l--)
 	{
-		if (NameToInt(lumpinfo[l].name.c_str()) == intname && lumpinfo[l].size > 0)
-		{
-			if (!R_InstallSpriteLump (l,
-								 lumpinfo[l].name[SPR_FRAME_CHAR] - 'A', // denis - fixme - security
-								 lumpinfo[l].name[SPR_ROTATION_CHAR] - '0',
-								 false, tolerant))
-				wellformed = false;
+		const OString& resource_name = sprite_paths[l].last();
 
-			if (lumpinfo[l].name[SPR_FLIPFRAME_CHAR])
-				if (!R_InstallSpriteLump (l,
-								 lumpinfo[l].name[SPR_FLIPFRAME_CHAR] - 'A',
-								 lumpinfo[l].name[SPR_FLIPROTATION_CHAR] - '0',
-								 true, tolerant))
-					wellformed = false;
+		// Archive and directory resources may carry long file names;
+		// only classic 8-character lump names can encode sprite frame
+		// and rotation characters.
+		if (resource_name.size() > 8 or resource_name.find(".") != std::string::npos)
+			continue;
+
+		const char* resource_name_array = resource_name.c_str();
+		if (*reinterpret_cast<const int*>(resource_name_array) != intname)
+			continue;
+
+		const ResourceId res_id = Res_GetResourceId(resource_name, NS_SPRITES);
+		unsigned frame = resource_name_array[4] - 'A';
+		unsigned rotation = resource_name_array[5] - '0';
+
+		if (not R_InstallSpriteLump(res_id, frame, rotation, false, tolerant))
+			wellformed = false;
+
+		// can frame can be flipped?
+		if (resource_name.size() > 6 and resource_name_array[6])
+		{
+			frame = resource_name_array[6] - 'A';
+			rotation = resource_name_array[7] - '0';
+
+			if (not R_InstallSpriteLump(res_id, frame, rotation, true, tolerant))
+				wellformed = false;
 		}
 	}
 
@@ -329,12 +350,14 @@ void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 {
 	numsprites = namelist.size();
 
-	// scan all the lump names for each of the names,
+	const ResourcePathList sprite_paths = Res_ListResourceDirectory(sprites_directory_name);
+
+	// scan all the resource names for each of the names,
 	//	noting the highest frame letter.
 	// Just compare 4 characters as ints
 	for (int i = 0; i < numsprites; i++)
 	{
-		R_ScanSpriteLumps(namelist[i]->sprite, firstspritelump, lastspritelump, false);
+		R_ScanSpriteLumps(sprite_paths, namelist[i]->sprite, false);
 		R_InstallSprite(namelist[i]->sprite, namelist[i]->spritenum);
 	}
 }
@@ -354,15 +377,14 @@ void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 //
 std::string R_FindIncompleteSprite()
 {
-	const int startlump = W_CheckNumForName("S_START");
-	const int endlump = W_CheckNumForName("S_END");
+	const ResourcePathList sprite_paths = Res_ListResourceDirectory(sprites_directory_name);
 
-	if (startlump == -1 || endlump == -1 || endlump <= startlump)
+	if (sprite_paths.empty())
 		return "";
 
 	for (auto it = sprnames.begin(); it != sprnames.end(); ++it)
 	{
-		if (!R_ScanSpriteLumps(it->second.data(), startlump + 1, endlump - 1, true))
+		if (not R_ScanSpriteLumps(sprite_paths, it->second.data(), true))
 			return fmt::format("sprite {} has a malformed lump name", it->second);
 
 		if (maxframe == -1)
@@ -380,10 +402,6 @@ std::string R_FindIncompleteSprite()
 //
 // GAME FUNCTIONS
 //
-int				MaxVisSprites;
-vissprite_t 	*vissprites;
-vissprite_t		*firstvissprite;
-vissprite_t		*lastvissprite;
 
 
 
@@ -393,15 +411,9 @@ vissprite_t		*lastvissprite;
 //
 void R_InitSprites(std::vector<spriteinfo_t*>& sprites)
 {
-	MaxVisSprites = 128;	// [RH] This is the initial default value. It grows as needed.
-
-	M_Free(vissprites);
-
-	firstvissprite = vissprites = static_cast<vissprite_t*>(M_Malloc(MaxVisSprites * sizeof(vissprite_t)));
-	lastvissprite = &vissprites[MaxVisSprites];
+	R_InitVisSprites();
 
 	R_InitSpriteDefs (sprites);
 }
 
 VERSION_CONTROL (r_sprites_cpp, "$Id$")
-

@@ -33,6 +33,7 @@
 #include "r_data.h"
 
 class IWindowSurface;
+class OFont;
 
 extern int CleanXfac, CleanYfac;
 
@@ -78,7 +79,6 @@ public:
 	{	return mSurface;	}
 
 	// Draw a linear block of pixels into the view buffer.
-	void DrawBlock (int x, int y, int width, int height, const byte *src) const;
 
 	// Reads a linear block of pixels from the view buffer.
 	void GetBlock (int x, int y, int width, int height, byte *dest) const;
@@ -91,7 +91,7 @@ public:
 	void Dim (int x, int y, int width, int height) const;
 
 	// Fill an area with a 64x64 flat texture
-	void FlatFill (int left, int top, int right, int bottom, unsigned int flatlength, const byte *src) const;
+	void FlatFill(const Texture* texture, int left, int top, int right, int bottom) const;
 
 	// Set an area to a specified color
 	void Clear(int left, int top, int right, int bottom, argb_t color) const;
@@ -106,81 +106,89 @@ public:
 	// Output a line of text using the console font
 	void PrintStr(int x, int y, const char *s, int default_color = -1, bool use_color_codes = true, int scale = 1) const;
 
-	// Output some text with wad heads-up font
-	inline void DrawText (int normalcolor, int x, int y, const byte *string) const;
-	inline void DrawTextLuc (int normalcolor, int x, int y, const byte *string) const;
-	inline void DrawTextClean (int normalcolor, int x, int y, const byte *string) const;		// Does not adjust x and y
-	inline void DrawTextCleanLuc (int normalcolor, int x, int y, const byte *string) const;		// ditto
-	inline void DrawTextCleanMove (int normalcolor, int x, int y, const byte *string) const;	// This one does
-	inline void DrawTextStretched (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
-	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
+	void DrawTextureFlipped(const Texture* texture, int x, int y) const;
+	void DrawTextureFlippedStretched(const Texture* texture, int x, int y,
+			int destwidth, int destheight) const;
+	void DrawFontTextCleanMove(const OFont* font, int normalcolor, int x, int y, const char *string) const;
+	void DrawFontText(const OFont* font, int normalcolor, int x, int y, const char *string, bool force_opaque = true) const;
 
-	inline void DrawText (int normalcolor, int x, int y, const char *string) const;
-	inline void DrawTextLuc (int normalcolor, int x, int y, const char *string) const;
-	inline void DrawTextClean (int normalcolor, int x, int y, const char *string) const;
-	inline void DrawTextCleanLuc (int normalcolor, int x, int y, const char *string) const;
-	inline void DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const;
-	inline void DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
-	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
+	inline void DrawTexture(const Texture* texture, int x, int y) const;
+	inline void DrawTextureStretched(const Texture* texture, int x, int y, int dw, int dh) const;
+	inline void DrawTextureDirect(const Texture* texture, int x, int y) const;
+	inline void DrawTextureIndirect (const Texture* texture, int x, int y) const;
+	inline void DrawTextureClean (const Texture* texture, int x, int y) const;
+	inline void DrawTextureCleanNoMove (const Texture* texture, int x, int y) const;
 
-	// Patch drawing functions
-	void DrawPatchIndirectFlipped (const patch_t *patch, int x, int y) const;
-	void DrawPatchFlipped (const patch_t *patch, int x, int y) const;
+	void DrawTextureFullScreen(const Texture* texture, bool clear = true) const;
 
-	inline void DrawPatch (const patch_t *patch, int x, int y) const;
-	inline void DrawPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
-	inline void DrawPatchDirect (const patch_t *patch, int x, int y) const;
-	inline void DrawPatchIndirect (const patch_t *patch, int x, int y) const;
-	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
-	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+	inline void DrawLucentTexture (const Texture* texture, int x, int y) const;
+	inline void DrawLucentTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const;
+	inline void DrawLucentTextureDirect (const Texture* texture, int x, int y) const;
+	inline void DrawLucentTextureIndirect (const Texture* texture, int x, int y) const;
+	inline void DrawLucentTextureClean (const Texture* texture, int x, int y) const;
+	inline void DrawLucentTextureCleanNoMove (const Texture* texture, int x, int y) const;
 
-	void DrawPatchFullScreen(const patch_t* patch, bool clear) const;
+	inline void DrawTranslatedTexture (const Texture* texture, int x, int y) const;
+	inline void DrawTranslatedTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const;
+	inline void DrawTranslatedTextureDirect (const Texture* texture, int x, int y) const;
+	inline void DrawTranslatedTextureIndirect (const Texture* texture, int x, int y) const;
+	inline void DrawTranslatedTextureClean (const Texture* texture, int x, int y) const;
+	inline void DrawTranslatedTextureCleanNoMove (const Texture* texture, int x, int y) const;
 
-	inline void DrawLucentPatch (const patch_t *patch, int x, int y) const;
-	inline void DrawLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
-	inline void DrawLucentPatchDirect (const patch_t *patch, int x, int y) const;
-	inline void DrawLucentPatchIndirect (const patch_t *patch, int x, int y) const;
-	inline void DrawLucentPatchClean (const patch_t *patch, int x, int y) const;
-	inline void DrawLucentPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+	inline void DrawTranslatedLucentTexture (const Texture* texture, int x, int y) const;
+	inline void DrawTranslatedLucentTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const;
+	inline void DrawTranslatedLucentTextureDirect (const Texture* texture, int x, int y) const;
+	inline void DrawTranslatedLucentTextureIndirect (const Texture* texture, int x, int y) const;
+	inline void DrawTranslatedLucentTextureClean (const Texture* texture, int x, int y) const;
+	inline void DrawTranslatedLucentTextureCleanNoMove (const Texture* texture, int x, int y) const;
 
-	inline void DrawTranslatedPatch (const patch_t *patch, int x, int y) const;
-	inline void DrawTranslatedPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
-	inline void DrawTranslatedPatchDirect (const patch_t *patch, int x, int y) const;
-	inline void DrawTranslatedPatchIndirect (const patch_t *patch, int x, int y) const;
-	inline void DrawTranslatedPatchClean (const patch_t *patch, int x, int y) const;
-	inline void DrawTranslatedPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+	inline void DrawColoredTexture (const Texture* texture, int x, int y) const;
+	inline void DrawColoredTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const;
+	inline void DrawColoredTextureDirect (const Texture* texture, int x, int y) const;
+	inline void DrawColoredTextureIndirect (const Texture* texture, int x, int y) const;
+	inline void DrawColoredTextureClean (const Texture* texture, int x, int y) const;
+	inline void DrawColoredTextureCleanNoMove (const Texture* texture, int x, int y) const;
 
-	inline void DrawTranslatedLucentPatch (const patch_t *patch, int x, int y) const;
-	inline void DrawTranslatedLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
-	inline void DrawTranslatedLucentPatchDirect (const patch_t *patch, int x, int y) const;
-	inline void DrawTranslatedLucentPatchIndirect (const patch_t *patch, int x, int y) const;
-	inline void DrawTranslatedLucentPatchClean (const patch_t *patch, int x, int y) const;
-	inline void DrawTranslatedLucentPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+	inline void DrawColoredLucentTexture (const Texture* texture, int x, int y) const;
+	inline void DrawColoredLucentTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const;
+	inline void DrawColoredLucentTextureDirect (const Texture* texture, int x, int y) const;
+	inline void DrawColoredLucentTextureIndirect (const Texture* texture, int x, int y) const;
+	inline void DrawColoredLucentTextureClean (const Texture* texture, int x, int y) const;
+	inline void DrawColoredLucentTextureCleanNoMove (const Texture* texture, int x, int y) const;
 
-	inline void DrawColoredPatch (const patch_t *patch, int x, int y) const;
-	inline void DrawColoredPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
-	inline void DrawColoredPatchDirect (const patch_t *patch, int x, int y) const;
-	inline void DrawColoredPatchIndirect (const patch_t *patch, int x, int y) const;
-	inline void DrawColoredPatchClean (const patch_t *patch, int x, int y) const;
-	inline void DrawColoredPatchCleanNoMove (const patch_t *patch, int x, int y) const;
-
-	inline void DrawColoredLucentPatch (const patch_t *patch, int x, int y) const;
-	inline void DrawColoredLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
-	inline void DrawColoredLucentPatchDirect (const patch_t *patch, int x, int y) const;
-	inline void DrawColoredLucentPatchIndirect (const patch_t *patch, int x, int y) const;
-	inline void DrawColoredLucentPatchClean (const patch_t *patch, int x, int y) const;
-	inline void DrawColoredLucentPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+	// Transitional wrappers: patch-drawing names forwarded to the texture
+	// drawers, for code written against the old patch interface.
+	void DrawPatch (const Texture* t, int x, int y) const { DrawTexture(t, x, y); }
+	void DrawPatchStretched (const Texture* t, int x, int y, int dw, int dh) const { DrawTextureStretched(t, x, y, dw, dh); }
+	void DrawPatchDirect (const Texture* t, int x, int y) const { DrawTextureDirect(t, x, y); }
+	void DrawPatchIndirect (const Texture* t, int x, int y) const { DrawTextureIndirect(t, x, y); }
+	void DrawPatchClean (const Texture* t, int x, int y) const { DrawTextureClean(t, x, y); }
+	void DrawPatchCleanNoMove (const Texture* t, int x, int y) const { DrawTextureCleanNoMove(t, x, y); }
+	void DrawPatchFullScreen (const Texture* t, bool clear = true) const { DrawTextureFullScreen(t, clear); }
+	void DrawPatchFlipped (const Texture* t, int x, int y) const { DrawTextureFlipped(t, x, y); }
+	void DrawPatchFlippedStretched (const Texture* t, int x, int y, int dw, int dh) const { DrawTextureFlippedStretched(t, x, y, dw, dh); }
+	void DrawLucentPatch (const Texture* t, int x, int y) const { DrawLucentTexture(t, x, y); }
+	void DrawLucentPatchClean (const Texture* t, int x, int y) const { DrawLucentTextureClean(t, x, y); }
+	void DrawLucentPatchStretched (const Texture* t, int x, int y, int dw, int dh) const { DrawLucentTextureStretched(t, x, y, dw, dh); }
+	void DrawTranslatedPatch (const Texture* t, int x, int y) const { DrawTranslatedTexture(t, x, y); }
+	void DrawTranslatedPatchClean (const Texture* t, int x, int y) const { DrawTranslatedTextureClean(t, x, y); }
+	void DrawTranslatedPatchCleanNoMove (const Texture* t, int x, int y) const { DrawTranslatedTextureCleanNoMove(t, x, y); }
+	void DrawTranslatedLucentPatch (const Texture* t, int x, int y) const { DrawTranslatedLucentTexture(t, x, y); }
+	void DrawTranslatedLucentPatchCleanNoMove (const Texture* t, int x, int y) const { DrawTranslatedLucentTextureCleanNoMove(t, x, y); }
+	void DrawColoredPatch (const Texture* t, int x, int y) const { DrawColoredTexture(t, x, y); }
+	void DrawColoredPatchClean (const Texture* t, int x, int y) const { DrawColoredTextureClean(t, x, y); }
+	void DrawColoredLucentPatch (const Texture* t, int x, int y) const { DrawColoredLucentTexture(t, x, y); }
 
 protected:
-	void TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
-	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
-	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
+	void DrawFontTextRaw (const OFont* font, EWrapperCode drawer, int normalcolor, int x, int y, const char *string) const;
 
-	void DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
-	void DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y, int destwidth, int destheight) const;
-	void DrawIWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
-	void DrawCWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
-	void DrawCNMWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
+	void DrawGlyphBlended (const palindex_t* fill, const byte* coverage, int width, int height, int x, int y, int level) const;
+
+	void DrawWrapper (EWrapperCode drawer, const Texture* texture, int x, int y) const;
+	void DrawSWrapper (EWrapperCode drawer, const Texture* texture, int x, int y, int destwidth, int destheight) const;
+	void DrawIWrapper (EWrapperCode drawer, const Texture* texture, int x, int y) const;
+	void DrawCWrapper (EWrapperCode drawer, const Texture* texture, int x, int y) const;
+	void DrawCNMWrapper (EWrapperCode drawer, const Texture* texture, int x, int y) const;
 
 	static void DrawPatchP (const byte *source, byte *dest, int count, int pitch);
 	static void DrawLucentPatchP (const byte *source, byte *dest, int count, int pitch);
@@ -234,213 +242,154 @@ private:
 	IWindowSurface*			mSurface;
 };
 
-inline void DCanvas::DrawText (int normalcolor, int x, int y, const byte *string) const
+inline void DCanvas::DrawTexture (const Texture* texture, int x, int y) const
 {
-	TextWrapper (EWrapper_Translated, normalcolor, x, y, string);
+	DrawWrapper (EWrapper_Normal, texture, x, y);
 }
-inline void DCanvas::DrawTextLuc (int normalcolor, int x, int y, const byte *string) const
+inline void DCanvas::DrawTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const
 {
-	TextWrapper (EWrapper_TlatedLucent, normalcolor, x, y, string);
+	DrawSWrapper (EWrapper_Normal, texture, x, y, dw, dh);
 }
-inline void DCanvas::DrawTextClean (int normalcolor, int x, int y, const byte *string) const
+inline void DCanvas::DrawTextureDirect (const Texture* texture, int x, int y) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, x, y, string);
+	DrawWrapper (EWrapper_Normal, texture, x, y);
 }
-inline void DCanvas::DrawTextCleanLuc (int normalcolor, int x, int y, const byte *string) const
+inline void DCanvas::DrawTextureIndirect (const Texture* texture, int x, int y) const
 {
-	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, string);
+	DrawIWrapper (EWrapper_Normal, texture, x, y);
 }
-inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const byte *string) const
+inline void DCanvas::DrawTextureClean (const Texture* texture, int x, int y) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, getCleanX(x), getCleanY(y), string);
+	DrawCWrapper (EWrapper_Normal, texture, x, y);
 }
-inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const
+inline void DCanvas::DrawTextureCleanNoMove (const Texture* texture, int x, int y) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, x, y, string, scalex, scaley);
-}
-
-inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const
-{
-	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, string, scalex, scaley);
+	DrawCNMWrapper (EWrapper_Normal, texture, x, y);
 }
 
-inline void DCanvas::DrawText (int normalcolor, int x, int y, const char *string) const
+inline void DCanvas::DrawLucentTexture (const Texture* texture, int x, int y) const
 {
-	TextWrapper (EWrapper_Translated, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+	DrawWrapper (EWrapper_Lucent, texture, x, y);
 }
-inline void DCanvas::DrawTextLuc (int normalcolor, int x, int y, const char *string) const
+inline void DCanvas::DrawLucentTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const
 {
-	TextWrapper (EWrapper_TlatedLucent, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+	DrawSWrapper (EWrapper_Lucent, texture, x, y, dw, dh);
 }
-inline void DCanvas::DrawTextClean (int normalcolor, int x, int y, const char *string) const
+inline void DCanvas::DrawLucentTextureDirect (const Texture* texture, int x, int y) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+	DrawWrapper (EWrapper_Lucent, texture, x, y);
 }
-inline void DCanvas::DrawTextCleanLuc (int normalcolor, int x, int y, const char *string) const
+inline void DCanvas::DrawLucentTextureIndirect (const Texture* texture, int x, int y) const
 {
-	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+	DrawIWrapper (EWrapper_Lucent, texture, x, y);
 }
-inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const
+inline void DCanvas::DrawLucentTextureClean (const Texture* texture, int x, int y) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, getCleanX(x), getCleanY(y), reinterpret_cast<const byte*>(string));
+	DrawCWrapper (EWrapper_Lucent, texture, x, y);
 }
-inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
+inline void DCanvas::DrawLucentTextureCleanNoMove (const Texture* texture, int x, int y) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, x, y, reinterpret_cast<const byte *>(string), scalex, scaley);
-}
-inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
-{
-	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, reinterpret_cast<const byte *>(string), scalex, scaley);
+	DrawCNMWrapper (EWrapper_Lucent, texture, x, y);
 }
 
-inline void DCanvas::DrawPatch (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawTranslatedTexture (const Texture* texture, int x, int y) const
 {
-	DrawWrapper (EWrapper_Normal, patch, x, y);
+	DrawWrapper (EWrapper_Translated, texture, x, y);
 }
-inline void DCanvas::DrawPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const
+inline void DCanvas::DrawTranslatedTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const
 {
-	DrawSWrapper (EWrapper_Normal, patch, x, y, dw, dh);
+	DrawSWrapper (EWrapper_Translated, texture, x, y, dw, dh);
 }
-inline void DCanvas::DrawPatchDirect (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawTranslatedTextureDirect (const Texture* texture, int x, int y) const
 {
-	DrawWrapper (EWrapper_Normal, patch, x, y);
+	DrawWrapper (EWrapper_Translated, texture, x, y);
 }
-inline void DCanvas::DrawPatchIndirect (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawTranslatedTextureIndirect (const Texture* texture, int x, int y) const
 {
-	DrawIWrapper (EWrapper_Normal, patch, x, y);
+	DrawIWrapper (EWrapper_Translated, texture, x, y);
 }
-inline void DCanvas::DrawPatchClean (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawTranslatedTextureClean (const Texture* texture, int x, int y) const
 {
-	DrawCWrapper (EWrapper_Normal, patch, x, y);
+	DrawCWrapper (EWrapper_Translated, texture, x, y);
 }
-inline void DCanvas::DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawTranslatedTextureCleanNoMove (const Texture* texture, int x, int y) const
 {
-	DrawCNMWrapper (EWrapper_Normal, patch, x, y);
-}
-
-inline void DCanvas::DrawLucentPatch (const patch_t *patch, int x, int y) const
-{
-	DrawWrapper (EWrapper_Lucent, patch, x, y);
-}
-inline void DCanvas::DrawLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const
-{
-	DrawSWrapper (EWrapper_Lucent, patch, x, y, dw, dh);
-}
-inline void DCanvas::DrawLucentPatchDirect (const patch_t *patch, int x, int y) const
-{
-	DrawWrapper (EWrapper_Lucent, patch, x, y);
-}
-inline void DCanvas::DrawLucentPatchIndirect (const patch_t *patch, int x, int y) const
-{
-	DrawIWrapper (EWrapper_Lucent, patch, x, y);
-}
-inline void DCanvas::DrawLucentPatchClean (const patch_t *patch, int x, int y) const
-{
-	DrawCWrapper (EWrapper_Lucent, patch, x, y);
-}
-inline void DCanvas::DrawLucentPatchCleanNoMove (const patch_t *patch, int x, int y) const
-{
-	DrawCNMWrapper (EWrapper_Lucent, patch, x, y);
+	DrawCNMWrapper (EWrapper_Translated, texture, x, y);
 }
 
-inline void DCanvas::DrawTranslatedPatch (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawTranslatedLucentTexture (const Texture* texture, int x, int y) const
 {
-	DrawWrapper (EWrapper_Translated, patch, x, y);
+	DrawWrapper (EWrapper_TlatedLucent, texture, x, y);
 }
-inline void DCanvas::DrawTranslatedPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const
+inline void DCanvas::DrawTranslatedLucentTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const
 {
-	DrawSWrapper (EWrapper_Translated, patch, x, y, dw, dh);
+	DrawSWrapper (EWrapper_TlatedLucent, texture, x, y, dw, dh);
 }
-inline void DCanvas::DrawTranslatedPatchDirect (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawTranslatedLucentTextureDirect (const Texture* texture, int x, int y) const
 {
-	DrawWrapper (EWrapper_Translated, patch, x, y);
+	DrawWrapper (EWrapper_TlatedLucent, texture, x, y);
 }
-inline void DCanvas::DrawTranslatedPatchIndirect (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawTranslatedLucentTextureIndirect (const Texture* texture, int x, int y) const
 {
-	DrawIWrapper (EWrapper_Translated, patch, x, y);
+	DrawIWrapper (EWrapper_TlatedLucent, texture, x, y);
 }
-inline void DCanvas::DrawTranslatedPatchClean (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawTranslatedLucentTextureClean (const Texture* texture, int x, int y) const
 {
-	DrawCWrapper (EWrapper_Translated, patch, x, y);
+	DrawCWrapper (EWrapper_TlatedLucent, texture, x, y);
 }
-inline void DCanvas::DrawTranslatedPatchCleanNoMove (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawTranslatedLucentTextureCleanNoMove (const Texture* texture, int x, int y) const
 {
-	DrawCNMWrapper (EWrapper_Translated, patch, x, y);
-}
-
-inline void DCanvas::DrawTranslatedLucentPatch (const patch_t *patch, int x, int y) const
-{
-	DrawWrapper (EWrapper_TlatedLucent, patch, x, y);
-}
-inline void DCanvas::DrawTranslatedLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const
-{
-	DrawSWrapper (EWrapper_TlatedLucent, patch, x, y, dw, dh);
-}
-inline void DCanvas::DrawTranslatedLucentPatchDirect (const patch_t *patch, int x, int y) const
-{
-	DrawWrapper (EWrapper_TlatedLucent, patch, x, y);
-}
-inline void DCanvas::DrawTranslatedLucentPatchIndirect (const patch_t *patch, int x, int y) const
-{
-	DrawIWrapper (EWrapper_TlatedLucent, patch, x, y);
-}
-inline void DCanvas::DrawTranslatedLucentPatchClean (const patch_t *patch, int x, int y) const
-{
-	DrawCWrapper (EWrapper_TlatedLucent, patch, x, y);
-}
-inline void DCanvas::DrawTranslatedLucentPatchCleanNoMove (const patch_t *patch, int x, int y) const
-{
-	DrawCNMWrapper (EWrapper_TlatedLucent, patch, x, y);
+	DrawCNMWrapper (EWrapper_TlatedLucent, texture, x, y);
 }
 
-inline void DCanvas::DrawColoredPatch (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawColoredTexture (const Texture* texture, int x, int y) const
 {
-	DrawWrapper (EWrapper_Colored, patch, x, y);
+	DrawWrapper (EWrapper_Colored, texture, x, y);
 }
-inline void DCanvas::DrawColoredPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const
+inline void DCanvas::DrawColoredTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const
 {
-	DrawSWrapper (EWrapper_Colored, patch, x, y, dw, dh);
+	DrawSWrapper (EWrapper_Colored, texture, x, y, dw, dh);
 }
-inline void DCanvas::DrawColoredPatchDirect (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawColoredTextureDirect (const Texture* texture, int x, int y) const
 {
-	DrawWrapper (EWrapper_Colored, patch, x, y);
+	DrawWrapper (EWrapper_Colored, texture, x, y);
 }
-inline void DCanvas::DrawColoredPatchIndirect (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawColoredTextureIndirect (const Texture* texture, int x, int y) const
 {
-	DrawIWrapper (EWrapper_Colored, patch, x, y);
+	DrawIWrapper (EWrapper_Colored, texture, x, y);
 }
-inline void DCanvas::DrawColoredPatchClean (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawColoredTextureClean (const Texture* texture, int x, int y) const
 {
-	DrawCWrapper (EWrapper_Colored, patch, x, y);
+	DrawCWrapper (EWrapper_Colored, texture, x, y);
 }
-inline void DCanvas::DrawColoredPatchCleanNoMove (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawColoredTextureCleanNoMove (const Texture* texture, int x, int y) const
 {
-	DrawCNMWrapper (EWrapper_Colored, patch, x, y);
+	DrawCNMWrapper (EWrapper_Colored, texture, x, y);
 }
 
-inline void DCanvas::DrawColoredLucentPatch (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawColoredLucentTexture (const Texture* texture, int x, int y) const
 {
-	DrawWrapper (EWrapper_ColoredLucent, patch, x, y);
+	DrawWrapper (EWrapper_ColoredLucent, texture, x, y);
 }
-inline void DCanvas::DrawColoredLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const
+inline void DCanvas::DrawColoredLucentTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const
 {
-	DrawSWrapper (EWrapper_ColoredLucent, patch, x, y, dw, dh);
+	DrawSWrapper (EWrapper_ColoredLucent, texture, x, y, dw, dh);
 }
-inline void DCanvas::DrawColoredLucentPatchDirect (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawColoredLucentTextureDirect (const Texture* texture, int x, int y) const
 {
-	DrawWrapper (EWrapper_ColoredLucent, patch, x, y);
+	DrawWrapper (EWrapper_ColoredLucent, texture, x, y);
 }
-inline void DCanvas::DrawColoredLucentPatchIndirect (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawColoredLucentTextureIndirect (const Texture* texture, int x, int y) const
 {
-	DrawIWrapper (EWrapper_ColoredLucent, patch, x, y);
+	DrawIWrapper (EWrapper_ColoredLucent, texture, x, y);
 }
-inline void DCanvas::DrawColoredLucentPatchClean (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawColoredLucentTextureClean (const Texture* texture, int x, int y) const
 {
-	DrawCWrapper (EWrapper_ColoredLucent, patch, x, y);
+	DrawCWrapper (EWrapper_ColoredLucent, texture, x, y);
 }
-inline void DCanvas::DrawColoredLucentPatchCleanNoMove (const patch_t *patch, int x, int y) const
+inline void DCanvas::DrawColoredLucentTextureCleanNoMove (const Texture* texture, int x, int y) const
 {
-	DrawCNMWrapper (EWrapper_ColoredLucent, patch, x, y);
+	DrawCNMWrapper (EWrapper_ColoredLucent, texture, x, y);
 }
 
 // This is the screen updated by I_FinishUpdate.
@@ -472,25 +421,6 @@ void V_MarkRect (int x, int y, int width, int height);
 // as defined in the X11R6RGB lump.
 argb_t V_GetColorFromString(const std::string& str);
 
-template<>
-forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
-{
-	// Crazy 8bpp alpha-blending using lookup tables and bit twiddling magic
-	argb_t bgARGB = Col2RGB8[bga >> 2][bg];
-	argb_t fgARGB = Col2RGB8[fga >> 2][fg];
-
-	argb_t mix = (fgARGB + bgARGB) | 0x1f07c1f;
-	return RGB32k[0][0][mix & (mix >> 15)];
-}
-
-template<>
-forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, const int fga)
-{
-	return alphablend2a(bg, bga, fg, fga);
-}
-
-bool V_UseWidescreen();
-
 // Alpha blend between two RGB colors with only dest alpha value
 // 0 <=   toa <= 255
 forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int toa)
@@ -509,16 +439,44 @@ forceinline argb_t alphablend1a(const argb_t from, const argb_t to, const int to
 		fb + ((db * toa) >> 8));
 }
 
-// Alpha blend between two RGB colors with two alpha values
-// 0 <= froma <= 255
-// 0 <=   toa <= 255
+// Alpha blend between two RGB colors with two alpha values.
+//
+// Both weights must satisfy 0 <= w and froma + toa <= 256. This blends on the
+// PACKED word, two channels at a time, so a weight out of range does not saturate
+// one channel -- it carries into the next.
+// Make sure every caller of this function clamps.
 forceinline argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa)
 {
-	return argb_t(
-		(from.getr() * froma + to.getr() * toa) >> 8,
-		(from.getg() * froma + to.getg() * toa) >> 8,
-		(from.getb() * froma + to.getb() * toa) >> 8);
+	constexpr uint32_t LANE = 0x00FF00FFu;
+
+	assert(froma >= 0 and toa >= 0 and froma + toa <= 256);
+
+	const uint32_t f = from, t = to;
+
+	const uint32_t even = ((((f & LANE) * froma) + ((t & LANE) * toa)) >> 8) & LANE;
+	const uint32_t odd = (((((f >> 8) & LANE) * froma) + (((t >> 8) & LANE) * toa)) >> 8) & LANE;
+
+	return argb_t(even | (odd << 8) | argb_t::alphaMask());
 }
+
+template<>
+forceinline palindex_t rt_blend2(const palindex_t bg, const int bga, const palindex_t fg, const int fga)
+{
+	// Crazy 8bpp alpha-blending using lookup tables and bit twiddling magic
+	argb_t bgARGB = Col2RGB8[bga >> 2][bg];
+	argb_t fgARGB = Col2RGB8[fga >> 2][fg];
+
+	argb_t mix = (fgARGB + bgARGB) | 0x1f07c1f;
+	return RGB32k[0][0][mix & (mix >> 15)];
+}
+
+template<>
+forceinline argb_t rt_blend2(const argb_t bg, const int bga, const argb_t fg, const int fga)
+{
+	return alphablend2a(bg, bga, fg, fga);
+}
+
+bool V_UseWidescreen();
 
 void V_DrawFPSWidget();
 void V_DrawFPSTicker();

@@ -29,6 +29,7 @@ struct palette_t
 {
 	argb_t			basecolors[256];		// non-gamma corrected colors
 	argb_t			colors[256];			// gamma corrected colors
+	palindex_t		mask_translation[256];	// table to translate textures to avoid accidental masking
 
 	shademap_t      maps;
 
@@ -42,13 +43,18 @@ struct palette_t
 		maps = other.maps;
 		return *this;
 	}
+
+	static const palindex_t mask_color = 0;
 };
+
+struct argbshadelut_t;
 
 struct dyncolormap_t {
 	shaderef_t		maps;
 	argb_t			color;
 	argb_t			fade;
 	dyncolormap_t *next;
+	argbshadelut_t* argblut;
 };
 
 extern fargb_t baseblend;
@@ -67,14 +73,8 @@ static inline argb_t V_GammaCorrect(const argb_t value)
 
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b);
 palindex_t V_BestColor(const argb_t *palette_colors, argb_t color);
-
-// Alpha blend between two RGB colors with only dest alpha value
-// 0 <=   toa <= 256
-argb_t alphablend1a(const argb_t from, const argb_t to, const int toa);
-// Alpha blend between two RGB colors with two alpha values
-// 0 <= froma <= 256
-// 0 <=   toa <= 256
-argb_t alphablend2a(const argb_t from, const int froma, const argb_t to, const int toa);
+palindex_t V_BestOpaqueColor(const argb_t* palette_colors, argb_t color);
+void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_t& color2);
 
 void V_InitPalette(const char* lumpname);
 

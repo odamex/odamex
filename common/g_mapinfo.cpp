@@ -32,10 +32,11 @@
 #include "p_setup.h"
 #include "r_sky.h"
 #include "v_video.h"
-#include "w_wad.h"
 #include "infomap.h"
 #include "p_mapformat.h"
 #include "g_umapinfo.h"
+#include "resources/res_main.h"
+#include "resources/res_nametranslator.h"
 
 /// Globals
 bool HexenHack;
@@ -540,7 +541,7 @@ void MIType_$LumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
-	const std::string musicname = os.getToken();
+	std::string musicname = os.getToken();
 
 	if (musicname[0] == '$')
 	{
@@ -555,14 +556,18 @@ void MIType_MusicLumpName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 		// Music lumps in the stringtable do not begin
 		// with a D_, so we must add it.
 		OLumpName lumpname = fmt::format("D_{}", s);
-		if (W_CheckNumForName(lumpname) != -1)
+		if (Res_CheckResource(Res_GetResourceId(OStringToUpper(lumpname.c_str()), NS_MUSIC)) or
+		    Res_CheckResource(Res_GetResourceId(OStringToUpper(lumpname.c_str()), NS_GLOBAL)))
 		{
 			out = lumpname;
 		}
 	}
-	else
+
+	const ResourceId res_id = Res_GetResourceId(musicname, NS_MUSIC);
+	if (res_id != ResourceId::INVALID_ID)
 	{
-		if (W_CheckNumForName(musicname) != -1)
+		if (Res_CheckResource(Res_GetResourceId(OStringToUpper(musicname.c_str()), NS_MUSIC)) or
+		    Res_CheckResource(Res_GetResourceId(OStringToUpper(musicname.c_str()), NS_GLOBAL)))
 		{
 			out = musicname;
 		}
@@ -1096,7 +1101,78 @@ void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo)
 	else if (os.compareTokenNoCase("strife"))
 		AM_SetBaseColorStrife();
 	else
-		os.warning("base expected \"doom\", \"heretic\", or \"strife\"; got {}", os.getToken());
+		os.warning("base expected \"doom\", \"heretic\", or \"strife\"; got %s", os.getToken().c_str());
+}
+
+//
+bool ScanAndCompareString(OScanner& os, std::string cmp)
+{
+	os.scan();
+	if (not os.compareToken(cmp.c_str()))
+	{
+		os.warning("Expected \"%s\", got \"%s\". Aborting parsing", cmp.c_str(), os.getToken().c_str());
+		return false;
+	}
+
+	return true;
+}
+
+//
+template <typename FixedType>
+bool ScanAndSetRealNum(OScanner& os, FixedType& num)
+{
+	os.scan();
+	if (not IsRealNum(os.getToken().c_str()))
+	{
+		os.warning("Expected number, got \"%s\". Aborting parsing", os.getToken().c_str());
+		return false;
+	}
+	num = FLOAT2FIXED(os.getTokenFloat());
+	
+	return true;
+}
+
+// Scans through and interprets a file of lines
+bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
+{
+	lines.clear();
+
+	const ResourceId res_id = Res_GetResourceId(name, NS_GLOBAL);
+	if (res_id != ResourceId::INVALID_ID)
+	{
+		const char* buffer = Res_LoadResource<char>(res_id, PU_STATIC);
+
+		const OScannerConfig config = {
+		    name.c_str(), // lumpName
+		    false,        // semiComments
+		    true,         // cComments
+		};
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
+		
+		while (os.scan())
+		{
+			os.unScan();
+			mline_t ml;
+			
+			if (not ScanAndCompareString(os, "(")) break;
+			if (not ScanAndSetRealNum(os, ml.a.x)) break;
+			if (not ScanAndCompareString(os, ",")) break;
+			if (not ScanAndSetRealNum(os, ml.a.y)) break;
+			if (not ScanAndCompareString(os, ")")) break;
+			if (not ScanAndCompareString(os, ",")) break;
+			if (not ScanAndCompareString(os, "(")) break;
+			if (not ScanAndSetRealNum(os, ml.b.x)) break;
+			if (not ScanAndCompareString(os, ",")) break;
+			if (not ScanAndSetRealNum(os, ml.b.y)) break;
+			if (not ScanAndCompareString(os, ")")) break;
+
+			lines.push_back(ml);
+		}
+	}
+	else
+		return false;
+
+	return true;
 }
 
 //
@@ -1575,8 +1651,9 @@ void ParseEpisodeInfo(OScanner& os)
 			break;
 	}
 
-	if (remove || (optional && W_CheckNumForName(map) == -1) ||
-	    (extended && W_CheckNumForName("EXTENDED") == -1))
+	bool map_res_id_not_found = Res_GetResourceId(map.c_str(), NS_GLOBAL) == ResourceId::INVALID_ID;
+	bool extended_res_id_not_found = Res_GetResourceId("EXTENDED", NS_GLOBAL) == ResourceId::INVALID_ID;
+	if (remove or (optional and map_res_id_not_found) or (extended and extended_res_id_not_found))
 	{
 		// If the remove property is given for an episode, remove it.
 		if (i < episodenum)
@@ -1785,7 +1862,7 @@ void ParseMapInfoBuffer(const char* buffer, size_t length, const OLumpName& lump
 	}
 
 	const OScannerConfig config = {
-	    lumpname, // lumpName
+	    lumpname.c_str(), // lumpName
 	    true,     // semiComments
 	    true,     // cComments
 	};
@@ -1960,14 +2037,23 @@ void ParseMapInfoBuffer(const char* buffer, size_t length, const OLumpName& lump
 	}
 }
 
-void ParseMapInfoLump(int lump, const OLumpName& lumpname)
+void ParseMapInfoLump(const ResourceId res_id, const OLumpName& lumpname)
 {
-	mapinfofrompwad = W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+	mapinfofrompwad = Res_IsResourceFromPWAD(res_id);
 
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
-	ParseMapInfoBuffer(buffer, W_LumpLength(lump), lumpname);
+	const char* buffer = Res_LoadResource<char>(res_id, PU_STATIC);
+	ParseMapInfoBuffer(buffer, Res_GetResourceSize(res_id), lumpname);
 }
 } // namespace
+
+
+void ParseMapInfoLump(const std::string& lumpname)
+{
+	ResourceId res_id = Res_GetResourceId(lumpname, NS_GLOBAL);
+	if (res_id == ResourceId::INVALID_ID)
+		I_Error("Unable to locate mapinfo lump \"%s\"", lumpname.c_str());
+	ParseMapInfoLump(res_id, lumpname);
+}
 
 //
 // G_ParseMapInfoBuffer
@@ -1994,15 +2080,11 @@ void G_ParseMapInfoString(const std::string& text, const OLumpName& lumpname, bo
 void G_ParseMapInfo()
 {
 	const char* baseinfoname = NULL;
-	int lump;
 
 	// Reset skill definitions
 	skillnum = 0;
 
-	//if (gamemission != heretic)
-	{
-		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
-	}
+	ParseMapInfoLump("_DCOMNFO");
 
 	switch (gamemission)
 	{
@@ -2012,8 +2094,7 @@ void G_ParseMapInfo()
 		baseinfoname = "_D1NFO";
 		if (gamemode == shareware)
 		{
-			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
+			ParseMapInfoLump(baseinfoname);
 			baseinfoname = "_D1SWNFO";
 		}
 		break;
@@ -2024,8 +2105,7 @@ void G_ParseMapInfo()
 		baseinfoname = "_D2NFO";
 		if (gamemode == commercial_bfg)
 		{
-			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
+			ParseMapInfoLump(baseinfoname);
 			baseinfoname = "_BFGNFO";
 		}
 		break;
@@ -2045,20 +2125,19 @@ void G_ParseMapInfo()
 		break;
 	}
 
-	lump = W_GetNumForName(baseinfoname);
-	ParseMapInfoLump(lump, baseinfoname);
+	ParseMapInfoLump(baseinfoname);
 
 	// Parse MAPINFO then UMAPINFO, like dsda
-	lump = -1;
-	while ((lump = W_FindLump("MAPINFO", lump)) != -1)
+	const ResourceIdList mapinfo_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/MAPINFO"));
+	for (size_t i = 0; i < mapinfo_res_ids.size(); i++)
 	{
-		ParseMapInfoLump(lump, "MAPINFO");
+		ParseMapInfoLump(mapinfo_res_ids[i], "MAPINFO");
 	}
 
-	lump = -1;
-	while ((lump = W_FindLump("UMAPINFO", lump)) != -1)
+	const ResourceIdList umapinfo_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/UMAPINFO"));
+	for (size_t i = 0; i < umapinfo_res_ids.size(); i++)
 	{
-		ParseUMapInfoLump(lump, "UMAPINFO");
+		ParseUMapInfoLump(umapinfo_res_ids[i], "UMAPINFO");
 	}
 
 	if (episodenum == 0)
@@ -2081,7 +2160,7 @@ void G_ParseMapInfo()
 	{
 		level_pwad_info_t& level = levels.at(i);
 		if (!level.author.empty() && !(level.metadataflags & metadataflags_t::AUTHORFROMPWAD) &&
-		    W_IsLumpFromPWAD(level.mapname))
+		    Res_IsMapFromPWAD(OString(level.mapname.c_str())))
 		{
 			level.author.clear();
 		}

@@ -32,6 +32,8 @@
 #include "i_time.h"
 #include "p_ctf.h"
 #include "g_gametype.h"
+#include "resources/res_main.h"
+#include "resources/res_filelib.h"
 
 static buf_t ml_message(MAX_UDP_PACKET);
 
@@ -163,13 +165,15 @@ void SV_SendServerInfo()
 
 	MSG_WriteString(&ml_message, level.mapname.c_str());
 
-	size_t numwads = wadfiles.size();
-	if(numwads > 0xff)numwads = 0xff;
+	const std::vector<std::string>& resource_file_names = Res_GetResourceFileNames();
+	const std::vector<OMD5Hash>& resource_file_hashes = Res_GetResourceFileHashes();
 
-	MSG_WriteByte(&ml_message, numwads - 1);
+	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
 
-	for (size_t i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, wadfiles[i].getBasename().c_str());
+	MSG_WriteByte(&ml_message, resource_file_count - 1);
+
+	for (size_t i = 1; i < resource_file_count; ++i)
+		MSG_WriteString(&ml_message, Res_CleanseFilename(resource_file_names[i]).c_str());
 
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
 	MSG_WriteByte(&ml_message, sv_skill.asInt());
@@ -191,8 +195,8 @@ void SV_SendServerInfo()
 		}
 	}
 
-	for (size_t i = 1; i < numwads; ++i)
-		MSG_WriteString(&ml_message, ::wadfiles[i].getMD5().getHexCStr());
+	for (size_t i = 1; i < resource_file_count; ++i)
+		MSG_WriteString(&ml_message, resource_file_hashes[i].getHexCStr());
 
 	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
 	MSG_WriteString(&ml_message, sv_downloadsites.cstring());
@@ -277,6 +281,15 @@ void SV_SendServerInfo()
 	{
 		MSG_WriteString(&ml_message,
 		                D_CleanseFileName(file.getBasename()).c_str());
+	}
+
+	MSG_WriteLong(&ml_message, 0x01020306_u32);
+	for (size_t i = 1; i < resource_file_count; ++i)
+	{
+		if (i < ::wadfiles.size())
+			MSG_WriteString(&ml_message, ::wadfiles[i].getContentDigest().getHexCStr());
+		else
+			MSG_WriteString(&ml_message, "");
 	}
 
 	NET_SendPacket(ml_message, net_from);

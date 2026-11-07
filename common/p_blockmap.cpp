@@ -376,7 +376,7 @@ blockmap_t blockmap_t::create()
 	return newblockmap;
 }
 
-blockmap_t blockmap_t::load(int lump)
+blockmap_t blockmap_t::load(const ResourceId lump)
 {
 	enum blockmaptype_t
 	{
@@ -387,15 +387,18 @@ blockmap_t blockmap_t::load(int lump)
 
 	blockmaptype_t format = VANILLA;
 
-	const auto lump_size = W_LumpLength(lump);
+	const auto lump_size = Res_CheckResource(lump) ? Res_GetResourceSize(lump) : 0;
 	const auto vanilla_size = lump_size / sizeof(int16_t);
 	if (vanilla_size < 4 || vanilla_size >= 0x10000)
 		format = BOOM;
 
-	void *data = W_CacheLumpNum(lump, PU_CACHE);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
-	if (memcmp(data, "XBM1\0\0\0\0", 8) == 0)
+	const uint8_t* data = Res_LoadResource(lump, PU_CACHE);
+	const auto guard = nonstd::make_scope_exit([&]{ Res_ReleaseResource(lump); });
+	if (data != nullptr and lump_size >= 8 and memcmp(data, "XBM1\0\0\0\0", 8) == 0)
 		format = XBM1;
+
+	if (data == nullptr)
+		format = BOOM;
 
 	if (Args.CheckParm("-blockmap"))
 		format = BOOM;
@@ -404,12 +407,12 @@ blockmap_t blockmap_t::load(int lump)
 	{
 		case VANILLA:
 			return loadVanilla({
-				static_cast<const int16_t*>(data),
+				reinterpret_cast<const int16_t*>(data),
 				lump_size / sizeof(int16_t)
 			});
 		case XBM1:
 			return loadXBM1({
-				static_cast<const int32_t*>(data) + 2,
+				reinterpret_cast<const int32_t*>(data) + 2,
 				(lump_size / sizeof(int32_t)) - 2
 			});
 		case BOOM:

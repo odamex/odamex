@@ -120,7 +120,7 @@ static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 	langid = MAKELCID (strtoul(buf, NULL, 16), SORT_DEFAULT);
 	if (!GetLocaleInfo (langid, LOCALE_SABBREVLANGNAME, buf, 8))
 		return;
-	idp = (char *)(&LanguageIDs[idx]);
+	idp = reinterpret_cast<char *>(&LanguageIDs[idx]);
 	memset (idp, 0, 4);
 	idp[0] = tolower(buf[0]);
 	idp[1] = tolower(buf[1]);
@@ -271,3 +271,4 @@ std::string I_ConsoleInput()
 }
 
 VERSION_CONTROL (i_system_cpp, "$Id$")
+

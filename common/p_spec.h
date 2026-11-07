@@ -28,6 +28,7 @@
 
 #include <list>
 #include "dsectoreffect.h"
+#include "resources/res_resourceid.h"
 
 typedef struct movingsector_s
 {
@@ -606,11 +607,13 @@ void	P_ChangeSwitchTexture (line_t *line, int useAgain, bool playsound);
 
 void	P_InitSwitchList ();
 
-void	P_ProcessSwitchDef ();
+class OScanner;
+void	P_ProcessSwitchDef (OScanner& os);
 
-short P_GetButtonTexture(const line_t* line);
+const ResourceId P_GetButtonTexture(const line_t* line);
 bool	P_GetButtonInfo (const line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
+const ResourceId P_GetButtonTexture(const line_t* line);
 
 void	P_UpdateButtons (client_t *cl);
 
@@ -929,7 +932,7 @@ public:
 	int         m_Direction      = 0; // 1 = up, 0 = waiting, -1 = down
 
 	// [RH] Need these for BOOM-ish transferring ceilings
-	int         m_Texture        = 0;
+	ResourceId  m_Texture;
 	short       m_NewSpecial     = 0;
 	uint32_t    m_NewFlags       = 0;
 	short       m_NewDamageRate  = 0;
@@ -1050,7 +1053,7 @@ public:
 	short       m_NewDamageRate   = 0;
 	byte        m_NewLeakRate     = 0;
 	byte        m_NewDmgInterval  = 0;
-	short       m_Texture         = 0;
+	ResourceId  m_Texture;
 	fixed_t     m_FloorDestHeight = 0;
 	fixed_t     m_Speed           = 0;
 

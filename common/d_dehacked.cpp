@@ -34,6 +34,8 @@
 #include "cmdlib.h"
 #include "c_dispatch.h"
 #include "d_dehacked.h"
+
+#include "resources/res_main.h"
 #include "m_doomobjcontainer.h"
 #include "d_items.h"
 #include "g_game.h"
@@ -1658,8 +1660,9 @@ static void PatchSounds(DehScanner& scanner)
 		}
 		else
 		{
-			const int lumpnum = W_CheckNumForName(fmt::format("DS{}", key).c_str());
-			const int sndIdx = S_FindSoundByLump(lumpnum);
+			const ResourceId snd_res_id = Res_GetResourceId(
+			    OStringToUpper(fmt::format("DS{}", key)), NS_SOUNDS);
+			const int sndIdx = S_FindSoundByResourceId(snd_res_id);
 			if (sndIdx == -1)
 				I_Error("Sound {} not found.", key);
 			S_AddSound(S_sfx[sndIdx].name, newnameds.c_str());
@@ -2182,9 +2185,10 @@ static void PatchText(const int oldSize, const int newSize, DehScanner& scanner)
 	const OLumpName newnameds = fmt::format("DS{}", *newStr);
 	const OLumpName oldnameds = fmt::format("DS{}", *oldStr);
 
-	const int oldlumpnum = W_CheckNumForName(oldnameds);
-	const int sndIdx = S_FindSoundByLump(oldlumpnum);
-	if (sndIdx != -1 && W_CheckNumForName(newnameds) != -1)
+	const ResourceId old_res_id = Res_GetResourceId(OStringToUpper(oldnameds.c_str()), NS_SOUNDS);
+	const int sndIdx = S_FindSoundByResourceId(old_res_id);
+	if (sndIdx != -1 and
+	    Res_CheckResource(Res_GetResourceId(OStringToUpper(newnameds.c_str()), NS_SOUNDS)))
 	{
 		S_AddSound(S_sfx[sndIdx].name, newnameds.c_str());
 		S_HashSounds();
@@ -2328,7 +2332,7 @@ static int DoInclude(std::string_view include, size_t)
 		return 0;
 	}
 
-	D_DoDehPatch(&res, -1, false, notext);
+	D_DoDehPatch(&res, ResourceId::INVALID_ID, false, notext);
 
 	DPrintFmt("Done with include\n");
 
@@ -2343,18 +2347,19 @@ static void D_PostProcessDeh(const DehScanner::ParsedState& dp);
  * @param patchfile File to attempt to load, NULL if not a file.
  * @param lump Lump index to load, -1 if not a lump.
  */
-bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool notext)
+bool D_DoDehPatch(const OResFile* patchfile, const ResourceId lump, bool textonly, bool notext)
 {
 	BackupData();
 
 	std::string buffer;
 
-	if (lump >= 0)
+	if (Res_CheckResource(lump))
 	{
 		// Execute the DEHACKED lump as a patch.
-		const auto lumplen = W_LumpLength(lump);
+		const uint32_t lumplen = Res_GetResourceSize(lump);
 		buffer.resize(lumplen);
-		W_ReadLump(lump, buffer.data());
+		memcpy(buffer.data(), Res_LoadResource(lump, PU_CACHE), lumplen);
+		Res_ReleaseResource(lump);
 	}
 	else if (patchfile)
 	{

@@ -25,26 +25,25 @@
 #include "odamex.h"
 
 #include "gstrings.h"
+#include "c_cvars.h"
 #include "i_system.h"
 #include "p_acs.h"
 #include "d_main.h"
 #include "g_mapinfo.h"
+#include "resources/res_main.h"
+#include "d_dehacked.h"
 
 // Game Mode - identify IWAD as shareware, retail etc.
 GameMode_t		gamemode = undetermined;
 GameMission_t	gamemission = doom;
 
 // Language.
-CVAR_FUNC_IMPL (language)
+CVAR_FUNC_IMPL(language)
 {
 	SetLanguageIDs();
 	if (level.behavior != NULL)
-	{
-		level.behavior->PrepLocale (LanguageIDs[0], LanguageIDs[1],
-			LanguageIDs[2], LanguageIDs[3]);
-	}
+		level.behavior->PrepLocale(LanguageIDs[0], LanguageIDs[1], LanguageIDs[2], LanguageIDs[3]);
 
-	// Reload LANGUAGE strings.
 	::GStrings.loadStrings(false);
 
 	// Reapply DeHackEd patches on top of these strings.

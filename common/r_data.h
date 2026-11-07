@@ -31,8 +31,6 @@
 // On the Alpha, accessing the shorts directly if they aren't aligned on a
 // 4-byte boundary causes unaligned access warnings. Why it does this it at
 // all and only while initing the textures is beyond me.
-
-
 #ifdef ALPHA
 #define SAFESHORT(s)	((short)(((byte *)&(s))[0] + ((byte *)&(s))[1] * 256))
 #else
@@ -40,72 +38,9 @@
 #endif
 
 
-// A single patch from a texture definition,
-//	basically a rectangular area within
-//	the texture rectangle.
-typedef struct
-{
-	// Block origin (always UL),
-	// which has already accounted
-	// for the internal origin of the patch.
-	int 		originx;
-	int 		originy;
-	int 		patch;
-} texpatch_t;
-
-
-// A maptexturedef_t describes a rectangular texture,
-//	which is composed of one or more mappatch_t structures
-//	that arrange graphic patches.
-typedef struct
-{
-	// Keep name for switch changing, etc.
-	OLumpName	name;
-	short		width;
-	short		height;
-
-	// All the patches[patchcount]
-	//	are drawn back to front into the cached texture.
-	short		patchcount;
-	texpatch_t	patches[1];
-
-} texture_t;
-
-
-extern texture_t **textures;
-extern byte* textureheightmask;
-extern fixed_t* texturescalex;
-extern fixed_t* texturescaley;
-
-// Retrieve column data for span blitting.
-tallpost_t* R_GetPatchColumn(int lumpnum, int colnum);
-byte* R_GetPatchColumnData(int lumpnum, int colnum);
-tallpost_t* R_GetTextureColumn(int texnum, int colnum);
-byte* R_GetTextureColumnData(int texnum, int colnum);
-
-
 // I/O, setting up the stuff.
 void R_InitData (void);
 void R_PrecacheLevel (void);
-
-std::string R_FindTextureMissingPatch();
-
-
-// Retrieval.
-// Floor/ceiling opaque texture tiles,
-// lookup by name. For animation?
-int R_FlatNumForName(const char *name);
-inline int R_FlatNumForName(const OLumpName& name) { return R_FlatNumForName(name.c_str()); };
-inline int R_FlatNumForName(const byte *name) { return R_FlatNumForName (reinterpret_cast<const char*>(name)); }
-
-
-// Called by P_Ticker for switches and animations,
-// returns the texture number for the texture name.
-int R_TextureNumForName(const OLumpName& name);
-int R_CheckTextureNumForName(const OLumpName& name);
-
-inline int R_TextureNumForName (const byte *name) { return R_TextureNumForName (reinterpret_cast<const char*>(name)); }
-inline int R_CheckTextureNumForName (const byte *name) { return R_CheckTextureNumForName (reinterpret_cast<const char*>(name)); }
 
 void R_InitColormaps();
 void R_ShutdownColormaps();

@@ -24,6 +24,12 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
+#include <algorithm>
+#include <atomic>
+#include <functional>
+
 #include "m_alloc.h"
 
 #include "m_random.h"
@@ -32,6 +38,9 @@
 
 #include "i_system.h"
 #include "w_wad.h"
+#include "z_zone.h"
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 #include "r_local.h"
 #include "r_interp.h"
@@ -39,6 +48,7 @@
 #include "p_local.h"
 
 #include "c_console.h"
+#include "c_dispatch.h"
 
 #include "v_video.h"
 
@@ -46,19 +56,9 @@
 #include "s_sound.h"
 
 #include "m_vectors.h"
+#include "r_intrin.h"
 
 extern fixed_t FocalLengthX, FocalLengthY;
-
-// prefetch hint, used to soften the pointer chase over a sector's
-// thing list
-#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
-	#include <xmmintrin.h>
-	#define R_PREFETCH(p) _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_T0)
-#elif defined(__GNUC__) || defined(__clang__)
-	#define R_PREFETCH(p) __builtin_prefetch(p)
-#else
-	#define R_PREFETCH(p) ((void)0)
-#endif
 
 #define MINZ							(FRACUNIT*4)
 #define BASEYCENTER 					(100)
@@ -74,10 +74,6 @@ fixed_t			pspriteyscale;
 fixed_t 		pspritexiscale;
 //fixed_t		sky1scale;			// [RH] Sky 1 scale factor
 									// [ML] 5/11/06 - Removed sky2
-int*			spritelights;
-
-fixed_t bobx;
-fixed_t boby;
 
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
 #define SPRITE_NEEDS_INFO	limits::MAXINT
@@ -94,7 +90,6 @@ EXTERN_CVAR (r_drawnetcredibility)
 // variables used to look up
 //	and range check thing_t sprites patches
 
-static tallpost_t* spriteposts[MAXWIDTH];
 
 // [RH] particle globals
 extern int				NumParticles;
@@ -106,55 +101,73 @@ std::vector<uint16_t>		ParticlesInSubsec;
 
 
 //
+//
 // GAME FUNCTIONS
 //
-vissprite_t		*vissprite_p;
-int 			newvissprite;
 
 
+
+//
+// R_InitVisSprites
+//
+// Allocates the context's vissprite pool.
+//
+vissprite_t* closestNonCredibleVisSprite;
+
+void R_InitVisSprites(rendercontext_t& ctx)
+{
+	spritecontext_t& sprite = ctx.sprite;
+
+	sprite.maxvissprites = 128;	// [RH] This is the initial default value. It grows as needed.
+
+	M_Free(sprite.vissprites);
+
+	sprite.firstvissprite = sprite.vissprites =
+		static_cast<vissprite_t*>(M_Malloc(sprite.maxvissprites * sizeof(vissprite_t)));
+	sprite.lastvissprite = &sprite.vissprites[sprite.maxvissprites];
+}
+
+//
+// R_InitVisSprites
+//
+void R_InitVisSprites()
+{
+	R_InitVisSprites(::rctx);
+}
 
 //
 // R_ClearSprites
 // Called at frame start.
 //
-
-// last sprite def looked up by R_ProjectSprite
-static int32_t projspritenum;
-static const spritedef_t* projsprdef;
-
-// frame-constant interpolation flag, so R_ProjectSprite doesn't make a
-// singleton call per sprite
-static bool projlerp;
-
-void R_ClearSprites()
+void R_ClearSprites(rendercontext_t& ctx)
 {
-	vissprite_p = firstvissprite;
+	ctx.sprite.vissprite_p = ctx.sprite.firstvissprite;
 
-	projspritenum = -1;
-	projsprdef = NULL;
-	projlerp = OInterpolation::getInstance().enabled();
+	ctx.sprite.projspritenum = -1;
+	ctx.sprite.projsprdef = nullptr;
+	ctx.sprite.projlerp = OInterpolation::getInstance().enabled();
 }
 
 
 //
 // R_NewVisSprite
 //
-vissprite_t *R_NewVisSprite()
+vissprite_t *R_NewVisSprite(rendercontext_t& ctx)
 {
-	if (vissprite_p == lastvissprite) {
-		int firstvisspritenum = firstvissprite - vissprites;
-		int prevvisspritenum = vissprite_p - vissprites;
+	if (ctx.sprite.vissprite_p == ctx.sprite.lastvissprite) {
+		int firstvisspritenum = ctx.sprite.firstvissprite - ctx.sprite.vissprites;
+		int prevvisspritenum = ctx.sprite.vissprite_p - ctx.sprite.vissprites;
 
-		MaxVisSprites *= 2;
-		vissprites = static_cast<vissprite_t*>(M_Realloc(vissprites, MaxVisSprites * sizeof(vissprite_t)));
-		lastvissprite = &vissprites[MaxVisSprites];
-		firstvissprite = &vissprites[firstvisspritenum];
-		vissprite_p = &vissprites[prevvisspritenum];
-		DPrintFmt("MaxVisSprites increased to {}\n", MaxVisSprites);
+		ctx.sprite.maxvissprites *= 2;
+		ctx.sprite.vissprites = static_cast<vissprite_t*>(M_Realloc(ctx.sprite.vissprites, ctx.sprite.maxvissprites * sizeof(vissprite_t)));
+		ctx.sprite.lastvissprite = &ctx.sprite.vissprites[ctx.sprite.maxvissprites];
+		ctx.sprite.firstvissprite = &ctx.sprite.vissprites[firstvisspritenum];
+		ctx.sprite.vissprite_p = &ctx.sprite.vissprites[prevvisspritenum];
+		DPrintFmt("ctx.sprite.maxvissprites increased to {}\n", ctx.sprite.maxvissprites);
 	}
 
-	vissprite_p++;
-	return vissprite_p-1;
+	ctx.sprite.vissprite_p++;
+	return ctx.sprite.vissprite_p-1;
 }
 
 
@@ -164,67 +177,63 @@ vissprite_t *R_NewVisSprite()
 // Masked means: partly transparent, i.e. stored
 //	in posts/runs of opaque pixels.
 //
-int*			mfloorclip;
-int*			mceilingclip;
 
-fixed_t 		spryscale;
-fixed_t 		sprtopscreen;
-
-void R_BlastSpriteColumn(void (*drawfunc)())
+void R_BlastSpriteColumn(rendercontext_t& ctx, void (*drawfunc)(rendercontext_t&))
 {
-	tallpost_t* post = dcol.post;
+	drawcolumn_t& dcol            = ctx.draw.dcol;
 
-	while (!post->end())
+	// calculate unclipped screen coordinates for post
+	const int64_t topscreen = ctx.sprite.sprtopscreen;
+	const int64_t bottomscreen = topscreen + FixedMul(ctx.sprite.spryscale, ctx.draw.dcol.textureheight);
+
+	int64_t yl = (topscreen - 1) >> FRACBITS;
+	int64_t yh = (bottomscreen - 1) >> FRACBITS;
+
+	int64_t texturefrac = 0;
+	if (ctx.sprite.mceilingclip[ctx.draw.dcol.x] + 1 > yl)
+		texturefrac = (ctx.sprite.mceilingclip[ctx.draw.dcol.x] + 1 - yl) * ctx.draw.dcol.iscale;
+
+	yl = std::max<int64_t>(yl, std::max(ctx.sprite.mceilingclip[ctx.draw.dcol.x], 0));
+	yh = std::min<int64_t>(yh, ctx.sprite.mfloorclip[ctx.draw.dcol.x] - 1);
+
+	if (yl > yh or texturefrac >= ctx.draw.dcol.textureheight)
+		return;
+
+	// clamp the texture coordinates so out-of-range rows are not drawn
+	const int64_t endfrac = texturefrac + ((yh - yl) * ctx.draw.dcol.iscale);
+	const int64_t maxfrac = ctx.draw.dcol.textureheight;
+
+	if (endfrac >= maxfrac)
 	{
-		// calculate unclipped screen coordinates for post
-		const int topscreen = sprtopscreen + spryscale * post->topdelta;
+		const int64_t cnt = (endfrac - maxfrac + ctx.draw.dcol.iscale) / ctx.draw.dcol.iscale;
+		yh -= cnt;
+	}
 
-		dcol.yl = topscreen >> FRACBITS;
-		dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
-
-		dcol.yl = std::max({dcol.yl, mceilingclip[dcol.x], 0});
-		dcol.yh = std::min(dcol.yh, mfloorclip[dcol.x] - 1);
-
-		dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
-			+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale);
-
-		if (dcol.texturefrac < 0)
-		{
-			int cnt = R_PixelCeil(-dcol.texturefrac, dcol.iscale);
-			dcol.yl += cnt;
-			dcol.texturefrac += cnt * dcol.iscale;
-		}
-
-		const fixed_t endfrac = dcol.texturefrac + (dcol.yh - dcol.yl) * dcol.iscale;
-		const fixed_t maxfrac = post->length << FRACBITS;
-
-		if (endfrac >= maxfrac)
-		{
-			int cnt = R_PixelCeil(endfrac - maxfrac + 1, dcol.iscale);
-			dcol.yh -= cnt;
-		}
-
-		dcol.source = post->data();
-
-		if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
-			drawfunc();
-
-		post = post->next();
+	if (yl >= 0 and yh < viewheight and yl <= yh)
+	{
+		ctx.draw.dcol.yl = static_cast<int>(yl);
+		ctx.draw.dcol.yh = static_cast<int>(yh);
+		ctx.draw.dcol.texturefrac = static_cast<fixed_t>(texturefrac);
+		drawfunc(ctx);
 	}
 }
 
-void SpriteColumnBlaster()
+
+void SpriteColumnBlaster(rendercontext_t& ctx)
 {
-	R_BlastSpriteColumn(colfunc);
+	R_BlastSpriteColumn(ctx, ctx.draw.colfunc);
 }
 
+
 EXTERN_CVAR(sv_showplayerpowerups)
+EXTERN_CVAR(sv_allowmovebob)
+EXTERN_CVAR(cl_movebob)
 
 //
 // R_DrawVisSprite
 //	mfloorclip and mceilingclip should also be set.
 //
-void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
+void R_DrawVisSprite(rendercontext_t& ctx, vissprite_t *vis, int x1, int x2)
 {
 	bool fuzz_effect = false;
 	bool translated = false;
@@ -233,19 +242,17 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	if (vis->yscale <= 0)
 		return;
 
-	dcol.textureheight = 256 << FRACBITS;
-
 	if (vis->spectator)
 		return;
 
-	if (vis->patch == NO_PARTICLE)
+	if (vis->res_id == NO_PARTICLE)
 	{
-		R_DrawParticle(vis);
+		R_DrawParticle(ctx, vis);
 		return;
 	}
 
 	// [AM] Ensure that we're not going to fall off the side of the patch.
-	const short patchWidth = W_CachePatch(vis->patch, PU_CACHE)->width();
+	const short patchWidth = vis->texture->mWidth;
 	const int start = vis->startfrac >> FRACBITS;
 	if (start < 0 || start > patchWidth)
 	{
@@ -259,12 +266,12 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		return;
 	}
 
-	dcol.colormap = vis->colormap;
+	ctx.draw.dcol.colormap = vis->colormap;
 
 	if (vis->translation)
 	{
 		translated = true;
-		dcol.translation = vis->translation;
+		ctx.draw.dcol.translation = vis->translation;
 	}
 	else if (vis->mobjflags & MF_TRANSLATION)
 	{
@@ -272,7 +279,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		used it, but the prefered way to change a thing's colors
 		//		is now with the palette field.
 		translated = true;
-		dcol.translation = translationref_t(translationtables + (MAXPLAYERS-1)*256 +
+		ctx.draw.dcol.translation = translationref_t(translationtables + ((MAXPLAYERS-1)*256) +
 			( (vis->mobjflags & mask(MF_TRANSLATION)).to_int() >> (MF_TRANSSHIFT-8) ));
 	}
 	int id = vis->mo && vis->mo->player ? vis->mo->player->id : 0;
@@ -291,7 +298,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 			// and don't include sector colored lighting because it creates strange
 			// colors.
 			const palette_t* pal = V_GetDefaultPalette();
-			dcol.colormap = shaderef_t(&pal->maps, INVERSECOLORMAP);
+			ctx.draw.dcol.colormap = shaderef_t(&pal->maps, INVERSECOLORMAP);
 		}
 		else if (vis->statusflags & SF_BERSERK)
 		{
@@ -299,13 +306,13 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 			// but only if the fist is out.
 			if (vis->mo && vis->mo->player && vis->mo->player->readyweapon == wp_fist)
 			{
-				dcol.translation = translationref_t(&::redtable[id][0]);
+				ctx.draw.dcol.translation = translationref_t(&::redtable[id][0]);
 			}
 		}
 		else if (vis->statusflags & SF_IRONFEET)
 		{
 			// draw a green palette on the vissprite
-			dcol.translation = translationref_t(&::greentable[id][0]);
+			ctx.draw.dcol.translation = translationref_t(&::greentable[id][0]);
 		}
 	}
 
@@ -315,53 +322,49 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 		//		a NULL colormap. This allow proper substition of
 		//		translucency with light levels if desired. The original
 		//		code used colormap == NULL to indicate shadows.
-		dcol.translevel = FRACUNIT/5;
 		fuzz_effect = true;
 	}
 	else if (vis->translucency < FRACUNIT)
 	{	// [RH] draw translucent column
 		lucent = true;
-		dcol.translevel = vis->translucency;
+		ctx.draw.dcol.translevel = vis->translucency;
 	}
 
 	// [SL] Select the set of drawing functions to use
-	R_ResetDrawFuncs();
+	R_ResetDrawFuncs(ctx);
 
 	if (fuzz_effect)
-		R_SetFuzzDrawFuncs();
+		R_SetFuzzDrawFuncs(ctx);
 	else if (lucent && translated)
-		R_SetTranslatedLucentDrawFuncs();
+		R_SetTranslatedLucentDrawFuncs(ctx);
 	else if (lucent)
-		R_SetLucentDrawFuncs();
+		R_SetLucentDrawFuncs(ctx);
 	else if (translated)
-		R_SetTranslatedDrawFuncs();
+		R_SetTranslatedDrawFuncs(ctx);
 
-	dcol.iscale = 0xffffffffu / static_cast<unsigned>(vis->yscale);
-	dcol.texturemid = vis->texturemid;
-	spryscale = vis->yscale;
-	sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
+
+	const Texture* texture = vis->texture;
+	ctx.draw.dcol.textureheight = texture->mHeight << FRACBITS;
+	ctx.draw.dcol.texturedata = texture->mData;
+	ctx.draw.dcol.argbtexturedata = texture->mARGBData;
+
+	ctx.draw.dcol.masked = true;
+	ctx.draw.dcol.iscale = 0xffffffffu / static_cast<unsigned>(vis->yscale);
+	ctx.draw.dcol.texturemid = vis->texturemid;
+	ctx.sprite.spryscale = vis->yscale;
+	ctx.sprite.sprtopscreen = centeryfrac - FixedMul(ctx.draw.dcol.texturemid, ctx.sprite.spryscale);
 
 	// [SL] set up the array that indicates which patch column to use for each screen column
 	fixed_t colfrac = vis->startfrac;
 	for (int x = vis->x1; x <= vis->x2; x++)
 	{
-		spriteposts[x] = R_GetPatchColumn(vis->patch, colfrac >> FRACBITS);
+		ctx.sprite.spriteposts[x] = texture->getColumn(colfrac >> FRACBITS);
 		colfrac += vis->xiscale;
 	}
 
-#if 0
-	if ((colfrac - vis->xiscale) >> FRACBITS != end)
-	{
-		PrintFmt(PRINT_WARNING, "Bad vissprite bounds check! (pw:{}  ex:{}  act:{})\n",
-		         patchWidth, end, colfrac >> FRACBITS);
-	}
-#endif
+	R_RenderColumnRange(ctx, vis->x1, vis->x2, negonearray, viewheightarray, ctx.sprite.spriteposts, SpriteColumnBlaster, false, 0);
 
-	// TODO: change from negonearray to actual top of sprite
-	R_RenderColumnRange(vis->x1, vis->x2, negonearray, viewheightarray,
-			spriteposts, SpriteColumnBlaster, false, 0);
-
-	R_ResetDrawFuncs();
+	R_ResetDrawFuncs(ctx);
 }
 
 
@@ -370,12 +373,15 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 //
 // Helper function that creates a vissprite_t and projects the given world
 // coordinates onto the screen. Returns NULL if the projection is completely
-// clipped off the screen.
+// clipped off the screen -- unless keepoffscreen, for a thing that may be drawn
+// as a voxel, whose model can reach the screen when the flat sprite does not.
+// Then onscreen says whether the flat sprite does.
 //
-static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
+static vissprite_t* R_GenerateVisSprite(rendercontext_t& ctx, const sector_t* sector, int fakeside,
 		fixed_t x, fixed_t y, fixed_t z, fixed_t tx, fixed_t ty,
 		fixed_t height, fixed_t width,
-		fixed_t topoffs, fixed_t sideoffs, bool flip)
+		fixed_t topoffs, fixed_t sideoffs, bool flip,
+		bool keepoffscreen = false, bool* onscreen = nullptr)
 {
 	// translate the sprite edges from world-space to camera-space
 	// and store in t1 & t2
@@ -391,11 +397,13 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 
 	// clip the sprite to the left & right screen edges
 	int32_t lclip, rclip;
-	if (!R_ClipLineToFrustum(&t1, &t2, NEARCLIP, lclip, rclip))
+	bool visible = R_ClipLineToFrustum(&t1, &t2, NEARCLIP, lclip, rclip);
+	if (not visible and not keepoffscreen)
 		return NULL;
 
 	// calculate how much of the sprite was clipped from the left side
-	R_ClipLine(&t1, &t2, lclip, rclip, &t1, &t2);
+	if (visible)
+		R_ClipLine(&t1, &t2, lclip, rclip, &t1, &t2);
 	fixed_t clipped_offset = t1.x - t1xold;
 
 	fixed_t gzt = z + topoffs;
@@ -408,7 +416,11 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	int x1 = FIXED2INT(centerxfrac + FixedMul(t1.x, xscale));
 	int x2 = FIXED2INT(centerxfrac + FixedMul(t2.x, xscale)) - 1;
 	if (!R_CheckProjectionX(x1, x2))
-		return NULL;
+	{
+		visible = false;
+		if (not keepoffscreen)
+			return nullptr;
+	}
 
 	fixed_t yscale = FixedDiv(FocalLengthY, ty);
 
@@ -416,7 +428,14 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	int y1 = FIXED2INT(centeryfrac - FixedMul(gzt - viewz, yscale));
 	int y2 = FIXED2INT(centeryfrac - FixedMul(gzb - viewz, yscale)) - 1;
 	if (!R_CheckProjectionY(y1, y2))
-		return NULL;
+	{
+		visible = false;
+		if (not keepoffscreen)
+			return nullptr;
+	}
+
+	if (onscreen)
+		*onscreen = visible;
 
 	// killough 3/27/98: exclude things totally separated
 	// from the viewer, by either water or fake ceilings
@@ -448,13 +467,15 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	}
 
 	// store information in a vissprite
-	vissprite_t *vis = R_NewVisSprite();
+	vissprite_t *vis = R_NewVisSprite(ctx);
 
 	// killough 3/27/98: save sector for special clipping later
 	vis->heightsec = heightsec;
 
-	vis->xscale = xscale;
-	vis->yscale = yscale;
+	vis->xscale = FixedDiv(FocalLengthX, ty);
+	vis->yscale = FixedDiv(FocalLengthY, ty);
+	vis->xiscale = FixedDiv(ty, FocalLengthX);
+	vis->startfrac = clipped_offset;
 	vis->gx = x;
 	vis->gy = y;
 	vis->gzb = gzb;
@@ -466,26 +487,22 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->y2 = y2;
 	vis->depth = ty;
 	vis->FakeFlat = fakeside;
-	vis->colormap = basecolormap;
 	vis->spectator = false;
+	vis->res_id = ResourceId::INVALID_ID;
+	vis->texture = nullptr;
+	vis->colormap = ctx.draw.basecolormap;
 	vis->voxel = nullptr;
 
-	fixed_t iscale = FixedDiv(ty, FocalLengthX);
 	if (flip)
 	{
-		vis->startfrac = width - 1 - clipped_offset;
-		vis->xiscale = -iscale;
-	}
-	else
-	{
-		vis->startfrac = clipped_offset;
-		vis->xiscale = iscale;
+		vis->startfrac = width - 1 - vis->startfrac;
+		vis->xiscale *= -1;
 	}
 
 	return vis;
 }
 
-void R_DrawHitBox(const AActor* thing)
+void R_DrawHitBox(rendercontext_t& ctx, const AActor* thing)
 {
 	v3fixed_t vertices[8];
 	static constexpr byte color = 0x80;
@@ -531,22 +548,22 @@ void R_DrawHitBox(const AActor* thing)
 	vertices[7].z = thing->z + thing->height;
 
 	// draw bottom square
-	R_DrawLine(&vertices[0], &vertices[1], color);
-	R_DrawLine(&vertices[0], &vertices[2], color);
-	R_DrawLine(&vertices[2], &vertices[3], color);
-	R_DrawLine(&vertices[1], &vertices[3], color);
+	R_DrawLine(ctx, &vertices[0], &vertices[1], color);
+	R_DrawLine(ctx, &vertices[0], &vertices[2], color);
+	R_DrawLine(ctx, &vertices[2], &vertices[3], color);
+	R_DrawLine(ctx, &vertices[1], &vertices[3], color);
 
 	// draw top square
-	R_DrawLine(&vertices[4], &vertices[5], color);
-	R_DrawLine(&vertices[4], &vertices[6], color);
-	R_DrawLine(&vertices[6], &vertices[7], color);
-	R_DrawLine(&vertices[5], &vertices[7], color);
+	R_DrawLine(ctx, &vertices[4], &vertices[5], color);
+	R_DrawLine(ctx, &vertices[4], &vertices[6], color);
+	R_DrawLine(ctx, &vertices[6], &vertices[7], color);
+	R_DrawLine(ctx, &vertices[5], &vertices[7], color);
 
 	// connect the top and bottom squares
-	R_DrawLine(&vertices[0], &vertices[4], color);
-	R_DrawLine(&vertices[1], &vertices[5], color);
-	R_DrawLine(&vertices[2], &vertices[6], color);
-	R_DrawLine(&vertices[3], &vertices[7], color);
+	R_DrawLine(ctx, &vertices[0], &vertices[4], color);
+	R_DrawLine(ctx, &vertices[1], &vertices[5], color);
+	R_DrawLine(ctx, &vertices[2], &vertices[6], color);
+	R_DrawLine(ctx, &vertices[3], &vertices[7], color);
 }
 
 
@@ -555,19 +572,9 @@ void R_DrawHitBox(const AActor* thing)
 // R_ProjectSprite
 // Generates a vissprite for a thing if it might be visible.
 //
-void R_ProjectSprite(AActor *thing, int fakeside)
+void R_ProjectSprite(rendercontext_t& ctx, AActor *thing, int fakeside)
 {
-	int 				lump;
-	unsigned int		rot;
-	bool 				flip;
-
-	if (!thing)
-		return;
-
-	if (!thing->subsector)
-		return;
-
-	if (!thing->subsector->sector)
+	if (not thing or not thing->subsector or not thing->subsector->sector)
 		return;
 
 	if (thing->flags2 & MF2_DONTDRAW || thing->translucency == 0 ||
@@ -578,7 +585,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
   // except if paused and using freecam
 	fixed_t thingx, thingy, thingz;
 
-	if (projlerp &&
+	if (ctx.sprite.projlerp and
 	    P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
 	    not (paused && displayplayer().isFreecam))
 	{
@@ -613,7 +620,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 
 	// Cache the last sprite def lookup - crowds of identical monsters hit
 	// this constantly.
-	if (thing->sprite != projspritenum || projsprdef == NULL)
+	if (thing->sprite != ctx.sprite.projspritenum or ctx.sprite.projsprdef == nullptr)
 	{
 		auto it = sprites.find(thing->sprite);
 
@@ -625,14 +632,14 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		}
 #endif
 
-		projsprdef = &it->second;
-		projspritenum = thing->sprite;
+		ctx.sprite.projsprdef = &it->second;
+		ctx.sprite.projspritenum = thing->sprite;
 	}
 
-	const spritedef_t* sprdef = projsprdef;
+	const spritedef_t* sprdef = ctx.sprite.projsprdef;
 
 #ifdef RANGECHECK
-	if ( (thing->frame & FF_FRAMEMASK) >= sprdef->numframes )
+	if ((thing->frame & FF_FRAMEMASK) >= sprdef->numframes)
 	{
 		DPrintFmt("R_ProjectSprite: thing ({}: {}): invalid sprite frame {} : {}\n ", thing->type, thing->info->name, thing->sprite, thing->frame);
 		return;
@@ -641,49 +648,51 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 
 	const spriteframe_t* sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
-	// decide which patch to use for sprite relative to player
+	unsigned int rot = 0;
+	// choose a different rotation based on player view (if supported by the sprite)
 	if (sprframe->rotate)
 	{
 		const angle_t ang = R_PointToAngle(thingx, thingy);
 
-		// choose a different rotation based on player view
-		if (sprframe->lump[0] == sprframe->lump[1])
+		// 16-angle sprite rotations
+		if (sprframe->resource[0] == sprframe->resource[1])
 		{
 			rot = (ang - thing->angle + static_cast<angle_t>(ANG45 / 2) * 9) >> 28;
 		}
 		else
 		{
-			rot = (ang - thing->angle + static_cast<angle_t>(ANG45 / 2) * 9 - static_cast<angle_t>(ANG180 / 16)) >> 28;
+			rot = (ang - thing->angle + (static_cast<angle_t>(ANG45 / 2) * 9) -
+			       static_cast<angle_t>(ANG180 / 16)) >> 28;
 		}
-
-		lump = sprframe->lump[rot];
-		flip = sprframe->flip[rot];
 	}
-	else
+
+	const ResourceId res_id = sprframe->resource[rot];
+
+	if (res_id == ResourceId::INVALID_ID)
 	{
-		// use single rotation for all views
-		lump = sprframe->lump[rot = 0];
-		flip = sprframe->flip[0];
-	}
-
-	if (lump == -1) {
 		char frame = (thing->frame & FF_FRAMEMASK) + 'A';
 		I_Error("Frame {} for sprite {} could not be found.", frame, sprnames[thing->sprite]);
 	}
 
 	if (sprframe->width[rot] == SPRITE_NEEDS_INFO)
 	{
-		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
+		R_CacheSprite(sprdef);	// [RH] speeds up game startup time
 	}
 
+	const Texture* texture = Res_CacheTexture(res_id);
+
+	bool flip = sprframe->flip[rot];
 	sector_t* sector = thing->subsector->sector;
-	fixed_t topoffs = sprframe->topoffset[rot];
-	fixed_t sideoffs = sprframe->offset[rot];
+	fixed_t topoffs = texture->mOffsetY << FRACBITS;
+	fixed_t sideoffs = texture->mOffsetX << FRACBITS;
+	fixed_t height = texture->mHeight << FRACBITS;
+	fixed_t width = texture->mWidth << FRACBITS;
 
-	fixed_t height = sprframe->height[rot];
-	fixed_t width = sprframe->width[rot];
-
-	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, camx, camy, height, width, topoffs, sideoffs, flip);
+	const int frame = thing->frame & FF_FRAMEMASK;
+	const bool hasvoxel = VX_HasVoxel(thing, frame);
+	bool onscreen = true;
+	vissprite_t* vis = R_GenerateVisSprite(ctx, sector, fakeside, thingx, thingy, thingz, camx, camy,
+	                                       height, width, topoffs, sideoffs, flip, hasvoxel, &onscreen);
 
 	if (vis == NULL)
 		return;
@@ -693,29 +702,36 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	vis->spectator = (thing->oflags & MFO_SPECTATOR).to_bool();
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
-	vis->patch = lump;
+	vis->res_id = res_id;
+	vis->texture = texture;
 	vis->mo = thing;
-	VX_ProjectVoxel(thing, thing->frame & FF_FRAMEMASK, vis);
+	if (not VX_ProjectVoxel(ctx, thing, frame, vis) and not onscreen)
+	{
+		// neither the voxel nor the flat sprite reaches the screen, so give the
+		// vissprite back
+		ctx.sprite.vissprite_p--;
+		return;
+	}
 
 	// get light level
 	if (fixedlightlev)
 	{
-		vis->colormap = basecolormap.with(fixedlightlev);
+		vis->colormap = ctx.draw.basecolormap.with(fixedlightlev);
 	}
 	else if (fixedcolormap.isValid())
 	{
 		// fixed map
 		vis->colormap = fixedcolormap;
 	}
-	else if (!foggy && (thing->frame & FF_FULLBRIGHT))
+	else if (not ctx.bsp.foggy and (thing->frame & FF_FULLBRIGHT))
 	{
 		// full bright
-		vis->colormap = basecolormap;	// [RH] Use basecolormap
+		vis->colormap = ctx.draw.basecolormap;	// [RH] Use basecolormap
 	}
-	else if (!foggy && thing->oflags & MFO_FULLBRIGHT)
+	else if (not ctx.bsp.foggy and thing->oflags & MFO_FULLBRIGHT)
 	{
 		// full bright
-		vis->colormap = basecolormap;
+		vis->colormap = ctx.draw.basecolormap;
 	}
 	else
 	{
@@ -723,7 +739,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		int index = (vis->yscale*lightscalexmul)>>LIGHTSCALESHIFT;	// [RH]
 		index = std::clamp(index, 0, MAXLIGHTSCALE - 1);
 
-		vis->colormap = basecolormap.with(spritelights[index]);	// [RH] Use basecolormap
+		vis->colormap = ctx.draw.basecolormap.with(ctx.sprite.spritelights[index]);	// [RH] Use basecolormap
 	}
 
 	if (r_drawnetcredibility)
@@ -753,39 +769,118 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 				particle.color = 228;           // Weathering yellow-beige.
 				break;
 			case CredibilityEnum::CHALLENGED_CREDIBILITY:
+			case CredibilityEnum::CREDIBILITY_LEVEL_COUNT:  // a count, not a level
 				particle.color = 0;             // Pitch.
 				break;
 		}
-		R_ProjectParticle(&particle, sector, fakeside);
+		R_ProjectParticle(ctx, &particle, sector, fakeside);
 	}
 }
 
+//
+// Sector sprite claims
+//
+// Each slice traverses the world on its own, so several can reach the same
+// sector. Its sprites have to be projected exactly once per view -- the masked
+// pass then has every slice draw the union of all slices' sprites, clamped to
+// its own columns -- so the first slice to reach a sector claims it.
+//
+// A claim is the current stamp: bumping the stamp releases every claim at once.
+// This replaces the sector_t::validcount guard, which would have had the
+// renderer writing level data from several threads.
+//
+// Particles are listed by subsector rather than sector, so they are claimed
+// by subsector, with the same stamp.
+//
+static std::unique_ptr<std::atomic<uint32_t>[]> sectorclaims;
+static size_t sectorclaimcount;
+static std::unique_ptr<std::atomic<uint32_t>[]> subsectorclaims;
+static size_t subsectorclaimcount;
+static uint32_t sectorclaimstamp;
+
+static void R_GrowClaims(std::unique_ptr<std::atomic<uint32_t>[]>& claims, size_t& count, size_t want)
+{
+	if (count >= want)
+		return;
+
+	count = want;
+	claims.reset(new std::atomic<uint32_t>[count]);
+	for (size_t i = 0; i < count; i++)
+		claims[i].store(0, std::memory_order_relaxed);
+}
+
+void R_BeginSpriteClaims()
+{
+	R_GrowClaims(sectorclaims, sectorclaimcount, static_cast<size_t>(numsectors));
+	R_GrowClaims(subsectorclaims, subsectorclaimcount, static_cast<size_t>(numsubsectors));
+
+	// on wrapping, clear every claim so no stale one can match
+	if (++sectorclaimstamp == 0)
+	{
+		for (size_t i = 0; i < sectorclaimcount; i++)
+			sectorclaims[i].store(0, std::memory_order_relaxed);
+		for (size_t i = 0; i < subsectorclaimcount; i++)
+			subsectorclaims[i].store(0, std::memory_order_relaxed);
+		sectorclaimstamp = 1;
+	}
+}
+
+static bool R_Claim(std::atomic<uint32_t>& claim)
+{
+	uint32_t seen = claim.load(std::memory_order_relaxed);
+	if (seen == sectorclaimstamp)
+		return false;
+
+	// only one slice wins the exchange
+	return claim.compare_exchange_strong(seen, sectorclaimstamp, std::memory_order_relaxed);
+}
+
+static bool R_ClaimSectorSprites(const sector_t* sec)
+{
+	return R_Claim(sectorclaims[sec - sectors]);
+}
+
+//
+// R_AddParticles
+//
+// Projects the particles in subsector num, once per view like R_AddSprites.
+//
+void R_AddParticles(rendercontext_t& ctx, int num, int fakeside)
+{
+	if (ParticlesInSubsec[num] == NO_PARTICLE)
+		return;
+
+	if (not R_Claim(subsectorclaims[num]))
+		return;
+
+	for (uint16_t i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
+		R_ProjectParticle(ctx, Particles + i, subsectors[num].sector, fakeside);
+}
 
 //
 // R_AddSprites
 // During BSP traversal, this adds sprites by sector.
 //
 // killough 9/18/98: add lightlevel as parameter, fixing underwater lighting
-void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
+//
+void R_AddSprites (rendercontext_t& ctx, sector_t *sec, int lightlevel, int fakeside)
 {
 	// BSP is traversed by subsector.
 	// A sector might have been split into several
-	//	subsectors during BSP building.
-	// Thus we check whether it was already added.
-	if (sec->validcount == validcount)
+	// subsectors during BSP building -- and with slices, reached by several
+	// of them.
+	// Only the first to get here projects its sprites.
+	if (not R_ClaimSectorSprites(sec))
 		return;
 
-	// Well, now it will be done.
-	sec->validcount = validcount;
-
-	int lightnum = (lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+	int lightnum = (lightlevel >> LIGHTSEGSHIFT) + (ctx.bsp.foggy ? 0 : extralight);
 
 	if (lightnum < 0)
-		spritelights = scalelight[0];
+		ctx.sprite.spritelights = scalelight[0];
 	else if (lightnum >= LIGHTLEVELS)
-		spritelights = scalelight[LIGHTLEVELS-1];
+		ctx.sprite.spritelights = scalelight[LIGHTLEVELS-1];
 	else
-		spritelights = scalelight[lightnum];
+		ctx.sprite.spritelights = scalelight[lightnum];
 
 	// Handle all things in sector.
 	for (AActor* thing = sec->thinglist; thing; thing = thing->snext)
@@ -797,7 +892,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 			R_PREFETCH(reinterpret_cast<const char*>(next) + 64);
 		}
 
-		R_ProjectSprite (thing, fakeside);
+		R_ProjectSprite (ctx, thing, fakeside);
 	}
 }
 
@@ -805,10 +900,8 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 //
 // R_DrawPSprite
 //
-void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
+void R_DrawPSprite(rendercontext_t& ctx, const pspdef_t& psp, ActorFlags1 flags)
 {
-	vissprite_t 		avis;
-
 	const state_t* st = psp.state();
 	if (!st)
 		return;
@@ -823,40 +916,43 @@ void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
 #endif
 	const spritedef_t* sprdef = &it->second;
 #ifdef RANGECHECK
-	if ( (st->frame & FF_FRAMEMASK) >= sprdef->numframes) {
+	if ((st->frame & FF_FRAMEMASK) >= sprdef->numframes) {
 		DPrintFmt("R_DrawPSprite: invalid sprite frame {} : {}\n", st->sprite, st->frame);
 		return;
 	}
 #endif
-	const spriteframe_t* sprframe = &sprdef->spriteframes[ st->frame & FF_FRAMEMASK ];
-
-	const int32_t lump = sprframe->lump[0];
+	const spriteframe_t* sprframe = &sprdef->spriteframes[st->frame & FF_FRAMEMASK];
+	const ResourceId res_id = sprframe->resource[0];
+	const Texture* texture = Res_CacheTexture(res_id);
 	const bool flip = sprframe->flip[0];
 
-	if (sprframe->width[0] == SPRITE_NEEDS_INFO)
-		R_CacheSprite (sprdef);	// [RH] speeds up game startup time
+	fixed_t topoffs = texture->mOffsetY << FRACBITS;
+	fixed_t sideoffs = texture->mOffsetX << FRACBITS;
+	fixed_t width = texture->mWidth << FRACBITS;
+
+	// calculate the positional offset due to weapon bobbing
+	fixed_t sx = ctx.sprite.bobx;
+	fixed_t sy = ctx.sprite.boby;
 
 	// calculate edges of the shape
-	fixed_t tx = bobx - ((320 / 2) << FRACBITS);
+	fixed_t tx = sx - ((320 / 2) << FRACBITS) - sideoffs;
+	int x1 = (centerxfrac + FixedMul(tx, pspritexscale)) >> FRACBITS;
 
-	tx -= sprframe->offset[0];	// [RH] Moved out of spriteoffset[]
-	const int32_t x1 = (centerxfrac + FixedMul (tx, pspritexscale)) >>FRACBITS;
-
-	// off the right side
-	if (x1 > viewwidth)
+	if (x1 > viewwidth)		// off the right side
 		return;
 
-	tx += sprframe->width[0];	// [RH] Moved out of spritewidth[]
-	const int32_t x2 = ((centerxfrac + FixedMul (tx, pspritexscale)) >>FRACBITS) - 1;
+	tx += width;
+	int x2 = ((centerxfrac + FixedMul(tx, pspritexscale)) >> FRACBITS) - 1;
 
-	// off the left side
-	if (x2 < 0)
+	if (x2 < 0)		// off the left side
 		return;
 
 	// store information in a vissprite
-	vissprite_t* vis = &avis;
-	vis->mobjflags = flags;
-	vis->statusflags = camera->player && camera->player->mo ? camera->player->mo->statusflags : 0;
+	vissprite_t vis;
+	vis.res_id = res_id;
+	vis.texture = texture;
+	vis.mobjflags = flags;
+	vis.statusflags = camera->player and camera->player->mo ? camera->player->mo->statusflags : 0;
 
 	// [RH] +0x6000 helps it meet the screen bottom
 	//		at higher resolutions while still being in
@@ -864,66 +960,60 @@ void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
 	// denis - bump to 0x9000
 	static constexpr fixed_t WEAPONTWEAK = 0x9000;
 
-	vis->texturemid = (BASEYCENTER << FRACBITS) + FRACUNIT / 2 -
-		(boby + WEAPONTWEAK - sprframe->topoffset[0]);	// [RH] Moved out of spritetopoffset[]
-	vis->x1 = x1 < 0 ? 0 : x1;
-	vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
-	vis->xscale = pspritexscale;
-	vis->yscale = pspriteyscale;
-	vis->translation = translationref_t();		// [RH] Use default colors
-	vis->translucency = r_drawplayersprites * FRACUNIT;
-	vis->mo = NULL;
-	vis->spectator = false;
+	vis.texturemid = (BASEYCENTER << FRACBITS) + (FRACUNIT / 2) - (sy + WEAPONTWEAK - topoffs);
+	vis.x1 = x1 < 0 ? 0 : x1;
+	vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+	vis.xscale = pspritexscale;
+	vis.yscale = pspriteyscale;
+	vis.xiscale = pspritexiscale;
+	vis.startfrac = 0;
+	vis.translation = translationref_t();		// [RH] Use default colors
+	vis.translucency = r_drawplayersprites * FRACUNIT;
+	vis.mo = nullptr;
+	vis.spectator = false;
 
 	if (flip)
 	{
-		vis->xiscale = -pspritexiscale;
-		vis->startfrac = sprframe->width[0]-1;	// [RH] Moved out of spritewidth[]
-	}
-	else
-	{
-		vis->xiscale = pspritexiscale;
-		vis->startfrac = 0;
+		vis.startfrac = width - 1;
+		vis.xiscale *= -1;
 	}
 
-	if (vis->x1 > x1)
-		vis->startfrac += vis->xiscale*(vis->x1-x1);
-
-	vis->patch = lump;
+	if (vis.x1 > x1)
+		vis.startfrac += vis.xiscale * (vis.x1-x1);
 
 	if (fixedlightlev)
 	{
-		vis->colormap = basecolormap.with(fixedlightlev);
+		vis.colormap = ctx.draw.basecolormap.with(fixedlightlev);
 	}
 	else if (fixedcolormap.isValid())
 	{
 		// fixed color
-		vis->colormap = fixedcolormap;
+		vis.colormap = fixedcolormap;
 	}
 	else if (st->frame & FF_FULLBRIGHT)
 	{
 		// full bright
-		vis->colormap = basecolormap;	// [RH] use basecolormap
+		vis.colormap = ctx.draw.basecolormap;	// [RH] use basecolormap
 	}
 	else
 	{
 		// local light
-		vis->colormap = basecolormap.with(spritelights[MAXLIGHTSCALE-1]);	// [RH] add basecolormap
+		vis.colormap = ctx.draw.basecolormap.with(ctx.sprite.spritelights[MAXLIGHTSCALE-1]);	// [RH] add basecolormap
 	}
-	if (vis->statusflags & SF_INVIS)
+	if (vis.statusflags & SF_INVIS)
 	{
 		// shadow draw
-		vis->mobjflags = MF_SHADOW;
+		vis.mobjflags = MF_SHADOW;
 	}
 
 	if (r_softinvulneffect)
 	{
-		if (vis->statusflags & SF_INVULN)
+		if (vis.statusflags & SF_INVULN)
 		{
 			// draw invuln palette on vissprite only
 			// and don't include sector colored lighting because it creates strange colors.
 			const palette_t* pal = V_GetDefaultPalette();
-			vis->colormap = shaderef_t(&pal->maps, INVERSECOLORMAP);
+			vis.colormap = shaderef_t(&pal->maps, INVERSECOLORMAP);
 		}
 	}
 
@@ -933,7 +1023,7 @@ void R_DrawPSprite(const pspdef_t& psp, ActorFlags1 flags)
 		displayplayer().isFreecam)
 		return;
 
-	R_DrawVisSprite (vis, vis->x1, vis->x2);
+	R_DrawVisSprite(ctx, &vis, vis.x1, vis.x2);
 }
 
 EXTERN_CVAR(r_thingsectorlight)
@@ -941,8 +1031,9 @@ EXTERN_CVAR(r_thingsectorlight)
 //
 // R_DrawPlayerSprites
 //
-void R_DrawPlayerSprites()
+void R_DrawPlayerSprites(rendercontext_t& ctx)
 {
+	pspdef_t*	psp;
 	static sector_t tempsec;
 	int			floorlight, ceilinglight;
 
@@ -954,30 +1045,29 @@ void R_DrawPlayerSprites()
 		(consoleplayer().cheats & CF_CHASECAM))
 		return;
 
-	const sector_t* sec = R_FakeFlat(viewsector, &tempsec, &floorlight,
+	const sector_t* sec = R_FakeFlat(ctx, viewsector, &tempsec, &floorlight,
 	                                 &ceilinglight, false);
 
-	// [RH] set foggy flag
-	foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3]
-				|| sec->colormap->fade;
+	// Set foggy flag
+	ctx.bsp.foggy = R_SectorIsFoggy(sec);
 
 	// [RH] set basecolormap
-	basecolormap = sec->colormap->maps;
+	ctx.draw.basecolormap = sec->colormap->maps;
 
 	// get light level
 	const int lightnum = ((r_thingsectorlight ? (floorlight + ceilinglight) / 2 : sec->lightlevel) >> LIGHTSEGSHIFT)
-	               + (foggy ? 0 : extralight);
+	               + (ctx.bsp.foggy ? 0 : extralight);
 
 	if (lightnum < 0)
-		spritelights = scalelight[0];
+		ctx.sprite.spritelights = scalelight[0];
 	else if (lightnum >= LIGHTLEVELS)
-		spritelights = scalelight[LIGHTLEVELS-1];
+		ctx.sprite.spritelights = scalelight[LIGHTLEVELS-1];
 	else
-		spritelights = scalelight[lightnum];
+		ctx.sprite.spritelights = scalelight[lightnum];
 
 	// clip to screen bounds
-	mfloorclip = viewheightarray;
-	mceilingclip = negonearray;
+	ctx.sprite.mfloorclip = viewheightarray;
+	ctx.sprite.mceilingclip = negonearray;
 
 	{
 		const int centerhack = centery;
@@ -989,7 +1079,7 @@ void R_DrawPlayerSprites()
 		for (const auto& psp : camera->player->psprites)
 		{
 			if (psp.statenum != S_NULL)
-				R_DrawPSprite(psp, ActorFlags1::none_set());
+				R_DrawPSprite(ctx, psp, ActorFlags1::none_set());
 		}
 
 		centery = centerhack;
@@ -1011,45 +1101,156 @@ void R_DrawPlayerSprites()
 // [EB] Now uses std::sort, hopefully slightly faster, but definitely easier to read
 //
 
-static std::vector<vissprite_t*> spritesorter;
+static thread_local std::vector<vissprite_t*> spritesorter;
 
-void R_SortVisSprites()
+void R_SortVisSprites(rendercontext_t& ctx, std::span<rendercontext_t* const> gather)
 {
-	const int vsprcount = vissprite_p - firstvissprite;
+	spritesorter.clear();
 
-	if (!vsprcount)
+	const auto gatherpool = [](const rendercontext_t& from)
 	{
-		spritesorter.clear();
-		return;
+		for (vissprite_t* spr = from.sprite.firstvissprite; spr < from.sprite.vissprite_p; spr++)
+			spritesorter.push_back(spr);
+	};
+
+	// A sprite overhanging into a slice that never reached its sector still
+	// has to draw there, so a view's pass takes every rendering slice's sprites.
+	if (not gather.empty())
+	{
+		for (const rendercontext_t* from : gather)
+			gatherpool(*from);
+	}
+	else
+	{
+		gatherpool(ctx);
 	}
 
-	spritesorter.reserve(MaxVisSprites);
-	spritesorter.resize(vsprcount);
+	if (spritesorter.empty())
+		return;
 
-	vissprite_t* spr = firstvissprite;
-	for (int i = 0; i < vsprcount; i++, spr++)
-		spritesorter[i] = spr;
-
+	// Exact ties fall back to identity, so the order cannot depend on which
+	// slice happened to project a sprite -- with threads that varies by timing,
+	// and two sprites at one spot would trade places frame to frame.
 	const auto comparator = [](const vissprite_t* v1, const vissprite_t* v2) -> bool
 	{
-		const bool samedepth = v1->depth == v2->depth;
-		return samedepth ? v1->gzt > v2->gzt : v1->depth < v2->depth;
+		if (v1->depth != v2->depth)
+			return v1->depth < v2->depth;
+		if (v1->gzt != v2->gzt)
+			return v1->gzt > v2->gzt;
+		if (v1->mo != v2->mo)
+			return std::less<const AActor*>()(v1->mo, v2->mo);
+		if (v1->x1 != v2->x1)
+			return v1->x1 < v2->x1;
+		return v1->startfrac < v2->startfrac;
 	};
 
 	std::sort(spritesorter.begin(), spritesorter.end(), comparator);
 }
 
 
+// ----------------------------------------------------------------------------
+//
+// Sprite occlusion statistics
+//
+// ----------------------------------------------------------------------------
+
+namespace
+{
+
+struct SpriteClipStats
+{
+	uint64_t	frames;
+	uint64_t	drawsegs;   // summed over frames
+	uint64_t	clipsegs;   // ... of those, the ones that can clip a sprite
+	uint64_t	sprites;    // summed over frames
+	uint64_t	scanned;    // clipseg entries visited by R_DrawSprite
+	uint64_t	overlapped; // ... that overlap the sprite's columns
+	uint32_t	peak_drawsegs;
+	uint32_t	peak_clipsegs;
+	uint32_t	peak_sprites;
+};
+
+// per thread: the stats command reports the main thread's slice
+thread_local SpriteClipStats spriteclip_stats;
+
+
+//
+// clipextent_t
+//
+// A drawseg's screen extent, held apart from drawseg_t so R_DrawSprite's
+// reject test streams 4 bytes per candidate instead of pulling a 72-byte
+// drawseg through the cache to read two of its fields.
+//
+struct clipextent_t
+{
+	int16_t  x1;
+	int16_t  x2;
+};
+
+static_assert(MAXWIDTH <= 32767, "clipextent_t holds screen columns in int16_t");
+
+thread_local std::vector<clipextent_t> clipseg_extents;
+thread_local std::vector<drawseg_t*>   clipseg_drawsegs;
+
+
+//
+// R_BuildClipSegs
+//
+// Collects the drawsegs that can clip a sprite, newest first so the scan
+// visits them in the same order a backwards walk of the drawseg array would.
+//
+void R_BuildClipSegs(rendercontext_t& ctx)
+{
+	clipseg_extents.clear();
+	clipseg_drawsegs.clear();
+
+	const size_t count = static_cast<size_t>(ctx.bsp.ds_p - ctx.bsp.firstdrawseg);
+	clipseg_extents.reserve(count);
+	clipseg_drawsegs.reserve(count);
+
+	for (drawseg_t* ds = ctx.bsp.ds_p ; ds-- > ctx.bsp.firstdrawseg ; )
+	{
+		// a drawseg with no silhouette and no masked midtexture can neither
+		// clip a sprite nor be drawn by one
+		if (not (ds->silhouette & SIL_BOTH) and not ds->midposts)
+			continue;
+
+		const clipextent_t extent = { static_cast<int16_t>(ds->x1),
+		                              static_cast<int16_t>(ds->x2) };
+		clipseg_extents.push_back(extent);
+		clipseg_drawsegs.push_back(ds);
+	}
+}
+
+} // namespace
+
+
 //
 // R_DrawSprite
 //
-void R_DrawSprite (vissprite_t *spr)
+void R_DrawSprite (rendercontext_t& ctx, vissprite_t *shared)
 {
 	static int			cliptop[MAXWIDTH];
 	static int			clipbot[MAXWIDTH];
 
 	int topclip = 0;
 	int botclip = viewheight;
+
+	// Every slice draws every sprite, and each clamps it differently, so the
+	// clamp works on a private copy -- the sprite may sit in another slice's
+	// pool.
+	vissprite_t local = *shared;
+	vissprite_t* const spr = &local;
+
+	// Clip sprites against the slice boundaries, since the drawsegs
+	// to clip against it don't exist in this context.
+	if (spr->x1 < ctx.slice_start)
+	{
+		if (spr->res_id != NO_PARTICLE)
+			spr->startfrac += spr->xiscale * (ctx.slice_start - spr->x1);
+		spr->x1 = ctx.slice_start;
+	}
+	spr->x2 = std::min(spr->x2, ctx.slice_stop);
 
 	// [RH] Quickly reject sprites with bad x ranges.
 	if (spr->x1 > spr->x2)
@@ -1110,26 +1311,34 @@ void R_DrawSprite (vissprite_t *spr)
 
 	// Scan drawsegs from end to start for obscuring segs.
 	// The first drawseg that has a greater scale is the clip seg.
+	//
+	// The scan walks the clipseg extents rather than the drawsegs themselves -
+	// the vast majority of candidates are rejected on their screen extent
+	// alone, and only the survivors are worth a drawseg's worth of cache.
 
-	// Modified by Lee Killough:
-	// (pointer check was originally nonportable
-	// and buggy, by going past LEFT end of array):
+	const size_t clipsegcount = clipseg_extents.size();
+	const clipextent_t* const extents = clipseg_extents.data();
+	drawseg_t* const* const clipdrawsegs = clipseg_drawsegs.data();
 
-	for (drawseg_t* ds = ds_p ; ds-- > firstdrawseg ; )  // new -- killough
+	const int sprx1 = spr->x1, sprx2 = spr->x2;
+
+	spriteclip_stats.scanned += clipsegcount;
+
+	for (size_t seg = 0; seg < clipsegcount; seg++)
 	{
 		// determine if the drawseg obscures the sprite
-		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 ||
-			(!(ds->silhouette & SIL_BOTH) && !ds->midposts) )
-		{
-			// does not cover sprite
-			continue;
-		}
+		if (extents[seg].x1 > sprx2 or extents[seg].x2 < sprx1)
+			continue; // does not cover sprite
+
+		spriteclip_stats.overlapped++;
+
+		drawseg_t* const ds = clipdrawsegs[seg];
 
 		const int r1 = std::max<int>(ds->x1, spr->x1);
 		const int r2 = std::min<int>(ds->x2, spr->x2);
 
-		const fixed_t segscale1 = std::max<fixed_t>(ds->scale1, ds->scale2);
-		const fixed_t segscale2 = std::min<fixed_t>(ds->scale1, ds->scale2);
+		const fixed_t segscale1 = std::max<fixed_t>(ds->sortscale1, ds->sortscale2);
+		const fixed_t segscale2 = std::min<fixed_t>(ds->sortscale1, ds->sortscale2);
 
 		// check if the seg is in front of the sprite
 		if (!(!ds->curline) && (segscale1 < spr->yscale ||
@@ -1137,7 +1346,7 @@ void R_DrawSprite (vissprite_t *spr)
 		{
 			// masked mid texture?
 			if (ds->midposts)
-				R_RenderMaskedSegRange(ds, r1, r2);
+				R_RenderMaskedSegRange(ctx, ds, r1, r2);
 			// seg is behind sprite
 			continue;
 		}
@@ -1155,39 +1364,56 @@ void R_DrawSprite (vissprite_t *spr)
 	}
 
 	// all clipping has been performed, so draw the sprite
-	mfloorclip = clipbot;
-	mceilingclip = cliptop;
+	ctx.sprite.mfloorclip = clipbot;
+	ctx.sprite.mceilingclip = cliptop;
 	if (spr->voxel != nullptr)
-		VX_DrawVoxel(spr);
+		VX_DrawVoxel(ctx, spr);
 	else
-		R_DrawVisSprite (spr, spr->x1, spr->x2);
+		R_DrawVisSprite (ctx, spr, spr->x1, spr->x2);
 
 	#if 0
 	EXTERN_CVAR (r_drawhitboxes)
 	if (r_drawhitboxes && spr->mo)
-		R_DrawHitBox(spr->mo);
+		R_DrawHitBox(ctx, spr->mo);
 	#endif
 }
 
 
-vissprite_t* closestNonCredibleVisSprite;
+
 
 //
 // R_DrawMasked
 //
-void R_DrawMasked (void)
+void R_DrawMasked (rendercontext_t& ctx, std::span<rendercontext_t* const> gather, bool mainview)
 {
 	drawseg_t		 *ds;
 
-	R_SortVisSprites ();
+	R_SortVisSprites (ctx, gather);
+	R_BuildClipSegs(ctx);
 
-	closestNonCredibleVisSprite = nullptr;
+	{
+		const uint32_t segcount = static_cast<uint32_t>(ctx.bsp.ds_p - ctx.bsp.firstdrawseg);
+		const uint32_t clipcount = static_cast<uint32_t>(clipseg_extents.size());
+		const uint32_t sprcount = static_cast<uint32_t>(spritesorter.size());
+
+		spriteclip_stats.frames++;
+		spriteclip_stats.drawsegs += segcount;
+		spriteclip_stats.clipsegs += clipcount;
+		spriteclip_stats.sprites += sprcount;
+		spriteclip_stats.peak_drawsegs = std::max(spriteclip_stats.peak_drawsegs, segcount);
+		spriteclip_stats.peak_clipsegs = std::max(spriteclip_stats.peak_clipsegs, clipcount);
+		spriteclip_stats.peak_sprites = std::max(spriteclip_stats.peak_sprites, sprcount);
+	}
+
+	const bool probe = mainview and &ctx == &rctx;
+	if (probe)
+		closestNonCredibleVisSprite = nullptr;
 
 	for (auto& vis : std::views::reverse(spritesorter))
 	{
-		R_DrawSprite(vis);
+		R_DrawSprite(ctx, vis);
 
-        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
+        if (probe and vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
         {
             closestNonCredibleVisSprite = vis;
         }
@@ -1201,13 +1427,48 @@ void R_DrawMasked (void)
 
 	//		for (ds=ds_p-1 ; ds >= drawsegs ; ds--)    old buggy code
 
-	for (ds=ds_p ; ds-- > firstdrawseg ; )	// new -- killough
+	for (ds=ctx.bsp.ds_p ; ds-- > ctx.bsp.firstdrawseg ; )	// new -- killough
 		if (ds->midposts)
-			R_RenderMaskedSegRange(ds, ds->x1, ds->x2);
-
-	// draw the psprites on top of everything
-	R_DrawPlayerSprites();
+			R_RenderMaskedSegRange(ctx, ds, ds->x1, ds->x2);
 }
+
+
+//
+// drawsegstats
+//
+// Reports the sprite clip scan's cost since the last call, then resets.
+//
+BEGIN_COMMAND(drawsegstats)
+{
+	const SpriteClipStats& s = spriteclip_stats;
+
+	if (s.frames == 0)
+	{
+		PrintFmt(PRINT_HIGH, "drawsegstats: nothing rendered since the last reset\n");
+		return;
+	}
+
+	const double frames = static_cast<double>(s.frames);
+	const double scanned = static_cast<double>(s.scanned) / frames;
+	const double overlap = s.scanned ?
+	    100.0 * static_cast<double>(s.overlapped) / static_cast<double>(s.scanned) : 0.0;
+
+	PrintFmt(PRINT_HIGH, "drawsegstats over {} frames:\n", s.frames);
+	PrintFmt(PRINT_HIGH, "  ctx.bsp.drawsegs/frame   avg {:.0f}   peak {}\n",
+	    static_cast<double>(s.drawsegs) / frames, s.peak_drawsegs);
+	PrintFmt(PRINT_HIGH, "  clipsegs/frame   avg {:.0f}   peak {}\n",
+	    static_cast<double>(s.clipsegs) / frames, s.peak_clipsegs);
+	PrintFmt(PRINT_HIGH, "  sprites/frame    avg {:.0f}   peak {}\n",
+	    static_cast<double>(s.sprites) / frames, s.peak_sprites);
+	PrintFmt(PRINT_HIGH, "  clip scan        avg {:.0f} entries/frame, {:.1f}% overlap a sprite\n",
+	    scanned, overlap);
+	PrintFmt(PRINT_HIGH, "  scan traffic     {:.2f} MB/frame at {} bytes per entry\n",
+	    scanned * static_cast<double>(sizeof(clipextent_t)) / (1024.0 * 1024.0),
+	    static_cast<uint32_t>(sizeof(clipextent_t)));
+
+	spriteclip_stats = SpriteClipStats();
+}
+END_COMMAND(drawsegstats)
 
 void R_InitParticles (void)
 {
@@ -1258,7 +1519,7 @@ void R_FindParticleSubsectors ()
 	}
 }
 
-void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakeside)
+void R_ProjectParticle (rendercontext_t& ctx, particle_t *particle, const sector_t *sector, int fakeside)
 {
 	if (sector == NULL)
 		return;
@@ -1273,11 +1534,11 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 
 	if (particle->sprite != NO_PARTICLE)
 	{
-		patch_t* patch = W_CachePatch(particle->sprite);
-		height = patch->height() << FRACBITS;
-		width = patch->width() << FRACBITS;
-		topoffs = patch->topoffset();
-		sideoffs = patch->leftoffset();
+		const Texture* tex = Res_CacheTexture(ResourceId(particle->sprite));
+		height = tex->mHeight << FRACBITS;
+		width = tex->mWidth << FRACBITS;
+		topoffs = tex->mOffsetY << FRACBITS;
+		sideoffs = tex->mOffsetX << FRACBITS;
 	}
 
 	// translate the particle's position into camera space
@@ -1285,13 +1546,12 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	if (R_RotatePointSafe(int64_t(x) - viewx, int64_t(y) - viewy, ANG90 - viewangle, tx, ty))
 		return;
 
-	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, tx, ty, height, width, topoffs, sideoffs, false);
+	vissprite_t* vis = R_GenerateVisSprite(ctx, sector, fakeside, x, y, z, tx, ty, height, width, topoffs, sideoffs, false);
 
 	if (vis == NULL)
 		return;
 
 	vis->translation = translationref_t();
-	vis->translucency = 65535;
 	vis->statusflags = 0;
 	vis->mo = NULL;
 	vis->spectator = false;
@@ -1301,11 +1561,16 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	if (particle->sprite == NO_PARTICLE)
 	{
 		vis->startfrac = particle->color;
-		vis->patch = NO_PARTICLE;
+		vis->res_id = NO_PARTICLE;
+		vis->texture = nullptr;
+		vis->translucency = 65535;
 	}
 	else
 	{
-		vis->patch = particle->sprite;
+		vis->res_id = ResourceId(particle->sprite);
+		vis->texture = Res_CacheTexture(vis->res_id);
+		vis->startfrac = 0;
+		vis->translucency = (particle->trans + 1) << 8;
 	}
 
 	// get light level
@@ -1329,7 +1594,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		else
 		{
 			int index = (vis->yscale*lightscalexmul)>>(LIGHTSCALESHIFT-1);
-			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+			int lightnum = (sector->lightlevel >> LIGHTSEGSHIFT) + (ctx.bsp.foggy ? 0 : extralight);
 
 			index = std::clamp(index, 0, MAXLIGHTSCALE - 1);
 			lightnum = std::clamp(lightnum, 0, LIGHTLEVELS - 1);
@@ -1339,23 +1604,23 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	}
 }
 
-void R_DrawParticle(vissprite_t* vis)
+void R_DrawParticle(rendercontext_t& ctx, vissprite_t* vis)
 {
 	// Don't bother clipping each individual column
 	const int x1 = vis->x1;
 	const int x2 = vis->x2;
-	const int y1 = std::max({vis->y1, mceilingclip[x1], mceilingclip[x2]});
-	const int y2 = std::min({vis->y2, mfloorclip[x1] - 1, mfloorclip[x2] - 1});
+	const int y1 = std::max({vis->y1, ctx.sprite.mceilingclip[x1], ctx.sprite.mceilingclip[x2]});
+	const int y2 = std::min({vis->y2, ctx.sprite.mfloorclip[x1] - 1, ctx.sprite.mfloorclip[x2] - 1});
 
-	dspan.x1 = vis->x1;
-	dspan.x2 = vis->x2;
-	dspan.colormap = vis->colormap;
-	dspan.translevel = vis->translucency;
+	ctx.draw.dspan.x1 = vis->x1;
+	ctx.draw.dspan.x2 = vis->x2;
+	ctx.draw.dspan.colormap = vis->colormap;
+	ctx.draw.dspan.translevel = vis->translucency;
 	// vis->startfrac holds palette color index
-	dspan.color = vis->startfrac;
+	ctx.draw.dspan.color = vis->startfrac;
 
-	for (dspan.y = y1; dspan.y <= y2; dspan.y++)
-		R_FillTranslucentSpan();
+	for (ctx.draw.dspan.y = y1; ctx.draw.dspan.y <= y2; ctx.draw.dspan.y++)
+		R_FillTranslucentSpan(ctx);
 }
 
 VERSION_CONTROL (r_things_cpp, "$Id$")

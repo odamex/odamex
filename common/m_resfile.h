@@ -33,6 +33,7 @@ enum ofile_t
 
 	/**
 	 * @brief Anything that would be passed as a -file or -iwad parameter.
+	 * Including directories and archives.
 	 */
 	OFILE_WAD,
 
@@ -49,6 +50,7 @@ class OResFile
 {
 	std::string m_fullpath;
 	OMD5Hash m_md5;
+	OMD5Hash m_contentDigest;
 	std::string m_basename;
 
   public:
@@ -66,11 +68,18 @@ class OResFile
 	const OMD5Hash& getMD5() const { return m_md5; }
 
 	/**
+	 * @brief Get the content manifest digest of the file, or an empty hash
+	 *        for resources that are not archives or directories.
+	 */
+	const OMD5Hash& getContentDigest() const { return m_contentDigest; }
+
+	/**
 	 * @brief Get the base filename, with no path.
 	 */
 	const std::string& getBasename() const { return m_basename; }
 
 	static bool make(OResFile& out, const std::string& file);
+	static bool makeDirectory(OResFile& out, const std::string& dir);
 	static bool makeWithHash(OResFile& out, const std::string& file,
 	                         const OMD5Hash& hash);
 };
@@ -84,6 +93,7 @@ class OWantFile
 	std::string m_wantedpath;
 	ofile_t m_wantedtype;
 	OMD5Hash m_wantedMD5;
+	OMD5Hash m_wantedContentDigest;
 	OCRC32Sum m_wantedCRC32;
 	std::string m_basename;
 	std::string m_extension;
@@ -106,6 +116,17 @@ class OWantFile
 	[[nodiscard]] const OMD5Hash& getWantedMD5() const { return m_wantedMD5; }
 
 	/**
+	 * @brief Get the wanted content manifest digest of the resource, or an
+	 *        empty hash if the server did not announce one.
+	 */
+	const OMD5Hash& getWantedContentDigest() const { return m_wantedContentDigest; }
+
+	/**
+	 * @brief Set the wanted content manifest digest of the resource.
+	 */
+	void setWantedContentDigest(const OMD5Hash& digest) { m_wantedContentDigest = digest; }
+
+	/**
 	 * @brief Get the base filename of the resource, with no directory.
 	 */
 	[[nodiscard]] const std::string& getBasename() const { return m_basename; }
@@ -121,12 +142,12 @@ class OWantFile
 };
 using OWantFiles = std::vector<OWantFile>;
 
-struct fileIdentifier_t;
+struct FileIdentifier;
 
 struct scannedIWAD_t
 {
 	std::string path;
-	const fileIdentifier_t* id;
+	const FileIdentifier* id;
 };
 
 struct scannedPWAD_t
@@ -141,3 +162,5 @@ std::vector<std::string> M_FileSearchDirs();
 bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted);
 std::vector<scannedIWAD_t> M_ScanIWADs();
 std::vector<scannedPWAD_t> M_ScanPWADs();
+OMD5Hash M_DirectoryMarkerHash(const std::string& basename);
+bool M_IsDirectoryMarkerHash(const OMD5Hash& hash, const std::string& basename);

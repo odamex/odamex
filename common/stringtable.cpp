@@ -23,16 +23,20 @@
 
 
 #include "odamex.h"
+#include <cstring>
+#include <stddef.h>
 
 #include "stringtable.h"
 
 
 #include "cmdlib.h"
+#include "m_swap.h"
 #include "i_system.h"
 #include "oscanner.h"
 #include "stringenums.h"
 #include "v_textcolors.h"
 #include "w_wad.h"
+#include <resources/res_main.h>
 
 /**
  * @brief Map a ZDoom game name to Odamex's internals and returns true if
@@ -92,7 +96,7 @@ void StringTable::clearStrings()
 //
 // Loads a language
 //
-void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char* lump,
+void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, const char* lump,
                                size_t lumpLen)
 {
 	OScannerConfig config = {
@@ -230,48 +234,6 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char
 	}
 }
 
-void StringTable::loadStringsLump(const int lump, const char* lumpname, const bool engOnly)
-{
-	// Can't use Z_Malloc this early, so we use raw new/delete.
-	size_t len = W_LumpLength(lump);
-	char* languageLump = new char[len + 1];
-	W_ReadLump(lump, languageLump);
-	languageLump[len] = '\0';
-
-	// String replacement pass.  Strings in an later pass can be replaced
-	// by a string in an earlier pass from another lump.
-	int pass = 1;
-
-	if (!engOnly)
-	{
-		// Load language-specific strings.
-		for (size_t i = 0; i < ARRAY_LENGTH(::LanguageIDs); i++)
-		{
-			// Deconstruct code into something less confusing.
-			char code[4];
-			UNMAKE_ID(code, ::LanguageIDs[i]);
-
-			// Language codes are up to three letters long.
-			code[3] = '\0';
-
-			// Try the full language code (enu).
-			loadLanguage(code, true, pass++, languageLump, len);
-
-			// Try the partial language code (en).
-			code[2] = '\0';
-			loadLanguage(code, true, pass++, languageLump, len);
-
-			// Try an inexact match for all languages in the same family (en_).
-			loadLanguage(code, false, pass++, languageLump, len);
-		}
-	}
-
-	// Load string defaults.
-	loadLanguage("**", true, pass++, languageLump, len);
-
-	delete[] languageLump;
-}
-
 void StringTable::prepareIndexes()
 {
 	// All of the default strings have index numbers that represent their
@@ -397,20 +359,57 @@ bool StringTable::hasString(const OString& name) const
 	return true;
 }
 
-//
-// Load strings from all LANGUAGE lumps in all loaded WAD files.
-//
+void StringTable::loadStringsLump(const uint32_t language_res_id, const bool engOnly)
+{
+	// Can't use Z_Malloc this early, so we use raw new/delete.
+	const char* language_data = Res_LoadResource<char>(language_res_id, PU_CACHE);
+	size_t len = Res_GetResourceSize(language_res_id);
+
+	// String replacement pass.  Strings in an later pass can be replaced
+	// by a string in an earlier pass from another lump.
+	int pass = 1;
+
+	if (not engOnly)
+	{
+		// Load language-specific strings.
+		for (size_t i = 0; i < ARRAY_LENGTH(::LanguageIDs); i++)
+		{
+			// Deconstruct code into something less confusing.
+			char code[4];
+			UNMAKE_ID(code, ::LanguageIDs[i]);
+
+			// Language codes are up to three letters long.
+			code[3] = '\0';
+
+			// Try the full language code (enu).
+			loadLanguage(code, true, pass++, language_data, len);
+
+			// Try the partial language code (en).
+			code[2] = '\0';
+			loadLanguage(code, true, pass++, language_data, len);
+
+			// Try an inexact match for all languages in the same family (en_).
+			loadLanguage(code, false, pass++, language_data, len);
+		}
+	}
+
+	// Load string defaults.
+	loadLanguage("**", true, pass++, language_data, len);
+
+	Res_ReleaseResource(language_res_id);
+	language_data = nullptr;
+}
+
 void StringTable::loadStrings(const bool engOnly)
 {
 	clearStrings();
 	prepareIndexes();
 
-	int lump = -1;
-
-	lump = -1;
-	while ((lump = W_FindLump("LANGUAGE", lump)) != -1)
+	const ResourceIdList language_res_ids =
+	    Res_GetAllResourceIds(ResourcePath("/GLOBAL/LANGUAGE"));
+	for (size_t i = 0; i < language_res_ids.size(); i++)
 	{
-		loadStringsLump(lump, "LANGUAGE", engOnly);
+		loadStringsLump(language_res_ids[i], engOnly);
 	}
 }
 

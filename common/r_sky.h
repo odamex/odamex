@@ -23,14 +23,28 @@
 
 #pragma once
 
+#include "c_cvars.h"
+#include "r_defs.h"
+#include "resources/res_resourceid.h"
+
+class Texture;
 
 // SKY, store the number for name.
 inline OLumpName SKYFLATNAME = "F_SKY1";
 
-inline int      sky1texture;
-inline int      sky2texture;
-inline fixed_t	sky2scrollxdelta;
+extern int		sky1shift;
+extern int		sky2shift;
+
+inline fixed_t	sky1scrolldelta;
+inline fixed_t	sky2scrolldelta;
+inline fixed_t	sky1columnoffset;
 inline fixed_t	sky2columnoffset;
+
+extern fixed_t	skytexturemid;
+extern int		skystretch;
+extern fixed_t	skyiscale;
+extern fixed_t	skyscale;
+extern fixed_t	skyheight;
 
 EXTERN_CVAR (r_stretchsky)
 
@@ -40,12 +54,19 @@ void R_InitSkyDefs();
 void R_InitSkiesForLevel();
 void R_ClearSkyDefs();
 void R_SetDefaultSky(const OLumpName& sky);
+void R_SetSkyTextures(const char* sky1_name, const char* sky2_name);
 void R_UpdateSkies();
-bool R_IsSkyFlat(int flatnum);
-void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures);
+void R_ActivateSkies();
 
-void R_RenderSkyRange(visplane_t* pl);
+void R_InterpolateSkyDefs(fixed_t amount);
+void R_TicSkyDefInterpolation();
+void R_RestoreSkyDefs();
 
+struct rendercontext_t;
+void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl);
+
+bool R_ResourceIdIsSkyFlat(const ResourceId res_id);
+static inline bool R_IsSkyFlat(const ResourceId res_id) { return R_ResourceIdIsSkyFlat(res_id); }
 // Sets scroll speed of the current map's sky1 and sky2
 // For ZDoom maps and ACS, may result in strange behavior with skydefs
 void R_SetSkyScrollSpeed(int skynum, fixed_t speed);

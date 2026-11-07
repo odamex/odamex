@@ -29,6 +29,7 @@
 #include "m_bbox.h"
 #include "m_fixed.h"
 #include "p_mobj.h"
+#include "resources/res_main.h"
 
 // mapblocks are used to check movement
 // against lines and things
@@ -59,7 +60,7 @@ class blockmap_t
 
 public:
 
-	static blockmap_t load(int lump);
+	static blockmap_t load(const ResourceId lump);
 
 	[[nodiscard]]
 	bool containsCoordinate(int x, int y) const noexcept

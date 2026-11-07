@@ -23,6 +23,10 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
+#include "resources/res_main.h"
+
 #include "s_sound.h"
 #include "c_dispatch.h"
 #include "oscanner.h"
@@ -66,18 +70,18 @@ int S_FindSound(const char *logicalname)
 	return i;
 }
 
-int S_FindSoundByLump(int lump)
+int S_FindSoundByResourceId(const ResourceId res_id)
 {
-	if (lump != -1)
+	if (Res_CheckResource(res_id))
 	{
 		for (unsigned i = 0; i < S_sfx.size(); i++)
-			if (S_sfx[i].lumpnum == lump)
+			if (S_sfx[i].res_id == res_id)
 				return i;
 	}
 	return -1;
 }
 
-size_t S_AddSoundLump(const char *logicalname, int lump)
+size_t S_AddSoundLump(const char *logicalname, const ResourceId res_id)
 {
 	sfxinfo_t& new_sfx = S_sfx.emplace_back();
 
@@ -85,7 +89,7 @@ size_t S_AddSoundLump(const char *logicalname, int lump)
 	M_StringCopy(new_sfx.name, logicalname, MAX_SNDNAME + 1);
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
-	new_sfx.lumpnum = lump;
+	new_sfx.res_id = res_id;
 	return S_sfx.size() - 1;
 }
 
@@ -109,7 +113,7 @@ size_t FindSoundTentative(const char* name)
 	size_t id = FindSoundNoHash(name);
 	if (id == static_cast<int>(S_sfx.size()))
 	{
-		id = S_AddSoundLump(name, -1);
+		id = S_AddSoundLump(name, ResourceId::INVALID_ID);
 	}
 	return id;
 }
@@ -118,14 +122,15 @@ size_t S_AddSound(const char *logicalname, const char *lumpname)
 {
 	size_t sfxid = FindSoundNoHash(logicalname);
 
-	const int lump = lumpname ? W_CheckNumForName(lumpname) : -1;
+	const ResourceId res_id = lumpname ?
+	    Res_GetResourceId(OStringToUpper(lumpname), NS_SOUNDS) : ResourceId::INVALID_ID;
 
 	// Otherwise, prepare a new one.
 	if (sfxid != S_sfx.size())
 	{
 		sfxinfo_t& sfx = S_sfx[sfxid];
 
-		sfx.lumpnum = lump;
+		sfx.res_id = res_id;
 		sfx.link = sfxinfo_t::NO_LINK;
 		if (sfx.israndom)
 		{
@@ -134,7 +139,7 @@ size_t S_AddSound(const char *logicalname, const char *lumpname)
 		}
 	}
 	else
-		sfxid = S_AddSoundLump(logicalname, lump);
+		sfxid = S_AddSoundLump(logicalname, res_id);
 
 	return sfxid;
 }
@@ -150,17 +155,18 @@ void S_AddRandomSound(size_t owner, std::vector<size_t>& list)
 // Parses all loaded SNDINFO lumps.
 void S_ParseSndInfo()
 {
-	int lump = -1;
-	while ((lump = W_FindLump("SNDINFO", lump)) != -1)
+	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/SNDINFO"));
+	for (size_t res_index = 0; res_index < res_ids.size(); res_index++)
 	{
-		char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
+		const ResourceId res_id = res_ids[res_index];
+		const char* buffer = Res_LoadResource<char>(res_id, PU_CACHE);
 
 		const OScannerConfig config = {
 		    .lumpName     = "SNDINFO",
 		    .semiComments = true,
 		    .cComments    = true,
 		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
 
 		while (os.scan())
 		{
@@ -346,13 +352,13 @@ void S_ParseSndInfo()
 	S_HashSounds();
 
 	CLIENT_ONLY(
-		extern int sfx_empty;
+		extern ResourceId sfx_empty;
 		extern int sfx_noway;
 		extern int sfx_oof;
 
-		sfx_empty = W_CheckNumForName("dsempty");
-		sfx_noway = S_FindSoundByLump(W_CheckNumForName("dsnoway"));
-		sfx_oof = S_FindSoundByLump(W_CheckNumForName("dsoof"));
+		sfx_empty = Res_GetResourceId("DSEMPTY", NS_SOUNDS);
+		sfx_noway = S_FindSoundByResourceId(Res_GetResourceId("DSNOWAY", NS_SOUNDS));
+		sfx_oof = S_FindSoundByResourceId(Res_GetResourceId("DSOOF", NS_SOUNDS));
 	);
 
 }

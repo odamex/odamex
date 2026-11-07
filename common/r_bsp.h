@@ -25,30 +25,23 @@
 
 extern const fixed_t NEARCLIP;
 
-extern const seg_t*		curline;
-extern side_t*		sidedef;
-extern line_t*		linedef;
-extern sector_t*	frontsector;
-extern sector_t*	backsector;
-
 extern bool			skymap;
-
-extern drawseg_t	*drawsegs;
-extern drawseg_t	*firstdrawseg;
-extern drawseg_t*	ds_p;
-
-extern byte			solidcol[MAXWIDTH];
-
-typedef void (*drawfunc_t) (int start, int stop);
 
 EXTERN_CVAR (r_drawflat)		// [RH] Don't texture segs?
 
+struct rendercontext_t;
+
 // BSP?
-void R_ClearClipSegs (void);
-void R_ReallocDrawSegs(void);
-void R_ClearDrawSegs (void);
-void R_RenderBSPNode (int bspnum);
-bool R_DoorClosed(void);	// killough 1/17/98
+void R_ClearClipSegs (rendercontext_t& ctx);
+void R_ReallocDrawSegs(rendercontext_t& ctx);
+void R_ClearDrawSegs (rendercontext_t& ctx);
+void R_RenderBSPNode (rendercontext_t& ctx, int bspnum);
+
+// Counts the subsectors under each node, when the level's nodes change.
+void R_PrepareBSPNodes();
+
+// A sector that fades to a color ignores extralight.
+bool R_SectorIsFoggy(const sector_t* sector);
 
 // killough 4/13/98: fake floors/ceilings for deep water / fake ceilings:
-sector_t *R_FakeFlat(sector_t *, sector_t *, int *, int *, bool);
+sector_t *R_FakeFlat(rendercontext_t& ctx, sector_t *, sector_t *, int *, int *, bool);

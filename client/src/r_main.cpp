@@ -26,12 +26,19 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+#include <chrono>
+#include <numeric>
+#include <vector>
+
 #include <stdlib.h>
 #include <math.h>
+#include <numbers>
 #include "m_random.h"
 #include "p_local.h"
 #include "gi.h"
 #include "r_local.h"
+#include "r_context.h"
 #include "r_sky.h"
 #include "r_interp.h"
 #include "r_voxel.h"
@@ -43,6 +50,7 @@
 #include "m_vectors.h"
 #include "am_map.h"
 #include "cl_demo.h"
+#include "c_dispatch.h"
 
 extern NetDemo netdemo;
 
@@ -53,11 +61,8 @@ int viewheightarray[MAXWIDTH];
 
 void R_SpanInitData ();
 
-extern int *walllights;
-
 // [RH] Defined in d_main.cpp
 extern dyncolormap_t NormalLight;
-extern bool r_fakingunderwater;
 
 EXTERN_CVAR (r_flashhom)
 EXTERN_CVAR (r_viewsize)
@@ -73,8 +78,6 @@ fixed_t			fovtan;
 float			focratio;
 float			ifocratio;
 
-// [RH] colormap currently drawing with
-shaderef_t		basecolormap;
 int				fixedlightlev;
 shaderef_t		fixedcolormap;
 
@@ -99,10 +102,6 @@ static argb_t sector_blend_color(0, 255, 255, 255);
 
 // [SL] Current color blending values (including palette effects)
 fargb_t blend_color(0.0f, 255.0f, 255.0f, 255.0f);
-
-void (*colfunc) (void);
-void (*spanfunc) (void);
-void (*spanslopefunc) (void);
 
 // [AM] Number of fineangles in a default 90 degree FOV at a 4:3 resolution.
 int FieldOfView = 2048;
@@ -307,10 +306,30 @@ fixed_t R_PointToDist2(fixed_t dx, fixed_t dy)
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 {
-	int index = ang >> ANGLETOFINESHIFT;
+	// Exact rotation with double precision.
+	// Because finesine/finecosine are only 16-bit and
+	// caused tons of jittering textures and linedefs,
+	// especially with mouselook on in high-resolution modes.
 
-	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
-	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
+	// This will be the same all frame, so cache the sucker per thread.
+	static thread_local angle_t cached_ang;
+	static thread_local double cached_sin, cached_cos = 1.0;
+
+	if (ang != cached_ang)
+	{
+		cached_ang = ang;
+		// Angle-to-rad calculation.
+		const double rad = ang * ANGLE_TO_RAD;
+		cached_sin = sin(rad);
+		cached_cos = cos(rad);
+	}
+
+	const double xd = FIXED2DOUBLE(x);
+	const double yd = FIXED2DOUBLE(y);
+
+
+	tx = static_cast<fixed_t>(static_cast<int64_t>(((xd * cached_cos) - (yd * cached_sin)) * static_cast<double>(FRACUNIT)));
+	ty = static_cast<fixed_t>(static_cast<int64_t>(((xd * cached_sin) + (yd * cached_cos)) * static_cast<double>(FRACUNIT)));
 }
 
 //
@@ -420,7 +439,6 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 //
 static inline int64_t R_iMul30(int64_t a, int64_t b) { return (a * b) >> 30; }
 static inline int64_t R_iDiv30(int64_t a, int64_t b) { return (a << 30) / b; }
-static inline int64_t R_iMulFrac(int64_t a, int64_t b) { return (a * b) >> FRACBITS; }
 
 void R_RotatePoint64(int64_t x, int64_t y, angle_t ang, int64_t& tx, int64_t& ty)
 {
@@ -470,8 +488,8 @@ bool R_ClipLineToFrustum64(const v2fixed64_t& v1, const v2fixed64_t& v2, int64_t
 	// apply the clipping against the 'y = clipdist' plane to p1 & p2
 	R_ClipLine64(v1, v2, lclip, rclip, p1, p2);
 
-	const int64_t yc1 = R_iMulFrac(fovtan, p1.y);
-	const int64_t yc2 = R_iMulFrac(fovtan, p2.y);
+	const int64_t yc1 = FixedMulWide(fovtan, p1.y);
+	const int64_t yc2 = FixedMulWide(fovtan, p2.y);
 
 	// is the entire line off the left side or the right side of the screen?
 	if ((p1.x < -yc1 && p2.x < -yc2) || (p1.x > yc1 && p2.x > yc2))
@@ -520,7 +538,7 @@ int R_ProjectPointX64(int64_t x, int64_t y)
 int R_ProjectPointX(fixed_t x, fixed_t y)
 {
 	if (y > 0)
-		return FIXED2INT(centerxfrac + int64_t(FocalLengthX) * int64_t(x) / int64_t(y));
+		return FIXED2INT(centerxfrac + (static_cast<int64_t>(FocalLengthX) * static_cast<int64_t>(x) / static_cast<int64_t>(y)));
 	else
 		return centerx;
 }
@@ -533,7 +551,7 @@ int R_ProjectPointX(fixed_t x, fixed_t y)
 int R_ProjectPointY(fixed_t z, fixed_t y)
 {
 	if (y > 0)
-		return FIXED2INT(centeryfrac - int64_t(FocalLengthY) * int64_t(z) / int64_t(y));
+		return FIXED2INT(centeryfrac - (static_cast<int64_t>(FocalLengthY) * static_cast<int64_t>(z) / static_cast<int64_t>(y)));
 	else
 		return centery;
 }
@@ -568,9 +586,11 @@ bool R_CheckProjectionY(int &y1, int &y2)
 //
 // R_DrawPixel
 //
-static inline void R_DrawPixel(int x, int y, byte color)
+static inline void R_DrawPixel(rendercontext_t& ctx, int x, int y, byte color)
 {
-	byte* dest = dcol.destination + y * dcol.pitch_in_pixels + x;
+	const drawcolumn_t& dcol = ctx.draw.dcol;
+
+	byte* dest = dcol.destination + (y * dcol.pitch_in_pixels) + (x * dcol.colstep);
 	*dest = color;
 }
 
@@ -580,7 +600,7 @@ static inline void R_DrawPixel(int x, int y, byte color)
 //
 // Draws a colored line between the two endpoints given in world coordinates.
 //
-void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
+void R_DrawLine(rendercontext_t& ctx, const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 {
 	// convert from world-space to camera-space
 	v3fixed_t pt1, pt2;
@@ -629,7 +649,7 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 
 		while (1)
 		{
-			R_DrawPixel(x, y, color);
+			R_DrawPixel(ctx, x, y, color);
 			if (x == x2)
 				return;
 
@@ -647,7 +667,7 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 		d = ax - ay/2;
 		while (1)
 		{
-			R_DrawPixel(x, y, color);
+			R_DrawPixel(ctx, x, y, color);
 			if (y == y2)
 				return;
 
@@ -774,7 +794,14 @@ void R_SetViewAngle(angle_t ang)
 //
 static void R_ViewShear(angle_t pitch)
 {
-	fixed_t dy = FixedMul(FocalLengthY, finetangent[(ANG90 - pitch) >> ANGLETOFINESHIFT]);
+	// Same thing here with finesine/finecosine,
+	// we need to use double precision (32-bit)
+	// to avoid jittering in viewshear.
+	//
+	// tan(pitch-to-rad)
+	const double tanpitch =
+	    tan(static_cast<int32_t>(pitch) * ANGLE_TO_RAD);
+	const fixed_t dy = DOUBLE2FIXED(-FIXED2DOUBLE(FocalLengthY) * tanpitch);
 
 	centeryfrac = (viewheight << (FRACBITS - 1)) + dy;
 	centery = centeryfrac >> FRACBITS;
@@ -862,7 +889,7 @@ argb_t R_GetSectorBlend()
 // R_SetupFrame
 //
 //
-void R_SetupFrame (player_t *player)
+void R_SetupFrame (rendercontext_t& ctx, player_t *player)
 {
 	camera = player->camera;	// [RH] Use camera instead of viewplayer
 
@@ -938,7 +965,7 @@ void R_SetupFrame (player_t *player)
 			fixedcolormap = shaderef_t(&pal->maps, player->fixedcolormap);
 		}
 
-		walllights = scalelightfixed;
+		ctx.seg.walllights = scalelightfixed;
 
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
@@ -955,7 +982,7 @@ void R_SetupFrame (player_t *player)
 	}
 
 	// [RH] Hack to make windows into underwater areas possible
-	r_fakingunderwater = false;
+	ctx.bsp.r_fakingunderwater = false;
 
 	framecount++;
 	validcount++;
@@ -967,11 +994,12 @@ void R_SetupFrame (player_t *player)
 // Sets the drawing function pointers to functions that floodfill with
 // flat colors instead of texture mapping.
 //
-void R_SetFlatDrawFuncs()
+void R_SetFlatDrawFuncs(rendercontext_t& ctx)
 {
-	colfunc = R_FillColumn;
-	spanfunc = R_FillSpan;
-	spanslopefunc = R_FillSpan;
+	ctx.draw.colfunc = R_FillColumn;
+	ctx.draw.spanfunc = R_FillSpan;
+	ctx.draw.levelcolfunc = nullptr;
+	ctx.draw.slopecolfunc = nullptr;
 }
 
 //
@@ -980,112 +1008,116 @@ void R_SetFlatDrawFuncs()
 // Sets the drawing function pointers to functions that draw nothing.
 // These can be used instead of the flat color functions for lucent midtex.
 //
-void R_SetBlankDrawFuncs()
+void R_SetBlankDrawFuncs(rendercontext_t& ctx)
 {
-	colfunc = R_BlankColumn;
-	spanfunc = spanslopefunc = R_BlankSpan;
+	ctx.draw.colfunc = R_BlankColumn;
+	ctx.draw.spanfunc = R_BlankSpan;
+	ctx.draw.levelcolfunc = nullptr;
+	ctx.draw.slopecolfunc = nullptr;
 }
 
 //
 // R_ResetDrawFuncs
 //
-void R_ResetDrawFuncs()
+void R_ResetDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawColumn;
-		spanfunc = R_DrawSpan;
-		spanslopefunc = R_DrawSlopeSpan;
+		ctx.draw.colfunc = R_DrawColumn;
+		ctx.draw.spanfunc = nullptr;
+		ctx.draw.levelcolfunc = R_DrawLevelColumn;
+		ctx.draw.slopecolfunc = R_DrawSlopeColumn;
 	}
 }
 
-void R_SetFuzzDrawFuncs()
+void R_SetFuzzDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawFuzzColumn;
-		spanfunc = R_DrawSpan;
-		spanslopefunc = R_DrawSlopeSpan;
+		ctx.draw.colfunc = R_DrawFuzzColumn;
+		ctx.draw.spanfunc = nullptr;
+		ctx.draw.levelcolfunc = R_DrawLevelColumn;
+		ctx.draw.slopecolfunc = R_DrawSlopeColumn;
 	}
 }
 
-void R_SetLucentDrawFuncs()
+void R_SetLucentDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawTranslucentColumn;
+		ctx.draw.colfunc = R_DrawTranslucentColumn;
 	}
 }
 
-void R_SetTranslatedDrawFuncs()
+void R_SetTranslatedDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawTranslatedColumn;
+		ctx.draw.colfunc = R_DrawTranslatedColumn;
 	}
 }
 
-void R_SetTranslatedLucentDrawFuncs()
+void R_SetTranslatedLucentDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawTlatedLucentColumn;
+		ctx.draw.colfunc = R_DrawTlatedLucentColumn;
 	}
 }
 
-void R_SetSkyForegroundDrawFuncs()
+void R_SetSkyForegroundDrawFuncs(rendercontext_t& ctx)
 {
 	if (nodrawers)
 	{
-		R_SetBlankDrawFuncs();
+		R_SetBlankDrawFuncs(ctx);
 	}
 	else if (r_drawflat)
 	{
-		R_SetFlatDrawFuncs();
+		R_SetFlatDrawFuncs(ctx);
 	}
 	else
 	{
-		colfunc = R_DrawSkyForegroundColumn;
+		ctx.draw.colfunc = R_DrawSkyForegroundColumn;
 	}
 }
 
@@ -1094,6 +1126,10 @@ void R_SetSkyForegroundDrawFuncs()
 //
 void R_RenderPlayerView(player_t* player)
 {
+	// r_threads changed? Add/remove contexts.
+	if (R_SyncRenderContexts())
+		setsizeneeded = true;
+
 	// Recalculate the viewing window dimensions, if needed.
 	if (setsizeneeded)
 	{
@@ -1107,17 +1143,7 @@ void R_RenderPlayerView(player_t* player)
 	if (!viewactive)
 		return;
 
-	R_SetupFrame(player);
-
-	// Clear buffers.
-	R_ClearClipSegs();
-	R_ClearDrawSegs();
-	R_ClearOpenings();
-	R_ClearPlanes(true);
-	R_ClearSprites();
-	VX_ClearVoxels();
-
-	R_ResetDrawFuncs();
+	R_SetupFrame(rctx, player);
 
 	IWindowSurface* surface = R_GetRenderingSurface();
 
@@ -1125,10 +1151,7 @@ void R_RenderPlayerView(player_t* player)
 	if (r_flashhom)
 	{
 		argb_t color = gametic & 8 ? argb_t(0, 0, 0) : argb_t(0, 0, 255);
-		int x1 = viewwindowx, y1 = viewwindowy;
-		int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1;
-
-		surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, color);
+		R_ClearViewBuffer(surface, color);
 	}
 
 	OInterpolation::getInstance().beginGameInterpolation(render_lerp_amount);
@@ -1138,29 +1161,118 @@ void R_RenderPlayerView(player_t* player)
 
     // [Russell] - From zdoom 1.22 source, added camera pointer check
 	// Never draw the player unless in chasecam mode
-	if (camera && camera->player && !(player->cheats & CF_CHASECAM))
+	const bool hideplayer = camera and camera->player and not (player->cheats & CF_CHASECAM);
+	ActorFlags2 flags2_backup = ActorFlags2::none_set();
+	if (hideplayer)
 	{
-		const auto flags2_backup = camera->flags2;
+		flags2_backup = camera->flags2;
 		camera->flags2 |= MF2_DONTDRAW;
-		R_RenderBSPNode(numnodes - 1);
-		camera->flags2 = flags2_backup;
 	}
-	else
-		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
 
-	VX_NearbySprites();
+	// Read walllights before it gets mutated.
+	int* const frame_walllights = rctx.seg.walllights;
 
-	R_DrawPlanes();
-	R_DrawPortals();
-	R_DrawMasked();
+	// Render the view as vertical slices, one context each.
+	const int nslices = R_ActiveSlices();
+
+	// Pass 1: traversal and planes.
+	//
+	// The slices are sized by how long each took in the last pass 1, and
+	// handed out slowest first by those times, so the threads that wake first
+	// take the heaviest and a late one is left a light slice.
+	R_BalanceSlices(nslices);
+
+	int pass1order[MAXRENDERSLICES];
+
+	const auto pass1 = [&](bool fakingunderwater)
+	{
+		std::iota(pass1order, pass1order + nslices, 0);
+		std::stable_sort(pass1order, pass1order + nslices, [](int a, int b) {
+			return R_SliceContext(a).pass1time > R_SliceContext(b).pass1time;
+		});
+
+		R_BeginSpriteClaims();
+
+		R_RunSlices(nslices, [&](int i)
+		{
+			const auto slicestart = std::chrono::steady_clock::now();
+
+			rendercontext_t& ctx = R_SliceContext(i);
+
+			ctx.seg.walllights = frame_walllights;
+			ctx.bsp.r_fakingunderwater = fakingunderwater;
+
+			// Clear buffers.
+			R_ClearClipSegs(ctx);
+			R_ClearDrawSegs(ctx);
+			R_ClearOpenings(ctx);
+			R_ClearPlanes(ctx, true);
+			R_ClearSprites(ctx);
+			VX_ClearVoxels(ctx);
+
+			R_ResetDrawFuncs(ctx);
+
+			R_RenderBSPNode(ctx, numnodes - 1);
+
+			R_DrawPlanes(ctx);
+
+			ctx.pass1time = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+			    std::chrono::steady_clock::now() - slicestart).count());
+		}, pass1order);
+	};
+
+	R_PrepareBSPNodes();
+
+	pass1(false);
+
+	// If one slice encounters deep water, change it for all of them.
+	if (nslices > 1)
+	{
+		int faking = 0;
+		for (int i = 0; i < nslices; i++)
+			faking += R_SliceContext(i).bsp.r_fakingunderwater;
+
+		if (faking > 0 and faking < nslices)
+			pass1(true);
+	}
+
+	// A voxel has depth, so one standing just outside the walked subsectors
+	// can still reach into the view. Slice 0's context projects them, after
+	// every slice's walk has claimed its sectors.
+	VX_NearbySprites(rctx);
+
+	// Pass 2: portals and skyboxes.
+	R_DrawPortals(nslices);
+
+	// Pass 3: sprites and masked midtextures.
+	static std::vector<rendercontext_t*> allslices;
+	allslices.clear();
+	for (int i = 0; i < nslices; i++)
+		allslices.push_back(&R_SliceContext(i));
+	R_RunSlices(nslices, [](int i) { R_DrawMasked(R_SliceContext(i), allslices, true); });
+
+	if (hideplayer)
+		camera->flags2 = flags2_backup;
+
+	// The weapon sprite spans the whole view, so it is drawn once rather than
+	// per slice.
+	R_DrawPlayerSprites(rctx);
 
 	// NOTE(jsd): Full-screen status color blending:
-	int blend_alpha = int(blend_color.geta() * 255.0f);
-	if (surface->getBitsPerPixel() == 32 && blend_alpha > 0)
+	const int blend_alpha = static_cast<int>(blend_color.geta() * 255.0f);
+	if (surface->getBitsPerPixel() == 32 and blend_alpha > 0)
 	{
-		r_dimpatchD(surface, V_GammaCorrect(blend_color), blend_alpha,
-						viewwindowx, viewwindowy, viewwidth, viewheight);
+		// Distribute damage/item flash across render slices
+		const argb_t blend_argb = V_GammaCorrect(blend_color);
+		R_RunSlices(nslices, [&](int i) {
+			const rendercontext_t& ctx = R_SliceContext(i);
+			r_dimpatchD(surface, blend_argb, blend_alpha, viewwindowx + ctx.slice_start,
+			            viewwindowy, ctx.sliceWidth(), viewheight);
+		});
 	}
+
+	// mark the slice boundaries the partition would use
+	R_ShowContexts();
 
 	OInterpolation::getInstance().endGameInterpolation();
 }
@@ -1296,14 +1408,14 @@ static void R_InitViewWindow()
 	if (consoleplayer().camera && consoleplayer().camera->player)
 		desired_fov = std::clamp(consoleplayer().camera->player->fov, 45.0f, 135.0f);
 
-	FieldOfView = int(desired_fov * FINEANGLES / 360.0f);
+	FieldOfView = static_cast<int>(desired_fov * FINEANGLES / 360.0f);
 
 	if (V_UseWidescreen())
 	{
 		float am = (3.0f * I_GetSurfaceWidth()) / (4.0f * I_GetSurfaceHeight());
 		float radfov = desired_fov * PI / 180.0f;
 		float widefov = (2 * atan(am * tan(radfov / 2))) * 180.0f / PI;
-		CorrectFieldOfView = int(widefov * FINEANGLES / 360.0f);
+		CorrectFieldOfView = static_cast<int>(widefov * FINEANGLES / 360.0f);
 	}
 	else
  	{
@@ -1319,6 +1431,8 @@ static void R_InitViewWindow()
 
 	focratio = yfoc / xfoc;
 	ifocratio = xfoc / yfoc;
+
+	R_InitWallRays();
 
 	// psprite scales
 	// [AM] Using centerxfrac will make our sprite too fat, so we
@@ -1348,11 +1462,13 @@ static void R_InitViewWindow()
 
 	R_InitLightTables(surface_width, surface_height);
 
-	R_PlaneInitData(surface);
+	for (int i = 0; i < R_ActiveSlices(); i++)
+		R_PlaneInitData(R_SliceContext(i), surface);
+
 	R_InitSkyMap();
 
-	dcol.destination = dspan.destination = surface->getBuffer(viewwindowx, viewwindowy);
-	dcol.pitch_in_pixels = dspan.pitch_in_pixels = surface->getPitchInPixels();
+	for (int i = 0; i < R_ActiveSlices(); i++)
+		R_BindViewBuffer(R_SliceContext(i), surface);
 
 	surface->unlock();
 
@@ -1412,7 +1528,191 @@ void R_ExitLevel()
 	blend_color = fargb_t(0.0f, 255.0f, 255.0f, 255.0f);
 	V_ForceBlend(blend_color);
 
-	r_underwater = false;
+	::rctx.bsp.r_underwater = false;
 }
+
+// ============================================================================
+//
+// r_benchmark
+//
+// Renders the current view repeatedly without ticking the game or presenting, and
+// reports the distribution of frame times.
+//
+// Hand-played A/Bs compare samples that saw different scenes.
+// Here the simulation does not advance, so the camera, the world and the
+// work are identical every iteration and between runs from the same spot.
+//
+// READ THE MINIMUM: it is the one figure the OS cannot inflate. The mean and p95
+// only say how much interference there was.
+//
+// Given a cvar and two values, the settings are INTERLEAVED frame by frame rather
+// than run back to back, which cancels thermal drift and background load.
+//
+//   r_benchmark [frames]
+//   r_benchmark <frames> <cvar> <valueA> <valueB>
+//
+// ============================================================================
+
+namespace
+{
+
+struct BenchSummary
+{
+	double min, median, mean, p95;
+};
+
+BenchSummary R_SummariseFrameTimes(std::vector<double>& ms)
+{
+	std::sort(ms.begin(), ms.end());
+
+	BenchSummary out;
+	out.min = ms.front();
+	out.median = ms[ms.size() / 2];
+	out.p95 = ms[std::min(ms.size() - 1, ms.size() * 95 / 100)];
+
+	double total = 0.0;
+	for (double v : ms)
+		total += v;
+	out.mean = total / static_cast<double>(ms.size());
+
+	return out;
+}
+
+double R_TimeOneView(player_t* player)
+{
+	const auto start = std::chrono::steady_clock::now();
+	R_RenderPlayerView(player);
+	const auto elapsed = std::chrono::steady_clock::now() - start;
+
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count() / 1.0e6;
+}
+
+void R_PrintBenchLine(const char* label, const BenchSummary& b)
+{
+	PrintFmt(PRINT_HIGH, "  {:<16} min {:7.3f}   median {:7.3f}   mean {:7.3f}   p95 {:7.3f} ms\n",
+			label, b.min, b.median, b.mean, b.p95);
+}
+
+} // namespace
+
+BEGIN_COMMAND(r_benchmark)
+{
+	if (not g_ValidLevel or not gametic or not viewactive)
+	{
+		PrintFmt(PRINT_HIGH, "r_benchmark: needs an active level view\n");
+		return;
+	}
+
+	int frames = 200;
+	if (argc > 1)
+		frames = std::clamp(atoi(argv[1]), 10, 20000);
+
+	cvar_t* swept = nullptr;
+	std::string value_a, value_b, restore;
+
+	if (argc > 4)
+	{
+		cvar_t* prev = nullptr;
+		swept = cvar_t::FindCVar(argv[2], &prev);
+
+		if (swept == nullptr)
+		{
+			PrintFmt(PRINT_HIGH, "r_benchmark: no such cvar \"{}\"\n", argv[2]);
+			return;
+		}
+
+		value_a = argv[3];
+		value_b = argv[4];
+		restore = swept->cstring();
+
+		// A cvar can decline the write -- CVAR_NOSET refuses outright, CVAR_LATCH
+		// only latches while a level runs -- and then both arms measure the same
+		// code. Check the value that reads back.
+		swept->Set(value_a);
+		if (value_a != swept->cstring())
+		{
+			PrintFmt(PRINT_HIGH, "r_benchmark: {} refused the value \"{}\" (it read back as \"{}\")\n",
+					swept->name(), value_a, swept->cstring());
+			PrintFmt(PRINT_HIGH, "  A latched or read-only cvar cannot be swept.\n");
+			swept->Set(restore);
+			return;
+		}
+	}
+	else if (argc > 2)
+	{
+		PrintFmt(PRINT_HIGH, "r_benchmark: usage is \"r_benchmark <frames> <cvar> <a> <b>\"\n");
+		return;
+	}
+
+	player_t* player = &displayplayer();
+
+	// Enough to settle the caches, the branch predictors and the clock.
+	const int warmup = std::max(16, frames / 4);
+	for (int i = 0; i < warmup; i++)
+	{
+		if (swept)
+			swept->Set(value_a);
+		R_RenderPlayerView(player);
+
+		if (swept)
+		{
+			swept->Set(value_b);
+			R_RenderPlayerView(player);
+		}
+	}
+
+	std::vector<double> a, b;
+	a.reserve(frames);
+	b.reserve(frames);
+
+	for (int i = 0; i < frames; i++)
+	{
+		if (swept)
+			swept->Set(value_a);
+		a.push_back(R_TimeOneView(player));
+
+		if (swept)
+		{
+			swept->Set(value_b);
+			b.push_back(R_TimeOneView(player));
+		}
+	}
+
+	if (swept)
+		swept->Set(restore);
+
+	const int bpp = I_GetPrimarySurface()->getBitsPerPixel();
+
+	PrintFmt(PRINT_HIGH, "r_benchmark: {} frames{}, column-major view {}x{}, {}bpp\n",
+			frames, swept ? " per setting, interleaved" : "",
+			viewwidth, viewheight, bpp);
+
+	// What makes two runs comparable: same origin, angle and view size means the
+	// two samples rendered the same scene.
+	PrintFmt(PRINT_HIGH, "  from  {:.2f},{:.2f},{:.2f}  angle {:.2f}\n",
+			FIXED2FLOAT(viewx), FIXED2FLOAT(viewy), FIXED2FLOAT(viewz),
+			360.0 * static_cast<double>(viewangle) / 4294967296.0);
+
+	const BenchSummary sa = R_SummariseFrameTimes(a);
+
+	if (not swept)
+	{
+		R_PrintBenchLine("view render", sa);
+		return;
+	}
+
+	const BenchSummary sb = R_SummariseFrameTimes(b);
+
+	R_PrintBenchLine((std::string(swept->name()) + " " + value_a).c_str(), sa);
+	R_PrintBenchLine((std::string(swept->name()) + " " + value_b).c_str(), sb);
+
+	// Minimum against minimum -- the cleanest statement of the difference.
+	if (sb.min > 0.0 and sa.min > 0.0)
+	{
+		PrintFmt(PRINT_HIGH, "  min-to-min       {:.3f} -> {:.3f} ms   ({:+.1f}%, {:.2f}x)\n",
+				sa.min, sb.min, 100.0 * (sb.min - sa.min) / sa.min, sa.min / sb.min);
+	}
+}
+END_COMMAND(r_benchmark)
 
 VERSION_CONTROL (r_main_cpp, "$Id$")

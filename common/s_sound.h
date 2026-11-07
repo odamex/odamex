@@ -25,7 +25,9 @@
 
 #include "m_fixed.h"
 
-#define MAX_SNDNAME 63
+#include "resources/res_main.h"
+
+#define MAX_SNDNAME			63
 
 class AActor;
 class FArchive;
@@ -44,12 +46,13 @@ struct sfxinfo_t
 	size_t link;
 	enum { NO_LINK = 0xffffffff };
 
-	int lumpnum;              // lump number of sfx
-	unsigned int ms;          // [RH] length of sfx in milliseconds
-	unsigned int next, index; // [RH] For hashing
-	unsigned int frequency;   // [RH] Preferred playback rate
-	unsigned int length;      // [RH] Length of the sound in bytes
-	bool israndom;            // [DE] Whether or not this is an alias for a set of random sounds
+	ResourceId	res_id;
+
+	unsigned int ms;					// [RH] length of sfx in milliseconds
+	unsigned int next, index;			// [RH] For hashing
+	unsigned int frequency;				// [RH] Preferred playback rate
+	unsigned int length;				// [RH] Length of the sound in bytes
+	bool israndom; // [DE] Whether or not this is an alias for a set of random sounds
 };
 
 enum class amb_type_t
@@ -193,9 +196,9 @@ void S_ParseSndInfo();
 
 void S_HashSounds();
 int S_FindSound(const char* logicalname);
-int S_FindSoundByLump(int lump);
+int S_FindSoundByResourceId(const ResourceId res_id);
 size_t S_AddSound(const char* logicalname, const char* lumpname); // Add sound by lumpname
-size_t S_AddSoundLump(char* logicalname, int lump);         // Add sound by lump index
+size_t S_AddSoundLump(const char* logicalname, const ResourceId res_id); // Add sound by ResourceId
 void S_AddRandomSound(size_t owner, std::vector<size_t>& list);
 void S_ClearSoundLumps();
 

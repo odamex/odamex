@@ -31,6 +31,7 @@
 #include "m_argv.h"
 #include "i_music.h"
 #include "i_system.h"
+#include "resources/res_identifier.h"
 
 #include "i_musicsystem.h"
 #ifdef OSX
@@ -56,81 +57,6 @@ EXTERN_CVAR (snd_nomusic)
 std::string currentmusic;
 
 //
-// S_MusicIsMus()
-//
-// Determines if a music lump is in the MUS format based on its header.
-//
-bool S_MusicIsMus(byte* data, size_t length)
-{
-	if (length > 4 && data[0] == 'M' && data[1] == 'U' &&
-		data[2] == 'S' && data[3] == 0x1A)
-		return true;
-
-	return false;
-}
-
-//
-// S_MusicIsMidi()
-//
-// Determines if a music lump is in the MIDI format based on its header.
-//
-bool S_MusicIsMidi(byte* data, size_t length)
-{
-	if (length > 4 && data[0] == 'M' && data[1] == 'T' &&
-		data[2] == 'h' && data[3] == 'd')
-		return true;
-
-	return false;
-}
-
-//
-// S_MusicIsOgg()
-//
-// Determines if a music lump is in the OGG format based on its header.
-//
-bool S_MusicIsOgg(byte* data, size_t length)
-{
-	if (length > 4 && data[0] == 'O' && data[1] == 'g' &&
-		data[2] == 'g' && data[3] == 'S')
-		return true;
-
-	return false;
-}
-
-//
-// S_MusicIsMp3()
-//
-// Determines if a music lump is in the MP3 format based on its header.
-//
-bool S_MusicIsMp3(byte* data, size_t length)
-{
-	// ID3 tag starts the file
-	if (length > 4 && data[0] == 'I' && data[1] == 'D' &&
-		data[2] == '3' && data[3] == 0x03)
-		return true;
-
-	// MP3 frame sync starts the file
-	if (length > 2 && data[0] == 0xFF && (data[1] & 0xE0))
-		return true;
-
-	return false;
-}
-
-//
-// S_MusicIsWave()
-//
-// Determines if a music lump is in the WAVE/RIFF format based on its header.
-//
-bool S_MusicIsWave(byte* data, size_t length)
-{
-	if (length > 4 && data[0] == 'R' && data[1] == 'I' &&
-		data[2] == 'F' && data[3] == 'F')
-		return true;
-
-	return false;
-}
-
-//
 // I_ResetMidiVolume()
 //
 // [SL] 2011-12-31 - Set all midi devices' output volume to maximum in the OS.
@@ -154,7 +80,7 @@ void I_ResetMidiVolume()
 		// Set the midi device's volume
 		static constexpr DWORD volume = 0xFFFFFFFF;		// maximum volume
 		if (result == MMSYSERR_NOERROR && (caps.dwSupport & MIDICAPS_VOLUME))
-			midiOutSetVolume((HMIDIOUT)device, volume);
+			midiOutSetVolume(reinterpret_cast<HMIDIOUT>(static_cast<uintptr_t>(device)), volume);
 	}
 
 	SDL_UnlockAudio();
@@ -281,7 +207,7 @@ static MusicSystemType I_SelectMusicSystem(byte *data, size_t length)
 	if (snd_musicsystem == MS_NONE)
 		return MS_NONE;
 
-	bool ismidi = (S_MusicIsMus(data, length) || S_MusicIsMidi(data, length));
+	bool ismidi = (Res_MusicIsMus(data, length) or Res_MusicIsMidi(data, length));
 
 	if (ismidi)
 		return I_ResolveMusicSystem(snd_musicsystem.asInt());
@@ -342,3 +268,4 @@ bool I_QrySongPlaying (int handle)
 }
 
 VERSION_CONTROL (i_music_cpp, "$Id$")
+

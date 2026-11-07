@@ -29,7 +29,6 @@
 #include "m_random.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
-#include "w_wad.h"
 #include "z_zone.h"
 #include "i_system.h"
 #include "cmdlib.h"
@@ -428,18 +427,19 @@ void S_ParseSndSeq()
 	ScriptTemp = static_cast<unsigned int *>(M_Malloc(MAX_SEQSIZE * sizeof(*ScriptTemp)));
 	ScriptTempSize = MAX_SEQSIZE;
 
-	int lump = -1;
-	while ((lump = W_FindLump("SNDSEQ", lump)) != -1)
+	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/SNDSEQ"));
+	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
+		const char* buffer = Res_LoadResource<char>(res_ids[i], PU_STATIC);
 
 		OScannerConfig config = {
 		    "SNDSEQ", // lumpName
 		    false,    // semiComments
 		    true,     // cComments
 		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
 
+		OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_ids[i]));
+		
 		while (os.scan())
 		{
 			std::string str = os.getToken();

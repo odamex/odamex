@@ -24,18 +24,25 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+#include <vector>
+
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
 #include "r_state.h"
 #include "z_zone.h"
-#include "w_wad.h"
 #include "gi.h"
 #include "svc_message.h"
 #include "p_mapformat.h"
+#include "m_ostring.h"
+#include "m_random.h"
+#include "cmdlib.h"
+#include "oscanner.h"
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 EXTERN_CVAR(co_zdoomsound)
-extern int numtextures;
 
 //
 // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
@@ -54,19 +61,116 @@ public:
 	};
 
 	DActiveButton ();
-	DActiveButton (line_t *, EWhere, int16_t tex, int32_t time, fixed_t x, fixed_t y);
+	DActiveButton (line_t *, EWhere, int32_t switch_def, ResourceId res_id, bool flippable,
+	               fixed_t x, fixed_t y);
 
 	void RunThink () override;
 
 	line_t	*m_Line;
 	EWhere	m_Where;
-	int16_t	m_Texture;
+	ResourceId m_ResId;	// texture before the press, restored if no pair leads back
 	int32_t	m_Timer;
 	fixed_t	m_X, m_Y;	// Location of timer sound
+	int32_t	m_SwitchDef;	// index into switchdefs of the frames playing
+	int32_t	m_Frame;
+	bool	m_Flippable;	// returns once the switch has been on for BUTTONTIME
+	bool	m_Returning;
+
+private:
+	void setTexture(ResourceId res_id);
+	bool startFrame();
 };
 
-static int *switchlist;
-static int  numswitches;
+//
+// What pressing a switch showing its pre-switched texture does.
+//
+// The frames play in order and the switch stays on the last one.
+// 
+// The pair is the definition for that last texture, which plays
+// when a reusable switch returns.
+//
+// The SWITCHES lump gives each definition a single frame.
+// ANIMDEFS switch definitions can have several, and their own sounds.
+//
+struct switchframe_t
+{
+	ResourceId texture;
+	int32_t time_min;
+	int32_t time_rnd;	// adds 0 to time_rnd - 1 tics
+};
+
+struct switchdef_t
+{
+	ResourceId pretexture;
+	std::vector<switchframe_t> frames;
+	OString sound;		// empty for the usual switch sounds
+	int32_t pair = -1;	// index into switchdefs
+};
+
+static std::vector<switchdef_t> switchdefs;
+
+// As in ZDoom, a sound that doesn't exist gets the usual switch sound instead.
+bool P_SwitchSoundExists(const switchdef_t& def)
+{
+	return not def.sound.empty() and S_FindSound(def.sound.c_str()) != -1;
+}
+
+int32_t P_FindSwitchDef(const ResourceId pretexture)
+{
+	for (size_t i = 0; i < switchdefs.size(); i++)
+		if (switchdefs[i].pretexture == pretexture)
+			return static_cast<int32_t>(i);
+	return -1;
+}
+
+int32_t P_StoreSwitchDef(const switchdef_t& def, const int32_t index)
+{
+	if (index >= 0)
+	{
+		switchdefs[index] = def;
+		return index;
+	}
+	switchdefs.push_back(def);
+	return static_cast<int32_t>(switchdefs.size() - 1);
+}
+
+//
+// P_AddSwitchPair
+//
+// Adds a switch's on and off definitions.
+//
+// When replace is on, they take over from any definitions
+// for the same textures, same behavior as ZDoom.
+// 
+// Without it a texture keeps the first pair that names it -- vanilla behavior.
+//
+void P_AddSwitchPair(const switchdef_t& on, const switchdef_t& off, bool replace)
+{
+	int32_t on_index = P_FindSwitchDef(on.pretexture);
+	int32_t off_index = P_FindSwitchDef(off.pretexture);
+
+	if (not replace and (on_index >= 0 or off_index >= 0))
+	{
+		if (on_index < 0)
+			P_StoreSwitchDef(on, -1);
+		if (off_index < 0)
+			P_StoreSwitchDef(off, -1);
+		return;
+	}
+
+	on_index = P_StoreSwitchDef(on, on_index);
+	off_index = P_StoreSwitchDef(off, off_index);
+
+	// A replaced definition no longer leads back to its old pair.
+	for (size_t i = 0; i < switchdefs.size(); i++)
+	{
+		if (switchdefs[i].pair == on_index or switchdefs[i].pair == off_index)
+			switchdefs[i].pair = -1;
+	}
+
+	switchdefs[on_index].pair = off_index;
+	switchdefs[off_index].pair = on_index;
+}
 
 //
 // P_InitSwitchList
@@ -76,44 +180,190 @@ static int  numswitches;
 //		MAXSWITCHES limit.
 void P_InitSwitchList(void)
 {
-	byte *alphSwitchList = W_CacheLumpName<byte>("SWITCHES", PU_STATIC);
-	byte *list_p;
-	int i;
+	switchdefs.clear();
 
-	for (i = 0, list_p = alphSwitchList; list_p[18] || list_p[19]; list_p += 20, i++)
-		;
+	const ResourceId res_id = Res_GetResourceId("SWITCHES", NS_GLOBAL);
+	const byte *alphSwitchList = Res_LoadResource<byte>(res_id, PU_STATIC);
 
-	if (i == 0)
+	for (const byte* list_p = alphSwitchList; list_p[18] || list_p[19]; list_p += 20)
 	{
-		switchlist = Z_Malloc<int>(1, PU_STATIC);
-		*switchlist = -1;
-		numswitches = 0;
-	}
-	else
-	{
-		switchlist = Z_Malloc<int>(i * 2 + 1, PU_STATIC);
-
-		for (i = 0, list_p = alphSwitchList; list_p[18] || list_p[19]; list_p += 20)
+		if (((gameinfo.maxSwitch & 15) >= (list_p[18] & 15)) &&
+			((gameinfo.maxSwitch & ~15) == (list_p[18] & ~15)))
 		{
-			if (((gameinfo.maxSwitch & 15) >= (list_p[18] & 15)) &&
-				((gameinfo.maxSwitch & ~15) == (list_p[18] & ~15)))
+			// [RH] Skip this switch if it can't be found.
+			const ResourceId texture1 = Res_GetTextureResourceId(reinterpret_cast<const char*>(list_p) + 0, WALL, false);
+			const ResourceId texture2 = Res_GetTextureResourceId(reinterpret_cast<const char*>(list_p) + 9, WALL, false);
+
+			if (Res_CheckResource(texture1) and Res_CheckResource(texture2))
 			{
-				// [RH] Skip this switch if it can't be found.
-				if (R_CheckTextureNumForName (list_p /* .name1 */) < 0)
-					continue;
-
-				if (R_CheckTextureNumForName (list_p + 9 /* .name2 */) < 0)
-					continue;
-
-				switchlist[i++] = R_TextureNumForName(list_p /* .name1 */);
-				switchlist[i++] = R_TextureNumForName(list_p + 9 /* .name2 */);
+				switchdef_t on, off;
+				on.pretexture = texture1;
+				on.frames.push_back({texture2, 0, 0});
+				off.pretexture = texture2;
+				off.frames.push_back({texture1, 0, 0});
+				P_AddSwitchPair(on, off, false);
 			}
 		}
-		numswitches = i/2;
-		switchlist[i] = -1;
 	}
 
-	Z_Free (alphSwitchList);
+	Res_ReleaseResource(res_id);
+}
+
+//
+// P_ParseSwitchState
+//
+// Reads the on or off state of an ANIMDEFS switch definition:
+//   [sound NAME] pic NAME tics N | range MIN MAX [pic ...]
+// Returns false if a frame's texture is missing.
+//
+bool P_ParseSwitchState(OScanner& os, switchdef_t& def)
+{
+	bool frames_exist = true;
+
+	while (os.scan())
+	{
+		if (os.compareTokenNoCase("sound"))
+		{
+			if (not def.sound.empty())
+				os.error("Switch state already has a sound");
+			os.mustScan();
+			def.sound = os.getToken();
+		}
+		else if (os.compareTokenNoCase("pic"))
+		{
+			switchframe_t frame;
+			os.mustScan();
+			frame.texture = Res_GetTextureResourceId(OStringToUpper(os.getToken()), WALL, false);
+			if (not Res_CheckResource(frame.texture))
+				frames_exist = false;
+
+			os.mustScan();
+			if (os.compareTokenNoCase("tics"))
+			{
+				os.mustScanInt();
+				frame.time_min = std::clamp(os.getTokenInt(), 0, 65535);
+				frame.time_rnd = 0;
+			}
+			else if (os.compareTokenNoCase("range") or os.compareTokenNoCase("rand"))
+			{
+				os.mustScanInt();
+				int time_min = std::clamp(os.getTokenInt(), 0, 65535);
+				os.mustScanInt();
+				int time_max = std::clamp(os.getTokenInt(), 0, 65535);
+				if (time_min > time_max)
+					std::swap(time_min, time_max);
+				frame.time_min = time_min;
+				frame.time_rnd = time_max - time_min + 1;
+			}
+			else
+			{
+				os.error("Must specify a duration for switch frame");
+			}
+			def.frames.push_back(frame);
+		}
+		else
+		{
+			os.unScan();
+			break;
+		}
+	}
+
+	if (def.frames.empty())
+		os.error("Switch state needs at least one frame");
+
+	return frames_exist;
+}
+
+//
+// P_ProcessSwitchDef
+//
+// Reads an ANIMDEFS switch definition, following the "switch" keyword:
+//   switch [doom [N]|heretic|hexen|strife|any] NAME [quest] on STATE [off STATE]
+// The on state plays when a switch showing NAME is pressed and must end on a
+// different texture.
+// The off state plays when a reusable switch returns, and without one the switch
+// goes straight back to NAME.
+//
+void P_ProcessSwitchDef(OScanner& os)
+{
+	bool this_game = true;
+
+	os.mustScan();
+	if (os.compareTokenNoCase("doom"))
+	{
+		// The episode number that may follow is deprecated.
+		os.mustScan();
+		if (not IsNum(os.getToken()))
+			os.unScan();
+	}
+	else if (os.compareTokenNoCase("heretic") or os.compareTokenNoCase("hexen") or
+	         os.compareTokenNoCase("strife"))
+	{
+		this_game = false;
+	}
+	else if (not os.compareTokenNoCase("any"))
+	{
+		os.unScan();
+	}
+
+	os.mustScan();
+	const OString name = OStringToUpper(os.getToken());
+	const ResourceId pretexture = Res_GetTextureResourceId(name, WALL, false);
+
+	switchdef_t on, off;
+	on.pretexture = pretexture;
+	bool has_on = false, has_off = false, frames_exist = true;
+
+	while (os.scan())
+	{
+		if (os.compareTokenNoCase("quest"))
+		{
+			// Strife's quest panels don't exist here.
+			continue;
+		}
+		else if (os.compareTokenNoCase("on"))
+		{
+			if (has_on)
+				os.error("Switch already has an on state");
+			has_on = true;
+			if (not P_ParseSwitchState(os, on))
+				frames_exist = false;
+		}
+		else if (os.compareTokenNoCase("off"))
+		{
+			if (has_off)
+				os.error("Switch already has an off state");
+			has_off = true;
+			if (not P_ParseSwitchState(os, off))
+				frames_exist = false;
+		}
+		else
+		{
+			os.unScan();
+			break;
+		}
+	}
+
+	if (not this_game or not has_on or not Res_CheckResource(pretexture))
+		return;
+
+	if (not frames_exist)
+	{
+		PrintFmt(PRINT_HIGH, "Missing texture for switch {} in ANIMDEFS\n", name.c_str());
+		return;
+	}
+
+	if (not has_off)
+	{
+		off.frames.push_back({pretexture, 0, 0});
+		off.sound = on.sound;
+	}
+	off.pretexture = on.frames.back().texture;
+
+	if (off.pretexture == pretexture)
+		os.error("The on state for switch {} must end with a texture other than {}", name.c_str(), name.c_str());
+
+	P_AddSwitchPair(on, off, true);
 }
 
 void P_DestroyButtonThinkers()
@@ -129,8 +379,8 @@ void P_DestroyButtonThinkers()
 // Start a button counting down till it turns off.
 // [RH] Rewritten to remove MAXBUTTONS limit and use temporary soundorgs.
 //
-static void P_StartButton (line_t *line, DActiveButton::EWhere w, int texture,
-						   int time, fixed_t x, fixed_t y)
+void P_StartButton (line_t *line, DActiveButton::EWhere w, int32_t switch_def,
+    ResourceId res_id, bool flippable, fixed_t x, fixed_t y)
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;
@@ -142,72 +392,100 @@ static void P_StartButton (line_t *line, DActiveButton::EWhere w, int texture,
 			return;
 	}
 
-	new DActiveButton (line, w, texture, time, x, y);
+	new DActiveButton (line, w, switch_def, res_id, flippable, x, y);
 }
 
-short* P_GetButtonTexturePtr(const line_t* line, short*& altTexture, DActiveButton::EWhere& where)
+bool P_SwitchDefShows(const switchdef_t& def, const ResourceId res_id, bool any_frame)
 {
-	if (!line->sidenum[0])
+	if (def.pretexture == res_id)
+		return true;
+
+	if (any_frame)
+	{
+		for (const switchframe_t& frame : def.frames)
+			if (frame.texture == res_id)
+				return true;
+	}
+
+	return false;
+}
+
+//
+// P_GetButtonTexturePtr
+//
+// Finds the part of the line's front side that shows a switch.
+//
+// When any_frame is false, only a texture that can be pressed counts,
+// and switch_def is set to its definition.
+//
+// With it, a texture can be switched partway through an animation.
+//
+ResourceId* P_GetButtonTexturePtr(line_t* line, DActiveButton::EWhere& where,
+                                     bool any_frame, int32_t* switch_def)
+{
+	where = static_cast<DActiveButton::EWhere>(0);
+
+	if (line->sidenum[0] == R_NOSIDE)
 		return NULL;
 
-	int texTop = sides[line->sidenum[0]].toptexture;
-	int texMid = sides[line->sidenum[0]].midtexture;
-	int texBot = sides[line->sidenum[0]].bottomtexture;
-	where = static_cast<DActiveButton::EWhere>(0);
-	altTexture = NULL;
+	side_t* side = &sides[line->sidenum[0]];
 
-	for (int i = 0; i < numswitches * 2; i++)
+	for (size_t i = 0; i < switchdefs.size(); i++)
 	{
-		if (switchlist[i] == texTop)
+		const switchdef_t& def = switchdefs[i];
+		ResourceId* res_id_ptr = nullptr;
+
+		if (P_SwitchDefShows(def, side->toptexture, any_frame))
 		{
-			altTexture = reinterpret_cast<short*>(&switchlist[i ^ 1]);
 			where = DActiveButton::BUTTON_Top;
-			return &sides[line->sidenum[0]].toptexture;
+			res_id_ptr = &side->toptexture;
 		}
-		else if (switchlist[i] == texBot)
+		else if (P_SwitchDefShows(def, side->bottomtexture, any_frame))
 		{
-			altTexture = reinterpret_cast<short*>(&switchlist[i ^ 1]);
 			where = DActiveButton::BUTTON_Bottom;
-			return &sides[line->sidenum[0]].bottomtexture;
+			res_id_ptr = &side->bottomtexture;
 		}
-		else if (switchlist[i] == texMid)
+		else if (P_SwitchDefShows(def, side->midtexture, any_frame))
 		{
-			altTexture = reinterpret_cast<short*>(&switchlist[i ^ 1]);
 			where = DActiveButton::BUTTON_Middle;
-			return &sides[line->sidenum[0]].midtexture;
+			res_id_ptr = &side->midtexture;
+		}
+
+		if (res_id_ptr != nullptr)
+		{
+			if (switch_def != nullptr)
+				*switch_def = static_cast<int32_t>(i);
+			return res_id_ptr;
 		}
 	}
 
 	return NULL;
 }
 
-short P_GetButtonTexture(const line_t* line)
+const ResourceId P_GetButtonTexture(const line_t* line)
 {
 	DActiveButton::EWhere twhere;
-	short* alt;
-	short* texture = P_GetButtonTexturePtr(line, alt, twhere);
-
-	if (texture)
-		return *texture;
-
-	return 0;
+	const ResourceId* res_id_ptr =
+	    P_GetButtonTexturePtr(const_cast<line_t*>(line), twhere, true, nullptr);
+	if (res_id_ptr != nullptr)
+		return *res_id_ptr;
+	return ResourceId::INVALID_ID;
 }
 
-void P_SetButtonTexture(line_t* line, short texture)
+void P_SetButtonTexture(line_t* line, const ResourceId new_res_id)
 {
-	if (texture > 0 && texture < numtextures)
+	if (Res_CheckResource(new_res_id))
 	{
 		DActiveButton::EWhere twhere;
-		short* alt;
-		short* findTexture = P_GetButtonTexturePtr(line, alt, twhere);
+		ResourceId* res_id_ptr = P_GetButtonTexturePtr(line, twhere, true, nullptr);
 
-		if (findTexture)
-			*findTexture = texture;
+		if (res_id_ptr != nullptr and Res_CheckResource(*res_id_ptr))
+			*res_id_ptr = new_res_id;
 	}
 }
 
 // denis - query button
-bool P_GetButtonInfo (const line_t *line, unsigned &state, unsigned &time)
+bool P_GetButtonInfo(const line_t *line, unsigned &state, unsigned &time)
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;
@@ -226,7 +504,7 @@ bool P_GetButtonInfo (const line_t *line, unsigned &state, unsigned &time)
 	return false;
 }
 
-bool P_SetButtonInfo (line_t *line, unsigned state, unsigned time)
+bool P_SetButtonInfo(line_t *line, unsigned state, unsigned time)
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;
@@ -300,17 +578,20 @@ void P_ChangeSwitchTexture(line_t* line, int useAgain, bool playsound)
 		line->special = 0;
 
 	DActiveButton::EWhere twhere;
-	short* altTexture;
-	short* texture = P_GetButtonTexturePtr(line, altTexture, twhere);
+	int32_t switch_def = -1;
+	ResourceId* res_id_ptr = P_GetButtonTexturePtr(line, twhere, false, &switch_def);
 
-	if (texture)
+	if (res_id_ptr != nullptr)
 	{
+		const switchdef_t& def = switchdefs[switch_def];
+		if (P_SwitchSoundExists(def))
+			sound = def.sound.c_str();
+
 		// [RH] The original code played the sound at buttonlist->soundorg,
 		//		which wasn't necessarily anywhere near the switch if
 		//		it was facing a big sector.
 		fixed_t x = line->v1->x + (line->dx >> 1);
 		fixed_t y = line->v1->y + (line->dy >> 1);
-
 		if (playsound)
 		{
 			if (co_zdoomsound)
@@ -327,14 +608,16 @@ void P_ChangeSwitchTexture(line_t* line, int useAgain, bool playsound)
 			}
 		}
 
-		if (useAgain)
-			P_StartButton(line, twhere, *texture, BUTTONTIME, x, y);
-		*texture = *altTexture;
+		const ResourceId pretexture = *res_id_ptr;
+		*res_id_ptr = def.frames[0].texture;
+		if (useAgain or def.frames.size() > 1)
+			P_StartButton(line, twhere, switch_def, pretexture, useAgain, x, y);
 		line->switchactive = true;
 	}
 
 	line->wastoggled = true;
 }
+
 
 IMPLEMENT_SERIAL (DActiveButton, DThinker)
 
@@ -342,21 +625,31 @@ DActiveButton::DActiveButton ()
 {
 	m_Line = NULL;
 	m_Where = BUTTON_Nowhere;
-	m_Texture = 0;
+	m_ResId = ResourceId::INVALID_ID;
 	m_Timer = 0;
 	m_X = 0;
 	m_Y = 0;
+	m_SwitchDef = -1;
+	m_Frame = 0;
+	m_Flippable = false;
+	m_Returning = false;
 }
 
-DActiveButton::DActiveButton (line_t *line, EWhere where, int16_t texture,
-							  int32_t time, fixed_t x, fixed_t y)
+// The first frame of the switch definition is already showing.
+DActiveButton::DActiveButton (line_t *line, EWhere where, int32_t switch_def, ResourceId res_id,
+							  bool flippable, fixed_t x, fixed_t y)
 {
 	m_Line = line;
 	m_Where = where;
-	m_Texture = texture;
-	m_Timer = time;
+	m_ResId = res_id;
+	m_Timer = 0;
 	m_X = x;
 	m_Y = y;
+	m_SwitchDef = switch_def;
+	m_Frame = 0;
+	m_Flippable = flippable;
+	m_Returning = false;
+	startFrame();
 }
 
 void DActiveButton::Serialize (FArchive &arc)
@@ -364,34 +657,102 @@ void DActiveButton::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
-		arc << m_Line << m_Where << m_Texture << m_Timer << m_X << m_Y;
+		arc << m_Line << m_Where << m_ResId << m_Timer << m_X << m_Y
+		    << m_SwitchDef << m_Frame << m_Flippable << m_Returning;
 	}
 	else
 	{
-		arc >> m_Line >> m_Where >> m_Texture >> m_Timer >> m_X >> m_Y;
+		arc >> m_Line >> m_Where >> m_ResId >> m_Timer >> m_X >> m_Y
+		    >> m_SwitchDef >> m_Frame >> m_Flippable >> m_Returning;
 	}
+}
+
+void DActiveButton::setTexture(const ResourceId res_id)
+{
+	switch (m_Where)
+	{
+	case BUTTON_Top:
+		sides[m_Line->sidenum[0]].toptexture = res_id;
+		break;
+
+	case BUTTON_Middle:
+		sides[m_Line->sidenum[0]].midtexture = res_id;
+		break;
+
+	case BUTTON_Bottom:
+		sides[m_Line->sidenum[0]].bottomtexture = res_id;
+		break;
+
+	default:
+		break;
+	}
+}
+
+//
+// DActiveButton::startFrame
+//
+// Times the frame that is showing. A reusable switch holds the last frame of
+// its on state for BUTTONTIME. Returns false when nothing is left to do.
+//
+bool DActiveButton::startFrame()
+{
+	if (m_SwitchDef < 0 or static_cast<size_t>(m_SwitchDef) >= switchdefs.size())
+		return false;
+
+	const switchdef_t& def = switchdefs[m_SwitchDef];
+	if (static_cast<size_t>(m_Frame) + 1 < def.frames.size())
+	{
+		const switchframe_t& frame = def.frames[m_Frame];
+		m_Timer = frame.time_min;
+		if (frame.time_rnd > 1)
+			m_Timer += ((M_Random() << 8) | M_Random()) % frame.time_rnd;
+		return true;
+	}
+
+	if (m_Flippable and not m_Returning)
+	{
+		m_Timer = BUTTONTIME;
+		return true;
+	}
+
+	return false;
 }
 
 void DActiveButton::RunThink ()
 {
-	if (0 >= --m_Timer)
+	if (0 < --m_Timer)
+		return;
+
+	const bool valid_def =
+	    m_SwitchDef >= 0 and static_cast<size_t>(m_SwitchDef) < switchdefs.size();
+
+	if (valid_def and static_cast<size_t>(m_Frame) + 1 < switchdefs[m_SwitchDef].frames.size())
 	{
-		switch (m_Where)
+		// The next frame of the state that is playing.
+		m_Frame++;
+		setTexture(switchdefs[m_SwitchDef].frames[m_Frame].texture);
+		if (startFrame())
+			return;
+	}
+	else if (not m_Returning)
+	{
+		// The switch has been on for BUTTONTIME, so it returns. Its pair plays
+		// the way back, or without one it shows its old texture again.
+		m_Returning = true;
+
+		const char* sound = "switches/normbutn";
+		const int32_t pair = valid_def ? switchdefs[m_SwitchDef].pair : -1;
+		if (pair >= 0)
 		{
-		case BUTTON_Top:
-			sides[m_Line->sidenum[0]].toptexture = m_Texture;
-			break;
-
-		case BUTTON_Middle:
-			sides[m_Line->sidenum[0]].midtexture = m_Texture;
-			break;
-
-		case BUTTON_Bottom:
-			sides[m_Line->sidenum[0]].bottomtexture = m_Texture;
-			break;
-
-		default:
-			break;
+			m_SwitchDef = pair;
+			m_Frame = 0;
+			setTexture(switchdefs[pair].frames[0].texture);
+			if (P_SwitchSoundExists(switchdefs[pair]))
+				sound = switchdefs[pair].sound.c_str();
+		}
+		else
+		{
+			setTexture(m_ResId);
 		}
 
 		if (co_zdoomsound)
@@ -400,17 +761,24 @@ void DActiveButton::RunThink ()
 			//  switch's linedef
 			fixed_t x = m_Line->v1->x + (m_Line->dx >> 1);
 			fixed_t y = m_Line->v1->y + (m_Line->dy >> 1);
-			S_Sound (x, y, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);
+			S_Sound (x, y, CHAN_BODY, sound, 1, ATTN_NORM);
 		}
 		else
 		{
 			// [SL] 2011-05-16 - Changed to play the switch resetting sound at the
 			// map location 0,0 to emulate the bug in vanilla doom
-			S_Sound (0, 0, CHAN_BODY, "switches/normbutn", 1, ATTN_NORM);
+			S_Sound (0, 0, CHAN_BODY, sound, 1, ATTN_NORM);
 		}
-		Destroy ();
-		m_Line->switchactive = false;
+
+		if (pair >= 0 and startFrame())
+			return;
 	}
+
+	Destroy ();
+
+	// A switch that doesn't return stays active.
+	if (m_Returning)
+		m_Line->switchactive = false;
 }
 
 VERSION_CONTROL (p_switch_cpp, "$Id$")

@@ -54,7 +54,8 @@ void MouseGraph::draw(int type)
 	const int x = I_GetSurfaceWidth() - MAX_HISTORY_TICS - 10;
 	const int y = 100;
 
-	screen->DrawText(CR_GREY, x, y, "Mouse X/Y");
+	if (V_FontsReady())
+		screen->DrawFontText(V_GetHudFontSized(8), CR_GREY, x, y, "Mouse X/Y");
 	if (type == TYPE_LINE)
 		this->drawLine(x, y + 8);
 	else if (type == TYPE_PLOT)
