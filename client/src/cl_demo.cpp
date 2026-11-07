@@ -135,7 +135,7 @@ void NetDemo::cleanUp()
 void NetDemo::error(const std::string &message)
 {
 	cleanUp();
-	PrintFmt(PRINT_HIGH, "{}\n", message);
+	PrintFmt(PRINT_WARNING, "{}\n", message);
 }
 
 /**
@@ -151,7 +151,7 @@ void NetDemo::fatalError(const std::string &message)
 	cleanUp();
 	stopPlaying();
 
-	PrintFmt(PRINT_HIGH, "{}\n", message);
+	PrintFmt(PRINT_ERROR, "{}\n", message);
 }
 
 //
