@@ -491,6 +491,25 @@ std::string G_MissingMapMessage(const std::string& mapname)
 }
 
 
+//
+// G_WarnHiddenUDMFMap
+//
+// Warns when the map about to be played stands in for a UDMF map of the same
+// name from a later file, which can't be loaded yet.
+//
+void G_WarnHiddenUDMFMap(const std::string& mapname)
+{
+	std::string udmf_file, map_file;
+	if (Res_FindHiddenUDMFMap(OString(StdStringToUpper(mapname)), udmf_file, map_file))
+	{
+		PrintFmt(PRINT_WARNING,
+		         "{} in {} is a UDMF map, which Odamex can't load yet. Playing {} from "
+		         "{} instead.\n",
+		         mapname, udmf_file, mapname, map_file);
+	}
+}
+
+
 bool G_LoadWadString(const std::string& str, const std::string& mapname, const maplist_lastmaps_t& lastmaps)
 {
 	OWantFiles newwadfiles;

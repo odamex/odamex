@@ -469,6 +469,7 @@ bool Res_IsResourceReplaced(const ResourcePath& path);
 
 bool Res_CheckMap(const OString& mapname);
 bool Res_IsUDMFMap(const OString& mapname);
+bool Res_FindHiddenUDMFMap(const OString& mapname, std::string& udmf_file, std::string& map_file);
 bool Res_IsMapFromPWAD(const OString& mapname);
 const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname);
 

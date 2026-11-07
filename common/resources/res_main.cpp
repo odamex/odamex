@@ -797,6 +797,50 @@ bool Res_IsUDMFMap(const OString& mapname)
 
 
 //
+// Res_GetResourceFileBaseName
+//
+// The name, without its directory, of the file the resource was loaded
+// from. A WAD embedded in a zip gives the zip's name.
+//
+static std::string Res_GetResourceFileBaseName(const ResourceId res_id)
+{
+	const std::optional<size_t> index = resource_manager.getResourceContainerIndex(res_id);
+	const std::vector<std::string>& files = resource_manager.getResourceFileNames();
+	if (not index or *index >= files.size())
+		return std::string();
+	return std::filesystem::path(files[*index]).filename().string();
+}
+
+
+//
+// Res_FindHiddenUDMFMap
+//
+// True when a UDMF map was loaded after the playable map of the same name,
+// so it would be played instead if UDMF could be loaded. The names of the
+// files holding each map are returned.
+//
+bool Res_FindHiddenUDMFMap(const OString& mapname, std::string& udmf_file, std::string& map_file)
+{
+	const ResourceId map_res_id =
+	    Res_GetResourceId(mapname, Res_MakeResourcePath(mapname, maps_directory_name));
+	const ResourceId udmf_res_id =
+	    Res_GetResourceId(mapname, Res_MakeResourcePath(mapname, udmf_maps_directory_name));
+
+	if (not resource_manager.validateResourceId(map_res_id) or
+	    not resource_manager.validateResourceId(udmf_res_id))
+		return false;
+
+	// ResourceIds are given out in load order.
+	if (static_cast<uint32_t>(udmf_res_id) < static_cast<uint32_t>(map_res_id))
+		return false;
+
+	udmf_file = Res_GetResourceFileBaseName(udmf_res_id);
+	map_file = Res_GetResourceFileBaseName(map_res_id);
+	return true;
+}
+
+
+//
 // Res_IsMapFromPWAD
 //
 // True when the map marker the game resolves for this name came from a PWAD.
