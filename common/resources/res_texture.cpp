@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <mutex>
 #include <shared_mutex>
+#include <vector>
 #include "m_fixed.h"
 
 #include "tables.h"
@@ -744,29 +745,80 @@ const ResourceId AnimatedTextureManager::getResourceId(const ResourceId res_id) 
 }
 
 
+uint32_t Res_GetTextureCandidateRecency(const ResourceId res_id);
+
 //
-// Res_AnimationFramesAreConsecutive
+// Res_GetAnimationFrame
 //
-// The ANIMATED lump describes a cycle only by its first and last frame and
-// assumes the frames in between occupy consecutive ResourceIds (vanilla
-// behavior). That only holds when every frame in the range
-// comes from the same resource file and none of them is shadowed by a later
-// file. Otherwise the id range covers unrelated resources, which would be
-// erroneously swapped into the animation.
+// Returns the texture that is the given number of frames after an animation's
+// base texture, or INVALID_ID when there is none.
 //
-static bool Res_AnimationFramesAreConsecutive(const ResourceId start_res_id, const ResourceId end_res_id, TextureSearchOrdering search_ordering)
+// The ANIMATED lump and ANIMDEFS ranges and numbered pics describe frames by
+// their position after the base, which means the lumps that follow it in the
+// file holding it (vanilla behavior).
+//
+// Texture lookups return TextureManager wrappers, which are registered after
+// all the resource files and ordered by where each name first appears, so a
+// texture replaced by a PWAD keeps the IWAD's place.
+//
+// Frames are therefore found through the raw lumps, and must
+// come from the base's file and not be replaced by a later one. Composite
+// textures have no lump of their own, so they follow their definition order.
+//
+static ResourceId Res_GetAnimationFrame(const ResourceId base_res_id, const uint32_t offset,
+                                        TextureSearchOrdering search_ordering)
 {
-	for (uint32_t value = start_res_id; value <= static_cast<uint32_t>(end_res_id); value++)
+	if (not Res_CheckResource(base_res_id))
+		return ResourceId::INVALID_ID;
+
+	const ResourceId raw_base_res_id(Res_GetTextureCandidateRecency(base_res_id));
+	const bool composite = raw_base_res_id == base_res_id;
+
+	const ResourceId step_res_id(static_cast<uint32_t>(composite ? base_res_id : raw_base_res_id) + offset);
+	if (not Res_CheckResource(step_res_id))
+		return ResourceId::INVALID_ID;
+	if (not composite and Res_GetResourceContainerFileName(step_res_id) !=
+	                          Res_GetResourceContainerFileName(raw_base_res_id))
+		return ResourceId::INVALID_ID;
+
+	// The frame must be the texture a lookup of its name finds, of the same kind.
+	const ResourceId frame_res_id =
+	    Res_GetTextureResourceId(Res_GetResourceName(step_res_id), search_ordering, false);
+	if (not Res_CheckResource(frame_res_id))
+		return ResourceId::INVALID_ID;
+
+	const ResourceId raw_frame_res_id(Res_GetTextureCandidateRecency(frame_res_id));
+	if (composite ? (frame_res_id != step_res_id or raw_frame_res_id != frame_res_id)
+	              : raw_frame_res_id != step_res_id)
+		return ResourceId::INVALID_ID;
+
+	return frame_res_id;
+}
+
+
+//
+// Res_GetAnimationRangeFrames
+//
+// Lists the frames of an animation given by its first and last texture.
+// Returns false when the last one isn't found after the first within the
+// frame limit, or a frame between them is missing or replaced.
+//
+static bool Res_GetAnimationRangeFrames(const ResourceId start_res_id, const ResourceId end_res_id,
+                                        TextureSearchOrdering search_ordering,
+                                        const uint32_t max_frames, std::vector<ResourceId>& frames)
+{
+	frames.clear();
+	for (uint32_t offset = 0; offset < max_frames; offset++)
 	{
-		const ResourceId res_id(value);
-		if (not Res_CheckResource(res_id))
+		const ResourceId frame_res_id = Res_GetAnimationFrame(start_res_id, offset, search_ordering);
+		if (frame_res_id == ResourceId::INVALID_ID)
 			return false;
-		// each frame must still be the visible (most recently loaded) resource
-		// for its name in this namespace
-		if (Res_GetTextureResourceId(Res_GetResourceName(res_id), search_ordering, false) != res_id)
-			return false;
+
+		frames.push_back(frame_res_id);
+		if (frame_res_id == end_res_id)
+			return frames.size() >= 2;
 	}
-	return true;
+	return false;
 }
 
 
@@ -818,26 +870,26 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 		const ResourceId start_res_id = Res_GetTextureResourceId(start_name, search_ordering, false);
 		const ResourceId end_res_id = Res_GetTextureResourceId(end_name, search_ordering, false);
 
-		uint32_t numframes = end_res_id - start_res_id + 1;
+		std::vector<ResourceId> frames;
 		if (not Res_CheckResource(start_res_id) or not Res_CheckResource(end_res_id))
 		{
 			DPrintFmt("Missing texture for cycle from {} to {} in ANIMATED lump\n", start_name.c_str(), end_name.c_str());
-		} 
-		else if (numframes < 2 or numframes > AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
-		{
-			PrintFmt(PRINT_HIGH, "Bad cycle from {} to {} in ANIMATED lump\n", start_name.c_str(), end_name.c_str());
 		}
-		else if (not Res_AnimationFramesAreConsecutive(start_res_id, end_res_id, search_ordering))
+		else if (not Res_GetAnimationRangeFrames(start_res_id, end_res_id, search_ordering,
+		                                         anim_t::MAX_ANIM_FRAMES, frames))
 		{
-			DPrintFmt("Skipping cycle from {} to {} in ANIMATED lump: frames are not contiguous in the loaded resource files\n", start_name.c_str(), end_name.c_str());
+			DPrintFmt("Skipping cycle from {} to {} in ANIMATED lump: {} doesn't follow {} in the same "
+			          "file, or a frame between them is missing or replaced\n",
+			          start_name.c_str(), end_name.c_str(), end_name.c_str(), start_name.c_str());
 		}
 		else
 		{
 			anim_t anim;
 			anim.basepic = start_res_id;
-			anim.numframes = numframes; 
+			anim.numframes = static_cast<short>(frames.size());
 			anim.uniqueframes = false;
 			anim.curframe = 0;
+			std::copy(frames.begin(), frames.end(), anim.framepic);
 			int speed = LELONG(*reinterpret_cast<const int*>(ptr + 19));
 			anim.speedmin[0] = anim.speedmax[0] = speed;
 			anim.countdown = speed - 1;
@@ -957,7 +1009,13 @@ void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering searc
 			os.mustScan();
 			ResourceId frame_res_id;
 			if (IsNum(os.getToken()))
-				frame_res_id = base_res_id + (os.getTokenInt() - 1);
+			{
+				// A numbered pic counts from the base, in the order of the file
+				// holding it.
+				const int number = os.getTokenInt();
+				frame_res_id = number >= 1 ? Res_GetAnimationFrame(base_res_id, number - 1, search_ordering)
+				                           : ResourceId::INVALID_ID;
+			}
 			else
 				frame_res_id = Res_GetTextureResourceId(OStringToUpper(os.getToken()), search_ordering, false);
 
@@ -989,22 +1047,27 @@ void AnimatedTextureManager::parseAnim(OScanner& os, TextureSearchOrdering searc
 	if (is_range)
 	{
 		const ResourceId end_res_id = Res_GetTextureResourceId(range_end_name, search_ordering, false);
-		const uint32_t numframes = end_res_id - base_res_id + 1;
-		if (not Res_CheckResource(end_res_id) or end_res_id <= base_res_id or
-		    numframes > AnimatedTextureManager::anim_t::MAX_ANIM_FRAMES)
+		if (not Res_CheckResource(end_res_id))
 		{
 			PrintFmt(PRINT_HIGH, "Bad range from {} to {} in ANIMDEFS\n", texture_name.c_str(), range_end_name.c_str());
 			return;
 		}
-		if (not Res_AnimationFramesAreConsecutive(base_res_id, end_res_id, search_ordering))
+
+		std::vector<ResourceId> frames;
+		if (not Res_GetAnimationRangeFrames(base_res_id, end_res_id, search_ordering,
+		                                    anim_t::MAX_ANIM_FRAMES, frames))
 		{
-			PrintFmt(PRINT_HIGH, "Disabling animation for {}: frames are not contiguous in the loaded resource files\n", texture_name.c_str());
+			PrintFmt(PRINT_HIGH,
+			         "Disabling animation for {}: {} doesn't follow it in the same file, or a "
+			         "frame between them is missing or replaced\n",
+			         texture_name.c_str(), range_end_name.c_str());
 			return;
 		}
 
 		// Like an ANIMATED lump cycle, every frame of the range animates.
 		anim.uniqueframes = false;
-		anim.numframes = static_cast<short>(numframes);
+		anim.numframes = static_cast<short>(frames.size());
+		std::copy(frames.begin(), frames.end(), anim.framepic);
 	}
 	else
 	{
@@ -1191,10 +1254,10 @@ void AnimatedTextureManager::updateAnimatedTextures()
 		}
 		else
 		{
-			for (uint32_t j = static_cast<uint32_t>(anim->basepic); j < static_cast<uint32_t>(anim->basepic) + anim->numframes; j++)
-			{
-				mTextureTranslation[j] = static_cast<ResourceId>((anim->basepic + ((anim->curframe + j) % anim->numframes)));
-			}
+			// Each frame's texture shows the animation from its own place in
+			// the cycle.
+			for (int j = 0; j < anim->numframes; j++)
+				mTextureTranslation[anim->framepic[j]] = anim->framepic[(anim->curframe + j) % anim->numframes];
 		}
 	}
 
