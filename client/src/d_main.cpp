@@ -959,7 +959,9 @@ void D_DoomMain()
 				OWantFile::make(file, pwad, OFILE_DEH);
 				newpatchfiles.push_back(file);
 			}
-			if (std::find(wad_exts.begin(), wad_exts.end(), extension) != wad_exts.end())
+			// The boot window also lists PK3 archives, which load as resource files.
+			if (std::find(wad_exts.begin(), wad_exts.end(), extension) != wad_exts.end() or
+			    extension == ".PK3")
 			{
 				OWantFile::make(file, pwad, OFILE_WAD);
 				newwadfiles.push_back(file);

@@ -678,7 +678,7 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
 	return rvo;
 }
 
-// Scan for PWADs and DEH and BEX files
+// Scan for PWADs, PK3s and DEH and BEX files
 std::vector<std::string> M_PWADFilesScanDir(std::string dir)
 {
 	std::vector<std::string> rvo;
@@ -696,7 +696,8 @@ std::vector<std::string> M_PWADFilesScanDir(std::string dir)
 
 			// Only return files with correct extensions
 			const std::string check = entry.path().extension().string();
-			if (iequals(check, ".WAD") || iequals(check, ".DEH") || iequals(check, ".BEX"))
+			if (iequals(check, ".WAD") or iequals(check, ".PK3") or iequals(check, ".DEH") or
+			    iequals(check, ".BEX"))
 			{
 				rvo.push_back(entry.path().filename().string());
 			}
