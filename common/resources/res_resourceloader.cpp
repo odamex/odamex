@@ -28,6 +28,7 @@
 #include <algorithm>
 
 #include <cmath>
+#include <vector>
 
 #include "resources/res_main.h"
 #include "resources/res_texture.h"
@@ -849,6 +850,27 @@ void PngTextureLoader::load(uint8_t* data) const
 	}
 	else
 	{
+		// Cache color matches so large images don't take excessive time.
+		// We've got a container to load!
+		const size_t pixel_count = static_cast<size_t>(mWidth) * mHeight;
+		size_t cache_bits = 8;
+		while (cache_bits < 16 and (size_t(1) << cache_bits) < pixel_count)
+			cache_bits++;
+		std::vector<uint32_t> best_color_cache(size_t(1) << cache_bits, 0);
+
+		const auto best_color = [&](const argb_t color) {
+			const uint32_t rgb = (static_cast<uint32_t>(color.getr()) << 16) |
+			                     (static_cast<uint32_t>(color.getg()) << 8) |
+			                     color.getb();
+			uint32_t& entry = best_color_cache[(rgb * 2654435761u) >> (32 - cache_bits)];
+			if ((entry >> 24) != 0 and (entry & 0xFFFFFF) == rgb)
+				return static_cast<palindex_t>(entry >> 24);
+
+			const palindex_t index = V_BestColor(palette->basecolors, color);
+			entry = (static_cast<uint32_t>(index) << 24) | rgb;
+			return index;
+		};
+
 		// write the image in the Texture, converting to column-major form
 		// and converting pixels to 8bpp palettized using nearest-color matching.
 		for (uint16_t y = 0; y < mHeight; y++)
@@ -863,7 +885,7 @@ void PngTextureLoader::load(uint8_t* data) const
 				if (color.geta() < Res_DitherAlphaThreshold(x, y))
 					*dest = palette->mask_color;
 				else
-					*dest = V_BestColor(palette->basecolors, color);
+					*dest = best_color(color);
 				dest += mHeight;
 
 				argb_plane[(mHeight * x) + y] = color;
