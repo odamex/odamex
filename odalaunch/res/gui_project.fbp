@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <wxFormBuilder_Project>
   <FileVersion major="1" minor="18"/>
-  <object class="Project" expanded="false">
+  <object class="Project" expanded="true">
     <property name="code_generation">XRC</property>
     <property name="cpp_class_decoration"></property>
     <property name="cpp_disconnect_events">1</property>
@@ -31,7 +31,7 @@
     <property name="relative_path">1</property>
     <property name="use_microsoft_bom">0</property>
     <property name="use_native_eol">0</property>
-    <object class="Frame" expanded="false">
+    <object class="Frame" expanded="true">
       <property name="aui_managed">0</property>
       <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
       <property name="bg"></property>
@@ -444,24 +444,13 @@
         <object class="tool" expanded="false">
           <property name="bitmap">Load From File; ./icons/btnrefresha.png</property>
           <property name="context_menu">0</property>
-          <property name="id">ID_MNUREFRESHALL</property>
+          <property name="id">ID_MNUGETLIST</property>
           <property name="kind">wxITEM_NORMAL</property>
           <property name="label">Refresh All</property>
-          <property name="name">Id_MnuItmRefreshAll</property>
+          <property name="name">Id_MnuItmGetList</property>
           <property name="permission">protected</property>
           <property name="statusbar">Refresh all servers currently displayed</property>
           <property name="tooltip">Refresh all servers currently displayed</property>
-        </object>
-        <object class="tool" expanded="false">
-          <property name="bitmap">Load From File; ./icons/btngetlist.png</property>
-          <property name="context_menu">0</property>
-          <property name="id">ID_MNUGETLIST</property>
-          <property name="kind">wxITEM_NORMAL</property>
-          <property name="label">Get List</property>
-          <property name="name">Id_MnuItmGetList</property>
-          <property name="permission">protected</property>
-          <property name="statusbar">Get a new list of servers</property>
-          <property name="tooltip">Get a new list of servers</property>
         </object>
         <object class="toolSeparator" expanded="false">
           <property name="permission">protected</property>
@@ -611,7 +600,10 @@
           <property name="shortcut"></property>
           <property name="unchecked_bitmap"></property>
         </object>
-        <object class="separator" />
+        <object class="separator" expanded="true">
+          <property name="name">m_separator7</property>
+          <property name="permission">none</property>
+        </object>
         <object class="wxMenuItem" expanded="false">
           <property name="bitmap"></property>
           <property name="checked">0</property>

@@ -140,17 +140,11 @@
         <longhelp>Refresh the selected server</longhelp>
         <bitmap>./icons/btnrefresh.png</bitmap>
       </object>
-      <object class="tool" name="Id_MnuItmRefreshAll">
+      <object class="tool" name="Id_MnuItmGetList">
         <label>Refresh All</label>
         <tooltip>Refresh all servers currently displayed</tooltip>
         <longhelp>Refresh all servers currently displayed</longhelp>
         <bitmap>./icons/btnrefresha.png</bitmap>
-      </object>
-      <object class="tool" name="Id_MnuItmGetList">
-        <label>Get List</label>
-        <tooltip>Get a new list of servers</tooltip>
-        <longhelp>Get a new list of servers</longhelp>
-        <bitmap>./icons/btngetlist.png</bitmap>
       </object>
       <object class="separator"/>
       <object class="tool" name="Id_MnuItmOpenChat">
