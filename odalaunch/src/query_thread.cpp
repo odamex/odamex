@@ -94,7 +94,6 @@ void QueryThread::Signal(odalpapi::Server* QueryServer, const std::string& Addre
 
 void* QueryThread::Entry()
 {
-	wxCommandEvent newEvent(wxEVT_THREAD_WORKER_SIGNAL, wxID_ANY);
 	odalpapi::BufferedSocket Socket;
     int Index;
     QueryThread::Message Msg;
@@ -137,9 +136,12 @@ void* QueryThread::Entry()
 
         // Set the required fields that is needed, so the caller thread can
         // process the server data
-        newEvent.SetId(Index);
-		newEvent.SetInt(m_ServerIndex);
-		wxPostEvent(m_EventHandler, newEvent);
+		auto* newEvent = new wxCommandEvent(wxEVT_THREAD_WORKER_SIGNAL, wxID_ANY);
+
+		newEvent->SetId(Index);
+		newEvent->SetInt(m_ServerIndex);
+
+		wxQueueEvent(m_EventHandler, newEvent);
 	}
 
 	return nullptr;

@@ -294,9 +294,9 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	// get master list on application start
 	if(GetListOnStart)
 	{
-		wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmGetList);
+		auto* event = new wxCommandEvent(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmGetList);
 
-		wxPostEvent(this, event);
+		wxQueueEvent(this, event);
 	}
 
 	// load chat client when launcher starts
@@ -796,7 +796,7 @@ bool dlgMain::MainThrPostEvent(mtcs_t CommandSignal, wxInt32 Index,
 void dlgMain::MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal,
                               wxInt32 Index, wxInt32 ListIndex)
 {
-	static wxCommandEvent event(EventType, win_id);
+	auto *event = new wxCommandEvent(EventType, win_id);
 
 	mtrs_struct_t* Result = new mtrs_struct_t;
 
@@ -804,9 +804,9 @@ void dlgMain::MonThrPostEvent(wxEventType EventType, int win_id, mtrs_t Signal,
 	Result->Index = Index;
 	Result->ServerListIndex = ListIndex;
 
-	event.SetClientData(Result);
+	event->SetClientData(Result);
 
-	wxPostEvent(this, event);
+	wxQueueEvent(this, event);
 }
 
 bool dlgMain::MonThrGetMasterList()
@@ -1235,7 +1235,7 @@ void dlgMain::OnMenuServers(wxCommandEvent& event)
 {
 	dlgServers dlgServersInstance(&MServer, this);
 
-	dlgServersInstance.Show();
+	dlgServersInstance.ShowModal();
 }
 
 
@@ -1819,9 +1819,9 @@ void dlgMain::LaunchGame(const wxString& Address, const wxString& ODX_Path,
 // when the user double clicks on the server list
 void dlgMain::OnServerListDoubleClick(wxListEvent& event)
 {
-	wxCommandEvent LaunchEvent(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmLaunch);
+	auto* LaunchEvent = new wxCommandEvent(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmLaunch);
 
-	wxPostEvent(this, LaunchEvent);
+	wxQueueEvent(this, LaunchEvent);
 }
 
 // returns a index of the server address as the internal array index

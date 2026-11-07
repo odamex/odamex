@@ -97,8 +97,8 @@ void dlgServers::ChkSetValueEx(wxInt32 XrcId, wxCheckBox* CheckBox, bool checked
 {
 	CheckBox->SetValue(checked);
 
-	wxCommandEvent Event(wxEVT_COMMAND_CHECKBOX_CLICKED, XrcId);
-	wxPostEvent(this, Event);
+	auto* event = new wxCommandEvent(wxEVT_COMMAND_CHECKBOX_CLICKED, XrcId);
+	wxQueueEvent(this, event);
 }
 
 // OK button
@@ -109,7 +109,8 @@ void dlgServers::OnButtonOK(wxCommandEvent& event)
 
 	if(UserChangedSetting == false)
 	{
-		Close();
+		EndModal(wxID_CANCEL);
+
 		return;
 	}
 
@@ -118,18 +119,25 @@ void dlgServers::OnButtonOK(wxCommandEvent& event)
 		SaveSettings();
 		
 		LoadServersIn();
+
+		EndModal(wxID_YES);
+
+		// reset 'dirty' flag
+		UserChangedSetting = false;
+
+		return;
 	}
     
     // reset 'dirty' flag
     UserChangedSetting = false;
 
-	Close();
+	EndModal(wxID_NO);
 }
 
 // Close button
 void dlgServers::OnButtonClose(wxCommandEvent& event)
 {
-	Close();
+	EndModal(wxID_CLOSE);
 }
 
 // User clicks on a server address in the list
