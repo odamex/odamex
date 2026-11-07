@@ -46,8 +46,8 @@ namespace
 {
 	void EnableSocketKeepAlive(CANARY_SOCKET_INT socketNumber)
 	{
-		int enable = 1;
-		int interval = 10;
+		const int enable = 1;
+		const int interval = 10;
 		if (setsockopt(socketNumber, SOL_SOCKET, SO_KEEPALIVE, SETSOCKOPTCAST(&enable), static_cast<socklen_t>(sizeof(enable))))
 		{
 			PrintFmt("Failed to enable SO_KEEPALIVE on the canary: {}\n", strerror(errno));
@@ -120,7 +120,7 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
 		greatestSocketValue = std::max(greatestSocketValue, canary.socket);
 	}
 
-	timeval noWait     = {0, 0};
+	timeval noWait     = {.tv_sec = 0, .tv_usec = 0};
 	int     numSockets = select(greatestSocketValue + 1, &sockets, nullptr, nullptr, &noWait);
 
 	if (numSockets > 0)
@@ -231,8 +231,8 @@ bool CanarySocketClient::IsAlive() const
 		FD_ZERO(&sockets);
 		FD_SET(m_socket, &sockets);
 
-		timeval noWait     = {0, 0};
-		int     numSockets = select(m_socket + 1, &sockets, nullptr, nullptr, &noWait);
+		timeval   noWait     = {.tv_sec = 0, .tv_usec = 0};
+		const int numSockets = select(m_socket + 1, &sockets, nullptr, nullptr, &noWait);
 
 		// For now, we only consider the case that the readfds get set when the connection has been reset/closed/terminated.
 		// TODO:  Check to see if there's *actual data* to read.
