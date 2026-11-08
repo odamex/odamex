@@ -269,6 +269,29 @@ void R_InstallSprite(const char *name, int32_t num)
 
 
 //
+// R_IsEmptySpriteLump
+//
+// Returns true if the newest lump at path is empty. The sprite resource
+// that name lookups return is a TextureManager wrapper whose size is that of
+// the decoded patch, so the raw lumps behind it are checked instead.
+//
+static bool R_IsEmptySpriteLump(const ResourcePath& path)
+{
+	ResourceId newest_res_id = ResourceId::INVALID_ID;
+	for (const ResourceId res_id : Res_GetAllResourceIds(path))
+	{
+		if (Res_IsTextureResource(res_id))
+			continue;
+		if (newest_res_id == ResourceId::INVALID_ID or
+		    static_cast<uint32_t>(res_id) > static_cast<uint32_t>(newest_res_id))
+			newest_res_id = res_id;
+	}
+
+	return Res_CheckResource(newest_res_id) and Res_GetResourceSize(newest_res_id) == 0;
+}
+
+
+//
 // R_ScanSpriteLumps
 //
 // Resets sprtemp/maxframe and fills them in from every sprite resource whose
@@ -308,6 +331,11 @@ bool R_ScanSpriteLumps(const ResourcePathList& sprite_paths, const char* sprite,
 
 		const char* resource_name_array = resource_name.c_str();
 		if (*reinterpret_cast<const int*>(resource_name_array) != intname)
+			continue;
+
+		// Skip empty sprite lumps, they're likely just the author grouping them
+		// in the WAD for organizational purposes.
+		if (R_IsEmptySpriteLump(sprite_paths[l]))
 			continue;
 
 		const ResourceId res_id = Res_GetResourceId(resource_name, NS_SPRITES);
