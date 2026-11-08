@@ -499,23 +499,23 @@ void P_MoveFreecam (freecam_t& freecam)
 	if (not freecam.mo)
 		return;
 
-	AActor *mo = freecam.mo;
+	AActor *freecamMobj = freecam.mo;
 
 	// Reactiontime is used to prevent movement
 	//	for a bit after a teleport.
-	if (freecam.mo->reactiontime)
+	if (freecamMobj->reactiontime)
 	{
-		freecam.mo->reactiontime--;
+		freecamMobj->reactiontime--;
 		return;
 	}
 
 	if (freecam.cmd.upmove != 0)
 	{
-		freecam.mo->momz = freecam.cmd.upmove << 9;
+		freecamMobj->momz = freecam.cmd.upmove << 9;
 	}
 
 	// Look left/right
-	mo->angle += freecam.cmd.yaw << 16;
+	freecamMobj->angle += freecam.cmd.yaw << 16;
 
 	// Look up/down stuff
 	const int look = freecam.cmd.pitch << 16;
@@ -524,53 +524,53 @@ void P_MoveFreecam (freecam_t& freecam)
 	{
 		if (look == INT_MIN)
 		{ // center view
-			freecam.mo->pitch = 0;
+			freecamMobj->pitch = 0;
 		}
 		else if (look > 0)
 		{ // look up
-			freecam.mo->pitch -= look;
-			if (freecam.mo->pitch < -ANG(32))
-				freecam.mo->pitch = -ANG(32);
+			freecamMobj->pitch -= look;
+			if (freecamMobj->pitch < -ANG(32))
+				freecamMobj->pitch = -ANG(32);
 		}
 		else
 		{ // look down
-			freecam.mo->pitch -= look;
-			if (freecam.mo->pitch > ANG(56))
-				freecam.mo->pitch = ANG(56);
+			freecamMobj->pitch -= look;
+			if (freecamMobj->pitch > ANG(56))
+				freecamMobj->pitch = ANG(56);
 		}
 	}
 
 	if (freecam.cmd.forwardmove | freecam.cmd.sidemove)
 	{
 		int friction;
-		const int movefactor = P_GetMoveFactor (mo, &friction);
+		const int movefactor = P_GetMoveFactor(freecamMobj, &friction);
 		
 		fixed_t forwardmove = (freecam.cmd.forwardmove * movefactor) >> 8;
 		const fixed_t sidemove = (freecam.cmd.sidemove * movefactor) >> 8;
 
 		if (forwardmove)
 		{
-			const angle_t ang = mo->angle >> ANGLETOFINESHIFT;
+			const angle_t ang = freecamMobj->angle >> ANGLETOFINESHIFT;
 
-			if (mo->pitch != 0)
+			if (freecamMobj->pitch != 0)
 			{
-				const angle_t pitch = static_cast<angle_t>(mo->pitch) >> ANGLETOFINESHIFT;
+				const angle_t pitch = static_cast<angle_t>(freecamMobj->pitch) >> ANGLETOFINESHIFT;
 				fixed_t zpush = FixedMul(forwardmove, finesine[pitch]);
-				if (mo->waterlevel and mo->waterlevel < 2 and zpush < 0)
+				if (freecamMobj->waterlevel and freecamMobj->waterlevel < 2 and zpush < 0)
 					zpush = 0;
 
-				mo->momz -= zpush;
+				freecamMobj->momz -= zpush;
 				forwardmove = FixedMul(forwardmove, finecosine[pitch]);
 			}
-			mo->momx += FixedMul(forwardmove, finecosine[ang]);
-			mo->momy += FixedMul(forwardmove, finesine[ang]);
+			freecamMobj->momx += FixedMul(forwardmove, finecosine[ang]);
+			freecamMobj->momy += FixedMul(forwardmove, finesine[ang]);
 		}
 		if (sidemove)
 		{
-			const fixed_t ang = (mo->angle - ANG90) >> ANGLETOFINESHIFT;
+			const fixed_t ang = (freecamMobj->angle - ANG90) >> ANGLETOFINESHIFT;
 
-			freecam.mo->momx += FixedMul(sidemove, finecosine[ang]);
-			freecam.mo->momy += FixedMul(sidemove, finesine[ang]);
+			freecamMobj->momx += FixedMul(sidemove, finecosine[ang]);
+			freecamMobj->momy += FixedMul(sidemove, finesine[ang]);
 		}
 	}
 }

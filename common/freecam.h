@@ -55,12 +55,12 @@ public:
 
 	struct ticcmd_t cmd;
 
-	bool wipedOnLevelChange();
 	void build(mapthing2_t spawn, bool setSpawnPos, bool noclip);
 	void persistPosition();
 	void moveToPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
 	void reset();
 	[[nodiscard]] bool needsPosition() const;
+	[[nodiscard]] bool wipedOnLevelChange() const;
 	static freecam_t* getfreecam(byte id);
 
 	inline static std::string prevmap;

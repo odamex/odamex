@@ -29,11 +29,6 @@ freecam_t::freecam_t(byte id, mapthing2_t spawn, bool noclip) : id(id)
 	this->build(spawn, true, noclip);
 };
 
-bool freecam_t::wipedOnLevelChange()
-{
-	return (this->mo == nullptr and this->camera == nullptr);
-}
-
 void freecam_t::build(mapthing2_t spawn, bool setSpawnPos, bool noclip)
 {
 	if (setSpawnPos)
@@ -99,6 +94,11 @@ void freecam_t::reset()
 bool freecam_t::needsPosition() const
 {
 	return (persist.x == 0 and persist.y == 0 and persist.z == 0);
+}
+
+bool freecam_t::wipedOnLevelChange() const
+{
+	return (this->mo == nullptr and this->camera == nullptr);
 }
 
 freecam_t* freecam_t::getfreecam(byte id)
