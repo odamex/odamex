@@ -1295,7 +1295,7 @@ bool AnimatedTextureManager::isWarped(const ResourceId res_id) const
 // judged by the newest other resource sharing the candidate's path — the
 // raw file/lump the wrapper reads from.
 //
-static uint32_t Res_GetTextureCandidateRecency(const ResourceId res_id)
+uint32_t Res_GetTextureCandidateRecency(const ResourceId res_id)
 {
 	const ResourceIdList res_ids = Res_GetAllResourceIds(Res_GetResourcePath(res_id));
 
