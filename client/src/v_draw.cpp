@@ -805,6 +805,42 @@ void DCanvas::DrawGlyphBlended(const palindex_t* fill, const byte* coverage,
 
 
 //
+// DCanvas::DrawGlyphClipped
+//
+// Blits one font glyph with the column drawers, for surfaces and glyphs that
+// DrawGlyphBlended does not handle. Unlike DrawWrapper, the glyph is clipped
+// to the surface, so a descender that hangs past the bottom edge is trimmed
+// rather than dropping the whole character.
+//
+// Coordinates are the glyph's top-left corner in screen pixels.
+//
+void DCanvas::DrawGlyphClipped(EWrapperCode drawer, const Texture* glyph, int x, int y) const
+{
+	if (not glyph or glyph->mWidth <= 0 or glyph->mHeight <= 0)
+		return;
+
+	const int x1 = std::max(x, 0);
+	const int y1 = std::max(y, 0);
+	const int x2 = std::min(x + glyph->mWidth, static_cast<int>(mSurface->getWidth()));
+	const int y2 = std::min(y + glyph->mHeight, static_cast<int>(mSurface->getHeight()));
+
+	if (x1 >= x2 or y1 >= y2)
+		return;
+
+	const vdrawfunc drawfunc = mSurface->getBitsPerPixel() == 8 ? Pfuncs[drawer] : Dfuncs[drawer];
+	const int surface_pitch = mSurface->getRowStepInBytes();
+	const int colstep = mSurface->getColStepInBytes();
+
+	if (mSurface == I_GetPrimarySurface())
+		V_MarkRect(x1, y1, x2 - x1, y2 - y1);
+
+	byte* dest = mSurface->getBuffer() + y1 * surface_pitch + x1 * colstep;
+	for (int col = x1; col < x2; col++, dest += colstep)
+		drawfunc(glyph->getColumn(col - x) + (y1 - y), dest, y2 - y1, surface_pitch);
+}
+
+
+//
 // V_DrawARGBColumn
 //
 // Draws one column of a texture's native true-color image plane to a

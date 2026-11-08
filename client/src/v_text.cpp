@@ -770,13 +770,13 @@ void DCanvas::DrawFontTextRaw(const OFont* font, EWrapperCode drawer,
 			}
 			else
 			{
-				// DrawWrapper does not clip, so the glyph has to fit whole
-				if (glyph_x + glyph->mWidth > mSurface->getWidth())
+				// the rest of the line is past the right edge
+				if (glyph_x >= mSurface->getWidth())
 					break;
 
-				if (glyph_x >= 0 and glyph_y >= 0 and
-				    glyph_y + glyph->mHeight <= mSurface->getHeight())
-					DrawWrapper(drawer, glyph, x, y + ascent);
+				// clipped like the blended path, so a descender that hangs
+				// past the bottom of the screen doesn't drop the character
+				DrawGlyphClipped(drawer, glyph, glyph_x, glyph_y);
 			}
 		}
 

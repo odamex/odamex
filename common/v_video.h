@@ -183,6 +183,7 @@ protected:
 	void DrawFontTextRaw (const OFont* font, EWrapperCode drawer, int normalcolor, int x, int y, const char *string) const;
 
 	void DrawGlyphBlended (const palindex_t* fill, const byte* coverage, int width, int height, int x, int y, int level) const;
+	void DrawGlyphClipped (EWrapperCode drawer, const Texture* glyph, int x, int y) const;
 
 	void DrawWrapper (EWrapperCode drawer, const Texture* texture, int x, int y) const;
 	void DrawSWrapper (EWrapperCode drawer, const Texture* texture, int x, int y, int destwidth, int destheight) const;

@@ -452,6 +452,26 @@ static void HU_DrawCrosshair()
 }
 
 
+//
+// HU_FontLineBottom
+//
+// Returns how far below the top of a line of text the font's printable
+// glyphs reach. A TrueType face's line height can be shorter than that,
+// since descenders and the drop shadow can hang below the face's descent.
+//
+int HU_FontLineBottom(const OFont* font)
+{
+	int bottom = font->getHeight();
+	for (int c = ' '; c <= '~'; c++)
+	{
+		const Texture* glyph = font->getGlyph(static_cast<char>(c));
+		if (glyph)
+			bottom = std::max(bottom, font->getAscent() - glyph->mOffsetY + glyph->mHeight);
+	}
+	return bottom;
+}
+
+
 static void HU_DrawChatPrompt()
 {
 	// Don't draw the chat prompt without a valid font.
@@ -473,6 +493,9 @@ static void HU_DrawChatPrompt()
 	//   intermission on-screen.
 	// * ST_Y is the current Y height of the status bar.
 
+	// leave room for the whole line, descenders included
+	const int line_height = std::max(10 * scaledyfac, HU_FontLineBottom(font));
+
 	int y;
 	if (!viewactive && gamestate != GS_INTERMISSION)
 	{
@@ -482,12 +505,12 @@ static void HU_DrawChatPrompt()
 	else if (viewactive && R_StatusBarVisible())
 	{
 		// Status bar is visible
-		y = ST_StatusBarY(surface_width, surface_height) - (10 * scaledyfac);
+		y = ST_StatusBarY(surface_width, surface_height) - line_height;
 	}
 	else
 	{
 		// Must be fullscreen HUD or intermission
-		y = surface_height - (10 * scaledyfac);
+		y = surface_height - line_height;
 	}
 
 	static const char* prompt;
