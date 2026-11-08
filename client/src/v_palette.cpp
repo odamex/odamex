@@ -1111,9 +1111,6 @@ END_COMMAND (testcolor)
 //
 void V_DoPaletteEffects()
 {
-	if (freecamIsActive())
-		return;
-
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 
 	player_t* plyr = &displayplayer();
