@@ -670,7 +670,7 @@ void AActor::UpdateActorLists()
 		return;
 
 	// MBF Rules
-	if (flags & MF_COUNTKILL || type == MT_SKULL)
+	if (IsMonster())
 	{
 		if (IsFriendly())
 			s_friendlies.Append(this);
@@ -1243,14 +1243,15 @@ void AActor::RunThink ()
 	}
 	else
 	{
-		const bool respawnmonsters = (G_GetCurrentSkill().respawn_counter || sv_monstersrespawn);
+		const bool respawnmonsters = (G_GetCurrentSkill().respawn_counter != 0 or sv_monstersrespawn);
 
 		// check for nightmare respawn
-		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
+		if (not IsMonster() or not respawnmonsters or this->info->flags3 & MF3_NORESPAWN)
 			return;
 
 		// Ch0wW - Let the server handle it alone.
 		// (CHECKME: Does that interfere with vanilla demos?)
+		// should this just be !serverside?
 		if ((multiplayer && clientside && !serverside))
 			return;
 
@@ -1258,21 +1259,21 @@ void AActor::RunThink ()
 
 		int respawntimer = 0;
 
-		if (G_GetCurrentSkill().respawn_counter < 0)
+		if (G_GetCurrentSkill().respawn_counter != 0)
 			respawntimer = G_GetCurrentSkill().respawn_counter;
 		else
-			respawntimer = 12 * TICRATE;
+			respawntimer = this->info->minrespawntics;
 
 		if (movecount < respawntimer)
-		return;
+			return;
 
 		if (level.time & 31)
 			return;
 
-		if (P_Random (this) > 4)
+		if (P_Random(this) > this->info->respawndice)
 			return;
 
-		P_NightmareRespawn (this);
+		P_NightmareRespawn(this);
 	}
 }
 
@@ -1657,37 +1658,49 @@ SetMobStateResultEnum P_SetMobjState(AActor *mobj, int32_t state, bool cl_update
 	return SetMobStateResultEnum::SUCCESSFUL;
 }
 
+namespace
+{
 
 //
 // P_WindThrustActor
 //
-static void P_WindThrustActor(AActor* mo)
+void P_WindThrustActor(AActor* mo)
 {
-	if (   mo
-	    && mo->subsector
-	    && (mo->flags2 & MF2_WINDTHRUST))
+	if (not map_format.getZDoom())
+		return;
+
+	if (mo and mo->subsector and (mo->flags2 & MF2_WINDTHRUST))
 	{
-		static constexpr int windTab[3] = {2048*5, 2048*10, 2048*25};
+		static constexpr std::array windTab = {2048*5, 2048*10, 2048*25};
 		const int special = mo->subsector->sector->special;
+		// NOLINTNEXTLINE(bugprone-switch-missing-default-case) -- supposed to do nothing in default case
 		switch (special)
 		{
-			case 40: case 41: case 42: // Wind_East
-				P_ThrustMobj (mo, 0, windTab[special - 40]);
+			case Wind_East_weak:
+			case Wind_East_medium:
+			case Wind_East_strong:
+				P_ThrustMobj (mo, 0, windTab[special - Wind_East_weak]);
 				break;
-			case 43: case 44: case 45: // Wind_North
-				P_ThrustMobj (mo, ANG90, windTab[special - 43]);
+			case Wind_North_weak:
+			case Wind_North_medium:
+			case Wind_North_strong:
+				P_ThrustMobj (mo, ANG90, windTab[special - Wind_North_weak]);
 				break;
-			case 46: case 47: case 48: // Wind_South
-				P_ThrustMobj (mo, ANG270, windTab[special - 46]);
+			case Wind_South_weak:
+			case Wind_South_medium:
+			case Wind_South_strong:
+				P_ThrustMobj (mo, ANG270, windTab[special - Wind_South_weak]);
 				break;
-			case 49: case 50: case 51: // Wind_West
-				P_ThrustMobj (mo, ANG180, windTab[special - 49]);
+			case Wind_West_weak:
+			case Wind_West_medium:
+			case Wind_West_strong:
+				P_ThrustMobj (mo, ANG180, windTab[special - Wind_West_weak]);
 				break;
 		}
 	}
 }
 
-static void P_WallBouncy(AActor* mo)
+void P_WallBouncy(AActor* mo)
 {
 	if (mo->flags & MF_BOUNCES ||
 	    (!mo->player && BlockingLine &&
@@ -1733,7 +1746,7 @@ static void P_WallBouncy(AActor* mo)
 //
 // Resets the Lost Soul to its spawn state after it collides with something.
 //
-static void P_LostSoulReset(AActor* mo)
+void P_LostSoulReset(AActor* mo)
 {
 	if (!mo->momx && !mo->momy && (mo->flags & MF_SKULLFLY))
 	{
@@ -1750,7 +1763,7 @@ static void P_LostSoulReset(AActor* mo)
 // Checks if lines that the missile collided with are ordinary walls or
 // are skywall-hacks/Line_Horizons. Returns false if the actor is destroyed.
 //
-static bool P_ExplodeMissileAgainstWall(AActor* mo)
+bool P_ExplodeMissileAgainstWall(AActor* mo)
 {
 	if (mo->flags & MF_MISSILE)
 	{
@@ -1808,7 +1821,7 @@ static bool P_ExplodeMissileAgainstWall(AActor* mo)
 //
 // P_ActorSlideAgainstWall
 //
-static void P_ActorSlideAgainstWall(AActor* mo)
+void P_ActorSlideAgainstWall(AActor* mo)
 {
 	if (BlockingLine != NULL &&
 		mo->player && mo->waterlevel && mo->waterlevel < 3 &&
@@ -1825,7 +1838,7 @@ static void P_ActorSlideAgainstWall(AActor* mo)
 //
 // P_ActorSlideAgainstActor
 //
-static void P_ActorSlideAgainstActor(AActor* mo, fixed_t ptryx, fixed_t ptryy)
+void P_ActorSlideAgainstActor(AActor* mo, fixed_t ptryx, fixed_t ptryy)
 {
 	// try sliding in the x direction
 	fixed_t tx = 0, ty = ptryy - mo->y;
@@ -1855,7 +1868,7 @@ static void P_ActorSlideAgainstActor(AActor* mo, fixed_t ptryx, fixed_t ptryy)
 // First, airfriction is applied to players who are in the air. Then sector
 // friction is applied.
 //
-static void P_ApplyXYFriction(AActor* mo)
+void P_ApplyXYFriction(AActor* mo)
 {
 	// No friction for missiles ever
 	if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
@@ -1935,6 +1948,8 @@ static void P_ApplyXYFriction(AActor* mo)
 		mo->momy = FixedMul(mo->momy, friction);
 	}
 }
+
+} // namespace
 
 
 //
@@ -3725,21 +3740,28 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// Filter mapthings based on the gamemode
-	if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
+	MapThingFlags spawn_mask;
+	if (not multiplayer)
 	{
-		if (!(mthing.flags & MTF_SINGLE))
-			return;
+		if (g_thingfilter == -1 or G_GetCurrentSkill().spawn_multi_coop_only)
+			spawn_mask = MTF_COOPERATIVE;
+		else if (G_GetCurrentSkill().spawn_multi)
+			spawn_mask = MTF_SINGLE | MTF_COOPERATIVE;
+		else
+			spawn_mask = MTF_SINGLE;
 	}
+	// should this also include CTF?
 	else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
 	{
-		if (!(mthing.flags & MTF_DEATHMATCH))
-			return;
+		spawn_mask = MTF_DEATHMATCH;
 	}
 	else if (G_IsCoopGame())
 	{
-		if (!(mthing.flags & MTF_COOPERATIVE))
-			return;
+		spawn_mask = MTF_COOPERATIVE;
 	}
+
+	if (not (mthing.flags & combo(spawn_mask)))
+		return;
 
 	if (g_thingfilter == 3 && P_IsPickupableThing(mthing.type))
 		return;
@@ -3859,36 +3881,18 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (!G_IsCoopGame() && info->flags & MF_NOTDMATCH)
 		return;
 
-	// don't spawn deathmatch weapons in offline single player mode
+	// filter out extra weapons in coop
+	if (g_thingfilter == 1 and info->hasWeaponPickup())
 	{
-		switch (type)
-		{
-		case MT_CHAINGUN:
-		case MT_SHOTGUN:
-		case MT_SUPERSHOTGUN:
-		case MT_MISC25: // BFG
-		case MT_MISC26: // chainsaw
-		case MT_MISC27: // rocket launcher
-		case MT_MISC28: // plasma gun
-			if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
-			{
-				if ((mthing.flags & MTF_DEATHMATCH) && !(mthing.flags & MTF_SINGLE))
-					return;
-			}
-			else
-			{
-				if ((mthing.flags & MTF_FILTER_COOPWPN))
-					return;
-			}
-			break;
-		default:
-			break;
-		}
+		// nested just for slightly more readability than a big long condition
+		if (multiplayer and G_IsCoopGame() and not (mthing.flags & MTF_SINGLE))
+			return;
 	}
+
 	// [csDoom] don't spawn any monsters
-	if (sv_nomonsters || !serverside)
+	if (sv_nomonsters or not serverside)
 	{
-		if (type == MT_SKULL || (info->flags & MF_COUNTKILL) )
+		if (info->isMonster())
 		{
 			return;
 		}
@@ -3958,7 +3962,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// [AM] Adjust monster health based on server setting
-	if ((type == MT_SKULL || (info->flags & MF_COUNTKILL)) && sv_monstershealth != 1.0f)
+	if (info->isMonster() and sv_monstershealth != 1.0f)
 		mobj->health *= sv_monstershealth;
 
 	if (mobj->tics > 0)

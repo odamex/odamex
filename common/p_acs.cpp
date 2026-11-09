@@ -130,7 +130,7 @@ void ClearInventory(AActor* activator)
 
 void GiveBackpack(player_t& player)
 {
-	if (!player.backpack)
+	if (not player.backpack)
 	{
 		for (auto& ammo : player.maxammo)
 		{
@@ -307,7 +307,7 @@ AActor* SingleActorFromTID(int tid, AActor* defactor)
 
 void TakeBackpack(player_t& player)
 {
-	if (!player.backpack)
+	if (not player.backpack)
 		return;
 
 	player.backpack = false;
@@ -1918,7 +1918,7 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, an
 
 	int spawncount = 0;
 
-	if (info != MT_NULL && !((mobjinfo[info].flags & MF_COUNTKILL) && sv_nomonsters))
+	if (info != MT_NULL and not (mobjinfo[info].isMonster() and sv_nomonsters))
 	{
 		auto* actor = new AActor (x, y, z, info);
 
@@ -1981,14 +1981,14 @@ void DLevelScript::DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t s
 			return;
 	}
 
-	if ((mobjinfo[info].flags & MF_COUNTKILL) && sv_nomonsters)
+	if (mobjinfo[info].isMonster() and sv_nomonsters)
 		return;
 
 	AActor* spot = nullptr;
 	AActor* mobj = nullptr;
 	while ( (spot = AActor::FindByTID (spot, tid)) )
 	{
-		if (spot->type != MT_MAPSPOT && spot->type != MT_MAPSPOTGRAVITY)
+		if (spot->type != MT_MAPSPOT and spot->type != MT_MAPSPOTGRAVITY)
 			continue;
 
 		mobj = new AActor(spot->x, spot->y, spot->z, info);
@@ -2000,7 +2000,7 @@ void DLevelScript::DoSpawnProjectile(int tid, int type, angle_t angle, fixed_t s
 			if (gravity)
 			{
 				mobj->flags &= ~MF_NOGRAVITY;
-				if (!(mobj->flags & MF_COUNTKILL))
+				if (not (mobj->flags & MF_COUNTKILL)) // why does countkill affect this? should this check ismonster?
 					mobj->flags2 |= MF2_LOGRAV;
 			}
 			else

@@ -1974,9 +1974,9 @@ void AM_drawCheatThing(const AActor* t)
 		}
 		else if (t->flags & MF_SOLID && t->flags & MF_SHOOTABLE)
 		{
-			if (t->flags & MF_FRIEND)
+			if (t->IsFriendly())
 				color = gameinfo.currentAutomapColors.ThingColor_Friend;
-			else if (t->flags & MF_COUNTKILL)
+			else if (t->IsMonster())
 				color = gameinfo.currentAutomapColors.ThingColor_Monster;
 			else
 				color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
