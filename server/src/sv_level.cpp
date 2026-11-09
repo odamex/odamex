@@ -872,7 +872,7 @@ void G_DoLoadLevel (int position)
 
 		// Mobjs and their netids are ultimately wiped out later in this function.
 		// Ensure that players' pending requested netid updates don't become stale.
-		player.requestedNetIdUpdates.clear();
+		it->requestedNetIdUpdates.clear();
 
 		// [AM] Only touch ready state if warmup mode is enabled.
 		if (sv_warmup)
