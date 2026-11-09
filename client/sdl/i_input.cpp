@@ -269,22 +269,22 @@ static void I_InitializeKeyNameTable()
 //
 // Returns the key code for the given key name
 //
-int I_GetKeyFromName(const std::string& name)
+std::optional<int32_t> I_GetKeyFromName(IStringView name)
 {
 	if (key_names.empty())
 		I_InitializeKeyNameTable();
 
 	// Names of the form #xxx are translated to key xxx automatically
 	if (name[0] == '#' && name[1] != 0)
-		return atoi(name.c_str() + 1);
+		return ParseNum<int32_t>(name.data() + 1);
 
 	// Otherwise, we scan the KeyNames[] array for a matching name
 	for (const auto& [key, key_name] : key_names)
 	{
-		if (iequals(name, key_name))
+		if (name == key_name)
 			return key;
 	}
-	return 0;
+	return std::nullopt;
 }
 
 

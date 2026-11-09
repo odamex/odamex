@@ -134,12 +134,14 @@ public:
 	}
 
 	// use as raw pointer
+	// NOLINTNEXTLINE(misc-explicit-constructor)
 	operator T*() noexcept
 	{
 		return get();
 	}
 
 	// use as raw pointer
+	// NOLINTNEXTLINE(misc-explicit-constructor)
 	operator const T*() const noexcept
 	{
 		return get();

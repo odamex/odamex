@@ -205,7 +205,7 @@ void S_ParseSndInfo()
 						ambient->type = amb_type_t::POINT;
 						os.mustScan();
 
-						if (IsRealNum(os.getToken().c_str()))
+						if (IsRealNum(os.getToken()))
 						{
 							if (os.getTokenFloat() > 0.0f)
 							{

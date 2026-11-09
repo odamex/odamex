@@ -30,7 +30,7 @@
 #include "z_zone.h"
 #include "r_defs.h"
 #include "m_resfile.h"
-
+#include "olumpname.h"
 
 // [RH] Compare wad header as ints instead of chars
 #define IWAD_ID (('I')|('W'<<8)|('A'<<16)|('D'<<24))
@@ -207,41 +207,34 @@ bool	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's n
 // [RH] Combine multiple marked ranges of lumps into one.
 void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t);
 
-// [RH] Copy an 8-char string and uppercase it.
-void uppercopy (char *to, const char *from);
-
-// [RH] Copies the lump name to to using uppercopy
-void W_GetLumpName(char* to, unsigned lump);
-
 // Copies the lump name to to
 void W_GetOLumpName(OLumpName& to, unsigned lump);
 OLumpName W_GetOLumpName(unsigned lump);
 
 // wadfiles always begins with odamex.wad followed by the IWAD, so every file
 // from here on is a PWAD.
+// TODO: this will need to be updated for id24res.wad, which gets loaded *before* the iwad
 constexpr size_t WADFILE_FIRSTPWAD = 2;
 
 // The index into wadfiles of the file a lump came from, or nothing at all when
 // the engine generated the lump instead of reading it.
-std::optional<size_t> W_GetLumpFile(unsigned lump);
+std::optional<size_t> W_GetLumpFile(unsigned int lump);
 
 // The base name of the file a lump came from, for use in diagnostics. Falls
 // back to a placeholder rather than failing, so it is always printable.
-std::string_view W_LumpFileName(unsigned lump);
+std::string_view W_LumpFileName(unsigned int lump);
 
 // True when a lump was supplied by a PWAD rather than by the IWAD, odamex.wad,
 // or the engine itself.
 //
 // The name overloads ask about the lump the engine resolves for that name,
 // which is the one the game actually uses.
-bool W_IsLumpFromPWAD(unsigned lump);
-bool W_IsLumpFromPWAD(const char* name, namespace_t namespc = ns_global);
-inline bool W_IsLumpFromPWAD(const OLumpName& name, namespace_t ns = ns_global) { return W_IsLumpFromPWAD(name.c_str(), ns); };
+bool W_IsLumpFromPWAD(unsigned int lump);
+bool W_IsLumpFromPWAD(const OLumpName& name, namespace_t namespc = ns_global);
 
 // True when a PWAD covers up a lump of the same name from an earlier file, as
 // opposed to contributing one the game did not already have.
-bool W_IsLumpReplaced(const char* name, namespace_t namespc = ns_global);
-inline bool W_IsLumpReplaced(const OLumpName& name, namespace_t ns = ns_global) { return W_IsLumpReplaced(name.c_str(), ns); };
+bool W_IsLumpReplaced(const OLumpName& name, namespace_t namespc = ns_global);
 
 // [RH] Put a lump in a certain namespace
 //void W_SetLumpNamespace (unsigned lump, int nmspace);
