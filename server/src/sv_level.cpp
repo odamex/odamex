@@ -688,14 +688,16 @@ void G_DoResetLevel(bool full_reset)
 		}
 	}
 
-	// Tell clients that a map reset is incoming.
+	// Tell clients that a map reset is incoming, and drop their requested mobj updates.
 	for (auto& player : players)
 	{
-		if (!(player.ingame()))
-			continue;
+		player.requestedNetIdUpdates.clear();
 
-		client_t* cl = &(player.client);
-		cl->messenger->Reliable().Write (odaproto::svc::ResetMap());
+		if (player.ingame())
+		{
+			client_t* cl = &(player.client);
+			cl->messenger->Reliable().Write (odaproto::svc::ResetMap());
+		}
 	}
 
 	// Unserialize saved snapshot
@@ -867,6 +869,10 @@ void G_DoLoadLevel (int position)
 		P_ClearPlayerCards(*it);
 		P_ClearPlayerPowerups(*it);
 		P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
+
+		// Mobjs and their netids are ultimately wiped out later in this function.
+		// Ensure that players' pending requested netid updates don't become stale.
+		player.requestedNetIdUpdates.clear();
 
 		// [AM] Only touch ready state if warmup mode is enabled.
 		if (sv_warmup)
