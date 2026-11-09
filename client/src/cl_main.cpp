@@ -2864,8 +2864,9 @@ void CL_SelectPotentialDesynchedMobjs(player_t& player)
 				}
 				else
 				{
-					const int dx = mostSignificantX - FIXED2INT(mobjInfoIter->actorPtr->x);
-					const int dy = mostSignificantY - FIXED2INT(mobjInfoIter->actorPtr->y);
+					// Do the arithmetic in 64 bits to avoid a known integer overflow at the extremes of our range.
+					const int64_t dx = mostSignificantX - FIXED2INT(mobjInfoIter->actorPtr->x);
+					const int64_t dy = mostSignificantY - FIXED2INT(mobjInfoIter->actorPtr->y);
 
 					// The sort key is distance squared divided by time since start of predicted
 					// motion.  This provides a decent balance between closest mobjs and mobjs that
@@ -2873,7 +2874,7 @@ void CL_SelectPotentialDesynchedMobjs(player_t& player)
 					// to become ghosts themselves.
 					mobjInfoIter->distanceSquared = (dx * dx) + (dy * dy);
 
-					if (const int age = mobjInfoIter->actorPtr->credibility.GetMotionAge())
+					if (const int64_t age = mobjInfoIter->actorPtr->credibility.GetMotionAge())
 					{
 						mobjInfoIter->distanceSquared /= age;
 					}
