@@ -1242,8 +1242,8 @@ void G_Ticker (void)
 					AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
 
 					// Clear all flags that need to be cleared to trigger the "can't hit thing"
-					// case in PIT_CheckThink.
-					mobj->flags &= ~(MF_SOLID | MF_SPECIAL | MF_SHOOTABLE | MF_TOUCHY);
+					// case in PIT_CheckThing.
+					mobj->flags &= ~(MF_SOLID | MF_SPECIAL | MF_SHOOTABLE | MF_TOUCHY | MF_PICKUP);
 					mobj->flags2 |= MF2_DONTDRAW;
 					mobj->oflags |= MFO_ISAWAITINGSPAWN;
 					consoleplayer().mo = consoleplayer().camera = mobj->ptr();
