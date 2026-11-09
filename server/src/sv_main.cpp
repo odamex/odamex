@@ -3649,8 +3649,8 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 		// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
 		// distance - just comparable values that correlate with distance.
 
-		const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> FRACBITS);
-		const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> FRACBITS);
+		const int64_t dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> FRACBITS);
+		const int64_t dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> FRACBITS);
 		mobjInfo.distanceSquared = dx*dx + dy*dy;
 	}
 	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distanceSquared < mo2.distanceSquared; };
